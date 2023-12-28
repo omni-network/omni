@@ -18,8 +18,6 @@ package commands
 
 import (
 	"encoding/json"
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -51,11 +49,11 @@ func printConfiguration(cmd *cobra.Command, args []string) error {
 
 	ologger.Info("---- Omni Configuration ------- ")
 	str, _ := json.MarshalIndent(config.omniConfig, "", "  ")
-	fmt.Println(string(str))
+	ologger.Info(string(str))
 	if verbose {
-		clogger.Info("---- cometBFT Configuration ------- ")
+		ologger.Info("---- cometBFT Configuration ------- ")
 		str, _ = json.MarshalIndent(config.cometBFTConfig, "", "  ")
-		fmt.Println(string(str))
+		ologger.Info(string(str))
 	}
 	return nil
 }

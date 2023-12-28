@@ -17,8 +17,6 @@
 package commands
 
 import (
-	"fmt"
-
 	"github.com/cometbft/cometbft/version"
 	"github.com/omni-network/omni"
 	"github.com/omni-network/omni/pkg/halo"
@@ -51,13 +49,13 @@ func printVersion(cmd *cobra.Command, args []string) error {
 	verbose := config.viperConfig.GetBool(optionNameVerbose)
 
 	ologger.Info("---- Version Info ------- ")
-	fmt.Println("Omni-Node    :", omni.Version)
-	fmt.Println("Omni-Halo    :", halo.HaloProtocolVersion)
+	ologger.Info("", "Omni-Node", omni.Version)
+	ologger.Info("", "Omni-Halo", halo.HaloProtocolVersion)
 	if verbose {
-		fmt.Println("CometBFT-Core:", version.TMCoreSemVer)
-		fmt.Println("CometBFT-ABCI:", version.ABCIVersion)
-		fmt.Println("CometBFT-P2P :", version.P2PProtocol)
-		fmt.Println("CometBFT-BlockProtocol:", version.BlockProtocol)
+		ologger.Info("", "CometBFT-Core:", version.TMCoreSemVer)
+		ologger.Info("", "CometBFT-ABCI:", version.ABCIVersion)
+		ologger.Info("", "CometBFT-P2P:", version.P2PProtocol)
+		ologger.Info("", "CometBFT-BlockProtocol:", version.BlockProtocol)
 	}
 	return nil
 }
