@@ -15,7 +15,7 @@ DEST ?= "$(shell (go list ./... ))"
 
 
 .PHONY: all
-all: clean lint vet test-race binary
+all: clean build lint vet test test-race binary
 
 .PHONY: binary
 binary: export CGO_ENABLED=0
@@ -26,7 +26,7 @@ binary: dist
 .PHONY: build
 build: export CGO_ENABLED=0
 build:
-	$(GO) build -trimpath -ldflags "$(LDFLAGS)" ./...
+	$(GO) build -trimpath -ldflags "$(LDFLAGS)" "$(DEST)"
 
 dist:
 	mkdir $@
@@ -44,6 +44,7 @@ format:
 	$(GOBIN)/gofumpt -l -w $(FOLDER)
 	$(GOBIN)/gci -w -local $(go list -m) `find $(FOLDER) -type f \! -name "*.go" \! -path \*/\.git/\* -exec echo {} \;`
 
+
 .PHONY: lint
 lint: linter
 	$(GOLANGCI_LINT) run ./...
@@ -56,13 +57,22 @@ linter:
 vet:
 	$(GO) vet "$(DEST)"
 
-.PHONY: test-race
-test-race:
-	$(GO) test -race -timeout 300000ms -v "$(DEST)"
-
 .PHONY: test
 test:
+ifdef coverage
+	$(GO) test -coverprofile=cover.out -v "$(DEST)"
+else
 	$(GO) test -v "$(DEST)"
+endif
+
+.PHONY: test-race
+test-race:
+ifdef coverage
+	$(GO) test -race -coverprofile=cover.out -v "$(DEST)"
+else
+	$(GO) test -race -v "$(DEST)"
+endif
+
 
 
 .PHONY: clean

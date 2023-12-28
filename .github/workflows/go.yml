@@ -8,6 +8,8 @@ on:
   merge_group:
     types: [checks_requested]
 
+
+
 jobs:
   formatting:
     name: Formatting
@@ -15,10 +17,51 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-
       - name: Go mod tidy checker
         id: gomodtidy
         uses: ./.github/actions/gomodtidy
+
+  test:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, macos-latest ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          cache: true
+          go-version-file: go.mod
+      - name: Build
+        run: make build
+      - name: Test with race detector (Ubuntu and MacOS)
+        run: make test-race
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Setup Go 1.21
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.21.5'
+          id: go
+          cache: false
+          go-version-file: go.mod
+      - name: GolangCI-Lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          skip-cache: false
+          version: v1.55.2
+          args: --config=.golangci.yml --out-${NO_FUTURE}format colored-line-number
+      - name: go mod tidy check
+        uses: katexochen/go-tidy-check@v2
 
   gosec:
     name: Gosec scan
@@ -38,25 +81,6 @@ jobs:
           go install github.com/securego/gosec/v2/cmd/gosec@v2.15.0
           gosec -exclude-generated  ./...
 
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Set up Go 1.21
-        uses: actions/setup-go@v3
-        with:
-          go-version: '1.21.5'
-          id: go
-
-      - name: Golangci-lint
-        uses: golangci/golangci-lint-action@v3
-        with:
-          version: v1.55.2
-          args: --config=.golangci.yml --out-${NO_FUTURE}format colored-line-number
-
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -75,5 +99,33 @@ jobs:
           go get -v -t -d ./...
 
       - name: Build
-        # Use blst tag to allow go and bazel builds for blst.
         run: go build -v ./...
+
+# TODO: enable this later
+#  coverage:
+#    name: Coverage Report
+#    if: github.ref == 'refs/heads/master'
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v3
+#      - name: Setup Go
+#        uses: actions/setup-go@v3
+#        with:
+#          cache: false
+#          go-version-file: go.mod
+#      - name: Cache Go Modules
+#        uses: actions/cache@v3
+#        with:
+#          path: |
+#            ~/.cache/go-build
+#            ~/go/pkg/mod
+#          key: ${{ runner.os }}-go-coverage-${{ hashFiles('**/go.sum') }}
+#      - name: Test with code coverage
+#        run: make cover=1 test
+#      - name: Upload coverage to Codecov
+#        uses: codecov/codecov-action@v3
+#        with:
+#          token: ${{ secrets.CODECOV_TOKEN }}
+#          fail_ci_if_error: true
+#          files: ./cover.out
