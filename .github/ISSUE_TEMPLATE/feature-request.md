@@ -1,21 +1,17 @@
 ---
 name: Feature request
-about: Use this template to suggest a new feature
-title: ''
-labels: ''
-assignees: ''
+about: Suggest a feature for Omni
+labels: 'feature'
 ---
 
-#### Summary
-<!--One paragraph explanation of the feature.-->
+### Description
 
-#### Motivation
-<!-- Why should this feature exist?
-What are the use-cases?-->
+<!-- ✍️ A clear and concise description of the problem or missing capability... --> 
 
-#### Implementation
-<!-- Do you have ideas regarding the implementation of this feature?
-Are you willing to implement this feature?-->
+### Describe the solution you'd like
 
-#### Drawbacks
-<!-- Why should we not do this? -->
+<!-- ✍️ If you have a solution in mind, please describe it. -->
+
+### Describe alternatives you've considered
+
+<!-- ✍️ Have you considered any alternative solutions or workarounds? --> 

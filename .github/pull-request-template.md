@@ -5,16 +5,31 @@
 - [ ] I have added tests to cover my changes.
 - [ ] I have filled out the description and linked the related issues.
 
-### Description
-<!--Please include a summary of the change and which issue is fixed.-->
+> 1) Please file an associated tracking issue if this pull request is non-trivial and requires context for our team to understand. All features and most bug fixes should have
+an associated issue with a design discussed and decided upon. Small bug
+fixes and documentation improvements don't need issues.
 
-### Open API Spec Version Changes (if applicable)
-<!--Please indicate the version changes if applicable (see https://semver.org).-->
+> 2) Note that PRs updating dependencies and new Go versions are not accepted.
+     Please file an issue instead.
 
-#### Motivation and Context (Optional)
-<!--Please include relevant motivation and context.-->
+**What type of PR is this?**
 
-### Related Issue (Optional)
-<!-- List any dependencies that are required for this change.-->
+> Uncomment one line below and remove others.
+>
+> Bug fix
+> 
+> Feature
+> 
+> Documentation
+> 
+> Other
 
-### Screenshots (if appropriate):
+**What does this PR do? Why is it needed?**
+
+**Which issues(s) does this PR fix?**
+
+Fixes #
+
+**Other notes for review**
+
+**Screenshots (if appropriate):**

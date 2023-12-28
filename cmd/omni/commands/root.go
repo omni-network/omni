@@ -19,7 +19,6 @@ package commands
 import (
 	"errors"
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
 	"strings"
@@ -30,6 +29,7 @@ import (
 	ocfg "github.com/omni-network/omni/pkg/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 )
 
 var (

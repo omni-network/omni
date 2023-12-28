@@ -18,6 +18,7 @@ package commands
 
 import (
 	"fmt"
+
 	"github.com/cometbft/cometbft/version"
 	"github.com/omni-network/omni"
 	"github.com/omni-network/omni/pkg/halo"

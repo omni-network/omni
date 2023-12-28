@@ -37,7 +37,7 @@ const (
 	DefaultConfigFileName = "config" // default omni configuration file (without .yaml ext)
 	DefaultLogLevel       = "info"   // default log level for omni node
 	DefaultLogWriter      = "stdout" // log writer (console, file)
-	DefaultDirPerm        = 0700     // default directory permission for all the above directories
+	DefaultDirPerm        = 0o700    // default directory permission for all the above directories
 
 	NativeTokenSymbol   = "OMNI" // the native tracker symbol of omni protocol
 	LayerOneTokenSymbol = "ETH"  // the native tracker symbol of ethereum layer 1 protocol

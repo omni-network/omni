@@ -1,10 +1,7 @@
 ---
 name: Documentation issue
-about: Use this template for documentation related issues
-title: ''
+about: For addition or modification to the documentation or the API
 labels: ''
-assignees: ''
-
 ---
 
 ### Location

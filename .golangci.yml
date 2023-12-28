@@ -1,0 +1,23 @@
+run:
+  go: '1.21.5'
+  timeout: 10m
+  skip-files:
+    - .*_test.go
+  skip-dirs:
+      - contracts
+      - packaging
+      - scripts
+      - tools
+linters:
+  enable:
+    - misspell
+    - gofmt
+    - unconvert
+
+linters-settings:
+  gocognit:
+    min-complexity: 65  # TODO: latest we should try to bring it down
+
+output:
+  print-issued-lines: true
+  sort-results: true

@@ -19,16 +19,20 @@ package commands
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"os"
+	"testing"
+
+	"github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/version"
 	"github.com/omni-network/omni"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"io"
-	"os"
-	"testing"
 )
 
 func TestVersionCmd(t *testing.T) {
+	t.Parallel()
+
 	// set the version, just like it is set from ther Makefile
 	omni.Version = "1.2.3-0xabcdef"
 
@@ -42,7 +46,7 @@ func TestVersionCmd(t *testing.T) {
 	// execute the command and get the output
 	got := runCommandAndCaptureStdio(t, cmd)
 
-	//check the output with the expected results
+	// check the output with the expected results
 	want := "Omni-Node    : 1.2.3-0xabcdef\nOmni-Halo    : 0.0.1\n"
 	if got != want {
 		t.Errorf("got output %q, want %q", got, want)
@@ -50,6 +54,8 @@ func TestVersionCmd(t *testing.T) {
 }
 
 func TestVersionCmdWithVerbosity(t *testing.T) {
+	t.Parallel()
+
 	// set the version, just like it is set from ther Makefile
 	omni.Version = "1.2.3-0xabcdef"
 
@@ -67,7 +73,7 @@ func TestVersionCmdWithVerbosity(t *testing.T) {
 	// execute the command and get the output
 	got := runCommandAndCaptureStdio(t, cmd)
 
-	//check the output with the expected results
+	// check the output with the expected results
 	want := fmt.Sprintf("Omni-Node    : 1.2.3-0xabcdef\nOmni-Halo    : 0.0.1\nCometBFT-Core: %v\nCometBFT-ABCI: %v\nCometBFT-P2P : %v\nCometBFT-BlockProtocol: %v\n",
 		version.TMCoreSemVer,
 		version.ABCIVersion,
@@ -78,30 +84,47 @@ func TestVersionCmdWithVerbosity(t *testing.T) {
 	}
 }
 
+var consoleMu = &sync.Mutex{}
+
 func runCommandAndCaptureStdio(t *testing.T, cmd *cobra.Command) string {
+	// lock this function so that the console output works
+	// properly during race condition
+	consoleMu.Lock()
+	defer consoleMu.Unlock()
+
 	// replace stdio with a pipe
 	backupOfStdIO := os.Stdout
-	r, w, _ := os.Pipe()
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
 	os.Stdout = w
 
 	outC := make(chan string)
 	go func() {
 		var buf bytes.Buffer
-		io.Copy(&buf, r)
+		_, err := io.Copy(&buf, r)
+		if err != nil {
+			return
+		}
 		outC <- buf.String()
 	}()
 
-	// run the comand
-	err := cmd.RunE(cmd, nil)
+	// run the command
+	err = cmd.RunE(cmd, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// cleanup
-	w.Close()
+	err = w.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
 	os.Stdout = backupOfStdIO
 
 	// capture the screen output and send for verification
 	out := <-outC
+	close(outC)
 	return out
 }

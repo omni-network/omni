@@ -18,12 +18,15 @@ package commands
 
 import (
 	"encoding/json"
+	"testing"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"testing"
 )
 
 func TestPrintConfigCmd(t *testing.T) {
+	t.Parallel()
+
 	// create the command
 	rootCmd := &cobra.Command{
 		Use: "omni",
@@ -34,7 +37,7 @@ func TestPrintConfigCmd(t *testing.T) {
 	// execute the command and get the output
 	got := runCommandAndCaptureStdio(t, cmd)
 
-	//check the output with the expected results (except the node name which is created at random every time)
+	// check the output with the expected results (except the node name which is created at random every time)
 	want, err := json.MarshalIndent(config.omniConfig, "", "  ")
 	if err != nil {
 		t.Fatal(err)
@@ -45,6 +48,8 @@ func TestPrintConfigCmd(t *testing.T) {
 }
 
 func TestPrintConfigCmdWithVerbosity(t *testing.T) {
+	t.Parallel()
+
 	// create the command
 	rootCmd := &cobra.Command{
 		Use: "omni",
@@ -59,7 +64,7 @@ func TestPrintConfigCmdWithVerbosity(t *testing.T) {
 	// execute the command and get the output
 	got := runCommandAndCaptureStdio(t, cmd)
 
-	//check the output with the expected results (except the node name which is created at random every time)
+	// check the output with the expected results (except the node name which is created at random every time)
 	want1, err := json.MarshalIndent(config.omniConfig, "", "  ")
 	if err != nil {
 		t.Fatal(err)
