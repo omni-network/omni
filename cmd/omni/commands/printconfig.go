@@ -17,8 +17,8 @@
 package commands
 
 import (
-	"encoding/json"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 // PrintConfigCmd prints the configuration of omni and cometBFT to
@@ -33,7 +33,6 @@ func PrintConfigCmd() *cobra.Command {
 		RunE: printConfiguration,
 	}
 	setPrintConfigFlags(cmd)
-	config.cmd.AddCommand(cmd)
 	return cmd
 }
 
@@ -47,13 +46,17 @@ func printConfiguration(cmd *cobra.Command, args []string) error {
 	}
 	verbose := config.viperConfig.GetBool(optionNameVerbose)
 
-	ologger.Info("---- Omni Configuration ------- ")
-	str, _ := json.MarshalIndent(config.omniConfig, "", "  ")
-	ologger.Info(string(str))
+	log := config.ologger
+	log.Info("---- Omni Configuration ------- ")
+	out, err := yaml.Marshal(config.omniConfig)
+	if err != nil {
+		return err
+	}
+	log.Info("\n" + string(out))
 	if verbose {
-		ologger.Info("---- cometBFT Configuration ------- ")
-		str, _ = json.MarshalIndent(config.cometBFTConfig, "", "  ")
-		ologger.Info(string(str))
+		log.Info("---- cometBFT Configuration ------- ")
+		out, err = yaml.Marshal(config.cometBFTConfig)
+		log.Info(string(out))
 	}
 	return nil
 }

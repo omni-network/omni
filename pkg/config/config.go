@@ -17,6 +17,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -121,13 +122,22 @@ var (
 )
 
 // LoadDefaultConfig constructs the default configuration for the omni chain
-func LoadDefaultConfig() *OmniConfig {
+func LoadDefaultConfig(commandLineHome string) (*OmniConfig, error) {
 	generator := namegenerator.NewNameGenerator()
 	randomNodeName := generator.Generate()
 
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		homeDir = "" // TODO: not passing error up. can we safely assume we will have a home dir????
+	// first give preference to commandline, then to find using os and env
+	homeDir := commandLineHome
+	if homeDir == "" {
+		hd, err := os.UserHomeDir()
+		if err != nil {
+			hd = os.Getenv("$HOME")
+			if hd == "" {
+				return nil, errors.New("could not get home directory")
+			}
+			homeDir = hd
+		}
+		homeDir = hd
 	}
 
 	omniRootDir := filepath.Join(homeDir, DefaultOmniRootDir)
@@ -146,14 +156,20 @@ func LoadDefaultConfig() *OmniConfig {
 		OmniLogDir:         omniLogDir,
 		OmniConfigFileName: DefaultConfigFileName,
 		ChainConfig:        Mainnet,
-	}
+	}, nil
 }
 
 // EnsureDirectories make sure the required directories are present before we start
 // using them
 func EnsureDirectories(ocfg *OmniConfig) error {
+	// ensure that the home directory is present, otherwise create it
+	err := os.MkdirAll(ocfg.HomeDirectory, DefaultDirPerm)
+	if err != nil {
+		return fmt.Errorf("could not create directory %q: %w", ocfg.HomeDirectory, err)
+	}
+
 	// ensure that the root directory is present, otherwise create it
-	err := os.MkdirAll(ocfg.OmniRootDir, DefaultDirPerm)
+	err = os.MkdirAll(ocfg.OmniRootDir, DefaultDirPerm)
 	if err != nil {
 		return fmt.Errorf("could not create directory %q: %w", ocfg.OmniRootDir, err)
 	}

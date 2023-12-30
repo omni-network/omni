@@ -21,6 +21,7 @@ import (
 	"github.com/omni-network/omni"
 	"github.com/omni-network/omni/pkg/halo"
 	"github.com/spf13/cobra"
+	"strconv"
 )
 
 func PrintVersionCmd() *cobra.Command {
@@ -33,7 +34,6 @@ func PrintVersionCmd() *cobra.Command {
 		RunE: printVersion,
 	}
 	setVersionFlags(cmd)
-	config.cmd.AddCommand(cmd)
 	return cmd
 }
 
@@ -48,14 +48,15 @@ func printVersion(cmd *cobra.Command, args []string) error {
 	}
 	verbose := config.viperConfig.GetBool(optionNameVerbose)
 
-	ologger.Info("---- Version Info ------- ")
-	ologger.Info("", "Omni-Node", omni.Version)
-	ologger.Info("", "Omni-Halo", halo.HaloProtocolVersion)
+	logger := config.ologger
+	logger.Info("---- Version Info ------- ")
+	logger.Info("Omni-Node: " + omni.Version)
+	logger.Info("Omni-Halo: " + halo.HaloProtocolVersion)
 	if verbose {
-		ologger.Info("", "CometBFT-Core:", version.TMCoreSemVer)
-		ologger.Info("", "CometBFT-ABCI:", version.ABCIVersion)
-		ologger.Info("", "CometBFT-P2P:", version.P2PProtocol)
-		ologger.Info("", "CometBFT-BlockProtocol:", version.BlockProtocol)
+		logger.Info("CometBFT-Core: " + version.TMCoreSemVer)
+		logger.Info("CometBFT-ABCI: " + version.ABCIVersion)
+		logger.Info("CometBFT-P2P: " + strconv.Itoa(int(version.P2PProtocol)))
+		logger.Info("CometBFT-BlockProtocol: " + strconv.Itoa(int(version.BlockProtocol)))
 	}
 	return nil
 }

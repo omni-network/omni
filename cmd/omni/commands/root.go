@@ -19,6 +19,8 @@ package commands
 import (
 	"errors"
 	"fmt"
+	"gopkg.in/yaml.v3"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,180 +30,223 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	ocfg "github.com/omni-network/omni/pkg/config"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v3"
 )
 
 var (
-	// load default configurations for omni and cometBFT
-	config = loadDefaultConfig()
-
-	// set the default omni logger
-	ologger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
-
-	// set the default cometBFT logger
-	clogger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+	config *Config //configurations for omni and cometBFT
 )
 
 // command options
 const (
-	optionNameHomeDir     = "home_dir"
-	optionNameOmniRootDir = "root_dir"
-	optionNameLogLevel    = "log_level"
-	optionNameLogWriter   = "log_writer"
+	envPrefix             = "OMNI"
+	optionNameHomeDir     = "home-dir"
+	optionNameLogLevel    = "log-level"
+	optionNameLogWriter   = "log-writer"
+	optionNameOmniRootDir = "root-dir"
 	optionNameVerbose     = "verbose"
 )
 
 type Config struct {
-	cmd            *cobra.Command   // the cobra command which has all the commandline
+	rootCmd        *cobra.Command   // the cobra command which has all the commandline
 	viperConfig    *viper.Viper     // viper for reading config from files
 	omniConfig     *ocfg.OmniConfig // omni related configuration
 	cometBFTConfig *ccfg.Config     // cometBFT related configuration
+	cmdWriter      io.Writer        // cobra writer to test output
+	ologger        log.Logger       // logger used in omni
+	clogger        log.Logger       // logger used in cometBFT
 }
 
-// GetRootCommand  is the root command for omni node
-func GetRootCommand() (*cobra.Command, error) {
+func setPersistentFlags(cmd *cobra.Command) {
+	// set the persistent flags
+	cmd.PersistentFlags().String(optionNameHomeDir, os.ExpandEnv("$HOME"), "home directory for creating omni root")
+	cmd.PersistentFlags().String(optionNameLogLevel, ocfg.DefaultLogLevel, "log level (info, debug, error, none)")
+	cmd.PersistentFlags().String(optionNameLogWriter, ocfg.DefaultLogWriter, "where to write the log output")
+}
+
+// NewRootCommand  is the root command for omni node
+func NewRootCommand() (*cobra.Command, error) {
 	RootCmd := &cobra.Command{
 		Use:           "omni",
 		Short:         "Omni node hosting halo protocol for Xchain messages",
 		SilenceErrors: true,
 		SilenceUsage:  true,
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			// construct the configuration for omni and cometBFT
+			var err error
+			config, err = initializeConfig(cmd)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		},
+		Run: func(cmd *cobra.Command, args []string) {},
 	}
-
-	// adds persistent commands to the root so that it is available for all children
-	addPersistentCommands(RootCmd)
-
-	// binds the cobra flags to the viper
-	if err := viper.BindPFlags(RootCmd.Flags()); err != nil {
-		return nil, err
-	}
-
-	// parse both the omni and cometbft configuration
-	config, err := parseConfig(RootCmd)
-	if err != nil {
-		return nil, err
-	}
-
-	// initialise the omni logger
-	ologger, err = getLogger(ologger, config.omniConfig.LogLevel, ocfg.DefaultLogLevel, "omni")
-	if err != nil {
-		return nil, err
-	}
-
-	// initialise the cometBFT logger
-	clogger, err = getLogger(clogger, config.cometBFTConfig.LogLevel, ocfg.DefaultLogLevel, "comt")
-	if err != nil {
-		return nil, err
-	}
-
+	setPersistentFlags(RootCmd)
 	return RootCmd, nil
 }
 
-func addPersistentCommands(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringP(optionNameHomeDir, "", os.ExpandEnv("$HOME"), "home directory for creating omni root")
-	cmd.PersistentFlags().String(optionNameLogLevel, config.omniConfig.LogLevel, "log level (info, debug, error, none)")
-	cmd.PersistentFlags().String(optionNameLogWriter, config.omniConfig.LogWriter, "where to write the log output")
+func initializeConfig(cmd *cobra.Command) (*Config, error) {
+	//
+	//  Step-1: load the default values for omni and cometBFT
+	//
+	defaultConfig, err := loadDefaultConfig(cmd)
+	if err != nil {
+		return nil, err
+	}
+	v := defaultConfig.viperConfig
+	co := defaultConfig.omniConfig
+
+	//
+	// Step-2: override the default by loading the values from the config files
+	writeConfigFileFlag, err := loadConfigFromFile(cmd, defaultConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	//
+	// step-3: - load from environment variables
+	//
+	v.SetEnvPrefix(envPrefix)
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.AutomaticEnv()
+
+	//
+	// step-4: load the resolved viper values to cobra, except the command line ones
+	//
+	bindFlags(cmd, v)
+
+	// if a config file is not present for omni, write it
+	if writeConfigFileFlag {
+		configFileName := filepath.Join(co.OmniConfigDir, co.OmniConfigFileName+".yml")
+		if err := writeConfigFile(configFileName, co); err != nil {
+			return nil, err
+		}
+	}
+	return defaultConfig, nil
 }
 
-func loadDefaultConfig() *Config {
+// Bind each cobra flag to its associated viper configuration (config file and environment variable)
+func bindFlags(cmd *cobra.Command, v *viper.Viper) {
+	cmd.Flags().VisitAll(func(f *pflag.Flag) {
+		// Determine the naming convention of the flags when represented in the config file
+		configName := f.Name
+
+		// Apply the viper config value to the flag when the flag is not set and viper has a value
+		if !f.Changed && v.IsSet(configName) {
+			val := v.Get(configName)
+			err := cmd.Flags().Set(f.Name, fmt.Sprintf("%v", val))
+			if err != nil {
+				return
+			}
+		}
+	})
+}
+
+func loadDefaultConfig(cmd *cobra.Command) (*Config, error) {
+	// check if the home-dir is passed through the command line
+	commandLineHome, err2 := cmd.Flags().GetString(optionNameHomeDir)
+	if err2 != nil {
+		return nil, err2
+	}
+
 	// create default Omni config
-	oConfig := ocfg.LoadDefaultConfig()
+	oConfig, err := ocfg.LoadDefaultConfig(commandLineHome)
+	if err != nil {
+		return nil, err
+	}
 
 	// create default cometBFT config
 	cConfig := ccfg.DefaultConfig()
 
 	// overwrite few defaults in cometbft config
-	cConfig.Moniker = oConfig.NodeName  // cometBFT moniker
-	cConfig.LogLevel = oConfig.LogLevel // cometBFT loglevel
+	cConfig.Moniker = oConfig.NodeName                                                // cometBFT moniker
+	cConfig.LogLevel = oConfig.LogLevel                                               // cometBFT loglevel
+	cConfig.RootDir = filepath.Join(oConfig.HomeDirectory, ccfg.DefaultTendermintDir) // cometBFT rootDir
 
-	return &Config{
-		viperConfig:    viper.New(),
-		omniConfig:     oConfig,
-		cometBFTConfig: cConfig,
+	// initialise the omni logger
+	defaultLogger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+	omniLogger, err := getLogger(defaultLogger, oConfig.LogLevel, ocfg.DefaultLogLevel, "omni")
+	if err != nil {
+		return nil, err
 	}
+
+	// initialise the cometBFT logger
+	defaultLogger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+	cometBFTLogger, err := getLogger(defaultLogger, cConfig.LogLevel, ocfg.DefaultLogLevel, "comt")
+	if err != nil {
+		return nil, err
+	}
+
+	// create the base default config instance
+	return &Config{
+		rootCmd:        cmd,
+		viperConfig:    viper.New(),       // set a new viper instance
+		omniConfig:     oConfig,           // set a default omni instance
+		cometBFTConfig: cConfig,           // set a default configBFT instance
+		cmdWriter:      cmd.OutOrStdout(), // used in unit test cases to capture the stdout
+		ologger:        omniLogger,
+		clogger:        cometBFTLogger,
+	}, nil
 }
 
-func parseConfig(cmd *cobra.Command) (*Config, error) {
-	// config loading order
-	// - defaults values loaded first
-	// - env vars are applied on top of that
-	// - config file values are applied on top of that
-	// - commandline variables overrides everything and applied last
-
-	// set the command line arguments
-	config.cmd = cmd
-
-	// read omni config from environment variables
-	config.viperConfig.SetEnvPrefix("OMNI")
-	config.viperConfig.AutomaticEnv() // read in environment variables that match
-	config.viperConfig.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
-
-	// parse the home dir if it is given in the command line
+func setHomeAndRootDirForOmniFromCommandLine(cmd *cobra.Command, defaultConfig *Config) {
+	// parse the omni home dir if it is given in the command line
 	hDir, err := cmd.Flags().GetString(optionNameHomeDir)
 	if err == nil {
-		config.omniConfig.HomeDirectory = hDir
+		defaultConfig.omniConfig.HomeDirectory = hDir
 	}
-
 	// parse the omni root dir if it is given in the command line
 	rDir, err := cmd.Flags().GetString(optionNameOmniRootDir)
 	if err == nil {
-		config.omniConfig.OmniRootDir = rDir
+		defaultConfig.omniConfig.OmniRootDir = filepath.Join(defaultConfig.omniConfig.HomeDirectory, rDir)
 	}
-
-	// make sure the directories exists, otherwise create them
-	err = ocfg.EnsureDirectories(config.omniConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	// set the file name to read
-	config.viperConfig.AddConfigPath(config.omniConfig.OmniConfigDir)
-	config.viperConfig.SetConfigName(config.omniConfig.OmniConfigFileName)
-
-	// If a config file is found, read it in.
-	if err := config.viperConfig.ReadInConfig(); err != nil {
-		var e viper.ConfigFileNotFoundError
-		if !errors.As(err, &e) {
-			return nil, err
-		} else {
-			// write a default config file
-			configFileName := filepath.Join(config.omniConfig.OmniConfigDir, config.omniConfig.OmniConfigFileName+".yaml")
-			if err := writeConfigFile(configFileName, config.omniConfig); err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	// read config for cometBFT
-	err = parseCometBFTConfig(config.cometBFTConfig, config.omniConfig.HomeDirectory)
-	if err != nil {
-		return nil, err
-	}
-
-	return config, nil
 }
 
-func parseCometBFTConfig(cometBFTConfig *ccfg.Config, homeDir string) error {
-	// set the cometBFT root directory with the same home as omni
-	cometBFTConfig.RootDir = filepath.Join(homeDir, ccfg.DefaultTendermintDir)
+func loadConfigFromFile(cmd *cobra.Command, defaultConfig *Config) (bool, error) {
+	writeOmniConfigToFileFlag := false
 
-	err := viper.Unmarshal(cometBFTConfig)
+	v := defaultConfig.viperConfig
+	co := defaultConfig.omniConfig
+	cc := defaultConfig.cometBFTConfig
+
+	// set the proper home and root directories before reading the config file
+	setHomeAndRootDirForOmniFromCommandLine(cmd, defaultConfig)
+
+	// make sure the directories exists
+	err := ocfg.EnsureDirectories(defaultConfig.omniConfig)
 	if err != nil {
-		return err
+		return false, err
+	}
+
+	// read the omni config file
+	v.SetConfigName(co.OmniConfigFileName)
+	v.AddConfigPath(co.OmniConfigDir)
+	if err := v.ReadInConfig(); err != nil {
+		var configFileNotFoundError viper.ConfigFileNotFoundError
+		if !errors.As(err, &configFileNotFoundError) {
+			return false, err
+		} else {
+			// omni config file not found, write it later after resolving all the values
+			writeOmniConfigToFileFlag = true
+		}
 	}
 
 	// read and validate the cometBFT values
-	cometBFTConfig.SetRoot(cometBFTConfig.RootDir)
-	ccfg.EnsureRoot(cometBFTConfig.RootDir)
-	if err := cometBFTConfig.ValidateBasic(); err != nil {
-		return fmt.Errorf("error in config file: %v", err)
+	cc.SetRoot(cc.RootDir)
+	ccfg.EnsureRoot(cc.RootDir)
+	if err := cc.ValidateBasic(); err != nil {
+		return false, fmt.Errorf("error in config file: %v", err)
 	}
-	if warnings := cometBFTConfig.CheckDeprecated(); len(warnings) > 0 {
+	if warnings := cc.CheckDeprecated(); len(warnings) > 0 {
 		for _, warning := range warnings {
-			clogger.Info("deprecated usage found in configuration file", "usage", warning)
+			config.clogger.Info("deprecated usage found in configuration file", "usage", warning)
 		}
 	}
-	return nil
+
+	return writeOmniConfigToFileFlag, nil
 }
 
 func writeConfigFile(fname string, config *ocfg.OmniConfig) error {

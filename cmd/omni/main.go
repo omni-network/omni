@@ -22,7 +22,7 @@ import (
 
 func main() {
 	// creat the root command
-	rootCmd, err := cmd.GetRootCommand()
+	rootCmd, err := cmd.NewRootCommand()
 	if err != nil {
 		panic(err)
 	}
