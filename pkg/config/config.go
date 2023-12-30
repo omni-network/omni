@@ -135,7 +135,6 @@ func LoadDefaultConfig(commandLineHome string) (*OmniConfig, error) {
 			if hd == "" {
 				return nil, errors.New("could not get home directory")
 			}
-			homeDir = hd
 		}
 		homeDir = hd
 	}

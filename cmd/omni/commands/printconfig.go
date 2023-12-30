@@ -56,6 +56,9 @@ func printConfiguration(cmd *cobra.Command, args []string) error {
 	if verbose {
 		log.Info("---- cometBFT Configuration ------- ")
 		out, err = yaml.Marshal(config.cometBFTConfig)
+		if err != nil {
+			return err
+		}
 		log.Info(string(out))
 	}
 	return nil
