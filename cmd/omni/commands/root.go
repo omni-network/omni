@@ -40,12 +40,14 @@ var (
 
 // command options
 const (
-	envPrefix             = "OMNI"
-	optionNameHomeDir     = "home-dir"
-	optionNameLogLevel    = "log-level"
-	optionNameLogWriter   = "log-writer"
-	optionNameOmniRootDir = "root-dir"
-	optionNameVerbose     = "verbose"
+	envPrefix               = "OMNI"
+	optionNameHomeDir       = "home-dir"
+	optionNameLogLevel      = "log-level"
+	optionNameLogWriter     = "log-writer"
+	optionNameOmniRootDir   = "root-dir"
+	optionNameVerbose       = "verbose"
+	optionNameChainId       = "chain-id"
+	optionNamePortalAddress = "portal-addr"
 )
 
 type Config struct {

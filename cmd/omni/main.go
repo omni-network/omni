@@ -30,6 +30,7 @@ func main() {
 	// add other commands
 	rootCmd.AddCommand(cmd.PrintVersionCmd())
 	rootCmd.AddCommand(cmd.PrintConfigCmd())
+	rootCmd.AddCommand(cmd.InitKeyFileConfigCmd())
 
 	// execute the respective command
 	if err := rootCmd.Execute(); err != nil {

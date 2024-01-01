@@ -154,7 +154,7 @@ func LoadDefaultConfig(commandLineHome string) (*OmniConfig, error) {
 		OmniDataDir:        omniDataDir,
 		OmniLogDir:         omniLogDir,
 		OmniConfigFileName: DefaultConfigFileName,
-		ChainConfig:        Mainnet,
+		ChainConfig:        Testnet,
 	}, nil
 }
 
