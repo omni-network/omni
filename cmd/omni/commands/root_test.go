@@ -29,16 +29,8 @@ import (
 func TestConfigPrecedence(t *testing.T) {
 	// Set argument from command line
 	t.Run("set flag", func(t *testing.T) {
-		tmpDir, err := os.MkdirTemp("", "*")
-		if err != nil {
-			defer func(path string) {
-				err := os.RemoveAll(path)
-				if err != nil {
-
-				}
-			}(tmpDir)
-			t.Fatal(err)
-		}
+		tmpDir := makeTempDIr(t)
+		defer removeTempDir(t, tmpDir)
 
 		rootCmd, err := NewRootCommand()
 		if err != nil {
@@ -62,16 +54,8 @@ func TestConfigPrecedence(t *testing.T) {
 
 	//  Check if the command line arguments are written in the file properly
 	t.Run("read from file", func(t *testing.T) {
-		tmpDir, err := os.MkdirTemp("", "*")
-		if err != nil {
-			defer func(path string) {
-				err := os.RemoveAll(path)
-				if err != nil {
-
-				}
-			}(tmpDir)
-			t.Fatal(err)
-		}
+		tmpDir := makeTempDIr(t)
+		defer removeTempDir(t, tmpDir)
 
 		rootCmd, err := NewRootCommand()
 		if err != nil {
@@ -140,4 +124,25 @@ func TestConfigPrecedence(t *testing.T) {
 		wantOutput := "myLogLevel"
 		assert.Equal(t, wantOutput, gotOutput, "expected %v but got %v", wantOutput, gotOutput)
 	})
+}
+
+func makeTempDIr(t *testing.T) string {
+	tmpDir, err := os.MkdirTemp("", "*")
+	if err != nil {
+		defer func(path string) {
+			err := os.RemoveAll(path)
+			if err != nil {
+
+			}
+		}(tmpDir)
+		t.Fatal(err)
+	}
+	return tmpDir
+}
+
+func removeTempDir(t *testing.T, tmpDir string) {
+	err := os.RemoveAll(tmpDir)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
