@@ -1,0 +1,47 @@
+repos:
+  # First run code formatters
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace # trims trailing whitespace
+        exclude: "testdata"
+      - id: end-of-file-fixer # ensures that a file is either empty, or ends with one newline
+        exclude_types: ["proto"]
+        exclude: "testdata"
+      - id: mixed-line-ending # ensures that a file doesn't contain a mix of LF and CRLF
+      - id: no-commit-to-branch # Protect specific branches (default: main/master) from direct checkins
+
+  - repo: https://github.com/dnephin/pre-commit-golang
+    rev: v0.5.1
+    hooks:
+      - id: go-mod-tidy # Run go mod tidy when go.mod changes
+        files: go.mod
+      - id: go-fmt
+        args: [ -w, -s ] # simplify code and write result to (source) file instead of stdout
+
+  # TODO(corver): Add hooks for the following:
+  # - Local minor go version matches go.mod
+  # - Auto-fix file license headers
+
+  # Then run code validators (on the formatted code)
+
+  - repo: https://github.com/golangci/golangci-lint # See .golangci.yml for config
+    rev: v1.55.2
+    hooks:
+      - id: golangci-lint
+        # Lint all go files in the repo, since this aligns with github actions.
+        entry: golangci-lint run --fix
+
+  - repo: local
+    hooks:
+      - id: run-go-tests
+        name: run-go-tests
+        language: script
+        entry: .pre-commit/run_tests.sh
+        types: [ file, go ]
+      - id: run-regexp
+        name: run-regexp
+        language: script
+        entry: .pre-commit/run_regexp.sh
+        types: [ file, go ]
+        exclude: "_test.go"
