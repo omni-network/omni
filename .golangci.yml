@@ -1,0 +1,85 @@
+run:
+  timeout: 5m
+  go: "1.21"
+  skip-files:
+    - ".*\\.pb\\.go$" # Ignore generated protobuf files
+linters-settings:
+  exhaustive:
+    default-signifies-exhaustive: true
+  forbidigo:
+    forbid:
+      - 'fmt\.Print.*(# Avoid debug logging)?'
+      - 'fmt\.Errorf.*(# Prefer app/errors.Wrap)?'
+  gci: # Auto-format imports
+    sections:
+      - standard                           # Go stdlib
+      - prefix(github.com/omni-network)    # Omni
+      - prefix(github.com/cometbft)        # CometBFT
+      - prefix(github.com/ethereum)        # Go-Ethereum
+      - default                            # All other imports not matched to another section type.
+      - blank                              # Blank imports
+    custom-order: true
+  govet:
+    enable-all: true
+  importas:
+    no-unaliased: true
+    # TODO(corver): Add our own import aliases here
+  misspell:
+    locale: US
+  nolintlint:
+    require-explanation: true
+    require-specific: true
+  revive:
+    enable-all-rules: true
+    severity: warning
+    rules:
+      # Disabled revive rules
+      - name: file-header # Doesn't support auto fix
+        disabled: true
+      # Some configured revive rules
+      - name: unhandled-error
+        arguments:
+         - 'fmt.Printf'
+         - 'fmt.Println'
+      - name: imports-blacklist
+        arguments:
+         - "errors" # Prefer ./lib/errors
+         - "github.com/pkg/errors" # Prefer ./lib/errors
+         - "github.com/gogo/protobuf/proto" # Prefer google.golang.org/protobuf
+  staticcheck:
+    checks:
+     - "all"
+  testpackage:
+    skip-regexp: internal_test\.go # Allow internal tests
+  wrapcheck:
+    ignoreSigs:
+      - github.com/omni-network/omni/
+
+issues:
+  fix: true
+  exclude-rules:
+    - path: '(.+)_test\.go'
+      linters: # Relax linters for tests
+        - gosec
+        - revive
+  exclude:
+    - fieldalignment # Ignore "fieldalignment: struct with XXX pointer bytes could be YYY"
+    - "shadow: declaration of \"err\" shadows declaration" # Relax govet
+
+linters:
+  enable-all: true
+  disable:
+    # Disable some linters
+    - godox # Allow TODOs
+
+    # Disable deprecated/archived linters
+    - deadcode
+    - exhaustivestruct
+    - golint
+    - ifshort
+    - interfacer
+    - maligned
+    - nosnakecase
+    - scopelint
+    - structcheck
+    - varcheck
