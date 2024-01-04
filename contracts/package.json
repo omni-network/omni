@@ -1,0 +1,7 @@
+{
+  "packageManager": "yarn@4.0.2",
+  "dependencies": {
+    "ds-test": "https://github.com/dapphub/ds-test",
+    "forge-std": "https://github.com/foundry-rs/forge-std"
+  }
+}
