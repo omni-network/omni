@@ -35,7 +35,6 @@ linters-settings:
     enable-all-rules: true
     severity: warning
     rules:
-
       # Disabled revive rules
       - name: file-header # Doesn't support auto fix
         disabled: true
