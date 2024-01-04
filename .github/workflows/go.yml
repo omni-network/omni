@@ -31,8 +31,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Go mod tidy checker
-        id: gomodtidy
-        uses: ./.github/actions/gomodtidy
+        uses: Jerome1337/gofmt-action@v1.0.5
+        with:
+          gofmt-path: "./src"
+          gofmt-flags: "-l -d"
+
+  mod_tidier:
+    runs-on: ubuntu-latest
+    name: Clean up mismatched go.sum files
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+      - uses: actions/setup-go@v4
+        with:
+          go-version: "^1.14.0"
+      - uses: evantorrie/mott-the-tidier@v1-beta
+        with:
+          gomods: |
+            **/go.mod
+            -tools/go.mod
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Auto-fix go.sum discrepancies
 
   test:
     name: Test
@@ -44,7 +65,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Setup Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           cache: true
           go-version-file: go.mod
@@ -62,7 +83,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Setup Go 1.21
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version: "1.21"
           id: go
@@ -84,9 +105,9 @@ jobs:
       GO111MODULE: on
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Set up Go 1.21
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version: "1.21"
       - name: Run Gosec Security Scanner
