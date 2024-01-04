@@ -35,19 +35,25 @@ linters-settings:
     enable-all-rules: true
     severity: warning
     rules:
+
       # Disabled revive rules
       - name: file-header # Doesn't support auto fix
         disabled: true
+      - name: max-public-structs # Too strict
+        disabled: true
       # Some configured revive rules
+      - name: imports-blacklist
+        arguments:
+          - "errors" # Prefer ./lib/errors
+          - "github.com/pkg/errors" # Prefer ./lib/errors
+          - "github.com/gogo/protobuf/proto" # Prefer google.golang.org/protobuf
+      - name: line-length-limit
+        arguments:
+          - 120
       - name: unhandled-error
         arguments:
          - 'fmt.Printf'
          - 'fmt.Println'
-      - name: imports-blacklist
-        arguments:
-         - "errors" # Prefer ./lib/errors
-         - "github.com/pkg/errors" # Prefer ./lib/errors
-         - "github.com/gogo/protobuf/proto" # Prefer google.golang.org/protobuf
   staticcheck:
     checks:
      - "all"
