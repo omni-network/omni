@@ -1,4 +1,4 @@
-module verifypr
+module github.com/omni-network/omni
 
 go 1.21
 
