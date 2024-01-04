@@ -26,6 +26,8 @@ linters-settings:
     # TODO(corver): Add our own import aliases here
   misspell:
     locale: US
+  nlreturn:
+    block-size: 2
   nolintlint:
     require-explanation: true
     require-specific: true
@@ -58,19 +60,30 @@ linters-settings:
 issues:
   fix: true
   exclude-rules:
-    - path: '(.+)_test\.go'
-      linters: # Relax linters for tests
-        - gosec
-        - revive
+    - path: '((.+)_test\.go|scripts/.+\.go)'
+      linters:        # Relax linters for both tests/scripts (non-production code)
+        - gosec       # Security not an issue here
+        - revive      # Relax revive rules
+        - wrapcheck   # Wrapping not required
+        - exhaustruct # Exhaustive structs not a priority
+    - path: 'scripts/.+\.go'
+      linters:        # Relax linters for scripts only (non-production code)
+        - forbidigo   # Allow debug printing
   exclude:
     - fieldalignment # Ignore "fieldalignment: struct with XXX pointer bytes could be YYY"
     - "shadow: declaration of \"err\" shadows declaration" # Relax govet
-
+    - "ifElseChain: rewrite if-else to switch statement"   # IfElseChain actually preferred to switches
 linters:
   enable-all: true
   disable:
     # Disable some linters
-    - godox # Allow TODOs
+    - goerr113      # We do not religiously follow the Go 1.13 package level error convention
+    - godox         # Allow TODOs
+    - tagliatelle   # Too strict
+    - varnamelen    # False positives
+    - wsl           # Way to strict and opinionated
+    - funlen        # Some functions will be long
+    - depguard      # Dependency guard is for enterprise users
 
     # Disable deprecated/archived linters
     - deadcode
