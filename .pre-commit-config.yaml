@@ -45,3 +45,8 @@ repos:
         entry: .pre-commit/run_regexp.sh
         types: [ file, go ]
         exclude: "_test.go"
+      - id: run-solhint
+        name: run-solhint
+        language: script
+        entry: .pre-commit/run_solhint.sh
+        types: [ file, solidity ]
