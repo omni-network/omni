@@ -1,5 +1,5 @@
 {
-  "packageManager": "yarn@4.0.2",
+  "packageManager": "pnpm@8.14.0",
   "dependencies": {
     "ds-test": "https://github.com/dapphub/ds-test",
     "forge-std": "https://github.com/foundry-rs/forge-std"
