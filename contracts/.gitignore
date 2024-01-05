@@ -1,13 +1,4 @@
-.yarn/*
-!.yarn/cache
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions
-
 node_modules
-yarn-error.log
 
 out
 cache
