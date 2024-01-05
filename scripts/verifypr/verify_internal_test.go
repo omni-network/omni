@@ -118,6 +118,16 @@ Adds a 'verifypr' github action that ensures all PR adhere to the omni style con
 
 task: https://app.asana.com/0/1206208509925075/1206265166156265`,
 		},
+		{
+			name: "valid description with dashes",
+			commit: `ci(github/workflows): add pre-commit and golangci-lint actions
+
+Adds two github actions:
+ - golangci-lint: Runs the go linter so issues are added inline to PR.
+ - pre-commit: Runs pre-commit hooks (excluding golangci-lint)
+
+task: none`,
+		},
 	}
 
 	for _, tt := range tests {

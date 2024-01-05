@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	descRegex = regexp.MustCompile(`^[a-z][\w\s]+$`) // e.g. "add foo bar"
+	descRegex = regexp.MustCompile(`^[a-z][-\w\s]+$`) // e.g. "add foo-bar"
 
 	scopeRegex = regexp.MustCompile(`^[*\w]+(/[*\w]+)?$`) // e.g. "*" or "foo" or "foo/bar"
 )

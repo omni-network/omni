@@ -1,0 +1,31 @@
+name: Lint Go code using golangci-lint
+# Run this separately from pre-commit since then we get nice inline messages in PRs.
+
+# Run on pull requests and commits to main
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  golangci:
+    name: Run golangci-lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: Install Go
+        uses: actions/setup-go@v5
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.55.2
+          # Verbose with color. Just fail, don't fix issues. Use both annotations and normal output.
+          args: -v --color=always --fix=false --out-format=colored-line-number,github-actions
+
+     # TODO(corver): Notify slack on failure on main
