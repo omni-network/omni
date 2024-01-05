@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+  pull_request: # Delete this once we assert this is working before merging PR to main.
 
 # TODO(corver): Figure out which images to publish and how to do this via goreleaser.
 
