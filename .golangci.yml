@@ -9,7 +9,7 @@ linters-settings:
   forbidigo:
     forbid:
       - 'fmt\.Print.*(# Avoid debug logging)?'
-      - 'fmt\.Errorf.*(# Prefer app/errors.Wrap)?'
+      - 'fmt\.Errorf.*(# Prefer lib/errors.Wrap)?'
   gci: # Auto-format imports
     sections:
       - standard                           # Go stdlib
@@ -70,27 +70,28 @@ issues:
         - gosec       # Security not an issue here
         - revive      # Relax revive rules
         - wrapcheck   # Wrapping not required
-        - exhaustruct # Exhaustive structs not a priority
     - path: 'scripts/.+\.go'
       linters:        # Relax linters for scripts only (non-production code)
         - forbidigo   # Allow debug printing
   exclude:
     - fieldalignment # Ignore "fieldalignment: struct with XXX pointer bytes could be YYY"
+    - cognitive-complexity # Ignore cognitive-complexity, better to manage complexity via code reviews
     - "shadow: declaration of \"err\" shadows declaration" # Relax govet
     - "ifElseChain: rewrite if-else to switch statement"   # IfElseChain actually preferred to switches
 linters:
   enable-all: true
   disable:
-    # Disable some linters
-    - goerr113      # We do not religiously follow the Go 1.13 package level error convention
-    - godox         # Allow TODOs
-    - tagliatelle   # Too strict
-    - varnamelen    # False positives
-    - wsl           # Way to strict and opinionated
-    - funlen        # Some functions will be long
-    - depguard      # Dependency guard is for enterprise users
+    # Disable some linters (alphabetical order)
+    - depguard             # Dependency guard is for enterprise users
+    - exhaustruct          # Exhaustive structs results in super verbose go code
+    - funlen               # Some functions will be long
+    - goerr113             # We do not religiously follow the Go 1.13 package level error convention
+    - godox                # Allow TODOs
+    - tagliatelle          # Too strict
+    - varnamelen           # False positives
+    - wsl                  # Way to strict and opinionated
 
-    # Disable deprecated/archived linters
+    # Disable deprecated/archived linters (alphabetical order)
     - deadcode
     - exhaustivestruct
     - golint
