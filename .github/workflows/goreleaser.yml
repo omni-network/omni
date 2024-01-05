@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+  pull_request: # Delete this after succesfull test in PR before merging PR
 
 # TODO(corver): Figure out which images to publish and how to do this via goreleaser.
 
@@ -19,7 +20,7 @@ jobs:
       - name: Login to Dockerhub container registry
         uses: docker/login-action@v3
         with:
-          username: omninetwork
+          username: corveromni
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Build docker images
         uses: goreleaser/goreleaser-action@v5
