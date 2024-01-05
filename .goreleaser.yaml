@@ -14,7 +14,7 @@ dockers:
   - ids: [halo]
     dockerfile: ./halo/Dockerfile
     image_templates:
-      - omninetwork/halo:latest
+      - omniops/halo:latest
 
 archives:
   - format: tar.gz

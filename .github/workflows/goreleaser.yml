@@ -31,4 +31,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Push to Dockerhub
-        run: docker push omninetwork/halo:latest
+        run: docker push omniops/halo:latest
