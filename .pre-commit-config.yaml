@@ -19,6 +19,14 @@ repos:
       - id: go-fmt
         args: [ -w, -s ] # simplify code and write result to (source) file instead of stdout
 
+  - repo: local
+    hooks:
+      - id: run-forge-fmt
+        name: run-forge-fmt
+        language: script
+        entry: .pre-commit/run_forge_fmt.sh
+        types: [ file, solidity ]
+
   # TODO(corver): Add hooks for the following:
   # - Local minor go version matches go.mod
   # - Auto-fix file license headers
