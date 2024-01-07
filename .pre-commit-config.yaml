@@ -45,6 +45,12 @@ repos:
         entry: .pre-commit/run_regexp.sh
         types: [ file, go ]
         exclude: "_test.go"
+      - id: run-goversion
+        name: run-goversion
+        language: script
+        entry: .pre-commit/run_goversion.sh
+        pass_filenames: false
+        types: [ file, go ]
       - id: run-solhint
         name: run-solhint
         language: script
