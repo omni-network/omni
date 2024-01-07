@@ -88,10 +88,6 @@ func GetMultiProof(tree [][32]byte, indices ...int) (MultiProof, error) {
 		stack = append(stack, p) //nolint:makezero // Appending to non-zero initialized slice is ok
 	}
 
-	if len(indices) == 0 {
-		panic("unreachable")
-	}
-
 	leaves := make([][32]byte, 0, len(indices))
 	for _, i := range indices {
 		leaves = append(leaves, tree[i])
