@@ -1,6 +1,6 @@
 module github.com/omni-network/omni
 
-go 1.21
+go 1.21.5
 
 require (
 	github.com/leodido/go-conventionalcommits v0.11.0
