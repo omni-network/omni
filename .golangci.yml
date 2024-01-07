@@ -74,10 +74,12 @@ issues:
       linters:        # Relax linters for scripts only (non-production code)
         - forbidigo   # Allow debug printing
   exclude:
-    - fieldalignment # Ignore "fieldalignment: struct with XXX pointer bytes could be YYY"
+    - add-constant         # Ignore "add-constant: avoid magic numbers like" since it is too strict
     - cognitive-complexity # Ignore cognitive-complexity, better to manage complexity via code reviews
-    - "shadow: declaration of \"err\" shadows declaration" # Relax govet
+    - cyclomatic           # Ignore cyclomatic, better to manage complexity via code reviews
+    - fieldalignment       # Ignore "fieldalignment: struct with XXX pointer bytes could be YYY"
     - "ifElseChain: rewrite if-else to switch statement"   # IfElseChain actually preferred to switches
+    - "shadow: declaration of \"err\" shadows declaration" # Relax govet
 linters:
   enable-all: true
   disable:
