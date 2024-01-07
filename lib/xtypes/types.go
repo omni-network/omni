@@ -30,6 +30,7 @@ type Receipt struct {
 	GasUsed        uint64   // Gas used during message "call"
 	Success        bool     // Result, true for success, false for revert
 	RelayerAddress [20]byte // Address of relayer that submitted the message
+	TxHash         [32]byte // Hash of the relayer submission transaction
 }
 
 // BlockHeader uniquely identifies a cross chain block.
