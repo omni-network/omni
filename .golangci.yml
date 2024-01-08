@@ -34,11 +34,24 @@ linters-settings:
   revive:
     enable-all-rules: true
     severity: warning
+    ignore-generated-header: true
     rules:
       # Disabled revive rules
       - name: file-header # Doesn't support auto fix
         disabled: true
       - name: max-public-structs # Too strict
+        disabled: true
+      - name: banned-characters # Not applicable
+        disabled: true
+      - name: cognitive-complexity # False positives, address in code reviews
+        disabled: true
+      - name: function-length # False positives, address in code reviews
+        disabled: true
+      - name: function-result-limit # False positives, address in code reviews
+        disabled: true
+      - name: cyclomatic # False positives, address in code reviews
+        disabled: true
+      - name: argument-limit # False positives, address in code reviews
         disabled: true
       # Some configured revive rules
       - name: imports-blacklist
@@ -75,11 +88,9 @@ issues:
         - forbidigo   # Allow debug printing
   exclude:
     - add-constant         # Ignore "add-constant: avoid magic numbers like" since it is too strict
-    - cognitive-complexity # Ignore cognitive-complexity, better to manage complexity via code reviews
-    - cyclomatic           # Ignore cyclomatic, better to manage complexity via code reviews
-    - fieldalignment       # Ignore "fieldalignment: struct with XXX pointer bytes could be YYY"
-    - "ifElseChain: rewrite if-else to switch statement"   # IfElseChain actually preferred to switches
+    - fieldalignment # Ignore "fieldalignment: struct with XXX pointer bytes could be YYY"
     - "shadow: declaration of \"err\" shadows declaration" # Relax govet
+    - "ifElseChain: rewrite if-else to switch statement"   # IfElseChain actually preferred to switches
 linters:
   enable-all: true
   disable:

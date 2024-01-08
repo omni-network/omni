@@ -1,3 +1,4 @@
+// Package cmd provides the cli for running the halo consensus client.
 package cmd
 
 import (

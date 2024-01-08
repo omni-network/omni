@@ -1,3 +1,4 @@
+// Command halo is the main entry point for the halo consensus client.
 package main
 
 import (
