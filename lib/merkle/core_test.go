@@ -70,7 +70,7 @@ func TestLeavesProvable(t *testing.T) {
 	require.Equal(t, tree[0], root)
 }
 
-// randomIndicesRange returns a random range of indices of the provide.
+// randomIndicesRange returns a random range of indices of the provided slice.
 func randomIndicesRange(slice [][32]byte) []int {
 	start := rand.Intn(len(slice))
 	count := rand.Intn(len(slice) - start)
