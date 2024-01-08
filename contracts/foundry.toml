@@ -10,7 +10,6 @@ remappings = [
   "test/=test",
 ]
 
-
 [fmt]
 line_length = 100
 bracket_spacing = true
