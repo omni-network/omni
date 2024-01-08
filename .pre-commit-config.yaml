@@ -28,7 +28,6 @@ repos:
         types: [ file, solidity ]
 
   # TODO(corver): Add hooks for the following:
-  # - Local minor go version matches go.mod
   # - Auto-fix file license headers
 
   # Then run code validators (on the formatted code)
@@ -53,6 +52,12 @@ repos:
         entry: .pre-commit/run_regexp.sh
         types: [ file, go ]
         exclude: "_test.go"
+      - id: run-goversion
+        name: run-goversion
+        language: script
+        entry: .pre-commit/run_goversion.sh
+        pass_filenames: false
+        types: [ file, go ]
       - id: run-solhint
         name: run-solhint
         language: script
