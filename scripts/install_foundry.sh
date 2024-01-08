@@ -27,10 +27,13 @@ if ! which foundryup 1>/dev/null; then
   esac
 
   echo "Sourcing $PROFILE"
+  cat $PROFILE
   source $PROFILE
+  echo "which foundryup: $(which foundryup)"
 fi
 
 if ! which forge 1>/dev/null || [[ $(forge --version) != $VERSION ]]; then
   echo "Installing $VERSION"
+  echo "which foundryup: $(which foundryup)"
   foundryup --version $TAG
 fi
