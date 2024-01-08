@@ -15,16 +15,19 @@ if ! which foundryup 1>/dev/null; then
 
   case $SHELL in
     */zsh)
-      source $HOME/.zshrc
+      PROFILE=${ZDOTDIR-"$HOME"}/.zshenv
       ;;
     */bash)
-      source $HOME/.bashrc
+      PROFILE=$HOME/.bashrc
       ;;
     *)
       echo "Unknown shell: $SHELL"
       exit 1
       ;;
   esac
+
+  echo "Sourcing $PROFILE"
+  source $PROFILE
 fi
 
 if ! which forge 1>/dev/null || [[ $(forge --version) != $VERSION ]]; then
