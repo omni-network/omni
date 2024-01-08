@@ -1,3 +1,5 @@
+// Package engine defines the execution chain' Engine API interface and RPC client implementation.
+// See reference https://github.com/ethereum/execution-apis/tree/main/src/engine.
 package engine
 
 import (
