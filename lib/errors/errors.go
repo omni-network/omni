@@ -19,6 +19,8 @@ func Wrap(err error, msg string) error {
 	return fmt.Errorf("%s: %w", msg, err) //nolint:forbidigo // This is only place where we can use fmt.Errorf.
 }
 
+// As finds the first error in err's tree that matches target, and if one is found, sets
+// target to that error value and returns true. Otherwise, it returns false.
 func As(err error, target any) bool {
 	return stderrors.As(err, target)
 }
