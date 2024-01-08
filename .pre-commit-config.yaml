@@ -44,8 +44,13 @@ repos:
       - id: run-go-tests
         name: run-go-tests
         language: script
-        entry: .pre-commit/run_tests.sh
+        entry: .pre-commit/run_go_tests.sh
         types: [ file, go ]
+      - id: run-forge-tests
+        name: run-forge-tests
+        language: script
+        entry: .pre-commit/run_forge_tests.sh
+        types: [ file, solidity ]
       - id: run-regexp
         name: run-regexp
         language: script
