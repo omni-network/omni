@@ -13,8 +13,8 @@ contract OmniPortal is IOmniPortal {
     /// @inheritdoc IOmniPortal
     mapping(uint64 => uint64) public outXStreamOffset;
 
-    constructor(uint64 _chainId) {
-        chainId = _chainId;
+    constructor() {
+        chainId = uint64(block.chainid);
     }
 
     /// @inheritdoc IOmniPortal

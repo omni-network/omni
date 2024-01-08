@@ -10,8 +10,6 @@ import {Events} from "test/common/Events.sol";
  * @dev An extension of forge Test that includes Omni specifc setup, utils, and events.
  */
 contract CommonTest is Test, Events {
-    uint64 constant sourceChainId = 1;
-
     address deployer;
     address xcaller;
 
@@ -22,6 +20,6 @@ contract CommonTest is Test, Events {
         xcaller = makeAddr("xcaller");
 
         vm.prank(deployer);
-        portal = new OmniPortal(sourceChainId);
+        portal = new OmniPortal();
     }
 }
