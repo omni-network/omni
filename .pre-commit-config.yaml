@@ -20,7 +20,6 @@ repos:
         args: [ -w, -s ] # simplify code and write result to (source) file instead of stdout
 
   # TODO(corver): Add hooks for the following:
-  # - Local minor go version matches go.mod
   # - Auto-fix file license headers
 
   # Then run code validators (on the formatted code)
