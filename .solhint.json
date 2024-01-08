@@ -1,6 +1,7 @@
 {
   "extends": "solhint:recommended",
   "rules": {
+    "compiler-fixed": "error",
     "no-unused-vars": "error",
     "no-unused-imports": "error"
   }
