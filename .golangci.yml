@@ -95,6 +95,7 @@ linters:
   enable-all: true
   disable:
     # Disable some linters (alphabetical order)
+    - cyclop               # False positives, address in code reviews
     - depguard             # Dependency guard is for enterprise users
     - exhaustruct          # Exhaustive structs results in super verbose go code
     - funlen               # Some functions will be long
