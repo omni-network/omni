@@ -34,7 +34,7 @@ interface IOmniPortal {
     function chainId() external view returns (uint64);
 
     /**
-     * @notice Offset of the next XMsg to be sent in the corresponding source -> dest XStream
+     * @notice Offset of the next outbound XMsg to be sent in the corresponding source -> dest XStream
      * @param destChainId Destination chain ID
      * @return Offset
      */
