@@ -28,6 +28,7 @@ func newRunCmd() *cobra.Command {
 			log.Info(ctx, "Press Ctrl+C to stop")
 			<-ctx.Done()
 			log.Info(ctx, "Relayer stopped")
+
 			return nil
 		},
 	}
