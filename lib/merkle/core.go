@@ -9,7 +9,7 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 
-	"golang.org/x/crypto/sha3"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 // MakeTree returns a merkle tree given the leaves.
@@ -183,9 +183,7 @@ func hashPair(a [32]byte, b [32]byte) [32]byte {
 
 // hash returns the 32 byte keccak256 hash of the given byte slice.
 func hash(buf []byte) [32]byte {
-	h := sha3.NewLegacyKeccak256()
-	_, _ = h.Write(buf)
-	resp := h.Sum(nil)
+	resp := crypto.Keccak256(buf)
 
 	return [32]byte(resp)
 }
