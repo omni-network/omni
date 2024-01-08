@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: No License (None)
-pragma solidity ^0.8.23;
+pragma solidity 0.8.23;
 
 /**
  * @title IOmniPortal
- * @notice Portal in and out or Omni's xchain messaging protocal
+ * @notice The OmniPortal is the on-chain interface to Omni's cross-chain
+ *         messaging protocol. It is used to initiate and execute cross-chain calls.
  */
 interface IOmniPortal {
     /**
-     * @notice Emitted when a contract is called on another chain
+     * @notice Emitted when an xcall is made to a contract on another chain
      * @param destChainId Destination chain ID
-     * @param streamOffset Offset of corresponding XMsg in source -> dest XStream
+     * @param streamOffset Offset this XMsg in the source -> dest XStream
      * @param sender msg.sender of the source xcall
      * @param to Address of the contract to call on the destination chain
      * @param gasLimit Gas limit for execution on destination chain
@@ -33,7 +34,7 @@ interface IOmniPortal {
     function chainId() external view returns (uint64);
 
     /**
-     * @notice Offset of the next XMsg to be sent to the given chain
+     * @notice Offset of the next XMsg to be sent in the corresponding source -> dest XStream
      * @param destChainId Destination chain ID
      * @return Offset
      */

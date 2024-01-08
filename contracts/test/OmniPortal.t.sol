@@ -10,14 +10,14 @@ contract OmniPortal_Test is CommonTest {
         uint64 destChainId = 2;
         address to = makeAddr("foo-addr-on-dest");
         bytes memory data = abi.encodeWithSignature("foo()");
-
         uint64 gasLimit = portal.XMSG_DEFAULT_GAS_LIMIT();
         uint64 offset = portal.outXStreamOffset(destChainId);
 
-        // test XMsg event is emitted
+        // check XMsg event is emitted
         vm.expectEmit();
         emit XMsg(destChainId, offset, xcaller, to, data, gasLimit);
 
+        // make xcall
         vm.prank(xcaller);
         portal.xcall(destChainId, to, data);
 
