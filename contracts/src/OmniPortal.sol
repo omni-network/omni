@@ -8,7 +8,7 @@ contract OmniPortal is IOmniPortal {
     uint64 public constant XMSG_DEFAULT_GAS_LIMIT = 200_000;
 
     /// @inheritdoc IOmniPortal
-    uint64 public chainId;
+    uint64 public immutable chainId;
 
     /// @inheritdoc IOmniPortal
     mapping(uint64 => uint64) public outXStreamOffset;
