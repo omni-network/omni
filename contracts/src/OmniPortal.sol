@@ -5,7 +5,7 @@ import {IOmniPortal} from "./interfaces/IOmniPortal.sol";
 
 contract OmniPortal is IOmniPortal {
     /// @inheritdoc IOmniPortal
-    uint64 public constant XMSG_DEFAULT_GAS_LIMIT = 75_000;
+    uint64 public constant XMSG_DEFAULT_GAS_LIMIT = 200_000;
 
     /// @inheritdoc IOmniPortal
     uint64 public chainId;
