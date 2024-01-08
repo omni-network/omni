@@ -4,6 +4,7 @@ package cmd
 import (
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/log"
+
 	"github.com/spf13/cobra"
 )
 
