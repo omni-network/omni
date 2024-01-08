@@ -1,5 +1,4 @@
-// Package xtypes defines the types used by the omni cross-chain protocol.
-package xtypes
+package xchain
 
 // StreamID uniquely identifies a cross-chain stream.
 // A stream is a logical representation of a cross-chain connection between two chains.
