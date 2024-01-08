@@ -7,12 +7,6 @@ source scripts/install_foundry.sh
 
 # searches upwards from a filepath for a directory containing foundry.toml
 foundryroot() {
-  if [ -z "$1" ]; then
-    echo "$1"
-    echo "Usage: foundryroot <filepath>"
-    return
-  fi
-
   dir=$(dirname $1)
 
   while [[ "$dir" != "." && "$dir" != "/" ]]; do
