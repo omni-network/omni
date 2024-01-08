@@ -12,6 +12,19 @@ VERSION="forge 0.2.0 (6fc7463 2024-01-05T00:17:41.668342000Z)"
 if ! which foundryup 1>/dev/null; then
   echo "Installing foundryup"
   curl -L https://foundry.paradigm.xyz | bash
+
+  case $SHELL in
+    */zsh)
+      source $HOME/.zshrc
+      ;;
+    */bash)
+      source $HOME/.bashrc
+      ;;
+    *)
+      echo "Unknown shell: $SHELL"
+      exit 1
+      ;;
+  esac
 fi
 
 if ! which forge 1>/dev/null || [[ $(forge --version) != $VERSION ]]; then
