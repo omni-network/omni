@@ -23,8 +23,12 @@ type Client struct {
 
 // NewClient returns a new Engine API JSON-RPC client.
 func NewClient(ctx context.Context, urlAddr string, jwtSecret []byte) (Client, error) {
-	roundTripper := newJWTRoundTripper(http.DefaultTransport, jwtSecret)
-	client := &http.Client{Timeout: defaultRPCHTTPTimeout, Transport: roundTripper}
+	transport := http.DefaultTransport
+	if len(jwtSecret) > 0 {
+		transport = newJWTRoundTripper(http.DefaultTransport, jwtSecret)
+	}
+
+	client := &http.Client{Timeout: defaultRPCHTTPTimeout, Transport: transport}
 
 	rpcClient, err := rpc.DialOptions(ctx, urlAddr, rpc.WithHTTPClient(client))
 	if err != nil {
