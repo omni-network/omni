@@ -28,8 +28,13 @@ for file in $@; do
   fi
 done
 
+
+echo "Foundry roots: ${ROOTS[@]}"
+
 # remove duplicates
 ROOTS=($(echo "${ROOTS[@]}" | tr ' ' '\n' | sort -u))
+
+echo "Foundry roots (unique): ${ROOTS[@]}"
 
 # run tests
 for dir in ${ROOTS[@]}; do
