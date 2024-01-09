@@ -69,3 +69,4 @@ repos:
         language: script
         entry: .pre-commit/run_solhint.sh
         types: [ file, solidity ]
+        require_serial: true
