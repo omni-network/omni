@@ -1,4 +1,4 @@
-package capi
+package cchain
 
 import (
 	"context"
@@ -17,6 +17,6 @@ type ProviderCallback func(ctx context.Context, height uint64, approved []xchain
 // It will exponentially backoff and retry forever while the callback function returns an error.
 type Provider interface {
 	// Subscribe registers a callback function that will be called with every all approved aggregate
-
+	// attestations (as they become available) on the consensus chain from the provided height (inclusive).
 	Subscribe(ctx context.Context, height uint64, callback ProviderCallback)
 }
