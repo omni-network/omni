@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	engineclient "github.com/omni-network/omni/lib/engine"
@@ -13,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/golang-jwt/jwt/v5"
 	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"
 )
@@ -136,7 +138,19 @@ func testEndpoint(t *testing.T, callback func(context.Context, engineclient.API)
 ) {
 	t.Helper()
 
+	const jwtSecret = "secret"
+
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Parse JWT from Authorization Bearer header.
+		tokenString := r.Header.Get("Authorization")
+		require.NotEmpty(t, tokenString)
+		tokenString = strings.TrimPrefix(tokenString, "Bearer ")
+
+		_, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			return []byte(jwtSecret), nil
+		})
+		require.NoError(t, err)
+
 		require.Equal(t, "/", r.URL.Path)
 
 		body, err := io.ReadAll(r.Body)
@@ -167,7 +181,7 @@ func testEndpoint(t *testing.T, callback func(context.Context, engineclient.API)
 
 	ctx := context.Background()
 
-	api, err := engineclient.NewClient(ctx, srv.URL, nil)
+	api, err := engineclient.NewClient(ctx, srv.URL, []byte(jwtSecret))
 	require.NoError(t, err)
 
 	got, err := callback(ctx, api)
