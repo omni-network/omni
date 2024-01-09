@@ -9,6 +9,13 @@ build-docker: ensure-go-releaser ## Builds the docker images.
 	@goreleaser release --snapshot --clean
 
 ###############################################################################
+###                                Contracts                                 ###
+###############################################################################
+
+contract-bindings: ## Generate golang contract bindings.
+	make -C ./contracts bindings
+
+###############################################################################
 ###                                Utils                                 	###
 ###############################################################################
 
