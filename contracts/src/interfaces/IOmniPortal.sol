@@ -27,6 +27,18 @@ interface IOmniPortal {
     function XMSG_DEFAULT_GAS_LIMIT() external view returns (uint64);
 
     /**
+     * @notice Maximum allowed xmsg gas limit
+     * @return Maximum gas limit
+     */
+    function XMSG_MAX_GAS_LIMIT() external view returns (uint64);
+
+    /**
+     * @notice Minimum allowed xmsg gas limit
+     * @return Minimum gas limit
+     */
+    function XMSG_MIN_GAS_LIMIT() external view returns (uint64);
+
+    /**
      * @notice Chain ID of the chain to which this portal is deployed
      * @dev Used as sourceChainId for all outbound XMsgs
      * @return Chain ID
@@ -52,7 +64,8 @@ interface IOmniPortal {
 
     /**
      * @notice Call a contract on another chain
-     * @dev Uses provide gasLimt as execution gas limit on destination chain
+     * @dev Uses provide gasLimit as execution gas limit on destination chain.
+     *      Reverts if gasLimit < XMSG_MAX_GAS_LIMIT or gasLimit > XMSG_MAX_GAS_LIMIT
      * @param destChainId Destination chain ID
      * @param to Address of contract to call on destination chain
      * @param data Encoded function calldata (use abi.encodeWithSignature

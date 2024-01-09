@@ -39,6 +39,24 @@ contract OmniPortal_Test is CommonTest {
         assertEq(portal.outXStreamOffset(destChainId), offset + 1);
     }
 
+    /// @dev Test that xcall with too-low gas limit reverts
+    function test_xcall_gasLimitTooLow_reverts() public {
+        (uint64 destChainId,, address to, bytes memory data) = _xfoo();
+        uint64 gasLimit = portal.XMSG_MIN_GAS_LIMIT() - 1;
+
+        vm.expectRevert();
+        portal.xcall(destChainId, to, data, gasLimit);
+    }
+
+    /// @dev Test that xcall with too-high gas limit reverts
+    function test_xcall_gasLimitTooHigh_reverts() public {
+        (uint64 destChainId,, address to, bytes memory data) = _xfoo();
+        uint64 gasLimit = portal.XMSG_MAX_GAS_LIMIT() + 1;
+
+        vm.expectRevert();
+        portal.xcall(destChainId, to, data, gasLimit);
+    }
+
     /// @dev Get test foo() xcall params
     function _xfoo() private returns (uint64 destChainId, uint64 offset, address to, bytes memory data) {
         return (2, portal.outXStreamOffset(2), makeAddr("foo-addr-on-dest"), abi.encodeWithSignature("foo()"));
