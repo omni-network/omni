@@ -4,7 +4,7 @@
 set -e
 
 # foundryup installs versions by tag (https://github.com/foundry-rs/foundry/tags)
-TAG="nightly-6fc74638b797b8e109452d3df8e26758f86f31fe"
+TAG="nightly-02292f2d2caa547968bd039c06dc53d98b72bf39"
 
 # output of forge --version, to check $TAG installed
 VERSION="forge 0.2.0 (6fc7463 2024-01-05T00:17:41.668342000Z)"
@@ -13,7 +13,7 @@ VERSION="forge 0.2.0 (6fc7463 2024-01-05T00:17:41.668342000Z)"
 # This tells https://foundry.paradigm.xyz where to install foundryup
 case $- in
   *i*) ;;
-  *) export FOUNDRY_BIN_DIR="$HOME/.config/foundry/bin";
+  *) export FOUNDRY_BIN_DIR="$HOME/.config/.foundry/bin";
 esac
 
 
