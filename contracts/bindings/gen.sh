@@ -24,5 +24,5 @@ gen_binding() {
 
 
 for contract in $@; do
-  gen_binding ${contract} $(mktemp -d)
+  gen_binding ${contract}
 done
