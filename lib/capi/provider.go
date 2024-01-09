@@ -6,7 +6,9 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 )
 
-type ProviderCallback func(ctx context.Context, aggs []xchain.AggAttestation)
+// ProviderCallback is the callback function signature that will be called with all approved attestation per
+// consensus block.
+type ProviderCallback func(ctx context.Context, height uint64, aggs []xchain.AggAttestation)
 
 // Provider abstracts connecting to the omni consensus chainand streaming approved
 // aggregate attestations from a specific height.
