@@ -24,10 +24,10 @@ jobs:
         with:
           go-version: 'stable'
       - name: Add foundry bin to path
-        # Required to give actions access to foundryup binary
+        # Required to allow pre-commit hooks to install & find foundryup binary
         # See https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#adding-a-system-path
         # Matches FOUNDRY_BIN_PATH set in scripts/install_foundry.sh
-        run:  echo "${HOME}/.config/.foundry/bin" >> $GITHUB_PATH
+        run:  echo "${HOME}/.foundry/bin" >> $GITHUB_PATH
       - name: Run pre-commit hooks
         uses: pre-commit/action@v3.0.0
 
