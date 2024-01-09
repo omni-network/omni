@@ -26,5 +26,6 @@ fi
 
 # If correct version not installed, install it
 if ! which forge 1>/dev/null || [[ $(forge --version) != $VERSION ]]; then
+  echo "Installing $VERSION"
   foundryup --version $TAG
 fi
