@@ -45,3 +45,24 @@ type Block struct {
 	Msgs     []Msg     // All cross-chain messages sent/emittted in the block
 	Receipts []Receipt // Receipts of all submitted cross-chain messages applied in the block
 }
+
+// Attestation by a validator of a cross-chain Block.
+type Attestation struct {
+	BlockHeader          // BlockHeader identifies the cross-chain Block
+	BlockRoot   [32]byte // Merkle root of the cross-chain Block
+	Signature   SigTuple // Validator signature and public key
+}
+
+// AggAttestation aggregates multiple attestation by a validator set of a cross-chain Block.
+type AggAttestation struct {
+	BlockHeader               // BlockHeader identifies the cross-chain Block
+	ValidatorSetID uint64     // Unique identified of the validator set included in this aggregate.
+	BlockRoot      [32]byte   // Merkle root of the cross-chain Block
+	Signatures     []SigTuple // Validator signatures and public keys
+}
+
+// SigTuple is a validator signature and public key.
+type SigTuple struct {
+	ValidatorPubKey [33]byte // Validator public key; 33 bytes compressed secp256k1.
+	Signature       [65]byte // Validator signature over XBlockRoot; Ethereum 65 bytes [R || S || V] format.
+}
