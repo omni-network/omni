@@ -51,6 +51,7 @@ repos:
         language: script
         entry: .pre-commit/run_forge_tests.sh
         types: [ file, solidity ]
+        require_serial: true
       - id: run-regexp
         name: run-regexp
         language: script
@@ -68,3 +69,4 @@ repos:
         language: script
         entry: .pre-commit/run_solhint.sh
         types: [ file, solidity ]
+        require_serial: true

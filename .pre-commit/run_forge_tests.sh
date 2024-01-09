@@ -4,6 +4,7 @@
 # of files provided as arguments by pre-commit.
 
 source scripts/install_foundry.sh
+source scripts/install_pnpm.sh
 
 # searches upwards from a filepath for a directory containing foundry.toml
 foundryroot() {
@@ -34,5 +35,5 @@ ROOTS=($(echo "${ROOTS[@]}" | tr ' ' '\n' | sort -u))
 # run tests
 for dir in ${ROOTS[@]}; do
   echo "Running forge tests in ./$dir"
-  (cd $dir && forge test)
+  (cd $dir && pnpm install && forge test)
 done

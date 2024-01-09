@@ -1,7 +1,9 @@
 {
   "extends": "solhint:recommended",
   "rules": {
-    "no-unused-vars": "error",
-    "no-unused-imports": "error"
+    "compiler-version": ["error", "0.8.23"],
+    "func-visibility": ["error", {"ignoreConstructors": true}],
+    "immutable-vars-naming": "off",
+    "no-unused-vars": "error"
   }
 }
