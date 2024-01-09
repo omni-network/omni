@@ -5,7 +5,7 @@ import {OmniPortal} from "src/OmniPortal.sol";
 import {CommonTest} from "test/common/CommonTest.sol";
 
 contract OmniPortal_Test is CommonTest {
-    /// @dev Test that xcall with default gas limt emits XMsg event and increments outXStreamOffset
+    /// @dev Test that xcall with default gas limit emits XMsg event and increments outXStreamOffset
     function test_xcall_defaultGasLimit_succeeds() public {
         (uint64 destChainId, uint64 offset, address to, bytes memory data) = _xfoo();
         uint64 gasLimit = portal.XMSG_DEFAULT_GAS_LIMIT();
@@ -22,7 +22,7 @@ contract OmniPortal_Test is CommonTest {
         assertEq(portal.outXStreamOffset(destChainId), offset + 1);
     }
 
-    /// @dev Test that xcall with explicit gas limt emits XMsg event and increments outXStreamOffset
+    /// @dev Test that xcall with explicit gas limit emits XMsg event and increments outXStreamOffset
     function test_xcall_explicitGasLimit_succeeds() public {
         (uint64 destChainId, uint64 offset, address to, bytes memory data) = _xfoo();
         uint64 gasLimit = portal.XMSG_DEFAULT_GAS_LIMIT() + 1;
