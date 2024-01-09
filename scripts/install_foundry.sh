@@ -27,8 +27,10 @@ if ! which foundryup 1>/dev/null; then
   esac
 
   echo "Sourcing $PROFILE"
-  cat $PROFILE
   source $PROFILE
+  echo "$PATH"
+  export PATH="$PATH:/home/runner/.config/.foundry/bin"
+  echo "$PATH"
   echo "which foundryup: $(which foundryup)"
 fi
 
