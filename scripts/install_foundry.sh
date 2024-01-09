@@ -7,7 +7,7 @@ set -e
 TAG="nightly-02292f2d2caa547968bd039c06dc53d98b72bf39"
 
 # output of forge --version, to check $TAG installed
-VERSION="forge 0.2.0 (6fc7463 2024-01-05T00:17:41.668342000Z)"
+VERSION="forge 0.2.0 (02292f2 2024-01-08T00:26:30.856271000Z)"
 
 
 # If not running interactively (like in Github Actions), specify FOUNDRY_DIR

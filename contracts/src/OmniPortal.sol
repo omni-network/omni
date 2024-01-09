@@ -22,6 +22,11 @@ contract OmniPortal is IOmniPortal {
         _xcall(destChainId, msg.sender, to, data, XMSG_DEFAULT_GAS_LIMIT);
     }
 
+    /// @inheritdoc IOmniPortal
+    function xcall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit) external payable {
+        _xcall(destChainId, msg.sender, to, data, gasLimit);
+    }
+
     /// @dev Emit an XMsg event, increment dest chain outXStreamOffset
     function _xcall(uint64 destChainId, address sender, address to, bytes calldata data, uint64 gasLimit) private {
         emit XMsg(destChainId, outXStreamOffset[destChainId], sender, to, data, gasLimit);

@@ -42,11 +42,21 @@ interface IOmniPortal {
 
     /**
      * @notice Call a contract on another chain
-     * @dev Uses OmniPortal.XMSG_DEFAULT_GAS_LIMIT as execution gas limit
+     * @dev Uses OmniPortal.XMSG_DEFAULT_GAS_LIMIT as execution gas limit on destination chain
      * @param destChainId Destination chain ID
      * @param to Address of contract to call on destination chain
      * @param data Encoded function calldata (use abi.encodeWithSignature
      * 	or abi.encodeWithSelector)
      */
     function xcall(uint64 destChainId, address to, bytes calldata data) external payable;
+
+    /**
+     * @notice Call a contract on another chain
+     * @dev Uses provide gasLimt as execution gas limit on destination chain
+     * @param destChainId Destination chain ID
+     * @param to Address of contract to call on destination chain
+     * @param data Encoded function calldata (use abi.encodeWithSignature
+     * 	or abi.encodeWithSelector)
+     */
+    function xcall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit) external payable;
 }
