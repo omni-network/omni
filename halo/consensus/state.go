@@ -86,12 +86,16 @@ func (s *state) AddAttestations(aggregates []xchain.AggAttestation) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.pendingAggs = mergeAggregates(s.pendingAggs, aggregates /* add new aggs */, true)
-	s.approvedAggs = mergeAggregates(s.approvedAggs, aggregates /* skip new aggs */, false)
+	// Merge the new aggregates with existing, either pending or approved, add non-matching to remaining.
+	var remaining []xchain.AggAttestation
+	s.pendingAggs, remaining = mergeAggregates(s.pendingAggs, aggregates)
+	s.approvedAggs, remaining = mergeAggregates(s.approvedAggs, remaining)
 
-	// Moving pending to approved.
-	var stillPending []xchain.AggAttestation
-	var newApproved []xchain.AggAttestation
+	// Add remaining non-matching to pending.
+	s.pendingAggs = sortAggregates(append(s.pendingAggs, remaining...))
+
+	// Check which pending are newly approved, and which are still pending.
+	var stillPending, newApproved []xchain.AggAttestation
 	for _, agg := range s.pendingAggs {
 		if isApproved(agg, s.validators) {
 			newApproved = append(newApproved, agg)
@@ -100,8 +104,9 @@ func (s *state) AddAttestations(aggregates []xchain.AggAttestation) {
 		}
 	}
 
-	s.pendingAggs = stillPending
-	s.approvedAggs = mergeAggregates(s.approvedAggs, newApproved /* add new aggs */, true)
+	// Update pending and approved.
+	s.pendingAggs = sortAggregates(stillPending)
+	s.approvedAggs = sortAggregates(append(s.approvedAggs, newApproved...))
 }
 
 // ApprovedAggregates returns a copy of the approved aggregates.
