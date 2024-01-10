@@ -12,8 +12,8 @@ jobs:
     name: Run pre-commit hooks
     runs-on: ubuntu-latest
     env:
-      # Skip a few hooks: Golangci-lint has its own action. Run lints against main commits.
-      SKIP: golangci-lint,no-commit-to-branch
+      # Skip a few hooks: Golangci-lint and go-tests have their own actions. Allow lints against main commits.
+      SKIP: golangci-lint,run-go-tests,no-commit-to-branch
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
