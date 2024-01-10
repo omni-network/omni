@@ -2,8 +2,6 @@ package attest
 
 import (
 	"github.com/omni-network/omni/lib/xchain"
-
-	crypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 )
 
 // Service abstracts the validator duty of attesting to all
@@ -31,5 +29,5 @@ type Service interface {
 	SetCommitted(headers []xchain.BlockHeader)
 
 	// LocalPubKey returns the local validator's public key.
-	LocalPubKey() crypto.PublicKey
+	LocalPubKey() [33]byte
 }

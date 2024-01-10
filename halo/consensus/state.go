@@ -7,16 +7,22 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/xchain"
 
-	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	abci "github.com/cometbft/cometbft/abci/types"
 
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
+const pubKeyLen = 33
+
+type validator struct {
+	PubKey [pubKeyLen]byte
+	Power  int64
+}
 type state struct {
 	mu                 sync.Mutex
 	ExecutionStateRoot [32]byte
 	valSetID           uint64
-	validators         []abci.ValidatorUpdate
+	validators         []validator
 	pendingAggs        []xchain.AggAttestation
 	approvedAggs       []xchain.AggAttestation
 }
@@ -24,7 +30,7 @@ type state struct {
 // InitChainState sets consensus validators.
 // It returns an error if the validators are already set.
 // This implies validators can only be set once and never change.
-func (s *state) InitChainState(req *abci.InitChainRequest) error {
+func (s *state) InitChainState(req *abci.RequestInitChain) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -32,16 +38,27 @@ func (s *state) InitChainState(req *abci.InitChainRequest) error {
 		return errors.New("chain already initialized")
 	}
 
-	if req.InitialHeight > 0 {
-		return errors.New("initial height must be 0")
-	}
-
 	if len(req.AppStateBytes) > 0 {
 		return errors.New("app state bytes must be empty")
 	}
 
 	s.valSetID++ // Update from 0 to 1.
-	s.validators = req.Validators
+
+	for _, v := range req.Validators {
+		if len(v.PubKey.GetEd25519()) > 0 {
+			return errors.New("ed25519 keys not supported")
+		}
+
+		pk := v.PubKey.GetSecp256K1()
+		if len(pk) != pubKeyLen {
+			return errors.New("invalid pubkey length")
+		}
+
+		s.validators = append(s.validators, validator{
+			PubKey: [pubKeyLen]byte(pk),
+			Power:  v.Power,
+		})
+	}
 
 	return nil
 }
@@ -100,7 +117,7 @@ func (s *state) AddAttestations(aggregates []xchain.AggAttestation) {
 type appHashJSON struct {
 	ExecutionStateRoot [32]byte                `json:"execution_state_root"`
 	ValSetID           uint64                  `json:"validator_set_id"`
-	Validators         []abci.ValidatorUpdate  `json:"validators"`
+	Validators         []validator             `json:"validators"`
 	PendingAggs        []xchain.AggAttestation `json:"pending_aggregate_attestations"`
 	ApprovedAggs       []xchain.AggAttestation `json:"approved_aggregate_attestations"`
 }

@@ -1,10 +1,10 @@
 package engine
 
 import (
+	"bytes"
 	"encoding/hex"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
@@ -51,7 +51,10 @@ func LoadJWTHexFile(file string) ([]byte, error) {
 		return nil, errors.Wrap(err, "read jwt file")
 	}
 
-	jwtBytes, err := hex.DecodeString(strings.TrimPrefix(string(jwtHex), "0x"))
+	jwtHex = bytes.TrimSpace(jwtHex)
+	jwtHex = bytes.TrimPrefix(jwtHex, []byte("0x"))
+
+	jwtBytes, err := hex.DecodeString(string(jwtHex))
 	if err != nil {
 		return nil, errors.Wrap(err, "decode jwt file")
 	}
