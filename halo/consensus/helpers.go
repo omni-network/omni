@@ -8,37 +8,38 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/xchain"
 
-	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
-	crypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
+	abci "github.com/cometbft/cometbft/abci/types"
+
+	"github.com/ethereum/go-ethereum/beacon/engine"
 )
 
-// cpayload is the value that we are coming to consensus on.
+// cPayload is the value that we are coming to consensus on.
 // It is the single tx contained in the cometBFT consensus block.
-type cpayload struct {
-	// TODO(corver): Add execution cpayload.
+type cPayload struct {
+	EPayload   engine.ExecutableData   `json:"executable_payload"`
 	Aggregates []xchain.AggAttestation `json:"attestations"`
 }
 
-// payloadFromTXs returns the consensus cpayload contained in the list of raw txs.
-func payloadFromTXs(txs [][]byte) (cpayload, error) {
+// payloadFromTXs returns the consensus cPayload contained in the list of raw txs.
+func payloadFromTXs(txs [][]byte) (cPayload, error) {
 	if len(txs) != 1 {
-		return cpayload{}, errors.New("invalid number of consensus transactions, only 1 ever expected")
+		return cPayload{}, errors.New("invalid number of consensus transactions, only 1 ever expected")
 	}
 
-	var resp cpayload
+	var resp cPayload
 	if err := decode(txs[0], &resp); err != nil {
-		return cpayload{}, err
+		return cPayload{}, errors.Wrap(err, "decode cpayload")
 	}
 
 	return resp, nil
 }
 
-// headersByPubkey returns the attestations for the provided key.
-func headersByPubkey(aggregates []xchain.AggAttestation, key crypto.PublicKey) []xchain.BlockHeader {
+// headersByPubKey returns the attestations for the provided key.
+func headersByPubKey(aggregates []xchain.AggAttestation, pubkey [33]byte) []xchain.BlockHeader {
 	var filtered []xchain.BlockHeader
 	for _, agg := range aggregates {
 		for _, sig := range agg.Signatures {
-			if sig.ValidatorPubKey == [33]byte(key.GetSecp256K1()) {
+			if sig.ValidatorPubKey == pubkey {
 				filtered = append(filtered, agg.BlockHeader)
 				break
 			}
@@ -50,7 +51,7 @@ func headersByPubkey(aggregates []xchain.AggAttestation, key crypto.PublicKey) [
 
 // aggregatesFromProposal returns the aggregate attestations contained in the proposal's last local
 // commit's vote extensions.
-func aggregatesFromProposal(req *abci.PrepareProposalRequest) ([]xchain.AggAttestation, error) {
+func aggregatesFromProposal(req *abci.RequestPrepareProposal) ([]xchain.AggAttestation, error) {
 	var attestations []xchain.Attestation
 	for _, vote := range req.LocalLastCommit.Votes {
 		voteAtts, err := attestationsFromVoteExt(vote.VoteExtension)
@@ -107,9 +108,13 @@ func aggregate(attestations []xchain.Attestation) []xchain.AggAttestation {
 
 // attestationsFromVoteExt returns the attestations contained in the vote extension.
 func attestationsFromVoteExt(voteExtension []byte) ([]xchain.Attestation, error) {
+	if len(voteExtension) == 0 {
+		return nil, nil
+	}
+
 	var att []xchain.Attestation
 	if err := decode(voteExtension, &att); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "decode vote extension")
 	}
 
 	return att, nil
@@ -137,7 +142,7 @@ func decode(data []byte, ptr any) error {
 }
 
 // isApproved returns true if the provided aggregate attestation is approved by the provided validator set.
-func isApproved(agg xchain.AggAttestation, validators []abci.ValidatorUpdate) bool {
+func isApproved(agg xchain.AggAttestation, validators []validator) bool {
 	quorum := 2*len(validators)/3 + 1 //nolint:gomnd // Formula for 2/3+1 quorum.
 	return len(agg.Signatures) >= quorum
 }

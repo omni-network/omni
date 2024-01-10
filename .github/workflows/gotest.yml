@@ -1,0 +1,22 @@
+name: go tests
+# Run this separately from pre-commit for nice visual coverage.
+
+# Run on pull requests and commits to main
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  unit_tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+      # TODO(corver): add coverage
+      - run: go test -timeout=5m -race ./...
