@@ -28,7 +28,7 @@ func run() error {
 	}
 
 	// Skip dependabot PRs.
-	if strings.Contains(pr.Title, "build(deps)") && strings.Contains(pr.Body, "dependabot") {
+	if strings.Contains(pr.Title, "deps") && strings.Contains(pr.Body, "dependabot") {
 		return nil
 	}
 
