@@ -1,4 +1,4 @@
-name: Lint Go code using golangci-lint
+name: go lint
 # Run this separately from pre-commit since then we get nice inline messages in PRs.
 
 # Run on pull requests and commits to main
@@ -14,7 +14,6 @@ permissions:
 
 jobs:
   golangci:
-    name: Run golangci-lint
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
