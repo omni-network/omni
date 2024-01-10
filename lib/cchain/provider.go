@@ -18,5 +18,5 @@ type ProviderCallback func(ctx context.Context, height uint64, approved []xchain
 type Provider interface {
 	// Subscribe registers a callback function that will be called with all approved aggregate
 	// attestations (as they become available per block) on the consensus chain from the provided height (inclusive).
-	Subscribe(ctx context.Context, height uint64, callback ProviderCallback)
+	Subscribe(ctx context.Context, sourceChainID uint64, sourceHeight uint64, callback ProviderCallback)
 }
