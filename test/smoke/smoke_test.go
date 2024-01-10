@@ -47,8 +47,10 @@ func TestSmoke(t *testing.T) {
 	require.NoError(t, err)
 	defer cleanup()
 
+	const attestations = 10
+
 	attSvc := &testAttSvc{
-		totals:     10,
+		totals:     attestations,
 		pubKeyChan: make(chan crypto.PubKey, 1),
 		fuzzer:     fuzz.New().NilChance(0),
 	}
@@ -89,9 +91,12 @@ func TestSmoke(t *testing.T) {
 		time.Sleep(1 * time.Second)
 	}
 
-	require.Empty(t, attSvc.totals, "Not all attestations used")
-
+	// Assert chain made progress.
 	require.NotEmpty(t, lastHeight, "Stuck at height 1")
+
+	// Assert all attestations used and approved.
+	require.Empty(t, attSvc.totals, "Not all attestations used")
+	require.Lenf(t, core.ApprovedAggregates(), attestations, "Not all attestations approved")
 }
 
 func writeFiles(t *testing.T, conf *config.Config) {
@@ -160,7 +165,7 @@ func (s *testAttSvc) SetProposed([]xchain.BlockHeader) {}
 func (s *testAttSvc) SetCommitted([]xchain.BlockHeader) {}
 
 func (s *testAttSvc) LocalPubKey() [33]byte {
-	return [33]byte{}
+	return [33]byte(s.getPubKey().Bytes())
 }
 
 var _ attest.Service = (*testAttSvc)(nil)

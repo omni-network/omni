@@ -86,6 +86,11 @@ func aggregate(attestations []xchain.Attestation) []xchain.AggAttestation {
 		aggsByHeader[att.BlockHeader] = agg
 	}
 
+	return flattenAggsByHeader(aggsByHeader)
+}
+
+// flattenAggsByHeader returns the provided map of aggregates by header as a slice in a deterministic order.
+func flattenAggsByHeader(aggsByHeader map[xchain.BlockHeader]xchain.AggAttestation) []xchain.AggAttestation {
 	aggs := make([]xchain.AggAttestation, 0, len(aggsByHeader))
 	for _, agg := range aggsByHeader {
 		aggs = append(aggs, agg)
@@ -145,4 +150,34 @@ func decode(data []byte, ptr any) error {
 func isApproved(agg xchain.AggAttestation, validators []validator) bool {
 	quorum := 2*len(validators)/3 + 1 //nolint:gomnd // Formula for 2/3+1 quorum.
 	return len(agg.Signatures) >= quorum
+}
+
+// mergeAggregates returns a copy of the existing aggregates merged with the toMerge aggregates.
+// If addNew is true, it will also create new aggregates, otherwise it will only merge existing.
+//
+//nolint:revive  // Control-coupling is fine here.
+func mergeAggregates(existing []xchain.AggAttestation, toMerge []xchain.AggAttestation, addNew bool,
+) []xchain.AggAttestation {
+	// Create a map of existing aggregates by header.
+	aggsByHeader := make(map[xchain.BlockHeader]xchain.AggAttestation)
+	for _, agg := range existing {
+		aggsByHeader[agg.BlockHeader] = agg
+	}
+
+	// Iterate over the toMerge aggregates.
+	for _, agg := range toMerge {
+		existing, ok := aggsByHeader[agg.BlockHeader]
+		if !ok {
+			if addNew { // If new, add it to the map.
+				aggsByHeader[agg.BlockHeader] = agg
+			}
+
+			continue
+		}
+
+		// If existing, append the signatures.
+		existing.Signatures = append(existing.Signatures, agg.Signatures...)
+	}
+
+	return flattenAggsByHeader(aggsByHeader)
 }

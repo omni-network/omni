@@ -86,31 +86,35 @@ func (s *state) AddAttestations(aggregates []xchain.AggAttestation) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Create a lookup
-	aggsByHeader := make(map[xchain.BlockHeader]xchain.AggAttestation)
-	for _, agg := range aggregates {
-		aggsByHeader[agg.BlockHeader] = agg
-	}
+	s.pendingAggs = mergeAggregates(s.pendingAggs, aggregates /* add new aggs */, true)
+	s.approvedAggs = mergeAggregates(s.approvedAggs, aggregates /* skip new aggs */, false)
 
-	// Add to pending, moving approved.
-	pendingCopy := s.pendingAggs
-	s.pendingAggs = nil
-	for _, agg := range pendingCopy {
-		toAdd, ok := aggsByHeader[agg.BlockHeader]
-		if !ok {
-			s.pendingAggs = append(s.pendingAggs, agg)
-			continue
-		}
-
-		agg.Signatures = append(agg.Signatures, toAdd.Signatures...)
+	// Moving pending to approved.
+	var stillPending []xchain.AggAttestation
+	var newApproved []xchain.AggAttestation
+	for _, agg := range s.pendingAggs {
 		if isApproved(agg, s.validators) {
-			s.approvedAggs = append(s.approvedAggs, agg)
+			newApproved = append(newApproved, agg)
 		} else {
-			s.pendingAggs = append(s.pendingAggs, agg)
+			stillPending = append(stillPending, agg)
 		}
 	}
 
-	// TODO(corver): Update approved aggregates, also trim approved aggregates after some blocks.
+	s.pendingAggs = stillPending
+	s.approvedAggs = mergeAggregates(s.approvedAggs, newApproved /* add new aggs */, true)
+}
+
+// ApprovedAggregates returns a copy of the approved aggregates.
+// For testing purposes only.
+func (s *state) ApprovedAggregates() []xchain.AggAttestation {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Return a copy of the approved aggregates.
+	aggs := make([]xchain.AggAttestation, len(s.approvedAggs))
+	copy(aggs, s.approvedAggs)
+
+	return aggs
 }
 
 // appHashJSON is the JSON representation of the state used to calculate app hash.
