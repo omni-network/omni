@@ -1,5 +1,7 @@
 package xchain
 
+import "time"
+
 // StreamID uniquely identifies a cross-chain stream.
 // A stream is a logical representation of a cross-chain connection between two chains.
 type StreamID struct {
@@ -42,8 +44,9 @@ type BlockHeader struct {
 // Block is a deterministic representation of the omni cross-chain properties of a source chain EVM block.
 type Block struct {
 	BlockHeader
-	Msgs     []Msg     // All cross-chain messages sent/emittted in the block
-	Receipts []Receipt // Receipts of all submitted cross-chain messages applied in the block
+	Msgs      []Msg     // All cross-chain messages sent/emittted in the block
+	Receipts  []Receipt // Receipts of all submitted cross-chain messages applied in the block
+	Timestamp time.Time // Timestamp of the source chain block
 }
 
 // Attestation by a validator of a cross-chain Block.
