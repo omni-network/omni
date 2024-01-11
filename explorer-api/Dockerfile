@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 FROM golang:1.21-alpine as builder
-ENV GO111MODULE=off
+ENV GO111MODULE=on
 LABEL authors="danflanagan"
 
 ARG COMMIT_HASH
@@ -17,8 +17,13 @@ ARG PORT=8080
 # Set destination for COPY
 WORKDIR /app
 
+# Set destination for COPY
 COPY go.mod go.sum ./
+
 RUN go mod tidy
+
+# Copy the source code
+COPY . .
 
 RUN echo ${COMMIT_HASH}
 RUN echo ${BUILD_DATE}
