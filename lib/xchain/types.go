@@ -69,12 +69,12 @@ type SigTuple struct {
 
 // Submission is a cross-chain submission of a set of messages and their proofs.
 type Submission struct {
-	AttestationRoot [32]byte
-	BlockHeader     BlockHeader
-	Msgs            []Msg
-	Proof           [][32]byte
-	ProofFlags      []bool
-	Signatures      []SigTuple
+	AttestationRoot [32]byte    // Merkle root of the attestations
+	BlockHeader     BlockHeader // BlockHeader identifies the cross-chain Block
+	Msgs            []Msg       // Messages to be submitted
+	Proof           [][32]byte  // Merkle multi proofs of the messages
+	ProofFlags      []bool      // Flags indicating whether the proof is a left or right proof
+	Signatures      []SigTuple  // Validator signatures and public keys
 }
 
 // StreamCursor is a cursor that tracks the progress of a cross-chain stream on destination portal contracts.
