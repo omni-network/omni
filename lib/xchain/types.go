@@ -77,7 +77,7 @@ type Submission struct {
 	Signatures      []SigTuple
 }
 
-// StreamCursor is a cursor that tracks the progress of a cross-chain stream on destination portal contracts
+// StreamCursor is a cursor that tracks the progress of a cross-chain stream on destination portal contracts.
 type StreamCursor struct {
 	StreamID                 // Stream ID of the Stream this cursor belongs to
 	Offset            uint64 // Monotonically incremented offset of Msg in the Stream
