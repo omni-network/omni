@@ -33,6 +33,6 @@ type Creator interface {
 }
 
 type Sender interface {
-	// SendTransaction sends a submission to the destination chain by invoking "xsubmit".
+	// SendTransaction sends a submission to the destination chain by invoking "xsubmit" on portal contract.
 	SendTransaction(ctx context.Context, submission xchain.Submission) error
 }
