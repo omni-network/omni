@@ -86,31 +86,40 @@ func (s *state) AddAttestations(aggregates []xchain.AggAttestation) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Create a lookup
-	aggsByHeader := make(map[xchain.BlockHeader]xchain.AggAttestation)
-	for _, agg := range aggregates {
-		aggsByHeader[agg.BlockHeader] = agg
-	}
+	// Merge the new aggregates with existing, either pending or approved, add non-matching to remaining.
+	var remaining []xchain.AggAttestation
+	s.pendingAggs, remaining = mergeAggregates(s.pendingAggs, aggregates)
+	s.approvedAggs, remaining = mergeAggregates(s.approvedAggs, remaining)
 
-	// Add to pending, moving approved.
-	pendingCopy := s.pendingAggs
-	s.pendingAggs = nil
-	for _, agg := range pendingCopy {
-		toAdd, ok := aggsByHeader[agg.BlockHeader]
-		if !ok {
-			s.pendingAggs = append(s.pendingAggs, agg)
-			continue
-		}
+	// Add remaining non-matching to pending.
+	s.pendingAggs = sortAggregates(append(s.pendingAggs, remaining...))
 
-		agg.Signatures = append(agg.Signatures, toAdd.Signatures...)
+	// Check which pending are newly approved, and which are still pending.
+	var stillPending, newApproved []xchain.AggAttestation
+	for _, agg := range s.pendingAggs {
 		if isApproved(agg, s.validators) {
-			s.approvedAggs = append(s.approvedAggs, agg)
+			newApproved = append(newApproved, agg)
 		} else {
-			s.pendingAggs = append(s.pendingAggs, agg)
+			stillPending = append(stillPending, agg)
 		}
 	}
 
-	// TODO(corver): Update approved aggregates, also trim approved aggregates after some blocks.
+	// Update pending and approved.
+	s.pendingAggs = sortAggregates(stillPending)
+	s.approvedAggs = sortAggregates(append(s.approvedAggs, newApproved...))
+}
+
+// ApprovedAggregates returns a copy of the approved aggregates.
+// For testing purposes only.
+func (s *state) ApprovedAggregates() []xchain.AggAttestation {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Return a copy of the approved aggregates.
+	aggs := make([]xchain.AggAttestation, len(s.approvedAggs))
+	copy(aggs, s.approvedAggs)
+
+	return aggs
 }
 
 // appHashJSON is the JSON representation of the state used to calculate app hash.

@@ -86,12 +86,22 @@ func aggregate(attestations []xchain.Attestation) []xchain.AggAttestation {
 		aggsByHeader[att.BlockHeader] = agg
 	}
 
+	return flattenAggsByHeader(aggsByHeader)
+}
+
+// flattenAggsByHeader returns the provided map of aggregates by header as a slice in a deterministic order.
+func flattenAggsByHeader(aggsByHeader map[xchain.BlockHeader]xchain.AggAttestation) []xchain.AggAttestation {
 	aggs := make([]xchain.AggAttestation, 0, len(aggsByHeader))
 	for _, agg := range aggsByHeader {
 		aggs = append(aggs, agg)
 	}
 
-	// Sort deterministically.
+	return sortAggregates(aggs)
+}
+
+// sortAggregates returns the provided aggregates in a deterministic order.
+// Note the provided slice is also sorted in-place.
+func sortAggregates(aggs []xchain.AggAttestation) []xchain.AggAttestation {
 	sort.Slice(aggs, func(i, j int) bool {
 		if aggs[i].BlockHeight != aggs[j].BlockHeight {
 			return aggs[i].BlockHeight < aggs[j].BlockHeight
@@ -145,4 +155,35 @@ func decode(data []byte, ptr any) error {
 func isApproved(agg xchain.AggAttestation, validators []validator) bool {
 	quorum := 2*len(validators)/3 + 1 //nolint:gomnd // Formula for 2/3+1 quorum.
 	return len(agg.Signatures) >= quorum
+}
+
+// mergeAggregates returns a copy of the existing aggregates merged with any matching toMerge aggregates.
+// It also returns all non-matching toMerge aggregates.
+//
+//nolint:nonamedreturns // Use named returns for ambiguous return values.
+func mergeAggregates(existing []xchain.AggAttestation, toMerge []xchain.AggAttestation) (
+	merged []xchain.AggAttestation, nonMatching []xchain.AggAttestation,
+) {
+	// Create a map of existing aggregates by header.
+	existingByHeader := make(map[xchain.BlockHeader]xchain.AggAttestation)
+	for _, agg := range existing {
+		existingByHeader[agg.BlockHeader] = agg
+	}
+
+	// Iterate over the toMerge aggregates.
+	for _, agg := range toMerge {
+		exist, ok := existingByHeader[agg.BlockHeader]
+		if !ok {
+			nonMatching = append(nonMatching, agg)
+			continue
+		}
+
+		// If existing, append the signatures.
+		exist.Signatures = append(exist.Signatures, agg.Signatures...)
+
+		// Update the existing aggregate.
+		existingByHeader[agg.BlockHeader] = exist
+	}
+
+	return flattenAggsByHeader(existingByHeader), nonMatching
 }

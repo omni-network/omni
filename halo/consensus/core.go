@@ -3,6 +3,7 @@ package consensus
 import (
 	"github.com/omni-network/omni/halo/attest"
 	"github.com/omni-network/omni/lib/engine"
+	"github.com/omni-network/omni/lib/xchain"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 )
@@ -22,6 +23,12 @@ func NewCore(ethCl engine.Client, attestSvc attest.Service) *Core {
 		ethCl:     ethCl,
 		attestSvc: attestSvc,
 	}
+}
+
+// ApprovedAggregates returns a copy of the latest state's approved aggregates.
+// For testing purposes only.
+func (c *Core) ApprovedAggregates() []xchain.AggAttestation {
+	return c.state.ApprovedAggregates()
 }
 
 var _ abci.Application = (*Core)(nil)
