@@ -93,7 +93,6 @@ func TestConfigs(t *testing.T) {
 	}
 }
 
-// nolint:tparallel // Parallel tests not supported since test-alias globals are used.
 func TestNewWithReset(t *testing.T) {
 	t0 := time.Now()
 	now := t0
