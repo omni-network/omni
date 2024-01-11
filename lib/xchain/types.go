@@ -69,3 +69,20 @@ type SigTuple struct {
 	ValidatorPubKey [33]byte // Validator public key; 33 bytes compressed secp256k1.
 	Signature       [65]byte // Validator signature over XBlockRoot; Ethereum 65 bytes [R || S || V] format.
 }
+
+// Submission is a cross-chain submission of a set of messages and their proofs.
+type Submission struct {
+	AttestationRoot [32]byte    // Merkle root of the attestations
+	BlockHeader     BlockHeader // BlockHeader identifies the cross-chain Block
+	Msgs            []Msg       // Messages to be submitted
+	Proof           [][32]byte  // Merkle multi proofs of the messages
+	ProofFlags      []bool      // Flags indicating whether the proof is a left or right proof
+	Signatures      []SigTuple  // Validator signatures and public keys
+}
+
+// StreamCursor is a cursor that tracks the progress of a cross-chain stream on destination portal contracts.
+type StreamCursor struct {
+	StreamID                 // Stream ID of the Stream this cursor belongs to
+	Offset            uint64 // Latest applied Msg offset of the Stream
+	SourceBlockHeight uint64 // Height of the source chain block
+}
