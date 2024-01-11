@@ -46,7 +46,7 @@ func errAttrs(err error) []any {
 
 	// Using cast instead of errors.As since no other wrapping library
 	// is used and this avoids exporting the structured error type.
-	serr, ok := err.(structErr) //nolint:errorlint // See comment above
+	serr, ok := err.(structErr) //nolint:errorlint // See comment aboveg
 	if !ok {
 		return nil
 	}
