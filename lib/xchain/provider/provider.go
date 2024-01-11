@@ -13,6 +13,8 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 )
 
+var _ xchain.Provider = (*Provider)(nil)
+
 // ChainConfig is the configuration parameters for all the chains
 // that needs to be managed by the provider.
 type ChainConfig struct {
