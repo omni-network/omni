@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"github.com/omni-network/omni/explorer-api/app"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/log"
 
@@ -18,7 +19,6 @@ func New() *cobra.Command {
 }
 
 // newRunCmd returns a new cobra command that runs the explorer-api.
-// TODO(@lazar955): Implement this.
 func newRunCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "run",
@@ -26,6 +26,15 @@ func newRunCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			log.Info(ctx, "ExplorerAPI started")
+			conf := app.Config{}
+
+			err := app.Run(ctx, conf)
+			if err != nil {
+				log.Error(ctx, "failed to start Explorer API", err)
+				<-ctx.Done()
+				return err
+			}
+
 			log.Info(ctx, "Press Ctrl+C to stop")
 			<-ctx.Done()
 			log.Info(ctx, "explorer-api stopped")
