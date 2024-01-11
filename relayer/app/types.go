@@ -36,3 +36,8 @@ type Sender interface {
 	// SendTransaction sends a submission to the destination chain by invoking "xsubmit" on portal contract.
 	SendTransaction(ctx context.Context, submission xchain.Submission) error
 }
+
+// cursorFetcher fetches all supported portal cursors.
+type cursorFetcher interface {
+	Cursors(ctx context.Context) ([]xchain.StreamCursor, error)
+}
