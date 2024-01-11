@@ -101,6 +101,7 @@ linters:
     - funlen               # Some functions will be long
     - goerr113             # We do not religiously follow the Go 1.13 package level error convention
     - godox                # Allow TODOs
+    - gomnd                # Too many false positives
     - tagliatelle          # Too strict
     - varnamelen           # False positives
     - wsl                  # Way to strict and opinionated
