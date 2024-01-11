@@ -66,3 +66,13 @@ type SigTuple struct {
 	ValidatorPubKey [33]byte // Validator public key; 33 bytes compressed secp256k1.
 	Signature       [65]byte // Validator signature over XBlockRoot; Ethereum 65 bytes [R || S || V] format.
 }
+
+// Submission is a cross-chain submission of a set of messages and their proofs.
+type Submission struct {
+	AttestationRoot [32]byte
+	BlockHeader     BlockHeader
+	Msgs            []Msg
+	Proof           [][32]byte
+	ProofFlags      []bool
+	Signatures      []SigTuple
+}
