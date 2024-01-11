@@ -153,7 +153,7 @@ func decode(data []byte, ptr any) error {
 
 // isApproved returns true if the provided aggregate attestation is approved by the provided validator set.
 func isApproved(agg xchain.AggAttestation, validators []validator) bool {
-	quorum := 2*len(validators)/3 + 1 //nolint:gomnd // Formula for 2/3+1 quorum.
+	quorum := 2*len(validators)/3 + 1
 	return len(agg.Signatures) >= quorum
 }
 

@@ -18,7 +18,7 @@ func MakeTree(leaves [][32]byte) ([][32]byte, error) {
 		return nil, errors.New("no leaves provided")
 	}
 
-	treeLen := 2*len(leaves) - 1 //nolint:gomnd // Formula for the length of a binary tree.
+	treeLen := 2*len(leaves) - 1
 	tree := make([][32]byte, treeLen)
 
 	// Fill in leaves in reverse order.
@@ -131,7 +131,7 @@ func leftChildIndex(i int) int {
 
 // rightChildIndex returns the index of the right child of the node at the given index.
 func rightChildIndex(i int) int {
-	return 2*i + 2 //nolint:gomnd // Formula merkle tree indices.
+	return 2*i + 2
 }
 
 // parentIndex returns the index of the parent of the node at the given index.
@@ -141,7 +141,7 @@ func parentIndex(i int) int {
 		panic("root has no parent")
 	}
 
-	return (i - 1) / 2 //nolint:gomnd // Formula merkle tree indices.
+	return (i - 1) / 2
 }
 
 // siblingIndex returns the index of the sibling of the node at the given index.
