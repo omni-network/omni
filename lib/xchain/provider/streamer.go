@@ -27,7 +27,7 @@ func NewStreamer(config *ChainConfig,
 	minHeight uint64,
 	callback xchain.ProviderCallback,
 	quitC chan struct{},
-) (*Streamer, error) {
+) *Streamer {
 	// initialize the streamer structure with the received configuration
 	stream := &Streamer{
 		chainConfig: config,
@@ -36,7 +36,7 @@ func NewStreamer(config *ChainConfig,
 		quitC:       quitC,
 	}
 
-	return stream, nil
+	return stream
 }
 
 func (s *Streamer) streamBlocks(ctx context.Context, currentHeight uint64) {

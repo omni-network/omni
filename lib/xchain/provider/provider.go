@@ -70,18 +70,7 @@ func (p *Provider) runStreamer(ctx context.Context,
 	callback xchain.ProviderCallback,
 ) {
 	// instantiate a new streamer for this chain
-	streamer, err := NewStreamer(config, minHeight, callback, p.quitC)
-	if err != nil {
-		log.Error(ctx, "Could not subscribe to chain", err,
-			"chainName", config.name,
-			"chainID", config.id)
-
-		return
-	}
-
-	if minHeight < config.minHeight {
-		minHeight = config.minHeight
-	}
+	streamer := NewStreamer(config, minHeight, callback, p.quitC)
 
 	// start the streaming process
 	streamer.streamBlocks(ctx, minHeight)
