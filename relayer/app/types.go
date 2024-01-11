@@ -12,8 +12,8 @@ type streamUpdate struct {
 	Msgs           []xchain.Msg          // msgs that increment the cursor
 }
 
-// DetectorCallback is the callback function signature that will be called with stream updates.
-type DetectorCallback func(context.Context, []streamUpdate) error
+// detectorCallback is the callback function signature that will be called with stream updates.
+type detectorCallback func(context.Context, []streamUpdate) error
 
 // Detector detects Stream updates that are approved and not yet submitted.
 type Detector interface {
@@ -24,7 +24,7 @@ type Detector interface {
 	InsertAggAttestation(attestation xchain.AggAttestation) error
 
 	// RegisterOutput registers an output function that will be called with stream updates.
-	RegisterOutput(ctx context.Context, cb DetectorCallback)
+	RegisterOutput(ctx context.Context, cb detectorCallback)
 }
 
 type Creator interface {

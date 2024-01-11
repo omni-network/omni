@@ -80,6 +80,6 @@ type Submission struct {
 // StreamCursor is a cursor that tracks the progress of a cross-chain stream on destination portal contracts.
 type StreamCursor struct {
 	StreamID                 // Stream ID of the Stream this cursor belongs to
-	Offset            uint64 // Monotonically incremented offset of Msg in the Stream
+	Offset            uint64 // Latest applied Msg offset of the Stream
 	SourceBlockHeight uint64 // Height of the source chain block
 }
