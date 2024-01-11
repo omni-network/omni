@@ -8,27 +8,24 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
 )
 
-var ErrConfigNotPresent = errors.New("config for chain id is not found")
-
 // ChainConfig is the configuration parameters for all the chains
 // that needs to be managed by the provider.
 type ChainConfig struct {
-	name      string // name of the rollup chain
-	id        uint64 // network id of the chain
-	minHeight uint64 // minimum configured height from which blocks should be fetched
-	// TODO(jmozah): use portal address when fetching blocks, commenting for now
-	// portalAddress common.Address // the portal smart contract address
-	rpcURL string // the rpc url to connect to the chain
+	name      string           // name of the rollup chain
+	id        uint64           // network id of the chain
+	minHeight uint64           // minimum configured height from which blocks should be fetched
+	rpcClient ethclient.Client // the rpc client to get the information from the chain
 }
 
 // Provider stores the source chain configuration and the global quit channel.
 type Provider struct {
 	config []*ChainConfig // store config for every chain ID
-	quitC  chan bool      // to stop all operations of the provider
+	quitC  chan struct{}  // to stop all operations of the provider
 }
 
 // New instantiates the provider instance which will be ready to accept
@@ -36,6 +33,7 @@ type Provider struct {
 func New(chains []*ChainConfig) *Provider {
 	return &Provider{
 		config: chains,
+		quitC:  make(chan struct{}),
 	}
 }
 
@@ -72,20 +70,24 @@ func (p *Provider) runStreamer(ctx context.Context,
 	callback xchain.ProviderCallback,
 ) {
 	// instantiate a new streamer for this chain
-	streamer, err := NewStreamer(ctx, config, minHeight, callback, p.quitC)
+	streamer, err := NewStreamer(config, minHeight, callback, p.quitC)
 	if err != nil {
 		log.Error(ctx, "Could not subscribe to chain", err,
-			"chain name", config.name,
-			"chain id", config.id,
-			"rpcURL", config.rpcURL)
+			"chainName", config.name,
+			"chainID", config.id)
 
 		return
 	}
 
+	if minHeight < config.minHeight {
+		minHeight = config.minHeight
+	}
+
 	// start the streaming process
-	streamer.start(ctx)
+	streamer.streamBlocks(ctx, minHeight)
 }
 
+// getConfig provides the configuration of the given chainID.
 func (p *Provider) getConfig(chainID uint64) (*ChainConfig, error) {
 	// check if the config for this chain ID is present
 	for _, config := range p.config {
@@ -94,5 +96,5 @@ func (p *Provider) getConfig(chainID uint64) (*ChainConfig, error) {
 		}
 	}
 
-	return nil, ErrConfigNotPresent
+	return nil, errors.New("config for chain id is not found")
 }

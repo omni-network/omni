@@ -2,127 +2,116 @@ package provider
 
 import (
 	"context"
+	"sync/atomic"
 	"time"
 
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
-
-	"github.com/ethereum/go-ethereum/common"
 )
 
 const (
-	BlockChannelSize = 10 // not of xblocks can be in the channel at any given time
+	BlockFetchInterval = 1 * time.Second // time interval between each block fetch
 )
 
+// Streamer maintains the config and the destination for each chain.
 type Streamer struct {
-	chainConfig     *ChainConfig            // the chain config which also has the subscription information
-	minHeight       uint64                  // the minimum height to start the getting the xchain messages
-	callback        xchain.ProviderCallback // the callback to call on receiving a xblock
-	rpcClient       *RPCClient              // the rpc client which manages the block production
-	lastBlockHash   common.Hash             // the hash of the last block delivered (used for parent hash)
-	lastBlockHeight uint64                  // the height of the last block delivered
-	blockC          chan *xchain.Block      // the channel through which the block is transmitted from rpc to streamer
-	quitC           chan bool               // the quit channel to stop all the streamer operations
+	chainConfig *ChainConfig            // the chain config which also has the subscription information
+	minHeight   uint64                  // the minimum height to start the getting the xchain messages
+	callback    xchain.ProviderCallback // the callback to call on receiving a xblock
+	quitC       chan struct{}           // the quit channel to stop all the streamer operations
 }
 
 // NewStreamer manages the rpc client to collect xblocks and delivers it to the
 // subscriber through callback.
-func NewStreamer(ctx context.Context,
-	config *ChainConfig,
+func NewStreamer(config *ChainConfig,
 	minHeight uint64,
 	callback xchain.ProviderCallback,
-	quitC chan bool,
+	quitC chan struct{},
 ) (*Streamer, error) {
-	blockChannel := make(chan *xchain.Block, BlockChannelSize)
-
-	// create the rpc client and do few validations
-	client, err := NewRPCClient(ctx, config, blockChannel)
-	if err != nil {
-		return nil, err
-	}
-
 	// initialize the streamer structure with the received configuration
 	stream := &Streamer{
 		chainConfig: config,
 		minHeight:   minHeight,
 		callback:    callback,
-		rpcClient:   client,
-		blockC:      blockChannel,
 		quitC:       quitC,
 	}
 
 	return stream, nil
 }
 
-// start triggers the rpc to produce blocks and streamer to consume and deliver blocks.
-func (s *Streamer) start(ctx context.Context) {
-	// TODO(jmozah) wait for the chain to sync
+func (s *Streamer) streamBlocks(ctx context.Context, currentHeight uint64) {
+	// produce blocks on every BlockFetchInterval
+	ticker := time.NewTicker(BlockFetchInterval)
+	defer ticker.Stop()
 
-	go s.rpcClient.produceBlocks(ctx, s.minHeight, s.quitC)
-	s.consumeXBlock(ctx)
-}
-
-// consumeXBlock is a forever loop (until interrupted by context) which collects the xblocks from
-// the rpc client and delivers it to the.
-func (s *Streamer) consumeXBlock(ctx context.Context) {
+	var locker uint32 // variable to take channel backpressure
 	for {
 		select {
 		case <-ctx.Done():
-			log.Info(ctx, "Stopping to consume blocks",
-				"chainName", s.chainConfig.name,
-				"chainID", s.chainConfig.id)
-
-			return
-		case <-s.quitC:
-			close(s.blockC)
-			log.Info(ctx, "Stopping to consume blocks",
-				"chainName", s.chainConfig.name,
-				"chainID", s.chainConfig.id)
-
-			return
-		case block := <-s.blockC:
-			s.deliverBlock(ctx, block)
-			s.lastBlockHeight = block.BlockHeight
-			s.lastBlockHash = block.BlockHash
-			noOfMsgs := len(block.Msgs)
-			noOfReceipts := len(block.Receipts)
-			log.Info(ctx, "Delivered xblock",
+			log.Info(ctx, "Stopping to produce blocks",
 				"chainName", s.chainConfig.name,
 				"chainID", s.chainConfig.id,
-				"blockHeight", block.BlockHeight,
-				"blockHash", block.BlockHash,
-				"xMsgsCount", noOfMsgs,
-				"xReceiptsCount", noOfReceipts)
-		}
-	}
-}
+				"height", currentHeight)
 
-// deliverBlock does the actual delivery of xblocks. if there is any error in
-// delivering the block, it re-tries until it succeeds.
-func (s *Streamer) deliverBlock(ctx context.Context, block *xchain.Block) {
-	err := s.callback(ctx, block)
-	if err != nil {
-		// if there is some error in delivering block
-		// then try delivering after sometime
-		// TODO(jmozah): may be we should quit the subscription after few attempts
-		ticker := time.NewTicker(BlockBatchInterval)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				err = s.callback(ctx, block)
-				if err != nil {
-					log.Error(ctx, "Error while delivering xblock", err,
-						"chainName", s.chainConfig.name,
-						"chainID", s.chainConfig.id,
-						"blockHeight", block.BlockHeight,
-						"blockHash", block.BlockHash)
-				} else {
-					return // block successfully delivered
-				}
+			return
+
+		case <-s.quitC:
+			log.Info(ctx, "Stopping to produce blocks",
+				"chainName", s.chainConfig.name,
+				"chainID", s.chainConfig.id,
+				"height", currentHeight)
+
+			return
+
+		case <-ticker.C:
+			// if the previous xblocks are not consumed yet, then skip this interval
+			if !atomic.CompareAndSwapUint32(&locker, 0, 1) {
+				continue
 			}
+
+			// get the message and receipts from the chain for this block if any
+			xBlock, err := s.chainConfig.rpcClient.GetBlock(ctx, currentHeight)
+			if err != nil {
+				log.Error(ctx, "Could not get cross chain block from rpc client", err,
+					"chainName", s.chainConfig.name,
+					"chainID", s.chainConfig.id,
+					"height", currentHeight)
+
+				continue
+			}
+
+			// ignore of there is no messages in this block
+			if xBlock == nil {
+				log.Info(ctx, "No cross chain block in this height",
+					"chainName", s.chainConfig.name,
+					"chainID", s.chainConfig.id,
+					"height", currentHeight)
+
+				continue
+			}
+
+			// deliver the block
+			callbackErr := s.callback(ctx, xBlock)
+			if callbackErr != nil {
+				log.Error(ctx, "Error while delivering xblock", callbackErr,
+					"chainName", s.chainConfig.name,
+					"chainID", s.chainConfig.id,
+					"blockHeight", currentHeight)
+
+				continue
+			}
+			log.Info(ctx, "Delivered xBlock",
+				"sourceChainID", xBlock.SourceChainID,
+				"blockHeight", xBlock.BlockHeight,
+				"blockHash", xBlock.BlockHash,
+				"noOfMsgs", len(xBlock.Msgs),
+				"noOfReceipts", len(xBlock.Receipts))
+
+			// move to the next block
+			currentHeight++
+
+			// release the lock to accept new xblocks
+			atomic.StoreUint32(&locker, 0)
 		}
 	}
 }
