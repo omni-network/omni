@@ -13,7 +13,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/proto"
 )
 
 var (
@@ -69,10 +68,6 @@ func RequireGoldenBytes(t *testing.T, data []byte, opts ...func(*string)) {
 // This is heavily inspired from https://github.com/sebdah/goldie.
 func RequireGoldenJSON(t *testing.T, data any, opts ...func(*string)) {
 	t.Helper()
-
-	if _, ok := data.(proto.Message); ok {
-		require.Fail(t, "RequireGoldenJSON should not be used with protobuf messages, use RequireGoldenProto")
-	}
 
 	b, err := json.MarshalIndent(data, "", " ")
 	require.NoError(t, err)
