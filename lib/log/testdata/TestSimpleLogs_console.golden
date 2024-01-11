@@ -1,0 +1,6 @@
+00-00-00 00:00:00 INFO info message with=args
+00-00-00 00:00:00 DEBU debug this code for me please number=1
+00-00-00 00:00:00 WARN watch out! err="file already exists"
+00-00-00 00:00:00 ERRO something went wrong float=1.234 err=EOF
+00-00-00 00:00:00 WARN err1 err=first 1=1
+00-00-00 00:00:00 ERRO err2 err="second: first" 2=2 1=1

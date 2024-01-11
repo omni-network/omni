@@ -79,7 +79,7 @@ func StartGenesisGeth(ctx context.Context, dir string, useLogProxy bool) (engine
 		select {
 		case <-ctx.Done():
 			return engine.Client{}, nil, ctx.Err()
-		case <-time.After(time.Millisecond * 500): //nolint:gomnd // 500ms is common wait time
+		case <-time.After(time.Millisecond * 500):
 		}
 
 		_, err := engCl.BlockNumber(ctx)
@@ -87,7 +87,7 @@ func StartGenesisGeth(ctx context.Context, dir string, useLogProxy bool) (engine
 			break
 		}
 
-		log.Warn(ctx, "Geth: waiting for RPC to be available", "err", err)
+		log.Warn(ctx, "Geth: waiting for RPC to be available", err)
 	}
 
 	log.Info(ctx, "Geth: RPC is available", "addr", endpoint)

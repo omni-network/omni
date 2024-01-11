@@ -1,32 +1,29 @@
 // Package log provides a wrapper around the slog package (might change implementation later).
 // It provides an opinionated interface for logging structured data always with context.
-//
-// TODO(corver): Add support for custom loggers in the context.
 package log
 
 import (
 	"context"
-	"log/slog"
-	"os"
-
-	charm "github.com/charmbracelet/log"
 )
-
-var logger = newConsoleLogger() //nolint:gochecknoglobals // Global logger is our approach.
 
 // Debug logs the message and arguments at default level.
 func Debug(ctx context.Context, msg string, args ...any) {
-	logger.DebugContext(ctx, msg, args...)
+	getLogger(ctx).DebugContext(ctx, msg, args...)
 }
 
 // Info logs the message and arguments at info level.
 func Info(ctx context.Context, msg string, args ...any) {
-	logger.InfoContext(ctx, msg, args...)
+	getLogger(ctx).InfoContext(ctx, msg, args...)
 }
 
-// Warn logs the message and arguments at warning level.
-func Warn(ctx context.Context, msg string, args ...any) {
-	logger.WarnContext(ctx, msg, args...)
+// Warn logs the message and error and arguments at warning level.
+// If err is nil, it will not be logged.
+func Warn(ctx context.Context, msg string, err error, args ...any) {
+	if err != nil {
+		args = append(args, "err", err)
+		args = append(args, errAttrs(err)...)
+	}
+	getLogger(ctx).WarnContext(ctx, msg, args...)
 }
 
 // Error logs the message and error and arguments at error level.
@@ -34,25 +31,25 @@ func Warn(ctx context.Context, msg string, args ...any) {
 func Error(ctx context.Context, msg string, err error, args ...any) {
 	if err != nil {
 		args = append(args, "err", err)
+		args = append(args, errAttrs(err)...)
 	}
-	logger.ErrorContext(ctx, msg, args...)
+	getLogger(ctx).ErrorContext(ctx, msg, args...)
 }
 
-// newConsoleLogger returns a new console logger for the following opinionated style:
-// - Colored log levels (if tty supports it)
-// - Timestamps are concise with millisecond precision
-// - Timestamps and structured keys are faint
-// This is aimed at local-dev and debugging. Production should use json or logfmt.
-func newConsoleLogger() *slog.Logger {
-	logger := charm.NewWithOptions(os.Stderr, charm.Options{
-		TimeFormat:      "06-01-02 15:04:05.000",
-		ReportTimestamp: true,
-		Level:           charm.DebugLevel,
-	})
+// errFields is similar to z.Err and returns the structured error fields and
+// stack trace but without the error message. It avoids duplication of the error message
+// since it is used as the main log message in Error above.
+func errAttrs(err error) []any {
+	type structErr interface {
+		Attrs() []any
+	}
 
-	styles := charm.DefaultStyles()
-	styles.Timestamp = styles.Timestamp.Faint(true)
-	logger.SetStyles(styles)
+	// Using cast instead of errors.As since no other wrapping library
+	// is used and this avoids exporting the structured error type.
+	serr, ok := err.(structErr) //nolint:errorlint // See comment aboveg
+	if !ok {
+		return nil
+	}
 
-	return slog.New(logger)
+	return serr.Attrs()
 }
