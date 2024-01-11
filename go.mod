@@ -5,7 +5,7 @@ go 1.21.5
 require (
 	github.com/charmbracelet/log v0.3.1
 	github.com/cometbft/cometbft v0.38.2
-	github.com/ethereum/go-ethereum v1.13.8
+	github.com/ethereum/go-ethereum v1.13.9
 	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/google/gofuzz v1.2.0
 	github.com/leodido/go-conventionalcommits v0.11.0
