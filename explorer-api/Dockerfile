@@ -8,7 +8,7 @@ ARG PORT=8080
 # Set destination for COPY
 WORKDIR /app
 
-COPY ../../go.mod ../../go.sum ./
+COPY go.mod go.sum ./
 
 RUN go mod tidy
 
