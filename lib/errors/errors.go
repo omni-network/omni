@@ -1,26 +1,32 @@
-// Package errors provides a consistent interface for using errors wrapping our chosen errors library.
-// It is a drop-in replacement for the standard library errors package.
-//
-//nolint:wrapcheck // Wrapping not needed in this package.
+// Package errors provides a consistent interface for using errors.
+// It also supports slog structured logging attributes; i.e. structured errors.
+// It is also a drop-in replacement for the standard library errors package.
 package errors
 
 import (
-	stderrors "errors" //nolint:revive // This is the only
+	stderrors "errors" //nolint:revive // This package wraps std errors.
 	"fmt"
 )
 
-// New returns a new error with the given message.
-func New(msg string) error {
-	return stderrors.New(msg)
+// New returns an error that formats as the given text and
+// contains the structured (slog) attributes.
+func New(msg string, attrs ...any) error {
+	return structured{
+		err:   stderrors.New(msg),
+		attrs: attrs,
+	}
 }
 
-// Wrap returns a new error wrapping the given error with the given message.
-func Wrap(err error, msg string) error {
-	return fmt.Errorf("%s: %w", msg, err) //nolint:forbidigo // This is only place where we can use fmt.Errorf.
-}
+// Wrap returns a new error wrapping the provided with additional
+// structured fields.
+func Wrap(err error, msg string, attrs ...any) error {
+	var inner structured
+	if As(err, &inner) {
+		attrs = append(attrs, inner.attrs...) // Append inner attributes
+	}
 
-// As finds the first error in err's tree that matches target, and if one is found, sets
-// target to that error value and returns true. Otherwise, it returns false.
-func As(err error, target any) bool {
-	return stderrors.As(err, target)
+	return structured{
+		err:   fmt.Errorf("%s: %w", msg, err), //nolint:forbidigo // Wrap error message using stdlib.
+		attrs: attrs,
+	}
 }
