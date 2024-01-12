@@ -9,8 +9,8 @@ import (
 type Config struct{}
 
 func Run(ctx context.Context, conf Config) error {
-	log.Info(ctx, "starting explorer-api")
-	log.Info(ctx, "config: %v", conf)
+	log.Info(ctx, "Starting ExplorerApi")
+	log.Info(ctx, "Config: %v", conf)
 
 	return nil
 }

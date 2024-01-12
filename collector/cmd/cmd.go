@@ -1,8 +1,8 @@
-// Package cmd provides the cli for running the explorer-api.
+// Package cmd provides the cli for running the explorerapi.
 package cmd
 
 import (
-	"github.com/omni-network/omni/explorer-api/app"
+	"github.com/omni-network/omni/explorerapi/app"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/log"
 
@@ -19,7 +19,7 @@ func New() *cobra.Command {
 	)
 }
 
-// newRunCmd returns a new cobra command that runs the explorer-api.
+// newRunCmd returns a new cobra command that runs the explorerapi.
 func newRunCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "run",
@@ -31,7 +31,7 @@ func newRunCmd() *cobra.Command {
 
 			err := app.Run(ctx, conf)
 			if err != nil {
-				log.Error(ctx, "failed to start Collector", err)
+				log.Error(ctx, "Failed to start Collector", err)
 				<-ctx.Done()
 
 				return err
@@ -39,7 +39,7 @@ func newRunCmd() *cobra.Command {
 
 			log.Info(ctx, "Press Ctrl+C to stop")
 			<-ctx.Done()
-			log.Info(ctx, "collector stopped")
+			log.Info(ctx, "Collector stopped")
 
 			return nil
 		},

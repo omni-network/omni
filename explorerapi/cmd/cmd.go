@@ -1,4 +1,4 @@
-// Package cmd provides the cli for running the explorer-api.
+// Package cmd provides the cli for running the explorerapi.
 package cmd
 
 import (
@@ -12,7 +12,7 @@ import (
 // New returns a new root cobra command that handles our command line tool.
 func New() *cobra.Command {
 	return libcmd.NewRootCmd(
-		"explorer-api",
+		"explorerapi",
 		"Explorer API is a service that serves as the intermediary between our Explorer and our "+
 			"Omni Blocks DB while generating appropriate response objects and coalesncing data for the explorer "+
 			"to show/visualize",
@@ -20,11 +20,11 @@ func New() *cobra.Command {
 	)
 }
 
-// newRunCmd returns a new cobra command that runs the explorer-api.
+// newRunCmd returns a new cobra command that runs the explorerapi.
 func newRunCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "run",
-		Short: "Runs the explorer-api",
+		Short: "Runs the explorerapi",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			log.Info(ctx, "ExplorerAPI started")
@@ -32,7 +32,7 @@ func newRunCmd() *cobra.Command {
 
 			err := app.Run(ctx, conf)
 			if err != nil {
-				log.Error(ctx, "failed to start Explorer API", err)
+				log.Error(ctx, "Failed to start Explorer API", err)
 				<-ctx.Done()
 
 				return err
@@ -40,7 +40,7 @@ func newRunCmd() *cobra.Command {
 
 			log.Info(ctx, "Press Ctrl+C to stop")
 			<-ctx.Done()
-			log.Info(ctx, "explorer-api stopped")
+			log.Info(ctx, "ExplorerApi stopped")
 
 			return nil
 		},
