@@ -22,16 +22,19 @@ type detectorService struct {
 	callback         callBacker
 }
 
-func NewDetector(submittedCursors map[xchain.StreamID]xchain.StreamCursor) Detector {
+func NewDetector(submittedCursors []xchain.StreamCursor) Detector {
 	return &detectorService{
-		submittedCursors: submittedCursors,
+		submittedCursors: cursorsToMap(submittedCursors),
+		blocks:           make(map[xchain.BlockHeader]xchain.Block),
+		aggAttestation:   make(map[xchain.BlockHeader]xchain.AggAttestation),
 	}
 }
 
 func (d *detectorService) InsertBlock(block xchain.Block) {
 	d.mu.Lock()
-	defer d.mu.Unlock()
 	d.blocks[block.BlockHeader] = block
+	d.mu.Unlock()
+	d.process()
 }
 
 func (d *detectorService) InsertAggAttestation(attestation xchain.AggAttestation) {
@@ -65,8 +68,8 @@ func (d *detectorService) process() {
 		// todo(lazar): check if xmsgs should be sorted by offset in the block or do they come sorted?
 
 		for _, msg := range block.Msgs {
-			cursor, found := d.submittedCursors[msg.StreamID]
-			if !found {
+			cursor, ok := d.submittedCursors[msg.StreamID]
+			if !ok {
 				continue
 			}
 			if cursor.SourceBlockHeight > block.BlockHeader.BlockHeight {
@@ -74,8 +77,8 @@ func (d *detectorService) process() {
 			}
 			// todo(lazar): handle offset
 
-			stUp, f := streamUpdates[msg.StreamID]
-			if !f {
+			stUp, ok := streamUpdates[msg.StreamID]
+			if !ok {
 				streamUpdates[msg.StreamID] = streamUpdate{
 					StreamID:       msg.StreamID,
 					AggAttestation: attestation,
@@ -93,6 +96,14 @@ func streamUpdateToSlice(streamUpdates map[xchain.StreamID]streamUpdate) []strea
 	res := make([]streamUpdate, 0, len(streamUpdates))
 	for _, v := range streamUpdates {
 		res = append(res, v)
+	}
+	return res
+}
+
+func cursorsToMap(cursors []xchain.StreamCursor) map[xchain.StreamID]xchain.StreamCursor {
+	res := make(map[xchain.StreamID]xchain.StreamCursor)
+	for _, cursor := range cursors {
+		res[cursor.StreamID] = cursor
 	}
 	return res
 }
