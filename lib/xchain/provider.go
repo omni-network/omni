@@ -16,5 +16,5 @@ type Provider interface {
 		chainID uint64,
 		fromHeight uint64,
 		callback ProviderCallback,
-	)
+	) error
 }
