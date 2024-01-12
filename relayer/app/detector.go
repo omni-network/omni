@@ -36,9 +36,9 @@ func (d *detectorService) InsertBlock(block xchain.Block) {
 
 func (d *detectorService) InsertAggAttestation(attestation xchain.AggAttestation) {
 	d.mu.Lock()
-	defer d.mu.Unlock()
 	d.aggAttestation[attestation.BlockHeader] = attestation
-	d.Process()
+	d.mu.Unlock()
+	d.process()
 }
 
 func (d *detectorService) RegisterOutput(ctx context.Context, cb DetectorCallback) {
@@ -50,7 +50,9 @@ func (d *detectorService) RegisterOutput(ctx context.Context, cb DetectorCallbac
 	}
 }
 
-func (d *detectorService) Process() {
+func (d *detectorService) process() {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 	// iterate over attestations check if any exist in block map
 	var streamUpdates map[xchain.StreamID]streamUpdate
 	for _, attestation := range d.aggAttestation {
