@@ -24,7 +24,7 @@ type Detector interface {
 	InsertAggAttestation(ctx context.Context, attestation xchain.AggAttestation)
 
 	// RegisterOutput registers an output function that will be called with stream updates.
-	RegisterOutput(ctx context.Context, cb DetectorCallback)
+	RegisterOutput(cb DetectorCallback)
 }
 
 type Creator interface {
@@ -37,7 +37,7 @@ type Sender interface {
 	SendTransaction(ctx context.Context, submission xchain.Submission) error
 }
 
-// cursorFetcher fetches all supported portal cursors.
-type cursorFetcher interface {
-	Cursors(ctx context.Context) ([]xchain.StreamCursor, error)
-}
+//// cursorFetcher fetches all supported portal cursors.
+//type cursorFetcher interface {
+//	Cursors(ctx context.Context) ([]xchain.StreamCursor, error)
+//}

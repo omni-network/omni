@@ -39,7 +39,7 @@ func (d *detectorService) InsertAggAttestation(ctx context.Context, attestation 
 	d.process(ctx)
 }
 
-func (d *detectorService) RegisterOutput(ctx context.Context, cb DetectorCallback) {
+func (d *detectorService) RegisterOutput(cb DetectorCallback) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.callback = cb
@@ -89,6 +89,7 @@ func streamUpdateToSlice(streamUpdates map[xchain.StreamID]streamUpdate) []strea
 	for _, v := range streamUpdates {
 		res = append(res, v)
 	}
+
 	return res
 }
 
@@ -97,5 +98,6 @@ func cursorsToMap(cursors []xchain.StreamCursor) map[xchain.StreamID]xchain.Stre
 	for _, cursor := range cursors {
 		res[cursor.StreamID] = cursor
 	}
+
 	return res
 }
