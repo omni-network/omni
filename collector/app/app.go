@@ -11,11 +11,11 @@ type Config struct {
 }
 
 func Run(ctx context.Context, conf Config) (err error) {
-	log.Info(ctx, "starting explorer-api")
-
-	fmt.Printf("%v", conf)
+	log.Info(ctx, "starting collector")
 
 	fmt.Println("hello world")
+
+	fmt.Printf("%v", conf)
 
 	return nil
 }

@@ -10,6 +10,20 @@ builds:
     goos: [linux, darwin]
     goarch: [amd64, arm64]
 
+  - id: explorer-api
+    main: ./explorer-api
+    binary: explorer-api
+    env: [ CGO_ENABLED=0 ]
+    goos: [ linux, darwin ]
+    goarch: [ amd64, arm64 ]
+
+  - id: collector
+    main: ./collector
+    binary: collector
+    env: [ CGO_ENABLED=0 ]
+    goos: [ linux, darwin ]
+    goarch: [ amd64, arm64 ]
+
 dockers:
   - ids: [halo]
     dockerfile: ./halo/Dockerfile
