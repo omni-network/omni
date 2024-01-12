@@ -17,9 +17,9 @@ builds:
     goos: [ linux, darwin ]
     goarch: [ amd64, arm64 ]
 
-  - id: collector
-    main: ./collector
-    binary: collector
+  - id: indexer
+    main: ./indexer
+    binary: indexer
     env: [ CGO_ENABLED=0 ]
     goos: [ linux, darwin ]
     goarch: [ amd64, arm64 ]
@@ -33,10 +33,10 @@ dockers:
     dockerfile: ./explorerapi/Dockerfile
     image_templates:
       - omniops/explorerapi:latest
-  - ids: [ collector ]
-    dockerfile: ./collector/Dockerfile
+  - ids: [ indexer ]
+    dockerfile: ./indexer/Dockerfile
     image_templates:
-      - omniops/collector:latest
+      - omniops/indexer:latest
 
 archives:
   - format: tar.gz

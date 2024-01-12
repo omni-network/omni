@@ -2,7 +2,7 @@
 package cmd
 
 import (
-	"github.com/omni-network/omni/collector/app"
+	"github.com/omni-network/omni/indexer/app"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/log"
 
