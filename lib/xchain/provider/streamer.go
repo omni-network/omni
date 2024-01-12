@@ -70,7 +70,7 @@ func (s *Streamer) streamBlocks(ctx context.Context, currentHeight uint64) {
 			}
 
 			// get the message and receipts from the chain for this block if any
-			xBlock, err := s.chainConfig.rpcClient.GetBlock(ctx, currentHeight)
+			xBlocks, err := s.chainConfig.rpcClient.GetBlocks(ctx, currentHeight)
 			if err != nil {
 				log.Error(ctx, "Could not get cross chain block from rpc client", err,
 					"chainName", s.chainConfig.name,
@@ -81,7 +81,7 @@ func (s *Streamer) streamBlocks(ctx context.Context, currentHeight uint64) {
 			}
 
 			// ignore of there is no messages in this block
-			if xBlock == nil {
+			if len(xBlocks) == 0 {
 				log.Info(ctx, "No cross chain block in this height",
 					"chainName", s.chainConfig.name,
 					"chainID", s.chainConfig.id,
@@ -90,22 +90,25 @@ func (s *Streamer) streamBlocks(ctx context.Context, currentHeight uint64) {
 				continue
 			}
 
-			// deliver the block
-			callbackErr := s.callback(ctx, xBlock)
-			if callbackErr != nil {
-				log.Error(ctx, "Error while delivering xblock", callbackErr,
-					"chainName", s.chainConfig.name,
-					"chainID", s.chainConfig.id,
-					"blockHeight", currentHeight)
+			// deliver the blocks
+			// TODO(jmozah): parallelize delivery later
+			for _, xBlock := range xBlocks {
+				callbackErr := s.callback(ctx, &xBlock) // #nosec G601 : this goes away in go 1.22
+				if callbackErr != nil {
+					log.Error(ctx, "Error while delivering xBlock", callbackErr,
+						"chainName", s.chainConfig.name,
+						"chainID", s.chainConfig.id,
+						"blockHeight", currentHeight)
 
-				continue
+					continue
+				}
+				log.Info(ctx, "Delivered xBlock",
+					"sourceChainID", xBlock.SourceChainID,
+					"blockHeight", xBlock.BlockHeight,
+					"blockHash", xBlock.BlockHash,
+					"noOfMsgs", len(xBlock.Msgs),
+					"noOfReceipts", len(xBlock.Receipts))
 			}
-			log.Info(ctx, "Delivered xBlock",
-				"sourceChainID", xBlock.SourceChainID,
-				"blockHeight", xBlock.BlockHeight,
-				"blockHash", xBlock.BlockHash,
-				"noOfMsgs", len(xBlock.Msgs),
-				"noOfReceipts", len(xBlock.Receipts))
 
 			// move to the next block
 			currentHeight++
