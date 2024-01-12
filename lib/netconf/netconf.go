@@ -20,13 +20,12 @@ type Network struct {
 // Chain defines the configuration of an execution chain that supports
 // the Omni cross chain protocol. This is most supported Rollup EVM, but
 // also the Omni EVM.
-// TODO(corver): We need a proper types for addresses or just strings.
 type Chain struct {
-	ID            uint64   `json:"id"`             // Chain ID asa per https://chainlist.org
-	Name          string   `json:"name"`           // Chain name as per https://chainlist.org
-	RPCURL        string   `json:"rpcurl"`         // RPC URL of the chain
-	PortalAddress [20]byte `json:"portal_address"` // Address of the omni portal contract on the chain
-	DeployHeight  uint64   `json:"deploy_height"`  // Height that the portal contracts were deployed
+	ID            uint64 `json:"id"`             // Chain ID asa per https://chainlist.org
+	Name          string `json:"name"`           // Chain name as per https://chainlist.org
+	RPCURL        string `json:"rpcurl"`         // RPC URL of the chain
+	PortalAddress string `json:"portal_address"` // Address of the omni portal contract on the chain
+	DeployHeight  uint64 `json:"deploy_height"`  // Height that the portal contracts were deployed
 }
 
 // Load loads the network configuration from the given path.
