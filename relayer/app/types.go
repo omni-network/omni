@@ -18,10 +18,10 @@ type DetectorCallback func(context.Context, []streamUpdate)
 // Detector detects Stream updates that are approved and not yet submitted.
 type Detector interface {
 	// InsertBlock inserts a new block into the detector.
-	InsertBlock(block xchain.Block)
+	InsertBlock(ctx context.Context, block xchain.Block)
 
 	// InsertAggAttestation inserts an attestation into the detector.
-	InsertAggAttestation(attestation xchain.AggAttestation)
+	InsertAggAttestation(ctx context.Context, attestation xchain.AggAttestation)
 
 	// RegisterOutput registers an output function that will be called with stream updates.
 	RegisterOutput(ctx context.Context, cb DetectorCallback)

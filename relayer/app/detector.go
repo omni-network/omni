@@ -9,17 +9,12 @@ import (
 
 var _ Detector = (*detectorService)(nil)
 
-type callBacker struct {
-	callback DetectorCallback
-	ctx      context.Context
-}
-
 type detectorService struct {
 	mu               sync.Mutex
 	submittedCursors map[xchain.StreamID]xchain.StreamCursor
 	blocks           map[xchain.BlockHeader]xchain.Block
 	aggAttestation   map[xchain.BlockHeader]xchain.AggAttestation
-	callback         callBacker
+	callback         DetectorCallback
 }
 
 func NewDetector(submittedCursors []xchain.StreamCursor) Detector {
@@ -30,30 +25,27 @@ func NewDetector(submittedCursors []xchain.StreamCursor) Detector {
 	}
 }
 
-func (d *detectorService) InsertBlock(block xchain.Block) {
+func (d *detectorService) InsertBlock(ctx context.Context, block xchain.Block) {
 	d.mu.Lock()
 	d.blocks[block.BlockHeader] = block
 	d.mu.Unlock()
-	d.process()
+	d.process(ctx)
 }
 
-func (d *detectorService) InsertAggAttestation(attestation xchain.AggAttestation) {
+func (d *detectorService) InsertAggAttestation(ctx context.Context, attestation xchain.AggAttestation) {
 	d.mu.Lock()
 	d.aggAttestation[attestation.BlockHeader] = attestation
 	d.mu.Unlock()
-	d.process()
+	d.process(ctx)
 }
 
 func (d *detectorService) RegisterOutput(ctx context.Context, cb DetectorCallback) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	d.callback = callBacker{
-		callback: cb,
-		ctx:      ctx,
-	}
+	d.callback = cb
 }
 
-func (d *detectorService) process() {
+func (d *detectorService) process(ctx context.Context) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	// iterate over attestations check if any exist in block map
@@ -88,7 +80,7 @@ func (d *detectorService) process() {
 		}
 	}
 	stUpdates := streamUpdateToSlice(streamUpdates)
-	d.callback.callback(d.callback.ctx, stUpdates)
+	d.callback(ctx, stUpdates)
 	// todo(Lazar): append new streamcursor to submittedCursors
 }
 
