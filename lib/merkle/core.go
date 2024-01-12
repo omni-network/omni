@@ -12,6 +12,15 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
+// StdLeafHash returns the standard leaf hash of the given data.
+// The data is hashed twice with keccak256 to prevent pre-image attacks.
+func StdLeafHash(data []byte) [32]byte {
+	h1 := hash(data)
+	h2 := hash(h1[:])
+
+	return h2
+}
+
 // MakeTree returns a merkle tree given the leaves.
 func MakeTree(leaves [][32]byte) ([][32]byte, error) {
 	if len(leaves) == 0 {
