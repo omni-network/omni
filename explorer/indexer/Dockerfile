@@ -1,3 +1,3 @@
 FROM scratch
 ENTRYPOINT ["/indexer"]
-COPY indexer /
+COPY explorer/indexer /

@@ -10,16 +10,16 @@ builds:
     goos: [linux, darwin]
     goarch: [amd64, arm64]
 
-  - id: explorerapi
-    main: ./explorerapi
-    binary: explorerapi
+  - id: explorer-api
+    main: ./explorer/api
+    binary: /explorer/api
     env: [ CGO_ENABLED=0 ]
     goos: [ linux, darwin ]
     goarch: [ amd64, arm64 ]
 
   - id: indexer
-    main: ./indexer
-    binary: indexer
+    main: ./explorer/indexer
+    binary: explorer/indexer
     env: [ CGO_ENABLED=0 ]
     goos: [ linux, darwin ]
     goarch: [ amd64, arm64 ]
@@ -29,14 +29,14 @@ dockers:
     dockerfile: ./halo/Dockerfile
     image_templates:
       - omniops/halo:latest
-  - ids: [explorerapi]
-    dockerfile: ./explorerapi/Dockerfile
+  - ids: [explorer-api]
+    dockerfile: ./explorer/api/Dockerfile
     image_templates:
-      - omniops/explorerapi:latest
-  - ids: [ indexer ]
-    dockerfile: ./indexer/Dockerfile
+      - omniops/explorer/api:latest
+  - ids: [indexer]
+    dockerfile: ./explorer/indexer/Dockerfile
     image_templates:
-      - omniops/indexer:latest
+      - omniops/explorer/indexer:latest
 
 archives:
   - format: tar.gz

@@ -1,8 +1,8 @@
-// Package cmd provides the cli for running the explorerapi.
+// Package cmd provides the cli for running the indexer.
 package cmd
 
 import (
-	"github.com/omni-network/omni/indexer/app"
+	"github.com/omni-network/omni/explorer/api/app"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/log"
 
@@ -12,27 +12,26 @@ import (
 // New returns a new root cobra command that handles our command line tool.
 func New() *cobra.Command {
 	return libcmd.NewRootCmd(
-		"explorerapi",
-		"Explorer API is a service that serves as the intermediary between our Explorer and our "+
-			"Omni Blocks DB while generating appropriate response objects and coalesncing data for the explorer "+
-			"to show/visualize",
+		"indexer",
+		"Indexer is a service that will initialize our streams to listen to our portals and index "+
+			"data and put it in our Omni Blocks DB",
 		newRunCmd(),
 	)
 }
 
-// newRunCmd returns a new cobra command that runs the explorerapi.
+// newRunCmd returns a new cobra command that runs the Indexer.
 func newRunCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "run",
-		Short: "Runs the explorerapi",
+		Short: "Runs the indexer",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			log.Info(ctx, "ExplorerAPI started")
+			log.Info(ctx, "Indexer started")
 			conf := app.Config{}
 
 			err := app.Run(ctx, conf)
 			if err != nil {
-				log.Error(ctx, "Failed to start Explorer API", err)
+				log.Error(ctx, "Failed to start Indexer", err)
 				<-ctx.Done()
 
 				return err
@@ -40,7 +39,7 @@ func newRunCmd() *cobra.Command {
 
 			log.Info(ctx, "Press Ctrl+C to stop")
 			<-ctx.Done()
-			log.Info(ctx, "ExplorerApi stopped")
+			log.Info(ctx, "Indexer stopped")
 
 			return nil
 		},

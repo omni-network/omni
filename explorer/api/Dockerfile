@@ -1,4 +1,4 @@
 FROM scratch
 ENTRYPOINT ["/explorerapi"]
-COPY explorerapi /
+COPY explorer/api /
 EXPOSE 8080
