@@ -29,6 +29,14 @@ dockers:
     dockerfile: ./halo/Dockerfile
     image_templates:
       - omniops/halo:latest
+  - ids: [explorer-api]
+    dockerfile: ./explorer-api/Dockerfile
+    image_templates:
+      - omniops/explorer-api:latest
+  - ids: [ collector ]
+    dockerfile: ./collector/Dockerfile
+    image_templates:
+      - omniops/collector:latest
 
 archives:
   - format: tar.gz
