@@ -2,20 +2,15 @@ package app
 
 import (
 	"context"
-	"fmt"
 
-	log "github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/log"
 )
 
-type Config struct {
-}
+type Config struct{}
 
-func Run(ctx context.Context, conf Config) (err error) {
+func Run(ctx context.Context, conf Config) error {
 	log.Info(ctx, "starting explorer-api")
-
-	fmt.Printf("%v", conf)
-
-	fmt.Println("hello world")
+	log.Info(ctx, "config: %v", conf)
 
 	return nil
 }

@@ -2,7 +2,7 @@
 package cmd
 
 import (
-	"github.com/omni-network/omni/explorer-api/app"
+	"github.com/omni-network/omni/collector/app"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/log"
 
@@ -13,7 +13,9 @@ import (
 func New() *cobra.Command {
 	return libcmd.NewRootCmd(
 		"explorer-api",
-		"Explorer API is a service that serves as the intermediary between our Explorer and our Omni Blocks DB while generating appropriate response objects and coalesncing data for the explorer to show/visualize",
+		"Explorer API is a service that serves as the intermediary between our Explorer and our "+
+			"Omni Blocks DB while generating appropriate response objects and coalesncing data for the explorer "+
+			"to show/visualize",
 		newRunCmd(),
 	)
 }
@@ -32,6 +34,7 @@ func newRunCmd() *cobra.Command {
 			if err != nil {
 				log.Error(ctx, "failed to start Explorer API", err)
 				<-ctx.Done()
+
 				return err
 			}
 

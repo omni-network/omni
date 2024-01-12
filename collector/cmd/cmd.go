@@ -13,7 +13,8 @@ import (
 func New() *cobra.Command {
 	return libcmd.NewRootCmd(
 		"collector",
-		"Collector is a service that will initialize our streams to listen to our portals and index data and put it in our Omni Blocks DB",
+		"Collector is a service that will initialize our streams to listen to our portals and index "+
+			"data and put it in our Omni Blocks DB",
 		newRunCmd(),
 	)
 }
@@ -32,6 +33,7 @@ func newRunCmd() *cobra.Command {
 			if err != nil {
 				log.Error(ctx, "failed to start Collector", err)
 				<-ctx.Done()
+
 				return err
 			}
 
