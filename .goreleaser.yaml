@@ -10,11 +10,33 @@ builds:
     goos: [linux, darwin]
     goarch: [amd64, arm64]
 
+  - id: explorer-api
+    main: ./explorer/api
+    binary: /explorer/api
+    env: [ CGO_ENABLED=0 ]
+    goos: [ linux, darwin ]
+    goarch: [ amd64, arm64 ]
+
+  - id: indexer
+    main: ./explorer/indexer
+    binary: explorer/indexer
+    env: [ CGO_ENABLED=0 ]
+    goos: [ linux, darwin ]
+    goarch: [ amd64, arm64 ]
+
 dockers:
   - ids: [halo]
     dockerfile: ./halo/Dockerfile
     image_templates:
       - omniops/halo:latest
+  - ids: [explorer-api]
+    dockerfile: ./explorer/api/Dockerfile
+    image_templates:
+      - omniops/explorer/api:latest
+  - ids: [indexer]
+    dockerfile: ./explorer/indexer/Dockerfile
+    image_templates:
+      - omniops/explorer/indexer:latest
 
 archives:
   - format: tar.gz
