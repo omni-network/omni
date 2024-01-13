@@ -55,7 +55,10 @@ func TestSmoke(t *testing.T) {
 		fuzzer:     fuzz.New().NilChance(0),
 	}
 
-	core := consensus.NewCore(ethCl, attSvc)
+	state, err := consensus.LoadOrGenState(t.TempDir(), 1)
+	require.NoError(t, err)
+
+	core := consensus.NewCore(ethCl, attSvc, state)
 
 	conf := rpctest.GetConfig(true)
 	writeFiles(t, conf)

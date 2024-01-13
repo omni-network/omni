@@ -16,36 +16,38 @@ import (
 const (
 	// version of the Halo application wrt cometBFT.
 	appVersion = 0
-
-	// startHeight of v0 in-memory chain is always 0.
-	startHeight = 0
 )
 
 // Info returns information about the application state.
 // V0 in-memory chain always starts from scratch, at height 0.
-func (*Core) Info(_ context.Context, req *abci.RequestInfo) (*abci.ResponseInfo, error) {
+func (c *Core) Info(_ context.Context, req *abci.RequestInfo) (*abci.ResponseInfo, error) {
 	return &abci.ResponseInfo{
 		Data:             "", // CometBFT does not use this field.
 		Version:          req.AbciVersion,
 		AppVersion:       appVersion,
-		LastBlockHeight:  startHeight,
-		LastBlockAppHash: nil, // AppHash overwritten by InitChain if LastBlockHeight==0.
+		LastBlockHeight:  int64(c.state.Height()),
+		LastBlockAppHash: c.state.Hash(), // AppHash overwritten by InitChain if LastBlockHeight==0.
 	}, nil
 }
 
 // InitChain initializes the blockchain.
 func (c *Core) InitChain(_ context.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
-	if err := c.state.InitChainState(req); err != nil {
-		return nil, errors.Wrap(err, "failed to set validators")
+	if req.InitialHeight > 1 {
+		return nil, errors.New("initial height must not 1")
 	}
 
-	appHash, err := c.state.AppHash()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to compute app hash")
+	if len(req.AppStateBytes) > 0 {
+		if err := c.state.Import(0, req.AppStateBytes); err != nil {
+			return nil, errors.Wrap(err, "import state")
+		}
+	}
+
+	if err := c.state.InitValidators(req.Validators); err != nil {
+		return nil, errors.Wrap(err, "set validators")
 	}
 
 	return &abci.ResponseInitChain{
-		AppHash: appHash,
+		AppHash: c.state.Hash(),
 		// Return nils below to indicate no-update.
 		ConsensusParams: nil,
 		Validators:      nil,
@@ -197,7 +199,7 @@ func (c *Core) FinalizeBlock(ctx context.Context, req *abci.RequestFinalizeBlock
 	localHeaders := headersByPubKey(cpayload.Aggregates, c.attestSvc.LocalPubKey())
 	c.attestSvc.SetCommitted(localHeaders)
 
-	appHash, err := c.state.AppHash()
+	appHash, err := c.state.Finalize()
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +211,19 @@ func (c *Core) FinalizeBlock(ctx context.Context, req *abci.RequestFinalizeBlock
 		}},
 		ValidatorUpdates:      nil, // Validator updates not supported yet.
 		ConsensusParamUpdates: nil, // ConsensusParam updates not supported yet.
-		AppHash:               appHash,
+		AppHash:               appHash[:],
+	}, nil
+}
+
+// Commit commits a block of transactions.
+func (c *Core) Commit(context.Context, *abci.RequestCommit) (*abci.ResponseCommit, error) {
+	height, err := c.state.Commit()
+	if err != nil {
+		return nil, errors.Wrap(err, "commit state")
+	}
+
+	return &abci.ResponseCommit{
+		RetainHeight: int64(height),
 	}, nil
 }
 
@@ -218,11 +232,6 @@ func (c *Core) FinalizeBlock(ctx context.Context, req *abci.RequestFinalizeBlock
 // Flush flushes the write buffer.
 func (*Core) Flush(context.Context, *abci.RequestFlush) (*abci.ResponseFlush, error) {
 	return nil, nil //nolint:nilnil // In-memory state, nothing to flush.
-}
-
-// Commit commits a block of transactions.
-func (*Core) Commit(context.Context, *abci.RequestCommit) (*abci.ResponseCommit, error) {
-	return &abci.ResponseCommit{}, nil // In-memory state, nothing to commit.
 }
 
 // Query queries the application state.
