@@ -30,11 +30,18 @@ type EthClient struct {
 
 // NewEthClient is the client implementation of the json rpc interface to the rollup chain.
 func NewEthClient(
+	ctx context.Context,
 	chainID uint64,
 	rpcURL string,
 	portalAddress common.Address,
 ) (*EthClient, error) {
 	// TODO(jmozah): validate chainID , portalAddress etc
+
+	// connect to rpc if not connected
+	eClient, err := connect(ctx, chainID, rpcURL)
+	if err != nil {
+		return nil, err
+	}
 
 	// construct the omni portal contract ABI from the bindings
 	contractAbi, err := abi.JSON(strings.NewReader(bindings.OmniPortalMetaData.ABI))
@@ -51,45 +58,15 @@ func NewEthClient(
 		portalAddress: portalAddress,
 		contractABI:   contractAbi,
 		xMsgSigHash:   crypto.Keccak256Hash(xMsgSig),
+		rpcClient:     eClient,
 	}, nil
 }
 
-// GetBlocks fetches the blocks that are present in a given block height.
-func (e *EthClient) GetBlocks(ctx context.Context, height uint64) ([]xchain.Block, error) {
-	// connect to rpc if not connected
-	err := e.connect(ctx)
-	if err != nil {
-		return nil, err
-	}
+// GetBlock fetches the cross chain block, if present in a given rollup block height.
+func (e *EthClient) GetBlock(ctx context.Context, height uint64) (xchain.Block, bool, error) {
+	var xBlock xchain.Block
 
-	// get the xBlock
-	xBlocks, err := e.constructXBlocks(ctx, height)
-	if err != nil {
-		return nil, err
-	}
-
-	return xBlocks, nil
-}
-
-// connect initiates a connection if it is not already dialed in.
-func (e *EthClient) connect(ctx context.Context) error {
-	if e.rpcClient != nil {
-		return nil
-	}
-	eClient, err := ethclient.Dial(e.rpcURL)
-	if err != nil {
-		return errors.Wrap(err, "could not connect to chain")
-	}
-	e.rpcClient = eClient
-	log.Info(ctx, "Connected to chain. ",
-		"chainId", e.chainID,
-		"rpcURL", e.rpcURL)
-
-	return nil
-}
-
-// constructXBlocks assembles the blocks by parsing the XMsg event for a given height.
-func (e *EthClient) constructXBlocks(ctx context.Context, height uint64) ([]xchain.Block, error) {
+	// TODO(jmozah): check if block is finalized else return
 	// construct the query to fetch all the event logs in the given height
 	query := ethereum.FilterQuery{
 		FromBlock: big.NewInt(int64(height)),
@@ -102,65 +79,82 @@ func (e *EthClient) constructXBlocks(ctx context.Context, height uint64) ([]xcha
 	// call the rpc to get the logs from the chain
 	logs, err := e.rpcClient.FilterLogs(ctx, query)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not filter logs")
+		return xBlock, false, errors.Wrap(err, "could not filter logs")
 	}
 
 	// select the logs based on the required event signature
-	selectedLogs := make(map[uint64][]types.Log)
+	selectedLogs := make([]types.Log, 0)
 	for _, vLog := range logs {
 		switch vLog.Topics[0].Hex() {
 		case e.xMsgSigHash.Hex():
-			destChainID := vLog.Topics[1].Big().Uint64()
-			if blockLogs, ok := selectedLogs[destChainID]; ok {
-				blockLogs = append(blockLogs, vLog)
-				selectedLogs[destChainID] = blockLogs
-			} else {
-				selectedLogs[destChainID] = []types.Log{vLog}
-			}
+			selectedLogs = append(selectedLogs, vLog)
 		default:
 		}
 	}
 
-	// construct the blocks based on the destination chain
-	// i.e. one block for each destination chain
-	blocks := make([]xchain.Block, 0)
-	for destID, vLogs := range selectedLogs {
-		// create the BlockHeader
-		header := xchain.BlockHeader{
-			SourceChainID: e.chainID,
-			BlockHeight:   vLogs[0].BlockNumber,
-			BlockHash:     vLogs[0].BlockHash,
+	// construct an xblock only if some cross chain events are found
+	if len(selectedLogs) > 0 {
+		xBlock = e.constructXBlocks(selectedLogs)
+	}
+
+	return xBlock, true, nil
+}
+
+// constructXBlocks assembles the xBlock using the XMsgs and XReceipts found in the block height.
+func (e *EthClient) constructXBlocks(selectedLogs []types.Log) xchain.Block {
+	var header xchain.BlockHeader
+	messages := make([]xchain.Msg, 0)
+	var block xchain.Block
+
+	// construct the block based on cross chain message or receipts that are found
+	for _, vLog := range selectedLogs {
+		// create the BlockHeader once
+		if header.SourceChainID != e.chainID {
+			header = xchain.BlockHeader{
+				SourceChainID: e.chainID,
+				BlockHeight:   vLog.BlockNumber,
+				BlockHash:     vLog.BlockHash,
+			}
 		}
 
 		// construct the messages that go in this block
-		var msgs []xchain.Msg
-		for _, msg := range vLogs {
-			streamID := xchain.StreamID{
-				SourceChainID: e.chainID,
-				DestChainID:   destID,
-			}
-			msgID := xchain.MsgID{
-				StreamID:     streamID,
-				StreamOffset: msg.Topics[2].Big().Uint64(),
-			}
-			m := xchain.Msg{
-				MsgID:           msgID,
-				SourceMsgSender: [20]byte(msg.Topics[2].Bytes()),
-				DestAddress:     [20]byte(msg.Topics[3].Bytes()),
-				Data:            msg.Topics[4].Bytes(),
-				DestGasLimit:    msg.Topics[5].Big().Uint64(),
-				TxHash:          msg.TxHash,
-			}
-			msgs = append(msgs, m)
+		streamID := xchain.StreamID{
+			SourceChainID: e.chainID,
+			DestChainID:   vLog.Topics[1].Big().Uint64(),
 		}
-
-		// assemble the entire block
-		block := xchain.Block{
-			BlockHeader: header,
-			Msgs:        msgs,
+		msgID := xchain.MsgID{
+			StreamID:     streamID,
+			StreamOffset: vLog.Topics[2].Big().Uint64(),
 		}
-		blocks = append(blocks, block)
+		msg := xchain.Msg{
+			MsgID:           msgID,
+			SourceMsgSender: [20]byte(vLog.Topics[2].Bytes()),
+			DestAddress:     [20]byte(vLog.Topics[3].Bytes()),
+			Data:            vLog.Topics[4].Bytes(),
+			DestGasLimit:    vLog.Topics[5].Big().Uint64(),
+			TxHash:          vLog.TxHash,
+		}
+		messages = append(messages, msg)
 	}
 
-	return blocks, nil
+	// assemble the entire block
+	block = xchain.Block{
+		BlockHeader: header,
+		Msgs:        messages,
+	}
+
+	return block
+}
+
+// connect initiates a connection if it is not already dialed in.
+func connect(ctx context.Context, chainID uint64, rpcURL string) (*ethclient.Client, error) {
+	eClient, err := ethclient.Dial(rpcURL)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not connect to chain")
+	}
+	log.Info(ctx, "Connected to chain. ",
+		"chainId", chainID,
+		"rpcURL", rpcURL)
+
+	return eClient, nil
 }
