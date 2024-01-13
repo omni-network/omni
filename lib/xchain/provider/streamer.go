@@ -104,7 +104,7 @@ func (s *Streamer) fetchAndDeliverTheBlock(ctx context.Context, currentHeight ui
 	}
 
 	// deliver the block
-	callbackErr := s.callback(ctx, xBlock) // #nosec G601 : this goes away in go 1.22
+	callbackErr := s.callback(ctx, &xBlock) // #nosec G601 : this goes away in go 1.22
 	if callbackErr != nil {
 		log.Error(ctx, "Error while delivering xBlock", callbackErr,
 			"chainName", s.chainConfig.name,

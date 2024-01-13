@@ -3,7 +3,7 @@ package xchain
 import "context"
 
 // ProviderCallback is the callback function signature that will be called with every finalized.
-type ProviderCallback func(context.Context, Block) error
+type ProviderCallback func(context.Context, *Block) error
 
 // Provider abstracts connecting to any supported source chain and streaming finalized
 // XBlocks from a specific height. It provides exactly once-delivery guarantees for the callback function.
