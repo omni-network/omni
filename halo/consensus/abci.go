@@ -215,15 +215,101 @@ func (c *Core) FinalizeBlock(ctx context.Context, req *abci.RequestFinalizeBlock
 	}, nil
 }
 
-// Commit commits a block of transactions.
+// Commit commits the state. It also creates a snapshot sometimes.
 func (c *Core) Commit(context.Context, *abci.RequestCommit) (*abci.ResponseCommit, error) {
 	height, err := c.state.Commit()
 	if err != nil {
 		return nil, errors.Wrap(err, "commit state")
 	}
 
+	if c.snapshotInterval > 0 && height%c.snapshotInterval == 0 {
+		_, err := c.snapshots.Create(c.state)
+		if err != nil {
+			return nil, errors.Wrap(err, "create snapshot")
+		}
+
+		err = c.snapshots.Prune()
+		if err != nil {
+			return nil, errors.Wrap(err, "prune snapshots")
+		}
+	}
+
 	return &abci.ResponseCommit{
-		RetainHeight: int64(height),
+		RetainHeight: 0, // Retain all blocks.
+	}, nil
+}
+
+// ListSnapshots lists all the available snapshots.
+func (c *Core) ListSnapshots(context.Context, *abci.RequestListSnapshots) (*abci.ResponseListSnapshots, error) {
+	var resp abci.ResponseListSnapshots
+	for _, snapshot := range c.snapshots.List() {
+		snapshot := snapshot // Pin.
+		resp.Snapshots = append(resp.Snapshots, &snapshot)
+	}
+
+	return &resp, nil
+}
+
+// OfferSnapshot sends a snapshot offer.
+func (c *Core) OfferSnapshot(_ context.Context, req *abci.RequestOfferSnapshot) (*abci.ResponseOfferSnapshot, error) {
+	c.restore.Lock()
+	defer c.restore.Unlock()
+
+	if c.restore.Snapshot != nil {
+		return nil, errors.New("snapshot already offered")
+	}
+
+	c.restore.Snapshot = req.Snapshot
+
+	return &abci.ResponseOfferSnapshot{
+		Result: abci.ResponseOfferSnapshot_ACCEPT,
+	}, nil
+}
+
+// ApplySnapshotChunk applies a chunk of snapshot.
+func (c *Core) ApplySnapshotChunk(_ context.Context, req *abci.RequestApplySnapshotChunk) (
+	*abci.ResponseApplySnapshotChunk, error,
+) {
+	c.restore.Lock()
+	defer c.restore.Unlock()
+
+	if c.restore.Snapshot == nil {
+		return nil, errors.New("no snapshot offered")
+	}
+
+	c.restore.Chunks = append(c.restore.Chunks, req.Chunk)
+
+	if len(c.restore.Chunks) < int(c.restore.Snapshot.Chunks) {
+		return &abci.ResponseApplySnapshotChunk{Result: abci.ResponseApplySnapshotChunk_ACCEPT}, nil
+	}
+
+	bz := make([]byte, 0, c.restore.Snapshot.Chunks*snapshotChunkSize)
+	for _, chunk := range c.restore.Chunks {
+		bz = append(bz, chunk...)
+	}
+
+	err := c.state.Import(c.restore.Snapshot.Height, bz)
+	if err != nil {
+		return nil, errors.Wrap(err, "import state")
+	}
+
+	c.restore.Snapshot = nil
+	c.restore.Chunks = nil
+
+	return &abci.ResponseApplySnapshotChunk{Result: abci.ResponseApplySnapshotChunk_ACCEPT}, nil
+}
+
+// LoadSnapshotChunk returns a chunk of snapshot.
+func (c *Core) LoadSnapshotChunk(_ context.Context, req *abci.RequestLoadSnapshotChunk) (
+	*abci.ResponseLoadSnapshotChunk, error,
+) {
+	chunk, err := c.snapshots.LoadChunk(req.Height, req.Format, req.Chunk)
+	if err != nil {
+		return nil, errors.Wrap(err, "load snapshot chunk")
+	}
+
+	return &abci.ResponseLoadSnapshotChunk{
+		Chunk: chunk,
 	}, nil
 }
 
@@ -237,30 +323,6 @@ func (*Core) Flush(context.Context, *abci.RequestFlush) (*abci.ResponseFlush, er
 // Query queries the application state.
 func (*Core) Query(context.Context, *abci.RequestQuery) (*abci.ResponseQuery, error) {
 	return nil, errors.New("queries not supported yet")
-}
-
-// ListSnapshots lists all the available snapshots.
-func (*Core) ListSnapshots(context.Context, *abci.RequestListSnapshots) (*abci.ResponseListSnapshots, error) {
-	return nil, errors.New("snapshots not supported yet")
-}
-
-// OfferSnapshot sends a snapshot offer.
-func (*Core) OfferSnapshot(context.Context, *abci.RequestOfferSnapshot) (*abci.ResponseOfferSnapshot, error) {
-	return nil, errors.New("snapshots not supported yet")
-}
-
-// LoadSnapshotChunk returns a chunk of snapshot.
-func (*Core) LoadSnapshotChunk(context.Context, *abci.RequestLoadSnapshotChunk) (
-	*abci.ResponseLoadSnapshotChunk, error,
-) {
-	return nil, errors.New("snapshots not supported yet")
-}
-
-// ApplySnapshotChunk applies a chunk of snapshot.
-func (*Core) ApplySnapshotChunk(context.Context, *abci.RequestApplySnapshotChunk) (
-	*abci.ResponseApplySnapshotChunk, error,
-) {
-	return nil, errors.New("snapshots not supported yet")
 }
 
 // Echo returns back the same message it is sent.

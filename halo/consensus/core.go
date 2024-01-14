@@ -1,6 +1,8 @@
 package consensus
 
 import (
+	"sync"
+
 	"github.com/omni-network/omni/halo/attest"
 	"github.com/omni-network/omni/lib/engine"
 	"github.com/omni-network/omni/lib/xchain"
@@ -12,17 +14,31 @@ import (
 // - Implements the server side of the ABCI++ interface, see abci.go.
 // - Maintains the consensus chain state.
 type Core struct {
-	ethCl     engine.Client
-	state     *State
-	attestSvc attest.Service
+	// Immutable fields (configured at construction)
+	ethCl            engine.Client
+	state            *State
+	attestSvc        attest.Service
+	snapshots        *SnapshotStore
+	snapshotInterval uint64
+
+	// Mutable restore snapshot fields
+	restore struct { //nolint: revive // Nested struct use to isolate mutable fields
+		sync.Mutex
+		Snapshot *abci.Snapshot
+		Chunks   [][]byte
+	}
 }
 
 // NewCore returns a new Core instance.
-func NewCore(ethCl engine.Client, attestSvc attest.Service, state *State) *Core {
+func NewCore(ethCl engine.Client, attestSvc attest.Service, state *State, snapshots *SnapshotStore,
+	snapshotInterval uint64,
+) *Core {
 	return &Core{
-		ethCl:     ethCl,
-		attestSvc: attestSvc,
-		state:     state,
+		ethCl:            ethCl,
+		attestSvc:        attestSvc,
+		state:            state,
+		snapshots:        snapshots,
+		snapshotInterval: snapshotInterval,
 	}
 }
 
