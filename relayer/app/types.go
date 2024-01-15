@@ -41,3 +41,8 @@ type Sender interface {
 //type cursorFetcher interface {
 //	Cursors(ctx context.Context) ([]xchain.StreamCursor, error)
 //}
+
+type xChainClient interface {
+	GetBlock(ctx context.Context, chainID uint64, height uint64) (xchain.Block, bool, error)
+	GetSubmittedCursors(ctx context.Context, chainID uint64) ([]xchain.StreamCursor, error)
+}

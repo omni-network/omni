@@ -8,7 +8,7 @@ import (
 
 // ProviderCallback is the callback function signature that will be called with all approved attestation per
 // source chain block.
-type ProviderCallback func(ctx context.Context, height uint64, approved []xchain.AggAttestation) error
+type ProviderCallback func(ctx context.Context, att xchain.AggAttestation) error
 
 // Provider abstracts connecting to the omni consensus chain and streaming approved
 // aggregate attestations for each source chain block from a specific height.
