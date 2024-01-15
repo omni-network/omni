@@ -1,8 +1,8 @@
-# Default code owners for the whole repository
-* @corverroos @jmozah @lazar955 @kevinhalliday @DanFlannel @pavelnikolov # feel free to add yourself or remove yourself from this list
-
-# Specify code owners for specific directories
+# Code owners for specific directories
 /halo @corverroos @jmozah @lazar955
 /relayer @corverroos @jmozah @lazar955
 /lib @corverroos @jmozah @lazar955 @kevinhalliday @DanFlannel @pavelnikolov
 /contracts @kevinhalliday @ttarsi
+/explorer @DanFlannel
+/explorer/api @lazar955
+/explorer/indexer @lazar955

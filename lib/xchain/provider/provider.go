@@ -66,7 +66,8 @@ func (p *Provider) Subscribe(
 }
 
 // startStreamer creates a new XBlock streamer for the given chain and kicks tarts its operation.
-func (p *Provider) runStreamer(ctx context.Context,
+func (p *Provider) runStreamer(
+	ctx context.Context,
 	config *ChainConfig,
 	minHeight uint64,
 	callback xchain.ProviderCallback,
