@@ -17,6 +17,28 @@ type Network struct {
 	Chains []Chain `json:"chains"` // Chains that are part of the network
 }
 
+// ChainIDs returns the all chain IDs in the network.
+// This is a convenience method.
+func (n Network) ChainIDs() []uint64 {
+	resp := make([]uint64, 0, len(n.Chains))
+	for _, chain := range n.Chains {
+		resp = append(resp, chain.ID)
+	}
+
+	return resp
+}
+
+// OmniChain returns the Omni execution chain config or false if it does not exist.
+func (n Network) OmniChain() (Chain, bool) {
+	for _, chain := range n.Chains {
+		if chain.IsOmni {
+			return chain, true
+		}
+	}
+
+	return Chain{}, false
+}
+
 // Chain defines the configuration of an execution chain that supports
 // the Omni cross chain protocol. This is most supported Rollup EVM, but
 // also the Omni EVM.
@@ -26,6 +48,7 @@ type Chain struct {
 	RPCURL        string `json:"rpcurl"`         // RPC URL of the chain
 	PortalAddress string `json:"portal_address"` // Address of the omni portal contract on the chain
 	DeployHeight  uint64 `json:"deploy_height"`  // Height that the portal contracts were deployed
+	IsOmni        bool   `json:"is_omni"`        // Whether this is the Omni chain
 }
 
 // Load loads the network configuration from the given path.
