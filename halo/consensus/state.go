@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 	"sync"
 
 	"github.com/omni-network/omni/lib/errors"
@@ -139,11 +140,32 @@ func (s *State) ApprovedAggregates() []xchain.AggAttestation {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	// Return a copy of the approved aggregates.
-	aggs := make([]xchain.AggAttestation, len(s.approvedAggs))
-	copy(aggs, s.approvedAggs)
+	return slices.Clone(s.approvedAggs)
+}
 
-	return aggs
+// ApprovedFrom returns a sequential range of approved aggregates from the provided chain ID and height.
+// It returns at most max aggregates. Their block heights are sequentially increasing.
+func (s *State) ApprovedFrom(chainID uint64, height uint64, max uint64) []xchain.AggAttestation {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	next := height
+
+	resp := make([]xchain.AggAttestation, 0, max)
+	for _, agg := range s.approvedAggs { // approvedAggs is sorted by block height.
+		if agg.SourceChainID != chainID || agg.BlockHeight != next {
+			continue
+		}
+
+		resp = append(resp, agg)
+		next++
+
+		if uint64(len(resp)) >= max {
+			break
+		}
+	}
+
+	return resp
 }
 
 // saveUnsafe saves the state to disk. It is unsafe since it assumes the lock is held.
