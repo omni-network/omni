@@ -58,7 +58,7 @@ func NewEthClient(
 	}, nil
 }
 
-func (e *EthClient) getCurrentFinalisedBlock(ctx context.Context) (*types.Header, error) {
+func (e *EthClient) GetCurrentFinalisedBlockHeader(ctx context.Context) (*types.Header, error) {
 	// call the function ourselves as the "finalized" tag is not supported by ethClient
 	// this call will return the last finalized block
 	var raw json.RawMessage
@@ -78,17 +78,8 @@ func (e *EthClient) getCurrentFinalisedBlock(ctx context.Context) (*types.Header
 }
 
 // GetBlock fetches the cross chain block, if present in a given rollup block height.
-func (e *EthClient) GetBlock(ctx context.Context, height uint64) (xchain.Block, bool, error) {
+func (e *EthClient) GetBlock(ctx context.Context, height uint64, header *types.Header) (xchain.Block, bool, error) {
 	var xBlock xchain.Block
-
-	// check if the height is finalized
-	finalisedHeader, err := e.getCurrentFinalisedBlock(ctx)
-	if err != nil {
-		return xBlock, false, err
-	}
-	if height > finalisedHeader.Number.Uint64() {
-		return xBlock, false, nil
-	}
 
 	// construct the query to fetch all the event logs in the given height
 	query := ethereum.FilterQuery{
@@ -116,41 +107,40 @@ func (e *EthClient) GetBlock(ctx context.Context, height uint64) (xchain.Block, 
 		}
 	}
 
-	// check if we can reuse the block header
-	if height != finalisedHeader.Number.Uint64() {
-		// get the block header for timestamp
-		header, err := e.rpcClient.HeaderByNumber(ctx, big.NewInt(int64(height)))
-		if err != nil {
-			return xBlock, false, errors.Wrap(err, "could not get header by number")
-		}
-		finalisedHeader = header
-	}
-
 	// construct a xblock only if some cross chain events are found
 	if len(selectedMsgLogs) > 0 {
-		xBlock = e.constructXBlock(selectedMsgLogs, finalisedHeader)
+		// check if the header is supplied, otherwise get the header
+		if header == nil {
+			// get the block header for timestamp
+			hdr, err := e.rpcClient.HeaderByNumber(ctx, big.NewInt(int64(height)))
+			if err != nil {
+				return xBlock, false, errors.Wrap(err, "could not get header by number")
+			}
+			header = hdr
+		}
+		xBlock = e.constructXBlock(selectedMsgLogs, header)
+
+		return xBlock, true, nil
 	}
 
-	return xBlock, true, nil
+	return xBlock, false, nil // no xMsgs or XReceipts in this block
 }
 
 // constructXBlock assembles the xBlock using the XMsgs and XReceipts found in the given block height.
 func (e *EthClient) constructXBlock(selectedMsgLogs []types.Log, header *types.Header) xchain.Block {
-	var xHeader xchain.BlockHeader
-	xMessages := make([]xchain.Msg, 0)
-	var xBlock xchain.Block
+	// assemble the block header and skeleton
+	xBlock := xchain.Block{
+		BlockHeader: xchain.BlockHeader{
+			SourceChainID: e.chainID,
+			BlockHeight:   header.Number.Uint64(),
+			BlockHash:     header.Hash(),
+		},
+		Msgs:      make([]xchain.Msg, 0),
+		Timestamp: time.Unix(int64(header.Time), 0),
+	}
 
-	// construct the block based on cross chain message or receipts that are found
+	// add cross chain message and receipts to the block
 	for _, vLog := range selectedMsgLogs {
-		// create the BlockHeader once
-		if xHeader.SourceChainID != e.chainID {
-			xHeader = xchain.BlockHeader{
-				SourceChainID: e.chainID,
-				BlockHeight:   vLog.BlockNumber,
-				BlockHash:     vLog.BlockHash,
-			}
-		}
-
 		// construct the messages that go in this block
 		streamID := xchain.StreamID{
 			SourceChainID: e.chainID,
@@ -168,15 +158,7 @@ func (e *EthClient) constructXBlock(selectedMsgLogs []types.Log, header *types.H
 			DestGasLimit:    vLog.Topics[5].Big().Uint64(),
 			TxHash:          vLog.TxHash,
 		}
-		xMessages = append(xMessages, msg)
-	}
-
-	// assemble the entire block
-
-	xBlock = xchain.Block{
-		BlockHeader: xHeader,
-		Msgs:        xMessages,
-		Timestamp:   time.Unix(0, int64(header.Time)),
+		xBlock.Msgs = append(xBlock.Msgs, msg)
 	}
 
 	return xBlock
