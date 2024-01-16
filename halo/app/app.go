@@ -25,21 +25,23 @@ type Config struct {
 	AttestStateFile         string
 	AppStateDir             string
 	AppStatePersistInterval uint64
+	SnapshotDir             string
+	SnapshotInterval        uint64
 	Network                 netconf.Network
 	Comet                   cmtconfig.Config
 }
 
 // Run runs the halo client.
-func Run(ctx context.Context, config Config) error {
+func Run(ctx context.Context, cfg Config) error {
 	// Load private validator key and state from disk (this hard exits on any error).
-	privVal := privval.LoadFilePV(config.Comet.PrivValidatorKeyFile(), config.Comet.PrivValidatorStateFile())
+	privVal := privval.LoadFilePV(cfg.Comet.PrivValidatorKeyFile(), cfg.Comet.PrivValidatorStateFile())
 
-	omniChain, ok := config.Network.OmniChain()
+	omniChain, ok := cfg.Network.OmniChain()
 	if !ok {
 		return errors.New("omni chain not found in network")
 	}
 
-	jwtBytes, err := engine.LoadJWTHexFile(config.EngineJWTFile)
+	jwtBytes, err := engine.LoadJWTHexFile(cfg.EngineJWTFile)
 	if err != nil {
 		return errors.Wrap(err, "load engine JWT file")
 	}
@@ -49,7 +51,7 @@ func Run(ctx context.Context, config Config) error {
 		return errors.Wrap(err, "create engine client")
 	}
 
-	attState, err := attest.LoadState(config.AttestStateFile)
+	attState, err := attest.LoadState(cfg.AttestStateFile)
 	if err != nil {
 		return errors.Wrap(err, "load attest state")
 	}
@@ -57,19 +59,24 @@ func Run(ctx context.Context, config Config) error {
 	var xprovider xchain.Provider
 	// TODO(corver): Instantiate xprovider
 
-	attSvc, err := attest.NewAttester(ctx, attState, privVal.Key.PrivKey, xprovider, config.Network.ChainIDs())
+	attSvc, err := attest.NewAttester(ctx, attState, privVal.Key.PrivKey, xprovider, cfg.Network.ChainIDs())
 	if err != nil {
 		return errors.Wrap(err, "create attester")
 	}
 
-	appState, err := consensus.LoadOrGenState(config.AppStateDir, config.AppStatePersistInterval)
+	appState, err := consensus.LoadOrGenState(cfg.AppStateDir, cfg.AppStatePersistInterval)
 	if err != nil {
 		return errors.Wrap(err, "load or gen app state")
 	}
 
-	core := consensus.NewCore(ethCl, attSvc, appState)
+	snapshotStore, err := consensus.NewSnapshotStore(cfg.SnapshotDir)
+	if err != nil {
+		return errors.Wrap(err, "create snapshot store")
+	}
 
-	cmtNode, err := newCometNode(ctx, &config.Comet, core, privVal)
+	core := consensus.NewCore(ethCl, attSvc, appState, snapshotStore, cfg.SnapshotInterval)
+
+	cmtNode, err := newCometNode(ctx, &cfg.Comet, core, privVal)
 	if err != nil {
 		return errors.Wrap(err, "create comet node")
 	}
