@@ -9,10 +9,6 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 )
 
-var (
-	errXBlockNotFound = errors.New("xblock not found")
-)
-
 func StartRelayer(
 	ctx context.Context,
 	cProvider cchain.Provider,
@@ -35,13 +31,15 @@ func StartRelayer(
 	// callback processes each approved attestation/xblock.
 	callback := func(ctx context.Context, att xchain.AggAttestation) error {
 		// Get the xblock from the source chain.
-		block, received, err := xClient.GetBlock(ctx, att.SourceChainID, att.BlockHeight)
+		block, ok, err := xClient.GetBlock(ctx, att.SourceChainID, att.BlockHeight)
 		if err != nil {
 			return err
 		}
 
-		if !received {
-			return errXBlockNotFound
+		if err != nil {
+			return err
+		} else if !ok {
+			return errors.New("attestation block not finalised", "attestation", att)
 		}
 
 		// Split into streams
@@ -90,9 +88,11 @@ func mapByStreamID(msgs []xchain.Msg) map[xchain.StreamID][]xchain.Msg {
 func filterMsgs(msgs []xchain.Msg, offset uint64) []xchain.Msg {
 	var res []xchain.Msg
 	for _, msg := range msgs {
-		if msg.StreamOffset > offset {
-			res = append(res, msg)
+		if msg.StreamOffset <= offset {
+			// filter msgs lower than offset
+			continue
 		}
+		res = append(res, msg)
 	}
 
 	return res
@@ -105,6 +105,7 @@ func FromHeights(cursors []xchain.StreamCursor, chainIDs []uint64) map[uint64]ui
 		res[chainID] = 0
 	}
 
+	// sort cursors by decreasing SourceBlockHeight so we start streaming from minimum height per source chain
 	sort.Slice(cursors, func(i, j int) bool {
 		return cursors[i].SourceBlockHeight > cursors[j].SourceBlockHeight
 	})
