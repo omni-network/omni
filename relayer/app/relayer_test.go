@@ -138,7 +138,7 @@ func Test_fromHeights(t *testing.T) {
 		want map[uint64]uint64
 	}{
 		{
-			name: testing.CoverMode(), args: args{
+			name: "", args: args{
 				cursors: []xchain.StreamCursor{
 					{StreamID: xchain.StreamID{SourceChainID: 1, DestChainID: 2}, Offset: 100, SourceBlockHeight: 200},
 					{StreamID: xchain.StreamID{SourceChainID: 2, DestChainID: 3}, Offset: 150, SourceBlockHeight: 250},
@@ -147,6 +147,17 @@ func Test_fromHeights(t *testing.T) {
 			}, want: map[uint64]uint64{
 				1: 200,
 				2: 250,
+				3: 0,
+			}},
+		{
+			name: "", args: args{
+				cursors: []xchain.StreamCursor{
+					{StreamID: xchain.StreamID{SourceChainID: 1, DestChainID: 2}, Offset: 100, SourceBlockHeight: 200},
+					{StreamID: xchain.StreamID{SourceChainID: 1, DestChainID: 3}, Offset: 150, SourceBlockHeight: 0},
+				},
+				chainIDs: []uint64{1, 3},
+			}, want: map[uint64]uint64{
+				1: 0,
 				3: 0,
 			}},
 	}
