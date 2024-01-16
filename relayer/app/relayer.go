@@ -32,14 +32,11 @@ func StartRelayer(
 	callback := func(ctx context.Context, att xchain.AggAttestation) error {
 		// Get the xblock from the source chain.
 		block, ok, err := xClient.GetBlock(ctx, att.SourceChainID, att.BlockHeight)
-		if err != nil {
-			return err
-		}
 
 		if err != nil {
 			return err
 		} else if !ok {
-			return errors.New("attestation block not finalised", "attestation", att)
+			return errors.New("attestation block not finalized", "attestation", att)
 		}
 
 		// Split into streams
@@ -86,7 +83,7 @@ func mapByStreamID(msgs []xchain.Msg) map[xchain.StreamID][]xchain.Msg {
 }
 
 func filterMsgs(msgs []xchain.Msg, offset uint64) []xchain.Msg {
-	var res []xchain.Msg
+	var res []xchain.Msg //nolint:prealloc // we don't know how many msgs will be filtered out
 	for _, msg := range msgs {
 		if msg.StreamOffset <= offset {
 			// filter msgs lower than offset

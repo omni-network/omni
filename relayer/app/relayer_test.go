@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/xchain"
 	relayer "github.com/omni-network/omni/relayer/app"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -45,10 +46,12 @@ func Test_StartRelayer(t *testing.T) {
 		GetBlockFn: func(ctx context.Context, chainID uint64, height uint64) (xchain.Block, bool, error) {
 			assert.Equal(t, aggAttestation.SourceChainID, chainID)
 			assert.Equal(t, aggAttestation.BlockHeight, height)
+
 			return xBlock, true, nil
 		},
 		GetSubmittedCursorsFn: func(ctx context.Context, chainID uint64) ([]xchain.StreamCursor, error) {
 			assert.Contains(t, chainIDs, chainID)
+
 			return cursors, nil
 		},
 	}
@@ -56,6 +59,7 @@ func Test_StartRelayer(t *testing.T) {
 	mockCreator := &mockCreator{
 		CreateSubmissionsFn: func(ctx context.Context, streamUpdate relayer.StreamUpdate) ([]xchain.Submission, error) {
 			assert.Equal(t, aggAttestation, streamUpdate.AggAttestation)
+
 			return []xchain.Submission{{}}, nil
 		},
 	}
@@ -84,7 +88,7 @@ func Test_StartRelayer(t *testing.T) {
 	<-ctx.Done()
 }
 
-func Test_fromHeights(t *testing.T) {
+func Test_FromHeights(t *testing.T) {
 	t.Parallel()
 	type args struct {
 		cursors  []xchain.StreamCursor
@@ -106,7 +110,8 @@ func Test_fromHeights(t *testing.T) {
 				1: 200,
 				2: 250,
 				3: 0,
-			}},
+			},
+		},
 		{
 			name: "", args: args{
 				cursors: []xchain.StreamCursor{
@@ -117,10 +122,13 @@ func Test_fromHeights(t *testing.T) {
 			}, want: map[uint64]uint64{
 				1: 0,
 				3: 0,
-			}},
+			},
+		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			if got := relayer.FromHeights(tt.args.cursors, tt.args.chainIDs); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("fromHeights() = %v, want %v", got, tt.want)
 			}
@@ -128,10 +136,12 @@ func Test_fromHeights(t *testing.T) {
 	}
 }
 
-var _ cchain.Provider = (*mockProvider)(nil)
-var _ relayer.XChainClient = (*mockXChainClient)(nil)
-var _ relayer.Creator = (*mockCreator)(nil)
-var _ relayer.Sender = (*mockSender)(nil)
+var (
+	_ cchain.Provider      = (*mockProvider)(nil)
+	_ relayer.XChainClient = (*mockXChainClient)(nil)
+	_ relayer.Creator      = (*mockCreator)(nil)
+	_ relayer.Sender       = (*mockSender)(nil)
+)
 
 type mockXChainClient struct {
 	GetBlockFn            func(ctx context.Context, chainID uint64, height uint64) (xchain.Block, bool, error)
@@ -150,7 +160,9 @@ type mockCreator struct {
 	CreateSubmissionsFn func(ctx context.Context, streamUpdate relayer.StreamUpdate) ([]xchain.Submission, error)
 }
 
-func (m *mockCreator) CreateSubmissions(ctx context.Context, streamUpdate relayer.StreamUpdate) ([]xchain.Submission, error) {
+func (m *mockCreator) CreateSubmissions(ctx context.Context,
+	streamUpdate relayer.StreamUpdate,
+) ([]xchain.Submission, error) {
 	return m.CreateSubmissionsFn(ctx, streamUpdate)
 }
 
@@ -167,6 +179,7 @@ type mockProvider struct {
 }
 
 func (m *mockProvider) Subscribe(ctx context.Context, sourceChainID uint64, sourceHeight uint64,
-	callback cchain.ProviderCallback) {
+	callback cchain.ProviderCallback,
+) {
 	m.SubscribeFn(ctx, sourceChainID, sourceHeight, callback)
 }
