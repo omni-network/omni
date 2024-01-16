@@ -1,0 +1,4 @@
+# open api spec
+/explorer/api/openapi/** linguist-generated=true
+/explorer/api/static/** linguist-generated=true
+/explorer/api/openapi/openapi.yaml linguist-generated=false
