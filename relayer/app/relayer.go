@@ -2,9 +2,15 @@ package relayer
 
 import (
 	"context"
+	"errors"
+	"sort"
 
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/xchain"
+)
+
+var (
+	ErrXBlockNotFound = errors.New("xblock not found")
 )
 
 func startRelayer(
@@ -29,9 +35,13 @@ func startRelayer(
 	// callback processes each approved attestation/xblock.
 	callback := func(ctx context.Context, att xchain.AggAttestation) error {
 		// Get the xblock from the source chain.
-		block, _, err := xClient.GetBlock(ctx, att.SourceChainID, att.BlockHeight)
+		block, received, err := xClient.GetBlock(ctx, att.SourceChainID, att.BlockHeight)
 		if err != nil {
 			return err
+		}
+
+		if !received {
+			return ErrXBlockNotFound
 		}
 
 		// Split into streams
@@ -78,14 +88,14 @@ func mapByStreamID(msgs []xchain.Msg) map[xchain.StreamID][]xchain.Msg {
 }
 
 func filterMsgs(msgs []xchain.Msg, offset uint64) []xchain.Msg {
-	var filtered []xchain.Msg
+	var res []xchain.Msg
 	for _, msg := range msgs {
 		if msg.StreamOffset > offset {
-			filtered = append(filtered, msg)
+			res = append(res, msg)
 		}
 	}
 
-	return filtered
+	return res
 }
 
 func fromHeights(cursors []xchain.StreamCursor, chainIDs []uint64) map[uint64]uint64 {
@@ -94,6 +104,10 @@ func fromHeights(cursors []xchain.StreamCursor, chainIDs []uint64) map[uint64]ui
 	for _, chainID := range chainIDs {
 		res[chainID] = 0
 	}
+
+	sort.Slice(cursors, func(i, j int) bool {
+		return cursors[i].SourceBlockHeight > cursors[j].SourceBlockHeight
+	})
 
 	for _, cursor := range cursors {
 		res[cursor.SourceChainID] = cursor.SourceBlockHeight

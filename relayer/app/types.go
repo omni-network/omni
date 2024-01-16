@@ -14,6 +14,7 @@ type streamUpdate struct {
 
 type Creator interface {
 	// CreateSubmissions creates one or more submissions from the given stream update.
+	// creates submissions by splitting xmsgs into batches if required and generating merkle proofs for each submission
 	CreateSubmissions(ctx context.Context, streamUpdate streamUpdate) ([]xchain.Submission, error)
 }
 
