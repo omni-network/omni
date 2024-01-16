@@ -8,7 +8,7 @@ set -e
 if which forge 1>/dev/null; then
   echo "Foundry already installed: $(forge --version)."
   echo "Run 'foundryup' to update."
-  exit 0
+  return
 fi
 
 # If not running interactively (like in Github Actions), specify FOUNDRY_DIR
