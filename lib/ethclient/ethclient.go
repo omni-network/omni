@@ -23,8 +23,6 @@ const (
 	xMsgSigString = "XMsg(uint64,uint64,address,address,bytes,uint64)"
 )
 
-var ErrBlockNotFinalised = errors.New("block not finalized")
-
 // EthClient is the configuration for the rpc client to connect and get information.
 type EthClient struct {
 	chainID       uint64
@@ -60,23 +58,23 @@ func NewEthClient(
 	}, nil
 }
 
-func (e *EthClient) getCurrentFinalisedBlock(ctx context.Context) (uint64, error) {
+func (e *EthClient) getCurrentFinalisedBlock(ctx context.Context) (*types.Header, error) {
 	// call the function ourselves as the "finalized" tag is not supported by ethClient
 	// this call will return the last finalized block
 	var raw json.RawMessage
 	params := []string{"finalized", "false"}
 	err := e.rpcClient.Client().CallContext(ctx, &raw, "eth_getBlockByNumber", params)
 	if err != nil {
-		return 0, errors.Wrap(err, "could not get finalized block")
+		return nil, errors.Wrap(err, "could not get finalized block")
 	}
 
 	// only header info is enough for us
-	var head *types.Header
-	if err := json.Unmarshal(raw, &head); err != nil {
-		return 0, errors.Wrap(err, "error unmarshalling finalized block")
+	var finalisedHeader types.Header
+	if err := json.Unmarshal(raw, &finalisedHeader); err != nil {
+		return nil, errors.Wrap(err, "error unmarshalling finalized block")
 	}
 
-	return head.Number.Uint64(), nil
+	return &finalisedHeader, nil
 }
 
 // GetBlock fetches the cross chain block, if present in a given rollup block height.
@@ -84,12 +82,12 @@ func (e *EthClient) GetBlock(ctx context.Context, height uint64) (xchain.Block, 
 	var xBlock xchain.Block
 
 	// check if the height is finalized
-	finalisedBlockNumber, err := e.getCurrentFinalisedBlock(ctx)
+	finalisedHeader, err := e.getCurrentFinalisedBlock(ctx)
 	if err != nil {
 		return xBlock, false, err
 	}
-	if height > finalisedBlockNumber {
-		return xBlock, false, ErrBlockNotFinalised
+	if height > finalisedHeader.Number.Uint64() {
+		return xBlock, false, nil
 	}
 
 	// construct the query to fetch all the event logs in the given height
@@ -118,15 +116,19 @@ func (e *EthClient) GetBlock(ctx context.Context, height uint64) (xchain.Block, 
 		}
 	}
 
-	// get the block header for timestamp
-	header, err := e.rpcClient.HeaderByNumber(ctx, big.NewInt(int64(height)))
-	if err != nil {
-		return xBlock, false, errors.Wrap(err, "could not get the block header by number")
+	// check if we can reuse the block header
+	if height != finalisedHeader.Number.Uint64() {
+		// get the block header for timestamp
+		header, err := e.rpcClient.HeaderByNumber(ctx, big.NewInt(int64(height)))
+		if err != nil {
+			return xBlock, false, errors.Wrap(err, "could not get header by number")
+		}
+		finalisedHeader = header
 	}
 
 	// construct a xblock only if some cross chain events are found
 	if len(selectedMsgLogs) > 0 {
-		xBlock = e.constructXBlock(selectedMsgLogs, header)
+		xBlock = e.constructXBlock(selectedMsgLogs, finalisedHeader)
 	}
 
 	return xBlock, true, nil
