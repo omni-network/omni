@@ -2,22 +2,22 @@ package relayer
 
 import (
 	"context"
-	"errors"
 	"sort"
 
 	"github.com/omni-network/omni/lib/cchain"
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/xchain"
 )
 
 var (
-	ErrXBlockNotFound = errors.New("xblock not found")
+	errXBlockNotFound = errors.New("xblock not found")
 )
 
-func startRelayer(
+func StartRelayer(
 	ctx context.Context,
 	cProvider cchain.Provider,
 	chainIDs []uint64,
-	xClient xChainClient,
+	xClient XChainClient,
 	creator Creator,
 	sender Sender,
 ) {
@@ -41,7 +41,7 @@ func startRelayer(
 		}
 
 		if !received {
-			return ErrXBlockNotFound
+			return errXBlockNotFound
 		}
 
 		// Split into streams
@@ -51,7 +51,7 @@ func startRelayer(
 				continue
 			}
 
-			update := streamUpdate{
+			update := StreamUpdate{
 				StreamID:       streamID,
 				AggAttestation: att,
 				Msgs:           msgs,
@@ -73,7 +73,7 @@ func startRelayer(
 	}
 
 	// Subscribe to attestations for each chain.
-	for chainID, fromHeight := range fromHeights(cursors, chainIDs) {
+	for chainID, fromHeight := range FromHeights(cursors, chainIDs) {
 		cProvider.Subscribe(ctx, chainID, fromHeight, callback)
 	}
 }
@@ -98,7 +98,7 @@ func filterMsgs(msgs []xchain.Msg, offset uint64) []xchain.Msg {
 	return res
 }
 
-func fromHeights(cursors []xchain.StreamCursor, chainIDs []uint64) map[uint64]uint64 {
+func FromHeights(cursors []xchain.StreamCursor, chainIDs []uint64) map[uint64]uint64 {
 	res := make(map[uint64]uint64)
 
 	for _, chainID := range chainIDs {

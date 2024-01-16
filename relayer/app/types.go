@@ -6,7 +6,7 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 )
 
-type streamUpdate struct {
+type StreamUpdate struct {
 	xchain.StreamID
 	AggAttestation xchain.AggAttestation // Attestation for the xmsgs
 	Msgs           []xchain.Msg          // msgs that increment the cursor
@@ -15,7 +15,7 @@ type streamUpdate struct {
 type Creator interface {
 	// CreateSubmissions creates one or more submissions from the given stream update.
 	// creates submissions by splitting xmsgs into batches if required and generating merkle proofs for each submission
-	CreateSubmissions(ctx context.Context, streamUpdate streamUpdate) ([]xchain.Submission, error)
+	CreateSubmissions(ctx context.Context, streamUpdate StreamUpdate) ([]xchain.Submission, error)
 }
 
 type Sender interface {
@@ -23,12 +23,7 @@ type Sender interface {
 	SendTransaction(ctx context.Context, submission xchain.Submission) error
 }
 
-//// cursorFetcher fetches all supported portal cursors.
-//type cursorFetcher interface {
-//	Cursors(ctx context.Context) ([]xchain.StreamCursor, error)
-//}
-
-type xChainClient interface {
+type XChainClient interface {
 	GetBlock(ctx context.Context, chainID uint64, height uint64) (xchain.Block, bool, error)
 	GetSubmittedCursors(ctx context.Context, chainID uint64) ([]xchain.StreamCursor, error)
 }
