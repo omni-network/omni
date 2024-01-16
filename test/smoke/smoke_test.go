@@ -1,3 +1,4 @@
+//nolint:ireturn  // Returning interface below is fine.
 package smoke_test
 
 import (
@@ -139,7 +140,7 @@ func (s *testAttSvc) decTotal() bool {
 	return true
 }
 
-func (s *testAttSvc) getPubKey() crypto.PubKey { //nolint:ireturn  // Returning interface is fine.
+func (s *testAttSvc) getPubKey() crypto.PubKey {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
