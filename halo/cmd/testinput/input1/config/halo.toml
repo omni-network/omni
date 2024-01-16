@@ -1,0 +1,6 @@
+engine-jwt-file="jwt.toml"
+
+snapshot-interval=999
+
+[state]
+persist-interval=99

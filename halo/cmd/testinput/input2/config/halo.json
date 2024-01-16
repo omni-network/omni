@@ -1,0 +1,5 @@
+{
+"engine-jwt-file": "jwt.json",
+"snapshot-interval": 123,
+"state-persist-interval": 12
+}

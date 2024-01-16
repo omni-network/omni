@@ -1,0 +1,32 @@
+{
+ "HomeDir": ".",
+ "EngineJWTFile": "",
+ "AppStatePersistInterval": 10,
+ "SnapshotInterval": 256,
+ "Comet": {
+  "Version": "",
+  "RootDir": "",
+  "ProxyApp": "",
+  "Moniker": "",
+  "DBBackend": "",
+  "DBPath": "",
+  "LogLevel": "",
+  "LogFormat": "",
+  "Genesis": "",
+  "PrivValidatorKey": "",
+  "PrivValidatorState": "",
+  "PrivValidatorListenAddr": "",
+  "NodeKey": "",
+  "ABCI": "",
+  "FilterPeers": false,
+  "RPC": null,
+  "P2P": null,
+  "Mempool": null,
+  "StateSync": null,
+  "BlockSync": null,
+  "Consensus": null,
+  "Storage": null,
+  "TxIndex": null,
+  "Instrumentation": null
+ }
+}
