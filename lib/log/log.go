@@ -6,34 +6,47 @@ import (
 	"context"
 )
 
-// Debug logs the message and arguments at default level.
-func Debug(ctx context.Context, msg string, args ...any) {
-	getLogger(ctx).DebugContext(ctx, msg, args...)
+type attrsKey struct{}
+
+// WithCtx returns a copy of the context with which the logging attributes are associated.
+// Usage:
+//
+//	ctx := log.WithCtx(ctx, "height", 1234)
+//	...
+//	log.Info(ctx, "Height processed") // Will contain attribute: height=1234
+func WithCtx(ctx context.Context, attrs ...any) context.Context {
+	return context.WithValue(ctx, attrsKey{}, mergeAttrs(ctx, attrs))
 }
 
-// Info logs the message and arguments at info level.
-func Info(ctx context.Context, msg string, args ...any) {
-	getLogger(ctx).InfoContext(ctx, msg, args...)
+// Debug logs the message and attributes at default level.
+func Debug(ctx context.Context, msg string, attrs ...any) {
+	getLogger(ctx).DebugContext(ctx, msg, mergeAttrs(ctx, attrs)...)
 }
 
-// Warn logs the message and error and arguments at warning level.
+// Info logs the message and attributes at info level.
+func Info(ctx context.Context, msg string, attrs ...any) {
+	getLogger(ctx).InfoContext(ctx, msg, mergeAttrs(ctx, attrs)...)
+}
+
+// Warn logs the message and error and attributes at warning level.
 // If err is nil, it will not be logged.
-func Warn(ctx context.Context, msg string, err error, args ...any) {
+func Warn(ctx context.Context, msg string, err error, attrs ...any) {
 	if err != nil {
-		args = append(args, "err", err)
-		args = append(args, errAttrs(err)...)
+		attrs = append(attrs, "err", err)
+		attrs = append(attrs, errAttrs(err)...)
 	}
-	getLogger(ctx).WarnContext(ctx, msg, args...)
+
+	getLogger(ctx).WarnContext(ctx, msg, mergeAttrs(ctx, attrs)...)
 }
 
 // Error logs the message and error and arguments at error level.
 // If err is nil, it will not be logged.
-func Error(ctx context.Context, msg string, err error, args ...any) {
+func Error(ctx context.Context, msg string, err error, attrs ...any) {
 	if err != nil {
-		args = append(args, "err", err)
-		args = append(args, errAttrs(err)...)
+		attrs = append(attrs, "err", err)
+		attrs = append(attrs, errAttrs(err)...)
 	}
-	getLogger(ctx).ErrorContext(ctx, msg, args...)
+	getLogger(ctx).ErrorContext(ctx, msg, mergeAttrs(ctx, attrs)...)
 }
 
 // errFields is similar to z.Err and returns the structured error fields and
@@ -46,10 +59,20 @@ func errAttrs(err error) []any {
 
 	// Using cast instead of errors.As since no other wrapping library
 	// is used and this avoids exporting the structured error type.
-	serr, ok := err.(structErr) //nolint:errorlint // See comment aboveg
+	serr, ok := err.(structErr) //nolint:errorlint // See comment above
 	if !ok {
 		return nil
 	}
 
 	return serr.Attrs()
+}
+
+// mergeAttrs returns the attributes from the context merged with the provided attributes.
+func mergeAttrs(ctx context.Context, attrs []any) []any {
+	resp, _ := ctx.Value(attrsKey{}).([]any) //nolint:revive // We know the type.
+	resp = append(resp, attrs...)
+
+	verifyAttrs(resp)
+
+	return resp
 }

@@ -46,8 +46,6 @@ func (p *Provider) Subscribe(
 	fromHeight uint64,
 	callback xchain.ProviderCallback,
 ) error {
-	log.Info(ctx, "Subscribing to provider ", "id", chainID, "fromHeight", fromHeight)
-
 	// retrieve the respective config
 	config, err := p.getConfig(chainID)
 	if err != nil {
@@ -58,6 +56,9 @@ func (p *Provider) Subscribe(
 	if fromHeight < config.minHeight {
 		fromHeight = config.minHeight
 	}
+
+	ctx = log.WithCtx(ctx, "chain_id", chainID, "chain_name", config.name)
+	log.Info(ctx, "Subscribing to provider", "from_height", fromHeight)
 
 	// run the XBlock stream for this chain
 	go p.runStreamer(ctx, config, fromHeight, callback)
