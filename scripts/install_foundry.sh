@@ -3,12 +3,13 @@
 
 set -e
 
-# foundryup installs versions by tag (https://github.com/foundry-rs/foundry/tags)
-TAG="nightly-02292f2d2caa547968bd039c06dc53d98b72bf39"
 
-# output of forge --version, to check $TAG installed
-VERSION="forge 0.2.0 (02292f2 2024-01-08T00:26:30.856271000Z)"
-
+# If already forge installed, exit. (we do not care about cast or anvil
+if which forge 1>/dev/null; then
+  echo "Foundry already installed: $(forge --version)."
+  echo "Run 'foundryup' to update."
+  exit 0
+fi
 
 # If not running interactively (like in Github Actions), specify FOUNDRY_DIR
 # This tells https://foundry.paradigm.xyz where to install foundryup -
@@ -27,8 +28,13 @@ if ! which foundryup 1>/dev/null; then
 fi
 
 
-# If correct version not installed, install it
-if ! which forge 1>/dev/null || [[ $(forge --version) != $VERSION ]]; then
-  echo "Installing $VERSION"
-  foundryup --version $TAG
-fi
+# We use the nightly version, rather than pinning to a specific version.
+# foundryup does allow pinning to a specific version, via github tag:
+#   foundryup --version nightly-24abca6c9133618e0c355842d2be2dd4f36da46d
+# Or via git commit:
+#   foundryup --commit 24abca6
+# But they delete github tags frequently, and installation via commit requires
+# rust and lenghty builds. So we use nightly, until versioning becomes an
+# issue.
+
+foundryup --version nightly

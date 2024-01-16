@@ -19,15 +19,13 @@ repos:
       - id: go-fmt
         args: [ -w, -s ] # simplify code and write result to (source) file instead of stdout
 
-# TODO(kevin): run-forge-fmt was failing on main, so we disabled it for now, please fix.#
-#  See https://github.com/omni-network/omni/commit/5bc13ef7da7b89469813c83857f359f3ddc6e222.
-#  - repo: local
-#    hooks:
-#      - id: run-forge-fmt
-#        name: run-forge-fmt
-#        language: script
-#        entry: .pre-commit/run_forge_fmt.sh
-#        types: [ file, solidity ]
+  - repo: local
+    hooks:
+     - id: run-forge-fmt
+       name: run-forge-fmt
+       language: script
+       entry: .pre-commit/run_forge_fmt.sh
+       types: [ file, solidity ]
 
   # Then run code validators (on the formatted code)
 
@@ -46,14 +44,12 @@ repos:
         entry: .pre-commit/run_go_tests.sh
         types: [ file, go ]
 
-#        # TODO(kevin): run-forge-fmt was failing on main, so we disabled it for now, please fix.
-#        #  See https://github.com/omni-network/omni/commit/5bc13ef7da7b89469813c83857f359f3ddc6e222.
-#      - id: run-forge-tests
-#        name: run-forge-tests
-#        language: script
-#        entry: .pre-commit/run_forge_tests.sh
-#        types: [ file, solidity ]
-#        require_serial: true
+      - id: run-forge-tests
+        name: run-forge-tests
+        language: script
+        entry: .pre-commit/run_forge_tests.sh
+        types: [ file, solidity ]
+        require_serial: true
 
       - id: run-regexp
         name: run-regexp
