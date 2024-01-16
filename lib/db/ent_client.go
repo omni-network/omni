@@ -45,7 +45,7 @@ func (ClientImpl) CreateNewEntClient(ctx context.Context, databaseURL string) (*
 	return ent.NewClient(ent.Driver(drv)), nil
 }
 
-func (ClientImpl) CreateSQLLiteEntClient(ctx context.Context) (*ent.Client, error) {
+func (ClientImpl) CreateSQLiteEntClient(ctx context.Context) (*ent.Client, error) {
 	client, err := ent.Open(dialect.SQLite, "file:ent?mode=memory&cache=shared&_fk=1")
 	if err != nil {
 		log.Error(ctx, "Failed opening connection to sqlite: %v", err)
