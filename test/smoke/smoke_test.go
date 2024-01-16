@@ -58,7 +58,10 @@ func TestSmoke(t *testing.T) {
 	state, err := consensus.LoadOrGenState(t.TempDir(), 1)
 	require.NoError(t, err)
 
-	core := consensus.NewCore(ethCl, attSvc, state)
+	snapshots, err := consensus.NewSnapshotStore(t.TempDir())
+	require.NoError(t, err)
+
+	core := consensus.NewCore(ethCl, attSvc, state, snapshots, 1)
 
 	conf := rpctest.GetConfig(true)
 	writeFiles(t, conf)
