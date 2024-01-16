@@ -19,6 +19,9 @@ contract-bindings: ## Generate golang contract bindings.
 ###                                Utils                                 	###
 ###############################################################################
 
+gen: ## Runs our gen code
+	cd lib/db/ent && go generate ./
+
 ensure-go-releaser: ## Installs the go-releaser tool.
 	@which goreleaser > /dev/null || echo "go-releaser not installed, see https://goreleaser.com/install/"
 

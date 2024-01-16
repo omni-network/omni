@@ -1,0 +1,5 @@
+# ent
+/lib/db/ent/** linguist-generated=true
+/lib/db/ent/schema/* linguist-generated=false
+/lib/db/ent/entc.go linguist-generated=false
+/lib/db/ent/generate.go linguist-generated=false
