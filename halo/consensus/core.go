@@ -13,15 +13,16 @@ import (
 // - Maintains the consensus chain state.
 type Core struct {
 	ethCl     engine.Client
-	state     state
+	state     *State
 	attestSvc attest.Service
 }
 
 // NewCore returns a new Core instance.
-func NewCore(ethCl engine.Client, attestSvc attest.Service) *Core {
+func NewCore(ethCl engine.Client, attestSvc attest.Service, state *State) *Core {
 	return &Core{
 		ethCl:     ethCl,
 		attestSvc: attestSvc,
+		state:     state,
 	}
 }
 
