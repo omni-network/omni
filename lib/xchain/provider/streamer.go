@@ -48,13 +48,13 @@ func (s *Streamer) streamBlocks(ctx context.Context, currentHeight uint64) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.Info(ctx, "Stopping to produce blocks",
+			log.Debug(ctx, "Stopping to produce blocks",
 				"height", currentHeight)
 
 			return
 
 		case <-s.quitC:
-			log.Info(ctx, "Stopping to produce blocks",
+			log.Debug(ctx, "Stopping to produce blocks",
 				"height", currentHeight)
 
 			return
@@ -83,14 +83,13 @@ func (s *Streamer) fetchAndDeliverTheBlock(ctx context.Context, currentHeight ui
 	// get the message and receipts from the chain for this block if any
 	xBlock, exists, err := s.chainConfig.rpcClient.GetBlock(ctx, currentHeight)
 	if err != nil {
-		log.Error(ctx, "Could not get cross chain block from rpc client", err)
-
+		log.Warn(ctx, "Could not get cross chain block from rpc client", err, "height", currentHeight)
 		return
 	}
 
 	// no cross chain logs in this height
 	if !exists {
-		log.Info(ctx, "No cross chain block in this height")
+		log.Debug(ctx, "No cross chain block in this height", "height", currentHeight)
 
 		return
 	}
@@ -98,11 +97,11 @@ func (s *Streamer) fetchAndDeliverTheBlock(ctx context.Context, currentHeight ui
 	// deliver the block
 	callbackErr := s.callback(ctx, &xBlock) // #nosec G601 : this goes away in go 1.22
 	if callbackErr != nil {
-		log.Error(ctx, "Error while delivering xBlock", callbackErr,
+		log.Warn(ctx, "Error while delivering xBlock", callbackErr,
 			"hash", xBlock.BlockHash)
 	}
 
-	log.Info(ctx, "Delivered xBlock",
+	log.Debug(ctx, "Delivered xBlock",
 		"hash", xBlock.BlockHash,
 		"msg_count", len(xBlock.Msgs),
 		"receipt_count", len(xBlock.Receipts))
