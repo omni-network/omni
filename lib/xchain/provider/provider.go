@@ -46,6 +46,8 @@ func (p *Provider) Subscribe(
 	fromHeight uint64,
 	callback xchain.ProviderCallback,
 ) error {
+	log.Debug(ctx, "Subscribing to provider ", "fromHeight", fromHeight)
+
 	// retrieve the respective config
 	config, err := p.getConfig(chainID)
 	if err != nil {
