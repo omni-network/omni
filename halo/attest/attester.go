@@ -96,10 +96,7 @@ func (a *Attester) GetAvailable() []xchain.Attestation {
 
 // SetProposed sets the attestations as proposed.
 func (a *Attester) SetProposed(headers []xchain.BlockHeader) {
-	proposed := make(map[xchain.BlockHeader]bool)
-	for _, header := range headers {
-		proposed[header] = true
-	}
+	proposed := headerMap(headers)
 
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -120,10 +117,7 @@ func (a *Attester) SetProposed(headers []xchain.BlockHeader) {
 
 // SetCommitted sets the attestations as committed.
 func (a *Attester) SetCommitted(headers []xchain.BlockHeader) {
-	confirmed := make(map[xchain.BlockHeader]bool)
-	for _, header := range headers {
-		confirmed[header] = true
-	}
+	confirmed := headerMap(headers)
 
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -165,6 +159,16 @@ func fromHeights(state State, chains []uint64) map[uint64]uint64 {
 	// Set heights for existing chains from state
 	for _, att := range state.Get() {
 		resp[att.SourceChainID] = att.BlockHeight + 1
+	}
+
+	return resp
+}
+
+// headerMap converts a list of headers to a bool map (set).
+func headerMap(headers []xchain.BlockHeader) map[xchain.BlockHeader]bool {
+	resp := make(map[xchain.BlockHeader]bool)
+	for _, header := range headers {
+		resp[header] = true
 	}
 
 	return resp

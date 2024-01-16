@@ -1,3 +1,4 @@
+//nolint:ireturn  // Returning interface below is fine.
 package smoke_test
 
 import (
@@ -55,7 +56,13 @@ func TestSmoke(t *testing.T) {
 		fuzzer:     fuzz.New().NilChance(0),
 	}
 
-	core := consensus.NewCore(ethCl, attSvc)
+	state, err := consensus.LoadOrGenState(t.TempDir(), 1)
+	require.NoError(t, err)
+
+	snapshots, err := consensus.NewSnapshotStore(t.TempDir())
+	require.NoError(t, err)
+
+	core := consensus.NewCore(ethCl, attSvc, state, snapshots, 1)
 
 	conf := rpctest.GetConfig(true)
 	writeFiles(t, conf)
@@ -133,7 +140,7 @@ func (s *testAttSvc) decTotal() bool {
 	return true
 }
 
-func (s *testAttSvc) getPubKey() crypto.PubKey { //nolint:ireturn  // Returning interface is fine.
+func (s *testAttSvc) getPubKey() crypto.PubKey {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

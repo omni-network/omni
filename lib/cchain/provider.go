@@ -6,9 +6,9 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 )
 
-// ProviderCallback is the callback function signature that will be called with all approved attestation per
-// source chain block.
-type ProviderCallback func(ctx context.Context, att xchain.AggAttestation) error
+// ProviderCallback is the callback function signature that will be called with each approved attestation per
+// source chain block in strictly sequential order.
+type ProviderCallback func(ctx context.Context, approved xchain.AggAttestation) error
 
 // Provider abstracts connecting to the omni consensus chain and streaming approved
 // aggregate attestations for each source chain block from a specific height.
