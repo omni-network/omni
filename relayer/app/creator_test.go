@@ -1,45 +1,70 @@
-package relayer
+package relayer_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
+	"github.com/cometbft/cometbft/crypto/secp256k1"
+	fuzz "github.com/google/gofuzz"
+	"github.com/omni-network/omni/halo/attest"
+	relayer "github.com/omni-network/omni/relayer/app"
+	"github.com/stretchr/testify/require"
+
 	"github.com/omni-network/omni/lib/xchain"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestCreatorService_CreateSubmissions(t *testing.T) {
 	type args struct {
 		ctx          context.Context
-		streamUpdate StreamUpdate
+		streamUpdate relayer.StreamUpdate
 	}
+	const (
+		SourceChainID = 1
+		DestChainID   = 2
+	)
+
+	privKey := secp256k1.GenPrivKey()
+
+	var block xchain.Block
+	fuzz.New().NilChance(0).NumElements(1, 64).Fuzz(&block)
+
+	att, err := attest.CreateAttestation(privKey, block)
+	require.NoError(t, err)
+	require.Equal(t, block.BlockHeader, att.BlockHeader)
+	require.Equal(t, privKey.PubKey().Bytes(), att.Signature.ValidatorPubKey[:])
+
+	aggAtt := xchain.AggAttestation{
+		BlockHeader:    att.BlockHeader,
+		ValidatorSetID: 1,
+		BlockRoot:      att.BlockRoot,
+		Signatures:     []xchain.SigTuple{att.Signature},
+	}
+
 	tests := []struct {
-		name    string
-		args    args
-		want    []xchain.Submission
-		wantErr assert.ErrorAssertionFunc
+		name string
+		args args
 	}{
 		{
 			name: "ok",
 			args: args{
 				ctx: context.TODO(),
-				streamUpdate: StreamUpdate{
-					StreamID:       xchain.StreamID{},
-					AggAttestation: xchain.AggAttestation{},
-					Msgs:           nil,
+				streamUpdate: relayer.StreamUpdate{
+					StreamID: xchain.StreamID{
+						SourceChainID: SourceChainID,
+						DestChainID:   DestChainID,
+					},
+					AggAttestation: aggAtt,
+					Msgs:           block.Msgs,
 				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cr := CreatorService{}
+			cr := relayer.CreatorService{}
 			got, err := cr.CreateSubmissions(tt.args.ctx, tt.args.streamUpdate)
-			if !tt.wantErr(t, err, fmt.Sprintf("CreateSubmissions(%v, %v)", tt.args.ctx, tt.args.streamUpdate)) {
-				return
-			}
-			assert.Equalf(t, tt.want, got, "CreateSubmissions(%v, %v)", tt.args.ctx, tt.args.streamUpdate)
+			require.NoError(t, err)
+			require.NotNil(t, got)
 		})
 	}
 }
