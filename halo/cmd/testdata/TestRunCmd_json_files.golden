@@ -1,0 +1,32 @@
+{
+ "HomeDir": "testinput/input2",
+ "EngineJWTFile": "jwt.json",
+ "AppStatePersistInterval": 12,
+ "SnapshotInterval": 123,
+ "Comet": {
+  "Version": "",
+  "RootDir": "",
+  "ProxyApp": "",
+  "Moniker": "",
+  "DBBackend": "",
+  "DBPath": "",
+  "LogLevel": "",
+  "LogFormat": "",
+  "Genesis": "",
+  "PrivValidatorKey": "",
+  "PrivValidatorState": "",
+  "PrivValidatorListenAddr": "",
+  "NodeKey": "",
+  "ABCI": "",
+  "FilterPeers": false,
+  "RPC": null,
+  "P2P": null,
+  "Mempool": null,
+  "StateSync": null,
+  "BlockSync": null,
+  "Consensus": null,
+  "Storage": null,
+  "TxIndex": null,
+  "Instrumentation": null
+ }
+}
