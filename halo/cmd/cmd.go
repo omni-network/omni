@@ -35,7 +35,7 @@ func newRunCmd(runFunc func(context.Context, app.Config) error) *cobra.Command {
 				return err
 			}
 
-			return runFunc(cmd.Context(), cfg)
+			return runFunc(ctx, cfg)
 		},
 	}
 
