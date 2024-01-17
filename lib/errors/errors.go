@@ -4,15 +4,14 @@
 package errors
 
 import (
-	stderrors "errors" //nolint:revive // This package wraps std errors.
-	"fmt"
+	pkgerrors "github.com/pkg/errors" //nolint:revive // This package wraps pkg/errors.
 )
 
 // New returns an error that formats as the given text and
 // contains the structured (slog) attributes.
 func New(msg string, attrs ...any) error {
 	return structured{
-		err:   stderrors.New(msg),
+		err:   pkgerrors.New(msg),
 		attrs: attrs,
 	}
 }
@@ -26,7 +25,7 @@ func Wrap(err error, msg string, attrs ...any) error {
 	}
 
 	return structured{
-		err:   fmt.Errorf("%s: %w", msg, err), //nolint:forbidigo // Wrap error message using stdlib.
+		err:   pkgerrors.Wrap(err, msg),
 		attrs: attrs,
 	}
 }
