@@ -58,10 +58,11 @@ func NewEthClient(
 	}, nil
 }
 
-func (e *EthClient) GetCurrentFinalisedBlockHeader(ctx context.Context) (*types.Header, error) {
-	// call the function ourselves as the "finalized" tag is not supported by ethClient
-	// this call will return the last finalized block
+func (e *EthClient) getCurrentFinalisedBlockHeader(ctx context.Context) (*types.Header, error) {
+	// skip ethCLient and call the function directly as the "finalized" tag is not supported
+	// by ethClient. This call will return the last finalized block.
 	var raw json.RawMessage
+
 	params := []string{"finalized", "false"}
 	err := e.rpcClient.Client().CallContext(ctx, &raw, "eth_getBlockByNumber", params)
 	if err != nil {
@@ -78,8 +79,19 @@ func (e *EthClient) GetCurrentFinalisedBlockHeader(ctx context.Context) (*types.
 }
 
 // GetBlock fetches the cross chain block, if present in a given rollup block height.
-func (e *EthClient) GetBlock(ctx context.Context, height uint64, header *types.Header) (xchain.Block, bool, error) {
+func (e *EthClient) GetBlock(ctx context.Context, height uint64) (xchain.Block, bool, error) {
 	var xBlock xchain.Block
+
+	// get the current finalized header
+	finalisedHeader, err := e.getCurrentFinalisedBlockHeader(ctx)
+	if err != nil {
+		return xBlock, false, err
+	}
+
+	// ignore if our height is greater than the finalized height
+	if height > finalisedHeader.Number.Uint64() {
+		return xBlock, false, nil
+	}
 
 	// construct the query to fetch all the event logs in the given height
 	query := ethereum.FilterQuery{
@@ -107,18 +119,18 @@ func (e *EthClient) GetBlock(ctx context.Context, height uint64, header *types.H
 		}
 	}
 
-	// construct a xblock only if some cross chain events are found
+	// construct a xBlock only if some cross chain events are found
 	if len(selectedMsgLogs) > 0 {
-		// check if the header is supplied, otherwise get the header
-		if header == nil {
-			// get the block header for timestamp
+		// check if we can reuse the header
+		if height != finalisedHeader.Number.Uint64() {
+			// fetch the block header for the given height
 			hdr, err := e.rpcClient.HeaderByNumber(ctx, big.NewInt(int64(height)))
 			if err != nil {
 				return xBlock, false, errors.Wrap(err, "could not get header by number")
 			}
-			header = hdr
+			finalisedHeader = hdr
 		}
-		xBlock = e.constructXBlock(selectedMsgLogs, header)
+		xBlock = e.constructXBlock(selectedMsgLogs, finalisedHeader)
 
 		return xBlock, true, nil
 	}

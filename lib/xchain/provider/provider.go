@@ -65,7 +65,7 @@ func (p *Provider) Subscribe(
 	log.Info(ctx, "Subscribing to provider", "from_height", fromHeight)
 
 	// run the XBlock stream for this chain
-	go p.runStreamer(ctx, config, fromHeight, callback)
+	p.runStreamer(ctx, config, fromHeight, callback)
 
 	return nil
 }
@@ -78,7 +78,7 @@ func (p *Provider) runStreamer(
 	callback xchain.ProviderCallback,
 ) {
 	// instantiate a new streamer for this chain
-	streamer := NewStreamer(config, minHeight, callback, p.batchSize, p.backoffFunc)
+	streamer := NewStreamer(config, callback, p.batchSize, p.backoffFunc)
 
 	// start the streaming process
 	streamer.streamBlocks(ctx, minHeight)
