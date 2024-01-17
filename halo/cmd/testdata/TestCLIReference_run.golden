@@ -1,0 +1,11 @@
+Runs the halo consensus client
+
+Usage:
+  halo run [flags]
+
+Flags:
+      --engine-jwt-file string        The path to the Engine API JWT file
+  -h, --help                          help for run
+      --home string                   The application home directory containing config and data (default ".")
+      --snapshot-interval uint        The interval (in blocks) at which to create snapshots (default 256)
+      --state-persist-interval uint   The interval (in blocks) at which to persist the app state (default 10)
