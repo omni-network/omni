@@ -14,7 +14,7 @@ func StartRelayer(
 	cProvider cchain.Provider,
 	chainIDs []uint64,
 	xClient XChainClient,
-	creator Creator,
+	creator CreateFunc,
 	sender Sender,
 ) {
 	// Get the last submitted cursors for each chain.
@@ -52,7 +52,7 @@ func StartRelayer(
 				Msgs:           msgs,
 			}
 
-			submissions, err := creator.CreateSubmissions(ctx, update)
+			submissions, err := creator(update)
 			if err != nil {
 				return err
 			}

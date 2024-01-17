@@ -6,34 +6,10 @@
 source scripts/install_foundry.sh
 source scripts/install_pnpm.sh
 
-# searches upwards from a filepath for a directory containing foundry.toml
-foundryroot() {
-  dir=$(dirname $1)
+# import foundryroots
+source .pre-commit/foundry_utils.sh
 
-  while [[ "$dir" != "." && "$dir" != "/" ]]; do
-    if [ -f "$dir/foundry.toml" ]; then
-      echo "$dir"
-      return
-    fi
-
-    dir=$(dirname $dir)
-  done
-}
-
-# get foundryroot for every path provided
-ROOTS=()
-for file in $@; do
-  root=$(foundryroot $file)
-  if [ -n "$root" ]; then
-    ROOTS+=("$root")
-  fi
-done
-
-# remove duplicates
-ROOTS=($(echo "${ROOTS[@]}" | tr ' ' '\n' | sort -u))
-
-# run tests
-for dir in ${ROOTS[@]}; do
-  echo "Running forge tests in ./$dir"
+for dir in $(foundryroots $@); do
+  echo "Running 'forge test' in ./$dir"
   (cd $dir && pnpm install && forge test)
 done
