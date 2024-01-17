@@ -60,15 +60,13 @@ func Test_StartRelayer(t *testing.T) {
 
 	// Collect all stream updates via the creator, stop as soon as we get one msg from for streamB.
 	var resp []relayer.StreamUpdate
-	mockCreator := &mockCreator{
-		CreateSubmissionsFn: func(ctx context.Context, update relayer.StreamUpdate) ([]xchain.Submission, error) {
-			resp = append(resp, update)
-			if update.DestChainID == destChainB {
-				cancel()
-			}
+	mockCreateFunc := func(streamUpdate relayer.StreamUpdate) ([]xchain.Submission, error) {
+		resp = append(resp, streamUpdate)
+		if streamUpdate.DestChainID == destChainB {
+			cancel()
+		}
 
-			return nil, nil
-		},
+		return nil, nil
 	}
 
 	// Sender should never be called, since we return empty slices from the creator.
@@ -100,7 +98,7 @@ func Test_StartRelayer(t *testing.T) {
 		},
 	}
 
-	relayer.StartRelayer(ctx, mockProvider, []uint64{srcChain}, mockXClient, mockCreator, mockSender)
+	relayer.StartRelayer(ctx, mockProvider, []uint64{srcChain}, mockXClient, mockCreateFunc, mockSender)
 
 	// Verify responses
 	expectChainA := destChainBCursor - destChainACursor + 1
@@ -180,7 +178,6 @@ func Test_FromHeights(t *testing.T) {
 var (
 	_ cchain.Provider      = (*mockProvider)(nil)
 	_ relayer.XChainClient = (*mockXChainClient)(nil)
-	_ relayer.Creator      = (*mockCreator)(nil)
 	_ relayer.Sender       = (*mockSender)(nil)
 )
 
@@ -195,16 +192,6 @@ func (m *mockXChainClient) GetBlock(ctx context.Context, chainID uint64, height 
 
 func (m *mockXChainClient) GetSubmittedCursors(ctx context.Context, chainID uint64) ([]xchain.StreamCursor, error) {
 	return m.GetSubmittedCursorsFn(ctx, chainID)
-}
-
-type mockCreator struct {
-	CreateSubmissionsFn func(ctx context.Context, streamUpdate relayer.StreamUpdate) ([]xchain.Submission, error)
-}
-
-func (m *mockCreator) CreateSubmissions(ctx context.Context,
-	streamUpdate relayer.StreamUpdate,
-) ([]xchain.Submission, error) {
-	return m.CreateSubmissionsFn(ctx, streamUpdate)
 }
 
 type mockSender struct {

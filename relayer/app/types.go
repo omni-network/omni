@@ -12,11 +12,8 @@ type StreamUpdate struct {
 	Msgs           []xchain.Msg          // msgs that increment the cursor
 }
 
-type Creator interface {
-	// CreateSubmissions creates one or more submissions from the given stream update.
-	// creates submissions by splitting xmsgs into batches if required and generating merkle proofs for each submission
-	CreateSubmissions(ctx context.Context, streamUpdate StreamUpdate) ([]xchain.Submission, error)
-}
+// CreateFunc is a function that creates one or more submissions from the given stream update.
+type CreateFunc func(streamUpdate StreamUpdate) ([]xchain.Submission, error)
 
 type Sender interface {
 	// SendTransaction sends a submission to the destination chain by invoking "xsubmit" on portal contract.
