@@ -22,8 +22,6 @@ library XChain {
         bytes data;
         /// @dev Gas limit to use for call execution on destination chain
         uint64 gasLimit;
-        /// @dev Hash of the source chain transaction that emitted the message
-        bytes32 txHash;
     }
 
     struct BlockHeader {
