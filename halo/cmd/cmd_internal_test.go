@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"testing"
 
@@ -13,8 +14,8 @@ import (
 
 //go:generate go test . -update -clean
 
-func TestRunCmd(t *testing.T) {
-	t.Parallel()
+func TestRunCmd(t *testing.T) { //nolint:paralleltest,tparallel // RunCmd modifies global state via setMonikerForT
+	setMonikerForT(t)
 
 	tests := []struct {
 		Name  string
@@ -54,6 +55,41 @@ func TestRunCmd(t *testing.T) {
 			rootCmd := libcmd.NewRootCmd("halo", "", cmd)
 			rootCmd.SetArgs(args)
 			require.NoError(t, rootCmd.Execute())
+		})
+	}
+}
+
+func TestCLIReference(t *testing.T) {
+	t.Parallel()
+	const root = "halo" // Use to identify root command (vs subcommands).
+
+	tests := []struct {
+		Command string
+	}{
+		{root},
+		{"run"},
+	}
+
+	for _, test := range tests {
+		test := test // Pin
+		t.Run(test.Command, func(t *testing.T) {
+			t.Parallel()
+
+			var args []string
+			if test.Command != root {
+				args = append(args, test.Command)
+			}
+			args = append(args, "--help")
+
+			cmd := New()
+			cmd.SetArgs(args)
+
+			var bz bytes.Buffer
+			cmd.SetOut(&bz)
+
+			require.NoError(t, cmd.Execute())
+
+			tutil.RequireGoldenBytes(t, bz.Bytes())
 		})
 	}
 }

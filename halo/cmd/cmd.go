@@ -27,6 +27,14 @@ func newRunCmd(runFunc func(context.Context, app.Config) error) *cobra.Command {
 		Use:   "run",
 		Short: "Runs the halo consensus client",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+
+			var err error
+			cfg.Comet, err = parseCometConfig(ctx, cfg.HomeDir)
+			if err != nil {
+				return err
+			}
+
 			return runFunc(cmd.Context(), cfg)
 		},
 	}
