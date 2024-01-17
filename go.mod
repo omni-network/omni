@@ -11,6 +11,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/google/gofuzz v1.2.0
 	github.com/leodido/go-conventionalcommits v0.11.0
+	github.com/ogen-go/ogen v0.81.1
 	github.com/pkg/errors v0.9.1
 	github.com/ogen-go/ogen v0.81.1
 	github.com/spf13/cobra v1.8.0
