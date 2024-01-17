@@ -1,0 +1,46 @@
+openapi: "3.1.0"
+info:
+  version: 0.0.1
+  title: Explorer API
+servers:
+  - url: http://localhost:8080
+    description: Local server for testing
+paths:
+  /health:
+    get:
+      tags:
+        - health
+      operationId: HealthCheck
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheckResponse'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+    HealthCheckResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
