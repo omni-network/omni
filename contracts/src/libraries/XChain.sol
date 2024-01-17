@@ -38,22 +38,22 @@ library XChain {
     struct SigTuple {
         /// @dev Validator public key - 33 bytes compressed secp256k1
         bytes validatorPubKey;
-        /// @dev Signature of the attestationRoot
+        /// @dev Validator signature over XBlockRoot; Ethereum 65 bytes [R || S || V] format.
         bytes signature;
     }
 
     struct Submission {
-        /// @dev Merkle root of xchain block, attested to and signed by Omni validators
+        /// @dev Merkle root of xchain block (XBlockRoot), attested to and signed by validators
         bytes32 attestationRoot;
-        /// @dev Block header, proven against attestationRoot, identifies xchain block
+        /// @dev Block header, identifies xchain block
         BlockHeader blockHeader;
-        /// @dev Array of xchain messages in the block
+        /// @dev Messages to execute
         Msg[] msgs;
         /// @dev Multi proof of block header and messages, proven against attestationRoot
         bytes32[] proof;
         /// @dev Multi proof flags
         bool[] ProofFlags;
-        /// @dev Array of Omni validator signatures of the attestationRoot
+        /// @dev Array of validator signatures of the attestationRoot, and their public keys
         SigTuple[] signatures;
     }
 }
