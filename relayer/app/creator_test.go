@@ -15,9 +15,7 @@ import (
 
 func TestCreatorService_CreateSubmissions(t *testing.T) {
 	t.Parallel()
-	type args struct {
-		streamUpdate relayer.StreamUpdate
-	}
+
 	const (
 		SourceChainID  = 1
 		DestChainID    = 2
@@ -42,20 +40,18 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 	}
 
 	tests := []struct {
-		name string
-		args args
+		name         string
+		streamUpdate relayer.StreamUpdate
 	}{
 		{
 			name: "ok",
-			args: args{
-				streamUpdate: relayer.StreamUpdate{
-					StreamID: xchain.StreamID{
-						SourceChainID: SourceChainID,
-						DestChainID:   DestChainID,
-					},
-					AggAttestation: aggAtt,
-					Msgs:           block.Msgs,
+			streamUpdate: relayer.StreamUpdate{
+				StreamID: xchain.StreamID{
+					SourceChainID: SourceChainID,
+					DestChainID:   DestChainID,
 				},
+				AggAttestation: aggAtt,
+				Msgs:           block.Msgs,
 			},
 		},
 	}
@@ -63,7 +59,7 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := relayer.CreateSubmissions(tt.args.streamUpdate)
+			got, err := relayer.CreateSubmissions(tt.streamUpdate)
 			require.NoError(t, err)
 			for _, g := range got {
 				require.NotNil(t, g.AttestationRoot)
@@ -71,7 +67,7 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 				// all leafs provided, there should be no proof
 				require.Nil(t, g.Proof)
 				require.Equal(t, len(g.Msgs), len(g.ProofFlags))
-				require.Equal(t, len(g.Msgs), len(tt.args.streamUpdate.Msgs))
+				require.Equal(t, len(g.Msgs), len(tt.streamUpdate.Msgs))
 			}
 		})
 	}
