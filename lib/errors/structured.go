@@ -16,12 +16,16 @@ func (s structured) StackTrace() pkgerrors.StackTrace {
 		StackTrace() pkgerrors.StackTrace
 	}
 
-	trace, ok := s.err.(stackTracer) //nolint:errorlint // Using cast as per pkgerror documentation.
+	tracer, ok := s.err.(stackTracer) //nolint:errorlint // Using cast as per pkgerror documentation.
 	if !ok {
 		return nil
 	}
 
-	return trace.StackTrace()[1:] // Skip the first frame since pkgerrors doesn't support custom skipping.
+	trace := tracer.StackTrace()
+
+	// Skip the first frame as this is always this package (can't skip it via pkgerrors API).
+	// Drop the last frame as that is always the runtime package.
+	return trace[1 : len(trace)-1]
 }
 
 // Error returns the error message and implements the error interface.
