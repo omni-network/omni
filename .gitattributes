@@ -1,0 +1,5 @@
+# ent
+/explorer/db/ent/** linguist-generated=true
+/explorer/db/ent/schema/* linguist-generated=false
+/explorer/db/ent/entc.go linguist-generated=false
+/explorer/db/ent/generate.go linguist-generated=false
