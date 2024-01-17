@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/omni-network/omni/lib/db/ent"
-	"github.com/omni-network/omni/lib/db/ent/enttest"
-	"github.com/omni-network/omni/lib/db/ent/migrate"
+	"github.com/omni-network/omni/explorer/db/ent"
+	"github.com/omni-network/omni/explorer/db/ent/enttest"
+	"github.com/omni-network/omni/explorer/db/ent/migrate"
 	"github.com/omni-network/omni/lib/log"
 
 	"github.com/stretchr/testify/assert"

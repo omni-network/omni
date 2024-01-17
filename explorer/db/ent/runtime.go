@@ -4,8 +4,8 @@ package ent
 
 import (
 	"github.com/google/uuid"
-	"github.com/omni-network/omni/lib/db/ent/schema"
-	"github.com/omni-network/omni/lib/db/ent/xblock"
+	"github.com/omni-network/omni/explorer/db/ent/schema"
+	"github.com/omni-network/omni/explorer/db/ent/xblock"
 )
 
 // The init function reads all schema descriptors with runtime code

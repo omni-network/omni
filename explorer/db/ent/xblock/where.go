@@ -5,7 +5,7 @@ package xblock
 import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
-	"github.com/omni-network/omni/lib/db/ent/predicate"
+	"github.com/omni-network/omni/explorer/db/ent/predicate"
 )
 
 // ID filters vertices based on their ID field.

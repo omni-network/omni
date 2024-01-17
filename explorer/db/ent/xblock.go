@@ -9,7 +9,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
-	"github.com/omni-network/omni/lib/db/ent/xblock"
+	"github.com/omni-network/omni/explorer/db/ent/xblock"
 )
 
 // XBlock is the model entity for the XBlock schema.

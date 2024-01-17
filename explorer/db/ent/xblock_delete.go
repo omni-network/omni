@@ -8,8 +8,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/omni-network/omni/lib/db/ent/predicate"
-	"github.com/omni-network/omni/lib/db/ent/xblock"
+	"github.com/omni-network/omni/explorer/db/ent/predicate"
+	"github.com/omni-network/omni/explorer/db/ent/xblock"
 )
 
 // XBlockDelete is the builder for deleting a XBlock entity.

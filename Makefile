@@ -16,11 +16,15 @@ contract-bindings: ## Generate golang contract bindings.
 	make -C ./contracts bindings
 
 ###############################################################################
-###                                Utils                                 	###
+###                               Explorer                                 	###
 ###############################################################################
 
-gen: ## Runs our gen code
-	cd lib/db/ent && go generate ./
+explorer-gen: ## Generates code for our explorer
+	make -C ./explorer/db gen
+
+###############################################################################
+###                                Utils                                 	###
+###############################################################################
 
 ensure-go-releaser: ## Installs the go-releaser tool.
 	@which goreleaser > /dev/null || echo "go-releaser not installed, see https://goreleaser.com/install/"

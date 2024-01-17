@@ -12,7 +12,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/omni-network/omni/lib/db/ent/xblock"
+	"github.com/omni-network/omni/explorer/db/ent/xblock"
 )
 
 // ent aliases to avoid import conflicts in user's code.

@@ -5,12 +5,12 @@ package enttest
 import (
 	"context"
 
-	"github.com/omni-network/omni/lib/db/ent"
+	"github.com/omni-network/omni/explorer/db/ent"
 	// required by schema hooks.
-	_ "github.com/omni-network/omni/lib/db/ent/runtime"
+	_ "github.com/omni-network/omni/explorer/db/ent/runtime"
 
 	"entgo.io/ent/dialect/sql/schema"
-	"github.com/omni-network/omni/lib/db/ent/migrate"
+	"github.com/omni-network/omni/explorer/db/ent/migrate"
 )
 
 type (

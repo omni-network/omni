@@ -11,8 +11,8 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
-	"github.com/omni-network/omni/lib/db/ent/predicate"
-	"github.com/omni-network/omni/lib/db/ent/xblock"
+	"github.com/omni-network/omni/explorer/db/ent/predicate"
+	"github.com/omni-network/omni/explorer/db/ent/xblock"
 )
 
 // XBlockUpdate is the builder for updating XBlock entities.

@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/omni-network/omni/lib/db/ent"
+	"github.com/omni-network/omni/explorer/db/ent"
 )
 
 // The XBlockFunc type is an adapter to allow the use of ordinary

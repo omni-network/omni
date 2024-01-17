@@ -9,12 +9,12 @@ import (
 	"log"
 	"reflect"
 
-	"github.com/omni-network/omni/lib/db/ent/migrate"
+	"github.com/omni-network/omni/explorer/db/ent/migrate"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
-	"github.com/omni-network/omni/lib/db/ent/xblock"
+	"github.com/omni-network/omni/explorer/db/ent/xblock"
 )
 
 // Client is the client that holds all ent builders.
