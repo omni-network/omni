@@ -46,6 +46,8 @@ contract OmniPortal is IOmniPortal {
         // TODO: verify block header and msgs are included in the attestation merkle root
 
         // TODO: verify msgs are intended for this chain, and are next messages in stream
+
+        // TODO: execute messages, emit receipts, update stream offsets
     }
 
     /// @dev Emit an XMsg event, increment dest chain outXStreamOffset
