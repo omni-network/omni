@@ -1,0 +1,146 @@
+{
+ "HomeDir": ".",
+ "EngineJWTFile": "",
+ "AppStatePersistInterval": 10,
+ "SnapshotInterval": 256,
+ "Comet": {
+  "Version": "0.38.2",
+  "RootDir": ".",
+  "ProxyApp": "tcp://127.0.0.1:26658",
+  "Moniker": "testmoniker",
+  "DBBackend": "goleveldb",
+  "DBPath": "data",
+  "LogLevel": "info",
+  "LogFormat": "plain",
+  "Genesis": "config/genesis.json",
+  "PrivValidatorKey": "config/priv_validator_key.json",
+  "PrivValidatorState": "data/priv_validator_state.json",
+  "PrivValidatorListenAddr": "",
+  "NodeKey": "config/node_key.json",
+  "ABCI": "socket",
+  "FilterPeers": false,
+  "RPC": {
+   "RootDir": ".",
+   "ListenAddress": "tcp://127.0.0.1:26657",
+   "CORSAllowedOrigins": [],
+   "CORSAllowedMethods": [
+    "HEAD",
+    "GET",
+    "POST"
+   ],
+   "CORSAllowedHeaders": [
+    "Origin",
+    "Accept",
+    "Content-Type",
+    "X-Requested-With",
+    "X-Server-Time"
+   ],
+   "GRPCListenAddress": "",
+   "GRPCMaxOpenConnections": 900,
+   "Unsafe": false,
+   "MaxOpenConnections": 900,
+   "MaxSubscriptionClients": 100,
+   "MaxSubscriptionsPerClient": 5,
+   "SubscriptionBufferSize": 200,
+   "WebSocketWriteBufferSize": 200,
+   "CloseOnSlowClient": false,
+   "TimeoutBroadcastTxCommit": 10000000000,
+   "MaxBodyBytes": 1000000,
+   "MaxHeaderBytes": 1048576,
+   "TLSCertFile": "",
+   "TLSKeyFile": "",
+   "PprofListenAddress": ""
+  },
+  "P2P": {
+   "RootDir": ".",
+   "ListenAddress": "tcp://0.0.0.0:26656",
+   "ExternalAddress": "",
+   "Seeds": "",
+   "PersistentPeers": "",
+   "AddrBook": "config/addrbook.json",
+   "AddrBookStrict": true,
+   "MaxNumInboundPeers": 40,
+   "MaxNumOutboundPeers": 10,
+   "UnconditionalPeerIDs": "",
+   "PersistentPeersMaxDialPeriod": 0,
+   "FlushThrottleTimeout": 100000000,
+   "MaxPacketMsgPayloadSize": 1024,
+   "SendRate": 5120000,
+   "RecvRate": 5120000,
+   "PexReactor": true,
+   "SeedMode": false,
+   "PrivatePeerIDs": "",
+   "AllowDuplicateIP": false,
+   "HandshakeTimeout": 20000000000,
+   "DialTimeout": 3000000000,
+   "TestDialFail": false,
+   "TestFuzz": false,
+   "TestFuzzConfig": {
+    "Mode": 0,
+    "MaxDelay": 3000000000,
+    "ProbDropRW": 0.2,
+    "ProbDropConn": 0,
+    "ProbSleep": 0
+   }
+  },
+  "Mempool": {
+   "Type": "flood",
+   "RootDir": ".",
+   "Recheck": true,
+   "Broadcast": true,
+   "WalPath": "",
+   "Size": 5000,
+   "MaxTxsBytes": 1073741824,
+   "CacheSize": 10000,
+   "KeepInvalidTxsInCache": false,
+   "MaxTxBytes": 1048576,
+   "MaxBatchBytes": 0,
+   "ExperimentalMaxGossipConnectionsToPersistentPeers": 0,
+   "ExperimentalMaxGossipConnectionsToNonPersistentPeers": 0
+  },
+  "StateSync": {
+   "Enable": false,
+   "TempDir": "",
+   "RPCServers": null,
+   "TrustPeriod": 604800000000000,
+   "TrustHeight": 0,
+   "TrustHash": "",
+   "DiscoveryTime": 15000000000,
+   "ChunkRequestTimeout": 10000000000,
+   "ChunkFetchers": 4
+  },
+  "BlockSync": {
+   "Version": "v0"
+  },
+  "Consensus": {
+   "RootDir": ".",
+   "WalPath": "data/cs.wal/wal",
+   "TimeoutPropose": 3000000000,
+   "TimeoutProposeDelta": 500000000,
+   "TimeoutPrevote": 1000000000,
+   "TimeoutPrevoteDelta": 500000000,
+   "TimeoutPrecommit": 1000000000,
+   "TimeoutPrecommitDelta": 500000000,
+   "TimeoutCommit": 1000000000,
+   "SkipTimeoutCommit": false,
+   "CreateEmptyBlocks": true,
+   "CreateEmptyBlocksInterval": 0,
+   "PeerGossipSleepDuration": 100000000,
+   "PeerQueryMaj23SleepDuration": 2000000000,
+   "DoubleSignCheckHeight": 0
+  },
+  "Storage": {
+   "DiscardABCIResponses": false
+  },
+  "TxIndex": {
+   "Indexer": "kv",
+   "PsqlConn": ""
+  },
+  "Instrumentation": {
+   "Prometheus": false,
+   "PrometheusListenAddr": ":26660",
+   "MaxOpenConnections": 3,
+   "Namespace": "cometbft"
+  }
+ }
+}

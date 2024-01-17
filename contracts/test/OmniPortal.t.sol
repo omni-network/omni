@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.23;
 
-import {OmniPortal} from "src/OmniPortal.sol";
-import {CommonTest} from "test/common/CommonTest.sol";
+import { OmniPortal } from "src/OmniPortal.sol";
+import { CommonTest } from "test/common/CommonTest.sol";
 
 contract OmniPortal_Test is CommonTest {
     /// @dev Test that xcall with default gas limit emits XMsg event and increments outXStreamOffset
@@ -58,7 +58,15 @@ contract OmniPortal_Test is CommonTest {
     }
 
     /// @dev Get test foo() xcall params
-    function _xfoo() private returns (uint64 destChainId, uint64 offset, address to, bytes memory data) {
-        return (2, portal.outXStreamOffset(2), makeAddr("foo-addr-on-dest"), abi.encodeWithSignature("foo()"));
+    function _xfoo()
+        private
+        returns (uint64 destChainId, uint64 offset, address to, bytes memory data)
+    {
+        return (
+            2,
+            portal.outXStreamOffset(2),
+            makeAddr("foo-addr-on-dest"),
+            abi.encodeWithSignature("foo()")
+        );
     }
 }

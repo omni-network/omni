@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.23;
 
-import {Test} from "forge-std/Test.sol";
-import {OmniPortal} from "src/OmniPortal.sol";
-import {Events} from "test/common/Events.sol";
+import { Test } from "forge-std/Test.sol";
+import { OmniPortal } from "src/OmniPortal.sol";
+import { Events } from "test/common/Events.sol";
 
 /**
  * @title CommonTest

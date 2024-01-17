@@ -4,6 +4,9 @@ package log
 
 import (
 	"context"
+	"log/slog"
+
+	pkgerrors "github.com/pkg/errors" //nolint:revive // Need this for stacktraces.
 )
 
 type attrsKey struct{}
@@ -55,6 +58,7 @@ func Error(ctx context.Context, msg string, err error, attrs ...any) {
 func errAttrs(err error) []any {
 	type structErr interface {
 		Attrs() []any
+		StackTrace() pkgerrors.StackTrace
 	}
 
 	// Using cast instead of errors.As since no other wrapping library
@@ -64,7 +68,7 @@ func errAttrs(err error) []any {
 		return nil
 	}
 
-	return serr.Attrs()
+	return append(serr.Attrs(), slog.Any("stacktrace", serr.StackTrace()))
 }
 
 // mergeAttrs returns the attributes from the context merged with the provided attributes.

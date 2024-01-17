@@ -7,7 +7,6 @@ import (
 	"github.com/omni-network/omni/halo/consensus"
 	"github.com/omni-network/omni/lib/engine"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -19,16 +18,9 @@ import (
 	cmttypes "github.com/cometbft/cometbft/types"
 )
 
-// Config defines al the halo run config.
 type Config struct {
-	EngineJWTFile           string
-	AttestStateFile         string
-	AppStateDir             string
-	AppStatePersistInterval uint64
-	SnapshotDir             string
-	SnapshotInterval        uint64
-	Network                 netconf.Network
-	Comet                   cmtconfig.Config
+	HaloConfig
+	Comet cmtconfig.Config
 }
 
 // Run runs the halo client.
@@ -36,7 +28,12 @@ func Run(ctx context.Context, cfg Config) error {
 	// Load private validator key and state from disk (this hard exits on any error).
 	privVal := privval.LoadFilePV(cfg.Comet.PrivValidatorKeyFile(), cfg.Comet.PrivValidatorStateFile())
 
-	omniChain, ok := cfg.Network.OmniChain()
+	network, err := cfg.Network()
+	if err != nil {
+		return errors.Wrap(err, "load network")
+	}
+
+	omniChain, ok := network.OmniChain()
 	if !ok {
 		return errors.New("omni chain not found in network")
 	}
@@ -51,7 +48,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "create engine client")
 	}
 
-	attState, err := attest.LoadState(cfg.AttestStateFile)
+	attState, err := attest.LoadState(cfg.AttestStateFile())
 	if err != nil {
 		return errors.Wrap(err, "load attest state")
 	}
@@ -59,17 +56,17 @@ func Run(ctx context.Context, cfg Config) error {
 	var xprovider xchain.Provider
 	// TODO(corver): Instantiate xprovider
 
-	attSvc, err := attest.NewAttester(ctx, attState, privVal.Key.PrivKey, xprovider, cfg.Network.ChainIDs())
+	attSvc, err := attest.NewAttester(ctx, attState, privVal.Key.PrivKey, xprovider, network.ChainIDs())
 	if err != nil {
 		return errors.Wrap(err, "create attester")
 	}
 
-	appState, err := consensus.LoadOrGenState(cfg.AppStateDir, cfg.AppStatePersistInterval)
+	appState, err := consensus.LoadOrGenState(cfg.AppStateDir(), cfg.AppStatePersistInterval)
 	if err != nil {
 		return errors.Wrap(err, "load or gen app state")
 	}
 
-	snapshotStore, err := consensus.NewSnapshotStore(cfg.SnapshotDir)
+	snapshotStore, err := consensus.NewSnapshotStore(cfg.SnapshotDir())
 	if err != nil {
 		return errors.Wrap(err, "create snapshot store")
 	}

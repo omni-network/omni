@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 
@@ -81,7 +82,14 @@ func initializeConfig(appName string, cmd *cobra.Command) error {
 	v := viper.New()
 
 	v.SetConfigName(appName)
-	v.AddConfigPath(".")
+
+	// Set config path to <home>/config/ if --home flag is used in this app.
+	if home := cmd.Flag(homeFlag); home != nil {
+		v.AddConfigPath(filepath.Join(home.Value.String(), "config"))
+	} else {
+		// Otherwise, set config path to current directory
+		v.AddConfigPath(".")
+	}
 
 	// Attempt to read the config file, gracefully ignoring errors
 	// caused by a config file not being found. Return an error
@@ -115,7 +123,7 @@ func bindFlags(cmd *cobra.Command, v *viper.Viper) error {
 		// Define all the viper flag names to check
 		viperNames := []string{
 			f.Name,
-			strings.ReplaceAll(f.Name, "_", "."), // TOML uses "." to indicate hierarchy, while we use "_".
+			strings.Replace(f.Name, "-", ".", 1), // Support 1 tier of TOML groups using first term before "-".
 		}
 
 		for _, name := range viperNames {
