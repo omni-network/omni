@@ -19,8 +19,9 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 		streamUpdate relayer.StreamUpdate
 	}
 	const (
-		SourceChainID = 1
-		DestChainID   = 2
+		SourceChainID  = 1
+		DestChainID    = 2
+		ValidatorSetID = 1
 	)
 
 	privKey := secp256k1.GenPrivKey()
@@ -35,7 +36,7 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 
 	aggAtt := xchain.AggAttestation{
 		BlockHeader:    att.BlockHeader,
-		ValidatorSetID: 1,
+		ValidatorSetID: ValidatorSetID,
 		BlockRoot:      att.BlockRoot,
 		Signatures:     []xchain.SigTuple{att.Signature},
 	}
@@ -64,7 +65,13 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 			cr := relayer.CreatorService{}
 			got, err := cr.CreateSubmissions(tt.args.ctx, tt.args.streamUpdate)
 			require.NoError(t, err)
-			require.NotNil(t, got)
+			for _, g := range got {
+				require.NotNil(t, g.AttestationRoot)
+				// all leafs provided, there should be no proof
+				require.Nil(t, g.Proof)
+				require.Equal(t, len(g.Msgs), len(g.ProofFlags))
+				require.Equal(t, len(g.Msgs), len(tt.args.streamUpdate.Msgs))
+			}
 		})
 	}
 }
