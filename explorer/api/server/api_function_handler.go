@@ -3,15 +3,12 @@ package server
 import (
 	"context"
 	"log"
-	"sync"
 
 	apifunctions "github.com/omni-network/omni/explorer/api/api_functions"
 	service "github.com/omni-network/omni/explorer/api/openapi"
 )
 
-type RestService struct {
-	mux sync.Mutex
-}
+type RestService struct{}
 
 func CreateRestService(
 	_ context.Context,
@@ -33,11 +30,9 @@ func (*RestService) NewError(
 	}
 }
 
-func (s *RestService) HealthCheck(
+func (*RestService) HealthCheck(
 	ctx context.Context,
 ) (*service.HealthCheckResponse, error) {
-	s.mux.Lock()
-	defer s.mux.Unlock()
 	log.Printf("health check called")
 
 	h, err := apifunctions.GetHealth(ctx)
