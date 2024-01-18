@@ -72,18 +72,18 @@ func (e *EthClient) getCurrentFinalisedBlockHeader(ctx context.Context) (*types.
 }
 
 // GetBlock fetches the cross chain block, if present in a given rollup block height.
-func (e *EthClient) GetBlock(ctx context.Context, height uint64) (xchain.Block, error) {
+func (e *EthClient) GetBlock(ctx context.Context, height uint64) (xchain.Block, bool, error) {
 	var xBlock xchain.Block
 
 	// get the current finalized header
 	finalisedHeader, err := e.getCurrentFinalisedBlockHeader(ctx)
 	if err != nil {
-		return xBlock, err
+		return xBlock, false, err
 	}
 
 	// ignore if our height is greater than the finalized height
 	if height > finalisedHeader.Number.Uint64() {
-		return xBlock, nil
+		return xBlock, false, nil
 	}
 
 	// construct the query to fetch all the event logs in the given height
@@ -98,7 +98,7 @@ func (e *EthClient) GetBlock(ctx context.Context, height uint64) (xchain.Block, 
 	// call the rpc to get the logs from the chain
 	logs, err := e.rpcClient.FilterLogs(ctx, query)
 	if err != nil {
-		return xBlock, errors.Wrap(err, "could not filter logs")
+		return xBlock, false, errors.Wrap(err, "could not filter logs")
 	}
 
 	// select the logs based on the required event signature
@@ -109,7 +109,7 @@ func (e *EthClient) GetBlock(ctx context.Context, height uint64) (xchain.Block, 
 		case e.xMsgSigHash.Hex():
 			selectedMsgLogs = append(selectedMsgLogs, vLog)
 		default:
-			return xBlock, errors.New("log not expected")
+			return xBlock, false, errors.New("log not expected")
 		}
 	}
 
@@ -118,13 +118,13 @@ func (e *EthClient) GetBlock(ctx context.Context, height uint64) (xchain.Block, 
 		// fetch the block header for the given height
 		hdr, err := e.rpcClient.HeaderByNumber(ctx, big.NewInt(int64(height)))
 		if err != nil {
-			return xBlock, errors.Wrap(err, "could not get header by number")
+			return xBlock, false, errors.Wrap(err, "could not get header by number")
 		}
 		finalisedHeader = hdr
 	}
 	xBlock = e.constructXBlock(selectedMsgLogs, finalisedHeader)
 
-	return xBlock, nil
+	return xBlock, true, nil
 }
 
 // constructXBlock assembles the xBlock using the XMsgs and XReceipts found in the given block height.
