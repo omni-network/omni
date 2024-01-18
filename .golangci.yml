@@ -3,6 +3,9 @@ run:
   go: "1.21"
   skip-files:
     - ".*\\.pb\\.go$" # Ignore generated protobuf files
+  skip-dirs:
+    - explorer/api/openapi
+    - explorer/db/ent
 linters-settings:
   exhaustive:
     default-signifies-exhaustive: true
