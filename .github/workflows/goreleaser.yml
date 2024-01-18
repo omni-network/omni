@@ -30,5 +30,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # TODO(corver): fix halo docker build
-      # - name: Push to Dockerhub
+      # - name: Push Explorer API to Dockerhub
       #   run: docker push omniops/halo:latest
+        run: docker push omniops/explorer-api:latest
+      - name: Push Explorer API to Dockerhub
+        run: docker push omniops/explorer-api:latest
+      - name: Push Indexer to Dockerhub
+        run: docker push omniops/indexer:latest
