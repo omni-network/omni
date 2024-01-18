@@ -39,9 +39,11 @@ func (Mock) Subscribe(ctx context.Context, chainID uint64, fromHeight uint64, ca
 }
 
 func nextBlock(chainID uint64, height uint64) *xchain.Block {
+	// Use deterministic randomness based on the chainID and height.
 	r := rand.New(rand.NewSource(int64(chainID ^ height)))
 
 	var (
+		// TODO(corver): add xreceipts
 		msgs   []xchain.Msg
 		offset = make(offseter).offset
 	)

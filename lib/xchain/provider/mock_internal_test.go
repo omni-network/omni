@@ -1,16 +1,14 @@
-package provider_test
+package provider
 
 import (
 	"context"
 	"testing"
 
 	"github.com/omni-network/omni/lib/xchain"
-	"github.com/omni-network/omni/lib/xchain/provider"
 
 	"github.com/stretchr/testify/require"
 )
 
-//nolint:testifylint // This makes it less readable.
 func TestMock(t *testing.T) {
 	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -21,7 +19,7 @@ func TestMock(t *testing.T) {
 		total      = 5
 	)
 
-	var mock provider.Mock
+	var mock Mock
 
 	var blocks []xchain.Block
 	err := mock.Subscribe(ctx, chainID, fromHeight, func(ctx context.Context, block *xchain.Block) error {
@@ -38,9 +36,26 @@ func TestMock(t *testing.T) {
 	require.Len(t, blocks, total)
 
 	// Just some very basic sanity checks
-	require.Len(t, blocks[0].Msgs, 0)
-	require.Len(t, blocks[1].Msgs, 1)
-	require.Len(t, blocks[2].Msgs, 1)
-	require.Len(t, blocks[3].Msgs, 2)
-	require.Len(t, blocks[4].Msgs, 0)
+	assertMsgs(t, blocks[0].Msgs, 0, 0)
+	assertMsgs(t, blocks[1].Msgs, 1, 0)
+	assertMsgs(t, blocks[2].Msgs, 0, 1)
+	assertMsgs(t, blocks[3].Msgs, 1, 1)
+	assertMsgs(t, blocks[4].Msgs, 0, 0)
+}
+
+func assertMsgs(t *testing.T, msgs []xchain.Msg, a, b int) {
+	t.Helper()
+	count := func(msgs []xchain.Msg, chainID uint64) int {
+		var resp int
+		for _, msg := range msgs {
+			if msg.DestChainID == chainID {
+				resp++
+			}
+		}
+
+		return resp
+	}
+
+	require.Equal(t, a, count(msgs, destChainA))
+	require.Equal(t, b, count(msgs, destChainB))
 }
