@@ -134,10 +134,12 @@ func initFiles(ctx context.Context, homeDir string) error {
 		if err != nil {
 			return errors.Wrap(err, "get public key")
 		}
+
+		const nonZeroPower = 10 // Use any non-zero power for this single validator.
 		genDoc.Validators = []types.GenesisValidator{{
 			Address: pubKey.Address(),
 			PubKey:  pubKey,
-			Power:   10,
+			Power:   nonZeroPower,
 		}}
 
 		if err := genDoc.SaveAs(genFile); err != nil {
