@@ -2,107 +2,112 @@ package provider
 
 import (
 	"context"
-	"sync/atomic"
-	"time"
 
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
 )
 
-const (
-	BlockFetchInterval = 1 * time.Second // time interval between each block fetch
-)
-
 // Streamer maintains the config and the destination for each chain.
 type Streamer struct {
 	chainConfig *ChainConfig            // the chain config which also has the subscription information
-	minHeight   uint64                  // the minimum height to start the getting the xchain messages
 	callback    xchain.ProviderCallback // the callback to call on receiving a xblock
-	quitC       chan struct{}           // the quit channel to stop all the streamer operations
+	backoffFunc func(context.Context) (func(), func())
 }
 
 // NewStreamer manages the rpc client to collect xblocks and delivers it to the
 // subscriber through callback.
 func NewStreamer(config *ChainConfig,
-	minHeight uint64,
 	callback xchain.ProviderCallback,
-	quitC chan struct{},
+	backoffFunc func(context.Context) (func(), func()),
 ) *Streamer {
 	// initialize the streamer structure with the received configuration
 	stream := &Streamer{
 		chainConfig: config,
-		minHeight:   minHeight,
 		callback:    callback,
-		quitC:       quitC,
+		backoffFunc: backoffFunc,
 	}
 
 	return stream
 }
 
-func (s *Streamer) streamBlocks(ctx context.Context, currentHeight uint64) {
-	// produce blocks on every BlockFetchInterval
-	ticker := time.NewTicker(BlockFetchInterval)
-	defer ticker.Stop()
+// streamBlocks triggers a continuously running routine that fetches and delivers xBlocks.
+func (s *Streamer) streamBlocks(ctx context.Context, height uint64) {
+	go func() {
+		backoff, reset := s.backoffFunc(ctx)
+		currentHeight := height
 
-	var locker uint32 // variable to take channel backpressure
-	for {
-		select {
-		case <-ctx.Done():
-			log.Debug(ctx, "Stopping to produce blocks",
-				"height", currentHeight)
+		// stream blocks until the context is canceled
+		for ctx.Err() == nil {
+			// fetch xBlock
+			log.Debug(ctx, "Fetching block", "height", currentHeight)
+			xBlock, exists := s.fetchXBlock(ctx, currentHeight, backoff, reset)
 
-			return
+			if !exists {
+				// no cross chain logs in this height, so go to the next height
+				log.Debug(ctx, "No cross chain block", "height", currentHeight)
+				currentHeight++
 
-		case <-s.quitC:
-			log.Debug(ctx, "Stopping to produce blocks",
-				"height", currentHeight)
+				// TODO(jmozah): to backoff or not
 
-			return
-
-		case <-ticker.C:
-			// if the previous xblocks are not consumed yet, then skip this interval
-			if !atomic.CompareAndSwapUint32(&locker, 0, 1) {
 				continue
 			}
 
-			// fetch and deliver the block through the registered callback
-			s.fetchAndDeliverTheBlock(ctx, currentHeight)
-
-			// move to the next block
+			// deliver the fetched xBlock
+			s.deliverXBlock(ctx, currentHeight, xBlock, backoff, reset)
+			log.Debug(ctx, "Delivered xBlock", "height", currentHeight)
 			currentHeight++
-
-			// release the lock to accept new xblocks
-			atomic.StoreUint32(&locker, 0)
 		}
-	}
+	}()
 }
 
-func (s *Streamer) fetchAndDeliverTheBlock(ctx context.Context, currentHeight uint64) {
-	ctx = log.WithCtx(ctx, "height", currentHeight)
+func (s *Streamer) fetchXBlock(ctx context.Context,
+	currentHeight uint64,
+	backoff func(),
+	reset func(),
+) (xchain.Block, bool) {
+	// fetch xBlock
+	for ctx.Err() == nil {
+		// get the message and receipts from the chain for this block if any
+		xBlock, exists, err := s.chainConfig.rpcClient.GetBlock(ctx, currentHeight)
+		if ctx.Err() != nil {
+			return xBlock, false
+		}
+		if err != nil {
+			log.Warn(ctx, "Could not fetch xBlock, will retry again after sometime", err,
+				"height", currentHeight)
+			backoff() // backoff and retry fetching the block
 
-	// get the message and receipts from the chain for this block if any
-	xBlock, exists, err := s.chainConfig.rpcClient.GetBlock(ctx, currentHeight)
-	if err != nil {
-		log.Warn(ctx, "Could not get cross chain block from rpc client", err, "height", currentHeight)
-		return
+			continue
+		}
+		reset() // reset the GetBlock backoff
+
+		return xBlock, exists
 	}
 
-	// no cross chain logs in this height
-	if !exists {
-		log.Debug(ctx, "No cross chain block in this height", "height", currentHeight)
+	return xchain.Block{}, false
+}
 
-		return
+func (s *Streamer) deliverXBlock(ctx context.Context,
+	currentHeight uint64,
+	xBlock xchain.Block,
+	backoff func(),
+	reset func(),
+) {
+	// deliver the fetched xBlock
+	for ctx.Err() == nil {
+		err := s.callback(ctx, &xBlock)
+		if ctx.Err() != nil {
+			return
+		}
+		if err != nil {
+			log.Warn(ctx, "Could not deliver xBlock, will retry again after sometime", err,
+				"height", currentHeight)
+			backoff() // try delivering after sometime
+
+			continue
+		}
+		reset() // delivery backoff reset
+
+		break // successfully delivered the xBlock
 	}
-
-	// deliver the block
-	callbackErr := s.callback(ctx, &xBlock) // #nosec G601 : this goes away in go 1.22
-	if callbackErr != nil {
-		log.Warn(ctx, "Error while delivering xBlock", callbackErr,
-			"hash", xBlock.BlockHash)
-	}
-
-	log.Debug(ctx, "Delivered xBlock",
-		"hash", xBlock.BlockHash,
-		"msg_count", len(xBlock.Msgs),
-		"receipt_count", len(xBlock.Receipts))
 }

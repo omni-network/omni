@@ -26,14 +26,22 @@ func setMonikerForT(t *testing.T) {
 	})
 }
 
-// parseCometConfig parses the cometBFT config from disk and verifies it.
-func parseCometConfig(ctx context.Context, homeDir string) (cfg.Config, error) {
+// defaultCometConfig returns the default cometBFT config.
+func defaultCometConfig(homeDir string) cfg.Config {
 	conf := cfg.DefaultConfig()
 
 	if testMoniker != "" {
 		conf.Moniker = testMoniker
 	}
 
+	conf.RootDir = homeDir
+	conf.SetRoot(conf.RootDir)
+
+	return *conf
+}
+
+// parseCometConfig parses the cometBFT config from disk and verifies it.
+func parseCometConfig(ctx context.Context, homeDir string) (cfg.Config, error) {
 	const (
 		file = "config" // CometBFT config files are named config.toml
 		dir  = "config" // CometBFT config files are stored in the config directory
@@ -56,13 +64,12 @@ func parseCometConfig(ctx context.Context, homeDir string) (cfg.Config, error) {
 		log.Warn(ctx, "No comet config.toml file found, using default config", nil)
 	}
 
-	err := v.Unmarshal(conf)
-	if err != nil {
+	conf := defaultCometConfig(homeDir)
+
+	if err := v.Unmarshal(&conf); err != nil {
 		return cfg.Config{}, errors.Wrap(err, "unmarshal comet config")
 	}
 
-	conf.RootDir = homeDir
-	conf.SetRoot(conf.RootDir)
 	if err := conf.ValidateBasic(); err != nil {
 		return cfg.Config{}, errors.Wrap(err, "validate comet config")
 	}
@@ -73,5 +80,5 @@ func parseCometConfig(ctx context.Context, homeDir string) (cfg.Config, error) {
 		}
 	}
 
-	return *conf, nil
+	return conf, nil
 }

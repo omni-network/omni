@@ -28,10 +28,45 @@ var (
 	_ = event.NewSubscription
 )
 
+// XChainBlockHeader is an auto generated low-level Go binding around an user-defined struct.
+type XChainBlockHeader struct {
+	SourceChainId uint64
+	BlockHeight   uint64
+	BlockHash     [32]byte
+}
+
+// XChainMsg is an auto generated low-level Go binding around an user-defined struct.
+type XChainMsg struct {
+	SourceChainId uint64
+	DestChainId   uint64
+	StreamOffset  uint64
+	Sender        common.Address
+	To            common.Address
+	Data          []byte
+	GasLimit      uint64
+	TxHash        [32]byte
+}
+
+// XChainSigTuple is an auto generated low-level Go binding around an user-defined struct.
+type XChainSigTuple struct {
+	ValidatorPubKey []byte
+	Signature       []byte
+}
+
+// XChainSubmission is an auto generated low-level Go binding around an user-defined struct.
+type XChainSubmission struct {
+	AttestationRoot [32]byte
+	BlockHeader     XChainBlockHeader
+	Msgs            []XChainMsg
+	Proof           [][32]byte
+	ProofFlags      []bool
+	Signatures      []XChainSigTuple
+}
+
 // OmniPortalMetaData contains all meta data concerning the OmniPortal contract.
 var OmniPortalMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"constructor\",\"inputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"XMSG_DEFAULT_GAS_LIMIT\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"chainId\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"outXStreamOffset\",\"inputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"xcall\",\"inputs\":[{\"name\":\"destChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"xcall\",\"inputs\":[{\"name\":\"destChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"gasLimit\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"event\",\"name\":\"XMsg\",\"inputs\":[{\"name\":\"destChainId\",\"type\":\"uint64\",\"indexed\":true,\"internalType\":\"uint64\"},{\"name\":\"streamOffset\",\"type\":\"uint64\",\"indexed\":true,\"internalType\":\"uint64\"},{\"name\":\"sender\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"indexed\":false,\"internalType\":\"bytes\"},{\"name\":\"gasLimit\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false}]",
-	Bin: "0x60a060405234801561001057600080fd5b506001600160401b03461660805260805161043c610038600039600060dd015261043c6000f3fe60806040526004361061004a5760003560e01c806350e646dd1461004f57806370e8b56a1461006457806390ab417c146100775780639a8a0592146100cb5780639dad9aae146100ff575b600080fd5b61006261005d36600461027a565b610116565b005b6100626100723660046102db565b61012d565b34801561008357600080fd5b506100ae610092366004610351565b60006020819052908152604090205467ffffffffffffffff1681565b60405167ffffffffffffffff909116815260200160405180910390f35b3480156100d757600080fd5b506100ae7f000000000000000000000000000000000000000000000000000000000000000081565b34801561010b57600080fd5b506100ae62030d4081565b610127843385858562030d40610142565b50505050565b61013b853386868686610142565b5050505050565b67ffffffffffffffff808716600081815260208190526040908190205490519216917fac3afbbff5be7c4af1610721cf4793840bd167251fd6f184ee708f752a731283906101999089908990899089908990610373565b60405180910390a367ffffffffffffffff808716600090815260208190526040812080546001939192916101cf918591166103d0565b92506101000a81548167ffffffffffffffff021916908367ffffffffffffffff160217905550505050505050565b803567ffffffffffffffff8116811461021557600080fd5b919050565b80356001600160a01b038116811461021557600080fd5b60008083601f84011261024357600080fd5b50813567ffffffffffffffff81111561025b57600080fd5b60208301915083602082850101111561027357600080fd5b9250929050565b6000806000806060858703121561029057600080fd5b610299856101fd565b93506102a76020860161021a565b9250604085013567ffffffffffffffff8111156102c357600080fd5b6102cf87828801610231565b95989497509550505050565b6000806000806000608086880312156102f357600080fd5b6102fc866101fd565b945061030a6020870161021a565b9350604086013567ffffffffffffffff81111561032657600080fd5b61033288828901610231565b90945092506103459050606087016101fd565b90509295509295909350565b60006020828403121561036357600080fd5b61036c826101fd565b9392505050565b6001600160a01b0386811682528516602082015260806040820181905281018390526000838560a0840137600060a0858401015260a0601f19601f860116830101905067ffffffffffffffff831660608301529695505050505050565b67ffffffffffffffff8181168382160190808211156103ff57634e487b7160e01b600052601160045260246000fd5b509291505056fea264697066735822122071e35842a25103b0963d06c7898e5ead0f36227a1479eb772b2c7cd61da38b2b64736f6c63430008170033",
+	ABI: "[{\"type\":\"constructor\",\"inputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"XMSG_DEFAULT_GAS_LIMIT\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"XMSG_MAX_GAS_LIMIT\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"XMSG_MIN_GAS_LIMIT\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"chainId\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"outXStreamOffset\",\"inputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"xcall\",\"inputs\":[{\"name\":\"destChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"xcall\",\"inputs\":[{\"name\":\"destChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"gasLimit\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"xsubmit\",\"inputs\":[{\"name\":\"sub\",\"type\":\"tuple\",\"internalType\":\"structXChain.Submission\",\"components\":[{\"name\":\"attestationRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"blockHeader\",\"type\":\"tuple\",\"internalType\":\"structXChain.BlockHeader\",\"components\":[{\"name\":\"sourceChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"blockHeight\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"blockHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"msgs\",\"type\":\"tuple[]\",\"internalType\":\"structXChain.Msg[]\",\"components\":[{\"name\":\"sourceChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"destChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"streamOffset\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"sender\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"gasLimit\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"txHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"proof\",\"type\":\"bytes32[]\",\"internalType\":\"bytes32[]\"},{\"name\":\"ProofFlags\",\"type\":\"bool[]\",\"internalType\":\"bool[]\"},{\"name\":\"signatures\",\"type\":\"tuple[]\",\"internalType\":\"structXChain.SigTuple[]\",\"components\":[{\"name\":\"validatorPubKey\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"XMsg\",\"inputs\":[{\"name\":\"destChainId\",\"type\":\"uint64\",\"indexed\":true,\"internalType\":\"uint64\"},{\"name\":\"streamOffset\",\"type\":\"uint64\",\"indexed\":true,\"internalType\":\"uint64\"},{\"name\":\"sender\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"indexed\":false,\"internalType\":\"bytes\"},{\"name\":\"gasLimit\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"GasLimitTooHigh\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"GasLimitTooLow\",\"inputs\":[]}]",
+	Bin: "0x60a060405234801561001057600080fd5b506001600160401b0346166080526080516105a3610039600039600061012a01526105a36000f3fe60806040526004361061007b5760003560e01c80639a8a05921161004e5780639a8a0592146101185780639dad9aae1461014c578063a2cc111b14610163578063fa590d141461017a57600080fd5b80634053c6d81461008057806350e646dd146100a057806370e8b56a146100b357806390ab417c146100c6575b600080fd5b34801561008c57600080fd5b5061009e61009b36600461032f565b50565b005b61009e6100ae3660046103ec565b610190565b61009e6100c136600461044c565b6101a7565b3480156100d257600080fd5b506100fc6100e13660046104c1565b6000602081905290815260409020546001600160401b031681565b6040516001600160401b03909116815260200160405180910390f35b34801561012457600080fd5b506100fc7f000000000000000000000000000000000000000000000000000000000000000081565b34801561015857600080fd5b506100fc62030d4081565b34801561016f57600080fd5b506100fc624c4b4081565b34801561018657600080fd5b506100fc61520881565b6101a1843385858562030d40610278565b50505050565b624c4b406001600160401b03821611156102085760405162461bcd60e51b815260206004820152601d60248201527f4f6d6e69506f7274616c3a206761734c696d697420746f6f206869676800000060448201526064015b60405180910390fd5b6152086001600160401b03821610156102635760405162461bcd60e51b815260206004820152601c60248201527f4f6d6e69506f7274616c3a206761734c696d697420746f6f206c6f770000000060448201526064016101ff565b610271853386868686610278565b5050505050565b6001600160401b03808716600081815260208190526040908190205490519216917fac3afbbff5be7c4af1610721cf4793840bd167251fd6f184ee708f752a731283906102ce90899089908990899089906104dc565b60405180910390a36001600160401b038087166000908152602081905260408120805460019391929161030391859116610538565b92506101000a8154816001600160401b0302191690836001600160401b03160217905550505050505050565b60006020828403121561034157600080fd5b81356001600160401b0381111561035757600080fd5b8201610100818503121561036a57600080fd5b9392505050565b80356001600160401b038116811461038857600080fd5b919050565b80356001600160a01b038116811461038857600080fd5b60008083601f8401126103b657600080fd5b5081356001600160401b038111156103cd57600080fd5b6020830191508360208285010111156103e557600080fd5b9250929050565b6000806000806060858703121561040257600080fd5b61040b85610371565b93506104196020860161038d565b925060408501356001600160401b0381111561043457600080fd5b610440878288016103a4565b95989497509550505050565b60008060008060006080868803121561046457600080fd5b61046d86610371565b945061047b6020870161038d565b935060408601356001600160401b0381111561049657600080fd5b6104a2888289016103a4565b90945092506104b5905060608701610371565b90509295509295909350565b6000602082840312156104d357600080fd5b61036a82610371565b6001600160a01b0386811682528516602082015260806040820181905281018390526000838560a0840137600060a0858401015260a0601f19601f86011683010190506001600160401b03831660608301529695505050505050565b6001600160401b0381811683821601908082111561056657634e487b7160e01b600052601160045260246000fd5b509291505056fea26469706673582212207e3e9771ae3341be95c0fdc06d5cbf24ef94adafb7aa0a260225e7c9f6da900564736f6c63430008170033",
 }
 
 // OmniPortalABI is the input ABI used to generate the binding from.
@@ -232,6 +267,68 @@ func (_OmniPortal *OmniPortalCallerSession) XMSGDEFAULTGASLIMIT() (uint64, error
 	return _OmniPortal.Contract.XMSGDEFAULTGASLIMIT(&_OmniPortal.CallOpts)
 }
 
+// XMSGMAXGASLIMIT is a free data retrieval call binding the contract method 0xa2cc111b.
+//
+// Solidity: function XMSG_MAX_GAS_LIMIT() view returns(uint64)
+func (_OmniPortal *OmniPortalCaller) XMSGMAXGASLIMIT(opts *bind.CallOpts) (uint64, error) {
+	var out []interface{}
+	err := _OmniPortal.contract.Call(opts, &out, "XMSG_MAX_GAS_LIMIT")
+
+	if err != nil {
+		return *new(uint64), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint64)).(*uint64)
+
+	return out0, err
+
+}
+
+// XMSGMAXGASLIMIT is a free data retrieval call binding the contract method 0xa2cc111b.
+//
+// Solidity: function XMSG_MAX_GAS_LIMIT() view returns(uint64)
+func (_OmniPortal *OmniPortalSession) XMSGMAXGASLIMIT() (uint64, error) {
+	return _OmniPortal.Contract.XMSGMAXGASLIMIT(&_OmniPortal.CallOpts)
+}
+
+// XMSGMAXGASLIMIT is a free data retrieval call binding the contract method 0xa2cc111b.
+//
+// Solidity: function XMSG_MAX_GAS_LIMIT() view returns(uint64)
+func (_OmniPortal *OmniPortalCallerSession) XMSGMAXGASLIMIT() (uint64, error) {
+	return _OmniPortal.Contract.XMSGMAXGASLIMIT(&_OmniPortal.CallOpts)
+}
+
+// XMSGMINGASLIMIT is a free data retrieval call binding the contract method 0xfa590d14.
+//
+// Solidity: function XMSG_MIN_GAS_LIMIT() view returns(uint64)
+func (_OmniPortal *OmniPortalCaller) XMSGMINGASLIMIT(opts *bind.CallOpts) (uint64, error) {
+	var out []interface{}
+	err := _OmniPortal.contract.Call(opts, &out, "XMSG_MIN_GAS_LIMIT")
+
+	if err != nil {
+		return *new(uint64), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint64)).(*uint64)
+
+	return out0, err
+
+}
+
+// XMSGMINGASLIMIT is a free data retrieval call binding the contract method 0xfa590d14.
+//
+// Solidity: function XMSG_MIN_GAS_LIMIT() view returns(uint64)
+func (_OmniPortal *OmniPortalSession) XMSGMINGASLIMIT() (uint64, error) {
+	return _OmniPortal.Contract.XMSGMINGASLIMIT(&_OmniPortal.CallOpts)
+}
+
+// XMSGMINGASLIMIT is a free data retrieval call binding the contract method 0xfa590d14.
+//
+// Solidity: function XMSG_MIN_GAS_LIMIT() view returns(uint64)
+func (_OmniPortal *OmniPortalCallerSession) XMSGMINGASLIMIT() (uint64, error) {
+	return _OmniPortal.Contract.XMSGMINGASLIMIT(&_OmniPortal.CallOpts)
+}
+
 // ChainId is a free data retrieval call binding the contract method 0x9a8a0592.
 //
 // Solidity: function chainId() view returns(uint64)
@@ -334,6 +431,27 @@ func (_OmniPortal *OmniPortalSession) Xcall0(destChainId uint64, to common.Addre
 // Solidity: function xcall(uint64 destChainId, address to, bytes data, uint64 gasLimit) payable returns()
 func (_OmniPortal *OmniPortalTransactorSession) Xcall0(destChainId uint64, to common.Address, data []byte, gasLimit uint64) (*types.Transaction, error) {
 	return _OmniPortal.Contract.Xcall0(&_OmniPortal.TransactOpts, destChainId, to, data, gasLimit)
+}
+
+// Xsubmit is a paid mutator transaction binding the contract method 0x4053c6d8.
+//
+// Solidity: function xsubmit((bytes32,(uint64,uint64,bytes32),(uint64,uint64,uint64,address,address,bytes,uint64,bytes32)[],bytes32[],bool[],(bytes,bytes)[]) sub) returns()
+func (_OmniPortal *OmniPortalTransactor) Xsubmit(opts *bind.TransactOpts, sub XChainSubmission) (*types.Transaction, error) {
+	return _OmniPortal.contract.Transact(opts, "xsubmit", sub)
+}
+
+// Xsubmit is a paid mutator transaction binding the contract method 0x4053c6d8.
+//
+// Solidity: function xsubmit((bytes32,(uint64,uint64,bytes32),(uint64,uint64,uint64,address,address,bytes,uint64,bytes32)[],bytes32[],bool[],(bytes,bytes)[]) sub) returns()
+func (_OmniPortal *OmniPortalSession) Xsubmit(sub XChainSubmission) (*types.Transaction, error) {
+	return _OmniPortal.Contract.Xsubmit(&_OmniPortal.TransactOpts, sub)
+}
+
+// Xsubmit is a paid mutator transaction binding the contract method 0x4053c6d8.
+//
+// Solidity: function xsubmit((bytes32,(uint64,uint64,bytes32),(uint64,uint64,uint64,address,address,bytes,uint64,bytes32)[],bytes32[],bool[],(bytes,bytes)[]) sub) returns()
+func (_OmniPortal *OmniPortalTransactorSession) Xsubmit(sub XChainSubmission) (*types.Transaction, error) {
+	return _OmniPortal.Contract.Xsubmit(&_OmniPortal.TransactOpts, sub)
 }
 
 // OmniPortalXMsgIterator is returned from FilterXMsg and is used to iterate over the raw logs and unpacked data for XMsg events raised by the OmniPortal contract.

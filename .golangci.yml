@@ -3,6 +3,9 @@ run:
   go: "1.21"
   skip-files:
     - ".*\\.pb\\.go$" # Ignore generated protobuf files
+  skip-dirs:
+    - explorer/api/openapi
+    - explorer/db/ent
 linters-settings:
   exhaustive:
     default-signifies-exhaustive: true
@@ -56,9 +59,10 @@ linters-settings:
       # Some configured revive rules
       - name: imports-blacklist
         arguments:
-          - "errors" # Prefer ./lib/errors
-          - "github.com/pkg/errors" # Prefer ./lib/errors
-          - "github.com/gogo/protobuf/proto" # Prefer google.golang.org/protobuf
+          - "log"                                # Prefer ./lib/log
+          - "errors"                             # Prefer ./lib/errors
+          - "github.com/pkg/errors"              # Prefer ./lib/errors
+          - "github.com/gogo/protobuf/proto"     # Prefer google.golang.org/protobuf
           - "github.com/stretchr/testify/assert" # Prefer github.com/stretchr/testify/require
       - name: line-length-limit
         arguments:
