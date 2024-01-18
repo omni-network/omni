@@ -40,21 +40,16 @@ func (s *Streamer) streamBlocks(ctx context.Context, height uint64) {
 		for ctx.Err() == nil {
 			// fetch xBlock
 			log.Debug(ctx, "Fetching block", "height", currentHeight)
-			xBlock, exists := s.fetchXBlock(ctx, currentHeight, backoff, reset)
-
-			if !exists {
-				// no cross chain logs in this height, so go to the next height
-				log.Debug(ctx, "No cross chain block", "height", currentHeight)
-				currentHeight++
-
-				// TODO(jmozah): to backoff or not
-
-				continue
+			xBlock, ok := s.fetchXBlock(ctx, currentHeight, backoff, reset)
+			if !ok {
+				// this will happen only if the context is killed
+				return
 			}
 
 			// deliver the fetched xBlock
 			s.deliverXBlock(ctx, currentHeight, xBlock, backoff, reset)
 			log.Debug(ctx, "Delivered xBlock", "height", currentHeight)
+
 			currentHeight++
 		}
 	}()
@@ -79,7 +74,18 @@ func (s *Streamer) fetchXBlock(ctx context.Context,
 
 			continue
 		}
-		reset() // reset the GetBlock backoff
+
+		// err == nil and exists == false means the height is not finalized yet
+		// so backoff
+		if !exists {
+			backoff()
+
+			continue
+		}
+
+		// err == nil and exists = true means we have a xBlock
+		// so reset the backoff and return
+		reset()
 
 		return xBlock, exists
 	}
