@@ -16,12 +16,15 @@ func New() *cobra.Command {
 		"halo",
 		"Halo is a consensus client implementation for the Omni Protocol",
 		newRunCmd(app.Run),
+		newInitCmd(),
 	)
 }
 
 // newRunCmd returns a new cobra command that runs the halo consensus client.
 func newRunCmd(runFunc func(context.Context, app.Config) error) *cobra.Command {
-	var cfg app.Config
+	cfg := app.Config{
+		HaloConfig: app.DefaultHaloConfig(),
+	}
 
 	cmd := &cobra.Command{
 		Use:   "run",

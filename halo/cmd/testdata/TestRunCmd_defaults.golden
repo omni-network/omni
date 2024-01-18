@@ -1,8 +1,8 @@
 {
  "HomeDir": ".",
  "EngineJWTFile": "",
- "AppStatePersistInterval": 10,
- "SnapshotInterval": 256,
+ "AppStatePersistInterval": 1,
+ "SnapshotInterval": 1000,
  "Comet": {
   "Version": "0.38.2",
   "RootDir": ".",

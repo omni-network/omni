@@ -1,0 +1,23 @@
+# This is a TOML config file.
+# For more information, see https://github.com/toml-lang/toml
+
+# The version of the Halo binary that created or
+# last modified the config file. Do not modify this.
+version = "unknown"
+
+#######################################################################
+###                         Config Options                          ###
+#######################################################################
+
+# Omni chain execution client JWT file used for authentication.
+engine-jwt-file = "{{ .EngineJWTFile }}"
+
+# PersistInterval specifies the block interval at which the halo
+# will persist state to disk. Defaults to 1 (every height), setting this to
+# 0 disables state persistence.
+state-persist-interval = {{ .AppStatePersistInterval }}
+
+# SnapshotInterval specifies the height interval at which halo
+# will take state sync snapshots. Defaults to 1000 (roughly once an hour), setting this to
+# 0 disables state snapshots.
+snapshot-interval = {{ .SnapshotInterval }}

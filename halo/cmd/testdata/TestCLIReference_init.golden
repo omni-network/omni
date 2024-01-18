@@ -1,0 +1,8 @@
+Initializes halo files and folders
+
+Usage:
+  halo init [flags]
+
+Flags:
+  -h, --help          help for init
+      --home string   The application home directory containing config and data

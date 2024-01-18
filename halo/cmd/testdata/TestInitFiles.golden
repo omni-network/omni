@@ -1,0 +1,8 @@
+/config/config.toml
+/config/genesis.json
+/config/halo.toml
+/config/node_key.json
+/config/priv_validator_key.json
+/data/priv_validator_state.json
+/data/snapshots
+/data/xattestations_state.json

@@ -3,12 +3,16 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"math/rand"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/omni-network/omni/halo/app"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/test/tutil"
 
+	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"
 )
 
@@ -68,6 +72,7 @@ func TestCLIReference(t *testing.T) {
 	}{
 		{root},
 		{"run"},
+		{"init"},
 	}
 
 	for _, test := range tests {
@@ -92,6 +97,38 @@ func TestCLIReference(t *testing.T) {
 			tutil.RequireGoldenBytes(t, bz.Bytes())
 		})
 	}
+}
+
+func TestTomlConfig(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+
+	// Create a fuzzer with small uint64s (toml struggles with large numbers).
+	fuzzer := fuzz.New().Funcs(func(i *uint64, c fuzz.Continue) {
+		*i = uint64(rand.Intn(1_000_000))
+	})
+
+	var expect app.HaloConfig
+	fuzzer.Fuzz(&expect)
+	expect.HomeDir = dir
+
+	// Ensure the <home>/config directory exists.
+	require.NoError(t, os.Mkdir(filepath.Join(dir, "config"), 0o755))
+
+	// Write the randomized config to disk.
+	require.NoError(t, app.WriteConfigTOML(expect))
+
+	// Create a run command that asserts the config is as expected.
+	cmd := newRunCmd(func(_ context.Context, actual app.Config) error {
+		require.Equal(t, expect, actual.HaloConfig)
+
+		return nil
+	})
+
+	// Create and execute a root command that runs the run command.
+	rootCmd := libcmd.NewRootCmd("halo", "", cmd)
+	rootCmd.SetArgs([]string{"run", "--home=" + dir})
+	require.NoError(t, rootCmd.Execute())
 }
 
 // slice is a convenience function for creating string slice literals.

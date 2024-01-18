@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"sort"
+	"sync"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/xchain"
@@ -24,12 +25,17 @@ var _ State = (*FileState)(nil)
 
 // FileState is a simple file-backed implementation of the State interface.
 type FileState struct {
-	atts map[uint64]xchain.Attestation
 	path string
+
+	mu   sync.Mutex
+	atts map[uint64]xchain.Attestation
 }
 
 // Add adds the attestation to the state, persisting it.
 func (s *FileState) Add(att xchain.Attestation) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if existing, ok := s.atts[att.SourceChainID]; ok {
 		if existing.BlockHeight >= att.BlockHeight {
 			return errors.New("attestation height already exists",
@@ -44,11 +50,20 @@ func (s *FileState) Add(att xchain.Attestation) error {
 
 	s.atts[att.SourceChainID] = att
 
-	return s.save()
+	return s.saveUnsafe()
 }
 
 // Get returns a copy of all the attestations in the state in a deterministic order.
 func (s *FileState) Get() []xchain.Attestation {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return s.getUnsafe()
+}
+
+// getUnsafe returns a copy of all the attestations in the state in a deterministic order.
+// It is unsafe since it assumes the lock is held.
+func (s *FileState) getUnsafe() []xchain.Attestation {
 	atts := make([]xchain.Attestation, 0, len(s.atts))
 	for _, att := range s.atts {
 		atts = append(atts, att)
@@ -65,8 +80,9 @@ func (s *FileState) Get() []xchain.Attestation {
 	return atts
 }
 
-func (s *FileState) save() error {
-	bz, err := json.Marshal(s.Get())
+// saveUnsafe saves the state to disk. It is unsafe since it assumes the lock is held.
+func (s *FileState) saveUnsafe() error {
+	bz, err := json.Marshal(s.getUnsafe())
 	if err != nil {
 		return errors.Wrap(err, "marshal state file")
 	}
@@ -76,6 +92,11 @@ func (s *FileState) save() error {
 	}
 
 	return nil
+}
+
+// GenEmptyStateFile generates an empty state file at the given path.
+func GenEmptyStateFile(path string) error {
+	return (&FileState{path: path}).saveUnsafe()
 }
 
 // LoadState loads a file state from the given path.
