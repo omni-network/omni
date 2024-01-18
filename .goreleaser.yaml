@@ -2,14 +2,13 @@ version: 1
 
 project_name: omni
 
-# TODO(corver): fix halo build step
 builds:
-  # - id: halo
-  #   main: ./halo
-  #   binary: halo
-  #   env: [CGO_ENABLED=0]
-  #   goos: [linux, darwin]
-  #   goarch: [amd64, arm64]
+  - id: halo
+    main: ./halo
+    binary: halo
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
 
   - id: explorer-api
     main: ./explorer/api

@@ -6,7 +6,7 @@ import (
 
 	"github.com/omni-network/omni/lib/xchain"
 
-	"github.com/cometbft/cometbft/crypto/secp256k1"
+	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 
 	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"
@@ -17,7 +17,7 @@ func TestAttester(t *testing.T) {
 	ctx := context.Background()
 	fuzzer := fuzz.New().NilChance(0).NumElements(1, 64)
 
-	a := NewAttesterForT(t, secp256k1.GenPrivKey())
+	a := NewAttesterForT(t, k1.GenPrivKey())
 
 	add := func(t *testing.T, chainID, height uint64) {
 		t.Helper()
