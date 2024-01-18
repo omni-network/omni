@@ -40,7 +40,15 @@ func (s *Streamer) streamBlocks(ctx context.Context, height uint64) {
 		for ctx.Err() == nil {
 			// fetch xBlock
 			log.Debug(ctx, "Fetching block", "height", currentHeight)
-			xBlock := s.fetchXBlock(ctx, currentHeight, backoff, reset)
+			xBlock, exists := s.fetchXBlock(ctx, currentHeight, backoff, reset)
+
+			if !exists {
+				// no cross chain logs in this height, so go to the next height
+				log.Debug(ctx, "No cross chain block", "height", currentHeight)
+				currentHeight++
+
+				continue
+			}
 
 			// deliver the fetched xBlock
 			s.deliverXBlock(ctx, currentHeight, xBlock, backoff, reset)
@@ -55,14 +63,13 @@ func (s *Streamer) fetchXBlock(ctx context.Context,
 	currentHeight uint64,
 	backoff func(),
 	reset func(),
-) xchain.Block {
+) (xchain.Block, bool) {
 	// fetch xBlock
 	for ctx.Err() == nil {
 		// get the message and receipts from the chain for this block if any
-		// ignoring the second return value since we pass the empty xBlocks too
-		xBlock, _, err := s.chainConfig.rpcClient.GetBlock(ctx, currentHeight)
+		xBlock, exists, err := s.chainConfig.rpcClient.GetBlock(ctx, currentHeight)
 		if ctx.Err() != nil {
-			return xBlock
+			return xBlock, false
 		}
 		if err != nil {
 			log.Warn(ctx, "Could not fetch xBlock, will retry again after sometime", err,
@@ -71,12 +78,23 @@ func (s *Streamer) fetchXBlock(ctx context.Context,
 
 			continue
 		}
-		reset() // reset the GetBlock backoff
 
-		return xBlock
+		// err == nil and exists == false means the height is not finalized yet
+		// so backoff
+		if !exists {
+			backoff()
+
+			continue
+		}
+
+		// err == nil and exists = true means we have a xBlock
+		// so reset the backoff and return
+		reset()
+
+		return xBlock, exists
 	}
 
-	return xchain.Block{}
+	return xchain.Block{}, false
 }
 
 func (s *Streamer) deliverXBlock(ctx context.Context,

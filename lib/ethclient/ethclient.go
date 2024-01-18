@@ -8,6 +8,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum"
@@ -83,6 +84,10 @@ func (e *EthClient) GetBlock(ctx context.Context, height uint64) (xchain.Block, 
 
 	// ignore if our height is greater than the finalized height
 	if height > finalisedHeader.Number.Uint64() {
+		log.Debug(ctx, "Block not finalized yet",
+			"height", height,
+			"finalized_height", finalisedHeader.Number.Uint64())
+
 		return xBlock, false, nil
 	}
 
