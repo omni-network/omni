@@ -2,7 +2,6 @@ package ethclient
 
 import (
 	"context"
-	"encoding/json"
 	"math/big"
 	"strings"
 	"time"
@@ -61,18 +60,12 @@ func NewEthClient(
 func (e *EthClient) getCurrentFinalisedBlockHeader(ctx context.Context) (*types.Header, error) {
 	// skip ethCLient and call the function directly as the "finalized" tag is not supported
 	// by ethClient. This call will return the last finalized block.
-	var raw json.RawMessage
+	var finalisedHeader types.Header
 
 	params := []string{"finalized", "false"}
-	err := e.rpcClient.Client().CallContext(ctx, &raw, "eth_getBlockByNumber", params)
+	err := e.rpcClient.Client().CallContext(ctx, &finalisedHeader, "eth_getBlockByNumber", params)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get finalized block")
-	}
-
-	// only header info is enough for us
-	var finalisedHeader types.Header
-	if err := json.Unmarshal(raw, &finalisedHeader); err != nil {
-		return nil, errors.Wrap(err, "error unmarshalling finalized block")
 	}
 
 	return &finalisedHeader, nil
@@ -116,26 +109,26 @@ func (e *EthClient) GetBlock(ctx context.Context, height uint64) (xchain.Block, 
 		case e.xMsgSigHash.Hex():
 			selectedMsgLogs = append(selectedMsgLogs, vLog)
 		default:
+			return xBlock, false, errors.New("log not expected")
 		}
 	}
 
 	// construct a xBlock only if some cross chain events are found
-	if len(selectedMsgLogs) > 0 {
-		// check if we can reuse the header
-		if height != finalisedHeader.Number.Uint64() {
-			// fetch the block header for the given height
-			hdr, err := e.rpcClient.HeaderByNumber(ctx, big.NewInt(int64(height)))
-			if err != nil {
-				return xBlock, false, errors.Wrap(err, "could not get header by number")
-			}
-			finalisedHeader = hdr
-		}
-		xBlock = e.constructXBlock(selectedMsgLogs, finalisedHeader)
-
-		return xBlock, true, nil
+	if len(selectedMsgLogs) == 0 {
+		return xBlock, false, nil // no xMsgs or XReceipts in this block
 	}
+	// check if we can reuse the header
+	if height != finalisedHeader.Number.Uint64() {
+		// fetch the block header for the given height
+		hdr, err := e.rpcClient.HeaderByNumber(ctx, big.NewInt(int64(height)))
+		if err != nil {
+			return xBlock, false, errors.Wrap(err, "could not get header by number")
+		}
+		finalisedHeader = hdr
+	}
+	xBlock = e.constructXBlock(selectedMsgLogs, finalisedHeader)
 
-	return xBlock, false, nil // no xMsgs or XReceipts in this block
+	return xBlock, true, nil
 }
 
 // constructXBlock assembles the xBlock using the XMsgs and XReceipts found in the given block height.
@@ -147,7 +140,6 @@ func (e *EthClient) constructXBlock(selectedMsgLogs []types.Log, header *types.H
 			BlockHeight:   header.Number.Uint64(),
 			BlockHash:     header.Hash(),
 		},
-		Msgs:      make([]xchain.Msg, 0),
 		Timestamp: time.Unix(int64(header.Time), 0),
 	}
 

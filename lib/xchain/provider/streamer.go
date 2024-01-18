@@ -2,21 +2,15 @@ package provider
 
 import (
 	"context"
-	"time"
 
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
-)
-
-const (
-	BlockFetchInterval = 1 * time.Second // time interval between each block fetch
 )
 
 // Streamer maintains the config and the destination for each chain.
 type Streamer struct {
 	chainConfig *ChainConfig            // the chain config which also has the subscription information
 	callback    xchain.ProviderCallback // the callback to call on receiving a xblock
-	batchSize   uint64
 	backoffFunc func(context.Context) (func(), func())
 }
 
@@ -24,14 +18,12 @@ type Streamer struct {
 // subscriber through callback.
 func NewStreamer(config *ChainConfig,
 	callback xchain.ProviderCallback,
-	batchSize uint64,
 	backoffFunc func(context.Context) (func(), func()),
 ) *Streamer {
 	// initialize the streamer structure with the received configuration
 	stream := &Streamer{
 		chainConfig: config,
 		callback:    callback,
-		batchSize:   batchSize,
 		backoffFunc: backoffFunc,
 	}
 
@@ -50,10 +42,12 @@ func (s *Streamer) streamBlocks(ctx context.Context, height uint64) {
 			log.Debug(ctx, "Fetching block", "height", currentHeight)
 			xBlock, exists := s.fetchXBlock(ctx, currentHeight, backoff, reset)
 
-			// no cross chain logs in this height, so go to the next height
 			if !exists {
+				// no cross chain logs in this height, so go to the next height
 				log.Debug(ctx, "No cross chain block", "height", currentHeight)
 				currentHeight++
+
+				// TODO(jmozah): to backoff or not
 
 				continue
 			}
@@ -72,7 +66,6 @@ func (s *Streamer) fetchXBlock(ctx context.Context,
 	reset func(),
 ) (xchain.Block, bool) {
 	// fetch xBlock
-	var blk xchain.Block
 	for ctx.Err() == nil {
 		// get the message and receipts from the chain for this block if any
 		xBlock, exists, err := s.chainConfig.rpcClient.GetBlock(ctx, currentHeight)
@@ -91,7 +84,7 @@ func (s *Streamer) fetchXBlock(ctx context.Context,
 		return xBlock, exists
 	}
 
-	return blk, false
+	return xchain.Block{}, false
 }
 
 func (s *Streamer) deliverXBlock(ctx context.Context,

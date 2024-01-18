@@ -27,16 +27,14 @@ type ChainConfig struct {
 // Provider stores the source chain configuration and the global quit channel.
 type Provider struct {
 	config      []*ChainConfig // store config for every chain ID
-	batchSize   uint64
 	backoffFunc func(context.Context) (func(), func())
 }
 
 // New instantiates the provider instance which will be ready to accept
 // subscriptions for respective destination XBlocks.
-func New(chains []*ChainConfig, batchSize uint64, backoffFunc func(context.Context) (func(), func())) *Provider {
+func New(chains []*ChainConfig, backoffFunc func(context.Context) (func(), func())) *Provider {
 	return &Provider{
 		config:      chains,
-		batchSize:   batchSize,
 		backoffFunc: backoffFunc,
 	}
 }
@@ -78,7 +76,7 @@ func (p *Provider) runStreamer(
 	callback xchain.ProviderCallback,
 ) {
 	// instantiate a new streamer for this chain
-	streamer := NewStreamer(config, callback, p.batchSize, p.backoffFunc)
+	streamer := NewStreamer(config, callback, p.backoffFunc)
 
 	// start the streaming process
 	streamer.streamBlocks(ctx, minHeight)
