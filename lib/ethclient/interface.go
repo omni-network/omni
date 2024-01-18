@@ -10,5 +10,5 @@ import (
 // chain and provides information.
 type Client interface {
 	// GetBlock fetches the XBlock from the event logs given a block height
-	GetBlock(ctx context.Context, height uint64) (xchain.Block, bool, error)
+	GetBlock(ctx context.Context, height uint64) (xchain.Block, error)
 }
