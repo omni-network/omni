@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.23;
 
+import { XChain } from "../libraries/XChain.sol";
+
 /**
  * @title IOmniPortal
  * @notice The OmniPortal is the on-chain interface to Omni's cross-chain
@@ -79,4 +81,11 @@ interface IOmniPortal {
     function xcall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit)
         external
         payable;
+
+    /**
+     * @notice Submit a batch of XMsgs to be executed on this chain
+     * @param xsub An xchain submisison, including an attestation root w/ validator signatures,
+     *        and a block header and message batch, proven against the attestation root.
+     */
+    function xsubmit(XChain.Submission calldata xsub) external;
 }

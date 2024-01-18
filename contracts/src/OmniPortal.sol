@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import { IOmniPortal } from "./interfaces/IOmniPortal.sol";
+import { XChain } from "./libraries/XChain.sol";
 
 contract OmniPortal is IOmniPortal {
     /// @inheritdoc IOmniPortal
@@ -36,6 +37,17 @@ contract OmniPortal is IOmniPortal {
         require(gasLimit <= XMSG_MAX_GAS_LIMIT, "OmniPortal: gasLimit too high");
         require(gasLimit >= XMSG_MIN_GAS_LIMIT, "OmniPortal: gasLimit too low");
         _xcall(destChainId, msg.sender, to, data, gasLimit);
+    }
+
+    /// @inheritdoc IOmniPortal
+    function xsubmit(XChain.Submission calldata xsub) external {
+        // TODO: verify a quorum of validators have signed off on the attestation root.
+
+        // TODO: verify block header and msgs are included in the attestation merkle root
+
+        // TODO: verify msgs are intended for this chain, and are next messages in stream
+
+        // TODO: execute messages, emit receipts, update stream offsets
     }
 
     /// @dev Emit an XMsg event, increment dest chain outXStreamOffset
