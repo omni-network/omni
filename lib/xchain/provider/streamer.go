@@ -45,6 +45,7 @@ func (s *Streamer) streamBlocks(ctx context.Context, height uint64) {
 			// deliver the fetched xBlock
 			s.deliverXBlock(ctx, currentHeight, xBlock, backoff, reset)
 			log.Debug(ctx, "Delivered xBlock", "height", currentHeight)
+
 			currentHeight++
 		}
 	}()
@@ -58,7 +59,8 @@ func (s *Streamer) fetchXBlock(ctx context.Context,
 	// fetch xBlock
 	for ctx.Err() == nil {
 		// get the message and receipts from the chain for this block if any
-		xBlock, err := s.chainConfig.rpcClient.GetBlock(ctx, currentHeight)
+		// ignoring the second return value since we pass the empty xBlocks too
+		xBlock, _, err := s.chainConfig.rpcClient.GetBlock(ctx, currentHeight)
 		if ctx.Err() != nil {
 			return xBlock
 		}
