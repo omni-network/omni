@@ -11,6 +11,8 @@ import (
 )
 
 // RequireNoError asserts that err is nil. It also logs the error to show the stacktrace.
+//
+// This can be used instead of require.NoError(t, err) to show the stacktrace in case of error.
 func RequireNoError(tb testing.TB, err error) {
 	tb.Helper()
 
