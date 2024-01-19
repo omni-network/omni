@@ -29,5 +29,9 @@ jobs:
           args: release --snapshot --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Push to Dockerhub
+      - name: Push Explorer API to Dockerhub
+        run: docker push omniops/explorer-api:latest
+      - name: Push Indexer to Dockerhub
+        run: docker push omniops/indexer:latest
+      - name: Push Halo to Dockerhub
         run: docker push omniops/halo:latest
