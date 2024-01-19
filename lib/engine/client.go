@@ -19,7 +19,7 @@ var _ API = Client{}
 
 // Client implements the Engine API using JSON-RPC.
 type Client struct {
-	ethclient.Client
+	*ethclient.Client
 	client *rpc.Client
 }
 
@@ -38,7 +38,7 @@ func NewClient(ctx context.Context, urlAddr string, jwtSecret []byte) (Client, e
 	}
 
 	return Client{
-		Client: *ethclient.NewClient(rpcClient),
+		Client: ethclient.NewClient(rpcClient),
 		client: rpcClient,
 	}, nil
 }

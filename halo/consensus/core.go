@@ -15,7 +15,7 @@ import (
 // - Maintains the consensus chain state.
 type Core struct {
 	// Immutable fields (configured at construction)
-	ethCl            engine.Client
+	ethCl            engine.API
 	state            *State
 	attestSvc        attest.Service
 	snapshots        *SnapshotStore
@@ -30,7 +30,7 @@ type Core struct {
 }
 
 // NewCore returns a new Core instance.
-func NewCore(ethCl engine.Client, attestSvc attest.Service, state *State, snapshots *SnapshotStore,
+func NewCore(ethCl engine.API, attestSvc attest.Service, state *State, snapshots *SnapshotStore,
 	snapshotInterval uint64,
 ) *Core {
 	return &Core{

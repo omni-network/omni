@@ -4,13 +4,22 @@ package engine
 
 import (
 	"context"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // API defines the execution chain' Engine API.
 type API interface {
+	// BlockNumber returns the most recent block number
+	BlockNumber(ctx context.Context) (uint64, error)
+
+	// BlockByNumber returns a block from the current canonical chain. If number is nil, the
+	// latest known block is returned.
+	BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error)
+
 	// NewPayloadV2 creates an Eth1 block, inserts it in the chain, and returns the status of the chain.
 	NewPayloadV2(ctx context.Context, params engine.ExecutableData) (engine.PayloadStatusV1, error)
 	// NewPayloadV3 creates an Eth1 block, inserts it in the chain, and returns the status of the chain.
