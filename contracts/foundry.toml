@@ -11,6 +11,5 @@ remappings = [
 ]
 
 [fmt]
-line_length = 100
 bracket_spacing = true
 number_underscore = "thousands"

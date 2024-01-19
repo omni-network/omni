@@ -2,11 +2,11 @@
 pragma solidity 0.8.23;
 
 /**
- * @title XChain
+ * @title XTypes
  * @dev Defines xchain types, core to Omni's xchain messaging protocol. These
  *      types mirror those defined in omni/lib/xchain/types.go.
  */
-library XChain {
+library XTypes {
     struct Msg {
         /// @dev Chain ID of the source chain
         uint64 sourceChainId;
@@ -50,8 +50,25 @@ library XChain {
         /// @dev Multi proof of block header and messages, proven against attestationRoot
         bytes32[] proof;
         /// @dev Multi proof flags
-        bool[] ProofFlags;
+        bool[] proofFlags;
         /// @dev Array of validator signatures of the attestationRoot, and their public keys
         SigTuple[] signatures;
+    }
+
+    struct Receipt {
+        /// @dev Chain ID of the source chain
+        uint64 sourceChainId;
+        /// @dev Chain ID of the destination chain
+        uint64 destChainId;
+        /// @dev Monotonically incremented offset of Msg in source -> dest Stream
+        uint64 streamOffset;
+        /// @dev gas used in execution
+        uint256 gasUsed;
+        /// @dev relayer of the xmsg
+        address relayer;
+        /// @dev whether or not the call was successful
+        bool success;
+        /// @dev Return data from call execution on destination chain
+        bytes returnData;
     }
 }

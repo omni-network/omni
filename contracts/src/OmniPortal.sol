@@ -2,7 +2,8 @@
 pragma solidity 0.8.23;
 
 import { IOmniPortal } from "./interfaces/IOmniPortal.sol";
-import { XChain } from "./libraries/XChain.sol";
+import { XTypes } from "./libraries/XTypes.sol";
+import { XCall } from "./libraries/XCall.sol";
 
 contract OmniPortal is IOmniPortal {
     /// @inheritdoc IOmniPortal
@@ -15,10 +16,16 @@ contract OmniPortal is IOmniPortal {
     uint64 public constant XMSG_MIN_GAS_LIMIT = 21_000;
 
     /// @inheritdoc IOmniPortal
+    uint64 public constant XRECEIPT_MAX_RETURN_DATA_SIZE = 256;
+
+    /// @inheritdoc IOmniPortal
     uint64 public immutable chainId;
 
     /// @inheritdoc IOmniPortal
     mapping(uint64 => uint64) public outXStreamOffset;
+
+    /// @inheritdoc IOmniPortal
+    mapping(uint64 => uint64) public inXStreamOffset;
 
     constructor() {
         chainId = uint64(block.chainid);
@@ -30,35 +37,54 @@ contract OmniPortal is IOmniPortal {
     }
 
     /// @inheritdoc IOmniPortal
-    function xcall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit)
-        external
-        payable
-    {
+    function xcall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit) external payable {
         require(gasLimit <= XMSG_MAX_GAS_LIMIT, "OmniPortal: gasLimit too high");
         require(gasLimit >= XMSG_MIN_GAS_LIMIT, "OmniPortal: gasLimit too low");
         _xcall(destChainId, msg.sender, to, data, gasLimit);
     }
 
     /// @inheritdoc IOmniPortal
-    function xsubmit(XChain.Submission calldata xsub) external {
+    function xsubmit(XTypes.Submission calldata xsub) external {
         // TODO: verify a quorum of validators have signed off on the attestation root.
 
         // TODO: verify block header and msgs are included in the attestation merkle root
 
-        // TODO: verify msgs are intended for this chain, and are next messages in stream
-
-        // TODO: execute messages, emit receipts, update stream offsets
+        // execute each xmsg
+        for (uint256 i = 0; i < xsub.msgs.length; i++) {
+            _exec(xsub.msgs[i]);
+        }
     }
 
-    /// @dev Emit an XMsg event, increment dest chain outXStreamOffset
-    function _xcall(
-        uint64 destChainId,
-        address sender,
-        address to,
-        bytes calldata data,
-        uint64 gasLimit
-    ) private {
+    /// @dev Emit an XMsg, increment dest chain outXStreamOffset
+    function _xcall(uint64 destChainId, address sender, address to, bytes calldata data, uint64 gasLimit) internal {
         emit XMsg(destChainId, outXStreamOffset[destChainId], sender, to, data, gasLimit);
         outXStreamOffset[destChainId] += 1;
+    }
+
+    /// @dev Execute an XMsg (if it's next in its XStream), increment inXStreamOffset, emit an XReceipt
+    function _exec(XTypes.Msg calldata xmsg) internal {
+        require(xmsg.destChainId == chainId, "OmniPortal: wrong destChainId");
+        require(xmsg.streamOffset == inXStreamOffset[xmsg.sourceChainId], "OmniPortal: wrong streamOffset");
+
+        // increment offset before executing xcall, to avoid reentrancy loop
+        inXStreamOffset[xmsg.sourceChainId] += 1;
+
+        XTypes.Receipt memory receipt = XCall.exec(
+            xmsg,
+            msg.sender,
+            XCall.ExecOpts({
+                maxReturnDataSize: XRECEIPT_MAX_RETURN_DATA_SIZE,
+                outOfGasErrorMsg: "OmniPortal: out of gas"
+            })
+        );
+
+        emit XReceipt(
+            receipt.sourceChainId,
+            receipt.streamOffset,
+            receipt.gasUsed,
+            receipt.relayer,
+            receipt.success,
+            receipt.returnData
+        );
     }
 }

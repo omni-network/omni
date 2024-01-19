@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.23;
 
-import { XChain } from "../libraries/XChain.sol";
+import { XTypes } from "../libraries/XTypes.sol";
 
 /**
  * @title IOmniPortal
@@ -19,12 +19,25 @@ interface IOmniPortal {
      * @param data Encoded function calldata
      */
     event XMsg(
-        uint64 indexed destChainId,
+        uint64 indexed destChainId, uint64 indexed streamOffset, address sender, address to, bytes data, uint64 gasLimit
+    );
+
+    /**
+     * @notice Emitted when an XMsg is executed on another chain
+     * @param sourceChainId Source chain ID
+     * @param streamOffset Offset the XMsg in the source -> dest XStream
+     * @param gasUsed Gas used in execution of the XMsg
+     * @param success Whether the execution succeeded
+     * @param relayer Address of the relayer who submitted the XMsg
+     * @param returnData Return data from the XMsg execution
+     */
+    event XReceipt(
+        uint64 indexed sourceChainId,
         uint64 indexed streamOffset,
-        address sender,
-        address to,
-        bytes data,
-        uint64 gasLimit
+        uint256 gasUsed,
+        address relayer,
+        bool success,
+        bytes returnData
     );
 
     /**
@@ -46,6 +59,13 @@ interface IOmniPortal {
     function XMSG_MIN_GAS_LIMIT() external view returns (uint64);
 
     /**
+     * @notice Maximum return data size emitted in an XReceipt
+     * @dev Return data is trimmed to this size, omitting bytes after the limit
+     * @return Maximum return data size
+     */
+    function XRECEIPT_MAX_RETURN_DATA_SIZE() external view returns (uint64);
+
+    /**
      * @notice Chain ID of the chain to which this portal is deployed
      * @dev Used as sourceChainId for all outbound XMsgs
      * @return Chain ID
@@ -58,6 +78,13 @@ interface IOmniPortal {
      * @return Offset
      */
     function outXStreamOffset(uint64 destChainId) external view returns (uint64);
+
+    /**
+     * @notice Offset of the next inbound XMsg to be received in the corresponding source -> dest XStream
+     * @param sourceChainId Destination chain ID
+     * @return Offset
+     */
+    function inXStreamOffset(uint64 sourceChainId) external view returns (uint64);
 
     /**
      * @notice Call a contract on another chain
@@ -78,14 +105,12 @@ interface IOmniPortal {
      * @param data Encoded function calldata (use abi.encodeWithSignature
      * 	or abi.encodeWithSelector)
      */
-    function xcall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit)
-        external
-        payable;
+    function xcall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit) external payable;
 
     /**
      * @notice Submit a batch of XMsgs to be executed on this chain
      * @param xsub An xchain submisison, including an attestation root w/ validator signatures,
      *        and a block header and message batch, proven against the attestation root.
      */
-    function xsubmit(XChain.Submission calldata xsub) external;
+    function xsubmit(XTypes.Submission calldata xsub) external;
 }
