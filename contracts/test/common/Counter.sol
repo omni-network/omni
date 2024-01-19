@@ -13,11 +13,4 @@ contract Counter {
         count++;
         return count;
     }
-
-    /// @dev Lets us increase gas usage for testing
-    function incrementTimes(uint256 times) public {
-        for (uint256 i = 0; i < times; i++) {
-            increment();
-        }
-    }
 }

@@ -66,19 +66,6 @@ contract CommonTest is Test, Events {
         });
     }
 
-    /// @dev Get XMsg fields for an inbound increment(uint256) xmsg
-    function _inbound_incrementTimes(uint256 times) internal view returns (XTypes.Msg memory) {
-        return XTypes.Msg({
-            sourceChainId: otherChainId,
-            destChainId: portal.chainId(),
-            streamOffset: portal.inXStreamOffset(otherChainId),
-            sender: address(counter),
-            to: address(counter),
-            data: abi.encodeWithSignature("incrementTimes(uint256)", times),
-            gasLimit: portal.XMSG_DEFAULT_GAS_LIMIT()
-        });
-    }
-
     /// @dev Get XMsg fields for an inbound revertWithReason(string) xmsg
     function _inbound_revertWithReason(string memory reason) internal view returns (XTypes.Msg memory) {
         return XTypes.Msg({
