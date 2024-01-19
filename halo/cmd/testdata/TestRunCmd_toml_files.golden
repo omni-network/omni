@@ -4,7 +4,7 @@
  "AppStatePersistInterval": 99,
  "SnapshotInterval": 999,
  "Comet": {
-  "Version": "0.38.2",
+  "Version": "0.38.3",
   "RootDir": "testinput/input1",
   "ProxyApp": "tcp://127.0.0.1:26658",
   "Moniker": "config.toml",
