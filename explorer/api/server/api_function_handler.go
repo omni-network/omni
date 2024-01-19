@@ -2,10 +2,10 @@ package server
 
 import (
 	"context"
-	"log"
 
 	apifunctions "github.com/omni-network/omni/explorer/api/api_functions"
 	service "github.com/omni-network/omni/explorer/api/openapi"
+	"github.com/omni-network/omni/lib/log"
 )
 
 type RestService struct{}
@@ -33,7 +33,7 @@ func (*RestService) NewError(
 func (*RestService) HealthCheck(
 	ctx context.Context,
 ) (*service.HealthCheckResponse, error) {
-	log.Printf("health check called")
+	log.Debug(ctx, "Health check called")
 
 	h, err := apifunctions.GetHealth(ctx)
 	if err != nil {
