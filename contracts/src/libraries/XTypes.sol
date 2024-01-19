@@ -62,11 +62,11 @@ library XTypes {
         uint64 destChainId;
         /// @dev Monotonically incremented offset of Msg in source -> dest Stream
         uint64 streamOffset;
-        /// @dev gas used in execution
+        /// @dev Gas used in execution
         uint256 gasUsed;
-        /// @dev relayer of the xmsg
+        /// @dev Relayer of the xmsg
         address relayer;
-        /// @dev whether or not the call was successful
+        /// @dev Whether or not the call was successful
         bool success;
         /// @dev Return data from call execution on destination chain
         bytes returnData;
