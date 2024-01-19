@@ -41,6 +41,20 @@ func TestMock(t *testing.T) {
 	assertMsgs(t, blocks[2].Msgs, 0, 1)
 	assertMsgs(t, blocks[3].Msgs, 1, 1)
 	assertMsgs(t, blocks[4].Msgs, 0, 0)
+
+	assertOffsets(t, blocks)
+}
+
+func assertOffsets(t *testing.T, blocks []xchain.Block) {
+	t.Helper()
+	offsets := make(map[xchain.StreamID]uint64)
+
+	for _, block := range blocks {
+		for _, msg := range block.Msgs {
+			require.Equal(t, offsets[msg.StreamID], msg.StreamOffset)
+			offsets[msg.StreamID]++
+		}
+	}
 }
 
 func assertMsgs(t *testing.T, msgs []xchain.Msg, a, b int) {

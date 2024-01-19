@@ -5,54 +5,99 @@ import (
 	"context"
 	"io"
 	"math/rand"
+	"sync"
 	"time"
 
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
+	relayer "github.com/omni-network/omni/relayer/app"
 )
 
-var _ xchain.Provider = (*Mock)(nil)
+var (
+	_ xchain.Provider      = (*Mock)(nil)
+	_ relayer.XChainClient = (*Mock)(nil)
+)
 
 const (
 	destChainA = 100
 	destChainB = 200
 )
 
-// Mock is a mock implementation of the xchain.Provider interface.
-// Its zero value is ready for use. It returns semi-deterministic blocks.
-type Mock struct{}
+// Mock is a mock implementation of the xchain.Provider interface as well as the relayer.XChainClient.
+type Mock struct {
+	period time.Duration
+	mu     sync.Mutex
+	blocks []xchain.Block
+}
 
-func (Mock) Subscribe(ctx context.Context, chainID uint64, fromHeight uint64, callback xchain.ProviderCallback,
+func NewMock(period time.Duration) *Mock {
+	return &Mock{
+		period: period,
+	}
+}
+
+func (m *Mock) Subscribe(ctx context.Context, chainID uint64, fromHeight uint64, callback xchain.ProviderCallback,
 ) error {
 	go func() {
 		height := fromHeight
+		offset := make(offseter).offset
 		for ctx.Err() == nil {
-			if err := callback(ctx, nextBlock(chainID, height)); err != nil {
+			block := nextBlock(chainID, height, offset)
+			m.addBlock(*block)
+			if err := callback(ctx, block); err != nil {
 				log.Warn(ctx, "Mock callback failed, will retry", err)
 				continue
 			}
 			height++
+
+			// Backoff before providing next block
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(m.period):
+			}
 		}
 	}()
 
 	return nil
 }
 
-func nextBlock(chainID uint64, height uint64) *xchain.Block {
+func (m *Mock) GetBlock(_ context.Context, chainID uint64, height uint64) (xchain.Block, bool, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	for _, block := range m.blocks {
+		if block.BlockHeight == height && block.SourceChainID == chainID {
+			return block, true, nil
+		}
+	}
+
+	return xchain.Block{}, false, nil
+}
+
+func (*Mock) GetSubmittedCursors(context.Context, uint64) ([]xchain.StreamCursor, error) {
+	return nil, nil
+}
+
+func (m *Mock) addBlock(block xchain.Block) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.blocks = append(m.blocks, block)
+}
+
+func nextBlock(chainID uint64, height uint64, offsetFunc func(xchain.StreamID) uint64) *xchain.Block {
 	// Use deterministic randomness based on the chainID and height.
 	r := rand.New(rand.NewSource(int64(chainID ^ height)))
 
-	var (
-		// TODO(corver): add xreceipts
-		msgs   []xchain.Msg
-		offset = make(offseter).offset
-	)
+	// TODO(corver): add xreceipts
+	var msgs []xchain.Msg
 
 	newMsgA := func() xchain.Msg {
-		return newMsg(r, chainID, destChainA, offset)
+		return newMsg(r, chainID, destChainA, offsetFunc)
 	}
 	newMsgB := func() xchain.Msg {
-		return newMsg(r, chainID, destChainB, offset)
+		return newMsg(r, chainID, destChainB, offsetFunc)
 	}
 
 	switch height % 4 {
