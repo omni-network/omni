@@ -39,6 +39,20 @@ var (
 	privValStateJSON []byte
 )
 
+// TestSmoke run a cobbled-together instance of halo and relayer ensuring that blocks are built
+// and that the cross chain message flow works.
+//
+// It has two Engine API variants:
+// - geth: uses a real geth devnet (integration test)
+// - mock: uses a mock Engine API (unit test)
+//
+// Each variant includes:
+// - Mock XProvider generates periodic xblocks for 1 src chain incl messages to 2 dest chains.
+// - Uses real cometBFT with single validator
+// - Uses real halo implementations of: core, attestation service, app state, snapshot store
+// - Uses relayer code with mocked creator and sender
+// - Integrate relayer using cprovider directly connected to core
+// - Assert that stream updates are generated for all xblocks.
 func TestSmoke(t *testing.T) {
 	t.Parallel()
 
@@ -79,8 +93,6 @@ func TestSmoke(t *testing.T) {
 	}
 }
 
-// TestSmoke starts a genesis geth node and a halo core application ensuring that blocks are built.
-// TODO(corver): improve this a lot.
 func testSmoke(t *testing.T, ethCl engine.API) {
 	t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
