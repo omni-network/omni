@@ -86,3 +86,13 @@ type StreamCursor struct {
 	Offset            uint64 // Latest applied Msg offset of the Stream
 	SourceBlockHeight uint64 // Height of the source chain block
 }
+
+// DestChainID returns the destination chain ID of the first message in the submission
+// (all should be to the same dest chain).
+func (s Submission) DestChainID() uint64 {
+	if len(s.Msgs) == 0 {
+		return 0
+	}
+
+	return s.Msgs[0].DestChainID
+}

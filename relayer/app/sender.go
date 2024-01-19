@@ -14,8 +14,13 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/omni-network/omni/lib/xchain"
+)
+
+const (
+	miningTimeout = 1 * time.Minute
 )
 
 type Portal struct {
@@ -30,13 +35,13 @@ type SenderService struct {
 	RpcClient  *ethclient.Client
 }
 
-func NewPortal(portalCfg PortalConfig, rpcClient *ethclient.Client, privateKey ecdsa.PrivateKey) (Portal, error) {
-	contract, err := bindings.NewOmniPortal(common.HexToAddress(portalCfg.contractAddress), rpcClient)
+func NewPortal(chain netconf.Chain, rpcClient *ethclient.Client, privateKey ecdsa.PrivateKey) (Portal, error) {
+	contract, err := bindings.NewOmniPortal(common.HexToAddress(chain.PortalAddress), rpcClient)
 	if err != nil {
 		return Portal{}, err
 	}
 
-	transactor, err := bind.NewKeyedTransactorWithChainID(&privateKey, big.NewInt(int64(portalCfg.chainID)))
+	transactor, err := bind.NewKeyedTransactorWithChainID(&privateKey, big.NewInt(int64(chain.ID)))
 	if err != nil {
 		return Portal{}, err
 	}
@@ -56,13 +61,8 @@ func NewPortal(portalCfg PortalConfig, rpcClient *ethclient.Client, privateKey e
 
 func (s SenderService) SendTransaction(ctx context.Context, submission xchain.Submission) error {
 	xChainSubmission := translateSubmission(submission)
+	destChainID := submission.DestChainID()
 
-	// todo(Lazar): add destChainID as top level property in xchain.Submission
-	if len(submission.Msgs) == 0 {
-		return nil
-	}
-
-	destChainID := submission.Msgs[0].DestChainID
 	portal, ok := s.Portal[destChainID]
 	if !ok {
 		return errors.New("portal not found", "destChainID", destChainID)
@@ -75,24 +75,24 @@ func (s SenderService) SendTransaction(ctx context.Context, submission xchain.Su
 	}
 
 	log.Info(ctx, "submitted_tx",
-		"txHash", tx.Hash().Hex(),
+		"tx_hash", tx.Hash().Hex(),
 		"nonce", tx.Nonce(),
 		"gas_price", tx.GasPrice(),
 	)
 
-	waitCtx, cancel := context.WithTimeout(ctx, 1*time.Minute)
+	waitCtx, cancel := context.WithTimeout(ctx, miningTimeout)
 	receipt, err := bind.WaitMined(waitCtx, s.RpcClient, tx)
-	cancel()
-	if err != nil {
-		if errors.Is(err, context.DeadlineExceeded) {
-			// todo(Lazar): handle error increase gas price and retry
-		}
+	defer cancel()
 
-		return errors.Wrap(err, "submission tx not mined (tx=%s): %w", tx.Hash().Hex())
-	}
-
-	if receipt.Status == ethtypes.ReceiptStatusFailed {
-		return errors.New("submission tx failed (tx=%s)", tx.Hash().Hex())
+	if ctx.Err() != nil {
+		// shutdown
+		return nil
+	} else if waitCtx.Err() != nil {
+		// todo(Lazar): handle error increase gas price and retry
+	} else if err != nil {
+		return err
+	} else if receipt.Status == ethtypes.ReceiptStatusFailed {
+		return errors.New("submission tx failed", tx.Hash().Hex())
 	}
 
 	// todo(Lazar): handle success case, metrics and cache
