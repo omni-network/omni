@@ -22,10 +22,7 @@ library XCall {
      * @param opts Execution options
      * @return receipt XReceipt of xmsg execution
      */
-    function exec(XTypes.Msg memory xmsg, address relayer, ExecOpts memory opts)
-        internal
-        returns (XTypes.Receipt memory)
-    {
+    function exec(XTypes.Msg memory xmsg, ExecOpts memory opts) internal returns (XTypes.Receipt memory) {
         // execute xmsg, tracking gas used
         uint256 gasUsed = gasleft();
         (bool success, bytes memory returnData) = xmsg.to.call{ gas: xmsg.gasLimit }(xmsg.data); // solhint-disable-line avoid-low-level-calls
@@ -42,7 +39,7 @@ library XCall {
         }
 
         return XTypes.Receipt(
-            xmsg.sourceChainId, xmsg.destChainId, xmsg.streamOffset, gasUsed, relayer, success, returnData
+            xmsg.sourceChainId, xmsg.destChainId, xmsg.streamOffset, gasUsed, msg.sender, success, returnData
         );
     }
 }

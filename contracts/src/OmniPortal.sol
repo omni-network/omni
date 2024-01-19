@@ -71,7 +71,6 @@ contract OmniPortal is IOmniPortal {
 
         XTypes.Receipt memory receipt = XCall.exec(
             xmsg,
-            msg.sender,
             XCall.ExecOpts({
                 maxReturnDataSize: XRECEIPT_MAX_RETURN_DATA_SIZE,
                 outOfGasErrorMsg: "OmniPortal: out of gas"

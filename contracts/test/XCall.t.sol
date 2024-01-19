@@ -14,12 +14,12 @@ contract XCall_Test is CommonTest {
         uint256 count = counter.count();
 
         vm.expectCall(xmsg.to, xmsg.data);
-        XTypes.Receipt memory receipt = XCall.exec(xmsg, relayer, _default_execopts());
+        XTypes.Receipt memory receipt = XCall.exec(xmsg, _default_execopts());
 
         assertEq(receipt.sourceChainId, xmsg.sourceChainId);
         assertEq(receipt.destChainId, xmsg.destChainId);
         assertEq(receipt.streamOffset, xmsg.streamOffset);
-        assertEq(receipt.relayer, relayer);
+        assertEq(receipt.relayer, msg.sender);
         assertEq(receipt.success, true);
         assertEq(receipt.returnData, abi.encode(count + 1));
         assertEq(counter.count(), count + 1);
@@ -30,12 +30,12 @@ contract XCall_Test is CommonTest {
         XTypes.Msg memory xmsg = _inbound_revertWithReason("test");
 
         vm.expectCall(xmsg.to, xmsg.data);
-        XTypes.Receipt memory receipt = XCall.exec(xmsg, relayer, _default_execopts());
+        XTypes.Receipt memory receipt = XCall.exec(xmsg, _default_execopts());
 
         assertEq(receipt.sourceChainId, xmsg.sourceChainId);
         assertEq(receipt.destChainId, xmsg.destChainId);
         assertEq(receipt.streamOffset, xmsg.streamOffset);
-        assertEq(receipt.relayer, relayer);
+        assertEq(receipt.relayer, msg.sender);
         assertEq(receipt.success, false);
         assertEq(receipt.returnData, abi.encodeWithSignature("Error(string)", "test"));
     }
@@ -45,12 +45,12 @@ contract XCall_Test is CommonTest {
         XTypes.Msg memory xmsg = _inbound_failRequireWithReason("test");
 
         vm.expectCall(xmsg.to, xmsg.data);
-        XTypes.Receipt memory receipt = XCall.exec(xmsg, relayer, _default_execopts());
+        XTypes.Receipt memory receipt = XCall.exec(xmsg, _default_execopts());
 
         assertEq(receipt.sourceChainId, xmsg.sourceChainId);
         assertEq(receipt.destChainId, xmsg.destChainId);
         assertEq(receipt.streamOffset, xmsg.streamOffset);
-        assertEq(receipt.relayer, relayer);
+        assertEq(receipt.relayer, msg.sender);
         assertEq(receipt.success, false);
         assertEq(receipt.returnData, abi.encodeWithSignature("Error(string)", "test"));
     }
@@ -66,14 +66,13 @@ contract XCall_Test is CommonTest {
         assert(untrimmedReturnData.length > maxReturnDataSize);
 
         vm.expectCall(xmsg.to, xmsg.data);
-        XTypes.Receipt memory receipt = XCall.exec(
-            xmsg, relayer, XCall.ExecOpts({ maxReturnDataSize: maxReturnDataSize, outOfGasErrorMsg: "out of gas" })
-        );
+        XTypes.Receipt memory receipt =
+            XCall.exec(xmsg, XCall.ExecOpts({ maxReturnDataSize: maxReturnDataSize, outOfGasErrorMsg: "out of gas" }));
 
         assertEq(receipt.sourceChainId, xmsg.sourceChainId);
         assertEq(receipt.destChainId, xmsg.destChainId);
         assertEq(receipt.streamOffset, xmsg.streamOffset);
-        assertEq(receipt.relayer, relayer);
+        assertEq(receipt.relayer, msg.sender);
         assertEq(receipt.success, false);
 
         // assert return data is trimmed
@@ -92,12 +91,12 @@ contract XCall_Test is CommonTest {
         uint256 count = counter.count();
 
         vm.expectCall(xmsg.to, xmsg.data);
-        XTypes.Receipt memory receipt = XCall.exec(xmsg, relayer, _default_execopts());
+        XTypes.Receipt memory receipt = XCall.exec(xmsg, _default_execopts());
 
         assertEq(receipt.sourceChainId, xmsg.sourceChainId);
         assertEq(receipt.destChainId, xmsg.destChainId);
         assertEq(receipt.streamOffset, xmsg.streamOffset);
-        assertEq(receipt.relayer, relayer);
+        assertEq(receipt.relayer, msg.sender);
         assertEq(receipt.success, false);
         assertEq(receipt.returnData, abi.encodeWithSignature("Error(string)", "out of gas"));
         assertEq(counter.count(), count);
