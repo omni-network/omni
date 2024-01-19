@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/halo/attest"
-	"github.com/omni-network/omni/halo/consensus"
+	"github.com/omni-network/omni/halo/comet"
 	"github.com/omni-network/omni/lib/engine"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/xchain"
@@ -61,19 +61,19 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "create attester")
 	}
 
-	appState, err := consensus.LoadOrGenState(cfg.AppStateDir(), cfg.AppStatePersistInterval)
+	appState, err := comet.LoadOrGenState(cfg.AppStateDir(), cfg.AppStatePersistInterval)
 	if err != nil {
 		return errors.Wrap(err, "load or gen app state")
 	}
 
-	snapshotStore, err := consensus.NewSnapshotStore(cfg.SnapshotDir())
+	snapshotStore, err := comet.NewSnapshotStore(cfg.SnapshotDir())
 	if err != nil {
 		return errors.Wrap(err, "create snapshot store")
 	}
 
-	core := consensus.NewCore(ethCl, attSvc, appState, snapshotStore, cfg.SnapshotInterval)
+	app := comet.NewApp(ethCl, attSvc, appState, snapshotStore, cfg.SnapshotInterval)
 
-	cmtNode, err := newCometNode(ctx, &cfg.Comet, core, privVal)
+	cmtNode, err := newCometNode(ctx, &cfg.Comet, app, privVal)
 	if err != nil {
 		return errors.Wrap(err, "create comet node")
 	}

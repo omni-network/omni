@@ -1,4 +1,4 @@
-package consensus
+package comet
 
 import (
 	"context"
@@ -20,7 +20,7 @@ const (
 
 // Info returns information about the application state.
 // V0 in-memory chain always starts from scratch, at height 0.
-func (c *Core) Info(_ context.Context, req *abci.RequestInfo) (*abci.ResponseInfo, error) {
+func (c *App) Info(_ context.Context, req *abci.RequestInfo) (*abci.ResponseInfo, error) {
 	return &abci.ResponseInfo{
 		Data:             "", // CometBFT does not use this field.
 		Version:          req.AbciVersion,
@@ -31,7 +31,7 @@ func (c *Core) Info(_ context.Context, req *abci.RequestInfo) (*abci.ResponseInf
 }
 
 // InitChain initializes the blockchain.
-func (c *Core) InitChain(_ context.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
+func (c *App) InitChain(_ context.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
 	if req.InitialHeight > 1 {
 		return nil, errors.New("initial height must not 1")
 	}
@@ -56,7 +56,7 @@ func (c *Core) InitChain(_ context.Context, req *abci.RequestInitChain) (*abci.R
 
 // PrepareProposal returns a proposal for the next block.
 // Note returning an error results in a panic cometbft and CONSENSUS_FAILURE log.
-func (c *Core) PrepareProposal(ctx context.Context, req *abci.RequestPrepareProposal) (
+func (c *App) PrepareProposal(ctx context.Context, req *abci.RequestPrepareProposal) (
 	*abci.ResponsePrepareProposal, error,
 ) {
 	if len(req.Txs) > 0 {
@@ -128,7 +128,7 @@ func (c *Core) PrepareProposal(ctx context.Context, req *abci.RequestPrepareProp
 }
 
 // ProcessProposal validates a proposal.
-func (c *Core) ProcessProposal(ctx context.Context, req *abci.RequestProcessProposal) (
+func (c *App) ProcessProposal(ctx context.Context, req *abci.RequestProcessProposal) (
 	*abci.ResponseProcessProposal, error,
 ) {
 	cpayload, err := payloadFromTXs(req.Txs)
@@ -152,7 +152,7 @@ func (c *Core) ProcessProposal(ctx context.Context, req *abci.RequestProcessProp
 }
 
 // ExtendVote extends a vote with application-injected data (vote extensions).
-func (c *Core) ExtendVote(context.Context, *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
+func (c *App) ExtendVote(context.Context, *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
 	attBytes, err := encode(c.attestSvc.GetAvailable())
 	if err != nil {
 		return nil, err
@@ -164,7 +164,7 @@ func (c *Core) ExtendVote(context.Context, *abci.RequestExtendVote) (*abci.Respo
 }
 
 // VerifyVoteExtension verifies a vote extension.
-func (*Core) VerifyVoteExtension(context.Context, *abci.RequestVerifyVoteExtension) (
+func (*App) VerifyVoteExtension(context.Context, *abci.RequestVerifyVoteExtension) (
 	*abci.ResponseVerifyVoteExtension, error,
 ) {
 	// TODO(corver): Figure out what to verify.
@@ -174,7 +174,7 @@ func (*Core) VerifyVoteExtension(context.Context, *abci.RequestVerifyVoteExtensi
 }
 
 // FinalizeBlock finalizes a block.
-func (c *Core) FinalizeBlock(ctx context.Context, req *abci.RequestFinalizeBlock) (*abci.ResponseFinalizeBlock, error) {
+func (c *App) FinalizeBlock(ctx context.Context, req *abci.RequestFinalizeBlock) (*abci.ResponseFinalizeBlock, error) {
 	cpayload, err := payloadFromTXs(req.Txs)
 	if err != nil {
 		return nil, err
@@ -216,7 +216,7 @@ func (c *Core) FinalizeBlock(ctx context.Context, req *abci.RequestFinalizeBlock
 }
 
 // Commit commits the state. It also creates a snapshot sometimes.
-func (c *Core) Commit(context.Context, *abci.RequestCommit) (*abci.ResponseCommit, error) {
+func (c *App) Commit(context.Context, *abci.RequestCommit) (*abci.ResponseCommit, error) {
 	height, err := c.state.Commit()
 	if err != nil {
 		return nil, errors.Wrap(err, "commit state")
@@ -240,7 +240,7 @@ func (c *Core) Commit(context.Context, *abci.RequestCommit) (*abci.ResponseCommi
 }
 
 // ListSnapshots lists all the available snapshots.
-func (c *Core) ListSnapshots(context.Context, *abci.RequestListSnapshots) (*abci.ResponseListSnapshots, error) {
+func (c *App) ListSnapshots(context.Context, *abci.RequestListSnapshots) (*abci.ResponseListSnapshots, error) {
 	var resp abci.ResponseListSnapshots
 	for _, snapshot := range c.snapshots.List() {
 		snapshot := snapshot // Pin.
@@ -251,7 +251,7 @@ func (c *Core) ListSnapshots(context.Context, *abci.RequestListSnapshots) (*abci
 }
 
 // OfferSnapshot sends a snapshot offer.
-func (c *Core) OfferSnapshot(_ context.Context, req *abci.RequestOfferSnapshot) (*abci.ResponseOfferSnapshot, error) {
+func (c *App) OfferSnapshot(_ context.Context, req *abci.RequestOfferSnapshot) (*abci.ResponseOfferSnapshot, error) {
 	c.restore.Lock()
 	defer c.restore.Unlock()
 
@@ -267,7 +267,7 @@ func (c *Core) OfferSnapshot(_ context.Context, req *abci.RequestOfferSnapshot) 
 }
 
 // ApplySnapshotChunk applies a chunk of snapshot.
-func (c *Core) ApplySnapshotChunk(_ context.Context, req *abci.RequestApplySnapshotChunk) (
+func (c *App) ApplySnapshotChunk(_ context.Context, req *abci.RequestApplySnapshotChunk) (
 	*abci.ResponseApplySnapshotChunk, error,
 ) {
 	c.restore.Lock()
@@ -300,7 +300,7 @@ func (c *Core) ApplySnapshotChunk(_ context.Context, req *abci.RequestApplySnaps
 }
 
 // LoadSnapshotChunk returns a chunk of snapshot.
-func (c *Core) LoadSnapshotChunk(_ context.Context, req *abci.RequestLoadSnapshotChunk) (
+func (c *App) LoadSnapshotChunk(_ context.Context, req *abci.RequestLoadSnapshotChunk) (
 	*abci.ResponseLoadSnapshotChunk, error,
 ) {
 	chunk, err := c.snapshots.LoadChunk(req.Height, req.Format, req.Chunk)
@@ -316,23 +316,23 @@ func (c *Core) LoadSnapshotChunk(_ context.Context, req *abci.RequestLoadSnapsho
 // TODO(corver): Implement the following logic.
 
 // Flush flushes the write buffer.
-func (*Core) Flush(context.Context, *abci.RequestFlush) (*abci.ResponseFlush, error) {
+func (*App) Flush(context.Context, *abci.RequestFlush) (*abci.ResponseFlush, error) {
 	return nil, nil //nolint:nilnil // In-memory state, nothing to flush.
 }
 
 // Query queries the application state.
-func (*Core) Query(context.Context, *abci.RequestQuery) (*abci.ResponseQuery, error) {
+func (*App) Query(context.Context, *abci.RequestQuery) (*abci.ResponseQuery, error) {
 	return nil, errors.New("queries not supported yet")
 }
 
 // Echo returns back the same message it is sent.
-func (*Core) Echo(_ context.Context, req *abci.RequestEcho) (*abci.ResponseEcho, error) {
+func (*App) Echo(_ context.Context, req *abci.RequestEcho) (*abci.ResponseEcho, error) {
 	return &abci.ResponseEcho{
 		Message: req.Message,
 	}, nil
 }
 
 // CheckTx validates a transaction.
-func (*Core) CheckTx(context.Context, *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
+func (*App) CheckTx(context.Context, *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
 	return nil, errors.New("unexpected CheckTx request")
 }

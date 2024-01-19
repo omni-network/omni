@@ -2,11 +2,11 @@ package attest
 
 import (
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/cometbft/cometbft/crypto"
-
-	"github.com/ethereum/go-ethereum/crypto/secp256k1"
+	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 )
 
 var ErrInvalidAttestation = errors.New("invalid attestation signature")
@@ -24,11 +24,9 @@ func CreateAttestation(privKey crypto.PrivKey, block xchain.Block) (xchain.Attes
 	}
 	root := tree.Root()
 
-	sig, err := secp256k1.Sign(root[:], privKey.Bytes())
+	sig, err := k1util.Sign(privKey, root)
 	if err != nil {
 		return xchain.Attestation{}, errors.Wrap(err, "sign attestation")
-	} else if len(sig) != 65 {
-		return xchain.Attestation{}, errors.New("invalid signature length", "length", len(sig))
 	}
 
 	return xchain.Attestation{
@@ -36,18 +34,18 @@ func CreateAttestation(privKey crypto.PrivKey, block xchain.Block) (xchain.Attes
 		BlockRoot:   root,
 		Signature: xchain.SigTuple{
 			ValidatorPubKey: [33]byte(pubkey),
-			Signature:       [65]byte(sig),
+			Signature:       sig,
 		},
 	}, nil
 }
 
 // VerifyAttestation verifies the attestation signature.
 func VerifyAttestation(att xchain.Attestation) error {
-	// Trim recovery ID
-	trimmedSig := att.Signature.Signature[:64]
-
-	ok := secp256k1.VerifySignature(att.Signature.ValidatorPubKey[:], att.BlockRoot[:], trimmedSig)
-	if !ok {
+	pk := k1.PubKey(att.Signature.ValidatorPubKey[:])
+	ok, err := k1util.Verify(pk, att.BlockRoot, att.Signature.Signature)
+	if err != nil {
+		return err
+	} else if !ok {
 		return ErrInvalidAttestation
 	}
 

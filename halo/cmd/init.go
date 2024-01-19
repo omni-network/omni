@@ -12,7 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 
 	cmtconfig "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/crypto/secp256k1"
+	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 	cmtos "github.com/cometbft/cometbft/libs/os"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	"github.com/cometbft/cometbft/p2p"
@@ -102,7 +102,7 @@ func initFiles(ctx context.Context, homeDir string) error {
 			"state_file", privValStateFile,
 		)
 	} else {
-		pv = privval.NewFilePV(secp256k1.GenPrivKey(), privValKeyFile, privValStateFile)
+		pv = privval.NewFilePV(k1.GenPrivKey(), privValKeyFile, privValStateFile)
 		pv.Save()
 		log.Info(ctx, "Generated private validator",
 			"key_file", privValKeyFile,

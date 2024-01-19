@@ -2,14 +2,13 @@ version: 1
 
 project_name: omni
 
-# TODO(corver): fix halo build step
 builds:
-  # - id: halo
-  #   main: ./halo
-  #   binary: halo
-  #   env: [CGO_ENABLED=0]
-  #   goos: [linux, darwin]
-  #   goarch: [amd64, arm64]
+  - id: halo
+    main: ./halo
+    binary: halo
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
 
   - id: explorer-api
     main: ./explorer/api
@@ -26,14 +25,16 @@ builds:
     goarch: [ amd64, arm64 ]
 
 dockers:
-  # - ids: [halo]
-  #   dockerfile: ./halo/Dockerfile
-  #   image_templates:
-  #     - omniops/halo:latest
+  - ids: [halo]
+    dockerfile: ./halo/Dockerfile
+    image_templates:
+     - omniops/halo:latest
+
   - ids: [explorer-api]
     dockerfile: ./explorer/api/Dockerfile
     image_templates:
       - omniops/explorer/api:latest
+
   - ids: [indexer]
     dockerfile: ./explorer/indexer/Dockerfile
     image_templates:

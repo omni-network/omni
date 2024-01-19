@@ -1,4 +1,4 @@
-package consensus
+package comet
 
 import (
 	"bytes"

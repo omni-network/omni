@@ -1,4 +1,4 @@
-package consensus
+package comet
 
 import (
 	"sync"
@@ -10,12 +10,12 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 )
 
-// Core of the Halo consensus client with the following responsibilities:
+// App of the CometBFT consensus application with the following responsibilities:
 // - Implements the server side of the ABCI++ interface, see abci.go.
-// - Maintains the consensus chain state.
-type Core struct {
+// - Maintains the consensus app state.
+type App struct {
 	// Immutable fields (configured at construction)
-	ethCl            engine.Client
+	ethCl            engine.API
 	state            *State
 	attestSvc        attest.Service
 	snapshots        *SnapshotStore
@@ -29,11 +29,11 @@ type Core struct {
 	}
 }
 
-// NewCore returns a new Core instance.
-func NewCore(ethCl engine.Client, attestSvc attest.Service, state *State, snapshots *SnapshotStore,
+// NewApp returns a new App instance.
+func NewApp(ethCl engine.API, attestSvc attest.Service, state *State, snapshots *SnapshotStore,
 	snapshotInterval uint64,
-) *Core {
-	return &Core{
+) *App {
+	return &App{
 		ethCl:            ethCl,
 		attestSvc:        attestSvc,
 		state:            state,
@@ -44,8 +44,15 @@ func NewCore(ethCl engine.Client, attestSvc attest.Service, state *State, snapsh
 
 // ApprovedAggregates returns a copy of the latest state's approved aggregates.
 // For testing purposes only.
-func (c *Core) ApprovedAggregates() []xchain.AggAttestation {
+func (c *App) ApprovedAggregates() []xchain.AggAttestation {
 	return c.state.ApprovedAggregates()
 }
 
-var _ abci.Application = (*Core)(nil)
+// ApprovedFrom returns a sequential range of approved aggregates from the provided chain ID and height.
+// It returns at most max aggregates. Their block heights are sequentially increasing.
+// For testing purposes only.
+func (c *App) ApprovedFrom(chainID uint64, height uint64, max uint64) []xchain.AggAttestation {
+	return c.state.ApprovedFrom(chainID, height, max)
+}
+
+var _ abci.Application = (*App)(nil)
