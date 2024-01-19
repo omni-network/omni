@@ -68,7 +68,7 @@ library XTypes {
         address relayer;
         /// @dev Whether or not the call was successful
         bool success;
-        /// @dev Return data from call execution on destination chain
+        /// @dev Return data of the call
         bytes returnData;
     }
 }
