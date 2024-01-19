@@ -4,7 +4,6 @@ package smoke_test
 import (
 	"context"
 	"os"
-	"sync"
 	"testing"
 	"time"
 
@@ -18,12 +17,10 @@ import (
 	"github.com/omni-network/omni/scripts/gethdevnet"
 
 	"github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/privval"
 	rpctest "github.com/cometbft/cometbft/rpc/test"
 	"github.com/cometbft/cometbft/types"
 
-	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"
 
 	_ "embed"
@@ -122,12 +119,12 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 	err = xprov.Subscribe(ctx, srcChainID, 0, attSvc.Attest)
 	require.NoError(t, err)
 
+	// Setup a cprovider that reads directly from app state.
+	cprov := cprovider.NewProviderForT(t, adaptFetcher(core), 99, noopBackoff)
+
 	// Start the relayer, collecting all updates.
 	updates := make(chan relayer.StreamUpdate)
-	relayer.StartRelayer(ctx,
-		cprovider.NewProviderForT(t, adaptFetcher(core), 99, noopBackoff),
-		[]uint64{srcChainID},
-		xprov,
+	relayer.StartRelayer(ctx, cprov, []uint64{srcChainID}, xprov,
 		func(update relayer.StreamUpdate) ([]xchain.Submission, error) {
 			updates <- update
 			return nil, nil
@@ -135,6 +132,7 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 		panicSender{},
 	)
 
+	// Start cometbft
 	node := rpctest.StartTendermint(core)
 	defer rpctest.StopTendermint(node)
 
@@ -209,61 +207,3 @@ type panicSender struct{}
 func (panicSender) SendTransaction(context.Context, xchain.Submission) error {
 	panic("this should never be called")
 }
-
-type testAttSvc struct {
-	mu         sync.Mutex
-	totals     int
-	pubKeyChan chan crypto.PubKey
-	pubKey     crypto.PubKey
-	fuzzer     *fuzz.Fuzzer
-}
-
-func (s *testAttSvc) decTotal() bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.totals == 0 {
-		return false
-	}
-
-	s.totals--
-
-	return true
-}
-
-func (s *testAttSvc) getPubKey() crypto.PubKey {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.pubKey == nil {
-		s.pubKey = <-s.pubKeyChan
-	}
-
-	return s.pubKey
-}
-
-func (s *testAttSvc) newAttestation() xchain.Attestation {
-	var att xchain.Attestation
-	s.fuzzer.Fuzz(&att)
-	copy(att.Signature.ValidatorPubKey[:], s.getPubKey().Bytes())
-
-	return att
-}
-
-func (s *testAttSvc) GetAvailable() []xchain.Attestation {
-	if !s.decTotal() {
-		return nil
-	}
-
-	return []xchain.Attestation{s.newAttestation()}
-}
-
-func (s *testAttSvc) SetProposed([]xchain.BlockHeader) {}
-
-func (s *testAttSvc) SetCommitted([]xchain.BlockHeader) {}
-
-func (s *testAttSvc) LocalPubKey() [33]byte {
-	return [33]byte(s.getPubKey().Bytes())
-}
-
-var _ attest.Service = (*testAttSvc)(nil)
