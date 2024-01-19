@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/halo/attest"
-	"github.com/omni-network/omni/halo/consensus"
+	"github.com/omni-network/omni/halo/comet"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/engine"
 	"github.com/omni-network/omni/lib/xchain"
@@ -49,9 +49,9 @@ var (
 // Each variant includes:
 // - Mock XProvider generates periodic xblocks for 1 src chain incl messages to 2 dest chains.
 // - Uses real cometBFT with single validator
-// - Uses real halo implementations of: core, attestation service, app state, snapshot store
+// - Uses real halo implementations of: app, attestation service, app state, snapshot store
 // - Uses relayer code with mocked creator and sender
-// - Integrate relayer using cprovider directly connected to core
+// - Integrate relayer using cprovider directly connected to app
 // - Assert that stream updates are generated for all xblocks.
 func TestSmoke(t *testing.T) {
 	t.Parallel()
@@ -114,15 +114,15 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 	attSvc := attest.NewAttesterForT(t, privVal.Key.PrivKey)
 
 	// Create application state
-	state, err := consensus.LoadOrGenState(t.TempDir(), 1)
+	state, err := comet.LoadOrGenState(t.TempDir(), 1)
 	require.NoError(t, err)
 
 	// Create snapshot store.
-	snapshots, err := consensus.NewSnapshotStore(t.TempDir())
+	snapshots, err := comet.NewSnapshotStore(t.TempDir())
 	require.NoError(t, err)
 
-	// Create the core application.
-	core := consensus.NewCore(ethCl, attSvc, state, snapshots, 1)
+	// Create the comet application.
+	app := comet.NewApp(ethCl, attSvc, state, snapshots, 1)
 
 	// Start a mock xprovider (this is the source of xblocks)
 	xprov := xprovider.NewMock(srcChainBlockPeriod)
@@ -132,7 +132,7 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 	require.NoError(t, err)
 
 	// Setup a cprovider that reads directly from app state.
-	cprov := cprovider.NewProviderForT(t, adaptFetcher(core), 99, noopBackoff)
+	cprov := cprovider.NewProviderForT(t, adaptFetcher(app), 99, noopBackoff)
 
 	// Start the relayer, collecting all updates.
 	updates := make(chan relayer.StreamUpdate)
@@ -145,7 +145,7 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 	)
 
 	// Start cometbft
-	node := rpctest.StartTendermint(core)
+	node := rpctest.StartTendermint(app)
 	defer rpctest.StopTendermint(node)
 
 	// Subscribe cometbft blocks
@@ -188,10 +188,10 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 	}
 }
 
-// adaptFetcher adapts the core application to implement the cprovider.FetchFunc.
-func adaptFetcher(core *consensus.Core) cprovider.FetchFunc {
+// adaptFetcher adapts the comet application to implement the cprovider.FetchFunc.
+func adaptFetcher(app *comet.App) cprovider.FetchFunc {
 	return func(ctx context.Context, chainID uint64, fromHeight uint64, max uint64) ([]xchain.AggAttestation, error) {
-		return core.ApprovedFrom(chainID, fromHeight, max), nil
+		return app.ApprovedFrom(chainID, fromHeight, max), nil
 	}
 }
 
