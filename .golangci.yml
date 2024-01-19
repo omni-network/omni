@@ -26,6 +26,9 @@ linters-settings:
     enable-all: true
   importas:
     no-unaliased: true
+    alias:
+      - pkg: github.com/cometbft/cometbft/crypto/secp256k1
+        alias: k1
     # TODO(corver): Add our own import aliases here
   misspell:
     locale: US

@@ -29,6 +29,5 @@ jobs:
           args: release --snapshot --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # TODO(corver): fix halo docker build
-      # - name: Push to Dockerhub
-      #   run: docker push omniops/halo:latest
+      - name: Push to Dockerhub
+        run: docker push omniops/halo:latest
