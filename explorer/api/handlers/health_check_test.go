@@ -1,10 +1,10 @@
-package apifunctions_test
+package handlers_test
 
 import (
 	"context"
 	"testing"
 
-	apifunctions "github.com/omni-network/omni/explorer/api/api_functions"
+	"github.com/omni-network/omni/explorer/api/handlers"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,7 +15,7 @@ func TestHealthCheck(t *testing.T) {
 
 	ctx := context.Background()
 
-	resp, err := apifunctions.GetHealth(ctx)
+	resp, err := handlers.GetHealth(ctx)
 
 	require.NoError(t, err)
 	assert.NotNil(t, resp)

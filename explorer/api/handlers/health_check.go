@@ -1,4 +1,4 @@
-package apifunctions
+package handlers
 
 import (
 	"context"

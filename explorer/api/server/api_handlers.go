@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 
-	apifunctions "github.com/omni-network/omni/explorer/api/api_functions"
+	"github.com/omni-network/omni/explorer/api/handlers"
 	service "github.com/omni-network/omni/explorer/api/openapi"
 	"github.com/omni-network/omni/lib/log"
 )
@@ -35,7 +35,7 @@ func (*RestService) HealthCheck(
 ) (*service.HealthCheckResponse, error) {
 	log.Debug(ctx, "Health check called")
 
-	h, err := apifunctions.GetHealth(ctx)
+	h, err := handlers.GetHealth(ctx)
 	if err != nil {
 		return nil, err
 	}
