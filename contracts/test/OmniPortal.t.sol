@@ -45,7 +45,7 @@ contract OmniPortal_Test is CommonTest {
         XTypes.Msg memory xmsg = _outbound_increment();
         xmsg.gasLimit = portal.XMSG_MIN_GAS_LIMIT() - 1;
 
-        vm.expectRevert(bytes("OmniPortal: gasLimit too low"));
+        vm.expectRevert("OmniPortal: gasLimit too low");
         portal.xcall(xmsg.destChainId, xmsg.to, xmsg.data, xmsg.gasLimit);
     }
 
@@ -54,7 +54,7 @@ contract OmniPortal_Test is CommonTest {
         XTypes.Msg memory xmsg = _outbound_increment();
         xmsg.gasLimit = portal.XMSG_MAX_GAS_LIMIT() + 1;
 
-        vm.expectRevert(bytes("OmniPortal: gasLimit too high"));
+        vm.expectRevert("OmniPortal: gasLimit too high");
         portal.xcall(xmsg.destChainId, xmsg.to, xmsg.data, xmsg.gasLimit);
     }
 
@@ -212,7 +212,7 @@ contract OmniPortal_Test is CommonTest {
 
         XTypes.Submission memory submission = _xsub(xmsgs);
 
-        vm.expectRevert(bytes("OmniPortal: wrong streamOffset"));
+        vm.expectRevert("OmniPortal: wrong streamOffset");
         portal.xsubmit(submission);
     }
 
@@ -232,7 +232,7 @@ contract OmniPortal_Test is CommonTest {
 
         XTypes.Submission memory submission = _xsub(xmsgs);
 
-        vm.expectRevert(bytes("OmniPortal: wrong destChainId"));
+        vm.expectRevert("OmniPortal: wrong destChainId");
         portal.xsubmit(submission);
     }
 
