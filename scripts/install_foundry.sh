@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 # Install foundryup and foundry toolkit (forge, cast, anvil)
 
-set -e
-
 
 # If already forge installed, exit. (we do not care about cast or anvil
 if which forge 1>/dev/null; then
@@ -11,14 +9,10 @@ if which forge 1>/dev/null; then
   return
 fi
 
-# If not running interactively (like in Github Actions), specify FOUNDRY_DIR
 # This tells https://foundry.paradigm.xyz where to install foundryup -
 # $FOUNDRY_DIR/bin. This dir is added to $GITHUB_PATH in
 # .github/workflows/pre-commit.yml
-case $- in
-  *i*) ;;
-  *) export FOUNDRY_DIR="$HOME/.foundry";
-esac
+export FOUNDRY_DIR="$HOME/.foundry";
 
 
 # If foundryup not installed, install it
