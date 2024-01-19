@@ -11,8 +11,10 @@ import (
 
 	"github.com/omni-network/omni/halo/attest"
 	"github.com/omni-network/omni/halo/consensus"
+	"github.com/omni-network/omni/lib/engine"
 	"github.com/omni-network/omni/lib/xchain"
 	"github.com/omni-network/omni/scripts/gethdevnet"
+	"github.com/omni-network/omni/test/tutil"
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
@@ -37,16 +39,51 @@ var (
 	privValStateJSON []byte
 )
 
-// TestSmoke starts a genesis geth node and a halo core application ensuring that blocks are built.
-// TODO(corver): improve this a lot.
 func TestSmoke(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
 
-	// Use logproxy=true to debug engine API errors
-	ethCl, cleanup, err := gethdevnet.StartGenesisGeth(ctx, gethDevNetPath, false)
-	require.NoError(t, err)
-	defer cleanup()
+	tests := []struct {
+		name      string
+		ethClFunc func(t *testing.T) engine.API
+	}{
+		{
+			name: "geth",
+			ethClFunc: func(t *testing.T) engine.API {
+				t.Helper()
+				// Use logproxy=true to debug engine API errors
+				ethCl, cleanup, err := gethdevnet.StartGenesisGeth(context.Background(), gethDevNetPath, false)
+				require.NoError(t, err)
+				t.Cleanup(cleanup)
+
+				return ethCl
+			},
+		},
+		{
+			name: "mock",
+			ethClFunc: func(t *testing.T) engine.API {
+				t.Helper()
+				mock, err := engine.NewMock()
+				require.NoError(t, err)
+
+				return mock
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			testSmoke(t, tt.ethClFunc(t))
+		})
+	}
+}
+
+// TestSmoke starts a genesis geth node and a halo core application ensuring that blocks are built.
+// TODO(corver): improve this a lot.
+func testSmoke(t *testing.T, ethCl engine.API) {
+	t.Helper()
+	ctx := context.Background()
 
 	const attestations = 10
 
@@ -89,7 +126,7 @@ func TestSmoke(t *testing.T) {
 		t.Logf("🔥!! Consensus Height=%v Hash=%v\n", cHeight, cHash)
 
 		latest, err := ethCl.BlockNumber(ctx)
-		require.NoError(t, err)
+		tutil.RequireNoError(t, err)
 
 		eblock, err := ethCl.BlockByNumber(ctx, big.NewInt(int64(latest)))
 		require.NoError(t, err)

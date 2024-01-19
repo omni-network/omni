@@ -1,6 +1,7 @@
 package log_test
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"os"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/test/tutil"
 )
 
 //go:generate go test . -update -clean
@@ -16,7 +18,7 @@ import (
 func TestSimpleLogs(t *testing.T) {
 	t.Parallel()
 
-	log.AssertLogging(t, func(t *testing.T, ctx context.Context) {
+	AssertLogging(t, func(t *testing.T, ctx context.Context) {
 		t.Helper()
 
 		log.Info(ctx, "info message", "with", "args")
@@ -35,4 +37,31 @@ func TestSimpleLogs(t *testing.T) {
 		ctx2 := log.WithCtx(ctx1, "ctx_key2", "ctx_value2")
 		log.Info(ctx2, "ctx info message", "info_key2", "info_value2")
 	})
+}
+
+// AssertLogging returns a function that will assert all loggers' output against
+// golden test files.
+func AssertLogging(t *testing.T, testFunc func(*testing.T, context.Context)) {
+	t.Helper()
+
+	loggers := log.LoggersForT(t)
+
+	for name, initFunc := range loggers {
+		initFunc := initFunc // Pin
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			var buf bytes.Buffer
+			logger := initFunc(func(config *log.TestOptions) {
+				config.Writer = &buf
+				config.StubTime = true
+			})
+
+			ctx := context.Background()
+			ctx = log.WithLogger(ctx, logger)
+
+			testFunc(t, ctx)
+
+			tutil.RequireGoldenBytes(t, buf.Bytes())
+		})
+	}
 }
