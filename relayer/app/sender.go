@@ -24,15 +24,36 @@ const (
 )
 
 type Portal struct {
-	Session bindings.OmniPortalSession
+	Session   bindings.OmniPortalSession
+	RpcClient *ethclient.Client
 }
 
 var _ Sender = (*SenderService)(nil)
 
 type SenderService struct {
-	Portal     map[uint64]*Portal
-	PrivateKey *ecdsa.PrivateKey
-	RpcClient  *ethclient.Client
+	Portal map[uint64]*Portal
+}
+
+// NewSenderService creates a new sender service
+func NewSenderService(chains []netconf.Chain, privateKey ecdsa.PrivateKey) (SenderService, error) {
+	var portal map[uint64]*Portal
+	for _, chain := range chains {
+		rpcClient, err := ethclient.Dial(chain.RPCURL)
+		if err != nil {
+			return SenderService{}, err
+		}
+
+		p, err := NewPortal(chain, rpcClient, privateKey)
+		if err != nil {
+			return SenderService{}, err
+		}
+
+		portal[chain.ID] = &p
+	}
+
+	return SenderService{
+		Portal: portal,
+	}, nil
 }
 
 func NewPortal(chain netconf.Chain, rpcClient *ethclient.Client, privateKey ecdsa.PrivateKey) (Portal, error) {
@@ -55,7 +76,8 @@ func NewPortal(chain netconf.Chain, rpcClient *ethclient.Client, privateKey ecds
 	}
 
 	return Portal{
-		Session: session,
+		Session:   session,
+		RpcClient: rpcClient,
 	}, nil
 }
 
@@ -81,7 +103,7 @@ func (s SenderService) SendTransaction(ctx context.Context, submission xchain.Su
 	)
 
 	waitCtx, cancel := context.WithTimeout(ctx, miningTimeout)
-	receipt, err := bind.WaitMined(waitCtx, s.RpcClient, tx)
+	receipt, err := bind.WaitMined(waitCtx, portal.RpcClient, tx)
 	defer cancel()
 
 	if ctx.Err() != nil {
