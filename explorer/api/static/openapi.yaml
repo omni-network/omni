@@ -8,8 +8,6 @@ servers:
 paths:
   /health:
     get:
-      tags:
-        - health
       operationId: HealthCheck
       responses:
         200:

@@ -16,6 +16,7 @@ require (
 	github.com/jackc/pgx/v5 v5.5.2
 	github.com/leodido/go-conventionalcommits v0.11.0
 	github.com/mattn/go-sqlite3 v1.14.19
+	github.com/mvrilo/go-redoc v0.1.4
 	github.com/ogen-go/ogen v0.81.1
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.8.0
