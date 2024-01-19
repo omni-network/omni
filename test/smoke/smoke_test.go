@@ -3,7 +3,6 @@ package smoke_test
 
 import (
 	"context"
-	"math/big"
 	"os"
 	"sync"
 	"testing"
@@ -11,14 +10,18 @@ import (
 
 	"github.com/omni-network/omni/halo/attest"
 	"github.com/omni-network/omni/halo/consensus"
+	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/engine"
 	"github.com/omni-network/omni/lib/xchain"
+	xprovider "github.com/omni-network/omni/lib/xchain/provider"
+	relayer "github.com/omni-network/omni/relayer/app"
 	"github.com/omni-network/omni/scripts/gethdevnet"
-	"github.com/omni-network/omni/test/tutil"
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/privval"
 	rpctest "github.com/cometbft/cometbft/rpc/test"
+	"github.com/cometbft/cometbft/types"
 
 	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"
@@ -83,64 +86,103 @@ func TestSmoke(t *testing.T) {
 // TODO(corver): improve this a lot.
 func testSmoke(t *testing.T, ethCl engine.API) {
 	t.Helper()
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	const attestations = 10
+	const (
+		srcChainBlockPeriod = 1 * time.Millisecond * 100
+		srcChainID          = 1
+	)
 
-	attSvc := &testAttSvc{
-		totals:     attestations,
-		pubKeyChan: make(chan crypto.PubKey, 1),
-		fuzzer:     fuzz.New().NilChance(0),
-	}
+	// Write genesis and priv validator files to temp dir.
+	conf := rpctest.GetConfig(true)
+	writeFiles(t, conf)
 
+	// Load the private validator
+	privVal := privval.LoadFilePV(conf.PrivValidatorKeyFile(), conf.PrivValidatorStateFile())
+
+	// Create the attestation service.
+	attSvc := attest.NewAttesterForT(t, privVal.Key.PrivKey)
+
+	// Create application state
 	state, err := consensus.LoadOrGenState(t.TempDir(), 1)
 	require.NoError(t, err)
 
+	// Create snapshot store.
 	snapshots, err := consensus.NewSnapshotStore(t.TempDir())
 	require.NoError(t, err)
 
+	// Create the core application.
 	core := consensus.NewCore(ethCl, attSvc, state, snapshots, 1)
 
-	conf := rpctest.GetConfig(true)
-	writeFiles(t, conf)
+	// Start a mock xprovider (this is the source of xblocks)
+	xprov := xprovider.NewMock(srcChainBlockPeriod)
+
+	// Subscribe the attestation service to the mock xprovider.
+	err = xprov.Subscribe(ctx, srcChainID, 0, attSvc.Attest)
+	require.NoError(t, err)
+
+	// Start the relayer, collecting all updates.
+	updates := make(chan relayer.StreamUpdate)
+	relayer.StartRelayer(ctx,
+		cprovider.NewProviderForT(t, adaptFetcher(core), 99, noopBackoff),
+		[]uint64{srcChainID},
+		xprov,
+		func(update relayer.StreamUpdate) ([]xchain.Submission, error) {
+			updates <- update
+			return nil, nil
+		},
+		panicSender{},
+	)
 
 	node := rpctest.StartTendermint(core)
 	defer rpctest.StopTendermint(node)
 
-	pubKey, err := node.PrivValidator().GetPubKey()
+	// Subscribe cometbft blocks
+	blocksSub, err := node.EventBus().Subscribe(ctx, "", types.EventQueryNewBlock)
 	require.NoError(t, err)
-	attSvc.pubKeyChan <- pubKey
 
-	var lastHeight int64
-	for i := 0; i < 3; i++ {
-		env, err := node.ConfigureRPC()
-		require.NoError(t, err)
+	// Wait for 10 stream updates.
+	stopAfter := 10
+	offsets := make(map[xchain.StreamID]uint64)
+	for {
+		select {
+		case event := <-blocksSub.Out():
+			blockEvent, ok := event.Data().(types.EventDataNewBlock)
+			require.True(t, ok)
+			t.Logf("🔥!! produced block=%d\n", blockEvent.Block.Height)
 
-		cHeight := env.BlockStore.Height()
-		lastHeight = cHeight
-		cblock := env.BlockStore.LoadBlock(cHeight)
-		var cHash string
-		if cblock != nil {
-			cHash = cblock.Hash().String()
+		case update := <-updates:
+			t.Logf("🔥!! stream update: destChain=%v msgs=%v\n", update.DestChainID, len(update.Msgs))
+
+			// Assert the update is good
+			require.EqualValues(t, srcChainID, update.SourceChainID)
+			require.NotEmpty(t, update.Msgs)
+
+			// Assert offsets are sequential
+			for _, msg := range update.Msgs {
+				offsets[update.StreamID]++
+				require.EqualValues(t, offsets[update.StreamID], msg.StreamOffset)
+			}
+
+			// Stop when we have received enough updates
+			stopAfter--
+			if stopAfter == 0 {
+				cancel()
+				return
+			}
+
+		case <-time.After(5 * time.Second):
+			t.Fatal("timed out waiting for the node to produce a block")
 		}
-		t.Logf("🔥!! Consensus Height=%v Hash=%v\n", cHeight, cHash)
-
-		latest, err := ethCl.BlockNumber(ctx)
-		tutil.RequireNoError(t, err)
-
-		eblock, err := ethCl.BlockByNumber(ctx, big.NewInt(int64(latest)))
-		require.NoError(t, err)
-		t.Logf("🔥!! Execution Height=%v Hash=%v\n", latest, eblock.Hash())
-
-		time.Sleep(1 * time.Second)
 	}
+}
 
-	// Assert chain made progress.
-	require.NotEmpty(t, lastHeight, "Stuck at height 1")
-
-	// Assert all attestations used and approved.
-	require.Empty(t, attSvc.totals, "Not all attestations used")
-	require.Lenf(t, core.ApprovedAggregates(), attestations, "Not all attestations approved")
+// adaptFetcher adapts the core application to implement the cprovider.FetchFunc.
+func adaptFetcher(core *consensus.Core) cprovider.FetchFunc {
+	return func(ctx context.Context, chainID uint64, fromHeight uint64, max uint64) ([]xchain.AggAttestation, error) {
+		return core.ApprovedFrom(chainID, fromHeight, max), nil
+	}
 }
 
 func writeFiles(t *testing.T, conf *config.Config) {
@@ -154,6 +196,18 @@ func writeFiles(t *testing.T, conf *config.Config) {
 
 	err = os.WriteFile(conf.PrivValidatorStateFile(), privValStateJSON, 0o644)
 	require.NoError(t, err)
+}
+
+func noopBackoff(context.Context) (func(), func()) {
+	return func() {}, func() {}
+}
+
+var _ relayer.Sender = panicSender{}
+
+type panicSender struct{}
+
+func (panicSender) SendTransaction(context.Context, xchain.Submission) error {
+	panic("this should never be called")
 }
 
 type testAttSvc struct {
