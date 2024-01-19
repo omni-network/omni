@@ -20,34 +20,34 @@ const (
 
 // Info returns information about the application state.
 // V0 in-memory chain always starts from scratch, at height 0.
-func (c *App) Info(_ context.Context, req *abci.RequestInfo) (*abci.ResponseInfo, error) {
+func (a *App) Info(_ context.Context, req *abci.RequestInfo) (*abci.ResponseInfo, error) {
 	return &abci.ResponseInfo{
 		Data:             "", // CometBFT does not use this field.
 		Version:          req.AbciVersion,
 		AppVersion:       appVersion,
-		LastBlockHeight:  int64(c.state.Height()),
-		LastBlockAppHash: c.state.Hash(), // AppHash overwritten by InitChain if LastBlockHeight==0.
+		LastBlockHeight:  int64(a.state.Height()),
+		LastBlockAppHash: a.state.Hash(), // AppHash overwritten by InitChain if LastBlockHeight==0.
 	}, nil
 }
 
 // InitChain initializes the blockchain.
-func (c *App) InitChain(_ context.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
+func (a *App) InitChain(_ context.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
 	if req.InitialHeight > 1 {
 		return nil, errors.New("initial height must not 1")
 	}
 
 	if len(req.AppStateBytes) > 0 {
-		if err := c.state.Import(0, req.AppStateBytes); err != nil {
+		if err := a.state.Import(0, req.AppStateBytes); err != nil {
 			return nil, errors.Wrap(err, "import state")
 		}
 	}
 
-	if err := c.state.InitValidators(req.Validators); err != nil {
+	if err := a.state.InitValidators(req.Validators); err != nil {
 		return nil, errors.Wrap(err, "set validators")
 	}
 
 	return &abci.ResponseInitChain{
-		AppHash: c.state.Hash(),
+		AppHash: a.state.Hash(),
 		// Return nils below to indicate no-update.
 		ConsensusParams: nil,
 		Validators:      nil,
@@ -56,19 +56,19 @@ func (c *App) InitChain(_ context.Context, req *abci.RequestInitChain) (*abci.Re
 
 // PrepareProposal returns a proposal for the next block.
 // Note returning an error results in a panic cometbft and CONSENSUS_FAILURE log.
-func (c *App) PrepareProposal(ctx context.Context, req *abci.RequestPrepareProposal) (
+func (a *App) PrepareProposal(ctx context.Context, req *abci.RequestPrepareProposal) (
 	*abci.ResponsePrepareProposal, error,
 ) {
 	if len(req.Txs) > 0 {
 		return nil, errors.New("unexpected transactions in proposal")
 	}
 
-	latestEHeight, err := c.ethCl.BlockNumber(ctx)
+	latestEHeight, err := a.ethCl.BlockNumber(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "latest execution block number")
 	}
 
-	latestEBlock, err := c.ethCl.BlockByNumber(ctx, big.NewInt(int64(latestEHeight)))
+	latestEBlock, err := a.ethCl.BlockByNumber(ctx, big.NewInt(int64(latestEHeight)))
 	if err != nil {
 		return nil, errors.Wrap(err, "latest execution block")
 	}
@@ -97,14 +97,14 @@ func (c *App) PrepareProposal(ctx context.Context, req *abci.RequestPreparePropo
 		BeaconRoot:            nil,
 	}
 
-	forkchoiceResp, err := c.ethCl.ForkchoiceUpdatedV2(ctx, forkchoiceState, &payloadAttrs)
+	forkchoiceResp, err := a.ethCl.ForkchoiceUpdatedV2(ctx, forkchoiceState, &payloadAttrs)
 	if err != nil {
 		return nil, err
 	} else if forkchoiceResp.PayloadStatus.Status != engine.VALID {
 		return nil, errors.New("status not valid")
 	}
 
-	payloadResp, err := c.ethCl.GetPayloadV2(ctx, *forkchoiceResp.PayloadID)
+	payloadResp, err := a.ethCl.GetPayloadV2(ctx, *forkchoiceResp.PayloadID)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func (c *App) PrepareProposal(ctx context.Context, req *abci.RequestPreparePropo
 }
 
 // ProcessProposal validates a proposal.
-func (c *App) ProcessProposal(ctx context.Context, req *abci.RequestProcessProposal) (
+func (a *App) ProcessProposal(ctx context.Context, req *abci.RequestProcessProposal) (
 	*abci.ResponseProcessProposal, error,
 ) {
 	cpayload, err := payloadFromTXs(req.Txs)
@@ -137,7 +137,7 @@ func (c *App) ProcessProposal(ctx context.Context, req *abci.RequestProcessPropo
 	}
 
 	// Push it back to the execution client (mark it as possible new head).
-	status, err := c.ethCl.NewPayloadV2(ctx, cpayload.EPayload)
+	status, err := a.ethCl.NewPayloadV2(ctx, cpayload.EPayload)
 	if err != nil {
 		return nil, err
 	} else if status.Status != engine.VALID {
@@ -145,15 +145,15 @@ func (c *App) ProcessProposal(ctx context.Context, req *abci.RequestProcessPropo
 	}
 
 	// Mark all local attestations as "proposed", i.e., included in latest proposed block.
-	localHeaders := headersByPubKey(cpayload.Aggregates, c.attestSvc.LocalPubKey())
-	c.attestSvc.SetProposed(localHeaders)
+	localHeaders := headersByPubKey(cpayload.Aggregates, a.attestSvc.LocalPubKey())
+	a.attestSvc.SetProposed(localHeaders)
 
 	return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil
 }
 
 // ExtendVote extends a vote with application-injected data (vote extensions).
-func (c *App) ExtendVote(context.Context, *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
-	attBytes, err := encode(c.attestSvc.GetAvailable())
+func (a *App) ExtendVote(context.Context, *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
+	attBytes, err := encode(a.attestSvc.GetAvailable())
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +174,7 @@ func (*App) VerifyVoteExtension(context.Context, *abci.RequestVerifyVoteExtensio
 }
 
 // FinalizeBlock finalizes a block.
-func (c *App) FinalizeBlock(ctx context.Context, req *abci.RequestFinalizeBlock) (*abci.ResponseFinalizeBlock, error) {
+func (a *App) FinalizeBlock(ctx context.Context, req *abci.RequestFinalizeBlock) (*abci.ResponseFinalizeBlock, error) {
 	cpayload, err := payloadFromTXs(req.Txs)
 	if err != nil {
 		return nil, err
@@ -186,20 +186,20 @@ func (c *App) FinalizeBlock(ctx context.Context, req *abci.RequestFinalizeBlock)
 		FinalizedBlockHash: cpayload.EPayload.BlockHash,
 	}
 
-	forchainResp, err := c.ethCl.ForkchoiceUpdatedV2(ctx, fcs, nil)
+	forchainResp, err := a.ethCl.ForkchoiceUpdatedV2(ctx, fcs, nil)
 	if err != nil {
 		return nil, err
 	} else if forchainResp.PayloadStatus.Status != engine.VALID {
 		return nil, errors.New("status not valid")
 	}
 
-	c.state.AddAttestations(cpayload.Aggregates)
+	a.state.AddAttestations(cpayload.Aggregates)
 
 	// Mark all local attestations "committed", i.e., included in this committed block.
-	localHeaders := headersByPubKey(cpayload.Aggregates, c.attestSvc.LocalPubKey())
-	c.attestSvc.SetCommitted(localHeaders)
+	localHeaders := headersByPubKey(cpayload.Aggregates, a.attestSvc.LocalPubKey())
+	a.attestSvc.SetCommitted(localHeaders)
 
-	appHash, err := c.state.Finalize()
+	appHash, err := a.state.Finalize()
 	if err != nil {
 		return nil, err
 	}
@@ -216,19 +216,19 @@ func (c *App) FinalizeBlock(ctx context.Context, req *abci.RequestFinalizeBlock)
 }
 
 // Commit commits the state. It also creates a snapshot sometimes.
-func (c *App) Commit(context.Context, *abci.RequestCommit) (*abci.ResponseCommit, error) {
-	height, err := c.state.Commit()
+func (a *App) Commit(context.Context, *abci.RequestCommit) (*abci.ResponseCommit, error) {
+	height, err := a.state.Commit()
 	if err != nil {
 		return nil, errors.Wrap(err, "commit state")
 	}
 
-	if c.snapshotInterval > 0 && height%c.snapshotInterval == 0 {
-		_, err := c.snapshots.Create(c.state)
+	if a.snapshotInterval > 0 && height%a.snapshotInterval == 0 {
+		_, err := a.snapshots.Create(a.state)
 		if err != nil {
 			return nil, errors.Wrap(err, "create snapshot")
 		}
 
-		err = c.snapshots.Prune()
+		err = a.snapshots.Prune()
 		if err != nil {
 			return nil, errors.Wrap(err, "prune snapshots")
 		}
@@ -240,9 +240,9 @@ func (c *App) Commit(context.Context, *abci.RequestCommit) (*abci.ResponseCommit
 }
 
 // ListSnapshots lists all the available snapshots.
-func (c *App) ListSnapshots(context.Context, *abci.RequestListSnapshots) (*abci.ResponseListSnapshots, error) {
+func (a *App) ListSnapshots(context.Context, *abci.RequestListSnapshots) (*abci.ResponseListSnapshots, error) {
 	var resp abci.ResponseListSnapshots
-	for _, snapshot := range c.snapshots.List() {
+	for _, snapshot := range a.snapshots.List() {
 		snapshot := snapshot // Pin.
 		resp.Snapshots = append(resp.Snapshots, &snapshot)
 	}
@@ -251,15 +251,15 @@ func (c *App) ListSnapshots(context.Context, *abci.RequestListSnapshots) (*abci.
 }
 
 // OfferSnapshot sends a snapshot offer.
-func (c *App) OfferSnapshot(_ context.Context, req *abci.RequestOfferSnapshot) (*abci.ResponseOfferSnapshot, error) {
-	c.restore.Lock()
-	defer c.restore.Unlock()
+func (a *App) OfferSnapshot(_ context.Context, req *abci.RequestOfferSnapshot) (*abci.ResponseOfferSnapshot, error) {
+	a.restore.Lock()
+	defer a.restore.Unlock()
 
-	if c.restore.Snapshot != nil {
+	if a.restore.Snapshot != nil {
 		return nil, errors.New("snapshot already offered")
 	}
 
-	c.restore.Snapshot = req.Snapshot
+	a.restore.Snapshot = req.Snapshot
 
 	return &abci.ResponseOfferSnapshot{
 		Result: abci.ResponseOfferSnapshot_ACCEPT,
@@ -267,43 +267,43 @@ func (c *App) OfferSnapshot(_ context.Context, req *abci.RequestOfferSnapshot) (
 }
 
 // ApplySnapshotChunk applies a chunk of snapshot.
-func (c *App) ApplySnapshotChunk(_ context.Context, req *abci.RequestApplySnapshotChunk) (
+func (a *App) ApplySnapshotChunk(_ context.Context, req *abci.RequestApplySnapshotChunk) (
 	*abci.ResponseApplySnapshotChunk, error,
 ) {
-	c.restore.Lock()
-	defer c.restore.Unlock()
+	a.restore.Lock()
+	defer a.restore.Unlock()
 
-	if c.restore.Snapshot == nil {
+	if a.restore.Snapshot == nil {
 		return nil, errors.New("no snapshot offered")
 	}
 
-	c.restore.Chunks = append(c.restore.Chunks, req.Chunk)
+	a.restore.Chunks = append(a.restore.Chunks, req.Chunk)
 
-	if len(c.restore.Chunks) < int(c.restore.Snapshot.Chunks) {
+	if len(a.restore.Chunks) < int(a.restore.Snapshot.Chunks) {
 		return &abci.ResponseApplySnapshotChunk{Result: abci.ResponseApplySnapshotChunk_ACCEPT}, nil
 	}
 
-	bz := make([]byte, 0, c.restore.Snapshot.Chunks*snapshotChunkSize)
-	for _, chunk := range c.restore.Chunks {
+	bz := make([]byte, 0, a.restore.Snapshot.Chunks*snapshotChunkSize)
+	for _, chunk := range a.restore.Chunks {
 		bz = append(bz, chunk...)
 	}
 
-	err := c.state.Import(c.restore.Snapshot.Height, bz)
+	err := a.state.Import(a.restore.Snapshot.Height, bz)
 	if err != nil {
 		return nil, errors.Wrap(err, "import state")
 	}
 
-	c.restore.Snapshot = nil
-	c.restore.Chunks = nil
+	a.restore.Snapshot = nil
+	a.restore.Chunks = nil
 
 	return &abci.ResponseApplySnapshotChunk{Result: abci.ResponseApplySnapshotChunk_ACCEPT}, nil
 }
 
 // LoadSnapshotChunk returns a chunk of snapshot.
-func (c *App) LoadSnapshotChunk(_ context.Context, req *abci.RequestLoadSnapshotChunk) (
+func (a *App) LoadSnapshotChunk(_ context.Context, req *abci.RequestLoadSnapshotChunk) (
 	*abci.ResponseLoadSnapshotChunk, error,
 ) {
-	chunk, err := c.snapshots.LoadChunk(req.Height, req.Format, req.Chunk)
+	chunk, err := a.snapshots.LoadChunk(req.Height, req.Format, req.Chunk)
 	if err != nil {
 		return nil, errors.Wrap(err, "load snapshot chunk")
 	}
