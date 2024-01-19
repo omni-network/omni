@@ -2,7 +2,7 @@
 package cmd
 
 import (
-	"github.com/omni-network/omni/explorer/indexer/app"
+	"github.com/omni-network/omni/explorer/api/app"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/log"
 
@@ -28,7 +28,7 @@ func newRunCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			log.Info(ctx, "ExplorerAPI started")
-			conf := app.Config{}
+			conf := app.DefaultExplorerAPIConfig()
 
 			err := app.Run(ctx, conf)
 			if err != nil {
