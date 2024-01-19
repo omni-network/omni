@@ -26,6 +26,7 @@ repos:
        language: script
        entry: .pre-commit/run_forge_fmt.sh
        types: [ file, solidity ]
+       require_serial: true
 
   # Then run code validators (on the formatted code)
 
