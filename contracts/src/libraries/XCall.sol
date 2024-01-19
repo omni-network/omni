@@ -6,7 +6,7 @@ import { XTypes } from "./XTypes.sol";
 
 /**
  * @title XCall
- * @dev Defines logic for executing XMsgs on their destination chain
+ * @dev Defines logic for executing an XMsg on its destination chain, and capturing the XReceipt
  */
 library XCall {
     struct ExecOpts {
