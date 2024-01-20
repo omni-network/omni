@@ -6,17 +6,17 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/xchain"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/omni-network/omni/contracts/bindings"
-	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/netconf"
-
-	"github.com/omni-network/omni/lib/xchain"
 )
 
 const (
@@ -25,22 +25,22 @@ const (
 
 type Portal struct {
 	Session   bindings.OmniPortalSession
-	RpcClient *ethclient.Client
+	RPCClient *ethclient.Client
 }
 
 var _ Sender = (*SenderService)(nil)
 
 type SenderService struct {
-	Portal map[uint64]*Portal
+	Portal map[uint64]Portal
 }
 
-// NewSenderService creates a new sender service
+// NewSenderService creates a new sender service.
 func NewSenderService(chains []netconf.Chain, privateKey ecdsa.PrivateKey) (SenderService, error) {
-	var portal map[uint64]*Portal
+	portal := make(map[uint64]Portal)
 	for _, chain := range chains {
 		rpcClient, err := ethclient.Dial(chain.RPCURL)
 		if err != nil {
-			return SenderService{}, err
+			return SenderService{}, errors.Wrap(err, "dial rpc", "url", chain.RPCURL)
 		}
 
 		p, err := NewPortal(chain, rpcClient, privateKey)
@@ -48,7 +48,7 @@ func NewSenderService(chains []netconf.Chain, privateKey ecdsa.PrivateKey) (Send
 			return SenderService{}, err
 		}
 
-		portal[chain.ID] = &p
+		portal[chain.ID] = p
 	}
 
 	return SenderService{
@@ -64,7 +64,7 @@ func NewPortal(chain netconf.Chain, rpcClient *ethclient.Client, privateKey ecds
 
 	transactor, err := bind.NewKeyedTransactorWithChainID(&privateKey, big.NewInt(int64(chain.ID)))
 	if err != nil {
-		return Portal{}, err
+		return Portal{}, errors.Wrap(err, "new transactor")
 	}
 
 	session := bindings.OmniPortalSession{
@@ -77,12 +77,12 @@ func NewPortal(chain netconf.Chain, rpcClient *ethclient.Client, privateKey ecds
 
 	return Portal{
 		Session:   session,
-		RpcClient: rpcClient,
+		RPCClient: rpcClient,
 	}, nil
 }
 
 func (s SenderService) SendTransaction(ctx context.Context, submission xchain.Submission) error {
-	xChainSubmission := translateSubmission(submission)
+	xChainSubmission := TranslateSubmission(submission)
 	destChainID := submission.DestChainID()
 
 	portal, ok := s.Portal[destChainID]
@@ -103,16 +103,17 @@ func (s SenderService) SendTransaction(ctx context.Context, submission xchain.Su
 	)
 
 	waitCtx, cancel := context.WithTimeout(ctx, miningTimeout)
-	receipt, err := bind.WaitMined(waitCtx, portal.RpcClient, tx)
+	receipt, err := bind.WaitMined(waitCtx, portal.RPCClient, tx)
 	defer cancel()
 
 	if ctx.Err() != nil {
 		// shutdown
-		return nil
+		return errors.Wrap(ctx.Err(), "ctx error")
 	} else if waitCtx.Err() != nil {
 		// todo(Lazar): handle error increase gas price and retry
+		return errors.Wrap(waitCtx.Err(), "wait mined")
 	} else if err != nil {
-		return err
+		return errors.Wrap(err, "wait mined")
 	} else if receipt.Status == ethtypes.ReceiptStatusFailed {
 		return errors.New("submission tx failed", tx.Hash().Hex())
 	}

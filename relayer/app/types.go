@@ -3,9 +3,10 @@ package relayer
 import (
 	"context"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/xchain"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type StreamUpdate struct {
@@ -27,7 +28,7 @@ type XChainClient interface {
 	GetSubmittedCursors(ctx context.Context, chainID uint64) ([]xchain.StreamCursor, error)
 }
 
-func translateSubmission(submission xchain.Submission) bindings.XChainSubmission {
+func TranslateSubmission(submission xchain.Submission) bindings.XChainSubmission {
 	chainSubmission := bindings.XChainSubmission{
 		AttestationRoot: submission.AttestationRoot,
 		BlockHeader: bindings.XChainBlockHeader{

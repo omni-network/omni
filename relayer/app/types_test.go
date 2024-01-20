@@ -1,12 +1,14 @@
-package relayer
+package relayer_test
 
 import (
 	"reflect"
 	"testing"
 
-	fuzz "github.com/google/gofuzz"
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/xchain"
+	relayer "github.com/omni-network/omni/relayer/app"
+
+	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"
 )
 
@@ -34,9 +36,10 @@ func Test_translateSubmission(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got := translateSubmission(tt.args.submission)
+			got := relayer.TranslateSubmission(tt.args.submission)
 			require.Equal(t, got.Proof, tt.want.Proof)
 			require.Equal(t, got.ProofFlags, tt.want.ProofFlags)
 			require.Equal(t, got.AttestationRoot, tt.want.AttestationRoot)
