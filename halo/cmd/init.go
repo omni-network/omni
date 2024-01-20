@@ -2,20 +2,18 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/omni-network/omni/halo/app"
 	"github.com/omni-network/omni/halo/attest"
-	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 
 	cmtconfig "github.com/cometbft/cometbft/config"
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 	cmtos "github.com/cometbft/cometbft/libs/os"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/types"
@@ -24,12 +22,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type initConfig struct {
+	HomeDir string
+	Network string
+	Force   bool
+}
+
 // newInitCmd returns a new cobra command that initializes the files and folders required by halo.
 func newInitCmd() *cobra.Command {
-	var (
-		homeDir = app.DefaultHomeDir
-		force   bool
-	)
+	// Default config flags
+	cfg := initConfig{
+		HomeDir: app.DefaultHomeDir,
+		Network: netconf.Simnet,
+		Force:   false,
+	}
 
 	cmd := &cobra.Command{
 		Use:   "init",
@@ -42,6 +48,7 @@ Ensures all the following files and directories exist:
   │   ├── config.toml                # CometBFT configuration
   │   ├── genesis.json               # Omni chain genesis file
   │   ├── halo.toml                  # Halo configuration
+  │   ├── network.json               # Omni network configuration
   │   ├── node_key.json              # Node P2P identity key
   │   └── priv_validator_key.json    # CometBFT private validator key (back this up and keep it safe)
   ├── data                           # Data directory
@@ -53,26 +60,35 @@ Existing files are not overwritten.
 The home directory should only contain subdirectories, no files, use --force to ignore this check.
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return initFiles(cmd.Context(), homeDir, force)
+			ctx := cmd.Context()
+			if err := logConfig(ctx, cmd.Flags()); err != nil {
+				return err
+			}
+
+			return initFiles(cmd.Context(), cfg)
 		},
 	}
 
-	libcmd.BindHomeFlag(cmd.Flags(), &homeDir)
-	cmd.Flags().BoolVar(&force, "force", false, "Force initialization even if home directory contains files")
+	bindInitFlags(cmd.Flags(), &cfg)
 
 	return cmd
 }
 
 // initFiles initializes the files and folders required by halo.
-// If no other genesis file exists, it will create a devnet genesis file.
+// It ensures a network and genesis file is generated/downloaded for the provided network.
 //
-//nolint:revive // Force bool is ok.
-func initFiles(ctx context.Context, homeDir string, force bool) error {
-	log.Info(ctx, "Initializing files and directories", "home", homeDir, "force", force)
+//nolint:gocognit // This is just many sequential steps.
+func initFiles(ctx context.Context, initCfg initConfig) error {
+	log.Info(ctx, "Initializing halo files and directories")
+	homeDir := initCfg.HomeDir
+
+	if initCfg.Network != netconf.Simnet {
+		return errors.New("only simnet is supported for now")
+	}
 
 	// Quick sanity check if --home contains files (it should only contain dirs).
 	// This prevents accidental initialization in wrong current dir.
-	if !force {
+	if !initCfg.Force {
 		files, _ := os.ReadDir(homeDir) // Ignore error, we'll just assume it's empty.
 		for _, file := range files {
 			if file.IsDir() { // Ignore directories
@@ -158,16 +174,38 @@ func initFiles(ctx context.Context, homeDir string, force bool) error {
 		log.Info(ctx, "Generated node key", "path", nodeKeyFile)
 	}
 
+	//  Setup network file
+	networkFile := cfg.NetworkFile()
+	if cmtos.FileExists(networkFile) {
+		log.Info(ctx, "Found network config", "path", networkFile)
+	} else {
+		// Create a simnet (single binary with mocked clients).
+		network := netconf.Network{
+			Name: initCfg.Network,
+			Chains: []netconf.Chain{
+				{
+					ID:     999,
+					Name:   "omni",
+					IsOmni: true,
+				},
+			},
+		}
+		if err := netconf.Save(network, networkFile); err != nil {
+			return errors.Wrap(err, "save network file")
+		}
+		log.Info(ctx, "Generated simnet network config", "path", networkFile)
+	}
+
 	// Setup genesis file
 	genFile := comet.GenesisFile()
 	if cmtos.FileExists(genFile) {
 		log.Info(ctx, "Found genesis file", "path", genFile)
 	} else {
-		// Create a devnet genesis file with this node as single validator.
+		// Create a simnet genesis file with this node as single validator.
 		genDoc := types.GenesisDoc{
-			ChainID:         fmt.Sprintf("dev-%s", cmtrand.Str(6)),
+			ChainID:         initCfg.Network,
 			GenesisTime:     cmttime.Now(),
-			ConsensusParams: types.DefaultConsensusParams(),
+			ConsensusParams: defaultConsensusParams(),
 		}
 		pubKey, err := pv.GetPubKey()
 		if err != nil {
@@ -184,7 +222,7 @@ func initFiles(ctx context.Context, homeDir string, force bool) error {
 		if err := genDoc.SaveAs(genFile); err != nil {
 			return errors.Wrap(err, "save genesis file")
 		}
-		log.Info(ctx, "Generated devnet genesis file", "path", genFile)
+		log.Info(ctx, "Generated simnet genesis file", "path", genFile)
 	}
 
 	// Attest state

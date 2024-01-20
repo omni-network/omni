@@ -6,6 +6,7 @@ Ensures all the following files and directories exist:
   │   ├── config.toml                # CometBFT configuration
   │   ├── genesis.json               # Omni chain genesis file
   │   ├── halo.toml                  # Halo configuration
+  │   ├── network.json               # Omni network configuration
   │   ├── node_key.json              # Node P2P identity key
   │   └── priv_validator_key.json    # CometBFT private validator key (back this up and keep it safe)
   ├── data                           # Data directory
@@ -20,6 +21,7 @@ Usage:
   halo init [flags]
 
 Flags:
-      --force         Force initialization even if home directory contains files
-  -h, --help          help for init
-      --home string   The application home directory containing config and data (default "./halo")
+      --force            Force initialization (overwrite existing files)
+  -h, --help             help for init
+      --home string      The application home directory containing config and data (default "./halo")
+      --network string   The network to initialize (default "simnet")

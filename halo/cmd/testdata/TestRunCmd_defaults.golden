@@ -10,7 +10,7 @@
   "Moniker": "testmoniker",
   "DBBackend": "goleveldb",
   "DBPath": "data",
-  "LogLevel": "info",
+  "LogLevel": "error",
   "LogFormat": "plain",
   "Genesis": "config/genesis.json",
   "PrivValidatorKey": "config/priv_validator_key.json",

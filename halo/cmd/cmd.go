@@ -32,6 +32,10 @@ func newRunCmd(runFunc func(context.Context, app.Config) error) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
+			if err := logConfig(ctx, cmd.Flags()); err != nil {
+				return err
+			}
+
 			var err error
 			cfg.Comet, err = parseCometConfig(ctx, cfg.HomeDir)
 			if err != nil {
@@ -42,7 +46,7 @@ func newRunCmd(runFunc func(context.Context, app.Config) error) *cobra.Command {
 		},
 	}
 
-	bindHaloFlags(cmd.Flags(), &cfg.HaloConfig)
+	bindRunFlags(cmd.Flags(), &cfg.HaloConfig)
 
 	return cmd
 }

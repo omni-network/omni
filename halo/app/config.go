@@ -6,7 +6,6 @@ import (
 	"text/template"
 
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/netconf"
 
 	cmtos "github.com/cometbft/cometbft/libs/os"
 
@@ -51,8 +50,8 @@ func (c HaloConfig) ConfigFile() string {
 	return filepath.Join(c.HomeDir, configDir, configFile)
 }
 
-func (c HaloConfig) Network() (netconf.Network, error) {
-	return netconf.Load(filepath.Join(c.HomeDir, configDir, networkFile))
+func (c HaloConfig) NetworkFile() string {
+	return filepath.Join(c.HomeDir, configDir, networkFile)
 }
 
 func (c HaloConfig) DataDir() string {

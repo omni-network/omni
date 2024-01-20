@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 
 	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/types"
 
 	"github.com/spf13/viper"
 )
@@ -36,8 +37,18 @@ func defaultCometConfig(homeDir string) cfg.Config {
 
 	conf.RootDir = homeDir
 	conf.SetRoot(conf.RootDir)
+	conf.LogLevel = "error" // Decrease default comet log level, it is super noisy.
 
 	return *conf
+}
+
+// defaultConsensusParams returns the default cometBFT consensus params for omni protocol.
+func defaultConsensusParams() *types.ConsensusParams {
+	resp := types.DefaultConsensusParams()
+	resp.ABCI.VoteExtensionsEnableHeight = 1                             // Enable vote extensions from the start.
+	resp.Validator.PubKeyTypes = []string{types.ABCIPubKeyTypeSecp256k1} // Only k1 keys.
+
+	return resp
 }
 
 // parseCometConfig parses the cometBFT config from disk and verifies it.
