@@ -1,0 +1,21 @@
+name: ci notify
+
+# run after all workflows on main
+on:
+  workflow_run:
+    workflows: ["*"]
+    branches: [main]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Slack Action
+        uses: ravsamhq/notify-slack-action@2.3.0
+        if: always()
+        with:
+          status: ${{ job.status }}
+          notify_when: "failure"
+          notification_title: "{workflow} is failing"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
