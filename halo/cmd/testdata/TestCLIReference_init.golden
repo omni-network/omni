@@ -1,8 +1,25 @@
-Initializes halo files and folders
+Initializes required halo files and directories.
+
+Ensures all the following files and directories exist:
+  <home>/                            # Halo home directory
+  ├── config                         # Config directory
+  │   ├── config.toml                # CometBFT configuration
+  │   ├── genesis.json               # Omni chain genesis file
+  │   ├── halo.toml                  # Halo configuration
+  │   ├── node_key.json              # Node P2P identity key
+  │   └── priv_validator_key.json    # CometBFT private validator key (back this up and keep it safe)
+  ├── data                           # Data directory
+  │   ├── priv_validator_state.json  # CometBFT private validator state (slashing protection)
+  │   ├── snapshots                  # Snapshot directory
+  │   └── xattestations_state.json   # Cross chain attestation state (slashing protection)
+
+Existing files are not overwritten.
+The home directory should only contain subdirectories, no files, use --force to ignore this check.
 
 Usage:
   halo init [flags]
 
 Flags:
+      --force         Force initialization even if home directory contains files
   -h, --help          help for init
-      --home string   The application home directory containing config and data
+      --home string   The application home directory containing config and data (default "./halo")

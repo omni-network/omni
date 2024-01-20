@@ -22,15 +22,16 @@ const (
 	attestStateFile = "xattestations_state.json"
 
 	// defaults.
-	defaultHomeDir                 = "."  // Defaults to current directory
-	defaultAppStatePersistInterval = 1    // Persist app state every block. Set to 0 to disable persistence.
-	defaultSnapshotInterval        = 1000 // Roughly once an hour (given 3s blocks)
+
+	DefaultHomeDir                 = "./halo" // Defaults to "halo" in current directory
+	defaultAppStatePersistInterval = 1        // Persist app state every block. Set to 0 to disable persistence.
+	defaultSnapshotInterval        = 1000     // Roughly once an hour (given 3s blocks)
 )
 
 // DefaultHaloConfig returns the default halo config.
 func DefaultHaloConfig() HaloConfig {
 	return HaloConfig{
-		HomeDir:                 defaultHomeDir,
+		HomeDir:                 DefaultHomeDir,
 		EngineJWTFile:           "", // No default
 		AppStatePersistInterval: defaultAppStatePersistInterval,
 		SnapshotInterval:        defaultSnapshotInterval,

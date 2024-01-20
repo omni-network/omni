@@ -1,11 +1,11 @@
 {
- "HomeDir": ".",
+ "HomeDir": "./halo",
  "EngineJWTFile": "",
  "AppStatePersistInterval": 1,
  "SnapshotInterval": 1000,
  "Comet": {
   "Version": "0.38.3",
-  "RootDir": ".",
+  "RootDir": "./halo",
   "ProxyApp": "tcp://127.0.0.1:26658",
   "Moniker": "testmoniker",
   "DBBackend": "goleveldb",
@@ -20,7 +20,7 @@
   "ABCI": "socket",
   "FilterPeers": false,
   "RPC": {
-   "RootDir": ".",
+   "RootDir": "./halo",
    "ListenAddress": "tcp://127.0.0.1:26657",
    "CORSAllowedOrigins": [],
    "CORSAllowedMethods": [
@@ -52,7 +52,7 @@
    "PprofListenAddress": ""
   },
   "P2P": {
-   "RootDir": ".",
+   "RootDir": "./halo",
    "ListenAddress": "tcp://0.0.0.0:26656",
    "ExternalAddress": "",
    "Seeds": "",
@@ -85,7 +85,7 @@
   },
   "Mempool": {
    "Type": "flood",
-   "RootDir": ".",
+   "RootDir": "./halo",
    "Recheck": true,
    "Broadcast": true,
    "WalPath": "",
@@ -113,7 +113,7 @@
    "Version": "v0"
   },
   "Consensus": {
-   "RootDir": ".",
+   "RootDir": "./halo",
    "WalPath": "data/cs.wal/wal",
    "TimeoutPropose": 3000000000,
    "TimeoutProposeDelta": 500000000,
