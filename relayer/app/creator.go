@@ -22,8 +22,8 @@ func CreateSubmissions(streamUpdate StreamUpdate) ([]xchain.Submission, error) {
 	}
 
 	submissions := make([]xchain.Submission, len(groupedMsgs))
-
-	for i, msgs := range groupedMsgs {
+	i := 0
+	for _, msgs := range groupedMsgs {
 		multi, err := tree.Proof(streamUpdate.AggAttestation.BlockHeader, msgs)
 		if err != nil {
 			return nil, err
@@ -37,6 +37,7 @@ func CreateSubmissions(streamUpdate StreamUpdate) ([]xchain.Submission, error) {
 			ProofFlags:      multi.ProofFlags,
 			Signatures:      streamUpdate.AggAttestation.Signatures,
 		}
+		i++
 	}
 
 	return submissions, nil
