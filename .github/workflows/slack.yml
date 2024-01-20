@@ -3,7 +3,7 @@ name: ci notify
 # run after all workflows on main
 on:
   workflow_run:
-    workflows: ["*"]
+    workflows: ["pre-commit hooks", "go tests", "go releaser", "go lint"]
     branches: [main]
 
 jobs:
