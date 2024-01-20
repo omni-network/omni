@@ -33,12 +33,12 @@ dockers:
   - ids: [explorer-api]
     dockerfile: ./explorer/api/Dockerfile
     image_templates:
-      - omniops/explorer/api:latest
+      - omniops/explorer_api:latest
 
   - ids: [indexer]
     dockerfile: ./explorer/indexer/Dockerfile
     image_templates:
-      - omniops/explorer/indexer:latest
+      - omniops/explorer_indexer:latest
 
 archives:
   - format: tar.gz
