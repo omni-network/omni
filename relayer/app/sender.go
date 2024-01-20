@@ -96,10 +96,10 @@ func (s SenderService) SendTransaction(ctx context.Context, submission xchain.Su
 		return err
 	}
 
-	log.Info(ctx, "submitted_tx",
-		"tx_hash", tx.Hash().Hex(),
-		"nonce", tx.Nonce(),
-		"gas_price", tx.GasPrice(),
+	log.Info(ctx, "Submitted_tx",
+		"Tx_hash", tx.Hash().Hex(),
+		"Nonce", tx.Nonce(),
+		"Gas_price", tx.GasPrice(),
 	)
 
 	waitCtx, cancel := context.WithTimeout(ctx, miningTimeout)
