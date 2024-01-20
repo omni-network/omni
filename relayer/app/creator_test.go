@@ -64,10 +64,6 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 			for _, g := range got {
 				require.NotNil(t, g.AttestationRoot)
 				require.Equal(t, g.AttestationRoot, att.BlockRoot)
-				// all leafs provided, there should be no proof
-
-				//require.Equal(t, len(g.Msgs), len(g.ProofFlags))
-				//require.Equal(t, len(g.Msgs), len(tt.streamUpdate.Msgs))
 			}
 		})
 	}
