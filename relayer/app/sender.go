@@ -106,6 +106,7 @@ func (s SenderService) SendTransaction(ctx context.Context, submission xchain.Su
 	receipt, err := bind.WaitMined(waitCtx, portal.RPCClient, tx)
 	defer cancel()
 
+	// todo(Lazar): handle error
 	if ctx.Err() != nil {
 		// shutdown
 		return errors.Wrap(ctx.Err(), "ctx error")
