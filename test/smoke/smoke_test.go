@@ -168,6 +168,8 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 			// Assert the update is good
 			require.EqualValues(t, srcChainID, update.SourceChainID)
 			require.NotEmpty(t, update.Msgs)
+			require.Len(t, update.AggAttestation.Signatures, 1)
+			require.EqualValues(t, privVal.Key.PubKey.Bytes(), update.AggAttestation.Signatures[0].ValidatorPubKey)
 
 			// Assert offsets are sequential
 			for _, msg := range update.Msgs {
