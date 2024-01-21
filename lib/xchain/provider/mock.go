@@ -38,9 +38,16 @@ func NewMock(period time.Duration) *Mock {
 
 func (m *Mock) Subscribe(ctx context.Context, chainID uint64, fromHeight uint64, callback xchain.ProviderCallback,
 ) error {
+	offset := make(offseter).offset
+
+	// Populate historical blocks so offsets are consistent for heights.
+	for i := uint64(0); i < fromHeight; i++ {
+		m.addBlock(*nextBlock(chainID, i, offset))
+	}
+
 	go func() {
 		height := fromHeight
-		offset := make(offseter).offset
+
 		for ctx.Err() == nil {
 			block := nextBlock(chainID, height, offset)
 			m.addBlock(*block)
@@ -104,11 +111,11 @@ func nextBlock(chainID uint64, height uint64, offsetFunc func(xchain.StreamID) u
 	case 0:
 		// Empty block, no messages or receipts
 	case 1:
-		msgs = append(msgs, newMsgA()) // One message to chain A
+		msgs = append(msgs, newMsgA()) // Msgs: 1*chainA, 0*chainB
 	case 2:
-		msgs = append(msgs, newMsgB()) // One message to chain B
+		msgs = append(msgs, newMsgA(), newMsgB()) // Msgs: 2*chainA, 1*chainB
 	case 3:
-		msgs = append(msgs, newMsgA(), newMsgB()) // Two messages, one to chain A and one to chain B
+		msgs = append(msgs, newMsgA(), newMsgA(), newMsgB()) // Msgs: 3*chainA, 1*chainB
 	}
 
 	return &xchain.Block{

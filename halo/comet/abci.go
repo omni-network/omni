@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/log"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
@@ -152,11 +153,15 @@ func (a *App) ProcessProposal(ctx context.Context, req *abci.RequestProcessPropo
 }
 
 // ExtendVote extends a vote with application-injected data (vote extensions).
-func (a *App) ExtendVote(context.Context, *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
-	attBytes, err := encode(a.attestSvc.GetAvailable())
+func (a *App) ExtendVote(ctx context.Context, _ *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
+	atts := a.attestSvc.GetAvailable()
+
+	attBytes, err := encode(atts)
 	if err != nil {
 		return nil, err
 	}
+
+	log.Info(ctx, "Attesting to rollup blocks", "attestations", len(atts))
 
 	return &abci.ResponseExtendVote{
 		VoteExtension: attBytes,

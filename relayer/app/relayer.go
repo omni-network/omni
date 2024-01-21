@@ -6,9 +6,12 @@ import (
 
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
 )
 
+// StartRelayer starts the relayer logic by subscribing to approved aggregate attestations
+// from the consensus chain and processing them into submissions for the destination chains.
 func StartRelayer(
 	ctx context.Context,
 	cProvider cchain.Provider,
@@ -32,11 +35,20 @@ func StartRelayer(
 	callback := func(ctx context.Context, att xchain.AggAttestation) error {
 		// Get the xblock from the source chain.
 		block, ok, err := xClient.GetBlock(ctx, att.SourceChainID, att.BlockHeight)
-
 		if err != nil {
 			return err
-		} else if !ok {
-			return errors.New("attestation block not finalized", "attestation", att)
+		} else if !ok { // Sanity check, should never happen.
+			return errors.New("attestation block not finalized [BUG!]",
+				"chain", att.SourceChainID,
+				"height", att.BlockHeight,
+			)
+		} else if block.BlockHash != att.BlockHash { // Sanity check, should never happen.
+			return errors.New("attestation block hash mismatch [BUG!]",
+				"chain", att.SourceChainID,
+				"height", att.BlockHeight,
+				log.Hex7("attestation_hash", att.BlockHash[:]),
+				log.Hex7("block_hash", block.BlockHash[:]),
+			)
 		}
 
 		// Split into streams
@@ -83,7 +95,7 @@ func mapByStreamID(msgs []xchain.Msg) map[xchain.StreamID][]xchain.Msg {
 }
 
 func filterMsgs(msgs []xchain.Msg, offset uint64) []xchain.Msg {
-	var res []xchain.Msg //nolint:prealloc // we don't know how many msgs will be filtered out
+	res := make([]xchain.Msg, 0, len(msgs)) // Res might have over-capacity, but that's fine, we only filter on startup.
 	for _, msg := range msgs {
 		if msg.StreamOffset <= offset {
 			// filter msgs lower than offset
