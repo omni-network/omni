@@ -24,18 +24,19 @@ func TestAggregate(t *testing.T) {
 	valY := newPubkey()
 	valZ := newPubkey()
 
-	var atts []xchain.Attestation
-	// Three atts for chainA, height1.
-	atts = append(atts, newAtt(chainA, height1, valX))
-	atts = append(atts, newAtt(chainA, height1, valY))
-	atts = append(atts, newAtt(chainA, height1, valZ))
+	atts := []xchain.Attestation{
+		// Three atts for chainA, height1.
+		newAtt(chainA, height1, valX),
+		newAtt(chainA, height1, valY),
+		newAtt(chainA, height1, valZ),
 
-	// Two atts for chainB, height1.
-	atts = append(atts, newAtt(chainB, height1, valX))
-	atts = append(atts, newAtt(chainB, height1, valY))
+		// Two atts for chainB, height1.
+		newAtt(chainB, height1, valX),
+		newAtt(chainB, height1, valY),
 
-	// One att for chainA, height2.
-	atts = append(atts, newAtt(chainA, height2, valX))
+		// One att for chainA, height2.
+		newAtt(chainA, height2, valX),
+	}
 
 	aggs := aggregate(atts)
 	require.Len(t, aggs, 3)

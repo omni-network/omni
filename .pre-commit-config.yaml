@@ -36,7 +36,7 @@ repos:
       - id: golangci-lint
         require_serial: true # Don't run this in parallel
         # Lint all go files in the repo, since this aligns with github actions.
-        entry: golangci-lint run -v --fix
+        entry: golangci-lint run --fix
 
   - repo: local
     hooks:
