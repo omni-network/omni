@@ -70,12 +70,8 @@ func newAtt(chainID uint64, height uint64, valPubKey [33]byte) xchain.Attestatio
 		return b
 	}
 
-	sig := func() [65]byte {
-		var b [65]byte
-		copy(b[:], valPubKey[:])
-
-		return b
-	}
+	var sig [65]byte
+	copy(sig[:], valPubKey[:])
 
 	return xchain.Attestation{
 		BlockHeader: xchain.BlockHeader{
@@ -86,7 +82,7 @@ func newAtt(chainID uint64, height uint64, valPubKey [33]byte) xchain.Attestatio
 		BlockRoot: randBytes32(),
 		Signature: xchain.SigTuple{
 			ValidatorPubKey: valPubKey,
-			Signature:       sig(),
+			Signature:       sig,
 		},
 	}
 }
