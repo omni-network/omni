@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/omni-network/omni/halo/app"
@@ -25,25 +26,63 @@ import (
 
 // newInitCmd returns a new cobra command that initializes the files and folders required by halo.
 func newInitCmd() *cobra.Command {
-	var homeDir string
+	var (
+		homeDir = app.DefaultHomeDir
+		force   bool
+	)
 
 	cmd := &cobra.Command{
 		Use:   "init",
-		Short: "Initializes halo files and folders",
+		Short: "Initializes required halo files and directories",
+		Long: `Initializes required halo files and directories.
+
+Ensures all the following files and directories exist:
+  <home>/                            # Halo home directory
+  ├── config                         # Config directory
+  │   ├── config.toml                # CometBFT configuration
+  │   ├── genesis.json               # Omni chain genesis file
+  │   ├── halo.toml                  # Halo configuration
+  │   ├── node_key.json              # Node P2P identity key
+  │   └── priv_validator_key.json    # CometBFT private validator key (back this up and keep it safe)
+  ├── data                           # Data directory
+  │   ├── priv_validator_state.json  # CometBFT private validator state (slashing protection)
+  │   ├── snapshots                  # Snapshot directory
+  │   └── xattestations_state.json   # Cross chain attestation state (slashing protection)
+
+Existing files are not overwritten.
+The home directory should only contain subdirectories, no files, use --force to ignore this check.
+`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return initFiles(cmd.Context(), homeDir)
+			return initFiles(cmd.Context(), homeDir, force)
 		},
 	}
 
 	libcmd.BindHomeFlag(cmd.Flags(), &homeDir)
+	cmd.Flags().BoolVar(&force, "force", false, "Force initialization even if home directory contains files")
 
 	return cmd
 }
 
 // initFiles initializes the files and folders required by halo.
 // If no other genesis file exists, it will create a devnet genesis file.
-func initFiles(ctx context.Context, homeDir string) error {
-	log.Info(ctx, "Initializing files and folder", "home", homeDir)
+//
+//nolint:revive // Force bool is ok.
+func initFiles(ctx context.Context, homeDir string, force bool) error {
+	log.Info(ctx, "Initializing files and directories", "home", homeDir, "force", force)
+
+	// Quick sanity check if --home contains files (it should only contain dirs).
+	// This prevents accidental initialization in wrong current dir.
+	if !force {
+		files, _ := os.ReadDir(homeDir) // Ignore error, we'll just assume it's empty.
+		for _, file := range files {
+			if file.IsDir() { // Ignore directories
+				continue
+			}
+
+			return errors.New("home directory contains unexpected file(s), use --force to initialize anyway",
+				"home", homeDir, "example_file", file.Name())
+		}
+	}
 
 	// Initialize default configs.
 	comet := defaultCometConfig(homeDir)

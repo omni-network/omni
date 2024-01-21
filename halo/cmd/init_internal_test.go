@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -16,7 +17,7 @@ import (
 func TestInitFiles(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	err := initFiles(context.Background(), dir)
+	err := initFiles(context.Background(), dir, false)
 	require.NoError(t, err)
 
 	files, err := filepath.Glob(dir + "/**/*")
@@ -28,4 +29,19 @@ func TestInitFiles(t *testing.T) {
 	}
 
 	tutil.RequireGoldenBytes(t, []byte(resp))
+}
+
+func TestInitForce(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+
+	// Create a dummy file
+	err := os.WriteFile(filepath.Join(dir, "dummy"), nil, 0o644)
+	require.NoError(t, err)
+
+	err = initFiles(context.Background(), dir, false)
+	require.ErrorContains(t, err, "unexpected file")
+
+	err = initFiles(context.Background(), dir, true)
+	require.NoError(t, err)
 }
