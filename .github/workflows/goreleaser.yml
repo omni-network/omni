@@ -32,6 +32,6 @@ jobs:
       - name: Push Explorer API to Dockerhub
         run: docker push omniops/explorer-api:latest
       - name: Push Indexer to Dockerhub
-        run: docker push omniops/indexer:latest
+        run: docker push omniops/explorer-indexer:latest
       - name: Push Halo to Dockerhub
         run: docker push omniops/halo:latest
