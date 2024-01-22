@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import { Test } from "forge-std/Test.sol";
-import { OmniPortal } from "src/OmniPortal.sol";
+import { TestPortal } from "test/common/TestPortal.sol";
 import { Counter } from "test/common/Counter.sol";
 import { Reverter } from "test/common/Reverter.sol";
 import { Events } from "test/common/Events.sol";
@@ -20,7 +20,7 @@ contract CommonTest is Test, Events {
     address xcaller;
     address relayer;
 
-    OmniPortal portal;
+    TestPortal portal;
     Counter counter;
     Reverter reverter;
 
@@ -30,7 +30,7 @@ contract CommonTest is Test, Events {
         relayer = makeAddr("relayer");
 
         vm.startPrank(deployer);
-        portal = new OmniPortal();
+        portal = new TestPortal();
         counter = new Counter();
         reverter = new Reverter();
         vm.stopPrank();
