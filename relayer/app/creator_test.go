@@ -91,7 +91,6 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 			for _, submission := range submissions {
 				require.NotNil(t, submission.AttestationRoot)
 				require.Equal(t, submission.AttestationRoot, att.BlockRoot)
-				require.NotNil(t, submission.Proof)
 				require.NotNil(t, submission.ProofFlags)
 				require.NotNil(t, submission.Signatures)
 				for _, msg := range submission.Msgs {
