@@ -31,7 +31,6 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 		func(e *xchain.Msg, c fuzz.Continue) {
 			e.DestChainID = uint64(randomBetween(1, 5))
 			e.SourceChainID = uint64(randomBetween(1, 5))
-			e.StreamOffset = uint64(randomBetween(1, 100))
 			e.DestAddress = [20]byte(crypto.CRandBytes(20))
 			e.SourceMsgSender = [20]byte(crypto.CRandBytes(20))
 			e.Data = crypto.CRandBytes(100)
@@ -40,6 +39,11 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 
 	var block xchain.Block
 	fuzzer.NilChance(0).NumElements(1, 64).Fuzz(&block)
+
+	// make all msg offset sequential
+	for i := range block.Msgs {
+		block.Msgs[i].StreamOffset = uint64(i)
+	}
 
 	att, err := attest.CreateAttestation(privKey, block)
 	require.NoError(t, err)
@@ -53,12 +57,12 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 		Signatures:     []xchain.SigTuple{att.Signature},
 	}
 
-	ensureNoDuplicates := func(msgs []xchain.Msg) {
+	ensureNoDuplicates := func(t *testing.T, msgs []xchain.Msg) {
 		msgSet := make(map[xchain.MsgID]struct{})
 		for _, msg := range msgs {
 			if _, exists := msgSet[msg.MsgID]; exists {
 				// Fail the test if a duplicate message is found
-				t.Fatalf("Duplicate message found: %+v", msg)
+				require.Fail(t, "Duplicate message found", msg)
 			}
 			msgSet[msg.MsgID] = struct{}{}
 		}
@@ -102,7 +106,7 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 			// ensure no msgs were dropped
 			require.Len(t, msgs, len(tt.streamUpdate.Msgs))
 			// check for duplicates
-			ensureNoDuplicates(msgs)
+			ensureNoDuplicates(t, msgs)
 		})
 	}
 }
