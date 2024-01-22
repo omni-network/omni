@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cometbft/cometbft/crypto"
 	"github.com/omni-network/omni/halo/attest"
 	"github.com/omni-network/omni/lib/xchain"
 	relayer "github.com/omni-network/omni/relayer/app"
 
+	"github.com/cometbft/cometbft/crypto"
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 
 	fuzz "github.com/google/gofuzz"
