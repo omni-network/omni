@@ -18,11 +18,11 @@ func CreateSubmissions(streamUpdate StreamUpdate) ([]xchain.Submission, error) {
 
 	groupedMsgs := map[uint64][]xchain.Msg{}
 	for _, msg := range streamUpdate.Msgs {
-		groupedMsgs[msg.StreamID.DestChainID] = append(groupedMsgs[msg.StreamID.DestChainID], msg)
+		groupedMsgs[msg.DestChainID] = append(groupedMsgs[msg.DestChainID], msg)
 	}
 
 	submissions := make([]xchain.Submission, 0, len(groupedMsgs))
-	for _, msgs := range groupedMsgs {
+	for destChainID, msgs := range groupedMsgs {
 		multi, err := tree.Proof(streamUpdate.AggAttestation.BlockHeader, msgs)
 		if err != nil {
 			return nil, err
@@ -35,6 +35,7 @@ func CreateSubmissions(streamUpdate StreamUpdate) ([]xchain.Submission, error) {
 			Proof:           multi.Proof,
 			ProofFlags:      multi.ProofFlags,
 			Signatures:      streamUpdate.AggAttestation.Signatures,
+			DestChainID:     destChainID,
 		})
 	}
 
