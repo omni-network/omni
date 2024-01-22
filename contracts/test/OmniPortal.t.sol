@@ -4,7 +4,6 @@ pragma solidity 0.8.23;
 import { CommonTest } from "test/common/CommonTest.sol";
 import { XChain } from "src/libraries/XChain.sol";
 import { Vm } from "forge-std/Vm.sol";
-import { console } from "forge-std/console.sol";
 
 contract OmniPortal_Test is CommonTest {
     /// @dev Test that xcall with default gas limit emits XMsg event and increments outXStreamOffset
