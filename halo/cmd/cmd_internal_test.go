@@ -102,11 +102,19 @@ func TestCLIReference(t *testing.T) {
 func TestTomlConfig(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
+	var chars = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
-	// Create a fuzzer with small uint64s (toml struggles with large numbers).
-	fuzzer := fuzz.New().Funcs(func(i *uint64, c fuzz.Continue) {
-		*i = uint64(rand.Intn(1_000_000))
-	})
+	// Create a fuzzer with small uint64s and ansi strings (toml struggles with large numbers and UTF8).
+	fuzzer := fuzz.New().Funcs(
+		func(i *uint64, c fuzz.Continue) {
+			*i = uint64(rand.Intn(1_000_000))
+		},
+		func(s *string, c fuzz.Continue) {
+			for i := 0; i < rand.Intn(64); i++ {
+				*s += string(chars[rand.Intn(len(chars))])
+			}
+		},
+	)
 
 	var expect app.HaloConfig
 	fuzzer.Fuzz(&expect)
