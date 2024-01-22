@@ -31,7 +31,7 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 		func(e *xchain.Msg, c fuzz.Continue) {
 			e.DestChainID = uint64(randomBetween(1, 5))
 			e.SourceChainID = uint64(randomBetween(1, 5))
-			e.StreamOffset = uint64(randomBetween(1, 10))
+			e.StreamOffset = uint64(randomBetween(1, 100))
 			e.DestAddress = [20]byte(crypto.CRandBytes(20))
 			e.SourceMsgSender = [20]byte(crypto.CRandBytes(20))
 			e.Data = crypto.CRandBytes(100)
