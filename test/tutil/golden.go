@@ -1,6 +1,6 @@
 // Package tutil provides test utilities.
 //
-//nolint:gochecknoglobals,gomnd,gosec // These not an issue for simple testing library.
+//nolint:gochecknoglobals,gomnd // These not an issue for simple testing library.
 package tutil
 
 import (
