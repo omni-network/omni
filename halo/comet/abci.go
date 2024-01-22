@@ -21,18 +21,25 @@ const (
 
 // Info returns information about the application state.
 // V0 in-memory chain always starts from scratch, at height 0.
-func (a *App) Info(_ context.Context, req *abci.RequestInfo) (*abci.ResponseInfo, error) {
-	return &abci.ResponseInfo{
+func (a *App) Info(ctx context.Context, req *abci.RequestInfo) (*abci.ResponseInfo, error) {
+	resp := &abci.ResponseInfo{
 		Data:             "", // CometBFT does not use this field.
 		Version:          req.AbciVersion,
 		AppVersion:       appVersion,
 		LastBlockHeight:  int64(a.state.Height()),
 		LastBlockAppHash: a.state.Hash(), // AppHash overwritten by InitChain if LastBlockHeight==0.
-	}, nil
+	}
+
+	log.Info(ctx, "Starting consensus chain",
+		"last_height", resp.LastBlockHeight,
+		log.Hex7("app_hash", resp.LastBlockAppHash),
+	)
+
+	return resp, nil
 }
 
 // InitChain initializes the blockchain.
-func (a *App) InitChain(_ context.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
+func (a *App) InitChain(ctx context.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
 	if req.InitialHeight > 1 {
 		return nil, errors.New("initial height must not 1")
 	}
@@ -47,12 +54,20 @@ func (a *App) InitChain(_ context.Context, req *abci.RequestInitChain) (*abci.Re
 		return nil, errors.Wrap(err, "set validators")
 	}
 
-	return &abci.ResponseInitChain{
+	resp := &abci.ResponseInitChain{
 		AppHash: a.state.Hash(),
 		// Return nils below to indicate no-update.
 		ConsensusParams: nil,
 		Validators:      nil,
-	}, nil
+	}
+
+	log.Info(ctx, "Initializing brand new consensus chain",
+		"init_height", req.InitialHeight,
+		"validators", len(req.Validators),
+		log.Hex7("genesis_app_hash", resp.AppHash),
+	)
+
+	return resp, nil
 }
 
 // PrepareProposal returns a proposal for the next block.
@@ -124,6 +139,11 @@ func (a *App) PrepareProposal(ctx context.Context, req *abci.RequestPreparePropo
 	if err != nil {
 		return nil, err
 	}
+
+	log.Info(ctx, "Proposing new block",
+		"height", req.Height,
+		log.Hex7("execution_block_hash", payloadResp.ExecutionPayload.BlockHash[:]),
+	)
 
 	return &abci.ResponsePrepareProposal{Txs: [][]byte{tx}}, nil
 }
@@ -208,6 +228,13 @@ func (a *App) FinalizeBlock(ctx context.Context, req *abci.RequestFinalizeBlock)
 	if err != nil {
 		return nil, err
 	}
+
+	log.Info(ctx, "Finalized new consensus block",
+		"height", req.Height,
+		log.Hex7("app_hash", appHash[:]),
+		"attestations", len(cpayload.Aggregates),
+		log.Hex7("execution_block_hash", cpayload.EPayload.BlockHash[:]),
+	)
 
 	return &abci.ResponseFinalizeBlock{
 		Events: nil, // Events are going to be deprecated from cometBFT.
