@@ -15,7 +15,7 @@ func TestMock(t *testing.T) {
 
 	const (
 		chainID    = 123
-		fromHeight = 456
+		fromHeight = 0
 		total      = 5
 	)
 
@@ -38,8 +38,8 @@ func TestMock(t *testing.T) {
 	// Just some very basic sanity checks
 	assertMsgs(t, blocks[0].Msgs, 0, 0)
 	assertMsgs(t, blocks[1].Msgs, 1, 0)
-	assertMsgs(t, blocks[2].Msgs, 0, 1)
-	assertMsgs(t, blocks[3].Msgs, 1, 1)
+	assertMsgs(t, blocks[2].Msgs, 1, 1)
+	assertMsgs(t, blocks[3].Msgs, 2, 1)
 	assertMsgs(t, blocks[4].Msgs, 0, 0)
 
 	assertOffsets(t, blocks)

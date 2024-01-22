@@ -34,6 +34,7 @@ repos:
     rev: v1.55.2
     hooks:
       - id: golangci-lint
+        require_serial: true # Don't run this in parallel
         # Lint all go files in the repo, since this aligns with github actions.
         entry: golangci-lint run --fix
 
@@ -42,6 +43,7 @@ repos:
       - id: run-go-tests
         name: run-go-tests
         language: script
+        require_serial: true # Don't run this in parallel
         entry: .pre-commit/run_go_tests.sh
         types: [ file, go ]
 

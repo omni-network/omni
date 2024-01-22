@@ -44,15 +44,15 @@ func NewApp(ethCl engine.API, attestSvc attest.Service, state *State, snapshots 
 
 // ApprovedAggregates returns a copy of the latest state's approved aggregates.
 // For testing purposes only.
-func (c *App) ApprovedAggregates() []xchain.AggAttestation {
-	return c.state.ApprovedAggregates()
+func (a *App) ApprovedAggregates() []xchain.AggAttestation {
+	return a.state.ApprovedAggregates()
 }
 
 // ApprovedFrom returns a sequential range of approved aggregates from the provided chain ID and height.
 // It returns at most max aggregates. Their block heights are sequentially increasing.
 // For testing purposes only.
-func (c *App) ApprovedFrom(chainID uint64, height uint64, max uint64) []xchain.AggAttestation {
-	return c.state.ApprovedFrom(chainID, height, max)
+func (a *App) ApprovedFrom(chainID uint64, height uint64, max uint64) []xchain.AggAttestation {
+	return a.state.ApprovedFrom(chainID, height, max)
 }
 
 var _ abci.Application = (*App)(nil)

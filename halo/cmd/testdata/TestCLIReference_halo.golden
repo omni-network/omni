@@ -6,7 +6,7 @@ Usage:
 Available Commands:
   completion  Generate the autocompletion script for the specified shell
   help        Help about any command
-  init        Initializes halo files and folders
+  init        Initializes required halo files and directories
   run         Runs the halo consensus client
 
 Flags:

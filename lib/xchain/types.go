@@ -78,6 +78,7 @@ type Submission struct {
 	Proof           [][32]byte  // Merkle multi proofs of the messages
 	ProofFlags      []bool      // Flags indicating whether the proof is a left or right proof
 	Signatures      []SigTuple  // Validator signatures and public keys
+	DestChainID     uint64      // Destination chain ID, for internal use only
 }
 
 // StreamCursor is a cursor that tracks the progress of a cross-chain stream on destination portal contracts.

@@ -67,6 +67,7 @@ linters-settings:
           - "github.com/pkg/errors"              # Prefer ./lib/errors
           - "github.com/gogo/protobuf/proto"     # Prefer google.golang.org/protobuf
           - "github.com/stretchr/testify/assert" # Prefer github.com/stretchr/testify/require
+          - "golang.org/x/exp/slices"            # Prefer slices
       - name: line-length-limit
         arguments:
           - 120
@@ -109,6 +110,8 @@ linters:
     - funlen               # Some functions will be long
     - goerr113             # We do not religiously follow the Go 1.13 package level error convention
     - godox                # Allow TODOs
+    - goimports            # Handled by gci
+    - gofumpt              # Not compatible with gci, see https://github.com/golangci/golangci-lint/issues/1490.
     - gomnd                # Too many false positives
     - ireturn              # Too many false positives
     - tagliatelle          # Too strict
