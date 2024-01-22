@@ -35,15 +35,12 @@ type SenderService struct {
 }
 
 // NewSenderService creates a new sender service.
-func NewSenderService(chains []netconf.Chain, privateKey ecdsa.PrivateKey) (SenderService, error) {
+func NewSenderService(chains []netconf.Chain, rpcClientPerChain map[uint64]*ethclient.Client,
+	privateKey ecdsa.PrivateKey,
+) (SenderService, error) {
 	portal := make(map[uint64]Portal)
 	for _, chain := range chains {
-		rpcClient, err := ethclient.Dial(chain.RPCURL)
-		if err != nil {
-			return SenderService{}, errors.Wrap(err, "dial rpc", "url", chain.RPCURL)
-		}
-
-		p, err := NewPortal(chain, rpcClient, privateKey)
+		p, err := NewPortal(chain, rpcClientPerChain[chain.ID], privateKey)
 		if err != nil {
 			return SenderService{}, err
 		}
@@ -83,11 +80,10 @@ func NewPortal(chain netconf.Chain, rpcClient *ethclient.Client, privateKey ecds
 
 func (s SenderService) SendTransaction(ctx context.Context, submission xchain.Submission) error {
 	xChainSubmission := TranslateSubmission(submission)
-	destChainID := submission.DestChainID()
 
-	portal, ok := s.Portal[destChainID]
+	portal, ok := s.Portal[submission.DestChainID]
 	if !ok {
-		return errors.New("portal not found", "destChainID", destChainID)
+		return errors.New("portal not found", "destChainID", submission.DestChainID)
 	}
 
 	tx, err := portal.Session.Xsubmit(xChainSubmission)
@@ -97,9 +93,9 @@ func (s SenderService) SendTransaction(ctx context.Context, submission xchain.Su
 	}
 
 	log.Info(ctx, "Submitted_tx",
-		"Tx_hash", tx.Hash().Hex(),
-		"Nonce", tx.Nonce(),
-		"Gas_price", tx.GasPrice(),
+		"tx_hash", tx.Hash().Hex(),
+		"nonce", tx.Nonce(),
+		"gas_price", tx.GasPrice(),
 	)
 
 	waitCtx, cancel := context.WithTimeout(ctx, miningTimeout)

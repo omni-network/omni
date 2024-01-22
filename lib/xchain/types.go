@@ -78,6 +78,7 @@ type Submission struct {
 	Proof           [][32]byte  // Merkle multi proofs of the messages
 	ProofFlags      []bool      // Flags indicating whether the proof is a left or right proof
 	Signatures      []SigTuple  // Validator signatures and public keys
+	DestChainID     uint64      // Destination chain ID, for internal use only
 }
 
 // StreamCursor is a cursor that tracks the progress of a cross-chain stream on destination portal contracts.
@@ -85,14 +86,4 @@ type StreamCursor struct {
 	StreamID                 // Stream ID of the Stream this cursor belongs to
 	Offset            uint64 // Latest applied Msg offset of the Stream
 	SourceBlockHeight uint64 // Height of the source chain block
-}
-
-// DestChainID returns the destination chain ID of the first message in the submission
-// (all should be to the same dest chain).
-func (s Submission) DestChainID() uint64 {
-	if len(s.Msgs) == 0 {
-		return 0
-	}
-
-	return s.Msgs[0].DestChainID
 }
