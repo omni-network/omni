@@ -101,7 +101,7 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 				msgs = append(msgs, submission.Msgs...)
 			}
 			// ensure no msgs were dropped
-			require.Equal(t, msgCount, len(tt.streamUpdate.Msgs))
+			require.Len(t, msgs, len(tt.streamUpdate.Msgs))
 			// check for duplicates
 			ensureNoDuplicates(msgs)
 		})
