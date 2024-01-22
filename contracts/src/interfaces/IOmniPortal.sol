@@ -23,7 +23,7 @@ interface IOmniPortal {
     );
 
     /**
-     * @notice Emitted when an XMsg is executed on another chain
+     * @notice Emitted when an XMsg is executed on its destination chain
      * @param sourceChainId Source chain ID
      * @param streamOffset Offset the XMsg in the source -> dest XStream
      * @param gasUsed Gas used in execution of the XMsg
@@ -68,7 +68,7 @@ interface IOmniPortal {
 
     /**
      * @notice Offset of the next inbound XMsg to be received in the corresponding source -> dest XStream
-     * @param sourceChainId Destination chain ID
+     * @param sourceChainId Source chain ID
      * @return Offset
      */
     function inXStreamOffset(uint64 sourceChainId) external view returns (uint64);

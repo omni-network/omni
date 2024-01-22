@@ -56,7 +56,7 @@ contract OmniPortal is IOmniPortal {
         outXStreamOffset[destChainId] += 1;
     }
 
-    /// @dev Execute an XMsg (if it's next in its XStream), increment inXStreamOffset, emit an XReceipt
+    /// @dev Verify an XMsg is next in its XStream, execute it, increment inXStreamOffset, emit an XReceipt
     function _exec(XChain.Msg calldata xmsg) internal {
         require(xmsg.destChainId == chainId, "OmniPortal: wrong destChainId");
         require(xmsg.streamOffset == inXStreamOffset[xmsg.sourceChainId], "OmniPortal: wrong streamOffset");
@@ -64,9 +64,12 @@ contract OmniPortal is IOmniPortal {
         // increment offset before executing xcall, to avoid reentrancy loop
         inXStreamOffset[xmsg.sourceChainId] += 1;
 
+        // we enforce a maximum on xcall, but we trim to max here just in case
+        uint256 gasLimit = xmsg.gasLimit > XMSG_MAX_GAS_LIMIT ? XMSG_MAX_GAS_LIMIT : xmsg.gasLimit;
+
         // execute xmsg, tracking gas used
         uint256 gasUsed = gasleft();
-        (bool success,) = xmsg.to.call{ gas: xmsg.gasLimit }(xmsg.data);
+        (bool success,) = xmsg.to.call{ gas: gasLimit }(xmsg.data);
         gasUsed = gasUsed - gasleft();
 
         emit XReceipt(xmsg.sourceChainId, xmsg.streamOffset, gasUsed, msg.sender, success);
