@@ -58,6 +58,7 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 	}
 
 	ensureNoDuplicates := func(t *testing.T, msgs []xchain.Msg) {
+		t.Helper()
 		msgSet := make(map[xchain.MsgID]struct{})
 		for _, msg := range msgs {
 			if _, exists := msgSet[msg.MsgID]; exists {
