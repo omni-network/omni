@@ -28,27 +28,27 @@ type Portal struct {
 	RPCClient *ethclient.Client
 }
 
-var _ Sender = (*SenderService)(nil)
+var _ Sender = (*SimpleSender)(nil)
 
-type SenderService struct {
+type SimpleSender struct {
 	Portal map[uint64]Portal
 }
 
 // NewSenderService creates a new sender service.
 func NewSenderService(chains []netconf.Chain, rpcClientPerChain map[uint64]*ethclient.Client,
 	privateKey ecdsa.PrivateKey,
-) (SenderService, error) {
+) (SimpleSender, error) {
 	portal := make(map[uint64]Portal)
 	for _, chain := range chains {
 		p, err := NewPortal(chain, rpcClientPerChain[chain.ID], privateKey)
 		if err != nil {
-			return SenderService{}, err
+			return SimpleSender{}, err
 		}
 
 		portal[chain.ID] = p
 	}
 
-	return SenderService{
+	return SimpleSender{
 		Portal: portal,
 	}, nil
 }
@@ -78,7 +78,7 @@ func NewPortal(chain netconf.Chain, rpcClient *ethclient.Client, privateKey ecds
 	}, nil
 }
 
-func (s SenderService) SendTransaction(ctx context.Context, submission xchain.Submission) error {
+func (s SimpleSender) SendTransaction(ctx context.Context, submission xchain.Submission) error {
 	xChainSubmission := TranslateSubmission(submission)
 
 	portal, ok := s.Portal[submission.DestChainID]
