@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/omni-network/omni/explorer/api/docs"
 	svr "github.com/omni-network/omni/explorer/api/server"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -25,6 +26,12 @@ func Run(ctx context.Context, conf ExplorerAPIConfig) error {
 
 		// api with prefix /api/v1
 		mux.Handle("/api/v1/", http.StripPrefix("/api/v1", server))
+
+		// static files
+		mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
+
+		// hosting our documentation
+		mux.HandleFunc("/docs", docs.GetHandler())
 
 		httpServer := &http.Server{
 			Addr:              fmt.Sprintf(":%v", conf.Port),
