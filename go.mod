@@ -5,7 +5,7 @@ go 1.21.5
 require (
 	entgo.io/ent v0.12.5
 	github.com/charmbracelet/log v0.3.1
-	github.com/cometbft/cometbft v0.38.3
+	github.com/cometbft/cometbft v0.38.4
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0
 	github.com/ethereum/go-ethereum v1.13.10
 	github.com/go-faster/errors v0.7.1
