@@ -67,6 +67,7 @@ linters-settings:
           - "github.com/pkg/errors"              # Prefer ./lib/errors
           - "github.com/gogo/protobuf/proto"     # Prefer google.golang.org/protobuf
           - "github.com/stretchr/testify/assert" # Prefer github.com/stretchr/testify/require
+          - "golang.org/x/exp/slices"            # Prefer slices
       - name: line-length-limit
         arguments:
           - 120

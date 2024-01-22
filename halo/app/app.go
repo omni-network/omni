@@ -50,17 +50,12 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	attState, err := attest.LoadState(cfg.AttestStateFile())
-	if err != nil {
-		return errors.Wrap(err, "load attest state")
-	}
-
 	xprovider, err := newXProvider(network)
 	if err != nil {
 		return errors.Wrap(err, "create xchain provider")
 	}
 
-	attSvc, err := attest.NewAttester(ctx, attState, privVal.Key.PrivKey, xprovider, network.ChainIDs())
+	attSvc, err := attest.LoadAttester(ctx, privVal.Key.PrivKey, cfg.AttestStateFile(), xprovider, network.ChainIDs())
 	if err != nil {
 		return errors.Wrap(err, "create attester")
 	}
