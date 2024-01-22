@@ -2,10 +2,12 @@ package cmd
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/test/tutil"
 
 	"github.com/stretchr/testify/require"
@@ -16,7 +18,11 @@ import (
 func TestInitFiles(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	err := initFiles(context.Background(), dir)
+	cfg := initConfig{
+		HomeDir: dir,
+		Network: netconf.Simnet,
+	}
+	err := initFiles(context.Background(), cfg)
 	require.NoError(t, err)
 
 	files, err := filepath.Glob(dir + "/**/*")
@@ -28,4 +34,25 @@ func TestInitFiles(t *testing.T) {
 	}
 
 	tutil.RequireGoldenBytes(t, []byte(resp))
+}
+
+func TestInitForce(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+
+	// Create a dummy file
+	err := os.WriteFile(filepath.Join(dir, "dummy"), nil, 0o644)
+	require.NoError(t, err)
+
+	cfg := initConfig{
+		HomeDir: dir,
+		Network: netconf.Simnet,
+	}
+
+	err = initFiles(context.Background(), cfg)
+	require.ErrorContains(t, err, "unexpected file")
+
+	cfg.Force = true
+	err = initFiles(context.Background(), cfg)
+	require.NoError(t, err)
 }

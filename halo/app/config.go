@@ -6,7 +6,6 @@ import (
 	"text/template"
 
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/netconf"
 
 	cmtos "github.com/cometbft/cometbft/libs/os"
 
@@ -22,15 +21,16 @@ const (
 	attestStateFile = "xattestations_state.json"
 
 	// defaults.
-	defaultHomeDir                 = "."  // Defaults to current directory
-	defaultAppStatePersistInterval = 1    // Persist app state every block. Set to 0 to disable persistence.
-	defaultSnapshotInterval        = 1000 // Roughly once an hour (given 3s blocks)
+
+	DefaultHomeDir                 = "./halo" // Defaults to "halo" in current directory
+	defaultAppStatePersistInterval = 1        // Persist app state every block. Set to 0 to disable persistence.
+	defaultSnapshotInterval        = 1000     // Roughly once an hour (given 3s blocks)
 )
 
 // DefaultHaloConfig returns the default halo config.
 func DefaultHaloConfig() HaloConfig {
 	return HaloConfig{
-		HomeDir:                 defaultHomeDir,
+		HomeDir:                 DefaultHomeDir,
 		EngineJWTFile:           "", // No default
 		AppStatePersistInterval: defaultAppStatePersistInterval,
 		SnapshotInterval:        defaultSnapshotInterval,
@@ -50,8 +50,8 @@ func (c HaloConfig) ConfigFile() string {
 	return filepath.Join(c.HomeDir, configDir, configFile)
 }
 
-func (c HaloConfig) Network() (netconf.Network, error) {
-	return netconf.Load(filepath.Join(c.HomeDir, configDir, networkFile))
+func (c HaloConfig) NetworkFile() string {
+	return filepath.Join(c.HomeDir, configDir, networkFile)
 }
 
 func (c HaloConfig) DataDir() string {

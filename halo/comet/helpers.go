@@ -1,4 +1,4 @@
-package consensus
+package comet
 
 import (
 	"bytes"
@@ -78,7 +78,6 @@ func aggregate(attestations []xchain.Attestation) []xchain.AggAttestation {
 				},
 				ValidatorSetID: 0, // TODO(corver): Figoure out how to map attestation to valsetid.
 				BlockRoot:      att.BlockRoot,
-				Signatures:     []xchain.SigTuple{att.Signature},
 			}
 		}
 

@@ -5,6 +5,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"testing"
 
 	charm "github.com/charmbracelet/log"
 )
@@ -32,8 +33,8 @@ func getLogger(ctx context.Context) *slog.Logger {
 // - Timestamps are concise with millisecond precision
 // - Timestamps and structured keys are faint
 // This is aimed at local-dev and debugging. Production should use json or logfmt.
-func newConsoleLogger(opts ...func(*options)) *slog.Logger {
-	o := options{
+func newConsoleLogger(opts ...func(*TestOptions)) *slog.Logger {
+	o := TestOptions{
 		Writer:   os.Stderr,
 		StubTime: false,
 	}
@@ -59,8 +60,15 @@ func newConsoleLogger(opts ...func(*options)) *slog.Logger {
 	return slog.New(logger)
 }
 
-// options allow testing loggers.
-type options struct {
+// TestOptions allow testing loggers.
+type TestOptions struct {
 	Writer   io.Writer // Write to some buffer
 	StubTime bool      // Stub time in tests for deterministic output.
+}
+
+// LoggersForT returns a map of loggers for testing.
+func LoggersForT(_ *testing.T) map[string]func(...func(*TestOptions)) *slog.Logger {
+	return map[string]func(...func(*TestOptions)) *slog.Logger{
+		"console": newConsoleLogger,
+	}
 }

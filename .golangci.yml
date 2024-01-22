@@ -26,6 +26,9 @@ linters-settings:
     enable-all: true
   importas:
     no-unaliased: true
+    alias:
+      - pkg: github.com/cometbft/cometbft/crypto/secp256k1
+        alias: k1
     # TODO(corver): Add our own import aliases here
   misspell:
     locale: US
@@ -106,6 +109,8 @@ linters:
     - funlen               # Some functions will be long
     - goerr113             # We do not religiously follow the Go 1.13 package level error convention
     - godox                # Allow TODOs
+    - goimports            # Handled by gci
+    - gofumpt              # Not compatible with gci, see https://github.com/golangci/golangci-lint/issues/1490.
     - gomnd                # Too many false positives
     - ireturn              # Too many false positives
     - tagliatelle          # Too strict

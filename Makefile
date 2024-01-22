@@ -21,13 +21,7 @@ contract-bindings: ## Generate golang contract bindings.
 
 explorer-gen: ## Generates code for our explorer
 	make -C ./explorer/db gen
-
-###############################################################################
-###                                Utils                                 	###
-###############################################################################
-
-explorer-gen:
-	cd explorer/api/ && $(MAKE) gen
+	make -C ./explorer/api gen
 
 ###############################################################################
 ###                                Utils                                 	###

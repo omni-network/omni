@@ -1,6 +1,7 @@
 /config/config.toml
 /config/genesis.json
 /config/halo.toml
+/config/network.json
 /config/node_key.json
 /config/priv_validator_key.json
 /data/priv_validator_state.json

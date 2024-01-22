@@ -1,10 +1,11 @@
-package consensus
+package comet
 
 import (
 	"context"
 	"math/big"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/log"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
@@ -20,55 +21,70 @@ const (
 
 // Info returns information about the application state.
 // V0 in-memory chain always starts from scratch, at height 0.
-func (c *Core) Info(_ context.Context, req *abci.RequestInfo) (*abci.ResponseInfo, error) {
-	return &abci.ResponseInfo{
+func (a *App) Info(ctx context.Context, req *abci.RequestInfo) (*abci.ResponseInfo, error) {
+	resp := &abci.ResponseInfo{
 		Data:             "", // CometBFT does not use this field.
 		Version:          req.AbciVersion,
 		AppVersion:       appVersion,
-		LastBlockHeight:  int64(c.state.Height()),
-		LastBlockAppHash: c.state.Hash(), // AppHash overwritten by InitChain if LastBlockHeight==0.
-	}, nil
+		LastBlockHeight:  int64(a.state.Height()),
+		LastBlockAppHash: a.state.Hash(), // AppHash overwritten by InitChain if LastBlockHeight==0.
+	}
+
+	log.Info(ctx, "Starting consensus chain",
+		"last_height", resp.LastBlockHeight,
+		log.Hex7("app_hash", resp.LastBlockAppHash),
+	)
+
+	return resp, nil
 }
 
 // InitChain initializes the blockchain.
-func (c *Core) InitChain(_ context.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
+func (a *App) InitChain(ctx context.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
 	if req.InitialHeight > 1 {
 		return nil, errors.New("initial height must not 1")
 	}
 
 	if len(req.AppStateBytes) > 0 {
-		if err := c.state.Import(0, req.AppStateBytes); err != nil {
+		if err := a.state.Import(0, req.AppStateBytes); err != nil {
 			return nil, errors.Wrap(err, "import state")
 		}
 	}
 
-	if err := c.state.InitValidators(req.Validators); err != nil {
+	if err := a.state.InitValidators(req.Validators); err != nil {
 		return nil, errors.Wrap(err, "set validators")
 	}
 
-	return &abci.ResponseInitChain{
-		AppHash: c.state.Hash(),
+	resp := &abci.ResponseInitChain{
+		AppHash: a.state.Hash(),
 		// Return nils below to indicate no-update.
 		ConsensusParams: nil,
 		Validators:      nil,
-	}, nil
+	}
+
+	log.Info(ctx, "Initializing brand new consensus chain",
+		"init_height", req.InitialHeight,
+		"validators", len(req.Validators),
+		log.Hex7("genesis_app_hash", resp.AppHash),
+	)
+
+	return resp, nil
 }
 
 // PrepareProposal returns a proposal for the next block.
 // Note returning an error results in a panic cometbft and CONSENSUS_FAILURE log.
-func (c *Core) PrepareProposal(ctx context.Context, req *abci.RequestPrepareProposal) (
+func (a *App) PrepareProposal(ctx context.Context, req *abci.RequestPrepareProposal) (
 	*abci.ResponsePrepareProposal, error,
 ) {
 	if len(req.Txs) > 0 {
 		return nil, errors.New("unexpected transactions in proposal")
 	}
 
-	latestEHeight, err := c.ethCl.BlockNumber(ctx)
+	latestEHeight, err := a.ethCl.BlockNumber(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "latest execution block number")
 	}
 
-	latestEBlock, err := c.ethCl.BlockByNumber(ctx, big.NewInt(int64(latestEHeight)))
+	latestEBlock, err := a.ethCl.BlockByNumber(ctx, big.NewInt(int64(latestEHeight)))
 	if err != nil {
 		return nil, errors.Wrap(err, "latest execution block")
 	}
@@ -97,14 +113,14 @@ func (c *Core) PrepareProposal(ctx context.Context, req *abci.RequestPrepareProp
 		BeaconRoot:            nil,
 	}
 
-	forkchoiceResp, err := c.ethCl.ForkchoiceUpdatedV2(ctx, forkchoiceState, &payloadAttrs)
+	forkchoiceResp, err := a.ethCl.ForkchoiceUpdatedV2(ctx, forkchoiceState, &payloadAttrs)
 	if err != nil {
 		return nil, err
 	} else if forkchoiceResp.PayloadStatus.Status != engine.VALID {
 		return nil, errors.New("status not valid")
 	}
 
-	payloadResp, err := c.ethCl.GetPayloadV2(ctx, *forkchoiceResp.PayloadID)
+	payloadResp, err := a.ethCl.GetPayloadV2(ctx, *forkchoiceResp.PayloadID)
 	if err != nil {
 		return nil, err
 	}
@@ -124,11 +140,16 @@ func (c *Core) PrepareProposal(ctx context.Context, req *abci.RequestPrepareProp
 		return nil, err
 	}
 
+	log.Info(ctx, "Proposing new block",
+		"height", req.Height,
+		log.Hex7("execution_block_hash", payloadResp.ExecutionPayload.BlockHash[:]),
+	)
+
 	return &abci.ResponsePrepareProposal{Txs: [][]byte{tx}}, nil
 }
 
 // ProcessProposal validates a proposal.
-func (c *Core) ProcessProposal(ctx context.Context, req *abci.RequestProcessProposal) (
+func (a *App) ProcessProposal(ctx context.Context, req *abci.RequestProcessProposal) (
 	*abci.ResponseProcessProposal, error,
 ) {
 	cpayload, err := payloadFromTXs(req.Txs)
@@ -137,7 +158,7 @@ func (c *Core) ProcessProposal(ctx context.Context, req *abci.RequestProcessProp
 	}
 
 	// Push it back to the execution client (mark it as possible new head).
-	status, err := c.ethCl.NewPayloadV2(ctx, cpayload.EPayload)
+	status, err := a.ethCl.NewPayloadV2(ctx, cpayload.EPayload)
 	if err != nil {
 		return nil, err
 	} else if status.Status != engine.VALID {
@@ -145,18 +166,22 @@ func (c *Core) ProcessProposal(ctx context.Context, req *abci.RequestProcessProp
 	}
 
 	// Mark all local attestations as "proposed", i.e., included in latest proposed block.
-	localHeaders := headersByPubKey(cpayload.Aggregates, c.attestSvc.LocalPubKey())
-	c.attestSvc.SetProposed(localHeaders)
+	localHeaders := headersByPubKey(cpayload.Aggregates, a.attestSvc.LocalPubKey())
+	a.attestSvc.SetProposed(localHeaders)
 
 	return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil
 }
 
 // ExtendVote extends a vote with application-injected data (vote extensions).
-func (c *Core) ExtendVote(context.Context, *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
-	attBytes, err := encode(c.attestSvc.GetAvailable())
+func (a *App) ExtendVote(ctx context.Context, _ *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
+	atts := a.attestSvc.GetAvailable()
+
+	attBytes, err := encode(atts)
 	if err != nil {
 		return nil, err
 	}
+
+	log.Info(ctx, "Attesting to rollup blocks", "attestations", len(atts))
 
 	return &abci.ResponseExtendVote{
 		VoteExtension: attBytes,
@@ -164,7 +189,7 @@ func (c *Core) ExtendVote(context.Context, *abci.RequestExtendVote) (*abci.Respo
 }
 
 // VerifyVoteExtension verifies a vote extension.
-func (*Core) VerifyVoteExtension(context.Context, *abci.RequestVerifyVoteExtension) (
+func (*App) VerifyVoteExtension(context.Context, *abci.RequestVerifyVoteExtension) (
 	*abci.ResponseVerifyVoteExtension, error,
 ) {
 	// TODO(corver): Figure out what to verify.
@@ -174,7 +199,7 @@ func (*Core) VerifyVoteExtension(context.Context, *abci.RequestVerifyVoteExtensi
 }
 
 // FinalizeBlock finalizes a block.
-func (c *Core) FinalizeBlock(ctx context.Context, req *abci.RequestFinalizeBlock) (*abci.ResponseFinalizeBlock, error) {
+func (a *App) FinalizeBlock(ctx context.Context, req *abci.RequestFinalizeBlock) (*abci.ResponseFinalizeBlock, error) {
 	cpayload, err := payloadFromTXs(req.Txs)
 	if err != nil {
 		return nil, err
@@ -186,23 +211,30 @@ func (c *Core) FinalizeBlock(ctx context.Context, req *abci.RequestFinalizeBlock
 		FinalizedBlockHash: cpayload.EPayload.BlockHash,
 	}
 
-	forchainResp, err := c.ethCl.ForkchoiceUpdatedV2(ctx, fcs, nil)
+	forchainResp, err := a.ethCl.ForkchoiceUpdatedV2(ctx, fcs, nil)
 	if err != nil {
 		return nil, err
 	} else if forchainResp.PayloadStatus.Status != engine.VALID {
 		return nil, errors.New("status not valid")
 	}
 
-	c.state.AddAttestations(cpayload.Aggregates)
+	a.state.AddAttestations(cpayload.Aggregates)
 
 	// Mark all local attestations "committed", i.e., included in this committed block.
-	localHeaders := headersByPubKey(cpayload.Aggregates, c.attestSvc.LocalPubKey())
-	c.attestSvc.SetCommitted(localHeaders)
+	localHeaders := headersByPubKey(cpayload.Aggregates, a.attestSvc.LocalPubKey())
+	a.attestSvc.SetCommitted(localHeaders)
 
-	appHash, err := c.state.Finalize()
+	appHash, err := a.state.Finalize()
 	if err != nil {
 		return nil, err
 	}
+
+	log.Info(ctx, "Finalized new consensus block",
+		"height", req.Height,
+		log.Hex7("app_hash", appHash[:]),
+		"attestations", len(cpayload.Aggregates),
+		log.Hex7("execution_block_hash", cpayload.EPayload.BlockHash[:]),
+	)
 
 	return &abci.ResponseFinalizeBlock{
 		Events: nil, // Events are going to be deprecated from cometBFT.
@@ -216,19 +248,19 @@ func (c *Core) FinalizeBlock(ctx context.Context, req *abci.RequestFinalizeBlock
 }
 
 // Commit commits the state. It also creates a snapshot sometimes.
-func (c *Core) Commit(context.Context, *abci.RequestCommit) (*abci.ResponseCommit, error) {
-	height, err := c.state.Commit()
+func (a *App) Commit(context.Context, *abci.RequestCommit) (*abci.ResponseCommit, error) {
+	height, err := a.state.Commit()
 	if err != nil {
 		return nil, errors.Wrap(err, "commit state")
 	}
 
-	if c.snapshotInterval > 0 && height%c.snapshotInterval == 0 {
-		_, err := c.snapshots.Create(c.state)
+	if a.snapshotInterval > 0 && height%a.snapshotInterval == 0 {
+		_, err := a.snapshots.Create(a.state)
 		if err != nil {
 			return nil, errors.Wrap(err, "create snapshot")
 		}
 
-		err = c.snapshots.Prune()
+		err = a.snapshots.Prune()
 		if err != nil {
 			return nil, errors.Wrap(err, "prune snapshots")
 		}
@@ -240,9 +272,9 @@ func (c *Core) Commit(context.Context, *abci.RequestCommit) (*abci.ResponseCommi
 }
 
 // ListSnapshots lists all the available snapshots.
-func (c *Core) ListSnapshots(context.Context, *abci.RequestListSnapshots) (*abci.ResponseListSnapshots, error) {
+func (a *App) ListSnapshots(context.Context, *abci.RequestListSnapshots) (*abci.ResponseListSnapshots, error) {
 	var resp abci.ResponseListSnapshots
-	for _, snapshot := range c.snapshots.List() {
+	for _, snapshot := range a.snapshots.List() {
 		snapshot := snapshot // Pin.
 		resp.Snapshots = append(resp.Snapshots, &snapshot)
 	}
@@ -251,15 +283,15 @@ func (c *Core) ListSnapshots(context.Context, *abci.RequestListSnapshots) (*abci
 }
 
 // OfferSnapshot sends a snapshot offer.
-func (c *Core) OfferSnapshot(_ context.Context, req *abci.RequestOfferSnapshot) (*abci.ResponseOfferSnapshot, error) {
-	c.restore.Lock()
-	defer c.restore.Unlock()
+func (a *App) OfferSnapshot(_ context.Context, req *abci.RequestOfferSnapshot) (*abci.ResponseOfferSnapshot, error) {
+	a.restore.Lock()
+	defer a.restore.Unlock()
 
-	if c.restore.Snapshot != nil {
+	if a.restore.Snapshot != nil {
 		return nil, errors.New("snapshot already offered")
 	}
 
-	c.restore.Snapshot = req.Snapshot
+	a.restore.Snapshot = req.Snapshot
 
 	return &abci.ResponseOfferSnapshot{
 		Result: abci.ResponseOfferSnapshot_ACCEPT,
@@ -267,43 +299,43 @@ func (c *Core) OfferSnapshot(_ context.Context, req *abci.RequestOfferSnapshot) 
 }
 
 // ApplySnapshotChunk applies a chunk of snapshot.
-func (c *Core) ApplySnapshotChunk(_ context.Context, req *abci.RequestApplySnapshotChunk) (
+func (a *App) ApplySnapshotChunk(_ context.Context, req *abci.RequestApplySnapshotChunk) (
 	*abci.ResponseApplySnapshotChunk, error,
 ) {
-	c.restore.Lock()
-	defer c.restore.Unlock()
+	a.restore.Lock()
+	defer a.restore.Unlock()
 
-	if c.restore.Snapshot == nil {
+	if a.restore.Snapshot == nil {
 		return nil, errors.New("no snapshot offered")
 	}
 
-	c.restore.Chunks = append(c.restore.Chunks, req.Chunk)
+	a.restore.Chunks = append(a.restore.Chunks, req.Chunk)
 
-	if len(c.restore.Chunks) < int(c.restore.Snapshot.Chunks) {
+	if len(a.restore.Chunks) < int(a.restore.Snapshot.Chunks) {
 		return &abci.ResponseApplySnapshotChunk{Result: abci.ResponseApplySnapshotChunk_ACCEPT}, nil
 	}
 
-	bz := make([]byte, 0, c.restore.Snapshot.Chunks*snapshotChunkSize)
-	for _, chunk := range c.restore.Chunks {
+	bz := make([]byte, 0, a.restore.Snapshot.Chunks*snapshotChunkSize)
+	for _, chunk := range a.restore.Chunks {
 		bz = append(bz, chunk...)
 	}
 
-	err := c.state.Import(c.restore.Snapshot.Height, bz)
+	err := a.state.Import(a.restore.Snapshot.Height, bz)
 	if err != nil {
 		return nil, errors.Wrap(err, "import state")
 	}
 
-	c.restore.Snapshot = nil
-	c.restore.Chunks = nil
+	a.restore.Snapshot = nil
+	a.restore.Chunks = nil
 
 	return &abci.ResponseApplySnapshotChunk{Result: abci.ResponseApplySnapshotChunk_ACCEPT}, nil
 }
 
 // LoadSnapshotChunk returns a chunk of snapshot.
-func (c *Core) LoadSnapshotChunk(_ context.Context, req *abci.RequestLoadSnapshotChunk) (
+func (a *App) LoadSnapshotChunk(_ context.Context, req *abci.RequestLoadSnapshotChunk) (
 	*abci.ResponseLoadSnapshotChunk, error,
 ) {
-	chunk, err := c.snapshots.LoadChunk(req.Height, req.Format, req.Chunk)
+	chunk, err := a.snapshots.LoadChunk(req.Height, req.Format, req.Chunk)
 	if err != nil {
 		return nil, errors.Wrap(err, "load snapshot chunk")
 	}
@@ -316,23 +348,23 @@ func (c *Core) LoadSnapshotChunk(_ context.Context, req *abci.RequestLoadSnapsho
 // TODO(corver): Implement the following logic.
 
 // Flush flushes the write buffer.
-func (*Core) Flush(context.Context, *abci.RequestFlush) (*abci.ResponseFlush, error) {
+func (*App) Flush(context.Context, *abci.RequestFlush) (*abci.ResponseFlush, error) {
 	return nil, nil //nolint:nilnil // In-memory state, nothing to flush.
 }
 
 // Query queries the application state.
-func (*Core) Query(context.Context, *abci.RequestQuery) (*abci.ResponseQuery, error) {
+func (*App) Query(context.Context, *abci.RequestQuery) (*abci.ResponseQuery, error) {
 	return nil, errors.New("queries not supported yet")
 }
 
 // Echo returns back the same message it is sent.
-func (*Core) Echo(_ context.Context, req *abci.RequestEcho) (*abci.ResponseEcho, error) {
+func (*App) Echo(_ context.Context, req *abci.RequestEcho) (*abci.ResponseEcho, error) {
 	return &abci.ResponseEcho{
 		Message: req.Message,
 	}, nil
 }
 
 // CheckTx validates a transaction.
-func (*Core) CheckTx(context.Context, *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
+func (*App) CheckTx(context.Context, *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
 	return nil, errors.New("unexpected CheckTx request")
 }

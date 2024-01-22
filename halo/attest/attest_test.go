@@ -6,7 +6,7 @@ import (
 	"github.com/omni-network/omni/halo/attest"
 	"github.com/omni-network/omni/lib/xchain"
 
-	"github.com/cometbft/cometbft/crypto/secp256k1"
+	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 
 	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"
@@ -15,7 +15,7 @@ import (
 func TestCreateVerifyAttestation(t *testing.T) {
 	t.Parallel()
 
-	privKey := secp256k1.GenPrivKey()
+	privKey := k1.GenPrivKey()
 
 	var block xchain.Block
 	fuzz.New().NilChance(0).NumElements(1, 64).Fuzz(&block)

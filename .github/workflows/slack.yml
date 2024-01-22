@@ -1,0 +1,39 @@
+name: ci notify
+
+# run after all completed workflows on main
+on:
+  workflow_run:
+    workflows: ["*"]
+    branches: [main]
+    types: [completed]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Slack
+        uses: slackapi/slack-github-action@v1.24.0
+        if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "CI failed on ${{github.event.workflow_run.head_branch}}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ github.event.workflow_run.name }} is failing. See here: ${{github.event.workflow_run.html_url}}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
