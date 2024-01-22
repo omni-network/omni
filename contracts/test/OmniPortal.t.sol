@@ -58,15 +58,7 @@ contract OmniPortal_Test is CommonTest {
     }
 
     /// @dev Get test foo() xcall params
-    function _xfoo()
-        private
-        returns (uint64 destChainId, uint64 offset, address to, bytes memory data)
-    {
-        return (
-            2,
-            portal.outXStreamOffset(2),
-            makeAddr("foo-addr-on-dest"),
-            abi.encodeWithSignature("foo()")
-        );
+    function _xfoo() private returns (uint64 destChainId, uint64 offset, address to, bytes memory data) {
+        return (2, portal.outXStreamOffset(2), makeAddr("foo-addr-on-dest"), abi.encodeWithSignature("foo()"));
     }
 }

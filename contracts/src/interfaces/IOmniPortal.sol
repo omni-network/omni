@@ -19,12 +19,7 @@ interface IOmniPortal {
      * @param data Encoded function calldata
      */
     event XMsg(
-        uint64 indexed destChainId,
-        uint64 indexed streamOffset,
-        address sender,
-        address to,
-        bytes data,
-        uint64 gasLimit
+        uint64 indexed destChainId, uint64 indexed streamOffset, address sender, address to, bytes data, uint64 gasLimit
     );
 
     /**
@@ -78,9 +73,7 @@ interface IOmniPortal {
      * @param data Encoded function calldata (use abi.encodeWithSignature
      * 	or abi.encodeWithSelector)
      */
-    function xcall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit)
-        external
-        payable;
+    function xcall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit) external payable;
 
     /**
      * @notice Submit a batch of XMsgs to be executed on this chain

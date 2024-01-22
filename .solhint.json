@@ -2,8 +2,10 @@
   "extends": "solhint:recommended",
   "rules": {
     "compiler-version": ["error", "0.8.23"],
-    "func-visibility": ["error", {"ignoreConstructors": true}],
+    "custom-errors": "off",
+    "func-visibility": ["error", { "ignoreConstructors": true }],
     "immutable-vars-naming": "off",
+    "no-unused-import": "error",
     "no-unused-vars": "error"
   }
 }

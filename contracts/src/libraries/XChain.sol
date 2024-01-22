@@ -50,7 +50,7 @@ library XChain {
         /// @dev Multi proof of block header and messages, proven against attestationRoot
         bytes32[] proof;
         /// @dev Multi proof flags
-        bool[] ProofFlags;
+        bool[] proofFlags;
         /// @dev Array of validator signatures of the attestationRoot, and their public keys
         SigTuple[] signatures;
     }
