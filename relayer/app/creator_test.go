@@ -53,6 +53,17 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 		Signatures:     []xchain.SigTuple{att.Signature},
 	}
 
+	ensureNoDuplicates := func(msgs []xchain.Msg) {
+		msgSet := make(map[xchain.MsgID]struct{})
+		for _, msg := range msgs {
+			if _, exists := msgSet[msg.MsgID]; exists {
+				// Fail the test if a duplicate message is found
+				t.Fatalf("Duplicate message found: %+v", msg)
+			}
+			msgSet[msg.MsgID] = struct{}{}
+		}
+	}
+
 	tests := []struct {
 		name         string
 		streamUpdate relayer.StreamUpdate
@@ -73,15 +84,26 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := relayer.CreateSubmissions(tt.streamUpdate)
+			submissions, err := relayer.CreateSubmissions(tt.streamUpdate)
 			require.NoError(t, err)
-			for _, g := range got {
-				require.NotNil(t, g.AttestationRoot)
-				require.Equal(t, g.AttestationRoot, att.BlockRoot)
-				require.NotNil(t, g.Proof)
-				require.NotNil(t, g.ProofFlags)
-				require.NotNil(t, g.Signatures)
+			msgCount := 0
+			msgs := make([]xchain.Msg, 0, len(tt.streamUpdate.Msgs))
+			for _, submission := range submissions {
+				require.NotNil(t, submission.AttestationRoot)
+				require.Equal(t, submission.AttestationRoot, att.BlockRoot)
+				require.NotNil(t, submission.Proof)
+				require.NotNil(t, submission.ProofFlags)
+				require.NotNil(t, submission.Signatures)
+				for _, msg := range submission.Msgs {
+					require.Equal(t, msg.DestChainID, submission.DestChainID)
+				}
+				msgCount += len(submission.Msgs)
+				msgs = append(msgs, submission.Msgs...)
 			}
+			// ensure no msgs were dropped
+			require.Equal(t, msgCount, len(tt.streamUpdate.Msgs))
+			// check for duplicates
+			ensureNoDuplicates(msgs)
 		})
 	}
 }
