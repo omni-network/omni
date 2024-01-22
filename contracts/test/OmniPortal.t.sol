@@ -298,7 +298,7 @@ contract OmniPortal_Test is CommonTest {
     function test_exec_aheadOffset_reverts() public {
         XChain.Msg memory xmsg = _inbound_increment();
 
-        xmsg.streamOffset = portal.inXStreamOffset(xmsg.sourceChainId) + 1; // intentionally ahead of offset
+        xmsg.streamOffset = xmsg.streamOffset + 1; // intentionally ahead of offset
 
         vm.expectRevert("OmniPortal: wrong streamOffset");
         portal.exec(xmsg);
