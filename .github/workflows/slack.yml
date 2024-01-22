@@ -19,18 +19,25 @@ jobs:
             {
               "blocks": [
                 {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": "CI failed on ${{github.event.workflow_run.head_branch}}"
-                  }
-                },
-                {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "${{ github.event.workflow_run.name }} is failing. See here: ${{github.event.workflow_run.html_url}}"
+                    "text": "🚨 CI failed on `${{ github.event.workflow_run.head_branch }}`. *${{ github.event.workflow_run.name }}* was unsuccessful."
                   }
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "image",
+                      "image_url": "https://upload.wikimedia.org/wikipedia/commons/4/43/Minimalist_info_Icon.png",
+                      "alt_text": "images"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "by: ${{ github.event.workflow_run.head_commit.author }} \n url: ${{ github.event.workflow_run.html_url }}"
+                    }
+                  ]
                 }
               ]
             }
