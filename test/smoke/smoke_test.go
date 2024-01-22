@@ -4,6 +4,7 @@ package smoke_test
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -110,8 +111,15 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 	// Load the private validator
 	privVal := privval.LoadFilePV(conf.PrivValidatorKeyFile(), conf.PrivValidatorStateFile())
 
+	// Start a mock xprovider (this is the source of xblocks)
+	xprov := xprovider.NewMock(srcChainBlockPeriod)
+
 	// Create the attestation service.
-	attSvc := attest.NewAttesterForT(t, privVal.Key.PrivKey)
+	path := filepath.Join(t.TempDir(), "state.json")
+	err := attest.GenEmptyStateFile(path)
+	require.NoError(t, err)
+	attSvc, err := attest.LoadAttester(ctx, privVal.Key.PrivKey, path, xprov, []uint64{srcChainID})
+	require.NoError(t, err)
 
 	// Create application state
 	state, err := comet.LoadOrGenState(t.TempDir(), 1)
@@ -123,13 +131,6 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 
 	// Create the comet application.
 	app := comet.NewApp(ethCl, attSvc, state, snapshots, 1)
-
-	// Start a mock xprovider (this is the source of xblocks)
-	xprov := xprovider.NewMock(srcChainBlockPeriod)
-
-	// Subscribe the attestation service to the mock xprovider.
-	err = xprov.Subscribe(ctx, srcChainID, 0, attSvc.Attest)
-	require.NoError(t, err)
 
 	// Setup a cprovider that reads directly from app state.
 	cprov := cprovider.NewProviderForT(t, adaptFetcher(app), 99, noopBackoff)
@@ -168,6 +169,8 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 			// Assert the update is good
 			require.EqualValues(t, srcChainID, update.SourceChainID)
 			require.NotEmpty(t, update.Msgs)
+			require.Len(t, update.AggAttestation.Signatures, 1)
+			require.EqualValues(t, privVal.Key.PubKey.Bytes(), update.AggAttestation.Signatures[0].ValidatorPubKey)
 
 			// Assert offsets are sequential
 			for _, msg := range update.Msgs {

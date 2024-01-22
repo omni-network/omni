@@ -8,11 +8,6 @@ pragma solidity 0.8.23;
  */
 contract Events {
     event XMsg(
-        uint64 indexed destChainId,
-        uint64 indexed streamOffset,
-        address sender,
-        address to,
-        bytes data,
-        uint64 gasLimit
+        uint64 indexed destChainId, uint64 indexed streamOffset, address sender, address to, bytes data, uint64 gasLimit
     );
 }
