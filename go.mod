@@ -4,6 +4,7 @@ go 1.21.5
 
 require (
 	entgo.io/ent v0.12.5
+	github.com/BurntSushi/toml v1.2.1
 	github.com/charmbracelet/log v0.3.1
 	github.com/cometbft/cometbft v0.38.3
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0

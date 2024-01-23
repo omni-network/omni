@@ -87,11 +87,12 @@ linters-settings:
 issues:
   fix: true
   exclude-rules:
-    - path: '((.+)_test\.go|scripts/.+\.go)'
+    - path: '(.*)(test|scripts)(.*)'
       linters:        # Relax linters for both tests/scripts (non-production code)
         - gosec       # Security not an issue here
         - revive      # Relax revive rules
         - wrapcheck   # Wrapping not required
+        - gocognit    # Cognitive complexity not an issue here
     - path: 'scripts/.+\.go'
       linters:        # Relax linters for scripts only (non-production code)
         - forbidigo   # Allow debug printing

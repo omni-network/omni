@@ -1,4 +1,4 @@
-//nolint:revive,testifylint // Using assert here to log error afterwards.
+//nolint:testifylint // Using assert here to log error afterwards.
 package tutil
 
 import (

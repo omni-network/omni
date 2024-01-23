@@ -27,8 +27,8 @@ func setMonikerForT(t *testing.T) {
 	})
 }
 
-// defaultCometConfig returns the default cometBFT config.
-func defaultCometConfig(homeDir string) cfg.Config {
+// DefaultCometConfig returns the default cometBFT config.
+func DefaultCometConfig(homeDir string) cfg.Config {
 	conf := cfg.DefaultConfig()
 
 	if testMoniker != "" {
@@ -42,8 +42,8 @@ func defaultCometConfig(homeDir string) cfg.Config {
 	return *conf
 }
 
-// defaultConsensusParams returns the default cometBFT consensus params for omni protocol.
-func defaultConsensusParams() *types.ConsensusParams {
+// DefaultConsensusParams returns the default cometBFT consensus params for omni protocol.
+func DefaultConsensusParams() *types.ConsensusParams {
 	resp := types.DefaultConsensusParams()
 	resp.ABCI.VoteExtensionsEnableHeight = 1                             // Enable vote extensions from the start.
 	resp.Validator.PubKeyTypes = []string{types.ABCIPubKeyTypeSecp256k1} // Only k1 keys.
@@ -75,7 +75,7 @@ func parseCometConfig(ctx context.Context, homeDir string) (cfg.Config, error) {
 		log.Warn(ctx, "No comet config.toml file found, using default config", nil)
 	}
 
-	conf := defaultCometConfig(homeDir)
+	conf := DefaultCometConfig(homeDir)
 
 	if err := v.Unmarshal(&conf); err != nil {
 		return cfg.Config{}, errors.Wrap(err, "unmarshal comet config")
