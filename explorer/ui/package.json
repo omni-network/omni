@@ -35,5 +35,9 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "directory": "dist",
+    "linkDirectory": true
   }
 }
