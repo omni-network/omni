@@ -41,7 +41,7 @@ func NewEthClient(
 	// TODO(jmozah): validate chainID , portalAddress etc
 
 	// construct the omni portal contract ABI from the bindings
-	contractAbi, err := abi.JSON(strings.NewReader(bindings.OmniPortalMetaData.ABI))
+	contractAbi, err := abi.JSON(strings.NewReader(bindings.OmniPortalABI))
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create contract abi")
 	}
