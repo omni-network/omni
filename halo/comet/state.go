@@ -144,14 +144,16 @@ func (s *State) ApprovedAggregates() []xchain.AggAttestation {
 }
 
 // ApprovedFrom returns a sequential range of approved aggregates from the provided chain ID and height.
-// It returns at most max aggregates. Their block heights are sequentially increasing.
-func (s *State) ApprovedFrom(chainID uint64, height uint64, max uint64) []xchain.AggAttestation {
+// It returns at most 100 aggregates. Their block heights are sequentially increasing.
+func (s *State) ApprovedFrom(chainID uint64, height uint64) []xchain.AggAttestation {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	next := height
 
-	resp := make([]xchain.AggAttestation, 0, max)
+	const limit = 100
+
+	resp := make([]xchain.AggAttestation, 0, limit)
 	for _, agg := range s.approvedAggs { // approvedAggs is sorted by block height.
 		if agg.SourceChainID != chainID || agg.BlockHeight != next {
 			continue
@@ -160,7 +162,7 @@ func (s *State) ApprovedFrom(chainID uint64, height uint64, max uint64) []xchain
 		resp = append(resp, agg)
 		next++
 
-		if uint64(len(resp)) >= max {
+		if uint64(len(resp)) >= limit {
 			break
 		}
 	}

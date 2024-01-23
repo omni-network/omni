@@ -41,7 +41,7 @@ func NewEthClient(
 	// TODO(jmozah): validate chainID , portalAddress etc
 
 	// construct the omni portal contract ABI from the bindings
-	contractAbi, err := abi.JSON(strings.NewReader(bindings.OmniPortalMetaData.ABI))
+	contractAbi, err := abi.JSON(strings.NewReader(bindings.OmniPortalABI))
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create contract abi")
 	}
@@ -161,7 +161,6 @@ func (e *EthClient) constructXBlock(selectedMsgLogs []types.Log, header *types.H
 			DestAddress:     [20]byte(vLog.Topics[3].Bytes()),
 			Data:            vLog.Topics[4].Bytes(),
 			DestGasLimit:    vLog.Topics[5].Big().Uint64(),
-			TxHash:          vLog.TxHash,
 		}
 		xBlock.Msgs = append(xBlock.Msgs, msg)
 	}

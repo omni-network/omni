@@ -4,7 +4,6 @@
 package bindings
 
 import (
-	"errors"
 	"math/big"
 	"strings"
 
@@ -18,7 +17,6 @@ import (
 
 // Reference imports to suppress errors if they are not otherwise used.
 var (
-	_ = errors.New
 	_ = big.NewInt
 	_ = strings.NewReader
 	_ = ethereum.NotFound
@@ -44,7 +42,6 @@ type XChainMsg struct {
 	To            common.Address
 	Data          []byte
 	GasLimit      uint64
-	TxHash        [32]byte
 }
 
 // XChainSigTuple is an auto generated low-level Go binding around an user-defined struct.
@@ -63,31 +60,20 @@ type XChainSubmission struct {
 	Signatures      []XChainSigTuple
 }
 
-// OmniPortalMetaData contains all meta data concerning the OmniPortal contract.
-var OmniPortalMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"constructor\",\"inputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"XMSG_DEFAULT_GAS_LIMIT\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"XMSG_MAX_GAS_LIMIT\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"XMSG_MIN_GAS_LIMIT\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"chainId\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"outXStreamOffset\",\"inputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"xcall\",\"inputs\":[{\"name\":\"destChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"xcall\",\"inputs\":[{\"name\":\"destChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"gasLimit\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"xsubmit\",\"inputs\":[{\"name\":\"sub\",\"type\":\"tuple\",\"internalType\":\"structXChain.Submission\",\"components\":[{\"name\":\"attestationRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"blockHeader\",\"type\":\"tuple\",\"internalType\":\"structXChain.BlockHeader\",\"components\":[{\"name\":\"sourceChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"blockHeight\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"blockHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"msgs\",\"type\":\"tuple[]\",\"internalType\":\"structXChain.Msg[]\",\"components\":[{\"name\":\"sourceChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"destChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"streamOffset\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"sender\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"gasLimit\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"txHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"proof\",\"type\":\"bytes32[]\",\"internalType\":\"bytes32[]\"},{\"name\":\"ProofFlags\",\"type\":\"bool[]\",\"internalType\":\"bool[]\"},{\"name\":\"signatures\",\"type\":\"tuple[]\",\"internalType\":\"structXChain.SigTuple[]\",\"components\":[{\"name\":\"validatorPubKey\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"XMsg\",\"inputs\":[{\"name\":\"destChainId\",\"type\":\"uint64\",\"indexed\":true,\"internalType\":\"uint64\"},{\"name\":\"streamOffset\",\"type\":\"uint64\",\"indexed\":true,\"internalType\":\"uint64\"},{\"name\":\"sender\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"indexed\":false,\"internalType\":\"bytes\"},{\"name\":\"gasLimit\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"GasLimitTooHigh\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"GasLimitTooLow\",\"inputs\":[]}]",
-	Bin: "0x60a060405234801561001057600080fd5b506001600160401b0346166080526080516105a3610039600039600061012a01526105a36000f3fe60806040526004361061007b5760003560e01c80639a8a05921161004e5780639a8a0592146101185780639dad9aae1461014c578063a2cc111b14610163578063fa590d141461017a57600080fd5b80634053c6d81461008057806350e646dd146100a057806370e8b56a146100b357806390ab417c146100c6575b600080fd5b34801561008c57600080fd5b5061009e61009b36600461032f565b50565b005b61009e6100ae3660046103ec565b610190565b61009e6100c136600461044c565b6101a7565b3480156100d257600080fd5b506100fc6100e13660046104c1565b6000602081905290815260409020546001600160401b031681565b6040516001600160401b03909116815260200160405180910390f35b34801561012457600080fd5b506100fc7f000000000000000000000000000000000000000000000000000000000000000081565b34801561015857600080fd5b506100fc62030d4081565b34801561016f57600080fd5b506100fc624c4b4081565b34801561018657600080fd5b506100fc61520881565b6101a1843385858562030d40610278565b50505050565b624c4b406001600160401b03821611156102085760405162461bcd60e51b815260206004820152601d60248201527f4f6d6e69506f7274616c3a206761734c696d697420746f6f206869676800000060448201526064015b60405180910390fd5b6152086001600160401b03821610156102635760405162461bcd60e51b815260206004820152601c60248201527f4f6d6e69506f7274616c3a206761734c696d697420746f6f206c6f770000000060448201526064016101ff565b610271853386868686610278565b5050505050565b6001600160401b03808716600081815260208190526040908190205490519216917fac3afbbff5be7c4af1610721cf4793840bd167251fd6f184ee708f752a731283906102ce90899089908990899089906104dc565b60405180910390a36001600160401b038087166000908152602081905260408120805460019391929161030391859116610538565b92506101000a8154816001600160401b0302191690836001600160401b03160217905550505050505050565b60006020828403121561034157600080fd5b81356001600160401b0381111561035757600080fd5b8201610100818503121561036a57600080fd5b9392505050565b80356001600160401b038116811461038857600080fd5b919050565b80356001600160a01b038116811461038857600080fd5b60008083601f8401126103b657600080fd5b5081356001600160401b038111156103cd57600080fd5b6020830191508360208285010111156103e557600080fd5b9250929050565b6000806000806060858703121561040257600080fd5b61040b85610371565b93506104196020860161038d565b925060408501356001600160401b0381111561043457600080fd5b610440878288016103a4565b95989497509550505050565b60008060008060006080868803121561046457600080fd5b61046d86610371565b945061047b6020870161038d565b935060408601356001600160401b0381111561049657600080fd5b6104a2888289016103a4565b90945092506104b5905060608701610371565b90509295509295909350565b6000602082840312156104d357600080fd5b61036a82610371565b6001600160a01b0386811682528516602082015260806040820181905281018390526000838560a0840137600060a0858401015260a0601f19601f86011683010190506001600160401b03831660608301529695505050505050565b6001600160401b0381811683821601908082111561056657634e487b7160e01b600052601160045260246000fd5b509291505056fea26469706673582212207e3e9771ae3341be95c0fdc06d5cbf24ef94adafb7aa0a260225e7c9f6da900564736f6c63430008170033",
-}
-
 // OmniPortalABI is the input ABI used to generate the binding from.
-// Deprecated: Use OmniPortalMetaData.ABI instead.
-var OmniPortalABI = OmniPortalMetaData.ABI
+const OmniPortalABI = "[{\"type\":\"constructor\",\"inputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"XMSG_DEFAULT_GAS_LIMIT\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"XMSG_MAX_GAS_LIMIT\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"XMSG_MIN_GAS_LIMIT\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"chainId\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"inXStreamOffset\",\"inputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"outXStreamOffset\",\"inputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"xcall\",\"inputs\":[{\"name\":\"destChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"xcall\",\"inputs\":[{\"name\":\"destChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"gasLimit\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"xsubmit\",\"inputs\":[{\"name\":\"xsub\",\"type\":\"tuple\",\"internalType\":\"structXChain.Submission\",\"components\":[{\"name\":\"attestationRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"blockHeader\",\"type\":\"tuple\",\"internalType\":\"structXChain.BlockHeader\",\"components\":[{\"name\":\"sourceChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"blockHeight\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"blockHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}]},{\"name\":\"msgs\",\"type\":\"tuple[]\",\"internalType\":\"structXChain.Msg[]\",\"components\":[{\"name\":\"sourceChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"destChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"streamOffset\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"sender\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"gasLimit\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"proof\",\"type\":\"bytes32[]\",\"internalType\":\"bytes32[]\"},{\"name\":\"proofFlags\",\"type\":\"bool[]\",\"internalType\":\"bool[]\"},{\"name\":\"signatures\",\"type\":\"tuple[]\",\"internalType\":\"structXChain.SigTuple[]\",\"components\":[{\"name\":\"validatorPubKey\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"XMsg\",\"inputs\":[{\"name\":\"destChainId\",\"type\":\"uint64\",\"indexed\":true,\"internalType\":\"uint64\"},{\"name\":\"streamOffset\",\"type\":\"uint64\",\"indexed\":true,\"internalType\":\"uint64\"},{\"name\":\"sender\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"indexed\":false,\"internalType\":\"bytes\"},{\"name\":\"gasLimit\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"XReceipt\",\"inputs\":[{\"name\":\"sourceChainId\",\"type\":\"uint64\",\"indexed\":true,\"internalType\":\"uint64\"},{\"name\":\"streamOffset\",\"type\":\"uint64\",\"indexed\":true,\"internalType\":\"uint64\"},{\"name\":\"gasUsed\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"relayer\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"success\",\"type\":\"bool\",\"indexed\":false,\"internalType\":\"bool\"}],\"anonymous\":false}]"
 
 // OmniPortalBin is the compiled bytecode used for deploying new contracts.
-// Deprecated: Use OmniPortalMetaData.Bin instead.
-var OmniPortalBin = OmniPortalMetaData.Bin
+var OmniPortalBin = "0x60a060405234801561001057600080fd5b506001600160401b034616608052608051610a3d6100406000396000818161013701526103210152610a3d6000f3fe6080604052600436106100865760003560e01c80639a8a0592116100595780639a8a0592146101255780639dad9aae14610159578063a2cc111b14610170578063b58e964f14610187578063fa590d14146101bd57600080fd5b806306f9f1741461008b57806350e646dd146100ad57806370e8b56a146100c057806390ab417c146100d3575b600080fd5b34801561009757600080fd5b506100ab6100a63660046106b8565b6101d3565b005b6100ab6100bb366004610775565b61022f565b6100ab6100ce3660046107d5565b610246565b3480156100df57600080fd5b506101096100ee36600461084a565b6000602081905290815260409020546001600160401b031681565b6040516001600160401b03909116815260200160405180910390f35b34801561013157600080fd5b506101097f000000000000000000000000000000000000000000000000000000000000000081565b34801561016557600080fd5b5061010962030d4081565b34801561017c57600080fd5b50610109624c4b4081565b34801561019357600080fd5b506101096101a236600461084a565b6001602052600090815260409020546001600160401b031681565b3480156101c957600080fd5b5061010961520881565b60005b6101e36080830183610865565b905081101561022b576102236101fc6080840184610865565b8381811061020c5761020c6108ae565b905060200281019061021e91906108c4565b610317565b6001016101d6565b5050565b610240843385858562030d40610601565b50505050565b624c4b406001600160401b03821611156102a75760405162461bcd60e51b815260206004820152601d60248201527f4f6d6e69506f7274616c3a206761734c696d697420746f6f206869676800000060448201526064015b60405180910390fd5b6152086001600160401b03821610156103025760405162461bcd60e51b815260206004820152601c60248201527f4f6d6e69506f7274616c3a206761734c696d697420746f6f206c6f7700000000604482015260640161029e565b610310853386868686610601565b5050505050565b6001600160401b037f000000000000000000000000000000000000000000000000000000000000000016610351604083016020840161084a565b6001600160401b0316146103a75760405162461bcd60e51b815260206004820152601d60248201527f4f6d6e69506f7274616c3a2077726f6e672064657374436861696e4964000000604482015260640161029e565b600160006103b8602084018461084a565b6001600160401b0390811682526020820192909252604090810160002054909116906103ea906060840190840161084a565b6001600160401b0316146104405760405162461bcd60e51b815260206004820152601e60248201527f4f6d6e69506f7274616c3a2077726f6e672073747265616d4f66667365740000604482015260640161029e565b6001806000610452602085018561084a565b6001600160401b039081168252602082019290925260400160009081208054909261047f918591166108fa565b92506101000a8154816001600160401b0302191690836001600160401b031602179055506000624c4b406001600160401b03168260c00160208101906104c5919061084a565b6001600160401b0316116104e8576104e360e0830160c0840161084a565b6104ed565b624c4b405b6001600160401b0316905060005a9050600061050f60a0850160808601610921565b6001600160a01b03168361052660a087018761093c565b604051610534929190610982565b60006040518083038160008787f1925050503d8060008114610572576040519150601f19603f3d011682016040523d82523d6000602084013e610577565b606091505b505090505a6105869083610992565b9150610598606085016040860161084a565b6001600160401b03166105ae602086018661084a565b604080518581523360208201528415158183015290516001600160401b0392909216917f34515b4105a7bb34f3af3cd490137ab292bb2ff14efb800df5c7d59e28944f259181900360600190a350505050565b6001600160401b03808716600081815260208190526040908190205490519216917fac3afbbff5be7c4af1610721cf4793840bd167251fd6f184ee708f752a7312839061065790899089908990899089906109ab565b60405180910390a36001600160401b038087166000908152602081905260408120805460019391929161068c918591166108fa565b92506101000a8154816001600160401b0302191690836001600160401b03160217905550505050505050565b6000602082840312156106ca57600080fd5b81356001600160401b038111156106e057600080fd5b820161010081850312156106f357600080fd5b9392505050565b80356001600160401b038116811461071157600080fd5b919050565b80356001600160a01b038116811461071157600080fd5b60008083601f84011261073f57600080fd5b5081356001600160401b0381111561075657600080fd5b60208301915083602082850101111561076e57600080fd5b9250929050565b6000806000806060858703121561078b57600080fd5b610794856106fa565b93506107a260208601610716565b925060408501356001600160401b038111156107bd57600080fd5b6107c98782880161072d565b95989497509550505050565b6000806000806000608086880312156107ed57600080fd5b6107f6866106fa565b945061080460208701610716565b935060408601356001600160401b0381111561081f57600080fd5b61082b8882890161072d565b909450925061083e9050606087016106fa565b90509295509295909350565b60006020828403121561085c57600080fd5b6106f3826106fa565b6000808335601e1984360301811261087c57600080fd5b8301803591506001600160401b0382111561089657600080fd5b6020019150600581901b360382131561076e57600080fd5b634e487b7160e01b600052603260045260246000fd5b6000823560de198336030181126108da57600080fd5b9190910192915050565b634e487b7160e01b600052601160045260246000fd5b6001600160401b0381811683821601908082111561091a5761091a6108e4565b5092915050565b60006020828403121561093357600080fd5b6106f382610716565b6000808335601e1984360301811261095357600080fd5b8301803591506001600160401b0382111561096d57600080fd5b60200191503681900382131561076e57600080fd5b8183823760009101908152919050565b818103818111156109a5576109a56108e4565b92915050565b6001600160a01b0386811682528516602082015260806040820181905281018390526000838560a0840137600060a0858401015260a0601f19601f86011683010190506001600160401b0383166060830152969550505050505056fea2646970667358221220106cec5cb09e5b244a74155f5d29fd38f9f7af41d4808f4e2ab720bd3c423cdd64736f6c63430008170033"
 
 // DeployOmniPortal deploys a new Ethereum contract, binding an instance of OmniPortal to it.
 func DeployOmniPortal(auth *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *types.Transaction, *OmniPortal, error) {
-	parsed, err := OmniPortalMetaData.GetAbi()
+	parsed, err := abi.JSON(strings.NewReader(OmniPortalABI))
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
-	if parsed == nil {
-		return common.Address{}, nil, nil, errors.New("GetABI returned nil")
-	}
 
-	address, tx, contract, err := bind.DeployContract(auth, *parsed, common.FromHex(OmniPortalBin), backend)
+	address, tx, contract, err := bind.DeployContract(auth, parsed, common.FromHex(OmniPortalBin), backend)
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
@@ -360,6 +346,37 @@ func (_OmniPortal *OmniPortalCallerSession) ChainId() (uint64, error) {
 	return _OmniPortal.Contract.ChainId(&_OmniPortal.CallOpts)
 }
 
+// InXStreamOffset is a free data retrieval call binding the contract method 0xb58e964f.
+//
+// Solidity: function inXStreamOffset(uint64 ) view returns(uint64)
+func (_OmniPortal *OmniPortalCaller) InXStreamOffset(opts *bind.CallOpts, arg0 uint64) (uint64, error) {
+	var out []interface{}
+	err := _OmniPortal.contract.Call(opts, &out, "inXStreamOffset", arg0)
+
+	if err != nil {
+		return *new(uint64), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint64)).(*uint64)
+
+	return out0, err
+
+}
+
+// InXStreamOffset is a free data retrieval call binding the contract method 0xb58e964f.
+//
+// Solidity: function inXStreamOffset(uint64 ) view returns(uint64)
+func (_OmniPortal *OmniPortalSession) InXStreamOffset(arg0 uint64) (uint64, error) {
+	return _OmniPortal.Contract.InXStreamOffset(&_OmniPortal.CallOpts, arg0)
+}
+
+// InXStreamOffset is a free data retrieval call binding the contract method 0xb58e964f.
+//
+// Solidity: function inXStreamOffset(uint64 ) view returns(uint64)
+func (_OmniPortal *OmniPortalCallerSession) InXStreamOffset(arg0 uint64) (uint64, error) {
+	return _OmniPortal.Contract.InXStreamOffset(&_OmniPortal.CallOpts, arg0)
+}
+
 // OutXStreamOffset is a free data retrieval call binding the contract method 0x90ab417c.
 //
 // Solidity: function outXStreamOffset(uint64 ) view returns(uint64)
@@ -433,25 +450,25 @@ func (_OmniPortal *OmniPortalTransactorSession) Xcall0(destChainId uint64, to co
 	return _OmniPortal.Contract.Xcall0(&_OmniPortal.TransactOpts, destChainId, to, data, gasLimit)
 }
 
-// Xsubmit is a paid mutator transaction binding the contract method 0x4053c6d8.
+// Xsubmit is a paid mutator transaction binding the contract method 0x06f9f174.
 //
-// Solidity: function xsubmit((bytes32,(uint64,uint64,bytes32),(uint64,uint64,uint64,address,address,bytes,uint64,bytes32)[],bytes32[],bool[],(bytes,bytes)[]) sub) returns()
-func (_OmniPortal *OmniPortalTransactor) Xsubmit(opts *bind.TransactOpts, sub XChainSubmission) (*types.Transaction, error) {
-	return _OmniPortal.contract.Transact(opts, "xsubmit", sub)
+// Solidity: function xsubmit((bytes32,(uint64,uint64,bytes32),(uint64,uint64,uint64,address,address,bytes,uint64)[],bytes32[],bool[],(bytes,bytes)[]) xsub) returns()
+func (_OmniPortal *OmniPortalTransactor) Xsubmit(opts *bind.TransactOpts, xsub XChainSubmission) (*types.Transaction, error) {
+	return _OmniPortal.contract.Transact(opts, "xsubmit", xsub)
 }
 
-// Xsubmit is a paid mutator transaction binding the contract method 0x4053c6d8.
+// Xsubmit is a paid mutator transaction binding the contract method 0x06f9f174.
 //
-// Solidity: function xsubmit((bytes32,(uint64,uint64,bytes32),(uint64,uint64,uint64,address,address,bytes,uint64,bytes32)[],bytes32[],bool[],(bytes,bytes)[]) sub) returns()
-func (_OmniPortal *OmniPortalSession) Xsubmit(sub XChainSubmission) (*types.Transaction, error) {
-	return _OmniPortal.Contract.Xsubmit(&_OmniPortal.TransactOpts, sub)
+// Solidity: function xsubmit((bytes32,(uint64,uint64,bytes32),(uint64,uint64,uint64,address,address,bytes,uint64)[],bytes32[],bool[],(bytes,bytes)[]) xsub) returns()
+func (_OmniPortal *OmniPortalSession) Xsubmit(xsub XChainSubmission) (*types.Transaction, error) {
+	return _OmniPortal.Contract.Xsubmit(&_OmniPortal.TransactOpts, xsub)
 }
 
-// Xsubmit is a paid mutator transaction binding the contract method 0x4053c6d8.
+// Xsubmit is a paid mutator transaction binding the contract method 0x06f9f174.
 //
-// Solidity: function xsubmit((bytes32,(uint64,uint64,bytes32),(uint64,uint64,uint64,address,address,bytes,uint64,bytes32)[],bytes32[],bool[],(bytes,bytes)[]) sub) returns()
-func (_OmniPortal *OmniPortalTransactorSession) Xsubmit(sub XChainSubmission) (*types.Transaction, error) {
-	return _OmniPortal.Contract.Xsubmit(&_OmniPortal.TransactOpts, sub)
+// Solidity: function xsubmit((bytes32,(uint64,uint64,bytes32),(uint64,uint64,uint64,address,address,bytes,uint64)[],bytes32[],bool[],(bytes,bytes)[]) xsub) returns()
+func (_OmniPortal *OmniPortalTransactorSession) Xsubmit(xsub XChainSubmission) (*types.Transaction, error) {
+	return _OmniPortal.Contract.Xsubmit(&_OmniPortal.TransactOpts, xsub)
 }
 
 // OmniPortalXMsgIterator is returned from FilterXMsg and is used to iterate over the raw logs and unpacked data for XMsg events raised by the OmniPortal contract.
@@ -605,6 +622,162 @@ func (_OmniPortal *OmniPortalFilterer) WatchXMsg(opts *bind.WatchOpts, sink chan
 func (_OmniPortal *OmniPortalFilterer) ParseXMsg(log types.Log) (*OmniPortalXMsg, error) {
 	event := new(OmniPortalXMsg)
 	if err := _OmniPortal.contract.UnpackLog(event, "XMsg", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// OmniPortalXReceiptIterator is returned from FilterXReceipt and is used to iterate over the raw logs and unpacked data for XReceipt events raised by the OmniPortal contract.
+type OmniPortalXReceiptIterator struct {
+	Event *OmniPortalXReceipt // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *OmniPortalXReceiptIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(OmniPortalXReceipt)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(OmniPortalXReceipt)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *OmniPortalXReceiptIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *OmniPortalXReceiptIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// OmniPortalXReceipt represents a XReceipt event raised by the OmniPortal contract.
+type OmniPortalXReceipt struct {
+	SourceChainId uint64
+	StreamOffset  uint64
+	GasUsed       *big.Int
+	Relayer       common.Address
+	Success       bool
+	Raw           types.Log // Blockchain specific contextual infos
+}
+
+// FilterXReceipt is a free log retrieval operation binding the contract event 0x34515b4105a7bb34f3af3cd490137ab292bb2ff14efb800df5c7d59e28944f25.
+//
+// Solidity: event XReceipt(uint64 indexed sourceChainId, uint64 indexed streamOffset, uint256 gasUsed, address relayer, bool success)
+func (_OmniPortal *OmniPortalFilterer) FilterXReceipt(opts *bind.FilterOpts, sourceChainId []uint64, streamOffset []uint64) (*OmniPortalXReceiptIterator, error) {
+
+	var sourceChainIdRule []interface{}
+	for _, sourceChainIdItem := range sourceChainId {
+		sourceChainIdRule = append(sourceChainIdRule, sourceChainIdItem)
+	}
+	var streamOffsetRule []interface{}
+	for _, streamOffsetItem := range streamOffset {
+		streamOffsetRule = append(streamOffsetRule, streamOffsetItem)
+	}
+
+	logs, sub, err := _OmniPortal.contract.FilterLogs(opts, "XReceipt", sourceChainIdRule, streamOffsetRule)
+	if err != nil {
+		return nil, err
+	}
+	return &OmniPortalXReceiptIterator{contract: _OmniPortal.contract, event: "XReceipt", logs: logs, sub: sub}, nil
+}
+
+// WatchXReceipt is a free log subscription operation binding the contract event 0x34515b4105a7bb34f3af3cd490137ab292bb2ff14efb800df5c7d59e28944f25.
+//
+// Solidity: event XReceipt(uint64 indexed sourceChainId, uint64 indexed streamOffset, uint256 gasUsed, address relayer, bool success)
+func (_OmniPortal *OmniPortalFilterer) WatchXReceipt(opts *bind.WatchOpts, sink chan<- *OmniPortalXReceipt, sourceChainId []uint64, streamOffset []uint64) (event.Subscription, error) {
+
+	var sourceChainIdRule []interface{}
+	for _, sourceChainIdItem := range sourceChainId {
+		sourceChainIdRule = append(sourceChainIdRule, sourceChainIdItem)
+	}
+	var streamOffsetRule []interface{}
+	for _, streamOffsetItem := range streamOffset {
+		streamOffsetRule = append(streamOffsetRule, streamOffsetItem)
+	}
+
+	logs, sub, err := _OmniPortal.contract.WatchLogs(opts, "XReceipt", sourceChainIdRule, streamOffsetRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(OmniPortalXReceipt)
+				if err := _OmniPortal.contract.UnpackLog(event, "XReceipt", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseXReceipt is a log parse operation binding the contract event 0x34515b4105a7bb34f3af3cd490137ab292bb2ff14efb800df5c7d59e28944f25.
+//
+// Solidity: event XReceipt(uint64 indexed sourceChainId, uint64 indexed streamOffset, uint256 gasUsed, address relayer, bool success)
+func (_OmniPortal *OmniPortalFilterer) ParseXReceipt(log types.Log) (*OmniPortalXReceipt, error) {
+	event := new(OmniPortalXReceipt)
+	if err := _OmniPortal.contract.UnpackLog(event, "XReceipt", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

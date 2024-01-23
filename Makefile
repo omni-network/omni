@@ -23,8 +23,8 @@ contract-bindings: ## Generate golang contract bindings.
 
 .PHONY: explorer-gen
 explorer-gen: ## Generates code for our explorer
-	make -C ./explorer/db gen
-	make -C ./explorer/api gen
+	make -C ./explorer gen-db
+	make -C ./explorer gen-api
 
 ###############################################################################
 ###                                Utils                                 	###
