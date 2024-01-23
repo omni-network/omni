@@ -42,10 +42,12 @@ ENV NODE_ENV production
 RUN mkdir /app
 WORKDIR /app
 
+RUN corepack enable
+
 COPY --from=production-deps /app/node_modules /app/node_modules
 COPY --from=build /app/build /app/build
 COPY --from=build /app/public /app/public
 ADD . .
 
 EXPOSE 3000
-CMD ["pnpm", "run", "start"]
+ENTRYPOINT ["pnpm", "run", "start"]
