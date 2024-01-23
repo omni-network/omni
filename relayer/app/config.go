@@ -4,7 +4,7 @@ import "path/filepath"
 
 const (
 	networkFile = "network.json"
-	configDir   = "config"
+	configDir   = "relayer/config"
 )
 
 type Config struct {

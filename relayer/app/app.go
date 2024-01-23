@@ -2,8 +2,6 @@ package relayer
 
 import (
 	"context"
-	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/rand"
 
 	"github.com/omni-network/omni/lib/cchain"
@@ -12,6 +10,9 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
+
+	ethcrypto "github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/crypto/ecies"
 )
 
 func Run(ctx context.Context, cfg Config) error {
@@ -31,11 +32,11 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 
 	// todo(lazar955): load from cfg
-	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	privateKey, err := ecies.GenerateKey(rand.Reader, ethcrypto.S256(), nil)
 	if err != nil {
 		return errors.Wrap(err, "generate private key")
 	}
-	sender, err := NewSimpleSender(network.Chains, rpcClientPerChain, *privateKey)
+	sender, err := NewSimpleSender(network.Chains, rpcClientPerChain, *privateKey.ExportECDSA())
 	if err != nil {
 		return err
 	}
