@@ -60,7 +60,6 @@ func TranslateSubmission(submission xchain.Submission) bindings.XChainSubmission
 			To:            common.BytesToAddress(msg.DestAddress[:]),
 			Data:          msg.Data,
 			GasLimit:      msg.DestGasLimit,
-			TxHash:        msg.TxHash,
 		}
 	}
 

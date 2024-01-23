@@ -18,9 +18,40 @@ func Test_translateSubmission(t *testing.T) {
 		submission xchain.Submission
 	}
 	var sub xchain.Submission
-	fuzz.NewWithSeed(1).NilChance(0).Fuzz(&sub)
-	var xSub bindings.XChainSubmission
-	fuzz.NewWithSeed(1).NilChance(0).Fuzz(&xSub)
+	fuzz.New().NilChance(0).Fuzz(&sub)
+
+	msgs := make([]bindings.XChainMsg, 0, len(sub.Msgs))
+	for _, msg := range sub.Msgs {
+		msgs = append(msgs, bindings.XChainMsg{
+			SourceChainId: msg.SourceChainID,
+			DestChainId:   msg.DestChainID,
+			StreamOffset:  msg.StreamOffset,
+			Sender:        msg.SourceMsgSender,
+			To:            msg.DestAddress,
+			Data:          msg.Data,
+			GasLimit:      msg.DestGasLimit,
+		})
+	}
+	signatures := make([]bindings.XChainSigTuple, 0, len(sub.Signatures))
+	for _, sig := range sub.Signatures {
+		signatures = append(signatures, bindings.XChainSigTuple{
+			ValidatorPubKey: sig.ValidatorPubKey[:],
+			Signature:       sig.Signature[:],
+		})
+	}
+
+	var xSub = bindings.XChainSubmission{
+		AttestationRoot: sub.AttestationRoot,
+		BlockHeader: bindings.XChainBlockHeader{
+			SourceChainId: sub.BlockHeader.SourceChainID,
+			BlockHeight:   sub.BlockHeader.BlockHeight,
+			BlockHash:     sub.BlockHeader.BlockHash,
+		},
+		Msgs:       msgs,
+		Proof:      sub.Proof,
+		ProofFlags: sub.ProofFlags,
+		Signatures: signatures,
+	}
 
 	tests := []struct {
 		name string
@@ -40,11 +71,7 @@ func Test_translateSubmission(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got := relayer.TranslateSubmission(tt.args.submission)
-			require.Equal(t, got.Proof, tt.want.Proof)
-			require.Equal(t, got.ProofFlags, tt.want.ProofFlags)
-			require.Equal(t, got.AttestationRoot, tt.want.AttestationRoot)
-			require.True(t, reflect.DeepEqual(got.BlockHeader, tt.want.BlockHeader))
-			require.True(t, reflect.DeepEqual(got.Msgs, tt.want.Msgs))
+			require.True(t, reflect.DeepEqual(got, tt.want))
 		})
 	}
 }
