@@ -23,6 +23,7 @@ func bindInitFlags(flags *pflag.FlagSet, cfg *InitConfig) {
 	libcmd.BindHomeFlag(flags, &cfg.HomeDir)
 	flags.StringVar(&cfg.Network, "network", cfg.Network, "The network to initialize")
 	flags.BoolVar(&cfg.Force, "force", cfg.Force, "Force initialization (overwrite existing files)")
+	flags.BoolVar(&cfg.Clean, "clean", cfg.Clean, "Delete home directory before initialization")
 }
 
 // logConfig logs the config struct kv pairs.
