@@ -39,6 +39,10 @@ install-pre-commit: ## Installs the pre-commit tool as the git pre-commit hook f
 	@which pre-commit > /dev/null || echo "pre-commit not installed, see https://pre-commit.com/#install"
 	@pre-commit install --install-hooks
 
+.PHONE: install-go-tools
+install-go-tools: ## Installs the go-dev-tools, like buf.
+	@go generate tools.go
+
 .PHONY: lint
 lint: ## Runs linters via pre-commit.
 	@pre-commit run -v --all-files
