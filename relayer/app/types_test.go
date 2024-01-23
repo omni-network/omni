@@ -1,7 +1,6 @@
 package relayer_test
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -71,7 +70,7 @@ func Test_translateSubmission(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got := relayer.TranslateSubmission(tt.args.submission)
-			require.True(t, reflect.DeepEqual(got, tt.want))
+			require.Equal(t, got, tt.want)
 		})
 	}
 }
