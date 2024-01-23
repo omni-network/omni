@@ -40,19 +40,21 @@ func TranslateSubmission(submission xchain.Submission) bindings.XChainSubmission
 		ProofFlags: submission.ProofFlags,
 	}
 
-	signatures := make([]bindings.XChainSigTuple, len(submission.Signatures))
-	for i, sig := range submission.Signatures {
-		signatures[i] = bindings.XChainSigTuple{
-			ValidatorPubKey: sig.ValidatorPubKey[:],
-			Signature:       sig.Signature[:],
-		}
+	chainSubmission.Signatures = make([]bindings.XChainSigTuple, 0, len(submission.Signatures))
+	for _, sig := range submission.Signatures {
+		validatorPubKey := make([]byte, len(sig.ValidatorPubKey))
+		copy(validatorPubKey, sig.ValidatorPubKey[:])
+		signature := make([]byte, len(sig.Signature))
+		copy(signature, sig.Signature[:])
+		chainSubmission.Signatures = append(chainSubmission.Signatures, bindings.XChainSigTuple{
+			ValidatorPubKey: validatorPubKey,
+			Signature:       signature,
+		})
 	}
 
-	chainSubmission.Signatures = signatures
-
-	msgs := make([]bindings.XChainMsg, len(submission.Msgs))
-	for i, msg := range submission.Msgs {
-		msgs[i] = bindings.XChainMsg{
+	msgs := make([]bindings.XChainMsg, 0, len(submission.Msgs))
+	for _, msg := range submission.Msgs {
+		msgs = append(msgs, bindings.XChainMsg{
 			SourceChainId: msg.SourceChainID,
 			DestChainId:   msg.DestChainID,
 			StreamOffset:  msg.StreamOffset,
@@ -60,7 +62,7 @@ func TranslateSubmission(submission xchain.Submission) bindings.XChainSubmission
 			To:            common.BytesToAddress(msg.DestAddress[:]),
 			Data:          msg.Data,
 			GasLimit:      msg.DestGasLimit,
-		}
+		})
 	}
 
 	chainSubmission.Msgs = msgs

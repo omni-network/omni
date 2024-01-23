@@ -13,64 +13,56 @@ import (
 
 func Test_translateSubmission(t *testing.T) {
 	t.Parallel()
-	type args struct {
-		submission xchain.Submission
-	}
 	var sub xchain.Submission
 	fuzz.New().NilChance(0).Fuzz(&sub)
 
-	msgs := make([]bindings.XChainMsg, 0, len(sub.Msgs))
-	for _, msg := range sub.Msgs {
-		msgs = append(msgs, bindings.XChainMsg{
-			SourceChainId: msg.SourceChainID,
-			DestChainId:   msg.DestChainID,
-			StreamOffset:  msg.StreamOffset,
-			Sender:        msg.SourceMsgSender,
-			To:            msg.DestAddress,
-			Data:          msg.Data,
-			GasLimit:      msg.DestGasLimit,
-		})
-	}
-	signatures := make([]bindings.XChainSigTuple, 0, len(sub.Signatures))
-	for _, sig := range sub.Signatures {
-		signatures = append(signatures, bindings.XChainSigTuple{
-			ValidatorPubKey: sig.ValidatorPubKey[:],
-			Signature:       sig.Signature[:],
-		})
-	}
+	xsub := relayer.TranslateSubmission(sub)
+	reversedSub := translateXSubmission(xsub, sub.DestChainID)
 
-	var xSub = bindings.XChainSubmission{
-		AttestationRoot: sub.AttestationRoot,
-		BlockHeader: bindings.XChainBlockHeader{
-			SourceChainId: sub.BlockHeader.SourceChainID,
-			BlockHeight:   sub.BlockHeader.BlockHeight,
-			BlockHash:     sub.BlockHeader.BlockHash,
+	require.Equal(t, sub, reversedSub)
+}
+
+func translateXSubmission(submission bindings.XChainSubmission, destChainID uint64) xchain.Submission {
+	chainSubmission := xchain.Submission{
+		AttestationRoot: submission.AttestationRoot,
+		BlockHeader: xchain.BlockHeader{
+			SourceChainID: submission.BlockHeader.SourceChainId,
+			BlockHeight:   submission.BlockHeader.BlockHeight,
+			BlockHash:     submission.BlockHeader.BlockHash,
 		},
-		Msgs:       msgs,
-		Proof:      sub.Proof,
-		ProofFlags: sub.ProofFlags,
-		Signatures: signatures,
+		Proof:       submission.Proof,
+		ProofFlags:  submission.ProofFlags,
+		DestChainID: destChainID,
 	}
 
-	tests := []struct {
-		name string
-		args args
-		want bindings.XChainSubmission
-	}{
-		{
-			name: "",
-			args: args{
-				submission: sub,
+	signatures := make([]xchain.SigTuple, len(submission.Signatures))
+	for i, sig := range submission.Signatures {
+		signatures[i] = xchain.SigTuple{
+			ValidatorPubKey: [33]byte(sig.ValidatorPubKey),
+			Signature:       [65]byte(sig.Signature),
+		}
+	}
+
+	chainSubmission.Signatures = signatures
+
+	msgs := make([]xchain.Msg, len(submission.Msgs))
+	for i, msg := range submission.Msgs {
+		msgs[i] = xchain.Msg{
+			MsgID: xchain.MsgID{
+				StreamID: xchain.StreamID{
+					SourceChainID: msg.SourceChainId,
+					DestChainID:   msg.DestChainId,
+				},
+				StreamOffset: msg.StreamOffset,
 			},
-			want: xSub,
-		},
+			SourceMsgSender: msg.Sender,
+			DestAddress:     msg.To,
+			Data:            msg.Data,
+			DestGasLimit:    msg.GasLimit,
+		}
 	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			got := relayer.TranslateSubmission(tt.args.submission)
-			require.Equal(t, got, tt.want)
-		})
-	}
+
+	chainSubmission.Msgs = msgs
+
+	return chainSubmission
 }

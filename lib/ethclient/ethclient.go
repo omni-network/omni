@@ -161,7 +161,6 @@ func (e *EthClient) constructXBlock(selectedMsgLogs []types.Log, header *types.H
 			DestAddress:     [20]byte(vLog.Topics[3].Bytes()),
 			Data:            vLog.Topics[4].Bytes(),
 			DestGasLimit:    vLog.Topics[5].Big().Uint64(),
-			TxHash:          vLog.TxHash,
 		}
 		xBlock.Msgs = append(xBlock.Msgs, msg)
 	}
