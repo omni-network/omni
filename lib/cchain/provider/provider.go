@@ -13,25 +13,23 @@ import (
 var _ cchain.Provider = Provider{}
 
 // FetchFunc abstracts fetching attestation from the consensus chain.
-type FetchFunc func(ctx context.Context, chainID uint64, fromHeight uint64, max uint64,
+type FetchFunc func(ctx context.Context, chainID uint64, fromHeight uint64,
 ) ([]xchain.AggAttestation, error)
 
 // Provider implements cchain.Provider.
 type Provider struct {
 	fetch       FetchFunc
-	batchSize   uint64
 	backoffFunc func(context.Context) (func(), func())
 }
 
 // TODO(corver): Add prod constructor once halo has an API.
 
 // NewProviderForT creates a new provider for testing.
-func NewProviderForT(_ *testing.T, fetch FetchFunc, batchSize uint64,
+func NewProviderForT(_ *testing.T, fetch FetchFunc,
 	backoffFunc func(context.Context) (func(), func()),
 ) Provider {
 	return Provider{
 		fetch:       fetch,
-		batchSize:   batchSize,
 		backoffFunc: backoffFunc,
 	}
 }
@@ -44,7 +42,7 @@ func (p Provider) Subscribe(ctx context.Context, chainID uint64, height uint64, 
 
 		for ctx.Err() == nil {
 			// Fetch next batch of attestations.
-			atts, err := p.fetch(ctx, chainID, height, p.batchSize)
+			atts, err := p.fetch(ctx, chainID, height)
 			if ctx.Err() != nil {
 				return // Don't backoff or log on ctx cancel, just return.
 			} else if err != nil {
