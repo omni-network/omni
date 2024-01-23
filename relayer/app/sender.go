@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"math/big"
-	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
@@ -14,54 +13,49 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-const (
-	miningTimeout = 1 * time.Minute
-)
+var _ Sender = (*SimpleSender)(nil)
 
-type Portal struct {
-	Session   bindings.OmniPortalSession
-	RPCClient *ethclient.Client
+// SimpleSender is a sender service that does best effort to send transactions to the destination chain.
+type SimpleSender struct {
+	clients  map[uint64]*ethclient.Client          // rpc clients per chain id
+	sessions map[uint64]bindings.OmniPortalSession // sessions per chain id
 }
 
-var _ Sender = (*SenderService)(nil)
-
-type SenderService struct {
-	Portal map[uint64]Portal
-}
-
-// NewSenderService creates a new sender service.
-func NewSenderService(chains []netconf.Chain, rpcClientPerChain map[uint64]*ethclient.Client,
+// NewSimpleSender creates a new sender service that does best effort to send transactions to the destination chain.
+func NewSimpleSender(chains []netconf.Chain, rpcClientPerChain map[uint64]*ethclient.Client,
 	privateKey ecdsa.PrivateKey,
-) (SenderService, error) {
-	portal := make(map[uint64]Portal)
+) (SimpleSender, error) {
+	sessions := make(map[uint64]bindings.OmniPortalSession)
 	for _, chain := range chains {
-		p, err := NewPortal(chain, rpcClientPerChain[chain.ID], privateKey)
+		session, err := newSession(chain, rpcClientPerChain[chain.ID], privateKey)
 		if err != nil {
-			return SenderService{}, err
+			return SimpleSender{}, err
 		}
 
-		portal[chain.ID] = p
+		sessions[chain.ID] = session
 	}
 
-	return SenderService{
-		Portal: portal,
+	return SimpleSender{
+		sessions: sessions,
+		clients:  rpcClientPerChain,
 	}, nil
 }
 
-func NewPortal(chain netconf.Chain, rpcClient *ethclient.Client, privateKey ecdsa.PrivateKey) (Portal, error) {
+// newSession creates a new session for the given chain. used to interact with portal contract.
+func newSession(chain netconf.Chain, rpcClient *ethclient.Client,
+	privateKey ecdsa.PrivateKey) (bindings.OmniPortalSession, error) {
 	contract, err := bindings.NewOmniPortal(common.HexToAddress(chain.PortalAddress), rpcClient)
 	if err != nil {
-		return Portal{}, err
+		return bindings.OmniPortalSession{}, errors.Wrap(err, "new contract")
 	}
 
 	transactor, err := bind.NewKeyedTransactorWithChainID(&privateKey, big.NewInt(int64(chain.ID)))
 	if err != nil {
-		return Portal{}, errors.Wrap(err, "new transactor")
+		return bindings.OmniPortalSession{}, errors.Wrap(err, "new transactor")
 	}
 
 	session := bindings.OmniPortalSession{
@@ -72,24 +66,22 @@ func NewPortal(chain netconf.Chain, rpcClient *ethclient.Client, privateKey ecds
 		},
 	}
 
-	return Portal{
-		Session:   session,
-		RPCClient: rpcClient,
-	}, nil
+	return session, nil
 }
 
-func (s SenderService) SendTransaction(ctx context.Context, submission xchain.Submission) error {
+// SendTransaction sends the given submission to the destination chain. Best effort sending.
+func (s SimpleSender) SendTransaction(ctx context.Context, submission xchain.Submission) error {
 	xChainSubmission := TranslateSubmission(submission)
 
-	portal, ok := s.Portal[submission.DestChainID]
+	session, ok := s.sessions[submission.DestChainID]
 	if !ok {
-		return errors.New("portal not found", "destChainID", submission.DestChainID)
+		return errors.New("session not found", "dest_chain_id", submission.DestChainID)
 	}
 
-	tx, err := portal.Session.Xsubmit(xChainSubmission)
+	tx, err := session.Xsubmit(xChainSubmission)
 	if err != nil {
 		// todo(Lazar): handle error
-		return err
+		return errors.Wrap(err, "submit tx")
 	}
 
 	log.Info(ctx, "Submitted_tx",
@@ -97,23 +89,6 @@ func (s SenderService) SendTransaction(ctx context.Context, submission xchain.Su
 		"nonce", tx.Nonce(),
 		"gas_price", tx.GasPrice(),
 	)
-
-	waitCtx, cancel := context.WithTimeout(ctx, miningTimeout)
-	receipt, err := bind.WaitMined(waitCtx, portal.RPCClient, tx)
-	defer cancel()
-
-	// todo(Lazar): handle error
-	if ctx.Err() != nil {
-		// shutdown
-		return errors.Wrap(ctx.Err(), "ctx error")
-	} else if waitCtx.Err() != nil {
-		// todo(Lazar): handle error increase gas price and retry
-		return errors.Wrap(waitCtx.Err(), "wait mined")
-	} else if err != nil {
-		return errors.Wrap(err, "wait mined")
-	} else if receipt.Status == ethtypes.ReceiptStatusFailed {
-		return errors.New("submission tx failed", tx.Hash().Hex())
-	}
 
 	// todo(Lazar): handle success case, metrics and cache
 
