@@ -18,9 +18,8 @@ func TestProvider(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	const (
-		errs      = 2
-		batchSize = 5
-		total     = 10
+		errs  = 2
+		total = 10
 	)
 
 	chainID := rand.Uint64()
@@ -29,7 +28,7 @@ func TestProvider(t *testing.T) {
 	var backoff testBackOff
 	fetcher := &testFetcher{errs: errs}
 
-	p := provider.NewProviderForT(t, fetcher.Fetch, batchSize, backoff.BackOff)
+	p := provider.NewProviderForT(t, fetcher.Fetch, backoff.BackOff)
 
 	var actual []xchain.AggAttestation
 	p.Subscribe(ctx, chainID, fromHeight, func(ctx context.Context, approved xchain.AggAttestation) error {
@@ -64,7 +63,7 @@ type testFetcher struct {
 	fetched int
 }
 
-func (f *testFetcher) Fetch(_ context.Context, chainID uint64, fromHeight uint64, max uint64,
+func (f *testFetcher) Fetch(_ context.Context, chainID uint64, fromHeight uint64,
 ) ([]xchain.AggAttestation, error) {
 	if f.errs > 0 {
 		f.errs--
@@ -73,10 +72,6 @@ func (f *testFetcher) Fetch(_ context.Context, chainID uint64, fromHeight uint64
 
 	toReturn := f.count
 	f.count++
-
-	if toReturn > int(max) {
-		toReturn = int(max)
-	}
 
 	var resp []xchain.AggAttestation
 	for i := 0; i < toReturn; i++ {

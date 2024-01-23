@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/big"
 
+	halopb "github.com/omni-network/omni/halo/halopb/v1"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
@@ -12,6 +13,8 @@ import (
 	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
+
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -357,8 +360,40 @@ func (*App) Flush(context.Context, *abci.RequestFlush) (*abci.ResponseFlush, err
 }
 
 // Query queries the application state.
-func (*App) Query(context.Context, *abci.RequestQuery) (*abci.ResponseQuery, error) {
-	return nil, errors.New("queries not supported yet")
+func (a *App) Query(_ context.Context, query *abci.RequestQuery) (*abci.ResponseQuery, error) {
+	if query == nil || len(query.Data) == 0 {
+		return nil, errors.New("empty query")
+	} else if query.Path != halopb.HaloService_ApprovedFrom_FullMethodName {
+		return nil, errors.New("unknown query path")
+	}
+
+	// Unmarshal the request.
+	req := new(halopb.ApprovedFromRequest)
+	if err := proto.Unmarshal(query.Data, req); err != nil {
+		return nil, errors.Wrap(err, "unmarshal approved from request")
+	}
+
+	// Query the state.
+	aggs := a.state.ApprovedFrom(req.GetChainId(), req.GetFromHeight())
+
+	// Construct the response.
+	resp := &halopb.ApprovedFromResponse{
+		Aggregates: halopb.AggregatesToProto(aggs),
+	}
+
+	// Marshal the response.
+	bz, err := proto.Marshal(resp)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal approved from response")
+	}
+
+	// Return the response.
+	return &abci.ResponseQuery{
+		Code:   abci.CodeTypeOK,
+		Key:    query.Data,
+		Value:  bz,
+		Height: int64(a.state.Height()),
+	}, nil
 }
 
 // Echo returns back the same message it is sent.
