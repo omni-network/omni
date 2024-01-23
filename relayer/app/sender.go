@@ -19,18 +19,19 @@ import (
 
 var _ Sender = (*SimpleSender)(nil)
 
+// SimpleSender is a sender service that does best effort to send transactions to the destination chain.
 type SimpleSender struct {
-	Clients  map[uint64]*ethclient.Client
-	Sessions map[uint64]bindings.OmniPortalSession
+	clients  map[uint64]*ethclient.Client          // rpc clients per chain id
+	sessions map[uint64]bindings.OmniPortalSession // sessions per chain id
 }
 
-// NewSenderService creates a new sender service.
-func NewSenderService(chains []netconf.Chain, rpcClientPerChain map[uint64]*ethclient.Client,
+// NewSimpleSender creates a new sender service that does best effort to send transactions to the destination chain.
+func NewSimpleSender(chains []netconf.Chain, rpcClientPerChain map[uint64]*ethclient.Client,
 	privateKey ecdsa.PrivateKey,
 ) (SimpleSender, error) {
 	sessions := make(map[uint64]bindings.OmniPortalSession)
 	for _, chain := range chains {
-		session, err := NewSession(chain, rpcClientPerChain[chain.ID], privateKey)
+		session, err := newSession(chain, rpcClientPerChain[chain.ID], privateKey)
 		if err != nil {
 			return SimpleSender{}, err
 		}
@@ -39,16 +40,17 @@ func NewSenderService(chains []netconf.Chain, rpcClientPerChain map[uint64]*ethc
 	}
 
 	return SimpleSender{
-		Sessions: sessions,
-		Clients:  rpcClientPerChain,
+		sessions: sessions,
+		clients:  rpcClientPerChain,
 	}, nil
 }
 
-func NewSession(chain netconf.Chain, rpcClient *ethclient.Client,
+// newSession creates a new session for the given chain. used to interact with portal contract.
+func newSession(chain netconf.Chain, rpcClient *ethclient.Client,
 	privateKey ecdsa.PrivateKey) (bindings.OmniPortalSession, error) {
 	contract, err := bindings.NewOmniPortal(common.HexToAddress(chain.PortalAddress), rpcClient)
 	if err != nil {
-		return bindings.OmniPortalSession{}, err
+		return bindings.OmniPortalSession{}, errors.Wrap(err, "new contract")
 	}
 
 	transactor, err := bind.NewKeyedTransactorWithChainID(&privateKey, big.NewInt(int64(chain.ID)))
@@ -67,18 +69,19 @@ func NewSession(chain netconf.Chain, rpcClient *ethclient.Client,
 	return session, nil
 }
 
+// SendTransaction sends the given submission to the destination chain. Best effort sending.
 func (s SimpleSender) SendTransaction(ctx context.Context, submission xchain.Submission) error {
 	xChainSubmission := TranslateSubmission(submission)
 
-	session, ok := s.Sessions[submission.DestChainID]
+	session, ok := s.sessions[submission.DestChainID]
 	if !ok {
-		return errors.New("session not found", "destChainID", submission.DestChainID)
+		return errors.New("session not found", "dest_chain_id", submission.DestChainID)
 	}
 
 	tx, err := session.Xsubmit(xChainSubmission)
 	if err != nil {
 		// todo(Lazar): handle error
-		return err
+		return errors.Wrap(err, "submit tx")
 	}
 
 	log.Info(ctx, "Submitted_tx",
@@ -86,12 +89,6 @@ func (s SimpleSender) SendTransaction(ctx context.Context, submission xchain.Sub
 		"nonce", tx.Nonce(),
 		"gas_price", tx.GasPrice(),
 	)
-
-	// todo(Lazar): handle error
-	if ctx.Err() != nil {
-		// shutdown
-		return errors.Wrap(ctx.Err(), "ctx error")
-	}
 
 	// todo(Lazar): handle success case, metrics and cache
 
