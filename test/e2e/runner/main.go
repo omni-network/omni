@@ -58,7 +58,7 @@ func NewCLI() *CLI {
 			}
 
 			cli.testnet = adaptTestnet(testnet)
-			cli.infp = docker.NewProvider(testnet, ifd)
+			cli.infp = docker.NewProvider(testnet, ifd, defaultServices())
 
 			return nil
 		},
@@ -73,6 +73,10 @@ func NewCLI() *CLI {
 			}
 
 			if err := Start(ctx, cli.testnet, cli.infp); err != nil {
+				return err
+			}
+
+			if err := DeployContracts(ctx); err != nil {
 				return err
 			}
 
