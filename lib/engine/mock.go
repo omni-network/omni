@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
@@ -30,9 +31,17 @@ type Mock struct {
 
 // NewMock returns a new mock Engine API.
 func NewMock() (*Mock, error) {
-	fuzzer := NewFuzzer()
+	var (
+		// Deterministic genesis block
+		height     uint64 // 0
+		parentHash common.Hash
+		timestamp  = time.Now().Truncate(time.Hour * 24).Unix() // TODO(corver): Improve this.
 
-	genesisPayload, err := makeNextPayload(nil, fuzzer)
+		// Deterministic fuzzer
+		fuzzer = NewFuzzer(timestamp)
+	)
+
+	genesisPayload, err := makePayload(fuzzer, height, uint64(timestamp), parentHash)
 	if err != nil {
 		return nil, errors.Wrap(err, "make next payload")
 	}
@@ -66,7 +75,7 @@ func (m *Mock) BlockByNumber(_ context.Context, number *big.Int) (*types.Block, 
 	return m.head, nil
 }
 
-func (m *Mock) NewPayloadV2(_ context.Context, params engine.ExecutableData) (engine.PayloadStatusV1, error) {
+func (m *Mock) NewPayloadV2(ctx context.Context, params engine.ExecutableData) (engine.PayloadStatusV1, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -77,13 +86,18 @@ func (m *Mock) NewPayloadV2(_ context.Context, params engine.ExecutableData) (en
 
 	m.payloads[id] = params
 
+	log.Debug(ctx, "Engine mock received new payload from proposer",
+		"height", params.Number,
+		log.Hex7("hash", params.BlockHash.Bytes()),
+	)
+
 	return engine.PayloadStatusV1{
 		Status: engine.VALID,
 	}, nil
 }
 
-func (m *Mock) ForkchoiceUpdatedV2(_ context.Context, update engine.ForkchoiceStateV1,
-	payloadAttributes *engine.PayloadAttributes,
+func (m *Mock) ForkchoiceUpdatedV2(ctx context.Context, update engine.ForkchoiceStateV1,
+	attrs *engine.PayloadAttributes,
 ) (engine.ForkChoiceResponse, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -95,8 +109,8 @@ func (m *Mock) ForkchoiceUpdatedV2(_ context.Context, update engine.ForkchoiceSt
 	}
 
 	// If we have payload attributes, make a new payload
-	if payloadAttributes != nil {
-		payload, err := makeNextPayload(m.head, m.fuzzer)
+	if attrs != nil {
+		payload, err := makePayload(m.fuzzer, m.head.NumberU64()+1, attrs.Timestamp, update.HeadBlockHash)
 		if err != nil {
 			return engine.ForkChoiceResponse{}, err
 		}
@@ -128,8 +142,8 @@ func (m *Mock) ForkchoiceUpdatedV2(_ context.Context, update engine.ForkchoiceSt
 			continue
 		}
 
-		if !isChild(m.head, block) {
-			return engine.ForkChoiceResponse{}, errors.New("unexpected new head block")
+		if err := verifyChild(m.head, block); err != nil {
+			return engine.ForkChoiceResponse{}, err
 		}
 
 		m.head = block
@@ -138,8 +152,14 @@ func (m *Mock) ForkchoiceUpdatedV2(_ context.Context, update engine.ForkchoiceSt
 		break
 	}
 	if !found {
-		return engine.ForkChoiceResponse{}, errors.New("head block not found")
+		return engine.ForkChoiceResponse{}, errors.New("forkchoice block not found",
+			log.Hex7("forkchoice", m.head.Hash().Bytes()))
 	}
+
+	log.Debug(ctx, "Engine mock forkchoice updated",
+		"height", m.head.NumberU64(),
+		log.Hex7("forkchoice", update.HeadBlockHash.Bytes()),
+	)
 
 	return resp, nil
 }
@@ -174,20 +194,9 @@ func (*Mock) GetPayloadV3(context.Context, engine.PayloadID) (*engine.ExecutionP
 	panic("implement me")
 }
 
-// makeNextPayload returns a new fuzzed payload using head as parent if provided.
-func makeNextPayload(head *types.Block, fuzzer *fuzz.Fuzzer) (engine.ExecutableData, error) {
-	// Set some deterministic genesis fields
-	height := uint64(1)
-	timestamp := uint64(time.Now().Unix())
-	var parentHash common.Hash
-
-	// If we have a head, use it as parent
-	if head != nil {
-		height = head.NumberU64() + 1
-		timestamp = head.Time() + 1
-		parentHash = head.Hash()
-	}
-
+// payloadFromHeader returns a new fuzzed payload using head as parent if provided.
+func makePayload(fuzzer *fuzz.Fuzzer, height uint64, timestamp uint64, parentHash common.Hash,
+) (engine.ExecutableData, error) {
 	// Build a new header
 	var header types.Header
 	fuzzer.Fuzz(&header)
@@ -223,6 +232,21 @@ func payloadID(payload engine.ExecutableData) (engine.PayloadID, error) {
 	return engine.PayloadID(hash[:8]), nil
 }
 
-func isChild(parent *types.Block, child *types.Block) bool {
-	return parent.NumberU64() == child.NumberU64()-1 && parent.Hash() == child.ParentHash()
+// verifyChild returns an error if child is not a valid child of parent.
+func verifyChild(parent *types.Block, child *types.Block) error {
+	if parent.NumberU64()+1 != child.NumberU64() {
+		return errors.New("forkchoice height not following head",
+			"head", parent.NumberU64(),
+			"forkchoice", child.NumberU64(),
+		)
+	}
+
+	if parent.Hash() != child.ParentHash() {
+		return errors.New("forkchoice parent hash not head",
+			log.Hex7("head", parent.Hash().Bytes()),
+			log.Hex7("forkchoice", child.Hash().Bytes()),
+		)
+	}
+
+	return nil
 }

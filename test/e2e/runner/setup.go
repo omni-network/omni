@@ -102,7 +102,9 @@ func Setup(ctx context.Context, testnet *e2e.Testnet, infp infra.Provider) error
 			filepath.Join(nodeDir, PrivvalStateFile),
 		)).Save()
 
-		if err := halocmd.InitFiles(ctx, halocmd.InitConfig{HomeDir: nodeDir, Network: netconf.Simnet}); err != nil {
+		// Initialize the node's data directory (with noop logger since it is noisy).
+		initCfg := halocmd.InitConfig{HomeDir: nodeDir, Network: netconf.Simnet}
+		if err := halocmd.InitFiles(log.WithNoopLogger(ctx), initCfg); err != nil {
 			return errors.Wrap(err, "init files")
 		}
 	}
