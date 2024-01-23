@@ -21,16 +21,16 @@ func maybeSetupSimnetRelayer(ctx context.Context, network netconf.Network, app *
 		return nil // Skip if not simnet.
 	}
 
-	fetchFunc := func(ctx context.Context, chainID uint64, fromHeight uint64, max uint64,
+	fetchFunc := func(ctx context.Context, chainID uint64, fromHeight uint64,
 	) ([]xchain.AggAttestation, error) {
-		return app.ApprovedFrom(chainID, fromHeight, max), nil
+		return app.ApprovedFrom(chainID, fromHeight), nil
 	}
 
 	backoffFunc := func(ctx context.Context) (func(), func()) {
 		return expbackoff.NewWithReset(ctx, expbackoff.WithFastConfig())
 	}
 
-	cprov := cprovider.NewProviderForT(nil, fetchFunc, 99, backoffFunc)
+	cprov := cprovider.NewProviderForT(nil, fetchFunc, backoffFunc)
 
 	mockXPriv, ok := xprovider.(*provider.Mock)
 	if !ok {

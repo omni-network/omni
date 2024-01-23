@@ -12,7 +12,6 @@ import "halo/halopb/v1/xchain.proto";
 message ApprovedFromRequest {
   uint64 chain_id    = 1; // Chain ID as per https://chainlist.org
   uint64 from_height = 2; // Block height to start from (inclusive)
-  uint64 max         = 3; // Maximum number of attestations to return (after from_height)
 }
 
 // ApprovedFromRequest queries halo for approved aggregate attestations for the given chain_id
