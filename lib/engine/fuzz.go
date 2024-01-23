@@ -2,6 +2,7 @@ package engine
 
 import (
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
@@ -12,8 +13,13 @@ import (
 )
 
 // NewFuzzer returns a new fuzzer for valid Engine API types.
-func NewFuzzer() *fuzz.Fuzzer {
-	f := fuzz.New().NilChance(0)
+// If seed is zero, it uses current nano time as the seed.
+func NewFuzzer(seed int64) *fuzz.Fuzzer {
+	if seed == 0 {
+		seed = time.Now().UnixNano()
+	}
+
+	f := fuzz.NewWithSeed(seed).NilChance(0)
 	f.Funcs(
 		func(h *types.Header, c fuzz.Continue) {
 			c.FuzzNoCustom(h)

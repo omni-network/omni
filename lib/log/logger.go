@@ -72,3 +72,10 @@ func LoggersForT(_ *testing.T) map[string]func(...func(*TestOptions)) *slog.Logg
 		"console": newConsoleLogger,
 	}
 }
+
+// WithNoopLogger returns a copy of the context with a noop logger which discards all logs.
+func WithNoopLogger(ctx context.Context) context.Context {
+	return WithLogger(ctx, newConsoleLogger(func(o *TestOptions) {
+		o.Writer = io.Discard
+	}))
+}

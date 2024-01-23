@@ -64,7 +64,10 @@ func (c cmtLogger) Error(msg string, keyvals ...any) {
 	if c.level < levelError {
 		return
 	}
-	log.Error(c.ctx, msg, nil, keyvals...)
+
+	keyvals, err := splitOutError(keyvals)
+
+	log.Error(c.ctx, msg, err, keyvals...)
 }
 
 func (c cmtLogger) With(keyvals ...any) cmtlog.Logger { //nolint:ireturn // This signature is required by interface.
@@ -72,4 +75,19 @@ func (c cmtLogger) With(keyvals ...any) cmtlog.Logger { //nolint:ireturn // This
 		ctx:   log.WithCtx(c.ctx, keyvals...),
 		level: c.level,
 	}
+}
+
+// splitOutError splits the keyvals into a slice of keyvals without the error and the error.
+func splitOutError(keyvals []any) ([]any, error) {
+	var remaining []any
+	var err error
+	for i := 0; i < len(keyvals); i += 2 {
+		if keyErr, ok := keyvals[i+1].(error); ok {
+			err = keyErr
+		} else {
+			remaining = append(remaining, keyvals[i], keyvals[i+1])
+		}
+	}
+
+	return remaining, err
 }
