@@ -27,6 +27,7 @@ type InitConfig struct {
 	HomeDir string
 	Network string
 	Force   bool
+	Clean   bool
 }
 
 // newInitCmd returns a new cobra command that initializes the files and folders required by halo.
@@ -57,7 +58,7 @@ Ensures all the following files and directories exist:
   │   ├── snapshots                  # Snapshot directory
   │   └── xattestations_state.json   # Cross chain attestation state (slashing protection)
 
-Existing files are not overwritten.
+Existing files are not overwritten, unless --clean is specified.
 The home directory should only contain subdirectories, no files, use --force to ignore this check.
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -98,6 +99,13 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 
 			return errors.New("home directory contains unexpected file(s), use --force to initialize anyway",
 				"home", homeDir, "example_file", file.Name())
+		}
+	}
+
+	if initCfg.Clean {
+		log.Info(ctx, "Deleting home directory, since --clean=true")
+		if err := os.RemoveAll(homeDir); err != nil {
+			return errors.Wrap(err, "remove home dir")
 		}
 	}
 
