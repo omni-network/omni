@@ -18,11 +18,11 @@ import (
 func TestInitFiles(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	cfg := initConfig{
+	cfg := InitConfig{
 		HomeDir: dir,
 		Network: netconf.Simnet,
 	}
-	err := initFiles(context.Background(), cfg)
+	err := InitFiles(context.Background(), cfg)
 	require.NoError(t, err)
 
 	files, err := filepath.Glob(dir + "/**/*")
@@ -44,15 +44,15 @@ func TestInitForce(t *testing.T) {
 	err := os.WriteFile(filepath.Join(dir, "dummy"), nil, 0o644)
 	require.NoError(t, err)
 
-	cfg := initConfig{
+	cfg := InitConfig{
 		HomeDir: dir,
 		Network: netconf.Simnet,
 	}
 
-	err = initFiles(context.Background(), cfg)
+	err = InitFiles(context.Background(), cfg)
 	require.ErrorContains(t, err, "unexpected file")
 
 	cfg.Force = true
-	err = initFiles(context.Background(), cfg)
+	err = InitFiles(context.Background(), cfg)
 	require.NoError(t, err)
 }

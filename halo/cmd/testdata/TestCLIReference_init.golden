@@ -14,13 +14,14 @@ Ensures all the following files and directories exist:
   │   ├── snapshots                  # Snapshot directory
   │   └── xattestations_state.json   # Cross chain attestation state (slashing protection)
 
-Existing files are not overwritten.
+Existing files are not overwritten, unless --clean is specified.
 The home directory should only contain subdirectories, no files, use --force to ignore this check.
 
 Usage:
   halo init [flags]
 
 Flags:
+      --clean            Delete home directory before initialization
       --force            Force initialization (overwrite existing files)
   -h, --help             help for init
       --home string      The application home directory containing config and data (default "./halo")

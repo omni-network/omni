@@ -22,16 +22,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type initConfig struct {
+// InitConfig is the config for the init command.
+type InitConfig struct {
 	HomeDir string
 	Network string
 	Force   bool
+	Clean   bool
 }
 
 // newInitCmd returns a new cobra command that initializes the files and folders required by halo.
 func newInitCmd() *cobra.Command {
 	// Default config flags
-	cfg := initConfig{
+	cfg := InitConfig{
 		HomeDir: app.DefaultHomeDir,
 		Network: netconf.Simnet,
 		Force:   false,
@@ -56,7 +58,7 @@ Ensures all the following files and directories exist:
   │   ├── snapshots                  # Snapshot directory
   │   └── xattestations_state.json   # Cross chain attestation state (slashing protection)
 
-Existing files are not overwritten.
+Existing files are not overwritten, unless --clean is specified.
 The home directory should only contain subdirectories, no files, use --force to ignore this check.
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -65,7 +67,7 @@ The home directory should only contain subdirectories, no files, use --force to 
 				return err
 			}
 
-			return initFiles(cmd.Context(), cfg)
+			return InitFiles(cmd.Context(), cfg)
 		},
 	}
 
@@ -74,11 +76,11 @@ The home directory should only contain subdirectories, no files, use --force to 
 	return cmd
 }
 
-// initFiles initializes the files and folders required by halo.
+// InitFiles initializes the files and folders required by halo.
 // It ensures a network and genesis file is generated/downloaded for the provided network.
 //
 //nolint:gocognit // This is just many sequential steps.
-func initFiles(ctx context.Context, initCfg initConfig) error {
+func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	log.Info(ctx, "Initializing halo files and directories")
 	homeDir := initCfg.HomeDir
 
@@ -100,8 +102,15 @@ func initFiles(ctx context.Context, initCfg initConfig) error {
 		}
 	}
 
+	if initCfg.Clean {
+		log.Info(ctx, "Deleting home directory, since --clean=true")
+		if err := os.RemoveAll(homeDir); err != nil {
+			return errors.Wrap(err, "remove home dir")
+		}
+	}
+
 	// Initialize default configs.
-	comet := defaultCometConfig(homeDir)
+	comet := DefaultCometConfig(homeDir)
 	cfg := app.DefaultHaloConfig()
 	cfg.HomeDir = homeDir
 
@@ -205,7 +214,7 @@ func initFiles(ctx context.Context, initCfg initConfig) error {
 		genDoc := types.GenesisDoc{
 			ChainID:         initCfg.Network,
 			GenesisTime:     cmttime.Now(),
-			ConsensusParams: defaultConsensusParams(),
+			ConsensusParams: DefaultConsensusParams(),
 		}
 		pubKey, err := pv.GetPubKey()
 		if err != nil {

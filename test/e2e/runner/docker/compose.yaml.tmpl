@@ -1,0 +1,47 @@
+version: '2.4'
+networks:
+  {{ .Name }}:
+    labels:
+      e2e: true
+    driver: bridge
+{{- if .IPv6 }}
+    enable_ipv6: true
+{{- end }}
+    ipam:
+      driver: default
+      config:
+      - subnet: {{ .IP }}
+
+services:
+{{- range .Nodes }}
+  {{ .Name }}:
+    labels:
+      e2e: true
+    container_name: {{ .Name }}
+    image: {{ .Version }}
+    init: true
+    ports:
+    - 26656
+    - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}26657
+{{- if .PrometheusProxyPort }}
+    - {{ .PrometheusProxyPort }}:26660
+{{- end }}
+    - 6060
+    volumes:
+    - ./{{ .Name }}:/halo
+    networks:
+      {{ $.Name }}:
+        ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .InternalIP }}
+{{end}}
+
+  chain_a:
+    labels:
+      e2e: true
+    image: ghcr.io/foundry-rs/foundry:latest
+    entrypoint: ['anvil','--host','0.0.0.0','--chain-id','100']
+    ports:
+      - "6545:8545"
+      - "6546:8546"
+    networks:
+      {{ $.Name }}:
+        ipv4_address: 10.186.73.200

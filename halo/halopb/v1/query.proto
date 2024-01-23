@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package halo.halopb.v1;
+
+option go_package = "github.com/omni-network/omni/halo/halopb/v1";
+
+import "halo/halopb/v1/xchain.proto";
+
+// ApprovedFromRequest queries halo for approved aggregate attestations for the given chain_id
+// and from the given height (inclusive). The response will contain at most max attestations sequentially
+// following from_height.
+message ApprovedFromRequest {
+  uint64 chain_id    = 1; // Chain ID as per https://chainlist.org
+  uint64 from_height = 2; // Block height to start from (inclusive)
+}
+
+// ApprovedFromRequest queries halo for approved aggregate attestations for the given chain_id
+// and from the given height (inclusive). The response will contain at most max attestations.
+message ApprovedFromResponse {
+  repeated halo.halopb.v1.AggAttestation aggregates = 1;
+}
+
+service HaloService {
+  rpc ApprovedFrom(ApprovedFromRequest) returns (ApprovedFromResponse);
+}

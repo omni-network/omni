@@ -61,14 +61,22 @@ func errAttrs(err error) []any {
 		StackTrace() pkgerrors.StackTrace
 	}
 
-	// Using cast instead of errors.As since no other wrapping library
-	// is used and this avoids exporting the structured error type.
-	serr, ok := err.(structErr) //nolint:errorlint // See comment above
-	if !ok {
-		return nil
+	// Find the first structured error in the cause chain. CometBFT wraps our errors
+	// in pkgErrors so we need to unwrap them to find our structured error.
+	cause := err
+	for cause != nil {
+		// Using cast instead of errors.As since no other wrapping library
+		// is used and this avoids exporting the structured error type.
+		serr, ok := cause.(structErr) //nolint:errorlint // See comment above
+		if !ok {
+			cause = pkgerrors.Unwrap(cause)
+			continue
+		}
+
+		return append(serr.Attrs(), slog.Any("stacktrace", serr.StackTrace()))
 	}
 
-	return append(serr.Attrs(), slog.Any("stacktrace", serr.StackTrace()))
+	return nil
 }
 
 // mergeAttrs returns the attributes from the context merged with the provided attributes.

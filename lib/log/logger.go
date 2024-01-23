@@ -32,6 +32,7 @@ func getLogger(ctx context.Context) *slog.Logger {
 // - Colored log levels (if tty supports it)
 // - Timestamps are concise with millisecond precision
 // - Timestamps and structured keys are faint
+// - Messages are right padded to 40 characters
 // This is aimed at local-dev and debugging. Production should use json or logfmt.
 func newConsoleLogger(opts ...func(*TestOptions)) *slog.Logger {
 	o := TestOptions{
@@ -55,6 +56,8 @@ func newConsoleLogger(opts ...func(*TestOptions)) *slog.Logger {
 
 	styles := charm.DefaultStyles()
 	styles.Timestamp = styles.Timestamp.Faint(true)
+	const padWidth = 40
+	styles.Message = styles.Message.Width(padWidth).Inline(true)
 	logger.SetStyles(styles)
 
 	return slog.New(logger)
@@ -71,4 +74,11 @@ func LoggersForT(_ *testing.T) map[string]func(...func(*TestOptions)) *slog.Logg
 	return map[string]func(...func(*TestOptions)) *slog.Logger{
 		"console": newConsoleLogger,
 	}
+}
+
+// WithNoopLogger returns a copy of the context with a noop logger which discards all logs.
+func WithNoopLogger(ctx context.Context) context.Context {
+	return WithLogger(ctx, newConsoleLogger(func(o *TestOptions) {
+		o.Writer = io.Discard
+	}))
 }

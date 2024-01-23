@@ -12,7 +12,7 @@ import (
 
 func TestFuzzer(t *testing.T) {
 	t.Parallel()
-	f := engineclient.NewFuzzer()
+	f := engineclient.NewFuzzer(0)
 
 	var payload engine.ExecutableData
 	f.Fuzz(&payload)

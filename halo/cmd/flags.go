@@ -19,10 +19,11 @@ func bindRunFlags(flags *pflag.FlagSet, cfg *app.HaloConfig) {
 	flags.Uint64Var(&cfg.SnapshotInterval, "snapshot-interval", cfg.SnapshotInterval, "The interval (in blocks) at which to create snapshots")
 }
 
-func bindInitFlags(flags *pflag.FlagSet, cfg *initConfig) {
+func bindInitFlags(flags *pflag.FlagSet, cfg *InitConfig) {
 	libcmd.BindHomeFlag(flags, &cfg.HomeDir)
 	flags.StringVar(&cfg.Network, "network", cfg.Network, "The network to initialize")
 	flags.BoolVar(&cfg.Force, "force", cfg.Force, "Force initialization (overwrite existing files)")
+	flags.BoolVar(&cfg.Clean, "clean", cfg.Clean, "Delete home directory before initialization")
 }
 
 // logConfig logs the config struct kv pairs.
