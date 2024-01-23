@@ -20,6 +20,9 @@ contract OmniPortal is IOmniPortal {
     /// @inheritdoc IOmniPortal
     mapping(uint64 => uint64) public outXStreamOffset;
 
+    /// @inheritdoc IOmniPortal
+    mapping(uint64 => uint64) public inXStreamOffset;
+
     constructor() {
         chainId = uint64(block.chainid);
     }
@@ -42,14 +45,33 @@ contract OmniPortal is IOmniPortal {
 
         // TODO: verify block header and msgs are included in the attestation merkle root
 
-        // TODO: verify msgs are intended for this chain, and are next messages in stream
-
-        // TODO: execute messages, emit receipts, update stream offsets
+        for (uint256 i = 0; i < xsub.msgs.length; i++) {
+            _exec(xsub.msgs[i]);
+        }
     }
 
     /// @dev Emit an XMsg event, increment dest chain outXStreamOffset
     function _xcall(uint64 destChainId, address sender, address to, bytes calldata data, uint64 gasLimit) private {
         emit XMsg(destChainId, outXStreamOffset[destChainId], sender, to, data, gasLimit);
         outXStreamOffset[destChainId] += 1;
+    }
+
+    /// @dev Verify an XMsg is next in its XStream, execute it, increment inXStreamOffset, emit an XReceipt
+    function _exec(XChain.Msg calldata xmsg) internal {
+        require(xmsg.destChainId == chainId, "OmniPortal: wrong destChainId");
+        require(xmsg.streamOffset == inXStreamOffset[xmsg.sourceChainId], "OmniPortal: wrong streamOffset");
+
+        // increment offset before executing xcall, to avoid reentrancy loop
+        inXStreamOffset[xmsg.sourceChainId] += 1;
+
+        // we enforce a maximum on xcall, but we trim to max here just in case
+        uint256 gasLimit = xmsg.gasLimit > XMSG_MAX_GAS_LIMIT ? XMSG_MAX_GAS_LIMIT : xmsg.gasLimit;
+
+        // execute xmsg, tracking gas used
+        uint256 gasUsed = gasleft();
+        (bool success,) = xmsg.to.call{ gas: gasLimit }(xmsg.data);
+        gasUsed = gasUsed - gasleft();
+
+        emit XReceipt(xmsg.sourceChainId, xmsg.streamOffset, gasUsed, msg.sender, success);
     }
 }

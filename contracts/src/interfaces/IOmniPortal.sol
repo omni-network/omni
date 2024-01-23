@@ -23,6 +23,18 @@ interface IOmniPortal {
     );
 
     /**
+     * @notice Emitted when an XMsg is executed on its destination chain
+     * @param sourceChainId Source chain ID
+     * @param streamOffset Offset the XMsg in the source -> dest XStream
+     * @param gasUsed Gas used in execution of the XMsg
+     * @param success Whether the execution succeeded
+     * @param relayer Address of the relayer who submitted the XMsg
+     */
+    event XReceipt(
+        uint64 indexed sourceChainId, uint64 indexed streamOffset, uint256 gasUsed, address relayer, bool success
+    );
+
+    /**
      * @notice Default xmsg execution gas limit, enforced on destination chain
      * @return Gas limit
      */
@@ -53,6 +65,13 @@ interface IOmniPortal {
      * @return Offset
      */
     function outXStreamOffset(uint64 destChainId) external view returns (uint64);
+
+    /**
+     * @notice Offset of the next inbound XMsg to be received in the corresponding source -> dest XStream
+     * @param sourceChainId Source chain ID
+     * @return Offset
+     */
+    function inXStreamOffset(uint64 sourceChainId) external view returns (uint64);
 
     /**
      * @notice Call a contract on another chain
