@@ -1,19 +1,51 @@
 FROM node:21-slim AS base
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
-COPY . /app
+
+# Install all node_modules, including dev dependencies
+FROM base as deps
+
+RUN mkdir /app
 WORKDIR /app
 
-FROM base AS prod-deps
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
+ADD package.json pnpm-lock.yaml ./
+RUN corepack enable
+RUN pnpm install --production=false
 
-FROM base AS build
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
-RUN pnpm run build
+# Setup production node_modules
+FROM base as production-deps
 
+ENV NODE_ENV production
+
+RUN mkdir /app
+WORKDIR /app
+
+COPY --from=deps /app/node_modules /app/node_modules
+ADD package.json pnpm-lock.yaml ./
+RUN corepack enable
+RUN pnpm prune --production
+
+# Build the app
+FROM base as build
+
+RUN mkdir /app
+WORKDIR /app
+
+COPY --from=deps /app/node_modules /app/node_modules
+
+ADD . .
+RUN npm run build
+
+# Finally, build the production image with minimal footprint
 FROM base
-COPY --from=prod-deps /app/node_modules /app/node_modules
-# COPY --from=build /app/dist /app/dist
+
+ENV NODE_ENV production
+
+RUN mkdir /app
+WORKDIR /app
+
+COPY --from=production-deps /app/node_modules /app/node_modules
+COPY --from=build /app/build /app/build
+COPY --from=build /app/public /app/public
+ADD . .
+
 EXPOSE 3000
-CMD [ "pnpm", "start" ]
+CMD ["pnpm", "run", "start"]
