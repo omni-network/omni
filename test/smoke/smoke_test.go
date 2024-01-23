@@ -3,7 +3,6 @@ package smoke_test
 
 import (
 	"context"
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -16,8 +15,8 @@ import (
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 	relayer "github.com/omni-network/omni/relayer/app"
 	"github.com/omni-network/omni/scripts/gethdevnet"
+	"github.com/omni-network/omni/test/tutil"
 
-	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/privval"
 	rpctest "github.com/cometbft/cometbft/rpc/test"
 	"github.com/cometbft/cometbft/types"
@@ -28,17 +27,6 @@ import (
 )
 
 const gethDevNetPath = "../../scripts/gethdevnet"
-
-var (
-	//go:embed testdata/genesis.json
-	genesisJSON []byte
-
-	//go:embed testdata/priv_validator_key.json
-	privValKeyJSON []byte
-
-	//go:embed testdata/priv_validator_state.json
-	privValStateJSON []byte
-)
 
 // TestSmoke run a cobbled-together instance of halo and relayer ensuring that blocks are built
 // and that the cross chain message flow works.
@@ -105,8 +93,7 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 	)
 
 	// Write genesis and priv validator files to temp dir.
-	conf := rpctest.GetConfig(true)
-	writeFiles(t, conf)
+	conf := tutil.PrepRPCTestConfig(t)
 
 	// Load the private validator
 	privVal := privval.LoadFilePV(conf.PrivValidatorKeyFile(), conf.PrivValidatorStateFile())
@@ -133,7 +120,7 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 	app := comet.NewApp(ethCl, attSvc, state, snapshots, 1)
 
 	// Setup a cprovider that reads directly from app state.
-	cprov := cprovider.NewProviderForT(t, adaptFetcher(app), 99, noopBackoff)
+	cprov := cprovider.NewProviderForT(t, adaptFetcher(app), noopBackoff)
 
 	// Start the relayer, collecting all updates.
 	updates := make(chan relayer.StreamUpdate)
@@ -193,24 +180,10 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 
 // adaptFetcher adapts the comet application to implement the cprovider.FetchFunc.
 func adaptFetcher(app *comet.App) cprovider.FetchFunc {
-	return func(ctx context.Context, chainID uint64, fromHeight uint64, max uint64) ([]xchain.AggAttestation, error) {
-		return app.ApprovedFrom(chainID, fromHeight, max), nil
+	return func(ctx context.Context, chainID uint64, fromHeight uint64) ([]xchain.AggAttestation, error) {
+		return app.ApprovedFrom(chainID, fromHeight), nil
 	}
 }
-
-func writeFiles(t *testing.T, conf *config.Config) {
-	t.Helper()
-
-	err := os.WriteFile(conf.GenesisFile(), genesisJSON, 0o644)
-	require.NoError(t, err)
-
-	err = os.WriteFile(conf.PrivValidatorKeyFile(), privValKeyJSON, 0o644)
-	require.NoError(t, err)
-
-	err = os.WriteFile(conf.PrivValidatorStateFile(), privValStateJSON, 0o644)
-	require.NoError(t, err)
-}
-
 func noopBackoff(context.Context) (func(), func()) {
 	return func() {}, func() {}
 }
