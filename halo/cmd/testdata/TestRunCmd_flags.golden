@@ -4,7 +4,7 @@
  "AppStatePersistInterval": 1,
  "SnapshotInterval": 1000,
  "Comet": {
-  "Version": "0.38.4",
+  "Version": "0.38.5",
   "RootDir": "foo",
   "ProxyApp": "tcp://127.0.0.1:26658",
   "Moniker": "testmoniker",
