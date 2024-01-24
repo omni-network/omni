@@ -10,7 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/gitinfo"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/xchain/provider"
+	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 
 	"github.com/cometbft/cometbft/rpc/client"
 	"github.com/cometbft/cometbft/rpc/client/http"
@@ -54,7 +54,7 @@ func Run(ctx context.Context, cfg Config) error {
 	err = StartRelayer(ctx,
 		cprovider.NewABCIProvider(tmClient),
 		network.ChainIDs(),
-		provider.New(network, rpcClientPerChain),
+		xprovider.New(network, rpcClientPerChain),
 		CreateSubmissions,
 		sender)
 

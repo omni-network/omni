@@ -178,14 +178,18 @@ func Test_FromHeights(t *testing.T) {
 }
 
 var (
-	_ cchain.Provider      = (*mockProvider)(nil)
-	_ relayer.XChainClient = (*mockXChainClient)(nil)
-	_ relayer.Sender       = (*mockSender)(nil)
+	_ cchain.Provider = (*mockProvider)(nil)
+	_ xchain.Provider = (*mockXChainClient)(nil)
+	_ relayer.Sender  = (*mockSender)(nil)
 )
 
 type mockXChainClient struct {
 	GetBlockFn           func(ctx context.Context, chainID uint64, height uint64) (xchain.Block, bool, error)
 	GetSubmittedCursorFn func(ctx context.Context, chainID uint64, sourceChain uint64) (xchain.StreamCursor, error)
+}
+
+func (m *mockXChainClient) Subscribe(ctx context.Context, chainID uint64, fromHeight uint64, callback xchain.ProviderCallback) error {
+	return nil
 }
 
 func (m *mockXChainClient) GetBlock(ctx context.Context, chainID uint64, height uint64) (xchain.Block, bool, error) {

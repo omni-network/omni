@@ -10,12 +10,10 @@ import (
 
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
-	relayer "github.com/omni-network/omni/relayer/app"
 )
 
 var (
-	_ xchain.Provider      = (*Mock)(nil)
-	_ relayer.XChainClient = (*Mock)(nil)
+	_ xchain.Provider = (*Mock)(nil)
 )
 
 const (
