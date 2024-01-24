@@ -124,13 +124,14 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 
 	// Start the relayer, collecting all updates.
 	updates := make(chan relayer.StreamUpdate)
-	relayer.StartRelayer(ctx, cprov, []uint64{srcChainID}, xprov,
+	err = relayer.StartRelayer(ctx, cprov, []uint64{srcChainID}, xprov,
 		func(update relayer.StreamUpdate) ([]xchain.Submission, error) {
 			updates <- update
 			return nil, nil
 		},
 		panicSender{},
 	)
+	require.NoError(t, err)
 
 	// Start cometbft
 	node := rpctest.StartTendermint(app)

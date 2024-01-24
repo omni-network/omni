@@ -82,8 +82,11 @@ func (m *Mock) GetBlock(_ context.Context, chainID uint64, height uint64) (xchai
 	return xchain.Block{}, false, nil
 }
 
-func (*Mock) GetSubmittedCursors(context.Context, uint64) ([]xchain.StreamCursor, error) {
-	return nil, nil
+func (*Mock) GetSubmittedCursor(_ context.Context, destChain uint64, srcChain uint64) (xchain.StreamCursor, error) {
+	return xchain.StreamCursor{StreamID: xchain.StreamID{
+		SourceChainID: srcChain,
+		DestChainID:   destChain,
+	}}, nil
 }
 
 func (m *Mock) addBlock(block xchain.Block) {

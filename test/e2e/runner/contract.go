@@ -21,7 +21,8 @@ const (
 )
 
 var (
-	// defaultNetworkis the  devnet network configuration.
+	// defaultNetwork is the default devnet network configuration.
+	//
 	//nolint:gochecknoglobals // This is predefined at this point.
 	defaultNetwork = netconf.Network{
 		Name: netconf.Devnet,

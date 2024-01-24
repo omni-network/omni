@@ -21,6 +21,8 @@ import (
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
 	cmttypes "github.com/cometbft/cometbft/types"
+
+	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 type Config struct {
@@ -50,7 +52,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	xprovider, err := newXProvider(network)
+	xprovider, err := newXProvider(ctx, network)
 	if err != nil {
 		return errors.Wrap(err, "create xchain provider")
 	}
@@ -98,18 +100,34 @@ func Run(ctx context.Context, cfg Config) error {
 }
 
 // newXProvider returns a new xchain provider.
-func newXProvider(network netconf.Network) (xchain.Provider, error) {
+func newXProvider(ctx context.Context, network netconf.Network) (xchain.Provider, error) {
 	if network.Name == netconf.Simnet {
 		return provider.NewMock(time.Millisecond * 750), nil // Slightly faster than our chain.
 	}
 
-	return nil, errors.New("only simnet is supported at this point")
+	clients := make(map[uint64]*ethclient.Client)
+	for _, chain := range network.Chains {
+		ethCl, err := ethclient.DialContext(ctx, chain.RPCURL)
+		if err != nil {
+			return nil, errors.Wrap(err, "dial chain",
+				"name", chain.Name,
+				"id", chain.ID,
+				"rpc_url", chain.RPCURL,
+			)
+		}
+		clients[chain.ID] = ethCl
+	}
+
+	return provider.New(network, clients), nil
 }
 
 // newEthCl returns a new engine API client.
 func newEthCl(ctx context.Context, cfg HaloConfig, network netconf.Network) (engine.API, error) {
 	if network.Name == netconf.Simnet {
 		return engine.NewMock()
+	}
+	if network.Name == netconf.Devnet {
+		return engine.NewMock() // TODO(corver): Use real engine client in devnet.
 	}
 
 	jwtBytes, err := engine.LoadJWTHexFile(cfg.EngineJWTFile)
