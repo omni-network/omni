@@ -19,6 +19,11 @@ func Test_translateSubmission(t *testing.T) {
 	xsub := relayer.TranslateSubmission(sub)
 	reversedSub := translateXSubmission(xsub, sub.DestChainID)
 
+	// Zero TxHash for comparison since it isn't translated.
+	for i := range sub.Msgs {
+		sub.Msgs[i].TxHash = [32]byte{}
+	}
+
 	require.Equal(t, sub, reversedSub)
 }
 

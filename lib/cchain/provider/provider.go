@@ -34,6 +34,11 @@ func NewProviderForT(_ *testing.T, fetch FetchFunc,
 	}
 }
 
+func (p Provider) ApprovedFrom(ctx context.Context, sourceChainID uint64, sourceHeight uint64,
+) ([]xchain.AggAttestation, error) {
+	return p.fetch(ctx, sourceChainID, sourceHeight)
+}
+
 // Subscribe implements cchain.Provider.
 func (p Provider) Subscribe(ctx context.Context, chainID uint64, height uint64, callback cchain.ProviderCallback) {
 	// Start a async goroutine to fetch attestations until ctx is canceled.

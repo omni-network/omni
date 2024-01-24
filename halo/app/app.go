@@ -21,6 +21,8 @@ import (
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
 	cmttypes "github.com/cometbft/cometbft/types"
+
+	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 type Config struct {
@@ -45,12 +47,12 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "validate network configuration")
 	}
 
-	ethCl, err := newEthCl(ctx, cfg.HaloConfig, network)
+	ethCl, err := newEngineClient(ctx, cfg.HaloConfig, network)
 	if err != nil {
 		return err
 	}
 
-	xprovider, err := newXProvider(network)
+	xprovider, err := newXProvider(ctx, network)
 	if err != nil {
 		return errors.Wrap(err, "create xchain provider")
 	}
@@ -83,7 +85,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "start comet node")
 	}
 
-	if err := maybeSetupSimnetRelayer(ctx, network, app, xprovider); err != nil {
+	if err := maybeSetupSimnetRelayer(ctx, network, cmtNode, xprovider); err != nil {
 		return errors.Wrap(err, "setup simnet relayer")
 	}
 
@@ -98,16 +100,29 @@ func Run(ctx context.Context, cfg Config) error {
 }
 
 // newXProvider returns a new xchain provider.
-func newXProvider(network netconf.Network) (xchain.Provider, error) {
+func newXProvider(ctx context.Context, network netconf.Network) (xchain.Provider, error) {
 	if network.Name == netconf.Simnet {
 		return provider.NewMock(time.Millisecond * 750), nil // Slightly faster than our chain.
 	}
 
-	return nil, errors.New("only simnet is supported at this point")
+	clients := make(map[uint64]*ethclient.Client)
+	for _, chain := range network.Chains {
+		ethCl, err := ethclient.DialContext(ctx, chain.RPCURL)
+		if err != nil {
+			return nil, errors.Wrap(err, "dial chain",
+				"name", chain.Name,
+				"id", chain.ID,
+				"rpc_url", chain.RPCURL,
+			)
+		}
+		clients[chain.ID] = ethCl
+	}
+
+	return provider.New(network, clients), nil
 }
 
-// newEthCl returns a new engine API client.
-func newEthCl(ctx context.Context, cfg HaloConfig, network netconf.Network) (engine.API, error) {
+// newEngineClient returns a new engine API client.
+func newEngineClient(ctx context.Context, cfg HaloConfig, network netconf.Network) (engine.API, error) {
 	if network.Name == netconf.Simnet {
 		return engine.NewMock()
 	}
@@ -122,7 +137,7 @@ func newEthCl(ctx context.Context, cfg HaloConfig, network netconf.Network) (eng
 		return nil, errors.New("omni chain not found in network")
 	}
 
-	ethCl, err := engine.NewClient(ctx, omniChain.RPCURL, jwtBytes)
+	ethCl, err := engine.NewClient(ctx, omniChain.AuthRPCURL, jwtBytes)
 	if err != nil {
 		return nil, errors.Wrap(err, "create engine client")
 	}

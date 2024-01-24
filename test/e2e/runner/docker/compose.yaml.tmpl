@@ -29,6 +29,7 @@ services:
     - 6060
     volumes:
     - ./{{ .Name }}:/halo
+    - ./geth/jwtsecret:/geth/jwtsecret
     networks:
       {{ $.Name }}:
         ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .InternalIP }}
@@ -37,11 +38,60 @@ services:
   chain_a:
     labels:
       e2e: true
+    container_name: chain_a
     image: ghcr.io/foundry-rs/foundry:latest
-    entrypoint: ['anvil','--host','0.0.0.0','--chain-id','100']
+    entrypoint: ['anvil','--host','0.0.0.0','--chain-id','100','--block-time','1']
     ports:
       - "6545:8545"
       - "6546:8546"
     networks:
       {{ $.Name }}:
         ipv4_address: 10.186.73.200
+
+  # Initialises geth files and folder from provided genesis file.
+  geth-init:
+    labels:
+      e2e: true
+    container_name: geth-init
+    image: "ethereum/client-go:latest"
+    command: --datadir=/geth init /geth/genesis.json
+    volumes:
+      - ./geth:/geth
+
+  # Runs geth as the omni EVM.
+  omni_evm:
+    labels:
+      e2e: true
+    container_name: omni_evm
+    image: "ethereum/client-go:latest"
+    command:
+      - --http
+      - --http.vhosts=*
+      - --http.api=eth,net,web3
+      - --http.addr=0.0.0.0
+      - --http.corsdomain=*
+      - --ws
+      - --ws.api=eth,net,web3
+      - --ws.addr=0.0.0.0
+      - --ws.origins=*
+      - --authrpc.vhosts=*
+      - --authrpc.addr=0.0.0.0
+      - --authrpc.jwtsecret=/geth/jwtsecret
+      - --datadir=/geth
+      - --allow-insecure-unlock
+      - --unlock=0x123463a4b065722e99115d6c222f267d9cabb524
+      - --password=/geth/geth_password.txt
+      - --nodiscover
+      - --syncmode=full
+    ports:
+      - 8551:8551
+      - 8545:8545
+      - 8546:8546
+    depends_on:
+      geth-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./geth:/geth
+    networks:
+      {{ $.Name }}:
+        ipv4_address: 10.186.73.210

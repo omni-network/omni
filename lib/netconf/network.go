@@ -28,7 +28,7 @@ const (
 //nolint:gochecknoglobals // Global state here is fine.
 var supported = map[string]bool{
 	Simnet:  true,
-	Devnet:  false,
+	Devnet:  true,
 	Staging: false,
 	Testnet: false,
 	Mainnet: false,

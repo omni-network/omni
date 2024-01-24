@@ -23,11 +23,6 @@ type Sender interface {
 	SendTransaction(ctx context.Context, submission xchain.Submission) error
 }
 
-type XChainClient interface {
-	GetBlock(ctx context.Context, chainID uint64, height uint64) (xchain.Block, bool, error)
-	GetSubmittedCursors(ctx context.Context, chainID uint64) ([]xchain.StreamCursor, error)
-}
-
 func TranslateSubmission(submission xchain.Submission) bindings.XChainSubmission {
 	chainSubmission := bindings.XChainSubmission{
 		AttestationRoot: submission.AttestationRoot,
