@@ -50,16 +50,28 @@ func (n Network) OmniChain() (Chain, bool) {
 	return Chain{}, false
 }
 
+// Chain returns the chain config for the given ID or false if it does not exist.
+func (n Network) Chain(id uint64) (Chain, bool) {
+	for _, chain := range n.Chains {
+		if chain.ID == id {
+			return chain, true
+		}
+	}
+
+	return Chain{}, false
+}
+
 // Chain defines the configuration of an execution chain that supports
 // the Omni cross chain protocol. This is most supported Rollup EVM, but
 // also the Omni EVM.
 type Chain struct {
-	ID            uint64 `json:"id"`             // Chain ID asa per https://chainlist.org
-	Name          string `json:"name"`           // Chain name as per https://chainlist.org
-	RPCURL        string `json:"rpcurl"`         // RPC URL of the chain
-	PortalAddress string `json:"portal_address"` // Address of the omni portal contract on the chain
-	DeployHeight  uint64 `json:"deploy_height"`  // Height that the portal contracts were deployed
-	IsOmni        bool   `json:"is_omni"`        // Whether this is the Omni chain
+	ID            uint64 `json:"id"`                    // Chain ID asa per https://chainlist.org
+	Name          string `json:"name"`                  // Chain name as per https://chainlist.org
+	RPCURL        string `json:"rpcurl"`                // RPC URL of the chain
+	AuthRPCURL    string `json:"auth_rpcurl,omitempty"` // RPC URL of the chain with JWT authentication enabled
+	PortalAddress string `json:"portal_address"`        // Address of the omni portal contract on the chain
+	DeployHeight  uint64 `json:"deploy_height"`         // Height that the portal contracts were deployed
+	IsOmni        bool   `json:"is_omni,omitempty"`     // Whether this is the Omni chain
 }
 
 // Load loads the network configuration from the given path.

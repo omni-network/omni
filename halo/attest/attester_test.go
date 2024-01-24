@@ -187,3 +187,11 @@ func (p stubProvider) Subscribe(_ context.Context, chainID uint64, fromHeight ui
 	p[chainID] = fromHeight
 	return nil
 }
+
+func (stubProvider) GetBlock(context.Context, uint64, uint64) (xchain.Block, bool, error) {
+	panic("unexpected")
+}
+
+func (stubProvider) GetSubmittedCursor(context.Context, uint64, uint64) (xchain.StreamCursor, error) {
+	panic("unexpected")
+}

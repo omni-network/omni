@@ -56,3 +56,15 @@ halo-simnet: ## Runs halo in simnet mode.
 	@go install github.com/omni-network/omni/halo
 	@halo init --home=/tmp/halo --network=simnet --clean
 	@halo run --home=/tmp/halo
+
+.PHONY: e2e-run
+e2e-run: ## Run specific e2e manifest (MANIFEST=single, MANIFEST=simple, etc).
+	@if [ -z "$(MANIFEST)" ]; then echo "⚠️ Please specify a manifest: MANIFEST=simple make e2e-run" && exit 1; fi
+	@echo "Using MANIFEST=$(MANIFEST)"
+	@go run github.com/omni-network/omni/test/e2e/runner -f test/e2e/manifests/$(MANIFEST).toml -p
+
+.PHONY: e2e-logs
+e2e-logs: ## Print the docker logs of previously ran e2e manifest (single, simple, etc).
+	@if [ -z "$(MANIFEST)" ]; then echo "⚠️  Please specify a manifest: MANIFEST=simple make e2e-logs" && exit 1; fi
+	@echo "Using MANIFEST=$(MANIFEST)"
+	@go run github.com/omni-network/omni/test/e2e/runner -f test/e2e/manifests/$(MANIFEST).toml logs

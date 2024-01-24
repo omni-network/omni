@@ -10,12 +10,10 @@ import (
 
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
-	relayer "github.com/omni-network/omni/relayer/app"
 )
 
 var (
-	_ xchain.Provider      = (*Mock)(nil)
-	_ relayer.XChainClient = (*Mock)(nil)
+	_ xchain.Provider = (*Mock)(nil)
 )
 
 const (
@@ -82,8 +80,11 @@ func (m *Mock) GetBlock(_ context.Context, chainID uint64, height uint64) (xchai
 	return xchain.Block{}, false, nil
 }
 
-func (*Mock) GetSubmittedCursors(context.Context, uint64) ([]xchain.StreamCursor, error) {
-	return nil, nil
+func (*Mock) GetSubmittedCursor(_ context.Context, destChain uint64, srcChain uint64) (xchain.StreamCursor, error) {
+	return xchain.StreamCursor{StreamID: xchain.StreamID{
+		SourceChainID: srcChain,
+		DestChainID:   destChain,
+	}}, nil
 }
 
 func (m *Mock) addBlock(block xchain.Block) {

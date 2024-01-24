@@ -16,16 +16,27 @@ func StartRelayer(
 	ctx context.Context,
 	cProvider cchain.Provider,
 	chainIDs []uint64,
-	xClient XChainClient,
+	xClient xchain.Provider,
 	creator CreateFunc,
 	sender Sender,
-) {
+) error {
 	// Get the last submitted cursors for each chain.
 	var cursors []xchain.StreamCursor                  // All submitted cursors from all chains.
 	initialOffsets := make(map[xchain.StreamID]uint64) // Initial submitted offsets for each stream.
-	for _, chainID := range chainIDs {
-		submitted, _ := xClient.GetSubmittedCursors(ctx, chainID)
-		for _, cursor := range submitted {
+	for _, destChain := range chainIDs {
+		for _, srcChain := range chainIDs {
+			if srcChain == destChain {
+				continue
+			}
+
+			cursor, err := xClient.GetSubmittedCursor(ctx, destChain, srcChain)
+			if err != nil {
+				return errors.Wrap(err, "failed to get submitted cursors",
+					"dest_chain", destChain,
+					"src_chain", srcChain,
+				)
+			}
+
 			initialOffsets[cursor.StreamID] = cursor.Offset
 			cursors = append(cursors, cursor)
 		}
@@ -49,6 +60,11 @@ func StartRelayer(
 				log.Hex7("attestation_hash", att.BlockHash[:]),
 				log.Hex7("block_hash", block.BlockHash[:]),
 			)
+		} else if len(block.Msgs) == 0 {
+			log.Debug(ctx, "Skipping empty attested block",
+				"height", att.BlockHeight, "chain", att.SourceChainID)
+
+			return nil
 		}
 
 		// Split into streams
@@ -83,8 +99,11 @@ func StartRelayer(
 	for chainID, fromHeight := range FromHeights(cursors, chainIDs) {
 		cProvider.Subscribe(ctx, chainID, fromHeight, callback)
 	}
+
+	return nil
 }
 
+// TODO(corver): Add support for empty submissions by passing a map of chainIDs to generate empty submissions for.
 func mapByStreamID(msgs []xchain.Msg) map[xchain.StreamID][]xchain.Msg {
 	m := make(map[xchain.StreamID][]xchain.Msg)
 	for _, msg := range msgs {
@@ -114,7 +133,7 @@ func FromHeights(cursors []xchain.StreamCursor, chainIDs []uint64) map[uint64]ui
 		res[chainID] = 0
 	}
 
-	// sort cursors by decreasing SourceBlockHeight so we start streaming from minimum height per source chain
+	// sort cursors by decreasing SourceBlockHeight, so we start streaming from minimum height per source chain
 	sort.Slice(cursors, func(i, j int) bool {
 		return cursors[i].SourceBlockHeight > cursors[j].SourceBlockHeight
 	})

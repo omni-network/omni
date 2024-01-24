@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
@@ -20,58 +21,79 @@ const (
 	anvilPrivKeyHex = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 )
 
-var (
-	// defaultNetworkis the  devnet network configuration.
-	//nolint:gochecknoglobals // This is predefined at this point.
-	defaultNetwork = netconf.Network{
+// newE2ENetwork returns the default e2e network configuration.
+// The RPC urls are for connecting from the host (outside docker).
+// See writeNetworkConfig for the docker networking overrides.
+func newE2ENetwork() netconf.Network {
+	return netconf.Network{
 		Name: netconf.Devnet,
 		Chains: []netconf.Chain{
 			{
-				ID:            100,
+				ID:            1, // From static/geth_genesis.json
+				Name:          "omni_evm",
+				RPCURL:        "http://localhost:8545",
+				AuthRPCURL:    "http://localhost:8551",
+				PortalAddress: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+				IsOmni:        true,
+			},
+			{
+				ID:            100, // From docker/compose.yaml.tmpl
 				Name:          "chain_a",
 				RPCURL:        "http://localhost:6545",
 				PortalAddress: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
 			},
 		},
 	}
-)
-
-// defaultServices returns the default additional docker-compose services to start.
-func defaultServices() []string {
-	resp := make([]string, 0, len(defaultNetwork.Chains))
-	for _, chain := range defaultNetwork.Chains {
-		resp = append(resp, chain.Name)
-	}
-
-	return resp
 }
 
-func DeployContracts(ctx context.Context) error {
+type Portal struct {
+	Chain    netconf.Chain
+	Client   *ethclient.Client
+	Contract *bindings.OmniPortal
+}
+
+func DeployContracts(ctx context.Context, network netconf.Network) (map[uint64]Portal, error) {
 	log.Info(ctx, "Deploying portal contracts")
 
-	for _, chain := range defaultNetwork.Chains {
+	resp := make(map[uint64]Portal)
+	for _, chain := range network.Chains {
 		ethClient, err := ethclient.Dial(chain.RPCURL)
 		if err != nil {
-			return errors.Wrap(err, "dial chain")
+			return nil, errors.Wrap(err, "dial chain")
 		}
 
-		txOpts, err := newTxOpts(anvilPrivKeyHex, chain.ID)
+		txOpts, err := newTxOpts(ctx, anvilPrivKeyHex, chain.ID)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		addr, _, _, err := bindings.DeployOmniPortal(txOpts, ethClient)
 		if err != nil {
-			return errors.Wrap(err, "deploy portal")
+			return nil, errors.Wrap(err, "deploy portal")
 		} else if addr.Hex() != chain.PortalAddress {
-			return errors.New("portal address mismatch")
+			return nil, errors.New("portal address mismatch",
+				"chain", chain.Name,
+				"expect", chain.PortalAddress,
+				"actual", addr.Hex(),
+			)
+		}
+
+		contract, err := bindings.NewOmniPortal(addr, ethClient)
+		if err != nil {
+			return nil, errors.Wrap(err, "create portal contract")
+		}
+
+		resp[chain.ID] = Portal{
+			Chain:    chain,
+			Client:   ethClient,
+			Contract: contract,
 		}
 	}
 
-	return nil
+	return resp, nil
 }
 
-func newTxOpts(privKeyHex string, chainID uint64) (*bind.TransactOpts, error) {
+func newTxOpts(ctx context.Context, privKeyHex string, chainID uint64) (*bind.TransactOpts, error) {
 	pk, err := crypto.HexToECDSA(strings.TrimPrefix(privKeyHex, "0x"))
 	if err != nil {
 		return nil, errors.Wrap(err, "parse private key")
@@ -85,5 +107,42 @@ func newTxOpts(privKeyHex string, chainID uint64) (*bind.TransactOpts, error) {
 		return nil, errors.Wrap(err, "keyed tx ops")
 	}
 
+	txOpts.Context = ctx
+
 	return txOpts, nil
+}
+
+func SendXMsgs(ctx context.Context, portals map[uint64]Portal) error {
+	log.Info(ctx, "Sending one round of xmsgs between all chains")
+
+	for _, from := range portals {
+		for _, to := range portals {
+			if from.Chain.ID == to.Chain.ID {
+				continue
+			}
+
+			if err := xcall(ctx, from, to.Chain.ID); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func xcall(ctx context.Context, from Portal, destChainID uint64) error {
+	txOpts, err := newTxOpts(ctx, anvilPrivKeyHex, from.Chain.ID)
+	if err != nil {
+		return err
+	}
+
+	_, err = from.Contract.Xcall(txOpts, destChainID, common.Address{}, nil)
+	if err != nil {
+		return errors.Wrap(err, "xcall",
+			"sourc_chain", from.Chain.ID,
+			"dest_chain", destChainID,
+		)
+	}
+
+	return nil
 }
