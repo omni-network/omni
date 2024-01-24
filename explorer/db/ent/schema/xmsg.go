@@ -41,5 +41,8 @@ func (XMsg) Edges() []ent.Edge {
 		edge.From("Xblock", XBlock.Type).
 			Ref("Msgs").
 			Unique(),
+		edge.From("XReceipt", XReceipt.Type).
+			Ref("XMsg").
+			Unique(),
 	}
 }

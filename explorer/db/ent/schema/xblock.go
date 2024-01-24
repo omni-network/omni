@@ -31,5 +31,6 @@ func (XBlock) Fields() []ent.Field {
 func (XBlock) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("Msgs", XMsg.Type),
+		edge.To("Receipts", XReceipt.Type),
 	}
 }

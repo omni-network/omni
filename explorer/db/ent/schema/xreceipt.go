@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 )
@@ -22,8 +23,6 @@ func (XReceipt) Fields() []ent.Field {
 		field.Bool("Success"),
 		field.Bytes("RelayerAddress").
 			MaxLen(20),
-		field.String("XMsgUUID").
-			NotEmpty(),
 		field.Uint64("SourceChainID"),
 		field.Uint64("DestChainID"),
 		field.Uint64("StreamOffset"),
@@ -36,5 +35,11 @@ func (XReceipt) Fields() []ent.Field {
 
 // Edges of the XReceipt.
 func (XReceipt) Edges() []ent.Edge {
-	return []ent.Edge{}
+	return []ent.Edge{
+		edge.From("Xblock", XBlock.Type).
+			Ref("Receipts").
+			Unique(),
+		edge.To("XMsg", XMsg.Type).
+			Unique(),
+	}
 }
