@@ -58,7 +58,7 @@ func NewCLI() *CLI {
 			}
 
 			cli.testnet = adaptTestnet(testnet)
-			cli.infp = docker.NewProvider(testnet, ifd)
+			cli.infp = docker.NewProvider(testnet, ifd, defaultServices())
 
 			return nil
 		},
@@ -73,6 +73,10 @@ func NewCLI() *CLI {
 			}
 
 			if err := Start(ctx, cli.testnet, cli.infp); err != nil {
+				return err
+			}
+
+			if err := DeployContracts(ctx); err != nil {
 				return err
 			}
 
@@ -179,8 +183,8 @@ func NewCLI() *CLI {
 }
 
 func adaptTestnet(testnet *e2e.Testnet) *e2e.Testnet {
-	// Move test dir: path/test/e2e/networks/single/ -> path/test/e2e/runs/single
-	testnet.Dir = strings.Replace(testnet.Dir, "networks", "runs", 1)
+	// Move test dir: path/test/e2e/manifests/single -> path/test/e2e/runs/single
+	testnet.Dir = strings.Replace(testnet.Dir, "manifests", "runs", 1)
 	testnet.VoteExtensionsEnableHeight = 1
 	testnet.UpgradeVersion = "omniops/halo:latest"
 	for i := range testnet.Nodes {

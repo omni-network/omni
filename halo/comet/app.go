@@ -49,10 +49,10 @@ func (a *App) ApprovedAggregates() []xchain.AggAttestation {
 }
 
 // ApprovedFrom returns a sequential range of approved aggregates from the provided chain ID and height.
-// It returns at most max aggregates. Their block heights are sequentially increasing.
+// It returns at most 100 aggregates. Their block heights are sequentially increasing.
 // For testing purposes only.
-func (a *App) ApprovedFrom(chainID uint64, height uint64, max uint64) []xchain.AggAttestation {
-	return a.state.ApprovedFrom(chainID, height, max)
+func (a *App) ApprovedFrom(chainID uint64, height uint64) []xchain.AggAttestation {
+	return a.state.ApprovedFrom(chainID, height)
 }
 
 var _ abci.Application = (*App)(nil)

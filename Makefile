@@ -23,8 +23,8 @@ contract-bindings: ## Generate golang contract bindings.
 
 .PHONY: explorer-gen
 explorer-gen: ## Generates code for our explorer
-	make -C ./explorer/db gen
-	make -C ./explorer/api gen
+	make -C ./explorer gen-db
+	make -C ./explorer gen-api
 
 ###############################################################################
 ###                                Utils                                 	###
@@ -39,6 +39,10 @@ install-pre-commit: ## Installs the pre-commit tool as the git pre-commit hook f
 	@which pre-commit > /dev/null || echo "pre-commit not installed, see https://pre-commit.com/#install"
 	@pre-commit install --install-hooks
 
+.PHONE: install-go-tools
+install-go-tools: ## Installs the go-dev-tools, like buf.
+	@go generate tools.go
+
 .PHONY: lint
 lint: ## Runs linters via pre-commit.
 	@pre-commit run -v --all-files
@@ -52,3 +56,15 @@ halo-simnet: ## Runs halo in simnet mode.
 	@go install github.com/omni-network/omni/halo
 	@halo init --home=/tmp/halo --network=simnet --clean
 	@halo run --home=/tmp/halo
+
+.PHONY: e2e-run
+e2e-run: ## Run specific e2e manifest (MANIFEST=single, MANIFEST=simple, etc).
+	@if [ -z "$(MANIFEST)" ]; then echo "⚠️ Please specify a manifest: MANIFEST=simple make e2e-run" && exit 1; fi
+	@echo "Using MANIFEST=$(MANIFEST)"
+	@go run github.com/omni-network/omni/test/e2e/runner -f test/e2e/manifests/$(MANIFEST).toml -p
+
+.PHONY: e2e-logs
+e2e-logs: ## Print the docker logs of previously ran e2e manifest (single, simple, etc).
+	@if [ -z "$(MANIFEST)" ]; then echo "⚠️  Please specify a manifest: MANIFEST=simple make e2e-logs" && exit 1; fi
+	@echo "Using MANIFEST=$(MANIFEST)"
+	@go run github.com/omni-network/omni/test/e2e/runner -f test/e2e/manifests/$(MANIFEST).toml logs

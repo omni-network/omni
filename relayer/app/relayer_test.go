@@ -32,9 +32,9 @@ func Test_StartRelayer(t *testing.T) {
 		SourceChainID: srcChain,
 		DestChainID:   destChainB,
 	}
-	cursors := []xchain.StreamCursor{
-		{StreamID: streamA, Offset: destChainACursor, SourceBlockHeight: destChainACursor},
-		{StreamID: streamB, Offset: destChainBCursor, SourceBlockHeight: destChainBCursor},
+	cursors := map[uint64]xchain.StreamCursor{
+		destChainA: {StreamID: streamA, Offset: destChainACursor, SourceBlockHeight: destChainACursor},
+		destChainB: {StreamID: streamB, Offset: destChainBCursor, SourceBlockHeight: destChainBCursor},
 	}
 
 	// Return mock blocks (with a single msg per dest chain).
@@ -51,10 +51,8 @@ func Test_StartRelayer(t *testing.T) {
 				},
 			}, true, nil
 		},
-		GetSubmittedCursorsFn: func(ctx context.Context, chainID uint64) ([]xchain.StreamCursor, error) {
-			require.EqualValues(t, srcChain, chainID)
-
-			return cursors, nil
+		GetSubmittedCursorFn: func(_ context.Context, chainID uint64, sourceChain uint64) (xchain.StreamCursor, error) {
+			return cursors[chainID], nil
 		},
 	}
 
@@ -80,7 +78,9 @@ func Test_StartRelayer(t *testing.T) {
 	// Provider mock attestations as requested until context canceled.
 	mockProvider := &mockProvider{
 		SubscribeFn: func(ctx context.Context, chainID uint64, fromHeight uint64, callback cchain.ProviderCallback) {
-			require.EqualValues(t, srcChain, chainID)
+			if chainID != srcChain {
+				return // Only subscribe to source chain.
+			}
 			require.EqualValues(t, destChainACursor, fromHeight)
 
 			height := fromHeight
@@ -98,7 +98,9 @@ func Test_StartRelayer(t *testing.T) {
 		},
 	}
 
-	relayer.StartRelayer(ctx, mockProvider, []uint64{srcChain}, mockXClient, mockCreateFunc, mockSender)
+	allChains := []uint64{srcChain, destChainA, destChainB}
+	err := relayer.StartRelayer(ctx, mockProvider, allChains, mockXClient, mockCreateFunc, mockSender)
+	require.NoError(t, err)
 
 	// Verify responses
 	expectChainA := destChainBCursor - destChainACursor + 1
@@ -182,16 +184,17 @@ var (
 )
 
 type mockXChainClient struct {
-	GetBlockFn            func(ctx context.Context, chainID uint64, height uint64) (xchain.Block, bool, error)
-	GetSubmittedCursorsFn func(ctx context.Context, chainID uint64) ([]xchain.StreamCursor, error)
+	GetBlockFn           func(ctx context.Context, chainID uint64, height uint64) (xchain.Block, bool, error)
+	GetSubmittedCursorFn func(ctx context.Context, chainID uint64, sourceChain uint64) (xchain.StreamCursor, error)
 }
 
 func (m *mockXChainClient) GetBlock(ctx context.Context, chainID uint64, height uint64) (xchain.Block, bool, error) {
 	return m.GetBlockFn(ctx, chainID, height)
 }
 
-func (m *mockXChainClient) GetSubmittedCursors(ctx context.Context, chainID uint64) ([]xchain.StreamCursor, error) {
-	return m.GetSubmittedCursorsFn(ctx, chainID)
+func (m *mockXChainClient) GetSubmittedCursor(ctx context.Context, chainID uint64, sourceChain uint64,
+) (xchain.StreamCursor, error) {
+	return m.GetSubmittedCursorFn(ctx, chainID, sourceChain)
 }
 
 type mockSender struct {

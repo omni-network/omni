@@ -35,7 +35,7 @@ jobs:
                     },
                     {
                       "type": "mrkdwn",
-                      "text": "by: ${{ github.event.workflow_run.head_commit.author }} \n url: ${{ github.event.workflow_run.html_url }}"
+                      "text": "by: ${{ github.event.workflow_run.head_commit.author.username }} \n url: ${{ github.event.workflow_run.html_url }}"
                     }
                   ]
                 }
