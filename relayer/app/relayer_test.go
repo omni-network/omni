@@ -188,7 +188,7 @@ type mockXChainClient struct {
 	GetSubmittedCursorFn func(ctx context.Context, chainID uint64, sourceChain uint64) (xchain.StreamCursor, error)
 }
 
-func (m *mockXChainClient) Subscribe(ctx context.Context, chainID uint64, fromHeight uint64, callback xchain.ProviderCallback) error {
+func (m *mockXChainClient) Subscribe(context.Context, uint64, uint64, xchain.ProviderCallback) error {
 	return nil
 }
 
