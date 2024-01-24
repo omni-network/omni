@@ -7,6 +7,7 @@ import (
 
 	"github.com/omni-network/omni/halo/app"
 	"github.com/omni-network/omni/halo/attest"
+	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -63,7 +64,7 @@ The home directory should only contain subdirectories, no files, use --force to 
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			if err := logConfig(ctx, cmd.Flags()); err != nil {
+			if err := libcmd.LogFlags(ctx, cmd.Flags()); err != nil {
 				return err
 			}
 

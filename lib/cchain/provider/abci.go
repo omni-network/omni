@@ -49,7 +49,11 @@ func (f ABCIFetcher) ApprovedFrom(ctx context.Context, chainID uint64, fromHeigh
 
 	resp, err := f.abci.ABCIQuery(ctx, halopb.HaloService_ApprovedFrom_FullMethodName, bz)
 	if err != nil {
-		return nil, errors.Wrap(err, "abci query approved-from")
+		return nil, errors.Wrap(err, "abci query approved-from",
+			"chain_id", chainID,
+			"from_height", fromHeight,
+			"len", len(bz),
+		)
 	} else if !resp.Response.IsOK() {
 		return nil, errors.New("abci query approved-from failed",
 			"code", resp.Response.Code,

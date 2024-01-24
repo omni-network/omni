@@ -40,8 +40,31 @@ func getCurrentFinalisedBlockHeader(ctx context.Context, rpcClient *ethclient.Cl
 	return header, nil
 }
 
-func (*Provider) GetSubmittedCursor(context.Context, uint64, uint64) (xchain.StreamCursor, error) {
-	return xchain.StreamCursor{}, errors.New("not implemented")
+func (p *Provider) GetSubmittedCursor(ctx context.Context, chainID uint64, sourceChainID uint64,
+) (xchain.StreamCursor, error) {
+	chain, rpcClient, err := p.getChain(chainID)
+	if err != nil {
+		return xchain.StreamCursor{}, err
+	}
+
+	caller, err := bindings.NewOmniPortalCaller(common.HexToAddress(chain.PortalAddress), rpcClient)
+	if err != nil {
+		return xchain.StreamCursor{}, errors.Wrap(err, "new caller")
+	}
+
+	offset, err := caller.InXStreamOffset(&bind.CallOpts{Context: ctx}, sourceChainID)
+	if err != nil {
+		return xchain.StreamCursor{}, errors.Wrap(err, "call inXStreamOffset")
+	}
+
+	return xchain.StreamCursor{
+		StreamID: xchain.StreamID{
+			SourceChainID: sourceChainID,
+			DestChainID:   chainID,
+		},
+		Offset:            offset,
+		SourceBlockHeight: 0, // TODO(corver): Get kevin to store and return this as well.
+	}, nil
 }
 
 // GetBlock returns the XBlock for the provided chain and height, or false if not available yet (not finalized),

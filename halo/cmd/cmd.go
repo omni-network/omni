@@ -32,7 +32,7 @@ func newRunCmd(runFunc func(context.Context, app.Config) error) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			if err := logConfig(ctx, cmd.Flags()); err != nil {
+			if err := libcmd.LogFlags(ctx, cmd.Flags()); err != nil {
 				return err
 			}
 
