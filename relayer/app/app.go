@@ -23,7 +23,7 @@ func Run(ctx context.Context, cfg Config) error {
 	commit, timestamp := gitinfo.Get()
 	log.Info(ctx, "Version info", "git_commit", commit, "git_timestamp", timestamp)
 
-	network, err := netconf.Load(cfg.NetworkFile())
+	network, err := netconf.Load(cfg.NetworkFile)
 	if err != nil {
 		return err
 	}
@@ -36,10 +36,6 @@ func Run(ctx context.Context, cfg Config) error {
 	privateKey, err := ethcrypto.LoadECDSA(cfg.PrivateKey)
 	if err != nil {
 		return errors.Wrap(err, "failed to load private key")
-	}
-
-	if privateKey == nil {
-		return errors.New("private key is nil")
 	}
 
 	sender, err := NewSimpleSender(network.Chains, rpcClientPerChain, *privateKey)
