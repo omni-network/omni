@@ -183,8 +183,8 @@ func NewCLI() *CLI {
 }
 
 func adaptTestnet(testnet *e2e.Testnet) *e2e.Testnet {
-	// Move test dir: path/test/e2e/networks/single/ -> path/test/e2e/runs/single
-	testnet.Dir = strings.Replace(testnet.Dir, "networks", "runs", 1)
+	// Move test dir: path/test/e2e/manifests/single -> path/test/e2e/runs/single
+	testnet.Dir = strings.Replace(testnet.Dir, "manifests", "runs", 1)
 	testnet.VoteExtensionsEnableHeight = 1
 	testnet.UpgradeVersion = "omniops/halo:latest"
 	for i := range testnet.Nodes {

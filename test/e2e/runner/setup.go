@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -39,6 +40,7 @@ const (
 	PrivvalStateFile      = "data/priv_validator_state.json"
 	PrivvalDummyKeyFile   = "config/dummy_validator_key.json"
 	PrivvalDummyStateFile = "data/dummy_validator_state.json"
+	NetworkConfigFile     = "config/network.json"
 )
 
 // Setup sets up the testnet configuration.
@@ -101,6 +103,10 @@ func Setup(ctx context.Context, testnet *e2e.Testnet, infp infra.Provider) error
 			filepath.Join(nodeDir, PrivvalKeyFile),
 			filepath.Join(nodeDir, PrivvalStateFile),
 		)).Save()
+
+		if err := writeNetworkConfig(defaultNetwork, filepath.Join(nodeDir, NetworkConfigFile)); err != nil {
+			return errors.Wrap(err, "write network config")
+		}
 
 		// Initialize the node's data directory (with noop logger since it is noisy).
 		initCfg := halocmd.InitConfig{HomeDir: nodeDir, Network: netconf.Simnet}
@@ -343,4 +349,19 @@ func UpdateConfigStateSync(node *e2e.Node, height int64, hash []byte) error {
 	}
 
 	return nil
+}
+
+// writeNetworkConfig writes the network config (adjusted for intra-docker networking) to the given path.
+func writeNetworkConfig(network netconf.Network, path string) error {
+	// Clone the network since we need to change the RPC URLs for intra-docker networking.
+	clone := netconf.Network{
+		Name:   network.Name,
+		Chains: slices.Clone(network.Chains),
+	}
+
+	for i, chain := range clone.Chains {
+		clone.Chains[i].RPCURL = fmt.Sprintf("http://%v:8545", chain.Name)
+	}
+
+	return netconf.Save(clone, path)
 }

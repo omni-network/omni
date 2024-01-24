@@ -38,7 +38,7 @@ services:
     labels:
       e2e: true
     image: ghcr.io/foundry-rs/foundry:latest
-    entrypoint: ['anvil','--host','0.0.0.0','--chain-id','100']
+    entrypoint: ['anvil','--host','0.0.0.0','--chain-id','100','--block-time','1']
     ports:
       - "6545:8545"
       - "6546:8546"

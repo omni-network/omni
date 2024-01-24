@@ -60,6 +60,11 @@ func StartRelayer(
 				log.Hex7("attestation_hash", att.BlockHash[:]),
 				log.Hex7("block_hash", block.BlockHash[:]),
 			)
+		} else if len(block.Msgs) == 0 {
+			log.Debug(ctx, "Skipping empty attested block",
+				"height", att.BlockHeight, "chain", att.SourceChainID)
+
+			return nil
 		}
 
 		// Split into streams
@@ -98,6 +103,7 @@ func StartRelayer(
 	return nil
 }
 
+// TODO(corver): Add support for empty submissions by passing a map of chainIDs to generate empty submissions for.
 func mapByStreamID(msgs []xchain.Msg) map[xchain.StreamID][]xchain.Msg {
 	m := make(map[xchain.StreamID][]xchain.Msg)
 	for _, msg := range msgs {
