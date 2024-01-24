@@ -16,7 +16,7 @@ func StartRelayer(
 	ctx context.Context,
 	cProvider cchain.Provider,
 	chainIDs []uint64,
-	xClient XChainClient,
+	xClient xchain.Provider,
 	creator CreateFunc,
 	sender Sender,
 ) error {
@@ -133,7 +133,7 @@ func FromHeights(cursors []xchain.StreamCursor, chainIDs []uint64) map[uint64]ui
 		res[chainID] = 0
 	}
 
-	// sort cursors by decreasing SourceBlockHeight so we start streaming from minimum height per source chain
+	// sort cursors by decreasing SourceBlockHeight, so we start streaming from minimum height per source chain
 	sort.Slice(cursors, func(i, j int) bool {
 		return cursors[i].SourceBlockHeight > cursors[j].SourceBlockHeight
 	})
