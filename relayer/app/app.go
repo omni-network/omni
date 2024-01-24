@@ -3,13 +3,17 @@ package relayer
 import (
 	"context"
 	"crypto/rand"
+	"fmt"
 
-	"github.com/omni-network/omni/lib/cchain"
+	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/gitinfo"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
+
+	"github.com/cometbft/cometbft/rpc/client"
+	"github.com/cometbft/cometbft/rpc/client/http"
 
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/ecies"
@@ -41,10 +45,22 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	var noopCProvider cchain.Provider = &NoopCProvider{}
 	var noopXProvider XChainClient = &NoopXChainClient{}
 
-	StartRelayer(ctx, noopCProvider, network.ChainIDs(), noopXProvider, CreateSubmissions, sender)
+	tmClient, err := newClient(cfg.HaloURL)
+	if err != nil {
+		return err
+	}
+
+	err = StartRelayer(ctx,
+		cprovider.NewABCIProvider(tmClient),
+		network.ChainIDs(),
+		noopXProvider,
+		CreateSubmissions,
+		sender)
+	if err != nil {
+		return err
+	}
 
 	<-ctx.Done()
 	log.Info(ctx, "Shutdown detected, stopping...")
@@ -52,25 +68,24 @@ func Run(ctx context.Context, cfg Config) error {
 	return nil
 }
 
-var _ cchain.Provider = (*NoopCProvider)(nil)
 var _ XChainClient = (*NoopXChainClient)(nil)
-
-// NoopCProvider is a no-op implementation of the Provider interface.
-type NoopCProvider struct{}
-
-// Subscribe implements the Subscribe method of the Provider interface.
-func (*NoopCProvider) Subscribe(ctx context.Context, sourceChainID uint64, sourceHeight uint64,
-	_ cchain.ProviderCallback) {
-	log.Info(ctx, "No-op: Subscribe called with:", "source_chain_id", sourceChainID, "source_height:", sourceHeight)
-}
 
 // NoopXChainClient is a no-op implementation of the XChainClient interface.
 type NoopXChainClient struct{}
+
+func (NoopXChainClient) GetSubmittedCursor(context.Context, uint64, uint64) (xchain.StreamCursor, error) {
+	return xchain.StreamCursor{}, nil
+}
 
 func (NoopXChainClient) GetBlock(_ context.Context, _ uint64, _ uint64) (xchain.Block, bool, error) {
 	return xchain.Block{}, false, nil
 }
 
-func (NoopXChainClient) GetSubmittedCursors(_ context.Context, _ uint64) ([]xchain.StreamCursor, error) {
-	return nil, nil
+func newClient(tmNodeAddr string) (client.Client, error) {
+	c, err := http.New(fmt.Sprintf("tcp://%s", tmNodeAddr), "/websocket")
+	if err != nil {
+		return nil, errors.Wrap(err, "new tendermint client")
+	}
+
+	return c, nil
 }
