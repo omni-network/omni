@@ -1,0 +1,9 @@
+type XBlock {
+    id: ID!
+    name: String!
+}
+
+type Query {
+    hello(name: String!): String!
+    xblocks(from: Int!, to: Int!): [XBlock!]!
+}
