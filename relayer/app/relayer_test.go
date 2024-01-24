@@ -210,6 +210,7 @@ func (m *mockSender) SendTransaction(ctx context.Context, submission xchain.Subm
 }
 
 type mockProvider struct {
+	cchain.Provider
 	SubscribeFn func(ctx context.Context, sourceChainID uint64, sourceHeight uint64, callback cchain.ProviderCallback)
 }
 

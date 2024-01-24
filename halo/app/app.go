@@ -47,7 +47,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "validate network configuration")
 	}
 
-	ethCl, err := newEthCl(ctx, cfg.HaloConfig, network)
+	ethCl, err := newEngineClient(ctx, cfg.HaloConfig, network)
 	if err != nil {
 		return err
 	}
@@ -121,13 +121,10 @@ func newXProvider(ctx context.Context, network netconf.Network) (xchain.Provider
 	return provider.New(network, clients), nil
 }
 
-// newEthCl returns a new engine API client.
-func newEthCl(ctx context.Context, cfg HaloConfig, network netconf.Network) (engine.API, error) {
+// newEngineClient returns a new engine API client.
+func newEngineClient(ctx context.Context, cfg HaloConfig, network netconf.Network) (engine.API, error) {
 	if network.Name == netconf.Simnet {
 		return engine.NewMock()
-	}
-	if network.Name == netconf.Devnet {
-		return engine.NewMock() // TODO(corver): Use real engine client in devnet.
 	}
 
 	jwtBytes, err := engine.LoadJWTHexFile(cfg.EngineJWTFile)
@@ -140,7 +137,7 @@ func newEthCl(ctx context.Context, cfg HaloConfig, network netconf.Network) (eng
 		return nil, errors.New("omni chain not found in network")
 	}
 
-	ethCl, err := engine.NewClient(ctx, omniChain.RPCURL, jwtBytes)
+	ethCl, err := engine.NewClient(ctx, omniChain.AuthRPCURL, jwtBytes)
 	if err != nil {
 		return nil, errors.Wrap(err, "create engine client")
 	}

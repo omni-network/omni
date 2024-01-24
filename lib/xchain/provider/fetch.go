@@ -5,20 +5,15 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/xchain"
 
-	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
-
-const xMsgSigString = "XMsg(uint64,uint64,address,address,bytes,uint64)"
-
-//nolint:gochecknoglobals // This is a static hash.
-var xMsgSigHash = crypto.Keccak256Hash([]byte(xMsgSigString))
 
 func getCurrentFinalisedBlockHeader(ctx context.Context, rpcClient *ethclient.Client) (*types.Header, error) {
 	// skip ethCLient and call the function directly as the "finalized" tag is not supported
@@ -52,7 +47,7 @@ func (*Provider) GetSubmittedCursor(context.Context, uint64, uint64) (xchain.Str
 // GetBlock returns the XBlock for the provided chain and height, or false if not available yet (not finalized),
 // or an error.
 func (p *Provider) GetBlock(ctx context.Context, chainID uint64, height uint64) (xchain.Block, bool, error) {
-	chain, rpcClient, err := p.getChain(chainID)
+	_, rpcClient, err := p.getChain(chainID)
 	if err != nil {
 		return xchain.Block{}, false, err
 	}
@@ -68,79 +63,129 @@ func (p *Provider) GetBlock(ctx context.Context, chainID uint64, height uint64) 
 		return xchain.Block{}, false, nil
 	}
 
-	// construct the query to fetch all the event logs in the given height
-	query := ethereum.FilterQuery{
-		FromBlock: big.NewInt(int64(height)),
-		ToBlock:   big.NewInt(int64(height)),
-		Addresses: []common.Address{
-			common.HexToAddress(chain.PortalAddress),
-		},
-	}
-
-	// call the rpc to get the logs from the chain
-	logs, err := rpcClient.FilterLogs(ctx, query)
-	if err != nil {
-		return xchain.Block{}, false, errors.Wrap(err, "could not filter logs")
-	}
-
-	// select the logs based on the required event signature
-	// TODO(jmozah): extract receipts logs too
-	selectedMsgLogs := make([]types.Log, 0)
-	for _, vLog := range logs {
-		switch vLog.Topics[0].Hex() {
-		case xMsgSigHash.Hex():
-			selectedMsgLogs = append(selectedMsgLogs, vLog)
-		default:
-			return xchain.Block{}, false, errors.New("log not expected")
-		}
-	}
-
 	// check if we can reuse the header
+	header := finalisedHeader
 	if height != finalisedHeader.Number.Uint64() {
 		// fetch the block header for the given height
-		hdr, err := rpcClient.HeaderByNumber(ctx, big.NewInt(int64(height)))
+		header, err = rpcClient.HeaderByNumber(ctx, big.NewInt(int64(height)))
 		if err != nil {
 			return xchain.Block{}, false, errors.Wrap(err, "could not get header by number")
 		}
-		finalisedHeader = hdr
 	}
 
-	return constructXBlock(chain.ID, selectedMsgLogs, finalisedHeader), true, nil
-}
+	// Filter xmsgs logs.
+	xmsgs, err := p.getXMsgLogs(ctx, chainID, height)
+	if err != nil {
+		return xchain.Block{}, false, err
+	}
 
-// constructXBlock assembles the xBlock using the XMsgs and XReceipts found in the given block height.
-func constructXBlock(chainID uint64, selectedMsgLogs []types.Log, header *types.Header) xchain.Block {
-	// assemble the block header and skeleton
-	xBlock := xchain.Block{
+	// Filter xreceipts logs.
+	receipts, err := p.getXReceiptLogs(ctx, chainID, height)
+	if err != nil {
+		return xchain.Block{}, false, err
+	}
+
+	return xchain.Block{
 		BlockHeader: xchain.BlockHeader{
 			SourceChainID: chainID,
-			BlockHeight:   header.Number.Uint64(),
+			BlockHeight:   height,
 			BlockHash:     header.Hash(),
 		},
+		Msgs:      xmsgs,
+		Receipts:  receipts,
 		Timestamp: time.Unix(int64(header.Time), 0),
+	}, true, nil
+}
+
+func (p *Provider) getXReceiptLogs(ctx context.Context, chainID uint64, height uint64) ([]xchain.Receipt, error) {
+	chain, rpcClient, err := p.getChain(chainID)
+	if err != nil {
+		return nil, err
 	}
 
-	// add cross chain message and receipts to the block
-	for _, vLog := range selectedMsgLogs {
-		// construct the messages that go in this block
-		streamID := xchain.StreamID{
-			SourceChainID: chainID,
-			DestChainID:   vLog.Topics[1].Big().Uint64(),
-		}
-		msgID := xchain.MsgID{
-			StreamID:     streamID,
-			StreamOffset: vLog.Topics[2].Big().Uint64(),
-		}
-		msg := xchain.Msg{
-			MsgID:           msgID,
-			SourceMsgSender: [20]byte(vLog.Topics[2].Bytes()),
-			DestAddress:     [20]byte(vLog.Topics[3].Bytes()),
-			Data:            vLog.Topics[4].Bytes(),
-			DestGasLimit:    vLog.Topics[5].Big().Uint64(),
-			TxHash:          vLog.TxHash,
-		}
-		xBlock.Msgs = append(xBlock.Msgs, msg)
+	filterer, err := bindings.NewOmniPortalFilterer(common.HexToAddress(chain.PortalAddress), rpcClient)
+	if err != nil {
+		return nil, errors.Wrap(err, "new filterer")
 	}
 
-	return xBlock
+	filterOpts := bind.FilterOpts{
+		Start:   height,
+		End:     &height,
+		Context: ctx,
+	}
+
+	iter, err := filterer.FilterXReceipt(&filterOpts, nil, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "filter receipts logs")
+	}
+
+	var receipts []xchain.Receipt
+	for iter.Next() {
+		e := iter.Event
+		receipts = append(receipts, xchain.Receipt{
+			MsgID: xchain.MsgID{
+				StreamID: xchain.StreamID{
+					SourceChainID: e.SourceChainId,
+					DestChainID:   chain.ID,
+				},
+				StreamOffset: e.StreamOffset,
+			},
+			GasUsed:        e.GasUsed.Uint64(),
+			Success:        e.Success,
+			RelayerAddress: e.Relayer,
+			TxHash:         e.Raw.TxHash,
+		})
+	}
+	if err := iter.Error(); err != nil {
+		return nil, errors.Wrap(err, "iterate receipts logs")
+	}
+
+	return receipts, nil
+}
+
+func (p *Provider) getXMsgLogs(ctx context.Context, chainID uint64, height uint64) ([]xchain.Msg, error) {
+	chain, rpcClient, err := p.getChain(chainID)
+	if err != nil {
+		return nil, err
+	}
+
+	filterer, err := bindings.NewOmniPortalFilterer(common.HexToAddress(chain.PortalAddress), rpcClient)
+	if err != nil {
+		return nil, err
+	}
+
+	filterOpts := bind.FilterOpts{
+		Start:   height,
+		End:     &height,
+		Context: ctx,
+	}
+
+	iter, err := filterer.FilterXMsg(&filterOpts, nil, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "filter xmsg logs")
+	}
+
+	var xmsgs []xchain.Msg
+	for iter.Next() {
+		e := iter.Event
+		xmsgs = append(xmsgs, xchain.Msg{
+			MsgID: xchain.MsgID{
+				StreamID: xchain.StreamID{
+					SourceChainID: chain.ID,
+					DestChainID:   e.DestChainId,
+				},
+				StreamOffset: e.StreamOffset,
+			},
+			SourceMsgSender: e.Sender,
+			DestAddress:     e.To,
+			Data:            e.Data,
+			DestGasLimit:    e.GasLimit,
+			TxHash:          e.Raw.TxHash,
+		})
+	}
+	if err := iter.Error(); err != nil {
+		return nil, errors.Wrap(err, "iterate xmsg logs")
+	}
+
+	return xmsgs, nil
 }
