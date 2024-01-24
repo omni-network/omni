@@ -1,6 +1,8 @@
 package schema
 
 import (
+	"time"
+
 	"entgo.io/ent"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
@@ -14,8 +16,13 @@ type XBlock struct {
 // Fields of the XBlock.
 func (XBlock) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("uuid", uuid.UUID{}).
+		field.UUID("UUID", uuid.UUID{}).
 			Default(uuid.New),
+		field.Uint64("SourceChainID"),
+		field.Uint64("BlockHeight"),
+		field.Bytes("BlockHash").MaxLen(32),
+		field.Time("CreatedAt").
+			Default(time.Now()),
 	}
 }
 
