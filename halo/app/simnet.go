@@ -3,41 +3,27 @@ package app
 import (
 	"context"
 
-	"github.com/omni-network/omni/halo/comet"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
-	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
-	"github.com/omni-network/omni/lib/xchain/provider"
 	relayer "github.com/omni-network/omni/relayer/app"
+
+	"github.com/cometbft/cometbft/node"
+	rpclocal "github.com/cometbft/cometbft/rpc/client/local"
 )
 
 // maybeSetupSimnetRelayer sets up the simnet relayer if the network is simnet.
-func maybeSetupSimnetRelayer(ctx context.Context, network netconf.Network, app *comet.App, xprovider xchain.Provider,
+func maybeSetupSimnetRelayer(ctx context.Context, network netconf.Network, cmtNode *node.Node,
+	xprovider xchain.Provider,
 ) error {
 	if network.Name != netconf.Simnet {
-		return nil // Skip if not simnet.
+		return nil
 	}
 
-	fetchFunc := func(ctx context.Context, chainID uint64, fromHeight uint64,
-	) ([]xchain.AggAttestation, error) {
-		return app.ApprovedFrom(chainID, fromHeight), nil
-	}
+	cprov := cprovider.NewABCIProvider(rpclocal.New(cmtNode))
 
-	backoffFunc := func(ctx context.Context) (func(), func()) {
-		return expbackoff.NewWithReset(ctx, expbackoff.WithFastConfig())
-	}
-
-	cprov := cprovider.NewProviderForT(nil, fetchFunc, backoffFunc)
-
-	mockXPriv, ok := xprovider.(*provider.Mock)
-	if !ok {
-		return errors.New("xchain provider is not a mock")
-	}
-
-	return relayer.StartRelayer(ctx, cprov, network.ChainIDs(), mockXPriv, relayer.CreateSubmissions, simnetSender{})
+	return relayer.StartRelayer(ctx, cprov, network.ChainIDs(), xprovider, relayer.CreateSubmissions, simnetSender{})
 }
 
 var _ relayer.Sender = simnetSender{}

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum"
@@ -24,15 +23,26 @@ var xMsgSigHash = crypto.Keccak256Hash([]byte(xMsgSigString))
 func getCurrentFinalisedBlockHeader(ctx context.Context, rpcClient *ethclient.Client) (*types.Header, error) {
 	// skip ethCLient and call the function directly as the "finalized" tag is not supported
 	// by ethClient. This call will return the last finalized block.
-	var finalisedHeader types.Header
+	// var finalisedHeader types.Header
+	// params := []string{"latest", "false"}
+	// err := rpcClient.Client().CallContext(ctx, &finalisedHeader, "eth_getBlockByNumber", params)
+	// if err != nil {
+	//	 return nil, errors.Wrap(err, "could not get finalized block")
+	// }
 
-	params := []string{"finalized", "false"}
-	err := rpcClient.Client().CallContext(ctx, &finalisedHeader, "eth_getBlockByNumber", params)
+	// TODO(corver): Support different finalized methods (to be added to netconf).
+	//  The only chain we support at this point is anvil, it doesn't support "finalized", so just use "latest" for now.
+	height, err := rpcClient.BlockNumber(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not get finalized block")
+		return nil, errors.Wrap(err, "get block number")
 	}
 
-	return &finalisedHeader, nil
+	header, err := rpcClient.HeaderByNumber(ctx, big.NewInt(int64(height)))
+	if err != nil {
+		return nil, errors.Wrap(err, "get header by number")
+	}
+
+	return header, nil
 }
 
 func (*Provider) GetSubmittedCursor(context.Context, uint64, uint64) (xchain.StreamCursor, error) {
@@ -55,10 +65,6 @@ func (p *Provider) GetBlock(ctx context.Context, chainID uint64, height uint64) 
 
 	// ignore if our height is greater than the finalized height
 	if height > finalisedHeader.Number.Uint64() {
-		log.Debug(ctx, "Block not finalized yet",
-			"height", height,
-			"finalized_height", finalisedHeader.Number.Uint64())
-
 		return xchain.Block{}, false, nil
 	}
 

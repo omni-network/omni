@@ -5,6 +5,7 @@ import (
 
 	halopb "github.com/omni-network/omni/halo/halopb/v1"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/xchain"
 
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
@@ -13,6 +14,17 @@ import (
 )
 
 var _ FetchFunc = ABCIFetcher{}.ApprovedFrom
+
+func NewABCIProvider(abci rpcclient.ABCIClient) Provider {
+	backoffFunc := func(ctx context.Context) (func(), func()) {
+		return expbackoff.NewWithReset(ctx, expbackoff.WithFastConfig())
+	}
+
+	return Provider{
+		fetch:       NewABCIFetcher(abci).ApprovedFrom,
+		backoffFunc: backoffFunc,
+	}
+}
 
 type ABCIFetcher struct {
 	abci rpcclient.ABCIClient

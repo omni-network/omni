@@ -18,6 +18,7 @@ import (
 	"github.com/omni-network/omni/test/tutil"
 
 	"github.com/cometbft/cometbft/privval"
+	rpclocal "github.com/cometbft/cometbft/rpc/client/local"
 	rpctest "github.com/cometbft/cometbft/rpc/test"
 	"github.com/cometbft/cometbft/types"
 
@@ -119,12 +120,16 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 	// Create the comet application.
 	app := comet.NewApp(ethCl, attSvc, state, snapshots, 1)
 
-	// Setup a cprovider that reads directly from app state.
-	cprov := cprovider.NewProviderForT(t, adaptFetcher(app), noopBackoff)
+	// Start cometbft
+	node := rpctest.StartTendermint(app)
+	defer rpctest.StopTendermint(node)
 
 	// Start the relayer, collecting all updates.
 	updates := make(chan relayer.StreamUpdate)
-	err = relayer.StartRelayer(ctx, cprov, []uint64{srcChainID}, xprov,
+	err = relayer.StartRelayer(ctx,
+		cprovider.NewABCIProvider(rpclocal.New(node)),
+		[]uint64{srcChainID},
+		xprov,
 		func(update relayer.StreamUpdate) ([]xchain.Submission, error) {
 			updates <- update
 			return nil, nil
@@ -132,10 +137,6 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 		panicSender{},
 	)
 	require.NoError(t, err)
-
-	// Start cometbft
-	node := rpctest.StartTendermint(app)
-	defer rpctest.StopTendermint(node)
 
 	// Subscribe cometbft blocks
 	blocksSub, err := node.EventBus().Subscribe(ctx, "", types.EventQueryNewBlock)
@@ -177,16 +178,6 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 			t.Fatal("timed out waiting for the node to produce a block")
 		}
 	}
-}
-
-// adaptFetcher adapts the comet application to implement the cprovider.FetchFunc.
-func adaptFetcher(app *comet.App) cprovider.FetchFunc {
-	return func(ctx context.Context, chainID uint64, fromHeight uint64) ([]xchain.AggAttestation, error) {
-		return app.ApprovedFrom(chainID, fromHeight), nil
-	}
-}
-func noopBackoff(context.Context) (func(), func()) {
-	return func() {}, func() {}
 }
 
 var _ relayer.Sender = panicSender{}

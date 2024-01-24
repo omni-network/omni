@@ -22,6 +22,8 @@ const (
 
 var (
 	// defaultNetwork is the default devnet network configuration.
+	// The RPC urls are for connecting from the host (outside docker).
+	// See writeNetworkConfig for the docker networking overrides.
 	//
 	//nolint:gochecknoglobals // This is predefined at this point.
 	defaultNetwork = netconf.Network{
