@@ -1,9 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/base64"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -11,10 +10,10 @@ import (
 	"regexp"
 	"slices"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
+	haloapp "github.com/omni-network/omni/halo/app"
 	halocmd "github.com/omni-network/omni/halo/cmd"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -27,7 +26,7 @@ import (
 	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
 	"github.com/cometbft/cometbft/types"
 
-	"github.com/BurntSushi/toml"
+	_ "embed"
 )
 
 const (
@@ -43,8 +42,18 @@ const (
 	NetworkConfigFile     = "config/network.json"
 )
 
+// additionalServices returns the default additional docker-compose services to start.
+func additionalServices(network netconf.Network) []string {
+	resp := make([]string, 0, len(network.Chains))
+	for _, chain := range network.Chains {
+		resp = append(resp, chain.Name)
+	}
+
+	return resp
+}
+
 // Setup sets up the testnet configuration.
-func Setup(ctx context.Context, testnet *e2e.Testnet, infp infra.Provider) error {
+func Setup(ctx context.Context, testnet *e2e.Testnet, infp infra.Provider, network netconf.Network) error {
 	log.Info(ctx, "Setup testnet", "dir", testnet.Dir)
 
 	if err := os.MkdirAll(testnet.Dir, os.ModePerm); err != nil {
@@ -57,6 +66,10 @@ func Setup(ctx context.Context, testnet *e2e.Testnet, infp infra.Provider) error
 
 	genesis, err := MakeGenesis(testnet)
 	if err != nil {
+		return err
+	}
+
+	if err := writeGethConfig(testnet.Dir); err != nil {
 		return err
 	}
 
@@ -80,13 +93,8 @@ func Setup(ctx context.Context, testnet *e2e.Testnet, infp infra.Provider) error
 		}
 		config.WriteConfigFile(filepath.Join(nodeDir, "config", "config.toml"), cfg) // panics
 
-		appCfg, err := MakeHaloConfig(node)
-		if err != nil {
+		if err := writeHaloConfig(nodeDir); err != nil {
 			return err
-		}
-		err = os.WriteFile(filepath.Join(nodeDir, "config", "halo.toml"), appCfg, 0o644)
-		if err != nil {
-			return errors.Wrap(err, "write halo config")
 		}
 
 		err = genesis.SaveAs(filepath.Join(nodeDir, "config", "genesis.json"))
@@ -104,12 +112,12 @@ func Setup(ctx context.Context, testnet *e2e.Testnet, infp infra.Provider) error
 			filepath.Join(nodeDir, PrivvalStateFile),
 		)).Save()
 
-		if err := writeNetworkConfig(defaultNetwork, filepath.Join(nodeDir, NetworkConfigFile)); err != nil {
+		if err := writeNetworkConfig(network, filepath.Join(nodeDir, NetworkConfigFile)); err != nil {
 			return errors.Wrap(err, "write network config")
 		}
 
 		// Initialize the node's data directory (with noop logger since it is noisy).
-		initCfg := halocmd.InitConfig{HomeDir: nodeDir, Network: netconf.Simnet}
+		initCfg := halocmd.InitConfig{HomeDir: nodeDir, Network: network.Name}
 		if err := halocmd.InitFiles(log.WithNoopLogger(ctx), initCfg); err != nil {
 			return errors.Wrap(err, "init files")
 		}
@@ -262,73 +270,13 @@ func MakeConfig(node *e2e.Node, nodeDir string) (*config.Config, error) {
 	return &cfg, nil
 }
 
-// MakeHaloConfig generates an ABCI application config for a node.
-func MakeHaloConfig(node *e2e.Node) ([]byte, error) {
-	cfg := map[string]interface{}{
-		"chain_id":               node.Testnet.Name,
-		"dir":                    "data/app",
-		"listen":                 AppAddressUNIX,
-		"mode":                   node.Mode,
-		"protocol":               "socket",
-		"persist_interval":       node.PersistInterval,
-		"snapshot_interval":      node.SnapshotInterval,
-		"retain_blocks":          node.RetainBlocks,
-		"key_type":               node.PrivvalKey.Type(),
-		"prepare_proposal_delay": node.Testnet.PrepareProposalDelay,
-		"process_proposal_delay": node.Testnet.ProcessProposalDelay,
-		"check_tx_delay":         node.Testnet.CheckTxDelay,
-		"vote_extension_delay":   node.Testnet.VoteExtensionDelay,
-		"finalize_block_delay":   node.Testnet.FinalizeBlockDelay,
-	}
-	switch node.ABCIProtocol {
-	case e2e.ProtocolUNIX:
-		cfg["listen"] = AppAddressUNIX
-	case e2e.ProtocolTCP:
-		cfg["listen"] = AppAddressTCP
-	case e2e.ProtocolGRPC:
-		cfg["listen"] = AppAddressTCP
-		cfg["protocol"] = "grpc"
-	case e2e.ProtocolBuiltin, e2e.ProtocolBuiltinConnSync:
-		delete(cfg, "listen")
-		cfg["protocol"] = string(node.ABCIProtocol)
-	default:
-		return nil, errors.New("unexpected abci protocol")
-	}
-	if node.Mode == e2e.ModeValidator {
-		switch node.PrivvalProtocol {
-		case e2e.ProtocolFile:
-		case e2e.ProtocolTCP:
-			cfg["privval_server"] = PrivvalAddressTCP
-			cfg["privval_key"] = PrivvalKeyFile
-			cfg["privval_state"] = PrivvalStateFile
-		case e2e.ProtocolUNIX:
-			cfg["privval_server"] = PrivvalAddressUNIX
-			cfg["privval_key"] = PrivvalKeyFile
-			cfg["privval_state"] = PrivvalStateFile
-		default:
-			return nil, errors.New("unexpected validator mode")
-		}
-	}
+// writeHaloConfig generates an halo application config for a node and writes it to disk.
+func writeHaloConfig(nodeDir string) error {
+	cfg := haloapp.DefaultHaloConfig()
+	cfg.HomeDir = nodeDir
+	cfg.EngineJWTFile = "/geth/jwtsecret" // As per docker-compose mount
 
-	if len(node.Testnet.ValidatorUpdates) > 0 {
-		validatorUpdates := map[string]map[string]int64{}
-		for height, validators := range node.Testnet.ValidatorUpdates {
-			updateVals := map[string]int64{}
-			for node, power := range validators {
-				updateVals[base64.StdEncoding.EncodeToString(node.PrivvalKey.PubKey().Bytes())] = power
-			}
-			validatorUpdates[strconv.FormatInt(height, 10)] = updateVals
-		}
-		cfg["validator_update"] = validatorUpdates
-	}
-
-	var buf bytes.Buffer
-	err := toml.NewEncoder(&buf).Encode(cfg)
-	if err != nil {
-		return nil, errors.Wrap(err, "encode config")
-	}
-
-	return buf.Bytes(), nil
+	return haloapp.WriteConfigTOML(cfg)
 }
 
 // UpdateConfigStateSync updates the state sync config for a node.
@@ -361,7 +309,41 @@ func writeNetworkConfig(network netconf.Network, path string) error {
 
 	for i, chain := range clone.Chains {
 		clone.Chains[i].RPCURL = fmt.Sprintf("http://%v:8545", chain.Name)
+		clone.Chains[i].AuthRPCURL = fmt.Sprintf("http://%v:8551", chain.Name)
 	}
 
 	return netconf.Save(clone, path)
+}
+
+var (
+	//go:embed static/geth_genesis.json
+	gethGenesis []byte
+
+	//go:embed static/geth_keystore.json
+	gethKeystore []byte
+)
+
+// writeGethConfig writes the geth config to <root>/geth.
+func writeGethConfig(root string) error {
+	var jwtSecret [32]byte
+	_, _ = rand.Read(jwtSecret[:])
+
+	files := map[string][]byte{
+		"genesis.json":      gethGenesis,
+		"keystore/keystore": gethKeystore,
+		"jwtsecret":         []byte(fmt.Sprintf("%#x", jwtSecret)),
+		"geth_password.txt": []byte(""), // Empty password
+	}
+
+	for name, data := range files {
+		path := filepath.Join(root, "geth", name)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			return errors.Wrap(err, "mkdir", "path", path)
+		}
+		if err := os.WriteFile(path, data, 0o644); err != nil {
+			return errors.Wrap(err, "write geth config")
+		}
+	}
+
+	return nil
 }

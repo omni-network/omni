@@ -7,6 +7,7 @@ import (
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/test/e2e/runner/docker"
 
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
@@ -27,11 +28,12 @@ type CLI struct {
 	testnet  *e2e.Testnet
 	preserve bool
 	infp     infra.Provider
+	network  netconf.Network
 }
 
 // NewCLI sets up the CLI.
 func NewCLI() *CLI {
-	cli := &CLI{}
+	cli := &CLI{network: newE2ENetwork()}
 	cli.root = &cobra.Command{
 		Use:           "runner",
 		Short:         "End-to-end test runner",
@@ -58,7 +60,7 @@ func NewCLI() *CLI {
 			}
 
 			cli.testnet = adaptTestnet(testnet)
-			cli.infp = docker.NewProvider(testnet, ifd, defaultServices())
+			cli.infp = docker.NewProvider(testnet, ifd, additionalServices(cli.network))
 
 			return nil
 		},
@@ -68,7 +70,7 @@ func NewCLI() *CLI {
 			if err := Cleanup(ctx, cli.testnet); err != nil {
 				return err
 			}
-			if err := Setup(ctx, cli.testnet, cli.infp); err != nil {
+			if err := Setup(ctx, cli.testnet, cli.infp, cli.network); err != nil {
 				return err
 			}
 
@@ -76,7 +78,12 @@ func NewCLI() *CLI {
 				return err
 			}
 
-			if err := DeployContracts(ctx); err != nil {
+			portals, err := DeployContracts(ctx, cli.network)
+			if err != nil {
+				return err
+			}
+
+			if err := SendXMsgs(ctx, portals); err != nil {
 				return err
 			}
 
@@ -93,6 +100,10 @@ func NewCLI() *CLI {
 			}
 
 			if err := Wait(ctx, cli.testnet, 5); err != nil { // wait for network to settle before tests
+				return err
+			}
+
+			if err := LogMetrics(ctx, cli.testnet, cli.network); err != nil {
 				return err
 			}
 
@@ -116,7 +127,7 @@ func NewCLI() *CLI {
 		Use:   "setup",
 		Short: "Generates the testnet directory and configuration",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return Setup(cmd.Context(), cli.testnet, cli.infp)
+			return Setup(cmd.Context(), cli.testnet, cli.infp, cli.network)
 		},
 	})
 
@@ -127,7 +138,7 @@ func NewCLI() *CLI {
 			ctx := cmd.Context()
 			_, err := os.Stat(cli.testnet.Dir)
 			if os.IsNotExist(err) {
-				err = Setup(ctx, cli.testnet, cli.infp)
+				err = Setup(ctx, cli.testnet, cli.infp, cli.network)
 			}
 			if err != nil {
 				return errors.Wrap(err, "setup")
