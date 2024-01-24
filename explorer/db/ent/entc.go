@@ -12,6 +12,7 @@ import (
 func main() {
 	err := entc.Generate("./schema", &gen.Config{
 		Features: []gen.Feature{
+			gen.FeatureEntQL,
 			gen.FeatureVersionedMigration,
 			gen.FeaturePrivacy,
 			gen.FeatureSnapshot,

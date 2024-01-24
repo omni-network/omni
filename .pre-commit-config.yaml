@@ -53,6 +53,7 @@ repos:
         require_serial: true # Don't run this in parallel
         entry: .pre-commit/run_go_tests.sh
         types: [ file, go ]
+        exclude: "(explorer/db/ent/internal/.*)"
 
       - id: run-forge-tests
         name: run-forge-tests
