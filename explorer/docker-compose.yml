@@ -1,0 +1,34 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:14-alpine
+    ports:
+      - 5432:5432
+    volumes:
+      - ~/apps/postgres:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=omni_secret
+      - POSTGRES_USER=omni_user
+      - POSTGRES_DB=omni_db
+
+  ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    ports:
+      - 3000
+    depends_on:
+      - db
+
+  api:
+    image: omniops/explorer-api
+    ports:
+      - 8080
+    depends_on:
+      - db
+
+  indexer:
+    image: omniops/explorer-indexer
+    depends_on:
+      - db
