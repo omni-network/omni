@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 )
@@ -36,5 +37,9 @@ func (XMsg) Fields() []ent.Field {
 
 // Edges of the XMsg.
 func (XMsg) Edges() []ent.Edge {
-	return []ent.Edge{}
+	return []ent.Edge{
+		edge.From("Xblock", XBlock.Type).
+			Ref("Msgs").
+			Unique(),
+	}
 }
