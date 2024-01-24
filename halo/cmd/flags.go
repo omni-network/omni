@@ -2,12 +2,8 @@
 package cmd
 
 import (
-	"context"
-	"strings"
-
 	"github.com/omni-network/omni/halo/app"
 	libcmd "github.com/omni-network/omni/lib/cmd"
-	"github.com/omni-network/omni/lib/log"
 
 	"github.com/spf13/pflag"
 )
@@ -24,25 +20,4 @@ func bindInitFlags(flags *pflag.FlagSet, cfg *InitConfig) {
 	flags.StringVar(&cfg.Network, "network", cfg.Network, "The network to initialize")
 	flags.BoolVar(&cfg.Force, "force", cfg.Force, "Force initialization (overwrite existing files)")
 	flags.BoolVar(&cfg.Clean, "clean", cfg.Clean, "Delete home directory before initialization")
-}
-
-// logConfig logs the config struct kv pairs.
-func logConfig(ctx context.Context, flags *pflag.FlagSet) error {
-	skip := map[string]bool{
-		"help": true,
-	}
-	// Flatten config into key/value pairs for logging.
-	var fields []any
-	flags.VisitAll(func(f *pflag.Flag) {
-		if skip[f.Name] {
-			return
-		}
-		// TODO(corver): Allow dashes for one-to-one mapping with actual flags?
-		fields = append(fields, strings.ReplaceAll(f.Name, "-", "_"))
-		fields = append(fields, f.Value)
-	})
-
-	log.Info(ctx, "Parsed config from flags", fields...)
-
-	return nil
 }

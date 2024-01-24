@@ -60,7 +60,7 @@ func NewCLI() *CLI {
 			}
 
 			cli.testnet = adaptTestnet(testnet)
-			cli.infp = docker.NewProvider(testnet, ifd, additionalServices(cli.network))
+			cli.infp = docker.NewProvider(testnet, ifd, chainServices(cli.network))
 
 			return nil
 		},
@@ -87,7 +87,16 @@ func NewCLI() *CLI {
 				return err
 			}
 
+			// Relayer crashes if chains not available on start (need to fix this), so start manually here.
+			if err := cmtdocker.ExecCompose(ctx, cli.testnet.Dir, "up", "-d", "relayer"); err != nil {
+				return err
+			}
+
 			if err := Wait(ctx, cli.testnet, 5); err != nil { // allow some txs to go through
+				return err
+			}
+
+			if err := SendXMsgs(ctx, portals); err != nil {
 				return err
 			}
 

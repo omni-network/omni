@@ -95,3 +95,14 @@ services:
     networks:
       {{ $.Name }}:
         ipv4_address: 10.186.73.210
+
+  relayer:
+    labels:
+      e2e: true
+    container_name: relayer
+    image: omniops/relayer:latest
+    volumes:
+      - ./relayer:/relayer
+    networks:
+      {{ $.Name }}:
+        ipv4_address: 10.186.73.220
