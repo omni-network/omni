@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 )
@@ -37,5 +38,11 @@ func (XBlockMsgs) Fields() []ent.Field {
 
 // Edges of the XBlockMsgs.
 func (XBlockMsgs) Edges() []ent.Edge {
-	return []ent.Edge{}
+	return []ent.Edge{
+		edge.From("XBlock", XBlock.Type).
+			Ref("Msgs").
+			Unique(),
+	}
 }
+
+// XBlockMsg represents a immutable cross-chain message in a block (one to many relationship).

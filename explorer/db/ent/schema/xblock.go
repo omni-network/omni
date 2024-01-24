@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 )
@@ -28,5 +29,8 @@ func (XBlock) Fields() []ent.Field {
 
 // Edges of the XBlock.
 func (XBlock) Edges() []ent.Edge {
-	return []ent.Edge{}
+	return []ent.Edge{
+		edge.To("Receipts", XBlockReceipt.Type),
+		edge.To("Msgs", XBlockMsgs.Type),
+	}
 }

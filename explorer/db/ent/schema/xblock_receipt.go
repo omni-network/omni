@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 )
@@ -27,5 +28,11 @@ func (XBlockReceipt) Fields() []ent.Field {
 
 // Edges of the XBlockReceipt.
 func (XBlockReceipt) Edges() []ent.Edge {
-	return []ent.Edge{}
+	return []ent.Edge{
+		edge.From("XBlock", XBlock.Type).
+			Ref("Receipts").
+			Unique(),
+	}
 }
+
+// XBlockReceipt represents a immutable cross-chain receipt in a block (one to many relationship).
