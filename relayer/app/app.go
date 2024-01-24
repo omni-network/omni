@@ -10,7 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/gitinfo"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/xchain"
+	"github.com/omni-network/omni/lib/xchain/provider"
 
 	"github.com/cometbft/cometbft/rpc/client"
 	"github.com/cometbft/cometbft/rpc/client/http"
@@ -40,12 +40,11 @@ func Run(ctx context.Context, cfg Config) error {
 	if err != nil {
 		return errors.Wrap(err, "generate private key")
 	}
+
 	sender, err := NewSimpleSender(network.Chains, rpcClientPerChain, *privateKey.ExportECDSA())
 	if err != nil {
 		return err
 	}
-
-	var noopXProvider XChainClient = &NoopXChainClient{}
 
 	tmClient, err := newClient(cfg.HaloURL)
 	if err != nil {
@@ -55,9 +54,10 @@ func Run(ctx context.Context, cfg Config) error {
 	err = StartRelayer(ctx,
 		cprovider.NewABCIProvider(tmClient),
 		network.ChainIDs(),
-		noopXProvider,
+		provider.New(network, rpcClientPerChain),
 		CreateSubmissions,
 		sender)
+
 	if err != nil {
 		return err
 	}
@@ -66,19 +66,6 @@ func Run(ctx context.Context, cfg Config) error {
 	log.Info(ctx, "Shutdown detected, stopping...")
 
 	return nil
-}
-
-var _ XChainClient = (*NoopXChainClient)(nil)
-
-// NoopXChainClient is a no-op implementation of the XChainClient interface.
-type NoopXChainClient struct{}
-
-func (NoopXChainClient) GetSubmittedCursor(context.Context, uint64, uint64) (xchain.StreamCursor, error) {
-	return xchain.StreamCursor{}, nil
-}
-
-func (NoopXChainClient) GetBlock(_ context.Context, _ uint64, _ uint64) (xchain.Block, bool, error) {
-	return xchain.Block{}, false, nil
 }
 
 func newClient(tmNodeAddr string) (client.Client, error) {
