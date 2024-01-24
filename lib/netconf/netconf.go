@@ -50,6 +50,17 @@ func (n Network) OmniChain() (Chain, bool) {
 	return Chain{}, false
 }
 
+// Chain returns the chain config for the given ID or false if it does not exist.
+func (n Network) Chain(id uint64) (Chain, bool) {
+	for _, chain := range n.Chains {
+		if chain.ID == id {
+			return chain, true
+		}
+	}
+
+	return Chain{}, false
+}
+
 // Chain defines the configuration of an execution chain that supports
 // the Omni cross chain protocol. This is most supported Rollup EVM, but
 // also the Omni EVM.

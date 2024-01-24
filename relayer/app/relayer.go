@@ -19,13 +19,24 @@ func StartRelayer(
 	xClient XChainClient,
 	creator CreateFunc,
 	sender Sender,
-) {
+) error {
 	// Get the last submitted cursors for each chain.
 	var cursors []xchain.StreamCursor                  // All submitted cursors from all chains.
 	initialOffsets := make(map[xchain.StreamID]uint64) // Initial submitted offsets for each stream.
-	for _, chainID := range chainIDs {
-		submitted, _ := xClient.GetSubmittedCursors(ctx, chainID)
-		for _, cursor := range submitted {
+	for _, destChain := range chainIDs {
+		for _, srcChain := range chainIDs {
+			if srcChain == destChain {
+				continue
+			}
+
+			cursor, err := xClient.GetSubmittedCursor(ctx, destChain, srcChain)
+			if err != nil {
+				return errors.Wrap(err, "failed to get submitted cursors",
+					"dest_chain", destChain,
+					"src_chain", srcChain,
+				)
+			}
+
 			initialOffsets[cursor.StreamID] = cursor.Offset
 			cursors = append(cursors, cursor)
 		}
@@ -83,6 +94,8 @@ func StartRelayer(
 	for chainID, fromHeight := range FromHeights(cursors, chainIDs) {
 		cProvider.Subscribe(ctx, chainID, fromHeight, callback)
 	}
+
+	return nil
 }
 
 func mapByStreamID(msgs []xchain.Msg) map[xchain.StreamID][]xchain.Msg {

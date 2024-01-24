@@ -37,9 +37,7 @@ func maybeSetupSimnetRelayer(ctx context.Context, network netconf.Network, app *
 		return errors.New("xchain provider is not a mock")
 	}
 
-	relayer.StartRelayer(ctx, cprov, network.ChainIDs(), mockXPriv, relayer.CreateSubmissions, simnetSender{})
-
-	return nil
+	return relayer.StartRelayer(ctx, cprov, network.ChainIDs(), mockXPriv, relayer.CreateSubmissions, simnetSender{})
 }
 
 var _ relayer.Sender = simnetSender{}

@@ -22,6 +22,7 @@ type Msg struct {
 	DestAddress     [20]byte // Target/To address to "call" on destination chain
 	Data            []byte   // Data to provide to "call" on destination chain
 	DestGasLimit    uint64   // Gas limit to use for "call" on destination chain
+	TxHash          [32]byte // Hash of the source chain transaction that emitted the message
 }
 
 // Receipt is a cross-chain message receipt, the result of applying the Msg on the destination chain.

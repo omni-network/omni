@@ -8,33 +8,33 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
+
+	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 var _ xchain.Provider = (*Provider)(nil)
 
-// ChainConfig is the configuration parameters for all the chains
-// that needs to be managed by the provider.
-type ChainConfig struct {
-	name      string           // name of the rollup chain
-	id        uint64           // network id of the chain
-	minHeight uint64           // minimum configured height from which blocks should be fetched
-	rpcClient ethclient.Client // the rpc client to get the information from the chain
-}
-
 // Provider stores the source chain configuration and the global quit channel.
 type Provider struct {
-	config      []*ChainConfig // store config for every chain ID
+	network     netconf.Network
+	rpcClients  map[uint64]*ethclient.Client // store config for every chain ID
 	backoffFunc func(context.Context) (func(), func())
 }
 
 // New instantiates the provider instance which will be ready to accept
 // subscriptions for respective destination XBlocks.
-func New(chains []*ChainConfig, backoffFunc func(context.Context) (func(), func())) *Provider {
+func New(network netconf.Network, rpcClients map[uint64]*ethclient.Client) *Provider {
+	backoffFunc := func(ctx context.Context) (func(), func()) {
+		return expbackoff.NewWithReset(ctx, expbackoff.WithFastConfig())
+	}
+
 	return &Provider{
-		config:      chains,
+		network:     network,
+		rpcClients:  rpcClients,
 		backoffFunc: backoffFunc,
 	}
 }
@@ -49,47 +49,36 @@ func (p *Provider) Subscribe(
 	log.Debug(ctx, "Subscribing to provider ", "fromHeight", fromHeight)
 
 	// retrieve the respective config
-	config, err := p.getConfig(chainID)
+	chain, _, err := p.getChain(chainID)
 	if err != nil {
 		return err
 	}
 
-	// Start streaming from chain's minimum height as per config.
-	if fromHeight < config.minHeight {
-		fromHeight = config.minHeight
+	// Start streaming from chain's deploy height as per config.
+	if fromHeight < chain.DeployHeight {
+		fromHeight = chain.DeployHeight
 	}
 
-	ctx = log.WithCtx(ctx, "chain_id", chainID, "chain_name", config.name)
+	ctx = log.WithCtx(ctx, "chain_id", chainID, "chain_name", chain.Name)
 	log.Info(ctx, "Subscribing to provider", "from_height", fromHeight)
 
 	// run the XBlock stream for this chain
-	p.runStreamer(ctx, config, fromHeight, callback)
+	p.streamBlocks(ctx, chainID, fromHeight, callback)
 
 	return nil
 }
 
-// startStreamer creates a new XBlock streamer for the given chain and kicks tarts its operation.
-func (p *Provider) runStreamer(
-	ctx context.Context,
-	config *ChainConfig,
-	minHeight uint64,
-	callback xchain.ProviderCallback,
-) {
-	// instantiate a new streamer for this chain
-	streamer := NewStreamer(config, callback, p.backoffFunc)
-
-	// start the streaming process
-	streamer.streamBlocks(ctx, minHeight)
-}
-
-// getConfig provides the configuration of the given chainID.
-func (p *Provider) getConfig(chainID uint64) (*ChainConfig, error) {
-	// check if the config for this chain ID is present
-	for _, config := range p.config {
-		if config.id == chainID {
-			return config, nil
-		}
+// getChain provides the configuration of the given chainID.
+func (p *Provider) getChain(chainID uint64) (netconf.Chain, *ethclient.Client, error) {
+	chain, ok := p.network.Chain(chainID)
+	if !ok {
+		return netconf.Chain{}, nil, errors.New("unknown chain ID for network")
 	}
 
-	return nil, errors.New("config for chain id is not found")
+	client, ok := p.rpcClients[chainID]
+	if !ok {
+		return netconf.Chain{}, nil, errors.New("no rpc client for chain ID")
+	}
+
+	return chain, client, nil
 }
