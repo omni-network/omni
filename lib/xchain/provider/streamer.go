@@ -7,47 +7,24 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 )
 
-// Streamer maintains the config and the destination for each chain.
-type Streamer struct {
-	chainConfig *ChainConfig            // the chain config which also has the subscription information
-	callback    xchain.ProviderCallback // the callback to call on receiving a xblock
-	backoffFunc func(context.Context) (func(), func())
-}
-
-// NewStreamer manages the rpc client to collect xblocks and delivers it to the
-// subscriber through callback.
-func NewStreamer(config *ChainConfig,
-	callback xchain.ProviderCallback,
-	backoffFunc func(context.Context) (func(), func()),
-) *Streamer {
-	// initialize the streamer structure with the received configuration
-	stream := &Streamer{
-		chainConfig: config,
-		callback:    callback,
-		backoffFunc: backoffFunc,
-	}
-
-	return stream
-}
-
 // streamBlocks triggers a continuously running routine that fetches and delivers xBlocks.
-func (s *Streamer) streamBlocks(ctx context.Context, height uint64) {
+func (p *Provider) streamBlocks(ctx context.Context, chainID uint64, height uint64, callback xchain.ProviderCallback) {
 	go func() {
-		backoff, reset := s.backoffFunc(ctx)
+		backoff, reset := p.backoffFunc(ctx)
 		currentHeight := height
 
 		// stream blocks until the context is canceled
 		for ctx.Err() == nil {
 			// fetch xBlock
 			log.Debug(ctx, "Fetching block", "height", currentHeight)
-			xBlock, ok := s.fetchXBlock(ctx, currentHeight, backoff, reset)
+			xBlock, ok := p.fetchXBlock(ctx, chainID, currentHeight, backoff, reset)
 			if !ok {
 				// this will happen only if the context is killed
 				return
 			}
 
 			// deliver the fetched xBlock
-			s.deliverXBlock(ctx, currentHeight, xBlock, backoff, reset)
+			deliverXBlock(ctx, currentHeight, xBlock, callback, backoff, reset)
 			log.Debug(ctx, "Delivered xBlock", "height", currentHeight)
 
 			currentHeight++
@@ -55,7 +32,8 @@ func (s *Streamer) streamBlocks(ctx context.Context, height uint64) {
 	}()
 }
 
-func (s *Streamer) fetchXBlock(ctx context.Context,
+func (p *Provider) fetchXBlock(ctx context.Context,
+	chainID uint64,
 	currentHeight uint64,
 	backoff func(),
 	reset func(),
@@ -63,9 +41,9 @@ func (s *Streamer) fetchXBlock(ctx context.Context,
 	// fetch xBlock
 	for ctx.Err() == nil {
 		// get the message and receipts from the chain for this block if any
-		xBlock, exists, err := s.chainConfig.rpcClient.GetBlock(ctx, currentHeight)
+		xBlock, exists, err := p.GetBlock(ctx, chainID, currentHeight)
 		if ctx.Err() != nil {
-			return xBlock, false
+			return xchain.Block{}, false
 		}
 		if err != nil {
 			log.Warn(ctx, "Could not fetch xBlock, will retry again after sometime", err,
@@ -93,15 +71,16 @@ func (s *Streamer) fetchXBlock(ctx context.Context,
 	return xchain.Block{}, false
 }
 
-func (s *Streamer) deliverXBlock(ctx context.Context,
+func deliverXBlock(ctx context.Context,
 	currentHeight uint64,
 	xBlock xchain.Block,
+	callback xchain.ProviderCallback,
 	backoff func(),
 	reset func(),
 ) {
 	// deliver the fetched xBlock
 	for ctx.Err() == nil {
-		err := s.callback(ctx, &xBlock)
+		err := callback(ctx, &xBlock)
 		if ctx.Err() != nil {
 			return
 		}

@@ -84,10 +84,6 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	log.Info(ctx, "Initializing halo files and directories")
 	homeDir := initCfg.HomeDir
 
-	if initCfg.Network != netconf.Simnet {
-		return errors.New("only simnet is supported for now")
-	}
-
 	// Quick sanity check if --home contains files (it should only contain dirs).
 	// This prevents accidental initialization in wrong current dir.
 	if !initCfg.Force {
@@ -187,7 +183,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	networkFile := cfg.NetworkFile()
 	if cmtos.FileExists(networkFile) {
 		log.Info(ctx, "Found network config", "path", networkFile)
-	} else {
+	} else if initCfg.Network == netconf.Simnet {
 		// Create a simnet (single binary with mocked clients).
 		network := netconf.Network{
 			Name: initCfg.Network,
@@ -203,13 +199,15 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 			return errors.Wrap(err, "save network file")
 		}
 		log.Info(ctx, "Generated simnet network config", "path", networkFile)
+	} else {
+		return errors.New("network config file must be pre-generated", "path", networkFile)
 	}
 
 	// Setup genesis file
 	genFile := comet.GenesisFile()
 	if cmtos.FileExists(genFile) {
 		log.Info(ctx, "Found genesis file", "path", genFile)
-	} else {
+	} else if initCfg.Network == netconf.Simnet {
 		// Create a simnet genesis file with this node as single validator.
 		genDoc := types.GenesisDoc{
 			ChainID:         initCfg.Network,
@@ -232,6 +230,8 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 			return errors.Wrap(err, "save genesis file")
 		}
 		log.Info(ctx, "Generated simnet genesis file", "path", genFile)
+	} else {
+		return errors.New("genesis file must be pre-generated", "path", networkFile)
 	}
 
 	// Attest state
