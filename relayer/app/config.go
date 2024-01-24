@@ -18,7 +18,7 @@ func (Config) NetworkFile() string {
 
 func DefaultRelayerConfig() Config {
 	return Config{
-		PrivateKey: "",
+		PrivateKey: "relayer.key",
 		HaloURL:    "http://localhost:26657",
 	}
 }

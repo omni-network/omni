@@ -21,14 +21,19 @@ func New() *cobra.Command {
 
 // newRunCmd returns a new cobra command that runs the relayer.
 func newRunCmd(runFunc func(context.Context, relayer.Config) error) *cobra.Command {
-	return &cobra.Command{
+	cfg := relayer.DefaultRelayerConfig()
+
+	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Runs the relayer",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			cfg := relayer.DefaultRelayerConfig()
 
 			return runFunc(ctx, cfg)
 		},
 	}
+
+	bindRunFlags(cmd.Flags(), &cfg)
+
+	return cmd
 }
