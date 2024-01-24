@@ -2,7 +2,6 @@ package relayer
 
 import (
 	"context"
-	"crypto/rand"
 	"fmt"
 
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
@@ -16,7 +15,6 @@ import (
 	"github.com/cometbft/cometbft/rpc/client/http"
 
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/crypto/ecies"
 )
 
 func Run(ctx context.Context, cfg Config) error {
@@ -35,13 +33,16 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	// todo(lazar955): load from cfg
-	privateKey, err := ecies.GenerateKey(rand.Reader, ethcrypto.S256(), nil)
+	privateKey, err := ethcrypto.LoadECDSA(cfg.PrivateKey)
 	if err != nil {
-		return errors.Wrap(err, "generate private key")
+		return errors.Wrap(err, "failed to load private key")
 	}
 
-	sender, err := NewSimpleSender(network.Chains, rpcClientPerChain, *privateKey.ExportECDSA())
+	if privateKey == nil {
+		return errors.New("private key is nil")
+	}
+
+	sender, err := NewSimpleSender(network.Chains, rpcClientPerChain, *privateKey)
 	if err != nil {
 		return err
 	}
