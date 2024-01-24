@@ -18,6 +18,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	relayapp "github.com/omni-network/omni/relayer/app"
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/p2p"
@@ -42,8 +43,8 @@ const (
 	NetworkConfigFile     = "config/network.json"
 )
 
-// additionalServices returns the default additional docker-compose services to start.
-func additionalServices(network netconf.Network) []string {
+// chainServices returns the EVM docker-compose services to start.
+func chainServices(network netconf.Network) []string {
 	resp := make([]string, 0, len(network.Chains))
 	for _, chain := range network.Chains {
 		resp = append(resp, chain.Name)
@@ -70,6 +71,10 @@ func Setup(ctx context.Context, testnet *e2e.Testnet, infp infra.Provider, netwo
 	}
 
 	if err := writeGethConfig(testnet.Dir); err != nil {
+		return err
+	}
+
+	if err := writeRelayerConfig(testnet.Dir, testnet, network); err != nil {
 		return err
 	}
 
@@ -343,6 +348,43 @@ func writeGethConfig(root string) error {
 		if err := os.WriteFile(path, data, 0o644); err != nil {
 			return errors.Wrap(err, "write geth config")
 		}
+	}
+
+	return nil
+}
+
+func writeRelayerConfig(root string, testnet *e2e.Testnet, network netconf.Network) error {
+	confRoot := filepath.Join(root, "relayer")
+
+	const (
+		privKeyFile = "privatekey"
+		networkFile = "network.json"
+		configFile  = "relayer.toml"
+	)
+
+	if err := os.MkdirAll(confRoot, 0o755); err != nil {
+		return errors.Wrap(err, "mkdir", "path", confRoot)
+	}
+
+	// Save network config
+	if err := writeNetworkConfig(network, filepath.Join(confRoot, networkFile)); err != nil {
+		return errors.Wrap(err, "save network config")
+	}
+
+	// Save private key
+	// TODO(corver): Use a different private key (avoid nonce issues)
+	pkBytes := []byte(strings.TrimPrefix(anvilPrivKeyHex, "0x"))
+	if err := os.WriteFile(filepath.Join(confRoot, privKeyFile), pkBytes, 0o600); err != nil {
+		return errors.Wrap(err, "write private key")
+	}
+
+	ralayCfg := relayapp.DefaultConfig()
+	ralayCfg.PrivateKey = privKeyFile
+	ralayCfg.NetworkFile = networkFile
+	ralayCfg.HaloURL = testnet.Nodes[0].AddressRPC()
+
+	if err := relayapp.WriteConfigTOML(ralayCfg, filepath.Join(confRoot, configFile)); err != nil {
+		return errors.Wrap(err, "write relayer config")
 	}
 
 	return nil

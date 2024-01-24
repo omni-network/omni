@@ -35,3 +35,5 @@ jobs:
         run: docker push omniops/explorer-indexer:latest
       - name: Push Halo to Dockerhub
         run: docker push omniops/halo:latest
+      - name: Push Relayer to Dockerhub
+        run: docker push omniops/relayer:latest

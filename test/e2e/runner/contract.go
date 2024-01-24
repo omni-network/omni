@@ -112,6 +112,7 @@ func newTxOpts(ctx context.Context, privKeyHex string, chainID uint64) (*bind.Tr
 	return txOpts, nil
 }
 
+// SendXMsgs sends one xmsg from every chain to every other chain.
 func SendXMsgs(ctx context.Context, portals map[uint64]Portal) error {
 	log.Info(ctx, "Sending one round of xmsgs between all chains")
 
@@ -130,6 +131,7 @@ func SendXMsgs(ctx context.Context, portals map[uint64]Portal) error {
 	return nil
 }
 
+// xcall sends a ethereum transaction to the portal contract, triggering a xcall.
 func xcall(ctx context.Context, from Portal, destChainID uint64) error {
 	txOpts, err := newTxOpts(ctx, anvilPrivKeyHex, from.Chain.ID)
 	if err != nil {

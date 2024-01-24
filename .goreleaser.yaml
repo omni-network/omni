@@ -10,6 +10,13 @@ builds:
     goos: [linux, darwin]
     goarch: [amd64, arm64]
 
+  - id: relayer
+    main: ./relayer
+    binary: relayer
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+
   - id: explorer-api
     main: ./explorer/api
     binary: /explorer/api
@@ -29,6 +36,11 @@ dockers:
     dockerfile: ./halo/Dockerfile
     image_templates:
      - omniops/halo:latest
+
+  - ids: [relayer]
+    dockerfile: ./relayer/Dockerfile
+    image_templates:
+     - omniops/relayer:latest
 
   - ids: [explorer-api]
     dockerfile: ./explorer/api/Dockerfile
