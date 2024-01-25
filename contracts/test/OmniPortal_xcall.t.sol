@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.23;
 
-import { CommonTest } from "test/common/CommonTest.sol";
+import { Base } from "test/common/Base.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
 import { Vm } from "forge-std/Vm.sol";
 
@@ -9,7 +9,7 @@ import { Vm } from "forge-std/Vm.sol";
  * @title OmniPortal_xcall_Test
  * @dev Tests of OmniPortal.xcall
  */
-contract OmniPortal_xcall_Test is CommonTest {
+contract OmniPortal_xcall_Test is Base {
     /// @dev Test that xcall with default gas limit emits XMsg event and increments outXStreamOffset
     function test_xcall_defaultGasLimit_succeeds() public {
         XTypes.Msg memory xmsg = _outbound_increment();

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.23;
 
-import { CommonTest } from "test/common/CommonTest.sol";
+import { Base } from "test/common/Base.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
 import { Vm } from "forge-std/Vm.sol";
 
@@ -9,12 +9,13 @@ import { Vm } from "forge-std/Vm.sol";
  * @title OmniPortal_xsubmit_Test
  * @dev Tests of OmniPortal.xsubmit
  */
-contract OmniPortal_xsubmit_Test is CommonTest {
+contract OmniPortal_xsubmit_Test is Base {
     /// @dev Test that an XSubmission with a single XMsg succeeds
     ///      Check that the correct XReceipt's are emitter, and stream offset is incremented.
     function test_xsubmit_xmsgSingle_succeeds() public {
         XTypes.Msg[] memory xmsgs = new XTypes.Msg[](1);
-        xmsgs[0] = _inbound_increment();
+
+        xmsgs[0] = _inbound_increment(0);
 
         XTypes.Submission memory submission = _xsub(xmsgs);
 
@@ -22,7 +23,7 @@ contract OmniPortal_xsubmit_Test is CommonTest {
         uint64 sourceChainId = xmsgs[0].sourceChainId;
         uint64 offset = portal.inXStreamOffset(sourceChainId);
 
-        vm.prank(xrelayer);
+        vm.prank(relayer);
         vm.recordLogs();
         portal.xsubmit(submission);
 
@@ -37,7 +38,7 @@ contract OmniPortal_xsubmit_Test is CommonTest {
             logs[0],
             sourceChainId,
             offset,
-            xrelayer,
+            relayer,
             true // success
         );
     }
@@ -46,14 +47,11 @@ contract OmniPortal_xsubmit_Test is CommonTest {
     ///      Check that the correct XReceipt's are emitter, and stream offset is incremented.
     function test_xsubmit_xmsgBatch_succeeds() public {
         XTypes.Msg[] memory xmsgs = new XTypes.Msg[](4);
-        xmsgs[0] = _inbound_increment();
-        xmsgs[1] = _inbound_increment();
-        xmsgs[2] = _inbound_increment();
-        xmsgs[3] = _inbound_increment();
 
-        xmsgs[1].streamOffset = xmsgs[0].streamOffset + 1;
-        xmsgs[2].streamOffset = xmsgs[1].streamOffset + 1;
-        xmsgs[3].streamOffset = xmsgs[2].streamOffset + 1;
+        xmsgs[0] = _inbound_increment(0);
+        xmsgs[1] = _inbound_increment(1);
+        xmsgs[2] = _inbound_increment(2);
+        xmsgs[3] = _inbound_increment(3);
 
         XTypes.Submission memory submission = _xsub(xmsgs);
 
@@ -61,7 +59,7 @@ contract OmniPortal_xsubmit_Test is CommonTest {
         uint64 sourceChainId = xmsgs[0].sourceChainId;
         uint64 offset = portal.inXStreamOffset(sourceChainId);
 
-        vm.prank(xrelayer);
+        vm.prank(relayer);
         vm.recordLogs();
         portal.xsubmit(submission);
 
@@ -77,7 +75,7 @@ contract OmniPortal_xsubmit_Test is CommonTest {
                 logs[i],
                 sourceChainId,
                 offset + uint64(i),
-                xrelayer,
+                relayer,
                 true // success
             );
         }
@@ -87,14 +85,11 @@ contract OmniPortal_xsubmit_Test is CommonTest {
     ///      Check that the correct XReceipt's are emitter, and stream offset is incremented.
     function test_xsubmit_xmsgBatchWithRevert_succeeds() public {
         XTypes.Msg[] memory xmsgs = new XTypes.Msg[](4);
-        xmsgs[0] = _inbound_increment();
-        xmsgs[1] = _inbound_increment();
-        xmsgs[2] = _inbound_revert();
-        xmsgs[3] = _inbound_increment();
 
-        xmsgs[1].streamOffset = xmsgs[0].streamOffset + 1;
-        xmsgs[2].streamOffset = xmsgs[1].streamOffset + 1;
-        xmsgs[3].streamOffset = xmsgs[2].streamOffset + 1;
+        xmsgs[0] = _inbound_increment(0);
+        xmsgs[1] = _inbound_increment(1);
+        xmsgs[2] = _inbound_revert(2);
+        xmsgs[3] = _inbound_increment(3);
 
         XTypes.Submission memory submission = _xsub(xmsgs);
 
@@ -102,7 +97,7 @@ contract OmniPortal_xsubmit_Test is CommonTest {
         uint64 sourceChainId = xmsgs[0].sourceChainId;
         uint64 offset = portal.inXStreamOffset(sourceChainId);
 
-        vm.prank(xrelayer);
+        vm.prank(relayer);
         vm.recordLogs();
         portal.xsubmit(submission);
 
@@ -117,7 +112,7 @@ contract OmniPortal_xsubmit_Test is CommonTest {
             logs[0],
             sourceChainId,
             offset,
-            xrelayer,
+            relayer,
             true // success
         );
 
@@ -125,7 +120,7 @@ contract OmniPortal_xsubmit_Test is CommonTest {
             logs[1],
             sourceChainId,
             offset + 1,
-            xrelayer,
+            relayer,
             true // success
         );
 
@@ -134,7 +129,7 @@ contract OmniPortal_xsubmit_Test is CommonTest {
             logs[2],
             sourceChainId,
             offset + 2,
-            xrelayer,
+            relayer,
             false // failure
         );
 
@@ -142,7 +137,7 @@ contract OmniPortal_xsubmit_Test is CommonTest {
             logs[3],
             sourceChainId,
             offset + 3,
-            xrelayer,
+            relayer,
             true // success
         );
     }
@@ -150,14 +145,11 @@ contract OmniPortal_xsubmit_Test is CommonTest {
     /// @dev Test that an XSubmission with a batch of XMsgs with an XMsg behind the current offset reverts
     function test_xsubmit_xmsgBatchOneBehindOffset_reverts() public {
         XTypes.Msg[] memory xmsgs = new XTypes.Msg[](4);
-        xmsgs[0] = _inbound_increment();
-        xmsgs[1] = _inbound_increment();
-        xmsgs[2] = _inbound_increment();
-        xmsgs[3] = _inbound_increment();
 
-        xmsgs[1].streamOffset = xmsgs[0].streamOffset + 1;
-        xmsgs[2].streamOffset = xmsgs[1].streamOffset + 1;
-        xmsgs[3].streamOffset = xmsgs[2].streamOffset - 1; // intentionally behind offset
+        xmsgs[0] = _inbound_increment(0);
+        xmsgs[1] = _inbound_increment(1);
+        xmsgs[2] = _inbound_increment(2);
+        xmsgs[3] = _inbound_increment(2); // intentionally behind offset
 
         XTypes.Submission memory submission = _xsub(xmsgs);
 
@@ -168,14 +160,11 @@ contract OmniPortal_xsubmit_Test is CommonTest {
     /// @dev Test that an XSubmission with a batch of XMsgs with an XMsg ahead the current offset reverts
     function test_xsubmit_xmsgBatchOneAheadOffset_reverts() public {
         XTypes.Msg[] memory xmsgs = new XTypes.Msg[](4);
-        xmsgs[0] = _inbound_increment();
-        xmsgs[1] = _inbound_increment();
-        xmsgs[2] = _inbound_increment();
-        xmsgs[3] = _inbound_increment();
 
-        xmsgs[1].streamOffset = xmsgs[0].streamOffset + 1;
-        xmsgs[2].streamOffset = xmsgs[1].streamOffset + 1;
-        xmsgs[3].streamOffset = xmsgs[2].streamOffset + 2; // intentionally ahead offset
+        xmsgs[0] = _inbound_increment(0);
+        xmsgs[1] = _inbound_increment(1);
+        xmsgs[2] = _inbound_increment(2);
+        xmsgs[3] = _inbound_increment(4); // intentionally ahead offset
 
         XTypes.Submission memory submission = _xsub(xmsgs);
 
@@ -186,14 +175,11 @@ contract OmniPortal_xsubmit_Test is CommonTest {
     /// @dev Test that an XSubmission with a batch of XMsgs in which one has the wrong destChainId reverts
     function test_xsubmit_xmsgBatchWrongChainId_reverts() public {
         XTypes.Msg[] memory xmsgs = new XTypes.Msg[](4);
-        xmsgs[0] = _inbound_increment();
-        xmsgs[1] = _inbound_increment();
-        xmsgs[2] = _inbound_increment();
-        xmsgs[3] = _inbound_increment();
 
-        xmsgs[1].streamOffset = xmsgs[0].streamOffset + 1;
-        xmsgs[2].streamOffset = xmsgs[1].streamOffset + 1;
-        xmsgs[3].streamOffset = xmsgs[2].streamOffset + 1;
+        xmsgs[0] = _inbound_increment(0);
+        xmsgs[1] = _inbound_increment(1);
+        xmsgs[2] = _inbound_increment(2);
+        xmsgs[3] = _inbound_increment(3);
 
         xmsgs[1].destChainId = xmsgs[0].destChainId + 1; // intentionally wrong chainId
 
