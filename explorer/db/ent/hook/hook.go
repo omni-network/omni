@@ -9,6 +9,18 @@ import (
 	"github.com/omni-network/omni/explorer/db/ent"
 )
 
+// The BlockFunc type is an adapter to allow the use of ordinary
+// function as Block mutator.
+type BlockFunc func(context.Context, *ent.BlockMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f BlockFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.BlockMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BlockMutation", m)
+}
+
 // The ChainFunc type is an adapter to allow the use of ordinary
 // function as Chain mutator.
 type ChainFunc func(context.Context, *ent.ChainMutation) (ent.Value, error)
@@ -21,16 +33,28 @@ func (f ChainFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ChainMutation", m)
 }
 
-// The XBlockFunc type is an adapter to allow the use of ordinary
-// function as XBlock mutator.
-type XBlockFunc func(context.Context, *ent.XBlockMutation) (ent.Value, error)
+// The MsgFunc type is an adapter to allow the use of ordinary
+// function as Msg mutator.
+type MsgFunc func(context.Context, *ent.MsgMutation) (ent.Value, error)
 
 // Mutate calls f(ctx, m).
-func (f XBlockFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.XBlockMutation); ok {
+func (f MsgFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.MsgMutation); ok {
 		return f(ctx, mv)
 	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.XBlockMutation", m)
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MsgMutation", m)
+}
+
+// The ReceiptFunc type is an adapter to allow the use of ordinary
+// function as Receipt mutator.
+type ReceiptFunc func(context.Context, *ent.ReceiptMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ReceiptFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ReceiptMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ReceiptMutation", m)
 }
 
 // The XProviderCursorFunc type is an adapter to allow the use of ordinary
