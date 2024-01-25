@@ -73,11 +73,11 @@ func LoadAttester(ctx context.Context, privKey crypto.PrivKey, path string, prov
 }
 
 // Attest creates an attestation for the given block and adds it to the internal state.
-func (a *Attester) Attest(_ context.Context, block *xchain.Block) error {
+func (a *Attester) Attest(_ context.Context, block xchain.Block) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	att, err := CreateAttestation(a.privKey, *block)
+	att, err := CreateAttestation(a.privKey, block)
 	if err != nil {
 		return err
 	}

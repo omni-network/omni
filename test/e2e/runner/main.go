@@ -112,7 +112,7 @@ func NewCLI() *CLI {
 				return err
 			}
 
-			if err := LogMetrics(ctx, cli.testnet, cli.network); err != nil {
+			if err := LogMetrics(ctx, cli.testnet, portals, cli.network); err != nil {
 				return err
 			}
 

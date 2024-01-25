@@ -40,7 +40,7 @@ func (m *Mock) Subscribe(ctx context.Context, chainID uint64, fromHeight uint64,
 
 	// Populate historical blocks so offsets are consistent for heights.
 	for i := uint64(0); i < fromHeight; i++ {
-		m.addBlock(*nextBlock(chainID, i, offset))
+		m.addBlock(nextBlock(chainID, i, offset))
 	}
 
 	go func() {
@@ -48,7 +48,7 @@ func (m *Mock) Subscribe(ctx context.Context, chainID uint64, fromHeight uint64,
 
 		for ctx.Err() == nil {
 			block := nextBlock(chainID, height, offset)
-			m.addBlock(*block)
+			m.addBlock(block)
 			if err := callback(ctx, block); err != nil {
 				log.Warn(ctx, "Mock callback failed, will retry", err)
 				continue
@@ -80,11 +80,12 @@ func (m *Mock) GetBlock(_ context.Context, chainID uint64, height uint64) (xchai
 	return xchain.Block{}, false, nil
 }
 
-func (*Mock) GetSubmittedCursor(_ context.Context, destChain uint64, srcChain uint64) (xchain.StreamCursor, error) {
+func (*Mock) GetSubmittedCursor(_ context.Context, destChain uint64, srcChain uint64,
+) (xchain.StreamCursor, bool, error) {
 	return xchain.StreamCursor{StreamID: xchain.StreamID{
 		SourceChainID: srcChain,
 		DestChainID:   destChain,
-	}}, nil
+	}}, true, nil
 }
 
 func (m *Mock) addBlock(block xchain.Block) {
@@ -94,7 +95,7 @@ func (m *Mock) addBlock(block xchain.Block) {
 	m.blocks = append(m.blocks, block)
 }
 
-func nextBlock(chainID uint64, height uint64, offsetFunc func(xchain.StreamID) uint64) *xchain.Block {
+func nextBlock(chainID uint64, height uint64, offsetFunc func(xchain.StreamID) uint64) xchain.Block {
 	// Use deterministic randomness based on the chainID and height.
 	r := rand.New(rand.NewSource(int64(chainID ^ height)))
 
@@ -119,7 +120,7 @@ func nextBlock(chainID uint64, height uint64, offsetFunc func(xchain.StreamID) u
 		msgs = append(msgs, newMsgA(), newMsgA(), newMsgB()) // Msgs: 3*chainA, 1*chainB
 	}
 
-	return &xchain.Block{
+	return xchain.Block{
 		BlockHeader: xchain.BlockHeader{
 			SourceChainID: chainID,
 			BlockHeight:   height,

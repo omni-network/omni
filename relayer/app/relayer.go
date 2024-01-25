@@ -21,25 +21,9 @@ func StartRelayer(
 	sender Sender,
 ) error {
 	// Get the last submitted cursors for each chain.
-	var cursors []xchain.StreamCursor                  // All submitted cursors from all chains.
-	initialOffsets := make(map[xchain.StreamID]uint64) // Initial submitted offsets for each stream.
-	for _, destChain := range chainIDs {
-		for _, srcChain := range chainIDs {
-			if srcChain == destChain {
-				continue
-			}
-
-			cursor, err := xClient.GetSubmittedCursor(ctx, destChain, srcChain)
-			if err != nil {
-				return errors.Wrap(err, "failed to get submitted cursors",
-					"dest_chain", destChain,
-					"src_chain", srcChain,
-				)
-			}
-
-			initialOffsets[cursor.StreamID] = cursor.Offset
-			cursors = append(cursors, cursor)
-		}
+	cursors, initialOffsets, err := getSubmittedCursors(ctx, chainIDs, xClient)
+	if err != nil {
+		return err
 	}
 
 	// callback processes each approved attestation/xblock.
@@ -62,14 +46,14 @@ func StartRelayer(
 			)
 		} else if len(block.Msgs) == 0 {
 			log.Debug(ctx, "Skipping empty attested block",
-				"height", att.BlockHeight, "chain", att.SourceChainID)
+				"height", att.BlockHeight, "source_chain_id", att.SourceChainID)
 
 			return nil
 		}
 
 		// Split into streams
 		for streamID, msgs := range mapByStreamID(block.Msgs) {
-			msgs = filterMsgs(msgs, initialOffsets[streamID]) // Filter out any partially submitted stream updates.
+			msgs = filterMsgs(msgs, initialOffsets, streamID) // Filter out any partially submitted stream updates.
 			if len(msgs) == 0 {
 				continue
 			}
@@ -103,6 +87,36 @@ func StartRelayer(
 	return nil
 }
 
+// getSubmittedCursors returns the last submitted cursor for each chain.
+// It also returns the offsets indexed by streamID for each stream.
+func getSubmittedCursors(ctx context.Context, chainIDs []uint64, xClient xchain.Provider,
+) ([]xchain.StreamCursor, map[xchain.StreamID]uint64, error) {
+	var cursors []xchain.StreamCursor                  // All submitted cursors from all chains.
+	initialOffsets := make(map[xchain.StreamID]uint64) // Initial submitted offsets for each stream.
+	for _, destChain := range chainIDs {
+		for _, srcChain := range chainIDs {
+			if srcChain == destChain {
+				continue
+			}
+
+			cursor, ok, err := xClient.GetSubmittedCursor(ctx, destChain, srcChain)
+			if err != nil {
+				return nil, nil, errors.Wrap(err, "failed to get submitted cursors",
+					"dest_chain", destChain,
+					"src_chain", srcChain,
+				)
+			} else if !ok {
+				continue
+			}
+
+			initialOffsets[cursor.StreamID] = cursor.Offset
+			cursors = append(cursors, cursor)
+		}
+	}
+
+	return cursors, initialOffsets, nil
+}
+
 // TODO(corver): Add support for empty submissions by passing a map of chainIDs to generate empty submissions for.
 func mapByStreamID(msgs []xchain.Msg) map[xchain.StreamID][]xchain.Msg {
 	m := make(map[xchain.StreamID][]xchain.Msg)
@@ -113,7 +127,12 @@ func mapByStreamID(msgs []xchain.Msg) map[xchain.StreamID][]xchain.Msg {
 	return m
 }
 
-func filterMsgs(msgs []xchain.Msg, offset uint64) []xchain.Msg {
+func filterMsgs(msgs []xchain.Msg, offsets map[xchain.StreamID]uint64, streamID xchain.StreamID) []xchain.Msg {
+	offset, ok := offsets[streamID]
+	if !ok {
+		return msgs // No offset, so no filtering.
+	}
+
 	res := make([]xchain.Msg, 0, len(msgs)) // Res might have over-capacity, but that's fine, we only filter on startup.
 	for _, msg := range msgs {
 		if msg.StreamOffset <= offset {
