@@ -60,4 +60,13 @@ contract OmniPortal_xcall_Test is CommonTest {
         vm.expectRevert("OmniPortal: gasLimit too high");
         portal.xcall(xmsg.destChainId, xmsg.to, xmsg.data, xmsg.gasLimit);
     }
+
+    /// @dev Test that xcall with destChainId == portal.chainId reverts
+    function test_xcall_sameChain_reverts() public {
+        XChain.Msg memory xmsg = _outbound_increment();
+        xmsg.destChainId = portal.chainId();
+
+        vm.expectRevert("OmniPortal: no same-chain xcall");
+        portal.xcall(xmsg.destChainId, xmsg.to, xmsg.data, xmsg.gasLimit);
+    }
 }

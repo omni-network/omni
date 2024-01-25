@@ -52,6 +52,7 @@ contract OmniPortal is IOmniPortal {
 
     /// @dev Emit an XMsg event, increment dest chain outXStreamOffset
     function _xcall(uint64 destChainId, address sender, address to, bytes calldata data, uint64 gasLimit) private {
+        require(destChainId != chainId, "OmniPortal: no same-chain xcall");
         emit XMsg(destChainId, outXStreamOffset[destChainId], sender, to, data, gasLimit);
         outXStreamOffset[destChainId] += 1;
     }
