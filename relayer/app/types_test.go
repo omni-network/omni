@@ -27,7 +27,7 @@ func Test_translateSubmission(t *testing.T) {
 	require.Equal(t, sub, reversedSub)
 }
 
-func translateXSubmission(submission bindings.XChainSubmission, destChainID uint64) xchain.Submission {
+func translateXSubmission(submission bindings.XTypesSubmission, destChainID uint64) xchain.Submission {
 	chainSubmission := xchain.Submission{
 		AttestationRoot: submission.AttestationRoot,
 		BlockHeader: xchain.BlockHeader{

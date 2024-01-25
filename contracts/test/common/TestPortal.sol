@@ -2,14 +2,14 @@
 pragma solidity 0.8.23;
 
 import { OmniPortal } from "src/OmniPortal.sol";
-import { XChain } from "src/libraries/XChain.sol";
+import { XTypes } from "src/libraries/XTypes.sol";
 
 /**
  * @title TestPortal
  * @dev A test contract that exposes the OmniPortal's internal functions.
  */
 contract TestPortal is OmniPortal {
-    function exec(XChain.Msg calldata xmsg) external {
+    function exec(XTypes.Msg calldata xmsg) external {
         _exec(xmsg);
     }
 }
