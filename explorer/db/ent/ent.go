@@ -12,7 +12,11 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/omni-network/omni/explorer/db/ent/xblock"
+	"github.com/omni-network/omni/explorer/db/ent/block"
+	"github.com/omni-network/omni/explorer/db/ent/chain"
+	"github.com/omni-network/omni/explorer/db/ent/msg"
+	"github.com/omni-network/omni/explorer/db/ent/receipt"
+	"github.com/omni-network/omni/explorer/db/ent/xprovidercursor"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -73,7 +77,11 @@ var (
 func checkColumn(table, column string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			xblock.Table: xblock.ValidColumn,
+			block.Table:           block.ValidColumn,
+			chain.Table:           chain.ValidColumn,
+			msg.Table:             msg.ValidColumn,
+			receipt.Table:         receipt.ValidColumn,
+			xprovidercursor.Table: xprovidercursor.ValidColumn,
 		})
 	})
 	return columnCheck(table, column)

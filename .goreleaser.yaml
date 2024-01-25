@@ -24,7 +24,7 @@ builds:
     goos: [ linux, darwin ]
     goarch: [ amd64, arm64 ]
 
-  - id: indexer
+  - id: explorer-indexer
     main: ./explorer/indexer
     binary: explorer/indexer
     env: [ CGO_ENABLED=0 ]
@@ -47,7 +47,7 @@ dockers:
     image_templates:
       - omniops/explorer-api:latest
 
-  - ids: [indexer]
+  - ids: [explorer-indexer]
     dockerfile: ./explorer/indexer/Dockerfile
     image_templates:
       - omniops/explorer-indexer:latest
