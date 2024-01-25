@@ -8,6 +8,20 @@ import (
 )
 
 var (
+	// ChainsColumns holds the columns for the "chains" table.
+	ChainsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "uuid", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "chain_id", Type: field.TypeUint64},
+		{Name: "name", Type: field.TypeString},
+	}
+	// ChainsTable holds the schema information for the "chains" table.
+	ChainsTable = &schema.Table{
+		Name:       "chains",
+		Columns:    ChainsColumns,
+		PrimaryKey: []*schema.Column{ChainsColumns[0]},
+	}
 	// XblocksColumns holds the columns for the "xblocks" table.
 	XblocksColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -19,9 +33,26 @@ var (
 		Columns:    XblocksColumns,
 		PrimaryKey: []*schema.Column{XblocksColumns[0]},
 	}
+	// XproviderCursorsColumns holds the columns for the "xprovider_cursors" table.
+	XproviderCursorsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "uuid", Type: field.TypeUUID},
+		{Name: "chain_id", Type: field.TypeUint64},
+		{Name: "height", Type: field.TypeUint64},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// XproviderCursorsTable holds the schema information for the "xprovider_cursors" table.
+	XproviderCursorsTable = &schema.Table{
+		Name:       "xprovider_cursors",
+		Columns:    XproviderCursorsColumns,
+		PrimaryKey: []*schema.Column{XproviderCursorsColumns[0]},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		ChainsTable,
 		XblocksTable,
+		XproviderCursorsTable,
 	}
 )
 

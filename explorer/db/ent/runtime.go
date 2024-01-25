@@ -3,19 +3,47 @@
 package ent
 
 import (
+	"time"
+
 	"github.com/google/uuid"
+	"github.com/omni-network/omni/explorer/db/ent/chain"
 	"github.com/omni-network/omni/explorer/db/ent/schema"
 	"github.com/omni-network/omni/explorer/db/ent/xblock"
+	"github.com/omni-network/omni/explorer/db/ent/xprovidercursor"
 )
 
 // The init function reads all schema descriptors with runtime code
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	chainFields := schema.Chain{}.Fields()
+	_ = chainFields
+	// chainDescUUID is the schema descriptor for UUID field.
+	chainDescUUID := chainFields[0].Descriptor()
+	// chain.DefaultUUID holds the default value on creation for the UUID field.
+	chain.DefaultUUID = chainDescUUID.Default.(func() uuid.UUID)
+	// chainDescCreatedAt is the schema descriptor for CreatedAt field.
+	chainDescCreatedAt := chainFields[1].Descriptor()
+	// chain.DefaultCreatedAt holds the default value on creation for the CreatedAt field.
+	chain.DefaultCreatedAt = chainDescCreatedAt.Default.(time.Time)
 	xblockFields := schema.XBlock{}.Fields()
 	_ = xblockFields
 	// xblockDescUUID is the schema descriptor for uuid field.
 	xblockDescUUID := xblockFields[0].Descriptor()
 	// xblock.DefaultUUID holds the default value on creation for the uuid field.
 	xblock.DefaultUUID = xblockDescUUID.Default.(func() uuid.UUID)
+	xprovidercursorFields := schema.XProviderCursor{}.Fields()
+	_ = xprovidercursorFields
+	// xprovidercursorDescUUID is the schema descriptor for UUID field.
+	xprovidercursorDescUUID := xprovidercursorFields[0].Descriptor()
+	// xprovidercursor.DefaultUUID holds the default value on creation for the UUID field.
+	xprovidercursor.DefaultUUID = xprovidercursorDescUUID.Default.(func() uuid.UUID)
+	// xprovidercursorDescCreatedAt is the schema descriptor for CreatedAt field.
+	xprovidercursorDescCreatedAt := xprovidercursorFields[3].Descriptor()
+	// xprovidercursor.DefaultCreatedAt holds the default value on creation for the CreatedAt field.
+	xprovidercursor.DefaultCreatedAt = xprovidercursorDescCreatedAt.Default.(time.Time)
+	// xprovidercursorDescUpdatedAt is the schema descriptor for UpdatedAt field.
+	xprovidercursorDescUpdatedAt := xprovidercursorFields[4].Descriptor()
+	// xprovidercursor.DefaultUpdatedAt holds the default value on creation for the UpdatedAt field.
+	xprovidercursor.DefaultUpdatedAt = xprovidercursorDescUpdatedAt.Default.(time.Time)
 }

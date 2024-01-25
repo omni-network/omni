@@ -14,7 +14,9 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
+	"github.com/omni-network/omni/explorer/db/ent/chain"
 	"github.com/omni-network/omni/explorer/db/ent/xblock"
+	"github.com/omni-network/omni/explorer/db/ent/xprovidercursor"
 )
 
 // Client is the client that holds all ent builders.
@@ -22,8 +24,12 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// Chain is the client for interacting with the Chain builders.
+	Chain *ChainClient
 	// XBlock is the client for interacting with the XBlock builders.
 	XBlock *XBlockClient
+	// XProviderCursor is the client for interacting with the XProviderCursor builders.
+	XProviderCursor *XProviderCursorClient
 }
 
 // NewClient creates a new client configured with the given options.
@@ -35,7 +41,9 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.Chain = NewChainClient(c.config)
 	c.XBlock = NewXBlockClient(c.config)
+	c.XProviderCursor = NewXProviderCursorClient(c.config)
 }
 
 type (
@@ -126,9 +134,11 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		XBlock: NewXBlockClient(cfg),
+		ctx:             ctx,
+		config:          cfg,
+		Chain:           NewChainClient(cfg),
+		XBlock:          NewXBlockClient(cfg),
+		XProviderCursor: NewXProviderCursorClient(cfg),
 	}, nil
 }
 
@@ -146,16 +156,18 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		XBlock: NewXBlockClient(cfg),
+		ctx:             ctx,
+		config:          cfg,
+		Chain:           NewChainClient(cfg),
+		XBlock:          NewXBlockClient(cfg),
+		XProviderCursor: NewXProviderCursorClient(cfg),
 	}, nil
 }
 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		XBlock.
+//		Chain.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -177,22 +189,163 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.Chain.Use(hooks...)
 	c.XBlock.Use(hooks...)
+	c.XProviderCursor.Use(hooks...)
 }
 
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
+	c.Chain.Intercept(interceptors...)
 	c.XBlock.Intercept(interceptors...)
+	c.XProviderCursor.Intercept(interceptors...)
 }
 
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
+	case *ChainMutation:
+		return c.Chain.mutate(ctx, m)
 	case *XBlockMutation:
 		return c.XBlock.mutate(ctx, m)
+	case *XProviderCursorMutation:
+		return c.XProviderCursor.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
+// ChainClient is a client for the Chain schema.
+type ChainClient struct {
+	config
+}
+
+// NewChainClient returns a client for the Chain from the given config.
+func NewChainClient(c config) *ChainClient {
+	return &ChainClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `chain.Hooks(f(g(h())))`.
+func (c *ChainClient) Use(hooks ...Hook) {
+	c.hooks.Chain = append(c.hooks.Chain, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `chain.Intercept(f(g(h())))`.
+func (c *ChainClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Chain = append(c.inters.Chain, interceptors...)
+}
+
+// Create returns a builder for creating a Chain entity.
+func (c *ChainClient) Create() *ChainCreate {
+	mutation := newChainMutation(c.config, OpCreate)
+	return &ChainCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Chain entities.
+func (c *ChainClient) CreateBulk(builders ...*ChainCreate) *ChainCreateBulk {
+	return &ChainCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ChainClient) MapCreateBulk(slice any, setFunc func(*ChainCreate, int)) *ChainCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ChainCreateBulk{err: fmt.Errorf("calling to ChainClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ChainCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ChainCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Chain.
+func (c *ChainClient) Update() *ChainUpdate {
+	mutation := newChainMutation(c.config, OpUpdate)
+	return &ChainUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ChainClient) UpdateOne(ch *Chain) *ChainUpdateOne {
+	mutation := newChainMutation(c.config, OpUpdateOne, withChain(ch))
+	return &ChainUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ChainClient) UpdateOneID(id int) *ChainUpdateOne {
+	mutation := newChainMutation(c.config, OpUpdateOne, withChainID(id))
+	return &ChainUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Chain.
+func (c *ChainClient) Delete() *ChainDelete {
+	mutation := newChainMutation(c.config, OpDelete)
+	return &ChainDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ChainClient) DeleteOne(ch *Chain) *ChainDeleteOne {
+	return c.DeleteOneID(ch.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ChainClient) DeleteOneID(id int) *ChainDeleteOne {
+	builder := c.Delete().Where(chain.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ChainDeleteOne{builder}
+}
+
+// Query returns a query builder for Chain.
+func (c *ChainClient) Query() *ChainQuery {
+	return &ChainQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeChain},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Chain entity by its id.
+func (c *ChainClient) Get(ctx context.Context, id int) (*Chain, error) {
+	return c.Query().Where(chain.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ChainClient) GetX(ctx context.Context, id int) *Chain {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *ChainClient) Hooks() []Hook {
+	return c.hooks.Chain
+}
+
+// Interceptors returns the client interceptors.
+func (c *ChainClient) Interceptors() []Interceptor {
+	return c.inters.Chain
+}
+
+func (c *ChainClient) mutate(ctx context.Context, m *ChainMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ChainCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ChainUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ChainUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ChainDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Chain mutation op: %q", m.Op())
 	}
 }
 
@@ -329,12 +482,145 @@ func (c *XBlockClient) mutate(ctx context.Context, m *XBlockMutation) (Value, er
 	}
 }
 
+// XProviderCursorClient is a client for the XProviderCursor schema.
+type XProviderCursorClient struct {
+	config
+}
+
+// NewXProviderCursorClient returns a client for the XProviderCursor from the given config.
+func NewXProviderCursorClient(c config) *XProviderCursorClient {
+	return &XProviderCursorClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `xprovidercursor.Hooks(f(g(h())))`.
+func (c *XProviderCursorClient) Use(hooks ...Hook) {
+	c.hooks.XProviderCursor = append(c.hooks.XProviderCursor, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `xprovidercursor.Intercept(f(g(h())))`.
+func (c *XProviderCursorClient) Intercept(interceptors ...Interceptor) {
+	c.inters.XProviderCursor = append(c.inters.XProviderCursor, interceptors...)
+}
+
+// Create returns a builder for creating a XProviderCursor entity.
+func (c *XProviderCursorClient) Create() *XProviderCursorCreate {
+	mutation := newXProviderCursorMutation(c.config, OpCreate)
+	return &XProviderCursorCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of XProviderCursor entities.
+func (c *XProviderCursorClient) CreateBulk(builders ...*XProviderCursorCreate) *XProviderCursorCreateBulk {
+	return &XProviderCursorCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *XProviderCursorClient) MapCreateBulk(slice any, setFunc func(*XProviderCursorCreate, int)) *XProviderCursorCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &XProviderCursorCreateBulk{err: fmt.Errorf("calling to XProviderCursorClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*XProviderCursorCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &XProviderCursorCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for XProviderCursor.
+func (c *XProviderCursorClient) Update() *XProviderCursorUpdate {
+	mutation := newXProviderCursorMutation(c.config, OpUpdate)
+	return &XProviderCursorUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *XProviderCursorClient) UpdateOne(xc *XProviderCursor) *XProviderCursorUpdateOne {
+	mutation := newXProviderCursorMutation(c.config, OpUpdateOne, withXProviderCursor(xc))
+	return &XProviderCursorUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *XProviderCursorClient) UpdateOneID(id int) *XProviderCursorUpdateOne {
+	mutation := newXProviderCursorMutation(c.config, OpUpdateOne, withXProviderCursorID(id))
+	return &XProviderCursorUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for XProviderCursor.
+func (c *XProviderCursorClient) Delete() *XProviderCursorDelete {
+	mutation := newXProviderCursorMutation(c.config, OpDelete)
+	return &XProviderCursorDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *XProviderCursorClient) DeleteOne(xc *XProviderCursor) *XProviderCursorDeleteOne {
+	return c.DeleteOneID(xc.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *XProviderCursorClient) DeleteOneID(id int) *XProviderCursorDeleteOne {
+	builder := c.Delete().Where(xprovidercursor.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &XProviderCursorDeleteOne{builder}
+}
+
+// Query returns a query builder for XProviderCursor.
+func (c *XProviderCursorClient) Query() *XProviderCursorQuery {
+	return &XProviderCursorQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeXProviderCursor},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a XProviderCursor entity by its id.
+func (c *XProviderCursorClient) Get(ctx context.Context, id int) (*XProviderCursor, error) {
+	return c.Query().Where(xprovidercursor.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *XProviderCursorClient) GetX(ctx context.Context, id int) *XProviderCursor {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *XProviderCursorClient) Hooks() []Hook {
+	return c.hooks.XProviderCursor
+}
+
+// Interceptors returns the client interceptors.
+func (c *XProviderCursorClient) Interceptors() []Interceptor {
+	return c.inters.XProviderCursor
+}
+
+func (c *XProviderCursorClient) mutate(ctx context.Context, m *XProviderCursorMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&XProviderCursorCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&XProviderCursorUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&XProviderCursorUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&XProviderCursorDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown XProviderCursor mutation op: %q", m.Op())
+	}
+}
+
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		XBlock []ent.Hook
+		Chain, XBlock, XProviderCursor []ent.Hook
 	}
 	inters struct {
-		XBlock []ent.Interceptor
+		Chain, XBlock, XProviderCursor []ent.Interceptor
 	}
 )

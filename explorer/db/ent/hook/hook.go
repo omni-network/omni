@@ -9,6 +9,18 @@ import (
 	"github.com/omni-network/omni/explorer/db/ent"
 )
 
+// The ChainFunc type is an adapter to allow the use of ordinary
+// function as Chain mutator.
+type ChainFunc func(context.Context, *ent.ChainMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ChainFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ChainMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ChainMutation", m)
+}
+
 // The XBlockFunc type is an adapter to allow the use of ordinary
 // function as XBlock mutator.
 type XBlockFunc func(context.Context, *ent.XBlockMutation) (ent.Value, error)
@@ -19,6 +31,18 @@ func (f XBlockFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, erro
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.XBlockMutation", m)
+}
+
+// The XProviderCursorFunc type is an adapter to allow the use of ordinary
+// function as XProviderCursor mutator.
+type XProviderCursorFunc func(context.Context, *ent.XProviderCursorMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f XProviderCursorFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.XProviderCursorMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.XProviderCursorMutation", m)
 }
 
 // Condition is a hook condition function.

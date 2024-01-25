@@ -6,5 +6,11 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// Chain is the predicate function for chain builders.
+type Chain func(*sql.Selector)
+
 // XBlock is the predicate function for xblock builders.
 type XBlock func(*sql.Selector)
+
+// XProviderCursor is the predicate function for xprovidercursor builders.
+type XProviderCursor func(*sql.Selector)
