@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import { IOmniPortal } from "./interfaces/IOmniPortal.sol";
-import { XChain } from "./libraries/XChain.sol";
+import { XTypes } from "./libraries/XTypes.sol";
 
 contract OmniPortal is IOmniPortal {
     /// @inheritdoc IOmniPortal
@@ -38,7 +38,7 @@ contract OmniPortal is IOmniPortal {
     }
 
     /// @inheritdoc IOmniPortal
-    function xsubmit(XChain.Submission calldata xsub) external {
+    function xsubmit(XTypes.Submission calldata xsub) external {
         // TODO: verify a quorum of validators have signed off on the attestation root.
 
         // TODO: verify block header and msgs are included in the attestation merkle root
@@ -60,7 +60,7 @@ contract OmniPortal is IOmniPortal {
     }
 
     /// @dev Verify an XMsg is next in its XStream, execute it, increment inXStreamOffset, emit an XReceipt
-    function _exec(XChain.Msg calldata xmsg) internal {
+    function _exec(XTypes.Msg calldata xmsg) internal {
         require(xmsg.destChainId == chainId, "OmniPortal: wrong destChainId");
         require(xmsg.streamOffset == inXStreamOffset[xmsg.sourceChainId], "OmniPortal: wrong streamOffset");
 

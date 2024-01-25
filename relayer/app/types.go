@@ -23,10 +23,10 @@ type Sender interface {
 	SendTransaction(ctx context.Context, submission xchain.Submission) error
 }
 
-func TranslateSubmission(submission xchain.Submission) bindings.XChainSubmission {
-	chainSubmission := bindings.XChainSubmission{
+func TranslateSubmission(submission xchain.Submission) bindings.XTypesSubmission {
+	chainSubmission := bindings.XTypesSubmission{
 		AttestationRoot: submission.AttestationRoot,
-		BlockHeader: bindings.XChainBlockHeader{
+		BlockHeader: bindings.XTypesBlockHeader{
 			SourceChainId: submission.BlockHeader.SourceChainID,
 			BlockHeight:   submission.BlockHeader.BlockHeight,
 			BlockHash:     submission.BlockHeader.BlockHash,
@@ -35,21 +35,21 @@ func TranslateSubmission(submission xchain.Submission) bindings.XChainSubmission
 		ProofFlags: submission.ProofFlags,
 	}
 
-	chainSubmission.Signatures = make([]bindings.XChainSigTuple, 0, len(submission.Signatures))
+	chainSubmission.Signatures = make([]bindings.XTypesSigTuple, 0, len(submission.Signatures))
 	for _, sig := range submission.Signatures {
 		validatorPubKey := make([]byte, len(sig.ValidatorPubKey))
 		copy(validatorPubKey, sig.ValidatorPubKey[:])
 		signature := make([]byte, len(sig.Signature))
 		copy(signature, sig.Signature[:])
-		chainSubmission.Signatures = append(chainSubmission.Signatures, bindings.XChainSigTuple{
+		chainSubmission.Signatures = append(chainSubmission.Signatures, bindings.XTypesSigTuple{
 			ValidatorPubKey: validatorPubKey,
 			Signature:       signature,
 		})
 	}
 
-	msgs := make([]bindings.XChainMsg, 0, len(submission.Msgs))
+	msgs := make([]bindings.XTypesMsg, 0, len(submission.Msgs))
 	for _, msg := range submission.Msgs {
-		msgs = append(msgs, bindings.XChainMsg{
+		msgs = append(msgs, bindings.XTypesMsg{
 			SourceChainId: msg.SourceChainID,
 			DestChainId:   msg.DestChainID,
 			StreamOffset:  msg.StreamOffset,

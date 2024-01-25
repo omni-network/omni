@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.23;
 
-import { XChain } from "../libraries/XChain.sol";
+import { XTypes } from "../libraries/XTypes.sol";
 
 /**
  * @title IOmniPortal
@@ -99,5 +99,5 @@ interface IOmniPortal {
      * @param xsub An xchain submisison, including an attestation root w/ validator signatures,
      *        and a block header and message batch, proven against the attestation root.
      */
-    function xsubmit(XChain.Submission calldata xsub) external;
+    function xsubmit(XTypes.Submission calldata xsub) external;
 }

@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import { CommonTest } from "test/common/CommonTest.sol";
-import { XChain } from "src/libraries/XChain.sol";
+import { XTypes } from "src/libraries/XTypes.sol";
 import { Vm } from "forge-std/Vm.sol";
 
 /**
@@ -12,7 +12,7 @@ import { Vm } from "forge-std/Vm.sol";
 contract OmniPortal_xcall_Test is CommonTest {
     /// @dev Test that xcall with default gas limit emits XMsg event and increments outXStreamOffset
     function test_xcall_defaultGasLimit_succeeds() public {
-        XChain.Msg memory xmsg = _outbound_increment();
+        XTypes.Msg memory xmsg = _outbound_increment();
 
         // check XMsg event is emitted
         vm.expectEmit();
@@ -28,7 +28,7 @@ contract OmniPortal_xcall_Test is CommonTest {
 
     /// @dev Test that xcall with explicit gas limit emits XMsg event and increments outXStreamOffset
     function test_xcall_explicitGasLimit_succeeds() public {
-        XChain.Msg memory xmsg = _outbound_increment();
+        XTypes.Msg memory xmsg = _outbound_increment();
         xmsg.gasLimit = portal.XMSG_DEFAULT_GAS_LIMIT() + 1;
 
         // check XMsg event is emitted
@@ -45,7 +45,7 @@ contract OmniPortal_xcall_Test is CommonTest {
 
     /// @dev Test that xcall with too-low gas limit reverts
     function test_xcall_gasLimitTooLow_reverts() public {
-        XChain.Msg memory xmsg = _outbound_increment();
+        XTypes.Msg memory xmsg = _outbound_increment();
         xmsg.gasLimit = portal.XMSG_MIN_GAS_LIMIT() - 1;
 
         vm.expectRevert("OmniPortal: gasLimit too low");
@@ -54,7 +54,7 @@ contract OmniPortal_xcall_Test is CommonTest {
 
     /// @dev Test that xcall with too-high gas limit reverts
     function test_xcall_gasLimitTooHigh_reverts() public {
-        XChain.Msg memory xmsg = _outbound_increment();
+        XTypes.Msg memory xmsg = _outbound_increment();
         xmsg.gasLimit = portal.XMSG_MAX_GAS_LIMIT() + 1;
 
         vm.expectRevert("OmniPortal: gasLimit too high");
@@ -63,7 +63,7 @@ contract OmniPortal_xcall_Test is CommonTest {
 
     /// @dev Test that xcall with destChainId == portal.chainId reverts
     function test_xcall_sameChain_reverts() public {
-        XChain.Msg memory xmsg = _outbound_increment();
+        XTypes.Msg memory xmsg = _outbound_increment();
         xmsg.destChainId = portal.chainId();
 
         vm.expectRevert("OmniPortal: no same-chain xcall");

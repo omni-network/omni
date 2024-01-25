@@ -2,11 +2,11 @@
 pragma solidity 0.8.23;
 
 /**
- * @title XChain
+ * @title XTypes
  * @dev Defines xchain types, core to Omni's xchain messaging protocol. These
  *      types mirror those defined in omni/lib/xchain/types.go.
  */
-library XChain {
+library XTypes {
     struct Msg {
         /// @dev Chain ID of the source chain
         uint64 sourceChainId;

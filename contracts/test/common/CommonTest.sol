@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import { Test } from "forge-std/Test.sol";
-import { XChain } from "src/libraries/XChain.sol";
+import { XTypes } from "src/libraries/XTypes.sol";
 import { TestPortal } from "./TestPortal.sol";
 import { Counter } from "./Counter.sol";
 import { Reverter } from "./Reverter.sol";
@@ -48,8 +48,8 @@ contract CommonTest is Test, Events {
      */
 
     /// @dev Get XMsg fields for an outbound Counter.increment() xcall
-    function _outbound_increment() internal view returns (XChain.Msg memory) {
-        return XChain.Msg({
+    function _outbound_increment() internal view returns (XTypes.Msg memory) {
+        return XTypes.Msg({
             sourceChainId: portal.chainId(),
             destChainId: otherChainId,
             streamOffset: portal.outXStreamOffset(otherChainId),
@@ -61,8 +61,8 @@ contract CommonTest is Test, Events {
     }
 
     /// @dev Get XMsg fields for an inbound Counter.increment() xmsg
-    function _inbound_increment() internal view returns (XChain.Msg memory) {
-        return XChain.Msg({
+    function _inbound_increment() internal view returns (XTypes.Msg memory) {
+        return XTypes.Msg({
             sourceChainId: otherChainId,
             destChainId: portal.chainId(),
             streamOffset: portal.inXStreamOffset(otherChainId),
@@ -74,8 +74,8 @@ contract CommonTest is Test, Events {
     }
 
     /// @dev Get XMsg fields for an inbound Reverter.revert() xmsg
-    function _inbound_revert() internal view returns (XChain.Msg memory) {
-        return XChain.Msg({
+    function _inbound_revert() internal view returns (XTypes.Msg memory) {
+        return XTypes.Msg({
             sourceChainId: otherChainId,
             destChainId: portal.chainId(),
             streamOffset: portal.inXStreamOffset(otherChainId),
@@ -87,14 +87,14 @@ contract CommonTest is Test, Events {
     }
 
     /// @dev Create an test XSubmission
-    function _xsub(XChain.Msg[] memory xmsgs) internal pure returns (XChain.Submission memory) {
-        return XChain.Submission({
+    function _xsub(XTypes.Msg[] memory xmsgs) internal pure returns (XTypes.Submission memory) {
+        return XTypes.Submission({
             attestationRoot: bytes32(0), // TODO: still unchecked
-            blockHeader: XChain.BlockHeader(0, 0, 0), // TODO: still unchecked
+            blockHeader: XTypes.BlockHeader(0, 0, 0), // TODO: still unchecked
             msgs: xmsgs,
             proof: new bytes32[](0), // TODO: still unchecked
             proofFlags: new bool[](0), // TODO: still unchecked
-            signatures: new XChain.SigTuple[](0) // TODO: still unchecked
+            signatures: new XTypes.SigTuple[](0) // TODO: still unchecked
          });
     }
 
@@ -104,7 +104,7 @@ contract CommonTest is Test, Events {
 
     // We define _XReceipt type here for convenience.
     // _ prefixed because event XReceipt is defined in test/common/Events.sol
-    // The struct is not used in production, and is therefore not defined in XChain.sol library.
+    // The struct is not used in production, and is therefore not defined in XTypes.sol library.
     struct _XReceipt {
         uint64 sourceChainId;
         uint64 streamOffset;
