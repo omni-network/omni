@@ -80,7 +80,7 @@ func deliverXBlock(ctx context.Context,
 ) {
 	// deliver the fetched xBlock
 	for ctx.Err() == nil {
-		err := callback(ctx, &xBlock)
+		err := callback(ctx, xBlock)
 		if ctx.Err() != nil {
 			return
 		}

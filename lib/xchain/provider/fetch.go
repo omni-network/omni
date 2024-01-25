@@ -40,21 +40,27 @@ func getCurrentFinalisedBlockHeader(ctx context.Context, rpcClient *ethclient.Cl
 	return header, nil
 }
 
+// GetSubmittedCursor returns the submitted cursor for the provided chain and source chain,
+// or false if not available, or an error.
 func (p *Provider) GetSubmittedCursor(ctx context.Context, chainID uint64, sourceChainID uint64,
-) (xchain.StreamCursor, error) {
+) (xchain.StreamCursor, bool, error) {
 	chain, rpcClient, err := p.getChain(chainID)
 	if err != nil {
-		return xchain.StreamCursor{}, err
+		return xchain.StreamCursor{}, false, err
 	}
 
 	caller, err := bindings.NewOmniPortalCaller(common.HexToAddress(chain.PortalAddress), rpcClient)
 	if err != nil {
-		return xchain.StreamCursor{}, errors.Wrap(err, "new caller")
+		return xchain.StreamCursor{}, false, errors.Wrap(err, "new caller")
 	}
 
 	offset, err := caller.InXStreamOffset(&bind.CallOpts{Context: ctx}, sourceChainID)
 	if err != nil {
-		return xchain.StreamCursor{}, errors.Wrap(err, "call inXStreamOffset")
+		return xchain.StreamCursor{}, false, errors.Wrap(err, "call inXStreamOffset")
+	}
+
+	if offset == 0 {
+		return xchain.StreamCursor{}, false, nil
 	}
 
 	return xchain.StreamCursor{
@@ -62,9 +68,9 @@ func (p *Provider) GetSubmittedCursor(ctx context.Context, chainID uint64, sourc
 			SourceChainID: sourceChainID,
 			DestChainID:   chainID,
 		},
-		Offset:            offset,
-		SourceBlockHeight: 0, // TODO(corver): Get kevin to store and return this as well.
-	}, nil
+		Offset:            offset - 1, // Contracts store the next expected message offset, so subtract 1.
+		SourceBlockHeight: 0,          // TODO(corver): Get kevin to store and return this as well.
+	}, true, nil
 }
 
 // GetBlock returns the XBlock for the provided chain and height, or false if not available yet (not finalized),

@@ -71,20 +71,34 @@ func newSession(chain netconf.Chain, rpcClient *ethclient.Client,
 
 // SendTransaction sends the given submission to the destination chain. Best effort sending.
 func (s SimpleSender) SendTransaction(ctx context.Context, submission xchain.Submission) error {
-	xChainSubmission := TranslateSubmission(submission)
-
 	session, ok := s.sessions[submission.DestChainID]
 	if !ok {
 		return errors.New("session not found", "dest_chain_id", submission.DestChainID)
 	}
 
-	tx, err := session.Xsubmit(xChainSubmission)
+	// Get some info for logging
+	var startOffset uint64
+	if len(submission.Msgs) > 0 {
+		startOffset = submission.Msgs[0].StreamOffset
+	}
+
+	log.Debug(ctx, "Sending submission transaction",
+		"dest_chain_id", submission.DestChainID,
+		"block_height", submission.BlockHeader.BlockHeight,
+		"source_chain_id", submission.BlockHeader.SourceChainID,
+		"start_offset", startOffset,
+		"msgs", len(submission.Msgs),
+	)
+
+	tx, err := session.Xsubmit(TranslateSubmission(submission))
 	if err != nil {
 		// todo(Lazar): handle error
 		return errors.Wrap(err, "submit tx")
 	}
 
-	log.Info(ctx, "Submitted_tx",
+	log.Info(ctx, "Sent submission transaction",
+		"dest_chain_id", submission.DestChainID,
+		"msgs", len(submission.Msgs),
 		"tx_hash", tx.Hash().Hex(),
 		"nonce", tx.Nonce(),
 		"gas_price", tx.GasPrice(),

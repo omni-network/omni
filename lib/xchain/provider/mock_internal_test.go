@@ -22,8 +22,8 @@ func TestMock(t *testing.T) {
 	var mock Mock
 
 	var blocks []xchain.Block
-	err := mock.Subscribe(ctx, chainID, fromHeight, func(ctx context.Context, block *xchain.Block) error {
-		blocks = append(blocks, *block)
+	err := mock.Subscribe(ctx, chainID, fromHeight, func(ctx context.Context, block xchain.Block) error {
+		blocks = append(blocks, block)
 		if len(blocks) == total {
 			cancel()
 		}
