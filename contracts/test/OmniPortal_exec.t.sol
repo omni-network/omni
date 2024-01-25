@@ -17,7 +17,7 @@ contract OmniPortal_exec_Test is Base {
         uint256 count = counter.count();
         uint64 offset = portal.inXStreamOffset(xmsg.sourceChainId);
 
-        vm.prank(xrelayer);
+        vm.prank(relayer);
         vm.expectCall(xmsg.to, xmsg.data);
         vm.recordLogs();
         portal.exec(xmsg);
@@ -31,7 +31,7 @@ contract OmniPortal_exec_Test is Base {
             logs[0],
             xmsg.sourceChainId,
             offset,
-            xrelayer,
+            relayer,
             true // success
         );
     }
@@ -43,7 +43,7 @@ contract OmniPortal_exec_Test is Base {
         uint256 count = counter.count();
         uint64 offset = portal.inXStreamOffset(xmsg.sourceChainId);
 
-        vm.prank(xrelayer);
+        vm.prank(relayer);
         vm.expectCall(xmsg.to, xmsg.data);
         vm.recordLogs();
         portal.exec(xmsg);
@@ -57,7 +57,7 @@ contract OmniPortal_exec_Test is Base {
             logs[0],
             xmsg.sourceChainId,
             offset,
-            xrelayer,
+            relayer,
             false // failure
         );
     }

@@ -23,7 +23,7 @@ contract OmniPortal_xsubmit_Test is Base {
         uint64 sourceChainId = xmsgs[0].sourceChainId;
         uint64 offset = portal.inXStreamOffset(sourceChainId);
 
-        vm.prank(xrelayer);
+        vm.prank(relayer);
         vm.recordLogs();
         portal.xsubmit(submission);
 
@@ -38,7 +38,7 @@ contract OmniPortal_xsubmit_Test is Base {
             logs[0],
             sourceChainId,
             offset,
-            xrelayer,
+            relayer,
             true // success
         );
     }
@@ -59,7 +59,7 @@ contract OmniPortal_xsubmit_Test is Base {
         uint64 sourceChainId = xmsgs[0].sourceChainId;
         uint64 offset = portal.inXStreamOffset(sourceChainId);
 
-        vm.prank(xrelayer);
+        vm.prank(relayer);
         vm.recordLogs();
         portal.xsubmit(submission);
 
@@ -75,7 +75,7 @@ contract OmniPortal_xsubmit_Test is Base {
                 logs[i],
                 sourceChainId,
                 offset + uint64(i),
-                xrelayer,
+                relayer,
                 true // success
             );
         }
@@ -97,7 +97,7 @@ contract OmniPortal_xsubmit_Test is Base {
         uint64 sourceChainId = xmsgs[0].sourceChainId;
         uint64 offset = portal.inXStreamOffset(sourceChainId);
 
-        vm.prank(xrelayer);
+        vm.prank(relayer);
         vm.recordLogs();
         portal.xsubmit(submission);
 
@@ -112,7 +112,7 @@ contract OmniPortal_xsubmit_Test is Base {
             logs[0],
             sourceChainId,
             offset,
-            xrelayer,
+            relayer,
             true // success
         );
 
@@ -120,7 +120,7 @@ contract OmniPortal_xsubmit_Test is Base {
             logs[1],
             sourceChainId,
             offset + 1,
-            xrelayer,
+            relayer,
             true // success
         );
 
@@ -129,7 +129,7 @@ contract OmniPortal_xsubmit_Test is Base {
             logs[2],
             sourceChainId,
             offset + 2,
-            xrelayer,
+            relayer,
             false // failure
         );
 
@@ -137,7 +137,7 @@ contract OmniPortal_xsubmit_Test is Base {
             logs[3],
             sourceChainId,
             offset + 3,
-            xrelayer,
+            relayer,
             true // success
         );
     }
