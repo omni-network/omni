@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/omni-network/omni/explorer/graphql/data"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 )
@@ -13,12 +14,13 @@ import (
 func Run(ctx context.Context, conf ExplorerAPIConfig) error {
 	log.Info(ctx, "Config: %v", conf)
 	ctx, cancel := context.WithCancel(ctx)
+	provider := data.Provider{}
 
 	go func() {
 		mux := http.NewServeMux()
 
 		mux.HandleFunc("/", home)
-		mux.Handle("/query", GraphQL())
+		mux.Handle("/query", GraphQL(provider))
 
 		httpServer := &http.Server{
 			Addr:              fmt.Sprintf(":%v", conf.Port),
