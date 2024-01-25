@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/big"
 	"strings"
+	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
@@ -17,8 +18,10 @@ import (
 )
 
 const (
-	// anvilPrivKeyHex of pre-funded anvil account 0.
-	anvilPrivKeyHex = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+	// privKeyHex0 of pre-funded anvil account 0.
+	privKeyHex0 = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+	// privKeyHex1 of pre-funded anvil account 1.
+	privKeyHex1 = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
 )
 
 // newE2ENetwork returns the default e2e network configuration.
@@ -62,7 +65,7 @@ func DeployContracts(ctx context.Context, network netconf.Network) (map[uint64]P
 			return nil, errors.Wrap(err, "dial chain")
 		}
 
-		txOpts, err := newTxOpts(ctx, anvilPrivKeyHex, chain.ID)
+		txOpts, err := newTxOpts(ctx, privKeyHex0, chain.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -112,10 +115,23 @@ func newTxOpts(ctx context.Context, privKeyHex string, chainID uint64) (*bind.Tr
 	return txOpts, nil
 }
 
+func StartSendingXMsgs(ctx context.Context, portals map[uint64]Portal) error {
+	log.Info(ctx, "Generating cross chain messages async")
+	go func() {
+		for ctx.Err() == nil {
+			if err := SendXMsgs(ctx, portals); err != nil {
+				log.Error(ctx, "Failed to send xmsgs, giving up", err)
+				return
+			}
+			time.Sleep(time.Millisecond * 500)
+		}
+	}()
+
+	return nil
+}
+
 // SendXMsgs sends one xmsg from every chain to every other chain.
 func SendXMsgs(ctx context.Context, portals map[uint64]Portal) error {
-	log.Info(ctx, "Sending one round of xmsgs between all chains")
-
 	for _, from := range portals {
 		for _, to := range portals {
 			if from.Chain.ID == to.Chain.ID {
@@ -133,7 +149,7 @@ func SendXMsgs(ctx context.Context, portals map[uint64]Portal) error {
 
 // xcall sends a ethereum transaction to the portal contract, triggering a xcall.
 func xcall(ctx context.Context, from Portal, destChainID uint64) error {
-	txOpts, err := newTxOpts(ctx, anvilPrivKeyHex, from.Chain.ID)
+	txOpts, err := newTxOpts(ctx, privKeyHex0, from.Chain.ID)
 	if err != nil {
 		return err
 	}

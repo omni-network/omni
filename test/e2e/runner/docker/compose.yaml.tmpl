@@ -101,6 +101,7 @@ services:
       e2e: true
     container_name: relayer
     image: omniops/relayer:latest
+    restart: unless-stopped # Restart on crash to mitigate startup race issues
     volumes:
       - ./relayer:/relayer
     networks:
