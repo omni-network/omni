@@ -1,3 +1,7 @@
 FROM scratch
-ENTRYPOINT ["/indexer"]
-COPY explorer/indexer /
+
+COPY explorer/indexer /app
+
+ENTRYPOINT ["/app"]
+
+CMD ["run"]
