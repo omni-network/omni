@@ -17,6 +17,7 @@ require (
 	github.com/jackc/pgx/v5 v5.5.2
 	github.com/leodido/go-conventionalcommits v0.11.0
 	github.com/mattn/go-sqlite3 v1.14.19
+	github.com/muesli/termenv v0.15.2
 	github.com/mvrilo/go-redoc v0.1.4
 	github.com/ogen-go/ogen v0.81.2
 	github.com/pkg/errors v0.9.1
@@ -141,7 +142,6 @@ require (
 	github.com/moby/term v0.5.0 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/muesli/reflow v0.3.0 // indirect
-	github.com/muesli/termenv v0.15.2 // indirect
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20220708102147-0a8a51822cae // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect

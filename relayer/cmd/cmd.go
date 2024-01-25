@@ -3,6 +3,7 @@ package cmd
 
 import (
 	libcmd "github.com/omni-network/omni/lib/cmd"
+	"github.com/omni-network/omni/lib/log"
 	relayer "github.com/omni-network/omni/relayer/app"
 
 	"github.com/spf13/cobra"
@@ -18,8 +19,14 @@ func New() *cobra.Command {
 	cfg := relayer.DefaultConfig()
 	bindRunFlags(cmd.Flags(), &cfg)
 
+	logCfg := log.DefaultConfig()
+	log.BindFlags(cmd.Flags(), &logCfg)
+
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := cmd.Context()
+		ctx, err := log.Init(cmd.Context(), logCfg)
+		if err != nil {
+			return err
+		}
 
 		if err := libcmd.LogFlags(ctx, cmd.Flags()); err != nil {
 			return err
