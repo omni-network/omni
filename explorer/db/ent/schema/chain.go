@@ -8,24 +8,24 @@ import (
 	"github.com/google/uuid"
 )
 
-// XBlock holds the schema definition for the XBlock entity.
+// Chain holds the schema definition for the Chain entity.
 type Chain struct {
 	ent.Schema
 }
 
-// Fields of the XBlock.
+// Fields of the Chain.
 func (Chain) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("UUID", uuid.UUID{}).
 			Default(uuid.New),
 		field.Time("CreatedAt").
 			Default(time.Now()),
-		field.Uint64("ChainId"),
+		field.Uint64("ChainID"),
 		field.String("Name"),
 	}
 }
 
-// Edges of the XBlock.
+// Edges of the Chain.
 func (Chain) Edges() []ent.Edge {
 	return []ent.Edge{}
 }

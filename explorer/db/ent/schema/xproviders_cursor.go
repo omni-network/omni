@@ -13,7 +13,7 @@ type XProviderCursor struct {
 	ent.Schema
 }
 
-// Fields of the XBlock.
+// Fields of the XProviderCursor.
 func (XProviderCursor) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("UUID", uuid.UUID{}).
@@ -27,7 +27,7 @@ func (XProviderCursor) Fields() []ent.Field {
 	}
 }
 
-// Edges of the XBlock.
+// Edges of the XProviderCursor.
 func (XProviderCursor) Edges() []ent.Edge {
 	return []ent.Edge{}
 }
