@@ -58,7 +58,7 @@ func TestAttester(t *testing.T) {
 			BlockHeight:   height,
 		}
 
-		err := a.Attest(ctx, &block)
+		err := a.Attest(ctx, block)
 		require.NoError(t, err)
 	}
 
@@ -170,7 +170,7 @@ func TestAttester(t *testing.T) {
 			BlockHeight:   height,
 		}
 
-		err := a.Attest(ctx, &block)
+		err := a.Attest(ctx, block)
 		require.Error(t, err)
 	}
 
@@ -192,6 +192,6 @@ func (stubProvider) GetBlock(context.Context, uint64, uint64) (xchain.Block, boo
 	panic("unexpected")
 }
 
-func (stubProvider) GetSubmittedCursor(context.Context, uint64, uint64) (xchain.StreamCursor, error) {
+func (stubProvider) GetSubmittedCursor(context.Context, uint64, uint64) (xchain.StreamCursor, bool, error) {
 	panic("unexpected")
 }

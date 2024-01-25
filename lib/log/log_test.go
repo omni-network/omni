@@ -54,17 +54,14 @@ func TestSimpleLogs(t *testing.T) {
 func AssertLogging(t *testing.T, testFunc func(*testing.T, context.Context)) {
 	t.Helper()
 
-	loggers := log.LoggersForT(t)
+	loggers := log.LoggersForT()
 
 	for name, initFunc := range loggers {
 		initFunc := initFunc // Pin
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			var buf bytes.Buffer
-			logger := initFunc(func(config *log.TestOptions) {
-				config.Writer = &buf
-				config.StubTime = true
-			})
+			logger := initFunc(&buf)
 
 			ctx := context.Background()
 			ctx = log.WithLogger(ctx, logger)

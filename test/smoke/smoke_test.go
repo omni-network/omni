@@ -163,8 +163,8 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 
 			// Assert offsets are sequential
 			for _, msg := range update.Msgs {
-				offsets[update.StreamID]++
 				require.EqualValues(t, offsets[update.StreamID], msg.StreamOffset)
+				offsets[update.StreamID]++
 			}
 
 			// Stop when we have received enough updates

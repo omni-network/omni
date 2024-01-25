@@ -6,6 +6,7 @@ import (
 
 	"github.com/omni-network/omni/halo/app"
 	libcmd "github.com/omni-network/omni/lib/cmd"
+	"github.com/omni-network/omni/lib/log"
 
 	"github.com/spf13/cobra"
 )
@@ -22,31 +23,35 @@ func New() *cobra.Command {
 
 // newRunCmd returns a new cobra command that runs the halo consensus client.
 func newRunCmd(runFunc func(context.Context, app.Config) error) *cobra.Command {
-	cfg := app.Config{
-		HaloConfig: app.DefaultHaloConfig(),
-	}
+	haloCfg := app.DefaultHaloConfig()
+	logCfg := log.DefaultConfig()
 
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Runs the halo consensus client",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-
+			ctx, err := log.Init(cmd.Context(), logCfg)
+			if err != nil {
+				return err
+			}
 			if err := libcmd.LogFlags(ctx, cmd.Flags()); err != nil {
 				return err
 			}
 
-			var err error
-			cfg.Comet, err = parseCometConfig(ctx, cfg.HomeDir)
+			cometCfg, err := parseCometConfig(ctx, haloCfg.HomeDir)
 			if err != nil {
 				return err
 			}
 
-			return runFunc(ctx, cfg)
+			return runFunc(ctx, app.Config{
+				HaloConfig: haloCfg,
+				Comet:      cometCfg,
+			})
 		},
 	}
 
-	bindRunFlags(cmd.Flags(), &cfg.HaloConfig)
+	bindRunFlags(cmd.Flags(), &haloCfg)
+	log.BindFlags(cmd.Flags(), &logCfg)
 
 	return cmd
 }

@@ -5,17 +5,38 @@ import (
 	"io"
 	"log/slog"
 	"os"
-	"testing"
+	"sync"
 
 	charm "github.com/charmbracelet/log"
+	"github.com/muesli/termenv"
 )
 
-var logger = newConsoleLogger() //nolint:gochecknoglobals // Global logger is our approach.
+//nolint:gochecknoglobals // Global logger is our approach.
+var (
+	global   = newConsoleLogger()
+	globalMu = new(sync.RWMutex)
+)
 
 type loggerKey struct{}
 
-// WithLogger returns a copy of the context with which the logger
-// is associated replacing the default global logger.
+// Init initializes the global logger with the given config.
+// It also returns a copy of the context with the global attached, see WithLogger.
+// It returns an error if the config is invalid.
+func Init(ctx context.Context, cfg Config) (context.Context, error) {
+	l, err := cfg.make()
+	if err != nil {
+		return nil, err
+	}
+
+	globalMu.Lock()
+	global = l
+	globalMu.Unlock()
+
+	return WithLogger(ctx, l), nil
+}
+
+// WithLogger returns a copy of the context with which the global
+// is associated replacing the default global logger when logging with this context.
 func WithLogger(ctx context.Context, logger *slog.Logger) context.Context {
 	return context.WithValue(ctx, loggerKey{}, logger)
 }
@@ -25,33 +46,68 @@ func getLogger(ctx context.Context) *slog.Logger {
 		return l.(*slog.Logger) //nolint:forcetypeassert,revive // We know the type.
 	}
 
-	return logger
+	globalMu.RLock()
+	defer globalMu.RUnlock()
+
+	return global
 }
 
-// newConsoleLogger returns a new console logger for the following opinionated style:
+func newJSONLogger(opts ...func(*options)) *slog.Logger {
+	o := defaultOptions()
+	for _, opt := range opts {
+		opt(&o)
+	}
+
+	// Maybe replace time, source and stacktrace with stubs for testing
+	replaceAttr := func(groups []string, a slog.Attr) slog.Attr { return a }
+	if o.Test {
+		replaceAttr = func(groups []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.TimeKey && len(groups) == 0 {
+				return slog.String(slog.TimeKey, "00-00-00 00:00:00")
+			}
+			if a.Key == slog.SourceKey && len(groups) == 0 {
+				return slog.String(slog.SourceKey, "<source>")
+			}
+			if a.Key == "stacktrace" && len(groups) == 0 {
+				return slog.String(slog.SourceKey, "<stacktrace>")
+			}
+
+			return a
+		}
+	}
+
+	handler := slog.NewJSONHandler(o.Writer, &slog.HandlerOptions{
+		AddSource:   true,
+		Level:       o.Level,
+		ReplaceAttr: replaceAttr,
+	})
+
+	return slog.New(handler)
+}
+
+// newConsoleLogger returns a new console global for the following opinionated style:
 // - Colored log levels (if tty supports it)
 // - Timestamps are concise with millisecond precision
 // - Timestamps and structured keys are faint
 // - Messages are right padded to 40 characters
 // This is aimed at local-dev and debugging. Production should use json or logfmt.
-func newConsoleLogger(opts ...func(*TestOptions)) *slog.Logger {
-	o := TestOptions{
-		Writer:   os.Stderr,
-		StubTime: false,
-	}
+func newConsoleLogger(opts ...func(*options)) *slog.Logger {
+	o := defaultOptions()
 	for _, opt := range opts {
 		opt(&o)
 	}
 
 	timeFormat := "06-01-02 15:04:05.000"
-	if o.StubTime {
+	if o.Test {
 		timeFormat = "00-00-00 00:00:00"
 	}
+
+	charmLevel, _ := charm.ParseLevel(o.Level.String()) // Ignore error as all slog levels are valid charm levels.
 
 	logger := charm.NewWithOptions(o.Writer, charm.Options{
 		TimeFormat:      timeFormat,
 		ReportTimestamp: true,
-		Level:           charm.DebugLevel,
+		Level:           charmLevel,
 	})
 
 	styles := charm.DefaultStyles()
@@ -59,26 +115,31 @@ func newConsoleLogger(opts ...func(*TestOptions)) *slog.Logger {
 	const padWidth = 40
 	styles.Message = styles.Message.Width(padWidth).Inline(true)
 	logger.SetStyles(styles)
+	logger.SetColorProfile(o.Color)
 
 	return slog.New(logger)
 }
 
-// TestOptions allow testing loggers.
-type TestOptions struct {
-	Writer   io.Writer // Write to some buffer
-	StubTime bool      // Stub time in tests for deterministic output.
+// options configure new loggers.
+type options struct {
+	Writer io.Writer // Write to some buffer
+	Level  slog.Level
+	Color  termenv.Profile
+	Test   bool // Stubs non-deterministic output for tests.
 }
 
-// LoggersForT returns a map of loggers for testing.
-func LoggersForT(_ *testing.T) map[string]func(...func(*TestOptions)) *slog.Logger {
-	return map[string]func(...func(*TestOptions)) *slog.Logger{
-		"console": newConsoleLogger,
+func defaultOptions() options {
+	return options{
+		Writer: os.Stderr,
+		Level:  slog.LevelDebug,
+		Color:  termenv.ColorProfile(),
+		Test:   false,
 	}
 }
 
-// WithNoopLogger returns a copy of the context with a noop logger which discards all logs.
+// WithNoopLogger returns a copy of the context with a noop global which discards all logs.
 func WithNoopLogger(ctx context.Context) context.Context {
-	return WithLogger(ctx, newConsoleLogger(func(o *TestOptions) {
+	return WithLogger(ctx, newConsoleLogger(func(o *options) {
 		o.Writer = io.Discard
 	}))
 }
