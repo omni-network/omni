@@ -7,12 +7,15 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
+	"github.com/omni-network/omni/explorer/db/ent/chain"
 	"github.com/omni-network/omni/explorer/db/ent/predicate"
 	"github.com/omni-network/omni/explorer/db/ent/xblock"
+	"github.com/omni-network/omni/explorer/db/ent/xprovidercursor"
 )
 
 const (
@@ -24,8 +27,534 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeXBlock = "XBlock"
+	TypeChain           = "Chain"
+	TypeXBlock          = "XBlock"
+	TypeXProviderCursor = "XProviderCursor"
 )
+
+// ChainMutation represents an operation that mutates the Chain nodes in the graph.
+type ChainMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *int
+	_UUID         *uuid.UUID
+	_CreatedAt    *time.Time
+	_ChainID      *uint64
+	add_ChainID   *int64
+	_Name         *string
+	clearedFields map[string]struct{}
+	done          bool
+	oldValue      func(context.Context) (*Chain, error)
+	predicates    []predicate.Chain
+}
+
+var _ ent.Mutation = (*ChainMutation)(nil)
+
+// chainOption allows management of the mutation configuration using functional options.
+type chainOption func(*ChainMutation)
+
+// newChainMutation creates new mutation for the Chain entity.
+func newChainMutation(c config, op Op, opts ...chainOption) *ChainMutation {
+	m := &ChainMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeChain,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withChainID sets the ID field of the mutation.
+func withChainID(id int) chainOption {
+	return func(m *ChainMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Chain
+		)
+		m.oldValue = func(ctx context.Context) (*Chain, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Chain.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withChain sets the old Chain of the mutation.
+func withChain(node *Chain) chainOption {
+	return func(m *ChainMutation) {
+		m.oldValue = func(context.Context) (*Chain, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ChainMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ChainMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ChainMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ChainMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Chain.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetUUID sets the "UUID" field.
+func (m *ChainMutation) SetUUID(u uuid.UUID) {
+	m._UUID = &u
+}
+
+// UUID returns the value of the "UUID" field in the mutation.
+func (m *ChainMutation) UUID() (r uuid.UUID, exists bool) {
+	v := m._UUID
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUUID returns the old "UUID" field's value of the Chain entity.
+// If the Chain object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChainMutation) OldUUID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUUID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUUID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUUID: %w", err)
+	}
+	return oldValue.UUID, nil
+}
+
+// ResetUUID resets all changes to the "UUID" field.
+func (m *ChainMutation) ResetUUID() {
+	m._UUID = nil
+}
+
+// SetCreatedAt sets the "CreatedAt" field.
+func (m *ChainMutation) SetCreatedAt(t time.Time) {
+	m._CreatedAt = &t
+}
+
+// CreatedAt returns the value of the "CreatedAt" field in the mutation.
+func (m *ChainMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m._CreatedAt
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "CreatedAt" field's value of the Chain entity.
+// If the Chain object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChainMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "CreatedAt" field.
+func (m *ChainMutation) ResetCreatedAt() {
+	m._CreatedAt = nil
+}
+
+// SetChainID sets the "ChainID" field.
+func (m *ChainMutation) SetChainID(u uint64) {
+	m._ChainID = &u
+	m.add_ChainID = nil
+}
+
+// ChainID returns the value of the "ChainID" field in the mutation.
+func (m *ChainMutation) ChainID() (r uint64, exists bool) {
+	v := m._ChainID
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldChainID returns the old "ChainID" field's value of the Chain entity.
+// If the Chain object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChainMutation) OldChainID(ctx context.Context) (v uint64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldChainID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldChainID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldChainID: %w", err)
+	}
+	return oldValue.ChainID, nil
+}
+
+// AddChainID adds u to the "ChainID" field.
+func (m *ChainMutation) AddChainID(u int64) {
+	if m.add_ChainID != nil {
+		*m.add_ChainID += u
+	} else {
+		m.add_ChainID = &u
+	}
+}
+
+// AddedChainID returns the value that was added to the "ChainID" field in this mutation.
+func (m *ChainMutation) AddedChainID() (r int64, exists bool) {
+	v := m.add_ChainID
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetChainID resets all changes to the "ChainID" field.
+func (m *ChainMutation) ResetChainID() {
+	m._ChainID = nil
+	m.add_ChainID = nil
+}
+
+// SetName sets the "Name" field.
+func (m *ChainMutation) SetName(s string) {
+	m._Name = &s
+}
+
+// Name returns the value of the "Name" field in the mutation.
+func (m *ChainMutation) Name() (r string, exists bool) {
+	v := m._Name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "Name" field's value of the Chain entity.
+// If the Chain object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChainMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "Name" field.
+func (m *ChainMutation) ResetName() {
+	m._Name = nil
+}
+
+// Where appends a list predicates to the ChainMutation builder.
+func (m *ChainMutation) Where(ps ...predicate.Chain) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ChainMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ChainMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Chain, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ChainMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ChainMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Chain).
+func (m *ChainMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ChainMutation) Fields() []string {
+	fields := make([]string, 0, 4)
+	if m._UUID != nil {
+		fields = append(fields, chain.FieldUUID)
+	}
+	if m._CreatedAt != nil {
+		fields = append(fields, chain.FieldCreatedAt)
+	}
+	if m._ChainID != nil {
+		fields = append(fields, chain.FieldChainID)
+	}
+	if m._Name != nil {
+		fields = append(fields, chain.FieldName)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ChainMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case chain.FieldUUID:
+		return m.UUID()
+	case chain.FieldCreatedAt:
+		return m.CreatedAt()
+	case chain.FieldChainID:
+		return m.ChainID()
+	case chain.FieldName:
+		return m.Name()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ChainMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case chain.FieldUUID:
+		return m.OldUUID(ctx)
+	case chain.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case chain.FieldChainID:
+		return m.OldChainID(ctx)
+	case chain.FieldName:
+		return m.OldName(ctx)
+	}
+	return nil, fmt.Errorf("unknown Chain field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ChainMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case chain.FieldUUID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUUID(v)
+		return nil
+	case chain.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case chain.FieldChainID:
+		v, ok := value.(uint64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetChainID(v)
+		return nil
+	case chain.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Chain field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ChainMutation) AddedFields() []string {
+	var fields []string
+	if m.add_ChainID != nil {
+		fields = append(fields, chain.FieldChainID)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ChainMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case chain.FieldChainID:
+		return m.AddedChainID()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ChainMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case chain.FieldChainID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddChainID(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Chain numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ChainMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ChainMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ChainMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Chain nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ChainMutation) ResetField(name string) error {
+	switch name {
+	case chain.FieldUUID:
+		m.ResetUUID()
+		return nil
+	case chain.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case chain.FieldChainID:
+		m.ResetChainID()
+		return nil
+	case chain.FieldName:
+		m.ResetName()
+		return nil
+	}
+	return fmt.Errorf("unknown Chain field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ChainMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ChainMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ChainMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ChainMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ChainMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ChainMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ChainMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown Chain unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ChainMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown Chain edge %s", name)
+}
 
 // XBlockMutation represents an operation that mutates the XBlock nodes in the graph.
 type XBlockMutation struct {
@@ -351,4 +880,615 @@ func (m *XBlockMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *XBlockMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown XBlock edge %s", name)
+}
+
+// XProviderCursorMutation represents an operation that mutates the XProviderCursor nodes in the graph.
+type XProviderCursorMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *int
+	_UUID         *uuid.UUID
+	_ChainId      *uint64
+	add_ChainId   *int64
+	_Height       *uint64
+	add_Height    *int64
+	_CreatedAt    *time.Time
+	_UpdatedAt    *time.Time
+	clearedFields map[string]struct{}
+	done          bool
+	oldValue      func(context.Context) (*XProviderCursor, error)
+	predicates    []predicate.XProviderCursor
+}
+
+var _ ent.Mutation = (*XProviderCursorMutation)(nil)
+
+// xprovidercursorOption allows management of the mutation configuration using functional options.
+type xprovidercursorOption func(*XProviderCursorMutation)
+
+// newXProviderCursorMutation creates new mutation for the XProviderCursor entity.
+func newXProviderCursorMutation(c config, op Op, opts ...xprovidercursorOption) *XProviderCursorMutation {
+	m := &XProviderCursorMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeXProviderCursor,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withXProviderCursorID sets the ID field of the mutation.
+func withXProviderCursorID(id int) xprovidercursorOption {
+	return func(m *XProviderCursorMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *XProviderCursor
+		)
+		m.oldValue = func(ctx context.Context) (*XProviderCursor, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().XProviderCursor.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withXProviderCursor sets the old XProviderCursor of the mutation.
+func withXProviderCursor(node *XProviderCursor) xprovidercursorOption {
+	return func(m *XProviderCursorMutation) {
+		m.oldValue = func(context.Context) (*XProviderCursor, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m XProviderCursorMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m XProviderCursorMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *XProviderCursorMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *XProviderCursorMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().XProviderCursor.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetUUID sets the "UUID" field.
+func (m *XProviderCursorMutation) SetUUID(u uuid.UUID) {
+	m._UUID = &u
+}
+
+// UUID returns the value of the "UUID" field in the mutation.
+func (m *XProviderCursorMutation) UUID() (r uuid.UUID, exists bool) {
+	v := m._UUID
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUUID returns the old "UUID" field's value of the XProviderCursor entity.
+// If the XProviderCursor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *XProviderCursorMutation) OldUUID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUUID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUUID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUUID: %w", err)
+	}
+	return oldValue.UUID, nil
+}
+
+// ResetUUID resets all changes to the "UUID" field.
+func (m *XProviderCursorMutation) ResetUUID() {
+	m._UUID = nil
+}
+
+// SetChainId sets the "ChainId" field.
+func (m *XProviderCursorMutation) SetChainId(u uint64) {
+	m._ChainId = &u
+	m.add_ChainId = nil
+}
+
+// ChainId returns the value of the "ChainId" field in the mutation.
+func (m *XProviderCursorMutation) ChainId() (r uint64, exists bool) {
+	v := m._ChainId
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldChainId returns the old "ChainId" field's value of the XProviderCursor entity.
+// If the XProviderCursor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *XProviderCursorMutation) OldChainId(ctx context.Context) (v uint64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldChainId is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldChainId requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldChainId: %w", err)
+	}
+	return oldValue.ChainId, nil
+}
+
+// AddChainId adds u to the "ChainId" field.
+func (m *XProviderCursorMutation) AddChainId(u int64) {
+	if m.add_ChainId != nil {
+		*m.add_ChainId += u
+	} else {
+		m.add_ChainId = &u
+	}
+}
+
+// AddedChainId returns the value that was added to the "ChainId" field in this mutation.
+func (m *XProviderCursorMutation) AddedChainId() (r int64, exists bool) {
+	v := m.add_ChainId
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetChainId resets all changes to the "ChainId" field.
+func (m *XProviderCursorMutation) ResetChainId() {
+	m._ChainId = nil
+	m.add_ChainId = nil
+}
+
+// SetHeight sets the "Height" field.
+func (m *XProviderCursorMutation) SetHeight(u uint64) {
+	m._Height = &u
+	m.add_Height = nil
+}
+
+// Height returns the value of the "Height" field in the mutation.
+func (m *XProviderCursorMutation) Height() (r uint64, exists bool) {
+	v := m._Height
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldHeight returns the old "Height" field's value of the XProviderCursor entity.
+// If the XProviderCursor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *XProviderCursorMutation) OldHeight(ctx context.Context) (v uint64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldHeight is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldHeight requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldHeight: %w", err)
+	}
+	return oldValue.Height, nil
+}
+
+// AddHeight adds u to the "Height" field.
+func (m *XProviderCursorMutation) AddHeight(u int64) {
+	if m.add_Height != nil {
+		*m.add_Height += u
+	} else {
+		m.add_Height = &u
+	}
+}
+
+// AddedHeight returns the value that was added to the "Height" field in this mutation.
+func (m *XProviderCursorMutation) AddedHeight() (r int64, exists bool) {
+	v := m.add_Height
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetHeight resets all changes to the "Height" field.
+func (m *XProviderCursorMutation) ResetHeight() {
+	m._Height = nil
+	m.add_Height = nil
+}
+
+// SetCreatedAt sets the "CreatedAt" field.
+func (m *XProviderCursorMutation) SetCreatedAt(t time.Time) {
+	m._CreatedAt = &t
+}
+
+// CreatedAt returns the value of the "CreatedAt" field in the mutation.
+func (m *XProviderCursorMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m._CreatedAt
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "CreatedAt" field's value of the XProviderCursor entity.
+// If the XProviderCursor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *XProviderCursorMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "CreatedAt" field.
+func (m *XProviderCursorMutation) ResetCreatedAt() {
+	m._CreatedAt = nil
+}
+
+// SetUpdatedAt sets the "UpdatedAt" field.
+func (m *XProviderCursorMutation) SetUpdatedAt(t time.Time) {
+	m._UpdatedAt = &t
+}
+
+// UpdatedAt returns the value of the "UpdatedAt" field in the mutation.
+func (m *XProviderCursorMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m._UpdatedAt
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "UpdatedAt" field's value of the XProviderCursor entity.
+// If the XProviderCursor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *XProviderCursorMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "UpdatedAt" field.
+func (m *XProviderCursorMutation) ResetUpdatedAt() {
+	m._UpdatedAt = nil
+}
+
+// Where appends a list predicates to the XProviderCursorMutation builder.
+func (m *XProviderCursorMutation) Where(ps ...predicate.XProviderCursor) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the XProviderCursorMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *XProviderCursorMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.XProviderCursor, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *XProviderCursorMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *XProviderCursorMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (XProviderCursor).
+func (m *XProviderCursorMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *XProviderCursorMutation) Fields() []string {
+	fields := make([]string, 0, 5)
+	if m._UUID != nil {
+		fields = append(fields, xprovidercursor.FieldUUID)
+	}
+	if m._ChainId != nil {
+		fields = append(fields, xprovidercursor.FieldChainId)
+	}
+	if m._Height != nil {
+		fields = append(fields, xprovidercursor.FieldHeight)
+	}
+	if m._CreatedAt != nil {
+		fields = append(fields, xprovidercursor.FieldCreatedAt)
+	}
+	if m._UpdatedAt != nil {
+		fields = append(fields, xprovidercursor.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *XProviderCursorMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case xprovidercursor.FieldUUID:
+		return m.UUID()
+	case xprovidercursor.FieldChainId:
+		return m.ChainId()
+	case xprovidercursor.FieldHeight:
+		return m.Height()
+	case xprovidercursor.FieldCreatedAt:
+		return m.CreatedAt()
+	case xprovidercursor.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *XProviderCursorMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case xprovidercursor.FieldUUID:
+		return m.OldUUID(ctx)
+	case xprovidercursor.FieldChainId:
+		return m.OldChainId(ctx)
+	case xprovidercursor.FieldHeight:
+		return m.OldHeight(ctx)
+	case xprovidercursor.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case xprovidercursor.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown XProviderCursor field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *XProviderCursorMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case xprovidercursor.FieldUUID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUUID(v)
+		return nil
+	case xprovidercursor.FieldChainId:
+		v, ok := value.(uint64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetChainId(v)
+		return nil
+	case xprovidercursor.FieldHeight:
+		v, ok := value.(uint64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetHeight(v)
+		return nil
+	case xprovidercursor.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case xprovidercursor.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown XProviderCursor field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *XProviderCursorMutation) AddedFields() []string {
+	var fields []string
+	if m.add_ChainId != nil {
+		fields = append(fields, xprovidercursor.FieldChainId)
+	}
+	if m.add_Height != nil {
+		fields = append(fields, xprovidercursor.FieldHeight)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *XProviderCursorMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case xprovidercursor.FieldChainId:
+		return m.AddedChainId()
+	case xprovidercursor.FieldHeight:
+		return m.AddedHeight()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *XProviderCursorMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case xprovidercursor.FieldChainId:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddChainId(v)
+		return nil
+	case xprovidercursor.FieldHeight:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddHeight(v)
+		return nil
+	}
+	return fmt.Errorf("unknown XProviderCursor numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *XProviderCursorMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *XProviderCursorMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *XProviderCursorMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown XProviderCursor nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *XProviderCursorMutation) ResetField(name string) error {
+	switch name {
+	case xprovidercursor.FieldUUID:
+		m.ResetUUID()
+		return nil
+	case xprovidercursor.FieldChainId:
+		m.ResetChainId()
+		return nil
+	case xprovidercursor.FieldHeight:
+		m.ResetHeight()
+		return nil
+	case xprovidercursor.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case xprovidercursor.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown XProviderCursor field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *XProviderCursorMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *XProviderCursorMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *XProviderCursorMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *XProviderCursorMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *XProviderCursorMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *XProviderCursorMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *XProviderCursorMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown XProviderCursor unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *XProviderCursorMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown XProviderCursor edge %s", name)
 }
