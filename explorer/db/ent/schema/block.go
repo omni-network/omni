@@ -9,28 +9,30 @@ import (
 	"github.com/google/uuid"
 )
 
-// XBlock holds the schema definition for the XBlock entity.
-type XBlock struct {
+// Block holds the schema definition for the Block entity.
+type Block struct {
 	ent.Schema
 }
 
 // Fields of the XBlock.
-func (XBlock) Fields() []ent.Field {
+func (Block) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("UUID", uuid.UUID{}).
 			Default(uuid.New),
 		field.Uint64("SourceChainID"),
 		field.Uint64("BlockHeight"),
 		field.Bytes("BlockHash").MaxLen(32),
+		field.Time("Timestamp").
+			Default(time.Now()),
 		field.Time("CreatedAt").
 			Default(time.Now()),
 	}
 }
 
-// Edges of the XBlock.
-func (XBlock) Edges() []ent.Edge {
+// Edges of the Block.
+func (Block) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("Msgs", XMsg.Type),
-		edge.To("Receipts", XReceipt.Type),
+		edge.To("Msgs", Msg.Type),
+		edge.To("Receipts", Receipt.Type),
 	}
 }

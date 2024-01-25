@@ -111,28 +111,124 @@ func DenyMutationOperationRule(op ent.Op) MutationRule {
 	return OnMutationOperation(rule, op)
 }
 
-// The XBlockQueryRuleFunc type is an adapter to allow the use of ordinary
+// The BlockQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
-type XBlockQueryRuleFunc func(context.Context, *ent.XBlockQuery) error
+type BlockQueryRuleFunc func(context.Context, *ent.BlockQuery) error
 
 // EvalQuery return f(ctx, q).
-func (f XBlockQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
-	if q, ok := q.(*ent.XBlockQuery); ok {
+func (f BlockQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.BlockQuery); ok {
 		return f(ctx, q)
 	}
-	return Denyf("ent/privacy: unexpected query type %T, expect *ent.XBlockQuery", q)
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.BlockQuery", q)
 }
 
-// The XBlockMutationRuleFunc type is an adapter to allow the use of ordinary
+// The BlockMutationRuleFunc type is an adapter to allow the use of ordinary
 // functions as a mutation rule.
-type XBlockMutationRuleFunc func(context.Context, *ent.XBlockMutation) error
+type BlockMutationRuleFunc func(context.Context, *ent.BlockMutation) error
 
 // EvalMutation calls f(ctx, m).
-func (f XBlockMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
-	if m, ok := m.(*ent.XBlockMutation); ok {
+func (f BlockMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.BlockMutation); ok {
 		return f(ctx, m)
 	}
-	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.XBlockMutation", m)
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.BlockMutation", m)
+}
+
+// The ChainQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type ChainQueryRuleFunc func(context.Context, *ent.ChainQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f ChainQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ChainQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.ChainQuery", q)
+}
+
+// The ChainMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type ChainMutationRuleFunc func(context.Context, *ent.ChainMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f ChainMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.ChainMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.ChainMutation", m)
+}
+
+// The MsgQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type MsgQueryRuleFunc func(context.Context, *ent.MsgQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f MsgQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.MsgQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.MsgQuery", q)
+}
+
+// The MsgMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type MsgMutationRuleFunc func(context.Context, *ent.MsgMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f MsgMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.MsgMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.MsgMutation", m)
+}
+
+// The ReceiptQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type ReceiptQueryRuleFunc func(context.Context, *ent.ReceiptQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f ReceiptQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ReceiptQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.ReceiptQuery", q)
+}
+
+// The ReceiptMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type ReceiptMutationRuleFunc func(context.Context, *ent.ReceiptMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f ReceiptMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.ReceiptMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.ReceiptMutation", m)
+}
+
+// The XProviderCursorQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type XProviderCursorQueryRuleFunc func(context.Context, *ent.XProviderCursorQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f XProviderCursorQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.XProviderCursorQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.XProviderCursorQuery", q)
+}
+
+// The XProviderCursorMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type XProviderCursorMutationRuleFunc func(context.Context, *ent.XProviderCursorMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f XProviderCursorMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.XProviderCursorMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.XProviderCursorMutation", m)
 }
 
 type (
@@ -170,7 +266,15 @@ var _ QueryMutationRule = FilterFunc(nil)
 
 func queryFilter(q ent.Query) (Filter, error) {
 	switch q := q.(type) {
-	case *ent.XBlockQuery:
+	case *ent.BlockQuery:
+		return q.Filter(), nil
+	case *ent.ChainQuery:
+		return q.Filter(), nil
+	case *ent.MsgQuery:
+		return q.Filter(), nil
+	case *ent.ReceiptQuery:
+		return q.Filter(), nil
+	case *ent.XProviderCursorQuery:
 		return q.Filter(), nil
 	default:
 		return nil, Denyf("ent/privacy: unexpected query type %T for query filter", q)
@@ -179,7 +283,15 @@ func queryFilter(q ent.Query) (Filter, error) {
 
 func mutationFilter(m ent.Mutation) (Filter, error) {
 	switch m := m.(type) {
-	case *ent.XBlockMutation:
+	case *ent.BlockMutation:
+		return m.Filter(), nil
+	case *ent.ChainMutation:
+		return m.Filter(), nil
+	case *ent.MsgMutation:
+		return m.Filter(), nil
+	case *ent.ReceiptMutation:
+		return m.Filter(), nil
+	case *ent.XProviderCursorMutation:
 		return m.Filter(), nil
 	default:
 		return nil, Denyf("ent/privacy: unexpected mutation type %T for mutation filter", m)

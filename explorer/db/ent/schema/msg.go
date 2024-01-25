@@ -9,13 +9,13 @@ import (
 	"github.com/google/uuid"
 )
 
-// XMsg holds the schema definition for the XMsg entity.
-type XMsg struct {
+// Msg holds the schema definition for the Msg entity.
+type Msg struct {
 	ent.Schema
 }
 
 // Fields of the XMsg.
-func (XMsg) Fields() []ent.Field {
+func (Msg) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("UUID", uuid.UUID{}).
 			Default(uuid.New),
@@ -36,13 +36,10 @@ func (XMsg) Fields() []ent.Field {
 }
 
 // Edges of the XMsg.
-func (XMsg) Edges() []ent.Edge {
+func (Msg) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("Xblock", XBlock.Type).
+		edge.From("Block", Block.Type).
 			Ref("Msgs").
-			Unique(),
-		edge.From("XReceipt", XReceipt.Type).
-			Ref("XMsg").
 			Unique(),
 	}
 }

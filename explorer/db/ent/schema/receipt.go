@@ -9,13 +9,13 @@ import (
 	"github.com/google/uuid"
 )
 
-// XReceipt holds the schema definition for the XReceipt entity.
-type XReceipt struct {
+// Receipt holds the schema definition for the Receipt entity.
+type Receipt struct {
 	ent.Schema
 }
 
-// Fields of the XBlock.
-func (XReceipt) Fields() []ent.Field {
+// Fields of the Receipt.
+func (Receipt) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("UUID", uuid.UUID{}).
 			Default(uuid.New),
@@ -34,12 +34,10 @@ func (XReceipt) Fields() []ent.Field {
 }
 
 // Edges of the XReceipt.
-func (XReceipt) Edges() []ent.Edge {
+func (Receipt) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("Xblock", XBlock.Type).
+		edge.From("Block", Block.Type).
 			Ref("Receipts").
-			Unique(),
-		edge.To("XMsg", XMsg.Type).
 			Unique(),
 	}
 }
