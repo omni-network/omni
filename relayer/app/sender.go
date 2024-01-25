@@ -58,6 +58,10 @@ func newSession(chain netconf.Chain, rpcClient *ethclient.Client,
 		return bindings.OmniPortalSession{}, errors.Wrap(err, "new transactor")
 	}
 
+	// Pick a fixed gas limit to avoid gas estimation issues due to offset errors.
+	const gasLimit = 1_000_000 // TODO(corver): make configurable
+	transactor.GasLimit = gasLimit
+
 	session := bindings.OmniPortalSession{
 		Contract:     contract,
 		TransactOpts: *transactor,

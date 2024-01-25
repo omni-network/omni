@@ -50,6 +50,8 @@ func chainServices(network netconf.Network) []string {
 		resp = append(resp, chain.Name)
 	}
 
+	resp = append(resp, "relayer")
+
 	return resp
 }
 
@@ -373,7 +375,7 @@ func writeRelayerConfig(root string, testnet *e2e.Testnet, network netconf.Netwo
 
 	// Save private key
 	// TODO(corver): Use a different private key (avoid nonce issues)
-	pkBytes := []byte(strings.TrimPrefix(anvilPrivKeyHex, "0x"))
+	pkBytes := []byte(strings.TrimPrefix(privKeyHex1, "0x"))
 	if err := os.WriteFile(filepath.Join(confRoot, privKeyFile), pkBytes, 0o600); err != nil {
 		return errors.Wrap(err, "write private key")
 	}

@@ -83,20 +83,11 @@ func NewCLI() *CLI {
 				return err
 			}
 
-			if err := SendXMsgs(ctx, portals); err != nil {
-				return err
-			}
-
-			// Relayer crashes if chains not available on start (need to fix this), so start manually here.
-			if err := cmtdocker.ExecCompose(ctx, cli.testnet.Dir, "up", "-d", "relayer"); err != nil {
+			if err := StartSendingXMsgs(ctx, portals); err != nil {
 				return err
 			}
 
 			if err := Wait(ctx, cli.testnet, 5); err != nil { // allow some txs to go through
-				return err
-			}
-
-			if err := SendXMsgs(ctx, portals); err != nil {
 				return err
 			}
 
