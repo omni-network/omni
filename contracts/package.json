@@ -5,7 +5,9 @@
     "test:gen:xblocks": "forge script WriteTestXBlocks"
   },
   "devDependencies": {
+    "@openzeppelin/merkle-tree": "^1.0.5",
     "ds-test": "https://github.com/dapphub/ds-test",
+    "ethereum-cryptography": "^2.1.3",
     "forge-std": "https://github.com/foundry-rs/forge-std",
     "typescript": "^5.3.3",
     "viem": "^2.5.0"
