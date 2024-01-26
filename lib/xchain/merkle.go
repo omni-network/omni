@@ -1,8 +1,6 @@
 package xchain
 
 import (
-	"encoding/json"
-
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/merkle"
 )
@@ -82,8 +80,7 @@ func NewBlockTree(block Block) (BlockTree, error) {
 }
 
 func msgLeaf(msg Msg) ([32]byte, error) {
-	// TODO(corver): ABI encode the message (excluding txhash)
-	bz, err := encode(msg)
+	bz, err := encodeMsg(msg)
 	if err != nil {
 		return [32]byte{}, errors.Wrap(err, "encode message")
 	}
@@ -92,20 +89,10 @@ func msgLeaf(msg Msg) ([32]byte, error) {
 }
 
 func blockHeaderLeaf(header BlockHeader) ([32]byte, error) {
-	bz, err := encode(header)
+	bz, err := encodeHeader(header)
 	if err != nil {
 		return [32]byte{}, errors.Wrap(err, "encode block header")
 	}
 
 	return merkle.StdLeafHash(bz), nil
-}
-
-// TODO(corver): ABI encode the data instead of json.
-func encode(data any) ([]byte, error) {
-	bz, err := json.Marshal(data)
-	if err != nil {
-		return nil, errors.Wrap(err, "marshal data")
-	}
-
-	return bz, nil
 }
