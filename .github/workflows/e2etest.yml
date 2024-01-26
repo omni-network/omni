@@ -1,0 +1,23 @@
+name: e2e tests
+
+# Run on main after building docker images
+on:
+  workflow_run:
+    workflows: ["go releaser"]
+    branches: [main]
+    types: [completed]
+
+jobs:
+  e2e_tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+      - run: |
+          go install github.com/omni-network/omni/test/e2e/runner
+          cd test/e2e
+          ./run-multiple.sh manifests/devnet1.toml manifests/simple.toml
