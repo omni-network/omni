@@ -49,12 +49,7 @@ contract Fixtures is CommonBase, StdCheats {
     mapping(uint64 => address) private _counters;
 
     // @dev path to which test XBlocks are written (see WriteXBlocks.sol), relative to project root
-    //      override with XBLOCKS_PATH env var
-    string constant DEFAULT_XBLOCKS_PATH = "test/data/xblocks.json";
-
-    // @dev path to which test XBlocks are written (see WriteXBlocks.sol), relative to project root
-    //      if not set, defaults to DEFAULT_XBLOCKS_PATH
-    string constant ENV_KEY_XBLOCKS_PATH = "XBLOCKS_PATH";
+    string constant XBLOCKS_PATH = "test/data/xblocks.json";
 
     function setUp() public {
         deployer = makeAddr("deployer");
@@ -94,8 +89,7 @@ contract Fixtures is CommonBase, StdCheats {
     ///      XBlock. These XSubmissions are then used as inputs into test cases.
     function writeXBlocks() public {
         string memory root = vm.projectRoot();
-        string memory path = vm.envOr(ENV_KEY_XBLOCKS_PATH, DEFAULT_XBLOCKS_PATH);
-        string memory fullpath = string.concat(root, "/", path);
+        string memory fullpath = string.concat(root, "/", XBLOCKS_PATH);
 
         TestXTypes.Block memory xblock1 = _xblock(1, 0); //  sourceBlockHeight: 1, startOffset: 0
         TestXTypes.Block memory xblock2 = _xblock(2, 10); // sourceBlockHeight: 2, startOffset: 10
