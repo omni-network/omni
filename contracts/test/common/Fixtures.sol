@@ -94,6 +94,8 @@ contract Fixtures is CommonBase, StdCheats {
         TestXTypes.Block memory xblock1 = _xblock(1, 0); //  sourceBlockHeight: 1, startOffset: 0
         TestXTypes.Block memory xblock2 = _xblock(2, 10); // sourceBlockHeight: 2, startOffset: 10
 
+        // id identifies the json object we are writing to within vm state
+        // see https://book.getfoundry.sh/cheatcodes/serialize-json
         string memory id = "ID";
         vm.serializeBytes(id, "xblock1", abi.encode(xblock1));
         string memory json = vm.serializeBytes(id, "xblock2", abi.encode(xblock2));
