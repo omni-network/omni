@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"math/big"
+	"time"
 
 	"github.com/omni-network/omni/explorer/db/ent"
 	"github.com/omni-network/omni/explorer/db/ent/block"
@@ -15,16 +16,28 @@ import (
 )
 
 type Provider struct {
-	EntClient ent.Client
+	EntClient *ent.Client
 }
 
 func (p Provider) Block(sourceChainID uint64, height uint64) (*resolvers.Block, bool, error) {
-	// h := common.Hash{}
-	// h.SetBytes([]byte{1, 3, 23, 111, 27, 45, 98, 103, 94, 55, 1, 3, 23, 111, 27, 45, 98, 103, 94, 55})
-	// var chainID big.Int
-	// chainID.SetUint64(sourceChainID)
-	// var blockHeight big.Int
-	// blockHeight.SetUint64(height)
+	if p.EntClient == nil {
+		h := common.Hash{}
+		h.SetBytes([]byte{1, 3, 23, 111, 27, 45, 98, 103, 94, 55, 1, 3, 23, 111, 27, 45, 98, 103, 94, 55})
+		var chainID big.Int
+		chainID.SetUint64(sourceChainID)
+		var blockHeight big.Int
+		blockHeight.SetUint64(height)
+
+		res := resolvers.Block{
+			SourceChainIDRaw: resolvers.BigInt{Int: chainID},
+			BlockHeightRaw:   resolvers.BigInt{Int: blockHeight},
+			BlockHashRaw:     h,
+			Timestamp:        graphql.Time{Time: time.Now()},
+			Messages:         dummyMessages(),
+		}
+
+		return &res, true, nil
+	}
 
 	ctx := context.Background()
 	query, err := p.EntClient.Block.Query().

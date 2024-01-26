@@ -27,7 +27,7 @@ func Run(ctx context.Context, conf ExplorerGralQLConfig) error {
 		}
 
 		provider := data.Provider{
-			EntClient: *client,
+			EntClient: client,
 		}
 
 		mux := http.NewServeMux()
