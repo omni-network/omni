@@ -17,7 +17,7 @@ library TestXTypes {
         bool success;
     }
 
-    /// @dev receipts ommited, as they are not needed to construct XSubmissions
+    /// @dev receipts omited, as they are not needed to construct XSubmissions
     struct Block {
         XTypes.BlockHeader blockHeader;
         XTypes.Msg[] msgs;
