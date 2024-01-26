@@ -48,7 +48,8 @@ contract Fixtures is CommonBase, StdCheats {
     mapping(uint64 => address) private _reverters;
     mapping(uint64 => address) private _counters;
 
-    // @dev path to which test XBlocks are written (see WriteXBlocks.sol), relative to project root
+    // @dev Path to which test XBlocks are written relative to project root. Read by ts utilites
+    //      to generate XSubmissions for each test XBlock (see ts/script/genxsubs/io.ts)
     string constant XBLOCKS_PATH = "test/data/xblocks.json";
 
     function setUp() public {
@@ -116,11 +117,11 @@ contract Fixtures is CommonBase, StdCheats {
         xmsgs[4] = _increment(chainAId, thisChainId, startOffset + 4);
 
         // intended for chain b
-        xmsgs[5] = _increment(chainAId, chainBId, startOffset + 5);
-        xmsgs[6] = _increment(chainAId, chainBId, startOffset + 6);
-        xmsgs[7] = _increment(chainAId, chainBId, startOffset + 7);
-        xmsgs[9] = _revert(chainAId, chainBId, startOffset + 8);
-        xmsgs[9] = _increment(chainAId, chainBId, startOffset + 9);
+        xmsgs[5] = _increment(chainAId, chainBId, startOffset);
+        xmsgs[6] = _increment(chainAId, chainBId, startOffset + 1);
+        xmsgs[7] = _increment(chainAId, chainBId, startOffset + 2);
+        xmsgs[8] = _revert(chainAId, chainBId, startOffset + 3);
+        xmsgs[9] = _increment(chainAId, chainBId, startOffset + 4);
 
         return TestXTypes.Block(XTypes.BlockHeader(chainAId, sourceBlockHeight, keccak256("blockhash")), xmsgs);
     }
