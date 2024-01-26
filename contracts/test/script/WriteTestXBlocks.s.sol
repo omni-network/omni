@@ -6,7 +6,7 @@ import { Fixtures } from "test/common/Fixtures.sol";
 
 /**
  * @title WriteTestXBlocks
- * @dev Script tow write test xblock fixtures to disc. See Fixtures.writeXBlocks()
+ * @dev Script to write test xblock fixtures to disk. See Fixtures.writeXBlocks()
  */
 contract WriteTestXBlocks is Script {
     function run() external {
