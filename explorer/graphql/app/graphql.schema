@@ -29,6 +29,10 @@ type Msg {
 Block represents a cross-chain block.
 """
 type Block {
+
+    "UUID of our block"
+    UUID: String!
+
     "Source chain ID as per https://chainlist.org"
     SourceChainID: BigInt!
 

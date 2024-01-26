@@ -3,6 +3,7 @@ package resolvers
 import (
 	"context"
 
+	"github.com/omni-network/omni/explorer/graphql/hexutil"
 	"github.com/omni-network/omni/lib/errors"
 )
 
@@ -19,6 +20,16 @@ func (m Msg) TxHash() string {
 
 func (b *Block) BlockHash() string {
 	return b.BlockHashRaw.String()
+}
+
+func (b *Block) SourceChainID() hexutil.Big {
+	id := b.SourceChainIDRaw.Int
+	return hexutil.Big(id)
+}
+
+func (b *Block) BlockHeight() hexutil.Big {
+	id := b.BlockHeightRaw.Int
+	return hexutil.Big(id)
 }
 
 type BlocksProvider interface {

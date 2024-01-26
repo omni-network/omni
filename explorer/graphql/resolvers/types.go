@@ -7,7 +7,7 @@ import (
 )
 
 type Msg struct {
-	UUID                   BigInt
+	UUID                   string
 	SourceMessageSenderRaw common.Address
 	DestAddressRaw         common.Address
 	Data                   []byte
@@ -19,12 +19,12 @@ type Msg struct {
 }
 
 type Block struct {
-	UUID          BigInt
-	SourceChainID BigInt
-	BlockHeight   BigInt
-	Timestamp     graphql.Time
-	CreatedAt     graphql.Time
-	BlockHashRaw  common.Hash
+	UUID             string
+	SourceChainIDRaw BigInt
+	BlockHeightRaw   BigInt
+	Timestamp        graphql.Time
+	CreatedAt        graphql.Time
+	BlockHashRaw     common.Hash
 
 	// TODO(Pavel): add paging for the messages.
 	Messages []Msg

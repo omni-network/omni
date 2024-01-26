@@ -38,11 +38,12 @@ func (p Provider) Block(sourceChainID uint64, height uint64) (*resolvers.Block, 
 	}
 
 	res := resolvers.Block{
-		SourceChainID: resolvers.BigInt{Int: *new(big.Int).SetUint64(query.SourceChainID)},
-		BlockHeight:   resolvers.BigInt{Int: *new(big.Int).SetUint64(query.BlockHeight)},
-		BlockHashRaw:  common.Hash(query.BlockHash),
-		Timestamp:     graphql.Time{Time: query.Timestamp},
-		Messages:      dummyMessages(),
+		UUID:             query.UUID.String(),
+		SourceChainIDRaw: resolvers.BigInt{Int: *new(big.Int).SetUint64(query.SourceChainID)},
+		BlockHeightRaw:   resolvers.BigInt{Int: *new(big.Int).SetUint64(query.BlockHeight)},
+		BlockHashRaw:     common.Hash(query.BlockHash),
+		Timestamp:        graphql.Time{Time: query.Timestamp},
+		Messages:         dummyMessages(),
 	}
 
 	return &res, true, nil
