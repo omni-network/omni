@@ -1,36 +1,26 @@
 """
-StreamID uniquely identifies a cross-chain stream.
-A stream is a logical representation of a cross-chain connection between two chains.
-"""
-type StreamID {
-    "Source chain ID as per https://chainlist.org/"
-	SourceChainID: BigInt!
-    "Destination chain ID as per https://chainlist.org/"
-	DestChainID: BigInt!
-}
-
-"""
-MsgID uniquely identifies a cross-chain message.
-"""
-type MsgID {
-    "Unique ID of the Stream this message belongs to"
-	StreamID: StreamID!
-    "Monotonically incremented offset of Msg in the Steam"
-	StreamOffset: BigInt!
-}
-
-"""
 Msg is a cross-chain message.
 """
 type Msg {
-    "Unique ID of the message"
-	MsgID: MsgID!
+
+    "Monotonically incremented offset of Msg in the Steam"
+	StreamOffset: BigInt!
+
     "Sender on source chain, set to msg.Sender"
-	Sender: String!
+	SourceMessageSender: String!
+
     "Target/To address to 'call' on destination chain"
 	DestAddress: String!
+
     "Gas limit to use for 'call' on destination chain"
 	DestGasLimit: BigInt!
+
+    "Source chain ID as per https://chainlist.org/"
+	SourceChainID: BigInt!
+
+    "Destination chain ID as per https://chainlist.org/"
+	DestChainID: BigInt!
+
     "Hash of the source chain transaction that emitted the message"
 	TxHash: String!
 }

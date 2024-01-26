@@ -24,6 +24,13 @@ builds:
     goos: [ linux, darwin ]
     goarch: [ amd64, arm64 ]
 
+  - id: explorer-graphql
+    main: ./explorer/graphql
+    binary: /explorer/graphql
+    env: [ CGO_ENABLED=0 ]
+    goos: [ linux, darwin ]
+    goarch: [ amd64, arm64 ]
+
   - id: explorer-indexer
     main: ./explorer/indexer
     binary: explorer/indexer
@@ -46,6 +53,11 @@ dockers:
     dockerfile: ./explorer/api/Dockerfile
     image_templates:
       - omniops/explorer-api:latest
+
+  - ids: [explorer-graphql]
+    dockerfile: ./explorer/graphql/Dockerfile
+    image_templates:
+      - omniops/explorer-graphql:latest
 
   - ids: [explorer-indexer]
     dockerfile: ./explorer/indexer/Dockerfile

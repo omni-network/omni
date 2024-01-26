@@ -21,18 +21,30 @@ type EntServerClient interface {
 
 type ClientImpl struct {
 	EntServerClient
-	port int
 }
 
-func NewClient(port int) *ClientImpl {
-	client := ClientImpl{
-		port: port,
-	}
+func NewClient() *ClientImpl {
+	client := ClientImpl{}
 
 	return &client
 }
 
 func (ClientImpl) CreateNewEntClient(ctx context.Context, databaseURL string) (*ent.Client, error) {
+	db, err := sql.Open("pgx", databaseURL)
+	if err != nil {
+		log.Error(ctx, "Failed to connect to postgres database: %v", err)
+		return nil, errors.Wrap(err, "failed to open postgres connection")
+	}
+
+	// Create an ent.Driver from `db`.
+	drv := entsql.OpenDB(dialect.Postgres, db)
+
+	client := ent.NewClient(ent.Driver(drv))
+
+	return client, nil
+}
+
+func (ClientImpl) CreateNewEntClientWithSchema(ctx context.Context, databaseURL string) (*ent.Client, error) {
 	db, err := sql.Open("pgx", databaseURL)
 	if err != nil {
 		log.Error(ctx, "Failed to connect to postgres database: %v", err)

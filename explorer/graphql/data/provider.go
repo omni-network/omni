@@ -1,32 +1,51 @@
 package data
 
 import (
+	"context"
 	"math/big"
-	"time"
+
+	"github.com/omni-network/omni/explorer/db/ent"
+	"github.com/omni-network/omni/explorer/db/ent/block"
+	"github.com/omni-network/omni/explorer/graphql/resolvers"
+	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/graph-gophers/graphql-go"
-	"github.com/omni-network/omni/explorer/graphql/resolvers"
 )
 
-type Provider struct{}
+type Provider struct {
+	EntClient ent.Client
+}
 
 func (p Provider) Block(sourceChainID uint64, height uint64) (*resolvers.Block, bool, error) {
-	h := common.Hash{}
-	h.SetBytes([]byte{1, 3, 23, 111, 27, 45, 98, 103, 94, 55, 1, 3, 23, 111, 27, 45, 98, 103, 94, 55})
-	var chainID big.Int
-	chainID.SetUint64(sourceChainID)
-	var blockHeight big.Int
-	blockHeight.SetUint64(height)
+	// h := common.Hash{}
+	// h.SetBytes([]byte{1, 3, 23, 111, 27, 45, 98, 103, 94, 55, 1, 3, 23, 111, 27, 45, 98, 103, 94, 55})
+	// var chainID big.Int
+	// chainID.SetUint64(sourceChainID)
+	// var blockHeight big.Int
+	// blockHeight.SetUint64(height)
 
-	block := resolvers.Block{
-		SourceChainID: resolvers.BigInt{Int: chainID},
-		BlockHeight:   resolvers.BigInt{Int: blockHeight},
-		Hash:          h,
-		Timestamp:     graphql.Time{Time: time.Now()},
+	ctx := context.Background()
+	query, err := p.EntClient.Block.Query().
+		Where(block.SourceChainID(sourceChainID)).
+		Where(block.BlockHeight(height)).
+		First(ctx)
+
+	if err != nil {
+		log.Error(ctx, "Graphql provider err", err)
+		return nil, false, err
+	}
+
+	res := resolvers.Block{
+		SourceChainID: resolvers.BigInt{Int: *new(big.Int).SetUint64(query.SourceChainID)},
+		BlockHeight:   resolvers.BigInt{Int: *new(big.Int).SetUint64(query.BlockHeight)},
+		BlockHashRaw:  common.Hash(query.BlockHash),
+		Timestamp:     graphql.Time{Time: query.Timestamp},
 		Messages:      dummyMessages(),
 	}
-	return &block, true, nil
+
+	return &res, true, nil
 }
 
 func dummyMessages() []resolvers.Msg {
@@ -46,17 +65,13 @@ func dummyMessages() []resolvers.Msg {
 
 	res := []resolvers.Msg{
 		{
-			MsgID: resolvers.MsgID{
-				StreamID: resolvers.StreamID{
-					SourceChainID: resolvers.BigInt{Int: a},
-					DestChainID:   resolvers.BigInt{Int: b},
-				},
-				StreamOffset: resolvers.BigInt{Int: c},
-			},
-			SenderRaw:      destAddr,
-			DestAddressRaw: destAddr,
-			DestGasLimit:   resolvers.BigInt{Int: d},
-			TxHashRaw:      txHash,
+			SourceChainID:          resolvers.BigInt{Int: a},
+			DestChainID:            resolvers.BigInt{Int: b},
+			StreamOffset:           resolvers.BigInt{Int: c},
+			SourceMessageSenderRaw: destAddr,
+			DestAddressRaw:         destAddr,
+			DestGasLimit:           resolvers.BigInt{Int: d},
+			TxHashRaw:              txHash,
 		},
 	}
 

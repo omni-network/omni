@@ -1,7 +1,7 @@
 package app
 
 const (
-	port = 8080
+	port = 8000
 )
 
 type ExplorerAPIConfig struct {

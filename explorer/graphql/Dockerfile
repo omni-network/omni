@@ -1,4 +1,9 @@
 FROM scratch
-ENTRYPOINT ["/explorerapi"]
-COPY explorer/api /
+
+COPY explorer/graphql /app
+
 EXPOSE 8080
+
+ENTRYPOINT ["/app"]
+
+CMD ["run"]

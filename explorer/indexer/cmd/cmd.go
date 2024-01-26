@@ -27,7 +27,7 @@ func newRunCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			log.Info(ctx, "Indexer started")
-			conf := app.Config{}
+			conf := app.DefaultExplorerAPIConfig()
 
 			err := app.Run(ctx, conf)
 			if err != nil {

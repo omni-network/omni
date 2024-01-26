@@ -6,6 +6,6 @@ type Query struct {
 	BlocksResolver
 }
 
-func (Query) Hello(ctx context.Context, args struct{ Name string }) string {
+func (Query) Hello(_ context.Context, args struct{ Name string }) string {
 	return "Hello, " + args.Name + "!"
 }
