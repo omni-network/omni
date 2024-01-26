@@ -16,4 +16,10 @@ library TestXTypes {
         address relayer;
         bool success;
     }
+
+    /// @dev receipts omitted, as they are not needed to construct XSubmissions
+    struct Block {
+        XTypes.BlockHeader blockHeader;
+        XTypes.Msg[] msgs;
+    }
 }

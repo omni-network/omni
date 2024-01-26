@@ -10,6 +10,8 @@ remappings = [
   "test/=test",
 ]
 
+fs_permissions = [{ access = "read-write", path = "./test/data" }]
+
 [fmt]
 bracket_spacing = true
 number_underscore = "thousands"
