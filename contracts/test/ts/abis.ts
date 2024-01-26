@@ -1,5 +1,5 @@
 /**
- * Define abi parameters for XType structs. Allowing us to encode / decode to
+ * Abi parameters for xtype structs. Allowing us to encode / decode to
  * and from bytes, matching Solidity's abi encoding. Struct fields must match
  * the order of the corresponding struct definition in Solidity.
  */

@@ -1,5 +1,5 @@
 /**
- * xchain type defintions, with encoding / decoding utilities.
+ * xtype defintions, with encoding / decoding utilities.
  */
 
 import { decodeAbiParameters, encodeAbiParameters } from 'viem'
