@@ -48,6 +48,14 @@ contract Fixtures is CommonBase, StdCheats {
     mapping(uint64 => address) private _reverters;
     mapping(uint64 => address) private _counters;
 
+    // @dev path to which test XBlocks are written (see WriteXBlocks.sol), relative to project root
+    //      override with XBLOCKS_PATH env var
+    string constant DEFAULT_XBLOCKS_PATH = "test/data/xblocks.json";
+
+    // @dev path to which test XBlocks are written (see WriteXBlocks.sol), relative to project root
+    //      if not set, defaults to DEFAULT_XBLOCKS_PATH
+    string constant ENV_KEY_XBLOCKS_PATH = "XBLOCKS_PATH";
+
     function setUp() public {
         deployer = makeAddr("deployer");
         xcaller = makeAddr("xcaller");
@@ -79,6 +87,46 @@ contract Fixtures is CommonBase, StdCheats {
         _reverters[thisChainId] = address(reverter);
         _reverters[chainAId] = address(chainAReverter);
         _reverters[chainBId] = address(chainBReverter);
+    }
+
+    /// @dev Write test fixture XBlocks to a json file. This is allows ts utilities
+    ///      to generate XSubmissions, with valid merkle roots and proofs, for each test
+    ///      XBlock. These XSubmissions are then used as inputs into test cases.
+    function writeXBlocks() public {
+        string memory root = vm.projectRoot();
+        string memory path = vm.envOr(ENV_KEY_XBLOCKS_PATH, DEFAULT_XBLOCKS_PATH);
+        string memory fullpath = string.concat(root, "/", path);
+
+        TestXTypes.Block memory xblock1 = _xblock(1, 0); //  sourceBlockHeight: 1, startOffset: 0
+        TestXTypes.Block memory xblock2 = _xblock(2, 10); // sourceBlockHeight: 2, startOffset: 10
+
+        string memory id = "ID";
+        vm.serializeBytes(id, "xblock1", abi.encode(xblock1));
+        string memory json = vm.serializeBytes(id, "xblock2", abi.encode(xblock2));
+
+        vm.writeJson(json, fullpath);
+    }
+
+    /// @dev Create an xblock from chainA with xmsgs for "this" chain and chain b.
+    ///      XBlocks will likely contain XMsgs for multiple chains, so we reflect that here.
+    function _xblock(uint64 sourceBlockHeight, uint64 startOffset) internal view returns (TestXTypes.Block memory) {
+        XTypes.Msg[] memory xmsgs = new XTypes.Msg[](10);
+
+        // intended for this chain
+        xmsgs[0] = _increment(chainAId, thisChainId, startOffset);
+        xmsgs[1] = _increment(chainAId, thisChainId, startOffset + 1);
+        xmsgs[2] = _increment(chainAId, thisChainId, startOffset + 2);
+        xmsgs[3] = _revert(chainAId, thisChainId, startOffset + 3);
+        xmsgs[4] = _increment(chainAId, thisChainId, startOffset + 4);
+
+        // intended for chain b
+        xmsgs[5] = _increment(chainAId, chainBId, startOffset + 5);
+        xmsgs[6] = _increment(chainAId, chainBId, startOffset + 6);
+        xmsgs[7] = _increment(chainAId, chainBId, startOffset + 7);
+        xmsgs[9] = _revert(chainAId, chainBId, startOffset + 8);
+        xmsgs[9] = _increment(chainAId, chainBId, startOffset + 9);
+
+        return TestXTypes.Block(XTypes.BlockHeader(chainAId, sourceBlockHeight, keccak256("blockhash")), xmsgs);
     }
 
     /// @dev Create an test XSubmission
