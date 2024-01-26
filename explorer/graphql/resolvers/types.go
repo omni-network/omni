@@ -1,10 +1,17 @@
 package resolvers
 
 import (
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/graph-gophers/graphql-go"
 )
+
+// BigInt represents a bigint number in GraphQL since many browsers only work with int32.
+type BigInt struct {
+	big.Int
+}
 
 type Msg struct {
 	UUID                   string

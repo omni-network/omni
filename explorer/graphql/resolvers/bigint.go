@@ -3,17 +3,11 @@ package resolvers
 import (
 	"context"
 	"encoding/json"
-	"math/big"
 	"strconv"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 )
-
-// BigInt represents a bigint number in GraphQL since many browsers only work with int32.
-type BigInt struct {
-	big.Int
-}
 
 // ImplementsGraphQLType maps this custom Go type
 // to the graphql scalar type in the schema.

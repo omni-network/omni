@@ -3,8 +3,9 @@ package resolvers
 import (
 	"context"
 
-	"github.com/omni-network/omni/explorer/graphql/hexutil"
 	"github.com/omni-network/omni/lib/errors"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 func (m Msg) SourceMessageSender() string {
