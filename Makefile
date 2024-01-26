@@ -57,8 +57,18 @@ halo-simnet: ## Runs halo in simnet mode.
 	@halo init --home=/tmp/halo --network=simnet --clean
 	@halo run --home=/tmp/halo
 
+.PHONY: devnet-run
+devnet-run: ## Runs devnet1 (alias for MANIFEST=devnet1 make e2e-run).
+	@echo "Creating a docker-compose devnet in ./test/e2e/run/devnet1"
+	@MANIFEST=devnet1 $(MAKE) e2e-run
+
+.PHONY: devnet-stop
+devnet-stop: ## Stops devnet1 containers (alias for MANIFEST=devnet1 make e2e-stop).
+	@echo "Stopping the devnet in ./test/e2e/run/devnet1"
+	@MANIFEST=devnet1 $(MAKE) e2e-stop
+
 .PHONY: e2e-run
-e2e-run: ## Run specific e2e manifest (MANIFEST=single, MANIFEST=simple, etc).
+e2e-run: ## Run specific e2e manifest (MANIFEST=single, MANIFEST=simple, etc). Note container remain running after the test.
 	@if [ -z "$(MANIFEST)" ]; then echo "⚠️ Please specify a manifest: MANIFEST=simple make e2e-run" && exit 1; fi
 	@echo "Using MANIFEST=$(MANIFEST)"
 	@go run github.com/omni-network/omni/test/e2e/runner -f test/e2e/manifests/$(MANIFEST).toml -p
@@ -68,3 +78,9 @@ e2e-logs: ## Print the docker logs of previously ran e2e manifest (single, simpl
 	@if [ -z "$(MANIFEST)" ]; then echo "⚠️  Please specify a manifest: MANIFEST=simple make e2e-logs" && exit 1; fi
 	@echo "Using MANIFEST=$(MANIFEST)"
 	@go run github.com/omni-network/omni/test/e2e/runner -f test/e2e/manifests/$(MANIFEST).toml logs
+
+.PHONY: e2e-stop
+e2e-stop: ## Stops all running containers from previously ran e2e manifest.
+	@if [ -z "$(MANIFEST)" ]; then echo "⚠️  Please specify a manifest: MANIFEST=simple make e2e-stop" && exit 1; fi
+	@echo "Using MANIFEST=$(MANIFEST)"
+	@go run github.com/omni-network/omni/test/e2e/runner -f test/e2e/manifests/$(MANIFEST).toml stop
