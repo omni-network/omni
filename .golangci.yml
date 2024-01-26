@@ -6,6 +6,7 @@ run:
   skip-dirs:
     - explorer/api/openapi
     - explorer/db/ent
+    - explorer/graphql/hexutil
 linters-settings:
   exhaustive:
     default-signifies-exhaustive: true
