@@ -8,8 +8,8 @@ on:
 
 jobs:
   pre-commit:
-    uses: ./.github/jobs/pre-commit.yml
+    uses: ./.github/workflows/pre-commit.yml
   go-tests:
-    uses: ./.github/jobs/gotest.yml
+    uses: ./.github/workflows/gotest.yml
   go-lint:
-    uses: ./.github/jobs/golangci-lint.yml
+    uses: ./.github/workflows/golangci-lint.yml

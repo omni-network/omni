@@ -9,14 +9,14 @@ on:
 
 jobs:
   pre-commit:
-    uses: ./.github/jobs/pre-commit.yml
+    uses: ./.github/workflows/pre-commit.yml
   go-tests:
-    uses: ./.github/jobs/gotest.yml
+    uses: ./.github/workflows/gotest.yml
   go-lint:
-    uses: ./.github/jobs/golangci-lint.yml
+    uses: ./.github/workflows/golangci-lint.yml
   go-releaser:
-    uses: ./.github/jobs/goreleaser.yml
+    uses: ./.github/workflows/goreleaser.yml
     needs: [pre-commit, go-tests, go-lint]
   e2e:
-    uses: ./.github/jobs/e2etest.yml
+    uses: ./.github/workflows/e2etest.yml
     needs: [go-releaser]
