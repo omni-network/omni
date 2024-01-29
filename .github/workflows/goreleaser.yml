@@ -30,10 +30,21 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Push Explorer API to Dockerhub
-        run: docker push omniops/explorer-api:latest
+        run: |
+          docker push omniops/explorer-api:${GITHUB_SHA::7}
+          docker push omniops/explorer-api:main
+
       - name: Push Indexer to Dockerhub
-        run: docker push omniops/explorer-indexer:latest
+        run: |
+          docker push omniops/explorer-indexer:${GITHUB_SHA::7}
+          docker push omniops/explorer-indexer:main
+
       - name: Push Halo to Dockerhub
-        run: docker push omniops/halo:latest
+        run: |
+          docker push omniops/halo:${GITHUB_SHA::7}
+          docker push omniops/halo:main
+
       - name: Push Relayer to Dockerhub
-        run: docker push omniops/relayer:latest
+        run: |
+          docker push omniops/relayer:${GITHUB_SHA::7}
+          docker push omniops/relayer:main
