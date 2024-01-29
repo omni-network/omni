@@ -35,24 +35,28 @@ dockers:
   - ids: [halo]
     dockerfile: ./halo/Dockerfile
     image_templates:
+     - omniops/halo:{{ .ShortCommit }}
      - omniops/halo:{{ .Tag }}
      - omniops/halo:latest
 
   - ids: [relayer]
     dockerfile: ./relayer/Dockerfile
     image_templates:
+     - omniops/relayer:{{ .ShortCommit }}
      - omniops/relayer:{{ .Tag }}
      - omniops/relayer:latest
 
   - ids: [explorer-api]
     dockerfile: ./explorer/api/Dockerfile
     image_templates:
+      - omniops/explorer-api:{{ .ShortCommit }}
       - omniops/explorer-api:{{ .Tag }}
       - omniops/explorer-api:latest
 
   - ids: [explorer-indexer]
     dockerfile: ./explorer/indexer/Dockerfile
     image_templates:
+      - omniops/explorer-indexer:{{ .ShortCommit }}
       - omniops/explorer-indexer:{{ .Tag }}
       - omniops/explorer-indexer:latest
 
