@@ -4,8 +4,7 @@ name: ci main
 on:
   push:
     branches:
-      # - main
-      - tt/refactor-ci
+      - main
 
 permissions:
   contents: read
