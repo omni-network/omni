@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -76,7 +77,7 @@ func Setup(ctx context.Context, testnet *e2e.Testnet, infp infra.Provider, netwo
 		return err
 	}
 
-	if err := writeRelayerConfig(testnet.Dir, testnet, network); err != nil {
+	if err := writeRelayerConfig(testnet.Dir, testnet, network, logConfig()); err != nil {
 		return err
 	}
 
@@ -100,7 +101,7 @@ func Setup(ctx context.Context, testnet *e2e.Testnet, infp infra.Provider, netwo
 		}
 		config.WriteConfigFile(filepath.Join(nodeDir, "config", "config.toml"), cfg) // panics
 
-		if err := writeHaloConfig(nodeDir); err != nil {
+		if err := writeHaloConfig(nodeDir, logConfig()); err != nil {
 			return err
 		}
 
@@ -278,12 +279,12 @@ func MakeConfig(node *e2e.Node, nodeDir string) (*config.Config, error) {
 }
 
 // writeHaloConfig generates an halo application config for a node and writes it to disk.
-func writeHaloConfig(nodeDir string) error {
+func writeHaloConfig(nodeDir string, logCfg log.Config) error {
 	cfg := haloapp.DefaultHaloConfig()
 	cfg.HomeDir = nodeDir
 	cfg.EngineJWTFile = "/geth/jwtsecret" // As per docker-compose mount
 
-	return haloapp.WriteConfigTOML(cfg)
+	return haloapp.WriteConfigTOML(cfg, logCfg)
 }
 
 // UpdateConfigStateSync updates the state sync config for a node.
@@ -355,7 +356,7 @@ func writeGethConfig(root string) error {
 	return nil
 }
 
-func writeRelayerConfig(root string, testnet *e2e.Testnet, network netconf.Network) error {
+func writeRelayerConfig(root string, testnet *e2e.Testnet, network netconf.Network, logCfg log.Config) error {
 	confRoot := filepath.Join(root, "relayer")
 
 	const (
@@ -385,9 +386,18 @@ func writeRelayerConfig(root string, testnet *e2e.Testnet, network netconf.Netwo
 	ralayCfg.NetworkFile = networkFile
 	ralayCfg.HaloURL = testnet.Nodes[0].AddressRPC()
 
-	if err := relayapp.WriteConfigTOML(ralayCfg, filepath.Join(confRoot, configFile)); err != nil {
+	if err := relayapp.WriteConfigTOML(ralayCfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write relayer config")
 	}
 
 	return nil
+}
+
+// logConfig returns a default e2e log config.
+func logConfig() log.Config {
+	return log.Config{
+		Format: log.FormatConsole,
+		Level:  slog.LevelDebug.String(),
+		Color:  log.ColorForce,
+	}
 }
