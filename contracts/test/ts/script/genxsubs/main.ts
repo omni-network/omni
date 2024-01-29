@@ -34,8 +34,9 @@ function getXSubs(b: NamedXBlock) {
   return xsubs
 }
 
+// matches xsub name referenced in common/Fixture.sol:readXSubmission
 const xsubName = (xblockName: string, destChainId: string) =>
-  [xblockName, 'xsub', 'destChainId=' + destChainId].join('_')
+  [xblockName, 'xsub', 'destChainId' + destChainId].join('_')
 
 function main() {
   const xblocks = readXBlocks()

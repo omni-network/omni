@@ -6,10 +6,14 @@ import { XTypes } from "src/libraries/XTypes.sol";
 
 /**
  * @title TestPortal
- * @dev A test contract that exposes the OmniPortal's internal functions.
+ * @dev A test contract that exposes OmniPortal internal functions, and allows state manipulation.
  */
 contract TestPortal is OmniPortal {
     function exec(XTypes.Msg calldata xmsg) external {
         _exec(xmsg);
+    }
+
+    function setInXStreamOffset(uint64 destChainId, uint64 offset) external {
+        inXStreamOffset[destChainId] = offset;
     }
 }
