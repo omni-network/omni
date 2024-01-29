@@ -146,7 +146,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	haloConfigFile := cfg.ConfigFile()
 	if cmtos.FileExists(haloConfigFile) {
 		log.Info(ctx, "Found halo config file", "path", haloConfigFile)
-	} else if err := app.WriteConfigTOML(cfg); err != nil {
+	} else if err := app.WriteConfigTOML(cfg, log.DefaultConfig()); err != nil {
 		return err
 	} else {
 		log.Info(ctx, "Generated default halo config file", "path", haloConfigFile)

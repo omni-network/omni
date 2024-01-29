@@ -10,6 +10,7 @@ import (
 
 	"github.com/omni-network/omni/halo/app"
 	libcmd "github.com/omni-network/omni/lib/cmd"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/test/tutil"
 
 	fuzz "github.com/google/gofuzz"
@@ -124,7 +125,7 @@ func TestTomlConfig(t *testing.T) {
 	require.NoError(t, os.Mkdir(filepath.Join(dir, "config"), 0o755))
 
 	// Write the randomized config to disk.
-	require.NoError(t, app.WriteConfigTOML(expect))
+	require.NoError(t, app.WriteConfigTOML(expect, log.DefaultConfig()))
 
 	// Create a run command that asserts the config is as expected.
 	cmd := newRunCmd(func(_ context.Context, actual app.Config) error {
