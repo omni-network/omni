@@ -1,4 +1,4 @@
-name: ci pr main
+name: ci pr
 # continuous integration on pull requests to main
 
 on:
