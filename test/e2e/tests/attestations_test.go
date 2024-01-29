@@ -26,10 +26,12 @@ func TestApprovedAttestations(t *testing.T) {
 			height, err := portal.Client.BlockNumber(ctx)
 			require.NoError(t, err)
 
-			aggs, err := cprov.ApprovedFrom(ctx, portal.Chain.ID, 0)
+			totalBlocks := height - portal.Chain.DeployHeight
+
+			aggs, err := cprov.ApprovedFrom(ctx, portal.Chain.ID, portal.Chain.DeployHeight)
 			require.NoError(t, err)
 
-			require.GreaterOrEqual(t, len(aggs), int(height/2)) // Assert that at least half of the blocks are approved
+			require.GreaterOrEqual(t, len(aggs), int(totalBlocks/2)) // Assert that at least half of the blocks are approved
 		}
 	}, nil)
 }

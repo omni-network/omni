@@ -24,7 +24,7 @@ func TestPortalOffsets(t *testing.T) {
 			require.NoError(t, err)
 
 			require.GreaterOrEqual(t, destOffset, sourceOffset/2,
-				"dest chain %s offset=%d, source chain %s offset=%d",
+				"dest chain %v offset=%d, source chain %v offset=%d",
 				dest.Chain.ID, destOffset, source.Chain.ID, sourceOffset)
 		}
 	})

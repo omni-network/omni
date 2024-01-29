@@ -9,7 +9,6 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/test/e2e/runner/network"
 
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	rpctypes "github.com/cometbft/cometbft/rpc/core/types"
@@ -29,9 +28,18 @@ import (
 //	os.Setenv("E2E_NODE", "validator01")
 //}
 
+const (
+	EnvInfraType   = "INFRASTRUCTURE_TYPE"
+	EnvInfraFile   = "INFRASTRUCTURE_FILE"
+	EnvE2EManifest = "E2E_MANIFEST"
+	EnvE2ENode     = "E2E_NODE"
+	EnvE2ENetwork  = "E2E_NETWORK"
+)
+
 //nolint:gochecknoglobals // This was copied from cometbft/test/e2e/test/e2e_test.go
 var (
 	ctx             = context.Background()
+	networkCache    = map[string]netconf.Network{}
 	testnetCache    = map[string]e2e.Testnet{}
 	testnetCacheMtx = sync.Mutex{}
 	blocksCache     = map[string][]*types.Block{}
@@ -55,16 +63,16 @@ type Portal struct {
 func test(t *testing.T, testNode func(*testing.T, e2e.Node, []Portal), testPortal func(*testing.T, Portal, []Portal)) {
 	t.Helper()
 
-	testnet := loadTestnet(t)
+	testnet, network := loadEnv(t)
 	nodes := testnet.Nodes
 
-	if name := os.Getenv("E2E_NODE"); name != "" {
+	if name := os.Getenv(EnvE2ENode); name != "" {
 		node := testnet.LookupNode(name)
 		require.NotNil(t, node, "node %q not found in testnet %q", name, testnet.Name)
 		nodes = []*e2e.Node{node}
 	}
 
-	portals := makePortals(t, network.NewE2E())
+	portals := makePortals(t, network)
 
 	for _, node := range nodes {
 		if node.Stateless() {
@@ -115,27 +123,27 @@ func makePortals(t *testing.T, network netconf.Network) []Portal {
 	return resp
 }
 
-// loadTestnet loads the testnet based on the E2E_MANIFEST envvar.
-func loadTestnet(t *testing.T) e2e.Testnet {
+// loadEnv loads the testnet  and network based on env vars.
+func loadEnv(t *testing.T) (e2e.Testnet, netconf.Network) {
 	t.Helper()
 
-	manifestFile := os.Getenv("E2E_MANIFEST")
+	manifestFile := os.Getenv(EnvE2EManifest)
 	if manifestFile == "" {
-		t.Skip("E2E_MANIFEST not set, not an end-to-end test run")
+		t.Skip(EnvE2EManifest + " not set, not an end-to-end test run")
 	}
 	if !filepath.IsAbs(manifestFile) {
-		require.Fail(t, "E2E_MANIFEST must be an absolute path", "got", manifestFile)
+		require.Fail(t, EnvE2EManifest+" must be an absolute path", "got", manifestFile)
 	}
 
-	ifdType := os.Getenv("INFRASTRUCTURE_TYPE")
-	ifdFile := os.Getenv("INFRASTRUCTURE_FILE")
+	ifdType := os.Getenv(EnvInfraType)
+	ifdFile := os.Getenv(EnvInfraFile)
 	if ifdType != "docker" && ifdFile == "" {
-		t.Fatalf("INFRASTRUCTURE_FILE not set and INFRASTRUCTURE_TYPE is not 'docker'")
+		t.Fatalf(EnvInfraFile + " not set and INFRASTRUCTURE_TYPE is not 'docker'")
 	}
 	testnetCacheMtx.Lock()
 	defer testnetCacheMtx.Unlock()
 	if testnet, ok := testnetCache[manifestFile]; ok {
-		return testnet
+		return testnet, networkCache[manifestFile]
 	}
 	m, err := e2e.LoadManifest(manifestFile)
 	require.NoError(t, err)
@@ -156,7 +164,16 @@ func loadTestnet(t *testing.T) e2e.Testnet {
 	require.NoError(t, err)
 	testnetCache[manifestFile] = *testnet
 
-	return *testnet
+	networkFile := os.Getenv(EnvE2ENetwork)
+	if networkFile == "" {
+		t.Fatalf(EnvE2ENetwork + " not set")
+	}
+
+	network, err := netconf.Load(networkFile)
+	require.NoError(t, err)
+	networkCache[manifestFile] = network
+
+	return *testnet, network
 }
 
 // fetchBlockChain fetches a complete, up-to-date block history from
@@ -164,7 +181,7 @@ func loadTestnet(t *testing.T) e2e.Testnet {
 func fetchBlockChain(t *testing.T) []*types.Block {
 	t.Helper()
 
-	testnet := loadTestnet(t)
+	testnet, _ := loadEnv(t)
 
 	// Find the freshest archive node
 	var (
