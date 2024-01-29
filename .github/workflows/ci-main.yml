@@ -20,6 +20,7 @@ jobs:
   go-releaser:
     uses: ./.github/workflows/goreleaser.yml
     needs: [pre-commit, go-tests, go-lint]
+    secrets: inherit
   e2e:
     uses: ./.github/workflows/e2etest.yml
     needs: [go-releaser]
