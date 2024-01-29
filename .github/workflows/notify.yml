@@ -4,7 +4,8 @@ name: ci notify
 on:
   workflow_run:
     workflows: ["*"]
-    branches: [main]
+    # test, remove tt/refactor-ci
+    branches: [main, tt/refactor-ci]
     types: [completed]
 
 jobs:
