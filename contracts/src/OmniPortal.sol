@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import { IOmniPortal } from "./interfaces/IOmniPortal.sol";
+import { XBlockMerkleProof } from "./libraries/XBlockMerkleProof.sol";
 import { XTypes } from "./libraries/XTypes.sol";
 
 contract OmniPortal is IOmniPortal {
@@ -41,7 +42,10 @@ contract OmniPortal is IOmniPortal {
     function xsubmit(XTypes.Submission calldata xsub) external {
         // TODO: verify a quorum of validators have signed off on the attestation root.
 
-        // TODO: verify block header and msgs are included in the attestation merkle root
+        require(
+            XBlockMerkleProof.verify(xsub.attestationRoot, xsub.blockHeader, xsub.msgs, xsub.proof, xsub.proofFlags),
+            "OmniPortal: invalid proof"
+        );
 
         for (uint256 i = 0; i < xsub.msgs.length; i++) {
             _exec(xsub.msgs[i]);
