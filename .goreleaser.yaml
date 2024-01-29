@@ -35,22 +35,30 @@ dockers:
   - ids: [halo]
     dockerfile: ./halo/Dockerfile
     image_templates:
-     - omniops/halo:latest
+     - omniops/halo:{{ .ShortCommit }}
+     - omniops/halo:{{ if .IsSnapshot }}main{{ else }}latest{{ end }}
+     - omniops/halo:{{ if .IsSnapshot }}main{{ else }}{{.Tag}}{{ end }}
 
   - ids: [relayer]
     dockerfile: ./relayer/Dockerfile
     image_templates:
-     - omniops/relayer:latest
+     - omniops/relayer:{{ .ShortCommit }}
+     - omniops/relayer:{{ if .IsSnapshot }}main{{ else }}latest{{ end }}
+     - omniops/relayer:{{ if .IsSnapshot }}main{{ else }}{{.Tag}}{{ end }}
 
   - ids: [explorer-api]
     dockerfile: ./explorer/api/Dockerfile
     image_templates:
-      - omniops/explorer-api:latest
+      - omniops/explorer-api:{{ .ShortCommit }}
+      - omniops/explorer-api:{{ if .IsSnapshot }}main{{ else }}latest{{ end }}
+      - omniops/explorer-api:{{ if .IsSnapshot }}main{{ else }}{{.Tag}}{{ end }}
 
   - ids: [explorer-indexer]
     dockerfile: ./explorer/indexer/Dockerfile
     image_templates:
-      - omniops/explorer-indexer:latest
+      - omniops/explorer-indexer:{{ .ShortCommit }}
+      - omniops/explorer-indexer:{{ if .IsSnapshot }}main{{ else }}latest{{ end }}
+      - omniops/explorer-indexer:{{ if .IsSnapshot }}main{{ else }}{{.Tag}}{{ end }}
 
 archives:
   - format: tar.gz
