@@ -1,11 +1,7 @@
 name: e2e tests
 
-# Run on main after building docker images
 on:
-  workflow_run:
-    workflows: ["go releaser"]
-    branches: [main]
-    types: [completed]
+  workflow_call:
 
 jobs:
   e2e_tests:
