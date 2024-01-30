@@ -24,6 +24,9 @@ contract OmniPortal is IOmniPortal {
     /// @inheritdoc IOmniPortal
     mapping(uint64 => uint64) public inXStreamOffset;
 
+    /// @inheritdoc IOmniPortal
+    mapping(uint64 => uint64) public inXStreamBlockHeight;
+
     constructor() {
         chainId = uint64(block.chainid);
     }
@@ -47,6 +50,8 @@ contract OmniPortal is IOmniPortal {
             "OmniPortal: invalid proof"
         );
 
+        inXStreamBlockHeight[xsub.blockHeader.sourceChainId] = xsub.blockHeader.blockHeight;
+
         for (uint256 i = 0; i < xsub.msgs.length; i++) {
             _exec(xsub.msgs[i]);
         }
@@ -58,15 +63,15 @@ contract OmniPortal is IOmniPortal {
         require(gasLimit >= XMSG_MIN_GAS_LIMIT, "OmniPortal: gasLimit too low");
         require(destChainId != chainId, "OmniPortal: no same-chain xcall");
 
-        emit XMsg(destChainId, outXStreamOffset[destChainId], sender, to, data, gasLimit);
-
         outXStreamOffset[destChainId] += 1;
+
+        emit XMsg(destChainId, outXStreamOffset[destChainId], sender, to, data, gasLimit);
     }
 
     /// @dev Verify an XMsg is next in its XStream, execute it, increment inXStreamOffset, emit an XReceipt
     function _exec(XTypes.Msg calldata xmsg) internal {
         require(xmsg.destChainId == chainId, "OmniPortal: wrong destChainId");
-        require(xmsg.streamOffset == inXStreamOffset[xmsg.sourceChainId], "OmniPortal: wrong streamOffset");
+        require(xmsg.streamOffset == inXStreamOffset[xmsg.sourceChainId] + 1, "OmniPortal: wrong streamOffset");
 
         // increment offset before executing xcall, to avoid reentrancy loop
         inXStreamOffset[xmsg.sourceChainId] += 1;

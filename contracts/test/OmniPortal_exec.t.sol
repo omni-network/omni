@@ -12,10 +12,9 @@ import { Vm } from "forge-std/Vm.sol";
 contract OmniPortal_exec_Test is Base {
     /// @dev Test that exec of a valid XMsg succeeds, and emits the correct XReceipt
     function test_exec_xmsg_succeeds() public {
-        XTypes.Msg memory xmsg = _inbound_increment(0);
+        XTypes.Msg memory xmsg = _inbound_increment(1);
 
         uint256 count = counter.count();
-        uint64 offset = portal.inXStreamOffset(xmsg.sourceChainId);
 
         vm.prank(relayer);
         vm.expectCall(xmsg.to, xmsg.data);
@@ -23,16 +22,15 @@ contract OmniPortal_exec_Test is Base {
         portal.exec(xmsg);
 
         assertEq(counter.count(), count + 1);
-        assertEq(portal.inXStreamOffset(xmsg.sourceChainId), offset + 1);
+        assertEq(portal.inXStreamOffset(xmsg.sourceChainId), xmsg.streamOffset);
         assertReceipt(vm.getRecordedLogs()[0], xmsg);
     }
 
     /// @dev Test that exec of an XMsg that reverts succeeds, and emits the correct XReceipt
     function test_exec_xmsgRevert_succeeds() public {
-        XTypes.Msg memory xmsg = _inbound_revert(0);
+        XTypes.Msg memory xmsg = _inbound_revert(1);
 
         uint256 count = counter.count();
-        uint64 offset = portal.inXStreamOffset(xmsg.sourceChainId);
 
         vm.prank(relayer);
         vm.expectCall(xmsg.to, xmsg.data);
@@ -40,13 +38,13 @@ contract OmniPortal_exec_Test is Base {
         portal.exec(xmsg);
 
         assertEq(counter.count(), count);
-        assertEq(portal.inXStreamOffset(xmsg.sourceChainId), offset + 1);
+        assertEq(portal.inXStreamOffset(xmsg.sourceChainId), xmsg.streamOffset);
         assertReceipt(vm.getRecordedLogs()[0], xmsg);
     }
 
     /// @dev Test that exec of an XMsg with the wrong destChainId reverts
     function test_exec_wrongChainId_reverts() public {
-        XTypes.Msg memory xmsg = _inbound_increment(0);
+        XTypes.Msg memory xmsg = _inbound_increment(1);
 
         xmsg.destChainId = xmsg.destChainId + 1; // intentionally wrong chainId
 
@@ -56,7 +54,7 @@ contract OmniPortal_exec_Test is Base {
 
     /// @dev Test that exec of an XMsg ahead of the current offset reverts
     function test_exec_aheadOffset_reverts() public {
-        XTypes.Msg memory xmsg = _inbound_increment(0);
+        XTypes.Msg memory xmsg = _inbound_increment(1);
 
         xmsg.streamOffset = xmsg.streamOffset + 1; // intentionally ahead of offset
 
@@ -66,7 +64,7 @@ contract OmniPortal_exec_Test is Base {
 
     /// @dev Test that exec of an XMsg behind the current offset reverts
     function test_exec_behindOffset_reverts() public {
-        XTypes.Msg memory xmsg = _inbound_increment(0);
+        XTypes.Msg memory xmsg = _inbound_increment(1);
 
         portal.exec(xmsg); // execute, to increment offset
 
