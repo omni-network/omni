@@ -4,6 +4,7 @@ go 1.21.5
 
 require (
 	entgo.io/ent v0.12.5
+	github.com/BurntSushi/toml v1.3.2
 	github.com/bufbuild/buf v1.29.0
 	github.com/charmbracelet/log v0.3.1
 	github.com/cometbft/cometbft v0.38.5
@@ -28,6 +29,7 @@ require (
 	go.opentelemetry.io/otel v1.22.0
 	go.opentelemetry.io/otel/metric v1.22.0
 	go.opentelemetry.io/otel/trace v1.22.0
+	golang.org/x/exp v0.0.0-20240112132812-db7319d0e0e3
 	google.golang.org/grpc v1.61.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.3.0
 	google.golang.org/protobuf v1.32.0
@@ -39,7 +41,6 @@ require (
 	connectrpc.com/connect v1.14.0 // indirect
 	connectrpc.com/otelconnect v0.7.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
-	github.com/BurntSushi/toml v1.3.2 // indirect
 	github.com/DataDog/zstd v1.4.5 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect
@@ -190,7 +191,6 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/crypto v0.18.0 // indirect
-	golang.org/x/exp v0.0.0-20240112132812-db7319d0e0e3 // indirect
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect

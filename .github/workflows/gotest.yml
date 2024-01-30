@@ -1,12 +1,8 @@
 name: go tests
 # Run this separately from pre-commit for nice visual coverage.
 
-# Run on pull requests and commits to main
 on:
-  pull_request:
-  push:
-    branches:
-      - main
+  workflow_call:
 
 jobs:
   unit_tests:

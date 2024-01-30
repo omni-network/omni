@@ -7,6 +7,7 @@ import (
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 )
 
@@ -15,13 +16,13 @@ import (
 func StartRelayer(
 	ctx context.Context,
 	cProvider cchain.Provider,
-	chainIDs []uint64,
+	network netconf.Network,
 	xClient xchain.Provider,
 	creator CreateFunc,
 	sender Sender,
 ) error {
 	// Get the last submitted cursors for each chain.
-	cursors, initialOffsets, err := getSubmittedCursors(ctx, chainIDs, xClient)
+	cursors, initialOffsets, err := getSubmittedCursors(ctx, network.ChainIDs(), xClient)
 	if err != nil {
 		return err
 	}
@@ -80,7 +81,7 @@ func StartRelayer(
 	}
 
 	// Subscribe to attestations for each chain.
-	for chainID, fromHeight := range FromHeights(cursors, chainIDs) {
+	for chainID, fromHeight := range FromHeights(cursors, network.Chains) {
 		cProvider.Subscribe(ctx, chainID, fromHeight, callback)
 	}
 
@@ -145,11 +146,11 @@ func filterMsgs(msgs []xchain.Msg, offsets map[xchain.StreamID]uint64, streamID 
 	return res
 }
 
-func FromHeights(cursors []xchain.StreamCursor, chainIDs []uint64) map[uint64]uint64 {
+func FromHeights(cursors []xchain.StreamCursor, chains []netconf.Chain) map[uint64]uint64 {
 	res := make(map[uint64]uint64)
 
-	for _, chainID := range chainIDs {
-		res[chainID] = 0
+	for _, chain := range chains {
+		res[chain.ID] = chain.DeployHeight
 	}
 
 	// sort cursors by decreasing SourceBlockHeight, so we start streaming from minimum height per source chain

@@ -16,14 +16,14 @@ contract OmniPortal_xcall_Test is Base {
 
         // check XMsg event is emitted
         vm.expectEmit();
-        emit XMsg(xmsg.destChainId, xmsg.streamOffset, xcaller, xmsg.to, xmsg.data, xmsg.gasLimit);
+        emit XMsg(xmsg.destChainId, 1, xcaller, xmsg.to, xmsg.data, xmsg.gasLimit);
 
         // make xcall
         vm.prank(xcaller);
         portal.xcall(xmsg.destChainId, xmsg.to, xmsg.data);
 
         // check outXStreamOffset is incremented
-        assertEq(portal.outXStreamOffset(xmsg.destChainId), xmsg.streamOffset + 1);
+        assertEq(portal.outXStreamOffset(xmsg.destChainId), 1);
     }
 
     /// @dev Test that xcall with explicit gas limit emits XMsg event and increments outXStreamOffset
@@ -33,14 +33,14 @@ contract OmniPortal_xcall_Test is Base {
 
         // check XMsg event is emitted
         vm.expectEmit();
-        emit XMsg(xmsg.destChainId, xmsg.streamOffset, xcaller, xmsg.to, xmsg.data, xmsg.gasLimit);
+        emit XMsg(xmsg.destChainId, 1, xcaller, xmsg.to, xmsg.data, xmsg.gasLimit);
 
         // make xcall
         vm.prank(xcaller);
         portal.xcall(xmsg.destChainId, xmsg.to, xmsg.data, xmsg.gasLimit);
 
         // check outXStreamOffset is incremented
-        assertEq(portal.outXStreamOffset(xmsg.destChainId), xmsg.streamOffset + 1);
+        assertEq(portal.outXStreamOffset(xmsg.destChainId), 1);
     }
 
     /// @dev Test that xcall with too-low gas limit reverts
