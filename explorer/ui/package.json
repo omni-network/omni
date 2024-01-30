@@ -8,19 +8,23 @@
     "dev": "remix dev --manual",
     "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
     "start": "remix-serve ./build/index.js",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "codegen": "graphql-codegen --config codegen.ts"
   },
   "dependencies": {
     "@remix-run/css-bundle": "^2.5.0",
     "@remix-run/node": "^2.5.0",
     "@remix-run/react": "^2.5.0",
     "@remix-run/serve": "^2.5.0",
+    "graphql": "16.8.1",
     "isbot": "^4.1.0",
     "openapi-fetch": "^0.8.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "5.0.0",
+    "@parcel/watcher": "2.4.0",
     "@remix-run/dev": "^2.5.0",
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
@@ -33,7 +37,8 @@
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
     "openapi-typescript": "^6.7.4",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "@graphql-codegen/client-preset": "4.1.0"
   },
   "engines": {
     "node": ">=18.0.0"
