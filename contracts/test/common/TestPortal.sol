@@ -12,8 +12,4 @@ contract TestPortal is OmniPortal {
     function exec(XTypes.Msg calldata xmsg) external {
         _exec(xmsg);
     }
-
-    function setInXStreamOffset(uint64 destChainId, uint64 offset) external {
-        inXStreamOffset[destChainId] = offset;
-    }
 }

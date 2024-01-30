@@ -26,21 +26,22 @@ contract OmniPortal_xsubmit_Test is Base {
     }
 
     function test_xsubmit_xblock2_succeeds() public {
-        XTypes.Submission memory xsub = readXSubmission("xblock2", portal.chainId());
+        // need to submit xblock1 first, to set the streamOffset
+        XTypes.Submission memory xsub1 = readXSubmission("xblock1", portal.chainId());
+        portal.xsubmit(xsub1);
 
-        uint64 sourceChainId = xsub.msgs[0].sourceChainId;
-        uint64 expectedOffset = xsub.msgs[0].streamOffset + uint64(xsub.msgs.length);
+        XTypes.Submission memory xsub2 = readXSubmission("xblock2", portal.chainId());
 
-        // xblock2 starts are later offset
-        portal.setInXStreamOffset(sourceChainId, xsub.msgs[0].streamOffset);
+        uint64 sourceChainId = xsub2.msgs[0].sourceChainId;
+        uint64 expectedOffset = xsub2.msgs[0].streamOffset + uint64(xsub2.msgs.length);
 
         vm.prank(relayer);
         vm.recordLogs();
-        expectCalls(xsub.msgs);
-        portal.xsubmit(xsub);
+        expectCalls(xsub2.msgs);
+        portal.xsubmit(xsub2);
 
         assertEq(portal.inXStreamOffset(sourceChainId), expectedOffset);
-        assertReceipts(vm.getRecordedLogs(), xsub.msgs);
+        assertReceipts(vm.getRecordedLogs(), xsub2.msgs);
     }
 
     function test_xsubmit_xblock1_chainB_succeeds() public {
@@ -59,21 +60,22 @@ contract OmniPortal_xsubmit_Test is Base {
     }
 
     function test_xsubmit_xblock2_chainB_succeeds() public {
-        XTypes.Submission memory xsub = readXSubmission("xblock2", chainBId);
+        // need to submit xblock1 first, to set the streamOffset
+        XTypes.Submission memory xsub1 = readXSubmission("xblock1", chainBId);
+        chainBPortal.xsubmit(xsub1);
 
-        uint64 sourceChainId = xsub.msgs[0].sourceChainId;
-        uint64 expectedOffset = xsub.msgs[0].streamOffset + uint64(xsub.msgs.length);
+        XTypes.Submission memory xsub2 = readXSubmission("xblock2", chainBId);
 
-        // xblock2 starts are later offset
-        chainBPortal.setInXStreamOffset(sourceChainId, xsub.msgs[0].streamOffset);
+        uint64 sourceChainId = xsub2.msgs[0].sourceChainId;
+        uint64 expectedOffset = xsub2.msgs[0].streamOffset + uint64(xsub2.msgs.length);
 
         vm.prank(relayer);
         vm.recordLogs();
-        expectCalls(xsub.msgs);
-        chainBPortal.xsubmit(xsub);
+        expectCalls(xsub2.msgs);
+        chainBPortal.xsubmit(xsub2);
 
         assertEq(chainBPortal.inXStreamOffset(sourceChainId), expectedOffset);
-        assertReceipts(vm.getRecordedLogs(), xsub.msgs);
+        assertReceipts(vm.getRecordedLogs(), xsub2.msgs);
     }
 
     function test_xsubmit_wrongChainId_reverts() public {
