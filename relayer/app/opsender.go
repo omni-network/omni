@@ -5,6 +5,13 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 	"math/big"
+	"strings"
+
+	"github.com/ethereum-optimism/optimism/op-service/txmgr/metrics"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	ethlog "github.com/ethereum/go-ethereum/log"
+	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/netconf"
 
 	opcrypto "github.com/ethereum-optimism/optimism/op-service/crypto"
 	"github.com/ethereum/go-ethereum/common"
@@ -23,7 +30,46 @@ var _ Sender = (*OpSender)(nil)
 
 type OpSender struct {
 	txMgrs  map[uint64]txmgr.TxManager
-	portals map[uint64]*common.Address
+	portals map[uint64]common.Address
+	abi     *abi.ABI
+}
+
+func NewOpSender(chains []netconf.Chain, rpcClientPerChain map[uint64]*ethclient.Client,
+	privateKey *ecdsa.PrivateKey) (OpSender, error) {
+	txMgrs := make(map[uint64]txmgr.TxManager)
+	for _, chain := range chains {
+		cfg, err := NewTxMgrConfig(context.Background(), txmgr.NewCLIConfig(chain.RPCURL, txmgr.DefaultBatcherFlagValues),
+			privateKey, rpcClientPerChain[chain.ID])
+		if err != nil {
+			return OpSender{}, err
+		}
+
+		l := ethLogger{}
+		txMgr, err := initTxMgr(cfg, l)
+		if err != nil {
+			return OpSender{}, err
+		}
+
+		txMgrs[chain.ID] = txMgr
+	}
+
+	// Create portals
+	portals := make(map[uint64]common.Address)
+	for _, chain := range chains {
+		portals[chain.ID] = common.HexToAddress(chain.PortalAddress)
+	}
+
+	// Create ABI
+	abi, err := abi.JSON(strings.NewReader(bindings.OmniPortalMetaData.ABI))
+	if err != nil {
+		return OpSender{}, errors.Wrap(err, "parse abi")
+	}
+
+	return OpSender{
+		txMgrs:  txMgrs,
+		portals: portals,
+		abi:     &abi,
+	}, nil
 }
 
 func (o OpSender) SendTransaction(ctx context.Context, submission xchain.Submission) error {
@@ -53,9 +99,14 @@ func (o OpSender) SendTransaction(ctx context.Context, submission xchain.Submiss
 		return errors.New("portal not found", "dest_chain_id", submission.DestChainID)
 	}
 
+	txData, err := o.GetXSubmitBytes(TranslateSubmission(submission))
+	if err != nil {
+		return err
+	}
+
 	candidate := txmgr.TxCandidate{
-		TxData:   nil,
-		To:       to,
+		TxData:   txData,
+		To:       &to,
 		GasLimit: gasLimit,
 		Value:    big.NewInt(0), // todo(lazar); is this right?
 	}
@@ -90,7 +141,7 @@ func NewTxMgrConfig(ctx context.Context, cfg txmgr.CLIConfig,
 	defer cancel()
 	chainID, err := client.ChainID(ctx)
 	if err != nil {
-		return txmgr.Config{}, fmt.Errorf("could not dial fetch L1 chain ID: %w", err)
+		return txmgr.Config{}, errors.Wrap(err, "could not dial fetch L1 chain ID")
 	}
 
 	signer := func(chainID *big.Int) opcrypto.SignerFn {
@@ -102,17 +153,17 @@ func NewTxMgrConfig(ctx context.Context, cfg txmgr.CLIConfig,
 
 	feeLimitThreshold, err := eth.GweiToWei(cfg.FeeLimitThresholdGwei)
 	if err != nil {
-		return txmgr.Config{}, fmt.Errorf("invalid fee limit threshold: %w", err)
+		return txmgr.Config{}, errors.Wrap(err, "invalid fee limit threshold")
 	}
 
 	minBaseFee, err := eth.GweiToWei(cfg.MinBaseFeeGwei)
 	if err != nil {
-		return txmgr.Config{}, fmt.Errorf("invalid min base fee: %w", err)
+		return txmgr.Config{}, errors.Wrap(err, "invalid min base fee")
 	}
 
 	minTipCap, err := eth.GweiToWei(cfg.MinTipCapGwei)
 	if err != nil {
-		return txmgr.Config{}, fmt.Errorf("invalid min tip cap: %w", err)
+		return txmgr.Config{}, errors.Wrap(err, "invalid min tip cap")
 	}
 
 	return txmgr.Config{
@@ -134,12 +185,22 @@ func NewTxMgrConfig(ctx context.Context, cfg txmgr.CLIConfig,
 	}, nil
 }
 
-func initTxMgr(cfg txmgr.Config) (txmgr.TxManager, error) {
-	// todo(lazar): logger and metrics will panic for now
-	txMgr, err := txmgr.NewSimpleTxManagerFromConfig("op-relayer", nil, nil, cfg)
+func initTxMgr(cfg txmgr.Config, logger ethlog.Logger) (txmgr.TxManager, error) {
+	// todo(lazar): metrics
+	m := metrics.NoopTxMetrics{}
+	txMgr, err := txmgr.NewSimpleTxManagerFromConfig("op-relayer", logger, &m, cfg)
 	if err != nil {
 		return nil, errors.New("failed to create tx mgr", "error", err)
 	}
 
 	return txMgr, nil
+}
+
+func (o OpSender) GetXSubmitBytes(xsub bindings.XTypesSubmission) ([]byte, error) {
+	bytes, err := o.abi.Pack("xsubmit", xsub)
+	if err != nil {
+		return nil, errors.Wrap(err, "pack xsubmit")
+	}
+
+	return bytes, nil
 }
