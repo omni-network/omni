@@ -13,8 +13,9 @@ contract OmniPortal_xsubmit_Test is Base {
     function test_xsubmit_xblock1_succeeds() public {
         XTypes.Submission memory xsub = readXSubmission("xblock1", portal.chainId());
 
-        uint64 sourceChainId = xsub.msgs[0].sourceChainId;
+        uint64 sourceChainId = xsub.blockHeader.sourceChainId;
         uint64 expectedOffset = xsub.msgs[xsub.msgs.length - 1].streamOffset;
+        uint256 expectedCount = numIncrements(xsub.msgs);
 
         vm.prank(relayer);
         vm.recordLogs();
@@ -23,6 +24,8 @@ contract OmniPortal_xsubmit_Test is Base {
 
         assertEq(portal.inXStreamOffset(sourceChainId), expectedOffset);
         assertEq(portal.inXStreamBlockHeight(sourceChainId), xsub.blockHeader.blockHeight);
+        assertEq(counter.count(), expectedCount);
+        assertEq(counter.countByChainId(sourceChainId), expectedCount);
         assertReceipts(vm.getRecordedLogs(), xsub.msgs);
     }
 
@@ -33,8 +36,9 @@ contract OmniPortal_xsubmit_Test is Base {
 
         XTypes.Submission memory xsub2 = readXSubmission("xblock2", portal.chainId());
 
-        uint64 sourceChainId = xsub2.msgs[0].sourceChainId;
+        uint64 sourceChainId = xsub2.blockHeader.sourceChainId;
         uint64 expectedOffset = xsub2.msgs[xsub2.msgs.length - 1].streamOffset;
+        uint256 expectedCount = numIncrements(xsub1.msgs) + numIncrements(xsub2.msgs);
 
         vm.prank(relayer);
         vm.recordLogs();
@@ -43,14 +47,17 @@ contract OmniPortal_xsubmit_Test is Base {
 
         assertEq(portal.inXStreamOffset(sourceChainId), expectedOffset);
         assertEq(portal.inXStreamBlockHeight(sourceChainId), xsub2.blockHeader.blockHeight);
+        assertEq(counter.count(), expectedCount);
+        assertEq(counter.countByChainId(sourceChainId), expectedCount);
         assertReceipts(vm.getRecordedLogs(), xsub2.msgs);
     }
 
     function test_xsubmit_xblock1_chainB_succeeds() public {
         XTypes.Submission memory xsub = readXSubmission("xblock1", chainBId);
 
-        uint64 sourceChainId = xsub.msgs[0].sourceChainId;
+        uint64 sourceChainId = xsub.blockHeader.sourceChainId;
         uint64 expectedOffset = xsub.msgs[xsub.msgs.length - 1].streamOffset;
+        uint256 expectedCount = numIncrements(xsub.msgs);
 
         vm.prank(relayer);
         vm.recordLogs();
@@ -59,6 +66,8 @@ contract OmniPortal_xsubmit_Test is Base {
 
         assertEq(chainBPortal.inXStreamOffset(sourceChainId), expectedOffset);
         assertEq(chainBPortal.inXStreamBlockHeight(sourceChainId), xsub.blockHeader.blockHeight);
+        assertEq(chainBCounter.count(), expectedCount);
+        assertEq(chainBCounter.countByChainId(sourceChainId), expectedCount);
         assertReceipts(vm.getRecordedLogs(), xsub.msgs);
     }
 
@@ -69,8 +78,9 @@ contract OmniPortal_xsubmit_Test is Base {
 
         XTypes.Submission memory xsub2 = readXSubmission("xblock2", chainBId);
 
-        uint64 sourceChainId = xsub2.msgs[0].sourceChainId;
+        uint64 sourceChainId = xsub2.blockHeader.sourceChainId;
         uint64 expectedOffset = xsub2.msgs[xsub2.msgs.length - 1].streamOffset;
+        uint256 expectedCount = numIncrements(xsub1.msgs) + numIncrements(xsub2.msgs);
 
         vm.prank(relayer);
         vm.recordLogs();
@@ -79,6 +89,8 @@ contract OmniPortal_xsubmit_Test is Base {
 
         assertEq(chainBPortal.inXStreamOffset(sourceChainId), expectedOffset);
         assertEq(chainBPortal.inXStreamBlockHeight(sourceChainId), xsub2.blockHeader.blockHeight);
+        assertEq(chainBCounter.count(), expectedCount);
+        assertEq(chainBCounter.countByChainId(sourceChainId), expectedCount);
         assertReceipts(vm.getRecordedLogs(), xsub2.msgs);
     }
 
