@@ -1,16 +1,8 @@
 name: go lint
 # Run this separately from pre-commit since then we get nice inline messages in PRs.
 
-# Run on pull requests and commits to main
 on:
-  pull_request:
-  push:
-    branches:
-      - main
-
-permissions:
-  contents: read
-  pull-requests: read
+  workflow_call:
 
 jobs:
   golangci:
@@ -28,5 +20,3 @@ jobs:
           version: v1.55.2
           # Verbose with color. Just fail, don't fix issues. Use both annotations and normal output.
           args: -v --color=always --fix=false --out-format=colored-line-number,github-actions
-
-     # TODO(corver): Notify slack on failure on main

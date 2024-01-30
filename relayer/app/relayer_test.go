@@ -2,10 +2,10 @@ package relayer_test
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
 	"github.com/omni-network/omni/lib/cchain"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 	relayer "github.com/omni-network/omni/relayer/app"
 
@@ -98,8 +98,12 @@ func Test_StartRelayer(t *testing.T) {
 		},
 	}
 
-	allChains := []uint64{srcChain, destChainA, destChainB}
-	err := relayer.StartRelayer(ctx, mockProvider, allChains, mockXClient, mockCreateFunc, mockSender)
+	network := netconf.Network{Chains: []netconf.Chain{
+		{ID: srcChain},
+		{ID: destChainA},
+		{ID: destChainB},
+	}}
+	err := relayer.StartRelayer(ctx, mockProvider, network, mockXClient, mockCreateFunc, mockSender)
 	require.NoError(t, err)
 
 	// Verify responses
@@ -132,8 +136,8 @@ func Test_StartRelayer(t *testing.T) {
 func Test_FromHeights(t *testing.T) {
 	t.Parallel()
 	type args struct {
-		cursors  []xchain.StreamCursor
-		chainIDs []uint64
+		cursors []xchain.StreamCursor
+		chains  []netconf.Chain
 	}
 	tests := []struct {
 		name string
@@ -141,12 +145,12 @@ func Test_FromHeights(t *testing.T) {
 		want map[uint64]uint64
 	}{
 		{
-			name: "", args: args{
+			name: "1", args: args{
 				cursors: []xchain.StreamCursor{
-					{StreamID: xchain.StreamID{SourceChainID: 1, DestChainID: 2}, Offset: 100, SourceBlockHeight: 200},
-					{StreamID: xchain.StreamID{SourceChainID: 2, DestChainID: 3}, Offset: 150, SourceBlockHeight: 250},
+					{StreamID: xchain.StreamID{SourceChainID: 1, DestChainID: 2}, SourceBlockHeight: 200},
+					{StreamID: xchain.StreamID{SourceChainID: 2, DestChainID: 3}, SourceBlockHeight: 250},
 				},
-				chainIDs: []uint64{1, 2, 3},
+				chains: []netconf.Chain{{ID: 1}, {ID: 2}, {ID: 3}},
 			}, want: map[uint64]uint64{
 				1: 200,
 				2: 250,
@@ -154,14 +158,27 @@ func Test_FromHeights(t *testing.T) {
 			},
 		},
 		{
-			name: "", args: args{
+			name: "2", args: args{
 				cursors: []xchain.StreamCursor{
-					{StreamID: xchain.StreamID{SourceChainID: 1, DestChainID: 2}, Offset: 100, SourceBlockHeight: 200},
-					{StreamID: xchain.StreamID{SourceChainID: 1, DestChainID: 3}, Offset: 150, SourceBlockHeight: 0},
+					{StreamID: xchain.StreamID{SourceChainID: 1, DestChainID: 3}, SourceBlockHeight: 200},
+					{StreamID: xchain.StreamID{SourceChainID: 2, DestChainID: 3}, SourceBlockHeight: 100},
 				},
-				chainIDs: []uint64{1, 3},
+				chains: []netconf.Chain{{ID: 1}, {ID: 2, DeployHeight: 55}, {ID: 3}},
 			}, want: map[uint64]uint64{
-				1: 0,
+				1: 200,
+				2: 100,
+				3: 0,
+			},
+		},
+		{
+			name: "3", args: args{
+				cursors: []xchain.StreamCursor{
+					{StreamID: xchain.StreamID{SourceChainID: 1, DestChainID: 2}, SourceBlockHeight: 200},
+				},
+				chains: []netconf.Chain{{ID: 1}, {ID: 2, DeployHeight: 55}, {ID: 3}},
+			}, want: map[uint64]uint64{
+				1: 200,
+				2: 55,
 				3: 0,
 			},
 		},
@@ -170,9 +187,8 @@ func Test_FromHeights(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if got := relayer.FromHeights(tt.args.cursors, tt.args.chainIDs); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("fromHeights() = %v, want %v", got, tt.want)
-			}
+			got := relayer.FromHeights(tt.args.cursors, tt.args.chains)
+			require.Equal(t, tt.want, got)
 		})
 	}
 }

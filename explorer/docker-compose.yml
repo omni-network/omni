@@ -20,32 +20,19 @@ services:
     build:
       context: ./ui
       dockerfile: Dockerfile
-    expose:
-      - 3000
     ports:
       - 3000:3000
     depends_on:
       db:
         condition: service_healthy
 
-  # api:
-  #   image: omniops/explorer-api
-  #   ports:
-  #     - 8000
-  #   depends_on:
-  #     - db
-
   graphql:
     image: omniops/explorer-graphql
-    expose:
-      - 8080
     ports:
       - 8080:8080
     depends_on:
       db:
         condition: service_healthy
-    links:
-      - db
 
   indexer:
     image: omniops/explorer-indexer

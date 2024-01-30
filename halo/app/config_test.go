@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/halo/app"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/test/tutil"
 
 	"github.com/stretchr/testify/require"
@@ -21,7 +22,7 @@ func TestDefaultConfigReference(t *testing.T) {
 	cfg.HomeDir = tempDir
 
 	require.NoError(t, os.MkdirAll(filepath.Join(tempDir, "config"), 0o755))
-	require.NoError(t, app.WriteConfigTOML(cfg))
+	require.NoError(t, app.WriteConfigTOML(cfg, log.DefaultConfig()))
 
 	b, err := os.ReadFile(filepath.Join(tempDir, "config", "halo.toml"))
 	require.NoError(t, err)

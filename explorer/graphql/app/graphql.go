@@ -19,6 +19,7 @@ var schema string
 //go:embed index.html
 var graphiql []byte
 
+// GraphQL returns a new graphql handler. We use the relay handler to create the graphql handler.
 func GraphQL(provider data.Provider) http.Handler {
 	// dummy hard-coded data
 	br := resolvers.BlocksResolver{
@@ -38,6 +39,6 @@ func home(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "text/html; charset=utf-8")
 	_, err := w.Write(graphiql)
 	if err != nil {
-		log.Error(r.Context(), "graphql home err", err)
+		log.Warn(r.Context(), "graphql home err", err)
 	}
 }

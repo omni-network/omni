@@ -1,5 +1,8 @@
 FROM scratch
 
+# Install ca-certificates (for https to rollups)
+COPY --from=alpine:latest /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+
 COPY halo /app
 
 # Mount home directory at /halo

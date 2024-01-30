@@ -12,7 +12,6 @@ gen-db: ## generates our ent orm schemas
 open-dev: ## opens all of the local host endpoints
 	python -m webbrowser "http://localhost:3000"
 	python -m webbrowser "http://localhost:8080"
-	python -m webbrowser "http://localhost:8081/hello"
 
 build: ## builds our docker images
 	make -C ../ build-docker
