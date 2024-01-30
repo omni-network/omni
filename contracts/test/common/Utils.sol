@@ -29,7 +29,7 @@ contract Utils is Test, Events, Fixtures {
         });
     }
 
-    /// _dev
+    /// _dev Assert that the logs are XReceipt events with the correct fields.
     function assertReceipts(Vm.Log[] memory logs, XTypes.Msg[] memory xmsgs) internal {
         assertEq(logs.length, xmsgs.length);
         for (uint256 i = 0; i < logs.length; i++) {
