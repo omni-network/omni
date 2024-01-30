@@ -95,4 +95,22 @@ contract OmniPortal_xsubmit_Test is Base {
         vm.expectRevert("OmniPortal: wrong streamOffset");
         portal.xsubmit(xsub);
     }
+
+    function test_xsubmit_invalidAttestationRoot_reverts() public {
+        XTypes.Submission memory xsub = readXSubmission("xblock1", portal.chainId());
+
+        xsub.attestationRoot = keccak256("invalid");
+
+        vm.expectRevert("OmniPortal: invalid proof");
+        portal.xsubmit(xsub);
+    }
+
+    function test_xsubmit_invalidMsgs_reverts() public {
+        XTypes.Submission memory xsub = readXSubmission("xblock1", portal.chainId());
+
+        xsub.msgs[0].data = abi.encodeWithSignature("invalid()");
+
+        vm.expectRevert("OmniPortal: invalid proof");
+        portal.xsubmit(xsub);
+    }
 }
