@@ -2,10 +2,13 @@ package relayer
 
 import (
 	"context"
+	"log/slog"
+
+	"github.com/omni-network/omni/lib/log"
 
 	ethlog "github.com/ethereum/go-ethereum/log"
 
-	"golang.org/x/exp/slog"
+	eslog "golang.org/x/exp/slog"
 )
 
 var _ ethlog.Logger = (*ethLogger)(nil)
@@ -14,16 +17,17 @@ type ethLogger struct {
 	log *slog.Logger
 }
 
-func (e ethLogger) With(ctx ...any) ethlog.Logger {
-	return ethLogger{
-		log: e.log.With(ctx...),
+// WrapLogger wraps the logger inside the context and returns a new logger compatible with the
+// Ethereum logger interface.
+func WrapLogger(ctx context.Context) ethlog.Logger {
+	return &ethLogger{
+		log: log.GetLogger(ctx),
 	}
 }
 
-// WrapLogger wraps an instance of [slog.Logger] returns a new logger compatiple with the Ethereum logger interaface.
-func WrapLogger(l *slog.Logger) ethlog.Logger {
-	return &ethLogger{
-		log: l,
+func (e ethLogger) With(ctx ...any) ethlog.Logger {
+	return ethLogger{
+		log: e.log.With(ctx...),
 	}
 }
 
@@ -33,7 +37,7 @@ func (e ethLogger) New(ctx ...any) ethlog.Logger {
 	}
 }
 
-func (e ethLogger) Log(level slog.Level, msg string, ctx ...any) {
+func (e ethLogger) Log(level eslog.Level, msg string, ctx ...any) {
 	e.Write(level, msg, ctx...)
 }
 
@@ -62,19 +66,19 @@ func (e ethLogger) Crit(msg string, ctx ...any) {
 	e.log.Error(msg, ctx...)
 }
 
-func (e ethLogger) Write(level slog.Level, msg string, attrs ...any) {
+func (e ethLogger) Write(level eslog.Level, msg string, attrs ...any) {
 	switch level {
-	case slog.LevelInfo:
+	case eslog.LevelInfo:
 		e.log.Info(msg, attrs...)
-	case slog.LevelWarn:
+	case eslog.LevelWarn:
 		e.log.Warn(msg, attrs...)
-	case slog.LevelError:
+	case eslog.LevelError:
 		e.log.Error(msg, attrs...)
-	case slog.LevelDebug:
+	case eslog.LevelDebug:
 		e.log.Debug(msg, attrs...)
 	}
 }
 
-func (ethLogger) Enabled(context.Context, slog.Level) bool {
+func (ethLogger) Enabled(context.Context, eslog.Level) bool {
 	return true
 }
