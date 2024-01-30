@@ -11,7 +11,7 @@ import { XTypes } from "./XTypes.sol";
 library XBlockMerkleProof {
     /**
      * @dev Verifies a multi merkle proof for the provided block header and messages, against the provided root.
-     *      Msgs order must match the order used to contstruct the merkle proof.
+     *      Msgs order must match the order used to construct the merkle proof.
      * @param root The root of the xblock merkle tree, generally XSubmission.attestationRoot.
      * @param blockHeader The xblock header.
      * @param msgs The xmsgs to verify.
@@ -37,9 +37,9 @@ library XBlockMerkleProof {
     {
         bytes32[] memory leaves = new bytes32[](msgs.length + 1);
 
-        leaves[0] = _leafHash(abi.encode((blockHeader)));
+        leaves[0] = _leafHash(abi.encode(blockHeader));
         for (uint256 i = 0; i < msgs.length; i++) {
-            leaves[i + 1] = _leafHash(abi.encode((msgs[i])));
+            leaves[i + 1] = _leafHash(abi.encode(msgs[i]));
         }
 
         return leaves;

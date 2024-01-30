@@ -57,7 +57,7 @@ contract Fixtures is CommonBase, StdCheats {
     //      are generated for each test XBlock, per destination chain, by ts/script/genxsubs/main.ts.
     string constant XSUBS_PATH = "test/data/xsubs.json";
 
-    /// @dev XSubs json read from XSUBS_PATH, stored to avoid re-reading fro disk
+    /// @dev XSubs json read from XSUBS_PATH, stored to avoid re-reading from disk
     string private _xsubsJson;
 
     function setUp() public {
