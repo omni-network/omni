@@ -3,8 +3,6 @@ package relayer
 import (
 	"context"
 
-	"github.com/omni-network/omni/lib/log"
-
 	ethlog "github.com/ethereum/go-ethereum/log"
 
 	"golang.org/x/exp/slog"
@@ -13,17 +11,26 @@ import (
 var _ ethlog.Logger = (*ethLogger)(nil)
 
 type ethLogger struct {
-	ctx context.Context //nolint:containedctx // This is a wrapper around the omni logger which is context based.
+	log *slog.Logger
 }
 
 func (e ethLogger) With(ctx ...any) ethlog.Logger {
 	return ethLogger{
-		ctx: log.WithCtx(e.ctx, ctx...),
+		log: e.log.With(ctx...),
+	}
+}
+
+// WrapLogger wraps an instance of [slog.Logger] returns a new logger compatiple with the Ethereum logger interaface.
+func WrapLogger(l *slog.Logger) ethlog.Logger {
+	return &ethLogger{
+		log: l,
 	}
 }
 
 func (e ethLogger) New(ctx ...any) ethlog.Logger {
-	return e.With(ctx...)
+	return &ethLogger{
+		log: e.log.With(ctx...),
+	}
 }
 
 func (e ethLogger) Log(level slog.Level, msg string, ctx ...any) {
@@ -31,61 +38,43 @@ func (e ethLogger) Log(level slog.Level, msg string, ctx ...any) {
 }
 
 func (e ethLogger) Trace(msg string, ctx ...any) {
-	log.Debug(e.ctx, msg, ctx...)
+	e.log.Debug(msg, ctx...)
 }
 
 func (e ethLogger) Debug(msg string, ctx ...any) {
-	log.Debug(e.ctx, msg, ctx...)
+	e.log.Debug(msg, ctx...)
 }
 
 func (e ethLogger) Info(msg string, ctx ...any) {
-	log.Info(e.ctx, msg, ctx...)
+	e.log.Info(msg, ctx...)
 }
 
 func (e ethLogger) Warn(msg string, ctx ...any) {
-	keyVals, err := splitOutError(ctx)
-	log.Warn(e.ctx, msg, err, keyVals...)
+	e.log.Warn(msg, ctx...)
 }
 
 func (e ethLogger) Error(msg string, ctx ...any) {
-	keyVals, err := splitOutError(ctx)
-	log.Error(e.ctx, msg, err, keyVals...)
+	e.log.Error(msg, ctx...)
 }
 
 func (e ethLogger) Crit(msg string, ctx ...any) {
 	// I don't want to do os.exit here
-	keyVals, err := splitOutError(ctx)
-	log.Error(e.ctx, msg, err, keyVals...)
+	e.log.Error(msg, ctx...)
 }
 
 func (e ethLogger) Write(level slog.Level, msg string, attrs ...any) {
 	switch level {
 	case slog.LevelInfo:
-		e.Info(msg, attrs...)
+		e.log.Info(msg, attrs...)
 	case slog.LevelWarn:
-		e.Warn(msg, attrs...)
+		e.log.Warn(msg, attrs...)
 	case slog.LevelError:
-		e.Error(msg, attrs...)
+		e.log.Error(msg, attrs...)
 	case slog.LevelDebug:
-		e.Debug(msg, attrs...)
+		e.log.Debug(msg, attrs...)
 	}
 }
 
 func (ethLogger) Enabled(context.Context, slog.Level) bool {
 	return true
-}
-
-// splitOutError splits the keyvals into a slice of keyvals without the error and the error.
-func splitOutError(keyvals []any) ([]any, error) {
-	var remaining []any
-	var err error
-	for i := 0; i < len(keyvals); i += 2 {
-		if keyErr, ok := keyvals[i+1].(error); ok {
-			err = keyErr
-		} else {
-			remaining = append(remaining, keyvals[i], keyvals[i+1])
-		}
-	}
-
-	return remaining, err
 }
