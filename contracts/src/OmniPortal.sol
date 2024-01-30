@@ -27,8 +27,23 @@ contract OmniPortal is IOmniPortal {
     /// @inheritdoc IOmniPortal
     mapping(uint64 => uint64) public inXStreamBlockHeight;
 
+    /// @dev The current XMsg being executed, exposed via xmsg() getter
+    ///      Private state + public getter preferred over public state with default getter,
+    ///      so that we can use the XMsg struct type in the interface.
+    XTypes.Msg private _currentXmsg;
+
     constructor() {
         chainId = uint64(block.chainid);
+    }
+
+    /// @inheritdoc IOmniPortal
+    function xmsg() external view returns (XTypes.Msg memory) {
+        return _currentXmsg;
+    }
+
+    /// @inheritdoc IOmniPortal
+    function isXCall() external view returns (bool) {
+        return _currentXmsg.sourceChainId != 0;
     }
 
     /// @inheritdoc IOmniPortal
@@ -69,21 +84,27 @@ contract OmniPortal is IOmniPortal {
     }
 
     /// @dev Verify an XMsg is next in its XStream, execute it, increment inXStreamOffset, emit an XReceipt
-    function _exec(XTypes.Msg calldata xmsg) internal {
-        require(xmsg.destChainId == chainId, "OmniPortal: wrong destChainId");
-        require(xmsg.streamOffset == inXStreamOffset[xmsg.sourceChainId] + 1, "OmniPortal: wrong streamOffset");
+    function _exec(XTypes.Msg calldata _xmsg) internal {
+        require(_xmsg.destChainId == chainId, "OmniPortal: wrong destChainId");
+        require(_xmsg.streamOffset == inXStreamOffset[_xmsg.sourceChainId] + 1, "OmniPortal: wrong streamOffset");
+
+        // set xmsg to the one we're executing
+        _currentXmsg = _xmsg;
 
         // increment offset before executing xcall, to avoid reentrancy loop
-        inXStreamOffset[xmsg.sourceChainId] += 1;
+        inXStreamOffset[_xmsg.sourceChainId] += 1;
 
         // we enforce a maximum on xcall, but we trim to max here just in case
-        uint256 gasLimit = xmsg.gasLimit > XMSG_MAX_GAS_LIMIT ? XMSG_MAX_GAS_LIMIT : xmsg.gasLimit;
+        uint256 gasLimit = _xmsg.gasLimit > XMSG_MAX_GAS_LIMIT ? XMSG_MAX_GAS_LIMIT : _xmsg.gasLimit;
 
         // execute xmsg, tracking gas used
         uint256 gasUsed = gasleft();
-        (bool success,) = xmsg.to.call{ gas: gasLimit }(xmsg.data);
+        (bool success,) = _xmsg.to.call{ gas: gasLimit }(_xmsg.data);
         gasUsed = gasUsed - gasleft();
 
-        emit XReceipt(xmsg.sourceChainId, xmsg.streamOffset, gasUsed, msg.sender, success);
+        // reset xmsg to zero
+        _currentXmsg = XTypes.zeroMsg();
+
+        emit XReceipt(_xmsg.sourceChainId, _xmsg.streamOffset, gasUsed, msg.sender, success);
     }
 }
