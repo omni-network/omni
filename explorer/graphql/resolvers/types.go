@@ -6,8 +6,8 @@ import (
 	"github.com/graph-gophers/graphql-go"
 )
 
-type Msg struct {
-	UUID                   string
+type XMsg struct {
+	UUID                   graphql.ID
 	SourceMessageSenderRaw common.Address
 	DestAddressRaw         common.Address
 	Data                   []byte
@@ -18,8 +18,8 @@ type Msg struct {
 	TxHashRaw              common.Hash
 }
 
-type Block struct {
-	UUID             string
+type XBlock struct {
+	UUID             graphql.ID
 	SourceChainIDRaw BigInt
 	BlockHeightRaw   BigInt
 	Timestamp        graphql.Time
@@ -27,5 +27,5 @@ type Block struct {
 	BlockHashRaw     common.Hash
 
 	// TODO(Pavel): add paging for the messages.
-	Messages []Msg
+	Messages []XMsg
 }

@@ -1,55 +1,55 @@
 """
 Msg is a cross-chain message.
 """
-type Msg {
+type XMsg {
 
     "Monotonically incremented offset of Msg in the Steam"
-	StreamOffset: BigInt!
+    StreamOffset: BigInt!
 
     "Sender on source chain, set to msg.Sender"
-	SourceMessageSender: String!
+    SourceMessageSender: String!
 
     "Target/To address to 'call' on destination chain"
-	DestAddress: String!
+    DestAddress: String!
 
     "Gas limit to use for 'call' on destination chain"
-	DestGasLimit: BigInt!
+    DestGasLimit: BigInt!
 
     "Source chain ID as per https://chainlist.org/"
-	SourceChainID: BigInt!
+    SourceChainID: BigInt!
 
     "Destination chain ID as per https://chainlist.org/"
-	DestChainID: BigInt!
+    DestChainID: BigInt!
 
     "Hash of the source chain transaction that emitted the message"
-	TxHash: String!
+    TxHash: String!
 }
 
 """
 Block represents a cross-chain block.
 """
-type Block {
+type XBlock {
 
     "UUID of our block"
-    UUID: String!
+    UUID: ID!
 
     "Source chain ID as per https://chainlist.org"
     SourceChainID: BigInt!
 
     "Height of the source chain block"
-	BlockHeight: BigInt!
+    BlockHeight: BigInt!
 
     "Hash of the source chain block"
-	BlockHash: String!
+    BlockHash: String!
 
     "All cross-chain messages sent/emittted in the block"
-    Messages: [Msg!]!
+    Messages: [XMsg!]!
 
     # "Receipts of all submitted cross-chain messages applied in the block"
-	# Receipts  [Receipt!]!
+    # Receipts  [Receipt!]!
 
     "Timestamp of the source chain block"
-	Timestamp: Time!
+    Timestamp: Time!
 }
 
 """
@@ -58,8 +58,8 @@ Therefore BigInt passes these numbers enclosed in string quotes.
 """
 scalar BigInt
 scalar Time
+scalar ID
 
 type Query {
-    hello(name: String!): String!
-    block(sourceChainID: BigInt!, height: BigInt!): Block
+    xblock(sourceChainID: BigInt!, height: BigInt!): XBlock
 }

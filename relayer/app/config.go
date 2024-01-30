@@ -5,6 +5,7 @@ import (
 	"text/template"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/log"
 
 	cmtos "github.com/cometbft/cometbft/libs/os"
 
@@ -29,7 +30,7 @@ func DefaultConfig() Config {
 var tomlTemplate []byte
 
 // WriteConfigTOML writes the toml halo config to disk.
-func WriteConfigTOML(cfg Config, path string) error {
+func WriteConfigTOML(cfg Config, logCfg log.Config, path string) error {
 	var buffer bytes.Buffer
 
 	t, err := template.New("").Parse(string(tomlTemplate))
@@ -37,8 +38,16 @@ func WriteConfigTOML(cfg Config, path string) error {
 		return errors.Wrap(err, "parse template")
 	}
 
-	if err := t.Execute(&buffer, cfg); err != nil {
-		panic(err)
+	s := struct {
+		Config
+		Log log.Config
+	}{
+		Config: cfg,
+		Log:    logCfg,
+	}
+
+	if err := t.Execute(&buffer, s); err != nil {
+		return errors.Wrap(err, "execute template")
 	}
 
 	if err := cmtos.WriteFile(path, buffer.Bytes(), 0o644); err != nil {

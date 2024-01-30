@@ -27,6 +27,8 @@ services:
     - {{ .PrometheusProxyPort }}:26660
 {{- end }}
     - 6060
+    environment:
+    - HALO_LOG_COLOR=force
     volumes:
     - ./{{ .Name }}:/halo
     - ./geth/jwtsecret:/geth/jwtsecret
@@ -100,8 +102,10 @@ services:
     labels:
       e2e: true
     container_name: relayer
-    image: omniops/relayer:latest
+    image: omniops/relayer:main
     restart: unless-stopped # Restart on crash to mitigate startup race issues
+    environment:
+      - RELAYER_LOG_COLOR=force
     volumes:
       - ./relayer:/relayer
     networks:

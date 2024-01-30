@@ -1,0 +1,26 @@
+name: ci main
+# continuous integration on push to main
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  pre-commit:
+    uses: ./.github/workflows/pre-commit.yml
+  go-tests:
+    uses: ./.github/workflows/gotest.yml
+  go-lint:
+    uses: ./.github/workflows/golangci-lint.yml
+  go-releaser:
+    uses: ./.github/workflows/goreleaser.yml
+    needs: [pre-commit, go-tests, go-lint]
+    secrets: inherit
+  e2e:
+    uses: ./.github/workflows/e2etest.yml
+    needs: [go-releaser]

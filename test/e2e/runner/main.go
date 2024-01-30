@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"strings"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/test/e2e/runner/docker"
+	"github.com/omni-network/omni/test/e2e/runner/network"
 
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -24,16 +26,17 @@ func main() {
 
 // CLI is the Cobra-based command-line interface.
 type CLI struct {
-	root     *cobra.Command
-	testnet  *e2e.Testnet
-	preserve bool
-	infp     infra.Provider
-	network  netconf.Network
+	root      *cobra.Command
+	testnet   *e2e.Testnet
+	preserve  bool
+	skipTests bool
+	infp      infra.Provider
+	network   netconf.Network
 }
 
 // NewCLI sets up the CLI.
 func NewCLI() *CLI {
-	cli := &CLI{network: newE2ENetwork()}
+	cli := &CLI{network: network.NewE2E()}
 	cli.root = &cobra.Command{
 		Use:           "runner",
 		Short:         "End-to-end test runner",
@@ -83,7 +86,9 @@ func NewCLI() *CLI {
 				return err
 			}
 
-			if err := StartSendingXMsgs(ctx, portals); err != nil {
+			sendCtx, sendCancel := context.WithCancel(ctx)
+			defer sendCancel()
+			if err := StartSendingXMsgs(sendCtx, portals); err != nil {
 				return err
 			}
 
@@ -103,6 +108,17 @@ func NewCLI() *CLI {
 				return err
 			}
 
+			// Stop sending messages
+			sendCancel()
+
+			if cli.skipTests {
+				log.Info(ctx, "Skipping tests")
+			} else {
+				if err := Test(ctx, cli.testnet, cli.infp.GetInfrastructureData()); err != nil {
+					return err
+				}
+			}
+
 			if err := LogMetrics(ctx, cli.testnet, portals, cli.network); err != nil {
 				return err
 			}
@@ -119,6 +135,9 @@ func NewCLI() *CLI {
 
 	cli.root.PersistentFlags().StringP("file", "f", "", "Testnet TOML manifest")
 	_ = cli.root.MarkPersistentFlagRequired("file")
+
+	cli.root.Flags().BoolVarP(&cli.skipTests, "skip-tests", "s", false,
+		"Skips running tests, useful to just bootstrap a devnet (if used with -p)")
 
 	cli.root.Flags().BoolVarP(&cli.preserve, "preserve", "p", false,
 		"Preserves the running of the test net after tests are completed")
@@ -176,9 +195,24 @@ func NewCLI() *CLI {
 
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "logs",
-		Short: "Shows the testnet logs",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return cmtdocker.ExecComposeVerbose(cmd.Context(), cli.testnet.Dir, "logs")
+		Short: "Shows the container logs (except anvil)",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			// Get all compose chains and validators
+			services := chainServices(cli.network)
+			for _, node := range cli.testnet.Nodes {
+				services = append(services, node.Name)
+			}
+			// Remove all anvils (chain*)
+			var filtered []string
+			for _, service := range services {
+				if !strings.HasPrefix(service, "chain") {
+					filtered = append(filtered, service)
+				}
+			}
+
+			args := append([]string{"logs"}, filtered...)
+
+			return cmtdocker.ExecComposeVerbose(cmd.Context(), cli.testnet.Dir, args...)
 		},
 	})
 
@@ -197,7 +231,7 @@ func adaptTestnet(testnet *e2e.Testnet) *e2e.Testnet {
 	// Move test dir: path/test/e2e/manifests/single -> path/test/e2e/runs/single
 	testnet.Dir = strings.Replace(testnet.Dir, "manifests", "runs", 1)
 	testnet.VoteExtensionsEnableHeight = 1
-	testnet.UpgradeVersion = "omniops/halo:latest"
+	testnet.UpgradeVersion = "omniops/halo:main"
 	for i := range testnet.Nodes {
 		testnet.Nodes[i] = adaptNode(testnet.Nodes[i])
 	}
@@ -206,7 +240,7 @@ func adaptTestnet(testnet *e2e.Testnet) *e2e.Testnet {
 }
 
 func adaptNode(node *e2e.Node) *e2e.Node {
-	node.Version = "omniops/halo:latest"
+	node.Version = "omniops/halo:main"
 	node.PrivvalKey = k1.GenPrivKey()
 
 	return node
