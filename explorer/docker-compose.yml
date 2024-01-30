@@ -26,13 +26,6 @@ services:
       db:
         condition: service_healthy
 
-  # api:
-  #   image: omniops/explorer-api
-  #   ports:
-  #     - 8000
-  #   depends_on:
-  #     - db
-
   graphql:
     image: omniops/explorer-graphql
     ports:
