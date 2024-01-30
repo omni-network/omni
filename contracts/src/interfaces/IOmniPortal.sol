@@ -81,6 +81,19 @@ interface IOmniPortal {
     function inXStreamBlockHeight(uint64 sourceChainId) external view returns (uint64);
 
     /**
+     * @notice The current XMsg being executed via this portal
+     * @dev If no XMsg is being executed, all fields will be zero
+     * @return XMsg
+     */
+    function xmsg() external view returns (XTypes.Msg memory);
+
+    /**
+     * @notice Whether the current transaction is an xcall
+     * @return True if current transaction is an xcall, false otherwise
+     */
+    function isXCall() external view returns (bool);
+
+    /**
      * @notice Call a contract on another chain
      * @dev Uses OmniPortal.XMSG_DEFAULT_GAS_LIMIT as execution gas limit on destination chain
      * @param destChainId Destination chain ID

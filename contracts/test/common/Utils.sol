@@ -59,4 +59,18 @@ contract Utils is Test, Events, Fixtures {
             vm.expectCall(xmsgs[i].to, xmsgs[i].data);
         }
     }
+
+    /// @dev The number of Counter.increment() calls in a list of xmsgs
+    function numIncrements(XTypes.Msg[] memory xmsgs) internal view returns (uint256) {
+        bytes32 incrHash = keccak256(abi.encodeWithSignature("increment()"));
+        uint256 count = 0;
+
+        for (uint256 i = 0; i < xmsgs.length; i++) {
+            if (xmsgs[i].to == _counters[xmsgs[i].destChainId] && keccak256(xmsgs[i].data) == incrHash) {
+                count++;
+            }
+        }
+
+        return count;
+    }
 }

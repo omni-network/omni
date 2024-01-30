@@ -69,17 +69,17 @@ contract Fixtures is CommonBase, StdCheats {
 
         vm.chainId(thisChainId); // portal constructor uses block.chainid
         portal = new TestPortal();
-        counter = new Counter();
+        counter = new Counter(portal);
         reverter = new Reverter();
 
         vm.chainId(chainAId);
         chainAPortal = new TestPortal();
-        chainACounter = new Counter();
+        chainACounter = new Counter(chainAPortal);
         chainAReverter = new Reverter();
 
         vm.chainId(chainBId);
         chainBPortal = new TestPortal();
-        chainBCounter = new Counter();
+        chainBCounter = new Counter(chainBPortal);
         chainBReverter = new Reverter();
 
         vm.stopPrank();
