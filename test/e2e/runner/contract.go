@@ -95,7 +95,7 @@ func StartSendingXMsgs(ctx context.Context, portals map[uint64]Portal) error {
 	go func() {
 		for ctx.Err() == nil {
 			err := SendXMsgs(ctx, portals)
-			if ctx.Err() == nil {
+			if ctx.Err() != nil {
 				return
 			} else if err != nil {
 				log.Error(ctx, "Failed to send xmsgs, giving up", err)
