@@ -23,3 +23,35 @@ export const encodeXMsg = (xmsg: XMsg) => encodeAbiParameters([xMsgParams], [xms
 export const encodeXBlock = (xblock: XBlock) => encodeAbiParameters([xBlockParams], [xblock])
 export const encodeXBlockHeader = (xblockHeader: XBlockHeader) =>
   encodeAbiParameters([xBlockHeaderParams], [xblockHeader])
+
+// JSON.stringify cannot serialized bigints, so we convert them to strings
+
+export const xMsgJson = (xmsg: XMsg) => ({
+  sourceChainId: xmsg.sourceChainId.toString(),
+  destChainId: xmsg.destChainId.toString(),
+  streamOffset: xmsg.streamOffset.toString(),
+  sender: xmsg.sender,
+  to: xmsg.to,
+  data: xmsg.data,
+  gasLimit: xmsg.gasLimit.toString(),
+})
+
+export const xBlockHeaderJson = (xblockHeader: XBlockHeader) => ({
+  sourceChainId: xblockHeader.sourceChainId.toString(),
+  blockHeight: xblockHeader.blockHeight.toString(),
+  blockHash: xblockHeader.blockHash,
+})
+
+export const xSubJson = (xsub: XSub) => ({
+  blockHeader: xBlockHeaderJson(xsub.blockHeader),
+  msgs: xsub.msgs.map(xMsgJson),
+  attestationRoot: xsub.attestationRoot,
+  proof: xsub.proof,
+  proofFlags: xsub.proofFlags,
+  signatures: xsub.signatures,
+})
+
+export const xBlockJson = (xblock: XBlock) => ({
+  blockHeader: xBlockHeaderJson(xblock.blockHeader),
+  msgs: xblock.msgs.map(xMsgJson),
+})

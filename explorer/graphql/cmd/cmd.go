@@ -15,7 +15,6 @@ func New() *cobra.Command {
 		"api",
 		"Explorer GraphQL Server",
 		newRunCmd(),
-		newDebugCmd(),
 	)
 }
 
@@ -32,33 +31,6 @@ func newRunCmd() *cobra.Command {
 			err := app.Run(ctx, conf)
 			if err != nil {
 				log.Error(ctx, "Failed to start Explorer GraphQL", err)
-				<-ctx.Done()
-
-				return err
-			}
-
-			log.Info(ctx, "Press Ctrl+C to stop")
-			<-ctx.Done()
-			log.Info(ctx, "ExplorerApi stopped")
-
-			return nil
-		},
-	}
-}
-
-// newRunCmd returns a new cobra command that runs the api.
-func newDebugCmd() *cobra.Command {
-	return &cobra.Command{
-		Use:   "debug",
-		Short: "Runs the GraphQL server without a PostgresClient",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			log.Info(ctx, "ExplorerAPI started")
-			conf := app.DefaultExplorerAPIConfig()
-
-			err := app.Debug(ctx, conf)
-			if err != nil {
-				log.Error(ctx, "Failed to start Explorer API", err)
 				<-ctx.Done()
 
 				return err

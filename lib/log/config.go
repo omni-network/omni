@@ -11,33 +11,33 @@ import (
 )
 
 const (
-	loggerConsole = "console"
-	loggerJSON    = "json"
+	FormatConsole = "console"
+	FormatJSON    = "json"
 
-	colorForce   = "force"
-	colorDisable = "disable"
-	colorAuto    = "auto"
+	ColorForce   = "force"
+	ColorDisable = "disable"
+	ColorAuto    = "auto"
 )
 
 //nolint:gochecknoglobals // Static mapping.
 var loggerFuncs = map[string]func(...func(*options)) *slog.Logger{
-	loggerConsole: newConsoleLogger,
-	loggerJSON:    newJSONLogger,
+	FormatConsole: newConsoleLogger,
+	FormatJSON:    newJSONLogger,
 }
 
 //nolint:gochecknoglobals // Static mapping.
 var colors = map[string]termenv.Profile{
-	colorForce:   termenv.TrueColor,
-	colorDisable: termenv.Ascii,
-	colorAuto:    termenv.ColorProfile(),
+	ColorForce:   termenv.TrueColor,
+	ColorDisable: termenv.Ascii,
+	ColorAuto:    termenv.ColorProfile(),
 }
 
 // DefaultConfig returns a default config.
 func DefaultConfig() Config {
 	return Config{
 		Level:  strings.ToLower(slog.LevelInfo.String()),
-		Color:  colorAuto,
-		Format: loggerConsole,
+		Color:  ColorAuto,
+		Format: FormatConsole,
 	}
 }
 
@@ -50,7 +50,7 @@ type Config struct {
 func (c Config) color() (termenv.Profile, error) {
 	color := c.Color
 	if c.Color == "" {
-		color = colorAuto
+		color = ColorAuto
 	}
 	resp, ok := colors[color]
 	if !ok {

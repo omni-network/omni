@@ -27,6 +27,8 @@ services:
     - {{ .PrometheusProxyPort }}:26660
 {{- end }}
     - 6060
+    environment:
+    - HALO_LOG_COLOR=force
     volumes:
     - ./{{ .Name }}:/halo
     - ./geth/jwtsecret:/geth/jwtsecret
@@ -40,7 +42,7 @@ services:
       e2e: true
     container_name: chain_a
     image: ghcr.io/foundry-rs/foundry:latest
-    entrypoint: ['anvil','--host','0.0.0.0','--chain-id','100','--block-time','1']
+    entrypoint: ['anvil','--host','0.0.0.0','--chain-id','100','--block-time','1', "--silent"]
     ports:
       - "6545:8545"
       - "6546:8546"
@@ -100,8 +102,10 @@ services:
     labels:
       e2e: true
     container_name: relayer
-    image: omniops/relayer:latest
+    image: omniops/relayer:main
     restart: unless-stopped # Restart on crash to mitigate startup race issues
+    environment:
+      - RELAYER_LOG_COLOR=force
     volumes:
       - ./relayer:/relayer
     networks:

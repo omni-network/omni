@@ -1,11 +1,7 @@
 name: pre-commit hooks
 
-# Run on pull requests and commits to main
 on:
-  pull_request:
-  push:
-    branches:
-      - main
+  workflow_call:
 
 jobs:
   pre-commit:

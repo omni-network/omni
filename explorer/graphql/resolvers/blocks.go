@@ -8,33 +8,8 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-func (m Msg) SourceMessageSender() string {
-	return m.SourceMessageSenderRaw.String()
-}
-func (m Msg) DestAddress() string {
-	return m.DestAddressRaw.String()
-}
-
-func (m Msg) TxHash() string {
-	return m.TxHashRaw.String()
-}
-
-func (b *Block) BlockHash() string {
-	return b.BlockHashRaw.String()
-}
-
-func (b *Block) SourceChainID() hexutil.Big {
-	id := b.SourceChainIDRaw.Int
-	return hexutil.Big(id)
-}
-
-func (b *Block) BlockHeight() hexutil.Big {
-	id := b.BlockHeightRaw.Int
-	return hexutil.Big(id)
-}
-
 type BlocksProvider interface {
-	Block(SourceChainID uint64, Height uint64) (*Block, bool, error)
+	XBlock(SourceChainID uint64, Height uint64) (*XBlock, bool, error)
 }
 
 type BlocksResolver struct {
@@ -42,12 +17,12 @@ type BlocksResolver struct {
 }
 
 type BlockArgs struct {
-	SourceChainID BigInt
-	Height        BigInt
+	SourceChainID hexutil.Big
+	Height        hexutil.Big
 }
 
-func (b *BlocksResolver) Block(_ context.Context, args BlockArgs) (*Block, error) {
-	res, found, err := b.BlocksProvider.Block(args.SourceChainID.Int.Uint64(), args.Height.Int.Uint64())
+func (b *BlocksResolver) XBlock(_ context.Context, args BlockArgs) (*XBlock, error) {
+	res, found, err := b.BlocksProvider.XBlock(args.SourceChainID.ToInt().Uint64(), args.Height.ToInt().Uint64())
 	if err != nil {
 		return nil, errors.New("failed to fetch block")
 	}

@@ -23,7 +23,7 @@ func maybeSetupSimnetRelayer(ctx context.Context, network netconf.Network, cmtNo
 
 	cprov := cprovider.NewABCIProvider(rpclocal.New(cmtNode))
 
-	return relayer.StartRelayer(ctx, cprov, network.ChainIDs(), xprovider, relayer.CreateSubmissions, simnetSender{})
+	return relayer.StartRelayer(ctx, cprov, network, xprovider, relayer.CreateSubmissions, simnetSender{})
 }
 
 var _ relayer.Sender = simnetSender{}

@@ -2,8 +2,6 @@ package data
 
 import (
 	"context"
-	"math/big"
-	"time"
 
 	"github.com/omni-network/omni/explorer/db/ent"
 	"github.com/omni-network/omni/explorer/db/ent/block"
@@ -11,6 +9,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/graph-gophers/graphql-go"
 )
@@ -19,26 +18,7 @@ type Provider struct {
 	EntClient *ent.Client
 }
 
-func (p Provider) Block(sourceChainID uint64, height uint64) (*resolvers.Block, bool, error) {
-	if p.EntClient == nil {
-		h := common.Hash{}
-		h.SetBytes([]byte{1, 3, 23, 111, 27, 45, 98, 103, 94, 55, 1, 3, 23, 111, 27, 45, 98, 103, 94, 55})
-		var chainID big.Int
-		chainID.SetUint64(sourceChainID)
-		var blockHeight big.Int
-		blockHeight.SetUint64(height)
-
-		res := resolvers.Block{
-			SourceChainIDRaw: resolvers.BigInt{Int: chainID},
-			BlockHeightRaw:   resolvers.BigInt{Int: blockHeight},
-			BlockHashRaw:     h,
-			Timestamp:        graphql.Time{Time: time.Now()},
-			Messages:         dummyMessages(),
-		}
-
-		return &res, true, nil
-	}
-
+func (p Provider) XBlock(sourceChainID uint64, height uint64) (*resolvers.XBlock, bool, error) {
 	ctx := context.Background()
 	query, err := p.EntClient.Block.Query().
 		Where(block.SourceChainID(sourceChainID)).
@@ -50,44 +30,15 @@ func (p Provider) Block(sourceChainID uint64, height uint64) (*resolvers.Block, 
 		return nil, false, err
 	}
 
-	res := resolvers.Block{
-		UUID:             query.UUID.String(),
-		SourceChainIDRaw: resolvers.BigInt{Int: *new(big.Int).SetUint64(query.SourceChainID)},
-		BlockHeightRaw:   resolvers.BigInt{Int: *new(big.Int).SetUint64(query.BlockHeight)},
-		BlockHashRaw:     common.Hash(query.BlockHash),
-		Timestamp:        graphql.Time{Time: query.Timestamp},
-		Messages:         dummyMessages(),
+	sourceChainIDString := hexutil.EncodeUint64(query.SourceChainID)
+	heightString := hexutil.EncodeUint64(query.BlockHeight)
+
+	res := resolvers.XBlock{
+		SourceChainID: hexutil.Big(*hexutil.MustDecodeBig(sourceChainIDString)),
+		BlockHeight:   hexutil.Big(*hexutil.MustDecodeBig(heightString)),
+		BlockHash:     common.Hash(query.BlockHash),
+		Timestamp:     graphql.Time{Time: query.Timestamp},
 	}
 
 	return &res, true, nil
-}
-
-func dummyMessages() []resolvers.Msg {
-	var a, b, c, d big.Int
-	a.SetUint64(2)
-	a.SetUint64(3)
-	c.SetInt64(5)
-	d.SetInt64((100_000))
-
-	destAddr := common.Address{}
-	destAddr.SetBytes([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9})
-	senderAddr := common.Address{}
-	senderAddr.SetBytes([]byte{34, 73, 84, 82, 12, 15, 43, 24, 76, 3, 6, 0, 0, 0, 3, 2, 4, 5})
-
-	txHash := common.Hash{}
-	txHash.SetBytes([]byte{5, 0, 0, 4, 0, 0, 1})
-
-	res := []resolvers.Msg{
-		{
-			SourceChainID:          resolvers.BigInt{Int: a},
-			DestChainID:            resolvers.BigInt{Int: b},
-			StreamOffset:           resolvers.BigInt{Int: c},
-			SourceMessageSenderRaw: destAddr,
-			DestAddressRaw:         destAddr,
-			DestGasLimit:           resolvers.BigInt{Int: d},
-			TxHashRaw:              txHash,
-		},
-	}
-
-	return res
 }

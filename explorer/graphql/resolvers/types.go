@@ -1,38 +1,32 @@
 package resolvers
 
 import (
-	"math/big"
-
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/graph-gophers/graphql-go"
 )
 
-// BigInt represents a bigint number in GraphQL since many browsers only work with int32.
-type BigInt struct {
-	big.Int
+type XMsg struct {
+	UUID                graphql.ID
+	SourceMessageSender common.Address
+	DestAddress         common.Address
+	Data                []byte
+	DestGasLimit        hexutil.Big
+	SourceChainID       hexutil.Big
+	DestChainID         hexutil.Big
+	StreamOffset        hexutil.Big
+	TxHash              common.Hash
 }
 
-type Msg struct {
-	UUID                   string
-	SourceMessageSenderRaw common.Address
-	DestAddressRaw         common.Address
-	Data                   []byte
-	DestGasLimit           BigInt
-	SourceChainID          BigInt
-	DestChainID            BigInt
-	StreamOffset           BigInt
-	TxHashRaw              common.Hash
-}
-
-type Block struct {
-	UUID             string
-	SourceChainIDRaw BigInt
-	BlockHeightRaw   BigInt
-	Timestamp        graphql.Time
-	CreatedAt        graphql.Time
-	BlockHashRaw     common.Hash
+type XBlock struct {
+	UUID          graphql.ID
+	SourceChainID hexutil.Big
+	BlockHeight   hexutil.Big
+	Timestamp     graphql.Time
+	CreatedAt     graphql.Time
+	BlockHash     common.Hash
 
 	// TODO(Pavel): add paging for the messages.
-	Messages []Msg
+	Messages []XMsg
 }

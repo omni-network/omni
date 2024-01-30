@@ -3,16 +3,18 @@ pragma solidity 0.8.23;
 
 import { Test } from "forge-std/Test.sol";
 import { Vm } from "forge-std/Vm.sol";
+import { XTypes } from "src/libraries/XTypes.sol";
 import { Events } from "./Events.sol";
 import { TestXTypes } from "./TestXTypes.sol";
+import { Fixtures } from "./Fixtures.sol";
 
 /**
  * @title Utils
  * @dev Defines test utilities.
  */
-contract Utils is Test, Events {
+contract Utils is Test, Events, Fixtures {
     /// @dev Parse an XReceipt log
-    function _parseReceipt(Vm.Log memory log) internal returns (TestXTypes.Receipt memory) {
+    function parseReceipt(Vm.Log memory log) internal returns (TestXTypes.Receipt memory) {
         assertEq(log.topics.length, 3);
         assertEq(log.topics[0], XReceipt.selector);
 
@@ -27,20 +29,34 @@ contract Utils is Test, Events {
         });
     }
 
+    /// _dev Assert that the logs are XReceipt events with the correct fields.
+    function assertReceipts(Vm.Log[] memory logs, XTypes.Msg[] memory xmsgs) internal {
+        assertEq(logs.length, xmsgs.length);
+        for (uint256 i = 0; i < logs.length; i++) {
+            assertReceipt(logs[i], xmsgs[i]);
+        }
+    }
+
     /// @dev Assert that the log is an XReceipt event with the correct fields.
     ///      We use this helper rather than vm.expectEmit(), because gasUsed is difficult to predict.
-    function _assertReceiptEmitted(
-        Vm.Log memory log,
-        uint64 sourceChainId,
-        uint64 streamOffset,
-        address relayer,
-        bool success
-    ) internal {
-        TestXTypes.Receipt memory receipt = _parseReceipt(log);
+    function assertReceipt(Vm.Log memory log, XTypes.Msg memory xmsg) internal {
+        TestXTypes.Receipt memory receipt = parseReceipt(log);
 
-        assertEq(receipt.sourceChainId, sourceChainId);
-        assertEq(receipt.streamOffset, streamOffset);
+        assertEq(receipt.sourceChainId, xmsg.sourceChainId);
+        assertEq(receipt.streamOffset, xmsg.streamOffset);
         assertEq(receipt.relayer, relayer);
-        assertEq(receipt.success, success);
+        assertEq(
+            receipt.success,
+            // little hacky, but deriving receipts from messages helps
+            // readability and this let's us do that
+            xmsg.to == _reverters[xmsg.destChainId] ? false : true
+        );
+    }
+
+    /// @dev vm.expectCall() for multiple XMsgs
+    function expectCalls(XTypes.Msg[] memory xmsgs) internal {
+        for (uint256 i = 0; i < xmsgs.length; i++) {
+            vm.expectCall(xmsgs[i].to, xmsgs[i].data);
+        }
     }
 }
