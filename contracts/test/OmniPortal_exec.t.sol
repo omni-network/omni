@@ -24,16 +24,7 @@ contract OmniPortal_exec_Test is Base {
 
         assertEq(counter.count(), count + 1);
         assertEq(portal.inXStreamOffset(xmsg.sourceChainId), offset + 1);
-
-        Vm.Log[] memory logs = vm.getRecordedLogs();
-
-        _assertReceiptEmitted(
-            logs[0],
-            xmsg.sourceChainId,
-            offset,
-            relayer,
-            true // success
-        );
+        assertReceipt(vm.getRecordedLogs()[0], xmsg);
     }
 
     /// @dev Test that exec of an XMsg that reverts succeeds, and emits the correct XReceipt
@@ -50,16 +41,7 @@ contract OmniPortal_exec_Test is Base {
 
         assertEq(counter.count(), count);
         assertEq(portal.inXStreamOffset(xmsg.sourceChainId), offset + 1);
-
-        Vm.Log[] memory logs = vm.getRecordedLogs();
-
-        _assertReceiptEmitted(
-            logs[0],
-            xmsg.sourceChainId,
-            offset,
-            relayer,
-            false // failure
-        );
+        assertReceipt(vm.getRecordedLogs()[0], xmsg);
     }
 
     /// @dev Test that exec of an XMsg with the wrong destChainId reverts
