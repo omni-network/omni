@@ -71,7 +71,7 @@ devnet-stop: ## Stops devnet1 containers (alias for MANIFEST=devnet1 make e2e-st
 e2e-run: ## Run specific e2e manifest (MANIFEST=single, MANIFEST=simple, etc). Note container remain running after the test.
 	@if [ -z "$(MANIFEST)" ]; then echo "⚠️ Please specify a manifest: MANIFEST=simple make e2e-run" && exit 1; fi
 	@echo "Using MANIFEST=$(MANIFEST)"
-	@go run github.com/omni-network/omni/test/e2e/runner -f test/e2e/manifests/$(MANIFEST).toml -p
+	@go run github.com/omni-network/omni/test/e2e/runner -f test/e2e/manifests/$(MANIFEST).toml
 
 .PHONY: e2e-logs
 e2e-logs: ## Print the docker logs of previously ran e2e manifest (single, simple, etc).
