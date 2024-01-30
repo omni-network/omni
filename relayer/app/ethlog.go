@@ -13,14 +13,12 @@ import (
 var _ ethlog.Logger = (*ethLogger)(nil)
 
 type ethLogger struct {
-	ctx   context.Context //nolint:containedctx // This is a wrapper around the omni logger which is context based.
-	level slog.Level
+	ctx context.Context //nolint:containedctx // This is a wrapper around the omni logger which is context based.
 }
 
 func (e ethLogger) With(ctx ...any) ethlog.Logger {
 	return ethLogger{
-		ctx:   log.WithCtx(e.ctx, ctx...),
-		level: e.level,
+		ctx: log.WithCtx(e.ctx, ctx...),
 	}
 }
 
@@ -74,7 +72,7 @@ func (e ethLogger) Write(level slog.Level, msg string, attrs ...any) {
 }
 
 func (e ethLogger) Enabled(_ context.Context, level slog.Level) bool {
-	return e.level < level
+	return true
 }
 
 // splitOutError splits the keyvals into a slice of keyvals without the error and the error.
