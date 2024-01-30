@@ -231,7 +231,7 @@ func adaptTestnet(testnet *e2e.Testnet) *e2e.Testnet {
 	// Move test dir: path/test/e2e/manifests/single -> path/test/e2e/runs/single
 	testnet.Dir = strings.Replace(testnet.Dir, "manifests", "runs", 1)
 	testnet.VoteExtensionsEnableHeight = 1
-	testnet.UpgradeVersion = "omniops/halo:latest"
+	testnet.UpgradeVersion = "omniops/halo:main"
 	for i := range testnet.Nodes {
 		testnet.Nodes[i] = adaptNode(testnet.Nodes[i])
 	}
@@ -240,7 +240,7 @@ func adaptTestnet(testnet *e2e.Testnet) *e2e.Testnet {
 }
 
 func adaptNode(node *e2e.Node) *e2e.Node {
-	node.Version = "omniops/halo:latest"
+	node.Version = "omniops/halo:main"
 	node.PrivvalKey = k1.GenPrivKey()
 
 	return node

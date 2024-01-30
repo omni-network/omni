@@ -102,7 +102,7 @@ services:
     labels:
       e2e: true
     container_name: relayer
-    image: omniops/relayer:latest
+    image: omniops/relayer:main
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     environment:
       - RELAYER_LOG_COLOR=force
