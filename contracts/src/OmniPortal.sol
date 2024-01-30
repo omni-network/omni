@@ -84,27 +84,27 @@ contract OmniPortal is IOmniPortal {
     }
 
     /// @dev Verify an XMsg is next in its XStream, execute it, increment inXStreamOffset, emit an XReceipt
-    function _exec(XTypes.Msg calldata _xmsg) internal {
-        require(_xmsg.destChainId == chainId, "OmniPortal: wrong destChainId");
-        require(_xmsg.streamOffset == inXStreamOffset[_xmsg.sourceChainId] + 1, "OmniPortal: wrong streamOffset");
+    function _exec(XTypes.Msg calldata xmsg_) internal {
+        require(xmsg_.destChainId == chainId, "OmniPortal: wrong destChainId");
+        require(xmsg_.streamOffset == inXStreamOffset[xmsg_.sourceChainId] + 1, "OmniPortal: wrong streamOffset");
 
         // set xmsg to the one we're executing
-        _currentXmsg = _xmsg;
+        _currentXmsg = xmsg_;
 
         // increment offset before executing xcall, to avoid reentrancy loop
-        inXStreamOffset[_xmsg.sourceChainId] += 1;
+        inXStreamOffset[xmsg_.sourceChainId] += 1;
 
         // we enforce a maximum on xcall, but we trim to max here just in case
-        uint256 gasLimit = _xmsg.gasLimit > XMSG_MAX_GAS_LIMIT ? XMSG_MAX_GAS_LIMIT : _xmsg.gasLimit;
+        uint256 gasLimit = xmsg_.gasLimit > XMSG_MAX_GAS_LIMIT ? XMSG_MAX_GAS_LIMIT : xmsg_.gasLimit;
 
         // execute xmsg, tracking gas used
         uint256 gasUsed = gasleft();
-        (bool success,) = _xmsg.to.call{ gas: gasLimit }(_xmsg.data);
+        (bool success,) = xmsg_.to.call{ gas: gasLimit }(xmsg_.data);
         gasUsed = gasUsed - gasleft();
 
         // reset xmsg to zero
         _currentXmsg = XTypes.zeroMsg();
 
-        emit XReceipt(_xmsg.sourceChainId, _xmsg.streamOffset, gasUsed, msg.sender, success);
+        emit XReceipt(xmsg_.sourceChainId, xmsg_.streamOffset, gasUsed, msg.sender, success);
     }
 }
