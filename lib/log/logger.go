@@ -41,7 +41,7 @@ func WithLogger(ctx context.Context, logger *slog.Logger) context.Context {
 	return context.WithValue(ctx, loggerKey{}, logger)
 }
 
-func GetLogger(ctx context.Context) *slog.Logger {
+func getLogger(ctx context.Context) *slog.Logger {
 	if l := ctx.Value(loggerKey{}); l != nil {
 		return l.(*slog.Logger) //nolint:forcetypeassert,revive // We know the type.
 	}
