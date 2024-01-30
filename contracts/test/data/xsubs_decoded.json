@@ -1,5 +1,5 @@
 {
-  "xblock1_xsub_destChainId=1": {
+  "xblock1_xsub_destChainId1": {
     "blockHeader": {
       "sourceChainId": "2",
       "blockHeight": "1",
@@ -68,7 +68,7 @@
     ],
     "signatures": []
   },
-  "xblock1_xsub_destChainId=3": {
+  "xblock1_xsub_destChainId3": {
     "blockHeader": {
       "sourceChainId": "2",
       "blockHeight": "1",
@@ -137,7 +137,7 @@
     ],
     "signatures": []
   },
-  "xblock2_xsub_destChainId=1": {
+  "xblock2_xsub_destChainId1": {
     "blockHeader": {
       "sourceChainId": "2",
       "blockHeight": "2",
@@ -206,7 +206,7 @@
     ],
     "signatures": []
   },
-  "xblock2_xsub_destChainId=3": {
+  "xblock2_xsub_destChainId3": {
     "blockHeader": {
       "sourceChainId": "2",
       "blockHeight": "2",
