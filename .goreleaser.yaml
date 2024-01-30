@@ -17,13 +17,6 @@ builds:
     goos: [linux, darwin]
     goarch: [amd64, arm64]
 
-  - id: explorer-api
-    main: ./explorer/api
-    binary: /explorer/api
-    env: [ CGO_ENABLED=0 ]
-    goos: [ linux, darwin ]
-    goarch: [ amd64, arm64 ]
-
   - id: explorer-graphql
     main: ./explorer/graphql
     binary: /explorer/graphql
@@ -52,13 +45,6 @@ dockers:
      - omniops/relayer:{{ .ShortCommit }}
      - omniops/relayer:{{ if .IsSnapshot }}main{{ else }}latest{{ end }}
      - omniops/relayer:{{ if .IsSnapshot }}main{{ else }}{{.Tag}}{{ end }}
-
-  - ids: [explorer-api]
-    dockerfile: ./explorer/api/Dockerfile
-    image_templates:
-      - omniops/explorer-api:{{ .ShortCommit }}
-      - omniops/explorer-api:{{ if .IsSnapshot }}main{{ else }}latest{{ end }}
-      - omniops/explorer-api:{{ if .IsSnapshot }}main{{ else }}{{.Tag}}{{ end }}
 
   - ids: [explorer-graphql]
     dockerfile: ./explorer/graphql/Dockerfile
