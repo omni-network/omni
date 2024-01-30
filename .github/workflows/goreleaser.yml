@@ -1,10 +1,7 @@
 name: go releaser
 
-# Run on all commits to main
 on:
-  push:
-    branches:
-      - main
+  workflow_call:
 
 # TODO(corver): Figure out which images to publish and how to do this via goreleaser.
 
