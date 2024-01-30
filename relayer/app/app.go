@@ -50,7 +50,7 @@ func Run(ctx context.Context, cfg Config) error {
 
 	err = StartRelayer(ctx,
 		cprovider.NewABCIProvider(tmClient),
-		network.ChainIDs(),
+		network,
 		xprovider.New(network, rpcClientPerChain),
 		CreateSubmissions,
 		sender)

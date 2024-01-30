@@ -16,7 +16,7 @@ type Provider struct {
 	EntClient ent.Client
 }
 
-func (Provider) Block(sourceChainID uint64, height uint64) (*resolvers.Block, bool, error) {
+func (Provider) XBlock(sourceChainID uint64, height uint64) (*resolvers.XBlock, bool, error) {
 	h := common.Hash{}
 	h.SetBytes([]byte{1, 3, 23, 111, 27, 45, 98, 103, 94, 55, 1, 3, 23, 111, 27, 45, 98, 103, 94, 55})
 	var chainID big.Int
@@ -24,7 +24,7 @@ func (Provider) Block(sourceChainID uint64, height uint64) (*resolvers.Block, bo
 	var blockHeight big.Int
 	blockHeight.SetUint64(height)
 
-	res := resolvers.Block{
+	res := resolvers.XBlock{
 		SourceChainIDRaw: resolvers.BigInt{Int: chainID},
 		BlockHeightRaw:   resolvers.BigInt{Int: blockHeight},
 		BlockHashRaw:     h,
@@ -35,7 +35,7 @@ func (Provider) Block(sourceChainID uint64, height uint64) (*resolvers.Block, bo
 	return &res, true, nil
 }
 
-func dummyMessages() []resolvers.Msg {
+func dummyMessages() []resolvers.XMsg {
 	var a, b, c, d big.Int
 	a.SetUint64(2)
 	a.SetUint64(3)
@@ -50,7 +50,7 @@ func dummyMessages() []resolvers.Msg {
 	txHash := common.Hash{}
 	txHash.SetBytes([]byte{5, 0, 0, 4, 0, 0, 1})
 
-	res := []resolvers.Msg{
+	res := []resolvers.XMsg{
 		{
 			SourceChainID:          resolvers.BigInt{Int: a},
 			DestChainID:            resolvers.BigInt{Int: b},

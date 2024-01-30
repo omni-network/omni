@@ -11,7 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 )
 
-func Run(ctx context.Context, conf ExplorerGralQLConfig) error {
+func Run(ctx context.Context, conf ExplorerGraphQLConfig) error {
 	log.Info(ctx, "Config: %v", conf)
 	ctx, cancel := context.WithCancel(ctx)
 

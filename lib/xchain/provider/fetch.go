@@ -63,13 +63,18 @@ func (p *Provider) GetSubmittedCursor(ctx context.Context, chainID uint64, sourc
 		return xchain.StreamCursor{}, false, nil
 	}
 
+	blockHeight, err := caller.InXStreamBlockHeight(&bind.CallOpts{Context: ctx}, sourceChainID)
+	if err != nil {
+		return xchain.StreamCursor{}, false, errors.Wrap(err, "call inXStreamBlockHeight")
+	}
+
 	return xchain.StreamCursor{
 		StreamID: xchain.StreamID{
 			SourceChainID: sourceChainID,
 			DestChainID:   chainID,
 		},
-		Offset:            offset - 1, // Contracts store the next expected message offset, so subtract 1.
-		SourceBlockHeight: 0,          // TODO(corver): Get kevin to store and return this as well.
+		Offset:            offset,
+		SourceBlockHeight: blockHeight,
 	}, true, nil
 }
 
