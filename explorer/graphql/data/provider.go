@@ -1,11 +1,13 @@
 package data
 
 import (
+	"context"
 	"math/big"
-	"time"
 
 	"github.com/omni-network/omni/explorer/db/ent"
+	"github.com/omni-network/omni/explorer/db/ent/block"
 	"github.com/omni-network/omni/explorer/graphql/resolvers"
+	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -13,22 +15,26 @@ import (
 )
 
 type Provider struct {
-	EntClient ent.Client
+	EntClient *ent.Client
 }
 
-func (Provider) XBlock(sourceChainID uint64, height uint64) (*resolvers.XBlock, bool, error) {
-	h := common.Hash{}
-	h.SetBytes([]byte{1, 3, 23, 111, 27, 45, 98, 103, 94, 55, 1, 3, 23, 111, 27, 45, 98, 103, 94, 55})
-	var chainID big.Int
-	chainID.SetUint64(sourceChainID)
-	var blockHeight big.Int
-	blockHeight.SetUint64(height)
+func (p Provider) XBlock(sourceChainID uint64, height uint64) (*resolvers.XBlock, bool, error) {
+	ctx := context.Background()
+	query, err := p.EntClient.Block.Query().
+		Where(block.SourceChainID(sourceChainID)).
+		Where(block.BlockHeight(height)).
+		First(ctx)
+
+	if err != nil {
+		log.Error(ctx, "Graphql provider err", err)
+		return nil, false, err
+	}
 
 	res := resolvers.XBlock{
-		SourceChainIDRaw: resolvers.BigInt{Int: chainID},
-		BlockHeightRaw:   resolvers.BigInt{Int: blockHeight},
-		BlockHashRaw:     h,
-		Timestamp:        graphql.Time{Time: time.Now()},
+		SourceChainIDRaw: resolvers.BigInt{Int: *new(big.Int).SetUint64(query.SourceChainID)},
+		BlockHeightRaw:   resolvers.BigInt{Int: *new(big.Int).SetUint64(query.BlockHeight)},
+		BlockHashRaw:     common.Hash(query.BlockHash),
+		Timestamp:        graphql.Time{Time: query.Timestamp},
 		Messages:         dummyMessages(),
 	}
 

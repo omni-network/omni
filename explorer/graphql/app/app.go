@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/omni-network/omni/explorer/db"
 	"github.com/omni-network/omni/explorer/graphql/data"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -16,7 +17,18 @@ func Run(ctx context.Context, conf ExplorerGraphQLConfig) error {
 	ctx, cancel := context.WithCancel(ctx)
 
 	go func() {
-		provider := data.Provider{}
+		// create ent client
+		entClient := db.NewClient()
+		client, err := entClient.CreateNewEntClient(conf.DBUrl)
+
+		if err != nil {
+			log.Error(ctx, "Failed to open ent client", err)
+			return
+		}
+
+		provider := data.Provider{
+			EntClient: client,
+		}
 
 		mux := http.NewServeMux()
 
@@ -33,7 +45,7 @@ func Run(ctx context.Context, conf ExplorerGraphQLConfig) error {
 
 		log.Info(ctx, "Starting to serve GraphQL - API on port: %v", httpServer.Addr)
 
-		err := httpServer.ListenAndServe()
+		err = httpServer.ListenAndServe()
 		if errors.Is(err, http.ErrServerClosed) {
 			log.Info(ctx, "Closed http server @%v", httpServer.Addr)
 		} else {
