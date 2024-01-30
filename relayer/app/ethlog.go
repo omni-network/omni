@@ -3,8 +3,10 @@ package relayer
 import (
 	"context"
 
-	ethlog "github.com/ethereum/go-ethereum/log"
 	"github.com/omni-network/omni/lib/log"
+
+	ethlog "github.com/ethereum/go-ethereum/log"
+
 	"golang.org/x/exp/slog"
 )
 
@@ -15,44 +17,44 @@ type ethLogger struct {
 	level slog.Level
 }
 
-func (e ethLogger) With(ctx ...interface{}) ethlog.Logger {
+func (e ethLogger) With(ctx ...any) ethlog.Logger {
 	return ethLogger{
 		ctx:   log.WithCtx(e.ctx, ctx...),
 		level: e.level,
 	}
 }
 
-func (e ethLogger) New(ctx ...interface{}) ethlog.Logger {
+func (e ethLogger) New(ctx ...any) ethlog.Logger {
 	return e.With(ctx...)
 }
 
-func (e ethLogger) Log(level slog.Level, msg string, ctx ...interface{}) {
+func (e ethLogger) Log(level slog.Level, msg string, ctx ...any) {
 	e.Write(level, msg, ctx...)
 }
 
-func (e ethLogger) Trace(msg string, ctx ...interface{}) {
+func (e ethLogger) Trace(msg string, ctx ...any) {
 	log.Debug(e.ctx, msg, ctx...)
 }
 
-func (e ethLogger) Debug(msg string, ctx ...interface{}) {
+func (e ethLogger) Debug(msg string, ctx ...any) {
 	log.Debug(e.ctx, msg, ctx...)
 }
 
-func (e ethLogger) Info(msg string, ctx ...interface{}) {
+func (e ethLogger) Info(msg string, ctx ...any) {
 	log.Info(e.ctx, msg, ctx...)
 }
 
-func (e ethLogger) Warn(msg string, ctx ...interface{}) {
+func (e ethLogger) Warn(msg string, ctx ...any) {
 	keyVals, err := splitOutError(ctx)
 	log.Warn(e.ctx, msg, err, keyVals...)
 }
 
-func (e ethLogger) Error(msg string, ctx ...interface{}) {
+func (e ethLogger) Error(msg string, ctx ...any) {
 	keyVals, err := splitOutError(ctx)
 	log.Error(e.ctx, msg, err, keyVals...)
 }
 
-func (e ethLogger) Crit(msg string, ctx ...interface{}) {
+func (e ethLogger) Crit(msg string, ctx ...any) {
 	// I don't want to do os.exit here
 	keyVals, err := splitOutError(ctx)
 	log.Error(e.ctx, msg, err, keyVals...)
