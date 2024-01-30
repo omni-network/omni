@@ -71,7 +71,7 @@ func (e ethLogger) Write(level slog.Level, msg string, attrs ...any) {
 	}
 }
 
-func (e ethLogger) Enabled(_ context.Context, level slog.Level) bool {
+func (ethLogger) Enabled(context.Context, slog.Level) bool {
 	return true
 }
 
