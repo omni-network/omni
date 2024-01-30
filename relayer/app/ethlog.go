@@ -11,19 +11,19 @@ import (
 var _ ethlog.Logger = (*ethLogger)(nil)
 
 type ethLogger struct {
-	ctx context.Context //nolint:containedctx // This is a wrapper around the omni logger which is context based.
+	ctx   context.Context //nolint:containedctx // This is a wrapper around the omni logger which is context based.
+	level slog.Level
 }
 
 func (e ethLogger) With(ctx ...interface{}) ethlog.Logger {
 	return ethLogger{
-		ctx: log.WithCtx(e.ctx, ctx...),
+		ctx:   log.WithCtx(e.ctx, ctx...),
+		level: e.level,
 	}
 }
 
 func (e ethLogger) New(ctx ...interface{}) ethlog.Logger {
-	return ethLogger{
-		ctx: log.WithCtx(e.ctx, ctx...),
-	}
+	return e.With(ctx...)
 }
 
 func (e ethLogger) Log(level slog.Level, msg string, ctx ...interface{}) {
@@ -43,16 +43,19 @@ func (e ethLogger) Info(msg string, ctx ...interface{}) {
 }
 
 func (e ethLogger) Warn(msg string, ctx ...interface{}) {
-	log.Warn(e.ctx, msg, nil, ctx...)
+	keyVals, err := splitOutError(ctx)
+	log.Warn(e.ctx, msg, err, keyVals...)
 }
 
 func (e ethLogger) Error(msg string, ctx ...interface{}) {
-	log.Error(e.ctx, msg, nil, ctx...)
+	keyVals, err := splitOutError(ctx)
+	log.Error(e.ctx, msg, err, keyVals...)
 }
 
 func (e ethLogger) Crit(msg string, ctx ...interface{}) {
 	// I don't want to do os.exit here
-	log.Error(e.ctx, msg, nil, ctx...)
+	keyVals, err := splitOutError(ctx)
+	log.Error(e.ctx, msg, err, keyVals...)
 }
 
 func (e ethLogger) Write(level slog.Level, msg string, attrs ...any) {
@@ -68,7 +71,21 @@ func (e ethLogger) Write(level slog.Level, msg string, attrs ...any) {
 	}
 }
 
-func (e ethLogger) Enabled(ctx context.Context, level slog.Level) bool {
-	//TODO implement me
-	panic("implement me")
+func (e ethLogger) Enabled(_ context.Context, level slog.Level) bool {
+	return e.level < level
+}
+
+// splitOutError splits the keyvals into a slice of keyvals without the error and the error.
+func splitOutError(keyvals []any) ([]any, error) {
+	var remaining []any
+	var err error
+	for i := 0; i < len(keyvals); i += 2 {
+		if keyErr, ok := keyvals[i+1].(error); ok {
+			err = keyErr
+		} else {
+			remaining = append(remaining, keyvals[i], keyvals[i+1])
+		}
+	}
+
+	return remaining, err
 }
