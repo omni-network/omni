@@ -29,9 +29,12 @@ contract Fixtures is CommonBase, StdCheats {
     uint64 constant chainAId = 2;
     uint64 constant chainBId = 3;
 
+    uint256 constant baseFee = 1 gwei;
+
     address deployer;
     address xcaller;
     address relayer;
+    address admin;
 
     TestPortal portal;
     TestPortal chainAPortal;
@@ -64,21 +67,22 @@ contract Fixtures is CommonBase, StdCheats {
         deployer = makeAddr("deployer");
         xcaller = makeAddr("xcaller");
         relayer = makeAddr("relayer");
+        admin = makeAddr("admin");
 
         vm.startPrank(deployer);
 
         vm.chainId(thisChainId); // portal constructor uses block.chainid
-        portal = new TestPortal();
+        portal = new TestPortal(admin, baseFee);
         counter = new Counter(portal);
         reverter = new Reverter();
 
         vm.chainId(chainAId);
-        chainAPortal = new TestPortal();
+        chainAPortal = new TestPortal(admin, baseFee);
         chainACounter = new Counter(chainAPortal);
         chainAReverter = new Reverter();
 
         vm.chainId(chainBId);
-        chainBPortal = new TestPortal();
+        chainBPortal = new TestPortal(admin, baseFee);
         chainBCounter = new Counter(chainBPortal);
         chainBReverter = new Reverter();
 

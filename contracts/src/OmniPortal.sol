@@ -2,10 +2,11 @@
 pragma solidity 0.8.23;
 
 import { IOmniPortal } from "./interfaces/IOmniPortal.sol";
+import { IOmniPortalAdmin } from "./interfaces/IOmniPortalAdmin.sol";
 import { XBlockMerkleProof } from "./libraries/XBlockMerkleProof.sol";
 import { XTypes } from "./libraries/XTypes.sol";
 
-contract OmniPortal is IOmniPortal {
+contract OmniPortal is IOmniPortal, IOmniPortalAdmin {
     /// @inheritdoc IOmniPortal
     uint64 public constant XMSG_DEFAULT_GAS_LIMIT = 200_000;
 
@@ -27,13 +28,46 @@ contract OmniPortal is IOmniPortal {
     /// @inheritdoc IOmniPortal
     mapping(uint64 => uint64) public inXStreamBlockHeight;
 
+    /// @inheritdoc IOmniPortalAdmin
+    address public admin;
+
+    /// @inheritdoc IOmniPortalAdmin
+    uint256 public fee;
+
     /// @dev The current XMsg being executed, exposed via xmsg() getter
     ///      Private state + public getter preferred over public state with default getter,
     ///      so that we can use the XMsg struct type in the interface.
     XTypes.Msg private _currentXmsg;
 
-    constructor() {
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "OmniPortal: not admin");
+        _;
+    }
+
+    constructor(address admin_, uint256 fee_) {
         chainId = uint64(block.chainid);
+
+        _setAdmin(admin_);
+        _setFee(fee_);
+    }
+
+    /// @inheritdoc IOmniPortalAdmin
+    function setAdmin(address admin_) external onlyAdmin {
+        _setAdmin(admin_);
+    }
+
+    function _setAdmin(address admin_) internal {
+        require(admin_ != address(0), "OmniPortal: no zero admin");
+        admin = admin_;
+    }
+
+    /// @inheritdoc IOmniPortalAdmin
+    function setFee(uint256 fee_) external onlyAdmin {
+        _setFee(fee_);
+    }
+
+    function _setFee(uint256 fee_) internal {
+        fee = fee_;
     }
 
     /// @inheritdoc IOmniPortal
@@ -44,6 +78,16 @@ contract OmniPortal is IOmniPortal {
     /// @inheritdoc IOmniPortal
     function isXCall() external view returns (bool) {
         return _currentXmsg.sourceChainId != 0;
+    }
+
+    /// @inheritdoc IOmniPortal
+    function feeFor(uint64, bytes calldata) external view returns (uint256) {
+        return fee;
+    }
+
+    /// @inheritdoc IOmniPortal
+    function feeFor(uint64, bytes calldata, uint64) external view returns (uint256) {
+        return fee;
     }
 
     /// @inheritdoc IOmniPortal
