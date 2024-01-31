@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/ethereum-optimism/optimism/op-service/eth"
 	"github.com/ethereum-optimism/optimism/op-service/txmgr/metrics"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	ethlog "github.com/ethereum/go-ethereum/log"
@@ -20,7 +21,6 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
-	"github.com/ethereum-optimism/optimism/op-service/eth"
 	"github.com/ethereum-optimism/optimism/op-service/txmgr"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/omni-network/omni/lib/xchain"
@@ -34,41 +34,39 @@ type OpSender struct {
 	abi     *abi.ABI
 }
 
-func NewOpSender(chains []netconf.Chain, rpcClientPerChain map[uint64]*ethclient.Client,
+func NewOpSender(ctx context.Context, chains []netconf.Chain, rpcClientPerChain map[uint64]*ethclient.Client,
 	privateKey *ecdsa.PrivateKey) (OpSender, error) {
 	txMgrs := make(map[uint64]txmgr.TxManager)
+	portals := make(map[uint64]common.Address)
+
+	l := WrapLogger(ctx)
+
 	for _, chain := range chains {
-		cfg, err := NewTxMgrConfig(context.Background(), txmgr.NewCLIConfig(chain.RPCURL, txmgr.DefaultBatcherFlagValues),
+		cfg, err := NewTxMgrConfig(ctx, txmgr.NewCLIConfig(chain.RPCURL, txmgr.DefaultBatcherFlagValues),
 			privateKey, rpcClientPerChain[chain.ID])
 		if err != nil {
 			return OpSender{}, err
 		}
 
-		l := ethLogger{}
 		txMgr, err := initTxMgr(cfg, l)
 		if err != nil {
 			return OpSender{}, err
 		}
 
 		txMgrs[chain.ID] = txMgr
-	}
-
-	// Create portals
-	portals := make(map[uint64]common.Address)
-	for _, chain := range chains {
 		portals[chain.ID] = common.HexToAddress(chain.PortalAddress)
 	}
 
 	// Create ABI
-	abi, err := abi.JSON(strings.NewReader(bindings.OmniPortalMetaData.ABI))
+	parsedAbi, err := abi.JSON(strings.NewReader(bindings.OmniPortalMetaData.ABI))
 	if err != nil {
-		return OpSender{}, errors.Wrap(err, "parse abi")
+		return OpSender{}, errors.Wrap(err, "parse abi error")
 	}
 
 	return OpSender{
 		txMgrs:  txMgrs,
 		portals: portals,
-		abi:     &abi,
+		abi:     &parsedAbi,
 	}, nil
 }
 
