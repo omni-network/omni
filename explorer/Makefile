@@ -27,5 +27,5 @@ run-clean: ## docker build and run
 	make -C ./ run
 
 gen-graphql: ## generates our graphql bindings for the ui
-	cp ./graphql/app/graphql.schema ./ui/app/graphql/schema.graphql
+	cp ./graphql/app/schema.graphql ./ui/app/graphql/schema.graphql
 	make -C ./ui gen-graphql
