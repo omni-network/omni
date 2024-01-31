@@ -72,6 +72,7 @@ type Chain struct {
 	PortalAddress string `json:"portal_address"`        // Address of the omni portal contract on the chain
 	DeployHeight  uint64 `json:"deploy_height"`         // Height that the portal contracts were deployed
 	IsOmni        bool   `json:"is_omni,omitempty"`     // Whether this is the Omni chain
+	IsPublic      bool   `json:"is_public,omitempty"`   // Whether this is a public chain
 }
 
 // Load loads the network configuration from the given path.

@@ -10,7 +10,6 @@ import (
 
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
-	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
 )
 
 const infraDocker = "docker"
@@ -36,7 +35,7 @@ func DefaultDefinitionConfig() DefinitionConfig {
 // Armed with a definition, a e2e network can be deployed, started, tested, stopped, etc.
 type Definition struct {
 	Testnet *e2e.Testnet // Note that testnet is the cometBFT term.
-	Infra   infra.Provider
+	Infra   Provider
 	Netman  netman.Manager
 }
 
@@ -63,7 +62,7 @@ func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
 
 	return Definition{
 		Testnet: adaptTestnet(testnet),
-		Infra:   docker.NewProvider(testnet, ifd, mngr.AdditionalService()),
+		Infra:   docker.NewProvider(testnet, ifd, mngr),
 		Netman:  mngr,
 	}, nil
 }

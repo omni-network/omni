@@ -26,13 +26,6 @@ var (
 	privKey1 = mustHexToKey(privKeyHex1)
 )
 
-// publicChains defines existing public chains.
-//
-//nolint:gochecknoglobals // Static mapping.
-var publicChains = map[string]bool{
-	arbGoerli: true,
-}
-
 // Manager abstract logic to deploy and bootstrap a network.
 type Manager interface {
 	// DeployPublicPortals deploys portals to public chains, like arb-goerli.
@@ -44,11 +37,9 @@ type Manager interface {
 	// Portals returns the deployed portals from both public and private chains.
 	Portals() map[uint64]Portal
 
-	// HostNetwork returns the network configuration for the host (outside docker, aka external IPs).
-	HostNetwork() netconf.Network
-
-	// DockerNetwork returns the network configuration for the docker containers (aka internal IPs).
-	DockerNetwork() netconf.Network
+	// Network returns the network configuration.
+	// Note that RPCURLs for private chains are empty, it is defined by the infra provider.
+	Network() netconf.Network
 
 	// RelayerKey returns the relayer private key hex.
 	RelayerKey() (*ecdsa.PrivateKey, error)

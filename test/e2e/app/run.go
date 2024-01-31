@@ -73,11 +73,11 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 		return err
 	}
 
-	if err := Test(ctx, def.Testnet, def.Infra.GetInfrastructureData(), def.Netman.HostNetwork()); err != nil {
+	if err := Test(ctx, def.Testnet, def.Infra); err != nil {
 		return err
 	}
 
-	if err := LogMetrics(ctx, def.Testnet, def.Netman); err != nil {
+	if err := LogMetrics(ctx, def.Testnet, def.Netman, def.Infra); err != nil {
 		return err
 	}
 

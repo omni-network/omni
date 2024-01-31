@@ -14,8 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-const arbGoerli = "arb_goerli"
-
 // Staging returns the default e2e Staging network configuration.
 // Note that arb_goerli portal address is defined by deployer flag used at runtime.
 func defaultStaging() netconf.Network {
@@ -25,17 +23,18 @@ func defaultStaging() netconf.Network {
 			{
 				ID:            1, // From static/geth_genesis.json
 				Name:          "omni_evm",
-				RPCURL:        "http://localhost:8545",
-				AuthRPCURL:    "http://localhost:8551",
+				RPCURL:        "", // Populated by infra provider
+				AuthRPCURL:    "", // Populated by infra provider
 				PortalAddress: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
 				IsOmni:        true,
 			},
 			{
 				ID:            421613, // From https://chainlist.org/?search=arbitrum+goerli&testnets=true
-				Name:          arbGoerli,
+				Name:          "arb_goerli",
 				RPCURL:        "https://arbitrum-goerli.publicnode.com",
 				PortalAddress: "", // Defined at runtime
 				DeployHeight:  0,  // Defined at runtime
+				IsPublic:      true,
 			},
 		},
 	}
@@ -51,7 +50,7 @@ type stagingManager struct {
 func (m *stagingManager) DeployPublicPortals(ctx context.Context) error {
 	// Log provided key balances for public chains (just FYI).
 	for _, chain := range m.network.Chains {
-		if !publicChains[chain.Name] {
+		if !chain.IsPublic {
 			continue // Only log public chain balances.
 		}
 		if err := logBalance(ctx, chain, m.deployKey, "deploy_key"); err != nil {
@@ -83,12 +82,8 @@ func (m *stagingManager) DeployPrivatePortals(ctx context.Context) error {
 	return m.fundPrivateRelayer(ctx, privKey1)
 }
 
-func (m *stagingManager) HostNetwork() netconf.Network {
+func (m *stagingManager) Network() netconf.Network {
 	return m.network
-}
-
-func (m *stagingManager) DockerNetwork() netconf.Network {
-	return dockerNetwork(m.network)
 }
 
 func (m *stagingManager) RelayerKey() (*ecdsa.PrivateKey, error) {
@@ -111,7 +106,7 @@ func (m *stagingManager) fundPrivateRelayer(ctx context.Context, fromPrivKey *ec
 	fromAddr := ethcrypto.PubkeyToAddress(fromPrivKey.PublicKey)
 
 	for _, chain := range m.network.Chains {
-		if publicChains[chain.Name] {
+		if chain.IsPublic {
 			continue // We use relayer key for public chain, it should already be funded.
 		}
 

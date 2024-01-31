@@ -14,8 +14,10 @@ import (
 )
 
 // Test runs test cases under tests/.
-func Test(ctx context.Context, testnet *e2e.Testnet, ifd *e2e.InfrastructureData, network netconf.Network) error {
+func Test(ctx context.Context, testnet *e2e.Testnet, infra Provider) error {
 	log.Info(ctx, "Running tests in ./tests/...")
+
+	network := infra.ExternalNetwork()
 
 	networkDir, err := os.MkdirTemp("", "omni-e2e")
 	if err != nil {
@@ -39,14 +41,16 @@ func Test(ctx context.Context, testnet *e2e.Testnet, ifd *e2e.InfrastructureData
 		return errors.Wrap(err, "setting E2E_MANIFEST")
 	}
 
-	if p := ifd.Path; p != "" {
+	infraData := infra.GetInfrastructureData()
+
+	if p := infraData.Path; p != "" {
 		err = os.Setenv("INFRASTRUCTURE_FILE", p)
 		if err != nil {
 			return errors.Wrap(err, "setting INFRASTRUCTURE_FILE")
 		}
 	}
 
-	if err = os.Setenv("INFRASTRUCTURE_TYPE", ifd.Provider); err != nil {
+	if err = os.Setenv("INFRASTRUCTURE_TYPE", infraData.Provider); err != nil {
 		return errors.Wrap(err, "setting INFRASTRUCTURE_TYPE")
 	}
 

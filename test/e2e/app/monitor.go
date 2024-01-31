@@ -12,13 +12,13 @@ import (
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
-func LogMetrics(ctx context.Context, testnet *e2e.Testnet, mngr netman.Manager) error {
+func LogMetrics(ctx context.Context, testnet *e2e.Testnet, mngr netman.Manager, infra Provider) error {
 	// Just pick the first node for now.
-	if err := MonitorCProvider(ctx, testnet.Nodes[0], mngr.HostNetwork()); err != nil {
+	if err := MonitorCProvider(ctx, testnet.Nodes[0], infra.ExternalNetwork()); err != nil {
 		return errors.Wrap(err, "monitoring cchain provider")
 	}
 
-	if err := MonitorCursors(ctx, mngr.Portals(), mngr.HostNetwork()); err != nil {
+	if err := MonitorCursors(ctx, mngr.Portals(), infra.ExternalNetwork()); err != nil {
 		return errors.Wrap(err, "monitoring cursors")
 	}
 

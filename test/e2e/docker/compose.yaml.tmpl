@@ -27,8 +27,6 @@ services:
     - {{ .PrometheusProxyPort }}:26660
 {{- end }}
     - 6060
-    environment:
-    - HALO_LOG_COLOR=force
     volumes:
     - ./{{ .Name }}:/halo
     - ./geth/jwtsecret:/geth/jwtsecret
@@ -37,18 +35,20 @@ services:
         ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .InternalIP }}
 {{end}}
 
-  chain_a:
+{{- range .Anvils }}
+  {{ .Name }}:
     labels:
       e2e: true
-    container_name: chain_a
+    container_name: {{ .Name }}
     image: ghcr.io/foundry-rs/foundry:latest
-    entrypoint: ['anvil','--host','0.0.0.0','--chain-id','100','--block-time','1', "--silent"]
+    entrypoint: ['anvil','--host','0.0.0.0','--chain-id','{{ .ChainID }}','--block-time','1', "--silent"]
     ports:
-      - "6545:8545"
-      - "6546:8546"
+      - {{ if .HostRPCPort }}{{ .HostRPCPort }}:{{ end }}8545
+      # - 6546:8546 # Websocket not enabled now
     networks:
       {{ $.Name }}:
-        ipv4_address: 10.186.73.200
+        # ipv4_address: { .InternalIP }
+{{end}}
 
   # Initialises geth files and folder from provided genesis file.
   geth-init:
@@ -60,11 +60,12 @@ services:
     volumes:
       - ./geth:/geth
 
-  # Runs geth as the omni EVM.
-  omni_evm:
+  # Use geth as the omni EVMs.
+{{- range .OmniEVMs }}
+  {{ .Name }}:
     labels:
       e2e: true
-    container_name: omni_evm
+    container_name: {{ .Name }}
     image: "ethereum/client-go:latest"
     command:
       - --http
@@ -85,18 +86,19 @@ services:
       - --password=/geth/geth_password.txt
       - --nodiscover
       - --syncmode=full
+      - --verbosity=2
     ports:
-      - 8551:8551
-      - 8545:8545
-      - 8546:8546
+      - {{ if .HostAuthRPCPort }}{{ .HostAuthRPCPort }}:{{ end }}8551 # Authed HTTP RPC
+      - {{ if .HostRPCPort }}{{ .HostRPCPort }}:{{ end }}8545 # HTTP RPC
+      # - 8546:8546 Websockets not enabled
     depends_on:
       geth-init:
         condition: service_completed_successfully
     volumes:
-      - ./geth:/geth
+      - ./{{ .Name }}:/geth
     networks:
       {{ $.Name }}:
-        ipv4_address: 10.186.73.210
+        # ipv4_address: { .InternalIP }
 
   relayer:
     labels:
@@ -104,10 +106,7 @@ services:
     container_name: relayer
     image: omniops/relayer:main
     restart: unless-stopped # Restart on crash to mitigate startup race issues
-    environment:
-      - RELAYER_LOG_COLOR=force
     volumes:
       - ./relayer:/relayer
     networks:
       {{ $.Name }}:
-        ipv4_address: 10.186.73.220
