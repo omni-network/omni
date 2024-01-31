@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/test/e2e/runner/netman"
+	"github.com/omni-network/omni/test/e2e/netman"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
