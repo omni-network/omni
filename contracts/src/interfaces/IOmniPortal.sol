@@ -60,18 +60,38 @@ interface IOmniPortal {
     function chainId() external view returns (uint64);
 
     /**
-     * @notice Offset of the next outbound XMsg to be sent in the corresponding source -> dest XStream
+     * @notice Offset of the last outbound XMsg that was sent to destChainId
      * @param destChainId Destination chain ID
      * @return Offset
      */
     function outXStreamOffset(uint64 destChainId) external view returns (uint64);
 
     /**
-     * @notice Offset of the next inbound XMsg to be received in the corresponding source -> dest XStream
+     * @notice Offset of the last inbound XMsg that was received from sourceChainId
      * @param sourceChainId Source chain ID
      * @return Offset
      */
     function inXStreamOffset(uint64 sourceChainId) external view returns (uint64);
+
+    /**
+     * @notice Source block height of the last inbound XMsg that was received from sourceChainId
+     * @param sourceChainId Source chain ID
+     * @return Block height
+     */
+    function inXStreamBlockHeight(uint64 sourceChainId) external view returns (uint64);
+
+    /**
+     * @notice The current XMsg being executed via this portal
+     * @dev If no XMsg is being executed, all fields will be zero
+     * @return XMsg
+     */
+    function xmsg() external view returns (XTypes.Msg memory);
+
+    /**
+     * @notice Whether the current transaction is an xcall
+     * @return True if current transaction is an xcall, false otherwise
+     */
+    function isXCall() external view returns (bool);
 
     /**
      * @notice Call a contract on another chain

@@ -54,4 +54,9 @@ library XTypes {
         /// @dev Array of validator signatures of the attestationRoot, and their public keys
         SigTuple[] signatures;
     }
+
+    /// @dev Zero value for Msg
+    function zeroMsg() internal pure returns (Msg memory) {
+        return Msg(0, 0, 0, address(0), address(0), "", 0);
+    }
 }

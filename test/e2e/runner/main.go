@@ -8,9 +8,8 @@ import (
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/test/e2e/runner/docker"
-	"github.com/omni-network/omni/test/e2e/runner/network"
+	"github.com/omni-network/omni/test/e2e/runner/netman"
 
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -26,17 +25,20 @@ func main() {
 
 // CLI is the Cobra-based command-line interface.
 type CLI struct {
-	root      *cobra.Command
-	testnet   *e2e.Testnet
-	preserve  bool
-	skipTests bool
-	infp      infra.Provider
-	network   netconf.Network
+	root    *cobra.Command
+	testnet *e2e.Testnet
+	infp    infra.Provider
+	mngr    netman.Manager
+
+	preserve       bool
+	skipTests      bool
+	deployKeyFile  string
+	relayerKeyFile string
 }
 
 // NewCLI sets up the CLI.
 func NewCLI() *CLI {
-	cli := &CLI{network: network.NewE2E()}
+	cli := &CLI{}
 	cli.root = &cobra.Command{
 		Use:           "runner",
 		Short:         "End-to-end test runner",
@@ -47,12 +49,17 @@ func NewCLI() *CLI {
 			if err != nil {
 				return errors.Wrap(err, "getting file")
 			}
-			m, err := e2e.LoadManifest(file)
+			m, err := LoadManifest(file)
 			if err != nil {
 				return errors.Wrap(err, "loading manifest")
 			}
 
-			ifd, err := e2e.NewDockerInfrastructureData(m)
+			mngr, err := netman.NewManager(m.Network, cli.deployKeyFile, cli.relayerKeyFile)
+			if err != nil {
+				return errors.Wrap(err, "get network")
+			}
+
+			ifd, err := e2e.NewDockerInfrastructureData(m.Manifest)
 			if err != nil {
 				return errors.Wrap(err, "creating docker infrastructure data")
 			}
@@ -63,7 +70,8 @@ func NewCLI() *CLI {
 			}
 
 			cli.testnet = adaptTestnet(testnet)
-			cli.infp = docker.NewProvider(testnet, ifd, chainServices(cli.network))
+			cli.mngr = mngr
+			cli.infp = docker.NewProvider(testnet, ifd, mngr.AdditionalService())
 
 			return nil
 		},
@@ -73,7 +81,13 @@ func NewCLI() *CLI {
 			if err := Cleanup(ctx, cli.testnet); err != nil {
 				return err
 			}
-			if err := Setup(ctx, cli.testnet, cli.infp, cli.network); err != nil {
+
+			// Deploy public portals first so their addresses are available for setup.
+			if err := cli.mngr.DeployPublicPortals(ctx); err != nil {
+				return err
+			}
+
+			if err := Setup(ctx, cli.testnet, cli.infp, cli.mngr); err != nil {
 				return err
 			}
 
@@ -81,14 +95,13 @@ func NewCLI() *CLI {
 				return err
 			}
 
-			portals, err := DeployContracts(ctx, cli.network)
-			if err != nil {
+			if err := cli.mngr.DeployPrivatePortals(ctx); err != nil {
 				return err
 			}
 
 			sendCtx, sendCancel := context.WithCancel(ctx)
 			defer sendCancel()
-			if err := StartSendingXMsgs(sendCtx, portals); err != nil {
+			if err := StartSendingXMsgs(sendCtx, cli.mngr.Portals()); err != nil {
 				return err
 			}
 
@@ -104,29 +117,28 @@ func NewCLI() *CLI {
 				return errors.New("evidence injection not supported yet")
 			}
 
+			sendCancel() // Stop sending messages
+
 			if err := Wait(ctx, cli.testnet, 5); err != nil { // wait for network to settle before tests
 				return err
 			}
 
-			// Stop sending messages
-			sendCancel()
-
 			if cli.skipTests {
-				log.Info(ctx, "Skipping tests")
+				log.Info(ctx, "Skipping tests; --skip-tests=true")
 			} else {
-				if err := Test(ctx, cli.testnet, cli.infp.GetInfrastructureData()); err != nil {
+				if err := Test(ctx, cli.testnet, cli.infp.GetInfrastructureData(), cli.mngr.HostNetwork()); err != nil {
 					return err
 				}
 			}
 
-			if err := LogMetrics(ctx, cli.testnet, portals, cli.network); err != nil {
+			if err := LogMetrics(ctx, cli.testnet, cli.mngr); err != nil {
 				return err
 			}
 
-			if !cli.preserve {
-				if err := Cleanup(ctx, cli.testnet); err != nil {
-					return err
-				}
+			if cli.preserve {
+				log.Warn(ctx, "Docker containers not stopped, --preserve=true", nil)
+			} else if err := Cleanup(ctx, cli.testnet); err != nil {
+				return err
 			}
 
 			return nil
@@ -142,11 +154,17 @@ func NewCLI() *CLI {
 	cli.root.Flags().BoolVarP(&cli.preserve, "preserve", "p", false,
 		"Preserves the running of the test net after tests are completed")
 
+	cli.root.Flags().StringVar(&cli.deployKeyFile, "deploy-key", "",
+		"Hex private key used to deploy public chain contracts (needs to be funded)")
+
+	cli.root.Flags().StringVar(&cli.relayerKeyFile, "relayer-key", "",
+		"Relayer's hex private key used for submissions on public chains (needs to be funded)")
+
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "setup",
 		Short: "Generates the testnet directory and configuration",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return Setup(cmd.Context(), cli.testnet, cli.infp, cli.network)
+			return Setup(cmd.Context(), cli.testnet, cli.infp, cli.mngr)
 		},
 	})
 
@@ -157,7 +175,7 @@ func NewCLI() *CLI {
 			ctx := cmd.Context()
 			_, err := os.Stat(cli.testnet.Dir)
 			if os.IsNotExist(err) {
-				err = Setup(ctx, cli.testnet, cli.infp, cli.network)
+				err = Setup(ctx, cli.testnet, cli.infp, cli.mngr)
 			}
 			if err != nil {
 				return errors.Wrap(err, "setup")
@@ -197,20 +215,7 @@ func NewCLI() *CLI {
 		Use:   "logs",
 		Short: "Shows the container logs (except anvil)",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			// Get all compose chains and validators
-			services := chainServices(cli.network)
-			for _, node := range cli.testnet.Nodes {
-				services = append(services, node.Name)
-			}
-			// Remove all anvils (chain*)
-			var filtered []string
-			for _, service := range services {
-				if !strings.HasPrefix(service, "chain") {
-					filtered = append(filtered, service)
-				}
-			}
-
-			args := append([]string{"logs"}, filtered...)
+			args := append([]string{"logs"}, cli.mngr.AdditionalService()...)
 
 			return cmtdocker.ExecComposeVerbose(cmd.Context(), cli.testnet.Dir, args...)
 		},

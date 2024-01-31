@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -20,6 +19,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	relayapp "github.com/omni-network/omni/relayer/app"
+	"github.com/omni-network/omni/test/e2e/runner/netman"
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/p2p"
@@ -27,6 +27,8 @@ import (
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
 	"github.com/cometbft/cometbft/types"
+
+	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 
 	_ "embed"
 )
@@ -44,20 +46,8 @@ const (
 	NetworkConfigFile     = "config/network.json"
 )
 
-// chainServices returns the EVM docker-compose services to start.
-func chainServices(network netconf.Network) []string {
-	resp := make([]string, 0, len(network.Chains))
-	for _, chain := range network.Chains {
-		resp = append(resp, chain.Name)
-	}
-
-	resp = append(resp, "relayer")
-
-	return resp
-}
-
 // Setup sets up the testnet configuration.
-func Setup(ctx context.Context, testnet *e2e.Testnet, infp infra.Provider, network netconf.Network) error {
+func Setup(ctx context.Context, testnet *e2e.Testnet, infp infra.Provider, mngr netman.Manager) error {
 	log.Info(ctx, "Setup testnet", "dir", testnet.Dir)
 
 	if err := os.MkdirAll(testnet.Dir, os.ModePerm); err != nil {
@@ -77,7 +67,7 @@ func Setup(ctx context.Context, testnet *e2e.Testnet, infp infra.Provider, netwo
 		return err
 	}
 
-	if err := writeRelayerConfig(testnet.Dir, testnet, network, logConfig()); err != nil {
+	if err := writeRelayerConfig(testnet.Dir, testnet, mngr, logConfig()); err != nil {
 		return err
 	}
 
@@ -120,12 +110,12 @@ func Setup(ctx context.Context, testnet *e2e.Testnet, infp infra.Provider, netwo
 			filepath.Join(nodeDir, PrivvalStateFile),
 		)).Save()
 
-		if err := writeNetworkConfig(network, filepath.Join(nodeDir, NetworkConfigFile)); err != nil {
+		if err := netconf.Save(mngr.DockerNetwork(), filepath.Join(nodeDir, NetworkConfigFile)); err != nil {
 			return errors.Wrap(err, "write network config")
 		}
 
 		// Initialize the node's data directory (with noop logger since it is noisy).
-		initCfg := halocmd.InitConfig{HomeDir: nodeDir, Network: network.Name}
+		initCfg := halocmd.InitConfig{HomeDir: nodeDir, Network: mngr.HostNetwork().Name}
 		if err := halocmd.InitFiles(log.WithNoopLogger(ctx), initCfg); err != nil {
 			return errors.Wrap(err, "init files")
 		}
@@ -307,22 +297,6 @@ func UpdateConfigStateSync(node *e2e.Node, height int64, hash []byte) error {
 	return nil
 }
 
-// writeNetworkConfig writes the network config (adjusted for intra-docker networking) to the given path.
-func writeNetworkConfig(network netconf.Network, path string) error {
-	// Clone the network since we need to change the RPC URLs for intra-docker networking.
-	clone := netconf.Network{
-		Name:   network.Name,
-		Chains: slices.Clone(network.Chains),
-	}
-
-	for i, chain := range clone.Chains {
-		clone.Chains[i].RPCURL = fmt.Sprintf("http://%v:8545", chain.Name)
-		clone.Chains[i].AuthRPCURL = fmt.Sprintf("http://%v:8551", chain.Name)
-	}
-
-	return netconf.Save(clone, path)
-}
-
 var (
 	//go:embed static/geth_genesis.json
 	gethGenesis []byte
@@ -356,7 +330,7 @@ func writeGethConfig(root string) error {
 	return nil
 }
 
-func writeRelayerConfig(root string, testnet *e2e.Testnet, network netconf.Network, logCfg log.Config) error {
+func writeRelayerConfig(root string, testnet *e2e.Testnet, mngr netman.Manager, logCfg log.Config) error {
 	confRoot := filepath.Join(root, "relayer")
 
 	const (
@@ -370,14 +344,17 @@ func writeRelayerConfig(root string, testnet *e2e.Testnet, network netconf.Netwo
 	}
 
 	// Save network config
-	if err := writeNetworkConfig(network, filepath.Join(confRoot, networkFile)); err != nil {
+	if err := netconf.Save(mngr.DockerNetwork(), filepath.Join(confRoot, networkFile)); err != nil {
 		return errors.Wrap(err, "save network config")
 	}
 
+	relayerKey, err := mngr.RelayerKey()
+	if err != nil {
+		return errors.Wrap(err, "get relayer key")
+	}
+
 	// Save private key
-	// TODO(corver): Use a different private key (avoid nonce issues)
-	pkBytes := []byte(strings.TrimPrefix(privKeyHex1, "0x"))
-	if err := os.WriteFile(filepath.Join(confRoot, privKeyFile), pkBytes, 0o600); err != nil {
+	if err := ethcrypto.SaveECDSA(filepath.Join(confRoot, privKeyFile), relayerKey); err != nil {
 		return errors.Wrap(err, "write private key")
 	}
 

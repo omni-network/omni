@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/halo/comet"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/engine"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 	relayer "github.com/omni-network/omni/relayer/app"
@@ -128,7 +129,7 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 	updates := make(chan relayer.StreamUpdate)
 	err = relayer.StartRelayer(ctx,
 		cprovider.NewABCIProvider(rpclocal.New(node)),
-		[]uint64{srcChainID},
+		netconf.Network{Chains: []netconf.Chain{{ID: srcChainID}}},
 		xprov,
 		func(update relayer.StreamUpdate) ([]xchain.Submission, error) {
 			updates <- update

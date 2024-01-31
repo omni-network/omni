@@ -69,17 +69,17 @@ contract Fixtures is CommonBase, StdCheats {
 
         vm.chainId(thisChainId); // portal constructor uses block.chainid
         portal = new TestPortal();
-        counter = new Counter();
+        counter = new Counter(portal);
         reverter = new Reverter();
 
         vm.chainId(chainAId);
         chainAPortal = new TestPortal();
-        chainACounter = new Counter();
+        chainACounter = new Counter(chainAPortal);
         chainAReverter = new Reverter();
 
         vm.chainId(chainBId);
         chainBPortal = new TestPortal();
-        chainBCounter = new Counter();
+        chainBCounter = new Counter(chainBPortal);
         chainBReverter = new Reverter();
 
         vm.stopPrank();
@@ -100,8 +100,8 @@ contract Fixtures is CommonBase, StdCheats {
         string memory root = vm.projectRoot();
         string memory fullpath = string.concat(root, "/", XBLOCKS_PATH);
 
-        TestXTypes.Block memory xblock1 = _xblock(1, 0); //  sourceBlockHeight: 1, startOffset: 0
-        TestXTypes.Block memory xblock2 = _xblock(2, 5); // sourceBlockHeight: 2, startOffset: 10
+        TestXTypes.Block memory xblock1 = _xblock(1, 1); // sourceBlockHeight: 1, startOffset: 1
+        TestXTypes.Block memory xblock2 = _xblock(2, 6); // sourceBlockHeight: 2, startOffset: 6
 
         // id identifies the json object we are writing to within vm state
         // see https://book.getfoundry.sh/cheatcodes/serialize-json

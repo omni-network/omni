@@ -22,7 +22,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "🚨 CI failed on `${{ github.event.workflow_run.head_branch }}`. *${{ github.event.workflow_run.name }}* was unsuccessful."
+                    "text": "🚨 CI failed on `${{ github.event.workflow_run.head_branch }}`."
                   }
                 },
                 {
@@ -35,7 +35,7 @@ jobs:
                     },
                     {
                       "type": "mrkdwn",
-                      "text": "by: ${{ github.event.workflow_run.head_commit.author.username }} \n url: ${{ github.event.workflow_run.html_url }}"
+                      "text": "url: ${{ github.event.workflow_run.html_url }}"
                     }
                   ]
                 }
