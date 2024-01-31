@@ -35,7 +35,7 @@ contract Fixtures is CommonBase, StdCheats {
     address deployer;
     address xcaller;
     address relayer;
-    address admin;
+    address owner;
 
     FeeOracleV1 feeOracle;
     FeeOracleV1 chainAFeeOracle;
@@ -72,25 +72,25 @@ contract Fixtures is CommonBase, StdCheats {
         deployer = makeAddr("deployer");
         xcaller = makeAddr("xcaller");
         relayer = makeAddr("relayer");
-        admin = makeAddr("admin");
+        owner = makeAddr("owner");
 
         vm.startPrank(deployer);
 
         vm.chainId(thisChainId); // portal constructor uses block.chainid
         feeOracle = new FeeOracleV1(deployer, baseFee);
-        portal = new TestPortal(admin, address(feeOracle));
+        portal = new TestPortal(owner, address(feeOracle));
         counter = new Counter(portal);
         reverter = new Reverter();
 
         vm.chainId(chainAId);
         chainAFeeOracle = new FeeOracleV1(deployer, baseFee);
-        chainAPortal = new TestPortal(admin, address(chainAFeeOracle));
+        chainAPortal = new TestPortal(owner, address(chainAFeeOracle));
         chainACounter = new Counter(chainAPortal);
         chainAReverter = new Reverter();
 
         vm.chainId(chainBId);
         chainBFeeOracle = new FeeOracleV1(deployer, baseFee);
-        chainBPortal = new TestPortal(admin, address(chainBFeeOracle));
+        chainBPortal = new TestPortal(owner, address(chainBFeeOracle));
         chainBCounter = new Counter(chainBPortal);
         chainBReverter = new Reverter();
 
