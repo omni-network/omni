@@ -17,7 +17,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.5.2
 	github.com/leodido/go-conventionalcommits v0.11.0
-	github.com/mattn/go-sqlite3 v1.14.20
+	github.com/mattn/go-sqlite3 v1.14.21
 	github.com/muesli/termenv v0.15.2
 	github.com/mvrilo/go-redoc v0.1.4
 	github.com/ogen-go/ogen v0.81.2
