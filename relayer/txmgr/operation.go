@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"time"
+
+	"github.com/omni-network/omni/lib/errors"
 )
 
 // ErrFailedPermanently is an error raised by Do when the
@@ -40,7 +42,7 @@ func Do[T any](ctx context.Context, maxAttempts int, strategy Strategy, op func(
 
 	for i := 0; i < maxAttempts; i++ {
 		if ctx.Err() != nil {
-			return empty, ctx.Err()
+			return empty, errors.Wrap(ctx.Err(), "context canceled")
 		}
 		ret, err = op()
 		if err == nil {
@@ -61,7 +63,7 @@ type FixedStrategy struct {
 	Dur time.Duration
 }
 
-func (f *FixedStrategy) Duration(attempt int) time.Duration {
+func (f *FixedStrategy) Duration(_ int) time.Duration {
 	return f.Dur
 }
 

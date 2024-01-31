@@ -5,15 +5,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
+	"github.com/omni-network/omni/relayer/txmgr"
 
-	"github.com/ethereum-optimism/optimism/op-service/txmgr"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
+
+	"github.com/stretchr/testify/require"
 )
 
 var (
-	testHash = common.HexToHash("0x01")
+	testHash = common.HexToHash("0x01") //nolint:gochecknoglobals // This is okay used for testing
 )
 
 const testSafeAbortNonceTooLowCount = 3
@@ -176,7 +177,7 @@ func stepClock(step time.Duration) func() time.Time {
 }
 
 // TestSendStateTimeoutAbort ensure that this will abort if it passes the tx pool timeout
-// when no successful transactions have been recorded
+// when no successful transactions have been recorded.
 func TestSendStateTimeoutAbort(t *testing.T) {
 	sendState := newSendStateWithTimeout(10*time.Millisecond, stepClock(20*time.Millisecond))
 	require.True(t, sendState.ShouldAbortImmediately(), "Should abort after timing out")

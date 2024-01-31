@@ -20,16 +20,17 @@ type priceBumpTest struct {
 }
 
 func (tc *priceBumpTest) run(t *testing.T) {
-	prevFC := calcGasFeeCap(big.NewInt(tc.prevBaseFee), big.NewInt(tc.prevGasTip))
+	prevFC := CalcGasFeeCap(big.NewInt(tc.prevBaseFee), big.NewInt(tc.prevGasTip))
 
-	tip, fc := updateFees(context.Background(), big.NewInt(tc.prevGasTip), prevFC, big.NewInt(tc.newGasTip), big.NewInt(tc.newBaseFee), tc.isBlobTx)
+	tip, fc := updateFees(context.Background(), big.NewInt(tc.prevGasTip), prevFC, big.NewInt(tc.newGasTip),
+		big.NewInt(tc.newBaseFee), tc.isBlobTx)
 
 	require.Equal(t, tc.expectedTip, tip.Int64(), "tip must be as expected")
 	require.Equal(t, tc.expectedFC, fc.Int64(), "fee cap must be as expected")
 }
 
 func TestUpdateFees(t *testing.T) {
-	require.Equal(t, int64(10), priceBump, "test must be updated if priceBump is adjusted")
+	require.Equal(t, int64(10), PriceBump, "test must be updated if priceBump is adjusted")
 	tests := []priceBumpTest{
 		{
 			prevGasTip: 100, prevBaseFee: 1000,

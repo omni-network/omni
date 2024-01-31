@@ -32,7 +32,8 @@ type SendState struct {
 }
 
 // NewSendStateWithNow creates a new send state with the provided clock.
-func NewSendStateWithNow(safeAbortNonceTooLowCount uint64, unableToSendTimeout time.Duration, now func() time.Time) *SendState {
+func NewSendStateWithNow(safeAbortNonceTooLowCount uint64, unableToSendTimeout time.Duration,
+	now func() time.Time) *SendState {
 	if safeAbortNonceTooLowCount == 0 {
 		panic("txmgr: safeAbortNonceTooLowCount cannot be zero")
 	}
@@ -45,7 +46,7 @@ func NewSendStateWithNow(safeAbortNonceTooLowCount uint64, unableToSendTimeout t
 	}
 }
 
-// NewSendState creates a new send state
+// NewSendState creates a new send state.
 func NewSendState(safeAbortNonceTooLowCount uint64, unableToSendTimeout time.Duration) *SendState {
 	return NewSendStateWithNow(safeAbortNonceTooLowCount, unableToSendTimeout, time.Now)
 }

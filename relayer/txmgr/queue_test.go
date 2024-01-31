@@ -1,4 +1,4 @@
-package txmgr
+package txmgr_test
 
 import (
 	"context"
@@ -7,24 +7,24 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum-optimism/optimism/op-service/testlog"
-	"github.com/ethereum-optimism/optimism/op-service/txmgr/metrics"
+	"github.com/omni-network/omni/relayer/txmgr"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/log"
+
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slices"
 )
 
-type queueFunc func(id int, candidate TxCandidate, receiptCh chan TxReceipt[int], q *Queue[int]) bool
+type queueFunc func(id int, candidate txmgr.TxCandidate, receiptCh chan txmgr.TxReceipt[int], q *txmgr.Queue[int]) bool
 
-func sendQueueFunc(id int, candidate TxCandidate, receiptCh chan TxReceipt[int], q *Queue[int]) bool {
+func sendQueueFunc(id int, candidate txmgr.TxCandidate, receiptCh chan txmgr.TxReceipt[int], q *txmgr.Queue[int]) bool {
 	q.Send(id, candidate, receiptCh)
 	return true
 }
 
-func trySendQueueFunc(id int, candidate TxCandidate, receiptCh chan TxReceipt[int], q *Queue[int]) bool {
+func trySendQueueFunc(id int, candidate txmgr.TxCandidate, receiptCh chan txmgr.TxReceipt[int], q *txmgr.Queue[int]) bool {
 	return q.TrySend(id, candidate, receiptCh)
 }
 
@@ -171,13 +171,11 @@ func TestQueue_Send(t *testing.T) {
 			conf.ResubmissionTimeout = 2 * time.Second  // resubmit to detect errors
 			conf.SafeAbortNonceTooLowCount = 1
 			backend := newMockBackendWithNonce(newGasPricer(3))
-			mgr := &SimpleTxManager{
-				chainID: conf.ChainID,
-				name:    "TEST",
-				cfg:     conf,
-				backend: backend,
-				l:       testlog.Logger(t, log.LvlCrit),
-				metr:    &metrics.NoopTxMetrics{},
+			mgr := &txmgr.SimpleTxManager{
+				ChainID: conf.ChainID,
+				Name:    "TEST",
+				Cfg:     conf,
+				Backend: backend,
 			}
 
 			// track the nonces, and return any expected errors from tx sending
@@ -200,18 +198,18 @@ func TestQueue_Send(t *testing.T) {
 
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 			defer cancel()
-			queue := NewQueue[int](ctx, mgr, test.max)
+			queue := txmgr.NewQueue[int](ctx, mgr, test.max)
 
 			// make all the queue calls given in the test case
 			start := time.Now()
-			receiptChs := make([]chan TxReceipt[int], len(test.calls))
+			receiptChs := make([]chan txmgr.TxReceipt[int], len(test.calls))
 			for i, c := range test.calls {
 				msg := fmt.Sprintf("Call %d", i)
-				candidate := TxCandidate{
+				candidate := txmgr.TxCandidate{
 					TxData: []byte{byte(i)},
 					To:     &common.Address{},
 				}
-				receiptChs[i] = make(chan TxReceipt[int], 1)
+				receiptChs[i] = make(chan txmgr.TxReceipt[int], 1)
 				queued := c.call(i, candidate, receiptChs[i], queue)
 				require.Equal(t, c.queued, queued, msg)
 			}

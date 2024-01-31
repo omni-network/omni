@@ -3,16 +3,16 @@ package txmgr
 import (
 	"context"
 	"crypto/ecdsa"
-	"fmt"
 	"math/big"
 	"time"
+
+	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/omni-network/omni/lib/errors"
 )
 
 type DefaultFlagValues struct {
@@ -47,9 +47,9 @@ type CLIConfig struct {
 	TxNotInMempoolTimeout     time.Duration
 }
 
-func NewCLIConfig(RPCURL string, defaults DefaultFlagValues) CLIConfig {
+func NewCLIConfig(rpc string, defaults DefaultFlagValues) CLIConfig {
 	return CLIConfig{
-		L1RPCURL:                  RPCURL,
+		L1RPCURL:                  rpc,
 		NumConfirmations:          defaults.NumConfirmations,
 		SafeAbortNonceTooLowCount: defaults.SafeAbortNonceTooLowCount,
 		FeeLimitMultiplier:        defaults.FeeLimitMultiplier,
@@ -76,7 +76,7 @@ func (m CLIConfig) Check() error {
 		return errors.New("must provide FeeLimitMultiplier")
 	}
 	if m.MinBaseFeeGwei < m.MinTipCapGwei {
-		return fmt.Errorf("minBaseFee smaller than minTipCap, have %f < %f",
+		return errors.New("minBaseFee smaller than minTipCap",
 			m.MinBaseFeeGwei, m.MinTipCapGwei)
 	}
 	if m.ResubmissionTimeout == 0 {
@@ -91,19 +91,21 @@ func (m CLIConfig) Check() error {
 	if m.SafeAbortNonceTooLowCount == 0 {
 		return errors.New("SafeAbortNonceTooLowCount must not be 0")
 	}
+
 	return nil
 }
 
 func PrivateKeySignerFn(key *ecdsa.PrivateKey, chainID *big.Int) bind.SignerFn {
 	from := crypto.PubkeyToAddress(key.PublicKey)
 	signer := types.LatestSignerForChainID(chainID)
+
 	return func(address common.Address, tx *types.Transaction) (*types.Transaction, error) {
 		if address != from {
 			return nil, bind.ErrNotAuthorized
 		}
 		signature, err := crypto.Sign(signer.Hash(tx).Bytes(), key)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "could not sign transaction")
 		}
 		return tx.WithSignature(signer, signature)
 	}
@@ -113,7 +115,7 @@ func PrivateKeySignerFn(key *ecdsa.PrivateKey, chainID *big.Int) bind.SignerFn {
 // It also takes the address that should be used to sign the transaction with.
 type SignerFn func(context.Context, common.Address, *types.Transaction) (*types.Transaction, error)
 
-// SignerFactory creates a SignerFn that is bound to a specific ChainID
+// SignerFactory creates a SignerFn that is bound to a specific ChainID.
 type SignerFactory func(chainID *big.Int) SignerFn
 
 // Config houses parameters for altering the behavior of a SimpleTxManager.
@@ -173,11 +175,11 @@ type Config struct {
 	From   common.Address
 }
 
-// NewConfig - creates a new txmgr config from the given CLI config and private key. This is taken and modified from op
+// NewConfig - creates a new txmgr config from the given CLI config and private key. This is taken and modified from op.
 func NewConfig(ctx context.Context, cfg CLIConfig,
 	privateKey *ecdsa.PrivateKey, client *ethclient.Client) (Config, error) {
 	if err := cfg.Check(); err != nil {
-		return Config{}, fmt.Errorf("invalid config: %w", err)
+		return Config{}, errors.New("invalid config", err)
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, cfg.NetworkTimeout)
@@ -245,7 +247,7 @@ func (m Config) Check() error {
 		return errors.New("must provide FeeLimitMultiplier")
 	}
 	if m.MinBaseFee != nil && m.MinTipCap != nil && m.MinBaseFee.Cmp(m.MinTipCap) == -1 {
-		return fmt.Errorf("minBaseFee smaller than minTipCap, have %v < %v",
+		return errors.New("minBaseFee smaller than minTipCap",
 			m.MinBaseFee, m.MinTipCap)
 	}
 	if m.ResubmissionTimeout == 0 {

@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/ethereum/go-ethereum/core/types"
+
 	"golang.org/x/sync/errgroup"
 )
 
@@ -19,11 +20,11 @@ type TxReceipt[T any] struct {
 }
 
 type Queue[T any] struct {
-	ctx        context.Context
+	ctx        context.Context //nolint:containedctx // Used as is from OP
 	txMgr      TxManager
 	maxPending uint64
 	groupLock  sync.Mutex
-	groupCtx   context.Context
+	groupCtx   context.Context //nolint:containedctx // Used as is from OP
 	group      *errgroup.Group
 }
 

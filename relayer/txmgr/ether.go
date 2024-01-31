@@ -5,9 +5,10 @@ import (
 	"math"
 	"math/big"
 
+	"github.com/omni-network/omni/lib/errors"
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/omni-network/omni/lib/errors"
 )
 
 // GweiToWei converts a float64 GWei value into a big.Int Wei value.
