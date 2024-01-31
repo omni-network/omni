@@ -94,6 +94,24 @@ interface IOmniPortal {
     function isXCall() external view returns (bool);
 
     /**
+     * @notice Calculate the fee for calling a contract on another chain
+     * @dev Uses OmniPortal.XMSG_DEFAULT_GAS_LIMIT
+     * @dev Fees denominated in wei
+     * @param destChainId Destination chain ID
+     * @param data Encoded function calldata
+     */
+    function feeFor(uint64 destChainId, bytes calldata data) external view returns (uint256);
+
+    /**
+     * @notice Calculate the fee for calling a contract on another chain
+     * @dev Fees denominated in wei
+     * @param destChainId Destination chain ID
+     * @param data Encoded function calldata
+     * @param gasLimit Execution gas limit, enforced on destination chain
+     */
+    function feeFor(uint64 destChainId, bytes calldata data, uint64 gasLimit) external view returns (uint256);
+
+    /**
      * @notice Call a contract on another chain
      * @dev Uses OmniPortal.XMSG_DEFAULT_GAS_LIMIT as execution gas limit on destination chain
      * @param destChainId Destination chain ID
