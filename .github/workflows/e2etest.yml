@@ -14,6 +14,6 @@ jobs:
         with:
           go-version: 'stable'
       - run: |
-          go install github.com/omni-network/omni/test/e2e/runner
+          go install github.com/omni-network/omni/test/e2e
           cd test/e2e
           ./run-multiple.sh manifests/devnet1.toml manifests/simple.toml

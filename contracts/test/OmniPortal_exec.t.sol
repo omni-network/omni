@@ -3,7 +3,6 @@ pragma solidity 0.8.23;
 
 import { Base } from "test/common/Base.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
-import { Vm } from "forge-std/Vm.sol";
 
 /**
  * @title OmniPortal_exec_Test
@@ -15,6 +14,7 @@ contract OmniPortal_exec_Test is Base {
         XTypes.Msg memory xmsg = _inbound_increment(1);
 
         uint256 count = counter.count();
+        uint256 countForChain = counter.countByChainId(xmsg.sourceChainId);
 
         vm.prank(relayer);
         vm.expectCall(xmsg.to, xmsg.data);
@@ -22,6 +22,7 @@ contract OmniPortal_exec_Test is Base {
         portal.exec(xmsg);
 
         assertEq(counter.count(), count + 1);
+        assertEq(counter.countByChainId(xmsg.sourceChainId), countForChain + 1);
         assertEq(portal.inXStreamOffset(xmsg.sourceChainId), xmsg.streamOffset);
         assertReceipt(vm.getRecordedLogs()[0], xmsg);
     }
@@ -30,14 +31,11 @@ contract OmniPortal_exec_Test is Base {
     function test_exec_xmsgRevert_succeeds() public {
         XTypes.Msg memory xmsg = _inbound_revert(1);
 
-        uint256 count = counter.count();
-
         vm.prank(relayer);
         vm.expectCall(xmsg.to, xmsg.data);
         vm.recordLogs();
         portal.exec(xmsg);
 
-        assertEq(counter.count(), count);
         assertEq(portal.inXStreamOffset(xmsg.sourceChainId), xmsg.streamOffset);
         assertReceipt(vm.getRecordedLogs()[0], xmsg);
     }

@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/test/e2e/runner/netman"
+	"github.com/omni-network/omni/test/e2e/netman"
 
 	"github.com/ethereum/go-ethereum/common"
 )

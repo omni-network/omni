@@ -49,7 +49,9 @@ dockers:
   - ids: [explorer-graphql]
     dockerfile: ./explorer/graphql/Dockerfile
     image_templates:
-      - omniops/explorer-graphql:latest
+      - omniops/explorer-graphql:{{ .ShortCommit }}
+      - omniops/explorer-graphql:{{ if .IsSnapshot }}main{{ else }}latest{{ end }}
+      - omniops/explorer-graphql:{{ if .IsSnapshot }}main{{ else }}{{.Tag}}{{ end }}
 
   - ids: [explorer-indexer]
     dockerfile: ./explorer/indexer/Dockerfile
