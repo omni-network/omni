@@ -57,30 +57,30 @@ halo-simnet: ## Runs halo in simnet mode.
 	@halo init --home=/tmp/halo --network=simnet --clean
 	@halo run --home=/tmp/halo
 
-.PHONY: devnet-run
+.PHONY: devnet-deploy
 devnet-run: ## Runs devnet1 (alias for MANIFEST=devnet1 make e2e-run).
 	@echo "Creating a docker-compose devnet in ./test/e2e/run/devnet1"
-	@go run github.com/omni-network/omni/test/e2e/runner -f test/e2e/manifests/devnet1.toml -p -s
+	@go run github.com/omni-network/omni/test/e2e -f test/e2e/manifests/devnet1.toml deploy
 
-.PHONY: devnet-stop
-devnet-stop: ## Stops devnet1 containers (alias for MANIFEST=devnet1 make e2e-stop).
+.PHONY: devnet-clean
+devnet-stop: ## Deletes devnet1 containers (alias for MANIFEST=devnet1 make e2e-stop).
 	@echo "Stopping the devnet in ./test/e2e/run/devnet1"
-	@go run github.com/omni-network/omni/test/e2e/runner -f test/e2e/manifests/devnet1.toml stop
+	@go run github.com/omni-network/omni/test/e2e -f test/e2e/manifests/devnet1.toml clean
 
 .PHONY: e2e-run
 e2e-run: ## Run specific e2e manifest (MANIFEST=single, MANIFEST=simple, etc). Note container remain running after the test.
 	@if [ -z "$(MANIFEST)" ]; then echo "⚠️ Please specify a manifest: MANIFEST=simple make e2e-run" && exit 1; fi
 	@echo "Using MANIFEST=$(MANIFEST)"
-	@go run github.com/omni-network/omni/test/e2e/runner -f test/e2e/manifests/$(MANIFEST).toml
+	@go run github.com/omni-network/omni/test/e2e -f test/e2e/manifests/$(MANIFEST).toml
 
 .PHONY: e2e-logs
 e2e-logs: ## Print the docker logs of previously ran e2e manifest (single, simple, etc).
 	@if [ -z "$(MANIFEST)" ]; then echo "⚠️  Please specify a manifest: MANIFEST=simple make e2e-logs" && exit 1; fi
 	@echo "Using MANIFEST=$(MANIFEST)"
-	@go run github.com/omni-network/omni/test/e2e/runner -f test/e2e/manifests/$(MANIFEST).toml logs
+	@go run github.com/omni-network/omni/test/e2e -f test/e2e/manifests/$(MANIFEST).toml logs
 
-.PHONY: e2e-stop
-e2e-stop: ## Stops all running containers from previously ran e2e manifest.
+.PHONY: e2e-clean
+e2e-stop: ## Deletes all running containers from previously ran e2e.
 	@if [ -z "$(MANIFEST)" ]; then echo "⚠️  Please specify a manifest: MANIFEST=simple make e2e-stop" && exit 1; fi
 	@echo "Using MANIFEST=$(MANIFEST)"
-	@go run github.com/omni-network/omni/test/e2e/runner -f test/e2e/manifests/$(MANIFEST).toml stop
+	@go run github.com/omni-network/omni/test/e2e -f test/e2e/manifests/$(MANIFEST).toml clean
