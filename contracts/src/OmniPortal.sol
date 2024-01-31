@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.23;
 
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { IFeeOracle } from "./interfaces/IFeeOracle.sol";
 import { IOmniPortal } from "./interfaces/IOmniPortal.sol";
 import { IOmniPortalAdmin } from "./interfaces/IOmniPortalAdmin.sol";
-import { IFeeOracle } from "./interfaces/IFeeOracle.sol";
 import { XBlockMerkleProof } from "./libraries/XBlockMerkleProof.sol";
 import { XTypes } from "./libraries/XTypes.sol";
 
-contract OmniPortal is IOmniPortal, IOmniPortalAdmin {
+contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
     /// @inheritdoc IOmniPortal
     uint64 public constant XMSG_DEFAULT_GAS_LIMIT = 200_000;
 
@@ -20,6 +21,9 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin {
     /// @inheritdoc IOmniPortal
     uint64 public immutable chainId;
 
+    /// @inheritdoc IOmniPortalAdmin
+    address public feeOracle;
+
     /// @inheritdoc IOmniPortal
     mapping(uint64 => uint64) public outXStreamOffset;
 
@@ -29,35 +33,18 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin {
     /// @inheritdoc IOmniPortal
     mapping(uint64 => uint64) public inXStreamBlockHeight;
 
-    /// @inheritdoc IOmniPortalAdmin
-    address public admin;
-
-    /// @inheritdoc IOmniPortalAdmin
-    address public feeOracle;
-
     /// @dev The current XMsg being executed, exposed via xmsg() getter
     ///      Private state + public getter preferred over public state with default getter,
     ///      so that we can use the XMsg struct type in the interface.
     XTypes.Msg private _currentXmsg;
 
-    modifier onlyAdmin() {
-        require(msg.sender == admin, "OmniPortal: only admin");
-        _;
-    }
-
-    constructor(address admin_, address feeOracle_) {
+    constructor(address owner_, address feeOracle_) Ownable(owner_) {
         chainId = uint64(block.chainid);
-        _setAdmin(admin_);
         _setFeeOracle(feeOracle_);
     }
 
     /// @inheritdoc IOmniPortalAdmin
-    function setAdmin(address admin_) external onlyAdmin {
-        _setAdmin(admin_);
-    }
-
-    /// @inheritdoc IOmniPortalAdmin
-    function setFeeOracle(address feeOracle_) external onlyAdmin {
+    function setFeeOracle(address feeOracle_) external onlyOwner {
         _setFeeOracle(feeOracle_);
     }
 
@@ -143,22 +130,12 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin {
         emit XReceipt(xmsg_.sourceChainId, xmsg_.streamOffset, gasUsed, msg.sender, success);
     }
 
-    /// @dev Set the admin account
-    function _setAdmin(address admin_) internal {
-        require(admin_ != address(0), "OmniPortal: no zero admin");
-
-        address oldAdmin = admin;
-        admin = admin_;
-
-        emit AdminChanged(oldAdmin, admin);
-    }
-
     /// @dev Set the fee oracle
     function _setFeeOracle(address feeOracle_) internal {
         require(feeOracle_ != address(0), "OmniPortal: no zero feeOracle");
 
         address oldFeeOracle = feeOracle;
-        feeOracle = feeOracle_; // TODO: supportsInterface check?
+        feeOracle = feeOracle_;
 
         emit FeeOracleChanged(oldFeeOracle, feeOracle);
     }

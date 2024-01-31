@@ -9,30 +9,11 @@ import { IFeeOracle } from "./IFeeOracle.sol";
  */
 interface IFeeOracleV1 is IFeeOracle {
     /**
-     * @notice Emitted when the admin account is changed
-     * @param oldAdmin The old admin account
-     * @param newAdmin The new admin account
-     */
-    event AdminChanged(address indexed oldAdmin, address indexed newAdmin);
-
-    /**
      * @notice Emitted when the fee is changed
      * @param oldFee The old fee
      * @param newFee The new fee
      */
     event FeeChanged(uint256 oldFee, uint256 newFee);
-
-    /**
-     * @notice The admin account, who can change the fee.
-     * @return The admin.
-     */
-    function admin() external view returns (address);
-
-    /**
-     * @notice Set the admin account.
-     * @dev Only callable by the current admin.
-     */
-    function setAdmin(address _admin) external;
 
     /**
      * @notice The current fee per transaction, in wei.
