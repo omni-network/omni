@@ -14,7 +14,7 @@ import (
 )
 
 //go:embed graphql.schema
-var schema string
+var Schema string
 
 //go:embed index.html
 var graphiql []byte
@@ -30,7 +30,7 @@ func GraphQL(provider data.Provider) http.Handler {
 		graphql.UseFieldResolvers(),
 		graphql.UseStringDescriptions(),
 	}
-	s := graphql.MustParseSchema(schema, &resolvers.Query{BlocksResolver: br}, opts...)
+	s := graphql.MustParseSchema(Schema, &resolvers.Query{BlocksResolver: br}, opts...)
 
 	return &relay.Handler{Schema: s}
 }
