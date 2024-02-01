@@ -30,8 +30,6 @@ scalar Long
 
 scalar Time
 
-scalar ID
-
 """
 XMsg is a cross-chain message.
 """

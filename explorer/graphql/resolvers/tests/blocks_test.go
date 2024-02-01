@@ -1,6 +1,7 @@
 package resolvers_tests
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -13,24 +14,33 @@ import (
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/gqltesting"
 	"go.uber.org/mock/gomock"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func TestXBlockQuery(t *testing.T) {
 	t.Parallel()
+	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	sourceChainID := hexutil.Big(*hexutil.MustDecodeBig("0x4b2"))
 	blockHeight := hexutil.Big(*hexutil.MustDecodeBig("0x1"))
+	blockHashBytes := []byte{1, 3, 23, 111, 27, 45, 98, 103, 94, 55, 1, 3, 23, 111, 27, 45, 98, 103, 94, 55}
 	blockHash := common.Hash{}
-	blockHash.SetBytes([]byte{1, 3, 23, 111, 27, 45, 98, 103, 94, 55, 1, 3, 23, 111, 27, 45, 98, 103, 94, 55})
+	blockHash.SetBytes(blockHashBytes)
+
+	opts := []graphql.SchemaOpt{
+		graphql.UseFieldResolvers(),
+		graphql.UseStringDescriptions(),
+	}
 
 	mockXBlock := &resolvers.XBlock{
-		UUID:          graphql.ID("0x1"),
 		SourceChainID: sourceChainID,
 		BlockHeight:   blockHeight,
 		BlockHash:     blockHash,
 		Timestamp:     graphql.Time{Time: time.Now()},
 		Messages:      nil,
 	}
+
 	mockProvider := NewMockBlocksProvider(ctrl)
 	mockProvider.EXPECT().XBlock(uint64(1234), uint64(0)).Return(mockXBlock, true, nil)
 
@@ -38,19 +48,13 @@ func TestXBlockQuery(t *testing.T) {
 		BlocksProvider: mockProvider,
 	}
 
-	r := &resolvers.Query{
-		BlocksResolver: br,
-	}
-
-	schema := graphql.MustParseSchema(gql.Schema, r)
-
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
-			Schema: schema,
+			Context: ctx,
+			Schema:  graphql.MustParseSchema(gql.Schema, &resolvers.Query{BlocksResolver: br}, opts...),
 			Query: `
 				{
 					xblock(sourceChainID: 1234, height: 0){
-						UUID
 						SourceChainID
 						BlockHeight
 						BlockHash
@@ -59,10 +63,12 @@ func TestXBlockQuery(t *testing.T) {
 			`,
 			ExpectedResult: `
 				{
-					"UUID": "0x1",
-					"SourceChainId": "0x4bf",
-					"BlockHeight": "0x1",
-					"BlockHash": "0x0103176f1b2d62675e370103176f1b2d62675e37",
+					"xblock":
+					{
+						"BlockHash":"0x0000000000000000000000000103176f1b2d62675e370103176f1b2d62675e37",
+						"BlockHeight":"0x1",
+						"SourceChainID":"0x4b2"
+					}
 				}
 			`,
 		},
