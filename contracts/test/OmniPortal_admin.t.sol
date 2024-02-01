@@ -12,6 +12,8 @@ contract OmniPortal_admin_Test is Base {
     function test_setFeeOracle_succeeds() public {
         address newFeeOracle = address(0x123);
 
+        vm.expectEmit();
+        emit FeeOracleChanged(portal.feeOracle(), newFeeOracle);
         vm.prank(owner);
         portal.setFeeOracle(newFeeOracle);
 

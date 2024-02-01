@@ -12,6 +12,8 @@ contract FeeOracleV1_Test is Base {
     function test_setFee_succeeds() public {
         uint256 fee = 100;
 
+        vm.expectEmit();
+        emit FeeChanged(feeOracle.fee(), fee);
         vm.prank(owner);
         feeOracle.setFee(fee);
 
@@ -36,6 +38,8 @@ contract FeeOracleV1_Test is Base {
     function test_feeFor_succeeds() public {
         uint256 fee = 100;
 
+        vm.expectEmit();
+        emit FeeChanged(feeOracle.fee(), fee);
         vm.prank(owner);
         feeOracle.setFee(fee);
 
