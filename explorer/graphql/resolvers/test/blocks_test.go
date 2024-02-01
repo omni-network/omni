@@ -60,7 +60,7 @@ func TestXBlockQuery(t *testing.T) {
 						BlockHeight
 						BlockHash
 					}
-			}
+				}
 			`,
 			ExpectedResult: `
 				{
