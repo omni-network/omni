@@ -73,7 +73,7 @@ type XBlock {
   BlockHash: Bytes32!
 
   "All cross-chain messages sent/emittted in the block"
-  Messages: [XMsg!]! # X msgs connection for pagination, edge with node and pagination
+  Messages: [XMsg!]!
 
   # "Receipts of all submitted cross-chain messages applied in the block"
   # Receipts  [Receipt!]!

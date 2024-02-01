@@ -1,3 +1,4 @@
+//go:generate mockgen -destination=./tests/blocks_mock.go -package=resolvers_test -source=blocks.go
 package resolvers
 
 import (

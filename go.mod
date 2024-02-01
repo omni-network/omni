@@ -28,6 +28,8 @@ require (
 	google.golang.org/protobuf v1.32.0
 )
 
+require go.uber.org/mock v0.4.0
+
 require (
 	go.opentelemetry.io/otel v1.22.0 // indirect
 	go.opentelemetry.io/otel/metric v1.22.0 // indirect
