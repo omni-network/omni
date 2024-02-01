@@ -67,7 +67,7 @@ func (m CLIConfig) Check() error {
 		return errors.New("must provide a L1 RPC url")
 	}
 	if m.NumConfirmations == 0 {
-		return errors.New("NumConfirmations must not be 0")
+		return errors.New("numConfirmations must not be 0")
 	}
 	if m.NetworkTimeout == 0 {
 		return errors.New("must provide NetworkTimeout")
@@ -89,7 +89,7 @@ func (m CLIConfig) Check() error {
 		return errors.New("must provide TxNotInMempoolTimeout")
 	}
 	if m.SafeAbortNonceTooLowCount == 0 {
-		return errors.New("SafeAbortNonceTooLowCount must not be 0")
+		return errors.New("safeAbortNonceTooLowCount must not be 0")
 	}
 
 	return nil
@@ -240,7 +240,7 @@ func (m Config) Check() error {
 		return errors.New("must provide the Backend")
 	}
 	if m.NumConfirmations == 0 {
-		return errors.New("NumConfirmations must not be 0")
+		return errors.New("numConfirmations must not be 0")
 	}
 	if m.NetworkTimeout == 0 {
 		return errors.New("must provide NetworkTimeout")
@@ -262,7 +262,7 @@ func (m Config) Check() error {
 		return errors.New("must provide TxNotInMempoolTimeout")
 	}
 	if m.SafeAbortNonceTooLowCount == 0 {
-		return errors.New("SafeAbortNonceTooLowCount must not be 0")
+		return errors.New("safeAbortNonceTooLowCount must not be 0")
 	}
 	if m.Signer == nil {
 		return errors.New("must provide the Signer")

@@ -380,7 +380,7 @@ func (m *SimpleTxManager) publishTx(ctx context.Context, tx *types.Transaction, 
 		if bumpFeesImmediately {
 			newTx, err := m.IncreaseGasPrice(ctx, tx)
 			if err != nil {
-				log.Info(ctx, "unable to increase gas", err)
+				log.Info(ctx, "Unable to increase gas", err)
 				return tx, false
 			}
 			tx = newTx
@@ -405,19 +405,19 @@ func (m *SimpleTxManager) publishTx(ctx context.Context, tx *types.Transaction, 
 
 		switch {
 		case ErrStringMatch(err, core.ErrNonceTooLow):
-			log.Warn(ctx, "nonce too low", err)
+			log.Warn(ctx, "Nonce too low", err)
 		case ErrStringMatch(err, context.Canceled):
-			log.Warn(ctx, "transaction doSend canceled", err)
+			log.Warn(ctx, "Transaction doSend canceled", err)
 		case ErrStringMatch(err, txpool.ErrAlreadyKnown):
-			log.Warn(ctx, "resubmitted already known transaction", err)
+			log.Warn(ctx, "Resubmitted already known transaction", err)
 		case ErrStringMatch(err, txpool.ErrReplaceUnderpriced):
-			log.Warn(ctx, "transaction replacement is underpriced", err)
+			log.Warn(ctx, "Transaction replacement is underpriced", err)
 			continue // retry with fee bump
 		case ErrStringMatch(err, txpool.ErrUnderpriced):
-			log.Warn(ctx, "transaction is underpriced", err)
+			log.Warn(ctx, "Transaction is underpriced", err)
 			continue // retry with fee bump
 		default:
-			log.Warn(ctx, "unknown error publishing transaction", err)
+			log.Warn(ctx, "Unknown error publishing transaction", err)
 		}
 
 		// on non-underpriced error return immediately; will retry on next resubmission timeout
@@ -537,13 +537,13 @@ func (m *SimpleTxManager) IncreaseGasPrice(ctx context.Context, tx *types.Transa
 		// original tx can get included in a block just before the above call. In this case the
 		// error is due to the tx reverting with message "block number must be equal to next
 		// expected block number"
-		log.Warn(ctx, "failed to re-estimate gas", err, "tx", tx.Hash(), "gaslimit", tx.Gas(),
+		log.Warn(ctx, "Failed to re-estimate gas", err, "tx", tx.Hash(), "gaslimit", tx.Gas(),
 			"gasFeeCap", bumpedFee, "gasTipCap", bumpedTip)
 
 		return nil, err
 	}
 	if tx.Gas() != gas {
-		log.Debug(ctx, "re-estimated gas differs", "tx", tx.Hash(), "old_gas", tx.Gas(), "new_gas", gas,
+		log.Debug(ctx, "Re-estimated gas differs", "tx", tx.Hash(), "old_gas", tx.Gas(), "new_gas", gas,
 			"gas_fee_Cap", bumpedFee, "gas_tip_cap", bumpedTip)
 	}
 
@@ -653,7 +653,7 @@ func calcThresholdValue(x *big.Int) *big.Int {
 //	(c) gasFeeCap is no less than calcGasFee(newBaseFee, newTip)
 func UpdateFees(ctx context.Context, oldTip, oldFeeCap, newTip, newBaseFee *big.Int) (*big.Int, *big.Int) {
 	newFeeCap := CalcGasFeeCap(newBaseFee, newTip)
-	log.Debug(ctx, "updating fees", "old_gas_tip_cap", oldTip, "old_gas_fee_cap", oldFeeCap,
+	log.Debug(ctx, "Updating fees", "old_gas_tip_cap", oldTip, "old_gas_fee_cap", oldFeeCap,
 		"new_gas_tip_cap", newTip, "new_gas_fee_cap", newFeeCap, "new_base_fee", newBaseFee)
 	thresholdTip := calcThresholdValue(oldTip)
 	thresholdFeeCap := calcThresholdValue(oldFeeCap)
