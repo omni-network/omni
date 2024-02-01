@@ -2,6 +2,7 @@ package txmgr
 
 import (
 	"context"
+	"log/slog"
 	"math/big"
 	"strings"
 	"sync"
@@ -136,10 +137,11 @@ func (m *SimpleTxManager) Close() {
 //
 //nolint:revive // Might fix
 func txFields(tx *types.Transaction,
-	logGas bool) []any {
-	fields := []any{"tx", tx.Hash(), "nonce", tx.Nonce()}
+	logGas bool) []slog.Attr {
+	fields := []slog.Attr{slog.String("tx", tx.Hash().String()), slog.Int64("nonce", int64(tx.Nonce()))}
 	if logGas {
-		fields = append(fields, "gas_tip_cap", tx.GasTipCap(), "gas_fee_cap", tx.GasFeeCap(), "gas_limit", tx.Gas())
+		fields = append(fields, slog.String("gas_tip_cap", tx.GasTipCap().String()),
+			slog.String("gas_fee_cap", tx.GasFeeCap().String()), slog.Int64("gas_limit", int64(tx.Gas())))
 	}
 
 	return fields
@@ -344,7 +346,7 @@ func (m *SimpleTxManager) SendTx(ctx context.Context, tx *types.Transaction) (*t
 			// If we see lots of unrecoverable errors (and no pending transactions) abort sending the transaction.
 			if sendState.ShouldAbortImmediately() {
 				attrs := txFields(tx, false)
-				return nil, errors.New("aborted transaction sending", attrs...)
+				return nil, errors.New("aborted transaction sending", attrs)
 			}
 			// if the tx manager closed while we were waiting for the tx, give up
 			if m.Closed.Load() {
@@ -510,7 +512,7 @@ func (m *SimpleTxManager) IncreaseGasPrice(ctx context.Context, tx *types.Transa
 	log.Debug(ctx, "Bumping gas price")
 	tip, baseFee, _, err := m.SuggestGasPriceCaps(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get gas price info", txFields(tx, true)...)
+		return nil, errors.Wrap(err, "failed to get gas price info", txFields(tx, true))
 	}
 	bumpedTip, bumpedFee := UpdateFees(ctx, tx.GasTipCap(), tx.GasFeeCap(), tip, baseFee)
 
@@ -532,8 +534,8 @@ func (m *SimpleTxManager) IncreaseGasPrice(ctx context.Context, tx *types.Transa
 		// original tx can get included in a block just before the above call. In this case the
 		// error is due to the tx reverting with message "block number must be equal to next
 		// expected block number"
-		log.Warn(ctx, "Failed to re-estimate gas", err, "tx", tx.Hash(), "gaslimit", tx.Gas(),
-			"gasFeeCap", bumpedFee, "gasTipCap", bumpedTip)
+		log.Warn(ctx, "Failed to re-estimate gas", err, "tx", tx.Hash(), "gas_limit", tx.Gas(),
+			"gas_fee_cap", bumpedFee, "gas_tip_cap", bumpedTip)
 		// just log and carry on
 		gas = tx.Gas()
 	}
