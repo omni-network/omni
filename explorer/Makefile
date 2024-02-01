@@ -20,3 +20,7 @@ stop: ## stops our docker compose
 run-clean: ## docker build and run
 	make -C ./ build
 	make -C ./ run
+
+gen-graphql: ## generates our graphql bindings for the ui
+	cp ./graphql/app/schema.graphql ./ui/app/graphql/schema.graphql
+	make -C ./ui gen-graphql

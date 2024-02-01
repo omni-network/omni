@@ -3,3 +3,6 @@ help:  ## Display this help message.
 
 gen: ## generates our openapi.yaml bindings for our ui
 	npx openapi-typescript ./app/openapi/openapi.yaml -o ./app/openapi/openapi.d.ts
+
+gen-graphql:
+	pnpm run codegen
