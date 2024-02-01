@@ -471,7 +471,7 @@ func (m *SimpleTxManager) queryReceipt(ctx context.Context, txHash common.Hash, 
 
 		return nil
 	} else if err != nil {
-		log.Warn(ctx, "Receipt retrieval failed", err, txHash)
+		//log.Warn(ctx, "Receipt retrieval failed", err, txHash)
 
 		return nil
 	} else if receipt == nil {
@@ -653,8 +653,8 @@ func calcThresholdValue(x *big.Int) *big.Int {
 //	(c) gasFeeCap is no less than calcGasFee(newBaseFee, newTip)
 func UpdateFees(ctx context.Context, oldTip, oldFeeCap, newTip, newBaseFee *big.Int) (*big.Int, *big.Int) {
 	newFeeCap := CalcGasFeeCap(newBaseFee, newTip)
-	log.Debug(ctx, "old_gasTipCap", oldTip, "old_gasFeeCap", oldFeeCap,
-		"new_gasTipCap", newTip, "new_gasFeeCap", newFeeCap, "new_baseFee", newBaseFee)
+	log.Debug(ctx, "updating fees", "old_gas_tip_cap", oldTip, "old_gas_fee_cap", oldFeeCap,
+		"new_gas_tip_cap", newTip, "new_gas_fee_cap", newFeeCap, "new_base_fee", newBaseFee)
 	thresholdTip := calcThresholdValue(oldTip)
 	thresholdFeeCap := calcThresholdValue(oldFeeCap)
 	if newTip.Cmp(thresholdTip) >= 0 && newFeeCap.Cmp(thresholdFeeCap) >= 0 {
@@ -682,10 +682,9 @@ func UpdateFees(ctx context.Context, oldTip, oldFeeCap, newTip, newBaseFee *big.
 //
 //	gasTipCap + 2*baseFee.
 func CalcGasFeeCap(baseFee, gasTipCap *big.Int) *big.Int {
-	two := big.NewInt(2)
 	return new(big.Int).Add(
 		gasTipCap,
-		new(big.Int).Mul(baseFee, two),
+		new(big.Int).Mul(baseFee, big.NewInt(2)),
 	)
 }
 
