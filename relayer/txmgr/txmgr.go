@@ -471,7 +471,7 @@ func (m *SimpleTxManager) queryReceipt(ctx context.Context, txHash common.Hash, 
 
 		return nil
 	} else if err != nil {
-		//log.Warn(ctx, "Receipt retrieval failed", err, txHash)
+		log.Warn(ctx, "Receipt retrieval failed", err, txHash)
 
 		return nil
 	} else if receipt == nil {

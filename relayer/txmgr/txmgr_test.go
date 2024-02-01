@@ -13,7 +13,6 @@ import (
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/misc/eip4844"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
@@ -114,31 +113,21 @@ func newGasPricer(mineAtEpoch int64) *gasPricer {
 }
 
 func (g *gasPricer) expGasFeeCap() *big.Int {
-	_, gasFeeCap, _ := g.feesForEpoch(g.mineAtEpoch)
+	_, gasFeeCap := g.feesForEpoch(g.mineAtEpoch)
 	return gasFeeCap
-}
-
-func (g *gasPricer) expBlobFeeCap() *big.Int {
-	_, _, excessBlobGas := g.feesForEpoch(g.mineAtEpoch)
-	return eip4844.CalcBlobFee(excessBlobGas)
 }
 
 func (g *gasPricer) shouldMine(gasFeeCap *big.Int) bool {
 	return g.expGasFeeCap().Cmp(gasFeeCap) <= 0
 }
 
-func (g *gasPricer) shouldMineBlobTx(gasFeeCap, blobFeeCap *big.Int) bool {
-	return g.shouldMine(gasFeeCap) && g.expBlobFeeCap().Cmp(blobFeeCap) <= 0
-}
-
-func (g *gasPricer) feesForEpoch(epoch int64) (*big.Int, *big.Int, uint64) {
+func (g *gasPricer) feesForEpoch(epoch int64) (*big.Int, *big.Int) {
 	e := big.NewInt(epoch)
 	epochBaseFee := new(big.Int).Mul(g.baseBaseFee, e)
 	epochGasTipCap := new(big.Int).Mul(g.baseGasTipFee, e)
 	epochGasFeeCap := txmgr.CalcGasFeeCap(epochBaseFee, epochGasTipCap)
-	epochExcessBlobGas := g.excessBlobGas * uint64(epoch)
 
-	return epochGasTipCap, epochGasFeeCap, epochExcessBlobGas
+	return epochGasTipCap, epochGasFeeCap
 }
 
 func (g *gasPricer) baseFee() *big.Int {
@@ -155,14 +144,14 @@ func (g *gasPricer) excessblobgas() uint64 {
 	return g.excessBlobGas * uint64(g.epoch)
 }
 
-func (g *gasPricer) sample() (*big.Int, *big.Int, uint64) {
+func (g *gasPricer) sample() (*big.Int, *big.Int) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
 	g.epoch++
-	epochGasTipCap, epochGasFeeCap, epochExcessBlobGas := g.feesForEpoch(g.epoch)
+	epochGasTipCap, epochGasFeeCap := g.feesForEpoch(g.epoch)
 
-	return epochGasTipCap, epochGasFeeCap, epochExcessBlobGas
+	return epochGasTipCap, epochGasFeeCap
 }
 
 type minedTxInfo struct {
@@ -258,7 +247,7 @@ func (b *mockBackend) EstimateGas(ctx context.Context, msg ethereum.CallMsg) (ui
 }
 
 func (b *mockBackend) SuggestGasTipCap(ctx context.Context) (*big.Int, error) {
-	tip, _, _ := b.g.sample()
+	tip, _ := b.g.sample()
 	return tip, nil
 }
 
@@ -322,7 +311,7 @@ func TestTxMgrConfirmAtMinGasPrice(t *testing.T) {
 
 	gasPricer := newGasPricer(1)
 
-	gasTipCap, gasFeeCap, _ := gasPricer.sample()
+	gasTipCap, gasFeeCap := gasPricer.sample()
 	tx := types.NewTx(&types.DynamicFeeTx{
 		GasTipCap: gasTipCap,
 		GasFeeCap: gasFeeCap,
@@ -355,7 +344,7 @@ func TestTxMgrNeverConfirmCancel(t *testing.T) {
 
 	h := newTestHarness(t)
 
-	gasTipCap, gasFeeCap, _ := h.gasPricer.sample()
+	gasTipCap, gasFeeCap := h.gasPricer.sample()
 	tx := types.NewTx(&types.DynamicFeeTx{
 		GasTipCap: gasTipCap,
 		GasFeeCap: gasFeeCap,
@@ -381,7 +370,7 @@ func TestTxMgrConfirmsAtHigherGasPrice(t *testing.T) {
 
 	h := newTestHarness(t)
 
-	gasTipCap, gasFeeCap, _ := h.gasPricer.sample()
+	gasTipCap, gasFeeCap := h.gasPricer.sample()
 	tx := types.NewTx(&types.DynamicFeeTx{
 		GasTipCap: gasTipCap,
 		GasFeeCap: gasFeeCap,
@@ -408,7 +397,7 @@ func TestTxMgrConfirmsAtHigherGasPrice(t *testing.T) {
 // errRPCFailure is a sentinel error used in testing to fail publications.
 var errRPCFailure = errors.New("rpc failure")
 
-// TestTxMgrBlocksOnFailingRpcCalls asserts that if all of the publication
+// TestTxMgrBlocksOnFailingRpcCalls asserts that if all the publication
 // attempts fail due to rpc failures, that the tx manager will return
 // ErrPublishTimeout.
 func TestTxMgrBlocksOnFailingRpcCalls(t *testing.T) {
@@ -416,7 +405,7 @@ func TestTxMgrBlocksOnFailingRpcCalls(t *testing.T) {
 
 	h := newTestHarness(t)
 
-	gasTipCap, gasFeeCap, _ := h.gasPricer.sample()
+	gasTipCap, gasFeeCap := h.gasPricer.sample()
 	tx := types.NewTx(&types.DynamicFeeTx{
 		GasTipCap: gasTipCap,
 		GasFeeCap: gasFeeCap,
@@ -442,7 +431,7 @@ func TestTxMgr_CraftTx(t *testing.T) {
 	candidate := h.createTxCandidate()
 
 	// Craft the transaction.
-	gasTipCap, gasFeeCap, _ := h.gasPricer.feesForEpoch(h.gasPricer.epoch + 1)
+	gasTipCap, gasFeeCap := h.gasPricer.feesForEpoch(h.gasPricer.epoch + 1)
 	tx, err := h.mgr.CraftTx(context.Background(), candidate)
 	require.NoError(t, err)
 	require.NotNil(t, tx)
@@ -548,7 +537,7 @@ func TestTxMgrOnlyOnePublicationSucceeds(t *testing.T) {
 
 	h := newTestHarness(t)
 
-	gasTipCap, gasFeeCap, _ := h.gasPricer.sample()
+	gasTipCap, gasFeeCap := h.gasPricer.sample()
 	tx := types.NewTx(&types.DynamicFeeTx{
 		GasTipCap: gasTipCap,
 		GasFeeCap: gasFeeCap,
@@ -584,7 +573,7 @@ func TestTxMgrConfirmsMinGasPriceAfterBumping(t *testing.T) {
 
 	h := newTestHarness(t)
 
-	gasTipCap, gasFeeCap, _ := h.gasPricer.sample()
+	gasTipCap, gasFeeCap := h.gasPricer.sample()
 	tx := types.NewTx(&types.DynamicFeeTx{
 		GasTipCap: gasTipCap,
 		GasFeeCap: gasFeeCap,
@@ -617,7 +606,7 @@ func TestTxMgrDoesntAbortNonceTooLowAfterMiningTx(t *testing.T) {
 
 	h := newTestHarnessWithConfig(t, configWithNumConfs(2))
 
-	gasTipCap, gasFeeCap, _ := h.gasPricer.sample()
+	gasTipCap, gasFeeCap := h.gasPricer.sample()
 	tx := types.NewTx(&types.DynamicFeeTx{
 		GasTipCap: gasTipCap,
 		GasFeeCap: gasFeeCap,
@@ -971,8 +960,10 @@ func TestIncreaseGasPrice(t *testing.T) {
 			run: func(t *testing.T) {
 				t.Helper()
 				_, newTx, err := doGasPriceIncrease(t, 100, 2200, 100, 2000)
-				require.Equal(t, big.NewInt(110).Uint64(), newTx.GasTipCap().Uint64(), "new tx tip must be equal the threshold value")
-				require.Equal(t, big.NewInt(4110).Uint64(), newTx.GasFeeCap().Uint64(), "new tx fee cap must be equal L1")
+				require.Equal(t, big.NewInt(110).Uint64(),
+					newTx.GasTipCap().Uint64(), "new tx tip must be equal the threshold value")
+				require.Equal(t, big.NewInt(4110).Uint64(),
+					newTx.GasFeeCap().Uint64(), "new tx fee cap must be equal L1")
 
 				require.NoError(t, err)
 			},
@@ -1070,7 +1061,6 @@ func testIncreaseGasPriceLimit(t *testing.T, lt gasPriceLimitTest) {
 	// Confirm that fees only rose until expected threshold
 	require.Equal(t, lt.expTipCap, lastGoodTx.GasTipCap().Int64())
 	require.Equal(t, lt.expFeeCap, lastGoodTx.GasFeeCap().Int64())
-
 }
 
 func TestErrStringMatch(t *testing.T) {

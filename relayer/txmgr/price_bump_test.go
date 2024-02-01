@@ -18,7 +18,6 @@ type priceBumpTest struct {
 	newBaseFee  int64
 	expectedTip int64
 	expectedFC  int64
-	isBlobTx    bool
 }
 
 func (tc *priceBumpTest) run(t *testing.T) {
