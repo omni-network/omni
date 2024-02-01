@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	gql "github.com/omni-network/omni/explorer/graphql/app"
-	resolvers "github.com/omni-network/omni/explorer/graphql/resolvers"
+	"github.com/omni-network/omni/explorer/graphql/app"
+	"github.com/omni-network/omni/explorer/graphql/resolvers"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -52,7 +52,7 @@ func TestXBlockQuery(t *testing.T) {
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
 			Context: ctx,
-			Schema:  graphql.MustParseSchema(gql.Schema, &resolvers.Query{BlocksResolver: br}, opts...),
+			Schema:  graphql.MustParseSchema(app.Schema, &resolvers.Query{BlocksResolver: br}, opts...),
 			Query: `
 				{
 					xblock(sourceChainID: 1234, height: 0){
