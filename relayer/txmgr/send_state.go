@@ -12,7 +12,7 @@ import (
 // SendState tracks information about the publication state of a given txn. In
 // this context, a txn may correspond to multiple different txn hashes due to
 // varying gas prices, though we treat them all as the same logical txn. This
-// struct is primarily used to determine whether or not the txmgr should abort a
+// struct is primarily used to determine whether the txmgr should abort a
 // given txn.
 type SendState struct {
 	minedTxs map[common.Hash]struct{}
@@ -75,7 +75,7 @@ func (s *SendState) TxMined(txHash common.Hash) {
 	s.minedTxs[txHash] = struct{}{}
 }
 
-// TxMined records that the txn with txnHash has not been mined or has been
+// TxNotMined records that the txn with txnHash has not been mined or has been
 // reorg'd out. It is safe to call this function multiple times.
 func (s *SendState) TxNotMined(txHash common.Hash) {
 	s.mu.Lock()

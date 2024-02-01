@@ -156,6 +156,7 @@ type Config struct {
 
 	// NetworkTimeout is the allowed duration for a single network request.
 	// This is intended to be used for network requests that can be replayed.
+	// todo(lazar): this should be handled by eth client
 	NetworkTimeout time.Duration
 
 	// RequireQueryInterval is the interval at which the tx manager will

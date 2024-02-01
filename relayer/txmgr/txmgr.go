@@ -2,7 +2,6 @@ package txmgr
 
 import (
 	"context"
-	"log/slog"
 	"math/big"
 	"strings"
 	"sync"
@@ -133,21 +132,17 @@ func (m *SimpleTxManager) Close() {
 	m.Closed.Store(true)
 }
 
-// txLogger returns a logger with the transaction hash and nonce fields set.
+// txFields returns a logger with the transaction hash and nonce fields set.
 //
 //nolint:revive // Might fix
-func (*SimpleTxManager) txLogger(ctx context.Context, tx *types.Transaction,
-	logGas bool) *slog.Logger {
+func txFields(tx *types.Transaction,
+	logGas bool) []any {
 	fields := []any{"tx", tx.Hash(), "nonce", tx.Nonce()}
 	if logGas {
-		fields = append(fields, "gasTipCap", tx.GasTipCap(), "gasFeeCap", tx.GasFeeCap(), "gasLimit", tx.Gas())
-	}
-	if len(tx.BlobHashes()) != 0 {
-		// log the number of blobs a tx has only if it's a blob tx
-		fields = append(fields, "blobs", len(tx.BlobHashes()))
+		fields = append(fields, "gas_tip_cap", tx.GasTipCap(), "gas_fee_cap", tx.GasFeeCap(), "gas_limit", tx.Gas())
 	}
 
-	return log.GetLogger(ctx).With(fields...)
+	return fields
 }
 
 // TxCandidate is a transaction candidate that can be submitted to ask the
@@ -177,6 +172,7 @@ func (m *SimpleTxManager) Send(ctx context.Context, candidate TxCandidate) (*typ
 	if m.Closed.Load() {
 		return nil, ErrClosed
 	}
+	// todo(lazar): replace m.pending with package level prometheus gauge
 	m.pending.Add(1)
 	defer func() {
 		m.pending.Add(-1)
@@ -196,6 +192,7 @@ func (m *SimpleTxManager) doSend(ctx context.Context, candidate TxCandidate) (*t
 		ctx, cancel = context.WithTimeout(ctx, m.Cfg.TxSendTimeout)
 		defer cancel()
 	}
+	// todo(lazar): use our exp backoff, with fast backoff
 	tx, err := Do(ctx, 30, Fixed(2*time.Second), func() (*types.Transaction, error) {
 		if m.Closed.Load() {
 			return nil, ErrClosed
@@ -306,7 +303,7 @@ func (m *SimpleTxManager) resetNonce() {
 	m.nonce = nil
 }
 
-// doSend submits the same transaction several times with increasing gas prices as necessary.
+// SendTx submits the same transaction several times with increasing gas prices as necessary.
 // It waits for the transaction to be confirmed on chain.
 func (m *SimpleTxManager) SendTx(ctx context.Context, tx *types.Transaction) (*types.Receipt, error) {
 	var wg sync.WaitGroup
@@ -331,7 +328,7 @@ func (m *SimpleTxManager) SendTx(ctx context.Context, tx *types.Transaction) (*t
 		return tx
 	}
 
-	// Immediately publish a transaction before starting the resumbission loop
+	// Immediately publish a transaction before starting the resubmission loop
 	tx = publishAndWait(tx, false)
 
 	ticker := time.NewTicker(m.Cfg.ResubmissionTimeout)
@@ -346,12 +343,11 @@ func (m *SimpleTxManager) SendTx(ctx context.Context, tx *types.Transaction) (*t
 			}
 			// If we see lots of unrecoverable errors (and no pending transactions) abort sending the transaction.
 			if sendState.ShouldAbortImmediately() {
-				m.txLogger(ctx, tx, false).Warn("Aborting transaction submission")
-				return nil, errors.New("aborted transaction sending")
+				attrs := txFields(tx, false)
+				return nil, errors.New("aborted transaction sending", attrs...)
 			}
 			// if the tx manager closed while we were waiting for the tx, give up
 			if m.Closed.Load() {
-				m.txLogger(ctx, tx, false).Warn("TxManager closed, aborting transaction submission")
 				return nil, ErrClosed
 			}
 			tx = publishAndWait(tx, true)
@@ -406,7 +402,7 @@ func (m *SimpleTxManager) publishTx(ctx context.Context, tx *types.Transaction, 
 		switch {
 		case ErrStringMatch(err, core.ErrNonceTooLow):
 			log.Warn(ctx, "Nonce too low", err)
-		case ErrStringMatch(err, context.Canceled):
+		case ErrStringMatch(err, context.Canceled) || ErrStringMatch(err, context.DeadlineExceeded):
 			log.Warn(ctx, "Transaction doSend canceled", err)
 		case ErrStringMatch(err, txpool.ErrAlreadyKnown):
 			log.Warn(ctx, "Resubmitted already known transaction", err)
@@ -433,7 +429,7 @@ func (m *SimpleTxManager) waitForTx(ctx context.Context, tx *types.Transaction, 
 	receipt, err := m.WaitMined(ctx, tx, sendState)
 	if err != nil {
 		// this will happen if the tx was successfully replaced by a tx with bumped fees
-		m.txLogger(ctx, tx, true).Debug("Transaction receipt not found", "err", err)
+		log.Warn(ctx, "Transaction receipt not mind, probably replaced", err, txFields(tx, true))
 		return
 	}
 	select {
@@ -497,7 +493,7 @@ func (m *SimpleTxManager) queryReceipt(ctx context.Context, txHash common.Hash, 
 	// inherent off-by-one, i.e. when using 1 confirmation the
 	// transaction should be confirmed when txHeight is equal to
 	// tipHeight. The equation is rewritten in this form to avoid
-	// underflows.
+	// underflow's.
 	tipHeight := tip.Number.Uint64()
 	if txHeight+m.Cfg.NumConfirmations <= tipHeight+1 {
 		return receipt
@@ -511,11 +507,10 @@ func (m *SimpleTxManager) queryReceipt(ctx context.Context, txHash common.Hash, 
 // limit estimate. To avoid runaway price increases, fees are capped at a `feeLimitMultiplier`
 // multiple of the suggested values.
 func (m *SimpleTxManager) IncreaseGasPrice(ctx context.Context, tx *types.Transaction) (*types.Transaction, error) {
-	m.txLogger(ctx, tx, true).Info("bumping gas price for transaction")
+	log.Debug(ctx, "Bumping gas price")
 	tip, baseFee, _, err := m.SuggestGasPriceCaps(ctx)
 	if err != nil {
-		m.txLogger(ctx, tx, false).Warn("failed to get suggested gas tip and base fee", "err", err)
-		return nil, err
+		return nil, errors.Wrap(err, "failed to get gas price info", txFields(tx, true)...)
 	}
 	bumpedTip, bumpedFee := UpdateFees(ctx, tx.GasTipCap(), tx.GasFeeCap(), tip, baseFee)
 
@@ -539,8 +534,8 @@ func (m *SimpleTxManager) IncreaseGasPrice(ctx context.Context, tx *types.Transa
 		// expected block number"
 		log.Warn(ctx, "Failed to re-estimate gas", err, "tx", tx.Hash(), "gaslimit", tx.Gas(),
 			"gasFeeCap", bumpedFee, "gasTipCap", bumpedTip)
-
-		return nil, err
+		// just log and carry on
+		gas = tx.Gas()
 	}
 	if tx.Gas() != gas {
 		log.Debug(ctx, "Re-estimated gas differs", "tx", tx.Hash(), "old_gas", tx.Gas(), "new_gas", gas,
