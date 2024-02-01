@@ -1200,7 +1200,7 @@ func TestMinFees(t *testing.T) {
 func TestClose(t *testing.T) {
 	t.Parallel()
 	conf := configWithNumConfs(1)
-	conf.SafeAbortNonceTooLowCount = 100
+	conf.SafeAbortNonceTooLowCount = 5
 	h := newTestHarnessWithConfig(t, conf)
 
 	sendingSignal := make(chan struct{})

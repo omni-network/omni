@@ -62,6 +62,9 @@ func (q *Queue[T]) Wait() {
 func (q *Queue[T]) Send(id T, candidate TxCandidate, receiptCh chan TxReceipt[T]) {
 	group, ctx := q.groupContext()
 	group.Go(func() error {
+		q.groupLock.Lock()
+		defer q.groupLock.Unlock()
+
 		return q.sendTx(ctx, id, candidate, receiptCh)
 	})
 }
@@ -78,6 +81,9 @@ func (q *Queue[T]) Send(id T, candidate TxCandidate, receiptCh chan TxReceipt[T]
 func (q *Queue[T]) TrySend(id T, candidate TxCandidate, receiptCh chan TxReceipt[T]) bool {
 	group, ctx := q.groupContext()
 	return group.TryGo(func() error {
+		q.groupLock.Lock()
+		defer q.groupLock.Unlock()
+
 		return q.sendTx(ctx, id, candidate, receiptCh)
 	})
 }
