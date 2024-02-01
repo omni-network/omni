@@ -13,7 +13,7 @@ import (
 	_ "embed"
 )
 
-//go:embed graphql.schema
+//go:embed schema.graphql
 var Schema string
 
 //go:embed index.html
@@ -21,7 +21,6 @@ var graphiql []byte
 
 // GraphQL returns a new graphql handler. We use the relay handler to create the graphql handler.
 func GraphQL(provider data.Provider) http.Handler {
-	// dummy hard-coded data
 	br := resolvers.BlocksResolver{
 		BlocksProvider: provider,
 	}
