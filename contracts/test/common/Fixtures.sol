@@ -5,6 +5,7 @@ import { CommonBase } from "forge-std/Base.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
+import { FeeOracleV1 } from "src/FeeOracleV1.sol";
 import { TestXTypes } from "./TestXTypes.sol";
 import { TestPortal } from "./TestPortal.sol";
 import { Counter } from "./Counter.sol";
@@ -29,9 +30,16 @@ contract Fixtures is CommonBase, StdCheats {
     uint64 constant chainAId = 2;
     uint64 constant chainBId = 3;
 
+    uint256 constant baseFee = 1 gwei;
+
     address deployer;
     address xcaller;
     address relayer;
+    address owner;
+
+    FeeOracleV1 feeOracle;
+    FeeOracleV1 chainAFeeOracle;
+    FeeOracleV1 chainBFeeOracle;
 
     TestPortal portal;
     TestPortal chainAPortal;
@@ -64,21 +72,25 @@ contract Fixtures is CommonBase, StdCheats {
         deployer = makeAddr("deployer");
         xcaller = makeAddr("xcaller");
         relayer = makeAddr("relayer");
+        owner = makeAddr("owner");
 
         vm.startPrank(deployer);
 
         vm.chainId(thisChainId); // portal constructor uses block.chainid
-        portal = new TestPortal();
+        feeOracle = new FeeOracleV1(owner, baseFee);
+        portal = new TestPortal(owner, address(feeOracle));
         counter = new Counter(portal);
         reverter = new Reverter();
 
         vm.chainId(chainAId);
-        chainAPortal = new TestPortal();
+        chainAFeeOracle = new FeeOracleV1(owner, baseFee);
+        chainAPortal = new TestPortal(owner, address(chainAFeeOracle));
         chainACounter = new Counter(chainAPortal);
         chainAReverter = new Reverter();
 
         vm.chainId(chainBId);
-        chainBPortal = new TestPortal();
+        chainBFeeOracle = new FeeOracleV1(owner, baseFee);
+        chainBPortal = new TestPortal(owner, address(chainBFeeOracle));
         chainBCounter = new Counter(chainBPortal);
         chainBReverter = new Reverter();
 

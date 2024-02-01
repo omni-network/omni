@@ -21,15 +21,15 @@ for MANIFEST in "$@"; do
 	START=$SECONDS
 	echo "==> Running testnet: $MANIFEST"
 
-	if ! runner -f "$MANIFEST"; then
+	if ! e2e -f "$MANIFEST"; then
 		echo "==> Testnet $MANIFEST failed, dumping manifest..."
 		cat "$MANIFEST"
 
 		echo "==> Dumping container logs for $MANIFEST..."
-		runner -f "$MANIFEST" logs
+		e2e -f "$MANIFEST" logs
 
 		echo "==> Cleaning up failed testnet $MANIFEST..."
-		runner -f "$MANIFEST" cleanup
+		e2e -f "$MANIFEST" clean
 
 		FAILED+=("$MANIFEST")
 	fi

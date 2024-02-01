@@ -4,14 +4,14 @@ Spins up and tests Omni devnets in Docker Compose based on a testnet manifest. T
 
 ```sh
 # In repo root
-# Install the e2e runner
-go install github.com/omni-network/omin/test/e2e/runner
+# Install the e2e app
+go install github.com/omni-network/omin/test/e2e
 
 # Build docker image of the code to test.
 make build-docker
 
-# Run one of the "manifests" in networks/ directory: runner -f <manifest>
-runner -f test/e2e/networks/single.toml
+# Run one of the "manifests" in networks/ directory: e2e -f <manifest>
+e2e -f test/e2e/networks/single.toml
 ```
 
 This creates and runs a testnet named `single` under `test/e2e/runs/single/`.
@@ -22,7 +22,7 @@ Please refer to the [cometBFT E2E test framework](https://github.com/cometbft/co
 
 ## Test Stages
 
-The test runner has the following stages, which can also be executed explicitly by running `runner -f <manifest> <stage>`:
+The e2e test has the following stages, which can also be executed explicitly by running `e2e -f <manifest> <stage>`:
 
 * `setup`: generates configuration files.
 

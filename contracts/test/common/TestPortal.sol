@@ -9,6 +9,8 @@ import { XTypes } from "src/libraries/XTypes.sol";
  * @dev A test contract that exposes OmniPortal internal functions, and allows state manipulation.
  */
 contract TestPortal is OmniPortal {
+    constructor(address owner_, address feeOracle_) OmniPortal(owner_, feeOracle_) { }
+
     function exec(XTypes.Msg calldata xmsg) external {
         _exec(xmsg);
     }

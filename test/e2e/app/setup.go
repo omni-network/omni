@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"context"
@@ -19,7 +19,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	relayapp "github.com/omni-network/omni/relayer/app"
-	"github.com/omni-network/omni/test/e2e/runner/netman"
+	"github.com/omni-network/omni/test/e2e/netman"
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/p2p"
