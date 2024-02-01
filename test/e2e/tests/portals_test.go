@@ -23,6 +23,12 @@ func TestPortalOffsets(t *testing.T) {
 			destOffset, err := dest.Contract.InXStreamOffset(nil, source.Chain.ID)
 			require.NoError(t, err)
 
+			// require at least some xmsgs were sent
+			require.Greater(t, sourceOffset, uint64(0),
+				"no xmsgs sent from source chain %v to dest chain %v",
+				source.Chain.ID, dest.Chain.ID)
+
+			// require at least half were received
 			require.GreaterOrEqual(t, destOffset, sourceOffset/2,
 				"dest chain %v offset=%d, source chain %v offset=%d",
 				dest.Chain.ID, destOffset, source.Chain.ID, sourceOffset)

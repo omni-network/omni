@@ -25,8 +25,8 @@ const (
 	// privKeyHex1 of pre-funded anvil account 1.
 	privKeyHex1 = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
 
-	// First contract address of privKeyHex0.
-	privatePortalAddr = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+	// Second contract address of privKeyHex0 (first is FeeOracleV1 @ 0x5FbDB2315678afecb367f032d93F642f64180aa3).
+	privatePortalAddr = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
 )
 
 //nolint:gochecknoglobals // Static mapping.
@@ -232,7 +232,9 @@ func (m *manager) DeployPrivatePortals(ctx context.Context) error {
 		if err != nil {
 			return errors.Wrap(err, "deploy public portal contract")
 		} else if addr != portal.DeployInfo.PortalAddress {
-			return errors.New("deployed address does not match existing address")
+			return errors.New("deployed address does not match existing address",
+				"expected", portal.DeployInfo.PortalAddress.Hex(),
+				"actual", addr.Hex())
 		}
 
 		portal.Contract = contract

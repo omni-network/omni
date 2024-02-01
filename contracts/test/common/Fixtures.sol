@@ -74,6 +74,9 @@ contract Fixtures is CommonBase, StdCheats {
         relayer = makeAddr("relayer");
         owner = makeAddr("owner");
 
+        // fund xcaller, so it can pay fees
+        vm.deal(xcaller, 100 ether);
+
         vm.startPrank(deployer);
 
         vm.chainId(thisChainId); // portal constructor uses block.chainid

@@ -38,6 +38,12 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
     ///      so that we can use the XMsg struct type in the interface.
     XTypes.Msg private _currentXmsg;
 
+    /// @dev Require sufficient fees were paid
+    modifier chargeFees(uint64 destChainId, bytes calldata data, uint64 gasLimit) {
+        require(msg.value >= feeFor(destChainId, data, gasLimit), "OmniPortal: insufficient fee");
+        _;
+    }
+
     constructor(address owner_, address feeOracle_) Ownable(owner_) {
         chainId = uint64(block.chainid);
         _setFeeOracle(feeOracle_);
@@ -46,6 +52,13 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
     /// @inheritdoc IOmniPortalAdmin
     function setFeeOracle(address feeOracle_) external onlyOwner {
         _setFeeOracle(feeOracle_);
+    }
+
+    /// @inheritdoc IOmniPortalAdmin
+    function collectFees(address to) external onlyOwner {
+        uint256 amount = address(this).balance;
+        payable(to).transfer(amount);
+        emit FeesCollected(to, amount);
     }
 
     /// @inheritdoc IOmniPortal
@@ -59,22 +72,30 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
     }
 
     /// @inheritdoc IOmniPortal
-    function feeFor(uint64 destChainId, bytes calldata data) external view returns (uint256) {
+    function feeFor(uint64 destChainId, bytes calldata data) public view returns (uint256) {
         return IFeeOracle(feeOracle).feeFor(destChainId, data, XMSG_DEFAULT_GAS_LIMIT);
     }
 
     /// @inheritdoc IOmniPortal
-    function feeFor(uint64 destChainId, bytes calldata data, uint64 gasLimit) external view returns (uint256) {
+    function feeFor(uint64 destChainId, bytes calldata data, uint64 gasLimit) public view returns (uint256) {
         return IFeeOracle(feeOracle).feeFor(destChainId, data, gasLimit);
     }
 
     /// @inheritdoc IOmniPortal
-    function xcall(uint64 destChainId, address to, bytes calldata data) external payable {
+    function xcall(uint64 destChainId, address to, bytes calldata data)
+        external
+        payable
+        chargeFees(destChainId, data, XMSG_DEFAULT_GAS_LIMIT)
+    {
         _xcall(destChainId, msg.sender, to, data, XMSG_DEFAULT_GAS_LIMIT);
     }
 
     /// @inheritdoc IOmniPortal
-    function xcall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit) external payable {
+    function xcall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit)
+        external
+        payable
+        chargeFees(destChainId, data, gasLimit)
+    {
         _xcall(destChainId, msg.sender, to, data, gasLimit);
     }
 
