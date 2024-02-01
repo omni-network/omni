@@ -7,7 +7,7 @@
 //
 
 // Package resolvers_tests is a generated GoMock package.
-package resolvers_tests
+package resolvers_test
 
 import (
 	reflect "reflect"
