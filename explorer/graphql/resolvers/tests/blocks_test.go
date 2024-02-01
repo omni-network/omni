@@ -14,14 +14,15 @@ import (
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/gqltesting"
 	"go.uber.org/mock/gomock"
-
-	_ "github.com/mattn/go-sqlite3"
 )
 
 func TestXBlockQuery(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
+
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	sourceChainID := hexutil.Big(*hexutil.MustDecodeBig("0x4b2"))
 	blockHeight := hexutil.Big(*hexutil.MustDecodeBig("0x1"))
 	blockHashBytes := []byte{1, 3, 23, 111, 27, 45, 98, 103, 94, 55, 1, 3, 23, 111, 27, 45, 98, 103, 94, 55}
