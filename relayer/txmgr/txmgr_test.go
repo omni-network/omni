@@ -1019,8 +1019,10 @@ func TestIncreaseGasPrice(t *testing.T) {
 	}
 	for _, test := range tests {
 		test := test
-		t.Parallel()
-		t.Run(test.name, test.run)
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			test.run(t)
+		})
 	}
 }
 

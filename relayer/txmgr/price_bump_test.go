@@ -22,7 +22,7 @@ type priceBumpTest struct {
 }
 
 func (tc *priceBumpTest) run(t *testing.T) {
-	t.Parallel()
+	t.Helper()
 	prevFC := txmgr.CalcGasFeeCap(big.NewInt(tc.prevBaseFee), big.NewInt(tc.prevGasTip))
 
 	tip, fc := txmgr.UpdateFees(context.Background(), big.NewInt(tc.prevGasTip), prevFC, big.NewInt(tc.newGasTip),
@@ -150,7 +150,9 @@ func TestUpdateFees(t *testing.T) {
 	for i, test := range tests {
 		i := i
 		test := test
-		t.Parallel()
-		t.Run(strconv.Itoa(i), test.run)
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			t.Parallel()
+			test.run(t)
+		})
 	}
 }
