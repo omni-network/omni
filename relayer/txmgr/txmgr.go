@@ -431,7 +431,7 @@ func (m *SimpleTxManager) waitForTx(ctx context.Context, tx *types.Transaction, 
 	receipt, err := m.WaitMined(ctx, tx, sendState)
 	if err != nil {
 		// this will happen if the tx was successfully replaced by a tx with bumped fees
-		log.Warn(ctx, "Transaction receipt not mind, probably replaced", err, txFields(tx, true))
+		log.Warn(ctx, "Transaction receipt not mind, probably replaced", err)
 		return
 	}
 	select {
