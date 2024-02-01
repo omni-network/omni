@@ -1,7 +1,6 @@
 package txmgr
 
 import (
-	"fmt"
 	"math"
 	"math/big"
 
@@ -14,7 +13,7 @@ import (
 // GweiToWei converts a float64 GWei value into a big.Int Wei value.
 func GweiToWei(gwei float64) (*big.Int, error) {
 	if math.IsNaN(gwei) || math.IsInf(gwei, 0) {
-		return nil, fmt.Errorf("invalid gwei value: %v", gwei)
+		return nil, errors.New("invalid gwei value", gwei)
 	}
 
 	// convert float GWei value into integer Wei value

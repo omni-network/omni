@@ -31,7 +31,7 @@ type SendState struct {
 	bumpCount int // number of times we have bumped the gas price
 }
 
-// NewSendStateWithNow creates a new send state with the provided clock.
+// NewSendStateWithNow creates a new doSend state with the provided clock.
 func NewSendStateWithNow(safeAbortNonceTooLowCount uint64, unableToSendTimeout time.Duration,
 	now func() time.Time) *SendState {
 	if safeAbortNonceTooLowCount == 0 {
@@ -46,7 +46,7 @@ func NewSendStateWithNow(safeAbortNonceTooLowCount uint64, unableToSendTimeout t
 	}
 }
 
-// NewSendState creates a new send state.
+// NewSendState creates a new doSend state.
 func NewSendState(safeAbortNonceTooLowCount uint64, unableToSendTimeout time.Duration) *SendState {
 	return NewSendStateWithNow(safeAbortNonceTooLowCount, unableToSendTimeout, time.Now)
 }

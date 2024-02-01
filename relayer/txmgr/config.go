@@ -107,7 +107,9 @@ func PrivateKeySignerFn(key *ecdsa.PrivateKey, chainID *big.Int) bind.SignerFn {
 		if err != nil {
 			return nil, errors.Wrap(err, "could not sign transaction")
 		}
-		return tx.WithSignature(signer, signature)
+		res, err := tx.WithSignature(signer, signature)
+
+		return res, errors.Wrap(err, "could not sign transaction")
 	}
 }
 
@@ -148,7 +150,7 @@ type Config struct {
 	// By default it is unbounded. If set, this is recommended to be at least 20 minutes.
 	TxSendTimeout time.Duration
 
-	// TxNotInMempoolTimeout is how long to wait before aborting a transaction send if the transaction does not
+	// TxNotInMempoolTimeout is how long to wait before aborting a transaction doSend if the transaction does not
 	// make it to the mempool. If the tx is in the mempool, TxSendTimeout is used instead.
 	TxNotInMempoolTimeout time.Duration
 
@@ -268,5 +270,6 @@ func (m Config) Check() error {
 	if m.ChainID == nil {
 		return errors.New("must provide the ChainID")
 	}
+
 	return nil
 }

@@ -27,8 +27,8 @@ func newSendStateWithTimeout(t time.Duration, now func() time.Time) *txmgr.SendS
 	return txmgr.NewSendStateWithNow(testSafeAbortNonceTooLowCount, t, now)
 }
 
-func processNSendErrors(sendState *txmgr.SendState, err error, n int) {
-	for i := 0; i < n; i++ {
+func processNSendErrors(sendState *txmgr.SendState, err error) {
+	for i := 0; i < testSafeAbortNonceTooLowCount; i++ {
 		sendState.ProcessSendError(err)
 	}
 }
@@ -36,6 +36,7 @@ func processNSendErrors(sendState *txmgr.SendState, err error, n int) {
 // TestSendStateNoAbortAfterInit asserts that the default SendState won't
 // trigger an abort even after the safe abort interval has elapsed.
 func TestSendStateNoAbortAfterInit(t *testing.T) {
+	t.Parallel()
 	sendState := newSendState()
 	require.False(t, sendState.ShouldAbortImmediately())
 	require.False(t, sendState.IsWaitingForConfirmation())
@@ -44,25 +45,28 @@ func TestSendStateNoAbortAfterInit(t *testing.T) {
 // TestSendStateNoAbortAfterProcessNilError asserts that nil errors are not
 // considered for abort status.
 func TestSendStateNoAbortAfterProcessNilError(t *testing.T) {
+	t.Parallel()
 	sendState := newSendState()
 
-	processNSendErrors(sendState, nil, testSafeAbortNonceTooLowCount)
+	processNSendErrors(sendState, nil)
 	require.False(t, sendState.ShouldAbortImmediately())
 }
 
 // TestSendStateNoAbortAfterProcessOtherError asserts that non-nil errors other
 // than ErrNonceTooLow are not considered for abort status.
 func TestSendStateNoAbortAfterProcessOtherError(t *testing.T) {
+	t.Parallel()
 	sendState := newSendState()
 
 	otherError := errors.New("other error")
-	processNSendErrors(sendState, otherError, testSafeAbortNonceTooLowCount)
+	processNSendErrors(sendState, otherError)
 	require.False(t, sendState.ShouldAbortImmediately())
 }
 
 // TestSendStateAbortSafelyAfterNonceTooLowButNoTxMined asserts that we will
 // abort after the safe abort interval has elapsed if we haven't mined a tx.
 func TestSendStateAbortSafelyAfterNonceTooLowButNoTxMined(t *testing.T) {
+	t.Parallel()
 	sendState := newSendState()
 
 	sendState.ProcessSendError(core.ErrNonceTooLow)
@@ -76,6 +80,7 @@ func TestSendStateAbortSafelyAfterNonceTooLowButNoTxMined(t *testing.T) {
 // TestSendStateMiningTxCancelsAbort asserts that a tx getting mined after
 // processing ErrNonceTooLow takes precedence and doesn't cause an abort.
 func TestSendStateMiningTxCancelsAbort(t *testing.T) {
+	t.Parallel()
 	sendState := newSendState()
 
 	sendState.ProcessSendError(core.ErrNonceTooLow)
@@ -90,6 +95,7 @@ func TestSendStateMiningTxCancelsAbort(t *testing.T) {
 // consider ErrNonceTooLow's prior to being mined when determining whether
 // to abort.
 func TestSendStateReorgingTxResetsAbort(t *testing.T) {
+	t.Parallel()
 	sendState := newSendState()
 
 	sendState.ProcessSendError(core.ErrNonceTooLow)
@@ -107,11 +113,12 @@ func TestSendStateReorgingTxResetsAbort(t *testing.T) {
 // ErrNonceTooLow failures after one of our txs has been mined, but that
 // shouldn't cause us to not continue waiting for confirmations.
 func TestSendStateNoAbortEvenIfNonceTooLowAfterTxMined(t *testing.T) {
+	t.Parallel()
 	sendState := newSendState()
 
 	sendState.TxMined(testHash)
 	processNSendErrors(
-		sendState, core.ErrNonceTooLow, testSafeAbortNonceTooLowCount,
+		sendState, core.ErrNonceTooLow,
 	)
 	require.False(t, sendState.ShouldAbortImmediately())
 }
@@ -120,6 +127,7 @@ func TestSendStateNoAbortEvenIfNonceTooLowAfterTxMined(t *testing.T) {
 // correctly abort if we continue to get ErrNonceTooLow after a tx is unmined
 // but not remined.
 func TestSendStateSafeAbortIfNonceTooLowPersistsAfterUnmine(t *testing.T) {
+	t.Parallel()
 	sendState := newSendState()
 
 	sendState.TxMined(testHash)
@@ -135,10 +143,11 @@ func TestSendStateSafeAbortIfNonceTooLowPersistsAfterUnmine(t *testing.T) {
 // correctly abort if we continue to call TxNotMined on txns that haven't been
 // mined.
 func TestSendStateSafeAbortWhileCallingNotMinedOnUnminedTx(t *testing.T) {
+	t.Parallel()
 	sendState := newSendState()
 
 	processNSendErrors(
-		sendState, core.ErrNonceTooLow, testSafeAbortNonceTooLowCount,
+		sendState, core.ErrNonceTooLow,
 	)
 	sendState.TxNotMined(testHash)
 	require.True(t, sendState.ShouldAbortImmediately())
@@ -147,6 +156,7 @@ func TestSendStateSafeAbortWhileCallingNotMinedOnUnminedTx(t *testing.T) {
 // TestSendStateIsWaitingForConfirmationAfterTxMined asserts that we are waiting
 // for confirmation after a tx is mined.
 func TestSendStateIsWaitingForConfirmationAfterTxMined(t *testing.T) {
+	t.Parallel()
 	sendState := newSendState()
 
 	testHash2 := common.HexToHash("0x02")
@@ -160,6 +170,7 @@ func TestSendStateIsWaitingForConfirmationAfterTxMined(t *testing.T) {
 // TestSendStateIsNotWaitingForConfirmationAfterTxUnmined asserts that we are
 // not waiting for confirmation after a tx is mined then unmined.
 func TestSendStateIsNotWaitingForConfirmationAfterTxUnmined(t *testing.T) {
+	t.Parallel()
 	sendState := newSendState()
 
 	sendState.TxMined(testHash)
@@ -172,6 +183,7 @@ func stepClock(step time.Duration) func() time.Time {
 	return func() time.Time {
 		var start time.Time
 		i += 1
+
 		return start.Add(time.Duration(i) * step)
 	}
 }
@@ -179,13 +191,15 @@ func stepClock(step time.Duration) func() time.Time {
 // TestSendStateTimeoutAbort ensure that this will abort if it passes the tx pool timeout
 // when no successful transactions have been recorded.
 func TestSendStateTimeoutAbort(t *testing.T) {
+	t.Parallel()
 	sendState := newSendStateWithTimeout(10*time.Millisecond, stepClock(20*time.Millisecond))
 	require.True(t, sendState.ShouldAbortImmediately(), "Should abort after timing out")
 }
 
 // TestSendStateNoTimeoutAbortIfPublishedTx ensure that this will not abort if there is
-// a successful transaction send.
+// a successful transaction doSend.
 func TestSendStateNoTimeoutAbortIfPublishedTx(t *testing.T) {
+	t.Parallel()
 	sendState := newSendStateWithTimeout(10*time.Millisecond, stepClock(20*time.Millisecond))
 	sendState.ProcessSendError(nil)
 	require.False(t, sendState.ShouldAbortImmediately(), "Should not abort if published transaction successfully")

@@ -13,9 +13,9 @@ import (
 type TxReceipt[T any] struct {
 	// ID can be used to identify unique tx receipts within the receipt channel
 	ID T
-	// Receipt result from the transaction send
+	// Receipt result from the transaction doSend
 	Receipt *types.Receipt
-	// Err contains any error that occurred during the tx send
+	// Err contains any error that occurred during the tx doSend
 	Err error
 }
 
@@ -29,7 +29,7 @@ type Queue[T any] struct {
 }
 
 // NewQueue creates a new transaction sending Queue, with the following parameters:
-//   - ctx: runtime context of the queue. If canceled, all ongoing send processes are canceled.
+//   - ctx: runtime context of the queue. If canceled, all ongoing doSend processes are canceled.
 //   - txMgt: transaction managre to use for transaction sending
 //   - maxPending: max number of pending txs at once (0 == no limit)
 func NewQueue[T any](ctx context.Context, txMgr TxManager, maxPending uint64) *Queue[T] {
@@ -37,6 +37,7 @@ func NewQueue[T any](ctx context.Context, txMgr TxManager, maxPending uint64) *Q
 		// ensure we don't overflow as errgroup only accepts int; in reality this will never be an issue
 		maxPending = math.MaxInt
 	}
+
 	return &Queue[T]{
 		ctx:        ctx,
 		txMgr:      txMgr,
@@ -53,7 +54,7 @@ func (q *Queue[T]) Wait() {
 }
 
 // Send will wait until the number of pending txs is below the max pending,
-// and then send the next tx.
+// and then doSend the next tx.
 //
 // The actual tx sending is non-blocking, with the receipt returned on the
 // provided receipt channel. If the channel is unbuffered, the goroutine is
@@ -68,7 +69,7 @@ func (q *Queue[T]) Send(id T, candidate TxCandidate, receiptCh chan TxReceipt[T]
 // TrySend sends the next tx, but only if the number of pending txs is below the
 // max pending.
 //
-// Returns false if there is no room in the queue to send. Otherwise, the
+// Returns false if there is no room in the queue to doSend. Otherwise, the
 // transaction is queued and this method returns true.
 //
 // The actual tx sending is non-blocking, with the receipt returned on the
@@ -88,6 +89,7 @@ func (q *Queue[T]) sendTx(ctx context.Context, id T, candidate TxCandidate, rece
 		Receipt: receipt,
 		Err:     err,
 	}
+
 	return err
 }
 
@@ -110,5 +112,6 @@ func (q *Queue[T]) groupContext() (*errgroup.Group, context.Context) {
 			q.group.SetLimit(int(q.maxPending))
 		}
 	}
+
 	return q.group, q.groupCtx
 }

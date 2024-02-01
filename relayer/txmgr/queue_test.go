@@ -24,18 +24,19 @@ func sendQueueFunc(id int, candidate txmgr.TxCandidate, receiptCh chan txmgr.TxR
 	return true
 }
 
-func trySendQueueFunc(id int, candidate txmgr.TxCandidate, receiptCh chan txmgr.TxReceipt[int], q *txmgr.Queue[int]) bool {
+func trySendQueueFunc(id int, candidate txmgr.TxCandidate, receiptCh chan txmgr.TxReceipt[int],
+	q *txmgr.Queue[int]) bool {
 	return q.TrySend(id, candidate, receiptCh)
 }
 
 type queueCall struct {
 	call   queueFunc // queue call (either Send or TrySend, use function helpers above)
-	queued bool      // true if the send was queued
-	txErr  bool      // true if the tx send should return an error
+	queued bool      // true if the doSend was queued
+	txErr  bool      // true if the tx doSend should return an error
 }
 
 type testTx struct {
-	sendErr bool // error to return from send for this tx
+	sendErr bool // error to return from doSend for this tx
 }
 
 type mockBackendWithNonce struct {
@@ -51,16 +52,17 @@ func newMockBackendWithNonce(g *gasPricer) *mockBackendWithNonce {
 	}
 }
 
-func (b *mockBackendWithNonce) NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error) {
+func (b *mockBackendWithNonce) NonceAt(context.Context, common.Address, *big.Int) (uint64, error) {
 	return uint64(len(b.minedTxs)), nil
 }
 
 func TestQueue_Send(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		name   string        // name of the test
 		max    uint64        // max concurrency of the queue
 		calls  []queueCall   // calls to the queue
-		txs    []testTx      // txs to generate from the factory (and potentially error in send)
+		txs    []testTx      // txs to generate from the factory (and potentially error in doSend)
 		nonces []uint64      // expected sent tx nonces after all calls are made
 		total  time.Duration // approx. total time it should take to complete all queue calls
 	}{
@@ -167,7 +169,7 @@ func TestQueue_Send(t *testing.T) {
 			t.Parallel()
 
 			conf := configWithNumConfs(1)
-			conf.ReceiptQueryInterval = 1 * time.Second // simulate a network send
+			conf.ReceiptQueryInterval = 1 * time.Second // simulate a network doSend
 			conf.ResubmissionTimeout = 2 * time.Second  // resubmit to detect errors
 			conf.SafeAbortNonceTooLowCount = 1
 			backend := newMockBackendWithNonce(newGasPricer(3))
@@ -192,6 +194,7 @@ func TestQueue_Send(t *testing.T) {
 				}
 				txHash := tx.Hash()
 				backend.mine(&txHash, tx.GasFeeCap(), nil)
+
 				return nil
 			}
 			backend.setTxSender(sendTx)
@@ -218,7 +221,8 @@ func TestQueue_Send(t *testing.T) {
 			duration := time.Since(start)
 			// expect the execution time within a certain window
 			now := time.Now()
-			require.WithinDuration(t, now.Add(test.total), now.Add(duration), 500*time.Millisecond, "unexpected queue transaction timing")
+			require.WithinDuration(t, now.Add(test.total), now.Add(duration),
+				500*time.Millisecond, "unexpected queue transaction timing")
 			// check that the nonces match
 			slices.Sort(nonces)
 			require.Equal(t, test.nonces, nonces, "expected nonces do not match")
