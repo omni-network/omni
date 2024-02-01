@@ -4,5 +4,6 @@
 /lib @corverroos @jmozah @lazar955 @kevinhalliday @DanFlannel @pavelnikolov
 /contracts @kevinhalliday @ttarsi
 /explorer @DanFlannel
-/explorer/api @lazar955
 /explorer/indexer @lazar955
+/explorer/ui @kevinhalliday
+/explorer/graphql @pavelnikolov

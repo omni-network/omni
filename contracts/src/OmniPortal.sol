@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.23;
 
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { IFeeOracle } from "./interfaces/IFeeOracle.sol";
 import { IOmniPortal } from "./interfaces/IOmniPortal.sol";
+import { IOmniPortalAdmin } from "./interfaces/IOmniPortalAdmin.sol";
 import { XBlockMerkleProof } from "./libraries/XBlockMerkleProof.sol";
 import { XTypes } from "./libraries/XTypes.sol";
 
-contract OmniPortal is IOmniPortal {
+contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
     /// @inheritdoc IOmniPortal
     uint64 public constant XMSG_DEFAULT_GAS_LIMIT = 200_000;
 
@@ -17,6 +20,9 @@ contract OmniPortal is IOmniPortal {
 
     /// @inheritdoc IOmniPortal
     uint64 public immutable chainId;
+
+    /// @inheritdoc IOmniPortalAdmin
+    address public feeOracle;
 
     /// @inheritdoc IOmniPortal
     mapping(uint64 => uint64) public outXStreamOffset;
@@ -32,8 +38,14 @@ contract OmniPortal is IOmniPortal {
     ///      so that we can use the XMsg struct type in the interface.
     XTypes.Msg private _currentXmsg;
 
-    constructor() {
+    constructor(address owner_, address feeOracle_) Ownable(owner_) {
         chainId = uint64(block.chainid);
+        _setFeeOracle(feeOracle_);
+    }
+
+    /// @inheritdoc IOmniPortalAdmin
+    function setFeeOracle(address feeOracle_) external onlyOwner {
+        _setFeeOracle(feeOracle_);
     }
 
     /// @inheritdoc IOmniPortal
@@ -44,6 +56,16 @@ contract OmniPortal is IOmniPortal {
     /// @inheritdoc IOmniPortal
     function isXCall() external view returns (bool) {
         return _currentXmsg.sourceChainId != 0;
+    }
+
+    /// @inheritdoc IOmniPortal
+    function feeFor(uint64 destChainId, bytes calldata data) external view returns (uint256) {
+        return IFeeOracle(feeOracle).feeFor(destChainId, data, XMSG_DEFAULT_GAS_LIMIT);
+    }
+
+    /// @inheritdoc IOmniPortal
+    function feeFor(uint64 destChainId, bytes calldata data, uint64 gasLimit) external view returns (uint256) {
+        return IFeeOracle(feeOracle).feeFor(destChainId, data, gasLimit);
     }
 
     /// @inheritdoc IOmniPortal
@@ -106,5 +128,15 @@ contract OmniPortal is IOmniPortal {
         _currentXmsg = XTypes.zeroMsg();
 
         emit XReceipt(xmsg_.sourceChainId, xmsg_.streamOffset, gasUsed, msg.sender, success);
+    }
+
+    /// @dev Set the fee oracle
+    function _setFeeOracle(address feeOracle_) internal {
+        require(feeOracle_ != address(0), "OmniPortal: no zero feeOracle");
+
+        address oldFeeOracle = feeOracle;
+        feeOracle = feeOracle_;
+
+        emit FeeOracleChanged(oldFeeOracle, feeOracle);
     }
 }
