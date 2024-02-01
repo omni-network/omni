@@ -14,4 +14,8 @@ contract Events {
     event XReceipt(
         uint64 indexed sourceChainId, uint64 indexed streamOffset, uint256 gasUsed, address relayer, bool success
     );
+
+    event FeeOracleChanged(address indexed oldFeeOracle, address indexed newFeeOracle);
+
+    event FeeChanged(uint256 oldFee, uint256 newFee);
 }
