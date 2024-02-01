@@ -3,14 +3,14 @@ package app
 import (
 	"net/http"
 
-	_ "embed"
-
 	"github.com/omni-network/omni/explorer/graphql/data"
 	"github.com/omni-network/omni/explorer/graphql/resolvers"
 	"github.com/omni-network/omni/lib/log"
 
 	graphql "github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/relay"
+
+	_ "embed"
 )
 
 //go:embed schema.graphql
