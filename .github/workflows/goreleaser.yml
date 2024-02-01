@@ -26,10 +26,10 @@ jobs:
           args: release --snapshot --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Push Explorer API to Dockerhub
+      - name: Push Explorer Graphql to Dockerhub
         run: |
-          docker push omniops/explorer-api:${GITHUB_SHA::7}
-          docker push omniops/explorer-api:main
+          docker push omniops/explorer-graphql:${GITHUB_SHA::7}
+          docker push omniops/explorer-graphql:main
 
       - name: Push Indexer to Dockerhub
         run: |
