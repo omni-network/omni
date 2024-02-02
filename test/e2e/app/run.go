@@ -9,7 +9,7 @@ import (
 
 // Deploy a new e2e network. It also starts all services in order to deploy private portals.
 func Deploy(ctx context.Context, def Definition) error {
-	if err := Cleanup(ctx, def.Testnet); err != nil {
+	if err := Cleanup(ctx, def.Testnet.Testnet); err != nil {
 		return err
 	}
 
@@ -22,7 +22,7 @@ func Deploy(ctx context.Context, def Definition) error {
 		return err
 	}
 
-	if err := Start(ctx, def.Testnet, def.Infra); err != nil {
+	if err := Start(ctx, def.Testnet.Testnet, def.Infra); err != nil {
 		return err
 	}
 
@@ -55,7 +55,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 		return err
 	}
 
-	if err := Wait(ctx, def.Testnet, 5); err != nil { // allow some txs to go through
+	if err := Wait(ctx, def.Testnet.Testnet, 5); err != nil { // allow some txs to go through
 		return err
 	}
 
@@ -69,11 +69,11 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 
 	sendCancel() // Stop sending messages
 
-	if err := Wait(ctx, def.Testnet, 5); err != nil { // wait for network to settle before tests
+	if err := Wait(ctx, def.Testnet.Testnet, 5); err != nil { // wait for network to settle before tests
 		return err
 	}
 
-	if err := Test(ctx, def.Testnet, def.Infra.GetInfrastructureData(), def.Netman.HostNetwork()); err != nil {
+	if err := Test(ctx, def.Testnet, def.Infra.GetInfrastructureData(), def.Netman); err != nil {
 		return err
 	}
 
@@ -83,7 +83,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 
 	if cfg.Preserve {
 		log.Warn(ctx, "Docker containers not stopped, --preserve=true", nil)
-	} else if err := Cleanup(ctx, def.Testnet); err != nil {
+	} else if err := Cleanup(ctx, def.Testnet.Testnet); err != nil {
 		return err
 	}
 

@@ -20,13 +20,14 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	relayapp "github.com/omni-network/omni/relayer/app"
 	"github.com/omni-network/omni/test/e2e/netman"
+	"github.com/omni-network/omni/test/e2e/types"
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
-	"github.com/cometbft/cometbft/types"
+	cmttypes "github.com/cometbft/cometbft/types"
 
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 
@@ -47,7 +48,7 @@ const (
 )
 
 // Setup sets up the testnet configuration.
-func Setup(ctx context.Context, testnet *e2e.Testnet, infp infra.Provider, mngr netman.Manager) error {
+func Setup(ctx context.Context, testnet types.Testnet, infp infra.Provider, mngr netman.Manager) error {
 	log.Info(ctx, "Setup testnet", "dir", testnet.Dir)
 
 	if err := os.MkdirAll(testnet.Dir, os.ModePerm); err != nil {
@@ -58,7 +59,7 @@ func Setup(ctx context.Context, testnet *e2e.Testnet, infp infra.Provider, mngr 
 		return errors.Wrap(err, "setup provider")
 	}
 
-	genesis, err := MakeGenesis(testnet)
+	genesis, err := MakeGenesis(testnet.Testnet)
 	if err != nil {
 		return err
 	}
@@ -67,7 +68,9 @@ func Setup(ctx context.Context, testnet *e2e.Testnet, infp infra.Provider, mngr 
 		return err
 	}
 
-	if err := writeRelayerConfig(testnet.Dir, testnet, mngr, logConfig()); err != nil {
+	logCfg := logConfig()
+
+	if err := writeRelayerConfig(testnet.Dir, testnet, mngr, logCfg); err != nil {
 		return err
 	}
 
@@ -91,7 +94,7 @@ func Setup(ctx context.Context, testnet *e2e.Testnet, infp infra.Provider, mngr 
 		}
 		config.WriteConfigFile(filepath.Join(nodeDir, "config", "config.toml"), cfg) // panics
 
-		if err := writeHaloConfig(nodeDir, logConfig()); err != nil {
+		if err := writeHaloConfig(nodeDir, logCfg); err != nil {
 			return err
 		}
 
@@ -110,12 +113,14 @@ func Setup(ctx context.Context, testnet *e2e.Testnet, infp infra.Provider, mngr 
 			filepath.Join(nodeDir, PrivvalStateFile),
 		)).Save()
 
-		if err := netconf.Save(mngr.DockerNetwork(), filepath.Join(nodeDir, NetworkConfigFile)); err != nil {
+		intNetwork := internalNetwork(testnet, mngr.DeployInfo())
+
+		if err := netconf.Save(intNetwork, filepath.Join(nodeDir, NetworkConfigFile)); err != nil {
 			return errors.Wrap(err, "write network config")
 		}
 
 		// Initialize the node's data directory (with noop logger since it is noisy).
-		initCfg := halocmd.InitConfig{HomeDir: nodeDir, Network: mngr.HostNetwork().Name}
+		initCfg := halocmd.InitConfig{HomeDir: nodeDir, Network: testnet.Network}
 		if err := halocmd.InitFiles(log.WithNoopLogger(ctx), initCfg); err != nil {
 			return errors.Wrap(err, "init files")
 		}
@@ -131,8 +136,8 @@ func Setup(ctx context.Context, testnet *e2e.Testnet, infp infra.Provider, mngr 
 }
 
 // MakeGenesis generates a genesis document.
-func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
-	genesis := types.GenesisDoc{
+func MakeGenesis(testnet *e2e.Testnet) (cmttypes.GenesisDoc, error) {
+	genesis := cmttypes.GenesisDoc{
 		GenesisTime:     time.Now(),
 		ChainID:         testnet.Name,
 		ConsensusParams: halocmd.DefaultConsensusParams(),
@@ -143,7 +148,7 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 	genesis.ConsensusParams.Evidence.MaxAgeNumBlocks = e2e.EvidenceAgeHeight
 	genesis.ConsensusParams.Evidence.MaxAgeDuration = e2e.EvidenceAgeTime
 	for validator, power := range testnet.Validators {
-		genesis.Validators = append(genesis.Validators, types.GenesisValidator{
+		genesis.Validators = append(genesis.Validators, cmttypes.GenesisValidator{
 			Name:    validator.Name,
 			Address: validator.PrivvalKey.PubKey().Address(),
 			PubKey:  validator.PrivvalKey.PubKey(),
@@ -318,7 +323,7 @@ func writeGethConfig(root string) error {
 	}
 
 	for name, data := range files {
-		path := filepath.Join(root, "geth", name)
+		path := filepath.Join(root, "omni_evm", name)
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			return errors.Wrap(err, "mkdir", "path", path)
 		}
@@ -330,7 +335,7 @@ func writeGethConfig(root string) error {
 	return nil
 }
 
-func writeRelayerConfig(root string, testnet *e2e.Testnet, mngr netman.Manager, logCfg log.Config) error {
+func writeRelayerConfig(root string, testnet types.Testnet, mngr netman.Manager, logCfg log.Config) error {
 	confRoot := filepath.Join(root, "relayer")
 
 	const (
@@ -344,17 +349,13 @@ func writeRelayerConfig(root string, testnet *e2e.Testnet, mngr netman.Manager, 
 	}
 
 	// Save network config
-	if err := netconf.Save(mngr.DockerNetwork(), filepath.Join(confRoot, networkFile)); err != nil {
+	intNetwork := internalNetwork(testnet, mngr.DeployInfo())
+	if err := netconf.Save(intNetwork, filepath.Join(confRoot, networkFile)); err != nil {
 		return errors.Wrap(err, "save network config")
 	}
 
-	relayerKey, err := mngr.RelayerKey()
-	if err != nil {
-		return errors.Wrap(err, "get relayer key")
-	}
-
 	// Save private key
-	if err := ethcrypto.SaveECDSA(filepath.Join(confRoot, privKeyFile), relayerKey); err != nil {
+	if err := ethcrypto.SaveECDSA(filepath.Join(confRoot, privKeyFile), mngr.RelayerKey()); err != nil {
 		return errors.Wrap(err, "write private key")
 	}
 
