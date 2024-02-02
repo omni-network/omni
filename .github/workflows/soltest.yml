@@ -1,0 +1,27 @@
+name: solidity tests
+# Run this separately from pre-commit for nice visual coverage.
+
+on:
+  workflow_call:
+  push:
+    branches:
+      - tt/foundry-action
+
+jobs:
+  unit_tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+      - name: Cd into contracts
+        run: cd contracts
+      - name: Run fmt
+        run: forge fmt
+      - name: Run snapshot
+        run: forge snapshot
+      - name: Ensure no diff
+        run: git diff --quiet
+      - name: Run tests
+        run: forge test -vvv
