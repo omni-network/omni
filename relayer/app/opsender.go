@@ -3,25 +3,18 @@ package relayer
 import (
 	"context"
 	"crypto/ecdsa"
-	"fmt"
 	"math/big"
 	"strings"
 
-	"github.com/ethereum-optimism/optimism/op-service/eth"
-	"github.com/ethereum-optimism/optimism/op-service/txmgr/metrics"
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	ethlog "github.com/ethereum/go-ethereum/log"
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/relayer/txmgr"
 
-	opcrypto "github.com/ethereum-optimism/optimism/op-service/crypto"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
-	"github.com/ethereum-optimism/optimism/op-service/txmgr"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/omni-network/omni/lib/xchain"
 )
@@ -39,16 +32,14 @@ func NewOpSender(ctx context.Context, chains []netconf.Chain, rpcClientPerChain 
 	txMgrs := make(map[uint64]txmgr.TxManager)
 	portals := make(map[uint64]common.Address)
 
-	l := WrapLogger(ctx)
-
 	for _, chain := range chains {
-		cfg, err := NewTxMgrConfig(ctx, txmgr.NewCLIConfig(chain.RPCURL, txmgr.DefaultBatcherFlagValues),
+		cfg, err := txmgr.NewConfig(ctx, txmgr.NewCLIConfig(chain.RPCURL, txmgr.DefaultSenderFlagValues),
 			privateKey, rpcClientPerChain[chain.ID])
 		if err != nil {
 			return OpSender{}, err
 		}
 
-		txMgr, err := initTxMgr(cfg, l)
+		txMgr, err := initTxMgr(cfg)
 		if err != nil {
 			return OpSender{}, err
 		}
@@ -125,68 +116,8 @@ func (o OpSender) SendTransaction(ctx context.Context, submission xchain.Submiss
 	return nil
 }
 
-// NewTxMgrConfig - creates a new txmgr config from the given CLI config and private key. This is taken and modified from op
-func NewTxMgrConfig(ctx context.Context, cfg txmgr.CLIConfig,
-	privateKey *ecdsa.PrivateKey, client *ethclient.Client) (txmgr.Config, error) {
-	if err := cfg.Check(); err != nil {
-		return txmgr.Config{}, fmt.Errorf("invalid config: %w", err)
-	}
-
-	ctx, cancel := context.WithTimeout(ctx, cfg.NetworkTimeout)
-	defer cancel()
-
-	ctx, cancel = context.WithTimeout(ctx, cfg.NetworkTimeout)
-	defer cancel()
-	chainID, err := client.ChainID(ctx)
-	if err != nil {
-		return txmgr.Config{}, errors.Wrap(err, "could not dial fetch L1 chain ID")
-	}
-
-	signer := func(chainID *big.Int) opcrypto.SignerFn {
-		s := opcrypto.PrivateKeySignerFn(privateKey, chainID)
-		return func(_ context.Context, addr common.Address, tx *types.Transaction) (*types.Transaction, error) {
-			return s(addr, tx)
-		}
-	}
-
-	feeLimitThreshold, err := eth.GweiToWei(cfg.FeeLimitThresholdGwei)
-	if err != nil {
-		return txmgr.Config{}, errors.Wrap(err, "invalid fee limit threshold")
-	}
-
-	minBaseFee, err := eth.GweiToWei(cfg.MinBaseFeeGwei)
-	if err != nil {
-		return txmgr.Config{}, errors.Wrap(err, "invalid min base fee")
-	}
-
-	minTipCap, err := eth.GweiToWei(cfg.MinTipCapGwei)
-	if err != nil {
-		return txmgr.Config{}, errors.Wrap(err, "invalid min tip cap")
-	}
-
-	return txmgr.Config{
-		Backend:                   client,
-		ResubmissionTimeout:       cfg.ResubmissionTimeout,
-		FeeLimitMultiplier:        cfg.FeeLimitMultiplier,
-		FeeLimitThreshold:         feeLimitThreshold,
-		MinBaseFee:                minBaseFee,
-		MinTipCap:                 minTipCap,
-		ChainID:                   chainID,
-		TxSendTimeout:             cfg.TxSendTimeout,
-		TxNotInMempoolTimeout:     cfg.TxNotInMempoolTimeout,
-		NetworkTimeout:            cfg.NetworkTimeout,
-		ReceiptQueryInterval:      cfg.ReceiptQueryInterval,
-		NumConfirmations:          cfg.NumConfirmations,
-		SafeAbortNonceTooLowCount: cfg.SafeAbortNonceTooLowCount,
-		Signer:                    signer(chainID),
-		From:                      crypto.PubkeyToAddress(privateKey.PublicKey),
-	}, nil
-}
-
-func initTxMgr(cfg txmgr.Config, logger ethlog.Logger) (txmgr.TxManager, error) {
-	// todo(lazar): metrics
-	m := metrics.NoopTxMetrics{}
-	txMgr, err := txmgr.NewSimpleTxManagerFromConfig("op-relayer", logger, &m, cfg)
+func initTxMgr(cfg txmgr.Config) (txmgr.TxManager, error) {
+	txMgr, err := txmgr.NewSimpleTxManagerFromConfig("op-relayer", cfg)
 	if err != nil {
 		return nil, errors.New("failed to create tx mgr", "error", err)
 	}
