@@ -29,11 +29,6 @@ type DefaultFlagValues struct {
 
 type CLIConfig struct {
 	L1RPCURL                  string
-	Mnemonic                  string
-	HDPath                    string
-	SequencerHDPath           string
-	L2OutputHDPath            string
-	PrivateKey                string
 	NumConfirmations          uint64
 	SafeAbortNonceTooLowCount uint64
 	FeeLimitMultiplier        uint64

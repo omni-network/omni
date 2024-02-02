@@ -473,7 +473,7 @@ func (m *SimpleTxManager) queryReceipt(ctx context.Context, txHash common.Hash, 
 
 		return nil
 	} else if receipt == nil {
-		log.Info(ctx, "Receipt is nil", txHash)
+		log.Info(ctx, "Receipt is nil", "tx_hash", txHash)
 
 		return nil
 	}
@@ -534,14 +534,23 @@ func (m *SimpleTxManager) IncreaseGasPrice(ctx context.Context, tx *types.Transa
 		// original tx can get included in a block just before the above call. In this case the
 		// error is due to the tx reverting with message "block number must be equal to next
 		// expected block number"
-		log.Warn(ctx, "Failed to re-estimate gas", err, "tx", tx.Hash(), "gas_limit", tx.Gas(),
-			"gas_fee_cap", bumpedFee, "gas_tip_cap", bumpedTip)
+		log.Warn(ctx, "Failed to re-estimate gas", err,
+			"tx", tx.Hash(),
+			"gas_limit", tx.Gas(),
+			"gas_fee_cap", bumpedFee,
+			"gas_tip_cap", bumpedTip,
+		)
 		// just log and carry on
 		gas = tx.Gas()
 	}
 	if tx.Gas() != gas {
-		log.Debug(ctx, "Re-estimated gas differs", "tx", tx.Hash(), "old_gas", tx.Gas(), "new_gas", gas,
-			"gas_fee_Cap", bumpedFee, "gas_tip_cap", bumpedTip)
+		log.Debug(ctx, "Re-estimated gas differs",
+			"tx", tx.Hash(),
+			"old_gas", tx.Gas(),
+			"new_gas", gas,
+			"gas_fee_cap", bumpedFee,
+			"gas_tip_cap", bumpedTip,
+		)
 	}
 
 	newTx := types.NewTx(&types.DynamicFeeTx{

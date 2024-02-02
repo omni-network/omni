@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/relayer/txmgr"
 
 	"github.com/ethereum/go-ethereum"
@@ -137,13 +138,6 @@ func (g *gasPricer) baseFee() *big.Int {
 	return new(big.Int).Mul(g.baseBaseFee, big.NewInt(g.epoch))
 }
 
-func (g *gasPricer) excessblobgas() uint64 {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-
-	return g.excessBlobGas * uint64(g.epoch)
-}
-
 func (g *gasPricer) sample() (*big.Int, *big.Int) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -226,7 +220,8 @@ func (b *mockBackend) HeaderByNumber(ctx context.Context, number *big.Int) (*typ
 	if number != nil {
 		num.Set(number)
 	}
-	bg := b.g.excessblobgas()
+
+	bg := b.g.excessBlobGas + uint64(b.g.epoch)
 
 	return &types.Header{
 		Number:        num,
@@ -327,7 +322,7 @@ func TestTxMgrConfirmAtMinGasPrice(t *testing.T) {
 	}
 	h.backend.setTxSender(sendTx)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 250*time.Millisecond)
 	defer cancel()
 	receipt, err := h.mgr.SendTx(ctx, tx)
 	require.NoError(t, err)
@@ -339,7 +334,7 @@ func TestTxMgrConfirmAtMinGasPrice(t *testing.T) {
 // transaction is mined. This is done to ensure the tx mgr can properly
 // abort on shutdown, even if a txn is in the process of being published.
 func TestTxMgrNeverConfirmCancel(t *testing.T) {
-	t.SkipNow()
+	//t.SkipNow()
 	t.Parallel()
 
 	h := newTestHarness(t)
@@ -355,7 +350,7 @@ func TestTxMgrNeverConfirmCancel(t *testing.T) {
 	}
 	h.backend.setTxSender(sendTx)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 
 	receipt, err := h.mgr.SendTx(ctx, tx)
@@ -385,7 +380,7 @@ func TestTxMgrConfirmsAtHigherGasPrice(t *testing.T) {
 	}
 	h.backend.setTxSender(sendTx)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	receipt, err := h.mgr.SendTx(ctx, tx)
@@ -402,26 +397,30 @@ var errRPCFailure = errors.New("rpc failure")
 // ErrPublishTimeout.
 func TestTxMgrBlocksOnFailingRpcCalls(t *testing.T) {
 	t.Parallel()
-
 	h := newTestHarness(t)
-
 	gasTipCap, gasFeeCap := h.gasPricer.sample()
-	tx := types.NewTx(&types.DynamicFeeTx{
+	orig := types.NewTx(&types.DynamicFeeTx{
 		GasTipCap: gasTipCap,
 		GasFeeCap: gasFeeCap,
 	})
-
+	errFirst := true
+	var sent *types.Transaction
 	sendTx := func(ctx context.Context, tx *types.Transaction) error {
-		return errRPCFailure
+		if errFirst {
+			errFirst = false
+			return errRPCFailure
+		}
+		sent = tx
+		hash := tx.Hash()
+		h.backend.mine(&hash, tx.GasFeeCap(), nil)
+		return nil
 	}
 	h.backend.setTxSender(sendTx)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	receipt, err := h.mgr.SendTx(ctx, tx)
-	require.Error(t, err)
-	require.Nil(t, receipt)
+	receipt, err := h.mgr.SendTx(context.Background(), orig)
+	require.NoError(t, err)
+	require.NotNil(t, receipt)
+	require.Equal(t, receipt.TxHash, sent.Hash())
+	require.GreaterOrEqual(t, sent.GasTipCap().Uint64(), orig.GasTipCap().Uint64())
 }
 
 // TestTxMgr_CraftTx ensures that the tx manager will create transactions as expected.
@@ -556,7 +555,7 @@ func TestTxMgrOnlyOnePublicationSucceeds(t *testing.T) {
 	}
 	h.backend.setTxSender(sendTx)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	receipt, err := h.mgr.SendTx(ctx, tx)
 	require.NoError(t, err)
@@ -582,7 +581,7 @@ func TestTxMgrConfirmsMinGasPriceAfterBumping(t *testing.T) {
 	sendTx := func(ctx context.Context, tx *types.Transaction) error {
 		// Delay mining the tx with the min gas price.
 		if h.gasPricer.shouldMine(tx.GasFeeCap()) {
-			time.AfterFunc(5*time.Second, func() {
+			time.AfterFunc(1*time.Second, func() {
 				txHash := tx.Hash()
 				h.backend.mine(&txHash, tx.GasFeeCap(), nil)
 			})
@@ -592,7 +591,7 @@ func TestTxMgrConfirmsMinGasPriceAfterBumping(t *testing.T) {
 	}
 	h.backend.setTxSender(sendTx)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	receipt, err := h.mgr.SendTx(ctx, tx)
 	require.NoError(t, err)
@@ -623,7 +622,7 @@ func TestTxMgrDoesntAbortNonceTooLowAfterMiningTx(t *testing.T) {
 		case h.gasPricer.shouldMine(tx.GasFeeCap()):
 			txHash := tx.Hash()
 			h.backend.mine(&txHash, tx.GasFeeCap(), nil)
-			time.AfterFunc(5*time.Second, func() {
+			time.AfterFunc(1*time.Second, func() {
 				h.backend.mine(nil, nil, nil)
 			})
 
@@ -637,7 +636,7 @@ func TestTxMgrDoesntAbortNonceTooLowAfterMiningTx(t *testing.T) {
 	}
 	h.backend.setTxSender(sendTx)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	receipt, err := h.mgr.SendTx(ctx, tx)
 	require.NoError(t, err)
@@ -672,7 +671,7 @@ func TestWaitMinedCanBeCanceled(t *testing.T) {
 
 	h := newTestHarness(t)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()
 
 	// Create an unimined tx.
@@ -680,6 +679,7 @@ func TestWaitMinedCanBeCanceled(t *testing.T) {
 
 	receipt, err := h.mgr.WaitMined(ctx, tx, txmgr.NewSendState(10, time.Hour))
 	require.Error(t, err)
+	log.Debug(ctx, "err", err, "hash", tx.Hash())
 	require.Nil(t, receipt)
 }
 
