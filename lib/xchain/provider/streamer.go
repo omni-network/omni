@@ -15,17 +15,28 @@ func (p *Provider) streamBlocks(ctx context.Context, chainID uint64, height uint
 
 		// stream blocks until the context is canceled
 		for ctx.Err() == nil {
-			// fetch xBlock
-			log.Debug(ctx, "Fetching block", "height", currentHeight)
-			xBlock, ok := p.fetchXBlock(ctx, chainID, currentHeight, backoff, reset)
-			if !ok {
-				// this will happen only if the context is killed
+			currCtx := log.WithCtx(ctx, "height", currentHeight)
+
+			xBlock, ok := p.fetchXBlock(currCtx, chainID, currentHeight, backoff, reset)
+			if !ok { // this will happen only if the context is killed
 				return
 			}
 
 			// deliver the fetched xBlock
-			deliverXBlock(ctx, currentHeight, xBlock, callback, backoff, reset)
-			log.Debug(ctx, "Delivered xBlock", "height", currentHeight)
+			for currCtx.Err() == nil {
+				err := callback(currCtx, xBlock)
+				if currCtx.Err() != nil {
+					return // Application context is killed
+				} else if err != nil {
+					log.Warn(currCtx, "Failure delivering xblock callback (will retry)", err)
+					backoff()
+
+					continue
+				}
+
+				break // successfully delivered the xBlock
+			}
+			reset() // delivery backoff reset
 
 			currentHeight++
 		}
@@ -69,30 +80,4 @@ func (p *Provider) fetchXBlock(ctx context.Context,
 	}
 
 	return xchain.Block{}, false
-}
-
-func deliverXBlock(ctx context.Context,
-	currentHeight uint64,
-	xBlock xchain.Block,
-	callback xchain.ProviderCallback,
-	backoff func(),
-	reset func(),
-) {
-	// deliver the fetched xBlock
-	for ctx.Err() == nil {
-		err := callback(ctx, xBlock)
-		if ctx.Err() != nil {
-			return
-		}
-		if err != nil {
-			log.Warn(ctx, "Could not deliver xBlock, will retry again after sometime", err,
-				"height", currentHeight)
-			backoff() // try delivering after sometime
-
-			continue
-		}
-		reset() // delivery backoff reset
-
-		break // successfully delivered the xBlock
-	}
 }

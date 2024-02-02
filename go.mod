@@ -1,6 +1,6 @@
 module github.com/omni-network/omni
 
-go 1.21.5
+go 1.22.0
 
 require (
 	entgo.io/ent v0.12.5

@@ -27,7 +27,9 @@ services:
         condition: service_healthy
 
   graphql:
-    image: omniops/explorer-graphql
+    image: omniops/explorer-graphql:main
+    environment:
+      - GRAPHQL_LOG_COLOR=force
     ports:
       - 8080:8080
     depends_on:
@@ -35,11 +37,16 @@ services:
         condition: service_healthy
 
   indexer:
-    image: omniops/explorer-indexer
-    expose:
-      - 8081
-    ports:
-      - 8081:8081
+    image: omniops/explorer-indexer:main
+    environment:
+      - INDEXER_LOG_COLOR=force
+    volumes:
+      - ./network.json:/network.json
     depends_on:
       db:
         condition: service_healthy
+
+networks:
+  default:
+    name: devnet1_devnet1
+    external: true
