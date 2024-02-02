@@ -8,7 +8,7 @@ on:
       - tt/foundry-action
 
 jobs:
-  unit_tests:
+  sol_tests:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
@@ -17,6 +17,10 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
       - name: Cd into contracts
         run: cd contracts
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+      - name: Install dependencies
+        run: pnpm install
       - name: Run fmt
         run: forge fmt
       - name: Run snapshot
