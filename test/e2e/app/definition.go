@@ -15,6 +15,9 @@ import (
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
 
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/p2p/enode"
+
 	"github.com/BurntSushi/toml"
 )
 
@@ -123,6 +126,14 @@ func TestnetFromManifest(manifest types.Manifest, manifestFile string, infd type
 		if !ok {
 			return types.Testnet{}, errors.New("omni evm instance not found in infrastructure data")
 		}
+
+		nodeKey, err := crypto.GenerateKey()
+		if err != nil {
+			return types.Testnet{}, errors.Wrap(err, "generate node key")
+		}
+
+		en := enode.NewV4(&nodeKey.PublicKey, inst.IPAddress, 30303, 30303)
+
 		omniEVMS = append(omniEVMS, types.OmniEVM{
 			Chain:           types.ChainOmniEVM,
 			InstanceName:    name,
@@ -131,7 +142,21 @@ func TestnetFromManifest(manifest types.Manifest, manifestFile string, infd type
 			InternalRPC:     fmt.Sprintf("http://%s:8545", name),
 			InternalAuthRPC: fmt.Sprintf("http://%s:8551", name),
 			ExternalRPC:     fmt.Sprintf("http://%s:%d", inst.ExtIPAddress.String(), inst.Port),
+			NodeKey:         nodeKey,
+			Enode:           en,
 		})
+	}
+
+	// Second pass to mesh the bootnodes
+	for i := range omniEVMS {
+		var bootnodes []*enode.Node
+		for j, bootEVM := range omniEVMS {
+			if i == j {
+				continue // Skip self
+			}
+			bootnodes = append(bootnodes, bootEVM.Enode)
+		}
+		omniEVMS[i].BootNodes = bootnodes
 	}
 
 	var anvils []types.AnvilChain
@@ -200,9 +225,11 @@ func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 	// Add all public chains
 	for _, public := range testnet.PublicChains {
 		chains = append(chains, netconf.Chain{
-			ID:     public.Chain.ID,
-			Name:   public.Chain.Name,
-			RPCURL: public.RPCAddress,
+			ID:            public.Chain.ID,
+			Name:          public.Chain.Name,
+			RPCURL:        public.RPCAddress,
+			PortalAddress: deployInfo[public.Chain].PortalAddress.Hex(),
+			DeployHeight:  deployInfo[public.Chain].DeployHeight,
 		})
 	}
 
@@ -241,9 +268,11 @@ func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 	// Add all public chains
 	for _, public := range testnet.PublicChains {
 		chains = append(chains, netconf.Chain{
-			ID:     public.Chain.ID,
-			Name:   public.Chain.Name,
-			RPCURL: public.RPCAddress,
+			ID:            public.Chain.ID,
+			Name:          public.Chain.Name,
+			RPCURL:        public.RPCAddress,
+			PortalAddress: deployInfo[public.Chain].PortalAddress.Hex(),
+			DeployHeight:  deployInfo[public.Chain].DeployHeight,
 		})
 	}
 

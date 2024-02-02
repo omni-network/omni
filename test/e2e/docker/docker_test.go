@@ -12,6 +12,9 @@ import (
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/p2p/enode"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,6 +25,10 @@ func TestComposeTemplate(t *testing.T) {
 
 	_, ipNet, err := net.ParseCIDR("10.186.73.0/24")
 	require.NoError(t, err)
+
+	key, err := crypto.HexToECDSA("59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d")
+	require.NoError(t, err)
+	en := enode.NewV4(&key.PublicKey, ipNet.IP, 30303, 30303)
 
 	dir := t.TempDir()
 	testnet := types.Testnet{
@@ -42,6 +49,9 @@ func TestComposeTemplate(t *testing.T) {
 				InstanceName: "omni_evm_0",
 				InternalIP:   ipNet.IP,
 				ProxyPort:    8000,
+				NodeKey:      key,
+				Enode:        en,
+				BootNodes:    []*enode.Node{en},
 			},
 		},
 		AnvilChains: []types.AnvilChain{

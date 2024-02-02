@@ -69,7 +69,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 
 	sendCancel() // Stop sending messages
 
-	if err := Wait(ctx, def.Testnet.Testnet, 5); err != nil { // wait for network to settle before tests
+	if err := Wait(ctx, def.Testnet.Testnet, 10); err != nil { // wait for network to settle before tests
 		return err
 	}
 
