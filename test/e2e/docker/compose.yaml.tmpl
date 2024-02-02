@@ -1,0 +1,115 @@
+version: '2.4'
+networks:
+  {{ .Name }}:
+    labels:
+      e2e: true
+    driver: bridge
+{{- if .IPv6 }}
+    enable_ipv6: true
+{{- end }}
+    ipam:
+      driver: default
+      config:
+      - subnet: {{ .IP }}
+
+services:
+{{- range .Nodes }}
+  {{ .Name }}:
+    labels:
+      e2e: true
+    container_name: {{ .Name }}
+    image: {{ .Version }}
+    init: true
+    ports:
+    - 26656
+    - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}26657
+{{- if .PrometheusProxyPort }}
+    - {{ .PrometheusProxyPort }}:26660
+{{- end }}
+    - 6060
+    volumes:
+    - ./{{ .Name }}:/halo
+    - ./{{ index $.NodeOmniEVMs .Name }}/jwtsecret:/geth/jwtsecret
+    networks:
+      {{ $.Name }}:
+        ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .InternalIP }}
+{{end}}
+
+{{- range .Anvils }}
+  # Initialises geth files and folder from provided genesis file.
+  {{ .Name }}:
+    labels:
+      e2e: true
+    container_name: {{ .Name }}
+    image: ghcr.io/foundry-rs/foundry:latest
+    entrypoint: ['anvil','--host','0.0.0.0','--chain-id','{{ .ChainID }}','--block-time','1', "--silent"]
+    ports:
+      - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}8545
+    networks:
+      {{ $.Name }}:
+        ipv4_address: {{ .InternalIP }}
+{{end}}
+
+  # Use geth as the omni EVMs.
+{{- range .OmniEVMs }}
+  # Initialises geth files and folder from provided genesis file.
+  {{ .Name }}-init:
+    labels:
+      e2e: true
+    container_name: {{ .Name }}-init
+    image: "ethereum/client-go:latest"
+    command: --datadir=/geth init /geth/genesis.json
+    volumes:
+      - ./{{ .Name }}:/geth
+
+  {{ .Name }}:
+    labels:
+      e2e: true
+    container_name: {{ .Name }}
+    image: "ethereum/client-go:latest"
+    command:
+      - --http
+      - --http.vhosts=*
+      - --http.api=eth,net,web3
+      - --http.addr=0.0.0.0
+      - --http.corsdomain=*
+      - --ws
+      - --ws.api=eth,net,web3
+      - --ws.addr=0.0.0.0
+      - --ws.origins=*
+      - --authrpc.vhosts=*
+      - --authrpc.addr=0.0.0.0
+      - --authrpc.jwtsecret=/geth/jwtsecret
+      - --datadir=/geth
+      - --allow-insecure-unlock
+      - --unlock=0x123463a4b065722e99115d6c222f267d9cabb524
+      - --password=/geth/geth_password.txt
+      - --nodiscover
+      - --syncmode=full
+      - --nodekeyhex={{.NodeKeyHex}}
+      - --bootnodes={{.BootNodes}}
+    ports:
+      - 8551
+      - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}8545
+      - 8546
+    depends_on:
+      {{ .Name }}-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./{{ .Name }}:/geth
+    networks:
+      {{ $.Name }}:
+        ipv4_address: {{ .InternalIP }}
+{{end}}
+
+  relayer:
+    labels:
+      e2e: true
+    container_name: relayer
+    image: omniops/relayer:main
+    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    volumes:
+      - ./relayer:/relayer
+    networks:
+      {{ $.Name }}:
+        ipv4_address: 10.186.73.200

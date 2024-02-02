@@ -1,0 +1,283 @@
+package app
+
+import (
+	"fmt"
+	"path/filepath"
+	"strings"
+
+	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/test/e2e/docker"
+	"github.com/omni-network/omni/test/e2e/netman"
+	"github.com/omni-network/omni/test/e2e/types"
+
+	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
+
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/p2p/enode"
+
+	"github.com/BurntSushi/toml"
+)
+
+const infraDocker = "docker"
+
+// DefinitionConfig is the configuration required to create a full Definition.
+type DefinitionConfig struct {
+	ManifestFile  string
+	InfraProvider string
+
+	// Secrets (not required for devnet)
+	DeployKeyFile  string
+	RelayerKeyFile string
+}
+
+// DefaultDefinitionConfig returns a default configuration for a Definition.
+func DefaultDefinitionConfig() DefinitionConfig {
+	return DefinitionConfig{
+		InfraProvider: infraDocker,
+	}
+}
+
+// Definition defines a e2e network. All (sub)commands of the e2e cli requires a definition operate.
+// Armed with a definition, a e2e network can be deployed, started, tested, stopped, etc.
+type Definition struct {
+	Testnet types.Testnet // Note that testnet is the cometBFT term.
+	Infra   infra.Provider
+	Netman  netman.Manager
+}
+
+func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
+	manifest, err := LoadManifest(cfg.ManifestFile)
+	if err != nil {
+		return Definition{}, errors.Wrap(err, "loading manifest")
+	}
+
+	ifd, err := docker.NewInfraData(manifest)
+	if err != nil {
+		return Definition{}, errors.Wrap(err, "creating docker infrastructure data")
+	}
+
+	testnet, err := TestnetFromManifest(manifest, cfg.ManifestFile, ifd)
+	if err != nil {
+		return Definition{}, errors.Wrap(err, "loading testnet")
+	}
+
+	mngr, err := netman.NewManager(testnet, cfg.DeployKeyFile, cfg.RelayerKeyFile)
+	if err != nil {
+		return Definition{}, errors.Wrap(err, "get network")
+	}
+
+	return Definition{
+		Testnet: testnet,
+		Infra:   docker.NewProvider(testnet, ifd),
+		Netman:  mngr,
+	}, nil
+}
+
+func adaptCometTestnet(testnet *e2e.Testnet) *e2e.Testnet {
+	testnet.Dir = runsDir(testnet.File)
+	testnet.VoteExtensionsEnableHeight = 1
+	testnet.UpgradeVersion = "omniops/halo:main"
+	for i := range testnet.Nodes {
+		testnet.Nodes[i] = adaptNode(testnet.Nodes[i])
+	}
+
+	return testnet
+}
+
+func adaptNode(node *e2e.Node) *e2e.Node {
+	node.Version = "omniops/halo:main"
+	node.PrivvalKey = k1.GenPrivKey()
+
+	return node
+}
+
+// runsDir returns the runs directory for a given manifest file.
+// E.g. /path/to/manifests/manifest.toml > /path/to/runs/manifest.
+func runsDir(manifestFile string) string {
+	resp := strings.TrimSuffix(manifestFile, filepath.Ext(manifestFile))
+	return strings.Replace(resp, "manifests", "runs", 1)
+}
+
+// LoadManifest loads a manifest from disk.
+func LoadManifest(path string) (types.Manifest, error) {
+	manifest := types.Manifest{}
+	_, err := toml.DecodeFile(path, &manifest)
+	if err != nil {
+		return manifest, errors.Wrap(err, "decode manifest")
+	}
+
+	return manifest, nil
+}
+
+//nolint:nosprintfhostport // Not an issue for non-critical e2e test code.
+func TestnetFromManifest(manifest types.Manifest, manifestFile string, infd types.InfrastructureData,
+) (types.Testnet, error) {
+	cmtTestnet, err := e2e.NewTestnetFromManifest(manifest.Manifest, manifestFile, infd.InfrastructureData)
+	if err != nil {
+		return types.Testnet{}, errors.Wrap(err, "testnet from manifest")
+	}
+
+	var omniEVMS []types.OmniEVM
+	for _, name := range manifest.OmniEVMs() {
+		inst, ok := infd.OmniEVMs[name]
+		if !ok {
+			return types.Testnet{}, errors.New("omni evm instance not found in infrastructure data")
+		}
+
+		nodeKey, err := crypto.GenerateKey()
+		if err != nil {
+			return types.Testnet{}, errors.Wrap(err, "generate node key")
+		}
+
+		en := enode.NewV4(&nodeKey.PublicKey, inst.IPAddress, 30303, 30303)
+
+		omniEVMS = append(omniEVMS, types.OmniEVM{
+			Chain:           types.ChainOmniEVM,
+			InstanceName:    name,
+			InternalIP:      inst.IPAddress,
+			ProxyPort:       inst.Port,
+			InternalRPC:     fmt.Sprintf("http://%s:8545", name),
+			InternalAuthRPC: fmt.Sprintf("http://%s:8551", name),
+			ExternalRPC:     fmt.Sprintf("http://%s:%d", inst.ExtIPAddress.String(), inst.Port),
+			NodeKey:         nodeKey,
+			Enode:           en,
+		})
+	}
+
+	// Second pass to mesh the bootnodes
+	for i := range omniEVMS {
+		var bootnodes []*enode.Node
+		for j, bootEVM := range omniEVMS {
+			if i == j {
+				continue // Skip self
+			}
+			bootnodes = append(bootnodes, bootEVM.Enode)
+		}
+		omniEVMS[i].BootNodes = bootnodes
+	}
+
+	var anvils []types.AnvilChain
+	for _, chain := range types.AnvilChainsByNames(manifest.AnvilChains) {
+		inst, ok := infd.AnvilChains[chain.Name]
+		if !ok {
+			return types.Testnet{}, errors.New("anvil chain instance not found in infrastructure data")
+		}
+		anvils = append(anvils, types.AnvilChain{
+			Chain:       chain,
+			InternalIP:  inst.IPAddress,
+			ProxyPort:   inst.Port,
+			InternalRPC: fmt.Sprintf("http://%s:8545", chain.Name),
+			ExternalRPC: fmt.Sprintf("http://%s:%d", inst.ExtIPAddress.String(), inst.Port),
+		})
+	}
+
+	var publics []types.PublicChain
+	for _, name := range manifest.PublicChains {
+		chain, err := types.PublicChainByName(name)
+		if err != nil {
+			return types.Testnet{}, errors.Wrap(err, "get public chain")
+		}
+		publics = append(publics, types.PublicChain{
+			Chain:      chain,
+			RPCAddress: types.PublicRPCByName(name),
+		})
+	}
+
+	return types.Testnet{
+		Network:      manifest.Network,
+		Testnet:      adaptCometTestnet(cmtTestnet),
+		OmniEVMs:     omniEVMS,
+		AnvilChains:  anvils,
+		PublicChains: publics,
+	}, nil
+}
+
+// internalNetwork returns a internal intra-network netconf.Network from the testnet and deployInfo.
+func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman.DeployInfo) netconf.Network {
+	var chains []netconf.Chain
+
+	// Use the first omni evm instance for now.
+	omniEVM := testnet.OmniEVMs[0]
+	chains = append(chains, netconf.Chain{
+		ID:            omniEVM.Chain.ID,
+		Name:          omniEVM.Chain.Name,
+		RPCURL:        omniEVM.InternalRPC,
+		AuthRPCURL:    omniEVM.InternalAuthRPC,
+		PortalAddress: deployInfo[omniEVM.Chain].PortalAddress.Hex(),
+		DeployHeight:  deployInfo[omniEVM.Chain].DeployHeight,
+		IsOmni:        true,
+	})
+
+	// Add all anvil chains
+	for _, anvil := range testnet.AnvilChains {
+		chains = append(chains, netconf.Chain{
+			ID:            anvil.Chain.ID,
+			Name:          anvil.Chain.Name,
+			RPCURL:        anvil.InternalRPC,
+			PortalAddress: deployInfo[anvil.Chain].PortalAddress.Hex(),
+			DeployHeight:  deployInfo[anvil.Chain].DeployHeight,
+		})
+	}
+
+	// Add all public chains
+	for _, public := range testnet.PublicChains {
+		chains = append(chains, netconf.Chain{
+			ID:            public.Chain.ID,
+			Name:          public.Chain.Name,
+			RPCURL:        public.RPCAddress,
+			PortalAddress: deployInfo[public.Chain].PortalAddress.Hex(),
+			DeployHeight:  deployInfo[public.Chain].DeployHeight,
+		})
+	}
+
+	return netconf.Network{
+		Name:   testnet.Network,
+		Chains: chains,
+	}
+}
+
+// externalNetwork returns a external e2e-app netconf.Network from the testnet and deployInfo.
+func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman.DeployInfo) netconf.Network {
+	var chains []netconf.Chain
+
+	// Use the first omni evm instance for now.
+	omniEVM := testnet.OmniEVMs[0]
+	chains = append(chains, netconf.Chain{
+		ID:            omniEVM.Chain.ID,
+		Name:          omniEVM.Chain.Name,
+		RPCURL:        omniEVM.ExternalRPC,
+		PortalAddress: deployInfo[omniEVM.Chain].PortalAddress.Hex(),
+		DeployHeight:  deployInfo[omniEVM.Chain].DeployHeight,
+		IsOmni:        true,
+	})
+
+	// Add all anvil chains
+	for _, anvil := range testnet.AnvilChains {
+		chains = append(chains, netconf.Chain{
+			ID:            anvil.Chain.ID,
+			Name:          anvil.Chain.Name,
+			RPCURL:        anvil.ExternalRPC,
+			PortalAddress: deployInfo[anvil.Chain].PortalAddress.Hex(),
+			DeployHeight:  deployInfo[anvil.Chain].DeployHeight,
+		})
+	}
+
+	// Add all public chains
+	for _, public := range testnet.PublicChains {
+		chains = append(chains, netconf.Chain{
+			ID:            public.Chain.ID,
+			Name:          public.Chain.Name,
+			RPCURL:        public.RPCAddress,
+			PortalAddress: deployInfo[public.Chain].PortalAddress.Hex(),
+			DeployHeight:  deployInfo[public.Chain].DeployHeight,
+		})
+	}
+
+	return netconf.Network{
+		Name:   testnet.Network,
+		Chains: chains,
+	}
+}

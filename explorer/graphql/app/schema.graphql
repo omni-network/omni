@@ -1,0 +1,87 @@
+"""
+Bytes32 is a 32 byte binary string, represented as 0x-prefixed hexadecimal.
+"""
+scalar Bytes32
+
+"""
+Address is a 20 byte Ethereum address, represented as 0x-prefixed hexadecimal.
+"""
+scalar Address
+
+"""
+Bytes is an arbitrary length binary string, represented as 0x-prefixed hexadecimal.
+An empty byte string is represented as '0x'. Byte strings must have an even number of hexadecimal nybbles.
+"""
+scalar Bytes
+
+"""
+BigInt is a large integer. Input is accepted as either a JSON number or as a string.
+Strings may be either decimal or 0x-prefixed hexadecimal. Output values are all
+0x-prefixed hexadecimal.
+"""
+scalar BigInt
+
+"""
+Long is a 64 bit unsigned integer. Input is accepted as either a JSON number or as a string.
+Strings may be either decimal or 0x-prefixed hexadecimal.
+Output values are all 0x-prefixed hexadecimal.
+"""
+scalar Long
+
+scalar Time
+
+"""
+XMsg is a cross-chain message.
+"""
+type XMsg {
+  "Monotonically incremented offset of Msg in the Steam"
+  StreamOffset: BigInt!
+
+  "Sender on source chain, set to msg.Sender"
+  SourceMessageSender: Address!
+
+  "Target/To address to 'call' on destination chain"
+  DestAddress: Address!
+
+  "Gas limit to use for 'call' on destination chain"
+  DestGasLimit: BigInt!
+
+  "Source chain ID as per https://chainlist.org/"
+  SourceChainID: BigInt!
+
+  "Destination chain ID as per https://chainlist.org/"
+  DestChainID: BigInt!
+
+  "Hash of the source chain transaction that emitted the message"
+  TxHash: Bytes32!
+}
+
+"""
+XBlock represents a cross-chain block.
+"""
+type XBlock {
+  "UUID of our block"
+  UUID: ID!
+
+  "Source chain ID as per https://chainlist.org"
+  SourceChainID: BigInt!
+
+  "Height of the source chain block"
+  BlockHeight: BigInt!
+
+  "Hash of the source chain block"
+  BlockHash: Bytes32!
+
+  "All cross-chain messages sent/emittted in the block"
+  Messages: [XMsg!]!
+
+  # "Receipts of all submitted cross-chain messages applied in the block"
+  # Receipts  [Receipt!]!
+
+  "Timestamp of the source chain block"
+  Timestamp: Time!
+}
+
+type Query {
+  xblock(sourceChainID: BigInt!, height: BigInt!): XBlock
+}

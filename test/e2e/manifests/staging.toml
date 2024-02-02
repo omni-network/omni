@@ -1,6 +1,6 @@
-network="staging"
+network = "staging"
+public_chains = ["arb_goerli"]
+multi_omni_evms = true
 
 [node.validator01]
 [node.validator02]
-[node.validator03]
-[node.validator04]

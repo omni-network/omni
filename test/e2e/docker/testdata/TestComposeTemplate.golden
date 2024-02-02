@@ -1,0 +1,105 @@
+version: '2.4'
+networks:
+  test:
+    labels:
+      e2e: true
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+      - subnet: 10.186.73.0/24
+
+services:
+  node0:
+    labels:
+      e2e: true
+    container_name: node0
+    image: v0.0.0
+    init: true
+    ports:
+    - 26656
+    - 8584:26657
+    - 6060
+    volumes:
+    - ./node0:/halo
+    - ./omni_evm_0/jwtsecret:/geth/jwtsecret
+    networks:
+      test:
+        ipv4_address: 10.186.73.0
+
+  # Initialises geth files and folder from provided genesis file.
+  chain_a:
+    labels:
+      e2e: true
+    container_name: chain_a
+    image: ghcr.io/foundry-rs/foundry:latest
+    entrypoint: ['anvil','--host','0.0.0.0','--chain-id','99','--block-time','1', "--silent"]
+    ports:
+      - 9000:8545
+    networks:
+      test:
+        ipv4_address: 10.186.73.0
+
+
+  # Use geth as the omni EVMs.
+  # Initialises geth files and folder from provided genesis file.
+  omni_evm_0-init:
+    labels:
+      e2e: true
+    container_name: omni_evm_0-init
+    image: "ethereum/client-go:latest"
+    command: --datadir=/geth init /geth/genesis.json
+    volumes:
+      - ./omni_evm_0:/geth
+
+  omni_evm_0:
+    labels:
+      e2e: true
+    container_name: omni_evm_0
+    image: "ethereum/client-go:latest"
+    command:
+      - --http
+      - --http.vhosts=*
+      - --http.api=eth,net,web3
+      - --http.addr=0.0.0.0
+      - --http.corsdomain=*
+      - --ws
+      - --ws.api=eth,net,web3
+      - --ws.addr=0.0.0.0
+      - --ws.origins=*
+      - --authrpc.vhosts=*
+      - --authrpc.addr=0.0.0.0
+      - --authrpc.jwtsecret=/geth/jwtsecret
+      - --datadir=/geth
+      - --allow-insecure-unlock
+      - --unlock=0x123463a4b065722e99115d6c222f267d9cabb524
+      - --password=/geth/geth_password.txt
+      - --nodiscover
+      - --syncmode=full
+      - --nodekeyhex=59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
+      - --bootnodes=enode://ba5734d8f7091719471e7f7ed6b9df170dc70cc661ca05e688601ad984f068b0d67351e5f06073092499336ab0839ef8a521afd334e53807205fa2f08eec74f4@10.186.73.0:30303
+    ports:
+      - 8551
+      - 8000:8545
+      - 8546
+    depends_on:
+      omni_evm_0-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./omni_evm_0:/geth
+    networks:
+      test:
+        ipv4_address: 10.186.73.0
+
+
+  relayer:
+    labels:
+      e2e: true
+    container_name: relayer
+    image: omniops/relayer:main
+    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    volumes:
+      - ./relayer:/relayer
+    networks:
+      test:
+        ipv4_address: 10.186.73.200
