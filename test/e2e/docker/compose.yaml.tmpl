@@ -42,6 +42,7 @@ services:
       e2e: true
     container_name: {{ .Name }}
     image: ghcr.io/foundry-rs/foundry:latest
+    platform: linux/amd64
     entrypoint: ['anvil','--host','0.0.0.0','--chain-id','{{ .ChainID }}','--block-time','1', "--silent"]
     ports:
       - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}8545
