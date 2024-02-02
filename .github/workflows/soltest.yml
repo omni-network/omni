@@ -15,17 +15,21 @@ jobs:
         uses: actions/checkout@v4
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
-      - name: Cd into contracts
-        run: cd contracts
       - name: Install pnpm
         uses: pnpm/action-setup@v2
+        with:
+          package_json_file: contracts/package.json
       - name: Install dependencies
         run: pnpm install
+        working-directory: contracts
       - name: Run fmt
         run: forge fmt
+        working-directory: contracts
       - name: Run snapshot
         run: forge snapshot
-      - name: Ensure no diff
-        run: git diff --quiet
+        working-directory: contracts
       - name: Run tests
         run: forge test -vvv
+        working-directory: contracts
+      - name: Ensure no diff
+        run: git diff --quiet
