@@ -6,17 +6,16 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/omni-network/omni/contracts/bindings"
-	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/relayer/txmgr"
-
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
-
-	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
+	"github.com/omni-network/omni/relayer/txmgr"
+
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 var _ Sender = (*OpSender)(nil)
@@ -97,7 +96,7 @@ func (o OpSender) SendTransaction(ctx context.Context, submission xchain.Submiss
 		TxData:   txData,
 		To:       &to,
 		GasLimit: gasLimit,
-		Value:    big.NewInt(0), // todo(lazar); is this right?
+		Value:    big.NewInt(0),
 	}
 
 	rec, err := txMgr.Send(ctx, candidate)
@@ -125,8 +124,8 @@ func initTxMgr(cfg txmgr.Config) (txmgr.TxManager, error) {
 	return txMgr, nil
 }
 
-func (o OpSender) GetXSubmitBytes(xsub bindings.XTypesSubmission) ([]byte, error) {
-	bytes, err := o.abi.Pack("xsubmit", xsub)
+func (o OpSender) GetXSubmitBytes(sub bindings.XTypesSubmission) ([]byte, error) {
+	bytes, err := o.abi.Pack("xsubmit", sub)
 	if err != nil {
 		return nil, errors.Wrap(err, "pack xsubmit")
 	}

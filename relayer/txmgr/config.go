@@ -43,6 +43,7 @@ type CLIConfig struct {
 }
 
 var (
+	//nolint:gochecknoglobals // should be configurable
 	DefaultSenderFlagValues = DefaultFlagValues{
 		NumConfirmations:          uint64(10),
 		SafeAbortNonceTooLowCount: uint64(3),
