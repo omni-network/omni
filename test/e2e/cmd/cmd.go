@@ -56,9 +56,7 @@ func newLogsCmd(def *app.Definition) *cobra.Command {
 		Use:   "logs",
 		Short: "Prints the infrastructure logs (of a previously preserved network)",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			args := append([]string{"logs"}, def.Netman.AdditionalService()...)
-
-			return cmtdocker.ExecComposeVerbose(cmd.Context(), def.Testnet.Dir, args...)
+			return cmtdocker.ExecComposeVerbose(cmd.Context(), def.Testnet.Dir, "logs")
 		},
 	}
 }
@@ -68,7 +66,7 @@ func newCleanCmd(def *app.Definition) *cobra.Command {
 		Use:   "clean",
 		Short: "Cleans (deletes) previously preserved network infrastructure",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return app.Cleanup(cmd.Context(), def.Testnet)
+			return app.Cleanup(cmd.Context(), def.Testnet.Testnet)
 		},
 	}
 }

@@ -92,6 +92,7 @@ issues:
         - revive      # Relax revive rules
         - wrapcheck   # Wrapping not required
         - gocognit    # Cognitive complexity not an issue here
+        - prealloc    # Prealloc not an issue here
     - path: 'scripts/.+\.go'
       linters:        # Relax linters for scripts only (non-production code)
         - forbidigo   # Allow debug printing

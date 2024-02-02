@@ -8,21 +8,25 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/test/e2e/netman"
+	"github.com/omni-network/omni/test/e2e/types"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/test/e2e/pkg/exec"
 )
 
 // Test runs test cases under tests/.
-func Test(ctx context.Context, testnet *e2e.Testnet, ifd *e2e.InfrastructureData, network netconf.Network) error {
+func Test(ctx context.Context, testnet types.Testnet, ifd *e2e.InfrastructureData, mngr netman.Manager) error {
 	log.Info(ctx, "Running tests in ./tests/...")
+
+	extNetwork := externalNetwork(testnet, mngr.DeployInfo())
 
 	networkDir, err := os.MkdirTemp("", "omni-e2e")
 	if err != nil {
 		return errors.Wrap(err, "creating temp dir")
 	}
 	networkFile := filepath.Join(networkDir, "network.json")
-	if err := netconf.Save(network, networkFile); err != nil {
+	if err := netconf.Save(extNetwork, networkFile); err != nil {
 		return errors.Wrap(err, "saving network")
 	}
 

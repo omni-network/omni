@@ -1,3 +1,5 @@
+network = "devnet"
+anvil_chains = ["chain_a"]
 
 [node.validator01]
 [node.validator02]
