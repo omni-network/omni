@@ -3,9 +3,6 @@ name: solidity tests
 
 on:
   workflow_call:
-  push:
-    branches:
-      - tt/foundry-action
 
 jobs:
   sol_tests:
@@ -18,11 +15,14 @@ jobs:
           package_json_file: contracts/package.json
       - run: pnpm install
         working-directory: contracts
-      - name: Run forge commands
-        run: |
-          forge fmt
-          forge snapshot
-          forge test -vvv
+      - name: Run fmt
+        run: forge fmt
+        working-directory: contracts
+      - name: Run snapshot
+        run: forge snapshot
+        working-directory: contracts
+      - name: Run tests
+        run: forge test -vvv
         working-directory: contracts
       - name: Ensure no diff
         run: git diff --quiet
