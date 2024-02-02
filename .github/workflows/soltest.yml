@@ -3,9 +3,6 @@ name: solidity tests
 
 on:
   workflow_call:
-  push:
-    branches:
-      - tt/foundry-action
 
 jobs:
   sol_tests:
