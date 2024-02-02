@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/relayer/txmgr"
 
 	"github.com/ethereum/go-ethereum"
@@ -334,7 +333,7 @@ func TestTxMgrConfirmAtMinGasPrice(t *testing.T) {
 // transaction is mined. This is done to ensure the tx mgr can properly
 // abort on shutdown, even if a txn is in the process of being published.
 func TestTxMgrNeverConfirmCancel(t *testing.T) {
-	//t.SkipNow()
+	// t.SkipNow()
 	t.Parallel()
 
 	h := newTestHarness(t)
@@ -413,6 +412,7 @@ func TestTxMgrBlocksOnFailingRpcCalls(t *testing.T) {
 		sent = tx
 		hash := tx.Hash()
 		h.backend.mine(&hash, tx.GasFeeCap(), nil)
+
 		return nil
 	}
 	h.backend.setTxSender(sendTx)
@@ -679,7 +679,6 @@ func TestWaitMinedCanBeCanceled(t *testing.T) {
 
 	receipt, err := h.mgr.WaitMined(ctx, tx, txmgr.NewSendState(10, time.Hour))
 	require.Error(t, err)
-	log.Debug(ctx, "err", err, "hash", tx.Hash())
 	require.Nil(t, receipt)
 }
 
