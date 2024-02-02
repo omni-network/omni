@@ -598,11 +598,11 @@ func (m *SimpleTxManager) SuggestGasPriceCaps(ctx context.Context) (*big.Int, *b
 
 	// Enforce minimum base fee and tip cap
 	if minTipCap := m.Cfg.MinTipCap; minTipCap != nil && tip.Cmp(minTipCap) == -1 {
-		log.Debug(ctx, "Enforcing min tip cap", "minTipCap", m.Cfg.MinTipCap, "origTipCap", tip)
+		log.Debug(ctx, "Enforcing min tip cap", "min_tip_cap", m.Cfg.MinTipCap, "orig_tip_cap", tip)
 		tip = new(big.Int).Set(m.Cfg.MinTipCap)
 	}
 	if minBaseFee := m.Cfg.MinBaseFee; minBaseFee != nil && baseFee.Cmp(minBaseFee) == -1 {
-		log.Debug(ctx, "Enforcing min base fee", "minBaseFee", m.Cfg.MinBaseFee, "origBaseFee", baseFee)
+		log.Debug(ctx, "Enforcing min base fee", "min_base_fee", m.Cfg.MinBaseFee, "orig_base_fee", baseFee)
 		baseFee = new(big.Int).Set(m.Cfg.MinBaseFee)
 	}
 

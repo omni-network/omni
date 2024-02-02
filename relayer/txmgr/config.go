@@ -183,8 +183,6 @@ func NewConfig(ctx context.Context, cfg CLIConfig,
 	ctx, cancel := context.WithTimeout(ctx, cfg.NetworkTimeout)
 	defer cancel()
 
-	ctx, cancel = context.WithTimeout(ctx, cfg.NetworkTimeout)
-	defer cancel()
 	chainID, err := client.ChainID(ctx)
 	if err != nil {
 		return Config{}, errors.Wrap(err, "could not dial fetch L1 chain ID")
