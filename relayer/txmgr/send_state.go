@@ -32,23 +32,23 @@ type SendState struct {
 }
 
 // NewSendStateWithNow creates a new doSend state with the provided clock.
-func NewSendStateWithNow(safeAbortNonceTooLowCount uint64, unableToSendTimeout time.Duration,
+func NewSendStateWithNow(nonceTooLowCount uint64, timeout time.Duration,
 	now func() time.Time) *SendState {
-	if safeAbortNonceTooLowCount == 0 {
-		panic("txmgr: safeAbortNonceTooLowCount cannot be zero")
+	if nonceTooLowCount == 0 {
+		panic("txmgr: nonceTooLowCount cannot be zero")
 	}
 
 	return &SendState{
 		minedTxs:                  make(map[common.Hash]struct{}),
-		safeAbortNonceTooLowCount: safeAbortNonceTooLowCount,
-		txInMempoolDeadline:       now().Add(unableToSendTimeout),
+		safeAbortNonceTooLowCount: nonceTooLowCount,
+		txInMempoolDeadline:       now().Add(timeout),
 		now:                       now,
 	}
 }
 
 // NewSendState creates a new doSend state.
-func NewSendState(safeAbortNonceTooLowCount uint64, unableToSendTimeout time.Duration) *SendState {
-	return NewSendStateWithNow(safeAbortNonceTooLowCount, unableToSendTimeout, time.Now)
+func NewSendState(nonceTooLowCount uint64, timeout time.Duration) *SendState {
+	return NewSendStateWithNow(nonceTooLowCount, timeout, time.Now)
 }
 
 // ProcessSendError should be invoked with the error returned for each

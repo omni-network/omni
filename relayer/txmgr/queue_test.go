@@ -17,16 +17,16 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-type queueFunc func(id int, candidate txmgr.TxCandidate, receiptCh chan txmgr.TxReceipt[int], q *txmgr.Queue[int]) bool
+type queueFunc func(id int, candidate txmgr.TxCandidate, receipts chan txmgr.TxReceipt[int], q *txmgr.Queue[int]) bool
 
-func sendQueueFunc(id int, candidate txmgr.TxCandidate, receiptCh chan txmgr.TxReceipt[int], q *txmgr.Queue[int]) bool {
-	q.Send(id, candidate, receiptCh)
+func sendQueueFunc(id int, candidate txmgr.TxCandidate, receipts chan txmgr.TxReceipt[int], q *txmgr.Queue[int]) bool {
+	q.Send(id, candidate, receipts)
 	return true
 }
 
-func trySendQueueFunc(id int, candidate txmgr.TxCandidate, receiptCh chan txmgr.TxReceipt[int],
+func trySendQueueFunc(id int, candidate txmgr.TxCandidate, receipts chan txmgr.TxReceipt[int],
 	q *txmgr.Queue[int]) bool {
-	return q.TrySend(id, candidate, receiptCh)
+	return q.TrySend(id, candidate, receipts)
 }
 
 type queueCall struct {
@@ -219,11 +219,7 @@ func TestQueue_Send(t *testing.T) {
 			}
 			// wait for the queue to drain (all txs complete or failed)
 			queue.Wait()
-			// duration := time.Since(start)
-			//// expect the execution time within a certain window
-			// now := time.Now()
-			// require.WithinDuration(t, now.Add(test.total), now.Add(duration),
-			//	1500*time.Millisecond, "unexpected queue transaction timing")
+
 			// check that the nonces match
 			slices.Sort(nonces)
 			require.Equal(t, test.nonces, nonces, "expected nonces do not match")
