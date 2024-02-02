@@ -35,7 +35,12 @@ func MonitorCursors(ctx context.Context, portals map[uint64]netman.Portal, netwo
 				continue
 			}
 
-			offset, err := portals[dest.ID].Contract.InXStreamOffset(nil, src.ID)
+			srcOffset, err := portals[src.ID].Contract.OutXStreamOffset(nil, dest.ID)
+			if err != nil {
+				return errors.Wrap(err, "getting inXStreamOffset")
+			}
+
+			destOffset, err := portals[dest.ID].Contract.InXStreamOffset(nil, src.ID)
 			if err != nil {
 				return errors.Wrap(err, "getting inXStreamOffset")
 			}
@@ -43,7 +48,8 @@ func MonitorCursors(ctx context.Context, portals map[uint64]netman.Portal, netwo
 			log.Info(ctx, "Submitted cross chain messages",
 				"src", src.Name,
 				"dest", dest.Name,
-				"count", offset,
+				"total_in", destOffset,
+				"total_out", srcOffset,
 			)
 		}
 	}

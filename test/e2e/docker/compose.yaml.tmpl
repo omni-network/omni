@@ -27,11 +27,9 @@ services:
     - {{ .PrometheusProxyPort }}:26660
 {{- end }}
     - 6060
-    environment:
-    - HALO_LOG_COLOR=force
     volumes:
     - ./{{ .Name }}:/halo
-    - ./omni_evm/jwtsecret:/geth/jwtsecret
+    - ./{{ index $.NodeOmniEVMs .Name }}/jwtsecret:/geth/jwtsecret
     networks:
       {{ $.Name }}:
         ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .InternalIP }}
@@ -88,6 +86,8 @@ services:
       - --password=/geth/geth_password.txt
       - --nodiscover
       - --syncmode=full
+      - --nodekeyhex={{.NodeKeyHex}}
+      - --bootnodes={{.BootNodes}}
     ports:
       - 8551
       - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}8545

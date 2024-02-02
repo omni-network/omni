@@ -1,9 +1,12 @@
 package types
 
 import (
+	"crypto/ecdsa"
 	"net"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+
+	"github.com/ethereum/go-ethereum/p2p/enode"
 )
 
 // Testnet wraps e2e.Testnet with additional omni-specific fields.
@@ -32,6 +35,11 @@ type OmniEVM struct {
 	InternalRPC     string   // For JSON-RPC queries from halo/relayer
 	InternalAuthRPC string   // For engine API queries from halo
 	ExternalRPC     string   // For JSON-RPC queries from e2e app.
+
+	// P2P networking
+	NodeKey   *ecdsa.PrivateKey // Private key
+	Enode     *enode.Node       // Public key
+	BootNodes []*enode.Node     // Peer public keys
 }
 
 // AnvilChain represents an anvil chain instance in a omni network.

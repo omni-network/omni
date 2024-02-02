@@ -3,8 +3,10 @@ package docker
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"text/template"
 
@@ -15,6 +17,8 @@ import (
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
 	cmtdocker "github.com/cometbft/cometbft/test/e2e/pkg/infra/docker"
+
+	"github.com/ethereum/go-ethereum/crypto"
 
 	_ "embed"
 )
@@ -97,8 +101,9 @@ func generateComposeFile(testnet types.Testnet) ([]byte, error) {
 
 type data struct {
 	*e2e.Testnet
-	Anvils   []chain
-	OmniEVMs []chain
+	NodeOmniEVMs map[string]string // Maps node name to Omni EVM instance name.
+	Anvils       []chain
+	OmniEVMs     []chain
 }
 
 type chain struct {
@@ -106,17 +111,37 @@ type chain struct {
 	ChainID    uint64
 	InternalIP string
 	ProxyPort  uint32
+
+	// Only for Geth OmniEVM
+	NodeKeyHex string // --nodekey: P2P node key file
+	BootNodes  string // --bootnodes: Comma separated enode URLs for P2P discovery bootstrap
 }
 
 func makeTemplateData(testnet types.Testnet) data {
 	var omniEVMs []chain
 	for _, omniEVM := range testnet.OmniEVMs {
+		var bootnodes []string
+		for _, b := range omniEVM.BootNodes {
+			bootnodes = append(bootnodes, b.String())
+		}
+
 		omniEVMs = append(omniEVMs, chain{
 			Name:       omniEVM.InstanceName,
 			ChainID:    omniEVM.Chain.ID,
 			ProxyPort:  omniEVM.ProxyPort,
 			InternalIP: omniEVM.InternalIP.String(),
+			NodeKeyHex: hex.EncodeToString(crypto.FromECDSA(omniEVM.NodeKey)),
+			BootNodes:  strings.Join(bootnodes, ","),
 		})
+	}
+
+	nodeEVMs := make(map[string]string)
+	for i, node := range testnet.Nodes {
+		evm := omniEVMs[0].Name
+		if len(omniEVMs) == len(testnet.Nodes) {
+			evm = omniEVMs[i].Name
+		}
+		nodeEVMs[node.Name] = evm
 	}
 
 	var anvils []chain
@@ -130,9 +155,10 @@ func makeTemplateData(testnet types.Testnet) data {
 	}
 
 	return data{
-		Testnet:  testnet.Testnet,
-		Anvils:   anvils,
-		OmniEVMs: omniEVMs,
+		Testnet:      testnet.Testnet,
+		Anvils:       anvils,
+		OmniEVMs:     omniEVMs,
+		NodeOmniEVMs: nodeEVMs,
 	}
 }
 

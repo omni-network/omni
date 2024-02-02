@@ -64,7 +64,7 @@ func Setup(ctx context.Context, testnet types.Testnet, infp infra.Provider, mngr
 		return err
 	}
 
-	if err := writeGethConfig(testnet.Dir); err != nil {
+	if err := writeOmniEVMConfig(testnet); err != nil {
 		return err
 	}
 
@@ -310,8 +310,8 @@ var (
 	gethKeystore []byte
 )
 
-// writeGethConfig writes the geth config to <root>/geth.
-func writeGethConfig(root string) error {
+// writeOmniEVMConfig writes the omni evms (geth) config to <root>/<omni_evm>.
+func writeOmniEVMConfig(testnet types.Testnet) error {
 	var jwtSecret [32]byte
 	_, _ = rand.Read(jwtSecret[:])
 
@@ -322,13 +322,15 @@ func writeGethConfig(root string) error {
 		"geth_password.txt": []byte(""), // Empty password
 	}
 
-	for name, data := range files {
-		path := filepath.Join(root, "omni_evm", name)
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-			return errors.Wrap(err, "mkdir", "path", path)
-		}
-		if err := os.WriteFile(path, data, 0o644); err != nil {
-			return errors.Wrap(err, "write geth config")
+	for _, evm := range testnet.OmniEVMs {
+		for file, data := range files {
+			path := filepath.Join(testnet.Dir, evm.InstanceName, file)
+			if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+				return errors.Wrap(err, "mkdir", "path", path)
+			}
+			if err := os.WriteFile(path, data, 0o644); err != nil {
+				return errors.Wrap(err, "write geth config")
+			}
 		}
 	}
 

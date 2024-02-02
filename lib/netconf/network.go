@@ -29,7 +29,7 @@ const (
 var supported = map[string]bool{
 	Simnet:  true,
 	Devnet:  true,
-	Staging: false,
+	Staging: true,
 	Testnet: false,
 	Mainnet: false,
 }
