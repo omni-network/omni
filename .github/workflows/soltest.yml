@@ -13,7 +13,6 @@ jobs:
       - uses: pnpm/action-setup@v2
         with:
           package_json_file: contracts/package.json
-          run_install: true
       - run: pnpm install
         working-directory: contracts
       - name: Run fmt
