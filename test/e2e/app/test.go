@@ -8,18 +8,15 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/test/e2e/netman"
-	"github.com/omni-network/omni/test/e2e/types"
 
-	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/test/e2e/pkg/exec"
 )
 
 // Test runs test cases under tests/.
-func Test(ctx context.Context, testnet types.Testnet, ifd *e2e.InfrastructureData, mngr netman.Manager) error {
+func Test(ctx context.Context, def Definition) error {
 	log.Info(ctx, "Running tests in ./tests/...")
 
-	extNetwork := externalNetwork(testnet, mngr.DeployInfo())
+	extNetwork := externalNetwork(def.Testnet, def.Netman.DeployInfo())
 
 	networkDir, err := os.MkdirTemp("", "omni-e2e")
 	if err != nil {
@@ -34,7 +31,7 @@ func Test(ctx context.Context, testnet types.Testnet, ifd *e2e.InfrastructureDat
 		return errors.Wrap(err, "setting E2E_MANIFEST")
 	}
 
-	manifestFile, err := filepath.Abs(testnet.File)
+	manifestFile, err := filepath.Abs(def.Testnet.File)
 	if err != nil {
 		return errors.Wrap(err, "absolute manifest path")
 	}
@@ -43,14 +40,15 @@ func Test(ctx context.Context, testnet types.Testnet, ifd *e2e.InfrastructureDat
 		return errors.Wrap(err, "setting E2E_MANIFEST")
 	}
 
-	if p := ifd.Path; p != "" {
+	infd := def.Infra.GetInfrastructureData()
+	if p := infd.Path; p != "" {
 		err = os.Setenv("INFRASTRUCTURE_FILE", p)
 		if err != nil {
 			return errors.Wrap(err, "setting INFRASTRUCTURE_FILE")
 		}
 	}
 
-	if err = os.Setenv("INFRASTRUCTURE_TYPE", ifd.Provider); err != nil {
+	if err = os.Setenv("INFRASTRUCTURE_TYPE", infd.Provider); err != nil {
 		return errors.Wrap(err, "setting INFRASTRUCTURE_TYPE")
 	}
 

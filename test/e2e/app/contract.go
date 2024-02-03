@@ -15,7 +15,7 @@ func StartSendingXMsgs(ctx context.Context, portals map[uint64]netman.Portal) er
 	log.Info(ctx, "Generating cross chain messages async")
 	go func() {
 		for ctx.Err() == nil {
-			err := SendXMsgs(ctx, portals)
+			err := SendXMsgs(ctx, portals, 3)
 			if ctx.Err() != nil {
 				return
 			} else if err != nil {
@@ -30,15 +30,17 @@ func StartSendingXMsgs(ctx context.Context, portals map[uint64]netman.Portal) er
 }
 
 // SendXMsgs sends one xmsg from every chain to every other chain.
-func SendXMsgs(ctx context.Context, portals map[uint64]netman.Portal) error {
+func SendXMsgs(ctx context.Context, portals map[uint64]netman.Portal, count int) error {
 	for _, from := range portals {
 		for _, to := range portals {
 			if from.Chain.ID == to.Chain.ID {
 				continue
 			}
 
-			if err := xcall(ctx, from, to.Chain.ID); err != nil {
-				return err
+			for i := 0; i < count; i++ {
+				if err := xcall(ctx, from, to.Chain.ID); err != nil {
+					return err
+				}
 			}
 		}
 	}

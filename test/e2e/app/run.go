@@ -18,7 +18,7 @@ func Deploy(ctx context.Context, def Definition) error {
 		return err
 	}
 
-	if err := Setup(ctx, def.Testnet, def.Infra, def.Netman); err != nil {
+	if err := Setup(ctx, def); err != nil {
 		return err
 	}
 
@@ -73,11 +73,11 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 		return err
 	}
 
-	if err := Test(ctx, def.Testnet, def.Infra.GetInfrastructureData(), def.Netman); err != nil {
+	if err := Test(ctx, def); err != nil {
 		return err
 	}
 
-	if err := LogMetrics(ctx, def.Testnet, def.Netman); err != nil {
+	if err := LogMetrics(ctx, def); err != nil {
 		return err
 	}
 
