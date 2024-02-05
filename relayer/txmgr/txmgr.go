@@ -265,7 +265,6 @@ func (m *SimpleTxManager) CraftTx(ctx context.Context, candidate TxCandidate) (*
 func (m *SimpleTxManager) signWithNextNonce(ctx context.Context, txMessage types.TxData) (*types.Transaction, error) {
 	m.nonceLock.Lock()
 	defer m.nonceLock.Unlock()
-
 	if m.nonce == nil {
 		// Fetch the sender's nonce from the latest known block (nil `blockNumber`)
 		childCtx, cancel := context.WithTimeout(ctx, m.Cfg.NetworkTimeout)

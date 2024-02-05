@@ -45,7 +45,7 @@ type CLIConfig struct {
 var (
 	//nolint:gochecknoglobals // should be configurable
 	DefaultSenderFlagValues = DefaultFlagValues{
-		NumConfirmations:          uint64(10),
+		NumConfirmations:          uint64(1),
 		SafeAbortNonceTooLowCount: uint64(3),
 		FeeLimitMultiplier:        uint64(5),
 		FeeLimitThresholdGwei:     100.0,
@@ -53,7 +53,7 @@ var (
 		NetworkTimeout:            10 * time.Second,
 		TxSendTimeout:             0 * time.Second,
 		TxNotInMempoolTimeout:     2 * time.Minute,
-		ReceiptQueryInterval:      12 * time.Second,
+		ReceiptQueryInterval:      100 * time.Millisecond, // todo(Lazar): this should be configurable
 	}
 )
 
@@ -118,8 +118,11 @@ func PrivateKeySignerFn(key *ecdsa.PrivateKey, chainID *big.Int) bind.SignerFn {
 			return nil, errors.Wrap(err, "could not sign transaction")
 		}
 		res, err := tx.WithSignature(signer, signature)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not sign transaction")
+		}
 
-		return res, errors.Wrap(err, "could not sign transaction")
+		return res, nil
 	}
 }
 
