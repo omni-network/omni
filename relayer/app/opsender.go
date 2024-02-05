@@ -87,7 +87,7 @@ func (o OpSender) SendTransaction(ctx context.Context, submission xchain.Submiss
 		return errors.New("portal not found", "dest_chain_id", submission.DestChainID)
 	}
 
-	txData, err := o.GetXSubmitBytes(TranslateSubmission(submission))
+	txData, err := o.getXSubmitBytes(TranslateSubmission(submission))
 	if err != nil {
 		return err
 	}
@@ -124,7 +124,7 @@ func initTxMgr(cfg txmgr.Config) (txmgr.TxManager, error) {
 	return txMgr, nil
 }
 
-func (o OpSender) GetXSubmitBytes(sub bindings.XTypesSubmission) ([]byte, error) {
+func (o OpSender) getXSubmitBytes(sub bindings.XTypesSubmission) ([]byte, error) {
 	bytes, err := o.abi.Pack("xsubmit", sub)
 	if err != nil {
 		return nil, errors.Wrap(err, "pack xsubmit")
