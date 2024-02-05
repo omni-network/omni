@@ -48,6 +48,17 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
         _setFeeOracle(feeOracle_);
     }
 
+    /// @inheritdoc IOmniPortalAdmin
+    function collectFees(address to) external onlyOwner {
+        uint256 amount = address(this).balance;
+
+        // .transfer() is fine, owner should provide an EOA address that will not
+        // consume more than 2300 gas on transfer, and we are okay .transfer() reverts
+        payable(to).transfer(amount);
+
+        emit FeesCollected(to, amount);
+    }
+
     /// @inheritdoc IOmniPortal
     function xmsg() external view returns (XTypes.Msg memory) {
         return _currentXmsg;
@@ -59,12 +70,12 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
     }
 
     /// @inheritdoc IOmniPortal
-    function feeFor(uint64 destChainId, bytes calldata data) external view returns (uint256) {
+    function feeFor(uint64 destChainId, bytes calldata data) public view returns (uint256) {
         return IFeeOracle(feeOracle).feeFor(destChainId, data, XMSG_DEFAULT_GAS_LIMIT);
     }
 
     /// @inheritdoc IOmniPortal
-    function feeFor(uint64 destChainId, bytes calldata data, uint64 gasLimit) external view returns (uint256) {
+    function feeFor(uint64 destChainId, bytes calldata data, uint64 gasLimit) public view returns (uint256) {
         return IFeeOracle(feeOracle).feeFor(destChainId, data, gasLimit);
     }
 
@@ -96,6 +107,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
 
     /// @dev Emit an XMsg event, increment dest chain outXStreamOffset
     function _xcall(uint64 destChainId, address sender, address to, bytes calldata data, uint64 gasLimit) private {
+        require(msg.value >= feeFor(destChainId, data, gasLimit), "OmniPortal: insufficient fee");
         require(gasLimit <= XMSG_MAX_GAS_LIMIT, "OmniPortal: gasLimit too high");
         require(gasLimit >= XMSG_MIN_GAS_LIMIT, "OmniPortal: gasLimit too low");
         require(destChainId != chainId, "OmniPortal: no same-chain xcall");

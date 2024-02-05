@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/test/e2e/netman"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -50,10 +51,25 @@ func SendXMsgs(ctx context.Context, portals map[uint64]netman.Portal, count int)
 
 // xcall sends a ethereum transaction to the portal contract, triggering a xcall.
 func xcall(ctx context.Context, from netman.Portal, destChainID uint64) error {
-	_, err := from.Contract.Xcall(from.TxOpts(ctx), destChainID, common.Address{}, nil)
+	// TODO: use calls to actual contracts
+	var data []byte = nil
+	to := common.Address{}
+
+	fee, err := from.Contract.FeeFor(&bind.CallOpts{}, destChainID, data)
+	if err != nil {
+		return errors.Wrap(err, "feeFor",
+			"source_chain", from.Chain.ID,
+			"dest_chain", destChainID,
+		)
+	}
+
+	txOpts := from.TxOpts(ctx)
+	txOpts.Value = fee
+
+	_, err = from.Contract.Xcall(txOpts, destChainID, to, data)
 	if err != nil {
 		return errors.Wrap(err, "xcall",
-			"sourc_chain", from.Chain.ID,
+			"source_chain", from.Chain.ID,
 			"dest_chain", destChainID,
 		)
 	}

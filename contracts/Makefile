@@ -9,4 +9,4 @@ build: version ## Build contracts.
 	forge build
 
 bindings: build ## Generate golang contract bindings.
-	./bindings/gen.sh OmniPortal
+	./bindings/gen.sh OmniPortal FeeOracleV1

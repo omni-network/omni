@@ -13,6 +13,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
@@ -25,17 +26,35 @@ func deployContract(ctx context.Context, chainID uint64, client *ethclient.Clien
 		return common.Address{}, nil, nil, err
 	}
 
-	addr, _, _, err := bindings.DeployOmniPortal(txOpts, client)
+	owner := txOpts.From
+	fee := new(big.Int).SetUint64(params.GWei)
+
+	feeOracleAddr, tx, _, err := bindings.DeployFeeOracleV1(txOpts, client, owner, fee)
+	if err != nil {
+		return common.Address{}, nil, nil, errors.Wrap(err, "deploy fee oracle contract")
+	}
+
+	receipt, err := bind.WaitMined(ctx, client, tx)
+	if err != nil || receipt.Status != types.ReceiptStatusSuccessful {
+		return common.Address{}, nil, nil, errors.Wrap(err, "wait mined fee oracle contract")
+	}
+
+	portalAddr, tx, _, err := bindings.DeployOmniPortal(txOpts, client, owner, feeOracleAddr)
 	if err != nil {
 		return common.Address{}, nil, nil, errors.Wrap(err, "deploy portal contract")
 	}
 
-	contract, err := bindings.NewOmniPortal(addr, client)
+	receipt, err = bind.WaitMined(ctx, client, tx)
+	if err != nil || receipt.Status != types.ReceiptStatusSuccessful {
+		return common.Address{}, nil, nil, errors.Wrap(err, "wait mined portal contract")
+	}
+
+	contract, err := bindings.NewOmniPortal(portalAddr, client)
 	if err != nil {
 		return common.Address{}, nil, nil, errors.Wrap(err, "new portal contract")
 	}
 
-	return addr, contract, txOpts, nil
+	return portalAddr, contract, txOpts, nil
 }
 
 func newTxOpts(ctx context.Context, privKey *ecdsa.PrivateKey, chainID uint64) (*bind.TransactOpts, error) {
