@@ -25,4 +25,4 @@ jobs:
         run: forge test -vvv
         working-directory: contracts
       - name: Ensure no diff
-        run: git diff
+        run: git diff --exit-code
