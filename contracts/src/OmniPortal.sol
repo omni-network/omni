@@ -38,12 +38,6 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
     ///      so that we can use the XMsg struct type in the interface.
     XTypes.Msg private _currentXmsg;
 
-    /// @dev Require sufficient fees were paid
-    modifier chargeFees(uint64 destChainId, bytes calldata data, uint64 gasLimit) {
-        require(msg.value >= feeFor(destChainId, data, gasLimit), "OmniPortal: insufficient fee");
-        _;
-    }
-
     constructor(address owner_, address feeOracle_) Ownable(owner_) {
         chainId = uint64(block.chainid);
         _setFeeOracle(feeOracle_);
@@ -82,20 +76,12 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
     }
 
     /// @inheritdoc IOmniPortal
-    function xcall(uint64 destChainId, address to, bytes calldata data)
-        external
-        payable
-        chargeFees(destChainId, data, XMSG_DEFAULT_GAS_LIMIT)
-    {
+    function xcall(uint64 destChainId, address to, bytes calldata data) external payable {
         _xcall(destChainId, msg.sender, to, data, XMSG_DEFAULT_GAS_LIMIT);
     }
 
     /// @inheritdoc IOmniPortal
-    function xcall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit)
-        external
-        payable
-        chargeFees(destChainId, data, gasLimit)
-    {
+    function xcall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit) external payable {
         _xcall(destChainId, msg.sender, to, data, gasLimit);
     }
 
@@ -117,6 +103,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
 
     /// @dev Emit an XMsg event, increment dest chain outXStreamOffset
     function _xcall(uint64 destChainId, address sender, address to, bytes calldata data, uint64 gasLimit) private {
+        require(msg.value >= feeFor(destChainId, data, gasLimit), "OmniPortal: insufficient fee");
         require(gasLimit <= XMSG_MAX_GAS_LIMIT, "OmniPortal: gasLimit too high");
         require(gasLimit >= XMSG_MIN_GAS_LIMIT, "OmniPortal: gasLimit too low");
         require(destChainId != chainId, "OmniPortal: no same-chain xcall");
