@@ -3,50 +3,34 @@ package resolvers_test
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/omni-network/omni/explorer/graphql/app"
+	d "github.com/omni-network/omni/explorer/graphql/data"
 	"github.com/omni-network/omni/explorer/graphql/resolvers"
-
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/gqltesting"
-	"go.uber.org/mock/gomock"
 )
 
 func TestXBlockQuery(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	sourceChainID := hexutil.Big(*hexutil.MustDecodeBig("0x4b2"))
-	blockHeight := hexutil.Big(*hexutil.MustDecodeBig("0x1"))
-	blockHashBytes := []byte{1, 3, 23, 111, 27, 45, 98, 103, 94, 55, 1, 3, 23, 111, 27, 45, 98, 103, 94, 55}
-	blockHash := common.Hash{}
-	blockHash.SetBytes(blockHashBytes)
+	client := resolvers.CreateTestEntClient(t)
+	resolvers.CreateTestBlock(t, ctx, client)
+	defer client.Close()
 
 	opts := []graphql.SchemaOpt{
 		graphql.UseFieldResolvers(),
 		graphql.UseStringDescriptions(),
 	}
 
-	mockXBlock := &resolvers.XBlock{
-		SourceChainID: sourceChainID,
-		BlockHeight:   blockHeight,
-		BlockHash:     blockHash,
-		Timestamp:     graphql.Time{Time: time.Now()},
-		Messages:      nil,
+	provider := &d.Provider{
+		EntClient: client,
 	}
 
-	mockProvider := NewMockBlocksProvider(ctrl)
-	mockProvider.EXPECT().XBlock(uint64(1234), uint64(0)).Return(mockXBlock, true, nil)
-
 	br := resolvers.BlocksResolver{
-		BlocksProvider: mockProvider,
+		BlocksProvider: provider,
 	}
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
@@ -67,8 +51,8 @@ func TestXBlockQuery(t *testing.T) {
 					"xblock":
 					{
 						"BlockHash":"0x0000000000000000000000000103176f1b2d62675e370103176f1b2d62675e37",
-						"BlockHeight":"0x1",
-						"SourceChainID":"0x4b2"
+						"BlockHeight":"0x0",
+						"SourceChainID":"0x4d2"
 					}
 				}
 			`,
