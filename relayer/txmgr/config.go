@@ -42,6 +42,21 @@ type CLIConfig struct {
 	TxNotInMempoolTimeout     time.Duration
 }
 
+var (
+	//nolint:gochecknoglobals // should be configurable
+	DefaultSenderFlagValues = DefaultFlagValues{
+		NumConfirmations:          uint64(10),
+		SafeAbortNonceTooLowCount: uint64(3),
+		FeeLimitMultiplier:        uint64(5),
+		FeeLimitThresholdGwei:     100.0,
+		ResubmissionTimeout:       48 * time.Second,
+		NetworkTimeout:            10 * time.Second,
+		TxSendTimeout:             0 * time.Second,
+		TxNotInMempoolTimeout:     2 * time.Minute,
+		ReceiptQueryInterval:      12 * time.Second,
+	}
+)
+
 func NewCLIConfig(rpc string, defaults DefaultFlagValues) CLIConfig {
 	return CLIConfig{
 		L1RPCURL:                  rpc,

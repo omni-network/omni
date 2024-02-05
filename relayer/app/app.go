@@ -38,7 +38,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "failed to load private key")
 	}
 
-	sender, err := NewSimpleSender(network.Chains, rpcClientPerChain, *privateKey)
+	sender, err := NewOpSender(ctx, network.Chains, rpcClientPerChain, *privateKey)
 	if err != nil {
 		return err
 	}
