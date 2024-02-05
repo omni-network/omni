@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.23;
 
-import { XTypes } from "src/protocol/libraries/XTypes.sol";
+import { XTypes } from "src/libraries/XTypes.sol";
 
 /**
  * @title TestXTypes

@@ -2,11 +2,11 @@
 pragma solidity 0.8.23;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { IFeeOracle } from "./interfaces/IFeeOracle.sol";
-import { IOmniPortal } from "./interfaces/IOmniPortal.sol";
-import { IOmniPortalAdmin } from "./interfaces/IOmniPortalAdmin.sol";
-import { XBlockMerkleProof } from "./libraries/XBlockMerkleProof.sol";
-import { XTypes } from "./libraries/XTypes.sol";
+import { IFeeOracle } from "../interfaces/IFeeOracle.sol";
+import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
+import { IOmniPortalAdmin } from "../interfaces/IOmniPortalAdmin.sol";
+import { XBlockMerkleProof } from "../libraries/XBlockMerkleProof.sol";
+import { XTypes } from "../libraries/XTypes.sol";
 
 contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
     /// @inheritdoc IOmniPortal

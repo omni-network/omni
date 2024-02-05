@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import { OmniPortal } from "src/protocol/OmniPortal.sol";
-import { XTypes } from "src/protocol/libraries/XTypes.sol";
+import { XTypes } from "src/libraries/XTypes.sol";
 
 /**
  * @title TestPortal
