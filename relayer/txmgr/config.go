@@ -119,7 +119,11 @@ func PrivateKeySignerFn(key *ecdsa.PrivateKey, chainID *big.Int) bind.SignerFn {
 		}
 		res, err := tx.WithSignature(signer, signature)
 
-		return res, errors.Wrap(err, "could not sign transaction")
+		if err != nil {
+			return nil, errors.Wrap(err, "could not sign transaction")
+		}
+
+		return res, nil
 	}
 }
 
