@@ -40,7 +40,7 @@ contract PingPong {
      * @param n The number of xcalls left to make
      */
     function pingpong(uint64 times, uint64 n) external {
-        require(omni.isXCall() && msg.sender == address(omni), "Pong: not an omni xcall");
+        require(omni.isXCall() && msg.sender == address(omni), "PingPong: not an omni xcall");
 
         XTypes.Msg memory xmsg = omni.xmsg();
 
