@@ -25,8 +25,7 @@ type EVMChain struct {
 	IsPublic bool
 }
 
-// OmniEVM represetns a omni evm instance in a omni network. Similar to e2e.Node for halo instances.
-// TODO(corver): Extend OmniEVM with bootnode peer addresses for p2p networking.
+// OmniEVM represents a omni evm instance in a omni network. Similar to e2e.Node for halo instances.
 type OmniEVM struct {
 	Chain           EVMChain // For netconf (all instances must have the same chain)
 	InstanceName    string   // For docker container name

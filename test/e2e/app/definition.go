@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
@@ -196,11 +197,11 @@ func TestnetFromManifest(manifest types.Manifest, manifestFile string, infd type
 }
 
 // internalNetwork returns a internal intra-network netconf.Network from the testnet and deployInfo.
-func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman.DeployInfo) netconf.Network {
+func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman.DeployInfo, evmIndex int,
+) netconf.Network {
 	var chains []netconf.Chain
 
-	// Use the first omni evm instance for now.
-	omniEVM := testnet.OmniEVMs[0]
+	omniEVM := omniEVMByIndex(testnet, evmIndex)
 	chains = append(chains, netconf.Chain{
 		ID:            omniEVM.Chain.ID,
 		Name:          omniEVM.Chain.Name,
@@ -243,8 +244,8 @@ func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman.DeployInfo) netconf.Network {
 	var chains []netconf.Chain
 
-	// Use the first omni evm instance for now.
-	omniEVM := testnet.OmniEVMs[0]
+	// Connect to a random omni evm
+	omniEVM := random(testnet.OmniEVMs)
 	chains = append(chains, netconf.Chain{
 		ID:            omniEVM.Chain.ID,
 		Name:          omniEVM.Chain.Name,
@@ -280,4 +281,24 @@ func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 		Name:   testnet.Network,
 		Chains: chains,
 	}
+}
+
+// omniEVMByNode returns the omniEVM at the provided index, or
+// a random omniEVM if index is -1, or
+// the only omniEVM if there is only one.
+func omniEVMByIndex(testnet types.Testnet, index int) types.OmniEVM {
+	if index == -1 {
+		return random(testnet.OmniEVMs)
+	} else if len(testnet.OmniEVMs) == 1 {
+		return testnet.OmniEVMs[0]
+	} else if index < 0 || index >= len(testnet.OmniEVMs) {
+		panic("invalid index")
+	}
+
+	return testnet.OmniEVMs[index]
+}
+
+// random returns a random item from a slice.
+func random[T any](items []T) T {
+	return items[int(time.Now().UnixNano())%len(items)]
 }

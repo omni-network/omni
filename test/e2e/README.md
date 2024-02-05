@@ -20,6 +20,15 @@ This creates and runs a testnet named `single` under `test/e2e/runs/single/`.
 
 Please refer to the [cometBFT E2E test framework](https://github.com/cometbft/cometbft/tree/main/test/e2e) for more details.
 
+In order to perform any action on a network (deploy/test/show logs), the following process is followed to create a network `Definition`:
+1. A network is initially declared in a `manifest` file, see [manifests/](./manifests) folder. It defines the desired network topology. See the `e2e/types#Manifest` type for details.
+2. Then the infrastructure provider (only `docker compose` supported at the moment) subsequently generates the `e2e/types#InfrastructureData` from the manifest. This defines the instance IPs and ports of everything we will deploy.
+3. Subsequently, we generate a `Testnet` struct which is basically contains all the configuration/keys/peers/images/files/folders required to deploy a network. See `e2e/types#Testnet` for details.
+4. We then instantiate a `netman.Manager` which is responsible for deploying portals. It takes a `Testnet` struct as input.
+5. Finally, we instantiate new `InfrastructureProvider` which can deploy the network. It takes a `Testnet` struct and `InfrastructureData` as input.
+
+These objects are then wrapped in a `e2e/app#Definition` that can be used to perform any action on a network.
+
 ## Test Stages
 
 The e2e test has the following stages, which can also be executed explicitly by running `e2e -f <manifest> <stage>`:

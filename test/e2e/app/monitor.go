@@ -8,20 +8,19 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/test/e2e/netman"
-	"github.com/omni-network/omni/test/e2e/types"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
-func LogMetrics(ctx context.Context, testnet types.Testnet, mngr netman.Manager) error {
-	extNetwork := externalNetwork(testnet, mngr.DeployInfo())
+func LogMetrics(ctx context.Context, def Definition) error {
+	extNetwork := externalNetwork(def.Testnet, def.Netman.DeployInfo())
 
-	// Just pick the first node for now.
-	if err := MonitorCProvider(ctx, testnet.Nodes[0], extNetwork); err != nil {
+	// Pick a random node to monitor.
+	if err := MonitorCProvider(ctx, random(def.Testnet.Nodes), extNetwork); err != nil {
 		return errors.Wrap(err, "monitoring cchain provider")
 	}
 
-	if err := MonitorCursors(ctx, mngr.Portals(), extNetwork); err != nil {
+	if err := MonitorCursors(ctx, def.Netman.Portals(), extNetwork); err != nil {
 		return errors.Wrap(err, "monitoring cursors")
 	}
 

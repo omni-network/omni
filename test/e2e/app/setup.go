@@ -19,14 +19,12 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	relayapp "github.com/omni-network/omni/relayer/app"
-	"github.com/omni-network/omni/test/e2e/netman"
 	"github.com/omni-network/omni/test/e2e/types"
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
-	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
 	cmttypes "github.com/cometbft/cometbft/types"
 
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
@@ -48,34 +46,34 @@ const (
 )
 
 // Setup sets up the testnet configuration.
-func Setup(ctx context.Context, testnet types.Testnet, infp infra.Provider, mngr netman.Manager) error {
-	log.Info(ctx, "Setup testnet", "dir", testnet.Dir)
+func Setup(ctx context.Context, def Definition) error {
+	log.Info(ctx, "Setup testnet", "dir", def.Testnet.Dir)
 
-	if err := os.MkdirAll(testnet.Dir, os.ModePerm); err != nil {
+	if err := os.MkdirAll(def.Testnet.Dir, os.ModePerm); err != nil {
 		return errors.Wrap(err, "mkdir")
 	}
 
-	if err := infp.Setup(); err != nil {
+	if err := def.Infra.Setup(); err != nil {
 		return errors.Wrap(err, "setup provider")
 	}
 
-	genesis, err := MakeGenesis(testnet.Testnet)
+	genesis, err := MakeGenesis(def.Testnet.Testnet)
 	if err != nil {
 		return err
 	}
 
-	if err := writeOmniEVMConfig(testnet); err != nil {
+	if err := writeOmniEVMConfig(def.Testnet); err != nil {
 		return err
 	}
 
 	logCfg := logConfig()
 
-	if err := writeRelayerConfig(testnet.Dir, testnet, mngr, logCfg); err != nil {
+	if err := writeRelayerConfig(def, logCfg); err != nil {
 		return err
 	}
 
-	for _, node := range testnet.Nodes {
-		nodeDir := filepath.Join(testnet.Dir, node.Name)
+	for i, node := range def.Testnet.Nodes {
+		nodeDir := filepath.Join(def.Testnet.Dir, node.Name)
 
 		dirs := []string{
 			filepath.Join(nodeDir, "config"),
@@ -113,21 +111,21 @@ func Setup(ctx context.Context, testnet types.Testnet, infp infra.Provider, mngr
 			filepath.Join(nodeDir, PrivvalStateFile),
 		)).Save()
 
-		intNetwork := internalNetwork(testnet, mngr.DeployInfo())
+		intNetwork := internalNetwork(def.Testnet, def.Netman.DeployInfo(), i)
 
 		if err := netconf.Save(intNetwork, filepath.Join(nodeDir, NetworkConfigFile)); err != nil {
 			return errors.Wrap(err, "write network config")
 		}
 
 		// Initialize the node's data directory (with noop logger since it is noisy).
-		initCfg := halocmd.InitConfig{HomeDir: nodeDir, Network: testnet.Network}
+		initCfg := halocmd.InitConfig{HomeDir: nodeDir, Network: def.Testnet.Network}
 		if err := halocmd.InitFiles(log.WithNoopLogger(ctx), initCfg); err != nil {
 			return errors.Wrap(err, "init files")
 		}
 	}
 
-	if testnet.Prometheus {
-		if err := testnet.WritePrometheusConfig(); err != nil {
+	if def.Testnet.Prometheus {
+		if err := def.Testnet.WritePrometheusConfig(); err != nil {
 			return errors.Wrap(err, "write prom config")
 		}
 	}
@@ -337,8 +335,8 @@ func writeOmniEVMConfig(testnet types.Testnet) error {
 	return nil
 }
 
-func writeRelayerConfig(root string, testnet types.Testnet, mngr netman.Manager, logCfg log.Config) error {
-	confRoot := filepath.Join(root, "relayer")
+func writeRelayerConfig(def Definition, logCfg log.Config) error {
+	confRoot := filepath.Join(def.Testnet.Dir, "relayer")
 
 	const (
 		privKeyFile = "privatekey"
@@ -351,20 +349,20 @@ func writeRelayerConfig(root string, testnet types.Testnet, mngr netman.Manager,
 	}
 
 	// Save network config
-	intNetwork := internalNetwork(testnet, mngr.DeployInfo())
+	intNetwork := internalNetwork(def.Testnet, def.Netman.DeployInfo(), -1)
 	if err := netconf.Save(intNetwork, filepath.Join(confRoot, networkFile)); err != nil {
 		return errors.Wrap(err, "save network config")
 	}
 
 	// Save private key
-	if err := ethcrypto.SaveECDSA(filepath.Join(confRoot, privKeyFile), mngr.RelayerKey()); err != nil {
+	if err := ethcrypto.SaveECDSA(filepath.Join(confRoot, privKeyFile), def.Netman.RelayerKey()); err != nil {
 		return errors.Wrap(err, "write private key")
 	}
 
 	ralayCfg := relayapp.DefaultConfig()
 	ralayCfg.PrivateKey = privKeyFile
 	ralayCfg.NetworkFile = networkFile
-	ralayCfg.HaloURL = testnet.Nodes[0].AddressRPC()
+	ralayCfg.HaloURL = random(def.Testnet.Nodes).AddressRPC()
 
 	if err := relayapp.WriteConfigTOML(ralayCfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write relayer config")
