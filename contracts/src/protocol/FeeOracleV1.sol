@@ -2,8 +2,8 @@
 pragma solidity 0.8.23;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { IFeeOracle } from "./interfaces/IFeeOracle.sol";
-import { IFeeOracleV1 } from "./interfaces/IFeeOracleV1.sol";
+import { IFeeOracle } from "../interfaces/IFeeOracle.sol";
+import { IFeeOracleV1 } from "../interfaces/IFeeOracleV1.sol";
 
 /**
  * @title FeeOracleV1

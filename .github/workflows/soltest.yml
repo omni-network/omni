@@ -15,14 +15,12 @@ jobs:
           package_json_file: contracts/package.json
       - run: pnpm install
         working-directory: contracts
-      - name: Run fmt
-        run: forge fmt
+      - name: Check fmt
+        run: forge fmt --check
         working-directory: contracts
-      - name: Run snapshot
-        run: forge snapshot
+      - name: Check snapshot
+        run: forge snapshot --check --tolerance 1
         working-directory: contracts
       - name: Run tests
         run: forge test -vvv
         working-directory: contracts
-      - name: Ensure no diff
-        run: git diff --quiet

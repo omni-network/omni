@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.23;
 
-import { OmniPortal } from "src/OmniPortal.sol";
+import { OmniPortal } from "src/protocol/OmniPortal.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
 
 /**

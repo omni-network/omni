@@ -5,7 +5,7 @@ import { CommonBase } from "forge-std/Base.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
-import { FeeOracleV1 } from "src/FeeOracleV1.sol";
+import { FeeOracleV1 } from "src/protocol/FeeOracleV1.sol";
 import { TestXTypes } from "./TestXTypes.sol";
 import { TestPortal } from "./TestPortal.sol";
 import { Counter } from "./Counter.sol";

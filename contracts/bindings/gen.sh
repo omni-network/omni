@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Generate bindings for the given solidity contracts, to be
 
+BINDINGS_DIR=${BINDINGS_DIR:-./bindings}
+
 # generate bindings for the given contract
 # params:
 #  $1: contract name (ex. 'OmniPortal')
@@ -19,7 +21,7 @@ gen_binding() {
     --bin ${temp}/${name}.bin \
     --pkg bindings \
     --type ${name} \
-    --out ./bindings/${name_lower}.go
+    --out ${BINDINGS_DIR}/${name_lower}.go
 }
 
 

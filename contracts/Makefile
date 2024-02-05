@@ -10,3 +10,6 @@ build: version ## Build contracts.
 
 bindings: build ## Generate golang contract bindings.
 	./bindings/gen.sh OmniPortal FeeOracleV1
+
+examples-bindings: build ## Generate golang contract bindings for example contracts
+	BINDINGS_DIR=./bindings/examples ./bindings/gen.sh PingPong
