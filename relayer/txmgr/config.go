@@ -45,7 +45,7 @@ type CLIConfig struct {
 var (
 	//nolint:gochecknoglobals // should be configurable
 	DefaultSenderFlagValues = DefaultFlagValues{
-		NumConfirmations:          uint64(10),
+		NumConfirmations:          uint64(1),
 		SafeAbortNonceTooLowCount: uint64(3),
 		FeeLimitMultiplier:        uint64(5),
 		FeeLimitThresholdGwei:     100.0,
@@ -53,7 +53,7 @@ var (
 		NetworkTimeout:            10 * time.Second,
 		TxSendTimeout:             0 * time.Second,
 		TxNotInMempoolTimeout:     2 * time.Minute,
-		ReceiptQueryInterval:      12 * time.Second,
+		ReceiptQueryInterval:      1 * time.Second,
 	}
 )
 
