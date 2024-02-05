@@ -51,7 +51,11 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
     /// @inheritdoc IOmniPortalAdmin
     function collectFees(address to) external onlyOwner {
         uint256 amount = address(this).balance;
+
+        // .transfer() is fine, owner should provide an EOA address that will not
+        // consume more than 2300 gas on transfer, and we are okay .transfer() reverts
         payable(to).transfer(amount);
+
         emit FeesCollected(to, amount);
     }
 
