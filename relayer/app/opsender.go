@@ -20,12 +20,14 @@ import (
 
 var _ Sender = (*OpSender)(nil)
 
+// OpSender uses txmgr to send transactions to the destination chain.
 type OpSender struct {
 	txMgrs  map[uint64]txmgr.TxManager
 	portals map[uint64]common.Address
 	abi     *abi.ABI
 }
 
+// NewOpSender creates a new sender that uses txmgr to send transactions to the destination chain.
 func NewOpSender(ctx context.Context, chains []netconf.Chain, rpcClientPerChain map[uint64]*ethclient.Client,
 	privateKey ecdsa.PrivateKey) (OpSender, error) {
 	txMgrs := make(map[uint64]txmgr.TxManager)
@@ -60,6 +62,7 @@ func NewOpSender(ctx context.Context, chains []netconf.Chain, rpcClientPerChain 
 	}, nil
 }
 
+// SendTransaction sends the submission to the destination chain.
 func (o OpSender) SendTransaction(ctx context.Context, submission xchain.Submission) error {
 	txMgr, ok := o.txMgrs[submission.DestChainID]
 	if !ok {
@@ -115,6 +118,7 @@ func (o OpSender) SendTransaction(ctx context.Context, submission xchain.Submiss
 	return nil
 }
 
+// initTxMgr creates a new txmgr.TxManager from the given config.
 func initTxMgr(cfg txmgr.Config) (txmgr.TxManager, error) {
 	txMgr, err := txmgr.NewSimpleTxManagerFromConfig("op-relayer", cfg)
 	if err != nil {
@@ -124,6 +128,7 @@ func initTxMgr(cfg txmgr.Config) (txmgr.TxManager, error) {
 	return txMgr, nil
 }
 
+// getXSubmitBytes returns the byte representation of the xsubmit function call.
 func (o OpSender) getXSubmitBytes(sub bindings.XTypesSubmission) ([]byte, error) {
 	bytes, err := o.abi.Pack("xsubmit", sub)
 	if err != nil {
