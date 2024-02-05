@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import { Base } from "test/common/Base.sol";
-import { IFeeOracle } from "src/interfaces/IFeeOracle.sol";
+import { IFeeOracle } from "src/protocol/interfaces/IFeeOracle.sol";
 
 /**
  * @title OmniPortal_feeFor_Test

@@ -3,7 +3,7 @@ pragma solidity 0.8.23;
 
 import { Test } from "forge-std/Test.sol";
 import { Vm } from "forge-std/Vm.sol";
-import { XTypes } from "src/libraries/XTypes.sol";
+import { XTypes } from "src/protocol/libraries/XTypes.sol";
 import { Events } from "./Events.sol";
 import { TestXTypes } from "./TestXTypes.sol";
 import { Fixtures } from "./Fixtures.sol";
