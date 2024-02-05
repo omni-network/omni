@@ -1,16 +1,13 @@
 version: '2.4'
 networks:
-  {{ .Name }}:
+  {{ .NetworkName }}:
     labels:
       e2e: true
     driver: bridge
-{{- if .IPv6 }}
-    enable_ipv6: true
-{{- end }}
     ipam:
       driver: default
       config:
-      - subnet: {{ .IP }}
+      - subnet: {{ .NetworkCIDR }}
 
 services:
 {{- range .Nodes }}
@@ -31,8 +28,8 @@ services:
     - ./{{ .Name }}:/halo
     - ./{{ index $.NodeOmniEVMs .Name }}/jwtsecret:/geth/jwtsecret
     networks:
-      {{ $.Name }}:
-        ipv{{ if $.IPv6 }}6{{ else }}4{{ end}}_address: {{ .InternalIP }}
+      {{ $.NetworkName }}:
+        ipv4_address: {{ .InternalIP }}
 {{end}}
 
 {{- range .Anvils }}
@@ -46,7 +43,7 @@ services:
     ports:
       - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}8545
     networks:
-      {{ $.Name }}:
+      {{ $.NetworkName }}:
         ipv4_address: {{ .InternalIP }}
 {{end}}
 
@@ -98,10 +95,11 @@ services:
     volumes:
       - ./{{ .Name }}:/geth
     networks:
-      {{ $.Name }}:
+      {{ $.NetworkName }}:
         ipv4_address: {{ .InternalIP }}
 {{end}}
 
+{{ if .Relayer }}
   relayer:
     labels:
       e2e: true
@@ -111,5 +109,6 @@ services:
     volumes:
       - ./relayer:/relayer
     networks:
-      {{ $.Name }}:
+      {{ $.NetworkName }}:
         ipv4_address: 10.186.73.200
+{{end}}

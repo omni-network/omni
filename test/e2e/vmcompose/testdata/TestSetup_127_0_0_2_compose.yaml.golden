@@ -1,0 +1,82 @@
+version: '2.4'
+networks:
+  manifest:
+    labels:
+      e2e: true
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+      - subnet: 127.0.0.0/24
+
+services:
+  validator02:
+    labels:
+      e2e: true
+    container_name: validator02
+    image: omniops/halo:main
+    init: true
+    ports:
+    - 26656
+    - 26657:26657
+    - 6060
+    volumes:
+    - ./validator02:/halo
+    - ./validator02_evm/jwtsecret:/geth/jwtsecret
+    networks:
+      manifest:
+        ipv4_address: 127.0.0.2
+
+
+  # Use geth as the omni EVMs.
+  # Initialises geth files and folder from provided genesis file.
+  validator02_evm-init:
+    labels:
+      e2e: true
+    container_name: validator02_evm-init
+    image: "ethereum/client-go:latest"
+    command: --datadir=/geth init /geth/genesis.json
+    volumes:
+      - ./validator02_evm:/geth
+
+  validator02_evm:
+    labels:
+      e2e: true
+    container_name: validator02_evm
+    image: "ethereum/client-go:latest"
+    command:
+      - --http
+      - --http.vhosts=*
+      - --http.api=eth,net,web3
+      - --http.addr=0.0.0.0
+      - --http.corsdomain=*
+      - --ws
+      - --ws.api=eth,net,web3
+      - --ws.addr=0.0.0.0
+      - --ws.origins=*
+      - --authrpc.vhosts=*
+      - --authrpc.addr=0.0.0.0
+      - --authrpc.jwtsecret=/geth/jwtsecret
+      - --datadir=/geth
+      - --allow-insecure-unlock
+      - --unlock=0x123463a4b065722e99115d6c222f267d9cabb524
+      - --password=/geth/geth_password.txt
+      - --nodiscover
+      - --syncmode=full
+      - --nodekeyhex=<nodekeyhex>
+      - --bootnodes=enode://<enode_pubkey>@127.0.0.1:30303
+    ports:
+      - 8551
+      - 8545:8545
+      - 8546
+    depends_on:
+      validator02_evm-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./validator02_evm:/geth
+    networks:
+      manifest:
+        ipv4_address: 127.0.0.2
+
+
+

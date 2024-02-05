@@ -40,18 +40,16 @@ func NewInfraData(manifest types.Manifest) (types.InfrastructureData, error) {
 		return uint32(port)
 	}
 
-	omniEVMS := make(map[string]e2e.InstanceData)
 	for _, name := range manifest.OmniEVMs() {
-		omniEVMS[name] = e2e.InstanceData{
+		infd.Instances[name] = e2e.InstanceData{
 			IPAddress:    nextInternalIP(),
 			ExtIPAddress: localhost,
 			Port:         nextPort(),
 		}
 	}
 
-	anvils := make(map[string]e2e.InstanceData)
 	for _, name := range manifest.AnvilChains {
-		anvils[name] = e2e.InstanceData{
+		infd.Instances[name] = e2e.InstanceData{
 			IPAddress:    nextInternalIP(),
 			ExtIPAddress: localhost,
 			Port:         nextPort(),
@@ -62,7 +60,5 @@ func NewInfraData(manifest types.Manifest) (types.InfrastructureData, error) {
 
 	return types.InfrastructureData{
 		InfrastructureData: infd,
-		OmniEVMs:           omniEVMS,
-		AnvilChains:        anvils,
 	}, nil
 }

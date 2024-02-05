@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/test/e2e/docker"
 	"github.com/omni-network/omni/test/e2e/netman"
 	"github.com/omni-network/omni/test/e2e/types"
+	"github.com/omni-network/omni/test/e2e/vmcompose"
 
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -32,6 +33,8 @@ type DefinitionConfig struct {
 	// Secrets (not required for devnet)
 	DeployKeyFile  string
 	RelayerKeyFile string
+
+	InfraDataFile string // Not required for docker provider
 }
 
 // DefaultDefinitionConfig returns a default configuration for a Definition.
@@ -55,12 +58,20 @@ func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
 		return Definition{}, errors.Wrap(err, "loading manifest")
 	}
 
-	ifd, err := docker.NewInfraData(manifest)
+	var infd types.InfrastructureData
+	switch cfg.InfraProvider {
+	case infraDocker:
+		infd, err = docker.NewInfraData(manifest)
+	case vmcompose.ProviderName:
+		infd, err = vmcompose.LoadData(cfg.InfraDataFile)
+	default:
+		return Definition{}, errors.New("unknown infra provider", "provider", cfg.InfraProvider)
+	}
 	if err != nil {
-		return Definition{}, errors.Wrap(err, "creating docker infrastructure data")
+		return Definition{}, errors.Wrap(err, "loading infrastructure data")
 	}
 
-	testnet, err := TestnetFromManifest(manifest, cfg.ManifestFile, ifd)
+	testnet, err := TestnetFromManifest(manifest, cfg.ManifestFile, infd)
 	if err != nil {
 		return Definition{}, errors.Wrap(err, "loading testnet")
 	}
@@ -70,9 +81,19 @@ func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
 		return Definition{}, errors.Wrap(err, "get network")
 	}
 
+	var infp infra.Provider
+	switch cfg.InfraProvider {
+	case infraDocker:
+		infp = docker.NewProvider(testnet, infd)
+	case vmcompose.ProviderName:
+		infp = vmcompose.NewProvider(testnet, infd)
+	default:
+		return Definition{}, errors.New("unknown infra provider", "provider", cfg.InfraProvider)
+	}
+
 	return Definition{
 		Testnet: testnet,
-		Infra:   docker.NewProvider(testnet, ifd),
+		Infra:   infp,
 		Netman:  mngr,
 	}, nil
 }
@@ -123,7 +144,7 @@ func TestnetFromManifest(manifest types.Manifest, manifestFile string, infd type
 
 	var omniEVMS []types.OmniEVM
 	for _, name := range manifest.OmniEVMs() {
-		inst, ok := infd.OmniEVMs[name]
+		inst, ok := infd.Instances[name]
 		if !ok {
 			return types.Testnet{}, errors.New("omni evm instance not found in infrastructure data")
 		}
@@ -162,7 +183,7 @@ func TestnetFromManifest(manifest types.Manifest, manifestFile string, infd type
 
 	var anvils []types.AnvilChain
 	for _, chain := range types.AnvilChainsByNames(manifest.AnvilChains) {
-		inst, ok := infd.AnvilChains[chain.Name]
+		inst, ok := infd.Instances[chain.Name]
 		if !ok {
 			return types.Testnet{}, errors.New("anvil chain instance not found in infrastructure data")
 		}

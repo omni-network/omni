@@ -92,6 +92,7 @@ services:
         ipv4_address: 10.186.73.0
 
 
+
   relayer:
     labels:
       e2e: true
@@ -103,3 +104,4 @@ services:
     networks:
       test:
         ipv4_address: 10.186.73.200
+
