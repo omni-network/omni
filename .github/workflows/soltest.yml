@@ -1,0 +1,28 @@
+name: solidity tests
+# Run this separately from pre-commit for nice visual coverage.
+
+on:
+  workflow_call:
+
+jobs:
+  sol_tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+      - uses: pnpm/action-setup@v2
+        with:
+          package_json_file: contracts/package.json
+      - run: pnpm install
+        working-directory: contracts
+      - name: Run fmt
+        run: forge fmt
+        working-directory: contracts
+      - name: Run snapshot
+        run: forge snapshot
+        working-directory: contracts
+      - name: Run tests
+        run: forge test -vvv
+        working-directory: contracts
+      - name: Ensure no diff
+        run: git diff --quiet

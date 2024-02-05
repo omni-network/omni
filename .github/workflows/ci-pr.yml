@@ -17,3 +17,5 @@ jobs:
     uses: ./.github/workflows/gotest.yml
   go-lint:
     uses: ./.github/workflows/golangci-lint.yml
+  sol-tests:
+    uses: ./.github/workflows/soltest.yml
