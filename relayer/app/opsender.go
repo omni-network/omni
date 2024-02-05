@@ -27,13 +27,13 @@ type OpSender struct {
 }
 
 func NewOpSender(ctx context.Context, chains []netconf.Chain, rpcClientPerChain map[uint64]*ethclient.Client,
-	privateKey *ecdsa.PrivateKey) (OpSender, error) {
+	privateKey ecdsa.PrivateKey) (OpSender, error) {
 	txMgrs := make(map[uint64]txmgr.TxManager)
 	portals := make(map[uint64]common.Address)
 
 	for _, chain := range chains {
 		cfg, err := txmgr.NewConfig(ctx, txmgr.NewCLIConfig(chain.RPCURL, txmgr.DefaultSenderFlagValues),
-			privateKey, rpcClientPerChain[chain.ID])
+			&privateKey, rpcClientPerChain[chain.ID])
 		if err != nil {
 			return OpSender{}, err
 		}
