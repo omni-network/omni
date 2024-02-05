@@ -53,7 +53,16 @@ func NewProvider(testnet types.Testnet, infd types.InfrastructureData) *Provider
 // Setup generates the docker-compose file and write it to disk, erroring if
 // any of these operations fail. It writes.
 func (p *Provider) Setup() error {
-	bz, err := generateComposeFile(p.testnet)
+	def := ComposeDef{
+		NetworkName: p.testnet.Name,
+		NetworkCIDR: p.testnet.IP.String(),
+		Nodes:       p.testnet.Nodes,
+		OmniEVMs:    p.testnet.OmniEVMs,
+		Anvils:      p.testnet.AnvilChains,
+		Relayer:     true,
+	}
+
+	bz, err := GenerateComposeFile(def)
 	if err != nil {
 		return errors.Wrap(err, "generate compose file")
 	}
@@ -84,14 +93,24 @@ func (p *Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 	return nil
 }
 
-func generateComposeFile(testnet types.Testnet) ([]byte, error) {
+type ComposeDef struct {
+	NetworkName string
+	NetworkCIDR string
+
+	Nodes    []*e2e.Node
+	OmniEVMs []types.OmniEVM
+	Anvils   []types.AnvilChain
+	Relayer  bool
+}
+
+func GenerateComposeFile(def ComposeDef) ([]byte, error) {
 	tmpl, err := template.New("compose").Parse(string(composeTmpl))
 	if err != nil {
 		return nil, errors.Wrap(err, "parse template")
 	}
 
 	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, makeTemplateData(testnet))
+	err = tmpl.Execute(&buf, makeTemplateData(def))
 	if err != nil {
 		return nil, errors.Wrap(err, "execute template")
 	}
@@ -100,10 +119,13 @@ func generateComposeFile(testnet types.Testnet) ([]byte, error) {
 }
 
 type data struct {
-	*e2e.Testnet
+	NetworkName  string
+	NetworkCIDR  string
+	Nodes        []*e2e.Node
 	NodeOmniEVMs map[string]string // Maps node name to Omni EVM instance name.
 	Anvils       []chain
 	OmniEVMs     []chain
+	Relayer      bool
 }
 
 type chain struct {
@@ -117,9 +139,9 @@ type chain struct {
 	BootNodes  string // --bootnodes: Comma separated enode URLs for P2P discovery bootstrap
 }
 
-func makeTemplateData(testnet types.Testnet) data {
+func makeTemplateData(def ComposeDef) data {
 	var omniEVMs []chain
-	for _, omniEVM := range testnet.OmniEVMs {
+	for _, omniEVM := range def.OmniEVMs {
 		var bootnodes []string
 		for _, b := range omniEVM.BootNodes {
 			bootnodes = append(bootnodes, b.String())
@@ -136,16 +158,16 @@ func makeTemplateData(testnet types.Testnet) data {
 	}
 
 	nodeEVMs := make(map[string]string)
-	for i, node := range testnet.Nodes {
+	for i, node := range def.Nodes {
 		evm := omniEVMs[0].Name
-		if len(omniEVMs) == len(testnet.Nodes) {
+		if len(omniEVMs) == len(def.Nodes) {
 			evm = omniEVMs[i].Name
 		}
 		nodeEVMs[node.Name] = evm
 	}
 
 	var anvils []chain
-	for _, anvil := range testnet.AnvilChains {
+	for _, anvil := range def.Anvils {
 		anvils = append(anvils, chain{
 			Name:       anvil.Chain.Name,
 			ChainID:    anvil.Chain.ID,
@@ -155,10 +177,13 @@ func makeTemplateData(testnet types.Testnet) data {
 	}
 
 	return data{
-		Testnet:      testnet.Testnet,
+		NetworkName:  def.NetworkName,
+		NetworkCIDR:  def.NetworkCIDR,
+		Nodes:        def.Nodes,
 		Anvils:       anvils,
 		OmniEVMs:     omniEVMs,
 		NodeOmniEVMs: nodeEVMs,
+		Relayer:      def.Relayer,
 	}
 }
 
