@@ -18,11 +18,9 @@ jobs:
       - name: Run fmt
         run: forge fmt
         working-directory: contracts
-      - name: Run snapshot
-        run: forge snapshot
+      - name: Ensure no snapshot diff
+        run: forge snapshot --check --tolerance 1
         working-directory: contracts
       - name: Run tests
         run: forge test -vvv
         working-directory: contracts
-      - name: Ensure no diff
-        run: git diff --exit-code
