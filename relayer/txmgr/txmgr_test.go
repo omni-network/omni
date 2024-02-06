@@ -742,7 +742,7 @@ func (b *failingBackend) TransactionReceipt(
 ) (*types.Receipt, error) {
 	if !b.returnSuccessReceipt {
 		b.returnSuccessReceipt = true
-		return nil, errRPCFailure
+		return nil, ethereum.NotFound
 	}
 
 	return &types.Receipt{
@@ -752,11 +752,6 @@ func (b *failingBackend) TransactionReceipt(
 }
 
 func (b *failingBackend) HeaderByNumber(ctx context.Context, _ *big.Int) (*types.Header, error) {
-	if !b.returnSuccessHeader {
-		b.returnSuccessHeader = true
-		return nil, errRPCFailure
-	}
-
 	return &types.Header{
 		Number:        big.NewInt(1),
 		BaseFee:       b.baseFee,
@@ -795,10 +790,10 @@ func (b *failingBackend) ChainID(ctx context.Context) (*big.Int, error) {
 func (b *failingBackend) Close() {
 }
 
-// TestWaitMinedReturnsReceiptAfterFailure asserts that WaitMined is able to
+// TestWaitMinedReturnsReceiptAfterNotFound asserts that WaitMined is able to
 // recover from failed calls to the backend. It uses the failedBackend to
 // simulate an rpc call failure, followed by the successful return of a receipt.
-func TestWaitMinedReturnsReceiptAfterFailure(t *testing.T) {
+func TestWaitMinedReturnsReceiptAfterNotFound(t *testing.T) {
 	t.Parallel()
 
 	var borkedBackend failingBackend

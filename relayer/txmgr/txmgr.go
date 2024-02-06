@@ -455,7 +455,7 @@ func (m *SimpleTxManager) WaitMined(ctx context.Context, tx *types.Transaction,
 		case <-queryTicker.C:
 			receipt, ok, err := m.queryReceipt(ctx, txHash, sendState)
 			if err != nil {
-				log.Warn(ctx, "Error querying transaction receipt", err)
+				return nil, err
 			} else if !ok {
 				if retries >= receiptMaxQueryCount {
 					log.Debug(ctx, "Transaction not yet mined", "tx", txHash, "chain_id", m.ChainID)
@@ -476,7 +476,7 @@ func (m *SimpleTxManager) queryReceipt(ctx context.Context, txHash common.Hash,
 	defer cancel()
 	receipt, err := m.Backend.TransactionReceipt(ctx, txHash)
 	if err != nil {
-		if errors.Is(err, ethereum.NotFound) {
+		if errors.Is(err, ethereum.NotFound) || strings.Contains(err.Error(), ethereum.NotFound.Error()) {
 			sendState.TxNotMined(txHash)
 			return nil, false, nil
 		}
@@ -490,7 +490,7 @@ func (m *SimpleTxManager) queryReceipt(ctx context.Context, txHash common.Hash,
 	txHeight := receipt.BlockNumber.Uint64()
 	tip, err := m.Backend.HeaderByNumber(ctx, nil)
 	if err != nil {
-		return nil, false, nil //nolint:nilerr // We just want to log this outside
+		return nil, false, err
 	}
 
 	// The transaction is considered confirmed when
