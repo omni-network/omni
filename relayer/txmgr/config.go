@@ -25,7 +25,6 @@ type DefaultFlagValues struct {
 	TxSendTimeout             time.Duration
 	TxNotInMempoolTimeout     time.Duration
 	ReceiptQueryInterval      time.Duration
-	ReceiptMaxQueryCount      uint
 }
 
 type CLIConfig struct {
@@ -36,7 +35,6 @@ type CLIConfig struct {
 	FeeLimitThresholdGwei     float64
 	MinBaseFeeGwei            float64
 	MinTipCapGwei             float64
-	ReceiptMaxQueryCount      uint
 	ResubmissionTimeout       time.Duration
 	ReceiptQueryInterval      time.Duration
 	NetworkTimeout            time.Duration
@@ -56,7 +54,6 @@ var (
 		TxSendTimeout:             0 * time.Second,
 		TxNotInMempoolTimeout:     2 * time.Minute,
 		ReceiptQueryInterval:      1 * time.Second, // todo(Lazar): this should be configurable
-		ReceiptMaxQueryCount:      9,
 	}
 )
 
@@ -72,7 +69,6 @@ func NewCLIConfig(rpc string, defaults DefaultFlagValues) CLIConfig {
 		TxSendTimeout:             defaults.TxSendTimeout,
 		TxNotInMempoolTimeout:     defaults.TxNotInMempoolTimeout,
 		ReceiptQueryInterval:      defaults.ReceiptQueryInterval,
-		ReceiptMaxQueryCount:      defaults.ReceiptMaxQueryCount,
 	}
 }
 
@@ -181,10 +177,6 @@ type Config struct {
 	// specific gas price has been published.
 	ReceiptQueryInterval time.Duration
 
-	// ReceiptMaxQueryCount is the maximum number of times the tx manager will
-	// query before logging warn messages
-	ReceiptMaxQueryCount uint
-
 	// NumConfirmations specifies how many blocks are need to consider a
 	// transaction confirmed.
 	NumConfirmations uint64
@@ -248,7 +240,6 @@ func NewConfig(ctx context.Context, cfg CLIConfig,
 		TxNotInMempoolTimeout:     cfg.TxNotInMempoolTimeout,
 		NetworkTimeout:            cfg.NetworkTimeout,
 		ReceiptQueryInterval:      cfg.ReceiptQueryInterval,
-		ReceiptMaxQueryCount:      cfg.ReceiptMaxQueryCount,
 		NumConfirmations:          cfg.NumConfirmations,
 		SafeAbortNonceTooLowCount: cfg.SafeAbortNonceTooLowCount,
 		Signer:                    signer(chainID),

@@ -443,29 +443,27 @@ func (m *SimpleTxManager) waitForTx(ctx context.Context, tx *types.Transaction, 
 func (m *SimpleTxManager) WaitMined(ctx context.Context, tx *types.Transaction,
 	sendState *SendState) (*types.Receipt, error) {
 	txHash := tx.Hash()
+	const receiptMaxQueryCount = 10
+	retries := uint(0)
+
 	queryTicker := time.NewTicker(m.Cfg.ReceiptQueryInterval)
 	defer queryTicker.Stop()
-	retries := uint(0)
 	for {
 		select {
 		case <-ctx.Done():
 			return nil, errors.Wrap(ctx.Err(), "context canceled")
 		case <-queryTicker.C:
-			receipt, found, err := m.queryReceipt(ctx, txHash, sendState)
-			shouldLog := retries >= m.Cfg.ReceiptMaxQueryCount
-			if errors.Is(err, ethereum.NotFound) {
-				if shouldLog {
+			receipt, ok, err := m.queryReceipt(ctx, txHash, sendState)
+			if err != nil {
+				return nil, err
+			} else if !ok {
+				if retries >= receiptMaxQueryCount {
 					log.Debug(ctx, "Transaction not yet mined", "tx", txHash, "chain_id", m.ChainID)
 				}
-			} else if err != nil {
-				if shouldLog {
-					log.Warn(ctx, "Receipt retrieval failed", err, "tx_hash", txHash, "chain_id", m.ChainID)
-				}
-			}
-
-			if found {
+			} else if ok {
 				return receipt, nil
 			}
+
 			retries++
 		}
 	}
@@ -482,7 +480,7 @@ func (m *SimpleTxManager) queryReceipt(ctx context.Context, txHash common.Hash,
 			sendState.TxNotMined(txHash)
 		}
 
-		return nil, false, err
+		return nil, false, nil
 	}
 
 	// Receipt is confirmed to be valid from this point on
@@ -491,7 +489,7 @@ func (m *SimpleTxManager) queryReceipt(ctx context.Context, txHash common.Hash,
 	txHeight := receipt.BlockNumber.Uint64()
 	tip, err := m.Backend.HeaderByNumber(ctx, nil)
 	if err != nil {
-		return nil, false, err
+		return nil, false, nil
 	}
 
 	// The transaction is considered confirmed when
