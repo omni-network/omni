@@ -39,7 +39,7 @@ install-pre-commit: ## Installs the pre-commit tool as the git pre-commit hook f
 	@which pre-commit > /dev/null || echo "pre-commit not installed, see https://pre-commit.com/#install"
 	@pre-commit install --install-hooks
 
-.PHONE: install-go-tools
+.PHONY: install-go-tools
 install-go-tools: ## Installs the go-dev-tools, like buf.
 	@go generate tools.go
 
@@ -57,12 +57,12 @@ halo-simnet: ## Runs halo in simnet mode.
 	@halo init --home=/tmp/halo --network=simnet --clean
 	@halo run --home=/tmp/halo
 
-.PHONY: devnet-deploy
+.PHONY: devnet-run
 devnet-run: ## Runs devnet1 (alias for MANIFEST=devnet1 make e2e-run).
 	@echo "Creating a docker-compose devnet in ./test/e2e/run/devnet1"
 	@go run github.com/omni-network/omni/test/e2e -f test/e2e/manifests/devnet1.toml deploy
 
-.PHONY: devnet-clean
+.PHONY: devnet-stop
 devnet-stop: ## Deletes devnet1 containers (alias for MANIFEST=devnet1 make e2e-stop).
 	@echo "Stopping the devnet in ./test/e2e/run/devnet1"
 	@go run github.com/omni-network/omni/test/e2e -f test/e2e/manifests/devnet1.toml clean
@@ -79,7 +79,7 @@ e2e-logs: ## Print the docker logs of previously ran e2e manifest (single, simpl
 	@echo "Using MANIFEST=$(MANIFEST)"
 	@go run github.com/omni-network/omni/test/e2e -f test/e2e/manifests/$(MANIFEST).toml logs
 
-.PHONY: e2e-clean
+.PHONY: e2e-stop
 e2e-stop: ## Deletes all running containers from previously ran e2e.
 	@if [ -z "$(MANIFEST)" ]; then echo "⚠️  Please specify a manifest: MANIFEST=simple make e2e-stop" && exit 1; fi
 	@echo "Using MANIFEST=$(MANIFEST)"
