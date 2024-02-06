@@ -6,9 +6,11 @@ import (
 	"github.com/spf13/pflag"
 )
 
+//nolint:lll // Long lines are easier to read for flag descriptions.
 func bindDefFlags(flags *pflag.FlagSet, cfg *app.DefinitionConfig) {
 	flags.StringVarP(&cfg.ManifestFile, "manifest-file", "f", cfg.ManifestFile, "path to manifest file")
-	flags.StringVar(&cfg.InfraProvider, "infra", cfg.InfraProvider, "infrastructure provider")
+	flags.StringVar(&cfg.InfraProvider, "infra", cfg.InfraProvider, "infrastructure provider: docker, vmcompose")
+	flags.StringVar(&cfg.InfraProvider, "infra-file", cfg.InfraDataFile, "infrastructure data file (not required for docker provider)")
 	flags.StringVar(&cfg.DeployKeyFile, "deploy-key", cfg.DeployKeyFile, "path to deploy private key file")
 	flags.StringVar(&cfg.RelayerKeyFile, "relayer-key", cfg.RelayerKeyFile, "path to relayer private key file")
 }

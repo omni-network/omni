@@ -19,6 +19,8 @@ import (
 	_ "embed"
 )
 
+const ProviderName = "docker"
+
 // composeTmpl is our own custom docker compose template. This differs from cometBFT's.
 //
 //go:embed compose.yaml.tmpl
