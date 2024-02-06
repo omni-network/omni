@@ -78,5 +78,3 @@ services:
       manifest:
         ipv4_address: 127.0.0.1
 
-
-

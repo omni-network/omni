@@ -2,10 +2,13 @@ package types
 
 import (
 	"crypto/ecdsa"
+	"encoding/hex"
 	"net"
+	"strings"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 )
 
@@ -39,6 +42,19 @@ type OmniEVM struct {
 	NodeKey   *ecdsa.PrivateKey // Private key
 	Enode     *enode.Node       // Public key
 	BootNodes []*enode.Node     // Peer public keys
+}
+
+func (o OmniEVM) NodeKeyHex() string {
+	return hex.EncodeToString(crypto.FromECDSA(o.NodeKey))
+}
+
+func (o OmniEVM) BootNodesStr() string {
+	var resp []string
+	for _, b := range o.BootNodes {
+		resp = append(resp, b.String())
+	}
+
+	return strings.Join(resp, ",")
 }
 
 // AnvilChain represents an anvil chain instance in a omni network.

@@ -1,0 +1,21 @@
+global:
+  scrape_interval: 30s # Set the scrape interval to every 30 seconds.
+  evaluation_interval: 30s # Evaluate rules every 30 seconds.
+
+{{- if .RemoteURL }}
+remote_write:
+  - url: {{ .RemoteURL }}
+    basic_auth:
+      username: {{ .RemoteUsername }}
+      password: {{ .RemotePassword }}
+{{end }}
+
+scrape_configs:
+{{- range .ScrapeConfigs }}
+  - job_name: "{{ .JobName }}"
+    metrics_path: "{{ .MetricsPath }}"
+    static_configs:
+      - targets: [{{ .Targets }}]
+        labels:
+          network: '{{ $.Network }}'
+{{ end }}
