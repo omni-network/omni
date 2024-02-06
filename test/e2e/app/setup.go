@@ -46,7 +46,7 @@ const (
 )
 
 // Setup sets up the testnet configuration.
-func Setup(ctx context.Context, def Definition) error {
+func Setup(ctx context.Context, def Definition, promSecrets PromSecrets) error {
 	log.Info(ctx, "Setup testnet", "dir", def.Testnet.Dir)
 
 	if err := os.MkdirAll(def.Testnet.Dir, os.ModePerm); err != nil {
@@ -125,7 +125,7 @@ func Setup(ctx context.Context, def Definition) error {
 	}
 
 	if def.Testnet.Prometheus {
-		if err := def.Testnet.WritePrometheusConfig(); err != nil {
+		if err := writePrometheusConfig(ctx, def.Testnet, promSecrets); err != nil {
 			return errors.Wrap(err, "write prom config")
 		}
 	}

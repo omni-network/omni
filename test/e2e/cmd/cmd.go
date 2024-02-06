@@ -42,13 +42,18 @@ func New() *cobra.Command {
 }
 
 func newDeployCmd(def *app.Definition) *cobra.Command {
-	return &cobra.Command{
+	var promSecrets app.PromSecrets
+	cmd := &cobra.Command{
 		Use:   "deploy",
 		Short: "Deploys the e2e network",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return app.Deploy(cmd.Context(), *def)
+			return app.Deploy(cmd.Context(), *def, promSecrets)
 		},
 	}
+
+	bindPromFlags(cmd.Flags(), &promSecrets)
+
+	return cmd
 }
 
 func newLogsCmd(def *app.Definition) *cobra.Command {
