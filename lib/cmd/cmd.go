@@ -29,6 +29,8 @@ import (
 func Main(cmd *cobra.Command) {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
+	silenceErrUsage(cmd)
+
 	err := cmd.ExecuteContext(ctx)
 
 	cancel()
@@ -55,25 +57,16 @@ func NewRootCmd(appName string, appDescription string, subCmds ...*cobra.Command
 	}
 
 	root.AddCommand(subCmds...)
-	root.SilenceErrors = true // Disable default error printing.
-
-	silenceUsage(root)
 
 	return root
 }
 
-// silenceUsage silences the usage printing when commands error during "running",
-// so only show usage if error occurs before that, e.g., when parsing flags.
-func silenceUsage(cmd *cobra.Command) {
-	if runFunc := cmd.RunE; runFunc != nil {
-		cmd.RunE = func(cmd *cobra.Command, args []string) error {
-			cmd.SilenceUsage = true
-			return runFunc(cmd, args)
-		}
-	}
-
+// silenceErrUsage silences the usage and error printing.
+func silenceErrUsage(cmd *cobra.Command) {
+	cmd.SilenceUsage = true
+	cmd.SilenceErrors = true
 	for _, cmd := range cmd.Commands() {
-		silenceUsage(cmd)
+		silenceErrUsage(cmd)
 	}
 }
 

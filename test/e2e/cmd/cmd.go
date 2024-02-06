@@ -13,8 +13,10 @@ import (
 )
 
 func New() *cobra.Command {
+	// E2E app is aimed at devs and CI, so debug level and force colors by default.
 	logCfg := log.DefaultConfig()
 	logCfg.Level = slog.LevelDebug.String()
+	logCfg.Color = log.ColorForce
 
 	defCfg := app.DefaultDefinitionConfig()
 
