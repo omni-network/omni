@@ -107,7 +107,7 @@ func (o OpSender) SendTransaction(ctx context.Context, submission xchain.Submiss
 		return errors.Wrap(err, "failed to send tx")
 	}
 
-	log.Debug(ctx, "Sent submission transaction",
+	log.Info(ctx, "Sent submission transaction",
 		"dest_chain_id", submission.DestChainID,
 		"block_height", submission.BlockHeader.BlockHeight,
 		"source_chain_id", submission.BlockHeader.SourceChainID,
