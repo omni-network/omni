@@ -52,6 +52,14 @@ var FastConfig = Config{
 	MaxDelay:   5 * time.Second,
 }
 
+// WithPeriodicConfig configures the backoff with periodic backoff.
+func WithPeriodicConfig(period time.Duration) func(*Config) {
+	return func(config *Config) {
+		config.BaseDelay = period
+		config.Multiplier = 1
+	}
+}
+
 // WithFastConfig configures the backoff with FastConfig.
 func WithFastConfig() func(*Config) {
 	return func(config *Config) {
