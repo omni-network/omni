@@ -65,6 +65,7 @@ func (p *Provider) Setup() error {
 			OmniEVMs:    omniEVMs,
 			Anvils:      anvilChains,
 			Relayer:     services["relayer"],
+			Prometheus:  p.Testnet.Prometheus,
 		}
 		compose, err := docker.GenerateComposeFile(def)
 		if err != nil {

@@ -16,3 +16,9 @@ func bindDefFlags(flags *pflag.FlagSet, cfg *app.DefinitionConfig) {
 func bindE2EFlags(flags *pflag.FlagSet, cfg *app.E2ETestConfig) {
 	flags.BoolVar(&cfg.Preserve, "preserve", cfg.Preserve, "preserve infrastructure after test")
 }
+
+func bindPromFlags(flags *pflag.FlagSet, cfg *app.PromSecrets) {
+	flags.StringVar(&cfg.URL, "prom-url", cfg.URL, "prometheus url (only required if prometheus==true)")
+	flags.StringVar(&cfg.User, "prom-user", cfg.User, "prometheus user")
+	flags.StringVar(&cfg.Pass, "prom-password", cfg.Pass, "prometheus password")
+}

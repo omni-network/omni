@@ -33,9 +33,10 @@ func TestComposeTemplate(t *testing.T) {
 	dir := t.TempDir()
 	testnet := types.Testnet{
 		Testnet: &e2e.Testnet{
-			Name: "test",
-			IP:   ipNet,
-			Dir:  dir,
+			Name:       "test",
+			IP:         ipNet,
+			Dir:        dir,
+			Prometheus: true,
 			Nodes: []*e2e.Node{{
 				Name:       "node0",
 				Version:    "v0.0.0",
