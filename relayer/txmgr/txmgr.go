@@ -452,14 +452,17 @@ func (m *SimpleTxManager) WaitMined(ctx context.Context, tx *types.Transaction,
 			return nil, errors.Wrap(ctx.Err(), "context canceled")
 		case <-queryTicker.C:
 			receipt, found, err := m.queryReceipt(ctx, txHash, sendState)
+			shouldLog := retries >= m.Cfg.ReceiptMaxQueryCount
 			if errors.Is(err, ethereum.NotFound) {
-				sendState.TxNotMined(txHash)
-				if retries >= m.Cfg.ReceiptMaxQueryCount {
+				if shouldLog {
 					log.Debug(ctx, "Transaction not yet mined", "tx", txHash, "chain_id", m.ChainID)
 				}
 			} else if err != nil {
-				return nil, err
+				if shouldLog {
+					log.Warn(ctx, "Receipt retrieval failed", err, "tx_hash", txHash, "chain_id", m.ChainID)
+				}
 			}
+
 			if found {
 				return receipt, nil
 			}
@@ -475,6 +478,10 @@ func (m *SimpleTxManager) queryReceipt(ctx context.Context, txHash common.Hash,
 	defer cancel()
 	receipt, err := m.Backend.TransactionReceipt(ctx, txHash)
 	if err != nil {
+		if errors.Is(err, ethereum.NotFound) {
+			sendState.TxNotMined(txHash)
+		}
+
 		return nil, false, err
 	}
 
