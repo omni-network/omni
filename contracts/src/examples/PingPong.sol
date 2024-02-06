@@ -53,6 +53,8 @@ contract PingPong {
     }
 
     function _xpingpong(uint64 destChainID, address to, uint64 times, uint64 n) internal {
-        omni.xcall(destChainID, to, abi.encodeWithSelector(this.pingpong.selector, times, n));
+        bytes memory data = abi.encodeWithSelector(this.pingpong.selector, times, n);
+        uint256 fee = omni.feeFor(destChainID, data);
+        omni.xcall{ value: fee }(destChainID, to, data);
     }
 }
