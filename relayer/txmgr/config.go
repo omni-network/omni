@@ -53,7 +53,7 @@ var (
 		NetworkTimeout:            10 * time.Second,
 		TxSendTimeout:             0 * time.Second,
 		TxNotInMempoolTimeout:     2 * time.Minute,
-		ReceiptQueryInterval:      100 * time.Millisecond, // todo(Lazar): this should be configurable
+		ReceiptQueryInterval:      300 * time.Millisecond, // todo(Lazar): this should be configurable
 	}
 )
 
@@ -160,7 +160,7 @@ type Config struct {
 	ChainID *big.Int
 
 	// TxSendTimeout is how long to wait for sending a transaction.
-	// By default it is unbounded. If set, this is recommended to be at least 20 minutes.
+	// By default, it is unbounded. If set, this is recommended to be at least 20 minutes.
 	TxSendTimeout time.Duration
 
 	// TxNotInMempoolTimeout is how long to wait before aborting a transaction doSend if the transaction does not
