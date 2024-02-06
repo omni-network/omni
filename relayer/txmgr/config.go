@@ -53,7 +53,7 @@ var (
 		NetworkTimeout:            10 * time.Second,
 		TxSendTimeout:             0 * time.Second,
 		TxNotInMempoolTimeout:     2 * time.Minute,
-		ReceiptQueryInterval:      1 * time.Second, // todo(Lazar): this should be configurable
+		ReceiptQueryInterval:      300 * time.Millisecond, // todo(Lazar): this should be configurable
 	}
 )
 

@@ -443,7 +443,7 @@ func (m *SimpleTxManager) waitForTx(ctx context.Context, tx *types.Transaction, 
 func (m *SimpleTxManager) WaitMined(ctx context.Context, tx *types.Transaction,
 	sendState *SendState) (*types.Receipt, error) {
 	txHash := tx.Hash()
-	const receiptMaxQueryCount = 10
+	const logFreqFactor = 10
 	retries := uint(0)
 
 	queryTicker := time.NewTicker(m.Cfg.ReceiptQueryInterval)
@@ -456,10 +456,12 @@ func (m *SimpleTxManager) WaitMined(ctx context.Context, tx *types.Transaction,
 			receipt, ok, err := m.queryReceipt(ctx, txHash, sendState)
 			if err != nil {
 				return nil, err
-			} else if !ok {
-				if retries >= receiptMaxQueryCount {
-					log.Debug(ctx, "Transaction not yet mined", "tx", txHash, "chain_id", m.ChainID)
-				}
+			} else if !ok && retries%logFreqFactor == 0 {
+				log.Warn(ctx, "Transaction not yet mined", nil,
+					"tx", txHash,
+					"chain_id", m.ChainID,
+					"retries", retries,
+				)
 			} else if ok {
 				return receipt, nil
 			}
