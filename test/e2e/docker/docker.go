@@ -3,10 +3,8 @@ package docker
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"text/template"
 
@@ -18,10 +16,10 @@ import (
 	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
 	cmtdocker "github.com/cometbft/cometbft/test/e2e/pkg/infra/docker"
 
-	"github.com/ethereum/go-ethereum/crypto"
-
 	_ "embed"
 )
+
+const ProviderName = "docker"
 
 // composeTmpl is our own custom docker compose template. This differs from cometBFT's.
 //
@@ -60,6 +58,7 @@ func (p *Provider) Setup() error {
 		OmniEVMs:    p.testnet.OmniEVMs,
 		Anvils:      p.testnet.AnvilChains,
 		Relayer:     true,
+		Prometheus:  p.testnet.Prometheus,
 	}
 
 	bz, err := GenerateComposeFile(def)
@@ -97,10 +96,25 @@ type ComposeDef struct {
 	NetworkName string
 	NetworkCIDR string
 
-	Nodes    []*e2e.Node
-	OmniEVMs []types.OmniEVM
-	Anvils   []types.AnvilChain
-	Relayer  bool
+	Nodes      []*e2e.Node
+	OmniEVMs   []types.OmniEVM
+	Anvils     []types.AnvilChain
+	Relayer    bool
+	Prometheus bool
+}
+
+// NodeOmniEVMs returns a map of node name to OmniEVM instance name; map[node_name]omni_evm.
+func (c ComposeDef) NodeOmniEVMs() map[string]string {
+	resp := make(map[string]string)
+	for i, node := range c.Nodes {
+		evm := c.OmniEVMs[0].InstanceName
+		if len(c.OmniEVMs) == len(c.Nodes) {
+			evm = c.OmniEVMs[i].InstanceName
+		}
+		resp[node.Name] = evm
+	}
+
+	return resp
 }
 
 func GenerateComposeFile(def ComposeDef) ([]byte, error) {
@@ -110,81 +124,12 @@ func GenerateComposeFile(def ComposeDef) ([]byte, error) {
 	}
 
 	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, makeTemplateData(def))
+	err = tmpl.Execute(&buf, def)
 	if err != nil {
 		return nil, errors.Wrap(err, "execute template")
 	}
 
 	return buf.Bytes(), nil
-}
-
-type data struct {
-	NetworkName  string
-	NetworkCIDR  string
-	Nodes        []*e2e.Node
-	NodeOmniEVMs map[string]string // Maps node name to Omni EVM instance name.
-	Anvils       []chain
-	OmniEVMs     []chain
-	Relayer      bool
-}
-
-type chain struct {
-	Name       string
-	ChainID    uint64
-	InternalIP string
-	ProxyPort  uint32
-
-	// Only for Geth OmniEVM
-	NodeKeyHex string // --nodekey: P2P node key file
-	BootNodes  string // --bootnodes: Comma separated enode URLs for P2P discovery bootstrap
-}
-
-func makeTemplateData(def ComposeDef) data {
-	var omniEVMs []chain
-	for _, omniEVM := range def.OmniEVMs {
-		var bootnodes []string
-		for _, b := range omniEVM.BootNodes {
-			bootnodes = append(bootnodes, b.String())
-		}
-
-		omniEVMs = append(omniEVMs, chain{
-			Name:       omniEVM.InstanceName,
-			ChainID:    omniEVM.Chain.ID,
-			ProxyPort:  omniEVM.ProxyPort,
-			InternalIP: omniEVM.InternalIP.String(),
-			NodeKeyHex: hex.EncodeToString(crypto.FromECDSA(omniEVM.NodeKey)),
-			BootNodes:  strings.Join(bootnodes, ","),
-		})
-	}
-
-	nodeEVMs := make(map[string]string)
-	for i, node := range def.Nodes {
-		evm := omniEVMs[0].Name
-		if len(omniEVMs) == len(def.Nodes) {
-			evm = omniEVMs[i].Name
-		}
-		nodeEVMs[node.Name] = evm
-	}
-
-	var anvils []chain
-	for _, anvil := range def.Anvils {
-		anvils = append(anvils, chain{
-			Name:       anvil.Chain.Name,
-			ChainID:    anvil.Chain.ID,
-			ProxyPort:  anvil.ProxyPort,
-			InternalIP: anvil.InternalIP.String(),
-		})
-	}
-
-	return data{
-		NetworkName:  def.NetworkName,
-		NetworkCIDR:  def.NetworkCIDR,
-		Nodes:        def.Nodes,
-		Anvils:       anvils,
-		OmniEVMs:     omniEVMs,
-		NodeOmniEVMs: nodeEVMs,
-		Relayer:      def.Relayer,
-	}
 }
 
 // additionalServices returns additional (to halo) docker-compose services to start.
@@ -195,6 +140,10 @@ func additionalServices(testnet types.Testnet) []string {
 	}
 	for _, anvil := range testnet.AnvilChains {
 		resp = append(resp, anvil.Chain.Name)
+	}
+
+	if testnet.Prometheus {
+		resp = append(resp, "prometheus")
 	}
 
 	resp = append(resp, "relayer")

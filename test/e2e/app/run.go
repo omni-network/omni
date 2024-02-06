@@ -8,7 +8,7 @@ import (
 )
 
 // Deploy a new e2e network. It also starts all services in order to deploy private portals.
-func Deploy(ctx context.Context, def Definition) error {
+func Deploy(ctx context.Context, def Definition, promSecrets PromSecrets) error {
 	if err := Cleanup(ctx, def.Testnet.Testnet); err != nil {
 		return err
 	}
@@ -18,7 +18,7 @@ func Deploy(ctx context.Context, def Definition) error {
 		return err
 	}
 
-	if err := Setup(ctx, def); err != nil {
+	if err := Setup(ctx, def, promSecrets); err != nil {
 		return err
 	}
 
@@ -45,7 +45,7 @@ func DefaultE2ETestConfig() E2ETestConfig {
 
 // E2ETest runs a full e2e test.
 func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
-	if err := Deploy(ctx, def); err != nil {
+	if err := Deploy(ctx, def, PromSecrets{}); err != nil { // No prometheus in tests for now.
 		return err
 	}
 

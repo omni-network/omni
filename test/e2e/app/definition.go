@@ -23,8 +23,6 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-const infraDocker = "docker"
-
 // DefinitionConfig is the configuration required to create a full Definition.
 type DefinitionConfig struct {
 	ManifestFile  string
@@ -40,7 +38,7 @@ type DefinitionConfig struct {
 // DefaultDefinitionConfig returns a default configuration for a Definition.
 func DefaultDefinitionConfig() DefinitionConfig {
 	return DefinitionConfig{
-		InfraProvider: infraDocker,
+		InfraProvider: docker.ProviderName,
 	}
 }
 
@@ -60,7 +58,7 @@ func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
 
 	var infd types.InfrastructureData
 	switch cfg.InfraProvider {
-	case infraDocker:
+	case docker.ProviderName:
 		infd, err = docker.NewInfraData(manifest)
 	case vmcompose.ProviderName:
 		infd, err = vmcompose.LoadData(cfg.InfraDataFile)
@@ -83,7 +81,7 @@ func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
 
 	var infp infra.Provider
 	switch cfg.InfraProvider {
-	case infraDocker:
+	case docker.ProviderName:
 		infp = docker.NewProvider(testnet, infd)
 	case vmcompose.ProviderName:
 		infp = vmcompose.NewProvider(testnet, infd)
