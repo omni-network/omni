@@ -445,49 +445,38 @@ func (m *SimpleTxManager) WaitMined(ctx context.Context, tx *types.Transaction,
 	txHash := tx.Hash()
 	queryTicker := time.NewTicker(m.Cfg.ReceiptQueryInterval)
 	defer queryTicker.Stop()
+	retries := uint(0)
 	for {
 		select {
 		case <-ctx.Done():
 			return nil, errors.Wrap(ctx.Err(), "context canceled")
 		case <-queryTicker.C:
-			receipt, err := m.queryReceipt(ctx, txHash, sendState)
+			receipt, found, err := m.queryReceipt(ctx, txHash, sendState)
 			if errors.Is(err, ethereum.NotFound) {
 				sendState.TxNotMined(txHash)
-				log.Debug(ctx, "Transaction not yet mined", "tx", txHash, "chain_id", m.ChainID)
+				if retries >= m.Cfg.ReceiptMaxQueryCount {
+					log.Debug(ctx, "Transaction not yet mined", "tx", txHash, "chain_id", m.ChainID)
+				}
 			} else if err != nil {
-				log.Warn(ctx, "Receipt retrieval failed", err, "tx_hash", txHash, "chain_id", m.ChainID)
-
 				return nil, err
 			}
-			if receipt != nil {
+			if found {
 				return receipt, nil
 			}
-			//if receipt := m.queryReceipt(ctx, txHash, sendState); receipt != nil {
-			//	return receipt, nil
-			//}
+			retries++
 		}
 	}
 }
 
 // queryReceipt queries for the receipt and returns the receipt if it has passed the confirmation depth.
-func (m *SimpleTxManager) queryReceipt(ctx context.Context, txHash common.Hash, sendState *SendState) (*types.Receipt, error) {
+func (m *SimpleTxManager) queryReceipt(ctx context.Context, txHash common.Hash,
+	sendState *SendState) (*types.Receipt, bool, error) {
 	ctx, cancel := context.WithTimeout(ctx, m.Cfg.NetworkTimeout)
 	defer cancel()
 	receipt, err := m.Backend.TransactionReceipt(ctx, txHash)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
-
-	//if errors.Is(err, ethereum.NotFound) {
-	//	sendState.TxNotMined(txHash)
-	//	log.Debug(ctx, "Transaction not yet mined", "tx", txHash, "chain_id", m.ChainID)
-	//
-	//	return nil
-	//} else if err != nil {
-	//	log.Warn(ctx, "Receipt retrieval failed", err, "tx_hash", txHash, "chain_id", m.ChainID)
-	//
-	//	return nil, false, err
-	//}
 
 	// Receipt is confirmed to be valid from this point on
 	sendState.TxMined(txHash)
@@ -495,7 +484,7 @@ func (m *SimpleTxManager) queryReceipt(ctx context.Context, txHash common.Hash, 
 	txHeight := receipt.BlockNumber.Uint64()
 	tip, err := m.Backend.HeaderByNumber(ctx, nil)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	// The transaction is considered confirmed when
@@ -507,10 +496,10 @@ func (m *SimpleTxManager) queryReceipt(ctx context.Context, txHash common.Hash, 
 	// underflow's.
 	tipHeight := tip.Number.Uint64()
 	if txHeight+m.Cfg.NumConfirmations <= tipHeight+1 {
-		return receipt, nil
+		return receipt, true, nil
 	}
 
-	return nil, nil
+	return nil, false, nil
 }
 
 // IncreaseGasPrice returns a new transaction that is equivalent to the input transaction but with
