@@ -49,11 +49,8 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 		return err
 	}
 
-	sendCtx, sendCancel := context.WithCancel(ctx)
-	defer sendCancel()
-	if err := StartSendingXMsgs(sendCtx, def.Netman.Portals()); err != nil {
-		return err
-	}
+	msgBatches := []int{4, 3, 2, 1} // Send 10 msgs from each chain to each other chain
+	msgsErr := StartSendingXMsgs(ctx, def.Netman.Portals(), msgBatches...)
 
 	if err := Wait(ctx, def.Testnet.Testnet, 5); err != nil { // allow some txs to go through
 		return err
@@ -67,9 +64,13 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 		return errors.New("evidence injection not supported yet")
 	}
 
-	sendCancel() // Stop sending messages
+	// Wait for all messages to be sent
+	log.Info(ctx, "Waiting for all cross chain messages to be sent")
+	if err := <-msgsErr; err != nil {
+		return err
+	}
 
-	if err := Wait(ctx, def.Testnet.Testnet, 10); err != nil { // wait for network to settle before tests
+	if err := WaitAllSubmissions(ctx, def.Netman.Portals(), sum(msgBatches)); err != nil {
 		return err
 	}
 
@@ -88,4 +89,13 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 	}
 
 	return nil
+}
+
+func sum(batches []int) int {
+	var resp int
+	for _, b := range batches {
+		resp += b
+	}
+
+	return resp
 }
