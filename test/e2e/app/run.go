@@ -18,7 +18,10 @@ func Deploy(ctx context.Context, def Definition, promSecrets PromSecrets) error 
 	}
 
 	genesisValSetID := uint64(1) // validator set IDs start at 1
-	genesisVals := toPortalValidators(def.Testnet.Validators)
+	genesisVals, err := toPortalValidators(def.Testnet.Validators)
+	if err != nil {
+		return err
+	}
 
 	// Deploy public portals first so their addresses are available for setup.
 	if err := def.Netman.DeployPublicPortals(ctx, genesisValSetID, genesisVals); err != nil {
@@ -108,14 +111,14 @@ func sum(batches []int) int {
 }
 
 // Convert cometbft testnet validators to solidity bindings.Validator, expected by portal constructor.
-func toPortalValidators(validators map[*e2e.Node]int64) []bindings.Validator {
+func toPortalValidators(validators map[*e2e.Node]int64) ([]bindings.Validator, error) {
 	vals := make([]bindings.Validator, 0, len(validators))
 
 	for val, power := range validators {
 		addr, err := k1util.PubKeyToAddress(val.PrivvalKey.PubKey())
 
 		if err != nil {
-			panic(err)
+			return nil, errors.Wrap(err, "convert validator pubkey to address")
 		}
 
 		vals = append(vals, bindings.Validator{
@@ -124,5 +127,5 @@ func toPortalValidators(validators map[*e2e.Node]int64) []bindings.Validator {
 		})
 	}
 
-	return vals
+	return vals, nil
 }
