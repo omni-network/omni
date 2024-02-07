@@ -11,14 +11,20 @@ import (
 
 func newCallback(client *ent.Client) xchain.ProviderCallback {
 	return func(ctx context.Context, block xchain.Block) error {
+		var err error
 		tx, err := client.BeginTx(ctx, nil)
 		if err != nil {
 			return errors.Wrap(err, "begin transaction")
 		}
 		defer func() {
-			if err := tx.Rollback(); err != nil {
+			if err == nil {
+				return
+			}
+			err = tx.Rollback()
+			if err != nil {
 				log.Error(ctx, "Rollback failed", err)
 			}
+			log.Info(ctx, "Rolledback transaction")
 		}()
 
 		insertedBlock, err := insertBlock(ctx, tx, block)
