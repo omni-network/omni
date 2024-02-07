@@ -25,7 +25,6 @@ type Sender interface {
 func SubmissionToBinding(sub xchain.Submission) bindings.XTypesSubmission {
 	sigs := make([]bindings.XTypesSigTuple, 0, len(sub.Signatures))
 	for _, sig := range sub.Signatures {
-		sig := sig // Pin since we are taking the address of the local variables
 		sigs = append(sigs, bindings.XTypesSigTuple{
 			ValidatorPubKey: sig.ValidatorAddress[:],
 			Signature:       sig.Signature[:],

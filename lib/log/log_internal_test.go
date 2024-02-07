@@ -20,7 +20,6 @@ func LoggersForT() map[string]func(io.Writer) *slog.Logger {
 
 	resp := make(map[string]func(w io.Writer) *slog.Logger)
 	for name, fn := range loggerFuncs {
-		fn := fn // Pin
 		resp[name] = func(w io.Writer) *slog.Logger {
 			return fn(testOpts(w))
 		}
