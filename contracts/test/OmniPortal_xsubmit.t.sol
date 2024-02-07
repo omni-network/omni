@@ -142,7 +142,7 @@ contract OmniPortal_xsubmit_Test is Base {
     function test_xsubmit_duplicateValidator_reverts() public {
         XTypes.Submission memory xsub = readXSubmission("xblock1", portal.chainId());
 
-        xsub.attestationRoot = keccak256("invalid");
+        // add duplicate validator
         xsub.signatures[1] = xsub.signatures[0];
 
         vm.expectRevert("OmniPortal: duplicate validator");
