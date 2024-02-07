@@ -20,6 +20,14 @@ const (
 )
 
 //nolint:gochecknoglobals // Static mapping.
+var (
+	levelDebug = strings.ToLower(slog.LevelDebug.String())
+	levelInfo  = strings.ToLower(slog.LevelInfo.String())
+	levelWarn  = strings.ToLower(slog.LevelWarn.String())
+	levelError = strings.ToLower(slog.LevelError.String())
+)
+
+//nolint:gochecknoglobals // Static mapping.
 var loggerFuncs = map[string]func(...func(*options)) *slog.Logger{
 	FormatConsole: newConsoleLogger,
 	FormatJSON:    newJSONLogger,
@@ -35,7 +43,7 @@ var colors = map[string]termenv.Profile{
 // DefaultConfig returns a default config.
 func DefaultConfig() Config {
 	return Config{
-		Level:  strings.ToLower(slog.LevelInfo.String()),
+		Level:  levelInfo,
 		Color:  ColorAuto,
 		Format: FormatConsole,
 	}

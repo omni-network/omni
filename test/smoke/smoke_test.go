@@ -93,6 +93,7 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 		srcChainBlockPeriod = 1 * time.Millisecond * 100
 		srcChainID          = 1
 	)
+	chainMap := map[uint64]string{srcChainID: ""}
 
 	// Write genesis and priv validator files to temp dir.
 	conf := tutil.PrepRPCTestConfig(t)
@@ -109,11 +110,11 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 	path := filepath.Join(t.TempDir(), "state.json")
 	err = attest.GenEmptyStateFile(path)
 	require.NoError(t, err)
-	attSvc, err := attest.LoadAttester(ctx, privVal.Key.PrivKey, path, xprov, []uint64{srcChainID})
+	attSvc, err := attest.LoadAttester(ctx, privVal.Key.PrivKey, path, xprov, chainMap)
 	require.NoError(t, err)
 
 	// Create application state
-	state, err := comet.LoadOrGenState(t.TempDir(), 1)
+	state, err := comet.LoadOrGenState(t.TempDir(), 1, chainMap)
 	require.NoError(t, err)
 
 	// Create snapshot store.

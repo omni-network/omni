@@ -23,33 +23,37 @@ func WithCtx(ctx context.Context, attrs ...any) context.Context {
 
 // Debug logs the message and attributes at default level.
 func Debug(ctx context.Context, msg string, attrs ...any) {
-	GetLogger(ctx).DebugContext(ctx, msg, mergeAttrs(ctx, attrs)...)
+	logTotal.WithLabelValues(levelDebug).Inc()
+	getLogger(ctx).DebugContext(ctx, msg, mergeAttrs(ctx, attrs)...)
 }
 
 // Info logs the message and attributes at info level.
 func Info(ctx context.Context, msg string, attrs ...any) {
-	GetLogger(ctx).InfoContext(ctx, msg, mergeAttrs(ctx, attrs)...)
+	logTotal.WithLabelValues(levelInfo).Inc()
+	getLogger(ctx).InfoContext(ctx, msg, mergeAttrs(ctx, attrs)...)
 }
 
 // Warn logs the message and error and attributes at warning level.
 // If err is nil, it will not be logged.
 func Warn(ctx context.Context, msg string, err error, attrs ...any) {
+	logTotal.WithLabelValues(levelWarn).Inc()
 	if err != nil {
 		attrs = append(attrs, "err", err)
 		attrs = append(attrs, errAttrs(err)...)
 	}
 
-	GetLogger(ctx).WarnContext(ctx, msg, mergeAttrs(ctx, attrs)...)
+	getLogger(ctx).WarnContext(ctx, msg, mergeAttrs(ctx, attrs)...)
 }
 
 // Error logs the message and error and arguments at error level.
 // If err is nil, it will not be logged.
 func Error(ctx context.Context, msg string, err error, attrs ...any) {
+	logTotal.WithLabelValues(levelError).Inc()
 	if err != nil {
 		attrs = append(attrs, "err", err)
 		attrs = append(attrs, errAttrs(err)...)
 	}
-	GetLogger(ctx).ErrorContext(ctx, msg, mergeAttrs(ctx, attrs)...)
+	getLogger(ctx).ErrorContext(ctx, msg, mergeAttrs(ctx, attrs)...)
 }
 
 // errFields is similar to z.Err and returns the structured error fields and

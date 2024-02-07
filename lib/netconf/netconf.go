@@ -39,6 +39,17 @@ func (n Network) ChainIDs() []uint64 {
 	return resp
 }
 
+// ChainNamesByIDs returns the all chain IDs and names in the network.
+// This is a convenience method.
+func (n Network) ChainNamesByIDs() map[uint64]string {
+	resp := make(map[uint64]string)
+	for _, chain := range n.Chains {
+		resp[chain.ID] = chain.Name
+	}
+
+	return resp
+}
+
 // OmniChain returns the Omni execution chain config or false if it does not exist.
 func (n Network) OmniChain() (Chain, bool) {
 	for _, chain := range n.Chains {
