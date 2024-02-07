@@ -20,32 +20,24 @@ import (
 
 // OpSender uses txmgr to send transactions to the destination chain.
 type OpSender struct {
-	txMgrs  map[uint64]txmgr.TxManager
-	portals map[uint64]common.Address
-	abi     *abi.ABI
+	txMgr  txmgr.TxManager
+	portal common.Address
+	abi    *abi.ABI
 }
 
 // NewOpSender creates a new sender that uses txmgr to send transactions to the destination chain.
-// TODO(corver): Change to single destination chain.
-func NewOpSender(ctx context.Context, chains []netconf.Chain, rpcClientPerChain map[uint64]*ethclient.Client,
+func NewOpSender(ctx context.Context, chain netconf.Chain, rpcClient *ethclient.Client,
 	privateKey ecdsa.PrivateKey) (OpSender, error) {
-	txMgrs := make(map[uint64]txmgr.TxManager)
-	portals := make(map[uint64]common.Address)
 
-	for _, chain := range chains {
-		cfg, err := txmgr.NewConfig(ctx, txmgr.NewCLIConfig(chain.RPCURL, txmgr.DefaultSenderFlagValues),
-			&privateKey, rpcClientPerChain[chain.ID])
-		if err != nil {
-			return OpSender{}, err
-		}
+	cfg, err := txmgr.NewConfig(ctx, txmgr.NewCLIConfig(chain.RPCURL, txmgr.DefaultSenderFlagValues),
+		&privateKey, rpcClient)
+	if err != nil {
+		return OpSender{}, err
+	}
 
-		txMgr, err := initTxMgr(cfg)
-		if err != nil {
-			return OpSender{}, err
-		}
-
-		txMgrs[chain.ID] = txMgr
-		portals[chain.ID] = common.HexToAddress(chain.PortalAddress)
+	txMgr, err := initTxMgr(cfg)
+	if err != nil {
+		return OpSender{}, err
 	}
 
 	// Create ABI
@@ -55,16 +47,15 @@ func NewOpSender(ctx context.Context, chains []netconf.Chain, rpcClientPerChain 
 	}
 
 	return OpSender{
-		txMgrs:  txMgrs,
-		portals: portals,
-		abi:     &parsedAbi,
+		txMgr:  txMgr,
+		portal: common.HexToAddress(chain.PortalAddress),
+		abi:    &parsedAbi,
 	}, nil
 }
 
 // SendTransaction sends the submission to the destination chain.
 func (o OpSender) SendTransaction(ctx context.Context, submission xchain.Submission) error {
-	txMgr, ok := o.txMgrs[submission.DestChainID]
-	if !ok {
+	if o.txMgr == nil {
 		return errors.New("tx mgr not found", "dest_chain_id", submission.DestChainID)
 	}
 
@@ -84,11 +75,6 @@ func (o OpSender) SendTransaction(ctx context.Context, submission xchain.Submiss
 
 	const gasLimit = 1_000_000 // TODO(lazar): make configurable
 
-	to, ok := o.portals[submission.DestChainID]
-	if !ok {
-		return errors.New("portal not found", "dest_chain_id", submission.DestChainID)
-	}
-
 	txData, err := o.getXSubmitBytes(SubmissionToBinding(submission))
 	if err != nil {
 		return err
@@ -96,12 +82,12 @@ func (o OpSender) SendTransaction(ctx context.Context, submission xchain.Submiss
 
 	candidate := txmgr.TxCandidate{
 		TxData:   txData,
-		To:       &to,
+		To:       &o.portal,
 		GasLimit: gasLimit,
 		Value:    big.NewInt(0),
 	}
 
-	rec, err := txMgr.Send(ctx, candidate)
+	rec, err := o.txMgr.Send(ctx, candidate)
 	if err != nil {
 		return errors.Wrap(err, "failed to send tx")
 	}

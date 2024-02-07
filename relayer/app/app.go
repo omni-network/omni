@@ -38,21 +38,21 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "failed to load private key")
 	}
 
-	sendProvider := func() (SendFunc, error) {
-		sender, err := NewOpSender(ctx, network.Chains, rpcClientPerChain, *privateKey)
-		if err != nil {
-			return nil, err
-		}
-
-		return sender.SendTransaction, nil
-	}
-
 	tmClient, err := newClient(cfg.HaloURL)
 	if err != nil {
 		return err
 	}
 
 	for _, destChain := range network.Chains {
+		sendProvider := func() (SendFunc, error) {
+			sender, err := NewOpSender(ctx, destChain, rpcClientPerChain[destChain.ID], *privateKey)
+			if err != nil {
+				return nil, err
+			}
+
+			return sender.SendTransaction, nil
+		}
+
 		worker := NewWorker(destChain, network,
 			cprovider.NewABCIProvider(tmClient),
 			xprovider.New(network, rpcClientPerChain),
