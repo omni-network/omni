@@ -7,6 +7,9 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 
+	"github.com/ethereum/go-ethereum/common"
+	ethcrypto "github.com/ethereum/go-ethereum/crypto"
+
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4/ecdsa"
 )
@@ -14,7 +17,8 @@ import (
 // privKeyLen is the length of a secp256k1 private key.
 const privKeyLen = 32
 
-const scalarLen = 32
+// pubkeyLen is the length of a secp256k1 compressed public key.
+const pubkeyLen = 33
 
 // Sign returns a signature from input data.
 //
@@ -32,46 +36,38 @@ func Sign(key crypto.PrivKey, input [32]byte) ([65]byte, error) {
 }
 
 // Verify returns whether the 65 byte signature is valid for the provided hash
-// and secp256k1 public key.
+// and Ethereum address.
 //
 // Note the signature MUST be 65 bytes in the Ethereum [R || S || V] format.
-func Verify(pubkey crypto.PubKey, hash [32]byte, sig [65]byte) (bool, error) {
-	r, err := to32Scalar(sig[:scalarLen])
+func Verify(address common.Address, hash [32]byte, sig [65]byte) (bool, error) {
+	// Adjust V from Ethereum 27/28 to secp256k1 0/1
+	const vIdx = 64
+	if v := sig[vIdx]; v != 27 && v != 28 {
+		return false, errors.New("invalid recovery id (V) format, must be 27 or 28")
+	}
+	sig[vIdx] -= 27
+
+	pubkey, err := ethcrypto.SigToPub(hash[:], sig[:])
 	if err != nil {
-		return false, errors.Wrap(err, "invalid signature R")
+		return false, errors.Wrap(err, "recover public key")
 	}
 
-	s, err := to32Scalar(sig[scalarLen : 2*scalarLen])
-	if err != nil {
-		return false, errors.Wrap(err, "invalid signature S")
-	}
+	actual := ethcrypto.PubkeyToAddress(*pubkey)
 
-	pk, err := secp256k1.ParsePubKey(pubkey.Bytes())
-	if err != nil {
-		return false, errors.Wrap(err, "invalid public key")
-	}
-
-	return ecdsa.NewSignature(r, s).Verify(hash[:], pk), nil
+	return actual == address, nil
 }
 
-// to32Scalar returns the 256-bit big-endian unsigned
-// integer as a scalar.
-func to32Scalar(b []byte) (*secp256k1.ModNScalar, error) {
-	if len(b) != scalarLen {
-		return nil, errors.New("invalid scalar length")
+// PubKeyToAddress returns the Ethereum address for the given k1 public key.
+func PubKeyToAddress(pubkey crypto.PubKey) (common.Address, error) {
+	pubkeyBytes := pubkey.Bytes()
+	if len(pubkeyBytes) != pubkeyLen {
+		return common.Address{}, errors.New("invalid pubkey length", "length", len(pubkeyBytes))
 	}
 
-	// Strip leading zeroes from S.
-	for len(b) > 0 && b[0] == 0x00 {
-		b = b[1:]
+	ethPubKey, err := ethcrypto.DecompressPubkey(pubkeyBytes)
+	if err != nil {
+		return common.Address{}, errors.Wrap(err, "decompress pubkey")
 	}
 
-	var s secp256k1.ModNScalar
-	if overflow := s.SetByteSlice(b); overflow {
-		return nil, errors.New("scalar overflow")
-	} else if s.IsZero() {
-		return nil, errors.New("zero overflow")
-	}
-
-	return &s, nil
+	return ethcrypto.PubkeyToAddress(*ethPubKey), nil
 }

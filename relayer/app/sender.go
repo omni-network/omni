@@ -94,7 +94,7 @@ func (s SimpleSender) SendTransaction(ctx context.Context, submission xchain.Sub
 		"msgs", len(submission.Msgs),
 	)
 
-	tx, err := session.Xsubmit(TranslateSubmission(submission))
+	tx, err := session.Xsubmit(SubmissionToBinding(submission))
 	if err != nil {
 		// todo(Lazar): handle error
 		return errors.Wrap(err, "submit tx")

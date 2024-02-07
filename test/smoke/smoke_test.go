@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/halo/comet"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/engine"
+	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
@@ -99,13 +100,15 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 
 	// Load the private validator
 	privVal := privval.LoadFilePV(conf.PrivValidatorKeyFile(), conf.PrivValidatorStateFile())
+	valAddr, err := k1util.PubKeyToAddress(privVal.Key.PubKey)
+	require.NoError(t, err)
 
 	// Start a mock xprovider (this is the source of xblocks)
 	xprov := xprovider.NewMock(srcChainBlockPeriod)
 
 	// Create the attestation service.
 	path := filepath.Join(t.TempDir(), "state.json")
-	err := attest.GenEmptyStateFile(path)
+	err = attest.GenEmptyStateFile(path)
 	require.NoError(t, err)
 	attSvc, err := attest.LoadAttester(ctx, privVal.Key.PrivKey, path, xprov, []uint64{srcChainID})
 	require.NoError(t, err)
@@ -160,7 +163,7 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 			require.EqualValues(t, srcChainID, update.SourceChainID)
 			require.NotEmpty(t, update.Msgs)
 			require.Len(t, update.AggAttestation.Signatures, 1)
-			require.EqualValues(t, privVal.Key.PubKey.Bytes(), update.AggAttestation.Signatures[0].ValidatorPubKey)
+			require.EqualValues(t, valAddr, update.AggAttestation.Signatures[0].ValidatorAddress)
 
 			// Assert offsets are sequential
 			for _, msg := range update.Msgs {

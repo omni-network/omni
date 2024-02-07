@@ -11,6 +11,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // cPayload is the value that we are coming to consensus on.
@@ -34,14 +35,14 @@ func payloadFromTXs(txs [][]byte) (cPayload, error) {
 	return resp, nil
 }
 
-// headersByPubKey returns the attestations for the provided key.
-func headersByPubKey(aggregates []xchain.AggAttestation, pubkey [33]byte) []xchain.BlockHeader {
+// headersByAddress returns the attestations for the provided address.
+func headersByAddress(aggregates []xchain.AggAttestation, address common.Address) []xchain.BlockHeader {
 	var filtered []xchain.BlockHeader
 	for _, agg := range aggregates {
 		for _, sig := range agg.Signatures {
-			if sig.ValidatorPubKey == pubkey {
+			if sig.ValidatorAddress == address {
 				filtered = append(filtered, agg.BlockHeader)
-				break
+				break // Continue to the next aggregate.
 			}
 		}
 	}

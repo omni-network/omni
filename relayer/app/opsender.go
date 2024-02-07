@@ -90,7 +90,7 @@ func (o OpSender) SendTransaction(ctx context.Context, submission xchain.Submiss
 		return errors.New("portal not found", "dest_chain_id", submission.DestChainID)
 	}
 
-	txData, err := o.getXSubmitBytes(TranslateSubmission(submission))
+	txData, err := o.getXSubmitBytes(SubmissionToBinding(submission))
 	if err != nil {
 		return err
 	}

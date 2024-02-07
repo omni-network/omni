@@ -6,7 +6,6 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/cometbft/cometbft/crypto"
-	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 )
 
 var ErrInvalidAttestation = errors.New("invalid attestation signature")
@@ -29,20 +28,24 @@ func CreateAttestation(privKey crypto.PrivKey, block xchain.Block) (xchain.Attes
 		return xchain.Attestation{}, errors.Wrap(err, "sign attestation")
 	}
 
+	address, err := k1util.PubKeyToAddress(privKey.PubKey())
+	if err != nil {
+		return xchain.Attestation{}, err
+	}
+
 	return xchain.Attestation{
 		BlockHeader: block.BlockHeader,
 		BlockRoot:   root,
 		Signature: xchain.SigTuple{
-			ValidatorPubKey: [33]byte(pubkey),
-			Signature:       sig,
+			ValidatorAddress: address,
+			Signature:        sig,
 		},
 	}, nil
 }
 
 // VerifyAttestation verifies the attestation signature.
 func VerifyAttestation(att xchain.Attestation) error {
-	pk := k1.PubKey(att.Signature.ValidatorPubKey[:])
-	ok, err := k1util.Verify(pk, att.BlockRoot, att.Signature.Signature)
+	ok, err := k1util.Verify(att.Signature.ValidatorAddress, att.BlockRoot, att.Signature.Signature)
 	if err != nil {
 		return err
 	} else if !ok {

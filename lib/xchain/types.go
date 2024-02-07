@@ -1,6 +1,10 @@
 package xchain
 
-import "time"
+import (
+	"time"
+
+	"github.com/ethereum/go-ethereum/common"
+)
 
 // StreamID uniquely identifies a cross-chain stream.
 // A stream is a logical representation of a cross-chain connection between two chains.
@@ -64,10 +68,10 @@ type AggAttestation struct {
 	Signatures     []SigTuple // Validator signatures and public keys
 }
 
-// SigTuple is a validator signature and public key.
+// SigTuple is a validator signature and address.
 type SigTuple struct {
-	ValidatorPubKey [33]byte // Validator public key; 33 bytes compressed secp256k1.
-	Signature       [65]byte // Validator signature over XBlockRoot; Ethereum 65 bytes [R || S || V] format.
+	ValidatorAddress common.Address // Validator Ethereum address
+	Signature        [65]byte       // Validator signature over XBlockRoot; Ethereum 65 bytes [R || S || V] format.
 }
 
 // Submission is a cross-chain submission of a set of messages and their proofs.

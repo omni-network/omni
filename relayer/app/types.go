@@ -5,8 +5,6 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/xchain"
-
-	"github.com/ethereum/go-ethereum/common"
 )
 
 type StreamUpdate struct {
@@ -23,44 +21,40 @@ type Sender interface {
 	SendTransaction(ctx context.Context, submission xchain.Submission) error
 }
 
-func TranslateSubmission(submission xchain.Submission) bindings.XTypesSubmission {
-	chainSubmission := bindings.XTypesSubmission{
-		AttestationRoot: submission.AttestationRoot,
-		BlockHeader: bindings.XTypesBlockHeader{
-			SourceChainId: submission.BlockHeader.SourceChainID,
-			BlockHeight:   submission.BlockHeader.BlockHeight,
-			BlockHash:     submission.BlockHeader.BlockHash,
-		},
-		Proof:      submission.Proof,
-		ProofFlags: submission.ProofFlags,
-	}
-
-	chainSubmission.Signatures = make([]bindings.XTypesSigTuple, 0, len(submission.Signatures))
-	for _, sig := range submission.Signatures {
-		validatorPubKey := make([]byte, len(sig.ValidatorPubKey))
-		copy(validatorPubKey, sig.ValidatorPubKey[:])
-		signature := make([]byte, len(sig.Signature))
-		copy(signature, sig.Signature[:])
-		chainSubmission.Signatures = append(chainSubmission.Signatures, bindings.XTypesSigTuple{
-			ValidatorPubKey: validatorPubKey,
-			Signature:       signature,
+// SubmissionToBinding converts a go xchain submission to a solidity binding submission.
+func SubmissionToBinding(sub xchain.Submission) bindings.XTypesSubmission {
+	sigs := make([]bindings.XTypesSigTuple, 0, len(sub.Signatures))
+	for _, sig := range sub.Signatures {
+		sig := sig // Pin since we are taking the address of the local variables
+		sigs = append(sigs, bindings.XTypesSigTuple{
+			ValidatorPubKey: sig.ValidatorAddress[:],
+			Signature:       sig.Signature[:],
 		})
 	}
 
-	msgs := make([]bindings.XTypesMsg, 0, len(submission.Msgs))
-	for _, msg := range submission.Msgs {
+	msgs := make([]bindings.XTypesMsg, 0, len(sub.Msgs))
+	for _, msg := range sub.Msgs {
 		msgs = append(msgs, bindings.XTypesMsg{
 			SourceChainId: msg.SourceChainID,
 			DestChainId:   msg.DestChainID,
 			StreamOffset:  msg.StreamOffset,
-			Sender:        common.BytesToAddress(msg.SourceMsgSender[:]),
-			To:            common.BytesToAddress(msg.DestAddress[:]),
+			Sender:        msg.SourceMsgSender,
+			To:            msg.DestAddress,
 			Data:          msg.Data,
 			GasLimit:      msg.DestGasLimit,
 		})
 	}
 
-	chainSubmission.Msgs = msgs
-
-	return chainSubmission
+	return bindings.XTypesSubmission{
+		AttestationRoot: sub.AttestationRoot,
+		BlockHeader: bindings.XTypesBlockHeader{
+			SourceChainId: sub.BlockHeader.SourceChainID,
+			BlockHeight:   sub.BlockHeader.BlockHeight,
+			BlockHash:     sub.BlockHeader.BlockHash,
+		},
+		Proof:      sub.Proof,
+		ProofFlags: sub.ProofFlags,
+		Signatures: sigs,
+		Msgs:       msgs,
+	}
 }

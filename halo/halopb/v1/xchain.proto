@@ -21,6 +21,6 @@ message AggAttestation {
 
 // SigTuple is a validator signature and public key.
 message SigTuple {
-  bytes validator_pub_key = 1; // Validator public key; 33 bytes compressed secp256k1.
+  bytes validator_address = 1; // Validator ethereum address; 20 bytes.
   bytes signature         = 2; // Validator signature over XBlockRoot; Ethereum 65 bytes [R || S || V] format.
 }
