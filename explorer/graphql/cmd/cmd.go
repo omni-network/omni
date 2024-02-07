@@ -7,40 +7,35 @@ import (
 	"github.com/omni-network/omni/lib/log"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
-// New returns a new root cobra command that handles our command line tool.
+// New returns a new root cobra command that runs the graphql server.
 func New() *cobra.Command {
-	return libcmd.NewRootCmd(
-		"api",
-		"Explorer GraphQL Server",
-		newRunCmd(),
-	)
+	cfg := app.DefaultConfig()
+	logCfg := log.DefaultConfig()
+
+	cmd := libcmd.NewRootCmd("graphql", "Explorer GraphQL Server")
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		ctx, err := log.Init(cmd.Context(), logCfg)
+		if err != nil {
+			return err
+		}
+
+		if err := libcmd.LogFlags(ctx, cmd.Flags()); err != nil {
+			return err
+		}
+
+		return app.Run(ctx, cfg)
+	}
+
+	bindGraphQLFlags(cmd.Flags(), &cfg)
+	log.BindFlags(cmd.Flags(), &logCfg)
+
+	return cmd
 }
 
-// newRunCmd returns a new cobra command that runs the api.
-func newRunCmd() *cobra.Command {
-	return &cobra.Command{
-		Use:   "run",
-		Short: "Runs the GraphQL server",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			log.Info(ctx, "Explorer GraphQL started")
-			conf := app.DefaultExplorerAPIConfig()
-
-			err := app.Run(ctx, conf)
-			if err != nil {
-				log.Error(ctx, "Failed to start Explorer GraphQL", err)
-				<-ctx.Done()
-
-				return err
-			}
-
-			log.Info(ctx, "Press Ctrl+C to stop")
-			<-ctx.Done()
-			log.Info(ctx, "ExplorerApi stopped")
-
-			return nil
-		},
-	}
+func bindGraphQLFlags(flags *pflag.FlagSet, cfg *app.Config) {
+	flags.StringVar(&cfg.DBUrl, "db-url", cfg.DBUrl, "URL to the database")
+	flags.StringVar(&cfg.ListenAddress, "listen-addr", cfg.ListenAddress, "Address to listen on")
 }

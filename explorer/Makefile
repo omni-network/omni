@@ -9,17 +9,21 @@ open-dev: ## opens all of the local host endpoints
 	python -m webbrowser "http://localhost:8080"
 
 build: ## builds our docker images
-	make -C ../ build-docker
+	@echo "Building containers"
+	@make -C ../ build-docker
 
-run: ## runs our docker compose up
-	docker-compose up
+run: stop ## Deploys e2e devnet1, copies network.json locally, and starts explorer docker compose
+	@echo "Starting devnet"
+	@make -C ../ devnet-deploy
+	@cp ../test/e2e/runs/devnet1/relayer/network.json ./network.json
+	@docker-compose up
 
 stop: ## stops our docker compose
-	docker-compose down
+	@echo "Stopping devnet"
+	@docker-compose down
+	@make -C ../ devnet-clean
 
-run-clean: ## docker build and run
-	make -C ./ build
-	make -C ./ run
+run-clean: build run ## docker build and run
 
 gen-graphql: ## generates our graphql bindings for the ui
 	cp ./graphql/app/schema.graphql ./ui/app/graphql/schema.graphql

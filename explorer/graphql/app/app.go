@@ -2,59 +2,81 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/omni-network/omni/explorer/db"
 	"github.com/omni-network/omni/explorer/graphql/data"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/gitinfo"
 	"github.com/omni-network/omni/lib/log"
+
+	"golang.org/x/sync/errgroup"
 )
 
-func Run(ctx context.Context, conf ExplorerGraphQLConfig) error {
-	log.Info(ctx, "Config: %v", conf)
+func Run(ctx context.Context, cfg Config) error {
+	log.Info(ctx, "Starting Explorer GraphQL server")
+
 	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-	go func() {
-		// create ent client
-		entClient := db.NewClient()
-		client, err := entClient.CreateNewEntClient(conf.DBUrl)
+	commit, timestamp := gitinfo.Get()
+	log.Info(ctx, "Version info", "git_commit", commit, "git_timestamp", timestamp)
 
+	// create ent client
+	entCl, err := db.NewPostgressClient(cfg.DBUrl)
+	if err != nil {
+		return errors.Wrap(err, "create db client")
+	}
+	defer entCl.Close()
+
+	if err := db.CreateSchema(ctx, entCl); err != nil {
+		return errors.Wrap(err, "create schema")
+	}
+
+	provider := data.Provider{
+		EntClient: entCl,
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", home)
+	mux.Handle("/query", GraphQL(provider))
+
+	httpServer := &http.Server{
+		Addr:              cfg.ListenAddress,
+		ReadHeaderTimeout: 30 * time.Second,
+		IdleTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		Handler:           mux,
+	}
+
+	var eg errgroup.Group
+	eg.Go(func() error {
+		defer cancel() // Cancel the app context if serving fails.
+
+		// ListenAndServe always returns an error.
+		return errors.Wrap(httpServer.ListenAndServe(), "serve")
+	})
+	eg.Go(func() error {
+		<-ctx.Done()
+		log.Info(ctx, "Shutdown detected, stopping server")
+
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		err := httpServer.Shutdown(shutdownCtx) //nolint:contextcheck // Fresh context is used for shutdown.
 		if err != nil {
-			log.Error(ctx, "Failed to open ent client", err)
-			return
+			return errors.Wrap(err, "server shutdown")
 		}
 
-		provider := data.Provider{
-			EntClient: client,
-		}
+		return nil
+	})
 
-		mux := http.NewServeMux()
-
-		mux.HandleFunc("/", home)
-		mux.Handle("/query", GraphQL(provider))
-
-		httpServer := &http.Server{
-			Addr:              fmt.Sprintf(":%v", conf.Port),
-			ReadHeaderTimeout: 30 * time.Second,
-			IdleTimeout:       30 * time.Second,
-			WriteTimeout:      30 * time.Second,
-			Handler:           mux,
-		}
-
-		log.Info(ctx, "Starting to serve GraphQL - API on port: %v", httpServer.Addr)
-
-		err = httpServer.ListenAndServe()
-		if errors.Is(err, http.ErrServerClosed) {
-			log.Info(ctx, "Closed http server @%v", httpServer.Addr)
-		} else {
-			log.Error(ctx, "Error listening for %v:", err, conf.Port)
-		}
-		cancel()
-	}()
-
-	<-ctx.Done()
+	if err := eg.Wait(); errors.Is(err, http.ErrServerClosed) {
+		return nil // No error on shutdown.
+	} else if err != nil {
+		return errors.Wrap(err, "server")
+	}
 
 	return nil
 }
