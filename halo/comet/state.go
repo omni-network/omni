@@ -13,6 +13,8 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/tempfile"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (
@@ -32,6 +34,7 @@ type State struct {
 	filePath        string
 	prevFilePath    string
 	persistInterval uint64 // Persist state every internal
+	chainNames      map[uint64]string
 
 	// Mutable state fields (persisted to disk)
 	mu            sync.RWMutex
@@ -46,7 +49,7 @@ type State struct {
 }
 
 // LoadOrGenState loads the state from the dir or creates a new state. It will persist to that dir.
-func LoadOrGenState(dir string, persistInterval uint64) (*State, error) {
+func LoadOrGenState(dir string, persistInterval uint64, chainNames map[uint64]string) (*State, error) {
 	filePath := filepath.Join(dir, stateFileName)
 	prevFilePath := filepath.Join(dir, prevStateFileName)
 
@@ -61,6 +64,7 @@ func LoadOrGenState(dir string, persistInterval uint64) (*State, error) {
 		filePath:        filePath,
 		prevFilePath:    prevFilePath,
 		persistInterval: persistInterval,
+		chainNames:      chainNames,
 	}
 	populateStateFromJSON(state, stateJSON)
 
@@ -132,6 +136,8 @@ func (s *State) AddAttestations(aggregates []xchain.AggAttestation) {
 	// Update pending and approved.
 	s.pendingAggs = sortAggregates(stillPending)
 	s.approvedAggs = sortAggregates(append(s.approvedAggs, newApproved...))
+
+	s.instrumentUnsafe()
 }
 
 // ApprovedAggregates returns a copy of the approved aggregates.
@@ -168,6 +174,26 @@ func (s *State) ApprovedFrom(chainID uint64, height uint64) []xchain.AggAttestat
 	}
 
 	return resp
+}
+
+// instrumentUnsafe updates the prometheus gauges with the latest aggregate block heights.
+// It is unsafe since it assumes the lock is held.
+func (s *State) instrumentUnsafe() {
+	latest := func(atts []xchain.AggAttestation, gauge *prometheus.GaugeVec) {
+		byChain := make(map[uint64]uint64)
+		for _, att := range atts {
+			if byChain[att.SourceChainID] < att.BlockHeight {
+				byChain[att.SourceChainID] = att.BlockHeight
+			}
+		}
+
+		for chainID, height := range byChain {
+			gauge.WithLabelValues(s.chainNames[chainID]).Set(float64(height))
+		}
+	}
+
+	latest(s.pendingAggs, pendingHeight)
+	latest(s.approvedAggs, approvedHeight)
 }
 
 // saveUnsafe saves the state to disk. It is unsafe since it assumes the lock is held.

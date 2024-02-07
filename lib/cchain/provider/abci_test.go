@@ -24,7 +24,7 @@ func TestQueryApprovedFrom(t *testing.T) {
 	f := fuzz.New().NilChance(0).NumElements(2, 8)
 	tutil.PrepRPCTestConfig(t) // Write genesis and priv validator files to temp dir.
 
-	state, err := comet.LoadOrGenState(t.TempDir(), 0)
+	state, err := comet.LoadOrGenState(t.TempDir(), 0, map[uint64]string{})
 	require.NoError(t, err)
 
 	ethCl, err := engine.NewMock()

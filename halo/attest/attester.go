@@ -7,6 +7,7 @@ import (
 	"slices"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
@@ -16,6 +17,8 @@ import (
 	"github.com/cometbft/cometbft/libs/tempfile"
 
 	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var _ Service = (*Attester)(nil)
@@ -26,6 +29,7 @@ var _ Service = (*Attester)(nil)
 type Attester struct {
 	path    string
 	privKey crypto.PrivKey
+	chains  map[uint64]string
 	address common.Address
 
 	mu        sync.Mutex
@@ -41,7 +45,8 @@ func GenEmptyStateFile(path string) error {
 }
 
 // LoadAttester returns a new attester with state loaded from disk.
-func LoadAttester(ctx context.Context, privKey crypto.PrivKey, path string, provider xchain.Provider, chains []uint64,
+func LoadAttester(ctx context.Context, privKey crypto.PrivKey, path string, provider xchain.Provider,
+	chains map[uint64]string,
 ) (*Attester, error) {
 	if len(privKey.PubKey().Bytes()) != 33 {
 		return nil, errors.New("invalid private key")
@@ -61,6 +66,7 @@ func LoadAttester(ctx context.Context, privKey crypto.PrivKey, path string, prov
 		privKey: privKey,
 		address: addr,
 		path:    path,
+		chains:  chains,
 
 		available: s.Available,
 		proposed:  s.Proposed,
@@ -68,7 +74,7 @@ func LoadAttester(ctx context.Context, privKey crypto.PrivKey, path string, prov
 	}
 
 	// Subscribe to latest block provider
-	for _, chainID := range chains {
+	for chainID := range chains {
 		var fromHeight uint64
 		if latest, ok := a.latestByChainUnsafe(chainID); ok {
 			fromHeight = latest.BlockHeight + 1
@@ -104,6 +110,10 @@ func (a *Attester) Attest(_ context.Context, block xchain.Block) error {
 
 	a.available = append(a.available, att)
 
+	lag := time.Since(block.Timestamp).Seconds()
+	createLag.WithLabelValues(a.chains[att.SourceChainID]).Set(lag)
+	createHeight.WithLabelValues(a.chains[att.SourceChainID]).Set(float64(att.BlockHeight))
+
 	return a.saveUnsafe()
 }
 
@@ -138,7 +148,7 @@ func (a *Attester) SetProposed(headers []xchain.BlockHeader) error {
 	return a.saveUnsafe()
 }
 
-// SetCommitted sets the attestations as committed. Persisting the result to disk,.
+// SetCommitted sets the attestations as committed. Persisting the result to disk.
 func (a *Attester) SetCommitted(headers []xchain.BlockHeader) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -160,6 +170,11 @@ func (a *Attester) SetCommitted(headers []xchain.BlockHeader) error {
 	a.available = newAvailable
 	a.proposed = nil
 	a.committed = pruneLatestPerChain(newCommitted)
+
+	// Update committed height metrics.
+	for _, att := range a.committed {
+		commitHeight.WithLabelValues(a.chains[att.SourceChainID]).Set(float64(att.BlockHeight))
+	}
 
 	return a.saveUnsafe()
 }
@@ -233,7 +248,26 @@ func (a *Attester) saveUnsafe() error {
 		return errors.Wrap(err, "write state path")
 	}
 
+	a.instrumentUnsafe()
+
 	return nil
+}
+
+// instrumentUnsafe updates metrics. It is unsafe since it assumes the lock is held.
+func (a *Attester) instrumentUnsafe() {
+	count := func(atts []xchain.Attestation, gaugeVec *prometheus.GaugeVec) {
+		counts := make(map[uint64]int)
+		for _, att := range atts {
+			counts[att.SourceChainID]++
+		}
+
+		for chain, count := range counts {
+			gaugeVec.WithLabelValues(a.chains[chain]).Set(float64(count))
+		}
+	}
+
+	count(a.available, availableCount)
+	count(a.proposed, proposedCount)
 }
 
 // stateJSON is the JSON representation of the attester state.

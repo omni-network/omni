@@ -61,7 +61,7 @@ func (p *Provider) Subscribe(
 	log.Info(ctx, "Subscribing to provider", "from_height", fromHeight)
 
 	// run the XBlock stream for this chain
-	p.streamBlocks(ctx, chainID, fromHeight, callback)
+	p.streamBlocks(ctx, chain.Name, chainID, fromHeight, callback)
 
 	return nil
 }
