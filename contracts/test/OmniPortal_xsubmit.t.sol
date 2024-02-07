@@ -126,11 +126,10 @@ contract OmniPortal_xsubmit_Test is Base {
 
         xsub.attestationRoot = keccak256("invalid");
 
-        // need to resign invalid root, to pass the quorum check
         xsub.signatures = valSigTuples(xsub.attestationRoot);
 
+        // remove last two signatures, to fail the quorum check
         Validators.SigTuple[] memory sigs = new Validators.SigTuple[](2);
-
         sigs[0] = xsub.signatures[0];
         sigs[1] = xsub.signatures[1];
 
