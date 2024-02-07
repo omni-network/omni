@@ -46,8 +46,6 @@ func TestRunCmd(t *testing.T) { //nolint:paralleltest,tparallel // RunCmd modifi
 	}
 
 	for _, test := range tests {
-		test := test      // Pin
-		args := test.Args // Pin
 		t.Run(test.Name, func(t *testing.T) {
 			t.Parallel()
 
@@ -58,7 +56,7 @@ func TestRunCmd(t *testing.T) { //nolint:paralleltest,tparallel // RunCmd modifi
 			})
 
 			rootCmd := libcmd.NewRootCmd("halo", "", cmd)
-			rootCmd.SetArgs(args)
+			rootCmd.SetArgs(test.Args)
 			require.NoError(t, rootCmd.Execute())
 		})
 	}
@@ -77,7 +75,6 @@ func TestCLIReference(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test // Pin
 		t.Run(test.Command, func(t *testing.T) {
 			t.Parallel()
 

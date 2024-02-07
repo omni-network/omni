@@ -36,7 +36,6 @@ func TestSetup(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, file := range files {
-		file := file // Pin
 		t.Run(filepath.Base(file), func(t *testing.T) {
 			t.Parallel()
 			bz, err := os.ReadFile(file)

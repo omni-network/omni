@@ -101,6 +101,14 @@ issues:
     - fieldalignment # Ignore "fieldalignment: struct with XXX pointer bytes could be YYY"
     - "shadow: declaration of" # Relax govet
     - "ifElseChain: rewrite if-else to switch statement"   # IfElseChain actually preferred to switches
+
+    # Loop variable issues have been fixed in Go 1.22, so can be ignored
+    - "G601: Implicit memory aliasing in for loop"
+    - "loopclosure: loop variable"
+    - "Range statement for test"
+    - "range-val-address: suspicious assignment of"
+    - "exporting a pointer for the loop variable snapshot"
+
 linters:
   enable-all: true
   disable:

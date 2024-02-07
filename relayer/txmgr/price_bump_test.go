@@ -96,8 +96,6 @@ func TestUpdateFees(t *testing.T) {
 		},
 	}
 	for i, test := range tests {
-		i := i
-		test := test
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			t.Parallel()
 			test.run(t)
