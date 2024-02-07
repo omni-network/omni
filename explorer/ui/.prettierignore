@@ -1,0 +1,6 @@
+/build
+/coverage-ts
+/node_modules
+package-lock.json
+pnpm-lock.yaml
+/app/graphql

@@ -12,10 +12,17 @@
     "codegen": "graphql-codegen --config codegen.ts"
   },
   "dependencies": {
+    "@emotion/react": "11.11.3",
+    "@emotion/styled": "11.11.0",
+    "@heroicons/react": "2.1.1",
+    "@material-tailwind/react": "2.1.8",
+    "@mui/x-data-grid": "6.19.3",
     "@remix-run/css-bundle": "^2.5.0",
     "@remix-run/node": "^2.5.0",
     "@remix-run/react": "^2.5.0",
     "@remix-run/serve": "^2.5.0",
+    "@tailwindcss/typography": "0.5.10",
+    "clsx": "2.1.0",
     "graphql": "16.8.1",
     "isbot": "^4.1.0",
     "openapi-fetch": "^0.8.2",
@@ -30,6 +37,7 @@
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
     "@typescript-eslint/eslint-plugin": "^6.7.4",
+    "daisyui": "4.6.2",
     "eslint": "^8.38.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-import-resolver-typescript": "^3.6.1",
@@ -37,6 +45,8 @@
     "eslint-plugin-jsx-a11y": "^6.7.1",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
+    "prettier": "3.2.5",
+    "tailwindcss": "3.4.1",
     "typescript": "^5.3.3"
   },
   "engines": {
