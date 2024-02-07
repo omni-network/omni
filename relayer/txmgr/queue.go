@@ -105,8 +105,6 @@ func (q *Queue[T]) sendTx(ctx context.Context, id T, candidate TxCandidate, rece
 // canceled. This method will wait on that Group for all pending transactions to return,
 // and create a new Group with the queue's global context as its parent.
 func (q *Queue[T]) groupContext() (*errgroup.Group, context.Context) {
-	q.groupLock.Lock()
-	defer q.groupLock.Unlock()
 	if q.groupCtx == nil || q.groupCtx.Err() != nil {
 		// no group exists, or the existing context has an error, so we need to wait
 		// for existing group threads to complete (if any) and create a new group

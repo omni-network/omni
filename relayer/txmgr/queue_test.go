@@ -57,7 +57,6 @@ func (b *mockBackendWithNonce) NonceAt(context.Context, common.Address, *big.Int
 }
 
 func TestQueue_Send(t *testing.T) {
-	t.SkipNow() // skipping for now
 	t.Parallel()
 	testCases := []struct {
 		name   string        // name of the test
