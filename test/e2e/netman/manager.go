@@ -148,11 +148,17 @@ type Portal struct {
 }
 
 // TxOpts returns transaction options using the deploy key.
-func (p Portal) TxOpts(ctx context.Context) *bind.TransactOpts {
+func (p Portal) TxOpts(ctx context.Context, value *big.Int) *bind.TransactOpts {
 	clone := *p.txOpts
 	clone.Context = ctx
+	clone.Value = value
 
 	return &clone
+}
+
+// TxOptsFrom returns the from address of the deploy key.
+func (p Portal) TxOptsFrom() common.Address {
+	return p.txOpts.From
 }
 
 var _ Manager = (*manager)(nil)

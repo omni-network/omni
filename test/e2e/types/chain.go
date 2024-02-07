@@ -14,6 +14,12 @@ var (
 		ID:       421613,
 		IsPublic: true,
 	}
+
+	chainGoerli = EVMChain{
+		Name:     "goerli",
+		ID:       5,
+		IsPublic: true,
+	}
 )
 
 const anvilChainIDFactor = 100
@@ -36,6 +42,8 @@ func PublicChainByName(name string) (EVMChain, error) {
 	switch name {
 	case chainArbGoerli.Name:
 		return chainArbGoerli, nil
+	case chainGoerli.Name:
+		return chainGoerli, nil
 	default:
 		return EVMChain{}, errors.New("unknown chain name")
 	}
@@ -46,6 +54,8 @@ func PublicRPCByName(name string) string {
 	switch name {
 	case chainArbGoerli.Name:
 		return "https://arbitrum-goerli.publicnode.com"
+	case chainGoerli.Name:
+		return "https://rpc.ankr.com/eth_goerli"
 	default:
 		return ""
 	}
