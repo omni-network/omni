@@ -5,6 +5,7 @@ import { CommonBase } from "forge-std/Base.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
+import { Validators } from "src/libraries/Validators.sol";
 import { FeeOracleV1 } from "src/protocol/FeeOracleV1.sol";
 import { TestXTypes } from "./TestXTypes.sol";
 import { TestPortal } from "./TestPortal.sol";
@@ -30,12 +31,26 @@ contract Fixtures is CommonBase, StdCheats {
     uint64 constant chainAId = 2;
     uint64 constant chainBId = 3;
 
+    uint64 constant baseValPower = 100;
+    uint64 constant valSetId = 1; // genesis validator set id
     uint256 constant baseFee = 1 gwei;
 
     address deployer;
     address xcaller;
     address relayer;
     address owner;
+
+    string constant valMnemonic = "test test test test test test test test test test test junk";
+
+    address val1;
+    address val2;
+    address val3;
+    address val4;
+
+    uint256 val1PrivKey;
+    uint256 val2PrivKey;
+    uint256 val3PrivKey;
+    uint256 val4PrivKey;
 
     FeeOracleV1 feeOracle;
     FeeOracleV1 chainAFeeOracle;
@@ -74,6 +89,17 @@ contract Fixtures is CommonBase, StdCheats {
         relayer = makeAddr("relayer");
         owner = makeAddr("owner");
 
+        (val1, val1PrivKey) = deriveRememberKey(valMnemonic, 0);
+        (val2, val2PrivKey) = deriveRememberKey(valMnemonic, 1);
+        (val3, val3PrivKey) = deriveRememberKey(valMnemonic, 2);
+        (val4, val4PrivKey) = deriveRememberKey(valMnemonic, 3);
+
+        Validators.Validator[] memory validators = new Validators.Validator[](4);
+        validators[0] = Validators.Validator(val1, baseValPower);
+        validators[1] = Validators.Validator(val2, baseValPower);
+        validators[2] = Validators.Validator(val3, baseValPower);
+        validators[3] = Validators.Validator(val4, baseValPower);
+
         // fund xcaller, so it can pay fees
         vm.deal(xcaller, 100 ether);
 
@@ -81,19 +107,19 @@ contract Fixtures is CommonBase, StdCheats {
 
         vm.chainId(thisChainId); // portal constructor uses block.chainid
         feeOracle = new FeeOracleV1(owner, baseFee);
-        portal = new TestPortal(owner, address(feeOracle));
+        portal = new TestPortal(owner, address(feeOracle), valSetId, validators);
         counter = new Counter(portal);
         reverter = new Reverter();
 
         vm.chainId(chainAId);
         chainAFeeOracle = new FeeOracleV1(owner, baseFee);
-        chainAPortal = new TestPortal(owner, address(chainAFeeOracle));
+        chainAPortal = new TestPortal(owner, address(chainAFeeOracle), valSetId, validators);
         chainACounter = new Counter(chainAPortal);
         chainAReverter = new Reverter();
 
         vm.chainId(chainBId);
         chainBFeeOracle = new FeeOracleV1(owner, baseFee);
-        chainBPortal = new TestPortal(owner, address(chainBFeeOracle));
+        chainBPortal = new TestPortal(owner, address(chainBFeeOracle), valSetId, validators);
         chainBCounter = new Counter(chainBPortal);
         chainBReverter = new Reverter();
 
@@ -141,7 +167,23 @@ contract Fixtures is CommonBase, StdCheats {
 
         XTypes.Submission memory xsub = abi.decode(parsed, (XTypes.Submission));
 
+        xsub.signatures = valSigTuples(xsub.attestationRoot);
+
         return xsub;
+    }
+
+    function valSigTuples(bytes32 digest) internal view returns (Validators.SigTuple[] memory sigs) {
+        sigs = new Validators.SigTuple[](4);
+
+        sigs[0] = Validators.SigTuple(val1, _sign(digest, val1PrivKey));
+        sigs[1] = Validators.SigTuple(val2, _sign(digest, val2PrivKey));
+        sigs[2] = Validators.SigTuple(val3, _sign(digest, val3PrivKey));
+        sigs[3] = Validators.SigTuple(val4, _sign(digest, val4PrivKey));
+    }
+
+    function _sign(bytes32 digest, uint256 pk) internal pure returns (bytes memory) {
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, digest);
+        return abi.encodePacked(r, s, v);
     }
 
     /// @dev Create an xblock from chainA with xmsgs for "this" chain and chain b.

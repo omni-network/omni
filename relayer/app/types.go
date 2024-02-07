@@ -28,11 +28,11 @@ func SubmissionToBinding(sub xchain.Submission) bindings.XTypesSubmission {
 		return sub.Signatures[i].ValidatorAddress.Cmp(sub.Signatures[j].ValidatorAddress) < 0
 	})
 
-	sigs := make([]bindings.XTypesSigTuple, 0, len(sub.Signatures))
+	sigs := make([]bindings.ValidatorSigTuple, 0, len(sub.Signatures))
 	for _, sig := range sub.Signatures {
-		sigs = append(sigs, bindings.XTypesSigTuple{
-			ValidatorPubKey: sig.ValidatorAddress[:],
-			Signature:       sig.Signature[:],
+		sigs = append(sigs, bindings.ValidatorSigTuple{
+			ValidatorAddr: sig.ValidatorAddress,
+			Signature:     sig.Signature[:],
 		})
 	}
 

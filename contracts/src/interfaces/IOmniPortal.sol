@@ -53,6 +53,12 @@ interface IOmniPortal {
     function XMSG_MIN_GAS_LIMIT() external view returns (uint64);
 
     /**
+     * @notice Percentage of total validator power required to accept an XSubmission, 0-100
+     * @return Quorum threshold percentage
+     */
+    function XSUB_QUORUM_THRESHOLD_PCT() external view returns (uint8);
+
+    /**
      * @notice Chain ID of the chain to which this portal is deployed
      * @dev Used as sourceChainId for all outbound XMsgs
      * @return Chain ID

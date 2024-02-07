@@ -4,6 +4,7 @@ pragma solidity 0.8.23;
 import { Base } from "test/common/Base.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
 import { Vm } from "forge-std/Vm.sol";
+import { Validators } from "src/libraries/Validators.sol";
 
 /**
  * @title OmniPortal_xsubmit_Test
@@ -113,7 +114,39 @@ contract OmniPortal_xsubmit_Test is Base {
 
         xsub.attestationRoot = keccak256("invalid");
 
+        // need to resign invalid root, to pass the quorum check
+        xsub.signatures = valSigTuples(xsub.attestationRoot);
+
         vm.expectRevert("OmniPortal: invalid proof");
+        portal.xsubmit(xsub);
+    }
+
+    function test_xsubmit_noQuorum_reverts() public {
+        XTypes.Submission memory xsub = readXSubmission("xblock1", portal.chainId());
+
+        xsub.attestationRoot = keccak256("invalid");
+
+        // need to resign invalid root, to pass the quorum check
+        xsub.signatures = valSigTuples(xsub.attestationRoot);
+
+        Validators.SigTuple[] memory sigs = new Validators.SigTuple[](2);
+
+        sigs[0] = xsub.signatures[0];
+        sigs[1] = xsub.signatures[1];
+
+        xsub.signatures = sigs;
+
+        vm.expectRevert("OmniPortal: no quorum");
+        portal.xsubmit(xsub);
+    }
+
+    function test_xsubmit_duplicateValidator_reverts() public {
+        XTypes.Submission memory xsub = readXSubmission("xblock1", portal.chainId());
+
+        xsub.attestationRoot = keccak256("invalid");
+        xsub.signatures[1] = xsub.signatures[0];
+
+        vm.expectRevert("OmniPortal: duplicate validator");
         portal.xsubmit(xsub);
     }
 
@@ -121,6 +154,9 @@ contract OmniPortal_xsubmit_Test is Base {
         XTypes.Submission memory xsub = readXSubmission("xblock1", portal.chainId());
 
         xsub.msgs[0].data = abi.encodeWithSignature("invalid()");
+
+        // need to resign invalid root, to pass the quorum check
+        xsub.signatures = valSigTuples(xsub.attestationRoot);
 
         vm.expectRevert("OmniPortal: invalid proof");
         portal.xsubmit(xsub);

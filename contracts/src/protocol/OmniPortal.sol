@@ -7,6 +7,7 @@ import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
 import { IOmniPortalAdmin } from "../interfaces/IOmniPortalAdmin.sol";
 import { XBlockMerkleProof } from "../libraries/XBlockMerkleProof.sol";
 import { XTypes } from "../libraries/XTypes.sol";
+import { Validators } from "../libraries/Validators.sol";
 
 contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
     /// @inheritdoc IOmniPortal
@@ -17,6 +18,9 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
 
     /// @inheritdoc IOmniPortal
     uint64 public constant XMSG_MIN_GAS_LIMIT = 21_000;
+
+    /// @inheritdoc IOmniPortal
+    uint8 public constant XSUB_QUORUM_THRESHOLD_PCT = 66;
 
     /// @inheritdoc IOmniPortal
     uint64 public immutable chainId;
@@ -33,14 +37,27 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
     /// @inheritdoc IOmniPortal
     mapping(uint64 => uint64) public inXStreamBlockHeight;
 
+    /// @dev Track latest seen valSetId, to avoid writing the same validator set multiple times
+    ///      validator set ideas increment monotonically
+    uint64 private _latestValSetId;
+
+    /// @dev Maps validator set id -> validator address -> power
+    mapping(uint64 => mapping(address => uint64)) private _validatorSet;
+
+    /// @dev Maps validator set id -> total power
+    mapping(uint64 => uint64) private _validatorSetTotalPower;
+
     /// @dev The current XMsg being executed, exposed via xmsg() getter
     ///      Private state + public getter preferred over public state with default getter,
     ///      so that we can use the XMsg struct type in the interface.
     XTypes.Msg private _currentXmsg;
 
-    constructor(address owner_, address feeOracle_) Ownable(owner_) {
+    constructor(address owner_, address feeOracle_, uint64 valSetId, Validators.Validator[] memory validators_)
+        Ownable(owner_)
+    {
         chainId = uint64(block.chainid);
         _setFeeOracle(feeOracle_);
+        _addValidators(valSetId, validators_);
     }
 
     /// @inheritdoc IOmniPortalAdmin
@@ -91,7 +108,20 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
 
     /// @inheritdoc IOmniPortal
     function xsubmit(XTypes.Submission calldata xsub) external {
-        // TODO: verify a quorum of validators have signed off on the attestation root.
+        // This only works because validator sets cannot yet change
+        // TODO: replace with uint64 valSetId = xsub.valSetId;
+        uint64 valSetId = _latestValSetId;
+
+        require(
+            Validators.verifyQuorum(
+                xsub.attestationRoot,
+                xsub.signatures,
+                _validatorSet[valSetId],
+                _validatorSetTotalPower[valSetId],
+                XSUB_QUORUM_THRESHOLD_PCT
+            ),
+            "OmniPortal: no quorum"
+        );
 
         require(
             XBlockMerkleProof.verify(xsub.attestationRoot, xsub.blockHeader, xsub.msgs, xsub.proof, xsub.proofFlags),
@@ -150,5 +180,27 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
         feeOracle = feeOracle_;
 
         emit FeeOracleChanged(oldFeeOracle, feeOracle);
+    }
+
+    function _addValidators(uint64 valSetId, Validators.Validator[] memory validators_) internal {
+        require(valSetId == _latestValSetId + 1, "OmniPortal: invalid valSetId");
+        require(validators_.length > 0, "OmniPortal: no validators");
+
+        uint64 totalPower;
+        Validators.Validator memory val;
+        mapping(address => uint64) storage set = _validatorSet[valSetId];
+
+        for (uint256 i = 0; i < validators_.length; i++) {
+            val = validators_[i];
+
+            require(val.addr != address(0), "OmniPortal: no zero validator");
+            require(val.power > 0, "OmniPortal: no zero power");
+
+            totalPower += val.power;
+            set[val.addr] = val.power;
+        }
+
+        _validatorSetTotalPower[valSetId] = totalPower;
+        _latestValSetId = valSetId;
     }
 }
