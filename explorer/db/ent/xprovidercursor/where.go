@@ -60,9 +60,9 @@ func UUID(v uuid.UUID) predicate.XProviderCursor {
 	return predicate.XProviderCursor(sql.FieldEQ(FieldUUID, v))
 }
 
-// ChainId applies equality check predicate on the "ChainId" field. It's identical to ChainIdEQ.
-func ChainId(v uint64) predicate.XProviderCursor {
-	return predicate.XProviderCursor(sql.FieldEQ(FieldChainId, v))
+// ChainID applies equality check predicate on the "ChainID" field. It's identical to ChainIDEQ.
+func ChainID(v uint64) predicate.XProviderCursor {
+	return predicate.XProviderCursor(sql.FieldEQ(FieldChainID, v))
 }
 
 // Height applies equality check predicate on the "Height" field. It's identical to HeightEQ.
@@ -120,44 +120,44 @@ func UUIDLTE(v uuid.UUID) predicate.XProviderCursor {
 	return predicate.XProviderCursor(sql.FieldLTE(FieldUUID, v))
 }
 
-// ChainIdEQ applies the EQ predicate on the "ChainId" field.
-func ChainIdEQ(v uint64) predicate.XProviderCursor {
-	return predicate.XProviderCursor(sql.FieldEQ(FieldChainId, v))
+// ChainIDEQ applies the EQ predicate on the "ChainID" field.
+func ChainIDEQ(v uint64) predicate.XProviderCursor {
+	return predicate.XProviderCursor(sql.FieldEQ(FieldChainID, v))
 }
 
-// ChainIdNEQ applies the NEQ predicate on the "ChainId" field.
-func ChainIdNEQ(v uint64) predicate.XProviderCursor {
-	return predicate.XProviderCursor(sql.FieldNEQ(FieldChainId, v))
+// ChainIDNEQ applies the NEQ predicate on the "ChainID" field.
+func ChainIDNEQ(v uint64) predicate.XProviderCursor {
+	return predicate.XProviderCursor(sql.FieldNEQ(FieldChainID, v))
 }
 
-// ChainIdIn applies the In predicate on the "ChainId" field.
-func ChainIdIn(vs ...uint64) predicate.XProviderCursor {
-	return predicate.XProviderCursor(sql.FieldIn(FieldChainId, vs...))
+// ChainIDIn applies the In predicate on the "ChainID" field.
+func ChainIDIn(vs ...uint64) predicate.XProviderCursor {
+	return predicate.XProviderCursor(sql.FieldIn(FieldChainID, vs...))
 }
 
-// ChainIdNotIn applies the NotIn predicate on the "ChainId" field.
-func ChainIdNotIn(vs ...uint64) predicate.XProviderCursor {
-	return predicate.XProviderCursor(sql.FieldNotIn(FieldChainId, vs...))
+// ChainIDNotIn applies the NotIn predicate on the "ChainID" field.
+func ChainIDNotIn(vs ...uint64) predicate.XProviderCursor {
+	return predicate.XProviderCursor(sql.FieldNotIn(FieldChainID, vs...))
 }
 
-// ChainIdGT applies the GT predicate on the "ChainId" field.
-func ChainIdGT(v uint64) predicate.XProviderCursor {
-	return predicate.XProviderCursor(sql.FieldGT(FieldChainId, v))
+// ChainIDGT applies the GT predicate on the "ChainID" field.
+func ChainIDGT(v uint64) predicate.XProviderCursor {
+	return predicate.XProviderCursor(sql.FieldGT(FieldChainID, v))
 }
 
-// ChainIdGTE applies the GTE predicate on the "ChainId" field.
-func ChainIdGTE(v uint64) predicate.XProviderCursor {
-	return predicate.XProviderCursor(sql.FieldGTE(FieldChainId, v))
+// ChainIDGTE applies the GTE predicate on the "ChainID" field.
+func ChainIDGTE(v uint64) predicate.XProviderCursor {
+	return predicate.XProviderCursor(sql.FieldGTE(FieldChainID, v))
 }
 
-// ChainIdLT applies the LT predicate on the "ChainId" field.
-func ChainIdLT(v uint64) predicate.XProviderCursor {
-	return predicate.XProviderCursor(sql.FieldLT(FieldChainId, v))
+// ChainIDLT applies the LT predicate on the "ChainID" field.
+func ChainIDLT(v uint64) predicate.XProviderCursor {
+	return predicate.XProviderCursor(sql.FieldLT(FieldChainID, v))
 }
 
-// ChainIdLTE applies the LTE predicate on the "ChainId" field.
-func ChainIdLTE(v uint64) predicate.XProviderCursor {
-	return predicate.XProviderCursor(sql.FieldLTE(FieldChainId, v))
+// ChainIDLTE applies the LTE predicate on the "ChainID" field.
+func ChainIDLTE(v uint64) predicate.XProviderCursor {
+	return predicate.XProviderCursor(sql.FieldLTE(FieldChainID, v))
 }
 
 // HeightEQ applies the EQ predicate on the "Height" field.

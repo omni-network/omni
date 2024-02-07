@@ -43,24 +43,24 @@ func (xcu *XProviderCursorUpdate) SetNillableUUID(u *uuid.UUID) *XProviderCursor
 	return xcu
 }
 
-// SetChainId sets the "ChainId" field.
-func (xcu *XProviderCursorUpdate) SetChainId(u uint64) *XProviderCursorUpdate {
-	xcu.mutation.ResetChainId()
-	xcu.mutation.SetChainId(u)
+// SetChainID sets the "ChainID" field.
+func (xcu *XProviderCursorUpdate) SetChainID(u uint64) *XProviderCursorUpdate {
+	xcu.mutation.ResetChainID()
+	xcu.mutation.SetChainID(u)
 	return xcu
 }
 
-// SetNillableChainId sets the "ChainId" field if the given value is not nil.
-func (xcu *XProviderCursorUpdate) SetNillableChainId(u *uint64) *XProviderCursorUpdate {
+// SetNillableChainID sets the "ChainID" field if the given value is not nil.
+func (xcu *XProviderCursorUpdate) SetNillableChainID(u *uint64) *XProviderCursorUpdate {
 	if u != nil {
-		xcu.SetChainId(*u)
+		xcu.SetChainID(*u)
 	}
 	return xcu
 }
 
-// AddChainId adds u to the "ChainId" field.
-func (xcu *XProviderCursorUpdate) AddChainId(u int64) *XProviderCursorUpdate {
-	xcu.mutation.AddChainId(u)
+// AddChainID adds u to the "ChainID" field.
+func (xcu *XProviderCursorUpdate) AddChainID(u int64) *XProviderCursorUpdate {
+	xcu.mutation.AddChainID(u)
 	return xcu
 }
 
@@ -157,11 +157,11 @@ func (xcu *XProviderCursorUpdate) sqlSave(ctx context.Context) (n int, err error
 	if value, ok := xcu.mutation.UUID(); ok {
 		_spec.SetField(xprovidercursor.FieldUUID, field.TypeUUID, value)
 	}
-	if value, ok := xcu.mutation.ChainId(); ok {
-		_spec.SetField(xprovidercursor.FieldChainId, field.TypeUint64, value)
+	if value, ok := xcu.mutation.ChainID(); ok {
+		_spec.SetField(xprovidercursor.FieldChainID, field.TypeUint64, value)
 	}
-	if value, ok := xcu.mutation.AddedChainId(); ok {
-		_spec.AddField(xprovidercursor.FieldChainId, field.TypeUint64, value)
+	if value, ok := xcu.mutation.AddedChainID(); ok {
+		_spec.AddField(xprovidercursor.FieldChainID, field.TypeUint64, value)
 	}
 	if value, ok := xcu.mutation.Height(); ok {
 		_spec.SetField(xprovidercursor.FieldHeight, field.TypeUint64, value)
@@ -209,24 +209,24 @@ func (xcuo *XProviderCursorUpdateOne) SetNillableUUID(u *uuid.UUID) *XProviderCu
 	return xcuo
 }
 
-// SetChainId sets the "ChainId" field.
-func (xcuo *XProviderCursorUpdateOne) SetChainId(u uint64) *XProviderCursorUpdateOne {
-	xcuo.mutation.ResetChainId()
-	xcuo.mutation.SetChainId(u)
+// SetChainID sets the "ChainID" field.
+func (xcuo *XProviderCursorUpdateOne) SetChainID(u uint64) *XProviderCursorUpdateOne {
+	xcuo.mutation.ResetChainID()
+	xcuo.mutation.SetChainID(u)
 	return xcuo
 }
 
-// SetNillableChainId sets the "ChainId" field if the given value is not nil.
-func (xcuo *XProviderCursorUpdateOne) SetNillableChainId(u *uint64) *XProviderCursorUpdateOne {
+// SetNillableChainID sets the "ChainID" field if the given value is not nil.
+func (xcuo *XProviderCursorUpdateOne) SetNillableChainID(u *uint64) *XProviderCursorUpdateOne {
 	if u != nil {
-		xcuo.SetChainId(*u)
+		xcuo.SetChainID(*u)
 	}
 	return xcuo
 }
 
-// AddChainId adds u to the "ChainId" field.
-func (xcuo *XProviderCursorUpdateOne) AddChainId(u int64) *XProviderCursorUpdateOne {
-	xcuo.mutation.AddChainId(u)
+// AddChainID adds u to the "ChainID" field.
+func (xcuo *XProviderCursorUpdateOne) AddChainID(u int64) *XProviderCursorUpdateOne {
+	xcuo.mutation.AddChainID(u)
 	return xcuo
 }
 
@@ -353,11 +353,11 @@ func (xcuo *XProviderCursorUpdateOne) sqlSave(ctx context.Context) (_node *XProv
 	if value, ok := xcuo.mutation.UUID(); ok {
 		_spec.SetField(xprovidercursor.FieldUUID, field.TypeUUID, value)
 	}
-	if value, ok := xcuo.mutation.ChainId(); ok {
-		_spec.SetField(xprovidercursor.FieldChainId, field.TypeUint64, value)
+	if value, ok := xcuo.mutation.ChainID(); ok {
+		_spec.SetField(xprovidercursor.FieldChainID, field.TypeUint64, value)
 	}
-	if value, ok := xcuo.mutation.AddedChainId(); ok {
-		_spec.AddField(xprovidercursor.FieldChainId, field.TypeUint64, value)
+	if value, ok := xcuo.mutation.AddedChainID(); ok {
+		_spec.AddField(xprovidercursor.FieldChainID, field.TypeUint64, value)
 	}
 	if value, ok := xcuo.mutation.Height(); ok {
 		_spec.SetField(xprovidercursor.FieldHeight, field.TypeUint64, value)

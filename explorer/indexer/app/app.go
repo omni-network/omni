@@ -57,7 +57,12 @@ func startXProvider(ctx context.Context, network netconf.Network, entCl *ent.Cli
 	callback := newCallback(entCl)
 
 	for _, chain := range network.Chains {
-		err = xprovider.Subscribe(ctx, chain.ID, chain.DeployHeight, callback)
+		fromHeight, err := initChainCursor(ctx, entCl, chain)
+		if err != nil {
+			return errors.Wrap(err, "initialize chain cursor", "chain_id", chain.ID)
+		}
+
+		err = xprovider.Subscribe(ctx, chain.ID, fromHeight, callback)
 		if err != nil {
 			return errors.Wrap(err, "subscribe", "chain_id", chain.ID)
 		}
@@ -77,4 +82,33 @@ func initializeRPCClients(chains []netconf.Chain) (map[uint64]*ethclient.Client,
 	}
 
 	return rpcClientPerChain, nil
+}
+
+// initChainCursor return the initial cursor height to start streaming from (inclusive).
+// If a cursor exists, it returns the cursor height + 1.
+// Else a new cursor is created with chain deploy height.
+func initChainCursor(ctx context.Context, entCl *ent.Client, chain netconf.Chain) (uint64, error) {
+	cursor, ok, err := getCursor(ctx, entCl.XProviderCursor, chain.ID)
+	if err != nil {
+		return 0, errors.Wrap(err, "get cursor")
+	} else if ok {
+		return cursor.Height + 1, nil
+	}
+
+	// Store the cursor at deploy height - 1, so first cursor update will be at deploy height.
+	deployMinOne := chain.DeployHeight - 1
+	if chain.DeployHeight == 0 { // Except for 0, we handle this explicitly.
+		deployMinOne = 0
+	}
+
+	// cursor doesn't exist yet, create it
+	_, err = entCl.XProviderCursor.Create().
+		SetChainID(chain.ID).
+		SetHeight(deployMinOne).
+		Save(ctx)
+	if err != nil {
+		return 0, errors.Wrap(err, "create cursor")
+	}
+
+	return chain.DeployHeight, nil
 }

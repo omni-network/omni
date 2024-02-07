@@ -35,9 +35,9 @@ func (xcc *XProviderCursorCreate) SetNillableUUID(u *uuid.UUID) *XProviderCursor
 	return xcc
 }
 
-// SetChainId sets the "ChainId" field.
-func (xcc *XProviderCursorCreate) SetChainId(u uint64) *XProviderCursorCreate {
-	xcc.mutation.SetChainId(u)
+// SetChainID sets the "ChainID" field.
+func (xcc *XProviderCursorCreate) SetChainID(u uint64) *XProviderCursorCreate {
+	xcc.mutation.SetChainID(u)
 	return xcc
 }
 
@@ -129,8 +129,8 @@ func (xcc *XProviderCursorCreate) check() error {
 	if _, ok := xcc.mutation.UUID(); !ok {
 		return &ValidationError{Name: "UUID", err: errors.New(`ent: missing required field "XProviderCursor.UUID"`)}
 	}
-	if _, ok := xcc.mutation.ChainId(); !ok {
-		return &ValidationError{Name: "ChainId", err: errors.New(`ent: missing required field "XProviderCursor.ChainId"`)}
+	if _, ok := xcc.mutation.ChainID(); !ok {
+		return &ValidationError{Name: "ChainID", err: errors.New(`ent: missing required field "XProviderCursor.ChainID"`)}
 	}
 	if _, ok := xcc.mutation.Height(); !ok {
 		return &ValidationError{Name: "Height", err: errors.New(`ent: missing required field "XProviderCursor.Height"`)}
@@ -171,9 +171,9 @@ func (xcc *XProviderCursorCreate) createSpec() (*XProviderCursor, *sqlgraph.Crea
 		_spec.SetField(xprovidercursor.FieldUUID, field.TypeUUID, value)
 		_node.UUID = value
 	}
-	if value, ok := xcc.mutation.ChainId(); ok {
-		_spec.SetField(xprovidercursor.FieldChainId, field.TypeUint64, value)
-		_node.ChainId = value
+	if value, ok := xcc.mutation.ChainID(); ok {
+		_spec.SetField(xprovidercursor.FieldChainID, field.TypeUint64, value)
+		_node.ChainID = value
 	}
 	if value, ok := xcc.mutation.Height(); ok {
 		_spec.SetField(xprovidercursor.FieldHeight, field.TypeUint64, value)
