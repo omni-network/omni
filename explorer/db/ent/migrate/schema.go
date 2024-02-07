@@ -109,6 +109,13 @@ var (
 		Name:       "xprovider_cursors",
 		Columns:    XproviderCursorsColumns,
 		PrimaryKey: []*schema.Column{XproviderCursorsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "xprovidercursor_chain_id",
+				Unique:  true,
+				Columns: []*schema.Column{XproviderCursorsColumns[2]},
+			},
+		},
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{

@@ -112,7 +112,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 		Type: "XProviderCursor",
 		Fields: map[string]*sqlgraph.FieldSpec{
 			xprovidercursor.FieldUUID:      {Type: field.TypeUUID, Column: xprovidercursor.FieldUUID},
-			xprovidercursor.FieldChainId:   {Type: field.TypeUint64, Column: xprovidercursor.FieldChainId},
+			xprovidercursor.FieldChainID:   {Type: field.TypeUint64, Column: xprovidercursor.FieldChainID},
 			xprovidercursor.FieldHeight:    {Type: field.TypeUint64, Column: xprovidercursor.FieldHeight},
 			xprovidercursor.FieldCreatedAt: {Type: field.TypeTime, Column: xprovidercursor.FieldCreatedAt},
 			xprovidercursor.FieldUpdatedAt: {Type: field.TypeTime, Column: xprovidercursor.FieldUpdatedAt},
@@ -581,9 +581,9 @@ func (f *XProviderCursorFilter) WhereUUID(p entql.ValueP) {
 	f.Where(p.Field(xprovidercursor.FieldUUID))
 }
 
-// WhereChainId applies the entql uint64 predicate on the ChainId field.
-func (f *XProviderCursorFilter) WhereChainId(p entql.Uint64P) {
-	f.Where(p.Field(xprovidercursor.FieldChainId))
+// WhereChainID applies the entql uint64 predicate on the ChainID field.
+func (f *XProviderCursorFilter) WhereChainID(p entql.Uint64P) {
+	f.Where(p.Field(xprovidercursor.FieldChainID))
 }
 
 // WhereHeight applies the entql uint64 predicate on the Height field.
