@@ -964,7 +964,6 @@ func TestIncreaseGasPrice(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			test.run(t)
@@ -1072,8 +1071,6 @@ func TestErrStringMatch(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		i := i
-		test := test
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			t.Parallel()
 			require.Equal(t, test.match, txmgr.ErrStringMatch(test.err, test.target))

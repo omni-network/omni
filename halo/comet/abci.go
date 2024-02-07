@@ -282,7 +282,6 @@ func (a *App) Commit(context.Context, *abci.RequestCommit) (*abci.ResponseCommit
 func (a *App) ListSnapshots(context.Context, *abci.RequestListSnapshots) (*abci.ResponseListSnapshots, error) {
 	var resp abci.ResponseListSnapshots
 	for _, snapshot := range a.snapshots.List() {
-		snapshot := snapshot // Pin.
 		resp.Snapshots = append(resp.Snapshots, &snapshot)
 	}
 

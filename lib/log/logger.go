@@ -7,6 +7,8 @@ import (
 	"os"
 	"sync"
 
+	"github.com/omni-network/omni/lib/errors"
+
 	charm "github.com/charmbracelet/log"
 	"github.com/muesli/termenv"
 )
@@ -118,6 +120,10 @@ func newConsoleLogger(opts ...func(*options)) *slog.Logger {
 	logger.SetStyles(styles)
 	logger.SetColorProfile(o.Color)
 
+	if o.Test {
+		return slog.New(stubHandler{Handler: logger})
+	}
+
 	return slog.New(logger)
 }
 
@@ -143,4 +149,29 @@ func WithNoopLogger(ctx context.Context) context.Context {
 	return WithLogger(ctx, newConsoleLogger(func(o *options) {
 		o.Writer = io.Discard
 	}))
+}
+
+// stubHandler is a handler that replaces the stacktrace and source attributes with stubs.
+type stubHandler struct {
+	slog.Handler
+}
+
+func (t stubHandler) Handle(ctx context.Context, r slog.Record) error {
+	resp := slog.NewRecord(r.Time, r.Level, r.Message, r.PC)
+
+	r.Attrs(func(a slog.Attr) bool {
+		if a.Key == "stacktrace" {
+			resp.AddAttrs(slog.String("stacktrace", "<stacktrace>"))
+		} else {
+			resp.AddAttrs(a)
+		}
+
+		return true
+	})
+
+	if err := t.Handler.Handle(ctx, resp); err != nil {
+		return errors.Wrap(err, "handle")
+	}
+
+	return nil
 }

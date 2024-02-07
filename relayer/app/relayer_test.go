@@ -184,7 +184,6 @@ func Test_FromHeights(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got := relayer.FromHeights(tt.args.cursors, tt.args.chains)

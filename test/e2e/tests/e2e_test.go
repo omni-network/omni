@@ -93,7 +93,6 @@ func test(t *testing.T, testNode func(*testing.T, e2e.Node, []Portal), testPorta
 	}
 
 	for _, portal := range portals {
-		portal := portal // Pin
 		t.Run(portal.Chain.Name, func(t *testing.T) {
 			t.Parallel()
 			testPortal(t, portal, portals)
