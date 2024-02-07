@@ -16,10 +16,8 @@ type StreamUpdate struct {
 // CreateFunc is a function that creates one or more submissions from the given stream update.
 type CreateFunc func(streamUpdate StreamUpdate) ([]xchain.Submission, error)
 
-type Sender interface {
-	// SendTransaction sends a submission to the destination chain by invoking "xsubmit" on portal contract.
-	SendTransaction(ctx context.Context, submission xchain.Submission) error
-}
+// SendFunc sends a submission to the destination chain by invoking "xsubmit" on portal contract.
+type SendFunc func(ctx context.Context, submission xchain.Submission) error
 
 // SubmissionToBinding converts a go xchain submission to a solidity binding submission.
 func SubmissionToBinding(sub xchain.Submission) bindings.XTypesSubmission {

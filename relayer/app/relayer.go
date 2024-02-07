@@ -6,7 +6,6 @@ import (
 
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 )
@@ -19,66 +18,16 @@ func StartRelayer(
 	network netconf.Network,
 	xClient xchain.Provider,
 	creator CreateFunc,
-	sender Sender,
+	sender SendFunc,
 ) error {
 	// Get the last submitted cursors for each chain.
-	cursors, initialOffsets, err := getSubmittedCursors(ctx, network.ChainIDs(), xClient)
+	cursors, initialOffsets, err := getSubmittedCursors(ctx, network.ChainIDs(), network.ChainIDs(), xClient)
 	if err != nil {
 		return err
 	}
 
 	// callback processes each approved attestation/xblock.
-	callback := func(ctx context.Context, att xchain.AggAttestation) error {
-		// Get the xblock from the source chain.
-		block, ok, err := xClient.GetBlock(ctx, att.SourceChainID, att.BlockHeight)
-		if err != nil {
-			return err
-		} else if !ok { // Sanity check, should never happen.
-			return errors.New("attestation block not finalized [BUG!]",
-				"chain", att.SourceChainID,
-				"height", att.BlockHeight,
-			)
-		} else if block.BlockHash != att.BlockHash { // Sanity check, should never happen.
-			return errors.New("attestation block hash mismatch [BUG!]",
-				"chain", att.SourceChainID,
-				"height", att.BlockHeight,
-				log.Hex7("attestation_hash", att.BlockHash[:]),
-				log.Hex7("block_hash", block.BlockHash[:]),
-			)
-		} else if len(block.Msgs) == 0 {
-			log.Debug(ctx, "Skipping empty attested block",
-				"height", att.BlockHeight, "source_chain_id", att.SourceChainID)
-
-			return nil
-		}
-
-		// Split into streams
-		for streamID, msgs := range mapByStreamID(block.Msgs) {
-			msgs = filterMsgs(msgs, initialOffsets, streamID) // Filter out any partially submitted stream updates.
-			if len(msgs) == 0 {
-				continue
-			}
-
-			update := StreamUpdate{
-				StreamID:       streamID,
-				AggAttestation: att,
-				Msgs:           msgs,
-			}
-
-			submissions, err := creator(update)
-			if err != nil {
-				return err
-			}
-
-			for _, subs := range submissions {
-				if err := sender.SendTransaction(ctx, subs); err != nil {
-					return err
-				}
-			}
-		}
-
-		return nil
-	}
+	callback := newCallback(xClient, initialOffsets, creator, sender)
 
 	// Subscribe to attestations for each chain.
 	for chainID, fromHeight := range FromHeights(cursors, network.Chains) {
@@ -90,12 +39,12 @@ func StartRelayer(
 
 // getSubmittedCursors returns the last submitted cursor for each chain.
 // It also returns the offsets indexed by streamID for each stream.
-func getSubmittedCursors(ctx context.Context, chainIDs []uint64, xClient xchain.Provider,
+func getSubmittedCursors(ctx context.Context, srcChains, dstChains []uint64, xClient xchain.Provider,
 ) ([]xchain.StreamCursor, map[xchain.StreamID]uint64, error) {
 	var cursors []xchain.StreamCursor                  // All submitted cursors from all chains.
 	initialOffsets := make(map[xchain.StreamID]uint64) // Initial submitted offsets for each stream.
-	for _, destChain := range chainIDs {
-		for _, srcChain := range chainIDs {
+	for _, destChain := range dstChains {
+		for _, srcChain := range srcChains {
 			if srcChain == destChain {
 				continue
 			}

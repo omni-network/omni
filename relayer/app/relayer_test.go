@@ -103,7 +103,7 @@ func Test_StartRelayer(t *testing.T) {
 		{ID: destChainA},
 		{ID: destChainB},
 	}}
-	err := relayer.StartRelayer(ctx, mockProvider, network, mockXClient, mockCreateFunc, mockSender)
+	err := relayer.StartRelayer(ctx, mockProvider, network, mockXClient, mockCreateFunc, mockSender.SendTransaction)
 	require.NoError(t, err)
 
 	// Verify responses
@@ -195,7 +195,6 @@ func Test_FromHeights(t *testing.T) {
 var (
 	_ cchain.Provider = (*mockProvider)(nil)
 	_ xchain.Provider = (*mockXChainClient)(nil)
-	_ relayer.Sender  = (*mockSender)(nil)
 )
 
 type mockXChainClient struct {
