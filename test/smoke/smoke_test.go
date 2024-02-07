@@ -137,7 +137,7 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 			updates <- update
 			return nil, nil
 		},
-		panicSender{},
+		panicSender{}.SendTransaction,
 	)
 	require.NoError(t, err)
 
@@ -183,7 +183,7 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 	}
 }
 
-var _ relayer.Sender = panicSender{}
+var _ relayer.SendFunc = panicSender{}.SendTransaction
 
 type panicSender struct{}
 

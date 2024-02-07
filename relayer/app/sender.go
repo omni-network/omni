@@ -17,8 +17,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-var _ Sender = (*SimpleSender)(nil)
-
 // SimpleSender is a sender service that does best effort to send transactions to the destination chain.
 type SimpleSender struct {
 	clients  map[uint64]*ethclient.Client          // rpc clients per chain id

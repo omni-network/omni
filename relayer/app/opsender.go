@@ -18,8 +18,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-var _ Sender = (*OpSender)(nil)
-
 // OpSender uses txmgr to send transactions to the destination chain.
 type OpSender struct {
 	txMgrs  map[uint64]txmgr.TxManager
@@ -28,6 +26,7 @@ type OpSender struct {
 }
 
 // NewOpSender creates a new sender that uses txmgr to send transactions to the destination chain.
+// TODO(corver): Change to single destination chain.
 func NewOpSender(ctx context.Context, chains []netconf.Chain, rpcClientPerChain map[uint64]*ethclient.Client,
 	privateKey ecdsa.PrivateKey) (OpSender, error) {
 	txMgrs := make(map[uint64]txmgr.TxManager)

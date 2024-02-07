@@ -23,10 +23,11 @@ func maybeSetupSimnetRelayer(ctx context.Context, network netconf.Network, cmtNo
 
 	cprov := cprovider.NewABCIProvider(rpclocal.New(cmtNode))
 
-	return relayer.StartRelayer(ctx, cprov, network, xprovider, relayer.CreateSubmissions, simnetSender{})
+	return relayer.StartRelayer(ctx, cprov, network, xprovider, relayer.CreateSubmissions,
+		simnetSender{}.SendTransaction)
 }
 
-var _ relayer.Sender = simnetSender{}
+var _ relayer.SendFunc = simnetSender{}.SendTransaction
 
 // simnetSender implements relayer.Sender for simnet by just logging.
 type simnetSender struct{}
