@@ -28,7 +28,6 @@ type OpSender struct {
 // NewOpSender creates a new sender that uses txmgr to send transactions to the destination chain.
 func NewOpSender(ctx context.Context, chain netconf.Chain, rpcClient *ethclient.Client,
 	privateKey ecdsa.PrivateKey) (OpSender, error) {
-
 	cfg, err := txmgr.NewConfig(ctx, txmgr.NewCLIConfig(chain.RPCURL, txmgr.DefaultSenderFlagValues),
 		&privateKey, rpcClient)
 	if err != nil {
