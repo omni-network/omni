@@ -7,6 +7,8 @@ import (
 
 	"github.com/omni-network/omni/lib/xchain"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,9 +22,9 @@ func TestAggregate(t *testing.T) {
 		height1 = 100
 		height2 = 101
 	)
-	valX := newPubkey()
-	valY := newPubkey()
-	valZ := newPubkey()
+	valX := newAddress()
+	valY := newAddress()
+	valZ := newAddress()
 
 	atts := []xchain.Attestation{
 		// Three atts for chainA, height1.
@@ -48,19 +50,19 @@ func TestAggregate(t *testing.T) {
 }
 
 // assertAgg asserts that the agg attestation has the expected values.
-func assertAgg(t *testing.T, agg xchain.AggAttestation, chainID uint64, height uint64, pubKeys ...[33]byte) {
+func assertAgg(t *testing.T, agg xchain.AggAttestation, chainID uint64, height uint64, addrs ...common.Address) {
 	t.Helper()
 	require.Equal(t, chainID, agg.BlockHeader.SourceChainID)
 	require.Equal(t, height, agg.BlockHeader.BlockHeight)
-	require.Len(t, agg.Signatures, len(pubKeys))
+	require.Len(t, agg.Signatures, len(addrs))
 
-	for i, pubKey := range pubKeys {
-		require.Equal(t, pubKey, agg.Signatures[i].ValidatorPubKey)
+	for i, addr := range addrs {
+		require.Equal(t, addr, agg.Signatures[i].ValidatorAddress)
 	}
 }
 
 // newAtt returns a new attestation with deterministic random values.
-func newAtt(chainID uint64, height uint64, valPubKey [33]byte) xchain.Attestation {
+func newAtt(chainID uint64, height uint64, address common.Address) xchain.Attestation {
 	r := rand.New(rand.NewSource(int64(chainID ^ height)))
 
 	randBytes32 := func() [32]byte {
@@ -71,7 +73,7 @@ func newAtt(chainID uint64, height uint64, valPubKey [33]byte) xchain.Attestatio
 	}
 
 	var sig [65]byte
-	copy(sig[:], valPubKey[:])
+	copy(sig[:], address[:])
 
 	return xchain.Attestation{
 		BlockHeader: xchain.BlockHeader{
@@ -81,16 +83,16 @@ func newAtt(chainID uint64, height uint64, valPubKey [33]byte) xchain.Attestatio
 		},
 		BlockRoot: randBytes32(),
 		Signature: xchain.SigTuple{
-			ValidatorPubKey: valPubKey,
-			Signature:       sig,
+			ValidatorAddress: address,
+			Signature:        sig,
 		},
 	}
 }
 
-// newPubkey returns a random 33 byte pubkey.
-func newPubkey() [33]byte {
-	var pubKey [33]byte
-	_, _ = crand.Read(pubKey[:])
+// newAddress returns a random 20 byte address.
+func newAddress() common.Address {
+	var addr [20]byte
+	_, _ = crand.Read(addr[:])
 
-	return pubKey
+	return addr
 }

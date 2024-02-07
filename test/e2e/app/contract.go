@@ -56,9 +56,9 @@ func SendXMsgs(ctx context.Context, portals map[uint64]netman.Portal, batch int)
 
 	for chainID, txs := range allTxs {
 		portal := portals[chainID]
-		for _, tx := range txs {
+		for i, tx := range txs {
 			if err := waitMined(ctx, portal.Client, tx); err != nil {
-				return errors.Wrap(err, "wait mined", "chain_id", chainID)
+				return errors.Wrap(err, "wait mined", "chain", portal.Chain.Name, "tx_index", i)
 			}
 		}
 	}

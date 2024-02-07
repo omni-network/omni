@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/halo/attest"
+	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/xchain"
 	relayer "github.com/omni-network/omni/relayer/app"
 
@@ -26,6 +27,8 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 	)
 
 	privKey := k1.GenPrivKey()
+	addr, err := k1util.PubKeyToAddress(privKey.PubKey())
+	require.NoError(t, err)
 
 	fuzzer := fuzz.New().NilChance(0).Funcs(
 		func(e *xchain.Msg, c fuzz.Continue) {
@@ -48,7 +51,7 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 	att, err := attest.CreateAttestation(privKey, block)
 	require.NoError(t, err)
 	require.Equal(t, block.BlockHeader, att.BlockHeader)
-	require.Equal(t, privKey.PubKey().Bytes(), att.Signature.ValidatorPubKey[:])
+	require.Equal(t, addr, att.Signature.ValidatorAddress)
 
 	aggAtt := xchain.AggAttestation{
 		BlockHeader:    att.BlockHeader,

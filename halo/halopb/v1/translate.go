@@ -83,23 +83,23 @@ func SigFromProto(sig *SigTuple) (xchain.SigTuple, error) {
 
 	if sig == nil {
 		return xchain.SigTuple{}, errors.New("nil sig tuple")
-	} else if len(sig.GetValidatorPubKey()) != len(zero.ValidatorPubKey) {
-		return xchain.SigTuple{}, errors.New("invalid validator public key length")
+	} else if len(sig.GetValidatorAddress()) != len(zero.ValidatorAddress) {
+		return xchain.SigTuple{}, errors.New("invalid validator address length")
 	} else if len(sig.GetSignature()) != len(zero.Signature) {
 		return xchain.SigTuple{}, errors.New("invalid signature length")
 	}
 
 	return xchain.SigTuple{
-		ValidatorPubKey: [33]byte(sig.GetValidatorPubKey()),
-		Signature:       [65]byte(sig.GetSignature()),
+		ValidatorAddress: [20]byte(sig.GetValidatorAddress()),
+		Signature:        [65]byte(sig.GetSignature()),
 	}, nil
 }
 
 // SigToProto converts a xchain.SigTuple to a protobuf SigTuple.
 func SigToProto(sig xchain.SigTuple) *SigTuple {
 	return &SigTuple{
-		ValidatorPubKey: sig.ValidatorPubKey[:],
-		Signature:       sig.Signature[:],
+		ValidatorAddress: sig.ValidatorAddress[:],
+		Signature:        sig.Signature[:],
 	}
 }
 

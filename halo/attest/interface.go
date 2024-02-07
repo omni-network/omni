@@ -2,6 +2,8 @@ package attest
 
 import (
 	"github.com/omni-network/omni/lib/xchain"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // Service abstracts the validator duty of attesting to all
@@ -28,6 +30,6 @@ type Service interface {
 	// All but the latest "confirmed" attestation for each source chain can be safely deleted from disk.
 	SetCommitted(headers []xchain.BlockHeader) error
 
-	// LocalPubKey returns the local validator's public key.
-	LocalPubKey() [33]byte
+	// LocalAddress returns the local validator's ethereum address.
+	LocalAddress() common.Address
 }

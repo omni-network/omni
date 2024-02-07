@@ -169,7 +169,7 @@ func (a *App) ProcessProposal(ctx context.Context, req *abci.RequestProcessPropo
 	}
 
 	// Mark all local attestations as "proposed", i.e., included in latest proposed block.
-	localHeaders := headersByPubKey(cpayload.Aggregates, a.attestSvc.LocalPubKey())
+	localHeaders := headersByAddress(cpayload.Aggregates, a.attestSvc.LocalAddress())
 	if err := a.attestSvc.SetProposed(localHeaders); err != nil {
 		return nil, err
 	}
@@ -226,7 +226,7 @@ func (a *App) FinalizeBlock(ctx context.Context, req *abci.RequestFinalizeBlock)
 	a.state.AddAttestations(cpayload.Aggregates)
 
 	// Mark all local attestations "committed", i.e., included in this committed block.
-	localHeaders := headersByPubKey(cpayload.Aggregates, a.attestSvc.LocalPubKey())
+	localHeaders := headersByAddress(cpayload.Aggregates, a.attestSvc.LocalAddress())
 	if err := a.attestSvc.SetCommitted(localHeaders); err != nil {
 		return nil, err
 	}

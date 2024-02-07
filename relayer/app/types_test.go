@@ -16,8 +16,8 @@ func Test_translateSubmission(t *testing.T) {
 	var sub xchain.Submission
 	fuzz.New().NilChance(0).Fuzz(&sub)
 
-	xsub := relayer.TranslateSubmission(sub)
-	reversedSub := translateXSubmission(xsub, sub.DestChainID)
+	xsub := relayer.SubmissionToBinding(sub)
+	reversedSub := submissionFromBinding(xsub, sub.DestChainID)
 
 	// Zero TxHash for comparison since it isn't translated.
 	for i := range sub.Msgs {
@@ -27,32 +27,18 @@ func Test_translateSubmission(t *testing.T) {
 	require.Equal(t, sub, reversedSub)
 }
 
-func translateXSubmission(submission bindings.XTypesSubmission, destChainID uint64) xchain.Submission {
-	chainSubmission := xchain.Submission{
-		AttestationRoot: submission.AttestationRoot,
-		BlockHeader: xchain.BlockHeader{
-			SourceChainID: submission.BlockHeader.SourceChainId,
-			BlockHeight:   submission.BlockHeader.BlockHeight,
-			BlockHash:     submission.BlockHeader.BlockHash,
-		},
-		Proof:       submission.Proof,
-		ProofFlags:  submission.ProofFlags,
-		DestChainID: destChainID,
+func submissionFromBinding(sub bindings.XTypesSubmission, destChainID uint64) xchain.Submission {
+	sigs := make([]xchain.SigTuple, 0, len(sub.Signatures))
+	for _, sig := range sub.Signatures {
+		sigs = append(sigs, xchain.SigTuple{
+			ValidatorAddress: [20]byte(sig.ValidatorPubKey),
+			Signature:        [65]byte(sig.Signature),
+		})
 	}
 
-	signatures := make([]xchain.SigTuple, len(submission.Signatures))
-	for i, sig := range submission.Signatures {
-		signatures[i] = xchain.SigTuple{
-			ValidatorPubKey: [33]byte(sig.ValidatorPubKey),
-			Signature:       [65]byte(sig.Signature),
-		}
-	}
-
-	chainSubmission.Signatures = signatures
-
-	msgs := make([]xchain.Msg, len(submission.Msgs))
-	for i, msg := range submission.Msgs {
-		msgs[i] = xchain.Msg{
+	msgs := make([]xchain.Msg, 0, len(sub.Msgs))
+	for _, msg := range sub.Msgs {
+		msgs = append(msgs, xchain.Msg{
 			MsgID: xchain.MsgID{
 				StreamID: xchain.StreamID{
 					SourceChainID: msg.SourceChainId,
@@ -64,10 +50,20 @@ func translateXSubmission(submission bindings.XTypesSubmission, destChainID uint
 			DestAddress:     msg.To,
 			Data:            msg.Data,
 			DestGasLimit:    msg.GasLimit,
-		}
+		})
 	}
 
-	chainSubmission.Msgs = msgs
-
-	return chainSubmission
+	return xchain.Submission{
+		AttestationRoot: sub.AttestationRoot,
+		BlockHeader: xchain.BlockHeader{
+			SourceChainID: sub.BlockHeader.SourceChainId,
+			BlockHeight:   sub.BlockHeader.BlockHeight,
+			BlockHash:     sub.BlockHeader.BlockHash,
+		},
+		Proof:       sub.Proof,
+		ProofFlags:  sub.ProofFlags,
+		DestChainID: destChainID,
+		Signatures:  sigs,
+		Msgs:        msgs,
+	}
 }

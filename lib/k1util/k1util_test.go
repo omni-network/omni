@@ -20,6 +20,7 @@ const (
 	pubKey1  = "02bc8e7cdb50e0ffd52a54faf984d6ac8fe5ee6856d38a5f8acd9bd33fc9c7d50d"
 	digest1  = "52fdfc072182654f163f5f0f9a621d729566c74d10037c4d7bbb0407d1e2c649" // 32 byte digest.
 	sig1     = "e08097bed6dc40d70aa0076f9d8250057566cdf40c652b3785ad9c06b1e38d584f8f331bf46f68e3737823a3bda905e90ca96735d510a6934b215753c09acec21c"
+	addr1    = "0xF88D5892faF084DCF4143566d9C9b3F047c153Ca"
 )
 
 func TestK1Util(t *testing.T) {
@@ -35,7 +36,11 @@ func TestK1Util(t *testing.T) {
 	require.NoError(t, err)
 	require.EqualValues(t, fromHex(t, sig1), sig[:])
 
-	ok, err := k1util.Verify(key.PubKey(), [32]byte(digest), sig)
+	addr, err := k1util.PubKeyToAddress(key.PubKey())
+	require.NoError(t, err)
+	require.Equal(t, addr1, addr.Hex())
+
+	ok, err := k1util.Verify(addr, [32]byte(digest), sig)
 	require.NoError(t, err)
 	require.True(t, ok)
 }
@@ -50,7 +55,10 @@ func TestRandom(t *testing.T) {
 	sig, err := k1util.Sign(key, digest)
 	require.NoError(t, err)
 
-	ok, err := k1util.Verify(key.PubKey(), digest, sig)
+	addr, err := k1util.PubKeyToAddress(key.PubKey())
+	require.NoError(t, err)
+
+	ok, err := k1util.Verify(addr, digest, sig)
 	require.NoError(t, err)
 	require.True(t, ok)
 }

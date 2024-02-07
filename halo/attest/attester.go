@@ -9,10 +9,13 @@ import (
 	"sync"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/tempfile"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 var _ Service = (*Attester)(nil)
@@ -23,6 +26,7 @@ var _ Service = (*Attester)(nil)
 type Attester struct {
 	path    string
 	privKey crypto.PrivKey
+	address common.Address
 
 	mu        sync.Mutex
 	available []xchain.Attestation
@@ -48,8 +52,14 @@ func LoadAttester(ctx context.Context, privKey crypto.PrivKey, path string, prov
 		return nil, err
 	}
 
+	addr, err := k1util.PubKeyToAddress(privKey.PubKey())
+	if err != nil {
+		return nil, err
+	}
+
 	a := Attester{
 		privKey: privKey,
+		address: addr,
 		path:    path,
 
 		available: s.Available,
@@ -154,13 +164,11 @@ func (a *Attester) SetCommitted(headers []xchain.BlockHeader) error {
 	return a.saveUnsafe()
 }
 
-func (a *Attester) LocalPubKey() [33]byte {
+func (a *Attester) LocalAddress() common.Address {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	bz := a.privKey.PubKey().Bytes()
-
-	return [33]byte(bz)
+	return a.address
 }
 
 // availableAndProposed returns all the available and proposed attestations.
