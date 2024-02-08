@@ -1,9 +1,12 @@
 import { json } from '@remix-run/node'
 import { useLoaderData } from '@remix-run/react'
-import { XBlock } from '~/graphql/graphql'
+import React from 'react'
+import { XMsg } from '~/graphql/graphql'
+import { ColumnDef } from '@tanstack/react-table'
+import SimpleTable from '../shared/simpleTable'
 
 export async function loader() {
-  return json<XBlock[]>(new Array())
+  return json<XMsg[]>(new Array())
 }
 
 export default function XMsgDataTable() {
@@ -13,77 +16,80 @@ export default function XMsgDataTable() {
   let rows = [
     {
       id: 1,
-      tx_hash: '0x1234',
-      source_chain: 'eth',
-      dest_chain: 'bsc',
-      updated_at: '2021-10-01T00:00:00Z',
+      DestAddress: '0x1234',
+      DestChainID: '1',
+      DestGasLimit: '100000',
+      SourceChainID: '2',
+      SourceMessageSender: '0x1234',
+      StreamOffset: '0',
+      TxHash: '0x1234',
     },
     {
       id: 2,
-      tx_hash: '0x5678',
-      source_chain: 'bsc',
-      dest_chain: 'eth',
-      updated_at: '2021-10-02T00:00:00Z',
+      DestAddress: '0x5678',
+      DestChainID: '2',
+      DestGasLimit: '100000',
+      SourceChainID: '1',
+      SourceMessageSender: '0x1234',
+      StreamOffset: '0',
+      TxHash: '0x5678',
     },
+    {
+      id: 3,
+      DestAddress: '0x5678',
+      DestChainID: '3',
+      DestGasLimit: '100000',
+      SourceChainID: '1',
+      SourceMessageSender: '0x1234',
+      StreamOffset: '0',
+      TxHash: '0x5678',
+    }
   ]
 
-  // const columns: GridColDef[] = [
-  //   {
-  //     field: "tx_hash",
-  //     headerName: "Tx Hash",
-  //     headerClassName: "text-inherit",
-  //     type: "string",
-  //     minWidth: 150,
-  //     flex: 1,
-  //   },
-  //   {
-  //     field: "source_chain",
-  //     headerName: "Source Chain",
-  //     headerClassName: "text-inherit",
-  //     type: "string",
-  //     minWidth: 150,
-  //     flex: 1,
-  //   },
-  //   {
-  //     field: "dest_chain",
-  //     headerName: "Dest Chain",
-  //     headerClassName: "text-inherit",
-  //     type: "string",
-  //     minWidth: 150,
-  //     flex: 1,
-  //   },
-  //   {
-  //     field: "updated_at",
-  //     headerName: "Updated At",
-  //     headerClassName: "text-inherit",
-  //     type: "string",
-  //     width: 150,
-  //     flex: 1,
-  //   },
-  // ];
+  rows = [...rows, ...rows, ...rows, ...rows, ...rows, ...rows]
+
+  const columns = React.useMemo<ColumnDef<XMsg>[]>(
+    () => [
+      {
+        accessorKey: 'tx_hash',
+        accessorFn: (row) => row.TxHash,
+        header: () => <span>TxHash</span>,
+        canFilter: false,
+        enableColumnFilter: false,
+      },
+      {
+        accessorKey: 'source_chain',
+        accessorFn: (row) => row.SourceChainID,
+        header: () => <span>Source Chain</span>,
+        canFilter: false,
+        enableColumnFilter: false,
+      },
+      {
+        accessorKey: 'dest_chain',
+        accessorFn: (row) => row.DestChainID,
+        header: () => <span>Dest Chain</span>,
+        canFilter: false,
+        enableColumnFilter: false,
+      },
+      {
+        accessorKey: 'time',
+        accessorFn: (row) => "",
+        header: () => <span>Updated At</span>,
+        canFilter: false,
+        enableColumnFilter: false,
+      },
+    ],
+    [],
+  )
 
   return (
     <div className="m-3">
-      <h2 className="prose text-3xl antialiased leading-tight tracking-normal text-inherit">
-        XMsgs
-      </h2>
-      {/* <section
-        id="DataGrid"
-        style={{
-          height: "100%",
-          width: "100%",
-        }}
-        className=" text-inherit"
-      >
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          {...data}
-          initialState={{
-            pagination: { paginationModel: { pageSize: 5 } },
-          }}
-          pageSizeOptions={[5, 10, 25]} />
-      </section> */}
+      <div className="">
+        <h1 className="prose text-xl font-semibold">XMsgs</h1>
+      </div>
+      <div>
+        <SimpleTable columns={columns} data={rows} />
+      </div>
     </div>
   )
 }

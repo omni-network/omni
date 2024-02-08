@@ -21,6 +21,7 @@
     "@remix-run/react": "^2.5.0",
     "@remix-run/serve": "^2.5.0",
     "@tailwindcss/typography": "0.5.10",
+    "@tanstack/react-table": "8.11.8",
     "autoprefixer": "10.4.17",
     "clsx": "2.1.0",
     "graphql": "16.8.1",
@@ -51,6 +52,7 @@
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
     "prettier": "3.2.5",
+    "solid": "link:@heroicons/react/solid",
     "tailwindcss": "3.4.1",
     "theme-change": "2.5.0",
     "typescript": "^5.3.3"
