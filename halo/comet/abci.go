@@ -2,11 +2,10 @@ package comet
 
 import (
 	"context"
-	"math/big"
-
 	halopb "github.com/omni-network/omni/halo/halopb/v1"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"math/big"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
@@ -135,9 +134,15 @@ func (a *App) PrepareProposal(ctx context.Context, req *abci.RequestPreparePropo
 		return nil, err
 	}
 
+	sevents, err := queryStakingLogEvents(ctx, a.ethCl, a.stakingContract, latestEBlock.NumberU64())
+	if err != nil {
+		return nil, err
+	}
+
 	tx, err := encode(cPayload{
 		EPayload:   *payloadResp.ExecutionPayload,
 		Aggregates: aggs,
+		Staking:    sevents,
 	})
 	if err != nil {
 		return nil, err
@@ -165,6 +170,13 @@ func (a *App) ProcessProposal(ctx context.Context, req *abci.RequestProcessPropo
 	if err != nil {
 		return nil, err
 	} else if status.Status != engine.VALID {
+		return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+	}
+
+	expected, err := queryStakingLogEvents(ctx, a.ethCl, a.stakingContract, cpayload.EPayload.Number-1)
+	if err != nil {
+		return nil, err
+	} else if expected != cpayload.Staking {
 		return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 	}
 
@@ -225,6 +237,11 @@ func (a *App) FinalizeBlock(ctx context.Context, req *abci.RequestFinalizeBlock)
 
 	a.state.AddAttestations(cpayload.Aggregates)
 
+	valUpdates, err := a.processStakingEvents(ctx, cpayload.Staking, req)
+	if err != nil {
+		return nil, err
+	}
+
 	// Mark all local attestations "committed", i.e., included in this committed block.
 	localHeaders := headersByAddress(cpayload.Aggregates, a.attestSvc.LocalAddress())
 	if err := a.attestSvc.SetCommitted(localHeaders); err != nil {
@@ -248,7 +265,7 @@ func (a *App) FinalizeBlock(ctx context.Context, req *abci.RequestFinalizeBlock)
 		TxResults: []*abci.ExecTxResult{{
 			Code: abci.CodeTypeOK, // Single zero/ok result is fine.
 		}},
-		ValidatorUpdates:      nil, // Validator updates not supported yet.
+		ValidatorUpdates:      valUpdates,
 		ConsensusParamUpdates: nil, // ConsensusParam updates not supported yet.
 		AppHash:               appHash[:],
 	}, nil

@@ -19,6 +19,7 @@ import (
 type cPayload struct {
 	EPayload   engine.ExecutableData   `json:"executable_payload"`
 	Aggregates []xchain.AggAttestation `json:"attestations"`
+	Staking    stakingEvents           `json:"staking_events"`
 }
 
 // payloadFromTXs returns the consensus cPayload contained in the list of raw txs.

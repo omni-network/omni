@@ -1,6 +1,9 @@
 package comet
 
 import (
+	cosmosdb "github.com/cosmos/cosmos-db"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/omni-network/omni/halo/cosmos"
 	"sync"
 
 	"github.com/omni-network/omni/halo/attest"
@@ -20,6 +23,9 @@ type App struct {
 	attestSvc        attest.Service
 	snapshots        *SnapshotStore
 	snapshotInterval uint64
+	modules          cosmos.Modules
+	stakingContract  common.Address
+	db               cosmosdb.DB
 
 	// Mutable restore snapshot fields
 	restore struct { //nolint: revive // Nested struct use to isolate mutable fields
@@ -31,7 +37,7 @@ type App struct {
 
 // NewApp returns a new App instance.
 func NewApp(ethCl engine.API, attestSvc attest.Service, state *State, snapshots *SnapshotStore,
-	snapshotInterval uint64,
+	snapshotInterval uint64, modules cosmos.Modules,
 ) *App {
 	return &App{
 		ethCl:            ethCl,
@@ -39,6 +45,7 @@ func NewApp(ethCl engine.API, attestSvc attest.Service, state *State, snapshots 
 		state:            state,
 		snapshots:        snapshots,
 		snapshotInterval: snapshotInterval,
+		modules:          modules,
 	}
 }
 
