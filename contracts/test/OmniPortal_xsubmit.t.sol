@@ -115,7 +115,7 @@ contract OmniPortal_xsubmit_Test is Base {
         xsub.attestationRoot = keccak256("invalid");
 
         // need to resign invalid root, to pass the quorum check
-        xsub.signatures = valSigTuples(xsub.attestationRoot);
+        xsub.signatures = valSigTuples(genesisValSetId, xsub.attestationRoot);
 
         vm.expectRevert("OmniPortal: invalid proof");
         portal.xsubmit(xsub);
@@ -123,10 +123,6 @@ contract OmniPortal_xsubmit_Test is Base {
 
     function test_xsubmit_noQuorum_reverts() public {
         XTypes.Submission memory xsub = readXSubmission("xblock1", portal.chainId());
-
-        xsub.attestationRoot = keccak256("invalid");
-
-        xsub.signatures = valSigTuples(xsub.attestationRoot);
 
         // remove last two signatures, to fail the quorum check
         Validators.SigTuple[] memory sigs = new Validators.SigTuple[](2);
@@ -152,10 +148,8 @@ contract OmniPortal_xsubmit_Test is Base {
     function test_xsubmit_invalidMsgs_reverts() public {
         XTypes.Submission memory xsub = readXSubmission("xblock1", portal.chainId());
 
+        // set invalid msg data, so proof fails
         xsub.msgs[0].data = abi.encodeWithSignature("invalid()");
-
-        // need to resign invalid root, to pass the quorum check
-        xsub.signatures = valSigTuples(xsub.attestationRoot);
 
         vm.expectRevert("OmniPortal: invalid proof");
         portal.xsubmit(xsub);

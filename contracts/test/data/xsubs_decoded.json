@@ -1,5 +1,7 @@
 {
   "xblock1_xsub_destChainId1": {
+    "attestationRoot": "0x4a502b463a97553474a86558dbf89b4c9fb0caf0ffa41f47522b097c5b81c5c6",
+    "validatorSetId": "1",
     "blockHeader": {
       "sourceChainId": "2",
       "blockHeight": "1",
@@ -52,7 +54,6 @@
         "gasLimit": "200000"
       }
     ],
-    "attestationRoot": "0x4a502b463a97553474a86558dbf89b4c9fb0caf0ffa41f47522b097c5b81c5c6",
     "proof": [
       "0x2f4d580c510d83d88210f3204af20eb5df396b1d0b151d3f668ca9d38f7159b6",
       "0x119fd517bc5676ce6385874609c1ff4faae4ac4c380167254ddec54dce705d37"
@@ -69,6 +70,8 @@
     "signatures": []
   },
   "xblock1_xsub_destChainId3": {
+    "attestationRoot": "0x4a502b463a97553474a86558dbf89b4c9fb0caf0ffa41f47522b097c5b81c5c6",
+    "validatorSetId": "1",
     "blockHeader": {
       "sourceChainId": "2",
       "blockHeight": "1",
@@ -121,7 +124,6 @@
         "gasLimit": "200000"
       }
     ],
-    "attestationRoot": "0x4a502b463a97553474a86558dbf89b4c9fb0caf0ffa41f47522b097c5b81c5c6",
     "proof": [
       "0xf7d5548087b87dd5acdcbc642bf847afb44bccca4215191dd2ae3d1db637e0ee",
       "0x4bd879d86a48925b63535ab128a8ec4b83be076a236594c272d9f9764d631c59"
@@ -138,6 +140,8 @@
     "signatures": []
   },
   "xblock2_xsub_destChainId1": {
+    "attestationRoot": "0xbcb8d4ae5e6a0698bb62cb893b728b9569b50f4161e4b0a6ae19c8af391773cb",
+    "validatorSetId": "1",
     "blockHeader": {
       "sourceChainId": "2",
       "blockHeight": "2",
@@ -190,7 +194,6 @@
         "gasLimit": "200000"
       }
     ],
-    "attestationRoot": "0xbcb8d4ae5e6a0698bb62cb893b728b9569b50f4161e4b0a6ae19c8af391773cb",
     "proof": [
       "0x3b2f4c324ae94b7d46274f0faff4ec38a8e10c7e4f8f554fcd9dab78773f53ef",
       "0x0a081f8f10e144f00d4a0c337385668da39d0193b5e5ffff49544235f96b9d75"
@@ -207,6 +210,8 @@
     "signatures": []
   },
   "xblock2_xsub_destChainId3": {
+    "attestationRoot": "0xbcb8d4ae5e6a0698bb62cb893b728b9569b50f4161e4b0a6ae19c8af391773cb",
+    "validatorSetId": "1",
     "blockHeader": {
       "sourceChainId": "2",
       "blockHeight": "2",
@@ -259,7 +264,6 @@
         "gasLimit": "200000"
       }
     ],
-    "attestationRoot": "0xbcb8d4ae5e6a0698bb62cb893b728b9569b50f4161e4b0a6ae19c8af391773cb",
     "proof": [
       "0x7db5d50787c8b79e7d69ade86fa7ee992d05c4d9fd15468e769e4249cbb18bac",
       "0x2e562ce4eac65c9da5453e3ded4b8fd6e1b39f66fcda8b32d7eb9992e84379d3"

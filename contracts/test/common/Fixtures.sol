@@ -32,7 +32,7 @@ contract Fixtures is CommonBase, StdCheats {
     uint64 constant chainBId = 3;
 
     uint64 constant baseValPower = 100;
-    uint64 constant valSetId = 1; // genesis validator set id
+    uint64 constant genesisValSetId = 1;
     uint256 constant baseFee = 1 gwei;
 
     address deployer;
@@ -46,6 +46,9 @@ contract Fixtures is CommonBase, StdCheats {
     address val2;
     address val3;
     address val4;
+
+    mapping(uint64 => Validators.Validator[]) validatorSet;
+    mapping(address => uint256) valPrivKeys;
 
     uint256 val1PrivKey;
     uint256 val2PrivKey;
@@ -84,54 +87,9 @@ contract Fixtures is CommonBase, StdCheats {
     string private _xsubsJson;
 
     function setUp() public {
-        deployer = makeAddr("deployer");
-        xcaller = makeAddr("xcaller");
-        relayer = makeAddr("relayer");
-        owner = makeAddr("owner");
-
-        (val1, val1PrivKey) = deriveRememberKey(valMnemonic, 0);
-        (val2, val2PrivKey) = deriveRememberKey(valMnemonic, 1);
-        (val3, val3PrivKey) = deriveRememberKey(valMnemonic, 2);
-        (val4, val4PrivKey) = deriveRememberKey(valMnemonic, 3);
-
-        Validators.Validator[] memory validators = new Validators.Validator[](4);
-        validators[0] = Validators.Validator(val1, baseValPower);
-        validators[1] = Validators.Validator(val2, baseValPower);
-        validators[2] = Validators.Validator(val3, baseValPower);
-        validators[3] = Validators.Validator(val4, baseValPower);
-
-        // fund xcaller, so it can pay fees
-        vm.deal(xcaller, 100 ether);
-
-        vm.startPrank(deployer);
-
-        vm.chainId(thisChainId); // portal constructor uses block.chainid
-        feeOracle = new FeeOracleV1(owner, baseFee);
-        portal = new TestPortal(owner, address(feeOracle), valSetId, validators);
-        counter = new Counter(portal);
-        reverter = new Reverter();
-
-        vm.chainId(chainAId);
-        chainAFeeOracle = new FeeOracleV1(owner, baseFee);
-        chainAPortal = new TestPortal(owner, address(chainAFeeOracle), valSetId, validators);
-        chainACounter = new Counter(chainAPortal);
-        chainAReverter = new Reverter();
-
-        vm.chainId(chainBId);
-        chainBFeeOracle = new FeeOracleV1(owner, baseFee);
-        chainBPortal = new TestPortal(owner, address(chainBFeeOracle), valSetId, validators);
-        chainBCounter = new Counter(chainBPortal);
-        chainBReverter = new Reverter();
-
-        vm.stopPrank();
-
-        _counters[thisChainId] = address(counter);
-        _counters[chainAId] = address(chainACounter);
-        _counters[chainBId] = address(chainBCounter);
-
-        _reverters[thisChainId] = address(reverter);
-        _reverters[chainAId] = address(chainAReverter);
-        _reverters[chainBId] = address(chainBReverter);
+        _initAddrs();
+        _initValidators();
+        _initContracts();
     }
 
     /// @dev Write test fixture XBlocks to a json file. This is allows ts utilities
@@ -167,18 +125,20 @@ contract Fixtures is CommonBase, StdCheats {
 
         XTypes.Submission memory xsub = abi.decode(parsed, (XTypes.Submission));
 
-        xsub.signatures = valSigTuples(xsub.attestationRoot);
+        xsub.signatures = valSigTuples(genesisValSetId, xsub.attestationRoot);
 
         return xsub;
     }
 
-    function valSigTuples(bytes32 digest) internal view returns (Validators.SigTuple[] memory sigs) {
-        sigs = new Validators.SigTuple[](4);
+    function valSigTuples(uint64 valSetId, bytes32 digest) internal view returns (Validators.SigTuple[] memory sigs) {
+        Validators.Validator[] memory vals = validatorSet[valSetId];
+        sigs = new Validators.SigTuple[](vals.length);
 
-        sigs[0] = Validators.SigTuple(val1, _sign(digest, val1PrivKey));
-        sigs[1] = Validators.SigTuple(val2, _sign(digest, val2PrivKey));
-        sigs[2] = Validators.SigTuple(val3, _sign(digest, val3PrivKey));
-        sigs[3] = Validators.SigTuple(val4, _sign(digest, val4PrivKey));
+        for (uint256 i = 0; i < vals.length; i++) {
+            sigs[i] = Validators.SigTuple(vals[i].addr, _sign(digest, valPrivKeys[vals[i].addr]));
+        }
+
+        return sigs;
     }
 
     function _sign(bytes32 digest, uint256 pk) internal pure returns (bytes memory) {
@@ -255,5 +215,67 @@ contract Fixtures is CommonBase, StdCheats {
             data: abi.encodeWithSignature("forceRevert()"),
             gasLimit: portal.XMSG_DEFAULT_GAS_LIMIT()
         });
+    }
+
+    /// @dev Initialize test addresses
+    function _initAddrs() private {
+        deployer = makeAddr("deployer");
+        xcaller = makeAddr("xcaller");
+        relayer = makeAddr("relayer");
+        owner = makeAddr("owner");
+        vm.deal(xcaller, 100 ether); // fund xcaller, so it can pay fees
+    }
+
+    /// @dev Initialize test validators
+    function _initValidators() private {
+        (val1, val1PrivKey) = deriveRememberKey(valMnemonic, 0);
+        (val2, val2PrivKey) = deriveRememberKey(valMnemonic, 1);
+        (val3, val3PrivKey) = deriveRememberKey(valMnemonic, 2);
+        (val4, val4PrivKey) = deriveRememberKey(valMnemonic, 3);
+
+        valPrivKeys[val1] = val1PrivKey;
+        valPrivKeys[val2] = val2PrivKey;
+        valPrivKeys[val3] = val3PrivKey;
+        valPrivKeys[val4] = val4PrivKey;
+
+        Validators.Validator[] storage genVals = validatorSet[genesisValSetId];
+
+        genVals.push(Validators.Validator(val1, baseValPower));
+        genVals.push(Validators.Validator(val2, baseValPower));
+        genVals.push(Validators.Validator(val3, baseValPower));
+        genVals.push(Validators.Validator(val4, baseValPower));
+    }
+
+    /// @dev Initialize portals and test contracts
+    function _initContracts() private {
+        vm.startPrank(deployer);
+
+        vm.chainId(thisChainId); // portal constructor uses block.chainid
+        feeOracle = new FeeOracleV1(owner, baseFee);
+        portal = new TestPortal(owner, address(feeOracle), genesisValSetId, validatorSet[genesisValSetId]);
+        counter = new Counter(portal);
+        reverter = new Reverter();
+
+        vm.chainId(chainAId);
+        chainAFeeOracle = new FeeOracleV1(owner, baseFee);
+        chainAPortal = new TestPortal(owner, address(chainAFeeOracle), genesisValSetId, validatorSet[genesisValSetId]);
+        chainACounter = new Counter(chainAPortal);
+        chainAReverter = new Reverter();
+
+        vm.chainId(chainBId);
+        chainBFeeOracle = new FeeOracleV1(owner, baseFee);
+        chainBPortal = new TestPortal(owner, address(chainBFeeOracle), genesisValSetId, validatorSet[genesisValSetId]);
+        chainBCounter = new Counter(chainBPortal);
+        chainBReverter = new Reverter();
+
+        vm.stopPrank();
+
+        _counters[thisChainId] = address(counter);
+        _counters[chainAId] = address(chainACounter);
+        _counters[chainBId] = address(chainBCounter);
+
+        _reverters[thisChainId] = address(reverter);
+        _reverters[chainAId] = address(chainAReverter);
+        _reverters[chainBId] = address(chainBReverter);
     }
 }

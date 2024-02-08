@@ -20,12 +20,13 @@ function getXSubs(b: NamedXBlock) {
     const proof = XBlockMerkleTree.prove(tree, b.xblock.blockHeader, msgs)
 
     const xsub: XSub = {
+      attestationRoot: bytesToHex(XBlockMerkleTree.root(tree)),
+      validatorSetId: 1n, // validatorSetId set in contract tests, when signing xsubs
       blockHeader: b.xblock.blockHeader,
       msgs,
-      attestationRoot: bytesToHex(XBlockMerkleTree.root(tree)),
       proof: proof.proof.map(p => bytesToHex(p)),
       proofFlags: proof.proofFlags,
-      signatures: [],
+      signatures: [], // signatures over attestationRoot added in contract tests
     }
 
     xsubs.push({ name: xsubName(b.name, destChainId), xsub })

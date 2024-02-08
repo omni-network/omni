@@ -43,9 +43,10 @@ export const xBlockHeaderJson = (xblockHeader: XBlockHeader) => ({
 })
 
 export const xSubJson = (xsub: XSub) => ({
+  attestationRoot: xsub.attestationRoot,
+  validatorSetId: xsub.validatorSetId.toString(),
   blockHeader: xBlockHeaderJson(xsub.blockHeader),
   msgs: xsub.msgs.map(xMsgJson),
-  attestationRoot: xsub.attestationRoot,
   proof: xsub.proof,
   proofFlags: xsub.proofFlags,
   signatures: xsub.signatures,
