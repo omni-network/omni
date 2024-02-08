@@ -51,7 +51,7 @@ library Validators {
                 require(sig.validatorAddr > prev.validatorAddr, "OmniPortal: sigs not sorted");
             }
 
-            if (_verifySig(sig, digest)) votedPower += validators[sig.validatorAddr];
+            if (_isValidSig(sig, digest)) votedPower += validators[sig.validatorAddr];
             if (_isQuorum(votedPower, totalPower, qNumerator, qDenominator)) return true;
         }
 
@@ -59,7 +59,7 @@ library Validators {
     }
 
     /// @dev Verifies that SigTuple.sig is a valid ECDSA signature over the given digest, for SigTuple.addr.
-    function _verifySig(SigTuple calldata sig, bytes32 digest) internal pure returns (bool) {
+    function _isValidSig(SigTuple calldata sig, bytes32 digest) internal pure returns (bool) {
         return ECDSA.recover(digest, sig.signature) == sig.validatorAddr;
     }
 
