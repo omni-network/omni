@@ -20,10 +20,10 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
     uint64 public constant XMSG_MIN_GAS_LIMIT = 21_000;
 
     /// @inheritdoc IOmniPortal
-    uint8 public constant XSUB_QUORUM_NUMERATOR = 66;
+    uint8 public constant XSUB_QUORUM_NUMERATOR = 2;
 
     /// @inheritdoc IOmniPortal
-    uint8 public constant XSUB_QUORUM_DENOMINATOR = 100;
+    uint8 public constant XSUB_QUORUM_DENOMINATOR = 3;
 
     /// @inheritdoc IOmniPortal
     uint64 public immutable chainId;
@@ -111,29 +111,29 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
 
     /// @inheritdoc IOmniPortal
     function xsubmit(XTypes.Submission calldata xsub) external {
-        // This only works because validator sets cannot yet change
-        // TODO: replace with uint64 valSetId = xsub.valSetId;
-        uint64 valSetId = _latestValSetId;
-
+        // check that the attestationRoot is signed by a quorum of validators in xsub.validatorsSetId
         require(
             Validators.verifyQuorum(
                 xsub.attestationRoot,
                 xsub.signatures,
-                _validatorSet[valSetId],
-                _validatorSetTotalPower[valSetId],
+                _validatorSet[xsub.validatorsSetId],
+                _validatorSetTotalPower[xsub.validatorsSetId],
                 XSUB_QUORUM_NUMERATOR,
                 XSUB_QUORUM_DENOMINATOR
             ),
             "OmniPortal: no quorum"
         );
 
+        // check that blockHeader and xmsgs are included in attestationRoot
         require(
             XBlockMerkleProof.verify(xsub.attestationRoot, xsub.blockHeader, xsub.msgs, xsub.proof, xsub.proofFlags),
             "OmniPortal: invalid proof"
         );
 
+        // update in stream block height
         inXStreamBlockHeight[xsub.blockHeader.sourceChainId] = xsub.blockHeader.blockHeight;
 
+        // execute xmsgs
         for (uint256 i = 0; i < xsub.msgs.length; i++) {
             _exec(xsub.msgs[i]);
         }
