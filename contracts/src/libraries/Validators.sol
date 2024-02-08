@@ -28,16 +28,16 @@ library Validators {
      * @param sigs Signatures to verify
      * @param validators Maps validator addresses to their voting power
      * @param totalPower Total voting power
-     * @param thresholdNumerator Numerator of the quorum threshold. Ex: 2/3 -> 2
-     * @param thresholdDenominator Denominator of the quorum threshold. Ex: 2/3 -> 3
+     * @param qNumerator Numerator of the quorum threshold. Ex: 2/3 -> 2
+     * @param qDenominator Denominator of the quorum threshold. Ex: 2/3 -> 3
      */
     function verifyQuorum(
         bytes32 digest,
         SigTuple[] calldata sigs,
         mapping(address => uint64) storage validators,
         uint64 totalPower,
-        uint8 thresholdNumerator,
-        uint8 thresholdDenominator
+        uint8 qNumerator,
+        uint8 qDenominator
     ) internal view returns (bool) {
         uint64 votedPower;
         SigTuple calldata sig;
@@ -48,19 +48,19 @@ library Validators {
             require(_isUnique(sig.validatorAddr, sigs, i + 1), "OmniPortal: duplicate validator");
 
             if (_verifySig(sig, digest)) votedPower += validators[sig.validatorAddr];
-            if (_exceedsThreshold(votedPower, totalPower, thresholdNumerator, thresholdDenominator)) return true;
+            if (_isQuorum(votedPower, totalPower, qNumerator, qDenominator)) return true;
         }
 
         return false;
     }
 
-    /// @dev Verifies that the given SigTuple.sig is valid ECDSA signature over the given digest, for SigTuple.addr.
+    /// @dev Verifies that SigTuple.sig is a valid ECDSA signature over the given digest, for SigTuple.addr.
     function _verifySig(SigTuple calldata sig, bytes32 digest) internal pure returns (bool) {
         return ECDSA.recover(digest, sig.signature) == sig.validatorAddr;
     }
 
-    /// @dev Verifies that the given power exceeds the given percentage of the total power.
-    function _exceedsThreshold(uint64 votedPower, uint64 totalPower, uint8 numerator, uint8 denominator)
+    /// @dev Verifies that the voted power exceeds the quorum threshold of numerator/denominator.
+    function _isQuorum(uint64 votedPower, uint64 totalPower, uint8 numerator, uint8 denominator)
         private
         pure
         returns (bool)
@@ -68,7 +68,7 @@ library Validators {
         return votedPower > totalPower * numerator / denominator;
     }
 
-    /// @dev Verifies that the given address is unique in the given array of SigTuples, starting at the given index.
+    /// @dev Verifies that addr is unique in sigs, starting at the given index.
     ///      Starting index is used to avoid checking the same address twice.
     function _isUnique(address addr, SigTuple[] calldata sigs, uint256 start) private pure returns (bool) {
         for (uint256 i = start; i < sigs.length; i++) {

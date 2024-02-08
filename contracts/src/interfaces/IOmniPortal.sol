@@ -57,14 +57,14 @@ interface IOmniPortal {
      *         accept an XSubmission. Ex 2/3 -> 2
      * @return Quorum threshold numerator
      */
-    function XSUB_QUORUM_THRESHOLD_NUMERATOR() external view returns (uint8);
+    function XSUB_QUORUM_NUMERATOR() external view returns (uint8);
 
     /**
      * @notice Denominator of the fraction of total validator power required to
      *         accept an XSubmission. Ex 2/3 -> 3
      * @return Quorum threshold denominator
      */
-    function XSUB_QUORUM_THRESHOLD_DENOMINATOR() external view returns (uint8);
+    function XSUB_QUORUM_DENOMINATOR() external view returns (uint8);
 
     /**
      * @notice Chain ID of the chain to which this portal is deployed
