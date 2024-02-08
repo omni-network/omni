@@ -130,20 +130,35 @@ contract Fixtures is CommonBase, StdCheats {
         return xsub;
     }
 
+    /// @dev Generate a SigTuple array for a given valSetId and digest
     function valSigTuples(uint64 valSetId, bytes32 digest) internal view returns (Validators.SigTuple[] memory sigs) {
-        Validators.Validator[] memory vals = validatorSet[valSetId];
+        Validators.Validator[] storage vals = validatorSet[valSetId];
         sigs = new Validators.SigTuple[](vals.length);
 
         for (uint256 i = 0; i < vals.length; i++) {
             sigs[i] = Validators.SigTuple(vals[i].addr, _sign(digest, valPrivKeys[vals[i].addr]));
         }
 
-        return sigs;
+        _sortSigsByAddr(sigs);
     }
 
+    /// @dev Sign a digest with a private key
     function _sign(bytes32 digest, uint256 pk) internal pure returns (bytes memory) {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, digest);
         return abi.encodePacked(r, s, v);
+    }
+
+    /// @dev Sort sigs by validator address. Validators.verifyQuorum expects sigs to be sorted.
+    ///      Func is not really 'pure', because it modifies the input array in place. But it does not depend on contract state.
+    function _sortSigsByAddr(Validators.SigTuple[] memory sigs) internal pure {
+        uint256 n = sigs.length;
+        for (uint256 i = 0; i < n - 1; i++) {
+            for (uint256 j = 0; j < n - i - 1; j++) {
+                if (sigs[j].validatorAddr > sigs[j + 1].validatorAddr) {
+                    (sigs[j], sigs[j + 1]) = (sigs[j + 1], sigs[j]);
+                }
+            }
+        }
     }
 
     /// @dev Create an xblock from chainA with xmsgs for "this" chain and chain b.

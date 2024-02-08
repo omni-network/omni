@@ -193,6 +193,8 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
         require(valSetId == _latestValSetId + 1, "OmniPortal: invalid valSetId");
         require(validators_.length > 0, "OmniPortal: no validators");
 
+        // TODO: check for duplicates, consider requiring sorted input
+
         uint64 totalPower;
         Validators.Validator memory val;
         mapping(address => uint64) storage set = _validatorSet[valSetId];

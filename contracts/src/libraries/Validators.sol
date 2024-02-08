@@ -25,7 +25,7 @@ library Validators {
     /**
      * @dev Verifies that the given percentage of the total power has signed the given digest.
      * @param digest Signed hash
-     * @param sigs Signatures to verify
+     * @param sigs Signatures to verify, must be sorted by validator address
      * @param validators Maps validator addresses to their voting power
      * @param totalPower Total voting power
      * @param qNumerator Numerator of the quorum threshold. Ex: 2/3 -> 2
@@ -45,7 +45,11 @@ library Validators {
         for (uint256 i = 0; i < sigs.length; i++) {
             sig = sigs[i];
 
-            require(_isUnique(sig.validatorAddr, sigs, i + 1), "OmniPortal: duplicate validator");
+            if (i > 0) {
+                SigTuple memory prev = sigs[i - 1];
+                require(sig.validatorAddr != prev.validatorAddr, "OmniPortal: duplicate validator");
+                require(sig.validatorAddr > prev.validatorAddr, "OmniPortal: sigs not sorted");
+            }
 
             if (_verifySig(sig, digest)) votedPower += validators[sig.validatorAddr];
             if (_isQuorum(votedPower, totalPower, qNumerator, qDenominator)) return true;
@@ -66,14 +70,5 @@ library Validators {
         returns (bool)
     {
         return votedPower > totalPower * numerator / denominator;
-    }
-
-    /// @dev Verifies that addr is unique in sigs, starting at the given index.
-    ///      Starting index is used to avoid checking the same address twice.
-    function _isUnique(address addr, SigTuple[] calldata sigs, uint256 start) private pure returns (bool) {
-        for (uint256 i = start; i < sigs.length; i++) {
-            if (sigs[i].validatorAddr == addr) return false;
-        }
-        return true;
     }
 }
