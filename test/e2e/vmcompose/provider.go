@@ -92,11 +92,22 @@ func (p *Provider) Setup() error {
 func (p *Provider) StartNodes(ctx context.Context, _ ...*e2e.Node) error {
 	var onceErr error
 	p.once.Do(func() {
+		// Stop and remove all staging containers
+		for vmName := range p.Data.VMs {
+			cleanCmd := fmt.Sprintf("cd /omni/%s && docker-compose down && rm -rf *", p.Testnet.Name)
+
+			err := execOnVM(ctx, vmName, cleanCmd)
+			if err != nil {
+				onceErr = errors.Wrap(err, "clean files", "vm", vmName)
+				return
+			}
+		}
+
 		// Copy the testnet dir to each VM
 		for vmName := range p.Data.VMs {
 			err := copyToVM(ctx, vmName, p.Testnet.Dir)
 			if err != nil {
-				onceErr = errors.Wrap(err, "copy files", "vmJSON", vmName)
+				onceErr = errors.Wrap(err, "copy files", "vm", vmName)
 				return
 			}
 		}
@@ -109,7 +120,7 @@ func (p *Provider) StartNodes(ctx context.Context, _ ...*e2e.Node) error {
 
 			err := execOnVM(ctx, vmName, startCmd)
 			if err != nil {
-				onceErr = errors.Wrap(err, "copy files", "vmJSON", vmName)
+				onceErr = errors.Wrap(err, "copy files", "vm", vmName)
 				return
 			}
 		}
