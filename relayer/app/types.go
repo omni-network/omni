@@ -2,6 +2,7 @@ package relayer
 
 import (
 	"context"
+	"sort"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/xchain"
@@ -9,6 +10,7 @@ import (
 
 type StreamUpdate struct {
 	xchain.StreamID
+	Tree           xchain.BlockTree
 	AggAttestation xchain.AggAttestation // Attestation for the xmsgs
 	Msgs           []xchain.Msg          // msgs that increment the cursor
 }
@@ -21,6 +23,11 @@ type SendFunc func(ctx context.Context, submission xchain.Submission) error
 
 // SubmissionToBinding converts a go xchain submission to a solidity binding submission.
 func SubmissionToBinding(sub xchain.Submission) bindings.XTypesSubmission {
+	// Sort the signatures by validator address to ensure deterministic ordering.
+	sort.Slice(sub.Signatures, func(i, j int) bool {
+		return sub.Signatures[i].ValidatorAddress.Cmp(sub.Signatures[j].ValidatorAddress) < 0
+	})
+
 	sigs := make([]bindings.XTypesSigTuple, 0, len(sub.Signatures))
 	for _, sig := range sub.Signatures {
 		sigs = append(sigs, bindings.XTypesSigTuple{
@@ -44,6 +51,7 @@ func SubmissionToBinding(sub xchain.Submission) bindings.XTypesSubmission {
 
 	return bindings.XTypesSubmission{
 		AttestationRoot: sub.AttestationRoot,
+		// ValidatorSetID:  sub.ValidatorSetID, // TODO(corver): Uncomment when bindings are updated.
 		BlockHeader: bindings.XTypesBlockHeader{
 			SourceChainId: sub.BlockHeader.SourceChainID,
 			BlockHeight:   sub.BlockHeader.BlockHeight,

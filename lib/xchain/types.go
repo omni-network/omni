@@ -77,6 +77,7 @@ type SigTuple struct {
 // Submission is a cross-chain submission of a set of messages and their proofs.
 type Submission struct {
 	AttestationRoot [32]byte    // Merkle root of the attestations
+	ValidatorSetID  uint64      // Unique identified of the validator set included in this aggregate.
 	BlockHeader     BlockHeader // BlockHeader identifies the cross-chain Block
 	Msgs            []Msg       // Messages to be submitted
 	Proof           [][32]byte  // Merkle multi proofs of the messages
