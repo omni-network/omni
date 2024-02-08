@@ -24,6 +24,9 @@ func Test_translateSubmission(t *testing.T) {
 		sub.Msgs[i].TxHash = [32]byte{}
 	}
 
+	// TODO(corver): Remove when bindings are updated.
+	sub.ValidatorSetID = 0
+
 	require.Equal(t, sub, reversedSub)
 }
 

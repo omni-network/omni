@@ -53,6 +53,9 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 	require.Equal(t, block.BlockHeader, att.BlockHeader)
 	require.Equal(t, addr, att.Signature.ValidatorAddress)
 
+	tree, err := xchain.NewBlockTree(block)
+	require.NoError(t, err)
+
 	aggAtt := xchain.AggAttestation{
 		BlockHeader:    att.BlockHeader,
 		ValidatorSetID: ValidatorSetID,
@@ -85,6 +88,7 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 				},
 				AggAttestation: aggAtt,
 				Msgs:           block.Msgs,
+				Tree:           tree,
 			},
 		},
 	}
