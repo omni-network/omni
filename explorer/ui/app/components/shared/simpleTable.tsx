@@ -18,11 +18,7 @@ import {
 } from '@heroicons/react/24/solid'
 import { Button, PageButton } from './button'
 
-export default function SimpleTable({ data, columns }: {
-  data: any[]
-  columns: ColumnDef<any>[]
-}) {
-
+export default function SimpleTable({ data, columns }: { data: any[]; columns: ColumnDef<any>[] }) {
   const table = useReactTable({
     data,
     columns,
@@ -39,7 +35,7 @@ export default function SimpleTable({ data, columns }: {
   return (
     <div className="shadow-xl overflow-hidden border border-gray-200 sm:rounded-lg">
       <div className="" />
-      <table className='min-w-full divide-y divide-gray-200'>
+      <table className="min-w-full divide-y divide-gray-200">
         <thead className="">
           {table.getHeaderGroups().map(headerGroup => (
             <tr key={headerGroup.id}>
@@ -54,10 +50,7 @@ export default function SimpleTable({ data, columns }: {
                   >
                     {header.isPlaceholder ? null : (
                       <div>
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        {flexRender(header.column.columnDef.header, header.getContext())}
                         {header.column.getCanFilter() ? (
                           <div>
                             <Filter column={header.column} table={table} />
@@ -71,21 +64,14 @@ export default function SimpleTable({ data, columns }: {
             </tr>
           ))}
         </thead>
-        <tbody className='divide-y divide'>
+        <tbody className="divide-y divide">
           {table.getRowModel().rows.map(row => {
             return (
               <tr key={row.id}>
                 {row.getVisibleCells().map(cell => {
                   return (
-                    <td
-                      key={cell.id}
-                      className='px-3 py-2 whitespace-nowrap'
-                      role='cell'
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+                    <td key={cell.id} className="px-3 py-2 whitespace-nowrap" role="cell">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   )
                 })}
@@ -98,8 +84,8 @@ export default function SimpleTable({ data, columns }: {
         {/* Pagination */}
         <div className="flex items-center m-3">
           {/* Page N of N */}
-          <div className='flex-none flex m-3'>
-            <div className='flex gap-x-2 items-baseline'>
+          <div className="flex-none flex m-3">
+            <div className="flex gap-x-2 items-baseline">
               <span className="prose">
                 Page <span className="prose">{table.getState().pagination.pageIndex + 1}</span> of{' '}
                 <span className="prose">{table.getPageCount()}</span>
@@ -107,10 +93,10 @@ export default function SimpleTable({ data, columns }: {
             </div>
           </div>
           {/* Page Size Dropdown */}
-          <div className='flex-none flex items-center m-3'>
+          <div className="flex-none flex items-center m-3">
             <label>
               <select
-                className='btn btn-sm prose rounded-md shadow-sm'
+                className="btn btn-sm prose rounded-md shadow-sm"
                 value={table.getState().pagination.pageSize}
                 onChange={e => {
                   table.setPageSize(Number(e.target.value))
@@ -125,10 +111,9 @@ export default function SimpleTable({ data, columns }: {
             </label>
           </div>
           {/* middle element */}
-          <div className='grow'>
-          </div>
+          <div className="grow"></div>
           {/* Nav Buttons */}
-          <div className='flex-none items-center jusify-between'>
+          <div className="flex-none items-center jusify-between">
             <PageButton
               className="rounded-l-md rounded-r-none"
               onClick={() => table.setPageIndex(0)}
@@ -168,16 +153,8 @@ export default function SimpleTable({ data, columns }: {
   )
 }
 
-function Filter({
-  column,
-  table,
-}: {
-  column: Column<any, any>
-  table: ReactTable<any>
-}) {
-  const firstValue = table
-    .getPreFilteredRowModel()
-    .flatRows[0]?.getValue(column.id)
+function Filter({ column, table }: { column: Column<any, any>; table: ReactTable<any> }) {
+  const firstValue = table.getPreFilteredRowModel().flatRows[0]?.getValue(column.id)
 
   const columnFilterValue = column.getFilterValue()
 
@@ -186,24 +163,14 @@ function Filter({
       <input
         type="number"
         value={(columnFilterValue as [number, number])?.[0] ?? ''}
-        onChange={e =>
-          column.setFilterValue((old: [number, number]) => [
-            e.target.value,
-            old?.[1],
-          ])
-        }
+        onChange={e => column.setFilterValue((old: [number, number]) => [e.target.value, old?.[1]])}
         placeholder={`Min`}
         className="w-24 border shadow rounded"
       />
       <input
         type="number"
         value={(columnFilterValue as [number, number])?.[1] ?? ''}
-        onChange={e =>
-          column.setFilterValue((old: [number, number]) => [
-            old?.[0],
-            e.target.value,
-          ])
-        }
+        onChange={e => column.setFilterValue((old: [number, number]) => [old?.[0], e.target.value])}
         placeholder={`Max`}
         className="w-24 border shadow rounded"
       />

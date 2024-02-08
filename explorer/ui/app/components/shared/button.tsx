@@ -18,14 +18,7 @@ export function Button({ children, className, ...rest }) {
 
 export function PageButton({ children, className, ...rest }) {
   return (
-    <button
-      type="button"
-      className={classNames(
-        'btn btn-sm font-medium',
-        className,
-      )}
-      {...rest}
-    >
+    <button type="button" className={classNames('btn btn-sm font-medium', className)} {...rest}>
       {children}
     </button>
   )

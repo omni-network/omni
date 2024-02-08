@@ -43,7 +43,7 @@ export default function XMsgDataTable() {
       SourceMessageSender: '0x1234',
       StreamOffset: '0',
       TxHash: '0x5678',
-    }
+    },
   ]
 
   rows = [...rows, ...rows, ...rows, ...rows, ...rows, ...rows]
@@ -52,28 +52,28 @@ export default function XMsgDataTable() {
     () => [
       {
         accessorKey: 'tx_hash',
-        accessorFn: (row) => row.TxHash,
+        accessorFn: row => row.TxHash,
         header: () => <span>TxHash</span>,
         canFilter: false,
         enableColumnFilter: false,
       },
       {
         accessorKey: 'source_chain',
-        accessorFn: (row) => row.SourceChainID,
+        accessorFn: row => row.SourceChainID,
         header: () => <span>Source Chain</span>,
         canFilter: false,
         enableColumnFilter: false,
       },
       {
         accessorKey: 'dest_chain',
-        accessorFn: (row) => row.DestChainID,
+        accessorFn: row => row.DestChainID,
         header: () => <span>Dest Chain</span>,
         canFilter: false,
         enableColumnFilter: false,
       },
       {
         accessorKey: 'time',
-        accessorFn: (row) => "",
+        accessorFn: row => '',
         header: () => <span>Updated At</span>,
         canFilter: false,
         enableColumnFilter: false,

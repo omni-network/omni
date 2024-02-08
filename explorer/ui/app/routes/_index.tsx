@@ -15,8 +15,8 @@ export default function Index() {
   return (
     <div>
       <Navbar />
-      <div className='flex'>
-        <div className='grow'></div>
+      <div className="flex">
+        <div className="grow"></div>
         <div className="flex-auto w-full max-w-screen-xl grid grid-cols-2 gap-4 place-items-stretch m3">
           <div className="flex-auto">
             <XBlockDataTable />
@@ -25,7 +25,7 @@ export default function Index() {
             <XMsgDataTable />
           </div>
         </div>
-        <div className='grow'></div>
+        <div className="grow"></div>
       </div>
       <Footer />
     </div>

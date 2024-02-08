@@ -61,7 +61,7 @@ export default function XBlockDataTable() {
       BlockHeight: '6',
       Messages: [],
       Timestamp: '2021-10-02T00:00:00Z',
-    }
+    },
   ]
   rows = [...rows, ...rows, ...rows, ...rows, ...rows, ...rows]
 
@@ -69,21 +69,21 @@ export default function XBlockDataTable() {
     () => [
       {
         accessorKey: 'blockNumber',
-        accessorFn: (row) => row.BlockHeight,
+        accessorFn: row => row.BlockHeight,
         header: () => <span>Block Number</span>,
         canFilter: false,
         enableColumnFilter: false,
       },
       {
         accessorKey: 'number_of_transactions',
-        accessorFn: (row) => row.Messages.length,
+        accessorFn: row => row.Messages.length,
         header: () => <span># of Txs</span>,
         canFilter: false,
         enableColumnFilter: false,
       },
       {
         accessorKey: 'time',
-        accessorFn: (row) => row.Timestamp,
+        accessorFn: row => row.Timestamp,
         header: () => <span>Time</span>,
         canFilter: false,
         enableColumnFilter: false,
