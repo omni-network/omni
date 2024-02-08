@@ -24,9 +24,6 @@ func Test_translateSubmission(t *testing.T) {
 		sub.Msgs[i].TxHash = [32]byte{}
 	}
 
-	// TODO(corver): Remove when bindings are updated.
-	sub.ValidatorSetID = 0
-
 	require.Equal(t, sub, reversedSub)
 }
 
@@ -58,6 +55,7 @@ func submissionFromBinding(sub bindings.XTypesSubmission, destChainID uint64) xc
 
 	return xchain.Submission{
 		AttestationRoot: sub.AttestationRoot,
+		ValidatorSetID:  sub.ValidatorSetId,
 		BlockHeader: xchain.BlockHeader{
 			SourceChainID: sub.BlockHeader.SourceChainId,
 			BlockHeight:   sub.BlockHeader.BlockHeight,

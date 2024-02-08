@@ -51,7 +51,7 @@ func SubmissionToBinding(sub xchain.Submission) bindings.XTypesSubmission {
 
 	return bindings.XTypesSubmission{
 		AttestationRoot: sub.AttestationRoot,
-		// ValidatorSetID:  sub.ValidatorSetID, // TODO(corver): Uncomment when bindings are updated.
+		ValidatorSetId:  sub.ValidatorSetID,
 		BlockHeader: bindings.XTypesBlockHeader{
 			SourceChainId: sub.BlockHeader.SourceChainID,
 			BlockHeight:   sub.BlockHeader.BlockHeight,
