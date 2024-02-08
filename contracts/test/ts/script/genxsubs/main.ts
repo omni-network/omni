@@ -21,7 +21,7 @@ function getXSubs(b: NamedXBlock) {
 
     const xsub: XSub = {
       attestationRoot: bytesToHex(XBlockMerkleTree.root(tree)),
-      validatorSetId: 1n, // validatorSetId set in contract tests, when signing xsubs
+      validatorSetId: 1n, // validatorSetId set added in contract tests
       blockHeader: b.xblock.blockHeader,
       msgs,
       proof: proof.proof.map(p => bytesToHex(p)),
