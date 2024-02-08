@@ -20,10 +20,10 @@ import (
 func TestCreatorService_CreateSubmissions(t *testing.T) {
 	t.Parallel()
 
-	const (
-		SourceChainID  = 1
-		DestChainID    = 2
-		ValidatorSetID = 1
+	var (
+		SourceChainID  = uint64(randomBetween(1, 5))
+		DestChainID    = uint64(randomBetween(1, 5))
+		ValidatorSetID = uint64(1)
 	)
 
 	privKey := k1.GenPrivKey()
@@ -32,8 +32,8 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 
 	fuzzer := fuzz.New().NilChance(0).Funcs(
 		func(e *xchain.Msg, c fuzz.Continue) {
-			e.DestChainID = uint64(randomBetween(1, 5))
-			e.SourceChainID = uint64(randomBetween(1, 5))
+			e.DestChainID = DestChainID
+			e.SourceChainID = SourceChainID
 			e.DestAddress = [20]byte(crypto.CRandBytes(20))
 			e.SourceMsgSender = [20]byte(crypto.CRandBytes(20))
 			e.Data = crypto.CRandBytes(100)

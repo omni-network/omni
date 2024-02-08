@@ -2,9 +2,10 @@ package relayer
 
 import (
 	"context"
+	"sort"
+
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/xchain"
-	"sort"
 )
 
 type StreamUpdate struct {
