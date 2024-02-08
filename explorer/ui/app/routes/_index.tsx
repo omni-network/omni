@@ -16,7 +16,7 @@ export default function Index() {
     <div>
       <Navbar />
       <div className="flex flex-col">
-        <div className="grid grid-cols-2 gap-4 place-items-center m3">
+        <div className="grid grid-cols-2 gap-4 place-items-stretch m3">
           <div className="grow flex-1">
             <XBlockDataTable />
           </div>
