@@ -1,4 +1,3 @@
-import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { XBlock } from "~/graphql/graphql";
@@ -26,36 +25,36 @@ export default function XBlockDataTable() {
     },
   ];
 
-  const columns: GridColDef[] = [
-    {
-      field: "blockNumber",
-      headerName: "Block Number",
-      headerClassName: "text-inherit",
-      type: "string",
-      minWidth: 150,
-      flex: 1,
-    },
-    {
-      field: "number_of_transactions",
-      headerName: "# of TXs",
-      headerClassName: "text-inherit",
-      type: "string",
-      minWidth: 150,
-      flex: 1,
-    },
-    {
-      field: "time",
-      headerName: "Time",
-      headerClassName: "text-inherit",
-      type: "string",
-      width: 150,
-      flex: 1,
-    },
-  ];
+  // const columns: GridColDef[] = [
+  //   {
+  //     field: "blockNumber",
+  //     headerName: "Block Number",
+  //     headerClassName: "text-inherit",
+  //     type: "string",
+  //     minWidth: 150,
+  //     flex: 1,
+  //   },
+  //   {
+  //     field: "number_of_transactions",
+  //     headerName: "# of TXs",
+  //     headerClassName: "text-inherit",
+  //     type: "string",
+  //     minWidth: 150,
+  //     flex: 1,
+  //   },
+  //   {
+  //     field: "time",
+  //     headerName: "Time",
+  //     headerClassName: "text-inherit",
+  //     type: "string",
+  //     width: 150,
+  //     flex: 1,
+  //   },
+  // ];
 
   return (
     <div className="m-3">
-      <h2 className="prose text-3xl antialiased leading-tight tracking-normal text-inherit">
+      {/* <h2 className="prose text-3xl antialiased leading-tight tracking-normal text-inherit">
         XBlocks
       </h2>
       <section
@@ -74,7 +73,7 @@ export default function XBlockDataTable() {
             pagination: { paginationModel: { pageSize: 5 } },
           }}
           pageSizeOptions={[5, 10, 25]} />
-      </section>
+      </section> */}
     </div>
   );
 }

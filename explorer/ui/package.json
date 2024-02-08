@@ -12,14 +12,10 @@
     "codegen": "graphql-codegen --config codegen.ts"
   },
   "dependencies": {
-    "@emotion/react": "11.11.3",
-    "@emotion/styled": "11.11.0",
     "@fortawesome/fontawesome-svg-core": "6.5.1",
     "@fortawesome/free-brands-svg-icons": "6.5.1",
     "@fortawesome/free-solid-svg-icons": "6.5.1",
     "@heroicons/react": "2.1.1",
-    "@material-tailwind/react": "2.1.8",
-    "@mui/x-data-grid": "6.19.3",
     "@remix-run/css-bundle": "^2.5.0",
     "@remix-run/node": "^2.5.0",
     "@remix-run/react": "^2.5.0",

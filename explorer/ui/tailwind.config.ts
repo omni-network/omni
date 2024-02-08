@@ -1,9 +1,8 @@
 import type { Config } from "tailwindcss";
 const typography = require('@tailwindcss/typography')
 const daisyui = require('daisyui')
-import withMT from "@material-tailwind/react/utils/withMT";
 
-export default withMT({
+export default ({
   content: [
     "./app/**/*.{html,js,ts,jsx,tsx}",
     "~/components/**/*.{html,js,ts,tsx,jsx}"

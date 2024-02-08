@@ -1,4 +1,3 @@
-import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { XBlock } from "~/graphql/graphql";
@@ -28,47 +27,47 @@ export default function XMsgDataTable() {
     },
   ];
 
-  const columns: GridColDef[] = [
-    {
-      field: "tx_hash",
-      headerName: "Tx Hash",
-      headerClassName: "text-inherit",
-      type: "string",
-      minWidth: 150,
-      flex: 1,
-    },
-    {
-      field: "source_chain",
-      headerName: "Source Chain",
-      headerClassName: "text-inherit",
-      type: "string",
-      minWidth: 150,
-      flex: 1,
-    },
-    {
-      field: "dest_chain",
-      headerName: "Dest Chain",
-      headerClassName: "text-inherit",
-      type: "string",
-      minWidth: 150,
-      flex: 1,
-    },
-    {
-      field: "updated_at",
-      headerName: "Updated At",
-      headerClassName: "text-inherit",
-      type: "string",
-      width: 150,
-      flex: 1,
-    },
-  ];
+  // const columns: GridColDef[] = [
+  //   {
+  //     field: "tx_hash",
+  //     headerName: "Tx Hash",
+  //     headerClassName: "text-inherit",
+  //     type: "string",
+  //     minWidth: 150,
+  //     flex: 1,
+  //   },
+  //   {
+  //     field: "source_chain",
+  //     headerName: "Source Chain",
+  //     headerClassName: "text-inherit",
+  //     type: "string",
+  //     minWidth: 150,
+  //     flex: 1,
+  //   },
+  //   {
+  //     field: "dest_chain",
+  //     headerName: "Dest Chain",
+  //     headerClassName: "text-inherit",
+  //     type: "string",
+  //     minWidth: 150,
+  //     flex: 1,
+  //   },
+  //   {
+  //     field: "updated_at",
+  //     headerName: "Updated At",
+  //     headerClassName: "text-inherit",
+  //     type: "string",
+  //     width: 150,
+  //     flex: 1,
+  //   },
+  // ];
 
   return (
     <div className="m-3">
       <h2 className="prose text-3xl antialiased leading-tight tracking-normal text-inherit">
         XMsgs
       </h2>
-      <section
+      {/* <section
         id="DataGrid"
         style={{
           height: "100%",
@@ -84,7 +83,7 @@ export default function XMsgDataTable() {
             pagination: { paginationModel: { pageSize: 5 } },
           }}
           pageSizeOptions={[5, 10, 25]} />
-      </section>
+      </section> */}
     </div>
   );
 }
