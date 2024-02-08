@@ -34,6 +34,10 @@ explorer-gen: ## Generates code for our explorer
 ensure-go-releaser: ## Installs the go-releaser tool.
 	@which goreleaser > /dev/null || echo "go-releaser not installed, see https://goreleaser.com/install/"
 
+.PHONY: ensure-detect-secrets
+ensure-detect-secrets: ## Checks if detect-secrets is installed.
+	@which detect-secrets > /dev/null || echo "detect-secrets not installed, see https://github.com/Yelp/detect-secrets?tab=readme-ov-file#installation"
+
 .PHONY: install-pre-commit
 install-pre-commit: ## Installs the pre-commit tool as the git pre-commit hook for this repo.
 	@which pre-commit > /dev/null || echo "pre-commit not installed, see https://pre-commit.com/#install"
@@ -46,6 +50,10 @@ install-go-tools: ## Installs the go-dev-tools, like buf.
 .PHONY: lint
 lint: ## Runs linters via pre-commit.
 	@pre-commit run -v --all-files
+
+.PHONY:
+secrets-baseline: ensure-detect-secrets ## Update secrets baseline.
+	@detect-secrets scan --exclude-file pnpm-lock.yaml > .secrets.baseline
 
 ###############################################################################
 ###                                Testing                                 	###
