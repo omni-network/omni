@@ -39,7 +39,7 @@ library XTypes {
         /// @dev Merkle root of xchain block (XBlockRoot), attested to and signed by validators
         bytes32 attestationRoot;
         /// @dev Unique identifier of the validator set that attested to this root
-        uint64 validatorsSetId;
+        uint64 validatorSetId;
         /// @dev Block header, identifies xchain block
         BlockHeader blockHeader;
         /// @dev Messages to execute

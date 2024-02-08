@@ -116,8 +116,8 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
             Validators.verifyQuorum(
                 xsub.attestationRoot,
                 xsub.signatures,
-                _validatorSet[xsub.validatorsSetId],
-                _validatorSetTotalPower[xsub.validatorsSetId],
+                _validatorSet[xsub.validatorSetId],
+                _validatorSetTotalPower[xsub.validatorSetId],
                 XSUB_QUORUM_NUMERATOR,
                 XSUB_QUORUM_DENOMINATOR
             ),
