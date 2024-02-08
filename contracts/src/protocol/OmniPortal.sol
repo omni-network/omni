@@ -111,13 +111,16 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
 
     /// @inheritdoc IOmniPortal
     function xsubmit(XTypes.Submission calldata xsub) external {
+        // TODO: change to uint64 valSetId = xsub.validatorSetId; when validatorSetId is added to aggregate attestation (see halo/comet/helpers.go:aggregate)
+        uint64 valSetId = _latestValSetId;
+
         // check that the attestationRoot is signed by a quorum of validators in xsub.validatorsSetId
         require(
             Validators.verifyQuorum(
                 xsub.attestationRoot,
                 xsub.signatures,
-                _validatorSet[xsub.validatorSetId],
-                _validatorSetTotalPower[xsub.validatorSetId],
+                _validatorSet[valSetId],
+                _validatorSetTotalPower[valSetId],
                 XSUB_QUORUM_NUMERATOR,
                 XSUB_QUORUM_DENOMINATOR
             ),
