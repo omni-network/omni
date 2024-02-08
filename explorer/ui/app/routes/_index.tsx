@@ -15,15 +15,17 @@ export default function Index() {
   return (
     <div>
       <Navbar />
-      <div className="flex flex-col">
-        <div className="grid grid-cols-2 gap-4 place-items-stretch m3">
-          <div className="grow flex-1">
+      <div className='flex'>
+        <div className='grow'></div>
+        <div className="flex-auto w-full max-w-screen-xl grid grid-cols-2 gap-4 place-items-stretch m3">
+          <div className="flex-auto">
             <XBlockDataTable />
           </div>
-          <div className="grow flex-1">
+          <div className="flex-auto">
             <XMsgDataTable />
           </div>
         </div>
+        <div className='grow'></div>
       </div>
       <Footer />
     </div>
