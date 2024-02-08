@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/test/e2e/docker"
 	"github.com/omni-network/omni/test/e2e/types"
 
@@ -94,12 +95,12 @@ func (p *Provider) StartNodes(ctx context.Context, _ ...*e2e.Node) error {
 	p.once.Do(func() {
 		// Stop and remove all staging containers
 		for vmName := range p.Data.VMs {
-			cleanCmd := fmt.Sprintf("cd /omni/%s && docker-compose down && rm -rf *", p.Testnet.Name)
+			cleanCmd := fmt.Sprintf("cd /omni/%s && sudo docker compose stop && sudo docker compose down && sudo rm -rf *", p.Testnet.Name)
 
 			err := execOnVM(ctx, vmName, cleanCmd)
 			if err != nil {
-				onceErr = errors.Wrap(err, "clean files", "vm", vmName)
-				return
+				// onceErr = errors.Wrap(err, "clean files", "vm", vmName)
+				log.Warn(ctx, "env folder doesn't exit", err)
 			}
 		}
 
@@ -115,10 +116,14 @@ func (p *Provider) StartNodes(ctx context.Context, _ ...*e2e.Node) error {
 		// Start the services
 		// TODO(corver): Only start additional services and then start halo as per above StartNodes.
 		for vmName, instance := range p.Data.VMs {
-			compileFile := strings.ReplaceAll(instance.IPAddress.String(), ".", "_") + "_compose.yaml"
-			startCmd := fmt.Sprintf("cd /omni/%s && docker-compose -f %s up -d", p.Testnet.Name, compileFile)
+			composeFile := strings.ReplaceAll(instance.IPAddress.String(), ".", "_") + "_compose.yaml"
+			startCmd := fmt.Sprintf("cd /omni/%s && "+
+				"mv %s docker-compose.yaml && "+
+				"docker-compose up -d",
+				p.Testnet.Name, composeFile)
 
 			err := execOnVM(ctx, vmName, startCmd)
+
 			if err != nil {
 				onceErr = errors.Wrap(err, "copy files", "vm", vmName)
 				return
