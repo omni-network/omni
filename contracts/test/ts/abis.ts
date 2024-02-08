@@ -39,6 +39,7 @@ export const xSubParams = {
   type: 'tuple',
   components: [
     { name: 'attestationRoot', type: 'bytes32' },
+    { name: 'validatorSetId', type: 'uint64' },
     xBlockHeaderParams,
     xMsgsParams,
     { name: 'proof', type: 'bytes32[]' },

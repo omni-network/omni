@@ -20,6 +20,7 @@ import (
 )
 
 func deployContract(ctx context.Context, chainID uint64, client *ethclient.Client, privKey *ecdsa.PrivateKey,
+	valSetID uint64, validators []bindings.Validator,
 ) (common.Address, *bindings.OmniPortal, *bind.TransactOpts, error) {
 	txOpts, err := newTxOpts(ctx, privKey, chainID)
 	if err != nil {
@@ -39,7 +40,7 @@ func deployContract(ctx context.Context, chainID uint64, client *ethclient.Clien
 		return common.Address{}, nil, nil, errors.Wrap(err, "wait mined fee oracle contract")
 	}
 
-	portalAddr, tx, _, err := bindings.DeployOmniPortal(txOpts, client, owner, feeOracleAddr)
+	portalAddr, tx, _, err := bindings.DeployOmniPortal(txOpts, client, owner, feeOracleAddr, valSetID, validators)
 	if err != nil {
 		return common.Address{}, nil, nil, errors.Wrap(err, "deploy portal contract")
 	}

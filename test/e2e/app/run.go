@@ -3,8 +3,12 @@ package app
 import (
 	"context"
 
+	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
+
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
 // Deploy a new e2e network. It also starts all services in order to deploy private portals.
@@ -13,8 +17,14 @@ func Deploy(ctx context.Context, def Definition, promSecrets PromSecrets) error 
 		return err
 	}
 
+	genesisValSetID := uint64(1) // validator set IDs start at 1
+	genesisVals, err := toPortalValidators(def.Testnet.Validators)
+	if err != nil {
+		return err
+	}
+
 	// Deploy public portals first so their addresses are available for setup.
-	if err := def.Netman.DeployPublicPortals(ctx); err != nil {
+	if err := def.Netman.DeployPublicPortals(ctx, genesisValSetID, genesisVals); err != nil {
 		return err
 	}
 
@@ -26,7 +36,7 @@ func Deploy(ctx context.Context, def Definition, promSecrets PromSecrets) error 
 		return err
 	}
 
-	if err := def.Netman.DeployPrivatePortals(ctx); err != nil {
+	if err := def.Netman.DeployPrivatePortals(ctx, genesisValSetID, genesisVals); err != nil {
 		return err
 	}
 
@@ -98,4 +108,24 @@ func sum(batches []int) int {
 	}
 
 	return resp
+}
+
+// Convert cometbft testnet validators to solidity bindings.Validator, expected by portal constructor.
+func toPortalValidators(validators map[*e2e.Node]int64) ([]bindings.Validator, error) {
+	vals := make([]bindings.Validator, 0, len(validators))
+
+	for val, power := range validators {
+		addr, err := k1util.PubKeyToAddress(val.PrivvalKey.PubKey())
+
+		if err != nil {
+			return nil, errors.Wrap(err, "convert validator pubkey to address")
+		}
+
+		vals = append(vals, bindings.Validator{
+			Addr:  addr,
+			Power: uint64(power),
+		})
+	}
+
+	return vals, nil
 }
