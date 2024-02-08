@@ -40,8 +40,8 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
     /// @inheritdoc IOmniPortal
     mapping(uint64 => uint64) public inXStreamBlockHeight;
 
-    /// @dev Track latest seen valSetId, to avoid writing the same validator set multiple times
-    ///      validator set ideas increment monotonically
+    /// @dev Track latest seen valSetId, to avoid writing the same validator set multiple times.
+    ///      Validator set ids increment monotonically
     uint64 private _latestValSetId;
 
     /// @dev Maps validator set id -> validator address -> power
