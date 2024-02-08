@@ -58,12 +58,12 @@ library Validators {
         return false;
     }
 
-    /// @dev Verifies that SigTuple.sig is a valid ECDSA signature over the given digest, for SigTuple.addr.
+    /// @dev True if SigTuple.sig is a valid ECDSA signature over the given digest for SigTuple.addr, else false.
     function _isValidSig(SigTuple calldata sig, bytes32 digest) internal pure returns (bool) {
         return ECDSA.recover(digest, sig.signature) == sig.validatorAddr;
     }
 
-    /// @dev Verifies that the voted power exceeds the quorum threshold of numerator/denominator.
+    /// @dev True if votedPower exceeds the quorum threshold of numerator/denominator, else false.
     function _isQuorum(uint64 votedPower, uint64 totalPower, uint8 numerator, uint8 denominator)
         private
         pure
