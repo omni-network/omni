@@ -95,7 +95,7 @@ export default function XBlockDataTable() {
   return (
     <div className="m-3">
       <div className="">
-        <h1 className="prose text-xl font-semibold">XBlocks</h1>
+        <h1 className="prose text-xl font-semibold mb-3">XBlocks</h1>
       </div>
       <div>
         <SimpleTable columns={columns} data={rows} />

@@ -85,7 +85,7 @@ export default function XMsgDataTable() {
   return (
     <div className="m-3">
       <div className="">
-        <h1 className="prose text-xl font-semibold">XMsgs</h1>
+        <h1 className="prose text-xl font-semibold mb-3">XMsgs</h1>
       </div>
       <div>
         <SimpleTable columns={columns} data={rows} />

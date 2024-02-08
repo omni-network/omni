@@ -37,8 +37,8 @@ export default function SimpleTable({ data, columns }: {
   console.log(table)
 
   return (
-    <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
-      <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg" />
+    <div className="shadow-xl overflow-hidden border border-gray-200 sm:rounded-lg">
+      <div className="" />
       <table className='min-w-full divide-y divide-gray-200'>
         <thead className="">
           {table.getHeaderGroups().map(headerGroup => (
@@ -94,11 +94,11 @@ export default function SimpleTable({ data, columns }: {
           })}
         </tbody>
       </table>
-      <div className="flex m-auto">
+      <div className="m-auto">
         {/* Pagination */}
         <div className="flex items-center m-3">
           {/* Page N of N */}
-          <div className='flex-auto flex m-3'>
+          <div className='flex-none flex m-3'>
             <div className='flex gap-x-2 items-baseline'>
               <span className="prose">
                 Page <span className="prose">{table.getState().pagination.pageIndex + 1}</span> of{' '}
@@ -107,7 +107,7 @@ export default function SimpleTable({ data, columns }: {
             </div>
           </div>
           {/* Page Size Dropdown */}
-          <div className='flex-auto flex items-center m-3'>
+          <div className='flex-none flex items-center m-3'>
             <label>
               <select
                 className='btn btn-sm prose rounded-md shadow-sm'
@@ -128,7 +128,7 @@ export default function SimpleTable({ data, columns }: {
           <div className='grow'>
           </div>
           {/* Nav Buttons */}
-          <div className='flex-auto items-center jusify-between'>
+          <div className='flex-none items-center jusify-between'>
             <PageButton
               className="rounded-l-md rounded-r-none"
               onClick={() => table.setPageIndex(0)}
