@@ -115,7 +115,7 @@ contract OmniPortal_xsubmit_Test is Base {
         xsub.attestationRoot = keccak256("invalid");
 
         // need to resign invalid root, to pass the quorum check
-        xsub.signatures = valSigTuples(genesisValSetId, xsub.attestationRoot);
+        xsub.signatures = getSignatures(genesisValSetId, xsub.attestationRoot);
 
         vm.expectRevert("OmniPortal: invalid proof");
         portal.xsubmit(xsub);

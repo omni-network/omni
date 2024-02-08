@@ -125,13 +125,13 @@ contract Fixtures is CommonBase, StdCheats {
 
         XTypes.Submission memory xsub = abi.decode(parsed, (XTypes.Submission));
 
-        xsub.signatures = valSigTuples(genesisValSetId, xsub.attestationRoot);
+        xsub.signatures = getSignatures(genesisValSetId, xsub.attestationRoot);
 
         return xsub;
     }
 
     /// @dev Generate a SigTuple array for a given valSetId and digest
-    function valSigTuples(uint64 valSetId, bytes32 digest) internal view returns (Validators.SigTuple[] memory sigs) {
+    function getSignatures(uint64 valSetId, bytes32 digest) internal view returns (Validators.SigTuple[] memory sigs) {
         Validators.Validator[] storage vals = validatorSet[valSetId];
         sigs = new Validators.SigTuple[](vals.length);
 
