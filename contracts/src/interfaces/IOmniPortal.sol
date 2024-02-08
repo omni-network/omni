@@ -35,6 +35,12 @@ interface IOmniPortal {
     );
 
     /**
+     * @notice Emitted when a new validator set is added
+     * @param setId Validator set ID
+     */
+    event ValidatorSetAdded(uint64 indexed setId);
+
+    /**
      * @notice Default xmsg execution gas limit, enforced on destination chain
      * @return Gas limit
      */

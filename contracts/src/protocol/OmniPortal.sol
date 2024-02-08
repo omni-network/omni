@@ -211,5 +211,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
 
         _validatorSetTotalPower[valSetId] = totalPower;
         _latestValSetId = valSetId;
+
+        emit ValidatorSetAdded(valSetId);
     }
 }
