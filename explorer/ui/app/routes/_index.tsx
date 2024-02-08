@@ -1,15 +1,15 @@
-import type { MetaFunction } from "@remix-run/node";
-import XBlockDataTable from "~/components/home/blockDataTable";
-import XMsgDataTable from "~/components/home/messageDataTable";
-import { Footer } from "~/components/shared/footer";
-import Navbar from "~/components/shared/navbar";
+import type { MetaFunction } from '@remix-run/node'
+import XBlockDataTable from '~/components/home/blockDataTable'
+import XMsgDataTable from '~/components/home/messageDataTable'
+import { Footer } from '~/components/shared/footer'
+import Navbar from '~/components/shared/navbar'
 
 export const meta: MetaFunction = () => {
   return [
-    { title: "Omni Network Explorer" },
-    { name: "description", content: "Omni Network Explorer" },
-  ];
-};
+    { title: 'Omni Network Explorer' },
+    { name: 'description', content: 'Omni Network Explorer' },
+  ]
+}
 
 export default function Index() {
   return (
@@ -27,5 +27,5 @@ export default function Index() {
       </div>
       <Footer />
     </div>
-  );
+  )
 }

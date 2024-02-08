@@ -1,31 +1,31 @@
-import { json } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
-import { XBlock } from "~/graphql/graphql";
+import { json } from '@remix-run/node'
+import { useLoaderData } from '@remix-run/react'
+import { XBlock } from '~/graphql/graphql'
 
 export async function loader() {
   return json<XBlock[]>(new Array())
 }
 
 export default function XMsgDataTable() {
-  let data = useLoaderData<typeof loader>();
-  console.log(data);
+  let data = useLoaderData<typeof loader>()
+  console.log(data)
 
   let rows = [
     {
       id: 1,
-      tx_hash: "0x1234",
-      source_chain: "eth",
-      dest_chain: "bsc",
-      updated_at: "2021-10-01T00:00:00Z",
+      tx_hash: '0x1234',
+      source_chain: 'eth',
+      dest_chain: 'bsc',
+      updated_at: '2021-10-01T00:00:00Z',
     },
     {
       id: 2,
-      tx_hash: "0x5678",
-      source_chain: "bsc",
-      dest_chain: "eth",
-      updated_at: "2021-10-02T00:00:00Z",
+      tx_hash: '0x5678',
+      source_chain: 'bsc',
+      dest_chain: 'eth',
+      updated_at: '2021-10-02T00:00:00Z',
     },
-  ];
+  ]
 
   // const columns: GridColDef[] = [
   //   {
@@ -85,5 +85,5 @@ export default function XMsgDataTable() {
           pageSizeOptions={[5, 10, 25]} />
       </section> */}
     </div>
-  );
+  )
 }

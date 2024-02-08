@@ -8,7 +8,7 @@ import logo from '~/components/ui/Horizontal_Word Black_Symbol Black.png'
 
 export function Footer() {
   return (
-    <footer className='mt-auto border-t'>
+    <footer className="mt-auto border-t">
       <div className="w-full max-w-screen-xl mx-auto grid grid-rows-2 grid-cols-3 gap-9 px-4 py-10">
         {/* top left */}
         <section className="place-items-start">
@@ -16,7 +16,6 @@ export function Footer() {
             <span className="sr-only">Omni Network</span>
             <img className="h-8 w-auto" src={logo} alt="" />
           </a>
-
         </section>
         {/* top middle */}
         <section className="grid grid-flow-col gap-6 place-items-center">
@@ -35,27 +34,23 @@ export function Footer() {
           </a>
         </section>
         {/* top right */}
-        <section className="">
-        </section>
+        <section className=""></section>
         {/* bottom left */}
         <section className="place-items-center m3">
-          <a className="prose prose-sm">
-            © 2023 The Omni Network | All Rights Reserved.
-          </a>
+          <a className="prose prose-sm">© 2023 The Omni Network | All Rights Reserved.</a>
         </section>
         {/* bottom middle */}
-        <section className="m3">
-        </section>
+        <section className="m3"></section>
         {/* bottom right */}
         <section className="grid grid-flow-col gap-6 place-items-center-stretch">
-          <a href='https://discord.gg/bKNXmaX9VD' target='_blank' className='m3 place-items-center'>
-            <FontAwesomeIcon icon={faDiscord} size='xl' />
+          <a href="https://discord.gg/bKNXmaX9VD" target="_blank" className="m3 place-items-center">
+            <FontAwesomeIcon icon={faDiscord} size="xl" />
           </a>
-          <a href='https://twitter.com/OmniFDN' target='_blank' className='m3'>
-            <FontAwesomeIcon icon={faXTwitter} size='xl' />
+          <a href="https://twitter.com/OmniFDN" target="_blank" className="m3">
+            <FontAwesomeIcon icon={faXTwitter} size="xl" />
           </a>
-          <a href='https://t.me/OmniFDN' target='_blank' className='m3'>
-            <FontAwesomeIcon icon={faTelegram} size='xl' className='m3' />
+          <a href="https://t.me/OmniFDN" target="_blank" className="m3">
+            <FontAwesomeIcon icon={faTelegram} size="xl" className="m3" />
           </a>
         </section>
       </div>

@@ -1,29 +1,29 @@
-import { json } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
-import { XBlock } from "~/graphql/graphql";
+import { json } from '@remix-run/node'
+import { useLoaderData } from '@remix-run/react'
+import { XBlock } from '~/graphql/graphql'
 
 export async function loader() {
   return json<XBlock[]>(new Array())
 }
 
 export default function XBlockDataTable() {
-  let data = useLoaderData<typeof loader>();
-  console.log(data);
+  let data = useLoaderData<typeof loader>()
+  console.log(data)
 
   let rows = [
     {
       id: 1,
-      blockNumber: "1",
-      number_of_transactions: "1",
-      time: "2021-10-01T00:00:00Z",
+      blockNumber: '1',
+      number_of_transactions: '1',
+      time: '2021-10-01T00:00:00Z',
     },
     {
       id: 2,
-      blockNumber: "2",
-      number_of_transactions: "2",
-      time: "2021-10-02T00:00:00Z",
+      blockNumber: '2',
+      number_of_transactions: '2',
+      time: '2021-10-02T00:00:00Z',
     },
-  ];
+  ]
 
   // const columns: GridColDef[] = [
   //   {
@@ -75,5 +75,5 @@ export default function XBlockDataTable() {
           pageSizeOptions={[5, 10, 25]} />
       </section> */}
     </div>
-  );
+  )
 }
