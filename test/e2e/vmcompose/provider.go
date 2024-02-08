@@ -2,9 +2,12 @@ package vmcompose
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/test/e2e/docker"
@@ -21,6 +24,7 @@ var _ infra.Provider = (*Provider)(nil)
 type Provider struct {
 	Testnet types.Testnet
 	Data    types.InfrastructureData
+	once    sync.Once
 }
 
 func NewProvider(testnet types.Testnet, data types.InfrastructureData) *Provider {
@@ -59,6 +63,8 @@ func (p *Provider) Setup() error {
 		}
 
 		def := docker.ComposeDef{
+			Network:     false,
+			BindAll:     true,
 			NetworkName: p.Testnet.Name,
 			NetworkCIDR: p.Testnet.IP.String(),
 			Nodes:       nodes,
@@ -83,10 +89,33 @@ func (p *Provider) Setup() error {
 	return nil
 }
 
-func (p *Provider) StartNodes(ctx context.Context, node ...*e2e.Node) error {
-	// TODO(corver): Copy all locally generated compose files and folders and config to VMs (see ../docker sync.Once).
+func (p *Provider) StartNodes(ctx context.Context, _ ...*e2e.Node) error {
+	var onceErr error
+	p.once.Do(func() {
+		// Copy the testnet dir to each VM
+		for vmName := range p.Data.VMs {
+			err := copyToVM(ctx, vmName, p.Testnet.Dir)
+			if err != nil {
+				onceErr = errors.Wrap(err, "copy files", "vmJSON", vmName)
+				return
+			}
+		}
 
-	return errors.New("not implemented")
+		// Start the services
+		// TODO(corver): Only start additional services and then start halo as per above StartNodes.
+		for vmName, instance := range p.Data.VMs {
+			compileFile := strings.ReplaceAll(instance.IPAddress.String(), ".", "_") + "_compose.yaml"
+			startCmd := fmt.Sprintf("cd /omni/%s && docker-compose -f %s up -d", p.Testnet.Name, compileFile)
+
+			err := execOnVM(ctx, vmName, startCmd)
+			if err != nil {
+				onceErr = errors.Wrap(err, "copy files", "vmJSON", vmName)
+				return
+			}
+		}
+	})
+
+	return onceErr
 }
 
 func (p *Provider) StopTestnet(ctx context.Context) error {
@@ -110,4 +139,27 @@ func groupByVM(instances map[string]e2e.InstanceData) map[string]map[string]bool
 	}
 
 	return resp
+}
+
+func execOnVM(ctx context.Context, vmName string, cmd string) error {
+	ssh := fmt.Sprintf("gcloud compute ssh --zone=us-east1-c %s -- \"%s\"", vmName, cmd)
+	out, err := exec.CommandContext(ctx, "bash", "-c", ssh).CombinedOutput()
+	if err != nil {
+		return errors.Wrap(err, "exec on VM", "output", string(out))
+	}
+
+	return nil
+}
+
+func copyToVM(ctx context.Context, vmName string, dir string) error {
+	tarscp := fmt.Sprintf("tar czf - %s | gcloud compute ssh --zone=us-east1-c %s -- \"cd /omni && tar xvzf -\"",
+		filepath.Base(dir), vmName)
+
+	cmd := exec.CommandContext(ctx, "bash", "-c", tarscp)
+	cmd.Dir = filepath.Dir(dir)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return errors.Wrap(err, "copy to VM", "output", string(out))
+	}
+
+	return nil
 }

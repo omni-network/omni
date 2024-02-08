@@ -1,4 +1,5 @@
 version: '2.4'
+{{- if .Network }}
 networks:
   {{ .NetworkName }}:
     labels:
@@ -8,6 +9,7 @@ networks:
       driver: default
       config:
       - subnet: {{ .NetworkCIDR }}
+{{ end }}
 
 services:
 {{- range .Nodes }}
@@ -18,7 +20,7 @@ services:
     image: {{ .Version }}
     init: true
     ports:
-    - 26656
+    - {{ if $.BindAll }}26656:{{end}}26656
     - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}26657
 {{- if .PrometheusProxyPort }}
     - {{ .PrometheusProxyPort }}:26660
@@ -27,9 +29,11 @@ services:
     volumes:
     - ./{{ .Name }}:/halo
     - ./{{ index $.NodeOmniEVMs .Name }}/jwtsecret:/geth/jwtsecret
+    {{- if $.Network }}
     networks:
       {{ $.NetworkName }}:
         ipv4_address: {{ .InternalIP }}
+    {{ end }}
 {{end}}
 
 {{- range .Anvils }}
@@ -42,9 +46,11 @@ services:
     entrypoint: ['anvil','--host','0.0.0.0','--chain-id','{{ .Chain.ID }}','--block-time','1', "--silent"]
     ports:
       - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}8545
+    {{- if $.Network }}
     networks:
       {{ $.NetworkName }}:
         ipv4_address: {{ .InternalIP }}
+    {{ end }}
 {{- end}}
 
   # Use geth as the omni EVMs.
@@ -88,15 +94,18 @@ services:
     ports:
       - 8551
       - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}8545
+      - {{ if $.BindAll }}30303:{{end}}30303
       - 8546
     depends_on:
       {{ .InstanceName }}-init:
         condition: service_completed_successfully
     volumes:
       - ./{{ .InstanceName }}:/geth
+    {{- if $.Network }}
     networks:
       {{ $.NetworkName }}:
         ipv4_address: {{ .InternalIP }}
+    {{ end }}
 {{end}}
 
 {{- if .Relayer }}
@@ -108,9 +117,11 @@ services:
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     volumes:
       - ./relayer:/relayer
+    {{- if $.Network }}
     networks:
       {{ $.NetworkName }}:
         ipv4_address: 10.186.73.200
+    {{ end }}
 {{end}}
 
 {{- if .Prometheus }}
@@ -122,7 +133,9 @@ services:
     restart: unless-stopped
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    {{- if $.Network }}
     networks:
       {{ $.NetworkName }}:
         ipv4_address: 10.186.73.201
+    {{ end }}
 {{ end }}

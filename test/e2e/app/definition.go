@@ -156,13 +156,18 @@ func TestnetFromManifest(manifest types.Manifest, manifestFile string, infd type
 
 		en := enode.NewV4(&nodeKey.PublicKey, inst.IPAddress, 30303, 30303)
 
+		internalIP := name // Use hostname in docker
+		if infd.Provider == vmcompose.ProviderName {
+			internalIP = inst.IPAddress.String()
+		}
+
 		omniEVMS = append(omniEVMS, types.OmniEVM{
 			Chain:           types.ChainOmniEVM,
 			InstanceName:    name,
 			InternalIP:      inst.IPAddress,
 			ProxyPort:       inst.Port,
-			InternalRPC:     fmt.Sprintf("http://%s:8545", name),
-			InternalAuthRPC: fmt.Sprintf("http://%s:8551", name),
+			InternalRPC:     fmt.Sprintf("http://%s:8545", internalIP),
+			InternalAuthRPC: fmt.Sprintf("http://%s:8551", internalIP),
 			ExternalRPC:     fmt.Sprintf("http://%s:%d", inst.ExtIPAddress.String(), inst.Port),
 			NodeKey:         nodeKey,
 			Enode:           en,
@@ -187,11 +192,17 @@ func TestnetFromManifest(manifest types.Manifest, manifestFile string, infd type
 		if !ok {
 			return types.Testnet{}, errors.New("anvil chain instance not found in infrastructure data")
 		}
+
+		internalIP := chain.Name // Use hostname in docker
+		if infd.Provider == vmcompose.ProviderName {
+			internalIP = inst.IPAddress.String()
+		}
+
 		anvils = append(anvils, types.AnvilChain{
 			Chain:       chain,
 			InternalIP:  inst.IPAddress,
 			ProxyPort:   inst.Port,
-			InternalRPC: fmt.Sprintf("http://%s:8545", chain.Name),
+			InternalRPC: fmt.Sprintf("http://%s:8545", internalIP),
 			ExternalRPC: fmt.Sprintf("http://%s:%d", inst.ExtIPAddress.String(), inst.Port),
 		})
 	}
@@ -224,11 +235,11 @@ func TestnetFromManifest(manifest types.Manifest, manifestFile string, infd type
 }
 
 // internalNetwork returns a internal intra-network netconf.Network from the testnet and deployInfo.
-func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman.DeployInfo, evmIndex int,
+func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman.DeployInfo, evmPrefix string,
 ) netconf.Network {
 	var chains []netconf.Chain
 
-	omniEVM := omniEVMByIndex(testnet, evmIndex)
+	omniEVM := omniEVMByPrefix(testnet, evmPrefix)
 	chains = append(chains, netconf.Chain{
 		ID:            omniEVM.Chain.ID,
 		Name:          omniEVM.Chain.Name,
@@ -310,19 +321,23 @@ func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 	}
 }
 
-// omniEVMByNode returns the omniEVM at the provided index, or
-// a random omniEVM if index is -1, or
-// the only omniEVM if there is only one.
-func omniEVMByIndex(testnet types.Testnet, index int) types.OmniEVM {
-	if index == -1 {
+// omniEVMByPrefix returns a omniEVM from the testnet with the given prefix.
+// Or a random omniEVM if prefix is empty.
+// Or the only omniEVM if there is only one.
+func omniEVMByPrefix(testnet types.Testnet, prefix string) types.OmniEVM {
+	if prefix == "" {
 		return random(testnet.OmniEVMs)
 	} else if len(testnet.OmniEVMs) == 1 {
 		return testnet.OmniEVMs[0]
-	} else if index < 0 || index >= len(testnet.OmniEVMs) {
-		panic("invalid index")
 	}
 
-	return testnet.OmniEVMs[index]
+	for _, evm := range testnet.OmniEVMs {
+		if strings.HasPrefix(evm.InstanceName, prefix) {
+			return evm
+		}
+	}
+
+	panic("evm not found")
 }
 
 // random returns a random item from a slice.

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -20,6 +21,7 @@ func Cleanup(ctx context.Context, testnet *e2e.Testnet) error {
 	if err != nil {
 		return err
 	}
+
 	err = cleanupDir(ctx, testnet.Dir)
 	if err != nil {
 		return err
@@ -70,18 +72,20 @@ func cleanupDir(ctx context.Context, dir string) error {
 	// On Linux, some local files in the volume will be owned by root since CometBFT
 	// runs as root inside the container, so we need to clean them up from within a
 	// container running as root too.
-	absDir, err := filepath.Abs(dir)
-	if err != nil {
-		return errors.Wrap(err, "abs dir")
-	}
-	err = docker.Exec(ctx, "run",
-		"--rm",             // Remove the container after it exits
-		"--entrypoint", "", // Clear the entrypoint so we can run a shell command
-		"-v", fmt.Sprintf("%v:/mount", absDir), // Mount the testnet dir into the container
-		"ethereum/client-go:latest",    // Use the latest geth image (which runs as root)
-		"sh", "-c", "rm -rf /mount/*/") // Remove all files in the mounted testnet dir
-	if err != nil {
-		return errors.Wrap(err, "docker exec rm mount")
+	if runtime.GOOS == "linux" {
+		absDir, err := filepath.Abs(dir)
+		if err != nil {
+			return errors.Wrap(err, "abs dir")
+		}
+		err = docker.Exec(ctx, "run",
+			"--rm",             // Remove the container after it exits
+			"--entrypoint", "", // Clear the entrypoint so we can run a shell command
+			"-v", fmt.Sprintf("%v:/mount", absDir), // Mount the testnet dir into the container
+			"ethereum/client-go:latest",    // Use the latest geth image (which runs as root)
+			"sh", "-c", "rm -rf /mount/*/") // Remove all files in the mounted testnet dir
+		if err != nil {
+			return errors.Wrap(err, "exec rm dir")
+		}
 	}
 
 	err = os.RemoveAll(dir)

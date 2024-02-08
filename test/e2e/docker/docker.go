@@ -52,8 +52,10 @@ func NewProvider(testnet types.Testnet, infd types.InfrastructureData) *Provider
 // any of these operations fail. It writes.
 func (p *Provider) Setup() error {
 	def := ComposeDef{
+		Network:     true,
 		NetworkName: p.testnet.Name,
 		NetworkCIDR: p.testnet.IP.String(),
+		BindAll:     false,
 		Nodes:       p.testnet.Nodes,
 		OmniEVMs:    p.testnet.OmniEVMs,
 		Anvils:      p.testnet.AnvilChains,
@@ -93,8 +95,10 @@ func (p *Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 }
 
 type ComposeDef struct {
+	Network     bool
 	NetworkName string
 	NetworkCIDR string
+	BindAll     bool
 
 	Nodes      []*e2e.Node
 	OmniEVMs   []types.OmniEVM

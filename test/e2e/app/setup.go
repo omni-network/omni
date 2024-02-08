@@ -72,7 +72,7 @@ func Setup(ctx context.Context, def Definition, promSecrets PromSecrets) error {
 		return err
 	}
 
-	for i, node := range def.Testnet.Nodes {
+	for _, node := range def.Testnet.Nodes {
 		nodeDir := filepath.Join(def.Testnet.Dir, node.Name)
 
 		dirs := []string{
@@ -111,7 +111,7 @@ func Setup(ctx context.Context, def Definition, promSecrets PromSecrets) error {
 			filepath.Join(nodeDir, PrivvalStateFile),
 		)).Save()
 
-		intNetwork := internalNetwork(def.Testnet, def.Netman.DeployInfo(), i)
+		intNetwork := internalNetwork(def.Testnet, def.Netman.DeployInfo(), node.Name)
 
 		if err := netconf.Save(intNetwork, filepath.Join(nodeDir, NetworkConfigFile)); err != nil {
 			return errors.Wrap(err, "write network config")
@@ -349,7 +349,7 @@ func writeRelayerConfig(def Definition, logCfg log.Config) error {
 	}
 
 	// Save network config
-	intNetwork := internalNetwork(def.Testnet, def.Netman.DeployInfo(), -1)
+	intNetwork := internalNetwork(def.Testnet, def.Netman.DeployInfo(), "")
 	if err := netconf.Save(intNetwork, filepath.Join(confRoot, networkFile)); err != nil {
 		return errors.Wrap(err, "save network config")
 	}

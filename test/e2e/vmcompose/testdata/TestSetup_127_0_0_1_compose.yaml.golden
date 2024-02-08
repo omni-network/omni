@@ -1,13 +1,4 @@
 version: '2.4'
-networks:
-  manifest:
-    labels:
-      e2e: true
-    driver: bridge
-    ipam:
-      driver: default
-      config:
-      - subnet: 127.0.0.0/24
 
 services:
   validator01:
@@ -17,15 +8,12 @@ services:
     image: omniops/halo:main
     init: true
     ports:
-    - 26656
+    - 26656:26656
     - 26657:26657
     - 6060
     volumes:
     - ./validator01:/halo
     - ./validator01_evm/jwtsecret:/geth/jwtsecret
-    networks:
-      manifest:
-        ipv4_address: 127.0.0.1
 
 
   # Use geth as the omni EVMs.
@@ -68,13 +56,11 @@ services:
     ports:
       - 8551
       - 8545:8545
+      - 30303:30303
       - 8546
     depends_on:
       validator01_evm-init:
         condition: service_completed_successfully
     volumes:
       - ./validator01_evm:/geth
-    networks:
-      manifest:
-        ipv4_address: 127.0.0.1
 
