@@ -55,12 +55,12 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
     ///      so that we can use the XMsg struct type in the interface.
     XTypes.Msg private _currentXmsg;
 
-    constructor(address owner_, address feeOracle_, uint64 valSetId, Validators.Validator[] memory validators_)
+    constructor(address owner_, address feeOracle_, uint64 valSetId, Validators.Validator[] memory validators)
         Ownable(owner_)
     {
         chainId = uint64(block.chainid);
         _setFeeOracle(feeOracle_);
-        _addValidators(valSetId, validators_);
+        _addValidators(valSetId, validators);
     }
 
     /// @inheritdoc IOmniPortalAdmin
@@ -189,9 +189,9 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
         emit FeeOracleChanged(oldFeeOracle, feeOracle);
     }
 
-    function _addValidators(uint64 valSetId, Validators.Validator[] memory validators_) internal {
+    function _addValidators(uint64 valSetId, Validators.Validator[] memory validators) internal {
         require(valSetId == _latestValSetId + 1, "OmniPortal: invalid valSetId");
-        require(validators_.length > 0, "OmniPortal: no validators");
+        require(validators.length > 0, "OmniPortal: no validators");
 
         // TODO: check for duplicates, consider requiring sorted input
 
@@ -199,8 +199,8 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
         Validators.Validator memory val;
         mapping(address => uint64) storage set = _validatorSet[valSetId];
 
-        for (uint256 i = 0; i < validators_.length; i++) {
-            val = validators_[i];
+        for (uint256 i = 0; i < validators.length; i++) {
+            val = validators[i];
 
             require(val.addr != address(0), "OmniPortal: no zero validator");
             require(val.power > 0, "OmniPortal: no zero power");
