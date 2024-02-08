@@ -6,11 +6,16 @@
 
 import { RemixBrowser } from "@remix-run/react";
 import { startTransition, StrictMode } from "react";
-import { hydrate } from "react-dom";
+import { hydrateRoot } from "react-dom/client";
 import { ThemeProvider } from "@material-tailwind/react";
 
 startTransition(() => {
-  // FIXME: This is a temporary fix for the issue with the Material Tailwind theme not being applied to the app.
-  // I can cause this locally by having dark reader extension enabled and then navigating to the app.
-  hydrate(<RemixBrowser />, document);
+  hydrateRoot(
+    document,
+    <StrictMode>
+      <ThemeProvider>
+        <RemixBrowser />
+      </ThemeProvider>
+    </StrictMode>
+  );
 });
