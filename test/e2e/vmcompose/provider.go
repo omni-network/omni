@@ -93,18 +93,20 @@ func (p *Provider) Setup() error {
 func (p *Provider) StartNodes(ctx context.Context, _ ...*e2e.Node) error {
 	var onceErr error
 	p.once.Do(func() {
+		log.Info(ctx, "Deleting existing VM deployments")
 		// Stop and remove all staging containers
 		for vmName := range p.Data.VMs {
-			cleanCmd := fmt.Sprintf("cd /omni/%s && sudo docker compose stop && sudo docker compose down && sudo rm -rf *", p.Testnet.Name)
-
+			cleanCmd := fmt.Sprintf("cd /omni/%s && "+
+				"sudo docker compose stop && "+
+				"sudo docker compose down && "+
+				"sudo rm -rf *", p.Testnet.Name)
 			err := execOnVM(ctx, vmName, cleanCmd)
 			if err != nil {
-				// onceErr = errors.Wrap(err, "clean files", "vm", vmName)
-				log.Warn(ctx, "env folder doesn't exit", err)
+				log.Warn(ctx, "Cleaning existing deployment", err)
 			}
 		}
 
-		// Copy the testnet dir to each VM
+		log.Info(ctx, "Copying artifacts to VMs")
 		for vmName := range p.Data.VMs {
 			err := copyToVM(ctx, vmName, p.Testnet.Dir)
 			if err != nil {
@@ -113,17 +115,16 @@ func (p *Provider) StartNodes(ctx context.Context, _ ...*e2e.Node) error {
 			}
 		}
 
-		// Start the services
+		log.Info(ctx, "Starting VM deployments")
 		// TODO(corver): Only start additional services and then start halo as per above StartNodes.
 		for vmName, instance := range p.Data.VMs {
 			composeFile := strings.ReplaceAll(instance.IPAddress.String(), ".", "_") + "_compose.yaml"
 			startCmd := fmt.Sprintf("cd /omni/%s && "+
 				"mv %s docker-compose.yaml && "+
-				"docker-compose up -d",
+				"sudo docker compose up -d",
 				p.Testnet.Name, composeFile)
 
 			err := execOnVM(ctx, vmName, startCmd)
-
 			if err != nil {
 				onceErr = errors.Wrap(err, "copy files", "vm", vmName)
 				return

@@ -156,18 +156,13 @@ func TestnetFromManifest(manifest types.Manifest, manifestFile string, infd type
 
 		en := enode.NewV4(&nodeKey.PublicKey, inst.IPAddress, 30303, 30303)
 
-		internalIP := name // Use hostname in docker
-		if infd.Provider == vmcompose.ProviderName {
-			internalIP = inst.IPAddress.String()
-		}
-
 		omniEVMS = append(omniEVMS, types.OmniEVM{
 			Chain:           types.ChainOmniEVM,
 			InstanceName:    name,
 			InternalIP:      inst.IPAddress,
 			ProxyPort:       inst.Port,
-			InternalRPC:     fmt.Sprintf("http://%s:8545", internalIP),
-			InternalAuthRPC: fmt.Sprintf("http://%s:8551", internalIP),
+			InternalRPC:     fmt.Sprintf("http://%s:8545", name),
+			InternalAuthRPC: fmt.Sprintf("http://%s:8551", name),
 			ExternalRPC:     fmt.Sprintf("http://%s:%d", inst.ExtIPAddress.String(), inst.Port),
 			NodeKey:         nodeKey,
 			Enode:           en,
@@ -193,16 +188,11 @@ func TestnetFromManifest(manifest types.Manifest, manifestFile string, infd type
 			return types.Testnet{}, errors.New("anvil chain instance not found in infrastructure data")
 		}
 
-		internalIP := chain.Name // Use hostname in docker
-		if infd.Provider == vmcompose.ProviderName {
-			internalIP = inst.IPAddress.String()
-		}
-
 		anvils = append(anvils, types.AnvilChain{
 			Chain:       chain,
 			InternalIP:  inst.IPAddress,
 			ProxyPort:   inst.Port,
-			InternalRPC: fmt.Sprintf("http://%s:8545", internalIP),
+			InternalRPC: fmt.Sprintf("http://%s:8545", chain.Name),
 			ExternalRPC: fmt.Sprintf("http://%s:%d", inst.ExtIPAddress.String(), inst.Port),
 		})
 	}

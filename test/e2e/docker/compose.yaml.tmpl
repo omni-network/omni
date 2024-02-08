@@ -29,6 +29,9 @@ services:
     volumes:
     - ./{{ .Name }}:/halo
     - ./{{ index $.NodeOmniEVMs .Name }}/jwtsecret:/geth/jwtsecret
+    depends_on:
+      {{ index $.NodeOmniEVMs .Name }}:
+        condition: service_healthy
     {{- if $.Network }}
     networks:
       {{ $.NetworkName }}:
@@ -99,6 +102,10 @@ services:
     depends_on:
       {{ .InstanceName }}-init:
         condition: service_completed_successfully
+    healthcheck:
+      test: "nc -z localhost 8545"
+      interval: 1s
+      retries: 30
     volumes:
       - ./{{ .InstanceName }}:/geth
     {{- if $.Network }}

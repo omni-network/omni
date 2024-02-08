@@ -20,6 +20,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	relayapp "github.com/omni-network/omni/relayer/app"
 	"github.com/omni-network/omni/test/e2e/types"
+	"github.com/omni-network/omni/test/e2e/vmcompose"
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/p2p"
@@ -349,8 +350,12 @@ func writeRelayerConfig(def Definition, logCfg log.Config) error {
 	}
 
 	// Save network config
-	intNetwork := internalNetwork(def.Testnet, def.Netman.DeployInfo(), "")
-	if err := netconf.Save(intNetwork, filepath.Join(confRoot, networkFile)); err != nil {
+	network := internalNetwork(def.Testnet, def.Netman.DeployInfo(), "")
+	if def.Infra.GetInfrastructureData().Provider == vmcompose.ProviderName {
+		network = externalNetwork(def.Testnet, def.Netman.DeployInfo())
+	}
+
+	if err := netconf.Save(network, filepath.Join(confRoot, networkFile)); err != nil {
 		return errors.Wrap(err, "save network config")
 	}
 

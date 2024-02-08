@@ -14,6 +14,9 @@ services:
     volumes:
     - ./validator01:/halo
     - ./validator01_evm/jwtsecret:/geth/jwtsecret
+    depends_on:
+      validator01_evm:
+        condition: service_healthy
 
 
   # Use geth as the omni EVMs.
@@ -61,6 +64,10 @@ services:
     depends_on:
       validator01_evm-init:
         condition: service_completed_successfully
+    healthcheck:
+      test: "nc -z localhost 8545"
+      interval: 1s
+      retries: 30
     volumes:
       - ./validator01_evm:/geth
 
