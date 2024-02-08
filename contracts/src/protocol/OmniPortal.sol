@@ -20,7 +20,10 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
     uint64 public constant XMSG_MIN_GAS_LIMIT = 21_000;
 
     /// @inheritdoc IOmniPortal
-    uint8 public constant XSUB_QUORUM_THRESHOLD_PCT = 66;
+    uint8 public constant XSUB_QUORUM_THRESHOLD_NUMERATOR = 66;
+
+    /// @inheritdoc IOmniPortal
+    uint8 public constant XSUB_QUORUM_THRESHOLD_DENOMINATOR = 100;
 
     /// @inheritdoc IOmniPortal
     uint64 public immutable chainId;
@@ -118,7 +121,8 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
                 xsub.signatures,
                 _validatorSet[valSetId],
                 _validatorSetTotalPower[valSetId],
-                XSUB_QUORUM_THRESHOLD_PCT
+                XSUB_QUORUM_THRESHOLD_NUMERATOR,
+                XSUB_QUORUM_THRESHOLD_DENOMINATOR
             ),
             "OmniPortal: no quorum"
         );

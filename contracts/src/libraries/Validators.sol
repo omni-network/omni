@@ -8,10 +8,6 @@ import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
  * @dev Defines validator data types and quorum verification logic.
  */
 library Validators {
-    /// @dev Threshold scale factor, used when checking if an amount of power
-    ///     exceeds a percentage of the total power, without loss of precision.
-    uint16 private constant _THRESHOLD_SCALE_FACTOR = 1000;
-
     struct SigTuple {
         /// @dev Validator ethereum address
         address validatorAddr;
@@ -32,16 +28,18 @@ library Validators {
      * @param sigs Signatures to verify
      * @param validators Maps validator addresses to their voting power
      * @param totalPower Total voting power
-     * @param pct Percentage of total power required to reach quorum, 0-100
+     * @param thresholdNumerator Numerator of the quorum threshold. Ex: 2/3 -> 2
+     * @param thresholdDenominator Denominator of the quorum threshold. Ex: 2/3 -> 3
      */
     function verifyQuorum(
         bytes32 digest,
         SigTuple[] calldata sigs,
         mapping(address => uint64) storage validators,
         uint64 totalPower,
-        uint8 pct
+        uint8 thresholdNumerator,
+        uint8 thresholdDenominator
     ) internal view returns (bool) {
-        uint64 power;
+        uint64 votedPower;
         SigTuple calldata sig;
 
         for (uint256 i = 0; i < sigs.length; i++) {
@@ -49,8 +47,8 @@ library Validators {
 
             require(_isUnique(sig.validatorAddr, sigs, i + 1), "OmniPortal: duplicate validator");
 
-            if (_verifySig(sig, digest)) power += validators[sig.validatorAddr];
-            if (_exceedsThreshold(power, totalPower, pct)) return true;
+            if (_verifySig(sig, digest)) votedPower += validators[sig.validatorAddr];
+            if (_exceedsThreshold(votedPower, totalPower, thresholdNumerator, thresholdDenominator)) return true;
         }
 
         return false;
@@ -62,8 +60,12 @@ library Validators {
     }
 
     /// @dev Verifies that the given power exceeds the given percentage of the total power.
-    function _exceedsThreshold(uint64 power, uint64 totalPower, uint64 pct) private pure returns (bool) {
-        return (power * _THRESHOLD_SCALE_FACTOR) >= (totalPower * _THRESHOLD_SCALE_FACTOR * pct) / 100;
+    function _exceedsThreshold(uint64 votedPower, uint64 totalPower, uint8 numerator, uint8 denominator)
+        private
+        pure
+        returns (bool)
+    {
+        return votedPower > totalPower * numerator / denominator;
     }
 
     /// @dev Verifies that the given address is unique in the given array of SigTuples, starting at the given index.
