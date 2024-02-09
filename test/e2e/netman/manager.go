@@ -38,14 +38,14 @@ var (
 // Manager abstract logic to deploy and bootstrap a extNetwork.
 type Manager interface {
 	// DeployPublicPortals deploys portals to public chains, like arb-goerli.
-	DeployPublicPortals(ctx context.Context) error
+	DeployPublicPortals(ctx context.Context, valSetID uint64, validators []bindings.Validator) error
 
 	// DeployInfo returns the deployed network information.
 	// Note that the private chains has to be deterministic, since this is called before deploying private portals.
 	DeployInfo() map[types.EVMChain]DeployInfo
 
 	// DeployPrivatePortals deploys portals to private (docker) chains.
-	DeployPrivatePortals(ctx context.Context) error
+	DeployPrivatePortals(ctx context.Context, valSetID uint64, validators []bindings.Validator) error
 
 	// Portals returns the deployed portals from both public and private chains.
 	Portals() map[uint64]Portal
@@ -178,7 +178,8 @@ func (m *manager) DeployInfo() map[types.EVMChain]DeployInfo {
 	return resp
 }
 
-func (m *manager) DeployPublicPortals(ctx context.Context) error {
+func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, validators []bindings.Validator,
+) error {
 	// Log provided key balances for public chains (just FYI).
 	for _, portal := range m.portals {
 		if !portal.Chain.IsPublic {
@@ -206,7 +207,7 @@ func (m *manager) DeployPublicPortals(ctx context.Context) error {
 			return errors.Wrap(err, "get block number")
 		}
 
-		addr, contract, txops, err := deployContract(ctx, chainID, portal.Client, m.publicDeployKey)
+		addr, contract, txops, err := deployContract(ctx, chainID, portal.Client, m.publicDeployKey, valSetID, validators)
 		if err != nil {
 			return errors.Wrap(err, "deploy public portal contract")
 		}
@@ -225,7 +226,8 @@ func (m *manager) DeployPublicPortals(ctx context.Context) error {
 	return nil
 }
 
-func (m *manager) DeployPrivatePortals(ctx context.Context) error {
+func (m *manager) DeployPrivatePortals(ctx context.Context, valSetID uint64, validators []bindings.Validator,
+) error {
 	log.Info(ctx, "Deploying private portal contracts")
 
 	for chainID := range m.portals {
@@ -234,7 +236,7 @@ func (m *manager) DeployPrivatePortals(ctx context.Context) error {
 			continue // Public chains are already deployed.
 		}
 
-		addr, contract, txops, err := deployContract(ctx, chainID, portal.Client, privateDeployKey)
+		addr, contract, txops, err := deployContract(ctx, chainID, portal.Client, privateDeployKey, valSetID, validators)
 		if err != nil {
 			return errors.Wrap(err, "deploy public portal contract")
 		} else if addr != portal.DeployInfo.PortalAddress {
