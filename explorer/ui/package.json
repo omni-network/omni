@@ -12,9 +12,6 @@
     "codegen": "graphql-codegen --config codegen.ts"
   },
   "dependencies": {
-    "@fortawesome/fontawesome-svg-core": "6.5.1",
-    "@fortawesome/free-brands-svg-icons": "6.5.1",
-    "@fortawesome/free-solid-svg-icons": "6.5.1",
     "@heroicons/react": "2.1.1",
     "@remix-run/css-bundle": "^2.5.0",
     "@remix-run/node": "^2.5.0",
@@ -30,7 +27,8 @@
     "react": "^18.2.0",
     "react-daisyui": "5.0.0",
     "react-dom": "^18.2.0",
-    "react-social-icons": "6.10.0"
+    "react-social-icons": "6.10.0",
+    "save": "2.9.0"
   },
   "devDependencies": {
     "@fontsource/urbanist": "5.0.18",

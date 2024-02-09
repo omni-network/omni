@@ -30,9 +30,10 @@ RUN mkdir /app
 WORKDIR /app
 
 COPY --from=deps /app/node_modules /app/node_modules
+RUN corepack enable
 
 ADD . .
-RUN npm run build
+RUN pnpm run build
 
 # Finally, build the production image with minimal footprint
 FROM base

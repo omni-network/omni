@@ -9,6 +9,7 @@ open-dev: ## opens all of the local host endpoints
 	python -m webbrowser "http://localhost:8080"
 
 build: ## builds our docker images
+	@docker-compose build
 	@echo "Building containers"
 	@make -C ../ build-docker
 

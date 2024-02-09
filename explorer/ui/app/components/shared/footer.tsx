@@ -1,6 +1,5 @@
-import { SocialIcon } from 'react-social-icons/component'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faDiscord, faXTwitter, faTelegram } from '@fortawesome/free-brands-svg-icons'
+import { Telegram, Discord, Github, Twitter } from './icons'
 import 'react-social-icons/discord'
 import 'react-social-icons/twitter'
 import 'react-social-icons/telegram'
@@ -44,13 +43,13 @@ export function Footer() {
         {/* bottom right */}
         <section className="grid grid-flow-col gap-6 place-items-center-stretch">
           <a href="https://discord.gg/bKNXmaX9VD" target="_blank" className="m3 place-items-center">
-            <FontAwesomeIcon icon={faDiscord} size="xl" />
+            <Discord />
           </a>
           <a href="https://twitter.com/OmniFDN" target="_blank" className="m3">
-            <FontAwesomeIcon icon={faXTwitter} size="xl" />
+            <Twitter />
           </a>
           <a href="https://t.me/OmniFDN" target="_blank" className="m3">
-            <FontAwesomeIcon icon={faTelegram} size="xl" className="m3" />
+            <Telegram />
           </a>
         </section>
       </div>
