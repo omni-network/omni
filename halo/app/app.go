@@ -57,12 +57,13 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "create xchain provider")
 	}
 
-	attSvc, err := attest.LoadAttester(ctx, privVal.Key.PrivKey, cfg.AttestStateFile(), xprovider, network.ChainIDs())
+	attSvc, err := attest.LoadAttester(ctx, privVal.Key.PrivKey, cfg.AttestStateFile(), xprovider,
+		network.ChainNamesByIDs())
 	if err != nil {
 		return errors.Wrap(err, "create attester")
 	}
 
-	appState, err := comet.LoadOrGenState(cfg.AppStateDir(), cfg.AppStatePersistInterval)
+	appState, err := comet.LoadOrGenState(cfg.AppStateDir(), cfg.AppStatePersistInterval, network.ChainNamesByIDs())
 	if err != nil {
 		return errors.Wrap(err, "load or gen app state")
 	}

@@ -35,6 +35,12 @@ interface IOmniPortal {
     );
 
     /**
+     * @notice Emitted when a new validator set is added
+     * @param setId Validator set ID
+     */
+    event ValidatorSetAdded(uint64 indexed setId);
+
+    /**
      * @notice Default xmsg execution gas limit, enforced on destination chain
      * @return Gas limit
      */
@@ -51,6 +57,20 @@ interface IOmniPortal {
      * @return Minimum gas limit
      */
     function XMSG_MIN_GAS_LIMIT() external view returns (uint64);
+
+    /**
+     * @notice Numerator of the fraction of total validator power required to
+     *         accept an XSubmission. Ex 2/3 -> 2
+     * @return Quorum threshold numerator
+     */
+    function XSUB_QUORUM_NUMERATOR() external view returns (uint8);
+
+    /**
+     * @notice Denominator of the fraction of total validator power required to
+     *         accept an XSubmission. Ex 2/3 -> 3
+     * @return Quorum threshold denominator
+     */
+    function XSUB_QUORUM_DENOMINATOR() external view returns (uint8);
 
     /**
      * @notice Chain ID of the chain to which this portal is deployed

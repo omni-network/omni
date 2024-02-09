@@ -16,8 +16,8 @@ const (
 	FieldID = "id"
 	// FieldUUID holds the string denoting the uuid field in the database.
 	FieldUUID = "uuid"
-	// FieldChainId holds the string denoting the chainid field in the database.
-	FieldChainId = "chain_id"
+	// FieldChainID holds the string denoting the chainid field in the database.
+	FieldChainID = "chain_id"
 	// FieldHeight holds the string denoting the height field in the database.
 	FieldHeight = "height"
 	// FieldCreatedAt holds the string denoting the createdat field in the database.
@@ -32,7 +32,7 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldUUID,
-	FieldChainId,
+	FieldChainID,
 	FieldHeight,
 	FieldCreatedAt,
 	FieldUpdatedAt,
@@ -70,9 +70,9 @@ func ByUUID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUUID, opts...).ToFunc()
 }
 
-// ByChainId orders the results by the ChainId field.
-func ByChainId(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldChainId, opts...).ToFunc()
+// ByChainID orders the results by the ChainID field.
+func ByChainID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldChainID, opts...).ToFunc()
 }
 
 // ByHeight orders the results by the Height field.

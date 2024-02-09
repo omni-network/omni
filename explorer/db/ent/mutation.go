@@ -3382,8 +3382,8 @@ type XProviderCursorMutation struct {
 	typ           string
 	id            *int
 	_UUID         *uuid.UUID
-	_ChainId      *uint64
-	add_ChainId   *int64
+	_ChainID      *uint64
+	add_ChainID   *int64
 	_Height       *uint64
 	add_Height    *int64
 	_CreatedAt    *time.Time
@@ -3528,60 +3528,60 @@ func (m *XProviderCursorMutation) ResetUUID() {
 	m._UUID = nil
 }
 
-// SetChainId sets the "ChainId" field.
-func (m *XProviderCursorMutation) SetChainId(u uint64) {
-	m._ChainId = &u
-	m.add_ChainId = nil
+// SetChainID sets the "ChainID" field.
+func (m *XProviderCursorMutation) SetChainID(u uint64) {
+	m._ChainID = &u
+	m.add_ChainID = nil
 }
 
-// ChainId returns the value of the "ChainId" field in the mutation.
-func (m *XProviderCursorMutation) ChainId() (r uint64, exists bool) {
-	v := m._ChainId
+// ChainID returns the value of the "ChainID" field in the mutation.
+func (m *XProviderCursorMutation) ChainID() (r uint64, exists bool) {
+	v := m._ChainID
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldChainId returns the old "ChainId" field's value of the XProviderCursor entity.
+// OldChainID returns the old "ChainID" field's value of the XProviderCursor entity.
 // If the XProviderCursor object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *XProviderCursorMutation) OldChainId(ctx context.Context) (v uint64, err error) {
+func (m *XProviderCursorMutation) OldChainID(ctx context.Context) (v uint64, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldChainId is only allowed on UpdateOne operations")
+		return v, errors.New("OldChainID is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldChainId requires an ID field in the mutation")
+		return v, errors.New("OldChainID requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldChainId: %w", err)
+		return v, fmt.Errorf("querying old value for OldChainID: %w", err)
 	}
-	return oldValue.ChainId, nil
+	return oldValue.ChainID, nil
 }
 
-// AddChainId adds u to the "ChainId" field.
-func (m *XProviderCursorMutation) AddChainId(u int64) {
-	if m.add_ChainId != nil {
-		*m.add_ChainId += u
+// AddChainID adds u to the "ChainID" field.
+func (m *XProviderCursorMutation) AddChainID(u int64) {
+	if m.add_ChainID != nil {
+		*m.add_ChainID += u
 	} else {
-		m.add_ChainId = &u
+		m.add_ChainID = &u
 	}
 }
 
-// AddedChainId returns the value that was added to the "ChainId" field in this mutation.
-func (m *XProviderCursorMutation) AddedChainId() (r int64, exists bool) {
-	v := m.add_ChainId
+// AddedChainID returns the value that was added to the "ChainID" field in this mutation.
+func (m *XProviderCursorMutation) AddedChainID() (r int64, exists bool) {
+	v := m.add_ChainID
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// ResetChainId resets all changes to the "ChainId" field.
-func (m *XProviderCursorMutation) ResetChainId() {
-	m._ChainId = nil
-	m.add_ChainId = nil
+// ResetChainID resets all changes to the "ChainID" field.
+func (m *XProviderCursorMutation) ResetChainID() {
+	m._ChainID = nil
+	m.add_ChainID = nil
 }
 
 // SetHeight sets the "Height" field.
@@ -3750,8 +3750,8 @@ func (m *XProviderCursorMutation) Fields() []string {
 	if m._UUID != nil {
 		fields = append(fields, xprovidercursor.FieldUUID)
 	}
-	if m._ChainId != nil {
-		fields = append(fields, xprovidercursor.FieldChainId)
+	if m._ChainID != nil {
+		fields = append(fields, xprovidercursor.FieldChainID)
 	}
 	if m._Height != nil {
 		fields = append(fields, xprovidercursor.FieldHeight)
@@ -3772,8 +3772,8 @@ func (m *XProviderCursorMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case xprovidercursor.FieldUUID:
 		return m.UUID()
-	case xprovidercursor.FieldChainId:
-		return m.ChainId()
+	case xprovidercursor.FieldChainID:
+		return m.ChainID()
 	case xprovidercursor.FieldHeight:
 		return m.Height()
 	case xprovidercursor.FieldCreatedAt:
@@ -3791,8 +3791,8 @@ func (m *XProviderCursorMutation) OldField(ctx context.Context, name string) (en
 	switch name {
 	case xprovidercursor.FieldUUID:
 		return m.OldUUID(ctx)
-	case xprovidercursor.FieldChainId:
-		return m.OldChainId(ctx)
+	case xprovidercursor.FieldChainID:
+		return m.OldChainID(ctx)
 	case xprovidercursor.FieldHeight:
 		return m.OldHeight(ctx)
 	case xprovidercursor.FieldCreatedAt:
@@ -3815,12 +3815,12 @@ func (m *XProviderCursorMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetUUID(v)
 		return nil
-	case xprovidercursor.FieldChainId:
+	case xprovidercursor.FieldChainID:
 		v, ok := value.(uint64)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetChainId(v)
+		m.SetChainID(v)
 		return nil
 	case xprovidercursor.FieldHeight:
 		v, ok := value.(uint64)
@@ -3851,8 +3851,8 @@ func (m *XProviderCursorMutation) SetField(name string, value ent.Value) error {
 // this mutation.
 func (m *XProviderCursorMutation) AddedFields() []string {
 	var fields []string
-	if m.add_ChainId != nil {
-		fields = append(fields, xprovidercursor.FieldChainId)
+	if m.add_ChainID != nil {
+		fields = append(fields, xprovidercursor.FieldChainID)
 	}
 	if m.add_Height != nil {
 		fields = append(fields, xprovidercursor.FieldHeight)
@@ -3865,8 +3865,8 @@ func (m *XProviderCursorMutation) AddedFields() []string {
 // was not set, or was not defined in the schema.
 func (m *XProviderCursorMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
-	case xprovidercursor.FieldChainId:
-		return m.AddedChainId()
+	case xprovidercursor.FieldChainID:
+		return m.AddedChainID()
 	case xprovidercursor.FieldHeight:
 		return m.AddedHeight()
 	}
@@ -3878,12 +3878,12 @@ func (m *XProviderCursorMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *XProviderCursorMutation) AddField(name string, value ent.Value) error {
 	switch name {
-	case xprovidercursor.FieldChainId:
+	case xprovidercursor.FieldChainID:
 		v, ok := value.(int64)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.AddChainId(v)
+		m.AddChainID(v)
 		return nil
 	case xprovidercursor.FieldHeight:
 		v, ok := value.(int64)
@@ -3922,8 +3922,8 @@ func (m *XProviderCursorMutation) ResetField(name string) error {
 	case xprovidercursor.FieldUUID:
 		m.ResetUUID()
 		return nil
-	case xprovidercursor.FieldChainId:
-		m.ResetChainId()
+	case xprovidercursor.FieldChainID:
+		m.ResetChainID()
 		return nil
 	case xprovidercursor.FieldHeight:
 		m.ResetHeight()

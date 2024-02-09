@@ -37,7 +37,7 @@ func TestAttester(t *testing.T) {
 	reloadAttester := func(t *testing.T, from1, from2 uint64) *attest.Attester {
 		t.Helper()
 		p := make(stubProvider)
-		a, err := attest.LoadAttester(ctx, pk, path, p, []uint64{chain1, chain2, chain3})
+		a, err := attest.LoadAttester(ctx, pk, path, p, map[uint64]string{chain1: "", chain2: "", chain3: ""})
 		require.NoError(t, err)
 
 		require.EqualValues(t, from1, p[chain1])

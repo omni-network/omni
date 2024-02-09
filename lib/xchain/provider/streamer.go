@@ -8,7 +8,9 @@ import (
 )
 
 // streamBlocks triggers a continuously running routine that fetches and delivers xBlocks.
-func (p *Provider) streamBlocks(ctx context.Context, chainID uint64, height uint64, callback xchain.ProviderCallback) {
+func (p *Provider) streamBlocks(ctx context.Context, chainName string, chainID uint64, height uint64,
+	callback xchain.ProviderCallback,
+) {
 	go func() {
 		backoff, reset := p.backoffFunc(ctx)
 		currentHeight := height
@@ -29,10 +31,13 @@ func (p *Provider) streamBlocks(ctx context.Context, chainID uint64, height uint
 					return // Application context is killed
 				} else if err != nil {
 					log.Warn(currCtx, "Failure delivering xblock callback (will retry)", err)
+					callbackErrTotal.WithLabelValues(chainName).Inc()
 					backoff()
 
 					continue
 				}
+
+				streamHeight.WithLabelValues(chainName).Set(float64(currentHeight))
 
 				break // successfully delivered the xBlock
 			}

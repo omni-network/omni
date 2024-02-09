@@ -31,7 +31,7 @@ func submissionFromBinding(sub bindings.XTypesSubmission, destChainID uint64) xc
 	sigs := make([]xchain.SigTuple, 0, len(sub.Signatures))
 	for _, sig := range sub.Signatures {
 		sigs = append(sigs, xchain.SigTuple{
-			ValidatorAddress: [20]byte(sig.ValidatorPubKey),
+			ValidatorAddress: sig.ValidatorAddr,
 			Signature:        [65]byte(sig.Signature),
 		})
 	}
@@ -55,6 +55,7 @@ func submissionFromBinding(sub bindings.XTypesSubmission, destChainID uint64) xc
 
 	return xchain.Submission{
 		AttestationRoot: sub.AttestationRoot,
+		ValidatorSetID:  sub.ValidatorSetId,
 		BlockHeader: xchain.BlockHeader{
 			SourceChainID: sub.BlockHeader.SourceChainId,
 			BlockHeight:   sub.BlockHeader.BlockHeight,

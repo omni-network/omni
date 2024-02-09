@@ -31,6 +31,7 @@ type DefinitionConfig struct {
 	// Secrets (not required for devnet)
 	DeployKeyFile  string
 	RelayerKeyFile string
+	RPCOverrides   map[string]string
 
 	InfraDataFile string // Not required for docker provider
 }
@@ -69,7 +70,7 @@ func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
 		return Definition{}, errors.Wrap(err, "loading infrastructure data")
 	}
 
-	testnet, err := TestnetFromManifest(manifest, cfg.ManifestFile, infd)
+	testnet, err := TestnetFromManifest(manifest, cfg.ManifestFile, infd, cfg.RPCOverrides)
 	if err != nil {
 		return Definition{}, errors.Wrap(err, "loading testnet")
 	}
@@ -134,6 +135,7 @@ func LoadManifest(path string) (types.Manifest, error) {
 
 //nolint:nosprintfhostport // Not an issue for non-critical e2e test code.
 func TestnetFromManifest(manifest types.Manifest, manifestFile string, infd types.InfrastructureData,
+	rpcOverrides map[string]string,
 ) (types.Testnet, error) {
 	cmtTestnet, err := e2e.NewTestnetFromManifest(manifest.Manifest, manifestFile, infd.InfrastructureData)
 	if err != nil {
@@ -200,9 +202,15 @@ func TestnetFromManifest(manifest types.Manifest, manifestFile string, infd type
 		if err != nil {
 			return types.Testnet{}, errors.Wrap(err, "get public chain")
 		}
+
+		addr, ok := rpcOverrides[name]
+		if !ok {
+			addr = types.PublicRPCByName(name)
+		}
+
 		publics = append(publics, types.PublicChain{
 			Chain:      chain,
-			RPCAddress: types.PublicRPCByName(name),
+			RPCAddress: addr,
 		})
 	}
 

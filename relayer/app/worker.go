@@ -99,22 +99,20 @@ func newCallback(xProvider xchain.Provider, initialOffsets map[xchain.StreamID]u
 		if err != nil {
 			return err
 		} else if !ok { // Sanity check, should never happen.
-			return errors.New("attestation block not finalized [BUG!]",
-				"chain", att.SourceChainID,
-				"height", att.BlockHeight,
-			)
+			return errors.New("attestation block not finalized [BUG!]")
 		} else if block.BlockHash != att.BlockHash { // Sanity check, should never happen.
 			return errors.New("attestation block hash mismatch [BUG!]",
-				"chain", att.SourceChainID,
-				"height", att.BlockHeight,
 				log.Hex7("attestation_hash", att.BlockHash[:]),
 				log.Hex7("block_hash", block.BlockHash[:]),
 			)
 		} else if len(block.Msgs) == 0 {
-			log.Debug(ctx, "Skipping empty attested block",
-				"height", att.BlockHeight, "source_chain_id", att.SourceChainID)
-
+			log.Debug(ctx, "Skipping empty attested block")
 			return nil
+		}
+
+		tree, err := xchain.NewBlockTree(block)
+		if err != nil {
+			return err
 		}
 
 		// Split into streams
@@ -128,6 +126,7 @@ func newCallback(xProvider xchain.Provider, initialOffsets map[xchain.StreamID]u
 				StreamID:       streamID,
 				AggAttestation: att,
 				Msgs:           msgs,
+				Tree:           tree,
 			}
 
 			submissions, err := creator(update)

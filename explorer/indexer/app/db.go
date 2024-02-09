@@ -4,40 +4,27 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/explorer/db/ent"
+	"github.com/omni-network/omni/explorer/db/ent/xprovidercursor"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
 )
 
+// newCallback returns the indexer xprovider callback that
+// inserts xblocks into the DB. It also updates cursors.
 func newCallback(client *ent.Client) xchain.ProviderCallback {
 	return func(ctx context.Context, block xchain.Block) error {
 		tx, err := client.BeginTx(ctx, nil)
 		if err != nil {
 			return errors.Wrap(err, "begin transaction")
 		}
-		defer func() {
-			if err := tx.Rollback(); err != nil {
-				log.Error(ctx, "Rollback failed", err)
+
+		if err := insertBlockTX(ctx, tx, block); err != nil {
+			if err := tx.Rollback(); err != nil { // Just log on rollback failure
+				log.Error(ctx, "Rollback transaction failed", err)
 			}
-		}()
 
-		insertedBlock, err := insertBlock(ctx, tx, block)
-		if err != nil {
-			return errors.Wrap(err, "insert block")
-		}
-
-		err = insertMessages(ctx, tx, block, insertedBlock)
-		if err != nil {
-			return errors.Wrap(err, "insert messages")
-		}
-
-		err = insertReceipts(ctx, tx, block, insertedBlock)
-		if err != nil {
-			return errors.Wrap(err, "insert receipts")
-		}
-
-		if err := tx.Commit(); err != nil {
-			return errors.Wrap(err, "commit transaction")
+			return errors.Wrap(err, "insert xblock")
 		}
 
 		log.Info(ctx, "Inserted xblock",
@@ -47,6 +34,68 @@ func newCallback(client *ent.Client) xchain.ProviderCallback {
 
 		return nil
 	}
+}
+
+// insertBlockTX inserts the block as part of a tx and commits it.
+// The caller should handle rollback on any error.
+func insertBlockTX(ctx context.Context, tx *ent.Tx, block xchain.Block) error {
+	insertedBlock, err := insertBlock(ctx, tx, block)
+	if err != nil {
+		return errors.Wrap(err, "insert block")
+	}
+
+	err = insertMessages(ctx, tx, block, insertedBlock)
+	if err != nil {
+		return errors.Wrap(err, "insert messages")
+	}
+
+	err = insertReceipts(ctx, tx, block, insertedBlock)
+	if err != nil {
+		return errors.Wrap(err, "insert receipts")
+	}
+
+	if err := incrementCursor(ctx, tx, block.SourceChainID, block.BlockHeight); err != nil {
+		return errors.Wrap(err, "increment cursor")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(err, "commit transaction")
+	}
+
+	return nil
+}
+
+// incrementCursor increments the cursor for the given chainID (it ensures it matches height).
+func incrementCursor(ctx context.Context, tx *ent.Tx, chainID, height uint64) error {
+	cursor, ok, err := getCursor(ctx, tx.XProviderCursor, chainID)
+	if err != nil {
+		return errors.Wrap(err, "query cursor")
+	} else if !ok {
+		return errors.New("cursor not found")
+	} else if cursor.Height != 0 && cursor.Height != height-1 {
+		// Sanity check, we MUST insert sequentially (after 0).
+		return errors.New("unexpected cursor vs block height mismatch [BUG]")
+	}
+
+	cursor.Height = height
+	if _, err := tx.XProviderCursor.UpdateOne(cursor).Save(ctx); err != nil {
+		return errors.Wrap(err, "update cursor")
+	}
+
+	return nil
+}
+
+// getCursor returns the current cursor for the given chainID, or false if it doesn't exist.
+func getCursor(ctx context.Context, client *ent.XProviderCursorClient, chainID uint64,
+) (*ent.XProviderCursor, bool, error) {
+	cursor, err := client.Query().Where(xprovidercursor.ChainID(chainID)).Only(ctx)
+	if ent.IsNotFound(err) {
+		return nil, false, nil
+	} else if err != nil {
+		return nil, false, errors.Wrap(err, "query cursor")
+	}
+
+	return cursor, true, nil
 }
 
 func insertBlock(ctx context.Context, tx *ent.Tx, block xchain.Block) (*ent.Block, error) {

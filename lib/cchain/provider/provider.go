@@ -82,10 +82,12 @@ func (p Provider) Subscribe(ctx context.Context, chainID uint64, height uint64, 
 						return // Don't backoff or log on ctx cancel, just return.
 					} else if err != nil {
 						log.Warn(ctx, "Failed processing attestation; will retry", err)
+						callbackErrTotal.Inc()
 						backoff()
 
 						continue
 					}
+					streamHeight.Set(float64(height)) // Update stream height metric
 
 					break // Success, stop retrying.
 				}

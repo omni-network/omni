@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"entgo.io/ent/schema/index"
 	"time"
 
 	"entgo.io/ent"
@@ -18,12 +19,18 @@ func (XProviderCursor) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("UUID", uuid.UUID{}).
 			Default(uuid.New),
-		field.Uint64("ChainId"),
+		field.Uint64("ChainID"),
 		field.Uint64("Height"),
 		field.Time("CreatedAt").
 			Default(time.Now()),
 		field.Time("UpdatedAt").
 			Default(time.Now()),
+	}
+}
+
+func (XProviderCursor) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("ChainID").Unique(), // Unique cursor per ChainID.
 	}
 }
 

@@ -20,8 +20,8 @@ type XProviderCursor struct {
 	ID int `json:"id,omitempty"`
 	// UUID holds the value of the "UUID" field.
 	UUID uuid.UUID `json:"UUID,omitempty"`
-	// ChainId holds the value of the "ChainId" field.
-	ChainId uint64 `json:"ChainId,omitempty"`
+	// ChainID holds the value of the "ChainID" field.
+	ChainID uint64 `json:"ChainID,omitempty"`
 	// Height holds the value of the "Height" field.
 	Height uint64 `json:"Height,omitempty"`
 	// CreatedAt holds the value of the "CreatedAt" field.
@@ -36,7 +36,7 @@ func (*XProviderCursor) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case xprovidercursor.FieldID, xprovidercursor.FieldChainId, xprovidercursor.FieldHeight:
+		case xprovidercursor.FieldID, xprovidercursor.FieldChainID, xprovidercursor.FieldHeight:
 			values[i] = new(sql.NullInt64)
 		case xprovidercursor.FieldCreatedAt, xprovidercursor.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -69,11 +69,11 @@ func (xc *XProviderCursor) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				xc.UUID = *value
 			}
-		case xprovidercursor.FieldChainId:
+		case xprovidercursor.FieldChainID:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field ChainId", values[i])
+				return fmt.Errorf("unexpected type %T for field ChainID", values[i])
 			} else if value.Valid {
-				xc.ChainId = uint64(value.Int64)
+				xc.ChainID = uint64(value.Int64)
 			}
 		case xprovidercursor.FieldHeight:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -132,8 +132,8 @@ func (xc *XProviderCursor) String() string {
 	builder.WriteString("UUID=")
 	builder.WriteString(fmt.Sprintf("%v", xc.UUID))
 	builder.WriteString(", ")
-	builder.WriteString("ChainId=")
-	builder.WriteString(fmt.Sprintf("%v", xc.ChainId))
+	builder.WriteString("ChainID=")
+	builder.WriteString(fmt.Sprintf("%v", xc.ChainID))
 	builder.WriteString(", ")
 	builder.WriteString("Height=")
 	builder.WriteString(fmt.Sprintf("%v", xc.Height))

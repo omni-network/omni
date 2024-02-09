@@ -57,9 +57,13 @@ func Test_StartRelayer(t *testing.T) {
 	}
 
 	// Collect all stream updates via the creator, stop as soon as we get one msg from for streamB.
-	var resp []relayer.StreamUpdate
+	var submissions []xchain.Submission
 	mockCreateFunc := func(streamUpdate relayer.StreamUpdate) ([]xchain.Submission, error) {
-		resp = append(resp, streamUpdate)
+		subs, err := relayer.CreateSubmissions(streamUpdate)
+		if err != nil {
+			return nil, err
+		}
+		submissions = append(submissions, subs...)
 		if streamUpdate.DestChainID == destChainB {
 			cancel()
 		}
@@ -109,15 +113,15 @@ func Test_StartRelayer(t *testing.T) {
 	// Verify responses
 	expectChainA := destChainBCursor - destChainACursor + 1
 	expectChainB := 1
-	require.Len(t, resp, expectChainA+expectChainB)
+	require.Len(t, submissions, expectChainA+expectChainB)
 
 	// Ensure msgs are delivered in sequence
 	var actualChainA, actualChainB int
 	prevChainA, prevChainB := destChainACursor, destChainBCursor
-	for _, update := range resp {
-		require.Len(t, update.Msgs, 1)
-		next := update.Msgs[0].StreamOffset
-		if update.DestChainID == destChainA {
+	for _, submission := range submissions {
+		require.Len(t, submission.Msgs, 1)
+		next := submission.Msgs[0].StreamOffset
+		if submission.DestChainID == destChainA {
 			actualChainA++
 			prevChainA++
 			require.EqualValues(t, prevChainA, next)

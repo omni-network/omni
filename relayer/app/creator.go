@@ -1,43 +1,50 @@
 package relayer
 
 import (
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/xchain"
 )
 
-// CreateSubmissions creates submissions from the given stream update by destination chain id.
-// It creates a merkle tree from the block and uses it to create a multi-proof for the given messages.
-func CreateSubmissions(streamUpdate StreamUpdate) ([]xchain.Submission, error) {
-	// todo(lazar): in future this will receive receipts as well
-	tree, err := xchain.NewBlockTree(xchain.Block{
-		BlockHeader: streamUpdate.AggAttestation.BlockHeader,
-		Msgs:        streamUpdate.Msgs,
-	})
-	if err != nil {
-		return nil, err
+// CreateSubmissions splits the update into multiple submissions that are each small enough (wrt calldata and gas)
+// to be submitted on-chain.
+func CreateSubmissions(up StreamUpdate) ([]xchain.Submission, error) {
+	// Sanity check on input, should only be for a single stream.
+	for i, msg := range up.Msgs {
+		if msg.DestChainID != up.DestChainID || msg.SourceChainID != up.SourceChainID {
+			return nil, errors.New("invalid msgs [BUG]")
+		} else if i > 0 && msg.StreamOffset != up.Msgs[i-1].StreamOffset+1 {
+			return nil, errors.New("msgs not sequential [BUG]")
+		}
 	}
 
-	groupedMsgs := map[uint64][]xchain.Msg{}
-	for _, msg := range streamUpdate.Msgs {
-		groupedMsgs[msg.DestChainID] = append(groupedMsgs[msg.DestChainID], msg)
-	}
+	agg := up.AggAttestation
 
-	submissions := make([]xchain.Submission, 0, len(groupedMsgs))
-	for destChainID, msgs := range groupedMsgs {
-		multi, err := tree.Proof(streamUpdate.AggAttestation.BlockHeader, msgs)
+	var resp []xchain.Submission //nolint:prealloc // Cannot predetermine size
+	for _, msgs := range groupMsgsByCost(up.Msgs) {
+		multi, err := up.Tree.Proof(agg.BlockHeader, msgs)
 		if err != nil {
 			return nil, err
 		}
 
-		submissions = append(submissions, xchain.Submission{
-			AttestationRoot: tree.Root(),
-			BlockHeader:     streamUpdate.AggAttestation.BlockHeader,
+		resp = append(resp, xchain.Submission{
+			AttestationRoot: agg.BlockRoot,
+			ValidatorSetID:  agg.ValidatorSetID,
+			BlockHeader:     agg.BlockHeader,
 			Msgs:            msgs,
 			Proof:           multi.Proof,
 			ProofFlags:      multi.ProofFlags,
-			Signatures:      streamUpdate.AggAttestation.Signatures,
-			DestChainID:     destChainID,
+			Signatures:      agg.Signatures,
+			DestChainID:     up.DestChainID,
 		})
 	}
 
-	return submissions, nil
+	return resp, nil
+}
+
+// groupMsgsByCost split the messages into groups that are each small enough (wrt calldata and gas)
+// to be submitted on-chain.
+//
+// TODO(corver): For now, we only create a single group per update.
+func groupMsgsByCost(msgs []xchain.Msg) [][]xchain.Msg {
+	return [][]xchain.Msg{msgs}
 }

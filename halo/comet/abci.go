@@ -197,7 +197,7 @@ func (a *App) ExtendVote(ctx context.Context, _ *abci.RequestExtendVote) (*abci.
 func (*App) VerifyVoteExtension(context.Context, *abci.RequestVerifyVoteExtension) (
 	*abci.ResponseVerifyVoteExtension, error,
 ) {
-	// TODO(corver): Figure out what to verify.
+	// TODO(corver): Figure out what to verify. E.g. too far away from latest approved block.
 	return &abci.ResponseVerifyVoteExtension{
 		Status: abci.ResponseVerifyVoteExtension_ACCEPT,
 	}, nil
