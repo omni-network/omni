@@ -29,7 +29,7 @@ func EntBlockToGraphQLBlock(
 		SourceChainID: hexutil.Big(*sourceChainIDBig),
 		BlockHeight:   hexutil.Big(*blockHeight),
 		BlockHash:     common.Hash(block.BlockHash),
-		Timestamp:     graphql.Time{Time: block.Timestamp},
+		Timestamp:     graphql.Time{Time: block.CreatedAt},
 	}
 
 	// Decode messages

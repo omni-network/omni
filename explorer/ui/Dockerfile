@@ -51,4 +51,4 @@ COPY --from=build /app/public /app/public
 ADD . .
 
 EXPOSE 3000
-ENTRYPOINT ["pnpm", "run", "start"]
+ENTRYPOINT ["pnpm", "run", "dev"]

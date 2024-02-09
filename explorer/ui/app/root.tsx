@@ -7,8 +7,8 @@ import { Client, Provider, cacheExchange, fetchExchange } from 'urql';
 export const links: LinksFunction = () => [{ rel: 'stylesheet', href: stylesheet }]
 
 const client = new Client({
-  url: 'http://localhost:8080/graphql',
-  exchanges: [cacheExchange, fetchExchange],
+  url: 'http://localhost:8080/query',
+  exchanges: [fetchExchange, cacheExchange],
 });
 
 function App() {

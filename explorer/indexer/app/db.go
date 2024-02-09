@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"time"
 
 	"github.com/omni-network/omni/explorer/db/ent"
 	"github.com/omni-network/omni/explorer/db/ent/xprovidercursor"
@@ -103,6 +104,7 @@ func insertBlock(ctx context.Context, tx *ent.Tx, block xchain.Block) (*ent.Bloc
 		SetBlockHeight(block.BlockHeight).
 		SetBlockHash(block.BlockHash[:]).
 		SetSourceChainID(block.SourceChainID).
+		SetCreatedAt(time.Now()).
 		Save(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "inserting block to db")
@@ -119,6 +121,7 @@ func insertMessages(ctx context.Context, tx *ent.Tx, block xchain.Block, dbBlock
 			SetData(msg.Data). // mock provider has no data? should this be nullable?
 			SetDestAddress(msg.DestAddress[:]).
 			SetDestChainID(msg.DestChainID).
+			SetCreatedAt(time.Now()).
 			// mock provider error: failed to encode args[4]: unable to encode 0xb70a309734fbef40
 			// into binary format for int8 (OID 20): 13189407884695039808 is greater than maximum value for int64
 			SetSourceChainID(msg.SourceChainID).
@@ -144,6 +147,7 @@ func insertReceipts(ctx context.Context, tx *ent.Tx, block xchain.Block, dbBlock
 			SetDestChainID(receipt.DestChainID).
 			SetSourceChainID(receipt.SourceChainID).
 			SetStreamOffset(receipt.StreamOffset).
+			SetCreatedAt(time.Now()).
 			Save(ctx)
 		if err != nil {
 			return errors.Wrap(err, "inserting message")
