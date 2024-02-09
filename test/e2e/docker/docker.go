@@ -103,7 +103,13 @@ func (p *Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 		return errors.Wrap(err, "start additional services")
 	}
 
-	if err := p.Provider.StartNodes(ctx, nodes...); err != nil {
+	// Start all requested nodes (use --no-deps to avoid starting the additional services again).
+	nodeNames := make([]string, len(nodes))
+	for i, n := range nodes {
+		nodeNames[i] = n.Name
+	}
+	err = cmtdocker.ExecCompose(ctx, p.Testnet.Dir, append([]string{"up", "-d", "--no-deps"}, nodeNames...)...)
+	if err != nil {
 		return errors.Wrap(err, "start nodes")
 	}
 
