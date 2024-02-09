@@ -3,6 +3,7 @@ package relayer_test
 import (
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/xchain"
 	relayer "github.com/omni-network/omni/relayer/app"
@@ -21,7 +22,7 @@ func Test_translateSubmission(t *testing.T) {
 
 	// Zero TxHash for comparison since it isn't translated.
 	for i := range sub.Msgs {
-		sub.Msgs[i].TxHash = [32]byte{}
+		sub.Msgs[i].TxHash = common.Hash{}
 	}
 
 	require.Equal(t, sub, reversedSub)

@@ -21,28 +21,28 @@ type MsgID struct {
 
 // Msg is a cross-chain message.
 type Msg struct {
-	MsgID                    // Unique ID of the message
-	SourceMsgSender [20]byte // Sender on source chain, set to msg.Sender
-	DestAddress     [20]byte // Target/To address to "call" on destination chain
-	Data            []byte   // Data to provide to "call" on destination chain
-	DestGasLimit    uint64   // Gas limit to use for "call" on destination chain
-	TxHash          [32]byte // Hash of the source chain transaction that emitted the message
+	MsgID                          // Unique ID of the message
+	SourceMsgSender common.Address // Sender on source chain, set to msg.Sender
+	DestAddress     common.Address // Target/To address to "call" on destination chain
+	Data            []byte         // Data to provide to "call" on destination chain
+	DestGasLimit    uint64         // Gas limit to use for "call" on destination chain
+	TxHash          common.Hash    // Hash of the source chain transaction that emitted the message
 }
 
 // Receipt is a cross-chain message receipt, the result of applying the Msg on the destination chain.
 type Receipt struct {
-	MsgID                   // Unique ID of the cross chain message that was applied.
-	GasUsed        uint64   // Gas used during message "call"
-	Success        bool     // Result, true for success, false for revert
-	RelayerAddress [20]byte // Address of relayer that submitted the message
-	TxHash         [32]byte // Hash of the relayer submission transaction
+	MsgID                         // Unique ID of the cross chain message that was applied.
+	GasUsed        uint64         // Gas used during message "call"
+	Success        bool           // Result, true for success, false for revert
+	RelayerAddress common.Address // Address of relayer that submitted the message
+	TxHash         common.Hash    // Hash of the relayer submission transaction
 }
 
 // BlockHeader uniquely identifies a cross chain block.
 type BlockHeader struct {
-	SourceChainID uint64   // Source chain ID as per https://chainlist.org
-	BlockHeight   uint64   // Height of the source chain block
-	BlockHash     [32]byte // Hash of the source chain block
+	SourceChainID uint64      // Source chain ID as per https://chainlist.org
+	BlockHeight   uint64      // Height of the source chain block
+	BlockHash     common.Hash // Hash of the source chain block
 }
 
 // Block is a deterministic representation of the omni cross-chain properties of a source chain EVM block.

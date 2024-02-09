@@ -28,7 +28,7 @@ func TestEncodeMsg(t *testing.T) {
 		DestAddress:     common.HexToAddress("0x9CC971e84FE5d09d0967f15AE05dfd553C5A1FA6"),
 		Data:            common.Hex2Bytes("d09de08a"),
 		DestGasLimit:    250_000,
-		TxHash:          [32]byte{},
+		TxHash:          common.Hash{},
 	}
 
 	packed, err := encodeMsg(msg)
