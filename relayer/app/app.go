@@ -15,6 +15,7 @@ import (
 	"github.com/cometbft/cometbft/rpc/client/http"
 
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 func Run(ctx context.Context, cfg Config) error {
@@ -75,4 +76,17 @@ func newClient(tmNodeAddr string) (client.Client, error) {
 	}
 
 	return c, nil
+}
+
+func initializeRPCClients(chains []netconf.Chain) (map[uint64]*ethclient.Client, error) {
+	rpcClientPerChain := make(map[uint64]*ethclient.Client)
+	for _, chain := range chains {
+		c, err := ethclient.Dial(chain.RPCURL)
+		if err != nil {
+			return nil, errors.Wrap(err, "dial rpc", "chain_id", chain.ID, "rpc_url", chain.RPCURL)
+		}
+		rpcClientPerChain[chain.ID] = c
+	}
+
+	return rpcClientPerChain, nil
 }

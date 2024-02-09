@@ -64,7 +64,8 @@ func (o OpSender) SendTransaction(ctx context.Context, submission xchain.Submiss
 		startOffset = submission.Msgs[0].StreamOffset
 	}
 
-	log.Debug(ctx, "Sending submission transaction",
+	ctx = log.WithCtx(ctx, "req_id", randomHex7())
+	log.Debug(ctx, "Received submission",
 		"dest_chain_id", submission.DestChainID,
 		"block_height", submission.BlockHeader.BlockHeight,
 		"source_chain_id", submission.BlockHeader.SourceChainID,
