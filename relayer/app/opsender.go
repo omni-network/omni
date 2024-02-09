@@ -61,7 +61,8 @@ func (o OpSender) SendTransaction(ctx context.Context, submission xchain.Submiss
 	if o.txMgr == nil {
 		return errors.New("tx mgr not found", "dest_chain_id", submission.DestChainID)
 	} else if submission.DestChainID != o.chain.ID {
-		return errors.New("unexpected destination chain [BUG]")
+		return errors.New("unexpected destination chain [BUG]",
+			"got", submission.DestChainID, "expect", o.chain.ID)
 	}
 
 	// Get some info for logging
