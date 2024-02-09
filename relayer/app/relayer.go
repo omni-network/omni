@@ -27,7 +27,7 @@ func StartRelayer(
 	}
 
 	// callback processes each approved attestation/xblock.
-	callback := newCallback(xClient, initialOffsets, creator, sender)
+	callback := newCallback(xClient, initialOffsets, creator, sender, 0)
 
 	// Subscribe to attestations for each chain.
 	for chainID, fromHeight := range FromHeights(cursors, network.Chains) {

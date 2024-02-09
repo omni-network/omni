@@ -76,7 +76,7 @@ func (w *Worker) runOnce(ctx context.Context) error {
 
 	buf := newActiveBuffer(w.chain.Name, mempoolLimit, bufferSize, sender)
 
-	callback := newCallback(w.xProvider, initialOffsets, w.creator, buf.AddInput)
+	callback := newCallback(w.xProvider, initialOffsets, w.creator, buf.AddInput, w.chain.ID)
 
 	var logAttrs []any //nolint:prealloc // Not worth it
 	for chainID, fromHeight := range FromHeights(cursors, w.network.Chains) {
@@ -92,7 +92,7 @@ func (w *Worker) runOnce(ctx context.Context) error {
 }
 
 func newCallback(xProvider xchain.Provider, initialOffsets map[xchain.StreamID]uint64, creator CreateFunc,
-	sender SendFunc) cchain.ProviderCallback {
+	sender SendFunc, destChainID uint64) cchain.ProviderCallback {
 	return func(ctx context.Context, att xchain.AggAttestation) error {
 		// Get the xblock from the source chain.
 		block, ok, err := xProvider.GetBlock(ctx, att.SourceChainID, att.BlockHeight)
@@ -117,6 +117,11 @@ func newCallback(xProvider xchain.Provider, initialOffsets map[xchain.StreamID]u
 
 		// Split into streams
 		for streamID, msgs := range mapByStreamID(block.Msgs) {
+			// TODO(corver): Remove !=0 check once legacy StartRelayer has been removed.
+			if destChainID != 0 && streamID.DestChainID != destChainID {
+				continue // Ignore streams not for this worker's destination chain.
+			}
+
 			msgs = filterMsgs(msgs, initialOffsets, streamID) // Filter out any partially submitted stream updates.
 			if len(msgs) == 0 {
 				continue

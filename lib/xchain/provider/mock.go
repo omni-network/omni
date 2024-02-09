@@ -88,6 +88,14 @@ func (*Mock) GetSubmittedCursor(_ context.Context, destChain uint64, srcChain ui
 	}}, true, nil
 }
 
+func (*Mock) GetEmittedCursor(_ context.Context, srcChainID uint64, destChainID uint64,
+) (xchain.StreamCursor, bool, error) {
+	return xchain.StreamCursor{StreamID: xchain.StreamID{
+		SourceChainID: srcChainID,
+		DestChainID:   destChainID,
+	}}, true, nil
+}
+
 func (m *Mock) addBlock(block xchain.Block) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

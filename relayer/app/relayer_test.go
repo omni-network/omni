@@ -51,8 +51,11 @@ func Test_StartRelayer(t *testing.T) {
 				},
 			}, true, nil
 		},
-		GetSubmittedCursorFn: func(_ context.Context, chainID uint64, sourceChain uint64) (xchain.StreamCursor, bool, error) {
-			return cursors[chainID], true, nil
+		GetSubmittedCursorFn: func(_ context.Context, srcChainID uint64, _ uint64) (xchain.StreamCursor, bool, error) {
+			return cursors[srcChainID], true, nil
+		},
+		GetEmittedCursorFn: func(_ context.Context, _ uint64, destChainID uint64) (xchain.StreamCursor, bool, error) {
+			return cursors[destChainID], true, nil
 		},
 	}
 
@@ -202,8 +205,9 @@ var (
 )
 
 type mockXChainClient struct {
-	GetBlockFn           func(ctx context.Context, chainID uint64, height uint64) (xchain.Block, bool, error)
-	GetSubmittedCursorFn func(ctx context.Context, chainID uint64, sourceChain uint64) (xchain.StreamCursor, bool, error)
+	GetBlockFn           func(context.Context, uint64, uint64) (xchain.Block, bool, error)
+	GetSubmittedCursorFn func(context.Context, uint64, uint64) (xchain.StreamCursor, bool, error)
+	GetEmittedCursorFn   func(context.Context, uint64, uint64) (xchain.StreamCursor, bool, error)
 }
 
 func (m *mockXChainClient) Subscribe(context.Context, uint64, uint64, xchain.ProviderCallback) error {
@@ -217,6 +221,11 @@ func (m *mockXChainClient) GetBlock(ctx context.Context, chainID uint64, height 
 func (m *mockXChainClient) GetSubmittedCursor(ctx context.Context, chainID uint64, sourceChain uint64,
 ) (xchain.StreamCursor, bool, error) {
 	return m.GetSubmittedCursorFn(ctx, chainID, sourceChain)
+}
+
+func (m *mockXChainClient) GetEmittedCursor(ctx context.Context, srcChainID uint64, destChainID uint64,
+) (xchain.StreamCursor, bool, error) {
+	return m.GetEmittedCursorFn(ctx, srcChainID, destChainID)
 }
 
 type mockSender struct {

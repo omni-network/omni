@@ -141,7 +141,7 @@ func loadEnv(t *testing.T) (types.Testnet, netconf.Network) {
 	ifdFile := os.Getenv(EnvInfraFile)
 	if ifdType != docker.ProviderName && ifdFile == "" {
 		require.Fail(t, EnvInfraFile+" not set while INFRASTRUCTURE_TYPE="+ifdType)
-	} else if !filepath.IsAbs(ifdFile) {
+	} else if ifdType != docker.ProviderName && !filepath.IsAbs(ifdFile) {
 		require.Fail(t, EnvInfraFile+" must be an absolute path", "got", ifdFile)
 	}
 

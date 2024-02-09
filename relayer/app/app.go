@@ -44,6 +44,9 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
+	cprov := cprovider.NewABCIProvider(tmClient)
+	xprov := xprovider.New(network, rpcClientPerChain)
+
 	for _, destChain := range network.Chains {
 		sendProvider := func() (SendFunc, error) {
 			sender, err := NewOpSender(ctx, destChain, rpcClientPerChain[destChain.ID], *privateKey,
@@ -56,13 +59,15 @@ func Run(ctx context.Context, cfg Config) error {
 		}
 
 		worker := NewWorker(destChain, network,
-			cprovider.NewABCIProvider(tmClient),
-			xprovider.New(network, rpcClientPerChain),
+			cprov,
+			xprov,
 			CreateSubmissions,
 			sendProvider)
 
 		go worker.Run(ctx)
 	}
+
+	startMonitoring(ctx, network, xprov, ethcrypto.PubkeyToAddress(privateKey.PublicKey), rpcClientPerChain)
 
 	<-ctx.Done()
 	log.Info(ctx, "Shutdown detected, stopping...")
