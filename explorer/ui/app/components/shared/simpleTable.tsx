@@ -22,15 +22,10 @@ export default function SimpleTable({ data, columns }: { data: any[]; columns: C
   const table = useReactTable({
     data,
     columns,
-    // Pipeline
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    //
-    debugTable: true,
   })
-
-  console.log(table)
 
   return (
     <div className="shadow-xl overflow-hidden border border-gray-200 sm:rounded-lg">
@@ -40,8 +35,6 @@ export default function SimpleTable({ data, columns }: { data: any[]; columns: C
           {table.getHeaderGroups().map(headerGroup => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map(header => {
-                console.log(header)
-                console.log(header.column.getCanFilter())
                 return (
                   <th
                     className="group px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"

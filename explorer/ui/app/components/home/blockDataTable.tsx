@@ -4,14 +4,71 @@ import React from 'react'
 import { XBlock } from '~/graphql/graphql'
 import { ColumnDef } from '@tanstack/react-table'
 import SimpleTable from '../shared/simpleTable'
+import { graphql } from '~/graphql'
+import { Client, gql, useQuery } from 'urql'
 
-export async function loader() {
-  return json<XBlock[]>(new Array())
+const xblock = graphql(`
+  query Xblock($sourceChainID: BigInt!, $height: BigInt!) {
+      xblock(sourceChainID: $sourceChainID, height: $height) {
+        BlockHash
+      }
+    }
+`);
+
+const xblockrange = graphql(`
+  query XBlockRange($amount: BigInt!, $offset: BigInt!) {
+    xblockrange(amount: $amount, offset: $offset) {
+      SourceChainID
+      BlockHash
+      BlockHeight
+      Timestamp
+    }
+  }
+`);
+
+const xblockcount = graphql(`
+  query XblockCount {
+    xblockcount
+  }
+`);
+export const loader = async () => {
+  console.log('loader')
+  const [{ data }] = useQuery({
+    query: xblockrange,
+    variables: {
+      amount: 100,
+      offset: 0,
+    }
+  })
+
+  // const { data, fetching, error } = result;
+  // console.log(data)
+  // console.log(fetching)
+  // return result
+
+  //return json(data)
+  return json([
+    { id: "1", name: "Pants" },
+    { id: "2", name: "Jacket" },
+  ]);
 }
 
 export default function XBlockDataTable() {
-  let data = useLoaderData<typeof loader>()
+  const d = useLoaderData<typeof loader>();
+  console.log('xblock data table')
+  console.log(d)
+
+  const [result] = useQuery({
+    query: xblockrange,
+    variables: {
+      amount: 100,
+      offset: 0,
+    }
+  })
+  const { data, fetching, error } = result;
   console.log(data)
+  console.log(fetching)
+  console.log(error)
 
   let rows = [
     {

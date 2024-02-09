@@ -2,8 +2,14 @@ import { cssBundleHref } from '@remix-run/css-bundle'
 import type { LinksFunction } from '@remix-run/node'
 import stylesheet from '~/tailwind.css'
 import { Links, LiveReload, Meta, Outlet, Scripts, ScrollRestoration } from '@remix-run/react'
+import { Client, Provider, cacheExchange, fetchExchange } from 'urql';
 
 export const links: LinksFunction = () => [{ rel: 'stylesheet', href: stylesheet }]
+
+const client = new Client({
+  url: 'http://localhost:8080/graphql',
+  exchanges: [cacheExchange, fetchExchange],
+});
 
 function App() {
   return (
@@ -25,5 +31,9 @@ function App() {
 }
 
 export default function AppWithProviders() {
-  return <App />
+  return (
+    <Provider value={client}>
+      <App />
+    </Provider>
+  )
 }
