@@ -4,49 +4,50 @@ import React from 'react'
 import { XMsg } from '~/graphql/graphql'
 import { ColumnDef } from '@tanstack/react-table'
 import SimpleTable from '../shared/simpleTable'
+import { useQuery } from 'urql'
+import { xblockrange } from '../queries/block'
 
 export async function loader() {
   return json<XMsg[]>(new Array())
 }
 
 export default function XMsgDataTable() {
-  let data = useLoaderData<typeof loader>()
-  console.log(data)
+  // let data = useLoaderData<typeof loader>()
+  // console.log(data)
 
-  let rows = [
-    {
-      id: 1,
-      DestAddress: '0x1234',
-      DestChainID: '1',
-      DestGasLimit: '100000',
-      SourceChainID: '2',
-      SourceMessageSender: '0x1234',
-      StreamOffset: '0',
-      TxHash: '0x1234',
-    },
-    {
-      id: 2,
-      DestAddress: '0x5678',
-      DestChainID: '2',
-      DestGasLimit: '100000',
-      SourceChainID: '1',
-      SourceMessageSender: '0x1234',
-      StreamOffset: '0',
-      TxHash: '0x5678',
-    },
-    {
-      id: 3,
-      DestAddress: '0x5678',
-      DestChainID: '3',
-      DestGasLimit: '100000',
-      SourceChainID: '1',
-      SourceMessageSender: '0x1234',
-      StreamOffset: '0',
-      TxHash: '0x5678',
-    },
-  ]
+  let amt = "0x" + (1000).toString(16)
+  let offset = "0x" + (0).toString(16)
 
-  rows = [...rows, ...rows, ...rows, ...rows, ...rows, ...rows]
+  const [result] = useQuery({
+    query: xblockrange,
+    variables: {
+      amount: amt,
+      offset: offset,
+    }
+  })
+  const { data, fetching, error } = result;
+
+  var rows: XMsg[] = []
+  data?.xblockrange.map((xblock: any) => {
+
+    if (xblock.Messages.length == 0) {
+      return
+    }
+
+    xblock.Messages.map((msg: any) => {
+      let xmsg = {
+        DestAddress: msg.DestAddress,
+        DestChainID: msg.DestChainID,
+        DestGasLimit: "",
+        SourceChainID: msg.SourceChainID,
+        SourceMessageSender: "",
+        StreamOffset: "",
+        TxHash: msg.TxHash,
+      }
+      rows.push(xmsg)
+    })
+
+  })
 
   const columns = React.useMemo<ColumnDef<XMsg>[]>(
     () => [

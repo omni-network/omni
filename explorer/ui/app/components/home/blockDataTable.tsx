@@ -5,38 +5,12 @@ import { XBlock, XMsg } from '~/graphql/graphql'
 import { ColumnDef } from '@tanstack/react-table'
 import SimpleTable from '../shared/simpleTable'
 import { graphql } from '~/graphql'
-import { Client, gql, useQuery } from 'urql'
+import { useQuery } from 'urql'
+import { GetBlockCount, GetBlocksInRange, xblockrange } from '../queries/block'
 
-const xblock = graphql(`
-  query Xblock($sourceChainID: BigInt!, $height: BigInt!) {
-      xblock(sourceChainID: $sourceChainID, height: $height) {
-        BlockHash
-      }
-    }
-`);
-
-const xblockrange = graphql(`
-  query XBlockRange($amount: BigInt!, $offset: BigInt!) {
-    xblockrange(amount: $amount, offset: $offset) {
-      SourceChainID
-      BlockHash
-      BlockHeight
-      Messages {
-        DestAddress
-      }
-      Timestamp
-    }
-  }
-`);
-
-const xblockcount = graphql(`
-  query XblockCount {
-    xblockcount
-  }
-`);
 export const loader = async () => {
   console.log('loader')
-  let amt = (1000).toString(16)
+  let amt = (500).toString(16)
   let offset = (0).toString(16)
   const [{ data }] = useQuery({
     query: xblockrange,
@@ -53,48 +27,8 @@ export default function XBlockDataTable() {
   const d = useLoaderData<typeof loader>();
   console.log(d)
 
-  let amt = "0x" + (1000).toString(16)
-  let offset = "0x" + (0).toString(16)
-
-  const [result] = useQuery({
-    query: xblockrange,
-    variables: {
-      amount: amt,
-      offset: offset,
-    }
-  })
-  const { data, fetching, error } = result;
-
-  var rows: XBlock[] = []
-  data?.xblockrange.map((xblock: any) => {
-    var msgs: XMsg[] = []
-    let block = {
-      id: xblock.BlockHeight,
-      UUID: "",
-      SourceChainID: xblock.SourceChainID,
-      BlockHash: xblock.BlockHash,
-      BlockHeight: xblock.BlockHeight,
-      Messages: msgs,
-      Timestamp: xblock.Timestamp,
-      Receipts: [],
-    }
-
-    xblock.Messages.map((msg: any) => {
-      let xmsg = {
-        DestAddress: "",
-        DestChainID: "",
-        DestGasLimit: "",
-        SourceChainID: "",
-        SourceMessageSender: "",
-        StreamOffset: "",
-        TxHash: "",
-      }
-      msgs.push(xmsg)
-    })
-
-    block.Messages = msgs
-    rows.push(block)
-  })
+  let rows = GetBlocksInRange(1000, 0)
+  let count = GetBlockCount()
 
   const columns = React.useMemo<ColumnDef<XBlock>[]>(
     () => [
@@ -114,7 +48,7 @@ export default function XBlockDataTable() {
       },
       {
         accessorKey: 'time',
-        accessorFn: row => row.Timestamp,
+        accessorFn: row => row.Timestamp, // TODO: format this
         header: () => <span>Time</span>,
         canFilter: false,
         enableColumnFilter: false,
@@ -130,6 +64,9 @@ export default function XBlockDataTable() {
       </div>
       <div>
         <SimpleTable columns={columns} data={rows} />
+      </div>
+      <div className="m-auto prose text-m">
+        Count: {count}
       </div>
     </div>
   )

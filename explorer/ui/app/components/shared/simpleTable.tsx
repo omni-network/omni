@@ -81,7 +81,9 @@ export default function SimpleTable({ data, columns }: { data: any[]; columns: C
             <div className="flex gap-x-2 items-baseline">
               <span className="prose">
                 Page <span className="prose">{table.getState().pagination.pageIndex + 1}</span> of{' '}
-                <span className="prose">{table.getPageCount()}</span>
+                <span className="prose">
+                  {table.getPageCount() == 0 ? 1 : table.getPageCount()}
+                </span>
               </span>
             </div>
           </div>
