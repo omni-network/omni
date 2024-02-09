@@ -15,7 +15,6 @@ type BlocksProvider interface {
 	XBlockCount() (*hexutil.Big, bool, error)
 	XMsgCount() (*hexutil.Big, bool, error)
 	XReceiptCount() (*hexutil.Big, bool, error)
-	// TODO: fill in the rest of the methods
 }
 
 type BlocksResolver struct {
