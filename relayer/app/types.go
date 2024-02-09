@@ -2,6 +2,8 @@ package relayer
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"sort"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -62,4 +64,17 @@ func SubmissionToBinding(sub xchain.Submission) bindings.XTypesSubmission {
 		Signatures: sigs,
 		Msgs:       msgs,
 	}
+}
+
+func randomHex7() string {
+	bytes := make([]byte, 4)
+	_, _ = rand.Read(bytes)
+	hexString := hex.EncodeToString(bytes)
+
+	// Trim the string to 7 characters
+	if len(hexString) > 7 {
+		hexString = hexString[:7]
+	}
+
+	return hexString
 }
