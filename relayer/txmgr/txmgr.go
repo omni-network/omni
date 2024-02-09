@@ -458,7 +458,6 @@ func (m *SimpleTxManager) WaitMined(ctx context.Context, tx *types.Transaction,
 				return nil, err
 			} else if !ok && attempt%logFreqFactor == 0 {
 				log.Warn(ctx, "Transaction not yet mined", nil,
-					"tx", txHash,
 					"chain_id", m.ChainID,
 					"attempt", attempt,
 				)
@@ -541,7 +540,6 @@ func (m *SimpleTxManager) IncreaseGasPrice(ctx context.Context, tx *types.Transa
 		// error is due to the tx reverting with message "block number must be equal to next
 		// expected block number"
 		log.Warn(ctx, "Failed to re-estimate gas", err,
-			"tx", tx.Hash(),
 			"gas_limit", tx.Gas(),
 			"gas_fee_cap", bumpedFee,
 			"gas_tip_cap", bumpedTip,
@@ -551,7 +549,6 @@ func (m *SimpleTxManager) IncreaseGasPrice(ctx context.Context, tx *types.Transa
 	}
 	if tx.Gas() != gas {
 		log.Debug(ctx, "Re-estimated gas differs",
-			"tx", tx.Hash(),
 			"old_gas", tx.Gas(),
 			"new_gas", gas,
 			"gas_fee_cap", bumpedFee,
