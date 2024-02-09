@@ -1,13 +1,9 @@
 version: '2.4'
 networks:
-  manifest:
+  test:
     labels:
       e2e: true
     driver: bridge
-    ipam:
-      driver: default
-      config:
-      - subnet: 127.0.0.0/24
 
 services:
   # Initialises geth files and folder from provided genesis file.
@@ -20,8 +16,8 @@ services:
     ports:
       - 8545:8545
     networks:
-      manifest:
-        ipv4_address: 127.0.0.3
+      test:
+        
 
   # Use geth as the omni EVMs.
   relayer:
@@ -33,6 +29,6 @@ services:
     volumes:
       - ./relayer:/relayer
     networks:
-      manifest:
-        ipv4_address: 10.186.73.200
+      test:
+        
 

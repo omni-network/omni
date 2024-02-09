@@ -23,7 +23,7 @@ multi_omni_evms = true
 [node.validator01]
 [node.validator02]
 `
-	manifestFile := filepath.Join(t.TempDir(), "manifest.toml")
+	manifestFile := filepath.Join(t.TempDir(), "test.toml")
 	err := os.WriteFile(manifestFile, []byte(manifest), 0o644)
 	require.NoError(t, err)
 

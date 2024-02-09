@@ -21,8 +21,9 @@ const (
 )
 
 type vmJSON struct {
-	Name string
-	IP   string
+	Name       string `json:"name"`
+	IP         string `json:"ip"`
+	ExternalIP string `json:"external_ip,omitempty"`
 }
 type dataJSON struct {
 	NetworkCIDR  string            `json:"network_cidr"`
@@ -46,9 +47,11 @@ func LoadData(path string) (types.InfrastructureData, error) {
 	vmsByName := make(map[string]e2e.InstanceData)
 	for _, vm := range data.VMs {
 		ip := net.ParseIP(vm.IP)
+		externalIP := net.ParseIP(vm.ExternalIP)
+
 		vmsByName[vm.Name] = e2e.InstanceData{
 			IPAddress:    ip,
-			ExtIPAddress: ip,
+			ExtIPAddress: externalIP,
 		}
 	}
 
@@ -69,7 +72,7 @@ func LoadData(path string) (types.InfrastructureData, error) {
 
 		instances[serviceName] = e2e.InstanceData{
 			IPAddress:    vm.IPAddress,
-			ExtIPAddress: vm.IPAddress,
+			ExtIPAddress: vm.ExtIPAddress,
 			Port:         uint32(port),
 		}
 	}
@@ -81,5 +84,6 @@ func LoadData(path string) (types.InfrastructureData, error) {
 			Instances: instances,
 			Network:   data.NetworkCIDR,
 		},
+		VMs: vmsByName,
 	}, nil
 }

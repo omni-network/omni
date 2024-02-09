@@ -23,6 +23,9 @@ services:
     volumes:
     - ./node0:/halo
     - ./omni_evm_0/jwtsecret:/geth/jwtsecret
+    depends_on:
+      omni_evm_0:
+        condition: service_healthy
     networks:
       test:
         ipv4_address: 10.186.73.0
@@ -50,6 +53,8 @@ services:
     command: --datadir=/geth init /geth/genesis.json
     volumes:
       - ./omni_evm_0:/geth
+    networks:
+      test:
 
   omni_evm_0:
     labels:
@@ -80,10 +85,15 @@ services:
     ports:
       - 8551
       - 8000:8545
+      - 30303
       - 8546
     depends_on:
       omni_evm_0-init:
         condition: service_completed_successfully
+    healthcheck:
+      test: "nc -z localhost 8545"
+      interval: 1s
+      retries: 30
     volumes:
       - ./omni_evm_0:/geth
     networks:

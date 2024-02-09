@@ -9,11 +9,15 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/test/e2e/app"
+	"github.com/omni-network/omni/test/e2e/docker"
+	"github.com/omni-network/omni/test/e2e/types"
+	"github.com/omni-network/omni/test/e2e/vmcompose"
 
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	rpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
-	"github.com/cometbft/cometbft/types"
+	cmttypes "github.com/cometbft/cometbft/types"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -38,11 +42,10 @@ const (
 
 //nolint:gochecknoglobals // This was copied from cometbft/test/e2e/test/e2e_test.go
 var (
-	ctx             = context.Background()
 	networkCache    = map[string]netconf.Network{}
-	testnetCache    = map[string]e2e.Testnet{}
+	testnetCache    = map[string]types.Testnet{}
 	testnetCacheMtx = sync.Mutex{}
-	blocksCache     = map[string][]*types.Block{}
+	blocksCache     = map[string][]*cmttypes.Block{}
 	blocksCacheMtx  = sync.Mutex{}
 )
 
@@ -123,7 +126,7 @@ func makePortals(t *testing.T, network netconf.Network) []Portal {
 }
 
 // loadEnv loads the testnet  and network based on env vars.
-func loadEnv(t *testing.T) (e2e.Testnet, netconf.Network) {
+func loadEnv(t *testing.T) (types.Testnet, netconf.Network) {
 	t.Helper()
 
 	manifestFile := os.Getenv(EnvE2EManifest)
@@ -136,32 +139,34 @@ func loadEnv(t *testing.T) (e2e.Testnet, netconf.Network) {
 
 	ifdType := os.Getenv(EnvInfraType)
 	ifdFile := os.Getenv(EnvInfraFile)
-	if ifdType != "docker" && ifdFile == "" {
-		t.Fatalf(EnvInfraFile + " not set and INFRASTRUCTURE_TYPE is not 'docker'")
+	if ifdType != docker.ProviderName && ifdFile == "" {
+		require.Fail(t, EnvInfraFile+" not set while INFRASTRUCTURE_TYPE="+ifdType)
+	} else if !filepath.IsAbs(ifdFile) {
+		require.Fail(t, EnvInfraFile+" must be an absolute path", "got", ifdFile)
 	}
+
 	testnetCacheMtx.Lock()
 	defer testnetCacheMtx.Unlock()
 	if testnet, ok := testnetCache[manifestFile]; ok {
 		return testnet, networkCache[manifestFile]
 	}
-	m, err := e2e.LoadManifest(manifestFile)
+	m, err := app.LoadManifest(manifestFile)
 	require.NoError(t, err)
 
-	var ifd e2e.InfrastructureData
+	var ifd types.InfrastructureData
 	switch ifdType {
-	case "docker":
-		ifd, err = e2e.NewDockerInfrastructureData(m)
-		require.NoError(t, err)
-	case "digital-ocean":
-		ifd, err = e2e.InfrastructureDataFromFile(ifdFile)
-		require.NoError(t, err)
+	case docker.ProviderName:
+		ifd, err = docker.NewInfraData(m)
+	case vmcompose.ProviderName:
+		ifd, err = vmcompose.LoadData(ifdFile)
 	default:
+		require.Fail(t, "unsupported infrastructure type", ifdType)
 	}
 	require.NoError(t, err)
 
-	testnet, err := e2e.LoadTestnet(manifestFile, ifd)
+	testnet, err := app.TestnetFromManifest(m, manifestFile, ifd, nil)
 	require.NoError(t, err)
-	testnetCache[manifestFile] = *testnet
+	testnetCache[manifestFile] = testnet
 
 	networkFile := os.Getenv(EnvE2ENetwork)
 	if networkFile == "" {
@@ -172,12 +177,12 @@ func loadEnv(t *testing.T) (e2e.Testnet, netconf.Network) {
 	require.NoError(t, err)
 	networkCache[manifestFile] = network
 
-	return *testnet, network
+	return testnet, network
 }
 
 // fetchBlockChain fetches a complete, up-to-date block history from
 // the freshest testnet archive node.
-func fetchBlockChain(t *testing.T) []*types.Block {
+func fetchBlockChain(ctx context.Context, t *testing.T) []*cmttypes.Block {
 	t.Helper()
 
 	testnet, _ := loadEnv(t)
@@ -208,7 +213,7 @@ func fetchBlockChain(t *testing.T) []*types.Block {
 	to := status.SyncInfo.LatestBlockHeight
 	blocks, ok := blocksCache[testnet.Name]
 	if !ok {
-		blocks = make([]*types.Block, 0, to-from+1)
+		blocks = make([]*cmttypes.Block, 0, to-from+1)
 	}
 	if len(blocks) > 0 {
 		from = blocks[len(blocks)-1].Height + 1
@@ -216,6 +221,7 @@ func fetchBlockChain(t *testing.T) []*types.Block {
 
 	for h := from; h <= to; h++ {
 		resp, err := client.Block(ctx, &(h))
+		require.NoError(t, ctx.Err(), "Timeout fetching all blocks: %d of %d", h, to)
 		require.NoError(t, err)
 		require.NotNil(t, resp.Block)
 		require.Equal(t, h, resp.Block.Height, "unexpected block height %v", resp.Block.Height)
