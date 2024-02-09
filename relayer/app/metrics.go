@@ -41,4 +41,32 @@ var (
 		Name:      "msg_total",
 		Help:      "The total number of messages submitted to a destination chain from a specific source chain",
 	}, []string{"src_chain", "dst_chain"})
+
+	emitCursor = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "relayer",
+		Subsystem: "monitor",
+		Name:      "emit_cursor",
+		Help:      "The latest emitted cursor on a source chain for a specific destination chain",
+	}, []string{"src_chain", "dst_chain"})
+
+	submitCursor = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "relayer",
+		Subsystem: "monitor",
+		Name:      "submit_cursor",
+		Help:      "The latest submitted cursor on a destination chain for a specific source chain",
+	}, []string{"src_chain", "dst_chain"})
+
+	accountBalance = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "relayer",
+		Subsystem: "monitor",
+		Name:      "account_balance_ether",
+		Help:      "The balance of the relayer account on a specific chain in ether",
+	}, []string{"chain"})
+
+	accountNonce = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "relayer",
+		Subsystem: "monitor",
+		Name:      "account_nonce",
+		Help:      "The nonce of the relayer account on a specific chain",
+	}, []string{"chain"})
 )

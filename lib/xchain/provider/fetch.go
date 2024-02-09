@@ -40,11 +40,50 @@ func getCurrentFinalisedBlockHeader(ctx context.Context, rpcClient *ethclient.Cl
 	return header, nil
 }
 
-// GetSubmittedCursor returns the submitted cursor for the provided chain and source chain,
-// or false if not available, or an error.
-func (p *Provider) GetSubmittedCursor(ctx context.Context, chainID uint64, sourceChainID uint64,
+// GetEmittedCursor returns the emitted cursor for the destination chain on the source chain,
+// or false if not available, or an error. Calls the source chain portal OutXStreamOffset method.
+func (p *Provider) GetEmittedCursor(ctx context.Context, sourceChainID uint64, destinationChainID uint64,
 ) (xchain.StreamCursor, bool, error) {
-	chain, rpcClient, err := p.getChain(chainID)
+	chain, rpcClient, err := p.getChain(sourceChainID)
+	if err != nil {
+		return xchain.StreamCursor{}, false, err
+	}
+
+	height, err := rpcClient.BlockNumber(ctx)
+	if err != nil {
+		return xchain.StreamCursor{}, false, errors.Wrap(err, "get block number")
+	}
+
+	caller, err := bindings.NewOmniPortalCaller(common.HexToAddress(chain.PortalAddress), rpcClient)
+	if err != nil {
+		return xchain.StreamCursor{}, false, errors.Wrap(err, "new caller")
+	}
+
+	opts := &bind.CallOpts{Context: ctx, BlockNumber: big.NewInt(int64(height))}
+	offset, err := caller.OutXStreamOffset(opts, destinationChainID)
+	if err != nil {
+		return xchain.StreamCursor{}, false, errors.Wrap(err, "call inXStreamOffset")
+	}
+
+	if offset == 0 {
+		return xchain.StreamCursor{}, false, nil
+	}
+
+	return xchain.StreamCursor{
+		StreamID: xchain.StreamID{
+			SourceChainID: sourceChainID,
+			DestChainID:   destinationChainID,
+		},
+		Offset:            offset,
+		SourceBlockHeight: height,
+	}, true, nil
+}
+
+// GetSubmittedCursor returns the submitted cursor for the source chain on the destination chain,
+// or false if not available, or an error. Calls the destination chain portal InXStreamOffset method.
+func (p *Provider) GetSubmittedCursor(ctx context.Context, destChainID uint64, sourceChainID uint64,
+) (xchain.StreamCursor, bool, error) {
+	chain, rpcClient, err := p.getChain(destChainID)
 	if err != nil {
 		return xchain.StreamCursor{}, false, err
 	}
@@ -71,7 +110,7 @@ func (p *Provider) GetSubmittedCursor(ctx context.Context, chainID uint64, sourc
 	return xchain.StreamCursor{
 		StreamID: xchain.StreamID{
 			SourceChainID: sourceChainID,
-			DestChainID:   chainID,
+			DestChainID:   destChainID,
 		},
 		Offset:            offset,
 		SourceBlockHeight: blockHeight,
