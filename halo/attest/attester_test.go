@@ -195,3 +195,7 @@ func (stubProvider) GetBlock(context.Context, uint64, uint64) (xchain.Block, boo
 func (stubProvider) GetSubmittedCursor(context.Context, uint64, uint64) (xchain.StreamCursor, bool, error) {
 	panic("unexpected")
 }
+
+func (stubProvider) GetEmittedCursor(context.Context, uint64, uint64) (xchain.StreamCursor, bool, error) {
+	panic("unexpected")
+}
