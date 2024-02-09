@@ -56,15 +56,13 @@ func Test(ctx context.Context, def Definition, verbose bool) error {
 		return errors.Wrap(err, "setting INFRASTRUCTURE_TYPE")
 	}
 
-	v := ""
+	args := []string{"go", "test", "-timeout", "15s", "-count", "1"}
 	if verbose {
-		v = "-v"
+		args = append(args, "-v")
 	}
+	args = append(args, "github.com/omni-network/omni/test/e2e/tests")
 
-	err = exec.CommandVerbose(ctx, "go", "test", v,
-		"-timeout", "15s",
-		"-count", "1",
-		"github.com/omni-network/omni/test/e2e/tests")
+	err = exec.CommandVerbose(ctx, args...)
 	if err != nil {
 		return errors.Wrap(err, "go tests failed")
 	}
