@@ -15,7 +15,6 @@ import (
 
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
-	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p/enode"
@@ -47,7 +46,7 @@ func DefaultDefinitionConfig() DefinitionConfig {
 // Armed with a definition, a e2e network can be deployed, started, tested, stopped, etc.
 type Definition struct {
 	Testnet types.Testnet // Note that testnet is the cometBFT term.
-	Infra   infra.Provider
+	Infra   types.InfraProvider
 	Netman  netman.Manager
 }
 
@@ -80,7 +79,7 @@ func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
 		return Definition{}, errors.Wrap(err, "get network")
 	}
 
-	var infp infra.Provider
+	var infp types.InfraProvider
 	switch cfg.InfraProvider {
 	case docker.ProviderName:
 		infp = docker.NewProvider(testnet, infd)
@@ -156,13 +155,18 @@ func TestnetFromManifest(manifest types.Manifest, manifestFile string, infd type
 
 		en := enode.NewV4(&nodeKey.PublicKey, inst.IPAddress, 30303, 30303)
 
+		internalIP := inst.IPAddress.String()
+		if infd.Provider == docker.ProviderName {
+			internalIP = name // For docker, we use container names
+		}
+
 		omniEVMS = append(omniEVMS, types.OmniEVM{
 			Chain:           types.ChainOmniEVM,
 			InstanceName:    name,
 			InternalIP:      inst.IPAddress,
 			ProxyPort:       inst.Port,
-			InternalRPC:     fmt.Sprintf("http://%s:8545", name),
-			InternalAuthRPC: fmt.Sprintf("http://%s:8551", name),
+			InternalRPC:     fmt.Sprintf("http://%s:8545", internalIP),
+			InternalAuthRPC: fmt.Sprintf("http://%s:8551", internalIP),
 			ExternalRPC:     fmt.Sprintf("http://%s:%d", inst.ExtIPAddress.String(), inst.Port),
 			NodeKey:         nodeKey,
 			Enode:           en,
@@ -188,11 +192,16 @@ func TestnetFromManifest(manifest types.Manifest, manifestFile string, infd type
 			return types.Testnet{}, errors.New("anvil chain instance not found in infrastructure data")
 		}
 
+		internalIP := inst.IPAddress.String()
+		if infd.Provider == docker.ProviderName {
+			internalIP = chain.Name // For docker, we use container names
+		}
+
 		anvils = append(anvils, types.AnvilChain{
 			Chain:       chain,
 			InternalIP:  inst.IPAddress,
 			ProxyPort:   inst.Port,
-			InternalRPC: fmt.Sprintf("http://%s:8545", chain.Name),
+			InternalRPC: fmt.Sprintf("http://%s:8545", internalIP),
 			ExternalRPC: fmt.Sprintf("http://%s:%d", inst.ExtIPAddress.String(), inst.Port),
 		})
 	}

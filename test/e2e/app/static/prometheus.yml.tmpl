@@ -8,6 +8,12 @@ remote_write:
     basic_auth:
       username: {{ .RemoteUsername }}
       password: {{ .RemotePassword }}
+    write_relabel_configs:
+      # Trim port from instance label
+      - source_labels: [__address__]
+        regex: '(.+):(\d+)'
+        target_label: instance
+        replacement: '${1}'
 {{end }}
 
 scrape_configs:

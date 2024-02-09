@@ -28,6 +28,10 @@ func New() *cobra.Command {
 			return err
 		}
 
+		if err := libcmd.LogFlags(cmd.Context(), cmd.Flags()); err != nil {
+			return err
+		}
+
 		var err error
 		def, err = app.MakeDefinition(defCfg)
 
@@ -41,12 +45,7 @@ func New() *cobra.Command {
 	e2eTestCfg := app.DefaultE2ETestConfig()
 	bindE2EFlags(cmd.Flags(), &e2eTestCfg)
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := cmd.Context()
-		if err := libcmd.LogFlags(ctx, cmd.Flags()); err != nil {
-			return err
-		}
-
-		return app.E2ETest(ctx, def, e2eTestCfg)
+		return app.E2ETest(cmd.Context(), def, e2eTestCfg)
 	}
 
 	// Add subcommands
@@ -54,6 +53,7 @@ func New() *cobra.Command {
 		newDeployCmd(&def),
 		newLogsCmd(&def),
 		newCleanCmd(&def),
+		newTestCmd(&def),
 	)
 
 	return cmd
@@ -65,12 +65,7 @@ func newDeployCmd(def *app.Definition) *cobra.Command {
 		Use:   "deploy",
 		Short: "Deploys the e2e network",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			if err := libcmd.LogFlags(ctx, cmd.Flags()); err != nil {
-				return err
-			}
-
-			return app.Deploy(ctx, *def, promSecrets)
+			return app.Deploy(cmd.Context(), *def, promSecrets)
 		},
 	}
 
@@ -94,7 +89,17 @@ func newCleanCmd(def *app.Definition) *cobra.Command {
 		Use:   "clean",
 		Short: "Cleans (deletes) previously preserved network infrastructure",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return app.Cleanup(cmd.Context(), def.Testnet.Testnet)
+			return app.Cleanup(cmd.Context(), *def)
+		},
+	}
+}
+
+func newTestCmd(def *app.Definition) *cobra.Command {
+	return &cobra.Command{
+		Use:   "test",
+		Short: "Runs go tests against the a previously preserved network",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return app.Test(cmd.Context(), *def, true)
 		},
 	}
 }

@@ -1,5 +1,5 @@
 network = "staging"
-public_chains = ["arb_goerli"]
+public_chains = ["arb_goerli", "goerli"]
 multi_omni_evms = true
 prometheus = true
 

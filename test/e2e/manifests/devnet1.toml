@@ -2,4 +2,8 @@
 network = "devnet"
 anvil_chains = ["chain_a"]
 
-[node.validator]
+multi_omni_evms = true
+prometheus = true
+
+[node.validator01]
+[node.validator02]

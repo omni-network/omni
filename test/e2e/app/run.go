@@ -9,7 +9,7 @@ import (
 
 // Deploy a new e2e network. It also starts all services in order to deploy private portals.
 func Deploy(ctx context.Context, def Definition, promSecrets PromSecrets) error {
-	if err := Cleanup(ctx, def.Testnet.Testnet); err != nil {
+	if err := Cleanup(ctx, def); err != nil {
 		return err
 	}
 
@@ -74,7 +74,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 		return err
 	}
 
-	if err := Test(ctx, def); err != nil {
+	if err := Test(ctx, def, false); err != nil {
 		return err
 	}
 
@@ -84,7 +84,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 
 	if cfg.Preserve {
 		log.Warn(ctx, "Docker containers not stopped, --preserve=true", nil)
-	} else if err := Cleanup(ctx, def.Testnet.Testnet); err != nil {
+	} else if err := Cleanup(ctx, def); err != nil {
 		return err
 	}
 

@@ -13,7 +13,7 @@ import (
 )
 
 // Test runs test cases under tests/.
-func Test(ctx context.Context, def Definition) error {
+func Test(ctx context.Context, def Definition, verbose bool) error {
 	log.Info(ctx, "Running tests in ./tests/...")
 
 	extNetwork := externalNetwork(def.Testnet, def.Netman.DeployInfo())
@@ -41,8 +41,12 @@ func Test(ctx context.Context, def Definition) error {
 	}
 
 	infd := def.Infra.GetInfrastructureData()
-	if p := infd.Path; p != "" {
-		err = os.Setenv("INFRASTRUCTURE_FILE", p)
+	if infd.Path != "" {
+		infdPath, err := filepath.Abs(infd.Path)
+		if err != nil {
+			return errors.Wrap(err, "absolute infrastructure path")
+		}
+		err = os.Setenv("INFRASTRUCTURE_FILE", infdPath)
 		if err != nil {
 			return errors.Wrap(err, "setting INFRASTRUCTURE_FILE")
 		}
@@ -52,7 +56,15 @@ func Test(ctx context.Context, def Definition) error {
 		return errors.Wrap(err, "setting INFRASTRUCTURE_TYPE")
 	}
 
-	err = exec.CommandVerbose(ctx, "go", "test", "-count", "1", "github.com/omni-network/omni/test/e2e/tests")
+	v := ""
+	if verbose {
+		v = "-v"
+	}
+
+	err = exec.CommandVerbose(ctx, "go", "test", v,
+		"-timeout", "15s",
+		"-count", "1",
+		"github.com/omni-network/omni/test/e2e/tests")
 	if err != nil {
 		return errors.Wrap(err, "go tests failed")
 	}

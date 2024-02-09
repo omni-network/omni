@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"context"
 	"testing"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -12,7 +13,9 @@ import (
 // Tests that block headers are identical across nodes where present.
 func TestBlock_Header(t *testing.T) {
 	t.Parallel()
-	blocks := fetchBlockChain(t)
+	ctx := context.Background()
+	blocks := fetchBlockChain(ctx, t)
+
 	test(t, func(t *testing.T, node e2e.Node, _ []Portal) {
 		t.Helper()
 		if node.Mode == e2e.ModeSeed {
@@ -52,6 +55,8 @@ func TestBlock_Header(t *testing.T) {
 // Tests that the node contains the expected block range.
 func TestBlock_Range(t *testing.T) {
 	t.Parallel()
+	ctx := context.Background()
+
 	test(t, func(t *testing.T, node e2e.Node, _ []Portal) {
 		t.Helper()
 		if node.Mode == e2e.ModeSeed {
@@ -87,12 +92,14 @@ func TestBlock_Range(t *testing.T) {
 				// Ignore errors in first block if node is pruning blocks due to race conditions.
 				continue
 			}
+			require.NoError(t, ctx.Err(), "Timeout fetching block range: %d", h)
 			require.NoError(t, err)
 			assert.Equal(t, h, resp.Block.Height)
 		}
 
 		for h := node.Testnet.InitialHeight; h < first; h++ {
 			_, err := client.Block(ctx, &(h))
+			require.NoError(t, ctx.Err(), "Timeout fetching initial range: %d", h)
 			require.Error(t, err)
 		}
 	}, nil)

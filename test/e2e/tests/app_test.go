@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"context"
 	"encoding/hex"
 	"testing"
 	"time"
@@ -14,6 +15,7 @@ import (
 // block and the node sync status.
 func TestApp_Hash(t *testing.T) {
 	t.Parallel()
+	ctx := context.Background()
 	test(t, func(t *testing.T, node e2e.Node, _ []Portal) {
 		t.Helper()
 		client, err := node.Client()

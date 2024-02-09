@@ -1,15 +1,15 @@
 version: '2.4'
-{{- if .Network }}
 networks:
   {{ .NetworkName }}:
     labels:
       e2e: true
     driver: bridge
+    {{- if .Network }}
     ipam:
       driver: default
       config:
       - subnet: {{ .NetworkCIDR }}
-{{ end }}
+    {{- end }}
 
 services:
 {{- range .Nodes }}
@@ -32,11 +32,9 @@ services:
     depends_on:
       {{ index $.NodeOmniEVMs .Name }}:
         condition: service_healthy
-    {{- if $.Network }}
     networks:
       {{ $.NetworkName }}:
-        ipv4_address: {{ .InternalIP }}
-    {{ end }}
+        {{ if $.Network }}ipv4_address: {{ .InternalIP }}{{ end }}
 {{end}}
 
 {{- range .Anvils }}
@@ -49,11 +47,9 @@ services:
     entrypoint: ['anvil','--host','0.0.0.0','--chain-id','{{ .Chain.ID }}','--block-time','1', "--silent"]
     ports:
       - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}8545
-    {{- if $.Network }}
     networks:
       {{ $.NetworkName }}:
-        ipv4_address: {{ .InternalIP }}
-    {{ end }}
+        {{ if $.Network }}ipv4_address: {{ .InternalIP }}{{ end }}
 {{- end}}
 
   # Use geth as the omni EVMs.
@@ -67,6 +63,8 @@ services:
     command: --datadir=/geth init /geth/genesis.json
     volumes:
       - ./{{ .InstanceName }}:/geth
+    networks:
+      {{ $.NetworkName }}:
 
   {{ .InstanceName }}:
     labels:
@@ -95,7 +93,7 @@ services:
       - --nodekeyhex={{.NodeKeyHex}}
       - --bootnodes={{.BootNodesStr}}
     ports:
-      - 8551
+      - {{ if $.BindAll }}8551:{{end}}8551
       - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}8545
       - {{ if $.BindAll }}30303:{{end}}30303
       - 8546
@@ -108,11 +106,9 @@ services:
       retries: 30
     volumes:
       - ./{{ .InstanceName }}:/geth
-    {{- if $.Network }}
     networks:
       {{ $.NetworkName }}:
-        ipv4_address: {{ .InternalIP }}
-    {{ end }}
+        {{ if $.Network }}ipv4_address: {{ .InternalIP }}{{ end }}
 {{end}}
 
 {{- if .Relayer }}
@@ -124,11 +120,9 @@ services:
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     volumes:
       - ./relayer:/relayer
-    {{- if $.Network }}
     networks:
       {{ $.NetworkName }}:
-        ipv4_address: 10.186.73.200
-    {{ end }}
+        {{ if $.Network }}ipv4_address: 10.186.73.200{{ end }}
 {{end}}
 
 {{- if .Prometheus }}
@@ -140,9 +134,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-    {{- if $.Network }}
     networks:
       {{ $.NetworkName }}:
-        ipv4_address: 10.186.73.201
-    {{ end }}
+        {{ if $.Network }}ipv4_address: 10.186.73.201{{ end }}
 {{ end }}

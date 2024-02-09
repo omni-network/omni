@@ -1,4 +1,9 @@
 version: '2.4'
+networks:
+  test:
+    labels:
+      e2e: true
+    driver: bridge
 
 services:
   # Initialises geth files and folder from provided genesis file.
@@ -10,6 +15,9 @@ services:
     entrypoint: ['anvil','--host','0.0.0.0','--chain-id','100','--block-time','1', "--silent"]
     ports:
       - 8545:8545
+    networks:
+      test:
+        
 
   # Use geth as the omni EVMs.
   relayer:
@@ -20,4 +28,7 @@ services:
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     volumes:
       - ./relayer:/relayer
+    networks:
+      test:
+        
 

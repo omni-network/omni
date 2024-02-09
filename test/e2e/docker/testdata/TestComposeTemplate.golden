@@ -9,7 +9,6 @@ networks:
       config:
       - subnet: 10.186.73.0/24
 
-
 services:
   node0:
     labels:
@@ -30,7 +29,6 @@ services:
     networks:
       test:
         ipv4_address: 10.186.73.0
-    
 
   # Initialises geth files and folder from provided genesis file.
   chain_a:
@@ -44,7 +42,6 @@ services:
     networks:
       test:
         ipv4_address: 10.186.73.0
-    
 
   # Use geth as the omni EVMs.
   # Initialises geth files and folder from provided genesis file.
@@ -56,6 +53,8 @@ services:
     command: --datadir=/geth init /geth/genesis.json
     volumes:
       - ./omni_evm_0:/geth
+    networks:
+      test:
 
   omni_evm_0:
     labels:
@@ -100,7 +99,6 @@ services:
     networks:
       test:
         ipv4_address: 10.186.73.0
-    
 
   relayer:
     labels:
@@ -113,7 +111,6 @@ services:
     networks:
       test:
         ipv4_address: 10.186.73.200
-    
 
   prometheus:
     labels:
@@ -126,5 +123,4 @@ services:
     networks:
       test:
         ipv4_address: 10.186.73.201
-    
 

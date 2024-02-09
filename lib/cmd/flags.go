@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"net/url"
 	"strings"
 
 	"github.com/omni-network/omni/lib/log"
@@ -29,12 +30,30 @@ func LogFlags(ctx context.Context, flags *pflag.FlagSet) error {
 		if skip[f.Name] {
 			return
 		}
+
 		// TODO(corver): Allow dashes for one-to-one mapping with actual flags?
 		fields = append(fields, strings.ReplaceAll(f.Name, "-", "_"))
-		fields = append(fields, f.Value)
+		fields = append(fields, redact(f.Name, f.Value.String()))
 	})
 
 	log.Info(ctx, "Parsed config from flags", fields...)
 
 	return nil
+}
+
+// redact returns a redacted version of the given flag value. It currently supports redacting
+// passwords in valid URLs as well as flags that contains words like "token" or "password" or "secret".
+func redact(flag, val string) string {
+	if strings.Contains(flag, "token") ||
+		strings.Contains(flag, "password") ||
+		strings.Contains(flag, "secret") {
+		return "xxxxx"
+	}
+
+	u, err := url.Parse(val)
+	if err != nil {
+		return val
+	}
+
+	return u.Redacted()
 }

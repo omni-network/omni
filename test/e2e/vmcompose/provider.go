@@ -15,12 +15,11 @@ import (
 	"github.com/omni-network/omni/test/e2e/types"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
-	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
 )
 
 const ProviderName = "vmcompose"
 
-var _ infra.Provider = (*Provider)(nil)
+var _ types.InfraProvider = (*Provider)(nil)
 
 type Provider struct {
 	Testnet types.Testnet
@@ -93,19 +92,6 @@ func (p *Provider) Setup() error {
 func (p *Provider) StartNodes(ctx context.Context, _ ...*e2e.Node) error {
 	var onceErr error
 	p.once.Do(func() {
-		log.Info(ctx, "Deleting existing VM deployments")
-		// Stop and remove all staging containers
-		for vmName := range p.Data.VMs {
-			cleanCmd := fmt.Sprintf("cd /omni/%s && "+
-				"sudo docker compose stop && "+
-				"sudo docker compose down && "+
-				"sudo rm -rf *", p.Testnet.Name)
-			err := execOnVM(ctx, vmName, cleanCmd)
-			if err != nil {
-				log.Warn(ctx, "Cleaning existing deployment", err)
-			}
-		}
-
 		log.Info(ctx, "Copying artifacts to VMs")
 		for vmName := range p.Data.VMs {
 			err := copyToVM(ctx, vmName, p.Testnet.Dir)
@@ -133,6 +119,25 @@ func (p *Provider) StartNodes(ctx context.Context, _ ...*e2e.Node) error {
 	})
 
 	return onceErr
+}
+
+func (p *Provider) Clean(ctx context.Context) error {
+	log.Info(ctx, "Deleting existing VM deployments including data")
+	for vmName := range p.Data.VMs {
+		for _, cmd := range docker.CleanCmds(true, true) {
+			err := execOnVM(ctx, vmName, cmd)
+			if err != nil {
+				return errors.Wrap(err, "clean docker containers", "vm", vmName)
+			}
+
+			err = execOnVM(ctx, vmName, "sudo rm -rf /omni/*")
+			if err != nil {
+				return errors.Wrap(err, "clean docker containers", "vm", vmName)
+			}
+		}
+	}
+
+	return nil
 }
 
 func (p *Provider) StopTestnet(ctx context.Context) error {

@@ -1,8 +1,18 @@
 package types
 
 import (
+	"context"
+
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
 )
+
+type InfraProvider interface {
+	infra.Provider
+
+	// Clean deletes all containers, networks, and data on disk.
+	Clean(ctx context.Context) error
+}
 
 // InfrastructureData wraps e2e.InfrastructureData with additional omni-specific fields.
 type InfrastructureData struct {
