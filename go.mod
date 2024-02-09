@@ -9,7 +9,7 @@ require (
 	github.com/charmbracelet/log v0.3.1
 	github.com/cometbft/cometbft v0.38.5
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0
-	github.com/ethereum/go-ethereum v1.13.11
+	github.com/ethereum/go-ethereum v1.13.12
 	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/google/gofuzz v1.2.0
 	github.com/google/uuid v1.6.0
