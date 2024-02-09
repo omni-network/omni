@@ -105,7 +105,8 @@ func (m CLIConfig) Check() error {
 	return nil
 }
 
-func PrivateKeySignerFn(key *ecdsa.PrivateKey, chainID *big.Int) bind.SignerFn {
+// privateKeySignerFn returns a SignerFn that signs transactions with the given private key.
+func privateKeySignerFn(key *ecdsa.PrivateKey, chainID *big.Int) bind.SignerFn {
 	from := crypto.PubkeyToAddress(key.PublicKey)
 	signer := types.LatestSignerForChainID(chainID)
 
@@ -130,7 +131,7 @@ func PrivateKeySignerFn(key *ecdsa.PrivateKey, chainID *big.Int) bind.SignerFn {
 // It also takes the address that should be used to sign the transaction with.
 type SignerFn func(context.Context, common.Address, *types.Transaction) (*types.Transaction, error)
 
-// SignerFactory creates a SignerFn that is bound to a specific ChainID.
+// SignerFactory creates a SignerFn that is bound to a specific chainID.
 type SignerFactory func(chainID *big.Int) SignerFn
 
 // Config houses parameters for altering the behavior of a SimpleTxManager.
@@ -207,7 +208,7 @@ func NewConfig(ctx context.Context, cfg CLIConfig,
 	}
 
 	signer := func(chainID *big.Int) SignerFn {
-		s := PrivateKeySignerFn(privateKey, chainID)
+		s := privateKeySignerFn(privateKey, chainID)
 		return func(_ context.Context, addr common.Address, tx *types.Transaction) (*types.Transaction, error) {
 			return s(addr, tx)
 		}
@@ -249,7 +250,7 @@ func NewConfig(ctx context.Context, cfg CLIConfig,
 
 func (m Config) Check() error {
 	if m.Backend == nil {
-		return errors.New("must provide the Backend")
+		return errors.New("must provide the backend")
 	}
 	if m.NumConfirmations == 0 {
 		return errors.New("numConfirmations must not be 0")
@@ -280,7 +281,7 @@ func (m Config) Check() error {
 		return errors.New("must provide the Signer")
 	}
 	if m.ChainID == nil {
-		return errors.New("must provide the ChainID")
+		return errors.New("must provide the chainID")
 	}
 
 	return nil
