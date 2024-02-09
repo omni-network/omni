@@ -1,12 +1,10 @@
-package txmgr_test
+package txmgr
 
 import (
 	"context"
 	"math/big"
 	"strconv"
 	"testing"
-
-	"github.com/omni-network/omni/relayer/txmgr"
 
 	"github.com/stretchr/testify/require"
 )
@@ -22,9 +20,9 @@ type priceBumpTest struct {
 
 func (tc *priceBumpTest) run(t *testing.T) {
 	t.Helper()
-	prevFC := txmgr.CalcGasFeeCap(big.NewInt(tc.prevBaseFee), big.NewInt(tc.prevGasTip))
+	prevFC := calcGasFeeCap(big.NewInt(tc.prevBaseFee), big.NewInt(tc.prevGasTip))
 
-	tip, fc := txmgr.UpdateFees(context.Background(), big.NewInt(tc.prevGasTip), prevFC, big.NewInt(tc.newGasTip),
+	tip, fc := updateFees(context.Background(), big.NewInt(tc.prevGasTip), prevFC, big.NewInt(tc.newGasTip),
 		big.NewInt(tc.newBaseFee))
 
 	require.Equal(t, tc.expectedTip, tip.Int64(), "tip must be as expected")
@@ -33,7 +31,7 @@ func (tc *priceBumpTest) run(t *testing.T) {
 
 func TestUpdateFees(t *testing.T) {
 	t.Parallel()
-	require.Equal(t, int64(10), txmgr.PriceBump, "test must be updated if priceBump is adjusted")
+	require.Equal(t, int64(10), PriceBump, "test must be updated if priceBump is adjusted")
 	tests := []priceBumpTest{
 		{
 			prevGasTip: 100, prevBaseFee: 1000,
