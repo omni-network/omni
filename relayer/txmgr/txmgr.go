@@ -90,9 +90,9 @@ type ETHBackend interface {
 // SimpleTxManager is a implementation of TxManager that performs linear fee
 // bumping of a tx until it confirms.
 type SimpleTxManager struct {
-	Cfg     Config // embed the config directly
-	Name    string
-	ChainID *big.Int
+	Cfg       Config // embed the config directly
+	ChainName string
+	ChainID   *big.Int
 
 	Backend ETHBackend
 
@@ -105,16 +105,16 @@ type SimpleTxManager struct {
 }
 
 // NewSimpleTxManagerFromConfig initializes a new SimpleTxManager with the passed Config.
-func NewSimpleTxManagerFromConfig(name string, conf Config) (*SimpleTxManager, error) {
+func NewSimpleTxManagerFromConfig(chainName string, conf Config) (*SimpleTxManager, error) {
 	if err := conf.Check(); err != nil {
 		return nil, errors.Wrap(err, "invalid config")
 	}
 
 	return &SimpleTxManager{
-		ChainID: conf.ChainID,
-		Name:    name,
-		Cfg:     conf,
-		Backend: conf.Backend,
+		ChainID:   conf.ChainID,
+		ChainName: chainName,
+		Cfg:       conf,
+		Backend:   conf.Backend,
 	}, nil
 }
 
@@ -315,6 +315,10 @@ func (m *SimpleTxManager) SendTx(ctx context.Context, tx *types.Transaction) (*t
 	sendState := NewSendState(m.Cfg.SafeAbortNonceTooLowCount, m.Cfg.TxNotInMempoolTimeout)
 	receiptChan := make(chan *types.Receipt, 1)
 	publishAndWait := func(tx *types.Transaction, bumpFees bool) *types.Transaction {
+		if bumpFees {
+			resendTotal.WithLabelValues(m.ChainName).Inc()
+		}
+
 		wg.Add(1)
 		tx, published := m.publishTx(ctx, tx, sendState, bumpFees)
 		if published {

@@ -45,10 +45,10 @@ func newTestHarnessWithConfig(_ *testing.T, cfg txmgr.Config) *testHarness {
 	backend := newMockBackend(g)
 	cfg.Backend = backend
 	mgr := &txmgr.SimpleTxManager{
-		ChainID: cfg.ChainID,
-		Name:    "TEST",
-		Cfg:     cfg,
-		Backend: cfg.Backend,
+		ChainID:   cfg.ChainID,
+		ChainName: "TEST",
+		Cfg:       cfg,
+		Backend:   cfg.Backend,
 	}
 
 	return &testHarness{
@@ -805,8 +805,8 @@ func TestWaitMinedReturnsReceiptAfterNotFound(t *testing.T) {
 			NumConfirmations:          1,
 			SafeAbortNonceTooLowCount: 3,
 		},
-		Name:    "TEST",
-		Backend: &borkedBackend,
+		ChainName: "TEST",
+		Backend:   &borkedBackend,
 	}
 
 	// Don't mine the tx with the default backend. The failingBackend will
@@ -842,8 +842,8 @@ func doGasPriceIncrease(_ *testing.T, txTipCap, txFeeCap, newTip,
 			},
 			From: common.Address{},
 		},
-		Name:    "TEST",
-		Backend: &borkedBackend,
+		ChainName: "TEST",
+		Backend:   &borkedBackend,
 	}
 
 	tx := types.NewTx(&types.DynamicFeeTx{
@@ -1029,8 +1029,8 @@ func testIncreaseGasPriceLimit(t *testing.T, lt gasPriceLimitTest) {
 			},
 			From: common.Address{},
 		},
-		Name:    "TEST",
-		Backend: &borkedBackend,
+		ChainName: "TEST",
+		Backend:   &borkedBackend,
 	}
 	lastGoodTx := types.NewTx(&types.DynamicFeeTx{
 		GasTipCap: big.NewInt(10),

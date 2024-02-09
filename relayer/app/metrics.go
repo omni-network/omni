@@ -27,4 +27,18 @@ var (
 		Name:      "reset_total",
 		Help:      "The total number of times the worker has reset by destination chain. Alert if too high",
 	}, []string{"chain"})
+
+	submissionTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "relayer",
+		Subsystem: "worker",
+		Name:      "submission_total",
+		Help:      "The total number of submissions to destination chain from a specific source chain",
+	}, []string{"src_chain", "dst_chain"})
+
+	msgTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "relayer",
+		Subsystem: "worker",
+		Name:      "msg_total",
+		Help:      "The total number of messages submitted to a destination chain from a specific source chain",
+	}, []string{"src_chain", "dst_chain"})
 )
