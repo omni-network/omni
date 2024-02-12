@@ -13,6 +13,8 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"
 )
@@ -34,8 +36,8 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 		func(e *xchain.Msg, c fuzz.Continue) {
 			e.DestChainID = DestChainID
 			e.SourceChainID = SourceChainID
-			e.DestAddress = [20]byte(crypto.CRandBytes(20))
-			e.SourceMsgSender = [20]byte(crypto.CRandBytes(20))
+			e.DestAddress = common.Address(crypto.CRandBytes(20))
+			e.SourceMsgSender = common.Address(crypto.CRandBytes(20))
 			e.Data = crypto.CRandBytes(100)
 		},
 	)

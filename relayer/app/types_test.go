@@ -7,6 +7,8 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 	relayer "github.com/omni-network/omni/relayer/app"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"
 )
@@ -21,7 +23,7 @@ func Test_translateSubmission(t *testing.T) {
 
 	// Zero TxHash for comparison since it isn't translated.
 	for i := range sub.Msgs {
-		sub.Msgs[i].TxHash = [32]byte{}
+		sub.Msgs[i].TxHash = common.Hash{}
 	}
 
 	require.Equal(t, sub, reversedSub)
@@ -32,7 +34,7 @@ func submissionFromBinding(sub bindings.XTypesSubmission, destChainID uint64) xc
 	for _, sig := range sub.Signatures {
 		sigs = append(sigs, xchain.SigTuple{
 			ValidatorAddress: sig.ValidatorAddr,
-			Signature:        [65]byte(sig.Signature),
+			Signature:        xchain.SignatureBytes(sig.Signature),
 		})
 	}
 
