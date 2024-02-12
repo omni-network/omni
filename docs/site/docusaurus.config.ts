@@ -65,6 +65,8 @@ const config: Config = {
         {
           label: 'About',
           to: '/docs/omni/home',
+          sidebarId: 'aboutSidebar',
+          position: 'left',
         },
         {
           type: "docSidebar",

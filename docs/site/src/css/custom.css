@@ -28,16 +28,3 @@
   --ifm-color-primary-lightest: #4fddbf;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
-
-/* Optional: Other configurations */
-
-.sidebar-label .menu__link {
-  font-weight: bold;
-  cursor: default;
-  /* color: var(--ifm-color-primary); Using a variable for theme consistency */
-}
-
-/* Optional: Remove the pointer events to make it non-clickable */
-/* .sidebar-label .menu__link {
-  pointer-events: none;
-} */
