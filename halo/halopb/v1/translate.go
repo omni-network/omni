@@ -93,7 +93,7 @@ func SigFromProto(sig *SigTuple) (xchain.SigTuple, error) {
 
 	return xchain.SigTuple{
 		ValidatorAddress: common.Address(sig.GetValidatorAddress()),
-		Signature:        xchain.SignatureBytes(sig.GetSignature()),
+		Signature:        xchain.Signature65(sig.GetSignature()),
 	}, nil
 }
 
