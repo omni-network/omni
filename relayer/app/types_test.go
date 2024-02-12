@@ -3,10 +3,11 @@ package relayer_test
 import (
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/xchain"
 	relayer "github.com/omni-network/omni/relayer/app"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"
@@ -33,7 +34,7 @@ func submissionFromBinding(sub bindings.XTypesSubmission, destChainID uint64) xc
 	for _, sig := range sub.Signatures {
 		sigs = append(sigs, xchain.SigTuple{
 			ValidatorAddress: sig.ValidatorAddr,
-			Signature:        [65]byte(sig.Signature),
+			Signature:        xchain.SignatureBytes(sig.Signature),
 		})
 	}
 

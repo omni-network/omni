@@ -3,6 +3,8 @@ package v1
 import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/xchain"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // AggregatesToProto converts a slice of xchain.AggAttestations to a slice of protobuf AggAttestations.
@@ -72,7 +74,7 @@ func AggregateFromProto(agg *AggAttestation) (xchain.AggAttestation, error) {
 	return xchain.AggAttestation{
 		BlockHeader:    header,
 		ValidatorSetID: agg.GetValidatorSetId(),
-		BlockRoot:      [32]byte(agg.GetBlockRoot()),
+		BlockRoot:      common.Hash(agg.GetBlockRoot()),
 		Signatures:     sigs,
 	}, nil
 }
@@ -90,8 +92,8 @@ func SigFromProto(sig *SigTuple) (xchain.SigTuple, error) {
 	}
 
 	return xchain.SigTuple{
-		ValidatorAddress: [20]byte(sig.GetValidatorAddress()),
-		Signature:        [65]byte(sig.GetSignature()),
+		ValidatorAddress: common.Address(sig.GetValidatorAddress()),
+		Signature:        xchain.SignatureBytes(sig.GetSignature()),
 	}, nil
 }
 
@@ -126,6 +128,6 @@ func BlockHeaderFromProto(header *BlockHeader) (xchain.BlockHeader, error) {
 	return xchain.BlockHeader{
 		SourceChainID: header.GetChainId(),
 		BlockHeight:   header.GetHeight(),
-		BlockHash:     [32]byte(header.GetHash()),
+		BlockHash:     common.Hash(header.GetHash()),
 	}, nil
 }

@@ -6,6 +6,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+type SignatureBytes [65]byte
+
 // StreamID uniquely identifies a cross-chain stream.
 // A stream is a logical representation of a cross-chain connection between two chains.
 type StreamID struct {
@@ -55,28 +57,28 @@ type Block struct {
 
 // Attestation by a validator of a cross-chain Block.
 type Attestation struct {
-	BlockHeader          // BlockHeader identifies the cross-chain Block
-	BlockRoot   [32]byte // Merkle root of the cross-chain Block
-	Signature   SigTuple // Validator signature and public key
+	BlockHeader             // BlockHeader identifies the cross-chain Block
+	BlockRoot   common.Hash // Merkle root of the cross-chain Block
+	Signature   SigTuple    // Validator signature and public key
 }
 
 // AggAttestation aggregates multiple attestation by a validator set of a cross-chain Block.
 type AggAttestation struct {
-	BlockHeader               // BlockHeader identifies the cross-chain Block
-	ValidatorSetID uint64     // Unique identified of the validator set included in this aggregate.
-	BlockRoot      [32]byte   // Merkle root of the cross-chain Block
-	Signatures     []SigTuple // Validator signatures and public keys
+	BlockHeader                // BlockHeader identifies the cross-chain Block
+	ValidatorSetID uint64      // Unique identified of the validator set included in this aggregate.
+	BlockRoot      common.Hash // Merkle root of the cross-chain Block
+	Signatures     []SigTuple  // Validator signatures and public keys
 }
 
 // SigTuple is a validator signature and address.
 type SigTuple struct {
 	ValidatorAddress common.Address // Validator Ethereum address
-	Signature        [65]byte       // Validator signature over XBlockRoot; Ethereum 65 bytes [R || S || V] format.
+	Signature        SignatureBytes // Validator signature over XBlockRoot; Ethereum 65 bytes [R || S || V] format.
 }
 
 // Submission is a cross-chain submission of a set of messages and their proofs.
 type Submission struct {
-	AttestationRoot [32]byte    // Merkle root of the attestations
+	AttestationRoot common.Hash // Merkle root of the attestations
 	ValidatorSetID  uint64      // Unique identified of the validator set included in this aggregate.
 	BlockHeader     BlockHeader // BlockHeader identifies the cross-chain Block
 	Msgs            []Msg       // Messages to be submitted
