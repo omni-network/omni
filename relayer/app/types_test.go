@@ -34,7 +34,7 @@ func submissionFromBinding(sub bindings.XTypesSubmission, destChainID uint64) xc
 	for _, sig := range sub.Signatures {
 		sigs = append(sigs, xchain.SigTuple{
 			ValidatorAddress: sig.ValidatorAddr,
-			Signature:        xchain.SignatureBytes(sig.Signature),
+			Signature:        xchain.Signature65(sig.Signature),
 		})
 	}
 
