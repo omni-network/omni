@@ -4,7 +4,7 @@
 // - protoc             (unknown)
 // source: halo/halopb/v1/query.proto
 
-package v1
+package halopbv1
 
 import (
 	context "context"

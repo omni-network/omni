@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package halo.halopb.v1;
 
-option go_package = "github.com/omni-network/omni/halo/halopb/v1";
-
 import "halo/halopb/v1/xchain.proto";
 
 // ApprovedFromRequest queries halo for approved aggregate attestations for the given chain_id

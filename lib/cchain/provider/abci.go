@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 
-	halopb "github.com/omni-network/omni/halo/halopb/v1"
+	halopbv1 "github.com/omni-network/omni/halo/halopb/v1"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/xchain"
@@ -38,7 +38,7 @@ func NewABCIFetcher(abci rpcclient.ABCIClient) ABCIFetcher {
 
 func (f ABCIFetcher) ApprovedFrom(ctx context.Context, chainID uint64, fromHeight uint64,
 ) ([]xchain.AggAttestation, error) {
-	req := &halopb.ApprovedFromRequest{
+	req := &halopbv1.ApprovedFromRequest{
 		ChainId:    chainID,
 		FromHeight: fromHeight,
 	}
@@ -47,7 +47,7 @@ func (f ABCIFetcher) ApprovedFrom(ctx context.Context, chainID uint64, fromHeigh
 		return nil, errors.Wrap(err, "marshal request")
 	}
 
-	resp, err := f.abci.ABCIQuery(ctx, halopb.HaloService_ApprovedFrom_FullMethodName, bz)
+	resp, err := f.abci.ABCIQuery(ctx, halopbv1.HaloService_ApprovedFrom_FullMethodName, bz)
 	if err != nil {
 		return nil, errors.Wrap(err, "abci query approved-from",
 			"chain_id", chainID,
@@ -62,13 +62,13 @@ func (f ABCIFetcher) ApprovedFrom(ctx context.Context, chainID uint64, fromHeigh
 		)
 	}
 
-	response := new(halopb.ApprovedFromResponse)
+	response := new(halopbv1.ApprovedFromResponse)
 	err = proto.Unmarshal(resp.Response.Value, response)
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal approved-from response")
 	}
 
-	aggs, err := halopb.AggregatesFromProto(response.GetAggregates())
+	aggs, err := halopbv1.AggregatesFromProto(response.GetAggregates())
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal approved-from aggregates")
 	}

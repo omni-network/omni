@@ -1,4 +1,4 @@
-package v1
+package halopbv1
 
 import (
 	"github.com/omni-network/omni/lib/errors"
