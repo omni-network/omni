@@ -4,6 +4,7 @@ go 1.22.0
 
 require (
 	cosmossdk.io/api v0.4.1
+	cosmossdk.io/core v0.6.1
 	cosmossdk.io/orm v1.0.0-beta.3
 	entgo.io/ent v0.13.0
 	github.com/BurntSushi/toml v1.3.2
@@ -30,6 +31,7 @@ require (
 )
 
 require (
+	cosmossdk.io/depinject v1.0.0-alpha.3 // indirect
 	cosmossdk.io/errors v1.0.0-beta.7 // indirect
 	github.com/cosmos/cosmos-db v1.0.0-rc.1 // indirect
 	github.com/cosmos/cosmos-proto v1.0.0-beta.3 // indirect
