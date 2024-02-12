@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package halo.halopb.v2;
+
+import "cosmos/orm/v1/orm.proto";
+
+message AggAttestation {
+  option (cosmos.orm.v1.table) = {
+    id: 1;
+    primary_key: { fields: "id", auto_increment: true }
+    index: {id: 1, fields: "chain_id,height,hash", unique: true}
+    index: {id: 2, fields: "status" } // this allows querying by status
+  };
+
+  uint64 id = 1; // Auto-incremented ID
+
+  // Block header fields
+  uint64 chain_id    = 2; // Chain ID as per https://chainlist.org
+  uint64 height      = 3; // Height of the block
+  bytes  hash        = 4; // Hash of the block
+
+  bytes block_root        = 5; // Merkle root of the cross-chain Block
+  uint32 status           = 6; // Status of the block; pending, approved.\
+  uint64 validator_set_id = 7; // Unique identified of the validator set included in this aggregate.
+}
+
+// AttSignature is the attestation signature of the validator over the block root.
+message AttSignature {
+  option (cosmos.orm.v1.table) = {
+    id: 2;
+    primary_key: { fields: "id", auto_increment: true }
+    index: {id: 1, fields: "agg_id"}
+  };
+
+  uint64 id                 = 1; // Auto-incremented ID
+  bytes  signature          = 3; // Validator signature over XBlockRoot; Ethereum 65 bytes [R || S || V] format.
+  bytes  validator_address  = 2; // Validator ethereum address; 20 bytes.
+  bytes  agg_id             = 4; // AggAttestation ID to which this signature belongs.
+}

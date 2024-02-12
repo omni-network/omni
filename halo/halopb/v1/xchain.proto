@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package halo.halopb.v1;
 
-option go_package = "github.com/omni-network/omni/halo/halopb/v1";
-
 // BlockHeader uniquely identifies a cross chain block.
 message BlockHeader {
   uint64 chain_id    = 1; // Chain ID as per https://chainlist.org

@@ -4,7 +4,7 @@ import (
 	"context"
 	"math/big"
 
-	halopb "github.com/omni-network/omni/halo/halopb/v1"
+	halopbv1 "github.com/omni-network/omni/halo/halopb/v1"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
@@ -362,12 +362,12 @@ func (*App) Flush(context.Context, *abci.RequestFlush) (*abci.ResponseFlush, err
 func (a *App) Query(_ context.Context, query *abci.RequestQuery) (*abci.ResponseQuery, error) {
 	if query == nil || len(query.Data) == 0 {
 		return nil, errors.New("empty query")
-	} else if query.Path != halopb.HaloService_ApprovedFrom_FullMethodName {
+	} else if query.Path != halopbv1.HaloService_ApprovedFrom_FullMethodName {
 		return nil, errors.New("unknown query path")
 	}
 
 	// Unmarshal the request.
-	req := new(halopb.ApprovedFromRequest)
+	req := new(halopbv1.ApprovedFromRequest)
 	if err := proto.Unmarshal(query.Data, req); err != nil {
 		return nil, errors.Wrap(err, "unmarshal approved from request")
 	}
@@ -376,8 +376,8 @@ func (a *App) Query(_ context.Context, query *abci.RequestQuery) (*abci.Response
 	aggs := a.state.ApprovedFrom(req.GetChainId(), req.GetFromHeight())
 
 	// Construct the response.
-	resp := &halopb.ApprovedFromResponse{
-		Aggregates: halopb.AggregatesToProto(aggs),
+	resp := &halopbv1.ApprovedFromResponse{
+		Aggregates: halopbv1.AggregatesToProto(aggs),
 	}
 
 	// Marshal the response.

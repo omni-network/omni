@@ -1,9 +1,9 @@
-package v1_test
+package halopbv1_test
 
 import (
 	"testing"
 
-	halopb "github.com/omni-network/omni/halo/halopb/v1"
+	"github.com/omni-network/omni/halo/halopb/v1"
 	"github.com/omni-network/omni/lib/xchain"
 
 	fuzz "github.com/google/gofuzz"
@@ -15,8 +15,8 @@ func TestTranslate(t *testing.T) {
 	var aggs []xchain.AggAttestation
 	fuzz.New().NilChance(0).NumElements(1, 8).Fuzz(&aggs)
 
-	aggpb := halopb.AggregatesToProto(aggs)
-	aggs2, err := halopb.AggregatesFromProto(aggpb)
+	aggpb := halopbv1.AggregatesToProto(aggs)
+	aggs2, err := halopbv1.AggregatesFromProto(aggpb)
 	require.NoError(t, err)
 
 	require.Equal(t, aggs, aggs2)

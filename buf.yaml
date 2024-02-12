@@ -1,5 +1,7 @@
 version: v1
-name: github.com/omni-network/omni
+name: buf.build/omni-network/omni
+deps:
+  - buf.build/cosmos/cosmos-sdk
 lint:
   use:
     - DEFAULT
