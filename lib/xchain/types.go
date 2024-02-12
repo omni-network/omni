@@ -6,7 +6,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type SignatureBytes [65]byte
+// Signature65 is a 65 byte Ethereum signature [R || S || V] format.
+type Signature65 [65]byte
 
 // StreamID uniquely identifies a cross-chain stream.
 // A stream is a logical representation of a cross-chain connection between two chains.
@@ -73,7 +74,7 @@ type AggAttestation struct {
 // SigTuple is a validator signature and address.
 type SigTuple struct {
 	ValidatorAddress common.Address // Validator Ethereum address
-	Signature        SignatureBytes // Validator signature over XBlockRoot; Ethereum 65 bytes [R || S || V] format.
+	Signature        Signature65    // Validator signature over XBlockRoot; Ethereum 65 bytes [R || S || V] format.
 }
 
 // Submission is a cross-chain submission of a set of messages and their proofs.
