@@ -69,10 +69,13 @@ func Run(ctx context.Context, cfg Config) error {
 
 	startMonitoring(ctx, network, xprov, ethcrypto.PubkeyToAddress(privateKey.PublicKey), rpcClientPerChain)
 
-	<-ctx.Done()
-	log.Info(ctx, "Shutdown detected, stopping...")
-
-	return nil
+	select {
+	case <-ctx.Done():
+		log.Info(ctx, "Shutdown detected, stopping...")
+		return nil
+	case err := <-serveMonitoring(cfg.MonitoringAddr):
+		return err
+	}
 }
 
 func newClient(tmNodeAddr string) (client.Client, error) {

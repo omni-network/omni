@@ -2,6 +2,7 @@ package relayer
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
@@ -12,6 +13,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // startMonitoring starts the monitoring goroutines.
@@ -119,4 +122,25 @@ func monitorOffsetsOnce(ctx context.Context, src, dst uint64, srcChain, dstChain
 	submitCursor.WithLabelValues(srcChain, dstChain).Set(float64(submitted.Offset))
 
 	return nil
+}
+
+// serveMonitoring starts a goroutine that serves the monitoring API. It
+// returns a channel that will receive an error if the server fails to start.
+func serveMonitoring(address string) <-chan error {
+	errChan := make(chan error)
+	go func() {
+		mux := http.NewServeMux()
+		mux.Handle("/metrics", promhttp.Handler())
+
+		srv := &http.Server{
+			Addr:              address,
+			ReadHeaderTimeout: 5 * time.Second,
+			IdleTimeout:       5 * time.Second,
+			WriteTimeout:      5 * time.Second,
+			Handler:           mux,
+		}
+		errChan <- errors.Wrap(srv.ListenAndServe(), "serve monitoring")
+	}()
+
+	return errChan
 }
