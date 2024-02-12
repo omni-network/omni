@@ -23,6 +23,6 @@ We use Trunk Based Development for managing branches, please refer to the [Branc
 
 - Open PRs against the `main` branch only.
 - Include tests for new or modified code.
-- Follow the [Go Style Guide](./goguidelines.md) and the project's [Solidity Style Guide](./solidityguidelines.md).
+- Follow the Go guidelines shown in the [Go Code Review Comments](https://go.dev/wiki/CodeReviewComments) and this [Solidity Style Guide](https://gist.github.com/lucas-manuel/a43da80cdd4c3f37a2f3151d3774b8e0).
 - Ensure all exported types outside of the internal package are well-documented.
 - Run linters and tests locally before submitting your PR, install the pre-commit hooks by running `make install-pre-commit`.
