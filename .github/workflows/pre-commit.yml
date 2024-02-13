@@ -5,7 +5,7 @@ on:
 
 jobs:
   pre-commit:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     env:
       # Skip a few hooks: Golangci-lint and go-tests have their own actions. Allow lints against main commits.
       SKIP: golangci-lint,run-go-tests,no-commit-to-branch,run-forge-tests,run-forge-fmt
