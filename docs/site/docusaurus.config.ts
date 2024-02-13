@@ -62,12 +62,29 @@ const config: Config = {
       },
       items: [
         {
-          to: "docs/home",
-          sidebarId: "oldSidebar",
           position: "left",
           label: "Omni",
+          type: "doc",
+          docId: "home",
         },
-        // { to: "/blog", label: "Blog", position: "left" },
+        {
+          position: "left",
+          label: "Protocol",
+          type: "doc",
+          docId: "protocol/overview",
+        },
+        {
+          position: "left",
+          label: "Developers",
+          type: "doc",
+          docId: "developers/contracts",
+        },
+        {
+          position: "left",
+          label: "Operators",
+          type: "doc",
+          docId: "operators/overview",
+        },
         {
           type: "docsVersionDropdown",
           position: "right",
