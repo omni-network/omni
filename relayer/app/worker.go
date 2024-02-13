@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	// bufferSize is the size of the activeBuffer for async send.
-	bufferSize = 1024
+	// bufferSize is the size of the activeBuffer for async send. For now we are using unbuffered channels.
+	bufferSize = 0
 	// mempoolLimit is the maximum number of transactions we want to submit to the mempool at once.
 	mempoolLimit = 16
 )

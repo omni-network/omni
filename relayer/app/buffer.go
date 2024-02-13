@@ -32,11 +32,11 @@ func newActiveBuffer(chainName string, mempoolLimit int64, size int, sender Send
 	}
 }
 
-func (b *activeBuffer) AddInput(_ context.Context, submission xchain.Submission) error {
+func (b *activeBuffer) AddInput(ctx context.Context, submission xchain.Submission) error {
 	select {
+	case <-ctx.Done():
+		b.submitErr(errors.Wrap(ctx.Err(), "context canceled"))
 	case b.buffer <- submission:
-	default:
-		b.submitErr(errors.New("async send activeBuffer overflow"))
 	}
 
 	bufferLen.WithLabelValues(b.chainName).Set(float64(len(b.buffer)))
