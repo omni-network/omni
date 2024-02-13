@@ -27,7 +27,7 @@ func maybeSetupSimnetRelayer(ctx context.Context, network netconf.Network, cmtNo
 		return simnetSender{}.SendTransaction, nil
 	})
 
-	w.Run(ctx)
+	go w.Run(ctx)
 }
 
 var _ relayer.SendFunc = simnetSender{}.SendTransaction

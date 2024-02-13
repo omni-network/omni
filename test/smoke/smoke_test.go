@@ -130,17 +130,29 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 
 	// Start the relayer, collecting all updates.
 	updates := make(chan relayer.StreamUpdate)
-	err = relayer.StartRelayer(ctx,
-		cprovider.NewABCIProvider(rpclocal.New(node)),
+	w := relayer.NewWorker(netconf.Chain{ID: srcChainID},
 		netconf.Network{Chains: []netconf.Chain{{ID: srcChainID}}},
+		cprovider.NewABCIProvider(rpclocal.New(node)),
 		xprov,
-		func(update relayer.StreamUpdate) ([]xchain.Submission, error) {
-			updates <- update
-			return nil, nil
-		},
-		panicSender{}.SendTransaction,
-	)
-	require.NoError(t, err)
+		relayer.CreateSubmissions,
+		func() (relayer.SendFunc, error) {
+			return panicSender{}.SendTransaction, nil
+
+		})
+	go w.Run(ctx)
+
+	//
+	//err = relayer.StartRelayer(ctx,
+	//	cprovider.NewABCIProvider(rpclocal.New(node)),
+	//	netconf.Network{Chains: []netconf.Chain{{ID: srcChainID}}},
+	//	xprov,
+	//	func(update relayer.StreamUpdate) ([]xchain.Submission, error) {
+	//		updates <- update
+	//		return nil, nil
+	//	},
+	//	panicSender{}.SendTransaction,
+	//)
+	//require.NoError(t, err)
 
 	// Subscribe cometbft blocks
 	blocksSub, err := node.EventBus().Subscribe(ctx, "", types.EventQueryNewBlock)
