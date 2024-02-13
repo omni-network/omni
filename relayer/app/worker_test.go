@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 	relayer "github.com/omni-network/omni/relayer/app"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,7 +27,7 @@ func TestWorker_Run(t *testing.T) {
 	)
 	expectChainA := destChainBCursor - destChainACursor + 1
 	expectChainB := 1
-	//totalMsgs := expectChainA + expectChainB
+	// totalMsgs := expectChainA + expectChainB
 
 	streamA := xchain.StreamID{
 		SourceChainID: srcChain,
@@ -97,7 +98,7 @@ func TestWorker_Run(t *testing.T) {
 			if chainID != srcChain {
 				return // Only subscribe to source chain.
 			}
-			//require.EqualValues(t, destChainACursor, fromHeight)
+			// require.EqualValues(t, destChainACursor, fromHeight)
 			if fromHeight != destChainACursor && fromHeight != destChainBCursor {
 				return
 			}
@@ -131,34 +132,31 @@ func TestWorker_Run(t *testing.T) {
 	}
 
 	go func() {
-		for {
-			select {
-			case sub := <-submissionsChan:
-				chainBMsgs := 0
-				chainAMsgs := 0
-				for _, msg := range submissions {
-					switch msg.DestChainID {
-					case destChainA:
-						chainAMsgs++
-					case destChainB:
-						chainBMsgs++
-					}
+		for sub := range submissionsChan {
+			chainBMsgs := 0
+			chainAMsgs := 0
+			for _, msg := range submissions {
+				switch msg.DestChainID {
+				case destChainA:
+					chainAMsgs++
+				case destChainB:
+					chainBMsgs++
 				}
+			}
 
-				for _, msg := range sub.Msgs {
-					if chainAMsgs < expectChainA && msg.DestChainID == destChainA {
-						submissions = append(submissions, sub)
-						chainAMsgs++
-					} else if chainBMsgs < expectChainB && msg.DestChainID == destChainB {
-						submissions = append(submissions, sub)
-						chainBMsgs++
-					} else if chainAMsgs == expectChainA && chainBMsgs == expectChainB {
-						close(done)
-						cancel()
-						return
-					}
+			for _, msg := range sub.Msgs {
+				if chainAMsgs < expectChainA && msg.DestChainID == destChainA {
+					submissions = append(submissions, sub)
+					chainAMsgs++
+				} else if chainBMsgs < expectChainB && msg.DestChainID == destChainB {
+					submissions = append(submissions, sub)
+					chainBMsgs++
+				} else if chainAMsgs == expectChainA && chainBMsgs == expectChainB {
+					close(done)
+					cancel()
+
+					return
 				}
-
 			}
 		}
 	}()
