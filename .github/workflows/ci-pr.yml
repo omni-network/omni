@@ -19,6 +19,6 @@ jobs:
     uses: ./.github/workflows/golangci-lint.yml
   sol-tests:
     uses: ./.github/workflows/soltest.yml
-  # test
+  # test, remove
   e2e-tests:
     uses: ./.github/workflows/e2etest.yml
