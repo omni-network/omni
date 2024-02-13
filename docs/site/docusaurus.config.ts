@@ -38,6 +38,11 @@ const config: Config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl: "https://github.com/omni-network/omni/docs/",
+          versions: {
+            current: {
+              label: `1.0.0 🚧`,
+            },
+          },
         },
         theme: {
           customCss: "./src/css/custom.css",
@@ -50,9 +55,9 @@ const config: Config = {
     // Replace with your project's social card
     image: "img/docusaurus-social-card.jpg",
     navbar: {
-      title: "My Site",
+      title: "Omni Docs",
       logo: {
-        alt: "My Site Logo",
+        alt: "Omni Logo",
         src: "img/logo.svg",
       },
       items: [
@@ -63,6 +68,11 @@ const config: Config = {
           label: "Omni",
         },
         // { to: "/blog", label: "Blog", position: "left" },
+        {
+          type: "docsVersionDropdown",
+          position: "right",
+          dropdownActiveClassDisabled: true,
+        },
         {
           href: "https://github.com/omni-network/omni",
           label: "GitHub",
@@ -101,17 +111,17 @@ const config: Config = {
       darkTheme: prismThemes.dracula,
       additionalLanguages: ["solidity"],
     },
-    algolia: {
-      appId: "<NEW_APP_ID>", // pragma: allowlist secret
-      apiKey: "<NEW_API_KEY>", // pragma: allowlist secret
-      indexName: "index-name",
-      contextualSearch: true,
-      searchParameters: {
-        clickAnalytics: true,
-        analytics: true,
-        enableReRanking: true,
-      },
-    },
+    // algolia: {
+    //   appId: "<NEW_APP_ID>", // pragma: allowlist secret
+    //   apiKey: "<NEW_API_KEY>", // pragma: allowlist secret
+    //   indexName: "index-name",
+    //   contextualSearch: true,
+    //   searchParameters: {
+    //     clickAnalytics: true,
+    //     analytics: true,
+    //     enableReRanking: true,
+    //   },
+    // },
   } satisfies Preset.ThemeConfig,
 };
 
