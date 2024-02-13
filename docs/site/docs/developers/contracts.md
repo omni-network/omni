@@ -135,7 +135,6 @@ function sendXChainTx(
     address _to,
     bytes memory _data
 ) public;
-
 ```
 
 #### Verifying Omni Contract State

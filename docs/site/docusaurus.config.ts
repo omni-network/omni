@@ -3,9 +3,9 @@ import type { Config } from "@docusaurus/types";
 import type * as Preset from "@docusaurus/preset-classic";
 
 const config: Config = {
-  title: "My Site",
-  tagline: "Dinosaurs are cool",
-  favicon: "img/favicon.ico",
+  title: "Omni Docs",
+  tagline: "Documentation for the Omni Network",
+  favicon: "img/favicon-dark.png",
 
   // Set the production url of your site here
   url: "https://your-docusaurus-site.example.com",
@@ -15,8 +15,8 @@ const config: Config = {
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: "facebook", // Usually your GitHub org/user name.
-  projectName: "docusaurus", // Usually your repo name.
+  organizationName: "omni-network", // Usually your GitHub org/user name.
+  projectName: "docs", // Usually your repo name.
 
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
@@ -37,13 +37,7 @@ const config: Config = {
           sidebarPath: "./sidebars.ts",
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
-          editUrl: "https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/",
-        },
-        blog: {
-          showReadingTime: true,
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
-          editUrl: "https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/",
+          editUrl: "https://github.com/omni-network/omni/docs/",
         },
         theme: {
           customCss: "./src/css/custom.css",
@@ -70,7 +64,7 @@ const config: Config = {
         },
         // { to: "/blog", label: "Blog", position: "left" },
         {
-          href: "https://github.com/facebook/docusaurus",
+          href: "https://github.com/omni-network/omni",
           label: "GitHub",
           position: "right",
         },
@@ -105,7 +99,20 @@ const config: Config = {
     prism: {
       theme: prismThemes.github,
       darkTheme: prismThemes.dracula,
+      additionalLanguages: ["solidity"],
     },
+    // algolia: {
+    //   appId: process.env.ALGOLIA_APP_ID,
+    //   apiKey: process.env.ALGOLIA_API_KEY,
+    //   indexName: "index-name",
+    //   contextualSearch: true,
+    //   searchParameters: {
+    //     clickAnalytics: true,
+    //     analytics: true,
+    //     enableReRanking: true,
+    //   },
+    //   searchPagePath: "search",
+    // },
   } satisfies Preset.ThemeConfig,
 };
 

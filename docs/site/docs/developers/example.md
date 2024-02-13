@@ -11,9 +11,9 @@ This is a simple example of a global application that uses Omni to operate acros
 
 ### On Omni
 
-The GlobalCounter contract on Omni tracks the current global count across all rollups. It also tracks the amount incremented by each rollup. It can also increment the count on a rollup (which in turn increments the global counter here).
+The `GlobalCounter` contract on Omni tracks the current global count across all rollups. It also tracks the amount incremented by each rollup. It can also increment the count on a rollup (which in turn increments the global counter here).
 
-This contract implements callback functions that simply store whether an incrementOnChain call was reverted or successful.
+This contract implements callback functions that simply store whether an `incrementOnChain` call was reverted or successful.
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -69,9 +69,9 @@ contract GlobalCounter is OmniScient {
 
 ### On Rollups
 
-This LocalCounter contract is deployed to rollups. The primary method is the increment() method, which sends a transaction to Omni to increment the global counter.
+This `LocalCounter` contract is deployed to rollups. The primary method is the `increment()` method, which sends a transaction to Omni to increment the global counter.
 
-It also includes a syncGlobalCount function, which uses the omni.verifyState method to check the global count state variable in the GlobalCounter contract.
+It also includes a `syncGlobalCount` function, which uses the `omni.verifyState` method to check the global count state variable in the `GlobalCounter` contract.
 
 ```solidity
 // SPDX-License-Identifier: MIT
