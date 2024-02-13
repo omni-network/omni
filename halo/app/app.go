@@ -86,9 +86,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "start comet node")
 	}
 
-	if err := maybeSetupSimnetRelayer(ctx, network, cmtNode, xprovider); err != nil {
-		return errors.Wrap(err, "setup simnet relayer")
-	}
+	maybeSetupSimnetRelayer(ctx, network, cmtNode, xprovider)
 
 	<-ctx.Done()
 	log.Info(ctx, "Shutdown detected, stopping...")
