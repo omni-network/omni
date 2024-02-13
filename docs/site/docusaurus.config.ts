@@ -101,18 +101,17 @@ const config: Config = {
       darkTheme: prismThemes.dracula,
       additionalLanguages: ["solidity"],
     },
-    // algolia: {
-    //   appId: process.env.ALGOLIA_APP_ID,
-    //   apiKey: process.env.ALGOLIA_API_KEY,
-    //   indexName: "index-name",
-    //   contextualSearch: true,
-    //   searchParameters: {
-    //     clickAnalytics: true,
-    //     analytics: true,
-    //     enableReRanking: true,
-    //   },
-    //   searchPagePath: "search",
-    // },
+    algolia: {
+      appId: "<NEW_APP_ID>", // pragma: allowlist secret
+      apiKey: "<NEW_API_KEY>", // pragma: allowlist secret
+      indexName: "index-name",
+      contextualSearch: true,
+      searchParameters: {
+        clickAnalytics: true,
+        analytics: true,
+        enableReRanking: true,
+      },
+    },
   } satisfies Preset.ThemeConfig,
 };
 
