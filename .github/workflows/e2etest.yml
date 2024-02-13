@@ -5,7 +5,7 @@ on:
 
 jobs:
   e2e_tests:
-    runs-on: self-hosted
+    runs-on: gh-runner-0
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
