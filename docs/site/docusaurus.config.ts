@@ -63,16 +63,10 @@ const config: Config = {
       },
       items: [
         {
-          label: 'About',
-          to: '/docs/omni/home',
-          sidebarId: 'aboutSidebar',
-          position: 'left',
-        },
-        {
-          type: "docSidebar",
-          sidebarId: "tutorialSidebar",
+          to: "docs/home",
+          sidebarId: "oldSidebar",
           position: "left",
-          label: "Tutorial",
+          label: "Omni",
         },
         { to: "/blog", label: "Blog", position: "left" },
         {
