@@ -131,9 +131,9 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 	defer rpctest.StopTendermint(node)
 
 	network := netconf.Network{Chains: []netconf.Chain{
-		{ID: srcChainID, Name: "srcChain"},
-		{ID: chainA, Name: "chainA"},
-		{ID: chainB, Name: "chainB"}},
+		{ID: srcChainID, Name: "src_chain"},
+		{ID: chainA, Name: "chain_a"},
+		{ID: chainB, Name: "chain_b"}},
 	}
 	updates := make(chan relayer.StreamUpdate)
 	// Start the relayer, collecting all updates.
