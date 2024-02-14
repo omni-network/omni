@@ -16,15 +16,27 @@ import (
 // maybeSetupSimnetRelayer sets up the simnet relayer if the network is simnet.
 func maybeSetupSimnetRelayer(ctx context.Context, network netconf.Network, cmtNode *node.Node,
 	xprovider xchain.Provider,
-) error {
+) {
 	if network.Name != netconf.Simnet {
-		return nil
+		return
 	}
 
 	cprov := cprovider.NewABCIProvider(rpclocal.New(cmtNode))
 
-	return relayer.StartRelayer(ctx, cprov, network, xprovider, relayer.CreateSubmissions,
-		simnetSender{}.SendTransaction)
+	for _, chain := range network.Chains {
+		w := relayer.NewWorker(
+			chain,
+			network,
+			cprov,
+			xprovider,
+			relayer.CreateSubmissions,
+			func() (relayer.SendFunc, error) {
+				return simnetSender{}.SendTransaction, nil
+			},
+		)
+
+		go w.Run(ctx)
+	}
 }
 
 var _ relayer.SendFunc = simnetSender{}.SendTransaction

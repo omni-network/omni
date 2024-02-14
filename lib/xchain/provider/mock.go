@@ -16,6 +16,7 @@ var (
 	_ xchain.Provider = (*Mock)(nil)
 )
 
+// todo(Lazar): delete this and pass it to ctor so it's not hard coded and hidden here.
 const (
 	destChainA = 100
 	destChainB = 200

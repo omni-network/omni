@@ -194,6 +194,16 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 					Name:   "omni",
 					IsOmni: true,
 				},
+				{
+					ID:     100, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
+					Name:   "chain_a",
+					IsOmni: false,
+				},
+				{
+					ID:     200, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
+					Name:   "chain_b",
+					IsOmni: false,
+				},
 			},
 		}
 		if err := netconf.Save(network, networkFile); err != nil {

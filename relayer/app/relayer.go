@@ -4,38 +4,10 @@ import (
 	"context"
 	"sort"
 
-	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 )
-
-// StartRelayer starts the relayer logic by subscribing to approved aggregate attestations
-// from the consensus chain and processing them into submissions for the destination chains.
-func StartRelayer(
-	ctx context.Context,
-	cProvider cchain.Provider,
-	network netconf.Network,
-	xClient xchain.Provider,
-	creator CreateFunc,
-	sender SendFunc,
-) error {
-	// Get the last submitted cursors for each chain.
-	cursors, initialOffsets, err := getSubmittedCursors(ctx, network.ChainIDs(), network.ChainIDs(), xClient)
-	if err != nil {
-		return err
-	}
-
-	// callback processes each approved attestation/xblock.
-	callback := newCallback(xClient, initialOffsets, creator, sender, 0)
-
-	// Subscribe to attestations for each chain.
-	for chainID, fromHeight := range FromHeights(cursors, network.Chains) {
-		cProvider.Subscribe(ctx, chainID, fromHeight, callback)
-	}
-
-	return nil
-}
 
 // getSubmittedCursors returns the last submitted cursor for each chain.
 // It also returns the offsets indexed by streamID for each stream.

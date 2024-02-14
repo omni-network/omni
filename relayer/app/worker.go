@@ -13,8 +13,6 @@ import (
 )
 
 const (
-	// bufferSize is the size of the activeBuffer for async send.
-	bufferSize = 1024
 	// mempoolLimit is the maximum number of transactions we want to submit to the mempool at once.
 	mempoolLimit = 16
 )
@@ -74,7 +72,7 @@ func (w *Worker) runOnce(ctx context.Context) error {
 		return err
 	}
 
-	buf := newActiveBuffer(w.chain.Name, mempoolLimit, bufferSize, sender)
+	buf := newActiveBuffer(w.chain.Name, mempoolLimit, sender)
 
 	callback := newCallback(w.xProvider, initialOffsets, w.creator, buf.AddInput, w.chain.ID)
 
@@ -82,7 +80,10 @@ func (w *Worker) runOnce(ctx context.Context) error {
 	for chainID, fromHeight := range FromHeights(cursors, w.network.Chains) {
 		w.cProvider.Subscribe(ctx, chainID, fromHeight, callback)
 
-		srcChain, _ := w.network.Chain(chainID)
+		srcChain, f := w.network.Chain(chainID)
+		if !f {
+			continue
+		}
 		logAttrs = append(logAttrs, srcChain.Name, fromHeight)
 	}
 
