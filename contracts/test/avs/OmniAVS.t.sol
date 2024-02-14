@@ -66,6 +66,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
         _testUndelegateAllDelegators();
     }
 
+    /// @dev Register operators with eigen layer core, assert OmniAVS quorum is still empty
     function _testRegisterOperators() internal {
         // NOTE: it is not necessary for operator to have deposited minimumStakeForQuorum
         // other staker(s) could have deposited and delegated to the operator
@@ -88,6 +89,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
         assertEq(validators.length, 0); // no validators
     }
 
+    /// @dev Register operators with OmniAVS, assert OmniAVS quorum is populated with initial stake
     function _testRegisterOperatorsWithAVS() internal {
         // register operators with AVS
         for (uint32 i = 0; i < numOperators; i++) {
@@ -114,6 +116,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
         }
     }
 
+    /// @dev Delegate to operators, assert OmniAVS quorum is populated with initial stake + delegations
     function _testDelegateToOperators() internal {
         // initialize delegators
         for (uint32 i = 0; i < numOperators; i++) {
@@ -161,6 +164,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
         }
     }
 
+    /// @dev Increase delegations for first half of operators, assert OmniAVS quorum is updated
     function _testIncreaseDelegationsToFirstHalfOfOperators() internal {
         // increase delegations for first half of operators
         for (uint32 i = 0; i < numOperators / 2; i++) {
@@ -203,6 +207,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
         }
     }
 
+    /// @dev Increase stake for second half of operators, assert OmniAVS quorum is updated
     function _testIncreaseStakeOfSecondHalfOfOperators() internal {
         // increase stake of second half of delegators
         for (uint32 i = numOperators / 2; i < numOperators; i++) {
@@ -247,6 +252,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
         }
     }
 
+    /// @dev Undelegate all delegators, assert OmniAVS quorum is updated
     function _testUndelegateAllDelegators() internal {
         // undelegate all delegators
         for (uint32 i = 0; i < numOperators; i++) {

@@ -14,24 +14,7 @@ import { AVSBase } from "./AVSBase.sol";
 contract AVSUtils is AVSBase {
     using BN254 for BN254.G1Point;
 
-    // map stake -> strategy -> amount
-    mapping(address => mapping(address => uint256)) internal _deposited;
-
-    // map operator addr -> operator id
-    mapping(address => bytes32) internal _operatorIds;
-
-    function _operator(uint256 index) internal pure returns (address) {
-        return _addr("operator", index);
-    }
-
-    function _delegator(uint256 index) internal pure returns (address) {
-        return _addr("delegator", index);
-    }
-
-    function _addr(string memory namespace, uint256 index) internal pure returns (address) {
-        return address(uint160(uint256(keccak256(abi.encodePacked(namespace, index)))));
-    }
-
+    /// @dev register an operator with eigenlayer core
     function _registerAsOperator(address operator) internal {
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             earningsReceiver: operator,
@@ -42,6 +25,7 @@ contract AVSUtils is AVSBase {
         _testRegisterAsOperator(operator, operatorDetails);
     }
 
+    /// @dev register an operator with OmniAVS
     function _registerOperatorWithAVS(address operator) internal {
         // only one quorum
         bytes memory quorumNumbers = hex"00";
@@ -53,29 +37,34 @@ contract AVSUtils is AVSBase {
         BN254.G1Point memory pubkey = BN254.hashToG1(keccak256(abi.encodePacked("pubkey", operator)));
         blsApkRegistry.setBLSPublicKey(operator, pubkey);
 
-        _operatorIds[operator] = pubkey.hashG1Point();
-
         vm.prank(operator);
 
         // signature & pubkey registration verification are skipped, see test/avs/eigen/DelegationManagerMock.sol
         registryCoordinator.registerOperator(quorumNumbers, socket, emptyPubkeyRegistrationParams, emptySignature);
     }
 
+    /// @dev create an operator address
+    function _operator(uint256 index) internal pure returns (address) {
+        return _addr("operator", index);
+    }
+
+    /// @dev create a delegator address
+    function _delegator(uint256 index) internal pure returns (address) {
+        return _addr("delegator", index);
+    }
+
+    /// @dev create a namespaced address
+    function _addr(string memory namespace, uint256 index) internal pure returns (address) {
+        return address(uint160(uint256(keccak256(abi.encodePacked(namespace, index)))));
+    }
+
+    /// @dev deposit WETH in eigen layer
     function _depositWeth(address staker, uint256 amount) internal {
         _testDepositWeth(staker, amount);
-        _deposited[staker][address(wethStrat)] += amount;
     }
 
-    function _wethDeposits(address staker) internal view returns (uint256) {
-        return _deposited[staker][address(wethStrat)];
-    }
-
+    /// @dev deposit Eigen in eigen layer
     function _depositEigen(address staker, uint256 amount) internal {
         _testDepositEigen(staker, amount);
-        _deposited[staker][address(eigenStrat)] += amount;
-    }
-
-    function _eigenDeposits(address staker) internal view returns (uint256) {
-        return _deposited[staker][address(eigenStrat)];
     }
 }

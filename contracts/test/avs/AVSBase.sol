@@ -71,13 +71,11 @@ contract AVSBase is EigenLayerTestHelper {
         _initRegistryCoordinator();
     }
 
-    /// @dev Deploy the ProxyAdmin contract, to be admin of all test proxies
     function _deployProxyAdmin() internal {
         vm.prank(proxyAdminOwner);
         proxyAdmin = new ProxyAdmin();
     }
 
-    /// @dev Deploy the RegistryCoordinator proxy
     function _deployRegistryCoordinatorProxy() internal {
         vm.prank(registryCoordinatorOwner);
         registryCoordinator = RegistryCoordinatorHarness(
@@ -132,7 +130,6 @@ contract AVSBase is EigenLayerTestHelper {
         omniAVS.initialize(omniAVSOwner, stubPortal, omniChainId);
     }
 
-    /// @dev Deploy the RegistryCoordinator implementation
     function _deployRegistryCoordinatorImpl() internal {
         vm.startPrank(proxyAdminOwner);
 
@@ -175,7 +172,6 @@ contract AVSBase is EigenLayerTestHelper {
         });
     }
 
-    /// @dev Single strategy (WETH) for now
     function _strategyParams() internal view returns (IStakeRegistry.StrategyParams[][] memory params) {
         params = new IStakeRegistry.StrategyParams[][](1);
         params[0] = _defaultQuorumStrategyParams();
