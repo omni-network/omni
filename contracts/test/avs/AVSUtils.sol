@@ -20,15 +20,15 @@ contract AVSUtils is AVSBase {
     // map operator addr -> operator id
     mapping(address => bytes32) internal _operatorIds;
 
-    function _operator(uint8 index) internal pure returns (address) {
+    function _operator(uint256 index) internal pure returns (address) {
         return _addr("operator", index);
     }
 
-    function _delegator(uint8 index) internal pure returns (address) {
+    function _delegator(uint256 index) internal pure returns (address) {
         return _addr("delegator", index);
     }
 
-    function _addr(string memory namespace, uint8 index) internal pure returns (address) {
+    function _addr(string memory namespace, uint256 index) internal pure returns (address) {
         return address(uint160(uint256(keccak256(abi.encodePacked(namespace, index)))));
     }
 

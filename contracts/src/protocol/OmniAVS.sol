@@ -1,74 +1,76 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.12;
 
+import { DelegationManager } from "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 import { ISignatureUtils } from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import { IDelegationManager } from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
-import { DelegationManager } from "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 
 import { OperatorStateRetriever } from "eigenlayer-middleware/src/OperatorStateRetriever.sol";
 import { ServiceManagerBase } from "eigenlayer-middleware/src/ServiceManagerBase.sol";
+import { RegistryCoordinator } from "eigenlayer-middleware/src/RegistryCoordinator.sol";
 import { IRegistryCoordinator } from "eigenlayer-middleware/src/interfaces/IRegistryCoordinator.sol";
 import { IStakeRegistry } from "eigenlayer-middleware/src/interfaces/IStakeRegistry.sol";
 
-import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
 import { OmniPredeploys } from "../libraries/OmniPredeploys.sol";
-
-/**
- * @title IOmniEthRestaking
- * @dev Interface for OmniEthRestaking predeployed contract, that receives operator stake updates from OmniAVS
- *       TOOD: implement OmniEthRestaking (name TBD), move to separate file
- */
-interface IOmniEthRestaking {
-    /// @dev Syncs operator state with OmniAVS. Only callable by XMsg from OmniAVS
-    function sync(OmniAVS.Validator[] calldata validators) external;
-}
+import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
+import { IOmniEthRestaking } from "../interfaces/IOmniEthRestaking.sol";
+import { IOmniAVS } from "../interfaces/IOmniAVS.sol";
+import { IOmniAVSAdmin } from "../interfaces/IOmniAVSAdmin.sol";
 
 /**
  * @title OmniAVS
+ * @notice Omni AVS contract. It is responsible for syncing Omni AVS operator
+ *         stake and delegations with the Omni chain.
  */
-contract OmniAVS is ServiceManagerBase, OperatorStateRetriever {
-    struct Validator {
-        // ethereum address of the operator
-        address addr;
-        // total amount delegated, not including operator stake
-        uint96 delegated;
-        // total amount staked by the operator, not including delegations
-        uint96 staked;
-    }
-
+contract OmniAVS is IOmniAVS, IOmniAVSAdmin, ServiceManagerBase, OperatorStateRetriever {
     /// @dev AVS Quorum numbers, Omni only has one quorum
     bytes public constant QUORUM_NUMBERS = hex"00";
 
     /// @dev AVS Quorum number
     uint8 public constant QUORUM_NUMBER = 0;
 
-    /// TODO: what are ramifications of hardcoding single quorum as constants?
+    /// @dev Omni chain id, used to make xcalls to the Omni chain
+    uint64 public omniChainId;
 
-    uint64 public immutable omniChainId;
-    IOmniPortal public immutable omni;
+    /// @dev Omni portal contract, used to make xcalls to the Omni chain
+    IOmniPortal public omni;
 
+    /// @dev List of currently register operators, used to sync EigenCore
     address[] public operators;
+
+    /// @dev Sync with OmniAVS StakeRegistry with EigenCore. To be called before any
+    //       operation that requires an up-to-date view of operator stake.
+    modifier syncWithEigenCore() {
+        RegistryCoordinator(address(_registryCoordinator)).updateOperators(operators);
+        _;
+    }
 
     constructor(
         IDelegationManager delegationManager_,
         IRegistryCoordinator registryCoordinator_,
-        IStakeRegistry stakeRegistry_,
-        IOmniPortal omniPortal_,
-        uint64 omniChainId_
-    ) ServiceManagerBase(delegationManager_, registryCoordinator_, stakeRegistry_) {
-        omni = omniPortal_;
+        IStakeRegistry stakeRegistry_
+    ) ServiceManagerBase(delegationManager_, registryCoordinator_, stakeRegistry_) { }
+
+    /// @inheritdoc IOmniAVSAdmin
+    function initialize(address owner_, IOmniPortal omni_, uint64 omniChainId_) external initializer {
+        _transferOwnership(owner_);
+        omni = omni_;
         omniChainId = omniChainId_;
     }
 
-    /// @dev Allow relayer to calculate xcall fee for syncWithOmni
-    function feeForSync() external view returns (uint256) {
+    /**
+     * Omni sync
+     */
+
+    /// @inheritdoc IOmniAVS
+    function xfeeForSync() external syncWithEigenCore returns (uint256) {
         Validator[] memory vals = getValidators();
         return omni.feeFor(omniChainId, abi.encodeWithSelector(IOmniEthRestaking.sync.selector, vals));
     }
 
-    /// @dev Syncs operator state with OmniEthRestaking predeploy
-    function syncWithOmni() external payable {
+    /// @inheritdoc IOmniAVS
+    function syncWithOmni() external payable syncWithEigenCore {
         Validator[] memory vals = getValidators();
         omni.xcall{ value: msg.value }(
             omniChainId,
@@ -77,10 +79,13 @@ contract OmniAVS is ServiceManagerBase, OperatorStateRetriever {
         );
     }
 
+    /**
+     * ServiceManagerBase overrides
+     */
+
     /// @dev Override ServiceManagerBase.registerOperatorToAVS, to track list of operators
     ///      We need to track list of operators so we can call registryCoordinator.updateOperators(operators);
     ///      before syncing with omni.
-    ///      TODO: call before sync - RegistryCoordinator(address(_registryCoordinator)).updateOperators(operators);
     function registerOperatorToAVS(
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
@@ -92,27 +97,43 @@ contract OmniAVS is ServiceManagerBase, OperatorStateRetriever {
     /// @dev Override ServiceManagerBase.deregisterOperatorFromAVS, to track list of operators
     ///      We need to track list of operators so we can call registryCoordinator.updateOperators(operators);
     ///      before syncing with omni.
-    ///      TODO: call before sync - RegistryCoordinator(address(_registryCoordinator)).updateOperators(operators);
     function deregisterOperatorFromAVS(address operator) public override {
         ServiceManagerBase.deregisterOperatorFromAVS(operator);
-
-        // TODO: can we remove operator here? do we need to wait for withdrawals?
         _removeOperator(operator);
     }
 
-    /// @dev Returns the list of validators for the current block
+    /**
+     * Admin controls
+     */
+
+    /// @inheritdoc IOmniAVSAdmin
+    function setOmniPortal(IOmniPortal omni_) external onlyOwner {
+        omni = omni_;
+    }
+
+    /// @inheritdoc IOmniAVSAdmin
+    function setOmniChainId(uint64 omniChainId_) external onlyOwner {
+        omniChainId = omniChainId_;
+    }
+
+    /**
+     * View functions
+     */
+
+    /// @inheritdoc IOmniAVS
     function getValidators() public view returns (Validator[] memory) {
         return getValidators(block.number);
     }
 
-    /// @dev Returns the list of validators for the given block
+    /// @inheritdoc IOmniAVS
     function getValidators(uint256 blockNumber) public view returns (Validator[] memory validators) {
-        /// we only provide on quorum, so we only need the first element of getOperatorState
-        Operator[] memory ops = getOperatorState(blockNumber)[0];
+        /// we only provide on quorum, so we only need the first element
+        Operator[] memory ops = _getOperatorState(blockNumber)[0];
 
-        // we translate Operator[] to Validator[], splitting Operator.stake
-        // into Validator.delegated (total amount delegated to the operator)
-        // and Validator.staked (total amount staked by the operator)
+        // We translate OperatorStateRetriever.Operator[] to Validator[], splitting Operator.stake into:
+        //  - Validator.delegated (total amount delegated to the operator) and
+        //  - Validator.staked (total amount staked by the operator)
+
         validators = new Validator[](ops.length);
 
         for (uint256 i = 0; i < ops.length; i++) {
@@ -125,25 +146,22 @@ contract OmniAVS is ServiceManagerBase, OperatorStateRetriever {
         return validators;
     }
 
-    /// @dev exposed for now, for testing
-    function getOperatorState() public view returns (Operator[][] memory) {
-        return getOperatorState(block.number);
-    }
+    /**
+     * Internal view functions
+     */
 
-    /// @dev exposed for now, for testing
-    function getOperatorState(uint256 blockNumber) public view returns (Operator[][] memory) {
+    /// @dev Read operator state from avs registries, at a specific block number
+    function _getOperatorState(uint256 blockNumber) public view returns (Operator[][] memory) {
         return OperatorStateRetriever.getOperatorState(_registryCoordinator, QUORUM_NUMBERS, uint32(blockNumber));
     }
 
     /// @dev Returns the total amount staked by the operator, not including deletations
     ///      This requires us translate the operators active delegatable shares into strategyParam
     ///      weigted steake amount, for QUORUM_NUMBER.
-    ///      TODO: this is a big question mark - we are not using eigen the way they intended
     function _getStaked(address operator) internal view returns (uint96) {
-        DelegationManager delegation = DelegationManager(address(_delegationManager));
-        (IStrategy[] memory strategies, uint256[] memory shares) = delegation.getDelegatableShares(operator);
-
         IStakeRegistry.StrategyParams[] memory strategyParams = _strategyParams();
+        (IStrategy[] memory strategies, uint256[] memory shares) =
+            DelegationManager(address(_delegationManager)).getDelegatableShares(operator);
 
         uint96 staked;
 
@@ -160,11 +178,10 @@ contract OmniAVS is ServiceManagerBase, OperatorStateRetriever {
                 }
             }
 
-            // TODO: what should we do if the strategy is not found? this should not happen
-            if (address(params.strategy) == address(0)) {
-                continue;
-            }
+            // if strategy is not found, do not consider it in stake
+            if (address(params.strategy) == address(0)) continue;
 
+            // same calculation StakeRegistry.weightOfOperatorForQuorum
             staked += uint96(sharesAmt * params.multiplier / _stakeRegistry.WEIGHTING_DIVISOR());
         }
 
@@ -181,12 +198,17 @@ contract OmniAVS is ServiceManagerBase, OperatorStateRetriever {
         return params;
     }
 
+    /**
+     * Internal functions.
+     */
+
     /// @dev Adds an operator to the list of operators
     function _addOperator(address operator) internal {
         for (uint256 i = 0; i < operators.length; i++) {
-            // TODO: we may not want to revert here, and instead just return
-            // allow ServiceManagerBase.registerOperatorToAVS to determine when an "operator already exists"
-            require(operators[i] != operator, "Operator already exists");
+            // If operator already exists, do not add it again.
+            // We do not revert. Instead, we allow ServiceManagerBase.registerOperatorToAVS to
+            // determine when an "operator already exists", at which point it will revert.
+            if (operators[i] == operator) return;
         }
 
         operators.push(operator);

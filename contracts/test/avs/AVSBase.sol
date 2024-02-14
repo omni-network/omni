@@ -21,9 +21,9 @@ import { IndexRegistry } from "eigenlayer-middleware/src/IndexRegistry.sol";
 import { IIndexRegistry } from "eigenlayer-middleware/src/interfaces/IIndexRegistry.sol";
 import { BitmapUtils } from "eigenlayer-middleware/src/libraries/BitmapUtils.sol";
 
-import { EigenLayerTestHelper } from "./eigen/EigenLayerTestHelper.t.sol";
-import { OmniAVS } from "src/protocol/OmniAVS.sol";
 import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
+import { EigenLayerTestHelper } from "./eigen/EigenLayerTestHelper.t.sol";
+import { OmniAVSHarness } from "./OmniAVSHarness.sol";
 
 contract AVSBase is EigenLayerTestHelper {
     using BN254 for BN254.G1Point;
@@ -45,13 +45,13 @@ contract AVSBase is EigenLayerTestHelper {
     StakeRegistryHarness public stakeRegistryImplementation;
     IBLSApkRegistry public blsApkRegistryImplementation;
     IIndexRegistry public indexRegistryImplementation;
-    OmniAVS public omniAVSImplementation;
+    OmniAVSHarness public omniAVSImplementation;
 
     RegistryCoordinatorHarness public registryCoordinator;
     StakeRegistryHarness public stakeRegistry;
     BLSApkRegistryHarness public blsApkRegistry;
     IIndexRegistry public indexRegistry;
-    OmniAVS public omniAVS;
+    OmniAVSHarness public omniAVS;
 
     /// @notice StakeRegistry, Constant used as a divisor in calculating weights.
     uint256 public constant WEIGHTING_DIVISOR = 1e18;
@@ -119,20 +119,17 @@ contract AVSBase is EigenLayerTestHelper {
 
     function _deployOmniAVS() internal {
         vm.startPrank(proxyAdminOwner);
-
-        omniAVS = OmniAVS(address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")));
-
-        uint64 omniChainId = 111;
-        address stubPortal = makeAddr("tempPortal"); // TODO: use a real portal deployment
-
-        omniAVSImplementation =
-            new OmniAVS(delegation, registryCoordinator, stakeRegistry, IOmniPortal(stubPortal), omniChainId);
-
+        omniAVS =
+            OmniAVSHarness(address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")));
+        omniAVSImplementation = new OmniAVSHarness(delegation, registryCoordinator, stakeRegistry);
         proxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(omniAVS))), address(omniAVSImplementation));
 
         vm.stopPrank();
 
-        omniAVS.initialize(omniAVSOwner);
+        uint64 omniChainId = 111;
+        IOmniPortal stubPortal = IOmniPortal(makeAddr("tempPortal")); // TODO: use a real portal deployment
+
+        omniAVS.initialize(omniAVSOwner, stubPortal, omniChainId);
     }
 
     /// @dev Deploy the RegistryCoordinator implementation
@@ -155,7 +152,7 @@ contract AVSBase is EigenLayerTestHelper {
         IRegistryCoordinator.OperatorSetParam[] memory operatorSetParams = _operatorSetParams();
 
         uint96[] memory minimumStakeForQuorums = new uint96[](1);
-        minimumStakeForQuorums[0] = uint96(1000);
+        minimumStakeForQuorums[0] = uint96(minimumStakeForQuorum);
 
         registryCoordinator.initialize(
             registryCoordinatorOwner,
