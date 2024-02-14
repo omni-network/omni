@@ -23,11 +23,20 @@ func maybeSetupSimnetRelayer(ctx context.Context, network netconf.Network, cmtNo
 
 	cprov := cprovider.NewABCIProvider(rpclocal.New(cmtNode))
 
-	w := relayer.NewWorker(network.Chains[0], network, cprov, xprovider, relayer.CreateSubmissions, func() (relayer.SendFunc, error) {
-		return simnetSender{}.SendTransaction, nil
-	})
+	for _, chain := range network.Chains {
+		w := relayer.NewWorker(
+			chain,
+			network,
+			cprov,
+			xprovider,
+			relayer.CreateSubmissions,
+			func() (relayer.SendFunc, error) {
+				return simnetSender{}.SendTransaction, nil
+			},
+		)
 
-	go w.Run(ctx)
+		go w.Run(ctx)
+	}
 }
 
 var _ relayer.SendFunc = simnetSender{}.SendTransaction

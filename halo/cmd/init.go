@@ -194,6 +194,16 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 					Name:   "omni",
 					IsOmni: true,
 				},
+				{
+					ID:     100,
+					Name:   "chainA",
+					IsOmni: false,
+				},
+				{
+					ID:     200,
+					Name:   "chainB",
+					IsOmni: false,
+				},
 			},
 		}
 		if err := netconf.Save(network, networkFile); err != nil {

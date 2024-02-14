@@ -92,6 +92,8 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 	const (
 		srcChainBlockPeriod = 1 * time.Millisecond * 100
 		srcChainID          = 1
+		chainA              = 100
+		chainB              = 200
 	)
 	chainMap := map[uint64]string{srcChainID: ""}
 
@@ -128,31 +130,23 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 	node := rpctest.StartTendermint(app)
 	defer rpctest.StopTendermint(node)
 
-	// Start the relayer, collecting all updates.
+	network := netconf.Network{Chains: []netconf.Chain{{ID: srcChainID}, {ID: chainA}, {ID: chainB}}}
 	updates := make(chan relayer.StreamUpdate)
-	w := relayer.NewWorker(netconf.Chain{ID: srcChainID},
-		netconf.Network{Chains: []netconf.Chain{{ID: srcChainID}}},
-		cprovider.NewABCIProvider(rpclocal.New(node)),
-		xprov,
-		relayer.CreateSubmissions,
-		func() (relayer.SendFunc, error) {
-			return panicSender{}.SendTransaction, nil
-
-		})
-	go w.Run(ctx)
-
-	//
-	//err = relayer.StartRelayer(ctx,
-	//	cprovider.NewABCIProvider(rpclocal.New(node)),
-	//	netconf.Network{Chains: []netconf.Chain{{ID: srcChainID}}},
-	//	xprov,
-	//	func(update relayer.StreamUpdate) ([]xchain.Submission, error) {
-	//		updates <- update
-	//		return nil, nil
-	//	},
-	//	panicSender{}.SendTransaction,
-	//)
-	//require.NoError(t, err)
+	// Start the relayer, collecting all updates.
+	for _, chain := range network.Chains {
+		w := relayer.NewWorker(chain,
+			network,
+			cprovider.NewABCIProvider(rpclocal.New(node)),
+			xprov,
+			func(update relayer.StreamUpdate) ([]xchain.Submission, error) {
+				updates <- update
+				return nil, nil
+			},
+			func() (relayer.SendFunc, error) {
+				return panicSender{}.SendTransaction, nil
+			})
+		go w.Run(ctx)
+	}
 
 	// Subscribe cometbft blocks
 	blocksSub, err := node.EventBus().Subscribe(ctx, "", types.EventQueryNewBlock)
@@ -179,8 +173,8 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 
 			// Assert offsets are sequential
 			for _, msg := range update.Msgs {
-				require.EqualValues(t, offsets[update.StreamID], msg.StreamOffset)
 				offsets[update.StreamID]++
+				require.EqualValues(t, offsets[update.StreamID], msg.StreamOffset)
 			}
 
 			// Stop when we have received enough updates
