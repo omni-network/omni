@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	fuzz "github.com/google/gofuzz"
 	"github.com/omni-network/omni/lib/xchain"
 
+	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"
 )
 
