@@ -5,7 +5,7 @@ on:
 
 jobs:
   verify:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     env:
       GITHUB_PR: ${{ toJSON(github.event.pull_request) }}
     steps:

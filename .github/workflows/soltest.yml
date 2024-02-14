@@ -6,7 +6,7 @@ on:
 
 jobs:
   sol_tests:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: foundry-rs/foundry-toolchain@v1

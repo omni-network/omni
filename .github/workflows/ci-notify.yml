@@ -9,7 +9,7 @@ on:
 
 jobs:
   notify:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Notify Slack
         uses: slackapi/slack-github-action@v1.24.0
