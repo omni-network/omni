@@ -28,14 +28,12 @@ interface IOmniEthRestaking {
  * @title OmniAVS
  */
 contract OmniAVS is ServiceManagerBase, OperatorStateRetriever {
-    // using BytesLib for bytes;
-
     struct Validator {
         // ethereum address of the operator
         address addr;
-        // amount of delegated, not including operator stake
+        // total amount delegated, not including operator stake
         uint96 delegated;
-        // total amount staked by the operator
+        // total amount staked by the operator, not including delegations
         uint96 staked;
     }
 
