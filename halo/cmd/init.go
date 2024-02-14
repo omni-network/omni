@@ -17,8 +17,6 @@ import (
 	cmtos "github.com/cometbft/cometbft/libs/os"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
-	"github.com/cometbft/cometbft/types"
-	cmttime "github.com/cometbft/cometbft/types/time"
 
 	"github.com/spf13/cobra"
 )
@@ -80,7 +78,7 @@ The home directory should only contain subdirectories, no files, use --force to 
 // InitFiles initializes the files and folders required by halo.
 // It ensures a network and genesis file is generated/downloaded for the provided network.
 //
-//nolint:gocognit // This is just many sequential steps.
+//nolint:gocognit,nestif // This is just many sequential steps.
 func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	log.Info(ctx, "Initializing halo files and directories")
 	homeDir := initCfg.HomeDir
@@ -219,25 +217,17 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	if cmtos.FileExists(genFile) {
 		log.Info(ctx, "Found genesis file", "path", genFile)
 	} else if initCfg.Network == netconf.Simnet {
-		// Create a simnet genesis file with this node as single validator.
-		genDoc := types.GenesisDoc{
-			ChainID:         initCfg.Network,
-			GenesisTime:     cmttime.Now(),
-			ConsensusParams: DefaultConsensusParams(),
-		}
 		pubKey, err := pv.GetPubKey()
 		if err != nil {
 			return errors.Wrap(err, "get public key")
 		}
 
-		const nonZeroPower = 10 // Use any non-zero power for this single validator.
-		genDoc.Validators = []types.GenesisValidator{{
-			Address: pubKey.Address(),
-			PubKey:  pubKey,
-			Power:   nonZeroPower,
-		}}
+		genDec, err := MakeGenesis(initCfg.Network, pubKey)
+		if err != nil {
+			return err
+		}
 
-		if err := genDoc.SaveAs(genFile); err != nil {
+		if err := genDec.SaveAs(genFile); err != nil {
 			return errors.Wrap(err, "save genesis file")
 		}
 		log.Info(ctx, "Generated simnet genesis file", "path", genFile)

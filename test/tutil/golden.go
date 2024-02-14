@@ -16,7 +16,8 @@ import (
 )
 
 var (
-	update = flag.Bool("update", false, "Create or update golden files, instead of comparing them")
+	// Note, had to change flag from 'update' to 'golden' to avoid conflicts with cosmos-sdk.
+	update = flag.Bool("golden", false, "Create or update golden files, instead of comparing them")
 	clean  = flag.Bool("clean", false, "Deletes the testdata folder before updating (noop of update==false)")
 )
 

@@ -156,7 +156,7 @@ func newCometNode(ctx context.Context, config *cmtconfig.Config, app abci.Applic
 		Indexer: "null",
 	}
 
-	cmtLog, err := newCmtLogger(ctx, config.LogLevel)
+	cmtLog, err := NewCmtLogger(ctx, config.LogLevel)
 	if err != nil {
 		return nil, err
 	}
