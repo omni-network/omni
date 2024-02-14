@@ -92,8 +92,8 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 	const (
 		srcChainBlockPeriod = 1 * time.Millisecond * 100
 		srcChainID          = 1
-		chainA              = 100
-		chainB              = 200
+		chainA              = 100 // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
+		chainB              = 200 // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
 	)
 	chainMap := map[uint64]string{srcChainID: ""}
 
