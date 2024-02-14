@@ -39,11 +39,6 @@ contract AVSBase is EigenLayerTestHelper {
     uint16 defaultKickBIPsOfTotalStake = 150;
     uint96 minimumStakeForQuorum = 1 ether;
 
-    BN254.G1Point internal defaultPubKey = BN254.G1Point(
-        18_260_007_818_883_133_054_078_754_218_619_977_578_772_505_796_600_400_998_181_738_095_793_040_006_897,
-        3_432_351_341_799_135_763_167_709_827_653_955_074_218_841_517_684_851_694_584_291_831_827_675_065_899
-    );
-
     ProxyAdmin public proxyAdmin;
 
     RegistryCoordinatorHarness public registryCoordinatorImplementation;
@@ -63,7 +58,6 @@ contract AVSBase is EigenLayerTestHelper {
 
     // only one quorum
     bytes public QUORUM_NUMBERS = hex"00";
-    // string public constant defaultSocket = "12.34.56.78";
 
     IBLSApkRegistry.PubkeyRegistrationParams pubkeyRegistrationParams;
 
