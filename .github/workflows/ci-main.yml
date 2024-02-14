@@ -21,8 +21,7 @@ jobs:
       uses: ./.github/workflows/soltest.yml
   e2e:
     uses: ./.github/workflows/e2etest.yml
-    needs: [go-releaser]
   go-releaser:
     uses: ./.github/workflows/goreleaser.yml
-    needs: [pre-commit, go-tests, go-lint, sol-tests]
+    needs: [pre-commit, go-tests, go-lint, sol-tests, e2e]
     secrets: inherit
