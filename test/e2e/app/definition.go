@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -15,6 +16,7 @@ import (
 
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/test/e2e/pkg/exec"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p/enode"
@@ -33,14 +35,19 @@ type DefinitionConfig struct {
 	RPCOverrides   map[string]string
 
 	InfraDataFile string // Not required for docker provider
-	// ImgTag is the tag of the deployed docker images.
-	ImgTag string
+	OmniImgTag    string // OmniImgTag is the docker image tag used for halo and relayer.
 }
 
 // DefaultDefinitionConfig returns a default configuration for a Definition.
 func DefaultDefinitionConfig() DefinitionConfig {
+	defaultTag := "main"
+	if out, err := exec.CommandOutput(context.Background(), "git", "rev-parse", "--short", "HEAD"); err == nil {
+		defaultTag = strings.TrimSpace(string(out))
+	}
+
 	return DefinitionConfig{
 		InfraProvider: docker.ProviderName,
+		OmniImgTag:    defaultTag,
 	}
 }
 
@@ -71,7 +78,7 @@ func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
 		return Definition{}, errors.Wrap(err, "loading infrastructure data")
 	}
 
-	testnet, err := TestnetFromManifest(manifest, cfg.ManifestFile, infd, cfg.RPCOverrides, cfg.ImgTag)
+	testnet, err := TestnetFromManifest(manifest, cfg.ManifestFile, infd, cfg.RPCOverrides, cfg.OmniImgTag)
 	if err != nil {
 		return Definition{}, errors.Wrap(err, "loading testnet")
 	}
@@ -84,9 +91,9 @@ func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
 	var infp types.InfraProvider
 	switch cfg.InfraProvider {
 	case docker.ProviderName:
-		infp = docker.NewProvider(testnet, infd, cfg.ImgTag)
+		infp = docker.NewProvider(testnet, infd, cfg.OmniImgTag)
 	case vmcompose.ProviderName:
-		infp = vmcompose.NewProvider(testnet, infd, cfg.ImgTag)
+		infp = vmcompose.NewProvider(testnet, infd, cfg.OmniImgTag)
 	default:
 		return Definition{}, errors.New("unknown infra provider", "provider", cfg.InfraProvider)
 	}
@@ -99,16 +106,11 @@ func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
 }
 
 func adaptCometTestnet(testnet *e2e.Testnet, imgTag string) *e2e.Testnet {
-	tag := "main"
-	if imgTag != "" {
-		tag = imgTag
-	}
-
 	testnet.Dir = runsDir(testnet.File)
 	testnet.VoteExtensionsEnableHeight = 1
-	testnet.UpgradeVersion = "omniops/halo:" + tag
+	testnet.UpgradeVersion = "omniops/halo:" + imgTag
 	for i := range testnet.Nodes {
-		testnet.Nodes[i] = adaptNode(testnet.Nodes[i], tag)
+		testnet.Nodes[i] = adaptNode(testnet.Nodes[i], imgTag)
 	}
 
 	return testnet

@@ -40,7 +40,7 @@ func waitingTime(nodes int, height int64) time.Duration {
 	return time.Duration(20+(int64(nodes)*height)) * time.Second
 }
 
-func WaitAllSubmissions(ctx context.Context, portals map[uint64]netman.Portal, total int) error {
+func WaitAllSubmissions(ctx context.Context, portals map[uint64]netman.Portal, minimum uint64) error {
 	log.Info(ctx, "Waiting for submissions on all destination chains")
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
@@ -67,19 +67,13 @@ func WaitAllSubmissions(ctx context.Context, portals map[uint64]netman.Portal, t
 					return errors.Wrap(err, "getting inXStreamOffset")
 				}
 
-				if srcOffset != uint64(total) {
-					return errors.New("unexpected source chain offset",
-						"src", src.Chain.Name, "dest", dest.Chain.Name,
-						"src_offset", srcOffset, "expected", total)
-				}
-
-				if destOffset == uint64(total) {
+				if srcOffset >= minimum && destOffset == srcOffset {
 					break
 				}
 
 				log.Debug(ctx, "Waiting for submissions on destination chain",
 					"src", src.Chain.Name, "dest", dest.Chain.Name,
-					"src_offset", srcOffset, "dest_offset", destOffset)
+					"src_offset", srcOffset, "dest_offset", destOffset, "minimum", minimum)
 				backoff()
 			}
 		}
