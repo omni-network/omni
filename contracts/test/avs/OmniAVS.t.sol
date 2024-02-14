@@ -64,6 +64,8 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
         _testIncreaseDelegationsToFirstHalfOfOperators();
         _testIncreaseStakeOfSecondHalfOfOperators();
         _testUndelegateAllDelegators();
+
+        // TODO: test unregistering operators
     }
 
     /// @dev Register operators with eigen layer core, assert OmniAVS quorum is still empty
