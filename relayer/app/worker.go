@@ -80,7 +80,10 @@ func (w *Worker) runOnce(ctx context.Context) error {
 	for chainID, fromHeight := range FromHeights(cursors, w.network.Chains) {
 		w.cProvider.Subscribe(ctx, chainID, fromHeight, callback)
 
-		srcChain, _ := w.network.Chain(chainID)
+		srcChain, f := w.network.Chain(chainID)
+		if !f {
+			continue
+		}
 		logAttrs = append(logAttrs, srcChain.Name, fromHeight)
 	}
 

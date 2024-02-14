@@ -89,7 +89,8 @@ func Test_activeBuffer_Run(t *testing.T) {
 
 	require.Eventuallyf(t, func() bool {
 		return counter.Load() == memLimit+1
-	}, time.Second, time.Millisecond, "expected %d", memLimit+1)
+	},
+		time.Second, time.Millisecond, "expected %d", memLimit+1)
 
 	// assert again that buf is blocking
 	require.Equal(t, memLimit+1, counter.Load())
