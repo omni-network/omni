@@ -7,7 +7,6 @@
     "test:gen:xsubs": "ts-node test/ts/script/genxsubs/main.ts"
   },
   "devDependencies": {
-    "@openzeppelin/contracts": "^5.0.1",
     "@openzeppelin/merkle-tree": "^1.0.5",
     "@types/node": "^20.11.7",
     "ds-test": "https://github.com/dapphub/ds-test",
@@ -16,5 +15,11 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3",
     "viem": "^2.5.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "4.7.0",
+    "@openzeppelin/contracts-upgradeable": "4.7.0",
+    "eigenlayer-contracts": "github:Layr-Labs/eigenlayer-contracts",
+    "eigenlayer-middleware": "github:Layr-Labs/eigenlayer-middleware"
   }
 }

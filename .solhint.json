@@ -1,7 +1,6 @@
 {
   "extends": "solhint:recommended",
   "rules": {
-    "compiler-version": ["error", "0.8.23"],
     "custom-errors": "off",
     "func-visibility": ["error", { "ignoreConstructors": true }],
     "immutable-vars-naming": "off",
