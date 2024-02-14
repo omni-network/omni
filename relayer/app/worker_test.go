@@ -120,8 +120,8 @@ func TestWorker_Run(t *testing.T) {
 
 	network := netconf.Network{Chains: []netconf.Chain{
 		{ID: srcChain, Name: "source"},
-		{ID: destChainA, Name: "chainA"},
-		{ID: destChainB, Name: "chainB"},
+		{ID: destChainA, Name: "chain_a"},
+		{ID: destChainB, Name: "chain_b"},
 	}}
 
 	for _, chain := range network.Chains {
