@@ -5,6 +5,6 @@ id: home
 
 # Home
 
-Welcome to the documentation portal for all things Omni!
+Welcome to the documentation portal for all things about Omni!
 
 Please read on to learn about **Omni's vision, background knowledge, protocol details, developer docs**, and more.
