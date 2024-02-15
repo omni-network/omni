@@ -1,4 +1,4 @@
-<h1 align="center">Omni Monorepo</h1>
+<h1 align="center">Another Omni Monorepo</h1>
 
 <p align="center">
     <strong>Monorepo for Omni node, contracts and other related tools.</strong>
