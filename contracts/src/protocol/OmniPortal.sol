@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity ^0.8.12;
+pragma solidity 0.8.23;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IFeeOracle } from "../interfaces/IFeeOracle.sol";
