@@ -2,7 +2,10 @@
 pragma solidity =0.8.12;
 
 import { ProxyAdmin } from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    ITransparentUpgradeableProxy,
+    TransparentUpgradeableProxy
+} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
@@ -103,13 +106,13 @@ contract AVSBase is EigenLayerTestHelper {
         indexRegistryImplementation = new IndexRegistry(registryCoordinator);
 
         proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(stakeRegistry))), address(stakeRegistryImplementation)
+            ITransparentUpgradeableProxy(payable(address(stakeRegistry))), address(stakeRegistryImplementation)
         );
         proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(blsApkRegistry))), address(blsApkRegistryImplementation)
+            ITransparentUpgradeableProxy(payable(address(blsApkRegistry))), address(blsApkRegistryImplementation)
         );
         proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(indexRegistry))), address(indexRegistryImplementation)
+            ITransparentUpgradeableProxy(payable(address(indexRegistry))), address(indexRegistryImplementation)
         );
 
         vm.stopPrank();
@@ -120,7 +123,7 @@ contract AVSBase is EigenLayerTestHelper {
         omniAVS =
             OmniAVSHarness(address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")));
         omniAVSImplementation = new OmniAVSHarness(delegation, registryCoordinator, stakeRegistry);
-        proxyAdmin.upgrade(TransparentUpgradeableProxy(payable(address(omniAVS))), address(omniAVSImplementation));
+        proxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(omniAVS))), address(omniAVSImplementation));
 
         vm.stopPrank();
 
@@ -137,7 +140,7 @@ contract AVSBase is EigenLayerTestHelper {
             new RegistryCoordinatorHarness(omniAVS, stakeRegistry, blsApkRegistry, indexRegistry);
 
         proxyAdmin.upgrade(
-            TransparentUpgradeableProxy(payable(address(registryCoordinator))),
+            ITransparentUpgradeableProxy(payable(address(registryCoordinator))),
             address(registryCoordinatorImplementation)
         );
 
