@@ -2,7 +2,7 @@
 
 ## Reporting a Vulnerability
 
-The security of the Omni Network is critical. If you discover any security vulnerabilities, we appreciate your help in responsibly disclosing them to us.
+The security of the Omni Network is critical. If you discover security vulnerabilities, we appreciate your help in responsibly disclosing them to us.
 
 To report a vulnerability, please send an email to **security at omni.network**. We kindly request that you provide us with the following details:
 
