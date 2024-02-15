@@ -9,8 +9,8 @@ dependencies:
     specifier: 4.7.0
     version: 4.7.0
   '@openzeppelin/contracts-upgradeable':
-    specifier: 4.7.0
-    version: 4.7.0
+    specifier: 4.9.3
+    version: 4.9.3
   eigenlayer-contracts:
     specifier: github:Layr-Labs/eigenlayer-contracts
     version: github.com/Layr-Labs/eigenlayer-contracts/ee1760756e6fd00b95d40af317bfa84ba9c3fbd4(hardhat@2.19.5)
@@ -705,8 +705,8 @@ packages:
       '@nomicfoundation/solidity-analyzer-win32-x64-msvc': 0.1.1
     dev: false
 
-  /@openzeppelin/contracts-upgradeable@4.7.0:
-    resolution: {integrity: sha512-wO3PyoAaAV/rA77cK8H4c3SbO98QylTjfiFxyvURUZKTFLV180rnAvna1x7/Nxvt0Gqv+jt1sXKC7ygxsq8iCw==}
+  /@openzeppelin/contracts-upgradeable@4.9.3:
+    resolution: {integrity: sha512-jjaHAVRMrE4UuZNfDwjlLGDxTHWIOwTJS2ldnc278a0gevfXfPr8hxKEVBGFBE96kl2G3VHDZhUimw/+G3TG2A==}
     dev: false
 
   /@openzeppelin/contracts@4.7.0:
