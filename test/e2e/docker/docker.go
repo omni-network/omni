@@ -36,6 +36,7 @@ type Provider struct {
 	*cmtdocker.Provider
 	servicesOnce sync.Once
 	testnet      types.Testnet
+	relayerTag   string
 }
 
 func (p *Provider) Clean(ctx context.Context) error {
@@ -52,7 +53,7 @@ func (p *Provider) Clean(ctx context.Context) error {
 }
 
 // NewProvider returns a new Provider.
-func NewProvider(testnet types.Testnet, infd types.InfrastructureData) *Provider {
+func NewProvider(testnet types.Testnet, infd types.InfrastructureData, tag string) *Provider {
 	return &Provider{
 		Provider: &cmtdocker.Provider{
 			ProviderData: infra.ProviderData{
@@ -60,7 +61,8 @@ func NewProvider(testnet types.Testnet, infd types.InfrastructureData) *Provider
 				InfrastructureData: infd.InfrastructureData,
 			},
 		},
-		testnet: testnet,
+		testnet:    testnet,
+		relayerTag: tag,
 	}
 }
 
@@ -77,6 +79,7 @@ func (p *Provider) Setup() error {
 		Anvils:      p.testnet.AnvilChains,
 		Relayer:     true,
 		Prometheus:  p.testnet.Prometheus,
+		RelayerTag:  p.relayerTag,
 	}
 
 	bz, err := GenerateComposeFile(def)
@@ -127,6 +130,7 @@ type ComposeDef struct {
 	Anvils     []types.AnvilChain
 	Relayer    bool
 	Prometheus bool
+	RelayerTag string
 }
 
 // NodeOmniEVMs returns a map of node name to OmniEVM instance name; map[node_name]omni_evm.

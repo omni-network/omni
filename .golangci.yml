@@ -1,6 +1,6 @@
 run:
   timeout: 5m
-  go: "1.21"
+  go: "1.22"
   skip-files:
     - ".*\\.pb\\.go$" # Ignore generated protobuf files
   skip-dirs:

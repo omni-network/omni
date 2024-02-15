@@ -10,7 +10,7 @@ services:
     labels:
       e2e: true
     container_name: validator02
-    image: omniops/halo:main
+    image: omniops/halo:7d1ae53
     init: true
     ports:
     - 26656:26656

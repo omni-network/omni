@@ -14,7 +14,7 @@ services:
     labels:
       e2e: true
     container_name: node0
-    image: v0.0.0
+    image: omniops/halo:main
     init: true
     ports:
     - 26656
