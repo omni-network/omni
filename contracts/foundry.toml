@@ -15,7 +15,7 @@ remappings = [
 fs_permissions = [{ access = "read-write", path = "./test/data" }]
 
 [fuzz]
-seed = "0x6eed6eed"
+seed = "0x6eed"
 
 [fmt]
 bracket_spacing = true

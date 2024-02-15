@@ -21,6 +21,8 @@ jobs:
       - name: Check snapshot
         run: forge snapshot --check --tolerance 1
         working-directory: contracts
+        env:
+            FOUNDRY_FUZZ_SEED: "0x6eed"
       - name: Run tests
         run: forge test -vvv
         working-directory: contracts
