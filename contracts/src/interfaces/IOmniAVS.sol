@@ -23,7 +23,7 @@ interface IOmniAVS {
      *      be called offchain with an eth_call.
      * @return The fee in wei
      */
-    function xfeeForSync() external returns (uint256);
+    function feeForSync() external returns (uint256);
 
     /**
      * @notice Sync OmniAVS validator stake & delegations with Omni chain.

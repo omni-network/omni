@@ -57,7 +57,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, ServiceManagerBase, OperatorStateRe
      */
 
     /// @inheritdoc IOmniAVS
-    function xfeeForSync() external returns (uint256) {
+    function feeForSync() external returns (uint256) {
         _syncWithEigenLayer();
         Validator[] memory vals = getValidators();
         return omni.feeFor(omniChainId, abi.encodeWithSelector(IOmniEthRestaking.sync.selector, vals));
