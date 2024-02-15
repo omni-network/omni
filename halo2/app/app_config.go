@@ -10,10 +10,10 @@ import (
 	genutilmodulev1 "cosmossdk.io/api/cosmos/genutil/module/v1"
 	stakingmodulev1 "cosmossdk.io/api/cosmos/staking/module/v1"
 	txconfigv1 "cosmossdk.io/api/cosmos/tx/config/v1"
-	"cosmossdk.io/core/address"
 	"cosmossdk.io/core/appconfig"
 	"cosmossdk.io/depinject"
 	"github.com/cosmos/cosmos-sdk/runtime"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	consensustypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
@@ -22,16 +22,31 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
+// Bech32HRP is the human-readable-part of the Bech32 address format.
+const Bech32HRP = "omni"
+
+// InitSDKConfig initializes the Cosmos SDK configuration.
+func InitSDKConfig() {
+	// Set prefixes
+	accountPubKeyPrefix := Bech32HRP + "pub"
+	validatorAddressPrefix := Bech32HRP + "valoper"
+	validatorPubKeyPrefix := Bech32HRP + "valoperpub"
+	consNodeAddressPrefix := Bech32HRP + "valcons"
+	consNodePubKeyPrefix := Bech32HRP + "valconspub"
+
+	// Set and seal config
+	cfg := sdk.GetConfig()
+	cfg.SetBech32PrefixForAccount(Bech32HRP, accountPubKeyPrefix)
+	cfg.SetBech32PrefixForValidator(validatorAddressPrefix, validatorPubKeyPrefix)
+	cfg.SetBech32PrefixForConsensusNode(consNodeAddressPrefix, consNodePubKeyPrefix)
+	cfg.Seal()
+}
+
 // DepConfig returns the default app depinject config.
 func DepConfig() depinject.Config {
 	return depinject.Configs(
 		appConfig,
-		depinject.Supply(
-			// Ethereum address codecs
-			func() address.Codec { return EthAddrCodec{} },
-			func() runtime.ValidatorAddressCodec { return EthAddrCodec{} },
-			func() runtime.ConsensusAddressCodec { return EthAddrCodec{} },
-		),
+		depinject.Supply(),
 	)
 }
 
@@ -54,7 +69,16 @@ var (
 		stakingtypes.ModuleName,
 	}
 
+	// blocked account addresses.
+	blockAccAddrs = []string{
+		authtypes.FeeCollectorName,
+		distrtypes.ModuleName,
+		stakingtypes.BondedPoolName,
+		stakingtypes.NotBondedPoolName,
+	}
+
 	moduleAccPerms = []*authmodulev1.ModuleAccountPermission{
+		{Account: authtypes.FeeCollectorName},
 		{Account: distrtypes.ModuleName},
 		{Account: stakingtypes.BondedPoolName, Permissions: []string{authtypes.Burner, stakingtypes.ModuleName}},
 		{Account: stakingtypes.NotBondedPoolName, Permissions: []string{authtypes.Burner, stakingtypes.ModuleName}},
@@ -82,6 +106,7 @@ var (
 				Name: authtypes.ModuleName,
 				Config: appconfig.WrapAny(&authmodulev1.Module{
 					ModuleAccountPermissions: moduleAccPerms,
+					Bech32Prefix:             Bech32HRP,
 				}),
 			},
 			{
@@ -92,8 +117,10 @@ var (
 				}),
 			},
 			{
-				Name:   banktypes.ModuleName,
-				Config: appconfig.WrapAny(&bankmodulev1.Module{}),
+				Name: banktypes.ModuleName,
+				Config: appconfig.WrapAny(&bankmodulev1.Module{
+					BlockedModuleAccountsOverride: blockAccAddrs,
+				}),
 			},
 			{
 				Name:   consensustypes.ModuleName,

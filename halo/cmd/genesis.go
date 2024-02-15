@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"github.com/omni-network/omni/halo2/genutil"
+
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
@@ -8,7 +10,7 @@ import (
 	cosmostypes "github.com/cosmos/cosmos-sdk/types"
 )
 
-func MakeGenesis(chainID string, valPubKeys ...crypto.PubKey) (types.GenesisDoc, error) {
+func MakeGenesis(chainID string, valPubKeys ...crypto.PubKey) (*types.GenesisDoc, error) {
 	power := cosmostypes.DefaultPowerReduction // Use any non-zero power for this single validator.
 
 	cometVals := make([]types.GenesisValidator, 0, len(valPubKeys))
@@ -20,10 +22,10 @@ func MakeGenesis(chainID string, valPubKeys ...crypto.PubKey) (types.GenesisDoc,
 		})
 	}
 
-	return types.GenesisDoc{
+	return &types.GenesisDoc{
 		ChainID:         chainID,
 		GenesisTime:     cmttime.Now(),
-		ConsensusParams: DefaultConsensusParams(),
+		ConsensusParams: genutil.DefaultConsensusParams(),
 		Validators:      cometVals,
 		AppState:        []byte("{}"),
 	}, nil

@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/omni-network/omni/halo/cmd"
+	"github.com/omni-network/omni/halo2/app"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 
@@ -29,6 +29,7 @@ import (
 )
 
 func MakeGenesis(chainID string, genesisTime time.Time, valPubkeys ...crypto.PubKey) (*gtypes.AppGenesis, error) {
+	app.InitSDKConfig() // Make sure this is called before anything else
 	cdc := getCodec()
 	txConfig := authtx.NewTxConfig(cdc, nil)
 
@@ -92,7 +93,7 @@ func MakeGenesis(chainID string, genesisTime time.Time, valPubkeys ...crypto.Pub
 }
 
 func defaultConsensusGenesis() *gtypes.ConsensusGenesis {
-	return gtypes.NewConsensusGenesis(cmd.DefaultConsensusParams().ToProto(), nil)
+	return gtypes.NewConsensusGenesis(DefaultConsensusParams().ToProto(), nil)
 }
 
 func validateGenesis(cdc codec.Codec, appState map[string]json.RawMessage) error {
@@ -150,7 +151,7 @@ func addValidator(txConfig client.TxConfig, pubkey crypto.PubKey, cdc codec.Code
 
 	amount := sdk.NewCoin(sdk.DefaultBondDenom, sdk.DefaultPowerReduction)
 
-	err = genutil.AddGenesisAccount(cdc, addr[:], false, genFile, amount.String(), "", 0, 0, "")
+	err = genutil.AddGenesisAccount(cdc, addr.Bytes(), false, genFile, amount.String(), "", 0, 0, "")
 	if err != nil {
 		return nil, errors.Wrap(err, "add genesis account")
 	}
@@ -163,10 +164,10 @@ func addValidator(txConfig client.TxConfig, pubkey crypto.PubKey, cdc codec.Code
 	var zero = math.LegacyZeroDec()
 
 	msg, err := stypes.NewMsgCreateValidator(
-		addr.Hex(),
+		sdk.ValAddress(addr.Bytes()).String(),
 		pub,
 		amount,
-		stypes.Description{},
+		stypes.Description{Moniker: addr.Hex()},
 		stypes.NewCommissionRates(zero, zero, zero),
 		sdk.DefaultPowerReduction)
 	if err != nil {
