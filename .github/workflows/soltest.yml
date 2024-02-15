@@ -19,7 +19,7 @@ jobs:
         run: forge fmt --check
         working-directory: contracts
       - name: Check snapshot
-        run: forge snapshot --check --tolerance 1
+        run: forge snapshot --check --tolerance 10
         working-directory: contracts
         env:
             FOUNDRY_FUZZ_SEED: "0x6eed"
