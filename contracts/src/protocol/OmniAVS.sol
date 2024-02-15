@@ -39,13 +39,6 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, ServiceManagerBase, OperatorStateRe
     /// @dev List of currently register operators, used to sync EigenCore
     address[] public operators;
 
-    /// @dev Sync with OmniAVS StakeRegistry with EigenCore. To be called before any
-    //       operation that requires an up-to-date view of operator stake.
-    modifier syncWithEigenCore() {
-        RegistryCoordinator(address(_registryCoordinator)).updateOperators(operators);
-        _;
-    }
-
     constructor(
         IDelegationManager delegationManager_,
         IRegistryCoordinator registryCoordinator_,
@@ -64,13 +57,15 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, ServiceManagerBase, OperatorStateRe
      */
 
     /// @inheritdoc IOmniAVS
-    function xfeeForSync() external syncWithEigenCore returns (uint256) {
+    function xfeeForSync() external returns (uint256) {
+        _syncWithEigenLayer();
         Validator[] memory vals = getValidators();
         return omni.feeFor(omniChainId, abi.encodeWithSelector(IOmniEthRestaking.sync.selector, vals));
     }
 
     /// @inheritdoc IOmniAVS
-    function syncWithOmni() external payable syncWithEigenCore {
+    function syncWithOmni() external payable {
+        _syncWithEigenLayer();
         Validator[] memory vals = getValidators();
         omni.xcall{ value: msg.value }(
             omniChainId,
@@ -201,6 +196,12 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, ServiceManagerBase, OperatorStateRe
     /**
      * Internal functions.
      */
+
+    /// @dev Sync with OmniAVS StakeRegistry with EigenLayer core. To be called before any
+    //       operation that requires an up-to-date view of operator stake.
+    function _syncWithEigenLayer() internal {
+        RegistryCoordinator(address(_registryCoordinator)).updateOperators(operators);
+    }
 
     /// @dev Adds an operator to the list of operators
     function _addOperator(address operator) internal {
