@@ -28,9 +28,9 @@ func DepConfig() depinject.Config {
 		appConfig,
 		depinject.Supply(
 			// Ethereum address codecs
-			func() address.Codec { return ethAddrCodec{} },
-			func() runtime.ValidatorAddressCodec { return ethAddrCodec{} },
-			func() runtime.ConsensusAddressCodec { return ethAddrCodec{} },
+			func() address.Codec { return EthAddrCodec{} },
+			func() runtime.ValidatorAddressCodec { return EthAddrCodec{} },
+			func() runtime.ConsensusAddressCodec { return EthAddrCodec{} },
 		),
 	)
 }

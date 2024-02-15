@@ -6,15 +6,15 @@ import (
 	"cosmossdk.io/core/address"
 )
 
-var _ address.Codec = ethAddrCodec{}
+var _ address.Codec = EthAddrCodec{}
 
-// ethAddrCodec defines an address codec for Ethereum addresses.
-type ethAddrCodec struct{}
+// EthAddrCodec defines an address codec for Ethereum addresses.
+type EthAddrCodec struct{}
 
-func (ethAddrCodec) StringToBytes(text string) ([]byte, error) {
+func (EthAddrCodec) StringToBytes(text string) ([]byte, error) {
 	return common.HexToAddress(text).Bytes(), nil
 }
 
-func (ethAddrCodec) BytesToString(bz []byte) (string, error) {
+func (EthAddrCodec) BytesToString(bz []byte) (string, error) {
 	return common.BytesToAddress(bz).String(), nil
 }
