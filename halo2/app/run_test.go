@@ -13,6 +13,7 @@ import (
 
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 
+	db "github.com/cosmos/cosmos-db"
 	"github.com/stretchr/testify/require"
 )
 
@@ -23,20 +24,29 @@ func TestSmoke(t *testing.T) {
 
 	cfg := setupSimnet(t)
 
+	spy := newSpyCtx(ctx)
+
 	// Start the server async
+	done := make(chan struct{})
 	go func() {
-		err := app.Run(ctx, cfg)
+		err := app.Run(spy, cfg)
 		require.NoError(t, err)
+		close(done)
 	}()
+
+	// Wait until the server is ready.
+	select {
+	case <-spy.SpyDone():
+	case <-done:
+		require.Fail(t, "server stopped before it was ready")
+	}
+
+	// Connect to the server.
+	cl, err := rpchttp.New("http://localhost:26657", "/websocket")
+	require.NoError(t, err)
 
 	// Wait until we get to block 3.
 	require.Eventually(t, func() bool {
-		cl, err := rpchttp.New("http://localhost:26657", "/websocket")
-		if err != nil {
-			t.Log("Failed to dail: ", err)
-			return false
-		}
-
 		s, err := cl.Status(ctx)
 		if err != nil {
 			t.Log("Failed to get status: ", err)
@@ -45,6 +55,32 @@ func TestSmoke(t *testing.T) {
 
 		return s.SyncInfo.LatestBlockHeight >= 3
 	}, time.Second*5, time.Millisecond*100)
+
+	// Stop the server.
+	cancel()
+	<-done
+}
+
+//nolint:containedctx // This wrap a context explicitly.
+type spyCtx struct {
+	context.Context
+	doneCalled chan struct{}
+}
+
+func newSpyCtx(ctx context.Context) *spyCtx {
+	return &spyCtx{
+		Context:    ctx,
+		doneCalled: make(chan struct{}),
+	}
+}
+
+func (s *spyCtx) Done() <-chan struct{} {
+	close(s.doneCalled)
+	return s.Context.Done()
+}
+
+func (s *spyCtx) SpyDone() <-chan struct{} {
+	return s.doneCalled
 }
 
 func setupSimnet(t *testing.T) halo1.Config {
@@ -56,6 +92,7 @@ func setupSimnet(t *testing.T) halo1.Config {
 		Comet:      halo1cmd.DefaultCometConfig(homeDir),
 	}
 	cfg.HomeDir = homeDir
+	cfg.BackendType = db.MemDBBackend
 
 	err := halo1cmd.InitFiles(log.WithNoopLogger(context.Background()), halo1cmd.InitConfig{
 		HomeDir: homeDir,

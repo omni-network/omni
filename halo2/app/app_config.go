@@ -1,6 +1,9 @@
 package app
 
 import (
+	engevmmodule "github.com/omni-network/omni/halo2/evmengine/module"
+	engevmtypes "github.com/omni-network/omni/halo2/evmengine/types"
+
 	runtimev1alpha1 "cosmossdk.io/api/cosmos/app/runtime/v1alpha1"
 	appv1alpha1 "cosmossdk.io/api/cosmos/app/v1alpha1"
 	authmodulev1 "cosmossdk.io/api/cosmos/auth/module/v1"
@@ -137,6 +140,10 @@ var (
 			{
 				Name:   stakingtypes.ModuleName,
 				Config: appconfig.WrapAny(&stakingmodulev1.Module{}),
+			},
+			{
+				Name:   engevmtypes.ModuleName,
+				Config: appconfig.WrapAny(&engevmmodule.Module{}),
 			},
 		},
 	})

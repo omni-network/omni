@@ -4,9 +4,11 @@ import (
 	"context"
 
 	halo1 "github.com/omni-network/omni/halo/app"
+	"github.com/omni-network/omni/lib/engine"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/gitinfo"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 
 	cmtcfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/node"
@@ -45,9 +47,22 @@ func Run(ctx context.Context, cfg halo1.Config) error {
 		return errors.Wrap(err, "make base app opts")
 	}
 
+	network, err := netconf.Load(cfg.NetworkFile())
+	if err != nil {
+		return errors.Wrap(err, "load network")
+	} else if err := network.Validate(); err != nil {
+		return errors.Wrap(err, "validate network configuration")
+	}
+
+	ethCl, err := newEngineClient(ctx, cfg.HaloConfig, network)
+	if err != nil {
+		return err
+	}
+
 	app, err := newApp(
 		newSDKLogger(ctx),
 		db,
+		ethCl,
 		sims.EmptyAppOptions{},
 		baseAppOpts...,
 	)
@@ -149,4 +164,28 @@ func chainIDFromGenesis(cfg halo1.Config) (string, error) {
 	}
 
 	return genDoc.ChainID, nil
+}
+
+// newEngineClient returns a new engine API client.
+func newEngineClient(ctx context.Context, cfg halo1.HaloConfig, network netconf.Network) (engine.API, error) {
+	if network.Name == netconf.Simnet {
+		return engine.NewMock()
+	}
+
+	jwtBytes, err := engine.LoadJWTHexFile(cfg.EngineJWTFile)
+	if err != nil {
+		return nil, errors.Wrap(err, "load engine JWT file")
+	}
+
+	omniChain, ok := network.OmniChain()
+	if !ok {
+		return nil, errors.New("omni chain not found in network")
+	}
+
+	ethCl, err := engine.NewClient(ctx, omniChain.AuthRPCURL, jwtBytes)
+	if err != nil {
+		return nil, errors.Wrap(err, "create engine client")
+	}
+
+	return ethCl, nil
 }
