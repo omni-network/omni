@@ -27,7 +27,7 @@ func deployContract(ctx context.Context, chainID uint64, client *ethclient.Clien
 		return common.Address{}, nil, nil, err
 	}
 
-	// TODO: allow these to be configurable
+	// TODO: make these configurable
 	owner := txOpts.From
 	fee := new(big.Int).SetUint64(params.GWei)
 
@@ -72,14 +72,15 @@ func deployFeeOracleV1(ctx context.Context, txOpts *bind.TransactOpts, client *e
 		return common.Address{}, errors.Wrap(err, "get fee oracle v1 abi")
 	}
 
-	encodedFeeOracleV1Initializer, err := feeOracleV1ABI.Pack("initialize", owner, fee)
+	enc, err := feeOracleV1ABI.Pack("initialize", owner, fee)
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "pack fee oracle v1 initializer")
 	}
 
 	feeOracleAddr, tx, _, err := bindings.DeployTransparentUpgradeableProxy(
-		txOpts, client, receipt.ContractAddress, proxyAdmin, encodedFeeOracleV1Initializer,
+		txOpts, client, receipt.ContractAddress, proxyAdmin, enc,
 	)
+
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "deploy fee oracle proxy")
 	}
@@ -111,18 +112,15 @@ func deployPortal(ctx context.Context, txOpts *bind.TransactOpts, client *ethcli
 		return common.Address{}, errors.Wrap(err, "get portal abi")
 	}
 
-	encodedPortalInitializer, err := portalABI.Pack("initialize", owner, feeOracleAddr, valSetID, validators)
+	enc, err := portalABI.Pack("initialize", owner, feeOracleAddr, valSetID, validators)
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "pack portal initializer")
 	}
 
 	portalAddr, tx, _, err := bindings.DeployTransparentUpgradeableProxy(
-		txOpts,
-		client,
-		receipt.ContractAddress,
-		proxyAdmin,
-		encodedPortalInitializer,
+		txOpts, client, receipt.ContractAddress, proxyAdmin, enc,
 	)
+
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "deploy portal proxy")
 	}
