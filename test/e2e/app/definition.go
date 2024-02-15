@@ -33,6 +33,8 @@ type DefinitionConfig struct {
 	RPCOverrides   map[string]string
 
 	InfraDataFile string // Not required for docker provider
+	// ImgTag is the tag of the deployed docker images.
+	ImgTag string
 }
 
 // DefaultDefinitionConfig returns a default configuration for a Definition.
@@ -69,7 +71,7 @@ func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
 		return Definition{}, errors.Wrap(err, "loading infrastructure data")
 	}
 
-	testnet, err := TestnetFromManifest(manifest, cfg.ManifestFile, infd, cfg.RPCOverrides)
+	testnet, err := TestnetFromManifest(manifest, cfg.ManifestFile, infd, cfg.RPCOverrides, cfg.ImgTag)
 	if err != nil {
 		return Definition{}, errors.Wrap(err, "loading testnet")
 	}
@@ -82,9 +84,9 @@ func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
 	var infp types.InfraProvider
 	switch cfg.InfraProvider {
 	case docker.ProviderName:
-		infp = docker.NewProvider(testnet, infd)
+		infp = docker.NewProvider(testnet, infd, cfg.ImgTag)
 	case vmcompose.ProviderName:
-		infp = vmcompose.NewProvider(testnet, infd)
+		infp = vmcompose.NewProvider(testnet, infd, cfg.ImgTag)
 	default:
 		return Definition{}, errors.New("unknown infra provider", "provider", cfg.InfraProvider)
 	}
@@ -96,19 +98,24 @@ func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
 	}, nil
 }
 
-func adaptCometTestnet(testnet *e2e.Testnet) *e2e.Testnet {
+func adaptCometTestnet(testnet *e2e.Testnet, imgTag string) *e2e.Testnet {
+	tag := "main"
+	if imgTag != "" {
+		tag = imgTag
+	}
+
 	testnet.Dir = runsDir(testnet.File)
 	testnet.VoteExtensionsEnableHeight = 1
-	testnet.UpgradeVersion = "omniops/halo:main"
+	testnet.UpgradeVersion = "omniops/halo:" + tag
 	for i := range testnet.Nodes {
-		testnet.Nodes[i] = adaptNode(testnet.Nodes[i])
+		testnet.Nodes[i] = adaptNode(testnet.Nodes[i], tag)
 	}
 
 	return testnet
 }
 
-func adaptNode(node *e2e.Node) *e2e.Node {
-	node.Version = "omniops/halo:main"
+func adaptNode(node *e2e.Node, tag string) *e2e.Node {
+	node.Version = "omniops/halo:" + tag
 	node.PrivvalKey = k1.GenPrivKey()
 
 	return node
@@ -134,7 +141,7 @@ func LoadManifest(path string) (types.Manifest, error) {
 
 //nolint:nosprintfhostport // Not an issue for non-critical e2e test code.
 func TestnetFromManifest(manifest types.Manifest, manifestFile string, infd types.InfrastructureData,
-	rpcOverrides map[string]string,
+	rpcOverrides map[string]string, imgTag string,
 ) (types.Testnet, error) {
 	cmtTestnet, err := e2e.NewTestnetFromManifest(manifest.Manifest, manifestFile, infd.InfrastructureData)
 	if err != nil {
@@ -226,7 +233,7 @@ func TestnetFromManifest(manifest types.Manifest, manifestFile string, infd type
 
 	return types.Testnet{
 		Network:      manifest.Network,
-		Testnet:      adaptCometTestnet(cmtTestnet),
+		Testnet:      adaptCometTestnet(cmtTestnet, imgTag),
 		OmniEVMs:     omniEVMS,
 		AnvilChains:  anvils,
 		PublicChains: publics,
