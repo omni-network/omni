@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.23;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { IFeeOracle } from "../interfaces/IFeeOracle.sol";
 import { IFeeOracleV1 } from "../interfaces/IFeeOracleV1.sol";
 
@@ -10,13 +10,18 @@ import { IFeeOracleV1 } from "../interfaces/IFeeOracleV1.sol";
  * @notice A simple fee oracle with a fixed fee, controlled by an admin account
  * @dev Used by OmniPortal to calculate xmsg fees
  */
-contract FeeOracleV1 is IFeeOracle, IFeeOracleV1, Ownable {
+contract FeeOracleV1 is IFeeOracle, IFeeOracleV1, OwnableUpgradeable {
     /// @inheritdoc IFeeOracleV1
     uint256 public fee;
 
-    constructor(address owner_, uint256 fee_) Ownable() {
-        _setFee(fee_);
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(address owner_, uint256 fee_) public initializer {
+        __Ownable_init();
         _transferOwnership(owner_);
+        _setFee(fee_);
     }
 
     /// @inheritdoc IFeeOracle

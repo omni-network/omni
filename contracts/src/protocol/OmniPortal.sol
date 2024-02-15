@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.23;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { IFeeOracle } from "../interfaces/IFeeOracle.sol";
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
 import { IOmniPortalAdmin } from "../interfaces/IOmniPortalAdmin.sol";
@@ -9,7 +9,7 @@ import { XBlockMerkleProof } from "../libraries/XBlockMerkleProof.sol";
 import { XTypes } from "../libraries/XTypes.sol";
 import { Validators } from "../libraries/Validators.sol";
 
-contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
+contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable {
     /// @inheritdoc IOmniPortal
     uint64 public constant XMSG_DEFAULT_GAS_LIMIT = 200_000;
 
@@ -55,13 +55,19 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
     ///      so that we can use the XMsg struct type in the interface.
     XTypes.Msg private _currentXmsg;
 
-    constructor(address owner_, address feeOracle_, uint64 valSetId, Validators.Validator[] memory validators)
-        Ownable()
-    {
+    constructor() {
+        _disableInitializers();
         chainId = uint64(block.chainid);
+    }
+
+    function initialize(address owner_, address feeOracle_, uint64 valSetId, Validators.Validator[] memory validators)
+        public
+        initializer
+    {
+        __Ownable_init();
+        _transferOwnership(owner_);
         _setFeeOracle(feeOracle_);
         _addValidators(valSetId, validators);
-        _transferOwnership(owner_);
     }
 
     /// @inheritdoc IOmniPortalAdmin
