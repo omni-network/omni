@@ -1,16 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.23;
 
-import { CommonBase } from "forge-std/Base.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { StdCheats } from "forge-std/StdCheats.sol";
+import { ProxyAdmin } from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+
 import { XTypes } from "src/libraries/XTypes.sol";
 import { Validators } from "src/libraries/Validators.sol";
 import { FeeOracleV1 } from "src/protocol/FeeOracleV1.sol";
+import { OmniPortal } from "src/protocol/OmniPortal.sol";
 import { TestXTypes } from "./TestXTypes.sol";
 import { PortalHarness } from "./PortalHarness.sol";
 import { Counter } from "./Counter.sol";
 import { Reverter } from "./Reverter.sol";
+
+import { CommonBase } from "forge-std/Base.sol";
+import { StdCheats } from "forge-std/StdCheats.sol";
 
 /**
  * @title Fixtures
@@ -55,13 +60,23 @@ contract Fixtures is CommonBase, StdCheats {
     uint256 val3PrivKey;
     uint256 val4PrivKey;
 
+    ProxyAdmin proxyAdmin;
+    ProxyAdmin chainAProxyAdmin;
+    ProxyAdmin chainBProxyAdmin;
+
     FeeOracleV1 feeOracle;
+    FeeOracleV1 feeOracleImpl;
     FeeOracleV1 chainAFeeOracle;
+    FeeOracleV1 chainAfeeOracleImpl;
     FeeOracleV1 chainBFeeOracle;
+    FeeOracleV1 chainBfeeOracleImpl;
 
     PortalHarness portal;
+    PortalHarness portalImpl;
     PortalHarness chainAPortal;
+    PortalHarness chainAPortalImpl;
     PortalHarness chainBPortal;
+    PortalHarness chainBPortalImpl;
 
     Counter counter;
     Counter chainACounter;
@@ -266,22 +281,104 @@ contract Fixtures is CommonBase, StdCheats {
         vm.startPrank(deployer);
 
         vm.chainId(thisChainId); // portal constructor uses block.chainid
-        feeOracle = new FeeOracleV1(owner, baseFee);
-        portal = new PortalHarness(owner, address(feeOracle), genesisValSetId, validatorSet[genesisValSetId]);
+
+        proxyAdmin = new ProxyAdmin();
+        proxyAdmin.transferOwnership(owner);
+
+        feeOracleImpl = new FeeOracleV1();
+        feeOracle = FeeOracleV1(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(feeOracleImpl),
+                    address(proxyAdmin),
+                    abi.encodeWithSelector(FeeOracleV1.initialize.selector, owner, baseFee)
+                )
+            )
+        );
+        portalImpl = new PortalHarness();
+        portal = PortalHarness(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(portalImpl),
+                    address(proxyAdmin),
+                    abi.encodeWithSelector(
+                        OmniPortal.initialize.selector,
+                        owner,
+                        address(feeOracle),
+                        genesisValSetId,
+                        validatorSet[genesisValSetId]
+                    )
+                )
+            )
+        );
         counter = new Counter(portal);
         reverter = new Reverter();
 
         vm.chainId(chainAId);
-        chainAFeeOracle = new FeeOracleV1(owner, baseFee);
-        chainAPortal =
-            new PortalHarness(owner, address(chainAFeeOracle), genesisValSetId, validatorSet[genesisValSetId]);
+
+        chainAProxyAdmin = new ProxyAdmin();
+        chainAProxyAdmin.transferOwnership(owner);
+
+        chainAfeeOracleImpl = new FeeOracleV1();
+        chainAFeeOracle = FeeOracleV1(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(chainAfeeOracleImpl),
+                    address(chainAProxyAdmin),
+                    abi.encodeWithSelector(FeeOracleV1.initialize.selector, owner, baseFee)
+                )
+            )
+        );
+        chainAPortalImpl = new PortalHarness();
+        chainAPortal = PortalHarness(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(chainAPortalImpl),
+                    address(chainAProxyAdmin),
+                    abi.encodeWithSelector(
+                        OmniPortal.initialize.selector,
+                        owner,
+                        address(feeOracle),
+                        genesisValSetId,
+                        validatorSet[genesisValSetId]
+                    )
+                )
+            )
+        );
         chainACounter = new Counter(chainAPortal);
         chainAReverter = new Reverter();
 
         vm.chainId(chainBId);
-        chainBFeeOracle = new FeeOracleV1(owner, baseFee);
-        chainBPortal =
-            new PortalHarness(owner, address(chainBFeeOracle), genesisValSetId, validatorSet[genesisValSetId]);
+
+        chainBProxyAdmin = new ProxyAdmin();
+        chainBProxyAdmin.transferOwnership(owner);
+
+        chainBfeeOracleImpl = new FeeOracleV1();
+        chainBFeeOracle = FeeOracleV1(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(chainBfeeOracleImpl),
+                    address(chainBProxyAdmin),
+                    abi.encodeWithSelector(FeeOracleV1.initialize.selector, owner, baseFee)
+                )
+            )
+        );
+        chainBPortalImpl = new PortalHarness();
+        chainBPortal = PortalHarness(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(chainBPortalImpl),
+                    address(chainBProxyAdmin),
+                    abi.encodeWithSelector(
+                        OmniPortal.initialize.selector,
+                        owner,
+                        address(feeOracle),
+                        genesisValSetId,
+                        validatorSet[genesisValSetId]
+                    )
+                )
+            )
+        );
         chainBCounter = new Counter(chainBPortal);
         chainBReverter = new Reverter();
 
