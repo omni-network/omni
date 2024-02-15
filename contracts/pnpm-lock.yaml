@@ -14,9 +14,6 @@ dependencies:
   eigenlayer-contracts:
     specifier: github:Layr-Labs/eigenlayer-contracts
     version: github.com/Layr-Labs/eigenlayer-contracts/ee1760756e6fd00b95d40af317bfa84ba9c3fbd4(hardhat@2.19.5)
-  eigenlayer-middleware:
-    specifier: github:Layr-Labs/eigenlayer-middleware
-    version: github.com/Layr-Labs/eigenlayer-middleware/6e95af93430583a886c3faa393d44bd7e29f677e
 
 devDependencies:
   '@openzeppelin/merkle-tree':
@@ -3184,12 +3181,6 @@ packages:
       solidity-docgen: 0.6.0-beta.36(hardhat@2.19.5)
     transitivePeerDependencies:
       - hardhat
-    dev: false
-
-  github.com/Layr-Labs/eigenlayer-middleware/6e95af93430583a886c3faa393d44bd7e29f677e:
-    resolution: {tarball: https://codeload.github.com/Layr-Labs/eigenlayer-middleware/tar.gz/6e95af93430583a886c3faa393d44bd7e29f677e}
-    name: eigenlayer-middleware
-    version: 0.0.0
     dev: false
 
   github.com/dapphub/ds-test/e282159d5170298eb2455a6c05280ab5a73a4ef0:

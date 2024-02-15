@@ -3,7 +3,6 @@ pragma solidity =0.8.12;
 
 import { ISignatureUtils } from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import { OperatorStateRetriever } from "eigenlayer-middleware/src/OperatorStateRetriever.sol";
 
 import { OmniAVS } from "src/protocol/OmniAVS.sol";
 import { AVSBase } from "./AVSBase.sol";
@@ -30,13 +29,6 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
      *  - delegators have increased their stake to some operators
      *  - operators have increased their stake
      *  - delegators have undelegated
-     *
-     * NOTES:
-     *
-     *  - Test Omni AVS uses the WETH strategy, configured in OmniDelegationAVSBase WETH counts 1:1 for stake.
-     *  - We test both OmniAVS.getValidators() and OmniAVS._getOperatorState() (exposed in harness) to ensure
-     *    that getValidators (the function we wrote) is consistent with getOperatorState, which proxies
-     *    OperatorStateRetriever.getOperatorState (a function Eigen wrote).
      */
     function testFuzz_getValidators(
         uint8 numOperators_,
@@ -44,9 +36,9 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
         uint96 initialOperatorStake_,
         uint96 initialDelegatorStake_
     ) public {
-        numOperators = uint32(bound(numOperators_, 2, defaultMaxOperatorCount));
+        numOperators = uint32(bound(numOperators_, 2, maxOperatorCount));
         numDelegatorsPerOp = uint32(bound(numDelegatorsPerOp_, 1, 30));
-        initialOperatorStake = uint96(bound(initialOperatorStake_, minimumStakeForQuorum, 100 ether));
+        initialOperatorStake = uint96(bound(initialOperatorStake_, minimumOperatorStake, 100 ether));
         initialDelegatorStake = uint96(bound(initialDelegatorStake_, 500 gwei, 5 ether));
 
         for (uint256 i = 0; i < numOperators; i++) {
@@ -77,16 +69,10 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
             _depositWeth(operators[i], initialOperatorStake);
         }
 
-        OperatorStateRetriever.Operator[][] memory operatorState;
         OmniAVS.Validator[] memory validators;
-
-        omniAVS.syncWithEigenLayer();
-        operatorState = omniAVS.getOperatorState();
         validators = omniAVS.getValidators();
 
         // assert no operator for omni avs quorum, because no operator has been registered
-        assertEq(operatorState.length, 1); // only one quorum
-        assertEq(operatorState[0].length, 0); // no operators
         assertEq(validators.length, 0); // no validators
     }
 
@@ -97,21 +83,14 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
             _registerOperatorWithAVS(operators[i]);
         }
 
-        OperatorStateRetriever.Operator[][] memory operatorState;
         OmniAVS.Validator[] memory validators;
-
-        omniAVS.syncWithEigenLayer();
-        operatorState = omniAVS.getOperatorState();
         validators = omniAVS.getValidators();
 
         // assert all operators have been registered
-        assertEq(operatorState.length, 1);
-        assertEq(operatorState[0].length, numOperators);
         assertEq(validators.length, numOperators);
 
         // assert operator has initial stake
         for (uint32 i = 0; i < numOperators; i++) {
-            assertEq(operatorState[0][i].stake, initialOperatorStake);
             assertEq(validators[i].staked, initialOperatorStake);
             assertEq(validators[i].delegated, 0);
         }
@@ -139,25 +118,16 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
             }
         }
 
-        OperatorStateRetriever.Operator[][] memory operatorState;
         OmniAVS.Validator[] memory validators;
-
-        omniAVS.syncWithEigenLayer();
-        operatorState = omniAVS.getOperatorState();
         validators = omniAVS.getValidators();
 
         // assert all operators still registered
-        assertEq(operatorState.length, 1); // only one quorum
-        assertEq(operatorState[0].length, numOperators);
         assertEq(validators.length, numOperators);
 
         // assert all operator stake has been updated by initialDelegatorStake
         for (uint32 i = 0; i < numOperators; i++) {
             uint96 totalDelegated = numDelegatorsPerOp * initialDelegatorStake;
             uint96 totalStaked = initialOperatorStake;
-
-            // operator state is delegations + stake
-            assertEq(operatorState[0][i].stake, totalStaked + totalDelegated);
 
             // validator state tracks these separately
             assertEq(validators[i].staked, totalStaked);
@@ -174,16 +144,10 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
             }
         }
 
-        OperatorStateRetriever.Operator[][] memory operatorState;
         OmniAVS.Validator[] memory validators;
-
-        omniAVS.syncWithEigenLayer();
-        operatorState = omniAVS.getOperatorState();
         validators = omniAVS.getValidators();
 
         // assert all operators still registered
-        assertEq(operatorState.length, 1); // only one quorum
-        assertEq(operatorState[0].length, numOperators);
         assertEq(validators.length, numOperators);
 
         // assert first half of operators have increased delegations
@@ -199,9 +163,6 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
                 totalDelegated += numDelegatorsPerOp * delegatorStakeAddition;
             }
 
-            // operator state is delegations + stake
-            assertEq(operatorState[0][i].stake, totalStaked + totalDelegated);
-
             // validator state tracks these separately
             assertEq(validators[i].staked, totalStaked);
             assertEq(validators[i].delegated, totalDelegated);
@@ -215,16 +176,10 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
             _depositWeth(operators[i], operatorStakeAddition);
         }
 
-        OperatorStateRetriever.Operator[][] memory operatorState;
         OmniAVS.Validator[] memory validators;
-
-        omniAVS.syncWithEigenLayer();
-        operatorState = omniAVS.getOperatorState();
         validators = omniAVS.getValidators();
 
         // assert all operators still registered
-        assertEq(operatorState.length, 1); // only one quorum
-        assertEq(operatorState[0].length, numOperators);
         assertEq(validators.length, numOperators);
 
         // assert first half of operators have increased delegations by delegatorStakeAddition
@@ -244,9 +199,6 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
                 totalStaked += operatorStakeAddition;
             }
 
-            // operator state is delegations + stake
-            assertEq(operatorState[0][i].stake, totalStaked + totalDelegated);
-
             // validator state tracks these separately
             assertEq(validators[i].staked, totalStaked);
             assertEq(validators[i].delegated, totalDelegated);
@@ -265,16 +217,10 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
             }
         }
 
-        OperatorStateRetriever.Operator[][] memory operatorState;
         OmniAVS.Validator[] memory validators;
-
-        omniAVS.syncWithEigenLayer();
-        operatorState = omniAVS.getOperatorState();
         validators = omniAVS.getValidators();
 
         // assert all operators still registered
-        assertEq(operatorState.length, 1); // only one quorum
-        assertEq(operatorState[0].length, numOperators);
         assertEq(validators.length, numOperators);
 
         // assert all operators have no delegations
@@ -289,9 +235,6 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
                 totalStaked += operatorStakeAddition;
             }
 
-            // operator state is delegations + stake
-            assertEq(operatorState[0][i].stake, totalStaked);
-
             // validator state tracks these separately
             assertEq(validators[i].staked, totalStaked);
             assertEq(validators[i].delegated, 0);
@@ -300,28 +243,22 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
 
     /// @dev Deregister operators, assert OmniAVS quorum is updated after each deregistration
     function _testDeregisterOperators() internal {
-        OperatorStateRetriever.Operator[][] memory operatorState;
         OmniAVS.Validator[] memory validators;
 
         for (uint32 i = 0; i < numOperators; i++) {
             address operator = operators[i];
 
-            _deregisterOperatorFromAVS(operators[i]);
+            _deregisterOperatorFromAVS(operator);
 
-            omniAVS.syncWithEigenLayer();
-            operatorState = omniAVS.getOperatorState();
             validators = omniAVS.getValidators();
 
             uint96 numOperatorsLeft = numOperators - i - 1;
 
             // assert there are only numOperatorsLeft
-            assertEq(operatorState.length, 1); // only one quorum
-            assertEq(operatorState[0].length, numOperatorsLeft);
             assertEq(validators.length, numOperatorsLeft);
 
             // assert that none of the operators left is the operator that just deregistered
             for (uint32 j = 0; j < numOperatorsLeft; j++) {
-                assertNotEq(operatorState[0][j].operator, operator);
                 assertNotEq(validators[j].addr, operator);
             }
         }

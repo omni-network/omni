@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.12;
 
+import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
+
 /**
  * @title OmniAVS
  * @notice Interface for the Omni AVS contract. It is responsible for syncing Omni AVS operator
@@ -14,6 +16,11 @@ interface IOmniAVS {
         uint96 delegated;
         // total amount staked by the operator, not including delegations
         uint96 staked;
+    }
+
+    struct StrategyParams {
+        IStrategy strategy;
+        uint96 multiplier;
     }
 
     /**
@@ -36,12 +43,4 @@ interface IOmniAVS {
      * @return The list of validators
      */
     function getValidators() external view returns (Validator[] memory);
-
-    /**
-     * @notice Get the list of validators registered as OmniAVS operators, with
-     *         their stake / delegations, at a specific block number.
-     * @param blockNumber The block number to query
-     * @return The list of validators
-     */
-    function getValidators(uint256 blockNumber) external view returns (Validator[] memory);
 }

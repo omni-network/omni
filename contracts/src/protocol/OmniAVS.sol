@@ -1,16 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.12;
 
+import { OwnableUpgradeable } from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+
 import { DelegationManager } from "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
-import { ISignatureUtils } from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import { IDelegationManager } from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
-
-import { OperatorStateRetriever } from "eigenlayer-middleware/src/OperatorStateRetriever.sol";
-import { ServiceManagerBase } from "eigenlayer-middleware/src/ServiceManagerBase.sol";
-import { RegistryCoordinator } from "eigenlayer-middleware/src/RegistryCoordinator.sol";
-import { IRegistryCoordinator } from "eigenlayer-middleware/src/interfaces/IRegistryCoordinator.sol";
-import { IStakeRegistry } from "eigenlayer-middleware/src/interfaces/IStakeRegistry.sol";
+import { ISignatureUtils } from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 
 import { OmniPredeploys } from "../libraries/OmniPredeploys.sol";
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
@@ -18,17 +14,13 @@ import { IOmniEthRestaking } from "../interfaces/IOmniEthRestaking.sol";
 import { IOmniAVS } from "../interfaces/IOmniAVS.sol";
 import { IOmniAVSAdmin } from "../interfaces/IOmniAVSAdmin.sol";
 
-/**
- * @title OmniAVS
- * @notice Omni AVS contract. It is responsible for syncing Omni AVS operator
- *         stake and delegations with the Omni chain.
- */
-contract OmniAVS is IOmniAVS, IOmniAVSAdmin, ServiceManagerBase, OperatorStateRetriever {
-    /// @dev AVS Quorum numbers, Omni only has one quorum
-    bytes public constant QUORUM_NUMBERS = hex"00";
+contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable {
+    IDelegationManager public immutable delegation;
 
-    /// @dev AVS Quorum number
-    uint8 public constant QUORUM_NUMBER = 0;
+    IOmniAVS.StrategyParams[] public strategyParams;
+
+    /// @notice Constant used as a divisor in calculating weights.
+    uint256 public constant WEIGHTING_DIVISOR = 1e18;
 
     /// @dev Omni chain id, used to make xcalls to the Omni chain
     uint64 public omniChainId;
@@ -39,17 +31,32 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, ServiceManagerBase, OperatorStateRe
     /// @dev List of currently register operators, used to sync EigenCore
     address[] public operators;
 
-    constructor(
-        IDelegationManager delegationManager_,
-        IRegistryCoordinator registryCoordinator_,
-        IStakeRegistry stakeRegistry_
-    ) ServiceManagerBase(delegationManager_, registryCoordinator_, stakeRegistry_) { }
+    /// @dev Maximum number of operators that can be registered
+    uint32 public maxOperatorCount;
+
+    /// @dev Minimum stake required for an operator to register, not including delegations
+    uint96 public minimumOperatorStake;
+
+    constructor(IDelegationManager delegationManager_) {
+        delegation = delegationManager_;
+        _disableInitializers();
+    }
 
     /// @inheritdoc IOmniAVSAdmin
-    function initialize(address owner_, IOmniPortal omni_, uint64 omniChainId_) external initializer {
+    function initialize(
+        address owner_,
+        IOmniPortal omni_,
+        uint64 omniChainId_,
+        uint96 minimumOperatorStake_,
+        uint32 maxOperatorCount_,
+        StrategyParams[] calldata strategyParams_
+    ) external initializer {
         _transferOwnership(owner_);
         omni = omni_;
         omniChainId = omniChainId_;
+        minimumOperatorStake = minimumOperatorStake_;
+        maxOperatorCount = maxOperatorCount_;
+        _setStrategyParams(strategyParams_);
     }
 
     /**
@@ -57,15 +64,13 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, ServiceManagerBase, OperatorStateRe
      */
 
     /// @inheritdoc IOmniAVS
-    function feeForSync() external returns (uint256) {
-        _syncWithEigenLayer();
+    function feeForSync() external view returns (uint256) {
         Validator[] memory vals = getValidators();
         return omni.feeFor(omniChainId, abi.encodeWithSelector(IOmniEthRestaking.sync.selector, vals));
     }
 
     /// @inheritdoc IOmniAVS
     function syncWithOmni() external payable {
-        _syncWithEigenLayer();
         Validator[] memory vals = getValidators();
         omni.xcall{ value: msg.value }(
             omniChainId,
@@ -75,26 +80,41 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, ServiceManagerBase, OperatorStateRe
     }
 
     /**
-     * ServiceManagerBase overrides
+     * ServiceManagerBase interface
      */
 
-    /// @dev Override ServiceManagerBase.registerOperatorToAVS, to track list of operators
-    ///      We need to track list of operators so we can call registryCoordinator.updateOperators(operators);
-    ///      before syncing with omni.
+    /// @notice Forwards a call to EigenLayer's DelegationManager contract to confirm operator registration with the AVS
+    /// @param operator The address of the operator to register.
+    /// @param operatorSignature The signature, salt, and expiry of the operator's signature.
     function registerOperatorToAVS(
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) public override {
-        ServiceManagerBase.registerOperatorToAVS(operator, operatorSignature);
+    ) public virtual {
+        require(msg.sender == operator, "OmniAVS: only operator");
+        require(operators.length < maxOperatorCount, "OmniAVS: max operators reached");
+        require(_getStaked(operator) >= minimumOperatorStake, "OmniAVS: minimum stake not met");
+        require(!_isOperator(operator), "OmniAVS: already an operator"); // we could let delegation.regsiterOperatorToAVS handle this, they do check
+
+        delegation.registerOperatorToAVS(operator, operatorSignature);
+
         _addOperator(operator);
     }
 
-    /// @dev Override ServiceManagerBase.deregisterOperatorFromAVS, to track list of operators
-    ///      We need to track list of operators so we can call registryCoordinator.updateOperators(operators);
-    ///      before syncing with omni.
-    function deregisterOperatorFromAVS(address operator) public override {
-        ServiceManagerBase.deregisterOperatorFromAVS(operator);
+    /// @notice Forwards a call to EigenLayer's DelegationManager contract to confirm operator deregistration from the AVS
+    /// @param operator The address of the operator to deregister.
+    function deregisterOperatorFromAVS(address operator) public virtual {
+        require(msg.sender == operator, "OmniAVS: only operator");
+        require(_isOperator(operator), "OmniAVS: not an operator");
+
+        delegation.deregisterOperatorFromAVS(operator);
         _removeOperator(operator);
+    }
+
+    /// @notice Sets the metadata URI for the AVS
+    /// @param _metadataURI is the metadata URI for the AVS
+    /// @dev only callable by the owner
+    function setMetadataURI(string memory _metadataURI) public virtual onlyOwner {
+        delegation.updateAVSMetadataURI(_metadataURI);
     }
 
     /**
@@ -111,52 +131,64 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, ServiceManagerBase, OperatorStateRe
         omniChainId = omniChainId_;
     }
 
+    /// @inheritdoc IOmniAVSAdmin
+    function setStrategyParams(StrategyParams[] calldata strategyParams_) external onlyOwner {
+        _setStrategyParams(strategyParams_);
+    }
+
+    function _setStrategyParams(StrategyParams[] calldata strategyParams_) internal {
+        delete strategyParams;
+        for (uint256 i = 0; i < strategyParams_.length; i++) {
+            strategyParams.push(strategyParams_[i]);
+        }
+    }
+
     /**
      * View functions
      */
 
     /// @inheritdoc IOmniAVS
     function getValidators() public view returns (Validator[] memory) {
-        return getValidators(block.number);
-    }
-
-    /// @inheritdoc IOmniAVS
-    function getValidators(uint256 blockNumber) public view returns (Validator[] memory validators) {
-        /// we only provide on quorum, so we only need the first element
-        Operator[] memory ops = _getOperatorState(blockNumber)[0];
-
-        // We translate OperatorStateRetriever.Operator[] to Validator[], splitting Operator.stake into:
-        //  - Validator.delegated (total amount delegated to the operator) and
-        //  - Validator.staked (total amount staked by the operator)
-
-        validators = new Validator[](ops.length);
-
-        for (uint256 i = 0; i < ops.length; i++) {
-            address addr = ops[i].operator;
-            uint96 staked = _getStaked(addr);
-            uint96 delegations = ops[i].stake - staked;
-            validators[i] = Validator(addr, delegations, staked);
-        }
-
-        return validators;
+        return _getValidators();
     }
 
     /**
      * Internal view functions
      */
 
-    /// @dev Read operator state from avs registries, at a specific block number
-    function _getOperatorState(uint256 blockNumber) public view returns (Operator[][] memory) {
-        return OperatorStateRetriever.getOperatorState(_registryCoordinator, QUORUM_NUMBERS, uint32(blockNumber));
+    /// @dev Return current list of Validators, including their personal stake and delegated stake
+    function _getValidators() internal view returns (Validator[] memory) {
+        Validator[] memory vals = new Validator[](operators.length);
+
+        for (uint256 i = 0; i < vals.length; i++) {
+            address addr = operators[i];
+            uint96 totalStaked;
+            StrategyParams memory params;
+
+            // get total opearator stake (their own stake + delegations)
+            for (uint256 j = 0; j < strategyParams.length; j++) {
+                params = strategyParams[j];
+
+                // shares of the operator in the strategy
+                uint256 sharesAmount = delegation.operatorShares(addr, params.strategy);
+
+                // add the weight from the shares for this strategy to the total weight
+                if (sharesAmount > 0) totalStaked += _weight(sharesAmount, params.multiplier);
+            }
+
+            uint96 staked = _getStaked(addr);
+            uint96 delegated = totalStaked - staked;
+
+            vals[i] = Validator(addr, delegated, staked);
+        }
+
+        return vals;
     }
 
     /// @dev Returns the total amount staked by the operator, not including deletations
-    ///      This requires us translate the operators active delegatable shares into strategyParam
-    ///      weigted steake amount, for QUORUM_NUMBER.
     function _getStaked(address operator) internal view returns (uint96) {
-        IStakeRegistry.StrategyParams[] memory strategyParams = _strategyParams();
         (IStrategy[] memory strategies, uint256[] memory shares) =
-            DelegationManager(address(_delegationManager)).getDelegatableShares(operator);
+            DelegationManager(address(delegation)).getDelegatableShares(operator);
 
         uint96 staked;
 
@@ -165,7 +197,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, ServiceManagerBase, OperatorStateRe
             uint256 sharesAmt = shares[i];
 
             // find the strategy params for the strategy
-            IStakeRegistry.StrategyParams memory params;
+            StrategyParams memory params;
             for (uint256 j = 0; j < strategyParams.length; j++) {
                 if (address(strategyParams[j].strategy) == address(strat)) {
                     params = strategyParams[j];
@@ -176,42 +208,22 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, ServiceManagerBase, OperatorStateRe
             // if strategy is not found, do not consider it in stake
             if (address(params.strategy) == address(0)) continue;
 
-            // same calculation StakeRegistry.weightOfOperatorForQuorum
-            staked += uint96(sharesAmt * params.multiplier / _stakeRegistry.WEIGHTING_DIVISOR());
+            staked += _weight(sharesAmt, params.multiplier);
         }
 
         return staked;
     }
 
-    /// @dev Returns the strategy params for OmniAVS's single quorum
-    function _strategyParams() internal view returns (IStakeRegistry.StrategyParams[] memory params) {
-        uint256 paramsLen = _stakeRegistry.strategyParamsLength(QUORUM_NUMBER);
-        params = new IStakeRegistry.StrategyParams[](paramsLen);
-        for (uint256 i = 0; i < paramsLen; i++) {
-            params[i] = _stakeRegistry.strategyParamsByIndex(QUORUM_NUMBER, i);
-        }
-        return params;
+    function _weight(uint256 shares, uint96 multiplier) internal pure returns (uint96) {
+        return uint96(shares * multiplier / WEIGHTING_DIVISOR);
     }
 
     /**
      * Internal functions.
      */
 
-    /// @dev Sync with OmniAVS StakeRegistry with EigenLayer core. To be called before any
-    //       operation that requires an up-to-date view of operator stake.
-    function _syncWithEigenLayer() internal {
-        RegistryCoordinator(address(_registryCoordinator)).updateOperators(operators);
-    }
-
-    /// @dev Adds an operator to the list of operators
+    /// @dev Adds an operator to the list of operators, does not check if operator already exists
     function _addOperator(address operator) internal {
-        for (uint256 i = 0; i < operators.length; i++) {
-            // If operator already exists, do not add it again.
-            // We do not revert. Instead, we allow ServiceManagerBase.registerOperatorToAVS to
-            // determine when an "operator already exists", at which point it will revert.
-            if (operators[i] == operator) return;
-        }
-
         operators.push(operator);
     }
 
@@ -224,5 +236,15 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, ServiceManagerBase, OperatorStateRe
                 break;
             }
         }
+    }
+
+    /// @dev Returns true if the operator is in the list of operators
+    function _isOperator(address operator) internal view returns (bool) {
+        for (uint256 i = 0; i < operators.length; i++) {
+            if (operators[i] == operator) {
+                return true;
+            }
+        }
+        return false;
     }
 }
