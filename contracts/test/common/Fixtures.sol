@@ -8,7 +8,7 @@ import { XTypes } from "src/libraries/XTypes.sol";
 import { Validators } from "src/libraries/Validators.sol";
 import { FeeOracleV1 } from "src/protocol/FeeOracleV1.sol";
 import { TestXTypes } from "./TestXTypes.sol";
-import { TestPortal } from "./TestPortal.sol";
+import { PortalHarness } from "./PortalHarness.sol";
 import { Counter } from "./Counter.sol";
 import { Reverter } from "./Reverter.sol";
 
@@ -59,9 +59,9 @@ contract Fixtures is CommonBase, StdCheats {
     FeeOracleV1 chainAFeeOracle;
     FeeOracleV1 chainBFeeOracle;
 
-    TestPortal portal;
-    TestPortal chainAPortal;
-    TestPortal chainBPortal;
+    PortalHarness portal;
+    PortalHarness chainAPortal;
+    PortalHarness chainBPortal;
 
     Counter counter;
     Counter chainACounter;
@@ -267,19 +267,21 @@ contract Fixtures is CommonBase, StdCheats {
 
         vm.chainId(thisChainId); // portal constructor uses block.chainid
         feeOracle = new FeeOracleV1(owner, baseFee);
-        portal = new TestPortal(owner, address(feeOracle), genesisValSetId, validatorSet[genesisValSetId]);
+        portal = new PortalHarness(owner, address(feeOracle), genesisValSetId, validatorSet[genesisValSetId]);
         counter = new Counter(portal);
         reverter = new Reverter();
 
         vm.chainId(chainAId);
         chainAFeeOracle = new FeeOracleV1(owner, baseFee);
-        chainAPortal = new TestPortal(owner, address(chainAFeeOracle), genesisValSetId, validatorSet[genesisValSetId]);
+        chainAPortal =
+            new PortalHarness(owner, address(chainAFeeOracle), genesisValSetId, validatorSet[genesisValSetId]);
         chainACounter = new Counter(chainAPortal);
         chainAReverter = new Reverter();
 
         vm.chainId(chainBId);
         chainBFeeOracle = new FeeOracleV1(owner, baseFee);
-        chainBPortal = new TestPortal(owner, address(chainBFeeOracle), genesisValSetId, validatorSet[genesisValSetId]);
+        chainBPortal =
+            new PortalHarness(owner, address(chainBFeeOracle), genesisValSetId, validatorSet[genesisValSetId]);
         chainBCounter = new Counter(chainBPortal);
         chainBReverter = new Reverter();
 
