@@ -31,8 +31,8 @@ var (
 
 // FeeOracleV1MetaData contains all meta data concerning the FeeOracleV1 contract.
 var FeeOracleV1MetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"owner_\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"fee_\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"fee\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"feeFor\",\"inputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setFee\",\"inputs\":[{\"name\":\"fee_\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"FeeChanged\",\"inputs\":[{\"name\":\"oldFee\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"newFee\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"OwnableInvalidOwner\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"OwnableUnauthorizedAccount\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}]}]",
-	Bin: "0x608060405234801561001057600080fd5b5060405161053838038061053883398101604081905261002f9161015e565b816001600160a01b03811661005f57604051631e4fbdf760e01b8152600060048201526024015b60405180910390fd5b61006881610079565b50610072816100c9565b5050610198565b600080546001600160a01b038381166001600160a01b0319831681178455604051919092169283917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09190a35050565b600081116101195760405162461bcd60e51b815260206004820152601c60248201527f4665654f7261636c6556313a20666565206d757374206265203e2030000000006044820152606401610056565b600180549082905560408051828152602081018490527f5fc463da23c1b063e66f9e352006a7fbe8db7223c455dc429e881a2dfe2f94f1910160405180910390a15050565b6000806040838503121561017157600080fd5b82516001600160a01b038116811461018857600080fd5b6020939093015192949293505050565b610391806101a76000396000f3fe608060405234801561001057600080fd5b50600436106100625760003560e01c806369fe0e2d14610067578063715018a61461007c5780638da5cb5b146100845780638dd9523c146100a4578063ddca3f43146100cb578063f2fde38b146100d4575b600080fd5b61007a610075366004610261565b6100e7565b005b61007a6100fb565b6000546040516001600160a01b0390911681526020015b60405180910390f35b6100bd6100b2366004610297565b600154949350505050565b60405190815260200161009b565b6100bd60015481565b61007a6100e236600461032b565b61010f565b6100ef61014f565b6100f88161017c565b50565b61010361014f565b61010d6000610211565b565b61011761014f565b6001600160a01b03811661014657604051631e4fbdf760e01b8152600060048201526024015b60405180910390fd5b6100f881610211565b6000546001600160a01b0316331461010d5760405163118cdaa760e01b815233600482015260240161013d565b600081116101cc5760405162461bcd60e51b815260206004820152601c60248201527f4665654f7261636c6556313a20666565206d757374206265203e203000000000604482015260640161013d565b600180549082905560408051828152602081018490527f5fc463da23c1b063e66f9e352006a7fbe8db7223c455dc429e881a2dfe2f94f1910160405180910390a15050565b600080546001600160a01b038381166001600160a01b0319831681178455604051919092169283917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09190a35050565b60006020828403121561027357600080fd5b5035919050565b803567ffffffffffffffff8116811461029257600080fd5b919050565b600080600080606085870312156102ad57600080fd5b6102b68561027a565b9350602085013567ffffffffffffffff808211156102d357600080fd5b818701915087601f8301126102e757600080fd5b8135818111156102f657600080fd5b88602082850101111561030857600080fd5b6020830195508094505050506103206040860161027a565b905092959194509250565b60006020828403121561033d57600080fd5b81356001600160a01b038116811461035457600080fd5b939250505056fea2646970667358221220e0a927e3908d8cf4b7dc7178542bf5ed3a5f1bd8c8720c41fe3e1bb0f394db1e64736f6c63430008170033",
+	ABI: "[{\"type\":\"constructor\",\"inputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"fee\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"feeFor\",\"inputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"initialize\",\"inputs\":[{\"name\":\"owner_\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"fee_\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setFee\",\"inputs\":[{\"name\":\"fee_\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"FeeChanged\",\"inputs\":[{\"name\":\"oldFee\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"newFee\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false}]",
+	Bin: "0x608060405234801561001057600080fd5b5061001961001e565b6100de565b600054610100900460ff161561008a5760405162461bcd60e51b815260206004820152602760248201527f496e697469616c697a61626c653a20636f6e747261637420697320696e697469604482015266616c697a696e6760c81b606482015260840160405180910390fd5b60005460ff90811610156100dc576000805460ff191660ff9081179091556040519081527f7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb38474024989060200160405180910390a15b565b610626806100ed6000396000f3fe608060405234801561001057600080fd5b506004361061007d5760003560e01c80638dd9523c1161005b5780638dd9523c146100bf578063cd6dc687146100e6578063ddca3f43146100f9578063f2fde38b1461010257600080fd5b806369fe0e2d14610082578063715018a6146100975780638da5cb5b1461009f575b600080fd5b610095610090366004610478565b610115565b005b610095610129565b6033546040516001600160a01b0390911681526020015b60405180910390f35b6100d86100cd3660046104ae565b606554949350505050565b6040519081526020016100b6565b6100956100f4366004610559565b61013d565b6100d860655481565b610095610110366004610583565b610267565b61011d6102dd565b61012681610337565b50565b6101316102dd565b61013b60006103cc565b565b600054610100900460ff161580801561015d5750600054600160ff909116105b806101775750303b158015610177575060005460ff166001145b6101df5760405162461bcd60e51b815260206004820152602e60248201527f496e697469616c697a61626c653a20636f6e747261637420697320616c72656160448201526d191e481a5b9a5d1a585b1a5e995960921b60648201526084015b60405180910390fd5b6000805460ff191660011790558015610202576000805461ff0019166101001790555b61020a61041e565b610213836103cc565b61021c82610337565b8015610262576000805461ff0019169055604051600181527f7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb38474024989060200160405180910390a15b505050565b61026f6102dd565b6001600160a01b0381166102d45760405162461bcd60e51b815260206004820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201526564647265737360d01b60648201526084016101d6565b610126816103cc565b6033546001600160a01b0316331461013b5760405162461bcd60e51b815260206004820181905260248201527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e657260448201526064016101d6565b600081116103875760405162461bcd60e51b815260206004820152601c60248201527f4665654f7261636c6556313a20666565206d757374206265203e20300000000060448201526064016101d6565b606580549082905560408051828152602081018490527f5fc463da23c1b063e66f9e352006a7fbe8db7223c455dc429e881a2dfe2f94f1910160405180910390a15050565b603380546001600160a01b038381166001600160a01b0319831681179093556040519116919082907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e090600090a35050565b600054610100900460ff166104455760405162461bcd60e51b81526004016101d6906105a5565b61013b600054610100900460ff1661046f5760405162461bcd60e51b81526004016101d6906105a5565b61013b336103cc565b60006020828403121561048a57600080fd5b5035919050565b803567ffffffffffffffff811681146104a957600080fd5b919050565b600080600080606085870312156104c457600080fd5b6104cd85610491565b9350602085013567ffffffffffffffff808211156104ea57600080fd5b818701915087601f8301126104fe57600080fd5b81358181111561050d57600080fd5b88602082850101111561051f57600080fd5b60208301955080945050505061053760408601610491565b905092959194509250565b80356001600160a01b03811681146104a957600080fd5b6000806040838503121561056c57600080fd5b61057583610542565b946020939093013593505050565b60006020828403121561059557600080fd5b61059e82610542565b9392505050565b6020808252602b908201527f496e697469616c697a61626c653a20636f6e7472616374206973206e6f74206960408201526a6e697469616c697a696e6760a81b60608201526080019056fea2646970667358221220fe823d1d12287cd4cfbe3da013b4f2c374a8a3fa59df1a7855a14a138e67d1a364736f6c63430008170033",
 }
 
 // FeeOracleV1ABI is the input ABI used to generate the binding from.
@@ -44,7 +44,7 @@ var FeeOracleV1ABI = FeeOracleV1MetaData.ABI
 var FeeOracleV1Bin = FeeOracleV1MetaData.Bin
 
 // DeployFeeOracleV1 deploys a new Ethereum contract, binding an instance of FeeOracleV1 to it.
-func DeployFeeOracleV1(auth *bind.TransactOpts, backend bind.ContractBackend, owner_ common.Address, fee_ *big.Int) (common.Address, *types.Transaction, *FeeOracleV1, error) {
+func DeployFeeOracleV1(auth *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *types.Transaction, *FeeOracleV1, error) {
 	parsed, err := FeeOracleV1MetaData.GetAbi()
 	if err != nil {
 		return common.Address{}, nil, nil, err
@@ -53,7 +53,7 @@ func DeployFeeOracleV1(auth *bind.TransactOpts, backend bind.ContractBackend, ow
 		return common.Address{}, nil, nil, errors.New("GetABI returned nil")
 	}
 
-	address, tx, contract, err := bind.DeployContract(auth, *parsed, common.FromHex(FeeOracleV1Bin), backend, owner_, fee_)
+	address, tx, contract, err := bind.DeployContract(auth, *parsed, common.FromHex(FeeOracleV1Bin), backend)
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
@@ -295,6 +295,27 @@ func (_FeeOracleV1 *FeeOracleV1CallerSession) Owner() (common.Address, error) {
 	return _FeeOracleV1.Contract.Owner(&_FeeOracleV1.CallOpts)
 }
 
+// Initialize is a paid mutator transaction binding the contract method 0xcd6dc687.
+//
+// Solidity: function initialize(address owner_, uint256 fee_) returns()
+func (_FeeOracleV1 *FeeOracleV1Transactor) Initialize(opts *bind.TransactOpts, owner_ common.Address, fee_ *big.Int) (*types.Transaction, error) {
+	return _FeeOracleV1.contract.Transact(opts, "initialize", owner_, fee_)
+}
+
+// Initialize is a paid mutator transaction binding the contract method 0xcd6dc687.
+//
+// Solidity: function initialize(address owner_, uint256 fee_) returns()
+func (_FeeOracleV1 *FeeOracleV1Session) Initialize(owner_ common.Address, fee_ *big.Int) (*types.Transaction, error) {
+	return _FeeOracleV1.Contract.Initialize(&_FeeOracleV1.TransactOpts, owner_, fee_)
+}
+
+// Initialize is a paid mutator transaction binding the contract method 0xcd6dc687.
+//
+// Solidity: function initialize(address owner_, uint256 fee_) returns()
+func (_FeeOracleV1 *FeeOracleV1TransactorSession) Initialize(owner_ common.Address, fee_ *big.Int) (*types.Transaction, error) {
+	return _FeeOracleV1.Contract.Initialize(&_FeeOracleV1.TransactOpts, owner_, fee_)
+}
+
 // RenounceOwnership is a paid mutator transaction binding the contract method 0x715018a6.
 //
 // Solidity: function renounceOwnership() returns()
@@ -487,6 +508,140 @@ func (_FeeOracleV1 *FeeOracleV1Filterer) WatchFeeChanged(opts *bind.WatchOpts, s
 func (_FeeOracleV1 *FeeOracleV1Filterer) ParseFeeChanged(log types.Log) (*FeeOracleV1FeeChanged, error) {
 	event := new(FeeOracleV1FeeChanged)
 	if err := _FeeOracleV1.contract.UnpackLog(event, "FeeChanged", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// FeeOracleV1InitializedIterator is returned from FilterInitialized and is used to iterate over the raw logs and unpacked data for Initialized events raised by the FeeOracleV1 contract.
+type FeeOracleV1InitializedIterator struct {
+	Event *FeeOracleV1Initialized // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *FeeOracleV1InitializedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(FeeOracleV1Initialized)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(FeeOracleV1Initialized)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *FeeOracleV1InitializedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *FeeOracleV1InitializedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// FeeOracleV1Initialized represents a Initialized event raised by the FeeOracleV1 contract.
+type FeeOracleV1Initialized struct {
+	Version uint8
+	Raw     types.Log // Blockchain specific contextual infos
+}
+
+// FilterInitialized is a free log retrieval operation binding the contract event 0x7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb3847402498.
+//
+// Solidity: event Initialized(uint8 version)
+func (_FeeOracleV1 *FeeOracleV1Filterer) FilterInitialized(opts *bind.FilterOpts) (*FeeOracleV1InitializedIterator, error) {
+
+	logs, sub, err := _FeeOracleV1.contract.FilterLogs(opts, "Initialized")
+	if err != nil {
+		return nil, err
+	}
+	return &FeeOracleV1InitializedIterator{contract: _FeeOracleV1.contract, event: "Initialized", logs: logs, sub: sub}, nil
+}
+
+// WatchInitialized is a free log subscription operation binding the contract event 0x7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb3847402498.
+//
+// Solidity: event Initialized(uint8 version)
+func (_FeeOracleV1 *FeeOracleV1Filterer) WatchInitialized(opts *bind.WatchOpts, sink chan<- *FeeOracleV1Initialized) (event.Subscription, error) {
+
+	logs, sub, err := _FeeOracleV1.contract.WatchLogs(opts, "Initialized")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(FeeOracleV1Initialized)
+				if err := _FeeOracleV1.contract.UnpackLog(event, "Initialized", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseInitialized is a log parse operation binding the contract event 0x7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb3847402498.
+//
+// Solidity: event Initialized(uint8 version)
+func (_FeeOracleV1 *FeeOracleV1Filterer) ParseInitialized(log types.Log) (*FeeOracleV1Initialized, error) {
+	event := new(FeeOracleV1Initialized)
+	if err := _FeeOracleV1.contract.UnpackLog(event, "Initialized", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
