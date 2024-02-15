@@ -88,7 +88,5 @@ func mergeAttrs(ctx context.Context, attrs []any) []any {
 	resp, _ := ctx.Value(attrsKey{}).([]any) //nolint:revive // We know the type.
 	resp = append(resp, attrs...)
 
-	verifyAttrs(resp)
-
 	return resp
 }

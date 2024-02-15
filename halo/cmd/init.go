@@ -4,9 +4,11 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/omni-network/omni/halo/app"
 	"github.com/omni-network/omni/halo/attest"
+	"github.com/omni-network/omni/halo2/genutil"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -17,6 +19,7 @@ import (
 	cmtos "github.com/cometbft/cometbft/libs/os"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
+	"github.com/cometbft/cometbft/types"
 
 	"github.com/spf13/cobra"
 )
@@ -27,6 +30,7 @@ type InitConfig struct {
 	Network string
 	Force   bool
 	Clean   bool
+	Cosmos  bool
 }
 
 // newInitCmd returns a new cobra command that initializes the files and folders required by halo.
@@ -222,12 +226,25 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 			return errors.Wrap(err, "get public key")
 		}
 
-		genDec, err := MakeGenesis(initCfg.Network, pubKey)
-		if err != nil {
-			return err
+		var genDoc *types.GenesisDoc
+		if initCfg.Cosmos {
+			cosmosGen, err := genutil.MakeGenesis(initCfg.Network, time.Now(), pubKey)
+			if err != nil {
+				return err
+			}
+
+			genDoc, err = cosmosGen.ToGenesisDoc()
+			if err != nil {
+				return errors.Wrap(err, "convert to genesis doc")
+			}
+		} else {
+			genDoc, err = MakeGenesis(initCfg.Network, pubKey)
+			if err != nil {
+				return err
+			}
 		}
 
-		if err := genDec.SaveAs(genFile); err != nil {
+		if err := genDoc.SaveAs(genFile); err != nil {
 			return errors.Wrap(err, "save genesis file")
 		}
 		log.Info(ctx, "Generated simnet genesis file", "path", genFile)

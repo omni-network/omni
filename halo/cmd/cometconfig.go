@@ -9,7 +9,6 @@ import (
 	"github.com/omni-network/omni/lib/log"
 
 	cfg "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/types"
 
 	"github.com/spf13/viper"
 )
@@ -41,15 +40,6 @@ func DefaultCometConfig(homeDir string) cfg.Config {
 	conf.TxIndex = &cfg.TxIndexConfig{Indexer: "null"} // Disable tx indexing.
 
 	return *conf
-}
-
-// DefaultConsensusParams returns the default cometBFT consensus params for omni protocol.
-func DefaultConsensusParams() *types.ConsensusParams {
-	resp := types.DefaultConsensusParams()
-	resp.ABCI.VoteExtensionsEnableHeight = 1                             // Enable vote extensions from the start.
-	resp.Validator.PubKeyTypes = []string{types.ABCIPubKeyTypeSecp256k1} // Only k1 keys.
-
-	return resp
 }
 
 // parseCometConfig parses the cometBFT config from disk and verifies it.

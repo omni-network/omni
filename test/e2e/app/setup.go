@@ -15,6 +15,7 @@ import (
 
 	haloapp "github.com/omni-network/omni/halo/app"
 	halocmd "github.com/omni-network/omni/halo/cmd"
+	"github.com/omni-network/omni/halo2/genutil"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -139,7 +140,7 @@ func MakeGenesis(testnet *e2e.Testnet) (cmttypes.GenesisDoc, error) {
 	genesis := cmttypes.GenesisDoc{
 		GenesisTime:     time.Now(),
 		ChainID:         testnet.Name,
-		ConsensusParams: halocmd.DefaultConsensusParams(),
+		ConsensusParams: genutil.DefaultConsensusParams(),
 		InitialHeight:   testnet.InitialHeight,
 	}
 	// set the app version to 1
