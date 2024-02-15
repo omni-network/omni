@@ -7,7 +7,7 @@ require (
 	cosmossdk.io/core v0.11.0 // Pegged to v0.11.0 for cosmos-sdk v0.50.3
 	cosmossdk.io/depinject v1.0.0-alpha.4
 	cosmossdk.io/errors v1.0.1 // indirect
-	cosmossdk.io/log v1.3.0
+	cosmossdk.io/log v1.3.1
 	cosmossdk.io/orm v1.0.0-beta.3
 	cosmossdk.io/store v1.0.2
 	entgo.io/ent v0.13.0
@@ -85,7 +85,7 @@ require (
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
 	github.com/oklog/run v1.1.0 // indirect
-	github.com/rs/zerolog v1.31.0 // indirect
+	github.com/rs/zerolog v1.32.0 // indirect
 	github.com/tendermint/go-amino v0.16.0 // indirect
 	github.com/tidwall/btree v1.7.0 // indirect
 	github.com/zondax/hid v0.9.2 // indirect
