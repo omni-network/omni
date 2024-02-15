@@ -17,7 +17,6 @@ import { Reverter } from "./Reverter.sol";
 import { CommonBase } from "forge-std/Base.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
 
-
 /**
  * @title Fixtures
  * @dev Defines test dependencies. Deploys portals and test contracts, and provides
