@@ -44,7 +44,7 @@
 
 ## About Omni
 
-Omni Protocol is a groundbreaking blockchain designed to seamlessly connect Ethereum's rollups, addressing the fragmentation issue in the ecosystem. It enables developers to create applications accessible across all rollups, simplifying user interaction and expanding the market reach for developers.
+Omni Protocol is a groundbreaking treefiddy blockchain designed to seamlessly connect Ethereum's rollups, addressing the fragmentation issue in the ecosystem. It enables developers to create applications accessible across all rollups, simplifying user interaction and expanding the market reach for developers.
 
 Key Features of Omni:
 
