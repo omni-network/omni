@@ -8,9 +8,14 @@ remappings = [
   "ds-test/=node_modules/ds-test/src",
   "src/=src",
   "test/=test",
+  # remapping for eigenlayers import
+  '@openzeppelin-upgrades/contracts/=node_modules/@openzeppelin/contracts-upgradeable',
 ]
 
 fs_permissions = [{ access = "read-write", path = "./test/data" }]
+
+[fuzz]
+seed = "0x6eed"
 
 [fmt]
 bracket_spacing = true

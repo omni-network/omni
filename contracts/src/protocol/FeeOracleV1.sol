@@ -14,8 +14,9 @@ contract FeeOracleV1 is IFeeOracle, IFeeOracleV1, Ownable {
     /// @inheritdoc IFeeOracleV1
     uint256 public fee;
 
-    constructor(address owner_, uint256 fee_) Ownable(owner_) {
+    constructor(address owner_, uint256 fee_) Ownable() {
         _setFee(fee_);
+        _transferOwnership(owner_);
     }
 
     /// @inheritdoc IFeeOracle

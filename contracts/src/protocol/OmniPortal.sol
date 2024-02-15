@@ -56,11 +56,12 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, Ownable {
     XTypes.Msg private _currentXmsg;
 
     constructor(address owner_, address feeOracle_, uint64 valSetId, Validators.Validator[] memory validators)
-        Ownable(owner_)
+        Ownable()
     {
         chainId = uint64(block.chainid);
         _setFeeOracle(feeOracle_);
         _addValidators(valSetId, validators);
+        _transferOwnership(owner_);
     }
 
     /// @inheritdoc IOmniPortalAdmin
