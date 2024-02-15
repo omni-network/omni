@@ -23,4 +23,8 @@ contract OmniAVSHarness is OmniAVS {
     function getOperatorState() external view returns (Operator[][] memory) {
         return _getOperatorState(block.number);
     }
+
+    function syncWithEigenLayer() external {
+        _syncWithEigenLayer();
+    }
 }

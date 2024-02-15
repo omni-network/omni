@@ -43,6 +43,12 @@ contract AVSUtils is AVSBase {
         registryCoordinator.registerOperator(quorumNumbers, socket, emptyPubkeyRegistrationParams, emptySignature);
     }
 
+    /// @dev deregister an operator from OmniAVS
+    function _deregisterOperatorFromAVS(address operator) internal {
+        vm.prank(operator);
+        registryCoordinator.deregisterOperator(QUORUM_NUMBERS);
+    }
+
     /// @dev create an operator address
     function _operator(uint256 index) internal pure returns (address) {
         return _addr("operator", index);
