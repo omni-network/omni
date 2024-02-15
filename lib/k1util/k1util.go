@@ -11,6 +11,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 
+	cosmosk1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	cosmoscrypto "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4/ecdsa"
 )
@@ -71,6 +73,17 @@ func PubKeyToAddress(pubkey crypto.PubKey) (common.Address, error) {
 	}
 
 	return ethcrypto.PubkeyToAddress(*ethPubKey), nil
+}
+
+func PubKeyToCosmos(pubkey crypto.PubKey) (cosmoscrypto.PubKey, error) {
+	pubkeyBytes := pubkey.Bytes()
+	if len(pubkeyBytes) != pubkeyLen {
+		return nil, errors.New("invalid pubkey length", "length", len(pubkeyBytes))
+	}
+
+	return &cosmosk1.PubKey{
+		Key: pubkey.Bytes(),
+	}, nil
 }
 
 // PubKeyPBToAddress returns the Ethereum address for the given k1 public key.

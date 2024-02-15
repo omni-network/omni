@@ -37,7 +37,8 @@ func DefaultCometConfig(homeDir string) cfg.Config {
 
 	conf.RootDir = homeDir
 	conf.SetRoot(conf.RootDir)
-	conf.LogLevel = "error" // Decrease default comet log level, it is super noisy.
+	conf.LogLevel = "error"                            // Decrease default comet log level, it is super noisy.
+	conf.TxIndex = &cfg.TxIndexConfig{Indexer: "null"} // Disable tx indexing.
 
 	return *conf
 }

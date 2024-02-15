@@ -10,6 +10,9 @@ import (
 
 	cmtos "github.com/cometbft/cometbft/libs/os"
 
+	pruningtypes "cosmossdk.io/store/pruning/types"
+	db "github.com/cosmos/cosmos-db"
+
 	_ "embed"
 )
 
@@ -26,6 +29,10 @@ const (
 	DefaultHomeDir                 = "./halo" // Defaults to "halo" in current directory
 	defaultAppStatePersistInterval = 1        // Persist app state every block. Set to 0 to disable persistence.
 	defaultSnapshotInterval        = 1000     // Roughly once an hour (given 3s blocks)
+	defaultMinRetainBlocks         = 0        // Retain all blocks
+
+	defaultPruningOption = pruningtypes.PruningOptionNothing // Prune nothing
+	defaultDBBackend     = db.GoLevelDBBackend
 )
 
 // DefaultHaloConfig returns the default halo config.
@@ -35,6 +42,11 @@ func DefaultHaloConfig() HaloConfig {
 		EngineJWTFile:           "", // No default
 		AppStatePersistInterval: defaultAppStatePersistInterval,
 		SnapshotInterval:        defaultSnapshotInterval,
+
+		// Halo2
+		BackendType:     defaultDBBackend,
+		MinRetainBlocks: defaultMinRetainBlocks,
+		PruningOption:   defaultPruningOption,
 	}
 }
 
@@ -43,7 +55,12 @@ type HaloConfig struct {
 	HomeDir                 string
 	EngineJWTFile           string
 	AppStatePersistInterval uint64
-	SnapshotInterval        uint64
+	SnapshotInterval        uint64 // See cosmossdk.io/store/snapshots/types/options.go
+
+	// Halo2
+	BackendType     db.BackendType
+	MinRetainBlocks uint64
+	PruningOption   string // See cosmossdk.io/store/pruning/types/options.go
 }
 
 // ConfigFile returns the default path to the toml halo config file.

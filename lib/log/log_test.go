@@ -14,7 +14,7 @@ import (
 	pkgerrors "github.com/pkg/errors"
 )
 
-//go:generate go test . -update -clean
+//go:generate go test . -golden -clean
 
 // TestSimpleLogs tests the simple logs.
 func TestSimpleLogs(t *testing.T) {

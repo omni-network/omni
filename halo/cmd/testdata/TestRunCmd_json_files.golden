@@ -3,6 +3,9 @@
  "EngineJWTFile": "jwt.json",
  "AppStatePersistInterval": 12,
  "SnapshotInterval": 123,
+ "BackendType": "goleveldb",
+ "MinRetainBlocks": 0,
+ "PruningOption": "nothing",
  "Comet": {
   "Version": "0.38.5",
   "RootDir": "testinput/input2",
@@ -133,7 +136,7 @@
    "DiscardABCIResponses": false
   },
   "TxIndex": {
-   "Indexer": "kv",
+   "Indexer": "null",
    "PsqlConn": ""
   },
   "Instrumentation": {
