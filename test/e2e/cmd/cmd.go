@@ -12,6 +12,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	defaultPingPongDeploy uint64 = 1000
+)
+
 func New() *cobra.Command {
 	// E2E app is aimed at devs and CI, so debug level and force colors by default.
 	logCfg := log.DefaultConfig()
@@ -60,16 +64,19 @@ func New() *cobra.Command {
 }
 
 func newDeployCmd(def *app.Definition) *cobra.Command {
-	var promSecrets app.PromSecrets
+	var cfg app.DeployConfig
+	pingPongN := defaultPingPongDeploy // Default to 1000 ping pongs.
+
 	cmd := &cobra.Command{
 		Use:   "deploy",
 		Short: "Deploys the e2e network",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return app.Deploy(cmd.Context(), *def, promSecrets)
+			return app.DeployWithPingPong(cmd.Context(), *def, cfg, pingPongN)
 		},
 	}
 
-	bindPromFlags(cmd.Flags(), &promSecrets)
+	bindPromFlags(cmd.Flags(), &cfg.PromSecrets)
+	cmd.Flags().Uint64Var(&pingPongN, "ping-pong", pingPongN, "Number of ping pongs messages to send. 0 disables it")
 
 	return cmd
 }

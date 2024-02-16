@@ -18,6 +18,7 @@ func StartSendingXMsgs(ctx context.Context, portals map[uint64]netman.Portal, ba
 	errChan := make(chan error, 1)
 	go func() {
 		for i, count := range batches {
+			log.Info(ctx, "Sending xmsgs", "batch", i, "count", count)
 			err := SendXMsgs(ctx, portals, count)
 			if ctx.Err() != nil {
 				errChan <- ctx.Err()

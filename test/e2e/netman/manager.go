@@ -74,6 +74,7 @@ func NewManager(testnet types.Testnet, deployKeyFile string,
 		RPCURL:     omniEVM.ExternalRPC,
 		DeployInfo: privateChainDeployInfo,
 	}
+
 	// Add all portals
 	for _, anvil := range testnet.AnvilChains {
 		portals[anvil.Chain.ID] = Portal{
@@ -216,7 +217,6 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 		if err != nil {
 			return errors.Wrap(err, "deploy public omni contracts")
 		}
-
 		portal.DeployInfo = DeployInfo{
 			PortalAddress: addr,
 			DeployHeight:  height,
@@ -283,36 +283,44 @@ func (m *manager) fundPrivateRelayer(ctx context.Context) error {
 			continue // We use relayer key for public chain, it should already be funded.
 		}
 
-		ethCl := portal.Client
-
-		nonce, err := ethCl.PendingNonceAt(ctx, fromAddr)
+		_, err := FundAddr(ctx, portal.Chain.ID, portal.Client, fromAddr, fromKey, toAddr, 10)
 		if err != nil {
-			return errors.Wrap(err, "get nonce")
-		}
-
-		price, err := ethCl.SuggestGasPrice(ctx)
-		if err != nil {
-			return errors.Wrap(err, "get gas price")
-		}
-
-		txData := ethtypes.LegacyTx{
-			Nonce:    nonce,
-			GasPrice: price,
-			Gas:      100_000, // 100k is fine
-			To:       &toAddr,
-			Value:    new(big.Int).Mul(big.NewInt(10), big.NewInt(params.Ether)), // 10 ETH
-		}
-
-		signer := ethtypes.LatestSignerForChainID(big.NewInt(int64(portal.Chain.ID)))
-		tx, err := ethtypes.SignNewTx(fromKey, signer, &txData)
-		if err != nil {
-			return errors.Wrap(err, "sign tx")
-		}
-
-		if err := ethCl.SendTransaction(ctx, tx); err != nil {
-			return errors.Wrap(err, "send tx")
+			return errors.Wrap(err, "fund relayer", "from", fromAddr.Hex(), "to", toAddr.Hex())
 		}
 	}
 
 	return nil
+}
+
+func FundAddr(ctx context.Context, chainIO uint64, ethCl *ethclient.Client, fromAddr common.Address,
+	fromKey *ecdsa.PrivateKey, toAddr common.Address, ether int64) (*ethtypes.Transaction, error) {
+	nonce, err := ethCl.PendingNonceAt(ctx, fromAddr)
+	if err != nil {
+		return nil, errors.Wrap(err, "get nonce")
+	}
+
+	price, err := ethCl.SuggestGasPrice(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "get gas price")
+	}
+
+	txData := ethtypes.LegacyTx{
+		Nonce:    nonce,
+		GasPrice: price,
+		Gas:      100_000, // 100k is fine
+		To:       &toAddr,
+		Value:    new(big.Int).Mul(big.NewInt(ether), big.NewInt(params.Ether)),
+	}
+
+	signer := ethtypes.LatestSignerForChainID(big.NewInt(int64(chainIO)))
+	tx, err := ethtypes.SignNewTx(fromKey, signer, &txData)
+	if err != nil {
+		return nil, errors.Wrap(err, "sign tx")
+	}
+
+	if err := ethCl.SendTransaction(ctx, tx); err != nil {
+		return nil, errors.Wrap(err, "send tx")
+	}
+
+	return tx, nil
 }

@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	examples "github.com/omni-network/omni/contracts/bindings/examples"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/test/e2e/app"
 	"github.com/omni-network/omni/test/e2e/docker"
@@ -56,6 +58,12 @@ type Portal struct {
 	Contract *bindings.OmniPortal
 }
 
+type PingPong struct {
+	Chain    netconf.Chain
+	Client   *ethclient.Client
+	Contract *examples.PingPong
+}
+
 // test runs tests for testnet nodes. The callback functions are respectively given a
 // single node to test, and a single portal to test, running as a subtest in parallel with other subtests.
 //
@@ -76,7 +84,11 @@ func test(t *testing.T, testNode func(*testing.T, e2e.Node, []Portal), testPorta
 	}
 
 	portals := makePortals(t, network)
-
+	log.Info(context.Background(), "Running tests for testnet",
+		"testnet", testnet.Name,
+		"nodes", len(nodes),
+		"portals", len(portals),
+	)
 	for _, node := range nodes {
 		if node.Stateless() {
 			continue
@@ -112,8 +124,10 @@ func makePortals(t *testing.T, network netconf.Network) []Portal {
 		ethClient, err := ethclient.Dial(chain.RPCURL)
 		require.NoError(t, err)
 
+		// create our Omni Portal Contract
 		contract, err := bindings.NewOmniPortal(common.HexToAddress(chain.PortalAddress), ethClient)
 		require.NoError(t, err)
+		require.NotNil(t, contract, "contract is nil")
 
 		resp = append(resp, Portal{
 			Chain:    chain,
