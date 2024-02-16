@@ -23,7 +23,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable {
     uint256 internal constant _XCALL_GAS_LIMIT_PER_VALIDATOR = 100_000;
 
     /// @notice EigenLayer core DelegationManager
-    IDelegationManager public immutable delegation;
+    IDelegationManager public immutable _delegationManager;
 
     /// @notice Maximum number of operators that can be registered
     uint32 public maxOperatorCount;
@@ -44,7 +44,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable {
     IOmniAVS.StrategyParams[] public strategyParams;
 
     constructor(IDelegationManager delegationManager_) {
-        delegation = delegationManager_;
+        _delegationManager = delegationManager_;
         _disableInitializers();
     }
 
@@ -104,7 +104,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable {
         require(_getStaked(operator) >= minimumOperatorStake, "OmniAVS: minimum stake not met");
         require(!_isOperator(operator), "OmniAVS: already an operator"); // we could let delegation.regsiterOperatorToAVS handle this, they do check
 
-        delegation.registerOperatorToAVS(operator, operatorSignature);
+        _delegationManager.registerOperatorToAVS(operator, operatorSignature);
 
         _addOperator(operator);
     }
@@ -115,7 +115,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable {
         require(msg.sender == operator, "OmniAVS: only operator");
         require(_isOperator(operator), "OmniAVS: not an operator");
 
-        delegation.deregisterOperatorFromAVS(operator);
+        _delegationManager.deregisterOperatorFromAVS(operator);
         _removeOperator(operator);
     }
 
@@ -151,7 +151,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable {
 
     /// @inheritdoc IOmniAVSAdmin
     function setMetadataURI(string memory metadataURI) public virtual onlyOwner {
-        delegation.updateAVSMetadataURI(metadataURI);
+        _delegationManager.updateAVSMetadataURI(metadataURI);
     }
 
     /// @inheritdoc IOmniAVSAdmin
@@ -204,7 +204,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable {
         address[] memory strategies = new address[](strategyParams.length);
         for (uint256 j = 0; j < strategyParams.length; j++) {
             address strat = address(strategyParams[j].strategy);
-            if (delegation.operatorShares(operator, IStrategy(strat)) > 0) strategies[j] = strat;
+            if (_delegationManager.operatorShares(operator, IStrategy(strat)) > 0) strategies[j] = strat;
         }
         return strategies;
     }
@@ -223,7 +223,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable {
                 params = strategyParams[j];
 
                 // shares of the operator in the strategy
-                uint256 sharesAmount = delegation.operatorShares(addr, params.strategy);
+                uint256 sharesAmount = _delegationManager.operatorShares(addr, params.strategy);
 
                 // add the weight from the shares for this strategy to the total weight
                 if (sharesAmount > 0) totalStaked += _weight(sharesAmount, params.multiplier);
@@ -241,7 +241,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable {
     /// @dev Returns the total amount staked by the operator, not including deletations
     function _getStaked(address operator) internal view returns (uint96) {
         (IStrategy[] memory strategies, uint256[] memory shares) =
-            DelegationManager(address(delegation)).getDelegatableShares(operator);
+            DelegationManager(address(_delegationManager)).getDelegatableShares(operator);
 
         uint96 staked;
 
