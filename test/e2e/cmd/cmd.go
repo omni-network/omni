@@ -58,6 +58,7 @@ func New() *cobra.Command {
 		newLogsCmd(&def),
 		newCleanCmd(&def),
 		newTestCmd(&def),
+		newUpgradeCmd(&def),
 	)
 
 	return cmd
@@ -107,6 +108,16 @@ func newTestCmd(def *app.Definition) *cobra.Command {
 		Short: "Runs go tests against the a previously preserved network",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return app.Test(cmd.Context(), *def, true)
+		},
+	}
+}
+
+func newUpgradeCmd(def *app.Definition) *cobra.Command {
+	return &cobra.Command{
+		Use:   "upgrade",
+		Short: "Upgrades docker containers of a previously preserved network",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return def.Infra.Upgrade(cmd.Context())
 		},
 	}
 }

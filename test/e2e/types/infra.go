@@ -10,6 +10,8 @@ import (
 type InfraProvider interface {
 	infra.Provider
 
+	Upgrade(ctx context.Context) error
+
 	// Clean deletes all containers, networks, and data on disk.
 	Clean(ctx context.Context) error
 }
