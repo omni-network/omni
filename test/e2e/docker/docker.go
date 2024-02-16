@@ -95,6 +95,10 @@ func (p *Provider) Setup() error {
 	return nil
 }
 
+func (*Provider) Upgrade(_ context.Context) error {
+	return errors.New("upgrade not supported for docker provider")
+}
+
 func (p *Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 	var err error
 	p.servicesOnce.Do(func() {
