@@ -9,8 +9,9 @@ import {
 
 import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
-import { OmniAVS } from "src/protocol/OmniAVS.sol";
+import { OmniAVSHarness } from "./OmniAVSHarness.sol";
 import { EigenLayerTestHelper } from "./eigen/EigenLayerTestHelper.t.sol";
+import { MockPortal } from "./MockPortal.sol";
 
 contract AVSBase is EigenLayerTestHelper {
     address public omniAVSOwner = makeAddr("omniAVSOwner");
@@ -18,14 +19,19 @@ contract AVSBase is EigenLayerTestHelper {
 
     uint32 maxOperatorCount = 10;
     uint96 minimumOperatorStake = 1 ether;
+    uint64 omniChainId = 111;
 
     ProxyAdmin public proxyAdmin;
 
-    OmniAVS public omniAVSImplementation;
-    OmniAVS public omniAVS;
+    MockPortal public portal;
+    OmniAVSHarness public omniAVSImplementation;
+    OmniAVSHarness public omniAVS;
 
     function setUp() public override {
         super.setUp();
+
+        portal = new MockPortal();
+
         _deployProxyAdmin();
         _deployOmniAVS();
     }
@@ -37,17 +43,20 @@ contract AVSBase is EigenLayerTestHelper {
 
     function _deployOmniAVS() internal {
         vm.startPrank(proxyAdminOwner);
-        omniAVS = OmniAVS(address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")));
-        omniAVSImplementation = new OmniAVS(delegation);
+        omniAVS =
+            OmniAVSHarness(address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")));
+        omniAVSImplementation = new OmniAVSHarness(delegation);
         proxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(omniAVS))), address(omniAVSImplementation));
         vm.stopPrank();
 
-        uint64 omniChainId = 111;
-        IOmniPortal stubPortal = IOmniPortal(makeAddr("tempPortal")); // TODO: use a real portal deployment
         IOmniAVS.StrategyParams[] memory strategyParams = _defaultStrategyParams();
-
         omniAVS.initialize(
-            omniAVSOwner, stubPortal, omniChainId, minimumOperatorStake, maxOperatorCount, strategyParams
+            omniAVSOwner,
+            IOmniPortal(address(portal)),
+            omniChainId,
+            minimumOperatorStake,
+            maxOperatorCount,
+            strategyParams
         );
     }
 

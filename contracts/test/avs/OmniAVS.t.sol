@@ -4,6 +4,8 @@ pragma solidity =0.8.12;
 import { ISignatureUtils } from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
+import { IOmniEthRestaking } from "src/interfaces/IOmniEthRestaking.sol";
+import { OmniPredeploys } from "src/libraries/OmniPredeploys.sol";
 import { OmniAVS } from "src/protocol/OmniAVS.sol";
 import { AVSBase } from "./AVSBase.sol";
 import { AVSUtils } from "./AVSUtils.sol";
@@ -21,16 +23,24 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
     uint96 delegatorStakeAddition = 1 ether;
     uint96 operatorStakeAddition = 1 ether;
 
+    // feeForSync is msg.value passsed in tests OmniAVS.syncWithOmni()
+    // normally, these fee will be calculated by the caller off-chain
+    uint256 syncFee = 1 gwei;
+
     /**
-     * Test OmniAVS.getValidators() at a number of different points in a "delegation lifecycle"
+     * Test OmniAVS.syncWithOmnie() at a number of different points in a "delegation lifecycle".
      *  - no registered operators
      *  - registered operators with some initial stake
      *  - delegators have delegated to operators
      *  - delegators have increased their stake to some operators
      *  - operators have increased their stake
      *  - delegators have undelegated
+     *
+     * For each point in delegation lifecycle, test that OmniAVS.getValidators() returns the
+     * expected validators list, and that OmniAVS.syncWithOmni() makes a call to
+     * OmniPortal.xcall with that list of validators.
      */
-    function testFuzz_getValidators(
+    function testFuzz_syncWithOmni(
         uint8 numOperators_,
         uint8 numDelegatorsPerOp_,
         uint96 initialOperatorStake_,
@@ -74,6 +84,11 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
 
         // assert no operator for omni avs quorum, because no operator has been registered
         assertEq(validators.length, 0); // no validators
+
+        // TODO: should we revert if no operators are registered?
+        // current thinking is no, to allow all operators to be deregistered
+        _expectXCall(validators);
+        omniAVS.syncWithOmni{ value: syncFee }();
     }
 
     /// @dev Register operators with OmniAVS, assert OmniAVS quorum is populated with initial stake
@@ -94,6 +109,9 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
             assertEq(validators[i].staked, initialOperatorStake);
             assertEq(validators[i].delegated, 0);
         }
+
+        _expectXCall(validators);
+        omniAVS.syncWithOmni{ value: syncFee }();
     }
 
     /// @dev Delegate to operators, assert OmniAVS quorum is populated with initial stake + delegations
@@ -133,6 +151,9 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
             assertEq(validators[i].staked, totalStaked);
             assertEq(validators[i].delegated, totalDelegated);
         }
+
+        _expectXCall(validators);
+        omniAVS.syncWithOmni{ value: syncFee }();
     }
 
     /// @dev Increase delegations for first half of operators, assert OmniAVS quorum is updated
@@ -167,6 +188,9 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
             assertEq(validators[i].staked, totalStaked);
             assertEq(validators[i].delegated, totalDelegated);
         }
+
+        _expectXCall(validators);
+        omniAVS.syncWithOmni{ value: syncFee }();
     }
 
     /// @dev Increase stake for second half of operators, assert OmniAVS quorum is updated
@@ -203,6 +227,9 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
             assertEq(validators[i].staked, totalStaked);
             assertEq(validators[i].delegated, totalDelegated);
         }
+
+        _expectXCall(validators);
+        omniAVS.syncWithOmni{ value: syncFee }();
     }
 
     /// @dev Undelegate all delegators, assert OmniAVS quorum is updated
@@ -239,6 +266,9 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
             assertEq(validators[i].staked, totalStaked);
             assertEq(validators[i].delegated, 0);
         }
+
+        _expectXCall(validators);
+        omniAVS.syncWithOmni{ value: syncFee }();
     }
 
     /// @dev Deregister operators, assert OmniAVS quorum is updated after each deregistration
@@ -262,5 +292,19 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
                 assertNotEq(validators[j].addr, operator);
             }
         }
+    }
+
+    /// @dev Expect an OmniPortal.xcall to IOmniEthRestaking.sync(validators), with correct fee and gasLimit
+    function _expectXCall(OmniAVS.Validator[] memory validators) internal {
+        bytes memory data = abi.encodeWithSelector(IOmniEthRestaking.sync.selector, validators);
+        uint64 gasLimit = omniAVS.xcallGasLimitFor(validators.length);
+
+        vm.expectCall(
+            address(portal),
+            syncFee,
+            abi.encodeWithSignature(
+                "xcall(uint64,address,bytes,uint64)", omniChainId, OmniPredeploys.OMNI_ETH_RESTAKING, data, gasLimit
+            )
+        );
     }
 }
