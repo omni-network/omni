@@ -4,8 +4,9 @@ pragma solidity =0.8.12;
 import { OwnableUpgradeable } from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
 import { DelegationManager } from "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
-import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import { IDelegationManager } from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import { ISignatureUtils } from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import { IServiceManager } from "eigenlayer-middleware/src/interfaces/IServiceManager.sol";
 
@@ -21,6 +22,9 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
 
     /// @notice EigenLayer core DelegationManager
     IDelegationManager public immutable _delegationManager;
+
+    /// @notice EigenLayer core AVSDirectory
+    IAVSDirectory public immutable _avsDirectory;
 
     /// @notice Maximum number of operators that can be registered
     uint32 public maxOperatorCount;
@@ -46,8 +50,9 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     /// @dev OmniPortal.xcall base gas limit in syncWithOmni
     uint256 internal xcallBaseGasLimit = 75_000;
 
-    constructor(IDelegationManager delegationManager_) {
+    constructor(IDelegationManager delegationManager_, IAVSDirectory avsDirectory_) {
         _delegationManager = delegationManager_;
+        _avsDirectory = avsDirectory_;
         _disableInitializers();
     }
 
@@ -110,7 +115,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
         require(_getStaked(operator) >= minimumOperatorStake, "OmniAVS: minimum stake not met");
         require(!_isOperator(operator), "OmniAVS: already an operator"); // we could let delegation.regsiterOperatorToAVS handle this, they do check
 
-        _delegationManager.registerOperatorToAVS(operator, operatorSignature);
+        _avsDirectory.registerOperatorToAVS(operator, operatorSignature);
         _addOperator(operator);
 
         emit OperatorAdded(operator);
@@ -121,7 +126,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
         require(msg.sender == operator, "OmniAVS: only operator");
         require(_isOperator(operator), "OmniAVS: not an operator");
 
-        _delegationManager.deregisterOperatorFromAVS(operator);
+        _avsDirectory.deregisterOperatorFromAVS(operator);
         _removeOperator(operator);
 
         emit OperatorRemoved(operator);
@@ -159,7 +164,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
 
     /// @inheritdoc IServiceManager
     function setMetadataURI(string memory metadataURI) external onlyOwner {
-        _delegationManager.updateAVSMetadataURI(metadataURI);
+        _avsDirectory.updateAVSMetadataURI(metadataURI);
     }
 
     /// @inheritdoc IOmniAVSAdmin
@@ -226,6 +231,11 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
             if (_delegationManager.operatorShares(operator, IStrategy(strat)) > 0) strategies[j] = strat;
         }
         return strategies;
+    }
+
+    /// @inheritdoc IServiceManager
+    function avsDirectory() external view returns (address) {
+        return address(_avsDirectory);
     }
 
     /// @dev Return current list of Validators, including their personal stake and delegated stake
