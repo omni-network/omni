@@ -74,13 +74,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     }
 
     /**
-     *
-     */
-    /**
-     * Operator registration ***
-     */
-    /**
-     *
+     * Operator registration
      */
 
     /// @inheritdoc IServiceManager
@@ -137,13 +131,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     }
 
     /**
-     *
-     */
-    /**
-     * Omni sync *********
-     */
-    /**
-     *
+     * Omni sync
      */
 
     /// @inheritdoc IOmniAVS
@@ -171,13 +159,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     }
 
     /**
-     *
-     */
-    /**
-     * Admin functions ******
-     */
-    /**
-     *
+     * Admin functions
      */
 
     /// @inheritdoc IServiceManager
@@ -224,13 +206,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     }
 
     /**
-     *
-     */
-    /**
-     * View functions ******
-     */
-    /**
-     *
+     * View functions
      */
 
     /// @inheritdoc IOmniAVS

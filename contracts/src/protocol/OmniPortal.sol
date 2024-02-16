@@ -71,13 +71,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable {
     }
 
     /**
-     *
-     */
-    /**
-     * XMsg functions ******
-     */
-    /**
-     *
+     * XMsg functions
      */
 
     /// @inheritdoc IOmniPortal
@@ -171,13 +165,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable {
     }
 
     /**
-     *
-     */
-    /**
-     * XMsg metadata functions **
-     */
-    /**
-     *
+     * XMsg metadata functions
      */
 
     /// @inheritdoc IOmniPortal
@@ -191,13 +179,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable {
     }
 
     /**
-     *
-     */
-    /**
-     * Admin functions ******
-     */
-    /**
-     *
+     * Admin functions
      */
 
     /// @inheritdoc IOmniPortalAdmin
