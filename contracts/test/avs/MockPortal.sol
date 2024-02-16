@@ -19,8 +19,5 @@ contract MockPortal {
     function xcall(uint64, /*destChainId*/ address, /*to*/ bytes calldata, /*data*/ uint64 /*gasLimit*/ )
         external
         payable
-    {
-        console.log("xcall");
-        console.log(address(this));
-    }
+    { }
 }

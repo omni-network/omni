@@ -28,7 +28,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
     uint256 syncFee = 1 gwei;
 
     /**
-     * Test OmniAVS.syncWithOmnie() at a number of different points in a "delegation lifecycle".
+     * Test OmniAVS.syncWithOmni() at a number of different points in a "delegation lifecycle".
      *  - no registered operators
      *  - registered operators with some initial stake
      *  - delegators have delegated to operators
