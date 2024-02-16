@@ -30,21 +30,43 @@ interface IOmniAVSAdmin {
     /**
      * @notice Set the Omni portal contract.
      * @dev Only the owner can call this function.
-     * @param omni The Omni portal contract
+     * @param portal The Omni portal contract
      */
-    function setOmniPortal(IOmniPortal omni) external;
+    function setOmniPortal(IOmniPortal portal) external;
 
     /**
      * @notice Set the Omni chain id.
      * @dev Only the owner can call this function.
-     * @param omniChainId The Omni chain id
+     * @param chainID The Omni chain id
      */
-    function setOmniChainId(uint64 omniChainId) external;
+    function setOmniChainId(uint64 chainID) external;
 
     /**
      * @notice Set the strategy parameters.
      * @dev Only the owner can call this function.
-     * @param strategyParams The strategy parameters
+     * @param params The strategy parameters
      */
-    function setStrategyParams(IOmniAVS.StrategyParams[] calldata strategyParams) external;
+    function setStrategyParams(IOmniAVS.StrategyParams[] calldata params) external;
+
+    /**
+     * @notice Set the minimum operator stake.
+     * @dev Only the owner can call this function.
+     * @param stake The minimum operator stake, not including delegations
+     */
+    function setMinimumOperatorStake(uint96 stake) external;
+
+    /**
+     * @notice Set the maximum operator count.
+     * @dev Only the owner can call this function.
+     * @param count The maximum operator count
+     */
+    function setMaxOperatorCount(uint32 count) external;
+
+    /**
+     * @notice Set the xcall gas limits.
+     * @dev Only the owner can call this function.
+     * @param base The base xcall gas limit
+     * @param perValidator The per-validator additional xcall gas limit
+     */
+    function setXcallGasLimits(uint256 base, uint256 perValidator) external;
 }

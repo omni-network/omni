@@ -11,7 +11,7 @@ import { IDelegationManager } from "eigenlayer-contracts/src/contracts/interface
 contract OmniAVSHarness is OmniAVS {
     constructor(IDelegationManager delegationManager) OmniAVS(delegationManager) { }
 
-    function xcallGasLimitFor(uint256 numValidators) external pure returns (uint64) {
+    function xcallGasLimitFor(uint256 numValidators) external view returns (uint64) {
         return _xcallGasLimitFor(numValidators);
     }
 }

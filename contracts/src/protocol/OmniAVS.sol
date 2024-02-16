@@ -19,14 +19,6 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     /// @notice Constant used as a divisor in calculating weights
     uint256 public constant WEIGHTING_DIVISOR = 1e18;
 
-    /// @dev OmniPortal.xcall gas limit per each validator in syncWithOmni
-    uint256 internal constant _XCALL_GAS_LIMIT_PER_VALIDATOR = 10_000;
-
-    /// @dev OmniPortal.xcall base gas limit in syncWithOmni
-    uint256 internal constant _XCALL_BASE_GAS_LIMIT = 75_000;
-
-    // TODO: revisit gas limits when OmniEthRestaking is written, and we can measure gas usage
-
     /// @notice EigenLayer core DelegationManager
     IDelegationManager public immutable _delegationManager;
 
@@ -47,6 +39,12 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
 
     /// @notice Strategy parameters for restaking
     IOmniAVS.StrategyParams[] public strategyParams;
+
+    /// @dev OmniPortal.xcall gas limit per each validator in syncWithOmni
+    uint256 internal xcallGasLimitPerValidator = 10_000;
+
+    /// @dev OmniPortal.xcall base gas limit in syncWithOmni
+    uint256 internal xcallBaseGasLimit = 75_000;
 
     constructor(IDelegationManager delegationManager_) {
         _delegationManager = delegationManager_;
@@ -94,8 +92,8 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     }
 
     /// @dev Returns the gas limit for OmniEthRestaking.sync xcall for some number of validators
-    function _xcallGasLimitFor(uint256 numValidators) internal pure returns (uint64) {
-        return uint64(numValidators * _XCALL_GAS_LIMIT_PER_VALIDATOR + _XCALL_BASE_GAS_LIMIT);
+    function _xcallGasLimitFor(uint256 numValidators) internal view returns (uint64) {
+        return uint64(numValidators * xcallGasLimitPerValidator + xcallBaseGasLimit);
     }
 
     /**
@@ -165,24 +163,40 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     }
 
     /// @inheritdoc IOmniAVSAdmin
-    function setOmniPortal(IOmniPortal omni_) external onlyOwner {
-        omni = omni_;
+    function setOmniPortal(IOmniPortal portal) external onlyOwner {
+        omni = portal;
     }
 
     /// @inheritdoc IOmniAVSAdmin
-    function setOmniChainId(uint64 omniChainId_) external onlyOwner {
-        omniChainId = omniChainId_;
+    function setOmniChainId(uint64 chainId) external onlyOwner {
+        omniChainId = chainId;
     }
 
     /// @inheritdoc IOmniAVSAdmin
-    function setStrategyParams(StrategyParams[] calldata strategyParams_) external onlyOwner {
-        _setStrategyParams(strategyParams_);
+    function setStrategyParams(StrategyParams[] calldata params) external onlyOwner {
+        _setStrategyParams(params);
     }
 
-    function _setStrategyParams(StrategyParams[] calldata strategyParams_) internal {
+    /// @inheritdoc IOmniAVSAdmin
+    function setMinimumOperatorStake(uint96 stake) external onlyOwner {
+        minimumOperatorStake = stake;
+    }
+
+    /// @inheritdoc IOmniAVSAdmin
+    function setMaxOperatorCount(uint32 count) external onlyOwner {
+        maxOperatorCount = count;
+    }
+
+    /// @inheritdoc IOmniAVSAdmin
+    function setXcallGasLimits(uint256 base, uint256 perValidator) external onlyOwner {
+        xcallBaseGasLimit = base;
+        xcallGasLimitPerValidator = perValidator;
+    }
+
+    function _setStrategyParams(StrategyParams[] calldata params) internal {
         delete strategyParams;
-        for (uint256 i = 0; i < strategyParams_.length; i++) {
-            strategyParams.push(strategyParams_[i]);
+        for (uint256 i = 0; i < params.length; i++) {
+            strategyParams.push(params[i]);
         }
     }
 
