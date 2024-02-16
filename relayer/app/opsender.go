@@ -31,10 +31,9 @@ type OpSender struct {
 func NewOpSender(ctx context.Context, chain netconf.Chain, rpcClient *ethclient.Client,
 	privateKey ecdsa.PrivateKey, chainNames map[uint64]string) (OpSender, error) {
 	// we want to query receipts every 1/3 of the block time
-	receiptQueryInterval := chain.BlockPeriod / 3
 	cfg, err := txmgr.NewConfig(ctx, txmgr.NewCLIConfig(
 		chain.RPCURL,
-		receiptQueryInterval,
+		chain.BlockPeriod/3,
 		txmgr.DefaultSenderFlagValues,
 	),
 		&privateKey,
