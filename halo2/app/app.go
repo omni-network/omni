@@ -1,6 +1,7 @@
 package app
 
 import (
+	attestkeeper "github.com/omni-network/omni/halo2/attest/keeper"
 	engevmkeeper "github.com/omni-network/omni/halo2/evmengine/keeper"
 	"github.com/omni-network/omni/lib/engine"
 	"github.com/omni-network/omni/lib/errors"
@@ -53,6 +54,7 @@ type App struct {
 	DistrKeeper           distrkeeper.Keeper
 	ConsensusParamsKeeper consensuskeeper.Keeper
 	EngEVMKeeper          engevmkeeper.Keeper
+	AttestKeeper          attestkeeper.Keeper
 }
 
 // newApp returns a reference to an initialized App.
