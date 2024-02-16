@@ -107,6 +107,7 @@ func monitorOffsetsForever(ctx context.Context, src, dst uint64, srcChain, dstCh
 func monitorOffsetsOnce(ctx context.Context, src, dst uint64, srcChain, dstChain string,
 	xprovider xchain.Provider) error {
 	emitted, ok, err := xprovider.GetEmittedCursor(ctx, src, dst)
+	log.Debug(ctx, "Emitted cursor", "src", src, "dst", dst, "emitted", emitted.Offset, "ok", ok)
 	if err != nil {
 		return err
 	} else if !ok {
@@ -118,6 +119,7 @@ func monitorOffsetsOnce(ctx context.Context, src, dst uint64, srcChain, dstChain
 		return err
 	}
 
+	log.Debug(ctx, "Submitted cursor", "src", src, "dst", dst, "submitted", submitted.Offset)
 	emitCursor.WithLabelValues(srcChain, dstChain).Set(float64(emitted.Offset))
 	submitCursor.WithLabelValues(srcChain, dstChain).Set(float64(submitted.Offset))
 
