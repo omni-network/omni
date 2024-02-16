@@ -57,7 +57,7 @@ var (
 	}
 )
 
-func NewCLIConfig(rpc string, defaults DefaultFlagValues) CLIConfig {
+func NewCLIConfig(rpc string, receiptQueryInterval time.Duration, defaults DefaultFlagValues) CLIConfig {
 	return CLIConfig{
 		L1RPCURL:                  rpc,
 		NumConfirmations:          defaults.NumConfirmations,
@@ -68,7 +68,7 @@ func NewCLIConfig(rpc string, defaults DefaultFlagValues) CLIConfig {
 		NetworkTimeout:            defaults.NetworkTimeout,
 		TxSendTimeout:             defaults.TxSendTimeout,
 		TxNotInMempoolTimeout:     defaults.TxNotInMempoolTimeout,
-		ReceiptQueryInterval:      defaults.ReceiptQueryInterval,
+		ReceiptQueryInterval:      receiptQueryInterval,
 	}
 }
 
