@@ -7,12 +7,38 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/test/e2e/pingpong"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
+type DeployConfig struct {
+	PromSecrets
+}
+
+// DeployWithPingPong a new e2e network. It also starts all services in order to deploy private portals.
+// It also deploys a pingpong contract and starts all edges.
+func DeployWithPingPong(ctx context.Context, def Definition, cfg DeployConfig, pingPongN uint64) error {
+	if err := Deploy(ctx, def, cfg); err != nil {
+		return err
+	}
+
+	if pingPongN == 0 {
+		return nil
+	}
+
+	pp, err := pingpong.Deploy(ctx, def.Netman.Portals())
+	if err != nil {
+		return errors.Wrap(err, "deploy pingpong")
+	} else if err := pp.StartAllEdges(ctx, pingPongN); err != nil {
+		return errors.Wrap(err, "start all edges")
+	}
+
+	return nil
+}
+
 // Deploy a new e2e network. It also starts all services in order to deploy private portals.
-func Deploy(ctx context.Context, def Definition, promSecrets PromSecrets) error {
+func Deploy(ctx context.Context, def Definition, cfg DeployConfig) error {
 	if err := Cleanup(ctx, def); err != nil {
 		return err
 	}
@@ -28,7 +54,7 @@ func Deploy(ctx context.Context, def Definition, promSecrets PromSecrets) error 
 		return err
 	}
 
-	if err := Setup(ctx, def, promSecrets); err != nil {
+	if err := Setup(ctx, def, cfg.PromSecrets); err != nil {
 		return err
 	}
 
@@ -45,7 +71,8 @@ func Deploy(ctx context.Context, def Definition, promSecrets PromSecrets) error 
 
 // E2ETestConfig is the configuration required to run a full e2e test.
 type E2ETestConfig struct {
-	Preserve bool
+	Preserve  bool
+	PingPongN uint64
 }
 
 // DefaultE2ETestConfig returns a default configuration for a e2e test.
@@ -55,8 +82,17 @@ func DefaultE2ETestConfig() E2ETestConfig {
 
 // E2ETest runs a full e2e test.
 func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
-	if err := Deploy(ctx, def, PromSecrets{}); err != nil { // No prometheus in tests for now.
+	if err := Deploy(ctx, def, DeployConfig{}); err != nil {
 		return err
+	}
+
+	// Deploy and start ping pong
+	const pingpongN = 4
+	pp, err := pingpong.Deploy(ctx, def.Netman.Portals())
+	if err != nil {
+		return errors.Wrap(err, "deploy pingpong")
+	} else if err := pp.StartAllEdges(ctx, pingpongN); err != nil {
+		return errors.Wrap(err, "start all edges")
 	}
 
 	msgBatches := []int{4, 3, 2, 1} // Send 10 msgs from each chain to each other chain
@@ -84,6 +120,11 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 		return err
 	}
 
+	// Anvil doens't support subscriptions, we need to poll.
+	// if err := pp.WaitDone(ctx); err != nil {
+	//	return errors.Wrap(err, "wait pingpong")
+	//}
+
 	if err := Test(ctx, def, false); err != nil {
 		return err
 	}
@@ -101,13 +142,13 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 	return nil
 }
 
-func sum(batches []int) int {
+func sum(batches []int) uint64 {
 	var resp int
 	for _, b := range batches {
 		resp += b
 	}
 
-	return resp
+	return uint64(resp)
 }
 
 // Convert cometbft testnet validators to solidity bindings.Validator, expected by portal constructor.

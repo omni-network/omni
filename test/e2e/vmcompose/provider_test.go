@@ -23,7 +23,7 @@ func TestSetup(t *testing.T) {
 		ManifestFile:  manifestFile,
 		InfraProvider: vmcompose.ProviderName,
 		InfraDataFile: dataFile,
-		ImgTag:        "7d1ae53",
+		OmniImgTag:    "7d1ae53",
 	})
 	require.NoError(t, err)
 

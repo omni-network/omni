@@ -28,11 +28,11 @@ type Provider struct {
 	relayerTag string
 }
 
-func NewProvider(testnet types.Testnet, data types.InfrastructureData, tag string) *Provider {
+func NewProvider(testnet types.Testnet, data types.InfrastructureData, relayerTag string) *Provider {
 	return &Provider{
 		Testnet:    testnet,
 		Data:       data,
-		relayerTag: tag,
+		relayerTag: relayerTag,
 	}
 }
 
