@@ -21,7 +21,7 @@ func maybeSetupSimnetRelayer(ctx context.Context, network netconf.Network, cmtNo
 		return
 	}
 
-	cprov := cprovider.NewABCIProvider(rpclocal.New(cmtNode))
+	cprov := cprovider.NewABCIProvider(rpclocal.New(cmtNode), network.ChainNamesByIDs())
 
 	for _, chain := range network.Chains {
 		w := relayer.NewWorker(

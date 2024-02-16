@@ -15,7 +15,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-func NewABCIProvider2(abci rpcclient.ABCIClient) Provider {
+func NewABCIProvider2(abci rpcclient.ABCIClient, chains map[uint64]string) Provider {
 	backoffFunc := func(ctx context.Context) (func(), func()) {
 		return expbackoff.NewWithReset(ctx, expbackoff.WithFastConfig())
 	}
@@ -25,6 +25,7 @@ func NewABCIProvider2(abci rpcclient.ABCIClient) Provider {
 	return Provider{
 		fetch:       newABCIFetchFunc(cl),
 		backoffFunc: backoffFunc,
+		chainNames:  chains,
 	}
 }
 
