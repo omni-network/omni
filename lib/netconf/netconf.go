@@ -77,14 +77,14 @@ func (n Network) Chain(id uint64) (Chain, bool) {
 // the Omni cross chain protocol. This is most supported Rollup EVM, but
 // also the Omni EVM.
 type Chain struct {
-	ID            uint64        `json:"id"`                    // Chain ID asa per https://chainlist.org
-	Name          string        `json:"name"`                  // Chain name as per https://chainlist.org
-	RPCURL        string        `json:"rpcurl"`                // RPC URL of the chain
-	AuthRPCURL    string        `json:"auth_rpcurl,omitempty"` // RPC URL of the chain with JWT authentication enabled
-	PortalAddress string        `json:"portal_address"`        // Address of the omni portal contract on the chain
-	DeployHeight  uint64        `json:"deploy_height"`         // Height that the portal contracts were deployed
-	IsOmni        bool          `json:"is_omni,omitempty"`     // Whether this is the Omni chain
-	BlockPeriod   time.Duration `json:"block_period"`          // Block period of the chain
+	ID            uint64        // Chain ID asa per https://chainlist.org
+	Name          string        // Chain name as per https://chainlist.org
+	RPCURL        string        // RPC URL of the chain
+	AuthRPCURL    string        // RPC URL of the chain with JWT authentication enabled
+	PortalAddress string        // Address of the omni portal contract on the chain
+	DeployHeight  uint64        // Height that the portal contracts were deployed
+	IsOmni        bool          // Whether this is the Omni chain
+	BlockPeriod   time.Duration // Block period of the chain
 }
 
 // Load loads the network configuration from the given path.
@@ -114,4 +114,62 @@ func Save(network Network, path string) error {
 	}
 
 	return nil
+}
+
+type chainJSON struct {
+	ID            uint64 `json:"id"`
+	Name          string `json:"name"`
+	RPCURL        string `json:"rpcurl"`
+	AuthRPCURL    string `json:"auth_rpcurl,omitempty"`
+	PortalAddress string `json:"portal_address"`
+	DeployHeight  uint64 `json:"deploy_height"`
+	IsOmni        bool   `json:"is_omni,omitempty"`
+	BlockPeriod   string `json:"block_period"`
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (c *Chain) UnmarshalJSON(bz []byte) error {
+	var cj chainJSON
+	if err := json.Unmarshal(bz, &cj); err != nil {
+		return errors.Wrap(err, "unmarshal chain")
+	}
+
+	blockPeriod, err := time.ParseDuration(cj.BlockPeriod)
+	if err != nil {
+		return errors.Wrap(err, "parse block period")
+	}
+
+	*c = Chain{
+		ID:            cj.ID,
+		Name:          cj.Name,
+		RPCURL:        cj.RPCURL,
+		AuthRPCURL:    cj.AuthRPCURL,
+		PortalAddress: cj.PortalAddress,
+		DeployHeight:  cj.DeployHeight,
+		IsOmni:        cj.IsOmni,
+		BlockPeriod:   blockPeriod,
+	}
+
+	return nil
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (c Chain) MarshalJSON() ([]byte, error) {
+	cj := chainJSON{
+		ID:            c.ID,
+		Name:          c.Name,
+		RPCURL:        c.RPCURL,
+		AuthRPCURL:    c.AuthRPCURL,
+		PortalAddress: c.PortalAddress,
+		DeployHeight:  c.DeployHeight,
+		IsOmni:        c.IsOmni,
+		BlockPeriod:   c.BlockPeriod.String(),
+	}
+
+	bz, err := json.Marshal(cj)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal chain")
+	}
+
+	return bz, nil
 }
