@@ -19,8 +19,12 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable {
     uint256 public constant WEIGHTING_DIVISOR = 1e18;
 
     /// @dev OmniPortal.xcall gas limit per each validator in syncWithOmni
-    ///      TODO: revisit when OmniEthRestaking is written, and we can measure gas usage
-    uint256 internal constant _XCALL_GAS_LIMIT_PER_VALIDATOR = 100_000;
+    uint256 internal constant _XCALL_GAS_LIMIT_PER_VALIDATOR = 10_000;
+
+    /// @dev OmniPortal.xcall base gas limit in syncWithOmni
+    uint256 internal constant _XCALL_BASE_GAS_LIMIT = 75_000;
+
+    // TODO: revisit gas limits when OmniEthRestaking is written, and we can measure gas usage
 
     /// @notice EigenLayer core DelegationManager
     IDelegationManager public immutable _delegationManager;
@@ -89,7 +93,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable {
     }
 
     function _xcallGasLimitFor(uint256 numValidators) internal pure returns (uint64) {
-        return uint64(numValidators * _XCALL_GAS_LIMIT_PER_VALIDATOR);
+        return uint64(numValidators * _XCALL_GAS_LIMIT_PER_VALIDATOR + _XCALL_BASE_GAS_LIMIT);
     }
 
     /**
