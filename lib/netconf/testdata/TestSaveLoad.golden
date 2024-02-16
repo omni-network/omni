@@ -9,7 +9,7 @@
    "portal_address": "笨Gń條ģ|2諱4",
    "deploy_height": 15080552979306262733,
    "is_omni": true,
-   "block_period": -5403400433935935150
+   "block_period": "-1500944h33m53.93593515s"
   },
   {
    "id": 3782003332368514395,
@@ -18,7 +18,7 @@
    "auth_rpcurl": "÷K鬣壈gƢ板鋩伸~槱¡rŔ",
    "portal_address": " 炄闌剾溏嶪滢w",
    "deploy_height": 500725193065327891,
-   "block_period": 8502318507835831306
+   "block_period": "2361755h8m27.835831306s"
   },
   {
    "id": 14892045504669513296,
@@ -28,7 +28,7 @@
    "portal_address": "",
    "deploy_height": 17326793931172433331,
    "is_omni": true,
-   "block_period": 3917555658738979543
+   "block_period": "1088209h54m18.738979543s"
   }
  ]
 }
