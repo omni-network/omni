@@ -1,30 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity ^0.8.12;
-
-import { IDelegationManager } from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
-
-import { OperatorStateRetriever } from "eigenlayer-middleware/src/OperatorStateRetriever.sol";
-import { IRegistryCoordinator } from "eigenlayer-middleware/src/interfaces/IRegistryCoordinator.sol";
-import { IStakeRegistry } from "eigenlayer-middleware/src/interfaces/IStakeRegistry.sol";
+pragma solidity =0.8.12;
 
 import { OmniAVS } from "src/protocol/OmniAVS.sol";
+import { IDelegationManager } from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
 /**
  * @title OmniAVSHarness
- * @dev A wrapper over OmniAVS that exposes internal functions for testing.
+ * @dev Wrapper around OmniAVS that exposes internal functions.
  */
 contract OmniAVSHarness is OmniAVS {
-    constructor(
-        IDelegationManager delegationManager_,
-        IRegistryCoordinator registryCoordinator_,
-        IStakeRegistry stakeRegistry_
-    ) OmniAVS(delegationManager_, registryCoordinator_, stakeRegistry_) { }
+    constructor(IDelegationManager delegationManager) OmniAVS(delegationManager) { }
 
-    function getOperatorState() external view returns (Operator[][] memory) {
-        return _getOperatorState(block.number);
-    }
-
-    function syncWithEigenLayer() external {
-        _syncWithEigenLayer();
+    function xcallGasLimitFor(uint256 numValidators) external view returns (uint64) {
+        return _xcallGasLimitFor(numValidators);
     }
 }

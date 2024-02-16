@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.12;
 
-import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
+import { IOmniPortal } from "./IOmniPortal.sol";
+import { IOmniAVS } from "./IOmniAVS.sol";
 
 /**
  * @title OmniAVSAdmin
@@ -10,23 +11,62 @@ import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
 interface IOmniAVSAdmin {
     /**
      * @notice Initialize the Omni AVS admin contract.
-     * @param owner_ The intiial owner of the contract
-     * @param omni_ The Omni portal contract
-     * @param omniChainId_ The Omni chain id
+     * @param owner The intiial owner of the contract
+     * @param omni The Omni portal contract
+     * @param omniChainId The Omni chain id
+     * @param minimumOperatorStake The minimum operator stake, not including delegations
+     * @param maxOperatorCount The maximum operator count
+     * @param strategyParams List of accepted strategies and their multipliers
      */
-    function initialize(address owner_, IOmniPortal omni_, uint64 omniChainId_) external;
+    function initialize(
+        address owner,
+        IOmniPortal omni,
+        uint64 omniChainId,
+        uint96 minimumOperatorStake,
+        uint32 maxOperatorCount,
+        IOmniAVS.StrategyParams[] calldata strategyParams
+    ) external;
 
     /**
      * @notice Set the Omni portal contract.
      * @dev Only the owner can call this function.
-     * @param omni_ The Omni portal contract
+     * @param portal The Omni portal contract
      */
-    function setOmniPortal(IOmniPortal omni_) external;
+    function setOmniPortal(IOmniPortal portal) external;
 
     /**
      * @notice Set the Omni chain id.
      * @dev Only the owner can call this function.
-     * @param omniChainId_ The Omni chain id
+     * @param chainID The Omni chain id
      */
-    function setOmniChainId(uint64 omniChainId_) external;
+    function setOmniChainId(uint64 chainID) external;
+
+    /**
+     * @notice Set the strategy parameters.
+     * @dev Only the owner can call this function.
+     * @param params The strategy parameters
+     */
+    function setStrategyParams(IOmniAVS.StrategyParams[] calldata params) external;
+
+    /**
+     * @notice Set the minimum operator stake.
+     * @dev Only the owner can call this function.
+     * @param stake The minimum operator stake, not including delegations
+     */
+    function setMinimumOperatorStake(uint96 stake) external;
+
+    /**
+     * @notice Set the maximum operator count.
+     * @dev Only the owner can call this function.
+     * @param count The maximum operator count
+     */
+    function setMaxOperatorCount(uint32 count) external;
+
+    /**
+     * @notice Set the xcall gas limits.
+     * @dev Only the owner can call this function.
+     * @param base The base xcall gas limit
+     * @param perValidator The per-validator additional xcall gas limit
+     */
+    function setXcallGasLimits(uint256 base, uint256 perValidator) external;
 }
