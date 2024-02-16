@@ -24,8 +24,6 @@ const (
 	networkFile     = "network.json"
 	attestStateFile = "xattestations_state.json"
 
-	// defaults.
-
 	DefaultHomeDir                 = "./halo" // Defaults to "halo" in current directory
 	defaultAppStatePersistInterval = 1        // Persist app state every block. Set to 0 to disable persistence.
 	defaultSnapshotInterval        = 1000     // Roughly once an hour (given 3s blocks)

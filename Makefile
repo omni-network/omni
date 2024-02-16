@@ -51,6 +51,10 @@ install-go-tools: ## Installs the go-dev-tools, like buf.
 lint: ## Runs linters via pre-commit.
 	@pre-commit run -v --all-files
 
+.PHONY: bufgen
+bufgen: ## Generates protobufs using buf generate.
+	@./scripts/buf_generate.sh
+
 .PHONY:
 secrets-baseline: ensure-detect-secrets ## Update secrets baseline.
 	@detect-secrets scan --exclude-file pnpm-lock.yaml > .secrets.baseline

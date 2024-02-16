@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package halo2.evmengine.types;
+
+import "cosmos/msg/v1/msg.proto";
+
+option go_package = "halo2/evmengine/types";
+
+// MsgService defines all the gRPC methods exposed by the evmengine module.
+service MsgService {
+  option (cosmos.msg.v1.service) = true;
+
+  // ExecutionPayload submits a new finalised execution payload from consensus to the OmniEVM.
+  rpc FinalisePayload (MsgExecutionPayload) returns (FinalisePayloadResponse);
+}
+
+// MsgExecutionPayload defines a Omni EVM execution payload.
+message MsgExecutionPayload {
+  option (cosmos.msg.v1.signer) = "authority";
+  string authority = 1;
+  bytes  data      = 2;
+}
+
+// FinalisePayloadResponse is an empty response of FinalisePayload.
+message FinalisePayloadResponse {}
+

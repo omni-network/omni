@@ -20,3 +20,5 @@ import (
 //go:generate go install github.com/bufbuild/buf/cmd/protoc-gen-buf-lint
 //go:generate go install google.golang.org/protobuf/cmd/protoc-gen-go
 //go:generate go install google.golang.org/grpc/cmd/protoc-gen-go-grpc
+//go:generate go install github.com/cosmos/cosmos-proto/cmd/protoc-gen-go-pulsar
+//go:generate go install cosmossdk.io/orm/cmd/protoc-gen-go-cosmos-orm

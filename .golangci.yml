@@ -100,6 +100,7 @@ issues:
     - add-constant         # Ignore "add-constant: avoid magic numbers like" since it is too strict
     - fieldalignment # Ignore "fieldalignment: struct with XXX pointer bytes could be YYY"
     - "shadow: declaration of" # Relax govet
+    - "shadows an import name" # Relax revive
     - "ifElseChain: rewrite if-else to switch statement"   # IfElseChain actually preferred to switches
 
     # Loop variable issues have been fixed in Go 1.22, so can be ignored
