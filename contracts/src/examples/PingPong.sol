@@ -57,4 +57,6 @@ contract PingPong {
         uint256 fee = omni.feeFor(destChainID, data);
         omni.xcall{ value: fee }(destChainID, to, data);
     }
+
+    receive() external payable { }
 }

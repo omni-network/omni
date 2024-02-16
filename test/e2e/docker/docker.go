@@ -53,7 +53,7 @@ func (p *Provider) Clean(ctx context.Context) error {
 }
 
 // NewProvider returns a new Provider.
-func NewProvider(testnet types.Testnet, infd types.InfrastructureData, tag string) *Provider {
+func NewProvider(testnet types.Testnet, infd types.InfrastructureData, haloTag string) *Provider {
 	return &Provider{
 		Provider: &cmtdocker.Provider{
 			ProviderData: infra.ProviderData{
@@ -62,7 +62,7 @@ func NewProvider(testnet types.Testnet, infd types.InfrastructureData, tag strin
 			},
 		},
 		testnet:    testnet,
-		relayerTag: tag,
+		relayerTag: haloTag,
 	}
 }
 
@@ -100,10 +100,21 @@ func (p *Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 	p.servicesOnce.Do(func() {
 		svcs := additionalServices(p.testnet)
 		log.Info(ctx, "Starting additional services", "names", svcs)
+
+		err = cmtdocker.ExecCompose(ctx, p.Testnet.Dir, "create") // This fails if containers not available.
+		if err != nil {
+			err = errors.Wrap(err, "create containers")
+			return
+		}
+
 		err = cmtdocker.ExecCompose(ctx, p.Testnet.Dir, append([]string{"up", "-d"}, svcs...)...)
+		if err != nil {
+			err = errors.Wrap(err, "start additional services")
+			return
+		}
 	})
 	if err != nil {
-		return errors.Wrap(err, "start additional services")
+		return err
 	}
 
 	// Start all requested nodes (use --no-deps to avoid starting the additional services again).
