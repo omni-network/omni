@@ -112,8 +112,8 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     ) external {
         require(msg.sender == operator, "OmniAVS: only operator");
         require(operators.length < maxOperatorCount, "OmniAVS: max operators reached");
-        require(_getStaked(operator) >= minimumOperatorStake, "OmniAVS: minimum stake not met");
-        require(!_isOperator(operator), "OmniAVS: already an operator"); // we could let delegation.regsiterOperatorToAVS handle this, they do check
+        require(_getSelfDelegations(operator) >= minimumOperatorStake, "OmniAVS: minimum stake not met"); // TODO: should this be _getTotalDelegations?
+        require(!_isOperator(operator), "OmniAVS: already an operator"); // we could let _avsDirectory.regsiterOperatorToAVS handle this, they do check
 
         _avsDirectory.registerOperatorToAVS(operator, operatorSignature);
         _addOperator(operator);
@@ -243,40 +243,40 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
         Validator[] memory vals = new Validator[](operators.length);
 
         for (uint256 i = 0; i < vals.length; i++) {
-            address addr = operators[i];
-            uint96 totalStaked;
-            StrategyParams memory params;
+            address operator = operators[i];
 
-            // get total opearator stake (their own stake + delegations)
-            for (uint256 j = 0; j < strategyParams.length; j++) {
-                params = strategyParams[j];
+            uint96 total = _getTotalDelegations(operator);
+            uint96 staked = _getSelfDelegations(operator);
+            uint96 delegated = total - staked;
 
-                // shares of the operator in the strategy
-                uint256 sharesAmount = _delegationManager.operatorShares(addr, params.strategy);
-
-                // add the weight from the shares for this strategy to the total weight
-                if (sharesAmount > 0) totalStaked += _weight(sharesAmount, params.multiplier);
-            }
-
-            uint96 staked = _getStaked(addr);
-            uint96 delegated = totalStaked - staked;
-
-            vals[i] = Validator(addr, delegated, staked);
+            vals[i] = Validator(operator, delegated, staked);
         }
 
         return vals;
     }
 
-    /// @dev Returns the total amount staked by the operator, not including deletations
-    function _getStaked(address operator) internal view returns (uint96) {
+    /// @dev Returns total delegations to the operator, including self delegations
+    function _getTotalDelegations(address operator) internal view returns (uint96) {
+        uint96 total;
+        StrategyParams memory params;
+
+        for (uint256 j = 0; j < strategyParams.length; j++) {
+            params = strategyParams[j];
+            uint256 shares = _delegationManager.operatorShares(operator, params.strategy);
+            total += _weight(shares, params.multiplier);
+        }
+
+        return total;
+    }
+
+    /// @dev Returns the operator's self-delegations
+    function _getSelfDelegations(address operator) internal view returns (uint96) {
         (IStrategy[] memory strategies, uint256[] memory shares) =
             DelegationManager(address(_delegationManager)).getDelegatableShares(operator);
 
         uint96 staked;
-
         for (uint256 i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
-            uint256 sharesAmt = shares[i];
 
             // find the strategy params for the strategy
             StrategyParams memory params;
@@ -290,7 +290,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
             // if strategy is not found, do not consider it in stake
             if (address(params.strategy) == address(0)) continue;
 
-            staked += _weight(sharesAmt, params.multiplier);
+            staked += _weight(shares[i], params.multiplier);
         }
 
         return staked;
