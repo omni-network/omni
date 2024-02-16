@@ -19,9 +19,9 @@ jobs:
         run: forge fmt --check
         working-directory: contracts
       - name: Check snapshot
-        # tolerance is high (15%) because fuzz tests often report lower gas on CI
-        # TODO: understand why, and fix
-        run: forge snapshot --check --tolerance 15
+        # fuzz tests snapshots are different in CI, so we ignore them
+        # TODO: figure out why, and fix
+        run: forge snapshot --check --tolerance 5 --no-match-test testFuzz_syncWithOmni
         working-directory: contracts
         env:
             FOUNDRY_FUZZ_SEED: "0x6eed"
