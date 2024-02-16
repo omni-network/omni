@@ -27,13 +27,13 @@ contract AVSUtils is AVSBase {
         vm.prank(operator);
 
         // signature & pubkey registration verification are skipped, see test/avs/eigen/DelegationManagerMock.sol
-        omniAVS.registerOperator(emptySignature);
+        omniAVS.registerOperatorToAVS(operator, emptySignature);
     }
 
     /// @dev deregister an operator from OmniAVS
     function _deregisterOperatorFromAVS(address operator) internal {
         vm.prank(operator);
-        omniAVS.deregisterOperator();
+        omniAVS.deregisterOperatorFromAVS(operator);
     }
 
     /// @dev create an operator address

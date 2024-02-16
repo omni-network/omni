@@ -47,12 +47,4 @@ interface IOmniAVSAdmin {
      * @param strategyParams The strategy parameters
      */
     function setStrategyParams(IOmniAVS.StrategyParams[] calldata strategyParams) external;
-
-    /**
-     * @notice Sets the metadata URI for the AVS
-     * @dev Matches eigenlayer-middleware ServiceManagerBase.setMetadataURI
-     * @param metadataURI is the metadata URI for the AVS
-     * @dev only callable by the owner
-     */
-    function setMetadataURI(string memory metadataURI) external;
 }

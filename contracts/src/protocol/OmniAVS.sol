@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity 0.8.12;
+pragma solidity =0.8.12;
 
 import { OwnableUpgradeable } from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
@@ -7,6 +7,7 @@ import { DelegationManager } from "eigenlayer-contracts/src/contracts/core/Deleg
 import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import { IDelegationManager } from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import { ISignatureUtils } from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
+import { IServiceManager } from "eigenlayer-middleware/src/interfaces/IServiceManager.sol";
 
 import { OmniPredeploys } from "../libraries/OmniPredeploys.sol";
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
@@ -14,7 +15,7 @@ import { IOmniEthRestaking } from "../interfaces/IOmniEthRestaking.sol";
 import { IOmniAVS } from "../interfaces/IOmniAVS.sol";
 import { IOmniAVSAdmin } from "../interfaces/IOmniAVSAdmin.sol";
 
-contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable {
+contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable {
     /// @notice Constant used as a divisor in calculating weights
     uint256 public constant WEIGHTING_DIVISOR = 1e18;
 
@@ -92,6 +93,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable {
         );
     }
 
+    /// @dev Returns the gas limit for OmniEthRestaking.sync xcall for some number of validators
     function _xcallGasLimitFor(uint256 numValidators) internal pure returns (uint64) {
         return uint64(numValidators * _XCALL_GAS_LIMIT_PER_VALIDATOR + _XCALL_BASE_GAS_LIMIT);
     }
@@ -100,27 +102,31 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable {
      * Operator registration
      */
 
-    /// @inheritdoc IOmniAVS
-    function registerOperator(ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature) external {
-        address operator = msg.sender;
+    /// @inheritdoc IServiceManager
+    function registerOperatorToAVS(
+        address operator,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    ) external {
         require(msg.sender == operator, "OmniAVS: only operator");
         require(operators.length < maxOperatorCount, "OmniAVS: max operators reached");
         require(_getStaked(operator) >= minimumOperatorStake, "OmniAVS: minimum stake not met");
         require(!_isOperator(operator), "OmniAVS: already an operator"); // we could let delegation.regsiterOperatorToAVS handle this, they do check
 
         _delegationManager.registerOperatorToAVS(operator, operatorSignature);
-
         _addOperator(operator);
+
+        emit OperatorAdded(operator);
     }
 
-    /// @inheritdoc IOmniAVS
-    function deregisterOperator() external {
-        address operator = msg.sender;
+    /// @inheritdoc IServiceManager
+    function deregisterOperatorFromAVS(address operator) external {
         require(msg.sender == operator, "OmniAVS: only operator");
         require(_isOperator(operator), "OmniAVS: not an operator");
 
         _delegationManager.deregisterOperatorFromAVS(operator);
         _removeOperator(operator);
+
+        emit OperatorRemoved(operator);
     }
 
     /// @dev Adds an operator to the list of operators, does not check if operator already exists
@@ -153,8 +159,8 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable {
      * Admin controls
      */
 
-    /// @inheritdoc IOmniAVSAdmin
-    function setMetadataURI(string memory metadataURI) public virtual onlyOwner {
+    /// @inheritdoc IServiceManager
+    function setMetadataURI(string memory metadataURI) external onlyOwner {
         _delegationManager.updateAVSMetadataURI(metadataURI);
     }
 
@@ -189,12 +195,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable {
         return _getValidators();
     }
 
-    /**
-     * @notice Returns the list of strategies that the AVS supports for restaking
-     * @dev This function is intended to be called off-chain
-     * @dev No guarantee is made on uniqueness of each element in the returned array.
-     *      The off-chain service should do that validation separately
-     */
+    /// @inheritdoc IServiceManager
     function getRestakeableStrategies() external view returns (address[] memory) {
         address[] memory strategies = new address[](strategyParams.length);
         for (uint256 j = 0; j < strategyParams.length; j++) {
@@ -203,7 +204,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable {
         return strategies;
     }
 
-    /// @inheritdoc IOmniAVS
+    /// @inheritdoc IServiceManager
     function getOperatorRestakedStrategies(address operator) external view returns (address[] memory) {
         address[] memory strategies = new address[](strategyParams.length);
         for (uint256 j = 0; j < strategyParams.length; j++) {
