@@ -12,11 +12,11 @@ dependencies:
     specifier: 4.9.3
     version: 4.9.3
   eigenlayer-contracts:
-    specifier: github:Layr-Labs/eigenlayer-contracts#m2-mainnet-fixes
-    version: github.com/Layr-Labs/eigenlayer-contracts/4ec523cd04bcae224bae5ad153128e4fc3129022(hardhat@2.19.5)
+    specifier: github:Layr-Labs/eigenlayer-contracts
+    version: github.com/Layr-Labs/eigenlayer-contracts/b6a3a91e1c0c126981de409b00b5fba178503447(hardhat@2.19.5)
   eigenlayer-middleware:
-    specifier: github:Layr-Labs/eigenlayer-middleware#m2-mainnet-fixes
-    version: github.com/Layr-Labs/eigenlayer-middleware/9401286d4643d1d16c79dc6e88ec17dac9987947
+    specifier: github:Layr-Labs/eigenlayer-middleware
+    version: github.com/Layr-Labs/eigenlayer-middleware/51ce856c203d7b3d901c1f0c03a103dfdc042917
 
 devDependencies:
   '@openzeppelin/merkle-tree':
@@ -3175,9 +3175,9 @@ packages:
     engines: {node: '>=10'}
     dev: false
 
-  github.com/Layr-Labs/eigenlayer-contracts/4ec523cd04bcae224bae5ad153128e4fc3129022(hardhat@2.19.5):
-    resolution: {tarball: https://codeload.github.com/Layr-Labs/eigenlayer-contracts/tar.gz/4ec523cd04bcae224bae5ad153128e4fc3129022}
-    id: github.com/Layr-Labs/eigenlayer-contracts/4ec523cd04bcae224bae5ad153128e4fc3129022
+  github.com/Layr-Labs/eigenlayer-contracts/b6a3a91e1c0c126981de409b00b5fba178503447(hardhat@2.19.5):
+    resolution: {tarball: https://codeload.github.com/Layr-Labs/eigenlayer-contracts/tar.gz/b6a3a91e1c0c126981de409b00b5fba178503447}
+    id: github.com/Layr-Labs/eigenlayer-contracts/b6a3a91e1c0c126981de409b00b5fba178503447
     name: eigenlayer-contracts
     version: 1.0.0
     dependencies:
@@ -3186,8 +3186,8 @@ packages:
       - hardhat
     dev: false
 
-  github.com/Layr-Labs/eigenlayer-middleware/9401286d4643d1d16c79dc6e88ec17dac9987947:
-    resolution: {tarball: https://codeload.github.com/Layr-Labs/eigenlayer-middleware/tar.gz/9401286d4643d1d16c79dc6e88ec17dac9987947}
+  github.com/Layr-Labs/eigenlayer-middleware/51ce856c203d7b3d901c1f0c03a103dfdc042917:
+    resolution: {tarball: https://codeload.github.com/Layr-Labs/eigenlayer-middleware/tar.gz/51ce856c203d7b3d901c1f0c03a103dfdc042917}
     name: eigenlayer-middleware
     version: 0.0.0
     dev: false
