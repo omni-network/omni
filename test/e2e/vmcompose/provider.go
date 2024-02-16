@@ -81,11 +81,32 @@ func (p *Provider) Setup() error {
 			return errors.Wrap(err, "generate compose file")
 		}
 
-		filename := strings.ReplaceAll(vmIP, ".", "_") + "_compose.yaml"
-
-		err = os.WriteFile(filepath.Join(p.Testnet.Dir, filename), compose, 0o644)
+		err = os.WriteFile(filepath.Join(p.Testnet.Dir, vmComposeFile(vmIP)), compose, 0o644)
 		if err != nil {
 			return errors.Wrap(err, "write compose file")
+		}
+	}
+
+	return nil
+}
+
+func (p *Provider) Upgrade(ctx context.Context) error {
+	log.Info(ctx, "Upgrading docker-compose on VMs")
+	for vmName, instance := range p.Data.VMs {
+		composeFile := vmComposeFile(instance.IPAddress.String())
+		err := copyToVM(ctx, vmName, filepath.Join(p.Testnet.Dir, composeFile))
+		if err != nil {
+			return errors.Wrap(err, "copy compose", "vm", vmName)
+		}
+
+		startCmd := fmt.Sprintf("cd /omni/%s && "+
+			"mv %s docker-compose.yaml && "+
+			"sudo docker compose up -d",
+			p.Testnet.Name, composeFile)
+
+		err = execOnVM(ctx, vmName, startCmd)
+		if err != nil {
+			return errors.Wrap(err, "compose up", "vm", vmName)
 		}
 	}
 
@@ -107,7 +128,7 @@ func (p *Provider) StartNodes(ctx context.Context, _ ...*e2e.Node) error {
 		log.Info(ctx, "Starting VM deployments")
 		// TODO(corver): Only start additional services and then start halo as per above StartNodes.
 		for vmName, instance := range p.Data.VMs {
-			composeFile := strings.ReplaceAll(instance.IPAddress.String(), ".", "_") + "_compose.yaml"
+			composeFile := vmComposeFile(instance.IPAddress.String())
 			startCmd := fmt.Sprintf("cd /omni/%s && "+
 				"mv %s docker-compose.yaml && "+
 				"sudo docker compose up -d",
@@ -115,7 +136,7 @@ func (p *Provider) StartNodes(ctx context.Context, _ ...*e2e.Node) error {
 
 			err := execOnVM(ctx, vmName, startCmd)
 			if err != nil {
-				onceErr = errors.Wrap(err, "copy files", "vm", vmName)
+				onceErr = errors.Wrap(err, "compose up", "vm", vmName)
 				return
 			}
 		}
@@ -187,4 +208,8 @@ func copyToVM(ctx context.Context, vmName string, dir string) error {
 	}
 
 	return nil
+}
+
+func vmComposeFile(internalIP string) string {
+	return strings.ReplaceAll(internalIP, ".", "_") + "_compose.yaml"
 }
