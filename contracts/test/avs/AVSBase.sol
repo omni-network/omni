@@ -6,6 +6,7 @@ import {
     ITransparentUpgradeableProxy,
     TransparentUpgradeableProxy
 } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import { IDelegationManager } from "src/interfaces/IDelegationManager.sol";
 
 import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
@@ -45,7 +46,7 @@ contract AVSBase is EigenLayerTestHelper {
         vm.startPrank(proxyAdminOwner);
         omniAVS =
             OmniAVSHarness(address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")));
-        omniAVSImplementation = new OmniAVSHarness(delegation, avsDirectory);
+        omniAVSImplementation = new OmniAVSHarness(IDelegationManager(address(delegation)), avsDirectory);
         proxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(omniAVS))), address(omniAVSImplementation));
         vm.stopPrank();
 

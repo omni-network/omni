@@ -3,8 +3,6 @@ pragma solidity =0.8.12;
 
 import { OwnableUpgradeable } from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
-import { DelegationManager } from "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
-import { IDelegationManager } from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import { ISignatureUtils } from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
@@ -15,6 +13,7 @@ import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
 import { IOmniEthRestaking } from "../interfaces/IOmniEthRestaking.sol";
 import { IOmniAVS } from "../interfaces/IOmniAVS.sol";
 import { IOmniAVSAdmin } from "../interfaces/IOmniAVSAdmin.sol";
+import { IDelegationManager } from "../interfaces/IDelegationManager.sol";
 
 contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable {
     /// @notice Constant used as a divisor in calculating weights
@@ -269,8 +268,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
 
     /// @dev Returns the total amount staked by the operator, not including deletations
     function _getStaked(address operator) internal view returns (uint96) {
-        (IStrategy[] memory strategies, uint256[] memory shares) =
-            DelegationManager(address(_delegationManager)).getDelegatableShares(operator);
+        (IStrategy[] memory strategies, uint256[] memory shares) = _delegationManager.getDelegatableShares(operator);
 
         uint96 staked;
 

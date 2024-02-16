@@ -2,7 +2,7 @@
 pragma solidity =0.8.12;
 
 import { OmniAVS } from "src/protocol/OmniAVS.sol";
-import { IDelegationManager } from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import { IDelegationManager } from "src/interfaces/IDelegationManager.sol";
 import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 
 /**
