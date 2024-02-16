@@ -253,7 +253,7 @@ func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 		AuthRPCURL:    omniEVM.InternalAuthRPC,
 		PortalAddress: deployInfo[omniEVM.Chain].PortalAddress.Hex(),
 		DeployHeight:  deployInfo[omniEVM.Chain].DeployHeight,
-		BlockTime:     omniEVM.Chain.BlockTime,
+		BlockPeriod:   omniEVM.Chain.BlockPeriod,
 		IsOmni:        true,
 	})
 
@@ -265,7 +265,7 @@ func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 			RPCURL:        anvil.InternalRPC,
 			PortalAddress: deployInfo[anvil.Chain].PortalAddress.Hex(),
 			DeployHeight:  deployInfo[anvil.Chain].DeployHeight,
-			BlockTime:     anvil.Chain.BlockTime,
+			BlockPeriod:   anvil.Chain.BlockPeriod,
 		})
 	}
 
@@ -277,7 +277,7 @@ func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 			RPCURL:        public.RPCAddress,
 			PortalAddress: deployInfo[public.Chain].PortalAddress.Hex(),
 			DeployHeight:  deployInfo[public.Chain].DeployHeight,
-			BlockTime:     public.Chain.BlockTime,
+			BlockPeriod:   public.Chain.BlockPeriod,
 		})
 	}
 
@@ -299,7 +299,7 @@ func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 		RPCURL:        omniEVM.ExternalRPC,
 		PortalAddress: deployInfo[omniEVM.Chain].PortalAddress.Hex(),
 		DeployHeight:  deployInfo[omniEVM.Chain].DeployHeight,
-		BlockTime:     omniEVM.Chain.BlockTime,
+		BlockPeriod:   omniEVM.Chain.BlockPeriod,
 		IsOmni:        true,
 	})
 
@@ -311,7 +311,7 @@ func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 			RPCURL:        anvil.ExternalRPC,
 			PortalAddress: deployInfo[anvil.Chain].PortalAddress.Hex(),
 			DeployHeight:  deployInfo[anvil.Chain].DeployHeight,
-			BlockTime:     anvil.Chain.BlockTime,
+			BlockPeriod:   anvil.Chain.BlockPeriod,
 		})
 	}
 
@@ -323,7 +323,7 @@ func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 			RPCURL:        public.RPCAddress,
 			PortalAddress: deployInfo[public.Chain].PortalAddress.Hex(),
 			DeployHeight:  deployInfo[public.Chain].DeployHeight,
-			BlockTime:     public.Chain.BlockTime,
+			BlockPeriod:   public.Chain.BlockPeriod,
 		})
 	}
 

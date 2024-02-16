@@ -1,27 +1,31 @@
 package types
 
-import "github.com/omni-network/omni/lib/errors"
+import (
+	"time"
+
+	"github.com/omni-network/omni/lib/errors"
+)
 
 //nolint:gochecknoglobals // Static mappings
 var (
 	ChainOmniEVM = EVMChain{
-		Name:      "omni_evm",
-		ID:        1,
-		BlockTime: 1000,
+		Name:        "omni_evm",
+		ID:          1,
+		BlockPeriod: time.Second,
 	}
 
 	chainArbGoerli = EVMChain{
-		Name:      "arb_goerli",
-		ID:        421613,
-		IsPublic:  true,
-		BlockTime: 6000,
+		Name:        "arb_goerli",
+		ID:          421613,
+		IsPublic:    true,
+		BlockPeriod: 6 * time.Second,
 	}
 
 	chainGoerli = EVMChain{
-		Name:      "goerli",
-		ID:        5,
-		IsPublic:  true,
-		BlockTime: 15000,
+		Name:        "goerli",
+		ID:          5,
+		IsPublic:    true,
+		BlockPeriod: 15 * time.Second,
 	}
 )
 
@@ -32,9 +36,9 @@ func AnvilChainsByNames(names []string) []EVMChain {
 	var chains []EVMChain
 	for i, name := range names {
 		chains = append(chains, EVMChain{
-			Name:      name,
-			ID:        anvilChainIDFactor * uint64(i+1),
-			BlockTime: 1000,
+			Name:        name,
+			ID:          anvilChainIDFactor * uint64(i+1),
+			BlockPeriod: 1000 * time.Millisecond,
 		})
 	}
 
