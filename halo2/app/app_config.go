@@ -1,6 +1,8 @@
 package app
 
 import (
+	attestmodule "github.com/omni-network/omni/halo2/attest/module"
+	attesttypes "github.com/omni-network/omni/halo2/attest/types"
 	engevmmodule "github.com/omni-network/omni/halo2/evmengine/module"
 	engevmtypes "github.com/omni-network/omni/halo2/evmengine/types"
 
@@ -70,6 +72,7 @@ var (
 
 	endBlockers = []string{
 		stakingtypes.ModuleName,
+		attesttypes.ModuleName,
 	}
 
 	// blocked account addresses.
@@ -144,6 +147,10 @@ var (
 			{
 				Name:   engevmtypes.ModuleName,
 				Config: appconfig.WrapAny(&engevmmodule.Module{}),
+			},
+			{
+				Name:   attesttypes.ModuleName,
+				Config: appconfig.WrapAny(&attestmodule.Module{}),
 			},
 		},
 	})

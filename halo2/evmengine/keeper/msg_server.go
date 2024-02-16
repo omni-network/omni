@@ -21,6 +21,8 @@ func (s msgServer) FinalisePayload(ctx context.Context, msg *types.MsgExecutionP
 		return nil, err
 	}
 
+	// TODO(corver): Fullnodes didn't get PrepareProposal, so they need to first call NewPayloadV2
+
 	fcs := engine.ForkchoiceStateV1{
 		HeadBlockHash:      payload.BlockHash,
 		SafeBlockHash:      payload.BlockHash,

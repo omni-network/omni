@@ -6,15 +6,13 @@
 
 function bufgen() {
     TYPE=$1 # Either orm,pulsar,proto
-    FILE=$2 # Path to proto file to generate
-    OUTDIR=$3 # Output directory
+    DIR=$2 # Path to dir containing protos to generate
 
-    echo "  ${TYPE}: ${FILE}"
+    echo "  ${TYPE}: ${DIR}"
 
     buf generate \
       --template="scripts/buf.gen.${TYPE}.yaml" \
-      --output="${OUTDIR}" \
-      --path="${FILE}"
+      --path="${DIR}"
 }
 
 # Ensure we are in the root of the repo, so  ${pwd}/go.mod must exit
@@ -24,19 +22,19 @@ if [ ! -f go.mod ]; then
 fi
 
 echo "Generating pulsar protos for cosmos module config"
-for FILE in halo2/*/module/*.proto halo/halopb/*/*.proto
+for DIR in halo2/*/module/ halo/halopb/*/
 do
-  bufgen pulsar "${FILE}" "."
+  bufgen pulsar "${DIR}" "."
 done
 
 echo "Generating gogo protos for cosmos module types"
-for FILE in halo2/*/types/*.proto
+for DIR in halo2/*/types/
 do
-  bufgen gogo "${FILE}" "."
+  bufgen gogo "${DIR}" "."
 done
 
 echo "Generating orm protos for cosmos keeper orm"
-for FILE in halo/aggregate/*/*.proto
+for DIR in halo2/*/keeper/
 do
-  bufgen orm "${FILE}" "."
+  bufgen orm "${DIR}" "."
 done

@@ -8,6 +8,7 @@ import (
 	halo1 "github.com/omni-network/omni/halo/app"
 	halo1cmd "github.com/omni-network/omni/halo/cmd"
 	"github.com/omni-network/omni/halo2/app"
+	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 
@@ -55,6 +56,12 @@ func TestSmoke(t *testing.T) {
 
 		return s.SyncInfo.LatestBlockHeight >= 3
 	}, time.Second*5, time.Millisecond*100)
+
+	cprov := cprovider.NewABCIProvider2(cl)
+
+	aggs, err := cprov.ApprovedFrom(ctx, 999, 1)
+	require.NoError(t, err)
+	require.Empty(t, aggs)
 
 	// Stop the server.
 	cancel()

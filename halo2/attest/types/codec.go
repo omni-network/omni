@@ -8,8 +8,8 @@ import (
 )
 
 func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
-	registry.RegisterImplementations((*sdk.Msg)(nil), new(MsgExecutionPayload))
-	registry.RegisterImplementations((*tx.MsgResponse)(nil), new(FinalisePayloadResponse))
+	registry.RegisterImplementations((*sdk.Msg)(nil), new(MsgAggAttestation))
+	registry.RegisterImplementations((*tx.MsgResponse)(nil), new(AddAggAttestationResponse))
 
 	msgservice.RegisterMsgServiceDesc(registry, &_MsgService_serviceDesc)
 }
