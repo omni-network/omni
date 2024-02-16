@@ -360,6 +360,9 @@ func (m *SimpleTxManager) sendTx(ctx context.Context, tx *types.Transaction) (*t
 			return nil, errors.Wrap(ctx.Err(), "context canceled")
 
 		case receipt := <-receiptChan:
+			if receipt.EffectiveGasPrice == nil {
+				return receipt, nil
+			}
 			fee := float64(receipt.EffectiveGasPrice.Uint64() * receipt.GasUsed / params.GWei)
 			txFees.WithLabelValues(m.chainName).Add(fee)
 			txL1GasFee.WithLabelValues(m.chainName).Set(fee)
