@@ -76,14 +76,14 @@ func (n Network) Chain(id uint64) (Chain, bool) {
 // the Omni cross chain protocol. This is most supported Rollup EVM, but
 // also the Omni EVM.
 type Chain struct {
-	ID                   uint64 `json:"id"`                     // Chain ID asa per https://chainlist.org
-	Name                 string `json:"name"`                   // Chain name as per https://chainlist.org
-	RPCURL               string `json:"rpcurl"`                 // RPC URL of the chain
-	AuthRPCURL           string `json:"auth_rpcurl,omitempty"`  // RPC URL of the chain with JWT authentication enabled
-	PortalAddress        string `json:"portal_address"`         // Address of the omni portal contract on the chain
-	DeployHeight         uint64 `json:"deploy_height"`          // Height that the portal contracts were deployed
-	IsOmni               bool   `json:"is_omni,omitempty"`      // Whether this is the Omni chain
-	ReceiptQueryInterval uint64 `json:"receipt_query_interval"` // Interval to query receipts by the txmgr. Milliseconds
+	ID            uint64 `json:"id"`                    // Chain ID asa per https://chainlist.org
+	Name          string `json:"name"`                  // Chain name as per https://chainlist.org
+	RPCURL        string `json:"rpcurl"`                // RPC URL of the chain
+	AuthRPCURL    string `json:"auth_rpcurl,omitempty"` // RPC URL of the chain with JWT authentication enabled
+	PortalAddress string `json:"portal_address"`        // Address of the omni portal contract on the chain
+	DeployHeight  uint64 `json:"deploy_height"`         // Height that the portal contracts were deployed
+	IsOmni        bool   `json:"is_omni,omitempty"`     // Whether this is the Omni chain
+	BlockTime     uint32 `json:"block_time"`            // Block time in milliseconds
 }
 
 // Load loads the network configuration from the given path.

@@ -23,9 +23,10 @@ type Testnet struct {
 
 // EVMChain represents a EVM chain in a omni network.
 type EVMChain struct {
-	Name     string // Chain Nam.
-	ID       uint64 // Chain ID
-	IsPublic bool
+	Name      string // Chain Nam.
+	ID        uint64 // Chain ID
+	IsPublic  bool
+	BlockTime uint32 // Block time in milliseconds
 }
 
 // OmniEVM represents a omni evm instance in a omni network. Similar to e2e.Node for halo instances.
