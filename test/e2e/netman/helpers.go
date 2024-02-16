@@ -31,27 +31,43 @@ func deployOmniContracts(ctx context.Context, chainID uint64, client *ethclient.
 	owner := txOpts.From
 	fee := new(big.Int).SetUint64(params.GWei)
 
-	proxyAdmin, _, _, err := bindings.DeployProxyAdmin(txOpts, client)
+	proxyAdmin, err := deployProxyAdmin(ctx, txOpts, client)
 	if err != nil {
-		return common.Address{}, nil, nil, errors.Wrap(err, "deploy proxy admin")
+		return common.Address{}, nil, nil, err
 	}
 
 	feeOracle, err := deployFeeOracleV1(ctx, txOpts, client, proxyAdmin, owner, fee)
 	if err != nil {
-		return common.Address{}, nil, nil, errors.Wrap(err, "deploy fee oracle")
+		return common.Address{}, nil, nil, err
 	}
 
 	portal, err := deployPortal(ctx, txOpts, client, proxyAdmin, owner, feeOracle, valSetID, validators)
 	if err != nil {
-		return common.Address{}, nil, nil, errors.Wrap(err, "deploy portal")
+		return common.Address{}, nil, nil, err
 	}
 
 	contract, err := bindings.NewOmniPortal(portal, client)
 	if err != nil {
-		return common.Address{}, nil, nil, errors.Wrap(err, "new portal contract")
+		return common.Address{}, nil, nil, err
 	}
 
 	return portal, contract, txOpts, nil
+}
+
+func deployProxyAdmin(ctx context.Context, txOpts *bind.TransactOpts, client *ethclient.Client) (
+	common.Address, error,
+) {
+	proxyAdmin, tx, _, err := bindings.DeployProxyAdmin(txOpts, client)
+	if err != nil {
+		return common.Address{}, errors.Wrap(err, "deploy proxy admin")
+	}
+
+	receipt, err := bind.WaitMined(ctx, client, tx)
+	if err != nil || receipt.Status != types.ReceiptStatusSuccessful {
+		return common.Address{}, errors.Wrap(err, "wait mined proxy admin")
+	}
+
+	return proxyAdmin, nil
 }
 
 func deployFeeOracleV1(ctx context.Context, txOpts *bind.TransactOpts, client *ethclient.Client,
@@ -64,20 +80,20 @@ func deployFeeOracleV1(ctx context.Context, txOpts *bind.TransactOpts, client *e
 
 	receipt, err := bind.WaitMined(ctx, client, tx)
 	if err != nil || receipt.Status != types.ReceiptStatusSuccessful {
-		return common.Address{}, errors.Wrap(err, "wait fee oracle impl mined")
+		return common.Address{}, errors.Wrap(err, "wait mined fee oracle impl")
 	}
 
 	abi, err := bindings.FeeOracleV1MetaData.GetAbi()
 	if err != nil {
-		return common.Address{}, errors.Wrap(err, "get fee oracle v1 abi")
+		return common.Address{}, errors.Wrap(err, "get fee oracle abi")
 	}
 
 	enc, err := abi.Pack("initialize", owner, fee)
 	if err != nil {
-		return common.Address{}, errors.Wrap(err, "pack fee oracle v1 initializer")
+		return common.Address{}, errors.Wrap(err, "encode fee oracle initializer")
 	}
 
-	proxy, _, _, err := bindings.DeployTransparentUpgradeableProxy(txOpts, client, impl, proxyAdmin, enc)
+	proxy, tx, _, err := bindings.DeployTransparentUpgradeableProxy(txOpts, client, impl, proxyAdmin, enc)
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "deploy fee oracle proxy")
 	}
@@ -111,7 +127,7 @@ func deployPortal(ctx context.Context, txOpts *bind.TransactOpts, client *ethcli
 
 	enc, err := abi.Pack("initialize", owner, feeOracle, valSetID, validators)
 	if err != nil {
-		return common.Address{}, errors.Wrap(err, "pack portal initializer")
+		return common.Address{}, errors.Wrap(err, "encode portal initializer")
 	}
 
 	proxy, tx, _, err := bindings.DeployTransparentUpgradeableProxy(txOpts, client, impl, proxyAdmin, enc)
@@ -138,7 +154,8 @@ func newTxOpts(ctx context.Context, privKey *ecdsa.PrivateKey, chainID uint64) (
 	return txOpts, nil
 }
 
-func logBalance(ctx context.Context, client *ethclient.Client, privkey *ecdsa.PrivateKey, name string) error {
+func logBalance(ctx context.Context, client *ethclient.Client, chain string, privkey *ecdsa.PrivateKey, name string,
+) error {
 	addr := crypto.PubkeyToAddress(privkey.PublicKey)
 
 	b, err := client.BalanceAt(ctx, addr, nil)
@@ -150,6 +167,7 @@ func logBalance(ctx context.Context, client *ethclient.Client, privkey *ecdsa.Pr
 	bf /= params.Ether
 
 	log.Info(ctx, "Provided public chain key balance",
+		"chain", chain,
 		"address", addr.Hex(),
 		"balance", fmt.Sprintf("%.2f", bf),
 		"key_name", name,

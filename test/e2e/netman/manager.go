@@ -186,10 +186,10 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 		if !portal.Chain.IsPublic {
 			continue // Only log public chain balances.
 		}
-		if err := logBalance(ctx, portal.Client, m.publicDeployKey, "deploy_key"); err != nil {
+		if err := logBalance(ctx, portal.Client, portal.Chain.Name, m.publicDeployKey, "deploy_key"); err != nil {
 			return err
 		}
-		if err := logBalance(ctx, portal.Client, m.relayerKey, "relayer_key"); err != nil {
+		if err := logBalance(ctx, portal.Client, portal.Chain.Name, m.relayerKey, "relayer_key"); err != nil {
 			return err
 		}
 	}
@@ -202,6 +202,8 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 		if !portal.Chain.IsPublic {
 			continue // Only public chains are deployed here.
 		}
+
+		log.Info(ctx, "Deploying to", "chain", portal.Chain.Name)
 
 		height, err := portal.Client.BlockNumber(ctx)
 		if err != nil {
