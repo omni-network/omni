@@ -186,10 +186,10 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 		if !portal.Chain.IsPublic {
 			continue // Only log public chain balances.
 		}
-		if err := logBalance(ctx, portal.Client, m.publicDeployKey, "deploy_key"); err != nil {
+		if err := logBalance(ctx, portal.Client, portal.Chain.Name, m.publicDeployKey, "deploy_key"); err != nil {
 			return err
 		}
-		if err := logBalance(ctx, portal.Client, m.relayerKey, "relayer_key"); err != nil {
+		if err := logBalance(ctx, portal.Client, portal.Chain.Name, m.relayerKey, "relayer_key"); err != nil {
 			return err
 		}
 	}
@@ -203,14 +203,18 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 			continue // Only public chains are deployed here.
 		}
 
+		log.Info(ctx, "Deploying to", "chain", portal.Chain.Name)
+
 		height, err := portal.Client.BlockNumber(ctx)
 		if err != nil {
 			return errors.Wrap(err, "get block number")
 		}
 
-		addr, contract, txops, err := deployContract(ctx, chainID, portal.Client, m.publicDeployKey, valSetID, validators)
+		addr, contract, txops, err := deployOmniContracts(
+			ctx, chainID, portal.Client, m.publicDeployKey, valSetID, validators,
+		)
 		if err != nil {
-			return errors.Wrap(err, "deploy public portal contract")
+			return errors.Wrap(err, "deploy public omni contracts")
 		}
 
 		portal.DeployInfo = DeployInfo{
@@ -237,9 +241,9 @@ func (m *manager) DeployPrivatePortals(ctx context.Context, valSetID uint64, val
 			continue // Public chains are already deployed.
 		}
 
-		addr, contract, txops, err := deployContract(ctx, chainID, portal.Client, privateDeployKey, valSetID, validators)
+		addr, contract, txops, err := deployOmniContracts(ctx, chainID, portal.Client, privateDeployKey, valSetID, validators)
 		if err != nil {
-			return errors.Wrap(err, "deploy private portal contract")
+			return errors.Wrap(err, "deploy private omni contracts")
 		} else if addr != portal.DeployInfo.PortalAddress {
 			return errors.New("deployed address does not match existing address",
 				"expected", portal.DeployInfo.PortalAddress.Hex(),
