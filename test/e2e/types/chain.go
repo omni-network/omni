@@ -38,7 +38,7 @@ func AnvilChainsByNames(names []string) []EVMChain {
 		chains = append(chains, EVMChain{
 			Name:        name,
 			ID:          anvilChainIDFactor * uint64(i+1),
-			BlockPeriod: 1000 * time.Millisecond,
+			BlockPeriod: time.Second,
 		})
 	}
 

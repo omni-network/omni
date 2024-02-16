@@ -27,7 +27,7 @@ type EVMChain struct {
 	Name        string // Chain Nam.
 	ID          uint64 // Chain ID
 	IsPublic    bool
-	BlockPeriod time.Duration // Block period
+	BlockPeriod time.Duration
 }
 
 // OmniEVM represents a omni evm instance in a omni network. Similar to e2e.Node for halo instances.
