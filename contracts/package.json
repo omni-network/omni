@@ -19,7 +19,7 @@
   "dependencies": {
     "@openzeppelin/contracts": "4.9.3",
     "@openzeppelin/contracts-upgradeable": "4.9.3",
-    "eigenlayer-contracts": "github:Layr-Labs/eigenlayer-contracts",
-    "eigenlayer-middleware": "github:Layr-Labs/eigenlayer-middleware"
+    "eigenlayer-contracts": "github:Layr-Labs/eigenlayer-contracts#m2-mainnet-fixes",
+    "eigenlayer-middleware": "github:Layr-Labs/eigenlayer-middleware#m2-mainnet-fixes"
   }
 }

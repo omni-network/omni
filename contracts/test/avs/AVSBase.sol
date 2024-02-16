@@ -45,7 +45,7 @@ contract AVSBase is EigenLayerTestHelper {
         vm.startPrank(proxyAdminOwner);
         omniAVS =
             OmniAVSHarness(address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")));
-        omniAVSImplementation = new OmniAVSHarness(delegation);
+        omniAVSImplementation = new OmniAVSHarness(delegation, avsDirectory);
         proxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(omniAVS))), address(omniAVSImplementation));
         vm.stopPrank();
 
