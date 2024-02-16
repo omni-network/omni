@@ -208,9 +208,11 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 			return errors.Wrap(err, "get block number")
 		}
 
-		addr, contract, txops, err := deployContract(ctx, chainID, portal.Client, m.publicDeployKey, valSetID, validators)
+		addr, contract, txops, err := deployOmniContracts(
+			ctx, chainID, portal.Client, m.publicDeployKey, valSetID, validators,
+		)
 		if err != nil {
-			return errors.Wrap(err, "deploy public portal contract")
+			return errors.Wrap(err, "deploy public omni contracts")
 		}
 
 		portal.DeployInfo = DeployInfo{
@@ -237,9 +239,9 @@ func (m *manager) DeployPrivatePortals(ctx context.Context, valSetID uint64, val
 			continue // Public chains are already deployed.
 		}
 
-		addr, contract, txops, err := deployContract(ctx, chainID, portal.Client, privateDeployKey, valSetID, validators)
+		addr, contract, txops, err := deployOmniContracts(ctx, chainID, portal.Client, privateDeployKey, valSetID, validators)
 		if err != nil {
-			return errors.Wrap(err, "deploy private portal contract")
+			return errors.Wrap(err, "deploy private omni contracts")
 		} else if addr != portal.DeployInfo.PortalAddress {
 			return errors.New("deployed address does not match existing address",
 				"expected", portal.DeployInfo.PortalAddress.Hex(),

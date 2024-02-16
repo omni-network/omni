@@ -19,7 +19,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-func deployContract(ctx context.Context, chainID uint64, client *ethclient.Client, privKey *ecdsa.PrivateKey,
+func deployOmniContracts(ctx context.Context, chainID uint64, client *ethclient.Client, privKey *ecdsa.PrivateKey,
 	valSetID uint64, validators []bindings.Validator,
 ) (common.Address, *bindings.OmniPortal, *bind.TransactOpts, error) {
 	txOpts, err := newTxOpts(ctx, privKey, chainID)
