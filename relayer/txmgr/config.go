@@ -24,7 +24,6 @@ type DefaultFlagValues struct {
 	NetworkTimeout            time.Duration
 	TxSendTimeout             time.Duration
 	TxNotInMempoolTimeout     time.Duration
-	ReceiptQueryInterval      time.Duration
 }
 
 type CLIConfig struct {
@@ -53,11 +52,10 @@ var (
 		NetworkTimeout:            10 * time.Second,
 		TxSendTimeout:             0 * time.Second,
 		TxNotInMempoolTimeout:     2 * time.Minute,
-		ReceiptQueryInterval:      300 * time.Millisecond, // todo(Lazar): this should be configurable
 	}
 )
 
-func NewCLIConfig(rpc string, defaults DefaultFlagValues) CLIConfig {
+func NewCLIConfig(rpc string, interval time.Duration, defaults DefaultFlagValues) CLIConfig {
 	return CLIConfig{
 		L1RPCURL:                  rpc,
 		NumConfirmations:          defaults.NumConfirmations,
@@ -68,7 +66,7 @@ func NewCLIConfig(rpc string, defaults DefaultFlagValues) CLIConfig {
 		NetworkTimeout:            defaults.NetworkTimeout,
 		TxSendTimeout:             defaults.TxSendTimeout,
 		TxNotInMempoolTimeout:     defaults.TxNotInMempoolTimeout,
-		ReceiptQueryInterval:      defaults.ReceiptQueryInterval,
+		ReceiptQueryInterval:      interval,
 	}
 }
 

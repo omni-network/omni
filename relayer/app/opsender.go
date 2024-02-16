@@ -30,8 +30,15 @@ type OpSender struct {
 // NewOpSender creates a new sender that uses txmgr to send transactions to the destination chain.
 func NewOpSender(ctx context.Context, chain netconf.Chain, rpcClient *ethclient.Client,
 	privateKey ecdsa.PrivateKey, chainNames map[uint64]string) (OpSender, error) {
-	cfg, err := txmgr.NewConfig(ctx, txmgr.NewCLIConfig(chain.RPCURL, txmgr.DefaultSenderFlagValues),
-		&privateKey, rpcClient)
+	// we want to query receipts every 1/3 of the block time
+	cfg, err := txmgr.NewConfig(ctx, txmgr.NewCLIConfig(
+		chain.RPCURL,
+		chain.BlockPeriod/3,
+		txmgr.DefaultSenderFlagValues,
+	),
+		&privateKey,
+		rpcClient,
+	)
 	if err != nil {
 		return OpSender{}, err
 	}
