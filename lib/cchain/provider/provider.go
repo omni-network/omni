@@ -20,6 +20,7 @@ type FetchFunc func(ctx context.Context, chainID uint64, fromHeight uint64,
 type Provider struct {
 	fetch       FetchFunc
 	backoffFunc func(context.Context) (func(), func())
+	chainNames  map[uint64]string
 }
 
 // TODO(corver): Add prod constructor once halo has an API.
@@ -41,17 +42,20 @@ func (p Provider) ApprovedFrom(ctx context.Context, sourceChainID uint64, source
 
 // Subscribe implements cchain.Provider.
 func (p Provider) Subscribe(ctx context.Context, chainID uint64, height uint64, callback cchain.ProviderCallback) {
+	ctx = log.WithCtx(ctx, "chain", p.chainNames[chainID])
+
 	// Start a async goroutine to fetch attestations until ctx is canceled.
 	go func() {
 		backoff, reset := p.backoffFunc(ctx) // Note that backoff returns immediately on ctx cancel.
 
 		for ctx.Err() == nil {
+			hctx := log.WithCtx(ctx, "height", height)
 			// Fetch next batch of attestations.
-			atts, err := p.fetch(ctx, chainID, height)
-			if ctx.Err() != nil {
+			atts, err := p.fetch(hctx, chainID, height)
+			if hctx.Err() != nil {
 				return // Don't backoff or log on ctx cancel, just return.
 			} else if err != nil {
-				log.Warn(ctx, "Failed fetching attestation; will retry", err)
+				log.Warn(hctx, "Failed fetching attestation; will retry", err)
 				backoff()
 
 				continue
@@ -68,20 +72,21 @@ func (p Provider) Subscribe(ctx context.Context, chainID uint64, height uint64, 
 			for _, att := range atts {
 				// Sanity checks
 				if att.SourceChainID != chainID {
-					log.Error(ctx, "Invalid attestation chain ID [BUG!]", nil)
+					log.Error(hctx, "Invalid attestation chain ID [BUG!]", nil)
 					return
 				} else if att.BlockHeight != height {
-					log.Error(ctx, "Invalid attestation height [BUG!]", nil)
+					log.Error(hctx, "Invalid attestation height [BUG!]", nil)
 					return
 				}
 
 				// Retry callback on error
-				for ctx.Err() == nil {
-					err := callback(ctx, att)
-					if ctx.Err() != nil {
+				for hctx.Err() == nil {
+					err := callback(hctx, att)
+					if hctx.Err() != nil {
 						return // Don't backoff or log on ctx cancel, just return.
 					} else if err != nil {
-						log.Warn(ctx, "Failed processing attestation; will retry", err)
+						log.Warn(hctx, "Failed processing attestation; will retry", err,
+							"chain", p.chainNames[chainID])
 						callbackErrTotal.Inc()
 						backoff()
 

@@ -57,7 +57,7 @@ func TestSmoke(t *testing.T) {
 		return s.SyncInfo.LatestBlockHeight >= 3
 	}, time.Second*5, time.Millisecond*100)
 
-	cprov := cprovider.NewABCIProvider2(cl)
+	cprov := cprovider.NewABCIProvider2(cl, nil)
 
 	aggs, err := cprov.ApprovedFrom(ctx, 999, 1)
 	require.NoError(t, err)

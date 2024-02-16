@@ -15,7 +15,7 @@ import (
 
 var _ FetchFunc = ABCIFetcher{}.ApprovedFrom
 
-func NewABCIProvider(abci rpcclient.ABCIClient) Provider {
+func NewABCIProvider(abci rpcclient.ABCIClient, chains map[uint64]string) Provider {
 	backoffFunc := func(ctx context.Context) (func(), func()) {
 		return expbackoff.NewWithReset(ctx, expbackoff.WithFastConfig())
 	}
@@ -23,6 +23,7 @@ func NewABCIProvider(abci rpcclient.ABCIClient) Provider {
 	return Provider{
 		fetch:       NewABCIFetcher(abci).ApprovedFrom,
 		backoffFunc: backoffFunc,
+		chainNames:  chains,
 	}
 }
 

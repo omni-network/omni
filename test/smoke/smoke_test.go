@@ -140,7 +140,7 @@ func testSmoke(t *testing.T, ethCl engine.API) {
 	for _, chain := range network.Chains {
 		w := relayer.NewWorker(chain,
 			network,
-			cprovider.NewABCIProvider(rpclocal.New(node)),
+			cprovider.NewABCIProvider(rpclocal.New(node), chainMap),
 			xprov,
 			func(update relayer.StreamUpdate) ([]xchain.Submission, error) {
 				updates <- update
