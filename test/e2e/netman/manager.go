@@ -48,8 +48,14 @@ type Manager interface {
 	// DeployPrivatePortals deploys portals to private (docker) chains.
 	DeployPrivatePortals(ctx context.Context, valSetID uint64, validators []bindings.Validator) error
 
+	// DeployAVS deploys the AVS contract to its configured chain.
+	DeployAVS(ctx context.Context, cfg types.AVSConfig, eigen types.EigenLayerDeployments) error
+
 	// Portals returns the deployed portals from both public and private chains.
 	Portals() map[uint64]Portal
+
+	// AVS returns the AVS contract deployed on "l1" chain.
+	AVS() OmniAVS
 
 	// RelayerKey returns the relayer private key hex.
 	RelayerKey() *ecdsa.PrivateKey
@@ -60,6 +66,7 @@ func NewManager(testnet types.Testnet, deployKeyFile string,
 ) (Manager, error) {
 	// Create partial portals. This will be updated by Deploy*Portals.
 	portals := make(map[uint64]Portal)
+	avs := OmniAVS{}
 
 	// Private chains have deterministic deploy height and addresses.
 	privateChainDeployInfo := DeployInfo{
@@ -82,6 +89,11 @@ func NewManager(testnet types.Testnet, deployKeyFile string,
 			RPCURL:     anvil.ExternalRPC,
 			DeployInfo: privateChainDeployInfo,
 		}
+
+		if anvil.Chain.IsL1 {
+			avs.Chain = anvil.Chain
+			avs.RPCURL = anvil.ExternalRPC
+		}
 	}
 	// Add all public chains
 	for _, public := range testnet.PublicChains {
@@ -89,6 +101,11 @@ func NewManager(testnet types.Testnet, deployKeyFile string,
 			Chain:  public.Chain,
 			RPCURL: public.RPCAddress,
 			// Public chain deploy height and address will be updated by DeployPublicPortals.
+		}
+
+		if public.Chain.IsL1 {
+			avs.Chain = public.Chain
+			avs.RPCURL = public.RPCAddress
 		}
 	}
 
@@ -103,6 +120,12 @@ func NewManager(testnet types.Testnet, deployKeyFile string,
 		portals[chainID] = portal
 	}
 
+	avsClient, err := ethclient.Dial(avs.RPCURL)
+	if err != nil {
+		return nil, errors.Wrap(err, "dial rpc", "chain", avs.Chain.Name, "url", avs.RPCURL)
+	}
+	avs.Client = avsClient
+
 	switch testnet.Network {
 	case netconf.Devnet:
 		if deployKeyFile != "" || relayerKeyFile != "" {
@@ -110,8 +133,10 @@ func NewManager(testnet types.Testnet, deployKeyFile string,
 		}
 
 		return &manager{
-			portals:    portals,
-			relayerKey: privateRelayerKey,
+			portals:     portals,
+			avs:         avs,
+			omniChainID: omniEVM.Chain.ID,
+			relayerKey:  privateRelayerKey,
 		}, nil
 	case netconf.Staging:
 		deployKey, err := crypto.LoadECDSA(deployKeyFile)
@@ -125,6 +150,8 @@ func NewManager(testnet types.Testnet, deployKeyFile string,
 
 		return &manager{
 			portals:         portals,
+			avs:             avs,
+			omniChainID:     omniEVM.Chain.ID,
 			publicDeployKey: deployKey,
 			relayerKey:      relayerKey,
 		}, nil
@@ -133,7 +160,7 @@ func NewManager(testnet types.Testnet, deployKeyFile string,
 	}
 }
 
-// DeployInfo contains the deployed portal address and height.
+// DeployInfo contains the deployed address and height.
 type DeployInfo struct {
 	PortalAddress common.Address
 	DeployHeight  uint64
@@ -147,6 +174,16 @@ type Portal struct {
 	Client     *ethclient.Client
 	Contract   *bindings.OmniPortal
 	txOpts     *bind.TransactOpts
+}
+
+// OmniAVS contains the deployed AVS information and state.
+type OmniAVS struct {
+	Chain    types.EVMChain
+	RPCURL   string
+	Address  common.Address
+	Client   *ethclient.Client
+	Contract *bindings.OmniAVS
+	txOpts   *bind.TransactOpts
 }
 
 // TxOpts returns transaction options using the deploy key.
@@ -167,6 +204,8 @@ var _ Manager = (*manager)(nil)
 
 type manager struct {
 	portals         map[uint64]Portal // Note that this is mutable, Portals are updated by Deploy*Portals.
+	avs             OmniAVS
+	omniChainID     uint64
 	publicDeployKey *ecdsa.PrivateKey
 	relayerKey      *ecdsa.PrivateKey
 }
@@ -231,6 +270,66 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 	return nil
 }
 
+func (m *manager) DeployAVS(ctx context.Context, cfg types.AVSConfig, eigen types.EigenLayerDeployments) error {
+	log.Info(ctx, "Deploying AVS contract to", "chain", m.avs.Chain.Name)
+
+	if m.avs.Chain.IsPublic {
+		return errors.New("public AVS deployment not supported")
+	}
+
+	// TODO: support public AVS deployment
+	// var deployerKey *ecdsa.PrivateKey
+	// if m.avs.Chain.IsPublic {
+	// 	deployerKey = m.publicDeployKey
+	// } else {
+	// 	deployerKey = privateDeployKey
+	// }
+
+	txOpts, err := newTxOpts(ctx, privateDeployKey, m.avs.Chain.ID)
+	if err != nil {
+		return err
+	}
+
+	// TODO: use same proxy admin for portal & avs on same chain
+	proxyAdmin, err := deployProxyAdmin(ctx, txOpts, m.avs.Client)
+	if err != nil {
+		return errors.Wrap(err, "deploy proxy admin")
+	}
+
+	portal, ok := m.portals[m.avs.Chain.ID]
+	if !ok {
+		return errors.New("missing portal for avs chain")
+	}
+
+	stratParms := make([]bindings.IOmniAVSStrategyParams, len(cfg.StrategyParams))
+	for i, sp := range cfg.StrategyParams {
+		stratParms[i] = bindings.IOmniAVSStrategyParams{
+			Strategy:   sp.Strategy,
+			Multiplier: sp.Multiplier,
+		}
+	}
+
+	addr, err := deployOmniAVS(ctx, m.avs.Client, txOpts, proxyAdmin, txOpts.From,
+		portal.DeployInfo.PortalAddress, m.omniChainID, eigen.DelegationManager, eigen.AVSDirectory,
+		cfg.MinimumOperatorStake, cfg.MaximumOperatorCount, stratParms)
+	if err != nil {
+		return errors.Wrap(err, "deploy avs")
+	}
+
+	contract, err := bindings.NewOmniAVS(addr, m.avs.Client)
+	if err != nil {
+		return errors.Wrap(err, "instantiate avs")
+	}
+
+	m.avs.Contract = contract
+	m.avs.Address = addr
+	m.avs.txOpts = txOpts
+
+	log.Info(ctx, "Deployed AVS contract", "address", addr.Hex(), "chain", m.avs.Chain.Name)
+
+	return nil
+}
+
 func (m *manager) DeployPrivatePortals(ctx context.Context, valSetID uint64, validators []bindings.Validator,
 ) error {
 	log.Info(ctx, "Deploying private portal contracts")
@@ -265,6 +364,10 @@ func (m *manager) Portals() map[uint64]Portal {
 
 func (m *manager) RelayerKey() *ecdsa.PrivateKey {
 	return m.relayerKey
+}
+
+func (m *manager) AVS() OmniAVS {
+	return m.avs
 }
 
 func (m *manager) fundPrivateRelayer(ctx context.Context) error {

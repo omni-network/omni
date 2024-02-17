@@ -63,6 +63,13 @@ secrets-baseline: ensure-detect-secrets ## Update secrets baseline.
 ###                                Testing                                 	###
 ###############################################################################
 
+PWD := $(shell pwd)
+
+DEFAULT_E2E_FLAGS := --eigenlayer-deployments $(PWD)/contracts/script/eigen/output/deployments.json \
+					 --anvil-state-files mock_l1=$(PWD)/contracts/script/eigen/output/anvil-state.json
+
+E2E_FLAGS ?= $(DEFAULT_E2E_FLAGS)
+
 .PHONY: halo-simnet
 halo-simnet: ## Runs halo in simnet mode.
 	@go install github.com/omni-network/omni/halo
@@ -72,7 +79,7 @@ halo-simnet: ## Runs halo in simnet mode.
 .PHONY: devnet-deploy
 devnet-deploy: ## Deploys devnet1
 	@echo "Creating a docker-compose devnet in ./test/e2e/run/devnet1"
-	@go run github.com/omni-network/omni/test/e2e -f test/e2e/manifests/devnet1.toml deploy
+	@go run github.com/omni-network/omni/test/e2e -f test/e2e/manifests/devnet1.toml deploy $(E2E_FLAGS)
 
 .PHONY: devnet-clean
 devnet-clean: ## Deletes devnet1 containers
@@ -83,7 +90,7 @@ devnet-clean: ## Deletes devnet1 containers
 e2e-run: ## Run specific e2e manifest (MANIFEST=single, MANIFEST=simple, etc). Note container remain running after the test.
 	@if [ -z "$(MANIFEST)" ]; then echo "⚠️ Please specify a manifest: MANIFEST=simple make e2e-run" && exit 1; fi
 	@echo "Using MANIFEST=$(MANIFEST)"
-	@go run github.com/omni-network/omni/test/e2e -f test/e2e/manifests/$(MANIFEST).toml
+	@go run github.com/omni-network/omni/test/e2e -f test/e2e/manifests/$(MANIFEST).toml $(E2E_FLAGS)
 
 .PHONY: e2e-logs
 e2e-logs: ## Print the docker logs of previously ran e2e manifest (single, simple, etc).

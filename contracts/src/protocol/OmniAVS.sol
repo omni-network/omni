@@ -21,10 +21,10 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     uint256 public constant WEIGHTING_DIVISOR = 1e18;
 
     /// @notice EigenLayer core DelegationManager
-    IDelegationManager public immutable _delegationManager;
+    IDelegationManager internal immutable _delegationManager;
 
     /// @notice EigenLayer core AVSDirectory
-    IAVSDirectory public immutable _avsDirectory;
+    IAVSDirectory internal immutable _avsDirectory;
 
     /// @notice Maximum number of operators that can be registered
     uint32 public maxOperatorCount;
