@@ -143,6 +143,45 @@ func deployPortal(ctx context.Context, txOpts *bind.TransactOpts, client *ethcli
 	return proxy, nil
 }
 
+func deployOmniAVS(ctx context.Context, client *ethclient.Client, txOpts *bind.TransactOpts,
+	proxyAdmin common.Address, owner common.Address, portal common.Address, omniChainID uint64,
+	delegationManager common.Address, avsDirectory common.Address, minimumOperatorStake *big.Int,
+	maximumOperatorCount uint32, strategyParams []bindings.IOmniAVSStrategyParams,
+) (common.Address, error) {
+	impl, tx, _, err := bindings.DeployOmniAVS(txOpts, client, delegationManager, avsDirectory)
+	if err != nil {
+		return common.Address{}, errors.Wrap(err, "deploy avs impl")
+	}
+
+	receipt, err := bind.WaitMined(ctx, client, tx)
+	if err != nil || receipt.Status != types.ReceiptStatusSuccessful {
+		return common.Address{}, errors.Wrap(err, "wait mined avs impl")
+	}
+
+	abi, err := bindings.OmniAVSMetaData.GetAbi()
+	if err != nil {
+		return common.Address{}, errors.Wrap(err, "get avs abi")
+	}
+
+	enc, err := abi.Pack("initialize", owner, portal, omniChainID,
+		minimumOperatorStake, maximumOperatorCount, strategyParams)
+	if err != nil {
+		return common.Address{}, errors.Wrap(err, "encode avs initializer")
+	}
+
+	proxy, tx, _, err := bindings.DeployTransparentUpgradeableProxy(txOpts, client, impl, proxyAdmin, enc)
+	if err != nil {
+		return common.Address{}, errors.Wrap(err, "deploy avs proxy")
+	}
+
+	receipt, err = bind.WaitMined(ctx, client, tx)
+	if err != nil || receipt.Status != types.ReceiptStatusSuccessful {
+		return common.Address{}, errors.Wrap(err, "wait mined avs proxy")
+	}
+
+	return proxy, nil
+}
+
 func newTxOpts(ctx context.Context, privKey *ecdsa.PrivateKey, chainID uint64) (*bind.TransactOpts, error) {
 	txOpts, err := bind.NewKeyedTransactorWithChainID(privKey, big.NewInt(int64(chainID)))
 	if err != nil {

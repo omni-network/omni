@@ -36,6 +36,9 @@ type DefinitionConfig struct {
 
 	InfraDataFile string // Not required for docker provider
 	OmniImgTag    string // OmniImgTag is the docker image tag used for halo and relayer.
+
+	AnvilStateFiles       map[string]string
+	EigenLayerDeployments string
 }
 
 // DefaultDefinitionConfig returns a default configuration for a Definition.
@@ -78,7 +81,8 @@ func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
 		return Definition{}, errors.Wrap(err, "loading infrastructure data")
 	}
 
-	testnet, err := TestnetFromManifest(manifest, cfg.ManifestFile, infd, cfg.RPCOverrides, cfg.OmniImgTag)
+	testnet, err := TestnetFromManifest(manifest, cfg.ManifestFile, infd, cfg.RPCOverrides,
+		cfg.OmniImgTag, cfg.AnvilStateFiles, cfg.EigenLayerDeployments)
 	if err != nil {
 		return Definition{}, errors.Wrap(err, "loading testnet")
 	}
@@ -143,7 +147,7 @@ func LoadManifest(path string) (types.Manifest, error) {
 
 //nolint:nosprintfhostport // Not an issue for non-critical e2e test code.
 func TestnetFromManifest(manifest types.Manifest, manifestFile string, infd types.InfrastructureData,
-	rpcOverrides map[string]string, imgTag string,
+	rpcOverrides map[string]string, imgTag string, anvilStateFiles map[string]string, eigenLayerDeploymentsFile string,
 ) (types.Testnet, error) {
 	cmtTestnet, err := e2e.NewTestnetFromManifest(manifest.Manifest, manifestFile, infd.InfrastructureData)
 	if err != nil {
@@ -201,18 +205,28 @@ func TestnetFromManifest(manifest types.Manifest, manifestFile string, infd type
 			return types.Testnet{}, errors.New("anvil chain instance not found in infrastructure data")
 		}
 
+		if manifest.L1 == chain.Name {
+			chain.IsL1 = true
+		}
+
 		internalIP := inst.IPAddress.String()
 		if infd.Provider == docker.ProviderName {
 			internalIP = chain.Name // For docker, we use container names
 		}
 
-		anvils = append(anvils, types.AnvilChain{
+		anvil := types.AnvilChain{
 			Chain:       chain,
 			InternalIP:  inst.IPAddress,
 			ProxyPort:   inst.Port,
 			InternalRPC: fmt.Sprintf("http://%s:8545", internalIP),
 			ExternalRPC: fmt.Sprintf("http://%s:%d", inst.ExtIPAddress.String(), inst.Port),
-		})
+		}
+
+		if stateFile, ok := anvilStateFiles[chain.Name]; ok {
+			anvil.LoadState = stateFile
+		}
+
+		anvils = append(anvils, anvil)
 	}
 
 	var publics []types.PublicChain
@@ -220,6 +234,10 @@ func TestnetFromManifest(manifest types.Manifest, manifestFile string, infd type
 		chain, err := types.PublicChainByName(name)
 		if err != nil {
 			return types.Testnet{}, errors.Wrap(err, "get public chain")
+		}
+
+		if manifest.L1 == name {
+			chain.IsL1 = true
 		}
 
 		addr, ok := rpcOverrides[name]
@@ -233,12 +251,24 @@ func TestnetFromManifest(manifest types.Manifest, manifestFile string, infd type
 		})
 	}
 
+	eigenLayerDeployments := types.EigenLayerDeployments{}
+	avsConfig := types.AVSConfig{}
+	if eigenLayerDeploymentsFile != "" {
+		eigenLayerDeployments, err = types.LoadEigenLayerDeployments(eigenLayerDeploymentsFile)
+		if err != nil {
+			return types.Testnet{}, errors.Wrap(err, "load eigen layer deployments")
+		}
+		avsConfig = types.DefaultTestAVSConfig(eigenLayerDeployments)
+	}
+
 	return types.Testnet{
-		Network:      manifest.Network,
-		Testnet:      adaptCometTestnet(cmtTestnet, imgTag),
-		OmniEVMs:     omniEVMS,
-		AnvilChains:  anvils,
-		PublicChains: publics,
+		Network:               manifest.Network,
+		Testnet:               adaptCometTestnet(cmtTestnet, imgTag),
+		OmniEVMs:              omniEVMS,
+		AnvilChains:           anvils,
+		PublicChains:          publics,
+		EigenLayerDeployments: eigenLayerDeployments,
+		AVSConfig:             avsConfig,
 	}, nil
 }
 

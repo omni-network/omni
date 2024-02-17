@@ -171,7 +171,7 @@ func loadEnv(t *testing.T) (types.Testnet, netconf.Network) {
 	}
 	require.NoError(t, err)
 
-	testnet, err := app.TestnetFromManifest(m, manifestFile, ifd, nil, "main")
+	testnet, err := app.TestnetFromManifest(m, manifestFile, ifd, nil, "", nil, "")
 	require.NoError(t, err)
 	testnetCache[manifestFile] = testnet
 
