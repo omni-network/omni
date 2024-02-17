@@ -361,7 +361,9 @@ func (m *SimpleTxManager) sendTx(ctx context.Context, tx *types.Transaction) (*t
 
 		case receipt := <-receiptChan:
 			if receipt.EffectiveGasPrice != nil {
-				txEffectiveGasPrice.WithLabelValues(m.chainName).Set(float64(receipt.EffectiveGasPrice.Uint64() / params.GWei))
+				txEffectiveGasPrice.
+					WithLabelValues(m.chainName).
+					Set(float64(receipt.EffectiveGasPrice.Uint64() / params.GWei))
 				txGasUsed.WithLabelValues(m.chainName).Observe(float64(receipt.GasUsed))
 			}
 
