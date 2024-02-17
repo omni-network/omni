@@ -160,7 +160,7 @@ func NewManager(testnet types.Testnet, deployKeyFile string,
 	}
 }
 
-// DeployInfo contains the deployed address and height.
+// DeployInfo contains the deployed portal address and height.
 type DeployInfo struct {
 	PortalAddress common.Address
 	DeployHeight  uint64
