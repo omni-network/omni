@@ -360,12 +360,10 @@ func (m *SimpleTxManager) sendTx(ctx context.Context, tx *types.Transaction) (*t
 			return nil, errors.Wrap(ctx.Err(), "context canceled")
 
 		case receipt := <-receiptChan:
-			if receipt.EffectiveGasPrice == nil {
-				return receipt, nil
+			if receipt.EffectiveGasPrice != nil {
+				txEffectiveGasPrice.WithLabelValues(m.chainName).Set(float64(receipt.EffectiveGasPrice.Uint64() / params.GWei))
+				txGasUsed.WithLabelValues(m.chainName).Observe(float64(receipt.GasUsed))
 			}
-			fee := float64(receipt.EffectiveGasPrice.Uint64() * receipt.GasUsed / params.GWei)
-			txFees.WithLabelValues(m.chainName).Add(fee)
-			txL1GasFee.WithLabelValues(m.chainName).Set(fee)
 
 			return receipt, nil
 		}
@@ -444,9 +442,10 @@ func (m *SimpleTxManager) waitForTx(ctx context.Context, tx *types.Transaction, 
 		log.Warn(ctx, "Transaction receipt not mined, probably replaced", err)
 		return
 	}
+	txConfirmationLatency.WithLabelValues(m.chainName).Set(time.Since(t).Seconds())
+
 	select {
 	case receiptChan <- receipt:
-		txConfirmationLatency.WithLabelValues(m.chainName).Set(time.Since(t).Seconds())
 	default:
 	}
 }

@@ -14,18 +14,11 @@ var (
 		Help:      "The total number of transaction resends to a destination chain",
 	}, []string{"chain"})
 
-	txL1GasFee = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	txEffectiveGasPrice = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "relayer",
 		Subsystem: "txmgr",
 		Name:      "tx_fee_gwei",
-		Help:      "L1 gas fee for transactions in GWEI",
-	}, []string{"chain"})
-
-	txFees = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "relayer",
-		Subsystem: "txmgr",
-		Name:      "tx_fee_gwei_total",
-		Help:      "Sum of fees spent for all transactions in GWEI",
+		Help:      "Effective gas price for transactions in GWEI",
 	}, []string{"chain"})
 
 	txConfirmationLatency = promauto.NewGaugeVec(prometheus.GaugeOpts{
@@ -33,5 +26,13 @@ var (
 		Subsystem: "txmgr",
 		Name:      "tx_confirmation_latency",
 		Help:      "Latency between transaction submission and confirmation in seconds",
+	}, []string{"chain"})
+
+	txGasUsed = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: "relayer",
+		Subsystem: "txmgr",
+		Name:      "tx_gas_used",
+		Help:      "Gas used by transactions",
+		Buckets:   []float64{10000, 25000, 50000, 100000, 250000, 500000, 1000000},
 	}, []string{"chain"})
 )
