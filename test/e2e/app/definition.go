@@ -147,7 +147,7 @@ func LoadManifest(path string) (types.Manifest, error) {
 
 //nolint:nosprintfhostport // Not an issue for non-critical e2e test code.
 func TestnetFromManifest(manifest types.Manifest, manifestFile string, infd types.InfrastructureData,
-	rpcOverrides map[string]string, imgTag string, anvilStateFiles map[string]string, eigenLayerDeploymentsFile string,
+	rpcOverrides map[string]string, imgTag string, anvilStateFiles map[string]string, eigenDepsFile string,
 ) (types.Testnet, error) {
 	cmtTestnet, err := e2e.NewTestnetFromManifest(manifest.Manifest, manifestFile, infd.InfrastructureData)
 	if err != nil {
@@ -251,14 +251,14 @@ func TestnetFromManifest(manifest types.Manifest, manifestFile string, infd type
 		})
 	}
 
-	eigenLayerDeployments := types.EigenLayerDeployments{}
+	eigenDeps := types.EigenLayerDeployments{}
 	avsConfig := types.AVSConfig{}
-	if eigenLayerDeploymentsFile != "" {
-		eigenLayerDeployments, err = types.LoadEigenLayerDeployments(eigenLayerDeploymentsFile)
+	if eigenDepsFile != "" {
+		eigenDeps, err = types.LoadEigenLayerDeployments(eigenDepsFile)
 		if err != nil {
 			return types.Testnet{}, errors.Wrap(err, "load eigen layer deployments")
 		}
-		avsConfig = types.DefaultTestAVSConfig(eigenLayerDeployments)
+		avsConfig = types.DefaultTestAVSConfig(eigenDeps)
 	}
 
 	return types.Testnet{
@@ -267,7 +267,7 @@ func TestnetFromManifest(manifest types.Manifest, manifestFile string, infd type
 		OmniEVMs:              omniEVMS,
 		AnvilChains:           anvils,
 		PublicChains:          publics,
-		EigenLayerDeployments: eigenLayerDeployments,
+		EigenLayerDeployments: eigenDeps,
 		AVSConfig:             avsConfig,
 	}, nil
 }
