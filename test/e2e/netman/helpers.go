@@ -145,8 +145,8 @@ func deployPortal(ctx context.Context, txOpts *bind.TransactOpts, client *ethcli
 
 func deployOmniAVS(ctx context.Context, client *ethclient.Client, txOpts *bind.TransactOpts,
 	proxyAdmin common.Address, owner common.Address, portal common.Address, omniChainID uint64,
-	delegationManager common.Address, avsDirectory common.Address, minimumOperatorStake *big.Int,
-	maximumOperatorCount uint32, strategyParams []bindings.IOmniAVSStrategyParams,
+	delegationManager common.Address, avsDirectory common.Address, minOperatorStake *big.Int,
+	maxOperators uint32, strategyParams []bindings.IOmniAVSStrategyParams,
 ) (common.Address, error) {
 	impl, tx, _, err := bindings.DeployOmniAVS(txOpts, client, delegationManager, avsDirectory)
 	if err != nil {
@@ -164,7 +164,7 @@ func deployOmniAVS(ctx context.Context, client *ethclient.Client, txOpts *bind.T
 	}
 
 	enc, err := abi.Pack("initialize", owner, portal, omniChainID,
-		minimumOperatorStake, maximumOperatorCount, strategyParams)
+		minOperatorStake, maxOperators, strategyParams)
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "encode avs initializer")
 	}
