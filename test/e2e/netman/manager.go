@@ -120,11 +120,14 @@ func NewManager(testnet types.Testnet, deployKeyFile string,
 		portals[chainID] = portal
 	}
 
-	avsClient, err := ethclient.Dial(avs.RPCURL)
-	if err != nil {
-		return nil, errors.Wrap(err, "dial rpc", "chain", avs.Chain.Name, "url", avs.RPCURL)
+	// TODO: should avs config be required?
+	if avs.RPCURL != "" {
+		avsClient, err := ethclient.Dial(avs.RPCURL)
+		if err != nil {
+			return nil, errors.Wrap(err, "dial rpc", "chain", avs.Chain.Name, "url", avs.RPCURL)
+		}
+		avs.Client = avsClient
 	}
-	avs.Client = avsClient
 
 	switch testnet.Network {
 	case netconf.Devnet:
@@ -176,6 +179,7 @@ type Portal struct {
 	txOpts     *bind.TransactOpts
 }
 
+// TODO: refactor DeployInto to support Portal and AVS (Manager.DeployInfo() couples with Portal).
 // OmniAVS contains the deployed AVS information and state.
 type OmniAVS struct {
 	Chain    types.EVMChain
@@ -272,6 +276,10 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 
 func (m *manager) DeployAVS(ctx context.Context, cfg types.AVSConfig, eigen types.EigenLayerDeployments) error {
 	log.Info(ctx, "Deploying AVS contract to", "chain", m.avs.Chain.Name)
+
+	if m.avs.Client == nil {
+		return errors.New("avs client not set")
+	}
 
 	if m.avs.Chain.IsPublic {
 		return errors.New("public AVS deployment not supported")
