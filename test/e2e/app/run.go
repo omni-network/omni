@@ -71,8 +71,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) error {
 
 // E2ETestConfig is the configuration required to run a full e2e test.
 type E2ETestConfig struct {
-	Preserve  bool
-	PingPongN uint64
+	Preserve bool
 }
 
 // DefaultE2ETestConfig returns a default configuration for a e2e test.

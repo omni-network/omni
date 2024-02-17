@@ -117,6 +117,7 @@ type ModuleInputs struct {
 	TXConfig     client.TxConfig
 	EthClient    engine.API
 	SKeeper      *skeeper.Keeper
+	Attester     types.Attester
 }
 
 type ModuleOutputs struct {
@@ -132,6 +133,7 @@ func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
 		in.StoreService,
 		in.EthClient,
 		in.SKeeper,
+		in.Attester,
 	)
 	if err != nil {
 		return ModuleOutputs{}, err

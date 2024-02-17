@@ -6,17 +6,21 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/halo2/app"
+	attesttypes "github.com/omni-network/omni/halo2/attest/types"
+	etypes "github.com/omni-network/omni/halo2/evmengine/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 
 	"github.com/cometbft/cometbft/crypto"
 
 	"cosmossdk.io/math"
+	"cosmossdk.io/x/tx/signing"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cosmosstd "github.com/cosmos/cosmos-sdk/std"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	atypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	btypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -25,7 +29,7 @@ import (
 	gtypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/cosmos/cosmos-sdk/x/staking"
 	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	gogoproto "github.com/cosmos/gogoproto/proto"
+	"github.com/cosmos/gogoproto/proto"
 )
 
 func MakeGenesis(chainID string, genesisTime time.Time, valPubkeys ...crypto.PubKey) (*gtypes.AppGenesis, error) {
@@ -93,7 +97,12 @@ func MakeGenesis(chainID string, genesisTime time.Time, valPubkeys ...crypto.Pub
 }
 
 func defaultConsensusGenesis() *gtypes.ConsensusGenesis {
-	return gtypes.NewConsensusGenesis(DefaultConsensusParams().ToProto(), nil)
+	pb := DefaultConsensusParams().ToProto()
+	resp := gtypes.NewConsensusGenesis(pb, nil)
+	// NewConsensusGenesis has a bug, it doesn't set VoteExtensionsEnableHeight
+	resp.Params.ABCI.VoteExtensionsEnableHeight = pb.Abci.VoteExtensionsEnableHeight
+
+	return resp
 }
 
 func validateGenesis(cdc codec.Codec, appState map[string]json.RawMessage) error {
@@ -184,7 +193,7 @@ func addValidator(txConfig client.TxConfig, pubkey crypto.PubKey, cdc codec.Code
 }
 
 // defaultAppState returns the default genesis application state.
-func defaultAppState(marshal func(gogoproto.Message) []byte) map[string]json.RawMessage {
+func defaultAppState(marshal func(proto.Message) []byte) map[string]json.RawMessage {
 	return map[string]json.RawMessage{
 		stypes.ModuleName: marshal(stypes.DefaultGenesisState()),
 		atypes.ModuleName: marshal(atypes.DefaultGenesisState()),
@@ -194,12 +203,26 @@ func defaultAppState(marshal func(gogoproto.Message) []byte) map[string]json.Raw
 }
 
 func getCodec() *codec.ProtoCodec {
-	reg := codectypes.NewInterfaceRegistry()
+	// TODO(corver): Use depinject to get all of this.
+	sdkConfig := sdk.GetConfig()
+	reg, err := codectypes.NewInterfaceRegistryWithOptions(codectypes.InterfaceRegistryOptions{
+		ProtoFiles: proto.HybridResolver,
+		SigningOptions: signing.Options{
+			AddressCodec:          authcodec.NewBech32Codec(sdkConfig.GetBech32AccountAddrPrefix()),
+			ValidatorAddressCodec: authcodec.NewBech32Codec(sdkConfig.GetBech32ValidatorAddrPrefix()),
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
 	cosmosstd.RegisterInterfaces(reg)
 	atypes.RegisterInterfaces(reg)
 	stypes.RegisterInterfaces(reg)
 	btypes.RegisterInterfaces(reg)
 	dtypes.RegisterInterfaces(reg)
+	etypes.RegisterInterfaces(reg)
+	attesttypes.RegisterInterfaces(reg)
 
 	return codec.NewProtoCodec(reg)
 }

@@ -1,8 +1,11 @@
 package app
 
 import (
+	"github.com/omni-network/omni/halo2/attest/attester"
 	attestkeeper "github.com/omni-network/omni/halo2/attest/keeper"
+	atypes "github.com/omni-network/omni/halo2/attest/types"
 	engevmkeeper "github.com/omni-network/omni/halo2/evmengine/keeper"
+	evmenginetypes "github.com/omni-network/omni/halo2/evmengine/types"
 	"github.com/omni-network/omni/lib/engine"
 	"github.com/omni-network/omni/lib/errors"
 
@@ -62,13 +65,17 @@ func newApp(
 	logger log.Logger,
 	db dbm.DB,
 	ethCl engine.API,
-	appOpts servertypes.AppOptions,
-	baseAppOptions ...func(*baseapp.BaseApp),
+	attestI atypes.Attester,
+	baseAppOpts ...func(*baseapp.BaseApp),
 ) (*App, error) {
 	depCfg := depinject.Configs(
 		DepConfig(),
 		depinject.Supply(
-			appOpts, logger, ethCl,
+			logger, ethCl, attestI,
+			[]evmenginetypes.CPayloadProvider{
+				attester.CPayloadProvider{},
+				// TODO(corver): Add evmstaking CPayloadProvider here once it is implemented.
+			},
 		),
 	)
 
@@ -87,18 +94,28 @@ func newApp(
 		&app.DistrKeeper,
 		&app.ConsensusParamsKeeper,
 		&app.EngEVMKeeper,
+		&app.AttestKeeper,
 	); err != nil {
 		return nil, errors.Wrap(err, "dep inject")
 	}
 
-	// Use evm engine to create and process block proposals.
-	evmEngineOpts := func(bapp *baseapp.BaseApp) {
-		bapp.SetPrepareProposal(app.EngEVMKeeper.PrepareProposal)
-		bapp.SetProcessProposal(app.EngEVMKeeper.ProcessProposal)
-	}
-	baseAppOptions = append(baseAppOptions, evmEngineOpts)
+	proposalHandler := makeProcessProposalHandler(app)
 
-	app.App = appBuilder.Build(db, nil, baseAppOptions...)
+	baseAppOpts = append(baseAppOpts, func(bapp *baseapp.BaseApp) {
+		// Use evm engine to create block proposals.
+		// Note that we do not check MaxTxBytes since all EngineEVM transaction MUST be included since we cannot
+		// postpone them to the next block. Nit: we could drop some vote extensions though...?
+		bapp.SetPrepareProposal(app.EngEVMKeeper.PrepareProposal)
+
+		// Route proposed messaged to keepers for verification and external state updates.
+		bapp.SetProcessProposal(proposalHandler)
+
+		// Use attest keeper to extend votes.
+		bapp.SetExtendVoteHandler(app.AttestKeeper.ExtendVote)
+		bapp.SetVerifyVoteExtensionHandler(app.AttestKeeper.VerifyVoteExtension)
+	})
+
+	app.App = appBuilder.Build(db, nil, baseAppOpts...)
 
 	if err := app.Load(true); err != nil {
 		return nil, errors.Wrap(err, "load app")

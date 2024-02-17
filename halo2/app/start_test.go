@@ -20,27 +20,13 @@ import (
 
 func TestSmoke(t *testing.T) {
 	t.Parallel()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := context.Background()
 
 	cfg := setupSimnet(t)
 
-	spy := newSpyCtx(ctx)
-
 	// Start the server async
-	done := make(chan struct{})
-	go func() {
-		err := app.Run(spy, cfg)
-		require.NoError(t, err)
-		close(done)
-	}()
-
-	// Wait until the server is ready.
-	select {
-	case <-spy.SpyDone():
-	case <-done:
-		require.Fail(t, "server stopped before it was ready")
-	}
+	stopfunc, err := app.Start(ctx, cfg)
+	require.NoError(t, err)
 
 	// Connect to the server.
 	cl, err := rpchttp.New("http://localhost:26657", "/websocket")
@@ -61,42 +47,21 @@ func TestSmoke(t *testing.T) {
 
 	aggs, err := cprov.ApprovedFrom(ctx, 999, 1)
 	require.NoError(t, err)
-	require.Empty(t, aggs)
+	require.NotEmpty(t, aggs)
 
 	// Stop the server.
-	cancel()
-	<-done
-}
-
-//nolint:containedctx // This wrap a context explicitly.
-type spyCtx struct {
-	context.Context
-	doneCalled chan struct{}
-}
-
-func newSpyCtx(ctx context.Context) *spyCtx {
-	return &spyCtx{
-		Context:    ctx,
-		doneCalled: make(chan struct{}),
-	}
-}
-
-func (s *spyCtx) Done() <-chan struct{} {
-	close(s.doneCalled)
-	return s.Context.Done()
-}
-
-func (s *spyCtx) SpyDone() <-chan struct{} {
-	return s.doneCalled
+	require.NoError(t, stopfunc(ctx))
 }
 
 func setupSimnet(t *testing.T) halo1.Config {
 	t.Helper()
 	homeDir := t.TempDir()
 
+	cmtCfg := halo1cmd.DefaultCometConfig(homeDir)
+	cmtCfg.BaseConfig.DBBackend = string(db.MemDBBackend)
 	cfg := halo1.Config{
 		HaloConfig: halo1.DefaultHaloConfig(),
-		Comet:      halo1cmd.DefaultCometConfig(homeDir),
+		Comet:      cmtCfg,
 	}
 	cfg.HomeDir = homeDir
 	cfg.BackendType = db.MemDBBackend

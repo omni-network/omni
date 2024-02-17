@@ -192,9 +192,10 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 			Name: initCfg.Network,
 			Chains: []netconf.Chain{
 				{
-					ID:     999,
-					Name:   "omni",
-					IsOmni: true,
+					ID:          999,
+					Name:        "omni",
+					IsOmni:      true,
+					BlockPeriod: time.Millisecond * 500, // Speed up block times for testing
 				},
 				{
 					ID:     100, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go

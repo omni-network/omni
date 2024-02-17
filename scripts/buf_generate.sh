@@ -8,6 +8,12 @@ function bufgen() {
     TYPE=$1 # Either orm,pulsar,proto
     DIR=$2 # Path to dir containing protos to generate
 
+    # Skip if ${DIR}/*.proto does not exist
+    if ! test -n "$(find "${DIR}" -maxdepth 1 -name '*.proto')"; then
+      return
+    fi
+
+
     echo "  ${TYPE}: ${DIR}"
 
     buf generate \
@@ -24,17 +30,17 @@ fi
 echo "Generating pulsar protos for cosmos module config"
 for DIR in halo2/*/module/ halo/halopb/*/
 do
-  bufgen pulsar "${DIR}" "."
+  bufgen pulsar "${DIR}"
 done
 
 echo "Generating gogo protos for cosmos module types"
 for DIR in halo2/*/types/
 do
-  bufgen gogo "${DIR}" "."
+  bufgen gogo "${DIR}"
 done
 
 echo "Generating orm protos for cosmos keeper orm"
 for DIR in halo2/*/keeper/
 do
-  bufgen orm "${DIR}" "."
+  bufgen orm "${DIR}"
 done

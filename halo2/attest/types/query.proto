@@ -22,8 +22,6 @@ message ApprovedFromRequest {
   uint64 from_height = 2; // Block height to start from (inclusive)
 }
 
-// ApprovedFromRequest queries halo for approved aggregate attestations for the given chain_id
-// and from the given height (inclusive). The response will contain at most max attestations.
-message ApprovedFromResponse {
-  repeated MsgAggAttestation aggregates = 1;
+message ApprovedFromResponse{
+  repeated AggAttestation aggregates = 1;
 }
