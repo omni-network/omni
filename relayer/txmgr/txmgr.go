@@ -17,6 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/txpool"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 const (
@@ -359,6 +360,13 @@ func (m *SimpleTxManager) sendTx(ctx context.Context, tx *types.Transaction) (*t
 			return nil, errors.Wrap(ctx.Err(), "context canceled")
 
 		case receipt := <-receiptChan:
+			if receipt.EffectiveGasPrice != nil {
+				txEffectiveGasPrice.
+					WithLabelValues(m.chainName).
+					Set(float64(receipt.EffectiveGasPrice.Uint64() / params.GWei))
+				txGasUsed.WithLabelValues(m.chainName).Observe(float64(receipt.GasUsed))
+			}
+
 			return receipt, nil
 		}
 	}
@@ -428,6 +436,7 @@ func (m *SimpleTxManager) publishTx(ctx context.Context, tx *types.Transaction, 
 // for the transaction. It should be called in a separate goroutine.
 func (m *SimpleTxManager) waitForTx(ctx context.Context, tx *types.Transaction, sendState *SendState,
 	receiptChan chan *types.Receipt) {
+	t := time.Now()
 	// Poll for the transaction to be ready & then doSend the result to receiptChan
 	receipt, err := m.waitMined(ctx, tx, sendState)
 	if err != nil {
@@ -435,6 +444,8 @@ func (m *SimpleTxManager) waitForTx(ctx context.Context, tx *types.Transaction, 
 		log.Warn(ctx, "Transaction receipt not mined, probably replaced", err)
 		return
 	}
+	txConfirmationLatency.WithLabelValues(m.chainName).Set(time.Since(t).Seconds())
+
 	select {
 	case receiptChan <- receipt:
 	default:
