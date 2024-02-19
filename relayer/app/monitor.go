@@ -36,14 +36,14 @@ func startMonitoring(ctx context.Context, network netconf.Network, xprovider xch
 // monitorAccountsForever blocks and periodically monitors the relayer accounts
 // for the given chain.
 func monitorAccountForever(ctx context.Context, addr common.Address, chainName string, client *ethclient.Client) {
-	timer := time.NewTimer(time.Second * 30)
-	defer timer.Stop()
+	ticker := time.NewTicker(time.Second * 30)
+	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-timer.C:
+		case <-ticker.C:
 			err := monitorAccountOnce(ctx, addr, chainName, client)
 			if ctx.Err() != nil {
 				return
@@ -81,14 +81,14 @@ func monitorAccountOnce(ctx context.Context, addr common.Address, chainName stri
 // offsets for a given source and destination chain.
 func monitorOffsetsForever(ctx context.Context, src, dst uint64, srcChain, dstChain string,
 	xprovider xchain.Provider) {
-	timer := time.NewTimer(time.Second * 30)
-	defer timer.Stop()
+	ticker := time.NewTicker(time.Second * 30)
+	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-timer.C:
+		case <-ticker.C:
 			err := monitorOffsetsOnce(ctx, src, dst, srcChain, dstChain, xprovider)
 			if ctx.Err() != nil {
 				return
