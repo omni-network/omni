@@ -10,7 +10,7 @@ import (
 
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 
-	grpc1 "github.com/cosmos/gogoproto/grpc"
+	gogogrpc "github.com/cosmos/gogoproto/grpc"
 	"github.com/cosmos/gogoproto/proto"
 	"google.golang.org/grpc"
 )
@@ -52,7 +52,7 @@ func newABCIFetchFunc(cl atypes.QueryClient) func(ctx context.Context, chainID u
 // rpcAdaptor adapts the cometBFT query client to the gRPC client interface.
 // Note it only supports the Invoke method, not the NewStream method.
 type rpcAdaptor struct {
-	grpc1.ClientConn
+	gogogrpc.ClientConn
 	abci rpcclient.ABCIClient
 }
 
@@ -71,11 +71,11 @@ func (a rpcAdaptor) Invoke(ctx context.Context, method string, req, resp any, _ 
 		return errors.Wrap(err, "marshal approved-from request")
 	}
 
-	r, err := a.abci.ABCIQuery(ctx, method, bz)
+	r, err := a.abci.ABCIQueryWithOptions(ctx, method, bz, rpcclient.ABCIQueryOptions{})
 	if err != nil {
 		return errors.Wrap(err, "abci query")
 	} else if !r.Response.IsOK() {
-		return errors.New("abci query failed", "code", r.Response.Code)
+		return errors.New("abci query failed", "code", r.Response.Code, "info", r.Response.Info, "log", r.Response.Log)
 	}
 
 	err = proto.Unmarshal(r.Response.Value, resppb)

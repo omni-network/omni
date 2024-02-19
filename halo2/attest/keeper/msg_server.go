@@ -26,10 +26,8 @@ func (s msgServer) AddAggAttestations(ctx context.Context, msg *types.MsgAggAtte
 
 	// Update the attester state with the local headers.
 	localHeaders := headersByAddress(msg.Aggregates, s.attester.LocalAddress())
-	if sdkCtx.ExecMode() == sdk.ExecModeFinalize {
-		if err := s.attester.SetCommitted(localHeaders); err != nil {
-			return nil, errors.Wrap(err, "set committed")
-		}
+	if err := s.attester.SetCommitted(localHeaders); err != nil {
+		return nil, errors.Wrap(err, "set committed")
 	}
 
 	err := s.Keeper.Add(ctx, msg)

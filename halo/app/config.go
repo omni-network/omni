@@ -30,7 +30,7 @@ const (
 	defaultMinRetainBlocks         = 0        // Retain all blocks
 
 	defaultPruningOption = pruningtypes.PruningOptionNothing // Prune nothing
-	defaultDBBackend     = db.GoLevelDBBackend
+	defaultDBBackend     = db.MemDBBackend
 )
 
 // DefaultHaloConfig returns the default halo config.

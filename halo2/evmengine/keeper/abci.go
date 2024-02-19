@@ -36,6 +36,16 @@ func (k Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPrepareProposa
 		return nil, errors.New("unexpected transactions in proposal")
 	}
 
+	if req.Height == 1 {
+		// Current issue is that InitChain doesn't reset the gas meter.
+		// So if the first block contains any transactions, we get a app_hash_mismatch
+		// Since the proposal calculates the incorrect gas for the first block after InitChain.
+		// The gas meter is reset at the end of the 1st block, so we can then start including txs.
+
+		log.Warn(ctx, "Creating empty initial block due to gas issue", nil)
+		return &abci.ResponsePrepareProposal{}, nil
+	}
+
 	latestEHeight, err := k.ethCl.BlockNumber(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "latest execution block number")

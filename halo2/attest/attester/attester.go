@@ -74,6 +74,10 @@ func LoadAttester(ctx context.Context, privKey crypto.PrivKey, path string, prov
 		committed: s.Committed,
 	}
 
+	// This shouldn't be required, but -race otherwise complains...
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
 	// Subscribe to latest block provider
 	for chainID := range chains {
 		var fromHeight uint64
@@ -136,7 +140,7 @@ func (a *Attester) SetProposed(headers []*types.BlockHeader) error {
 	var newAvailable, newProposed []*types.Attestation
 	for _, att := range a.availableAndProposedUnsafe() {
 		// If proposed, move it to the proposed list.
-		if proposed[att.BlockHeader] {
+		if proposed[att.BlockHeader.ToXChain()] {
 			newProposed = append(newProposed, att)
 		} else { // Otherwise, keep or move it to in the available list.
 			newAvailable = append(newAvailable, att)
@@ -161,7 +165,7 @@ func (a *Attester) SetCommitted(headers []*types.BlockHeader) error {
 	var newAvailable []*types.Attestation
 	for _, att := range a.availableAndProposedUnsafe() {
 		// If newly committed, add to committed.
-		if committed[att.BlockHeader] {
+		if committed[att.BlockHeader.ToXChain()] {
 			newCommitted = append(newCommitted, att)
 		} else { // Otherwise, keep/move it back to available.
 			newAvailable = append(newAvailable, att)
@@ -293,10 +297,10 @@ func loadState(path string) (stateJSON, error) {
 }
 
 // headerMap converts a list of headers to a bool map (set).
-func headerMap(headers []*types.BlockHeader) map[*types.BlockHeader]bool {
-	resp := make(map[*types.BlockHeader]bool)
+func headerMap(headers []*types.BlockHeader) map[xchain.BlockHeader]bool {
+	resp := make(map[xchain.BlockHeader]bool) // Can't use protos as map keys.
 	for _, header := range headers {
-		resp[header] = true
+		resp[header.ToXChain()] = true
 	}
 
 	return resp
@@ -306,9 +310,11 @@ func headerMap(headers []*types.BlockHeader) map[*types.BlockHeader]bool {
 func pruneLatestPerChain(atts []*types.Attestation) []*types.Attestation {
 	latest := make(map[uint64]*types.Attestation)
 	for _, att := range atts {
-		if latest[att.BlockHeader.ChainId].BlockHeader.Height >= att.BlockHeader.Height {
+		latestAtt, ok := latest[att.BlockHeader.ChainId]
+		if ok && latestAtt.BlockHeader.Height >= att.BlockHeader.Height {
 			continue
 		}
+
 		latest[att.BlockHeader.ChainId] = att
 	}
 

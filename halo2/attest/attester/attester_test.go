@@ -7,7 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/omni-network/omni/halo/attest"
+	"github.com/omni-network/omni/halo2/attest/attester"
+	"github.com/omni-network/omni/halo2/attest/types"
 	"github.com/omni-network/omni/lib/xchain"
 
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
@@ -22,7 +23,7 @@ func TestAttester(t *testing.T) {
 	fuzzer := fuzz.New().NilChance(0).NumElements(1, 64)
 
 	path := filepath.Join(t.TempDir(), "state.json")
-	err := attest.GenEmptyStateFile(path)
+	err := attester.GenEmptyStateFile(path)
 	require.NoError(t, err)
 
 	pk := k1.GenPrivKey()
@@ -34,10 +35,10 @@ func TestAttester(t *testing.T) {
 	)
 
 	// reloadAttester reloads the attester from disk.
-	reloadAttester := func(t *testing.T, from1, from2 uint64) *attest.Attester {
+	reloadAttester := func(t *testing.T, from1, from2 uint64) *attester.Attester {
 		t.Helper()
 		p := make(stubProvider)
-		a, err := attest.LoadAttester(ctx, pk, path, p, map[uint64]string{chain1: "", chain2: "", chain3: ""})
+		a, err := attester.LoadAttester(ctx, pk, path, p, map[uint64]string{chain1: "", chain2: "", chain3: ""})
 		require.NoError(t, err)
 
 		require.EqualValues(t, from1, p[chain1])
@@ -63,22 +64,22 @@ func TestAttester(t *testing.T) {
 	}
 
 	propose := func(chainID, height uint64) {
-		header := xchain.BlockHeader{
-			SourceChainID: chainID,
-			BlockHeight:   height,
+		header := &types.BlockHeader{
+			ChainId: chainID,
+			Height:  height,
 		}
 
-		err := a.SetProposed([]xchain.BlockHeader{header})
+		err := a.SetProposed([]*types.BlockHeader{header})
 		require.NoError(t, err)
 	}
 
 	commit := func(chainID, height uint64) {
-		header := xchain.BlockHeader{
-			SourceChainID: chainID,
-			BlockHeight:   height,
+		header := &types.BlockHeader{
+			ChainId: chainID,
+			Height:  height,
 		}
 
-		err := a.SetCommitted([]xchain.BlockHeader{header})
+		err := a.SetCommitted([]*types.BlockHeader{header})
 		require.NoError(t, err)
 	}
 
@@ -87,7 +88,7 @@ func TestAttester(t *testing.T) {
 
 		var found bool
 		for _, att := range a.GetAvailable() {
-			if att.SourceChainID == chainID && att.BlockHeight == height {
+			if att.BlockHeader.ChainId == chainID && att.BlockHeader.Height == height {
 				found = true
 				break
 			}
@@ -96,7 +97,7 @@ func TestAttester(t *testing.T) {
 		require.Equal(t, ok, found)
 	}
 
-	// Add 1, 2, 3
+	// Add 1, 2, 3 (and assert they are available)
 	add(t, 1, 1)
 	add(t, 1, 2)
 	add(t, 1, 3)
@@ -107,7 +108,7 @@ func TestAttester(t *testing.T) {
 	// Add noise
 	add(t, 2, 1)
 
-	// Assert all are available
+	// Assert all are still available
 	available(t, 1, 1, true)
 	available(t, 1, 2, true)
 	available(t, 1, 3, true)

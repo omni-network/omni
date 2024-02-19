@@ -30,8 +30,10 @@ import (
 // Bech32HRP is the human-readable-part of the Bech32 address format.
 const Bech32HRP = "omni"
 
-// InitSDKConfig initializes the Cosmos SDK configuration.
-func InitSDKConfig() {
+// init initializes the Cosmos SDK configuration.
+//
+//nolint:gochecknoinits // Cosmos-style
+func init() {
 	// Set prefixes
 	accountPubKeyPrefix := Bech32HRP + "pub"
 	validatorAddressPrefix := Bech32HRP + "valoper"

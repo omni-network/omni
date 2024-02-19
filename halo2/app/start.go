@@ -170,7 +170,7 @@ func newCometNode(ctx context.Context, cfg *cmtcfg.Config, app *App, privVal cmt
 	cmtNode, err := node.NewNode(cfg,
 		privVal,
 		nodeKey,
-		proxy.NewLocalClientCreator(server.NewCometABCIWrapper(app)),
+		proxy.NewLocalClientCreator(loggingABCIApp{server.NewCometABCIWrapper(app)}),
 		node.DefaultGenesisDocProviderFunc(cfg),
 		cmtcfg.DefaultDBProvider,
 		node.DefaultMetricsProvider(cfg.Instrumentation),

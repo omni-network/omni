@@ -50,3 +50,23 @@ func (a *Attestation) Verify() error {
 
 	return nil
 }
+
+func (h *BlockHeader) Verify() error {
+	if h == nil {
+		return errors.New("nil block header")
+	}
+
+	if len(h.Hash) != len(common.Hash{}) {
+		return errors.New("invalid block header hash length")
+	}
+
+	return nil
+}
+
+func (h *BlockHeader) ToXChain() xchain.BlockHeader {
+	return xchain.BlockHeader{
+		SourceChainID: h.ChainId,
+		BlockHeight:   h.Height,
+		BlockHash:     common.BytesToHash(h.Hash),
+	}
+}

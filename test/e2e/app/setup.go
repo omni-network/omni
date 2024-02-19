@@ -24,6 +24,7 @@ import (
 	"github.com/omni-network/omni/test/e2e/vmcompose"
 
 	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -59,9 +60,18 @@ func Setup(ctx context.Context, def Definition, promSecrets PromSecrets) error {
 		return errors.Wrap(err, "setup provider")
 	}
 
-	genesis, err := MakeGenesis(def.Testnet.Testnet)
+	var vals []crypto.PubKey
+	for _, node := range def.Testnet.Nodes {
+		vals = append(vals, node.PrivvalKey.PubKey())
+	}
+
+	cosmosGenesis, err := genutil.MakeGenesis(def.Testnet.Name, time.Now(), vals...)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "make genesis")
+	}
+	cmtGenesis, err := cosmosGenesis.ToGenesisDoc()
+	if err != nil {
+		return errors.Wrap(err, "convert genesis")
 	}
 
 	if err := writeOmniEVMConfig(def.Testnet); err != nil {
@@ -98,7 +108,7 @@ func Setup(ctx context.Context, def Definition, promSecrets PromSecrets) error {
 			return err
 		}
 
-		err = genesis.SaveAs(filepath.Join(nodeDir, "config", "genesis.json"))
+		err = cmtGenesis.SaveAs(filepath.Join(nodeDir, "config", "genesis.json"))
 		if err != nil {
 			return errors.Wrap(err, "write genesis")
 		}

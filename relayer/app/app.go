@@ -44,7 +44,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	cprov := cprovider.NewABCIProvider(tmClient, network.ChainNamesByIDs())
+	cprov := cprovider.NewABCIProvider2(tmClient, network.ChainNamesByIDs())
 	xprov := xprovider.New(network, rpcClientPerChain)
 
 	for _, destChain := range network.Chains {
