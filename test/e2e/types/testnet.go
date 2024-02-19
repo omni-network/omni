@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/omni-network/omni/lib/errors"
+
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 
 	"github.com/ethereum/go-ethereum/crypto"
@@ -16,12 +18,26 @@ import (
 // Testnet wraps e2e.Testnet with additional omni-specific fields.
 type Testnet struct {
 	*e2e.Testnet
-	Network               string
-	OmniEVMs              []OmniEVM
-	AnvilChains           []AnvilChain
-	PublicChains          []PublicChain
-	EigenLayerDeployments EigenLayerDeployments
-	AVSConfig             AVSConfig
+	Network      string
+	OmniEVMs     []OmniEVM
+	AnvilChains  []AnvilChain
+	PublicChains []PublicChain
+}
+
+func (t Testnet) AVSChain() (EVMChain, error) {
+	for _, c := range t.AnvilChains {
+		if c.Chain.IsAVSTarget {
+			return c.Chain, nil
+		}
+	}
+
+	for _, c := range t.PublicChains {
+		if c.Chain.IsAVSTarget {
+			return c.Chain, nil
+		}
+	}
+
+	return EVMChain{}, errors.New("avs target chain found")
 }
 
 // EVMChain represents a EVM chain in a omni network.
@@ -29,7 +45,7 @@ type EVMChain struct {
 	Name        string // Chain Nam.
 	ID          uint64 // Chain ID
 	IsPublic    bool
-	IsL1        bool
+	IsAVSTarget bool
 	BlockPeriod time.Duration
 }
 

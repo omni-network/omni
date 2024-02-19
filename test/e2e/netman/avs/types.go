@@ -1,4 +1,4 @@
-package types
+package avs
 
 import (
 	"encoding/json"
@@ -21,7 +21,7 @@ type AVSConfig struct {
 	StrategyParams       []StrategyParams `json:"strategyParams"`
 }
 
-type EigenLayerDeployments struct {
+type EigenDeployments struct {
 	// core deployments
 	AVSDirectory      common.Address `json:"AVSDirectory"`
 	DelegationManager common.Address `json:"DelegationManager"`
@@ -35,21 +35,21 @@ type EigenLayerDeployments struct {
 	WETHStrategy  common.Address `json:"WETHStrategy"`
 }
 
-func LoadEigenLayerDeployments(file string) (EigenLayerDeployments, error) {
+func LoadDeployments(file string) (EigenDeployments, error) {
 	data, err := os.ReadFile(file)
 	if err != nil {
-		return EigenLayerDeployments{}, errors.Wrap(err, "read eigen layer deployments", "path", file)
+		return EigenDeployments{}, errors.Wrap(err, "read eigen layer resp", "path", file)
 	}
 
-	var deployments EigenLayerDeployments
-	if err := json.Unmarshal(data, &deployments); err != nil {
-		return EigenLayerDeployments{}, errors.Wrap(err, "unmarshal eigen layer deployments")
+	var resp EigenDeployments
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return EigenDeployments{}, errors.Wrap(err, "unmarshal eigen layer resp")
 	}
 
-	return deployments, nil
+	return resp, nil
 }
 
-func DefaultTestAVSConfig(eigen EigenLayerDeployments) AVSConfig {
+func DefaultTestAVSConfig(eigen EigenDeployments) AVSConfig {
 	return AVSConfig{
 		MinimumOperatorStake: big.NewInt(1e18),
 		MaximumOperatorCount: 10,

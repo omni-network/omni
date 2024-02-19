@@ -1,3 +1,4 @@
+//nolint:lll // Long lines are easier to read for flag descriptions.
 package cmd
 
 import (
@@ -6,7 +7,6 @@ import (
 	"github.com/spf13/pflag"
 )
 
-//nolint:lll // Long lines are easier to read for flag descriptions.
 func bindDefFlags(flags *pflag.FlagSet, cfg *app.DefinitionConfig) {
 	flags.StringVarP(&cfg.ManifestFile, "manifest-file", "f", cfg.ManifestFile, "path to manifest file")
 	flags.StringVar(&cfg.InfraProvider, "infra", cfg.InfraProvider, "infrastructure provider: docker, vmcompose")
@@ -14,8 +14,7 @@ func bindDefFlags(flags *pflag.FlagSet, cfg *app.DefinitionConfig) {
 	flags.StringVar(&cfg.DeployKeyFile, "deploy-key", cfg.DeployKeyFile, "path to deploy private key file")
 	flags.StringVar(&cfg.RelayerKeyFile, "relayer-key", cfg.RelayerKeyFile, "path to relayer private key file")
 	flags.StringVar(&cfg.OmniImgTag, "omni-image-tag", cfg.OmniImgTag, "Omni docker images tag (halo, relayer). Defaults to working dir git commit.")
-	flags.StringVar(&cfg.EigenLayerDeployments, "eigenlayer-deployments", cfg.EigenLayerDeployments, "path to json file defining eigenlayer deployments")
-	flags.StringToStringVar(&cfg.AnvilStateFiles, "anvil-state-files", cfg.AnvilStateFiles, "path to anvil state files to load into anvil chains: '<chain1>=<file1>'")
+	flags.StringToStringVar(&cfg.AnvilStateFiles, "anvil-state", cfg.AnvilStateFiles, "path to anvil state files to load into anvil chains: '<chain1>=<file1>'")
 	flags.StringToStringVar(&cfg.RPCOverrides, "rpc-overrides", cfg.RPCOverrides, "Pubilc chain rpc overrides: '<chain1>=<url1>'")
 }
 
@@ -27,4 +26,9 @@ func bindPromFlags(flags *pflag.FlagSet, cfg *app.PromSecrets) {
 	flags.StringVar(&cfg.URL, "prom-url", cfg.URL, "prometheus url (only required if prometheus==true)")
 	flags.StringVar(&cfg.User, "prom-user", cfg.User, "prometheus user")
 	flags.StringVar(&cfg.Pass, "prom-password", cfg.Pass, "prometheus password")
+}
+
+func bindDeployFlags(flags *pflag.FlagSet, cfg *app.DeployConfig) {
+	bindPromFlags(flags, &cfg.PromSecrets)
+	flags.StringVar(&cfg.EigenFile, "eigen-file", cfg.EigenFile, "path to json file defining eigenlayer deployments. Empty to skip AVS deployment")
 }
