@@ -126,6 +126,7 @@ linters:
     - goimports            # Handled by gci
     - gofumpt              # Not compatible with gci, see https://github.com/golangci/golangci-lint/issues/1490.
     - gomnd                # Too many false positives
+    - gomoddirectives      # We have a replace directive
     - ireturn              # Too many false positives
     - tagliatelle          # Too strict
     - varnamelen           # False positives

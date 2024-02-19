@@ -121,7 +121,7 @@ func TestTomlConfig(t *testing.T) {
 	// TODO(corver): Add support for halo2 flags to config
 	expect.MinRetainBlocks = 0
 	expect.PruningOption = "nothing"
-	expect.BackendType = "memdb"
+	expect.BackendType = "goleveldb"
 
 	// Ensure the <home>/config directory exists.
 	require.NoError(t, os.Mkdir(filepath.Join(dir, "config"), 0o755))
