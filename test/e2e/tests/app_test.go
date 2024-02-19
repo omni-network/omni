@@ -16,7 +16,7 @@ import (
 func TestApp_Hash(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	test(t, func(t *testing.T, node e2e.Node, _ []Portal) {
+	testNode(t, func(t *testing.T, node e2e.Node, _ []Portal) {
 		t.Helper()
 		client, err := node.Client()
 		require.NoError(t, err)
@@ -42,5 +42,5 @@ func TestApp_Hash(t *testing.T) {
 			hex.EncodeToString(info.Response.LastBlockAppHash),
 			hex.EncodeToString(block.Block.AppHash.Bytes()),
 			"app hash does not match last block's app hash")
-	}, nil)
+	})
 }
