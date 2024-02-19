@@ -19,8 +19,7 @@ func (l loggingABCIApp) Info(ctx context.Context, info *abci.RequestInfo) (*abci
 }
 
 func (l loggingABCIApp) Query(ctx context.Context, query *abci.RequestQuery) (*abci.ResponseQuery, error) {
-	log.Debug(ctx, "👾 ABCI call: Query")
-	return l.Application.Query(ctx, query)
+	return l.Application.Query(ctx, query) // No log here since this can be very noisy
 }
 
 func (l loggingABCIApp) CheckTx(ctx context.Context, tx *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {

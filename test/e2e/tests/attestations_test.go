@@ -21,7 +21,7 @@ func TestApprovedAttestations(t *testing.T) {
 		t.Helper()
 		client, err := node.Client()
 		require.NoError(t, err)
-		cprov := provider.NewABCIProvider(client, nil)
+		cprov := provider.NewABCIProvider2(client, nil)
 
 		ctx := context.Background()
 		for _, portal := range portals {
