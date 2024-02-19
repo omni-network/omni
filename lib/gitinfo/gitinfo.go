@@ -1,6 +1,11 @@
 package gitinfo
 
-import "runtime/debug"
+import (
+	"context"
+	"runtime/debug"
+
+	"github.com/omni-network/omni/lib/log"
+)
 
 // Get returns the git commit hash and timestamp from the runtime build info.
 func Get() (hash string, timestamp string) { //nolint:nonamedreturns // Disambiguate identical return types.
@@ -24,4 +29,15 @@ func Get() (hash string, timestamp string) { //nolint:nonamedreturns // Disambig
 	}
 
 	return hash, timestamp
+}
+
+// Instrument logs the git commit hash and timestamp from the runtime build info.
+// It also sets the commit and timestamp metrics.
+func Instrument(ctx context.Context) {
+	commit, timestamp := Get()
+
+	log.Info(ctx, "Version info", "git_commit", commit, "git_timestamp", timestamp)
+
+	commitGauge.WithLabelValues(commit).Set(1)
+	timestampGauge.WithLabelValues(timestamp).Set(1)
 }

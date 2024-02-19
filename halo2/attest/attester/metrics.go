@@ -5,7 +5,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-//nolint:gochecknoglobals // Promauto metrics are global.
 var (
 	createLag = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "halo2",

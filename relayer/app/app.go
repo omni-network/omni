@@ -21,8 +21,7 @@ import (
 func Run(ctx context.Context, cfg Config) error {
 	log.Info(ctx, "Starting relayer")
 
-	commit, timestamp := gitinfo.Get()
-	log.Info(ctx, "Version info", "git_commit", commit, "git_timestamp", timestamp)
+	gitinfo.Instrument(ctx)
 
 	network, err := netconf.Load(cfg.NetworkFile)
 	if err != nil {
