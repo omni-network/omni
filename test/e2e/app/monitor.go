@@ -62,7 +62,7 @@ func MonitorCProvider(ctx context.Context, node *e2e.Node, network netconf.Netwo
 		return errors.Wrap(err, "getting client")
 	}
 
-	cprov := cprovider.NewABCIProvider(client, network.ChainNamesByIDs())
+	cprov := cprovider.NewABCIProvider2(client, network.ChainNamesByIDs())
 
 	for _, chain := range network.Chains {
 		aggs, err := cprov.ApprovedFrom(ctx, chain.ID, chain.DeployHeight)
