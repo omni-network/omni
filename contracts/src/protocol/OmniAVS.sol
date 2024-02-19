@@ -73,34 +73,6 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     }
 
     /**
-     * Omni sync
-     */
-
-    /// @inheritdoc IOmniAVS
-    function feeForSync() external view returns (uint256) {
-        Validator[] memory vals = getValidators();
-        return omni.feeFor(
-            omniChainId, abi.encodeWithSelector(IOmniEthRestaking.sync.selector, vals), _xcallGasLimitFor(vals.length)
-        );
-    }
-
-    /// @inheritdoc IOmniAVS
-    function syncWithOmni() external payable {
-        Validator[] memory vals = getValidators();
-        omni.xcall{ value: msg.value }(
-            omniChainId,
-            OmniPredeploys.OMNI_ETH_RESTAKING,
-            abi.encodeWithSelector(IOmniEthRestaking.sync.selector, vals),
-            _xcallGasLimitFor(vals.length)
-        );
-    }
-
-    /// @dev Returns the gas limit for OmniEthRestaking.sync xcall for some number of validators
-    function _xcallGasLimitFor(uint256 numValidators) internal view returns (uint64) {
-        return uint64(numValidators * xcallGasLimitPerValidator + xcallBaseGasLimit);
-    }
-
-    /**
      * Operator registration
      */
 
@@ -132,12 +104,12 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     }
 
     /// @dev Adds an operator to the list of operators, does not check if operator already exists
-    function _addOperator(address operator) internal {
+    function _addOperator(address operator) private {
         operators.push(operator);
     }
 
     /// @dev Removes an operator from the list of operators
-    function _removeOperator(address operator) internal {
+    function _removeOperator(address operator) private {
         for (uint256 i = 0; i < operators.length; i++) {
             if (operators[i] == operator) {
                 operators[i] = operators[operators.length - 1];
@@ -148,7 +120,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     }
 
     /// @dev Returns true if the operator is in the list of operators
-    function _isOperator(address operator) internal view returns (bool) {
+    function _isOperator(address operator) private view returns (bool) {
         for (uint256 i = 0; i < operators.length; i++) {
             if (operators[i] == operator) {
                 return true;
@@ -158,7 +130,35 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     }
 
     /**
-     * Admin controls
+     * Omni sync
+     */
+
+    /// @inheritdoc IOmniAVS
+    function feeForSync() external view returns (uint256) {
+        Validator[] memory vals = getValidators();
+        return omni.feeFor(
+            omniChainId, abi.encodeWithSelector(IOmniEthRestaking.sync.selector, vals), _xcallGasLimitFor(vals.length)
+        );
+    }
+
+    /// @inheritdoc IOmniAVS
+    function syncWithOmni() external payable {
+        Validator[] memory vals = getValidators();
+        omni.xcall{ value: msg.value }(
+            omniChainId,
+            OmniPredeploys.OMNI_ETH_RESTAKING,
+            abi.encodeWithSelector(IOmniEthRestaking.sync.selector, vals),
+            _xcallGasLimitFor(vals.length)
+        );
+    }
+
+    /// @dev Returns the gas limit for OmniEthRestaking.sync xcall for some number of validators
+    function _xcallGasLimitFor(uint256 numValidators) internal view returns (uint64) {
+        return uint64(numValidators * xcallGasLimitPerValidator + xcallBaseGasLimit);
+    }
+
+    /**
+     * Admin functions
      */
 
     /// @inheritdoc IServiceManager
