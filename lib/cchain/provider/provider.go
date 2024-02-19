@@ -41,8 +41,9 @@ func (p Provider) ApprovedFrom(ctx context.Context, sourceChainID uint64, source
 }
 
 // Subscribe implements cchain.Provider.
-func (p Provider) Subscribe(ctx context.Context, chainID uint64, height uint64, callback cchain.ProviderCallback) {
-	ctx = log.WithCtx(ctx, "chain", p.chainNames[chainID])
+func (p Provider) Subscribe(in context.Context, chainID uint64, height uint64, callback cchain.ProviderCallback) {
+	chain := p.chainNames[chainID]
+	ctx := log.WithCtx(in, "chain", chain)
 
 	// Start a async goroutine to fetch attestations until ctx is canceled.
 	go func() {
@@ -85,14 +86,13 @@ func (p Provider) Subscribe(ctx context.Context, chainID uint64, height uint64, 
 					if hctx.Err() != nil {
 						return // Don't backoff or log on ctx cancel, just return.
 					} else if err != nil {
-						log.Warn(hctx, "Failed processing attestation; will retry", err,
-							"chain", p.chainNames[chainID])
-						callbackErrTotal.Inc()
+						log.Warn(hctx, "Failed processing attestation; will retry", err)
+						callbackErrTotal.WithLabelValues(chain).Inc()
 						backoff()
 
 						continue
 					}
-					streamHeight.Set(float64(height)) // Update stream height metric
+					streamHeight.WithLabelValues(chain).Set(float64(height)) // Update stream height metric
 
 					break // Success, stop retrying.
 				}

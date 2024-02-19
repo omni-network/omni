@@ -8,12 +8,13 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/test/e2e/types"
 
 	"github.com/cometbft/cometbft/test/e2e/pkg/exec"
 )
 
 // Test runs test cases under tests/.
-func Test(ctx context.Context, def Definition, verbose bool) error {
+func Test(ctx context.Context, def Definition, deployInfo types.DeployInfos, verbose bool) error {
 	log.Info(ctx, "Running tests in ./tests/...")
 
 	extNetwork := externalNetwork(def.Testnet, def.Netman.DeployInfo())
@@ -54,6 +55,14 @@ func Test(ctx context.Context, def Definition, verbose bool) error {
 
 	if err = os.Setenv("INFRASTRUCTURE_TYPE", infd.Provider); err != nil {
 		return errors.Wrap(err, "setting INFRASTRUCTURE_TYPE")
+	}
+
+	deployInfoFile := filepath.Join(networkDir, "deployinfo.json")
+	if err := deployInfo.Save(deployInfoFile); err != nil {
+		return errors.Wrap(err, "saving deployinfo")
+	}
+	if err = os.Setenv("E2E_DEPLOY_INFO", deployInfoFile); err != nil {
+		return errors.Wrap(err, "setting E2E_DEPLOY_INFO")
 	}
 
 	args := []string{"go", "test", "-timeout", "15s", "-count", "1"}
