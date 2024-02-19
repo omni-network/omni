@@ -31,10 +31,10 @@ services:
         ipv4_address: 10.186.73.0
 
   # Initialises geth files and folder from provided genesis file.
-  chain_a:
+  mock_rollup:
     labels:
       e2e: true
-    container_name: chain_a
+    container_name: mock_rollup
     image: ghcr.io/foundry-rs/foundry:latest
     entrypoint: ['anvil','--host','0.0.0.0','--chain-id','99','--block-time','1', '--silent', ]
     ports:
@@ -42,6 +42,22 @@ services:
     networks:
       test:
         ipv4_address: 10.186.73.0
+    
+  # Initialises geth files and folder from provided genesis file.
+  mock_l1:
+    labels:
+      e2e: true
+    container_name: mock_l1
+    image: ghcr.io/foundry-rs/foundry:latest
+    entrypoint: ['anvil','--host','0.0.0.0','--chain-id','1','--block-time','1', '--silent', '--load-state','/anvil/state.json']
+    ports:
+      - 9000:8545
+    networks:
+      test:
+        ipv4_address: 10.186.73.0
+    
+    volumes:
+      - path/to/anvil/state.json:/anvil/state.json
     
 
   # Use geth as the omni EVMs.

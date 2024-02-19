@@ -62,9 +62,15 @@ func TestComposeTemplate(t *testing.T) {
 				},
 				AnvilChains: []types.AnvilChain{
 					{
-						Chain:      types.EVMChain{Name: "chain_a", ID: 99},
+						Chain:      types.EVMChain{Name: "mock_rollup", ID: 99},
 						InternalIP: ipNet.IP,
 						ProxyPort:  9000,
+					},
+					{
+						Chain:      types.EVMChain{Name: "mock_l1", ID: 1},
+						InternalIP: ipNet.IP,
+						ProxyPort:  9000,
+						LoadState:  "path/to/anvil/state.json",
 					},
 				},
 			}
