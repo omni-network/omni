@@ -5,7 +5,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-//nolint:gochecknoglobals // Promauto metrics are global by nature
 var (
 	bufferLen = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "relayer",

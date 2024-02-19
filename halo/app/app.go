@@ -34,8 +34,7 @@ type Config struct {
 func Run(ctx context.Context, cfg Config) error {
 	log.Info(ctx, "Starting halo consensus client")
 
-	commit, timestamp := gitinfo.Get()
-	log.Info(ctx, "Version info", "git_commit", commit, "git_timestamp", timestamp)
+	gitinfo.Instrument(ctx)
 
 	// Load private validator key and state from disk (this hard exits on any error).
 	privVal := privval.LoadFilePV(cfg.Comet.PrivValidatorKeyFile(), cfg.Comet.PrivValidatorStateFile())

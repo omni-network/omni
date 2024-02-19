@@ -86,6 +86,9 @@ linters-settings:
 issues:
   fix: true
   exclude-rules:
+    - path: 'metrics.go'
+      linters:
+        - gochecknoglobals # Promauto metrics are global variables
     - path: '(.*)(test|scripts)(.*)'
       linters:        # Relax linters for both tests/scripts (non-production code)
         - gosec       # Security not an issue here
