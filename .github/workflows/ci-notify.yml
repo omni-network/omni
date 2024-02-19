@@ -4,7 +4,7 @@ name: ci notify
 on:
   workflow_run:
     workflows: ["*"]
-    branches: [main]
+    branches: [tt/notify]
     types: [completed]
 
 jobs:
@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Notify Slack
         uses: slackapi/slack-github-action@v1.24.0
-        if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+        # if: ${{ github.event.workflow_run.conclusion == 'failure' }}
         with:
           payload: |
             {
@@ -22,7 +22,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "🚨 CI failed on `${{ github.event.workflow_run.head_branch }}`."
+                    "text": "🚨 CI failed on `${{github.event.workflow_run.head_repository}}:${{ github.event.workflow_run.head_branch }}`."
                   }
                 },
                 {
