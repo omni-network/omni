@@ -8,8 +8,8 @@ import (
 )
 
 // AggregatesToProto converts a slice of xchain.AggAttestations to a slice of protobuf AggAttestations.
-func AggregatesToProto(aggs []xchain.AggAttestation) []*MsgAggAttestation {
-	resp := make([]*MsgAggAttestation, 0, len(aggs))
+func AggregatesToProto(aggs []xchain.AggAttestation) []*AggAttestation {
+	resp := make([]*AggAttestation, 0, len(aggs))
 	for _, agg := range aggs {
 		resp = append(resp, AggregateToProto(agg))
 	}
@@ -18,7 +18,7 @@ func AggregatesToProto(aggs []xchain.AggAttestation) []*MsgAggAttestation {
 }
 
 // AggregatesFromProto converts a slice of protobuf AggAttestations to a slice of xchain.AggAttestations.
-func AggregatesFromProto(aggs []*MsgAggAttestation) ([]xchain.AggAttestation, error) {
+func AggregatesFromProto(aggs []*AggAttestation) ([]xchain.AggAttestation, error) {
 	resp := make([]xchain.AggAttestation, 0, len(aggs))
 	for _, aggpb := range aggs {
 		agg, err := AggregateFromProto(aggpb)
@@ -32,13 +32,13 @@ func AggregatesFromProto(aggs []*MsgAggAttestation) ([]xchain.AggAttestation, er
 }
 
 // AggregateToProto converts a xchain.AggAttestation to a protobuf AggAttestation.
-func AggregateToProto(agg xchain.AggAttestation) *MsgAggAttestation {
+func AggregateToProto(agg xchain.AggAttestation) *AggAttestation {
 	sigs := make([]*SigTuple, 0, len(agg.Signatures))
 	for _, sig := range agg.Signatures {
 		sigs = append(sigs, SigToProto(sig))
 	}
 
-	return &MsgAggAttestation{
+	return &AggAttestation{
 		BlockHeader:    BlockHeaderToProto(agg.BlockHeader),
 		ValidatorSetId: agg.ValidatorSetID,
 		BlockRoot:      agg.BlockRoot[:],
@@ -47,7 +47,7 @@ func AggregateToProto(agg xchain.AggAttestation) *MsgAggAttestation {
 }
 
 // AggregateFromProto converts a protobuf AggAttestation to a xchain.AggAttestation.
-func AggregateFromProto(agg *MsgAggAttestation) (xchain.AggAttestation, error) {
+func AggregateFromProto(agg *AggAttestation) (xchain.AggAttestation, error) {
 	if agg == nil {
 		return xchain.AggAttestation{}, errors.New("nil aggregate attestation")
 	}

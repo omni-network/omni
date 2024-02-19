@@ -108,6 +108,7 @@ type ModuleInputs struct {
 	Logger       log.Logger
 	TXConfig     client.TxConfig
 	EthClient    engine.API
+	Providers    []types.CPayloadProvider
 }
 
 //nolint:revive // Cosmos-style
@@ -125,6 +126,7 @@ func ProvideModule(in ModuleInputs) ModuleOutputs {
 		in.Logger,
 		in.EthClient,
 		in.TXConfig,
+		in.Providers,
 	)
 	m := NewAppModule(
 		in.Cdc,

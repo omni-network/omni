@@ -220,7 +220,7 @@
     "app": "0"
    },
    "abci": {
-    "vote_extensions_enable_height": "0"
+    "vote_extensions_enable_height": "1"
    }
   }
  }

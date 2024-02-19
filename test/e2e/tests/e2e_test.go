@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/contracts/bindings"
-	examples "github.com/omni-network/omni/contracts/bindings/examples"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/test/e2e/app"
@@ -56,12 +55,6 @@ type Portal struct {
 	Chain    netconf.Chain
 	Client   *ethclient.Client
 	Contract *bindings.OmniPortal
-}
-
-type PingPong struct {
-	Chain    netconf.Chain
-	Client   *ethclient.Client
-	Contract *examples.PingPong
 }
 
 // test runs tests for testnet nodes. The callback functions are respectively given a

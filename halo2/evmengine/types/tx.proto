@@ -10,8 +10,8 @@ option go_package = "halo2/evmengine/types";
 service MsgService {
   option (cosmos.msg.v1.service) = true;
 
-  // ExecutionPayload submits a new finalised execution payload from consensus to the OmniEVM.
-  rpc FinalisePayload (MsgExecutionPayload) returns (FinalisePayloadResponse);
+  // ExecutionPayload submits a new execution payload from consensus to the OmniEVM.
+  rpc ExecutionPayload (MsgExecutionPayload) returns (ExecutionPayloadResponse);
 }
 
 // MsgExecutionPayload defines a Omni EVM execution payload.
@@ -21,6 +21,4 @@ message MsgExecutionPayload {
   bytes  data      = 2;
 }
 
-// FinalisePayloadResponse is an empty response of FinalisePayload.
-message FinalisePayloadResponse {}
-
+message ExecutionPayloadResponse {}
