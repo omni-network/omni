@@ -12,7 +12,7 @@ bindings: build ## Generate golang contract bindings.
 	./bindings/gen.sh OmniPortal FeeOracleV1 OmniAVS TransparentUpgradeableProxy ProxyAdmin
 
 examples-bindings: build ## Generate golang contract bindings for example contracts
-	BINDINGS_DIR=./bindings/examples ./bindings/gen.sh PingPong
+	PKG=examples DIR=./bindings/examples ./bindings/gen.sh PingPong
 
 deploy-eigenlayer-save-anvil-state: ## Deploy eigenlayer contracts and dump anvil state.
 	./script/eigen/deploy-eigenlayer-save-anvil-state.sh

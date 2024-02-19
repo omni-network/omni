@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/test/e2e/pingpong"
+	"github.com/omni-network/omni/test/e2e/types"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
@@ -19,59 +20,69 @@ type DeployConfig struct {
 
 // DeployWithPingPong a new e2e network. It also starts all services in order to deploy private portals.
 // It also deploys a pingpong contract and starts all edges.
-func DeployWithPingPong(ctx context.Context, def Definition, cfg DeployConfig, pingPongN uint64) error {
-	if err := Deploy(ctx, def, cfg); err != nil {
-		return err
+func DeployWithPingPong(ctx context.Context, def Definition, cfg DeployConfig, pingPongN uint64,
+) (types.DeployInfos, error) {
+	deployInfo, err := Deploy(ctx, def, cfg)
+	if err != nil {
+		return nil, err
 	}
 
 	if pingPongN == 0 {
-		return nil
+		return deployInfo, nil
 	}
 
 	pp, err := pingpong.Deploy(ctx, def.Netman.Portals())
 	if err != nil {
-		return errors.Wrap(err, "deploy pingpong")
+		return nil, errors.Wrap(err, "deploy pingpong")
 	} else if err := pp.StartAllEdges(ctx, pingPongN); err != nil {
-		return errors.Wrap(err, "start all edges")
+		return nil, errors.Wrap(err, "start all edges")
 	}
 
-	return nil
+	pp.ExportDeployInfo(deployInfo)
+
+	return deployInfo, nil
 }
 
 // Deploy a new e2e network. It also starts all services in order to deploy private portals.
-func Deploy(ctx context.Context, def Definition, cfg DeployConfig) error {
+func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.DeployInfos, error) {
 	if err := Cleanup(ctx, def); err != nil {
-		return err
+		return nil, err
 	}
 
 	genesisValSetID := uint64(1) // validator set IDs start at 1
 	genesisVals, err := toPortalValidators(def.Testnet.Validators)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Deploy public portals first so their addresses are available for setup.
 	if err := def.Netman.DeployPublicPortals(ctx, genesisValSetID, genesisVals); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := Setup(ctx, def, cfg.PromSecrets); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := Start(ctx, def.Testnet.Testnet, def.Infra); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := def.Netman.DeployPrivatePortals(ctx, genesisValSetID, genesisVals); err != nil {
-		return err
+		return nil, err
 	}
 
-	if err := deployAVS(ctx, def, cfg); err != nil {
-		return err
+	deployInfo := make(types.DeployInfos)
+
+	if err := deployAVS(ctx, def, cfg, deployInfo); err != nil {
+		return nil, err
 	}
 
-	return nil
+	for chain, info := range def.Netman.DeployInfo() {
+		deployInfo.Set(chain.ID, types.ContractPortal, info.PortalAddress, info.DeployHeight)
+	}
+
+	return deployInfo, nil
 }
 
 // E2ETestConfig is the configuration required to run a full e2e test.
@@ -86,7 +97,8 @@ func DefaultE2ETestConfig() E2ETestConfig {
 
 // E2ETest runs a full e2e test.
 func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
-	if err := Deploy(ctx, def, DeployConfig{}); err != nil {
+	deployInfo, err := Deploy(ctx, def, DeployConfig{})
+	if err != nil {
 		return err
 	}
 
@@ -129,7 +141,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 	//	return errors.Wrap(err, "wait pingpong")
 	//}
 
-	if err := Test(ctx, def, false); err != nil {
+	if err := Test(ctx, def, deployInfo, false); err != nil {
 		return err
 	}
 

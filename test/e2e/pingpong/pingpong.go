@@ -69,6 +69,13 @@ func Deploy(ctx context.Context, portals map[uint64]netman.Portal) (XDapp, error
 
 	return resp, nil
 }
+
+func (a *XDapp) ExportDeployInfo(resp types.DeployInfos) {
+	for chainID, contract := range a.contracts {
+		resp.Set(chainID, types.ContractPingPong, contract.Address, contract.DeployHeight)
+	}
+}
+
 func (a *XDapp) fund(ctx context.Context) error {
 	for _, contract := range a.contracts {
 		fund := new(big.Int).Mul(big.NewInt(1_000_000), big.NewInt(params.GWei)) // Also fund it with 0.1 ETH

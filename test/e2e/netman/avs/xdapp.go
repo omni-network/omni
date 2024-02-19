@@ -28,6 +28,7 @@ type XDapp struct {
 	// Mutable state
 	contract     *bindings.OmniAVS
 	contractAddr common.Address
+	height       uint64
 }
 
 func New(cfg AVSConfig, eigen EigenDeployments, portalAddr common.Address,
@@ -51,6 +52,11 @@ func (m *XDapp) Deploy(ctx context.Context) error {
 
 	if m.ethCl == nil {
 		return errors.New("avs client not set")
+	}
+
+	height, err := m.ethCl.BlockNumber(ctx)
+	if err != nil {
+		return errors.Wrap(err, "get block number")
 	}
 
 	// TODO: use same proxy admin for portal & avs on same chain
@@ -81,10 +87,22 @@ func (m *XDapp) Deploy(ctx context.Context) error {
 
 	m.contract = contract
 	m.contractAddr = addr
+	m.height = height
 
 	log.Info(ctx, "Deployed AVS contract", "address", addr.Hex(), "chain", m.chain.Name)
 
 	return nil
+}
+
+// ExportDeployInfo sets the contract addresses in the given DeployInfos.
+func (m *XDapp) ExportDeployInfo(i types.DeployInfos) {
+	i.Set(m.chain.ID, types.ContractOmniAVS, m.contractAddr, m.height)
+
+	const elHeight uint64 = 0 // TODO(corver): Maybe figure this out?
+	i.Set(m.chain.ID, types.ContractELAVSDirectory, m.eigen.AVSDirectory, elHeight)
+	i.Set(m.chain.ID, types.ContractELDelegationManager, m.eigen.DelegationManager, elHeight)
+	i.Set(m.chain.ID, types.ContractELStrategyManager, m.eigen.StrategyManager, elHeight)
+	i.Set(m.chain.ID, types.ContractELPodManager, m.eigen.EigenPodManager, elHeight)
 }
 
 func deployOmniAVS(ctx context.Context, client *ethclient.Client, txOpts *bind.TransactOpts,
