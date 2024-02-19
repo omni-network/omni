@@ -3,11 +3,13 @@ package txmgr_test
 import (
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	fuzz "github.com/google/gofuzz"
 	"github.com/omni-network/omni/contracts/bindings"
 	tx "github.com/omni-network/omni/lib/txmgr"
 	"github.com/omni-network/omni/lib/xchain"
+
+	"github.com/ethereum/go-ethereum/common"
+
+	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"
 )
 

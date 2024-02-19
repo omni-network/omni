@@ -11,8 +11,8 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
-	"github.com/omni-network/omni/lib/xchain"
 	t "github.com/omni-network/omni/lib/txmgr"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -74,41 +74,22 @@ func NewTxSender(
 	}, nil
 }
 
-func (s TxSender) SendSubmitTransaction(ctx context.Context, submission xchain.Submission) error {
+func (s TxSender) SendSubmitTransaction(ctx context.Context, submission xchain.Submission, value *big.Int) error {
 	bytes, err := s.getXSubmitBytes(t.SubmissionToBinding(submission))
 	if err != nil {
 		return errors.Wrap(err, "get xsubmit bytes")
 	}
 
-	return s.SendTransaction(ctx, submission.DestChainID, bytes, big.Int{})
+	return s.sendTransaction(ctx, submission.DestChainID, bytes, value)
 }
 
-// core difference, I want the data in bytes before this function is called.
-func (s TxSender) SendTransaction(ctx context.Context, destChainID uint64, data []byte, value big.Int) error {
-	if s.txMgr == nil {
-		return errors.New("tx mgr not found", "dest_chain_id", destChainID)
-	}
-
-	if destChainID == s.chain.ID {
-		return errors.New("unexpected destination chain [BUG]",
-			"got", destChainID, "expect", s.chain.ID)
-	}
-
-	candidate := txmgr.TxCandidate{
-		TxData:   data,
-		To:       &s.portal,
-		GasLimit: gasLimit,
-		Value:    &value,
-	}
-
-	rec, err := s.txMgr.Send(ctx, candidate)
+func (s TxSender) SendXCallTransaction(ctx context.Context, msg xchain.Msg, value *big.Int) error {
+	bytes, err := s.getXCallBytes(t.MsgToBindings(msg))
 	if err != nil {
-		return errors.Wrap(err, "failed to send tx")
+		return errors.Wrap(err, "get xsubmit bytes")
 	}
 
-	log.Info(ctx, "Sent tx", "tx_hash", rec.TxHash.Hex(), "dest_chain", s.chainName)
-
-	return nil
+	return s.sendTransaction(ctx, msg.DestChainID, bytes, value)
 }
 
 // getXCallByres returns the byte representation of the xcall function call.
@@ -131,4 +112,35 @@ func (s TxSender) getXSubmitBytes(sub bindings.XTypesSubmission) ([]byte, error)
 	return bytes, nil
 }
 
-//TODO: also to send xcalls you'll need to update txmgr to let you specify a value  (ETH to send) with a tx
+// core difference, I am wrapping this in the above methods
+func (s TxSender) sendTransaction(ctx context.Context, destChainID uint64, data []byte, value *big.Int) error {
+	if s.txMgr == nil {
+		return errors.New("tx mgr not found", "dest_chain_id", destChainID)
+	}
+
+	if destChainID == s.chain.ID {
+		return errors.New("unexpected destination chain [BUG]",
+			"got", destChainID, "expect", s.chain.ID)
+	}
+
+	// make it "optional" to pass in the send value
+	if value == nil {
+		value = big.NewInt(0)
+	}
+
+	candidate := txmgr.TxCandidate{
+		TxData:   data,
+		To:       &s.portal,
+		GasLimit: gasLimit,
+		Value:    value,
+	}
+
+	rec, err := s.txMgr.Send(ctx, candidate)
+	if err != nil {
+		return errors.Wrap(err, "failed to send tx")
+	}
+
+	log.Info(ctx, "Sent tx", "tx_hash", rec.TxHash.Hex(), "dest_chain", s.chainName)
+
+	return nil
+}

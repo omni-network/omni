@@ -49,3 +49,15 @@ func SubmissionToBinding(sub xchain.Submission) bindings.XTypesSubmission {
 		Msgs:       msgs,
 	}
 }
+
+func MsgToBindings(xcall xchain.Msg) bindings.XTypesMsg {
+	return bindings.XTypesMsg{
+		SourceChainId: xcall.SourceChainID,
+		DestChainId:   xcall.DestChainID,
+		StreamOffset:  xcall.StreamOffset,
+		Sender:        xcall.SourceMsgSender,
+		To:            xcall.DestAddress,
+		Data:          xcall.Data,
+		GasLimit:      xcall.DestGasLimit,
+	}
+}
