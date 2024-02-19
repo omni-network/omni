@@ -2,7 +2,7 @@
 # Generate bindings for the given solidity contracts, to be
 
 DIR=${DIR:-./bindings}
-PKG=${PKG:-./bindings}
+PKG=${PKG:-bindings}
 
 # generate bindings for the given contract
 # params:
