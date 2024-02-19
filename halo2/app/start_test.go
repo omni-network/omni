@@ -37,6 +37,8 @@ func TestSmoke(t *testing.T) {
 	cl, err := rpchttp.New("http://localhost:26657", "/websocket")
 	require.NoError(t, err)
 
+	cprov := cprovider.NewABCIProvider2(cl, nil)
+
 	// Wait until we get to block 3.
 	const target = uint64(3)
 	require.Eventually(t, func() bool {
@@ -49,8 +51,7 @@ func TestSmoke(t *testing.T) {
 		return s.SyncInfo.LatestBlockHeight >= int64(target)
 	}, time.Second*time.Duration(target*2), time.Millisecond*100)
 
-	cprov := cprovider.NewABCIProvider2(cl, nil)
-
+	// Ensure all blocks are attested and approved.
 	cprov.Subscribe(ctx, 999, 0, func(ctx context.Context, approved xchain.AggAttestation) error {
 		t.Logf("cprovider streamed approved block: %d", approved.BlockHeight)
 		if approved.BlockHeight >= target {
@@ -59,6 +60,7 @@ func TestSmoke(t *testing.T) {
 
 		return nil
 	})
+
 	<-ctx.Done()
 
 	// Stop the server.
@@ -76,7 +78,6 @@ func setupSimnet(t *testing.T) halo1.Config {
 		Comet:      cmtCfg,
 	}
 	cfg.HomeDir = homeDir
-	cfg.BackendType = db.MemDBBackend
 
 	err := halo1cmd.InitFiles(log.WithNoopLogger(context.Background()), halo1cmd.InitConfig{
 		HomeDir: homeDir,

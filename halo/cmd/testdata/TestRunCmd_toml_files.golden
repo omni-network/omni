@@ -3,7 +3,7 @@
  "EngineJWTFile": "jwt.toml",
  "AppStatePersistInterval": 99,
  "SnapshotInterval": 999,
- "BackendType": "memdb",
+ "BackendType": "goleveldb",
  "MinRetainBlocks": 0,
  "PruningOption": "nothing",
  "Comet": {
