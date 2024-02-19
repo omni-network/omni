@@ -17,9 +17,9 @@ func New() *cobra.Command {
 	return libcmd.NewRootCmd(
 		"halo",
 		"Halo is a consensus client implementation for the Omni Protocol",
-		newRunCmd("run", halo1.Run),
+		newRunCmd("run1", halo1.Run),
 		newInitCmd(),
-		newRunCmd("run2", halo2.Run),
+		newRunCmd("run", halo2.Run),
 	)
 }
 

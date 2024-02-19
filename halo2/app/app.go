@@ -4,7 +4,7 @@ import (
 	"github.com/omni-network/omni/halo2/attest/attester"
 	attestkeeper "github.com/omni-network/omni/halo2/attest/keeper"
 	atypes "github.com/omni-network/omni/halo2/attest/types"
-	engevmkeeper "github.com/omni-network/omni/halo2/evmengine/keeper"
+	evmenginekeeper "github.com/omni-network/omni/halo2/evmengine/keeper"
 	evmenginetypes "github.com/omni-network/omni/halo2/evmengine/types"
 	"github.com/omni-network/omni/lib/engine"
 	"github.com/omni-network/omni/lib/errors"
@@ -25,17 +25,15 @@ import (
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 
-	// Blank imports for side-effects.
-	_ "cosmossdk.io/api/cosmos/tx/config/v1"
-	_ "github.com/cosmos/cosmos-sdk/x/auth"
-	_ "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
-	_ "github.com/cosmos/cosmos-sdk/x/bank"
-	_ "github.com/cosmos/cosmos-sdk/x/consensus"
-	_ "github.com/cosmos/cosmos-sdk/x/distribution"
-	_ "github.com/cosmos/cosmos-sdk/x/genutil"
-	_ "github.com/cosmos/cosmos-sdk/x/mint"
-	_ "github.com/cosmos/cosmos-sdk/x/staking"
-	_ "github.com/omni-network/omni/halo2/evmengine/module"
+	_ "cosmossdk.io/api/cosmos/tx/config/v1"          // import for side-effects
+	_ "github.com/cosmos/cosmos-sdk/x/auth"           // import for side-effects
+	_ "github.com/cosmos/cosmos-sdk/x/auth/tx/config" // import for side-effects
+	_ "github.com/cosmos/cosmos-sdk/x/bank"           // import for side-effects
+	_ "github.com/cosmos/cosmos-sdk/x/consensus"      // import for side-effects
+	_ "github.com/cosmos/cosmos-sdk/x/distribution"   // import for side-effects
+	_ "github.com/cosmos/cosmos-sdk/x/genutil"        // import for side-effects
+	_ "github.com/cosmos/cosmos-sdk/x/mint"           // import for side-effects
+	_ "github.com/cosmos/cosmos-sdk/x/staking"        // import for side-effects
 )
 
 const Name = "halo"
@@ -56,7 +54,7 @@ type App struct {
 	StakingKeeper         *stakingkeeper.Keeper
 	DistrKeeper           distrkeeper.Keeper
 	ConsensusParamsKeeper consensuskeeper.Keeper
-	EngEVMKeeper          engevmkeeper.Keeper
+	EngEVMKeeper          evmenginekeeper.Keeper
 	AttestKeeper          attestkeeper.Keeper
 }
 

@@ -128,7 +128,10 @@ func (k Keeper) addOne(ctx context.Context, agg *types.AggAttestation) error {
 			ValidatorAddress: sig.ValidatorAddress,
 			AggId:            aggID,
 		})
-		if err != nil {
+		if errors.Is(err, ormerrors.UniqueKeyViolation) {
+			// TODO(corver): We should prevent this from happening earlier.
+			log.Warn(ctx, "Ignoring duplicate attestation", nil, "agg_id", aggID, "validator", sig.ValidatorAddress)
+		} else if err != nil {
 			return errors.Wrap(err, "insert signature")
 		}
 	}

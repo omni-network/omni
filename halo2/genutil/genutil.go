@@ -5,7 +5,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/omni-network/omni/halo2/app"
 	attesttypes "github.com/omni-network/omni/halo2/attest/types"
 	etypes "github.com/omni-network/omni/halo2/evmengine/types"
 	"github.com/omni-network/omni/lib/errors"
@@ -33,7 +32,6 @@ import (
 )
 
 func MakeGenesis(chainID string, genesisTime time.Time, valPubkeys ...crypto.PubKey) (*gtypes.AppGenesis, error) {
-	app.InitSDKConfig() // Make sure this is called before anything else
 	cdc := getCodec()
 	txConfig := authtx.NewTxConfig(cdc, nil)
 

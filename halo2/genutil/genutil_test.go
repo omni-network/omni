@@ -8,6 +8,8 @@ import (
 	"github.com/omni-network/omni/test/tutil"
 
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
+
+	_ "github.com/omni-network/omni/halo2/app" // To init SDK config.
 )
 
 //go:generate go test . -golden -clean

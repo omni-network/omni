@@ -11,6 +11,7 @@ import (
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/xchain"
 
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 
@@ -20,7 +21,11 @@ import (
 
 func TestSmoke(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	ctx, err := log.Init(ctx, log.Config{Color: log.ColorForce, Level: "debug", Format: log.FormatConsole})
+	require.NoError(t, err)
 
 	cfg := setupSimnet(t)
 
@@ -33,6 +38,7 @@ func TestSmoke(t *testing.T) {
 	require.NoError(t, err)
 
 	// Wait until we get to block 3.
+	const target = uint64(3)
 	require.Eventually(t, func() bool {
 		s, err := cl.Status(ctx)
 		if err != nil {
@@ -40,14 +46,20 @@ func TestSmoke(t *testing.T) {
 			return false
 		}
 
-		return s.SyncInfo.LatestBlockHeight >= 3
-	}, time.Second*5, time.Millisecond*100)
+		return s.SyncInfo.LatestBlockHeight >= int64(target)
+	}, time.Second*time.Duration(target*2), time.Millisecond*100)
 
 	cprov := cprovider.NewABCIProvider2(cl, nil)
 
-	aggs, err := cprov.ApprovedFrom(ctx, 999, 1)
-	require.NoError(t, err)
-	require.NotEmpty(t, aggs)
+	cprov.Subscribe(ctx, 999, 0, func(ctx context.Context, approved xchain.AggAttestation) error {
+		t.Logf("cprovider streamed approved block: %d", approved.BlockHeight)
+		if approved.BlockHeight >= target {
+			cancel()
+		}
+
+		return nil
+	})
+	<-ctx.Done()
 
 	// Stop the server.
 	require.NoError(t, stopfunc(ctx))
