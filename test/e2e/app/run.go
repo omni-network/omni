@@ -96,8 +96,8 @@ func DefaultE2ETestConfig() E2ETestConfig {
 }
 
 // E2ETest runs a full e2e test.
-func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
-	deployInfo, err := Deploy(ctx, def, DeployConfig{})
+func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, depCfg DeployConfig) error {
+	deployInfo, err := Deploy(ctx, def, depCfg)
 	if err != nil {
 		return err
 	}

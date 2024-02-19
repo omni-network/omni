@@ -26,6 +26,7 @@ func New() *cobra.Command {
 	defCfg := app.DefaultDefinitionConfig()
 
 	var def app.Definition
+	var depCfg app.DeployConfig
 
 	cmd := libcmd.NewRootCmd("e2e", "e2e network generator and test runner")
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
@@ -44,13 +45,14 @@ func New() *cobra.Command {
 	}
 
 	bindDefFlags(cmd.PersistentFlags(), &defCfg)
+	bindDeployFlags(cmd.PersistentFlags(), &depCfg)
 	log.BindFlags(cmd.PersistentFlags(), &logCfg)
 
 	// Root command runs the full E2E test.
 	e2eTestCfg := app.DefaultE2ETestConfig()
 	bindE2EFlags(cmd.Flags(), &e2eTestCfg)
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		return app.E2ETest(cmd.Context(), def, e2eTestCfg)
+		return app.E2ETest(cmd.Context(), def, e2eTestCfg, depCfg)
 	}
 
 	// Add subcommands

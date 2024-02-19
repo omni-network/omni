@@ -65,8 +65,8 @@ secrets-baseline: ensure-detect-secrets ## Update secrets baseline.
 
 PWD := $(shell pwd)
 
-DEFAULT_E2E_FLAGS := --eigenlayer-deployments $(PWD)/contracts/script/eigen/output/deployments.json \
-					 --anvil-state-files mock_l1=$(PWD)/contracts/script/eigen/output/anvil-state.json
+DEFAULT_E2E_FLAGS := --eigen-file $(PWD)/contracts/script/eigen/output/deployments.json \
+					 --anvil-state mock_l1=$(PWD)/contracts/script/eigen/output/anvil-state.json
 
 E2E_FLAGS ?= $(DEFAULT_E2E_FLAGS)
 
