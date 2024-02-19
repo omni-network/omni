@@ -1,15 +1,13 @@
-package relayer_test
+package txmgr_test
 
 import (
 	"testing"
 
-	"github.com/omni-network/omni/contracts/bindings"
-	"github.com/omni-network/omni/lib/xchain"
-	relayer "github.com/omni-network/omni/relayer/app"
-
 	"github.com/ethereum/go-ethereum/common"
-
 	fuzz "github.com/google/gofuzz"
+	"github.com/omni-network/omni/contracts/bindings"
+	tx "github.com/omni-network/omni/lib/txmgr"
+	"github.com/omni-network/omni/lib/xchain"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,7 +16,7 @@ func Test_translateSubmission(t *testing.T) {
 	var sub xchain.Submission
 	fuzz.New().NilChance(0).Fuzz(&sub)
 
-	xsub := relayer.SubmissionToBinding(sub)
+	xsub := tx.SubmissionToBinding(sub)
 	reversedSub := submissionFromBinding(xsub, sub.DestChainID)
 
 	// Zero TxHash for comparison since it isn't translated.

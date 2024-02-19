@@ -10,9 +10,9 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/txmgr"
 	"github.com/omni-network/omni/lib/xchain"
-	t "github.com/omni-network/omni/relayer/app"
-	"github.com/omni-network/omni/relayer/txmgr"
+	t "github.com/omni-network/omni/lib/txmgr"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
