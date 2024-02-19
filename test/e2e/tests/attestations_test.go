@@ -17,7 +17,7 @@ import (
 // for at least half of all the source chain blocks.
 func TestApprovedAttestations(t *testing.T) {
 	t.Parallel()
-	test(t, func(t *testing.T, node e2e.Node, portals []Portal) {
+	testNode(t, func(t *testing.T, node e2e.Node, portals []Portal) {
 		t.Helper()
 		client, err := node.Client()
 		require.NoError(t, err)
@@ -34,7 +34,7 @@ func TestApprovedAttestations(t *testing.T) {
 			totalBlocks := height - portal.Chain.DeployHeight
 			require.GreaterOrEqual(t, len(aggs), int(totalBlocks/2)) // Assert that at least half of the blocks are approved
 		}
-	}, nil)
+	})
 }
 
 func fetchAllAggs(ctx context.Context, cprov cchain.Provider, chainID, from uint64) ([]xchain.AggAttestation, error) {

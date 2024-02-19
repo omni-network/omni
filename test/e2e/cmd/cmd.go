@@ -6,6 +6,7 @@ import (
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/test/e2e/app"
+	"github.com/omni-network/omni/test/e2e/types"
 
 	cmtdocker "github.com/cometbft/cometbft/test/e2e/pkg/infra/docker"
 
@@ -72,7 +73,8 @@ func newDeployCmd(def *app.Definition) *cobra.Command {
 		Use:   "deploy",
 		Short: "Deploys the e2e network",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return app.DeployWithPingPong(cmd.Context(), *def, cfg, pingPongN)
+			_, err := app.DeployWithPingPong(cmd.Context(), *def, cfg, pingPongN)
+			return err
 		},
 	}
 
@@ -107,7 +109,7 @@ func newTestCmd(def *app.Definition) *cobra.Command {
 		Use:   "test",
 		Short: "Runs go tests against the a previously preserved network",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return app.Test(cmd.Context(), *def, true)
+			return app.Test(cmd.Context(), *def, types.DeployInfos{}, true)
 		},
 	}
 }

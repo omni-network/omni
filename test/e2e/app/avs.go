@@ -6,11 +6,12 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/test/e2e/netman/avs"
+	"github.com/omni-network/omni/test/e2e/types"
 )
 
-func deployAVS(ctx context.Context, def Definition, cfg DeployConfig) error {
+func deployAVS(ctx context.Context, def Definition, cfg DeployConfig, deployInfo types.DeployInfos) error {
 	if cfg.EigenFile == "" {
-		log.Warn(ctx, "No eigen file provided, skipping AVS deployment", nil)
+		log.Warn(ctx, "No eigen deployments file provided, skipping AVS deployment", nil)
 		return nil
 	}
 
@@ -35,5 +36,11 @@ func deployAVS(ctx context.Context, def Definition, cfg DeployConfig) error {
 		portal.TxOpts(ctx, nil),
 	)
 
-	return xdapp.Deploy(ctx)
+	if err := xdapp.Deploy(ctx); err != nil {
+		return errors.Wrap(err, "deploy xdapp")
+	}
+
+	xdapp.ExportDeployInfo(deployInfo)
+
+	return nil
 }
