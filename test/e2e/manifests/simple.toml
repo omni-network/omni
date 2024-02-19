@@ -1,5 +1,5 @@
 network = "devnet"
-anvil_chains = ["chain_a", "mock_l1"]
+anvil_chains = ["mock_rollup", "mock_l1"]
 l1 = "mock_l1"
 
 [node.validator01]

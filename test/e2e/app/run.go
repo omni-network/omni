@@ -8,13 +8,13 @@ import (
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/test/e2e/pingpong"
-	"github.com/omni-network/omni/test/e2e/types"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
 type DeployConfig struct {
 	PromSecrets
+	EigenFile string
 }
 
 // DeployWithPingPong a new e2e network. It also starts all services in order to deploy private portals.
@@ -67,10 +67,8 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) error {
 		return err
 	}
 
-	if (def.Testnet.EigenLayerDeployments != types.EigenLayerDeployments{}) {
-		if err := def.Netman.DeployAVS(ctx, def.Testnet.AVSConfig, def.Testnet.EigenLayerDeployments); err != nil {
-			return err
-		}
+	if err := deployAVS(ctx, def, cfg); err != nil {
+		return err
 	}
 
 	return nil

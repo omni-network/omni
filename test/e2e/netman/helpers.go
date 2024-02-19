@@ -31,7 +31,7 @@ func deployOmniContracts(ctx context.Context, chainID uint64, client *ethclient.
 	owner := txOpts.From
 	fee := new(big.Int).SetUint64(params.GWei)
 
-	proxyAdmin, err := deployProxyAdmin(ctx, txOpts, client)
+	proxyAdmin, err := DeployProxyAdmin(ctx, txOpts, client)
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
@@ -54,7 +54,7 @@ func deployOmniContracts(ctx context.Context, chainID uint64, client *ethclient.
 	return portal, contract, txOpts, nil
 }
 
-func deployProxyAdmin(ctx context.Context, txOpts *bind.TransactOpts, client *ethclient.Client) (
+func DeployProxyAdmin(ctx context.Context, txOpts *bind.TransactOpts, client *ethclient.Client) (
 	common.Address, error,
 ) {
 	proxyAdmin, tx, _, err := bindings.DeployProxyAdmin(txOpts, client)
@@ -138,45 +138,6 @@ func deployPortal(ctx context.Context, txOpts *bind.TransactOpts, client *ethcli
 	receipt, err = bind.WaitMined(ctx, client, tx)
 	if err != nil || receipt.Status != types.ReceiptStatusSuccessful {
 		return common.Address{}, errors.Wrap(err, "wait mined portal proxy")
-	}
-
-	return proxy, nil
-}
-
-func deployOmniAVS(ctx context.Context, client *ethclient.Client, txOpts *bind.TransactOpts,
-	proxyAdmin common.Address, owner common.Address, portal common.Address, omniChainID uint64,
-	delegationManager common.Address, avsDirectory common.Address, minOperatorStake *big.Int,
-	maxOperators uint32, strategyParams []bindings.IOmniAVSStrategyParams,
-) (common.Address, error) {
-	impl, tx, _, err := bindings.DeployOmniAVS(txOpts, client, delegationManager, avsDirectory)
-	if err != nil {
-		return common.Address{}, errors.Wrap(err, "deploy avs impl")
-	}
-
-	receipt, err := bind.WaitMined(ctx, client, tx)
-	if err != nil || receipt.Status != types.ReceiptStatusSuccessful {
-		return common.Address{}, errors.Wrap(err, "wait mined avs impl")
-	}
-
-	abi, err := bindings.OmniAVSMetaData.GetAbi()
-	if err != nil {
-		return common.Address{}, errors.Wrap(err, "get avs abi")
-	}
-
-	enc, err := abi.Pack("initialize", owner, portal, omniChainID,
-		minOperatorStake, maxOperators, strategyParams)
-	if err != nil {
-		return common.Address{}, errors.Wrap(err, "encode avs initializer")
-	}
-
-	proxy, tx, _, err := bindings.DeployTransparentUpgradeableProxy(txOpts, client, impl, proxyAdmin, enc)
-	if err != nil {
-		return common.Address{}, errors.Wrap(err, "deploy avs proxy")
-	}
-
-	receipt, err = bind.WaitMined(ctx, client, tx)
-	if err != nil || receipt.Status != types.ReceiptStatusSuccessful {
-		return common.Address{}, errors.Wrap(err, "wait mined avs proxy")
 	}
 
 	return proxy, nil

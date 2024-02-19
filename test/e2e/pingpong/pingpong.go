@@ -193,7 +193,7 @@ type Contract struct {
 	Chain        types.EVMChain
 	Address      common.Address
 	PingPong     *examples.PingPong
-	txOpts       *bind.TransactOpts
+	txOpts       *bind.TransactOpts // TODO(corver): Replace this with a txmgr.
 	DeployHeight uint64
 }
 

@@ -76,7 +76,7 @@ func newDeployCmd(def *app.Definition) *cobra.Command {
 		},
 	}
 
-	bindPromFlags(cmd.Flags(), &cfg.PromSecrets)
+	bindDeployFlags(cmd.Flags(), &cfg)
 	cmd.Flags().Uint64Var(&pingPongN, "ping-pong", pingPongN, "Number of ping pongs messages to send. 0 disables it")
 
 	return cmd

@@ -132,7 +132,7 @@ func makePortals(t *testing.T, network netconf.Network) []Portal {
 	return resp
 }
 
-// loadEnv loads the testnet  and network based on env vars.
+// loadEnv loads the testnet and network based on env vars.
 func loadEnv(t *testing.T) (types.Testnet, netconf.Network) {
 	t.Helper()
 
@@ -171,7 +171,10 @@ func loadEnv(t *testing.T) (types.Testnet, netconf.Network) {
 	}
 	require.NoError(t, err)
 
-	testnet, err := app.TestnetFromManifest(m, manifestFile, ifd, nil, "", nil, "")
+	cfg := app.DefinitionConfig{
+		ManifestFile: manifestFile,
+	}
+	testnet, err := app.TestnetFromManifest(m, ifd, cfg)
 	require.NoError(t, err)
 	testnetCache[manifestFile] = testnet
 
