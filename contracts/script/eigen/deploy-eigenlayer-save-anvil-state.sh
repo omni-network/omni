@@ -19,5 +19,5 @@ forge script script/eigen/DeployEigenLayer.s.sol \
 pkill anvil
 
 mv $ANVIL_STATE_FILE $OUTPUT_DIR/anvil-state.json.tmp
-jq . $OUTPUT_DIR/anvil-state.json.tmp > $ANVIL_STATE_FILE
+jq '.block.number = "0x0"' $OUTPUT_DIR/anvil-state.json.tmp > $ANVIL_STATE_FILE
 rm $OUTPUT_DIR/anvil-state.json.tmp
