@@ -1,177 +1,141 @@
 package app
 
 import (
-	"context"
-	"time"
-
-	"github.com/omni-network/omni/halo/attest"
-	"github.com/omni-network/omni/halo/comet"
+	"github.com/omni-network/omni/halo/attest/attester"
+	attestkeeper "github.com/omni-network/omni/halo/attest/keeper"
+	atypes "github.com/omni-network/omni/halo/attest/types"
+	evmenginekeeper "github.com/omni-network/omni/halo/evmengine/keeper"
+	evmenginetypes "github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/lib/engine"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/gitinfo"
-	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/xchain"
-	"github.com/omni-network/omni/lib/xchain/provider"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	cmtconfig "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/node"
-	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/privval"
-	"github.com/cometbft/cometbft/proxy"
-	cmttypes "github.com/cometbft/cometbft/types"
+	"cosmossdk.io/depinject"
+	"cosmossdk.io/log"
+	dbm "github.com/cosmos/cosmos-db"
+	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/runtime"
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	"github.com/cosmos/cosmos-sdk/types/module"
+	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
+	consensuskeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
+	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 
-	"github.com/ethereum/go-ethereum/ethclient"
+	_ "cosmossdk.io/api/cosmos/tx/config/v1"          // import for side-effects
+	_ "github.com/cosmos/cosmos-sdk/x/auth"           // import for side-effects
+	_ "github.com/cosmos/cosmos-sdk/x/auth/tx/config" // import for side-effects
+	_ "github.com/cosmos/cosmos-sdk/x/bank"           // import for side-effects
+	_ "github.com/cosmos/cosmos-sdk/x/consensus"      // import for side-effects
+	_ "github.com/cosmos/cosmos-sdk/x/distribution"   // import for side-effects
+	_ "github.com/cosmos/cosmos-sdk/x/genutil"        // import for side-effects
+	_ "github.com/cosmos/cosmos-sdk/x/mint"           // import for side-effects
+	_ "github.com/cosmos/cosmos-sdk/x/staking"        // import for side-effects
 )
 
-type Config struct {
-	HaloConfig
-	Comet cmtconfig.Config
+const Name = "halo"
+
+// App extends an ABCI application, but with most of its parameters exported.
+// They are exported for convenience in creating helper functions, as object
+// capabilities aren't needed for testing.
+type App struct {
+	*runtime.App
+
+	appCodec          codec.Codec
+	txConfig          client.TxConfig
+	interfaceRegistry codectypes.InterfaceRegistry
+
+	// keepers
+	AccountKeeper         authkeeper.AccountKeeper
+	BankKeeper            bankkeeper.Keeper
+	StakingKeeper         *stakingkeeper.Keeper
+	DistrKeeper           distrkeeper.Keeper
+	ConsensusParamsKeeper consensuskeeper.Keeper
+	EngEVMKeeper          evmenginekeeper.Keeper
+	AttestKeeper          attestkeeper.Keeper
 }
 
-// Run runs the halo client.
-func Run(ctx context.Context, cfg Config) error {
-	log.Info(ctx, "Starting halo consensus client")
+// newApp returns a reference to an initialized App.
+func newApp(
+	logger log.Logger,
+	db dbm.DB,
+	ethCl engine.API,
+	attestI atypes.Attester,
+	baseAppOpts ...func(*baseapp.BaseApp),
+) (*App, error) {
+	depCfg := depinject.Configs(
+		DepConfig(),
+		depinject.Supply(
+			logger, ethCl, attestI,
+			[]evmenginetypes.CPayloadProvider{
+				attester.CPayloadProvider{},
+				// TODO(corver): Add evmstaking CPayloadProvider here once it is implemented.
+			},
+		),
+	)
 
-	gitinfo.Instrument(ctx)
-
-	// Load private validator key and state from disk (this hard exits on any error).
-	privVal := privval.LoadFilePV(cfg.Comet.PrivValidatorKeyFile(), cfg.Comet.PrivValidatorStateFile())
-
-	network, err := netconf.Load(cfg.NetworkFile())
-	if err != nil {
-		return errors.Wrap(err, "load network")
-	} else if err := network.Validate(); err != nil {
-		return errors.Wrap(err, "validate network configuration")
+	var (
+		app        = new(App)
+		appBuilder = new(runtime.AppBuilder)
+	)
+	if err := depinject.Inject(depCfg,
+		&appBuilder,
+		&app.appCodec,
+		&app.txConfig,
+		&app.interfaceRegistry,
+		&app.AccountKeeper,
+		&app.BankKeeper,
+		&app.StakingKeeper,
+		&app.DistrKeeper,
+		&app.ConsensusParamsKeeper,
+		&app.EngEVMKeeper,
+		&app.AttestKeeper,
+	); err != nil {
+		return nil, errors.Wrap(err, "dep inject")
 	}
 
-	ethCl, err := newEngineClient(ctx, cfg.HaloConfig, network)
-	if err != nil {
-		return err
+	proposalHandler := makeProcessProposalHandler(app)
+
+	baseAppOpts = append(baseAppOpts, func(bapp *baseapp.BaseApp) {
+		// Use evm engine to create block proposals.
+		// Note that we do not check MaxTxBytes since all EngineEVM transaction MUST be included since we cannot
+		// postpone them to the next block. Nit: we could drop some vote extensions though...?
+		bapp.SetPrepareProposal(app.EngEVMKeeper.PrepareProposal)
+
+		// Route proposed messaged to keepers for verification and external state updates.
+		bapp.SetProcessProposal(proposalHandler)
+
+		// Use attest keeper to extend votes.
+		bapp.SetExtendVoteHandler(app.AttestKeeper.ExtendVote)
+		bapp.SetVerifyVoteExtensionHandler(app.AttestKeeper.VerifyVoteExtension)
+	})
+
+	app.App = appBuilder.Build(db, nil, baseAppOpts...)
+
+	if err := app.Load(true); err != nil {
+		return nil, errors.Wrap(err, "load app")
 	}
 
-	xprovider, err := newXProvider(ctx, network)
-	if err != nil {
-		return errors.Wrap(err, "create xchain provider")
-	}
+	return app, nil
+}
 
-	attSvc, err := attest.LoadAttester(ctx, privVal.Key.PrivKey, cfg.AttestStateFile(), xprovider,
-		network.ChainNamesByIDs())
-	if err != nil {
-		return errors.Wrap(err, "create attester")
-	}
-
-	appState, err := comet.LoadOrGenState(cfg.AppStateDir(), cfg.AppStatePersistInterval, network.ChainNamesByIDs())
-	if err != nil {
-		return errors.Wrap(err, "load or gen app state")
-	}
-
-	snapshotStore, err := comet.NewSnapshotStore(cfg.SnapshotDir())
-	if err != nil {
-		return errors.Wrap(err, "create snapshot store")
-	}
-
-	app := comet.NewApp(ethCl, attSvc, appState, snapshotStore, cfg.SnapshotInterval)
-
-	cmtNode, err := newCometNode(ctx, &cfg.Comet, app, privVal)
-	if err != nil {
-		return errors.Wrap(err, "create comet node")
-	}
-
-	log.Info(ctx, "Starting CometBFT", "listeners", cmtNode.Listeners())
-
-	if err := cmtNode.Start(); err != nil {
-		return errors.Wrap(err, "start comet node")
-	}
-
-	maybeSetupSimnetRelayer(ctx, network, cmtNode, xprovider)
-
-	<-ctx.Done()
-	log.Info(ctx, "Shutdown detected, stopping...")
-
-	if err := cmtNode.Stop(); err != nil {
-		return errors.Wrap(err, "stop comet node")
-	}
-
+func (App) LegacyAmino() *codec.LegacyAmino {
 	return nil
 }
 
-// newXProvider returns a new xchain provider.
-func newXProvider(ctx context.Context, network netconf.Network) (xchain.Provider, error) {
-	if network.Name == netconf.Simnet {
-		return provider.NewMock(time.Millisecond * 750), nil // Slightly faster than our chain.
-	}
-
-	clients := make(map[uint64]*ethclient.Client)
-	for _, chain := range network.Chains {
-		ethCl, err := ethclient.DialContext(ctx, chain.RPCURL)
-		if err != nil {
-			return nil, errors.Wrap(err, "dial chain",
-				"name", chain.Name,
-				"id", chain.ID,
-				"rpc_url", chain.RPCURL,
-			)
-		}
-		clients[chain.ID] = ethCl
-	}
-
-	return provider.New(network, clients), nil
+func (App) ExportAppStateAndValidators(_ bool, _, _ []string) (servertypes.ExportedApp, error) {
+	return servertypes.ExportedApp{}, errors.New("not implemented")
 }
 
-// newEngineClient returns a new engine API client.
-func newEngineClient(ctx context.Context, cfg HaloConfig, network netconf.Network) (engine.API, error) {
-	if network.Name == netconf.Simnet {
-		return engine.NewMock()
-	}
-
-	jwtBytes, err := engine.LoadJWTHexFile(cfg.EngineJWTFile)
-	if err != nil {
-		return nil, errors.Wrap(err, "load engine JWT file")
-	}
-
-	omniChain, ok := network.OmniChain()
-	if !ok {
-		return nil, errors.New("omni chain not found in network")
-	}
-
-	ethCl, err := engine.NewClient(ctx, omniChain.AuthRPCURL, jwtBytes)
-	if err != nil {
-		return nil, errors.Wrap(err, "create engine client")
-	}
-
-	return ethCl, nil
+// SimulationManager implements the SimulationApp interface.
+func (App) SimulationManager() *module.SimulationManager {
+	return nil
 }
 
-func newCometNode(ctx context.Context, config *cmtconfig.Config, app abci.Application, privVal cmttypes.PrivValidator,
-) (*node.Node, error) {
-	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
-	if err != nil {
-		return nil, errors.Wrap(err, "load or gen node key", "key_file", config.NodeKeyFile())
-	}
-
-	// TxIndex config always disabled
-	config.TxIndex = &cmtconfig.TxIndexConfig{
-		Indexer: "null",
-	}
-
-	cmtLog, err := NewCmtLogger(ctx, config.LogLevel)
-	if err != nil {
-		return nil, err
-	}
-
-	cmtNode, err := node.NewNode(config,
-		privVal,
-		nodeKey,
-		proxy.NewLocalClientCreator(app),
-		node.DefaultGenesisDocProviderFunc(config),
-		cmtconfig.DefaultDBProvider,
-		node.DefaultMetricsProvider(config.Instrumentation),
-		cmtLog,
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "create node")
-	}
-
-	return cmtNode, nil
-}
+var (
+	_ runtime.AppI            = (*App)(nil)
+	_ servertypes.Application = (*App)(nil)
+)

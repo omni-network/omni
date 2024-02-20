@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/halo/app"
+	halocfg "github.com/omni-network/omni/halo/config"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/test/tutil"
@@ -114,24 +115,19 @@ func TestTomlConfig(t *testing.T) {
 		},
 	)
 
-	var expect app.HaloConfig
+	var expect halocfg.Config
 	fuzzer.Fuzz(&expect)
 	expect.HomeDir = dir
-
-	// TODO(corver): Add support for halo2 flags to config
-	expect.MinRetainBlocks = 0
-	expect.PruningOption = "nothing"
-	expect.BackendType = "goleveldb"
 
 	// Ensure the <home>/config directory exists.
 	require.NoError(t, os.Mkdir(filepath.Join(dir, "config"), 0o755))
 
 	// Write the randomized config to disk.
-	require.NoError(t, app.WriteConfigTOML(expect, log.DefaultConfig()))
+	require.NoError(t, halocfg.WriteConfigTOML(expect, log.DefaultConfig()))
 
 	// Create a run command that asserts the config is as expected.
 	cmd := newRunCmd("run", func(_ context.Context, actual app.Config) error {
-		require.Equal(t, expect, actual.HaloConfig)
+		require.Equal(t, expect, actual.Config)
 
 		return nil
 	})

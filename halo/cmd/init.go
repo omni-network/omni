@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/omni-network/omni/halo/app"
-	"github.com/omni-network/omni/halo/attest"
-	"github.com/omni-network/omni/halo2/genutil"
+	"github.com/omni-network/omni/halo/attest/attester"
+	halocfg "github.com/omni-network/omni/halo/config"
+	"github.com/omni-network/omni/halo/genutil"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -37,7 +37,7 @@ type InitConfig struct {
 func newInitCmd() *cobra.Command {
 	// Default config flags
 	cfg := InitConfig{
-		HomeDir: app.DefaultHomeDir,
+		HomeDir: halocfg.DefaultHomeDir,
 		Network: netconf.Simnet,
 		Force:   false,
 	}
@@ -110,7 +110,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 
 	// Initialize default configs.
 	comet := DefaultCometConfig(homeDir)
-	cfg := app.DefaultHaloConfig()
+	cfg := halocfg.DefaultConfig()
 	cfg.HomeDir = homeDir
 
 	// Folders
@@ -148,7 +148,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	haloConfigFile := cfg.ConfigFile()
 	if cmtos.FileExists(haloConfigFile) {
 		log.Info(ctx, "Found halo config file", "path", haloConfigFile)
-	} else if err := app.WriteConfigTOML(cfg, log.DefaultConfig()); err != nil {
+	} else if err := halocfg.WriteConfigTOML(cfg, log.DefaultConfig()); err != nil {
 		return err
 	} else {
 		log.Info(ctx, "Generated default halo config file", "path", haloConfigFile)
@@ -257,7 +257,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	attStateFile := cfg.AttestStateFile()
 	if cmtos.FileExists(attStateFile) {
 		log.Info(ctx, "Found attest state file", "path", attStateFile)
-	} else if err := attest.GenEmptyStateFile(attStateFile); err != nil {
+	} else if err := attester.GenEmptyStateFile(attStateFile); err != nil {
 		return err
 	} else {
 		log.Info(ctx, "Generated attest state file", "path", attStateFile)

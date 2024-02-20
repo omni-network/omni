@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	haloapp "github.com/omni-network/omni/halo/app"
 	halocmd "github.com/omni-network/omni/halo/cmd"
-	"github.com/omni-network/omni/halo2/genutil"
+	halocfg "github.com/omni-network/omni/halo/config"
+	"github.com/omni-network/omni/halo/genutil"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -285,11 +285,11 @@ func MakeConfig(node *e2e.Node, nodeDir string) (*config.Config, error) {
 
 // writeHaloConfig generates an halo application config for a node and writes it to disk.
 func writeHaloConfig(nodeDir string, logCfg log.Config) error {
-	cfg := haloapp.DefaultHaloConfig()
+	cfg := halocfg.DefaultConfig()
 	cfg.HomeDir = nodeDir
 	cfg.EngineJWTFile = "/geth/jwtsecret" // As per docker-compose mount
 
-	return haloapp.WriteConfigTOML(cfg, logCfg)
+	return halocfg.WriteConfigTOML(cfg, logCfg)
 }
 
 // UpdateConfigStateSync updates the state sync config for a node.
