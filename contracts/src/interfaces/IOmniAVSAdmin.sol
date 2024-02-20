@@ -13,13 +13,13 @@ interface IOmniAVSAdmin {
      * @notice Emitted when an operator is added to the allowlist.
      * @param operator The operator
      */
-    event OperatorAddedToAllowlist(address operator);
+    event OperatorAllowed(address operator);
 
     /**
      * @notice Emitted when an operator is removed from the allowlist.
      * @param operator The operator
      */
-    event OperatorRemovedFromAllowlist(address operator);
+    event OperatorDisallowed(address operator);
 
     /**
      * @notice Initialize the Omni AVS admin contract.

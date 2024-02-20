@@ -211,14 +211,14 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
         require(operator != address(0), "OmniAVS: zero address");
         require(!_allowlist[operator], "OmniAVS: already in allowlist");
         _allowlist[operator] = true;
-        emit OperatorAddedToAllowlist(operator);
+        emit OperatorAllowed(operator);
     }
 
     /// @inheritdoc IOmniAVSAdmin
     function removeFromAllowlist(address operator) external onlyOwner {
         require(_allowlist[operator], "OmniAVS: not in allowlist");
         _allowlist[operator] = false;
-        emit OperatorRemovedFromAllowlist(operator);
+        emit OperatorDisallowed(operator);
     }
 
     /// @dev Set the strategy parameters
