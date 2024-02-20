@@ -58,7 +58,7 @@ func RequireGoldenBytes(t *testing.T, data []byte, opts ...func(*string)) {
 
 	expected, err := os.ReadFile(filename)
 	if os.IsNotExist(err) {
-		t.Fatalf("golden file does not exist, %s, generate by running with -update", filename)
+		t.Fatalf("golden file does not exist, %s, generate by running with -golden", filename)
 		return
 	}
 

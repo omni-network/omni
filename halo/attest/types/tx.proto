@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package halo.attest.types;
+
+import "cosmos/msg/v1/msg.proto";
+
+option go_package = "halo/attest/types";
+
+// MsgService defines all the gRPC methods exposed by the attest module.
+service MsgService {
+  option (cosmos.msg.v1.service) = true;
+
+  // AddAggAttestations processes aggregate attestations included in a proposed or finalised block.
+  rpc AddAggAttestations (MsgAggAttestations) returns (AddAggAttestationsResponse);
+}
+
+
+// MsgAggAttestations contains multiple aggregates for different cross-chain Blocks.
+message MsgAggAttestations {
+  option (cosmos.msg.v1.signer) = "authority";
+  string authority = 1;
+  repeated AggAttestation aggregates = 2;
+}
+
+message AddAggAttestationsResponse {}
+
+// AggAttestation aggregates multiple attestation by a validator set of a cross-chain Block.
+message AggAttestation {
+  BlockHeader       block_header     = 1; // BlockHeader identifies the cross-chain Block
+  uint64            validator_set_id = 2; // Unique identified of the validator set included in this aggregate.
+  bytes             block_root       = 3; // Merkle root of the cross-chain Block
+  repeated SigTuple signatures       = 4; // Validator signatures and public keys
+}
+
+// Attestations contains multiple attestation by a validator of multiple cross-chain Blocks.
+message Attestations {
+  repeated Attestation attestations = 1;
+}
+
+// Attestation by a validator of a cross-chain Block.
+message Attestation {
+  BlockHeader block_header     = 1; // BlockHeader identifies the cross-chain Block
+  uint64      validator_set_id = 2; // Unique identified of the validator set included in this aggregate.
+  bytes       block_root       = 3; // Merkle root of the cross-chain Block
+  SigTuple    signature        = 4; // Validator signatures and public keys
+}
+
+// BlockHeader uniquely identifies a cross chain block.
+message BlockHeader {
+  uint64 chain_id    = 1; // Chain ID as per https://chainlist.org
+  uint64 height      = 2; // Height of the block
+  bytes  hash        = 3; // Hash of the block
+}
+
+// SigTuple is a validator signature and public key.
+message SigTuple {
+  bytes validator_address = 1; // Validator ethereum address; 20 bytes.
+  bytes signature         = 2; // Validator signature over XBlockRoot; Ethereum 65 bytes [R || S || V] format.
+}

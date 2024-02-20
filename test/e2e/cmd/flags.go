@@ -14,7 +14,6 @@ func bindDefFlags(flags *pflag.FlagSet, cfg *app.DefinitionConfig) {
 	flags.StringVar(&cfg.DeployKeyFile, "deploy-key", cfg.DeployKeyFile, "path to deploy private key file")
 	flags.StringVar(&cfg.RelayerKeyFile, "relayer-key", cfg.RelayerKeyFile, "path to relayer private key file")
 	flags.StringVar(&cfg.OmniImgTag, "omni-image-tag", cfg.OmniImgTag, "Omni docker images tag (halo, relayer). Defaults to working dir git commit.")
-	flags.StringToStringVar(&cfg.AnvilStateFiles, "anvil-state", cfg.AnvilStateFiles, "path to anvil state files to load into anvil chains: '<chain1>=<file1>'")
 	flags.StringToStringVar(&cfg.RPCOverrides, "rpc-overrides", cfg.RPCOverrides, "Pubilc chain rpc overrides: '<chain1>=<url1>'")
 }
 
@@ -30,5 +29,5 @@ func bindPromFlags(flags *pflag.FlagSet, cfg *app.PromSecrets) {
 
 func bindDeployFlags(flags *pflag.FlagSet, cfg *app.DeployConfig) {
 	bindPromFlags(flags, &cfg.PromSecrets)
-	flags.StringVar(&cfg.EigenFile, "eigen-file", cfg.EigenFile, "path to json file defining eigenlayer deployments. Empty to skip AVS deployment")
+	flags.StringVar(&cfg.EigenFile, "eigen-file", cfg.EigenFile, "path to json file defining eigenlayer deployments. Defaults to ./e2e/app/static/el_deployments.json")
 }

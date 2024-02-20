@@ -1,0 +1,9 @@
+time="00-00-00 00:00:00" level=INFO source=<source> msg="info message" with=args
+time="00-00-00 00:00:00" level=DEBUG source=<source> msg="debug this code for me please" number=1
+time="00-00-00 00:00:00" level=WARN source=<source> msg="watch out!" err="file already exists"
+time="00-00-00 00:00:00" level=ERROR source=<source> msg="something went wrong" float=1.234 err=EOF
+time="00-00-00 00:00:00" level=WARN source=<source> msg=err1 err=first 1=1 source=<stacktrace>
+time="00-00-00 00:00:00" level=ERROR source=<source> msg=err2 err="second: first" 2=2 1=1 source=<stacktrace>
+time="00-00-00 00:00:00" level=DEBUG source=<source> msg="ctx debug message" ctx_key1=ctx_value1 debug_key1=debug_value1
+time="00-00-00 00:00:00" level=INFO source=<source> msg="ctx info message" ctx_key1=ctx_value1 ctx_key2=ctx_value2 info_key2=info_value2
+time="00-00-00 00:00:00" level=WARN source=<source> msg="Pkg wrapped error" err="pkg wrap: omni wrap: new" wrap=wrap new=new source=<stacktrace>

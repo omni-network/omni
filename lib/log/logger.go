@@ -55,34 +55,31 @@ func getLogger(ctx context.Context) *slog.Logger {
 	return global
 }
 
+func newLogfmtLogger(opts ...func(*options)) *slog.Logger {
+	o := defaultOptions()
+	for _, opt := range opts {
+		opt(&o)
+	}
+
+	handler := slog.NewTextHandler(o.Writer, &slog.HandlerOptions{
+		AddSource:   true,
+		Level:       o.Level,
+		ReplaceAttr: slogReplaceAtts(o),
+	})
+
+	return slog.New(handler)
+}
+
 func newJSONLogger(opts ...func(*options)) *slog.Logger {
 	o := defaultOptions()
 	for _, opt := range opts {
 		opt(&o)
 	}
 
-	// Maybe replace time, source and stacktrace with stubs for testing
-	replaceAttr := func(groups []string, a slog.Attr) slog.Attr { return a }
-	if o.Test {
-		replaceAttr = func(groups []string, a slog.Attr) slog.Attr {
-			if a.Key == slog.TimeKey && len(groups) == 0 {
-				return slog.String(slog.TimeKey, "00-00-00 00:00:00")
-			}
-			if a.Key == slog.SourceKey && len(groups) == 0 {
-				return slog.String(slog.SourceKey, "<source>")
-			}
-			if a.Key == "stacktrace" && len(groups) == 0 {
-				return slog.String(slog.SourceKey, "<stacktrace>")
-			}
-
-			return a
-		}
-	}
-
 	handler := slog.NewJSONHandler(o.Writer, &slog.HandlerOptions{
 		AddSource:   true,
 		Level:       o.Level,
-		ReplaceAttr: replaceAttr,
+		ReplaceAttr: slogReplaceAtts(o),
 	})
 
 	return slog.New(handler)
@@ -174,4 +171,25 @@ func (t stubHandler) Handle(ctx context.Context, r slog.Record) error {
 	}
 
 	return nil
+}
+
+// slogReplaceAtts returns a the slog replace attr function based on the test flag.
+func slogReplaceAtts(o options) func(groups []string, a slog.Attr) slog.Attr {
+	if !o.Test {
+		return func(groups []string, a slog.Attr) slog.Attr { return a }
+	}
+
+	return func(groups []string, a slog.Attr) slog.Attr {
+		if a.Key == slog.TimeKey && len(groups) == 0 {
+			return slog.String(slog.TimeKey, "00-00-00 00:00:00")
+		}
+		if a.Key == slog.SourceKey && len(groups) == 0 {
+			return slog.String(slog.SourceKey, "<source>")
+		}
+		if a.Key == "stacktrace" && len(groups) == 0 {
+			return slog.String(slog.SourceKey, "<stacktrace>")
+		}
+
+		return a
+	}
 }

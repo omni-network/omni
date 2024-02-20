@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-//go:generate go test . -update -clean
+//go:generate go test . -golden -clean
 
 func TestWriteConfigTOML(t *testing.T) {
 	t.Parallel()

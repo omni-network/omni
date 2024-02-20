@@ -38,7 +38,7 @@ func Info(ctx context.Context, msg string, attrs ...any) {
 func Warn(ctx context.Context, msg string, err error, attrs ...any) {
 	logTotal.WithLabelValues(levelWarn).Inc()
 	if err != nil {
-		attrs = append(attrs, "err", err)
+		attrs = append(attrs, slog.String("err", err.Error()))
 		attrs = append(attrs, errAttrs(err)...)
 	}
 
@@ -50,7 +50,7 @@ func Warn(ctx context.Context, msg string, err error, attrs ...any) {
 func Error(ctx context.Context, msg string, err error, attrs ...any) {
 	logTotal.WithLabelValues(levelError).Inc()
 	if err != nil {
-		attrs = append(attrs, "err", err)
+		attrs = append(attrs, slog.String("err", err.Error()))
 		attrs = append(attrs, errAttrs(err)...)
 	}
 	getLogger(ctx).ErrorContext(ctx, msg, mergeAttrs(ctx, attrs)...)

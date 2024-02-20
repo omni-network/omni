@@ -36,9 +36,6 @@ type DefinitionConfig struct {
 
 	InfraDataFile string // Not required for docker provider
 	OmniImgTag    string // OmniImgTag is the docker image tag used for halo and relayer.
-
-	AnvilStateFiles       map[string]string // map[chainName]stateFile
-	EigenLayerDeployments string
 }
 
 // DefaultDefinitionConfig returns a default configuration for a Definition.
@@ -214,7 +211,7 @@ func TestnetFromManifest(manifest types.Manifest, infd types.InfrastructureData,
 			Chain:       chain,
 			InternalIP:  inst.IPAddress,
 			ProxyPort:   inst.Port,
-			LoadState:   cfg.AnvilStateFiles[chain.Name],
+			LoadState:   "./anvil/state.json",
 			InternalRPC: fmt.Sprintf("http://%s:8545", internalIP),
 			ExternalRPC: fmt.Sprintf("http://%s:%d", inst.ExtIPAddress.String(), inst.Port),
 		})

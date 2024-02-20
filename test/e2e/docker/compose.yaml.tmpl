@@ -26,6 +26,8 @@ services:
     - {{ .PrometheusProxyPort }}:26660
 {{- end }}
     - 6060
+    environment:
+    - HALO_LOG_FORMAT={{ $.OmniLogFormat }}
     volumes:
     - ./{{ .Name }}:/halo
     - ./{{ index $.NodeOmniEVMs .Name }}/jwtsecret:/geth/jwtsecret
@@ -44,7 +46,13 @@ services:
       e2e: true
     container_name: {{ .Chain.Name }}
     image: ghcr.io/foundry-rs/foundry:latest
-    entrypoint: ['anvil','--host','0.0.0.0','--chain-id','{{ .Chain.ID }}','--block-time','1', '--silent', {{ if .LoadState }}'--load-state','/anvil/state.json'{{ end }}]
+    entrypoint:
+      - anvil
+      - --host=0.0.0.0
+      - --chain-id={{ .Chain.ID }}
+      - --block-time=1
+      - --silent
+      {{ if .LoadState }}- --load-state=/anvil/state.json{{ end }}
     ports:
       - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}8545
     networks:
@@ -122,6 +130,8 @@ services:
     container_name: relayer
     image: omniops/relayer:{{or .RelayerTag "main"}}
     restart: unless-stopped # Restart on crash to mitigate startup race issues
+    environment:
+    - RELAYER_LOG_FORMAT={{ $.OmniLogFormat }}
     volumes:
       - ./relayer:/relayer
     networks:
