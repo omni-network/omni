@@ -80,8 +80,8 @@ func xcall(ctx context.Context, from netman.Portal, destChainID uint64, nonce ui
 	fee, err := from.Contract.FeeFor(&bind.CallOpts{}, destChainID, data)
 	if err != nil {
 		return nil, errors.Wrap(err, "feeFor",
-			"source_chain", from.Chain.Name,
-			"dest_chain", destChainID,
+			"src_chain", from.Chain.Name,
+			"dst_chain_id", destChainID,
 		)
 	}
 
@@ -91,8 +91,8 @@ func xcall(ctx context.Context, from netman.Portal, destChainID uint64, nonce ui
 	tx, err := from.Contract.Xcall(txOpts, destChainID, to, data)
 	if err != nil {
 		return nil, errors.Wrap(err, "xcall",
-			"source_chain", from.Chain.Name,
-			"dest_chain", destChainID,
+			"src_chain", from.Chain.Name,
+			"dst_chain_id", destChainID,
 		)
 	}
 

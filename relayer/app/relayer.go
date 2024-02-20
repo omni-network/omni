@@ -9,31 +9,26 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 )
 
-// getSubmittedCursors returns the last submitted cursor for each chain.
+// getSubmittedCursors returns the last submitted cursor for each source chain on the destination chain.
 // It also returns the offsets indexed by streamID for each stream.
-func getSubmittedCursors(ctx context.Context, srcChains, dstChains []uint64, xClient xchain.Provider,
+func getSubmittedCursors(ctx context.Context, network netconf.Network, dstChainID uint64, xClient xchain.Provider,
 ) ([]xchain.StreamCursor, map[xchain.StreamID]uint64, error) {
-	var cursors []xchain.StreamCursor                  // All submitted cursors from all chains.
+	var cursors []xchain.StreamCursor                  //nolint:prealloc // Not worth it.
 	initialOffsets := make(map[xchain.StreamID]uint64) // Initial submitted offsets for each stream.
-	for _, destChain := range dstChains {
-		for _, srcChain := range srcChains {
-			if srcChain == destChain {
-				continue
-			}
-
-			cursor, ok, err := xClient.GetSubmittedCursor(ctx, destChain, srcChain)
-			if err != nil {
-				return nil, nil, errors.Wrap(err, "failed to get submitted cursors",
-					"dest_chain", destChain,
-					"src_chain", srcChain,
-				)
-			} else if !ok {
-				continue
-			}
-
-			initialOffsets[cursor.StreamID] = cursor.Offset
-			cursors = append(cursors, cursor)
+	for _, srcChain := range network.Chains {
+		if srcChain.ID == dstChainID {
+			continue
 		}
+
+		cursor, ok, err := xClient.GetSubmittedCursor(ctx, dstChainID, srcChain.ID)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "failed to get submitted cursors", "src_chain", srcChain.Name)
+		} else if !ok {
+			continue
+		}
+
+		initialOffsets[cursor.StreamID] = cursor.Offset
+		cursors = append(cursors, cursor)
 	}
 
 	return cursors, initialOffsets, nil
@@ -67,10 +62,13 @@ func filterMsgs(msgs []xchain.Msg, offsets map[xchain.StreamID]uint64, streamID 
 	return res
 }
 
-func FromHeights(cursors []xchain.StreamCursor, chains []netconf.Chain) map[uint64]uint64 {
+func FromHeights(cursors []xchain.StreamCursor, destChain netconf.Chain, chains []netconf.Chain) map[uint64]uint64 {
 	res := make(map[uint64]uint64)
 
 	for _, chain := range chains {
+		if chain.ID == destChain.ID {
+			continue
+		}
 		res[chain.ID] = chain.DeployHeight
 	}
 
@@ -80,6 +78,9 @@ func FromHeights(cursors []xchain.StreamCursor, chains []netconf.Chain) map[uint
 	})
 
 	for _, cursor := range cursors {
+		if cursor.SourceChainID == destChain.ID {
+			continue // Sanity check
+		}
 		res[cursor.SourceChainID] = cursor.SourceBlockHeight
 	}
 

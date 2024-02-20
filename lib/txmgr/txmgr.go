@@ -470,10 +470,7 @@ func (m *SimpleTxManager) waitMined(ctx context.Context, tx *types.Transaction,
 			if err != nil {
 				return nil, err
 			} else if !ok && attempt%logFreqFactor == 0 {
-				log.Warn(ctx, "Transaction not yet mined", nil,
-					"chain_id", m.chainID,
-					"attempt", attempt,
-				)
+				log.Warn(ctx, "Transaction not yet mined", nil, "attempt", attempt)
 			} else if ok {
 				return receipt, nil
 			}
