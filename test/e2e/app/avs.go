@@ -27,11 +27,15 @@ func deployAVS(ctx context.Context, def Definition, cfg DeployConfig, deployInfo
 
 	portal := def.Netman.Portals()[chain.ID]
 
+	// just use the first OmniEVM chain for now
+	omniChainID := def.Testnet.OmniEVMs[0].Chain.ID
+
 	xdapp := avs.New(
 		avs.DefaultTestAVSConfig(elDeps),
 		elDeps,
 		portal.DeployInfo.PortalAddress,
 		chain,
+		omniChainID,
 		portal.Client,
 		portal.TxOpts(ctx, nil),
 	)
