@@ -34,9 +34,6 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     /// @notice Minimum stake required for an operator to register, not including delegations
     uint96 public minimumOperatorStake;
 
-    /// @notice List of currently register operators, used to sync EigenCore
-    address[] public operators;
-
     /// @notice Omni portal contract, used to make xcalls to the Omni chain
     IOmniPortal public omni;
 
@@ -48,6 +45,12 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
 
     /// @dev OmniPortal.xcall base gas limit in syncWithOmni
     uint256 internal xcallBaseGasLimit = 75_000;
+
+    /// @notice List of currently register operators, used to sync EigenCore
+    address[] internal _operators;
+
+    /// @notice Set of operators that are allowed to register
+    mapping(address => bool) internal _allowlist;
 
     constructor(IDelegationManager delegationManager_, IAVSDirectory avsDirectory_) {
         _delegationManager = delegationManager_;
@@ -62,14 +65,19 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
         uint64 omniChainId_,
         uint96 minimumOperatorStake_,
         uint32 maxOperatorCount_,
+        address[] calldata allowlist_,
         StrategyParams[] calldata strategyParams_
     ) external initializer {
-        _transferOwnership(owner_);
         omni = omni_;
         omniChainId = omniChainId_;
         minimumOperatorStake = minimumOperatorStake_;
         maxOperatorCount = maxOperatorCount_;
         _setStrategyParams(strategyParams_);
+        _transferOwnership(owner_);
+
+        for (uint256 i = 0; i < allowlist_.length; i++) {
+            _allowlist[allowlist_[i]] = true;
+        }
     }
 
     /**
@@ -82,9 +90,10 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external {
         require(msg.sender == operator, "OmniAVS: only operator");
-        require(operators.length < maxOperatorCount, "OmniAVS: max operators reached");
-        require(_getSelfDelegations(operator) >= minimumOperatorStake, "OmniAVS: minimum stake not met"); // TODO: should this be _getTotalDelegations?
+        require(_allowlist[operator], "OmniAVS: not allowed");
         require(!_isOperator(operator), "OmniAVS: already an operator"); // we could let _avsDirectory.regsiterOperatorToAVS handle this, they do check
+        require(_operators.length < maxOperatorCount, "OmniAVS: max operators reached");
+        require(_getSelfDelegations(operator) >= minimumOperatorStake, "OmniAVS: minimum stake not met"); // TODO: should this be _getTotalDelegations?
 
         _avsDirectory.registerOperatorToAVS(operator, operatorSignature);
         _addOperator(operator);
@@ -105,15 +114,15 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
 
     /// @dev Adds an operator to the list of operators, does not check if operator already exists
     function _addOperator(address operator) private {
-        operators.push(operator);
+        _operators.push(operator);
     }
 
     /// @dev Removes an operator from the list of operators
     function _removeOperator(address operator) private {
-        for (uint256 i = 0; i < operators.length; i++) {
-            if (operators[i] == operator) {
-                operators[i] = operators[operators.length - 1];
-                operators.pop();
+        for (uint256 i = 0; i < _operators.length; i++) {
+            if (_operators[i] == operator) {
+                _operators[i] = _operators[_operators.length - 1];
+                _operators.pop();
                 break;
             }
         }
@@ -121,8 +130,8 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
 
     /// @dev Returns true if the operator is in the list of operators
     function _isOperator(address operator) private view returns (bool) {
-        for (uint256 i = 0; i < operators.length; i++) {
-            if (operators[i] == operator) {
+        for (uint256 i = 0; i < _operators.length; i++) {
+            if (_operators[i] == operator) {
                 return true;
             }
         }
@@ -135,7 +144,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
 
     /// @inheritdoc IOmniAVS
     function feeForSync() external view returns (uint256) {
-        Validator[] memory vals = getValidators();
+        Validator[] memory vals = _getValidators();
         return omni.feeFor(
             omniChainId, abi.encodeWithSelector(IOmniEthRestaking.sync.selector, vals), _xcallGasLimitFor(vals.length)
         );
@@ -143,7 +152,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
 
     /// @inheritdoc IOmniAVS
     function syncWithOmni() external payable {
-        Validator[] memory vals = getValidators();
+        Validator[] memory vals = _getValidators();
         omni.xcall{ value: msg.value }(
             omniChainId,
             OmniPredeploys.OMNI_ETH_RESTAKING,
@@ -197,9 +206,31 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
         xcallGasLimitPerValidator = perValidator;
     }
 
+    /// @inheritdoc IOmniAVSAdmin
+    function addToAllowlist(address operator) external onlyOwner {
+        require(operator != address(0), "OmniAVS: zero address");
+        require(!_allowlist[operator], "OmniAVS: already in allowlist");
+        _allowlist[operator] = true;
+        emit OperatorAllowed(operator);
+    }
+
+    /// @inheritdoc IOmniAVSAdmin
+    function removeFromAllowlist(address operator) external onlyOwner {
+        require(_allowlist[operator], "OmniAVS: not in allowlist");
+        _allowlist[operator] = false;
+        emit OperatorDisallowed(operator);
+    }
+
+    /// @dev Set the strategy parameters
     function _setStrategyParams(StrategyParams[] calldata params) internal {
         delete strategyParams;
+
         for (uint256 i = 0; i < params.length; i++) {
+            // ensure no duplicates
+            for (uint256 j = i + 1; j < params.length; j++) {
+                require(address(params[i].strategy) != address(params[j].strategy), "OmniAVS: duplicate strategy");
+            }
+
             strategyParams.push(params[i]);
         }
     }
@@ -209,7 +240,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
      */
 
     /// @inheritdoc IOmniAVS
-    function getValidators() public view returns (Validator[] memory) {
+    function getValidators() external view returns (Validator[] memory) {
         return _getValidators();
     }
 
@@ -227,7 +258,9 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
         address[] memory strategies = new address[](strategyParams.length);
         for (uint256 j = 0; j < strategyParams.length; j++) {
             address strat = address(strategyParams[j].strategy);
-            if (_delegationManager.operatorShares(operator, IStrategy(strat)) > 0) strategies[j] = strat;
+            if (_delegationManager.operatorShares(operator, IStrategy(strat)) > 0) {
+                strategies[j] = strat;
+            }
         }
         return strategies;
     }
@@ -237,12 +270,17 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
         return address(_avsDirectory);
     }
 
+    /// @inheritdoc IOmniAVSAdmin
+    function isInAllowlist(address operator) external view returns (bool) {
+        return _allowlist[operator];
+    }
+
     /// @dev Return current list of Validators, including their personal stake and delegated stake
     function _getValidators() internal view returns (Validator[] memory) {
-        Validator[] memory vals = new Validator[](operators.length);
+        Validator[] memory vals = new Validator[](_operators.length);
 
         for (uint256 i = 0; i < vals.length; i++) {
-            address operator = operators[i];
+            address operator = _operators[i];
 
             uint96 total = _getTotalDelegations(operator);
             uint96 staked = _getSelfDelegations(operator);

@@ -57,6 +57,7 @@ contract AVSBase is EigenLayerTestHelper {
             omniChainId,
             minimumOperatorStake,
             maxOperatorCount,
+            new address[](0), // allowlist
             strategyParams
         );
     }

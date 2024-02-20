@@ -44,6 +44,18 @@ contract AVSUtils is AVSBase {
         omniAVS.registerOperatorToAVS(operator, sig);
     }
 
+    /// @dev add an operator to the allowlist
+    function _addToAllowlist(address operator) internal {
+        vm.prank(omniAVSOwner);
+        omniAVS.addToAllowlist(operator);
+    }
+
+    /// @dev remove an operator from the allowlist
+    function _removeFromAllowlist(address operator) internal {
+        vm.prank(omniAVSOwner);
+        omniAVS.removeFromAllowlist(operator);
+    }
+
     /// @dev deregister an operator from OmniAVS
     function _deregisterOperatorFromAVS(address operator) internal {
         vm.prank(operator);

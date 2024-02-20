@@ -95,6 +95,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
     function _testRegisterOperatorsWithAVS() internal {
         // register operators with AVS
         for (uint32 i = 0; i < numOperators; i++) {
+            _addToAllowlist(operators[i]);
             _registerOperatorWithAVS(operators[i]);
         }
 
@@ -306,5 +307,58 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
                 "xcall(uint64,address,bytes,uint64)", omniChainId, OmniPredeploys.OMNI_ETH_RESTAKING, data, gasLimit
             )
         );
+    }
+
+    /**
+     * Unit tests.
+     */
+
+    /// @dev Test that an operator cannot register if not in allow list
+    function test_registerOperator_notAllowed_reverts() public {
+        address operator = _operator(0);
+
+        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+
+        vm.expectRevert("OmniAVS: not allowed");
+        vm.prank(operator);
+        omniAVS.registerOperatorToAVS(operator, emptySig);
+    }
+
+    /// @dev Test that an operator can be added to the allowlist
+    function test_addToAllowlist_succeeds() public {
+        address operator = makeAddr("operator");
+        _addToAllowlist(operator);
+        assertTrue(omniAVS.isInAllowlist(operator));
+    }
+
+    /// @dev Test that an operator can be removed from the allowlist
+    function test_removeFromAllowlist_succeeds() public {
+        address operator1 = makeAddr("operator");
+        address operator2 = makeAddr("operator2");
+
+        _addToAllowlist(operator1);
+        _addToAllowlist(operator2);
+        assertTrue(omniAVS.isInAllowlist(operator1));
+        assertTrue(omniAVS.isInAllowlist(operator2));
+
+        _removeFromAllowlist(operator1);
+        assertFalse(omniAVS.isInAllowlist(operator1));
+        assertTrue(omniAVS.isInAllowlist(operator2));
+    }
+
+    /// @dev Test that only the owner can add to the allowlist
+    function test_addToAllowlist_notOwner_reverts() public {
+        address operator = makeAddr("operator");
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        omniAVS.addToAllowlist(operator);
+    }
+
+    /// @dev Test that only the owner can remove from the allowlist
+    function test_removeFromAllowlist_notOwner_reverts() public {
+        address operator = makeAddr("operator");
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        omniAVS.removeFromAllowlist(operator);
     }
 }
