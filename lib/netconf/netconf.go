@@ -73,6 +73,7 @@ func (n Network) Chain(id uint64) (Chain, bool) {
 	return Chain{}, false
 }
 
+// FinalizationStrat defines the level of finalization of a block to define query strategies.
 type FinalizationStrat string
 
 const (
@@ -92,7 +93,7 @@ type Chain struct {
 	DeployHeight      uint64            // Height that the portal contracts were deployed
 	IsOmni            bool              // Whether this is the Omni chain
 	BlockPeriod       time.Duration     // Block period of the chain
-	FinalizationStrat FinalizationStrat // Commitment Level of the block
+	FinalizationStrat FinalizationStrat // Finalization strategy of the chain
 }
 
 // Load loads the network configuration from the given path.
@@ -133,7 +134,7 @@ type chainJSON struct {
 	DeployHeight      uint64            `json:"deploy_height"`
 	IsOmni            bool              `json:"is_omni,omitempty"`
 	BlockPeriod       string            `json:"block_period"`
-	FinalizationStrat FinalizationStrat `json:"commitment_level"`
+	FinalizationStrat FinalizationStrat `json:"finalization_strat"`
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
