@@ -134,7 +134,7 @@ type chainJSON struct {
 	DeployHeight      uint64            `json:"deploy_height"`
 	IsOmni            bool              `json:"is_omni,omitempty"`
 	BlockPeriod       string            `json:"block_period"`
-	FinalizationStrat FinalizationStrat `json:"finalization_strat"`
+	FinalizationStrat FinalizationStrat `json:"finalization_start"`
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
