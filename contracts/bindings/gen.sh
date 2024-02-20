@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Generate bindings for the given solidity contracts, to be
 
-BINDINGS_DIR=${BINDINGS_DIR:-./bindings}
+DIR=${DIR:-./bindings}
+PKG=${PKG:-bindings}
 
 # generate bindings for the given contract
 # params:
@@ -19,9 +20,9 @@ gen_binding() {
   abigen \
     --abi ${temp}/${name}.abi \
     --bin ${temp}/${name}.bin \
-    --pkg bindings \
+    --pkg ${PKG} \
     --type ${name} \
-    --out ${BINDINGS_DIR}/${name_lower}.go
+    --out ${DIR}/${name_lower}.go
 }
 
 

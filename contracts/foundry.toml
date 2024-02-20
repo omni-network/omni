@@ -12,7 +12,10 @@ remappings = [
   '@openzeppelin-upgrades/contracts/=node_modules/@openzeppelin/contracts-upgradeable',
 ]
 
-fs_permissions = [{ access = "read-write", path = "./test/data" }]
+fs_permissions = [
+  { access = "read-write", path = "./test/data" },
+  { access = "read-write", path = "./script" },
+]
 
 [fuzz]
 seed = "0x6eed"

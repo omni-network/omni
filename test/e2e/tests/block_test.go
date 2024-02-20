@@ -16,7 +16,7 @@ func TestBlock_Header(t *testing.T) {
 	ctx := context.Background()
 	blocks := fetchBlockChain(ctx, t)
 
-	test(t, func(t *testing.T, node e2e.Node, _ []Portal) {
+	testNode(t, func(t *testing.T, node e2e.Node, _ []Portal) {
 		t.Helper()
 		if node.Mode == e2e.ModeSeed {
 			return
@@ -49,7 +49,7 @@ func TestBlock_Header(t *testing.T) {
 			require.NoError(t, resp.Block.ValidateBasic(),
 				"block at height %d is invalid", block.Header.Height)
 		}
-	}, nil)
+	})
 }
 
 // Tests that the node contains the expected block range.
@@ -57,7 +57,7 @@ func TestBlock_Range(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	test(t, func(t *testing.T, node e2e.Node, _ []Portal) {
+	testNode(t, func(t *testing.T, node e2e.Node, _ []Portal) {
 		t.Helper()
 		if node.Mode == e2e.ModeSeed {
 			return
@@ -102,5 +102,5 @@ func TestBlock_Range(t *testing.T) {
 			require.NoError(t, ctx.Err(), "Timeout fetching initial range: %d", h)
 			require.Error(t, err)
 		}
-	}, nil)
+	})
 }

@@ -10,7 +10,7 @@ import (
 // and that at least half of the messages are received by the destination chains.
 func TestPortalOffsets(t *testing.T) {
 	t.Parallel()
-	test(t, nil, func(t *testing.T, source Portal, dests []Portal) {
+	testPortal(t, func(t *testing.T, source Portal, dests []Portal) {
 		t.Helper()
 		for _, dest := range dests {
 			if source.Chain.ID == dest.Chain.ID {

@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/omni-network/omni/lib/errors"
+
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 
 	"github.com/ethereum/go-ethereum/crypto"
@@ -22,11 +24,28 @@ type Testnet struct {
 	PublicChains []PublicChain
 }
 
+func (t Testnet) AVSChain() (EVMChain, error) {
+	for _, c := range t.AnvilChains {
+		if c.Chain.IsAVSTarget {
+			return c.Chain, nil
+		}
+	}
+
+	for _, c := range t.PublicChains {
+		if c.Chain.IsAVSTarget {
+			return c.Chain, nil
+		}
+	}
+
+	return EVMChain{}, errors.New("avs target chain found")
+}
+
 // EVMChain represents a EVM chain in a omni network.
 type EVMChain struct {
 	Name        string // Chain Nam.
 	ID          uint64 // Chain ID
 	IsPublic    bool
+	IsAVSTarget bool
 	BlockPeriod time.Duration
 }
 
@@ -66,6 +85,7 @@ type AnvilChain struct {
 	ProxyPort   uint32   // For binding
 	InternalRPC string   // For JSON-RPC queries from halo/relayer
 	ExternalRPC string   // For JSON-RPC queries from e2e app.
+	LoadState   string   // File path to load anvil state from
 }
 
 // PublicChain represents a public chain in a omni network.
