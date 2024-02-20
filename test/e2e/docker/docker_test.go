@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-//go:generate go test . -clean -update
+//go:generate go test . -golden -clean
 
 func TestComposeTemplate(t *testing.T) {
 	t.Parallel()
