@@ -7,7 +7,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/test/e2e/pingpong"
+	"github.com/omni-network/omni/test/e2e/netman/pingpong"
 	"github.com/omni-network/omni/test/e2e/types"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
