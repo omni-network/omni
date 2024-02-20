@@ -43,7 +43,7 @@ func AnvilChainsByNames(names []string) []EVMChain {
 			Name:              name,
 			ID:                anvilChainIDFactor * uint64(i+1),
 			BlockPeriod:       time.Second,
-			FinalizationStrat: netconf.StartLatest,
+			FinalizationStrat: netconf.StartLatest, // anvil doesn't support finalized
 		})
 	}
 
