@@ -4,8 +4,8 @@ package cmd
 import (
 	"context"
 
-	halo1 "github.com/omni-network/omni/halo/app"
-	halo2 "github.com/omni-network/omni/halo2/app"
+	"github.com/omni-network/omni/halo/app"
+	halocfg "github.com/omni-network/omni/halo/config"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/log"
 
@@ -17,15 +17,14 @@ func New() *cobra.Command {
 	return libcmd.NewRootCmd(
 		"halo",
 		"Halo is a consensus client implementation for the Omni Protocol",
-		newRunCmd("run1", halo1.Run),
+		newRunCmd("run", app.Run),
 		newInitCmd(),
-		newRunCmd("run", halo2.Run),
 	)
 }
 
 // newRunCmd returns a new cobra command that runs the halo consensus client.
-func newRunCmd(name string, runFunc func(context.Context, halo1.Config) error) *cobra.Command {
-	haloCfg := halo1.DefaultHaloConfig()
+func newRunCmd(name string, runFunc func(context.Context, app.Config) error) *cobra.Command {
+	haloCfg := halocfg.DefaultConfig()
 	logCfg := log.DefaultConfig()
 
 	cmd := &cobra.Command{
@@ -45,9 +44,9 @@ func newRunCmd(name string, runFunc func(context.Context, halo1.Config) error) *
 				return err
 			}
 
-			return runFunc(ctx, halo1.Config{
-				HaloConfig: haloCfg,
-				Comet:      cometCfg,
+			return runFunc(ctx, app.Config{
+				Config: haloCfg,
+				Comet:  cometCfg,
 			})
 		},
 	}

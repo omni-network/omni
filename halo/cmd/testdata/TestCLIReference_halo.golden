@@ -8,7 +8,6 @@ Available Commands:
   help        Help about any command
   init        Initializes required halo files and directories
   run         Runs the halo consensus client
-  run1        Runs the halo consensus client
 
 Flags:
   -h, --help   help for halo
