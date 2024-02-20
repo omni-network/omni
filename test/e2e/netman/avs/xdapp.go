@@ -18,12 +18,13 @@ import (
 
 type XDapp struct {
 	// Immutable state
-	cfg        AVSConfig
-	eigen      EigenDeployments
-	portalAddr common.Address
-	chain      types.EVMChain
-	ethCl      *ethclient.Client
-	txOpts     *bind.TransactOpts // TODO(corver): Replace this with a txmgr.
+	cfg         AVSConfig
+	eigen       EigenDeployments
+	portalAddr  common.Address
+	chain       types.EVMChain
+	omniChainID uint64
+	ethCl       *ethclient.Client
+	txOpts      *bind.TransactOpts // TODO(corver): Replace this with a txmgr.
 
 	// Mutable state
 	contract     *bindings.OmniAVS
@@ -32,14 +33,15 @@ type XDapp struct {
 }
 
 func New(cfg AVSConfig, eigen EigenDeployments, portalAddr common.Address,
-	chain types.EVMChain, ethCl *ethclient.Client, txOpts *bind.TransactOpts) *XDapp {
+	chain types.EVMChain, omniChainID uint64, ethCl *ethclient.Client, txOpts *bind.TransactOpts) *XDapp {
 	return &XDapp{
-		cfg:        cfg,
-		eigen:      eigen,
-		portalAddr: portalAddr,
-		chain:      chain,
-		ethCl:      ethCl,
-		txOpts:     txOpts,
+		cfg:         cfg,
+		eigen:       eigen,
+		portalAddr:  portalAddr,
+		chain:       chain,
+		omniChainID: omniChainID,
+		ethCl:       ethCl,
+		txOpts:      txOpts,
 	}
 }
 
@@ -74,7 +76,7 @@ func (m *XDapp) Deploy(ctx context.Context) error {
 	}
 
 	addr, err := deployOmniAVS(ctx, m.ethCl, m.txOpts, proxyAdmin, m.txOpts.From,
-		m.portalAddr, m.chain.ID, m.eigen.DelegationManager, m.eigen.AVSDirectory,
+		m.portalAddr, m.omniChainID, m.eigen.DelegationManager, m.eigen.AVSDirectory,
 		m.cfg.MinimumOperatorStake, m.cfg.MaximumOperatorCount, stratParms)
 	if err != nil {
 		return errors.Wrap(err, "deploy avs")
