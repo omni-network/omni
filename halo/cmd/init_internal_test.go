@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-//go:generate go test . -run TestInit -update
+//go:generate go test . -run TestInit -golden
 
 func TestInitFiles(t *testing.T) {
 	t.Parallel()
