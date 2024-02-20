@@ -10,7 +10,7 @@
    "deploy_height": 15080552979306262733,
    "is_omni": true,
    "block_period": "-1500944h33m53.93593515s",
-   "finalization_strat": "ŽƔA苩xǼe赖{³*Ę鄏þƿ"
+   "finalization_start": "ŽƔA苩xǼe赖{³*Ę鄏þƿ"
   },
   {
    "id": 2023352169444513236,
@@ -20,7 +20,7 @@
    "portal_address": "ɩ9Ă`ȝ",
    "deploy_height": 58744245388319889,
    "block_period": "849478h16m29.713366904s",
-   "finalization_strat": "R涞!Ä\u003e漌Ǭ顼溹*"
+   "finalization_start": "R涞!Ä\u003e漌Ǭ顼溹*"
   },
   {
    "id": 4788190398976706073,
@@ -30,7 +30,7 @@
    "portal_address": "uvȭƹ棳ɷk",
    "deploy_height": 11472980923278878730,
    "block_period": "-562084h53m3.72828752s",
-   "finalization_strat": "ĦɈ"
+   "finalization_start": "ĦɈ"
   }
  ]
 }
