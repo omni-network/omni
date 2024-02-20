@@ -7,7 +7,7 @@ on:
 
 jobs:
   goreleaser:
-    runs-on: self-hosted
+    runs-on: namespace-profile-default
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
