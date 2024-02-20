@@ -17,4 +17,8 @@ contract OmniAVSHarness is OmniAVS {
     function xcallGasLimitFor(uint256 numValidators) external view returns (uint64) {
         return _xcallGasLimitFor(numValidators);
     }
+
+    function isInAllowlist(address operator) external view returns (bool) {
+        return _isInAllowlist(operator);
+    }
 }
