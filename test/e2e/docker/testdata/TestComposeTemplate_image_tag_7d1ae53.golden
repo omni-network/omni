@@ -20,6 +20,8 @@ services:
     - 26656
     - 8584:26657
     - 6060
+    environment:
+    - HALO_LOG_FORMAT=console
     volumes:
     - ./node0:/halo
     - ./omni_evm_0/jwtsecret:/geth/jwtsecret
@@ -135,6 +137,8 @@ services:
     container_name: relayer
     image: omniops/relayer:7d1ae53
     restart: unless-stopped # Restart on crash to mitigate startup race issues
+    environment:
+    - RELAYER_LOG_FORMAT=console
     volumes:
       - ./relayer:/relayer
     networks:

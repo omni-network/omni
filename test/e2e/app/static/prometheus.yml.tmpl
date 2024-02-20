@@ -9,10 +9,10 @@ remote_write:
       username: {{ .RemoteUsername }}
       password: {{ .RemotePassword }}
     write_relabel_configs:
-      # Trim port from instance label
-      - source_labels: [__address__]
+      # Add 'container' label using 'instance without port'
+      - source_labels: [instance]
         regex: '(.+):(\d+)'
-        target_label: instance
+        target_label: container
         replacement: '${1}'
 {{end }}
 

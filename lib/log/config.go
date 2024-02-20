@@ -13,6 +13,7 @@ import (
 const (
 	FormatConsole = "console"
 	FormatJSON    = "json"
+	FormatLogfmt  = "logfmt"
 
 	ColorForce   = "force"
 	ColorDisable = "disable"
@@ -31,6 +32,7 @@ var (
 var loggerFuncs = map[string]func(...func(*options)) *slog.Logger{
 	FormatConsole: newConsoleLogger,
 	FormatJSON:    newJSONLogger,
+	FormatLogfmt:  newLogfmtLogger,
 }
 
 //nolint:gochecknoglobals // Static mapping.
