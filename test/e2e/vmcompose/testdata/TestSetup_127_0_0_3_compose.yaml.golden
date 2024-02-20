@@ -12,7 +12,7 @@ services:
       e2e: true
     container_name: chain_a
     image: ghcr.io/foundry-rs/foundry:latest
-    entrypoint: ['anvil','--host','0.0.0.0','--chain-id','100','--block-time','1', ]
+    entrypoint: ['anvil','--host','0.0.0.0','--chain-id','100','--block-time','1', '--silent', ]
     ports:
       - 8545:8545
     networks:
