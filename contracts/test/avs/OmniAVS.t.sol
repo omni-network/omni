@@ -331,28 +331,15 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
         assertTrue(omniAVS.isInAllowlist(operator));
     }
 
-    function test_setAllowlist_succeeds() public {
-        address operator1 = makeAddr("operator");
-        address operator2 = makeAddr("operator2");
-        address[] memory ops = new address[](2);
-        ops[0] = operator1;
-        ops[1] = operator2;
-
-        _setAllowlist(ops);
-        assertTrue(omniAVS.isInAllowlist(operator1));
-        assertTrue(omniAVS.isInAllowlist(operator2));
-    }
-
     /// @dev Test that an operator can be removed from the allowlist
     function test_removeFromAllowlist_succeeds() public {
         address operator1 = makeAddr("operator");
         address operator2 = makeAddr("operator2");
-        address[] memory ops = new address[](2);
-        ops[0] = operator1;
-        ops[1] = operator2;
 
-        _setAllowlist(ops);
+        _addToAllowlist(operator1);
+        _addToAllowlist(operator2);
         assertTrue(omniAVS.isInAllowlist(operator1));
+        assertTrue(omniAVS.isInAllowlist(operator2));
 
         _removeFromAllowlist(operator1);
         assertFalse(omniAVS.isInAllowlist(operator1));
@@ -373,15 +360,5 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
 
         vm.expectRevert("Ownable: caller is not the owner");
         omniAVS.removeFromAllowlist(operator);
-    }
-
-    /// @dev Test that only the owner can set the allowlist
-    function test_setAllowlist_notOwner_reverts() public {
-        address[] memory ops = new address[](2);
-        ops[0] = makeAddr("operator");
-        ops[1] = makeAddr("operator2");
-
-        vm.expectRevert("Ownable: caller is not the owner");
-        omniAVS.setAllowlist(ops);
     }
 }

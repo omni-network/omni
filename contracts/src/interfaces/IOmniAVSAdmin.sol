@@ -10,9 +10,16 @@ import { IOmniAVS } from "./IOmniAVS.sol";
  */
 interface IOmniAVSAdmin {
     /**
-     * @notice Returns list of operators that are allowed to register.
+     * @notice Emitted when an operator is added to the allowlist.
+     * @param operator The operator
      */
-    function allowlist() external view returns (address[] memory);
+    event OperatorAddedToAllowlist(address operator);
+
+    /**
+     * @notice Emitted when an operator is removed from the allowlist.
+     * @param operator The operator
+     */
+    event OperatorRemovedFromAllowlist(address operator);
 
     /**
      * @notice Initialize the Omni AVS admin contract.
@@ -78,11 +85,10 @@ interface IOmniAVSAdmin {
     function setXcallGasLimits(uint256 base, uint256 perValidator) external;
 
     /**
-     * @notice Set the allowlist.
-     * @dev Only the owner can call this function.
-     * @param allowlist The allowlist
+     * @notice Returns true if the operator is in the allowlist.
+     * @param operator The operator to check
      */
-    function setAllowlist(address[] calldata allowlist) external;
+    function isInAllowlist(address operator) external view returns (bool);
 
     /**
      * @notice Add an operator to the allowlist.

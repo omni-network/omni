@@ -49,8 +49,8 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     /// @notice List of currently register operators, used to sync EigenCore
     address[] internal _operators;
 
-    /// @notice List of operator addresses that are allowed to register
-    address[] internal _allowlist;
+    /// @notice Set of operators that are allowed to register
+    mapping(address => bool) internal _allowlist;
 
     constructor(IDelegationManager delegationManager_, IAVSDirectory avsDirectory_) {
         _delegationManager = delegationManager_;
@@ -73,8 +73,11 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
         minimumOperatorStake = minimumOperatorStake_;
         maxOperatorCount = maxOperatorCount_;
         _setStrategyParams(strategyParams_);
-        _setAllowlist(allowlist_);
         _transferOwnership(owner_);
+
+        for (uint256 i = 0; i < allowlist_.length; i++) {
+            _allowlist[allowlist_[i]] = true;
+        }
     }
 
     /**
@@ -87,7 +90,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external {
         require(msg.sender == operator, "OmniAVS: only operator");
-        require(_isInAllowlist(operator), "OmniAVS: not allowed");
+        require(_allowlist[operator], "OmniAVS: not allowed");
         require(!_isOperator(operator), "OmniAVS: already an operator"); // we could let _avsDirectory.regsiterOperatorToAVS handle this, they do check
         require(_operators.length < maxOperatorCount, "OmniAVS: max operators reached");
         require(_getSelfDelegations(operator) >= minimumOperatorStake, "OmniAVS: minimum stake not met"); // TODO: should this be _getTotalDelegations?
@@ -206,26 +209,16 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     /// @inheritdoc IOmniAVSAdmin
     function addToAllowlist(address operator) external onlyOwner {
         require(operator != address(0), "OmniAVS: zero address");
-        require(!_isInAllowlist(operator), "OmniAVS: already in allowlist");
-
-        _allowlist.push(operator);
+        require(!_allowlist[operator], "OmniAVS: already in allowlist");
+        _allowlist[operator] = true;
+        emit OperatorAddedToAllowlist(operator);
     }
 
     /// @inheritdoc IOmniAVSAdmin
     function removeFromAllowlist(address operator) external onlyOwner {
-        for (uint256 i = 0; i < _allowlist.length; i++) {
-            if (_allowlist[i] == operator) {
-                _allowlist[i] = _allowlist[_allowlist.length - 1];
-                _allowlist.pop();
-                return;
-            }
-        }
-        revert("OmniAVS: not in allowlist");
-    }
-
-    /// @inheritdoc IOmniAVSAdmin
-    function setAllowlist(address[] calldata allowlist_) external onlyOwner {
-        _setAllowlist(allowlist_);
+        require(_allowlist[operator], "OmniAVS: not in allowlist");
+        _allowlist[operator] = false;
+        emit OperatorRemovedFromAllowlist(operator);
     }
 
     /// @dev Set the strategy parameters
@@ -239,21 +232,6 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
             }
 
             strategyParams.push(params[i]);
-        }
-    }
-
-    /// @dev Set the allowlist
-    function _setAllowlist(address[] calldata allowlist_) internal {
-        delete _allowlist;
-        for (uint256 i = 0; i < allowlist_.length; i++) {
-            require(allowlist_[i] != address(0), "OmniAVS: zero address");
-
-            // ensure no duplicates
-            for (uint256 j = i + 1; j < allowlist_.length; j++) {
-                require(allowlist_[i] != allowlist_[j], "OmniAVS: duplicate allowlist");
-            }
-
-            _allowlist.push(allowlist_[i]);
         }
     }
 
@@ -293,8 +271,8 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     }
 
     /// @inheritdoc IOmniAVSAdmin
-    function allowlist() external view returns (address[] memory) {
-        return _allowlist;
+    function isInAllowlist(address operator) external view returns (bool) {
+        return _allowlist[operator];
     }
 
     /// @dev Return current list of Validators, including their personal stake and delegated stake
@@ -357,13 +335,5 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     /// @dev Returns the weighted stake for shares with specified multiplier
     function _weight(uint256 shares, uint96 multiplier) internal pure returns (uint96) {
         return uint96(shares * multiplier / WEIGHTING_DIVISOR);
-    }
-
-    /// @dev Returns true if the operator is in the allowlist
-    function _isInAllowlist(address operator) internal view returns (bool) {
-        for (uint256 i = 0; i < _allowlist.length; i++) {
-            if (_allowlist[i] == operator) return true;
-        }
-        return false;
     }
 }
