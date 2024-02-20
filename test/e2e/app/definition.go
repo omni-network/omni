@@ -253,40 +253,40 @@ func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 
 	omniEVM := omniEVMByPrefix(testnet, evmPrefix)
 	chains = append(chains, netconf.Chain{
-		ID:              omniEVM.Chain.ID,
-		Name:            omniEVM.Chain.Name,
-		RPCURL:          omniEVM.InternalRPC,
-		AuthRPCURL:      omniEVM.InternalAuthRPC,
-		PortalAddress:   deployInfo[omniEVM.Chain].PortalAddress.Hex(),
-		DeployHeight:    deployInfo[omniEVM.Chain].DeployHeight,
-		BlockPeriod:     omniEVM.Chain.BlockPeriod,
-		CommitmentLevel: omniEVM.Chain.CommitmentLevel,
-		IsOmni:          true,
+		ID:                omniEVM.Chain.ID,
+		Name:              omniEVM.Chain.Name,
+		RPCURL:            omniEVM.InternalRPC,
+		AuthRPCURL:        omniEVM.InternalAuthRPC,
+		PortalAddress:     deployInfo[omniEVM.Chain].PortalAddress.Hex(),
+		DeployHeight:      deployInfo[omniEVM.Chain].DeployHeight,
+		BlockPeriod:       omniEVM.Chain.BlockPeriod,
+		FinalizationStrat: omniEVM.Chain.FinalizationStrat,
+		IsOmni:            true,
 	})
 
 	// Add all anvil chains
 	for _, anvil := range testnet.AnvilChains {
 		chains = append(chains, netconf.Chain{
-			ID:              anvil.Chain.ID,
-			Name:            anvil.Chain.Name,
-			RPCURL:          anvil.InternalRPC,
-			PortalAddress:   deployInfo[anvil.Chain].PortalAddress.Hex(),
-			DeployHeight:    deployInfo[anvil.Chain].DeployHeight,
-			BlockPeriod:     anvil.Chain.BlockPeriod,
-			CommitmentLevel: anvil.Chain.CommitmentLevel,
+			ID:                anvil.Chain.ID,
+			Name:              anvil.Chain.Name,
+			RPCURL:            anvil.InternalRPC,
+			PortalAddress:     deployInfo[anvil.Chain].PortalAddress.Hex(),
+			DeployHeight:      deployInfo[anvil.Chain].DeployHeight,
+			BlockPeriod:       anvil.Chain.BlockPeriod,
+			FinalizationStrat: anvil.Chain.FinalizationStrat,
 		})
 	}
 
 	// Add all public chains
 	for _, public := range testnet.PublicChains {
 		chains = append(chains, netconf.Chain{
-			ID:              public.Chain.ID,
-			Name:            public.Chain.Name,
-			RPCURL:          public.RPCAddress,
-			PortalAddress:   deployInfo[public.Chain].PortalAddress.Hex(),
-			DeployHeight:    deployInfo[public.Chain].DeployHeight,
-			BlockPeriod:     public.Chain.BlockPeriod,
-			CommitmentLevel: public.Chain.CommitmentLevel,
+			ID:                public.Chain.ID,
+			Name:              public.Chain.Name,
+			RPCURL:            public.RPCAddress,
+			PortalAddress:     deployInfo[public.Chain].PortalAddress.Hex(),
+			DeployHeight:      deployInfo[public.Chain].DeployHeight,
+			BlockPeriod:       public.Chain.BlockPeriod,
+			FinalizationStrat: public.Chain.FinalizationStrat,
 		})
 	}
 
@@ -303,14 +303,14 @@ func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 	// Connect to a random omni evm
 	omniEVM := random(testnet.OmniEVMs)
 	chains = append(chains, netconf.Chain{
-		ID:              omniEVM.Chain.ID,
-		Name:            omniEVM.Chain.Name,
-		RPCURL:          omniEVM.ExternalRPC,
-		PortalAddress:   deployInfo[omniEVM.Chain].PortalAddress.Hex(),
-		DeployHeight:    deployInfo[omniEVM.Chain].DeployHeight,
-		BlockPeriod:     omniEVM.Chain.BlockPeriod,
-		CommitmentLevel: omniEVM.Chain.CommitmentLevel,
-		IsOmni:          true,
+		ID:                omniEVM.Chain.ID,
+		Name:              omniEVM.Chain.Name,
+		RPCURL:            omniEVM.ExternalRPC,
+		PortalAddress:     deployInfo[omniEVM.Chain].PortalAddress.Hex(),
+		DeployHeight:      deployInfo[omniEVM.Chain].DeployHeight,
+		BlockPeriod:       omniEVM.Chain.BlockPeriod,
+		FinalizationStrat: omniEVM.Chain.FinalizationStrat,
+		IsOmni:            true,
 	})
 
 	// Add all anvil chains
@@ -328,13 +328,13 @@ func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 	// Add all public chains
 	for _, public := range testnet.PublicChains {
 		chains = append(chains, netconf.Chain{
-			ID:              public.Chain.ID,
-			Name:            public.Chain.Name,
-			RPCURL:          public.RPCAddress,
-			PortalAddress:   deployInfo[public.Chain].PortalAddress.Hex(),
-			DeployHeight:    deployInfo[public.Chain].DeployHeight,
-			BlockPeriod:     public.Chain.BlockPeriod,
-			CommitmentLevel: public.Chain.CommitmentLevel,
+			ID:                public.Chain.ID,
+			Name:              public.Chain.Name,
+			RPCURL:            public.RPCAddress,
+			PortalAddress:     deployInfo[public.Chain].PortalAddress.Hex(),
+			DeployHeight:      deployInfo[public.Chain].DeployHeight,
+			BlockPeriod:       public.Chain.BlockPeriod,
+			FinalizationStrat: public.Chain.FinalizationStrat,
 		})
 	}
 

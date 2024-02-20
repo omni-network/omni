@@ -7,6 +7,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -16,13 +17,13 @@ import (
 )
 
 func getCurrentFinalisedBlockHeader(
-	ctx context.Context, rpcClient *ethclient.Client, commitmentLevel string) (*types.Header, error) {
+	ctx context.Context, rpcClient *ethclient.Client, start netconf.FinalizationStrat) (*types.Header, error) {
 	var header *types.Header
 	err := rpcClient.Client().CallContext(
 		ctx,
 		&header,
 		"eth_getBlockByNumber",
-		commitmentLevel,
+		string(start),
 		false,
 	)
 	if err != nil {
@@ -118,7 +119,7 @@ func (p *Provider) GetBlock(ctx context.Context, chainID uint64, height uint64) 
 	}
 
 	// get the current finalized header
-	finalisedHeader, err := getCurrentFinalisedBlockHeader(ctx, rpcClient, chain.CommitmentLevel)
+	finalisedHeader, err := getCurrentFinalisedBlockHeader(ctx, rpcClient, chain.FinalizationStrat)
 	if err != nil {
 		return xchain.Block{}, false, err
 	}

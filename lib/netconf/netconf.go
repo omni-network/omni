@@ -73,19 +73,26 @@ func (n Network) Chain(id uint64) (Chain, bool) {
 	return Chain{}, false
 }
 
+type FinalizationStrat string
+
+const (
+	StratFinalized FinalizationStrat = "finalized"
+	StartLatest    FinalizationStrat = "latest"
+)
+
 // Chain defines the configuration of an execution chain that supports
 // the Omni cross chain protocol. This is most supported Rollup EVM, but
 // also the Omni EVM.
 type Chain struct {
-	ID              uint64        // Chain ID asa per https://chainlist.org
-	Name            string        // Chain name as per https://chainlist.org
-	RPCURL          string        // RPC URL of the chain
-	AuthRPCURL      string        // RPC URL of the chain with JWT authentication enabled
-	PortalAddress   string        // Address of the omni portal contract on the chain
-	DeployHeight    uint64        // Height that the portal contracts were deployed
-	IsOmni          bool          // Whether this is the Omni chain
-	BlockPeriod     time.Duration // Block period of the chain
-	CommitmentLevel string        // Commitment Level of the block ("latest", "finalized")
+	ID                uint64            // Chain ID asa per https://chainlist.org
+	Name              string            // Chain name as per https://chainlist.org
+	RPCURL            string            // RPC URL of the chain
+	AuthRPCURL        string            // RPC URL of the chain with JWT authentication enabled
+	PortalAddress     string            // Address of the omni portal contract on the chain
+	DeployHeight      uint64            // Height that the portal contracts were deployed
+	IsOmni            bool              // Whether this is the Omni chain
+	BlockPeriod       time.Duration     // Block period of the chain
+	FinalizationStrat FinalizationStrat // Commitment Level of the block
 }
 
 // Load loads the network configuration from the given path.
@@ -118,15 +125,15 @@ func Save(network Network, path string) error {
 }
 
 type chainJSON struct {
-	ID              uint64 `json:"id"`
-	Name            string `json:"name"`
-	RPCURL          string `json:"rpcurl"`
-	AuthRPCURL      string `json:"auth_rpcurl,omitempty"`
-	PortalAddress   string `json:"portal_address"`
-	DeployHeight    uint64 `json:"deploy_height"`
-	IsOmni          bool   `json:"is_omni,omitempty"`
-	BlockPeriod     string `json:"block_period"`
-	CommitmentLevel string `json:"commitment_level"`
+	ID                uint64            `json:"id"`
+	Name              string            `json:"name"`
+	RPCURL            string            `json:"rpcurl"`
+	AuthRPCURL        string            `json:"auth_rpcurl,omitempty"`
+	PortalAddress     string            `json:"portal_address"`
+	DeployHeight      uint64            `json:"deploy_height"`
+	IsOmni            bool              `json:"is_omni,omitempty"`
+	BlockPeriod       string            `json:"block_period"`
+	FinalizationStrat FinalizationStrat `json:"commitment_level"`
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
@@ -142,15 +149,15 @@ func (c *Chain) UnmarshalJSON(bz []byte) error {
 	}
 
 	*c = Chain{
-		ID:              cj.ID,
-		Name:            cj.Name,
-		RPCURL:          cj.RPCURL,
-		AuthRPCURL:      cj.AuthRPCURL,
-		PortalAddress:   cj.PortalAddress,
-		DeployHeight:    cj.DeployHeight,
-		IsOmni:          cj.IsOmni,
-		BlockPeriod:     blockPeriod,
-		CommitmentLevel: cj.CommitmentLevel,
+		ID:                cj.ID,
+		Name:              cj.Name,
+		RPCURL:            cj.RPCURL,
+		AuthRPCURL:        cj.AuthRPCURL,
+		PortalAddress:     cj.PortalAddress,
+		DeployHeight:      cj.DeployHeight,
+		IsOmni:            cj.IsOmni,
+		BlockPeriod:       blockPeriod,
+		FinalizationStrat: cj.FinalizationStrat,
 	}
 
 	return nil
@@ -159,15 +166,15 @@ func (c *Chain) UnmarshalJSON(bz []byte) error {
 // MarshalJSON implements the json.Marshaler interface.
 func (c Chain) MarshalJSON() ([]byte, error) {
 	cj := chainJSON{
-		ID:              c.ID,
-		Name:            c.Name,
-		RPCURL:          c.RPCURL,
-		AuthRPCURL:      c.AuthRPCURL,
-		PortalAddress:   c.PortalAddress,
-		DeployHeight:    c.DeployHeight,
-		IsOmni:          c.IsOmni,
-		BlockPeriod:     c.BlockPeriod.String(),
-		CommitmentLevel: c.CommitmentLevel,
+		ID:                c.ID,
+		Name:              c.Name,
+		RPCURL:            c.RPCURL,
+		AuthRPCURL:        c.AuthRPCURL,
+		PortalAddress:     c.PortalAddress,
+		DeployHeight:      c.DeployHeight,
+		IsOmni:            c.IsOmni,
+		BlockPeriod:       c.BlockPeriod.String(),
+		FinalizationStrat: c.FinalizationStrat,
 	}
 
 	bz, err := json.Marshal(cj)
