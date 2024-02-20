@@ -128,7 +128,7 @@ func deployOmniAVS(ctx context.Context, client *ethclient.Client, txOpts *bind.T
 	}
 
 	enc, err := abi.Pack("initialize", owner, portal, omniChainID,
-		minOperatorStake, maxOperators, strategyParams)
+		minOperatorStake, maxOperators, []common.Address{} /* allowlist */, strategyParams)
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "encode avs initializer")
 	}
