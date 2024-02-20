@@ -3,6 +3,7 @@ package gitinfo
 import (
 	"context"
 	"runtime/debug"
+	"time"
 
 	"github.com/omni-network/omni/lib/log"
 )
@@ -39,5 +40,7 @@ func Instrument(ctx context.Context) {
 	log.Info(ctx, "Version info", "git_commit", commit, "git_timestamp", timestamp)
 
 	commitGauge.WithLabelValues(commit).Set(1)
-	timestampGauge.WithLabelValues(timestamp).Set(1)
+
+	ts, _ := time.Parse(time.RFC3339, timestamp)
+	timestampGauge.Set(float64(ts.Unix()))
 }
