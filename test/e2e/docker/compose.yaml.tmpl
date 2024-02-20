@@ -26,6 +26,8 @@ services:
     - {{ .PrometheusProxyPort }}:26660
 {{- end }}
     - 6060
+    environment:
+    - HALO_LOG_FORMAT={{ $.OmniLogFormat }}
     volumes:
     - ./{{ .Name }}:/halo
     - ./{{ index $.NodeOmniEVMs .Name }}/jwtsecret:/geth/jwtsecret
@@ -122,6 +124,8 @@ services:
     container_name: relayer
     image: omniops/relayer:{{or .RelayerTag "main"}}
     restart: unless-stopped # Restart on crash to mitigate startup race issues
+    environment:
+    - RELAYER_LOG_FORMAT={{ $.OmniLogFormat }}
     volumes:
       - ./relayer:/relayer
     networks:

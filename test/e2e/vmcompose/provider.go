@@ -65,16 +65,17 @@ func (p *Provider) Setup() error {
 		}
 
 		def := docker.ComposeDef{
-			Network:     false,
-			BindAll:     true,
-			NetworkName: p.Testnet.Name,
-			NetworkCIDR: p.Testnet.IP.String(),
-			Nodes:       nodes,
-			OmniEVMs:    omniEVMs,
-			Anvils:      anvilChains,
-			Relayer:     services["relayer"],
-			Prometheus:  p.Testnet.Prometheus,
-			RelayerTag:  p.relayerTag,
+			Network:       false,
+			BindAll:       true,
+			NetworkName:   p.Testnet.Name,
+			NetworkCIDR:   p.Testnet.IP.String(),
+			Nodes:         nodes,
+			OmniEVMs:      omniEVMs,
+			Anvils:        anvilChains,
+			Relayer:       services["relayer"],
+			Prometheus:    p.Testnet.Prometheus,
+			RelayerTag:    p.relayerTag,
+			OmniLogFormat: log.FormatLogfmt, // VM compose always use logfmt log format.
 		}
 		compose, err := docker.GenerateComposeFile(def)
 		if err != nil {
