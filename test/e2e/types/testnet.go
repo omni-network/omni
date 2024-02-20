@@ -7,8 +7,9 @@ import (
 	"strings"
 	"time"
 
-	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/omni-network/omni/lib/errors"
+
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p/enode"
