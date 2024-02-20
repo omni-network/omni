@@ -26,7 +26,7 @@ func getCurrentFinalisedBlockHeader(
 		false,
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not get finalized block")
+		return nil, errors.Wrap(err, "could not get block")
 	}
 
 	return header, nil
