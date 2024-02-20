@@ -57,7 +57,7 @@ func (p *Provider) Subscribe(
 		fromHeight = chain.DeployHeight
 	}
 
-	ctx = log.WithCtx(ctx, "chain_id", chainID, "chain_name", chain.Name)
+	ctx = log.WithCtx(ctx, "chain_name", chain.Name)
 	log.Info(ctx, "Subscribing to provider", "from_height", fromHeight)
 
 	// run the XBlock stream for this chain

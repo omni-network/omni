@@ -19,7 +19,10 @@ type Provider interface {
 	// Subscribe registers a callback function that will be called with all approved aggregate
 	// attestations (as they become available per source chain block) on the consensus chain from
 	// the provided source chain ID and height (inclusive).
-	Subscribe(ctx context.Context, sourceChainID uint64, sourceHeight uint64, callback ProviderCallback)
+	//
+	// Worker name is only used for metrics.
+	Subscribe(ctx context.Context, sourceChainID uint64, sourceHeight uint64,
+		workerName string, callback ProviderCallback)
 
 	// ApprovedFrom returns the subsequent approved aggregate attestations for the provided source chain
 	// and height (inclusive). It will return max 100 aggregate attestations per call.

@@ -41,22 +41,23 @@ func (p Provider) ApprovedFrom(ctx context.Context, sourceChainID uint64, source
 }
 
 // Subscribe implements cchain.Provider.
-func (p Provider) Subscribe(in context.Context, chainID uint64, height uint64, callback cchain.ProviderCallback) {
-	chain := p.chainNames[chainID]
-	ctx := log.WithCtx(in, "chain", chain)
+func (p Provider) Subscribe(in context.Context, srcChainID uint64, height uint64, workerName string,
+	callback cchain.ProviderCallback,
+) {
+	srcChain := p.chainNames[srcChainID]
+	ctx := log.WithCtx(in, "src_chain", srcChain)
 
 	// Start a async goroutine to fetch attestations until ctx is canceled.
 	go func() {
 		backoff, reset := p.backoffFunc(ctx) // Note that backoff returns immediately on ctx cancel.
 
 		for ctx.Err() == nil {
-			hctx := log.WithCtx(ctx, "height", height)
 			// Fetch next batch of attestations.
-			atts, err := p.fetch(hctx, chainID, height)
-			if hctx.Err() != nil {
+			atts, err := p.fetch(ctx, srcChainID, height)
+			if ctx.Err() != nil {
 				return // Don't backoff or log on ctx cancel, just return.
 			} else if err != nil {
-				log.Warn(hctx, "Failed fetching attestation; will retry", err)
+				log.Warn(ctx, "Failed fetching attestation; will retry", err, "height", height)
 				backoff()
 
 				continue
@@ -71,28 +72,29 @@ func (p Provider) Subscribe(in context.Context, chainID uint64, height uint64, c
 
 			// Call callback for each attestation
 			for _, att := range atts {
+				actx := log.WithCtx(ctx, "height", att.BlockHeight)
 				// Sanity checks
-				if att.SourceChainID != chainID {
-					log.Error(hctx, "Invalid attestation chain ID [BUG!]", nil)
+				if att.SourceChainID != srcChainID {
+					log.Error(actx, "Invalid attestation srcChain ID [BUG!]", nil)
 					return
 				} else if att.BlockHeight != height {
-					log.Error(hctx, "Invalid attestation height [BUG!]", nil)
+					log.Error(actx, "Invalid attestation height [BUG!]", nil)
 					return
 				}
 
 				// Retry callback on error
-				for hctx.Err() == nil {
-					err := callback(hctx, att)
-					if hctx.Err() != nil {
+				for actx.Err() == nil {
+					err := callback(actx, att)
+					if actx.Err() != nil {
 						return // Don't backoff or log on ctx cancel, just return.
 					} else if err != nil {
-						log.Warn(hctx, "Failed processing attestation; will retry", err)
-						callbackErrTotal.WithLabelValues(chain).Inc()
+						log.Warn(actx, "Failed processing attestation; will retry", err)
+						callbackErrTotal.WithLabelValues(workerName, srcChain).Inc()
 						backoff()
 
 						continue
 					}
-					streamHeight.WithLabelValues(chain).Set(float64(height)) // Update stream height metric
+					streamHeight.WithLabelValues(workerName, srcChain).Set(float64(height))
 
 					break // Success, stop retrying.
 				}

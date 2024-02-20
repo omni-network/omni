@@ -31,7 +31,7 @@ func TestProvider(t *testing.T) {
 	p := provider.NewProviderForT(t, fetcher.Fetch, backoff.BackOff)
 
 	var actual []xchain.AggAttestation
-	p.Subscribe(ctx, chainID, fromHeight, func(ctx context.Context, approved xchain.AggAttestation) error {
+	p.Subscribe(ctx, chainID, fromHeight, "test", func(ctx context.Context, approved xchain.AggAttestation) error {
 		actual = append(actual, approved)
 		if len(actual) == total {
 			cancel()

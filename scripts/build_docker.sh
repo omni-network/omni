@@ -12,10 +12,9 @@ fi
 
 GOOS=linux goreleaser build --single-target --snapshot --clean --id="${APP}"
 
-ARCH=$(go env -json | jq .GOARCH -r)
 GITREF=$(git rev-parse --short HEAD)
 
-cd "dist/${APP}_linux_${ARCH}" || exit 1
+cd dist/${APP}* || exit 1
 
 docker build -f "../../${APP}/Dockerfile" . -t "omniops/${APP}:${GITREF}"
 

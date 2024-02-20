@@ -18,7 +18,7 @@ type Provider interface {
 
 	// GetSubmittedCursor returns the submitted cursor for the source chain on the destination chain,
 	// or false if not available, or an error. Calls the destination chain portal InXStreamOffset method.
-	GetSubmittedCursor(ctx context.Context, destDhainID uint64, sourceChainID uint64) (StreamCursor, bool, error)
+	GetSubmittedCursor(ctx context.Context, destChainID uint64, sourceChainID uint64) (StreamCursor, bool, error)
 
 	// GetEmittedCursor returns the emitted cursor for the destination chain on the source chain,
 	// or false if not available, or an error. Calls the source chain portal OutXStreamOffset method.
