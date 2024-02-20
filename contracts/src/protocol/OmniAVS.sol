@@ -46,10 +46,10 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     /// @dev OmniPortal.xcall base gas limit in syncWithOmni
     uint256 internal xcallBaseGasLimit = 75_000;
 
-    /// @notice List of currently register operators, used to sync EigenCore
+    /// @dev List of currently register operators, used to sync EigenCore
     address[] internal _operators;
 
-    /// @notice Set of operators that are allowed to register
+    /// @dev Set of operators that are allowed to register
     mapping(address => bool) internal _allowlist;
 
     constructor(IDelegationManager delegationManager_, IAVSDirectory avsDirectory_) {
@@ -167,75 +167,6 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     }
 
     /**
-     * Admin functions
-     */
-
-    /// @inheritdoc IServiceManager
-    function setMetadataURI(string memory metadataURI) external onlyOwner {
-        _avsDirectory.updateAVSMetadataURI(metadataURI);
-    }
-
-    /// @inheritdoc IOmniAVSAdmin
-    function setOmniPortal(IOmniPortal portal) external onlyOwner {
-        omni = portal;
-    }
-
-    /// @inheritdoc IOmniAVSAdmin
-    function setOmniChainId(uint64 chainId) external onlyOwner {
-        omniChainId = chainId;
-    }
-
-    /// @inheritdoc IOmniAVSAdmin
-    function setStrategyParams(StrategyParams[] calldata params) external onlyOwner {
-        _setStrategyParams(params);
-    }
-
-    /// @inheritdoc IOmniAVSAdmin
-    function setMinimumOperatorStake(uint96 stake) external onlyOwner {
-        minimumOperatorStake = stake;
-    }
-
-    /// @inheritdoc IOmniAVSAdmin
-    function setMaxOperatorCount(uint32 count) external onlyOwner {
-        maxOperatorCount = count;
-    }
-
-    /// @inheritdoc IOmniAVSAdmin
-    function setXcallGasLimits(uint256 base, uint256 perValidator) external onlyOwner {
-        xcallBaseGasLimit = base;
-        xcallGasLimitPerValidator = perValidator;
-    }
-
-    /// @inheritdoc IOmniAVSAdmin
-    function addToAllowlist(address operator) external onlyOwner {
-        require(operator != address(0), "OmniAVS: zero address");
-        require(!_allowlist[operator], "OmniAVS: already in allowlist");
-        _allowlist[operator] = true;
-        emit OperatorAllowed(operator);
-    }
-
-    /// @inheritdoc IOmniAVSAdmin
-    function removeFromAllowlist(address operator) external onlyOwner {
-        require(_allowlist[operator], "OmniAVS: not in allowlist");
-        _allowlist[operator] = false;
-        emit OperatorDisallowed(operator);
-    }
-
-    /// @dev Set the strategy parameters
-    function _setStrategyParams(StrategyParams[] calldata params) internal {
-        delete strategyParams;
-
-        for (uint256 i = 0; i < params.length; i++) {
-            // ensure no duplicates
-            for (uint256 j = i + 1; j < params.length; j++) {
-                require(address(params[i].strategy) != address(params[j].strategy), "OmniAVS: duplicate strategy");
-            }
-
-            strategyParams.push(params[i]);
-        }
-    }
-
-    /**
      * View functions
      */
 
@@ -335,5 +266,74 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     /// @dev Returns the weighted stake for shares with specified multiplier
     function _weight(uint256 shares, uint96 multiplier) internal pure returns (uint96) {
         return uint96(shares * multiplier / WEIGHTING_DIVISOR);
+    }
+
+    /**
+     * Admin functions
+     */
+
+    /// @inheritdoc IServiceManager
+    function setMetadataURI(string memory metadataURI) external onlyOwner {
+        _avsDirectory.updateAVSMetadataURI(metadataURI);
+    }
+
+    /// @inheritdoc IOmniAVSAdmin
+    function setOmniPortal(IOmniPortal portal) external onlyOwner {
+        omni = portal;
+    }
+
+    /// @inheritdoc IOmniAVSAdmin
+    function setOmniChainId(uint64 chainId) external onlyOwner {
+        omniChainId = chainId;
+    }
+
+    /// @inheritdoc IOmniAVSAdmin
+    function setStrategyParams(StrategyParams[] calldata params) external onlyOwner {
+        _setStrategyParams(params);
+    }
+
+    /// @inheritdoc IOmniAVSAdmin
+    function setMinimumOperatorStake(uint96 stake) external onlyOwner {
+        minimumOperatorStake = stake;
+    }
+
+    /// @inheritdoc IOmniAVSAdmin
+    function setMaxOperatorCount(uint32 count) external onlyOwner {
+        maxOperatorCount = count;
+    }
+
+    /// @inheritdoc IOmniAVSAdmin
+    function setXcallGasLimits(uint256 base, uint256 perValidator) external onlyOwner {
+        xcallBaseGasLimit = base;
+        xcallGasLimitPerValidator = perValidator;
+    }
+
+    /// @inheritdoc IOmniAVSAdmin
+    function addToAllowlist(address operator) external onlyOwner {
+        require(operator != address(0), "OmniAVS: zero address");
+        require(!_allowlist[operator], "OmniAVS: already in allowlist");
+        _allowlist[operator] = true;
+        emit OperatorAllowed(operator);
+    }
+
+    /// @inheritdoc IOmniAVSAdmin
+    function removeFromAllowlist(address operator) external onlyOwner {
+        require(_allowlist[operator], "OmniAVS: not in allowlist");
+        _allowlist[operator] = false;
+        emit OperatorDisallowed(operator);
+    }
+
+    /// @dev Set the strategy parameters
+    function _setStrategyParams(StrategyParams[] calldata params) internal {
+        delete strategyParams;
+
+        for (uint256 i = 0; i < params.length; i++) {
+            // ensure no duplicates
+            for (uint256 j = i + 1; j < params.length; j++) {
+                require(address(params[i].strategy) != address(params[j].strategy), "OmniAVS: duplicate strategy");
+            }
+
+            strategyParams.push(params[i]);
+        }
     }
 }
