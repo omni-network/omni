@@ -30,6 +30,7 @@ import (
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/server"
+	sdktelemetry "github.com/cosmos/cosmos-sdk/telemetry"
 	"github.com/cosmos/cosmos-sdk/types/mempool"
 )
 
@@ -73,6 +74,10 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 	log.Info(ctx, "Starting halo consensus client")
 
 	gitinfo.Instrument(ctx)
+
+	if err := enableSDKTelemetry(); err != nil {
+		return nil, errors.Wrap(err, "enable cosmos-sdk telemetry")
+	}
 
 	// Load private validator key and state from disk (this hard exits on any error).
 	privVal := privval.LoadFilePV(cfg.Comet.PrivValidatorKeyFile(), cfg.Comet.PrivValidatorStateFile())
@@ -267,4 +272,20 @@ func newEngineClient(ctx context.Context, cfg Config, network netconf.Network) (
 	}
 
 	return ethCl, nil
+}
+
+// enableSDKTelemetry enables prometheus based cosmos-sdk telemetry.
+func enableSDKTelemetry() error {
+	const farFuture = time.Hour * 24 * 365 * 10 // 10 years ~= infinity.
+
+	_, err := sdktelemetry.New(sdktelemetry.Config{
+		ServiceName:             "cosmos",
+		Enabled:                 true,
+		PrometheusRetentionTime: int64(farFuture.Seconds()), // Prometheus metrics never expire once created in-app.
+	})
+	if err != nil {
+		return errors.Wrap(err, "enable cosmos-sdk telemetry")
+	}
+
+	return nil
 }

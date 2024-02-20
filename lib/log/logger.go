@@ -34,6 +34,8 @@ func Init(ctx context.Context, cfg Config) (context.Context, error) {
 	global = l
 	globalMu.Unlock()
 
+	zeroLogMetrics()
+
 	return WithLogger(ctx, l), nil
 }
 

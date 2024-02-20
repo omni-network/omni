@@ -1,19 +1,22 @@
 package gitinfo
 
-import "github.com/prometheus/client_golang/prometheus"
+import (
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+)
 
 var (
-	commitGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	commitGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "lib",
 		Subsystem: "git",
 		Name:      "commit",
-		Help:      "Constant gauge with label 'commit' set to the current git commit hash.",
+		Help:      "Constant gauge with label 'commit' set to the build info git commit hash.",
 	}, []string{"commit"})
 
-	timestampGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	timestampGauge = promauto.NewGauge(prometheus.GaugeOpts{
 		Namespace: "lib",
 		Subsystem: "git",
-		Name:      "timestamp",
-		Help:      "Constant gauge with label 'timestamp' set to the current git commit timestamp.",
-	}, []string{"timestamp"})
+		Name:      "timestamp_unix",
+		Help:      "Build info git commit timestamp in unix seconds.",
+	})
 )

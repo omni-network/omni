@@ -12,6 +12,7 @@ linters-settings:
     forbid:
       - 'fmt\.Print.*(# Avoid debug logging)?'
       - 'fmt\.Errorf.*(# Prefer lib/errors.Wrap)?'
+      - 'prometheus\.New.*(# Prefer promauto)?'
   gci: # Auto-format imports
     sections:
       - standard                           # Go stdlib

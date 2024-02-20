@@ -26,6 +26,8 @@ var (
 	levelInfo  = strings.ToLower(slog.LevelInfo.String())
 	levelWarn  = strings.ToLower(slog.LevelWarn.String())
 	levelError = strings.ToLower(slog.LevelError.String())
+
+	levels = []string{levelDebug, levelInfo, levelWarn, levelError}
 )
 
 //nolint:gochecknoglobals // Static mapping.
