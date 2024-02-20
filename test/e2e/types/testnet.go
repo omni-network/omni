@@ -7,9 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/omni-network/omni/lib/errors"
-
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p/enode"
@@ -42,11 +41,12 @@ func (t Testnet) AVSChain() (EVMChain, error) {
 
 // EVMChain represents a EVM chain in a omni network.
 type EVMChain struct {
-	Name        string // Chain Nam.
-	ID          uint64 // Chain ID
-	IsPublic    bool
-	IsAVSTarget bool
-	BlockPeriod time.Duration
+	Name            string // Chain Nam.
+	ID              uint64 // Chain ID
+	IsPublic        bool
+	IsAVSTarget     bool
+	BlockPeriod     time.Duration
+	CommitmentLevel string
 }
 
 // OmniEVM represents a omni evm instance in a omni network. Similar to e2e.Node for halo instances.
