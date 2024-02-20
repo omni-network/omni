@@ -110,8 +110,9 @@ func NewManager(testnet types.Testnet, deployKeyFile string,
 		}
 
 		return &manager{
-			portals:    portals,
-			relayerKey: privateRelayerKey,
+			portals:     portals,
+			omniChainID: omniEVM.Chain.ID,
+			relayerKey:  privateRelayerKey,
 		}, nil
 	case netconf.Staging:
 		deployKey, err := crypto.LoadECDSA(deployKeyFile)
@@ -125,6 +126,7 @@ func NewManager(testnet types.Testnet, deployKeyFile string,
 
 		return &manager{
 			portals:         portals,
+			omniChainID:     omniEVM.Chain.ID,
 			publicDeployKey: deployKey,
 			relayerKey:      relayerKey,
 		}, nil
@@ -146,7 +148,7 @@ type Portal struct {
 	DeployInfo DeployInfo
 	Client     *ethclient.Client
 	Contract   *bindings.OmniPortal
-	txOpts     *bind.TransactOpts
+	txOpts     *bind.TransactOpts // TODO(corver): Replace this with a txmgr.
 }
 
 // TxOpts returns transaction options using the deploy key.
@@ -167,6 +169,7 @@ var _ Manager = (*manager)(nil)
 
 type manager struct {
 	portals         map[uint64]Portal // Note that this is mutable, Portals are updated by Deploy*Portals.
+	omniChainID     uint64
 	publicDeployKey *ecdsa.PrivateKey
 	relayerKey      *ecdsa.PrivateKey
 }

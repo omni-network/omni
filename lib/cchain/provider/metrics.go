@@ -6,17 +6,17 @@ import (
 )
 
 var (
-	callbackErrTotal = promauto.NewCounter(prometheus.CounterOpts{
+	callbackErrTotal = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "lib",
 		Subsystem: "cprovider",
 		Name:      "callback_error_total",
 		Help:      "Total number of callback errors per source chain. Alert if growing.",
-	})
+	}, []string{"chain"})
 
-	streamHeight = promauto.NewGauge(prometheus.GaugeOpts{
+	streamHeight = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "lib",
 		Subsystem: "cprovider",
 		Name:      "stream_height",
 		Help:      "Latest streamed xblock height per source chain. Alert if not growing.",
-	})
+	}, []string{"chain"})
 )

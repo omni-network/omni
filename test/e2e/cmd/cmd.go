@@ -6,6 +6,7 @@ import (
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/test/e2e/app"
+	"github.com/omni-network/omni/test/e2e/types"
 
 	cmtdocker "github.com/cometbft/cometbft/test/e2e/pkg/infra/docker"
 
@@ -25,6 +26,7 @@ func New() *cobra.Command {
 	defCfg := app.DefaultDefinitionConfig()
 
 	var def app.Definition
+	var depCfg app.DeployConfig
 
 	cmd := libcmd.NewRootCmd("e2e", "e2e network generator and test runner")
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
@@ -43,13 +45,14 @@ func New() *cobra.Command {
 	}
 
 	bindDefFlags(cmd.PersistentFlags(), &defCfg)
+	bindDeployFlags(cmd.PersistentFlags(), &depCfg)
 	log.BindFlags(cmd.PersistentFlags(), &logCfg)
 
 	// Root command runs the full E2E test.
 	e2eTestCfg := app.DefaultE2ETestConfig()
 	bindE2EFlags(cmd.Flags(), &e2eTestCfg)
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		return app.E2ETest(cmd.Context(), def, e2eTestCfg)
+		return app.E2ETest(cmd.Context(), def, e2eTestCfg, depCfg)
 	}
 
 	// Add subcommands
@@ -72,11 +75,12 @@ func newDeployCmd(def *app.Definition) *cobra.Command {
 		Use:   "deploy",
 		Short: "Deploys the e2e network",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return app.DeployWithPingPong(cmd.Context(), *def, cfg, pingPongN)
+			_, err := app.DeployWithPingPong(cmd.Context(), *def, cfg, pingPongN)
+			return err
 		},
 	}
 
-	bindPromFlags(cmd.Flags(), &cfg.PromSecrets)
+	bindDeployFlags(cmd.Flags(), &cfg)
 	cmd.Flags().Uint64Var(&pingPongN, "ping-pong", pingPongN, "Number of ping pongs messages to send. 0 disables it")
 
 	return cmd
@@ -107,7 +111,7 @@ func newTestCmd(def *app.Definition) *cobra.Command {
 		Use:   "test",
 		Short: "Runs go tests against the a previously preserved network",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return app.Test(cmd.Context(), *def, true)
+			return app.Test(cmd.Context(), *def, types.DeployInfos{}, true)
 		},
 	}
 }

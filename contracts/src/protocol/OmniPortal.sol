@@ -70,41 +70,9 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable {
         _addValidators(valSetId, validators);
     }
 
-    /// @inheritdoc IOmniPortalAdmin
-    function setFeeOracle(address feeOracle_) external onlyOwner {
-        _setFeeOracle(feeOracle_);
-    }
-
-    /// @inheritdoc IOmniPortalAdmin
-    function collectFees(address to) external onlyOwner {
-        uint256 amount = address(this).balance;
-
-        // .transfer() is fine, owner should provide an EOA address that will not
-        // consume more than 2300 gas on transfer, and we are okay .transfer() reverts
-        payable(to).transfer(amount);
-
-        emit FeesCollected(to, amount);
-    }
-
-    /// @inheritdoc IOmniPortal
-    function xmsg() external view returns (XTypes.Msg memory) {
-        return _currentXmsg;
-    }
-
-    /// @inheritdoc IOmniPortal
-    function isXCall() external view returns (bool) {
-        return _currentXmsg.sourceChainId != 0;
-    }
-
-    /// @inheritdoc IOmniPortal
-    function feeFor(uint64 destChainId, bytes calldata data) public view returns (uint256) {
-        return IFeeOracle(feeOracle).feeFor(destChainId, data, XMSG_DEFAULT_GAS_LIMIT);
-    }
-
-    /// @inheritdoc IOmniPortal
-    function feeFor(uint64 destChainId, bytes calldata data, uint64 gasLimit) public view returns (uint256) {
-        return IFeeOracle(feeOracle).feeFor(destChainId, data, gasLimit);
-    }
+    /**
+     * XMsg functions
+     */
 
     /// @inheritdoc IOmniPortal
     function xcall(uint64 destChainId, address to, bytes calldata data) external payable {
@@ -149,6 +117,16 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable {
         }
     }
 
+    /// @inheritdoc IOmniPortal
+    function feeFor(uint64 destChainId, bytes calldata data) public view returns (uint256) {
+        return IFeeOracle(feeOracle).feeFor(destChainId, data, XMSG_DEFAULT_GAS_LIMIT);
+    }
+
+    /// @inheritdoc IOmniPortal
+    function feeFor(uint64 destChainId, bytes calldata data, uint64 gasLimit) public view returns (uint256) {
+        return IFeeOracle(feeOracle).feeFor(destChainId, data, gasLimit);
+    }
+
     /// @dev Emit an XMsg event, increment dest chain outXStreamOffset
     function _xcall(uint64 destChainId, address sender, address to, bytes calldata data, uint64 gasLimit) private {
         require(msg.value >= feeFor(destChainId, data, gasLimit), "OmniPortal: insufficient fee");
@@ -186,8 +164,42 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable {
         emit XReceipt(xmsg_.sourceChainId, xmsg_.streamOffset, gasUsed, msg.sender, success);
     }
 
+    /**
+     * XMsg metadata functions
+     */
+
+    /// @inheritdoc IOmniPortal
+    function xmsg() external view returns (XTypes.Msg memory) {
+        return _currentXmsg;
+    }
+
+    /// @inheritdoc IOmniPortal
+    function isXCall() external view returns (bool) {
+        return _currentXmsg.sourceChainId != 0;
+    }
+
+    /**
+     * Admin functions
+     */
+
+    /// @inheritdoc IOmniPortalAdmin
+    function setFeeOracle(address feeOracle_) external onlyOwner {
+        _setFeeOracle(feeOracle_);
+    }
+
+    /// @inheritdoc IOmniPortalAdmin
+    function collectFees(address to) external onlyOwner {
+        uint256 amount = address(this).balance;
+
+        // .transfer() is fine, owner should provide an EOA address that will not
+        // consume more than 2300 gas on transfer, and we are okay .transfer() reverts
+        payable(to).transfer(amount);
+
+        emit FeesCollected(to, amount);
+    }
+
     /// @dev Set the fee oracle
-    function _setFeeOracle(address feeOracle_) internal {
+    function _setFeeOracle(address feeOracle_) private {
         require(feeOracle_ != address(0), "OmniPortal: no zero feeOracle");
 
         address oldFeeOracle = feeOracle;
@@ -196,7 +208,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable {
         emit FeeOracleChanged(oldFeeOracle, feeOracle);
     }
 
-    function _addValidators(uint64 valSetId, Validators.Validator[] memory validators) internal {
+    function _addValidators(uint64 valSetId, Validators.Validator[] memory validators) private {
         require(valSetId == _latestValSetId + 1, "OmniPortal: invalid valSetId");
         require(validators.length > 0, "OmniPortal: no validators");
 

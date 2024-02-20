@@ -11,6 +11,7 @@ import "eigenlayer-contracts/src/contracts/interfaces/IETHPOSDeposit.sol";
 import "eigenlayer-contracts/src/contracts/interfaces/IBeaconChainOracle.sol";
 
 import "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
+import "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 import "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
 import "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import "eigenlayer-contracts/src/contracts/core/Slasher.sol";
@@ -24,13 +25,11 @@ import "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
 import "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 import "eigenlayer-contracts/src/test/mocks/ETHDepositMock.sol";
 
-import "./AVSDirectoryMock.sol";
 import "forge-std/Test.sol";
 
 /**
  * @dev Repurposed from eignlayer-contracts src/test/EigenLayerDeployer.t.sol
  *      Unused storage variables and functions were removed
- *      AVSDirectory deployment was added
  * @custom:attribution https://github.com/Layr-Labs/eigenlayer-contracts/blob/m2-mainnet-fixes/src/test/EigenLayerDeployer.t.sol
  */
 contract EigenLayerDeployer is Test {
@@ -42,7 +41,7 @@ contract EigenLayerDeployer is Test {
 
     Slasher public slasher;
     DelegationManager public delegation;
-    AVSDirectoryMock public avsDirectory;
+    AVSDirectory public avsDirectory;
     StrategyManager public strategyManager;
     EigenPodManager public eigenPodManager;
     IEigenPod public pod;
@@ -104,7 +103,7 @@ contract EigenLayerDeployer is Test {
         delegation = DelegationManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-        avsDirectory = AVSDirectoryMock(
+        avsDirectory = AVSDirectory(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
         strategyManager = StrategyManager(
@@ -132,7 +131,7 @@ contract EigenLayerDeployer is Test {
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         DelegationManager delegationImplementation = new DelegationManager(strategyManager, slasher, eigenPodManager);
-        AVSDirectoryMock avsDirectoryImplementation = new AVSDirectoryMock(delegation);
+        AVSDirectory avsDirectoryImplementation = new AVSDirectory(delegation);
         StrategyManager strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
         Slasher slasherImplementation = new Slasher(strategyManager, delegation);
         EigenPodManager eigenPodManagerImplementation =
@@ -157,7 +156,7 @@ contract EigenLayerDeployer is Test {
             ITransparentUpgradeableProxy(payable(address(avsDirectory))),
             address(avsDirectoryImplementation),
             abi.encodeWithSelector(
-                AVSDirectoryMock.initialize.selector,
+                AVSDirectory.initialize.selector,
                 eigenLayerReputedMultisig,
                 eigenLayerPauserReg,
                 0 /*initialPausedStatus*/

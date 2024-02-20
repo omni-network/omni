@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omni-network/omni/relayer/txmgr"
+	"github.com/omni-network/omni/lib/txmgr"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
