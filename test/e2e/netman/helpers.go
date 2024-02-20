@@ -168,7 +168,7 @@ func logBalance(ctx context.Context, backend backend.Backend, chain string, addr
 	return nil
 }
 
-func mustHexToKey(privKeyHex string) *ecdsa.PrivateKey {
+func MustHexToKey(privKeyHex string) *ecdsa.PrivateKey {
 	privKey, err := crypto.HexToECDSA(strings.TrimPrefix(privKeyHex, "0x"))
 	if err != nil {
 		panic(err)

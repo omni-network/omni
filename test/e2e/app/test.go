@@ -65,6 +65,13 @@ func Test(ctx context.Context, def Definition, deployInfo types.DeployInfos, ver
 		return errors.Wrap(err, "setting E2E_DEPLOY_INFO")
 	}
 
+	log.Info(ctx, "env files",
+		"E2E_NETWORK", networkFile,
+		"E2E_MANIFEST", manifestFile,
+		"INFRASTRUCTURE_TYPE", infd.Provider,
+		"INFRASTRUCTURE_FILE", infd.Path,
+		"E2E_DEPLOY_INFO", deployInfoFile)
+
 	args := []string{"go", "test", "-timeout", "15s", "-count", "1"}
 	if verbose {
 		args = append(args, "-v")

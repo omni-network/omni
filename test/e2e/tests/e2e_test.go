@@ -67,15 +67,16 @@ type PingPong struct {
 }
 
 type AVS struct {
-	Chain    netconf.Chain
-	Client   ethclient.Client
-	Contract *bindings.OmniAVS
+	Chain                     netconf.Chain
+	Client                    ethclient.Client
+	AVSContract               *bindings.OmniAVS
+	DelegationManagerContract *bindings.DelegationManager
 }
 
 type testFunc struct {
 	TestNode   func(*testing.T, e2e.Node, []Portal)
 	TestPortal func(*testing.T, Portal, []Portal)
-	TestAVS    func(*testing.T, AVS)
+	TestAVS    func(*testing.T, AVS, map[types.ContractName]types.DeployInfo)
 }
 
 func testNode(t *testing.T, fn func(*testing.T, e2e.Node, []Portal)) {
@@ -88,11 +89,10 @@ func testPortal(t *testing.T, fn func(*testing.T, Portal, []Portal)) {
 	test(t, testFunc{TestPortal: fn})
 }
 
-// TODO(corver): Uncomment and use.
-// func testAVS(t *testing.T, fn func(*testing.T, AVS)) {
-//	t.Helper()
-//	test(t, testFunc{TestAVS: fn})
-//}
+func testAVS(t *testing.T, fn func(*testing.T, AVS, map[types.ContractName]types.DeployInfo)) {
+	t.Helper()
+	test(t, testFunc{TestAVS: fn})
+}
 
 // test runs tests for testnet nodes. The callback functions are respectively given a
 // single node to test, and a single portal to test, running as a subtest in parallel with other subtests.
@@ -147,10 +147,46 @@ func test(t *testing.T, testFunc testFunc) {
 			t.Skip("Skipping AVS tests since no deploy info is available")
 			return
 		}
-		// TODO: Create AWS contracts and test them
-		for chain, info := range deployInfo {
-			t.Log(chain, info)
+
+		// search only anvil chains for avs_target for now
+		avsTargetChainId := uint64(0)
+		foundAvsTarget := false
+		for _, achain := range testnet.AnvilChains {
+			if achain.Chain.IsAVSTarget {
+				avsTargetChainId = achain.Chain.ID
+				foundAvsTarget = true
+				break
+			}
 		}
+
+		if !foundAvsTarget {
+			t.Skip("Skipping AVS tests since no avs_target chain is found")
+			return
+		}
+
+		var chain netconf.Chain
+		for _, c := range network.Chains {
+			if c.ID == avsTargetChainId {
+				chain = c
+			}
+		}
+		chainInfo := deployInfo[avsTargetChainId]
+		ethClient, err := ethclient.Dial(chain.Name, chain.RPCURL)
+		require.NoError(t, err)
+		omniAvsAddr := chainInfo[types.ContractOmniAVS].Address
+		omniAvs, err := bindings.NewOmniAVS(omniAvsAddr, ethClient)
+		require.NoError(t, err)
+		DelegationManagerAddr := chainInfo[types.ContractELDelegationManager].Address
+		delMan, err := bindings.NewDelegationManager(DelegationManagerAddr, ethClient)
+		require.NoError(t, err)
+
+		testAvs := AVS{
+			Chain:                     chain,
+			Client:                    ethClient,
+			AVSContract:               omniAvs,
+			DelegationManagerContract: delMan,
+		}
+		testFunc.TestAVS(t, testAvs, chainInfo)
 	}
 }
 
