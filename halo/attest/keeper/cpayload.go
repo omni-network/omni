@@ -1,4 +1,4 @@
-package attester
+package keeper
 
 import (
 	"bytes"
@@ -8,22 +8,27 @@ import (
 	"github.com/omni-network/omni/halo/attest/types"
 	evmenginetypes "github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/xchain"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/gogoproto/proto"
 )
 
-var _ evmenginetypes.CPayloadProvider = CPayloadProvider{}
+var _ evmenginetypes.CPayloadProvider = Keeper{}
 
-// CPayloadProvider implements the CPayloadProvider interface for the attester module.
-// It extracts the aggregate attestations from the vote extensions of the last local commit.
-type CPayloadProvider struct {
-}
+func (k Keeper) PreparePayload(ctx context.Context, height uint64, commit abci.ExtendedCommitInfo) ([]sdk.Msg, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if err := baseapp.ValidateVoteExtensions(sdkCtx, k.skeeper, int64(height), sdkCtx.ChainID(), commit); err != nil {
+		log.Error(ctx, "Cannot include invalid vote extensions in payload", err, "height", height)
+		return nil, nil
+	}
 
-func (CPayloadProvider) PreparePayload(_ context.Context, _ uint64, commit abci.ExtendedCommitInfo) ([]sdk.Msg, error) {
 	aggAtts, ok, err := aggregatesFromLastCommit(commit)
 	if err != nil {
 		return nil, err
@@ -39,6 +44,9 @@ func (CPayloadProvider) PreparePayload(_ context.Context, _ uint64, commit abci.
 func aggregatesFromLastCommit(info abci.ExtendedCommitInfo) (*types.MsgAggAttestations, bool, error) {
 	var allAtts []*types.Attestation
 	for _, vote := range info.Votes {
+		if vote.BlockIdFlag != cmtproto.BlockIDFlagCommit {
+			continue // Skip non block votes
+		}
 		atts, ok, err := attestationsFromVoteExt(vote.VoteExtension)
 		if err != nil {
 			return nil, false, err
@@ -57,10 +65,10 @@ func aggregatesFromLastCommit(info abci.ExtendedCommitInfo) (*types.MsgAggAttest
 
 // aggregateAtts aggregates the provided attestations by block header.
 func aggregateAtts(atts []*types.Attestation) []*types.AggAttestation {
-	aggsByHash := make(map[string]*types.AggAttestation) // map[BlockHash]AggAttestation
+	aggsByHeader := make(map[xchain.BlockHeader]*types.AggAttestation) // map[BlockHash]AggAttestation
 	for _, att := range atts {
-		hashStr := string(att.BlockHeader.Hash)
-		agg, ok := aggsByHash[hashStr]
+		header := att.BlockHeader.ToXChain()
+		agg, ok := aggsByHeader[header]
 		if !ok {
 			agg = &types.AggAttestation{
 				BlockHeader: att.BlockHeader,
@@ -69,14 +77,14 @@ func aggregateAtts(atts []*types.Attestation) []*types.AggAttestation {
 		}
 
 		agg.Signatures = append(agg.Signatures, att.Signature)
-		aggsByHash[hashStr] = agg
+		aggsByHeader[header] = agg
 	}
 
-	return flattenAggsByHeader(aggsByHash)
+	return flattenAggsByHeader(aggsByHeader)
 }
 
 // flattenAggsByHeader returns the provided map of aggregates by header as a slice in a deterministic order.
-func flattenAggsByHeader(aggsByHeader map[string]*types.AggAttestation) []*types.AggAttestation {
+func flattenAggsByHeader(aggsByHeader map[xchain.BlockHeader]*types.AggAttestation) []*types.AggAttestation {
 	aggs := make([]*types.AggAttestation, 0, len(aggsByHeader))
 	for _, agg := range aggsByHeader {
 		aggs = append(aggs, agg)

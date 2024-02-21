@@ -14,7 +14,7 @@ import (
 )
 
 type msgServer struct {
-	Keeper
+	*Keeper
 	types.UnimplementedMsgServiceServer
 }
 
@@ -71,7 +71,7 @@ func newPayload(ctx context.Context, ethCl engineapi.API, msg *types.MsgExecutio
 
 // NewMsgServerImpl returns an implementation of the MsgServer interface
 // for the provided Keeper.
-func NewMsgServerImpl(keeper Keeper) types.MsgServiceServer {
+func NewMsgServerImpl(keeper *Keeper) types.MsgServiceServer {
 	return &msgServer{Keeper: keeper}
 }
 

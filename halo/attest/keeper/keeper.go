@@ -3,6 +3,9 @@ package keeper
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"log/slog"
+	"strconv"
 
 	"github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/lib/engine"
@@ -306,7 +309,23 @@ func (k Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.Re
 		return nil, errors.Wrap(err, "marshal atts")
 	}
 
-	log.Info(ctx, "Attesting to rollup blocks", "attestations", len(atts))
+	// Make nice logs
+	heights := make(map[uint64][]uint64)
+	for _, att := range atts {
+		heights[att.BlockHeader.ChainId] = append(heights[att.BlockHeader.ChainId], att.BlockHeader.Height)
+	}
+	attrs := []any{
+		slog.Int("attestations", len(atts)),
+		log.Hex7("validator", k.attester.LocalAddress().Bytes()),
+	}
+	for cid, hs := range heights {
+		attrs = append(attrs, slog.String(
+			strconv.FormatUint(cid, 10),
+			fmt.Sprint(hs),
+		))
+	}
+
+	log.Info(ctx, "Attesting to rollup blocks", attrs...)
 
 	return &abci.ResponseExtendVote{
 		VoteExtension: bz,
@@ -314,7 +333,7 @@ func (k Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.Re
 }
 
 // VerifyVoteExtension verifies a vote extension.
-func (k Keeper) VerifyVoteExtension(sdk.Context, *abci.RequestVerifyVoteExtension) (
+func (k Keeper) VerifyVoteExtension(_ sdk.Context, _ *abci.RequestVerifyVoteExtension) (
 	*abci.ResponseVerifyVoteExtension, error,
 ) {
 	// TODO(corver): Figure out what to verify. E.g. outside window or too big.

@@ -91,7 +91,7 @@ func (m *XDapp) Deploy(ctx context.Context) error {
 	m.contractAddr = addr
 	m.height = height
 
-	log.Info(ctx, "Deployed AVS contract", "address", addr.Hex(), "chain", m.chain.Name)
+	log.Debug(ctx, "Deployed AVS contract", "address", addr.Hex(), "chain", m.chain.Name)
 
 	return nil
 }

@@ -100,7 +100,7 @@ func (a *XDapp) StartAllEdges(ctx context.Context, count uint64) error {
 		from := a.contracts[edge.From]
 		to := a.contracts[edge.To]
 
-		log.Info(ctx, "Starting ping pong contract",
+		log.Debug(ctx, "Starting ping pong contract",
 			"from", from.Chain.Name,
 			"to", to.Chain.Name,
 			"count", count,
