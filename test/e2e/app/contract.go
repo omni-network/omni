@@ -39,10 +39,10 @@ func StartSendingXMsgs(ctx context.Context, portals map[uint64]netman.Portal, tx
 func SendXMsgs(ctx context.Context, portals map[uint64]netman.Portal, txManager xtx.TxSenderManager, batch int) error {
 	allTxs := make(map[uint64][]*ethtypes.Transaction)
 	for fromChainID, from := range portals {
-		nonce, err := from.Client.PendingNonceAt(ctx, from.TxOptsFrom())
-		if err != nil {
-			return errors.Wrap(err, "pending nonce", "chain", from.Chain.Name)
-		}
+		// nonce, err := from.Client.PendingNonceAt(ctx, from.TxOptsFrom())
+		// if err != nil {
+		// 	return errors.Wrap(err, "pending nonce", "chain", from.Chain.Name)
+		// }
 
 		for _, to := range portals {
 			if from.Chain.ID == to.Chain.ID {
@@ -56,17 +56,17 @@ func SendXMsgs(ctx context.Context, portals map[uint64]netman.Portal, txManager 
 					Data:        []byte{},
 					GasLimit:    uint64(1000000),
 				}
-
-				err := txManager.SendXCallTransaction(ctx, opts, nil, fromChainID) // TODO: add eth value
+				value := big.NewInt(0)
+				err := txManager.SendXCallTransaction(ctx, opts, value, fromChainID)
 				if err != nil {
 					return errors.Wrap(err, "send xcall", "from", from.Chain.Name, "to", to.Chain.Name, "batch", i)
 				}
-				tx, err := xcall(ctx, from, to.Chain.ID, nonce)
-				if err != nil {
-					return errors.Wrap(err, "batch_offset", i)
-				}
-				allTxs[fromChainID] = append(allTxs[fromChainID], tx)
-				nonce++
+				// tx, err := xcall(ctx, from, to.Chain.ID, nonce)
+				// if err != nil {
+				// 	return errors.Wrap(err, "batch_offset", i)
+				// }
+				// allTxs[fromChainID] = append(allTxs[fromChainID], tx)
+				// nonce++
 			}
 		}
 	}

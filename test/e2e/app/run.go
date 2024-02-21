@@ -23,19 +23,19 @@ type DeployConfig struct {
 // It also deploys a pingpong contract and starts all edges.
 func DeployWithPingPong(ctx context.Context, def Definition, cfg DeployConfig, pingPongN uint64,
 ) (types.DeployInfos, error) {
-	txManager, err := xtx.New(ctx, def.Netman.Portals(), def.Netman.RelayerKey())
-	if err != nil {
-		return nil, errors.Wrap(err, "deploy tx sender manager")
-	}
-	log.Info(ctx, "Deployed tx sender manager", "txManager", txManager)
 
-	deployInfo, err := Deploy(ctx, def, cfg, txManager)
+	deployInfo, err := Deploy(ctx, def, cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	if pingPongN == 0 {
 		return deployInfo, nil
+	}
+
+	txManager, err := xtx.New(ctx, def.Netman.Portals(), def.Netman.RelayerKey())
+	if err != nil {
+		return nil, errors.Wrap(err, "deploy tx sender manager")
 	}
 
 	pp, err := pingpong.Deploy(ctx, def.Netman.Portals(), txManager)
@@ -51,12 +51,10 @@ func DeployWithPingPong(ctx context.Context, def Definition, cfg DeployConfig, p
 }
 
 // Deploy a new e2e network. It also starts all services in order to deploy private portals.
-func Deploy(ctx context.Context, def Definition, cfg DeployConfig, txManager xtx.TxSenderManager) (types.DeployInfos, error) {
+func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.DeployInfos, error) {
 	if err := Cleanup(ctx, def); err != nil {
 		return nil, err
 	}
-
-	log.Info(ctx, "Deployed tx sender manager", "txManager", txManager)
 
 	genesisValSetID := uint64(1) // validator set IDs start at 1
 	genesisVals, err := toPortalValidators(def.Testnet.Validators)
@@ -106,15 +104,16 @@ func DefaultE2ETestConfig() E2ETestConfig {
 
 // E2ETest runs a full e2e test.
 func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, depCfg DeployConfig) error {
+	deployInfo, err := Deploy(ctx, def, depCfg)
+	if err != nil {
+		return err
+	}
+
 	txManager, err := xtx.New(ctx, def.Netman.Portals(), def.Netman.RelayerKey())
 	if err != nil {
 		return errors.Wrap(err, "deploy tx sender manager")
 	}
 
-	deployInfo, err := Deploy(ctx, def, depCfg, txManager)
-	if err != nil {
-		return err
-	}
 
 	// Deploy and start ping pong
 	const pingpongN = 4
