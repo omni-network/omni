@@ -114,8 +114,6 @@ func (c Config) make() (*slog.Logger, error) {
 }
 
 // BindFlags binds the standard flags to provide logging config at runtime.
-//
-//nolint:lll,revive // Long lines are actually more readable here.
 func BindFlags(flags *pflag.FlagSet, cfg *Config) {
 	flags.StringVar(&cfg.Level, "log-level", cfg.Level, "Log level; debug, info, warn, error")
 	flags.StringVar(&cfg.Color, "log-color", cfg.Color, "Log color (only applicable to console format); auto, force, disable")

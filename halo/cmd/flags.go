@@ -1,4 +1,3 @@
-//nolint:lll,revive // Flags are long but don't wrap since it makes the code harder to read.
 package cmd
 
 import (
