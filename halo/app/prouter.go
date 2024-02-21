@@ -18,7 +18,7 @@ import (
 func makeProcessProposalHandler(app *App) sdk.ProcessProposalHandler {
 	router := baseapp.NewMsgServiceRouter()
 	router.SetInterfaceRegistry(app.interfaceRegistry)
-	app.EngEVMKeeper.RegisterProposalService(router) // EVMEngine called NewPayload on proposals to veridy it.
+	app.EVMEngKeeper.RegisterProposalService(router) // EVMEngine calls NewPayload on proposals to verify it.
 	app.AttestKeeper.RegisterProposalService(router) // Attester marks attestations as proposed.
 
 	return func(ctx sdk.Context, req *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {

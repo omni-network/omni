@@ -28,25 +28,28 @@ func NewKeeper(
 	logger log.Logger,
 	ethCl engine.API,
 	txConfig client.TxConfig,
-	providers []types.CPayloadProvider,
-) Keeper {
-	return Keeper{
+) *Keeper {
+	return &Keeper{
 		cdc:          cdc,
 		storeService: storeService,
 		logger:       logger,
 		ethCl:        ethCl,
 		txConfig:     txConfig,
-		providers:    providers,
 	}
 }
 
+// TODO(corver): Figure out how to use depinject for this.
+func (k *Keeper) AddProvider(p types.CPayloadProvider) {
+	k.providers = append(k.providers, p)
+}
+
 // Logger returns a module-specific logger.
-func (k Keeper) Logger() log.Logger {
+func (k *Keeper) Logger() log.Logger {
 	return k.logger.With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }
 
 // RegisterProposalService registers the proposal service on the provided router.
 // This implements abci.ProcessProposal verification of new proposals.
-func (k Keeper) RegisterProposalService(server grpc1.Server) {
+func (k *Keeper) RegisterProposalService(server grpc1.Server) {
 	types.RegisterMsgServiceServer(server, NewProposalServer(k))
 }

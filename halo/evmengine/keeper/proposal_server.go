@@ -7,7 +7,7 @@ import (
 )
 
 type proposalServer struct {
-	Keeper
+	*Keeper
 	types.UnimplementedMsgServiceServer
 }
 
@@ -24,7 +24,7 @@ func (s proposalServer) ExecutionPayload(ctx context.Context, msg *types.MsgExec
 
 // NewProposalServer returns an implementation of the MsgServer interface
 // for the provided Keeper.
-func NewProposalServer(keeper Keeper) types.MsgServiceServer {
+func NewProposalServer(keeper *Keeper) types.MsgServiceServer {
 	return &proposalServer{Keeper: keeper}
 }
 

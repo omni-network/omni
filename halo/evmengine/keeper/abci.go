@@ -22,7 +22,7 @@ import (
 
 // PrepareProposal returns a proposal for the next block.
 // Note returning an error results in a panic cometbft and CONSENSUS_FAILURE log.
-func (k Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPrepareProposal) (
+func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPrepareProposal) (
 	*abci.ResponsePrepareProposal, error,
 ) {
 	defer func() {

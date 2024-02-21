@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"math/big"
+	"time"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -15,10 +16,13 @@ import (
 
 func StartSendingXMsgs(ctx context.Context, portals map[uint64]netman.Portal, batches ...int) <-chan error {
 	log.Info(ctx, "Generating cross chain messages async", "batches", batches)
+
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	errChan := make(chan error, 1)
+
 	go func() {
 		for i, count := range batches {
-			log.Info(ctx, "Sending xmsgs", "batch", i, "count", count)
+			log.Debug(ctx, "Sending xmsgs", "batch", i, "count", count)
 			err := SendXMsgs(ctx, portals, count)
 			if ctx.Err() != nil {
 				errChan <- ctx.Err()
@@ -29,6 +33,7 @@ func StartSendingXMsgs(ctx context.Context, portals map[uint64]netman.Portal, ba
 			}
 		}
 		errChan <- nil
+		cancel()
 	}()
 
 	return errChan

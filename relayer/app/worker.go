@@ -2,7 +2,6 @@ package relayer
 
 import (
 	"context"
-	"time"
 
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
@@ -42,7 +41,7 @@ func NewWorker(destChain netconf.Chain, network netconf.Network, cProvider cchai
 
 func (w *Worker) Run(ctx context.Context) {
 	ctx = log.WithCtx(ctx, "dst_chain", w.destChain.Name)
-	backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second)) // TODO(corver): Improve backoff.
+	backoff := expbackoff.NewWithAutoReset(ctx)
 	for ctx.Err() == nil {
 		err := w.runOnce(ctx)
 		if ctx.Err() != nil {

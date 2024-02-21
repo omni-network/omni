@@ -1,11 +1,9 @@
 package app
 
 import (
-	"github.com/omni-network/omni/halo/attest/attester"
 	attestkeeper "github.com/omni-network/omni/halo/attest/keeper"
 	atypes "github.com/omni-network/omni/halo/attest/types"
-	evmenginekeeper "github.com/omni-network/omni/halo/evmengine/keeper"
-	evmenginetypes "github.com/omni-network/omni/halo/evmengine/types"
+	evmengkeeper "github.com/omni-network/omni/halo/evmengine/keeper"
 	"github.com/omni-network/omni/lib/engine"
 	"github.com/omni-network/omni/lib/errors"
 
@@ -54,7 +52,7 @@ type App struct {
 	StakingKeeper         *stakingkeeper.Keeper
 	DistrKeeper           distrkeeper.Keeper
 	ConsensusParamsKeeper consensuskeeper.Keeper
-	EngEVMKeeper          evmenginekeeper.Keeper
+	EVMEngKeeper          *evmengkeeper.Keeper
 	AttestKeeper          attestkeeper.Keeper
 }
 
@@ -70,10 +68,6 @@ func newApp(
 		DepConfig(),
 		depinject.Supply(
 			logger, ethCl, attestI,
-			[]evmenginetypes.CPayloadProvider{
-				attester.CPayloadProvider{},
-				// TODO(corver): Add evmstaking CPayloadProvider here once it is implemented.
-			},
 		),
 	)
 
@@ -91,11 +85,14 @@ func newApp(
 		&app.StakingKeeper,
 		&app.DistrKeeper,
 		&app.ConsensusParamsKeeper,
-		&app.EngEVMKeeper,
+		&app.EVMEngKeeper,
 		&app.AttestKeeper,
 	); err != nil {
 		return nil, errors.Wrap(err, "dep inject")
 	}
+
+	// Add CProviders to evmengine keeper.
+	app.EVMEngKeeper.AddProvider(app.AttestKeeper)
 
 	proposalHandler := makeProcessProposalHandler(app)
 
@@ -103,7 +100,7 @@ func newApp(
 		// Use evm engine to create block proposals.
 		// Note that we do not check MaxTxBytes since all EngineEVM transaction MUST be included since we cannot
 		// postpone them to the next block. Nit: we could drop some vote extensions though...?
-		bapp.SetPrepareProposal(app.EngEVMKeeper.PrepareProposal)
+		bapp.SetPrepareProposal(app.EVMEngKeeper.PrepareProposal)
 
 		// Route proposed messaged to keepers for verification and external state updates.
 		bapp.SetProcessProposal(proposalHandler)

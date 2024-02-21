@@ -60,12 +60,12 @@ func (AppModuleBasic) RegisterGRPCGatewayRoutes(client.Context, *runtime.ServeMu
 type AppModule struct {
 	AppModuleBasic
 
-	keeper keeper.Keeper
+	keeper *keeper.Keeper
 }
 
 func NewAppModule(
 	cdc codec.Codec,
-	keeper keeper.Keeper,
+	keeper *keeper.Keeper,
 ) AppModule {
 	return AppModule{
 		AppModuleBasic: NewAppModuleBasic(cdc),
@@ -108,15 +108,14 @@ type ModuleInputs struct {
 	Logger       log.Logger
 	TXConfig     client.TxConfig
 	EthClient    engine.API
-	Providers    []types.CPayloadProvider
 }
 
 //nolint:revive // Cosmos-style
 type ModuleOutputs struct {
 	depinject.Out
 
-	EVMEngineKeeper keeper.Keeper
-	Module          appmodule.AppModule
+	EngEVMKeeper *keeper.Keeper
+	Module       appmodule.AppModule
 }
 
 func ProvideModule(in ModuleInputs) ModuleOutputs {
@@ -126,12 +125,11 @@ func ProvideModule(in ModuleInputs) ModuleOutputs {
 		in.Logger,
 		in.EthClient,
 		in.TXConfig,
-		in.Providers,
 	)
 	m := NewAppModule(
 		in.Cdc,
 		k,
 	)
 
-	return ModuleOutputs{EVMEngineKeeper: k, Module: m}
+	return ModuleOutputs{EngEVMKeeper: k, Module: m}
 }

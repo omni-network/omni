@@ -3,9 +3,13 @@ package keeper
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"log/slog"
+	"strconv"
 
 	"github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -34,6 +38,28 @@ func (s msgServer) AddAggAttestations(ctx context.Context, msg *types.MsgAggAtte
 	if err != nil {
 		return nil, errors.Wrap(err, "add aggregate attestation")
 	}
+
+	if len(msg.Aggregates) == 0 {
+		return &types.AddAggAttestationsResponse{}, nil
+	}
+
+	// Make nice logs
+	heights := make(map[uint64][]uint64)
+	for _, header := range localHeaders {
+		heights[header.ChainId] = append(heights[header.ChainId], header.Height)
+	}
+	attrs := []any{
+		slog.Int("attestations", len(localHeaders)),
+		log.Hex7("validator", s.attester.LocalAddress().Bytes()),
+	}
+	for cid, hs := range heights {
+		attrs = append(attrs, slog.String(
+			strconv.FormatUint(cid, 10),
+			fmt.Sprint(hs),
+		))
+	}
+
+	log.Debug(ctx, "Marked local attestations as committed", attrs...)
 
 	return &types.AddAggAttestationsResponse{}, nil
 }
