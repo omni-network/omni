@@ -1,4 +1,4 @@
-package txsenders
+package xtx
 
 import (
 	"context"
@@ -8,10 +8,10 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/xchain"
 	"github.com/omni-network/omni/test/e2e/netman"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type TxSenderManager struct {
@@ -19,7 +19,14 @@ type TxSenderManager struct {
 	abi      *abi.ABI
 }
 
-func Deploy(ctx context.Context, portals map[uint64]netman.Portal, privateKey *ecdsa.PrivateKey) (TxSenderManager, error) {
+type XCallOpts struct {
+	DestChainID uint64
+	Address     common.Address
+	Data        []byte
+	GasLimit    uint64
+}
+
+func New(ctx context.Context, portals map[uint64]netman.Portal, privateKey *ecdsa.PrivateKey) (TxSenderManager, error) {
 	// create ABI interface
 	parsedAbi, err := abi.JSON(strings.NewReader(bindings.OmniPortalMetaData.ABI))
 	if err != nil {
@@ -50,7 +57,7 @@ func (s TxSenderManager) deployTx(ctx context.Context, portal netman.Portal, pri
 		return errors.New("tx sender already exists", "chain", chain.ID)
 	}
 
-	txSender, err := DeployTxSender(
+	txSender, err := NewTxSender(
 		ctx,
 		portal,
 		privateKey,
@@ -65,21 +72,19 @@ func (s TxSenderManager) deployTx(ctx context.Context, portal netman.Portal, pri
 	return nil
 }
 
-func (s TxSenderManager) SendXCallTransaction(ctx context.Context, msg xchain.Msg, value *big.Int, sourceChainID uint64) error {
+func (s TxSenderManager) SendXCallTransaction(ctx context.Context, opts XCallOpts, value *big.Int, sourceChainID uint64) error {
 	txSender := s.txSender[sourceChainID]
-	bytes, err := s.XCallBytes(MsgToBindings(msg))
+	bytes, err := s.XCallBytes(opts.DestChainID, opts.Address, opts.Data, opts.GasLimit)
 	if err != nil {
 		return errors.Wrap(err, "get xsubmit bytes")
 	}
 
-	return txSender.sendTransaction(ctx, msg.DestChainID, bytes, value)
+	return txSender.sendTransaction(ctx, opts.DestChainID, bytes, value)
 }
 
 // getXCallBytes returns the byte representation of the xcall function call.
-func (s TxSenderManager) XCallBytes(
-	sub bindings.XTypesMsg,
-) ([]byte, error) {
-	bytes, err := s.abi.Pack("xcall", sub)
+func (s TxSenderManager) XCallBytes(destChainId uint64, address common.Address, data []byte, gasLimit uint64) ([]byte, error) {
+	bytes, err := s.abi.Pack("xcall", destChainId, address, data, gasLimit)
 	if err != nil {
 		return nil, errors.Wrap(err, "pack xcall")
 	}

@@ -1,4 +1,4 @@
-package txsenders
+package xtx
 
 import (
 	"context"
@@ -27,7 +27,7 @@ const (
 	interval = 3
 )
 
-func DeployTxSender(ctx context.Context, portal netman.Portal, privateKey *ecdsa.PrivateKey, abi abi.ABI) (Sender, error) {
+func NewTxSender(ctx context.Context, portal netman.Portal, privateKey *ecdsa.PrivateKey, abi abi.ABI) (Sender, error) {
 	// creates our new CLI config for our tx manager
 	cliConfig := txmgr.NewCLIConfig(
 		portal.RPCURL,

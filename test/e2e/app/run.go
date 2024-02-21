@@ -8,8 +8,8 @@ import (
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/test/e2e/pingpong"
-	"github.com/omni-network/omni/test/e2e/txsenders"
 	"github.com/omni-network/omni/test/e2e/types"
+	"github.com/omni-network/omni/test/e2e/xtx"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
@@ -23,7 +23,7 @@ type DeployConfig struct {
 // It also deploys a pingpong contract and starts all edges.
 func DeployWithPingPong(ctx context.Context, def Definition, cfg DeployConfig, pingPongN uint64,
 ) (types.DeployInfos, error) {
-	txManager, err := txsenders.Deploy(ctx, def.Netman.Portals(), def.Netman.RelayerKey())
+	txManager, err := xtx.New(ctx, def.Netman.Portals(), def.Netman.RelayerKey())
 	if err != nil {
 		return nil, errors.Wrap(err, "deploy tx sender manager")
 	}
@@ -51,8 +51,7 @@ func DeployWithPingPong(ctx context.Context, def Definition, cfg DeployConfig, p
 }
 
 // Deploy a new e2e network. It also starts all services in order to deploy private portals.
-func Deploy(ctx context.Context, def Definition, cfg DeployConfig,
-	txManager txsenders.TxSenderManager) (types.DeployInfos, error) {
+func Deploy(ctx context.Context, def Definition, cfg DeployConfig, txManager xtx.TxSenderManager) (types.DeployInfos, error) {
 	if err := Cleanup(ctx, def); err != nil {
 		return nil, err
 	}
@@ -107,7 +106,7 @@ func DefaultE2ETestConfig() E2ETestConfig {
 
 // E2ETest runs a full e2e test.
 func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, depCfg DeployConfig) error {
-	txManager, err := txsenders.Deploy(ctx, def.Netman.Portals(), def.Netman.RelayerKey())
+	txManager, err := xtx.New(ctx, def.Netman.Portals(), def.Netman.RelayerKey())
 	if err != nil {
 		return errors.Wrap(err, "deploy tx sender manager")
 	}

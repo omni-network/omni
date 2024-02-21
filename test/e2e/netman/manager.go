@@ -150,7 +150,6 @@ type Portal struct {
 	Client     *ethclient.Client
 	Contract   *bindings.OmniPortal
 	txOpts     *bind.TransactOpts // TODO(corver): Replace this with a txmgr.
-	// sender     txsenders.Sender
 }
 
 // TxOpts returns transaction options using the deploy key.
