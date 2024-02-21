@@ -5,6 +5,10 @@ import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrate
 import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
 import { EigenM2GoerliDeployments } from "test/avs/eigen/deploy/EigenM2GoerliDeployments.sol";
 
+/**
+ * @title StrategyParams
+ * @dev Defines OmniAVS strategy params for different chains
+ */
 library StrategyParams {
     uint96 public constant STD_MULTIPLIER = 1e18; // OmniAVS.WEIGHTING_DIVISOR
 

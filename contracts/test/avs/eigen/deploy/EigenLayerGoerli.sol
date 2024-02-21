@@ -8,6 +8,12 @@ import { IDelegationManager } from "eigenlayer-contracts/src/contracts/interface
 import { IEigenDeployer } from "./IEigenDeployer.sol";
 import { EigenM2GoerliDeployments } from "./EigenM2GoerliDeployments.sol";
 
+/**
+ * @title EigenLayerGoerli
+ * @dev A goerli IEigenDeployer. This contract is used when "deploying"
+ *      EigenLayer on a goerli fork. It does not actually deploy anything, it just
+ *      returns the addresses of the contracts that are already deployed on goerli.
+ */
 contract EigenLayerGoerli is IEigenDeployer {
     function deploy() external view returns (Deployments memory) {
         address proxyAdminAddr = _proxyAdmin(EigenM2GoerliDeployments.EigenPodManager);

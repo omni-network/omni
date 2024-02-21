@@ -30,6 +30,12 @@ import { ETHPOSDepositMock } from "eigenlayer-contracts/src/test/mocks/ETHDeposi
 
 import { IEigenDeployer } from "./IEigenDeployer.sol";
 
+/**
+ * @title EigenLayerLocal
+ * @dev A local IEigenDeployer. This contract is used when not running against
+ *      a testnet or mainnet fork. It requires deploys all eigenlayer core
+ *      contracts.
+ */
 contract EigenLayerLocal is IEigenDeployer {
     // EigenLayer contracts
     ProxyAdmin proxyAdmin;

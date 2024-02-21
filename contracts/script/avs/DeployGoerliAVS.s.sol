@@ -17,14 +17,22 @@ import { Script } from "forge-std/Script.sol";
 
 // solhint-disable const-name-snakecase
 
+/**
+ * @title DeployGoerliAVS
+ * @dev A script + utilites for deploying OmnIAVS to Goerli. It exposes a
+ *      deploy function, so that fork tests can use the same deployment logic as the
+ *      deploy script.
+ */
 contract DeployGoerliAVS is Script {
     uint96 public constant minimumOperatorStake = 1 ether;
     uint32 public constant maxOperatorCount = 10;
 
+    /// @dev forge script entrypoint
     function run() public pure {
         revert("Not implemented");
     }
 
+    /// @dev defines goerli deployment logic
     function deploy(address owner, address proxyAdmin, address portal, uint64 omniChainId) public returns (address) {
         address proxy = address(new TransparentUpgradeableProxy(address(new Empty()), proxyAdmin, ""));
         address impl = address(

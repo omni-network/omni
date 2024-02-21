@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
+/**
+ * @dev Defines interface for Eigen Deployer (ex. local, goerli, mainnet)
+ */
 interface IEigenDeployer {
     struct Deployments {
         address proxyAdminOwner;
