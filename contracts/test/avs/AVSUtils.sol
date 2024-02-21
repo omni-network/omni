@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.12;
 
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 import { ISignatureUtils } from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import { IDelegationManager } from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
+import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
 import { AVSBase } from "./AVSBase.sol";
 
 contract AVSUtils is AVSBase {
@@ -85,13 +88,32 @@ contract AVSUtils is AVSBase {
         return abi.encodePacked(r, s, v);
     }
 
-    /// @dev deposit WETH in eigen layer
-    function _depositWeth(address staker, uint256 amount) internal {
-        _testDepositWeth(staker, amount);
+    /// @dev deposit into a random strategy, that is part of the OmniAVS strategy params
+    function _depositIntoSupportedStrategy(address staker, uint256 amount) internal {
+        IOmniAVS.StrategyParams[] memory params = omniAVS.strategyParams();
+        uint256 index = uint256(keccak256(abi.encodePacked(staker))) % params.length;
+        _depositIntoStrategy(staker, amount, address(params[index].strategy));
     }
 
-    /// @dev deposit Eigen in eigen layer
-    function _depositEigen(address staker, uint256 amount) internal {
-        _testDepositEigen(staker, amount);
+    /// @dev deposit into an that is NOT part of the OmniAVS strategy params
+    function _depositIntoUnsupportedStrategy(address staker, uint256 amount) internal {
+        IOmniAVS.StrategyParams[] memory params = omniAVS.strategyParams();
+
+        // check that unsupportedStrategy is not part of the strategy params
+        for (uint256 i = 0; i < params.length; i++) {
+            require(
+                address(params[i].strategy) != address(unsupportedStrat),
+                "AVSUtils: unsupportedStrat should not be in strategy params"
+            );
+        }
+
+        _depositIntoStrategy(staker, amount, address(unsupportedStrat));
+    }
+
+    /// @dev deposit into the provided strategy
+    function _depositIntoStrategy(address staker, uint256 amount, address strategy) internal {
+        IStrategy strat = IStrategy(strategy);
+        IERC20 underlying = strat.underlyingToken();
+        _testDepositToStrategy(staker, amount, underlying, strat);
     }
 }
