@@ -27,6 +27,8 @@ import "eigenlayer-contracts/src/test/mocks/ETHDepositMock.sol";
 
 import "forge-std/Test.sol";
 
+import "./EigenM2GoerliDeployments.sol";
+
 /**
  * @dev Repurposed from eignlayer-contracts src/test/EigenLayerDeployer.t.sol
  *      Unused storage variables and functions were removed
@@ -36,55 +38,84 @@ contract EigenLayerDeployer is Test {
     Vm cheats = Vm(HEVM_ADDRESS);
 
     // EigenLayer contracts
-    ProxyAdmin public eigenLayerProxyAdmin;
-    PauserRegistry public eigenLayerPauserReg;
+    ProxyAdmin eigenLayerProxyAdmin;
+    PauserRegistry eigenLayerPauserReg;
+    Slasher slasher;
+    DelegationManager delegation;
+    AVSDirectory avsDirectory;
+    StrategyManager strategyManager;
+    EigenPodManager eigenPodManager;
+    IEigenPod pod;
+    IDelayedWithdrawalRouter delayedWithdrawalRouter;
+    IETHPOSDeposit ethPOSDeposit;
+    IBeacon eigenPodBeacon;
 
-    Slasher public slasher;
-    DelegationManager public delegation;
-    AVSDirectory public avsDirectory;
-    StrategyManager public strategyManager;
-    EigenPodManager public eigenPodManager;
-    IEigenPod public pod;
-    IDelayedWithdrawalRouter public delayedWithdrawalRouter;
-    IETHPOSDeposit public ethPOSDeposit;
-    IBeacon public eigenPodBeacon;
+    // local strategies
+    IERC20 eigenToken;
+    IERC20 weth;
+    StrategyBase wethStrat;
+    StrategyBase eigenStrat;
+    StrategyBase baseStrategyImplementation;
+
+    // goerli strategies
+    uint256 wethInitialSupply = 10e50;
+    uint256 eigenTotalSupply = 1000e18;
+    IERC20 stETH;
+    IERC20 rETH;
+    StrategyBase stETHStrat;
+    StrategyBase rETHStrat;
+
+    // active strategies (goerli or local)
+    IStrategy[] strategies;
 
     // testing/mock contracts
-    IERC20 public eigenToken;
-    IERC20 public weth;
-    StrategyBase public wethStrat;
-    StrategyBase public eigenStrat;
-    StrategyBase public baseStrategyImplementation;
-    EmptyContract public emptyContract;
+    EmptyContract emptyContract;
 
-    //from testing seed phrase
-    bytes32 priv_key_0 = 0x1234567812345678123456781234567812345678123456781234567812345678;
-    bytes32 priv_key_1 = 0x1234567812345678123456781234567812345698123456781234567812348976;
-
-    address[2] public stakers;
-
-    uint256 wethInitialSupply = 10e50;
-    uint256 public constant eigenTotalSupply = 1000e18;
-    IStrategy[] public initializeStrategiesToSetDelayBlocks;
-    uint256[] public initializeWithdrawalDelayBlocks;
+    // config (for local setup)
+    IStrategy[] initializeStrategiesToSetDelayBlocks;
+    uint256[] initializeWithdrawalDelayBlocks;
     uint256 minWithdrawalDelayBlocks = 0;
     uint32 PARTIAL_WITHDRAWAL_FRAUD_PROOF_PERIOD_BLOCKS = 7 days / 12 seconds;
     uint64 MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = 32e9;
     uint64 GOERLI_GENESIS_TIME = 1_616_508_000;
 
+    // addrs
     address pauser;
     address unpauser;
-    address acct_0 = cheats.addr(uint256(priv_key_0));
-    address acct_1 = cheats.addr(uint256(priv_key_1));
-    address public eigenLayerReputedMultisig = address(this);
-
+    address eigenLayerReputedMultisig = address(this);
     address beaconChainOracleAddress;
 
-    function setUp() public virtual {
-        _deployEigenLayerContractsLocal();
+    function isGoerli() public view returns (bool) {
+        return block.chainid == 5;
     }
 
-    function _deployEigenLayerContractsLocal() internal {
+    function setUp() public virtual {
+        if (isGoerli()) {
+            _deployGoerliEigenLayer();
+        } else {
+            _deployLocalEigenLayer();
+        }
+    }
+
+    function _deployGoerliEigenLayer() internal {
+        // core
+        avsDirectory = AVSDirectory(EigenM2GoerliDeployments.AVSDirectory);
+        delegation = DelegationManager(EigenM2GoerliDeployments.DelegationManager);
+        strategyManager = StrategyManager(EigenM2GoerliDeployments.StrategyManager);
+        slasher = Slasher(EigenM2GoerliDeployments.Slasher);
+        eigenPodManager = EigenPodManager(EigenM2GoerliDeployments.EigenPodManager);
+
+        // strategies
+        stETH = IERC20(EigenM2GoerliDeployments.stETH);
+        rETH = IERC20(EigenM2GoerliDeployments.rETH);
+        stETHStrat = StrategyBase(EigenM2GoerliDeployments.stETHStrategy);
+        rETHStrat = StrategyBase(EigenM2GoerliDeployments.rETHStrategy);
+
+        strategies.push(stETHStrat);
+        strategies.push(rETHStrat);
+    }
+
+    function _deployLocalEigenLayer() internal {
         pauser = address(69);
         unpauser = address(489);
         // deploy proxy admin for ability to upgrade proxy contracts
@@ -234,6 +265,7 @@ contract EigenLayerDeployer is Test {
             )
         );
 
-        stakers = [acct_0, acct_1];
+        strategies.push(wethStrat);
+        strategies.push(eigenStrat);
     }
 }

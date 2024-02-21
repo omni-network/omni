@@ -34,17 +34,17 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     /// @notice Minimum stake required for an operator to register, not including delegations
     uint96 public minimumOperatorStake;
 
+    /// @notice OmniPortal.xcall gas limit per each validator in syncWithOmni
+    uint64 public xcallGasLimitPerValidator = 10_000;
+
+    /// @notice OmniPortal.xcall base gas limit in syncWithOmni
+    uint64 public xcallBaseGasLimit = 75_000;
+
     /// @notice Omni portal contract, used to make xcalls to the Omni chain
     IOmniPortal public omni;
 
-    /// @notice Strategy parameters for restaking
-    IOmniAVS.StrategyParams[] public strategyParams;
-
-    /// @dev OmniPortal.xcall gas limit per each validator in syncWithOmni
-    uint256 internal xcallGasLimitPerValidator = 10_000;
-
-    /// @dev OmniPortal.xcall base gas limit in syncWithOmni
-    uint256 internal xcallBaseGasLimit = 75_000;
+    /// @dev Strategy parameters for restaking
+    IOmniAVS.StrategyParams[] internal _strategyParams;
 
     /// @dev List of currently register operators, used to sync EigenCore
     address[] internal _operators;
@@ -171,24 +171,29 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
      */
 
     /// @inheritdoc IOmniAVS
+    function strategyParams() external view returns (StrategyParams[] memory) {
+        return _strategyParams;
+    }
+
+    /// @inheritdoc IOmniAVS
     function getValidators() external view returns (Validator[] memory) {
         return _getValidators();
     }
 
     /// @inheritdoc IServiceManager
     function getRestakeableStrategies() external view returns (address[] memory) {
-        address[] memory strategies = new address[](strategyParams.length);
-        for (uint256 j = 0; j < strategyParams.length; j++) {
-            strategies[j] = address(strategyParams[j].strategy);
+        address[] memory strategies = new address[](_strategyParams.length);
+        for (uint256 j = 0; j < _strategyParams.length; j++) {
+            strategies[j] = address(_strategyParams[j].strategy);
         }
         return strategies;
     }
 
     /// @inheritdoc IServiceManager
     function getOperatorRestakedStrategies(address operator) external view returns (address[] memory) {
-        address[] memory strategies = new address[](strategyParams.length);
-        for (uint256 j = 0; j < strategyParams.length; j++) {
-            address strat = address(strategyParams[j].strategy);
+        address[] memory strategies = new address[](_strategyParams.length);
+        for (uint256 j = 0; j < _strategyParams.length; j++) {
+            address strat = address(_strategyParams[j].strategy);
             if (_delegationManager.operatorShares(operator, IStrategy(strat)) > 0) {
                 strategies[j] = strat;
             }
@@ -228,8 +233,8 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
         uint96 total;
         StrategyParams memory params;
 
-        for (uint256 j = 0; j < strategyParams.length; j++) {
-            params = strategyParams[j];
+        for (uint256 j = 0; j < _strategyParams.length; j++) {
+            params = _strategyParams[j];
             uint256 shares = _delegationManager.operatorShares(operator, params.strategy);
             total += _weight(shares, params.multiplier);
         }
@@ -247,9 +252,9 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
 
             // find the strategy params for the strategy
             StrategyParams memory params;
-            for (uint256 j = 0; j < strategyParams.length; j++) {
-                if (address(strategyParams[j].strategy) == address(strat)) {
-                    params = strategyParams[j];
+            for (uint256 j = 0; j < _strategyParams.length; j++) {
+                if (address(_strategyParams[j].strategy) == address(strat)) {
+                    params = _strategyParams[j];
                     break;
                 }
             }
@@ -303,7 +308,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     }
 
     /// @inheritdoc IOmniAVSAdmin
-    function setXcallGasLimits(uint256 base, uint256 perValidator) external onlyOwner {
+    function setXcallGasLimits(uint64 base, uint64 perValidator) external onlyOwner {
         xcallBaseGasLimit = base;
         xcallGasLimitPerValidator = perValidator;
     }
@@ -325,7 +330,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
 
     /// @dev Set the strategy parameters
     function _setStrategyParams(StrategyParams[] calldata params) internal {
-        delete strategyParams;
+        delete _strategyParams;
 
         for (uint256 i = 0; i < params.length; i++) {
             // ensure no duplicates
@@ -333,7 +338,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
                 require(address(params[i].strategy) != address(params[j].strategy), "OmniAVS: duplicate strategy");
             }
 
-            strategyParams.push(params[i]);
+            _strategyParams.push(params[i]);
         }
     }
 }

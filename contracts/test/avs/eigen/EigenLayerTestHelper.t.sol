@@ -35,26 +35,6 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
     }
 
     /**
-     * @notice Deposits `amountToDeposit` of WETH from address `sender` into `wethStrat`.
-     * @param sender The address to spoof calls from using `cheats.startPrank(sender)`
-     * @param amountToDeposit Amount of WETH that is first *transferred from this contract to `sender`* and then deposited by `sender` into `stratToDepositTo`
-     */
-    function _testDepositWeth(address sender, uint256 amountToDeposit) internal returns (uint256 amountDeposited) {
-        cheats.assume(amountToDeposit <= wethInitialSupply);
-        amountDeposited = _testDepositToStrategy(sender, amountToDeposit, weth, wethStrat);
-    }
-
-    /**
-     * @notice Deposits `amountToDeposit` of EIGEN from address `sender` into `eigenStrat`.
-     * @param sender The address to spoof calls from using `cheats.startPrank(sender)`
-     * @param amountToDeposit Amount of EIGEN that is first *transferred from this contract to `sender`* and then deposited by `sender` into `stratToDepositTo`
-     */
-    function _testDepositEigen(address sender, uint256 amountToDeposit) internal returns (uint256 amountDeposited) {
-        cheats.assume(amountToDeposit <= eigenTotalSupply);
-        amountDeposited = _testDepositToStrategy(sender, amountToDeposit, eigenToken, eigenStrat);
-    }
-
-    /**
      * @notice Deposits `amountToDeposit` of `underlyingToken` from address `sender` into `stratToDepositTo`.
      * *If*  `sender` has zero shares prior to deposit, *then* checks that `stratToDepositTo` is correctly added to their `stakerStrategyList` array.
      *
@@ -92,7 +72,7 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             emit log_named_uint("while contractBalance is", contractBalance);
             revert("_testDepositToStrategy failure");
         } else {
-            underlyingToken.transfer(sender, amountToDeposit);
+            deal(address(underlyingToken), sender, amountToDeposit);
             cheats.startPrank(sender);
             underlyingToken.approve(address(strategyManager), type(uint256).max);
             strategyManager.depositIntoStrategy(stratToDepositTo, underlyingToken, amountToDeposit);

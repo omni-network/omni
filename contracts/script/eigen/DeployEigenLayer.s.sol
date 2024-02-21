@@ -7,7 +7,7 @@ import { EigenLayerDeployer } from "test/avs/eigen/EigenLayerDeployer.t.sol";
 contract DeployEigenLayer is EigenLayerDeployer, Script {
     function run() external {
         vm.startBroadcast();
-        _deployEigenLayerContractsLocal();
+        _deployLocalEigenLayer();
         _writeDeploymentsJson();
     }
 
