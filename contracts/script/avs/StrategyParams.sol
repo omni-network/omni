@@ -3,7 +3,7 @@ pragma solidity =0.8.12;
 
 import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
-import { EigenM2GoerliDeployments } from "test/avs/eigen/EigenM2GoerliDeployments.sol";
+import { EigenM2GoerliDeployments } from "test/avs/eigen/deploy/EigenM2GoerliDeployments.sol";
 
 library StrategyParams {
     uint96 public constant STD_MULTIPLIER = 1e18; // OmniAVS.WEIGHTING_DIVISOR

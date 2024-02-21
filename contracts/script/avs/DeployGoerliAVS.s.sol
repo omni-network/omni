@@ -1,8 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.12;
 
-import { EigenM2GoerliDeployments } from "test/avs/eigen/EigenM2GoerliDeployments.sol";
-import { AVSDeploy } from "./AVSDeploy.sol";
+import { ProxyAdmin } from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import { ITransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+
+import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import { IDelegationManager } from "src/interfaces/IDelegationManager.sol";
+
+import { Empty } from "test/common/Empty.sol";
+import { OmniAVS } from "src/protocol/OmniAVS.sol";
+import { EigenM2GoerliDeployments } from "test/avs/eigen/deploy/EigenM2GoerliDeployments.sol";
 import { StrategyParams } from "./StrategyParams.sol";
 
 import { Script } from "forge-std/Script.sol";
@@ -18,22 +26,29 @@ contract DeployGoerliAVS is Script {
     }
 
     function deploy(address owner, address proxyAdmin, address portal, uint64 omniChainId) public returns (address) {
-        address proxy = AVSDeploy.proxy(proxyAdmin);
-        address impl = AVSDeploy.impl(EigenM2GoerliDeployments.DelegationManager, EigenM2GoerliDeployments.AVSDirectory);
+        address proxy = address(new TransparentUpgradeableProxy(address(new Empty()), proxyAdmin, ""));
+        address impl = address(
+            new OmniAVS(
+                IDelegationManager(EigenM2GoerliDeployments.DelegationManager),
+                IAVSDirectory(EigenM2GoerliDeployments.AVSDirectory)
+            )
+        );
 
         address[] memory allowlist = new address[](0);
 
-        AVSDeploy.upgradeAndInit(
-            proxyAdmin,
-            proxy,
+        ProxyAdmin(proxyAdmin).upgradeAndCall(
+            ITransparentUpgradeableProxy(proxy),
             impl,
-            owner,
-            portal,
-            omniChainId,
-            minimumOperatorStake,
-            maxOperatorCount,
-            allowlist,
-            StrategyParams.goerli()
+            abi.encodeWithSelector(
+                OmniAVS.initialize.selector,
+                owner,
+                portal,
+                omniChainId,
+                minimumOperatorStake,
+                maxOperatorCount,
+                allowlist,
+                StrategyParams.goerli()
+            )
         );
 
         return proxy;

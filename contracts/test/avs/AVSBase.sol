@@ -4,22 +4,25 @@ pragma solidity =0.8.12;
 import { ProxyAdmin } from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { ITransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import { IDelegationManager } from "src/interfaces/IDelegationManager.sol";
 
+import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
+import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
+
+import { IDelegationManager } from "src/interfaces/IDelegationManager.sol";
 import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
 import { OmniAVS } from "src/protocol/OmniAVS.sol";
-import { EigenLayerTestHelper } from "./eigen/EigenLayerTestHelper.t.sol";
-import { EigenM2GoerliDeployments } from "./eigen/EigenM2GoerliDeployments.sol";
-import { MockPortal } from "./MockPortal.sol";
 
 import { DeployGoerliAVS } from "script/avs/DeployGoerliAVS.s.sol";
 import { StrategyParams } from "script/avs/StrategyParams.sol";
-import { AVSDeploy } from "script/avs/AVSDeploy.sol";
+import { Empty } from "test/common/Empty.sol";
+import { EigenLayerTestHelper } from "./eigen/EigenLayerTestHelper.t.sol";
+import { MockPortal } from "./MockPortal.sol";
 
 contract AVSBase is EigenLayerTestHelper {
-    address omniAVSOwner = makeAddr("omniAVSOwner");
-    address proxyAdminOwner = makeAddr("proxyAdminOwner");
+    address multisig = makeAddr("multisig");
+    address proxyAdminOwner = multisig;
+    address omniAVSOwner = multisig;
 
     uint32 maxOperatorCount = 10;
     uint96 minimumOperatorStake = 1 ether;
@@ -27,7 +30,6 @@ contract AVSBase is EigenLayerTestHelper {
 
     ProxyAdmin proxyAdmin;
     MockPortal portal;
-    OmniAVS omniAVSImplementation;
     OmniAVS omniAVS;
 
     function setUp() public override {
@@ -35,56 +37,56 @@ contract AVSBase is EigenLayerTestHelper {
 
         portal = new MockPortal();
 
-        _deployProxyAdmin();
-
-        if (isGoerli()) {
-            _deployGoerliAVS();
-        } else {
-            _deployLocalAVS();
-        }
-    }
-
-    function _deployProxyAdmin() private {
         vm.prank(proxyAdminOwner);
         proxyAdmin = new ProxyAdmin();
+
+        omniAVS = isGoerli() ? _deployGoerliAVS() : _deployLocalAVS();
     }
 
-    function _deployGoerliAVS() internal {
+    function _deployGoerliAVS() internal returns (OmniAVS) {
         DeployGoerliAVS deployer = new DeployGoerliAVS();
-        omniAVS = OmniAVS(deployer.deploy(omniAVSOwner, address(proxyAdmin), address(portal), omniChainId));
+        return OmniAVS(deployer.deploy(omniAVSOwner, address(proxyAdmin), address(portal), omniChainId));
     }
 
-    function _deployLocalAVS() internal {
+    function _deployLocalAVS() internal returns (OmniAVS) {
         vm.startPrank(proxyAdminOwner);
-        omniAVS = OmniAVS(AVSDeploy.proxy(address(proxyAdmin)));
-        omniAVSImplementation = OmniAVS(AVSDeploy.impl(address(delegation), address(avsDirectory)));
 
-        IOmniAVS.StrategyParams[] memory strategyParams = _localStrategyParams();
+        address proxy = address(new TransparentUpgradeableProxy(address(new Empty()), address(proxyAdmin), ""));
+        address impl =
+            address(new OmniAVS(IDelegationManager(address(delegation)), IAVSDirectory(address(avsDirectory))));
+
         address[] memory allowlist = new address[](0);
 
-        AVSDeploy.upgradeAndInit(
-            address(proxyAdmin),
-            address(omniAVS),
-            address(omniAVSImplementation),
-            // init params
-            omniAVSOwner,
-            address(portal),
-            omniChainId,
-            minimumOperatorStake,
-            maxOperatorCount,
-            allowlist,
-            strategyParams
+        ProxyAdmin(proxyAdmin).upgradeAndCall(
+            ITransparentUpgradeableProxy(proxy),
+            impl,
+            abi.encodeWithSelector(
+                OmniAVS.initialize.selector,
+                omniAVSOwner,
+                portal,
+                omniChainId,
+                minimumOperatorStake,
+                maxOperatorCount,
+                allowlist,
+                _localStrategyParams()
+            )
         );
-
         vm.stopPrank();
+
+        return OmniAVS(proxy);
     }
 
     function _localStrategyParams() internal view returns (IOmniAVS.StrategyParams[] memory params) {
-        params = new IOmniAVS.StrategyParams[](1);
-        params[0] = IOmniAVS.StrategyParams({
-            strategy: wethStrat,
-            multiplier: uint96(omniAVSImplementation.WEIGHTING_DIVISOR())
-        });
+        // add all EigenLayerDeployer.strategies
+        params = new IOmniAVS.StrategyParams[](strategies.length);
+
+        for (uint256 i = 0; i < strategies.length; i++) {
+            params[i] = IOmniAVS.StrategyParams({
+                strategy: IStrategy(strategies[i]),
+                multiplier: uint96(1e18) // OmniAVS.WEIGHTING_DIVISOR
+             });
+        }
+
         return params;
     }
 }
