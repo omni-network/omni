@@ -1,4 +1,4 @@
-package txsender
+package txsenders
 
 import (
 	"github.com/omni-network/omni/contracts/bindings"

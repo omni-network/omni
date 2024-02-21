@@ -1,18 +1,17 @@
-package txsender
+package txsenders
 
 import (
 	"context"
 	"crypto/ecdsa"
 	"math/big"
-	"time"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/txmgr"
+	"github.com/omni-network/omni/test/e2e/netman"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 type Sender struct {
@@ -28,42 +27,32 @@ const (
 	interval = 3
 )
 
-func DeployTxSender(
-	ctx context.Context,
-	rpcCurl string,
-	blockPeriod time.Duration,
-	chainID uint64,
-	portalAddress common.Address,
-	rpcClient *ethclient.Client,
-	privateKey *ecdsa.PrivateKey,
-	chainName string,
-	abi abi.ABI,
-) (Sender, error) {
+func DeployTxSender(ctx context.Context, portal netman.Portal, privateKey *ecdsa.PrivateKey, abi abi.ABI) (Sender, error) {
 	// creates our new CLI config for our tx manager
 	cliConfig := txmgr.NewCLIConfig(
-		rpcCurl,
-		blockPeriod/interval, // we want to query receipts at block period / interval
+		portal.RPCURL,
+		portal.Chain.BlockPeriod/interval, // we want to query receipts at block period / interval
 		txmgr.DefaultSenderFlagValues,
 	)
 
 	// get the config for our tx manager
-	cfg, err := txmgr.NewConfig(ctx, cliConfig, privateKey, rpcClient)
+	cfg, err := txmgr.NewConfig(ctx, cliConfig, privateKey, portal.Client)
 	if err != nil {
 		return Sender{}, errors.New("create tx mgr config", "error", err)
 	}
 
 	// create a simple tx manager from our config
-	txMgr, err := txmgr.NewSimpleTxManagerFromConfig(chainName, cfg)
+	txMgr, err := txmgr.NewSimpleTxManagerFromConfig(portal.Chain.Name, cfg)
 	if err != nil {
 		return Sender{}, errors.New("create tx mgr", "error", err)
 	}
 
 	return Sender{
 		txMgr:     txMgr,
-		portal:    portalAddress,
+		portal:    portal.DeployInfo.PortalAddress,
 		abi:       &abi,
-		chainName: chainName,
-		chainID:   chainID,
+		chainName: portal.Chain.Name,
+		chainID:   portal.Chain.ID,
 	}, nil
 }
 

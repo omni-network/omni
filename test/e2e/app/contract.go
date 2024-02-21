@@ -6,20 +6,22 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/xchain"
 	"github.com/omni-network/omni/test/e2e/netman"
+	"github.com/omni-network/omni/test/e2e/txsenders"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
-func StartSendingXMsgs(ctx context.Context, portals map[uint64]netman.Portal, batches ...int) <-chan error {
+func StartSendingXMsgs(ctx context.Context, portals map[uint64]netman.Portal, txManager txsenders.TxSenderManager, batches ...int) <-chan error {
 	log.Info(ctx, "Generating cross chain messages async", "batches", batches)
 	errChan := make(chan error, 1)
 	go func() {
 		for i, count := range batches {
 			log.Info(ctx, "Sending xmsgs", "batch", i, "count", count)
-			err := SendXMsgs(ctx, portals, count)
+			err := SendXMsgs(ctx, portals, txManager, count)
 			if ctx.Err() != nil {
 				errChan <- ctx.Err()
 				return
@@ -35,7 +37,7 @@ func StartSendingXMsgs(ctx context.Context, portals map[uint64]netman.Portal, ba
 }
 
 // SendXMsgs sends <count> xmsgs from every chain to every other chain, then waits for them to be mined.
-func SendXMsgs(ctx context.Context, portals map[uint64]netman.Portal, batch int) error {
+func SendXMsgs(ctx context.Context, portals map[uint64]netman.Portal, txManager txsenders.TxSenderManager, batch int) error {
 	allTxs := make(map[uint64][]*ethtypes.Transaction)
 	for fromChainID, from := range portals {
 		nonce, err := from.Client.PendingNonceAt(ctx, from.TxOptsFrom())
@@ -49,6 +51,14 @@ func SendXMsgs(ctx context.Context, portals map[uint64]netman.Portal, batch int)
 			}
 
 			for i := 0; i < batch; i++ {
+				msg := xchain.Msg{
+					SourceMsgSender: from.DeployInfo.PortalAddress,
+					DestAddress:     to.DeployInfo.PortalAddress,
+					Data:            []byte("data"),
+					DestGasLimit:    uint64(1000000),
+					TxHash:          common.Hash{},
+				}
+				txManager.SendXCallTransaction(ctx, msg, nil, fromChainID) // TODO: add eth value
 				tx, err := xcall(ctx, from, to.Chain.ID, nonce)
 				if err != nil {
 					return errors.Wrap(err, "batch_offset", i)

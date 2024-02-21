@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/test/e2e/netman"
+	"github.com/omni-network/omni/test/e2e/txsenders"
 	"github.com/omni-network/omni/test/e2e/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -25,7 +26,7 @@ type XDapp struct {
 	contracts map[uint64]Contract
 }
 
-func Deploy(ctx context.Context, portals map[uint64]netman.Portal) (XDapp, error) {
+func Deploy(ctx context.Context, portals map[uint64]netman.Portal, txManager txsenders.TxSenderManager) (XDapp, error) {
 	log.Info(ctx, "Deploying ping pong contracts")
 
 	contracts := make(map[uint64]Contract)

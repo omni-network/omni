@@ -1,4 +1,4 @@
-package txsender
+package txsenders
 
 import (
 	"context"
@@ -19,11 +19,7 @@ type TxSenderManager struct {
 	abi      *abi.ABI
 }
 
-func Deploy(
-	ctx context.Context,
-	portals map[uint64]netman.Portal,
-	privateKey *ecdsa.PrivateKey,
-) (TxSenderManager, error) {
+func Deploy(ctx context.Context, portals map[uint64]netman.Portal, privateKey *ecdsa.PrivateKey) (TxSenderManager, error) {
 	// create ABI interface
 	parsedAbi, err := abi.JSON(strings.NewReader(bindings.OmniPortalMetaData.ABI))
 	if err != nil {
@@ -47,11 +43,7 @@ func Deploy(
 	return manager, nil
 }
 
-func (s TxSenderManager) deployTx(
-	ctx context.Context,
-	portal netman.Portal,
-	privateKey *ecdsa.PrivateKey,
-) error {
+func (s TxSenderManager) deployTx(ctx context.Context, portal netman.Portal, privateKey *ecdsa.PrivateKey) error {
 	chain := portal.Chain
 
 	if _, ok := s.txSender[chain.ID]; ok {
@@ -60,13 +52,8 @@ func (s TxSenderManager) deployTx(
 
 	txSender, err := DeployTxSender(
 		ctx,
-		portal.RPCURL,
-		chain.BlockPeriod,
-		chain.ID,
-		portal.DeployInfo.PortalAddress,
-		portal.Client,
+		portal,
 		privateKey,
-		chain.Name,
 		*s.abi,
 	)
 	if err != nil {
@@ -78,12 +65,7 @@ func (s TxSenderManager) deployTx(
 	return nil
 }
 
-func (s TxSenderManager) SendXCallTransaction(
-	ctx context.Context,
-	msg xchain.Msg,
-	value *big.Int,
-	sourceChainID uint64,
-) error {
+func (s TxSenderManager) SendXCallTransaction(ctx context.Context, msg xchain.Msg, value *big.Int, sourceChainID uint64) error {
 	txSender := s.txSender[sourceChainID]
 	bytes, err := s.XCallBytes(MsgToBindings(msg))
 	if err != nil {

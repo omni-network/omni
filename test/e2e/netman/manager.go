@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	// "github.com/omni-network/omni/test/e2e/txsenders".
 	"github.com/omni-network/omni/test/e2e/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -103,8 +104,6 @@ func NewManager(testnet types.Testnet, deployKeyFile string,
 		portals[chainID] = portal
 	}
 
-	// TODO: instantiate all txmgrs
-
 	switch testnet.Network {
 	case netconf.Devnet:
 		if deployKeyFile != "" || relayerKeyFile != "" {
@@ -151,6 +150,7 @@ type Portal struct {
 	Client     *ethclient.Client
 	Contract   *bindings.OmniPortal
 	txOpts     *bind.TransactOpts // TODO(corver): Replace this with a txmgr.
+	// sender     txsenders.Sender
 }
 
 // TxOpts returns transaction options using the deploy key.
