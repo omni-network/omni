@@ -15,7 +15,7 @@ import { EigenM2GoerliDeployments } from "./EigenM2GoerliDeployments.sol";
  *      returns the addresses of the contracts that are already deployed on goerli.
  */
 contract EigenLayerGoerli is IEigenDeployer {
-    function deploy() external view returns (Deployments memory) {
+    function deploy() public view returns (Deployments memory) {
         address proxyAdminAddr = _proxyAdmin(EigenM2GoerliDeployments.EigenPodManager);
         address proxyAdminOwner = ProxyAdmin(proxyAdminAddr).owner();
 

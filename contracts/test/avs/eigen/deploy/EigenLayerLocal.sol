@@ -66,7 +66,7 @@ contract EigenLayerLocal is IEigenDeployer {
     // eignlayer multisig in prod, anvil account9 locally
     address proxyAdminOwner = 0xa0Ee7A142d267C1f36714E4a8F75612F20a79720;
 
-    function deploy() external returns (Deployments memory) {
+    function deploy() public returns (Deployments memory) {
         pauser = address(69);
         unpauser = address(489);
         // deploy proxy admin for ability to upgrade proxy contracts
