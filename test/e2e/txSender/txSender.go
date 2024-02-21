@@ -1,10 +1,9 @@
-package txmgr
+package txsender
 
 import (
 	"context"
 	"crypto/ecdsa"
 	"math/big"
-	"strings"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
@@ -37,6 +36,7 @@ func NewTxSender(
 	rpcClient *ethclient.Client,
 	privateKey *ecdsa.PrivateKey,
 	chainName string,
+	abi abi.ABI,
 ) (TxSender, error) {
 	// creates our new CLI config for our tx manager
 	cliConfig := txmgr.NewCLIConfig(
@@ -57,17 +57,11 @@ func NewTxSender(
 		return TxSender{}, errors.New("failed to create tx mgr", "error", err)
 	}
 
-	// create ABI interface
-	parsedAbi, err := abi.JSON(strings.NewReader(bindings.OmniPortalMetaData.ABI))
-	if err != nil {
-		return TxSender{}, errors.Wrap(err, "parse abi error")
-	}
-
 	// return our new TxSender
 	return TxSender{
 		txMgr:     txMgr,
 		portal:    common.HexToAddress(chain.PortalAddress),
-		abi:       &parsedAbi,
+		abi:       &abi,
 		chain:     chain,
 		chainName: chainName,
 	}, nil
@@ -92,7 +86,6 @@ func (s TxSender) getXCallBytes(sub bindings.XTypesMsg) ([]byte, error) {
 	return bytes, nil
 }
 
-// core difference, I am wrapping this in the above methods.
 func (s TxSender) sendTransaction(ctx context.Context, destChainID uint64, data []byte, value *big.Int) error {
 	if s.txMgr == nil {
 		return errors.New("tx mgr not found", "dest_chain_id", destChainID)
