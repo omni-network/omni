@@ -72,6 +72,9 @@ contract EigenLayerTestHelper is EigenLayerDeployer {
             emit log_named_uint("while contractBalance is", contractBalance);
             revert("_testDepositToStrategy failure");
         } else {
+            // NOTE: this only works for strategies with underlying ERC20 tokens
+            // this will not work for beacon eth strategy, which is currently untested
+            // TODO: add tests for beacon eth strategy, figure out how to support it here
             deal(address(underlyingToken), sender, amountToDeposit);
             cheats.startPrank(sender);
             underlyingToken.approve(address(strategyManager), type(uint256).max);
