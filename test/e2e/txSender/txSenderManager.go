@@ -56,5 +56,20 @@ func (s TxSenderManager) SendXCallTransaction(
 	sourceChainID uint64,
 ) error {
 	txSender := s.txSender[sourceChainID]
-	return txSender.SendXCallTransaction(ctx, msg, value)
+	bytes, err := s.getXCallBytes(MsgToBindings(msg))
+	if err != nil {
+		return errors.Wrap(err, "get xsubmit bytes")
+	}
+
+	return txSender.sendTransaction(ctx, msg.DestChainID, bytes, value)
+}
+
+// getXCallBytes returns the byte representation of the xcall function call.
+func (s TxSenderManager) getXCallBytes(sub bindings.XTypesMsg) ([]byte, error) {
+	bytes, err := s.abi.Pack("xcall", sub)
+	if err != nil {
+		return nil, errors.Wrap(err, "pack xcall")
+	}
+
+	return bytes, nil
 }

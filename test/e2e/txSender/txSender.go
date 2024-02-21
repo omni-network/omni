@@ -5,12 +5,10 @@ import (
 	"crypto/ecdsa"
 	"math/big"
 
-	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
-	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -65,25 +63,6 @@ func NewTxSender(
 		chain:     chain,
 		chainName: chainName,
 	}, nil
-}
-
-func (s TxSender) SendXCallTransaction(ctx context.Context, msg xchain.Msg, value *big.Int) error {
-	bytes, err := s.getXCallBytes(MsgToBindings(msg))
-	if err != nil {
-		return errors.Wrap(err, "get xsubmit bytes")
-	}
-
-	return s.sendTransaction(ctx, msg.DestChainID, bytes, value)
-}
-
-// getXCallByres returns the byte representation of the xcall function call.
-func (s TxSender) getXCallBytes(sub bindings.XTypesMsg) ([]byte, error) {
-	bytes, err := s.abi.Pack("xcall", sub)
-	if err != nil {
-		return nil, errors.Wrap(err, "pack xcall")
-	}
-
-	return bytes, nil
 }
 
 func (s TxSender) sendTransaction(ctx context.Context, destChainID uint64, data []byte, value *big.Int) error {
