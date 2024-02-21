@@ -68,6 +68,7 @@ services:
       - --syncmode=full
       - --nodekeyhex=<nodekeyhex>
       - --bootnodes=enode://<enode_pubkey>@127.0.0.2:30303
+      - --miner.recommit=500ms
     ports:
       - 8551:8551
       - 8545:8545
