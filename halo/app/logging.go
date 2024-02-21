@@ -1,4 +1,4 @@
-//nolint:wrapcheck,lll,revive // The abci.Application is our application, so we don't need to wrap it. Long lines are fine here.
+//nolint:wrapcheck // The abci.Application is our application, so we don't need to wrap it. Long lines are fine here.
 package app
 
 import (
