@@ -4,10 +4,10 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"math/big"
+	"time"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -19,8 +19,12 @@ type TxSender struct {
 	txMgr     txmgr.TxManager
 	portal    common.Address
 	abi       *abi.ABI
-	chain     netconf.Chain
 	chainName string
+	chainID   uint64
+}
+
+func NewTxSender() TxSender {
+	return TxSender{}
 }
 
 const (
@@ -28,41 +32,45 @@ const (
 	interval = 3
 )
 
-func NewTxSender(
+func (s TxSender) Deploy(
 	ctx context.Context,
-	chain netconf.Chain,
+	rpcCurl string,
+	blockPeriod time.Duration,
+	chainID uint64,
+	portalAddress common.Address,
 	rpcClient *ethclient.Client,
 	privateKey *ecdsa.PrivateKey,
 	chainName string,
 	abi abi.ABI,
-) (TxSender, error) {
+) error {
+
 	// creates our new CLI config for our tx manager
 	cliConfig := txmgr.NewCLIConfig(
-		chain.RPCURL,
-		chain.BlockPeriod/interval, // we want to query receipts at block period / interval
+		rpcCurl,
+		blockPeriod/interval, // we want to query receipts at block period / interval
 		txmgr.DefaultSenderFlagValues,
 	)
 
 	// get the config for our tx manager
 	cfg, err := txmgr.NewConfig(ctx, cliConfig, privateKey, rpcClient)
 	if err != nil {
-		return TxSender{}, err
+		return err
 	}
 
 	// create a simple tx manager from our config
 	txMgr, err := txmgr.NewSimpleTxManagerFromConfig(chainName, cfg)
 	if err != nil {
-		return TxSender{}, errors.New("failed to create tx mgr", "error", err)
+		return errors.New("failed to create tx mgr", "error", err)
 	}
 
-	// return our new TxSender
-	return TxSender{
-		txMgr:     txMgr,
-		portal:    common.HexToAddress(chain.PortalAddress),
-		abi:       &abi,
-		chain:     chain,
-		chainName: chainName,
-	}, nil
+	// update our tx sender
+	s.txMgr = txMgr
+	s.portal = portalAddress
+	s.abi = &abi
+	s.chainName = chainName
+	s.chainID = chainID
+
+	return nil
 }
 
 func (s TxSender) sendTransaction(
@@ -75,9 +83,9 @@ func (s TxSender) sendTransaction(
 		return errors.New("tx mgr not found", "dest_chain_id", destChainID)
 	}
 
-	if destChainID == s.chain.ID {
+	if destChainID == s.chainID {
 		return errors.New("unexpected destination chain [BUG]",
-			"got", destChainID, "expect", s.chain.ID)
+			"got", destChainID, "expect", s.chainID)
 	}
 
 	// make it "optional" to pass in the send value

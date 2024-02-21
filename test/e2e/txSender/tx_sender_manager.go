@@ -8,11 +8,10 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
+	"github.com/omni-network/omni/test/e2e/netman"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 type TxSenderManager struct {
@@ -33,15 +32,42 @@ func NewTxSenderManager() (TxSenderManager, error) {
 	}, nil
 }
 
-func (s TxSenderManager) CreateNewTxSender(ctx context.Context,
-	chain netconf.Chain,
-	rpcClient *ethclient.Client,
+func (s TxSenderManager) Deploy(
+	ctx context.Context,
+	portals map[uint64]netman.Portal,
 	privateKey *ecdsa.PrivateKey,
-	chainName string,
 ) error {
-	txSender, err := NewTxSender(ctx, chain, rpcClient, privateKey, chainName, *s.abi)
+	for _, portal := range portals {
+		s.deployTx(ctx, portal, privateKey)
+	}
+	return nil
+}
+
+func (s TxSenderManager) deployTx(
+	ctx context.Context,
+	portal netman.Portal,
+	privateKey *ecdsa.PrivateKey,
+) error {
+	chain := portal.Chain
+
+	if _, ok := s.txSender[chain.ID]; ok {
+		return errors.New("tx sender already exists", "chain", chain.ID)
+	}
+
+	txSender := NewTxSender()
+	err := txSender.Deploy(
+		ctx,
+		portal.RPCURL,
+		chain.BlockPeriod,
+		chain.ID,
+		portal.DeployInfo.PortalAddress,
+		portal.Client,
+		privateKey,
+		chain.Name,
+		*s.abi,
+	)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "deploy tx sender", "chain", chain.ID)
 	}
 
 	s.txSender[chain.ID] = txSender
@@ -56,7 +82,7 @@ func (s TxSenderManager) SendXCallTransaction(
 	sourceChainID uint64,
 ) error {
 	txSender := s.txSender[sourceChainID]
-	bytes, err := s.getXCallBytes(MsgToBindings(msg))
+	bytes, err := s.XCallBytes(MsgToBindings(msg))
 	if err != nil {
 		return errors.Wrap(err, "get xsubmit bytes")
 	}
@@ -65,7 +91,7 @@ func (s TxSenderManager) SendXCallTransaction(
 }
 
 // getXCallBytes returns the byte representation of the xcall function call.
-func (s TxSenderManager) getXCallBytes(
+func (s TxSenderManager) XCallBytes(
 	sub bindings.XTypesMsg,
 ) ([]byte, error) {
 	bytes, err := s.abi.Pack("xcall", sub)
