@@ -65,7 +65,9 @@ func (s TxSenderManager) SendXCallTransaction(
 }
 
 // getXCallBytes returns the byte representation of the xcall function call.
-func (s TxSenderManager) getXCallBytes(sub bindings.XTypesMsg) ([]byte, error) {
+func (s TxSenderManager) getXCallBytes(
+	sub bindings.XTypesMsg,
+) ([]byte, error) {
 	bytes, err := s.abi.Pack("xcall", sub)
 	if err != nil {
 		return nil, errors.Wrap(err, "pack xcall")

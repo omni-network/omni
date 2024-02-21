@@ -65,7 +65,12 @@ func NewTxSender(
 	}, nil
 }
 
-func (s TxSender) sendTransaction(ctx context.Context, destChainID uint64, data []byte, value *big.Int) error {
+func (s TxSender) sendTransaction(
+	ctx context.Context,
+	destChainID uint64,
+	data []byte,
+	value *big.Int,
+) error {
 	if s.txMgr == nil {
 		return errors.New("tx mgr not found", "dest_chain_id", destChainID)
 	}
