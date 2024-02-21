@@ -20,7 +20,7 @@ require (
 	github.com/cosmos/cosmos-proto v1.0.0-beta.4
 	github.com/cosmos/cosmos-sdk v0.50.3
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0
-	github.com/ethereum/go-ethereum v1.13.12
+	github.com/ethereum/go-ethereum v1.13.13
 	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/google/gofuzz v1.2.0
 	github.com/google/uuid v1.6.0
