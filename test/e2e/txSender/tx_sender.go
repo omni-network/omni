@@ -15,7 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-type TxSender struct {
+type Sender struct {
 	txMgr     txmgr.TxManager
 	portal    common.Address
 	abi       *abi.ABI
@@ -23,16 +23,12 @@ type TxSender struct {
 	chainID   uint64
 }
 
-func NewTxSender() TxSender {
-	return TxSender{}
-}
-
 const (
 	gasLimit = 1000000
 	interval = 3
 )
 
-func (s TxSender) Deploy(
+func DeployTxSender(
 	ctx context.Context,
 	rpcCurl string,
 	blockPeriod time.Duration,
@@ -42,8 +38,7 @@ func (s TxSender) Deploy(
 	privateKey *ecdsa.PrivateKey,
 	chainName string,
 	abi abi.ABI,
-) error {
-
+) (Sender, error) {
 	// creates our new CLI config for our tx manager
 	cliConfig := txmgr.NewCLIConfig(
 		rpcCurl,
@@ -54,26 +49,25 @@ func (s TxSender) Deploy(
 	// get the config for our tx manager
 	cfg, err := txmgr.NewConfig(ctx, cliConfig, privateKey, rpcClient)
 	if err != nil {
-		return err
+		return Sender{}, errors.New("create tx mgr config", "error", err)
 	}
 
 	// create a simple tx manager from our config
 	txMgr, err := txmgr.NewSimpleTxManagerFromConfig(chainName, cfg)
 	if err != nil {
-		return errors.New("failed to create tx mgr", "error", err)
+		return Sender{}, errors.New("create tx mgr", "error", err)
 	}
 
-	// update our tx sender
-	s.txMgr = txMgr
-	s.portal = portalAddress
-	s.abi = &abi
-	s.chainName = chainName
-	s.chainID = chainID
-
-	return nil
+	return Sender{
+		txMgr:     txMgr,
+		portal:    portalAddress,
+		abi:       &abi,
+		chainName: chainName,
+		chainID:   chainID,
+	}, nil
 }
 
-func (s TxSender) sendTransaction(
+func (s Sender) sendTransaction(
 	ctx context.Context,
 	destChainID uint64,
 	data []byte,

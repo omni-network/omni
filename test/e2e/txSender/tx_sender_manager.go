@@ -15,32 +15,36 @@ import (
 )
 
 type TxSenderManager struct {
-	txSender map[uint64]TxSender
+	txSender map[uint64]Sender
 	abi      *abi.ABI
 }
 
-func NewTxSenderManager() (TxSenderManager, error) {
+func Deploy(
+	ctx context.Context,
+	portals map[uint64]netman.Portal,
+	privateKey *ecdsa.PrivateKey,
+) (TxSenderManager, error) {
 	// create ABI interface
 	parsedAbi, err := abi.JSON(strings.NewReader(bindings.OmniPortalMetaData.ABI))
 	if err != nil {
 		return TxSenderManager{}, errors.Wrap(err, "parse abi error")
 	}
 
-	return TxSenderManager{
-		txSender: make(map[uint64]TxSender),
+	// create tx sender manager
+	manager := TxSenderManager{
+		txSender: make(map[uint64]Sender),
 		abi:      &parsedAbi,
-	}, nil
-}
-
-func (s TxSenderManager) Deploy(
-	ctx context.Context,
-	portals map[uint64]netman.Portal,
-	privateKey *ecdsa.PrivateKey,
-) error {
-	for _, portal := range portals {
-		s.deployTx(ctx, portal, privateKey)
 	}
-	return nil
+
+	// deploy tx sender for each portal
+	for _, portal := range portals {
+		err := manager.deployTx(ctx, portal, privateKey)
+		if err != nil {
+			return TxSenderManager{}, errors.Wrap(err, "deploy tx sender")
+		}
+	}
+
+	return manager, nil
 }
 
 func (s TxSenderManager) deployTx(
@@ -54,8 +58,7 @@ func (s TxSenderManager) deployTx(
 		return errors.New("tx sender already exists", "chain", chain.ID)
 	}
 
-	txSender := NewTxSender()
-	err := txSender.Deploy(
+	txSender, err := DeployTxSender(
 		ctx,
 		portal.RPCURL,
 		chain.BlockPeriod,

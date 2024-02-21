@@ -8,7 +8,7 @@ import (
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/test/e2e/pingpong"
-	txs "github.com/omni-network/omni/test/e2e/txsender"
+	"github.com/omni-network/omni/test/e2e/txsender"
 	"github.com/omni-network/omni/test/e2e/types"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -23,15 +23,11 @@ type DeployConfig struct {
 // It also deploys a pingpong contract and starts all edges.
 func DeployWithPingPong(ctx context.Context, def Definition, cfg DeployConfig, pingPongN uint64,
 ) (types.DeployInfos, error) {
-	txSenderManager, err := txs.NewTxSenderManager()
-	if err != nil {
-		return nil, errors.Wrap(err, "new tx sender manager")
-	}
-
-	err = txSenderManager.Deploy(ctx, def.Netman.Portals(), def.Netman.RelayerKey())
+	txManager, err := txsender.Deploy(ctx, def.Netman.Portals(), def.Netman.RelayerKey())
 	if err != nil {
 		return nil, errors.Wrap(err, "deploy tx sender manager")
 	}
+	log.Info(ctx, "Deployed tx sender manager", "txManager", txManager)
 
 	deployInfo, err := Deploy(ctx, def, cfg)
 	if err != nil {
