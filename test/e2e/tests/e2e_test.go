@@ -73,7 +73,9 @@ type AVS struct {
 	DelegationManagerContract *bindings.DelegationManager
 	StrategyManagerContract   *bindings.StrategyManager
 	WETHStrategyContract      *bindings.StrategyBase
-	WETHTokenContract         *bindings.ERC20PresetFixedSupply
+	WETHTokenContract         *bindings.MockERC20
+	AVSDirectory              *bindings.AVSDirectory
+	EIP1271SigUtils           *bindings.EIP1271SignatureUtils
 }
 
 type testFunc struct {
@@ -152,28 +154,16 @@ func test(t *testing.T, testFunc testFunc) {
 		}
 
 		// search only anvil chains for avs_target for now
-		avsTargetChainId := uint64(0)
-		foundAvsTarget := false
-		for _, achain := range testnet.AnvilChains {
-			if achain.Chain.IsAVSTarget {
-				avsTargetChainId = achain.Chain.ID
-				foundAvsTarget = true
-				break
-			}
-		}
-
-		if !foundAvsTarget {
-			t.Skip("Skipping AVS tests since no avs_target chain is found")
-			return
-		}
+		achain, err := testnet.AVSChain()
+		require.NoError(t, err)
 
 		var chain netconf.Chain
 		for _, c := range network.Chains {
-			if c.ID == avsTargetChainId {
+			if c.ID == achain.ID {
 				chain = c
 			}
 		}
-		chainInfo := deployInfo[avsTargetChainId]
+		chainInfo := deployInfo[achain.ID]
 		ethClient, err := ethclient.Dial(chain.Name, chain.RPCURL)
 		require.NoError(t, err)
 
@@ -195,7 +185,15 @@ func test(t *testing.T, testFunc testFunc) {
 		require.NoError(t, err)
 
 		wethTokenAddr := chainInfo[types.ContractELWETH].Address
-		wethToken, err := bindings.NewERC20PresetFixedSupply(wethTokenAddr, ethClient)
+		wethToken, err := bindings.NewMockERC20(wethTokenAddr, ethClient)
+		require.NoError(t, err)
+
+		avsDirAddr := chainInfo[types.ContractAVSDirectory].Address
+		avsDir, err := bindings.NewAVSDirectory(avsDirAddr, ethClient)
+		require.NoError(t, err)
+
+		eip1271SigUtilsAddr := chainInfo[types.ContractEIP1271SigUtils].Address
+		eip1271SigUtils, err := bindings.NewEIP1271SignatureUtils(eip1271SigUtilsAddr, ethClient)
 		require.NoError(t, err)
 
 		testAvs := AVS{
@@ -206,6 +204,8 @@ func test(t *testing.T, testFunc testFunc) {
 			StrategyManagerContract:   stratMan,
 			WETHStrategyContract:      wethStrategy,
 			WETHTokenContract:         wethToken,
+			AVSDirectory:              avsDir,
+			EIP1271SigUtils:           eip1271SigUtils,
 		}
 		testFunc.TestAVS(t, testAvs, chainInfo)
 	}

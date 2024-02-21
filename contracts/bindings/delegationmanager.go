@@ -69,12 +69,12 @@ type ISignatureUtilsSignatureWithExpiry struct {
 //	WithdrawalStartBlock uint32
 //	DelegatedAddress     common.Address
 //}
-
-// IStrategyManagerDeprecatedStructWithdrawerAndNonce is an auto generated low-level Go binding around an user-defined struct.
-type IStrategyManagerDeprecatedStructWithdrawerAndNonce struct {
-	Withdrawer common.Address
-	Nonce      *big.Int
-}
+//
+//// IStrategyManagerDeprecatedStructWithdrawerAndNonce is an auto generated low-level Go binding around an user-defined struct.
+//type IStrategyManagerDeprecatedStructWithdrawerAndNonce struct {
+//	Withdrawer common.Address
+//	Nonce      *big.Int
+//}
 
 // DelegationManagerMetaData contains all meta data concerning the DelegationManager contract.
 var DelegationManagerMetaData = &bind.MetaData{

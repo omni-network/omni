@@ -32,8 +32,8 @@ const (
 
 //nolint:gochecknoglobals // Static mapping.
 var (
-	privateDeployKey  = MustHexToKey(privKeyHex0)
-	privateRelayerKey = MustHexToKey(privKeyHex1)
+	privateDeployKey  = mustHexToKey(privKeyHex0)
+	privateRelayerKey = mustHexToKey(privKeyHex1)
 )
 
 // Manager abstract logic to deploy and bootstrap a extNetwork.

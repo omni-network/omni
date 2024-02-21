@@ -2,16 +2,17 @@ package e2e_test
 
 import (
 	"context"
-	"fmt"
+	"crypto/ecdsa"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/omni-network/omni/lib/errors"
 	"math/big"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/omni-network/omni/contracts/bindings"
-	"github.com/omni-network/omni/test/e2e/netman"
 	"github.com/omni-network/omni/test/e2e/types"
 
 	"github.com/stretchr/testify/require"
@@ -19,7 +20,7 @@ import (
 
 const (
 	omniDeployPk = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-	elDeployPk   = "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
+	elDeployPk   = "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6" // anvil account 9
 
 	// info of pre-funded anvil account 3 as delegator1
 	delegator1Addr = "0x90F79bf6EB2c4f870365E785982E1f101E93b906"
@@ -44,8 +45,12 @@ const (
 	operator3PK          = "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
 	operator3MetaDataURI = "https://www.operator2.com"
 
-	// anvil addr 9
-	eigenLayerDeployerPK = "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
+	// anvil account 8 used as token store
+	tokenStoreAddr = "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f"
+	tokenStorePk   = "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"
+
+	MinStateForOperatorInEigenLayer = 10
+	MaxNumberOfOperators            = 2
 )
 
 type LogEvents int
@@ -62,13 +67,14 @@ const (
 
 var (
 	zeroAddr  = common.HexToAddress("0x0000000000000000000000000000000000000000")
-	omniDepPk = netman.MustHexToKey(omniDeployPk)
-	elDepPk   = netman.MustHexToKey(elDeployPk)
-	del1Pk    = netman.MustHexToKey(delegator1Pk)
-	del2Pk    = netman.MustHexToKey(delegator2Pk)
-	opr1Pk    = netman.MustHexToKey(operator1PK)
-	opr2Pk    = netman.MustHexToKey(operator2PK)
-	opr3Pk    = netman.MustHexToKey(operator3PK)
+	omniDepPk = mustHexToKey(omniDeployPk)
+	elDepPk   = mustHexToKey(elDeployPk)
+	del1Pk    = mustHexToKey(delegator1Pk)
+	del2Pk    = mustHexToKey(delegator2Pk)
+	opr1Pk    = mustHexToKey(operator1PK)
+	opr2Pk    = mustHexToKey(operator2PK)
+	opr3Pk    = mustHexToKey(operator3PK)
+	tokStrPk  = mustHexToKey(tokenStorePk)
 )
 
 func TestEigen_AreContractsDeployed(t *testing.T) {
@@ -93,24 +99,24 @@ func TestEigen_AreContractsDeployed(t *testing.T) {
 		txOpts.Context = ctx
 
 		// set min stake
-		stake := big.NewInt(10)
-		_, err = avs.AVSContract.SetMinimumOperatorStake(txOpts, stake)
+		minStake := big.NewInt(MinStateForOperatorInEigenLayer)
+		_, err = avs.AVSContract.SetMinimumOperatorStake(txOpts, minStake)
 		require.NoError(t, err)
 
-		// check if min stake is set
+		// check if min stake is set properly
 		callOpts := bind.CallOpts{}
 		operatorStake, err := avs.AVSContract.MinimumOperatorStake(&callOpts)
 		require.NoError(t, err)
-		require.Equal(t, stake.Uint64(), operatorStake.Uint64())
+		require.Equal(t, minStake.Uint64(), operatorStake.Uint64())
 
 		// set operator count
-		_, err = avs.AVSContract.SetMaxOperatorCount(txOpts, uint32(2))
+		_, err = avs.AVSContract.SetMaxOperatorCount(txOpts, uint32(MaxNumberOfOperators))
 		require.NoError(t, err)
 
-		// check if operator count is set
+		// check if operator count is set properly
 		opCount, err := avs.AVSContract.MaxOperatorCount(&callOpts)
 		require.NoError(t, err)
-		require.Equal(t, uint32(2), opCount)
+		require.Equal(t, uint32(MaxNumberOfOperators), opCount)
 	})
 }
 
@@ -188,61 +194,82 @@ func TestEigen_RegisterOperator(t *testing.T) {
 	})
 }
 
-func TestEigen_DelegateToSelf(t *testing.T) {
-	t.Run("delegate stake to self (operator)", func(t *testing.T) {
+func TestEigen_FundOperatorsAndDelegators(t *testing.T) {
+	t.Run("fund token to delegators and operators", func(t *testing.T) {
 		testAVS(t, func(t *testing.T, avs AVS, deployInfo map[types.ContractName]types.DeployInfo) {
 			t.Helper()
 			ctx := context.Background()
 
 			// fund the operators and delegators
 			opr1Addr := common.HexToAddress(operator1Addr)
-			//opr2Addr := common.HexToAddress(operator2Addr)
-			//del1Addr := common.HexToAddress(delegator1Addr)
-			//del2Addr := common.HexToAddress(delegator1Addr)
-			fundAccountWithWETH(t, ctx, avs, deployInfo, opr1Addr, 9) // less than min stake
-			//fundAccountWithWETH(t, ctx, avs, deployInfo, opr2Addr, 100)
-			//fundAccountWithWETH(t, ctx, avs, deployInfo, del1Addr, 1000)
-			//fundAccountWithWETH(t, ctx, avs, deployInfo, del2Addr, 1000)
+			opr2Addr := common.HexToAddress(operator2Addr)
+			del1Addr := common.HexToAddress(delegator1Addr)
+			del2Addr := common.HexToAddress(delegator1Addr)
+			fundAccountWithWETH(t, ctx, avs, opr1Addr, 1000) // less than min stake
+			fundAccountWithWETH(t, ctx, avs, opr2Addr, 1000) // more than min stake
+			fundAccountWithWETH(t, ctx, avs, del1Addr, 1000)
+			fundAccountWithWETH(t, ctx, avs, del2Addr, 1000)
 
-			bal := wETHBalance(t, ctx, avs, opr1Addr)
-			fmt.Print("balance of operator1Addr = ", bal)
-
+			require.Equal(t, uint64(1000), wETHBalance(t, ctx, avs, opr1Addr))
+			require.Equal(t, uint64(1000), wETHBalance(t, ctx, avs, opr2Addr))
+			require.Equal(t, uint64(1000), wETHBalance(t, ctx, avs, del1Addr))
+			require.Equal(t, uint64(1000), wETHBalance(t, ctx, avs, del2Addr))
 		})
 	})
+
+	//t.Run("stake token to delegators and operators", func(t *testing.T) {
+	//	testAVS(t, func(t *testing.T, avs AVS, deployInfo map[types.ContractName]types.DeployInfo) {
+	//		t.Helper()
+	//		ctx := context.Background()
+	//
+	//	})
+	//})
 }
 
 func TestEigen_RegisterOperatorForAVS(t *testing.T) {
-	t.Run("register operator 1 for AVS", func(t *testing.T) {
+	t.Run("register operator 1 for AVS with less than min stake", func(t *testing.T) {
 		t.Parallel()
 		testAVS(t, func(t *testing.T, avs AVS, deployInfo map[types.ContractName]types.DeployInfo) {
 			t.Helper()
 			ctx := context.Background()
+			opr1Addr := common.HexToAddress(operator1Addr)
 
-			txOpts, err := bind.NewKeyedTransactorWithChainID(opr1Pk, big.NewInt(int64(avs.Chain.ID)))
+			// add operator to avs allow list
+			txOpts, err := bind.NewKeyedTransactorWithChainID(omniDepPk, big.NewInt(int64(avs.Chain.ID)))
 			require.NoError(t, err)
 			txOpts.Context = ctx
+			//_, err = avs.AVSContract.AddToAllowlist(txOpts, opr1Addr)
+			//require.NoError(t, err)
 
+			// delegate min stake from operator to strategy
+			depositToStrategy(t, ctx, avs, common.HexToAddress(operator1Addr), opr1Pk, 11, deployInfo)
+
+			// register operator to avs
 			blockNumber, err := avs.Client.BlockNumber(ctx)
 			require.NoError(t, err)
 			block, err := avs.Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
 			require.NoError(t, err)
-
-			del1Addr := common.HexToAddress(delegator1Addr)
-			opr1Addr := common.HexToAddress(operator1Addr)
-			callOpts := bind.CallOpts{
-				From:    del1Addr,
-				Context: ctx,
-			}
-			_, err = avs.DelegationManagerContract.DelegatedTo(&callOpts, opr1Addr)
-			require.NoError(t, err)
-
 			operatorSignatureWithSaltAndExpiry := bindings.ISignatureUtilsSignatureWithSaltAndExpiry{
 				Signature: []byte{0},
 				Salt:      crypto.Keccak256Hash(opr1Addr.Bytes()),
 				Expiry:    big.NewInt(int64(block.Time()) + int64((24 * time.Hour))),
 			}
 
-			tx, err := avs.AVSContract.RegisterOperatorToAVS(txOpts, common.HexToAddress(operator1Addr), operatorSignatureWithSaltAndExpiry)
+			callOpts := bind.CallOpts{}
+			omniAVSADDR := deployInfo[types.ContractOmniAVS].Address
+			digestHash, err := avs.AVSDirectory.CalculateOperatorAVSRegistrationDigestHash(&callOpts, opr1Addr, omniAVSADDR, operatorSignatureWithSaltAndExpiry.Salt, operatorSignatureWithSaltAndExpiry.Expiry)
+			require.NoError(t, err)
+
+			operatorSignatureWithSaltAndExpiry.Signature, err = crypto.Sign(digestHash[:32], opr1Pk)
+			require.NoError(t, err)
+			if len(operatorSignatureWithSaltAndExpiry.Signature) != 65 {
+				require.NoError(t, errors.New("invalid signature length"))
+			}
+			operatorSignatureWithSaltAndExpiry.Signature[64] += 27
+			txOpts, err = bind.NewKeyedTransactorWithChainID(opr1Pk, big.NewInt(int64(avs.Chain.ID)))
+			require.NoError(t, err)
+			txOpts.Context = ctx
+			tx, err := avs.AVSContract.RegisterOperatorToAVS(txOpts, opr1Addr, operatorSignatureWithSaltAndExpiry)
 			require.NoError(t, err)
 			require.Equal(t, big.NewInt(int64(avs.Chain.ID)), tx.ChainId(), "chain Id not equal")
 
@@ -330,22 +357,71 @@ func checkForOperatorRegisteredToELLog(
 func fundAccountWithWETH(t *testing.T,
 	ctx context.Context,
 	avs AVS,
-	deployInfo map[types.ContractName]types.DeployInfo,
 	accountToFund common.Address,
-	amount uint64) {
+	amount int64) {
 
 	txOpts, err := bind.NewKeyedTransactorWithChainID(elDepPk, big.NewInt(int64(avs.Chain.ID)))
 	require.NoError(t, err)
 	txOpts.Context = ctx
 
-	//white list the token strategy
-	stratToWL := []common.Address{deployInfo[types.ContractELWETHStrategy].Address}
-	tpfv := []bool{false}
-	_, err = avs.StrategyManagerContract.AddStrategiesToDepositWhitelist(txOpts, stratToWL, tpfv)
+	_, err = avs.WETHTokenContract.Mint(txOpts, accountToFund, big.NewInt(amount))
+	require.NoError(t, err)
+}
+
+func depositToStrategy(t *testing.T,
+	ctx context.Context,
+	avs AVS,
+	depositorAddr common.Address,
+	depositorPk *ecdsa.PrivateKey,
+	amount int64,
+	deployInfo map[types.ContractName]types.DeployInfo) {
+
+	stratManAddr := deployInfo[types.ContractELStrategyManager].Address
+	wethStratAddr := deployInfo[types.ContractELWETHStrategy].Address
+	//wethTokenAddr := deployInfo[types.ContractELWETH].Address
+
+	// approve strategy manager to deposit on behalf of the depositor
+	txOpts, err := bind.NewKeyedTransactorWithChainID(depositorPk, big.NewInt(int64(avs.Chain.ID)))
+	require.NoError(t, err)
+	txOpts.Context = ctx
+	_, err = avs.WETHTokenContract.Approve(txOpts, stratManAddr, big.NewInt(amount))
 	require.NoError(t, err)
 
-	// transfer the amount from the ERC20 contract to the account to fund
-	_, err = avs.WETHTokenContract.Transfer(txOpts, accountToFund, big.NewInt(int64(amount)))
+	// whitelist strategy
+	txOpts, err = bind.NewKeyedTransactorWithChainID(elDepPk, big.NewInt(int64(avs.Chain.ID)))
+	require.NoError(t, err)
+	txOpts.Context = ctx
+	_, err = avs.StrategyManagerContract.AddStrategiesToDepositWhitelist(txOpts, []common.Address{wethStratAddr}, []bool{false})
+	require.NoError(t, err)
+
+	// deposit to strategy
+	txOpts, err = bind.NewKeyedTransactorWithChainID(depositorPk, big.NewInt(int64(avs.Chain.ID)))
+	require.NoError(t, err)
+	txOpts.Context = ctx
+	_, err = avs.StrategyManagerContract.DepositIntoStrategy(txOpts, wethStratAddr, wethTokenAddr, big.NewInt(amount))
+	require.NoError(t, err)
+}
+
+func delegateWETHToOperator(t *testing.T,
+	ctx context.Context,
+	avs AVS,
+	delegator common.Address,
+	delegatorPk *ecdsa.PrivateKey,
+	operator common.Address,
+	amount int64,
+	expiryTime *big.Int) {
+
+	txOpts, err := bind.NewKeyedTransactorWithChainID(delegatorPk, big.NewInt(int64(avs.Chain.ID)))
+	require.NoError(t, err)
+	txOpts.Context = ctx
+	txOpts.Value = big.NewInt(amount)
+
+	approverSignatureAndExpiry := bindings.ISignatureUtilsSignatureWithExpiry{
+		Signature: []byte{0},
+		Expiry:    expiryTime,
+	}
+	approverSalt := crypto.Keccak256Hash(delegator.Bytes())
+	_, err = avs.DelegationManagerContract.DelegateTo(txOpts, operator, approverSignatureAndExpiry, approverSalt)
 	require.NoError(t, err)
 
 }
@@ -375,4 +451,13 @@ func checkIfCodePresent(t *testing.T,
 	codeBytes, err := avs.Client.CodeAt(ctx, deployInfo[contractName].Address, big.NewInt(int64(blockNumber)))
 	require.NoError(t, err)
 	require.Less(t, 0, len(codeBytes))
+}
+
+func mustHexToKey(privKeyHex string) *ecdsa.PrivateKey {
+	privKey, err := crypto.HexToECDSA(strings.TrimPrefix(privKeyHex, "0x"))
+	if err != nil {
+		panic(err)
+	}
+
+	return privKey
 }

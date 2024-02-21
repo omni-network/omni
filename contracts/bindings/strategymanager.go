@@ -39,11 +39,11 @@ type IStrategyManagerDeprecatedStructQueuedWithdrawal struct {
 	DelegatedAddress     common.Address
 }
 
-//// IStrategyManagerDeprecatedStructWithdrawerAndNonce is an auto generated low-level Go binding around an user-defined struct.
-//type IStrategyManagerDeprecatedStructWithdrawerAndNonce struct {
-//	Withdrawer common.Address
-//	Nonce      *big.Int
-//}
+// IStrategyManagerDeprecatedStructWithdrawerAndNonce is an auto generated low-level Go binding around an user-defined struct.
+type IStrategyManagerDeprecatedStructWithdrawerAndNonce struct {
+	Withdrawer common.Address
+	Nonce      *big.Int
+}
 
 // StrategyManagerMetaData contains all meta data concerning the StrategyManager contract.
 var StrategyManagerMetaData = &bind.MetaData{
