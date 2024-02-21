@@ -76,7 +76,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
         for (uint32 i = 0; i < numOperators; i++) {
             operators[i] = _operator(i);
             _registerAsOperator(operators[i]);
-            _depositIntoRandStrategy(operators[i], initialOperatorStake);
+            _depositIntoSupportedStrategy(operators[i], initialOperatorStake);
         }
 
         OmniAVS.Validator[] memory validators;
@@ -127,10 +127,10 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
                 address delegator = delegators[idx];
 
                 // should contribute to quorom stake
-                _depositIntoRandStrategy(delegator, initialDelegatorStake);
+                _depositIntoSupportedStrategy(delegator, initialDelegatorStake);
 
                 // should NOT contribute to quorom stake
-                // _depositEigen(delegator, initialDelegatorStake);
+                _depositIntoUnsupportedStrategy(delegator, initialDelegatorStake);
 
                 // all stake is delegated
                 _testDelegateToOperator(delegator, operator);
@@ -162,7 +162,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
         // increase delegations for first half of operators
         for (uint32 i = 0; i < numOperators / 2; i++) {
             for (uint32 j = 0; j < numDelegatorsPerOp; j++) {
-                _depositIntoRandStrategy(delegators[i * numDelegatorsPerOp + j], delegatorStakeAddition);
+                _depositIntoSupportedStrategy(delegators[i * numDelegatorsPerOp + j], delegatorStakeAddition);
             }
         }
 
@@ -198,7 +198,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
     function _testIncreaseStakeOfSecondHalfOfOperators() internal {
         // increase stake of second half of delegators
         for (uint32 i = numOperators / 2; i < numOperators; i++) {
-            _depositIntoRandStrategy(operators[i], operatorStakeAddition);
+            _depositIntoSupportedStrategy(operators[i], operatorStakeAddition);
         }
 
         OmniAVS.Validator[] memory validators;

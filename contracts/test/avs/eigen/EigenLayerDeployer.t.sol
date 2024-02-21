@@ -51,22 +51,20 @@ contract EigenLayerDeployer is Test {
     IBeacon eigenPodBeacon;
 
     // local strategies
-    IERC20 eigenToken;
+    uint256 wethInitialSupply = 10e50;
     IERC20 weth;
     StrategyBase wethStrat;
-    StrategyBase eigenStrat;
-    StrategyBase baseStrategyImplementation;
 
     // goerli strategies
-    uint256 wethInitialSupply = 10e50;
-    uint256 eigenTotalSupply = 1000e18;
     IERC20 stETH;
     IERC20 rETH;
     StrategyBase stETHStrat;
     StrategyBase rETHStrat;
 
-    // active strategies (goerli or local)
-    IStrategy[] strategies;
+    // unsupported strategy (always excluded from OmniAVS strategy params)
+    uint256 unsupportedTotalSupply = 1000e18;
+    IERC20 unsupportedToken;
+    StrategyBase unsupportedStrat;
 
     // testing/mock contracts
     EmptyContract emptyContract;
@@ -92,27 +90,29 @@ contract EigenLayerDeployer is Test {
     function setUp() public virtual {
         if (isGoerli()) {
             _deployGoerliEigenLayer();
+            _deployGoerliStrategies();
         } else {
             _deployLocalEigenLayer();
+            _deployLocalStrategies();
         }
+
+        // we always deploy unsupported strategy
+        _deployUnsupportedStrategy();
     }
 
     function _deployGoerliEigenLayer() internal {
-        // core
         avsDirectory = AVSDirectory(EigenM2GoerliDeployments.AVSDirectory);
         delegation = DelegationManager(EigenM2GoerliDeployments.DelegationManager);
         strategyManager = StrategyManager(EigenM2GoerliDeployments.StrategyManager);
         slasher = Slasher(EigenM2GoerliDeployments.Slasher);
         eigenPodManager = EigenPodManager(EigenM2GoerliDeployments.EigenPodManager);
+    }
 
-        // strategies
+    function _deployGoerliStrategies() internal {
         stETH = IERC20(EigenM2GoerliDeployments.stETH);
         rETH = IERC20(EigenM2GoerliDeployments.rETH);
         stETHStrat = StrategyBase(EigenM2GoerliDeployments.stETHStrategy);
         rETHStrat = StrategyBase(EigenM2GoerliDeployments.rETHStrategy);
-
-        strategies.push(stETHStrat);
-        strategies.push(rETHStrat);
     }
 
     function _deployLocalEigenLayer() internal {
@@ -236,36 +236,33 @@ contract EigenLayerDeployer is Test {
                 withdrawalDelayBlocks
             )
         );
+    }
 
-        //simple ERC20 (**NOT** WETH-like!), used in a test strategy
+    function _deployLocalStrategies() internal {
         weth = new ERC20PresetFixedSupply("weth", "WETH", wethInitialSupply, address(this));
-
-        // deploy StrategyBase contract implementation, then create upgradeable proxy that points to implementation and initialize it
-        baseStrategyImplementation = new StrategyBase(strategyManager);
+        StrategyBase impl = new StrategyBase(strategyManager);
         wethStrat = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(
-                    address(baseStrategyImplementation),
+                    address(impl),
                     address(eigenLayerProxyAdmin),
                     abi.encodeWithSelector(StrategyBase.initialize.selector, weth, eigenLayerPauserReg)
                 )
             )
         );
+    }
 
-        eigenToken = new ERC20PresetFixedSupply("eigen", "EIGEN", wethInitialSupply, address(this));
-
-        // deploy upgradeable proxy that points to StrategyBase implementation and initialize it
-        eigenStrat = StrategyBase(
+    function _deployUnsupportedStrategy() internal {
+        unsupportedToken = new ERC20PresetFixedSupply("eigen", "EIGEN", wethInitialSupply, address(this));
+        StrategyBase impl = new StrategyBase(strategyManager);
+        unsupportedStrat = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(
-                    address(baseStrategyImplementation),
+                    address(impl),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, eigenToken, eigenLayerPauserReg)
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, unsupportedToken, eigenLayerPauserReg)
                 )
             )
         );
-
-        strategies.push(wethStrat);
-        strategies.push(eigenStrat);
     }
 }

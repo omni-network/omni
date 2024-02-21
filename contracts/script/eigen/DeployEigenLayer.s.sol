@@ -28,8 +28,8 @@ contract DeployEigenLayer is EigenLayerDeployer, Script {
         vm.serializeAddress(jsonId, "DelayedWithdrawalRouter", address(delayedWithdrawalRouter));
         vm.serializeAddress(jsonId, "ETHPOSDeposit", address(ethPOSDeposit));
         vm.serializeAddress(jsonId, "EigenPodBeacon", address(eigenPodBeacon));
-        vm.serializeAddress(jsonId, "EigenToken", address(eigenToken));
-        vm.serializeAddress(jsonId, "EigenStrategy", address(eigenStrat));
+        vm.serializeAddress(jsonId, "UnsupportedToken", address(unsupportedToken));
+        vm.serializeAddress(jsonId, "UnsupportedStrategy", address(unsupportedStrat));
         vm.serializeAddress(jsonId, "WETH", address(weth));
         string memory json = vm.serializeAddress(jsonId, "WETHStrategy", address(wethStrat));
         vm.writeJson(json, outputFile);

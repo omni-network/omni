@@ -89,10 +89,25 @@ contract AVSUtils is AVSBase {
     }
 
     /// @dev deposit into a random strategy, that is part of the OmniAVS strategy params
-    function _depositIntoRandStrategy(address staker, uint256 amount) internal {
+    function _depositIntoSupportedStrategy(address staker, uint256 amount) internal {
         IOmniAVS.StrategyParams[] memory params = omniAVS.strategyParams();
         uint256 index = uint256(keccak256(abi.encodePacked(staker))) % params.length;
         _depositIntoStrategy(staker, amount, address(params[index].strategy));
+    }
+
+    /// @dev deposit into an that is NOT part of the OmniAVS strategy params
+    function _depositIntoUnsupportedStrategy(address staker, uint256 amount) internal {
+        IOmniAVS.StrategyParams[] memory params = omniAVS.strategyParams();
+
+        // check that unsupportedStrategy is not part of the strategy params
+        for (uint256 i = 0; i < params.length; i++) {
+            require(
+                address(params[i].strategy) != address(unsupportedStrat),
+                "AVSUtils: unsupportedStrat should not be in strategy params"
+            );
+        }
+
+        _depositIntoStrategy(staker, amount, address(unsupportedStrat));
     }
 
     /// @dev deposit into the provided strategy
