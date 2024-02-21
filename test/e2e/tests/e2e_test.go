@@ -71,6 +71,9 @@ type AVS struct {
 	Client                    ethclient.Client
 	AVSContract               *bindings.OmniAVS
 	DelegationManagerContract *bindings.DelegationManager
+	StrategyManagerContract   *bindings.StrategyManager
+	WETHStrategyContract      *bindings.StrategyBase
+	WETHTokenContract         *bindings.ERC20PresetFixedSupply
 }
 
 type testFunc struct {
@@ -173,11 +176,26 @@ func test(t *testing.T, testFunc testFunc) {
 		chainInfo := deployInfo[avsTargetChainId]
 		ethClient, err := ethclient.Dial(chain.Name, chain.RPCURL)
 		require.NoError(t, err)
+
+		// create the contracts
 		omniAvsAddr := chainInfo[types.ContractOmniAVS].Address
 		omniAvs, err := bindings.NewOmniAVS(omniAvsAddr, ethClient)
 		require.NoError(t, err)
+
 		DelegationManagerAddr := chainInfo[types.ContractELDelegationManager].Address
 		delMan, err := bindings.NewDelegationManager(DelegationManagerAddr, ethClient)
+		require.NoError(t, err)
+
+		StrategtManagerAddr := chainInfo[types.ContractELStrategyManager].Address
+		stratMan, err := bindings.NewStrategyManager(StrategtManagerAddr, ethClient)
+		require.NoError(t, err)
+
+		wethStrategyAddr := chainInfo[types.ContractELWETHStrategy].Address
+		wethStrategy, err := bindings.NewStrategyBase(wethStrategyAddr, ethClient)
+		require.NoError(t, err)
+
+		wethTokenAddr := chainInfo[types.ContractELWETH].Address
+		wethToken, err := bindings.NewERC20PresetFixedSupply(wethTokenAddr, ethClient)
 		require.NoError(t, err)
 
 		testAvs := AVS{
@@ -185,6 +203,9 @@ func test(t *testing.T, testFunc testFunc) {
 			Client:                    ethClient,
 			AVSContract:               omniAvs,
 			DelegationManagerContract: delMan,
+			StrategyManagerContract:   stratMan,
+			WETHStrategyContract:      wethStrategy,
+			WETHTokenContract:         wethToken,
 		}
 		testFunc.TestAVS(t, testAvs, chainInfo)
 	}

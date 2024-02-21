@@ -19,6 +19,8 @@ const (
 	ContractELDelegationManager ContractName = "el_delegation_manager"
 	ContractELStrategyManager   ContractName = "el_strategy_manager"
 	ContractELPodManager        ContractName = "el_pod_manager"
+	ContractELWETH              ContractName = "el_weth"
+	ContractELWETHStrategy      ContractName = "el_weth_strategy"
 )
 
 // DeployInfos contains the addresses of deployed xdapps and contracts by chainID.

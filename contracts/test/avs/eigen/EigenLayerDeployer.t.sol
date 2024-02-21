@@ -67,8 +67,8 @@ contract EigenLayerDeployer is Test {
     }
 
     function _deployUnsupportedStrategy(address strategyManager_, address proxyAdmin_, address pauserRegistry_)
-        internal
-        returns (address)
+    internal
+    returns (address)
     {
         uint256 totalSupply = 1000e18;
         IERC20 unsupportedToken = new ERC20PresetFixedSupply("unsupported", "UNSUPPORTED", totalSupply, address(this));

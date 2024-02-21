@@ -23,10 +23,16 @@ type AVSConfig struct {
 
 type EigenDeployments struct {
 	// core deployments
-	AVSDirectory      common.Address `json:"avsDirectory"`
-	DelegationManager common.Address `json:"delegationManager"`
-	StrategyManager   common.Address `json:"strategyManager"`
-	EigenPodManager   common.Address `json:"eigenPodManager"`
+	AVSDirectory      common.Address `json:"AVSDirectory"`
+	DelegationManager common.Address `json:"DelegationManager"`
+	StrategyManager   common.Address `json:"StrategyManager"`
+	EigenPodManager   common.Address `json:"EigenPodManager"`
+
+	// test token & strategies
+	EigenStrategy common.Address `json:"EigenStrategy"`
+	EigenToken    common.Address `json:"EigenToken"`
+	WETH          common.Address `json:"WETH"`
+	WETHStrategy  common.Address `json:"WETHStrategy"`
 
 	// maps token symbol to strategy address
 	Strategies map[string]common.Address `json:"strategies"`

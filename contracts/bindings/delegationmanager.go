@@ -60,15 +60,15 @@ type ISignatureUtilsSignatureWithExpiry struct {
 	Expiry    *big.Int
 }
 
-// IStrategyManagerDeprecatedStructQueuedWithdrawal is an auto generated low-level Go binding around an user-defined struct.
-type IStrategyManagerDeprecatedStructQueuedWithdrawal struct {
-	Strategies           []common.Address
-	Shares               []*big.Int
-	Staker               common.Address
-	WithdrawerAndNonce   IStrategyManagerDeprecatedStructWithdrawerAndNonce
-	WithdrawalStartBlock uint32
-	DelegatedAddress     common.Address
-}
+//// IStrategyManagerDeprecatedStructQueuedWithdrawal is an auto generated low-level Go binding around an user-defined struct.
+//type IStrategyManagerDeprecatedStructQueuedWithdrawal struct {
+//	Strategies           []common.Address
+//	Shares               []*big.Int
+//	Staker               common.Address
+//	WithdrawerAndNonce   IStrategyManagerDeprecatedStructWithdrawerAndNonce
+//	WithdrawalStartBlock uint32
+//	DelegatedAddress     common.Address
+//}
 
 // IStrategyManagerDeprecatedStructWithdrawerAndNonce is an auto generated low-level Go binding around an user-defined struct.
 type IStrategyManagerDeprecatedStructWithdrawerAndNonce struct {

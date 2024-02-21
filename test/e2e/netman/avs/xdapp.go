@@ -89,10 +89,14 @@ func (d *XDapp) ExportDeployInfo(i types.DeployInfos) {
 	i.Set(d.chain.ID, types.ContractOmniAVS, d.contractAddr, d.height)
 
 	const elHeight uint64 = 0 // TODO(corver): Maybe figure this out?
+
 	i.Set(d.chain.ID, types.ContractELAVSDirectory, d.eigen.AVSDirectory, elHeight)
 	i.Set(d.chain.ID, types.ContractELDelegationManager, d.eigen.DelegationManager, elHeight)
 	i.Set(d.chain.ID, types.ContractELStrategyManager, d.eigen.StrategyManager, elHeight)
 	i.Set(d.chain.ID, types.ContractELPodManager, d.eigen.EigenPodManager, elHeight)
+	i.Set(d.chain.ID, types.ContractELWETH, d.eigen.WETH, elHeight)
+	i.Set(d.chain.ID, types.ContractELWETHStrategy, d.eigen.WETHStrategy, elHeight)
+
 }
 
 func (d *XDapp) deployOmniAVS(ctx context.Context, client backend.Backend, txOpts *bind.TransactOpts,
