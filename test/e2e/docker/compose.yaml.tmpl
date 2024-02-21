@@ -104,6 +104,7 @@ services:
       - --syncmode=full
       - --nodekeyhex={{.NodeKeyHex}}
       - --bootnodes={{.BootNodesStr}}
+      - --miner.recommit=500ms
     ports:
       - {{ if $.BindAll }}8551:{{end}}8551
       - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}8545

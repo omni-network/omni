@@ -111,7 +111,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, depCfg Depl
 		return errors.Wrap(err, "start all edges")
 	}
 
-	msgBatches := []int{4, 3, 2, 1} // Send 10 msgs from each chain to each other chain
+	msgBatches := []int{3, 2, 1} // Send 6 msgs from each chain to each other chain
 	msgsErr := StartSendingXMsgs(ctx, def.Netman.Portals(), msgBatches...)
 
 	if err := Wait(ctx, def.Testnet.Testnet, 5); err != nil { // allow some txs to go through

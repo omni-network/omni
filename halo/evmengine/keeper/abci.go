@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"runtime/debug"
+	"time"
 
 	"github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/lib/errors"
@@ -86,6 +87,11 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 	} else if forkchoiceResp.PayloadStatus.Status != engine.VALID {
 		return nil, errors.New("status not valid")
 	}
+
+	// We need to wait for geth to build a non-empty block.
+	// If we call to quickly, it just returns a empty block.
+	// Best would be to start building optimistically on prev block Commit.
+	time.Sleep(time.Millisecond * 600) // Geth miner.recommit value + 100ms. TODO(corver): Make this configurable.
 
 	payloadResp, err := k.ethCl.GetPayloadV2(ctx, *forkchoiceResp.PayloadID)
 	if err != nil {
