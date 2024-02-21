@@ -86,8 +86,8 @@ func SendXMsgs(ctx context.Context, portals map[uint64]netman.Portal, batch int)
 			}
 
 			// Only log slow confirmations
-			if delta := receipt.BlockNumber.Uint64() - tup.SentAt; delta > 0 {
-				log.Debug(ctx, "Sent xmsg mined",
+			if delta := receipt.BlockNumber.Uint64() - tup.SentAt; delta > 2 {
+				log.Debug(ctx, "Sent xmsg mined (slow)",
 					"chain", portal.Chain.Name,
 					"sent_at", tup.SentAt, "mined_at", receipt.BlockNumber.Uint64(),
 					"delta", receipt.BlockNumber.Uint64()-tup.SentAt)

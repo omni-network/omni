@@ -52,7 +52,7 @@ func WaitAllSubmissions(ctx context.Context, portals map[uint64]netman.Portal, m
 			}
 
 			backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second))
-			for {
+			for i := 0; ; i++ {
 				if ctx.Err() != nil {
 					return errors.Wrap(ctx.Err(), "timeout waiting for submissions")
 				}
@@ -71,9 +71,12 @@ func WaitAllSubmissions(ctx context.Context, portals map[uint64]netman.Portal, m
 					break
 				}
 
-				log.Debug(ctx, "Waiting for submissions on destination chain",
-					"src", src.Chain.Name, "dest", dest.Chain.Name,
-					"src_offset", srcOffset, "dest_offset", destOffset, "minimum", minimum)
+				if i%5 == 0 { // Only log every 5th iteration (5s)
+					log.Debug(ctx, "Waiting for submissions on destination chain",
+						"src", src.Chain.Name, "dest", dest.Chain.Name,
+						"src_offset", srcOffset, "dest_offset", destOffset, "minimum", minimum)
+				}
+
 				backoff()
 			}
 		}
