@@ -59,6 +59,7 @@ func SendXMsgs(ctx context.Context, portals map[uint64]netman.Portal, batch int)
 		}
 	}
 
+	// remove after updating with txmgr
 	for chainID, txs := range allTxs {
 		portal := portals[chainID]
 		for i, tx := range txs {

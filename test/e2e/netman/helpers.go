@@ -62,6 +62,7 @@ func DeployProxyAdmin(ctx context.Context, txOpts *bind.TransactOpts, client *et
 		return common.Address{}, errors.Wrap(err, "deploy proxy admin")
 	}
 
+	// TODO: replace with txmgr
 	receipt, err := bind.WaitMined(ctx, client, tx)
 	if err != nil || receipt.Status != types.ReceiptStatusSuccessful {
 		return common.Address{}, errors.Wrap(err, "wait mined proxy admin")
@@ -78,6 +79,7 @@ func deployFeeOracleV1(ctx context.Context, txOpts *bind.TransactOpts, client *e
 		return common.Address{}, errors.Wrap(err, "deploy fee oracle impl")
 	}
 
+	// TODO: eplace with txmgr
 	receipt, err := bind.WaitMined(ctx, client, tx)
 	if err != nil || receipt.Status != types.ReceiptStatusSuccessful {
 		return common.Address{}, errors.Wrap(err, "wait mined fee oracle impl")
@@ -98,6 +100,7 @@ func deployFeeOracleV1(ctx context.Context, txOpts *bind.TransactOpts, client *e
 		return common.Address{}, errors.Wrap(err, "deploy fee oracle proxy")
 	}
 
+	// TODO: replace with txmgr
 	receipt, err = bind.WaitMined(ctx, client, tx)
 	if err != nil || receipt.Status != types.ReceiptStatusSuccessful {
 		return common.Address{}, errors.Wrap(err, "wait mined fee oracle proxy")
@@ -115,6 +118,7 @@ func deployPortal(ctx context.Context, txOpts *bind.TransactOpts, client *ethcli
 		return common.Address{}, errors.Wrap(err, "deploy portal impl")
 	}
 
+	// TODO: replace with txmgr
 	receipt, err := bind.WaitMined(ctx, client, tx)
 	if err != nil || receipt.Status != types.ReceiptStatusSuccessful {
 		return common.Address{}, errors.Wrap(err, "wait mined portal proxy")
@@ -135,6 +139,7 @@ func deployPortal(ctx context.Context, txOpts *bind.TransactOpts, client *ethcli
 		return common.Address{}, errors.Wrap(err, "deploy portal proxy")
 	}
 
+	// TODO: replace with txmgr
 	receipt, err = bind.WaitMined(ctx, client, tx)
 	if err != nil || receipt.Status != types.ReceiptStatusSuccessful {
 		return common.Address{}, errors.Wrap(err, "wait mined portal proxy")

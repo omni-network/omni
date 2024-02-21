@@ -103,6 +103,8 @@ func NewManager(testnet types.Testnet, deployKeyFile string,
 		portals[chainID] = portal
 	}
 
+	// TODO: instantiate all txmgrs
+
 	switch testnet.Network {
 	case netconf.Devnet:
 		if deployKeyFile != "" || relayerKeyFile != "" {

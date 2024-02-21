@@ -11,7 +11,6 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
-	t "github.com/omni-network/omni/lib/txmgr"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -36,7 +35,7 @@ func NewTxSender(
 	ctx context.Context,
 	chain netconf.Chain,
 	rpcClient *ethclient.Client,
-	privateKey ecdsa.PrivateKey,
+	privateKey *ecdsa.PrivateKey,
 	chainName string,
 ) (TxSender, error) {
 	// creates our new CLI config for our tx manager
@@ -47,7 +46,7 @@ func NewTxSender(
 	)
 
 	// get the config for our tx manager
-	cfg, err := txmgr.NewConfig(ctx, cliConfig, &privateKey, rpcClient)
+	cfg, err := txmgr.NewConfig(ctx, cliConfig, privateKey, rpcClient)
 	if err != nil {
 		return TxSender{}, err
 	}
@@ -74,17 +73,8 @@ func NewTxSender(
 	}, nil
 }
 
-func (s TxSender) SendSubmitTransaction(ctx context.Context, submission xchain.Submission, value *big.Int) error {
-	bytes, err := s.getXSubmitBytes(t.SubmissionToBinding(submission))
-	if err != nil {
-		return errors.Wrap(err, "get xsubmit bytes")
-	}
-
-	return s.sendTransaction(ctx, submission.DestChainID, bytes, value)
-}
-
 func (s TxSender) SendXCallTransaction(ctx context.Context, msg xchain.Msg, value *big.Int) error {
-	bytes, err := s.getXCallBytes(t.MsgToBindings(msg))
+	bytes, err := s.getXCallBytes(MsgToBindings(msg))
 	if err != nil {
 		return errors.Wrap(err, "get xsubmit bytes")
 	}
@@ -102,17 +92,7 @@ func (s TxSender) getXCallBytes(sub bindings.XTypesMsg) ([]byte, error) {
 	return bytes, nil
 }
 
-// getXSubmitBytes returns the byte representation of the xsubmit function call.
-func (s TxSender) getXSubmitBytes(sub bindings.XTypesSubmission) ([]byte, error) {
-	bytes, err := s.abi.Pack("xsubmit", sub)
-	if err != nil {
-		return nil, errors.Wrap(err, "pack xsubmit")
-	}
-
-	return bytes, nil
-}
-
-// core difference, I am wrapping this in the above methods
+// core difference, I am wrapping this in the above methods.
 func (s TxSender) sendTransaction(ctx context.Context, destChainID uint64, data []byte, value *big.Int) error {
 	if s.txMgr == nil {
 		return errors.New("tx mgr not found", "dest_chain_id", destChainID)
@@ -140,7 +120,7 @@ func (s TxSender) sendTransaction(ctx context.Context, destChainID uint64, data 
 		return errors.Wrap(err, "failed to send tx")
 	}
 
-	log.Info(ctx, "Sent tx", "tx_hash", rec.TxHash.Hex(), "dest_chain", s.chainName)
+	log.Hex7("Sent tx", rec.TxHash.Bytes())
 
 	return nil
 }

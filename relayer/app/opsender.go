@@ -11,7 +11,6 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
-	t "github.com/omni-network/omni/lib/txmgr"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -93,7 +92,7 @@ func (o OpSender) SendTransaction(ctx context.Context, submission xchain.Submiss
 
 	const gasLimit = 1_000_000 // TODO(lazar): make configurable
 
-	txData, err := o.getXSubmitBytes(t.SubmissionToBinding(submission))
+	txData, err := o.getXSubmitBytes(SubmissionToBinding(submission))
 	if err != nil {
 		return err
 	}

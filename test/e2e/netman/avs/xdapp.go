@@ -115,6 +115,7 @@ func deployOmniAVS(ctx context.Context, client *ethclient.Client, txOpts *bind.T
 		return common.Address{}, errors.Wrap(err, "deploy avs impl")
 	}
 
+	// TODO: replace with txmgr
 	receipt, err := bind.WaitMined(ctx, client, tx)
 	if err != nil || receipt.Status != ethtypes.ReceiptStatusSuccessful {
 		return common.Address{}, errors.Wrap(err, "wait mined avs impl")
@@ -136,6 +137,7 @@ func deployOmniAVS(ctx context.Context, client *ethclient.Client, txOpts *bind.T
 		return common.Address{}, errors.Wrap(err, "deploy avs proxy")
 	}
 
+	// TODO: replace with txmgr
 	receipt, err = bind.WaitMined(ctx, client, tx)
 	if err != nil || receipt.Status != ethtypes.ReceiptStatusSuccessful {
 		return common.Address{}, errors.Wrap(err, "wait mined avs proxy")

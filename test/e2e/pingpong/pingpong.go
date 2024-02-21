@@ -57,6 +57,7 @@ func Deploy(ctx context.Context, portals map[uint64]netman.Portal) (XDapp, error
 		miner[chainID] = tx
 	}
 
+	// TODO: replace with txmgr
 	if err := miner.WaitMined(ctx, contracts); err != nil {
 		return XDapp{}, errors.Wrap(err, "wait mined")
 	}
@@ -86,6 +87,7 @@ func (a *XDapp) fund(ctx context.Context) error {
 			return errors.Wrap(err, "fund ping pong", "chain", contract.Chain.Name)
 		}
 
+		// TODO: replace with txmgr
 		if _, err := bind.WaitMined(ctx, contract.Client, tx); err != nil {
 			return errors.Wrap(err, "wait mined", "chain", contract.Chain.Name, "tx", tx.Hash())
 		}
@@ -112,6 +114,7 @@ func (a *XDapp) StartAllEdges(ctx context.Context, count uint64) error {
 			return errors.Wrap(err, "start ping pong", "from", from.Chain.Name, "to", to.Chain.Name)
 		}
 
+		// TODO: replace with txmgr
 		if _, err := bind.WaitMined(ctx, from.Client, tx); err != nil {
 			return errors.Wrap(err, "wait mined", "chain", from.Chain.Name, "tx", tx.Hash())
 		}
@@ -215,6 +218,7 @@ func (p Contract) TxOpts(ctx context.Context, value *big.Int) *bind.TransactOpts
 
 type miner map[uint64]*etypes.Transaction
 
+// TODO: remove after txmgr is implemented.
 func (m miner) WaitMined(ctx context.Context, contracts map[uint64]Contract) error {
 	for chainID, tx := range m {
 		if _, err := bind.WaitMined(ctx, contracts[chainID].Client, tx); err != nil {
