@@ -19,8 +19,8 @@ import { StrategyManager } from "eigenlayer-contracts/src/contracts/core/Strateg
 import { StrategyBase } from "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import { Slasher } from "eigenlayer-contracts/src/contracts/core/Slasher.sol";
-import { EigenPod, IEigenPod } from "eigenlayer-contracts/src/contracts/pods/EigenPod.sol";
 import { EigenPodManager } from "eigenlayer-contracts/src/contracts/pods/EigenPodManager.sol";
+import { EigenPod, IEigenPod } from "eigenlayer-contracts/src/contracts/pods/EigenPod.sol";
 import { DelayedWithdrawalRouter } from "eigenlayer-contracts/src/contracts/pods/DelayedWithdrawalRouter.sol";
 import { IDelayedWithdrawalRouter } from "eigenlayer-contracts/src/contracts/pods/DelayedWithdrawalRouter.sol";
 import { PauserRegistry } from "eigenlayer-contracts/src/contracts/permissions/PauserRegistry.sol";
@@ -28,7 +28,10 @@ import { PauserRegistry } from "eigenlayer-contracts/src/contracts/permissions/P
 import { EmptyContract } from "eigenlayer-contracts/src/test/mocks/EmptyContract.sol";
 import { ETHPOSDepositMock } from "eigenlayer-contracts/src/test/mocks/ETHDepositMock.sol";
 
+import { EigenPodManagerHarness } from "../EigenPodManagerHarness.sol";
 import { IEigenDeployer } from "./IEigenDeployer.sol";
+
+import { CommonBase } from "forge-std/Base.sol";
 
 /**
  * @title EigenLayerLocal
@@ -36,7 +39,7 @@ import { IEigenDeployer } from "./IEigenDeployer.sol";
  *      a testnet or mainnet fork. It requires deploys all eigenlayer core
  *      contracts.
  */
-contract EigenLayerLocal is IEigenDeployer {
+contract EigenLayerLocal is IEigenDeployer, CommonBase {
     // EigenLayer contracts
     ProxyAdmin proxyAdmin;
     PauserRegistry pauserReg;
@@ -64,7 +67,10 @@ contract EigenLayerLocal is IEigenDeployer {
     address beaconChainOracleAddress;
 
     // eignlayer multisig in prod, anvil account9 locally
-    address proxyAdminOwner = 0xa0Ee7A142d267C1f36714E4a8F75612F20a79720;
+    address constant proxyAdminOwner = 0xa0Ee7A142d267C1f36714E4a8F75612F20a79720;
+
+    /// Canonical, virtual beacon chain ETH strategy
+    address constant beaconChainETHStrategy = 0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0;
 
     function deploy() public returns (Deployments memory) {
         pauser = address(69);
@@ -112,7 +118,7 @@ contract EigenLayerLocal is IEigenDeployer {
         StrategyManager strategyManagerImplementation = new StrategyManager(delegation, eigenPodManager, slasher);
         Slasher slasherImplementation = new Slasher(strategyManager, delegation);
         EigenPodManager eigenPodManagerImplementation =
-            new EigenPodManager(ethPOSDeposit, eigenPodBeacon, strategyManager, slasher, delegation);
+            new EigenPodManagerHarness(ethPOSDeposit, eigenPodBeacon, strategyManager, slasher, delegation);
         DelayedWithdrawalRouter delayedWithdrawalRouterImplementation = new DelayedWithdrawalRouter(eigenPodManager);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
@@ -178,8 +184,12 @@ contract EigenLayerLocal is IEigenDeployer {
             )
         );
 
-        address[] memory strategies = new address[](1);
+        address[] memory strategies = new address[](2);
+
         strategies[0] = _deployWETHStrategy();
+        strategies[1] = beaconChainETHStrategy;
+
+        _whitelistStrategies(strategies);
 
         return Deployments({
             proxyAdminOwner: proxyAdminOwner,
@@ -207,7 +217,22 @@ contract EigenLayerLocal is IEigenDeployer {
                 )
             )
         );
-
         return address(wethStrat);
+    }
+
+    function _whitelistStrategies(address[] memory strats) internal {
+        vm.startPrank(strategyManager.strategyWhitelister());
+
+        IStrategy[] memory _strategy = new IStrategy[](strats.length);
+        bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](strats.length);
+
+        for (uint256 i = 0; i < strats.length; i++) {
+            _strategy[i] = IStrategy(strats[i]);
+            _thirdPartyTransfersForbiddenValues[i] = false;
+        }
+
+        strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
+
+        vm.stopPrank();
     }
 }
