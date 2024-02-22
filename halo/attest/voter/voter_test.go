@@ -1,4 +1,4 @@
-package attester_test
+package voter_test
 
 import (
 	"context"
@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/omni-network/omni/halo/attest/attester"
 	"github.com/omni-network/omni/halo/attest/types"
+	"github.com/omni-network/omni/halo/attest/voter"
 	"github.com/omni-network/omni/lib/xchain"
 
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
@@ -23,7 +23,7 @@ func TestAttester(t *testing.T) {
 	fuzzer := fuzz.New().NilChance(0).NumElements(1, 64)
 
 	path := filepath.Join(t.TempDir(), "state.json")
-	err := attester.GenEmptyStateFile(path)
+	err := voter.GenEmptyStateFile(path)
 	require.NoError(t, err)
 
 	pk := k1.GenPrivKey()
@@ -34,11 +34,11 @@ func TestAttester(t *testing.T) {
 		chain3 = 3
 	)
 
-	// reloadAttester reloads the attester from disk.
-	reloadAttester := func(t *testing.T, from1, from2 uint64) *attester.Attester {
+	// reloadVoter reloads the attester from disk.
+	reloadVoter := func(t *testing.T, from1, from2 uint64) *voter.Voter {
 		t.Helper()
 		p := make(stubProvider)
-		a, err := attester.LoadAttester(ctx, pk, path, p, map[uint64]string{chain1: "", chain2: "", chain3: ""})
+		a, err := voter.LoadVoter(ctx, pk, path, p, map[uint64]string{chain1: "", chain2: "", chain3: ""})
 		require.NoError(t, err)
 
 		require.EqualValues(t, from1, p[chain1])
@@ -48,7 +48,7 @@ func TestAttester(t *testing.T) {
 		return a
 	}
 
-	a := reloadAttester(t, 0, 0)
+	a := reloadVoter(t, 0, 0)
 
 	add := func(t *testing.T, chainID, height uint64) {
 		t.Helper()
@@ -103,7 +103,7 @@ func TestAttester(t *testing.T) {
 	add(t, 1, 3)
 
 	// Reload
-	a = reloadAttester(t, 4, 0)
+	a = reloadVoter(t, 4, 0)
 
 	// Add noise
 	add(t, 2, 1)
@@ -115,7 +115,7 @@ func TestAttester(t *testing.T) {
 	available(t, 2, 1, true)
 
 	// Reload
-	a = reloadAttester(t, 4, 2)
+	a = reloadVoter(t, 4, 2)
 
 	// Propose and commit 3 only
 	propose(1, 3)
@@ -127,7 +127,7 @@ func TestAttester(t *testing.T) {
 	available(t, 1, 3, false)
 
 	// Reload
-	a = reloadAttester(t, 4, 2)
+	a = reloadVoter(t, 4, 2)
 
 	// Propose 1
 	propose(1, 1)
@@ -144,7 +144,7 @@ func TestAttester(t *testing.T) {
 	available(t, 1, 2, true)
 
 	// Reload
-	a = reloadAttester(t, 4, 2)
+	a = reloadVoter(t, 4, 2)
 
 	// Commit 2 and noise
 	commit(1, 2)

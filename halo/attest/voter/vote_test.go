@@ -1,9 +1,9 @@
-package attester_test
+package voter_test
 
 import (
 	"testing"
 
-	"github.com/omni-network/omni/halo/attest/attester"
+	"github.com/omni-network/omni/halo/attest/voter"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCreateVerifyAttestation(t *testing.T) {
+func TestCreateVerifyVotesn(t *testing.T) {
 	t.Parallel()
 
 	privKey := k1.GenPrivKey()
@@ -25,7 +25,7 @@ func TestCreateVerifyAttestation(t *testing.T) {
 	var block xchain.Block
 	fuzz.New().NilChance(0).NumElements(1, 64).Fuzz(&block)
 
-	att, err := attester.CreateAttestation(privKey, block)
+	att, err := voter.CreateVote(privKey, block)
 	require.NoError(t, err)
 	require.Equal(t, block.BlockHeader, att.BlockHeader.ToXChain())
 	require.Equal(t, addr, common.Address(att.Signature.ValidatorAddress))

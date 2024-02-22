@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omni-network/omni/halo/attest/attester"
+	"github.com/omni-network/omni/halo/attest/voter"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/xchain"
 	relayer "github.com/omni-network/omni/relayer/app"
@@ -23,9 +23,8 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 	t.Parallel()
 
 	var (
-		SourceChainID  = uint64(randomBetween(1, 5))
-		DestChainID    = uint64(randomBetween(1, 5))
-		ValidatorSetID = uint64(1)
+		SourceChainID = uint64(randomBetween(1, 5))
+		DestChainID   = uint64(randomBetween(1, 5))
 	)
 
 	privKey := k1.GenPrivKey()
@@ -45,12 +44,15 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 	var block xchain.Block
 	fuzzer.NilChance(0).NumElements(1, 64).Fuzz(&block)
 
+	var valSetHash common.Hash
+	fuzzer.Fuzz(&valSetHash)
+
 	// make all msg offset sequential
 	for i := range block.Msgs {
 		block.Msgs[i].StreamOffset = uint64(i)
 	}
 
-	att, err := attester.CreateAttestation(privKey, block)
+	att, err := voter.CreateVote(privKey, block)
 	require.NoError(t, err)
 	require.Equal(t, block.BlockHeader, att.BlockHeader.ToXChain())
 	require.Equal(t, addr, common.Address(att.Signature.ValidatorAddress))
@@ -59,10 +61,10 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 	require.NoError(t, err)
 
 	aggAtt := xchain.AggAttestation{
-		BlockHeader:    att.BlockHeader.ToXChain(),
-		ValidatorSetID: ValidatorSetID,
-		BlockRoot:      [32]byte(att.BlockRoot),
-		Signatures:     []xchain.SigTuple{att.Signature.ToXChain()},
+		BlockHeader:      att.BlockHeader.ToXChain(),
+		ValidatorSetHash: valSetHash,
+		BlockRoot:        [32]byte(att.BlockRoot),
+		Signatures:       []xchain.SigTuple{att.Signature.ToXChain()},
 	}
 
 	ensureNoDuplicates := func(t *testing.T, msgs []xchain.Msg) {
@@ -97,20 +99,21 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			submissions, err := relayer.CreateSubmissions(tt.streamUpdate)
+			subs, err := relayer.CreateSubmissions(tt.streamUpdate)
 			require.NoError(t, err)
 			msgCount := 0
 			msgs := make([]xchain.Msg, 0, len(tt.streamUpdate.Msgs))
-			for _, submission := range submissions {
-				require.NotNil(t, submission.AttestationRoot)
-				require.Equal(t, submission.AttestationRoot, common.Hash(att.BlockRoot))
-				require.NotNil(t, submission.ProofFlags)
-				require.NotNil(t, submission.Signatures)
-				for _, msg := range submission.Msgs {
-					require.Equal(t, msg.DestChainID, submission.DestChainID)
+			for _, sub := range subs {
+				require.EqualValues(t, 1, sub.ValidatorSetID)
+				require.NotNil(t, sub.AttestationRoot)
+				require.Equal(t, sub.AttestationRoot, common.Hash(att.BlockRoot))
+				require.NotNil(t, sub.ProofFlags)
+				require.NotNil(t, sub.Signatures)
+				for _, msg := range sub.Msgs {
+					require.Equal(t, msg.DestChainID, sub.DestChainID)
 				}
-				msgCount += len(submission.Msgs)
-				msgs = append(msgs, submission.Msgs...)
+				msgCount += len(sub.Msgs)
+				msgs = append(msgs, sub.Msgs...)
 			}
 			// ensure no msgs were dropped
 			require.Len(t, msgs, len(tt.streamUpdate.Msgs))

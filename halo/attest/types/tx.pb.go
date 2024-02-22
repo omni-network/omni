@@ -28,24 +28,24 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// MsgAggAttestations contains multiple aggregates for different cross-chain Blocks.
-type MsgAggAttestations struct {
-	Authority  string            `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
-	Aggregates []*AggAttestation `protobuf:"bytes,2,rep,name=aggregates,proto3" json:"aggregates,omitempty"`
+// MsgAggAttestations contains multiple aggregated votes for different cross-chain Blocks.
+type MsgAddVotes struct {
+	Authority string     `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
+	Votes     []*AggVote `protobuf:"bytes,2,rep,name=votes,proto3" json:"votes,omitempty"`
 }
 
-func (m *MsgAggAttestations) Reset()         { *m = MsgAggAttestations{} }
-func (m *MsgAggAttestations) String() string { return proto.CompactTextString(m) }
-func (*MsgAggAttestations) ProtoMessage()    {}
-func (*MsgAggAttestations) Descriptor() ([]byte, []int) {
+func (m *MsgAddVotes) Reset()         { *m = MsgAddVotes{} }
+func (m *MsgAddVotes) String() string { return proto.CompactTextString(m) }
+func (*MsgAddVotes) ProtoMessage()    {}
+func (*MsgAddVotes) Descriptor() ([]byte, []int) {
 	return fileDescriptor_263938a3aa2a585e, []int{0}
 }
-func (m *MsgAggAttestations) XXX_Unmarshal(b []byte) error {
+func (m *MsgAddVotes) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgAggAttestations) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgAddVotes) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgAggAttestations.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgAddVotes.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -55,47 +55,47 @@ func (m *MsgAggAttestations) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return b[:n], nil
 	}
 }
-func (m *MsgAggAttestations) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgAggAttestations.Merge(m, src)
+func (m *MsgAddVotes) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgAddVotes.Merge(m, src)
 }
-func (m *MsgAggAttestations) XXX_Size() int {
+func (m *MsgAddVotes) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgAggAttestations) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgAggAttestations.DiscardUnknown(m)
+func (m *MsgAddVotes) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgAddVotes.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgAggAttestations proto.InternalMessageInfo
+var xxx_messageInfo_MsgAddVotes proto.InternalMessageInfo
 
-func (m *MsgAggAttestations) GetAuthority() string {
+func (m *MsgAddVotes) GetAuthority() string {
 	if m != nil {
 		return m.Authority
 	}
 	return ""
 }
 
-func (m *MsgAggAttestations) GetAggregates() []*AggAttestation {
+func (m *MsgAddVotes) GetVotes() []*AggVote {
 	if m != nil {
-		return m.Aggregates
+		return m.Votes
 	}
 	return nil
 }
 
-type AddAggAttestationsResponse struct {
+type AddVotesResponse struct {
 }
 
-func (m *AddAggAttestationsResponse) Reset()         { *m = AddAggAttestationsResponse{} }
-func (m *AddAggAttestationsResponse) String() string { return proto.CompactTextString(m) }
-func (*AddAggAttestationsResponse) ProtoMessage()    {}
-func (*AddAggAttestationsResponse) Descriptor() ([]byte, []int) {
+func (m *AddVotesResponse) Reset()         { *m = AddVotesResponse{} }
+func (m *AddVotesResponse) String() string { return proto.CompactTextString(m) }
+func (*AddVotesResponse) ProtoMessage()    {}
+func (*AddVotesResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_263938a3aa2a585e, []int{1}
 }
-func (m *AddAggAttestationsResponse) XXX_Unmarshal(b []byte) error {
+func (m *AddVotesResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *AddAggAttestationsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *AddVotesResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_AddAggAttestationsResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_AddVotesResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -105,145 +105,31 @@ func (m *AddAggAttestationsResponse) XXX_Marshal(b []byte, deterministic bool) (
 		return b[:n], nil
 	}
 }
-func (m *AddAggAttestationsResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AddAggAttestationsResponse.Merge(m, src)
+func (m *AddVotesResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AddVotesResponse.Merge(m, src)
 }
-func (m *AddAggAttestationsResponse) XXX_Size() int {
+func (m *AddVotesResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *AddAggAttestationsResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_AddAggAttestationsResponse.DiscardUnknown(m)
+func (m *AddVotesResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_AddVotesResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_AddAggAttestationsResponse proto.InternalMessageInfo
+var xxx_messageInfo_AddVotesResponse proto.InternalMessageInfo
 
-// AggAttestation aggregates multiple attestation by a validator set of a cross-chain Block.
-type AggAttestation struct {
-	BlockHeader    *BlockHeader `protobuf:"bytes,1,opt,name=block_header,json=blockHeader,proto3" json:"block_header,omitempty"`
-	ValidatorSetId uint64       `protobuf:"varint,2,opt,name=validator_set_id,json=validatorSetId,proto3" json:"validator_set_id,omitempty"`
-	BlockRoot      []byte       `protobuf:"bytes,3,opt,name=block_root,json=blockRoot,proto3" json:"block_root,omitempty"`
-	Signatures     []*SigTuple  `protobuf:"bytes,4,rep,name=signatures,proto3" json:"signatures,omitempty"`
-}
-
-func (m *AggAttestation) Reset()         { *m = AggAttestation{} }
-func (m *AggAttestation) String() string { return proto.CompactTextString(m) }
-func (*AggAttestation) ProtoMessage()    {}
-func (*AggAttestation) Descriptor() ([]byte, []int) {
-	return fileDescriptor_263938a3aa2a585e, []int{2}
-}
-func (m *AggAttestation) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *AggAttestation) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_AggAttestation.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *AggAttestation) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AggAttestation.Merge(m, src)
-}
-func (m *AggAttestation) XXX_Size() int {
-	return m.Size()
-}
-func (m *AggAttestation) XXX_DiscardUnknown() {
-	xxx_messageInfo_AggAttestation.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_AggAttestation proto.InternalMessageInfo
-
-func (m *AggAttestation) GetBlockHeader() *BlockHeader {
-	if m != nil {
-		return m.BlockHeader
-	}
-	return nil
-}
-
-func (m *AggAttestation) GetValidatorSetId() uint64 {
-	if m != nil {
-		return m.ValidatorSetId
-	}
-	return 0
-}
-
-func (m *AggAttestation) GetBlockRoot() []byte {
-	if m != nil {
-		return m.BlockRoot
-	}
-	return nil
-}
-
-func (m *AggAttestation) GetSignatures() []*SigTuple {
-	if m != nil {
-		return m.Signatures
-	}
-	return nil
-}
-
-// Attestations contains multiple attestation by a validator of multiple cross-chain Blocks.
-type Attestations struct {
-	Attestations []*Attestation `protobuf:"bytes,1,rep,name=attestations,proto3" json:"attestations,omitempty"`
-}
-
-func (m *Attestations) Reset()         { *m = Attestations{} }
-func (m *Attestations) String() string { return proto.CompactTextString(m) }
-func (*Attestations) ProtoMessage()    {}
-func (*Attestations) Descriptor() ([]byte, []int) {
-	return fileDescriptor_263938a3aa2a585e, []int{3}
-}
-func (m *Attestations) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *Attestations) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Attestations.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *Attestations) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Attestations.Merge(m, src)
-}
-func (m *Attestations) XXX_Size() int {
-	return m.Size()
-}
-func (m *Attestations) XXX_DiscardUnknown() {
-	xxx_messageInfo_Attestations.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Attestations proto.InternalMessageInfo
-
-func (m *Attestations) GetAttestations() []*Attestation {
-	if m != nil {
-		return m.Attestations
-	}
-	return nil
-}
-
-// Attestation by a validator of a cross-chain Block.
+// Attestation contains quorum votes for a cross-chain block of a specific validator set.
 type Attestation struct {
 	BlockHeader    *BlockHeader `protobuf:"bytes,1,opt,name=block_header,json=blockHeader,proto3" json:"block_header,omitempty"`
-	ValidatorSetId uint64       `protobuf:"varint,2,opt,name=validator_set_id,json=validatorSetId,proto3" json:"validator_set_id,omitempty"`
-	BlockRoot      []byte       `protobuf:"bytes,3,opt,name=block_root,json=blockRoot,proto3" json:"block_root,omitempty"`
-	Signature      *SigTuple    `protobuf:"bytes,4,opt,name=signature,proto3" json:"signature,omitempty"`
+	BlockRoot      []byte       `protobuf:"bytes,2,opt,name=block_root,json=blockRoot,proto3" json:"block_root,omitempty"`
+	Signatures     []*SigTuple  `protobuf:"bytes,3,rep,name=signatures,proto3" json:"signatures,omitempty"`
+	ValidatorsHash []byte       `protobuf:"bytes,4,opt,name=validators_hash,json=validatorsHash,proto3" json:"validators_hash,omitempty"`
 }
 
 func (m *Attestation) Reset()         { *m = Attestation{} }
 func (m *Attestation) String() string { return proto.CompactTextString(m) }
 func (*Attestation) ProtoMessage()    {}
 func (*Attestation) Descriptor() ([]byte, []int) {
-	return fileDescriptor_263938a3aa2a585e, []int{4}
+	return fileDescriptor_263938a3aa2a585e, []int{2}
 }
 func (m *Attestation) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -279,13 +165,6 @@ func (m *Attestation) GetBlockHeader() *BlockHeader {
 	return nil
 }
 
-func (m *Attestation) GetValidatorSetId() uint64 {
-	if m != nil {
-		return m.ValidatorSetId
-	}
-	return 0
-}
-
 func (m *Attestation) GetBlockRoot() []byte {
 	if m != nil {
 		return m.BlockRoot
@@ -293,7 +172,181 @@ func (m *Attestation) GetBlockRoot() []byte {
 	return nil
 }
 
-func (m *Attestation) GetSignature() *SigTuple {
+func (m *Attestation) GetSignatures() []*SigTuple {
+	if m != nil {
+		return m.Signatures
+	}
+	return nil
+}
+
+func (m *Attestation) GetValidatorsHash() []byte {
+	if m != nil {
+		return m.ValidatorsHash
+	}
+	return nil
+}
+
+// AggVote aggregates multiple votes of a cross-chain Block.
+type AggVote struct {
+	BlockHeader *BlockHeader `protobuf:"bytes,1,opt,name=block_header,json=blockHeader,proto3" json:"block_header,omitempty"`
+	BlockRoot   []byte       `protobuf:"bytes,2,opt,name=block_root,json=blockRoot,proto3" json:"block_root,omitempty"`
+	Signatures  []*SigTuple  `protobuf:"bytes,3,rep,name=signatures,proto3" json:"signatures,omitempty"`
+}
+
+func (m *AggVote) Reset()         { *m = AggVote{} }
+func (m *AggVote) String() string { return proto.CompactTextString(m) }
+func (*AggVote) ProtoMessage()    {}
+func (*AggVote) Descriptor() ([]byte, []int) {
+	return fileDescriptor_263938a3aa2a585e, []int{3}
+}
+func (m *AggVote) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *AggVote) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_AggVote.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *AggVote) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AggVote.Merge(m, src)
+}
+func (m *AggVote) XXX_Size() int {
+	return m.Size()
+}
+func (m *AggVote) XXX_DiscardUnknown() {
+	xxx_messageInfo_AggVote.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AggVote proto.InternalMessageInfo
+
+func (m *AggVote) GetBlockHeader() *BlockHeader {
+	if m != nil {
+		return m.BlockHeader
+	}
+	return nil
+}
+
+func (m *AggVote) GetBlockRoot() []byte {
+	if m != nil {
+		return m.BlockRoot
+	}
+	return nil
+}
+
+func (m *AggVote) GetSignatures() []*SigTuple {
+	if m != nil {
+		return m.Signatures
+	}
+	return nil
+}
+
+// Votes contains multiple votes for different cross-chain Blocks. Usually by the same validator.
+type Votes struct {
+	Votes []*Vote `protobuf:"bytes,1,rep,name=votes,proto3" json:"votes,omitempty"`
+}
+
+func (m *Votes) Reset()         { *m = Votes{} }
+func (m *Votes) String() string { return proto.CompactTextString(m) }
+func (*Votes) ProtoMessage()    {}
+func (*Votes) Descriptor() ([]byte, []int) {
+	return fileDescriptor_263938a3aa2a585e, []int{4}
+}
+func (m *Votes) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Votes) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Votes.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Votes) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Votes.Merge(m, src)
+}
+func (m *Votes) XXX_Size() int {
+	return m.Size()
+}
+func (m *Votes) XXX_DiscardUnknown() {
+	xxx_messageInfo_Votes.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Votes proto.InternalMessageInfo
+
+func (m *Votes) GetVotes() []*Vote {
+	if m != nil {
+		return m.Votes
+	}
+	return nil
+}
+
+// Vote by a validator of a cross-chain Block.
+type Vote struct {
+	BlockHeader *BlockHeader `protobuf:"bytes,1,opt,name=block_header,json=blockHeader,proto3" json:"block_header,omitempty"`
+	BlockRoot   []byte       `protobuf:"bytes,2,opt,name=block_root,json=blockRoot,proto3" json:"block_root,omitempty"`
+	Signature   *SigTuple    `protobuf:"bytes,3,opt,name=signature,proto3" json:"signature,omitempty"`
+}
+
+func (m *Vote) Reset()         { *m = Vote{} }
+func (m *Vote) String() string { return proto.CompactTextString(m) }
+func (*Vote) ProtoMessage()    {}
+func (*Vote) Descriptor() ([]byte, []int) {
+	return fileDescriptor_263938a3aa2a585e, []int{5}
+}
+func (m *Vote) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Vote) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Vote.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Vote) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Vote.Merge(m, src)
+}
+func (m *Vote) XXX_Size() int {
+	return m.Size()
+}
+func (m *Vote) XXX_DiscardUnknown() {
+	xxx_messageInfo_Vote.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Vote proto.InternalMessageInfo
+
+func (m *Vote) GetBlockHeader() *BlockHeader {
+	if m != nil {
+		return m.BlockHeader
+	}
+	return nil
+}
+
+func (m *Vote) GetBlockRoot() []byte {
+	if m != nil {
+		return m.BlockRoot
+	}
+	return nil
+}
+
+func (m *Vote) GetSignature() *SigTuple {
 	if m != nil {
 		return m.Signature
 	}
@@ -311,7 +364,7 @@ func (m *BlockHeader) Reset()         { *m = BlockHeader{} }
 func (m *BlockHeader) String() string { return proto.CompactTextString(m) }
 func (*BlockHeader) ProtoMessage()    {}
 func (*BlockHeader) Descriptor() ([]byte, []int) {
-	return fileDescriptor_263938a3aa2a585e, []int{5}
+	return fileDescriptor_263938a3aa2a585e, []int{6}
 }
 func (m *BlockHeader) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -371,7 +424,7 @@ func (m *SigTuple) Reset()         { *m = SigTuple{} }
 func (m *SigTuple) String() string { return proto.CompactTextString(m) }
 func (*SigTuple) ProtoMessage()    {}
 func (*SigTuple) Descriptor() ([]byte, []int) {
-	return fileDescriptor_263938a3aa2a585e, []int{6}
+	return fileDescriptor_263938a3aa2a585e, []int{7}
 }
 func (m *SigTuple) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -415,11 +468,12 @@ func (m *SigTuple) GetSignature() []byte {
 }
 
 func init() {
-	proto.RegisterType((*MsgAggAttestations)(nil), "halo.attest.types.MsgAggAttestations")
-	proto.RegisterType((*AddAggAttestationsResponse)(nil), "halo.attest.types.AddAggAttestationsResponse")
-	proto.RegisterType((*AggAttestation)(nil), "halo.attest.types.AggAttestation")
-	proto.RegisterType((*Attestations)(nil), "halo.attest.types.Attestations")
+	proto.RegisterType((*MsgAddVotes)(nil), "halo.attest.types.MsgAddVotes")
+	proto.RegisterType((*AddVotesResponse)(nil), "halo.attest.types.AddVotesResponse")
 	proto.RegisterType((*Attestation)(nil), "halo.attest.types.Attestation")
+	proto.RegisterType((*AggVote)(nil), "halo.attest.types.AggVote")
+	proto.RegisterType((*Votes)(nil), "halo.attest.types.Votes")
+	proto.RegisterType((*Vote)(nil), "halo.attest.types.Vote")
 	proto.RegisterType((*BlockHeader)(nil), "halo.attest.types.BlockHeader")
 	proto.RegisterType((*SigTuple)(nil), "halo.attest.types.SigTuple")
 }
@@ -427,39 +481,39 @@ func init() {
 func init() { proto.RegisterFile("halo/attest/types/tx.proto", fileDescriptor_263938a3aa2a585e) }
 
 var fileDescriptor_263938a3aa2a585e = []byte{
-	// 501 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x54, 0x31, 0x6f, 0xd3, 0x40,
-	0x14, 0xee, 0xa5, 0xa1, 0x34, 0xcf, 0x56, 0x44, 0x6e, 0x00, 0x63, 0x8a, 0x15, 0x2c, 0x21, 0x59,
-	0xad, 0xb0, 0x45, 0x98, 0x80, 0xc9, 0x99, 0xe8, 0xd0, 0xe5, 0x52, 0x16, 0x96, 0xe8, 0x12, 0x9f,
-	0xce, 0x86, 0x34, 0x17, 0xdd, 0x5d, 0x22, 0x3a, 0x81, 0x90, 0xd8, 0xf9, 0x29, 0xfd, 0x19, 0x8c,
-	0x1d, 0x18, 0x60, 0x43, 0xc9, 0xd0, 0xbf, 0x81, 0x7c, 0x0e, 0xb1, 0x43, 0x0c, 0x33, 0x93, 0xfd,
-	0xde, 0xfb, 0xee, 0xbd, 0xef, 0xfb, 0xec, 0x77, 0xe0, 0xa6, 0x74, 0x22, 0x22, 0xaa, 0x35, 0x53,
-	0x3a, 0xd2, 0x97, 0x33, 0xa6, 0x22, 0xfd, 0x3e, 0x9c, 0x49, 0xa1, 0x05, 0xee, 0xe4, 0xb5, 0xb0,
-	0xa8, 0x85, 0xa6, 0xe6, 0xde, 0x1b, 0x0b, 0x75, 0x21, 0x54, 0x74, 0xa1, 0x78, 0xb4, 0x78, 0x9a,
-	0x3f, 0x0a, 0xac, 0xff, 0x19, 0x01, 0x3e, 0x53, 0x3c, 0xe6, 0x3c, 0x36, 0x78, 0xaa, 0x33, 0x31,
-	0x55, 0xf8, 0x08, 0x5a, 0x74, 0xae, 0x53, 0x21, 0x33, 0x7d, 0xe9, 0xa0, 0x2e, 0x0a, 0x5a, 0xa4,
-	0x4c, 0xe0, 0x18, 0x80, 0x72, 0x2e, 0x19, 0xa7, 0x9a, 0x29, 0xa7, 0xd1, 0xdd, 0x0f, 0xac, 0xde,
-	0xa3, 0x70, 0x67, 0x6a, 0xb8, 0xdd, 0x95, 0x54, 0x0e, 0xbd, 0x68, 0x7f, 0xba, 0xb9, 0x3a, 0x2e,
-	0x5b, 0xfa, 0x47, 0xe0, 0xc6, 0x49, 0xf2, 0x07, 0x0d, 0xc2, 0xd4, 0x4c, 0x4c, 0x15, 0xf3, 0x7f,
-	0x20, 0x68, 0x6f, 0xd7, 0x70, 0x0c, 0xf6, 0x68, 0x22, 0xc6, 0xef, 0x86, 0x29, 0xa3, 0x09, 0x93,
-	0x86, 0xa4, 0xd5, 0xf3, 0x6a, 0x58, 0xf4, 0x73, 0xd8, 0x2b, 0x83, 0x22, 0xd6, 0xa8, 0x0c, 0x70,
-	0x00, 0x77, 0x16, 0x74, 0x92, 0x25, 0x54, 0x0b, 0x39, 0x54, 0x4c, 0x0f, 0xb3, 0xc4, 0x69, 0x74,
-	0x51, 0xd0, 0x24, 0xed, 0x4d, 0x7e, 0xc0, 0xf4, 0x69, 0x82, 0x1f, 0x02, 0x14, 0xc3, 0xa4, 0x10,
-	0xda, 0xd9, 0xef, 0xa2, 0xc0, 0x26, 0x2d, 0x93, 0x21, 0x42, 0x68, 0xfc, 0x12, 0x40, 0x65, 0x7c,
-	0x4a, 0xf5, 0x5c, 0x32, 0xe5, 0x34, 0x8d, 0x1f, 0x0f, 0x6a, 0x98, 0x0c, 0x32, 0x7e, 0x3e, 0x9f,
-	0x4d, 0x18, 0xa9, 0xc0, 0x7d, 0x02, 0xf6, 0x96, 0xf5, 0x7d, 0xb0, 0x69, 0x25, 0x76, 0x90, 0x69,
-	0x57, 0x27, 0xac, 0xea, 0xed, 0xd6, 0x19, 0xff, 0x1b, 0x02, 0xeb, 0x7f, 0x35, 0xeb, 0x39, 0xb4,
-	0x36, 0xea, 0x9d, 0xa6, 0x21, 0xf2, 0x4f, 0xaf, 0x4a, 0xb4, 0x7f, 0x0e, 0x56, 0x85, 0x1f, 0xbe,
-	0x0f, 0x87, 0xe3, 0x94, 0x66, 0xd3, 0x9c, 0x0a, 0x32, 0x54, 0x6e, 0x9b, 0xf8, 0x34, 0xc1, 0x77,
-	0xe1, 0x20, 0x65, 0x19, 0x4f, 0xf5, 0x9a, 0xe3, 0x3a, 0xc2, 0x18, 0x9a, 0x29, 0x55, 0xe9, 0x9a,
-	0x95, 0x79, 0xf7, 0x5f, 0xc3, 0xe1, 0xef, 0x61, 0xf8, 0x04, 0x3a, 0xa5, 0x4a, 0x9a, 0x24, 0x92,
-	0x29, 0x65, 0x7a, 0xdb, 0xa4, 0x94, 0x1f, 0x17, 0xf9, 0x7c, 0x49, 0x4a, 0x25, 0x8d, 0x42, 0xe7,
-	0x26, 0xd1, 0xfb, 0x00, 0x70, 0xa6, 0xf8, 0x80, 0xc9, 0x45, 0x36, 0x66, 0xf8, 0x2d, 0xe0, 0xdd,
-	0xff, 0x1b, 0x3f, 0xae, 0x11, 0xbe, 0xbb, 0x8d, 0xee, 0x93, 0xba, 0x8f, 0xff, 0xd7, 0x6d, 0x71,
-	0x6f, 0x7d, 0xbc, 0xb9, 0x3a, 0x46, 0xfd, 0x93, 0xaf, 0x4b, 0x0f, 0x5d, 0x2f, 0x3d, 0xf4, 0x73,
-	0xe9, 0xa1, 0x2f, 0x2b, 0x6f, 0xef, 0x7a, 0xe5, 0xed, 0x7d, 0x5f, 0x79, 0x7b, 0x6f, 0x3a, 0x3b,
-	0x97, 0xc7, 0xe8, 0xc0, 0x5c, 0x07, 0xcf, 0x7e, 0x05, 0x00, 0x00, 0xff, 0xff, 0xba, 0xc1, 0xe0,
-	0x08, 0x58, 0x04, 0x00, 0x00,
+	// 505 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x54, 0x31, 0x6f, 0xd3, 0x4c,
+	0x18, 0xce, 0x35, 0x4e, 0x9b, 0xbc, 0x8e, 0xfa, 0x35, 0x37, 0x7c, 0x35, 0x06, 0xac, 0xc8, 0x0c,
+	0x44, 0xad, 0xb0, 0x21, 0x48, 0x48, 0xc0, 0xe4, 0x4e, 0x65, 0xa8, 0x90, 0xae, 0x85, 0x81, 0x25,
+	0xba, 0xc4, 0x27, 0xdf, 0x89, 0x24, 0x17, 0xf9, 0x2e, 0x11, 0xdd, 0x10, 0xbf, 0x80, 0xff, 0xc0,
+	0xc2, 0xd8, 0x9f, 0xc1, 0xd8, 0x05, 0x89, 0x11, 0x25, 0x43, 0xff, 0x06, 0xf2, 0x39, 0xb1, 0x23,
+	0x6a, 0x31, 0x22, 0x26, 0xfb, 0xde, 0xf7, 0xd1, 0xf3, 0xbc, 0xcf, 0xbd, 0x7a, 0x0e, 0x5c, 0x4e,
+	0xc7, 0x32, 0xa4, 0x5a, 0x33, 0xa5, 0x43, 0x7d, 0x39, 0x63, 0x2a, 0xd4, 0x1f, 0x82, 0x59, 0x2a,
+	0xb5, 0xc4, 0x9d, 0xac, 0x17, 0xe4, 0xbd, 0xc0, 0xf4, 0xdc, 0xc3, 0x91, 0x54, 0x13, 0xa9, 0xc2,
+	0x89, 0x4a, 0xc2, 0xc5, 0x93, 0xec, 0x93, 0x63, 0xfd, 0x09, 0xd8, 0x67, 0x2a, 0x89, 0xe2, 0xf8,
+	0xad, 0xd4, 0x4c, 0xe1, 0x7b, 0xd0, 0xa2, 0x73, 0xcd, 0x65, 0x2a, 0xf4, 0xa5, 0x83, 0xba, 0xa8,
+	0xd7, 0x22, 0x65, 0x01, 0x3f, 0x86, 0xc6, 0x22, 0x83, 0x39, 0x3b, 0xdd, 0x7a, 0xcf, 0xee, 0xbb,
+	0xc1, 0x2d, 0xa1, 0x20, 0x4a, 0x92, 0x8c, 0x89, 0xe4, 0xc0, 0x17, 0xfb, 0x9f, 0x6e, 0xae, 0x8e,
+	0x4a, 0x06, 0x1f, 0xc3, 0xc1, 0x46, 0x8b, 0x30, 0x35, 0x93, 0x53, 0xc5, 0xfc, 0xef, 0x08, 0xec,
+	0xc8, 0x70, 0x50, 0x2d, 0xe4, 0x14, 0x47, 0xd0, 0x1e, 0x8e, 0xe5, 0xe8, 0xfd, 0x80, 0x33, 0x1a,
+	0xb3, 0xd4, 0x8c, 0x61, 0xf7, 0xbd, 0x0a, 0xb1, 0x93, 0x0c, 0x76, 0x6a, 0x50, 0xc4, 0x1e, 0x96,
+	0x07, 0x7c, 0x1f, 0x20, 0xa7, 0x48, 0xa5, 0xd4, 0xce, 0x4e, 0x17, 0xf5, 0xda, 0xa4, 0x65, 0x2a,
+	0x44, 0x4a, 0x8d, 0x5f, 0x02, 0x28, 0x91, 0x4c, 0xa9, 0x9e, 0xa7, 0x4c, 0x39, 0x75, 0x63, 0xe6,
+	0x6e, 0x05, 0xff, 0xb9, 0x48, 0x2e, 0xe6, 0xb3, 0x31, 0x23, 0x5b, 0x70, 0xfc, 0x10, 0xfe, 0x5b,
+	0xd0, 0xb1, 0x88, 0xa9, 0x96, 0xa9, 0x1a, 0x70, 0xaa, 0xb8, 0x63, 0x19, 0x81, 0xfd, 0xb2, 0x7c,
+	0x4a, 0x15, 0xf7, 0xbf, 0x22, 0xd8, 0x5b, 0x5f, 0xc7, 0x3f, 0xee, 0xc9, 0x7f, 0x06, 0x8d, 0x7c,
+	0xff, 0x8f, 0x36, 0x1b, 0x46, 0x86, 0xe0, 0xb0, 0x82, 0x60, 0x6b, 0xbd, 0xfe, 0x17, 0x04, 0xd6,
+	0x5f, 0xf2, 0xf7, 0x1c, 0x5a, 0xc5, 0xc0, 0x4e, 0xdd, 0xd0, 0xff, 0xd1, 0x5e, 0x89, 0xf6, 0x2f,
+	0xc0, 0xde, 0x52, 0xc5, 0x77, 0xa0, 0x39, 0xe2, 0x54, 0x4c, 0x07, 0x22, 0x36, 0x73, 0x5a, 0x64,
+	0xcf, 0x9c, 0x5f, 0xc5, 0xf8, 0x7f, 0xd8, 0xe5, 0x4c, 0x24, 0x3c, 0xd7, 0xb7, 0xc8, 0xfa, 0x84,
+	0x31, 0x58, 0x66, 0xd1, 0x75, 0x33, 0x95, 0xf9, 0xf7, 0xdf, 0x40, 0x73, 0x23, 0x86, 0x8f, 0xa1,
+	0x53, 0x2c, 0x7f, 0x40, 0xe3, 0x38, 0x65, 0x4a, 0x19, 0xee, 0x36, 0x39, 0x28, 0x1a, 0x51, 0x5e,
+	0xcf, 0x32, 0x56, 0x3a, 0x59, 0xfb, 0x2c, 0x0a, 0xfd, 0x18, 0xe0, 0x4c, 0x25, 0xe7, 0x2c, 0x5d,
+	0x88, 0x11, 0xc3, 0xaf, 0xa1, 0x59, 0x64, 0xb3, 0xea, 0x36, 0xb7, 0xb2, 0xeb, 0x3e, 0xa8, 0x8a,
+	0xe3, 0x6f, 0x61, 0x73, 0x1b, 0x1f, 0x6f, 0xae, 0x8e, 0xd0, 0xc9, 0xf1, 0xb7, 0xa5, 0x87, 0xae,
+	0x97, 0x1e, 0xfa, 0xb9, 0xf4, 0xd0, 0xe7, 0x95, 0x57, 0xbb, 0x5e, 0x79, 0xb5, 0x1f, 0x2b, 0xaf,
+	0xf6, 0xae, 0x73, 0xeb, 0x61, 0x19, 0xee, 0x9a, 0xa7, 0xe2, 0xe9, 0xaf, 0x00, 0x00, 0x00, 0xff,
+	0xff, 0x04, 0xa4, 0x7d, 0xbe, 0x74, 0x04, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -474,8 +528,8 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgServiceClient interface {
-	// AddAggAttestations processes aggregate attestations included in a proposed or finalised block.
-	AddAggAttestations(ctx context.Context, in *MsgAggAttestations, opts ...grpc.CallOption) (*AddAggAttestationsResponse, error)
+	// AddVotes processes aggregate votes included in a proposed or finalised block.
+	AddVotes(ctx context.Context, in *MsgAddVotes, opts ...grpc.CallOption) (*AddVotesResponse, error)
 }
 
 type msgServiceClient struct {
@@ -486,9 +540,9 @@ func NewMsgServiceClient(cc grpc1.ClientConn) MsgServiceClient {
 	return &msgServiceClient{cc}
 }
 
-func (c *msgServiceClient) AddAggAttestations(ctx context.Context, in *MsgAggAttestations, opts ...grpc.CallOption) (*AddAggAttestationsResponse, error) {
-	out := new(AddAggAttestationsResponse)
-	err := c.cc.Invoke(ctx, "/halo.attest.types.MsgService/AddAggAttestations", in, out, opts...)
+func (c *msgServiceClient) AddVotes(ctx context.Context, in *MsgAddVotes, opts ...grpc.CallOption) (*AddVotesResponse, error) {
+	out := new(AddVotesResponse)
+	err := c.cc.Invoke(ctx, "/halo.attest.types.MsgService/AddVotes", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -497,36 +551,36 @@ func (c *msgServiceClient) AddAggAttestations(ctx context.Context, in *MsgAggAtt
 
 // MsgServiceServer is the server API for MsgService service.
 type MsgServiceServer interface {
-	// AddAggAttestations processes aggregate attestations included in a proposed or finalised block.
-	AddAggAttestations(context.Context, *MsgAggAttestations) (*AddAggAttestationsResponse, error)
+	// AddVotes processes aggregate votes included in a proposed or finalised block.
+	AddVotes(context.Context, *MsgAddVotes) (*AddVotesResponse, error)
 }
 
 // UnimplementedMsgServiceServer can be embedded to have forward compatible implementations.
 type UnimplementedMsgServiceServer struct {
 }
 
-func (*UnimplementedMsgServiceServer) AddAggAttestations(ctx context.Context, req *MsgAggAttestations) (*AddAggAttestationsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AddAggAttestations not implemented")
+func (*UnimplementedMsgServiceServer) AddVotes(ctx context.Context, req *MsgAddVotes) (*AddVotesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddVotes not implemented")
 }
 
 func RegisterMsgServiceServer(s grpc1.Server, srv MsgServiceServer) {
 	s.RegisterService(&_MsgService_serviceDesc, srv)
 }
 
-func _MsgService_AddAggAttestations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgAggAttestations)
+func _MsgService_AddVotes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgAddVotes)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MsgServiceServer).AddAggAttestations(ctx, in)
+		return srv.(MsgServiceServer).AddVotes(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/halo.attest.types.MsgService/AddAggAttestations",
+		FullMethod: "/halo.attest.types.MsgService/AddVotes",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServiceServer).AddAggAttestations(ctx, req.(*MsgAggAttestations))
+		return srv.(MsgServiceServer).AddVotes(ctx, req.(*MsgAddVotes))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -536,15 +590,15 @@ var _MsgService_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*MsgServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "AddAggAttestations",
-			Handler:    _MsgService_AddAggAttestations_Handler,
+			MethodName: "AddVotes",
+			Handler:    _MsgService_AddVotes_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "halo/attest/types/tx.proto",
 }
 
-func (m *MsgAggAttestations) Marshal() (dAtA []byte, err error) {
+func (m *MsgAddVotes) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -554,20 +608,20 @@ func (m *MsgAggAttestations) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgAggAttestations) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgAddVotes) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgAggAttestations) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgAddVotes) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Aggregates) > 0 {
-		for iNdEx := len(m.Aggregates) - 1; iNdEx >= 0; iNdEx-- {
+	if len(m.Votes) > 0 {
+		for iNdEx := len(m.Votes) - 1; iNdEx >= 0; iNdEx-- {
 			{
-				size, err := m.Aggregates[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				size, err := m.Votes[iNdEx].MarshalToSizedBuffer(dAtA[:i])
 				if err != nil {
 					return 0, err
 				}
@@ -588,7 +642,7 @@ func (m *MsgAggAttestations) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *AddAggAttestationsResponse) Marshal() (dAtA []byte, err error) {
+func (m *AddVotesResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -598,114 +652,16 @@ func (m *AddAggAttestationsResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *AddAggAttestationsResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *AddVotesResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *AddAggAttestationsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *AddVotesResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	return len(dAtA) - i, nil
-}
-
-func (m *AggAttestation) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *AggAttestation) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *AggAttestation) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Signatures) > 0 {
-		for iNdEx := len(m.Signatures) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Signatures[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintTx(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x22
-		}
-	}
-	if len(m.BlockRoot) > 0 {
-		i -= len(m.BlockRoot)
-		copy(dAtA[i:], m.BlockRoot)
-		i = encodeVarintTx(dAtA, i, uint64(len(m.BlockRoot)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if m.ValidatorSetId != 0 {
-		i = encodeVarintTx(dAtA, i, uint64(m.ValidatorSetId))
-		i--
-		dAtA[i] = 0x10
-	}
-	if m.BlockHeader != nil {
-		{
-			size, err := m.BlockHeader.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintTx(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *Attestations) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *Attestations) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Attestations) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Attestations) > 0 {
-		for iNdEx := len(m.Attestations) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Attestations[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintTx(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0xa
-		}
-	}
 	return len(dAtA) - i, nil
 }
 
@@ -729,6 +685,162 @@ func (m *Attestation) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.ValidatorsHash) > 0 {
+		i -= len(m.ValidatorsHash)
+		copy(dAtA[i:], m.ValidatorsHash)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.ValidatorsHash)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.Signatures) > 0 {
+		for iNdEx := len(m.Signatures) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Signatures[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintTx(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if len(m.BlockRoot) > 0 {
+		i -= len(m.BlockRoot)
+		copy(dAtA[i:], m.BlockRoot)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.BlockRoot)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.BlockHeader != nil {
+		{
+			size, err := m.BlockHeader.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintTx(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *AggVote) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *AggVote) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *AggVote) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Signatures) > 0 {
+		for iNdEx := len(m.Signatures) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Signatures[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintTx(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if len(m.BlockRoot) > 0 {
+		i -= len(m.BlockRoot)
+		copy(dAtA[i:], m.BlockRoot)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.BlockRoot)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.BlockHeader != nil {
+		{
+			size, err := m.BlockHeader.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintTx(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *Votes) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Votes) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Votes) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Votes) > 0 {
+		for iNdEx := len(m.Votes) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Votes[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintTx(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *Vote) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Vote) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Vote) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
 	if m.Signature != nil {
 		{
 			size, err := m.Signature.MarshalToSizedBuffer(dAtA[:i])
@@ -739,19 +851,14 @@ func (m *Attestation) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i = encodeVarintTx(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x22
+		dAtA[i] = 0x1a
 	}
 	if len(m.BlockRoot) > 0 {
 		i -= len(m.BlockRoot)
 		copy(dAtA[i:], m.BlockRoot)
 		i = encodeVarintTx(dAtA, i, uint64(len(m.BlockRoot)))
 		i--
-		dAtA[i] = 0x1a
-	}
-	if m.ValidatorSetId != 0 {
-		i = encodeVarintTx(dAtA, i, uint64(m.ValidatorSetId))
-		i--
-		dAtA[i] = 0x10
+		dAtA[i] = 0x12
 	}
 	if m.BlockHeader != nil {
 		{
@@ -856,7 +963,7 @@ func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *MsgAggAttestations) Size() (n int) {
+func (m *MsgAddVotes) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -866,8 +973,8 @@ func (m *MsgAggAttestations) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovTx(uint64(l))
 	}
-	if len(m.Aggregates) > 0 {
-		for _, e := range m.Aggregates {
+	if len(m.Votes) > 0 {
+		for _, e := range m.Votes {
 			l = e.Size()
 			n += 1 + l + sovTx(uint64(l))
 		}
@@ -875,7 +982,7 @@ func (m *MsgAggAttestations) Size() (n int) {
 	return n
 }
 
-func (m *AddAggAttestationsResponse) Size() (n int) {
+func (m *AddVotesResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -884,7 +991,7 @@ func (m *AddAggAttestationsResponse) Size() (n int) {
 	return n
 }
 
-func (m *AggAttestation) Size() (n int) {
+func (m *Attestation) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -894,8 +1001,32 @@ func (m *AggAttestation) Size() (n int) {
 		l = m.BlockHeader.Size()
 		n += 1 + l + sovTx(uint64(l))
 	}
-	if m.ValidatorSetId != 0 {
-		n += 1 + sovTx(uint64(m.ValidatorSetId))
+	l = len(m.BlockRoot)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	if len(m.Signatures) > 0 {
+		for _, e := range m.Signatures {
+			l = e.Size()
+			n += 1 + l + sovTx(uint64(l))
+		}
+	}
+	l = len(m.ValidatorsHash)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	return n
+}
+
+func (m *AggVote) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.BlockHeader != nil {
+		l = m.BlockHeader.Size()
+		n += 1 + l + sovTx(uint64(l))
 	}
 	l = len(m.BlockRoot)
 	if l > 0 {
@@ -910,14 +1041,14 @@ func (m *AggAttestation) Size() (n int) {
 	return n
 }
 
-func (m *Attestations) Size() (n int) {
+func (m *Votes) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if len(m.Attestations) > 0 {
-		for _, e := range m.Attestations {
+	if len(m.Votes) > 0 {
+		for _, e := range m.Votes {
 			l = e.Size()
 			n += 1 + l + sovTx(uint64(l))
 		}
@@ -925,7 +1056,7 @@ func (m *Attestations) Size() (n int) {
 	return n
 }
 
-func (m *Attestation) Size() (n int) {
+func (m *Vote) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -934,9 +1065,6 @@ func (m *Attestation) Size() (n int) {
 	if m.BlockHeader != nil {
 		l = m.BlockHeader.Size()
 		n += 1 + l + sovTx(uint64(l))
-	}
-	if m.ValidatorSetId != 0 {
-		n += 1 + sovTx(uint64(m.ValidatorSetId))
 	}
 	l = len(m.BlockRoot)
 	if l > 0 {
@@ -991,7 +1119,7 @@ func sovTx(x uint64) (n int) {
 func sozTx(x uint64) (n int) {
 	return sovTx(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *MsgAggAttestations) Unmarshal(dAtA []byte) error {
+func (m *MsgAddVotes) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1014,10 +1142,10 @@ func (m *MsgAggAttestations) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgAggAttestations: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgAddVotes: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgAggAttestations: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgAddVotes: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1054,7 +1182,7 @@ func (m *MsgAggAttestations) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Aggregates", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Votes", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -1081,8 +1209,8 @@ func (m *MsgAggAttestations) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Aggregates = append(m.Aggregates, &AggAttestation{})
-			if err := m.Aggregates[len(m.Aggregates)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			m.Votes = append(m.Votes, &AggVote{})
+			if err := m.Votes[len(m.Votes)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -1107,7 +1235,7 @@ func (m *MsgAggAttestations) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *AddAggAttestationsResponse) Unmarshal(dAtA []byte) error {
+func (m *AddVotesResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1130,269 +1258,12 @@ func (m *AddAggAttestationsResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: AddAggAttestationsResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: AddVotesResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: AddAggAttestationsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: AddVotesResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
-		default:
-			iNdEx = preIndex
-			skippy, err := skipTx(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthTx
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *AggAttestation) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowTx
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: AggAttestation: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: AggAttestation: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BlockHeader", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.BlockHeader == nil {
-				m.BlockHeader = &BlockHeader{}
-			}
-			if err := m.BlockHeader.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ValidatorSetId", wireType)
-			}
-			m.ValidatorSetId = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.ValidatorSetId |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BlockRoot", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.BlockRoot = append(m.BlockRoot[:0], dAtA[iNdEx:postIndex]...)
-			if m.BlockRoot == nil {
-				m.BlockRoot = []byte{}
-			}
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Signatures", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Signatures = append(m.Signatures, &SigTuple{})
-			if err := m.Signatures[len(m.Signatures)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipTx(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthTx
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Attestations) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowTx
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Attestations: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Attestations: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Attestations", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Attestations = append(m.Attestations, &Attestation{})
-			if err := m.Attestations[len(m.Attestations)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipTx(dAtA[iNdEx:])
@@ -1480,25 +1351,6 @@ func (m *Attestation) Unmarshal(dAtA []byte) error {
 			}
 			iNdEx = postIndex
 		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ValidatorSetId", wireType)
-			}
-			m.ValidatorSetId = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.ValidatorSetId |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field BlockRoot", wireType)
 			}
@@ -1532,7 +1384,433 @@ func (m *Attestation) Unmarshal(dAtA []byte) error {
 				m.BlockRoot = []byte{}
 			}
 			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Signatures", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Signatures = append(m.Signatures, &SigTuple{})
+			if err := m.Signatures[len(m.Signatures)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValidatorsHash", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ValidatorsHash = append(m.ValidatorsHash[:0], dAtA[iNdEx:postIndex]...)
+			if m.ValidatorsHash == nil {
+				m.ValidatorsHash = []byte{}
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *AggVote) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AggVote: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AggVote: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BlockHeader", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.BlockHeader == nil {
+				m.BlockHeader = &BlockHeader{}
+			}
+			if err := m.BlockHeader.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BlockRoot", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.BlockRoot = append(m.BlockRoot[:0], dAtA[iNdEx:postIndex]...)
+			if m.BlockRoot == nil {
+				m.BlockRoot = []byte{}
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Signatures", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Signatures = append(m.Signatures, &SigTuple{})
+			if err := m.Signatures[len(m.Signatures)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Votes) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Votes: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Votes: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Votes", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Votes = append(m.Votes, &Vote{})
+			if err := m.Votes[len(m.Votes)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Vote) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Vote: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Vote: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BlockHeader", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.BlockHeader == nil {
+				m.BlockHeader = &BlockHeader{}
+			}
+			if err := m.BlockHeader.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BlockRoot", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.BlockRoot = append(m.BlockRoot[:0], dAtA[iNdEx:postIndex]...)
+			if m.BlockRoot == nil {
+				m.BlockRoot = []byte{}
+			}
+			iNdEx = postIndex
+		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Signature", wireType)
 			}

@@ -3,6 +3,7 @@ package app
 import (
 	attestkeeper "github.com/omni-network/omni/halo/attest/keeper"
 	atypes "github.com/omni-network/omni/halo/attest/types"
+	"github.com/omni-network/omni/halo/comet"
 	evmengkeeper "github.com/omni-network/omni/halo/evmengine/keeper"
 	"github.com/omni-network/omni/lib/engine"
 	"github.com/omni-network/omni/lib/errors"
@@ -53,7 +54,7 @@ type App struct {
 	DistrKeeper           distrkeeper.Keeper
 	ConsensusParamsKeeper consensuskeeper.Keeper
 	EVMEngKeeper          *evmengkeeper.Keeper
-	AttestKeeper          attestkeeper.Keeper
+	AttestKeeper          *attestkeeper.Keeper
 }
 
 // newApp returns a reference to an initialized App.
@@ -61,13 +62,13 @@ func newApp(
 	logger log.Logger,
 	db dbm.DB,
 	ethCl engine.API,
-	attestI atypes.Attester,
+	voter atypes.Voter,
 	baseAppOpts ...func(*baseapp.BaseApp),
 ) (*App, error) {
 	depCfg := depinject.Configs(
 		DepConfig(),
 		depinject.Supply(
-			logger, ethCl, attestI,
+			logger, ethCl, voter,
 		),
 	)
 
@@ -130,6 +131,13 @@ func (App) ExportAppStateAndValidators(_ bool, _, _ []string) (servertypes.Expor
 // SimulationManager implements the SimulationApp interface.
 func (App) SimulationManager() *module.SimulationManager {
 	return nil
+}
+
+// SetCometAPI sets the comet API client.
+// TODO(corver): Figure out how to use depinject to set this.
+func (a App) SetCometAPI(api comet.API) {
+	a.AttestKeeper.SetCometAPI(api)
+	a.EVMEngKeeper.SetCometAPI(api)
 }
 
 var (

@@ -19,6 +19,8 @@ func (s proposalServer) ExecutionPayload(ctx context.Context, msg *types.MsgExec
 		return nil, err
 	}
 
+	// TODO(corver): If this validator is proposer for next block, we should trigger block building.
+
 	return &types.ExecutionPayloadResponse{}, nil
 }
 

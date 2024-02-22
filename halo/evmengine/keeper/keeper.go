@@ -3,6 +3,7 @@ package keeper
 import (
 	"fmt"
 
+	"github.com/omni-network/omni/halo/comet"
 	"github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/lib/engine"
 
@@ -20,6 +21,7 @@ type Keeper struct {
 	ethCl        engine.API
 	txConfig     client.TxConfig
 	providers    []types.CPayloadProvider
+	cmtAPI       comet.API
 }
 
 func NewKeeper(
@@ -41,6 +43,11 @@ func NewKeeper(
 // TODO(corver): Figure out how to use depinject for this.
 func (k *Keeper) AddProvider(p types.CPayloadProvider) {
 	k.providers = append(k.providers, p)
+}
+
+// SetCometAPI sets the comet API client.
+func (k *Keeper) SetCometAPI(c comet.API) {
+	k.cmtAPI = c
 }
 
 // Logger returns a module-specific logger.

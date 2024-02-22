@@ -1,4 +1,4 @@
-package attester
+package voter
 
 import (
 	"context"
@@ -22,33 +22,33 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-var _ types.Attester = (*Attester)(nil)
+var _ types.Voter = (*Voter)(nil)
 
-// Attester implements the types.Attester interface.
-// It is responsible for creating and persisting attestations.
-// The goal is to ensure "all blocks are attested to".
-type Attester struct {
+// Voter implements the types.Voter interface.
+// It is responsible for creating and persisting votes.
+// The goal is to ensure "all blocks are votes for".
+type Voter struct {
 	path    string
 	privKey crypto.PrivKey
 	chains  map[uint64]string
 	address common.Address
 
 	mu        sync.Mutex
-	available []*types.Attestation
-	proposed  []*types.Attestation
-	committed []*types.Attestation
+	available []*types.Vote
+	proposed  []*types.Vote
+	committed []*types.Vote
 }
 
 // GenEmptyStateFile generates an empty attester state file at the given path.
-// This must be called before LoadAttester.
+// This must be called before LoadVoter.
 func GenEmptyStateFile(path string) error {
-	return (&Attester{path: path}).saveUnsafe()
+	return (&Voter{path: path}).saveUnsafe()
 }
 
-// LoadAttester returns a new attester with state loaded from disk.
-func LoadAttester(ctx context.Context, privKey crypto.PrivKey, path string, provider xchain.Provider,
+// LoadVoter returns a new attester with state loaded from disk.
+func LoadVoter(ctx context.Context, privKey crypto.PrivKey, path string, provider xchain.Provider,
 	chains map[uint64]string,
-) (*Attester, error) {
+) (*Voter, error) {
 	if len(privKey.PubKey().Bytes()) != 33 {
 		return nil, errors.New("invalid private key")
 	}
@@ -63,7 +63,7 @@ func LoadAttester(ctx context.Context, privKey crypto.PrivKey, path string, prov
 		return nil, err
 	}
 
-	a := Attester{
+	a := Voter{
 		privKey: privKey,
 		address: addr,
 		path:    path,
@@ -94,36 +94,36 @@ func LoadAttester(ctx context.Context, privKey crypto.PrivKey, path string, prov
 }
 
 // Attest creates an attestation for the given block and adds it to the internal state.
-func (a *Attester) Attest(_ context.Context, block xchain.Block) error {
+func (a *Voter) Attest(_ context.Context, block xchain.Block) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	att, err := CreateAttestation(a.privKey, block)
+	vote, err := CreateVote(a.privKey, block)
 	if err != nil {
 		return err
 	}
 
 	// Ensure attestation is sequential and not a duplicate.
-	latest, ok := a.latestByChainUnsafe(att.BlockHeader.ChainId)
-	if ok && latest.BlockHeader.Height >= att.BlockHeader.Height {
+	latest, ok := a.latestByChainUnsafe(vote.BlockHeader.ChainId)
+	if ok && latest.BlockHeader.Height >= vote.BlockHeader.Height {
 		return errors.New("attestation height already exists",
-			"latest", latest.BlockHeader.Height, "new", att.BlockHeader.Height)
-	} else if ok && latest.BlockHeader.Height+1 != att.BlockHeader.Height {
+			"latest", latest.BlockHeader.Height, "new", vote.BlockHeader.Height)
+	} else if ok && latest.BlockHeader.Height+1 != vote.BlockHeader.Height {
 		return errors.New("attestation is not sequential",
-			"existing", latest.BlockHeader.Height, "new", att.BlockHeader.Height)
+			"existing", latest.BlockHeader.Height, "new", vote.BlockHeader.Height)
 	}
 
-	a.available = append(a.available, att)
+	a.available = append(a.available, vote)
 
 	lag := time.Since(block.Timestamp).Seconds()
-	createLag.WithLabelValues(a.chains[att.BlockHeader.ChainId]).Set(lag)
-	createHeight.WithLabelValues(a.chains[att.BlockHeader.ChainId]).Set(float64(att.BlockHeader.Height))
+	createLag.WithLabelValues(a.chains[vote.BlockHeader.ChainId]).Set(lag)
+	createHeight.WithLabelValues(a.chains[vote.BlockHeader.ChainId]).Set(float64(vote.BlockHeader.Height))
 
 	return a.saveUnsafe()
 }
 
 // GetAvailable returns all the available attestations.
-func (a *Attester) GetAvailable() []*types.Attestation {
+func (a *Voter) GetAvailable() []*types.Vote {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
@@ -131,19 +131,19 @@ func (a *Attester) GetAvailable() []*types.Attestation {
 }
 
 // SetProposed sets the attestations as proposed.
-func (a *Attester) SetProposed(headers []*types.BlockHeader) error {
+func (a *Voter) SetProposed(headers []*types.BlockHeader) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
 	proposed := headerMap(headers)
 
-	var newAvailable, newProposed []*types.Attestation
-	for _, att := range a.availableAndProposedUnsafe() {
+	var newAvailable, newProposed []*types.Vote
+	for _, vote := range a.availableAndProposedUnsafe() {
 		// If proposed, move it to the proposed list.
-		if proposed[att.BlockHeader.ToXChain()] {
-			newProposed = append(newProposed, att)
+		if proposed[vote.BlockHeader.ToXChain()] {
+			newProposed = append(newProposed, vote)
 		} else { // Otherwise, keep or move it to in the available list.
-			newAvailable = append(newAvailable, att)
+			newAvailable = append(newAvailable, vote)
 		}
 	}
 
@@ -154,7 +154,7 @@ func (a *Attester) SetProposed(headers []*types.BlockHeader) error {
 }
 
 // SetCommitted sets the attestations as committed. Persisting the result to disk.
-func (a *Attester) SetCommitted(headers []*types.BlockHeader) error {
+func (a *Voter) SetCommitted(headers []*types.BlockHeader) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
@@ -162,13 +162,13 @@ func (a *Attester) SetCommitted(headers []*types.BlockHeader) error {
 
 	newCommitted := a.committed
 
-	var newAvailable []*types.Attestation
-	for _, att := range a.availableAndProposedUnsafe() {
+	var newAvailable []*types.Vote
+	for _, vote := range a.availableAndProposedUnsafe() {
 		// If newly committed, add to committed.
-		if committed[att.BlockHeader.ToXChain()] {
-			newCommitted = append(newCommitted, att)
+		if committed[vote.BlockHeader.ToXChain()] {
+			newCommitted = append(newCommitted, vote)
 		} else { // Otherwise, keep/move it back to available.
-			newAvailable = append(newAvailable, att)
+			newAvailable = append(newAvailable, vote)
 		}
 	}
 
@@ -177,14 +177,14 @@ func (a *Attester) SetCommitted(headers []*types.BlockHeader) error {
 	a.committed = pruneLatestPerChain(newCommitted)
 
 	// Update committed height metrics.
-	for _, att := range a.committed {
-		commitHeight.WithLabelValues(a.chains[att.BlockHeader.ChainId]).Set(float64(att.BlockHeader.Height))
+	for _, vote := range a.committed {
+		commitHeight.WithLabelValues(a.chains[vote.BlockHeader.ChainId]).Set(float64(vote.BlockHeader.Height))
 	}
 
 	return a.saveUnsafe()
 }
 
-func (a *Attester) LocalAddress() common.Address {
+func (a *Voter) LocalAddress() common.Address {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
@@ -193,8 +193,8 @@ func (a *Attester) LocalAddress() common.Address {
 
 // availableAndProposed returns all the available and proposed attestations.
 // It is unsafe since it assumes the lock is held.
-func (a *Attester) availableAndProposedUnsafe() []*types.Attestation {
-	var resp []*types.Attestation
+func (a *Voter) availableAndProposedUnsafe() []*types.Vote {
+	var resp []*types.Vote
 	resp = append(resp, a.available...)
 	resp = append(resp, a.proposed...)
 
@@ -203,15 +203,15 @@ func (a *Attester) availableAndProposedUnsafe() []*types.Attestation {
 
 // LatestByChainUnsafe returns the latest attestation for the given chain.
 // It is unsafe since it assumes the lock is held.
-func (a *Attester) latestByChainUnsafe(chainID uint64) (*types.Attestation, bool) {
+func (a *Voter) latestByChainUnsafe(chainID uint64) (*types.Vote, bool) {
 	var found bool
-	resp := &types.Attestation{BlockHeader: &types.BlockHeader{}} // Zero value is safe to use.
-	iter := func(atts []*types.Attestation) {
-		for _, att := range atts {
-			if att.BlockHeader.ChainId != chainID || att.BlockHeader.Height <= resp.BlockHeader.Height {
+	resp := &types.Vote{BlockHeader: &types.BlockHeader{}} // Zero value is safe to use.
+	iter := func(votes []*types.Vote) {
+		for _, vote := range votes {
+			if vote.BlockHeader.ChainId != chainID || vote.BlockHeader.Height <= resp.BlockHeader.Height {
 				continue
 			}
-			resp = att
+			resp = vote
 			found = true
 		}
 	}
@@ -224,8 +224,8 @@ func (a *Attester) latestByChainUnsafe(chainID uint64) (*types.Attestation, bool
 }
 
 // saveUnsafe saves the state to disk. It is unsafe since it assumes the lock is held.
-func (a *Attester) saveUnsafe() error {
-	sortAtts := func(atts []*types.Attestation) {
+func (a *Voter) saveUnsafe() error {
+	sortVotes := func(atts []*types.Vote) {
 		sort.Slice(atts, func(i, j int) bool {
 			if atts[i].BlockHeader.ChainId != atts[j].BlockHeader.ChainId {
 				return atts[i].BlockHeader.ChainId < atts[j].BlockHeader.ChainId
@@ -234,9 +234,9 @@ func (a *Attester) saveUnsafe() error {
 			return atts[i].BlockHeader.Height < atts[j].BlockHeader.Height
 		})
 	}
-	sortAtts(a.available)
-	sortAtts(a.proposed)
-	sortAtts(a.committed)
+	sortVotes(a.available)
+	sortVotes(a.proposed)
+	sortVotes(a.committed)
 
 	s := stateJSON{
 		Available: a.available,
@@ -258,11 +258,11 @@ func (a *Attester) saveUnsafe() error {
 }
 
 // instrumentUnsafe updates metrics. It is unsafe since it assumes the lock is held.
-func (a *Attester) instrumentUnsafe() {
-	count := func(atts []*types.Attestation, gaugeVec *prometheus.GaugeVec) {
+func (a *Voter) instrumentUnsafe() {
+	count := func(atts []*types.Vote, gaugeVec *prometheus.GaugeVec) {
 		counts := make(map[uint64]int)
-		for _, att := range atts {
-			counts[att.BlockHeader.ChainId]++
+		for _, vote := range atts {
+			counts[vote.BlockHeader.ChainId]++
 		}
 
 		for chain, count := range counts {
@@ -276,9 +276,9 @@ func (a *Attester) instrumentUnsafe() {
 
 // stateJSON is the JSON representation of the attester state.
 type stateJSON struct {
-	Available []*types.Attestation `json:"available"`
-	Proposed  []*types.Attestation `json:"proposed"`
-	Committed []*types.Attestation `json:"committed"`
+	Available []*types.Vote `json:"available"`
+	Proposed  []*types.Vote `json:"proposed"`
+	Committed []*types.Vote `json:"committed"`
 }
 
 // loadState loads a path state from the given path.
@@ -307,21 +307,21 @@ func headerMap(headers []*types.BlockHeader) map[xchain.BlockHeader]bool {
 }
 
 // pruneLatestPerChain returns only the latest attestation per chain.
-func pruneLatestPerChain(atts []*types.Attestation) []*types.Attestation {
-	latest := make(map[uint64]*types.Attestation)
-	for _, att := range atts {
-		latestAtt, ok := latest[att.BlockHeader.ChainId]
-		if ok && latestAtt.BlockHeader.Height >= att.BlockHeader.Height {
+func pruneLatestPerChain(atts []*types.Vote) []*types.Vote {
+	latest := make(map[uint64]*types.Vote)
+	for _, vote := range atts {
+		latestAtt, ok := latest[vote.BlockHeader.ChainId]
+		if ok && latestAtt.BlockHeader.Height >= vote.BlockHeader.Height {
 			continue
 		}
 
-		latest[att.BlockHeader.ChainId] = att
+		latest[vote.BlockHeader.ChainId] = vote
 	}
 
 	// Flatten
-	resp := make([]*types.Attestation, 0, len(latest))
-	for _, att := range latest {
-		resp = append(resp, att)
+	resp := make([]*types.Vote, 0, len(latest))
+	for _, vote := range latest {
+		resp = append(resp, vote)
 	}
 
 	return resp

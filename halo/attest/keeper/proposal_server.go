@@ -12,20 +12,20 @@ import (
 )
 
 type proposalServer struct {
-	Keeper
+	*Keeper
 	types.UnimplementedMsgServiceServer
 }
 
-// AddAggAttestations handles aggregate attestations proposed in a block.
-func (s proposalServer) AddAggAttestations(ctx context.Context, msg *types.MsgAggAttestations,
-) (*types.AddAggAttestationsResponse, error) {
-	localHeaders := headersByAddress(msg.Aggregates, s.attester.LocalAddress())
-	if err := s.attester.SetProposed(localHeaders); err != nil {
+// AddVotes processes votes proposed in a block.
+func (s proposalServer) AddVotes(ctx context.Context, msg *types.MsgAddVotes,
+) (*types.AddVotesResponse, error) {
+	localHeaders := headersByAddress(msg.Votes, s.voter.LocalAddress())
+	if err := s.voter.SetProposed(localHeaders); err != nil {
 		return nil, errors.Wrap(err, "set committed")
 	}
 
-	if len(msg.Aggregates) == 0 {
-		return &types.AddAggAttestationsResponse{}, nil
+	if len(msg.Votes) == 0 {
+		return &types.AddVotesResponse{}, nil
 	}
 
 	// Make nice logs
@@ -35,7 +35,7 @@ func (s proposalServer) AddAggAttestations(ctx context.Context, msg *types.MsgAg
 	}
 	attrs := []any{
 		slog.Int("attestations", len(localHeaders)),
-		log.Hex7("validator", s.attester.LocalAddress().Bytes()),
+		log.Hex7("validator", s.voter.LocalAddress().Bytes()),
 	}
 	for cid, hs := range heights {
 		attrs = append(attrs, slog.String(
@@ -44,14 +44,14 @@ func (s proposalServer) AddAggAttestations(ctx context.Context, msg *types.MsgAg
 		))
 	}
 
-	log.Debug(ctx, "Marked local attestations as proposed", attrs...)
+	log.Debug(ctx, "Marked local votes as proposed", attrs...)
 
-	return &types.AddAggAttestationsResponse{}, nil
+	return &types.AddVotesResponse{}, nil
 }
 
 // NewProposalServer returns an implementation of the MsgServer interface
 // for the provided Keeper.
-func NewProposalServer(keeper Keeper) types.MsgServiceServer {
+func NewProposalServer(keeper *Keeper) types.MsgServiceServer {
 	return &proposalServer{Keeper: keeper}
 }
 

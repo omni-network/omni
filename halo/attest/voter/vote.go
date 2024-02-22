@@ -1,4 +1,4 @@
-package attester
+package voter
 
 import (
 	"github.com/omni-network/omni/halo/attest/types"
@@ -9,8 +9,8 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 )
 
-// CreateAttestation creates an attestation for the given block.
-func CreateAttestation(privKey crypto.PrivKey, block xchain.Block) (*types.Attestation, error) {
+// CreateVote creates an attestation for the given block.
+func CreateVote(privKey crypto.PrivKey, block xchain.Block) (*types.Vote, error) {
 	pubkey := privKey.PubKey().Bytes()
 	if len(pubkey) != 33 {
 		return nil, errors.New("invalid pubkey length", "length", len(pubkey))
@@ -32,7 +32,7 @@ func CreateAttestation(privKey crypto.PrivKey, block xchain.Block) (*types.Attes
 		return nil, err
 	}
 
-	return &types.Attestation{
+	return &types.Vote{
 		BlockHeader: &types.BlockHeader{
 			ChainId: block.SourceChainID,
 			Height:  block.BlockHeight,
