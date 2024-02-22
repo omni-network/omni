@@ -48,6 +48,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
     ) public {
         numOperators = uint32(bound(numOperators_, 2, maxOperatorCount));
         numDelegatorsPerOp = uint32(bound(numDelegatorsPerOp_, 1, 30));
+
         initialOperatorStake = uint96(bound(initialOperatorStake_, minimumOperatorStake, 100 ether));
         initialDelegatorStake = uint96(bound(initialDelegatorStake_, 500 gwei, 5 ether));
 

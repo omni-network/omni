@@ -45,7 +45,9 @@ contract AVSBase is EigenLayerTestHelper {
 
     function _deployGoerliAVS() internal returns (OmniAVS) {
         DeployGoerliAVS deployer = new DeployGoerliAVS();
-        return OmniAVS(deployer.deploy(omniAVSOwner, address(proxyAdmin), address(portal), omniChainId));
+        return OmniAVS(
+            deployer.prankDeploy(proxyAdminOwner, omniAVSOwner, address(proxyAdmin), address(portal), omniChainId)
+        );
     }
 
     function _deployLocalAVS() internal returns (OmniAVS) {

@@ -333,6 +333,9 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
         delete _strategyParams;
 
         for (uint256 i = 0; i < params.length; i++) {
+            // TODO: add zero addr and duplicate strat tests
+            require(address(params[i].strategy) != address(0), "OmniAVS: zero strategy");
+
             // ensure no duplicates
             for (uint256 j = i + 1; j < params.length; j++) {
                 require(address(params[i].strategy) != address(params[j].strategy), "OmniAVS: duplicate strategy");

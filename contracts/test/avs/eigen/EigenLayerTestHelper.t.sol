@@ -9,8 +9,13 @@ import { ISignatureUtils } from "eigenlayer-contracts/src/contracts/interfaces/I
 
 import { EigenLayerDeployer } from "./EigenLayerDeployer.t.sol";
 
+import { console } from "forge-std/console.sol";
 import { Vm } from "forge-std/Vm.sol";
 import { Test } from "forge-std/Test.sol";
+
+interface IERC20Wrapper {
+    function underlying() external view returns (address);
+}
 
 /**
  * @dev Repurposed from eignlayer-contracts src/test/utils/Operators.sol
@@ -73,9 +78,6 @@ contract EigenLayerTestHelper is Test, EigenLayerDeployer {
         uint256 operatorSharesBefore = strategyManager.stakerStrategyShares(sender, stratToDepositTo);
         uint256 expectedSharesOut = stratToDepositTo.underlyingToShares(amountToDeposit);
 
-        // NOTE: this only works for strategies with underlying ERC20 tokens
-        // this will not work for beacon eth strategy, which is currently untested
-        // TODO: add tests for beacon eth strategy, figure out how to support it here
         deal(address(underlyingToken), sender, amountToDeposit);
         cheats.startPrank(sender);
         underlyingToken.approve(address(strategyManager), type(uint256).max);

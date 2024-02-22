@@ -11,7 +11,6 @@ library EigenM2GoerliDeployments {
     address internal constant StrategyManager = 0x779d1b5315df083e3F9E94cB495983500bA8E907;
     address internal constant Slasher = 0xD11d60b669Ecf7bE10329726043B3ac07B380C22;
     address internal constant AVSDirectory = 0x0AC9694c271eFbA6059e9783769e515E8731f935;
-    address internal constant BeaconChainETHSTrategy = 0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0;
 
     // strategies
     address internal constant stETHStrategy = 0xB613E78E2068d7489bb66419fB1cfa11275d14da;
