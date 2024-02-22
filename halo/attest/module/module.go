@@ -118,6 +118,7 @@ type ModuleInputs struct {
 	EthClient    engine.API
 	SKeeper      *skeeper.Keeper
 	Voter        types.Voter
+	Namer        types.ChainNameFunc
 }
 
 type ModuleOutputs struct {
@@ -134,6 +135,7 @@ func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
 		in.EthClient,
 		in.SKeeper,
 		in.Voter,
+		in.Namer,
 	)
 	if err != nil {
 		return ModuleOutputs{}, err

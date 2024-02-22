@@ -63,12 +63,13 @@ func newApp(
 	db dbm.DB,
 	ethCl engine.API,
 	voter atypes.Voter,
+	namer atypes.ChainNameFunc,
 	baseAppOpts ...func(*baseapp.BaseApp),
 ) (*App, error) {
 	depCfg := depinject.Configs(
 		DepConfig(),
 		depinject.Supply(
-			logger, ethCl, voter,
+			logger, ethCl, voter, namer,
 		),
 	)
 
