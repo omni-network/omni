@@ -12,6 +12,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 type Sender struct {
@@ -61,13 +62,13 @@ func (s Sender) sendTransaction(
 	destChainID uint64,
 	data []byte,
 	value *big.Int,
-) error {
+) (*types.Receipt, error) {
 	if s.txMgr == nil {
-		return errors.New("tx mgr not found", "dest_chain_id", destChainID)
+		return nil, errors.New("tx mgr not found", "dest_chain_id", destChainID)
 	}
 
 	if destChainID == s.chainID {
-		return errors.New("unexpected destination chain [BUG]",
+		return nil, errors.New("unexpected destination chain [BUG]",
 			"got", destChainID, "expect", s.chainID)
 	}
 
@@ -85,10 +86,12 @@ func (s Sender) sendTransaction(
 
 	rec, err := s.txMgr.Send(ctx, candidate)
 	if err != nil {
-		return errors.Wrap(err, "failed to send tx")
+		return nil, errors.Wrap(err, "failed to send tx")
 	}
+
+	log.Info(ctx, "Sent tx", "status", rec.Status, "gas_used", rec.GasUsed, "tx_hash", rec.TxHash.String())
 
 	log.Hex7("Sent tx", rec.TxHash.Bytes())
 
-	return nil
+	return rec, nil
 }

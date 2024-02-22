@@ -9,7 +9,6 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	// "github.com/omni-network/omni/test/e2e/txsenders".
 	"github.com/omni-network/omni/test/e2e/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"

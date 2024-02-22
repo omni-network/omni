@@ -12,6 +12,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 type TxSenderManager struct {
@@ -19,7 +20,7 @@ type TxSenderManager struct {
 	abi      *abi.ABI
 }
 
-type XCallOpts struct {
+type XCallArgs struct {
 	DestChainID uint64
 	Address     common.Address
 	Data        []byte
@@ -72,19 +73,24 @@ func (s TxSenderManager) deployTx(ctx context.Context, portal netman.Portal, pri
 	return nil
 }
 
-func (s TxSenderManager) SendXCallTransaction(ctx context.Context, opts XCallOpts, value *big.Int, sourceChainID uint64) error {
+func (s TxSenderManager) SendXCallTransaction(ctx context.Context, args XCallArgs, value *big.Int, sourceChainID uint64) (*types.Receipt, error) {
 	txSender := s.txSender[sourceChainID]
-	bytes, err := s.XCallBytes(opts.DestChainID, opts.Address, opts.Data, opts.GasLimit)
+	bytes, err := s.XCallBytes(args.DestChainID, args.Address, args.Data, args.GasLimit)
 	if err != nil {
-		return errors.Wrap(err, "get xsubmit bytes")
+		return nil, errors.Wrap(err, "get xsubmit bytes")
 	}
 
-	return txSender.sendTransaction(ctx, opts.DestChainID, bytes, value)
+	receipt, err := txSender.sendTransaction(ctx, args.DestChainID, bytes, value)
+	if err != nil {
+		return nil, errors.Wrap(err, "send xsubmit")
+	}
+
+	return receipt, nil
 }
 
 // getXCallBytes returns the byte representation of the xcall function call.
-func (s TxSenderManager) XCallBytes(destChainID uint64, address common.Address, data []byte, gasLimit uint64) ([]byte, error) {
-	bytes, err := s.abi.Pack("xcall", destChainID, address, data)
+func (s TxSenderManager) XCallBytes(destChainID uint64, to common.Address, data []byte, gasLimit uint64) ([]byte, error) {
+	bytes, err := s.abi.Pack("xcall", destChainID, to, data) // TODO: add gas limit?
 	if err != nil {
 		return nil, errors.Wrap(err, "pack xcall")
 	}
