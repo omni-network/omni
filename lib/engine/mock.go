@@ -108,6 +108,34 @@ func (m *Mock) ForkchoiceUpdatedV2(ctx context.Context, update engine.Forkchoice
 		},
 	}
 
+	// Maybe update head
+	if m.head.Hash() != update.HeadBlockHash {
+		var found bool
+		for _, payload := range m.payloads {
+			block, err := engine.ExecutableDataToBlock(payload, nil, nil)
+			if err != nil {
+				return engine.ForkChoiceResponse{}, errors.Wrap(err, "executable data to block")
+			}
+
+			if block.Hash() != update.HeadBlockHash {
+				continue
+			}
+
+			if err := verifyChild(m.head, block); err != nil {
+				return engine.ForkChoiceResponse{}, err
+			}
+
+			m.head = block
+			found = true
+
+			break
+		}
+		if !found {
+			return engine.ForkChoiceResponse{}, errors.New("forkchoice block not found",
+				log.Hex7("forkchoice", m.head.Hash().Bytes()))
+		}
+	}
+
 	// If we have payload attributes, make a new payload
 	if attrs != nil {
 		payload, err := makePayload(m.fuzzer, m.head.NumberU64()+1, attrs.Timestamp, update.HeadBlockHash)
@@ -123,37 +151,6 @@ func (m *Mock) ForkchoiceUpdatedV2(ctx context.Context, update engine.Forkchoice
 		m.payloads[id] = payload
 
 		resp.PayloadID = &id
-	}
-
-	if m.head.Hash() == update.HeadBlockHash {
-		// Head is already up to date
-		return resp, nil
-	}
-
-	// Update head
-	var found bool
-	for _, payload := range m.payloads {
-		block, err := engine.ExecutableDataToBlock(payload, nil, nil)
-		if err != nil {
-			return engine.ForkChoiceResponse{}, errors.Wrap(err, "executable data to block")
-		}
-
-		if block.Hash() != update.HeadBlockHash {
-			continue
-		}
-
-		if err := verifyChild(m.head, block); err != nil {
-			return engine.ForkChoiceResponse{}, err
-		}
-
-		m.head = block
-		found = true
-
-		break
-	}
-	if !found {
-		return engine.ForkChoiceResponse{}, errors.New("forkchoice block not found",
-			log.Hex7("forkchoice", m.head.Hash().Bytes()))
 	}
 
 	log.Debug(ctx, "Engine mock forkchoice updated",

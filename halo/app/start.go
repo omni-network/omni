@@ -4,7 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/omni-network/omni/halo/attest/attester"
+	"github.com/omni-network/omni/halo/attest/voter"
+	"github.com/omni-network/omni/halo/comet"
 	halocfg "github.com/omni-network/omni/halo/config"
 	"github.com/omni-network/omni/lib/engine"
 	"github.com/omni-network/omni/lib/errors"
@@ -19,6 +20,7 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
+	rpclocal "github.com/cometbft/cometbft/rpc/client/local"
 	cmttypes "github.com/cometbft/cometbft/types"
 
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -109,7 +111,7 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 		return nil, errors.Wrap(err, "create xchain provider")
 	}
 
-	attestI, err := attester.LoadAttester(ctx, privVal.Key.PrivKey, cfg.AttestStateFile(), xprovider,
+	voterI, err := voter.LoadVoter(ctx, privVal.Key.PrivKey, cfg.AttestStateFile(), xprovider,
 		network.ChainNamesByIDs())
 	if err != nil {
 		return nil, errors.Wrap(err, "create attester")
@@ -120,17 +122,22 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 		newSDKLogger(ctx),
 		db,
 		ethCl,
-		attestI,
+		voterI,
 		baseAppOpts...,
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "create app")
 	}
 
+	app.EVMEngKeeper.SetBuildDelay(cfg.EVMBuildDelay)
+	app.EVMEngKeeper.SetBuildOptimistic(cfg.EVMBuildOptimistic)
+
 	cmtNode, err := newCometNode(ctx, &cfg.Comet, app, privVal)
 	if err != nil {
 		return nil, errors.Wrap(err, "create comet node")
 	}
+
+	app.SetCometAPI(comet.NewAPI(rpclocal.New(cmtNode)))
 
 	log.Info(ctx, "Starting CometBFT", "listeners", cmtNode.Listeners())
 
@@ -143,6 +150,9 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 		if err := cmtNode.Stop(); err != nil {
 			return errors.Wrap(err, "stop comet node")
 		}
+		cmtNode.Wait()
+
+		// Note that cometBFT doesn't shut down cleanly. It leaves a bunch of goroutines running...
 
 		return nil
 	}, nil

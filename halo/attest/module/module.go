@@ -64,12 +64,12 @@ func (AppModuleBasic) RegisterGRPCGatewayRoutes(client.Context, *runtime.ServeMu
 type AppModule struct {
 	AppModuleBasic
 
-	keeper keeper.Keeper
+	keeper *keeper.Keeper
 }
 
 func NewAppModule(
 	cdc codec.Codec,
-	keeper keeper.Keeper,
+	keeper *keeper.Keeper,
 ) AppModule {
 	return AppModule{
 		AppModuleBasic: NewAppModuleBasic(cdc),
@@ -117,13 +117,13 @@ type ModuleInputs struct {
 	TXConfig     client.TxConfig
 	EthClient    engine.API
 	SKeeper      *skeeper.Keeper
-	Attester     types.Attester
+	Voter        types.Voter
 }
 
 type ModuleOutputs struct {
 	depinject.Out
 
-	Keeper keeper.Keeper
+	Keeper *keeper.Keeper
 	Module appmodule.AppModule
 }
 
@@ -133,7 +133,7 @@ func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
 		in.StoreService,
 		in.EthClient,
 		in.SKeeper,
-		in.Attester,
+		in.Voter,
 	)
 	if err != nil {
 		return ModuleOutputs{}, err

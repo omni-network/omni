@@ -26,6 +26,8 @@ func Test_translateSubmission(t *testing.T) {
 		sub.Msgs[i].TxHash = common.Hash{}
 	}
 
+	sub.ValidatorSetHash = common.Hash{} // TODO(corver): Remove once supported.
+
 	require.Equal(t, sub, reversedSub)
 }
 
@@ -57,7 +59,7 @@ func submissionFromBinding(sub bindings.XTypesSubmission, destChainID uint64) xc
 
 	return xchain.Submission{
 		AttestationRoot: sub.AttestationRoot,
-		ValidatorSetID:  sub.ValidatorSetId,
+		// ValidatorSetHash: sub.ValidatorSetHash, // Uncomment when supported
 		BlockHeader: xchain.BlockHeader{
 			SourceChainID: sub.BlockHeader.SourceChainId,
 			BlockHeight:   sub.BlockHeader.BlockHeight,

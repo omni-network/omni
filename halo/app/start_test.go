@@ -2,6 +2,7 @@ package app_test
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -21,6 +22,7 @@ import (
 
 func TestSmoke(t *testing.T) {
 	t.Parallel()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -53,7 +55,7 @@ func TestSmoke(t *testing.T) {
 
 	srcChain := uint64(999)
 	// Ensure all blocks are attested and approved.
-	cprov.Subscribe(ctx, srcChain, 0, "test", func(ctx context.Context, approved xchain.AggAttestation) error {
+	cprov.Subscribe(ctx, srcChain, 0, "test", func(ctx context.Context, approved xchain.Attestation) error {
 		require.Equal(t, srcChain, approved.SourceChainID)
 		t.Logf("cprovider streamed approved block: %d", approved.BlockHeight)
 		if approved.BlockHeight >= target {
@@ -75,11 +77,16 @@ func setupSimnet(t *testing.T) haloapp.Config {
 
 	cmtCfg := halocmd.DefaultCometConfig(homeDir)
 	cmtCfg.BaseConfig.DBBackend = string(db.MemDBBackend)
+
+	haloCfg := halocfg.DefaultConfig()
+	haloCfg.HomeDir = homeDir
+	haloCfg.BackendType = string(db.MemDBBackend)
+	haloCfg.EVMBuildDelay = time.Millisecond
+
 	cfg := haloapp.Config{
-		Config: halocfg.DefaultConfig(),
+		Config: haloCfg,
 		Comet:  cmtCfg,
 	}
-	cfg.HomeDir = homeDir
 
 	err := halocmd.InitFiles(log.WithNoopLogger(context.Background()), halocmd.InitConfig{
 		HomeDir: homeDir,
@@ -87,6 +94,19 @@ func setupSimnet(t *testing.T) haloapp.Config {
 		Cosmos:  true,
 	})
 	require.NoError(t, err)
+
+	// CometBFT doesn't shutdown cleanly. It leaves goroutines running that write to disk.
+	// The test sometimes fails with: TempDir RemoveAll cleanup: unlinkat ... directory not empty
+	// Manually retry deleting everything a few times. This should prevent to test from flapping.
+	t.Cleanup(func() {
+		for i := 0; i < 5; i++ {
+			err := os.RemoveAll(homeDir)
+			if err == nil {
+				break
+			}
+			time.Sleep(time.Millisecond * 500)
+		}
+	})
 
 	return cfg
 }

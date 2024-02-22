@@ -9,19 +9,19 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-var _ types.QueryServer = Keeper{}
+var _ types.QueryServer = (*Keeper)(nil)
 
 const approvedFromLimit = 100
 
-func (k Keeper) ApprovedFrom(ctx context.Context, req *types.ApprovedFromRequest) (*types.ApprovedFromResponse, error) {
+func (k *Keeper) AttestationsFrom(ctx context.Context, req *types.AttestationsFromRequest) (*types.AttestationsFromResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
-	aggs, err := k.approvedFrom(ctx, req.ChainId, req.FromHeight, approvedFromLimit)
+	atts, err := k.attestationFrom(ctx, req.ChainId, req.FromHeight, approvedFromLimit)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &types.ApprovedFromResponse{Aggregates: aggs}, nil
+	return &types.AttestationsFromResponse{Attestations: atts}, nil
 }

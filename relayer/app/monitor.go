@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
 
@@ -22,6 +23,7 @@ func startMonitoring(ctx context.Context, network netconf.Network, xprovider xch
 	addr common.Address, rpcClients map[uint64]*ethclient.Client) {
 	for _, srcChain := range network.Chains {
 		go monitorAccountForever(ctx, addr, srcChain.Name, rpcClients[srcChain.ID])
+		go monitorHeadsForever(ctx, srcChain.Name, rpcClients[srcChain.ID])
 
 		for _, dstChain := range network.Chains {
 			if srcChain.ID == dstChain.ID {
@@ -30,6 +32,33 @@ func startMonitoring(ctx context.Context, network netconf.Network, xprovider xch
 
 			go monitorOffsetsForever(ctx, srcChain.ID, dstChain.ID, srcChain.Name, dstChain.Name, xprovider)
 		}
+	}
+}
+
+// monitorHeadsForever blocks and periodically monitors the heads of the given chain.
+func monitorHeadsForever(ctx context.Context, chainName string, client *ethclient.Client) {
+	ticker := time.NewTicker(time.Second * 30)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			monitorHeadsOnce(ctx, chainName, client)
+		}
+	}
+}
+
+// monitorHeadsOnce monitors the heads of the given chain.
+func monitorHeadsOnce(ctx context.Context, chainName string, client *ethclient.Client) {
+	for _, typ := range []string{"latest", "safe", "finalized"} {
+		head, err := getHead(ctx, client, typ)
+		if err != nil {
+			// Not all chains support all types, so just swallow the errors, this is best effort monitoring.
+			continue
+		}
+		headHeight.WithLabelValues(chainName, typ).Set(float64(head))
 	}
 }
 
@@ -143,4 +172,21 @@ func serveMonitoring(address string) <-chan error {
 	}()
 
 	return errChan
+}
+
+// getHead returns the head of the chain for the given type.
+func getHead(ctx context.Context, rpcClient *ethclient.Client, typ string) (uint64, error) {
+	var header *types.Header
+	err := rpcClient.Client().CallContext(
+		ctx,
+		&header,
+		"eth_getBlockByNumber",
+		typ,
+		false,
+	)
+	if err != nil {
+		return 0, errors.Wrap(err, "could not get block")
+	}
+
+	return header.Number.Uint64(), nil
 }

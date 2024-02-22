@@ -27,26 +27,26 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// ApprovedFromRequest queries halo for approved aggregate attestations for the given chain_id
+// ApprovedFromRequest queries halo for approved attestations for the given chain_id
 // and from the given height (inclusive). The response will contain at most max attestations sequentially
 // following from_height.
-type ApprovedFromRequest struct {
+type AttestationsFromRequest struct {
 	ChainId    uint64 `protobuf:"varint,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	FromHeight uint64 `protobuf:"varint,2,opt,name=from_height,json=fromHeight,proto3" json:"from_height,omitempty"`
 }
 
-func (m *ApprovedFromRequest) Reset()         { *m = ApprovedFromRequest{} }
-func (m *ApprovedFromRequest) String() string { return proto.CompactTextString(m) }
-func (*ApprovedFromRequest) ProtoMessage()    {}
-func (*ApprovedFromRequest) Descriptor() ([]byte, []int) {
+func (m *AttestationsFromRequest) Reset()         { *m = AttestationsFromRequest{} }
+func (m *AttestationsFromRequest) String() string { return proto.CompactTextString(m) }
+func (*AttestationsFromRequest) ProtoMessage()    {}
+func (*AttestationsFromRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_93d3f1745081aabb, []int{0}
 }
-func (m *ApprovedFromRequest) XXX_Unmarshal(b []byte) error {
+func (m *AttestationsFromRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *ApprovedFromRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *AttestationsFromRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_ApprovedFromRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_AttestationsFromRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -56,48 +56,48 @@ func (m *ApprovedFromRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte,
 		return b[:n], nil
 	}
 }
-func (m *ApprovedFromRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ApprovedFromRequest.Merge(m, src)
+func (m *AttestationsFromRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AttestationsFromRequest.Merge(m, src)
 }
-func (m *ApprovedFromRequest) XXX_Size() int {
+func (m *AttestationsFromRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *ApprovedFromRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_ApprovedFromRequest.DiscardUnknown(m)
+func (m *AttestationsFromRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_AttestationsFromRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ApprovedFromRequest proto.InternalMessageInfo
+var xxx_messageInfo_AttestationsFromRequest proto.InternalMessageInfo
 
-func (m *ApprovedFromRequest) GetChainId() uint64 {
+func (m *AttestationsFromRequest) GetChainId() uint64 {
 	if m != nil {
 		return m.ChainId
 	}
 	return 0
 }
 
-func (m *ApprovedFromRequest) GetFromHeight() uint64 {
+func (m *AttestationsFromRequest) GetFromHeight() uint64 {
 	if m != nil {
 		return m.FromHeight
 	}
 	return 0
 }
 
-type ApprovedFromResponse struct {
-	Aggregates []*AggAttestation `protobuf:"bytes,1,rep,name=aggregates,proto3" json:"aggregates,omitempty"`
+type AttestationsFromResponse struct {
+	Attestations []*Attestation `protobuf:"bytes,1,rep,name=attestations,proto3" json:"attestations,omitempty"`
 }
 
-func (m *ApprovedFromResponse) Reset()         { *m = ApprovedFromResponse{} }
-func (m *ApprovedFromResponse) String() string { return proto.CompactTextString(m) }
-func (*ApprovedFromResponse) ProtoMessage()    {}
-func (*ApprovedFromResponse) Descriptor() ([]byte, []int) {
+func (m *AttestationsFromResponse) Reset()         { *m = AttestationsFromResponse{} }
+func (m *AttestationsFromResponse) String() string { return proto.CompactTextString(m) }
+func (*AttestationsFromResponse) ProtoMessage()    {}
+func (*AttestationsFromResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_93d3f1745081aabb, []int{1}
 }
-func (m *ApprovedFromResponse) XXX_Unmarshal(b []byte) error {
+func (m *AttestationsFromResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *ApprovedFromResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *AttestationsFromResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_ApprovedFromResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_AttestationsFromResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -107,51 +107,50 @@ func (m *ApprovedFromResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte
 		return b[:n], nil
 	}
 }
-func (m *ApprovedFromResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ApprovedFromResponse.Merge(m, src)
+func (m *AttestationsFromResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AttestationsFromResponse.Merge(m, src)
 }
-func (m *ApprovedFromResponse) XXX_Size() int {
+func (m *AttestationsFromResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *ApprovedFromResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_ApprovedFromResponse.DiscardUnknown(m)
+func (m *AttestationsFromResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_AttestationsFromResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ApprovedFromResponse proto.InternalMessageInfo
+var xxx_messageInfo_AttestationsFromResponse proto.InternalMessageInfo
 
-func (m *ApprovedFromResponse) GetAggregates() []*AggAttestation {
+func (m *AttestationsFromResponse) GetAttestations() []*Attestation {
 	if m != nil {
-		return m.Aggregates
+		return m.Attestations
 	}
 	return nil
 }
 
 func init() {
-	proto.RegisterType((*ApprovedFromRequest)(nil), "halo.attest.types.ApprovedFromRequest")
-	proto.RegisterType((*ApprovedFromResponse)(nil), "halo.attest.types.ApprovedFromResponse")
+	proto.RegisterType((*AttestationsFromRequest)(nil), "halo.attest.types.AttestationsFromRequest")
+	proto.RegisterType((*AttestationsFromResponse)(nil), "halo.attest.types.AttestationsFromResponse")
 }
 
 func init() { proto.RegisterFile("halo/attest/types/query.proto", fileDescriptor_93d3f1745081aabb) }
 
 var fileDescriptor_93d3f1745081aabb = []byte{
-	// 263 bytes of a gzipped FileDescriptorProto
+	// 248 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0xcd, 0x48, 0xcc, 0xc9,
 	0xd7, 0x4f, 0x2c, 0x29, 0x49, 0x2d, 0x2e, 0xd1, 0x2f, 0xa9, 0x2c, 0x48, 0x2d, 0xd6, 0x2f, 0x2c,
 	0x4d, 0x2d, 0xaa, 0xd4, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x12, 0x04, 0x49, 0xeb, 0x41, 0xa4,
-	0xf5, 0xc0, 0xd2, 0x52, 0x52, 0x98, 0x3a, 0x4a, 0x2a, 0x20, 0xca, 0x95, 0x02, 0xb9, 0x84, 0x1d,
-	0x0b, 0x0a, 0x8a, 0xf2, 0xcb, 0x52, 0x53, 0xdc, 0x8a, 0xf2, 0x73, 0x83, 0x52, 0x0b, 0x4b, 0x53,
-	0x8b, 0x4b, 0x84, 0x24, 0xb9, 0x38, 0x92, 0x33, 0x12, 0x33, 0xf3, 0xe2, 0x33, 0x53, 0x24, 0x18,
-	0x15, 0x18, 0x35, 0x58, 0x82, 0xd8, 0xc1, 0x7c, 0xcf, 0x14, 0x21, 0x79, 0x2e, 0xee, 0xb4, 0xa2,
-	0xfc, 0xdc, 0xf8, 0x8c, 0xd4, 0xcc, 0xf4, 0x8c, 0x12, 0x09, 0x26, 0xb0, 0x2c, 0x17, 0x48, 0xc8,
-	0x03, 0x2c, 0xa2, 0x14, 0xc9, 0x25, 0x82, 0x6a, 0x64, 0x71, 0x41, 0x7e, 0x5e, 0x71, 0xaa, 0x90,
-	0x23, 0x17, 0x57, 0x62, 0x7a, 0x7a, 0x51, 0x6a, 0x7a, 0x62, 0x49, 0x6a, 0xb1, 0x04, 0xa3, 0x02,
-	0xb3, 0x06, 0xb7, 0x91, 0xa2, 0x1e, 0x86, 0x73, 0xf5, 0x1c, 0xd3, 0xd3, 0x1d, 0xc1, 0xfc, 0xc4,
-	0x92, 0xcc, 0xfc, 0xbc, 0x20, 0x24, 0x4d, 0x46, 0x59, 0x5c, 0xac, 0x81, 0x20, 0xbf, 0x0a, 0x25,
-	0x72, 0xf1, 0x20, 0xdb, 0x21, 0xa4, 0x86, 0xcd, 0x1c, 0x4c, 0x7f, 0x49, 0xa9, 0x13, 0x54, 0x07,
-	0x71, 0xac, 0x12, 0x83, 0x93, 0xf6, 0x89, 0x47, 0x72, 0x8c, 0x17, 0x1e, 0xc9, 0x31, 0x3e, 0x78,
-	0x24, 0xc7, 0x38, 0xe1, 0xb1, 0x1c, 0xc3, 0x85, 0xc7, 0x72, 0x0c, 0x37, 0x1e, 0xcb, 0x31, 0x44,
-	0x09, 0x62, 0x84, 0x67, 0x12, 0x1b, 0x38, 0x34, 0x8d, 0x01, 0x01, 0x00, 0x00, 0xff, 0xff, 0x96,
-	0xd1, 0x1d, 0x57, 0x9d, 0x01, 0x00, 0x00,
+	0xf5, 0xc0, 0xd2, 0x52, 0x52, 0x98, 0x3a, 0x4a, 0x2a, 0x20, 0xca, 0x95, 0x42, 0xb9, 0xc4, 0x1d,
+	0xc1, 0x12, 0x89, 0x25, 0x99, 0xf9, 0x79, 0xc5, 0x6e, 0x45, 0xf9, 0xb9, 0x41, 0xa9, 0x85, 0xa5,
+	0xa9, 0xc5, 0x25, 0x42, 0x92, 0x5c, 0x1c, 0xc9, 0x19, 0x89, 0x99, 0x79, 0xf1, 0x99, 0x29, 0x12,
+	0x8c, 0x0a, 0x8c, 0x1a, 0x2c, 0x41, 0xec, 0x60, 0xbe, 0x67, 0x8a, 0x90, 0x3c, 0x17, 0x77, 0x5a,
+	0x51, 0x7e, 0x6e, 0x7c, 0x46, 0x6a, 0x66, 0x7a, 0x46, 0x89, 0x04, 0x13, 0x58, 0x96, 0x0b, 0x24,
+	0xe4, 0x01, 0x16, 0x51, 0x8a, 0xe3, 0x92, 0xc0, 0x34, 0xb6, 0xb8, 0x20, 0x3f, 0xaf, 0x38, 0x55,
+	0xc8, 0x89, 0x8b, 0x27, 0x11, 0x49, 0x4e, 0x82, 0x51, 0x81, 0x59, 0x83, 0xdb, 0x48, 0x4e, 0x0f,
+	0xc3, 0xe1, 0x7a, 0x48, 0x46, 0x04, 0xa1, 0xe8, 0x31, 0x2a, 0xe3, 0x62, 0x0d, 0x04, 0x79, 0x5a,
+	0x28, 0x97, 0x4b, 0x00, 0xdd, 0x22, 0x21, 0x2d, 0xfc, 0x46, 0x21, 0x7b, 0x52, 0x4a, 0x9b, 0x28,
+	0xb5, 0x10, 0x97, 0x2b, 0x31, 0x38, 0x69, 0x9f, 0x78, 0x24, 0xc7, 0x78, 0xe1, 0x91, 0x1c, 0xe3,
+	0x83, 0x47, 0x72, 0x8c, 0x13, 0x1e, 0xcb, 0x31, 0x5c, 0x78, 0x2c, 0xc7, 0x70, 0xe3, 0xb1, 0x1c,
+	0x43, 0x94, 0x20, 0x46, 0x20, 0x27, 0xb1, 0x81, 0x83, 0xd8, 0x18, 0x10, 0x00, 0x00, 0xff, 0xff,
+	0x29, 0xdd, 0x82, 0xd5, 0xb2, 0x01, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -166,10 +165,10 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type QueryClient interface {
-	// ApprovedFrom queries halo for approved aggregate attestations for the given chain_id
+	// AttestationsFrom queries halo for approved attestations for the given chain_id
 	// and from the given height (inclusive). The response will contain at most max attestations sequentially
 	// following from_height.
-	ApprovedFrom(ctx context.Context, in *ApprovedFromRequest, opts ...grpc.CallOption) (*ApprovedFromResponse, error)
+	AttestationsFrom(ctx context.Context, in *AttestationsFromRequest, opts ...grpc.CallOption) (*AttestationsFromResponse, error)
 }
 
 type queryClient struct {
@@ -180,9 +179,9 @@ func NewQueryClient(cc grpc1.ClientConn) QueryClient {
 	return &queryClient{cc}
 }
 
-func (c *queryClient) ApprovedFrom(ctx context.Context, in *ApprovedFromRequest, opts ...grpc.CallOption) (*ApprovedFromResponse, error) {
-	out := new(ApprovedFromResponse)
-	err := c.cc.Invoke(ctx, "/halo.attest.types.Query/ApprovedFrom", in, out, opts...)
+func (c *queryClient) AttestationsFrom(ctx context.Context, in *AttestationsFromRequest, opts ...grpc.CallOption) (*AttestationsFromResponse, error) {
+	out := new(AttestationsFromResponse)
+	err := c.cc.Invoke(ctx, "/halo.attest.types.Query/AttestationsFrom", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -191,38 +190,38 @@ func (c *queryClient) ApprovedFrom(ctx context.Context, in *ApprovedFromRequest,
 
 // QueryServer is the server API for Query service.
 type QueryServer interface {
-	// ApprovedFrom queries halo for approved aggregate attestations for the given chain_id
+	// AttestationsFrom queries halo for approved attestations for the given chain_id
 	// and from the given height (inclusive). The response will contain at most max attestations sequentially
 	// following from_height.
-	ApprovedFrom(context.Context, *ApprovedFromRequest) (*ApprovedFromResponse, error)
+	AttestationsFrom(context.Context, *AttestationsFromRequest) (*AttestationsFromResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
 type UnimplementedQueryServer struct {
 }
 
-func (*UnimplementedQueryServer) ApprovedFrom(ctx context.Context, req *ApprovedFromRequest) (*ApprovedFromResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ApprovedFrom not implemented")
+func (*UnimplementedQueryServer) AttestationsFrom(ctx context.Context, req *AttestationsFromRequest) (*AttestationsFromResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AttestationsFrom not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
 	s.RegisterService(&_Query_serviceDesc, srv)
 }
 
-func _Query_ApprovedFrom_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ApprovedFromRequest)
+func _Query_AttestationsFrom_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AttestationsFromRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).ApprovedFrom(ctx, in)
+		return srv.(QueryServer).AttestationsFrom(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/halo.attest.types.Query/ApprovedFrom",
+		FullMethod: "/halo.attest.types.Query/AttestationsFrom",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).ApprovedFrom(ctx, req.(*ApprovedFromRequest))
+		return srv.(QueryServer).AttestationsFrom(ctx, req.(*AttestationsFromRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -232,15 +231,15 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*QueryServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "ApprovedFrom",
-			Handler:    _Query_ApprovedFrom_Handler,
+			MethodName: "AttestationsFrom",
+			Handler:    _Query_AttestationsFrom_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "halo/attest/types/query.proto",
 }
 
-func (m *ApprovedFromRequest) Marshal() (dAtA []byte, err error) {
+func (m *AttestationsFromRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -250,12 +249,12 @@ func (m *ApprovedFromRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *ApprovedFromRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *AttestationsFromRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ApprovedFromRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *AttestationsFromRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -273,7 +272,7 @@ func (m *ApprovedFromRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *ApprovedFromResponse) Marshal() (dAtA []byte, err error) {
+func (m *AttestationsFromResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -283,20 +282,20 @@ func (m *ApprovedFromResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *ApprovedFromResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *AttestationsFromResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ApprovedFromResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *AttestationsFromResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Aggregates) > 0 {
-		for iNdEx := len(m.Aggregates) - 1; iNdEx >= 0; iNdEx-- {
+	if len(m.Attestations) > 0 {
+		for iNdEx := len(m.Attestations) - 1; iNdEx >= 0; iNdEx-- {
 			{
-				size, err := m.Aggregates[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				size, err := m.Attestations[iNdEx].MarshalToSizedBuffer(dAtA[:i])
 				if err != nil {
 					return 0, err
 				}
@@ -321,7 +320,7 @@ func encodeVarintQuery(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *ApprovedFromRequest) Size() (n int) {
+func (m *AttestationsFromRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -336,14 +335,14 @@ func (m *ApprovedFromRequest) Size() (n int) {
 	return n
 }
 
-func (m *ApprovedFromResponse) Size() (n int) {
+func (m *AttestationsFromResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if len(m.Aggregates) > 0 {
-		for _, e := range m.Aggregates {
+	if len(m.Attestations) > 0 {
+		for _, e := range m.Attestations {
 			l = e.Size()
 			n += 1 + l + sovQuery(uint64(l))
 		}
@@ -357,7 +356,7 @@ func sovQuery(x uint64) (n int) {
 func sozQuery(x uint64) (n int) {
 	return sovQuery(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *ApprovedFromRequest) Unmarshal(dAtA []byte) error {
+func (m *AttestationsFromRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -380,10 +379,10 @@ func (m *ApprovedFromRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: ApprovedFromRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: AttestationsFromRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ApprovedFromRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: AttestationsFromRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -445,7 +444,7 @@ func (m *ApprovedFromRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *ApprovedFromResponse) Unmarshal(dAtA []byte) error {
+func (m *AttestationsFromResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -468,15 +467,15 @@ func (m *ApprovedFromResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: ApprovedFromResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: AttestationsFromResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ApprovedFromResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: AttestationsFromResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Aggregates", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Attestations", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -503,8 +502,8 @@ func (m *ApprovedFromResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Aggregates = append(m.Aggregates, &AggAttestation{})
-			if err := m.Aggregates[len(m.Aggregates)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			m.Attestations = append(m.Attestations, &Attestation{})
+			if err := m.Attestations[len(m.Attestations)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

@@ -10,39 +10,46 @@ option go_package = "halo/attest/types";
 service MsgService {
   option (cosmos.msg.v1.service) = true;
 
-  // AddAggAttestations processes aggregate attestations included in a proposed or finalised block.
-  rpc AddAggAttestations (MsgAggAttestations) returns (AddAggAttestationsResponse);
+  // AddVotes processes aggregate votes included in a proposed or finalised block.
+  rpc AddVotes (MsgAddVotes) returns (AddVotesResponse);
 }
 
 
-// MsgAggAttestations contains multiple aggregates for different cross-chain Blocks.
-message MsgAggAttestations {
+// MsgAddVotes contains multiple aggregated votes for different cross-chain Blocks.
+message MsgAddVotes {
   option (cosmos.msg.v1.signer) = "authority";
   string authority = 1;
-  repeated AggAttestation aggregates = 2;
+  repeated AggVote votes = 2;
 }
 
-message AddAggAttestationsResponse {}
+message AddVotesResponse {}
 
-// AggAttestation aggregates multiple attestation by a validator set of a cross-chain Block.
-message AggAttestation {
-  BlockHeader       block_header     = 1; // BlockHeader identifies the cross-chain Block
-  uint64            validator_set_id = 2; // Unique identified of the validator set included in this aggregate.
-  bytes             block_root       = 3; // Merkle root of the cross-chain Block
-  repeated SigTuple signatures       = 4; // Validator signatures and public keys
-}
-
-// Attestations contains multiple attestation by a validator of multiple cross-chain Blocks.
-message Attestations {
-  repeated Attestation attestations = 1;
-}
-
-// Attestation by a validator of a cross-chain Block.
+// Attestation contains quorum votes for a cross-chain block of a specific validator set.
 message Attestation {
+  BlockHeader       block_header     = 1; // BlockHeader identifies the cross-chain Block
+  bytes             block_root       = 2; // Merkle root of the cross-chain Block
+  repeated SigTuple signatures       = 3; // Validator signatures and public keys
+  bytes             validators_hash  = 4; // Merkle root hash of the validator set that approved this aggregate.
+}
+
+
+// AggVote aggregates multiple votes of a cross-chain Block.
+message AggVote {
+  BlockHeader       block_header     = 1; // BlockHeader identifies the cross-chain Block
+  bytes             block_root       = 2; // Merkle root of the cross-chain Block
+  repeated SigTuple signatures       = 3; // Validator signatures and public keys
+}
+
+// Votes contains multiple votes for different cross-chain Blocks. Usually by the same validator.
+message Votes {
+  repeated Vote votes = 1;
+}
+
+// Vote by a validator of a cross-chain Block.
+message Vote {
   BlockHeader block_header     = 1; // BlockHeader identifies the cross-chain Block
-  uint64      validator_set_id = 2; // Unique identified of the validator set included in this aggregate.
-  bytes       block_root       = 3; // Merkle root of the cross-chain Block
-  SigTuple    signature        = 4; // Validator signatures and public keys
+  bytes       block_root       = 2; // Merkle root of the cross-chain Block
+  SigTuple    signature        = 3; // Validator signatures and public keys
 }
 
 // BlockHeader uniquely identifies a cross chain block.

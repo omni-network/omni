@@ -8,13 +8,14 @@ import (
 	"strconv"
 
 	"github.com/omni-network/omni/halo/attest/types"
+	"github.com/omni-network/omni/halo/comet"
 	"github.com/omni-network/omni/lib/engine"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
+	cmttypes "github.com/cometbft/cometbft/types"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -29,65 +30,71 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 )
 
-var _ sdk.ExtendVoteHandler = Keeper{}.ExtendVote
-var _ sdk.VerifyVoteExtensionHandler = Keeper{}.VerifyVoteExtension
+var _ sdk.ExtendVoteHandler = (*Keeper)(nil).ExtendVote
+var _ sdk.VerifyVoteExtensionHandler = (*Keeper)(nil).VerifyVoteExtension
 
-// Keeper is the aggregate attestation keeper.
+// Keeper is the attestation keeper.
 // It keeps tracks of all attestations included on-chain and detects when they are approved.
 type Keeper struct {
-	aggTable     AggAttestationTable
-	sigTable     AttSignatureTable
+	attTable     AttestationTable
+	sigTable     SignatureTable
 	cdc          codec.BinaryCodec
 	storeService store.KVStoreService
 	ethCl        engine.API
-	attester     types.Attester
+	voter        types.Voter
 	skeeper      *skeeper.Keeper // TODO(corver): Define a interface for the methods we use.
+	cmtAPI       comet.API
 }
 
-// NewKeeper returns a new aggregate attestation keeper.
+// NewKeeper returns a new attestation keeper.
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeSvc store.KVStoreService,
 	ethCl engine.API,
 	skeeper *skeeper.Keeper,
-	attester types.Attester,
-) (Keeper, error) {
+	voter types.Voter,
+) (*Keeper, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
-		{Id: 1, ProtoFileName: File_halo_attest_keeper_aggregate_proto.Path()},
+		{Id: 1, ProtoFileName: File_halo_attest_keeper_attestation_proto.Path()},
 	}}
 
 	modDB, err := ormdb.NewModuleDB(schema, ormdb.ModuleDBOptions{KVStoreService: storeSvc})
 	if err != nil {
-		return Keeper{}, errors.Wrap(err, "create module db")
+		return nil, errors.Wrap(err, "create module db")
 	}
 
-	aggstore, err := NewAggregateStore(modDB)
+	attstore, err := NewAttestationStore(modDB)
 	if err != nil {
-		return Keeper{}, errors.Wrap(err, "create aggregate store")
+		return nil, errors.Wrap(err, "create attestation store")
 	}
 
-	return Keeper{
-		aggTable:     aggstore.AggAttestationTable(),
-		sigTable:     aggstore.AttSignatureTable(),
+	return &Keeper{
+		attTable:     attstore.AttestationTable(),
+		sigTable:     attstore.SignatureTable(),
 		cdc:          cdc,
 		storeService: storeSvc,
 		ethCl:        ethCl,
 		skeeper:      skeeper,
-		attester:     attester,
+		voter:        voter,
 	}, nil
+}
+
+// SetCometAPI sets the comet API client.
+func (k *Keeper) SetCometAPI(cmtAPI comet.API) {
+	k.cmtAPI = cmtAPI
 }
 
 // RegisterProposalService registers the proposal service on the provided router.
 // This implements abci.ProcessProposal verification of new proposals.
-func (k Keeper) RegisterProposalService(server grpc1.Server) {
+func (k *Keeper) RegisterProposalService(server grpc1.Server) {
 	types.RegisterMsgServiceServer(server, NewProposalServer(k))
 }
 
-// Add adds the given aggregate attestations to the store.
-// It merges the aggregate if it already exists.
-func (k Keeper) Add(ctx context.Context, msg *types.MsgAggAttestations) error {
-	for _, att := range msg.Aggregates {
-		err := k.addOne(ctx, att)
+// Add adds the given aggregate votes as pen the store.
+// It merges the votes with attestations it already exists.
+func (k *Keeper) Add(ctx context.Context, msg *types.MsgAddVotes) error {
+	for _, vote := range msg.Votes {
+		err := k.addOne(ctx, vote)
 		if err != nil {
 			return errors.Wrap(err, "add one")
 		}
@@ -96,22 +103,22 @@ func (k Keeper) Add(ctx context.Context, msg *types.MsgAggAttestations) error {
 	return nil
 }
 
-// addOne adds the given aggregate attestation to the store.
-// It merges the aggregate if it already exists.
-func (k Keeper) addOne(ctx context.Context, agg *types.AggAttestation) error {
+// addOne adds the given aggregate vote to the store.
+// It merges it if the attestation already exists.
+func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote) error {
 	header := agg.BlockHeader
 
-	var aggID uint64
-	exiting, err := k.aggTable.GetByChainIdHeightHash(ctx, header.ChainId, header.Height, header.Hash)
+	var attID uint64
+	exiting, err := k.attTable.GetByChainIdHeightHash(ctx, header.ChainId, header.Height, header.Hash)
 	if ormerrors.IsNotFound(err) {
-		// Insert new aggregate
-		aggID, err = k.aggTable.InsertReturningId(ctx, &AggAttestation{
+		// Insert new attestation
+		attID, err = k.attTable.InsertReturningId(ctx, &Attestation{
 			ChainId:        agg.BlockHeader.ChainId,
 			Height:         agg.BlockHeader.Height,
 			Hash:           agg.BlockHeader.Hash,
 			BlockRoot:      agg.BlockRoot,
-			Status:         int32(AggStatus_Pending),
-			ValidatorSetId: 0, // Unknown at this point.
+			Status:         int32(Status_Pending),
+			ValidatorsHash: nil, // Unknown at this point.
 		})
 		if err != nil {
 			return errors.Wrap(err, "insert")
@@ -121,20 +128,20 @@ func (k Keeper) addOne(ctx context.Context, agg *types.AggAttestation) error {
 	} else if !bytes.Equal(exiting.GetBlockRoot(), agg.BlockRoot) {
 		return errors.New("mismatching block root")
 	} else {
-		aggID = exiting.GetId()
+		attID = exiting.GetId()
 	}
 
 	// Insert signatures
 	for _, sig := range agg.Signatures {
-		err := k.sigTable.Insert(ctx, &AttSignature{
+		err := k.sigTable.Insert(ctx, &Signature{
 			Signature:        sig.Signature,
 			ValidatorAddress: sig.ValidatorAddress,
-			AggId:            aggID,
+			AttId:            attID,
 		})
 		if errors.Is(err, ormerrors.UniqueKeyViolation) {
 			// TODO(corver): We should prevent this from happening earlier.
-			log.Warn(ctx, "Ignoring duplicate attestation", nil,
-				"agg_id", aggID,
+			log.Warn(ctx, "Ignoring duplicate vote", nil,
+				"agg_id", attID,
 				"chain_id", agg.BlockHeader.ChainId,
 				"height", agg.BlockHeader.Height,
 				log.Hex7("validator", sig.ValidatorAddress),
@@ -147,27 +154,36 @@ func (k Keeper) addOne(ctx context.Context, agg *types.AggAttestation) error {
 	return nil
 }
 
-// Approve approves any pending aggregate attestations that have quorum signatures form the provided set.
-func (k Keeper) Approve(ctx context.Context, valSetID uint64, validators abci.ValidatorUpdates) error {
-	pendingIdx := AggAttestationStatusChainIdHeightIndexKey{}.WithStatus(int32(AggStatus_Pending))
-	iter, err := k.aggTable.List(ctx, pendingIdx)
+// Approve approves any pending attestations that have quorum signatures form the provided set.
+func (k *Keeper) Approve(ctx context.Context, valset *cmttypes.ValidatorSet) error {
+	pendingIdx := AttestationStatusChainIdHeightIndexKey{}.WithStatus(int32(Status_Pending))
+	iter, err := k.attTable.List(ctx, pendingIdx)
 	if err != nil {
 		return errors.Wrap(err, "list pending")
 	}
 	defer iter.Close()
 
+	valsByPower := make(map[common.Address]int64)
+	for _, val := range valset.Validators {
+		addr, err := k1util.PubKeyToAddress(val.PubKey)
+		if err != nil {
+			return errors.Wrap(err, "pubkey to address")
+		}
+		valsByPower[addr] = val.VotingPower
+	}
+
 	for iter.Next() {
-		agg, err := iter.Value()
+		att, err := iter.Value()
 		if err != nil {
 			return errors.Wrap(err, "value")
 		}
 
-		sigs, err := k.getAggSigs(ctx, agg.GetId())
+		sigs, err := k.getSigs(ctx, att.GetId())
 		if err != nil {
-			return errors.Wrap(err, "get agg validators")
+			return errors.Wrap(err, "get att signatures")
 		}
 
-		toDelete, ok := isApproved(validators, sigs)
+		toDelete, ok := isApproved(sigs, valsByPower, valset.TotalVotingPower())
 		if !ok {
 			continue
 		}
@@ -180,9 +196,9 @@ func (k Keeper) Approve(ctx context.Context, valSetID uint64, validators abci.Va
 		}
 
 		// Update status
-		agg.Status = int32(AggStatus_Approved)
-		agg.ValidatorSetId = valSetID
-		err = k.aggTable.Save(ctx, agg)
+		att.Status = int32(Status_Approved)
+		att.ValidatorsHash = valset.Hash()
+		err = k.attTable.Save(ctx, att)
 		if err != nil {
 			return errors.Wrap(err, "save")
 		}
@@ -191,36 +207,36 @@ func (k Keeper) Approve(ctx context.Context, valSetID uint64, validators abci.Va
 	return nil
 }
 
-// approvedFrom returns the subsequent approved attestations from the provided height (inclusive).
-func (k Keeper) approvedFrom(ctx context.Context, chainID uint64, height uint64, max uint64,
-) ([]*types.AggAttestation, error) {
-	from := AggAttestationStatusChainIdHeightIndexKey{}.WithStatusChainIdHeight(
-		int32(AggStatus_Approved), chainID, height)
-	to := AggAttestationStatusChainIdHeightIndexKey{}.WithStatusChainIdHeight(
-		int32(AggStatus_Approved), chainID, height+max)
+// attestationFrom returns the subsequent approved attestations from the provided height (inclusive).
+func (k *Keeper) attestationFrom(ctx context.Context, chainID uint64, height uint64, max uint64,
+) ([]*types.Attestation, error) {
+	from := AttestationStatusChainIdHeightIndexKey{}.WithStatusChainIdHeight(
+		int32(Status_Approved), chainID, height)
+	to := AttestationStatusChainIdHeightIndexKey{}.WithStatusChainIdHeight(
+		int32(Status_Approved), chainID, height+max)
 
-	iter, err := k.aggTable.ListRange(ctx, from, to)
+	iter, err := k.attTable.ListRange(ctx, from, to)
 	if err != nil {
 		return nil, errors.Wrap(err, "list range")
 	}
 	defer iter.Close()
 
-	var resp []*types.AggAttestation
+	var resp []*types.Attestation
 	next := height
 	for iter.Next() {
-		agg, err := iter.Value()
+		att, err := iter.Value()
 		if err != nil {
 			return nil, errors.Wrap(err, "value")
 		}
 
-		if agg.GetHeight() != next {
+		if att.GetHeight() != next {
 			break
 		}
 		next++
 
-		pbsigs, err := k.getAggSigs(ctx, agg.GetId())
+		pbsigs, err := k.getSigs(ctx, att.GetId())
 		if err != nil {
-			return nil, errors.Wrap(err, "get agg sigs")
+			return nil, errors.Wrap(err, "get att sigs")
 		}
 
 		var sigs []*types.SigTuple
@@ -231,14 +247,14 @@ func (k Keeper) approvedFrom(ctx context.Context, chainID uint64, height uint64,
 			})
 		}
 
-		resp = append(resp, &types.AggAttestation{
+		resp = append(resp, &types.Attestation{
 			BlockHeader: &types.BlockHeader{
-				ChainId: agg.GetChainId(),
-				Height:  agg.GetHeight(),
-				Hash:    agg.GetHash(),
+				ChainId: att.GetChainId(),
+				Height:  att.GetHeight(),
+				Hash:    att.GetHash(),
 			},
-			ValidatorSetId: agg.GetValidatorSetId(),
-			BlockRoot:      agg.GetBlockRoot(),
+			ValidatorsHash: att.GetValidatorsHash(),
+			BlockRoot:      att.GetBlockRoot(),
 			Signatures:     sigs,
 		})
 	}
@@ -246,16 +262,16 @@ func (k Keeper) approvedFrom(ctx context.Context, chainID uint64, height uint64,
 	return resp, nil
 }
 
-// getAggSigs returns the signatures for the given aggregate ID.
-func (k Keeper) getAggSigs(ctx context.Context, aggID uint64) ([]*AttSignature, error) {
-	aggIDIdx := AttSignatureAggIdIndexKey{}.WithAggId(aggID)
-	sigIter, err := k.sigTable.List(ctx, aggIDIdx)
+// getSigs returns the signatures for the given attestation ID.
+func (k *Keeper) getSigs(ctx context.Context, attID uint64) ([]*Signature, error) {
+	attIDIdx := SignatureAttIdIndexKey{}.WithAttId(attID)
+	sigIter, err := k.sigTable.List(ctx, attIDIdx)
 	if err != nil {
 		return nil, errors.Wrap(err, "list sig")
 	}
 	defer sigIter.Close()
 
-	var sigs []*AttSignature
+	var sigs []*Signature
 	for sigIter.Next() {
 		sig, err := sigIter.Value()
 		if err != nil {
@@ -268,42 +284,27 @@ func (k Keeper) getAggSigs(ctx context.Context, aggID uint64) ([]*AttSignature, 
 	return sigs, nil
 }
 
-func (k Keeper) EndBlock(ctx context.Context) error {
-	reduction := k.skeeper.PowerReduction(ctx)
+func (k *Keeper) EndBlock(ctx context.Context) error {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if sdkCtx.BlockHeight() <= 1 {
+		return nil // First block doesn't have any vote extensions to approve.
+	}
 
-	// TODO(corver): We need to fetch the validators for the previous block. Maybe get them from cometBFT directly.
-	vals, err := k.skeeper.GetBondedValidatorsByPower(ctx)
+	valset, err := k.cmtAPI.Validators(ctx, sdkCtx.BlockHeight()-1) // Get the validators for the previous block.
 	if err != nil {
-		return errors.Wrap(err, "get last validators")
+		return errors.Wrap(err, "fetch validators")
 	}
 
-	valUpdates := make(abci.ValidatorUpdates, 0, len(vals))
-	for _, val := range vals {
-		cosmosPubKey, err := val.ConsPubKey()
-		if err != nil {
-			return errors.Wrap(err, "consensus pubkey")
-		}
-
-		valUpdates = append(valUpdates, abci.UpdateValidator(
-			cosmosPubKey.Bytes(),
-			val.ConsensusPower(reduction),
-			k1.KeyType,
-		))
-	}
-
-	// TODO(corver): Figure out where this is stored and fetch it.
-	var valSetID uint64 = 1
-
-	return k.Approve(ctx, valSetID, valUpdates)
+	return k.Approve(ctx, valset)
 }
 
 // ExtendVote extends a vote with application-injected data (vote extensions).
-func (k Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
-	atts := k.attester.GetAvailable()
+func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
+	votes := k.voter.GetAvailable()
 
 	// TODO(corver): Only include attestations in window, also ensure max size.
-	bz, err := proto.Marshal(&types.Attestations{
-		Attestations: atts,
+	bz, err := proto.Marshal(&types.Votes{
+		Votes: votes,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal atts")
@@ -311,12 +312,12 @@ func (k Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.Re
 
 	// Make nice logs
 	heights := make(map[uint64][]uint64)
-	for _, att := range atts {
-		heights[att.BlockHeader.ChainId] = append(heights[att.BlockHeader.ChainId], att.BlockHeader.Height)
+	for _, vote := range votes {
+		heights[vote.BlockHeader.ChainId] = append(heights[vote.BlockHeader.ChainId], vote.BlockHeader.Height)
 	}
 	attrs := []any{
-		slog.Int("attestations", len(atts)),
-		log.Hex7("validator", k.attester.LocalAddress().Bytes()),
+		slog.Int("votes", len(votes)),
+		log.Hex7("validator", k.voter.LocalAddress().Bytes()),
 	}
 	for cid, hs := range heights {
 		attrs = append(attrs, slog.String(
@@ -325,7 +326,7 @@ func (k Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.Re
 		))
 	}
 
-	log.Info(ctx, "Attesting to rollup blocks", attrs...)
+	log.Info(ctx, "Voted for rollup blocks", attrs...)
 
 	return &abci.ResponseExtendVote{
 		VoteExtension: bz,
@@ -333,7 +334,7 @@ func (k Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.Re
 }
 
 // VerifyVoteExtension verifies a vote extension.
-func (k Keeper) VerifyVoteExtension(_ sdk.Context, _ *abci.RequestVerifyVoteExtension) (
+func (k *Keeper) VerifyVoteExtension(_ sdk.Context, _ *abci.RequestVerifyVoteExtension) (
 	*abci.ResponseVerifyVoteExtension, error,
 ) {
 	// TODO(corver): Figure out what to verify. E.g. outside window or too big.
@@ -344,23 +345,11 @@ func (k Keeper) VerifyVoteExtension(_ sdk.Context, _ *abci.RequestVerifyVoteExte
 
 // isApproved returns whether the given signatures are approved by the given validators.
 // It also returns the signatures to delete (not in the validator set).
-func isApproved(validators abci.ValidatorUpdates, sigs []*AttSignature) ([]*AttSignature, bool) {
-	valSet := make(map[common.Address]int64)
-	var total int64
-	for _, val := range validators {
-		addr, err := k1util.PubKeyPBToAddress(val.PubKey)
-		if err != nil {
-			return nil, false
-		}
-
-		total += val.Power
-		valSet[addr] = val.Power
-	}
-
+func isApproved(sigs []*Signature, valsByPower map[common.Address]int64, total int64) ([]*Signature, bool) {
 	var sum int64
-	var toDelete []*AttSignature
+	var toDelete []*Signature
 	for _, sig := range sigs {
-		power, ok := valSet[common.Address(sig.GetValidatorAddress())]
+		power, ok := valsByPower[common.BytesToAddress(sig.GetValidatorAddress())]
 		if !ok {
 			toDelete = append(toDelete, sig)
 			continue
