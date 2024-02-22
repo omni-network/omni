@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"path/filepath"
 	"text/template"
+	"time"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -29,8 +30,10 @@ const (
 	defaultSnapshotInterval        = 1000     // Roughly once an hour (given 3s blocks)
 	defaultMinRetainBlocks         = 0        // Retain all blocks
 
-	defaultPruningOption = pruningtypes.PruningOptionNothing // Prune nothing
-	defaultDBBackend     = db.GoLevelDBBackend
+	defaultPruningOption      = pruningtypes.PruningOptionNothing // Prune nothing
+	defaultDBBackend          = db.GoLevelDBBackend
+	defaultEVMBuildDelay      = time.Millisecond * 600 // 100ms longer than geth's --miner.recommit=500ms.
+	defaultEVMBuildOptimistic = true
 )
 
 // DefaultConfig returns the default halo config.
@@ -43,6 +46,8 @@ func DefaultConfig() Config {
 		BackendType:             string(defaultDBBackend),
 		MinRetainBlocks:         defaultMinRetainBlocks,
 		PruningOption:           defaultPruningOption,
+		EVMBuildDelay:           defaultEVMBuildDelay,
+		EVMBuildOptimistic:      defaultEVMBuildOptimistic,
 	}
 }
 
@@ -55,6 +60,8 @@ type Config struct {
 	BackendType             string // See cosmos-db/db.go
 	MinRetainBlocks         uint64
 	PruningOption           string // See cosmossdk.io/store/pruning/types/options.go
+	EVMBuildDelay           time.Duration
+	EVMBuildOptimistic      bool
 }
 
 // ConfigFile returns the default path to the toml halo config file.

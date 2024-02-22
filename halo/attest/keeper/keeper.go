@@ -11,10 +11,13 @@ import (
 	"github.com/omni-network/omni/halo/comet"
 	"github.com/omni-network/omni/lib/engine"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmttypes "github.com/cometbft/cometbft/types"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	ormv1alpha1 "cosmossdk.io/api/cosmos/orm/v1alpha1"
 	"cosmossdk.io/core/store"
@@ -160,6 +163,15 @@ func (k *Keeper) Approve(ctx context.Context, valset *cmttypes.ValidatorSet) err
 	}
 	defer iter.Close()
 
+	valsByPower := make(map[common.Address]int64)
+	for _, val := range valset.Validators {
+		addr, err := k1util.PubKeyToAddress(val.PubKey)
+		if err != nil {
+			return errors.Wrap(err, "pubkey to address")
+		}
+		valsByPower[addr] = val.VotingPower
+	}
+
 	for iter.Next() {
 		att, err := iter.Value()
 		if err != nil {
@@ -171,7 +183,7 @@ func (k *Keeper) Approve(ctx context.Context, valset *cmttypes.ValidatorSet) err
 			return errors.Wrap(err, "get att signatures")
 		}
 
-		toDelete, ok := isApproved(sigs, valset)
+		toDelete, ok := isApproved(sigs, valsByPower, valset.TotalVotingPower())
 		if !ok {
 			continue
 		}
@@ -333,18 +345,18 @@ func (k *Keeper) VerifyVoteExtension(_ sdk.Context, _ *abci.RequestVerifyVoteExt
 
 // isApproved returns whether the given signatures are approved by the given validators.
 // It also returns the signatures to delete (not in the validator set).
-func isApproved(sigs []*Signature, valset *cmttypes.ValidatorSet) ([]*Signature, bool) {
+func isApproved(sigs []*Signature, valsByPower map[common.Address]int64, total int64) ([]*Signature, bool) {
 	var sum int64
 	var toDelete []*Signature
 	for _, sig := range sigs {
-		idx, val := valset.GetByAddress(sig.GetValidatorAddress())
-		if idx < 0 {
+		power, ok := valsByPower[common.BytesToAddress(sig.GetValidatorAddress())]
+		if !ok {
 			toDelete = append(toDelete, sig)
 			continue
 		}
 
-		sum += val.VotingPower
+		sum += power
 	}
 
-	return toDelete, sum > valset.TotalVotingPower()*2/3
+	return toDelete, sum > total*2/3
 }

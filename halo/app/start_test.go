@@ -75,12 +75,16 @@ func setupSimnet(t *testing.T) haloapp.Config {
 
 	cmtCfg := halocmd.DefaultCometConfig(homeDir)
 	cmtCfg.BaseConfig.DBBackend = string(db.MemDBBackend)
+
+	haloCfg := halocfg.DefaultConfig()
+	haloCfg.HomeDir = homeDir
+	haloCfg.BackendType = string(db.MemDBBackend)
+	haloCfg.EVMBuildDelay = time.Millisecond
+
 	cfg := haloapp.Config{
-		Config: halocfg.DefaultConfig(),
+		Config: haloCfg,
 		Comet:  cmtCfg,
 	}
-	cfg.HomeDir = homeDir
-	cfg.Config.BackendType = string(db.MemDBBackend)
 
 	err := halocmd.InitFiles(log.WithNoopLogger(context.Background()), halocmd.InitConfig{
 		HomeDir: homeDir,

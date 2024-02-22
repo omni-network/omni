@@ -8,7 +8,6 @@ import (
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/depinject"
-	"cosmossdk.io/log"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -105,9 +104,9 @@ type ModuleInputs struct {
 	StoreService store.KVStoreService
 	Cdc          codec.Codec
 	Config       *Module
-	Logger       log.Logger
 	TXConfig     client.TxConfig
 	EthClient    engine.API
+	AddrProvider types.AddressProvider
 }
 
 //nolint:revive // Cosmos-style
@@ -122,9 +121,9 @@ func ProvideModule(in ModuleInputs) ModuleOutputs {
 	k := keeper.NewKeeper(
 		in.Cdc,
 		in.StoreService,
-		in.Logger,
 		in.EthClient,
 		in.TXConfig,
+		in.AddrProvider,
 	)
 	m := NewAppModule(
 		in.Cdc,

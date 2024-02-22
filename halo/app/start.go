@@ -129,6 +129,9 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 		return nil, errors.Wrap(err, "create app")
 	}
 
+	app.EVMEngKeeper.SetBuildDelay(cfg.EVMBuildDelay)
+	app.EVMEngKeeper.SetBuildOptimistic(cfg.EVMBuildOptimistic)
+
 	cmtNode, err := newCometNode(ctx, &cfg.Comet, app, privVal)
 	if err != nil {
 		return nil, errors.Wrap(err, "create comet node")
