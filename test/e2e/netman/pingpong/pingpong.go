@@ -22,6 +22,7 @@ import (
 // So given a network of N chains (vertexes), there will be N! pairs (edges).
 type XDapp struct {
 	contracts map[uint64]Contract
+	edges     []Edge
 }
 
 func Deploy(ctx context.Context, portals map[uint64]netman.Portal) (XDapp, error) {
@@ -66,6 +67,8 @@ func Deploy(ctx context.Context, portals map[uint64]netman.Portal) (XDapp, error
 		return XDapp{}, errors.Wrap(err, "fund")
 	}
 
+	resp.setEdges()
+
 	return resp, nil
 }
 
@@ -95,7 +98,7 @@ func (a *XDapp) fund(ctx context.Context) error {
 
 func (a *XDapp) StartAllEdges(ctx context.Context, count uint64) error {
 	log.Info(ctx, "Starting ping pong contracts")
-	for _, edge := range a.edges() {
+	for _, edge := range a.edges {
 		from := a.contracts[edge.From]
 		to := a.contracts[edge.To]
 
@@ -123,8 +126,8 @@ func (a *XDapp) StartAllEdges(ctx context.Context, count uint64) error {
 // Note this doesn't work on anvil since it doesn't support subscriptions.
 func (a *XDapp) WaitDone(ctx context.Context) error {
 	log.Info(ctx, "Waiting for ping pongs to complete")
-	done := make(chan *examples.PingPongDone, len(a.edges()))
-	for _, edge := range a.edges() {
+	done := make(chan *examples.PingPongDone, len(a.edges))
+	for _, edge := range a.edges {
 		from := a.contracts[edge.From]
 		_, err := from.PingPong.WatchDone(&bind.WatchOpts{
 			Start:   &from.DeployHeight,
@@ -136,7 +139,7 @@ func (a *XDapp) WaitDone(ctx context.Context) error {
 	}
 
 	// Wait for all ping pongs to be done
-	for range a.edges() {
+	for range a.edges {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -154,7 +157,7 @@ type Edge struct {
 }
 
 // edges returns a deterministic map of unique edges between chains.
-func (a *XDapp) edges() []Edge {
+func (a *XDapp) setEdges() {
 	var resp []Edge
 	arr := []Contract{}
 	// flatten contracts
@@ -169,7 +172,7 @@ func (a *XDapp) edges() []Edge {
 		}
 	}
 
-	return resp
+	a.edges = resp
 }
 
 // Contract defines a deployed contract.
