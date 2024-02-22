@@ -236,6 +236,12 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
         for (uint256 j = 0; j < _strategyParams.length; j++) {
             params = _strategyParams[j];
             uint256 shares = _delegationManager.operatorShares(operator, params.strategy);
+
+            // TODO: should we convert shares to underlying?
+            // uint256 amt = IStrategy(params.strategy).sharesToUnderlying(shares);
+            // This would convert "shares in the stETH strategy" to "stETH tokens"
+            // Shares do not map 1:1 to underlying for rebalancing tokens
+
             total += _weight(shares, params.multiplier);
         }
 
@@ -261,6 +267,11 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
 
             // if strategy is not found, do not consider it in stake
             if (address(params.strategy) == address(0)) continue;
+
+            // TODO: should we convert shares to underlying?
+            // uint256 amt = IStrategy(params.strategy).sharesToUnderlying(shares[i]);
+            // This would convert "shares in the stETH strategy" to "stETH tokens"
+            // Shares do not map 1:1 to underlying for rebalancing tokens
 
             staked += _weight(shares[i], params.multiplier);
         }
