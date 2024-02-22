@@ -8,12 +8,12 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/test/e2e/netman"
-	"github.com/omni-network/omni/test/e2e/xtx"
+	"github.com/omni-network/omni/test/e2e/send"
 
 	"github.com/ethereum/go-ethereum/params"
 )
 
-func StartSendingXMsgs(ctx context.Context, portals map[uint64]netman.Portal, txManager xtx.TxSenderManager, batches ...int) <-chan error {
+func StartSendingXMsgs(ctx context.Context, portals map[uint64]netman.Portal, txManager send.Manager, batches ...int) <-chan error {
 	log.Info(ctx, "Generating cross chain messages async", "batches", batches)
 
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
@@ -39,14 +39,14 @@ func StartSendingXMsgs(ctx context.Context, portals map[uint64]netman.Portal, tx
 }
 
 // SendXMsgs sends <count> xmsgs from every chain to every other chain, then waits for them to be mined.
-func SendXMsgs(ctx context.Context, portals map[uint64]netman.Portal, txManager xtx.TxSenderManager, batch int) error {
+func SendXMsgs(ctx context.Context, portals map[uint64]netman.Portal, txManager send.Manager, batch int) error {
 	for fromChainID, from := range portals {
 		for _, to := range portals {
 			if from.Chain.ID == to.Chain.ID {
 				continue
 			}
 
-			args := xtx.XCallArgs{
+			args := send.XCallArgs{
 				DestChainID: to.Chain.ID,
 				Address:     to.DeployInfo.PortalAddress,
 				Data:        []byte{},
@@ -54,7 +54,7 @@ func SendXMsgs(ctx context.Context, portals map[uint64]netman.Portal, txManager 
 			}
 			value := big.NewInt(params.GWei)
 			log.Info(ctx, "Sending xcall", "from", from.Chain.Name, "to", to.Chain.Name, "value", value, "gasLimit", args.GasLimit, "destChainID", args.DestChainID, "address", args.Address.String())
-			receipt, err := txManager.SendXCallTransaction(ctx, args, value, fromChainID)
+			receipt, err := txManager.SendXCall(ctx, args, value, fromChainID, to.DeployInfo.PortalAddress)
 			if err != nil {
 				return errors.Wrap(err, "send xcall", "from", from.Chain.Name, "to", to.Chain.Name)
 			}

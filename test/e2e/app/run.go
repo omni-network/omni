@@ -8,8 +8,8 @@ import (
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/test/e2e/netman/pingpong"
+	"github.com/omni-network/omni/test/e2e/send"
 	"github.com/omni-network/omni/test/e2e/types"
-	"github.com/omni-network/omni/test/e2e/xtx"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
@@ -32,7 +32,7 @@ func DeployWithPingPong(ctx context.Context, def Definition, cfg DeployConfig, p
 		return deployInfo, nil
 	}
 
-	txManager, err := xtx.New(ctx, def.Netman.Portals(), def.Netman.RelayerKey())
+	txManager, err := send.New(ctx, def.Netman.Portals(), def.Netman.RelayerKey())
 	if err != nil {
 		return nil, errors.Wrap(err, "deploy tx sender manager")
 	}
@@ -108,7 +108,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, depCfg Depl
 		return err
 	}
 
-	txManager, err := xtx.New(ctx, def.Netman.Portals(), def.Netman.RelayerKey())
+	txManager, err := send.New(ctx, def.Netman.Portals(), def.Netman.RelayerKey())
 	if err != nil {
 		return errors.Wrap(err, "deploy tx sender manager")
 	}

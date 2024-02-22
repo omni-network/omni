@@ -1,4 +1,4 @@
-package xtx
+package send
 
 import (
 	"context"
@@ -28,7 +28,7 @@ const (
 	interval = 3
 )
 
-func NewTxSender(ctx context.Context, portal netman.Portal, privateKey *ecdsa.PrivateKey, abi abi.ABI) (Sender, error) {
+func newTxSender(ctx context.Context, portal netman.Portal, privateKey *ecdsa.PrivateKey, abi abi.ABI) (Sender, error) {
 	// creates our new CLI config for our tx manager
 	cliConfig := txmgr.NewCLIConfig(
 		portal.RPCURL,
@@ -59,27 +59,22 @@ func NewTxSender(ctx context.Context, portal netman.Portal, privateKey *ecdsa.Pr
 
 func (s Sender) sendTransaction(
 	ctx context.Context,
-	destChainID uint64,
+	address common.Address,
 	data []byte,
 	value *big.Int,
 ) (*types.Receipt, error) {
 	if s.txMgr == nil {
-		return nil, errors.New("tx mgr not found", "dest_chain_id", destChainID)
-	}
-
-	if destChainID == s.chainID {
-		return nil, errors.New("unexpected destination chain [BUG]",
-			"got", destChainID, "expect", s.chainID)
+		return nil, errors.New("tx mgr not found")
 	}
 
 	// make it "optional" to pass in the send value
 	if value == nil {
 		value = big.NewInt(0)
 	}
-	log.Info(ctx, "Sending tx", "from", s.chainName, "to", destChainID, "value", value, "gasLimit", gasLimit, "destChainID", destChainID, "address", s.portal.String())
+
 	candidate := txmgr.TxCandidate{
 		TxData:   data,
-		To:       &s.portal,
+		To:       &address,
 		GasLimit: uint64(gasLimit),
 		Value:    value,
 	}
@@ -89,9 +84,8 @@ func (s Sender) sendTransaction(
 		return nil, errors.Wrap(err, "failed to send tx")
 	}
 
-	log.Info(ctx, "Sent tx", "status", rec.Status, "gas_used", rec.GasUsed, "tx_hash", rec.TxHash.String())
-
-	log.Hex7("Sent tx", rec.TxHash.Bytes())
+	txHashLog := log.Hex7("Sent tx", rec.TxHash.Bytes())
+	log.Info(ctx, "Sent tx", "status", rec.Status, "gas_used", rec.GasUsed, "tx_hash", rec.TxHash.String(), txHashLog)
 
 	return rec, nil
 }
