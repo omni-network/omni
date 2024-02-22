@@ -27,7 +27,7 @@ func TestEncodeTXs(t *testing.T) {
 		&etypes.MsgExecutionPayload{
 			Authority: authtypes.NewModuleAddress("evm").String(),
 		},
-		&atypes.MsgAggAttestations{
+		&atypes.MsgAddVotes{
 			Authority: authtypes.NewModuleAddress("evm").String(),
 		},
 	}

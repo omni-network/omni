@@ -57,6 +57,7 @@ type Block struct {
 }
 
 // Attestation by a validator of a cross-chain Block.
+// TODO(corver): Rename to Vote.
 type Attestation struct {
 	BlockHeader             // BlockHeader identifies the cross-chain Block
 	BlockRoot   common.Hash // Merkle root of the cross-chain Block
@@ -64,11 +65,12 @@ type Attestation struct {
 }
 
 // AggAttestation aggregates multiple attestation by a validator set of a cross-chain Block.
+// TODO(corver): Rename to Attestation.
 type AggAttestation struct {
-	BlockHeader                // BlockHeader identifies the cross-chain Block
-	ValidatorSetID uint64      // Unique identified of the validator set included in this aggregate.
-	BlockRoot      common.Hash // Merkle root of the cross-chain Block
-	Signatures     []SigTuple  // Validator signatures and public keys
+	BlockHeader                  // BlockHeader identifies the cross-chain Block
+	ValidatorSetHash common.Hash // Merkle root hash of the validator set that approved this aggregate.
+	BlockRoot        common.Hash // Merkle root of the cross-chain Block
+	Signatures       []SigTuple  // Validator signatures and public keys
 }
 
 // SigTuple is a validator signature and address.

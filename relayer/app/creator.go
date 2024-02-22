@@ -28,7 +28,7 @@ func CreateSubmissions(up StreamUpdate) ([]xchain.Submission, error) {
 
 		resp = append(resp, xchain.Submission{
 			AttestationRoot: agg.BlockRoot,
-			ValidatorSetID:  agg.ValidatorSetID,
+			ValidatorSetID:  1, // TODO(corver): Use agg.ValidatorSetHash once bindings supports it.
 			BlockHeader:     agg.BlockHeader,
 			Msgs:            msgs,
 			Proof:           multi.Proof,

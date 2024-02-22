@@ -8,20 +8,20 @@ option go_package = "halo/attest/types";
 
 // Query defines the gRPC querier service.
 service Query {
-  // ApprovedFrom queries halo for approved aggregate attestations for the given chain_id
+  // AttestationsFrom queries halo for approved attestations for the given chain_id
   // and from the given height (inclusive). The response will contain at most max attestations sequentially
   // following from_height.
-  rpc ApprovedFrom(ApprovedFromRequest) returns (ApprovedFromResponse) {}
+  rpc AttestationsFrom(AttestationsFromRequest) returns (AttestationsFromResponse) {}
 }
 
-// ApprovedFromRequest queries halo for approved aggregate attestations for the given chain_id
+// ApprovedFromRequest queries halo for approved attestations for the given chain_id
 // and from the given height (inclusive). The response will contain at most max attestations sequentially
 // following from_height.
-message ApprovedFromRequest {
+message AttestationsFromRequest {
   uint64 chain_id    = 1; // Chain ID as per https://chainlist.org
   uint64 from_height = 2; // Block height to start from (inclusive)
 }
 
-message ApprovedFromResponse{
-  repeated AggAttestation aggregates = 1;
+message AttestationsFromResponse{
+  repeated Attestation attestations = 1;
 }

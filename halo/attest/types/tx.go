@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func (a *Attestation) Verify() error {
+func (a *Vote) Verify() error {
 	if a == nil {
 		return errors.New("nil attestation")
 	}
@@ -91,5 +91,83 @@ func (m *SigTuple) ToXChain() xchain.SigTuple {
 	return xchain.SigTuple{
 		ValidatorAddress: common.Address(m.ValidatorAddress),
 		Signature:        xchain.Signature65(m.Signature),
+	}
+}
+
+func (a *AggVote) Verify() error {
+	if a == nil {
+		return errors.New("nil aggregate attestation")
+	}
+
+	if err := a.BlockHeader.Verify(); err != nil {
+		return errors.Wrap(err, "block header")
+	}
+
+	if len(a.BlockRoot) != len(common.Hash{}) {
+		return errors.New("invalid block root length")
+	}
+
+	if len(a.Signatures) == 0 {
+		return errors.New("empty signatures")
+	}
+
+	for _, sig := range a.Signatures {
+		if err := sig.Verify(); err != nil {
+			return errors.Wrap(err, "signature")
+		}
+	}
+
+	return nil
+}
+
+func (a *Attestation) Verify() error {
+	if a == nil {
+		return errors.New("nil aggregate attestation")
+	}
+
+	if err := a.BlockHeader.Verify(); err != nil {
+		return errors.Wrap(err, "block header")
+	}
+
+	if len(a.BlockRoot) != len(common.Hash{}) {
+		return errors.New("invalid block root length")
+	}
+
+	if len(a.ValidatorsHash) != len(common.Hash{}) {
+		return errors.New("invalid validator set hash length")
+	}
+
+	if len(a.Signatures) == 0 {
+		return errors.New("empty signatures")
+	}
+
+	for _, sig := range a.Signatures {
+		if err := sig.Verify(); err != nil {
+			return errors.Wrap(err, "signature")
+		}
+	}
+
+	return nil
+}
+
+func (a *Attestation) ToXChain() xchain.AggAttestation {
+	sigs := make([]xchain.SigTuple, 0, len(a.Signatures))
+	for _, sig := range a.Signatures {
+		sigs = append(sigs, sig.ToXChain())
+	}
+
+	return xchain.AggAttestation{
+		BlockHeader:      a.BlockHeader.ToXChain(),
+		ValidatorSetHash: common.Hash(a.ValidatorsHash),
+		BlockRoot:        common.Hash(a.BlockRoot),
+		Signatures:       sigs,
+	}
+}
+
+func (a *Vote) ToXChain() xchain.Attestation {
+	return xchain.Attestation{
+		BlockHeader: a.BlockHeader.ToXChain(),
+		BlockRoot:   common.Hash(a.BlockRoot),
+		Signature:   a.Signature.ToXChain(),
 	}
 }

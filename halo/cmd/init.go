@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/omni-network/omni/halo/attest/attester"
+	"github.com/omni-network/omni/halo/attest/voter"
 	halocfg "github.com/omni-network/omni/halo/config"
 	"github.com/omni-network/omni/halo/genutil"
 	libcmd "github.com/omni-network/omni/lib/cmd"
@@ -257,7 +257,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	attStateFile := cfg.AttestStateFile()
 	if cmtos.FileExists(attStateFile) {
 		log.Info(ctx, "Found attest state file", "path", attStateFile)
-	} else if err := attester.GenEmptyStateFile(attStateFile); err != nil {
+	} else if err := voter.GenEmptyStateFile(attStateFile); err != nil {
 		return err
 	} else {
 		log.Info(ctx, "Generated attest state file", "path", attStateFile)

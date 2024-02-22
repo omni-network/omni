@@ -1,4 +1,4 @@
-package attester
+package voter
 
 import (
 	"github.com/prometheus/client_golang/prometheus"

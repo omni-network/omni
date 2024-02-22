@@ -45,12 +45,16 @@ func (l loggingABCIApp) ProcessProposal(ctx context.Context, proposal *abci.Requ
 func (l loggingABCIApp) FinalizeBlock(ctx context.Context, block *abci.RequestFinalizeBlock) (*abci.ResponseFinalizeBlock, error) {
 	log.Debug(ctx, "👾 ABCI call: FinalizeBlock")
 	resp, err := l.Application.FinalizeBlock(ctx, block)
+	if err != nil {
+		log.Error(ctx, "Finalize block failed [BUG]", err, "height", block.Height)
+		return resp, err
+	}
 
 	for i, res := range resp.TxResults {
 		if res.Code == 0 {
 			continue
 		}
-		log.Error(ctx, "Unexpected failed transaction", nil,
+		log.Error(ctx, "Unexpected failed transaction [BUG]", nil,
 			"info", res.Info, "code", res.Code, "log", res.Log,
 			"code_space", res.Codespace, "index", i, "height", block.Height)
 	}

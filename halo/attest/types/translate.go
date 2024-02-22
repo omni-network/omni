@@ -1,15 +1,14 @@
 package types
 
 import (
-	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
 )
 
 // AggregatesToProto converts a slice of xchain.AggAttestations to a slice of protobuf AggAttestations.
-func AggregatesToProto(aggs []xchain.AggAttestation) []*AggAttestation {
-	resp := make([]*AggAttestation, 0, len(aggs))
+func AggregatesToProto(aggs []xchain.AggAttestation) []*Attestation {
+	resp := make([]*Attestation, 0, len(aggs))
 	for _, agg := range aggs {
 		resp = append(resp, AggregateToProto(agg))
 	}
@@ -18,7 +17,7 @@ func AggregatesToProto(aggs []xchain.AggAttestation) []*AggAttestation {
 }
 
 // AggregatesFromProto converts a slice of protobuf AggAttestations to a slice of xchain.AggAttestations.
-func AggregatesFromProto(aggs []*AggAttestation) ([]xchain.AggAttestation, error) {
+func AggregatesFromProto(aggs []*Attestation) ([]xchain.AggAttestation, error) {
 	resp := make([]xchain.AggAttestation, 0, len(aggs))
 	for _, aggpb := range aggs {
 		agg, err := AggregateFromProto(aggpb)
@@ -32,24 +31,24 @@ func AggregatesFromProto(aggs []*AggAttestation) ([]xchain.AggAttestation, error
 }
 
 // AggregateToProto converts a xchain.AggAttestation to a protobuf AggAttestation.
-func AggregateToProto(agg xchain.AggAttestation) *AggAttestation {
+func AggregateToProto(agg xchain.AggAttestation) *Attestation {
 	sigs := make([]*SigTuple, 0, len(agg.Signatures))
 	for _, sig := range agg.Signatures {
 		sigs = append(sigs, SigToProto(sig))
 	}
 
-	return &AggAttestation{
+	return &Attestation{
 		BlockHeader:    BlockHeaderToProto(agg.BlockHeader),
-		ValidatorSetId: agg.ValidatorSetID,
+		ValidatorsHash: agg.ValidatorSetHash[:],
 		BlockRoot:      agg.BlockRoot[:],
 		Signatures:     sigs,
 	}
 }
 
 // AggregateFromProto converts a protobuf AggAttestation to a xchain.AggAttestation.
-func AggregateFromProto(agg *AggAttestation) (xchain.AggAttestation, error) {
-	if agg == nil {
-		return xchain.AggAttestation{}, errors.New("nil aggregate attestation")
+func AggregateFromProto(agg *Attestation) (xchain.AggAttestation, error) {
+	if err := agg.Verify(); err != nil {
+		return xchain.AggAttestation{}, err
 	}
 
 	header, err := BlockHeaderFromProto(agg.GetBlockHeader())
@@ -66,29 +65,18 @@ func AggregateFromProto(agg *AggAttestation) (xchain.AggAttestation, error) {
 		sigs = append(sigs, sig)
 	}
 
-	var zero xchain.AggAttestation
-	if len(agg.GetBlockRoot()) != len(zero.BlockRoot) {
-		return xchain.AggAttestation{}, errors.New("invalid block root length")
-	}
-
 	return xchain.AggAttestation{
-		BlockHeader:    header,
-		ValidatorSetID: agg.GetValidatorSetId(),
-		BlockRoot:      common.Hash(agg.GetBlockRoot()),
-		Signatures:     sigs,
+		BlockHeader:      header,
+		ValidatorSetHash: common.BytesToHash(agg.GetValidatorsHash()),
+		BlockRoot:        common.BytesToHash(agg.GetBlockRoot()),
+		Signatures:       sigs,
 	}, nil
 }
 
 // SigFromProto converts a protobuf SigTuple to a xchain.SigTuple.
 func SigFromProto(sig *SigTuple) (xchain.SigTuple, error) {
-	var zero xchain.SigTuple
-
-	if sig == nil {
-		return xchain.SigTuple{}, errors.New("nil sig tuple")
-	} else if len(sig.GetValidatorAddress()) != len(zero.ValidatorAddress) {
-		return xchain.SigTuple{}, errors.New("invalid validator address length")
-	} else if len(sig.GetSignature()) != len(zero.Signature) {
-		return xchain.SigTuple{}, errors.New("invalid signature length")
+	if err := sig.Verify(); err != nil {
+		return xchain.SigTuple{}, err
 	}
 
 	return xchain.SigTuple{
@@ -116,13 +104,8 @@ func BlockHeaderToProto(header xchain.BlockHeader) *BlockHeader {
 
 // BlockHeaderFromProto converts a protobuf BlockHeader to a xchain.BlockHeader.
 func BlockHeaderFromProto(header *BlockHeader) (xchain.BlockHeader, error) {
-	if header == nil {
-		return xchain.BlockHeader{}, errors.New("nil block header")
-	}
-
-	var zero xchain.BlockHeader
-	if len(header.GetHash()) != len(zero.BlockHash) {
-		return xchain.BlockHeader{}, errors.New("invalid block hash length")
+	if err := header.Verify(); err != nil {
+		return xchain.BlockHeader{}, err
 	}
 
 	return xchain.BlockHeader{
