@@ -3,7 +3,6 @@ package pingpong
 import (
 	"context"
 	"math/big"
-	"sort"
 
 	examples "github.com/omni-network/omni/contracts/bindings/examples"
 	"github.com/omni-network/omni/lib/errors"
@@ -160,34 +159,17 @@ func (e Edge) Equals(other Edge) bool {
 
 // edges returns a deterministic map of unique edges between chains.
 func (a *XDapp) edges() []Edge {
-	var all []Edge
-	for fromChainID := range a.contracts {
-		for toChainID := range a.contracts {
-			if fromChainID == toChainID {
-				continue
-			}
-
-			all = append(all, Edge{From: fromChainID, To: toChainID})
-		}
+	var resp []Edge
+	arr := []Contract{}
+	// flatten contracts
+	for _, v := range a.contracts {
+		arr = append(arr, v)
 	}
 
-	// Order by fromChainID
-	sort.Slice(all, func(i, j int) bool {
-		return all[i].From < all[j].From
-	})
-
-	// Deduplicate
-	var resp []Edge
-	for _, candidate := range all {
-		unique := true
-		for _, existing := range resp {
-			if candidate.Equals(existing) {
-				unique = false
-				break
-			}
-		}
-		if unique {
-			resp = append(resp, candidate)
+	// get all unique edges
+	for i := 0; i < len(arr); i++ {
+		for j := i + 1; j < len(arr); j++ {
+			resp = append(resp, Edge{From: arr[i].Chain.ID, To: arr[j].Chain.ID})
 		}
 	}
 
