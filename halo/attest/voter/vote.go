@@ -9,7 +9,7 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 )
 
-// CreateVote creates an attestation for the given block.
+// CreateVote creates an vote for the given block.
 func CreateVote(privKey crypto.PrivKey, block xchain.Block) (*types.Vote, error) {
 	pubkey := privKey.PubKey().Bytes()
 	if len(pubkey) != 33 {

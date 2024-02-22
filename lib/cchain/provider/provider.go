@@ -14,7 +14,7 @@ var _ cchain.Provider = Provider{}
 
 // FetchFunc abstracts fetching attestation from the consensus chain.
 type FetchFunc func(ctx context.Context, chainID uint64, fromHeight uint64,
-) ([]xchain.AggAttestation, error)
+) ([]xchain.Attestation, error)
 
 // Provider implements cchain.Provider.
 type Provider struct {
@@ -22,8 +22,6 @@ type Provider struct {
 	backoffFunc func(context.Context) (func(), func())
 	chainNames  map[uint64]string
 }
-
-// TODO(corver): Add prod constructor once halo has an API.
 
 // NewProviderForT creates a new provider for testing.
 func NewProviderForT(_ *testing.T, fetch FetchFunc,
@@ -35,8 +33,8 @@ func NewProviderForT(_ *testing.T, fetch FetchFunc,
 	}
 }
 
-func (p Provider) ApprovedFrom(ctx context.Context, sourceChainID uint64, sourceHeight uint64,
-) ([]xchain.AggAttestation, error) {
+func (p Provider) AttestationsFrom(ctx context.Context, sourceChainID uint64, sourceHeight uint64,
+) ([]xchain.Attestation, error) {
 	return p.fetch(ctx, sourceChainID, sourceHeight)
 }
 

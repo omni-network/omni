@@ -30,8 +30,8 @@ func NewABCIProvider(abci rpcclient.ABCIClient, chains map[uint64]string) Provid
 }
 
 func newABCIFetchFunc(cl atypes.QueryClient) func(ctx context.Context, chainID uint64, fromHeight uint64,
-) ([]xchain.AggAttestation, error) {
-	return func(ctx context.Context, chainID uint64, fromHeight uint64) ([]xchain.AggAttestation, error) {
+) ([]xchain.Attestation, error) {
+	return func(ctx context.Context, chainID uint64, fromHeight uint64) ([]xchain.Attestation, error) {
 		resp, err := cl.AttestationsFrom(ctx, &atypes.AttestationsFromRequest{
 			ChainId:    chainID,
 			FromHeight: fromHeight,
@@ -40,12 +40,12 @@ func newABCIFetchFunc(cl atypes.QueryClient) func(ctx context.Context, chainID u
 			return nil, errors.Wrap(err, "abci query approved-from")
 		}
 
-		aggs, err := atypes.AggregatesFromProto(resp.Attestations)
+		atts, err := atypes.AttestationsFromProto(resp.Attestations)
 		if err != nil {
-			return nil, errors.Wrap(err, "unmarshal approved-from aggregates")
+			return nil, errors.Wrap(err, "attestations from proto")
 		}
 
-		return aggs, nil
+		return atts, nil
 	}
 }
 

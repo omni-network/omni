@@ -65,7 +65,7 @@ func votesFromLastCommit(info abci.ExtendedCommitInfo) (*types.MsgAddVotes, bool
 
 // aggregateVotes aggregates the provided attestations by block header.
 func aggregateVotes(votes []*types.Vote) []*types.AggVote {
-	aggsByHeader := make(map[xchain.BlockHeader]*types.AggVote) // map[BlockHash]AggAttestation
+	aggsByHeader := make(map[xchain.BlockHeader]*types.AggVote) // map[BlockHash]Attestation
 	for _, vote := range votes {
 		header := vote.BlockHeader.ToXChain()
 		agg, ok := aggsByHeader[header]

@@ -15,7 +15,7 @@ service MsgService {
 }
 
 
-// MsgAggAttestations contains multiple aggregated votes for different cross-chain Blocks.
+// MsgAddVotes contains multiple aggregated votes for different cross-chain Blocks.
 message MsgAddVotes {
   option (cosmos.msg.v1.signer) = "authority";
   string authority = 1;

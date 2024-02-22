@@ -28,7 +28,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// MsgAggAttestations contains multiple aggregated votes for different cross-chain Blocks.
+// MsgAddVotes contains multiple aggregated votes for different cross-chain Blocks.
 type MsgAddVotes struct {
 	Authority string     `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
 	Votes     []*AggVote `protobuf:"bytes,2,rep,name=votes,proto3" json:"votes,omitempty"`
