@@ -153,10 +153,6 @@ type Edge struct {
 	To   uint64
 }
 
-func (e Edge) Equals(other Edge) bool {
-	return e.From == other.From && e.To == other.To || e.From == other.To && e.To == other.From
-}
-
 // edges returns a deterministic map of unique edges between chains.
 func (a *XDapp) edges() []Edge {
 	var resp []Edge
