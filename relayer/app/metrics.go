@@ -68,4 +68,11 @@ var (
 		Name:      "account_nonce",
 		Help:      "The nonce of the relayer account on a specific chain",
 	}, []string{"chain"})
+
+	headHeight = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "relayer",
+		Subsystem: "monitor",
+		Name:      "head_height",
+		Help:      "The latest height of different types of head blocks on a specific chain",
+	}, []string{"chain", "type"})
 )
