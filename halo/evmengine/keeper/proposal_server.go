@@ -14,12 +14,10 @@ type proposalServer struct {
 // ExecutionPayload handles a new execution payload proposed in a block.
 func (s proposalServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecutionPayload,
 ) (*types.ExecutionPayloadResponse, error) {
-	_, err := newPayload(ctx, s.ethCl, msg)
+	_, err := pushPayload(ctx, s.ethCl, msg)
 	if err != nil {
 		return nil, err
 	}
-
-	// TODO(corver): If this validator is proposer for next block, we should trigger block building.
 
 	return &types.ExecutionPayloadResponse{}, nil
 }

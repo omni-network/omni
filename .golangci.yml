@@ -105,6 +105,7 @@ issues:
     - "shadow: declaration of" # Relax govet
     - "shadows an import name" # Relax revive
     - "ifElseChain: rewrite if-else to switch statement"   # IfElseChain actually preferred to switches
+    - "nested-structs: no nested structs are allowed"      # Relax revive
 
     # Loop variable issues have been fixed in Go 1.22, so can be ignored
     - "G601: Implicit memory aliasing in for loop"

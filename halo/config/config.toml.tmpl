@@ -48,6 +48,16 @@ pruning = "{{ .PruningOption }}"
 # The fallback is the db_backend value set in CometBFT's config.toml.
 app-db-backend = "{{ .BackendType }}"
 
+# EVMBuildDelay defines the minimum delay between triggering a EVM payload build and fetching the result.
+# This is a tradeoff between "high value blocks" and "fast consensus".
+# It should be slightly higher than geth's --miner.recommit value.
+evm-build-delay = "{{.EVMBuildDelay}}"
+
+# EVMBuildOptimistic defines whether to trigger optimistic EVM payload building.
+# If true, the EVM payload will be triggered on previous finalisation. This allows
+# more time for block building while ensuring faster consensus blocks.
+evm-build-optimistic = {{.EVMBuildOptimistic}}
+
 #######################################################################
 ###                         Logging Options                         ###
 #######################################################################
