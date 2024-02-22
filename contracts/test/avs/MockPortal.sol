@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.12;
 
-import { console } from "forge-std/console.sol";
-
 /**
  * @title MockPortal
  * @dev Stub portal that lets use us vm.expectCall to test the OmniAVS contract.

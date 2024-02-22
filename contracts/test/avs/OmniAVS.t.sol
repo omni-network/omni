@@ -10,8 +10,6 @@ import { OmniAVS } from "src/protocol/OmniAVS.sol";
 import { AVSBase } from "./AVSBase.sol";
 import { AVSUtils } from "./AVSUtils.sol";
 
-import { console } from "forge-std/console.sol";
-
 contract OmniAVS_Test is AVSBase, AVSUtils {
     uint32 numOperators;
     uint32 numDelegatorsPerOp;

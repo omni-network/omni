@@ -9,13 +9,8 @@ import { ISignatureUtils } from "eigenlayer-contracts/src/contracts/interfaces/I
 
 import { EigenLayerDeployer } from "./EigenLayerDeployer.t.sol";
 
-import { console } from "forge-std/console.sol";
 import { Vm } from "forge-std/Vm.sol";
 import { Test } from "forge-std/Test.sol";
-
-interface IERC20Wrapper {
-    function underlying() external view returns (address);
-}
 
 /**
  * @dev Repurposed from eignlayer-contracts src/test/utils/Operators.sol

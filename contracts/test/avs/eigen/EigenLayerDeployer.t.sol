@@ -15,7 +15,6 @@ import { EigenLayerGoerli } from "./deploy/EigenLayerGoerli.sol";
 import { EigenLayerLocal } from "./deploy/EigenLayerLocal.sol";
 import { IEigenDeployer } from "./deploy/IEigenDeployer.sol";
 
-import { console } from "forge-std/console.sol";
 import { Test } from "forge-std/Test.sol";
 
 /**

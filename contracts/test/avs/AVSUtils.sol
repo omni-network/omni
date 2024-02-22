@@ -9,7 +9,6 @@ import { IDelegationManager } from "eigenlayer-contracts/src/contracts/interface
 
 import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
 import { AVSBase } from "./AVSBase.sol";
-import { console } from "forge-std/console.sol";
 
 contract AVSUtils is AVSBase {
     // map addr to private key
