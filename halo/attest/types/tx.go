@@ -96,7 +96,7 @@ func (m *SigTuple) ToXChain() xchain.SigTuple {
 
 func (a *AggVote) Verify() error {
 	if a == nil {
-		return errors.New("nil aggregate attestation")
+		return errors.New("nil aggregate vote")
 	}
 
 	if err := a.BlockHeader.Verify(); err != nil {
@@ -122,7 +122,7 @@ func (a *AggVote) Verify() error {
 
 func (a *Attestation) Verify() error {
 	if a == nil {
-		return errors.New("nil aggregate attestation")
+		return errors.New("nil attestation")
 	}
 
 	if err := a.BlockHeader.Verify(); err != nil {
@@ -150,13 +150,13 @@ func (a *Attestation) Verify() error {
 	return nil
 }
 
-func (a *Attestation) ToXChain() xchain.AggAttestation {
+func (a *Attestation) ToXChain() xchain.Attestation {
 	sigs := make([]xchain.SigTuple, 0, len(a.Signatures))
 	for _, sig := range a.Signatures {
 		sigs = append(sigs, sig.ToXChain())
 	}
 
-	return xchain.AggAttestation{
+	return xchain.Attestation{
 		BlockHeader:      a.BlockHeader.ToXChain(),
 		ValidatorSetHash: common.Hash(a.ValidatorsHash),
 		BlockRoot:        common.Hash(a.BlockRoot),
@@ -164,8 +164,8 @@ func (a *Attestation) ToXChain() xchain.AggAttestation {
 	}
 }
 
-func (a *Vote) ToXChain() xchain.Attestation {
-	return xchain.Attestation{
+func (a *Vote) ToXChain() xchain.Vote {
+	return xchain.Vote{
 		BlockHeader: a.BlockHeader.ToXChain(),
 		BlockRoot:   common.Hash(a.BlockRoot),
 		Signature:   a.Signature.ToXChain(),

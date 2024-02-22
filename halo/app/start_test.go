@@ -53,7 +53,7 @@ func TestSmoke(t *testing.T) {
 
 	srcChain := uint64(999)
 	// Ensure all blocks are attested and approved.
-	cprov.Subscribe(ctx, srcChain, 0, "test", func(ctx context.Context, approved xchain.AggAttestation) error {
+	cprov.Subscribe(ctx, srcChain, 0, "test", func(ctx context.Context, approved xchain.Attestation) error {
 		require.Equal(t, srcChain, approved.SourceChainID)
 		t.Logf("cprovider streamed approved block: %d", approved.BlockHeight)
 		if approved.BlockHeight >= target {

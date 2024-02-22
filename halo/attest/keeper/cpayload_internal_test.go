@@ -32,7 +32,7 @@ func TestVotesFromCommit(t *testing.T) {
 	vals := []k1.PrivKey{k1.GenPrivKey(), k1.GenPrivKey(), k1.GenPrivKey()}
 	batches := [][]uint64{{1, 2}, {3}, { /*empty*/ }}
 
-	expected := make(map[xchain.Attestation]bool)
+	expected := make(map[xchain.Vote]bool)
 
 	var evotes []abci.ExtendedVoteInfo
 	for _, chain := range chains {
@@ -94,7 +94,7 @@ func TestVotesFromCommit(t *testing.T) {
 
 	for _, agg := range resp.Votes {
 		for _, sig := range agg.Signatures {
-			att := xchain.Attestation{
+			att := xchain.Vote{
 				BlockHeader: agg.BlockHeader.ToXChain(),
 				BlockRoot:   common.Hash(agg.BlockRoot),
 				Signature:   sig.ToXChain(),

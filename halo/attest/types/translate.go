@@ -6,69 +6,69 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// AggregatesToProto converts a slice of xchain.AggAttestations to a slice of protobuf AggAttestations.
-func AggregatesToProto(aggs []xchain.AggAttestation) []*Attestation {
-	resp := make([]*Attestation, 0, len(aggs))
-	for _, agg := range aggs {
-		resp = append(resp, AggregateToProto(agg))
+// AttestationsToProto converts a slice of xchain.Attestations to a slice of protobuf Attestations.
+func AttestationsToProto(atts []xchain.Attestation) []*Attestation {
+	resp := make([]*Attestation, 0, len(atts))
+	for _, att := range atts {
+		resp = append(resp, AttestationToProto(att))
 	}
 
 	return resp
 }
 
-// AggregatesFromProto converts a slice of protobuf AggAttestations to a slice of xchain.AggAttestations.
-func AggregatesFromProto(aggs []*Attestation) ([]xchain.AggAttestation, error) {
-	resp := make([]xchain.AggAttestation, 0, len(aggs))
-	for _, aggpb := range aggs {
-		agg, err := AggregateFromProto(aggpb)
+// AttestationsFromProto converts a slice of protobuf Attestations to a slice of xchain.Attestations.
+func AttestationsFromProto(atts []*Attestation) ([]xchain.Attestation, error) {
+	resp := make([]xchain.Attestation, 0, len(atts))
+	for _, attpb := range atts {
+		att, err := AttestationFromProto(attpb)
 		if err != nil {
 			return nil, err
 		}
-		resp = append(resp, agg)
+		resp = append(resp, att)
 	}
 
 	return resp, nil
 }
 
-// AggregateToProto converts a xchain.AggAttestation to a protobuf AggAttestation.
-func AggregateToProto(agg xchain.AggAttestation) *Attestation {
-	sigs := make([]*SigTuple, 0, len(agg.Signatures))
-	for _, sig := range agg.Signatures {
+// AttestationToProto converts a xchain.Attestation to a protobuf Attestation.
+func AttestationToProto(att xchain.Attestation) *Attestation {
+	sigs := make([]*SigTuple, 0, len(att.Signatures))
+	for _, sig := range att.Signatures {
 		sigs = append(sigs, SigToProto(sig))
 	}
 
 	return &Attestation{
-		BlockHeader:    BlockHeaderToProto(agg.BlockHeader),
-		ValidatorsHash: agg.ValidatorSetHash[:],
-		BlockRoot:      agg.BlockRoot[:],
+		BlockHeader:    BlockHeaderToProto(att.BlockHeader),
+		ValidatorsHash: att.ValidatorSetHash[:],
+		BlockRoot:      att.BlockRoot[:],
 		Signatures:     sigs,
 	}
 }
 
-// AggregateFromProto converts a protobuf AggAttestation to a xchain.AggAttestation.
-func AggregateFromProto(agg *Attestation) (xchain.AggAttestation, error) {
-	if err := agg.Verify(); err != nil {
-		return xchain.AggAttestation{}, err
+// AttestationFromProto converts a protobuf Attestation to a xchain.Attestation.
+func AttestationFromProto(att *Attestation) (xchain.Attestation, error) {
+	if err := att.Verify(); err != nil {
+		return xchain.Attestation{}, err
 	}
 
-	header, err := BlockHeaderFromProto(agg.GetBlockHeader())
+	header, err := BlockHeaderFromProto(att.GetBlockHeader())
 	if err != nil {
-		return xchain.AggAttestation{}, err
+		return xchain.Attestation{}, err
 	}
 
-	sigs := make([]xchain.SigTuple, 0, len(agg.GetSignatures()))
-	for _, sigpb := range agg.GetSignatures() {
+	sigs := make([]xchain.SigTuple, 0, len(att.GetSignatures()))
+	for _, sigpb := range att.GetSignatures() {
 		sig, err := SigFromProto(sigpb)
 		if err != nil {
-			return xchain.AggAttestation{}, err
+			return xchain.Attestation{}, err
 		}
 		sigs = append(sigs, sig)
 	}
 
-	return xchain.AggAttestation{
+	return xchain.Attestation{
 		BlockHeader:      header,
-		ValidatorSetHash: common.BytesToHash(agg.GetValidatorsHash()),
-		BlockRoot:        common.BytesToHash(agg.GetBlockRoot()),
+		ValidatorSetHash: common.BytesToHash(att.GetValidatorsHash()),
+		BlockRoot:        common.BytesToHash(att.GetBlockRoot()),
 		Signatures:       sigs,
 	}, nil
 }

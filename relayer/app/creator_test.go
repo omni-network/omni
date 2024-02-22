@@ -52,19 +52,19 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 		block.Msgs[i].StreamOffset = uint64(i)
 	}
 
-	att, err := voter.CreateVote(privKey, block)
+	vote, err := voter.CreateVote(privKey, block)
 	require.NoError(t, err)
-	require.Equal(t, block.BlockHeader, att.BlockHeader.ToXChain())
-	require.Equal(t, addr, common.Address(att.Signature.ValidatorAddress))
+	require.Equal(t, block.BlockHeader, vote.BlockHeader.ToXChain())
+	require.Equal(t, addr, common.Address(vote.Signature.ValidatorAddress))
 
 	tree, err := xchain.NewBlockTree(block)
 	require.NoError(t, err)
 
-	aggAtt := xchain.AggAttestation{
-		BlockHeader:      att.BlockHeader.ToXChain(),
+	att := xchain.Attestation{
+		BlockHeader:      vote.BlockHeader.ToXChain(),
 		ValidatorSetHash: valSetHash,
-		BlockRoot:        [32]byte(att.BlockRoot),
-		Signatures:       []xchain.SigTuple{att.Signature.ToXChain()},
+		BlockRoot:        [32]byte(vote.BlockRoot),
+		Signatures:       []xchain.SigTuple{vote.Signature.ToXChain()},
 	}
 
 	ensureNoDuplicates := func(t *testing.T, msgs []xchain.Msg) {
@@ -90,9 +90,9 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 					SourceChainID: SourceChainID,
 					DestChainID:   DestChainID,
 				},
-				AggAttestation: aggAtt,
-				Msgs:           block.Msgs,
-				Tree:           tree,
+				Attestation: att,
+				Msgs:        block.Msgs,
+				Tree:        tree,
 			},
 		},
 	}
@@ -104,9 +104,9 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 			msgCount := 0
 			msgs := make([]xchain.Msg, 0, len(tt.streamUpdate.Msgs))
 			for _, sub := range subs {
-				require.EqualValues(t, 1, sub.ValidatorSetID)
+				require.EqualValues(t, valSetHash, sub.ValidatorSetHash)
 				require.NotNil(t, sub.AttestationRoot)
-				require.Equal(t, sub.AttestationRoot, common.Hash(att.BlockRoot))
+				require.Equal(t, sub.AttestationRoot, att.BlockRoot)
 				require.NotNil(t, sub.ProofFlags)
 				require.NotNil(t, sub.Signatures)
 				for _, msg := range sub.Msgs {

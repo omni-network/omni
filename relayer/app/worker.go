@@ -96,7 +96,7 @@ func (w *Worker) runOnce(ctx context.Context) error {
 
 func newCallback(xProvider xchain.Provider, initialOffsets map[xchain.StreamID]uint64, creator CreateFunc,
 	sender SendFunc, destChainID uint64) cchain.ProviderCallback {
-	return func(ctx context.Context, att xchain.AggAttestation) error {
+	return func(ctx context.Context, att xchain.Attestation) error {
 		// Get the xblock from the source chain.
 		block, ok, err := xProvider.GetBlock(ctx, att.SourceChainID, att.BlockHeight)
 		if err != nil {
@@ -129,10 +129,10 @@ func newCallback(xProvider xchain.Provider, initialOffsets map[xchain.StreamID]u
 			}
 
 			update := StreamUpdate{
-				StreamID:       streamID,
-				AggAttestation: att,
-				Msgs:           msgs,
-				Tree:           tree,
+				StreamID:    streamID,
+				Attestation: att,
+				Msgs:        msgs,
+				Tree:        tree,
 			}
 
 			submissions, err := creator(update)

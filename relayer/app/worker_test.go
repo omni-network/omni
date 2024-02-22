@@ -104,9 +104,9 @@ func TestWorker_Run(t *testing.T) {
 			}
 
 			height := fromHeight
-			nextAtt := func() xchain.AggAttestation {
+			nextAtt := func() xchain.Attestation {
 				defer func() { height++ }()
-				return xchain.AggAttestation{
+				return xchain.Attestation{
 					BlockHeader: xchain.BlockHeader{SourceChainID: chainID, BlockHeight: height},
 				}
 			}

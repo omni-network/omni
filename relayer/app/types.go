@@ -12,9 +12,9 @@ import (
 
 type StreamUpdate struct {
 	xchain.StreamID
-	Tree           xchain.BlockTree
-	AggAttestation xchain.AggAttestation // Attestation for the xmsgs
-	Msgs           []xchain.Msg          // msgs that increment the cursor
+	Tree        xchain.BlockTree
+	Attestation xchain.Attestation // Attestation for the xmsgs
+	Msgs        []xchain.Msg       // msgs that increment the cursor
 }
 
 // CreateFunc is a function that creates one or more submissions from the given stream update.
@@ -53,7 +53,7 @@ func SubmissionToBinding(sub xchain.Submission) bindings.XTypesSubmission {
 
 	return bindings.XTypesSubmission{
 		AttestationRoot: sub.AttestationRoot,
-		ValidatorSetId:  sub.ValidatorSetID,
+		ValidatorSetId:  1, // TODO(corver): Use sub.ValSetHash once bindings supports it.
 		BlockHeader: bindings.XTypesBlockHeader{
 			SourceChainId: sub.BlockHeader.SourceChainID,
 			BlockHeight:   sub.BlockHeader.BlockHeight,
