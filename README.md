@@ -27,7 +27,7 @@
 
 <p align="center">
     <a href="https://omni.network/">
-        <img src="docs/images/omni_banner.jpg" alt="Logo">
+        <img src="docs/images/omni_banner.png" alt="Logo">
     </a>
 </p>
 
