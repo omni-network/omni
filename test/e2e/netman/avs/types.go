@@ -23,16 +23,13 @@ type AVSConfig struct {
 
 type EigenDeployments struct {
 	// core deployments
-	AVSDirectory      common.Address `json:"AVSDirectory"`
-	DelegationManager common.Address `json:"DelegationManager"`
-	StrategyManager   common.Address `json:"StrategyManager"`
-	EigenPodManager   common.Address `json:"EigenPodManager"`
+	AVSDirectory      common.Address `json:"avsDirectory"`
+	DelegationManager common.Address `json:"delegationManager"`
+	StrategyManager   common.Address `json:"strategyManager"`
+	EigenPodManager   common.Address `json:"eigenPodManager"`
 
-	// test token & strategies
-	EigenStrategy common.Address `json:"EigenStrategy"`
-	EigenToken    common.Address `json:"EigenToken"`
-	WETH          common.Address `json:"WETH"`
-	WETHStrategy  common.Address `json:"WETHStrategy"`
+	// maps token symbol to strategy address
+	Strategies map[string]common.Address `json:"strategies"`
 }
 
 func LoadDeployments(file string) (EigenDeployments, error) {
@@ -50,18 +47,17 @@ func LoadDeployments(file string) (EigenDeployments, error) {
 }
 
 func DefaultTestAVSConfig(eigen EigenDeployments) AVSConfig {
+	strategyParams := make([]StrategyParams, 0, len(eigen.Strategies))
+	for _, strategy := range eigen.Strategies {
+		strategyParams = append(strategyParams, StrategyParams{
+			Strategy:   strategy,
+			Multiplier: big.NewInt(1e18), // OmniAVS.WEIGHTING_DIVISOR
+		})
+	}
+
 	return AVSConfig{
 		MinimumOperatorStake: big.NewInt(1e18),
 		MaximumOperatorCount: 10,
-		StrategyParams: []StrategyParams{
-			{
-				Strategy:   eigen.EigenStrategy,
-				Multiplier: big.NewInt(1e18), // OmniAVS.WEIGHTING_DIVISOR
-			},
-			{
-				Strategy:   eigen.WETHStrategy,
-				Multiplier: big.NewInt(1e18), // OmniAVS.WEIGHTING_DIVISOR
-			},
-		},
+		StrategyParams:       strategyParams,
 	}
 }

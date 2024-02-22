@@ -16,6 +16,8 @@ services:
     - 26656:26656
     - 26657:26657
     - 6060
+    environment:
+    - HALO_LOG_FORMAT=logfmt
     volumes:
     - ./validator02:/halo
     - ./validator02_evm/jwtsecret:/geth/jwtsecret
@@ -66,6 +68,7 @@ services:
       - --syncmode=full
       - --nodekeyhex=<nodekeyhex>
       - --bootnodes=enode://<enode_pubkey>@127.0.0.1:30303
+      - --miner.recommit=500ms
     ports:
       - 8551:8551
       - 8545:8545

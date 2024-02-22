@@ -76,7 +76,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
         for (uint32 i = 0; i < numOperators; i++) {
             operators[i] = _operator(i);
             _registerAsOperator(operators[i]);
-            _depositWeth(operators[i], initialOperatorStake);
+            _depositIntoSupportedStrategy(operators[i], initialOperatorStake);
         }
 
         OmniAVS.Validator[] memory validators;
@@ -95,6 +95,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
     function _testRegisterOperatorsWithAVS() internal {
         // register operators with AVS
         for (uint32 i = 0; i < numOperators; i++) {
+            _addToAllowlist(operators[i]);
             _registerOperatorWithAVS(operators[i]);
         }
 
@@ -126,10 +127,10 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
                 address delegator = delegators[idx];
 
                 // should contribute to quorom stake
-                _depositWeth(delegator, initialDelegatorStake);
+                _depositIntoSupportedStrategy(delegator, initialDelegatorStake);
 
                 // should NOT contribute to quorom stake
-                _depositEigen(delegator, initialDelegatorStake);
+                _depositIntoUnsupportedStrategy(delegator, initialDelegatorStake);
 
                 // all stake is delegated
                 _testDelegateToOperator(delegator, operator);
@@ -161,7 +162,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
         // increase delegations for first half of operators
         for (uint32 i = 0; i < numOperators / 2; i++) {
             for (uint32 j = 0; j < numDelegatorsPerOp; j++) {
-                _depositWeth(delegators[i * numDelegatorsPerOp + j], delegatorStakeAddition);
+                _depositIntoSupportedStrategy(delegators[i * numDelegatorsPerOp + j], delegatorStakeAddition);
             }
         }
 
@@ -197,7 +198,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
     function _testIncreaseStakeOfSecondHalfOfOperators() internal {
         // increase stake of second half of delegators
         for (uint32 i = numOperators / 2; i < numOperators; i++) {
-            _depositWeth(operators[i], operatorStakeAddition);
+            _depositIntoSupportedStrategy(operators[i], operatorStakeAddition);
         }
 
         OmniAVS.Validator[] memory validators;
@@ -297,7 +298,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
     /// @dev Expect an OmniPortal.xcall to IOmniEthRestaking.sync(validators), with correct fee and gasLimit
     function _expectXCall(OmniAVS.Validator[] memory validators) internal {
         bytes memory data = abi.encodeWithSelector(IOmniEthRestaking.sync.selector, validators);
-        uint64 gasLimit = omniAVS.xcallGasLimitFor(validators.length);
+        uint64 gasLimit = omniAVS.xcallBaseGasLimit() + omniAVS.xcallGasLimitPerValidator() * uint64(validators.length);
 
         vm.expectCall(
             address(portal),
@@ -306,5 +307,58 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
                 "xcall(uint64,address,bytes,uint64)", omniChainId, OmniPredeploys.OMNI_ETH_RESTAKING, data, gasLimit
             )
         );
+    }
+
+    /**
+     * Unit tests.
+     */
+
+    /// @dev Test that an operator cannot register if not in allow list
+    function test_registerOperator_notAllowed_reverts() public {
+        address operator = _operator(0);
+
+        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+
+        vm.expectRevert("OmniAVS: not allowed");
+        vm.prank(operator);
+        omniAVS.registerOperatorToAVS(operator, emptySig);
+    }
+
+    /// @dev Test that an operator can be added to the allowlist
+    function test_addToAllowlist_succeeds() public {
+        address operator = makeAddr("operator");
+        _addToAllowlist(operator);
+        assertTrue(omniAVS.isInAllowlist(operator));
+    }
+
+    /// @dev Test that an operator can be removed from the allowlist
+    function test_removeFromAllowlist_succeeds() public {
+        address operator1 = makeAddr("operator");
+        address operator2 = makeAddr("operator2");
+
+        _addToAllowlist(operator1);
+        _addToAllowlist(operator2);
+        assertTrue(omniAVS.isInAllowlist(operator1));
+        assertTrue(omniAVS.isInAllowlist(operator2));
+
+        _removeFromAllowlist(operator1);
+        assertFalse(omniAVS.isInAllowlist(operator1));
+        assertTrue(omniAVS.isInAllowlist(operator2));
+    }
+
+    /// @dev Test that only the owner can add to the allowlist
+    function test_addToAllowlist_notOwner_reverts() public {
+        address operator = makeAddr("operator");
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        omniAVS.addToAllowlist(operator);
+    }
+
+    /// @dev Test that only the owner can remove from the allowlist
+    function test_removeFromAllowlist_notOwner_reverts() public {
+        address operator = makeAddr("operator");
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        omniAVS.removeFromAllowlist(operator);
     }
 }

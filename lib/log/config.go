@@ -13,6 +13,7 @@ import (
 const (
 	FormatConsole = "console"
 	FormatJSON    = "json"
+	FormatLogfmt  = "logfmt"
 
 	ColorForce   = "force"
 	ColorDisable = "disable"
@@ -25,12 +26,15 @@ var (
 	levelInfo  = strings.ToLower(slog.LevelInfo.String())
 	levelWarn  = strings.ToLower(slog.LevelWarn.String())
 	levelError = strings.ToLower(slog.LevelError.String())
+
+	levels = []string{levelDebug, levelInfo, levelWarn, levelError}
 )
 
 //nolint:gochecknoglobals // Static mapping.
 var loggerFuncs = map[string]func(...func(*options)) *slog.Logger{
 	FormatConsole: newConsoleLogger,
 	FormatJSON:    newJSONLogger,
+	FormatLogfmt:  newLogfmtLogger,
 }
 
 //nolint:gochecknoglobals // Static mapping.
@@ -110,8 +114,6 @@ func (c Config) make() (*slog.Logger, error) {
 }
 
 // BindFlags binds the standard flags to provide logging config at runtime.
-//
-//nolint:lll,revive // Long lines are actually more readable here.
 func BindFlags(flags *pflag.FlagSet, cfg *Config) {
 	flags.StringVar(&cfg.Level, "log-level", cfg.Level, "Log level; debug, info, warn, error")
 	flags.StringVar(&cfg.Color, "log-color", cfg.Color, "Log color (only applicable to console format); auto, force, disable")

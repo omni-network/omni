@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/omni-network/omni/halo2/genutil"
+	"github.com/omni-network/omni/halo/genutil"
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/types"

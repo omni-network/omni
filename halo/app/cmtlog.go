@@ -34,7 +34,7 @@ type cmtLogger struct {
 	level int
 }
 
-func NewCmtLogger(ctx context.Context, levelStr string) (cmtlog.Logger, error) {
+func newCmtLogger(ctx context.Context, levelStr string) (cmtlog.Logger, error) {
 	level, ok := levels[strings.ToLower(levelStr)]
 	if !ok {
 		return cmtLogger{}, errors.New("invalid comet log level", "level", levelStr)
@@ -75,19 +75,4 @@ func (c cmtLogger) With(keyvals ...any) cmtlog.Logger { //nolint:ireturn // This
 		ctx:   log.WithCtx(c.ctx, keyvals...),
 		level: c.level,
 	}
-}
-
-// splitOutError splits the keyvals into a slice of keyvals without the error and the error.
-func splitOutError(keyvals []any) ([]any, error) {
-	var remaining []any
-	var err error
-	for i := 0; i < len(keyvals); i += 2 {
-		if keyErr, ok := keyvals[i+1].(error); ok {
-			err = keyErr
-		} else {
-			remaining = append(remaining, keyvals[i], keyvals[i+1])
-		}
-	}
-
-	return remaining, err
 }

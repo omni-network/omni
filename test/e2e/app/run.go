@@ -7,7 +7,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/test/e2e/pingpong"
+	"github.com/omni-network/omni/test/e2e/netman/pingpong"
 	"github.com/omni-network/omni/test/e2e/types"
 	"github.com/omni-network/omni/test/e2e/xtx"
 
@@ -23,7 +23,6 @@ type DeployConfig struct {
 // It also deploys a pingpong contract and starts all edges.
 func DeployWithPingPong(ctx context.Context, def Definition, cfg DeployConfig, pingPongN uint64,
 ) (types.DeployInfos, error) {
-
 	deployInfo, err := Deploy(ctx, def, cfg)
 	if err != nil {
 		return nil, err
@@ -113,7 +112,6 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, depCfg Depl
 	if err != nil {
 		return errors.Wrap(err, "deploy tx sender manager")
 	}
-
 
 	// Deploy and start ping pong
 	const pingpongN = 4

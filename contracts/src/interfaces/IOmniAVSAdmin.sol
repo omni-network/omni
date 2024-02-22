@@ -10,12 +10,25 @@ import { IOmniAVS } from "./IOmniAVS.sol";
  */
 interface IOmniAVSAdmin {
     /**
+     * @notice Emitted when an operator is added to the allowlist.
+     * @param operator The operator
+     */
+    event OperatorAllowed(address operator);
+
+    /**
+     * @notice Emitted when an operator is removed from the allowlist.
+     * @param operator The operator
+     */
+    event OperatorDisallowed(address operator);
+
+    /**
      * @notice Initialize the Omni AVS admin contract.
      * @param owner The intiial owner of the contract
      * @param omni The Omni portal contract
      * @param omniChainId The Omni chain id
      * @param minimumOperatorStake The minimum operator stake, not including delegations
      * @param maxOperatorCount The maximum operator count
+     * @param allowlist The initial allowlist
      * @param strategyParams List of accepted strategies and their multipliers
      */
     function initialize(
@@ -24,6 +37,7 @@ interface IOmniAVSAdmin {
         uint64 omniChainId,
         uint96 minimumOperatorStake,
         uint32 maxOperatorCount,
+        address[] calldata allowlist,
         IOmniAVS.StrategyParams[] calldata strategyParams
     ) external;
 
@@ -68,5 +82,25 @@ interface IOmniAVSAdmin {
      * @param base The base xcall gas limit
      * @param perValidator The per-validator additional xcall gas limit
      */
-    function setXcallGasLimits(uint256 base, uint256 perValidator) external;
+    function setXcallGasLimits(uint64 base, uint64 perValidator) external;
+
+    /**
+     * @notice Returns true if the operator is in the allowlist.
+     * @param operator The operator to check
+     */
+    function isInAllowlist(address operator) external view returns (bool);
+
+    /**
+     * @notice Add an operator to the allowlist.
+     * @dev Only the owner can call this function.
+     * @param operator The operator to add
+     */
+    function addToAllowlist(address operator) external;
+
+    /**
+     * @notice Remove an operator from the allowlist.
+     * @dev Only the owner can call this function.
+     * @param operator The operator to remove
+     */
+    function removeFromAllowlist(address operator) external;
 }

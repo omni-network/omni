@@ -70,16 +70,17 @@ func NewProvider(testnet types.Testnet, infd types.InfrastructureData, haloTag s
 // any of these operations fail. It writes.
 func (p *Provider) Setup() error {
 	def := ComposeDef{
-		Network:     true,
-		NetworkName: p.testnet.Name,
-		NetworkCIDR: p.testnet.IP.String(),
-		BindAll:     false,
-		Nodes:       p.testnet.Nodes,
-		OmniEVMs:    p.testnet.OmniEVMs,
-		Anvils:      p.testnet.AnvilChains,
-		Relayer:     true,
-		Prometheus:  p.testnet.Prometheus,
-		RelayerTag:  p.relayerTag,
+		Network:       true,
+		NetworkName:   p.testnet.Name,
+		NetworkCIDR:   p.testnet.IP.String(),
+		BindAll:       false,
+		Nodes:         p.testnet.Nodes,
+		OmniEVMs:      p.testnet.OmniEVMs,
+		Anvils:        p.testnet.AnvilChains,
+		Relayer:       true,
+		Prometheus:    p.testnet.Prometheus,
+		RelayerTag:    p.relayerTag,
+		OmniLogFormat: log.FormatConsole, // Local docker compose always use console log format.
 	}
 
 	bz, err := GenerateComposeFile(def)
@@ -140,12 +141,13 @@ type ComposeDef struct {
 	NetworkCIDR string
 	BindAll     bool
 
-	Nodes      []*e2e.Node
-	OmniEVMs   []types.OmniEVM
-	Anvils     []types.AnvilChain
-	Relayer    bool
-	Prometheus bool
-	RelayerTag string
+	Nodes         []*e2e.Node
+	OmniEVMs      []types.OmniEVM
+	Anvils        []types.AnvilChain
+	Relayer       bool
+	Prometheus    bool
+	RelayerTag    string
+	OmniLogFormat string
 }
 
 // NodeOmniEVMs returns a map of node name to OmniEVM instance name; map[node_name]omni_evm.

@@ -15,35 +15,31 @@ if [[ $# == 0 ]]; then
 	exit 1
 fi
 
-FAILED=()
+echo "🌊==> Running e2e tests:" "$@"
 
 for MANIFEST in "$@"; do
 	START=$SECONDS
-	echo "==> Running testnet: $MANIFEST"
+	echo "🌊==> Running manifest: $MANIFEST"
 
 	if ! e2e -f "$MANIFEST"; then
-		echo "==> Testnet $MANIFEST failed, dumping manifest..."
+		echo "🌊==> ❌ Testnet $MANIFEST failed, dumping manifest..."
 		cat "$MANIFEST"
 
-		echo "==> Dumping container logs for $MANIFEST..."
-		e2e -f "$MANIFEST" logs
+		echo "🌊==> Dumping failed container logs to failed-logs.txt..."
+		e2e -f "$MANIFEST" logs > failed-logs.txt
 
-		echo "==> Cleaning up failed testnet $MANIFEST..."
+		echo "🌊==> Displaying failed container error and warn logs..."
+		grep -iE "(panic|erro|warn)" failed-logs.txt || echo "No errors or warns found"
+
+		echo "🌊==> Cleaning up failed manifest $MANIFEST..."
 		e2e -f "$MANIFEST" clean
 
-		FAILED+=("$MANIFEST")
+    echo "🌊==> ❌ Manifest $MANIFEST failed..."
+		exit 1
 	fi
 
-	echo "==> Completed testnet $MANIFEST in $(( SECONDS - START ))s"
+	echo "🌊==> ✅ Completed manifest $MANIFEST in $(( SECONDS - START ))s"
 	echo ""
 done
 
-if [[ ${#FAILED[@]} -ne 0 ]]; then
-	echo "${#FAILED[@]} testnets failed:"
-	for MANIFEST in "${FAILED[@]}"; do
-		echo "- $MANIFEST"
-	done
-	exit 1
-else
-	echo "All testnets successful"
-fi
+echo "🌊==> 🎉 All manifests successful "

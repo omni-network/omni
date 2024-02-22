@@ -1,37 +1,49 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import { Script } from "forge-std/Script.sol";
-import { EigenLayerDeployer } from "test/avs/eigen/EigenLayerDeployer.t.sol";
+import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract DeployEigenLayer is EigenLayerDeployer, Script {
+import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
+
+import { EigenLayerLocal } from "test/avs/eigen/deploy/EigenLayerLocal.sol";
+import { IEigenDeployer } from "test/avs/eigen/deploy/IEigenDeployer.sol";
+import { Script } from "forge-std/Script.sol";
+
+contract DeployLocalEigenLayer is Script, EigenLayerLocal {
     function run() external {
         vm.startBroadcast();
-        _deployEigenLayerContractsLocal(false /*mockAvsDirectory*/ );
-        _writeDeploymentsJson();
+        Deployments memory deployments = EigenLayerLocal.deploy();
+        _writeDeployments(deployments);
     }
 
-    function _writeDeploymentsJson() private {
+    function _writeDeployments(IEigenDeployer.Deployments memory deps) private {
         string memory defaultOutputDir = "script/eigen/output";
         string memory outputDir = vm.envOr("OUTPUT_DIR", defaultOutputDir);
         string memory outputFile = string.concat(outputDir, "/deployments.json");
 
         string memory jsonId = "id";
-        vm.serializeAddress(jsonId, "ProxyAdmin", address(eigenLayerProxyAdmin));
-        vm.serializeAddress(jsonId, "PauserRegistry", address(eigenLayerPauserReg));
-        vm.serializeAddress(jsonId, "AVSDirectory", address(avsDirectory));
-        vm.serializeAddress(jsonId, "DelegationManager", address(delegation));
-        vm.serializeAddress(jsonId, "Slasher", address(slasher));
-        vm.serializeAddress(jsonId, "StrategyManager", address(strategyManager));
-        vm.serializeAddress(jsonId, "EigenPodManager", address(eigenPodManager));
-        vm.serializeAddress(jsonId, "EigenPod", address(pod));
-        vm.serializeAddress(jsonId, "DelayedWithdrawalRouter", address(delayedWithdrawalRouter));
-        vm.serializeAddress(jsonId, "ETHPOSDeposit", address(ethPOSDeposit));
-        vm.serializeAddress(jsonId, "EigenPodBeacon", address(eigenPodBeacon));
-        vm.serializeAddress(jsonId, "EigenToken", address(eigenToken));
-        vm.serializeAddress(jsonId, "EigenStrategy", address(eigenStrat));
-        vm.serializeAddress(jsonId, "WETH", address(weth));
-        string memory json = vm.serializeAddress(jsonId, "WETHStrategy", address(wethStrat));
+
+        // seralize all contract addresses in base json
+        vm.serializeAddress(jsonId, "proxyAdmin", deps.proxyAdmin);
+        vm.serializeAddress(jsonId, "pauserRegistry", deps.pauserRegistry);
+        vm.serializeAddress(jsonId, "avsDirectory", deps.avsDirectory);
+        vm.serializeAddress(jsonId, "delegationManager", deps.delegationManager);
+        vm.serializeAddress(jsonId, "slasher", deps.slasher);
+        vm.serializeAddress(jsonId, "strategyManager", deps.strategyManager);
+        vm.serializeAddress(jsonId, "eigenPodManager", deps.eigenPodManager);
+
+        // serialize token symbol mapped to strategy address
+        string memory strategies = "strategies";
+        string memory strategiesJson;
+        for (uint256 i = 0; i < deps.strategies.length; i++) {
+            IStrategy strat = IStrategy(deps.strategies[i]);
+            strategiesJson =
+                vm.serializeAddress(strategies, ERC20(address(strat.underlyingToken())).symbol(), address(strat));
+        }
+
+        // join stragies map with base json
+        string memory json = vm.serializeString(jsonId, strategies, strategiesJson);
+
         vm.writeJson(json, outputFile);
     }
 }

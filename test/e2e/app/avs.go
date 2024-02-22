@@ -2,20 +2,30 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/test/e2e/netman/avs"
 	"github.com/omni-network/omni/test/e2e/types"
+
+	_ "embed"
 )
 
-func deployAVS(ctx context.Context, def Definition, cfg DeployConfig, deployInfo types.DeployInfos) error {
-	if cfg.EigenFile == "" {
-		log.Warn(ctx, "No eigen deployments file provided, skipping AVS deployment", nil)
-		return nil
-	}
+//go:embed static/el-deployments.json
+var defaultEigenDeps []byte
 
-	elDeps, err := avs.LoadDeployments(cfg.EigenFile)
+func deployAVS(ctx context.Context, def Definition, cfg DeployConfig, deployInfo types.DeployInfos) error {
+	var (
+		elDeps avs.EigenDeployments
+		err    error
+	)
+	if cfg.EigenFile != "" {
+		elDeps, err = avs.LoadDeployments(cfg.EigenFile)
+	} else {
+		log.Debug(ctx, "Using default eigen deployments")
+		err = json.Unmarshal(defaultEigenDeps, &elDeps)
+	}
 	if err != nil {
 		return errors.Wrap(err, "load eigen deployments")
 	}
@@ -27,11 +37,15 @@ func deployAVS(ctx context.Context, def Definition, cfg DeployConfig, deployInfo
 
 	portal := def.Netman.Portals()[chain.ID]
 
+	// just use the first OmniEVM chain for now
+	omniChainID := def.Testnet.OmniEVMs[0].Chain.ID
+
 	xdapp := avs.New(
 		avs.DefaultTestAVSConfig(elDeps),
 		elDeps,
 		portal.DeployInfo.PortalAddress,
 		chain,
+		omniChainID,
 		portal.Client,
 		portal.TxOpts(ctx, nil),
 	)

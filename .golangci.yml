@@ -12,6 +12,7 @@ linters-settings:
     forbid:
       - 'fmt\.Print.*(# Avoid debug logging)?'
       - 'fmt\.Errorf.*(# Prefer lib/errors.Wrap)?'
+      - 'prometheus\.New.*(# Prefer promauto)?'
   gci: # Auto-format imports
     sections:
       - standard                           # Go stdlib
@@ -58,6 +59,8 @@ linters-settings:
         disabled: true
       - name: argument-limit # False positives, address in code reviews
         disabled: true
+      - name: line-length-limit # Requires us to cause indentation confusion: https://google.github.io/styleguide/go/decisions#indentation-confusion
+        disabled: true
       # Some configured revive rules
       - name: imports-blacklist
         arguments:
@@ -67,9 +70,6 @@ linters-settings:
           - "github.com/gogo/protobuf/proto"     # Prefer google.golang.org/protobuf
           - "github.com/stretchr/testify/assert" # Prefer github.com/stretchr/testify/require
           - "golang.org/x/exp/slices"            # Prefer slices
-      - name: line-length-limit
-        arguments:
-          - 120
       - name: unhandled-error
         arguments:
          - 'fmt.Printf'
@@ -131,6 +131,7 @@ linters:
     - tagliatelle          # Too strict
     - varnamelen           # False positives
     - wsl                  # Way to strict and opinionated
+    - lll                  # Disable rigid line length limit
 
     # Disable deprecated/archived linters (alphabetical order)
     - deadcode

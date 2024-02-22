@@ -52,9 +52,13 @@ interface IOmniAVS {
     function syncWithOmni() external payable;
 
     /**
-     * @notice Get the list of validators registered as OmniAVS operators, with
-     *         their stake / delegations.
-     * @return The list of validators
+     * @notice Returns the currrent list of validators registered as OmniAVS
+     *         operators, with their stake / delegations.
      */
     function getValidators() external view returns (Validator[] memory);
+
+    /**
+     * @notice Returns the current strategy parameters.
+     */
+    function strategyParams() external view returns (StrategyParams[] memory);
 }

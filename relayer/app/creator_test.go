@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omni-network/omni/halo/attest"
+	"github.com/omni-network/omni/halo/attest/attester"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/xchain"
 	relayer "github.com/omni-network/omni/relayer/app"
@@ -50,19 +50,19 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 		block.Msgs[i].StreamOffset = uint64(i)
 	}
 
-	att, err := attest.CreateAttestation(privKey, block)
+	att, err := attester.CreateAttestation(privKey, block)
 	require.NoError(t, err)
-	require.Equal(t, block.BlockHeader, att.BlockHeader)
-	require.Equal(t, addr, att.Signature.ValidatorAddress)
+	require.Equal(t, block.BlockHeader, att.BlockHeader.ToXChain())
+	require.Equal(t, addr, common.Address(att.Signature.ValidatorAddress))
 
 	tree, err := xchain.NewBlockTree(block)
 	require.NoError(t, err)
 
 	aggAtt := xchain.AggAttestation{
-		BlockHeader:    att.BlockHeader,
+		BlockHeader:    att.BlockHeader.ToXChain(),
 		ValidatorSetID: ValidatorSetID,
-		BlockRoot:      att.BlockRoot,
-		Signatures:     []xchain.SigTuple{att.Signature},
+		BlockRoot:      [32]byte(att.BlockRoot),
+		Signatures:     []xchain.SigTuple{att.Signature.ToXChain()},
 	}
 
 	ensureNoDuplicates := func(t *testing.T, msgs []xchain.Msg) {
@@ -103,7 +103,7 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 			msgs := make([]xchain.Msg, 0, len(tt.streamUpdate.Msgs))
 			for _, submission := range submissions {
 				require.NotNil(t, submission.AttestationRoot)
-				require.Equal(t, submission.AttestationRoot, att.BlockRoot)
+				require.Equal(t, submission.AttestationRoot, common.Hash(att.BlockRoot))
 				require.NotNil(t, submission.ProofFlags)
 				require.NotNil(t, submission.Signatures)
 				for _, msg := range submission.Msgs {

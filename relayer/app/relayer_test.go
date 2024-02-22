@@ -65,7 +65,7 @@ func Test_FromHeights(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got := relayer.FromHeights(tt.args.cursors, tt.args.chains)
+			got := relayer.FromHeights(tt.args.cursors, netconf.Chain{ID: 4}, tt.args.chains)
 			require.Equal(t, tt.want, got)
 		})
 	}
@@ -114,7 +114,7 @@ type mockProvider struct {
 }
 
 func (m *mockProvider) Subscribe(ctx context.Context, sourceChainID uint64, sourceHeight uint64,
-	callback cchain.ProviderCallback,
+	_ string, callback cchain.ProviderCallback,
 ) {
 	m.SubscribeFn(ctx, sourceChainID, sourceHeight, callback)
 }

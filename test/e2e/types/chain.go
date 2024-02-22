@@ -4,28 +4,32 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/netconf"
 )
 
 //nolint:gochecknoglobals // Static mappings
 var (
 	ChainOmniEVM = EVMChain{
-		Name:        "omni_evm",
-		ID:          1,
-		BlockPeriod: time.Second,
+		Name:              "omni_evm",
+		ID:                1,
+		BlockPeriod:       time.Second,
+		FinalizationStrat: netconf.StratFinalized,
 	}
 
 	chainArbGoerli = EVMChain{
-		Name:        "arb_goerli",
-		ID:          421613,
-		IsPublic:    true,
-		BlockPeriod: 6 * time.Second,
+		Name:              "arb_goerli",
+		ID:                421613,
+		IsPublic:          true,
+		BlockPeriod:       6 * time.Second,
+		FinalizationStrat: netconf.StratFinalized,
 	}
 
 	chainGoerli = EVMChain{
-		Name:        "goerli",
-		ID:          5,
-		IsPublic:    true,
-		BlockPeriod: 15 * time.Second,
+		Name:              "goerli",
+		ID:                5,
+		IsPublic:          true,
+		BlockPeriod:       15 * time.Second,
+		FinalizationStrat: netconf.StratFinalized,
 	}
 )
 
@@ -36,9 +40,10 @@ func AnvilChainsByNames(names []string) []EVMChain {
 	var chains []EVMChain
 	for i, name := range names {
 		chains = append(chains, EVMChain{
-			Name:        name,
-			ID:          anvilChainIDFactor * uint64(i+1),
-			BlockPeriod: time.Second,
+			Name:              name,
+			ID:                anvilChainIDFactor * uint64(i+1),
+			BlockPeriod:       time.Second,
+			FinalizationStrat: netconf.StartLatest, // anvil doesn't support finalized
 		})
 	}
 

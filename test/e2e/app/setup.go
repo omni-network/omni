@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	haloapp "github.com/omni-network/omni/halo/app"
 	halocmd "github.com/omni-network/omni/halo/cmd"
-	"github.com/omni-network/omni/halo2/genutil"
+	halocfg "github.com/omni-network/omni/halo/config"
+	"github.com/omni-network/omni/halo/genutil"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -84,6 +84,10 @@ func Setup(ctx context.Context, def Definition, promSecrets PromSecrets) error {
 		return err
 	}
 
+	if err := writeAnvilState(def.Testnet); err != nil {
+		return err
+	}
+
 	for _, node := range def.Testnet.Nodes {
 		nodeDir := filepath.Join(def.Testnet.Dir, node.Name)
 
@@ -140,6 +144,23 @@ func Setup(ctx context.Context, def Definition, promSecrets PromSecrets) error {
 		if err := writePrometheusConfig(ctx, def.Testnet, promSecrets); err != nil {
 			return errors.Wrap(err, "write prom config")
 		}
+	}
+
+	return nil
+}
+
+//go:embed static/el-anvil-state.json
+var anvilState []byte
+
+// writeAnvilState writes the embedded /static/el-anvil-state.json
+// to <testnet.Dir>/anvil/state.json for use by all anvil chains.
+func writeAnvilState(testnet types.Testnet) error {
+	anvilStateFile := filepath.Join(testnet.Dir, "anvil", "state.json")
+	if err := os.MkdirAll(filepath.Dir(anvilStateFile), 0o755); err != nil {
+		return errors.Wrap(err, "mkdir")
+	}
+	if err := os.WriteFile(anvilStateFile, anvilState, 0o644); err != nil {
+		return errors.Wrap(err, "write anvil state")
 	}
 
 	return nil
@@ -285,11 +306,11 @@ func MakeConfig(node *e2e.Node, nodeDir string) (*config.Config, error) {
 
 // writeHaloConfig generates an halo application config for a node and writes it to disk.
 func writeHaloConfig(nodeDir string, logCfg log.Config) error {
-	cfg := haloapp.DefaultHaloConfig()
+	cfg := halocfg.DefaultConfig()
 	cfg.HomeDir = nodeDir
 	cfg.EngineJWTFile = "/geth/jwtsecret" // As per docker-compose mount
 
-	return haloapp.WriteConfigTOML(cfg, logCfg)
+	return halocfg.WriteConfigTOML(cfg, logCfg)
 }
 
 // UpdateConfigStateSync updates the state sync config for a node.
@@ -313,10 +334,10 @@ func UpdateConfigStateSync(node *e2e.Node, height int64, hash []byte) error {
 }
 
 var (
-	//go:embed static/geth_genesis.json
+	//go:embed static/geth-genesis.json
 	gethGenesis []byte
 
-	//go:embed static/geth_keystore.json
+	//go:embed static/geth-keystore.json
 	gethKeystore []byte
 )
 

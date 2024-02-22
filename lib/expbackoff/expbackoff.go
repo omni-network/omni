@@ -144,6 +144,44 @@ func NewWithReset(ctx context.Context, opts ...func(*Config)) (backoff func(), r
 	return backoff, reset
 }
 
+// NewWithAutoReset returns a backoff function configured via functional options applied to DefaultConfig.
+// The backoff function will exponentially sleep longer each time it is called.
+// The backoff function is automatically reset if sufficient time has passed since the last backoff.
+//
+// This "sufficient delay" is the next backoff duration, so if the next backoff duration is 1s,
+// the backoff will reset to initial duration after 1s of not being called.
+//
+//nolint:nonamedreturns // Named returns used for clear code.
+func NewWithAutoReset(ctx context.Context, opts ...func(*Config)) (backoff func()) {
+	conf := DefaultConfig
+	for _, opt := range opts {
+		opt(&conf)
+	}
+
+	var retries int
+
+	lastBackoff := time.Now()
+	backoff = func() {
+		if ctx.Err() != nil {
+			return
+		}
+
+		autoResetAt := lastBackoff.Add(Backoff(conf, retries))
+		if time.Now().After(autoResetAt) {
+			retries = 0
+		}
+
+		select {
+		case <-ctx.Done():
+		case <-after(Backoff(conf, retries)):
+		}
+		retries++
+		lastBackoff = time.Now()
+	}
+
+	return backoff
+}
+
 // Backoff returns the amount of time to wait before the next retry given the
 // number of retries.
 // Copied from google.golang.org/grpc@v1.48.0/internal/backoff/backoff.go.

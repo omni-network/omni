@@ -9,6 +9,11 @@ help:  ## Display this help message
 build-docker: ensure-go-releaser ## Builds the docker images.
 	@goreleaser release --snapshot --clean
 
+.PHONY: build-halo-relayer
+build-halo-relayer: ensure-go-releaser ## Builds the halo and relayer docker images only (slightly faster than above).
+	@scripts/build_docker.sh halo
+	@scripts/build_docker.sh relayer
+
 ###############################################################################
 ###                                Contracts                                 ###
 ###############################################################################
@@ -59,16 +64,13 @@ bufgen: ## Generates protobufs using buf generate.
 secrets-baseline: ensure-detect-secrets ## Update secrets baseline.
 	@detect-secrets scan --exclude-file pnpm-lock.yaml > .secrets.baseline
 
+.PHONY: fix-golden
+fix-golden: ## Fixes golden test fixtures.
+	@./scripts/fix_golden_tests.sh
+
 ###############################################################################
 ###                                Testing                                 	###
 ###############################################################################
-
-PWD := $(shell pwd)
-
-DEFAULT_E2E_FLAGS := --eigen-file $(PWD)/contracts/script/eigen/output/deployments.json \
-					 --anvil-state mock_l1=$(PWD)/contracts/script/eigen/output/anvil-state.json
-
-E2E_FLAGS ?= $(DEFAULT_E2E_FLAGS)
 
 .PHONY: halo-simnet
 halo-simnet: ## Runs halo in simnet mode.
@@ -79,18 +81,23 @@ halo-simnet: ## Runs halo in simnet mode.
 .PHONY: devnet-deploy
 devnet-deploy: ## Deploys devnet1
 	@echo "Creating a docker-compose devnet in ./test/e2e/run/devnet1"
-	@go run github.com/omni-network/omni/test/e2e -f test/e2e/manifests/devnet1.toml deploy $(E2E_FLAGS)
+	@go run github.com/omni-network/omni/test/e2e -f test/e2e/manifests/devnet1.toml deploy
 
 .PHONY: devnet-clean
 devnet-clean: ## Deletes devnet1 containers
 	@echo "Stopping the devnet in ./test/e2e/run/devnet1"
 	@go run github.com/omni-network/omni/test/e2e -f test/e2e/manifests/devnet1.toml clean
 
+.PHONY: e2e-ci
+e2e-ci: ## Runs all e2e CI tests
+	@go install github.com/omni-network/omni/test/e2e
+	@cd test/e2e && ./run-multiple.sh manifests/devnet1.toml manifests/simple.toml
+
 .PHONY: e2e-run
 e2e-run: ## Run specific e2e manifest (MANIFEST=single, MANIFEST=simple, etc). Note container remain running after the test.
 	@if [ -z "$(MANIFEST)" ]; then echo "⚠️ Please specify a manifest: MANIFEST=simple make e2e-run" && exit 1; fi
 	@echo "Using MANIFEST=$(MANIFEST)"
-	@go run github.com/omni-network/omni/test/e2e -f test/e2e/manifests/$(MANIFEST).toml $(E2E_FLAGS)
+	@go run github.com/omni-network/omni/test/e2e -f test/e2e/manifests/$(MANIFEST).toml
 
 .PHONY: e2e-logs
 e2e-logs: ## Print the docker logs of previously ran e2e manifest (single, simple, etc).
