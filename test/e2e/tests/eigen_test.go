@@ -3,8 +3,6 @@ package e2e_test
 import (
 	"context"
 	"crypto/ecdsa"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"math/big"
 	"strings"
 	"testing"
@@ -12,7 +10,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
@@ -25,45 +25,17 @@ const (
 	omniDeployPk = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 	elDeployPk   = "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6" // anvil account 9
 
-	//// info of pre-funded anvil account 3 as delegator1
-	//delegator1Addr = "0x90F79bf6EB2c4f870365E785982E1f101E93b906"
-	//delegator1Pk   = "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
-	//
-	//// info of pre-funded anvil account 4 as delegator2
-	//delegator2Addr = "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65"
-	//delegator2Pk   = "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
-	//
-	//// info of pre-funded anvil account 6 as operator1
-	//operator1Addr        = "0x976EA74026E726554dB657fA54763abd0C3a0aa9"
-	//operator1PK          = "0x92db14e403b83dfe3df233f83dfa3a0d7096f21ca9b0d6d6b8d88b2b4ec1564e"
 	operator1MetaDataURI = "https://www.operator1.com"
-	//
-	//// info of pre-funded anvil account 7 as operator2
-	//operator2Addr        = "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955"
-	//operator2PK          = "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
 	operator2MetaDataURI = "https://www.operator2.com"
 
 	MinStateForOperatorInEigenLayer = 10
-	MaxNumberOfOperators            = 2
+	MaxNumberOfOperators            = 200
 )
 
 var (
-	zeroAddr = common.HexToAddress("0x0000000000000000000000000000000000000000")
-	//opr1Addr = common.HexToAddress(operator1Addr)
-	//opr2Addr = common.HexToAddress(operator2Addr)
-	//del1Addr = common.HexToAddress(delegator1Addr)
-	//del2Addr = common.HexToAddress(delegator1Addr)
-
+	zeroAddr  = common.HexToAddress("0x0000000000000000000000000000000000000000")
 	omniDepPk = mustHexToKey(omniDeployPk)
 	elDepPk   = mustHexToKey(elDeployPk)
-	//opr1Pk    = mustHexToKey(operator1PK)
-	//opr2Pk    = mustHexToKey(operator2PK)
-	//del1Addr    = mustHexToKey(delegator1Pk)
-	//del2Pk    = mustHexToKey(delegator2Pk)
-)
-
-var (
-	ErrStrOprAlreadyReg = "operator has already registered"
 )
 
 func TestEigenAndOmniAVS(t *testing.T) {
@@ -71,43 +43,52 @@ func TestEigenAndOmniAVS(t *testing.T) {
 		t.Helper()
 		ctx := context.Background()
 
+		delMgrAddr := deployInfo[types.ContractELDelegationManager].Address
+		stratManAddr := deployInfo[types.ContractELStrategyManager].Address
+		wethStratAddr := deployInfo[types.ContractELWETHStrategy].Address
+		wethTokenAddr := deployInfo[types.ContractELWETH].Address
+		omniAVSAddr := deployInfo[types.ContractOmniAVS].Address
+
 		// create new operators, delegators and fund them with ETH
-		operator1Addr, opr1Addr, opr1Pk := createAccount(t)
-		operator2Addr, opr2Addr, opr2Pk := createAccount(t)
-		delegator1Addr, del1Addr, del1Pk := createAccount(t)
-		delegator2Addr, del2Addr, del2Pk := createAccount(t)
-		transferFundTo(t, operator1Addr, avs.Client)
-		transferFundTo(t, operator2Addr, avs.Client)
-		transferFundTo(t, delegator1Addr, avs.Client)
-		transferFundTo(t, delegator2Addr, avs.Client)
+		operator1Addr, opr1Addr, opr1Pk := createAccount(t, ctx, avs.Client)
+		operator2Addr, opr2Addr, opr2Pk := createAccount(t, ctx, avs.Client)
+		_, del1Addr, del1Pk := createAccount(t, ctx, avs.Client)
+		_, del2Addr, del2Pk := createAccount(t, ctx, avs.Client)
 
 		// check if contracts are deployed and configured properly
 		checkIfContractsAreDeployed(t, ctx, avs, deployInfo)
 		checkOmniAVSConfigurations(t, ctx, avs)
 
-		// register operator with EigenLayer
-		checkRegisteringOperatorToEL(t, ctx, avs, deployInfo, opr1Pk, operator1Addr, operator1MetaDataURI, "")
-		checkRegisteringOperatorToEL(t, ctx, avs, deployInfo, opr1Pk, operator1Addr, operator1MetaDataURI, ErrStrOprAlreadyReg)
-		checkRegisteringOperatorToEL(t, ctx, avs, deployInfo, opr2Pk, operator2Addr, operator2MetaDataURI, "")
+		// register operators with EigenLayer
+		checkRegisteringOperatorToEL(t, ctx, avs, delMgrAddr, opr1Pk, operator1Addr, operator1MetaDataURI)
+		checkRegisteringOperatorToEL(t, ctx, avs, delMgrAddr, opr2Pk, operator2Addr, operator2MetaDataURI)
 
-		// add funding to operators and delegators
+		// add WETH funding to operators and delegators
 		checkFundingWETHToAccounts(t, ctx, avs, 1000, opr1Addr, opr2Addr, del1Addr, del2Addr)
 
-		// register operators to omni AVS
-		whiteListStrategy(t, ctx, avs, deployInfo)
-		checkRegisteringOperatorsWithAVS(t, ctx, avs, deployInfo, opr1Addr, opr1Pk, 100, true)
-		checkRegisteringOperatorsWithAVS(t, ctx, avs, deployInfo, opr2Addr, opr2Pk, 100, true)
+		// register operators to omni AVS with a stake more than minimum stake
+		whiteListStrategy(t, ctx, avs, wethStratAddr)
+		checkRegisteringOperatorsWithAVS(t, ctx, avs, stratManAddr, wethStratAddr, wethTokenAddr, omniAVSAddr,
+			opr1Addr, opr1Pk, 100)
+		checkRegisteringOperatorsWithAVS(t, ctx, avs, stratManAddr, wethStratAddr, wethTokenAddr, omniAVSAddr,
+			opr2Addr, opr2Pk, 100)
 
-		// delegate stake from delegaters
-		delegateWETHToOperator(t, ctx, avs, del1Addr, del1Pk, opr1Addr, 20)
-		delegateWETHToOperator(t, ctx, avs, del1Addr, del1Pk, opr2Addr, 30)
-		delegateWETHToOperator(t, ctx, avs, del1Addr, del1Pk, opr1Addr, 20)
-		delegateWETHToOperator(t, ctx, avs, del2Addr, del2Pk, opr2Addr, 20)
+		// delegate stake to operators and check their balance
+		delegateWETHToOperator(t, ctx, avs, del1Addr, del1Pk, opr1Addr)
+		delegateWETHToStrategy(t, ctx, avs, del1Pk, stratManAddr, wethStratAddr, wethTokenAddr, 50)
+		checkOetOperatorBalance(t, ctx, avs, opr1Addr, opr1Pk)
+
+		delegateWETHToOperator(t, ctx, avs, del2Addr, del2Pk, opr2Addr)
+		delegateWETHToStrategy(t, ctx, avs, del2Pk, stratManAddr, wethStratAddr, wethTokenAddr, 50)
+		checkOetOperatorBalance(t, ctx, avs, opr2Addr, opr2Pk)
 
 	})
 }
 
-func createAccount(t *testing.T) (string, common.Address, *ecdsa.PrivateKey) {
+/*
+ * internal/ helper functions
+ */
+func createAccount(t *testing.T, ctx context.Context, client *ethclient.Client) (string, common.Address, *ecdsa.PrivateKey) {
 	privateKey, err := crypto.GenerateKey()
 	require.NoError(t, err)
 
@@ -116,10 +97,13 @@ func createAccount(t *testing.T) (string, common.Address, *ecdsa.PrivateKey) {
 	require.Equal(t, true, ok)
 	address := crypto.PubkeyToAddress(*publicKeyECDSA)
 
+	// fund the account with ETH
+	transferFundTo(t, ctx, address.String(), client)
+
 	return address.String(), address, privateKey
 }
 
-func transferFundTo(t *testing.T, addr string, client *ethclient.Client) {
+func transferFundTo(t *testing.T, ctx context.Context, addr string, client *ethclient.Client) {
 	pk := mustHexToKey("0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356")
 	adr := common.HexToAddress("0x14dC79964da2C08b23698B3D3cc7Ca32193d9955")
 
@@ -152,11 +136,10 @@ func transferFundTo(t *testing.T, addr string, client *ethclient.Client) {
 
 	err = client.SendTransaction(context.Background(), signedTx)
 	require.NoError(t, err)
+	_, err = bind.WaitMined(ctx, client, signedTx)
+	require.NoError(t, err)
 }
 
-/*
- * internal/ helper functions
- */
 func checkIfContractsAreDeployed(
 	t *testing.T,
 	ctx context.Context,
@@ -189,7 +172,9 @@ func checkOmniAVSConfigurations(
 
 	// set min stake
 	minStake := big.NewInt(MinStateForOperatorInEigenLayer)
-	_, err = avs.AVSContract.SetMinimumOperatorStake(txOpts, minStake)
+	tx, err := avs.AVSContract.SetMinimumOperatorStake(txOpts, minStake)
+	require.NoError(t, err)
+	_, err = bind.WaitMined(ctx, avs.Client, tx)
 	require.NoError(t, err)
 
 	// check if min stake is set properly
@@ -199,7 +184,9 @@ func checkOmniAVSConfigurations(
 	require.Equal(t, minStake.Uint64(), operatorStake.Uint64())
 
 	// set operator count
-	_, err = avs.AVSContract.SetMaxOperatorCount(txOpts, uint32(MaxNumberOfOperators))
+	tx, err = avs.AVSContract.SetMaxOperatorCount(txOpts, uint32(MaxNumberOfOperators))
+	require.NoError(t, err)
+	_, err = bind.WaitMined(ctx, avs.Client, tx)
 	require.NoError(t, err)
 
 	// check if operator count is set properly
@@ -212,11 +199,10 @@ func checkRegisteringOperatorToEL(
 	t *testing.T,
 	ctx context.Context,
 	avs AVS,
-	deployInfo map[types.ContractName]types.DeployInfo,
+	delMgrAddr common.Address,
 	oprPk *ecdsa.PrivateKey,
 	oprAddrStr string,
-	oprMetaDataURI string,
-	regErrStr string) {
+	oprMetaDataURI string) {
 	t.Helper()
 
 	// register operator to EL
@@ -225,25 +211,18 @@ func checkRegisteringOperatorToEL(
 	txOpts.Context = ctx
 	operatorDetails := getOperatorDetails(oprAddrStr)
 	tx, err := avs.DelegationManagerContract.RegisterAsOperator(txOpts, operatorDetails, oprMetaDataURI)
-
-	if regErrStr != "" {
-		require.ErrorContains(t, err, regErrStr, "")
-		return
-	}
-
+	receipt, err := bind.WaitMined(ctx, avs.Client, tx)
 	require.NoError(t, err)
-	require.Equal(t, big.NewInt(int64(avs.Chain.ID)), tx.ChainId(), "chain Id not equal")
 
-	//// get block where the operator was registered
-	//hash := tx.Hash()
-	//block, err := avs.Client.BlockByHash(ctx, hash)
-	//require.NoError(t, err)
-	//
-	//// check logs if the operator is registered properly
-	//checkForOperatorRegisteredToELLog(t, ctx, avs,
-	//	common.HexToAddress(operator1Addr),
-	//	deployInfo[types.ContractELDelegationManager].Address,
-	//	block.Header().Number.Uint64())
+	// get block where the operator was registered
+	block, err := avs.Client.BlockByNumber(ctx, receipt.BlockNumber)
+	require.NoError(t, err)
+
+	// check logs if the operator is registered properly
+	checkForOperatorRegisteredToELLog(t, ctx, avs,
+		common.HexToAddress(oprAddrStr),
+		delMgrAddr,
+		block.Header().Number.Uint64())
 }
 
 func checkFundingWETHToAccounts(
@@ -273,23 +252,23 @@ func checkRegisteringOperatorsWithAVS(
 	t *testing.T,
 	ctx context.Context,
 	avs AVS,
-	deployInfo map[types.ContractName]types.DeployInfo,
+	stratManAddr common.Address,
+	wethStratAddr common.Address,
+	wethTokenAddr common.Address,
+	omniAVSAddr common.Address,
 	oprAddr common.Address,
 	oprPk *ecdsa.PrivateKey,
-	selfStakeAmount int64,
-	addToAllowList bool) {
+	selfStakeAmount int64) {
 	t.Helper()
 
 	// add the operator to omni avs allow list
-	if addToAllowList {
-		addOperatorToAllowList(t, ctx, avs, oprAddr)
-	}
+	addOperatorToAllowList(t, ctx, avs, oprAddr)
 
 	// delegate min stake from operator to strategy
-	depositToStrategy(t, ctx, avs, deployInfo, oprPk, selfStakeAmount)
+	depositToStrategy(t, ctx, avs, stratManAddr, wethStratAddr, wethTokenAddr, oprPk, selfStakeAmount)
 
 	// register the operator with omni avs
-	registerOperatorToAVS(t, ctx, avs, deployInfo, oprAddr, oprPk)
+	registerOperatorToAVS(t, ctx, avs, oprAddr, omniAVSAddr, oprPk)
 }
 
 func addOperatorToAllowList(
@@ -303,15 +282,17 @@ func addOperatorToAllowList(
 	require.NoError(t, err)
 	txOpts.Context = ctx
 
-	_, err = avs.AVSContract.AddToAllowlist(txOpts, oprAddr)
+	tx, err := avs.AVSContract.AddToAllowlist(txOpts, oprAddr)
+	require.NoError(t, err)
+	_, err = bind.WaitMined(ctx, avs.Client, tx)
 	require.NoError(t, err)
 }
 
 func registerOperatorToAVS(t *testing.T,
 	ctx context.Context,
 	avs AVS,
-	deployInfo map[types.ContractName]types.DeployInfo,
 	oprAddr common.Address,
+	omniAVSAddr common.Address,
 	oprPk *ecdsa.PrivateKey) {
 	t.Helper()
 
@@ -326,7 +307,6 @@ func registerOperatorToAVS(t *testing.T,
 		Expiry:    big.NewInt(int64(block.Time()) + int64((24 * time.Hour))),
 	}
 	callOpts := bind.CallOpts{}
-	omniAVSAddr := deployInfo[types.ContractOmniAVS].Address
 	digestHash, err := avs.AVSDirectory.CalculateOperatorAVSRegistrationDigestHash(&callOpts, oprAddr, omniAVSAddr, operatorSignatureWithSaltAndExpiry.Salt, operatorSignatureWithSaltAndExpiry.Expiry)
 	require.NoError(t, err)
 
@@ -341,7 +321,8 @@ func registerOperatorToAVS(t *testing.T,
 	txOpts.Context = ctx
 	tx, err := avs.AVSContract.RegisterOperatorToAVS(txOpts, oprAddr, operatorSignatureWithSaltAndExpiry)
 	require.NoError(t, err)
-	require.Equal(t, big.NewInt(int64(avs.Chain.ID)), tx.ChainId(), "chain Id not equal")
+	_, err = bind.WaitMined(ctx, avs.Client, tx)
+	require.NoError(t, err)
 }
 
 func getOperatorDetails(addr string) bindings.IDelegationManagerOperatorDetails {
@@ -393,7 +374,9 @@ func fundAccountWithWETH(t *testing.T,
 	require.NoError(t, err)
 	txOpts.Context = ctx
 
-	_, err = avs.WETHTokenContract.Mint(txOpts, accountToFund, big.NewInt(amount))
+	tx, err := avs.WETHTokenContract.Mint(txOpts, accountToFund, big.NewInt(amount))
+	require.NoError(t, err)
+	_, err = bind.WaitMined(ctx, avs.Client, tx)
 	require.NoError(t, err)
 }
 
@@ -401,14 +384,15 @@ func whiteListStrategy(
 	t *testing.T,
 	ctx context.Context,
 	avs AVS,
-	deployInfo map[types.ContractName]types.DeployInfo) {
+	wethStratAddr common.Address) {
 	t.Helper()
 
-	wethStratAddr := deployInfo[types.ContractELWETHStrategy].Address
 	txOpts, err := bind.NewKeyedTransactorWithChainID(elDepPk, big.NewInt(int64(avs.Chain.ID)))
 	require.NoError(t, err)
 	txOpts.Context = ctx
-	_, err = avs.StrategyManagerContract.AddStrategiesToDepositWhitelist(txOpts, []common.Address{wethStratAddr}, []bool{false})
+	tx, err := avs.StrategyManagerContract.AddStrategiesToDepositWhitelist(txOpts, []common.Address{wethStratAddr}, []bool{false})
+	require.NoError(t, err)
+	_, err = bind.WaitMined(ctx, avs.Client, tx)
 	require.NoError(t, err)
 
 }
@@ -417,27 +401,29 @@ func depositToStrategy(
 	t *testing.T,
 	ctx context.Context,
 	avs AVS,
-	deployInfo map[types.ContractName]types.DeployInfo,
+	stratManAddr common.Address,
+	wethStratAddr common.Address,
+	wethTokenAddr common.Address,
 	depositorPk *ecdsa.PrivateKey,
 	amount int64) {
 	t.Helper()
-
-	stratManAddr := deployInfo[types.ContractELStrategyManager].Address
-	wethStratAddr := deployInfo[types.ContractELWETHStrategy].Address
-	wethTokenAddr := deployInfo[types.ContractELWETH].Address
 
 	// approve strategy manager to deposit on behalf of the depositor
 	txOpts, err := bind.NewKeyedTransactorWithChainID(depositorPk, big.NewInt(int64(avs.Chain.ID)))
 	require.NoError(t, err)
 	txOpts.Context = ctx
-	_, err = avs.WETHTokenContract.Approve(txOpts, stratManAddr, big.NewInt(amount))
+	tx, err := avs.WETHTokenContract.Approve(txOpts, stratManAddr, big.NewInt(amount))
+	require.NoError(t, err)
+	_, err = bind.WaitMined(ctx, avs.Client, tx)
 	require.NoError(t, err)
 
 	// deposit to strategy (assuming that this strategy is already white listed)
 	txOpts, err = bind.NewKeyedTransactorWithChainID(depositorPk, big.NewInt(int64(avs.Chain.ID)))
 	require.NoError(t, err)
 	txOpts.Context = ctx
-	_, err = avs.StrategyManagerContract.DepositIntoStrategy(txOpts, wethStratAddr, wethTokenAddr, big.NewInt(amount))
+	tx, err = avs.StrategyManagerContract.DepositIntoStrategy(txOpts, wethStratAddr, wethTokenAddr, big.NewInt(amount))
+	require.NoError(t, err)
+	_, err = bind.WaitMined(ctx, avs.Client, tx)
 	require.NoError(t, err)
 }
 
@@ -446,13 +432,12 @@ func delegateWETHToOperator(t *testing.T,
 	avs AVS,
 	delegator common.Address,
 	delegatorPk *ecdsa.PrivateKey,
-	operator common.Address,
-	amount int64) {
+	operator common.Address) {
+	t.Helper()
 
 	txOpts, err := bind.NewKeyedTransactorWithChainID(delegatorPk, big.NewInt(int64(avs.Chain.ID)))
 	require.NoError(t, err)
 	txOpts.Context = ctx
-	txOpts.Value = big.NewInt(amount)
 
 	blockNumber, err := avs.Client.BlockNumber(ctx)
 	require.NoError(t, err)
@@ -463,8 +448,71 @@ func delegateWETHToOperator(t *testing.T,
 		Expiry:    big.NewInt(int64(block.Time()) + int64((24 * time.Hour))),
 	}
 	approverSalt := crypto.Keccak256Hash(delegator.Bytes())
-	_, err = avs.DelegationManagerContract.DelegateTo(txOpts, operator, approverSignatureAndExpiry, approverSalt)
+	tx, err := avs.DelegationManagerContract.DelegateTo(txOpts, operator, approverSignatureAndExpiry, approverSalt)
 	require.NoError(t, err)
+	_, err = bind.WaitMined(ctx, avs.Client, tx)
+	require.NoError(t, err)
+}
+
+func delegateWETHToStrategy(
+	t *testing.T,
+	ctx context.Context,
+	avs AVS,
+	delegatorPk *ecdsa.PrivateKey,
+	strategyManager common.Address,
+	strategy common.Address,
+	token common.Address,
+	amount int64) {
+	t.Helper()
+
+	txOpts, err := bind.NewKeyedTransactorWithChainID(delegatorPk, big.NewInt(int64(avs.Chain.ID)))
+	require.NoError(t, err)
+	txOpts.Context = ctx
+
+	tx, err := avs.WETHTokenContract.Approve(txOpts, strategyManager, big.NewInt(amount))
+	require.NoError(t, err)
+	_, err = bind.WaitMined(ctx, avs.Client, tx)
+	require.NoError(t, err)
+
+	txOpts, err = bind.NewKeyedTransactorWithChainID(delegatorPk, big.NewInt(int64(avs.Chain.ID)))
+	require.NoError(t, err)
+	txOpts.Context = ctx
+
+	tx, err = avs.StrategyManagerContract.DepositIntoStrategy(txOpts, strategy, token, big.NewInt(amount))
+	require.NoError(t, err)
+	_, err = bind.WaitMined(ctx, avs.Client, tx)
+	require.NoError(t, err)
+}
+
+func checkOetOperatorBalance(
+	t *testing.T,
+	ctx context.Context,
+	avs AVS,
+	operator common.Address,
+	operatorPk *ecdsa.PrivateKey) {
+	t.Helper()
+
+	txOpts, err := bind.NewKeyedTransactorWithChainID(operatorPk, big.NewInt(int64(avs.Chain.ID)))
+	require.NoError(t, err)
+	txOpts.Context = ctx
+
+	callOpts := bind.CallOpts{
+		From:    operator,
+		Context: ctx,
+	}
+	vals, err := avs.AVSContract.GetValidators(&callOpts)
+	require.NoError(t, err)
+
+	found := false
+	for _, val := range vals {
+		if val.Addr.String() == operator.String() {
+			found = true
+			require.Equal(t, uint64(100), val.Staked.Uint64())
+			require.Equal(t, uint64(50), val.Delegated.Uint64())
+			break
+		}
+	}
+	require.Equal(t, true, found)
 
 }
 
@@ -484,7 +532,8 @@ func wETHBalance(t *testing.T,
 	return balance.Uint64()
 }
 
-func checkIfCodePresent(t *testing.T,
+func checkIfCodePresent(
+	t *testing.T,
 	ctx context.Context,
 	avs AVS,
 	deployInfo map[types.ContractName]types.DeployInfo,
@@ -500,6 +549,12 @@ func mustHexToKey(privKeyHex string) *ecdsa.PrivateKey {
 	if err != nil {
 		panic(err)
 	}
-
 	return privKey
+}
+
+func checkOperatorDelegatiuonStatus(
+	t *testing.T,
+	ctx context.Context,
+	avs AVS) {
+
 }
