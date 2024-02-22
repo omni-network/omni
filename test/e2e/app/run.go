@@ -7,6 +7,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/math"
 	"github.com/omni-network/omni/test/e2e/netman/pingpong"
 	"github.com/omni-network/omni/test/e2e/types"
 
@@ -132,7 +133,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, depCfg Depl
 		return err
 	}
 
-	if err := WaitAllSubmissions(ctx, def.Netman.Portals(), sum(msgBatches)); err != nil {
+	if err := WaitAllSubmissions(ctx, def.Netman.Portals(), math.Sum(msgBatches)); err != nil {
 		return err
 	}
 
@@ -156,15 +157,6 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, depCfg Depl
 	}
 
 	return nil
-}
-
-func sum(batches []int) uint64 {
-	var resp int
-	for _, b := range batches {
-		resp += b
-	}
-
-	return uint64(resp)
 }
 
 // Convert cometbft testnet validators to solidity bindings.Validator, expected by portal constructor.
