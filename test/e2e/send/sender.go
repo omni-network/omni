@@ -57,12 +57,7 @@ func newTxSender(ctx context.Context, portal netman.Portal, privateKey *ecdsa.Pr
 	}, nil
 }
 
-func (s Sender) sendTransaction(
-	ctx context.Context,
-	address common.Address,
-	data []byte,
-	value *big.Int,
-) (*types.Receipt, error) {
+func (s Sender) sendTransaction(ctx context.Context, address common.Address, data []byte, value *big.Int) (*types.Receipt, error) {
 	if s.txMgr == nil {
 		return nil, errors.New("tx mgr not found")
 	}
