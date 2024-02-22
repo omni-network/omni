@@ -84,7 +84,7 @@ func (s TxSenderManager) SendXCallTransaction(ctx context.Context, opts XCallOpt
 
 // getXCallBytes returns the byte representation of the xcall function call.
 func (s TxSenderManager) XCallBytes(destChainID uint64, address common.Address, data []byte, gasLimit uint64) ([]byte, error) {
-	bytes, err := s.abi.Pack("xcall", destChainID, address, data, gasLimit)
+	bytes, err := s.abi.Pack("xcall", destChainID, address, data)
 	if err != nil {
 		return nil, errors.Wrap(err, "pack xcall")
 	}

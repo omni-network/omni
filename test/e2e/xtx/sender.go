@@ -23,7 +23,7 @@ type Sender struct {
 }
 
 const (
-	gasLimit = 1000000
+	gasLimit = 10000000
 	interval = 3
 )
 

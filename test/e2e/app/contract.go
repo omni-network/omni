@@ -68,7 +68,7 @@ func SendXMsgs(ctx context.Context, portals map[uint64]netman.Portal, txManager 
 					DestChainID: to.Chain.ID,
 					Address:     to.DeployInfo.PortalAddress,
 					Data:        []byte{},
-					GasLimit:    uint64(1000000),
+					GasLimit:    uint64(10000000),
 				}
 				value := big.NewInt(0)
 				err = txManager.SendXCallTransaction(ctx, opts, value, fromChainID)
