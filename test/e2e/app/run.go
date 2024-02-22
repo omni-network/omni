@@ -16,31 +16,7 @@ import (
 type DeployConfig struct {
 	PromSecrets
 	EigenFile string
-}
-
-// DeployWithPingPong a new e2e network. It also starts all services in order to deploy private portals.
-// It also deploys a pingpong contract and starts all edges.
-func DeployWithPingPong(ctx context.Context, def Definition, cfg DeployConfig, pingPongN uint64,
-) (types.DeployInfos, error) {
-	deployInfo, err := Deploy(ctx, def, cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	if pingPongN == 0 {
-		return deployInfo, nil
-	}
-
-	pp, err := pingpong.Deploy(ctx, def.Netman.Portals())
-	if err != nil {
-		return nil, errors.Wrap(err, "deploy pingpong")
-	} else if err := pp.StartAllEdges(ctx, pingPongN); err != nil {
-		return nil, errors.Wrap(err, "start all edges")
-	}
-
-	pp.ExportDeployInfo(deployInfo)
-
-	return deployInfo, nil
+	PingPongN *uint64
 }
 
 // Deploy a new e2e network. It also starts all services in order to deploy private portals.
@@ -81,6 +57,22 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 	for chain, info := range def.Netman.DeployInfo() {
 		deployInfo.Set(chain.ID, types.ContractPortal, info.PortalAddress, info.DeployHeight)
 	}
+
+	if cfg.PingPongN == nil {
+		return deployInfo, nil
+	}
+
+	pp, err := pingpong.Deploy(ctx, def.Netman.Portals())
+	if err != nil {
+		return nil, errors.Wrap(err, "deploy pingpong")
+	}
+
+	err = pp.StartAllEdges(ctx, *cfg.PingPongN)
+	if err != nil {
+		return nil, errors.Wrap(err, "start all edges")
+	}
+
+	pp.ExportDeployInfo(deployInfo)
 
 	return deployInfo, nil
 }

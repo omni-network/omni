@@ -69,13 +69,15 @@ func New() *cobra.Command {
 
 func newDeployCmd(def *app.Definition) *cobra.Command {
 	var cfg app.DeployConfig
+
 	pingPongN := defaultPingPongDeploy // Default to 1000 ping pongs.
+	cfg.PingPongN = &pingPongN
 
 	cmd := &cobra.Command{
 		Use:   "deploy",
 		Short: "Deploys the e2e network",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := app.DeployWithPingPong(cmd.Context(), *def, cfg, pingPongN)
+			_, err := app.Deploy(cmd.Context(), *def, cfg)
 			return err
 		},
 	}
