@@ -30,6 +30,23 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 
 	keeper := NewKeeper(getCodec(), nil, MockEngineAPI{}, MockTxConfig{}, MockAddressProvider{})
 	_ = keeper
+
+	// Test case 1: Test when there are no transactions in the proposal
+	t.Run("NoTransactions", func(t *testing.T) {
+		//ctx := // Create a mock context
+		//req := &abci.RequestPrepareProposal{
+		//	Txs:    nil, // Set to nil to simulate no transactions
+		//	Height: 1,   // Set height to 1 for this test case
+		//	Time:   time.Now(), // Set time to current time or mock a time
+		//}
+		//
+		//resp, err := k.PrepareProposal(ctx, req)
+		//
+		//// Assert that the response is as expected
+		//require.NoError(t, err)
+		//require.NotNil(t, resp)
+		//require.Empty(t, resp.Txs) // Expecting no transactions in the response
+	})
 }
 
 func getCodec() *codec.ProtoCodec {
