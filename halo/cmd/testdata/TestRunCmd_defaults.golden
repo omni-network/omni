@@ -6,6 +6,8 @@
  "BackendType": "goleveldb",
  "MinRetainBlocks": 0,
  "PruningOption": "nothing",
+ "EVMBuildDelay": 600000000,
+ "EVMBuildOptimistic": true,
  "Comet": {
   "Version": "0.38.5",
   "RootDir": "./halo",

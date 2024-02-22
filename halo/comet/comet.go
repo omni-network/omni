@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/k1util"
 
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	cmttypes "github.com/cometbft/cometbft/types"
@@ -42,16 +41,7 @@ func (a adapter) Validators(ctx context.Context, height int64) (*cmttypes.Valida
 		}
 
 		for _, v := range valResp.Validators {
-			val := cmttypes.NewValidator(v.PubKey, v.VotingPower)
-
-			// Set the address to our Ethereum-style address.
-			addr, err := k1util.PubKeyToAddress(val.PubKey)
-			if err != nil {
-				return nil, errors.Wrap(err, "pubkey to address")
-			}
-			val.Address = addr[:]
-
-			vals = append(vals, val)
+			vals = append(vals, cmttypes.NewValidator(v.PubKey, v.VotingPower))
 		}
 
 		if len(vals) == valResp.Total {
@@ -65,9 +55,12 @@ func (a adapter) Validators(ctx context.Context, height int64) (*cmttypes.Valida
 		return nil, errors.Wrap(err, "update with change set")
 	}
 	if len(vals) > 0 {
-		valset.IncrementProposerPriority(1) // See cmttypes.NewValidatorSet, not sure about this actually...?
+		valset.IncrementProposerPriority(1) // See cmttypes.NewValidatorSet
 	}
-	// Note we can not call valSet.ValidateBasic() since we changed the address format.
+
+	if err := valset.ValidateBasic(); err != nil {
+		return nil, errors.Wrap(err, "validate basic")
+	}
 
 	return valset, nil
 }

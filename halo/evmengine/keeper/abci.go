@@ -14,7 +14,6 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
-	"github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -47,53 +46,63 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 		return &abci.ResponsePrepareProposal{}, nil
 	}
 
-	latestEHeight, err := k.ethCl.BlockNumber(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "latest execution block number")
+	// Either use the optimistic payload or create a new one.
+	payloadID, height, triggeredAt := k.getOptimisticPayload()
+	if uint64(req.Height) != height { //nolint:nestif // We need to extract this to a function probably.
+		latestEHeight, err := k.ethCl.BlockNumber(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "latest execution block number")
+		}
+
+		latestEBlock, err := k.ethCl.BlockByNumber(ctx, big.NewInt(int64(latestEHeight)))
+		if err != nil {
+			return nil, errors.Wrap(err, "latest execution block")
+		}
+
+		// CometBFT has instant finality, so head/safe/finalized is latest height.
+		forkchoiceState := engine.ForkchoiceStateV1{
+			HeadBlockHash:      latestEBlock.Hash(),
+			SafeBlockHash:      latestEBlock.Hash(),
+			FinalizedBlockHash: latestEBlock.Hash(),
+		}
+
+		// Use req time as timestamp for the next block.
+		// Or use latest execution block timestamp + 1 if is not greater.
+		// Since execution blocks must have unique second-granularity timestamps.
+		// TODO(corver): Maybe error if timestamp is not greater than latest execution block.
+		timestamp := uint64(req.Time.Unix())
+		if timestamp <= latestEBlock.Time() {
+			timestamp = latestEBlock.Time() + 1
+		}
+
+		payloadAttrs := engine.PayloadAttributes{
+			Timestamp:             timestamp,
+			Random:                latestEBlock.Hash(), // TODO(corver): implement proper randao.
+			SuggestedFeeRecipient: k.addrProvider.LocalAddress(),
+			Withdrawals:           []*etypes.Withdrawal{}, // Withdrawals not supported yet.
+			BeaconRoot:            nil,
+		}
+
+		forkchoiceResp, err := k.ethCl.ForkchoiceUpdatedV2(ctx, forkchoiceState, &payloadAttrs)
+		if err != nil {
+			return nil, errors.Wrap(err, "forkchoice updated")
+		} else if forkchoiceResp.PayloadStatus.Status != engine.VALID {
+			return nil, errors.New("status not valid")
+		}
+
+		payloadID = forkchoiceResp.PayloadID
+		triggeredAt = time.Now()
 	}
 
-	latestEBlock, err := k.ethCl.BlockByNumber(ctx, big.NewInt(int64(latestEHeight)))
-	if err != nil {
-		return nil, errors.Wrap(err, "latest execution block")
+	// Wait the minimum build_delay for the payload to be available.
+	waitTo := triggeredAt.Add(k.buildDelay)
+	select {
+	case <-ctx.Done():
+		return nil, errors.Wrap(ctx.Err(), "context done")
+	case <-time.After(time.Until(waitTo)):
 	}
 
-	// CometBFT has instant finality, so head/safe/finalized is latest height.
-	forkchoiceState := engine.ForkchoiceStateV1{
-		HeadBlockHash:      latestEBlock.Hash(),
-		SafeBlockHash:      latestEBlock.Hash(),
-		FinalizedBlockHash: latestEBlock.Hash(),
-	}
-
-	// Use req time as timestamp for the next block.
-	// Or use latest execution block timestamp + 1 if is not greater.
-	// Since execution blocks must have unique second-granularity timestamps.
-	// TODO(corver): Maybe error if timestamp is not greater than latest execution block.
-	timestamp := uint64(req.Time.Unix())
-	if timestamp <= latestEBlock.Time() {
-		timestamp = latestEBlock.Time() + 1
-	}
-
-	payloadAttrs := engine.PayloadAttributes{
-		Timestamp:             timestamp,
-		Random:                latestEBlock.Hash(),                        // TODO(corver): implement proper randao.
-		SuggestedFeeRecipient: common.BytesToAddress(req.ProposerAddress), // TODO(corver): Ensure this is correct.
-		Withdrawals:           []*etypes.Withdrawal{},                     // Withdrawals not supported yet.
-		BeaconRoot:            nil,
-	}
-
-	forkchoiceResp, err := k.ethCl.ForkchoiceUpdatedV2(ctx, forkchoiceState, &payloadAttrs)
-	if err != nil {
-		return nil, errors.Wrap(err, "forkchoice updated")
-	} else if forkchoiceResp.PayloadStatus.Status != engine.VALID {
-		return nil, errors.New("status not valid")
-	}
-
-	// We need to wait for geth to build a non-empty block.
-	// If we call to quickly, it just returns a empty block.
-	// Best would be to start building optimistically on prev block Commit.
-	time.Sleep(time.Millisecond * 600) // Geth miner.recommit value + 100ms. TODO(corver): Make this configurable.
-
-	payloadResp, err := k.ethCl.GetPayloadV2(ctx, *forkchoiceResp.PayloadID)
+	payloadResp, err := k.ethCl.GetPayloadV2(ctx, *payloadID)
 	if err != nil {
 		return nil, errors.Wrap(err, "get payload")
 	}
