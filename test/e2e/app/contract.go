@@ -46,18 +46,18 @@ func SendXMsgs(ctx context.Context, portals map[uint64]netman.Portal, txManager 
 				continue
 			}
 
-			opts := xtx.XCallArgs{
+			args := xtx.XCallArgs{
 				DestChainID: to.Chain.ID,
 				Address:     to.DeployInfo.PortalAddress,
 				Data:        []byte{},
+				GasLimit:    params.TxGas,
 			}
 			value := big.NewInt(params.GWei)
-			log.Info(ctx, "Sending xcall", "from", from.Chain.Name, "to", to.Chain.Name, "value", value, "gasLimit", opts.GasLimit, "destChainID", opts.DestChainID, "address", opts.Address.String())
-			receipt, err := txManager.SendXCallTransaction(ctx, opts, value, fromChainID)
+			log.Info(ctx, "Sending xcall", "from", from.Chain.Name, "to", to.Chain.Name, "value", value, "gasLimit", args.GasLimit, "destChainID", args.DestChainID, "address", args.Address.String())
+			receipt, err := txManager.SendXCallTransaction(ctx, args, value, fromChainID)
 			if err != nil {
 				return errors.Wrap(err, "send xcall", "from", from.Chain.Name, "to", to.Chain.Name)
 			}
-			time.Sleep(1 * time.Second) // TODO: potentially remove this sleep
 			log.Info(ctx, "Receipt", "status", receipt.Status, "gas_used", receipt.GasUsed, "tx_hash", receipt.TxHash.String())
 		}
 	}

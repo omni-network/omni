@@ -76,7 +76,7 @@ func (s Sender) sendTransaction(
 	if value == nil {
 		value = big.NewInt(0)
 	}
-
+	log.Info(ctx, "Sending tx", "from", s.chainName, "to", destChainID, "value", value, "gasLimit", gasLimit, "destChainID", destChainID, "address", s.portal.String())
 	candidate := txmgr.TxCandidate{
 		TxData:   data,
 		To:       &s.portal,
