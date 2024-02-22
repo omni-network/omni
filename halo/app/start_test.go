@@ -2,6 +2,7 @@ package app_test
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -21,6 +22,7 @@ import (
 
 func TestSmoke(t *testing.T) {
 	t.Parallel()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -92,6 +94,19 @@ func setupSimnet(t *testing.T) haloapp.Config {
 		Cosmos:  true,
 	})
 	require.NoError(t, err)
+
+	// CometBFT doesn't shutdown cleanly. It leaves goroutines running that write to disk.
+	// The test sometimes fails with: TempDir RemoveAll cleanup: unlinkat ... directory not empty
+	// Manually retry deleting everything a few times. This should prevent to test from flapping.
+	t.Cleanup(func() {
+		for i := 0; i < 5; i++ {
+			err := os.RemoveAll(homeDir)
+			if err == nil {
+				break
+			}
+			time.Sleep(time.Millisecond * 500)
+		}
+	})
 
 	return cfg
 }
