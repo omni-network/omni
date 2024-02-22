@@ -23,7 +23,7 @@ type Sender struct {
 }
 
 const (
-	gasLimit = 10000000
+	gasLimit = 1_000_000
 	interval = 3
 )
 
@@ -79,7 +79,7 @@ func (s Sender) sendTransaction(
 	candidate := txmgr.TxCandidate{
 		TxData:   data,
 		To:       &s.portal,
-		GasLimit: gasLimit,
+		GasLimit: uint64(gasLimit),
 		Value:    value,
 	}
 
