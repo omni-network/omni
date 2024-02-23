@@ -499,7 +499,9 @@ func (m *SimpleTxManager) queryReceipt(ctx context.Context, txHash common.Hash,
 	defer cancel()
 	receipt, err := m.backend.TransactionReceipt(ctx, txHash)
 	if err != nil {
-		if errors.Is(err, ethereum.NotFound) || strings.Contains(err.Error(), ethereum.NotFound.Error()) {
+		if strings.Contains(err.Error(), "transaction indexing is in progress") {
+			return nil, false, nil // Just back off here
+		} else if errors.Is(err, ethereum.NotFound) || strings.Contains(err.Error(), ethereum.NotFound.Error()) {
 			sendState.TxNotMined(txHash)
 			return nil, false, nil
 		}
