@@ -12,10 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-func (p Provider) XBlock(
-	sourceChainID uint64,
-	height uint64,
-) (*resolvers.XBlock, bool, error) {
+func (p Provider) XBlock(sourceChainID uint64, height uint64) (*resolvers.XBlock, bool, error) {
 	ctx := context.Background()
 	query, err := p.EntClient.Block.Query().
 		Where(block.SourceChainID(sourceChainID)).
@@ -35,13 +32,10 @@ func (p Provider) XBlock(
 	return graphQLBlock, true, nil
 }
 
-func (p Provider) XBlockRange(
-	amount uint64,
-	offset uint64,
-) ([]*resolvers.XBlock, bool, error) {
+func (p Provider) XBlockRange(amount uint64, offset uint64) ([]*resolvers.XBlock, bool, error) {
 	ctx := context.Background()
 	query, err := p.EntClient.Block.Query().
-		Order(ent.Desc(block.FieldTimestamp)).
+		Order(ent.Asc(block.FieldTimestamp)).
 		Limit(int(amount)).
 		Offset(int(offset)).
 		All(ctx)

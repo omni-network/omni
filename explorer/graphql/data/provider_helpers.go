@@ -12,9 +12,7 @@ import (
 )
 
 // EntBlockToGraphQLBlock converts an ent.Block to a resolvers.XBlock.
-func EntBlockToGraphQLBlock(
-	block *ent.Block,
-) (*resolvers.XBlock, error) {
+func EntBlockToGraphQLBlock(block *ent.Block) (*resolvers.XBlock, error) {
 	sourceChainIDBig, err := hexutil.DecodeBig(hexutil.EncodeUint64(block.SourceChainID))
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding source chain id")
