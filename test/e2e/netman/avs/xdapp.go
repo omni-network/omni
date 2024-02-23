@@ -96,7 +96,6 @@ func (d *XDapp) ExportDeployInfo(i types.DeployInfos) {
 	i.Set(d.chain.ID, types.ContractELPodManager, d.eigen.EigenPodManager, elHeight)
 	i.Set(d.chain.ID, types.ContractELWETH, d.eigen.WETH, elHeight)
 	i.Set(d.chain.ID, types.ContractELWETHStrategy, d.eigen.WETHStrategy, elHeight)
-
 }
 
 func (d *XDapp) deployOmniAVS(ctx context.Context, client backend.Backend, txOpts *bind.TransactOpts,
