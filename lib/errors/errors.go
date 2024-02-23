@@ -19,6 +19,10 @@ func New(msg string, attrs ...any) error {
 // Wrap returns a new error wrapping the provided with additional
 // structured fields.
 func Wrap(err error, msg string, attrs ...any) error {
+	if err == nil {
+		panic("wrap nil error")
+	}
+
 	var inner structured
 	if As(err, &inner) {
 		attrs = append(attrs, inner.attrs...) // Append inner attributes
