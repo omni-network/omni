@@ -6,12 +6,21 @@ import (
 	"testing"
 	"time"
 
-	"cosmossdk.io/core/store"
-	storetypes "cosmossdk.io/store/types"
-	"cosmossdk.io/x/tx/signing"
+	attesttypes "github.com/omni-network/omni/halo/attest/types"
+	etypes "github.com/omni-network/omni/halo/evmengine/types"
+	"github.com/omni-network/omni/lib/engine"
+
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
+
+	eengine "github.com/ethereum/go-ethereum/beacon/engine"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+
+	"cosmossdk.io/core/store"
+	storetypes "cosmossdk.io/store/types"
+	"cosmossdk.io/x/tx/signing"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -26,12 +35,6 @@ import (
 	dtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/gogoproto/proto"
-	eengine "github.com/ethereum/go-ethereum/beacon/engine"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	attesttypes "github.com/omni-network/omni/halo/attest/types"
-	etypes "github.com/omni-network/omni/halo/evmengine/types"
-	"github.com/omni-network/omni/lib/engine"
 	"github.com/stretchr/testify/require"
 )
 
@@ -77,11 +80,11 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		// Assert that the response is as expected
 		require.Error(t, err) // Expecting an error
 		require.Nil(t, resp)
-
 	})
 }
 
 func getTestContext(t *testing.T) (sdk.Context, store.KVStoreService) {
+	t.Helper()
 	key := storetypes.NewKVStoreKey("test")
 	storeService := runtime.NewKVStoreService(key)
 	testCtx := testutil.DefaultContextWithDB(t, key, storetypes.NewTransientStoreKey("transient_test"))
@@ -123,96 +126,96 @@ type MockTxConfig struct{}
 type MockAddressProvider struct{}
 
 func (m MockAddressProvider) LocalAddress() common.Address {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m MockTxConfig) TxEncoder() sdk.TxEncoder {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m MockTxConfig) TxDecoder() sdk.TxDecoder {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m MockTxConfig) TxJSONEncoder() sdk.TxEncoder {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m MockTxConfig) TxJSONDecoder() sdk.TxDecoder {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m MockTxConfig) MarshalSignatureJSON(v2s []signing2.SignatureV2) ([]byte, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m MockTxConfig) UnmarshalSignatureJSON(bytes []byte) ([]signing2.SignatureV2, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m MockTxConfig) NewTxBuilder() client.TxBuilder {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m MockTxConfig) WrapTxBuilder(tx sdk.Tx) (client.TxBuilder, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m MockTxConfig) SignModeHandler() *signing.HandlerMap {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m MockTxConfig) SigningContext() *signing.Context {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m MockEngineAPI) BlockNumber(ctx context.Context) (uint64, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m MockEngineAPI) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m MockEngineAPI) NewPayloadV2(ctx context.Context, params eengine.ExecutableData) (eengine.PayloadStatusV1, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m MockEngineAPI) NewPayloadV3(ctx context.Context, params eengine.ExecutableData, versionedHashes []common.Hash, beaconRoot *common.Hash) (eengine.PayloadStatusV1, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m MockEngineAPI) ForkchoiceUpdatedV2(ctx context.Context, update eengine.ForkchoiceStateV1, payloadAttributes *eengine.PayloadAttributes) (eengine.ForkChoiceResponse, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m MockEngineAPI) ForkchoiceUpdatedV3(ctx context.Context, update eengine.ForkchoiceStateV1, payloadAttributes *eengine.PayloadAttributes) (eengine.ForkChoiceResponse, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m MockEngineAPI) GetPayloadV2(ctx context.Context, payloadID eengine.PayloadID) (*eengine.ExecutionPayloadEnvelope, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m MockEngineAPI) GetPayloadV3(ctx context.Context, payloadID eengine.PayloadID) (*eengine.ExecutionPayloadEnvelope, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
