@@ -32,6 +32,9 @@ contract AVSBase is EigenLayerTestHelper {
     MockPortal portal;
     OmniAVS omniAVS;
 
+    /// Canonical, virtual beacon chain ETH strategy
+    address constant beaconChainETHStrategy = 0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0;
+
     function setUp() public override {
         super.setUp();
 

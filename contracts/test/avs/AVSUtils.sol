@@ -7,6 +7,7 @@ import { ISignatureUtils } from "eigenlayer-contracts/src/contracts/interfaces/I
 import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import { IDelegationManager } from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
+import { EigenPodManagerHarness } from "./eigen/EigenPodManagerHarness.sol";
 import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
 import { AVSBase } from "./AVSBase.sol";
 
@@ -112,6 +113,11 @@ contract AVSUtils is AVSBase {
 
     /// @dev deposit into the provided strategy
     function _depositIntoStrategy(address staker, uint256 shares, address strategy) internal {
+        if (strategy == beaconChainETHStrategy) {
+            _depositBeaconEth(staker, shares);
+            return;
+        }
+
         IStrategy strat = IStrategy(strategy);
 
         // when running fork tests, some strategies (like stETH), do not map underlying tokens to shares 1:1
@@ -126,5 +132,10 @@ contract AVSUtils is AVSBase {
         }
 
         _testDepositToStrategy(staker, underlyingAmt, underlying, strat);
+    }
+
+    /// @dev Deposit beacon eth
+    function _depositBeaconEth(address staker, uint256 amount) internal {
+        eigenPodManager.updatePodOwnerShares(staker, int256(amount));
     }
 }
