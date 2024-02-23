@@ -4,12 +4,20 @@ import (
 	"context"
 	"math/big"
 	"testing"
+	"time"
 
+	"cosmossdk.io/core/store"
+	storetypes "cosmossdk.io/store/types"
 	"cosmossdk.io/x/tx/signing"
+	abci "github.com/cometbft/cometbft/abci/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	cosmosstd "github.com/cosmos/cosmos-sdk/std"
+	"github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	signing2 "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
@@ -24,33 +32,65 @@ import (
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
 	etypes "github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/lib/engine"
+	"github.com/stretchr/testify/require"
 )
 
 func TestKeeper_PrepareProposal(t *testing.T) {
-
-	keeper := NewKeeper(getCodec(), nil, MockEngineAPI{}, MockTxConfig{}, MockAddressProvider{})
-	_ = keeper
+	t.Parallel()
 
 	// Test case 1: Test when there are no transactions in the proposal
 	t.Run("NoTransactions", func(t *testing.T) {
-		//ctx := // Create a mock context
-		//req := &abci.RequestPrepareProposal{
-		//	Txs:    nil, // Set to nil to simulate no transactions
-		//	Height: 1,   // Set height to 1 for this test case
-		//	Time:   time.Now(), // Set time to current time or mock a time
-		//}
-		//
-		//resp, err := k.PrepareProposal(ctx, req)
-		//
-		//// Assert that the response is as expected
-		//require.NoError(t, err)
-		//require.NotNil(t, resp)
-		//require.Empty(t, resp.Txs) // Expecting no transactions in the response
+		t.Parallel()
+		ctx, storeService := getTestContext(t)
+
+		keeper := NewKeeper(getCodec(), storeService, MockEngineAPI{}, MockTxConfig{}, MockAddressProvider{})
+
+		req := &abci.RequestPrepareProposal{
+			Txs:    nil,        // Set to nil to simulate no transactions
+			Height: 1,          // Set height to 1 for this test case
+			Time:   time.Now(), // Set time to current time or mock a time
+		}
+
+		resp, err := keeper.PrepareProposal(ctx, req)
+
+		// Assert that the response is as expected
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+		require.Empty(t, resp.Txs) // Expecting no transactions in the response
+	})
+
+	// Test case 2: Test when there are transactions in the proposal
+	t.Run("WithTransactions", func(t *testing.T) {
+		t.Parallel()
+		ctx, storeService := getTestContext(t)
+
+		keeper := NewKeeper(getCodec(), storeService, MockEngineAPI{}, MockTxConfig{}, MockAddressProvider{})
+
+		req := &abci.RequestPrepareProposal{
+			Txs:    [][]byte{[]byte("test1")}, // Set to some transactions to simulate transactions in the proposal
+			Height: 2,                         // Set height to 2 for this test case
+			Time:   time.Now(),                // Set time to current time or mock a time
+		}
+
+		resp, err := keeper.PrepareProposal(ctx, req)
+
+		// Assert that the response is as expected
+		require.Error(t, err) // Expecting an error
+		require.Nil(t, resp)
+
 	})
 }
 
+func getTestContext(t *testing.T) (sdk.Context, store.KVStoreService) {
+	key := storetypes.NewKVStoreKey("test")
+	storeService := runtime.NewKVStoreService(key)
+	testCtx := testutil.DefaultContextWithDB(t, key, storetypes.NewTransientStoreKey("transient_test"))
+	ctx := testCtx.Ctx.WithBlockHeader(cmtproto.Header{Time: cmttime.Now()})
+
+	return ctx, storeService
+}
+
 func getCodec() *codec.ProtoCodec {
-	// TODO(corver): Use depinject to get all of this.
 	sdkConfig := sdk.GetConfig()
 	reg, err := codectypes.NewInterfaceRegistryWithOptions(codectypes.InterfaceRegistryOptions{
 		ProtoFiles: proto.HybridResolver,
