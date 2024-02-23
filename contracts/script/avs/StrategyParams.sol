@@ -21,8 +21,8 @@ library StrategyParams {
             multiplier: STD_MULTIPLIER
         });
 
-        params[0] = IOmniAVS.StrategyParams({
-            strategy: IStrategy(EigenM2GoerliDeployments.stETHStrategy),
+        params[1] = IOmniAVS.StrategyParams({
+            strategy: IStrategy(EigenM2GoerliDeployments.rETHStrategy),
             multiplier: STD_MULTIPLIER
         });
     }
