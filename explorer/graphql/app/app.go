@@ -29,10 +29,6 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 	defer entCl.Close()
 
-	if err := db.CreateSchema(ctx, entCl); err != nil {
-		return errors.Wrap(err, "create schema")
-	}
-
 	provider := data.Provider{
 		EntClient: entCl,
 	}
