@@ -1,4 +1,4 @@
-package math
+package app
 
 func Sum(batches []int) uint64 {
 	var resp int
