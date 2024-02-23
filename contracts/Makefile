@@ -25,4 +25,4 @@ deploy-eigenlayer-save-anvil-state: ## Deploy eigenlayer contracts and dump anvi
 
 avs-fork-test-goerli: ## Run OmniAVS tests on a goerli fork.
 	@if [ -z "${INFURA_KEY}" ]; then echo "INFURA_KEY is not set"; exit 1; fi
-	@forge test --fork-url https://goerli.infura.io/v3/${INFURA_KEY} --fork-block-number 10580259 --match-contract OmniAVS_Test
+	@FOUNDRY_FUZZ_RUNS=10 forge test --fork-url https://goerli.infura.io/v3/${INFURA_KEY} --fork-block-number 10580259 --match-contract OmniAVS_Test

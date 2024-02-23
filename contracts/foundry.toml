@@ -19,7 +19,6 @@ fs_permissions = [
 
 [fuzz]
 seed = "0x6eed"
-runs = 10
 
 [fmt]
 bracket_spacing = true
