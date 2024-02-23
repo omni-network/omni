@@ -55,10 +55,6 @@ func (p Provider) XBlockRange(amount uint64, offset uint64) ([]*resolvers.XBlock
 		res = append(res, graphQL)
 	}
 
-	// sort.Slice(res, func(i, j int) bool {
-	// 	return res[i].Timestamp.Time.Before(res[j].Timestamp.Time)
-	// })
-
 	return res, true, nil
 }
 
