@@ -27,7 +27,7 @@ type DefaultFlagValues struct {
 }
 
 type CLIConfig struct {
-	L1RPCURL                  string
+	ChainID                   uint64
 	NumConfirmations          uint64
 	SafeAbortNonceTooLowCount uint64
 	FeeLimitMultiplier        uint64
@@ -55,9 +55,8 @@ var (
 	}
 )
 
-func NewCLIConfig(rpc string, interval time.Duration, defaults DefaultFlagValues) CLIConfig {
+func NewCLIConfig(chainID uint64, interval time.Duration, defaults DefaultFlagValues) CLIConfig {
 	return CLIConfig{
-		L1RPCURL:                  rpc,
 		NumConfirmations:          defaults.NumConfirmations,
 		SafeAbortNonceTooLowCount: defaults.SafeAbortNonceTooLowCount,
 		FeeLimitMultiplier:        defaults.FeeLimitMultiplier,
@@ -67,13 +66,11 @@ func NewCLIConfig(rpc string, interval time.Duration, defaults DefaultFlagValues
 		TxSendTimeout:             defaults.TxSendTimeout,
 		TxNotInMempoolTimeout:     defaults.TxNotInMempoolTimeout,
 		ReceiptQueryInterval:      interval,
+		ChainID:                   chainID,
 	}
 }
 
 func (m CLIConfig) Check() error {
-	if m.L1RPCURL == "" {
-		return errors.New("must provide a L1 RPC url")
-	}
 	if m.NumConfirmations == 0 {
 		return errors.New("numConfirmations must not be 0")
 	}
@@ -191,18 +188,9 @@ type Config struct {
 }
 
 // NewConfig - creates a new txmgr config from the given CLI config and private key. This is taken and modified from op.
-func NewConfig(ctx context.Context, cfg CLIConfig,
-	privateKey *ecdsa.PrivateKey, client *ethclient.Client) (Config, error) {
+func NewConfig(cfg CLIConfig, privateKey *ecdsa.PrivateKey, client *ethclient.Client) (Config, error) {
 	if err := cfg.Check(); err != nil {
 		return Config{}, errors.New("invalid config", err)
-	}
-
-	ctx, cancel := context.WithTimeout(ctx, cfg.NetworkTimeout)
-	defer cancel()
-
-	chainID, err := client.ChainID(ctx)
-	if err != nil {
-		return Config{}, errors.Wrap(err, "could not dial fetch L1 chain ID")
 	}
 
 	signer := func(chainID *big.Int) SignerFn {
@@ -226,6 +214,8 @@ func NewConfig(ctx context.Context, cfg CLIConfig,
 	if err != nil {
 		return Config{}, errors.Wrap(err, "invalid min tip cap")
 	}
+
+	chainID := big.NewInt(int64(cfg.ChainID))
 
 	return Config{
 		Backend:                   client,

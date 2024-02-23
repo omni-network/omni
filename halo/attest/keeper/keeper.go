@@ -44,6 +44,7 @@ type Keeper struct {
 	voter        types.Voter
 	skeeper      *skeeper.Keeper // TODO(corver): Define a interface for the methods we use.
 	cmtAPI       comet.API
+	namer        types.ChainNameFunc
 }
 
 // NewKeeper returns a new attestation keeper.
@@ -53,6 +54,7 @@ func NewKeeper(
 	ethCl engine.API,
 	skeeper *skeeper.Keeper,
 	voter types.Voter,
+	namer types.ChainNameFunc,
 ) (*Keeper, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
 		{Id: 1, ProtoFileName: File_halo_attest_keeper_attestation_proto.Path()},
@@ -76,6 +78,7 @@ func NewKeeper(
 		ethCl:        ethCl,
 		skeeper:      skeeper,
 		voter:        voter,
+		namer:        namer,
 	}, nil
 }
 
@@ -172,10 +175,14 @@ func (k *Keeper) Approve(ctx context.Context, valset *cmttypes.ValidatorSet) err
 		valsByPower[addr] = val.VotingPower
 	}
 
+	skip := make(map[uint64]bool) // Skip processing chains as soon as a pending attestation is found.
 	for iter.Next() {
 		att, err := iter.Value()
 		if err != nil {
 			return errors.Wrap(err, "value")
+		}
+		if skip[att.GetChainId()] {
+			continue
 		}
 
 		sigs, err := k.getSigs(ctx, att.GetId())
@@ -185,6 +192,7 @@ func (k *Keeper) Approve(ctx context.Context, valset *cmttypes.ValidatorSet) err
 
 		toDelete, ok := isApproved(sigs, valsByPower, valset.TotalVotingPower())
 		if !ok {
+			skip[att.GetChainId()] = true
 			continue
 		}
 
@@ -202,6 +210,8 @@ func (k *Keeper) Approve(ctx context.Context, valset *cmttypes.ValidatorSet) err
 		if err != nil {
 			return errors.Wrap(err, "save")
 		}
+
+		approvedHeight.WithLabelValues(k.namer(att.GetChainId())).Set(float64(att.GetHeight()))
 	}
 
 	return nil

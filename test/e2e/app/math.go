@@ -1,6 +1,6 @@
 package app
 
-func Sum(batches []int) uint64 {
+func sum(batches []int) uint64 {
 	var resp int
 	for _, b := range batches {
 		resp += b

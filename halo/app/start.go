@@ -123,6 +123,7 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 		db,
 		ethCl,
 		voterI,
+		network.ChainName,
 		baseAppOpts...,
 	)
 	if err != nil {
