@@ -52,9 +52,7 @@ func EntBlockToGraphQLBlock(block *ent.Block) (*resolvers.XBlock, error) {
 }
 
 // EntMsgToGraphQLXMsg converts an ent.Msg to a resolvers.XMsg.
-func EntMsgToGraphQLXMsg(
-	msg *ent.Msg,
-) (*resolvers.XMsg, error) {
+func EntMsgToGraphQLXMsg(msg *ent.Msg) (*resolvers.XMsg, error) {
 	sourceChainIDBig, err := hexutil.DecodeBig(hexutil.EncodeUint64(msg.SourceChainID))
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding source chain id")
@@ -88,9 +86,7 @@ func EntMsgToGraphQLXMsg(
 }
 
 // EntReceiptToGraphQLXReceipt converts an ent.Receipt to a resolvers.XReceipt.
-func EntReceiptToGraphQLXReceipt(
-	receipt *ent.Receipt,
-) (*resolvers.XReceipt, error) {
+func EntReceiptToGraphQLXReceipt(receipt *ent.Receipt) (*resolvers.XReceipt, error) {
 	gasUsed, err := hexutil.DecodeBig(hexutil.EncodeUint64(receipt.GasUsed))
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding gas used")
