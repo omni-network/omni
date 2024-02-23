@@ -132,7 +132,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, depCfg Depl
 		return err
 	}
 
-	if err := WaitAllSubmissions(ctx, def.Netman.Portals(), sum(msgBatches)); err != nil {
+	if err := WaitAllSubmissions(ctx, def.Netman.Portals(), Sum(msgBatches)); err != nil {
 		return err
 	}
 
@@ -156,15 +156,6 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, depCfg Depl
 	}
 
 	return nil
-}
-
-func sum(batches []int) uint64 {
-	var resp int
-	for _, b := range batches {
-		resp += b
-	}
-
-	return uint64(resp)
 }
 
 // Convert cometbft testnet validators to solidity bindings.Validator, expected by portal constructor.
