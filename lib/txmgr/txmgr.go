@@ -40,7 +40,7 @@ type TxManager interface {
 	// may be included on L1 even if the context is canceled.
 	//
 	// NOTE: Send can be called concurrently, the nonce will be managed internally.
-	Send(ctx context.Context, candidate TxCandidate) (*types.Receipt, error)
+	Send(ctx context.Context, candidate TxCandidate) (*types.Transaction, *types.Receipt, error)
 
 	// From returns the sending address associated with the instance of the transaction manager.
 	// It is static for a single instance of a TxManager.
@@ -168,26 +168,27 @@ type TxCandidate struct {
 // transaction manager will do a gas estimation.
 //
 // NOTE: Send can be called concurrently, the nonce will be managed internally.
-func (m *SimpleTxManager) Send(ctx context.Context, candidate TxCandidate) (*types.Receipt, error) {
+func (m *SimpleTxManager) Send(ctx context.Context, candidate TxCandidate) (*types.Transaction, *types.Receipt, error) {
 	// refuse new requests if the tx manager is closed
 	if m.closed.Load() {
-		return nil, ErrClosed
+		return nil, nil, ErrClosed
 	}
 	// todo(lazar): replace m.pending with package level prometheus gauge
 	m.pending.Add(1)
 	defer func() {
 		m.pending.Add(-1)
 	}()
-	receipt, err := m.doSend(ctx, candidate)
+	tx, rec, err := m.doSend(ctx, candidate)
 	if err != nil {
 		m.resetNonce()
+		return nil, nil, err
 	}
 
-	return receipt, err
+	return tx, rec, nil
 }
 
 // doSend performs the actual transaction creation and sending.
-func (m *SimpleTxManager) doSend(ctx context.Context, candidate TxCandidate) (*types.Receipt, error) {
+func (m *SimpleTxManager) doSend(ctx context.Context, candidate TxCandidate) (*types.Transaction, *types.Receipt, error) {
 	if m.cfg.TxSendTimeout != 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, m.cfg.TxSendTimeout)
@@ -206,10 +207,15 @@ func (m *SimpleTxManager) doSend(ctx context.Context, candidate TxCandidate) (*t
 		return tx, err
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create the tx")
+		return nil, nil, errors.Wrap(err, "create the tx")
 	}
 
-	return m.sendTx(ctx, tx)
+	rec, err := m.sendTx(ctx, tx)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "send the tx")
+	}
+
+	return tx, rec, nil
 }
 
 // craftTx creates the signed transaction

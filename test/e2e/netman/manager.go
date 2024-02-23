@@ -9,19 +9,17 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/txmgr"
+	"github.com/omni-network/omni/test/e2e/send"
 	"github.com/omni-network/omni/test/e2e/types"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
 )
 
 const (
-	// keys of pre-funded anvil account 0.
-	privKeyHex0 = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 
 	// privKeyHex1 of pre-funded anvil account 1.
 	privKeyHex1 = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
@@ -32,7 +30,6 @@ const (
 
 //nolint:gochecknoglobals // Static mapping.
 var (
-	privateDeployKey  = mustHexToKey(privKeyHex0)
 	privateRelayerKey = mustHexToKey(privKeyHex1)
 )
 
@@ -55,8 +52,7 @@ type Manager interface {
 	RelayerKey() *ecdsa.PrivateKey
 }
 
-func NewManager(testnet types.Testnet, deployKeyFile string,
-	relayerKeyFile string,
+func NewManager(testnet types.Testnet, sender send.Sender, relayerKeyFile string,
 ) (Manager, error) {
 	// Create partial portals. This will be updated by Deploy*Portals.
 	portals := make(map[uint64]Portal)
@@ -71,7 +67,6 @@ func NewManager(testnet types.Testnet, deployKeyFile string,
 	omniEVM := testnet.OmniEVMs[0]
 	portals[omniEVM.Chain.ID] = Portal{
 		Chain:      omniEVM.Chain,
-		RPCURL:     omniEVM.ExternalRPC,
 		DeployInfo: privateChainDeployInfo,
 	}
 
@@ -79,56 +74,40 @@ func NewManager(testnet types.Testnet, deployKeyFile string,
 	for _, anvil := range testnet.AnvilChains {
 		portals[anvil.Chain.ID] = Portal{
 			Chain:      anvil.Chain,
-			RPCURL:     anvil.ExternalRPC,
 			DeployInfo: privateChainDeployInfo,
 		}
 	}
 	// Add all public chains
 	for _, public := range testnet.PublicChains {
 		portals[public.Chain.ID] = Portal{
-			Chain:  public.Chain,
-			RPCURL: public.RPCAddress,
+			Chain: public.Chain,
 			// Public chain deploy height and address will be updated by DeployPublicPortals.
 		}
 	}
 
-	// Instantiate all clients
-	for chainID := range portals {
-		portal := portals[chainID]
-		client, err := ethclient.Dial(portals[chainID].RPCURL)
-		if err != nil {
-			return nil, errors.Wrap(err, "dial rpc", "chain", portal.Chain.Name, "url", portal.RPCURL)
-		}
-		portal.Client = client
-		portals[chainID] = portal
-	}
-
 	switch testnet.Network {
 	case netconf.Devnet:
-		if deployKeyFile != "" || relayerKeyFile != "" {
-			return nil, errors.New("deploy and relayer keys not supported in devnet")
+		if relayerKeyFile != "" {
+			return nil, errors.New("relayer keys not supported in devnet")
 		}
 
 		return &manager{
 			portals:     portals,
 			omniChainID: omniEVM.Chain.ID,
 			relayerKey:  privateRelayerKey,
+			sender:      sender,
 		}, nil
 	case netconf.Staging:
-		deployKey, err := crypto.LoadECDSA(deployKeyFile)
-		if err != nil {
-			return nil, errors.Wrap(err, "read deploy key file", "path", deployKeyFile)
-		}
 		relayerKey, err := crypto.LoadECDSA(relayerKeyFile)
 		if err != nil {
 			return nil, errors.Wrap(err, "read relayer key file", "path", relayerKeyFile)
 		}
 
 		return &manager{
-			portals:         portals,
-			omniChainID:     omniEVM.Chain.ID,
-			publicDeployKey: deployKey,
-			relayerKey:      relayerKey,
+			portals:     portals,
+			omniChainID: omniEVM.Chain.ID,
+			relayerKey:  relayerKey,
+			sender:      sender,
 		}, nil
 	default:
 		return nil, errors.New("unknown extNetwork")
@@ -144,34 +123,17 @@ type DeployInfo struct {
 // Portal contains all deployed portal information and state.
 type Portal struct {
 	Chain      types.EVMChain
-	RPCURL     string
 	DeployInfo DeployInfo
-	Client     *ethclient.Client
 	Contract   *bindings.OmniPortal
-	txOpts     *bind.TransactOpts // TODO(corver): Replace this with a txmgr.
-}
-
-// TxOpts returns transaction options using the deploy key.
-func (p Portal) TxOpts(ctx context.Context, value *big.Int) *bind.TransactOpts {
-	clone := *p.txOpts
-	clone.Context = ctx
-	clone.Value = value
-
-	return &clone
-}
-
-// TxOptsFrom returns the from address of the deploy key.
-func (p Portal) TxOptsFrom() common.Address {
-	return p.txOpts.From
 }
 
 var _ Manager = (*manager)(nil)
 
 type manager struct {
-	portals         map[uint64]Portal // Note that this is mutable, Portals are updated by Deploy*Portals.
-	omniChainID     uint64
-	publicDeployKey *ecdsa.PrivateKey
-	relayerKey      *ecdsa.PrivateKey
+	portals     map[uint64]Portal // Note that this is mutable, Portals are updated by Deploy*Portals.
+	omniChainID uint64
+	relayerKey  *ecdsa.PrivateKey
+	sender      send.Sender
 }
 
 func (m *manager) DeployInfo() map[types.EVMChain]DeployInfo {
@@ -190,10 +152,18 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 		if !portal.Chain.IsPublic {
 			continue // Only log public chain balances.
 		}
-		if err := logBalance(ctx, portal.Client, portal.Chain.Name, m.publicDeployKey, "deploy_key"); err != nil {
+
+		txOpts, backend, err := m.sender.BindOpts(ctx, portal.Chain.ID)
+		if err != nil {
+			return errors.Wrap(err, "deploy opts", "chain", portal.Chain.Name)
+		}
+
+		if err := logBalance(ctx, backend, portal.Chain.Name, txOpts.From, "deploy_key"); err != nil {
 			return err
 		}
-		if err := logBalance(ctx, portal.Client, portal.Chain.Name, m.relayerKey, "relayer_key"); err != nil {
+
+		relayerAddr := crypto.PubkeyToAddress(m.relayerKey.PublicKey)
+		if err := logBalance(ctx, backend, portal.Chain.Name, relayerAddr, "relayer_key"); err != nil {
 			return err
 		}
 	}
@@ -209,23 +179,27 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 
 		log.Info(ctx, "Deploying to", "chain", portal.Chain.Name)
 
-		height, err := portal.Client.BlockNumber(ctx)
+		txOpts, backend, err := m.sender.BindOpts(ctx, chainID)
 		if err != nil {
-			return errors.Wrap(err, "get block number")
+			return errors.Wrap(err, "deploy opts", "chain", portal.Chain.Name)
 		}
 
-		addr, contract, txops, err := deployOmniContracts(
-			ctx, chainID, portal.Client, m.publicDeployKey, valSetID, validators,
+		height, err := backend.BlockNumber(ctx)
+		if err != nil {
+			return errors.Wrap(err, "get block number", "chain", portal.Chain.Name)
+		}
+
+		addr, contract, err := deployOmniContracts(
+			ctx, txOpts, backend, valSetID, validators,
 		)
 		if err != nil {
-			return errors.Wrap(err, "deploy public omni contracts")
+			return errors.Wrap(err, "deploy public omni contracts", "chain", portal.Chain.Name)
 		}
 		portal.DeployInfo = DeployInfo{
 			PortalAddress: addr,
 			DeployHeight:  height,
 		}
 		portal.Contract = contract
-		portal.txOpts = txops
 
 		m.portals[chainID] = portal
 		log.Info(ctx, "Deployed public portal contract", "chain", portal.Chain.Name, "address", addr.Hex(), "height", height)
@@ -244,17 +218,22 @@ func (m *manager) DeployPrivatePortals(ctx context.Context, valSetID uint64, val
 			continue // Public chains are already deployed.
 		}
 
-		addr, contract, txops, err := deployOmniContracts(ctx, chainID, portal.Client, privateDeployKey, valSetID, validators)
+		txOpts, backend, err := m.sender.BindOpts(ctx, chainID)
 		if err != nil {
-			return errors.Wrap(err, "deploy private omni contracts")
+			return errors.Wrap(err, "deploy opts", "chain", portal.Chain.Name)
+		}
+
+		addr, contract, err := deployOmniContracts(ctx, txOpts, backend, valSetID, validators)
+		if err != nil {
+			return errors.Wrap(err, "deploy private omni contracts", "chain", portal.Chain.Name)
 		} else if addr != portal.DeployInfo.PortalAddress {
 			return errors.New("deployed address does not match existing address",
 				"expected", portal.DeployInfo.PortalAddress.Hex(),
-				"actual", addr.Hex())
+				"actual", addr.Hex(),
+				"chain", portal.Chain.Name)
 		}
 
 		portal.Contract = contract
-		portal.txOpts = txops
 
 		m.portals[chainID] = portal
 	}
@@ -271,58 +250,39 @@ func (m *manager) RelayerKey() *ecdsa.PrivateKey {
 }
 
 func (m *manager) fundPrivateRelayer(ctx context.Context) error {
-	fromKey := privateRelayerKey
-	toKey := m.relayerKey
-
-	if fromKey.Equal(toKey) {
+	if privateRelayerKey.Equal(m.relayerKey) {
 		return nil // No need to fund relayer if key is private.
 	}
 
-	fromAddr := crypto.PubkeyToAddress(fromKey.PublicKey)
-	toAddr := crypto.PubkeyToAddress(toKey.PublicKey)
+	relayerAddr := crypto.PubkeyToAddress(m.relayerKey.PublicKey)
 
 	for _, portal := range m.portals {
 		if portal.Chain.IsPublic {
 			continue // We use relayer key for public chain, it should already be funded.
 		}
 
-		_, err := FundAddr(ctx, portal.Chain.ID, portal.Client, fromAddr, fromKey, toAddr, 10)
+		_, backend, err := m.sender.BindOpts(ctx, portal.Chain.ID)
 		if err != nil {
-			return errors.Wrap(err, "fund relayer", "from", fromAddr.Hex(), "to", toAddr.Hex())
+			return errors.Wrap(err, "deploy opts")
+		}
+
+		_, err = fundAddr(ctx, backend, relayerAddr, 10)
+		if err != nil {
+			return errors.Wrap(err, "fund relayer", "to", relayerAddr.Hex())
 		}
 	}
 
 	return nil
 }
 
-func FundAddr(ctx context.Context, chainIO uint64, ethCl *ethclient.Client, fromAddr common.Address,
-	fromKey *ecdsa.PrivateKey, toAddr common.Address, ether int64) (*ethtypes.Transaction, error) {
-	nonce, err := ethCl.PendingNonceAt(ctx, fromAddr)
-	if err != nil {
-		return nil, errors.Wrap(err, "get nonce")
-	}
-
-	price, err := ethCl.SuggestGasPrice(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "get gas price")
-	}
-
-	txData := ethtypes.LegacyTx{
-		Nonce:    nonce,
-		GasPrice: price,
-		Gas:      100_000, // 100k is fine
+func fundAddr(ctx context.Context, backend send.Backend, toAddr common.Address, ether int64) (*ethtypes.Transaction, error) {
+	tx, _, err := backend.Send(ctx, txmgr.TxCandidate{
 		To:       &toAddr,
+		GasLimit: 100_000, // 100k is fine,
 		Value:    new(big.Int).Mul(big.NewInt(ether), big.NewInt(params.Ether)),
-	}
-
-	signer := ethtypes.LatestSignerForChainID(big.NewInt(int64(chainIO)))
-	tx, err := ethtypes.SignNewTx(fromKey, signer, &txData)
+	})
 	if err != nil {
-		return nil, errors.Wrap(err, "sign tx")
-	}
-
-	if err := ethCl.SendTransaction(ctx, tx); err != nil {
-		return nil, errors.Wrap(err, "send tx")
+		return nil, errors.Wrap(err, "send ether")
 	}
 
 	return tx, nil

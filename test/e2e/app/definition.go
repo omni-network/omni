@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/test/e2e/docker"
 	"github.com/omni-network/omni/test/e2e/netman"
+	"github.com/omni-network/omni/test/e2e/send"
 	"github.com/omni-network/omni/test/e2e/types"
 	"github.com/omni-network/omni/test/e2e/vmcompose"
 
@@ -57,6 +58,7 @@ type Definition struct {
 	Testnet types.Testnet // Note that testnet is the cometBFT term.
 	Infra   types.InfraProvider
 	Netman  netman.Manager
+	Sender  send.Sender
 }
 
 func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
@@ -83,7 +85,12 @@ func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
 		return Definition{}, errors.Wrap(err, "loading testnet")
 	}
 
-	mngr, err := netman.NewManager(testnet, cfg.DeployKeyFile, cfg.RelayerKeyFile)
+	sender, err := send.New(testnet, cfg.DeployKeyFile)
+	if err != nil {
+		return Definition{}, errors.Wrap(err, "new sender")
+	}
+
+	netman, err := netman.NewManager(testnet, sender, cfg.RelayerKeyFile)
 	if err != nil {
 		return Definition{}, errors.Wrap(err, "get network")
 	}
@@ -101,7 +108,8 @@ func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
 	return Definition{
 		Testnet: testnet,
 		Infra:   infp,
-		Netman:  mngr,
+		Sender:  sender,
+		Netman:  netman,
 	}, nil
 }
 
