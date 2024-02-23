@@ -207,9 +207,9 @@ func (m *SimpleTxManager) doSend(ctx context.Context, candidate TxCandidate) (*t
 		tx, err := m.craftTx(ctx, candidate)
 		if err != nil {
 			log.Debug(ctx, "Failed to create a transaction, will retry", "err", err)
+		} else {
+			log.Debug(ctx, "Txmgr crafted new tx", txFields(tx, true)...)
 		}
-
-		log.Debug(ctx, "Txmgr crafted new tx", txFields(tx, true)...)
 
 		return tx, err
 	})
