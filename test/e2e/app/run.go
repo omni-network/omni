@@ -16,7 +16,7 @@ import (
 type DeployConfig struct {
 	PromSecrets
 	EigenFile string
-	PingPongN *uint64
+	PingPongN uint64
 }
 
 // Deploy a new e2e network. It also starts all services in order to deploy private portals.
@@ -58,7 +58,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 		deployInfo.Set(chain.ID, types.ContractPortal, info.PortalAddress, info.DeployHeight)
 	}
 
-	if cfg.PingPongN == nil {
+	if cfg.PingPongN == 0 {
 		return deployInfo, nil
 	}
 
@@ -67,7 +67,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 		return nil, errors.Wrap(err, "deploy pingpong")
 	}
 
-	err = pp.StartAllEdges(ctx, *cfg.PingPongN)
+	err = pp.StartAllEdges(ctx, cfg.PingPongN)
 	if err != nil {
 		return nil, errors.Wrap(err, "start all edges")
 	}

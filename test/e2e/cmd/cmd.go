@@ -69,9 +69,7 @@ func New() *cobra.Command {
 
 func newDeployCmd(def *app.Definition) *cobra.Command {
 	var cfg app.DeployConfig
-
-	pingPongN := defaultPingPongDeploy // Default to 1000 ping pongs.
-	cfg.PingPongN = &pingPongN
+	cfg.PingPongN = defaultPingPongDeploy // Default to 1000 ping pongs.
 
 	cmd := &cobra.Command{
 		Use:   "deploy",
@@ -83,7 +81,6 @@ func newDeployCmd(def *app.Definition) *cobra.Command {
 	}
 
 	bindDeployFlags(cmd.Flags(), &cfg)
-	cmd.Flags().Uint64Var(&pingPongN, "ping-pong", pingPongN, "Number of ping pongs messages to send. 0 disables it")
 
 	return cmd
 }

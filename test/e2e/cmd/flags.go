@@ -30,4 +30,5 @@ func bindPromFlags(flags *pflag.FlagSet, cfg *app.PromSecrets) {
 func bindDeployFlags(flags *pflag.FlagSet, cfg *app.DeployConfig) {
 	bindPromFlags(flags, &cfg.PromSecrets)
 	flags.StringVar(&cfg.EigenFile, "eigen-file", cfg.EigenFile, "path to json file defining eigenlayer deployments. Defaults to ./e2e/app/static/el_deployments.json")
+	flags.Uint64Var(&cfg.PingPongN, "ping-pong", cfg.PingPongN, "Number of ping pongs messages to send. 0 disables it")
 }
