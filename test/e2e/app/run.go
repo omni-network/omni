@@ -132,7 +132,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, depCfg Depl
 		return err
 	}
 
-	if err := WaitAllSubmissions(ctx, def.Netman.Portals(), Sum(msgBatches)); err != nil {
+	if err := WaitAllSubmissions(ctx, def.Netman.Portals(), sum(msgBatches)); err != nil {
 		return err
 	}
 
