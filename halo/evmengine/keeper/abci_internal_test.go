@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
 	etypes "github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/lib/engine"
@@ -21,14 +22,12 @@ import (
 	"cosmossdk.io/core/store"
 	storetypes "cosmossdk.io/store/types"
 	"cosmossdk.io/x/tx/signing"
-	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	cosmosstd "github.com/cosmos/cosmos-sdk/std"
 	"github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	signing2 "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
 	atypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	btypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -45,8 +44,10 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 	t.Run("NoTransactions", func(t *testing.T) {
 		t.Parallel()
 		ctx, storeService := getTestContext(t)
+		cdc := getCodec()
+		txConfig := authtx.NewTxConfig(cdc, nil)
 
-		keeper := NewKeeper(getCodec(), storeService, MockEngineAPI{}, MockTxConfig{}, MockAddressProvider{})
+		keeper := NewKeeper(cdc, storeService, MockEngineAPI{}, txConfig, MockAddressProvider{})
 
 		req := &abci.RequestPrepareProposal{
 			Txs:    nil,        // Set to nil to simulate no transactions
@@ -66,8 +67,10 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 	t.Run("WithTransactions", func(t *testing.T) {
 		t.Parallel()
 		ctx, storeService := getTestContext(t)
+		cdc := getCodec()
+		txConfig := authtx.NewTxConfig(cdc, nil)
 
-		keeper := NewKeeper(getCodec(), storeService, MockEngineAPI{}, MockTxConfig{}, MockAddressProvider{})
+		keeper := NewKeeper(cdc, storeService, MockEngineAPI{}, txConfig, MockAddressProvider{})
 
 		req := &abci.RequestPrepareProposal{
 			Txs:    [][]byte{[]byte("test1")}, // Set to some transactions to simulate transactions in the proposal
@@ -118,65 +121,13 @@ func getCodec() *codec.ProtoCodec {
 }
 
 var _ engine.API = (*MockEngineAPI)(nil)
-var _ client.TxConfig = (*MockTxConfig)(nil)
 var _ etypes.AddressProvider = (*MockAddressProvider)(nil)
 
 type MockEngineAPI struct{}
-type MockTxConfig struct{}
 type MockAddressProvider struct{}
 
 func (m MockAddressProvider) LocalAddress() common.Address {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (m MockTxConfig) TxEncoder() sdk.TxEncoder {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (m MockTxConfig) TxDecoder() sdk.TxDecoder {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (m MockTxConfig) TxJSONEncoder() sdk.TxEncoder {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (m MockTxConfig) TxJSONDecoder() sdk.TxDecoder {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (m MockTxConfig) MarshalSignatureJSON(v2s []signing2.SignatureV2) ([]byte, error) {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (m MockTxConfig) UnmarshalSignatureJSON(bytes []byte) ([]signing2.SignatureV2, error) {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (m MockTxConfig) NewTxBuilder() client.TxBuilder {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (m MockTxConfig) WrapTxBuilder(tx sdk.Tx) (client.TxBuilder, error) {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (m MockTxConfig) SignModeHandler() *signing.HandlerMap {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (m MockTxConfig) SigningContext() *signing.Context {
-	// TODO implement me
+	//TODO implement me
 	panic("implement me")
 }
 
