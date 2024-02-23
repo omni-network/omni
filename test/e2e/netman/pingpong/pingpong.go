@@ -3,7 +3,6 @@ package pingpong
 import (
 	"context"
 	"math/big"
-	"sort"
 
 	examples "github.com/omni-network/omni/contracts/bindings/examples"
 	"github.com/omni-network/omni/lib/errors"
@@ -23,6 +22,7 @@ import (
 // So given a network of N chains (vertexes), there will be N! pairs (edges).
 type XDapp struct {
 	contracts map[uint64]Contract
+	edges     []Edge
 }
 
 func Deploy(ctx context.Context, portals map[uint64]netman.Portal) (XDapp, error) {
@@ -67,6 +67,8 @@ func Deploy(ctx context.Context, portals map[uint64]netman.Portal) (XDapp, error
 		return XDapp{}, errors.Wrap(err, "fund")
 	}
 
+	resp.setEdges()
+
 	return resp, nil
 }
 
@@ -96,7 +98,7 @@ func (a *XDapp) fund(ctx context.Context) error {
 
 func (a *XDapp) StartAllEdges(ctx context.Context, count uint64) error {
 	log.Info(ctx, "Starting ping pong contracts")
-	for _, edge := range a.edges() {
+	for _, edge := range a.edges {
 		from := a.contracts[edge.From]
 		to := a.contracts[edge.To]
 
@@ -124,8 +126,8 @@ func (a *XDapp) StartAllEdges(ctx context.Context, count uint64) error {
 // Note this doesn't work on anvil since it doesn't support subscriptions.
 func (a *XDapp) WaitDone(ctx context.Context) error {
 	log.Info(ctx, "Waiting for ping pongs to complete")
-	done := make(chan *examples.PingPongDone, len(a.edges()))
-	for _, edge := range a.edges() {
+	done := make(chan *examples.PingPongDone, len(a.edges))
+	for _, edge := range a.edges {
 		from := a.contracts[edge.From]
 		_, err := from.PingPong.WatchDone(&bind.WatchOpts{
 			Start:   &from.DeployHeight,
@@ -137,7 +139,7 @@ func (a *XDapp) WaitDone(ctx context.Context) error {
 	}
 
 	// Wait for all ping pongs to be done
-	for range a.edges() {
+	for range a.edges {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -154,44 +156,23 @@ type Edge struct {
 	To   uint64
 }
 
-func (e Edge) Equals(other Edge) bool {
-	return e.From == other.From && e.To == other.To || e.From == other.To && e.To == other.From
-}
-
-// edges returns a deterministic map of unique edges between chains.
-func (a *XDapp) edges() []Edge {
-	var all []Edge
-	for fromChainID := range a.contracts {
-		for toChainID := range a.contracts {
-			if fromChainID == toChainID {
-				continue
-			}
-
-			all = append(all, Edge{From: fromChainID, To: toChainID})
-		}
-	}
-
-	// Order by fromChainID
-	sort.Slice(all, func(i, j int) bool {
-		return all[i].From < all[j].From
-	})
-
-	// Deduplicate
+// setEdges creates a deterministic map of unique edges between chains.
+func (a *XDapp) setEdges() {
 	var resp []Edge
-	for _, candidate := range all {
-		unique := true
-		for _, existing := range resp {
-			if candidate.Equals(existing) {
-				unique = false
-				break
-			}
-		}
-		if unique {
-			resp = append(resp, candidate)
+	var arr []Contract
+	// flatten contracts
+	for _, v := range a.contracts {
+		arr = append(arr, v)
+	}
+
+	// get all unique edges
+	for i := 0; i < len(arr); i++ {
+		for j := i + 1; j < len(arr); j++ {
+			resp = append(resp, Edge{From: arr[i].Chain.ID, To: arr[j].Chain.ID})
 		}
 	}
 
-	return resp
+	a.edges = resp
 }
 
 // Contract defines a deployed contract.

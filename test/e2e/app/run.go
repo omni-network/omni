@@ -158,15 +158,6 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, depCfg Depl
 	return nil
 }
 
-func sum(batches []int) uint64 {
-	var resp int
-	for _, b := range batches {
-		resp += b
-	}
-
-	return uint64(resp)
-}
-
 // Convert cometbft testnet validators to solidity bindings.Validator, expected by portal constructor.
 func toPortalValidators(validators map[*e2e.Node]int64) ([]bindings.Validator, error) {
 	vals := make([]bindings.Validator, 0, len(validators))

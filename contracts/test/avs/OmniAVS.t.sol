@@ -10,8 +10,6 @@ import { OmniAVS } from "src/protocol/OmniAVS.sol";
 import { AVSBase } from "./AVSBase.sol";
 import { AVSUtils } from "./AVSUtils.sol";
 
-import { console } from "forge-std/console.sol";
-
 contract OmniAVS_Test is AVSBase, AVSUtils {
     uint32 numOperators;
     uint32 numDelegatorsPerOp;
@@ -48,6 +46,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
     ) public {
         numOperators = uint32(bound(numOperators_, 2, maxOperatorCount));
         numDelegatorsPerOp = uint32(bound(numDelegatorsPerOp_, 1, 30));
+
         initialOperatorStake = uint96(bound(initialOperatorStake_, minimumOperatorStake, 100 ether));
         initialDelegatorStake = uint96(bound(initialDelegatorStake_, 500 gwei, 5 ether));
 

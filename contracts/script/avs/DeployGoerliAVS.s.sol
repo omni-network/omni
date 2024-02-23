@@ -15,8 +15,6 @@ import { StrategyParams } from "./StrategyParams.sol";
 
 import { Script } from "forge-std/Script.sol";
 
-// solhint-disable const-name-snakecase
-
 /**
  * @title DeployGoerliAVS
  * @dev A script + utilites for deploying OmnIAVS to Goerli. It exposes a
@@ -24,8 +22,8 @@ import { Script } from "forge-std/Script.sol";
  *      deploy script.
  */
 contract DeployGoerliAVS is Script {
-    uint96 public constant minimumOperatorStake = 1 ether;
-    uint32 public constant maxOperatorCount = 10;
+    uint96 public constant MIN_OPERATOR_STAKE = 1 ether;
+    uint32 public constant MAX_OPERATOR_COUNT = 10;
 
     /// @dev forge script entrypoint
     function run() public pure {
@@ -52,13 +50,25 @@ contract DeployGoerliAVS is Script {
                 owner,
                 portal,
                 omniChainId,
-                minimumOperatorStake,
-                maxOperatorCount,
+                MIN_OPERATOR_STAKE,
+                MAX_OPERATOR_COUNT,
                 allowlist,
                 StrategyParams.goerli()
             )
         );
 
         return proxy;
+    }
+
+    /// @dev deploy OmniAVS, but with a prank. necessary because we cannot
+    //       vm.startPrank() outside of this contract
+    function prankDeploy(address prank, address owner, address proxyAdmin, address portal, uint64 omniChainId)
+        public
+        returns (address)
+    {
+        vm.startPrank(prank);
+        address avs = deploy(owner, proxyAdmin, portal, omniChainId);
+        vm.stopPrank();
+        return avs;
     }
 }
