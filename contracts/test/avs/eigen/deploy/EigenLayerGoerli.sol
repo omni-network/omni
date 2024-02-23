@@ -4,12 +4,18 @@ pragma solidity =0.8.12;
 import { ERC20, IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { ITransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { ProxyAdmin } from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import { IBeacon } from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 
 import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
+import { IETHPOSDeposit } from "eigenlayer-contracts/src/contracts/interfaces/IETHPOSDeposit.sol";
 import { IDelegationManager } from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
+import { IEigenPodManager } from "eigenlayer-contracts/src/contracts/interfaces/IEigenPodManager.sol";
+import { IStrategyManager } from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
+import { ISlasher } from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 
 import { IEigenDeployer } from "./IEigenDeployer.sol";
 import { EigenM2GoerliDeployments } from "./EigenM2GoerliDeployments.sol";
+import { EigenPodManagerHarness } from "../EigenPodManagerHarness.sol";
 
 import { Test } from "forge-std/Test.sol";
 
@@ -20,7 +26,7 @@ import { Test } from "forge-std/Test.sol";
  *      returns the addresses of the contracts that are already deployed on goerli.
  */
 contract EigenLayerGoerli is IEigenDeployer, Test {
-    function deploy() public returns (Deployments memory) {
+    function deploy() public returns (Deployments memory deps) {
         address proxyAdminAddr = _proxyAdmin(EigenM2GoerliDeployments.EigenPodManager);
         address proxyAdminOwner = ProxyAdmin(proxyAdminAddr).owner();
 
@@ -34,7 +40,7 @@ contract EigenLayerGoerli is IEigenDeployer, Test {
         _replaceERC20(EigenM2GoerliDeployments.stETHStrategy, address(stETH));
         _replaceERC20(EigenM2GoerliDeployments.rETHStrategy, address(rETH));
 
-        return Deployments({
+        deps = Deployments({
             proxyAdminOwner: proxyAdminOwner,
             proxyAdmin: proxyAdminAddr,
             pauserRegistry: EigenM2GoerliDeployments.PauserRegistry,
@@ -45,6 +51,8 @@ contract EigenLayerGoerli is IEigenDeployer, Test {
             avsDirectory: EigenM2GoerliDeployments.AVSDirectory,
             strategies: strategies
         });
+
+        _replaceEigenPodManager(deps);
     }
 
     /// @dev Storage slot with the admin of the contract.
@@ -70,5 +78,25 @@ contract EigenLayerGoerli is IEigenDeployer, Test {
 
         deal(address(token), strategy, stratBalance);
         assertEq(ERC20(token).balanceOf(strategy), stratBalance);
+    }
+
+    /// @dev Replace the EigenPodManager with our harness that allows to updatePodOwnerShares.
+    function _replaceEigenPodManager(Deployments memory deps) internal {
+        IEigenPodManager current = IEigenPodManager(deps.eigenPodManager);
+        IETHPOSDeposit ethPOS = current.ethPOS();
+        IBeacon eigenPodBeacon = current.eigenPodBeacon();
+
+        vm.prank(deps.proxyAdmin);
+        address impl = ITransparentUpgradeableProxy(address(current)).implementation();
+
+        EigenPodManagerHarness harness = new EigenPodManagerHarness(
+            ethPOS,
+            eigenPodBeacon,
+            IStrategyManager(deps.strategyManager),
+            ISlasher(deps.slasher),
+            IDelegationManager(deps.delegationManager)
+        );
+
+        vm.etch(impl, address(harness).code);
     }
 }

@@ -12,9 +12,6 @@ import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
 import { AVSBase } from "./AVSBase.sol";
 
 contract AVSUtils is AVSBase {
-    /// Canonical, virtual beacon chain ETH strategy
-    address constant beaconChainETHStrategy = 0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0;
-
     // map addr to private key
     mapping(address => uint256) _pks;
 
