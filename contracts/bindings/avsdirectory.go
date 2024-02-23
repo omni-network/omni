@@ -29,12 +29,12 @@ var (
 	_ = abi.ConvertType
 )
 
-// ISignatureUtilsSignatureWithSaltAndExpiry is an auto generated low-level Go binding around an user-defined struct.
-type ISignatureUtilsSignatureWithSaltAndExpiry struct {
-	Signature []byte
-	Salt      [32]byte
-	Expiry    *big.Int
-}
+//// ISignatureUtilsSignatureWithSaltAndExpiry is an auto generated low-level Go binding around an user-defined struct.
+//type ISignatureUtilsSignatureWithSaltAndExpiry struct {
+//	Signature []byte
+//	Salt      [32]byte
+//	Expiry    *big.Int
+//}
 
 // AVSDirectoryMetaData contains all meta data concerning the AVSDirectory contract.
 var AVSDirectoryMetaData = &bind.MetaData{

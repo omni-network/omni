@@ -42,12 +42,12 @@ type IOmniAVSValidator struct {
 	Staked    *big.Int
 }
 
-//// ISignatureUtilsSignatureWithSaltAndExpiry is an auto generated low-level Go binding around an user-defined struct.
-//type ISignatureUtilsSignatureWithSaltAndExpiry struct {
-//	Signature []byte
-//	Salt      [32]byte
-//	Expiry    *big.Int
-//}
+// ISignatureUtilsSignatureWithSaltAndExpiry is an auto generated low-level Go binding around an user-defined struct.
+type ISignatureUtilsSignatureWithSaltAndExpiry struct {
+	Signature []byte
+	Salt      [32]byte
+	Expiry    *big.Int
+}
 
 // OmniAVSMetaData contains all meta data concerning the OmniAVS contract.
 var OmniAVSMetaData = &bind.MetaData{

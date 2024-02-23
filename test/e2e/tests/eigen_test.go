@@ -25,13 +25,13 @@ const (
 	// pk used to deploy omniAVS contracts.
 	omniDeployPk = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 
-	// pk used to deploy EigenLayer contracts.
-	elDeployPk = "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6" // anvil account 9
+	// pk used to deploy EigenLayer contracts, anvil account 9.
+	elDeployPk = "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
 
-	// uri which stores the metadata for an operator.
+	// URI, which stores the metadata for an operator.
 	operator1MetaDataURI = "https://www.operator1.com"
 
-	// uri which stores the metadata for an operator.
+	// URI, which stores the metadata for an operator.
 	operator2MetaDataURI = "https://www.operator2.com"
 
 	// minimum self stake for an operator to get registered in omniAVS.
@@ -49,7 +49,7 @@ const (
 	// initial stake that a delegator will do for an operator.
 	InitialDelegatorStake = 50
 
-	// the zero address string.
+	// the zero-address string.
 	zeroAddr = "0x0000000000000000000000000000000000000000"
 )
 
@@ -62,8 +62,11 @@ func TestEigenAndOmniAVS(t *testing.T) {
 		delMgrAddr := deployInfo[types.ContractELDelegationManager].Address
 		stratManAddr := deployInfo[types.ContractELStrategyManager].Address
 		wethStratAddr := deployInfo[types.ContractELWETHStrategy].Address
-		wethTokenAddr := deployInfo[types.ContractELWETH].Address
+		wethTokenAddr := getTokenAddr(t, avs)
 		omniAVSAddr := deployInfo[types.ContractOmniAVS].Address
+		deployInfo[types.ContractELWETH] = types.DeployInfo{
+			Address: wethTokenAddr,
+		}
 
 		// create new operators, delegators and fund them with ETH
 		operator1Addr, opr1Addr, opr1Pk := createAccount(t, ctx, avs.Client)
@@ -112,6 +115,17 @@ func TestEigenAndOmniAVS(t *testing.T) {
 /*
  * internal/ helper functions.
  */
+
+func getTokenAddr(t *testing.T, avs AVS) common.Address {
+	t.Helper()
+
+	callOpts := bind.CallOpts{}
+	token, err := avs.WETHStrategyContract.UnderlyingToken(&callOpts)
+	require.NoError(t, err)
+
+	return token
+}
+
 func createAccount(t *testing.T, ctx context.Context, client *ethclient.Client) (string,
 	common.Address, *ecdsa.PrivateKey) {
 	t.Helper()
