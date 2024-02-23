@@ -1,0 +1,17 @@
+version: v1
+managed:
+  enabled: true
+  go_package_prefix:
+    default: github.com/omni-network/omni
+    override:
+      buf.build/cosmos/cosmos-sdk: cosmossdk.io/api # Required to import the Cosmos SDK api module
+plugins:
+  - name: go
+    out: .
+    opt: paths=source_relative
+  - plugin: go-grpc
+    out: .
+    opt: paths=source_relative
+  - name: go-cosmos-orm
+    out: .
+    opt: paths=source_relative

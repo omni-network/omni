@@ -14,15 +14,14 @@ var _ cchain.Provider = Provider{}
 
 // FetchFunc abstracts fetching attestation from the consensus chain.
 type FetchFunc func(ctx context.Context, chainID uint64, fromHeight uint64,
-) ([]xchain.AggAttestation, error)
+) ([]xchain.Attestation, error)
 
 // Provider implements cchain.Provider.
 type Provider struct {
 	fetch       FetchFunc
 	backoffFunc func(context.Context) (func(), func())
+	chainNames  map[uint64]string
 }
-
-// TODO(corver): Add prod constructor once halo has an API.
 
 // NewProviderForT creates a new provider for testing.
 func NewProviderForT(_ *testing.T, fetch FetchFunc,
@@ -34,24 +33,29 @@ func NewProviderForT(_ *testing.T, fetch FetchFunc,
 	}
 }
 
-func (p Provider) ApprovedFrom(ctx context.Context, sourceChainID uint64, sourceHeight uint64,
-) ([]xchain.AggAttestation, error) {
+func (p Provider) AttestationsFrom(ctx context.Context, sourceChainID uint64, sourceHeight uint64,
+) ([]xchain.Attestation, error) {
 	return p.fetch(ctx, sourceChainID, sourceHeight)
 }
 
 // Subscribe implements cchain.Provider.
-func (p Provider) Subscribe(ctx context.Context, chainID uint64, height uint64, callback cchain.ProviderCallback) {
+func (p Provider) Subscribe(in context.Context, srcChainID uint64, height uint64, workerName string,
+	callback cchain.ProviderCallback,
+) {
+	srcChain := p.chainNames[srcChainID]
+	ctx := log.WithCtx(in, "src_chain", srcChain)
+
 	// Start a async goroutine to fetch attestations until ctx is canceled.
 	go func() {
 		backoff, reset := p.backoffFunc(ctx) // Note that backoff returns immediately on ctx cancel.
 
 		for ctx.Err() == nil {
 			// Fetch next batch of attestations.
-			atts, err := p.fetch(ctx, chainID, height)
+			atts, err := p.fetch(ctx, srcChainID, height)
 			if ctx.Err() != nil {
 				return // Don't backoff or log on ctx cancel, just return.
 			} else if err != nil {
-				log.Warn(ctx, "Failed fetching attestation; will retry", err)
+				log.Warn(ctx, "Failed fetching attestation; will retry", err, "height", height)
 				backoff()
 
 				continue
@@ -66,28 +70,29 @@ func (p Provider) Subscribe(ctx context.Context, chainID uint64, height uint64, 
 
 			// Call callback for each attestation
 			for _, att := range atts {
+				actx := log.WithCtx(ctx, "height", att.BlockHeight)
 				// Sanity checks
-				if att.SourceChainID != chainID {
-					log.Error(ctx, "Invalid attestation chain ID [BUG!]", nil)
+				if att.SourceChainID != srcChainID {
+					log.Error(actx, "Invalid attestation srcChain ID [BUG!]", nil)
 					return
 				} else if att.BlockHeight != height {
-					log.Error(ctx, "Invalid attestation height [BUG!]", nil)
+					log.Error(actx, "Invalid attestation height [BUG!]", nil)
 					return
 				}
 
 				// Retry callback on error
-				for ctx.Err() == nil {
-					err := callback(ctx, att)
-					if ctx.Err() != nil {
+				for actx.Err() == nil {
+					err := callback(actx, att)
+					if actx.Err() != nil {
 						return // Don't backoff or log on ctx cancel, just return.
 					} else if err != nil {
-						log.Warn(ctx, "Failed processing attestation; will retry", err)
-						callbackErrTotal.Inc()
+						log.Warn(actx, "Failed processing attestation; will retry", err)
+						callbackErrTotal.WithLabelValues(workerName, srcChain).Inc()
 						backoff()
 
 						continue
 					}
-					streamHeight.Set(float64(height)) // Update stream height metric
+					streamHeight.WithLabelValues(workerName, srcChain).Set(float64(height))
 
 					break // Success, stop retrying.
 				}

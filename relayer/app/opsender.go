@@ -10,8 +10,8 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/txmgr"
 	"github.com/omni-network/omni/lib/xchain"
-	"github.com/omni-network/omni/relayer/txmgr"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -20,21 +20,30 @@ import (
 
 // OpSender uses txmgr to send transactions to the destination chain.
 type OpSender struct {
-	txMgr  txmgr.TxManager
-	portal common.Address
-	abi    *abi.ABI
+	txMgr      txmgr.TxManager
+	portal     common.Address
+	abi        *abi.ABI
+	chain      netconf.Chain
+	chainNames map[uint64]string
 }
 
 // NewOpSender creates a new sender that uses txmgr to send transactions to the destination chain.
 func NewOpSender(ctx context.Context, chain netconf.Chain, rpcClient *ethclient.Client,
-	privateKey ecdsa.PrivateKey) (OpSender, error) {
-	cfg, err := txmgr.NewConfig(ctx, txmgr.NewCLIConfig(chain.RPCURL, txmgr.DefaultSenderFlagValues),
-		&privateKey, rpcClient)
+	privateKey ecdsa.PrivateKey, chainNames map[uint64]string) (OpSender, error) {
+	// we want to query receipts every 1/3 of the block time
+	cfg, err := txmgr.NewConfig(ctx, txmgr.NewCLIConfig(
+		chain.RPCURL,
+		chain.BlockPeriod/3,
+		txmgr.DefaultSenderFlagValues,
+	),
+		&privateKey,
+		rpcClient,
+	)
 	if err != nil {
 		return OpSender{}, err
 	}
 
-	txMgr, err := initTxMgr(cfg)
+	txMgr, err := initTxMgr(cfg, chain.Name)
 	if err != nil {
 		return OpSender{}, err
 	}
@@ -46,9 +55,11 @@ func NewOpSender(ctx context.Context, chain netconf.Chain, rpcClient *ethclient.
 	}
 
 	return OpSender{
-		txMgr:  txMgr,
-		portal: common.HexToAddress(chain.PortalAddress),
-		abi:    &parsedAbi,
+		txMgr:      txMgr,
+		portal:     common.HexToAddress(chain.PortalAddress),
+		abi:        &parsedAbi,
+		chain:      chain,
+		chainNames: chainNames,
 	}, nil
 }
 
@@ -56,6 +67,9 @@ func NewOpSender(ctx context.Context, chain netconf.Chain, rpcClient *ethclient.
 func (o OpSender) SendTransaction(ctx context.Context, submission xchain.Submission) error {
 	if o.txMgr == nil {
 		return errors.New("tx mgr not found", "dest_chain_id", submission.DestChainID)
+	} else if submission.DestChainID != o.chain.ID {
+		return errors.New("unexpected destination chain [BUG]",
+			"got", submission.DestChainID, "expect", o.chain.ID)
 	}
 
 	// Get some info for logging
@@ -64,10 +78,11 @@ func (o OpSender) SendTransaction(ctx context.Context, submission xchain.Submiss
 		startOffset = submission.Msgs[0].StreamOffset
 	}
 
-	log.Debug(ctx, "Sending submission transaction",
-		"dest_chain_id", submission.DestChainID,
-		"block_height", submission.BlockHeader.BlockHeight,
-		"source_chain_id", submission.BlockHeader.SourceChainID,
+	dstChain := o.chain.Name
+	srcChain := o.chainNames[submission.BlockHeader.SourceChainID]
+
+	ctx = log.WithCtx(ctx, "req_id", randomHex7())
+	log.Debug(ctx, "Received submission",
 		"start_offset", startOffset,
 		"msgs", len(submission.Msgs),
 	)
@@ -92,19 +107,19 @@ func (o OpSender) SendTransaction(ctx context.Context, submission xchain.Submiss
 	}
 
 	log.Info(ctx, "Sent submission transaction",
-		"dest_chain_id", submission.DestChainID,
-		"block_height", submission.BlockHeader.BlockHeight,
-		"source_chain_id", submission.BlockHeader.SourceChainID,
 		"status", rec.Status,
 		"gas_used", rec.GasUsed,
 		"tx_hash", rec.TxHash)
+
+	submissionTotal.WithLabelValues(srcChain, dstChain).Inc()
+	msgTotal.WithLabelValues(srcChain, dstChain).Add(float64(len(submission.Msgs)))
 
 	return nil
 }
 
 // initTxMgr creates a new txmgr.TxManager from the given config.
-func initTxMgr(cfg txmgr.Config) (txmgr.TxManager, error) {
-	txMgr, err := txmgr.NewSimpleTxManagerFromConfig("op-relayer", cfg)
+func initTxMgr(cfg txmgr.Config, chainName string) (txmgr.TxManager, error) {
+	txMgr, err := txmgr.NewSimpleTxManagerFromConfig(chainName, cfg)
 	if err != nil {
 		return nil, errors.New("failed to create tx mgr", "error", err)
 	}

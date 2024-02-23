@@ -1,5 +1,10 @@
 # Devnet1 is the smallest devnet possible. It only a single validator.
 network = "devnet"
-anvil_chains = ["chain_a"]
+anvil_chains = ["mock_l1", "mock_rollup"]
+avs_target = "mock_l1"
 
-[node.validator]
+multi_omni_evms = true
+prometheus = true
+
+[node.validator01]
+[node.validator02]

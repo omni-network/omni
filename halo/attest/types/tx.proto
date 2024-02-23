@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package halo.attest.types;
+
+import "cosmos/msg/v1/msg.proto";
+
+option go_package = "halo/attest/types";
+
+// MsgService defines all the gRPC methods exposed by the attest module.
+service MsgService {
+  option (cosmos.msg.v1.service) = true;
+
+  // AddVotes processes aggregate votes included in a proposed or finalised block.
+  rpc AddVotes (MsgAddVotes) returns (AddVotesResponse);
+}
+
+
+// MsgAddVotes contains multiple aggregated votes for different cross-chain Blocks.
+message MsgAddVotes {
+  option (cosmos.msg.v1.signer) = "authority";
+  string authority = 1;
+  repeated AggVote votes = 2;
+}
+
+message AddVotesResponse {}
+
+// Attestation contains quorum votes for a cross-chain block of a specific validator set.
+message Attestation {
+  BlockHeader       block_header     = 1; // BlockHeader identifies the cross-chain Block
+  bytes             block_root       = 2; // Merkle root of the cross-chain Block
+  repeated SigTuple signatures       = 3; // Validator signatures and public keys
+  bytes             validators_hash  = 4; // Merkle root hash of the validator set that approved this aggregate.
+}
+
+
+// AggVote aggregates multiple votes of a cross-chain Block.
+message AggVote {
+  BlockHeader       block_header     = 1; // BlockHeader identifies the cross-chain Block
+  bytes             block_root       = 2; // Merkle root of the cross-chain Block
+  repeated SigTuple signatures       = 3; // Validator signatures and public keys
+}
+
+// Votes contains multiple votes for different cross-chain Blocks. Usually by the same validator.
+message Votes {
+  repeated Vote votes = 1;
+}
+
+// Vote by a validator of a cross-chain Block.
+message Vote {
+  BlockHeader block_header     = 1; // BlockHeader identifies the cross-chain Block
+  bytes       block_root       = 2; // Merkle root of the cross-chain Block
+  SigTuple    signature        = 3; // Validator signatures and public keys
+}
+
+// BlockHeader uniquely identifies a cross chain block.
+message BlockHeader {
+  uint64 chain_id    = 1; // Chain ID as per https://chainlist.org
+  uint64 height      = 2; // Height of the block
+  bytes  hash        = 3; // Hash of the block
+}
+
+// SigTuple is a validator signature and public key.
+message SigTuple {
+  bytes validator_address = 1; // Validator ethereum address; 20 bytes.
+  bytes signature         = 2; // Validator signature over XBlockRoot; Ethereum 65 bytes [R || S || V] format.
+}

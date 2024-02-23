@@ -4,10 +4,12 @@ networks:
     labels:
       e2e: true
     driver: bridge
+    {{- if .Network }}
     ipam:
       driver: default
       config:
       - subnet: {{ .NetworkCIDR }}
+    {{- end }}
 
 services:
 {{- range .Nodes }}
@@ -18,18 +20,23 @@ services:
     image: {{ .Version }}
     init: true
     ports:
-    - 26656
+    - {{ if $.BindAll }}26656:{{end}}26656
     - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}26657
 {{- if .PrometheusProxyPort }}
     - {{ .PrometheusProxyPort }}:26660
 {{- end }}
     - 6060
+    environment:
+    - HALO_LOG_FORMAT={{ $.OmniLogFormat }}
     volumes:
     - ./{{ .Name }}:/halo
     - ./{{ index $.NodeOmniEVMs .Name }}/jwtsecret:/geth/jwtsecret
+    depends_on:
+      {{ index $.NodeOmniEVMs .Name }}:
+        condition: service_healthy
     networks:
       {{ $.NetworkName }}:
-        ipv4_address: {{ .InternalIP }}
+        {{ if $.Network }}ipv4_address: {{ .InternalIP }}{{ end }}
 {{end}}
 
 {{- range .Anvils }}
@@ -39,12 +46,22 @@ services:
       e2e: true
     container_name: {{ .Chain.Name }}
     image: ghcr.io/foundry-rs/foundry:latest
-    entrypoint: ['anvil','--host','0.0.0.0','--chain-id','{{ .Chain.ID }}','--block-time','1', "--silent"]
+    entrypoint:
+      - anvil
+      - --host=0.0.0.0
+      - --chain-id={{ .Chain.ID }}
+      - --block-time=1
+      - --silent
+      {{ if .LoadState }}- --load-state=/anvil/state.json{{ end }}
     ports:
       - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}8545
     networks:
       {{ $.NetworkName }}:
-        ipv4_address: {{ .InternalIP }}
+        {{ if $.Network }}ipv4_address: {{ .InternalIP }}{{ end }}
+    {{ if .LoadState }}
+    volumes:
+      - {{ .LoadState }}:/anvil/state.json
+    {{ end }}
 {{- end}}
 
   # Use geth as the omni EVMs.
@@ -58,6 +75,8 @@ services:
     command: --datadir=/geth init /geth/genesis.json
     volumes:
       - ./{{ .InstanceName }}:/geth
+    networks:
+      {{ $.NetworkName }}:
 
   {{ .InstanceName }}:
     labels:
@@ -85,18 +104,24 @@ services:
       - --syncmode=full
       - --nodekeyhex={{.NodeKeyHex}}
       - --bootnodes={{.BootNodesStr}}
+      - --miner.recommit=500ms
     ports:
-      - 8551
+      - {{ if $.BindAll }}8551:{{end}}8551
       - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}8545
+      - {{ if $.BindAll }}30303:{{end}}30303
       - 8546
     depends_on:
       {{ .InstanceName }}-init:
         condition: service_completed_successfully
+    healthcheck:
+      test: "nc -z localhost 8545"
+      interval: 1s
+      retries: 30
     volumes:
       - ./{{ .InstanceName }}:/geth
     networks:
       {{ $.NetworkName }}:
-        ipv4_address: {{ .InternalIP }}
+        {{ if $.Network }}ipv4_address: {{ .InternalIP }}{{ end }}
 {{end}}
 
 {{- if .Relayer }}
@@ -104,13 +129,15 @@ services:
     labels:
       e2e: true
     container_name: relayer
-    image: omniops/relayer:main
+    image: omniops/relayer:{{or .RelayerTag "main"}}
     restart: unless-stopped # Restart on crash to mitigate startup race issues
+    environment:
+    - RELAYER_LOG_FORMAT={{ $.OmniLogFormat }}
     volumes:
       - ./relayer:/relayer
     networks:
       {{ $.NetworkName }}:
-        ipv4_address: 10.186.73.200
+        {{ if $.Network }}ipv4_address: 10.186.73.200{{ end }}
 {{end}}
 
 {{- if .Prometheus }}
@@ -124,5 +151,5 @@ services:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     networks:
       {{ $.NetworkName }}:
-        ipv4_address: 10.186.73.201
+        {{ if $.Network }}ipv4_address: 10.186.73.201{{ end }}
 {{ end }}

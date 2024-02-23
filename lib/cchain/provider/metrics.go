@@ -5,19 +5,18 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-//nolint:gochecknoglobals // Promauto metrics are global.
 var (
-	callbackErrTotal = promauto.NewCounter(prometheus.CounterOpts{
+	callbackErrTotal = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "lib",
 		Subsystem: "cprovider",
 		Name:      "callback_error_total",
-		Help:      "Total number of callback errors per source chain. Alert if growing.",
-	})
+		Help:      "Total number of callback errors per worker per source chain. Alert if growing.",
+	}, []string{"worker", "chain"})
 
-	streamHeight = promauto.NewGauge(prometheus.GaugeOpts{
+	streamHeight = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "lib",
 		Subsystem: "cprovider",
 		Name:      "stream_height",
-		Help:      "Latest streamed xblock height per source chain. Alert if not growing.",
-	})
+		Help:      "Latest streamed xblock height per worker per source chain. Alert if not growing.",
+	}, []string{"worker", "chain"})
 )

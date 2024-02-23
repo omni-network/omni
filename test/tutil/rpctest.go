@@ -16,10 +16,10 @@ var (
 	//go:embed testdata/genesis.json
 	genesisJSON []byte
 
-	//go:embed testdata/priv_validator_key.json
+	//go:embed testdata/priv-validator-key.json
 	privValKeyJSON []byte
 
-	//go:embed testdata/priv_validator_state.json
+	//go:embed testdata/priv-validator-state.json
 	privValStateJSON []byte
 )
 

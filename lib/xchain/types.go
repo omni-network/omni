@@ -6,6 +6,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+// Signature65 is a 65 byte Ethereum signature [R || S || V] format.
+type Signature65 [65]byte
+
 // StreamID uniquely identifies a cross-chain stream.
 // A stream is a logical representation of a cross-chain connection between two chains.
 type StreamID struct {
@@ -21,28 +24,28 @@ type MsgID struct {
 
 // Msg is a cross-chain message.
 type Msg struct {
-	MsgID                    // Unique ID of the message
-	SourceMsgSender [20]byte // Sender on source chain, set to msg.Sender
-	DestAddress     [20]byte // Target/To address to "call" on destination chain
-	Data            []byte   // Data to provide to "call" on destination chain
-	DestGasLimit    uint64   // Gas limit to use for "call" on destination chain
-	TxHash          [32]byte // Hash of the source chain transaction that emitted the message
+	MsgID                          // Unique ID of the message
+	SourceMsgSender common.Address // Sender on source chain, set to msg.Sender
+	DestAddress     common.Address // Target/To address to "call" on destination chain
+	Data            []byte         // Data to provide to "call" on destination chain
+	DestGasLimit    uint64         // Gas limit to use for "call" on destination chain
+	TxHash          common.Hash    // Hash of the source chain transaction that emitted the message
 }
 
 // Receipt is a cross-chain message receipt, the result of applying the Msg on the destination chain.
 type Receipt struct {
-	MsgID                   // Unique ID of the cross chain message that was applied.
-	GasUsed        uint64   // Gas used during message "call"
-	Success        bool     // Result, true for success, false for revert
-	RelayerAddress [20]byte // Address of relayer that submitted the message
-	TxHash         [32]byte // Hash of the relayer submission transaction
+	MsgID                         // Unique ID of the cross chain message that was applied.
+	GasUsed        uint64         // Gas used during message "call"
+	Success        bool           // Result, true for success, false for revert
+	RelayerAddress common.Address // Address of relayer that submitted the message
+	TxHash         common.Hash    // Hash of the relayer submission transaction
 }
 
 // BlockHeader uniquely identifies a cross chain block.
 type BlockHeader struct {
-	SourceChainID uint64   // Source chain ID as per https://chainlist.org
-	BlockHeight   uint64   // Height of the source chain block
-	BlockHash     [32]byte // Hash of the source chain block
+	SourceChainID uint64      // Source chain ID as per https://chainlist.org
+	BlockHeight   uint64      // Height of the source chain block
+	BlockHash     common.Hash // Hash of the source chain block
 }
 
 // Block is a deterministic representation of the omni cross-chain properties of a source chain EVM block.
@@ -53,37 +56,37 @@ type Block struct {
 	Timestamp time.Time // Timestamp of the source chain block
 }
 
-// Attestation by a validator of a cross-chain Block.
-type Attestation struct {
-	BlockHeader          // BlockHeader identifies the cross-chain Block
-	BlockRoot   [32]byte // Merkle root of the cross-chain Block
-	Signature   SigTuple // Validator signature and public key
+// Vote by a validator of a cross-chain Block.
+type Vote struct {
+	BlockHeader             // BlockHeader identifies the cross-chain Block
+	BlockRoot   common.Hash // Merkle root of the cross-chain Block
+	Signature   SigTuple    // Validator signature and public key
 }
 
-// AggAttestation aggregates multiple attestation by a validator set of a cross-chain Block.
-type AggAttestation struct {
-	BlockHeader               // BlockHeader identifies the cross-chain Block
-	ValidatorSetID uint64     // Unique identified of the validator set included in this aggregate.
-	BlockRoot      [32]byte   // Merkle root of the cross-chain Block
-	Signatures     []SigTuple // Validator signatures and public keys
+// Attestation containing quorum votes by the validator set of a cross-chain Block.
+type Attestation struct {
+	BlockHeader                  // BlockHeader identifies the cross-chain Block
+	ValidatorSetHash common.Hash // Merkle root hash of the validator set that approved this attestation.
+	BlockRoot        common.Hash // Merkle root of the cross-chain Block
+	Signatures       []SigTuple  // Validator signatures and public keys
 }
 
 // SigTuple is a validator signature and address.
 type SigTuple struct {
 	ValidatorAddress common.Address // Validator Ethereum address
-	Signature        [65]byte       // Validator signature over XBlockRoot; Ethereum 65 bytes [R || S || V] format.
+	Signature        Signature65    // Validator signature over XBlockRoot; Ethereum 65 bytes [R || S || V] format.
 }
 
 // Submission is a cross-chain submission of a set of messages and their proofs.
 type Submission struct {
-	AttestationRoot [32]byte    // Merkle root of the attestations
-	ValidatorSetID  uint64      // Unique identified of the validator set included in this aggregate.
-	BlockHeader     BlockHeader // BlockHeader identifies the cross-chain Block
-	Msgs            []Msg       // Messages to be submitted
-	Proof           [][32]byte  // Merkle multi proofs of the messages
-	ProofFlags      []bool      // Flags indicating whether the proof is a left or right proof
-	Signatures      []SigTuple  // Validator signatures and public keys
-	DestChainID     uint64      // Destination chain ID, for internal use only
+	AttestationRoot  common.Hash // Merkle root of the cross-chain Block
+	ValidatorSetHash common.Hash // Merkle root hash of the validator set that approved the attestation.
+	BlockHeader      BlockHeader // BlockHeader identifies the cross-chain Block
+	Msgs             []Msg       // Messages to be submitted
+	Proof            [][32]byte  // Merkle multi proofs of the messages
+	ProofFlags       []bool      // Flags indicating whether the proof is a left or right proof
+	Signatures       []SigTuple  // Validator signatures and public keys
+	DestChainID      uint64      // Destination chain ID, for internal use only
 }
 
 // StreamCursor is a cursor that tracks the progress of a cross-chain stream on destination portal contracts.

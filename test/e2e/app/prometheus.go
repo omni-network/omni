@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
-	"time"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -56,11 +55,16 @@ func genPromConfig(ctx context.Context, testnet types.Testnet, secrets PromSecre
 
 	network := testnet.Network
 	if network == netconf.Devnet {
-		network += "-" + time.Now().Format("20060102150405") // Add suffix to distinguish between devnets
+		network = testnet.Name
+		if hostname, err := os.Hostname(); err == nil {
+			network += "-" + hostname
+		}
 	}
 
 	if secrets.URL == "" {
 		log.Warn(ctx, "Prometheus remote URL not set, metrics not being pushed to Grafana cloud", nil)
+	} else {
+		log.Info(ctx, "Prometheus metrics pushed to Grafana cloud", "network", network)
 	}
 
 	data := promTmplData{

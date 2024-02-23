@@ -8,12 +8,18 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/contracts/bindings/examples"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/test/e2e/app"
+	"github.com/omni-network/omni/test/e2e/docker"
+	"github.com/omni-network/omni/test/e2e/types"
+	"github.com/omni-network/omni/test/e2e/vmcompose"
 
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	rpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
-	"github.com/cometbft/cometbft/types"
+	cmttypes "github.com/cometbft/cometbft/types"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -29,20 +35,21 @@ import (
 //}
 
 const (
-	EnvInfraType   = "INFRASTRUCTURE_TYPE"
-	EnvInfraFile   = "INFRASTRUCTURE_FILE"
-	EnvE2EManifest = "E2E_MANIFEST"
-	EnvE2ENode     = "E2E_NODE"
-	EnvE2ENetwork  = "E2E_NETWORK"
+	EnvInfraType     = "INFRASTRUCTURE_TYPE"
+	EnvInfraFile     = "INFRASTRUCTURE_FILE"
+	EnvE2EManifest   = "E2E_MANIFEST"
+	EnvE2ENode       = "E2E_NODE"
+	EnvE2ENetwork    = "E2E_NETWORK"
+	EnvE2EDeployInfo = "E2E_DEPLOY_INFO"
 )
 
 //nolint:gochecknoglobals // This was copied from cometbft/test/e2e/test/e2e_test.go
 var (
-	ctx             = context.Background()
 	networkCache    = map[string]netconf.Network{}
-	testnetCache    = map[string]e2e.Testnet{}
+	deployInfoCache = map[string]types.DeployInfos{}
+	testnetCache    = map[string]types.Testnet{}
 	testnetCacheMtx = sync.Mutex{}
-	blocksCache     = map[string][]*types.Block{}
+	blocksCache     = map[string][]*cmttypes.Block{}
 	blocksCacheMtx  = sync.Mutex{}
 )
 
@@ -53,6 +60,40 @@ type Portal struct {
 	Contract *bindings.OmniPortal
 }
 
+type PingPong struct {
+	Chain    netconf.Chain
+	Client   *ethclient.Client
+	Contract *examples.PingPong
+}
+
+type AVS struct {
+	Chain    netconf.Chain
+	Client   *ethclient.Client
+	Contract *bindings.OmniAVS
+}
+
+type testFunc struct {
+	TestNode   func(*testing.T, e2e.Node, []Portal)
+	TestPortal func(*testing.T, Portal, []Portal)
+	TestAVS    func(*testing.T, AVS)
+}
+
+func testNode(t *testing.T, fn func(*testing.T, e2e.Node, []Portal)) {
+	t.Helper()
+	test(t, testFunc{TestNode: fn})
+}
+
+func testPortal(t *testing.T, fn func(*testing.T, Portal, []Portal)) {
+	t.Helper()
+	test(t, testFunc{TestPortal: fn})
+}
+
+// TODO(corver): Uncomment and use.
+// func testAVS(t *testing.T, fn func(*testing.T, AVS)) {
+//	t.Helper()
+//	test(t, testFunc{TestAVS: fn})
+//}
+
 // test runs tests for testnet nodes. The callback functions are respectively given a
 // single node to test, and a single portal to test, running as a subtest in parallel with other subtests.
 //
@@ -60,10 +101,10 @@ type Portal struct {
 // these tests are skipped so that they're not picked up during normal unit
 // test runs. If E2E_NODE is also set, only the specified node is tested,
 // otherwise all nodes are tested.
-func test(t *testing.T, testNode func(*testing.T, e2e.Node, []Portal), testPortal func(*testing.T, Portal, []Portal)) {
+func test(t *testing.T, testFunc testFunc) {
 	t.Helper()
 
-	testnet, network := loadEnv(t)
+	testnet, network, deployInfo := loadEnv(t)
 	nodes := testnet.Nodes
 
 	if name := os.Getenv(EnvE2ENode); name != "" {
@@ -73,30 +114,43 @@ func test(t *testing.T, testNode func(*testing.T, e2e.Node, []Portal), testPorta
 	}
 
 	portals := makePortals(t, network)
-
+	log.Info(context.Background(), "Running tests for testnet",
+		"testnet", testnet.Name,
+		"nodes", len(nodes),
+		"portals", len(portals),
+	)
 	for _, node := range nodes {
 		if node.Stateless() {
 			continue
-		} else if testNode == nil {
+		} else if testFunc.TestNode == nil {
 			continue
 		}
 
 		node := *node
 		t.Run(node.Name, func(t *testing.T) {
 			t.Parallel()
-			testNode(t, node, portals)
+			testFunc.TestNode(t, node, portals)
 		})
 	}
 
-	if testPortal == nil {
-		return
+	if testFunc.TestPortal != nil {
+		for _, portal := range portals {
+			t.Run(portal.Chain.Name, func(t *testing.T) {
+				t.Parallel()
+				testFunc.TestPortal(t, portal, portals)
+			})
+		}
 	}
 
-	for _, portal := range portals {
-		t.Run(portal.Chain.Name, func(t *testing.T) {
-			t.Parallel()
-			testPortal(t, portal, portals)
-		})
+	if testFunc.TestAVS != nil {
+		if len(deployInfo) == 0 {
+			t.Skip("Skipping AVS tests since no deploy info is available")
+			return
+		}
+		// TODO: Create AWS contracts and test them
+		for chain, info := range deployInfo {
+			t.Log(chain, info)
+		}
 	}
 }
 
@@ -109,8 +163,10 @@ func makePortals(t *testing.T, network netconf.Network) []Portal {
 		ethClient, err := ethclient.Dial(chain.RPCURL)
 		require.NoError(t, err)
 
+		// create our Omni Portal Contract
 		contract, err := bindings.NewOmniPortal(common.HexToAddress(chain.PortalAddress), ethClient)
 		require.NoError(t, err)
+		require.NotNil(t, contract, "contract is nil")
 
 		resp = append(resp, Portal{
 			Chain:    chain,
@@ -122,8 +178,8 @@ func makePortals(t *testing.T, network netconf.Network) []Portal {
 	return resp
 }
 
-// loadEnv loads the testnet  and network based on env vars.
-func loadEnv(t *testing.T) (e2e.Testnet, netconf.Network) {
+// loadEnv loads the testnet and network based on env vars.
+func loadEnv(t *testing.T) (types.Testnet, netconf.Network, types.DeployInfos) {
 	t.Helper()
 
 	manifestFile := os.Getenv(EnvE2EManifest)
@@ -136,32 +192,37 @@ func loadEnv(t *testing.T) (e2e.Testnet, netconf.Network) {
 
 	ifdType := os.Getenv(EnvInfraType)
 	ifdFile := os.Getenv(EnvInfraFile)
-	if ifdType != "docker" && ifdFile == "" {
-		t.Fatalf(EnvInfraFile + " not set and INFRASTRUCTURE_TYPE is not 'docker'")
+	if ifdType != docker.ProviderName && ifdFile == "" {
+		require.Fail(t, EnvInfraFile+" not set while INFRASTRUCTURE_TYPE="+ifdType)
+	} else if ifdType != docker.ProviderName && !filepath.IsAbs(ifdFile) {
+		require.Fail(t, EnvInfraFile+" must be an absolute path", "got", ifdFile)
 	}
+
 	testnetCacheMtx.Lock()
 	defer testnetCacheMtx.Unlock()
 	if testnet, ok := testnetCache[manifestFile]; ok {
-		return testnet, networkCache[manifestFile]
+		return testnet, networkCache[manifestFile], deployInfoCache[manifestFile]
 	}
-	m, err := e2e.LoadManifest(manifestFile)
+	m, err := app.LoadManifest(manifestFile)
 	require.NoError(t, err)
 
-	var ifd e2e.InfrastructureData
+	var ifd types.InfrastructureData
 	switch ifdType {
-	case "docker":
-		ifd, err = e2e.NewDockerInfrastructureData(m)
-		require.NoError(t, err)
-	case "digital-ocean":
-		ifd, err = e2e.InfrastructureDataFromFile(ifdFile)
-		require.NoError(t, err)
+	case docker.ProviderName:
+		ifd, err = docker.NewInfraData(m)
+	case vmcompose.ProviderName:
+		ifd, err = vmcompose.LoadData(ifdFile)
 	default:
+		require.Fail(t, "unsupported infrastructure type", ifdType)
 	}
 	require.NoError(t, err)
 
-	testnet, err := e2e.LoadTestnet(manifestFile, ifd)
+	cfg := app.DefinitionConfig{
+		ManifestFile: manifestFile,
+	}
+	testnet, err := app.TestnetFromManifest(m, ifd, cfg)
 	require.NoError(t, err)
-	testnetCache[manifestFile] = *testnet
+	testnetCache[manifestFile] = testnet
 
 	networkFile := os.Getenv(EnvE2ENetwork)
 	if networkFile == "" {
@@ -172,15 +233,23 @@ func loadEnv(t *testing.T) (e2e.Testnet, netconf.Network) {
 	require.NoError(t, err)
 	networkCache[manifestFile] = network
 
-	return *testnet, network
+	var deployInfo types.DeployInfos
+	deployInfoFile := os.Getenv(EnvE2EDeployInfo)
+	if deployInfoFile != "" {
+		deployInfo, err = types.LoadDeployInfos(deployInfoFile)
+		require.NoError(t, err)
+		deployInfoCache[manifestFile] = deployInfo
+	}
+
+	return testnet, network, deployInfo
 }
 
 // fetchBlockChain fetches a complete, up-to-date block history from
 // the freshest testnet archive node.
-func fetchBlockChain(t *testing.T) []*types.Block {
+func fetchBlockChain(ctx context.Context, t *testing.T) []*cmttypes.Block {
 	t.Helper()
 
-	testnet, _ := loadEnv(t)
+	testnet, _, _ := loadEnv(t)
 
 	// Find the freshest archive node
 	var (
@@ -208,7 +277,7 @@ func fetchBlockChain(t *testing.T) []*types.Block {
 	to := status.SyncInfo.LatestBlockHeight
 	blocks, ok := blocksCache[testnet.Name]
 	if !ok {
-		blocks = make([]*types.Block, 0, to-from+1)
+		blocks = make([]*cmttypes.Block, 0, to-from+1)
 	}
 	if len(blocks) > 0 {
 		from = blocks[len(blocks)-1].Height + 1
@@ -216,6 +285,7 @@ func fetchBlockChain(t *testing.T) []*types.Block {
 
 	for h := from; h <= to; h++ {
 		resp, err := client.Block(ctx, &(h))
+		require.NoError(t, ctx.Err(), "Timeout fetching all blocks: %d of %d", h, to)
 		require.NoError(t, err)
 		require.NotNil(t, resp.Block)
 		require.Equal(t, h, resp.Block.Height, "unexpected block height %v", resp.Block.Height)

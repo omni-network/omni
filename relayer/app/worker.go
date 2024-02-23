@@ -2,7 +2,6 @@ package relayer
 
 import (
 	"context"
-	"time"
 
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
@@ -13,14 +12,12 @@ import (
 )
 
 const (
-	// bufferSize is the size of the activeBuffer for async send.
-	bufferSize = 1024
 	// mempoolLimit is the maximum number of transactions we want to submit to the mempool at once.
 	mempoolLimit = 16
 )
 
 type Worker struct {
-	chain        netconf.Chain // Destination chain
+	destChain    netconf.Chain // Destination chain
 	network      netconf.Network
 	cProvider    cchain.Provider
 	xProvider    xchain.Provider
@@ -29,11 +26,11 @@ type Worker struct {
 }
 
 // NewWorker creates a new worker for a single destination chain.
-func NewWorker(chain netconf.Chain, network netconf.Network, cProvider cchain.Provider,
+func NewWorker(destChain netconf.Chain, network netconf.Network, cProvider cchain.Provider,
 	xProvider xchain.Provider, creator CreateFunc, sendProvider func() (SendFunc, error),
 ) *Worker {
 	return &Worker{
-		chain:        chain,
+		destChain:    destChain,
 		network:      network,
 		cProvider:    cProvider,
 		xProvider:    xProvider,
@@ -43,9 +40,8 @@ func NewWorker(chain netconf.Chain, network netconf.Network, cProvider cchain.Pr
 }
 
 func (w *Worker) Run(ctx context.Context) {
-	ctx = log.WithCtx(ctx, "chain", w.chain.Name)
-
-	backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second)) // TODO(corver): Improve backoff.
+	ctx = log.WithCtx(ctx, "dst_chain", w.destChain.Name)
+	backoff := expbackoff.NewWithAutoReset(ctx)
 	for ctx.Err() == nil {
 		err := w.runOnce(ctx)
 		if ctx.Err() != nil {
@@ -53,7 +49,7 @@ func (w *Worker) Run(ctx context.Context) {
 		}
 
 		log.Error(ctx, "Worker failed, resetting", err)
-		workerResets.WithLabelValues(w.chain.Name).Inc()
+		workerResets.WithLabelValues(w.destChain.Name).Inc()
 		backoff()
 	}
 }
@@ -64,7 +60,7 @@ func (w *Worker) runOnce(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	cursors, initialOffsets, err := getSubmittedCursors(ctx, w.network.ChainIDs(), []uint64{w.chain.ID}, w.xProvider)
+	cursors, initialOffsets, err := getSubmittedCursors(ctx, w.network, w.destChain.ID, w.xProvider)
 	if err != nil {
 		return err
 	}
@@ -74,15 +70,22 @@ func (w *Worker) runOnce(ctx context.Context) error {
 		return err
 	}
 
-	buf := newActiveBuffer(w.chain.Name, mempoolLimit, bufferSize, sender)
-
-	callback := newCallback(w.xProvider, initialOffsets, w.creator, buf.AddInput)
+	buf := newActiveBuffer(w.destChain.Name, mempoolLimit, sender)
 
 	var logAttrs []any //nolint:prealloc // Not worth it
-	for chainID, fromHeight := range FromHeights(cursors, w.network.Chains) {
-		w.cProvider.Subscribe(ctx, chainID, fromHeight, callback)
+	for srcChainID, fromHeight := range FromHeights(cursors, w.destChain, w.network.Chains) {
+		if srcChainID == w.destChain.ID { // Sanity check
+			return errors.New("unexpected cursor [BUG]")
+		}
 
-		srcChain, _ := w.network.Chain(chainID)
+		callback := newCallback(w.xProvider, initialOffsets, w.creator, buf.AddInput, w.destChain.ID)
+
+		w.cProvider.Subscribe(ctx, srcChainID, fromHeight, w.destChain.Name, callback)
+
+		srcChain, f := w.network.Chain(srcChainID)
+		if !f {
+			continue
+		}
 		logAttrs = append(logAttrs, srcChain.Name, fromHeight)
 	}
 
@@ -92,8 +95,8 @@ func (w *Worker) runOnce(ctx context.Context) error {
 }
 
 func newCallback(xProvider xchain.Provider, initialOffsets map[xchain.StreamID]uint64, creator CreateFunc,
-	sender SendFunc) cchain.ProviderCallback {
-	return func(ctx context.Context, att xchain.AggAttestation) error {
+	sender SendFunc, destChainID uint64) cchain.ProviderCallback {
+	return func(ctx context.Context, att xchain.Attestation) error {
 		// Get the xblock from the source chain.
 		block, ok, err := xProvider.GetBlock(ctx, att.SourceChainID, att.BlockHeight)
 		if err != nil {
@@ -106,7 +109,6 @@ func newCallback(xProvider xchain.Provider, initialOffsets map[xchain.StreamID]u
 				log.Hex7("block_hash", block.BlockHash[:]),
 			)
 		} else if len(block.Msgs) == 0 {
-			log.Debug(ctx, "Skipping empty attested block")
 			return nil
 		}
 
@@ -117,16 +119,20 @@ func newCallback(xProvider xchain.Provider, initialOffsets map[xchain.StreamID]u
 
 		// Split into streams
 		for streamID, msgs := range mapByStreamID(block.Msgs) {
+			if streamID.DestChainID != destChainID {
+				continue
+			}
+
 			msgs = filterMsgs(msgs, initialOffsets, streamID) // Filter out any partially submitted stream updates.
 			if len(msgs) == 0 {
 				continue
 			}
 
 			update := StreamUpdate{
-				StreamID:       streamID,
-				AggAttestation: att,
-				Msgs:           msgs,
-				Tree:           tree,
+				StreamID:    streamID,
+				Attestation: att,
+				Msgs:        msgs,
+				Tree:        tree,
 			}
 
 			submissions, err := creator(update)

@@ -30,8 +30,8 @@ func TestProvider(t *testing.T) {
 
 	p := provider.NewProviderForT(t, fetcher.Fetch, backoff.BackOff)
 
-	var actual []xchain.AggAttestation
-	p.Subscribe(ctx, chainID, fromHeight, func(ctx context.Context, approved xchain.AggAttestation) error {
+	var actual []xchain.Attestation
+	p.Subscribe(ctx, chainID, fromHeight, "test", func(ctx context.Context, approved xchain.Attestation) error {
 		actual = append(actual, approved)
 		if len(actual) == total {
 			cancel()
@@ -64,7 +64,7 @@ type testFetcher struct {
 }
 
 func (f *testFetcher) Fetch(_ context.Context, chainID uint64, fromHeight uint64,
-) ([]xchain.AggAttestation, error) {
+) ([]xchain.Attestation, error) {
 	if f.errs > 0 {
 		f.errs--
 		return nil, errors.New("test error")
@@ -73,9 +73,9 @@ func (f *testFetcher) Fetch(_ context.Context, chainID uint64, fromHeight uint64
 	toReturn := f.count
 	f.count++
 
-	var resp []xchain.AggAttestation
+	var resp []xchain.Attestation
 	for i := 0; i < toReturn; i++ {
-		resp = append(resp, xchain.AggAttestation{
+		resp = append(resp, xchain.Attestation{
 			BlockHeader: xchain.BlockHeader{
 				SourceChainID: chainID,
 				BlockHeight:   fromHeight + uint64(i),

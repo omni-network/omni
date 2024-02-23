@@ -4,64 +4,31 @@ import (
 	"context"
 	"sort"
 
-	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 )
 
-// StartRelayer starts the relayer logic by subscribing to approved aggregate attestations
-// from the consensus chain and processing them into submissions for the destination chains.
-func StartRelayer(
-	ctx context.Context,
-	cProvider cchain.Provider,
-	network netconf.Network,
-	xClient xchain.Provider,
-	creator CreateFunc,
-	sender SendFunc,
-) error {
-	// Get the last submitted cursors for each chain.
-	cursors, initialOffsets, err := getSubmittedCursors(ctx, network.ChainIDs(), network.ChainIDs(), xClient)
-	if err != nil {
-		return err
-	}
-
-	// callback processes each approved attestation/xblock.
-	callback := newCallback(xClient, initialOffsets, creator, sender)
-
-	// Subscribe to attestations for each chain.
-	for chainID, fromHeight := range FromHeights(cursors, network.Chains) {
-		cProvider.Subscribe(ctx, chainID, fromHeight, callback)
-	}
-
-	return nil
-}
-
-// getSubmittedCursors returns the last submitted cursor for each chain.
+// getSubmittedCursors returns the last submitted cursor for each source chain on the destination chain.
 // It also returns the offsets indexed by streamID for each stream.
-func getSubmittedCursors(ctx context.Context, srcChains, dstChains []uint64, xClient xchain.Provider,
+func getSubmittedCursors(ctx context.Context, network netconf.Network, dstChainID uint64, xClient xchain.Provider,
 ) ([]xchain.StreamCursor, map[xchain.StreamID]uint64, error) {
-	var cursors []xchain.StreamCursor                  // All submitted cursors from all chains.
+	var cursors []xchain.StreamCursor                  //nolint:prealloc // Not worth it.
 	initialOffsets := make(map[xchain.StreamID]uint64) // Initial submitted offsets for each stream.
-	for _, destChain := range dstChains {
-		for _, srcChain := range srcChains {
-			if srcChain == destChain {
-				continue
-			}
-
-			cursor, ok, err := xClient.GetSubmittedCursor(ctx, destChain, srcChain)
-			if err != nil {
-				return nil, nil, errors.Wrap(err, "failed to get submitted cursors",
-					"dest_chain", destChain,
-					"src_chain", srcChain,
-				)
-			} else if !ok {
-				continue
-			}
-
-			initialOffsets[cursor.StreamID] = cursor.Offset
-			cursors = append(cursors, cursor)
+	for _, srcChain := range network.Chains {
+		if srcChain.ID == dstChainID {
+			continue
 		}
+
+		cursor, ok, err := xClient.GetSubmittedCursor(ctx, dstChainID, srcChain.ID)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "failed to get submitted cursors", "src_chain", srcChain.Name)
+		} else if !ok {
+			continue
+		}
+
+		initialOffsets[cursor.StreamID] = cursor.Offset
+		cursors = append(cursors, cursor)
 	}
 
 	return cursors, initialOffsets, nil
@@ -95,10 +62,13 @@ func filterMsgs(msgs []xchain.Msg, offsets map[xchain.StreamID]uint64, streamID 
 	return res
 }
 
-func FromHeights(cursors []xchain.StreamCursor, chains []netconf.Chain) map[uint64]uint64 {
+func FromHeights(cursors []xchain.StreamCursor, destChain netconf.Chain, chains []netconf.Chain) map[uint64]uint64 {
 	res := make(map[uint64]uint64)
 
 	for _, chain := range chains {
+		if chain.ID == destChain.ID {
+			continue
+		}
 		res[chain.ID] = chain.DeployHeight
 	}
 
@@ -108,6 +78,9 @@ func FromHeights(cursors []xchain.StreamCursor, chains []netconf.Chain) map[uint
 	})
 
 	for _, cursor := range cursors {
+		if cursor.SourceChainID == destChain.ID {
+			continue // Sanity check
+		}
 		res[cursor.SourceChainID] = cursor.SourceBlockHeight
 	}
 

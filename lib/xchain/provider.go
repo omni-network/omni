@@ -16,7 +16,11 @@ type Provider interface {
 	// or an error.
 	GetBlock(ctx context.Context, chainID uint64, height uint64) (Block, bool, error)
 
-	// GetSubmittedCursor returns the submitted cursor for the provided chain and source chain,
-	// or false if not available, or an error.
-	GetSubmittedCursor(ctx context.Context, chainID uint64, sourceChainID uint64) (StreamCursor, bool, error)
+	// GetSubmittedCursor returns the submitted cursor for the source chain on the destination chain,
+	// or false if not available, or an error. Calls the destination chain portal InXStreamOffset method.
+	GetSubmittedCursor(ctx context.Context, destChainID uint64, sourceChainID uint64) (StreamCursor, bool, error)
+
+	// GetEmittedCursor returns the emitted cursor for the destination chain on the source chain,
+	// or false if not available, or an error. Calls the source chain portal OutXStreamOffset method.
+	GetEmittedCursor(ctx context.Context, srcChainID uint64, destChainID uint64) (StreamCursor, bool, error)
 }

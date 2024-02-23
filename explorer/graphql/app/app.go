@@ -20,8 +20,7 @@ func Run(ctx context.Context, cfg Config) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	commit, timestamp := gitinfo.Get()
-	log.Info(ctx, "Version info", "git_commit", commit, "git_timestamp", timestamp)
+	gitinfo.Instrument(ctx)
 
 	// create ent client
 	entCl, err := db.NewPostgressClient(cfg.DBUrl)

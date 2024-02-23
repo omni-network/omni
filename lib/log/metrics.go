@@ -5,7 +5,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-//nolint:gochecknoglobals // Promauto metrics are global.
 var (
 	logTotal = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "lib",
@@ -14,3 +13,10 @@ var (
 		Help:      "Total number of log messages per level.",
 	}, []string{"level"})
 )
+
+// zeroLogMetrics zeros the log metrics so they display nicely in grafana.
+func zeroLogMetrics() {
+	for _, level := range levels {
+		logTotal.WithLabelValues(level).Add(0)
+	}
+}

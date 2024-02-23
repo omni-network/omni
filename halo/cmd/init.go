@@ -4,9 +4,11 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"time"
 
-	"github.com/omni-network/omni/halo/app"
-	"github.com/omni-network/omni/halo/attest"
+	"github.com/omni-network/omni/halo/attest/voter"
+	halocfg "github.com/omni-network/omni/halo/config"
+	"github.com/omni-network/omni/halo/genutil"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -18,7 +20,6 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/types"
-	cmttime "github.com/cometbft/cometbft/types/time"
 
 	"github.com/spf13/cobra"
 )
@@ -29,13 +30,14 @@ type InitConfig struct {
 	Network string
 	Force   bool
 	Clean   bool
+	Cosmos  bool
 }
 
 // newInitCmd returns a new cobra command that initializes the files and folders required by halo.
 func newInitCmd() *cobra.Command {
 	// Default config flags
 	cfg := InitConfig{
-		HomeDir: app.DefaultHomeDir,
+		HomeDir: halocfg.DefaultHomeDir,
 		Network: netconf.Simnet,
 		Force:   false,
 	}
@@ -80,7 +82,7 @@ The home directory should only contain subdirectories, no files, use --force to 
 // InitFiles initializes the files and folders required by halo.
 // It ensures a network and genesis file is generated/downloaded for the provided network.
 //
-//nolint:gocognit // This is just many sequential steps.
+//nolint:gocognit,nestif // This is just many sequential steps.
 func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	log.Info(ctx, "Initializing halo files and directories")
 	homeDir := initCfg.HomeDir
@@ -108,7 +110,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 
 	// Initialize default configs.
 	comet := DefaultCometConfig(homeDir)
-	cfg := app.DefaultHaloConfig()
+	cfg := halocfg.DefaultConfig()
 	cfg.HomeDir = homeDir
 
 	// Folders
@@ -146,7 +148,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	haloConfigFile := cfg.ConfigFile()
 	if cmtos.FileExists(haloConfigFile) {
 		log.Info(ctx, "Found halo config file", "path", haloConfigFile)
-	} else if err := app.WriteConfigTOML(cfg, log.DefaultConfig()); err != nil {
+	} else if err := halocfg.WriteConfigTOML(cfg, log.DefaultConfig()); err != nil {
 		return err
 	} else {
 		log.Info(ctx, "Generated default halo config file", "path", haloConfigFile)
@@ -190,9 +192,20 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 			Name: initCfg.Network,
 			Chains: []netconf.Chain{
 				{
-					ID:     999,
-					Name:   "omni",
-					IsOmni: true,
+					ID:          999,
+					Name:        "omni",
+					IsOmni:      true,
+					BlockPeriod: time.Millisecond * 500, // Speed up block times for testing
+				},
+				{
+					ID:     100, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
+					Name:   "chain_a",
+					IsOmni: false,
+				},
+				{
+					ID:     200, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
+					Name:   "chain_b",
+					IsOmni: false,
 				},
 			},
 		}
@@ -209,23 +222,28 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	if cmtos.FileExists(genFile) {
 		log.Info(ctx, "Found genesis file", "path", genFile)
 	} else if initCfg.Network == netconf.Simnet {
-		// Create a simnet genesis file with this node as single validator.
-		genDoc := types.GenesisDoc{
-			ChainID:         initCfg.Network,
-			GenesisTime:     cmttime.Now(),
-			ConsensusParams: DefaultConsensusParams(),
-		}
 		pubKey, err := pv.GetPubKey()
 		if err != nil {
 			return errors.Wrap(err, "get public key")
 		}
 
-		const nonZeroPower = 10 // Use any non-zero power for this single validator.
-		genDoc.Validators = []types.GenesisValidator{{
-			Address: pubKey.Address(),
-			PubKey:  pubKey,
-			Power:   nonZeroPower,
-		}}
+		var genDoc *types.GenesisDoc
+		if initCfg.Cosmos {
+			cosmosGen, err := genutil.MakeGenesis(initCfg.Network, time.Now(), pubKey)
+			if err != nil {
+				return err
+			}
+
+			genDoc, err = cosmosGen.ToGenesisDoc()
+			if err != nil {
+				return errors.Wrap(err, "convert to genesis doc")
+			}
+		} else {
+			genDoc, err = MakeGenesis(initCfg.Network, pubKey)
+			if err != nil {
+				return err
+			}
+		}
 
 		if err := genDoc.SaveAs(genFile); err != nil {
 			return errors.Wrap(err, "save genesis file")
@@ -239,7 +257,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	attStateFile := cfg.AttestStateFile()
 	if cmtos.FileExists(attStateFile) {
 		log.Info(ctx, "Found attest state file", "path", attStateFile)
-	} else if err := attest.GenEmptyStateFile(attStateFile); err != nil {
+	} else if err := voter.GenEmptyStateFile(attStateFile); err != nil {
 		return err
 	} else {
 		log.Info(ctx, "Generated attest state file", "path", attStateFile)

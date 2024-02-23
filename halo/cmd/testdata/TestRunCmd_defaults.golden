@@ -3,6 +3,11 @@
  "EngineJWTFile": "",
  "AppStatePersistInterval": 1,
  "SnapshotInterval": 1000,
+ "BackendType": "goleveldb",
+ "MinRetainBlocks": 0,
+ "PruningOption": "nothing",
+ "EVMBuildDelay": 600000000,
+ "EVMBuildOptimistic": true,
  "Comet": {
   "Version": "0.38.5",
   "RootDir": "./halo",
@@ -133,7 +138,7 @@
    "DiscardABCIResponses": false
   },
   "TxIndex": {
-   "Indexer": "kv",
+   "Indexer": "null",
    "PsqlConn": ""
   },
   "Instrumentation": {

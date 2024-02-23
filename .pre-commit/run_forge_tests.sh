@@ -11,5 +11,7 @@ source .pre-commit/foundry_utils.sh
 
 for dir in $(foundryroots $@); do
   echo "Running 'forge test' in ./$dir"
-  (cd $dir && pnpm install && forge test && forge snapshot)
+  # fuzz tests snapshots are different in CI, so we ignore them
+  # TODO: figure out why, and fix
+  (cd $dir && pnpm install && forge test && forge snapshot --no-match-test testFuzz_syncWithOmni)
 done

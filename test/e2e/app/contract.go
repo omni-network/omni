@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"math/big"
+	"time"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -15,9 +16,13 @@ import (
 
 func StartSendingXMsgs(ctx context.Context, portals map[uint64]netman.Portal, batches ...int) <-chan error {
 	log.Info(ctx, "Generating cross chain messages async", "batches", batches)
+
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	errChan := make(chan error, 1)
+
 	go func() {
 		for i, count := range batches {
+			log.Debug(ctx, "Sending xmsgs", "batch", i, "count", count)
 			err := SendXMsgs(ctx, portals, count)
 			if ctx.Err() != nil {
 				errChan <- ctx.Err()
@@ -28,6 +33,7 @@ func StartSendingXMsgs(ctx context.Context, portals map[uint64]netman.Portal, ba
 			}
 		}
 		errChan <- nil
+		cancel()
 	}()
 
 	return errChan
@@ -35,7 +41,11 @@ func StartSendingXMsgs(ctx context.Context, portals map[uint64]netman.Portal, ba
 
 // SendXMsgs sends <count> xmsgs from every chain to every other chain, then waits for them to be mined.
 func SendXMsgs(ctx context.Context, portals map[uint64]netman.Portal, batch int) error {
-	allTxs := make(map[uint64][]*ethtypes.Transaction)
+	type sentTuple struct {
+		TX     *ethtypes.Transaction
+		SentAt uint64
+	}
+	allSends := make(map[uint64][]sentTuple)
 	for fromChainID, from := range portals {
 		nonce, err := from.Client.PendingNonceAt(ctx, from.TxOptsFrom())
 		if err != nil {
@@ -48,21 +58,39 @@ func SendXMsgs(ctx context.Context, portals map[uint64]netman.Portal, batch int)
 			}
 
 			for i := 0; i < batch; i++ {
+				h, err := from.Client.BlockNumber(ctx)
+				if err != nil {
+					return errors.Wrap(err, "block number")
+				}
+
 				tx, err := xcall(ctx, from, to.Chain.ID, nonce)
 				if err != nil {
 					return errors.Wrap(err, "batch_offset", i)
 				}
-				allTxs[fromChainID] = append(allTxs[fromChainID], tx)
+
+				allSends[fromChainID] = append(allSends[fromChainID], sentTuple{
+					TX:     tx,
+					SentAt: h,
+				})
 				nonce++
 			}
 		}
 	}
 
-	for chainID, txs := range allTxs {
+	for chainID, tups := range allSends {
 		portal := portals[chainID]
-		for i, tx := range txs {
-			if _, err := bind.WaitMined(ctx, portal.Client, tx); err != nil {
+		for i, tup := range tups {
+			receipt, err := bind.WaitMined(ctx, portal.Client, tup.TX)
+			if err != nil {
 				return errors.Wrap(err, "wait mined", "chain", portal.Chain.Name, "tx_index", i)
+			}
+
+			// Only log slow confirmations
+			if delta := receipt.BlockNumber.Uint64() - tup.SentAt; delta > 2 {
+				log.Debug(ctx, "Sent xmsg mined (slow)",
+					"chain", portal.Chain.Name,
+					"sent_at", tup.SentAt, "mined_at", receipt.BlockNumber.Uint64(),
+					"delta", receipt.BlockNumber.Uint64()-tup.SentAt)
 			}
 		}
 	}
@@ -79,8 +107,8 @@ func xcall(ctx context.Context, from netman.Portal, destChainID uint64, nonce ui
 	fee, err := from.Contract.FeeFor(&bind.CallOpts{}, destChainID, data)
 	if err != nil {
 		return nil, errors.Wrap(err, "feeFor",
-			"source_chain", from.Chain.Name,
-			"dest_chain", destChainID,
+			"src_chain", from.Chain.Name,
+			"dst_chain_id", destChainID,
 		)
 	}
 
@@ -90,8 +118,8 @@ func xcall(ctx context.Context, from netman.Portal, destChainID uint64, nonce ui
 	tx, err := from.Contract.Xcall(txOpts, destChainID, to, data)
 	if err != nil {
 		return nil, errors.Wrap(err, "xcall",
-			"source_chain", from.Chain.Name,
-			"dest_chain", destChainID,
+			"src_chain", from.Chain.Name,
+			"dst_chain_id", destChainID,
 		)
 	}
 

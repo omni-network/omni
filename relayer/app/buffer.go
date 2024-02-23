@@ -22,21 +22,21 @@ type activeBuffer struct {
 	sender       SendFunc
 }
 
-func newActiveBuffer(chainName string, mempoolLimit int64, size int, sender SendFunc) *activeBuffer {
+func newActiveBuffer(chainName string, mempoolLimit int64, sender SendFunc) *activeBuffer {
 	return &activeBuffer{
 		chainName:    chainName,
-		buffer:       make(chan xchain.Submission, size),
+		buffer:       make(chan xchain.Submission),
 		mempoolLimit: mempoolLimit,
 		errChan:      make(chan error, 1),
 		sender:       sender,
 	}
 }
 
-func (b *activeBuffer) AddInput(_ context.Context, submission xchain.Submission) error {
+func (b *activeBuffer) AddInput(ctx context.Context, submission xchain.Submission) error {
 	select {
-	case b.buffer <- submission:
-	default:
-		b.submitErr(errors.New("async send activeBuffer overflow"))
+	case <-ctx.Done():
+		b.submitErr(errors.Wrap(ctx.Err(), "context canceled"))
+	case b.buffer <- submission: // Unbuffered, will block until a reader is ready. We don't want to restart the worker.
 	}
 
 	bufferLen.WithLabelValues(b.chainName).Set(float64(len(b.buffer)))

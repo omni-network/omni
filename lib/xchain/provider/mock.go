@@ -16,6 +16,7 @@ var (
 	_ xchain.Provider = (*Mock)(nil)
 )
 
+// todo(Lazar): delete this and pass it to ctor so it's not hard coded and hidden here.
 const (
 	destChainA = 100
 	destChainB = 200
@@ -85,6 +86,14 @@ func (*Mock) GetSubmittedCursor(_ context.Context, destChain uint64, srcChain ui
 	return xchain.StreamCursor{StreamID: xchain.StreamID{
 		SourceChainID: srcChain,
 		DestChainID:   destChain,
+	}}, true, nil
+}
+
+func (*Mock) GetEmittedCursor(_ context.Context, srcChainID uint64, destChainID uint64,
+) (xchain.StreamCursor, bool, error) {
+	return xchain.StreamCursor{StreamID: xchain.StreamID{
+		SourceChainID: srcChainID,
+		DestChainID:   destChainID,
 	}}, true, nil
 }
 

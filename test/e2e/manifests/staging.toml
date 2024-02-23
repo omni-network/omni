@@ -1,5 +1,6 @@
 network = "staging"
-public_chains = ["goerli"]
+public_chains = ["arb_goerli", "goerli"]
+avs_target = "goerli"
 multi_omni_evms = true
 prometheus = true
 

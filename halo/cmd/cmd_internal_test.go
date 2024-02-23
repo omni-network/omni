@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/halo/app"
+	halocfg "github.com/omni-network/omni/halo/config"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/test/tutil"
@@ -17,7 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-//go:generate go test . -update -clean
+//go:generate go test . -golden -clean
 
 func TestRunCmd(t *testing.T) { //nolint:paralleltest,tparallel // RunCmd modifies global state via setMonikerForT
 	setMonikerForT(t)
@@ -49,7 +50,7 @@ func TestRunCmd(t *testing.T) { //nolint:paralleltest,tparallel // RunCmd modifi
 		t.Run(test.Name, func(t *testing.T) {
 			t.Parallel()
 
-			cmd := newRunCmd(func(_ context.Context, actual app.Config) error {
+			cmd := newRunCmd("run", func(_ context.Context, actual app.Config) error {
 				tutil.RequireGoldenJSON(t, actual)
 
 				return nil
@@ -114,7 +115,7 @@ func TestTomlConfig(t *testing.T) {
 		},
 	)
 
-	var expect app.HaloConfig
+	var expect halocfg.Config
 	fuzzer.Fuzz(&expect)
 	expect.HomeDir = dir
 
@@ -122,11 +123,11 @@ func TestTomlConfig(t *testing.T) {
 	require.NoError(t, os.Mkdir(filepath.Join(dir, "config"), 0o755))
 
 	// Write the randomized config to disk.
-	require.NoError(t, app.WriteConfigTOML(expect, log.DefaultConfig()))
+	require.NoError(t, halocfg.WriteConfigTOML(expect, log.DefaultConfig()))
 
 	// Create a run command that asserts the config is as expected.
-	cmd := newRunCmd(func(_ context.Context, actual app.Config) error {
-		require.Equal(t, expect, actual.HaloConfig)
+	cmd := newRunCmd("run", func(_ context.Context, actual app.Config) error {
+		require.Equal(t, expect, actual.Config)
 
 		return nil
 	})

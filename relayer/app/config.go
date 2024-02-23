@@ -13,16 +13,18 @@ import (
 )
 
 type Config struct {
-	PrivateKey  string
-	HaloURL     string
-	NetworkFile string
+	PrivateKey     string
+	HaloURL        string
+	NetworkFile    string
+	MonitoringAddr string
 }
 
 func DefaultConfig() Config {
 	return Config{
-		PrivateKey:  "relayer.key",
-		HaloURL:     "localhost:26657",
-		NetworkFile: "network.json",
+		PrivateKey:     "relayer.key",
+		HaloURL:        "localhost:26657",
+		NetworkFile:    "network.json",
+		MonitoringAddr: ":26660",
 	}
 }
 

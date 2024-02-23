@@ -6,10 +6,13 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/cometbft/cometbft/crypto"
+	cryptopb "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
 	"github.com/ethereum/go-ethereum/common"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 
+	cosmosk1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	cosmoscrypto "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4/ecdsa"
 )
@@ -60,6 +63,32 @@ func Verify(address common.Address, hash [32]byte, sig [65]byte) (bool, error) {
 // PubKeyToAddress returns the Ethereum address for the given k1 public key.
 func PubKeyToAddress(pubkey crypto.PubKey) (common.Address, error) {
 	pubkeyBytes := pubkey.Bytes()
+	if len(pubkeyBytes) != pubkeyLen {
+		return common.Address{}, errors.New("invalid pubkey length", "length", len(pubkeyBytes))
+	}
+
+	ethPubKey, err := ethcrypto.DecompressPubkey(pubkeyBytes)
+	if err != nil {
+		return common.Address{}, errors.Wrap(err, "decompress pubkey")
+	}
+
+	return ethcrypto.PubkeyToAddress(*ethPubKey), nil
+}
+
+func PubKeyToCosmos(pubkey crypto.PubKey) (cosmoscrypto.PubKey, error) {
+	pubkeyBytes := pubkey.Bytes()
+	if len(pubkeyBytes) != pubkeyLen {
+		return nil, errors.New("invalid pubkey length", "length", len(pubkeyBytes))
+	}
+
+	return &cosmosk1.PubKey{
+		Key: pubkey.Bytes(),
+	}, nil
+}
+
+// PubKeyPBToAddress returns the Ethereum address for the given k1 public key.
+func PubKeyPBToAddress(pubkey cryptopb.PublicKey) (common.Address, error) {
+	pubkeyBytes := pubkey.GetSecp256K1()
 	if len(pubkeyBytes) != pubkeyLen {
 		return common.Address{}, errors.New("invalid pubkey length", "length", len(pubkeyBytes))
 	}

@@ -1,6 +1,6 @@
 run:
   timeout: 5m
-  go: "1.21"
+  go: "1.22"
   skip-files:
     - ".*\\.pb\\.go$" # Ignore generated protobuf files
   skip-dirs:
@@ -12,6 +12,7 @@ linters-settings:
     forbid:
       - 'fmt\.Print.*(# Avoid debug logging)?'
       - 'fmt\.Errorf.*(# Prefer lib/errors.Wrap)?'
+      - 'prometheus\.New.*(# Prefer promauto)?'
   gci: # Auto-format imports
     sections:
       - standard                           # Go stdlib
@@ -58,6 +59,8 @@ linters-settings:
         disabled: true
       - name: argument-limit # False positives, address in code reviews
         disabled: true
+      - name: line-length-limit # Requires us to cause indentation confusion: https://google.github.io/styleguide/go/decisions#indentation-confusion
+        disabled: true
       # Some configured revive rules
       - name: imports-blacklist
         arguments:
@@ -67,9 +70,6 @@ linters-settings:
           - "github.com/gogo/protobuf/proto"     # Prefer google.golang.org/protobuf
           - "github.com/stretchr/testify/assert" # Prefer github.com/stretchr/testify/require
           - "golang.org/x/exp/slices"            # Prefer slices
-      - name: line-length-limit
-        arguments:
-          - 120
       - name: unhandled-error
         arguments:
          - 'fmt.Printf'
@@ -86,6 +86,9 @@ linters-settings:
 issues:
   fix: true
   exclude-rules:
+    - path: 'metrics.go'
+      linters:
+        - gochecknoglobals # Promauto metrics are global variables
     - path: '(.*)(test|scripts)(.*)'
       linters:        # Relax linters for both tests/scripts (non-production code)
         - gosec       # Security not an issue here
@@ -100,7 +103,9 @@ issues:
     - add-constant         # Ignore "add-constant: avoid magic numbers like" since it is too strict
     - fieldalignment # Ignore "fieldalignment: struct with XXX pointer bytes could be YYY"
     - "shadow: declaration of" # Relax govet
+    - "shadows an import name" # Relax revive
     - "ifElseChain: rewrite if-else to switch statement"   # IfElseChain actually preferred to switches
+    - "nested-structs: no nested structs are allowed"      # Relax revive
 
     # Loop variable issues have been fixed in Go 1.22, so can be ignored
     - "G601: Implicit memory aliasing in for loop"
@@ -122,10 +127,12 @@ linters:
     - goimports            # Handled by gci
     - gofumpt              # Not compatible with gci, see https://github.com/golangci/golangci-lint/issues/1490.
     - gomnd                # Too many false positives
+    - gomoddirectives      # We have a replace directive
     - ireturn              # Too many false positives
     - tagliatelle          # Too strict
     - varnamelen           # False positives
     - wsl                  # Way to strict and opinionated
+    - lll                  # Disable rigid line length limit
 
     # Disable deprecated/archived linters (alphabetical order)
     - deadcode

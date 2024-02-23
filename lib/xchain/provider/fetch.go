@@ -7,6 +7,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -15,36 +16,67 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-func getCurrentFinalisedBlockHeader(ctx context.Context, rpcClient *ethclient.Client) (*types.Header, error) {
-	// skip ethCLient and call the function directly as the "finalized" tag is not supported
-	// by ethClient. This call will return the last finalized block.
-	// var finalisedHeader types.Header
-	// params := []string{"latest", "false"}
-	// err := rpcClient.Client().CallContext(ctx, &finalisedHeader, "eth_getBlockByNumber", params)
-	// if err != nil {
-	//	 return nil, errors.Wrap(err, "could not get finalized block")
-	// }
-
-	// TODO(corver): Support different finalized methods (to be added to netconf).
-	//  The only chain we support at this point is anvil, it doesn't support "finalized", so just use "latest" for now.
-	height, err := rpcClient.BlockNumber(ctx)
+func getCurrentFinalisedBlockHeader(
+	ctx context.Context, rpcClient *ethclient.Client, start netconf.FinalizationStrat) (*types.Header, error) {
+	var header *types.Header
+	err := rpcClient.Client().CallContext(
+		ctx,
+		&header,
+		"eth_getBlockByNumber",
+		string(start),
+		false,
+	)
 	if err != nil {
-		return nil, errors.Wrap(err, "get block number")
-	}
-
-	header, err := rpcClient.HeaderByNumber(ctx, big.NewInt(int64(height)))
-	if err != nil {
-		return nil, errors.Wrap(err, "get header by number")
+		return nil, errors.Wrap(err, "could not get block")
 	}
 
 	return header, nil
 }
 
-// GetSubmittedCursor returns the submitted cursor for the provided chain and source chain,
-// or false if not available, or an error.
-func (p *Provider) GetSubmittedCursor(ctx context.Context, chainID uint64, sourceChainID uint64,
+// GetEmittedCursor returns the emitted cursor for the destination chain on the source chain,
+// or false if not available, or an error. Calls the source chain portal OutXStreamOffset method.
+func (p *Provider) GetEmittedCursor(ctx context.Context, sourceChainID uint64, destinationChainID uint64,
 ) (xchain.StreamCursor, bool, error) {
-	chain, rpcClient, err := p.getChain(chainID)
+	chain, rpcClient, err := p.getChain(sourceChainID)
+	if err != nil {
+		return xchain.StreamCursor{}, false, err
+	}
+
+	height, err := rpcClient.BlockNumber(ctx)
+	if err != nil {
+		return xchain.StreamCursor{}, false, errors.Wrap(err, "get block number")
+	}
+
+	caller, err := bindings.NewOmniPortalCaller(common.HexToAddress(chain.PortalAddress), rpcClient)
+	if err != nil {
+		return xchain.StreamCursor{}, false, errors.Wrap(err, "new caller")
+	}
+
+	opts := &bind.CallOpts{Context: ctx, BlockNumber: big.NewInt(int64(height))}
+	offset, err := caller.OutXStreamOffset(opts, destinationChainID)
+	if err != nil {
+		return xchain.StreamCursor{}, false, errors.Wrap(err, "call inXStreamOffset")
+	}
+
+	if offset == 0 {
+		return xchain.StreamCursor{}, false, nil
+	}
+
+	return xchain.StreamCursor{
+		StreamID: xchain.StreamID{
+			SourceChainID: sourceChainID,
+			DestChainID:   destinationChainID,
+		},
+		Offset:            offset,
+		SourceBlockHeight: height,
+	}, true, nil
+}
+
+// GetSubmittedCursor returns the submitted cursor for the source chain on the destination chain,
+// or false if not available, or an error. Calls the destination chain portal InXStreamOffset method.
+func (p *Provider) GetSubmittedCursor(ctx context.Context, destChainID uint64, sourceChainID uint64,
+) (xchain.StreamCursor, bool, error) {
+	chain, rpcClient, err := p.getChain(destChainID)
 	if err != nil {
 		return xchain.StreamCursor{}, false, err
 	}
@@ -71,7 +103,7 @@ func (p *Provider) GetSubmittedCursor(ctx context.Context, chainID uint64, sourc
 	return xchain.StreamCursor{
 		StreamID: xchain.StreamID{
 			SourceChainID: sourceChainID,
-			DestChainID:   chainID,
+			DestChainID:   destChainID,
 		},
 		Offset:            offset,
 		SourceBlockHeight: blockHeight,
@@ -81,13 +113,13 @@ func (p *Provider) GetSubmittedCursor(ctx context.Context, chainID uint64, sourc
 // GetBlock returns the XBlock for the provided chain and height, or false if not available yet (not finalized),
 // or an error.
 func (p *Provider) GetBlock(ctx context.Context, chainID uint64, height uint64) (xchain.Block, bool, error) {
-	_, rpcClient, err := p.getChain(chainID)
+	chain, rpcClient, err := p.getChain(chainID)
 	if err != nil {
 		return xchain.Block{}, false, err
 	}
 
 	// get the current finalized header
-	finalisedHeader, err := getCurrentFinalisedBlockHeader(ctx, rpcClient)
+	finalisedHeader, err := getCurrentFinalisedBlockHeader(ctx, rpcClient, chain.FinalizationStrat)
 	if err != nil {
 		return xchain.Block{}, false, err
 	}

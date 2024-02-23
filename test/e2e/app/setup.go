@@ -13,15 +13,18 @@ import (
 	"strings"
 	"time"
 
-	haloapp "github.com/omni-network/omni/halo/app"
 	halocmd "github.com/omni-network/omni/halo/cmd"
+	halocfg "github.com/omni-network/omni/halo/config"
+	"github.com/omni-network/omni/halo/genutil"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	relayapp "github.com/omni-network/omni/relayer/app"
 	"github.com/omni-network/omni/test/e2e/types"
+	"github.com/omni-network/omni/test/e2e/vmcompose"
 
 	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -57,9 +60,18 @@ func Setup(ctx context.Context, def Definition, promSecrets PromSecrets) error {
 		return errors.Wrap(err, "setup provider")
 	}
 
-	genesis, err := MakeGenesis(def.Testnet.Testnet)
+	var vals []crypto.PubKey
+	for _, node := range def.Testnet.Nodes {
+		vals = append(vals, node.PrivvalKey.PubKey())
+	}
+
+	cosmosGenesis, err := genutil.MakeGenesis(def.Testnet.Name, time.Now(), vals...)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "make genesis")
+	}
+	cmtGenesis, err := cosmosGenesis.ToGenesisDoc()
+	if err != nil {
+		return errors.Wrap(err, "convert genesis")
 	}
 
 	if err := writeOmniEVMConfig(def.Testnet); err != nil {
@@ -72,7 +84,11 @@ func Setup(ctx context.Context, def Definition, promSecrets PromSecrets) error {
 		return err
 	}
 
-	for i, node := range def.Testnet.Nodes {
+	if err := writeAnvilState(def.Testnet); err != nil {
+		return err
+	}
+
+	for _, node := range def.Testnet.Nodes {
 		nodeDir := filepath.Join(def.Testnet.Dir, node.Name)
 
 		dirs := []string{
@@ -96,7 +112,7 @@ func Setup(ctx context.Context, def Definition, promSecrets PromSecrets) error {
 			return err
 		}
 
-		err = genesis.SaveAs(filepath.Join(nodeDir, "config", "genesis.json"))
+		err = cmtGenesis.SaveAs(filepath.Join(nodeDir, "config", "genesis.json"))
 		if err != nil {
 			return errors.Wrap(err, "write genesis")
 		}
@@ -111,7 +127,7 @@ func Setup(ctx context.Context, def Definition, promSecrets PromSecrets) error {
 			filepath.Join(nodeDir, PrivvalStateFile),
 		)).Save()
 
-		intNetwork := internalNetwork(def.Testnet, def.Netman.DeployInfo(), i)
+		intNetwork := internalNetwork(def.Testnet, def.Netman.DeployInfo(), node.Name)
 
 		if err := netconf.Save(intNetwork, filepath.Join(nodeDir, NetworkConfigFile)); err != nil {
 			return errors.Wrap(err, "write network config")
@@ -133,12 +149,29 @@ func Setup(ctx context.Context, def Definition, promSecrets PromSecrets) error {
 	return nil
 }
 
+//go:embed static/el-anvil-state.json
+var anvilState []byte
+
+// writeAnvilState writes the embedded /static/el-anvil-state.json
+// to <testnet.Dir>/anvil/state.json for use by all anvil chains.
+func writeAnvilState(testnet types.Testnet) error {
+	anvilStateFile := filepath.Join(testnet.Dir, "anvil", "state.json")
+	if err := os.MkdirAll(filepath.Dir(anvilStateFile), 0o755); err != nil {
+		return errors.Wrap(err, "mkdir")
+	}
+	if err := os.WriteFile(anvilStateFile, anvilState, 0o644); err != nil {
+		return errors.Wrap(err, "write anvil state")
+	}
+
+	return nil
+}
+
 // MakeGenesis generates a genesis document.
 func MakeGenesis(testnet *e2e.Testnet) (cmttypes.GenesisDoc, error) {
 	genesis := cmttypes.GenesisDoc{
 		GenesisTime:     time.Now(),
 		ChainID:         testnet.Name,
-		ConsensusParams: halocmd.DefaultConsensusParams(),
+		ConsensusParams: genutil.DefaultConsensusParams(),
 		InitialHeight:   testnet.InitialHeight,
 	}
 	// set the app version to 1
@@ -273,11 +306,11 @@ func MakeConfig(node *e2e.Node, nodeDir string) (*config.Config, error) {
 
 // writeHaloConfig generates an halo application config for a node and writes it to disk.
 func writeHaloConfig(nodeDir string, logCfg log.Config) error {
-	cfg := haloapp.DefaultHaloConfig()
+	cfg := halocfg.DefaultConfig()
 	cfg.HomeDir = nodeDir
 	cfg.EngineJWTFile = "/geth/jwtsecret" // As per docker-compose mount
 
-	return haloapp.WriteConfigTOML(cfg, logCfg)
+	return halocfg.WriteConfigTOML(cfg, logCfg)
 }
 
 // UpdateConfigStateSync updates the state sync config for a node.
@@ -301,10 +334,10 @@ func UpdateConfigStateSync(node *e2e.Node, height int64, hash []byte) error {
 }
 
 var (
-	//go:embed static/geth_genesis.json
+	//go:embed static/geth-genesis.json
 	gethGenesis []byte
 
-	//go:embed static/geth_keystore.json
+	//go:embed static/geth-keystore.json
 	gethKeystore []byte
 )
 
@@ -349,8 +382,12 @@ func writeRelayerConfig(def Definition, logCfg log.Config) error {
 	}
 
 	// Save network config
-	intNetwork := internalNetwork(def.Testnet, def.Netman.DeployInfo(), -1)
-	if err := netconf.Save(intNetwork, filepath.Join(confRoot, networkFile)); err != nil {
+	network := internalNetwork(def.Testnet, def.Netman.DeployInfo(), "")
+	if def.Infra.GetInfrastructureData().Provider == vmcompose.ProviderName {
+		network = externalNetwork(def.Testnet, def.Netman.DeployInfo())
+	}
+
+	if err := netconf.Save(network, filepath.Join(confRoot, networkFile)); err != nil {
 		return errors.Wrap(err, "save network config")
 	}
 

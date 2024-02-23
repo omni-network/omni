@@ -20,13 +20,14 @@ import (
 )
 
 const (
-	// privKeyHex0 of pre-funded anvil account 0.
+	// keys of pre-funded anvil account 0.
 	privKeyHex0 = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+
 	// privKeyHex1 of pre-funded anvil account 1.
 	privKeyHex1 = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
 
-	// Second contract address of privKeyHex0 (first is FeeOracleV1 @ 0x5FbDB2315678afecb367f032d93F642f64180aa3).
-	privatePortalAddr = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
+	// Fifth contract address of privKeyHex0 (ProxyAdmin, FeeOracleV1Impl, FeeOracleV1Proxy, PortalImpl come first).
+	privatePortalAddr = "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"
 )
 
 //nolint:gochecknoglobals // Static mapping.
@@ -73,6 +74,7 @@ func NewManager(testnet types.Testnet, deployKeyFile string,
 		RPCURL:     omniEVM.ExternalRPC,
 		DeployInfo: privateChainDeployInfo,
 	}
+
 	// Add all portals
 	for _, anvil := range testnet.AnvilChains {
 		portals[anvil.Chain.ID] = Portal{
@@ -108,8 +110,9 @@ func NewManager(testnet types.Testnet, deployKeyFile string,
 		}
 
 		return &manager{
-			portals:    portals,
-			relayerKey: privateRelayerKey,
+			portals:     portals,
+			omniChainID: omniEVM.Chain.ID,
+			relayerKey:  privateRelayerKey,
 		}, nil
 	case netconf.Staging:
 		deployKey, err := crypto.LoadECDSA(deployKeyFile)
@@ -123,6 +126,7 @@ func NewManager(testnet types.Testnet, deployKeyFile string,
 
 		return &manager{
 			portals:         portals,
+			omniChainID:     omniEVM.Chain.ID,
 			publicDeployKey: deployKey,
 			relayerKey:      relayerKey,
 		}, nil
@@ -144,7 +148,7 @@ type Portal struct {
 	DeployInfo DeployInfo
 	Client     *ethclient.Client
 	Contract   *bindings.OmniPortal
-	txOpts     *bind.TransactOpts
+	txOpts     *bind.TransactOpts // TODO(corver): Replace this with a txmgr.
 }
 
 // TxOpts returns transaction options using the deploy key.
@@ -165,6 +169,7 @@ var _ Manager = (*manager)(nil)
 
 type manager struct {
 	portals         map[uint64]Portal // Note that this is mutable, Portals are updated by Deploy*Portals.
+	omniChainID     uint64
 	publicDeployKey *ecdsa.PrivateKey
 	relayerKey      *ecdsa.PrivateKey
 }
@@ -185,10 +190,10 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 		if !portal.Chain.IsPublic {
 			continue // Only log public chain balances.
 		}
-		if err := logBalance(ctx, portal.Client, m.publicDeployKey, "deploy_key"); err != nil {
+		if err := logBalance(ctx, portal.Client, portal.Chain.Name, m.publicDeployKey, "deploy_key"); err != nil {
 			return err
 		}
-		if err := logBalance(ctx, portal.Client, m.relayerKey, "relayer_key"); err != nil {
+		if err := logBalance(ctx, portal.Client, portal.Chain.Name, m.relayerKey, "relayer_key"); err != nil {
 			return err
 		}
 	}
@@ -202,16 +207,19 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 			continue // Only public chains are deployed here.
 		}
 
+		log.Info(ctx, "Deploying to", "chain", portal.Chain.Name)
+
 		height, err := portal.Client.BlockNumber(ctx)
 		if err != nil {
 			return errors.Wrap(err, "get block number")
 		}
 
-		addr, contract, txops, err := deployContract(ctx, chainID, portal.Client, m.publicDeployKey, valSetID, validators)
+		addr, contract, txops, err := deployOmniContracts(
+			ctx, chainID, portal.Client, m.publicDeployKey, valSetID, validators,
+		)
 		if err != nil {
-			return errors.Wrap(err, "deploy public portal contract")
+			return errors.Wrap(err, "deploy public omni contracts")
 		}
-
 		portal.DeployInfo = DeployInfo{
 			PortalAddress: addr,
 			DeployHeight:  height,
@@ -236,9 +244,9 @@ func (m *manager) DeployPrivatePortals(ctx context.Context, valSetID uint64, val
 			continue // Public chains are already deployed.
 		}
 
-		addr, contract, txops, err := deployContract(ctx, chainID, portal.Client, privateDeployKey, valSetID, validators)
+		addr, contract, txops, err := deployOmniContracts(ctx, chainID, portal.Client, privateDeployKey, valSetID, validators)
 		if err != nil {
-			return errors.Wrap(err, "deploy public portal contract")
+			return errors.Wrap(err, "deploy private omni contracts")
 		} else if addr != portal.DeployInfo.PortalAddress {
 			return errors.New("deployed address does not match existing address",
 				"expected", portal.DeployInfo.PortalAddress.Hex(),
@@ -278,36 +286,44 @@ func (m *manager) fundPrivateRelayer(ctx context.Context) error {
 			continue // We use relayer key for public chain, it should already be funded.
 		}
 
-		ethCl := portal.Client
-
-		nonce, err := ethCl.PendingNonceAt(ctx, fromAddr)
+		_, err := FundAddr(ctx, portal.Chain.ID, portal.Client, fromAddr, fromKey, toAddr, 10)
 		if err != nil {
-			return errors.Wrap(err, "get nonce")
-		}
-
-		price, err := ethCl.SuggestGasPrice(ctx)
-		if err != nil {
-			return errors.Wrap(err, "get gas price")
-		}
-
-		txData := ethtypes.LegacyTx{
-			Nonce:    nonce,
-			GasPrice: price,
-			Gas:      100_000, // 100k is fine
-			To:       &toAddr,
-			Value:    new(big.Int).Mul(big.NewInt(10), big.NewInt(params.Ether)), // 10 ETH
-		}
-
-		signer := ethtypes.LatestSignerForChainID(big.NewInt(int64(portal.Chain.ID)))
-		tx, err := ethtypes.SignNewTx(fromKey, signer, &txData)
-		if err != nil {
-			return errors.Wrap(err, "sign tx")
-		}
-
-		if err := ethCl.SendTransaction(ctx, tx); err != nil {
-			return errors.Wrap(err, "send tx")
+			return errors.Wrap(err, "fund relayer", "from", fromAddr.Hex(), "to", toAddr.Hex())
 		}
 	}
 
 	return nil
+}
+
+func FundAddr(ctx context.Context, chainIO uint64, ethCl *ethclient.Client, fromAddr common.Address,
+	fromKey *ecdsa.PrivateKey, toAddr common.Address, ether int64) (*ethtypes.Transaction, error) {
+	nonce, err := ethCl.PendingNonceAt(ctx, fromAddr)
+	if err != nil {
+		return nil, errors.Wrap(err, "get nonce")
+	}
+
+	price, err := ethCl.SuggestGasPrice(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "get gas price")
+	}
+
+	txData := ethtypes.LegacyTx{
+		Nonce:    nonce,
+		GasPrice: price,
+		Gas:      100_000, // 100k is fine
+		To:       &toAddr,
+		Value:    new(big.Int).Mul(big.NewInt(ether), big.NewInt(params.Ether)),
+	}
+
+	signer := ethtypes.LatestSignerForChainID(big.NewInt(int64(chainIO)))
+	tx, err := ethtypes.SignNewTx(fromKey, signer, &txData)
+	if err != nil {
+		return nil, errors.Wrap(err, "sign tx")
+	}
+
+	if err := ethCl.SendTransaction(ctx, tx); err != nil {
+		return nil, errors.Wrap(err, "send tx")
+	}
+
+	return tx, nil
 }

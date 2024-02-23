@@ -15,13 +15,13 @@ import (
 	"github.com/cometbft/cometbft/rpc/client/http"
 
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 func Run(ctx context.Context, cfg Config) error {
 	log.Info(ctx, "Starting relayer")
 
-	commit, timestamp := gitinfo.Get()
-	log.Info(ctx, "Version info", "git_commit", commit, "git_timestamp", timestamp)
+	gitinfo.Instrument(ctx)
 
 	network, err := netconf.Load(cfg.NetworkFile)
 	if err != nil {
@@ -43,9 +43,13 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
+	cprov := cprovider.NewABCIProvider(tmClient, network.ChainNamesByIDs())
+	xprov := xprovider.New(network, rpcClientPerChain)
+
 	for _, destChain := range network.Chains {
 		sendProvider := func() (SendFunc, error) {
-			sender, err := NewOpSender(ctx, destChain, rpcClientPerChain[destChain.ID], *privateKey)
+			sender, err := NewOpSender(ctx, destChain, rpcClientPerChain[destChain.ID], *privateKey,
+				network.ChainNamesByIDs())
 			if err != nil {
 				return nil, err
 			}
@@ -54,18 +58,23 @@ func Run(ctx context.Context, cfg Config) error {
 		}
 
 		worker := NewWorker(destChain, network,
-			cprovider.NewABCIProvider(tmClient),
-			xprovider.New(network, rpcClientPerChain),
+			cprov,
+			xprov,
 			CreateSubmissions,
 			sendProvider)
 
 		go worker.Run(ctx)
 	}
 
-	<-ctx.Done()
-	log.Info(ctx, "Shutdown detected, stopping...")
+	startMonitoring(ctx, network, xprov, ethcrypto.PubkeyToAddress(privateKey.PublicKey), rpcClientPerChain)
 
-	return nil
+	select {
+	case <-ctx.Done():
+		log.Info(ctx, "Shutdown detected, stopping...")
+		return nil
+	case err := <-serveMonitoring(cfg.MonitoringAddr):
+		return err
+	}
 }
 
 func newClient(tmNodeAddr string) (client.Client, error) {
@@ -75,4 +84,17 @@ func newClient(tmNodeAddr string) (client.Client, error) {
 	}
 
 	return c, nil
+}
+
+func initializeRPCClients(chains []netconf.Chain) (map[uint64]*ethclient.Client, error) {
+	rpcClientPerChain := make(map[uint64]*ethclient.Client)
+	for _, chain := range chains {
+		c, err := ethclient.Dial(chain.RPCURL)
+		if err != nil {
+			return nil, errors.Wrap(err, "dial rpc", "chain_id", chain.ID, "rpc_url", chain.RPCURL)
+		}
+		rpcClientPerChain[chain.ID] = c
+	}
+
+	return rpcClientPerChain, nil
 }

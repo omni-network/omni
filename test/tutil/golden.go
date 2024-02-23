@@ -16,7 +16,8 @@ import (
 )
 
 var (
-	update = flag.Bool("update", false, "Create or update golden files, instead of comparing them")
+	// Note, had to change flag from 'update' to 'golden' to avoid conflicts with cosmos-sdk.
+	update = flag.Bool("golden", false, "Create or update golden files, instead of comparing them")
 	clean  = flag.Bool("clean", false, "Deletes the testdata folder before updating (noop of update==false)")
 )
 
@@ -57,7 +58,7 @@ func RequireGoldenBytes(t *testing.T, data []byte, opts ...func(*string)) {
 
 	expected, err := os.ReadFile(filename)
 	if os.IsNotExist(err) {
-		t.Fatalf("golden file does not exist, %s, generate by running with -update", filename)
+		t.Fatalf("golden file does not exist, %s, generate by running with -golden", filename)
 		return
 	}
 

@@ -9,6 +9,11 @@ help:  ## Display this help message
 build-docker: ensure-go-releaser ## Builds the docker images.
 	@goreleaser release --snapshot --clean
 
+.PHONY: build-halo-relayer
+build-halo-relayer: ensure-go-releaser ## Builds the halo and relayer docker images only (slightly faster than above).
+	@scripts/build_docker.sh halo
+	@scripts/build_docker.sh relayer
+
 ###############################################################################
 ###                                Contracts                                 ###
 ###############################################################################
@@ -34,6 +39,10 @@ explorer-gen: ## Generates code for our explorer
 ensure-go-releaser: ## Installs the go-releaser tool.
 	@which goreleaser > /dev/null || echo "go-releaser not installed, see https://goreleaser.com/install/"
 
+.PHONY: ensure-detect-secrets
+ensure-detect-secrets: ## Checks if detect-secrets is installed.
+	@which detect-secrets > /dev/null || echo "detect-secrets not installed, see https://github.com/Yelp/detect-secrets?tab=readme-ov-file#installation"
+
 .PHONY: install-pre-commit
 install-pre-commit: ## Installs the pre-commit tool as the git pre-commit hook for this repo.
 	@which pre-commit > /dev/null || echo "pre-commit not installed, see https://pre-commit.com/#install"
@@ -46,6 +55,18 @@ install-go-tools: ## Installs the go-dev-tools, like buf.
 .PHONY: lint
 lint: ## Runs linters via pre-commit.
 	@pre-commit run -v --all-files
+
+.PHONY: bufgen
+bufgen: ## Generates protobufs using buf generate.
+	@./scripts/buf_generate.sh
+
+.PHONY:
+secrets-baseline: ensure-detect-secrets ## Update secrets baseline.
+	@detect-secrets scan --exclude-file pnpm-lock.yaml > .secrets.baseline
+
+.PHONY: fix-golden
+fix-golden: ## Fixes golden test fixtures.
+	@./scripts/fix_golden_tests.sh
 
 ###############################################################################
 ###                                Testing                                 	###
@@ -66,6 +87,11 @@ devnet-deploy: ## Deploys devnet1
 devnet-clean: ## Deletes devnet1 containers
 	@echo "Stopping the devnet in ./test/e2e/run/devnet1"
 	@go run github.com/omni-network/omni/test/e2e -f test/e2e/manifests/devnet1.toml clean
+
+.PHONY: e2e-ci
+e2e-ci: ## Runs all e2e CI tests
+	@go install github.com/omni-network/omni/test/e2e
+	@cd test/e2e && ./run-multiple.sh manifests/devnet1.toml manifests/simple.toml
 
 .PHONY: e2e-run
 e2e-run: ## Run specific e2e manifest (MANIFEST=single, MANIFEST=simple, etc). Note container remain running after the test.

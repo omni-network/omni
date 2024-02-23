@@ -5,13 +5,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omni-network/omni/halo/attest"
+	"github.com/omni-network/omni/halo/attest/voter"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/xchain"
 	relayer "github.com/omni-network/omni/relayer/app"
 
 	"github.com/cometbft/cometbft/crypto"
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"
@@ -21,9 +23,8 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 	t.Parallel()
 
 	var (
-		SourceChainID  = uint64(randomBetween(1, 5))
-		DestChainID    = uint64(randomBetween(1, 5))
-		ValidatorSetID = uint64(1)
+		SourceChainID = uint64(randomBetween(1, 5))
+		DestChainID   = uint64(randomBetween(1, 5))
 	)
 
 	privKey := k1.GenPrivKey()
@@ -34,8 +35,8 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 		func(e *xchain.Msg, c fuzz.Continue) {
 			e.DestChainID = DestChainID
 			e.SourceChainID = SourceChainID
-			e.DestAddress = [20]byte(crypto.CRandBytes(20))
-			e.SourceMsgSender = [20]byte(crypto.CRandBytes(20))
+			e.DestAddress = common.Address(crypto.CRandBytes(20))
+			e.SourceMsgSender = common.Address(crypto.CRandBytes(20))
 			e.Data = crypto.CRandBytes(100)
 		},
 	)
@@ -43,24 +44,27 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 	var block xchain.Block
 	fuzzer.NilChance(0).NumElements(1, 64).Fuzz(&block)
 
+	var valSetHash common.Hash
+	fuzzer.Fuzz(&valSetHash)
+
 	// make all msg offset sequential
 	for i := range block.Msgs {
 		block.Msgs[i].StreamOffset = uint64(i)
 	}
 
-	att, err := attest.CreateAttestation(privKey, block)
+	vote, err := voter.CreateVote(privKey, block)
 	require.NoError(t, err)
-	require.Equal(t, block.BlockHeader, att.BlockHeader)
-	require.Equal(t, addr, att.Signature.ValidatorAddress)
+	require.Equal(t, block.BlockHeader, vote.BlockHeader.ToXChain())
+	require.Equal(t, addr, common.Address(vote.Signature.ValidatorAddress))
 
 	tree, err := xchain.NewBlockTree(block)
 	require.NoError(t, err)
 
-	aggAtt := xchain.AggAttestation{
-		BlockHeader:    att.BlockHeader,
-		ValidatorSetID: ValidatorSetID,
-		BlockRoot:      att.BlockRoot,
-		Signatures:     []xchain.SigTuple{att.Signature},
+	att := xchain.Attestation{
+		BlockHeader:      vote.BlockHeader.ToXChain(),
+		ValidatorSetHash: valSetHash,
+		BlockRoot:        [32]byte(vote.BlockRoot),
+		Signatures:       []xchain.SigTuple{vote.Signature.ToXChain()},
 	}
 
 	ensureNoDuplicates := func(t *testing.T, msgs []xchain.Msg) {
@@ -86,29 +90,30 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 					SourceChainID: SourceChainID,
 					DestChainID:   DestChainID,
 				},
-				AggAttestation: aggAtt,
-				Msgs:           block.Msgs,
-				Tree:           tree,
+				Attestation: att,
+				Msgs:        block.Msgs,
+				Tree:        tree,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			submissions, err := relayer.CreateSubmissions(tt.streamUpdate)
+			subs, err := relayer.CreateSubmissions(tt.streamUpdate)
 			require.NoError(t, err)
 			msgCount := 0
 			msgs := make([]xchain.Msg, 0, len(tt.streamUpdate.Msgs))
-			for _, submission := range submissions {
-				require.NotNil(t, submission.AttestationRoot)
-				require.Equal(t, submission.AttestationRoot, att.BlockRoot)
-				require.NotNil(t, submission.ProofFlags)
-				require.NotNil(t, submission.Signatures)
-				for _, msg := range submission.Msgs {
-					require.Equal(t, msg.DestChainID, submission.DestChainID)
+			for _, sub := range subs {
+				require.EqualValues(t, valSetHash, sub.ValidatorSetHash)
+				require.NotNil(t, sub.AttestationRoot)
+				require.Equal(t, sub.AttestationRoot, att.BlockRoot)
+				require.NotNil(t, sub.ProofFlags)
+				require.NotNil(t, sub.Signatures)
+				for _, msg := range sub.Msgs {
+					require.Equal(t, msg.DestChainID, sub.DestChainID)
 				}
-				msgCount += len(submission.Msgs)
-				msgs = append(msgs, submission.Msgs...)
+				msgCount += len(sub.Msgs)
+				msgs = append(msgs, sub.Msgs...)
 			}
 			// ensure no msgs were dropped
 			require.Len(t, msgs, len(tt.streamUpdate.Msgs))

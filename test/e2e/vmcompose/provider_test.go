@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-//go:generate go test . -update -clean
+//go:generate go test . -golden -clean
 
 func TestSetup(t *testing.T) {
 	t.Parallel()
@@ -23,6 +23,7 @@ func TestSetup(t *testing.T) {
 		ManifestFile:  manifestFile,
 		InfraProvider: vmcompose.ProviderName,
 		InfraDataFile: dataFile,
+		OmniImgTag:    "7d1ae53",
 	})
 	require.NoError(t, err)
 

@@ -62,15 +62,15 @@ func MonitorCProvider(ctx context.Context, node *e2e.Node, network netconf.Netwo
 		return errors.Wrap(err, "getting client")
 	}
 
-	cprov := cprovider.NewABCIProvider(client)
+	cprov := cprovider.NewABCIProvider(client, network.ChainNamesByIDs())
 
 	for _, chain := range network.Chains {
-		aggs, err := cprov.ApprovedFrom(ctx, chain.ID, chain.DeployHeight)
+		atts, err := cprov.AttestationsFrom(ctx, chain.ID, chain.DeployHeight)
 		if err != nil {
 			return errors.Wrap(err, "getting approved attestations")
 		}
 
-		log.Info(ctx, "Halo approved attestations", "chain", chain.Name, "count", len(aggs))
+		log.Info(ctx, "Halo approved attestations", "chain", chain.Name, "count", len(atts))
 	}
 
 	return nil

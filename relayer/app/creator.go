@@ -17,24 +17,24 @@ func CreateSubmissions(up StreamUpdate) ([]xchain.Submission, error) {
 		}
 	}
 
-	agg := up.AggAttestation
+	att := up.Attestation
 
 	var resp []xchain.Submission //nolint:prealloc // Cannot predetermine size
 	for _, msgs := range groupMsgsByCost(up.Msgs) {
-		multi, err := up.Tree.Proof(agg.BlockHeader, msgs)
+		multi, err := up.Tree.Proof(att.BlockHeader, msgs)
 		if err != nil {
 			return nil, err
 		}
 
 		resp = append(resp, xchain.Submission{
-			AttestationRoot: agg.BlockRoot,
-			ValidatorSetID:  agg.ValidatorSetID,
-			BlockHeader:     agg.BlockHeader,
-			Msgs:            msgs,
-			Proof:           multi.Proof,
-			ProofFlags:      multi.ProofFlags,
-			Signatures:      agg.Signatures,
-			DestChainID:     up.DestChainID,
+			AttestationRoot:  att.BlockRoot,
+			ValidatorSetHash: att.ValidatorSetHash,
+			BlockHeader:      att.BlockHeader,
+			Msgs:             msgs,
+			Proof:            multi.Proof,
+			ProofFlags:       multi.ProofFlags,
+			Signatures:       att.Signatures,
+			DestChainID:      up.DestChainID,
 		})
 	}
 

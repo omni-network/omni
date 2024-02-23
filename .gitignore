@@ -17,3 +17,5 @@ dist
 
 # MacOS specific file
 .DS_Store
+
+.env
