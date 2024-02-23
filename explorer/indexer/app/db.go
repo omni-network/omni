@@ -104,6 +104,7 @@ func insertBlock(ctx context.Context, tx *ent.Tx, block xchain.Block) (*ent.Bloc
 		SetBlockHeight(block.BlockHeight).
 		SetBlockHash(block.BlockHash[:]).
 		SetSourceChainID(block.SourceChainID).
+		SetTimestamp(block.Timestamp).
 		SetCreatedAt(time.Now()).
 		Save(ctx)
 	if err != nil {

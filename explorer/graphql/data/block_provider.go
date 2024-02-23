@@ -35,7 +35,7 @@ func (p Provider) XBlock(sourceChainID uint64, height uint64) (*resolvers.XBlock
 func (p Provider) XBlockRange(amount uint64, offset uint64) ([]*resolvers.XBlock, bool, error) {
 	ctx := context.Background()
 	query, err := p.EntClient.Block.Query().
-		Order(ent.Asc(block.FieldTimestamp)).
+		Order(ent.Desc(block.FieldTimestamp)).
 		Limit(int(amount)).
 		Offset(int(offset)).
 		All(ctx)
@@ -54,6 +54,10 @@ func (p Provider) XBlockRange(amount uint64, offset uint64) ([]*resolvers.XBlock
 
 		res = append(res, graphQL)
 	}
+
+	// sort.Slice(res, func(i, j int) bool {
+	// 	return res[i].Timestamp.Time.Before(res[j].Timestamp.Time)
+	// })
 
 	return res, true, nil
 }
