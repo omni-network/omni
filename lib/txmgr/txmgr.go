@@ -135,12 +135,17 @@ func (m *SimpleTxManager) Close() {
 // txFields returns a logger with the transaction hash and nonce fields set.
 //
 //nolint:revive // Might fix
-func txFields(tx *types.Transaction,
-	logGas bool) []slog.Attr {
-	fields := []slog.Attr{slog.String("tx", tx.Hash().String()), slog.Int64("nonce", int64(tx.Nonce()))}
+func txFields(tx *types.Transaction, logGas bool) []any {
+	fields := []any{
+		slog.Int64("nonce", int64(tx.Nonce())),
+		slog.String("tx", tx.Hash().String()),
+	}
 	if logGas {
-		fields = append(fields, slog.String("gas_tip_cap", tx.GasTipCap().String()),
-			slog.String("gas_fee_cap", tx.GasFeeCap().String()), slog.Int64("gas_limit", int64(tx.Gas())))
+		fields = append(fields,
+			slog.String("gas_tip_cap", tx.GasTipCap().String()),
+			slog.String("gas_fee_cap", tx.GasFeeCap().String()),
+			slog.Int64("gas_limit", int64(tx.Gas())),
+		)
 	}
 
 	return fields
@@ -203,6 +208,8 @@ func (m *SimpleTxManager) doSend(ctx context.Context, candidate TxCandidate) (*t
 		if err != nil {
 			log.Debug(ctx, "Failed to create a transaction, will retry", "err", err)
 		}
+
+		log.Debug(ctx, "Txmgr crafted new tx", txFields(tx, true)...)
 
 		return tx, err
 	})
@@ -353,8 +360,7 @@ func (m *SimpleTxManager) sendTx(ctx context.Context, tx *types.Transaction) (*t
 			}
 			// If we see lots of unrecoverable errors (and no pending transactions) abort sending the transaction.
 			if sendState.ShouldAbortImmediately() {
-				attrs := txFields(tx, false)
-				return nil, errors.New("aborted transaction sending", attrs)
+				return nil, errors.New("aborted transaction sending", txFields(tx, false)...)
 			}
 			// if the tx manager closed while we were waiting for the tx, give up
 			if m.closed.Load() {
@@ -533,7 +539,7 @@ func (m *SimpleTxManager) increaseGasPrice(ctx context.Context, tx *types.Transa
 	log.Debug(ctx, "Bumping gas price")
 	tip, baseFee, err := m.suggestGasPriceCaps(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get gas price info", txFields(tx, true))
+		return nil, errors.Wrap(err, "failed to get gas price info", txFields(tx, true)...)
 	}
 	bumpedTip, bumpedFee := updateFees(ctx, tx.GasTipCap(), tx.GasFeeCap(), tip, baseFee)
 
