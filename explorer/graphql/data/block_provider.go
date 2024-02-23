@@ -12,34 +12,30 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-func (p Provider) XBlock(sourceChainID uint64, height uint64) (*resolvers.XBlock, bool, error) {
-	ctx := context.Background()
+func (p Provider) XBlock(ctx context.Context, sourceChainID uint64, height uint64) (*resolvers.XBlock, bool, error) {
 	query, err := p.EntClient.Block.Query().
 		Where(block.SourceChainID(sourceChainID)).
 		Where(block.BlockHeight(height)).
 		First(ctx)
-
 	if err != nil {
 		log.Error(ctx, "Graphql provider err", err)
 		return nil, false, err
 	}
 
-	graphQLBlock, err := EntBlockToGraphQLBlock(query)
+	b, err := EntBlockToGraphQLBlock(query)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "failed to decode block")
 	}
 
-	return graphQLBlock, true, nil
+	return b, true, nil
 }
 
-func (p Provider) XBlockRange(amount uint64, offset uint64) ([]*resolvers.XBlock, bool, error) {
-	ctx := context.Background()
+func (p Provider) XBlockRange(ctx context.Context, amount uint64, offset uint64) ([]*resolvers.XBlock, bool, error) {
 	query, err := p.EntClient.Block.Query().
 		Order(ent.Desc(block.FieldTimestamp)).
 		Limit(int(amount)).
 		Offset(int(offset)).
 		All(ctx)
-
 	if err != nil {
 		log.Error(ctx, "Graphql provider err", err)
 		return nil, false, err
@@ -58,11 +54,8 @@ func (p Provider) XBlockRange(amount uint64, offset uint64) ([]*resolvers.XBlock
 	return res, true, nil
 }
 
-func (p Provider) XBlockCount() (*hexutil.Big, bool, error) {
-	ctx := context.Background()
-	query, err := p.EntClient.Block.Query().
-		Count(ctx)
-
+func (p Provider) XBlockCount(ctx context.Context) (*hexutil.Big, bool, error) {
+	query, err := p.EntClient.Block.Query().Count(ctx)
 	if err != nil {
 		log.Error(ctx, "Graphql provider err", err)
 		return nil, false, err

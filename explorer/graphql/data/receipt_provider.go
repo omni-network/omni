@@ -9,8 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-func (p Provider) XReceiptCount() (*hexutil.Big, bool, error) {
-	ctx := context.Background()
+func (p Provider) XReceiptCount(ctx context.Context) (*hexutil.Big, bool, error) {
 	query, err := p.EntClient.Receipt.Query().
 		Count(ctx)
 	if err != nil {

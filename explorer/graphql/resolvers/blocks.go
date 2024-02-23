@@ -10,11 +10,11 @@ import (
 )
 
 type BlocksProvider interface {
-	XBlock(SourceChainID uint64, Height uint64) (*XBlock, bool, error)
-	XBlockRange(Amount uint64, Offset uint64) ([]*XBlock, bool, error)
-	XBlockCount() (*hexutil.Big, bool, error)
-	XMsgCount() (*hexutil.Big, bool, error)
-	XReceiptCount() (*hexutil.Big, bool, error)
+	XBlock(ctx context.Context, SourceChainID uint64, Height uint64) (*XBlock, bool, error)
+	XBlockRange(ctx context.Context, Amount uint64, Offset uint64) ([]*XBlock, bool, error)
+	XBlockCount(ctx context.Context) (*hexutil.Big, bool, error)
+	XMsgCount(ctx context.Context) (*hexutil.Big, bool, error)
+	XReceiptCount(ctx context.Context) (*hexutil.Big, bool, error)
 }
 
 type BlocksResolver struct {
@@ -31,8 +31,8 @@ type XBlockRangeArgs struct {
 	Offset hexutil.Big
 }
 
-func (b *BlocksResolver) XBlock(_ context.Context, args XBlockArgs) (*XBlock, error) {
-	res, found, err := b.BlocksProvider.XBlock(args.SourceChainID.ToInt().Uint64(), args.Height.ToInt().Uint64())
+func (b *BlocksResolver) XBlock(ctx context.Context, args XBlockArgs) (*XBlock, error) {
+	res, found, err := b.BlocksProvider.XBlock(ctx, args.SourceChainID.ToInt().Uint64(), args.Height.ToInt().Uint64())
 	if err != nil {
 		return nil, errors.New("failed to fetch block")
 	}
@@ -43,8 +43,8 @@ func (b *BlocksResolver) XBlock(_ context.Context, args XBlockArgs) (*XBlock, er
 	return res, nil
 }
 
-func (b *BlocksResolver) XBlockRange(_ context.Context, args XBlockRangeArgs) ([]*XBlock, error) {
-	res, found, err := b.BlocksProvider.XBlockRange(args.Amount.ToInt().Uint64(), args.Offset.ToInt().Uint64())
+func (b *BlocksResolver) XBlockRange(ctx context.Context, args XBlockRangeArgs) ([]*XBlock, error) {
+	res, found, err := b.BlocksProvider.XBlockRange(ctx, args.Amount.ToInt().Uint64(), args.Offset.ToInt().Uint64())
 	if err != nil {
 		return nil, errors.New("failed to fetch block range")
 	}
@@ -55,8 +55,8 @@ func (b *BlocksResolver) XBlockRange(_ context.Context, args XBlockRangeArgs) ([
 	return res, nil
 }
 
-func (b *BlocksResolver) XBlockCount(_ context.Context) (*hexutil.Big, error) {
-	res, found, err := b.BlocksProvider.XBlockCount()
+func (b *BlocksResolver) XBlockCount(ctx context.Context) (*hexutil.Big, error) {
+	res, found, err := b.BlocksProvider.XBlockCount(ctx)
 	if err != nil {
 		return nil, errors.New("failed to fetch block count")
 	}
@@ -67,8 +67,8 @@ func (b *BlocksResolver) XBlockCount(_ context.Context) (*hexutil.Big, error) {
 	return res, nil
 }
 
-func (b *BlocksResolver) XMsgCount(_ context.Context) (*hexutil.Big, error) {
-	res, found, err := b.BlocksProvider.XMsgCount()
+func (b *BlocksResolver) XMsgCount(ctx context.Context) (*hexutil.Big, error) {
+	res, found, err := b.BlocksProvider.XMsgCount(ctx)
 	if err != nil {
 		return nil, errors.New("failed to fetch message count")
 	}
@@ -79,8 +79,8 @@ func (b *BlocksResolver) XMsgCount(_ context.Context) (*hexutil.Big, error) {
 	return res, nil
 }
 
-func (b *BlocksResolver) XReceiptCount(_ context.Context) (*hexutil.Big, error) {
-	res, found, err := b.BlocksProvider.XReceiptCount()
+func (b *BlocksResolver) XReceiptCount(ctx context.Context) (*hexutil.Big, error) {
+	res, found, err := b.BlocksProvider.XReceiptCount(ctx)
 	if err != nil {
 		return nil, errors.New("failed to fetch receipt count")
 	}
