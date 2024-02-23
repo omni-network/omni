@@ -65,7 +65,7 @@ func Test(ctx context.Context, def Definition, deployInfo types.DeployInfos, ver
 		return errors.Wrap(err, "setting E2E_DEPLOY_INFO")
 	}
 
-	log.Info(ctx, "env files",
+	log.Info(ctx, "Env files",
 		"E2E_NETWORK", networkFile,
 		"E2E_MANIFEST", manifestFile,
 		"INFRASTRUCTURE_TYPE", infd.Provider,

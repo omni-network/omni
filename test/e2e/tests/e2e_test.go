@@ -153,60 +153,23 @@ func test(t *testing.T, testFunc testFunc) {
 			return
 		}
 
-		// search only anvil chains for avs_target for now
+		// search only anvil chains for avs_target
 		achain, err := testnet.AVSChain()
 		require.NoError(t, err)
 
+		// get the netconf for the avs chain
 		var chain netconf.Chain
 		for _, c := range network.Chains {
 			if c.ID == achain.ID {
 				chain = c
 			}
 		}
+
+		// get the deploy info for the chain and load the contracts
 		chainInfo := deployInfo[achain.ID]
 		ethClient, err := ethclient.Dial(chain.Name, chain.RPCURL)
 		require.NoError(t, err)
-
-		// create the contracts
-		omniAvsAddr := chainInfo[types.ContractOmniAVS].Address
-		omniAvs, err := bindings.NewOmniAVS(omniAvsAddr, ethClient)
-		require.NoError(t, err)
-
-		DelegationManagerAddr := chainInfo[types.ContractELDelegationManager].Address
-		delMan, err := bindings.NewDelegationManager(DelegationManagerAddr, ethClient)
-		require.NoError(t, err)
-
-		StrategtManagerAddr := chainInfo[types.ContractELStrategyManager].Address
-		stratMan, err := bindings.NewStrategyManager(StrategtManagerAddr, ethClient)
-		require.NoError(t, err)
-
-		wethStrategyAddr := chainInfo[types.ContractELWETHStrategy].Address
-		wethStrategy, err := bindings.NewStrategyBase(wethStrategyAddr, ethClient)
-		require.NoError(t, err)
-
-		wethTokenAddr := chainInfo[types.ContractELWETH].Address
-		wethToken, err := bindings.NewMockERC20(wethTokenAddr, ethClient)
-		require.NoError(t, err)
-
-		avsDirAddr := chainInfo[types.ContractAVSDirectory].Address
-		avsDir, err := bindings.NewAVSDirectory(avsDirAddr, ethClient)
-		require.NoError(t, err)
-
-		eip1271SigUtilsAddr := chainInfo[types.ContractEIP1271SigUtils].Address
-		eip1271SigUtils, err := bindings.NewEIP1271SignatureUtils(eip1271SigUtilsAddr, ethClient)
-		require.NoError(t, err)
-
-		testAvs := AVS{
-			Chain:                     chain,
-			Client:                    ethClient,
-			AVSContract:               omniAvs,
-			DelegationManagerContract: delMan,
-			StrategyManagerContract:   stratMan,
-			WETHStrategyContract:      wethStrategy,
-			WETHTokenContract:         wethToken,
-			AVSDirectory:              avsDir,
-			EIP1271SigUtils:           eip1271SigUtils,
-		}
+		testAvs := loadContractsForAVS(t, chainInfo, chain, ethClient)
 		testFunc.TestAVS(t, testAvs, chainInfo)
 	}
 }
@@ -352,4 +315,52 @@ func fetchBlockChain(ctx context.Context, t *testing.T) []*cmttypes.Block {
 	blocksCache[testnet.Name] = blocks
 
 	return blocks
+}
+
+func loadContractsForAVS(t *testing.T, chainInfo map[types.ContractName]types.DeployInfo,
+	chain netconf.Chain, ethClient *ethclient.Client) AVS {
+	t.Helper()
+
+	// create the contracts
+	omniAvsAddr := chainInfo[types.ContractOmniAVS].Address
+	omniAvs, err := bindings.NewOmniAVS(omniAvsAddr, ethClient)
+	require.NoError(t, err)
+
+	DelegationManagerAddr := chainInfo[types.ContractELDelegationManager].Address
+	delMan, err := bindings.NewDelegationManager(DelegationManagerAddr, ethClient)
+	require.NoError(t, err)
+
+	StrategtManagerAddr := chainInfo[types.ContractELStrategyManager].Address
+	stratMan, err := bindings.NewStrategyManager(StrategtManagerAddr, ethClient)
+	require.NoError(t, err)
+
+	wethStrategyAddr := chainInfo[types.ContractELWETHStrategy].Address
+	wethStrategy, err := bindings.NewStrategyBase(wethStrategyAddr, ethClient)
+	require.NoError(t, err)
+
+	wethTokenAddr := chainInfo[types.ContractELWETH].Address
+	wethToken, err := bindings.NewMockERC20(wethTokenAddr, ethClient)
+	require.NoError(t, err)
+
+	avsDirAddr := chainInfo[types.ContractAVSDirectory].Address
+	avsDir, err := bindings.NewAVSDirectory(avsDirAddr, ethClient)
+	require.NoError(t, err)
+
+	eip1271SigUtilsAddr := chainInfo[types.ContractEIP1271SigUtils].Address
+	eip1271SigUtils, err := bindings.NewEIP1271SignatureUtils(eip1271SigUtilsAddr, ethClient)
+	require.NoError(t, err)
+
+	testAVS := AVS{
+		Chain:                     chain,
+		Client:                    ethClient,
+		AVSContract:               omniAvs,
+		DelegationManagerContract: delMan,
+		StrategyManagerContract:   stratMan,
+		WETHStrategyContract:      wethStrategy,
+		WETHTokenContract:         wethToken,
+		AVSDirectory:              avsDir,
+		EIP1271SigUtils:           eip1271SigUtils,
+	}
+
+	return testAVS
 }
