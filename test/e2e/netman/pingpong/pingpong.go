@@ -156,10 +156,10 @@ type Edge struct {
 	To   uint64
 }
 
-// edges returns a deterministic map of unique edges between chains.
+// setEdges creates a deterministic map of unique edges between chains.
 func (a *XDapp) setEdges() {
 	var resp []Edge
-	arr := []Contract{}
+	var arr []Contract
 	// flatten contracts
 	for _, v := range a.contracts {
 		arr = append(arr, v)
