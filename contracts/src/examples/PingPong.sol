@@ -1,16 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.23;
 
-import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
-import { XTypes } from "src/libraries/XTypes.sol";
+import { XApp } from "src/pkg/XApp.sol";
 
 /**
  * @title PingPong
  * @notice A contract that pingpongs xmsgs between two chains
  */
-contract PingPong {
-    IOmniPortal public omni;
-
+contract PingPong is XApp {
     /**
      * @notice Emitted when the pingpong loop is done
      * @param destChainID The destination chain id
@@ -19,9 +16,7 @@ contract PingPong {
      */
     event Done(uint64 destChainID, address to, uint64 times);
 
-    constructor(IOmniPortal _omni) {
-        omni = _omni;
-    }
+    constructor(address portal) XApp(portal) { }
 
     /**
      * @notice Start the pingpong xmsg loop
@@ -39,10 +34,8 @@ contract PingPong {
      * @param times The pingpongs in the loop
      * @param n The number of xcalls left to make
      */
-    function pingpong(uint64 times, uint64 n) external {
-        require(omni.isXCall() && msg.sender == address(omni), "PingPong: not an omni xcall");
-
-        XTypes.Msg memory xmsg = omni.xmsg();
+    function pingpong(uint64 times, uint64 n) external xfunc {
+        require(isXCall(), "PingPong: not an omni xcall");
 
         if (n == 0) {
             emit Done(xmsg.sourceChainId, xmsg.sender, times);
@@ -53,9 +46,7 @@ contract PingPong {
     }
 
     function _xpingpong(uint64 destChainID, address to, uint64 times, uint64 n) internal {
-        bytes memory data = abi.encodeWithSelector(this.pingpong.selector, times, n);
-        uint256 fee = omni.feeFor(destChainID, data);
-        omni.xcall{ value: fee }(destChainID, to, data);
+        xcall(destChainID, to, abi.encodeWithSelector(this.pingpong.selector, times, n));
     }
 
     receive() external payable { }

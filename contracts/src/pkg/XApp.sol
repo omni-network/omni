@@ -16,16 +16,10 @@ contract XApp {
     XTypes.Msg internal xmsg;
 
     /// @dev Read current xmsg into storage before execution, delete it afterwards
-    modifier setXMsg() {
+    modifier xfunc() {
         xmsg = omni.xmsg();
         _;
         delete xmsg;
-    }
-
-    /// @dev Only allow xcalls to call this function
-    modifier onlyXCall() {
-        require(isXCall(), "XApp: not xcall");
-        _;
     }
 
     constructor(address _omni) {
