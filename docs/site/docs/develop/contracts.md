@@ -12,7 +12,7 @@ The Omni protocol is implemented through a set of contracts that define the core
 
 #### [`IOmniPortal.sol`](https://github.com/omni-network/omni/blob/2d1e3f57c140b8824bf7d39244e0168fec73af4c/contracts/src/interfaces/IOmniPortal.sol)
 
-- A utility contract aimed at simplifying interactions with the Omni [Portal Contact](../use/protocol.md#portal-contract).
+- A utility contract aimed at simplifying interactions with the Omni [Portal Contact](../protocol/architecture.md#portal-contract).
 - On-chain gateway for Omni's cross-chain messaging, enabling cross-chain contract invocations through events like `XMsg` and `XReceipt`.
 - It establishes gas limits for cross-chain message execution, sets quorum thresholds for validator approvals, and maintains a record of the chain ID as well as inbound and outbound message offsets.
 - Provides methods to [calculate fees](#fees) for cross-chain function calls, both with default and custom gas limits, allowing payable cross-chain calls (`xcall`) and submission of batches of cross-chain messages (`xsubmit`).
@@ -190,7 +190,7 @@ interface IOmniPortal {
 
 #### [`OmniPortal.sol`](https://github.com/omni-network/omni/blob/97cb666259c4490f9d945bcf68c1c45baece81b8/contracts/src/protocol/OmniPortal.sol)
 
-- The Omni system [Portal Contact](../use/protocol.md#portal-contract) deployed to all integrated rollups.
+- The Omni system [Portal Contact](../protocol/architecture.md#portal-contract) deployed to all integrated rollups.
 - Exposes methods to interact with the Omni EVM and other rollups.
   - `function xcall(...)` sends a transaction to another rollup.
   - `function xsubmit(...)` receives calls from another rollup.

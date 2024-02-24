@@ -31,8 +31,8 @@ For detailed information on how the native token is utilized for gas abstraction
 
 ## Restaking ETH
 
-The Omni Network consists of validators who restake $ETH and monitor the state of rollups. These validators relay state updates from one domain to others and provide crypto-economic assurance of validity. Read more about economic security in the [Omni Security Model section](../use/restaking.md#omni-security-model).
+The Omni Network consists of validators who restake $ETH and monitor the state of rollups. These validators relay state updates from one domain to others and provide crypto-economic assurance of validity. Read more about economic security in the [Omni Security Model section](../protocol/restaking.md#omni-security-model).
 
 This means that the Omni Network is going to be the first platform that provides developers with a global view of state from all rollups, making cross-rollup application development extremely simple. All of this is made possible through the unique insight to use Ethereum's validator set to aggregate a global perspective of Ethereum's L2 ecosystem.
 
-Read on how to delegate restaked $ETH to Omni with EigenLayer in the [Delegating ETH](./delegate.md) section and read more on how Omni handles restaking in the [Restaking](../use/restaking.md) protocol section.
+Read on how to delegate restaked $ETH to Omni with EigenLayer in the [Delegating ETH](./delegate.md) section and read more on how Omni handles restaking in the [Restaking](../protocol/restaking.md) protocol section.

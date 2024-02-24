@@ -24,7 +24,7 @@ omni.xcall(
 
 ### Calls from Another Rollup
 
-The destination rollup contract will be called by the rollup deployed [Portal Contract](../use/protocol.md#portal-contract) when it's an Onmi cross-rollup call. These `external` functions can then specifically filter for contract calls from the Portal `address` and use the `omni.isXCall()` helper, as:
+The destination rollup contract will be called by the rollup deployed [Portal Contract](../protocol/architecture.md#portal-contract) when it's an Onmi cross-rollup call. These `external` functions can then specifically filter for contract calls from the Portal `address` and use the `omni.isXCall()` helper, as:
 
 ```solidity
 function receive() external {
