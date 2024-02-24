@@ -30,6 +30,10 @@ jobs:
   comment:
     needs: deploy
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
     steps:
       - name: Comment PR with Deployment URL
         uses: actions/github-script@v7
