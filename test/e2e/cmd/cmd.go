@@ -13,10 +13,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	defaultPingPongDeploy uint64 = 1000
-)
-
 func New() *cobra.Command {
 	// E2E app is aimed at devs and CI, so debug level and force colors by default.
 	logCfg := log.DefaultConfig()
@@ -26,7 +22,7 @@ func New() *cobra.Command {
 	defCfg := app.DefaultDefinitionConfig()
 
 	var def app.Definition
-	var depCfg app.DeployConfig
+	var prom app.PromSecrets // Using empty prom secrets for e2e tests.
 
 	cmd := libcmd.NewRootCmd("e2e", "e2e network generator and test runner")
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
@@ -45,14 +41,14 @@ func New() *cobra.Command {
 	}
 
 	bindDefFlags(cmd.PersistentFlags(), &defCfg)
-	bindDeployFlags(cmd.PersistentFlags(), &depCfg)
+	bindPromFlags(cmd.PersistentFlags(), &prom)
 	log.BindFlags(cmd.PersistentFlags(), &logCfg)
 
 	// Root command runs the full E2E test.
 	e2eTestCfg := app.DefaultE2ETestConfig()
 	bindE2EFlags(cmd.Flags(), &e2eTestCfg)
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		return app.E2ETest(cmd.Context(), def, e2eTestCfg, depCfg)
+		return app.E2ETest(cmd.Context(), def, e2eTestCfg, prom)
 	}
 
 	// Add subcommands
@@ -68,8 +64,7 @@ func New() *cobra.Command {
 }
 
 func newDeployCmd(def *app.Definition) *cobra.Command {
-	var cfg app.DeployConfig
-	cfg.PingPongN = defaultPingPongDeploy // Default to 1000 ping pongs.
+	cfg := app.DefaultDeployConfig()
 
 	cmd := &cobra.Command{
 		Use:   "deploy",

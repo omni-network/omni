@@ -13,6 +13,16 @@ import (
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
+// defaultPingPongN defines a few hours of ping pong messages after each deploy.
+const defaultPingPongN = 1000
+
+func DefaultDeployConfig() DeployConfig {
+	return DeployConfig{
+		PromSecrets: PromSecrets{}, // Empty secrets
+		PingPongN:   defaultPingPongN,
+	}
+}
+
 type DeployConfig struct {
 	PromSecrets
 	EigenFile string
@@ -88,19 +98,16 @@ func DefaultE2ETestConfig() E2ETestConfig {
 }
 
 // E2ETest runs a full e2e test.
-func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, depCfg DeployConfig) error {
+func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, prom PromSecrets) error {
+	const pingpongN = 4 // Deploy and start ping pong
+	depCfg := DeployConfig{
+		PromSecrets: prom,
+		PingPongN:   pingpongN,
+	}
+
 	deployInfo, err := Deploy(ctx, def, depCfg)
 	if err != nil {
 		return err
-	}
-
-	// Deploy and start ping pong
-	const pingpongN = 4
-	pp, err := pingpong.Deploy(ctx, def.Netman, def.Sender)
-	if err != nil {
-		return errors.Wrap(err, "deploy pingpong")
-	} else if err := pp.StartAllEdges(ctx, pingpongN); err != nil {
-		return errors.Wrap(err, "start all edges")
 	}
 
 	msgBatches := []int{3, 2, 1} // Send 6 msgs from each chain to each other chain
