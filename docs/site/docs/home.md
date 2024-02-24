@@ -5,7 +5,7 @@ id: home
 
 # Home
 
-![omni banner](../../images/omni_banner.png)
+![omni banner](../static/img/omni-banner.png)
 
 _Welcome to the documentation portal for all things Omni!_
 

@@ -10,7 +10,7 @@ const config: Config = {
   favicon: "img/favicon.svg",
 
   // Set the production url of your site here
-  url: "https://your-docusaurus-site.example.com",
+  url: "https://docs.omni.network/",
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: "/",
@@ -60,7 +60,7 @@ const config: Config = {
 
   themeConfig: {
     // Replace with your project's social card
-    image: "img/docusaurus-social-card.jpg",
+    image: "img/omni-banner.png",
     navbar: {
       title: "Omni Docs",
       logo: {
@@ -131,9 +131,11 @@ const config: Config = {
       additionalLanguages: ["solidity", "bash"],
     },
     algolia: {
-      appId: "<NEW_APP_ID>", // pragma: allowlist secret
-      apiKey: "<NEW_API_KEY>", // pragma: allowlist secret
-      indexName: "index-name",
+      // The application ID provided by Algolia
+      appId: "YGLZ6VW4T5", // pragma: allowlist secret
+      // Public API key: it is safe to commit it
+      apiKey: "b2cac1111a5f723ffcc9b11008094448", // pragma: allowlist secret
+      indexName: "omni",
       contextualSearch: true,
       searchParameters: {
         clickAnalytics: true,
