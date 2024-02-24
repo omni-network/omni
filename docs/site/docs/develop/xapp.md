@@ -237,7 +237,7 @@ Note that `XApp.xcall(...)` returns the fee charged. This lets you charge users 
 
 
 ```solidity
-uint256 = xcall(...)
+uint256 fee = xcall(...)
 require(msg.value >= fee, "insufficient fee")
 ```
 
