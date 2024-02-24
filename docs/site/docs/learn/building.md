@@ -7,7 +7,7 @@ id: building
 
 Omni is only possible because of a series of recent innovations in blockchain infrastructure. This section provides a high level overview of the "How It Works" and the components that work together to establish the final product.
 
-For a more detailed overview, see the [Protocol](../use/overview.md) section.
+For a more detailed overview, see the [Protocol](../protocol/overview.md) section.
 
 ## Global EVM-Compatible Application Development
 
@@ -27,7 +27,7 @@ The native token is integral to Omni's ecosystem, serving three primary function
 
 This design allows Omni to manage DDoS attacks, provide "gas liquidity" for seamless transactions across rollups, and progressively decentralize governance. This approach ensures backward compatibility with local gas tokens through an abstracted gas marketplace, highlighting the native token's role in enhancing the network's functionality and security.
 
-For detailed information on how the native token is utilized for gas abstraction and supports global application development, refer to the protocol [Fees](../use/overview.md#fee-model) section.
+For detailed information on how the native token is utilized for gas abstraction and supports global application development, refer to the protocol [Fees](../protocol/overview.md#fee-model) section.
 
 ## Restaking ETH
 

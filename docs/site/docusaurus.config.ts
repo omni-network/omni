@@ -76,9 +76,9 @@ const config: Config = {
         },
         {
           position: "left",
-          label: "Use",
+          label: "Protocol",
           type: "doc",
-          docId: "use/overview",
+          docId: "protocol/overview",
         },
         {
           position: "left",
