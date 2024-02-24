@@ -15,6 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -49,17 +50,20 @@ func monitorHeightsForever(ctx context.Context, chain netconf.Chain,
 			return
 		case <-ticker.C:
 			// First get attested head (so it can't be lower than heads).
-			attested, err := getAttested(ctx, chain.ID, chain.DeployHeight, cprovider)
+			attested, hash, err := getAttested(ctx, chain.ID, chain.DeployHeight, cprovider)
 
 			// then get chain heads (so it is always higher than attested).
 			heads := getHeads(ctx, client)
 
 			// Then populate gauges "at the same time" so they update "atomically".
 			if err != nil {
-				log.Error(ctx, "Monitoring attested failed (will retry)", err,
-					"chain", chain.Name)
+				log.Error(ctx, "Monitoring attested failed (will retry)", err, "chain", chain.Name)
 			} else {
-				attestedHeight.WithLabelValues(chain.Name).Set(float64(attested))
+				labels := prometheus.Labels{
+					"block_hash": hash.String(),
+					"chain":      chain.Name,
+				}
+				attestedHeight.WithLabelValues(chain.Name).(prometheus.ExemplarObserver).ObserveWithExemplar(float64(attested), labels) //nolint:forcetypeassert // false positive
 			}
 
 			for typ, head := range heads {
@@ -94,16 +98,16 @@ func getHeads(ctx context.Context, client ethclient.Client) map[ethclient.HeadTy
 	return resp
 }
 
-// monitorAttestedOnce monitors of the latest attested height by chain.
-func getAttested(ctx context.Context, chainID uint64, deployHeight uint64, cprovider cchain.Provider) (uint64, error) {
+// getAttested returns the latest attested height and block hash by chain.
+func getAttested(ctx context.Context, chainID uint64, deployHeight uint64, cprovider cchain.Provider) (uint64, common.Hash, error) {
 	att, ok, err := cprovider.LatestAttestation(ctx, chainID)
 	if err != nil {
-		return 0, errors.Wrap(err, "latest attestation")
+		return 0, common.Hash{}, errors.Wrap(err, "latest attestation")
 	} else if !ok {
-		return deployHeight - 1, nil
+		return deployHeight - 1, common.Hash{}, nil
 	}
 
-	return att.BlockHeader.BlockHeight, nil
+	return att.BlockHeader.BlockHeight, att.BlockHeader.BlockHash, nil
 }
 
 // monitorAccountsForever blocks and periodically monitors the relayer accounts
@@ -203,7 +207,11 @@ func serveMonitoring(address string) <-chan error {
 	errChan := make(chan error)
 	go func() {
 		mux := http.NewServeMux()
-		mux.Handle("/metrics", promhttp.Handler())
+		mux.Handle("/metrics", promhttp.HandlerFor(
+			prometheus.DefaultGatherer,
+			promhttp.HandlerOpts{
+				EnableOpenMetrics: true,
+			}))
 
 		srv := &http.Server{
 			Addr:              address,
