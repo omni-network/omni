@@ -7,7 +7,7 @@ id: building
 
 Omni is only possible because of a series of recent innovations in blockchain infrastructure. This section provides a high level overview of the "How It Works" and the components that work together to establish the final product.
 
-For a more detailed overview, see the [Protocol](../use/overview.md) section.
+For a more detailed overview, see the [Protocol](../protocol/overview.md) section.
 
 ## Global EVM-Compatible Application Development
 
@@ -27,12 +27,12 @@ The native token is integral to Omni's ecosystem, serving three primary function
 
 This design allows Omni to manage DDoS attacks, provide "gas liquidity" for seamless transactions across rollups, and progressively decentralize governance. This approach ensures backward compatibility with local gas tokens through an abstracted gas marketplace, highlighting the native token's role in enhancing the network's functionality and security.
 
-For detailed information on how the native token is utilized for gas abstraction and supports global application development, refer to the protocol [Fees](../use/overview.md#fee-model) section.
+For detailed information on how the native token is utilized for gas abstraction and supports global application development, refer to the protocol [Fees](../protocol/overview.md#fee-model) section.
 
 ## Restaking ETH
 
-The Omni Network consists of validators who restake $ETH and monitor the state of rollups. These validators relay state updates from one domain to others and provide crypto-economic assurance of validity. Read more about economic security in the [Omni Security Model section](../use/restaking.md#omni-security-model).
+The Omni Network consists of validators who restake $ETH and monitor the state of rollups. These validators relay state updates from one domain to others and provide crypto-economic assurance of validity. Read more about economic security in the [Omni Security Model section](../protocol/restaking.md#omni-security-model).
 
 This means that the Omni Network is going to be the first platform that provides developers with a global view of state from all rollups, making cross-rollup application development extremely simple. All of this is made possible through the unique insight to use Ethereum's validator set to aggregate a global perspective of Ethereum's L2 ecosystem.
 
-Read on how to delegate restaked $ETH to Omni with EigenLayer in the [Delegating ETH](./delegate.md) section and read more on how Omni handles restaking in the [Restaking](../use/restaking.md) protocol section.
+Read on how to delegate restaked $ETH to Omni with EigenLayer in the [Delegating ETH](./delegate.md) section and read more on how Omni handles restaking in the [Restaking](../protocol/restaking.md) protocol section.

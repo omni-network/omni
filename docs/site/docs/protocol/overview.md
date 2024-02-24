@@ -39,7 +39,7 @@ If we were to follow a simple initiating cross-rollup user call from a rollup (i
 5. The Relayer service pushes the information from the `XMsg` in the attested `xBlock` to the destination chain by calling the destination Portal contract `xsubmit` method
 6. The Portal Contract in the destination chain performs the a contract call to the specified method in the destination contract as specified by the original call `xcall` in **2**.
 
-To read further on this message traversal see the [`XMsg` Lifecycle](./protocol.md#xmsg-lifecycle) section.
+To read further on this message traversal see the [`XMsg` Lifecycle](./architecture.md#xmsg-lifecycle) section.
 
 ## Finality
 
@@ -55,4 +55,4 @@ Omni fees start with a basic, Solidity-based fee payment interface and an uncomp
 
 Fees are paid in $ETH and calculated in real-time during transactions via the payable `xcall` function on the portal contracts, ensuring simplicity for developers and compatibility with existing Ethereum tooling. This setup allows for easy off-chain fee estimations and the possibility for developers to pass the cost on to users, with a straightforward upgrade path to a more dynamic fee structure that can adapt to the network's evolving needs without necessitating changes to developer contracts.
 
-For more information on how fees are handled read the [fees protocol section](./protocol.md#fee-handling)
+For more information on how fees are handled read the [fees protocol section](./architecture.md#fee-handling)
