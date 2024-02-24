@@ -113,7 +113,6 @@ xmsg.sender        // address(0)
 You can check if the current call is an xcall with `isXCall`.
 
 ```solidity
-// ...
 function greet() external setXMsg {
     if (isXCall()) {
         // if it's an xcall, emit a greeting from the source chain
@@ -134,7 +133,6 @@ If you want your function to only accept `xcalls`, use the `onlyXCall` modifier.
 
 
 ```solidity
-// ...
 function greet() external setXMsg onlyXCall {
     // now, it's always an xcall
     emit Greetings(xmsg.sender, xmsg.sourceChainId, greeting);
