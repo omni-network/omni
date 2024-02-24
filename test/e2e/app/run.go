@@ -62,7 +62,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 		return deployInfo, nil
 	}
 
-	pp, err := pingpong.Deploy(ctx, def.Netman.Portals())
+	pp, err := pingpong.Deploy(ctx, def.Netman, def.Sender)
 	if err != nil {
 		return nil, errors.Wrap(err, "deploy pingpong")
 	}
@@ -96,7 +96,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, depCfg Depl
 
 	// Deploy and start ping pong
 	const pingpongN = 4
-	pp, err := pingpong.Deploy(ctx, def.Netman.Portals())
+	pp, err := pingpong.Deploy(ctx, def.Netman, def.Sender)
 	if err != nil {
 		return errors.Wrap(err, "deploy pingpong")
 	} else if err := pp.StartAllEdges(ctx, pingpongN); err != nil {
@@ -104,7 +104,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, depCfg Depl
 	}
 
 	msgBatches := []int{3, 2, 1} // Send 6 msgs from each chain to each other chain
-	msgsErr := StartSendingXMsgs(ctx, def.Netman.Portals(), msgBatches...)
+	msgsErr := StartSendingXMsgs(ctx, def.Netman, def.Sender, msgBatches...)
 
 	if err := Wait(ctx, def.Testnet.Testnet, 5); err != nil { // allow some txs to go through
 		return err
@@ -148,15 +148,6 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, depCfg Depl
 	}
 
 	return nil
-}
-
-func sum(batches []int) uint64 {
-	var resp int
-	for _, b := range batches {
-		resp += b
-	}
-
-	return uint64(resp)
 }
 
 // Convert cometbft testnet validators to solidity bindings.Validator, expected by portal constructor.

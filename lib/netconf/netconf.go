@@ -62,6 +62,12 @@ func (n Network) OmniChain() (Chain, bool) {
 	return Chain{}, false
 }
 
+// ChainName returns the chain name for the given ID or an empty string if it does not exist.
+func (n Network) ChainName(id uint64) string {
+	chain, _ := n.Chain(id)
+	return chain.Name
+}
+
 // Chain returns the chain config for the given ID or false if it does not exist.
 func (n Network) Chain(id uint64) (Chain, bool) {
 	for _, chain := range n.Chains {

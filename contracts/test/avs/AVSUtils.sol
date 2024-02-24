@@ -7,6 +7,7 @@ import { ISignatureUtils } from "eigenlayer-contracts/src/contracts/interfaces/I
 import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import { IDelegationManager } from "eigenlayer-contracts/src/contracts/interfaces/IDelegationManager.sol";
 
+import { EigenPodManagerHarness } from "./eigen/EigenPodManagerHarness.sol";
 import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
 import { AVSBase } from "./AVSBase.sol";
 
@@ -89,14 +90,14 @@ contract AVSUtils is AVSBase {
     }
 
     /// @dev deposit into a random strategy, that is part of the OmniAVS strategy params
-    function _depositIntoSupportedStrategy(address staker, uint256 amount) internal {
+    function _depositIntoSupportedStrategy(address staker, uint256 shares) internal {
         IOmniAVS.StrategyParams[] memory params = omniAVS.strategyParams();
         uint256 index = uint256(keccak256(abi.encodePacked(staker))) % params.length;
-        _depositIntoStrategy(staker, amount, address(params[index].strategy));
+        _depositIntoStrategy(staker, shares, address(params[index].strategy));
     }
 
     /// @dev deposit into an that is NOT part of the OmniAVS strategy params
-    function _depositIntoUnsupportedStrategy(address staker, uint256 amount) internal {
+    function _depositIntoUnsupportedStrategy(address staker, uint256 shares) internal {
         IOmniAVS.StrategyParams[] memory params = omniAVS.strategyParams();
 
         // check that unsupportedStrategy is not part of the strategy params
@@ -107,13 +108,34 @@ contract AVSUtils is AVSBase {
             );
         }
 
-        _depositIntoStrategy(staker, amount, address(unsupportedStrat));
+        _depositIntoStrategy(staker, shares, address(unsupportedStrat));
     }
 
     /// @dev deposit into the provided strategy
-    function _depositIntoStrategy(address staker, uint256 amount, address strategy) internal {
+    function _depositIntoStrategy(address staker, uint256 shares, address strategy) internal {
+        if (strategy == beaconChainETHStrategy) {
+            _depositBeaconEth(staker, shares);
+            return;
+        }
+
         IStrategy strat = IStrategy(strategy);
+
+        // when running fork tests, some strategies (like stETH), do not map underlying tokens to shares 1:1
+        // so we need to figure out how much underlying to deposit to get the correct amount of shares
         IERC20 underlying = strat.underlyingToken();
-        _testDepositToStrategy(staker, amount, underlying, strat);
+        uint256 underlyingAmt = strat.sharesToUnderlying(shares);
+
+        // sometimes underlyingToShares(sharesToUnderlying(x)) != x (for some strategies like stETH)
+        // so we keep incrementing underlyingAmt until sharesToUnderlying(underlyingAmt) == shares
+        while (shares != strat.underlyingToShares(underlyingAmt)) {
+            underlyingAmt = underlyingAmt + 1;
+        }
+
+        _testDepositToStrategy(staker, underlyingAmt, underlying, strat);
+    }
+
+    /// @dev Deposit beacon eth
+    function _depositBeaconEth(address staker, uint256 amount) internal {
+        eigenPodManager.updatePodOwnerShares(staker, int256(amount));
     }
 }

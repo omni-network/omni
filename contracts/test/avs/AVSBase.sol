@@ -32,6 +32,9 @@ contract AVSBase is EigenLayerTestHelper {
     MockPortal portal;
     OmniAVS omniAVS;
 
+    /// Canonical, virtual beacon chain ETH strategy
+    address constant beaconChainETHStrategy = 0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0;
+
     function setUp() public override {
         super.setUp();
 
@@ -45,7 +48,9 @@ contract AVSBase is EigenLayerTestHelper {
 
     function _deployGoerliAVS() internal returns (OmniAVS) {
         DeployGoerliAVS deployer = new DeployGoerliAVS();
-        return OmniAVS(deployer.deploy(omniAVSOwner, address(proxyAdmin), address(portal), omniChainId));
+        return OmniAVS(
+            deployer.prankDeploy(proxyAdminOwner, omniAVSOwner, address(proxyAdmin), address(portal), omniChainId)
+        );
     }
 
     function _deployLocalAVS() internal returns (OmniAVS) {

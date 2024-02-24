@@ -11,6 +11,7 @@ import { DelegationManager } from "eigenlayer-contracts/src/contracts/core/Deleg
 import { AVSDirectory } from "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
 import { StrategyBase } from "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 
+import { EigenPodManagerHarness } from "./EigenPodManagerHarness.sol";
 import { EigenLayerGoerli } from "./deploy/EigenLayerGoerli.sol";
 import { EigenLayerLocal } from "./deploy/EigenLayerLocal.sol";
 import { IEigenDeployer } from "./deploy/IEigenDeployer.sol";
@@ -18,15 +19,16 @@ import { IEigenDeployer } from "./deploy/IEigenDeployer.sol";
 import { Test } from "forge-std/Test.sol";
 
 /**
- * @dev Repurposed from eignlayer-contracts src/test/EigenLayerDeployer.t.sol
- *      Unused storage variables and functions were removed
- * @custom:attribution https://github.com/Layr-Labs/eigenlayer-contracts/blob/m2-mainnet-fixes/src/test/EigenLayerDeployer.t.sol
+ * @title EigenLayerDeployer
+ * @dev Test eigen deployment utily. Deploys local or goerli contracts, depending on the chain id.
+ *      It also deploys an "unsupported strategy" that is always excluded from OmniAVS strategy params.
  */
 contract EigenLayerDeployer is Test {
     // eigen deployments
     DelegationManager delegation;
     AVSDirectory avsDirectory;
     StrategyManager strategyManager;
+    EigenPodManagerHarness eigenPodManager;
 
     // stragies
     address[] strategies;
@@ -57,7 +59,11 @@ contract EigenLayerDeployer is Test {
         delegation = DelegationManager(deployments.delegationManager);
         avsDirectory = AVSDirectory(deployments.avsDirectory);
         strategyManager = StrategyManager(deployments.strategyManager);
-        strategies = deployments.strategies;
+        eigenPodManager = EigenPodManagerHarness(deployments.eigenPodManager);
+
+        for (uint256 i = 0; i < deployments.strategies.length; i++) {
+            strategies.push(deployments.strategies[i]);
+        }
     }
 
     function _deployUnsupportedStrategy(address strategyManager_, address proxyAdmin_, address pauserRegistry_)

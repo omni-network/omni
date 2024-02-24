@@ -10,8 +10,6 @@ import { OmniAVS } from "src/protocol/OmniAVS.sol";
 import { AVSBase } from "./AVSBase.sol";
 import { AVSUtils } from "./AVSUtils.sol";
 
-import { console } from "forge-std/console.sol";
-
 contract OmniAVS_Test is AVSBase, AVSUtils {
     uint32 numOperators;
     uint32 numDelegatorsPerOp;
@@ -26,6 +24,8 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
     // feeForSync is msg.value passsed in tests OmniAVS.syncWithOmni()
     // normally, these fee will be calculated by the caller off-chain
     uint256 syncFee = 1 gwei;
+
+    uint96 GWEI_TO_WEI = 1e9;
 
     /**
      * Test OmniAVS.syncWithOmni() at a number of different points in a "delegation lifecycle".
@@ -48,8 +48,14 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
     ) public {
         numOperators = uint32(bound(numOperators_, 2, maxOperatorCount));
         numDelegatorsPerOp = uint32(bound(numDelegatorsPerOp_, 1, 30));
+
         initialOperatorStake = uint96(bound(initialOperatorStake_, minimumOperatorStake, 100 ether));
         initialDelegatorStake = uint96(bound(initialDelegatorStake_, 500 gwei, 5 ether));
+
+        // round both initialOperatorStake and initialDelegatorStake to the nearest GWEI
+        // beaconChainETHStrategy requires round numbers in GWEI
+        initialOperatorStake = (initialOperatorStake / GWEI_TO_WEI) * GWEI_TO_WEI;
+        initialDelegatorStake = (initialDelegatorStake / GWEI_TO_WEI) * GWEI_TO_WEI;
 
         for (uint256 i = 0; i < numOperators; i++) {
             operators.push(_operator(i));
@@ -83,7 +89,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
         validators = omniAVS.getValidators();
 
         // assert no operator for omni avs quorum, because no operator has been registered
-        assertEq(validators.length, 0); // no validators
+        assertEq(validators.length, 0, "_testRegisterOperators: no operators should be registered");
 
         // TODO: should we revert if no operators are registered?
         // current thinking is no, to allow all operators to be deregistered
@@ -103,12 +109,16 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
         validators = omniAVS.getValidators();
 
         // assert all operators have been registered
-        assertEq(validators.length, numOperators);
+        assertEq(validators.length, numOperators, "_testRegisterOperatorsWithAVS: all operators should be registered");
 
         // assert operator has initial stake
         for (uint32 i = 0; i < numOperators; i++) {
-            assertEq(validators[i].staked, initialOperatorStake);
-            assertEq(validators[i].delegated, 0);
+            assertEq(
+                validators[i].staked,
+                initialOperatorStake,
+                "_testRegisterOperatorsWithAVS: validator.staked should be initialOperatorStake"
+            );
+            assertEq(validators[i].delegated, 0, "_testRegisterOperatorsWithAVS: validator.delegated should be 0");
         }
 
         _expectXCall(validators);
@@ -141,7 +151,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
         validators = omniAVS.getValidators();
 
         // assert all operators still registered
-        assertEq(validators.length, numOperators);
+        assertEq(validators.length, numOperators, "_testDelegateToOperators: all operators should still be registered");
 
         // assert all operator stake has been updated by initialDelegatorStake
         for (uint32 i = 0; i < numOperators; i++) {
@@ -149,8 +159,10 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
             uint96 totalStaked = initialOperatorStake;
 
             // validator state tracks these separately
-            assertEq(validators[i].staked, totalStaked);
-            assertEq(validators[i].delegated, totalDelegated);
+            assertEq(validators[i].staked, totalStaked, "_testDelegateToOperators: validator.staked unexpected");
+            assertEq(
+                validators[i].delegated, totalDelegated, "_testDelegateToOperators: validator.delegated unexpected"
+            );
         }
 
         _expectXCall(validators);
@@ -170,7 +182,11 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
         validators = omniAVS.getValidators();
 
         // assert all operators still registered
-        assertEq(validators.length, numOperators);
+        assertEq(
+            validators.length,
+            numOperators,
+            "_testIncreaseDelegationsToFirstHalfOfOperators: all operators should still be registered"
+        );
 
         // assert first half of operators have increased delegations
         for (uint32 i = 0; i < numOperators; i++) {
@@ -186,8 +202,16 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
             }
 
             // validator state tracks these separately
-            assertEq(validators[i].staked, totalStaked);
-            assertEq(validators[i].delegated, totalDelegated);
+            assertEq(
+                validators[i].staked,
+                totalStaked,
+                "_testIncreaseDelegationsToFirstHalfOfOperators: validator.staked unexpected"
+            );
+            assertEq(
+                validators[i].delegated,
+                totalDelegated,
+                "_testIncreaseDelegationsToFirstHalfOfOperators: validator.delegated unexpected"
+            );
         }
 
         _expectXCall(validators);
@@ -205,7 +229,11 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
         validators = omniAVS.getValidators();
 
         // assert all operators still registered
-        assertEq(validators.length, numOperators);
+        assertEq(
+            validators.length,
+            numOperators,
+            "_testIncreaseStakeOfSecondHalfOfOperators: all operators should still be registered"
+        );
 
         // assert first half of operators have increased delegations by delegatorStakeAddition
         // assert second half of operators have increased stake by operatorStakeAddition
@@ -225,8 +253,16 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
             }
 
             // validator state tracks these separately
-            assertEq(validators[i].staked, totalStaked);
-            assertEq(validators[i].delegated, totalDelegated);
+            assertEq(
+                validators[i].staked,
+                totalStaked,
+                "_testIncreaseStakeOfSecondHalfOfOperators: validator.staked unexpected "
+            );
+            assertEq(
+                validators[i].delegated,
+                totalDelegated,
+                "_testIncreaseStakeOfSecondHalfOfOperators: validator.delegated unexpected"
+            );
         }
 
         _expectXCall(validators);
@@ -249,7 +285,9 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
         validators = omniAVS.getValidators();
 
         // assert all operators still registered
-        assertEq(validators.length, numOperators);
+        assertEq(
+            validators.length, numOperators, "_testUndelegateAllDelegators: all operators should still be registered"
+        );
 
         // assert all operators have no delegations
         // assert first half is back to initial stake
@@ -264,8 +302,8 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
             }
 
             // validator state tracks these separately
-            assertEq(validators[i].staked, totalStaked);
-            assertEq(validators[i].delegated, 0);
+            assertEq(validators[i].staked, totalStaked, "_testUndelegateAllDelegators: validator.staked unexpected ");
+            assertEq(validators[i].delegated, 0, "_testtUndelegateAllDelegators: validator.delegated should be 0");
         }
 
         _expectXCall(validators);
@@ -290,7 +328,9 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
 
             // assert that none of the operators left is the operator that just deregistered
             for (uint32 j = 0; j < numOperatorsLeft; j++) {
-                assertNotEq(validators[j].addr, operator);
+                assertNotEq(
+                    validators[j].addr, operator, "_testDeregisterOperators: operator should not be in validators list"
+                );
             }
         }
     }
@@ -312,6 +352,22 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
     /**
      * Unit tests.
      */
+    function test_depositBeaconEth_succeeds() public {
+        address operator = _operator(0);
+        uint96 amount = minimumOperatorStake;
+
+        _registerAsOperator(operator);
+        _addToAllowlist(operator);
+        _depositBeaconEth(operator, amount);
+        _registerOperatorWithAVS(operator);
+
+        OmniAVS.Validator[] memory validators = omniAVS.getValidators();
+
+        assertEq(validators.length, 1);
+        assertEq(validators[0].addr, operator);
+        assertEq(validators[0].staked, amount);
+        assertEq(validators[0].delegated, 0);
+    }
 
     /// @dev Test that an operator cannot register if not in allow list
     function test_registerOperator_notAllowed_reverts() public {
