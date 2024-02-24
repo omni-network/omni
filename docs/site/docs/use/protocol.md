@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Protocol
 
-Omni evolved from an [Ethermint](https://github.com/cosmos/ethermint) fork to enhance Ethereum's ecosystem scalability and interoperability, needing an architectural revamp for increased transactions and users. It integrates smart contracts across the Omni Chain EVM and Ethereum rollups for cross-chain interactions, with security ensured by a dPoS validator set, supported by a native token and re-staked ETH through Eigenlayer. This framework enables efficient cross-network storage and contract calls.
+Omni is designed to enhance the Ethereum ecosystem's scalability and interoperability. It integrates smart contracts across the Omni Chain EVM and Ethereum rollups for cross-chain interactions, with security ensured by a dPoS validator set, supported by a native token and re-staked ETH through Eigenlayer. This framework enables efficient cross-network storage and contract calls.
 
 ## `XMsg` Lifecycle
 
