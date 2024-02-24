@@ -72,7 +72,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 		return deployInfo, nil
 	}
 
-	pp, err := pingpong.Deploy(ctx, def.Netman, def.Sender)
+	pp, err := pingpong.Deploy(ctx, def.Netman, def.Backends)
 	if err != nil {
 		return nil, errors.Wrap(err, "deploy pingpong")
 	}
@@ -111,7 +111,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, prom PromSe
 	}
 
 	msgBatches := []int{3, 2, 1} // Send 6 msgs from each chain to each other chain
-	msgsErr := StartSendingXMsgs(ctx, def.Netman, def.Sender, msgBatches...)
+	msgsErr := StartSendingXMsgs(ctx, def.Netman, def.Backends, msgBatches...)
 
 	if err := Wait(ctx, def.Testnet.Testnet, 5); err != nil { // allow some txs to go through
 		return err
@@ -135,11 +135,6 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, prom PromSe
 		return err
 	}
 
-	// Anvil doens't support subscriptions, we need to poll.
-	// if err := pp.WaitDone(ctx); err != nil {
-	//	return errors.Wrap(err, "wait pingpong")
-	//}
-
 	if err := Test(ctx, def, deployInfo, false); err != nil {
 		return err
 	}
@@ -157,13 +152,11 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, prom PromSe
 	return nil
 }
 
-// Convert cometbft testnet validators to solidity bindings.Validator, expected by portal constructor.
+// toPortalValidators returns the provided validator set as a lice of portal validators.
 func toPortalValidators(validators map[*e2e.Node]int64) ([]bindings.Validator, error) {
 	vals := make([]bindings.Validator, 0, len(validators))
-
 	for val, power := range validators {
 		addr, err := k1util.PubKeyToAddress(val.PrivvalKey.PubKey())
-
 		if err != nil {
 			return nil, errors.Wrap(err, "convert validator pubkey to address")
 		}
