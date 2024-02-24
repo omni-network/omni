@@ -17,6 +17,7 @@ import { EigenLayerLocal } from "./deploy/EigenLayerLocal.sol";
 import { IEigenDeployer } from "./deploy/IEigenDeployer.sol";
 
 import { Test } from "forge-std/Test.sol";
+import { MockERC20 } from "../../common/MockERC20.sol";
 
 /**
  * @title EigenLayerDeployer
@@ -71,7 +72,7 @@ contract EigenLayerDeployer is Test {
         returns (address)
     {
         uint256 totalSupply = 1000e18;
-        IERC20 unsupportedToken = new ERC20PresetFixedSupply("unsupported", "UNSUPPORTED", totalSupply, address(this));
+        IERC20 unsupportedToken = new MockERC20("unsupported", "UNSUPPORTED");
         StrategyBase impl = new StrategyBase(IStrategyManager(strategyManager_));
         return address(
             new TransparentUpgradeableProxy(

@@ -101,9 +101,8 @@ func TestEigenAndOmniAVS(t *testing.T) {
 		delegateWETHToStrategy(t, ctx, avs, del2Pk, stratManAddr, wethStratAddr, wethTokenAddr, InitialDelegatorStake)
 		checkOperatorBalance(t, ctx, avs, opr2Addr, opr2Pk, uint64(InitialOperatorStake), uint64(InitialDelegatorStake))
 
-		// undelegate delegator 1
-		undelegateWETHFromStrategy(t, ctx, avs, del1Addr, del1Pk, wethStratAddr, wethTokenAddr,
-			big.NewInt(InitialDelegatorStake))
+		// undelegate delegator 1 and check if the stake is removed from operator
+		undelegateWETHForDelegattor(t, ctx, avs, del1Addr, del1Pk)
 		checkOperatorBalance(t, ctx, avs, opr1Addr, opr1Pk, uint64(InitialOperatorStake), uint64(0))
 
 		// unregister operators
@@ -582,22 +581,18 @@ func mustHexToKey(privKeyHex string) *ecdsa.PrivateKey {
 	return privKey
 }
 
-func undelegateWETHFromStrategy(
+func undelegateWETHForDelegattor(
 	t *testing.T,
 	ctx context.Context,
 	avs AVS,
 	delegatorAddr common.Address,
-	delegatorPk *ecdsa.PrivateKey,
-	strategy common.Address,
-	token common.Address,
-	sharesToUndelegate *big.Int) {
+	delegatorPk *ecdsa.PrivateKey) {
 	t.Helper()
 
 	txOpts, err := bind.NewKeyedTransactorWithChainID(delegatorPk, big.NewInt(int64(avs.Chain.ID)))
 	require.NoError(t, err)
 	txOpts.Context = ctx
-	tx, err := avs.StrategyManagerContract.WithdrawSharesAsTokens(txOpts, delegatorAddr,
-		strategy, sharesToUndelegate, token)
+	tx, err := avs.DelegationManagerContract.Undelegate(txOpts, delegatorAddr)
 	require.NoError(t, err)
 	_, err = bind.WaitMined(ctx, avs.Client, tx)
 	require.NoError(t, err)
