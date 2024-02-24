@@ -6,24 +6,24 @@ sidebar_position: 1
 
 Omniʼs operator needs to run the consensus client and the execution client:
 
-  - EVM client for execution (`geth`)
-  - Omniʼs consensus client (`halo`)
+- EVM client for execution (`geth`, `erigon`, etc)
+- Omniʼs consensus client (`halo`)
 
 ## Hardware Requirements
 
-| Hardware | Requirement |
+| Hardware | Requirement (minimum) |
 | --- | --- |
-| Cores | 8 |
-| Bandwidth | 1Gbps |
+| Cores | 4 |
+| Bandwidth | 100 Mbps |
 | RAM | 32GB |
-| SSD Hard Disk (expandable) | 4 TB |
+| SSD Hard Disk | 500 GB |
 
 ## Software Requirements
 
 | Software | Requirement |
 | --- | --- |
 | Docker | 24.0.7 |
-| Operating System | Linux/macOS (arm/x46) |
+| Operating System | Linux/macOS (arm/64) |
 
 ### Ports
 
