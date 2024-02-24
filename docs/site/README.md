@@ -5,7 +5,7 @@ This website is built using [Docusaurus](https://docusaurus.io/), a modern stati
 ### Installation
 
 ```
-$ pnpm
+$ pnpm install
 ```
 
 ### Local Development

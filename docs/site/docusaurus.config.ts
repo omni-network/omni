@@ -39,7 +39,7 @@ const config: Config = {
           sidebarPath: "./sidebars.ts",
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
-          editUrl: "https://github.com/omni-network/omni/docs/",
+          editUrl: "https://github.com/omni-network/omni/docs/site/",
           remarkPlugins: [remarkMath],
           rehypePlugins: [rehypeKatex],
         },
@@ -84,7 +84,7 @@ const config: Config = {
           position: "left",
           label: "Develop",
           type: "doc",
-          docId: "develop/contracts",
+          docId: "develop/introduction",
         },
         {
           position: "left",
@@ -128,7 +128,7 @@ const config: Config = {
     prism: {
       theme: prismThemes.vsLight,
       darkTheme: prismThemes.vsDark,
-      additionalLanguages: ["solidity"],
+      additionalLanguages: ["solidity", "bash"],
     },
     algolia: {
       appId: "<NEW_APP_ID>", // pragma: allowlist secret
