@@ -15,7 +15,7 @@ Below I will enumerate some simple examples of what becomes possible in this new
 
 This is the boring use case. A majority of readers are likely familiar with this as it does not require programmability and is the functionality offered by simple interoperability protocols like LayerZero.
 
-Example: Alice is on Arbitrum where she has 1 $ETH. She sends that $ETH to Optimism using a simple message passing protocol. Now Alice has 1 $ETH on Optimism.
+Example: Alice is on Arbitrum where she has 1\$ETH. She sends that\$ETH to Optimism using a simple message passing protocol. Now Alice has 1\$ETH on Optimism.
 
 This is important functionality -- however, it is largely commoditized and uninteresting for modern application development. Our perspective is that users should never have to think about low level operations like this. Developers should build applications that abstract away this complexity from end users. This lowers friction for users and gives developers a greater addressable market as their apps will be default accessible everywhere.
 
