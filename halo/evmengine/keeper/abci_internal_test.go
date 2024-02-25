@@ -45,11 +45,11 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 	// Test case 1: Test when there are no transactions in the proposal
 	t.Run("NoTransactions", func(t *testing.T) {
 		t.Parallel()
-		ctx, storeService := getTestContext(t)
+		ctx, storeService := setupCtxStore(t)
 		cdc := getCodec()
 		txConfig := authtx.NewTxConfig(cdc, nil)
 
-		keeper := NewKeeper(cdc, storeService, MockEngineAPI{}, txConfig, MockAddressProvider{})
+		keeper := NewKeeper(cdc, storeService, &MockEngineAPI{}, txConfig, MockAddressProvider{})
 
 		req := &abci.RequestPrepareProposal{
 			Txs:    nil,        // Set to nil to simulate no transactions
@@ -68,11 +68,11 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 	// Test case 2: Test when there are transactions in the proposal
 	t.Run("WithTransactions", func(t *testing.T) {
 		t.Parallel()
-		ctx, storeService := getTestContext(t)
+		ctx, storeService := setupCtxStore(t)
 		cdc := getCodec()
 		txConfig := authtx.NewTxConfig(cdc, nil)
 
-		keeper := NewKeeper(cdc, storeService, MockEngineAPI{}, txConfig, MockAddressProvider{})
+		keeper := NewKeeper(cdc, storeService, &MockEngineAPI{}, txConfig, MockAddressProvider{})
 
 		req := &abci.RequestPrepareProposal{
 			Txs:    [][]byte{[]byte("test1")}, // Set to some transactions to simulate transactions in the proposal
@@ -90,7 +90,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 	// Test case 3: Test when the block number is successfully fetched
 	t.Run("Block number err", func(t *testing.T) {
 		t.Parallel()
-		ctx, storeService := getTestContext(t)
+		ctx, storeService := setupCtxStore(t)
 		cdc := getCodec()
 		txConfig := authtx.NewTxConfig(cdc, nil)
 
@@ -100,7 +100,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 			},
 		}
 
-		keeper := NewKeeper(cdc, storeService, mockEngine, txConfig, MockAddressProvider{})
+		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, MockAddressProvider{})
 		height := int64(2)
 
 		req := &abci.RequestPrepareProposal{
@@ -117,7 +117,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 	// Test case 4: Test when the block number is successfully fetched
 	t.Run("Block by number err", func(t *testing.T) {
 		t.Parallel()
-		ctx, storeService := getTestContext(t)
+		ctx, storeService := setupCtxStore(t)
 		cdc := getCodec()
 		txConfig := authtx.NewTxConfig(cdc, nil)
 
@@ -130,7 +130,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 			},
 		}
 
-		keeper := NewKeeper(cdc, storeService, mockEngine, txConfig, MockAddressProvider{})
+		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, MockAddressProvider{})
 		height := int64(2)
 
 		req := &abci.RequestPrepareProposal{
@@ -147,7 +147,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 	// Test case 4: Test when the block number is successfully fetched
 	t.Run("Block by number err", func(t *testing.T) {
 		t.Parallel()
-		ctx, storeService := getTestContext(t)
+		ctx, storeService := setupCtxStore(t)
 		cdc := getCodec()
 		txConfig := authtx.NewTxConfig(cdc, nil)
 
@@ -160,7 +160,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 			},
 		}
 
-		keeper := NewKeeper(cdc, storeService, mockEngine, txConfig, MockAddressProvider{})
+		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, MockAddressProvider{})
 		height := int64(2)
 
 		req := &abci.RequestPrepareProposal{
@@ -177,7 +177,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 	// Test case 5: Test when the forkchoice update errs
 	t.Run("forkchoiceUpdateV2  err", func(t *testing.T) {
 		t.Parallel()
-		ctx, storeService := getTestContext(t)
+		ctx, storeService := setupCtxStore(t)
 		cdc := getCodec()
 		txConfig := authtx.NewTxConfig(cdc, nil)
 
@@ -197,7 +197,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 			},
 		}
 
-		keeper := NewKeeper(cdc, storeService, mockEngine, txConfig, MockAddressProvider{})
+		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, MockAddressProvider{})
 		height := int64(2)
 
 		req := &abci.RequestPrepareProposal{
@@ -211,9 +211,36 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		require.Nil(t, resp)
 	})
 
+	t.Run("use mock impl", func(t *testing.T) {
+		t.Parallel()
+		ctx, storeService := setupCtxStore(t)
+		cdc := getCodec()
+		txConfig := authtx.NewTxConfig(cdc, nil)
+
+		me, err := engine.NewMock()
+		require.NoError(t, err)
+		mockEngine := MockEngineAPI{
+			Mock: me,
+		}
+
+		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, MockAddressProvider{})
+		height := int64(2)
+		keeper.mutablePayload.UpdatedAt = time.Now()
+
+		req := &abci.RequestPrepareProposal{
+			Txs:    nil,
+			Height: height,
+			Time:   time.Now(),
+		}
+
+		resp, err := keeper.PrepareProposal(ctx, req)
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+	})
+
 }
 
-func getTestContext(t *testing.T) (sdk.Context, store.KVStoreService) {
+func setupCtxStore(t *testing.T) (sdk.Context, store.KVStoreService) {
 	t.Helper()
 	key := storetypes.NewKVStoreKey("test")
 	storeService := runtime.NewKVStoreService(key)
@@ -251,6 +278,7 @@ var _ engine.API = (*MockEngineAPI)(nil)
 var _ etypes.AddressProvider = (*MockAddressProvider)(nil)
 
 type MockEngineAPI struct {
+	*engine.Mock            // avoid repeating the implementation but also allow for custom implementations of mocks
 	BlockNumberFunc         func(ctx context.Context) (uint64, error)
 	BlockByNumberFunc       func(ctx context.Context, number *big.Int) (*types.Block, error)
 	ForkchoiceUpdatedV2Func func(ctx context.Context, update eengine.ForkchoiceStateV1,
@@ -262,50 +290,45 @@ func (m MockAddressProvider) LocalAddress() common.Address {
 	return common.BytesToAddress([]byte("test"))
 }
 
-func (m MockEngineAPI) BlockNumber(ctx context.Context) (uint64, error) {
+func (m *MockEngineAPI) BlockNumber(ctx context.Context) (uint64, error) {
 	if m.BlockNumberFunc != nil {
 		return m.BlockNumberFunc(ctx)
 
 	}
-	return 0, errors.New("not defined")
+	return m.Mock.BlockNumber(ctx)
 }
 
-func (m MockEngineAPI) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
+func (m *MockEngineAPI) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
 	if m.BlockByNumberFunc != nil {
 		return m.BlockByNumberFunc(ctx, number)
 
 	}
-	return nil, errors.New("not defined")
+	return m.Mock.BlockByNumber(ctx, number)
 }
 
-func (m MockEngineAPI) NewPayloadV2(ctx context.Context, params eengine.ExecutableData) (eengine.PayloadStatusV1, error) {
-	// TODO implement me
-	panic("implement me")
+func (m *MockEngineAPI) NewPayloadV2(ctx context.Context, params eengine.ExecutableData) (eengine.PayloadStatusV1, error) {
+	return m.Mock.NewPayloadV2(ctx, params)
 }
 
-func (m MockEngineAPI) NewPayloadV3(ctx context.Context, params eengine.ExecutableData, versionedHashes []common.Hash, beaconRoot *common.Hash) (eengine.PayloadStatusV1, error) {
-	// TODO implement me
-	panic("implement me")
+func (m *MockEngineAPI) NewPayloadV3(ctx context.Context, params eengine.ExecutableData, versionedHashes []common.Hash, beaconRoot *common.Hash) (eengine.PayloadStatusV1, error) {
+	return m.Mock.NewPayloadV3(ctx, params, versionedHashes, beaconRoot)
 }
 
-func (m MockEngineAPI) ForkchoiceUpdatedV2(ctx context.Context, update eengine.ForkchoiceStateV1, payloadAttributes *eengine.PayloadAttributes) (eengine.ForkChoiceResponse, error) {
+func (m *MockEngineAPI) ForkchoiceUpdatedV2(ctx context.Context, update eengine.ForkchoiceStateV1, payloadAttributes *eengine.PayloadAttributes) (eengine.ForkChoiceResponse, error) {
 	if m.ForkchoiceUpdatedV2Func != nil {
 		return m.ForkchoiceUpdatedV2Func(ctx, update, payloadAttributes)
 	}
-	return eengine.ForkChoiceResponse{}, errors.New("not defined")
+	return m.Mock.ForkchoiceUpdatedV2(ctx, update, payloadAttributes)
 }
 
-func (m MockEngineAPI) ForkchoiceUpdatedV3(ctx context.Context, update eengine.ForkchoiceStateV1, payloadAttributes *eengine.PayloadAttributes) (eengine.ForkChoiceResponse, error) {
-	// TODO implement me
+func (m *MockEngineAPI) ForkchoiceUpdatedV3(ctx context.Context, update eengine.ForkchoiceStateV1, payloadAttributes *eengine.PayloadAttributes) (eengine.ForkChoiceResponse, error) {
 	panic("implement me")
 }
 
-func (m MockEngineAPI) GetPayloadV2(ctx context.Context, payloadID eengine.PayloadID) (*eengine.ExecutionPayloadEnvelope, error) {
-	// TODO implement me
-	panic("implement me")
+func (m *MockEngineAPI) GetPayloadV2(ctx context.Context, payloadID eengine.PayloadID) (*eengine.ExecutionPayloadEnvelope, error) {
+	return m.Mock.GetPayloadV2(ctx, payloadID)
 }
 
-func (m MockEngineAPI) GetPayloadV3(ctx context.Context, payloadID eengine.PayloadID) (*eengine.ExecutionPayloadEnvelope, error) {
-	// TODO implement me
+func (m *MockEngineAPI) GetPayloadV3(ctx context.Context, payloadID eengine.PayloadID) (*eengine.ExecutionPayloadEnvelope, error) {
 	panic("implement me")
 }
