@@ -220,7 +220,9 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
 
             uint96 total = _getTotalDelegations(operator);
             uint96 staked = _getSelfDelegations(operator);
-            uint96 delegated = total - staked;
+
+            // this should never happen, but just in case
+            uint96 delegated = total > staked ? total - staked : 0;
 
             vals[i] = Validator(operator, delegated, staked);
         }

@@ -1100,7 +1100,7 @@ func TestNonceReset(t *testing.T) {
 
 	ctx := context.Background()
 	for i := 0; i < 8; i++ {
-		_, err := h.mgr.Send(ctx, TxCandidate{
+		_, _, err := h.mgr.Send(ctx, TxCandidate{
 			To: &common.Address{},
 		})
 		// expect every 3rd tx to fail
@@ -1224,7 +1224,7 @@ func TestClose(t *testing.T) {
 	}()
 	// demonstrate that a tx is sent, even when it must retry repeatedly
 	ctx := context.Background()
-	_, err := h.mgr.Send(ctx, TxCandidate{
+	_, _, err := h.mgr.Send(ctx, TxCandidate{
 		To: &common.Address{},
 	})
 	require.NoError(t, err)
@@ -1239,10 +1239,10 @@ func TestClose(t *testing.T) {
 		h.mgr.Close()
 	}()
 	// demonstrate that a tx will cancel if it is in progress when the manager is closed
-	_, err = h.mgr.Send(ctx, TxCandidate{
+	_, _, err = h.mgr.Send(ctx, TxCandidate{
 		To: &common.Address{},
 	})
-	require.ErrorIs(t, ErrClosed, err)
+	require.ErrorIs(t, err, ErrClosed)
 	// confirm that the tx was canceled before it retried to completion
 	require.Less(t, called, retries)
 	require.True(t, h.mgr.closed.Load())
@@ -1251,7 +1251,7 @@ func TestClose(t *testing.T) {
 	// demonstrate that new calls to Send will also fail when the manager is closed
 	// there should be no need to capture the sending signal here because the manager is already closed
 	// and will return immediately
-	_, err = h.mgr.Send(ctx, TxCandidate{
+	_, _, err = h.mgr.Send(ctx, TxCandidate{
 		To: &common.Address{},
 	})
 	require.ErrorIs(t, ErrClosed, err)
@@ -1297,7 +1297,7 @@ func TestCloseWaitingForConfirmation(t *testing.T) {
 	}()
 
 	ctx := context.Background()
-	_, err := h.mgr.Send(ctx, TxCandidate{
+	_, _, err := h.mgr.Send(ctx, TxCandidate{
 		To: &common.Address{},
 	})
 	require.True(t, h.mgr.closed.Load())

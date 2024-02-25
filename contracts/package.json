@@ -1,5 +1,15 @@
 {
+  "name": "@omni-network/contracts",
+  "version": "0.2.0-alpha.1",
+  "license": "GPL-3.0-only",
   "packageManager": "pnpm@8.14.0",
+  "repository": "https://github.com/omni-network/omni/contracts",
+  "files": [
+      "src/**/*.sol",
+      "test/**/*.sol",
+      "test/**/*.ts",
+      "script/**/*.sol"
+    ],
   "scripts": {
     "test": "pnpm test:gen && forge test",
     "test:gen": "pnpm test:gen:xblocks && pnpm test:gen:xsubs",

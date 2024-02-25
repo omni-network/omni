@@ -13,34 +13,20 @@ import (
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
+// defaultPingPongN defines a few hours of ping pong messages after each deploy.
+const defaultPingPongN = 1000
+
+func DefaultDeployConfig() DeployConfig {
+	return DeployConfig{
+		PromSecrets: PromSecrets{}, // Empty secrets
+		PingPongN:   defaultPingPongN,
+	}
+}
+
 type DeployConfig struct {
 	PromSecrets
 	EigenFile string
-}
-
-// DeployWithPingPong a new e2e network. It also starts all services in order to deploy private portals.
-// It also deploys a pingpong contract and starts all edges.
-func DeployWithPingPong(ctx context.Context, def Definition, cfg DeployConfig, pingPongN uint64,
-) (types.DeployInfos, error) {
-	deployInfo, err := Deploy(ctx, def, cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	if pingPongN == 0 {
-		return deployInfo, nil
-	}
-
-	pp, err := pingpong.Deploy(ctx, def.Netman.Portals())
-	if err != nil {
-		return nil, errors.Wrap(err, "deploy pingpong")
-	} else if err := pp.StartAllEdges(ctx, pingPongN); err != nil {
-		return nil, errors.Wrap(err, "start all edges")
-	}
-
-	pp.ExportDeployInfo(deployInfo)
-
-	return deployInfo, nil
+	PingPongN uint64
 }
 
 // Deploy a new e2e network. It also starts all services in order to deploy private portals.
@@ -82,6 +68,22 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 		deployInfo.Set(chain.ID, types.ContractPortal, info.PortalAddress, info.DeployHeight)
 	}
 
+	if cfg.PingPongN == 0 {
+		return deployInfo, nil
+	}
+
+	pp, err := pingpong.Deploy(ctx, def.Netman, def.Backends)
+	if err != nil {
+		return nil, errors.Wrap(err, "deploy pingpong")
+	}
+
+	err = pp.StartAllEdges(ctx, cfg.PingPongN)
+	if err != nil {
+		return nil, errors.Wrap(err, "start all edges")
+	}
+
+	pp.ExportDeployInfo(deployInfo)
+
 	return deployInfo, nil
 }
 
@@ -96,23 +98,20 @@ func DefaultE2ETestConfig() E2ETestConfig {
 }
 
 // E2ETest runs a full e2e test.
-func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, depCfg DeployConfig) error {
+func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, prom PromSecrets) error {
+	const pingpongN = 4 // Deploy and start ping pong
+	depCfg := DeployConfig{
+		PromSecrets: prom,
+		PingPongN:   pingpongN,
+	}
+
 	deployInfo, err := Deploy(ctx, def, depCfg)
 	if err != nil {
 		return err
 	}
 
-	// Deploy and start ping pong
-	const pingpongN = 4
-	pp, err := pingpong.Deploy(ctx, def.Netman.Portals())
-	if err != nil {
-		return errors.Wrap(err, "deploy pingpong")
-	} else if err := pp.StartAllEdges(ctx, pingpongN); err != nil {
-		return errors.Wrap(err, "start all edges")
-	}
-
 	msgBatches := []int{3, 2, 1} // Send 6 msgs from each chain to each other chain
-	msgsErr := StartSendingXMsgs(ctx, def.Netman.Portals(), msgBatches...)
+	msgsErr := StartSendingXMsgs(ctx, def.Netman, def.Backends, msgBatches...)
 
 	if err := Wait(ctx, def.Testnet.Testnet, 5); err != nil { // allow some txs to go through
 		return err
@@ -136,11 +135,6 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, depCfg Depl
 		return err
 	}
 
-	// Anvil doens't support subscriptions, we need to poll.
-	// if err := pp.WaitDone(ctx); err != nil {
-	//	return errors.Wrap(err, "wait pingpong")
-	//}
-
 	if err := Test(ctx, def, deployInfo, false); err != nil {
 		return err
 	}
@@ -158,13 +152,11 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, depCfg Depl
 	return nil
 }
 
-// Convert cometbft testnet validators to solidity bindings.Validator, expected by portal constructor.
+// toPortalValidators returns the provided validator set as a lice of portal validators.
 func toPortalValidators(validators map[*e2e.Node]int64) ([]bindings.Validator, error) {
 	vals := make([]bindings.Validator, 0, len(validators))
-
 	for val, power := range validators {
 		addr, err := k1util.PubKeyToAddress(val.PrivvalKey.PubKey())
-
 		if err != nil {
 			return nil, errors.Wrap(err, "convert validator pubkey to address")
 		}

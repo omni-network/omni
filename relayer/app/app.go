@@ -48,7 +48,7 @@ func Run(ctx context.Context, cfg Config) error {
 
 	for _, destChain := range network.Chains {
 		sendProvider := func() (SendFunc, error) {
-			sender, err := NewOpSender(ctx, destChain, rpcClientPerChain[destChain.ID], *privateKey,
+			sender, err := NewOpSender(destChain, rpcClientPerChain[destChain.ID], *privateKey,
 				network.ChainNamesByIDs())
 			if err != nil {
 				return nil, err

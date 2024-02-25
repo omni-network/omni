@@ -2,19 +2,21 @@ package app
 
 import (
 	"context"
-	"math/big"
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/test/e2e/backend"
 	"github.com/omni-network/omni/test/e2e/netman"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
+
+	"golang.org/x/sync/errgroup"
 )
 
-func StartSendingXMsgs(ctx context.Context, portals map[uint64]netman.Portal, batches ...int) <-chan error {
+func StartSendingXMsgs(ctx context.Context, netman netman.Manager, backends backend.Backends, batches ...int) <-chan error {
 	log.Info(ctx, "Generating cross chain messages async", "batches", batches)
 
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
@@ -23,7 +25,7 @@ func StartSendingXMsgs(ctx context.Context, portals map[uint64]netman.Portal, ba
 	go func() {
 		for i, count := range batches {
 			log.Debug(ctx, "Sending xmsgs", "batch", i, "count", count)
-			err := SendXMsgs(ctx, portals, count)
+			err := SendXMsgs(ctx, netman, backends, count)
 			if ctx.Err() != nil {
 				errChan <- ctx.Err()
 				return
@@ -40,66 +42,46 @@ func StartSendingXMsgs(ctx context.Context, portals map[uint64]netman.Portal, ba
 }
 
 // SendXMsgs sends <count> xmsgs from every chain to every other chain, then waits for them to be mined.
-func SendXMsgs(ctx context.Context, portals map[uint64]netman.Portal, batch int) error {
-	type sentTuple struct {
-		TX     *ethtypes.Transaction
-		SentAt uint64
-	}
-	allSends := make(map[uint64][]sentTuple)
-	for fromChainID, from := range portals {
-		nonce, err := from.Client.PendingNonceAt(ctx, from.TxOptsFrom())
-		if err != nil {
-			return errors.Wrap(err, "pending nonce", "chain", from.Chain.Name)
-		}
-
-		for _, to := range portals {
+func SendXMsgs(ctx context.Context, netman netman.Manager, backends backend.Backends, count int) error {
+	waiter := backends.NewWaiter()
+	var eg errgroup.Group
+	for _, from := range netman.Portals() {
+		for _, to := range netman.Portals() {
 			if from.Chain.ID == to.Chain.ID {
 				continue
 			}
 
-			for i := 0; i < batch; i++ {
-				h, err := from.Client.BlockNumber(ctx)
-				if err != nil {
-					return errors.Wrap(err, "block number")
-				}
+			for i := 0; i < count; i++ {
+				// Send async so whole batch included in same block. Important for testing.
+				eg.Go(func() error {
+					tx, err := xcall(ctx, backends, from, to.Chain.ID)
+					if err != nil {
+						return errors.Wrap(err, "xcall")
+					}
 
-				tx, err := xcall(ctx, from, to.Chain.ID, nonce)
-				if err != nil {
-					return errors.Wrap(err, "batch_offset", i)
-				}
+					waiter.Add(from.Chain.ID, tx)
 
-				allSends[fromChainID] = append(allSends[fromChainID], sentTuple{
-					TX:     tx,
-					SentAt: h,
+					return nil
 				})
-				nonce++
 			}
 		}
 	}
 
-	for chainID, tups := range allSends {
-		portal := portals[chainID]
-		for i, tup := range tups {
-			receipt, err := bind.WaitMined(ctx, portal.Client, tup.TX)
-			if err != nil {
-				return errors.Wrap(err, "wait mined", "chain", portal.Chain.Name, "tx_index", i)
-			}
+	// Wait for all sends to complete
+	if err := eg.Wait(); err != nil {
+		return errors.Wrap(err, "send xmsgs")
+	}
 
-			// Only log slow confirmations
-			if delta := receipt.BlockNumber.Uint64() - tup.SentAt; delta > 2 {
-				log.Debug(ctx, "Sent xmsg mined (slow)",
-					"chain", portal.Chain.Name,
-					"sent_at", tup.SentAt, "mined_at", receipt.BlockNumber.Uint64(),
-					"delta", receipt.BlockNumber.Uint64()-tup.SentAt)
-			}
-		}
+	// Wait for all xmsgs to be mined, so next batch sent in subsequent block.
+	if err := waiter.Wait(ctx); err != nil {
+		return errors.Wrap(err, "wait xmsgs")
 	}
 
 	return nil
 }
 
 // xcall sends a ethereum transaction to the portal contract, triggering a xcall.
-func xcall(ctx context.Context, from netman.Portal, destChainID uint64, nonce uint64) (*ethtypes.Transaction, error) {
+func xcall(ctx context.Context, backends backend.Backends, from netman.Portal, destChainID uint64) (*ethtypes.Transaction, error) {
 	// TODO: use calls to actual contracts
 	var data []byte
 	to := common.Address{}
@@ -112,8 +94,12 @@ func xcall(ctx context.Context, from netman.Portal, destChainID uint64, nonce ui
 		)
 	}
 
-	txOpts := from.TxOpts(ctx, fee)
-	txOpts.Nonce = big.NewInt(int64(nonce))
+	txOpts, _, err := backends.BindOpts(ctx, from.Chain.ID)
+	if err != nil {
+		return nil, errors.Wrap(err, "bindOpts")
+	}
+
+	txOpts.Value = fee
 
 	tx, err := from.Contract.Xcall(txOpts, destChainID, to, data)
 	if err != nil {

@@ -28,11 +28,11 @@ type OpSender struct {
 }
 
 // NewOpSender creates a new sender that uses txmgr to send transactions to the destination chain.
-func NewOpSender(ctx context.Context, chain netconf.Chain, rpcClient *ethclient.Client,
+func NewOpSender(chain netconf.Chain, rpcClient *ethclient.Client,
 	privateKey ecdsa.PrivateKey, chainNames map[uint64]string) (OpSender, error) {
 	// we want to query receipts every 1/3 of the block time
-	cfg, err := txmgr.NewConfig(ctx, txmgr.NewCLIConfig(
-		chain.RPCURL,
+	cfg, err := txmgr.NewConfig(txmgr.NewCLIConfig(
+		chain.ID,
 		chain.BlockPeriod/3,
 		txmgr.DefaultSenderFlagValues,
 	),
@@ -101,13 +101,14 @@ func (o OpSender) SendTransaction(ctx context.Context, submission xchain.Submiss
 		Value:    big.NewInt(0),
 	}
 
-	rec, err := o.txMgr.Send(ctx, candidate)
+	tx, rec, err := o.txMgr.Send(ctx, candidate)
 	if err != nil {
 		return errors.Wrap(err, "failed to send tx")
 	}
 
 	log.Info(ctx, "Sent submission transaction",
 		"status", rec.Status,
+		"nonce", tx.Nonce(),
 		"gas_used", rec.GasUsed,
 		"tx_hash", rec.TxHash)
 

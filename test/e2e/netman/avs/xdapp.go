@@ -2,18 +2,17 @@ package avs
 
 import (
 	"context"
-	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/test/e2e/backend"
 	"github.com/omni-network/omni/test/e2e/netman"
 	"github.com/omni-network/omni/test/e2e/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 type XDapp struct {
@@ -23,8 +22,7 @@ type XDapp struct {
 	portalAddr  common.Address
 	chain       types.EVMChain
 	omniChainID uint64
-	ethCl       *ethclient.Client
-	txOpts      *bind.TransactOpts // TODO(corver): Replace this with a txmgr.
+	backends    backend.Backends
 
 	// Mutable state
 	contract     *bindings.OmniAVS
@@ -33,93 +31,83 @@ type XDapp struct {
 }
 
 func New(cfg AVSConfig, eigen EigenDeployments, portalAddr common.Address,
-	chain types.EVMChain, omniChainID uint64, ethCl *ethclient.Client, txOpts *bind.TransactOpts) *XDapp {
+	chain types.EVMChain, omniChainID uint64, backends backend.Backends) *XDapp {
 	return &XDapp{
 		cfg:         cfg,
 		eigen:       eigen,
 		portalAddr:  portalAddr,
 		chain:       chain,
 		omniChainID: omniChainID,
-		ethCl:       ethCl,
-		txOpts:      txOpts,
+		backends:    backends,
 	}
 }
 
-func (m *XDapp) Deploy(ctx context.Context) error {
-	if m.contract != nil {
+func (d *XDapp) Deploy(ctx context.Context) error {
+	if d.contract != nil {
 		return errors.New("avs already deployed")
 	}
 
-	log.Info(ctx, "Deploying AVS contracts", "chain", m.chain.Name)
+	log.Info(ctx, "Deploying AVS contracts", "chain", d.chain.Name)
 
-	if m.ethCl == nil {
-		return errors.New("avs client not set")
+	txOpts, backend, err := d.backends.BindOpts(ctx, d.chain.ID)
+	if err != nil {
+		return err
 	}
 
-	height, err := m.ethCl.BlockNumber(ctx)
+	height, err := backend.BlockNumber(ctx)
 	if err != nil {
 		return errors.Wrap(err, "get block number")
 	}
 
 	// TODO: use same proxy admin for portal & avs on same chain
-	proxyAdmin, err := netman.DeployProxyAdmin(ctx, m.txOpts, m.ethCl)
+	proxyAdmin, err := netman.DeployProxyAdmin(ctx, txOpts, backend)
 	if err != nil {
 		return errors.Wrap(err, "deploy proxy admin")
 	}
 
-	stratParms := make([]bindings.IOmniAVSStrategyParams, len(m.cfg.StrategyParams))
-	for i, sp := range m.cfg.StrategyParams {
-		stratParms[i] = bindings.IOmniAVSStrategyParams{
-			Strategy:   sp.Strategy,
-			Multiplier: sp.Multiplier,
-		}
-	}
-
-	addr, err := deployOmniAVS(ctx, m.ethCl, m.txOpts, proxyAdmin, m.txOpts.From,
-		m.portalAddr, m.omniChainID, m.eigen.DelegationManager, m.eigen.AVSDirectory,
-		m.cfg.MinimumOperatorStake, m.cfg.MaximumOperatorCount, stratParms)
+	addr, err := d.deployOmniAVS(ctx, backend, txOpts, proxyAdmin, txOpts.From)
 	if err != nil {
 		return errors.Wrap(err, "deploy avs")
 	}
 
-	contract, err := bindings.NewOmniAVS(addr, m.ethCl)
+	contract, err := bindings.NewOmniAVS(addr, backend)
 	if err != nil {
 		return errors.Wrap(err, "instantiate avs")
 	}
 
-	m.contract = contract
-	m.contractAddr = addr
-	m.height = height
+	d.contract = contract
+	d.contractAddr = addr
+	d.height = height
 
-	log.Debug(ctx, "Deployed AVS contract", "address", addr.Hex(), "chain", m.chain.Name)
+	log.Debug(ctx, "Deployed AVS contract", "address", addr.Hex(), "chain", d.chain.Name)
 
 	return nil
 }
 
 // ExportDeployInfo sets the contract addresses in the given DeployInfos.
-func (m *XDapp) ExportDeployInfo(i types.DeployInfos) {
-	i.Set(m.chain.ID, types.ContractOmniAVS, m.contractAddr, m.height)
+func (d *XDapp) ExportDeployInfo(i types.DeployInfos) {
+	i.Set(d.chain.ID, types.ContractOmniAVS, d.contractAddr, d.height)
 
 	const elHeight uint64 = 0 // TODO(corver): Maybe figure this out?
-	i.Set(m.chain.ID, types.ContractELAVSDirectory, m.eigen.AVSDirectory, elHeight)
-	i.Set(m.chain.ID, types.ContractELDelegationManager, m.eigen.DelegationManager, elHeight)
-	i.Set(m.chain.ID, types.ContractELStrategyManager, m.eigen.StrategyManager, elHeight)
-	i.Set(m.chain.ID, types.ContractELPodManager, m.eigen.EigenPodManager, elHeight)
+	i.Set(d.chain.ID, types.ContractELAVSDirectory, d.eigen.AVSDirectory, elHeight)
+	i.Set(d.chain.ID, types.ContractELDelegationManager, d.eigen.DelegationManager, elHeight)
+	i.Set(d.chain.ID, types.ContractELStrategyManager, d.eigen.StrategyManager, elHeight)
+	i.Set(d.chain.ID, types.ContractELPodManager, d.eigen.EigenPodManager, elHeight)
 }
 
-func deployOmniAVS(ctx context.Context, client *ethclient.Client, txOpts *bind.TransactOpts,
-	proxyAdmin common.Address, owner common.Address, portal common.Address, omniChainID uint64,
-	delegationManager common.Address, avsDirectory common.Address, minOperatorStake *big.Int,
-	maxOperators uint32, strategyParams []bindings.IOmniAVSStrategyParams,
+func (d *XDapp) deployOmniAVS(ctx context.Context, client backend.Backend, txOpts *bind.TransactOpts,
+	proxyAdmin common.Address, owner common.Address,
 ) (common.Address, error) {
-	impl, tx, _, err := bindings.DeployOmniAVS(txOpts, client, delegationManager, avsDirectory)
+	impl, tx, _, err := bindings.DeployOmniAVS(txOpts, client, d.eigen.DelegationManager, d.eigen.AVSDirectory)
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "deploy avs impl")
 	}
 
 	receipt, err := bind.WaitMined(ctx, client, tx)
-	if err != nil || receipt.Status != ethtypes.ReceiptStatusSuccessful {
+	if err != nil {
 		return common.Address{}, errors.Wrap(err, "wait mined avs impl")
+	} else if receipt.Status != ethtypes.ReceiptStatusSuccessful {
+		return common.Address{}, errors.New("deploy avs impl failed")
 	}
 
 	abi, err := bindings.OmniAVSMetaData.GetAbi()
@@ -127,8 +115,16 @@ func deployOmniAVS(ctx context.Context, client *ethclient.Client, txOpts *bind.T
 		return common.Address{}, errors.Wrap(err, "get avs abi")
 	}
 
-	enc, err := abi.Pack("initialize", owner, portal, omniChainID,
-		minOperatorStake, maxOperators, []common.Address{} /* allowlist */, strategyParams)
+	stratParms := make([]bindings.IOmniAVSStrategyParams, len(d.cfg.StrategyParams))
+	for i, sp := range d.cfg.StrategyParams {
+		stratParms[i] = bindings.IOmniAVSStrategyParams{
+			Strategy:   sp.Strategy,
+			Multiplier: sp.Multiplier,
+		}
+	}
+
+	enc, err := abi.Pack("initialize", owner, d.portalAddr, d.omniChainID,
+		d.cfg.MinimumOperatorStake, d.cfg.MaximumOperatorCount, []common.Address{} /* allowlist */, stratParms)
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "encode avs initializer")
 	}
@@ -139,8 +135,10 @@ func deployOmniAVS(ctx context.Context, client *ethclient.Client, txOpts *bind.T
 	}
 
 	receipt, err = bind.WaitMined(ctx, client, tx)
-	if err != nil || receipt.Status != ethtypes.ReceiptStatusSuccessful {
+	if err != nil {
 		return common.Address{}, errors.Wrap(err, "wait mined avs proxy")
+	} else if receipt.Status != ethtypes.ReceiptStatusSuccessful {
+		return common.Address{}, errors.New("deploy avs proxy failed")
 	}
 
 	return proxy, nil

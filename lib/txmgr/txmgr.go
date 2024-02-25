@@ -40,7 +40,7 @@ type TxManager interface {
 	// may be included on L1 even if the context is canceled.
 	//
 	// NOTE: Send can be called concurrently, the nonce will be managed internally.
-	Send(ctx context.Context, candidate TxCandidate) (*types.Receipt, error)
+	Send(ctx context.Context, candidate TxCandidate) (*types.Transaction, *types.Receipt, error)
 
 	// From returns the sending address associated with the instance of the transaction manager.
 	// It is static for a single instance of a TxManager.
@@ -135,12 +135,17 @@ func (m *SimpleTxManager) Close() {
 // txFields returns a logger with the transaction hash and nonce fields set.
 //
 //nolint:revive // Might fix
-func txFields(tx *types.Transaction,
-	logGas bool) []slog.Attr {
-	fields := []slog.Attr{slog.String("tx", tx.Hash().String()), slog.Int64("nonce", int64(tx.Nonce()))}
+func txFields(tx *types.Transaction, logGas bool) []any {
+	fields := []any{
+		slog.Int64("nonce", int64(tx.Nonce())),
+		slog.String("tx", tx.Hash().String()),
+	}
 	if logGas {
-		fields = append(fields, slog.String("gas_tip_cap", tx.GasTipCap().String()),
-			slog.String("gas_fee_cap", tx.GasFeeCap().String()), slog.Int64("gas_limit", int64(tx.Gas())))
+		fields = append(fields,
+			slog.String("gas_tip_cap", tx.GasTipCap().String()),
+			slog.String("gas_fee_cap", tx.GasFeeCap().String()),
+			slog.Int64("gas_limit", int64(tx.Gas())),
+		)
 	}
 
 	return fields
@@ -168,26 +173,27 @@ type TxCandidate struct {
 // transaction manager will do a gas estimation.
 //
 // NOTE: Send can be called concurrently, the nonce will be managed internally.
-func (m *SimpleTxManager) Send(ctx context.Context, candidate TxCandidate) (*types.Receipt, error) {
+func (m *SimpleTxManager) Send(ctx context.Context, candidate TxCandidate) (*types.Transaction, *types.Receipt, error) {
 	// refuse new requests if the tx manager is closed
 	if m.closed.Load() {
-		return nil, ErrClosed
+		return nil, nil, ErrClosed
 	}
 	// todo(lazar): replace m.pending with package level prometheus gauge
 	m.pending.Add(1)
 	defer func() {
 		m.pending.Add(-1)
 	}()
-	receipt, err := m.doSend(ctx, candidate)
+	tx, rec, err := m.doSend(ctx, candidate)
 	if err != nil {
 		m.resetNonce()
+		return nil, nil, err
 	}
 
-	return receipt, err
+	return tx, rec, nil
 }
 
 // doSend performs the actual transaction creation and sending.
-func (m *SimpleTxManager) doSend(ctx context.Context, candidate TxCandidate) (*types.Receipt, error) {
+func (m *SimpleTxManager) doSend(ctx context.Context, candidate TxCandidate) (*types.Transaction, *types.Receipt, error) {
 	if m.cfg.TxSendTimeout != 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, m.cfg.TxSendTimeout)
@@ -206,10 +212,15 @@ func (m *SimpleTxManager) doSend(ctx context.Context, candidate TxCandidate) (*t
 		return tx, err
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create the tx")
+		return nil, nil, errors.Wrap(err, "create the tx")
 	}
 
-	return m.sendTx(ctx, tx)
+	rec, err := m.sendTx(ctx, tx)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "send the tx")
+	}
+
+	return tx, rec, nil
 }
 
 // craftTx creates the signed transaction
@@ -347,8 +358,7 @@ func (m *SimpleTxManager) sendTx(ctx context.Context, tx *types.Transaction) (*t
 			}
 			// If we see lots of unrecoverable errors (and no pending transactions) abort sending the transaction.
 			if sendState.ShouldAbortImmediately() {
-				attrs := txFields(tx, false)
-				return nil, errors.New("aborted transaction sending", attrs)
+				return nil, errors.New("aborted transaction sending", txFields(tx, false)...)
 			}
 			// if the tx manager closed while we were waiting for the tx, give up
 			if m.closed.Load() {
@@ -487,7 +497,9 @@ func (m *SimpleTxManager) queryReceipt(ctx context.Context, txHash common.Hash,
 	defer cancel()
 	receipt, err := m.backend.TransactionReceipt(ctx, txHash)
 	if err != nil {
-		if errors.Is(err, ethereum.NotFound) || strings.Contains(err.Error(), ethereum.NotFound.Error()) {
+		if strings.Contains(err.Error(), "transaction indexing is in progress") {
+			return nil, false, nil // Just back off here
+		} else if errors.Is(err, ethereum.NotFound) || strings.Contains(err.Error(), ethereum.NotFound.Error()) {
 			sendState.TxNotMined(txHash)
 			return nil, false, nil
 		}
@@ -527,7 +539,7 @@ func (m *SimpleTxManager) increaseGasPrice(ctx context.Context, tx *types.Transa
 	log.Debug(ctx, "Bumping gas price")
 	tip, baseFee, err := m.suggestGasPriceCaps(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get gas price info", txFields(tx, true))
+		return nil, errors.Wrap(err, "failed to get gas price info", txFields(tx, true)...)
 	}
 	bumpedTip, bumpedFee := updateFees(ctx, tx.GasTipCap(), tx.GasFeeCap(), tip, baseFee)
 
