@@ -1,4 +1,4 @@
-package send
+package backend
 
 import (
 	"context"
@@ -30,29 +30,29 @@ var (
 	privateDeployKey = mustHexToKey(privKeyHex0)
 )
 
-// Sender is a wrapper around a set of adapted ethclients (backends)
+// Backends is a wrapper around a set of adapted ethclients (backends)
 // that delegate transaction sending to a txmgr.TxManager for reliable sending.
 //
 // It should be used with bindings based contracts, as it provides bind.TransactOpts.
-type Sender struct {
+type Backends struct {
 	backends map[uint64]backend
 }
 
-func New(testnet types.Testnet, deployKeyFile string) (Sender, error) {
+func New(testnet types.Testnet, deployKeyFile string) (Backends, error) {
 	var err error
 
 	var publicDeployKey *ecdsa.PrivateKey
 	if testnet.Network == netconf.Devnet {
 		if deployKeyFile != "" {
-			return Sender{}, errors.New("deploy key not supported in devnet")
+			return Backends{}, errors.New("deploy key not supported in devnet")
 		}
 	} else if testnet.Network == netconf.Staging {
 		publicDeployKey, err = crypto.LoadECDSA(deployKeyFile)
 	} else {
-		return Sender{}, errors.New("unknown extNetwork")
+		return Backends{}, errors.New("unknown extNetwork")
 	}
 	if err != nil {
-		return Sender{}, errors.Wrap(err, "load deploy key")
+		return Backends{}, errors.Wrap(err, "load deploy key")
 	}
 
 	backends := make(map[uint64]backend)
@@ -62,7 +62,7 @@ func New(testnet types.Testnet, deployKeyFile string) (Sender, error) {
 		chain := testnet.OmniEVMs[0] // Connect to the first omni evm instance for now.
 		backends[chain.Chain.ID], err = newBackend(chain.Chain, chain.ExternalRPC, privateDeployKey)
 		if err != nil {
-			return Sender{}, errors.Wrap(err, "new omni backend")
+			return Backends{}, errors.Wrap(err, "new omni backend")
 		}
 	}
 
@@ -70,22 +70,22 @@ func New(testnet types.Testnet, deployKeyFile string) (Sender, error) {
 	for _, chain := range testnet.AnvilChains {
 		backends[chain.Chain.ID], err = newBackend(chain.Chain, chain.ExternalRPC, privateDeployKey)
 		if err != nil {
-			return Sender{}, errors.Wrap(err, "new anvil backend")
+			return Backends{}, errors.Wrap(err, "new anvil backend")
 		}
 	}
 
 	// Configure public EVM backends
 	for _, chain := range testnet.PublicChains {
 		if publicDeployKey == nil {
-			return Sender{}, errors.New("public deploy key required")
+			return Backends{}, errors.New("public deploy key required")
 		}
 		backends[chain.Chain.ID], err = newBackend(chain.Chain, chain.RPCAddress, publicDeployKey)
 		if err != nil {
-			return Sender{}, errors.Wrap(err, "new public backend")
+			return Backends{}, errors.Wrap(err, "new public backend")
 		}
 	}
 
-	return Sender{
+	return Backends{
 		backends: backends,
 	}, nil
 }
@@ -96,13 +96,13 @@ func New(testnet types.Testnet, deployKeyFile string) (Sender, error) {
 //
 // Do not cache or store the TransactOpts, as they are not safe for concurrent use (pointer).
 // Rather create a new TransactOpts for each transaction.
-func (s Sender) BindOpts(ctx context.Context, sourceChainID uint64) (*bind.TransactOpts, Backend, error) {
-	b, ok := s.backends[sourceChainID]
+func (b Backends) BindOpts(ctx context.Context, sourceChainID uint64) (*bind.TransactOpts, Backend, error) {
+	backend, ok := b.backends[sourceChainID]
 	if !ok {
 		return nil, nil, errors.New("unknown backend")
 	}
 
-	if header, err := b.HeaderByNumber(ctx, nil); err != nil {
+	if header, err := backend.HeaderByNumber(ctx, nil); err != nil {
 		return nil, nil, errors.Wrap(err, "header by number")
 	} else if header.BaseFee == nil {
 		return nil, nil, errors.New("only dynamic transaction backends supported")
@@ -111,13 +111,13 @@ func (s Sender) BindOpts(ctx context.Context, sourceChainID uint64) (*bind.Trans
 	// Stub nonce and signer since txmgr will handle this.
 	// Bindings will estimate gas.
 	return &bind.TransactOpts{
-		From:  b.from,
+		From:  backend.from,
 		Nonce: big.NewInt(1),
 		Signer: func(_ common.Address, tx *ethtypes.Transaction) (*ethtypes.Transaction, error) {
 			return tx, nil
 		},
 		Context: ctx,
-	}, b, nil
+	}, backend, nil
 }
 
 func newTxMgr(ethCl *ethclient.Client, chain types.EVMChain, privateKey *ecdsa.PrivateKey) (txmgr.TxManager, error) {

@@ -46,7 +46,7 @@ func deployAVS(ctx context.Context, def Definition, cfg DeployConfig, deployInfo
 		portal.DeployInfo.PortalAddress,
 		chain,
 		omniChainID,
-		def.Sender,
+		def.Backends,
 	)
 
 	if err := xdapp.Deploy(ctx); err != nil {

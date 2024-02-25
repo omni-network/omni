@@ -7,8 +7,8 @@ import (
 	"github.com/omni-network/omni/contracts/bindings/examples"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/test/e2e/backend"
 	"github.com/omni-network/omni/test/e2e/netman"
-	"github.com/omni-network/omni/test/e2e/send"
 	"github.com/omni-network/omni/test/e2e/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -22,17 +22,17 @@ import (
 type XDapp struct {
 	contracts map[uint64]contract
 	edges     []Edge
-	sender    send.Sender
+	backends  backend.Backends
 }
 
-func Deploy(ctx context.Context, netman netman.Manager, sender send.Sender) (XDapp, error) {
+func Deploy(ctx context.Context, netman netman.Manager, backends backend.Backends) (XDapp, error) {
 	log.Info(ctx, "Deploying ping pong contracts")
 
 	contracts := make(map[uint64]contract)
 	for chainID, portal := range netman.Portals() {
 		portalAddr := portal.DeployInfo.PortalAddress
 
-		txOpts, backend, err := sender.BindOpts(ctx, chainID)
+		txOpts, backend, err := backends.BindOpts(ctx, chainID)
 		if err != nil {
 			return XDapp{}, errors.Wrap(err, "deploy opts")
 		}
@@ -57,7 +57,7 @@ func Deploy(ctx context.Context, netman netman.Manager, sender send.Sender) (XDa
 
 	dapp := XDapp{
 		contracts: contracts,
-		sender:    sender,
+		backends:  backends,
 		edges:     edges(contracts),
 	}
 
@@ -76,7 +76,7 @@ func (d *XDapp) ExportDeployInfo(resp types.DeployInfos) {
 
 func (d *XDapp) fund(ctx context.Context) error {
 	for _, contract := range d.contracts {
-		txOpts, backend, err := d.sender.BindOpts(ctx, contract.Chain.ID)
+		txOpts, backend, err := d.backends.BindOpts(ctx, contract.Chain.ID)
 		if err != nil {
 			return err
 		}
@@ -109,7 +109,7 @@ func (d *XDapp) StartAllEdges(ctx context.Context, count uint64) error {
 			"count", count,
 		)
 
-		txOpts, backend, err := d.sender.BindOpts(ctx, from.Chain.ID)
+		txOpts, backend, err := d.backends.BindOpts(ctx, from.Chain.ID)
 		if err != nil {
 			return err
 		}

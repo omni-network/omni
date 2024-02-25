@@ -10,7 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
-	"github.com/omni-network/omni/test/e2e/send"
+	"github.com/omni-network/omni/test/e2e/backend"
 	"github.com/omni-network/omni/test/e2e/types"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -52,7 +52,7 @@ type Manager interface {
 	RelayerKey() *ecdsa.PrivateKey
 }
 
-func NewManager(testnet types.Testnet, sender send.Sender, relayerKeyFile string,
+func NewManager(testnet types.Testnet, backends backend.Backends, relayerKeyFile string,
 ) (Manager, error) {
 	// Create partial portals. This will be updated by Deploy*Portals.
 	portals := make(map[uint64]Portal)
@@ -95,7 +95,7 @@ func NewManager(testnet types.Testnet, sender send.Sender, relayerKeyFile string
 			portals:     portals,
 			omniChainID: omniEVM.Chain.ID,
 			relayerKey:  privateRelayerKey,
-			sender:      sender,
+			backends:    backends,
 		}, nil
 	case netconf.Staging:
 		relayerKey, err := crypto.LoadECDSA(relayerKeyFile)
@@ -107,7 +107,7 @@ func NewManager(testnet types.Testnet, sender send.Sender, relayerKeyFile string
 			portals:     portals,
 			omniChainID: omniEVM.Chain.ID,
 			relayerKey:  relayerKey,
-			sender:      sender,
+			backends:    backends,
 		}, nil
 	default:
 		return nil, errors.New("unknown extNetwork")
@@ -133,7 +133,7 @@ type manager struct {
 	portals     map[uint64]Portal // Note that this is mutable, Portals are updated by Deploy*Portals.
 	omniChainID uint64
 	relayerKey  *ecdsa.PrivateKey
-	sender      send.Sender
+	backends    backend.Backends
 }
 
 func (m *manager) DeployInfo() map[types.EVMChain]DeployInfo {
@@ -153,7 +153,7 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 			continue // Only log public chain balances.
 		}
 
-		txOpts, backend, err := m.sender.BindOpts(ctx, portal.Chain.ID)
+		txOpts, backend, err := m.backends.BindOpts(ctx, portal.Chain.ID)
 		if err != nil {
 			return errors.Wrap(err, "deploy opts", "chain", portal.Chain.Name)
 		}
@@ -177,9 +177,9 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 			continue // Only public chains are deployed here.
 		}
 
-		log.Info(ctx, "Deploying to", "chain", portal.Chain.Name)
+		log.Debug(ctx, "Deploying to", "chain", portal.Chain.Name)
 
-		txOpts, backend, err := m.sender.BindOpts(ctx, chainID)
+		txOpts, backend, err := m.backends.BindOpts(ctx, chainID)
 		if err != nil {
 			return errors.Wrap(err, "deploy opts", "chain", portal.Chain.Name)
 		}
@@ -218,7 +218,7 @@ func (m *manager) DeployPrivatePortals(ctx context.Context, valSetID uint64, val
 			continue // Public chains are already deployed.
 		}
 
-		txOpts, backend, err := m.sender.BindOpts(ctx, chainID)
+		txOpts, backend, err := m.backends.BindOpts(ctx, chainID)
 		if err != nil {
 			return errors.Wrap(err, "deploy opts", "chain", portal.Chain.Name)
 		}
@@ -261,7 +261,7 @@ func (m *manager) fundPrivateRelayer(ctx context.Context) error {
 			continue // We use relayer key for public chain, it should already be funded.
 		}
 
-		_, backend, err := m.sender.BindOpts(ctx, portal.Chain.ID)
+		_, backend, err := m.backends.BindOpts(ctx, portal.Chain.ID)
 		if err != nil {
 			return errors.Wrap(err, "deploy opts")
 		}
@@ -275,7 +275,7 @@ func (m *manager) fundPrivateRelayer(ctx context.Context) error {
 	return nil
 }
 
-func fundAddr(ctx context.Context, backend send.Backend, toAddr common.Address, ether int64) (*ethtypes.Transaction, error) {
+func fundAddr(ctx context.Context, backend backend.Backend, toAddr common.Address, ether int64) (*ethtypes.Transaction, error) {
 	tx, _, err := backend.Send(ctx, txmgr.TxCandidate{
 		To:       &toAddr,
 		GasLimit: 100_000, // 100k is fine,

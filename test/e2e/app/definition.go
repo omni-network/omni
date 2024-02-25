@@ -9,9 +9,9 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/test/e2e/backend"
 	"github.com/omni-network/omni/test/e2e/docker"
 	"github.com/omni-network/omni/test/e2e/netman"
-	"github.com/omni-network/omni/test/e2e/send"
 	"github.com/omni-network/omni/test/e2e/types"
 	"github.com/omni-network/omni/test/e2e/vmcompose"
 
@@ -55,10 +55,10 @@ func DefaultDefinitionConfig() DefinitionConfig {
 // Definition defines a e2e network. All (sub)commands of the e2e cli requires a definition operate.
 // Armed with a definition, a e2e network can be deployed, started, tested, stopped, etc.
 type Definition struct {
-	Testnet types.Testnet // Note that testnet is the cometBFT term.
-	Infra   types.InfraProvider
-	Netman  netman.Manager
-	Sender  send.Sender
+	Testnet  types.Testnet // Note that testnet is the cometBFT term.
+	Infra    types.InfraProvider
+	Netman   netman.Manager
+	Backends backend.Backends
 }
 
 func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
@@ -85,12 +85,12 @@ func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
 		return Definition{}, errors.Wrap(err, "loading testnet")
 	}
 
-	sender, err := send.New(testnet, cfg.DeployKeyFile)
+	backends, err := backend.New(testnet, cfg.DeployKeyFile)
 	if err != nil {
-		return Definition{}, errors.Wrap(err, "new sender")
+		return Definition{}, errors.Wrap(err, "new backends")
 	}
 
-	netman, err := netman.NewManager(testnet, sender, cfg.RelayerKeyFile)
+	netman, err := netman.NewManager(testnet, backends, cfg.RelayerKeyFile)
 	if err != nil {
 		return Definition{}, errors.Wrap(err, "get network")
 	}
@@ -106,10 +106,10 @@ func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
 	}
 
 	return Definition{
-		Testnet: testnet,
-		Infra:   infp,
-		Sender:  sender,
-		Netman:  netman,
+		Testnet:  testnet,
+		Infra:    infp,
+		Backends: backends,
+		Netman:   netman,
 	}, nil
 }
 

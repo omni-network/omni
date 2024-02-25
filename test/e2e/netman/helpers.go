@@ -10,7 +10,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/test/e2e/send"
+	"github.com/omni-network/omni/test/e2e/backend"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -19,29 +19,29 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-func deployOmniContracts(ctx context.Context, txOpts *bind.TransactOpts, ethCl send.Backend,
+func deployOmniContracts(ctx context.Context, txOpts *bind.TransactOpts, backend backend.Backend,
 	valSetID uint64, validators []bindings.Validator,
 ) (common.Address, *bindings.OmniPortal, error) {
 	// TODO: make these configurable
 	owner := txOpts.From
 	fee := new(big.Int).SetUint64(params.GWei)
 
-	proxyAdmin, err := DeployProxyAdmin(ctx, txOpts, ethCl)
+	proxyAdmin, err := DeployProxyAdmin(ctx, txOpts, backend)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "deploy proxy admin")
 	}
 
-	feeOracle, err := deployFeeOracleV1(ctx, txOpts, ethCl, proxyAdmin, owner, fee)
+	feeOracle, err := deployFeeOracleV1(ctx, txOpts, backend, proxyAdmin, owner, fee)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "deploy fee oracle")
 	}
 
-	portal, err := deployPortal(ctx, txOpts, ethCl, proxyAdmin, owner, feeOracle, valSetID, validators)
+	portal, err := deployPortal(ctx, txOpts, backend, proxyAdmin, owner, feeOracle, valSetID, validators)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "deploy portal")
 	}
 
-	contract, err := bindings.NewOmniPortal(portal, ethCl)
+	contract, err := bindings.NewOmniPortal(portal, backend)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "new portal")
 	}
@@ -49,7 +49,7 @@ func deployOmniContracts(ctx context.Context, txOpts *bind.TransactOpts, ethCl s
 	return portal, contract, nil
 }
 
-func DeployProxyAdmin(ctx context.Context, txOpts *bind.TransactOpts, ethCl send.Backend) (
+func DeployProxyAdmin(ctx context.Context, txOpts *bind.TransactOpts, ethCl backend.Backend) (
 	common.Address, error,
 ) {
 	proxyAdmin, tx, _, err := bindings.DeployProxyAdmin(txOpts, ethCl)
@@ -67,7 +67,7 @@ func DeployProxyAdmin(ctx context.Context, txOpts *bind.TransactOpts, ethCl send
 	return proxyAdmin, nil
 }
 
-func deployFeeOracleV1(ctx context.Context, txOpts *bind.TransactOpts, ethCl send.Backend,
+func deployFeeOracleV1(ctx context.Context, txOpts *bind.TransactOpts, ethCl backend.Backend,
 	proxyAdmin common.Address, owner common.Address, fee *big.Int,
 ) (common.Address, error) {
 	impl, tx, _, err := bindings.DeployFeeOracleV1(txOpts, ethCl)
@@ -107,7 +107,7 @@ func deployFeeOracleV1(ctx context.Context, txOpts *bind.TransactOpts, ethCl sen
 	return proxy, nil
 }
 
-func deployPortal(ctx context.Context, txOpts *bind.TransactOpts, ethCl send.Backend,
+func deployPortal(ctx context.Context, txOpts *bind.TransactOpts, ethCl backend.Backend,
 	proxyAdmin common.Address, owner common.Address, feeOracle common.Address, valSetID uint64,
 	validators []bindings.Validator,
 ) (common.Address, error) {
@@ -148,7 +148,7 @@ func deployPortal(ctx context.Context, txOpts *bind.TransactOpts, ethCl send.Bac
 	return proxy, nil
 }
 
-func logBalance(ctx context.Context, backend send.Backend, chain string, addr common.Address, name string,
+func logBalance(ctx context.Context, backend backend.Backend, chain string, addr common.Address, name string,
 ) error {
 	b, err := backend.BalanceAt(ctx, addr, nil)
 	if err != nil {

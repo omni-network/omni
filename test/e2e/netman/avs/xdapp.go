@@ -6,8 +6,8 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/test/e2e/backend"
 	"github.com/omni-network/omni/test/e2e/netman"
-	"github.com/omni-network/omni/test/e2e/send"
 	"github.com/omni-network/omni/test/e2e/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -22,7 +22,7 @@ type XDapp struct {
 	portalAddr  common.Address
 	chain       types.EVMChain
 	omniChainID uint64
-	sender      send.Sender
+	backends    backend.Backends
 
 	// Mutable state
 	contract     *bindings.OmniAVS
@@ -31,14 +31,14 @@ type XDapp struct {
 }
 
 func New(cfg AVSConfig, eigen EigenDeployments, portalAddr common.Address,
-	chain types.EVMChain, omniChainID uint64, sender send.Sender) *XDapp {
+	chain types.EVMChain, omniChainID uint64, backends backend.Backends) *XDapp {
 	return &XDapp{
 		cfg:         cfg,
 		eigen:       eigen,
 		portalAddr:  portalAddr,
 		chain:       chain,
 		omniChainID: omniChainID,
-		sender:      sender,
+		backends:    backends,
 	}
 }
 
@@ -49,7 +49,7 @@ func (d *XDapp) Deploy(ctx context.Context) error {
 
 	log.Info(ctx, "Deploying AVS contracts", "chain", d.chain.Name)
 
-	txOpts, backend, err := d.sender.BindOpts(ctx, d.chain.ID)
+	txOpts, backend, err := d.backends.BindOpts(ctx, d.chain.ID)
 	if err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func (d *XDapp) ExportDeployInfo(i types.DeployInfos) {
 	i.Set(d.chain.ID, types.ContractELPodManager, d.eigen.EigenPodManager, elHeight)
 }
 
-func (d *XDapp) deployOmniAVS(ctx context.Context, client send.Backend, txOpts *bind.TransactOpts,
+func (d *XDapp) deployOmniAVS(ctx context.Context, client backend.Backend, txOpts *bind.TransactOpts,
 	proxyAdmin common.Address, owner common.Address,
 ) (common.Address, error) {
 	impl, tx, _, err := bindings.DeployOmniAVS(txOpts, client, d.eigen.DelegationManager, d.eigen.AVSDirectory)
