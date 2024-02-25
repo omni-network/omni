@@ -263,6 +263,12 @@ func (*mockBackend) ChainID(ctx context.Context) (*big.Int, error) {
 	return big.NewInt(1), nil
 }
 
+func (b *mockBackend) TransactionByHash(ctx context.Context, txHash common.Hash) (*types.Transaction, bool, error) {
+	// Hard-coded to return false for isPending since we only care
+	// if the tx with the given txHash is pending or not.
+	return &types.Transaction{}, false, nil
+}
+
 // TransactionReceipt queries the mockBackend for a mined txHash. If none is found, nil is returned
 // for both return values. Otherwise, it returns a receipt containing the txHash, the gasFeeCap
 // used in GasUsed, and the blobFeeCap in CumuluativeGasUsed to make the values accessible from our
@@ -731,6 +737,12 @@ func (b *failingBackend) BlockNumber(ctx context.Context) (uint64, error) {
 	}
 
 	return 1, nil
+}
+
+func (*failingBackend) TransactionByHash(ctx context.Context, txHash common.Hash) (*types.Transaction, bool, error) {
+	// Hard-coded to return false for isPending since we only care
+	// if the tx with the given txHash is pending or not.
+	return &types.Transaction{}, false, nil
 }
 
 // TransactionReceipt for the failingBackend returns errRPCFailure on the first

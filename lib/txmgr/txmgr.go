@@ -56,19 +56,11 @@ type TxManager interface {
 // ETHBackend is the set of methods that the transaction manager uses to resubmit gas & determine
 // when transactions are included on L1.
 type ETHBackend interface {
-	// BlockNumber returns the most recent block number.
-	BlockNumber(ctx context.Context) (uint64, error)
-
-	// CallContract executes an eth_call against the provided contract.
-	CallContract(ctx context.Context, msg ethereum.CallMsg, blockNumber *big.Int) ([]byte, error)
-
-	// TransactionReceipt queries the backend for a receipt associated with
-	// txHash. If lookup does not fail, but the transaction is not found,
-	// nil should be returned for both values.
-	TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error)
-
-	// SendTransaction submits a signed transaction to L1.
-	SendTransaction(ctx context.Context, tx *types.Transaction) error
+	ethereum.BlockNumberReader
+	ethereum.ContractCaller
+	ethereum.GasEstimator
+	ethereum.TransactionReader
+	ethereum.TransactionSender
 
 	// These functions are used to estimate what the base fee & priority fee should be set to.
 	// TODO(CLI-3318): Maybe need a generic interface to support different RPC providers
@@ -79,9 +71,6 @@ type ETHBackend interface {
 	NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error)
 	// PendingNonceAt returns the pending nonce.
 	PendingNonceAt(ctx context.Context, account common.Address) (uint64, error)
-	// EstimateGas returns an estimate of the amount of gas needed to execute the given
-	// transaction against the current pending block.
-	EstimateGas(ctx context.Context, msg ethereum.CallMsg) (uint64, error)
 	// Close the underlying eth connection
 	Close()
 }
@@ -122,7 +111,7 @@ func (m *SimpleTxManager) From() common.Address {
 }
 
 func (m *SimpleTxManager) BlockNumber(ctx context.Context) (uint64, error) {
-	return m.backend.BlockNumber(ctx)
+	return m.backend.BlockNumber(ctx) //nolint:wrapcheck // false positive
 }
 
 // Close closes the underlying connection, and sets the closed flag.
@@ -495,16 +484,25 @@ func (m *SimpleTxManager) queryReceipt(ctx context.Context, txHash common.Hash,
 	sendState *SendState) (*types.Receipt, bool, error) {
 	ctx, cancel := context.WithTimeout(ctx, m.cfg.NetworkTimeout)
 	defer cancel()
+
+	// there are no receipts for pending transactions, therefore check if the
+	// transaction is pending first and only then proceed
+	_, pending, err := m.backend.TransactionByHash(ctx, txHash)
+	if err != nil {
+		return nil, false, errors.Wrap(err, "transaction by hash")
+	}
+	if pending {
+		return nil, false, nil // Just back off here
+	}
+
 	receipt, err := m.backend.TransactionReceipt(ctx, txHash)
 	if err != nil {
-		if strings.Contains(err.Error(), "transaction indexing is in progress") {
-			return nil, false, nil // Just back off here
-		} else if errors.Is(err, ethereum.NotFound) || strings.Contains(err.Error(), ethereum.NotFound.Error()) {
+		if errors.Is(err, ethereum.NotFound) || strings.Contains(err.Error(), ethereum.NotFound.Error()) {
 			sendState.TxNotMined(txHash)
 			return nil, false, nil
 		}
 
-		return nil, false, err
+		return nil, false, errors.Wrap(err, "transaction receipt")
 	}
 
 	// Receipt is confirmed to be valid from this point on
