@@ -38,4 +38,4 @@ The process of participating in the proof-of-stake (PoS) consensus mechanism of 
 
 ## Restaking
 
-Restaking functions as a set of smart contracts in which users that stake the asset (in Omni's case $ETH) can repurpose their locked asset to extend cryptoeconomic security to other applications built on the network. EigenLayer supports restaking $ETH, creating an opt-in middle layer where users agree to grant EigenLayer additional enforcement rights on their staked $ETH, enabling it to be effectively restaked onto other applications.
+Restaking functions as a set of smart contracts in which users that stake the asset (in Omni's case \$ETH) can repurpose their locked asset to extend cryptoeconomic security to other applications built on the network. EigenLayer supports restaking \$ETH, creating an opt-in middle layer where users agree to grant EigenLayer additional enforcement rights on their staked \$ETH, enabling it to be effectively restaked onto other applications.
