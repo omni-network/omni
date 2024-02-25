@@ -134,9 +134,9 @@ const config: Config = {
       // The application ID provided by Algolia
       appId: "YGLZ6VW4T5", // pragma: allowlist secret
       // Public API key: it is safe to commit it
-      apiKey: "b2cac1111a5f723ffcc9b11008094448", // pragma: allowlist secret
+      apiKey: "64557e587da746830ff903f126eb134b", // pragma: allowlist secret
       indexName: "omni",
-      contextualSearch: true,
+      contextualSearch: false,
       searchParameters: {
         clickAnalytics: true,
         analytics: true,
