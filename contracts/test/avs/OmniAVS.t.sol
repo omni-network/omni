@@ -380,6 +380,30 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
         omniAVS.registerOperatorToAVS(operator, emptySig);
     }
 
+    /// @dev Test that the owner can deregister an operator
+    function test_deregisterOperator_byOwner_succeeds() public {
+        address operator = _operator(0);
+
+        // register operator
+        _registerAsOperator(operator);
+        _addToAllowlist(operator);
+        _depositBeaconEth(operator, minimumOperatorStake);
+        _registerOperatorWithAVS(operator);
+
+        // assert operator is registered
+        OmniAVS.Validator[] memory validators = omniAVS.getValidators();
+        assertEq(validators.length, 1);
+        assertEq(validators[0].addr, operator);
+
+        // deregister operator
+        vm.prank(omniAVSOwner);
+        omniAVS.deregisterOperatorFromAVS(operator);
+
+        // assert operator is deregistered
+        validators = omniAVS.getValidators();
+        assertEq(validators.length, 0);
+    }
+
     /// @dev Test that an operator can be added to the allowlist
     function test_addToAllowlist_succeeds() public {
         address operator = makeAddr("operator");
