@@ -104,6 +104,11 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     /// @inheritdoc IServiceManager
     function deregisterOperatorFromAVS(address operator) external {
         require(msg.sender == operator, "OmniAVS: only operator");
+        _deregsiterOperatorFromAVS(operator);
+    }
+
+    /// @dev Deregisters an operator from AVS
+    function _deregsiterOperatorFromAVS(address operator) internal {
         require(_isOperator(operator), "OmniAVS: not an operator");
 
         _avsDirectory.deregisterOperatorFromAVS(operator);
@@ -328,30 +333,41 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
 
     /// @inheritdoc IOmniAVSAdmin
     function addToAllowlist(address operator) external onlyOwner {
-        require(operator != address(0), "OmniAVS: zero address");
-        require(!_allowlist[operator], "OmniAVS: already in allowlist");
-        _allowlist[operator] = true;
-        emit OperatorAllowed(operator);
+        _addToAllowlist(operator);
     }
 
     /// @inheritdoc IOmniAVSAdmin
     function removeFromAllowlist(address operator) external onlyOwner {
-        require(_allowlist[operator], "OmniAVS: not in allowlist");
-        _allowlist[operator] = false;
-        emit OperatorDisallowed(operator);
+        _removeFromAllowlist(operator);
     }
 
     /// @inheritdoc IOmniAVSAdmin
     function ejectOperator(address operator) external onlyOwner {
         require(_isOperator(operator), "OmniAVS: not an operator");
 
-        _removeOperator(operator);
-        _avsDirectory.deregisterOperatorFromAVS(operator);
+        _removeFromAllowlist(operator);
+        _deregsiterOperatorFromAVS(operator);
+
+        emit OperatorEjected(operator);
+    }
+
+    /// @dev Add an operator to the allowlist
+    function _addToAllowlist(address operator) internal {
+        require(operator != address(0), "OmniAVS: zero address");
+        require(!_allowlist[operator], "OmniAVS: already in allowlist");
+
+        _allowlist[operator] = true;
+
+        emit OperatorAllowed(operator);
+    }
+
+    /// @dev Remove an operator from the allowlist
+    function _removeFromAllowlist(address operator) internal {
+        require(_allowlist[operator], "OmniAVS: not in allowlist");
+
         _allowlist[operator] = false;
 
-        emit OperatorRemoved(operator);
         emit OperatorDisallowed(operator);
-        emit OperatorEjected(operator);
     }
 
     /// @dev Set the strategy parameters
