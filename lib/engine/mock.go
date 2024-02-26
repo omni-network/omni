@@ -41,7 +41,7 @@ func NewMock() (*Mock, error) {
 		fuzzer = NewFuzzer(timestamp)
 	)
 
-	genesisPayload, err := makePayload(fuzzer, height, uint64(timestamp), parentHash)
+	genesisPayload, err := makePayload(fuzzer, height, uint64(timestamp), parentHash, common.Address{})
 	if err != nil {
 		return nil, errors.Wrap(err, "make next payload")
 	}
@@ -117,10 +117,6 @@ func (m *Mock) ForkchoiceUpdatedV2(ctx context.Context, update engine.Forkchoice
 				return engine.ForkChoiceResponse{}, errors.Wrap(err, "executable data to block")
 			}
 
-			if block.Hash() != update.HeadBlockHash {
-				continue
-			}
-
 			if err := verifyChild(m.head, block); err != nil {
 				return engine.ForkChoiceResponse{}, err
 			}
@@ -138,7 +134,7 @@ func (m *Mock) ForkchoiceUpdatedV2(ctx context.Context, update engine.Forkchoice
 
 	// If we have payload attributes, make a new payload
 	if attrs != nil {
-		payload, err := makePayload(m.fuzzer, m.head.NumberU64()+1, attrs.Timestamp, update.HeadBlockHash)
+		payload, err := makePayload(m.fuzzer, m.head.NumberU64()+1, attrs.Timestamp, update.HeadBlockHash, attrs.SuggestedFeeRecipient)
 		if err != nil {
 			return engine.ForkChoiceResponse{}, err
 		}
@@ -192,7 +188,7 @@ func (*Mock) GetPayloadV3(context.Context, engine.PayloadID) (*engine.ExecutionP
 }
 
 // payloadFromHeader returns a new fuzzed payload using head as parent if provided.
-func makePayload(fuzzer *fuzz.Fuzzer, height uint64, timestamp uint64, parentHash common.Hash,
+func makePayload(fuzzer *fuzz.Fuzzer, height uint64, timestamp uint64, parentHash common.Hash, feeRecipient common.Address,
 ) (engine.ExecutableData, error) {
 	// Build a new header
 	var header types.Header
@@ -200,6 +196,8 @@ func makePayload(fuzzer *fuzz.Fuzzer, height uint64, timestamp uint64, parentHas
 	header.Number = big.NewInt(int64(height))
 	header.Time = timestamp
 	header.ParentHash = parentHash
+	header.Coinbase = feeRecipient
+	header.MixDigest = parentHash
 
 	// Convert header to block
 	block := types.NewBlock(&header, nil, nil, nil, trie.NewStackTrie(nil))
@@ -246,4 +244,11 @@ func verifyChild(parent *types.Block, child *types.Block) error {
 	}
 
 	return nil
+}
+
+func (m *Mock) Payloads() map[engine.PayloadID]engine.ExecutableData {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	return m.payloads
 }
