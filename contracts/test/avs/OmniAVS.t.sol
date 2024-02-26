@@ -444,6 +444,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
 
         validators = omniAVS.getValidators();
         assertEq(validators.length, 0);
+        assertFalse(omniAVS.isInAllowlist(operator));
     }
 
     /// @dev Test that only the owner can eject an operator
