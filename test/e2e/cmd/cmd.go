@@ -115,7 +115,7 @@ func newUpgradeCmd(def *app.Definition) *cobra.Command {
 		Use:   "upgrade",
 		Short: "Upgrades docker containers of a previously preserved network",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return def.Infra.Upgrade(cmd.Context())
+			return app.Upgrade(cmd.Context(), *def)
 		},
 	}
 }

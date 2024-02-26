@@ -156,6 +156,16 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, prom PromSe
 	return nil
 }
 
+// Upgrade generates all local artifacts, but only copies the docker-compose file to the VMs.
+// It them calls docker-compose up.
+func Upgrade(ctx context.Context, def Definition) error {
+	if err := Setup(ctx, def, PromSecrets{}); err != nil {
+		return err
+	}
+
+	return def.Infra.Upgrade(ctx)
+}
+
 // toPortalValidators returns the provided validator set as a lice of portal validators.
 func toPortalValidators(validators map[*e2e.Node]int64) ([]bindings.Validator, error) {
 	vals := make([]bindings.Validator, 0, len(validators))
