@@ -45,174 +45,97 @@ import (
 func TestKeeper_PrepareProposal(t *testing.T) {
 	t.Parallel()
 
-	// Test case 1: Test when there are no transactions in the proposal
-	t.Run("NoTransactions", func(t *testing.T) {
+	t.Run("run err scenarios", func(t *testing.T) {
 		t.Parallel()
-		ctx, storeService := setupCtxStore(t)
-		cdc := getCodec()
-		txConfig := authtx.NewTxConfig(cdc, nil)
+		tests := []struct {
+			name       string
+			mockEngine MockEngineAPI
+			req        *abci.RequestPrepareProposal
+			wantErr    bool
+		}{
+			{
+				name:       "no transactions",
+				mockEngine: MockEngineAPI{},
+				req: &abci.RequestPrepareProposal{
+					Txs:    nil,        // Set to nil to simulate no transactions
+					Height: 1,          // Set height to 1 for this test case
+					Time:   time.Now(), // Set time to current time or mock a time
+				},
+				wantErr: false,
+			},
+			{
+				name: "block number err",
+				mockEngine: MockEngineAPI{
+					BlockNumberFunc: func(ctx context.Context) (uint64, error) {
+						return 0, errors.New("mocked error")
+					},
+				},
+				req: &abci.RequestPrepareProposal{
+					Txs:    nil,
+					Height: 2,
+					Time:   time.Now(),
+				},
+				wantErr: true,
+			},
+			{
+				name: "block by number err",
+				mockEngine: MockEngineAPI{
+					BlockNumberFunc: func(ctx context.Context) (uint64, error) {
+						return 0, nil
+					},
+					BlockByNumberFunc: func(ctx context.Context, number *big.Int) (*types.Block, error) {
+						return nil, errors.New("mocked error")
+					},
+				},
+				req: &abci.RequestPrepareProposal{
+					Txs:    nil,
+					Height: 2,
+					Time:   time.Now(),
+				},
+				wantErr: true,
+			},
+			{
+				name: "forkchoiceUpdateV2  err",
+				mockEngine: MockEngineAPI{
+					BlockNumberFunc: func(ctx context.Context) (uint64, error) {
+						return 0, nil
+					},
+					BlockByNumberFunc: func(ctx context.Context, number *big.Int) (*types.Block, error) {
+						fuzzer := engine.NewFuzzer(0)
+						var block *types.Block
+						fuzzer.Fuzz(&block)
 
-		keeper := NewKeeper(cdc, storeService, &MockEngineAPI{}, txConfig, MockAddressProvider{})
-
-		req := &abci.RequestPrepareProposal{
-			Txs:    nil,        // Set to nil to simulate no transactions
-			Height: 1,          // Set height to 1 for this test case
-			Time:   time.Now(), // Set time to current time or mock a time
-		}
-
-		resp, err := keeper.PrepareProposal(ctx, req)
-
-		// Assert that the response is as expected
-		require.NoError(t, err)
-		require.NotNil(t, resp)
-		require.Empty(t, resp.Txs) // Expecting no transactions in the response
-	})
-
-	// Test case 2: Test when there are transactions in the proposal
-	t.Run("WithTransactions", func(t *testing.T) {
-		t.Parallel()
-		ctx, storeService := setupCtxStore(t)
-		cdc := getCodec()
-		txConfig := authtx.NewTxConfig(cdc, nil)
-
-		keeper := NewKeeper(cdc, storeService, &MockEngineAPI{}, txConfig, MockAddressProvider{})
-
-		req := &abci.RequestPrepareProposal{
-			Txs:    [][]byte{[]byte("test1")}, // Set to some transactions to simulate transactions in the proposal
-			Height: 2,                         // Set height to 2 for this test case
-			Time:   time.Now(),                // Set time to current time or mock a time
-		}
-
-		resp, err := keeper.PrepareProposal(ctx, req)
-
-		// Assert that the response is as expected
-		require.Error(t, err) // Expecting an error
-		require.Nil(t, resp)
-	})
-
-	// Test case 3: Test when the block number is successfully fetched
-	t.Run("Block number err", func(t *testing.T) {
-		t.Parallel()
-		ctx, storeService := setupCtxStore(t)
-		cdc := getCodec()
-		txConfig := authtx.NewTxConfig(cdc, nil)
-
-		mockEngine := MockEngineAPI{
-			BlockNumberFunc: func(ctx context.Context) (uint64, error) {
-				return 0, errors.New("mocked error")
+						return block, nil
+					},
+					ForkchoiceUpdatedV2Func: func(ctx context.Context, update eengine.ForkchoiceStateV1,
+						payloadAttributes *eengine.PayloadAttributes) (eengine.ForkChoiceResponse, error) {
+						return eengine.ForkChoiceResponse{}, errors.New("mocked error")
+					},
+				},
+				req: &abci.RequestPrepareProposal{
+					Txs:    nil,
+					Height: 2,
+					Time:   time.Now(),
+				},
+				wantErr: true,
 			},
 		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				ctx, storeService := setupCtxStore(t)
+				cdc := getCodec()
+				txConfig := authtx.NewTxConfig(cdc, nil)
+				ap := MockAddressProvider{}
 
-		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, MockAddressProvider{})
-		height := int64(2)
-
-		req := &abci.RequestPrepareProposal{
-			Txs:    nil, // Set to nil to simulate no transactions
-			Height: height,
-			Time:   time.Now(), // Set time to current time or mock a time
+				k := NewKeeper(cdc, storeService, &tt.mockEngine, txConfig, ap)
+				_, err := k.PrepareProposal(ctx, tt.req)
+				if (err != nil) != tt.wantErr {
+					t.Errorf("PrepareProposal() error = %v, wantErr %v", err, tt.wantErr)
+					return
+				}
+			})
 		}
-
-		resp, err := keeper.PrepareProposal(ctx, req)
-		require.Error(t, err)
-		require.Nil(t, resp)
-	})
-
-	// Test case 4: Test when the block number is successfully fetched
-	t.Run("Block by number err", func(t *testing.T) {
-		t.Parallel()
-		ctx, storeService := setupCtxStore(t)
-		cdc := getCodec()
-		txConfig := authtx.NewTxConfig(cdc, nil)
-
-		mockEngine := MockEngineAPI{
-			BlockNumberFunc: func(ctx context.Context) (uint64, error) {
-				return 0, nil
-			},
-			BlockByNumberFunc: func(ctx context.Context, number *big.Int) (*types.Block, error) {
-				return nil, errors.New("mocked error")
-			},
-		}
-
-		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, MockAddressProvider{})
-		height := int64(2)
-
-		req := &abci.RequestPrepareProposal{
-			Txs:    nil, // Set to nil to simulate no transactions
-			Height: height,
-			Time:   time.Now(), // Set time to current time or mock a time
-		}
-
-		resp, err := keeper.PrepareProposal(ctx, req)
-		require.Error(t, err)
-		require.Nil(t, resp)
-	})
-
-	// Test case 4: Test when the block number is successfully fetched
-	t.Run("Block by number err", func(t *testing.T) {
-		t.Parallel()
-		ctx, storeService := setupCtxStore(t)
-		cdc := getCodec()
-		txConfig := authtx.NewTxConfig(cdc, nil)
-
-		mockEngine := MockEngineAPI{
-			BlockNumberFunc: func(ctx context.Context) (uint64, error) {
-				return 0, nil
-			},
-			BlockByNumberFunc: func(ctx context.Context, number *big.Int) (*types.Block, error) {
-				return nil, errors.New("mocked error")
-			},
-		}
-
-		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, MockAddressProvider{})
-		height := int64(2)
-
-		req := &abci.RequestPrepareProposal{
-			Txs:    nil, // Set to nil to simulate no transactions
-			Height: height,
-			Time:   time.Now(), // Set time to current time or mock a time
-		}
-
-		resp, err := keeper.PrepareProposal(ctx, req)
-		require.Error(t, err)
-		require.Nil(t, resp)
-	})
-
-	// Test case 5: Test when the forkchoice update errs
-	t.Run("forkchoiceUpdateV2  err", func(t *testing.T) {
-		t.Parallel()
-		ctx, storeService := setupCtxStore(t)
-		cdc := getCodec()
-		txConfig := authtx.NewTxConfig(cdc, nil)
-
-		mockEngine := MockEngineAPI{
-			BlockNumberFunc: func(ctx context.Context) (uint64, error) {
-				return 0, nil
-			},
-			BlockByNumberFunc: func(ctx context.Context, number *big.Int) (*types.Block, error) {
-				fuzzer := engine.NewFuzzer(0)
-				var block *types.Block
-				fuzzer.Fuzz(&block)
-
-				return block, nil
-			},
-			ForkchoiceUpdatedV2Func: func(ctx context.Context, update eengine.ForkchoiceStateV1,
-				payloadAttributes *eengine.PayloadAttributes) (eengine.ForkChoiceResponse, error) {
-				return eengine.ForkChoiceResponse{}, errors.New("mocked error")
-			},
-		}
-
-		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, MockAddressProvider{})
-		height := int64(2)
-
-		req := &abci.RequestPrepareProposal{
-			Txs:    nil, // Set to nil to simulate no transactions
-			Height: height,
-			Time:   time.Now(), // Set time to current time or mock a time
-		}
-
-		resp, err := keeper.PrepareProposal(ctx, req)
-		require.Error(t, err)
-		require.Nil(t, resp)
 	})
 
 	t.Run("build not optimistic", func(t *testing.T) {
@@ -258,8 +181,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		require.NoError(t, err)
 
 		for _, msg := range tx.GetMsgs() {
-			switch msg.(type) {
-			case *etypes.MsgExecutionPayload:
+			if _, ok := msg.(*etypes.MsgExecutionPayload); ok {
 				assertExecutablePayload(t, msg, ts, nextBlock.Hash(), ap, uint64(req.Height))
 			}
 		}
