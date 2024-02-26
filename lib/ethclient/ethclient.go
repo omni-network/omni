@@ -66,14 +66,14 @@ func (w Wrapper) Close() {
 
 // HeaderByType returns the block header for the given head type.
 func (w Wrapper) HeaderByType(ctx context.Context, typ HeadType) (*types.Header, error) {
-	const endpoint = "eth_getBlockByNumber"
+	const endpoint = "header_by_type"
 	defer latency(w.chain, endpoint)() //nolint:revive // Defer chain is fine here.
 
 	var header *types.Header
 	err := w.cl.Client().CallContext(
 		ctx,
 		&header,
-		endpoint,
+		"eth_getBlockByNumber",
 		typ.String(),
 		false,
 	)

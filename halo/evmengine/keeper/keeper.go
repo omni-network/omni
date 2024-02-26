@@ -7,8 +7,8 @@ import (
 
 	"github.com/omni-network/omni/halo/comet"
 	"github.com/omni-network/omni/halo/evmengine/types"
-	"github.com/omni-network/omni/lib/engine"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/k1util"
 
 	eengine "github.com/ethereum/go-ethereum/beacon/engine"
@@ -23,7 +23,7 @@ import (
 type Keeper struct {
 	cdc             codec.BinaryCodec
 	storeService    store.KVStoreService
-	ethCl           engine.API
+	engineCl        ethclient.EngineClient
 	txConfig        client.TxConfig
 	providers       []types.CPayloadProvider
 	cmtAPI          comet.API
@@ -45,14 +45,14 @@ type Keeper struct {
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService store.KVStoreService,
-	ethCl engine.API,
+	engineCl ethclient.EngineClient,
 	txConfig client.TxConfig,
 	addrProvider types.AddressProvider,
 ) *Keeper {
 	return &Keeper{
 		cdc:          cdc,
 		storeService: storeService,
-		ethCl:        ethCl,
+		engineCl:     engineCl,
 		txConfig:     txConfig,
 		addrProvider: addrProvider,
 	}

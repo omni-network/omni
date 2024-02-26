@@ -5,8 +5,8 @@ import (
 	atypes "github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/halo/comet"
 	evmengkeeper "github.com/omni-network/omni/halo/evmengine/keeper"
-	"github.com/omni-network/omni/lib/engine"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 
 	"cosmossdk.io/depinject"
 	"cosmossdk.io/log"
@@ -61,7 +61,7 @@ type App struct {
 func newApp(
 	logger log.Logger,
 	db dbm.DB,
-	ethCl engine.API,
+	engineCl ethclient.EngineClient,
 	voter atypes.Voter,
 	namer atypes.ChainNameFunc,
 	baseAppOpts ...func(*baseapp.BaseApp),
@@ -69,7 +69,7 @@ func newApp(
 	depCfg := depinject.Configs(
 		DepConfig(),
 		depinject.Supply(
-			logger, ethCl, voter, namer,
+			logger, engineCl, voter, namer,
 		),
 	)
 

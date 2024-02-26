@@ -7,7 +7,6 @@ import (
 	"github.com/omni-network/omni/halo/attest/voter"
 	"github.com/omni-network/omni/halo/comet"
 	halocfg "github.com/omni-network/omni/halo/config"
-	"github.com/omni-network/omni/lib/engine"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/gitinfo"
@@ -100,7 +99,7 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 		return nil, errors.Wrap(err, "validate network configuration")
 	}
 
-	ethCl, err := newEngineClient(ctx, cfg, network)
+	engineCl, err := newEngineClient(ctx, cfg, network)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +119,7 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 	app, err := newApp(
 		newSDKLogger(ctx),
 		db,
-		ethCl,
+		engineCl,
 		voterI,
 		network.ChainName,
 		baseAppOpts...,
@@ -261,12 +260,12 @@ func chainIDFromGenesis(cfg Config) (string, error) {
 }
 
 // newEngineClient returns a new engine API client.
-func newEngineClient(ctx context.Context, cfg Config, network netconf.Network) (engine.API, error) {
+func newEngineClient(ctx context.Context, cfg Config, network netconf.Network) (ethclient.EngineClient, error) {
 	if network.Name == netconf.Simnet {
-		return engine.NewMock()
+		return ethclient.NewEngineMock()
 	}
 
-	jwtBytes, err := engine.LoadJWTHexFile(cfg.EngineJWTFile)
+	jwtBytes, err := ethclient.LoadJWTHexFile(cfg.EngineJWTFile)
 	if err != nil {
 		return nil, errors.Wrap(err, "load engine JWT file")
 	}
@@ -276,12 +275,12 @@ func newEngineClient(ctx context.Context, cfg Config, network netconf.Network) (
 		return nil, errors.New("omni chain not found in network")
 	}
 
-	ethCl, err := engine.NewClient(ctx, omniChain.AuthRPCURL, jwtBytes)
+	engineCl, err := ethclient.NewAuthClient(ctx, omniChain.AuthRPCURL, jwtBytes)
 	if err != nil {
 		return nil, errors.Wrap(err, "create engine client")
 	}
 
-	return ethCl, nil
+	return engineCl, nil
 }
 
 // enableSDKTelemetry enables prometheus based cosmos-sdk telemetry.

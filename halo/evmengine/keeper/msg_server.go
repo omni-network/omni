@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/halo/evmengine/types"
-	engineapi "github.com/omni-network/omni/lib/engine"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
@@ -29,7 +29,7 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 		return nil, errors.New("only allowed in finalize mode")
 	}
 
-	payload, err := pushPayload(ctx, s.ethCl, msg)
+	payload, err := pushPayload(ctx, s.engineCl, msg)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +63,7 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 		}
 	}
 
-	fcr, err := s.ethCl.ForkchoiceUpdatedV2(ctx, fcs, attrs)
+	fcr, err := s.engineCl.ForkchoiceUpdatedV2(ctx, fcs, attrs)
 	if err != nil {
 		return nil, err
 	} else if fcr.PayloadStatus.Status != engine.VALID {
@@ -79,7 +79,7 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 
 // pushPayload creates a new payload from the given message and pushes it to the execution client.
 // It returns the new forkchoice state.
-func pushPayload(ctx context.Context, ethCl engineapi.API, msg *types.MsgExecutionPayload,
+func pushPayload(ctx context.Context, engineCl ethclient.EngineClient, msg *types.MsgExecutionPayload,
 ) (engine.ExecutableData, error) {
 	var payload engine.ExecutableData
 	if err := json.Unmarshal(msg.Data, &payload); err != nil {
@@ -87,7 +87,7 @@ func pushPayload(ctx context.Context, ethCl engineapi.API, msg *types.MsgExecuti
 	}
 
 	// Push it back to the execution client (mark it as possible new head).
-	status, err := ethCl.NewPayloadV2(ctx, payload)
+	status, err := engineCl.NewPayloadV2(ctx, payload)
 	if err != nil {
 		return engine.ExecutableData{}, errors.Wrap(err, "new payload")
 	} else if status.Status != engine.VALID {
