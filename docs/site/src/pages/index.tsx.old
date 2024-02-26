@@ -39,5 +39,5 @@ export default function Home(): JSX.Element {
   //     </main>
   //   </Layout>
   // );
-  return <Redirect to="/home" />;
+  return <Redirect to="/" />;
 }

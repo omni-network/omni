@@ -1,6 +1,8 @@
 ---
 sidebar_position: 1
 id: home
+displayed_sidebar: mainSidebar
+slug: /
 ---
 
 # Home
