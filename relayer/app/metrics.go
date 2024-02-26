@@ -75,4 +75,11 @@ var (
 		Name:      "head_height",
 		Help:      "The latest height of different types of head blocks on a specific chain",
 	}, []string{"chain", "type"})
+
+	attestedHeight = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "relayer",
+		Subsystem: "monitor",
+		Name:      "halo_attested_height",
+		Help:      "The latest halo attested height of a specific chain",
+	}, []string{"chain"})
 )

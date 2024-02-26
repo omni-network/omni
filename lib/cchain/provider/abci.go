@@ -24,6 +24,7 @@ func NewABCIProvider(abci rpcclient.ABCIClient, chains map[uint64]string) Provid
 
 	return Provider{
 		fetch:       newABCIFetchFunc(cl),
+		latest:      newABCILatestFunc(cl),
 		backoffFunc: backoffFunc,
 		chainNames:  chains,
 	}
@@ -46,6 +47,25 @@ func newABCIFetchFunc(cl atypes.QueryClient) func(ctx context.Context, chainID u
 		}
 
 		return atts, nil
+	}
+}
+
+func newABCILatestFunc(cl atypes.QueryClient) func(ctx context.Context, chainID uint64,
+) (xchain.Attestation, error) {
+	return func(ctx context.Context, chainID uint64) (xchain.Attestation, error) {
+		resp, err := cl.LatestAttestation(ctx, &atypes.LatestAttestationRequest{
+			ChainId: chainID,
+		})
+		if err != nil {
+			return xchain.Attestation{}, errors.Wrap(err, "abci query approved-from")
+		}
+
+		att, err := atypes.AttestationFromProto(resp.Attestation)
+		if err != nil {
+			return xchain.Attestation{}, errors.Wrap(err, "attestations from proto")
+		}
+
+		return att, nil
 	}
 }
 
