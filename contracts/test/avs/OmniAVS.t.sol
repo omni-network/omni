@@ -417,4 +417,49 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
         vm.expectRevert("Ownable: caller is not the owner");
         omniAVS.removeFromAllowlist(operator);
     }
+
+    /// @dev Test that an owner can eject an operator
+    function test_ejectOperator_succeeds() public {
+        address operator = _operator(0);
+        uint96 amount = minimumOperatorStake;
+
+        // register operator
+
+        _registerAsOperator(operator);
+        _addToAllowlist(operator);
+        _depositBeaconEth(operator, amount);
+        _registerOperatorWithAVS(operator);
+
+        OmniAVS.Validator[] memory validators = omniAVS.getValidators();
+
+        assertEq(validators.length, 1);
+        assertEq(validators[0].addr, operator);
+        assertEq(validators[0].staked, amount);
+        assertEq(validators[0].delegated, 0);
+
+        // eject operator
+
+        vm.prank(omniAVSOwner);
+        omniAVS.ejectOperator(operator);
+
+        validators = omniAVS.getValidators();
+        assertEq(validators.length, 0);
+    }
+
+    /// @dev Test that only the owner can eject an operator
+    function test_ejectOperator_notOwner_reverts() public {
+        address operator = makeAddr("operator");
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        omniAVS.ejectOperator(operator);
+    }
+
+    /// @dev Test that an operator needs to exist to be ejected
+    function test_ejectOperator_notExist_reverts() public {
+        address operator = makeAddr("operator");
+
+        vm.expectRevert("OmniAVS: not an operator");
+        vm.prank(omniAVSOwner);
+        omniAVS.ejectOperator(operator);
+    }
 }

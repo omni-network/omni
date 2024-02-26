@@ -341,6 +341,19 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
         emit OperatorDisallowed(operator);
     }
 
+    /// @inheritdoc IOmniAVSAdmin
+    function ejectOperator(address operator) external onlyOwner {
+        require(_isOperator(operator), "OmniAVS: not an operator");
+
+        _removeOperator(operator);
+        _avsDirectory.deregisterOperatorFromAVS(operator);
+        _allowlist[operator] = false;
+
+        emit OperatorRemoved(operator);
+        emit OperatorDisallowed(operator);
+        emit OperatorEjected(operator);
+    }
+
     /// @dev Set the strategy parameters
     function _setStrategyParams(StrategyParams[] calldata params) internal {
         delete _strategyParams;
