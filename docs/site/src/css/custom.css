@@ -90,6 +90,10 @@ body {
   background: var(--navbar-color);
 }
 
+article nav[aria-label='Breadcrumbs'] {
+  display: none;
+}
+
 .clean-btn:hover {
   color: var(--ifm-color-primary);
 }
@@ -132,18 +136,27 @@ svg text {
 .sidebar-separator {
   margin-top: 1em;
   margin-bottom: 0.5em;
-  border-top: 0.5px solid var(--ifm-color-emphasis-300);
+  height: 0.5px; /* This sets the thickness of the line */
+  background: linear-gradient(to right, var(--ifm-color-emphasis-300), rgba(255, 255, 255, 0));
+  border: none; /* Remove the solid border */
 }
 
-.sidebar-title {
-  font-family: 'Inter', sans-serif;
-  /* font: caption; */
-  font-size: 1em;
-  font-weight: bold;
-  margin-top: 0.6em;
-  /* font-weight: 500; */
-  /* text-transform: uppercase; */
-  color: var(--ifm-color-primary-darker);
-  /* border-left: 4px solid var(--ifm-color-primary); */
-  /* border-radius: 2px; */
+.sidebar-title > div a {
+  text-transform: uppercase;
+  font-size: 0.85em;
+  color: var(--ifm-color-primary-darker) !important;
+  font-family: 'Inter';
+}
+
+.sidebar-title > div:hover {
+  background-color: transparent;
+}
+
+h1:after {
+  content: '';
+  display: block;
+  width: 100%; /* This ensures the gradient spans the entire width of the title */
+  height: 0.5px; /* This sets the thickness of the line */
+  background: linear-gradient(to right, var(--ifm-color-primary-darkest), rgba(255, 255, 255, 0));
+  margin-top: 14px; /* Adjust the spacing as needed */
 }
