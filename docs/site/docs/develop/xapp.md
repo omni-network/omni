@@ -63,8 +63,8 @@ contract XGreeter is XApp {
     }
 
     /// @dev Greet on this chain
-    ///      The `xfunc` modifier reads the current xmsg into `xmsg` storage
-    function greet(string calldata greeting) external xfunc {
+    ///      The `xrecv` modifier reads the current xmsg into `xmsg` storage
+    function greet(string calldata greeting) external xrecv {
         require(isXCall(), "XGreeter: only xcall");
         emit Greetings(xmsg.sender, xmsg.sourceChainId, greeting);
     }
@@ -103,7 +103,7 @@ function xgreet(uint64 destChainId, address to, string calldata greeting) extern
 
 <br />
 
-### `xmsg`
+### `xrecv`
 
 When receiving an `xcall`, you can read its context via `omni.xmsg()`.
 
@@ -123,21 +123,21 @@ function greet(string calldata greeting) external {
 
 <br />
 
-For convenience, `XApp` defines the `xfunc` modifier. This modifier reads the current xmsg into storage, and deletes after its function's execution.
+For convenience, `XApp` defines the `xrecv` modifier. This modifier reads the current xmsg into storage, and deletes after its function's execution.
 
 ```solidity
-modifier xfunc() {
+modifier xrecv() {
     xmsg = omni.xmsg();
     _;
     delete xmsg;
 }
 ```
 
-It also visually marks a function as the target of an `xcall`. Though, the `xfunc` modifier is not required to receive an `xcall`. Using this modifier, we can simplify our `XGreeter` a bit further.
+It also visually marks a function as the target of an `xcall`. Though, the `xrecv` modifier is not required to receive an `xcall`. Using this modifier, we can simplify our `XGreeter` a bit further.
 
 
 ```solidity
-function greet(string calldata greeting) external xfunc {
+function greet(string calldata greeting) external xrecv {
     emit Greetings(xmsg.sender, xmsg.sourceChainId, greeting);
 }
 ```
@@ -165,7 +165,7 @@ Note that not only does `isXCall` check with the portal that the current transac
 
 
 ```solidity
-function greet(string calldata greeting) external xfunc  {
+function greet(string calldata greeting) external xrecv  {
     require(isXCall(), "XGreeter: only xcall");
     emit Greetings(xmsg.sender, xmsg.sourceChainId, greeting);
 }

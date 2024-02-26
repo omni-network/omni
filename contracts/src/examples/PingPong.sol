@@ -34,7 +34,7 @@ contract PingPong is XApp {
      * @param times The pingpongs in the loop
      * @param n The number of xcalls left to make
      */
-    function pingpong(uint64 times, uint64 n) external xfunc {
+    function pingpong(uint64 times, uint64 n) external xrecv {
         require(isXCall(), "PingPong: not an omni xcall");
 
         if (n == 0) {
