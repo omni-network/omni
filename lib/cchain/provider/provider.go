@@ -12,22 +12,27 @@ import (
 
 var _ cchain.Provider = Provider{}
 
-// FetchFunc abstracts fetching attestation from the consensus chain.
+// FetchFunc abstracts fetching attestations from the consensus chain.
 type FetchFunc func(ctx context.Context, chainID uint64, fromHeight uint64,
 ) ([]xchain.Attestation, error)
+
+// LatestFunc abstracts fetching the latest attestation from the consensus chain.
+type LatestFunc func(ctx context.Context, chainID uint64) (xchain.Attestation, error)
 
 // Provider implements cchain.Provider.
 type Provider struct {
 	fetch       FetchFunc
+	latest      LatestFunc
 	backoffFunc func(context.Context) (func(), func())
 	chainNames  map[uint64]string
 }
 
 // NewProviderForT creates a new provider for testing.
-func NewProviderForT(_ *testing.T, fetch FetchFunc,
+func NewProviderForT(_ *testing.T, fetch FetchFunc, latest LatestFunc,
 	backoffFunc func(context.Context) (func(), func()),
 ) Provider {
 	return Provider{
+		latest:      latest,
 		fetch:       fetch,
 		backoffFunc: backoffFunc,
 	}
@@ -36,6 +41,11 @@ func NewProviderForT(_ *testing.T, fetch FetchFunc,
 func (p Provider) AttestationsFrom(ctx context.Context, sourceChainID uint64, sourceHeight uint64,
 ) ([]xchain.Attestation, error) {
 	return p.fetch(ctx, sourceChainID, sourceHeight)
+}
+
+func (p Provider) LatestAttestation(ctx context.Context, sourceChainID uint64,
+) (xchain.Attestation, error) {
+	return p.latest(ctx, sourceChainID)
 }
 
 // Subscribe implements cchain.Provider.

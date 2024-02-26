@@ -27,4 +27,7 @@ type Provider interface {
 	// AttestationsFrom returns the subsequent approved attestations for the provided source chain
 	// and height (inclusive). It will return max 100 attestations per call.
 	AttestationsFrom(ctx context.Context, sourceChainID uint64, sourceHeight uint64) ([]xchain.Attestation, error)
+
+	// LatestAttestation returns the latest approved attestation for the provided source chain.
+	LatestAttestation(ctx context.Context, sourceChainID uint64) (xchain.Attestation, error)
 }

@@ -66,7 +66,7 @@ func Run(ctx context.Context, cfg Config) error {
 		go worker.Run(ctx)
 	}
 
-	startMonitoring(ctx, network, xprov, ethcrypto.PubkeyToAddress(privateKey.PublicKey), rpcClientPerChain)
+	startMonitoring(ctx, network, xprov, cprov, ethcrypto.PubkeyToAddress(privateKey.PublicKey), rpcClientPerChain)
 
 	select {
 	case <-ctx.Done():
