@@ -245,10 +245,3 @@ func verifyChild(parent *types.Block, child *types.Block) error {
 
 	return nil
 }
-
-func (m *Mock) Payloads() map[engine.PayloadID]engine.ExecutableData {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	return m.payloads
-}

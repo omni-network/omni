@@ -138,7 +138,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		}
 	})
 
-	t.Run("build not optimistic", func(t *testing.T) {
+	t.Run("build non optimistic", func(t *testing.T) {
 		t.Parallel()
 		ctx, storeService := setupCtxStore(t)
 		cdc := getCodec()
@@ -186,6 +186,59 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("build optimistic", func(t *testing.T) {
+		t.Parallel()
+		ctx, storeService := setupCtxStore(t)
+		cdc := getCodec()
+		txConfig := authtx.NewTxConfig(cdc, nil)
+
+		me, err := engine.NewMock()
+		require.NoError(t, err)
+		mockEngine := MockEngineAPI{
+			Mock:   me,
+			fuzzer: engine.NewFuzzer(time.Now().Truncate(time.Hour * 24).Unix()),
+		}
+		ap := MockAddressProvider{}
+		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap)
+
+		ts := time.Now()
+		latestHeight, err := mockEngine.BlockNumber(ctx)
+		require.NoError(t, err)
+		latestBlock, err := mockEngine.BlockByNumber(ctx, big.NewInt(int64(latestHeight)))
+		require.NoError(t, err)
+
+		mockEngine.pushPayload(t, ctx, ap, latestBlock.Hash(), ts)
+		nextBlock := mockEngine.nextBlock(latestHeight+1, uint64(ts.Unix()), latestBlock.Hash(), ap.LocalAddress())
+		payloadID := mockEngine.pushPayload(t, ctx, ap, nextBlock.Hash(), ts)
+
+		keeper.mutablePayload.UpdatedAt = time.Now()
+		keeper.mutablePayload.ID = payloadID
+
+		req := &abci.RequestPrepareProposal{
+			Txs:    nil,
+			Height: int64(2),
+			Time:   time.Now(),
+		}
+
+		resp, err := keeper.PrepareProposal(ctx, req)
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+
+		latestHeight, err = mockEngine.BlockNumber(ctx)
+		require.NoError(t, err)
+		latestBlock, err = mockEngine.BlockByNumber(ctx, big.NewInt(int64(latestHeight)))
+		require.NoError(t, err)
+
+		tx, err := txConfig.TxDecoder()(resp.Txs[0])
+		require.NoError(t, err)
+
+		for _, msg := range tx.GetMsgs() {
+			if _, ok := msg.(*etypes.MsgExecutionPayload); ok {
+				assertExecutablePayload(t, msg, ts, latestBlock.Hash(), ap, uint64(req.Height))
+			}
+		}
+	})
 }
 
 func assertExecutablePayload(t *testing.T, msg sdk.Msg, ts time.Time, blockHash common.Hash, ap MockAddressProvider, height uint64) {
@@ -196,7 +249,7 @@ func assertExecutablePayload(t *testing.T, msg sdk.Msg, ts time.Time, blockHash 
 	var ep *eengine.ExecutableData
 	err := json.Unmarshal(executionPayload.GetData(), &ep)
 	require.NoError(t, err)
-	require.Equal(t, int64(ep.Timestamp), ts.Unix())
+	require.Equal(t, int64(ep.Timestamp), ts.Unix()+1)
 	require.Equal(t, ep.Random, blockHash)
 	require.Equal(t, ep.FeeRecipient, ap.LocalAddress())
 	require.Empty(t, ep.Withdrawals)
