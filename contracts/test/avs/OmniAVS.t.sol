@@ -382,29 +382,55 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
 
     /// @dev Test that an operator can be added to the allowlist
     function test_addToAllowlist_succeeds() public {
-        address operator = makeAddr("operator");
+        address operator = _operator(0);
         _addToAllowlist(operator);
         assertTrue(omniAVS.isInAllowlist(operator));
     }
 
     /// @dev Test that an operator can be removed from the allowlist
     function test_removeFromAllowlist_succeeds() public {
-        address operator1 = makeAddr("operator");
-        address operator2 = makeAddr("operator2");
+        address operator1 = _operator(0);
+        address operator2 = _operator(1);
 
         _addToAllowlist(operator1);
         _addToAllowlist(operator2);
+
+        // assert both operators are in allowlist
         assertTrue(omniAVS.isInAllowlist(operator1));
         assertTrue(omniAVS.isInAllowlist(operator2));
 
+        // register operators with avs
+        _registerAsOperator(operator1);
+        _registerAsOperator(operator2);
+        _depositBeaconEth(operator1, minimumOperatorStake);
+        _depositBeaconEth(operator2, minimumOperatorStake);
+        _registerOperatorWithAVS(operator1);
+        _registerOperatorWithAVS(operator2);
+
+        // assert both operators are registered
+        OmniAVS.Validator[] memory validators = omniAVS.getValidators();
+        assertEq(validators.length, 2);
+        assertEq(validators[0].addr, operator1);
+        assertEq(validators[1].addr, operator2);
+
+        // remove operator1 from allowlist
         _removeFromAllowlist(operator1);
+
+        // assert operator1 no longer in allowlist
         assertFalse(omniAVS.isInAllowlist(operator1));
+
+        // assert operator2 still in allowlist
         assertTrue(omniAVS.isInAllowlist(operator2));
+
+        // assert operator1 no longer registered
+        validators = omniAVS.getValidators();
+        assertEq(validators.length, 1);
+        assertEq(validators[0].addr, operator2);
     }
 
     /// @dev Test that only the owner can add to the allowlist
     function test_addToAllowlist_notOwner_reverts() public {
-        address operator = makeAddr("operator");
+        address operator = _operator(0);
 
         vm.expectRevert("Ownable: caller is not the owner");
         omniAVS.addToAllowlist(operator);
@@ -412,7 +438,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
 
     /// @dev Test that only the owner can remove from the allowlist
     function test_removeFromAllowlist_notOwner_reverts() public {
-        address operator = makeAddr("operator");
+        address operator = _operator(0);
 
         vm.expectRevert("Ownable: caller is not the owner");
         omniAVS.removeFromAllowlist(operator);
@@ -424,24 +450,23 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
         uint96 amount = minimumOperatorStake;
 
         // register operator
-
         _registerAsOperator(operator);
         _addToAllowlist(operator);
         _depositBeaconEth(operator, amount);
         _registerOperatorWithAVS(operator);
 
+        // assert operator is registered
         OmniAVS.Validator[] memory validators = omniAVS.getValidators();
-
         assertEq(validators.length, 1);
         assertEq(validators[0].addr, operator);
         assertEq(validators[0].staked, amount);
         assertEq(validators[0].delegated, 0);
 
         // eject operator
-
         vm.prank(omniAVSOwner);
         omniAVS.ejectOperator(operator);
 
+        // assert operator is no longer registered
         validators = omniAVS.getValidators();
         assertEq(validators.length, 0);
         assertFalse(omniAVS.isInAllowlist(operator));
@@ -449,7 +474,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
 
     /// @dev Test that only the owner can eject an operator
     function test_ejectOperator_notOwner_reverts() public {
-        address operator = makeAddr("operator");
+        address operator = _operator(0);
 
         vm.expectRevert("Ownable: caller is not the owner");
         omniAVS.ejectOperator(operator);
@@ -457,7 +482,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
 
     /// @dev Test that an operator needs to exist to be ejected
     function test_ejectOperator_notExist_reverts() public {
-        address operator = makeAddr("operator");
+        address operator = _operator(0);
 
         vm.expectRevert("OmniAVS: not an operator");
         vm.prank(omniAVSOwner);
