@@ -1,4 +1,4 @@
-package engine
+package ethclient
 
 import (
 	"context"
@@ -18,10 +18,9 @@ import (
 	fuzz "github.com/google/gofuzz"
 )
 
-var _ API = (*Mock)(nil)
-
-// Mock mocks the Engine API for testing purposes.
-type Mock struct {
+// engineMock mocks the Engine API for testing purposes.
+type engineMock struct {
+	Client
 	fuzzer *fuzz.Fuzzer
 
 	mu       sync.Mutex
@@ -29,8 +28,10 @@ type Mock struct {
 	payloads map[engine.PayloadID]engine.ExecutableData
 }
 
-// NewMock returns a new mock Engine API.
-func NewMock() (*Mock, error) {
+// NewEngineMock returns a new mock engine API client.
+//
+// Note only some methods are implemented, it will panic if you call an unimplemented method.
+func NewEngineMock() (EngineClient, error) {
 	var (
 		// Deterministic genesis block
 		height     uint64 // 0
@@ -50,21 +51,21 @@ func NewMock() (*Mock, error) {
 		return nil, errors.Wrap(err, "executable data to block")
 	}
 
-	return &Mock{
+	return &engineMock{
 		fuzzer:   fuzzer,
 		head:     genesisBlock,
 		payloads: make(map[engine.PayloadID]engine.ExecutableData),
 	}, nil
 }
 
-func (m *Mock) BlockNumber(_ context.Context) (uint64, error) {
+func (m *engineMock) BlockNumber(_ context.Context) (uint64, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	return m.head.NumberU64(), nil
 }
 
-func (m *Mock) BlockByNumber(_ context.Context, number *big.Int) (*types.Block, error) {
+func (m *engineMock) BlockByNumber(_ context.Context, number *big.Int) (*types.Block, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -75,7 +76,7 @@ func (m *Mock) BlockByNumber(_ context.Context, number *big.Int) (*types.Block, 
 	return m.head, nil
 }
 
-func (m *Mock) NewPayloadV2(ctx context.Context, params engine.ExecutableData) (engine.PayloadStatusV1, error) {
+func (m *engineMock) NewPayloadV2(ctx context.Context, params engine.ExecutableData) (engine.PayloadStatusV1, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -96,7 +97,7 @@ func (m *Mock) NewPayloadV2(ctx context.Context, params engine.ExecutableData) (
 	}, nil
 }
 
-func (m *Mock) ForkchoiceUpdatedV2(ctx context.Context, update engine.ForkchoiceStateV1,
+func (m *engineMock) ForkchoiceUpdatedV2(ctx context.Context, update engine.ForkchoiceStateV1,
 	attrs *engine.PayloadAttributes,
 ) (engine.ForkChoiceResponse, error) {
 	m.mu.Lock()
@@ -161,7 +162,7 @@ func (m *Mock) ForkchoiceUpdatedV2(ctx context.Context, update engine.Forkchoice
 	return resp, nil
 }
 
-func (m *Mock) GetPayloadV2(_ context.Context, payloadID engine.PayloadID) (*engine.ExecutionPayloadEnvelope, error) {
+func (m *engineMock) GetPayloadV2(_ context.Context, payloadID engine.PayloadID) (*engine.ExecutionPayloadEnvelope, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -177,21 +178,21 @@ func (m *Mock) GetPayloadV2(_ context.Context, payloadID engine.PayloadID) (*eng
 
 // TODO(corver): Add support for V3
 
-func (*Mock) NewPayloadV3(context.Context, engine.ExecutableData, []common.Hash, *common.Hash,
+func (*engineMock) NewPayloadV3(context.Context, engine.ExecutableData, []common.Hash, *common.Hash,
 ) (engine.PayloadStatusV1, error) {
 	panic("implement me")
 }
 
-func (*Mock) ForkchoiceUpdatedV3(context.Context, engine.ForkchoiceStateV1, *engine.PayloadAttributes,
+func (*engineMock) ForkchoiceUpdatedV3(context.Context, engine.ForkchoiceStateV1, *engine.PayloadAttributes,
 ) (engine.ForkChoiceResponse, error) {
 	panic("implement me")
 }
 
-func (*Mock) GetPayloadV3(context.Context, engine.PayloadID) (*engine.ExecutionPayloadEnvelope, error) {
+func (*engineMock) GetPayloadV3(context.Context, engine.PayloadID) (*engine.ExecutionPayloadEnvelope, error) {
 	panic("implement me")
 }
 
-// payloadFromHeader returns a new fuzzed payload using head as parent if provided.
+// makePayload returns a new fuzzed payload using head as parent if provided.
 func makePayload(fuzzer *fuzz.Fuzzer, height uint64, timestamp uint64, parentHash common.Hash,
 ) (engine.ExecutableData, error) {
 	// Build a new header

@@ -9,7 +9,6 @@ import (
 
 	"github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/halo/comet"
-	"github.com/omni-network/omni/lib/engine"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
@@ -40,7 +39,6 @@ type Keeper struct {
 	sigTable     SignatureTable
 	cdc          codec.BinaryCodec
 	storeService store.KVStoreService
-	ethCl        engine.API
 	voter        types.Voter
 	skeeper      *skeeper.Keeper // TODO(corver): Define a interface for the methods we use.
 	cmtAPI       comet.API
@@ -51,7 +49,6 @@ type Keeper struct {
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeSvc store.KVStoreService,
-	ethCl engine.API,
 	skeeper *skeeper.Keeper,
 	voter types.Voter,
 	namer types.ChainNameFunc,
@@ -75,7 +72,6 @@ func NewKeeper(
 		sigTable:     attstore.SignatureTable(),
 		cdc:          cdc,
 		storeService: storeSvc,
-		ethCl:        ethCl,
 		skeeper:      skeeper,
 		voter:        voter,
 		namer:        namer,

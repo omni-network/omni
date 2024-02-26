@@ -1,4 +1,4 @@
-package engine_test
+package ethclient_test
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	engineclient "github.com/omni-network/omni/lib/engine"
+	"github.com/omni-network/omni/lib/ethclient"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
@@ -29,8 +29,8 @@ func TestGetPayloadV2(t *testing.T) {
 	var resp engine.ExecutionPayloadEnvelope
 	fuzzer.Fuzz(&resp)
 
-	call := func(ctx context.Context, api engineclient.API) (any, error) {
-		return api.GetPayloadV2(ctx, param1)
+	call := func(ctx context.Context, engineCl ethclient.EngineClient) (any, error) {
+		return engineCl.GetPayloadV2(ctx, param1)
 	}
 
 	testEndpoint(t, call, resp, param1)
@@ -46,8 +46,8 @@ func TestGetPayloadV3(t *testing.T) {
 	var resp engine.ExecutionPayloadEnvelope
 	fuzzer.Fuzz(&resp)
 
-	call := func(ctx context.Context, api engineclient.API) (any, error) {
-		return api.GetPayloadV3(ctx, param1)
+	call := func(ctx context.Context, engineCl ethclient.EngineClient) (any, error) {
+		return engineCl.GetPayloadV3(ctx, param1)
 	}
 
 	testEndpoint(t, call, resp, param1)
@@ -63,8 +63,8 @@ func TestNewPayloadV2(t *testing.T) {
 	var resp engine.PayloadStatusV1
 	fuzzer.Fuzz(&resp)
 
-	call := func(ctx context.Context, api engineclient.API) (any, error) {
-		return api.NewPayloadV2(ctx, param1)
+	call := func(ctx context.Context, engineCl ethclient.EngineClient) (any, error) {
+		return engineCl.NewPayloadV2(ctx, param1)
 	}
 
 	testEndpoint(t, call, resp, param1)
@@ -86,8 +86,8 @@ func TestNewPayloadV3(t *testing.T) {
 	var resp engine.PayloadStatusV1
 	fuzzer.Fuzz(&resp)
 
-	call := func(ctx context.Context, api engineclient.API) (any, error) {
-		return api.NewPayloadV3(ctx, param1, param2, &param3)
+	call := func(ctx context.Context, engineCl ethclient.EngineClient) (any, error) {
+		return engineCl.NewPayloadV3(ctx, param1, param2, &param3)
 	}
 
 	testEndpoint(t, call, resp, param1, param2, param3)
@@ -106,8 +106,8 @@ func TestForkchoiceUpdatedV2(t *testing.T) {
 	var resp engine.ForkChoiceResponse
 	fuzzer.Fuzz(&resp)
 
-	call := func(ctx context.Context, api engineclient.API) (any, error) {
-		return api.ForkchoiceUpdatedV2(ctx, param1, &param2)
+	call := func(ctx context.Context, engineCl ethclient.EngineClient) (any, error) {
+		return engineCl.ForkchoiceUpdatedV2(ctx, param1, &param2)
 	}
 
 	testEndpoint(t, call, resp, param1, param2)
@@ -126,14 +126,14 @@ func TestForkchoiceUpdatedV3(t *testing.T) {
 	var resp engine.ForkChoiceResponse
 	fuzzer.Fuzz(&resp)
 
-	call := func(ctx context.Context, api engineclient.API) (any, error) {
-		return api.ForkchoiceUpdatedV3(ctx, param1, &param2)
+	call := func(ctx context.Context, engineCl ethclient.EngineClient) (any, error) {
+		return engineCl.ForkchoiceUpdatedV3(ctx, param1, &param2)
 	}
 
 	testEndpoint(t, call, resp, param1, param2)
 }
 
-func testEndpoint(t *testing.T, callback func(context.Context, engineclient.API) (any, error),
+func testEndpoint(t *testing.T, callback func(context.Context, ethclient.EngineClient) (any, error),
 	resp any, params ...any,
 ) {
 	t.Helper()
@@ -181,7 +181,7 @@ func testEndpoint(t *testing.T, callback func(context.Context, engineclient.API)
 
 	ctx := context.Background()
 
-	api, err := engineclient.NewClient(ctx, srv.URL, []byte(jwtSecret))
+	api, err := ethclient.NewAuthClient(ctx, srv.URL, []byte(jwtSecret))
 	require.NoError(t, err)
 
 	got, err := callback(ctx, api)

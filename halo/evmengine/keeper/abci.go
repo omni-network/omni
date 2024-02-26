@@ -49,12 +49,12 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 	// Either use the optimistic payload or create a new one.
 	payloadID, height, triggeredAt := k.getOptimisticPayload()
 	if uint64(req.Height) != height { //nolint:nestif // We need to extract this to a function probably.
-		latestEHeight, err := k.ethCl.BlockNumber(ctx)
+		latestEHeight, err := k.engineCl.BlockNumber(ctx)
 		if err != nil {
 			return nil, errors.Wrap(err, "latest execution block number")
 		}
 
-		latestEBlock, err := k.ethCl.BlockByNumber(ctx, big.NewInt(int64(latestEHeight)))
+		latestEBlock, err := k.engineCl.BlockByNumber(ctx, big.NewInt(int64(latestEHeight)))
 		if err != nil {
 			return nil, errors.Wrap(err, "latest execution block")
 		}
@@ -83,7 +83,7 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 			BeaconRoot:            nil,
 		}
 
-		forkchoiceResp, err := k.ethCl.ForkchoiceUpdatedV2(ctx, forkchoiceState, &payloadAttrs)
+		forkchoiceResp, err := k.engineCl.ForkchoiceUpdatedV2(ctx, forkchoiceState, &payloadAttrs)
 		if err != nil {
 			return nil, errors.Wrap(err, "forkchoice updated")
 		} else if forkchoiceResp.PayloadStatus.Status != engine.VALID {
@@ -102,7 +102,7 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 	case <-time.After(time.Until(waitTo)):
 	}
 
-	payloadResp, err := k.ethCl.GetPayloadV2(ctx, *payloadID)
+	payloadResp, err := k.engineCl.GetPayloadV2(ctx, *payloadID)
 	if err != nil {
 		return nil, errors.Wrap(err, "get payload")
 	}
