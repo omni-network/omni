@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/txmgr"
 	"github.com/omni-network/omni/test/e2e/types"
@@ -16,7 +17,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 type Backend interface {
@@ -32,7 +32,7 @@ type Backend interface {
 var _ Backend = backend{}
 
 type backend struct {
-	*ethclient.Client
+	ethclient.Client
 
 	from  common.Address
 	txMgr txmgr.TxManager
@@ -40,7 +40,7 @@ type backend struct {
 }
 
 func newBackend(chain types.EVMChain, rpcAddr string, privateKey *ecdsa.PrivateKey) (backend, error) {
-	ethCl, err := ethclient.Dial(rpcAddr)
+	ethCl, err := ethclient.Dial(chain.Name, rpcAddr)
 	if err != nil {
 		return backend{}, errors.Wrap(err, "dial")
 	}

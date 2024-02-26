@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
 	"github.com/omni-network/omni/test/e2e/types"
@@ -15,7 +16,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 const (
@@ -120,7 +120,7 @@ func (b Backends) BindOpts(ctx context.Context, sourceChainID uint64) (*bind.Tra
 	}, backend, nil
 }
 
-func newTxMgr(ethCl *ethclient.Client, chain types.EVMChain, privateKey *ecdsa.PrivateKey) (txmgr.TxManager, error) {
+func newTxMgr(ethCl ethclient.Client, chain types.EVMChain, privateKey *ecdsa.PrivateKey) (txmgr.TxManager, error) {
 	// creates our new CLI config for our tx manager
 	cliConfig := txmgr.NewCLIConfig(
 		chain.ID,

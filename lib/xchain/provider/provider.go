@@ -8,12 +8,11 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
-
-	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 var _ xchain.Provider = (*Provider)(nil)
@@ -21,13 +20,13 @@ var _ xchain.Provider = (*Provider)(nil)
 // Provider stores the source chain configuration and the global quit channel.
 type Provider struct {
 	network     netconf.Network
-	rpcClients  map[uint64]*ethclient.Client // store config for every chain ID
+	rpcClients  map[uint64]ethclient.Client // store config for every chain ID
 	backoffFunc func(context.Context) (func(), func())
 }
 
 // New instantiates the provider instance which will be ready to accept
 // subscriptions for respective destination XBlocks.
-func New(network netconf.Network, rpcClients map[uint64]*ethclient.Client) *Provider {
+func New(network netconf.Network, rpcClients map[uint64]ethclient.Client) *Provider {
 	backoffFunc := func(ctx context.Context) (func(), func()) {
 		return expbackoff.NewWithReset(ctx, expbackoff.WithFastConfig())
 	}
@@ -67,7 +66,7 @@ func (p *Provider) Subscribe(
 }
 
 // getChain provides the configuration of the given chainID.
-func (p *Provider) getChain(chainID uint64) (netconf.Chain, *ethclient.Client, error) {
+func (p *Provider) getChain(chainID uint64) (netconf.Chain, ethclient.Client, error) {
 	chain, ok := p.network.Chain(chainID)
 	if !ok {
 		return netconf.Chain{}, nil, errors.New("unknown chain ID for network")

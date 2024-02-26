@@ -9,6 +9,7 @@ import (
 	halocfg "github.com/omni-network/omni/halo/config"
 	"github.com/omni-network/omni/lib/engine"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/gitinfo"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -22,8 +23,6 @@ import (
 	"github.com/cometbft/cometbft/proxy"
 	rpclocal "github.com/cometbft/cometbft/rpc/client/local"
 	cmttypes "github.com/cometbft/cometbft/types"
-
-	"github.com/ethereum/go-ethereum/ethclient"
 
 	"cosmossdk.io/store"
 	pruningtypes "cosmossdk.io/store/pruning/types"
@@ -106,7 +105,7 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 		return nil, err
 	}
 
-	xprovider, err := newXProvider(ctx, network)
+	xprovider, err := newXProvider(network)
 	if err != nil {
 		return nil, errors.Wrap(err, "create xchain provider")
 	}
@@ -160,7 +159,7 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 }
 
 // newXProvider returns a new xchain provider.
-func newXProvider(ctx context.Context, network netconf.Network) (xchain.Provider, error) {
+func newXProvider(network netconf.Network) (xchain.Provider, error) {
 	if network.Name == netconf.Simnet {
 		omniChain, ok := network.OmniChain()
 		if !ok {
@@ -170,9 +169,9 @@ func newXProvider(ctx context.Context, network netconf.Network) (xchain.Provider
 		return provider.NewMock(omniChain.BlockPeriod * 8 / 10), nil // Slightly faster than our chain.
 	}
 
-	clients := make(map[uint64]*ethclient.Client)
+	clients := make(map[uint64]ethclient.Client)
 	for _, chain := range network.Chains {
-		ethCl, err := ethclient.DialContext(ctx, chain.RPCURL)
+		ethCl, err := ethclient.Dial(chain.Name, chain.RPCURL)
 		if err != nil {
 			return nil, errors.Wrap(err, "dial chain",
 				"name", chain.Name,
