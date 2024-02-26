@@ -338,6 +338,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
 
     /// @inheritdoc IOmniAVSAdmin
     function removeFromAllowlist(address operator) external onlyOwner {
+        if (_isOperator(operator)) _deregsiterOperatorFromAVS(operator);
         _removeFromAllowlist(operator);
     }
 
