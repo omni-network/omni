@@ -2,9 +2,11 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/log"
 
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	rpctypes "github.com/cometbft/cometbft/rpc/core/types"
@@ -23,13 +25,33 @@ func waitForHeight(ctx context.Context, testnet *e2e.Testnet, height int64) (*ty
 		lastIncrease = time.Now()
 	)
 
-	timer := time.NewTimer(0)
-	defer timer.Stop()
+	currentBlock := func(ctx context.Context, client *rpchttp.HTTP) (*rpctypes.ResultBlock, error) {
+		ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+		defer cancel()
+		resp, err := client.Block(ctx, nil)
+		if err != nil {
+			return nil, errors.Wrap(err, "get block")
+		}
+
+		return resp, nil
+	}
+
+	queryTicker := time.NewTicker(time.Second)
+	defer queryTicker.Stop()
+	logTicker := time.NewTicker(5 * time.Second)
+	defer logTicker.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
 			return nil, nil, errors.Wrap(ctx.Err(), "context canceled")
-		case <-timer.C:
+		case <-logTicker.C:
+			current := "unknown"
+			if maxResult != nil {
+				current = fmt.Sprint(maxResult.Block.Height)
+			}
+			log.Debug(ctx, "Still waiting for height", "current_height", current, "wait_for_height", height)
+		case <-queryTicker.C:
 			for _, node := range testnet.Nodes {
 				if node.Stateless() {
 					continue
@@ -43,15 +65,13 @@ func waitForHeight(ctx context.Context, testnet *e2e.Testnet, height int64) (*ty
 					clients[node.Name] = client
 				}
 
-				subctx, cancel := context.WithTimeout(ctx, 1*time.Second)
-				defer cancel()
-				result, err := client.Block(subctx, nil)
-				if subctx.Err() != nil {
-					return nil, nil, errors.Wrap(subctx.Err(), "timeout")
-				}
-				if err != nil {
+				result, err := currentBlock(ctx, client)
+				if errors.Is(err, context.DeadlineExceeded) {
+					return nil, nil, errors.Wrap(err, "timeout")
+				} else if err != nil {
 					continue
 				}
+
 				if result.Block != nil && (maxResult == nil || result.Block.Height > maxResult.Block.Height) {
 					maxResult = result
 					lastIncrease = time.Now()
@@ -71,7 +91,6 @@ func waitForHeight(ctx context.Context, testnet *e2e.Testnet, height int64) (*ty
 
 				return nil, nil, errors.New("chain stalled", "height", maxResult.Block.Height)
 			}
-			timer.Reset(1 * time.Second)
 		}
 	}
 }
