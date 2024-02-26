@@ -127,7 +127,7 @@ type ModuleOutputs struct {
 }
 
 func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
-	k, err := keeper.NewKeeper(
+	k, err := keeper.New(
 		in.Cdc,
 		in.StoreService,
 		in.SKeeper,

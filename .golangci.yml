@@ -100,6 +100,9 @@ issues:
     - path: 'scripts/.+\.go'
       linters:        # Relax linters for scripts only (non-production code)
         - forbidigo   # Allow debug printing
+    - path: '.+_test\.go'
+      linters:
+        - maintidx   # Relax linter for table driven tests
   exclude:
     - add-constant         # Ignore "add-constant: avoid magic numbers like" since it is too strict
     - fieldalignment # Ignore "fieldalignment: struct with XXX pointer bytes could be YYY"

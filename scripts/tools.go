@@ -22,3 +22,4 @@ import (
 //go:generate go install google.golang.org/grpc/cmd/protoc-gen-go-grpc
 //go:generate go install github.com/cosmos/cosmos-proto/cmd/protoc-gen-go-pulsar
 //go:generate go install cosmossdk.io/orm/cmd/protoc-gen-go-cosmos-orm
+//go:generate go install go.uber.org/mock/mockgen@latest
