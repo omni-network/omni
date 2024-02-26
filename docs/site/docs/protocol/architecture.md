@@ -17,7 +17,7 @@ The following steps provide a comprehensive overview of how an XMsg travels from
 
 1. A user calls an xdApp smart contract function on a rollup VM.
 
-2. The smart contract converts the user’s logic into an `xcall` that is made on the rollup VM’s Portal contract. `xcall` are defined in Solidity as below ([also shown in the overview](./overview.md#xcall-parameters)):
+2. The smart contract converts the user’s logic into an `xcall` that is made on the rollup VM’s Portal contract. `xcall` are defined in Solidity as below (read more in the [develop section](../develop/introduction.md)):
 
     ```solidity
     omni.xcall(

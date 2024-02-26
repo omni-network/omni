@@ -96,6 +96,7 @@ issues:
         - wrapcheck   # Wrapping not required
         - gocognit    # Cognitive complexity not an issue here
         - prealloc    # Prealloc not an issue here
+        - perfsprint  # Performance not an issue here
     - path: 'scripts/.+\.go'
       linters:        # Relax linters for scripts only (non-production code)
         - forbidigo   # Allow debug printing

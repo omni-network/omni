@@ -7,8 +7,8 @@ import (
 	"github.com/omni-network/omni/halo/attest/voter"
 	"github.com/omni-network/omni/halo/comet"
 	halocfg "github.com/omni-network/omni/halo/config"
-	"github.com/omni-network/omni/lib/engine"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/gitinfo"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -22,8 +22,6 @@ import (
 	"github.com/cometbft/cometbft/proxy"
 	rpclocal "github.com/cometbft/cometbft/rpc/client/local"
 	cmttypes "github.com/cometbft/cometbft/types"
-
-	"github.com/ethereum/go-ethereum/ethclient"
 
 	"cosmossdk.io/store"
 	pruningtypes "cosmossdk.io/store/pruning/types"
@@ -101,12 +99,12 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 		return nil, errors.Wrap(err, "validate network configuration")
 	}
 
-	ethCl, err := newEngineClient(ctx, cfg, network)
+	engineCl, err := newEngineClient(ctx, cfg, network)
 	if err != nil {
 		return nil, err
 	}
 
-	xprovider, err := newXProvider(ctx, network)
+	xprovider, err := newXProvider(network)
 	if err != nil {
 		return nil, errors.Wrap(err, "create xchain provider")
 	}
@@ -121,7 +119,7 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 	app, err := newApp(
 		newSDKLogger(ctx),
 		db,
-		ethCl,
+		engineCl,
 		voterI,
 		network.ChainName,
 		baseAppOpts...,
@@ -160,7 +158,7 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 }
 
 // newXProvider returns a new xchain provider.
-func newXProvider(ctx context.Context, network netconf.Network) (xchain.Provider, error) {
+func newXProvider(network netconf.Network) (xchain.Provider, error) {
 	if network.Name == netconf.Simnet {
 		omniChain, ok := network.OmniChain()
 		if !ok {
@@ -170,9 +168,9 @@ func newXProvider(ctx context.Context, network netconf.Network) (xchain.Provider
 		return provider.NewMock(omniChain.BlockPeriod * 8 / 10), nil // Slightly faster than our chain.
 	}
 
-	clients := make(map[uint64]*ethclient.Client)
+	clients := make(map[uint64]ethclient.Client)
 	for _, chain := range network.Chains {
-		ethCl, err := ethclient.DialContext(ctx, chain.RPCURL)
+		ethCl, err := ethclient.Dial(chain.Name, chain.RPCURL)
 		if err != nil {
 			return nil, errors.Wrap(err, "dial chain",
 				"name", chain.Name,
@@ -262,12 +260,12 @@ func chainIDFromGenesis(cfg Config) (string, error) {
 }
 
 // newEngineClient returns a new engine API client.
-func newEngineClient(ctx context.Context, cfg Config, network netconf.Network) (engine.API, error) {
+func newEngineClient(ctx context.Context, cfg Config, network netconf.Network) (ethclient.EngineClient, error) {
 	if network.Name == netconf.Simnet {
-		return engine.NewMock()
+		return ethclient.NewEngineMock()
 	}
 
-	jwtBytes, err := engine.LoadJWTHexFile(cfg.EngineJWTFile)
+	jwtBytes, err := ethclient.LoadJWTHexFile(cfg.EngineJWTFile)
 	if err != nil {
 		return nil, errors.Wrap(err, "load engine JWT file")
 	}
@@ -277,12 +275,12 @@ func newEngineClient(ctx context.Context, cfg Config, network netconf.Network) (
 		return nil, errors.New("omni chain not found in network")
 	}
 
-	ethCl, err := engine.NewClient(ctx, omniChain.AuthRPCURL, jwtBytes)
+	engineCl, err := ethclient.NewAuthClient(ctx, omniChain.AuthRPCURL, jwtBytes)
 	if err != nil {
 		return nil, errors.Wrap(err, "create engine client")
 	}
 
-	return ethCl, nil
+	return engineCl, nil
 }
 
 // enableSDKTelemetry enables prometheus based cosmos-sdk telemetry.

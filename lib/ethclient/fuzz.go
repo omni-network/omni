@@ -1,4 +1,4 @@
-package engine
+package ethclient
 
 import (
 	"math/big"
@@ -12,7 +12,7 @@ import (
 	fuzz "github.com/google/gofuzz"
 )
 
-// NewFuzzer returns a new fuzzer for valid Engine API types.
+// NewFuzzer returns a new fuzzer for valid ethereum types.
 // If seed is zero, it uses current nano time as the seed.
 func NewFuzzer(seed int64) *fuzz.Fuzzer {
 	if seed == 0 {

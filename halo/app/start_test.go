@@ -54,6 +54,10 @@ func TestSmoke(t *testing.T) {
 	}, time.Second*time.Duration(target*2), time.Millisecond*100)
 
 	srcChain := uint64(999)
+	att, err := cprov.LatestAttestation(ctx, srcChain)
+	require.NoError(t, err)
+	require.Equal(t, srcChain, att.SourceChainID)
+
 	// Ensure all blocks are attested and approved.
 	cprov.Subscribe(ctx, srcChain, 0, "test", func(ctx context.Context, approved xchain.Attestation) error {
 		require.Equal(t, srcChain, approved.SourceChainID)

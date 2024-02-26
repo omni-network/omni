@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 )
 
 // Network defines a deployment of the Omni cross chain protocol.
@@ -79,12 +80,14 @@ func (n Network) Chain(id uint64) (Chain, bool) {
 	return Chain{}, false
 }
 
-// FinalizationStrat defines the level of finalization of a block to define query strategies.
+// FinalizationStrat defines the finalization strategy of a chain.
+// This is mostly ethclient.HeadFinalized, but some chains may not support
+// it, like zkEVM chains which would need a much more involved strategy.
 type FinalizationStrat string
 
 const (
-	StratFinalized FinalizationStrat = "finalized"
-	StartLatest    FinalizationStrat = "latest"
+	StratFinalized = FinalizationStrat(ethclient.HeadFinalized)
+	StartLatest    = FinalizationStrat(ethclient.HeadLatest)
 )
 
 // Chain defines the configuration of an execution chain that supports

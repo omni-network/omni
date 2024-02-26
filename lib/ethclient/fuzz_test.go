@@ -1,9 +1,9 @@
-package engine_test
+package ethclient_test
 
 import (
 	"testing"
 
-	engineclient "github.com/omni-network/omni/lib/engine"
+	"github.com/omni-network/omni/lib/ethclient"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
 
@@ -12,7 +12,7 @@ import (
 
 func TestFuzzer(t *testing.T) {
 	t.Parallel()
-	f := engineclient.NewFuzzer(0)
+	f := ethclient.NewFuzzer(0)
 
 	var payload engine.ExecutableData
 	f.Fuzz(&payload)

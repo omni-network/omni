@@ -28,7 +28,7 @@ func TestProvider(t *testing.T) {
 	var backoff testBackOff
 	fetcher := &testFetcher{errs: errs}
 
-	p := provider.NewProviderForT(t, fetcher.Fetch, backoff.BackOff)
+	p := provider.NewProviderForT(t, fetcher.Fetch, nil, backoff.BackOff)
 
 	var actual []xchain.Attestation
 	p.Subscribe(ctx, chainID, fromHeight, "test", func(ctx context.Context, approved xchain.Attestation) error {

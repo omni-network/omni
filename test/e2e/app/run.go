@@ -50,7 +50,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 		return nil, err
 	}
 
-	if err := Start(ctx, def.Testnet.Testnet, def.Infra); err != nil {
+	if err := StartInitial(ctx, def.Testnet.Testnet, def.Infra); err != nil {
 		return nil, err
 	}
 
@@ -113,6 +113,10 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, prom PromSe
 	msgBatches := []int{3, 2, 1} // Send 6 msgs from each chain to each other chain
 	msgsErr := StartSendingXMsgs(ctx, def.Netman, def.Backends, msgBatches...)
 
+	if err := StartRemaining(ctx, def.Testnet.Testnet, def.Infra); err != nil {
+		return err
+	}
+
 	if err := Wait(ctx, def.Testnet.Testnet, 5); err != nil { // allow some txs to go through
 		return err
 	}
@@ -150,6 +154,16 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, prom PromSe
 	}
 
 	return nil
+}
+
+// Upgrade generates all local artifacts, but only copies the docker-compose file to the VMs.
+// It them calls docker-compose up.
+func Upgrade(ctx context.Context, def Definition) error {
+	if err := Setup(ctx, def, PromSecrets{}); err != nil {
+		return err
+	}
+
+	return def.Infra.Upgrade(ctx)
 }
 
 // toPortalValidators returns the provided validator set as a lice of portal validators.

@@ -6,6 +6,7 @@ import (
 
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/gitinfo"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -15,7 +16,6 @@ import (
 	"github.com/cometbft/cometbft/rpc/client/http"
 
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 func Run(ctx context.Context, cfg Config) error {
@@ -66,7 +66,7 @@ func Run(ctx context.Context, cfg Config) error {
 		go worker.Run(ctx)
 	}
 
-	startMonitoring(ctx, network, xprov, ethcrypto.PubkeyToAddress(privateKey.PublicKey), rpcClientPerChain)
+	startMonitoring(ctx, network, xprov, cprov, ethcrypto.PubkeyToAddress(privateKey.PublicKey), rpcClientPerChain)
 
 	select {
 	case <-ctx.Done():
@@ -86,10 +86,10 @@ func newClient(tmNodeAddr string) (client.Client, error) {
 	return c, nil
 }
 
-func initializeRPCClients(chains []netconf.Chain) (map[uint64]*ethclient.Client, error) {
-	rpcClientPerChain := make(map[uint64]*ethclient.Client)
+func initializeRPCClients(chains []netconf.Chain) (map[uint64]ethclient.Client, error) {
+	rpcClientPerChain := make(map[uint64]ethclient.Client)
 	for _, chain := range chains {
-		c, err := ethclient.Dial(chain.RPCURL)
+		c, err := ethclient.Dial(chain.Name, chain.RPCURL)
 		if err != nil {
 			return nil, errors.Wrap(err, "dial rpc", "chain_id", chain.ID, "rpc_url", chain.RPCURL)
 		}

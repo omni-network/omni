@@ -9,7 +9,6 @@ import (
 
 	"github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/halo/comet"
-	"github.com/omni-network/omni/lib/engine"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
@@ -22,6 +21,7 @@ import (
 	ormv1alpha1 "cosmossdk.io/api/cosmos/orm/v1alpha1"
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/orm/model/ormdb"
+	"cosmossdk.io/orm/model/ormlist"
 	"cosmossdk.io/orm/types/ormerrors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -40,7 +40,6 @@ type Keeper struct {
 	sigTable     SignatureTable
 	cdc          codec.BinaryCodec
 	storeService store.KVStoreService
-	ethCl        engine.API
 	voter        types.Voter
 	skeeper      *skeeper.Keeper // TODO(corver): Define a interface for the methods we use.
 	cmtAPI       comet.API
@@ -51,7 +50,6 @@ type Keeper struct {
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeSvc store.KVStoreService,
-	ethCl engine.API,
 	skeeper *skeeper.Keeper,
 	voter types.Voter,
 	namer types.ChainNameFunc,
@@ -75,7 +73,6 @@ func NewKeeper(
 		sigTable:     attstore.SignatureTable(),
 		cdc:          cdc,
 		storeService: storeSvc,
-		ethCl:        ethCl,
 		skeeper:      skeeper,
 		voter:        voter,
 		namer:        namer,
@@ -270,6 +267,53 @@ func (k *Keeper) attestationFrom(ctx context.Context, chainID uint64, height uin
 	}
 
 	return resp, nil
+}
+
+// latestAttestation returns the latest approved attestation for the given chain.
+func (k *Keeper) latestAttestation(ctx context.Context, chainID uint64) (*types.Attestation, error) {
+	idx := AttestationStatusChainIdHeightIndexKey{}.WithStatusChainId(int32(Status_Approved), chainID)
+	iter, err := k.attTable.List(ctx, idx, ormlist.Reverse(), ormlist.DefaultLimit(1))
+	if err != nil {
+		return nil, errors.Wrap(err, "list")
+	}
+	defer iter.Close()
+
+	if !iter.Next() {
+		return nil, errors.New("no attestation found")
+	}
+
+	att, err := iter.Value()
+	if err != nil {
+		return nil, errors.Wrap(err, "value")
+	}
+
+	if iter.Next() {
+		return nil, errors.New("multiple attestation found")
+	}
+
+	pbsigs, err := k.getSigs(ctx, att.GetId())
+	if err != nil {
+		return nil, errors.Wrap(err, "get att sigs")
+	}
+
+	var sigs []*types.SigTuple
+	for _, pbsig := range pbsigs {
+		sigs = append(sigs, &types.SigTuple{
+			ValidatorAddress: pbsig.GetValidatorAddress(),
+			Signature:        pbsig.GetSignature(),
+		})
+	}
+
+	return &types.Attestation{
+		BlockHeader: &types.BlockHeader{
+			ChainId: att.GetChainId(),
+			Height:  att.GetHeight(),
+			Hash:    att.GetHash(),
+		},
+		ValidatorsHash: att.GetValidatorsHash(),
+		BlockRoot:      att.GetBlockRoot(),
+		Signatures:     sigs,
+	}, nil
 }
 
 // getSigs returns the signatures for the given attestation ID.

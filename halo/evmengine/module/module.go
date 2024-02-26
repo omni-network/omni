@@ -3,7 +3,7 @@ package module
 import (
 	"github.com/omni-network/omni/halo/evmengine/keeper"
 	"github.com/omni-network/omni/halo/evmengine/types"
-	"github.com/omni-network/omni/lib/engine"
+	"github.com/omni-network/omni/lib/ethclient"
 
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/core/store"
@@ -105,7 +105,7 @@ type ModuleInputs struct {
 	Cdc          codec.Codec
 	Config       *Module
 	TXConfig     client.TxConfig
-	EthClient    engine.API
+	EngineCl     ethclient.EngineClient
 	AddrProvider types.AddressProvider
 }
 
@@ -121,7 +121,7 @@ func ProvideModule(in ModuleInputs) ModuleOutputs {
 	k := keeper.NewKeeper(
 		in.Cdc,
 		in.StoreService,
-		in.EthClient,
+		in.EngineCl,
 		in.TXConfig,
 		in.AddrProvider,
 	)
