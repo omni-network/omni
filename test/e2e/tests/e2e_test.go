@@ -9,6 +9,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/contracts/bindings/examples"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/test/e2e/app"
@@ -22,7 +23,6 @@ import (
 	cmttypes "github.com/cometbft/cometbft/types"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/stretchr/testify/require"
 )
@@ -56,19 +56,19 @@ var (
 // Portal is a struct that contains the chain, client and contract for a portal.
 type Portal struct {
 	Chain    netconf.Chain
-	Client   *ethclient.Client
+	Client   ethclient.Client
 	Contract *bindings.OmniPortal
 }
 
 type PingPong struct {
 	Chain    netconf.Chain
-	Client   *ethclient.Client
+	Client   ethclient.Client
 	Contract *examples.PingPong
 }
 
 type AVS struct {
 	Chain    netconf.Chain
-	Client   *ethclient.Client
+	Client   ethclient.Client
 	Contract *bindings.OmniAVS
 }
 
@@ -160,7 +160,7 @@ func makePortals(t *testing.T, network netconf.Network) []Portal {
 
 	resp := make([]Portal, 0, len(network.Chains))
 	for _, chain := range network.Chains {
-		ethClient, err := ethclient.Dial(chain.RPCURL)
+		ethClient, err := ethclient.Dial(chain.Name, chain.RPCURL)
 		require.NoError(t, err)
 
 		// create our Omni Portal Contract

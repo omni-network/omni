@@ -7,31 +7,12 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 )
-
-func getCurrentFinalisedBlockHeader(
-	ctx context.Context, rpcClient *ethclient.Client, start netconf.FinalizationStrat) (*types.Header, error) {
-	var header *types.Header
-	err := rpcClient.Client().CallContext(
-		ctx,
-		&header,
-		"eth_getBlockByNumber",
-		string(start),
-		false,
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not get block")
-	}
-
-	return header, nil
-}
 
 // GetEmittedCursor returns the emitted cursor for the destination chain on the source chain,
 // or false if not available, or an error. Calls the source chain portal OutXStreamOffset method.
@@ -118,8 +99,7 @@ func (p *Provider) GetBlock(ctx context.Context, chainID uint64, height uint64) 
 		return xchain.Block{}, false, err
 	}
 
-	// get the current finalized header
-	finalisedHeader, err := getCurrentFinalisedBlockHeader(ctx, rpcClient, chain.FinalizationStrat)
+	finalisedHeader, err := rpcClient.HeaderByType(ctx, ethclient.HeadType(chain.FinalizationStrat))
 	if err != nil {
 		return xchain.Block{}, false, err
 	}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
@@ -15,7 +16,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 // OpSender uses txmgr to send transactions to the destination chain.
@@ -28,7 +28,7 @@ type OpSender struct {
 }
 
 // NewOpSender creates a new sender that uses txmgr to send transactions to the destination chain.
-func NewOpSender(chain netconf.Chain, rpcClient *ethclient.Client,
+func NewOpSender(chain netconf.Chain, rpcClient ethclient.Client,
 	privateKey ecdsa.PrivateKey, chainNames map[uint64]string) (OpSender, error) {
 	// we want to query receipts every 1/3 of the block time
 	cfg, err := txmgr.NewConfig(txmgr.NewCLIConfig(

@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 type DefaultFlagValues struct {
@@ -188,7 +188,7 @@ type Config struct {
 }
 
 // NewConfig - creates a new txmgr config from the given CLI config and private key. This is taken and modified from op.
-func NewConfig(cfg CLIConfig, privateKey *ecdsa.PrivateKey, client *ethclient.Client) (Config, error) {
+func NewConfig(cfg CLIConfig, privateKey *ecdsa.PrivateKey, client ethclient.Client) (Config, error) {
 	if err := cfg.Check(); err != nil {
 		return Config{}, errors.New("invalid config", err)
 	}
