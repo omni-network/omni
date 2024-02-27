@@ -205,8 +205,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		ap := mockAddressProvider{}
 		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap)
 
-		cpayloadProvider := mockCPayloadProvider{}
-		keeper.providers = []etypes.CPayloadProvider{cpayloadProvider}
+		keeper.providers = []etypes.CPayloadProvider{mockCPayloadProvider{}, mockCPayloadProvider{}}
 
 		// get the genesis block to build on top of
 		ts := time.Now()
@@ -238,12 +237,19 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		tx, err := txConfig.TxDecoder()(resp.Txs[0])
 		require.NoError(t, err)
 
+		actualDelCount := 0
 		// assert that the message is an executable payload
 		for _, msg := range tx.GetMsgs() {
 			if _, ok := msg.(*etypes.MsgExecutionPayload); ok {
 				assertExecutablePayload(t, msg, req.Time.Unix()+1, nextBlock.Hash(), ap, uint64(req.Height))
 			}
+			if msgDelegate, ok := msg.(*stypes.MsgDelegate); ok {
+				require.Equal(t, msgDelegate.Amount, sdk.NewInt64Coin("stake", 100))
+				actualDelCount++
+			}
 		}
+		// make sure all msg.Delegate are present
+		require.Equal(t, len(keeper.providers), actualDelCount)
 	})
 }
 
