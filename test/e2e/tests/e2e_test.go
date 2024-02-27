@@ -22,7 +22,6 @@ import (
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	cmttypes "github.com/cometbft/cometbft/types"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/stretchr/testify/require"
@@ -76,7 +75,6 @@ type AVS struct {
 	WETHStrategyContract      *bindings.StrategyBase
 	WETHTokenContract         *bindings.MockERC20
 	AVSDirectory              *bindings.AVSDirectory
-	EIP1271SigUtils           *bindings.EIP1271SignatureUtils
 }
 
 type testFunc struct {
@@ -319,7 +317,7 @@ func fetchBlockChain(ctx context.Context, t *testing.T) []*cmttypes.Block {
 }
 
 func loadContractsForAVS(t *testing.T, chainInfo map[types.ContractName]types.DeployInfo,
-	chain netconf.Chain, ethClient *ethclient.Client) AVS {
+	chain netconf.Chain, ethClient ethclient.Client) AVS {
 	t.Helper()
 
 	// create the contracts
@@ -339,18 +337,12 @@ func loadContractsForAVS(t *testing.T, chainInfo map[types.ContractName]types.De
 	wethStrategy, err := bindings.NewStrategyBase(wethStrategyAddr, ethClient)
 	require.NoError(t, err)
 
-	callOpts := bind.CallOpts{}
-	wethTokenAddr, err := wethStrategy.UnderlyingToken(&callOpts)
-	require.NoError(t, err)
+	wethTokenAddr := chainInfo[types.ContractELWETH].Address
 	wethToken, err := bindings.NewMockERC20(wethTokenAddr, ethClient)
 	require.NoError(t, err)
 
 	avsDirAddr := chainInfo[types.ContractAVSDirectory].Address
 	avsDir, err := bindings.NewAVSDirectory(avsDirAddr, ethClient)
-	require.NoError(t, err)
-
-	eip1271SigUtilsAddr := chainInfo[types.ContractEIP1271SigUtils].Address
-	eip1271SigUtils, err := bindings.NewEIP1271SignatureUtils(eip1271SigUtilsAddr, ethClient)
 	require.NoError(t, err)
 
 	testAVS := AVS{
@@ -362,7 +354,6 @@ func loadContractsForAVS(t *testing.T, chainInfo map[types.ContractName]types.De
 		WETHStrategyContract:      wethStrategy,
 		WETHTokenContract:         wethToken,
 		AVSDirectory:              avsDir,
-		EIP1271SigUtils:           eip1271SigUtils,
 	}
 
 	return testAVS

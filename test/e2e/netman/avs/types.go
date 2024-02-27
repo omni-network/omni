@@ -28,12 +28,6 @@ type EigenDeployments struct {
 	StrategyManager   common.Address `json:"StrategyManager"`
 	EigenPodManager   common.Address `json:"EigenPodManager"`
 
-	// test token & strategies
-	EigenStrategy common.Address `json:"EigenStrategy"`
-	EigenToken    common.Address `json:"EigenToken"`
-	WETH          common.Address `json:"WETH"`
-	WETHStrategy  common.Address `json:"WETHStrategy"`
-
 	// maps token symbol to strategy address
 	Strategies map[string]common.Address `json:"strategies"`
 }

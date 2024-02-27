@@ -10,13 +10,13 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/test/e2e/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/stretchr/testify/require"
 )
@@ -125,7 +125,7 @@ func getTokenAddr(t *testing.T, avs AVS) common.Address {
 	return token
 }
 
-func createAccount(t *testing.T, ctx context.Context, client *ethclient.Client) (string,
+func createAccount(t *testing.T, ctx context.Context, client ethclient.Client) (string,
 	common.Address, *ecdsa.PrivateKey) {
 	t.Helper()
 
@@ -143,7 +143,7 @@ func createAccount(t *testing.T, ctx context.Context, client *ethclient.Client) 
 	return address.String(), address, privateKey
 }
 
-func transferFundTo(t *testing.T, ctx context.Context, addr string, client *ethclient.Client) {
+func transferFundTo(t *testing.T, ctx context.Context, addr string, client ethclient.Client) {
 	t.Helper()
 	pk := mustHexToKey("0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356")
 	adr := common.HexToAddress("0x14dC79964da2C08b23698B3D3cc7Ca32193d9955")
@@ -157,7 +157,7 @@ func transferFundTo(t *testing.T, ctx context.Context, addr string, client *ethc
 	require.NoError(t, err)
 
 	var data []byte
-	chainID, err := client.NetworkID(ctx)
+	chainID, err := client.ChainID(ctx)
 	require.NoError(t, err)
 
 	toAddress := common.HexToAddress(addr)
