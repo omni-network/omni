@@ -25,10 +25,9 @@ const (
 	networkFile     = "network.json"
 	attestStateFile = "xattestations_state.json"
 
-	DefaultHomeDir                 = "./halo" // Defaults to "halo" in current directory
-	defaultAppStatePersistInterval = 1        // Persist app state every block. Set to 0 to disable persistence.
-	defaultSnapshotInterval        = 1000     // Roughly once an hour (given 3s blocks)
-	defaultMinRetainBlocks         = 0        // Retain all blocks
+	DefaultHomeDir          = "./halo" // Defaults to "halo" in current directory
+	defaultSnapshotInterval = 1000     // Roughly once an hour (given 3s blocks)
+	defaultMinRetainBlocks  = 0        // Retain all blocks
 
 	defaultPruningOption      = pruningtypes.PruningOptionNothing // Prune nothing
 	defaultDBBackend          = db.GoLevelDBBackend
@@ -39,29 +38,27 @@ const (
 // DefaultConfig returns the default halo config.
 func DefaultConfig() Config {
 	return Config{
-		HomeDir:                 DefaultHomeDir,
-		EngineJWTFile:           "", // No default
-		AppStatePersistInterval: defaultAppStatePersistInterval,
-		SnapshotInterval:        defaultSnapshotInterval,
-		BackendType:             string(defaultDBBackend),
-		MinRetainBlocks:         defaultMinRetainBlocks,
-		PruningOption:           defaultPruningOption,
-		EVMBuildDelay:           defaultEVMBuildDelay,
-		EVMBuildOptimistic:      defaultEVMBuildOptimistic,
+		HomeDir:            DefaultHomeDir,
+		EngineJWTFile:      "", // No default
+		SnapshotInterval:   defaultSnapshotInterval,
+		BackendType:        string(defaultDBBackend),
+		MinRetainBlocks:    defaultMinRetainBlocks,
+		PruningOption:      defaultPruningOption,
+		EVMBuildDelay:      defaultEVMBuildDelay,
+		EVMBuildOptimistic: defaultEVMBuildOptimistic,
 	}
 }
 
 // Config defines all halo specific config.
 type Config struct {
-	HomeDir                 string
-	EngineJWTFile           string
-	AppStatePersistInterval uint64
-	SnapshotInterval        uint64 // See cosmossdk.io/store/snapshots/types/options.go
-	BackendType             string // See cosmos-db/db.go
-	MinRetainBlocks         uint64
-	PruningOption           string // See cosmossdk.io/store/pruning/types/options.go
-	EVMBuildDelay           time.Duration
-	EVMBuildOptimistic      bool
+	HomeDir            string
+	EngineJWTFile      string
+	SnapshotInterval   uint64 // See cosmossdk.io/store/snapshots/types/options.go
+	BackendType        string // See cosmos-db/db.go
+	MinRetainBlocks    uint64
+	PruningOption      string // See cosmossdk.io/store/pruning/types/options.go
+	EVMBuildDelay      time.Duration
+	EVMBuildOptimistic bool
 }
 
 // ConfigFile returns the default path to the toml halo config file.

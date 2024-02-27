@@ -25,8 +25,9 @@ func DefaultDeployConfig() DeployConfig {
 
 type DeployConfig struct {
 	PromSecrets
-	EigenFile string
-	PingPongN uint64
+	EigenFile  string
+	PingPongN  uint64
+	testConfig bool // Internal use only (no command line flag).
 }
 
 // Deploy a new e2e network. It also starts all services in order to deploy private portals.
@@ -46,7 +47,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 		return nil, err
 	}
 
-	if err := Setup(ctx, def, cfg.PromSecrets); err != nil {
+	if err := Setup(ctx, def, cfg.PromSecrets, cfg.testConfig); err != nil {
 		return nil, err
 	}
 
@@ -103,6 +104,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, prom PromSe
 	depCfg := DeployConfig{
 		PromSecrets: prom,
 		PingPongN:   pingpongN,
+		testConfig:  true,
 	}
 
 	deployInfo, err := Deploy(ctx, def, depCfg)
@@ -131,8 +133,13 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, prom PromSe
 
 	// Wait for all messages to be sent
 	log.Info(ctx, "Waiting for all cross chain messages to be sent")
-	if err := <-msgsErr; err != nil {
-		return err
+	select {
+	case <-ctx.Done():
+		return errors.Wrap(ctx.Err(), "cancel")
+	case err := <-msgsErr:
+		if err != nil {
+			return err
+		}
 	}
 
 	if err := WaitAllSubmissions(ctx, def.Netman.Portals(), sum(msgBatches)); err != nil {
@@ -164,7 +171,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, prom PromSe
 // Upgrade generates all local artifacts, but only copies the docker-compose file to the VMs.
 // It them calls docker-compose up.
 func Upgrade(ctx context.Context, def Definition) error {
-	if err := Setup(ctx, def, PromSecrets{}); err != nil {
+	if err := Setup(ctx, def, PromSecrets{}, false); err != nil {
 		return err
 	}
 

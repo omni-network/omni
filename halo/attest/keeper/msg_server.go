@@ -29,11 +29,7 @@ func (s msgServer) AddVotes(ctx context.Context, msg *types.MsgAddVotes,
 		return nil, errors.New("only allowed in finalize mode")
 	}
 
-	sdkContext := sdk.UnwrapSDKContext(ctx)
-	vals := s.validatorsByAddress(ctx, sdkContext.BlockHeight()-1)
-	if err := verifyAggVotes(ctx, vals, s.windower, msg.Votes); err != nil {
-		return nil, errors.Wrap(err, "verify votes")
-	}
+	// Not verifying votes here since this block is now finalized, so it is too late to reject votes.
 
 	err := s.Keeper.Add(ctx, msg)
 	if err != nil {

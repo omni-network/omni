@@ -5,6 +5,7 @@ import (
 
 	"github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/log"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -19,8 +20,14 @@ func (s proposalServer) AddVotes(ctx context.Context, msg *types.MsgAddVotes,
 ) (*types.AddVotesResponse, error) {
 	// Verify proposed msg
 	sdkContext := sdk.UnwrapSDKContext(ctx)
-	vals := s.validatorsByAddress(ctx, sdkContext.BlockHeight()-1)
-	if err := verifyAggVotes(ctx, vals, s.windower, msg.Votes); err != nil {
+	vals, ok, err := s.validatorsByAddress(ctx, sdkContext.BlockHeight()-1)
+	if err != nil {
+		return nil, errors.Wrap(err, "fetch validators")
+	} else if !ok {
+		log.Warn(ctx, "Skipping vote verification since prev block validators not available. "+
+			"Assume this is first block after snapshot restore", nil)
+		// This is ok, since this should only occur on single validators
+	} else if err := verifyAggVotes(ctx, vals, s.windower, msg.Votes); err != nil {
 		return nil, errors.Wrap(err, "verify votes")
 	}
 

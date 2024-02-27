@@ -49,7 +49,7 @@ const (
 )
 
 // Setup sets up the testnet configuration.
-func Setup(ctx context.Context, def Definition, promSecrets PromSecrets) error {
+func Setup(ctx context.Context, def Definition, promSecrets PromSecrets, testCfg bool) error {
 	log.Info(ctx, "Setup testnet", "dir", def.Testnet.Dir)
 
 	if err := os.MkdirAll(def.Testnet.Dir, os.ModePerm); err != nil {
@@ -108,7 +108,7 @@ func Setup(ctx context.Context, def Definition, promSecrets PromSecrets) error {
 		}
 		config.WriteConfigFile(filepath.Join(nodeDir, "config", "config.toml"), cfg) // panics
 
-		if err := writeHaloConfig(nodeDir, logCfg); err != nil {
+		if err := writeHaloConfig(nodeDir, logCfg, testCfg); err != nil {
 			return err
 		}
 
@@ -305,17 +305,20 @@ func MakeConfig(node *e2e.Node, nodeDir string) (*config.Config, error) {
 }
 
 // writeHaloConfig generates an halo application config for a node and writes it to disk.
-func writeHaloConfig(nodeDir string, logCfg log.Config) error {
+func writeHaloConfig(nodeDir string, logCfg log.Config, testCfg bool) error {
 	cfg := halocfg.DefaultConfig()
 	cfg.HomeDir = nodeDir
 	cfg.EngineJWTFile = "/geth/jwtsecret" // As per docker-compose mount
+	if testCfg {
+		cfg.SnapshotInterval = 1 // Write snapshots each block in e2e tests
+	}
 
 	return halocfg.WriteConfigTOML(cfg, logCfg)
 }
 
-// UpdateConfigStateSync updates the state sync config for a node.
-func UpdateConfigStateSync(node *e2e.Node, height int64, hash []byte) error {
-	cfgPath := filepath.Join(node.Testnet.Dir, node.Name, "config", "config.toml")
+// updateConfigStateSync updates the state sync config for a node.
+func updateConfigStateSync(nodeDir string, height int64, hash []byte) error {
+	cfgPath := filepath.Join(nodeDir, "config", "config.toml")
 
 	// FIXME Apparently there's no function to simply load a config file without
 	// involving the entire Viper apparatus, so we'll just resort to regexps.
@@ -323,8 +326,17 @@ func UpdateConfigStateSync(node *e2e.Node, height int64, hash []byte) error {
 	if err != nil {
 		return errors.Wrap(err, "read config")
 	}
+
+	before := string(bz)
+
 	bz = regexp.MustCompile(`(?m)^trust_height =.*`).ReplaceAll(bz, []byte(fmt.Sprintf(`trust_height = %v`, height)))
 	bz = regexp.MustCompile(`(?m)^trust_hash =.*`).ReplaceAll(bz, []byte(fmt.Sprintf(`trust_hash = "%X"`, hash)))
+	bz = regexp.MustCompile(`(?m)^log_level =.*`).ReplaceAll(bz, []byte(`log_level = "info"`)) // Increase log level.
+
+	after := string(bz)
+	if before == after {
+		return errors.New("no changes to config")
+	}
 
 	if err := os.WriteFile(cfgPath, bz, 0o644); err != nil {
 		return errors.Wrap(err, "write config")

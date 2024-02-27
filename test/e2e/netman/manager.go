@@ -33,7 +33,7 @@ var (
 	privateRelayerKey = mustHexToKey(privKeyHex1)
 )
 
-// Manager abstract logic to deploy and bootstrap a extNetwork.
+// Manager abstract logic to deploy and bootstrap a network.
 type Manager interface {
 	// DeployPublicPortals deploys portals to public chains, like arb-goerli.
 	DeployPublicPortals(ctx context.Context, valSetID uint64, validators []bindings.Validator) error
@@ -110,7 +110,7 @@ func NewManager(testnet types.Testnet, backends backend.Backends, relayerKeyFile
 			backends:    backends,
 		}, nil
 	default:
-		return nil, errors.New("unknown extNetwork")
+		return nil, errors.New("unknown network")
 	}
 }
 
