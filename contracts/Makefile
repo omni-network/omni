@@ -15,7 +15,7 @@ build: version ## Build contracts.
 	forge build
 
 bindings: build ## Generate golang contract bindings.
-	./bindings/gen.sh OmniPortal FeeOracleV1 OmniAVS TransparentUpgradeableProxy ProxyAdmin
+	./bindings/gen.sh OmniPortal FeeOracleV1 OmniAVS TransparentUpgradeableProxy ProxyAdmin DelegationManager StrategyManager StrategyBase ERC20 AVSDirectory EIP1271SignatureUtils
 
 examples-bindings: build ## Generate golang contract bindings for example contracts
 	PKG=examples DIR=./bindings/examples ./bindings/gen.sh PingPong

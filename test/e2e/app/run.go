@@ -139,6 +139,11 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, prom PromSe
 		return err
 	}
 
+	// Anvil doens't support subscriptions, we need to poll.
+	// if err := pp.WaitDone(ctx); err != nil {
+	//	return errors.Wrap(err, "wait pingpong")
+	//}
+
 	if err := Test(ctx, def, deployInfo, false); err != nil {
 		return err
 	}
