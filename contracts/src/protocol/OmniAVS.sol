@@ -2,6 +2,7 @@
 pragma solidity =0.8.12;
 
 import { OwnableUpgradeable } from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import { PausableUpgradeable } from "@openzeppelin-upgrades/contracts/security/PausableUpgradeable.sol";
 
 import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
@@ -15,7 +16,7 @@ import { IOmniAVS } from "../interfaces/IOmniAVS.sol";
 import { IOmniAVSAdmin } from "../interfaces/IOmniAVSAdmin.sol";
 import { IDelegationManager } from "../interfaces/IDelegationManager.sol";
 
-contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable {
+contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable, PausableUpgradeable {
     /// @notice Constant used as a divisor in calculating weights
     uint256 public constant WEIGHTING_DIVISOR = 1e18;
 
@@ -72,8 +73,9 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
         omniChainId = omniChainId_;
         minimumOperatorStake = minimumOperatorStake_;
         maxOperatorCount = maxOperatorCount_;
-        _setStrategyParams(strategyParams_);
+
         _transferOwnership(owner_);
+        _setStrategyParams(strategyParams_);
 
         for (uint256 i = 0; i < allowlist_.length; i++) {
             _allowlist[allowlist_[i]] = true;
@@ -88,7 +90,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     function registerOperatorToAVS(
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external {
+    ) external whenNotPaused {
         require(msg.sender == operator, "OmniAVS: only operator");
         require(_allowlist[operator], "OmniAVS: not allowed");
         require(!_isOperator(operator), "OmniAVS: already an operator"); // we could let _avsDirectory.regsiterOperatorToAVS handle this, they do check
@@ -102,7 +104,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     }
 
     /// @inheritdoc IServiceManager
-    function deregisterOperatorFromAVS(address operator) external {
+    function deregisterOperatorFromAVS(address operator) external whenNotPaused {
         require(msg.sender == operator || msg.sender == owner(), "OmniAVS: only operator or owner");
         require(_isOperator(operator), "OmniAVS: not an operator");
 
@@ -151,7 +153,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     }
 
     /// @inheritdoc IOmniAVS
-    function syncWithOmni() external payable {
+    function syncWithOmni() external payable whenNotPaused {
         Validator[] memory vals = _getValidators();
         omni.xcall{ value: msg.value }(
             omniChainId,
@@ -339,6 +341,16 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
         require(_allowlist[operator], "OmniAVS: not in allowlist");
         _allowlist[operator] = false;
         emit OperatorDisallowed(operator);
+    }
+
+    /// @inheritdoc IOmniAVSAdmin
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /// @inheritdoc IOmniAVSAdmin
+    function unpause() external onlyOwner {
+        _unpause();
     }
 
     /// @dev Set the strategy parameters

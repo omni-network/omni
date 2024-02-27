@@ -6,7 +6,7 @@ import { Base } from "./common/Base.sol";
 
 /**
  * @title OmniAVS_admin_Test
- * @dev Test suite for the AVS amdin functionality
+ * @dev Test suite for the AVS admin functionality
  */
 contract OmniAVS_admin_Test is Base {
     /// @dev Test that the owner can deregister an operator

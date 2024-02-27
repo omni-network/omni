@@ -103,4 +103,16 @@ interface IOmniAVSAdmin {
      * @param operator The operator to remove
      */
     function removeFromAllowlist(address operator) external;
+
+    /**
+     * @notice Pause the contract.
+     * @dev Only the owner can call this function.
+     */
+    function pause() external;
+
+    /**
+     * @notice Unpause the contract.
+     * @dev Only the owner can call this function.
+     */
+    function unpause() external;
 }
