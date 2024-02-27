@@ -22,6 +22,7 @@ import (
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	cmttypes "github.com/cometbft/cometbft/types"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/stretchr/testify/require"
@@ -337,7 +338,9 @@ func loadContractsForAVS(t *testing.T, chainInfo map[types.ContractName]types.De
 	wethStrategy, err := bindings.NewStrategyBase(wethStrategyAddr, ethClient)
 	require.NoError(t, err)
 
-	wethTokenAddr := chainInfo[types.ContractELWETH].Address
+	callOpts := bind.CallOpts{}
+	wethTokenAddr, err := wethStrategy.UnderlyingToken(&callOpts)
+	require.NoError(t, err)
 	wethToken, err := bindings.NewMockERC20(wethTokenAddr, ethClient)
 	require.NoError(t, err)
 
