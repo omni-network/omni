@@ -11,7 +11,7 @@ require (
 	cosmossdk.io/math v1.3.0
 	cosmossdk.io/orm v1.0.0-beta.3
 	cosmossdk.io/store v1.0.2
-	entgo.io/ent v0.13.0
+	entgo.io/ent v0.13.1
 	github.com/BurntSushi/toml v1.3.2
 	github.com/bufbuild/buf v1.29.0
 	github.com/charmbracelet/log v0.3.1
