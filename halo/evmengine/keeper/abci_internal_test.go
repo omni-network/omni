@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum"
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
 	etypes "github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/lib/errors"
@@ -17,6 +16,7 @@ import (
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 
+	"github.com/ethereum/go-ethereum"
 	eengine "github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -42,7 +42,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// todo(lazar): make it table tests, ok for now.
 func TestKeeper_PrepareProposal(t *testing.T) {
 	t.Parallel()
 
@@ -125,7 +124,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 				ctx, storeService := setupCtxStore(t)
-				cdc := getCodec()
+				cdc := getCodec(t)
 				txConfig := authtx.NewTxConfig(cdc, nil)
 				ap := MockAddressProvider{}
 
@@ -142,7 +141,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 	t.Run("build non optimistic", func(t *testing.T) {
 		t.Parallel()
 		ctx, storeService := setupCtxStore(t)
-		cdc := getCodec()
+		cdc := getCodec(t)
 		txConfig := authtx.NewTxConfig(cdc, nil)
 
 		me, err := ethclient.NewEngineMock()
@@ -160,19 +159,21 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		latestBlock, err := mockEngine.BlockByNumber(ctx, big.NewInt(int64(latestHeight)))
 		require.NoError(t, err)
 
-		mockEngine.pushPayload(t, ctx, ap, latestBlock.Hash(), ts)
-		nextBlock := mockEngine.nextBlock(latestHeight+1, uint64(ts.Unix()), latestBlock.Hash(), ap.LocalAddress())
-		payloadID := mockEngine.pushPayload(t, ctx, ap, nextBlock.Hash(), ts)
-
-		keeper.mutablePayload.UpdatedAt = time.Now()
-		keeper.mutablePayload.ID = payloadID
+		mockEngine.pushPayload(t, ctx, ap.LocalAddress(), latestBlock.Hash(), ts)
+		nextBlock, blockPayload := mockEngine.nextBlock(t, latestHeight+1, uint64(ts.Unix()), latestBlock.Hash(), ap.LocalAddress())
+		_, err = mockEngine.Mock.NewPayloadV2(ctx, blockPayload)
+		require.NoError(t, err)
+		payloadID := mockEngine.pushPayload(t, ctx, ap.LocalAddress(), nextBlock.Hash(), ts)
 
 		req := &abci.RequestPrepareProposal{
 			Txs:    nil,
 			Height: int64(2),
 			Time:   time.Now(),
 		}
+
 		keeper.mutablePayload.Height = 2
+		keeper.mutablePayload.UpdatedAt = time.Now()
+		keeper.mutablePayload.ID = payloadID
 
 		resp, err := keeper.PrepareProposal(ctx, req)
 		require.NoError(t, err)
@@ -183,7 +184,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 
 		for _, msg := range tx.GetMsgs() {
 			if _, ok := msg.(*etypes.MsgExecutionPayload); ok {
-				assertExecutablePayload(t, msg, ts, nextBlock.Hash(), ap, uint64(req.Height))
+				assertExecutablePayload(t, msg, ts.Unix(), nextBlock.Hash(), ap, uint64(req.Height))
 			}
 		}
 	})
@@ -191,7 +192,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 	t.Run("build optimistic", func(t *testing.T) {
 		t.Parallel()
 		ctx, storeService := setupCtxStore(t)
-		cdc := getCodec()
+		cdc := getCodec(t)
 		txConfig := authtx.NewTxConfig(cdc, nil)
 
 		me, err := ethclient.NewEngineMock()
@@ -209,12 +210,13 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		latestBlock, err := mockEngine.BlockByNumber(ctx, big.NewInt(int64(latestHeight)))
 		require.NoError(t, err)
 
-		mockEngine.pushPayload(t, ctx, ap, latestBlock.Hash(), ts)
-		nextBlock := mockEngine.nextBlock(latestHeight+1, uint64(ts.Unix()), latestBlock.Hash(), ap.LocalAddress())
-		payloadID := mockEngine.pushPayload(t, ctx, ap, nextBlock.Hash(), ts)
+		mockEngine.pushPayload(t, ctx, ap.LocalAddress(), latestBlock.Hash(), ts)
+		nextBlock, blockPayload := mockEngine.nextBlock(t, latestHeight+1, uint64(ts.Unix()), latestBlock.Hash(), ap.LocalAddress())
+		_, err = mockEngine.Mock.NewPayloadV2(ctx, blockPayload)
+		require.NoError(t, err)
+		mockEngine.pushPayload(t, ctx, ap.LocalAddress(), nextBlock.Hash(), ts)
 
 		keeper.mutablePayload.UpdatedAt = time.Now()
-		keeper.mutablePayload.ID = payloadID
 
 		req := &abci.RequestPrepareProposal{
 			Txs:    nil,
@@ -226,23 +228,18 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, resp)
 
-		latestHeight, err = mockEngine.BlockNumber(ctx)
-		require.NoError(t, err)
-		latestBlock, err = mockEngine.BlockByNumber(ctx, big.NewInt(int64(latestHeight)))
-		require.NoError(t, err)
-
 		tx, err := txConfig.TxDecoder()(resp.Txs[0])
 		require.NoError(t, err)
 
 		for _, msg := range tx.GetMsgs() {
 			if _, ok := msg.(*etypes.MsgExecutionPayload); ok {
-				assertExecutablePayload(t, msg, ts, latestBlock.Hash(), ap, uint64(req.Height))
+				assertExecutablePayload(t, msg, req.Time.Unix()+1, nextBlock.Hash(), ap, uint64(req.Height))
 			}
 		}
 	})
 }
 
-func assertExecutablePayload(t *testing.T, msg sdk.Msg, ts time.Time, blockHash common.Hash, ap MockAddressProvider, height uint64) {
+func assertExecutablePayload(t *testing.T, msg sdk.Msg, ts int64, blockHash common.Hash, ap MockAddressProvider, height uint64) {
 	t.Helper()
 	executionPayload, ok := msg.(*etypes.MsgExecutionPayload)
 	require.True(t, ok)
@@ -250,7 +247,7 @@ func assertExecutablePayload(t *testing.T, msg sdk.Msg, ts time.Time, blockHash 
 	var ep *eengine.ExecutableData
 	err := json.Unmarshal(executionPayload.GetData(), &ep)
 	require.NoError(t, err)
-	require.Equal(t, int64(ep.Timestamp), ts.Unix()+1)
+	require.Equal(t, int64(ep.Timestamp), ts)
 	require.Equal(t, ep.Random, blockHash)
 	require.Equal(t, ep.FeeRecipient, ap.LocalAddress())
 	require.Empty(t, ep.Withdrawals)
@@ -267,7 +264,8 @@ func setupCtxStore(t *testing.T) (sdk.Context, store.KVStoreService) {
 	return ctx, storeService
 }
 
-func getCodec() *codec.ProtoCodec {
+func getCodec(t *testing.T) *codec.ProtoCodec {
+	t.Helper()
 	sdkConfig := sdk.GetConfig()
 	reg, err := codectypes.NewInterfaceRegistryWithOptions(codectypes.InterfaceRegistryOptions{
 		ProtoFiles: proto.HybridResolver,
@@ -276,9 +274,7 @@ func getCodec() *codec.ProtoCodec {
 			ValidatorAddressCodec: authcodec.NewBech32Codec(sdkConfig.GetBech32ValidatorAddrPrefix()),
 		},
 	})
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 
 	cosmosstd.RegisterInterfaces(reg)
 	atypes.RegisterInterfaces(reg)
@@ -305,142 +301,142 @@ type MockEngineAPI struct {
 }
 
 func (m *MockEngineAPI) ChainID(ctx context.Context) (*big.Int, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m *MockEngineAPI) BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m *MockEngineAPI) HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m *MockEngineAPI) HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m *MockEngineAPI) TransactionCount(ctx context.Context, blockHash common.Hash) (uint, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m *MockEngineAPI) TransactionInBlock(ctx context.Context, blockHash common.Hash, index uint) (*types.Transaction, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m *MockEngineAPI) SubscribeNewHead(ctx context.Context, ch chan<- *types.Header) (ethereum.Subscription, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m *MockEngineAPI) BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (*big.Int, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m *MockEngineAPI) StorageAt(ctx context.Context, account common.Address, key common.Hash, blockNumber *big.Int) ([]byte, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m *MockEngineAPI) CodeAt(ctx context.Context, account common.Address, blockNumber *big.Int) ([]byte, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m *MockEngineAPI) NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m *MockEngineAPI) SyncProgress(ctx context.Context) (*ethereum.SyncProgress, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m *MockEngineAPI) CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m *MockEngineAPI) EstimateGas(ctx context.Context, call ethereum.CallMsg) (uint64, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m *MockEngineAPI) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m *MockEngineAPI) SuggestGasTipCap(ctx context.Context) (*big.Int, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m *MockEngineAPI) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]types.Log, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m *MockEngineAPI) SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m *MockEngineAPI) PendingBalanceAt(ctx context.Context, account common.Address) (*big.Int, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m *MockEngineAPI) PendingStorageAt(ctx context.Context, account common.Address, key common.Hash) ([]byte, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m *MockEngineAPI) PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m *MockEngineAPI) PendingNonceAt(ctx context.Context, account common.Address) (uint64, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m *MockEngineAPI) PendingTransactionCount(ctx context.Context) (uint, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
-func (m *MockEngineAPI) TransactionByHash(ctx context.Context, txHash common.Hash) (tx *types.Transaction, isPending bool, err error) {
-	//TODO implement me
+func (m *MockEngineAPI) TransactionByHash(ctx context.Context, txHash common.Hash) (*types.Transaction, bool, error) {
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m *MockEngineAPI) TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m *MockEngineAPI) SendTransaction(ctx context.Context, tx *types.Transaction) error {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m *MockEngineAPI) HeaderByType(ctx context.Context, typ ethclient.HeadType) (*types.Header, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m *MockEngineAPI) Close() {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
@@ -500,9 +496,9 @@ func (m *MockEngineAPI) GetPayloadV3(ctx context.Context, payloadID eengine.Payl
 	panic("implement me")
 }
 
-func (m *MockEngineAPI) pushPayload(t *testing.T, ctx context.Context, ap etypes.AddressProvider, blockHash common.Hash, ts time.Time) *eengine.PayloadID {
+func (m *MockEngineAPI) pushPayload(t *testing.T, ctx context.Context, feeRecipient common.Address, blockHash common.Hash, ts time.Time) *eengine.PayloadID {
 	t.Helper()
-	forkchoiceState := eengine.ForkchoiceStateV1{
+	state := eengine.ForkchoiceStateV1{
 		HeadBlockHash:      blockHash,
 		SafeBlockHash:      blockHash,
 		FinalizedBlockHash: blockHash,
@@ -511,18 +507,20 @@ func (m *MockEngineAPI) pushPayload(t *testing.T, ctx context.Context, ap etypes
 	payloadAttrs := eengine.PayloadAttributes{
 		Timestamp:             uint64(ts.Unix()),
 		Random:                blockHash,
-		SuggestedFeeRecipient: ap.LocalAddress(),
+		SuggestedFeeRecipient: feeRecipient,
 		Withdrawals:           []*types.Withdrawal{},
 		BeaconRoot:            nil,
 	}
 
-	forkchoiceResp, err := m.ForkchoiceUpdatedV2(ctx, forkchoiceState, &payloadAttrs)
+	resp, err := m.ForkchoiceUpdatedV2(ctx, state, &payloadAttrs)
 	require.NoError(t, err)
 
-	return forkchoiceResp.PayloadID
+	return resp.PayloadID
 }
 
-func (m *MockEngineAPI) nextBlock(height uint64, timestamp uint64, parentHash common.Hash, feeRecipient common.Address) *types.Block {
+func (m *MockEngineAPI) nextBlock(t *testing.T, height uint64, timestamp uint64, parentHash common.Hash,
+	feeRecipient common.Address) (*types.Block, eengine.ExecutableData) {
+	t.Helper()
 	var header types.Header
 	m.fuzzer.Fuzz(&header)
 	header.Number = big.NewInt(int64(height))
@@ -534,5 +532,13 @@ func (m *MockEngineAPI) nextBlock(height uint64, timestamp uint64, parentHash co
 	// Convert header to block
 	block := types.NewBlock(&header, nil, nil, nil, trie.NewStackTrie(nil))
 
-	return block
+	// Convert block to payload
+	env := eengine.BlockToExecutableData(block, big.NewInt(0), nil)
+	payload := *env.ExecutionPayload
+
+	// Ensure the block is valid
+	_, err := eengine.ExecutableDataToBlock(payload, nil, nil)
+	require.NoError(t, err)
+
+	return block, payload
 }
