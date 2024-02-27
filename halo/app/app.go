@@ -62,14 +62,13 @@ func newApp(
 	logger log.Logger,
 	db dbm.DB,
 	engineCl ethclient.EngineClient,
-	voter atypes.Voter,
 	namer atypes.ChainNameFunc,
 	baseAppOpts ...func(*baseapp.BaseApp),
 ) (*App, error) {
 	depCfg := depinject.Configs(
 		DepConfig(),
 		depinject.Supply(
-			logger, engineCl, voter, namer,
+			logger, engineCl, namer,
 		),
 	)
 
@@ -139,6 +138,13 @@ func (App) SimulationManager() *module.SimulationManager {
 func (a App) SetCometAPI(api comet.API) {
 	a.AttestKeeper.SetCometAPI(api)
 	a.EVMEngKeeper.SetCometAPI(api)
+}
+
+// SetVoter sets the voter.
+// TODO(corver): Figure out how to use depinject to set this.
+func (a App) SetVoter(voter atypes.Voter) {
+	a.AttestKeeper.SetVoter(voter)
+	a.EVMEngKeeper.SetAddressProvider(voter)
 }
 
 var (

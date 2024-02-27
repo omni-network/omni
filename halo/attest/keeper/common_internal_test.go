@@ -47,7 +47,7 @@ func setupKeeper(t *testing.T, expectations ...func(sdk.Context, mocks)) (*Keepe
 	}
 
 	const voteWindow = 1
-	k, err := New(codec, storeSvc, m.skeeper, m.voter, m.namer.ChainName, voteWindow)
+	k, err := New(codec, storeSvc, m.skeeper, m.namer.ChainName, voteWindow)
 	require.NoError(t, err, "new keeper")
 
 	return k, ctx

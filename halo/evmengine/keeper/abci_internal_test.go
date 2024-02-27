@@ -131,7 +131,8 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 				txConfig := authtx.NewTxConfig(cdc, nil)
 				ap := mockAddressProvider{}
 
-				k := NewKeeper(cdc, storeService, &tt.mockEngine, txConfig, ap)
+				k := NewKeeper(cdc, storeService, &tt.mockEngine, txConfig)
+				k.SetAddressProvider(ap)
 				_, err := k.PrepareProposal(ctx, tt.req)
 				if (err != nil) != tt.wantErr {
 					t.Errorf("PrepareProposal() error = %v, wantErr %v", err, tt.wantErr)
@@ -150,7 +151,8 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		mockEngine, err := newMockEngineAPI()
 		require.NoError(t, err)
 		ap := mockAddressProvider{}
-		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap)
+		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig)
+		keeper.SetAddressProvider(ap)
 
 		// get the genesis block to build on top of
 		ts := time.Now()
@@ -203,7 +205,8 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		require.NoError(t, err)
 
 		ap := mockAddressProvider{}
-		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap)
+		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig)
+		keeper.SetAddressProvider(ap)
 
 		keeper.providers = []etypes.CPayloadProvider{mockCPayloadProvider{}, mockCPayloadProvider{}}
 
