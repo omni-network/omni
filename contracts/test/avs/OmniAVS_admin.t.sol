@@ -16,7 +16,7 @@ contract OmniAVS_admin_Test is Base {
         // register operator
         _registerAsOperator(operator);
         _addToAllowlist(operator);
-        _depositBeaconEth(operator, minimumOperatorStake);
+        _depositBeaconEth(operator, minOperatorStake);
         _registerOperatorWithAVS(operator);
 
         // assert operator is registered

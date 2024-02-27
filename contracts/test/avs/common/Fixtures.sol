@@ -29,7 +29,7 @@ contract Fixtures is EigenLayerFixtures {
     address omniAVSOwner = multisig;
 
     uint32 maxOperatorCount = 10;
-    uint96 minimumOperatorStake = 1 ether;
+    uint96 minOperatorStake = 1 ether;
     uint64 omniChainId = 111;
 
     ProxyAdmin proxyAdmin;
@@ -74,7 +74,7 @@ contract Fixtures is EigenLayerFixtures {
                 omniAVSOwner,
                 portal,
                 omniChainId,
-                minimumOperatorStake,
+                minOperatorStake,
                 maxOperatorCount,
                 allowlist,
                 _localStrategyParams()
