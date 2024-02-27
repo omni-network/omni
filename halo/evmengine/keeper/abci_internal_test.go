@@ -204,6 +204,9 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		ap := MockAddressProvider{}
 		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap)
 
+		cpayloadProvider := MockCPayloadProvider{}
+		keeper.providers = []etypes.CPayloadProvider{cpayloadProvider}
+
 		ts := time.Now()
 		latestHeight, err := mockEngine.BlockNumber(ctx)
 		require.NoError(t, err)
@@ -416,7 +419,9 @@ type MockAddressProvider struct{}
 type MockCPayloadProvider struct{}
 
 func (m MockCPayloadProvider) PreparePayload(ctx context.Context, height uint64, commit abci.ExtendedCommitInfo) ([]sdk.Msg, error) {
-	panic("implement me")
+	coin := sdk.NewInt64Coin("stake", 100)
+	msg := stypes.NewMsgDelegate("addr", "addr", coin)
+	return []sdk.Msg{msg}, nil
 }
 
 func (m MockAddressProvider) LocalAddress() common.Address {
