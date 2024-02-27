@@ -18,7 +18,7 @@ When receiving an `xcall`, you can read its context through the current `xmsg`.
 
 ```solidity
 omni.xmsg().sourceChainId // where this xcall came from
-omni.xmsg().sender        // who sent it
+omni.xmsg().sender        // who sent it (msg.sender of the source xcall)
 ```
 
 <br />
