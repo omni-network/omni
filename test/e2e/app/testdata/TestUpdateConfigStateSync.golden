@@ -1,0 +1,16 @@
+
+# Database directory
+db_dir = "data"
+
+# Output level for logging, including package level options
+log_level = "info"
+
+# Output format: 'plain' (colored text) or 'json'
+log_format = "plain"
+
+# For Cosmos SDK-based chains, trust_period should usually be about 2/3 of the unbonding time (~2
+# weeks) during which they can be financially punished (slashed) for misbehavior.
+rpc_servers = ""
+trust_height = 1
+trust_hash = "74657374"
+trust_period = "168h0m0s"

@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"path/filepath"
 	"slices"
 	"sort"
 	"time"
@@ -93,7 +94,8 @@ func StartRemaining(ctx context.Context, testnet *e2e.Testnet, p infra.Provider)
 	// Update any state sync nodes with a trusted height and hash
 	for _, node := range remaining {
 		if node.StateSync || node.Mode == e2e.ModeLight {
-			err = UpdateConfigStateSync(node, block.Height, blockID.Hash.Bytes())
+			nodeDir := filepath.Join(testnet.Dir, node.Name)
+			err = updateConfigStateSync(nodeDir, block.Height, blockID.Hash.Bytes())
 			if err != nil {
 				return err
 			}

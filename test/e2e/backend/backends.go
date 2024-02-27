@@ -49,7 +49,7 @@ func New(testnet types.Testnet, deployKeyFile string) (Backends, error) {
 	} else if testnet.Network == netconf.Staging {
 		publicDeployKey, err = crypto.LoadECDSA(deployKeyFile)
 	} else {
-		return Backends{}, errors.New("unknown extNetwork")
+		return Backends{}, errors.New("unknown network")
 	}
 	if err != nil {
 		return Backends{}, errors.Wrap(err, "load deploy key")

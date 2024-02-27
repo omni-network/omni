@@ -94,9 +94,11 @@ func (k *Keeper) isNextProposer(ctx context.Context) (bool, uint64, error) {
 	header := sdkCtx.BlockHeader()
 	nextHeight := header.Height + 1
 
-	valset, err := k.cmtAPI.Validators(ctx, header.Height)
+	valset, ok, err := k.cmtAPI.Validators(ctx, header.Height)
 	if err != nil {
 		return false, 0, err
+	} else if !ok {
+		return false, 0, errors.New("validators not available")
 	}
 
 	idx, _ := valset.GetByAddress(header.ProposerAddress)

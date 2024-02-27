@@ -14,4 +14,8 @@ message Module {
 
   // authority defines the custom module authority. If not set, defaults to the governance module.
   string authority = 1;
+
+  // vote_window defines the number of blocks before and after the latest approved attestation
+  // that votes are allowed for.
+  uint64 vote_window = 2;
 }

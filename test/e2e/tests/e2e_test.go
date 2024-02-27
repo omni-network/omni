@@ -22,6 +22,7 @@ import (
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	cmttypes "github.com/cometbft/cometbft/types"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/stretchr/testify/require"
@@ -67,15 +68,20 @@ type PingPong struct {
 }
 
 type AVS struct {
-	Chain    netconf.Chain
-	Client   ethclient.Client
-	Contract *bindings.OmniAVS
+	Chain                     netconf.Chain
+	Client                    ethclient.Client
+	AVSContract               *bindings.OmniAVS
+	DelegationManagerContract *bindings.DelegationManager
+	StrategyManagerContract   *bindings.StrategyManager
+	WETHStrategyContract      *bindings.StrategyBase
+	WETHTokenContract         *bindings.MockERC20
+	AVSDirectory              *bindings.AVSDirectory
 }
 
 type testFunc struct {
 	TestNode   func(*testing.T, e2e.Node, []Portal)
 	TestPortal func(*testing.T, Portal, []Portal)
-	TestAVS    func(*testing.T, AVS)
+	TestAVS    func(*testing.T, AVS, map[types.ContractName]types.DeployInfo)
 }
 
 func testNode(t *testing.T, fn func(*testing.T, e2e.Node, []Portal)) {
@@ -88,11 +94,10 @@ func testPortal(t *testing.T, fn func(*testing.T, Portal, []Portal)) {
 	test(t, testFunc{TestPortal: fn})
 }
 
-// TODO(corver): Uncomment and use.
-// func testAVS(t *testing.T, fn func(*testing.T, AVS)) {
-//	t.Helper()
-//	test(t, testFunc{TestAVS: fn})
-//}
+func testAVS(t *testing.T, fn func(*testing.T, AVS, map[types.ContractName]types.DeployInfo)) {
+	t.Helper()
+	test(t, testFunc{TestAVS: fn})
+}
 
 // test runs tests for testnet nodes. The callback functions are respectively given a
 // single node to test, and a single portal to test, running as a subtest in parallel with other subtests.
@@ -147,10 +152,25 @@ func test(t *testing.T, testFunc testFunc) {
 			t.Skip("Skipping AVS tests since no deploy info is available")
 			return
 		}
-		// TODO: Create AWS contracts and test them
-		for chain, info := range deployInfo {
-			t.Log(chain, info)
+
+		// search only anvil chains for avs_target
+		achain, err := testnet.AVSChain()
+		require.NoError(t, err)
+
+		// get the netconf for the avs chain
+		var chain netconf.Chain
+		for _, c := range network.Chains {
+			if c.ID == achain.ID {
+				chain = c
+			}
 		}
+
+		// get the deploy info for the chain and load the contracts
+		chainInfo := deployInfo[achain.ID]
+		ethClient, err := ethclient.Dial(chain.Name, chain.RPCURL)
+		require.NoError(t, err)
+		testAvs := loadContractsForAVS(t, chainInfo, chain, ethClient)
+		testFunc.TestAVS(t, testAvs, chainInfo)
 	}
 }
 
@@ -295,4 +315,48 @@ func fetchBlockChain(ctx context.Context, t *testing.T) []*cmttypes.Block {
 	blocksCache[testnet.Name] = blocks
 
 	return blocks
+}
+
+func loadContractsForAVS(t *testing.T, chainInfo map[types.ContractName]types.DeployInfo,
+	chain netconf.Chain, ethClient ethclient.Client) AVS {
+	t.Helper()
+
+	// create the contracts
+	omniAvsAddr := chainInfo[types.ContractOmniAVS].Address
+	omniAvs, err := bindings.NewOmniAVS(omniAvsAddr, ethClient)
+	require.NoError(t, err)
+
+	DelegationManagerAddr := chainInfo[types.ContractELDelegationManager].Address
+	delMan, err := bindings.NewDelegationManager(DelegationManagerAddr, ethClient)
+	require.NoError(t, err)
+
+	StrategtManagerAddr := chainInfo[types.ContractELStrategyManager].Address
+	stratMan, err := bindings.NewStrategyManager(StrategtManagerAddr, ethClient)
+	require.NoError(t, err)
+
+	wethStrategyAddr := chainInfo[types.ContractELWETHStrategy].Address
+	wethStrategy, err := bindings.NewStrategyBase(wethStrategyAddr, ethClient)
+	require.NoError(t, err)
+
+	wethTokenAddr, err := wethStrategy.UnderlyingToken(&bind.CallOpts{})
+	require.NoError(t, err)
+	wethToken, err := bindings.NewMockERC20(wethTokenAddr, ethClient)
+	require.NoError(t, err)
+
+	avsDirAddr := chainInfo[types.ContractAVSDirectory].Address
+	avsDir, err := bindings.NewAVSDirectory(avsDirAddr, ethClient)
+	require.NoError(t, err)
+
+	testAVS := AVS{
+		Chain:                     chain,
+		Client:                    ethClient,
+		AVSContract:               omniAvs,
+		DelegationManagerContract: delMan,
+		StrategyManagerContract:   stratMan,
+		WETHStrategyContract:      wethStrategy,
+		WETHTokenContract:         wethToken,
+		AVSDirectory:              avsDir,
+	}
+
+	return testAVS
 }

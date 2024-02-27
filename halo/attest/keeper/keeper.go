@@ -44,6 +44,7 @@ type Keeper struct {
 	skeeper      *skeeper.Keeper // TODO(corver): Define a interface for the methods we use.
 	cmtAPI       comet.API
 	namer        types.ChainNameFunc
+	windower     types.Windower
 }
 
 // NewKeeper returns a new attestation keeper.
@@ -53,6 +54,7 @@ func NewKeeper(
 	skeeper *skeeper.Keeper,
 	voter types.Voter,
 	namer types.ChainNameFunc,
+	voteWindow uint64,
 ) (*Keeper, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
 		{Id: 1, ProtoFileName: File_halo_attest_keeper_attestation_proto.Path()},
@@ -68,7 +70,7 @@ func NewKeeper(
 		return nil, errors.Wrap(err, "create attestation store")
 	}
 
-	return &Keeper{
+	k := &Keeper{
 		attTable:     attstore.AttestationTable(),
 		sigTable:     attstore.SignatureTable(),
 		cdc:          cdc,
@@ -76,7 +78,12 @@ func NewKeeper(
 		skeeper:      skeeper,
 		voter:        voter,
 		namer:        namer,
-	}, nil
+	}
+
+	// windower is abstracted for testing purposes.
+	k.windower = newWindower(voteWindow, k.latestAttestation)
+
+	return k, nil
 }
 
 // SetCometAPI sets the comet API client.
@@ -108,8 +115,9 @@ func (k *Keeper) Add(ctx context.Context, msg *types.MsgAddVotes) error {
 func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote) error {
 	header := agg.BlockHeader
 
+	// Get existing attestation or insert new one.
 	var attID uint64
-	exiting, err := k.attTable.GetByChainIdHeightHash(ctx, header.ChainId, header.Height, header.Hash)
+	existing, err := k.attTable.GetByChainIdHeightHash(ctx, header.ChainId, header.Height, header.Hash)
 	if ormerrors.IsNotFound(err) {
 		// Insert new attestation
 		attID, err = k.attTable.InsertReturningId(ctx, &Attestation{
@@ -125,10 +133,10 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote) error {
 		}
 	} else if err != nil {
 		return errors.Wrap(err, "by block header")
-	} else if !bytes.Equal(exiting.GetBlockRoot(), agg.BlockRoot) {
+	} else if !bytes.Equal(existing.GetBlockRoot(), agg.BlockRoot) {
 		return errors.New("mismatching block root")
 	} else {
-		attID = exiting.GetId()
+		attID = existing.GetId()
 	}
 
 	// Insert signatures
@@ -154,7 +162,7 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote) error {
 	return nil
 }
 
-// Approve approves any pending attestations that have quorum signatures form the provided set.
+// Approve approves any pending attestations that have quorum signatures from the provided set.
 func (k *Keeper) Approve(ctx context.Context, valset *cmttypes.ValidatorSet) error {
 	pendingIdx := AttestationStatusChainIdHeightIndexKey{}.WithStatus(int32(Status_Pending))
 	iter, err := k.attTable.List(ctx, pendingIdx)
@@ -269,31 +277,32 @@ func (k *Keeper) attestationFrom(ctx context.Context, chainID uint64, height uin
 	return resp, nil
 }
 
-// latestAttestation returns the latest approved attestation for the given chain.
-func (k *Keeper) latestAttestation(ctx context.Context, chainID uint64) (*types.Attestation, error) {
+// latestAttestation returns the latest approved attestation for the given chain or
+// false if none is found.
+func (k *Keeper) latestAttestation(ctx context.Context, chainID uint64) (*types.Attestation, bool, error) {
 	idx := AttestationStatusChainIdHeightIndexKey{}.WithStatusChainId(int32(Status_Approved), chainID)
 	iter, err := k.attTable.List(ctx, idx, ormlist.Reverse(), ormlist.DefaultLimit(1))
 	if err != nil {
-		return nil, errors.Wrap(err, "list")
+		return nil, false, errors.Wrap(err, "list")
 	}
 	defer iter.Close()
 
 	if !iter.Next() {
-		return nil, errors.New("no attestation found")
+		return nil, false, nil
 	}
 
 	att, err := iter.Value()
 	if err != nil {
-		return nil, errors.Wrap(err, "value")
+		return nil, false, errors.Wrap(err, "value")
 	}
 
 	if iter.Next() {
-		return nil, errors.New("multiple attestation found")
+		return nil, false, errors.New("multiple attestation found")
 	}
 
 	pbsigs, err := k.getSigs(ctx, att.GetId())
 	if err != nil {
-		return nil, errors.Wrap(err, "get att sigs")
+		return nil, false, errors.Wrap(err, "get att sigs")
 	}
 
 	var sigs []*types.SigTuple
@@ -313,7 +322,7 @@ func (k *Keeper) latestAttestation(ctx context.Context, chainID uint64) (*types.
 		ValidatorsHash: att.GetValidatorsHash(),
 		BlockRoot:      att.GetBlockRoot(),
 		Signatures:     sigs,
-	}, nil
+	}, true, nil
 }
 
 // getSigs returns the signatures for the given attestation ID.
@@ -339,14 +348,21 @@ func (k *Keeper) getSigs(ctx context.Context, attID uint64) ([]*Signature, error
 }
 
 func (k *Keeper) EndBlock(ctx context.Context) error {
+	defer k.windower.ResetCache()
+
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if sdkCtx.BlockHeight() <= 1 {
 		return nil // First block doesn't have any vote extensions to approve.
 	}
 
-	valset, err := k.cmtAPI.Validators(ctx, sdkCtx.BlockHeight()-1) // Get the validators for the previous block.
+	// We should technically use the validators from the previous block, but that isn't available immediately
+	// after a snapshot restore, so workaround is just to use current set. Only drawback is that the last
+	// votes from validators that are no longer in the set will be ignored.
+	valset, ok, err := k.cmtAPI.Validators(ctx, sdkCtx.BlockHeight())
 	if err != nil {
 		return errors.Wrap(err, "fetch validators")
+	} else if !ok {
+		return errors.Wrap(err, "current validators not available [BUG]")
 	}
 
 	return k.Approve(ctx, valset)
@@ -356,7 +372,16 @@ func (k *Keeper) EndBlock(ctx context.Context) error {
 func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
 	votes := k.voter.GetAvailable()
 
-	// TODO(corver): Only include attestations in window, also ensure max size.
+	for _, vote := range votes {
+		if resp, err := k.windower.Compare(ctx, vote.BlockHeader); err != nil {
+			return nil, errors.Wrap(err, "windower")
+		} else if resp != 0 {
+			// TODO(corver): Ensure voter is always inside window.
+			return nil, errors.New("own vote outside window [BUG]", "resp", resp)
+		}
+	}
+
+	// TODO(corver): ensure max size.
 	bz, err := proto.Marshal(&types.Votes{
 		Votes: votes,
 	})
@@ -388,13 +413,96 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 }
 
 // VerifyVoteExtension verifies a vote extension.
-func (k *Keeper) VerifyVoteExtension(_ sdk.Context, _ *abci.RequestVerifyVoteExtension) (
+func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVoteExtension) (
 	*abci.ResponseVerifyVoteExtension, error,
 ) {
-	// TODO(corver): Figure out what to verify. E.g. outside window or too big.
-	return &abci.ResponseVerifyVoteExtension{
+	respAccept := &abci.ResponseVerifyVoteExtension{
 		Status: abci.ResponseVerifyVoteExtension_ACCEPT,
-	}, nil
+	}
+	respReject := &abci.ResponseVerifyVoteExtension{
+		Status: abci.ResponseVerifyVoteExtension_REJECT,
+	}
+
+	votes, ok, err := votesFromExtension(req.VoteExtension)
+	if err != nil {
+		log.Warn(ctx, "Rejecting invalid vote extension", err)
+		return respReject, nil
+	} else if !ok {
+		log.Warn(ctx, "Rejecting nil vote extension", err)
+		return respReject, nil
+	}
+
+	for _, vote := range votes.Votes {
+		if err := vote.Verify(); err != nil {
+			log.Warn(ctx, "Rejecting invalid vote", err)
+			return respReject, nil
+		}
+		if resp, err := k.windower.Compare(ctx, vote.BlockHeader); err != nil {
+			return nil, errors.Wrap(err, "windower")
+		} else if resp != 0 {
+			log.Warn(ctx, "Rejecting out-of-window vote", nil, "resp", resp)
+			return respReject, nil
+		}
+	}
+
+	// TODO(corver): Ensure max size.
+	return respAccept, nil
+}
+
+// validatorsByAddress returns the validator set by ethereum address for the provided height or false if not available.
+func (k *Keeper) validatorsByAddress(ctx context.Context, height int64) (map[common.Address]bool, bool, error) {
+	valset, ok, err := k.cmtAPI.Validators(ctx, height)
+	if err != nil {
+		return nil, false, err
+	} else if !ok {
+		return nil, false, nil
+	}
+
+	resp := make(map[common.Address]bool)
+	for _, val := range valset.Validators {
+		addr, err := k1util.PubKeyToAddress(val.PubKey)
+		if err != nil {
+			return nil, false, err
+		}
+		resp[addr] = true
+	}
+
+	return resp, true, nil
+}
+
+// verifyAggVotes verifies the given aggregates votes:
+// - Ensure all votes are from validators in the provided set.
+// - Ensure the vote block header is in the vote window.
+// - Ensure votes represent at least 2/3 of the total voting power.
+func verifyAggVotes(
+	ctx context.Context,
+	validators map[common.Address]bool,
+	windower types.Windower,
+	aggs []*types.AggVote,
+) error {
+	for _, agg := range aggs {
+		if err := agg.Verify(); err != nil {
+			return errors.Wrap(err, "verify aggregate vote")
+		}
+
+		// Ensure all votes are from validators in the set
+		for _, sig := range agg.Signatures {
+			addr := common.BytesToAddress(sig.GetValidatorAddress())
+			_, ok := validators[addr]
+			if !ok {
+				return errors.New("vote from unknown validator")
+			}
+		}
+
+		// Ensure the block header is in the vote window.
+		if resp, err := windower.Compare(ctx, agg.BlockHeader); err != nil {
+			return errors.Wrap(err, "windower")
+		} else if resp != 0 {
+			return errors.New("vote outside window", "resp", resp)
+		}
+	}
+
+	return nil
 }
 
 // isApproved returns whether the given signatures are approved by the given validators.

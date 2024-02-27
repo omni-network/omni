@@ -1,6 +1,8 @@
 package types
 
 import (
+	"context"
+
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -31,3 +33,18 @@ type Voter interface {
 	// LocalAddress returns the local validator's ethereum address.
 	LocalAddress() common.Address
 }
+
+// Windower abstract the logic to verify whether a vote's block header is
+// in the voting window.
+//
+// The vote window is a number of configured blocks around the latest
+// approved attestation for the provided chain.
+type Windower interface {
+	// Compare return whether the header is before (-1), in (0) or after (1) the vote window.
+	Compare(ctx context.Context, header *BlockHeader) (int, error)
+	// ResetCache resets the internal cache.
+	ResetCache()
+}
+
+// ChainNameFunc is a function that returns the name of a chain given its ID.
+type ChainNameFunc func(chainID uint64) string

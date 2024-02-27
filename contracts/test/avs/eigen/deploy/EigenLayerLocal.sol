@@ -30,6 +30,7 @@ import { ETHPOSDepositMock } from "eigenlayer-contracts/src/test/mocks/ETHDeposi
 
 import { EigenPodManagerHarness } from "../EigenPodManagerHarness.sol";
 import { IEigenDeployer } from "./IEigenDeployer.sol";
+import { MockERC20 } from "../../../common/MockERC20.sol";
 
 import { CommonBase } from "forge-std/Base.sol";
 
@@ -206,7 +207,7 @@ contract EigenLayerLocal is IEigenDeployer, CommonBase {
 
     function _deployWETHStrategy() internal returns (address) {
         uint256 totalSupply = 1e6 ether;
-        IERC20 weth = new ERC20PresetFixedSupply("weth", "WETH", totalSupply, address(this));
+        IERC20 weth = new MockERC20("weth", "WETH");
         StrategyBase impl = new StrategyBase(strategyManager);
         IStrategy wethStrat = StrategyBase(
             address(

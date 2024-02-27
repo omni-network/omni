@@ -31,9 +31,11 @@ func (k *Keeper) LatestAttestation(ctx context.Context, req *types.LatestAttesta
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
-	att, err := k.latestAttestation(ctx, req.ChainId)
+	att, ok, err := k.latestAttestation(ctx, req.ChainId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
+	} else if !ok {
+		return nil, status.Error(codes.NotFound, "no approved attestations for chain")
 	}
 
 	return &types.LatestAttestationResponse{Attestation: att}, nil
