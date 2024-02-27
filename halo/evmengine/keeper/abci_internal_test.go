@@ -129,7 +129,9 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 				ctx, storeService := setupCtxStore(t)
 				cdc := getCodec(t)
 				txConfig := authtx.NewTxConfig(cdc, nil)
-				ap := mockAddressProvider{}
+				ap := mockAddressProvider{
+					address: common.BytesToAddress([]byte("test")),
+				}
 
 				k := NewKeeper(cdc, storeService, &tt.mockEngine, txConfig, ap)
 				_, err := k.PrepareProposal(ctx, tt.req)
@@ -149,7 +151,9 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		txConfig := authtx.NewTxConfig(cdc, nil)
 		mockEngine, err := newMockEngineAPI()
 		require.NoError(t, err)
-		ap := mockAddressProvider{}
+		ap := mockAddressProvider{
+			address: common.BytesToAddress([]byte("test")),
+		}
 		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap)
 
 		// get the genesis block to build on top of
@@ -202,7 +206,9 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		mockEngine, err := newMockEngineAPI()
 		require.NoError(t, err)
 
-		ap := mockAddressProvider{}
+		ap := mockAddressProvider{
+			address: common.BytesToAddress([]byte("test")),
+		}
 		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap)
 
 		keeper.providers = []etypes.CPayloadProvider{mockCPayloadProvider{}, mockCPayloadProvider{}}
@@ -274,7 +280,7 @@ func setupCtxStore(t *testing.T) (sdk.Context, store.KVStoreService) {
 	key := storetypes.NewKVStoreKey("test")
 	storeService := runtime.NewKVStoreService(key)
 	testCtx := testutil.DefaultContextWithDB(t, key, storetypes.NewTransientStoreKey("transient_test"))
-	ctx := testCtx.Ctx.WithBlockHeader(cmtproto.Header{Time: cmttime.Now()})
+	ctx := testCtx.Ctx.WithBlockHeader(cmtproto.Header{Time: cmttime.Now(), Height: 1})
 
 	return ctx, storeService
 }
@@ -329,7 +335,9 @@ func newMockEngineAPI() (mockEngineAPI, error) {
 	}, nil
 }
 
-type mockAddressProvider struct{}
+type mockAddressProvider struct {
+	address common.Address
+}
 type mockCPayloadProvider struct{}
 
 func (m mockCPayloadProvider) PreparePayload(ctx context.Context, height uint64, commit abci.ExtendedCommitInfo) ([]sdk.Msg, error) {
@@ -340,7 +348,7 @@ func (m mockCPayloadProvider) PreparePayload(ctx context.Context, height uint64,
 }
 
 func (m mockAddressProvider) LocalAddress() common.Address {
-	return common.BytesToAddress([]byte("test"))
+	return m.address
 }
 
 func (m *mockEngineAPI) BlockNumber(ctx context.Context) (uint64, error) {
