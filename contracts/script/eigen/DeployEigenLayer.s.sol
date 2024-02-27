@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.8.12;
 
-import { MockERC20 } from "test/common/MockERC20.sol";
 import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-import { EigenLayerLocal } from "test/avs/eigen/deploy/EigenLayerLocal.sol";
-import { IEigenDeployer } from "test/avs/eigen/deploy/IEigenDeployer.sol";
+import { MockERC20 } from "test/avs/common/MockERC20.sol";
+import { EigenLayerLocal } from "test/avs/common/eigen/EigenLayerLocal.sol";
+import { IEigenDeployer } from "test/avs/common/eigen/IEigenDeployer.sol";
 import { Script } from "forge-std/Script.sol";
 
 contract DeployLocalEigenLayer is Script, EigenLayerLocal {

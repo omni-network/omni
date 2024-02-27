@@ -92,11 +92,11 @@ contract Fixtures is CommonBase, StdCheats {
 
     // @dev Path to which test XBlocks are written relative to project root. Read by ts utilites
     //      to generate XSubmissions for each test XBlock (see ts/script/genxsubs/io.ts)
-    string constant XBLOCKS_PATH = "test/data/xblocks.json";
+    string constant XBLOCKS_PATH = "test/portal/data/xblocks.json";
 
     // @dev Path to which test XSubmissions are written relative to project root. XSubmissions
     //      are generated for each test XBlock, per destination chain, by ts/script/genxsubs/main.ts.
-    string constant XSUBS_PATH = "test/data/xsubs.json";
+    string constant XSUBS_PATH = "test/portal/data/xsubs.json";
 
     /// @dev XSubs json read from XSUBS_PATH, stored to avoid re-reading from disk
     string private _xsubsJson;

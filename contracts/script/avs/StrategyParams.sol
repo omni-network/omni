@@ -3,7 +3,7 @@ pragma solidity =0.8.12;
 
 import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
-import { EigenM2GoerliDeployments } from "test/avs/eigen/deploy/EigenM2GoerliDeployments.sol";
+import { EigenM2GoerliDeployments } from "test/avs/common/eigen/EigenM2GoerliDeployments.sol";
 
 /**
  * @title StrategyParams

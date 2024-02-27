@@ -12,19 +12,19 @@ import { AVSDirectory } from "eigenlayer-contracts/src/contracts/core/AVSDirecto
 import { StrategyBase } from "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 
 import { EigenPodManagerHarness } from "./EigenPodManagerHarness.sol";
-import { EigenLayerGoerli } from "./deploy/EigenLayerGoerli.sol";
-import { EigenLayerLocal } from "./deploy/EigenLayerLocal.sol";
-import { IEigenDeployer } from "./deploy/IEigenDeployer.sol";
+import { EigenLayerGoerli } from "./EigenLayerGoerli.sol";
+import { EigenLayerLocal } from "./EigenLayerLocal.sol";
+import { IEigenDeployer } from "./IEigenDeployer.sol";
 
 import { Test } from "forge-std/Test.sol";
-import { MockERC20 } from "../../common/MockERC20.sol";
+import { MockERC20 } from "test/avs/common/MockERC20.sol";
 
 /**
- * @title EigenLayerDeployer
- * @dev Test eigen deployment utily. Deploys local or goerli contracts, depending on the chain id.
+ * @title EigenLayerFixtures
+ * @dev Deploys eigen layer test fixtures. Deploys local or goerli contracts, depending on the chain id.
  *      It also deploys an "unsupported strategy" that is always excluded from OmniAVS strategy params.
  */
-contract EigenLayerDeployer is Test {
+contract EigenLayerFixtures is Test {
     // eigen deployments
     DelegationManager delegation;
     AVSDirectory avsDirectory;
@@ -71,7 +71,6 @@ contract EigenLayerDeployer is Test {
         internal
         returns (address)
     {
-        uint256 totalSupply = 1000e18;
         IERC20 unsupportedToken = new MockERC20("unsupported", "UNSUPPORTED");
         StrategyBase impl = new StrategyBase(IStrategyManager(strategyManager_));
         return address(

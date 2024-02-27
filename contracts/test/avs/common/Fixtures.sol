@@ -15,11 +15,15 @@ import { OmniAVS } from "src/protocol/OmniAVS.sol";
 
 import { DeployGoerliAVS } from "script/avs/DeployGoerliAVS.s.sol";
 import { StrategyParams } from "script/avs/StrategyParams.sol";
-import { Empty } from "test/common/Empty.sol";
-import { EigenLayerTestHelper } from "./eigen/EigenLayerTestHelper.t.sol";
+import { EigenLayerFixtures } from "./eigen/EigenLayerFixtures.sol";
+import { Empty } from "./Empty.sol";
 import { MockPortal } from "./MockPortal.sol";
 
-contract AVSBase is EigenLayerTestHelper {
+/**
+ * @title Fixtures
+ * @dev Common fixtures contract for all AVS tests.
+ */
+contract Fixtures is EigenLayerFixtures {
     address multisig = makeAddr("multisig");
     address proxyAdminOwner = multisig;
     address omniAVSOwner = multisig;
