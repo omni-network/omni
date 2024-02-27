@@ -249,7 +249,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 			}
 		}
 		// make sure all msg.Delegate are present
-		require.Equal(t, len(keeper.providers), actualDelCount)
+		require.Len(t, keeper.providers, actualDelCount)
 	})
 }
 
