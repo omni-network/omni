@@ -338,8 +338,7 @@ func loadContractsForAVS(t *testing.T, chainInfo map[types.ContractName]types.De
 	wethStrategy, err := bindings.NewStrategyBase(wethStrategyAddr, ethClient)
 	require.NoError(t, err)
 
-	callOpts := bind.CallOpts{}
-	wethTokenAddr, err := wethStrategy.UnderlyingToken(&callOpts)
+	wethTokenAddr, err := wethStrategy.UnderlyingToken(&bind.CallOpts{})
 	require.NoError(t, err)
 	wethToken, err := bindings.NewMockERC20(wethTokenAddr, ethClient)
 	require.NoError(t, err)
