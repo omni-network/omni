@@ -355,9 +355,14 @@ func (k *Keeper) EndBlock(ctx context.Context) error {
 		return nil // First block doesn't have any vote extensions to approve.
 	}
 
-	valset, err := k.cmtAPI.Validators(ctx, sdkCtx.BlockHeight()-1) // Get the validators for the previous block.
+	// We should technically use the validators from the previous block, but that isn't available immediately
+	// after a snapshot restore, so workaround is just to use current set. Only drawback is that the last
+	// votes from validators that are no longer in the set will be ignored.
+	valset, ok, err := k.cmtAPI.Validators(ctx, sdkCtx.BlockHeight())
 	if err != nil {
 		return errors.Wrap(err, "fetch validators")
+	} else if !ok {
+		return errors.Wrap(err, "current validators not available [BUG]")
 	}
 
 	return k.Approve(ctx, valset)
@@ -444,23 +449,25 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 	return respAccept, nil
 }
 
-// validatorsByAddress returns the validator set by ethereum address for the provided height.
-func (k *Keeper) validatorsByAddress(ctx context.Context, height int64) map[common.Address]bool {
-	valset, err := k.cmtAPI.Validators(ctx, height)
+// validatorsByAddress returns the validator set by ethereum address for the provided height or false if not available.
+func (k *Keeper) validatorsByAddress(ctx context.Context, height int64) (map[common.Address]bool, bool, error) {
+	valset, ok, err := k.cmtAPI.Validators(ctx, height)
 	if err != nil {
-		return nil
+		return nil, false, err
+	} else if !ok {
+		return nil, false, nil
 	}
 
 	resp := make(map[common.Address]bool)
 	for _, val := range valset.Validators {
 		addr, err := k1util.PubKeyToAddress(val.PubKey)
 		if err != nil {
-			return nil
+			return nil, false, err
 		}
 		resp[addr] = true
 	}
 
-	return resp
+	return resp, true, nil
 }
 
 // verifyAggVotes verifies the given aggregates votes:

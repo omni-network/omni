@@ -1,7 +1,6 @@
 {
  "HomeDir": "testinput/input1",
  "EngineJWTFile": "jwt.toml",
- "AppStatePersistInterval": 99,
  "SnapshotInterval": 999,
  "BackendType": "goleveldb",
  "MinRetainBlocks": 0,
