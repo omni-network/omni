@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.23;
 
-import { Base } from "test/common/Base.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
-import { Vm } from "forge-std/Vm.sol";
 import { Validators } from "src/libraries/Validators.sol";
+import { Base } from "./common/Base.sol";
+import { Vm } from "forge-std/Vm.sol";
 
 /**
  * @title OmniPortal_xsubmit_Test

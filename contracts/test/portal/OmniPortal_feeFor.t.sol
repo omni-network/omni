@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.23;
 
-import { Base } from "test/common/Base.sol";
 import { IFeeOracle } from "src/interfaces/IFeeOracle.sol";
+import { Base } from "./common/Base.sol";
 
 /**
  * @title OmniPortal_feeFor_Test

@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.12;
 
-import { ISignatureUtils } from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
-
+import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
 import { IOmniEthRestaking } from "src/interfaces/IOmniEthRestaking.sol";
 import { OmniPredeploys } from "src/libraries/OmniPredeploys.sol";
-import { OmniAVS } from "src/protocol/OmniAVS.sol";
-import { AVSBase } from "./AVSBase.sol";
-import { AVSUtils } from "./AVSUtils.sol";
 
-contract OmniAVS_Test is AVSBase, AVSUtils {
+import { Base } from "./common/Base.sol";
+
+/**
+ * @title OmniAVS_syncWithOmni_Test
+ * @dev Test suite for OmniAVS.syncWithOmni(), and by extension, OmniAVS.getValidators()
+ */
+contract OmniAVS_syncWithOmni_Test is Base {
     uint32 numOperators;
     uint32 numDelegatorsPerOp;
     address[] operators;
@@ -85,7 +86,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
             _depositIntoSupportedStrategy(operators[i], initialOperatorStake);
         }
 
-        OmniAVS.Validator[] memory validators;
+        IOmniAVS.Validator[] memory validators;
         validators = omniAVS.getValidators();
 
         // assert no operator for omni avs quorum, because no operator has been registered
@@ -105,7 +106,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
             _registerOperatorWithAVS(operators[i]);
         }
 
-        OmniAVS.Validator[] memory validators;
+        IOmniAVS.Validator[] memory validators;
         validators = omniAVS.getValidators();
 
         // assert all operators have been registered
@@ -147,7 +148,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
             }
         }
 
-        OmniAVS.Validator[] memory validators;
+        IOmniAVS.Validator[] memory validators;
         validators = omniAVS.getValidators();
 
         // assert all operators still registered
@@ -178,7 +179,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
             }
         }
 
-        OmniAVS.Validator[] memory validators;
+        IOmniAVS.Validator[] memory validators;
         validators = omniAVS.getValidators();
 
         // assert all operators still registered
@@ -225,7 +226,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
             _depositIntoSupportedStrategy(operators[i], operatorStakeAddition);
         }
 
-        OmniAVS.Validator[] memory validators;
+        IOmniAVS.Validator[] memory validators;
         validators = omniAVS.getValidators();
 
         // assert all operators still registered
@@ -281,7 +282,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
             }
         }
 
-        OmniAVS.Validator[] memory validators;
+        IOmniAVS.Validator[] memory validators;
         validators = omniAVS.getValidators();
 
         // assert all operators still registered
@@ -312,7 +313,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
 
     /// @dev Deregister operators, assert OmniAVS quorum is updated after each deregistration
     function _testDeregisterOperators() internal {
-        OmniAVS.Validator[] memory validators;
+        IOmniAVS.Validator[] memory validators;
 
         for (uint32 i = 0; i < numOperators; i++) {
             address operator = operators[i];
@@ -336,7 +337,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
     }
 
     /// @dev Expect an OmniPortal.xcall to IOmniEthRestaking.sync(validators), with correct fee and gasLimit
-    function _expectXCall(OmniAVS.Validator[] memory validators) internal {
+    function _expectXCall(IOmniAVS.Validator[] memory validators) internal {
         bytes memory data = abi.encodeWithSelector(IOmniEthRestaking.sync.selector, validators);
         uint64 gasLimit = omniAVS.xcallBaseGasLimit() + omniAVS.xcallGasLimitPerValidator() * uint64(validators.length);
 
@@ -349,9 +350,7 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
         );
     }
 
-    /**
-     * Unit tests.
-     */
+    /// @dev Unit test for beacon eth deposit
     function test_depositBeaconEth_succeeds() public {
         address operator = _operator(0);
         uint96 amount = minimumOperatorStake;
@@ -361,84 +360,14 @@ contract OmniAVS_Test is AVSBase, AVSUtils {
         _depositBeaconEth(operator, amount);
         _registerOperatorWithAVS(operator);
 
-        OmniAVS.Validator[] memory validators = omniAVS.getValidators();
+        IOmniAVS.Validator[] memory validators = omniAVS.getValidators();
 
         assertEq(validators.length, 1);
         assertEq(validators[0].addr, operator);
         assertEq(validators[0].staked, amount);
         assertEq(validators[0].delegated, 0);
-    }
 
-    /// @dev Test that an operator cannot register if not in allow list
-    function test_registerOperator_notAllowed_reverts() public {
-        address operator = _operator(0);
-
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
-
-        vm.expectRevert("OmniAVS: not allowed");
-        vm.prank(operator);
-        omniAVS.registerOperatorToAVS(operator, emptySig);
-    }
-
-    /// @dev Test that the owner can deregister an operator
-    function test_deregisterOperator_byOwner_succeeds() public {
-        address operator = _operator(0);
-
-        // register operator
-        _registerAsOperator(operator);
-        _addToAllowlist(operator);
-        _depositBeaconEth(operator, minimumOperatorStake);
-        _registerOperatorWithAVS(operator);
-
-        // assert operator is registered
-        OmniAVS.Validator[] memory validators = omniAVS.getValidators();
-        assertEq(validators.length, 1);
-        assertEq(validators[0].addr, operator);
-
-        // deregister operator
-        vm.prank(omniAVSOwner);
-        omniAVS.deregisterOperatorFromAVS(operator);
-
-        // assert operator is deregistered
-        validators = omniAVS.getValidators();
-        assertEq(validators.length, 0);
-    }
-
-    /// @dev Test that an operator can be added to the allowlist
-    function test_addToAllowlist_succeeds() public {
-        address operator = makeAddr("operator");
-        _addToAllowlist(operator);
-        assertTrue(omniAVS.isInAllowlist(operator));
-    }
-
-    /// @dev Test that an operator can be removed from the allowlist
-    function test_removeFromAllowlist_succeeds() public {
-        address operator1 = makeAddr("operator");
-        address operator2 = makeAddr("operator2");
-
-        _addToAllowlist(operator1);
-        _addToAllowlist(operator2);
-        assertTrue(omniAVS.isInAllowlist(operator1));
-        assertTrue(omniAVS.isInAllowlist(operator2));
-
-        _removeFromAllowlist(operator1);
-        assertFalse(omniAVS.isInAllowlist(operator1));
-        assertTrue(omniAVS.isInAllowlist(operator2));
-    }
-
-    /// @dev Test that only the owner can add to the allowlist
-    function test_addToAllowlist_notOwner_reverts() public {
-        address operator = makeAddr("operator");
-
-        vm.expectRevert("Ownable: caller is not the owner");
-        omniAVS.addToAllowlist(operator);
-    }
-
-    /// @dev Test that only the owner can remove from the allowlist
-    function test_removeFromAllowlist_notOwner_reverts() public {
-        address operator = makeAddr("operator");
-
-        vm.expectRevert("Ownable: caller is not the owner");
-        omniAVS.removeFromAllowlist(operator);
+        _expectXCall(validators);
+        omniAVS.syncWithOmni{ value: syncFee }();
     }
 }
