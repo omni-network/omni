@@ -316,6 +316,7 @@ func newMockEngineAPI() (mockEngineAPI, error) {
 	if err != nil {
 		return mockEngineAPI{}, err
 	}
+
 	return mockEngineAPI{
 		mock:   me,
 		fuzzer: ethclient.NewFuzzer(time.Now().Truncate(time.Hour * 24).Unix()),
@@ -328,6 +329,7 @@ type mockCPayloadProvider struct{}
 func (m mockCPayloadProvider) PreparePayload(ctx context.Context, height uint64, commit abci.ExtendedCommitInfo) ([]sdk.Msg, error) {
 	coin := sdk.NewInt64Coin("stake", 100)
 	msg := stypes.NewMsgDelegate("addr", "addr", coin)
+
 	return []sdk.Msg{msg}, nil
 }
 
