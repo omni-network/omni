@@ -93,6 +93,7 @@ contract OmniAVS_initialize_Test is Base {
         }
     }
 
+    /// @dev Test that the contract can be initialized as paused
     function test_initialize_paused_succeeds() public {
         InitializeParams memory params = _defaultInitializeParams();
         params.paused = true;
