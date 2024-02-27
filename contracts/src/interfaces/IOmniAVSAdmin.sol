@@ -24,7 +24,6 @@ interface IOmniAVSAdmin {
     /**
      * @notice Initialize the Omni AVS admin contract.
      * @param owner The intiial owner of the contract
-     * @param paused The initial paused state
      * @param omni The Omni portal contract
      * @param omniChainId The Omni chain id
      * @param minimumOperatorStake The minimum operator stake, not including delegations
@@ -34,7 +33,6 @@ interface IOmniAVSAdmin {
      */
     function initialize(
         address owner,
-        bool paused,
         IOmniPortal omni,
         uint64 omniChainId,
         uint96 minimumOperatorStake,

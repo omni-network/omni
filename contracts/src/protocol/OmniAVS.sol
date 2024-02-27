@@ -62,7 +62,6 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     /// @inheritdoc IOmniAVSAdmin
     function initialize(
         address owner_,
-        bool paused_,
         IOmniPortal omni_,
         uint64 omniChainId_,
         uint96 minimumOperatorStake_,
@@ -75,13 +74,9 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
         minimumOperatorStake = minimumOperatorStake_;
         maxOperatorCount = maxOperatorCount_;
 
-        __Ownable_init();
         _transferOwnership(owner_);
-
-        __Pausable_init();
-        if (paused_) _pause();
-
         _setStrategyParams(strategyParams_);
+
         for (uint256 i = 0; i < allowlist_.length; i++) {
             _allowlist[allowlist_[i]] = true;
         }

@@ -72,7 +72,6 @@ contract Fixtures is EigenLayerFixtures {
             abi.encodeWithSelector(
                 OmniAVS.initialize.selector,
                 omniAVSOwner,
-                false, // paused
                 portal,
                 omniChainId,
                 minimumOperatorStake,

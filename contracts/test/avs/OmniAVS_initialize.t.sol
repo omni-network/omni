@@ -23,7 +23,6 @@ import { Base } from "./common/Base.sol";
 contract OmniAVS_initialize_Test is Base {
     struct InitializeParams {
         address owner;
-        bool paused;
         IOmniPortal omni;
         uint64 omniChainId;
         uint96 minimumOperatorStake;
@@ -35,7 +34,6 @@ contract OmniAVS_initialize_Test is Base {
     function _defaultInitializeParams() internal view returns (InitializeParams memory) {
         return InitializeParams({
             owner: omniAVSOwner,
-            paused: false,
             omni: IOmniPortal(address(portal)),
             omniChainId: omniChainId,
             minimumOperatorStake: minimumOperatorStake,
@@ -59,7 +57,6 @@ contract OmniAVS_initialize_Test is Base {
             abi.encodeWithSelector(
                 OmniAVS.initialize.selector,
                 params.owner,
-                params.paused,
                 params.omni,
                 params.omniChainId,
                 params.minimumOperatorStake,
@@ -79,7 +76,6 @@ contract OmniAVS_initialize_Test is Base {
         OmniAVS omniAVS = _deployAndInitialize(params);
 
         assertEq(omniAVS.owner(), params.owner);
-        assertEq(omniAVS.paused(), params.paused);
         assertEq(address(omniAVS.omni()), address(params.omni));
         assertEq(omniAVS.omniChainId(), params.omniChainId);
         assertEq(omniAVS.minimumOperatorStake(), params.minimumOperatorStake);
@@ -91,14 +87,8 @@ contract OmniAVS_initialize_Test is Base {
             assertEq(address(strategyParams[i].strategy), address(params.strategyParams[i].strategy));
             assertEq(strategyParams[i].multiplier, params.strategyParams[i].multiplier);
         }
-    }
 
-    /// @dev Test that the contract can be initialized as paused
-    function test_initialize_paused_succeeds() public {
-        InitializeParams memory params = _defaultInitializeParams();
-        params.paused = true;
-        OmniAVS omniAVS = _deployAndInitialize(params);
-        assertEq(omniAVS.paused(), true);
+        assertEq(omniAVS.paused(), false); // assert not paused
     }
 
     // TODO: add more initialization tests
