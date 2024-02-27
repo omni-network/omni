@@ -15,10 +15,12 @@ build: version ## Build contracts.
 	forge build
 
 bindings: build ## Generate golang contract bindings.
-	./bindings/gen.sh OmniPortal FeeOracleV1 OmniAVS TransparentUpgradeableProxy ProxyAdmin DelegationManager StrategyManager StrategyBase ERC20 AVSDirectory EIP1271SignatureUtils
+	./bindings/scripts/gen.sh OmniPortal FeeOracleV1 OmniAVS TransparentUpgradeableProxy ProxyAdmin DelegationManager StrategyManager StrategyBase MockERC20 AVSDirectory
+	go run ./bindings/scripts/commenttypes.go -- bindings/strategymanager.go IStrategyManagerDeprecatedStructQueuedWithdrawal IStrategyManagerDeprecatedStructWithdrawerAndNonce
+	go run ./bindings/scripts/commenttypes.go -- bindings/avsdirectory.go ISignatureUtilsSignatureWithSaltAndExpiry
 
 examples-bindings: build ## Generate golang contract bindings for example contracts
-	PKG=examples DIR=./bindings/examples ./bindings/gen.sh PingPong
+	PKG=examples DIR=./bindings/examples ./bindings/script/gen.sh PingPong
 
 deploy-eigenlayer-save-anvil-state: ## Deploy eigenlayer contracts and dump anvil state.
 	./script/eigen/deploy-eigenlayer-save-anvil-state.sh
