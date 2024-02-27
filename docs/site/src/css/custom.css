@@ -11,17 +11,19 @@
 
 /* You can override the default Infima variables here. */
 :root {
-  /* --ifm-color-content: #00235c; */
+  --ifm-font-family-base: "Manrope";
+  --ifm-heading-font-family: "Inter";
   --ifm-color-primary: #0564ff;
   --ifm-color-primary-dark: #0056e1;
   --ifm-color-primary-darker: #0049be;
   --ifm-color-primary-darkest: #003b99;
-  --ifm-color-primary-light: #5cd1d7;
-  --ifm-color-primary-lighter: #7fd6db;
-  --ifm-color-primary-lightest: #d4e8e9;
+  --ifm-color-primary-light: #3e88ff;
+  --ifm-color-primary-lighter: #6ca5ff;
+  --ifm-color-primary-lightest: #93bdff;
   --ifm-color-secondary: #ffffff;
-  --ifm-color-emphasis-200: var(--ifm-color-white);
+  --ifm-color-gray-200: #93bdff;
   --ifm-code-font-size: 85%;
+  --ifm-heading-color: #003b99;
   --ifm-navbar-background-color: #ffffff;
   --ifm-footer-background-color: #ffffff;
   background-color: #ffffff;
@@ -29,14 +31,16 @@
 
 /* For readability concerns, you should choose a lighter palette in dark mode. */
 [data-theme="dark"] {
-  --ifm-color-primary: #4e92ff;
+  --ifm-color-primary: #7eafff;
   --ifm-color-primary-dark: #6285bc;
   --ifm-color-primary-darker: #8498b9;
   --ifm-color-primary-darkest: #afbfd8;
   --ifm-color-primary-light: #79cbcf;
   --ifm-color-primary-lighter: #a3d3d5;
   --ifm-color-primary-lightest: #e7ebeb;
-  --ifm-color-secondary: #061f49;
+  --ifm-color-gray-800: #8498b9;
+  --ifm-color-secondary: #0d2143;
+  --ifm-heading-color: #afbfd8;
   --ifm-navbar-background-color: #00122f;
   --ifm-footer-background-color: #00122f;
   background-color: #00122f;
@@ -106,12 +110,6 @@ nav.navbar {
   border-image: linear-gradient(to bottom, var(--ifm-color-emphasis-300), transparent) 1;
 }
 
-/* Titles: Use Inter */
-h1, h2, h3, h4, h5, h6 {
-  font-family: 'Inter', sans-serif;
-  color: var(--ifm-color-primary-darkest);
-}
-
 h1:after {
   content: '';
   display: block;
@@ -157,7 +155,7 @@ svg text {
 .sidebar-title > div a {
   text-transform: uppercase;
   font-size: 0.85em;
-  color: var(--ifm-color-primary-darker) !important;
+  color: var(--ifm-color-primary);
   font-family: 'Inter';
 }
 
