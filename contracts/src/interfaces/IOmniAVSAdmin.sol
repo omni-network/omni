@@ -24,6 +24,7 @@ interface IOmniAVSAdmin {
     /**
      * @notice Initialize the Omni AVS admin contract.
      * @param owner The intiial owner of the contract
+     * @param paused The initial paused state
      * @param omni The Omni portal contract
      * @param omniChainId The Omni chain id
      * @param minimumOperatorStake The minimum operator stake, not including delegations
@@ -33,6 +34,7 @@ interface IOmniAVSAdmin {
      */
     function initialize(
         address owner,
+        bool paused,
         IOmniPortal omni,
         uint64 omniChainId,
         uint96 minimumOperatorStake,
@@ -103,4 +105,16 @@ interface IOmniAVSAdmin {
      * @param operator The operator to remove
      */
     function removeFromAllowlist(address operator) external;
+
+    /**
+     * @notice Pause the contract.
+     * @dev Only the owner can call this function.
+     */
+    function pause() external;
+
+    /**
+     * @notice Unpause the contract.
+     * @dev Only the owner can call this function.
+     */
+    function unpause() external;
 }
