@@ -92,18 +92,21 @@ func (p *Provider) Setup() error {
 }
 
 func (p *Provider) Upgrade(ctx context.Context) error {
-	log.Info(ctx, "Upgrading docker-compose on VMs")
+	log.Info(ctx, "Upgrading docker-compose on VMs", "image", p.Testnet.UpgradeVersion)
 	for vmName, instance := range p.Data.VMs {
+		log.Debug(ctx, "Upgrading docker-compose", "vm", vmName)
+
 		composeFile := vmComposeFile(instance.IPAddress.String())
 		err := copyToVM(ctx, vmName, filepath.Join(p.Testnet.Dir, composeFile))
 		if err != nil {
 			return errors.Wrap(err, "copy compose", "vm", vmName)
 		}
 
-		startCmd := fmt.Sprintf("cd /omni/%s && "+
-			"mv %s docker-compose.yaml && "+
+		startCmd := fmt.Sprintf("cd /omni && "+
+			"sudo mv %s %s/docker-compose.yaml && "+
+			"cd %s && "+
 			"sudo docker compose up -d",
-			p.Testnet.Name, composeFile)
+			composeFile, p.Testnet.Name, p.Testnet.Name)
 
 		err = execOnVM(ctx, vmName, startCmd)
 		if err != nil {
@@ -131,7 +134,7 @@ func (p *Provider) StartNodes(ctx context.Context, _ ...*e2e.Node) error {
 		for vmName, instance := range p.Data.VMs {
 			composeFile := vmComposeFile(instance.IPAddress.String())
 			startCmd := fmt.Sprintf("cd /omni/%s && "+
-				"mv %s docker-compose.yaml && "+
+				"sudo mv %s docker-compose.yaml && "+
 				"sudo docker compose up -d",
 				p.Testnet.Name, composeFile)
 
@@ -198,12 +201,12 @@ func execOnVM(ctx context.Context, vmName string, cmd string) error {
 	return nil
 }
 
-func copyToVM(ctx context.Context, vmName string, dir string) error {
+func copyToVM(ctx context.Context, vmName string, path string) error {
 	tarscp := fmt.Sprintf("tar czf - %s | gcloud compute ssh --zone=us-east1-c %s -- \"cd /omni && tar xvzf -\"",
-		filepath.Base(dir), vmName)
+		filepath.Base(path), vmName)
 
 	cmd := exec.CommandContext(ctx, "bash", "-c", tarscp)
-	cmd.Dir = filepath.Dir(dir)
+	cmd.Dir = filepath.Dir(path)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrap(err, "copy to VM", "output", string(out))
 	}
