@@ -88,9 +88,8 @@ func TestVotesFromCommit(t *testing.T) {
 		Votes: evotes,
 	}
 
-	resp, ok, err := votesFromLastCommit(info)
+	resp, err := votesFromLastCommit(info)
 	require.NoError(t, err)
-	require.True(t, ok)
 
 	for _, agg := range resp.Votes {
 		for _, sig := range agg.Signatures {

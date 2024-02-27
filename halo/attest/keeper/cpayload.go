@@ -29,11 +29,9 @@ func (k *Keeper) PreparePayload(ctx context.Context, height uint64, commit abci.
 		return nil, nil
 	}
 
-	msg, ok, err := votesFromLastCommit(commit)
+	msg, err := votesFromLastCommit(commit)
 	if err != nil {
 		return nil, err
-	} else if !ok {
-		return nil, nil
 	}
 
 	return []sdk.Msg{msg}, nil
@@ -41,7 +39,7 @@ func (k *Keeper) PreparePayload(ctx context.Context, height uint64, commit abci.
 
 // votesFromLastCommit returns the aggregated votes contained in vote extensions
 // of the last local commit.
-func votesFromLastCommit(info abci.ExtendedCommitInfo) (*types.MsgAddVotes, bool, error) {
+func votesFromLastCommit(info abci.ExtendedCommitInfo) (*types.MsgAddVotes, error) {
 	var allVotes []*types.Vote
 	for _, vote := range info.Votes {
 		if vote.BlockIdFlag != cmtproto.BlockIDFlagCommit {
@@ -49,7 +47,7 @@ func votesFromLastCommit(info abci.ExtendedCommitInfo) (*types.MsgAddVotes, bool
 		}
 		votes, ok, err := votesFromExtension(vote.VoteExtension)
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		} else if !ok {
 			continue
 		}
@@ -60,7 +58,7 @@ func votesFromLastCommit(info abci.ExtendedCommitInfo) (*types.MsgAddVotes, bool
 	return &types.MsgAddVotes{
 		Authority: authtypes.NewModuleAddress(types.ModuleName).String(),
 		Votes:     aggregateVotes(allVotes),
-	}, len(allVotes) > 0, nil
+	}, nil
 }
 
 // aggregateVotes aggregates the provided attestations by block header.

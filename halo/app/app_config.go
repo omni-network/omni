@@ -28,7 +28,11 @@ import (
 )
 
 // Bech32HRP is the human-readable-part of the Bech32 address format.
-const Bech32HRP = "omni"
+const (
+	Bech32HRP = "omni"
+
+	genesisVoteWindow = 64 // TODO(corver): Maybe move this to genesis itself.
+)
 
 // init initializes the Cosmos SDK configuration.
 //
@@ -151,8 +155,10 @@ var (
 				Config: appconfig.WrapAny(&engevmmodule.Module{}),
 			},
 			{
-				Name:   attesttypes.ModuleName,
-				Config: appconfig.WrapAny(&attestmodule.Module{}),
+				Name: attesttypes.ModuleName,
+				Config: appconfig.WrapAny(&attestmodule.Module{
+					VoteWindow: genesisVoteWindow,
+				}),
 			},
 		},
 	})
