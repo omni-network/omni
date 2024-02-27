@@ -85,16 +85,6 @@ To start a localnet, run:
 make devnet-run
 ```
 
-### Starting a Localnet with Explorer
-
-To start a localnet with the explorer, run:
-
-```bash
-cd explorer
-make build
-make run
-```
-
 ## Directory Structure
 
 <pre>
