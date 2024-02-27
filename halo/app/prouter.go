@@ -7,6 +7,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	cmttypes "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -22,6 +23,21 @@ func makeProcessProposalHandler(app *App) sdk.ProcessProposalHandler {
 	app.AttestKeeper.RegisterProposalService(router) // Attester marks attestations as proposed.
 
 	return func(ctx sdk.Context, req *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
+		// Ensure the proposal includes quorum vote extensions (unless first block).
+		if req.Height > 1 {
+			var totalPower, votedPower int64
+			for _, vote := range req.ProposedLastCommit.Votes {
+				totalPower += vote.Validator.Power
+				if vote.BlockIdFlag != cmttypes.BlockIDFlagCommit {
+					continue
+				}
+				votedPower += vote.Validator.Power
+			}
+			if totalPower*2/3 >= votedPower {
+				return handleErr(ctx, errors.New("proposed doesn't include quorum votes exttensions"))
+			}
+		}
+
 		for _, rawTX := range req.Txs {
 			tx, err := app.txConfig.TxDecoder()(rawTX)
 			if err != nil {

@@ -132,6 +132,10 @@ func (a *Voter) GetAvailable() []*types.Vote {
 
 // SetProposed sets the attestations as proposed.
 func (a *Voter) SetProposed(headers []*types.BlockHeader) error {
+	if len(headers) == 0 {
+		return nil
+	}
+
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
@@ -155,6 +159,10 @@ func (a *Voter) SetProposed(headers []*types.BlockHeader) error {
 
 // SetCommitted sets the attestations as committed. Persisting the result to disk.
 func (a *Voter) SetCommitted(headers []*types.BlockHeader) error {
+	if len(headers) == 0 {
+		return nil
+	}
+
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
