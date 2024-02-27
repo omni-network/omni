@@ -103,7 +103,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
 
     /// @inheritdoc IServiceManager
     function deregisterOperatorFromAVS(address operator) external {
-        require(msg.sender == operator, "OmniAVS: only operator");
+        require(msg.sender == operator || msg.sender == owner(), "OmniAVS: only operator or owner");
         require(_isOperator(operator), "OmniAVS: not an operator");
 
         _avsDirectory.deregisterOperatorFromAVS(operator);

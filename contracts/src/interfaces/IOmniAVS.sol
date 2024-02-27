@@ -39,12 +39,9 @@ interface IOmniAVS {
 
     /**
      * @notice Calculate the omni xcall fee for a syncWithOmni call.
-     * @dev This is not a view function because it updates state in the OmniAVS
-     *      StakeRegistry, by syncing state with EigenLayer core. It is meant to
-     *      be called offchain with an eth_call.
      * @return The fee in wei
      */
-    function feeForSync() external returns (uint256);
+    function feeForSync() external view returns (uint256);
 
     /**
      * @notice Sync OmniAVS validator stake & delegations with Omni chain.
