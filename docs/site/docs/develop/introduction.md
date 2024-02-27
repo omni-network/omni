@@ -21,6 +21,4 @@ omni.xmsg().sourceChainId // where this xcall came from
 omni.xmsg().sender        // who sent it
 ```
 
-<br />
-
-`omni` is a reference to the [OmniPortal](contracts#omniportal) contract. One portal is deployed on each supported chain. To make interacting with the portal easier, inherit from the [XApp](xapp) contract.
+`omni` is a reference to the [OmniPortal](./contracts.md#omniportal) contract. One portal is deployed on each supported chain. To make interacting with the portal easier, inherit from the [XApp](./xapp/xapp.md) contract.
