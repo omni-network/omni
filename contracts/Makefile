@@ -20,7 +20,7 @@ bindings: build ## Generate golang contract bindings.
 	go run ./bindings/scripts/commenttypes.go -- bindings/avsdirectory.go ISignatureUtilsSignatureWithSaltAndExpiry
 
 examples-bindings: build ## Generate golang contract bindings for example contracts
-	PKG=examples DIR=./bindings/examples ./bindings/script/gen.sh PingPong
+	PKG=examples DIR=./bindings/examples ./bindings/scripts/gen.sh PingPong
 
 deploy-eigenlayer-save-anvil-state: ## Deploy eigenlayer contracts and dump anvil state.
 	./script/eigen/deploy-eigenlayer-save-anvil-state.sh
