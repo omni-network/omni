@@ -390,14 +390,20 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 	}
 
 	// Make nice logs
-	heights := make(map[uint64][]uint64)
+	const limit = 5
+	heights := make(map[uint64][]string)
 	for _, vote := range votes {
-		heights[vote.BlockHeader.ChainId] = append(heights[vote.BlockHeader.ChainId], vote.BlockHeader.Height)
+		hs := heights[vote.BlockHeader.ChainId]
+		if len(hs) < limit {
+			hs = append(hs, strconv.FormatUint(vote.BlockHeader.Height, 10))
+		} else if len(hs) == limit {
+			hs = append(hs, "...")
+		} else {
+			continue
+		}
+		heights[vote.BlockHeader.ChainId] = hs
 	}
-	attrs := []any{
-		slog.Int("votes", len(votes)),
-		log.Hex7("validator", k.voter.LocalAddress().Bytes()),
-	}
+	attrs := []any{slog.Int("votes", len(votes))}
 	for cid, hs := range heights {
 		attrs = append(attrs, slog.String(
 			strconv.FormatUint(cid, 10),
