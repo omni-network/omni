@@ -42,7 +42,7 @@ func NewEngineMock() (EngineClient, error) {
 		fuzzer = NewFuzzer(timestamp)
 	)
 
-	genesisPayload, err := makePayload(fuzzer, height, uint64(timestamp), parentHash)
+	genesisPayload, err := makePayload(fuzzer, height, uint64(timestamp), parentHash, common.Address{}, parentHash)
 	if err != nil {
 		return nil, errors.Wrap(err, "make next payload")
 	}
@@ -139,7 +139,8 @@ func (m *engineMock) ForkchoiceUpdatedV2(ctx context.Context, update engine.Fork
 
 	// If we have payload attributes, make a new payload
 	if attrs != nil {
-		payload, err := makePayload(m.fuzzer, m.head.NumberU64()+1, attrs.Timestamp, update.HeadBlockHash)
+		payload, err := makePayload(m.fuzzer, m.head.NumberU64()+1,
+			attrs.Timestamp, update.HeadBlockHash, attrs.SuggestedFeeRecipient, attrs.Random)
 		if err != nil {
 			return engine.ForkChoiceResponse{}, err
 		}
@@ -194,13 +195,15 @@ func (*engineMock) GetPayloadV3(context.Context, engine.PayloadID) (*engine.Exec
 
 // makePayload returns a new fuzzed payload using head as parent if provided.
 func makePayload(fuzzer *fuzz.Fuzzer, height uint64, timestamp uint64, parentHash common.Hash,
-) (engine.ExecutableData, error) {
+	feeRecipient common.Address, randao common.Hash) (engine.ExecutableData, error) {
 	// Build a new header
 	var header types.Header
 	fuzzer.Fuzz(&header)
 	header.Number = big.NewInt(int64(height))
 	header.Time = timestamp
 	header.ParentHash = parentHash
+	header.MixDigest = randao      // this corresponds to Random field in PayloadAttributes
+	header.Coinbase = feeRecipient // this corresponds to SuggestedFeeRecipient field in PayloadAttributes
 
 	// Convert header to block
 	block := types.NewBlock(&header, nil, nil, nil, trie.NewStackTrie(nil))
