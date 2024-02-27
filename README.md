@@ -61,11 +61,6 @@ Building the node requires a working Go (version 1.22 or higher, see `go.mod`) a
 ```bash
 make build-docker
 ```
-then
-
-```bash
-make run
-```
 
 ## Usage
 
@@ -77,12 +72,18 @@ To run the end-to-end tests, run:
 MANIFEST=simple make e2e-run
 ```
 
-### Starting a Localnet
+### Starting a devnet
 
-To start a localnet, run:
+To start a devnet, run:
 
 ```bash
-make devnet-run
+make devnet-deploy
+```
+
+To stop it, run:
+
+```bash
+make devnet-clean
 ```
 
 ## Directory Structure
