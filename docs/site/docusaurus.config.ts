@@ -15,11 +15,6 @@ const config: Config = {
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: "/",
 
-  // GitHub pages deployment config.
-  // If you aren't using GitHub pages, you don't need these.
-  organizationName: "omni-network", // Usually your GitHub org/user name.
-  projectName: "docs", // Usually your repo name.
-
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
 
@@ -36,6 +31,7 @@ const config: Config = {
       "classic",
       {
         docs: {
+          routeBasePath: "/",
           sidebarPath: "./sidebars.ts",
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
@@ -67,37 +63,7 @@ const config: Config = {
         alt: "Omni Logo",
         src: "img/logo.svg",
       },
-      items: [
-        {
-          position: "left",
-          label: "Learn",
-          type: "doc",
-          docId: "learn/introduction",
-        },
-        {
-          position: "left",
-          label: "Protocol",
-          type: "doc",
-          docId: "protocol/overview",
-        },
-        {
-          position: "left",
-          label: "Develop",
-          type: "doc",
-          docId: "develop/introduction",
-        },
-        {
-          position: "left",
-          label: "Operate",
-          type: "doc",
-          docId: "operate/run",
-        },
-        {
-          href: "https://github.com/omni-network/omni",
-          label: "GitHub",
-          position: "right",
-        },
-      ],
+      items: [],
     },
     footer: {
       // style: "dark",
