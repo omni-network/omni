@@ -6,9 +6,9 @@ import { IOmniAVS } from "../interfaces/IOmniAVS.sol";
 
 abstract contract OmniAVSStorage {
     /// @notice Strategy parameters for restaking
-    IOmniAVS.StrategyParams[] internal _strategyParams;
+    IOmniAVS.StrategyParam[] internal _strategyParams;
 
-    /// @notice List of currently register operators, used to sync EigenCore
+    /// @notice Ethereum addresses of currently register operators
     address[] internal _operators;
 
     /// @notice Set of operators that are allowed to register
@@ -20,10 +20,10 @@ abstract contract OmniAVSStorage {
     /// @notice Omni chain id, used to make xcalls to the Omni chain
     uint64 public omniChainId;
 
-    /// @notice OmniPortal.xcall gas limit per each validator in syncWithOmni
-    uint64 public xcallGasLimitPerValidator = 10_000;
+    /// @notice OmniPortal.xcall gas limit per each operator in syncWithOmni()
+    uint64 public xcallGasLimitPerOperator = 10_000;
 
-    /// @notice OmniPortal.xcall base gas limit in syncWithOmnj
+    /// @notice OmniPortal.xcall base gas limit in syncWithOmni()
     uint64 public xcallBaseGasLimit = 75_000;
 
     /// @notice Minimum stake required for an operator to register, not including delegations

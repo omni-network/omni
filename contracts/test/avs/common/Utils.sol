@@ -96,14 +96,14 @@ contract Utils is Fixtures {
 
     /// @dev deposit into a random strategy, that is part of the OmniAVS strategy params
     function _depositIntoSupportedStrategy(address staker, uint256 shares) internal {
-        IOmniAVS.StrategyParams[] memory params = omniAVS.strategyParams();
+        IOmniAVS.StrategyParam[] memory params = omniAVS.strategyParams();
         uint256 index = uint256(keccak256(abi.encodePacked(staker))) % params.length;
         _depositIntoStrategy(staker, shares, address(params[index].strategy));
     }
 
     /// @dev deposit into an that is NOT part of the OmniAVS strategy params
     function _depositIntoUnsupportedStrategy(address staker, uint256 shares) internal {
-        IOmniAVS.StrategyParams[] memory params = omniAVS.strategyParams();
+        IOmniAVS.StrategyParam[] memory params = omniAVS.strategyParams();
 
         // check that unsupportedStrategy is not part of the strategy params
         for (uint256 i = 0; i < params.length; i++) {
