@@ -303,8 +303,7 @@ func TestKeeper_Add(t *testing.T) {
 				return
 			}
 
-			gotAtts, gotSigs, err := dumpTables(t, k, ctx)
-			require.NoError(t, err, "dump orm tables")
+			gotAtts, gotSigs := dumpTables(t, ctx, k)
 
 			if !cmp.Equal(gotAtts, tt.want.atts, atteTrans) {
 				t.Error(cmp.Diff(gotAtts, tt.want.atts, atteTrans))

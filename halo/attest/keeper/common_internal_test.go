@@ -56,8 +56,17 @@ func setupKeeper(t *testing.T, expectations ...func(sdk.Context, mocks)) (*Keepe
 }
 
 // dumpTables returns all the items in the atestation and signature tables as slices.
-func dumpTables(t *testing.T, k *Keeper, ctx sdk.Context) ([]*Attestation, []*Signature, error) {
+func dumpTables(t *testing.T, ctx sdk.Context, k *Keeper) ([]*Attestation, []*Signature) {
 	t.Helper()
+	atts, sigs, err := keeperData(ctx, k)
+	if err != nil {
+		t.Fatalf("error fetching keeper tables: %v", err)
+	}
+
+	return atts, sigs
+}
+
+func keeperData(ctx sdk.Context, k *Keeper) ([]*Attestation, []*Signature, error) {
 	var atts []*Attestation
 	lastAttID, err := k.attTable.LastInsertedSequence(ctx)
 	if err != nil {
