@@ -110,6 +110,13 @@ func newGasPricer(mineAtEpoch int64) *gasPricer {
 	}
 }
 
+func (g *gasPricer) getEpoch() int64 {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
+
+	return g.epoch
+}
+
 func (g *gasPricer) expGasFeeCap() *big.Int {
 	_, gasFeeCap := g.feesForEpoch(g.mineAtEpoch)
 	return gasFeeCap
@@ -129,10 +136,7 @@ func (g *gasPricer) feesForEpoch(epoch int64) (*big.Int, *big.Int) {
 }
 
 func (g *gasPricer) baseFee() *big.Int {
-	g.mu.RLock()
-	defer g.mu.RUnlock()
-
-	return new(big.Int).Mul(g.baseBaseFee, big.NewInt(g.epoch))
+	return new(big.Int).Mul(g.baseBaseFee, big.NewInt(g.getEpoch()))
 }
 
 func (g *gasPricer) sample() (*big.Int, *big.Int) {
@@ -218,10 +222,7 @@ func (b *mockBackend) HeaderByNumber(ctx context.Context, number *big.Int) (*typ
 		num.Set(number)
 	}
 
-	b.g.mu.RLock()
-	defer b.g.mu.RUnlock()
-
-	bg := b.g.excessBlobGas + uint64(b.g.epoch)
+	bg := b.g.excessBlobGas + uint64(b.g.getEpoch())
 
 	return &types.Header{
 		Number:        num,
@@ -431,7 +432,7 @@ func TestTxMgr_CraftTx(t *testing.T) {
 	candidate := h.createTxCandidate()
 
 	// Craft the transaction.
-	gasTipCap, gasFeeCap := h.gasPricer.feesForEpoch(h.gasPricer.epoch + 1)
+	gasTipCap, gasFeeCap := h.gasPricer.feesForEpoch(h.gasPricer.getEpoch() + 1)
 	tx, err := h.mgr.craftTx(context.Background(), candidate)
 	require.NoError(t, err)
 	require.NotNil(t, tx)
