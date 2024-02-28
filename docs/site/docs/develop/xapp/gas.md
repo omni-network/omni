@@ -15,7 +15,7 @@ xcall(
 )
 ```
 
-If you do not specify a gas limit (like in the example above), Omni enforces a default gas limit, currently set to `200_000`. You can read the default gas limit via the portal contract.
+If you do not specify a gas limit, Omni enforces a default gas limit, currently set to `200_000`. You can read the default gas limit via the portal contract.
 
 ```solidity
 /// @notice Default xmsg execution gas limit, enforced on destination chain

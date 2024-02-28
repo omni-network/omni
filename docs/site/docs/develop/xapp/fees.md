@@ -6,7 +6,7 @@ sidebar_position: 5
 
 Omni charges fees for each `xcall`. These fees are paid synchronously on the soruce chain, in the chain's native token. For most rollups, this is ETH.
 
-## Fee Methods
+## Fee Calculation
 
 Fees are determined by an `xcall`'s destination chain, calldata, and gas limit. You can calculate the fee for an `xcall` via the `XApp.feeFor(...)` method.
 
@@ -27,7 +27,7 @@ uint256 fee = feeFor(
 )
 ```
 
-## Fee Calculation
+## Fee Payment
 
 `XApp` handles calculating and charging fees when making an `xcall`
 
