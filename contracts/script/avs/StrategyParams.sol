@@ -10,7 +10,7 @@ import { EigenM2GoerliDeployments } from "test/avs/common/eigen/EigenM2GoerliDep
  * @dev Defines OmniAVS strategy params for different chains
  */
 library StrategyParams {
-    /// @notice standar strategy multiplier, matches OmniAVS.WEIGHTING_DIVISOR
+    /// @notice standar strategy multiplier, matches OmniAVS.STRATEGY_WEIGHTING_DIVISOR
     uint96 public constant STD_MULTIPLIER = 1e18;
 
     /// @notice EigenLayer's canonical, virtual beacon chain ETH strategy

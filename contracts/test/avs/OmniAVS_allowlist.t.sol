@@ -53,7 +53,7 @@ contract OmniAVS_allowlist_Test is Base {
         address operator = _operator(0);
 
         _addToAllowlist(operator);
-        _depositIntoSupportedStrategy(operator, minimumOperatorStake);
+        _depositIntoSupportedStrategy(operator, minOperatorStake);
         _registerAsOperator(operator);
         _registerOperatorWithAVS(operator);
 
