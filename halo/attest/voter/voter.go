@@ -231,7 +231,8 @@ func (a *Voter) TrimBehind(thresholds map[uint64]uint64) int {
 	for _, vote := range a.available {
 		threshold, ok := thresholds[vote.BlockHeader.ChainId]
 		if ok && vote.BlockHeader.Height < threshold {
-			continue // Skip
+			trimTotal.WithLabelValues(a.chains[vote.BlockHeader.ChainId]).Inc()
+			continue // Skip/Trim
 		}
 		stillAvailable = append(stillAvailable, vote) // Retain all others
 	}
