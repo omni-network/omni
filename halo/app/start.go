@@ -223,8 +223,7 @@ func makeBaseAppOpts(cfg Config) ([]func(*baseapp.BaseApp), error) {
 		return nil, err
 	}
 
-	const snapshotCount = 4
-	snapshotOptions := snapshottypes.NewSnapshotOptions(cfg.SnapshotInterval, snapshotCount)
+	snapshotOptions := snapshottypes.NewSnapshotOptions(cfg.SnapshotInterval, uint32(cfg.SnapshotKeepRecent))
 
 	return []func(*baseapp.BaseApp){
 		baseapp.SetChainID(chainID),
