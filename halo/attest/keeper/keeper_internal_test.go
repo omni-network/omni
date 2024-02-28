@@ -33,8 +33,8 @@ func TestKeeper_Add(t *testing.T) {
 
 	// cmp transformation options to ignore private fields of proto generated types.
 	var (
-		atteTrans = cmp.Options{cmpopts.IgnoreUnexported(Attestation{})}
-		sigsTrans = cmp.Options{cmpopts.IgnoreUnexported(Signature{})}
+		atteCmpOpts = cmp.Options{cmpopts.IgnoreUnexported(Attestation{})}
+		sigsCmpOpts = cmp.Options{cmpopts.IgnoreUnexported(Signature{})}
 	)
 
 	type args struct {
@@ -305,12 +305,12 @@ func TestKeeper_Add(t *testing.T) {
 
 			gotAtts, gotSigs := dumpTables(t, ctx, k)
 
-			if !cmp.Equal(gotAtts, tt.want.atts, atteTrans) {
-				t.Error(cmp.Diff(gotAtts, tt.want.atts, atteTrans))
+			if !cmp.Equal(gotAtts, tt.want.atts, atteCmpOpts) {
+				t.Error(cmp.Diff(gotAtts, tt.want.atts, atteCmpOpts))
 			}
 
-			if !cmp.Equal(gotSigs, tt.want.sigs, sigsTrans) {
-				t.Error(cmp.Diff(gotSigs, tt.want.sigs, sigsTrans))
+			if !cmp.Equal(gotSigs, tt.want.sigs, sigsCmpOpts) {
+				t.Error(cmp.Diff(gotSigs, tt.want.sigs, sigsCmpOpts))
 			}
 		})
 	}

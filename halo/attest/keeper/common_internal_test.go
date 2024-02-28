@@ -5,13 +5,13 @@ import (
 
 	"github.com/omni-network/omni/halo/attest/testutil"
 	"github.com/omni-network/omni/halo/attest/types"
-	"github.com/omni-network/omni/lib/errors"
 
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdktestutil "github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
 
@@ -48,9 +48,7 @@ func setupKeeper(t *testing.T, expectations ...func(sdk.Context, mocks)) (*Keepe
 
 	const voteWindow = 1
 	k, err := New(codec, storeSvc, m.skeeper, m.voter, m.namer.ChainName, voteWindow)
-	if err != nil {
-		t.Fatalf("error creating keeper: %v", err)
-	}
+	require.NoError(t, err, "new keeper")
 
 	return k, ctx
 }
@@ -58,52 +56,27 @@ func setupKeeper(t *testing.T, expectations ...func(sdk.Context, mocks)) (*Keepe
 // dumpTables returns all the items in the atestation and signature tables as slices.
 func dumpTables(t *testing.T, ctx sdk.Context, k *Keeper) ([]*Attestation, []*Signature) {
 	t.Helper()
-	atts, sigs, err := keeperData(ctx, k)
-	if err != nil {
-		t.Fatalf("error fetching keeper tables: %v", err)
-	}
-
-	return atts, sigs
-}
-
-func keeperData(ctx sdk.Context, k *Keeper) ([]*Attestation, []*Signature, error) {
 	var atts []*Attestation
-	lastAttID, err := k.attTable.LastInsertedSequence(ctx)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "last atestation id")
-	}
-	aitr, err := k.attTable.ListRange(ctx, AttestationIdIndexKey{}.WithId(0), AttestationIdIndexKey{}.WithId(lastAttID))
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "iterate atestations")
-	}
+	aitr, err := k.attTable.List(ctx, AttestationIdIndexKey{})
+	require.NoError(t, err, "list attestations")
 	defer aitr.Close()
 
 	for aitr.Next() {
 		a, err := aitr.Value()
-		if err != nil {
-			return nil, nil, errors.Wrap(err, "attestation iterator Value")
-		}
+		require.NoError(t, err, "signature iterator Value")
 		atts = append(atts, a)
 	}
 
 	var sigs []*Signature
-	lastSigID, err := k.sigTable.LastInsertedSequence(ctx)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "last signature id")
-	}
-	sitr, err := k.sigTable.ListRange(ctx, SignatureIdIndexKey{}.WithId(0), SignatureIdIndexKey{}.WithId(lastSigID))
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "iterate atestations")
-	}
+	sitr, err := k.sigTable.List(ctx, SignatureIdIndexKey{})
+	require.NoError(t, err, "list signatures")
 	defer sitr.Close()
 
 	for sitr.Next() {
 		s, err := sitr.Value()
-		if err != nil {
-			return nil, nil, errors.Wrap(err, "signature iterator Value")
-		}
+		require.NoError(t, err, "signature iterator Value")
 		sigs = append(sigs, s)
 	}
 
-	return atts, sigs, nil
+	return atts, sigs
 }
