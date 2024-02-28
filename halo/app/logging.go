@@ -15,7 +15,12 @@ type loggingABCIApp struct {
 
 func (l loggingABCIApp) Info(ctx context.Context, info *abci.RequestInfo) (*abci.ResponseInfo, error) {
 	log.Debug(ctx, "👾 ABCI call: Info")
-	return l.Application.Info(ctx, info)
+	resp, err := l.Application.Info(ctx, info)
+	if err != nil {
+		log.Error(ctx, "Info failed [BUG]", err)
+	}
+
+	return resp, err
 }
 
 func (l loggingABCIApp) Query(ctx context.Context, query *abci.RequestQuery) (*abci.ResponseQuery, error) {
@@ -29,17 +34,32 @@ func (l loggingABCIApp) CheckTx(ctx context.Context, tx *abci.RequestCheckTx) (*
 
 func (l loggingABCIApp) InitChain(ctx context.Context, chain *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
 	log.Debug(ctx, "👾 ABCI call: InitChain")
-	return l.Application.InitChain(ctx, chain)
+	resp, err := l.Application.InitChain(ctx, chain)
+	if err != nil {
+		log.Error(ctx, "InitChain failed [BUG]", err)
+	}
+
+	return resp, err
 }
 
 func (l loggingABCIApp) PrepareProposal(ctx context.Context, proposal *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
 	log.Debug(ctx, "👾 ABCI call: PrepareProposal")
-	return l.Application.PrepareProposal(ctx, proposal)
+	resp, err := l.Application.PrepareProposal(ctx, proposal)
+	if err != nil {
+		log.Error(ctx, "PrepareProposal failed [BUG]", err)
+	}
+
+	return resp, err
 }
 
 func (l loggingABCIApp) ProcessProposal(ctx context.Context, proposal *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
 	log.Debug(ctx, "👾 ABCI call: ProcessProposal")
-	return l.Application.ProcessProposal(ctx, proposal)
+	resp, err := l.Application.ProcessProposal(ctx, proposal)
+	if err != nil {
+		log.Error(ctx, "ProcessProposal failed [BUG]", err)
+	}
+
+	return resp, err
 }
 
 func (l loggingABCIApp) FinalizeBlock(ctx context.Context, block *abci.RequestFinalizeBlock) (*abci.ResponseFinalizeBlock, error) {
@@ -54,7 +74,7 @@ func (l loggingABCIApp) FinalizeBlock(ctx context.Context, block *abci.RequestFi
 		if res.Code == 0 {
 			continue
 		}
-		log.Error(ctx, "Unexpected failed transaction [BUG]", nil,
+		log.Error(ctx, "FinalizeBlock contains unexpected failed transaction [BUG]", nil,
 			"info", res.Info, "code", res.Code, "log", res.Log,
 			"code_space", res.Codespace, "index", i, "height", block.Height)
 	}
@@ -64,12 +84,22 @@ func (l loggingABCIApp) FinalizeBlock(ctx context.Context, block *abci.RequestFi
 
 func (l loggingABCIApp) ExtendVote(ctx context.Context, vote *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
 	log.Debug(ctx, "👾 ABCI call: ExtendVote")
-	return l.Application.ExtendVote(ctx, vote)
+	resp, err := l.Application.ExtendVote(ctx, vote)
+	if err != nil {
+		log.Error(ctx, "ExtendVote failed [BUG]", err)
+	}
+
+	return resp, err
 }
 
 func (l loggingABCIApp) VerifyVoteExtension(ctx context.Context, extension *abci.RequestVerifyVoteExtension) (*abci.ResponseVerifyVoteExtension, error) {
 	log.Debug(ctx, "👾 ABCI call: VerifyVoteExtension")
-	return l.Application.VerifyVoteExtension(ctx, extension)
+	resp, err := l.Application.VerifyVoteExtension(ctx, extension)
+	if err != nil {
+		log.Error(ctx, "VerifyVoteExtension failed [BUG]", err)
+	}
+
+	return resp, err
 }
 
 func (l loggingABCIApp) Commit(ctx context.Context, commit *abci.RequestCommit) (*abci.ResponseCommit, error) {

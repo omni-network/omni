@@ -4,9 +4,12 @@ import (
 	"context"
 	"time"
 
+	atypes "github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/halo/attest/voter"
 	"github.com/omni-network/omni/halo/comet"
 	halocfg "github.com/omni-network/omni/halo/config"
+	"github.com/omni-network/omni/lib/cchain"
+	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/gitinfo"
@@ -70,6 +73,9 @@ func Run(ctx context.Context, cfg Config) error {
 }
 
 // Start starts the halo client returning a stop function or an error.
+//
+// Note that the original context used to start the app must be canceled first
+// before calling the stop function and a fresh context should be passed into the stop function.
 func Start(ctx context.Context, cfg Config) (func(context.Context) error, error) {
 	log.Info(ctx, "Starting halo consensus client")
 
@@ -109,18 +115,11 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 		return nil, errors.Wrap(err, "create xchain provider")
 	}
 
-	voterI, err := voter.LoadVoter(ctx, privVal.Key.PrivKey, cfg.AttestStateFile(), xprovider,
-		network.ChainNamesByIDs())
-	if err != nil {
-		return nil, errors.Wrap(err, "create attester")
-	}
-
 	//nolint:contextcheck // False positive
 	app, err := newApp(
 		newSDKLogger(ctx),
 		db,
 		engineCl,
-		voterI,
 		network.ChainName,
 		baseAppOpts...,
 	)
@@ -136,7 +135,16 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 		return nil, errors.Wrap(err, "create comet node")
 	}
 
-	app.SetCometAPI(comet.NewAPI(rpclocal.New(cmtNode)))
+	cmtAPI := comet.NewAPI(rpclocal.New(cmtNode))
+	app.SetCometAPI(cmtAPI)
+
+	voter, err := newVoter(cmtAPI, network, privVal, xprovider, cmtNode, cfg.VoterStateFile())
+	if err != nil {
+		return nil, errors.Wrap(err, "create voter")
+	}
+	app.SetVoter(voter)
+
+	voter.Start(ctx)
 
 	log.Info(ctx, "Starting CometBFT", "listeners", cmtNode.Listeners())
 
@@ -145,7 +153,11 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 	}
 
 	// Return stop function.
+	// Note that the original context uesd to start the app must be canceled first.
+	// And a fresh context should be passed into the stop function.
 	return func(ctx context.Context) error {
+		voter.WaitDone()
+
 		if err := cmtNode.Stop(); err != nil {
 			return errors.Wrap(err, "stop comet node")
 		}
@@ -296,4 +308,42 @@ func enableSDKTelemetry() error {
 	}
 
 	return nil
+}
+
+func newVoter(
+	cmtAPI comet.API,
+	network netconf.Network,
+	privVal *privval.FilePV,
+	xprovider xchain.Provider,
+	tmNode *node.Node,
+	stateFile string,
+) (*voter.Voter, error) {
+	deps := voteDeps{
+		API:      cmtAPI,
+		Provider: cprovider.NewABCIProvider(rpclocal.New(tmNode), network.ChainNamesByIDs()),
+	}
+	voterI, err := voter.LoadVoter(privVal.Key.PrivKey, stateFile, xprovider, deps, network.ChainNamesByIDs())
+	if err != nil {
+		return nil, errors.Wrap(err, "create voter")
+	}
+
+	return voterI, nil
+}
+
+var _ atypes.VoterDeps = voteDeps{}
+
+type voteDeps struct {
+	comet.API
+	cchain.Provider
+}
+
+func (v voteDeps) LatestAttestationHeight(ctx context.Context, chainID uint64) (uint64, bool, error) {
+	att, ok, err := v.LatestAttestation(ctx, chainID)
+	if err != nil {
+		return 0, false, err
+	} else if !ok {
+		return 0, false, nil
+	}
+
+	return att.BlockHeight, true, nil
 }

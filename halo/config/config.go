@@ -23,7 +23,7 @@ const (
 	configDir       = "config"
 	snapshotDataDir = "snapshots"
 	networkFile     = "network.json"
-	attestStateFile = "xattestations_state.json"
+	voterStateFile  = "voter_state.json"
 
 	DefaultHomeDir            = "./halo" // Defaults to "halo" in current directory
 	defaultSnapshotInterval   = 1000     // Roughly once an hour (given 3s blocks)
@@ -77,8 +77,8 @@ func (c Config) DataDir() string {
 	return filepath.Join(c.HomeDir, dataDir)
 }
 
-func (c Config) AttestStateFile() string {
-	return filepath.Join(c.DataDir(), attestStateFile)
+func (c Config) VoterStateFile() string {
+	return filepath.Join(c.DataDir(), voterStateFile)
 }
 
 func (c Config) AppStateDir() string {

@@ -253,14 +253,14 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 		return errors.New("genesis file must be pre-generated", "path", networkFile)
 	}
 
-	// Attest state
-	attStateFile := cfg.AttestStateFile()
-	if cmtos.FileExists(attStateFile) {
-		log.Info(ctx, "Found attest state file", "path", attStateFile)
-	} else if err := voter.GenEmptyStateFile(attStateFile); err != nil {
+	// Vote state
+	voterStateFile := cfg.VoterStateFile()
+	if cmtos.FileExists(voterStateFile) {
+		log.Info(ctx, "Found voter state file", "path", voterStateFile)
+	} else if err := voter.GenEmptyStateFile(voterStateFile); err != nil {
 		return err
 	} else {
-		log.Info(ctx, "Generated attest state file", "path", attStateFile)
+		log.Info(ctx, "Generated voter state file", "path", voterStateFile)
 	}
 
 	return nil

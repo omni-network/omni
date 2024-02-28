@@ -28,6 +28,12 @@ type Provider interface {
 	// and height (inclusive). It will return max 100 attestations per call.
 	AttestationsFrom(ctx context.Context, sourceChainID uint64, sourceHeight uint64) ([]xchain.Attestation, error)
 
-	// LatestAttestation returns the latest approved attestation for the provided source chain.
-	LatestAttestation(ctx context.Context, sourceChainID uint64) (xchain.Attestation, error)
+	// LatestAttestation returns the latest approved attestation for the provided source chain or false
+	// if none exist.
+	LatestAttestation(ctx context.Context, sourceChainID uint64) (xchain.Attestation, bool, error)
+
+	// WindowCompare returns wether the given attestation block header is behind (-1), or in (0), or ahead (1)
+	// of the current vote window. The vote window is a configured number of blocks around the latest approved
+	// attestation for the provided chain.
+	WindowCompare(ctx context.Context, sourceChainID uint64, height uint64) (int, error)
 }

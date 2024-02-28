@@ -27,7 +27,7 @@ func (s proposalServer) AddVotes(ctx context.Context, msg *types.MsgAddVotes,
 		log.Warn(ctx, "Skipping vote verification since prev block validators not available. "+
 			"Assume this is first block after snapshot restore", nil)
 		// This is ok, since this should only occur on single validators
-	} else if err := verifyAggVotes(ctx, vals, s.windower, msg.Votes); err != nil {
+	} else if err := s.verifyAggVotes(ctx, vals, msg.Votes); err != nil {
 		return nil, errors.Wrap(err, "verify votes")
 	}
 

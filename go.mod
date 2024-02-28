@@ -6,7 +6,7 @@ require (
 	cosmossdk.io/api v0.7.3
 	cosmossdk.io/core v0.11.0 // Pegged to v0.11.0 for cosmos-sdk v0.50.3
 	cosmossdk.io/depinject v1.0.0-alpha.4
-	cosmossdk.io/errors v1.0.1 // indirect
+	cosmossdk.io/errors v1.0.1
 	cosmossdk.io/log v1.3.1
 	cosmossdk.io/math v1.3.0
 	cosmossdk.io/orm v1.0.0-beta.3

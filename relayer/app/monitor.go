@@ -89,9 +89,11 @@ func monitorAttestedForever(ctx context.Context, chain string, chainID uint64, c
 
 // monitorAttestedOnce monitors of the latest attested height by chain.
 func monitorAttestedOnce(ctx context.Context, chain string, chainID uint64, cprovider cchain.Provider) error {
-	att, err := cprovider.LatestAttestation(ctx, chainID)
+	att, ok, err := cprovider.LatestAttestation(ctx, chainID)
 	if err != nil {
 		return errors.Wrap(err, "latest attestation")
+	} else if !ok {
+		return nil // No attestations yet.
 	}
 
 	attestedHeight.WithLabelValues(chain).Set(float64(att.BlockHeight))

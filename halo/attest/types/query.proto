@@ -15,6 +15,11 @@ service Query {
 
   // LatestAttestation queries halo for the latest approved attestations for the given chain_id.
   rpc LatestAttestation(LatestAttestationRequest) returns (LatestAttestationResponse) {}
+
+  // WindowCompare compares the given chain height to the vote window.
+  // It returns whether the request is behind (-1), or in (0), or after (1) the vote window.
+  // The vote window is a configured number of blocks around the latest approved attestation.
+  rpc WindowCompare(WindowCompareRequest) returns (WindowCompareResponse) {}
 }
 
 // ApprovedFromRequest queries halo for approved attestations for the given chain_id
@@ -35,4 +40,13 @@ message LatestAttestationRequest {
 
 message LatestAttestationResponse {
   Attestation attestation = 1;
+}
+
+message WindowCompareRequest {
+  uint64 chain_id = 1; // Chain ID as per https://chainlist.org
+  uint64 height = 2; // Attestation block height to compare
+}
+
+message WindowCompareResponse {
+  int32 cmp = 1; // Whether the request is behind (-1), or in (0), or after (1) the vote window.
 }

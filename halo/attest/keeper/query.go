@@ -40,3 +40,16 @@ func (k *Keeper) LatestAttestation(ctx context.Context, req *types.LatestAttesta
 
 	return &types.LatestAttestationResponse{Attestation: att}, nil
 }
+
+func (k *Keeper) WindowCompare(ctx context.Context, req *types.WindowCompareRequest) (*types.WindowCompareResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid request")
+	}
+
+	cmp, err := k.windowCompare(ctx, req.ChainId, req.Height)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &types.WindowCompareResponse{Cmp: int32(cmp)}, nil
+}

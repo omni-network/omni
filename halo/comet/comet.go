@@ -4,9 +4,12 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/k1util"
 
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	cmttypes "github.com/cometbft/cometbft/types"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 const perPageConst = 100
@@ -17,6 +20,10 @@ type API interface {
 	// Validators returns the cometBFT validators at the given height or false if not
 	// available (probably due to snapshot sync after height).
 	Validators(ctx context.Context, height int64) (*cmttypes.ValidatorSet, bool, error)
+
+	// IsValidator returns true if the given address is a validator at the latest height.
+	// It is best-effort, so returns false on any error.
+	IsValidator(ctx context.Context, valAddress common.Address) bool
 }
 
 func NewAPI(cl rpcclient.Client) API {
@@ -27,6 +34,35 @@ type adapter struct {
 	cl rpcclient.Client
 }
 
+// IsValidator returns true if the given address is a validator at the latest height.
+// It is best-effort, so returns false on any error.
+func (a adapter) IsValidator(ctx context.Context, valAddress common.Address) bool {
+	status, err := a.cl.Status(ctx)
+	if err != nil || status.SyncInfo.CatchingUp {
+		return false // Best effort
+	}
+
+	valset, ok, err := a.Validators(ctx, status.SyncInfo.LatestBlockHeight)
+	if !ok || err != nil {
+		return false // Best effort
+	}
+
+	for _, val := range valset.Validators {
+		addr, err := k1util.PubKeyToAddress(val.PubKey)
+		if err != nil {
+			continue // Best effort
+		}
+
+		if addr == valAddress {
+			return true
+		}
+	}
+
+	return false
+}
+
+// Validators returns the cometBFT validators at the given height or false if not
+// available (probably due to snapshot sync after height).
 func (a adapter) Validators(ctx context.Context, height int64) (*cmttypes.ValidatorSet, bool, error) {
 	perPage := perPageConst // Can't take a pointer to a const directly.
 

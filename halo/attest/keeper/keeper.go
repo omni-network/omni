@@ -44,7 +44,7 @@ type Keeper struct {
 	skeeper      baseapp.ValidatorStore
 	cmtAPI       comet.API
 	namer        types.ChainNameFunc
-	windower     types.Windower
+	voteWindow   uint64
 }
 
 // New returns a new attestation keeper.
@@ -52,7 +52,6 @@ func New(
 	cdc codec.BinaryCodec,
 	storeSvc store.KVStoreService,
 	skeeper baseapp.ValidatorStore,
-	voter types.Voter,
 	namer types.ChainNameFunc,
 	voteWindow uint64,
 ) (*Keeper, error) {
@@ -76,12 +75,9 @@ func New(
 		cdc:          cdc,
 		storeService: storeSvc,
 		skeeper:      skeeper,
-		voter:        voter,
 		namer:        namer,
+		voteWindow:   voteWindow,
 	}
-
-	// windower is abstracted for testing purposes.
-	k.windower = newWindower(voteWindow, k.latestAttestation)
 
 	return k, nil
 }
@@ -89,6 +85,11 @@ func New(
 // SetCometAPI sets the comet API client.
 func (k *Keeper) SetCometAPI(cmtAPI comet.API) {
 	k.cmtAPI = cmtAPI
+}
+
+// SetVoter sets the voter.
+func (k *Keeper) SetVoter(voter types.Voter) {
+	k.voter = voter
 }
 
 // RegisterProposalService registers the proposal service on the provided router.
@@ -180,7 +181,8 @@ func (k *Keeper) Approve(ctx context.Context, valset *cmttypes.ValidatorSet) err
 		valsByPower[addr] = val.VotingPower
 	}
 
-	skip := make(map[uint64]bool) // Skip processing chains as soon as a pending attestation is found.
+	skip := make(map[uint64]bool)           // Skip processing chains as soon as a pending attestation is found.
+	edgesByChain := make(map[uint64]uint64) // Track new minimum edges for updated vote windows.
 	for iter.Next() {
 		att, err := iter.Value()
 		if err != nil {
@@ -216,7 +218,13 @@ func (k *Keeper) Approve(ctx context.Context, valset *cmttypes.ValidatorSet) err
 			return errors.Wrap(err, "save")
 		}
 
+		edgesByChain[att.GetChainId()] = uintSub(att.GetHeight(), k.voteWindow)
 		approvedHeight.WithLabelValues(k.namer(att.GetChainId())).Set(float64(att.GetHeight()))
+	}
+
+	count := k.voter.TrimBehind(edgesByChain)
+	if count > 0 {
+		log.Warn(ctx, "Trimmed votes behind vote-window (expected if node was struggling)", nil, "count", count)
 	}
 
 	return nil
@@ -348,8 +356,6 @@ func (k *Keeper) getSigs(ctx context.Context, attID uint64) ([]*Signature, error
 }
 
 func (k *Keeper) EndBlock(ctx context.Context) error {
-	defer k.windower.ResetCache()
-
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if sdkCtx.BlockHeight() <= 1 {
 		return nil // First block doesn't have any vote extensions to approve.
@@ -362,7 +368,7 @@ func (k *Keeper) EndBlock(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "fetch validators")
 	} else if !ok {
-		return errors.Wrap(err, "current validators not available [BUG]")
+		return errors.New("current validators not available [BUG]")
 	}
 
 	return k.Approve(ctx, valset)
@@ -372,18 +378,20 @@ func (k *Keeper) EndBlock(ctx context.Context) error {
 func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
 	votes := k.voter.GetAvailable()
 
+	// Filter by vote window
+	var filtered []*types.Vote
 	for _, vote := range votes {
-		if resp, err := k.windower.Compare(ctx, vote.BlockHeader); err != nil {
+		if cmp, err := k.windowCompare(ctx, vote.BlockHeader.ChainId, vote.BlockHeader.Height); err != nil {
 			return nil, errors.Wrap(err, "windower")
-		} else if resp != 0 {
-			// TODO(corver): Ensure voter is always inside window.
-			return nil, errors.New("own vote outside window [BUG]", "resp", resp)
+		} else if cmp != 0 {
+			continue
 		}
+		filtered = append(filtered, vote)
 	}
 
 	// TODO(corver): ensure max size.
 	bz, err := proto.Marshal(&types.Votes{
-		Votes: votes,
+		Votes: filtered,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal atts")
@@ -429,13 +437,16 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 		Status: abci.ResponseVerifyVoteExtension_REJECT,
 	}
 
+	// Adding logging attributes to sdk context is a bit tricky
+	ctx = ctx.WithContext(log.WithCtx(ctx, log.Hex7("validator", req.ValidatorAddress)))
+
 	votes, ok, err := votesFromExtension(req.VoteExtension)
 	if err != nil {
 		log.Warn(ctx, "Rejecting invalid vote extension", err)
 		return respReject, nil
 	} else if !ok {
-		log.Warn(ctx, "Rejecting nil vote extension", err)
-		return respReject, nil
+		log.Info(ctx, "Accepting nil vote extension", err) // This can happen in some edge-cases.
+		return respAccept, nil
 	}
 
 	for _, vote := range votes.Votes {
@@ -443,10 +454,10 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 			log.Warn(ctx, "Rejecting invalid vote", err)
 			return respReject, nil
 		}
-		if resp, err := k.windower.Compare(ctx, vote.BlockHeader); err != nil {
+		if cmp, err := k.windowCompare(ctx, vote.BlockHeader.ChainId, vote.BlockHeader.Height); err != nil {
 			return nil, errors.Wrap(err, "windower")
-		} else if resp != 0 {
-			log.Warn(ctx, "Rejecting out-of-window vote", nil, "resp", resp)
+		} else if cmp != 0 {
+			log.Warn(ctx, "Rejecting out-of-window vote", nil, "cmp", cmp)
 			return respReject, nil
 		}
 	}
@@ -476,16 +487,23 @@ func (k *Keeper) validatorsByAddress(ctx context.Context, height int64) (map[com
 	return resp, true, nil
 }
 
+func (k *Keeper) windowCompare(ctx context.Context, chainID uint64, height uint64) (int, error) {
+	latest, exists, err := k.latestAttestation(ctx, chainID)
+	if err != nil {
+		return 0, err
+	} else if !exists {
+		// TODO(corver): Use netconf deploy height to use as initial window.
+		return 0, nil // Allow any height while no approved attestation exists.
+	}
+
+	return windowCompare(k.voteWindow, latest.BlockHeader, height), nil
+}
+
 // verifyAggVotes verifies the given aggregates votes:
 // - Ensure all votes are from validators in the provided set.
 // - Ensure the vote block header is in the vote window.
 // - Ensure votes represent at least 2/3 of the total voting power.
-func verifyAggVotes(
-	ctx context.Context,
-	validators map[common.Address]bool,
-	windower types.Windower,
-	aggs []*types.AggVote,
-) error {
+func (k *Keeper) verifyAggVotes(ctx context.Context, validators map[common.Address]bool, aggs []*types.AggVote) error {
 	for _, agg := range aggs {
 		if err := agg.Verify(); err != nil {
 			return errors.Wrap(err, "verify aggregate vote")
@@ -501,7 +519,7 @@ func verifyAggVotes(
 		}
 
 		// Ensure the block header is in the vote window.
-		if resp, err := windower.Compare(ctx, agg.BlockHeader); err != nil {
+		if resp, err := k.windowCompare(ctx, agg.BlockHeader.ChainId, agg.BlockHeader.Height); err != nil {
 			return errors.Wrap(err, "windower")
 		} else if resp != 0 {
 			return errors.New("vote outside window", "resp", resp)
@@ -527,4 +545,28 @@ func isApproved(sigs []*Signature, valsByPower map[common.Address]int64, total i
 	}
 
 	return toDelete, sum > total*2/3
+}
+
+func windowCompare(voteWindow uint64, header *types.BlockHeader, latest uint64) int {
+	x := header.Height
+	mid := latest
+	delta := voteWindow
+
+	if x < uintSub(mid, delta) {
+		return -1
+	} else if x > mid+delta {
+		return 1
+	}
+
+	return 0
+}
+
+// uintSub returns a - b if a > b, else 0.
+// Subtracting uints can result in underflow, so we need to check for that.
+func uintSub(a, b uint64) uint64 {
+	if a <= b {
+		return 0
+	}
+
+	return a - b
 }
