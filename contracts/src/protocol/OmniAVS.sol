@@ -9,13 +9,14 @@ import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrate
 import { ISignatureUtils } from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import { IServiceManager } from "eigenlayer-middleware/src/interfaces/IServiceManager.sol";
 
-import { IDelegationManager } from "../interfaces/IDelegationManager.sol";
 import { OmniPredeploys } from "../libraries/OmniPredeploys.sol";
-import { OmniAVSStorage } from "./OmniAVSStorage.sol";
+import { IDelegationManager } from "../interfaces/IDelegationManager.sol";
 import { IOmniEthRestaking } from "../interfaces/IOmniEthRestaking.sol";
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
 import { IOmniAVS } from "../interfaces/IOmniAVS.sol";
 import { IOmniAVSAdmin } from "../interfaces/IOmniAVSAdmin.sol";
+
+import { OmniAVSStorage } from "./OmniAVSStorage.sol";
 
 contract OmniAVS is
     IOmniAVS,
@@ -25,9 +26,18 @@ contract OmniAVS is
     PausableUpgradeable,
     OmniAVSStorage
 {
-    constructor(IDelegationManager delegationManager_, IAVSDirectory avsDirectory_)
-        OmniAVSStorage(delegationManager_, avsDirectory_)
-    {
+    /// @notice Constant used as a divisor in calculating weights
+    uint256 internal constant STRATEGY_WEIGHTING_DIVISOR = 1e18;
+
+    /// @notice EigenLayer core DelegationManager
+    IDelegationManager internal immutable _delegationManager;
+
+    /// @notice EigenLayer core AVSDirectory
+    IAVSDirectory internal immutable _avsDirectory;
+
+    constructor(IDelegationManager delegationManager_, IAVSDirectory avsDirectory_) {
+        _delegationManager = delegationManager_;
+        _avsDirectory = avsDirectory_;
         _disableInitializers();
     }
 
@@ -257,7 +267,7 @@ contract OmniAVS is
 
     /// @dev Returns the weighted stake for shares with specified multiplier
     function _weight(uint256 shares, uint96 multiplier) internal pure returns (uint96) {
-        return uint96(shares * multiplier / WEIGHTING_DIVISOR);
+        return uint96(shares * multiplier / STRATEGY_WEIGHTING_DIVISOR);
     }
 
     /**

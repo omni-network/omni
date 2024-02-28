@@ -92,7 +92,7 @@ contract Fixtures is EigenLayerFixtures {
         for (uint256 i = 0; i < strategies.length; i++) {
             params[i] = IOmniAVS.StrategyParams({
                 strategy: IStrategy(strategies[i]),
-                multiplier: uint96(1e18) // OmniAVS.WEIGHTING_DIVISOR
+                multiplier: uint96(1e18) // OmniAVS.STRATEGY_WEIGHTING_DIVISOR
              });
         }
 

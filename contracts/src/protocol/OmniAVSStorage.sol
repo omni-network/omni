@@ -1,22 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.12;
 
-import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
-
-import { IDelegationManager } from "../interfaces/IDelegationManager.sol";
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
 import { IOmniAVS } from "../interfaces/IOmniAVS.sol";
 
 abstract contract OmniAVSStorage {
-    /// @notice Constant used as a divisor in calculating weights
-    uint256 internal constant WEIGHTING_DIVISOR = 1e18;
-
-    /// @notice EigenLayer core DelegationManager
-    IDelegationManager internal immutable _delegationManager;
-
-    /// @notice EigenLayer core AVSDirectory
-    IAVSDirectory internal immutable _avsDirectory;
-
     /// @notice Strategy parameters for restaking
     IOmniAVS.StrategyParams[] internal _strategyParams;
 
@@ -43,9 +31,4 @@ abstract contract OmniAVSStorage {
 
     /// @notice Omni portal contract, used to make xcalls to the Omni chain
     IOmniPortal public omni;
-
-    constructor(IDelegationManager delegationManager_, IAVSDirectory avsDirectory_) {
-        _delegationManager = delegationManager_;
-        _avsDirectory = avsDirectory_;
-    }
 }
