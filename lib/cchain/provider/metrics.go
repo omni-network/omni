@@ -13,6 +13,13 @@ var (
 		Help:      "Total number of callback errors per worker per source chain. Alert if growing.",
 	}, []string{"worker", "chain"})
 
+	fetchErrTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "lib",
+		Subsystem: "cprovider",
+		Name:      "fetch_error_total",
+		Help:      "Total number of fetch errors per worker per source chain. Alert if growing.",
+	}, []string{"worker", "chain"})
+
 	streamHeight = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "lib",
 		Subsystem: "cprovider",
