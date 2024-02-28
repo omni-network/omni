@@ -73,6 +73,7 @@ func (p Provider) Subscribe(in context.Context, srcChainID uint64, height uint64
 				return // Don't backoff or log on ctx cancel, just return.
 			} else if err != nil {
 				log.Warn(ctx, "Failed fetching attestation; will retry", err, "height", height)
+				fetchErrTotal.WithLabelValues(workerName, srcChain).Inc()
 				backoff()
 
 				continue
