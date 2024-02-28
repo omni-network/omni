@@ -229,6 +229,63 @@ func TestKeeper_Add(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "mismatching_block_root",
+			args: args{
+				msg: &types.MsgAddVotes{
+					Authority: "test-authority",
+					Votes: []*types.AggVote{
+						{
+							BlockHeader: &types.BlockHeader{
+								ChainId: 1,
+								Height:  500,
+								Hash:    blockHashes[0].Bytes(),
+							},
+							BlockRoot: []byte("different root"), // the block root is intentionally different to cause an error
+							Signatures: []*types.SigTuple{
+								{ValidatorAddress: val1.Address, Signature: val1.Bytes()},
+								{ValidatorAddress: val2.Address, Signature: val2.Bytes()},
+							},
+						},
+					},
+				},
+			},
+			prerequisites: []func(t *testing.T, k *Keeper, ctx sdk.Context){
+				func(t *testing.T, k *Keeper, ctx sdk.Context) {
+					t.Helper()
+					// the same message as the one in the args
+					msg := &types.MsgAddVotes{
+						Authority: "test-authority",
+						Votes: []*types.AggVote{
+							{
+								BlockHeader: &types.BlockHeader{
+									ChainId: 1,
+									Height:  500,
+									Hash:    blockHashes[0].Bytes(),
+								},
+								BlockRoot: blockRoot,
+								Signatures: []*types.SigTuple{
+									{ValidatorAddress: val1.Address, Signature: val1.Bytes()},
+									{ValidatorAddress: val2.Address, Signature: val2.Bytes()},
+								},
+							},
+						},
+					}
+					err := k.Add(ctx, msg)
+					require.NoError(t, err)
+				},
+			},
+			wantErr: true,
+			want: want{
+				atts: []*Attestation{
+					{Id: 1, BlockRoot: blockRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: 500, Status: int32(Status_Pending)},
+				},
+				sigs: []*Signature{
+					{Id: 1, AttId: 1, Signature: val1.Bytes(), ValidatorAddress: val1.Address},
+					{Id: 2, AttId: 1, Signature: val2.Bytes(), ValidatorAddress: val2.Address},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -243,9 +300,6 @@ func TestKeeper_Add(t *testing.T) {
 			err := k.Add(ctx, tt.args.msg)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("keeper.Add() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if err != nil {
 				return
 			}
 
