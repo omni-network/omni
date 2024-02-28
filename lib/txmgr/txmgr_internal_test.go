@@ -96,7 +96,7 @@ type gasPricer struct {
 	baseBaseFee   *big.Int
 	excessBlobGas uint64
 	err           error
-	mu            sync.Mutex
+	mu            sync.RWMutex
 }
 
 func newGasPricer(mineAtEpoch int64) *gasPricer {
@@ -129,8 +129,8 @@ func (g *gasPricer) feesForEpoch(epoch int64) (*big.Int, *big.Int) {
 }
 
 func (g *gasPricer) baseFee() *big.Int {
-	g.mu.Lock()
-	defer g.mu.Unlock()
+	g.mu.RLock()
+	defer g.mu.RUnlock()
 
 	return new(big.Int).Mul(g.baseBaseFee, big.NewInt(g.epoch))
 }
@@ -217,6 +217,9 @@ func (b *mockBackend) HeaderByNumber(ctx context.Context, number *big.Int) (*typ
 	if number != nil {
 		num.Set(number)
 	}
+
+	b.g.mu.RLock()
+	defer b.g.mu.RUnlock()
 
 	bg := b.g.excessBlobGas + uint64(b.g.epoch)
 
