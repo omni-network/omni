@@ -3,14 +3,14 @@ pragma solidity =0.8.12;
 
 import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
-import { EigenM2GoerliDeployments } from "test/avs/eigen/deploy/EigenM2GoerliDeployments.sol";
+import { EigenM2GoerliDeployments } from "test/avs/common/eigen/EigenM2GoerliDeployments.sol";
 
 /**
  * @title StrategyParams
  * @dev Defines OmniAVS strategy params for different chains
  */
 library StrategyParams {
-    /// @notice standar strategy multiplier, matches OmniAVS.WEIGHTING_DIVISOR
+    /// @notice standar strategy multiplier, matches OmniAVS.STRATEGY_WEIGHTING_DIVISOR
     uint96 public constant STD_MULTIPLIER = 1e18;
 
     /// @notice EigenLayer's canonical, virtual beacon chain ETH strategy

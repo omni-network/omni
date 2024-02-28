@@ -213,14 +213,14 @@ func configOmniAVS(
 	require.NoError(t, err)
 	txOpts.Context = ctx
 	minStake := big.NewInt(MinStateForOperatorInEigenLayer)
-	tx, err := avs.AVSContract.SetMinimumOperatorStake(txOpts, minStake)
+	tx, err := avs.AVSContract.SetMinOperatorStake(txOpts, minStake)
 	require.NoError(t, err)
 	_, err = bind.WaitMined(ctx, avs.Client, tx)
 	require.NoError(t, err)
 
 	// check if min stake is set properly
 	callOpts := bind.CallOpts{}
-	operatorStake, err := avs.AVSContract.MinimumOperatorStake(&callOpts)
+	operatorStake, err := avs.AVSContract.MinOperatorStake(&callOpts)
 	require.NoError(t, err)
 	require.Equal(t, minStake.Uint64(), operatorStake.Uint64())
 

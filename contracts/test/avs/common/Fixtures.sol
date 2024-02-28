@@ -15,17 +15,21 @@ import { OmniAVS } from "src/protocol/OmniAVS.sol";
 
 import { DeployGoerliAVS } from "script/avs/DeployGoerliAVS.s.sol";
 import { StrategyParams } from "script/avs/StrategyParams.sol";
-import { Empty } from "test/common/Empty.sol";
-import { EigenLayerTestHelper } from "./eigen/EigenLayerTestHelper.t.sol";
+import { EigenLayerFixtures } from "./eigen/EigenLayerFixtures.sol";
+import { Empty } from "./Empty.sol";
 import { MockPortal } from "./MockPortal.sol";
 
-contract AVSBase is EigenLayerTestHelper {
+/**
+ * @title Fixtures
+ * @dev Common fixtures contract for all AVS tests.
+ */
+contract Fixtures is EigenLayerFixtures {
     address multisig = makeAddr("multisig");
     address proxyAdminOwner = multisig;
     address omniAVSOwner = multisig;
 
     uint32 maxOperatorCount = 10;
-    uint96 minimumOperatorStake = 1 ether;
+    uint96 minOperatorStake = 1 ether;
     uint64 omniChainId = 111;
 
     ProxyAdmin proxyAdmin;
@@ -70,7 +74,7 @@ contract AVSBase is EigenLayerTestHelper {
                 omniAVSOwner,
                 portal,
                 omniChainId,
-                minimumOperatorStake,
+                minOperatorStake,
                 maxOperatorCount,
                 allowlist,
                 _localStrategyParams()
@@ -88,7 +92,7 @@ contract AVSBase is EigenLayerTestHelper {
         for (uint256 i = 0; i < strategies.length; i++) {
             params[i] = IOmniAVS.StrategyParams({
                 strategy: IStrategy(strategies[i]),
-                multiplier: uint96(1e18) // OmniAVS.WEIGHTING_DIVISOR
+                multiplier: uint96(1e18) // OmniAVS.STRATEGY_WEIGHTING_DIVISOR
              });
         }
 

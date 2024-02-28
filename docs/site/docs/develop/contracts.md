@@ -129,7 +129,7 @@ contract XApp {
     XTypes.Msg internal xmsg;
 
     /// @dev Read current xmsg into storage before execution, delete it afterwards
-    modifier xfunc() {
+    modifier xrecv() {
         xmsg = omni.xmsg();
         _;
         delete xmsg;

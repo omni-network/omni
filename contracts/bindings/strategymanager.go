@@ -29,21 +29,23 @@ var (
 	_ = abi.ConvertType
 )
 
-//// IStrategyManagerDeprecatedStructQueuedWithdrawal is an auto generated low-level Go binding around an user-defined struct.
-//type IStrategyManagerDeprecatedStructQueuedWithdrawal struct {
-//	Strategies           []common.Address
-//	Shares               []*big.Int
-//	Staker               common.Address
-//	WithdrawerAndNonce   IStrategyManagerDeprecatedStructWithdrawerAndNonce
-//	WithdrawalStartBlock uint32
-//	DelegatedAddress     common.Address
-//}
-//
-//// IStrategyManagerDeprecatedStructWithdrawerAndNonce is an auto generated low-level Go binding around an user-defined struct.
-//type IStrategyManagerDeprecatedStructWithdrawerAndNonce struct {
-//	Withdrawer common.Address
-//	Nonce      *big.Int
-//}
+// IStrategyManagerDeprecatedStructQueuedWithdrawal is an auto generated low-level Go binding around an user-defined struct.
+// autocommented by commenttypes.go
+// type IStrategyManagerDeprecatedStructQueuedWithdrawal struct {
+// 	Strategies           []common.Address
+// 	Shares               []*big.Int
+// 	Staker               common.Address
+// 	WithdrawerAndNonce   IStrategyManagerDeprecatedStructWithdrawerAndNonce
+// 	WithdrawalStartBlock uint32
+// 	DelegatedAddress     common.Address
+// }
+
+// IStrategyManagerDeprecatedStructWithdrawerAndNonce is an auto generated low-level Go binding around an user-defined struct.
+// autocommented by commenttypes.go
+// type IStrategyManagerDeprecatedStructWithdrawerAndNonce struct {
+// 	Withdrawer common.Address
+// 	Nonce      *big.Int
+// }
 
 // StrategyManagerMetaData contains all meta data concerning the StrategyManager contract.
 var StrategyManagerMetaData = &bind.MetaData{

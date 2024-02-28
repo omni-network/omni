@@ -2,6 +2,7 @@
 pragma solidity =0.8.12;
 
 import { OwnableUpgradeable } from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import { PausableUpgradeable } from "@openzeppelin-upgrades/contracts/security/PausableUpgradeable.sol";
 
 import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
@@ -9,48 +10,30 @@ import { ISignatureUtils } from "eigenlayer-contracts/src/contracts/interfaces/I
 import { IServiceManager } from "eigenlayer-middleware/src/interfaces/IServiceManager.sol";
 
 import { OmniPredeploys } from "../libraries/OmniPredeploys.sol";
-import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
+import { IDelegationManager } from "../interfaces/IDelegationManager.sol";
 import { IOmniEthRestaking } from "../interfaces/IOmniEthRestaking.sol";
+import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
 import { IOmniAVS } from "../interfaces/IOmniAVS.sol";
 import { IOmniAVSAdmin } from "../interfaces/IOmniAVSAdmin.sol";
-import { IDelegationManager } from "../interfaces/IDelegationManager.sol";
 
-contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable {
+import { OmniAVSStorage } from "./OmniAVSStorage.sol";
+
+contract OmniAVS is
+    IOmniAVS,
+    IOmniAVSAdmin,
+    IServiceManager,
+    OwnableUpgradeable,
+    PausableUpgradeable,
+    OmniAVSStorage
+{
     /// @notice Constant used as a divisor in calculating weights
-    uint256 public constant WEIGHTING_DIVISOR = 1e18;
+    uint256 internal constant STRATEGY_WEIGHTING_DIVISOR = 1e18;
 
     /// @notice EigenLayer core DelegationManager
     IDelegationManager internal immutable _delegationManager;
 
     /// @notice EigenLayer core AVSDirectory
     IAVSDirectory internal immutable _avsDirectory;
-
-    /// @notice Maximum number of operators that can be registered
-    uint32 public maxOperatorCount;
-
-    /// @notice Omni chain id, used to make xcalls to the Omni chain
-    uint64 public omniChainId;
-
-    /// @notice Minimum stake required for an operator to register, not including delegations
-    uint96 public minimumOperatorStake;
-
-    /// @notice OmniPortal.xcall gas limit per each validator in syncWithOmni
-    uint64 public xcallGasLimitPerValidator = 10_000;
-
-    /// @notice OmniPortal.xcall base gas limit in syncWithOmni
-    uint64 public xcallBaseGasLimit = 75_000;
-
-    /// @notice Omni portal contract, used to make xcalls to the Omni chain
-    IOmniPortal public omni;
-
-    /// @dev Strategy parameters for restaking
-    IOmniAVS.StrategyParams[] internal _strategyParams;
-
-    /// @dev List of currently register operators, used to sync EigenCore
-    address[] internal _operators;
-
-    /// @dev Set of operators that are allowed to register
-    mapping(address => bool) internal _allowlist;
 
     constructor(IDelegationManager delegationManager_, IAVSDirectory avsDirectory_) {
         _delegationManager = delegationManager_;
@@ -63,17 +46,18 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
         address owner_,
         IOmniPortal omni_,
         uint64 omniChainId_,
-        uint96 minimumOperatorStake_,
+        uint96 minOperatorStake_,
         uint32 maxOperatorCount_,
         address[] calldata allowlist_,
         StrategyParams[] calldata strategyParams_
     ) external initializer {
         omni = omni_;
         omniChainId = omniChainId_;
-        minimumOperatorStake = minimumOperatorStake_;
+        minOperatorStake = minOperatorStake_;
         maxOperatorCount = maxOperatorCount_;
-        _setStrategyParams(strategyParams_);
+
         _transferOwnership(owner_);
+        _setStrategyParams(strategyParams_);
 
         for (uint256 i = 0; i < allowlist_.length; i++) {
             _allowlist[allowlist_[i]] = true;
@@ -88,12 +72,12 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     function registerOperatorToAVS(
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external {
+    ) external whenNotPaused {
         require(msg.sender == operator, "OmniAVS: only operator");
         require(_allowlist[operator], "OmniAVS: not allowed");
         require(!_isOperator(operator), "OmniAVS: already an operator"); // we could let _avsDirectory.regsiterOperatorToAVS handle this, they do check
         require(_operators.length < maxOperatorCount, "OmniAVS: max operators reached");
-        require(_getSelfDelegations(operator) >= minimumOperatorStake, "OmniAVS: minimum stake not met"); // TODO: should this be _getTotalDelegations?
+        require(_getSelfDelegations(operator) >= minOperatorStake, "OmniAVS: min stake not met"); // TODO: should this be _getTotalDelegations?
 
         _avsDirectory.registerOperatorToAVS(operator, operatorSignature);
         _addOperator(operator);
@@ -102,7 +86,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     }
 
     /// @inheritdoc IServiceManager
-    function deregisterOperatorFromAVS(address operator) external {
+    function deregisterOperatorFromAVS(address operator) external whenNotPaused {
         require(msg.sender == operator || msg.sender == owner(), "OmniAVS: only operator or owner");
         require(_isOperator(operator), "OmniAVS: not an operator");
 
@@ -151,7 +135,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     }
 
     /// @inheritdoc IOmniAVS
-    function syncWithOmni() external payable {
+    function syncWithOmni() external payable whenNotPaused {
         Validator[] memory vals = _getValidators();
         omni.xcall{ value: msg.value }(
             omniChainId,
@@ -283,7 +267,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
 
     /// @dev Returns the weighted stake for shares with specified multiplier
     function _weight(uint256 shares, uint96 multiplier) internal pure returns (uint96) {
-        return uint96(shares * multiplier / WEIGHTING_DIVISOR);
+        return uint96(shares * multiplier / STRATEGY_WEIGHTING_DIVISOR);
     }
 
     /**
@@ -311,8 +295,8 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     }
 
     /// @inheritdoc IOmniAVSAdmin
-    function setMinimumOperatorStake(uint96 stake) external onlyOwner {
-        minimumOperatorStake = stake;
+    function setMinOperatorStake(uint96 stake) external onlyOwner {
+        minOperatorStake = stake;
     }
 
     /// @inheritdoc IOmniAVSAdmin
@@ -339,6 +323,16 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
         require(_allowlist[operator], "OmniAVS: not in allowlist");
         _allowlist[operator] = false;
         emit OperatorDisallowed(operator);
+    }
+
+    /// @inheritdoc IOmniAVSAdmin
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /// @inheritdoc IOmniAVSAdmin
+    function unpause() external onlyOwner {
+        _unpause();
     }
 
     /// @dev Set the strategy parameters

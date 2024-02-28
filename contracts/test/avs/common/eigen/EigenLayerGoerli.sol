@@ -15,7 +15,7 @@ import { ISlasher } from "eigenlayer-contracts/src/contracts/interfaces/ISlasher
 
 import { IEigenDeployer } from "./IEigenDeployer.sol";
 import { EigenM2GoerliDeployments } from "./EigenM2GoerliDeployments.sol";
-import { EigenPodManagerHarness } from "../EigenPodManagerHarness.sol";
+import { EigenPodManagerHarness } from "./EigenPodManagerHarness.sol";
 
 import { Test } from "forge-std/Test.sol";
 

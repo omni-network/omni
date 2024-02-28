@@ -17,6 +17,9 @@ engine-jwt-file = "{{ .EngineJWTFile }}"
 # 0 disables state snapshots.
 snapshot-interval = {{ .SnapshotInterval }}
 
+# snapshot-keep-recent specifies the number of recent snapshots to keep and serve (0 to keep all).
+snapshot-keep-recent = {{ .SnapshotKeepRecent }}
+
 # MinRetainBlocks defines the minimum block height offset from the current
 # block being committed, such that all blocks past this offset are pruned
 # from CometBFT. It is used as part of the process of determining the

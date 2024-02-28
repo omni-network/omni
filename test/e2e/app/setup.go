@@ -310,7 +310,8 @@ func writeHaloConfig(nodeDir string, logCfg log.Config, testCfg bool) error {
 	cfg.HomeDir = nodeDir
 	cfg.EngineJWTFile = "/geth/jwtsecret" // As per docker-compose mount
 	if testCfg {
-		cfg.SnapshotInterval = 1 // Write snapshots each block in e2e tests
+		cfg.SnapshotInterval = 1   // Write snapshots each block in e2e tests
+		cfg.SnapshotKeepRecent = 0 // Keep all snapshots in e2e tests
 	}
 
 	return halocfg.WriteConfigTOML(cfg, logCfg)

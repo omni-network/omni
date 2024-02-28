@@ -3,12 +3,12 @@ import { decodeXBlock, encodeXSub, xBlockJson, xSubJson } from '../../xtypes'
 import { NamedXSub, NamedXBlock } from './types'
 
 // paths match those defined in test/common/Fixture.sol
-const XBLOCKS_PATH = 'test/data/xblocks.json'
-const XSUBS_PATH = 'test/data/xsubs.json'
+const XBLOCKS_PATH = 'test/portal/data/xblocks.json'
+const XSUBS_PATH = 'test/portal/data/xsubs.json'
 
 // to write decoded xblocks and xsubs, for debugging
-const XBLOCKS_DECODED_PATH = 'test/data/xblocks_decoded.json'
-const XSUBS_DECODED_PATH = 'test/data/xsubs_decoded.json'
+const XBLOCKS_DECODED_PATH = 'test/portal/data/xblocks_decoded.json'
+const XSUBS_DECODED_PATH = 'test/portal/data/xsubs_decoded.json'
 
 export function readXBlocks(): NamedXBlock[] {
   const input = JSON.parse(fs.readFileSync(XBLOCKS_PATH, 'utf8'))

@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 id: home
-displayed_sidebar: mainSidebar
+displayed_sidebar: learnSidebar
 slug: /
 ---
 
