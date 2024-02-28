@@ -51,8 +51,6 @@ contract OmniAVS is
      * @param owner_            Intiial contract owner
      * @param omni_             Omni portal contract
      * @param omniChainId_      Omni chain id
-     * @param minOperatorStake_ Minimum operator stake, not including delegations
-     * @param maxOperatorCount_ Maximum operator count
      * @param allowlist_        Initial allowlist
      * @param strategyParams_   List of accepted strategies and their multipliers
      */
@@ -60,15 +58,11 @@ contract OmniAVS is
         address owner_,
         IOmniPortal omni_,
         uint64 omniChainId_,
-        uint96 minOperatorStake_,
-        uint32 maxOperatorCount_,
         address[] calldata allowlist_,
         StrategyParam[] calldata strategyParams_
     ) external initializer {
         omni = omni_;
         omniChainId = omniChainId_;
-        minOperatorStake = minOperatorStake_;
-        maxOperatorCount = maxOperatorCount_;
 
         _transferOwnership(owner_);
         _setStrategyParams(strategyParams_);
@@ -96,8 +90,6 @@ contract OmniAVS is
         require(msg.sender == operator, "OmniAVS: only operator");
         require(_allowlist[operator], "OmniAVS: not allowed");
         require(!_isOperator(operator), "OmniAVS: already an operator"); // we could let _avsDirectory.regsiterOperatorToAVS handle this, they do check
-        require(_operators.length < maxOperatorCount, "OmniAVS: max operators reached");
-        require(_getSelfDelegations(operator) >= minOperatorStake, "OmniAVS: min stake not met"); // TODO: should this be _getTotalDelegations?
 
         _avsDirectory.registerOperatorToAVS(operator, operatorSignature);
         _addOperator(operator);
@@ -249,22 +241,6 @@ contract OmniAVS is
      */
     function setStrategyParams(StrategyParam[] calldata params) external onlyOwner {
         _setStrategyParams(params);
-    }
-
-    /**
-     * @notice Set the minimum operator stake.
-     * @param stake The minimum operator stake, not including delegations
-     */
-    function setMinOperatorStake(uint96 stake) external onlyOwner {
-        minOperatorStake = stake;
-    }
-
-    /**
-     * @notice Set the maximum operator count.
-     * @param count The maximum operator count
-     */
-    function setMaxOperatorCount(uint32 count) external onlyOwner {
-        maxOperatorCount = count;
     }
 
     /**

@@ -26,8 +26,6 @@ interface IOmniAVSAdmin {
      * @param owner             Intiial contract owner
      * @param omni              Omni portal contract
      * @param omniChainId       Omni chain id
-     * @param minOperatorStake  Minimum operator stake, not including delegations
-     * @param maxOperatorCount  Maximum operator count
      * @param allowlist         Initial allowlist
      * @param strategyParams    List of accepted strategies and their multipliers
      */
@@ -35,8 +33,6 @@ interface IOmniAVSAdmin {
         address owner,
         IOmniPortal omni,
         uint64 omniChainId,
-        uint96 minOperatorStake,
-        uint32 maxOperatorCount,
         address[] calldata allowlist,
         IOmniAVS.StrategyParam[] calldata strategyParams
     ) external;
@@ -58,18 +54,6 @@ interface IOmniAVSAdmin {
      * @param params The strategy parameters
      */
     function setStrategyParams(IOmniAVS.StrategyParam[] calldata params) external;
-
-    /**
-     * @notice Set the minimum operator stake.
-     * @param stake The minimum operator stake, not including delegations
-     */
-    function setMinOperatorStake(uint96 stake) external;
-
-    /**
-     * @notice Set the maximum operator count.
-     * @param count The maximum operator count
-     */
-    function setMaxOperatorCount(uint32 count) external;
 
     /**
      * @notice Set the xcall gas limits.

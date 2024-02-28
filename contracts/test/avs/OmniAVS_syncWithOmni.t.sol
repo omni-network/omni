@@ -47,10 +47,10 @@ contract OmniAVS_syncWithOmni_Test is Base {
         uint96 initialOperatorStake_,
         uint96 initialDelegatorStake_
     ) public {
-        numOperators = uint32(bound(numOperators_, 2, maxOperatorCount));
+        numOperators = uint32(bound(numOperators_, 2, 10));
         numDelegatorsPerOp = uint32(bound(numDelegatorsPerOp_, 1, 30));
 
-        initialOperatorStake = uint96(bound(initialOperatorStake_, minOperatorStake, 100 ether));
+        initialOperatorStake = uint96(bound(initialOperatorStake_, 1 ether, 100 ether));
         initialDelegatorStake = uint96(bound(initialDelegatorStake_, 500 gwei, 5 ether));
 
         // round both initialOperatorStake and initialDelegatorStake to the nearest GWEI
@@ -347,7 +347,7 @@ contract OmniAVS_syncWithOmni_Test is Base {
     /// @dev Unit test for beacon eth deposit
     function test_depositBeaconEth_succeeds() public {
         address operator = _operator(0);
-        uint96 amount = minOperatorStake;
+        uint96 amount = 1 ether;
 
         _registerAsOperator(operator);
         _addToAllowlist(operator);
