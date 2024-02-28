@@ -1,5 +1,5 @@
 ---
-sidebar_position: 1
+sidebar_position: 2
 ---
 
 # Run a Validator
@@ -28,7 +28,3 @@ Omniʼs operator needs to run the consensus client and the execution client:
 ### Ports
 
 Inbound ports will be enabled for cometBFT (tcp://266567) and Geth (tcp://30303, udp://30303)
-
-## Register as a Validator
-
-Initially, we will have a whitelist. Ultimately, operators will be ranked based on their delegated TVL. Reach out to us to get on the whitelist.

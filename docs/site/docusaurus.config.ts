@@ -72,7 +72,7 @@ const config: Config = {
         {
           position: "left",
           label: "Protocol",
-          to: "/protocol/overview",
+          to: "/protocol/introduction",
         },
         {
           position: "left",
@@ -82,7 +82,7 @@ const config: Config = {
         {
           position: "left",
           label: "Operate",
-          to: "/operate/run",
+          to: "/operate/introduction",
         },
         {
           href: "https://github.com/omni-network/omni",
