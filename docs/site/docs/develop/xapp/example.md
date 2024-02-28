@@ -42,8 +42,6 @@ contract XGreeter is XApp {
 
 Let's walk through this step by step.
 
-### Inheritance and Constructor
-
 First, inherit from `XApp`.
 
 
@@ -69,7 +67,7 @@ function xgreet(uint64 destChainId, address to, string calldata greeting) extern
 }
 ```
 
-### Decomposing Messages
+### Receive a Cross Chain Call
 
 When receiving an `xcall`, you can read its context via `omni.xmsg()`.
 
@@ -78,8 +76,6 @@ omni.xmsg().sourceChainId // where this xcall came from
 omni.xmsg().sender        // who sent it
 ```
 
-### Emit Events
-
 With this context, we can have our `XGreeter` emit events detailing the source chain and sender.
 
 ```solidity
@@ -87,7 +83,6 @@ function greet(string calldata greeting) external {
     emit Greetings(omni.xmsg().sender, omni.xmsg().sourceChainId, greeting);
 }
 ```
-### Receiving Calls
 
 For convenience, `XApp` defines the `xrecv` modifier. This modifier reads the current xmsg into storage, and deletes after its function's execution.
 
