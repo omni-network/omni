@@ -23,9 +23,9 @@ import (
 	"cosmossdk.io/orm/model/ormdb"
 	"cosmossdk.io/orm/model/ormlist"
 	"cosmossdk.io/orm/types/ormerrors"
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	skeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
 	"github.com/cosmos/gogoproto/proto"
 )
@@ -41,17 +41,17 @@ type Keeper struct {
 	cdc          codec.BinaryCodec
 	storeService store.KVStoreService
 	voter        types.Voter
-	skeeper      *skeeper.Keeper // TODO(corver): Define a interface for the methods we use.
+	skeeper      baseapp.ValidatorStore
 	cmtAPI       comet.API
 	namer        types.ChainNameFunc
 	windower     types.Windower
 }
 
-// NewKeeper returns a new attestation keeper.
-func NewKeeper(
+// New returns a new attestation keeper.
+func New(
 	cdc codec.BinaryCodec,
 	storeSvc store.KVStoreService,
-	skeeper *skeeper.Keeper,
+	skeeper baseapp.ValidatorStore,
 	voter types.Voter,
 	namer types.ChainNameFunc,
 	voteWindow uint64,
