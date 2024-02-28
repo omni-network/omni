@@ -20,16 +20,16 @@ contract OmniAVS_admin_Test is Base {
         _registerOperatorWithAVS(operator);
 
         // assert operator is registered
-        IOmniAVS.Validator[] memory validators = omniAVS.getValidators();
-        assertEq(validators.length, 1);
-        assertEq(validators[0].addr, operator);
+        IOmniAVS.Operator[] memory operators = omniAVS.operators();
+        assertEq(operators.length, 1);
+        assertEq(operators[0].addr, operator);
 
         // deregister operator
         vm.prank(omniAVSOwner);
         omniAVS.deregisterOperatorFromAVS(operator);
 
         // assert operator is deregistered
-        validators = omniAVS.getValidators();
-        assertEq(validators.length, 0);
+        operators = omniAVS.operators();
+        assertEq(operators.length, 0);
     }
 }

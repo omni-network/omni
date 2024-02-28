@@ -57,10 +57,10 @@ contract OmniAVS_allowlist_Test is Base {
         _registerAsOperator(operator);
         _registerOperatorWithAVS(operator);
 
-        IOmniAVS.Validator[] memory validators = omniAVS.getValidators();
+        IOmniAVS.Operator[] memory operators = omniAVS.operators();
 
-        assertEq(validators.length, 1);
-        assertEq(validators[0].addr, operator);
+        assertEq(operators.length, 1);
+        assertEq(operators[0].addr, operator);
     }
 
     /// @dev Test that an operator cannot register if not in allow list

@@ -28,7 +28,7 @@ contract OmniAVS_initialize_Test is Base {
         uint96 minOperatorStake;
         uint32 maxOperatorCount;
         address[] allowlist;
-        IOmniAVS.StrategyParams[] strategyParams;
+        IOmniAVS.StrategyParam[] strategyParams;
     }
 
     function _defaultInitializeParams() internal view returns (InitializeParams memory) {
@@ -81,7 +81,7 @@ contract OmniAVS_initialize_Test is Base {
         assertEq(omniAVS.minOperatorStake(), params.minOperatorStake);
         assertEq(omniAVS.maxOperatorCount(), params.maxOperatorCount);
 
-        IOmniAVS.StrategyParams[] memory strategyParams = omniAVS.strategyParams();
+        IOmniAVS.StrategyParam[] memory strategyParams = omniAVS.strategyParams();
         assertEq(strategyParams.length, params.strategyParams.length);
         for (uint256 i = 0; i < strategyParams.length; i++) {
             assertEq(address(strategyParams[i].strategy), address(params.strategyParams[i].strategy));

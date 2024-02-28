@@ -85,12 +85,12 @@ contract Fixtures is EigenLayerFixtures {
         return OmniAVS(proxy);
     }
 
-    function _localStrategyParams() internal view returns (IOmniAVS.StrategyParams[] memory params) {
+    function _localStrategyParams() internal view returns (IOmniAVS.StrategyParam[] memory params) {
         // add all EigenLayerDeployer.strategies
-        params = new IOmniAVS.StrategyParams[](strategies.length);
+        params = new IOmniAVS.StrategyParam[](strategies.length);
 
         for (uint256 i = 0; i < strategies.length; i++) {
-            params[i] = IOmniAVS.StrategyParams({
+            params[i] = IOmniAVS.StrategyParam({
                 strategy: IStrategy(strategies[i]),
                 multiplier: uint96(1e18) // OmniAVS.STRATEGY_WEIGHTING_DIVISOR
              });

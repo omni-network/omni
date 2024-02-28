@@ -17,25 +17,25 @@ library StrategyParams {
     address public constant BEACON_CHAIN_ETH_STRATEGY = 0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0;
 
     /// @notice Goerli strategy params
-    function goerli() external pure returns (IOmniAVS.StrategyParams[] memory params) {
-        params = new IOmniAVS.StrategyParams[](3);
+    function goerli() external pure returns (IOmniAVS.StrategyParam[] memory params) {
+        params = new IOmniAVS.StrategyParam[](3);
 
-        params[0] = IOmniAVS.StrategyParams({
+        params[0] = IOmniAVS.StrategyParam({
             strategy: IStrategy(EigenM2GoerliDeployments.stETHStrategy),
             multiplier: STD_MULTIPLIER
         });
 
-        params[1] = IOmniAVS.StrategyParams({
+        params[1] = IOmniAVS.StrategyParam({
             strategy: IStrategy(EigenM2GoerliDeployments.rETHStrategy),
             multiplier: STD_MULTIPLIER
         });
 
         params[2] =
-            IOmniAVS.StrategyParams({ strategy: IStrategy(BEACON_CHAIN_ETH_STRATEGY), multiplier: STD_MULTIPLIER });
+            IOmniAVS.StrategyParam({ strategy: IStrategy(BEACON_CHAIN_ETH_STRATEGY), multiplier: STD_MULTIPLIER });
     }
 
     /// @notice Mainnet strategy params
-    function mainnet() external pure returns (IOmniAVS.StrategyParams[] memory) {
+    function mainnet() external pure returns (IOmniAVS.StrategyParam[] memory) {
         revert("Not implemented");
     }
 }
