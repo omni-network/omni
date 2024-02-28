@@ -28,8 +28,6 @@ contract Fixtures is EigenLayerFixtures {
     address proxyAdminOwner = multisig;
     address omniAVSOwner = multisig;
 
-    uint32 maxOperatorCount = 10;
-    uint96 minOperatorStake = 1 ether;
     uint64 omniChainId = 111;
 
     ProxyAdmin proxyAdmin;
@@ -70,14 +68,7 @@ contract Fixtures is EigenLayerFixtures {
             ITransparentUpgradeableProxy(proxy),
             impl,
             abi.encodeWithSelector(
-                OmniAVS.initialize.selector,
-                omniAVSOwner,
-                portal,
-                omniChainId,
-                minOperatorStake,
-                maxOperatorCount,
-                allowlist,
-                _localStrategyParams()
+                OmniAVS.initialize.selector, omniAVSOwner, portal, omniChainId, allowlist, _localStrategyParams()
             )
         );
         vm.stopPrank();
