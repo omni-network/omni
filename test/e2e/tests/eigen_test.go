@@ -34,12 +34,6 @@ const (
 	// URI, which stores the metadata for an operator.
 	operator2MetaDataURI = "https://www.operator2.com"
 
-	// minimum self stake for an operator to get registered in omniAVS.
-	MinStateForOperatorInEigenLayer = 10
-
-	// maximum number of operators allowed in omniAVS.
-	MaxNumberOfOperators = 200
-
 	// initial funding of WETH for operators and delegators.
 	InitialWETHFunding = 1000
 
@@ -77,7 +71,6 @@ func TestEigenAndOmniAVS(t *testing.T) {
 
 		// check if contracts are deployed and configured properly
 		checkIfContractsAreDeployed(t, ctx, avs, deployInfo)
-		configOmniAVS(t, ctx, avs)
 
 		// register operators with EigenLayer
 		registerOperatorWithEL(t, ctx, avs, delMgrAddr, opr1Pk, operator1Addr, operator1MetaDataURI)
@@ -200,41 +193,6 @@ func checkIfContractsAreDeployed(
 	checkIfCodePresent(t, ctx, avs, deployInfo, blockNumber, types.ContractELWETHStrategy)
 	checkIfCodePresent(t, ctx, avs, deployInfo, blockNumber, types.ContractELWETH)
 	checkIfCodePresent(t, ctx, avs, deployInfo, blockNumber, types.ContractELPodManager)
-}
-
-func configOmniAVS(
-	t *testing.T,
-	ctx context.Context,
-	avs AVS) {
-	t.Helper()
-
-	// set min stake
-	omniDepPk := mustHexToKey(omniDeployPk)
-	txOpts, err := bind.NewKeyedTransactorWithChainID(omniDepPk, big.NewInt(int64(avs.Chain.ID)))
-	require.NoError(t, err)
-	txOpts.Context = ctx
-	minStake := big.NewInt(MinStateForOperatorInEigenLayer)
-	tx, err := avs.AVSContract.SetMinOperatorStake(txOpts, minStake)
-	require.NoError(t, err)
-	_, err = bind.WaitMined(ctx, avs.Client, tx)
-	require.NoError(t, err)
-
-	// check if min stake is set properly
-	callOpts := bind.CallOpts{}
-	operatorStake, err := avs.AVSContract.MinOperatorStake(&callOpts)
-	require.NoError(t, err)
-	require.Equal(t, minStake.Uint64(), operatorStake.Uint64())
-
-	// set operator count
-	tx, err = avs.AVSContract.SetMaxOperatorCount(txOpts, uint32(MaxNumberOfOperators))
-	require.NoError(t, err)
-	_, err = bind.WaitMined(ctx, avs.Client, tx)
-	require.NoError(t, err)
-
-	// check if operator count is set properly
-	opCount, err := avs.AVSContract.MaxOperatorCount(&callOpts)
-	require.NoError(t, err)
-	require.Equal(t, uint32(MaxNumberOfOperators), opCount)
 }
 
 func registerOperatorWithEL(
@@ -525,15 +483,15 @@ func checkOperatorBalance(
 		From:    operator,
 		Context: ctx,
 	}
-	vals, err := avs.AVSContract.GetValidators(&callOpts)
+	operators, err := avs.AVSContract.Operators(&callOpts)
 	require.NoError(t, err)
 
 	found := false
-	for _, val := range vals {
-		if val.Addr.String() == operator.String() {
+	for _, op := range operators {
+		if op.Addr.String() == operator.String() {
 			found = true
-			require.Equal(t, oprState, val.Staked.Uint64())
-			require.Equal(t, delStake, val.Delegated.Uint64())
+			require.Equal(t, oprState, op.Staked.Uint64())
+			require.Equal(t, delStake, op.Delegated.Uint64())
 
 			break
 		}
