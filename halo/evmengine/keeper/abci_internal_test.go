@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	cmttime "github.com/cometbft/cometbft/types/time"
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
 	etypes "github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/lib/errors"
@@ -14,8 +15,6 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	cmttime "github.com/cometbft/cometbft/types/time"
-
 	eengine "github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -126,7 +125,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
-				ctx, storeService := setupCtxStore(t)
+				ctx, storeService := setupCtxStore(t, cmtproto.Header{Time: cmttime.Now()})
 				cdc := getCodec(t)
 				txConfig := authtx.NewTxConfig(cdc, nil)
 				ap := mockAddressProvider{
@@ -146,7 +145,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 	t.Run("TestBuildOptimistic", func(t *testing.T) {
 		t.Parallel()
 		// setup dependencies
-		ctx, storeService := setupCtxStore(t)
+		ctx, storeService := setupCtxStore(t, cmtproto.Header{Time: cmttime.Now()})
 		cdc := getCodec(t)
 		txConfig := authtx.NewTxConfig(cdc, nil)
 		mockEngine, err := newMockEngineAPI()
@@ -199,7 +198,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 	t.Run("TestBuildNonOptimistic", func(t *testing.T) {
 		t.Parallel()
 		// setup dependencies
-		ctx, storeService := setupCtxStore(t)
+		ctx, storeService := setupCtxStore(t, cmtproto.Header{Time: cmttime.Now()})
 		cdc := getCodec(t)
 		txConfig := authtx.NewTxConfig(cdc, nil)
 
@@ -275,12 +274,12 @@ func assertExecutablePayload(t *testing.T, msg sdk.Msg, ts int64, blockHash comm
 	require.Equal(t, ep.Number, height)
 }
 
-func setupCtxStore(t *testing.T) (sdk.Context, store.KVStoreService) {
+func setupCtxStore(t *testing.T, header cmtproto.Header) (sdk.Context, store.KVStoreService) {
 	t.Helper()
 	key := storetypes.NewKVStoreKey("test")
 	storeService := runtime.NewKVStoreService(key)
 	testCtx := testutil.DefaultContextWithDB(t, key, storetypes.NewTransientStoreKey("transient_test"))
-	ctx := testCtx.Ctx.WithBlockHeader(cmtproto.Header{Time: cmttime.Now(), Height: 1})
+	ctx := testCtx.Ctx.WithBlockHeader(header)
 
 	return ctx, storeService
 }
