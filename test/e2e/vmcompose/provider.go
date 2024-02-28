@@ -192,7 +192,7 @@ func groupByVM(instances map[string]e2e.InstanceData) map[string]map[string]bool
 }
 
 func execOnVM(ctx context.Context, vmName string, cmd string) error {
-	ssh := fmt.Sprintf("gcloud compute ssh --zone=us-east1-c %s -- \"%s\"", vmName, cmd)
+	ssh := fmt.Sprintf("gcloud compute ssh --zone=us-east1-c %s --quiet -- \"%s\"", vmName, cmd)
 	out, err := exec.CommandContext(ctx, "bash", "-c", ssh).CombinedOutput()
 	if err != nil {
 		return errors.Wrap(err, "exec on VM", "output", string(out))
@@ -202,7 +202,7 @@ func execOnVM(ctx context.Context, vmName string, cmd string) error {
 }
 
 func copyToVM(ctx context.Context, vmName string, path string) error {
-	tarscp := fmt.Sprintf("tar czf - %s | gcloud compute ssh --zone=us-east1-c %s -- \"cd /omni && tar xvzf -\"",
+	tarscp := fmt.Sprintf("tar czf - %s | gcloud compute ssh --zone=us-east1-c %s --quiet -- \"cd /omni && tar xvzf -\"",
 		filepath.Base(path), vmName)
 
 	cmd := exec.CommandContext(ctx, "bash", "-c", tarscp)
