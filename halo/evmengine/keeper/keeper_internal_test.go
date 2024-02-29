@@ -21,11 +21,12 @@ import (
 func TestKeeper_isNextProposer(t *testing.T) {
 	t.Parallel()
 	type args struct {
-		header         cmtproto.Header
+		header         *cmtproto.Header
 		validatorsFunc func(context.Context, int64) (*cmttypes.ValidatorSet, bool, error)
 		current        int
 		next           int
 	}
+	header1 := &cmtproto.Header{Height: 1}
 	tests := []struct {
 		name       string
 		args       args
@@ -36,7 +37,7 @@ func TestKeeper_isNextProposer(t *testing.T) {
 		{
 			name: "is next proposer",
 			args: args{
-				header:  cmtproto.Header{Height: 1},
+				header:  header1,
 				current: 0,
 				next:    1,
 			},
@@ -47,7 +48,7 @@ func TestKeeper_isNextProposer(t *testing.T) {
 		{
 			name: "proposer false",
 			args: args{
-				header:  cmtproto.Header{Height: 1},
+				header:  header1,
 				current: 0,
 				next:    2,
 			},
@@ -58,7 +59,7 @@ func TestKeeper_isNextProposer(t *testing.T) {
 		{
 			name: "validatorsFunc error",
 			args: args{
-				header:  cmtproto.Header{Height: 1},
+				header:  header1,
 				current: 0,
 				next:    1,
 				validatorsFunc: func(ctx context.Context, i int64) (*cmttypes.ValidatorSet, bool, error) {
@@ -71,7 +72,7 @@ func TestKeeper_isNextProposer(t *testing.T) {
 		{
 			name: "validatorsFunc not ok",
 			args: args{
-				header:  cmtproto.Header{Height: 1},
+				header:  header1,
 				current: 0,
 				next:    1,
 				validatorsFunc: func(ctx context.Context, i int64) (*cmttypes.ValidatorSet, bool, error) {
@@ -85,20 +86,24 @@ func TestKeeper_isNextProposer(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+
 			cdc := getCodec(t)
 			txConfig := authtx.NewTxConfig(cdc, nil)
 			mockEngine, err := newMockEngineAPI()
 			require.NoError(t, err)
+
 			cmtAPI := newMockCometAPI(t, tt.args.validatorsFunc)
 			tt.args.header.ProposerAddress = cmtAPI.validatorSet.Validators[tt.args.current].Address
 			nxtAddr, err := k1util.PubKeyToAddress(cmtAPI.validatorSet.Validators[tt.args.next].PubKey)
 			require.NoError(t, err)
+
 			ctx, storeService := setupCtxStore(t, tt.args.header)
+
 			keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig)
-			keeper.cmtAPI = cmtAPI
-			keeper.addrProvider = mockAddressProvider{
+			keeper.SetCometAPI(cmtAPI)
+			keeper.SetAddressProvider(mockAddressProvider{
 				address: nxtAddr,
-			}
+			})
 
 			got, gotHeight, err := keeper.isNextProposer(ctx)
 			if (err != nil) != tt.wantErr {

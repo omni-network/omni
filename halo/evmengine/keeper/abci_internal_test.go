@@ -126,14 +126,14 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
-				ctx, storeService := setupCtxStore(t, cmtproto.Header{Time: cmttime.Now()})
+				ctx, storeService := setupCtxStore(t, nil)
 				cdc := getCodec(t)
 				txConfig := authtx.NewTxConfig(cdc, nil)
 
 				k := NewKeeper(cdc, storeService, &tt.mockEngine, txConfig)
-				k.addrProvider = mockAddressProvider{
+				k.SetAddressProvider(mockAddressProvider{
 					address: common.BytesToAddress([]byte("test")),
-				}
+				})
 				_, err := k.PrepareProposal(ctx, tt.req)
 				if (err != nil) != tt.wantErr {
 					t.Errorf("PrepareProposal() error = %v, wantErr %v", err, tt.wantErr)
@@ -146,7 +146,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 	t.Run("TestBuildOptimistic", func(t *testing.T) {
 		t.Parallel()
 		// setup dependencies
-		ctx, storeService := setupCtxStore(t, cmtproto.Header{Time: cmttime.Now()})
+		ctx, storeService := setupCtxStore(t, nil)
 		cdc := getCodec(t)
 		txConfig := authtx.NewTxConfig(cdc, nil)
 		mockEngine, err := newMockEngineAPI()
@@ -156,7 +156,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		ap := mockAddressProvider{
 			address: common.BytesToAddress([]byte("test")),
 		}
-		keeper.addrProvider = ap
+		keeper.SetAddressProvider(ap)
 
 		// get the genesis block to build on top of
 		ts := time.Now()
@@ -201,7 +201,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 	t.Run("TestBuildNonOptimistic", func(t *testing.T) {
 		t.Parallel()
 		// setup dependencies
-		ctx, storeService := setupCtxStore(t, cmtproto.Header{Time: cmttime.Now()})
+		ctx, storeService := setupCtxStore(t, nil)
 		cdc := getCodec(t)
 		txConfig := authtx.NewTxConfig(cdc, nil)
 
@@ -212,7 +212,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		ap := mockAddressProvider{
 			address: common.BytesToAddress([]byte("test")),
 		}
-		keeper.addrProvider = ap
+		keeper.SetAddressProvider(ap)
 
 		keeper.providers = []etypes.CPayloadProvider{mockCPayloadProvider{}, mockCPayloadProvider{}}
 
@@ -278,12 +278,15 @@ func assertExecutablePayload(t *testing.T, msg sdk.Msg, ts int64, blockHash comm
 	require.Equal(t, ep.Number, height)
 }
 
-func setupCtxStore(t *testing.T, header cmtproto.Header) (sdk.Context, store.KVStoreService) {
+func setupCtxStore(t *testing.T, header *cmtproto.Header) (sdk.Context, store.KVStoreService) {
 	t.Helper()
 	key := storetypes.NewKVStoreKey("test")
 	storeService := runtime.NewKVStoreService(key)
 	testCtx := testutil.DefaultContextWithDB(t, key, storetypes.NewTransientStoreKey("transient_test"))
-	ctx := testCtx.Ctx.WithBlockHeader(header)
+	if header == nil {
+		header = &cmtproto.Header{Time: cmttime.Now()}
+	}
+	ctx := testCtx.Ctx.WithBlockHeader(*header)
 
 	return ctx, storeService
 }
