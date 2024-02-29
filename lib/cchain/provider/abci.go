@@ -1,3 +1,4 @@
+//nolint:revive // Defer chains is best for latency metrics.
 package provider
 
 import (
@@ -36,11 +37,14 @@ func NewABCIProvider(abci rpcclient.ABCIClient, chains map[uint64]string) Provid
 func newABCIFetchFunc(cl atypes.QueryClient) func(ctx context.Context, chainID uint64, fromHeight uint64,
 ) ([]xchain.Attestation, error) {
 	return func(ctx context.Context, chainID uint64, fromHeight uint64) ([]xchain.Attestation, error) {
+		const endpoint = "attestations_from"
+		defer latency(endpoint)()
 		resp, err := cl.AttestationsFrom(ctx, &atypes.AttestationsFromRequest{
 			ChainId:    chainID,
 			FromHeight: fromHeight,
 		})
 		if err != nil {
+			incQueryErr(endpoint)
 			return nil, errors.Wrap(err, "abci query approved-from")
 		}
 
@@ -56,11 +60,14 @@ func newABCIFetchFunc(cl atypes.QueryClient) func(ctx context.Context, chainID u
 func newABCIWindowFunc(cl atypes.QueryClient) func(ctx context.Context, chainID uint64, height uint64,
 ) (int, error) {
 	return func(ctx context.Context, chainID uint64, height uint64) (int, error) {
+		const endpoint = "window_compare"
+		defer latency(endpoint)()
 		resp, err := cl.WindowCompare(ctx, &atypes.WindowCompareRequest{
 			ChainId: chainID,
 			Height:  height,
 		})
 		if err != nil {
+			incQueryErr(endpoint)
 			return 0, errors.Wrap(err, "abci query window compare")
 		}
 
@@ -71,12 +78,15 @@ func newABCIWindowFunc(cl atypes.QueryClient) func(ctx context.Context, chainID 
 func newABCILatestFunc(cl atypes.QueryClient) func(ctx context.Context, chainID uint64,
 ) (xchain.Attestation, bool, error) {
 	return func(ctx context.Context, chainID uint64) (xchain.Attestation, bool, error) {
+		const endpoint = "latest_attestation"
+		defer latency(endpoint)()
 		resp, err := cl.LatestAttestation(ctx, &atypes.LatestAttestationRequest{
 			ChainId: chainID,
 		})
 		if errors.Is(err, sdkerrors.ErrKeyNotFound) {
 			return xchain.Attestation{}, false, nil
 		} else if err != nil {
+			incQueryErr(endpoint)
 			return xchain.Attestation{}, false, errors.Wrap(err, "abci query latest attestation")
 		}
 
