@@ -16,7 +16,7 @@ const sidebars: SidebarsConfig = {
     },
   ],
   protocolSidebar: [
-    "protocol/overview",
+    "protocol/introduction",
     {
       type: "html",
       value: "<div class='sidebar-separator'></div>",

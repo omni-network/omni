@@ -3,15 +3,15 @@ sidebar_position: 2
 id: blockchains
 ---
 
-# Modular Blockchains
+# Blockchain Background
 
-The concept of modular blockchains is a mental model for building blockchains that has grown in popularity over the past few years in the crypto industry.
+The concept of modular blockchains is a mental model for building blockchains that has grown in popularity over the past few years in the crypto industry. Let's discuss the history of the idea, and how it's relevant to Omni.
 
 ## Monolithic Blockchains
 
 Historically, blockchains were built in a monolithic fashion. Most Layer 1 blockchains were built as an "end to end" service – taking responsibility for all services that a blockchain must provide. Layer 1 solutions like Bitcoin and Ethereum were built in this fashion.
 
-As we learned more, new Layer 1s were developed that optimized their stacks to make different trade-offs in terms of security, scalability, and speed. Many of these new Layer 1s adopted the monolithic approach – optimizing the full chain stack to provide the optimal desired experience. Examples of these newer monolithic Layer 1s include [Solana](https://solana.com/), [Aptos](https://aptosfoundation.org/), and [Sui](https://sui.io/).
+As the industry evolved, new Layer 1s were developed that optimized their stacks to make different trade-offs in terms of security, scalability, and speed. Many of these new Layer 1s adopted the monolithic approach – optimizing the full chain stack to provide the optimal desired experience. Examples of these newer monolithic Layer 1s include [Solana](https://solana.com/), [Aptos](https://aptosfoundation.org/), and [Sui](https://sui.io/).
 
 ## Modular Blockchains
 
@@ -36,3 +36,11 @@ Hence, the [rollup-centric roadmap](https://ethereum-magicians.org/t/a-rollup-ce
 Today, Ethereum Layer 1 handles Data Availability, Execution, and Consensus. But over time, Ethereum will primarily become a Data Availability layer. Rollups will handle execution off-chain, and utilize either Ethereum's smart contract layer, or their own sovereign settlement layer, for consensus. This allows rollups (Layer 2s) to borrow Ethereum security while scaling throughput and decreasing cost. Upgrades like [EIP-4844](https://www.eip4844.com/) will even further improve Ethereum as a Data Availability layer by providing the service at lower cost.
 
 You can view the growth of rollup ecosystems at [L2Beat.com](https://l2beat.com/), a great resource for understanding the security trade-offs, current state of development, and adoption levels for rollups.
+
+## Omni
+
+The modular stack is relevant to Omni in several ways.
+
+Omni is a solution to the vast proliferation of rollups that has resulted in user and liquidity fragmentation. It offers a platform for developers to *aggregate* their users and liquidity across rollups, rather than *fragment* it.
+
+In addition so solving problems introduced by the modular stack, Omni's architecture is inspired by the it. In particular, the Omni chain is defined by a Consensus Layer and an Execution Layer, that communicate through the Engine API – the same one as Ethereum Layer 1. Read more about this in our [architecture docs](../protocol/introduction.md).
