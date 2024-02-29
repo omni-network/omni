@@ -117,9 +117,9 @@ func (d *XDapp) deployOmniAVS(ctx context.Context, client backend.Backend, txOpt
 		return common.Address{}, errors.Wrap(err, "get avs abi")
 	}
 
-	stratParms := make([]bindings.IOmniAVSStrategyParams, len(d.cfg.StrategyParams))
+	stratParms := make([]bindings.IOmniAVSStrategyParam, len(d.cfg.StrategyParams))
 	for i, sp := range d.cfg.StrategyParams {
-		stratParms[i] = bindings.IOmniAVSStrategyParams{
+		stratParms[i] = bindings.IOmniAVSStrategyParam{
 			Strategy:   sp.Strategy,
 			Multiplier: sp.Multiplier,
 		}

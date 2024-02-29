@@ -10,15 +10,15 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type StrategyParams struct {
+type StrategyParam struct {
 	Strategy   common.Address `json:"strategy"`
 	Multiplier *big.Int       `json:"multiplier"`
 }
 
 type AVSConfig struct {
-	MinimumOperatorStake *big.Int         `json:"minimumOperatorStake"`
-	MaximumOperatorCount uint32           `json:"maximumOperatorCount"`
-	StrategyParams       []StrategyParams `json:"strategyParams"`
+	MinimumOperatorStake *big.Int        `json:"minimumOperatorStake"`
+	MaximumOperatorCount uint32          `json:"maximumOperatorCount"`
+	StrategyParams       []StrategyParam `json:"strategyParams"`
 }
 
 type EigenDeployments struct {
@@ -47,11 +47,11 @@ func LoadDeployments(file string) (EigenDeployments, error) {
 }
 
 func DefaultTestAVSConfig(eigen EigenDeployments) AVSConfig {
-	strategyParams := make([]StrategyParams, 0, len(eigen.Strategies))
+	strategyParams := make([]StrategyParam, 0, len(eigen.Strategies))
 	for _, strategy := range eigen.Strategies {
-		strategyParams = append(strategyParams, StrategyParams{
+		strategyParams = append(strategyParams, StrategyParam{
 			Strategy:   strategy,
-			Multiplier: big.NewInt(1e18), // OmniAVS.WEIGHTING_DIVISOR
+			Multiplier: big.NewInt(1e18), // OmniAVS.STRATEGY_WEIGHTING_DIVISOR
 		})
 	}
 
