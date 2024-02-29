@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.12;
 
-import { Validators } from "./Validators.sol";
-
 /**
  * @title XTypes
  * @dev Defines xchain types, core to Omni's xchain messaging protocol. These
@@ -49,11 +47,20 @@ library XTypes {
         /// @dev Multi proof flags
         bool[] proofFlags;
         /// @dev Array of validator signatures of the attestationRoot, and their public keys
-        Validators.SigTuple[] signatures;
+        SigTuple[] signatures;
     }
 
-    /// @dev Zero value for Msg
-    function zeroMsg() internal pure returns (Msg memory) {
-        return Msg(0, 0, 0, address(0), address(0), "", 0);
+    struct SigTuple {
+        /// @dev Validator ethereum address
+        address validatorAddr;
+        /// @dev Validator signature over some digest; Ethereum 65 bytes [R || S || V] format.
+        bytes signature;
+    }
+
+    struct Validator {
+        /// @dev Validator ethereum address
+        address addr;
+        /// @dev Validator voting power
+        uint64 power;
     }
 }

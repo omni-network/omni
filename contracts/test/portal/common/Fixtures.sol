@@ -6,7 +6,6 @@ import { ProxyAdmin } from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import { XTypes } from "src/libraries/XTypes.sol";
-import { Validators } from "src/libraries/Validators.sol";
 import { FeeOracleV1 } from "src/protocol/FeeOracleV1.sol";
 import { OmniPortal } from "src/protocol/OmniPortal.sol";
 import { TestXTypes } from "./TestXTypes.sol";
@@ -52,7 +51,7 @@ contract Fixtures is CommonBase, StdCheats {
     address val3;
     address val4;
 
-    mapping(uint64 => Validators.Validator[]) validatorSet;
+    mapping(uint64 => XTypes.Validator[]) validatorSet;
     mapping(address => uint256) valPrivKeys;
 
     uint256 val1PrivKey;
@@ -146,12 +145,12 @@ contract Fixtures is CommonBase, StdCheats {
     }
 
     /// @dev Generate a SigTuple array for a given valSetId and digest
-    function getSignatures(uint64 valSetId, bytes32 digest) internal view returns (Validators.SigTuple[] memory sigs) {
-        Validators.Validator[] storage vals = validatorSet[valSetId];
-        sigs = new Validators.SigTuple[](vals.length);
+    function getSignatures(uint64 valSetId, bytes32 digest) internal view returns (XTypes.SigTuple[] memory sigs) {
+        XTypes.Validator[] storage vals = validatorSet[valSetId];
+        sigs = new XTypes.SigTuple[](vals.length);
 
         for (uint256 i = 0; i < vals.length; i++) {
-            sigs[i] = Validators.SigTuple(vals[i].addr, _sign(digest, valPrivKeys[vals[i].addr]));
+            sigs[i] = XTypes.SigTuple(vals[i].addr, _sign(digest, valPrivKeys[vals[i].addr]));
         }
 
         _sortSigsByAddr(sigs);
@@ -163,9 +162,9 @@ contract Fixtures is CommonBase, StdCheats {
         return abi.encodePacked(r, s, v);
     }
 
-    /// @dev Sort sigs by validator address. Validators.verifyQuorum expects sigs to be sorted.
+    /// @dev Sort sigs by validator address. XTypes.verifyQuorum expects sigs to be sorted.
     ///      Func is not really 'pure', because it modifies the input array in place. But it does not depend on contract state.
-    function _sortSigsByAddr(Validators.SigTuple[] memory sigs) internal pure {
+    function _sortSigsByAddr(XTypes.SigTuple[] memory sigs) internal pure {
         uint256 n = sigs.length;
         for (uint256 i = 0; i < n - 1; i++) {
             for (uint256 j = 0; j < n - i - 1; j++) {
@@ -268,12 +267,12 @@ contract Fixtures is CommonBase, StdCheats {
         valPrivKeys[val3] = val3PrivKey;
         valPrivKeys[val4] = val4PrivKey;
 
-        Validators.Validator[] storage genVals = validatorSet[genesisValSetId];
+        XTypes.Validator[] storage genVals = validatorSet[genesisValSetId];
 
-        genVals.push(Validators.Validator(val1, baseValPower));
-        genVals.push(Validators.Validator(val2, baseValPower));
-        genVals.push(Validators.Validator(val3, baseValPower));
-        genVals.push(Validators.Validator(val4, baseValPower));
+        genVals.push(XTypes.Validator(val1, baseValPower));
+        genVals.push(XTypes.Validator(val2, baseValPower));
+        genVals.push(XTypes.Validator(val3, baseValPower));
+        genVals.push(XTypes.Validator(val4, baseValPower));
     }
 
     /// @dev Initialize portals and test contracts
