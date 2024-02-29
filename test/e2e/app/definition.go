@@ -326,12 +326,13 @@ func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 	// Add all anvil chains
 	for _, anvil := range testnet.AnvilChains {
 		chains = append(chains, netconf.Chain{
-			ID:            anvil.Chain.ID,
-			Name:          anvil.Chain.Name,
-			RPCURL:        anvil.ExternalRPC,
-			PortalAddress: deployInfo[anvil.Chain].PortalAddress.Hex(),
-			DeployHeight:  deployInfo[anvil.Chain].DeployHeight,
-			BlockPeriod:   anvil.Chain.BlockPeriod,
+			ID:                anvil.Chain.ID,
+			Name:              anvil.Chain.Name,
+			RPCURL:            anvil.ExternalRPC,
+			PortalAddress:     deployInfo[anvil.Chain].PortalAddress.Hex(),
+			DeployHeight:      deployInfo[anvil.Chain].DeployHeight,
+			BlockPeriod:       anvil.Chain.BlockPeriod,
+			FinalizationStrat: anvil.Chain.FinalizationStrat,
 		})
 	}
 
@@ -346,6 +347,12 @@ func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 			BlockPeriod:       public.Chain.BlockPeriod,
 			FinalizationStrat: public.Chain.FinalizationStrat,
 		})
+	}
+
+	for _, chain := range chains {
+		if err := chain.FinalizationStrat.Verify(); err != nil {
+			panic(err) // Ok to panic since this e2e and is build-time issue.
+		}
 	}
 
 	return netconf.Network{

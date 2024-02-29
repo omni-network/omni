@@ -96,6 +96,20 @@ func (n Network) Chain(id uint64) (Chain, bool) {
 // it, like zkEVM chains which would need a much more involved strategy.
 type FinalizationStrat string
 
+func (h FinalizationStrat) Verify() error {
+	if !allStrats[h] {
+		return errors.New("invalid finalization strategy", "start", h)
+	}
+
+	return nil
+}
+
+//nolint:gochecknoglobals // Static mappings
+var allStrats = map[FinalizationStrat]bool{
+	StratFinalized: true,
+	StartLatest:    true,
+}
+
 const (
 	StratFinalized = FinalizationStrat(ethclient.HeadFinalized)
 	StartLatest    = FinalizationStrat(ethclient.HeadLatest)

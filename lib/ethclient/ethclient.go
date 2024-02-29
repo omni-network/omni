@@ -20,6 +20,23 @@ func (h HeadType) String() string {
 	return string(h)
 }
 
+func (h HeadType) Verify() error {
+	if !allHeadTypes[h] {
+		return errors.New("invalid head type", "head", h)
+	}
+
+	return nil
+}
+
+//nolint:gochecknoglobals // Static mappings
+var allHeadTypes = map[HeadType]bool{
+	HeadLatest:    true,
+	HeadEarliest:  true,
+	HeadPending:   true,
+	HeadSafe:      true,
+	HeadFinalized: true,
+}
+
 const (
 	HeadLatest    HeadType = "latest"
 	HeadEarliest  HeadType = "earliest"
