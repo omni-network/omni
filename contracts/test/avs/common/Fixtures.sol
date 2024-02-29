@@ -15,9 +15,9 @@ import { OmniAVS } from "src/protocol/OmniAVS.sol";
 
 import { DeployGoerliAVS } from "script/avs/DeployGoerliAVS.s.sol";
 import { StrategyParams } from "script/avs/StrategyParams.sol";
+import { MockPortal } from "test/utils/MockPortal.sol";
 import { EigenLayerFixtures } from "./eigen/EigenLayerFixtures.sol";
 import { Empty } from "./Empty.sol";
-import { MockPortal } from "./MockPortal.sol";
 
 /**
  * @title Fixtures
