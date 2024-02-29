@@ -90,13 +90,14 @@ issues:
       linters:
         - gochecknoglobals # Promauto metrics are global variables
     - path: '(.*)(test|scripts)(.*)'
-      linters:        # Relax linters for both tests/scripts (non-production code)
-        - gosec       # Security not an issue here
-        - revive      # Relax revive rules
-        - wrapcheck   # Wrapping not required
-        - gocognit    # Cognitive complexity not an issue here
-        - prealloc    # Prealloc not an issue here
-        - perfsprint  # Performance not an issue here
+      linters:         # Relax linters for both tests/scripts (non-production code)
+        - gosec        # Security not an issue here
+        - revive       # Relax revive rules
+        - wrapcheck    # Wrapping not required
+        - gocognit     # Cognitive complexity not an issue here
+        - prealloc     # Prealloc not an issue here
+        - perfsprint   # Performance not an issue here
+        - contextcheck # Context not an issue here
     - path: 'scripts/.+\.go'
       linters:        # Relax linters for scripts only (non-production code)
         - forbidigo   # Allow debug printing

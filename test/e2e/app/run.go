@@ -170,7 +170,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, secrets age
 	}
 
 	// Start unit tests.
-	if err := Test(ctx, def, deployInfo, true); err != nil {
+	if err := Test(ctx, def, deployInfo, false); err != nil {
 		return err
 	}
 

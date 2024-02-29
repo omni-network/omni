@@ -1,0 +1,17 @@
+version: '2.4'
+
+services:
+  anvil:
+    labels:
+      anvil: true
+    image: ghcr.io/foundry-rs/foundry:latest
+    entrypoint:
+      - anvil
+      - --host=0.0.0.0
+      - --chain-id={{ .ChainID }}
+      - --silent
+      - --load-state=/anvil/state.json
+    ports:
+      - {{ .Port }}:8545
+    volumes:
+      - ./state.json:/anvil/state.json

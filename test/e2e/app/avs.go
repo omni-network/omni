@@ -6,14 +6,12 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/test/e2e/app/static"
 	"github.com/omni-network/omni/test/e2e/netman/avs"
 	"github.com/omni-network/omni/test/e2e/types"
 
 	_ "embed"
 )
-
-//go:embed static/el-deployments.json
-var defaultEigenDeps []byte
 
 func deployAVS(ctx context.Context, def Definition, cfg DeployConfig, deployInfo types.DeployInfos) error {
 	var (
@@ -24,7 +22,7 @@ func deployAVS(ctx context.Context, def Definition, cfg DeployConfig, deployInfo
 		elDeps, err = avs.LoadDeployments(cfg.EigenFile)
 	} else {
 		log.Debug(ctx, "Using default eigen deployments")
-		err = json.Unmarshal(defaultEigenDeps, &elDeps)
+		err = json.Unmarshal(static.GetElDeployments(), &elDeps)
 	}
 	if err != nil {
 		return errors.Wrap(err, "load eigen deployments")
