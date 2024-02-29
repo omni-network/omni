@@ -261,7 +261,7 @@ require (
 )
 
 require (
-	github.com/opencontainers/runc v1.1.5 // indirect
+	github.com/opencontainers/runc v1.1.12 // indirect
 	github.com/urfave/cli/v2 v2.27.1 // indirect
 )
 
