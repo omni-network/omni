@@ -76,6 +76,7 @@ type AVS struct {
 	WETHStrategyContract      *bindings.StrategyBase
 	WETHTokenContract         *bindings.MockERC20
 	AVSDirectory              *bindings.AVSDirectory
+	EigenPodManagerContract   *bindings.EigenPodManager
 }
 
 type testFunc struct {
@@ -347,6 +348,10 @@ func loadContractsForAVS(t *testing.T, chainInfo map[types.ContractName]types.De
 	avsDir, err := bindings.NewAVSDirectory(avsDirAddr, ethClient)
 	require.NoError(t, err)
 
+	podMgrAddr := chainInfo[types.ContractELPodManager].Address
+	podMgr, err := bindings.NewEigenPodManager(podMgrAddr, ethClient)
+	require.NoError(t, err)
+
 	testAVS := AVS{
 		Chain:                     chain,
 		Client:                    ethClient,
@@ -356,6 +361,7 @@ func loadContractsForAVS(t *testing.T, chainInfo map[types.ContractName]types.De
 		WETHStrategyContract:      wethStrategy,
 		WETHTokenContract:         wethToken,
 		AVSDirectory:              avsDir,
+		EigenPodManagerContract:   podMgr,
 	}
 
 	return testAVS

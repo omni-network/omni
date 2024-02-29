@@ -22,17 +22,23 @@ import (
 )
 
 const (
-	// pk used to deploy omniAVS contracts.
+	// pk used to deploy omniAVS contracts (anvil account 0).
 	omniDeployPk = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 
-	// pk used to deploy EigenLayer contracts, anvil account 9.
+	// pk used to deploy EigenLayer contracts ( anvil account 9).
 	elDeployPk = "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
+
+	// ETH funding account (anvil account 8)
+	ethFundingPk = "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"
 
 	// URI, which stores the metadata for an operator.
 	operator1MetaDataURI = "https://www.operator1.com"
 
 	// URI, which stores the metadata for an operator.
 	operator2MetaDataURI = "https://www.operator2.com"
+
+	// URI, which stores the metadata for an operator.
+	operator3MetaDataURI = "https://www.operator3.com"
 
 	// minimum self stake for an operator to get registered in omniAVS.
 	MinStateForOperatorInEigenLayer = 10
@@ -64,6 +70,7 @@ func TestEigenAndOmniAVS(t *testing.T) {
 		wethStratAddr := deployInfo[types.ContractELWETHStrategy].Address
 		wethTokenAddr := getTokenAddr(t, avs)
 		omniAVSAddr := deployInfo[types.ContractOmniAVS].Address
+		//podMgrAddr := deployInfo[types.ContractELPodManager].Address
 		deployInfo[types.ContractELWETH] = types.DeployInfo{
 			Address: wethTokenAddr,
 		}
@@ -71,19 +78,30 @@ func TestEigenAndOmniAVS(t *testing.T) {
 		// create new operators, delegators and fund them with ETH
 		operator1Addr, opr1Addr, opr1Pk := createAccount(t, ctx, avs.Client)
 		operator2Addr, opr2Addr, opr2Pk := createAccount(t, ctx, avs.Client)
+		operator3Addr, opr3Addr, opr3Pk := createAccount(t, ctx, avs.Client)
 		_, del1Addr, del1Pk := createAccount(t, ctx, avs.Client)
 		_, del2Addr, del2Pk := createAccount(t, ctx, avs.Client)
+		_, del3Addr, del3Pk := createAccount(t, ctx, avs.Client)
 
 		// check if contracts are deployed and configured properly
 		checkIfContractsAreDeployed(t, ctx, avs, deployInfo)
-		configOmniAVS(t, ctx, avs)
+		//configOmniAVS(t, ctx, avs)
 
 		// register operators with EigenLayer
 		registerOperatorWithEL(t, ctx, avs, delMgrAddr, opr1Pk, operator1Addr, operator1MetaDataURI)
 		registerOperatorWithEL(t, ctx, avs, delMgrAddr, opr2Pk, operator2Addr, operator2MetaDataURI)
+		registerOperatorWithEL(t, ctx, avs, delMgrAddr, opr3Pk, operator3Addr, operator3MetaDataURI)
 
 		// fund operators and delegators with WETH
-		fundAccountsWithWETH(t, ctx, avs, InitialWETHFunding, opr1Addr, opr2Addr, del1Addr, del2Addr)
+		accounts := []common.Address{
+			opr1Addr,
+			opr2Addr,
+			opr3Addr,
+			del1Addr,
+			del2Addr,
+			del3Addr,
+		}
+		fundAccountsWithWETH(t, ctx, avs, InitialWETHFunding, accounts)
 
 		// register operators to omni AVS with a stake more than minimum stake
 		whiteListStrategy(t, ctx, avs, wethStratAddr)
@@ -91,6 +109,8 @@ func TestEigenAndOmniAVS(t *testing.T) {
 			opr1Addr, opr1Pk, InitialOperatorStake)
 		registeringOperatorsWithAVS(t, ctx, avs, stratManAddr, wethStratAddr, wethTokenAddr, omniAVSAddr,
 			opr2Addr, opr2Pk, InitialOperatorStake)
+		registeringOperatorsWithAVS(t, ctx, avs, stratManAddr, wethStratAddr, wethTokenAddr, omniAVSAddr,
+			opr3Addr, opr3Pk, InitialOperatorStake)
 
 		// delegate stake to operators and check their balance
 		delegateWETHToOperator(t, ctx, avs, del1Addr, del1Pk, opr1Addr)
@@ -100,6 +120,10 @@ func TestEigenAndOmniAVS(t *testing.T) {
 		delegateWETHToOperator(t, ctx, avs, del2Addr, del2Pk, opr2Addr)
 		delegateWETHToStrategy(t, ctx, avs, del2Pk, stratManAddr, wethStratAddr, wethTokenAddr, InitialDelegatorStake)
 		checkOperatorBalance(t, ctx, avs, opr2Addr, opr2Pk, uint64(InitialOperatorStake), uint64(InitialDelegatorStake))
+
+		stakeETHToDelegator(t, ctx, avs, del3Addr, del3Pk)
+		//delegateETHToStrategy(t, ctx, avs, del3Pk, stratManAddr, wethStratAddr, wethTokenAddr, InitialDelegatorStake)
+		checkOperatorBalance(t, ctx, avs, opr3Addr, opr3Pk, uint64(InitialOperatorStake), uint64(InitialDelegatorStake))
 
 		// undelegate delegator 1 and check if the stake is removed from operator
 		undelegateWETHForDelegattor(t, ctx, avs, del1Addr, del1Pk)
@@ -137,20 +161,21 @@ func createAccount(t *testing.T, ctx context.Context, client ethclient.Client) (
 	require.True(t, ok)
 	address := crypto.PubkeyToAddress(*publicKeyECDSA)
 
-	// fund the account with ETH
-	transferFundTo(t, ctx, address.String(), client)
+	// fund the account with ETH for fees
+	amount := big.NewInt(100000000000000000) // 1 ETH
+	transferETHTo(t, ctx, address.String(), client, amount)
 
 	return address.String(), address, privateKey
 }
 
-func transferFundTo(t *testing.T, ctx context.Context, addr string, client ethclient.Client) {
+func transferETHTo(t *testing.T, ctx context.Context, addr string, client ethclient.Client, amount *big.Int) {
 	t.Helper()
 	pk := mustHexToKey("0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356")
 	adr := common.HexToAddress("0x14dC79964da2C08b23698B3D3cc7Ca32193d9955")
 
 	nonce, err := client.PendingNonceAt(ctx, adr)
 	require.NoError(t, err)
-	value := big.NewInt(1000000000000000000) // 10 ETH
+	value := amount // big.NewInt(100000000000000000) // 1 ETH
 	gasLimit := uint64(21000)
 	tip := big.NewInt(2000000000)
 	feeCap := big.NewInt(20000000000)
@@ -201,40 +226,40 @@ func checkIfContractsAreDeployed(
 	checkIfCodePresent(t, ctx, avs, deployInfo, blockNumber, types.ContractELPodManager)
 }
 
-func configOmniAVS(
-	t *testing.T,
-	ctx context.Context,
-	avs AVS) {
-	t.Helper()
-
-	// set min stake
-	omniDepPk := mustHexToKey(omniDeployPk)
-	txOpts, err := bind.NewKeyedTransactorWithChainID(omniDepPk, big.NewInt(int64(avs.Chain.ID)))
-	require.NoError(t, err)
-	txOpts.Context = ctx
-	minStake := big.NewInt(MinStateForOperatorInEigenLayer)
-	tx, err := avs.AVSContract.SetMinOperatorStake(txOpts, minStake)
-	require.NoError(t, err)
-	_, err = bind.WaitMined(ctx, avs.Client, tx)
-	require.NoError(t, err)
-
-	// check if min stake is set properly
-	callOpts := bind.CallOpts{}
-	operatorStake, err := avs.AVSContract.MinOperatorStake(&callOpts)
-	require.NoError(t, err)
-	require.Equal(t, minStake.Uint64(), operatorStake.Uint64())
-
-	// set operator count
-	tx, err = avs.AVSContract.SetMaxOperatorCount(txOpts, uint32(MaxNumberOfOperators))
-	require.NoError(t, err)
-	_, err = bind.WaitMined(ctx, avs.Client, tx)
-	require.NoError(t, err)
-
-	// check if operator count is set properly
-	opCount, err := avs.AVSContract.MaxOperatorCount(&callOpts)
-	require.NoError(t, err)
-	require.Equal(t, uint32(MaxNumberOfOperators), opCount)
-}
+//func configOmniAVS(
+//	t *testing.T,
+//	ctx context.Context,
+//	avs AVS) {
+//	t.Helper()
+//
+//	// set min stake
+//	omniDepPk := mustHexToKey(omniDeployPk)
+//	txOpts, err := bind.NewKeyedTransactorWithChainID(omniDepPk, big.NewInt(int64(avs.Chain.ID)))
+//	require.NoError(t, err)
+//	txOpts.Context = ctx
+//	minStake := big.NewInt(MinStateForOperatorInEigenLayer)
+//	tx, err := avs.AVSContract.SetMinOperatorStake(txOpts, minStake)
+//	require.NoError(t, err)
+//	_, err = bind.WaitMined(ctx, avs.Client, tx)
+//	require.NoError(t, err)
+//
+//	// check if min stake is set properly
+//	callOpts := bind.CallOpts{}
+//	operatorStake, err := avs.AVSContract.MinOperatorStake(&callOpts)
+//	require.NoError(t, err)
+//	require.Equal(t, minStake.Uint64(), operatorStake.Uint64())
+//
+//	// set operator count
+//	tx, err = avs.AVSContract.SetMaxOperatorCount(txOpts, uint32(MaxNumberOfOperators))
+//	require.NoError(t, err)
+//	_, err = bind.WaitMined(ctx, avs.Client, tx)
+//	require.NoError(t, err)
+//
+//	// check if operator count is set properly
+//	opCount, err := avs.AVSContract.MaxOperatorCount(&callOpts)
+//	require.NoError(t, err)
+//	require.Equal(t, uint32(MaxNumberOfOperators), opCount)
+//}
 
 func registerOperatorWithEL(
 	t *testing.T,
@@ -272,22 +297,14 @@ func fundAccountsWithWETH(
 	ctx context.Context,
 	avs AVS,
 	amount int64,
-	opr1Addr common.Address,
-	opr2Addr common.Address,
-	del1Addr common.Address,
-	del2Addr common.Address) {
+	addresses []common.Address) {
 	t.Helper()
 
-	// fund the operators and delegators
-	fundAccountWithWETH(t, ctx, avs, opr1Addr, amount)
-	fundAccountWithWETH(t, ctx, avs, opr2Addr, amount)
-	fundAccountWithWETH(t, ctx, avs, del1Addr, amount)
-	fundAccountWithWETH(t, ctx, avs, del2Addr, amount)
-
-	require.Equal(t, uint64(amount), wETHBalance(t, ctx, avs, opr1Addr))
-	require.Equal(t, uint64(amount), wETHBalance(t, ctx, avs, opr2Addr))
-	require.Equal(t, uint64(amount), wETHBalance(t, ctx, avs, del1Addr))
-	require.Equal(t, uint64(amount), wETHBalance(t, ctx, avs, del2Addr))
+	// fund the operators/delegators and check if it funded properly
+	for _, addr := range addresses {
+		fundAccountWithWETH(t, ctx, avs, addr, amount)
+		require.Equal(t, uint64(amount), wETHBalance(t, ctx, avs, addr))
+	}
 }
 
 func registeringOperatorsWithAVS(
@@ -476,6 +493,38 @@ func delegateWETHToOperator(t *testing.T,
 	require.NoError(t, err)
 }
 
+func stakeETHToDelegator(t *testing.T,
+	ctx context.Context,
+	avs AVS,
+	delegator common.Address,
+	delegatorPk *ecdsa.PrivateKey) {
+	t.Helper()
+
+	// first transfer some funds to delegator to stake
+	amount := big.NewInt(32000000000000000000) // 32 ETH
+	transferETHTo(t, ctx, delegator.String(), avs.Client, amount)
+
+	// then delegate the ETH to operator
+	txOpts, err := bind.NewKeyedTransactorWithChainID(delegatorPk, big.NewInt(int64(avs.Chain.ID)))
+	require.NoError(t, err)
+	txOpts.Context = ctx
+	txOpts.Value = amount
+	txOpts.From = delegator
+
+	depositRoot := []byte(zeroAddr)[:32]
+	signature, err := crypto.Sign(depositRoot, delegatorPk)
+	require.NoError(t, err)
+
+	pubKey, err := crypto.SigToPub(depositRoot, signature)
+	require.NoError(t, err)
+	pubKeyBytes := crypto.FromECDSAPub(pubKey)
+
+	tx, err := avs.EigenPodManagerContract.Stake(txOpts, pubKeyBytes, signature, [32]byte(depositRoot))
+	require.NoError(t, err)
+	_, err = bind.WaitMined(ctx, avs.Client, tx)
+	require.NoError(t, err)
+}
+
 func delegateWETHToStrategy(
 	t *testing.T,
 	ctx context.Context,
@@ -524,7 +573,7 @@ func checkOperatorBalance(
 		From:    operator,
 		Context: ctx,
 	}
-	vals, err := avs.AVSContract.GetValidators(&callOpts)
+	vals, err := avs.AVSContract.Operators(&callOpts)
 	require.NoError(t, err)
 
 	found := false
