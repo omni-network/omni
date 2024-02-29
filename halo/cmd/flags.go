@@ -27,7 +27,5 @@ func bindInitFlags(flags *pflag.FlagSet, cfg *InitConfig) {
 
 func bindOperatorFlags(flags *pflag.FlagSet, cfg *OperatorConfig) {
 	libcmd.BindHomeFlag(flags, &cfg.HomeDir)
-	flags.StringVar(&cfg.L1ChainName, "l1chain", cfg.L1ChainName, "The layer 1 chain name")
-	flags.StringVar(&cfg.AVSDirectoryAddr, "avs-dir-addr", cfg.AVSDirectoryAddr, "The AVS Directory contract address")
 	flags.StringVar(&cfg.OmniAVSAddr, "omni-avs", cfg.OmniAVSAddr, "The contract address of OmniAVS")
 }

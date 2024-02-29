@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 
@@ -63,28 +64,38 @@ func register(ctx context.Context, cfg *OperatorConfig) error {
 	privVal := privval.LoadFilePVEmptyState(cfg.CometConfig.PrivValidatorKeyFile(), cfg.CometConfig.PrivValidatorStateFile())
 
 	// connect to the rpc endpoint
-	client, err := ethclient.Dial(chain.Name, chain.RPCURL)
+	client, err := ethclient.Dial("Ethereum", chain.RPCURL)
 	if err != nil {
 		return err
 	}
 
 	// load contract bindings
-	omniAvs, err := bindings.NewOmniAVS(common.HexToAddress(cfg.AVSDirectoryAddr), client)
+	omniAvs, err := bindings.NewOmniAVS(common.HexToAddress(cfg.OmniAVSAddr), client)
 	if err != nil {
 		return err
 	}
-	avsDirectory, err := bindings.NewAVSDirectory(common.HexToAddress(cfg.OmniAVSAddr), client)
+	avsDirectoryAddr, err := omniAvs.AvsDirectory(&bind.CallOpts{})
+	if err != nil {
+		return err
+	}
+	avsDirectory, err := bindings.NewAVSDirectory(avsDirectoryAddr, client)
 	if err != nil {
 		return err
 	}
 
+	// get the operator private key and operators ethereum address
 	operPK, err := crypto.ToECDSA(privVal.Key.PrivKey.Bytes())
 	if err != nil {
-		log.Info(ctx, "Could not convert private keys", err)
-
 		return errors.Wrap(err, "could not convert pk to ecdsa")
 	}
-	operAddr := common.HexToAddress(privVal.GetAddress().String())
+	pubKey, err := privVal.GetPubKey()
+	if err != nil {
+		return errors.Wrap(err, "get pubkey")
+	}
+	operAddr, err := k1util.PubKeyToAddress(pubKey)
+	if err != nil {
+		return errors.Wrap(err, "could not convert to ethereum address")
+	}
 
 	// calculate operator signature and digest hash
 	blockNumber, err := client.BlockNumber(ctx)
@@ -110,11 +121,12 @@ func register(ctx context.Context, cfg *OperatorConfig) error {
 		return err
 	}
 
-	operatorSignatureWithSaltAndExpiry.Signature, err = crypto.Sign(digestHash[:32], operPK)
+	sig, err := k1util.Sign(privVal.Key.PrivKey, [32]byte(digestHash[:32]))
 	if err != nil {
 		return errors.Wrap(err, "error signing)")
 	}
 
+	operatorSignatureWithSaltAndExpiry.Signature = sig[:]
 	if len(operatorSignatureWithSaltAndExpiry.Signature) != 65 {
 		return errors.New("invalid signature length")
 	}
@@ -148,10 +160,9 @@ func getChainConfig(cfg *OperatorConfig) (*netconf.Chain, error) {
 		return nil, errors.Wrap(err, "validate network config")
 	}
 
-	for _, c := range network.Chains {
-		if c.Name == cfg.L1ChainName {
-			return &c, nil
-		}
+	chain, present := network.EthereumChain()
+	if present {
+		return &chain, nil
 	}
 
 	return nil, errors.New("chain not found")

@@ -63,6 +63,17 @@ func (n Network) OmniChain() (Chain, bool) {
 	return Chain{}, false
 }
 
+// EthereumChain returns the Eth Layer1 chain config or false if it does not exist.
+func (n Network) EthereumChain() (Chain, bool) {
+	for _, chain := range n.Chains {
+		if chain.IsEthereum {
+			return chain, true
+		}
+	}
+
+	return Chain{}, false
+}
+
 // ChainName returns the chain name for the given ID or an empty string if it does not exist.
 func (n Network) ChainName(id uint64) string {
 	chain, _ := n.Chain(id)
@@ -101,6 +112,7 @@ type Chain struct {
 	PortalAddress     string            // Address of the omni portal contract on the chain
 	DeployHeight      uint64            // Height that the portal contracts were deployed
 	IsOmni            bool              // Whether this is the Omni chain
+	IsEthereum        bool              // Whether this is the ethereum layer1 chain
 	BlockPeriod       time.Duration     // Block period of the chain
 	FinalizationStrat FinalizationStrat // Finalization strategy of the chain
 }
@@ -142,6 +154,7 @@ type chainJSON struct {
 	PortalAddress     string            `json:"portal_address"`
 	DeployHeight      uint64            `json:"deploy_height"`
 	IsOmni            bool              `json:"is_omni,omitempty"`
+	IsEthereum        bool              `json:"is_ethereum,omitempty"`
 	BlockPeriod       string            `json:"block_period"`
 	FinalizationStrat FinalizationStrat `json:"finalization_start"`
 }
@@ -166,6 +179,7 @@ func (c *Chain) UnmarshalJSON(bz []byte) error {
 		PortalAddress:     cj.PortalAddress,
 		DeployHeight:      cj.DeployHeight,
 		IsOmni:            cj.IsOmni,
+		IsEthereum:        cj.IsEthereum,
 		BlockPeriod:       blockPeriod,
 		FinalizationStrat: cj.FinalizationStrat,
 	}
@@ -183,6 +197,7 @@ func (c Chain) MarshalJSON() ([]byte, error) {
 		PortalAddress:     c.PortalAddress,
 		DeployHeight:      c.DeployHeight,
 		IsOmni:            c.IsOmni,
+		IsEthereum:        c.IsEthereum,
 		BlockPeriod:       c.BlockPeriod.String(),
 		FinalizationStrat: c.FinalizationStrat,
 	}

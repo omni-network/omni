@@ -12,22 +12,19 @@ import (
 
 // OperatorConfig is the config required for operator registration and deregistration.
 type OperatorConfig struct {
-	HomeDir          string
-	L1ChainName      string
-	OmniAVSAddr      string
-	AVSDirectoryAddr string
-	HaloConfig       halocfg.Config
-	CometConfig      config.Config
-	LogConfig        log.Config
+	HomeDir     string
+	OmniAVSAddr string
+	HaloConfig  halocfg.Config
+	CometConfig config.Config
+	LogConfig   log.Config
 }
 
 // newOperatorCmd returns a new cobra command that is used to perform eigen layer relates tasks.
 func newOperatorCmd() *cobra.Command {
 	cfg := OperatorConfig{
-		HomeDir:     halocfg.DefaultHomeDir,
-		L1ChainName: "Ethereum",
-		HaloConfig:  halocfg.DefaultConfig(),
-		LogConfig:   log.DefaultConfig(),
+		HomeDir:    halocfg.DefaultHomeDir,
+		HaloConfig: halocfg.DefaultConfig(),
+		LogConfig:  log.DefaultConfig(),
 	}
 
 	operatorCmd := &cobra.Command{

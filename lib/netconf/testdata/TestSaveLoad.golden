@@ -9,28 +9,32 @@
    "portal_address": "笨Gń條ģ|2諱4",
    "deploy_height": 15080552979306262733,
    "is_omni": true,
-   "block_period": "-1500944h33m53.93593515s",
-   "finalization_start": "ŽƔA苩xǼe赖{³*Ę鄏þƿ"
+   "block_period": "241333h25m56.476018686s",
+   "finalization_start": "YF墄[C_睿ȉǫ蹟t´ûș$0đ"
   },
   {
-   "id": 2023352169444513236,
-   "name": "đ\u003eƯ]ɹȽ東潇澍ȣ1ȖɥmeCʊ 炄",
-   "rpcurl": "斚嬆ʅȀʙĄĥ腲ʤaǇ趴x瑻霳鸻ȉĔ",
-   "auth_rpcurl": "ËQLuVǭz瘯霡豐",
-   "portal_address": "ɩ9Ă`ȝ",
-   "deploy_height": 58744245388319889,
-   "block_period": "849478h16m29.713366904s",
-   "finalization_start": "R涞!Ä\u003e漌Ǭ顼溹*"
+   "id": 5735187812301142556,
+   "name": "÷K鬣壈gƢ板鋩伸~槱¡rŔ",
+   "rpcurl": " 炄闌剾溏嶪滢w",
+   "auth_rpcurl": "ĥ腲ʤa",
+   "portal_address": "蘳G",
+   "deploy_height": 10085923631778523276,
+   "is_omni": true,
+   "is_ethereum": true,
+   "block_period": "-782574h36m33.103665835s",
+   "finalization_start": "ȉĔȹ$Ievɥʈ摨aƈŲɩ9Ă`"
   },
   {
-   "id": 4788190398976706073,
-   "name": "祇Fæƭō跮ɽ溢煮FɀÄf渂硹",
-   "rpcurl": "",
-   "auth_rpcurl": "匬襧",
-   "portal_address": "uvȭƹ棳ɷk",
-   "deploy_height": 11472980923278878730,
-   "block_period": "-562084h53m3.72828752s",
-   "finalization_start": "ĦɈ"
+   "id": 16460321371496047982,
+   "name": "飦tD6ɀk諮Ȃ遃ɸ",
+   "rpcurl": "溹*x唎蕍冻垰40F7楣ƛ隨Ǩmȷā",
+   "auth_rpcurl": "譯匬襧*|机",
+   "portal_address": "ƹ棳",
+   "deploy_height": 658961313498574590,
+   "is_omni": true,
+   "is_ethereum": true,
+   "block_period": "-1937156h25m50.430672886s",
+   "finalization_start": "ư銩6ĳ憏歅"
   }
  ]
 }
