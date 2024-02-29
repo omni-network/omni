@@ -102,7 +102,7 @@ func TestKeeper_isNextProposer(t *testing.T) {
 			ctx, storeService := setupCtxStore(t, &header)
 
 			keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig)
-			keeper.SetCometAPI(cmtAPI)
+			keeper.SetCometAPI(&cmtAPI)
 			keeper.SetAddressProvider(mockAddressProvider{
 				address: nxtAddr,
 			})
@@ -118,6 +118,8 @@ func TestKeeper_isNextProposer(t *testing.T) {
 			if gotHeight != tt.wantHeight {
 				t.Errorf("isNextProposer() gotHeight = %v, want %v", gotHeight, tt.wantHeight)
 			}
+			// make sure that height passed into Validators is correct
+			require.Equal(t, tt.args.height, cmtAPI.height)
 		})
 	}
 }
@@ -127,6 +129,7 @@ type mockCometAPI struct {
 	fuzzer         *fuzz.Fuzzer
 	validatorSet   *cmttypes.ValidatorSet
 	validatorsFunc func(context.Context, int64) (*cmttypes.ValidatorSet, bool, error)
+	height         int64
 }
 
 func newMockCometAPI(t *testing.T, valFun func(context.Context, int64) (*cmttypes.ValidatorSet, bool, error)) mockCometAPI {
@@ -154,7 +157,8 @@ func fuzzValidators(t *testing.T, fuzzer *fuzz.Fuzzer) *cmttypes.ValidatorSet {
 	return valSet
 }
 
-func (m mockCometAPI) Validators(ctx context.Context, height int64) (*cmttypes.ValidatorSet, bool, error) {
+func (m *mockCometAPI) Validators(ctx context.Context, height int64) (*cmttypes.ValidatorSet, bool, error) {
+	m.height = height
 	if m.validatorsFunc != nil {
 		return m.validatorsFunc(ctx, height)
 	}
@@ -173,7 +177,7 @@ func newFuzzer(seed int64) *fuzz.Fuzzer {
 		func(v *cmttypes.Validator, c fuzz.Continue) {
 			privKey := k1.GenPrivKey()
 			v.PubKey = privKey.PubKey()
-			v.VotingPower = int64(c.Intn(200))
+			v.VotingPower = 200
 			val := cmttypes.NewValidator(v.PubKey, v.VotingPower)
 
 			*v = *val
