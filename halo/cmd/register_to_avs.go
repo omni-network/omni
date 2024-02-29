@@ -40,7 +40,7 @@ func RegisterOperatorToOmniAVS(cfg *OperatorConfig) *cobra.Command {
 		},
 	}
 
-	bindOperatorRegisterFlags(registerToAVSCmd.Flags(), cfg)
+	bindOperatorFlags(registerToAVSCmd.Flags(), cfg)
 
 	return registerToAVSCmd
 }

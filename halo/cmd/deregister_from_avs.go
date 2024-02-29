@@ -6,6 +6,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -33,13 +34,13 @@ func DeRegisterOperatorFromOmniAVS(cfg *OperatorConfig) *cobra.Command {
 		},
 	}
 
-	bindOperatorDeRegisterFlags(deregisterFromAVSCmd.Flags(), cfg)
+	bindOperatorFlags(deregisterFromAVSCmd.Flags(), cfg)
 
 	return deregisterFromAVSCmd
 }
 
 func deregister(ctx context.Context, cfg *OperatorConfig) error {
-	privVal, client, chain, err := loadKeysNadChain(ctx, cfg)
+	privVal, client, chain, err := loadKeysAndChain(ctx, cfg)
 	if err != nil {
 		return err
 	}
@@ -49,18 +50,22 @@ func deregister(ctx context.Context, cfg *OperatorConfig) error {
 		return err
 	}
 
-	// TODO(jmozah): proper conversion of address from k1 to eth format
-	operPK, err := crypto.ToECDSA(privVal.Key.PrivKey.Bytes())
-	if err != nil {
-		log.Info(ctx, "Could not convert private keys", err)
-
-		return errors.Wrap(err, "could not convert pk to ecdsa")
-	}
-	operAddr := common.HexToAddress(privVal.GetAddress().String())
-
 	omniAvs, err := bindings.NewOmniAVS(common.HexToAddress(cfg.OmniAVSAddr), client)
 	if err != nil {
 		return err
+	}
+
+	operPK, err := crypto.ToECDSA(privVal.Key.PrivKey.Bytes())
+	if err != nil {
+		return errors.Wrap(err, "could not convert pk to ecdsa")
+	}
+	pubKey, err := privVal.GetPubKey()
+	if err != nil {
+		return errors.Wrap(err, "get pubkey")
+	}
+	operAddr, err := k1util.PubKeyToAddress(pubKey)
+	if err != nil {
+		return errors.Wrap(err, "could not convert to ethereum address")
 	}
 
 	txOpts, err := bind.NewKeyedTransactorWithChainID(operPK, big.NewInt(int64(chain.ID)))

@@ -6,5 +6,4 @@ Usage:
 Flags:
   -h, --help              help for deregister
       --home string       The application home directory containing config and data (default "./halo")
-      --l1chain string    The layer 1 chain name (default "Ethereum")
       --omni-avs string   The contract address of OmniAVS

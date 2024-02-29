@@ -4,8 +4,6 @@ Usage:
   halo operator register [flags]
 
 Flags:
-      --avs-dir-addr string   The AVS Directory contract address
-  -h, --help                  help for register
-      --home string           The application home directory containing config and data (default "./halo")
-      --l1chain string        The layer 1 chain name (default "Ethereum")
-      --omni-avs string       The contract address of OmniAVS
+  -h, --help              help for register
+      --home string       The application home directory containing config and data (default "./halo")
+      --omni-avs string   The contract address of OmniAVS
