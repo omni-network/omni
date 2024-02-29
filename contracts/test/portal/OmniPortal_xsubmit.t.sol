@@ -2,7 +2,6 @@
 pragma solidity 0.8.23;
 
 import { XTypes } from "src/libraries/XTypes.sol";
-import { Validators } from "src/libraries/Validators.sol";
 import { Base } from "./common/Base.sol";
 import { Vm } from "forge-std/Vm.sol";
 
@@ -125,7 +124,7 @@ contract OmniPortal_xsubmit_Test is Base {
         XTypes.Submission memory xsub = readXSubmission("xblock1", portal.chainId());
 
         // remove last two signatures, to fail the quorum check
-        Validators.SigTuple[] memory sigs = new Validators.SigTuple[](2);
+        XTypes.SigTuple[] memory sigs = new XTypes.SigTuple[](2);
         sigs[0] = xsub.signatures[0];
         sigs[1] = xsub.signatures[1];
 

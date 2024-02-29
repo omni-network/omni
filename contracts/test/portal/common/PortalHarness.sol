@@ -3,7 +3,6 @@ pragma solidity ^0.8.12;
 
 import { OmniPortal } from "src/protocol/OmniPortal.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
-import { Validators } from "src/libraries/Validators.sol";
 
 /**
  * @title PortalHarness

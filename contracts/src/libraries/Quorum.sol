@@ -2,26 +2,13 @@
 pragma solidity ^0.8.12;
 
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { XTypes } from "./XTypes.sol";
 
 /**
- * @title Validators
- * @dev Defines validator data types and quorum verification logic.
+ * @title Quorom
+ * @dev Defines quorum verification logic.
  */
-library Validators {
-    struct SigTuple {
-        /// @dev Validator ethereum address
-        address validatorAddr;
-        /// @dev Validator signature over some digest; Ethereum 65 bytes [R || S || V] format.
-        bytes signature;
-    }
-
-    struct Validator {
-        /// @dev Validator ethereum address
-        address addr;
-        /// @dev Validator voting power
-        uint64 power;
-    }
-
+library Quorum {
     /**
      * @dev Verifies that the given percentage of the total power has signed the given digest.
      * @param digest Signed hash
@@ -31,22 +18,22 @@ library Validators {
      * @param qNumerator Numerator of the quorum threshold. Ex: 2/3 -> 2
      * @param qDenominator Denominator of the quorum threshold. Ex: 2/3 -> 3
      */
-    function verifyQuorum(
+    function verify(
         bytes32 digest,
-        SigTuple[] calldata sigs,
+        XTypes.SigTuple[] calldata sigs,
         mapping(address => uint64) storage validators,
         uint64 totalPower,
         uint8 qNumerator,
         uint8 qDenominator
     ) internal view returns (bool) {
         uint64 votedPower;
-        SigTuple calldata sig;
+        XTypes.SigTuple calldata sig;
 
         for (uint256 i = 0; i < sigs.length; i++) {
             sig = sigs[i];
 
             if (i > 0) {
-                SigTuple memory prev = sigs[i - 1];
+                XTypes.SigTuple memory prev = sigs[i - 1];
                 require(sig.validatorAddr != prev.validatorAddr, "OmniPortal: duplicate validator");
                 require(sig.validatorAddr > prev.validatorAddr, "OmniPortal: sigs not sorted");
             }
@@ -59,7 +46,7 @@ library Validators {
     }
 
     /// @dev True if SigTuple.sig is a valid ECDSA signature over the given digest for SigTuple.addr, else false.
-    function _isValidSig(SigTuple calldata sig, bytes32 digest) internal pure returns (bool) {
+    function _isValidSig(XTypes.SigTuple calldata sig, bytes32 digest) internal pure returns (bool) {
         return ECDSA.recover(digest, sig.signature) == sig.validatorAddr;
     }
 

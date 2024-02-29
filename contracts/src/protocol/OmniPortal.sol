@@ -7,7 +7,7 @@ import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
 import { IOmniPortalAdmin } from "../interfaces/IOmniPortalAdmin.sol";
 import { XBlockMerkleProof } from "../libraries/XBlockMerkleProof.sol";
 import { XTypes } from "../libraries/XTypes.sol";
-import { Validators } from "../libraries/Validators.sol";
+import { Quorum } from "../libraries/Quorum.sol";
 
 contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable {
     /// @inheritdoc IOmniPortal
@@ -60,7 +60,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable {
         chainId = uint64(block.chainid);
     }
 
-    function initialize(address owner_, address feeOracle_, uint64 valSetId, Validators.Validator[] memory validators)
+    function initialize(address owner_, address feeOracle_, uint64 valSetId, XTypes.Validator[] memory validators)
         public
         initializer
     {
@@ -91,7 +91,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable {
 
         // check that the attestationRoot is signed by a quorum of validators in xsub.validatorsSetId
         require(
-            Validators.verifyQuorum(
+            Quorum.verify(
                 xsub.attestationRoot,
                 xsub.signatures,
                 _validatorSet[valSetId],
@@ -159,7 +159,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable {
         gasUsed = gasUsed - gasleft();
 
         // reset xmsg to zero
-        _currentXmsg = XTypes.zeroMsg();
+        delete _currentXmsg;
 
         emit XReceipt(xmsg_.sourceChainId, xmsg_.streamOffset, gasUsed, msg.sender, success);
     }
@@ -208,14 +208,14 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable {
         emit FeeOracleChanged(oldFeeOracle, feeOracle);
     }
 
-    function _addValidators(uint64 valSetId, Validators.Validator[] memory validators) private {
+    function _addValidators(uint64 valSetId, XTypes.Validator[] memory validators) private {
         require(valSetId == _latestValSetId + 1, "OmniPortal: invalid valSetId");
         require(validators.length > 0, "OmniPortal: no validators");
 
         // TODO: check for duplicates, consider requiring sorted input
 
         uint64 totalPower;
-        Validators.Validator memory val;
+        XTypes.Validator memory val;
         mapping(address => uint64) storage set = _validatorSet[valSetId];
 
         for (uint256 i = 0; i < validators.length; i++) {
