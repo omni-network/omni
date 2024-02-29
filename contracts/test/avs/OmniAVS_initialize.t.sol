@@ -25,7 +25,6 @@ contract OmniAVS_initialize_Test is Base {
         address owner;
         IOmniPortal omni;
         uint64 omniChainId;
-        address[] allowlist;
         IOmniAVS.StrategyParam[] strategyParams;
     }
 
@@ -34,7 +33,6 @@ contract OmniAVS_initialize_Test is Base {
             owner: omniAVSOwner,
             omni: IOmniPortal(address(portal)),
             omniChainId: omniChainId,
-            allowlist: new address[](0),
             strategyParams: _localStrategyParams()
         });
     }
@@ -51,12 +49,7 @@ contract OmniAVS_initialize_Test is Base {
             ITransparentUpgradeableProxy(proxy),
             impl,
             abi.encodeWithSelector(
-                OmniAVS.initialize.selector,
-                params.owner,
-                params.omni,
-                params.omniChainId,
-                params.allowlist,
-                params.strategyParams
+                OmniAVS.initialize.selector, params.owner, params.omni, params.omniChainId, params.strategyParams
             )
         );
         vm.stopPrank();

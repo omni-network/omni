@@ -51,14 +51,12 @@ contract OmniAVS is
      * @param owner_            Intiial contract owner
      * @param omni_             Omni portal contract
      * @param omniChainId_      Omni chain id
-     * @param allowlist_        Initial allowlist
      * @param strategyParams_   List of accepted strategies and their multipliers
      */
     function initialize(
         address owner_,
         IOmniPortal omni_,
         uint64 omniChainId_,
-        address[] calldata allowlist_,
         StrategyParam[] calldata strategyParams_
     ) external initializer {
         omni = omni_;
@@ -66,10 +64,6 @@ contract OmniAVS is
 
         _transferOwnership(owner_);
         _setStrategyParams(strategyParams_);
-
-        for (uint256 i = 0; i < allowlist_.length; i++) {
-            _allowlist[allowlist_[i]] = true;
-        }
     }
 
     //////////////////////////////////////////////////////////////////////////////

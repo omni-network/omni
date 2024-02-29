@@ -26,14 +26,12 @@ interface IOmniAVSAdmin {
      * @param owner             Intiial contract owner
      * @param omni              Omni portal contract
      * @param omniChainId       Omni chain id
-     * @param allowlist         Initial allowlist
      * @param strategyParams    List of accepted strategies and their multipliers
      */
     function initialize(
         address owner,
         IOmniPortal omni,
         uint64 omniChainId,
-        address[] calldata allowlist,
         IOmniAVS.StrategyParam[] calldata strategyParams
     ) external;
 

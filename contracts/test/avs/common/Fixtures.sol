@@ -62,13 +62,11 @@ contract Fixtures is EigenLayerFixtures {
         address impl =
             address(new OmniAVS(IDelegationManager(address(delegation)), IAVSDirectory(address(avsDirectory))));
 
-        address[] memory allowlist = new address[](0);
-
         ProxyAdmin(proxyAdmin).upgradeAndCall(
             ITransparentUpgradeableProxy(proxy),
             impl,
             abi.encodeWithSelector(
-                OmniAVS.initialize.selector, omniAVSOwner, portal, omniChainId, allowlist, _localStrategyParams()
+                OmniAVS.initialize.selector, omniAVSOwner, portal, omniChainId, _localStrategyParams()
             )
         );
         vm.stopPrank();
