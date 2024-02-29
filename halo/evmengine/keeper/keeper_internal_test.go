@@ -21,12 +21,12 @@ import (
 func TestKeeper_isNextProposer(t *testing.T) {
 	t.Parallel()
 	type args struct {
-		header         *cmtproto.Header
+		height         int64
 		validatorsFunc func(context.Context, int64) (*cmttypes.ValidatorSet, bool, error)
 		current        int
 		next           int
 	}
-	header1 := &cmtproto.Header{Height: 1}
+	height := int64(1)
 	tests := []struct {
 		name       string
 		args       args
@@ -37,7 +37,7 @@ func TestKeeper_isNextProposer(t *testing.T) {
 		{
 			name: "is next proposer",
 			args: args{
-				header:  header1,
+				height:  height,
 				current: 0,
 				next:    1,
 			},
@@ -48,7 +48,7 @@ func TestKeeper_isNextProposer(t *testing.T) {
 		{
 			name: "proposer false",
 			args: args{
-				header:  header1,
+				height:  height,
 				current: 0,
 				next:    2,
 			},
@@ -59,7 +59,7 @@ func TestKeeper_isNextProposer(t *testing.T) {
 		{
 			name: "validatorsFunc error",
 			args: args{
-				header:  header1,
+				height:  height,
 				current: 0,
 				next:    1,
 				validatorsFunc: func(ctx context.Context, i int64) (*cmttypes.ValidatorSet, bool, error) {
@@ -72,7 +72,7 @@ func TestKeeper_isNextProposer(t *testing.T) {
 		{
 			name: "validatorsFunc not ok",
 			args: args{
-				header:  header1,
+				height:  height,
 				current: 0,
 				next:    1,
 				validatorsFunc: func(ctx context.Context, i int64) (*cmttypes.ValidatorSet, bool, error) {
@@ -93,11 +93,13 @@ func TestKeeper_isNextProposer(t *testing.T) {
 			require.NoError(t, err)
 
 			cmtAPI := newMockCometAPI(t, tt.args.validatorsFunc)
-			tt.args.header.ProposerAddress = cmtAPI.validatorSet.Validators[tt.args.current].Address
+			header := cmtproto.Header{Height: tt.args.height}
+			header.ProposerAddress = cmtAPI.validatorSet.Validators[tt.args.current].Address
+
 			nxtAddr, err := k1util.PubKeyToAddress(cmtAPI.validatorSet.Validators[tt.args.next].PubKey)
 			require.NoError(t, err)
 
-			ctx, storeService := setupCtxStore(t, tt.args.header)
+			ctx, storeService := setupCtxStore(t, &header)
 
 			keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig)
 			keeper.SetCometAPI(cmtAPI)

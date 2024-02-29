@@ -166,11 +166,11 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		require.NoError(t, err)
 
 		// build next two blocks and get the PayloadID of the second
-		mockEngine.pushPayload(t, ctx, keeper.addrProvider.LocalAddress(), latestBlock.Hash(), ts)
-		nextBlock, blockPayload := mockEngine.nextBlock(t, latestHeight+1, uint64(ts.Unix()), latestBlock.Hash(), keeper.addrProvider.LocalAddress())
+		mockEngine.pushPayload(t, ctx, ap.LocalAddress(), latestBlock.Hash(), ts)
+		nextBlock, blockPayload := mockEngine.nextBlock(t, latestHeight+1, uint64(ts.Unix()), latestBlock.Hash(), ap.LocalAddress())
 		_, err = mockEngine.mock.NewPayloadV2(ctx, blockPayload)
 		require.NoError(t, err)
-		payloadID := mockEngine.pushPayload(t, ctx, keeper.addrProvider.LocalAddress(), nextBlock.Hash(), ts)
+		payloadID := mockEngine.pushPayload(t, ctx, ap.LocalAddress(), nextBlock.Hash(), ts)
 
 		req := &abci.RequestPrepareProposal{
 			Txs:    nil,
@@ -224,11 +224,11 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		require.NoError(t, err)
 
 		// build next two blocks and get the PayloadID of the second
-		mockEngine.pushPayload(t, ctx, keeper.addrProvider.LocalAddress(), latestBlock.Hash(), ts)
-		nextBlock, blockPayload := mockEngine.nextBlock(t, latestHeight+1, uint64(ts.Unix()), latestBlock.Hash(), keeper.addrProvider.LocalAddress())
+		mockEngine.pushPayload(t, ctx, ap.LocalAddress(), latestBlock.Hash(), ts)
+		nextBlock, blockPayload := mockEngine.nextBlock(t, latestHeight+1, uint64(ts.Unix()), latestBlock.Hash(), ap.LocalAddress())
 		_, err = mockEngine.NewPayloadV2(ctx, blockPayload)
 		require.NoError(t, err)
-		mockEngine.pushPayload(t, ctx, keeper.addrProvider.LocalAddress(), nextBlock.Hash(), ts)
+		mockEngine.pushPayload(t, ctx, ap.LocalAddress(), nextBlock.Hash(), ts)
 
 		keeper.mutablePayload.UpdatedAt = time.Now()
 
