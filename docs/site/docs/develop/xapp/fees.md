@@ -39,10 +39,10 @@ function xcall(uint64 destChainId, address to, bytes memory data, uint64 gasLimi
 }
 ```
 
-Note that `XApp.xcall(...)` returns the fee charged. This lets you charge users for fees, rather than paying fees from your contract.
+`xcall(...)` charges fees to your contract by default. To charge users for fees, calculate the fee with `feeFor(...)`, and verify `msg.value` is sufficient.
 
 ```solidity
-uint256 fee = xcall(...)
+uint256 fee = feeFor(...)
 require(msg.value >= fee, "insufficient fee")
 ```
 
