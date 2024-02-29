@@ -6,8 +6,8 @@ settings:
 
 dependencies:
   '@openzeppelin/contracts':
-    specifier: 4.9.3
-    version: 4.9.3
+    specifier: 4.9.6
+    version: 4.9.6
   '@openzeppelin/contracts-upgradeable':
     specifier: 4.9.3
     version: 4.9.3
@@ -709,8 +709,8 @@ packages:
     resolution: {integrity: sha512-jjaHAVRMrE4UuZNfDwjlLGDxTHWIOwTJS2ldnc278a0gevfXfPr8hxKEVBGFBE96kl2G3VHDZhUimw/+G3TG2A==}
     dev: false
 
-  /@openzeppelin/contracts@4.9.3:
-    resolution: {integrity: sha512-He3LieZ1pP2TNt5JbkPA4PNT9WC3gOTOlDcFGJW4Le4QKqwmiNJCRt44APfxMxvq7OugU/cqYuPcSBzOw38DAg==}
+  /@openzeppelin/contracts@4.9.6:
+    resolution: {integrity: sha512-xSmezSupL+y9VkHZJGDoCBpmnB2ogM13ccaYDWqJTfS3dbuHkgjuwDFUmaFauBCboQMGB/S5UqUl2y54X99BmA==}
     dev: false
 
   /@openzeppelin/merkle-tree@1.0.5:
