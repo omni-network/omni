@@ -28,8 +28,6 @@ contract Fixtures is EigenLayerFixtures {
     address proxyAdminOwner = multisig;
     address omniAVSOwner = multisig;
 
-    uint32 maxOperatorCount = 10;
-    uint96 minOperatorStake = 1 ether;
     uint64 omniChainId = 111;
 
     ProxyAdmin proxyAdmin;
@@ -70,14 +68,7 @@ contract Fixtures is EigenLayerFixtures {
             ITransparentUpgradeableProxy(proxy),
             impl,
             abi.encodeWithSelector(
-                OmniAVS.initialize.selector,
-                omniAVSOwner,
-                portal,
-                omniChainId,
-                minOperatorStake,
-                maxOperatorCount,
-                allowlist,
-                _localStrategyParams()
+                OmniAVS.initialize.selector, omniAVSOwner, portal, omniChainId, allowlist, _localStrategyParams()
             )
         );
         vm.stopPrank();
@@ -85,12 +76,12 @@ contract Fixtures is EigenLayerFixtures {
         return OmniAVS(proxy);
     }
 
-    function _localStrategyParams() internal view returns (IOmniAVS.StrategyParams[] memory params) {
+    function _localStrategyParams() internal view returns (IOmniAVS.StrategyParam[] memory params) {
         // add all EigenLayerDeployer.strategies
-        params = new IOmniAVS.StrategyParams[](strategies.length);
+        params = new IOmniAVS.StrategyParam[](strategies.length);
 
         for (uint256 i = 0; i < strategies.length; i++) {
-            params[i] = IOmniAVS.StrategyParams({
+            params[i] = IOmniAVS.StrategyParam({
                 strategy: IStrategy(strategies[i]),
                 multiplier: uint96(1e18) // OmniAVS.STRATEGY_WEIGHTING_DIVISOR
              });

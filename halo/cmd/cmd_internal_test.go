@@ -73,6 +73,8 @@ func TestCLIReference(t *testing.T) {
 		{root},
 		{"run"},
 		{"init"},
+		{"operator"},
+		{"operator register"},
 	}
 
 	for _, test := range tests {

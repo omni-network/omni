@@ -1,0 +1,13 @@
+operator commands to interact with OmniAVS
+
+Usage:
+  halo operator [command]
+
+Available Commands:
+  deregister  deregister validator from omni avs
+  register    register validator to omni avs
+
+Flags:
+  -h, --help   help for operator
+
+Use "halo operator [command] --help" for more information about a command.

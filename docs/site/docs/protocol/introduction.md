@@ -1,9 +1,9 @@
 ---
 sidebar_position: 1
-id: overview
+id: introduction
 ---
 
-# High-Level Overview
+# Introduction
 
 Below you'll find a high-level overview of the Omni Network, its design, and its functionality.
 
@@ -15,7 +15,7 @@ Below you'll find a high-level overview of the Omni Network, its design, and its
 </figure>
 
 - The **Omni network** is responsible for operating the Omni EVM and facilitating cross-network messages (`XMsg`). It consists of two internal chains, a consensus layer and an execution layer, similar to post-merge Ethereum.
-  - **Execution layer** - is implemented by a standard Ethereum execution client, `geth`, providing the Omni EVM.
+  - **Execution layer** - is implemented by a standard Ethereum execution client, like `geth`, `erigon`, etc, providing the Omni EVM.
   - **Consensus layer** - is implemented by the Omni Consensus client, `halo`, that uses CometBFT to provide security for cross-chain messaging and for the Omni execution layer.
 - **EigenLayer smart contracts** exist on Ethereum L1 and connect the Omni network with its re-staking participants. The Omni network is registered with EigenLayer as an “Actively Validated Service” AVS and Omni validators serve the role of “Operators” of the AVS.
 - [**Portal contracts**](./architecture/portal.md) implement the on-chain logic of the Omni protocol and serve as the main interface for creating cross-network messages. They are deployed to all supported rollup VMs as well as the Omni EVM on the Omni network. They all have the same address and calls to and from are abstracted with the [solidity interface](https://github.com/omni-network/omni/blob/22bd4460e254eee4ebf79239897ea04ba9b2db43/contracts/src/interfaces/IOmniPortal.sol).
@@ -27,17 +27,19 @@ If we were to follow a simple initiating cross-rollup user call from a rollup (i
 
 <figure>
   <img src="/img/high-level-arch.svg" alt="High-Level Arch" />
-  <figcaption>*Following a user deposit call to an xdApp*</figcaption>
+  <figcaption>*Following a user deposit call to an xapp*</figcaption>
 </figure>
 
 ### Stepwise Walkthrough
 
-1. User calls a `deposit()` function in the source xdApp contract (deployed in Arbitrum) that means to perform a call to another contract in Optimism.
-2. The source xdApp contract calls the `xcall` method on the deployed Omni Portal contract in Arbitrum[^1]
+Note: we refer to an `xapp` as a smart contract application that exists on multiple chains. In this example, we'll use Arbitrum as the "source chain" and Optimism as the "destination chain".
+
+1. User calls a function on the xapp contract on Arbitrum that intends to interact with a contract on Optimism
+2. The source xapp contract calls the `xcall` method on the Omni Portal contract on Arbitrum[^1]
 3. The Portal contract emits a `XMsg` Event containing relevant data for the destination chain contract call
-4. Validators read the emitted Event, create an `xBlock` & attest to it, and the Relayer service reads this data
-5. The Relayer service pushes the information from the `XMsg` in the attested `xBlock` to the destination chain by calling the destination Portal contract `xsubmit` method
-6. The Portal Contract in the destination chain performs the a contract call to the specified method in the destination contract as specified by the original call `xcall` in **2**.
+4. Validators read the emitted Event, create an `xBlock` & attest to it.
+5. The Relayer service reads the attestations and pushes the information from the `XMsg` in the attested `xBlock` to the destination chain by calling the destination Portal contract's `xsubmit` method
+6. The Portal Contract on the destination chain performs the a contract call to the specified method in the destination contract as specified by the original call `xcall` in **2**.
 
 To read further on this message traversal see the [`XMsg` Lifecycle](./architecture/xmsg.md) section.
 
@@ -51,8 +53,8 @@ Omni’s [Parallelized Consensus](./architecture/components.md#parallelized-cons
 
 ## Fee Model
 
-Omni fees start with a basic, Solidity-based fee payment interface and an uncomplicated pricing mechanism, with room for future enhancements. The network only supports \$ETH for fee payments presently. In the future, developers will also be able to pay with \$OMNI and potentially other tokens if they desire, but $ETH will always be supported.
+Omni fees start with a basic, Solidity-based fee payment interface and an uncomplicated pricing mechanism, with room for future enhancements. The network only supports **\$ETH** for fee payments presently. In the future, developers will also be able to pay with **\$OMNI** and potentially other tokens if they desire, but **\$ETH** will always be supported.
 
-Fees are paid in \$ETH and calculated in real-time during transactions via the payable `xcall` function on the portal contracts, ensuring simplicity for developers and compatibility with existing Ethereum tooling. This setup allows for easy off-chain fee estimations and the possibility for developers to pass the cost on to users, with a straightforward upgrade path to a more dynamic fee structure that can adapt to the network's evolving needs without necessitating changes to developer contracts.
+Fees are paid in **\$ETH** and calculated in real-time during transactions via the payable `xcall` function on the portal contracts, ensuring simplicity for developers and compatibility with existing Ethereum tooling. This setup allows for easy off-chain fee estimations and the possibility for developers to pass the cost on to users, with a straightforward upgrade path to a more dynamic fee structure that can adapt to the network's evolving needs without necessitating changes to developer contracts.
 
 For more information on how fees are handled read the [fees protocol section](./architecture/fees.md)
