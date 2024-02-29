@@ -22,6 +22,9 @@ type Manifest struct {
 
 	// MultiOmniEVMs defines whether to deploy one or multiple Omni EVMs.
 	MultiOmniEVMs bool `toml:"multi_omni_evms"`
+
+	// SlowTests defines whether to run slow tests (e.g. tests/eigen_tests.go)
+	SlowTests bool `toml:"slow_tests"`
 }
 
 // OmniEVMs returns the names Omni EVMs to deploy.

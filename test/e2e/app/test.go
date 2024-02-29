@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -72,7 +73,7 @@ func Test(ctx context.Context, def Definition, deployInfo types.DeployInfos, ver
 		"INFRASTRUCTURE_FILE", infd.Path,
 		"E2E_DEPLOY_INFO", deployInfoFile)
 
-	args := []string{"go", "test", "-timeout", "60s", "-count", "1"}
+	args := []string{"go", "test", "-timeout", "60s", "-count", "1", "-slow", fmt.Sprint(def.Manifest.SlowTests)}
 	if verbose {
 		args = append(args, "-v")
 	}

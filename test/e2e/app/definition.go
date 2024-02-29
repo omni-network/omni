@@ -55,6 +55,7 @@ func DefaultDefinitionConfig() DefinitionConfig {
 // Definition defines a e2e network. All (sub)commands of the e2e cli requires a definition operate.
 // Armed with a definition, a e2e network can be deployed, started, tested, stopped, etc.
 type Definition struct {
+	Manifest types.Manifest
 	Testnet  types.Testnet // Note that testnet is the cometBFT term.
 	Infra    types.InfraProvider
 	Netman   netman.Manager
@@ -106,6 +107,7 @@ func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
 	}
 
 	return Definition{
+		Manifest: manifest,
 		Testnet:  testnet,
 		Infra:    infp,
 		Backends: backends,
