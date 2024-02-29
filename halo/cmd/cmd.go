@@ -19,6 +19,7 @@ func New() *cobra.Command {
 		"Halo is a consensus client implementation for the Omni Protocol",
 		newRunCmd("run", app.Run),
 		newInitCmd(),
+		newOperatorCmd(),
 	)
 }
 
