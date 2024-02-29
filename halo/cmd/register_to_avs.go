@@ -64,7 +64,7 @@ func register(ctx context.Context, cfg *OperatorConfig) error {
 	privVal := privval.LoadFilePVEmptyState(cfg.CometConfig.PrivValidatorKeyFile(), cfg.CometConfig.PrivValidatorStateFile())
 
 	// connect to the rpc endpoint
-	client, err := ethclient.Dial(chain.Name, chain.RPCURL)
+	client, err := ethclient.Dial("Ethereum", chain.RPCURL)
 	if err != nil {
 		return err
 	}
