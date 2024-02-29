@@ -10,5 +10,5 @@ import { IOmniAVS } from "./IOmniAVS.sol";
  */
 interface IOmniEthRestaking {
     /// @dev Syncs operator state with OmniAVS. Only callable by XMsg from OmniAVS
-    function sync(IOmniAVS.Validator[] calldata validators) external;
+    function sync(IOmniAVS.Operator[] calldata operators) external;
 }

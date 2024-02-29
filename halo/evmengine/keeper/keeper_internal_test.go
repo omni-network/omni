@@ -94,10 +94,11 @@ func TestKeeper_isNextProposer(t *testing.T) {
 			nxtAddr, err := k1util.PubKeyToAddress(cmtAPI.validatorSet.Validators[tt.args.next].PubKey)
 			require.NoError(t, err)
 			ctx, storeService := setupCtxStore(t, tt.args.header)
-			keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, mockAddressProvider{
-				address: nxtAddr,
-			})
+			keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig)
 			keeper.cmtAPI = cmtAPI
+			keeper.addrProvider = mockAddressProvider{
+				address: nxtAddr,
+			}
 
 			got, gotHeight, err := keeper.isNextProposer(ctx)
 			if (err != nil) != tt.wantErr {

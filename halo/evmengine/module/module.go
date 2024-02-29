@@ -106,7 +106,6 @@ type ModuleInputs struct {
 	Config       *Module
 	TXConfig     client.TxConfig
 	EngineCl     ethclient.EngineClient
-	AddrProvider types.AddressProvider
 }
 
 //nolint:revive // Cosmos-style
@@ -123,7 +122,6 @@ func ProvideModule(in ModuleInputs) ModuleOutputs {
 		in.StoreService,
 		in.EngineCl,
 		in.TXConfig,
-		in.AddrProvider,
 	)
 	m := NewAppModule(
 		in.Cdc,

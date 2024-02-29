@@ -4,7 +4,7 @@ pragma solidity ^0.8.12;
 import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
 /**
- * @title OmniAVS
+ * @title IOmniAVS
  * @notice Interface for the Omni AVS contract. It is responsible for syncing Omni AVS operator
  *         stake and delegations with the Omni chain.
  */
@@ -21,41 +21,45 @@ interface IOmniAVS {
      */
     event OperatorRemoved(address indexed operator);
 
-    struct Validator {
-        // ethereum address of the operator
+    /**
+     * @notice Struct representing an OmniAVS operator
+     * @custom:field addr       The operator's ethereum address
+     * @custom:field delegated  The total amount delegated, not including operator stake
+     * @custom:field staked     The total amount staked by the operator, not including delegations
+     */
+    struct Operator {
         address addr;
-        // total amount delegated, not including operator stake
         uint96 delegated;
-        // total amount staked by the operator, not including delegations
         uint96 staked;
     }
 
-    struct StrategyParams {
-        // strategy contract
+    /**
+     * @notice Represents a single supported strategy.
+     * @custom:field strategy   The strategy contract
+     * @custom:field multiplier The stake multiplier, to weight strategy against others
+     */
+    struct StrategyParam {
         IStrategy strategy;
-        // stake multiplier, to weight strategy against others
         uint96 multiplier;
     }
 
     /**
-     * @notice Calculate the omni xcall fee for a syncWithOmni call.
-     * @return The fee in wei
+     * @notice Returns the fee required for syncWithOmni(), for the current operator set.
      */
     function feeForSync() external view returns (uint256);
 
     /**
-     * @notice Sync OmniAVS validator stake & delegations with Omni chain.
+     * @notice Sync OmniAVS operator stake & delegations with Omni chain.
      */
     function syncWithOmni() external payable;
 
     /**
-     * @notice Returns the currrent list of validators registered as OmniAVS
-     *         operators, with their stake / delegations.
+     * @notice Returns the currrent list of operator registered as OmniAVS.
      */
-    function getValidators() external view returns (Validator[] memory);
+    function operators() external view returns (Operator[] memory);
 
     /**
      * @notice Returns the current strategy parameters.
      */
-    function strategyParams() external view returns (StrategyParams[] memory);
+    function strategyParams() external view returns (StrategyParam[] memory);
 }

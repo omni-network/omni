@@ -11,7 +11,9 @@ import (
 
 	"github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/k1util"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/cometbft/cometbft/crypto"
@@ -22,16 +24,25 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const prodBackoff = time.Second
+
 var _ types.Voter = (*Voter)(nil)
 
 // Voter implements the types.Voter interface.
 // It is responsible for creating and persisting votes.
 // The goal is to ensure "all blocks are votes for".
+//
+// Note Start must be called only once on startup.
+// GetAvailable, SetProposed, and SetCommitted are thread safe, but must be called after Start.
 type Voter struct {
-	path    string
-	privKey crypto.PrivKey
-	chains  map[uint64]string
-	address common.Address
+	path          string
+	privKey       crypto.PrivKey
+	chains        map[uint64]string
+	address       common.Address
+	provider      xchain.Provider
+	deps          types.VoterDeps
+	backoffPeriod time.Duration
+	wg            sync.WaitGroup
 
 	mu        sync.Mutex
 	available []*types.Vote
@@ -46,7 +57,7 @@ func GenEmptyStateFile(path string) error {
 }
 
 // LoadVoter returns a new attester with state loaded from disk.
-func LoadVoter(ctx context.Context, privKey crypto.PrivKey, path string, provider xchain.Provider,
+func LoadVoter(privKey crypto.PrivKey, path string, provider xchain.Provider, deps types.VoterDeps,
 	chains map[uint64]string,
 ) (*Voter, error) {
 	if len(privKey.PubKey().Bytes()) != 33 {
@@ -63,38 +74,127 @@ func LoadVoter(ctx context.Context, privKey crypto.PrivKey, path string, provide
 		return nil, err
 	}
 
-	a := Voter{
-		privKey: privKey,
-		address: addr,
-		path:    path,
-		chains:  chains,
+	return &Voter{
+		privKey:       privKey,
+		address:       addr,
+		path:          path,
+		chains:        chains,
+		provider:      provider,
+		deps:          deps,
+		backoffPeriod: prodBackoff,
 
 		available: s.Available,
 		proposed:  s.Proposed,
 		committed: s.Committed,
-	}
-
-	// This shouldn't be required, but -race otherwise complains...
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
-	// Subscribe to latest block provider
-	for chainID := range chains {
-		var fromHeight uint64
-		if latest, ok := a.latestByChainUnsafe(chainID); ok {
-			fromHeight = latest.BlockHeader.Height + 1
-		}
-		err := provider.Subscribe(ctx, chainID, fromHeight, a.Attest)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return &a, nil
+	}, nil
 }
 
-// Attest creates an attestation for the given block and adds it to the internal state.
-func (a *Voter) Attest(_ context.Context, block xchain.Block) error {
+// Start starts runners that attest to each source chain. It does not block, it returns immediately.
+func (a *Voter) Start(ctx context.Context) {
+	for chainID := range a.chains {
+		go a.runForever(ctx, chainID)
+	}
+}
+
+// WaitDone waits for all runners to exit. Note the original Start context must be canceled to exit.
+func (a *Voter) WaitDone() {
+	a.wg.Wait()
+}
+
+// runForever blocks, repeatedly calling runOnce (with backoff) for the provided chain until the context is canceled.
+func (a *Voter) runForever(ctx context.Context, chainID uint64) {
+	a.wg.Add(1)
+	defer a.wg.Done()
+
+	ctx = log.WithCtx(ctx, "chain", a.chains[chainID])
+
+	backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(a.backoffPeriod))
+	for ctx.Err() == nil {
+		if !a.deps.IsValidator(ctx, a.address) {
+			backoff()
+			continue
+		}
+
+		err := a.runOnce(ctx, chainID)
+		if ctx.Err() != nil {
+			return // Don't log or sleep on context cancel.
+		}
+
+		log.Warn(ctx, "Vote runner failed (will retry)", err)
+		backoff()
+	}
+}
+
+// runOnce blocks, streaming xblocks from the provided chain until an error is encountered.
+// It always returns a non-nil error.
+func (a *Voter) runOnce(ctx context.Context, chainID uint64) error {
+	// Determine what height to stream from.
+	var fromHeight uint64
+
+	// Get latest state from disk.
+	if latest, ok := a.latestByChain(chainID); ok {
+		fromHeight = latest.BlockHeader.Height + 1
+	}
+
+	// Get latest approved attestation from the chain.
+	if latest, ok, err := a.deps.LatestAttestationHeight(ctx, chainID); err != nil {
+		return errors.Wrap(err, "latest attestation")
+	} else if ok && fromHeight < latest+1 {
+		// Allows skipping ahead of we were behind for some reason.
+		fromHeight = latest + 1
+	}
+
+	// Channel shenanigans to wait for async subscription.
+	errChan := make(chan error)
+	ctx, cancel := context.WithCancel(ctx)
+	handleErr := func(err error) error {
+		select {
+		case errChan <- err:
+		case <-ctx.Done(): // Just in case of race.
+		}
+		cancel()
+
+		return errors.Wrap(err, "voter runner")
+	}
+
+	// Start async subscription.
+	first := true // Allow skipping on first attestation.
+	err := a.provider.Subscribe(ctx, chainID, fromHeight,
+		func(ctx context.Context, block xchain.Block) error {
+			if !a.deps.IsValidator(ctx, a.address) {
+				return handleErr(errors.New("not a validator anymore"))
+			}
+
+			cmp, err := a.deps.WindowCompare(ctx, block.SourceChainID, block.BlockHeight)
+			if err != nil {
+				return handleErr(errors.Wrap(err, "window compare"))
+			} else if cmp < 0 {
+				return handleErr(errors.New("behind vote window (too slow)"))
+			} // Being ahead is not a problem, since we buffer on disk.
+
+			if err := a.Vote(block, first); err != nil {
+				return handleErr(errors.Wrap(err, "attest"))
+			}
+			first = false
+
+			return nil
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	// Wait for error or context cancel.
+	select {
+	case err := <-errChan:
+		return err
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+// Vote creates a vote for the given block and adds it to the internal state.
+func (a *Voter) Vote(block xchain.Block, allowSkip bool) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
@@ -108,7 +208,7 @@ func (a *Voter) Attest(_ context.Context, block xchain.Block) error {
 	if ok && latest.BlockHeader.Height >= vote.BlockHeader.Height {
 		return errors.New("attestation height already exists",
 			"latest", latest.BlockHeader.Height, "new", vote.BlockHeader.Height)
-	} else if ok && latest.BlockHeader.Height+1 != vote.BlockHeader.Height {
+	} else if ok && !allowSkip && latest.BlockHeader.Height+1 != vote.BlockHeader.Height {
 		return errors.New("attestation is not sequential",
 			"existing", latest.BlockHeader.Height, "new", vote.BlockHeader.Height)
 	}
@@ -122,7 +222,29 @@ func (a *Voter) Attest(_ context.Context, block xchain.Block) error {
 	return a.saveUnsafe()
 }
 
-// GetAvailable returns all the available attestations.
+// TrimBehind trims all votes that are behind the vote window thresholds (map[chainID]height) and returns the number that was deleted.
+func (a *Voter) TrimBehind(thresholds map[uint64]uint64) int {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	var stillAvailable []*types.Vote
+	for _, vote := range a.available {
+		threshold, ok := thresholds[vote.BlockHeader.ChainId]
+		if ok && vote.BlockHeader.Height < threshold {
+			trimTotal.WithLabelValues(a.chains[vote.BlockHeader.ChainId]).Inc()
+			continue // Skip/Trim
+		}
+		stillAvailable = append(stillAvailable, vote) // Retain all others
+	}
+
+	trimmed := len(a.available) - len(stillAvailable)
+
+	a.available = stillAvailable
+
+	return trimmed
+}
+
+// GetAvailable returns a copy of all the available votes.
 func (a *Voter) GetAvailable() []*types.Vote {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -130,7 +252,7 @@ func (a *Voter) GetAvailable() []*types.Vote {
 	return slices.Clone(a.available)
 }
 
-// SetProposed sets the attestations as proposed.
+// SetProposed sets the votes as proposed.
 func (a *Voter) SetProposed(headers []*types.BlockHeader) error {
 	if len(headers) == 0 {
 		return nil
@@ -157,7 +279,7 @@ func (a *Voter) SetProposed(headers []*types.BlockHeader) error {
 	return a.saveUnsafe()
 }
 
-// SetCommitted sets the attestations as committed. Persisting the result to disk.
+// SetCommitted sets the votes as committed. Persisting the result to disk.
 func (a *Voter) SetCommitted(headers []*types.BlockHeader) error {
 	if len(headers) == 0 {
 		return nil
@@ -199,7 +321,7 @@ func (a *Voter) LocalAddress() common.Address {
 	return a.address
 }
 
-// availableAndProposed returns all the available and proposed attestations.
+// availableAndProposed returns all the available and proposed votes.
 // It is unsafe since it assumes the lock is held.
 func (a *Voter) availableAndProposedUnsafe() []*types.Vote {
 	var resp []*types.Vote
@@ -207,6 +329,13 @@ func (a *Voter) availableAndProposedUnsafe() []*types.Vote {
 	resp = append(resp, a.proposed...)
 
 	return resp
+}
+
+func (a *Voter) latestByChain(chainID uint64) (*types.Vote, bool) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	return a.latestByChainUnsafe(chainID)
 }
 
 // LatestByChainUnsafe returns the latest attestation for the given chain.

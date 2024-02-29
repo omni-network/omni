@@ -23,11 +23,12 @@ const (
 	configDir       = "config"
 	snapshotDataDir = "snapshots"
 	networkFile     = "network.json"
-	attestStateFile = "xattestations_state.json"
+	voterStateFile  = "voter_state.json"
 
-	DefaultHomeDir          = "./halo" // Defaults to "halo" in current directory
-	defaultSnapshotInterval = 1000     // Roughly once an hour (given 3s blocks)
-	defaultMinRetainBlocks  = 0        // Retain all blocks
+	DefaultHomeDir            = "./halo" // Defaults to "halo" in current directory
+	defaultSnapshotInterval   = 1000     // Roughly once an hour (given 3s blocks)
+	defaultSnapshotKeepRecent = 2
+	defaultMinRetainBlocks    = 0 // Retain all blocks
 
 	defaultPruningOption      = pruningtypes.PruningOptionNothing // Prune nothing
 	defaultDBBackend          = db.GoLevelDBBackend
@@ -41,6 +42,7 @@ func DefaultConfig() Config {
 		HomeDir:            DefaultHomeDir,
 		EngineJWTFile:      "", // No default
 		SnapshotInterval:   defaultSnapshotInterval,
+		SnapshotKeepRecent: defaultSnapshotKeepRecent,
 		BackendType:        string(defaultDBBackend),
 		MinRetainBlocks:    defaultMinRetainBlocks,
 		PruningOption:      defaultPruningOption,
@@ -54,6 +56,7 @@ type Config struct {
 	HomeDir            string
 	EngineJWTFile      string
 	SnapshotInterval   uint64 // See cosmossdk.io/store/snapshots/types/options.go
+	SnapshotKeepRecent uint64 // See cosmossdk.io/store/snapshots/types/options.go
 	BackendType        string // See cosmos-db/db.go
 	MinRetainBlocks    uint64
 	PruningOption      string // See cosmossdk.io/store/pruning/types/options.go
@@ -74,8 +77,8 @@ func (c Config) DataDir() string {
 	return filepath.Join(c.HomeDir, dataDir)
 }
 
-func (c Config) AttestStateFile() string {
-	return filepath.Join(c.DataDir(), attestStateFile)
+func (c Config) VoterStateFile() string {
+	return filepath.Join(c.DataDir(), voterStateFile)
 }
 
 func (c Config) AppStateDir() string {

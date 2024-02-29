@@ -4,15 +4,16 @@ Usage:
   halo run [flags]
 
 Flags:
-      --app-db-backend string      The type of database for application and snapshots databases (default "goleveldb")
-      --engine-jwt-file string     The path to the Engine API JWT file
-      --evm-build-delay duration   Minimum delay between triggering and fetching a EVM payload build (default 600ms)
-      --evm-build-optimistic       Enables optimistic building of EVM payloads on previous block finalize (default true)
-  -h, --help                       help for run
-      --home string                The application home directory containing config and data (default "./halo")
-      --log-color string           Log color (only applicable to console format); auto, force, disable (default "auto")
-      --log-format string          Log format; console, json (default "console")
-      --log-level string           Log level; debug, info, warn, error (default "info")
-      --min-retain-blocks uint     Minimum block height offset during ABCI commit to prune CometBFT blocks
-      --pruning string             Pruning strategy (default|nothing|everything) (default "nothing")
-      --snapshot-interval uint     The interval (in blocks) at which to create snapshots (default 1000)
+      --app-db-backend string       The type of database for application and snapshots databases (default "goleveldb")
+      --engine-jwt-file string      The path to the Engine API JWT file
+      --evm-build-delay duration    Minimum delay between triggering and fetching a EVM payload build (default 600ms)
+      --evm-build-optimistic        Enables optimistic building of EVM payloads on previous block finalize (default true)
+  -h, --help                        help for run
+      --home string                 The application home directory containing config and data (default "./halo")
+      --log-color string            Log color (only applicable to console format); auto, force, disable (default "auto")
+      --log-format string           Log format; console, json (default "console")
+      --log-level string            Log level; debug, info, warn, error (default "info")
+      --min-retain-blocks uint      Minimum block height offset during ABCI commit to prune CometBFT blocks
+      --pruning string              Pruning strategy (default|nothing|everything) (default "nothing")
+      --snapshot-interval uint      State sync snapshot interval (default 1000)
+      --snapshot-keep-recent uint   State sync snapshot to keep (default 2)

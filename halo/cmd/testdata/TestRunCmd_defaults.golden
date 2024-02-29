@@ -2,6 +2,7 @@
  "HomeDir": "./halo",
  "EngineJWTFile": "",
  "SnapshotInterval": 1000,
+ "SnapshotKeepRecent": 2,
  "BackendType": "goleveldb",
  "MinRetainBlocks": 0,
  "PruningOption": "nothing",

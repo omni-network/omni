@@ -53,13 +53,19 @@ func TestSmoke(t *testing.T) {
 		return s.SyncInfo.LatestBlockHeight >= int64(target)
 	}, time.Second*time.Duration(target*2), time.Millisecond*100)
 
-	srcChain := uint64(999)
-	att, err := cprov.LatestAttestation(ctx, srcChain)
+	_, ok, err := cprov.LatestAttestation(ctx, 0)
 	require.NoError(t, err)
-	require.Equal(t, srcChain, att.SourceChainID)
+	require.False(t, ok)
 
+	srcChain := uint64(999)
 	// Ensure all blocks are attested and approved.
 	cprov.Subscribe(ctx, srcChain, 0, "test", func(ctx context.Context, approved xchain.Attestation) error {
+		// Sanity check we can fetch latest directly as well.
+		att, ok, err := cprov.LatestAttestation(ctx, srcChain)
+		require.NoError(t, err)
+		require.True(t, ok)
+		require.Equal(t, srcChain, att.SourceChainID)
+
 		require.Equal(t, srcChain, approved.SourceChainID)
 		t.Logf("cprovider streamed approved block: %d", approved.BlockHeight)
 		if approved.BlockHeight >= target {

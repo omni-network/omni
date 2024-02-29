@@ -63,7 +63,33 @@ const config: Config = {
         alt: "Omni Logo",
         src: "img/logo.svg",
       },
-      items: [],
+      items: [
+        {
+          position: "left",
+          label: "Learn",
+          to: "/learn/introduction",
+        },
+        {
+          position: "left",
+          label: "Protocol",
+          to: "/protocol/introduction",
+        },
+        {
+          position: "left",
+          label: "Develop",
+          to: "/develop/introduction",
+        },
+        {
+          position: "left",
+          label: "Operate",
+          to: "/operate/introduction",
+        },
+        {
+          href: "https://github.com/omni-network/omni",
+          label: "GitHub",
+          position: "right",
+        },
+      ],
     },
     footer: {
       // style: "dark",

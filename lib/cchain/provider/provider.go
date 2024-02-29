@@ -17,23 +17,26 @@ type FetchFunc func(ctx context.Context, chainID uint64, fromHeight uint64,
 ) ([]xchain.Attestation, error)
 
 // LatestFunc abstracts fetching the latest attestation from the consensus chain.
-type LatestFunc func(ctx context.Context, chainID uint64) (xchain.Attestation, error)
+type LatestFunc func(ctx context.Context, chainID uint64) (xchain.Attestation, bool, error)
+type WindowFunc func(ctx context.Context, chainID uint64, height uint64) (int, error)
 
 // Provider implements cchain.Provider.
 type Provider struct {
 	fetch       FetchFunc
 	latest      LatestFunc
+	window      WindowFunc
 	backoffFunc func(context.Context) (func(), func())
 	chainNames  map[uint64]string
 }
 
 // NewProviderForT creates a new provider for testing.
-func NewProviderForT(_ *testing.T, fetch FetchFunc, latest LatestFunc,
+func NewProviderForT(_ *testing.T, fetch FetchFunc, latest LatestFunc, window WindowFunc,
 	backoffFunc func(context.Context) (func(), func()),
 ) Provider {
 	return Provider{
 		latest:      latest,
 		fetch:       fetch,
+		window:      window,
 		backoffFunc: backoffFunc,
 	}
 }
@@ -44,8 +47,12 @@ func (p Provider) AttestationsFrom(ctx context.Context, sourceChainID uint64, so
 }
 
 func (p Provider) LatestAttestation(ctx context.Context, sourceChainID uint64,
-) (xchain.Attestation, error) {
+) (xchain.Attestation, bool, error) {
 	return p.latest(ctx, sourceChainID)
+}
+
+func (p Provider) WindowCompare(ctx context.Context, sourceChainID uint64, height uint64) (int, error) {
+	return p.window(ctx, sourceChainID, height)
 }
 
 // Subscribe implements cchain.Provider.
@@ -66,6 +73,7 @@ func (p Provider) Subscribe(in context.Context, srcChainID uint64, height uint64
 				return // Don't backoff or log on ctx cancel, just return.
 			} else if err != nil {
 				log.Warn(ctx, "Failed fetching attestation; will retry", err, "height", height)
+				fetchErrTotal.WithLabelValues(workerName, srcChain).Inc()
 				backoff()
 
 				continue

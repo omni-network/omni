@@ -6,4 +6,4 @@
 /config/priv_validator_key.json
 /data/priv_validator_state.json
 /data/snapshots
-/data/xattestations_state.json
+/data/voter_state.json

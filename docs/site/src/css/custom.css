@@ -20,7 +20,7 @@
   --ifm-color-primary-light: #3e88ff;
   --ifm-color-primary-lighter: #6ca5ff;
   --ifm-color-primary-lightest: #93bdff;
-  --ifm-color-secondary: #ffffff;
+  --ifm-color-secondary: #f1f4f9;
   --ifm-color-gray-200: #93bdff;
   --ifm-code-font-size: 85%;
   --ifm-heading-color: #003b99;
@@ -52,7 +52,7 @@
   --docsearch-muted-color: var(--ifm-color-secondary-darkest);
   --docsearch-container-background: rgba(94, 100, 112, 0.7);
   /* Modal */
-  --docsearch-modal-background: var(--navbar-color);
+  --docsearch-modal-background: var(--ifm-navbar-background-color);
   /* Search box */
   --docsearch-searchbox-background: var(--ifm-color-secondary);
   --docsearch-searchbox-focus-background: var(--ifm-color-white);
@@ -69,7 +69,7 @@
   --docsearch-muted-color: var(--ifm-color-secondary-darkest);
   --docsearch-container-background: rgba(47, 55, 69, 0.7);
   /* Modal */
-  --docsearch-modal-background: var(--navbar-color);
+  --docsearch-modal-background: var(--ifm-navbar-background-color);
   /* Search box */
   --docsearch-searchbox-background: var(--ifm-color-secondary);
   --docsearch-searchbox-focus-background: var(--ifm-color-black);
@@ -82,21 +82,17 @@
   --docsearch-key-gradient: linear-gradient(-26.5deg, var(--ifm-color-emphasis-200) 0%, var(--ifm-color-emphasis-100) 100%);
 }
 
-body {
-  font-family: "Manrope", sans-serif;
-}
-
 article nav[aria-label='Breadcrumbs'] {
   display: none;
 }
 
 footer.footer {
-  border-top: 0.25px solid transparent; /* Changed to transparent */
+  border-top: 0.25px solid transparent;
   border-image: linear-gradient(to right, var(--ifm-color-emphasis-400), transparent) 1;
 }
 
 nav.navbar {
-  border-bottom: 0.25px solid transparent; /* Changed to transparent */
+  border-bottom: 0.25px solid transparent;
   border-image: linear-gradient(to right, var(--ifm-color-emphasis-400), transparent) 1;
 }
 
@@ -119,7 +115,6 @@ h1:after {
   margin-top: 14px;
 }
 
-/* Code blocks: Use Geist Mono in bold */
 code {
   font-weight: 550;
   font-family: 'Geist Mono', monospace;
@@ -139,7 +134,6 @@ code {
   background-color: #fbfbfb;
 }
 
-/* svgs: Use Manrope */
 svg text {
   font-family: "Manrope", sans-serif;
 }
@@ -147,9 +141,9 @@ svg text {
 .sidebar-separator {
   margin-top: 1em;
   margin-bottom: 0.5em;
-  height: 0.5px; /* This sets the thickness of the line */
+  height: 0.5px;
   background: linear-gradient(to right, var(--ifm-color-emphasis-400), rgba(255, 255, 255, 0));
-  border: none; /* Remove the solid border */
+  border: none;
 }
 
 .sidebar-title > div a {

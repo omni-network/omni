@@ -2,6 +2,7 @@
 pragma solidity =0.8.12;
 
 import { OwnableUpgradeable } from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import { PausableUpgradeable } from "@openzeppelin-upgrades/contracts/security/PausableUpgradeable.sol";
 
 import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
@@ -9,15 +10,29 @@ import { ISignatureUtils } from "eigenlayer-contracts/src/contracts/interfaces/I
 import { IServiceManager } from "eigenlayer-middleware/src/interfaces/IServiceManager.sol";
 
 import { OmniPredeploys } from "../libraries/OmniPredeploys.sol";
-import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
+import { IDelegationManager } from "../interfaces/IDelegationManager.sol";
 import { IOmniEthRestaking } from "../interfaces/IOmniEthRestaking.sol";
+import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
 import { IOmniAVS } from "../interfaces/IOmniAVS.sol";
 import { IOmniAVSAdmin } from "../interfaces/IOmniAVSAdmin.sol";
-import { IDelegationManager } from "../interfaces/IDelegationManager.sol";
 
-contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable {
+import { OmniAVSStorage } from "./OmniAVSStorage.sol";
+
+/**
+ * @title OmniAVS
+ * @notice Omni's AVS contract. It is responsible for faciiltating registration / deregistration of
+ *         EigenLayer opators, and for syncing operator delegations with the Omni chain.
+ */
+contract OmniAVS is
+    IOmniAVS,
+    IOmniAVSAdmin,
+    IServiceManager,
+    OwnableUpgradeable,
+    PausableUpgradeable,
+    OmniAVSStorage
+{
     /// @notice Constant used as a divisor in calculating weights
-    uint256 public constant WEIGHTING_DIVISOR = 1e18;
+    uint256 internal constant STRATEGY_WEIGHTING_DIVISOR = 1e18;
 
     /// @notice EigenLayer core DelegationManager
     IDelegationManager internal immutable _delegationManager;
@@ -25,75 +40,56 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
     /// @notice EigenLayer core AVSDirectory
     IAVSDirectory internal immutable _avsDirectory;
 
-    /// @notice Maximum number of operators that can be registered
-    uint32 public maxOperatorCount;
-
-    /// @notice Omni chain id, used to make xcalls to the Omni chain
-    uint64 public omniChainId;
-
-    /// @notice Minimum stake required for an operator to register, not including delegations
-    uint96 public minimumOperatorStake;
-
-    /// @notice OmniPortal.xcall gas limit per each validator in syncWithOmni
-    uint64 public xcallGasLimitPerValidator = 10_000;
-
-    /// @notice OmniPortal.xcall base gas limit in syncWithOmni
-    uint64 public xcallBaseGasLimit = 75_000;
-
-    /// @notice Omni portal contract, used to make xcalls to the Omni chain
-    IOmniPortal public omni;
-
-    /// @dev Strategy parameters for restaking
-    IOmniAVS.StrategyParams[] internal _strategyParams;
-
-    /// @dev List of currently register operators, used to sync EigenCore
-    address[] internal _operators;
-
-    /// @dev Set of operators that are allowed to register
-    mapping(address => bool) internal _allowlist;
-
     constructor(IDelegationManager delegationManager_, IAVSDirectory avsDirectory_) {
         _delegationManager = delegationManager_;
         _avsDirectory = avsDirectory_;
         _disableInitializers();
     }
 
-    /// @inheritdoc IOmniAVSAdmin
+    /**
+     * @notice Initialize the Omni AVS admin contract.
+     * @param owner_            Intiial contract owner
+     * @param omni_             Omni portal contract
+     * @param omniChainId_      Omni chain id
+     * @param allowlist_        Initial allowlist
+     * @param strategyParams_   List of accepted strategies and their multipliers
+     */
     function initialize(
         address owner_,
         IOmniPortal omni_,
         uint64 omniChainId_,
-        uint96 minimumOperatorStake_,
-        uint32 maxOperatorCount_,
         address[] calldata allowlist_,
-        StrategyParams[] calldata strategyParams_
+        StrategyParam[] calldata strategyParams_
     ) external initializer {
         omni = omni_;
         omniChainId = omniChainId_;
-        minimumOperatorStake = minimumOperatorStake_;
-        maxOperatorCount = maxOperatorCount_;
-        _setStrategyParams(strategyParams_);
+
         _transferOwnership(owner_);
+        _setStrategyParams(strategyParams_);
 
         for (uint256 i = 0; i < allowlist_.length; i++) {
             _allowlist[allowlist_[i]] = true;
         }
     }
 
-    /**
-     * Operator registration
-     */
+    //////////////////////////////////////////////////////////////////////////////
+    //                          Operator Registration                           //
+    //////////////////////////////////////////////////////////////////////////////
 
-    /// @inheritdoc IServiceManager
+    /**
+     * @notice Forwards a call to EigenLayer's DelegationManager contract to confirm operator
+     *         registration with the AVS
+     * @dev Adds operator address to internally tracked list of operators
+     * @param operator          The address of the operator to register.
+     * @param operatorSignature The signature, salt, and expiry of the operator's signature.
+     */
     function registerOperatorToAVS(
         address operator,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
-    ) external {
+    ) external whenNotPaused {
         require(msg.sender == operator, "OmniAVS: only operator");
         require(_allowlist[operator], "OmniAVS: not allowed");
         require(!_isOperator(operator), "OmniAVS: already an operator"); // we could let _avsDirectory.regsiterOperatorToAVS handle this, they do check
-        require(_operators.length < maxOperatorCount, "OmniAVS: max operators reached");
-        require(_getSelfDelegations(operator) >= minimumOperatorStake, "OmniAVS: minimum stake not met"); // TODO: should this be _getTotalDelegations?
 
         _avsDirectory.registerOperatorToAVS(operator, operatorSignature);
         _addOperator(operator);
@@ -101,8 +97,12 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
         emit OperatorAdded(operator);
     }
 
-    /// @inheritdoc IServiceManager
-    function deregisterOperatorFromAVS(address operator) external {
+    /**
+     * @notice Forwards a call to EigenLayer's DelegationManager contract to confirm operator deregistration from the AVS
+     * @dev Removes operator address from internally tracked list of operators
+     * @param operator The address of the operator to deregister.
+     */
+    function deregisterOperatorFromAVS(address operator) external whenNotPaused {
         require(msg.sender == operator || msg.sender == owner(), "OmniAVS: only operator or owner");
         require(_isOperator(operator), "OmniAVS: not an operator");
 
@@ -112,75 +112,77 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
         emit OperatorRemoved(operator);
     }
 
-    /// @dev Adds an operator to the list of operators, does not check if operator already exists
-    function _addOperator(address operator) private {
-        _operators.push(operator);
-    }
-
-    /// @dev Removes an operator from the list of operators
-    function _removeOperator(address operator) private {
-        for (uint256 i = 0; i < _operators.length; i++) {
-            if (_operators[i] == operator) {
-                _operators[i] = _operators[_operators.length - 1];
-                _operators.pop();
-                break;
-            }
-        }
-    }
-
-    /// @dev Returns true if the operator is in the list of operators
-    function _isOperator(address operator) private view returns (bool) {
-        for (uint256 i = 0; i < _operators.length; i++) {
-            if (_operators[i] == operator) {
-                return true;
-            }
-        }
-        return false;
+    /**
+     * @notice Returns true if the operator is in the allowlist.
+     * @param operator The operator to check
+     */
+    function isInAllowlist(address operator) external view returns (bool) {
+        return _allowlist[operator];
     }
 
     /**
-     * Omni sync
+     * @inheritdoc IServiceManager
+     * @dev Implemented to match IServiceManager interface - required for compatibility with
+     *      eigenlayer frontend.
      */
-
-    /// @inheritdoc IOmniAVS
-    function feeForSync() external view returns (uint256) {
-        Validator[] memory vals = _getValidators();
-        return omni.feeFor(
-            omniChainId, abi.encodeWithSelector(IOmniEthRestaking.sync.selector, vals), _xcallGasLimitFor(vals.length)
-        );
+    function avsDirectory() external view returns (address) {
+        return address(_avsDirectory);
     }
 
-    /// @inheritdoc IOmniAVS
-    function syncWithOmni() external payable {
-        Validator[] memory vals = _getValidators();
+    //////////////////////////////////////////////////////////////////////////////
+    //                              Omni Sync                                   //
+    //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * @notice Sync OmniAVS operator stake & delegations with Omni chain.
+     */
+    function syncWithOmni() external payable whenNotPaused {
+        Operator[] memory ops = _getOperators();
         omni.xcall{ value: msg.value }(
             omniChainId,
             OmniPredeploys.OMNI_ETH_RESTAKING,
-            abi.encodeWithSelector(IOmniEthRestaking.sync.selector, vals),
-            _xcallGasLimitFor(vals.length)
+            abi.encodeWithSelector(IOmniEthRestaking.sync.selector, ops),
+            _xcallGasLimitFor(ops.length)
         );
     }
 
-    /// @dev Returns the gas limit for OmniEthRestaking.sync xcall for some number of validators
-    function _xcallGasLimitFor(uint256 numValidators) internal view returns (uint64) {
-        return uint64(numValidators * xcallGasLimitPerValidator + xcallBaseGasLimit);
+    /**
+     * @notice Returns the fee required for syncWithOmni(), for the current operator set.
+     */
+    function feeForSync() external view returns (uint256) {
+        Operator[] memory ops = _getOperators();
+        return omni.feeFor(
+            omniChainId, abi.encodeWithSelector(IOmniEthRestaking.sync.selector, ops), _xcallGasLimitFor(ops.length)
+        );
+    }
+
+    //////////////////////////////////////////////////////////////////////////////
+    //                              AVS Views                                   //
+    //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * @notice Returns the currrent list of operator registered as OmniAVS.
+     *         Operator.addr        = The operator's ethereum address
+     *         Operator.staked      = The total amount staked by the operator, not including delegations
+     *         Operator.delegated   = The total amount delegated, not including operator stake
+     */
+    function operators() external view returns (Operator[] memory) {
+        return _getOperators();
     }
 
     /**
-     * View functions
+     * @notice Returns the current strategy parameters. Strategy parameters determine which
+     *         eigenlayer strateies the AVS considers when determining operator stake.
      */
-
-    /// @inheritdoc IOmniAVS
-    function strategyParams() external view returns (StrategyParams[] memory) {
+    function strategyParams() external view returns (StrategyParam[] memory) {
         return _strategyParams;
     }
 
-    /// @inheritdoc IOmniAVS
-    function getValidators() external view returns (Validator[] memory) {
-        return _getValidators();
-    }
-
-    /// @inheritdoc IServiceManager
+    /**
+     * @inheritdoc IServiceManager
+     * @dev Implemented to match IServiceManager interface - required for compatibility with
+     *      eigenlayer frontend.
+     */
     function getRestakeableStrategies() external view returns (address[] memory) {
         address[] memory strategies = new address[](_strategyParams.length);
         for (uint256 j = 0; j < _strategyParams.length; j++) {
@@ -189,7 +191,11 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
         return strategies;
     }
 
-    /// @inheritdoc IServiceManager
+    /**
+     * @inheritdoc IServiceManager
+     * @dev Implemented to match IServiceManager interface - required for compatibility with
+     *      eigenlayer frontend.
+     */
     function getOperatorRestakedStrategies(address operator) external view returns (address[] memory) {
         address[] memory strategies = new address[](_strategyParams.length);
         for (uint256 j = 0; j < _strategyParams.length; j++) {
@@ -201,21 +207,162 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
         return strategies;
     }
 
-    /// @inheritdoc IServiceManager
-    function avsDirectory() external view returns (address) {
-        return address(_avsDirectory);
+    //////////////////////////////////////////////////////////////////////////////
+    //                              Admin functions                             //
+    //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * @inheritdoc IServiceManager
+     * @dev Sets AVS metadata URI with the AVSDirectory. Implemented to match IServiceManager interface
+     */
+    function setMetadataURI(string memory metadataURI) external onlyOwner {
+        _avsDirectory.updateAVSMetadataURI(metadataURI);
     }
 
-    /// @inheritdoc IOmniAVSAdmin
-    function isInAllowlist(address operator) external view returns (bool) {
-        return _allowlist[operator];
+    /**
+     * @notice Set the Omni portal contract.
+     * @param portal The Omni portal contract
+     */
+    function setOmniPortal(IOmniPortal portal) external onlyOwner {
+        omni = portal;
     }
 
-    /// @dev Return current list of Validators, including their personal stake and delegated stake
-    function _getValidators() internal view returns (Validator[] memory) {
-        Validator[] memory vals = new Validator[](_operators.length);
+    /**
+     * @notice Set the Omni chain id.
+     * @param chainId The Omni chain id
+     */
+    function setOmniChainId(uint64 chainId) external onlyOwner {
+        omniChainId = chainId;
+    }
 
-        for (uint256 i = 0; i < vals.length; i++) {
+    /**
+     * @notice Set the strategy parameters.
+     * @param params The strategy parameters
+     */
+    function setStrategyParams(StrategyParam[] calldata params) external onlyOwner {
+        _setStrategyParams(params);
+    }
+
+    /**
+     * @notice Set the xcall gas limits.
+     * @param base          The base xcall gas limit
+     * @param perOperator   The per-operator additional xcall gas limit
+     */
+    function setXcallGasLimits(uint64 base, uint64 perOperator) external onlyOwner {
+        xcallBaseGasLimit = base;
+        xcallGasLimitPerOperator = perOperator;
+    }
+
+    /**
+     * @notice Add an operator to the allowlist.
+     * @param operator The operator to add
+     */
+    function addToAllowlist(address operator) external onlyOwner {
+        require(operator != address(0), "OmniAVS: zero address");
+        require(!_allowlist[operator], "OmniAVS: already in allowlist");
+        _allowlist[operator] = true;
+        emit OperatorAllowed(operator);
+    }
+
+    /**
+     * @notice Remove an operator from the allowlist.
+     * @param operator The operator to remove
+     */
+    function removeFromAllowlist(address operator) external onlyOwner {
+        require(_allowlist[operator], "OmniAVS: not in allowlist");
+        _allowlist[operator] = false;
+        emit OperatorDisallowed(operator);
+    }
+
+    /**
+     * @notice Pause the contract.
+     * @dev This pauses registerOperatorToAVS, deregisterOperatorFromAVS, and syncWithOmni.
+     */
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /**
+     * @notice Unpause the contract.
+     */
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
+    //////////////////////////////////////////////////////////////////////////////
+    //                              Internal setters                            //
+    //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * @dev Adds an operator to the list of operators, does not check if operator already exists
+     */
+    function _addOperator(address operator) private {
+        _operators.push(operator);
+    }
+
+    /**
+     * @notice Removes an operator from the list of operators
+     */
+    function _removeOperator(address operator) private {
+        for (uint256 i = 0; i < _operators.length; i++) {
+            if (_operators[i] == operator) {
+                _operators[i] = _operators[_operators.length - 1];
+                _operators.pop();
+                break;
+            }
+        }
+    }
+
+    /**
+     * @notice Returns true if the operator is in the list of operators
+     */
+    function _isOperator(address operator) private view returns (bool) {
+        for (uint256 i = 0; i < _operators.length; i++) {
+            if (_operators[i] == operator) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @notice Set the strategy parameters.
+     * @param params The strategy parameters
+     */
+    function _setStrategyParams(StrategyParam[] calldata params) internal {
+        delete _strategyParams;
+
+        for (uint256 i = 0; i < params.length; i++) {
+            // TODO: add zero addr and duplicate strat tests
+            require(address(params[i].strategy) != address(0), "OmniAVS: zero strategy");
+
+            // ensure no duplicates
+            for (uint256 j = i + 1; j < params.length; j++) {
+                require(address(params[i].strategy) != address(params[j].strategy), "OmniAVS: duplicate strategy");
+            }
+
+            _strategyParams.push(params[i]);
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////
+    //                              Internal views                              //
+    //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * @notice Returns the gas limit for OmniEthRestaking.sync xcall for some number of operators
+     */
+    function _xcallGasLimitFor(uint256 numOperators) internal view returns (uint64) {
+        return uint64(numOperators * xcallGasLimitPerOperator + xcallBaseGasLimit);
+    }
+
+    /**
+     * @notice Return current list of Operators, including their personal stake and delegated stake
+     */
+    function _getOperators() internal view returns (Operator[] memory) {
+        Operator[] memory ops = new Operator[](_operators.length);
+
+        for (uint256 i = 0; i < ops.length; i++) {
             address operator = _operators[i];
 
             uint96 total = _getTotalDelegations(operator);
@@ -224,33 +371,16 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
             // this should never happen, but just in case
             uint96 delegated = total > staked ? total - staked : 0;
 
-            vals[i] = Validator(operator, delegated, staked);
+            ops[i] = Operator(operator, delegated, staked);
         }
 
-        return vals;
+        return ops;
     }
 
-    /// @dev Returns total delegations to the operator, including self delegations
-    function _getTotalDelegations(address operator) internal view returns (uint96) {
-        uint96 total;
-        StrategyParams memory params;
-
-        for (uint256 j = 0; j < _strategyParams.length; j++) {
-            params = _strategyParams[j];
-            uint256 shares = _delegationManager.operatorShares(operator, params.strategy);
-
-            // TODO: should we convert shares to underlying?
-            // uint256 amt = IStrategy(params.strategy).sharesToUnderlying(shares);
-            // This would convert "shares in the stETH strategy" to "stETH tokens"
-            // Shares do not map 1:1 to underlying for rebalancing tokens
-
-            total += _weight(shares, params.multiplier);
-        }
-
-        return total;
-    }
-
-    /// @dev Returns the operator's self-delegations
+    /**
+     * @notice Returns the operator's self-delegations
+     * @param operator The operator address
+     */
     function _getSelfDelegations(address operator) internal view returns (uint96) {
         (IStrategy[] memory strategies, uint256[] memory shares) = _delegationManager.getDelegatableShares(operator);
 
@@ -259,7 +389,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
             IStrategy strat = strategies[i];
 
             // find the strategy params for the strategy
-            StrategyParams memory params;
+            StrategyParam memory params;
             for (uint256 j = 0; j < _strategyParams.length; j++) {
                 if (address(_strategyParams[j].strategy) == address(strat)) {
                     params = _strategyParams[j];
@@ -281,80 +411,33 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, IServiceManager, OwnableUpgradeable
         return staked;
     }
 
-    /// @dev Returns the weighted stake for shares with specified multiplier
-    function _weight(uint256 shares, uint96 multiplier) internal pure returns (uint96) {
-        return uint96(shares * multiplier / WEIGHTING_DIVISOR);
+    /**
+     * @notice Returns total delegations to the operator, including self delegations
+     * @param operator The operator address
+     */
+    function _getTotalDelegations(address operator) internal view returns (uint96) {
+        uint96 total;
+        StrategyParam memory params;
+
+        for (uint256 j = 0; j < _strategyParams.length; j++) {
+            params = _strategyParams[j];
+            uint256 shares = _delegationManager.operatorShares(operator, params.strategy);
+
+            // TODO: should we convert shares to underlying?
+            // uint256 amt = IStrategy(params.strategy).sharesToUnderlying(shares);
+            // This would convert "shares in the stETH strategy" to "stETH tokens"
+            // Shares do not map 1:1 to underlying for rebalancing tokens
+
+            total += _weight(shares, params.multiplier);
+        }
+
+        return total;
     }
 
     /**
-     * Admin functions
+     * @notice Returns the weighted stake for shares with specified multiplier
      */
-
-    /// @inheritdoc IServiceManager
-    function setMetadataURI(string memory metadataURI) external onlyOwner {
-        _avsDirectory.updateAVSMetadataURI(metadataURI);
-    }
-
-    /// @inheritdoc IOmniAVSAdmin
-    function setOmniPortal(IOmniPortal portal) external onlyOwner {
-        omni = portal;
-    }
-
-    /// @inheritdoc IOmniAVSAdmin
-    function setOmniChainId(uint64 chainId) external onlyOwner {
-        omniChainId = chainId;
-    }
-
-    /// @inheritdoc IOmniAVSAdmin
-    function setStrategyParams(StrategyParams[] calldata params) external onlyOwner {
-        _setStrategyParams(params);
-    }
-
-    /// @inheritdoc IOmniAVSAdmin
-    function setMinimumOperatorStake(uint96 stake) external onlyOwner {
-        minimumOperatorStake = stake;
-    }
-
-    /// @inheritdoc IOmniAVSAdmin
-    function setMaxOperatorCount(uint32 count) external onlyOwner {
-        maxOperatorCount = count;
-    }
-
-    /// @inheritdoc IOmniAVSAdmin
-    function setXcallGasLimits(uint64 base, uint64 perValidator) external onlyOwner {
-        xcallBaseGasLimit = base;
-        xcallGasLimitPerValidator = perValidator;
-    }
-
-    /// @inheritdoc IOmniAVSAdmin
-    function addToAllowlist(address operator) external onlyOwner {
-        require(operator != address(0), "OmniAVS: zero address");
-        require(!_allowlist[operator], "OmniAVS: already in allowlist");
-        _allowlist[operator] = true;
-        emit OperatorAllowed(operator);
-    }
-
-    /// @inheritdoc IOmniAVSAdmin
-    function removeFromAllowlist(address operator) external onlyOwner {
-        require(_allowlist[operator], "OmniAVS: not in allowlist");
-        _allowlist[operator] = false;
-        emit OperatorDisallowed(operator);
-    }
-
-    /// @dev Set the strategy parameters
-    function _setStrategyParams(StrategyParams[] calldata params) internal {
-        delete _strategyParams;
-
-        for (uint256 i = 0; i < params.length; i++) {
-            // TODO: add zero addr and duplicate strat tests
-            require(address(params[i].strategy) != address(0), "OmniAVS: zero strategy");
-
-            // ensure no duplicates
-            for (uint256 j = i + 1; j < params.length; j++) {
-                require(address(params[i].strategy) != address(params[j].strategy), "OmniAVS: duplicate strategy");
-            }
-
-            _strategyParams.push(params[i]);
-        }
+    function _weight(uint256 shares, uint96 multiplier) internal pure returns (uint96) {
+        return uint96(shares * multiplier / STRATEGY_WEIGHTING_DIVISOR);
     }
 }

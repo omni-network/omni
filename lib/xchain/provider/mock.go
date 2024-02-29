@@ -45,12 +45,19 @@ func (m *Mock) Subscribe(ctx context.Context, chainID uint64, fromHeight uint64,
 	}
 
 	go func() {
+		defer func() {
+			log.Debug(ctx, "Mock subscription ended")
+		}()
 		height := fromHeight
 
 		for ctx.Err() == nil {
 			block := nextBlock(chainID, height, offset)
 			m.addBlock(block)
-			if err := callback(ctx, block); err != nil {
+
+			err := callback(ctx, block)
+			if ctx.Err() != nil {
+				return
+			} else if err != nil {
 				log.Warn(ctx, "Mock callback failed, will retry", err)
 				continue
 			}

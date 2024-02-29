@@ -8,9 +8,9 @@ import { ITransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/tran
 import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import { IDelegationManager } from "src/interfaces/IDelegationManager.sol";
 
-import { Empty } from "test/common/Empty.sol";
 import { OmniAVS } from "src/protocol/OmniAVS.sol";
-import { EigenM2GoerliDeployments } from "test/avs/eigen/deploy/EigenM2GoerliDeployments.sol";
+import { Empty } from "test/avs/common/Empty.sol";
+import { EigenM2GoerliDeployments } from "test/avs/common/eigen/EigenM2GoerliDeployments.sol";
 import { StrategyParams } from "./StrategyParams.sol";
 
 import { Script } from "forge-std/Script.sol";
