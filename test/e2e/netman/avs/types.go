@@ -16,9 +16,7 @@ type StrategyParam struct {
 }
 
 type AVSConfig struct {
-	MinimumOperatorStake *big.Int        `json:"minimumOperatorStake"`
-	MaximumOperatorCount uint32          `json:"maximumOperatorCount"`
-	StrategyParams       []StrategyParam `json:"strategyParams"`
+	StrategyParams []StrategyParam `json:"strategyParams"`
 }
 
 type EigenDeployments struct {
@@ -56,8 +54,6 @@ func DefaultTestAVSConfig(eigen EigenDeployments) AVSConfig {
 	}
 
 	return AVSConfig{
-		MinimumOperatorStake: big.NewInt(1e18),
-		MaximumOperatorCount: 10,
-		StrategyParams:       strategyParams,
+		StrategyParams: strategyParams,
 	}
 }

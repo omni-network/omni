@@ -126,7 +126,7 @@ func (d *XDapp) deployOmniAVS(ctx context.Context, client backend.Backend, txOpt
 	}
 
 	enc, err := abi.Pack("initialize", owner, d.portalAddr, d.omniChainID,
-		d.cfg.MinimumOperatorStake, d.cfg.MaximumOperatorCount, []common.Address{} /* allowlist */, stratParms)
+		[]common.Address{} /* allowlist */, stratParms)
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "encode avs initializer")
 	}
