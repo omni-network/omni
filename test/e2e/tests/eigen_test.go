@@ -54,6 +54,7 @@ const (
 )
 
 func TestEigenAndOmniAVS(t *testing.T) {
+	SkipUnlessSlow(t)
 	t.Parallel()
 	testAVS(t, func(t *testing.T, avs AVS, deployInfo map[types.ContractName]types.DeployInfo) {
 		t.Helper()

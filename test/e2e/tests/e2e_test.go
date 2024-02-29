@@ -25,15 +25,19 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
+	flag "github.com/spf13/pflag"
 	"github.com/stretchr/testify/require"
 )
 
-// This can be used to manually specify a testnet manifest and/or node to
-// run tests against. The testnet must have been started by the runner first.
-// func init() {
-//	os.Setenv("E2E_MANIFEST", "networks/ci.toml")
-//	os.Setenv("E2E_NODE", "validator01")
-//}
+//nolint:gochecknoglobals // Tests flags need to use globals.
+var slow = flag.Bool("slow", false, "run slow tests")
+
+func SkipUnlessSlow(t *testing.T) {
+	t.Helper()
+	if !*slow {
+		t.Skip("skipping slow test, since --slow=false")
+	}
+}
 
 const (
 	EnvInfraType     = "INFRASTRUCTURE_TYPE"

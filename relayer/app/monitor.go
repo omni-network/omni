@@ -48,49 +48,62 @@ func monitorHeightsForever(ctx context.Context, chain netconf.Chain,
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			// First get chain heads
-			monitorHeadsOnce(ctx, chain.Name, client)
+			// First get attested head (so it can't be lower than heads).
+			attested, err := getAttested(ctx, chain.ID, chain.DeployHeight, cprovider)
 
-			// Then get attested head (so it can't be higher than heads).
-			err := monitorAttestedOnce(ctx, chain.Name, chain.ID, chain.DeployHeight, cprovider)
+			// then get chain heads (so it is always higher than attested).
+			heads := getHeads(ctx, client)
+
+			// Then populate gauges "at the same time" so they update "atomically".
 			if err != nil {
 				log.Error(ctx, "Monitoring attested failed (will retry)", err,
 					"chain", chain.Name)
+			} else {
+				attestedHeight.WithLabelValues(chain.Name).Set(float64(attested))
+			}
+
+			for typ, head := range heads {
+				headHeight.WithLabelValues(chain.Name, typ.String()).Set(float64(head))
+			}
+			stratHeight, ok := heads[ethclient.HeadType(chain.FinalizationStrat)]
+			if ok {
+				headHeight.WithLabelValues(chain.Name, "xfinal").Set(float64(stratHeight))
 			}
 		}
 	}
 }
 
 // monitorHeadsOnce monitors the heads of the given chain.
-func monitorHeadsOnce(ctx context.Context, chainName string, client ethclient.Client) {
+func getHeads(ctx context.Context, client ethclient.Client) map[ethclient.HeadType]uint64 {
 	heads := []ethclient.HeadType{
 		ethclient.HeadLatest,
 		ethclient.HeadSafe,
 		ethclient.HeadFinalized,
 	}
+
+	resp := make(map[ethclient.HeadType]uint64)
 	for _, typ := range heads {
 		head, err := client.HeaderByType(ctx, typ)
 		if err != nil {
 			// Not all chains support all types, so just swallow the errors, this is best effort monitoring.
 			continue
 		}
-		headHeight.WithLabelValues(chainName, typ.String()).Set(float64(head.Number.Uint64()))
+		resp[typ] = head.Number.Uint64()
 	}
+
+	return resp
 }
 
 // monitorAttestedOnce monitors of the latest attested height by chain.
-func monitorAttestedOnce(ctx context.Context, chain string, chainID uint64, deployHeight uint64, cprovider cchain.Provider) error {
+func getAttested(ctx context.Context, chainID uint64, deployHeight uint64, cprovider cchain.Provider) (uint64, error) {
 	att, ok, err := cprovider.LatestAttestation(ctx, chainID)
 	if err != nil {
-		return errors.Wrap(err, "latest attestation")
+		return 0, errors.Wrap(err, "latest attestation")
 	} else if !ok {
-		// Use portal deploy height -1 if no attestation is available.
-		attestedHeight.WithLabelValues(chain).Set(float64(deployHeight - 1))
-	} else {
-		attestedHeight.WithLabelValues(chain).Set(float64(att.BlockHeight))
+		return deployHeight - 1, nil
 	}
 
-	return nil
+	return att.BlockHeader.BlockHeight, nil
 }
 
 // monitorAccountsForever blocks and periodically monitors the relayer accounts
