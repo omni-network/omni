@@ -23,8 +23,7 @@ func startMonitoring(ctx context.Context, network netconf.Network, xprovider xch
 	cprovider cchain.Provider, addr common.Address, rpcClients map[uint64]ethclient.Client) {
 	for _, srcChain := range network.Chains {
 		go monitorAccountForever(ctx, addr, srcChain.Name, rpcClients[srcChain.ID])
-		go monitorHeadsForever(ctx, srcChain.Name, rpcClients[srcChain.ID])
-		go monitorAttestedForever(ctx, srcChain.Name, srcChain.ID, cprovider)
+		go monitorHeightsForever(ctx, srcChain, cprovider, rpcClients[srcChain.ID])
 
 		for _, dstChain := range network.Chains {
 			if srcChain.ID == dstChain.ID {
@@ -36,8 +35,11 @@ func startMonitoring(ctx context.Context, network netconf.Network, xprovider xch
 	}
 }
 
-// monitorHeadsForever blocks and periodically monitors the heads of the given chain.
-func monitorHeadsForever(ctx context.Context, chainName string, client ethclient.Client) {
+// monitorHeightsForever blocks and periodically monitors the latest/safe/final heads
+// and halo attested height of the given chain.
+func monitorHeightsForever(ctx context.Context, chain netconf.Chain,
+	cprovider cchain.Provider, client ethclient.Client,
+) {
 	ticker := time.NewTicker(time.Second * 10)
 	defer ticker.Stop()
 
@@ -46,7 +48,15 @@ func monitorHeadsForever(ctx context.Context, chainName string, client ethclient
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			monitorHeadsOnce(ctx, chainName, client)
+			// First get chain heads
+			monitorHeadsOnce(ctx, chain.Name, client)
+
+			// Then get attested head (so it can't be higher than heads).
+			err := monitorAttestedOnce(ctx, chain.Name, chain.ID, chain.DeployHeight, cprovider)
+			if err != nil {
+				log.Error(ctx, "Monitoring attested failed (will retry)", err,
+					"chain", chain.Name)
+			}
 		}
 	}
 }
@@ -68,35 +78,17 @@ func monitorHeadsOnce(ctx context.Context, chainName string, client ethclient.Cl
 	}
 }
 
-// monitorAttestedForever blocks and periodically monitors of the latest attested height by chain.
-func monitorAttestedForever(ctx context.Context, chain string, chainID uint64, cprovider cchain.Provider) {
-	ticker := time.NewTicker(time.Second * 10)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			err := monitorAttestedOnce(ctx, chain, chainID, cprovider)
-			if err != nil {
-				log.Error(ctx, "Monitoring attested failed (will retry)", err,
-					"chain", chain)
-			}
-		}
-	}
-}
-
 // monitorAttestedOnce monitors of the latest attested height by chain.
-func monitorAttestedOnce(ctx context.Context, chain string, chainID uint64, cprovider cchain.Provider) error {
+func monitorAttestedOnce(ctx context.Context, chain string, chainID uint64, deployHeight uint64, cprovider cchain.Provider) error {
 	att, ok, err := cprovider.LatestAttestation(ctx, chainID)
 	if err != nil {
 		return errors.Wrap(err, "latest attestation")
 	} else if !ok {
-		return nil // No attestations yet.
+		// Use portal deploy height -1 if no attestation is available.
+		attestedHeight.WithLabelValues(chain).Set(float64(deployHeight - 1))
+	} else {
+		attestedHeight.WithLabelValues(chain).Set(float64(att.BlockHeight))
 	}
-
-	attestedHeight.WithLabelValues(chain).Set(float64(att.BlockHeight))
 
 	return nil
 }
