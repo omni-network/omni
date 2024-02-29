@@ -1,16 +1,11 @@
-Halo is a consensus client implementation for the Omni Protocol
+register validator to omni avs
 
 Usage:
-  halo [command]
-
-Available Commands:
-  completion  Generate the autocompletion script for the specified shell
-  help        Help about any command
-  init        Initializes required halo files and directories
-  operator    operator commands to interact with OmniAVS
-  run         Runs the halo consensus client
+  halo operator register [flags]
 
 Flags:
-  -h, --help   help for halo
-
-Use "halo [command] --help" for more information about a command.
+      --avs-dir-addr string   The AVS Directory contract address
+  -h, --help                  help for register
+      --home string           The application home directory containing config and data (default "./halo")
+      --l1chain string        The layer 1 chain name (default "Ethereum")
+      --omni-avs string       The contract address of OmniAVS

@@ -26,7 +26,13 @@ func bindInitFlags(flags *pflag.FlagSet, cfg *InitConfig) {
 	flags.BoolVar(&cfg.Clean, "clean", cfg.Clean, "Delete home directory before initialization")
 }
 
-func bindOperatorFlags(flags *pflag.FlagSet, cfg *OperatorConfig) {
+func bindOperatorRegisterFlags(flags *pflag.FlagSet, cfg *OperatorConfig) {
 	libcmd.BindHomeFlag(flags, &cfg.HomeDir)
+	flags.StringVar(&cfg.OmniAVSAddr, "omni-avs", cfg.OmniAVSAddr, "The contract address of OmniAVS")
+}
+
+func bindOperatorDeRegisterFlags(flags *pflag.FlagSet, cfg *OperatorConfig) {
+	libcmd.BindHomeFlag(flags, &cfg.HomeDir)
+	flags.StringVar(&cfg.L1ChainName, "l1chain", cfg.L1ChainName, "The layer 1 chain name")
 	flags.StringVar(&cfg.OmniAVSAddr, "omni-avs", cfg.OmniAVSAddr, "The contract address of OmniAVS")
 }

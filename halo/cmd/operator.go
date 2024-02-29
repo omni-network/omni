@@ -42,7 +42,7 @@ func newOperatorCmd() *cobra.Command {
 
 	operatorCmd.AddCommand(
 		RegisterOperatorToOmniAVS(&cfg),
-		DeRegisterOperatorFromOmniAVS(),
+		DeRegisterOperatorFromOmniAVS(&cfg),
 	)
 
 	return operatorCmd
