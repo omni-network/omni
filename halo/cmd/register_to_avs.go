@@ -46,25 +46,12 @@ func RegisterOperatorToOmniAVS(cfg *OperatorConfig) *cobra.Command {
 }
 
 func register(ctx context.Context, cfg *OperatorConfig) error {
-	// check for home directory where the config files exist
-	if !directoryExists(cfg.HaloConfig.HomeDir) {
-		log.Info(ctx, "Make sure to run \"init\" command before running operator commands")
-		err := errors.New("directory does not exists", "home", cfg.HaloConfig.HomeDir)
-
-		return err
-	}
-
-	// load network config for the layer1 chain
-	chain, err := getChainConfig(cfg)
+	privVal, client, chain, err := loadKeysAndChain(ctx, cfg)
 	if err != nil {
 		return err
 	}
 
-	// load a private validator key and state from disk (this hard exits on any error).
-	privVal := privval.LoadFilePVEmptyState(cfg.CometConfig.PrivValidatorKeyFile(), cfg.CometConfig.PrivValidatorStateFile())
-
-	// connect to the rpc endpoint
-	client, err := ethclient.Dial("Ethereum", chain.RPCURL)
+	err = validateContractAddresses(ctx, cfg, client)
 	if err != nil {
 		return err
 	}
@@ -152,6 +139,33 @@ func register(ctx context.Context, cfg *OperatorConfig) error {
 	return nil
 }
 
+func loadKeysAndChain(ctx context.Context, cfg *OperatorConfig) (*privval.FilePV, *ethclient.Wrapper, *netconf.Chain, error) {
+	// check for home directory where the config files exist
+	if !directoryExists(cfg.HaloConfig.HomeDir) {
+		log.Info(ctx, "Make sure to run \"init\" command before running operator commands")
+		err := errors.New("directory does not exists", "home", cfg.HaloConfig.HomeDir)
+
+		return nil, nil, nil, err
+	}
+
+	// load network config for the layer1 c
+	c, err := getChainConfig(cfg)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	// load a private validator key and state from disk (this hard exits on any error).
+	privVal := privval.LoadFilePVEmptyState(cfg.CometConfig.PrivValidatorKeyFile(), cfg.CometConfig.PrivValidatorStateFile())
+
+	// connect to the rpc endpoint
+	client, err := ethclient.Dial(c.Name, c.RPCURL)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return privVal, &client, c, nil
+}
+
 func getChainConfig(cfg *OperatorConfig) (*netconf.Chain, error) {
 	network, err := netconf.Load(cfg.HaloConfig.NetworkFile())
 	if err != nil {
@@ -174,4 +188,18 @@ func directoryExists(dir string) bool {
 	}
 
 	return true
+}
+
+func validateContractAddresses(ctx context.Context, cfg *OperatorConfig, client *ethclient.Wrapper) error {
+	// check if contracts are deployed in respective addresses
+	blockNum, err := client.BlockNumber(ctx)
+	if err != nil {
+		return err
+	}
+	_, err = client.CodeAt(ctx, common.HexToAddress(cfg.OmniAVSAddr), big.NewInt(int64(blockNum)))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/omni-network/omni/halo/app"
@@ -75,6 +76,7 @@ func TestCLIReference(t *testing.T) {
 		{"init"},
 		{"operator"},
 		{"operator register"},
+		{"operator deregister"},
 	}
 
 	for _, test := range tests {
@@ -83,7 +85,12 @@ func TestCLIReference(t *testing.T) {
 
 			var args []string
 			if test.Command != root {
-				args = append(args, test.Command)
+				if strings.Contains(test.Command, "operator") {
+					subCmd := strings.Split(test.Command, " ")
+					args = append(args, subCmd...)
+				} else {
+					args = append(args, test.Command)
+				}
 			}
 			args = append(args, "--help")
 
