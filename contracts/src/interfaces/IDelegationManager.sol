@@ -10,4 +10,5 @@ import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrate
  */
 interface IDelegationManager is IDM {
     function getDelegatableShares(address operator) external view returns (IStrategy[] memory, uint256[] memory);
+    function beaconChainETHStrategy() external view returns (IStrategy);
 }

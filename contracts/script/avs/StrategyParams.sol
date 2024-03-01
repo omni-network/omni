@@ -22,16 +22,21 @@ library StrategyParams {
 
         params[0] = IOmniAVS.StrategyParam({
             strategy: IStrategy(EigenM2GoerliDeployments.stETHStrategy),
-            multiplier: STD_MULTIPLIER
+            multiplier: STD_MULTIPLIER,
+            useUnderlying: false
         });
 
         params[1] = IOmniAVS.StrategyParam({
             strategy: IStrategy(EigenM2GoerliDeployments.rETHStrategy),
-            multiplier: STD_MULTIPLIER
+            multiplier: STD_MULTIPLIER,
+            useUnderlying: false
         });
 
-        params[2] =
-            IOmniAVS.StrategyParam({ strategy: IStrategy(BEACON_CHAIN_ETH_STRATEGY), multiplier: STD_MULTIPLIER });
+        params[2] = IOmniAVS.StrategyParam({
+            strategy: IStrategy(BEACON_CHAIN_ETH_STRATEGY),
+            multiplier: STD_MULTIPLIER,
+            useUnderlying: false
+        });
     }
 
     /// @notice Mainnet strategy params

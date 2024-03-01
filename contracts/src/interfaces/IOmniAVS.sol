@@ -35,12 +35,14 @@ interface IOmniAVS {
 
     /**
      * @notice Represents a single supported strategy.
-     * @custom:field strategy   The strategy contract
-     * @custom:field multiplier The stake multiplier, to weight strategy against others
+     * @custom:field strategy       The strategy contract
+     * @custom:field multiplier     The stake multiplier, to weight strategy against others
+     * @custom:field useUnderlying  Whether to use the underlying token balance, rather than strategy shares
      */
     struct StrategyParam {
         IStrategy strategy;
         uint96 multiplier;
+        bool useUnderlying;
     }
 
     /**
