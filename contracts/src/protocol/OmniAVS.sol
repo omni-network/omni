@@ -327,7 +327,6 @@ contract OmniAVS is
         delete _strategyParams;
 
         for (uint256 i = 0; i < params.length; i++) {
-            // TODO: add zero addr and duplicate strat tests
             require(address(params[i].strategy) != address(0), "OmniAVS: no zero strategy");
 
             // ensure no duplicates
