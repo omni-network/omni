@@ -22,3 +22,12 @@ jobs:
           name: failed-logs
           path: test/e2e/failed-logs.txt
           retention-days: 3
+
+      - name: e2e-logs
+        if: failure()
+        uses: metrico/loki-action@V3.1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          endpoint: ${{ secrets.LOGQL_ENDPOINT }}
+          username: ${{ secrets.LOGQL_USER }}
+          password: ${{ secrets.LOGQL_PASS }}
