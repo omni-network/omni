@@ -27,8 +27,8 @@
     "viem": "^2.5.0"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "4.9.3",
-    "@openzeppelin/contracts-upgradeable": "4.9.3",
+    "@openzeppelin/contracts": "4.9.6",
+    "@openzeppelin/contracts-upgradeable": "4.9.6",
     "eigenlayer-contracts": "github:Layr-Labs/eigenlayer-contracts",
     "eigenlayer-middleware": "github:Layr-Labs/eigenlayer-middleware"
   }
