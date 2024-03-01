@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"math/big"
+	"strconv"
 	"strings"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -16,6 +17,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // OpSender uses txmgr to send transactions to the destination chain.
@@ -112,7 +115,16 @@ func (o OpSender) SendTransaction(ctx context.Context, submission xchain.Submiss
 		"gas_used", rec.GasUsed,
 		"tx_hash", rec.TxHash)
 
-	submissionTotal.WithLabelValues(srcChain, dstChain).Inc()
+	labels := prometheus.Labels{
+		"dst_chain": dstChain,
+		"gas_used":  strconv.FormatUint(rec.GasUsed, 10),
+		"nonce":     strconv.FormatUint(tx.Nonce(), 10),
+		"src_chain": srcChain,
+		"status":    strconv.FormatUint(rec.Status, 10),
+		"to":        o.portal.String(),
+		"tx_hash":   rec.TxHash.String(),
+	}
+	submissionTotal.WithLabelValues(srcChain, dstChain).(prometheus.ExemplarAdder).AddWithExemplar(1, labels) //nolint:forcetypeassert // false positive
 	msgTotal.WithLabelValues(srcChain, dstChain).Add(float64(len(submission.Msgs)))
 
 	return nil
