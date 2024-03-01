@@ -6,6 +6,7 @@ import (
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/test/e2e/app"
+	"github.com/omni-network/omni/test/e2e/app/agent"
 	"github.com/omni-network/omni/test/e2e/types"
 
 	cmtdocker "github.com/cometbft/cometbft/test/e2e/pkg/infra/docker"
@@ -22,7 +23,7 @@ func New() *cobra.Command {
 	defCfg := app.DefaultDefinitionConfig()
 
 	var def app.Definition
-	var prom app.PromSecrets // Using empty prom secrets for e2e tests.
+	var secrets agent.Secrets
 
 	cmd := libcmd.NewRootCmd("e2e", "e2e network generator and test runner")
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
@@ -41,14 +42,14 @@ func New() *cobra.Command {
 	}
 
 	bindDefFlags(cmd.PersistentFlags(), &defCfg)
-	bindPromFlags(cmd.PersistentFlags(), &prom)
+	bindPromFlags(cmd.PersistentFlags(), &secrets)
 	log.BindFlags(cmd.PersistentFlags(), &logCfg)
 
 	// Root command runs the full E2E test.
 	e2eTestCfg := app.DefaultE2ETestConfig()
 	bindE2EFlags(cmd.Flags(), &e2eTestCfg)
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		return app.E2ETest(cmd.Context(), def, e2eTestCfg, prom)
+		return app.E2ETest(cmd.Context(), def, e2eTestCfg, secrets)
 	}
 
 	// Add subcommands

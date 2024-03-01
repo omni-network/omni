@@ -11,6 +11,7 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/test/e2e/app/agent"
 	"github.com/omni-network/omni/test/e2e/docker"
 	"github.com/omni-network/omni/test/e2e/types"
 
@@ -42,9 +43,11 @@ func (p *Provider) Setup() error {
 	for vmIP, services := range groupByVM(p.Data.Instances) {
 		// Get all halo nodes in this VM
 		var nodes []*e2e.Node
+		var halos []string
 		for _, node := range p.Testnet.Nodes {
 			if services[node.Name] {
 				nodes = append(nodes, node)
+				halos = append(halos, node.Name)
 			}
 		}
 
@@ -83,6 +86,24 @@ func (p *Provider) Setup() error {
 		}
 
 		err = os.WriteFile(filepath.Join(p.Testnet.Dir, vmComposeFile(vmIP)), compose, 0o644)
+		if err != nil {
+			return errors.Wrap(err, "write compose file")
+		}
+
+		if !p.Testnet.Prometheus {
+			continue // No need to generate prometheus config
+		}
+
+		// Update custom prometheus.yml config for this VM
+		promCfgFile := filepath.Join(p.Testnet.Dir, "prometheus", "prometheus.yml")
+		agentCfg, err := os.ReadFile(promCfgFile)
+		if err != nil {
+			return errors.Wrap(err, "read prometheus config")
+		}
+
+		hostname := vmIP // TODO(corver): Add hostnames to infra instances.
+		agentCfg = agent.ConfigForHost(agentCfg, hostname, halos, services["relayer"])
+		err = os.WriteFile(filepath.Join(p.Testnet.Dir, vmAgentFile(vmIP)), agentCfg, 0o644)
 		if err != nil {
 			return errors.Wrap(err, "write compose file")
 		}
@@ -133,10 +154,12 @@ func (p *Provider) StartNodes(ctx context.Context, _ ...*e2e.Node) error {
 		// TODO(corver): Only start additional services and then start halo as per above StartNodes.
 		for vmName, instance := range p.Data.VMs {
 			composeFile := vmComposeFile(instance.IPAddress.String())
+			agentFile := vmAgentFile(instance.IPAddress.String())
 			startCmd := fmt.Sprintf("cd /omni/%s && "+
 				"sudo mv %s docker-compose.yaml && "+
+				"sudo mv %s prometheus/prometheus.yml && "+
 				"sudo docker compose up -d",
-				p.Testnet.Name, composeFile)
+				p.Testnet.Name, composeFile, agentFile)
 
 			err := execOnVM(ctx, vmName, startCmd)
 			if err != nil {
@@ -212,6 +235,10 @@ func copyToVM(ctx context.Context, vmName string, path string) error {
 	}
 
 	return nil
+}
+
+func vmAgentFile(internalIP string) string {
+	return "prometheus/" + strings.ReplaceAll(internalIP, ".", "_") + "_prometheus.yml"
 }
 
 func vmComposeFile(internalIP string) string {

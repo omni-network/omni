@@ -20,6 +20,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	relayapp "github.com/omni-network/omni/relayer/app"
+	"github.com/omni-network/omni/test/e2e/app/agent"
 	"github.com/omni-network/omni/test/e2e/types"
 	"github.com/omni-network/omni/test/e2e/vmcompose"
 
@@ -49,15 +50,11 @@ const (
 )
 
 // Setup sets up the testnet configuration.
-func Setup(ctx context.Context, def Definition, promSecrets PromSecrets, testCfg bool) error {
+func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, testCfg bool) error {
 	log.Info(ctx, "Setup testnet", "dir", def.Testnet.Dir)
 
 	if err := os.MkdirAll(def.Testnet.Dir, os.ModePerm); err != nil {
 		return errors.Wrap(err, "mkdir")
-	}
-
-	if err := def.Infra.Setup(); err != nil {
-		return errors.Wrap(err, "setup provider")
 	}
 
 	var vals []crypto.PubKey
@@ -141,9 +138,13 @@ func Setup(ctx context.Context, def Definition, promSecrets PromSecrets, testCfg
 	}
 
 	if def.Testnet.Prometheus {
-		if err := writePrometheusConfig(ctx, def.Testnet, promSecrets); err != nil {
+		if err := agent.WriteConfig(ctx, def.Testnet, agentSecrets); err != nil {
 			return errors.Wrap(err, "write prom config")
 		}
+	}
+
+	if err := def.Infra.Setup(); err != nil {
+		return errors.Wrap(err, "setup provider")
 	}
 
 	return nil

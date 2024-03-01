@@ -7,6 +7,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/test/e2e/app/agent"
 	"github.com/omni-network/omni/test/e2e/netman/pingpong"
 	"github.com/omni-network/omni/test/e2e/types"
 
@@ -18,16 +19,16 @@ const defaultPingPongN = 1000
 
 func DefaultDeployConfig() DeployConfig {
 	return DeployConfig{
-		PromSecrets: PromSecrets{}, // Empty secrets
-		PingPongN:   defaultPingPongN,
+		AgentSecrets: agent.Secrets{}, // Empty secrets
+		PingPongN:    defaultPingPongN,
 	}
 }
 
 type DeployConfig struct {
-	PromSecrets
-	EigenFile  string
-	PingPongN  uint64
-	testConfig bool // Internal use only (no command line flag).
+	AgentSecrets agent.Secrets
+	EigenFile    string
+	PingPongN    uint64
+	testConfig   bool // Internal use only (no command line flag).
 }
 
 // Deploy a new e2e network. It also starts all services in order to deploy private portals.
@@ -47,7 +48,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 		return nil, err
 	}
 
-	if err := Setup(ctx, def, cfg.PromSecrets, cfg.testConfig); err != nil {
+	if err := Setup(ctx, def, cfg.AgentSecrets, cfg.testConfig); err != nil {
 		return nil, err
 	}
 
@@ -99,12 +100,12 @@ func DefaultE2ETestConfig() E2ETestConfig {
 }
 
 // E2ETest runs a full e2e test.
-func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, prom PromSecrets) error {
+func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, secrets agent.Secrets) error {
 	const pingpongN = 4 // Deploy and start ping pong
 	depCfg := DeployConfig{
-		PromSecrets: prom,
-		PingPongN:   pingpongN,
-		testConfig:  true,
+		AgentSecrets: secrets,
+		PingPongN:    pingpongN,
+		testConfig:   true,
 	}
 
 	deployInfo, err := Deploy(ctx, def, depCfg)
@@ -171,7 +172,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, prom PromSe
 // Upgrade generates all local artifacts, but only copies the docker-compose file to the VMs.
 // It them calls docker-compose up.
 func Upgrade(ctx context.Context, def Definition) error {
-	if err := Setup(ctx, def, PromSecrets{}, false); err != nil {
+	if err := Setup(ctx, def, agent.Secrets{}, false); err != nil {
 		return err
 	}
 
