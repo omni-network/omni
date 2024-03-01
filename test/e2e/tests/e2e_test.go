@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"context"
+	"flag"
 	"os"
 	"path/filepath"
 	"sync"
@@ -25,7 +26,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
-	flag "github.com/spf13/pflag"
 	"github.com/stretchr/testify/require"
 )
 
@@ -34,6 +34,7 @@ var slow = flag.Bool("slow", false, "run slow tests")
 
 func SkipUnlessSlow(t *testing.T) {
 	t.Helper()
+
 	if !*slow {
 		t.Skip("skipping slow test, since --slow=false")
 	}

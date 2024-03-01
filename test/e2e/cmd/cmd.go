@@ -71,7 +71,7 @@ func newDeployCmd(def *app.Definition) *cobra.Command {
 		Use:   "deploy",
 		Short: "Deploys the e2e network",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := app.Deploy(cmd.Context(), *def, cfg)
+			_, _, err := app.Deploy(cmd.Context(), *def, cfg)
 			return err
 		},
 	}
