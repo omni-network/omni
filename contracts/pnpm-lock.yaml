@@ -6,11 +6,11 @@ settings:
 
 dependencies:
   '@openzeppelin/contracts':
-    specifier: 4.9.3
-    version: 4.9.3
+    specifier: 4.9.6
+    version: 4.9.6
   '@openzeppelin/contracts-upgradeable':
-    specifier: 4.9.3
-    version: 4.9.3
+    specifier: 4.9.6
+    version: 4.9.6
   eigenlayer-contracts:
     specifier: github:Layr-Labs/eigenlayer-contracts
     version: github.com/Layr-Labs/eigenlayer-contracts/b6a3a91e1c0c126981de409b00b5fba178503447(hardhat@2.19.5)
@@ -705,12 +705,12 @@ packages:
       '@nomicfoundation/solidity-analyzer-win32-x64-msvc': 0.1.1
     dev: false
 
-  /@openzeppelin/contracts-upgradeable@4.9.3:
-    resolution: {integrity: sha512-jjaHAVRMrE4UuZNfDwjlLGDxTHWIOwTJS2ldnc278a0gevfXfPr8hxKEVBGFBE96kl2G3VHDZhUimw/+G3TG2A==}
+  /@openzeppelin/contracts-upgradeable@4.9.6:
+    resolution: {integrity: sha512-m4iHazOsOCv1DgM7eD7GupTJ+NFVujRZt1wzddDPSVGpWdKq1SKkla5htKG7+IS4d2XOCtzkUNwRZ7Vq5aEUMA==}
     dev: false
 
-  /@openzeppelin/contracts@4.9.3:
-    resolution: {integrity: sha512-He3LieZ1pP2TNt5JbkPA4PNT9WC3gOTOlDcFGJW4Le4QKqwmiNJCRt44APfxMxvq7OugU/cqYuPcSBzOw38DAg==}
+  /@openzeppelin/contracts@4.9.6:
+    resolution: {integrity: sha512-xSmezSupL+y9VkHZJGDoCBpmnB2ogM13ccaYDWqJTfS3dbuHkgjuwDFUmaFauBCboQMGB/S5UqUl2y54X99BmA==}
     dev: false
 
   /@openzeppelin/merkle-tree@1.0.5:
