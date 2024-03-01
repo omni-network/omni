@@ -89,8 +89,8 @@ contract OmniAVS is
         require(_allowlist[operator], "OmniAVS: not allowed");
         require(!_isOperator(operator), "OmniAVS: already an operator"); // we could let _avsDirectory.regsiterOperatorToAVS handle this, they do check
 
-        _avsDirectory.registerOperatorToAVS(operator, operatorSignature);
         _addOperator(operator);
+        _avsDirectory.registerOperatorToAVS(operator, operatorSignature);
 
         emit OperatorAdded(operator);
     }
@@ -104,8 +104,8 @@ contract OmniAVS is
         require(msg.sender == operator || msg.sender == owner(), "OmniAVS: only operator or owner");
         require(_isOperator(operator), "OmniAVS: not an operator");
 
-        _avsDirectory.deregisterOperatorFromAVS(operator);
         _removeOperator(operator);
+        _avsDirectory.deregisterOperatorFromAVS(operator);
 
         emit OperatorRemoved(operator);
     }
