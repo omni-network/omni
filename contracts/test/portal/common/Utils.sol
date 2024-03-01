@@ -30,7 +30,7 @@ contract Utils is Test, Events, Fixtures {
     }
 
     /// _dev Assert that the logs are XReceipt events with the correct fields.
-    function assertReceipts(Vm.Log[] memory logs, XTypes.MsgFull[] memory xmsgs) internal {
+    function assertReceipts(Vm.Log[] memory logs, XTypes.Msg[] memory xmsgs) internal {
         assertEq(logs.length, xmsgs.length);
         for (uint256 i = 0; i < logs.length; i++) {
             assertReceipt(logs[i], xmsgs[i]);
@@ -39,7 +39,7 @@ contract Utils is Test, Events, Fixtures {
 
     /// @dev Assert that the log is an XReceipt event with the correct fields.
     ///      We use this helper rather than vm.expectEmit(), because gasUsed is difficult to predict.
-    function assertReceipt(Vm.Log memory log, XTypes.MsgFull memory xmsg) internal {
+    function assertReceipt(Vm.Log memory log, XTypes.Msg memory xmsg) internal {
         TestXTypes.Receipt memory receipt = parseReceipt(log);
 
         assertEq(receipt.sourceChainId, xmsg.sourceChainId);
@@ -54,14 +54,14 @@ contract Utils is Test, Events, Fixtures {
     }
 
     /// @dev vm.expectCall() for multiple XMsgs
-    function expectCalls(XTypes.MsgFull[] memory xmsgs) internal {
+    function expectCalls(XTypes.Msg[] memory xmsgs) internal {
         for (uint256 i = 0; i < xmsgs.length; i++) {
             vm.expectCall(xmsgs[i].to, xmsgs[i].data);
         }
     }
 
     /// @dev The number of Counter.increment() calls in a list of xmsgs
-    function numIncrements(XTypes.MsgFull[] memory xmsgs) internal view returns (uint256) {
+    function numIncrements(XTypes.Msg[] memory xmsgs) internal view returns (uint256) {
         bytes32 incrHash = keccak256(abi.encodeWithSignature("increment()"));
         uint256 count = 0;
 

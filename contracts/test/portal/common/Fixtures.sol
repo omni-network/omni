@@ -178,7 +178,7 @@ contract Fixtures is CommonBase, StdCheats {
     /// @dev Create an xblock from chainA with xmsgs for "this" chain and chain b.
     ///      XBlocks will likely contain XMsgs for multiple chains, so we reflect that here.
     function _xblock(uint64 sourceBlockHeight, uint64 startOffset) internal view returns (TestXTypes.Block memory) {
-        XTypes.MsgFull[] memory xmsgs = new XTypes.MsgFull[](10);
+        XTypes.Msg[] memory xmsgs = new XTypes.Msg[](10);
 
         // intended for this chain
         xmsgs[0] = _increment(chainAId, thisChainId, startOffset);
@@ -198,17 +198,17 @@ contract Fixtures is CommonBase, StdCheats {
     }
 
     /// @dev Create a Counter.increment() XMsg from thisChainId to chainAId
-    function _outbound_increment() internal view returns (XTypes.MsgFull memory) {
+    function _outbound_increment() internal view returns (XTypes.Msg memory) {
         return _increment(thisChainId, chainAId, 0);
     }
 
     /// @dev Create a Counter.increment() XMsg from chainAId to thisChainId
-    function _inbound_increment(uint64 streamOffset) internal view returns (XTypes.MsgFull memory) {
+    function _inbound_increment(uint64 streamOffset) internal view returns (XTypes.Msg memory) {
         return _increment(chainAId, thisChainId, streamOffset);
     }
 
     /// @dev Create a Reverter.forceRevert() XMsg from chainAId to thisChainId
-    function _inbound_revert(uint64 streamOffset) internal view returns (XTypes.MsgFull memory) {
+    function _inbound_revert(uint64 streamOffset) internal view returns (XTypes.Msg memory) {
         return _revert(chainAId, thisChainId, streamOffset);
     }
 
@@ -216,9 +216,9 @@ contract Fixtures is CommonBase, StdCheats {
     function _increment(uint64 sourceChainId, uint64 destChainId, uint64 streamOffset)
         internal
         view
-        returns (XTypes.MsgFull memory)
+        returns (XTypes.Msg memory)
     {
-        return XTypes.MsgFull({
+        return XTypes.Msg({
             sourceChainId: sourceChainId,
             destChainId: destChainId,
             streamOffset: streamOffset,
@@ -233,9 +233,9 @@ contract Fixtures is CommonBase, StdCheats {
     function _revert(uint64 sourceChainId, uint64 destChainId, uint64 offset)
         internal
         view
-        returns (XTypes.MsgFull memory)
+        returns (XTypes.Msg memory)
     {
-        return XTypes.MsgFull({
+        return XTypes.Msg({
             sourceChainId: sourceChainId,
             destChainId: destChainId,
             streamOffset: offset,

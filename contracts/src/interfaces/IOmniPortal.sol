@@ -69,11 +69,14 @@ interface IOmniPortal {
     function inXStreamBlockHeight(uint64 sourceChainId) external view returns (uint64);
 
     /**
-     * @notice The current XMsg being executed via this portal
-     * @dev If no XMsg is being executed, all fields will be zero
-     * @return XMsg
+     * @notice Returns the current XMsg being executed via this portal.
+     *          - xmsg().sourceChainId  Chain ID of the source xcall
+     *          - xmsg().sender         msg.sender of the source xcall
+     *         If no XMsg is being executed, all fields will be zero.
+     *          - xmsg().sourceChainId  == 0
+     *          - xmsg().sender         == address(0)
      */
-    function xmsg() external view returns (XTypes.Msg memory);
+    function xmsg() external view returns (XTypes.MsgShort memory);
 
     /**
      * @notice Whether the current transaction is an xcall

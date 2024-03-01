@@ -8,9 +8,9 @@ pragma solidity ^0.8.12;
  */
 library XTypes {
     /**
-     * @notice The full context of an xmsg. This matches the XMsg type used throughout Omni's
-     *         cross-chain messaging protocol. MsgFull is used to contrsuct and verify XSubmission
-     *         merkle trees / proofs.
+     * @notice A cross chain message - the product of an xcall. This matches the XMsg type used
+     *        throughout Omni's cross-chain messaging protocol. Msg is used to contrsuct and verify
+     *        XSubmission merkle trees / proofs.
      * @custom:field sourceChainId  Chain ID of the source chain
      * @custom:field destChainId    Chain ID of the destination chain
      * @custom:field streamOffset   Monotonically incremented offset of Msg in source -> dest Stream
@@ -19,7 +19,7 @@ library XTypes {
      * @custom:field data           Data to provide to call on destination chain
      * @custom:field gasLimit       Gas limit to use for call execution on destination chain
      */
-    struct MsgFull {
+    struct Msg {
         uint64 sourceChainId;
         uint64 destChainId;
         uint64 streamOffset;
@@ -30,12 +30,11 @@ library XTypes {
     }
 
     /**
-     * @notice Trimmed down version of MsgFull that presents the minimum required msg context
-     *         for consuming xapps.
+     * @notice Trimmed version of Msg that presents the minimum required context for consuming xapps.
      * @custom:field sourceChainId  Chain ID of the source chain
      * @custom:field sender         msg.sender of xcall on source chain
      */
-    struct Msg {
+    struct MsgShort {
         uint64 sourceChainId;
         address sender;
     }
@@ -67,7 +66,7 @@ library XTypes {
         bytes32 attestationRoot;
         uint64 validatorSetId;
         BlockHeader blockHeader;
-        MsgFull[] msgs;
+        Msg[] msgs;
         bytes32[] proof;
         bool[] proofFlags;
         SigTuple[] signatures;

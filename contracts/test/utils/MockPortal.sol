@@ -29,7 +29,7 @@ contract MockPortal is OmniPortalConstants {
 
     mapping(uint64 => uint64) public outXStreamOffset;
 
-    XTypes.Msg private _currentXmsg;
+    XTypes.MsgShort private _currentXmsg;
 
     constructor() {
         chainId = uint64(block.chainid);
@@ -67,7 +67,7 @@ contract MockPortal is OmniPortalConstants {
         emit XMsg(destChainId, outXStreamOffset[destChainId], sender, to, data, gasLimit);
     }
 
-    function xmsg() external view returns (XTypes.Msg memory) {
+    function xmsg() external view returns (XTypes.MsgShort memory) {
         return _currentXmsg;
     }
 
@@ -89,7 +89,7 @@ contract MockPortal is OmniPortalConstants {
         require(gasLimit <= XMSG_MAX_GAS_LIMIT, "OmniPortal: gasLimit too high");
         require(gasLimit >= XMSG_MIN_GAS_LIMIT, "OmniPortal: gasLimit too low");
 
-        _currentXmsg = XTypes.Msg({ sourceChainId: sourceChainId, sender: sender });
+        _currentXmsg = XTypes.MsgShort({ sourceChainId: sourceChainId, sender: sender });
 
         uint256 gasUsed = gasleft();
         (bool success, bytes memory returnData) = to.call{ gas: gasLimit }(data);

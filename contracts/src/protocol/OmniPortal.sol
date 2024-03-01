@@ -39,7 +39,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OmniPortalConstants, Ownab
     /// @dev The current XMsg being executed, exposed via xmsg() getter
     ///      Private state + public getter preferred over public state with default getter,
     ///      so that we can use the XMsg struct type in the interface.
-    XTypes.Msg private _currentXmsg;
+    XTypes.MsgShort private _currentXmsg;
 
     constructor() {
         _disableInitializers();
@@ -126,12 +126,12 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OmniPortalConstants, Ownab
     }
 
     /// @dev Verify an XMsg is next in its XStream, execute it, increment inXStreamOffset, emit an XReceipt
-    function _exec(XTypes.MsgFull calldata xmsg_) internal {
+    function _exec(XTypes.Msg calldata xmsg_) internal {
         require(xmsg_.destChainId == chainId, "OmniPortal: wrong destChainId");
         require(xmsg_.streamOffset == inXStreamOffset[xmsg_.sourceChainId] + 1, "OmniPortal: wrong streamOffset");
 
         // set xmsg to the one we're executing
-        _currentXmsg = XTypes.Msg(xmsg_.sourceChainId, xmsg_.sender);
+        _currentXmsg = XTypes.MsgShort(xmsg_.sourceChainId, xmsg_.sender);
 
         // increment offset before executing xcall, to avoid reentrancy loop
         inXStreamOffset[xmsg_.sourceChainId] += 1;
@@ -155,7 +155,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OmniPortalConstants, Ownab
      */
 
     /// @inheritdoc IOmniPortal
-    function xmsg() external view returns (XTypes.Msg memory) {
+    function xmsg() external view returns (XTypes.MsgShort memory) {
         return _currentXmsg;
     }
 

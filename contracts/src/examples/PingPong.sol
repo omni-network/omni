@@ -58,7 +58,7 @@ contract PingPong is XApp {
     function pingpong_norecv(uint64 times, uint64 n) external {
         require(isXCall(), "PingPong: not an omni xcall");
 
-        XTypes.Msg memory _xmsg = omni.xmsg();
+        XTypes.MsgShort memory _xmsg = omni.xmsg();
 
         if (n == 0) {
             emit Done(_xmsg.sourceChainId, _xmsg.sender, times);

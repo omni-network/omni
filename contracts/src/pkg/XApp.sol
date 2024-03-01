@@ -13,7 +13,7 @@ contract XApp {
     IOmniPortal internal immutable omni;
 
     /// @notice Transient storage for the current xmsg
-    XTypes.Msg internal xmsg;
+    XTypes.MsgShort internal xmsg;
 
     /// @notice Read current xmsg into storage before execution, delete it afterwards
     modifier xrecv() {
