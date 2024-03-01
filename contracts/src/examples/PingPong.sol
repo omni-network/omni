@@ -10,7 +10,7 @@ import { XTypes } from "src/libraries/XTypes.sol";
  */
 contract PingPong is XApp {
     /// @notice Gas limit used for a single pingpong xcall
-    uint64 public constant GAS_LIMIT = 50_000;
+    uint64 public constant GAS_LIMIT = 75_000;
 
     /**
      * @notice Emitted when the pingpong loop is done
