@@ -27,15 +27,38 @@ type Mock struct {
 	period time.Duration
 	mu     sync.Mutex
 	blocks []xchain.Block
+	uniq   map[uint64]bool
 }
 
 func NewMock(period time.Duration) *Mock {
 	return &Mock{
 		period: period,
+		uniq:   make(map[uint64]bool),
 	}
 }
 
-func (m *Mock) Subscribe(ctx context.Context, chainID uint64, fromHeight uint64, callback xchain.ProviderCallback,
+func (m *Mock) StreamAsync(ctx context.Context, chainID uint64, fromHeight uint64, callback xchain.ProviderCallback) error {
+	go func() {
+		err := m.stream(ctx, chainID, fromHeight, callback, true)
+		if err != nil {
+			log.Error(ctx, "Unexpected stream error [BUG]", err)
+		}
+	}()
+
+	return nil
+}
+
+func (m *Mock) StreamBlocks(ctx context.Context, chainID uint64, fromHeight uint64, callback xchain.ProviderCallback) error {
+	return m.stream(ctx, chainID, fromHeight, callback, false)
+}
+
+//nolint:nilerr // Stream function contract states it returns nil on context error.
+func (m *Mock) stream(
+	ctx context.Context,
+	chainID uint64,
+	fromHeight uint64,
+	callback xchain.ProviderCallback,
+	retryCallback bool,
 ) error {
 	offset := make(offseter).offset
 
@@ -44,33 +67,35 @@ func (m *Mock) Subscribe(ctx context.Context, chainID uint64, fromHeight uint64,
 		m.addBlock(nextBlock(chainID, i, offset))
 	}
 
-	go func() {
-		defer func() {
-			log.Debug(ctx, "Mock subscription ended")
-		}()
-		height := fromHeight
-
-		for ctx.Err() == nil {
-			block := nextBlock(chainID, height, offset)
-			m.addBlock(block)
-
-			err := callback(ctx, block)
-			if ctx.Err() != nil {
-				return
-			} else if err != nil {
-				log.Warn(ctx, "Mock callback failed, will retry", err)
-				continue
-			}
-			height++
-
-			// Backoff before providing next block
-			select {
-			case <-ctx.Done():
-				return
-			case <-time.After(m.period):
-			}
-		}
+	defer func() {
+		log.Debug(ctx, "Mock subscription ended")
 	}()
+	height := fromHeight
+
+	for ctx.Err() == nil {
+		block := nextBlock(chainID, height, offset)
+		m.addBlock(block)
+
+		err := callback(ctx, block)
+		if ctx.Err() != nil {
+			return nil
+		} else if err != nil {
+			if !retryCallback {
+				return err
+			}
+			log.Warn(ctx, "Mock callback failed (will retry)", err)
+
+			continue
+		}
+		height++
+
+		// Backoff before providing next block
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-time.After(m.period):
+		}
+	}
 
 	return nil
 }
@@ -107,8 +132,11 @@ func (*Mock) GetEmittedCursor(_ context.Context, srcChainID uint64, destChainID 
 func (m *Mock) addBlock(block xchain.Block) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-
+	if m.uniq[block.BlockHeight] {
+		return
+	}
 	m.blocks = append(m.blocks, block)
+	m.uniq[block.BlockHeight] = true
 }
 
 func nextBlock(chainID uint64, height uint64, offsetFunc func(xchain.StreamID) uint64) xchain.Block {

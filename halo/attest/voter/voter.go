@@ -144,53 +144,29 @@ func (a *Voter) runOnce(ctx context.Context, chainID uint64) error {
 		fromHeight = latest + 1
 	}
 
-	// Channel shenanigans to wait for async subscription.
-	errChan := make(chan error)
-	ctx, cancel := context.WithCancel(ctx)
-	handleErr := func(err error) error {
-		select {
-		case errChan <- err:
-		case <-ctx.Done(): // Just in case of race.
-		}
-		cancel()
-
-		return errors.Wrap(err, "voter runner")
-	}
-
-	// Start async subscription.
 	first := true // Allow skipping on first attestation.
-	err := a.provider.Subscribe(ctx, chainID, fromHeight,
+
+	return a.provider.StreamBlocks(ctx, chainID, fromHeight,
 		func(ctx context.Context, block xchain.Block) error {
 			if !a.deps.IsValidator(ctx, a.address) {
-				return handleErr(errors.New("not a validator anymore"))
+				return errors.New("not a validator anymore")
 			}
 
 			cmp, err := a.deps.WindowCompare(ctx, block.SourceChainID, block.BlockHeight)
 			if err != nil {
-				return handleErr(errors.Wrap(err, "window compare"))
+				return errors.Wrap(err, "window compare")
 			} else if cmp < 0 {
-				return handleErr(errors.New("behind vote window (too slow)"))
+				return errors.New("behind vote window (too slow)")
 			} // Being ahead is not a problem, since we buffer on disk.
 
 			if err := a.Vote(block, first); err != nil {
-				return handleErr(errors.Wrap(err, "attest"))
+				return errors.Wrap(err, "vote")
 			}
 			first = false
 
 			return nil
 		},
 	)
-	if err != nil {
-		return err
-	}
-
-	// Wait for error or context cancel.
-	select {
-	case err := <-errChan:
-		return err
-	case <-ctx.Done():
-		return ctx.Err()
-	}
 }
 
 // Vote creates a vote for the given block and adds it to the internal state.

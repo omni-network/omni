@@ -60,7 +60,7 @@ func startXProvider(ctx context.Context, network netconf.Network, entCl *ent.Cli
 			return errors.Wrap(err, "initialize chain cursor", "chain_id", chain.ID)
 		}
 
-		err = xprovider.Subscribe(ctx, chain.ID, fromHeight, callback)
+		err = xprovider.StreamAsync(ctx, chain.ID, fromHeight, callback)
 		if err != nil {
 			return errors.Wrap(err, "subscribe", "chain_id", chain.ID)
 		}

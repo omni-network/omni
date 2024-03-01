@@ -58,6 +58,7 @@ func TestRunner(t *testing.T) {
 			require.NoError(t, err)
 		} else {
 			require.Error(t, err)
+			sub.result <- err // Unblock the synchronous caller
 		}
 	}
 
@@ -263,7 +264,7 @@ func TestVoter(t *testing.T) {
 	v.AddErr(t, 1, 5)
 }
 
-func expectSubscriptions(t *testing.T, p stubProvider, chainHeights ...uint64) {
+func expectSubscriptions(t *testing.T, prov stubProvider, chainHeights ...uint64) {
 	t.Helper()
 
 	expected := make(map[uint64]uint64)
@@ -279,7 +280,7 @@ func expectSubscriptions(t *testing.T, p stubProvider, chainHeights ...uint64) {
 		select {
 		case <-ctx.Done():
 			require.Fail(t, "timed out waiting for subscription")
-		case next := <-p:
+		case next := <-prov:
 			h, ok := expected[next.chainID]
 			require.True(t, ok)
 			require.EqualValues(t, h, next.height)
@@ -440,13 +441,27 @@ type sub struct {
 	chainID  uint64
 	height   uint64
 	callback xchain.ProviderCallback
+	result   chan error
 }
+
+var _ xchain.Provider = make(stubProvider)
 
 type stubProvider chan sub
 
-func (p stubProvider) Subscribe(_ context.Context, chainID uint64, fromHeight uint64, callback xchain.ProviderCallback) error {
-	p <- sub{chainID, fromHeight, callback}
-	return nil
+func (p stubProvider) StreamBlocks(ctx context.Context, chainID uint64, fromHeight uint64, callback xchain.ProviderCallback) error {
+	result := make(chan error)
+	p <- sub{chainID, fromHeight, callback, result}
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err := <-result:
+		return err
+	}
+}
+
+func (stubProvider) StreamAsync(context.Context, uint64, uint64, xchain.ProviderCallback) error {
+	panic("unexpected")
 }
 
 func (stubProvider) GetBlock(context.Context, uint64, uint64) (xchain.Block, bool, error) {

@@ -82,8 +82,12 @@ type mockXChainClient struct {
 	GetEmittedCursorFn   func(context.Context, uint64, uint64) (xchain.StreamCursor, bool, error)
 }
 
-func (m *mockXChainClient) Subscribe(context.Context, uint64, uint64, xchain.ProviderCallback) error {
-	return nil
+func (m *mockXChainClient) StreamAsync(context.Context, uint64, uint64, xchain.ProviderCallback) error {
+	panic("unexpected")
+}
+
+func (m *mockXChainClient) StreamBlocks(context.Context, uint64, uint64, xchain.ProviderCallback) error {
+	panic("unexpected")
 }
 
 func (m *mockXChainClient) GetBlock(ctx context.Context, chainID uint64, height uint64) (xchain.Block, bool, error) {

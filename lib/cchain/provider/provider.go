@@ -6,7 +6,9 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/lib/cchain"
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/stream"
 	"github.com/omni-network/omni/lib/xchain"
 )
 
@@ -62,62 +64,37 @@ func (p Provider) Subscribe(in context.Context, srcChainID uint64, height uint64
 	srcChain := p.chainNames[srcChainID]
 	ctx := log.WithCtx(in, "src_chain", srcChain)
 
-	// Start a async goroutine to fetch attestations until ctx is canceled.
+	deps := stream.Deps[xchain.Attestation]{
+		FetchBatch:    p.fetch,
+		Backoff:       p.backoffFunc,
+		ElemLabel:     "attestation",
+		RetryCallback: true,
+		Verify: func(ctx context.Context, att xchain.Attestation, h uint64) error {
+			if att.SourceChainID != srcChainID {
+				return errors.New("invalid attestation source chain ID")
+			} else if att.BlockHeight != h {
+				return errors.New("invalid attestation height")
+			}
+
+			return nil
+		},
+		IncFetchErr: func() {
+			fetchErrTotal.WithLabelValues(workerName, srcChain).Inc()
+		},
+		IncCallbackErr: func() {
+			callbackErrTotal.WithLabelValues(workerName, srcChain).Inc()
+		},
+		SetStreamHeight: func(h uint64) {
+			streamHeight.WithLabelValues(workerName, srcChain).Set(float64(h))
+		},
+	}
+
+	cb := (stream.Callback[xchain.Attestation])(callback)
+
 	go func() {
-		backoff, reset := p.backoffFunc(ctx) // Note that backoff returns immediately on ctx cancel.
-
-		for ctx.Err() == nil {
-			// Fetch next batch of attestations.
-			atts, err := p.fetch(ctx, srcChainID, height)
-			if ctx.Err() != nil {
-				return // Don't backoff or log on ctx cancel, just return.
-			} else if err != nil {
-				log.Warn(ctx, "Failed fetching attestation; will retry", err, "height", height)
-				fetchErrTotal.WithLabelValues(workerName, srcChain).Inc()
-				backoff()
-
-				continue
-			} else if len(atts) == 0 {
-				// We reached the head of the chain, wait for new blocks.
-				backoff() // Maybe do (consensus-block-period / N)
-
-				continue
-			}
-
-			reset() // Reset fetch backoff
-
-			// Call callback for each attestation
-			for _, att := range atts {
-				actx := log.WithCtx(ctx, "height", att.BlockHeight)
-				// Sanity checks
-				if att.SourceChainID != srcChainID {
-					log.Error(actx, "Invalid attestation srcChain ID [BUG!]", nil)
-					return
-				} else if att.BlockHeight != height {
-					log.Error(actx, "Invalid attestation height [BUG!]", nil)
-					return
-				}
-
-				// Retry callback on error
-				for actx.Err() == nil {
-					err := callback(actx, att)
-					if actx.Err() != nil {
-						return // Don't backoff or log on ctx cancel, just return.
-					} else if err != nil {
-						log.Warn(actx, "Failed processing attestation; will retry", err)
-						callbackErrTotal.WithLabelValues(workerName, srcChain).Inc()
-						backoff()
-
-						continue
-					}
-					streamHeight.WithLabelValues(workerName, srcChain).Set(float64(height))
-
-					break // Success, stop retrying.
-				}
-
-				reset() // Reset callback backoff
-				height++
-			}
+		err := stream.Stream(ctx, deps, srcChainID, height, cb)
+		if err != nil { // RetryCallback==true, so this never return an error.
+			log.Error(ctx, "Unexpected stream error [BUG]", err)
 		}
 	}()
 }
