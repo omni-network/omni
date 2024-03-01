@@ -9,9 +9,8 @@ import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrate
 import { ISignatureUtils } from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 import { IServiceManager } from "eigenlayer-middleware/src/interfaces/IServiceManager.sol";
 
-import { OmniPredeploys } from "../libraries/OmniPredeploys.sol";
 import { IDelegationManager } from "../interfaces/IDelegationManager.sol";
-import { IOmniEthRestaking } from "../interfaces/IOmniEthRestaking.sol";
+import { IEthStakeInbox } from "../interfaces/IEthStakeInbox.sol";
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
 import { IOmniAVS } from "../interfaces/IOmniAVS.sol";
 import { IOmniAVSAdmin } from "../interfaces/IOmniAVSAdmin.sol";
@@ -51,18 +50,21 @@ contract OmniAVS is
      * @param owner_            Intiial contract owner
      * @param omni_             Omni portal contract
      * @param omniChainId_      Omni chain id
+     * @param ethStakeInbox_    EthStakeInbox contract address
      * @param strategyParams_   List of accepted strategies and their multipliers
      */
     function initialize(
         address owner_,
         IOmniPortal omni_,
         uint64 omniChainId_,
+        address ethStakeInbox_,
         StrategyParam[] calldata strategyParams_
     ) external initializer {
         omni = omni_;
         omniChainId = omniChainId_;
         xcallGasLimitPerOperator = 50_000;
         xcallBaseGasLimit = 75_000;
+        ethStakeInbox = ethStakeInbox_;
 
         _transferOwnership(owner_);
         _setStrategyParams(strategyParams_);
@@ -136,8 +138,8 @@ contract OmniAVS is
         Operator[] memory ops = _getOperators();
         omni.xcall{ value: msg.value }(
             omniChainId,
-            OmniPredeploys.OMNI_ETH_RESTAKING,
-            abi.encodeWithSelector(IOmniEthRestaking.sync.selector, ops),
+            ethStakeInbox,
+            abi.encodeWithSelector(IEthStakeInbox.sync.selector, ops),
             _xcallGasLimitFor(ops.length)
         );
     }
@@ -148,7 +150,7 @@ contract OmniAVS is
     function feeForSync() external view returns (uint256) {
         Operator[] memory ops = _getOperators();
         return omni.feeFor(
-            omniChainId, abi.encodeWithSelector(IOmniEthRestaking.sync.selector, ops), _xcallGasLimitFor(ops.length)
+            omniChainId, abi.encodeWithSelector(IEthStakeInbox.sync.selector, ops), _xcallGasLimitFor(ops.length)
         );
     }
 
@@ -229,6 +231,15 @@ contract OmniAVS is
      */
     function setOmniChainId(uint64 chainId) external onlyOwner {
         omniChainId = chainId;
+    }
+
+    /**
+     * @notice Set the EthStakeInbox contract address.
+     * @param inbox The EthStakeInbox contract address
+     */
+    function setEthStakeInbox(address inbox) external onlyOwner {
+        require(inbox != address(0), "OmniAVS: zero address");
+        ethStakeInbox = inbox;
     }
 
     /**

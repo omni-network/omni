@@ -7,5 +7,5 @@ pragma solidity ^0.8.12;
  */
 library OmniPredeploys {
     // TODO: replace with actual predeploy address
-    address public constant OMNI_ETH_RESTAKING = address(0);
+    address public constant ETH_STAKE_INBOX = address(12_345);
 }

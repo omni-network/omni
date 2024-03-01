@@ -17,6 +17,7 @@ type StrategyParam struct {
 
 type AVSConfig struct {
 	StrategyParams []StrategyParam `json:"strategyParams"`
+	EthStakeInbox  common.Address  `json:"restakedEthInbox"`
 }
 
 type EigenDeployments struct {
@@ -55,5 +56,6 @@ func DefaultTestAVSConfig(eigen EigenDeployments) AVSConfig {
 
 	return AVSConfig{
 		StrategyParams: strategyParams,
+		EthStakeInbox:  common.HexToAddress("0x1234"), // TODO: replace with actual address
 	}
 }

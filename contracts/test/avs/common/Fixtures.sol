@@ -12,6 +12,7 @@ import { IDelegationManager } from "src/interfaces/IDelegationManager.sol";
 import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
 import { OmniAVS } from "src/protocol/OmniAVS.sol";
+import { OmniPredeploys } from "src/libraries/OmniPredeploys.sol";
 
 import { DeployGoerliAVS } from "script/avs/DeployGoerliAVS.s.sol";
 import { StrategyParams } from "script/avs/StrategyParams.sol";
@@ -29,6 +30,7 @@ contract Fixtures is EigenLayerFixtures {
     address omniAVSOwner = multisig;
 
     uint64 omniChainId = 111;
+    address ethStakeInbox = OmniPredeploys.ETH_STAKE_INBOX;
 
     ProxyAdmin proxyAdmin;
     MockPortal portal;
@@ -66,7 +68,7 @@ contract Fixtures is EigenLayerFixtures {
             ITransparentUpgradeableProxy(proxy),
             impl,
             abi.encodeWithSelector(
-                OmniAVS.initialize.selector, omniAVSOwner, portal, omniChainId, _localStrategyParams()
+                OmniAVS.initialize.selector, omniAVSOwner, portal, omniChainId, ethStakeInbox, _localStrategyParams()
             )
         );
         vm.stopPrank();

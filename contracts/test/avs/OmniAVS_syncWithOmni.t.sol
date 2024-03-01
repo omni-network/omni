@@ -2,7 +2,7 @@
 pragma solidity =0.8.12;
 
 import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
-import { IOmniEthRestaking } from "src/interfaces/IOmniEthRestaking.sol";
+import { IEthStakeInbox } from "src/interfaces/IEthStakeInbox.sol";
 import { OmniPredeploys } from "src/libraries/OmniPredeploys.sol";
 
 import { Base } from "./common/Base.sol";
@@ -332,15 +332,13 @@ contract OmniAVS_syncWithOmni_Test is Base {
 
     /// @dev Expect an OmniPortal.xcall to IOmniEthRestaking.sync(ops), with correct fee and gasLimit
     function _expectXCall(IOmniAVS.Operator[] memory ops) internal {
-        bytes memory data = abi.encodeWithSelector(IOmniEthRestaking.sync.selector, ops);
+        bytes memory data = abi.encodeWithSelector(IEthStakeInbox.sync.selector, ops);
         uint64 gasLimit = omniAVS.xcallBaseGasLimit() + omniAVS.xcallGasLimitPerOperator() * uint64(ops.length);
 
         vm.expectCall(
             address(portal),
             syncFee,
-            abi.encodeWithSignature(
-                "xcall(uint64,address,bytes,uint64)", omniChainId, OmniPredeploys.OMNI_ETH_RESTAKING, data, gasLimit
-            )
+            abi.encodeWithSignature("xcall(uint64,address,bytes,uint64)", omniChainId, ethStakeInbox, data, gasLimit)
         );
     }
 
