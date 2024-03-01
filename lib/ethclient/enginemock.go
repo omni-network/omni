@@ -129,6 +129,12 @@ func (m *engineMock) ForkchoiceUpdatedV2(ctx context.Context, update engine.Fork
 			m.head = block
 			found = true
 
+			id, err := payloadID(payload)
+			if err != nil {
+				return engine.ForkChoiceResponse{}, err
+			}
+			resp.PayloadID = &id
+
 			break
 		}
 		if !found {
