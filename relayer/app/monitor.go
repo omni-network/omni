@@ -94,7 +94,7 @@ func getHeads(ctx context.Context, client ethclient.Client) map[ethclient.HeadTy
 	return resp
 }
 
-// getAttested returns the latest attested height and block hash by chain.
+// getAttested returns the latest attested height by chain.
 func getAttested(ctx context.Context, chainID uint64, deployHeight uint64, cprovider cchain.Provider) (uint64, error) {
 	att, ok, err := cprovider.LatestAttestation(ctx, chainID)
 	if err != nil {

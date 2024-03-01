@@ -8,6 +8,7 @@ remote_write:
     basic_auth:
       username: {{ .RemoteUsername }}
       password: {{ .RemotePassword }}
+    send_exemplars: true
     write_relabel_configs:
       # Add 'container' label using 'instance without port'
       - source_labels: [instance]
