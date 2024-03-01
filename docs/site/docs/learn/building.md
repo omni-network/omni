@@ -7,7 +7,7 @@ id: building
 
 Omni is only possible because of a series of recent innovations in blockchain infrastructure. This section provides a high level overview of the "How It Works" and the components that work together to establish the final product.
 
-For a more detailed overview, see the [Protocol](../protocol/introduction.md) section.
+For a more detailed overview, see the [Protocol](../protocol/introduction/introduction.md) section.
 
 ## Global EVM-Compatible Application Development
 
