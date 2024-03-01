@@ -28,42 +28,45 @@ type DeployConfig struct {
 	AgentSecrets agent.Secrets
 	EigenFile    string
 	PingPongN    uint64
-	testConfig   bool // Internal use only (no command line flag).
+
+	// Internal use parameters (no command line flags).
+	testConfig bool
 }
 
 // Deploy a new e2e network. It also starts all services in order to deploy private portals.
-func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.DeployInfos, error) {
+// It also returns an optional deployed ping pong contract is enabled.
+func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.DeployInfos, *pingpong.XDapp, error) {
 	if err := Cleanup(ctx, def); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	genesisValSetID := uint64(1) // validator set IDs start at 1
 	genesisVals, err := toPortalValidators(def.Testnet.Validators)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Deploy public portals first so their addresses are available for setup.
 	if err := def.Netman.DeployPublicPortals(ctx, genesisValSetID, genesisVals); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if err := Setup(ctx, def, cfg.AgentSecrets, cfg.testConfig); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if err := StartInitial(ctx, def.Testnet.Testnet, def.Infra); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if err := def.Netman.DeployPrivatePortals(ctx, genesisValSetID, genesisVals); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	deployInfo := make(types.DeployInfos)
 
 	if err := deployAVS(ctx, def, cfg, deployInfo); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	for chain, info := range def.Netman.DeployInfo() {
@@ -71,22 +74,22 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 	}
 
 	if cfg.PingPongN == 0 {
-		return deployInfo, nil
+		return deployInfo, nil, nil
 	}
 
 	pp, err := pingpong.Deploy(ctx, def.Netman, def.Backends)
 	if err != nil {
-		return nil, errors.Wrap(err, "deploy pingpong")
+		return nil, nil, errors.Wrap(err, "deploy pingpong")
 	}
 
 	err = pp.StartAllEdges(ctx, cfg.PingPongN)
 	if err != nil {
-		return nil, errors.Wrap(err, "start all edges")
+		return nil, nil, errors.Wrap(err, "start all edges")
 	}
 
 	pp.ExportDeployInfo(deployInfo)
 
-	return deployInfo, nil
+	return deployInfo, &pp, nil
 }
 
 // E2ETestConfig is the configuration required to run a full e2e test.
@@ -101,17 +104,19 @@ func DefaultE2ETestConfig() E2ETestConfig {
 
 // E2ETest runs a full e2e test.
 func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, secrets agent.Secrets) error {
-	const pingpongN = 4 // Deploy and start ping pong
+	const pingpongN = 3 // Deploy and start ping pong
 	depCfg := DeployConfig{
 		AgentSecrets: secrets,
 		PingPongN:    pingpongN,
 		testConfig:   true,
 	}
 
-	deployInfo, err := Deploy(ctx, def, depCfg)
+	deployInfo, pingpong, err := Deploy(ctx, def, depCfg)
 	if err != nil {
 		return err
 	}
+
+	stopReceiptMonitor := StartMonitoringReceipts(ctx, def)
 
 	msgBatches := []int{3, 2, 1} // Send 6 msgs from each chain to each other chain
 	msgsErr := StartSendingXMsgs(ctx, def.Netman, def.Backends, msgBatches...)
@@ -132,7 +137,12 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, secrets age
 		return errors.New("evidence injection not supported yet")
 	}
 
-	// Wait for all messages to be sent
+	// Wait for:
+	// - all xmsgs messages to be sent
+	// - all xmsgs to be submitted
+	// - all pingpongs to complete
+	// - all receipts are successful
+
 	log.Info(ctx, "Waiting for all cross chain messages to be sent")
 	select {
 	case <-ctx.Done():
@@ -147,12 +157,20 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, secrets age
 		return err
 	}
 
-	// Anvil doens't support subscriptions, we need to poll.
-	// if err := pp.WaitDone(ctx); err != nil {
-	//	return errors.Wrap(err, "wait pingpong")
-	//}
+	if err := pingpong.LogBalances(ctx); err != nil {
+		return err
+	}
 
-	if err := Test(ctx, def, deployInfo, false); err != nil {
+	if err := pingpong.WaitDone(ctx); err != nil {
+		return errors.Wrap(err, "wait for pingpong")
+	}
+
+	if err := stopReceiptMonitor(); err != nil {
+		return errors.Wrap(err, "stop deploy")
+	}
+
+	// Start unit tests.
+	if err := Test(ctx, def, deployInfo, true); err != nil {
 		return err
 	}
 
