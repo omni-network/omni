@@ -14,7 +14,7 @@ abstract contract OmniAVSStorage {
     /// @notice Set of operators that are allowed to register
     mapping(address => bool) internal _allowlist;
 
-    /// @notice Omni chain id, used to make xcalls to the Omni chain
+    /// @notice Omni chain id, used to make xcalls to Omni
     uint64 public omniChainId;
 
     /// @notice OmniPortal.xcall gas limit per each operator in syncWithOmni()
@@ -23,6 +23,9 @@ abstract contract OmniAVSStorage {
     /// @notice OmniPortal.xcall base gas limit in syncWithOmni()
     uint64 public xcallBaseGasLimit;
 
-    /// @notice Omni portal contract, used to make xcalls to the Omni chain
+    /// @notice Address of EthStakeInbox contract, predeployed on Omni
+    address public ethStakeInbox;
+
+    /// @notice Omni portal contract, used to make xcalls to Omni
     IOmniPortal public omni;
 }

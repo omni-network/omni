@@ -15,6 +15,7 @@ import { OmniAVS } from "src/protocol/OmniAVS.sol";
 
 import { DeployGoerliAVS } from "script/avs/DeployGoerliAVS.s.sol";
 import { StrategyParams } from "script/avs/StrategyParams.sol";
+import { MockOmniPredeploys } from "test/utils/MockOmniPredeploys.sol";
 import { MockPortal } from "test/utils/MockPortal.sol";
 import { EigenLayerFixtures } from "./eigen/EigenLayerFixtures.sol";
 import { Empty } from "./Empty.sol";
@@ -29,6 +30,7 @@ contract Fixtures is EigenLayerFixtures {
     address omniAVSOwner = multisig;
 
     uint64 omniChainId = 111;
+    address ethStakeInbox = MockOmniPredeploys.ETH_STAKE_INBOX;
 
     ProxyAdmin proxyAdmin;
     MockPortal portal;
@@ -66,7 +68,7 @@ contract Fixtures is EigenLayerFixtures {
             ITransparentUpgradeableProxy(proxy),
             impl,
             abi.encodeWithSelector(
-                OmniAVS.initialize.selector, omniAVSOwner, portal, omniChainId, _localStrategyParams()
+                OmniAVS.initialize.selector, omniAVSOwner, portal, omniChainId, ethStakeInbox, _localStrategyParams()
             )
         );
         vm.stopPrank();
