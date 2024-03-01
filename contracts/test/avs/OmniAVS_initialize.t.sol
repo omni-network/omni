@@ -12,8 +12,8 @@ import { IDelegationManager } from "src/interfaces/IDelegationManager.sol";
 import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
 import { OmniAVS } from "src/protocol/OmniAVS.sol";
-import { OmniPredeploys } from "src/libraries/OmniPredeploys.sol";
 
+import { MockOmniPredeploys } from "test/utils/MockOmniPredeploys.sol";
 import { Empty } from "./common/Empty.sol";
 import { Base } from "./common/Base.sol";
 
@@ -35,7 +35,7 @@ contract OmniAVS_initialize_Test is Base {
             owner: omniAVSOwner,
             omni: IOmniPortal(address(portal)),
             omniChainId: omniChainId,
-            ethStakeInbox: OmniPredeploys.ETH_STAKE_INBOX,
+            ethStakeInbox: MockOmniPredeploys.ETH_STAKE_INBOX,
             strategyParams: _localStrategyParams()
         });
     }

@@ -12,10 +12,10 @@ import { IDelegationManager } from "src/interfaces/IDelegationManager.sol";
 import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
 import { OmniAVS } from "src/protocol/OmniAVS.sol";
-import { OmniPredeploys } from "src/libraries/OmniPredeploys.sol";
 
 import { DeployGoerliAVS } from "script/avs/DeployGoerliAVS.s.sol";
 import { StrategyParams } from "script/avs/StrategyParams.sol";
+import { MockOmniPredeploys } from "test/utils/MockOmniPredeploys.sol";
 import { MockPortal } from "test/utils/MockPortal.sol";
 import { EigenLayerFixtures } from "./eigen/EigenLayerFixtures.sol";
 import { Empty } from "./Empty.sol";
@@ -30,7 +30,7 @@ contract Fixtures is EigenLayerFixtures {
     address omniAVSOwner = multisig;
 
     uint64 omniChainId = 111;
-    address ethStakeInbox = OmniPredeploys.ETH_STAKE_INBOX;
+    address ethStakeInbox = MockOmniPredeploys.ETH_STAKE_INBOX;
 
     ProxyAdmin proxyAdmin;
     MockPortal portal;

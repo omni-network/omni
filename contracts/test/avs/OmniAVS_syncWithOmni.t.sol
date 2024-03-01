@@ -3,7 +3,6 @@ pragma solidity =0.8.12;
 
 import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
 import { IEthStakeInbox } from "src/interfaces/IEthStakeInbox.sol";
-import { OmniPredeploys } from "src/libraries/OmniPredeploys.sol";
 
 import { Base } from "./common/Base.sol";
 
