@@ -9,13 +9,13 @@ import { XTypes } from "../libraries/XTypes.sol";
  * @dev Base contract for Omni cross-chain applications
  */
 contract XApp {
-    /// @dev The OmniPortal contract
+    /// @notice The OmniPortal contract
     IOmniPortal internal immutable omni;
 
-    /// @dev Transient storage for the current xmsg
-    XTypes.Msg internal xmsg;
+    /// @notice Transient storage for the current xmsg
+    XTypes.MsgShort internal xmsg;
 
-    /// @dev Read current xmsg into storage before execution, delete it afterwards
+    /// @notice Read current xmsg into storage before execution, delete it afterwards
     modifier xrecv() {
         xmsg = omni.xmsg();
         _;
@@ -26,35 +26,41 @@ contract XApp {
         omni = IOmniPortal(_omni);
     }
 
-    /// @dev Return true if the current call is an xcall from the OmniPortal
+    /**
+     * @notice Return true if the current call is an xcall from the OmniPortal
+     */
     function isXCall() internal view returns (bool) {
         return omni.isXCall() && msg.sender == address(omni);
     }
 
-    /// @dev Calculate the fee for calling a contract on another chain.
-    ///      Uses OmniPortal.XMSG_DEFAULT_GAS_LIMIT
-    /// @return fee The fee, denominated in wei
+    /**
+     * @notice Returns the fee for calling a contract on another chain. Uses OmniPortal.XMSG_DEFAULT_GAS_LIMIT
+     */
     function feeFor(uint64 destChainId, bytes memory data) internal view returns (uint256) {
         return omni.feeFor(destChainId, data);
     }
 
-    /// @dev Calculate the fee for calling a contract on another chain.
-    ///      Uses OmniPortal.XMSG_DEFAULT_GAS_LIMIT
-    /// @return fee The fee, denominated in wei
+    /**
+     * @notice Retruns the fee for calling a contract on another chain, with the specified gas limit
+     */
     function feeFor(uint64 destChainId, bytes memory data, uint64 gasLimit) internal view returns (uint256) {
         return omni.feeFor(destChainId, data, gasLimit);
     }
 
-    /// @dev Call a contract on another chain. Uses OmniPortal.XMSG_DEFAULT_GAS_LIMIT
-    /// @return fee The fee for the xcall
+    /**
+     * @notice Call a contract on another chain. Uses OmniPortal.XMSG_DEFAULT_GAS_LIMIT
+     * @return fee The fee for the xcall
+     */
     function xcall(uint64 destChainId, address to, bytes memory data) internal returns (uint256) {
         uint256 fee = omni.feeFor(destChainId, data);
         omni.xcall{ value: fee }(destChainId, to, data);
         return fee;
     }
 
-    /// @dev Call a contract on another chain
-    /// @return fee The fee, denominated in wei
+    /**
+     * @notice Call a contract on another chain, with the specified gas limit
+     * @return fee The fee, denominated in wei
+     */
     function xcall(uint64 destChainId, address to, bytes memory data, uint64 gasLimit) internal returns (uint256) {
         uint256 fee = omni.feeFor(destChainId, data, gasLimit);
         omni.xcall{ value: fee }(destChainId, to, data, gasLimit);

@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { OmniPortalConstants } from "./OmniPortalConstants.sol";
 import { IFeeOracle } from "../interfaces/IFeeOracle.sol";
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
 import { IOmniPortalAdmin } from "../interfaces/IOmniPortalAdmin.sol";
@@ -9,22 +10,7 @@ import { XBlockMerkleProof } from "../libraries/XBlockMerkleProof.sol";
 import { XTypes } from "../libraries/XTypes.sol";
 import { Quorum } from "../libraries/Quorum.sol";
 
-contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable {
-    /// @inheritdoc IOmniPortal
-    uint64 public constant XMSG_DEFAULT_GAS_LIMIT = 200_000;
-
-    /// @inheritdoc IOmniPortal
-    uint64 public constant XMSG_MAX_GAS_LIMIT = 5_000_000;
-
-    /// @inheritdoc IOmniPortal
-    uint64 public constant XMSG_MIN_GAS_LIMIT = 21_000;
-
-    /// @inheritdoc IOmniPortal
-    uint8 public constant XSUB_QUORUM_NUMERATOR = 2;
-
-    /// @inheritdoc IOmniPortal
-    uint8 public constant XSUB_QUORUM_DENOMINATOR = 3;
-
+contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OmniPortalConstants, OwnableUpgradeable {
     /// @inheritdoc IOmniPortal
     uint64 public immutable chainId;
 
@@ -53,7 +39,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable {
     /// @dev The current XMsg being executed, exposed via xmsg() getter
     ///      Private state + public getter preferred over public state with default getter,
     ///      so that we can use the XMsg struct type in the interface.
-    XTypes.Msg private _currentXmsg;
+    XTypes.MsgShort private _currentXmsg;
 
     constructor() {
         _disableInitializers();
@@ -145,7 +131,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable {
         require(xmsg_.streamOffset == inXStreamOffset[xmsg_.sourceChainId] + 1, "OmniPortal: wrong streamOffset");
 
         // set xmsg to the one we're executing
-        _currentXmsg = xmsg_;
+        _currentXmsg = XTypes.MsgShort(xmsg_.sourceChainId, xmsg_.sender);
 
         // increment offset before executing xcall, to avoid reentrancy loop
         inXStreamOffset[xmsg_.sourceChainId] += 1;
@@ -169,7 +155,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable {
      */
 
     /// @inheritdoc IOmniPortal
-    function xmsg() external view returns (XTypes.Msg memory) {
+    function xmsg() external view returns (XTypes.MsgShort memory) {
         return _currentXmsg;
     }
 

@@ -18,10 +18,10 @@ abstract contract OmniAVSStorage {
     uint64 public omniChainId;
 
     /// @notice OmniPortal.xcall gas limit per each operator in syncWithOmni()
-    uint64 public xcallGasLimitPerOperator = 10_000;
+    uint64 public xcallGasLimitPerOperator;
 
     /// @notice OmniPortal.xcall base gas limit in syncWithOmni()
-    uint64 public xcallBaseGasLimit = 75_000;
+    uint64 public xcallBaseGasLimit;
 
     /// @notice Omni portal contract, used to make xcalls to the Omni chain
     IOmniPortal public omni;

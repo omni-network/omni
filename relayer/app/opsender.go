@@ -129,7 +129,7 @@ func initTxMgr(cfg txmgr.Config, chainName string) (txmgr.TxManager, error) {
 }
 
 // getXSubmitBytes returns the byte representation of the xsubmit function call.
-func (o OpSender) getXSubmitBytes(sub bindings.XTypesSubmission) ([]byte, error) {
+func (o OpSender) getXSubmitBytes(sub bindings.XSubmission) ([]byte, error) {
 	bytes, err := o.abi.Pack("xsubmit", sub)
 	if err != nil {
 		return nil, errors.Wrap(err, "pack xsubmit")
