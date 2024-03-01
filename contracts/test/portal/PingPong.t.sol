@@ -39,7 +39,7 @@ contract PingPong_Test is Test {
             1, // destChainID
             msg.sender, // sender
             address(pp), // destContract
-            abi.encodeWithSelector(pp.pingpong.selector, 10, 10), // calldata
+            abi.encodeWithSelector(pp.pingpong_norecv.selector, 10, 10), // calldata
             pp.GAS_LIMIT()
         );
     }
@@ -68,14 +68,14 @@ contract PingPong_Test is Test {
             1, // destChainID
             msg.sender, // sender
             address(pp), // destContract
-            abi.encodeWithSelector(pp.pingpong.selector, 10, 10), // calldata
+            abi.encodeWithSelector(pp.pingpong_norecv.selector, 10, 10), // calldata
             pp.GAS_LIMIT()
         );
         portal.mockXCall(
             1, // destChainID
             msg.sender, // sender
             address(pp), // destContract
-            abi.encodeWithSelector(pp.pingpong.selector, 10, 10), // calldata
+            abi.encodeWithSelector(pp.pingpong_norecv.selector, 10, 10), // calldata
             pp.GAS_LIMIT()
         );
     }
