@@ -50,7 +50,7 @@ func monitorHeightsForever(ctx context.Context, chain netconf.Chain,
 			return
 		case <-ticker.C:
 			// First get attested head (so it can't be lower than heads).
-			attested, hash, err := getAttested(ctx, chain.ID, chain.DeployHeight, cprovider)
+			attested, err := getAttested(ctx, chain.ID, chain.DeployHeight, cprovider)
 
 			// then get chain heads (so it is always higher than attested).
 			heads := getHeads(ctx, client)
@@ -59,11 +59,7 @@ func monitorHeightsForever(ctx context.Context, chain netconf.Chain,
 			if err != nil {
 				log.Error(ctx, "Monitoring attested failed (will retry)", err, "chain", chain.Name)
 			} else {
-				labels := prometheus.Labels{
-					"block_hash": hash.String(),
-					"chain":      chain.Name,
-				}
-				attestedHeight.WithLabelValues(chain.Name).(prometheus.ExemplarObserver).ObserveWithExemplar(float64(attested), labels) //nolint:forcetypeassert // false positive
+				attestedHeight.WithLabelValues(chain.Name).Set(float64(attested))
 			}
 
 			for typ, head := range heads {
@@ -99,15 +95,15 @@ func getHeads(ctx context.Context, client ethclient.Client) map[ethclient.HeadTy
 }
 
 // getAttested returns the latest attested height and block hash by chain.
-func getAttested(ctx context.Context, chainID uint64, deployHeight uint64, cprovider cchain.Provider) (uint64, common.Hash, error) {
+func getAttested(ctx context.Context, chainID uint64, deployHeight uint64, cprovider cchain.Provider) (uint64, error) {
 	att, ok, err := cprovider.LatestAttestation(ctx, chainID)
 	if err != nil {
-		return 0, common.Hash{}, errors.Wrap(err, "latest attestation")
+		return 0, errors.Wrap(err, "latest attestation")
 	} else if !ok {
-		return deployHeight - 1, common.Hash{}, nil
+		return deployHeight - 1, nil
 	}
 
-	return att.BlockHeader.BlockHeight, att.BlockHeader.BlockHash, nil
+	return att.BlockHeader.BlockHeight, nil
 }
 
 // monitorAccountsForever blocks and periodically monitors the relayer accounts
