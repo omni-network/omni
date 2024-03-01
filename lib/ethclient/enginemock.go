@@ -110,6 +110,7 @@ func (m *engineMock) ForkchoiceUpdatedV2(ctx context.Context, update engine.Fork
 	}
 
 	// Maybe update head
+	//nolint: nestif // this is a mock it's fine
 	if m.head.Hash() != update.HeadBlockHash {
 		var found bool
 		for _, payload := range m.payloads {

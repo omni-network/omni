@@ -7,13 +7,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/beacon/engine"
-	etypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+
+	"github.com/ethereum/go-ethereum/beacon/engine"
+	etypes "github.com/ethereum/go-ethereum/core/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
@@ -60,8 +61,8 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 		b, execPayload := mockEngine.nextBlock(t, latestHeight+1, uint64(time.Now().Unix()), latestBlock.Hash(), ap.LocalAddress())
 		block = b
 		//
-		//payloadID := mockEngine.pushPayload(t, ctx, ap.LocalAddress(), latestBlock.Hash(), time.Now())
-		//payloadResp, err := mockEngine.GetPayloadV2(ctx, *payloadID)
+		// payloadID := mockEngine.pushPayload(t, ctx, ap.LocalAddress(), latestBlock.Hash(), time.Now())
+		// payloadResp, err := mockEngine.GetPayloadV2(ctx, *payloadID)
 		//require.NoError(t, err)
 		payloadID, err = toPayloadID(execPayload)
 		require.NoError(t, err)
