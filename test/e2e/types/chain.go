@@ -12,7 +12,7 @@ var (
 	ChainOmniEVM = EVMChain{
 		Name:              "omni_evm",
 		ID:                1,
-		BlockPeriod:       time.Second,
+		BlockPeriod:       2 * time.Second, // TODO(corver): Make this more robust.
 		FinalizationStrat: netconf.StratFinalized,
 	}
 
