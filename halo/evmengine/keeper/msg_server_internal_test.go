@@ -60,10 +60,7 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 
 		b, execPayload := mockEngine.nextBlock(t, latestHeight+1, uint64(time.Now().Unix()), latestBlock.Hash(), ap.LocalAddress())
 		block = b
-		//
-		// payloadID := mockEngine.pushPayload(t, ctx, ap.LocalAddress(), latestBlock.Hash(), time.Now())
-		// payloadResp, err := mockEngine.GetPayloadV2(ctx, *payloadID)
-		//require.NoError(t, err)
+
 		payloadID, err = toPayloadID(execPayload)
 		require.NoError(t, err)
 
