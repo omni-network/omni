@@ -8,6 +8,8 @@ import { XApp } from "src/pkg/XApp.sol";
  * @notice A contract that pingpongs xmsgs between two chains
  */
 contract PingPong is XApp {
+    uint64 public constant GAS_LIMIT = 500_000;
+
     /**
      * @notice Emitted when the pingpong loop is done
      * @param destChainID The destination chain id
@@ -46,7 +48,7 @@ contract PingPong is XApp {
     }
 
     function _xpingpong(uint64 destChainID, address to, uint64 times, uint64 n) internal {
-        xcall(destChainID, to, abi.encodeWithSelector(this.pingpong.selector, times, n));
+        xcall(destChainID, to, abi.encodeWithSelector(this.pingpong.selector, times, n), GAS_LIMIT);
     }
 
     receive() external payable { }

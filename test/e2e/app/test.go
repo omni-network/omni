@@ -17,7 +17,6 @@ import (
 // Test runs test cases under tests/.
 func Test(ctx context.Context, def Definition, deployInfo types.DeployInfos, verbose bool) error {
 	log.Info(ctx, "Running tests in ./tests/...")
-
 	extNetwork := externalNetwork(def.Testnet, def.Netman.DeployInfo())
 
 	networkDir, err := os.MkdirTemp("", "omni-e2e")
@@ -66,18 +65,20 @@ func Test(ctx context.Context, def Definition, deployInfo types.DeployInfos, ver
 		return errors.Wrap(err, "setting E2E_DEPLOY_INFO")
 	}
 
-	log.Info(ctx, "Env files",
+	log.Debug(ctx, "Env files",
 		"E2E_NETWORK", networkFile,
 		"E2E_MANIFEST", manifestFile,
 		"INFRASTRUCTURE_TYPE", infd.Provider,
 		"INFRASTRUCTURE_FILE", infd.Path,
 		"E2E_DEPLOY_INFO", deployInfoFile)
 
-	args := []string{"go", "test", "-timeout", "60s", "-count", "1", "-slow", fmt.Sprint(def.Manifest.SlowTests)}
+	args := []string{"go", "test", "-timeout", "60s", "-count", "1"}
 	if verbose {
 		args = append(args, "-v")
 	}
 	args = append(args, "github.com/omni-network/omni/test/e2e/tests")
+	args = append(args, fmt.Sprintf("-slow=%v", def.Manifest.SlowTests))
+	log.Debug(ctx, "Test command", "args", args)
 
 	err = exec.CommandVerbose(ctx, args...)
 	if err != nil {
