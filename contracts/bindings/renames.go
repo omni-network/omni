@@ -5,3 +5,7 @@ package bindings
 
 type Validator = XTypesValidator
 type ValidatorSigTuple = XTypesSigTuple
+
+type XMsg = XTypesMsgFull
+type XSubmission = XTypesSubmission
+type XBlockHeader = XTypesBlockHeader

@@ -12,7 +12,7 @@ import { Vm } from "forge-std/Vm.sol";
 contract OmniPortal_xcall_Test is Base {
     /// @dev Test that xcall with default gas limit emits XMsg event and increments outXStreamOffset
     function test_xcall_defaultGasLimit_succeeds() public {
-        XTypes.Msg memory xmsg = _outbound_increment();
+        XTypes.MsgFull memory xmsg = _outbound_increment();
 
         // check XMsg event is emitted
         vm.expectEmit();
@@ -30,7 +30,7 @@ contract OmniPortal_xcall_Test is Base {
 
     /// @dev Test that xcall with explicit gas limit emits XMsg event and increments outXStreamOffset
     function test_xcall_explicitGasLimit_succeeds() public {
-        XTypes.Msg memory xmsg = _outbound_increment();
+        XTypes.MsgFull memory xmsg = _outbound_increment();
         xmsg.gasLimit = portal.XMSG_DEFAULT_GAS_LIMIT() + 1;
 
         // check XMsg event is emitted
@@ -49,7 +49,7 @@ contract OmniPortal_xcall_Test is Base {
 
     /// @dev Test that xcall with insufficient fee revert
     function test_xcall_insufficientFee_reverts() public {
-        XTypes.Msg memory xmsg = _outbound_increment();
+        XTypes.MsgFull memory xmsg = _outbound_increment();
 
         uint256 fee = portal.feeFor(xmsg.destChainId, xmsg.data, xmsg.gasLimit) - 1;
 
@@ -59,7 +59,7 @@ contract OmniPortal_xcall_Test is Base {
 
     /// @dev Test that xcall with too-low gas limit reverts
     function test_xcall_gasLimitTooLow_reverts() public {
-        XTypes.Msg memory xmsg = _outbound_increment();
+        XTypes.MsgFull memory xmsg = _outbound_increment();
         xmsg.gasLimit = portal.XMSG_MIN_GAS_LIMIT() - 1;
 
         uint256 fee = portal.feeFor(xmsg.destChainId, xmsg.data, xmsg.gasLimit);
@@ -70,7 +70,7 @@ contract OmniPortal_xcall_Test is Base {
 
     /// @dev Test that xcall with too-high gas limit reverts
     function test_xcall_gasLimitTooHigh_reverts() public {
-        XTypes.Msg memory xmsg = _outbound_increment();
+        XTypes.MsgFull memory xmsg = _outbound_increment();
         xmsg.gasLimit = portal.XMSG_MAX_GAS_LIMIT() + 1;
 
         uint256 fee = portal.feeFor(xmsg.destChainId, xmsg.data, xmsg.gasLimit);
@@ -81,7 +81,7 @@ contract OmniPortal_xcall_Test is Base {
 
     /// @dev Test that xcall with destChainId == portal.chainId reverts
     function test_xcall_sameChain_reverts() public {
-        XTypes.Msg memory xmsg = _outbound_increment();
+        XTypes.MsgFull memory xmsg = _outbound_increment();
         xmsg.destChainId = portal.chainId();
 
         uint256 fee = portal.feeFor(xmsg.destChainId, xmsg.data, xmsg.gasLimit);

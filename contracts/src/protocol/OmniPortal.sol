@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { OmniPortalConstants } from "./OmniPortalConstants.sol";
 import { IFeeOracle } from "../interfaces/IFeeOracle.sol";
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
 import { IOmniPortalAdmin } from "../interfaces/IOmniPortalAdmin.sol";
@@ -9,22 +10,7 @@ import { XBlockMerkleProof } from "../libraries/XBlockMerkleProof.sol";
 import { XTypes } from "../libraries/XTypes.sol";
 import { Quorum } from "../libraries/Quorum.sol";
 
-contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable {
-    /// @inheritdoc IOmniPortal
-    uint64 public constant XMSG_DEFAULT_GAS_LIMIT = 200_000;
-
-    /// @inheritdoc IOmniPortal
-    uint64 public constant XMSG_MAX_GAS_LIMIT = 5_000_000;
-
-    /// @inheritdoc IOmniPortal
-    uint64 public constant XMSG_MIN_GAS_LIMIT = 21_000;
-
-    /// @inheritdoc IOmniPortal
-    uint8 public constant XSUB_QUORUM_NUMERATOR = 2;
-
-    /// @inheritdoc IOmniPortal
-    uint8 public constant XSUB_QUORUM_DENOMINATOR = 3;
-
+contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OmniPortalConstants, OwnableUpgradeable {
     /// @inheritdoc IOmniPortal
     uint64 public immutable chainId;
 
@@ -140,12 +126,12 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable {
     }
 
     /// @dev Verify an XMsg is next in its XStream, execute it, increment inXStreamOffset, emit an XReceipt
-    function _exec(XTypes.Msg calldata xmsg_) internal {
+    function _exec(XTypes.MsgFull calldata xmsg_) internal {
         require(xmsg_.destChainId == chainId, "OmniPortal: wrong destChainId");
         require(xmsg_.streamOffset == inXStreamOffset[xmsg_.sourceChainId] + 1, "OmniPortal: wrong streamOffset");
 
         // set xmsg to the one we're executing
-        _currentXmsg = xmsg_;
+        _currentXmsg = XTypes.Msg(xmsg_.sourceChainId, xmsg_.sender);
 
         // increment offset before executing xcall, to avoid reentrancy loop
         inXStreamOffset[xmsg_.sourceChainId] += 1;

@@ -22,7 +22,7 @@ library XBlockMerkleProof {
     function verify(
         bytes32 root,
         XTypes.BlockHeader calldata blockHeader,
-        XTypes.Msg[] calldata msgs,
+        XTypes.MsgFull[] calldata msgs,
         bytes32[] calldata proof,
         bool[] calldata proofFlags
     ) internal pure returns (bool) {
@@ -30,7 +30,7 @@ library XBlockMerkleProof {
     }
 
     /// @dev Convert block header and msgs to leaf hashes
-    function _leaves(XTypes.BlockHeader calldata blockHeader, XTypes.Msg[] calldata msgs)
+    function _leaves(XTypes.BlockHeader calldata blockHeader, XTypes.MsgFull[] calldata msgs)
         private
         pure
         returns (bytes32[] memory)
