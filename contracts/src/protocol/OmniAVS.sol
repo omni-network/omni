@@ -61,6 +61,8 @@ contract OmniAVS is
     ) external initializer {
         omni = omni_;
         omniChainId = omniChainId_;
+        xcallGasLimitPerOperator = 50_000;
+        xcallBaseGasLimit = 75_000;
 
         _transferOwnership(owner_);
         _setStrategyParams(strategyParams_);
@@ -346,7 +348,7 @@ contract OmniAVS is
      * @notice Returns the gas limit for OmniEthRestaking.sync xcall for some number of operators
      */
     function _xcallGasLimitFor(uint256 numOperators) internal view returns (uint64) {
-        return uint64(numOperators * xcallGasLimitPerOperator + xcallBaseGasLimit);
+        return uint64(numOperators) * xcallGasLimitPerOperator + xcallBaseGasLimit;
     }
 
     /**
