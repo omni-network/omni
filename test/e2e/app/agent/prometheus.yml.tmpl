@@ -21,7 +21,8 @@ scrape_configs:
   - job_name: "{{ .JobName }}"
     metrics_path: "{{ .MetricsPath }}"
     static_configs:
-      - targets: [{{ .Targets }}]
+      - targets: [{{ .Targets }}] # {{ .JobName }} targets
         labels:
           network: '{{ $.Network }}'
+          host: '{{ $.Host }}'
 {{ end }}
