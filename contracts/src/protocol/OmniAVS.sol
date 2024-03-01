@@ -183,8 +183,11 @@ contract OmniAVS is
      */
     function getRestakeableStrategies() external view returns (address[] memory) {
         address[] memory strategies = new address[](_strategyParams.length);
-        for (uint256 j = 0; j < _strategyParams.length; j++) {
+        for (uint256 j = 0; j < _strategyParams.length;) {
             strategies[j] = address(_strategyParams[j].strategy);
+            unchecked {
+                j++;
+            }
         }
         return strategies;
     }
@@ -196,10 +199,13 @@ contract OmniAVS is
      */
     function getOperatorRestakedStrategies(address operator) external view returns (address[] memory) {
         address[] memory strategies = new address[](_strategyParams.length);
-        for (uint256 j = 0; j < _strategyParams.length; j++) {
+        for (uint256 j = 0; j < _strategyParams.length;) {
             address strat = address(_strategyParams[j].strategy);
             if (_delegationManager.operatorShares(operator, IStrategy(strat)) > 0) {
                 strategies[j] = strat;
+            }
+            unchecked {
+                j++;
             }
         }
         return strategies;
@@ -311,11 +317,14 @@ contract OmniAVS is
      * @notice Removes an operator from the list of operators
      */
     function _removeOperator(address operator) private {
-        for (uint256 i = 0; i < _operators.length; i++) {
+        for (uint256 i = 0; i < _operators.length;) {
             if (_operators[i] == operator) {
                 _operators[i] = _operators[_operators.length - 1];
                 _operators.pop();
                 break;
+            }
+            unchecked {
+                i++;
             }
         }
     }
@@ -324,9 +333,12 @@ contract OmniAVS is
      * @notice Returns true if the operator is in the list of operators
      */
     function _isOperator(address operator) private view returns (bool) {
-        for (uint256 i = 0; i < _operators.length; i++) {
+        for (uint256 i = 0; i < _operators.length;) {
             if (_operators[i] == operator) {
                 return true;
+            }
+            unchecked {
+                i++;
             }
         }
         return false;
@@ -339,15 +351,21 @@ contract OmniAVS is
     function _setStrategyParams(StrategyParam[] calldata params) internal {
         delete _strategyParams;
 
-        for (uint256 i = 0; i < params.length; i++) {
+        for (uint256 i = 0; i < params.length;) {
             require(address(params[i].strategy) != address(0), "OmniAVS: no zero strategy");
 
             // ensure no duplicates
-            for (uint256 j = i + 1; j < params.length; j++) {
+            for (uint256 j = i + 1; j < params.length;) {
                 require(address(params[i].strategy) != address(params[j].strategy), "OmniAVS: no duplicate strategy");
+                unchecked {
+                    j++;
+                }
             }
 
             _strategyParams.push(params[i]);
+            unchecked {
+                i++;
+            }
         }
     }
 
@@ -368,7 +386,7 @@ contract OmniAVS is
     function _getOperators() internal view returns (Operator[] memory) {
         Operator[] memory ops = new Operator[](_operators.length);
 
-        for (uint256 i = 0; i < ops.length; i++) {
+        for (uint256 i = 0; i < ops.length;) {
             address operator = _operators[i];
 
             uint96 total = _getTotalDelegations(operator);
@@ -378,6 +396,9 @@ contract OmniAVS is
             uint96 delegated = total > staked ? total - staked : 0;
 
             ops[i] = Operator(operator, delegated, staked);
+            unchecked {
+                i++;
+            }
         }
 
         return ops;
@@ -391,27 +412,28 @@ contract OmniAVS is
         (IStrategy[] memory strategies, uint256[] memory shares) = _delegationManager.getDelegatableShares(operator);
 
         uint96 staked;
-        for (uint256 i = 0; i < strategies.length; i++) {
+        for (uint256 i = 0; i < strategies.length;) {
             IStrategy strat = strategies[i];
 
             // find the strategy params for the strategy
             StrategyParam memory params;
-            for (uint256 j = 0; j < _strategyParams.length; j++) {
+            for (uint256 j = 0; j < _strategyParams.length;) {
                 if (address(_strategyParams[j].strategy) == address(strat)) {
                     params = _strategyParams[j];
                     break;
+                }
+                unchecked {
+                    j++;
                 }
             }
 
             // if strategy is not found, do not consider it in stake
             if (address(params.strategy) == address(0)) continue;
 
-            // TODO: should we convert shares to underlying?
-            // uint256 amt = IStrategy(params.strategy).sharesToUnderlying(shares[i]);
-            // This would convert "shares in the stETH strategy" to "stETH tokens"
-            // Shares do not map 1:1 to underlying for rebalancing tokens
-
             staked += _weight(shares[i], params.multiplier);
+            unchecked {
+                i++;
+            }
         }
 
         return staked;
@@ -425,16 +447,14 @@ contract OmniAVS is
         uint96 total;
         StrategyParam memory params;
 
-        for (uint256 j = 0; j < _strategyParams.length; j++) {
+        for (uint256 j = 0; j < _strategyParams.length;) {
             params = _strategyParams[j];
             uint256 shares = _delegationManager.operatorShares(operator, params.strategy);
 
-            // TODO: should we convert shares to underlying?
-            // uint256 amt = IStrategy(params.strategy).sharesToUnderlying(shares);
-            // This would convert "shares in the stETH strategy" to "stETH tokens"
-            // Shares do not map 1:1 to underlying for rebalancing tokens
-
             total += _weight(shares, params.multiplier);
+            unchecked {
+                j++;
+            }
         }
 
         return total;
