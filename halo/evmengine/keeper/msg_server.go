@@ -51,7 +51,7 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 	if s.buildOptimistic && isNext {
 		log.Debug(ctx, "Triggering optimistic EVM payload build", "next_height", nextHeight)
 		ts := uint64(time.Now().Unix())
-		if payload.Timestamp <= ts {
+		if ts <= payload.Timestamp {
 			ts = payload.Timestamp + 1 // Subsequent blocks must have a higher timestamp.
 		}
 		attrs = &engine.PayloadAttributes{
