@@ -52,7 +52,7 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 	var latestHeight uint64
 	var block *etypes.Block
 	newPayload := func() {
-		// get latest block to build on top of
+		// get latest block to build on top
 		latestHeight, err = mockEngine.BlockNumber(ctx)
 		require.NoError(t, err)
 		latestBlock, err := mockEngine.BlockByNumber(ctx, big.NewInt(int64(latestHeight)))
