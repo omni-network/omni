@@ -48,11 +48,14 @@ interface IOmniPortal {
     function chainId() external view returns (uint64);
 
     /**
-     * @notice The current XMsg being executed via this portal
-     * @dev If no XMsg is being executed, all fields will be zero
-     * @return XMsg
+     * @notice Returns the current XMsg being executed via this portal.
+     *          - xmsg().sourceChainId  Chain ID of the source xcall
+     *          - xmsg().sender         msg.sender of the source xcall
+     *         If no XMsg is being executed, all fields will be zero.
+     *          - xmsg().sourceChainId  == 0
+     *          - xmsg().sender         == address(0)
      */
-    function xmsg() external view returns (XTypes.Msg memory);
+    function xmsg() external view returns (XTypes.MsgShort memory);
 
     /**
      * @notice Whether the current transaction is an xcall
@@ -126,7 +129,7 @@ contract XApp {
     IOmniPortal internal immutable omni;
 
     /// @dev Transient storage for the current xmsg
-    XTypes.Msg internal xmsg;
+    XTypes.MsgShort internal xmsg;
 
     /// @dev Read current xmsg into storage before execution, delete it afterwards
     modifier xrecv() {
@@ -180,7 +183,7 @@ contract XApp {
 ### [`XTypes`](https://github.com/omni-network/omni/blob/main/contracts/src/libraries/XTypes.sol)
 
 - Defines core xchain messaging types for the Omni protocol.
-- `XTypes.Msg` is the only type end users interact with. It provides context
+- `XTypes.MsgShort` is the only type end users interact with. It provides context
 
 <details>
 <summary>`XTypes.sol` Reference Solidity Code</summary>
@@ -191,21 +194,14 @@ pragma solidity ^0.8.12;
 
 /// @dev Omni xchain types (only user facing types)
 library XTypes {
-    struct Msg {
-        /// @dev Chain ID of the source chain
+    /**
+     * @notice Trimmed version of Msg that presents the minimum required context for consuming xapps.
+     * @custom:field sourceChainId  Chain ID of the source chain
+     * @custom:field sender         msg.sender of xcall on source chain
+     */
+    struct MsgShort {
         uint64 sourceChainId;
-        /// @dev Chain ID of the destination chain
-        uint64 destChainId;
-        /// @dev Monotonically incremented offset of Msg in source -> dest Stream
-        uint64 streamOffset;
-        /// @dev msg.sender of xcall on source chain
         address sender;
-        /// @dev Target address to call on destination chain
-        address to;
-        /// @dev Data to provide to call on destination chain
-        bytes data;
-        /// @dev Gas limit to use for call execution on destination chain
-        uint64 gasLimit;
     }
 }
 ```
