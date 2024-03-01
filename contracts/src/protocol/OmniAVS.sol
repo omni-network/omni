@@ -328,11 +328,11 @@ contract OmniAVS is
 
         for (uint256 i = 0; i < params.length; i++) {
             // TODO: add zero addr and duplicate strat tests
-            require(address(params[i].strategy) != address(0), "OmniAVS: zero strategy");
+            require(address(params[i].strategy) != address(0), "OmniAVS: no zero strategy");
 
             // ensure no duplicates
             for (uint256 j = i + 1; j < params.length; j++) {
-                require(address(params[i].strategy) != address(params[j].strategy), "OmniAVS: duplicate strategy");
+                require(address(params[i].strategy) != address(params[j].strategy), "OmniAVS: no duplicate strategy");
             }
 
             _strategyParams.push(params[i]);
