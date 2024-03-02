@@ -183,10 +183,10 @@ contract OmniAVS is
      */
     function getRestakeableStrategies() external view returns (address[] memory) {
         address[] memory strategies = new address[](_strategyParams.length);
-        for (uint256 j = 0; j < _strategyParams.length;) {
-            strategies[j] = address(_strategyParams[j].strategy);
+        for (uint256 i = 0; i < _strategyParams.length;) {
+            strategies[i] = address(_strategyParams[i].strategy);
             unchecked {
-                j++;
+                i++;
             }
         }
         return strategies;
@@ -199,13 +199,13 @@ contract OmniAVS is
      */
     function getOperatorRestakedStrategies(address operator) external view returns (address[] memory) {
         address[] memory strategies = new address[](_strategyParams.length);
-        for (uint256 j = 0; j < _strategyParams.length;) {
-            address strat = address(_strategyParams[j].strategy);
+        for (uint256 i = 0; i < _strategyParams.length;) {
+            address strat = address(_strategyParams[i].strategy);
             if (_delegationManager.operatorShares(operator, IStrategy(strat)) > 0) {
-                strategies[j] = strat;
+                strategies[i] = strat;
             }
             unchecked {
-                j++;
+                i++;
             }
         }
         return strategies;
@@ -447,13 +447,13 @@ contract OmniAVS is
         uint96 total;
         StrategyParam memory params;
 
-        for (uint256 j = 0; j < _strategyParams.length;) {
-            params = _strategyParams[j];
+        for (uint256 i = 0; i < _strategyParams.length;) {
+            params = _strategyParams[i];
             uint256 shares = _delegationManager.operatorShares(operator, params.strategy);
 
             total += _weight(shares, params.multiplier);
             unchecked {
-                j++;
+                i++;
             }
         }
 
