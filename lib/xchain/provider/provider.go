@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/stream"
 	"github.com/omni-network/omni/lib/xchain"
 )
 
@@ -38,12 +39,48 @@ func New(network netconf.Network, rpcClients map[uint64]ethclient.Client) *Provi
 	}
 }
 
-// Subscribe to the XBlock from a given destination chain.
-func (p *Provider) Subscribe(
+// StreamAsync starts a goroutine that streams xblocks asynchronously forever.
+// It returns immediately. It only returns an error if the chainID in invalid.
+// This is the async version of StreamBlocks.
+// It retries forever (with backoff) on all fetch and callback errors.
+func (p *Provider) StreamAsync(
 	ctx context.Context,
 	chainID uint64,
 	fromHeight uint64,
 	callback xchain.ProviderCallback,
+) error {
+	if _, _, err := p.getChain(chainID); err != nil {
+		return err
+	}
+
+	go func() {
+		err := p.stream(ctx, chainID, fromHeight, callback, true)
+		if err != nil { // RetryCallback==true so this should only ever return nil on ctx cancel.
+			log.Error(ctx, "Streaming xprovider blocks failed unexpectedly [BUG]", err)
+		}
+	}()
+
+	return nil
+}
+
+// StreamBlocks blocks, streaming all xblocks from the chain as they become available (finalized).
+// It retries forever (with backoff) on all fetch errors. It however returns the first callback error.
+// It returns nil when the context is canceled.
+func (p *Provider) StreamBlocks(
+	ctx context.Context,
+	chainID uint64,
+	fromHeight uint64,
+	callback xchain.ProviderCallback,
+) error {
+	return p.stream(ctx, chainID, fromHeight, callback, false)
+}
+
+func (p *Provider) stream(
+	ctx context.Context,
+	chainID uint64,
+	fromHeight uint64,
+	callback xchain.ProviderCallback,
+	retryCallback bool,
 ) error {
 	// retrieve the respective config
 	chain, _, err := p.getChain(chainID)
@@ -51,18 +88,51 @@ func (p *Provider) Subscribe(
 		return err
 	}
 
+	deps := stream.Deps[xchain.Block]{
+		FetchBatch: func(ctx context.Context, chainID uint64, height uint64) ([]xchain.Block, error) {
+			xBlock, exists, err := p.GetBlock(ctx, chainID, height)
+			if err != nil {
+				return nil, err
+			} else if !exists {
+				return nil, nil
+			}
+
+			return []xchain.Block{xBlock}, nil
+		},
+		Backoff:       p.backoffFunc,
+		ElemLabel:     "attestation",
+		RetryCallback: retryCallback,
+		Verify: func(ctx context.Context, block xchain.Block, h uint64) error {
+			if block.SourceChainID != chainID {
+				return errors.New("invalid block source chain id")
+			} else if block.BlockHeight != h {
+				return errors.New("invalid block height")
+			}
+
+			return nil
+		},
+		IncFetchErr: func() {
+			fetchErrTotal.WithLabelValues(chain.Name).Inc()
+		},
+		IncCallbackErr: func() {
+			callbackErrTotal.WithLabelValues(chain.Name).Inc()
+		},
+		SetStreamHeight: func(h uint64) {
+			streamHeight.WithLabelValues(chain.Name).Set(float64(h))
+		},
+	}
+
+	cb := (stream.Callback[xchain.Block])(callback)
+
 	// Start streaming from chain's deploy height as per config.
 	if fromHeight < chain.DeployHeight {
 		fromHeight = chain.DeployHeight
 	}
 
-	ctx = log.WithCtx(ctx, "chain_name", chain.Name)
-	log.Info(ctx, "Subscribing to provider", "from_height", fromHeight)
+	ctx = log.WithCtx(ctx, "chain", chain.Name)
+	log.Info(ctx, "Streaming xprovider blocks", "from_height", fromHeight)
 
-	// run the XBlock stream for this chain
-	p.streamBlocks(ctx, chain.Name, chainID, fromHeight, callback)
-
-	return nil
+	return stream.Stream(ctx, deps, chainID, fromHeight, cb)
 }
 
 // getChain provides the configuration of the given chainID.

@@ -42,7 +42,7 @@ func StartMonitoringReceipts(ctx context.Context, def Definition) func() error {
 	var msgCache sync.Map
 
 	streamReceipts := func(ctx context.Context, chain netconf.Chain) (void, error) {
-		return nil, xprovider.StreamBlocks(ctx, chain, chain.DeployHeight,
+		return nil, xprovider.StreamBlocks(ctx, chain.ID, chain.DeployHeight,
 			func(ctx context.Context, block xchain.Block) error {
 				var failed int
 				for _, receipt := range block.Receipts {
