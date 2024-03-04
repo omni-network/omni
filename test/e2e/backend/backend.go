@@ -260,20 +260,18 @@ func (f backendStubSigner) Sender(tx *ethtypes.Transaction) (common.Address, err
 
 	v, r, s := tx.RawSignatureValues()
 
-	if len(r.Bytes()) != 8 {
+	if len(r.Bytes()) != 20 {
 		return common.Address{}, errors.New("invalid r length", "length", len(r.Bytes()))
 	}
-	if len(s.Bytes()) != 8 {
-		return common.Address{}, errors.New("invalid s length", "length", len(s.Bytes()))
+	if s.Uint64() != 0 {
+		return common.Address{}, errors.New("non-empty s [BUG]", "length", len(s.Bytes()))
 	}
-	if len(v.Bytes()) != 4 {
-		return common.Address{}, errors.New("invalid v length", "length", len(v.Bytes()))
+	if v.Uint64() != 0 {
+		return common.Address{}, errors.New("non-empty v [BUG]", "length", len(v.Bytes()))
 	}
 
 	addr := make([]byte, 20)
-	copy(addr[:8], r.Bytes())
-	copy(addr[8:16], s.Bytes())
-	copy(addr[16:], v.Bytes())
+	copy(addr, r.Bytes())
 
 	return common.Address(addr), nil
 }
@@ -284,14 +282,10 @@ func (f backendStubSigner) SignatureValues(_ *ethtypes.Transaction, sig []byte) 
 		return nil, nil, nil, errors.New("invalid from signature length", "length", len(sig))
 	}
 
-	// Convert the 20 byte signature into:
-	// R: 8 bytes uint64
-	// S: 8 bytes uint64
-	// V: 4 bytes uint32
-
-	r = new(big.Int).SetBytes(sig[:8])
-	s = new(big.Int).SetBytes(sig[8:16])
-	v = new(big.Int).SetBytes(sig[16:])
+	// Set the 20 byte signature (from address) as R
+	r = new(big.Int).SetBytes(sig)
+	s = new(big.Int) // 0
+	v = new(big.Int) // 0
 
 	return r, s, v, nil
 }
