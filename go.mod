@@ -31,7 +31,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/graph-gophers/graphql-go v1.5.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
-	github.com/jackc/pgx/v5 v5.5.3
+	github.com/jackc/pgx/v5 v5.5.4
 	github.com/leodido/go-conventionalcommits v0.12.0
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/muesli/termenv v0.15.2
