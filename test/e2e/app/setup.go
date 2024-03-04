@@ -21,6 +21,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	relayapp "github.com/omni-network/omni/relayer/app"
 	"github.com/omni-network/omni/test/e2e/app/agent"
+	"github.com/omni-network/omni/test/e2e/app/static"
 	"github.com/omni-network/omni/test/e2e/types"
 	"github.com/omni-network/omni/test/e2e/vmcompose"
 
@@ -150,9 +151,6 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 	return nil
 }
 
-//go:embed static/el-anvil-state.json
-var anvilState []byte
-
 // writeAnvilState writes the embedded /static/el-anvil-state.json
 // to <testnet.Dir>/anvil/state.json for use by all anvil chains.
 func writeAnvilState(testnet types.Testnet) error {
@@ -160,7 +158,7 @@ func writeAnvilState(testnet types.Testnet) error {
 	if err := os.MkdirAll(filepath.Dir(anvilStateFile), 0o755); err != nil {
 		return errors.Wrap(err, "mkdir")
 	}
-	if err := os.WriteFile(anvilStateFile, anvilState, 0o644); err != nil {
+	if err := os.WriteFile(anvilStateFile, static.GetElAnvilState(), 0o644); err != nil {
 		return errors.Wrap(err, "write anvil state")
 	}
 

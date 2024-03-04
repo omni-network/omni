@@ -3,8 +3,8 @@ package backend
 import (
 	"context"
 	"crypto/ecdsa"
-	"math/big"
 	"strings"
+	"time"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
@@ -14,7 +14,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -30,12 +29,12 @@ var (
 	privateDeployKey = mustHexToKey(privKeyHex0)
 )
 
-// Backends is a wrapper around a set of adapted ethclients (backends)
-// that delegate transaction sending to a txmgr.TxManager for reliable sending.
+// Backends is a wrapper around a set of Backends, one for each chain.
+// At this point, it only supports "a single account for all Backends".
 //
-// It should be used with bindings based contracts, as it provides bind.TransactOpts.
+// See Backends godoc for more information.
 type Backends struct {
-	backends map[uint64]backend
+	backends map[uint64]*backend
 }
 
 func New(testnet types.Testnet, deployKeyFile string) (Backends, error) {
@@ -55,12 +54,17 @@ func New(testnet types.Testnet, deployKeyFile string) (Backends, error) {
 		return Backends{}, errors.Wrap(err, "load deploy key")
 	}
 
-	backends := make(map[uint64]backend)
+	backends := make(map[uint64]*backend)
 
 	// Configure omni EVM backend
 	{
 		chain := testnet.OmniEVMs[0] // Connect to the first omni evm instance for now.
-		backends[chain.Chain.ID], err = newBackend(chain.Chain, chain.ExternalRPC, privateDeployKey)
+		ethCl, err := ethclient.Dial(chain.Chain.Name, chain.ExternalRPC)
+		if err != nil {
+			return Backends{}, errors.Wrap(err, "dial")
+		}
+
+		backends[chain.Chain.ID], err = newBackend(chain.Chain.Name, chain.Chain.ID, chain.Chain.BlockPeriod, ethCl, privateDeployKey)
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "new omni backend")
 		}
@@ -68,7 +72,12 @@ func New(testnet types.Testnet, deployKeyFile string) (Backends, error) {
 
 	// Configure anvil EVM backends
 	for _, chain := range testnet.AnvilChains {
-		backends[chain.Chain.ID], err = newBackend(chain.Chain, chain.ExternalRPC, privateDeployKey)
+		ethCl, err := ethclient.Dial(chain.Chain.Name, chain.ExternalRPC)
+		if err != nil {
+			return Backends{}, errors.Wrap(err, "dial")
+		}
+
+		backends[chain.Chain.ID], err = newBackend(chain.Chain.Name, chain.Chain.ID, chain.Chain.BlockPeriod, ethCl, privateDeployKey)
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "new anvil backend")
 		}
@@ -79,7 +88,12 @@ func New(testnet types.Testnet, deployKeyFile string) (Backends, error) {
 		if publicDeployKey == nil {
 			return Backends{}, errors.New("public deploy key required")
 		}
-		backends[chain.Chain.ID], err = newBackend(chain.Chain, chain.RPCAddress, publicDeployKey)
+		ethCl, err := ethclient.Dial(chain.Chain.Name, chain.RPCAddress)
+		if err != nil {
+			return Backends{}, errors.Wrap(err, "dial")
+		}
+
+		backends[chain.Chain.ID], err = newBackend(chain.Chain.Name, chain.Chain.ID, chain.Chain.BlockPeriod, ethCl, publicDeployKey)
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "new public backend")
 		}
@@ -90,50 +104,46 @@ func New(testnet types.Testnet, deployKeyFile string) (Backends, error) {
 	}, nil
 }
 
-// BindOpts returns a new TransactOpts and Backend for interacting with bindings based contracts.
-// The TransactOpts are partially stubbed, since txmgr handles nonces and signing.
-// The returned backend is a normal ethclient, except that it delegates SendTransaction to txmgr.
-//
-// Do not cache or store the TransactOpts, as they are not safe for concurrent use (pointer).
-// Rather create a new TransactOpts for each transaction.
-func (b Backends) BindOpts(ctx context.Context, sourceChainID uint64) (*bind.TransactOpts, Backend, error) {
+// BindOpts is a convenience function that returns the single account and bind.TransactOpts and backend for a given chain.
+func (b Backends) BindOpts(ctx context.Context, sourceChainID uint64) (common.Address, *bind.TransactOpts, Backend, error) {
 	backend, ok := b.backends[sourceChainID]
 	if !ok {
-		return nil, nil, errors.New("unknown backend")
+		return common.Address{}, nil, nil, errors.New("unknown chain", "chain", sourceChainID)
 	}
 
-	if header, err := backend.HeaderByNumber(ctx, nil); err != nil {
-		return nil, nil, errors.Wrap(err, "header by number")
-	} else if header.BaseFee == nil {
-		return nil, nil, errors.New("only dynamic transaction backends supported")
+	if len(backend.accounts) != 1 {
+		return common.Address{}, nil, nil, errors.New("only single account backends supported")
 	}
 
-	// Stub nonce and signer since txmgr will handle this.
-	// Bindings will estimate gas.
-	return &bind.TransactOpts{
-		From:  backend.from,
-		Nonce: big.NewInt(1),
-		Signer: func(_ common.Address, tx *ethtypes.Transaction) (*ethtypes.Transaction, error) {
-			return tx, nil
-		},
-		Context: ctx,
-	}, backend, nil
+	// Get the first account
+	var addr common.Address
+	for a := range backend.accounts {
+		addr = a
+		break
+	}
+
+	opts, err := backend.BindOpts(ctx, addr)
+	if err != nil {
+		return common.Address{}, nil, nil, errors.Wrap(err, "bind opts")
+	}
+
+	return addr, opts, backend, nil
 }
 
 func (b Backends) RPCClients() map[uint64]ethclient.Client {
 	clients := make(map[uint64]ethclient.Client)
 	for chainID, backend := range b.backends {
-		clients[chainID] = backend
+		clients[chainID] = backend.Client
 	}
 
 	return clients
 }
 
-func newTxMgr(ethCl ethclient.Client, chain types.EVMChain, privateKey *ecdsa.PrivateKey) (txmgr.TxManager, error) {
+func newTxMgr(ethCl ethclient.Client, chainName string, chainID uint64, blockPeriod time.Duration, privateKey *ecdsa.PrivateKey) (txmgr.TxManager, error) {
 	// creates our new CLI config for our tx manager
 	cliConfig := txmgr.NewCLIConfig(
-		chain.ID,
-		chain.BlockPeriod/interval,
+		chainID,
+		blockPeriod/interval,
 		txmgr.DefaultSenderFlagValues,
 	)
 
@@ -144,7 +154,7 @@ func newTxMgr(ethCl ethclient.Client, chain types.EVMChain, privateKey *ecdsa.Pr
 	}
 
 	// create a simple tx manager from our config
-	txMgr, err := txmgr.NewSimpleTxManagerFromConfig(chain.Name, cfg)
+	txMgr, err := txmgr.NewSimpleTxManagerFromConfig(chainName, cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "new simple")
 	}

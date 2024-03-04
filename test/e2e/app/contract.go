@@ -94,7 +94,7 @@ func xcall(ctx context.Context, backends backend.Backends, from netman.Portal, d
 		)
 	}
 
-	txOpts, _, err := backends.BindOpts(ctx, from.Chain.ID)
+	_, txOpts, _, err := backends.BindOpts(ctx, from.Chain.ID)
 	if err != nil {
 		return nil, errors.Wrap(err, "bindOpts")
 	}

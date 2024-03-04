@@ -36,7 +36,7 @@ func Deploy(ctx context.Context, netMgr netman.Manager, backends backend.Backend
 	deployFunc := func(ctx context.Context, portal netman.Portal) (contract, error) {
 		portalAddr := portal.DeployInfo.PortalAddress
 
-		txOpts, backend, err := backends.BindOpts(ctx, portal.Chain.ID)
+		_, txOpts, backend, err := backends.BindOpts(ctx, portal.Chain.ID)
 		if err != nil {
 			return contract{}, errors.Wrap(err, "deploy opts")
 		}
@@ -92,7 +92,7 @@ func (d *XDapp) ExportDeployInfo(resp types.DeployInfos) {
 
 func (d *XDapp) LogBalances(ctx context.Context) error {
 	for _, contract := range d.contracts {
-		_, backend, err := d.backends.BindOpts(ctx, contract.Chain.ID)
+		_, _, backend, err := d.backends.BindOpts(ctx, contract.Chain.ID)
 		if err != nil {
 			return err
 		}
@@ -113,7 +113,7 @@ func (d *XDapp) LogBalances(ctx context.Context) error {
 
 func (d *XDapp) fund(ctx context.Context) error {
 	for _, contract := range d.contracts {
-		txOpts, backend, err := d.backends.BindOpts(ctx, contract.Chain.ID)
+		_, txOpts, backend, err := d.backends.BindOpts(ctx, contract.Chain.ID)
 		if err != nil {
 			return err
 		}
@@ -148,7 +148,7 @@ func (d *XDapp) StartAllEdges(ctx context.Context, count uint64) error {
 			"count", count,
 		)
 
-		txOpts, backend, err := d.backends.BindOpts(ctx, from.Chain.ID)
+		_, txOpts, backend, err := d.backends.BindOpts(ctx, from.Chain.ID)
 		if err != nil {
 			return err
 		}
