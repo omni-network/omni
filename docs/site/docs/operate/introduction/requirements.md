@@ -2,7 +2,7 @@
 sidebar_position: 2
 ---
 
-# Run a Validator
+# Validator Requirements
 
 Omniʼs operator needs to run the consensus client and the execution client:
 
