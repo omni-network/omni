@@ -10,34 +10,43 @@ import (
 )
 
 type State interface {
-	Get() map[uint64]uint64
-	Persist(chainID uint64, height uint64) error
+	Get() map[uint64]map[uint64]uint64
+	Persist(srcID, dstID, height uint64) error
 }
 
 type PersistentState struct {
 	mu       sync.Mutex
 	filePath string
-	cursors  map[uint64]uint64
+	cursors  map[uint64]map[uint64]uint64 // destChainID -> srcChainID -> height
+}
+
+func NewPersistentState(filePath string) PersistentState {
+	return PersistentState{
+		filePath: filePath,
+		cursors:  make(map[uint64]map[uint64]uint64),
+	}
 }
 
 // Get returns the current state.
-func (p *PersistentState) Get() map[uint64]uint64 {
+func (p *PersistentState) Get() map[uint64]map[uint64]uint64 {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	return p.cursors
 }
 
-// Persist saves the given height for the given chainID. It returns an error if the height is already saved.
-func (p *PersistentState) Persist(chainID uint64, height uint64) error {
+// Persist saves the given height for the given chainID.
+func (p *PersistentState) Persist(srcID, dstID, height uint64) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	if existing, ok := p.cursors[chainID]; ok {
-		return errors.New("height already saved", "chainID", chainID, "existing", existing, "new", height)
+	srcMap, ok := p.cursors[dstID]
+	if !ok {
+		srcMap = make(map[uint64]uint64)
 	}
+	srcMap[srcID] = height
 
-	p.cursors[chainID] = height
+	p.cursors[dstID] = srcMap
 
 	return p.saveUnsafe()
 }
@@ -64,7 +73,7 @@ func Load(path string) (*PersistentState, error) {
 		return nil, errors.Wrap(err, "read state file")
 	}
 
-	cursors := make(map[uint64]uint64)
+	cursors := make(map[uint64]map[uint64]uint64)
 	if err := json.Unmarshal(bytes, &cursors); err != nil {
 		return nil, errors.Wrap(err, "unmarshal state file")
 	}

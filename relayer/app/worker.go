@@ -23,6 +23,7 @@ type Worker struct {
 	xProvider    xchain.Provider
 	creator      CreateFunc
 	sendProvider func() (SendFunc, error)
+	state        State
 }
 
 // NewWorker creates a new worker for a single destination chain.
@@ -72,13 +73,16 @@ func (w *Worker) runOnce(ctx context.Context) error {
 
 	buf := newActiveBuffer(w.destChain.Name, mempoolLimit, sender)
 
+	heights := FromHeights(cursors, w.destChain, w.network.Chains)
+	log.Info(ctx, "Worker subscribed to chains", "heights", heights)
+
 	var logAttrs []any //nolint:prealloc // Not worth it
 	for srcChainID, fromHeight := range FromHeights(cursors, w.destChain, w.network.Chains) {
 		if srcChainID == w.destChain.ID { // Sanity check
 			return errors.New("unexpected cursor [BUG]")
 		}
 
-		callback := newCallback(w.xProvider, initialOffsets, w.creator, buf.AddInput, w.destChain.ID)
+		callback := newCallback(w.xProvider, initialOffsets, w.creator, buf.AddInput, w.destChain.ID, w.state)
 
 		w.cProvider.Subscribe(ctx, srcChainID, fromHeight, w.destChain.Name, callback)
 
@@ -95,7 +99,7 @@ func (w *Worker) runOnce(ctx context.Context) error {
 }
 
 func newCallback(xProvider xchain.Provider, initialOffsets map[xchain.StreamID]uint64, creator CreateFunc,
-	sender SendFunc, destChainID uint64) cchain.ProviderCallback {
+	sender SendFunc, destChainID uint64, state State) cchain.ProviderCallback {
 	return func(ctx context.Context, att xchain.Attestation) error {
 		// Get the xblock from the source chain.
 		block, ok, err := xProvider.GetBlock(ctx, att.SourceChainID, att.BlockHeight)
@@ -109,6 +113,11 @@ func newCallback(xProvider xchain.Provider, initialOffsets map[xchain.StreamID]u
 				log.Hex7("block_hash", block.BlockHash[:]),
 			)
 		} else if len(block.Msgs) == 0 {
+			//log.Debug(ctx, "Block has no messages", "block", att.BlockHeight)
+			//err := state.Persist(destChainID, att.BlockHeight)
+			//if err != nil {
+			//	return errors.Wrap(err, "persist state")
+			//}
 			return nil
 		}
 
@@ -145,6 +154,12 @@ func newCallback(xProvider xchain.Provider, initialOffsets map[xchain.StreamID]u
 					return err
 				}
 			}
+
+			//log.Debug(ctx, "saving state", "block", att.BlockHeight, "dst", destChainID)
+			//err = state.Persist(destChainID, att.BlockHeight)
+			//if err != nil {
+			//	return errors.Wrap(err, "persist state")
+			//}
 		}
 
 		return nil

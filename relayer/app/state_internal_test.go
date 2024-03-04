@@ -10,20 +10,22 @@ import (
 
 func TestPersistState(t *testing.T) {
 	t.Parallel()
-	fuzzer := fuzz.New().NilChance(0).NumElements(1, 64)
-	path := filepath.Join(t.TempDir(), "relayer.json")
+	fuzzer := fuzz.New().NilChance(0).NumElements(1, 5)
+	path := filepath.Join(t.TempDir(), "state.json")
 
 	ps := &PersistentState{
-		cursors:  make(map[uint64]uint64),
+		cursors:  make(map[uint64]map[uint64]uint64),
 		filePath: path,
 	}
 
-	expected := make(map[uint64]uint64)
+	expected := make(map[uint64]map[uint64]uint64)
 	fuzzer.Fuzz(&expected)
 
-	for chainID, height := range expected {
-		err := ps.Persist(chainID, height)
-		require.NoError(t, err)
+	for dstChainID, sourceMap := range expected {
+		for srcChainID, height := range sourceMap {
+			err := ps.Persist(srcChainID, dstChainID, height)
+			require.NoError(t, err)
+		}
 	}
 
 	loadedState, err := Load(path)
@@ -32,14 +34,27 @@ func TestPersistState(t *testing.T) {
 	require.True(t, mapsEqual(expected, loadedState.Get()))
 }
 
-// mapsEqual compares two maps to check if they are equal
-func mapsEqual(expected, actual map[uint64]uint64) bool {
-	if len(expected) != len(actual) {
+func mapsEqual(map1, map2 map[uint64]map[uint64]uint64) bool {
+	if len(map1) != len(map2) {
 		return false
 	}
 
-	for key, val := range expected {
-		if loadedVal, ok := actual[key]; !ok || loadedVal != val {
+	for key, value := range map1 {
+		if val2, ok := map2[key]; !ok || !subMapsEqual(value, val2) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func subMapsEqual(subMap1, subMap2 map[uint64]uint64) bool {
+	if len(subMap1) != len(subMap2) {
+		return false
+	}
+
+	for k, v := range subMap1 {
+		if v2, ok := subMap2[k]; !ok || v != v2 {
 			return false
 		}
 	}
