@@ -182,33 +182,22 @@ contract OmniAVS is
      *      eigenlayer frontend.
      */
     function getRestakeableStrategies() external view returns (address[] memory) {
-        address[] memory strategies = new address[](_strategyParams.length);
-        for (uint256 i = 0; i < _strategyParams.length;) {
-            strategies[i] = address(_strategyParams[i].strategy);
-            unchecked {
-                i++;
-            }
-        }
-        return strategies;
+        return _getRestakeableStrategies();
     }
 
     /**
      * @inheritdoc IServiceManager
      * @dev Implemented to match IServiceManager interface - required for compatibility with
      *      eigenlayer frontend.
+     *
+     *      No work to determine which strategies the operator has restaked. This matches the
+     *      behavior defined in eigenlayer-middleware's ServiceManagerBase. In ServiceManagerBase,
+     *      they return the aggregate list of strategies for the quorums the operator is a member of.
+     *      We only have one "quorum", so we return all strategies.
      */
     function getOperatorRestakedStrategies(address operator) external view returns (address[] memory) {
-        address[] memory strategies = new address[](_strategyParams.length);
-        for (uint256 i = 0; i < _strategyParams.length;) {
-            address strat = address(_strategyParams[i].strategy);
-            if (_delegationManager.operatorShares(operator, IStrategy(strat)) > 0) {
-                strategies[i] = strat;
-            }
-            unchecked {
-                i++;
-            }
-        }
-        return strategies;
+        if (!_isOperator(operator)) return new address[](0);
+        return _getRestakeableStrategies();
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -465,5 +454,19 @@ contract OmniAVS is
      */
     function _weight(uint256 shares, uint96 multiplier) internal pure returns (uint96) {
         return uint96(shares * multiplier / STRATEGY_WEIGHTING_DIVISOR);
+    }
+
+    /**
+     * @notice Returns the list of restakeable strategy addresses
+     */
+    function _getRestakeableStrategies() internal view returns (address[] memory) {
+        address[] memory strategies = new address[](_strategyParams.length);
+        for (uint256 i = 0; i < _strategyParams.length;) {
+            strategies[i] = address(_strategyParams[i].strategy);
+            unchecked {
+                i++;
+            }
+        }
+        return strategies;
     }
 }
