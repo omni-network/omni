@@ -233,7 +233,6 @@ contract OmniAVS is
      * @param inbox The EthStakeInbox contract address
      */
     function setEthStakeInbox(address inbox) external onlyOwner {
-        require(inbox != address(0), "OmniAVS: zero address");
         ethStakeInbox = inbox;
     }
 
@@ -250,7 +249,7 @@ contract OmniAVS is
      * @param base          The base xcall gas limit
      * @param perOperator   The per-operator additional xcall gas limit
      */
-    function setXcallGasLimits(uint64 base, uint64 perOperator) external onlyOwner {
+    function setXCallGasLimits(uint64 base, uint64 perOperator) external onlyOwner {
         xcallBaseGasLimit = base;
         xcallGasLimitPerOperator = perOperator;
     }
@@ -319,21 +318,6 @@ contract OmniAVS is
     }
 
     /**
-     * @notice Returns true if the operator is in the list of operators
-     */
-    function _isOperator(address operator) private view returns (bool) {
-        for (uint256 i = 0; i < _operators.length;) {
-            if (_operators[i] == operator) {
-                return true;
-            }
-            unchecked {
-                i++;
-            }
-        }
-        return false;
-    }
-
-    /**
      * @notice Set the strategy parameters.
      * @param params The strategy parameters
      */
@@ -367,6 +351,21 @@ contract OmniAVS is
      */
     function _xcallGasLimitFor(uint256 numOperators) internal view returns (uint64) {
         return uint64(numOperators) * xcallGasLimitPerOperator + xcallBaseGasLimit;
+    }
+
+    /**
+     * @notice Returns true if the operator is in the list of operators
+     */
+    function _isOperator(address operator) private view returns (bool) {
+        for (uint256 i = 0; i < _operators.length;) {
+            if (_operators[i] == operator) {
+                return true;
+            }
+            unchecked {
+                i++;
+            }
+        }
+        return false;
     }
 
     /**
