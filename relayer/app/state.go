@@ -27,8 +27,17 @@ func NewPersistentState(filePath string) *PersistentState {
 func (p *PersistentState) Get() map[uint64]map[uint64]uint64 {
 	p.mu.Lock()
 	defer p.mu.Unlock()
+	// Create a copy of the map to avoid race conditions
+	copyMap := make(map[uint64]map[uint64]uint64)
+	for k, v := range p.cursors {
+		innerMap := make(map[uint64]uint64)
+		for k2, v2 := range v {
+			innerMap[k2] = v2
+		}
+		copyMap[k] = innerMap
+	}
 
-	return p.cursors
+	return copyMap
 }
 
 // Persist saves the given height for the given chainID.

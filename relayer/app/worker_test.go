@@ -2,7 +2,6 @@ package relayer_test
 
 import (
 	"context"
-	"path/filepath"
 	"sync"
 	"testing"
 
@@ -125,7 +124,7 @@ func TestWorker_Run(t *testing.T) {
 		{ID: destChainB, Name: "chain_b"},
 	}}
 
-	state := relayer.NewPersistentState(filepath.Join(t.TempDir(), "relayer-state.json"))
+	state := relayer.NewPersistentState("/tmp/relayer-state.json")
 
 	for _, chain := range network.Chains {
 		w := relayer.NewWorker(chain, network, mockProvider, mockXClient, mockCreateFunc, func() (relayer.SendFunc, error) {
