@@ -6,11 +6,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
 	"time"
 
+	clicmd "github.com/omni-network/omni/cli/cmd"
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/avs"
 	"github.com/omni-network/omni/lib/avs/anvil"
@@ -25,7 +28,12 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 
+	eigentypes "github.com/Layr-Labs/eigenlayer-cli/pkg/types"
+	eigenutils "github.com/Layr-Labs/eigenlayer-cli/pkg/utils"
+	eigenecdsa "github.com/Layr-Labs/eigensdk-go/crypto/ecdsa"
+	eigensdktypes "github.com/Layr-Labs/eigensdk-go/types"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -91,9 +99,11 @@ func TestEigenAndOmniAVS(t *testing.T) {
 	ownerEigen, err := backend.AddAccount(mustHexToKey(eigenDeployPk))
 	require.NoError(t, err)
 
-	operator1, err := backend.AddAccount(genPrivKey(t))
+	operator1Key := genPrivKey(t)
+	operator1, err := backend.AddAccount(operator1Key)
 	require.NoError(t, err)
-	operator2, err := backend.AddAccount(genPrivKey(t))
+	operator2Key := genPrivKey(t)
+	operator2, err := backend.AddAccount(operator2Key)
 	require.NoError(t, err)
 	delegator1, err := backend.AddAccount(genPrivKey(t))
 	require.NoError(t, err)
@@ -106,6 +116,7 @@ func TestEigenAndOmniAVS(t *testing.T) {
 	require.NoError(t, err)
 
 	// Combine 2 operators and 2 delegators
+	operatorKeys := []*ecdsa.PrivateKey{operator1Key, operator2Key}
 	operators := []common.Address{operator1, operator2}
 	delegators := []common.Address{delegator1, delegator2}
 
@@ -130,7 +141,7 @@ func TestEigenAndOmniAVS(t *testing.T) {
 	whiteListStrategy(t, ctx, backend, contracts, ownerEigen)
 
 	// Register operators to omni AVS with a stake more than minimum stake
-	for _, operator := range operators {
+	for i, operator := range operators {
 		// Add the operator to omni avs allow list
 		addOperatorToAllowList(t, ctx, contracts, ownerAVS, backend, operator)
 
@@ -138,8 +149,9 @@ func TestEigenAndOmniAVS(t *testing.T) {
 		err = avs.DelegateWETH(ctx, contracts, backend, operator, InitialOperatorStake)
 		require.NoError(t, err)
 
-		err = avs.RegisterOperatorWithAVS(ctx, contracts, backend, operator)
-		require.NoError(t, err)
+		registerOperatorCLI(t, ctx, contracts, backend, operatorKeys[i])
+
+		assertOperatorRegistered(t, ctx, contracts, operator)
 	}
 
 	// delegate stake to operators and check their balance
@@ -157,7 +169,7 @@ func TestEigenAndOmniAVS(t *testing.T) {
 	}
 
 	// Undelegate delegator 1 and check if the stake is removed from operator
-	err = avs.UndelegateWETH(ctx, contracts, backend, delegators[0])
+	err = avs.Undelegate(ctx, contracts, backend, delegators[0])
 	require.NoError(t, err)
 	assertOperatorBalance(t, ctx, contracts, operators[0], InitialOperatorStake, 0)
 
@@ -166,6 +178,21 @@ func TestEigenAndOmniAVS(t *testing.T) {
 		err := avs.DeregisterOperatorFromAVS(ctx, contracts, backend, operator)
 		require.NoError(t, err)
 	}
+}
+
+func assertOperatorRegistered(t *testing.T, ctx context.Context, contracts avs.Contracts, operator common.Address) {
+	t.Helper()
+
+	ops, err := contracts.OmniAVS.Operators(&bind.CallOpts{Context: ctx})
+	require.NoError(t, err)
+
+	for _, op := range ops {
+		if op.Addr == operator {
+			return
+		}
+	}
+
+	require.Fail(t, "operator not found in omni avs")
 }
 
 func checkIfContractsAreDeployed(
@@ -389,4 +416,63 @@ func genPrivKey(t *testing.T) *ecdsa.PrivateKey {
 	require.NoError(t, err)
 
 	return privKey
+}
+
+func registerOperatorCLI(t *testing.T, ctx context.Context, contracts avs.Contracts, b backend.Backend, key *ecdsa.PrivateKey) {
+	t.Helper()
+
+	addr := crypto.PubkeyToAddress(key.PublicKey)
+	dir := filepath.Join(t.TempDir(), addr.Hex())
+	keystoreFile := filepath.Join(dir, "keystore.json")
+	configFile := filepath.Join(dir, "config.yaml")
+
+	_, chainID := b.Chain()
+
+	const password = "12345678"
+
+	err := eigenecdsa.WriteKey(keystoreFile, key, password)
+	require.NoError(t, err)
+
+	cfg := eigentypes.OperatorConfigNew{
+		Operator: eigensdktypes.Operator{
+			Address:                   addr.Hex(),
+			EarningsReceiverAddress:   addr.Hex(),
+			DelegationApproverAddress: eigensdktypes.ZeroAddress,
+			StakerOptOutWindowBlocks:  0,
+		},
+		ELDelegationManagerAddress: contracts.DelegationManagerAddr.Hex(),
+		EthRPCUrl:                  b.Address(),
+		PrivateKeyStorePath:        keystoreFile,
+		SignerType:                 eigentypes.LocalKeystoreSigner,
+		ChainId:                    *big.NewInt(int64(chainID)),
+	}
+
+	bz, err := yaml.Marshal(cfg)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(configFile, bz, 0644))
+
+	// Override register options for testing.
+	testOpts := func(deps *clicmd.RegDeps) {
+		deps.Prompter = stubPrompter{password: password}
+		deps.NewBackendFunc = func(_ string, _ uint64, _ time.Duration, _ ethclient.Client, _ ...*ecdsa.PrivateKey) (backend.Backend, error) {
+			return b, nil // Have to provide the test backend for nonce management
+		}
+		deps.VerifyFunc = func(eigensdktypes.Operator) error {
+			return nil // Skip operator verification since it requires non-localhost urls.
+		}
+	}
+
+	err = clicmd.Register(ctx, configFile, contracts.OmniAVSAddr.Hex(), testOpts)
+	tutil.RequireNoError(t, err)
+}
+
+var _ eigenutils.Prompter = stubPrompter{}
+
+type stubPrompter struct {
+	eigenutils.Prompter
+	password string
+}
+
+func (s stubPrompter) InputHiddenString(_, _ string, _ func(string) error) (string, error) {
+	return s.password, nil
 }

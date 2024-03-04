@@ -68,6 +68,10 @@ secrets-baseline: ensure-detect-secrets ## Update secrets baseline.
 fix-golden: ## Fixes golden test fixtures.
 	@./scripts/fix_golden_tests.sh
 
+.PHONY: build-cli
+build-cli: ## Build the omnicli.
+	@go build -o omni cli/main.go
+
 ###############################################################################
 ###                                Testing                                 	###
 ###############################################################################

@@ -47,15 +47,17 @@ const (
 
 // Wrapper wraps an ethclient.Client adding metrics and wrapped errors.
 type Wrapper struct {
-	cl    *ethclient.Client
-	chain string
+	cl      *ethclient.Client
+	chain   string
+	address string
 }
 
 // NewClient wraps an *rpc.Client adding metrics and wrapped errors.
-func NewClient(cl *rpc.Client, chain string) Wrapper {
+func NewClient(cl *rpc.Client, chain, address string) Wrapper {
 	return Wrapper{
-		cl:    ethclient.NewClient(cl),
-		chain: chain,
+		cl:      ethclient.NewClient(cl),
+		chain:   chain,
+		address: address,
 	}
 }
 
@@ -71,14 +73,20 @@ func Dial(chainName string, url string) (Wrapper, error) {
 	}
 
 	return Wrapper{
-		cl:    cl,
-		chain: chainName,
+		cl:      cl,
+		chain:   chainName,
+		address: url,
 	}, nil
 }
 
 // Close closes the underlying RPC connection.
 func (w Wrapper) Close() {
 	w.cl.Close()
+}
+
+// Address returns the underlying RPC address.
+func (w Wrapper) Address() string {
+	return w.address
 }
 
 // HeaderByType returns the block header for the given head type.
