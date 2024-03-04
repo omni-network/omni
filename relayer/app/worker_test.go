@@ -2,6 +2,7 @@ package relayer_test
 
 import (
 	"context"
+	"path/filepath"
 	"sync"
 	"testing"
 
@@ -124,10 +125,12 @@ func TestWorker_Run(t *testing.T) {
 		{ID: destChainB, Name: "chain_b"},
 	}}
 
+	state := relayer.NewPersistentState(filepath.Join(t.TempDir(), "relayer-state.json"))
+
 	for _, chain := range network.Chains {
 		w := relayer.NewWorker(chain, network, mockProvider, mockXClient, mockCreateFunc, func() (relayer.SendFunc, error) {
 			return mockSender.SendTransaction, nil
-		}, &memoryState{})
+		}, state, state.Get())
 		go w.Run(ctx)
 	}
 
@@ -187,26 +190,4 @@ func TestWorker_Run(t *testing.T) {
 	// Ensure totals.
 	require.EqualValues(t, expectChainA, actualChainA)
 	require.EqualValues(t, expectChainB, actualChainB)
-}
-
-var _ relayer.State = &memoryState{}
-
-type memoryState struct {
-	cursors map[uint64]map[uint64]uint64
-}
-
-func (m *memoryState) Persist(srcChainID, dstChainID, height uint64) error {
-	if m.cursors == nil {
-		m.cursors = make(map[uint64]map[uint64]uint64)
-	}
-	if m.cursors[dstChainID] == nil {
-		m.cursors[dstChainID] = make(map[uint64]uint64)
-	}
-	m.cursors[dstChainID][srcChainID] = height
-
-	return nil
-}
-
-func (m *memoryState) Get() map[uint64]map[uint64]uint64 {
-	return m.cursors
 }

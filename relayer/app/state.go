@@ -10,11 +10,6 @@ import (
 	"github.com/cometbft/cometbft/libs/tempfile"
 )
 
-type State interface {
-	Get() map[uint64]map[uint64]uint64
-	Persist(srcID, dstID, height uint64) error
-}
-
 type PersistentState struct {
 	mu       sync.Mutex
 	filePath string
@@ -67,8 +62,8 @@ func (p *PersistentState) saveUnsafe() error {
 	return nil
 }
 
-// Load loads a file state from the given path.
-func Load(path string) (*PersistentState, bool, error) {
+// LoadCursors loads a file state from the given path.
+func LoadCursors(path string) (*PersistentState, bool, error) {
 	bytes, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {

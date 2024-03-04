@@ -28,7 +28,7 @@ func TestPersistState(t *testing.T) {
 		}
 	}
 
-	loadedState, ok, err := Load(path)
+	loadedState, ok, err := LoadCursors(path)
 	require.NoError(t, err)
 	require.True(t, ok)
 	require.NotNil(t, loadedState)

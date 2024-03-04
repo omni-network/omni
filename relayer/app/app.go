@@ -46,11 +46,11 @@ func Run(ctx context.Context, cfg Config) error {
 	cprov := cprovider.NewABCIProvider(tmClient, network.ChainNamesByIDs())
 	xprov := xprovider.New(network, rpcClientPerChain)
 
-	state, ok, err := Load(stateFile)
+	state, ok, err := LoadCursors(cfg.StateFile)
 	if err != nil {
 		return err
 	} else if !ok {
-		state = NewPersistentState(stateFile)
+		state = NewPersistentState(cfg.StateFile)
 	}
 
 	for _, destChain := range network.Chains {
@@ -69,9 +69,8 @@ func Run(ctx context.Context, cfg Config) error {
 			xprov,
 			CreateSubmissions,
 			sendProvider,
-			state)
-
-		worker.SetCursors(state.Get())
+			state,
+			state.Get())
 
 		go worker.Run(ctx)
 	}
