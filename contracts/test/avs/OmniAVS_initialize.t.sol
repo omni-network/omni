@@ -82,7 +82,8 @@ contract OmniAVS_initialize_Test is Base {
             assertEq(strategyParams[i].multiplier, params.strategyParams[i].multiplier);
         }
 
-        assertEq(omniAVS.paused(), false); // assert not paused
+        assertTrue(omniAVS.allowlistEnabled());
+        assertFalse(omniAVS.paused());
     }
 
     // TODO: add more initialization tests

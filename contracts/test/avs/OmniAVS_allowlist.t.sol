@@ -48,12 +48,80 @@ contract OmniAVS_allowlist_Test is Base {
         omniAVS.removeFromAllowlist(operator);
     }
 
-    /// @dev Test that an operator can register if in allow list
+    /// @dev Test that an operator can register if in allowlist
     function test_registerOperator_succeeds() public {
         address operator = _operator(0);
 
         _addToAllowlist(operator);
         _depositIntoSupportedStrategy(operator, 1 ether);
+        _registerAsOperator(operator);
+        _registerOperatorWithAVS(operator);
+
+        IOmniAVS.Operator[] memory operators = omniAVS.operators();
+
+        assertEq(operators.length, 1);
+        assertEq(operators[0].addr, operator);
+    }
+
+    /// @dev Test that an operator can't register if not in allowlist
+    function test_registerOperator_nowAllowed_reverts() public {
+        address operator = _operator(0);
+        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
+
+        vm.expectRevert("OmniAVS: not allowed");
+        vm.prank(operator);
+        omniAVS.registerOperatorToAVS(operator, emptySig);
+    }
+
+    /// @dev Test that the owner can disable the allowlist
+    function test_disableAllowlist_succeeds() public {
+        vm.prank(omniAVSOwner);
+        omniAVS.disableAllowlist();
+        assertFalse(omniAVS.allowlistEnabled());
+    }
+
+    /// @dev Test that only the owner can disable the allowlist
+    function test_disableAllowlist_notOwner_reverts() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        omniAVS.disableAllowlist();
+    }
+
+    /// @dev Test that the allowlist can't be disabled if already disabled
+    function test_disableAllowlist_alreadyDisabled_reverts() public {
+        _disableAllowlist();
+        assertFalse(omniAVS.allowlistEnabled());
+        vm.expectRevert("OmniAVS: already disabled");
+        vm.prank(omniAVSOwner);
+        omniAVS.disableAllowlist();
+    }
+
+    /// @dev Test that the owner can enable the allowlist
+    function test_enableAllowlist_succeeds() public {
+        _disableAllowlist();
+        vm.prank(omniAVSOwner);
+        omniAVS.enableAllowlist();
+        assertTrue(omniAVS.allowlistEnabled());
+    }
+
+    /// @dev Test that only the owner can enable the allowlist
+    function test_enableAllowlist_notOwner_reverts() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        omniAVS.enableAllowlist();
+    }
+
+    /// @dev Test that the allowlist can't be enabled if already enabled
+    function test_enableAllowlist_alreadyEnabled_reverts() public {
+        assertTrue(omniAVS.allowlistEnabled());
+        vm.expectRevert("OmniAVS: already enabled");
+        vm.prank(omniAVSOwner);
+        omniAVS.enableAllowlist();
+    }
+
+    /// @dev Test that an operator can register if not in allowlist, if allowlist is disabled
+    function test_registerOperator_allowlistDisabled_succeeds() public {
+        address operator = _operator(0);
+
+        _disableAllowlist();
         _registerAsOperator(operator);
         _registerOperatorWithAVS(operator);
 

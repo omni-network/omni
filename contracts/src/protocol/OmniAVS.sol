@@ -64,6 +64,7 @@ contract OmniAVS is
         omniChainId = omniChainId_;
         xcallGasLimitPerOperator = 50_000;
         xcallBaseGasLimit = 75_000;
+        allowlistEnabled = true;
         ethStakeInbox = ethStakeInbox_;
 
         _transferOwnership(owner_);
@@ -86,7 +87,7 @@ contract OmniAVS is
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external whenNotPaused {
         require(msg.sender == operator, "OmniAVS: only operator");
-        require(_allowlist[operator], "OmniAVS: not allowed");
+        require(!allowlistEnabled || _allowlist[operator], "OmniAVS: not allowed");
         require(!_isOperator(operator), "OmniAVS: already an operator"); // we could let _avsDirectory.regsiterOperatorToAVS handle this, they do check
 
         _addOperator(operator);
@@ -273,6 +274,24 @@ contract OmniAVS is
         require(_allowlist[operator], "OmniAVS: not in allowlist");
         _allowlist[operator] = false;
         emit OperatorDisallowed(operator);
+    }
+
+    /**
+     * @notice Enable the allowlist.
+     */
+    function enableAllowlist() external onlyOwner {
+        require(!allowlistEnabled, "OmniAVS: already enabled");
+        allowlistEnabled = true;
+        emit AllowlistEnabled();
+    }
+
+    /**
+     * @notice Disable the allowlist.
+     */
+    function disableAllowlist() external onlyOwner {
+        require(allowlistEnabled, "OmniAVS: already disabled");
+        allowlistEnabled = false;
+        emit AllowlistDisabled();
     }
 
     /**
