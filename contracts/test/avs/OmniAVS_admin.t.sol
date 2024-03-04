@@ -107,4 +107,26 @@ contract OmniAVS_admin_Test is Base {
         assertEq(address(actualParams[1].strategy), address(4));
         assertEq(actualParams[1].multiplier, 400);
     }
+
+    /// @dev Emitted by the avs directory when an AVS's metadata URI is updated
+    event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
+
+    /// @dev Test setMetadataURI sets the metadata URI with the avs directory
+    function test_setMetadataURI_succeeds() public {
+        string memory uri = "https://example.com/avs/";
+
+        vm.expectEmit(address(avsDirectory));
+        emit AVSMetadataURIUpdated(address(omniAVS), uri);
+
+        vm.prank(omniAVSOwner);
+        omniAVS.setMetadataURI(uri);
+    }
+
+    /// @dev Test that only the owner can set the metadata URI
+    function test_setMetadataURI_notOwner_reverts() public {
+        string memory uri = "https://example.com/avs/";
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        omniAVS.setMetadataURI(uri);
+    }
 }
