@@ -12,6 +12,10 @@ import (
 	_ "embed"
 )
 
+const (
+	stateFile = "relayer-state.json"
+)
+
 type Config struct {
 	PrivateKey     string
 	HaloURL        string

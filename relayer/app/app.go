@@ -45,7 +45,13 @@ func Run(ctx context.Context, cfg Config) error {
 
 	cprov := cprovider.NewABCIProvider(tmClient, network.ChainNamesByIDs())
 	xprov := xprovider.New(network, rpcClientPerChain)
-	state := NewPersistentState("./relayer-state.json")
+
+	state, ok, err := Load(stateFile)
+	if err != nil {
+		return err
+	} else if !ok {
+		state = NewPersistentState(stateFile)
+	}
 
 	for _, destChain := range network.Chains {
 		sendProvider := func() (SendFunc, error) {
@@ -62,9 +68,10 @@ func Run(ctx context.Context, cfg Config) error {
 			cprov,
 			xprov,
 			CreateSubmissions,
-			sendProvider)
+			sendProvider,
+			state)
 
-		worker.state = &state // todo(lazar): move to ctor
+		worker.SetCursors(state.Get())
 
 		go worker.Run(ctx)
 	}

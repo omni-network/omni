@@ -28,8 +28,9 @@ func TestPersistState(t *testing.T) {
 		}
 	}
 
-	loadedState, err := Load(path)
+	loadedState, ok, err := Load(path)
 	require.NoError(t, err)
+	require.True(t, ok)
 	require.NotNil(t, loadedState)
 	require.True(t, mapsEqual(expected, loadedState.Get()))
 }

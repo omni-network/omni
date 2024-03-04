@@ -5,8 +5,9 @@ import (
 	"os"
 	"sync"
 
-	"github.com/cometbft/cometbft/libs/tempfile"
 	"github.com/omni-network/omni/lib/errors"
+
+	"github.com/cometbft/cometbft/libs/tempfile"
 )
 
 type State interface {
@@ -20,8 +21,8 @@ type PersistentState struct {
 	cursors  map[uint64]map[uint64]uint64 // destChainID -> srcChainID -> height
 }
 
-func NewPersistentState(filePath string) PersistentState {
-	return PersistentState{
+func NewPersistentState(filePath string) *PersistentState {
+	return &PersistentState{
 		filePath: filePath,
 		cursors:  make(map[uint64]map[uint64]uint64),
 	}
@@ -67,19 +68,23 @@ func (p *PersistentState) saveUnsafe() error {
 }
 
 // Load loads a file state from the given path.
-func Load(path string) (*PersistentState, error) {
+func Load(path string) (*PersistentState, bool, error) {
 	bytes, err := os.ReadFile(path)
 	if err != nil {
-		return nil, errors.Wrap(err, "read state file")
+		if os.IsNotExist(err) {
+			return nil, false, nil
+		}
+
+		return nil, false, errors.Wrap(err, "read state file")
 	}
 
 	cursors := make(map[uint64]map[uint64]uint64)
 	if err := json.Unmarshal(bytes, &cursors); err != nil {
-		return nil, errors.Wrap(err, "unmarshal state file")
+		return nil, false, errors.Wrap(err, "unmarshal state file")
 	}
 
 	return &PersistentState{
 		cursors:  cursors,
 		filePath: path,
-	}, nil
+	}, true, nil
 }
