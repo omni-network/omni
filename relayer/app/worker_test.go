@@ -125,11 +125,12 @@ func TestWorker_Run(t *testing.T) {
 	}}
 
 	state := relayer.NewPersistentState("/tmp/relayer-state.json")
+	loadedCursors := state.Get()
 
 	for _, chain := range network.Chains {
 		w := relayer.NewWorker(chain, network, mockProvider, mockXClient, mockCreateFunc, func() (relayer.SendFunc, error) {
 			return mockSender.SendTransaction, nil
-		}, state, state.Get())
+		}, state, loadedCursors[chain.ID])
 		go w.Run(ctx)
 	}
 

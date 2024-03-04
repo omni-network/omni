@@ -62,7 +62,8 @@ func filterMsgs(msgs []xchain.Msg, offsets map[xchain.StreamID]uint64, streamID 
 	return res
 }
 
-func FromHeights(cursors []xchain.StreamCursor, destChain netconf.Chain, chains []netconf.Chain) map[uint64]uint64 {
+func FromHeights(cursors []xchain.StreamCursor, destChain netconf.Chain, chains []netconf.Chain,
+	loadedHeights map[uint64]uint64) map[uint64]uint64 {
 	res := make(map[uint64]uint64)
 
 	for _, chain := range chains {
@@ -80,6 +81,10 @@ func FromHeights(cursors []xchain.StreamCursor, destChain netconf.Chain, chains 
 	for _, cursor := range cursors {
 		if cursor.SourceChainID == destChain.ID {
 			continue // Sanity check
+		}
+		if height, ok := loadedHeights[cursor.SourceChainID]; ok && height > cursor.SourceBlockHeight {
+			res[cursor.SourceChainID] = height
+			continue
 		}
 		res[cursor.SourceChainID] = cursor.SourceBlockHeight
 	}

@@ -15,8 +15,9 @@ import (
 func Test_FromHeights(t *testing.T) {
 	t.Parallel()
 	type args struct {
-		cursors []xchain.StreamCursor
-		chains  []netconf.Chain
+		cursors       []xchain.StreamCursor
+		chains        []netconf.Chain
+		loadedHeights map[uint64]uint64
 	}
 	tests := []struct {
 		name string
@@ -61,11 +62,29 @@ func Test_FromHeights(t *testing.T) {
 				3: 0,
 			},
 		},
+		{
+			name: "4",
+			args: args{
+				cursors: []xchain.StreamCursor{
+					{StreamID: xchain.StreamID{SourceChainID: 1, DestChainID: 2}, SourceBlockHeight: 200},
+				},
+				chains: []netconf.Chain{{ID: 1}, {ID: 2, DeployHeight: 55}, {ID: 3}},
+				loadedHeights: map[uint64]uint64{
+					1: 300,
+					2: 53,
+					3: 20,
+				},
+			}, want: map[uint64]uint64{
+				1: 300,
+				2: 55,
+				3: 0,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got := relayer.FromHeights(tt.args.cursors, netconf.Chain{ID: 4}, tt.args.chains)
+			got := relayer.FromHeights(tt.args.cursors, netconf.Chain{ID: 4}, tt.args.chains, tt.args.loadedHeights)
 			require.Equal(t, tt.want, got)
 		})
 	}

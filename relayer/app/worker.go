@@ -23,14 +23,14 @@ type Worker struct {
 	xProvider    xchain.Provider
 	creator      CreateFunc
 	state        *PersistentState
-	cursors      map[uint64]map[uint64]uint64 // destChainID -> srcChainID -> height
+	heights      map[uint64]uint64 // srcChainID -> height
 	sendProvider func() (SendFunc, error)
 }
 
 // NewWorker creates a new worker for a single destination chain.
 func NewWorker(destChain netconf.Chain, network netconf.Network, cProvider cchain.Provider,
 	xProvider xchain.Provider, creator CreateFunc, sendProvider func() (SendFunc, error),
-	state *PersistentState, cursors map[uint64]map[uint64]uint64,
+	state *PersistentState, heights map[uint64]uint64,
 ) *Worker {
 	return &Worker{
 		destChain:    destChain,
@@ -40,7 +40,7 @@ func NewWorker(destChain netconf.Chain, network netconf.Network, cProvider cchai
 		creator:      creator,
 		sendProvider: sendProvider,
 		state:        state,
-		cursors:      cursors,
+		heights:      heights,
 	}
 }
 
@@ -77,20 +77,10 @@ func (w *Worker) runOnce(ctx context.Context) error {
 
 	buf := newActiveBuffer(w.destChain.Name, mempoolLimit, sender)
 
-	loadedHeights, ok := w.cursors[w.destChain.ID]
-
 	var logAttrs []any //nolint:prealloc // Not worth it
-	for srcChainID, fromHeight := range FromHeights(cursors, w.destChain, w.network.Chains) {
+	for srcChainID, fromHeight := range FromHeights(cursors, w.destChain, w.network.Chains, w.heights) {
 		if srcChainID == w.destChain.ID { // Sanity check
 			return errors.New("unexpected cursor [BUG]")
-		}
-
-		if ok {
-			if loadedHeight, ok := loadedHeights[srcChainID]; ok && loadedHeight > fromHeight {
-				fromHeight = loadedHeight
-
-				log.Info(ctx, "Loaded height", "src", srcChainID, "height", fromHeight, "dst", w.destChain.ID)
-			}
 		}
 
 		callback := newCallback(w.xProvider, initialOffsets, w.creator, buf.AddInput, w.destChain.ID, w.state)

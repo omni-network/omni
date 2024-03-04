@@ -53,6 +53,8 @@ func Run(ctx context.Context, cfg Config) error {
 		state = NewPersistentState(cfg.StateFile)
 	}
 
+	cursors := state.Get()
+
 	for _, destChain := range network.Chains {
 		sendProvider := func() (SendFunc, error) {
 			sender, err := NewOpSender(destChain, rpcClientPerChain[destChain.ID], *privateKey,
@@ -70,7 +72,7 @@ func Run(ctx context.Context, cfg Config) error {
 			CreateSubmissions,
 			sendProvider,
 			state,
-			state.Get())
+			cursors[destChain.ID])
 
 		go worker.Run(ctx)
 	}
