@@ -66,7 +66,7 @@ interface IOmniAVSAdmin {
      * @param base          The base xcall gas limit
      * @param perValidator  The per-validator additional xcall gas limit
      */
-    function setXcallGasLimits(uint64 base, uint64 perValidator) external;
+    function setXCallGasLimits(uint64 base, uint64 perValidator) external;
 
     /**
      * @notice Returns true if the operator is in the allowlist.

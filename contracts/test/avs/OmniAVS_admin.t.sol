@@ -3,6 +3,8 @@ pragma solidity =0.8.12;
 
 import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
+import { OmniPortalConstants } from "src/protocol/OmniPortalConstants.sol";
+import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
 import { Base } from "./common/Base.sol";
 
@@ -125,8 +127,70 @@ contract OmniAVS_admin_Test is Base {
     /// @dev Test that only the owner can set the metadata URI
     function test_setMetadataURI_notOwner_reverts() public {
         string memory uri = "https://example.com/avs/";
-
         vm.expectRevert("Ownable: caller is not the owner");
         omniAVS.setMetadataURI(uri);
+    }
+
+    /// @dev Test that the owner can set omniChainId
+    function test_setOmniChainId_succeeds() public {
+        uint64 chainId = 1;
+        vm.prank(omniAVSOwner);
+        omniAVS.setOmniChainId(chainId);
+        assertEq(omniAVS.omniChainId(), chainId);
+    }
+
+    /// @dev Test that only the owner can set omniChainId
+    function test_setOmniChainId_notOwner_reverts() public {
+        uint64 chainId = 1;
+        vm.expectRevert("Ownable: caller is not the owner");
+        omniAVS.setOmniChainId(chainId);
+    }
+
+    /// @dev Test that the owner can set ethStakeInbox
+    function test_setEthStakeInbox_succeeds() public {
+        address ethStakeInbox = address(1);
+        vm.prank(omniAVSOwner);
+        omniAVS.setEthStakeInbox(ethStakeInbox);
+        assertEq(omniAVS.ethStakeInbox(), ethStakeInbox);
+    }
+
+    /// @dev Test that only the owner can set ethStakeInbox
+    function test_setEthStakeInbox_notOwner_reverts() public {
+        address ethStakeInbox = address(1);
+        vm.expectRevert("Ownable: caller is not the owner");
+        omniAVS.setEthStakeInbox(ethStakeInbox);
+    }
+
+    /// @dev Test thath the owner can set the portal address
+    function test_setPortal_succeeds() public {
+        address portal = address(1);
+        vm.prank(omniAVSOwner);
+        omniAVS.setOmniPortal(IOmniPortal(portal));
+        assertEq(address(omniAVS.omni()), portal);
+    }
+
+    /// @dev Test that only the owner can set the portal address
+    function test_setPortal_notOwner_reverts() public {
+        address portal = address(1);
+        vm.expectRevert("Ownable: caller is not the owner");
+        omniAVS.setOmniPortal(IOmniPortal(portal));
+    }
+
+    /// @dev Test that the owner can set the xcall gas limit params
+    function test_setXCallGasLimits_succeeds() public {
+        uint64 base = omniAVS.xcallBaseGasLimit() + 10_000;
+        uint64 perOperator = omniAVS.xcallGasLimitPerOperator() + 20_000;
+
+        vm.prank(omniAVSOwner);
+        omniAVS.setXCallGasLimits(base, perOperator);
+
+        assertEq(omniAVS.xcallBaseGasLimit(), base);
+        assertEq(omniAVS.xcallGasLimitPerOperator(), perOperator);
+    }
+
+    /// @dev Test that only the owner can set the xcall gas limit params
+    function test_setXCallGasLimits_notOwner_reverts() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        omniAVS.setXCallGasLimits(0, 0);
     }
 }
