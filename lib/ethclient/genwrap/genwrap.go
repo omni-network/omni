@@ -45,6 +45,7 @@ type Client interface {
     {{range .Providers}} ethereum.{{.}}
     {{end -}}
 	HeaderByType(ctx context.Context, typ HeadType) (*types.Header, error)
+	Address() string
 	Close()
 }
 

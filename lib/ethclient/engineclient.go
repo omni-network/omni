@@ -74,7 +74,7 @@ func NewAuthClient(ctx context.Context, urlAddr string, jwtSecret []byte) (Engin
 	}
 
 	return engineClient{
-		Wrapper: NewClient(rpcClient, "engine"),
+		Wrapper: NewClient(rpcClient, "engine", urlAddr),
 	}, nil
 }
 

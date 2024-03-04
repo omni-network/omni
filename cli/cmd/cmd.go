@@ -1,11 +1,8 @@
 package cmd
 
 import (
-	"strings"
-
 	libcmd "github.com/omni-network/omni/lib/cmd"
 
-	"github.com/Layr-Labs/eigenlayer-cli/pkg/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -14,11 +11,12 @@ func New() *cobra.Command {
 	return libcmd.NewRootCmd(
 		"omnicli",
 		"CLI providing tools for omni operators",
-		newOperatorCmd(),
+		newOperatorCmds(),
+		newDevnetCmds(),
 	)
 }
 
-func newOperatorCmd() *cobra.Command {
+func newOperatorCmds() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "operator",
 		Short: "Operator commands",
@@ -31,8 +29,6 @@ func newOperatorCmd() *cobra.Command {
 }
 
 func newRegisterCmd() *cobra.Command {
-	prompter := utils.NewPrompter()
-
 	var omniAVSAddress string
 
 	cmd := &cobra.Command{
@@ -45,7 +41,7 @@ Note the operator must already be registered with Eigen-Layer.`,
 		Example: "  omnicli operator register <eigen-configuration-file>",
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return register(cmd.Context(), strings.TrimSpace(args[0]), prompter, omniAVSAddress)
+			return Register(cmd.Context(), args[0], omniAVSAddress)
 		},
 	}
 

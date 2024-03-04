@@ -63,6 +63,8 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 		return nil, nil, err
 	}
 
+	logRPCs(ctx, def)
+
 	deployInfo := make(types.DeployInfos)
 
 	if err := deployAVS(ctx, def, cfg, deployInfo); err != nil {
@@ -213,4 +215,12 @@ func toPortalValidators(validators map[*e2e.Node]int64) ([]bindings.Validator, e
 	}
 
 	return vals, nil
+}
+
+func logRPCs(ctx context.Context, def Definition) {
+	network := externalNetwork(def.Testnet, def.Netman.DeployInfo())
+	for _, chain := range network.Chains {
+		log.Info(ctx, "EVM Chain RPC available", "chain_id", chain.ID,
+			"chain_name", chain.Name, "url", chain.RPCURL)
+	}
 }
