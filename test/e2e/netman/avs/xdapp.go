@@ -49,7 +49,7 @@ func (d *XDapp) Deploy(ctx context.Context) error {
 
 	log.Info(ctx, "Deploying AVS contracts", "chain", d.chain.Name)
 
-	txOpts, backend, err := d.backends.BindOpts(ctx, d.chain.ID)
+	_, txOpts, backend, err := d.backends.BindOpts(ctx, d.chain.ID)
 	if err != nil {
 		return err
 	}

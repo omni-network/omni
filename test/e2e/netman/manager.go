@@ -15,7 +15,6 @@ import (
 	"github.com/omni-network/omni/test/e2e/types"
 
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 )
@@ -154,7 +153,7 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 			continue // Only log public chain balances.
 		}
 
-		txOpts, backend, err := m.backends.BindOpts(ctx, portal.Chain.ID)
+		_, txOpts, backend, err := m.backends.BindOpts(ctx, portal.Chain.ID)
 		if err != nil {
 			return errors.Wrap(err, "deploy opts", "chain", portal.Chain.Name)
 		}
@@ -175,7 +174,7 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 	deployFunc := func(ctx context.Context, portal Portal) (*deployResult, error) {
 		log.Debug(ctx, "Deploying to", "chain", portal.Chain.Name)
 
-		txOpts, backend, err := m.backends.BindOpts(ctx, portal.Chain.ID)
+		_, txOpts, backend, err := m.backends.BindOpts(ctx, portal.Chain.ID)
 		if err != nil {
 			return nil, errors.Wrap(err, "deploy opts", "chain", portal.Chain.Name)
 		}
@@ -238,7 +237,7 @@ func (m *manager) DeployPrivatePortals(ctx context.Context, valSetID uint64, val
 	// Define a forkjoin work function that will deploy the omni contracts for each chain
 	deployFunc := func(ctx context.Context, portal Portal) (*bindings.OmniPortal, error) {
 		chain := portal.Chain.Name
-		txOpts, backend, err := m.backends.BindOpts(ctx, portal.Chain.ID)
+		_, txOpts, backend, err := m.backends.BindOpts(ctx, portal.Chain.ID)
 		if err != nil {
 			return nil, errors.Wrap(err, "deploy opts", "chain", chain)
 		}
@@ -303,31 +302,24 @@ func (m *manager) fundPrivateRelayer(ctx context.Context) error {
 			continue // We use relayer key for public chain, it should already be funded.
 		}
 
-		_, backend, err := m.backends.BindOpts(ctx, portal.Chain.ID)
+		addr, _, backend, err := m.backends.BindOpts(ctx, portal.Chain.ID)
 		if err != nil {
 			return errors.Wrap(err, "deploy opts")
 		}
 
-		_, err = fundAddr(ctx, backend, relayerAddr, 10)
+		tx, _, err := backend.Send(ctx, addr, txmgr.TxCandidate{
+			To:       &relayerAddr,
+			GasLimit: 100_000,                                                    // 100k is fine,
+			Value:    new(big.Int).Mul(big.NewInt(10), big.NewInt(params.Ether)), // 10 ETH
+		})
 		if err != nil {
-			return errors.Wrap(err, "fund relayer", "to", relayerAddr.Hex())
+			return errors.Wrap(err, "send ether")
+		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
+			return errors.Wrap(err, "wait mined")
 		}
 	}
 
 	return nil
-}
-
-func fundAddr(ctx context.Context, backend backend.Backend, toAddr common.Address, ether int64) (*ethtypes.Transaction, error) {
-	tx, _, err := backend.Send(ctx, txmgr.TxCandidate{
-		To:       &toAddr,
-		GasLimit: 100_000, // 100k is fine,
-		Value:    new(big.Int).Mul(big.NewInt(ether), big.NewInt(params.Ether)),
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "send ether")
-	}
-
-	return tx, nil
 }
 
 type deployResult struct {
