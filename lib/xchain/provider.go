@@ -1,6 +1,8 @@
 package xchain
 
-import "context"
+import (
+	"context"
+)
 
 // ProviderCallback is the callback function signature that will be called with every finalized.
 type ProviderCallback func(context.Context, Block) error
@@ -8,9 +10,16 @@ type ProviderCallback func(context.Context, Block) error
 // Provider abstracts fetching cross chain data from any supported chain.
 // This is basically a cross-chain data client for all supported chains.
 type Provider interface {
-	// Subscribe registers a callback function that will be called with each XBlock
-	// (as they become finalized per source chain) for the provided source chain ID and height (inclusive).
-	Subscribe(ctx context.Context, chainID uint64, fromHeight uint64, callback ProviderCallback) error
+	// StreamAsync starts a goroutine that streams xblocks forever from the provided source chain and height (inclusive).
+	// It returns immediately. It only returns an error if the chainID in invalid.
+	// This is the async version of StreamBlocks.
+	// It retries forever (with backoff) on all fetch and callback errors.
+	StreamAsync(ctx context.Context, chainID uint64, fromHeight uint64, callback ProviderCallback) error
+
+	// StreamBlocks is the synchronous fail-fast version of Subscribe. It streams
+	// xblocks as they become available but returns on the first callback error.
+	// This is useful for workers that need to reset on application errors.
+	StreamBlocks(ctx context.Context, chainID uint64, fromHeight uint64, callback ProviderCallback) error
 
 	// GetBlock returns the block for the given chain and height, or false if not available (not finalized yet),
 	// or an error.

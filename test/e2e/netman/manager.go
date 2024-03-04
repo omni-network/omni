@@ -7,6 +7,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/forkjoin"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
@@ -170,6 +171,36 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 
 	log.Info(ctx, "Deploying public portal contracts")
 
+	// Define a forkjoin work function that will deploy the omni contracts for each chain
+	deployFunc := func(ctx context.Context, portal Portal) (*deployResult, error) {
+		log.Debug(ctx, "Deploying to", "chain", portal.Chain.Name)
+
+		txOpts, backend, err := m.backends.BindOpts(ctx, portal.Chain.ID)
+		if err != nil {
+			return nil, errors.Wrap(err, "deploy opts", "chain", portal.Chain.Name)
+		}
+
+		height, err := backend.BlockNumber(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "get block number", "chain", portal.Chain.Name)
+		}
+
+		addr, contract, err := deployOmniContracts(
+			ctx, txOpts, backend, valSetID, validators,
+		)
+		if err != nil {
+			return nil, errors.Wrap(err, "deploy public omni contracts", "chain", portal.Chain.Name)
+		}
+
+		return &deployResult{
+			Contract: contract,
+			Addr:     addr,
+			Height:   height,
+		}, nil
+	}
+
+	fork, join, cancel := forkjoin.New(ctx, deployFunc)
+	defer cancel()
 	for chainID := range m.portals {
 		portal := m.portals[chainID]
 
@@ -177,32 +208,24 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 			continue // Only public chains are deployed here.
 		}
 
-		log.Debug(ctx, "Deploying to", "chain", portal.Chain.Name)
+		fork(portal)
+	}
 
-		txOpts, backend, err := m.backends.BindOpts(ctx, chainID)
-		if err != nil {
-			return errors.Wrap(err, "deploy opts", "chain", portal.Chain.Name)
+	for res := range join() {
+		if res.Err != nil {
+			return errors.Wrap(res.Err, "fork join")
 		}
 
-		height, err := backend.BlockNumber(ctx)
-		if err != nil {
-			return errors.Wrap(err, "get block number", "chain", portal.Chain.Name)
-		}
+		portal := m.portals[res.Input.Chain.ID]
 
-		addr, contract, err := deployOmniContracts(
-			ctx, txOpts, backend, valSetID, validators,
-		)
-		if err != nil {
-			return errors.Wrap(err, "deploy public omni contracts", "chain", portal.Chain.Name)
-		}
 		portal.DeployInfo = DeployInfo{
-			PortalAddress: addr,
-			DeployHeight:  height,
+			PortalAddress: res.Output.Addr,
+			DeployHeight:  res.Output.Height,
 		}
-		portal.Contract = contract
+		portal.Contract = res.Output.Contract
 
-		m.portals[chainID] = portal
-		log.Info(ctx, "Deployed public portal contract", "chain", portal.Chain.Name, "address", addr.Hex(), "height", height)
+		m.portals[res.Input.Chain.ID] = portal
+		log.Info(ctx, "Deployed public portal contract", "chain", portal.Chain.Name, "address", res.Output.Addr.Hex(), "height", res.Output.Height)
 	}
 
 	return nil
@@ -212,30 +235,49 @@ func (m *manager) DeployPrivatePortals(ctx context.Context, valSetID uint64, val
 ) error {
 	log.Info(ctx, "Deploying private portal contracts")
 
+	// Define a forkjoin work function that will deploy the omni contracts for each chain
+	deployFunc := func(ctx context.Context, portal Portal) (*bindings.OmniPortal, error) {
+		chain := portal.Chain.Name
+		txOpts, backend, err := m.backends.BindOpts(ctx, portal.Chain.ID)
+		if err != nil {
+			return nil, errors.Wrap(err, "deploy opts", "chain", chain)
+		}
+
+		addr, contract, err := deployOmniContracts(ctx, txOpts, backend, valSetID, validators)
+		if err != nil {
+			return nil, errors.Wrap(err, "deploy private omni contracts", "chain", chain)
+		} else if addr != portal.DeployInfo.PortalAddress {
+			return nil, errors.New("deployed address does not match existing address",
+				"expected", portal.DeployInfo.PortalAddress.Hex(),
+				"actual", addr.Hex(),
+				"chain", chain)
+		}
+
+		return contract, nil
+	}
+
+	// Start the forkjoin
+	fork, join, cancel := forkjoin.New(ctx, deployFunc)
+	defer cancel()
 	for chainID := range m.portals {
 		portal := m.portals[chainID]
 		if portal.Chain.IsPublic {
 			continue // Public chains are already deployed.
 		}
 
-		txOpts, backend, err := m.backends.BindOpts(ctx, chainID)
-		if err != nil {
-			return errors.Wrap(err, "deploy opts", "chain", portal.Chain.Name)
+		fork(portal)
+	}
+
+	// Join the results
+	for res := range join() {
+		if res.Err != nil {
+			return errors.Wrap(res.Err, "fork join")
 		}
 
-		addr, contract, err := deployOmniContracts(ctx, txOpts, backend, valSetID, validators)
-		if err != nil {
-			return errors.Wrap(err, "deploy private omni contracts", "chain", portal.Chain.Name)
-		} else if addr != portal.DeployInfo.PortalAddress {
-			return errors.New("deployed address does not match existing address",
-				"expected", portal.DeployInfo.PortalAddress.Hex(),
-				"actual", addr.Hex(),
-				"chain", portal.Chain.Name)
-		}
-
-		portal.Contract = contract
-
-		m.portals[chainID] = portal
+		// Update the portal with the deployed contract
+		portal := m.portals[res.Input.Chain.ID]
+		portal.Contract = res.Output
+		m.portals[res.Input.Chain.ID] = portal
 	}
 
 	return m.fundPrivateRelayer(ctx)
@@ -286,4 +328,10 @@ func fundAddr(ctx context.Context, backend backend.Backend, toAddr common.Addres
 	}
 
 	return tx, nil
+}
+
+type deployResult struct {
+	Contract *bindings.OmniPortal
+	Addr     common.Address
+	Height   uint64
 }

@@ -13,6 +13,7 @@ import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
 import { OmniAVS } from "src/protocol/OmniAVS.sol";
 
+import { MockOmniPredeploys } from "test/utils/MockOmniPredeploys.sol";
 import { Empty } from "./common/Empty.sol";
 import { Base } from "./common/Base.sol";
 
@@ -25,7 +26,7 @@ contract OmniAVS_initialize_Test is Base {
         address owner;
         IOmniPortal omni;
         uint64 omniChainId;
-        address[] allowlist;
+        address ethStakeInbox;
         IOmniAVS.StrategyParam[] strategyParams;
     }
 
@@ -34,7 +35,7 @@ contract OmniAVS_initialize_Test is Base {
             owner: omniAVSOwner,
             omni: IOmniPortal(address(portal)),
             omniChainId: omniChainId,
-            allowlist: new address[](0),
+            ethStakeInbox: MockOmniPredeploys.ETH_STAKE_INBOX,
             strategyParams: _localStrategyParams()
         });
     }
@@ -55,7 +56,7 @@ contract OmniAVS_initialize_Test is Base {
                 params.owner,
                 params.omni,
                 params.omniChainId,
-                params.allowlist,
+                params.ethStakeInbox,
                 params.strategyParams
             )
         );
@@ -72,6 +73,7 @@ contract OmniAVS_initialize_Test is Base {
         assertEq(omniAVS.owner(), params.owner);
         assertEq(address(omniAVS.omni()), address(params.omni));
         assertEq(omniAVS.omniChainId(), params.omniChainId);
+        assertEq(omniAVS.ethStakeInbox(), params.ethStakeInbox);
 
         IOmniAVS.StrategyParam[] memory strategyParams = omniAVS.strategyParams();
         assertEq(strategyParams.length, params.strategyParams.length);

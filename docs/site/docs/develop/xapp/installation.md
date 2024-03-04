@@ -40,7 +40,7 @@ import TabItem from '@theme/TabItem';
   </TabItem>
   <TabItem value="forge" label="forge">
     ```solidity
-    import { XApp } from "omni-network/omni/contracts/src/pkg/XApp.sol"
+    import { XApp } from "omni/contracts/src/pkg/XApp.sol"
     ```
   </TabItem>
 </Tabs>

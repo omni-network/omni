@@ -120,6 +120,15 @@ func (b Backends) BindOpts(ctx context.Context, sourceChainID uint64) (*bind.Tra
 	}, backend, nil
 }
 
+func (b Backends) RPCClients() map[uint64]ethclient.Client {
+	clients := make(map[uint64]ethclient.Client)
+	for chainID, backend := range b.backends {
+		clients[chainID] = backend
+	}
+
+	return clients
+}
+
 func newTxMgr(ethCl ethclient.Client, chain types.EVMChain, privateKey *ecdsa.PrivateKey) (txmgr.TxManager, error) {
 	// creates our new CLI config for our tx manager
 	cliConfig := txmgr.NewCLIConfig(

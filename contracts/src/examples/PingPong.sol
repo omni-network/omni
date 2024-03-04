@@ -2,12 +2,16 @@
 pragma solidity 0.8.23;
 
 import { XApp } from "src/pkg/XApp.sol";
+import { XTypes } from "src/libraries/XTypes.sol";
 
 /**
  * @title PingPong
  * @notice A contract that pingpongs xmsgs between two chains
  */
 contract PingPong is XApp {
+    /// @notice Gas limit used for a single pingpong xcall
+    uint64 public constant GAS_LIMIT = 100_000;
+
     /**
      * @notice Emitted when the pingpong loop is done
      * @param destChainID The destination chain id
@@ -45,8 +49,27 @@ contract PingPong is XApp {
         _xpingpong(xmsg.sourceChainId, xmsg.sender, times, n - 1);
     }
 
+    /**
+     * @notice The pingpong xmsg loop
+     * @dev Used to test differnce in gas usage between xrecv and non-xrecv functions
+     * @param times The pingpongs in the loop
+     * @param n The number of xcalls left to make
+     */
+    function pingpong_norecv(uint64 times, uint64 n) external {
+        require(isXCall(), "PingPong: not an omni xcall");
+
+        XTypes.MsgShort memory _xmsg = omni.xmsg();
+
+        if (n == 0) {
+            emit Done(_xmsg.sourceChainId, _xmsg.sender, times);
+            return;
+        }
+
+        _xpingpong(_xmsg.sourceChainId, _xmsg.sender, times, n - 1);
+    }
+
     function _xpingpong(uint64 destChainID, address to, uint64 times, uint64 n) internal {
-        xcall(destChainID, to, abi.encodeWithSelector(this.pingpong.selector, times, n));
+        xcall(destChainID, to, abi.encodeWithSelector(this.pingpong.selector, times, n), GAS_LIMIT);
     }
 
     receive() external payable { }

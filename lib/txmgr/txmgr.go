@@ -134,7 +134,7 @@ func (m *SimpleTxManager) Close() {
 
 // txFields returns a logger with the transaction hash and nonce fields set.
 //
-//nolint:revive // Might fix
+
 func txFields(tx *types.Transaction, logGas bool) []any {
 	fields := []any{
 		slog.Int64("nonce", int64(tx.Nonce())),
@@ -386,7 +386,7 @@ func (m *SimpleTxManager) sendTx(ctx context.Context, tx *types.Transaction) (*t
 // it will bump the fees and retry.
 // Returns the latest fee bumped tx, and a boolean indicating whether the tx was sent or not.
 //
-//nolint:revive // Might fix
+
 func (m *SimpleTxManager) publishTx(ctx context.Context, tx *types.Transaction, sendState *SendState,
 	bumpFeesImmediately bool) (*types.Transaction, bool) {
 	for {

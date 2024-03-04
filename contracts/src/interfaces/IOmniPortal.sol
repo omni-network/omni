@@ -41,38 +41,6 @@ interface IOmniPortal {
     event ValidatorSetAdded(uint64 indexed setId);
 
     /**
-     * @notice Default xmsg execution gas limit, enforced on destination chain
-     * @return Gas limit
-     */
-    function XMSG_DEFAULT_GAS_LIMIT() external view returns (uint64);
-
-    /**
-     * @notice Maximum allowed xmsg gas limit
-     * @return Maximum gas limit
-     */
-    function XMSG_MAX_GAS_LIMIT() external view returns (uint64);
-
-    /**
-     * @notice Minimum allowed xmsg gas limit
-     * @return Minimum gas limit
-     */
-    function XMSG_MIN_GAS_LIMIT() external view returns (uint64);
-
-    /**
-     * @notice Numerator of the fraction of total validator power required to
-     *         accept an XSubmission. Ex 2/3 -> 2
-     * @return Quorum threshold numerator
-     */
-    function XSUB_QUORUM_NUMERATOR() external view returns (uint8);
-
-    /**
-     * @notice Denominator of the fraction of total validator power required to
-     *         accept an XSubmission. Ex 2/3 -> 3
-     * @return Quorum threshold denominator
-     */
-    function XSUB_QUORUM_DENOMINATOR() external view returns (uint8);
-
-    /**
      * @notice Chain ID of the chain to which this portal is deployed
      * @dev Used as sourceChainId for all outbound XMsgs
      * @return Chain ID
@@ -101,11 +69,14 @@ interface IOmniPortal {
     function inXStreamBlockHeight(uint64 sourceChainId) external view returns (uint64);
 
     /**
-     * @notice The current XMsg being executed via this portal
-     * @dev If no XMsg is being executed, all fields will be zero
-     * @return XMsg
+     * @notice Returns the current XMsg being executed via this portal.
+     *          - xmsg().sourceChainId  Chain ID of the source xcall
+     *          - xmsg().sender         msg.sender of the source xcall
+     *         If no XMsg is being executed, all fields will be zero.
+     *          - xmsg().sourceChainId  == 0
+     *          - xmsg().sender         == address(0)
      */
-    function xmsg() external view returns (XTypes.Msg memory);
+    function xmsg() external view returns (XTypes.MsgShort memory);
 
     /**
      * @notice Whether the current transaction is an xcall

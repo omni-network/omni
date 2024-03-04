@@ -1,4 +1,4 @@
-package app
+package agent
 
 import (
 	"bytes"
@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -17,7 +18,7 @@ import (
 	_ "embed"
 )
 
-type PromSecrets struct {
+type Secrets struct {
 	URL  string
 	User string
 	Pass string
@@ -25,11 +26,16 @@ type PromSecrets struct {
 
 const promPort = 26660 // Default metrics port for all omni apps (from cometBFT)
 
-//go:embed static/prometheus.yml.tmpl
+//go:embed prometheus.yml.tmpl
 var promConfigTmpl []byte
 
-func writePrometheusConfig(ctx context.Context, testnet types.Testnet, secrets PromSecrets) error {
-	bz, err := genPromConfig(ctx, testnet, secrets)
+func WriteConfig(ctx context.Context, testnet types.Testnet, secrets Secrets) error {
+	hostname, err := os.Hostname()
+	if err != nil {
+		hostname = "unknown"
+	}
+
+	bz, err := genPromConfig(ctx, testnet, secrets, hostname)
 	if err != nil {
 		return errors.Wrap(err, "generating prometheus config")
 	}
@@ -46,7 +52,7 @@ func writePrometheusConfig(ctx context.Context, testnet types.Testnet, secrets P
 	return nil
 }
 
-func genPromConfig(ctx context.Context, testnet types.Testnet, secrets PromSecrets) ([]byte, error) {
+func genPromConfig(ctx context.Context, testnet types.Testnet, secrets Secrets, hostname string) ([]byte, error) {
 	var nodeTargets []string
 	for _, node := range testnet.Nodes {
 		// Prometheus is always inside the same docker-compose, so use service names.
@@ -55,10 +61,7 @@ func genPromConfig(ctx context.Context, testnet types.Testnet, secrets PromSecre
 
 	network := testnet.Network
 	if network == netconf.Devnet {
-		network = testnet.Name
-		if hostname, err := os.Hostname(); err == nil {
-			network += "-" + hostname
-		}
+		network = fmt.Sprintf("%s-%s", testnet.Name, hostname)
 	}
 
 	if secrets.URL == "" {
@@ -69,6 +72,7 @@ func genPromConfig(ctx context.Context, testnet types.Testnet, secrets PromSecre
 
 	data := promTmplData{
 		Network:        network,
+		Host:           hostname,
 		RemoteURL:      secrets.URL,
 		RemoteUsername: secrets.User,
 		RemotePassword: secrets.Pass,
@@ -100,6 +104,7 @@ func genPromConfig(ctx context.Context, testnet types.Testnet, secrets PromSecre
 
 type promTmplData struct {
 	Network        string            // Used a "network" label to all metrics
+	Host           string            // Hostname of the docker host machine
 	RemoteURL      string            // URL to the Grafana cloud server
 	RemoteUsername string            // Username to the Grafana cloud server
 	RemotePassword string            // Password to the Grafana cloud server
@@ -114,4 +119,30 @@ type promScrapConfig struct {
 
 func (c promScrapConfig) Targets() string {
 	return strings.Join(c.targets, ",")
+}
+
+// ConfigForHost returns a new prometheus agent config with the given host and halo targets.
+//
+//	It removes the relayer targets if not enabled.
+//	It replaces the halo targets with provided.
+//	It replaces the host label.
+func ConfigForHost(bz []byte, newHost string, halos []string, relayer bool) []byte {
+	if !relayer {
+		// Remove relayer target if not needed.
+		bz = regexp.MustCompile(`(?m)\[.*\] # relayer targets$`).
+			ReplaceAll(bz, []byte(`[] # relayer targets`))
+	}
+
+	var haloTargets []string
+	for _, halo := range halos {
+		haloTargets = append(haloTargets, fmt.Sprintf(`"%s:%d"`, halo, promPort))
+	}
+	replace := fmt.Sprintf(`[%s] # halo targets`, strings.Join(haloTargets, ","))
+	bz = regexp.MustCompile(`(?m)\[.*\] # halo targets$`).
+		ReplaceAll(bz, []byte(replace))
+
+	bz = regexp.MustCompile(`(?m)host: '.*'$`).
+		ReplaceAll(bz, []byte(fmt.Sprintf(`host: '%s'`, newHost)))
+
+	return bz
 }

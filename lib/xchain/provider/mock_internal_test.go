@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -19,10 +20,10 @@ func TestMock(t *testing.T) {
 		total      = 5
 	)
 
-	var mock Mock
+	mock := NewMock(time.Millisecond)
 
 	var blocks []xchain.Block
-	err := mock.Subscribe(ctx, chainID, fromHeight, func(ctx context.Context, block xchain.Block) error {
+	err := mock.StreamAsync(ctx, chainID, fromHeight, func(ctx context.Context, block xchain.Block) error {
 		blocks = append(blocks, block)
 		if len(blocks) == total {
 			cancel()
