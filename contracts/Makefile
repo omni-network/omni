@@ -14,12 +14,12 @@ version: ## Print tool versions.
 build: version ## Build contracts.
 	forge build
 
-bindings: build ## Generate golang contract bindings.
+bindings: check-abigen-version build ## Generate golang contract bindings.
 	./bindings/scripts/gen.sh OmniPortal FeeOracleV1 OmniAVS TransparentUpgradeableProxy ProxyAdmin DelegationManager StrategyManager StrategyBase MockERC20 AVSDirectory
 	go run ./bindings/scripts/commenttypes.go -- bindings/strategymanager.go IStrategyManagerDeprecatedStructQueuedWithdrawal IStrategyManagerDeprecatedStructWithdrawerAndNonce
 	go run ./bindings/scripts/commenttypes.go -- bindings/avsdirectory.go ISignatureUtilsSignatureWithSaltAndExpiry
 
-examples-bindings: build ## Generate golang contract bindings for example contracts
+examples-bindings: check-abigen-version build ## Generate golang contract bindings for example contracts
 	PKG=examples DIR=./bindings/examples ./bindings/scripts/gen.sh PingPong
 
 deploy-eigenlayer-save-anvil-state: ## Deploy eigenlayer contracts and dump anvil state.
@@ -28,3 +28,11 @@ deploy-eigenlayer-save-anvil-state: ## Deploy eigenlayer contracts and dump anvi
 avs-fork-test-goerli: ## Run OmniAVS tests on a goerli fork.
 	@if [ -z "${INFURA_KEY}" ]; then echo "INFURA_KEY is not set"; exit 1; fi
 	@FOUNDRY_FUZZ_RUNS=10 forge test --fork-url https://goerli.infura.io/v3/${INFURA_KEY} --fork-block-number 10580259 --match-contract OmniAVS_Test
+
+check-abigen-version: ## Check abigen version.
+	@version=$$(abigen --version); \
+	if [ "$$version" != "abigen version 1.13.14-stable" ]; then \
+		echo "abigen version is not 1.13.14-stable"; \
+		echo "Install with go install github.com/ethereum/go-ethereum/cmd/abigen@v1.13.14"; \
+		exit 1; \
+	fi
