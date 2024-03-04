@@ -15,6 +15,10 @@ import (
 )
 
 func RegisterOperatorWithAVS(ctx context.Context, contracts Contracts, backend backend.Backend, operator common.Address) error {
+	if err := verifyRegisterOperator(ctx, contracts, operator); err != nil {
+		return errors.Wrap(err, "verify register operator")
+	}
+
 	salt := crypto.Keccak256Hash(operator.Bytes())         // Salt can be anything, it should just be unique.
 	expiry := big.NewInt(time.Now().Add(time.Hour).Unix()) // Sig is 1 Hour valid
 
@@ -66,6 +70,36 @@ func DeregisterOperatorFromAVS(ctx context.Context, contracts Contracts, backend
 
 	if _, err = backend.WaitMined(ctx, tx); err != nil {
 		return errors.Wrap(err, "wait mined")
+	}
+
+	return nil
+}
+
+func verifyRegisterOperator(ctx context.Context, contracts Contracts, operator common.Address) error {
+	callOpts := &bind.CallOpts{Context: ctx}
+
+	ok, err := contracts.DelegationManager.IsOperator(callOpts, operator)
+	if err != nil {
+		return errors.Wrap(err, "is operator")
+	} else if !ok {
+		return errors.New("operator not registered with eigen layer delegation manager")
+	}
+
+	ok, err = contracts.OmniAVS.IsInAllowlist(callOpts, operator)
+	if err != nil {
+		return errors.Wrap(err, "is in allowlist")
+	} else if !ok {
+		return errors.New("operator not in omni avs allow list")
+	}
+
+	operators, err := contracts.OmniAVS.Operators(callOpts)
+	if err != nil {
+		return errors.Wrap(err, "operators")
+	}
+	for _, op := range operators {
+		if op.Addr == operator {
+			return errors.New("operator already registered with omni avs")
+		}
 	}
 
 	return nil
