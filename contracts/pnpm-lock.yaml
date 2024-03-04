@@ -17,6 +17,9 @@ dependencies:
   eigenlayer-middleware:
     specifier: github:Layr-Labs/eigenlayer-middleware
     version: github.com/Layr-Labs/eigenlayer-middleware/51ce856c203d7b3d901c1f0c03a103dfdc042917
+  solmate:
+    specifier: ^6.2.0
+    version: 6.2.0
 
 devDependencies:
   '@openzeppelin/merkle-tree':
@@ -2740,6 +2743,10 @@ packages:
       handlebars: 4.7.8
       hardhat: 2.19.5(ts-node@10.9.2)(typescript@5.3.3)
       solidity-ast: 0.4.55
+    dev: false
+
+  /solmate@6.2.0:
+    resolution: {integrity: sha512-AM38ioQ2P8zRsA42zenb9or6OybRjOLXIu3lhIT8rhddUuduCt76pUEuLxOIg9GByGojGz+EbpFdCB6B+QZVVA==}
     dev: false
 
   /source-map-support@0.5.21:

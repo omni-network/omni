@@ -74,8 +74,8 @@ func DelegateWETH(ctx context.Context, contracts Contracts, backend backend.Back
 	return nil
 }
 
-// UndelegateWETH undelegates WETH from the Eigen Layer strategy manager's WETH strategy.
-func UndelegateWETH(ctx context.Context, contracts Contracts, backend backend.Backend, delegator common.Address) error {
+// Undelegate undelegates WETH from the Eigen Layer strategy manager's WETH strategy.
+func Undelegate(ctx context.Context, contracts Contracts, backend backend.Backend, delegator common.Address) error {
 	txOpts, err := backend.BindOpts(ctx, delegator)
 	if err != nil {
 		return err

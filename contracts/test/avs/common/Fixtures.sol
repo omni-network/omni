@@ -39,7 +39,7 @@ contract Fixtures is EigenLayerFixtures {
     /// Canonical, virtual beacon chain ETH strategy
     address constant beaconChainETHStrategy = 0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0;
 
-    function setUp() public override {
+    function setUp() public virtual override {
         super.setUp();
 
         portal = new MockPortal();

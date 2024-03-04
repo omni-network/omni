@@ -62,39 +62,4 @@ contract OmniAVS_allowlist_Test is Base {
         assertEq(operators.length, 1);
         assertEq(operators[0].addr, operator);
     }
-
-    /// @dev Test that an operator cannot register if not in allow list
-    function test_registerOperator_notAllowed_reverts() public {
-        address operator = _operator(0);
-
-        ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
-
-        vm.expectRevert("OmniAVS: not allowed");
-        vm.prank(operator);
-        omniAVS.registerOperatorToAVS(operator, emptySig);
-    }
-
-    /// @dev Test that the owner can set the ethStakeInbox
-    function test_setEthStakeInbox_succeeds() public {
-        address newInbox = 0x1234567890123456789012345678901234567890;
-
-        vm.prank(omniAVSOwner);
-        omniAVS.setEthStakeInbox(newInbox);
-        assertEq(omniAVS.ethStakeInbox(), newInbox);
-    }
-
-    /// @dev Test that only the owner can set the ethStakeInbox
-    function test_setEthStakeInbox_notOwner_reverts() public {
-        address newInbox = 0x1234567890123456789012345678901234567890;
-
-        vm.expectRevert("Ownable: caller is not the owner");
-        omniAVS.setEthStakeInbox(newInbox);
-    }
-
-    /// @dev Test the the ethStakeInbox cannot be set to the zero address
-    function test_setEthStakeInbox_zeroAddress_reverts() public {
-        vm.prank(omniAVSOwner);
-        vm.expectRevert("OmniAVS: zero address");
-        omniAVS.setEthStakeInbox(address(0));
-    }
 }

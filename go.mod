@@ -15,7 +15,7 @@ require (
 	entgo.io/ent v0.13.1
 	github.com/BurntSushi/toml v1.3.2
 	github.com/Layr-Labs/eigenlayer-cli v0.6.2
-	github.com/Layr-Labs/eigensdk-go v0.1.0
+	github.com/Layr-Labs/eigensdk-go v0.1.1
 	github.com/bufbuild/buf v1.29.0
 	github.com/charmbracelet/log v0.3.1
 	github.com/cometbft/cometbft v0.38.5
@@ -31,7 +31,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/graph-gophers/graphql-go v1.5.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
-	github.com/jackc/pgx/v5 v5.5.3
+	github.com/jackc/pgx/v5 v5.5.4
 	github.com/leodido/go-conventionalcommits v0.12.0
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/muesli/termenv v0.15.2

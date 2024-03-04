@@ -182,33 +182,22 @@ contract OmniAVS is
      *      eigenlayer frontend.
      */
     function getRestakeableStrategies() external view returns (address[] memory) {
-        address[] memory strategies = new address[](_strategyParams.length);
-        for (uint256 i = 0; i < _strategyParams.length;) {
-            strategies[i] = address(_strategyParams[i].strategy);
-            unchecked {
-                i++;
-            }
-        }
-        return strategies;
+        return _getRestakeableStrategies();
     }
 
     /**
      * @inheritdoc IServiceManager
      * @dev Implemented to match IServiceManager interface - required for compatibility with
      *      eigenlayer frontend.
+     *
+     *      No work to determine which strategies the operator has restaked. This matches the
+     *      behavior defined in eigenlayer-middleware's ServiceManagerBase. In ServiceManagerBase,
+     *      they return the aggregate list of strategies for the quorums the operator is a member of.
+     *      We only have one "quorum", so we return all strategies.
      */
     function getOperatorRestakedStrategies(address operator) external view returns (address[] memory) {
-        address[] memory strategies = new address[](_strategyParams.length);
-        for (uint256 i = 0; i < _strategyParams.length;) {
-            address strat = address(_strategyParams[i].strategy);
-            if (_delegationManager.operatorShares(operator, IStrategy(strat)) > 0) {
-                strategies[i] = strat;
-            }
-            unchecked {
-                i++;
-            }
-        }
-        return strategies;
+        if (!_isOperator(operator)) return new address[](0);
+        return _getRestakeableStrategies();
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -244,7 +233,6 @@ contract OmniAVS is
      * @param inbox The EthStakeInbox contract address
      */
     function setEthStakeInbox(address inbox) external onlyOwner {
-        require(inbox != address(0), "OmniAVS: zero address");
         ethStakeInbox = inbox;
     }
 
@@ -261,7 +249,7 @@ contract OmniAVS is
      * @param base          The base xcall gas limit
      * @param perOperator   The per-operator additional xcall gas limit
      */
-    function setXcallGasLimits(uint64 base, uint64 perOperator) external onlyOwner {
+    function setXCallGasLimits(uint64 base, uint64 perOperator) external onlyOwner {
         xcallBaseGasLimit = base;
         xcallGasLimitPerOperator = perOperator;
     }
@@ -330,21 +318,6 @@ contract OmniAVS is
     }
 
     /**
-     * @notice Returns true if the operator is in the list of operators
-     */
-    function _isOperator(address operator) private view returns (bool) {
-        for (uint256 i = 0; i < _operators.length;) {
-            if (_operators[i] == operator) {
-                return true;
-            }
-            unchecked {
-                i++;
-            }
-        }
-        return false;
-    }
-
-    /**
      * @notice Set the strategy parameters.
      * @param params The strategy parameters
      */
@@ -378,6 +351,21 @@ contract OmniAVS is
      */
     function _xcallGasLimitFor(uint256 numOperators) internal view returns (uint64) {
         return uint64(numOperators) * xcallGasLimitPerOperator + xcallBaseGasLimit;
+    }
+
+    /**
+     * @notice Returns true if the operator is in the list of operators
+     */
+    function _isOperator(address operator) private view returns (bool) {
+        for (uint256 i = 0; i < _operators.length;) {
+            if (_operators[i] == operator) {
+                return true;
+            }
+            unchecked {
+                i++;
+            }
+        }
+        return false;
     }
 
     /**
@@ -465,5 +453,19 @@ contract OmniAVS is
      */
     function _weight(uint256 shares, uint96 multiplier) internal pure returns (uint96) {
         return uint96(shares * multiplier / STRATEGY_WEIGHTING_DIVISOR);
+    }
+
+    /**
+     * @notice Returns the list of restakeable strategy addresses
+     */
+    function _getRestakeableStrategies() internal view returns (address[] memory) {
+        address[] memory strategies = new address[](_strategyParams.length);
+        for (uint256 i = 0; i < _strategyParams.length;) {
+            strategies[i] = address(_strategyParams[i].strategy);
+            unchecked {
+                i++;
+            }
+        }
+        return strategies;
     }
 }

@@ -1,9 +1,0 @@
-register validator to omni avs
-
-Usage:
-  halo operator register [flags]
-
-Flags:
-  -h, --help              help for register
-      --home string       The application home directory containing config and data (default "./halo")
-      --omni-avs string   The contract address of OmniAVS

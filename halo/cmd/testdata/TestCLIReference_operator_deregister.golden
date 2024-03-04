@@ -1,9 +1,0 @@
-deregister validator from omni avs
-
-Usage:
-  halo operator deregister [flags]
-
-Flags:
-  -h, --help              help for deregister
-      --home string       The application home directory containing config and data (default "./halo")
-      --omni-avs string   The contract address of OmniAVS
