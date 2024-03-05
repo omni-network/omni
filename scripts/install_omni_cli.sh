@@ -20,6 +20,7 @@ FILE=""
 echo "ℹ️ Downloading omni from $URL"
 
 # Create target directory
+echo "ℹ️ Installing omni to $TARGET"
 mkdir -p "$(dirname "${TARGET}")"
 
 curl -L -s "$URL" | tar -xz -C "$(dirname "${TARGET}")" omni
