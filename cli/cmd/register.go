@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -24,6 +25,11 @@ import (
 )
 
 const l1BlockPeriod = time.Second * 12
+
+type RegConfig struct {
+	ConfigFile string
+	AVSAddr    string
+}
 
 // RegDeps contains the Register dependencies that are abstracted for testing.
 type RegDeps struct {
@@ -38,7 +44,7 @@ type regOpt func(*RegDeps)
 //
 // It assumes that the operator is already registered with the Eigen-Layer
 // and that the eigen-layer configuration file (and ecdsa keystore) is present on disk.
-func Register(ctx context.Context, configFile string, avsAddr string, opts ...regOpt) error {
+func Register(ctx context.Context, cfg RegConfig, opts ...regOpt) error {
 	// Default dependencies.
 	deps := RegDeps{
 		Prompter:       eigenutils.NewPrompter(),
@@ -51,7 +57,7 @@ func Register(ctx context.Context, configFile string, avsAddr string, opts ...re
 		opt(&deps)
 	}
 
-	eigenCfg, err := readConfig(configFile)
+	eigenCfg, err := readConfig(cfg.ConfigFile)
 	if err != nil {
 		return err
 	} else if err := deps.VerifyFunc(eigenCfg.Operator); err != nil {
@@ -77,7 +83,7 @@ func Register(ctx context.Context, configFile string, avsAddr string, opts ...re
 		return errors.Wrap(err, "dial eth client", "url", eigenCfg.EthRPCUrl)
 	}
 
-	avsAddress, err := avsAddressOrDefault(avsAddr, &eigenCfg.ChainId)
+	avsAddress, err := avsAddressOrDefault(cfg.AVSAddr, &eigenCfg.ChainId)
 	if err != nil {
 		return err
 	}
@@ -97,7 +103,14 @@ func Register(ctx context.Context, configFile string, avsAddr string, opts ...re
 		return errors.Wrap(err, "add account")
 	}
 
-	return avs.RegisterOperatorWithAVS(ctx, contracts, backend, operator)
+	err = avs.RegisterOperatorWithAVS(ctx, contracts, backend, operator)
+	if err != nil {
+		return errors.Wrap(err, "register")
+	}
+
+	log.Info(ctx, "Operator registered with Omni AVS contract", "operator", operator.Hex())
+
+	return nil
 }
 
 // makeContracts returns a avs Contracts struct with the given backend and delegation manager, avs directory, and omni avs contracts.

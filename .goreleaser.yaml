@@ -9,6 +9,8 @@ builds:
     env: [CGO_ENABLED=0]
     goos: [linux, darwin]
     goarch: [amd64, arm64]
+    ldflags:
+      - -s -w -X github.com/omni-network/omni/lib/buildinfo.version={{.Version}}
 
   - id: relayer
     main: ./relayer
@@ -16,6 +18,8 @@ builds:
     env: [CGO_ENABLED=0]
     goos: [linux, darwin]
     goarch: [amd64, arm64]
+    ldflags:
+      - -s -w -X github.com/omni-network/omni/lib/buildinfo.version={{.Version}}
 
   - id: explorer-graphql
     main: ./explorer/graphql
@@ -30,6 +34,15 @@ builds:
     env: [ CGO_ENABLED=0 ]
     goos: [ linux, darwin ]
     goarch: [ amd64, arm64 ]
+
+  - id: omni
+    main: ./cli/cmd/omni
+    binary: omni
+    env: [ CGO_ENABLED=0 ]
+    goos: [ linux, darwin ]
+    goarch: [ amd64, arm64 ]
+    ldflags:
+      - -s -w -X github.com/omni-network/omni/lib/buildinfo.version={{.Version}}
 
 dockers:
   - ids: [halo]

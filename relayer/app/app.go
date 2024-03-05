@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/omni-network/omni/lib/buildinfo"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/gitinfo"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
@@ -21,7 +21,7 @@ import (
 func Run(ctx context.Context, cfg Config) error {
 	log.Info(ctx, "Starting relayer")
 
-	gitinfo.Instrument(ctx)
+	buildinfo.Instrument(ctx)
 
 	network, err := netconf.Load(cfg.NetworkFile)
 	if err != nil {

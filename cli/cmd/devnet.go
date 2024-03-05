@@ -42,43 +42,51 @@ func newDevnetCmds() *cobra.Command {
 }
 
 func newDevnetFundCmd() *cobra.Command {
+	var cfg devnetFundConfig
+
 	cmd := &cobra.Command{
-		Use:     "fund",
-		Short:   "Fund a local devnet account with 1 ETH",
-		Example: "  omni devnet fund <address> <rpc_url>",
-		Args:    cobra.ExactArgs(2),
+		Use:   "fund",
+		Short: "Fund a local devnet account with 1 ETH",
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return fund(cmd.Context(), args[0], args[1])
+			return devnetFund(cmd.Context(), cfg)
 		},
 	}
+
+	bindDevnetFundConfig(cmd, &cfg)
 
 	return cmd
 }
 
 func newDevnetAVSAllow() *cobra.Command {
-	var omniAVSAddress string
+	var cfg devnetAllowConfig
 
 	cmd := &cobra.Command{
-		Use:     "avs-allow",
-		Short:   "Add an operator to the omni AVS allow list",
-		Example: "  omni devnet avs-allow <operator-address> <rpc-url> [avs-address]",
-		Args:    cobra.ExactArgs(2),
+		Use:   "avs-allow",
+		Short: "Add an operator to the omni AVS allow list",
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return devnetAllow(cmd.Context(), args[0], args[1], omniAVSAddress)
+			return devnetAllow(cmd.Context(), cfg)
 		},
 	}
 
-	cmd.Flags().StringVar(&omniAVSAddress, "omni-avs-address", omniAVSAddress, "Optional address of the Omni AVS contract.")
+	bindDevnetAVSAllowConfig(cmd, &cfg)
 
 	return cmd
 }
 
-func devnetAllow(ctx context.Context, operatorAddr string, rpcURL string, avsAddr string) error {
-	if !common.IsHexAddress(operatorAddr) {
-		return errors.New("invalid operator address", "address", operatorAddr)
+type devnetAllowConfig struct {
+	OperatorAddr string
+	RPCURL       string
+	AVSAddr      string
+}
+
+func devnetAllow(ctx context.Context, cfg devnetAllowConfig) error {
+	if !common.IsHexAddress(cfg.OperatorAddr) {
+		return errors.New("invalid operator address", "address", cfg.OperatorAddr)
 	}
 
-	avsOwner, backend, err := devnetBackend(ctx, rpcURL)
+	avsOwner, backend, err := devnetBackend(ctx, cfg.RPCURL)
 	if err != nil {
 		return err
 	}
@@ -88,7 +96,7 @@ func devnetAllow(ctx context.Context, operatorAddr string, rpcURL string, avsAdd
 		return errors.Wrap(err, "get chain id")
 	}
 
-	avsAddress, err := avsAddressOrDefault(avsAddr, chainID)
+	avsAddress, err := avsAddressOrDefault(cfg.AVSAddr, chainID)
 	if err != nil {
 		return err
 	}
@@ -103,7 +111,7 @@ func devnetAllow(ctx context.Context, operatorAddr string, rpcURL string, avsAdd
 		return err
 	}
 
-	tx, err := omniAVS.AddToAllowlist(txOpts, common.HexToAddress(operatorAddr))
+	tx, err := omniAVS.AddToAllowlist(txOpts, common.HexToAddress(cfg.OperatorAddr))
 	if err != nil {
 		return errors.Wrap(err, "add to allowlist")
 	}
@@ -112,20 +120,27 @@ func devnetAllow(ctx context.Context, operatorAddr string, rpcURL string, avsAdd
 		return errors.Wrap(err, "wait mined")
 	}
 
+	log.Info(ctx, "Operator added to Omni AVS allow list", "address", cfg.OperatorAddr)
+
 	return nil
 }
 
-func fund(ctx context.Context, address string, rpcURL string) error {
-	if !common.IsHexAddress(address) {
-		return errors.New("invalid ETH address", "address", address)
+type devnetFundConfig struct {
+	Address string
+	RPCURL  string
+}
+
+func devnetFund(ctx context.Context, cfg devnetFundConfig) error {
+	if !common.IsHexAddress(cfg.Address) {
+		return errors.New("invalid ETH address", "address", cfg.Address)
 	}
 
-	funder, backend, err := devnetBackend(ctx, rpcURL)
+	funder, backend, err := devnetBackend(ctx, cfg.RPCURL)
 	if err != nil {
 		return err
 	}
 
-	addr := common.HexToAddress(address)
+	addr := common.HexToAddress(cfg.Address)
 	tx, _, err := backend.Send(ctx, funder, txmgr.TxCandidate{
 		To:       &addr,
 		GasLimit: 100_000,
@@ -145,7 +160,7 @@ func fund(ctx context.Context, address string, rpcURL string) error {
 	bf, _ := b.Float64()
 	bf /= params.Ether
 
-	log.Info(ctx, "Account funded", "address", address, "balance", fmt.Sprintf("%.4f ETH", bf))
+	log.Info(ctx, "Account funded", "address", cfg.Address, "balance", fmt.Sprintf("%.2f ETH", bf))
 
 	return nil
 }

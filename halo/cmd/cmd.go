@@ -6,6 +6,7 @@ import (
 
 	"github.com/omni-network/omni/halo/app"
 	halocfg "github.com/omni-network/omni/halo/config"
+	"github.com/omni-network/omni/lib/buildinfo"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/log"
 
@@ -19,6 +20,7 @@ func New() *cobra.Command {
 		"Halo is a consensus client implementation for the Omni Protocol",
 		newRunCmd("run", app.Run),
 		newInitCmd(),
+		buildinfo.NewVersionCmd(),
 	)
 }
 

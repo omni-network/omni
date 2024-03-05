@@ -8,11 +8,11 @@ import (
 	"github.com/omni-network/omni/halo/attest/voter"
 	"github.com/omni-network/omni/halo/comet"
 	halocfg "github.com/omni-network/omni/halo/config"
+	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/cchain"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/gitinfo"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
@@ -79,7 +79,7 @@ func Run(ctx context.Context, cfg Config) error {
 func Start(ctx context.Context, cfg Config) (func(context.Context) error, error) {
 	log.Info(ctx, "Starting halo consensus client")
 
-	gitinfo.Instrument(ctx)
+	buildinfo.Instrument(ctx)
 
 	if err := enableSDKTelemetry(); err != nil {
 		return nil, errors.Wrap(err, "enable cosmos-sdk telemetry")

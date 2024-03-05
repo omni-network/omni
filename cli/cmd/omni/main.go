@@ -1,3 +1,4 @@
+// Command omni provides the omni command line interface.
 package main
 
 import (
