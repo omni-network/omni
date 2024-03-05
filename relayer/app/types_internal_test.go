@@ -1,11 +1,10 @@
-package relayer_test
+package relayer
 
 import (
 	"testing"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/xchain"
-	relayer "github.com/omni-network/omni/relayer/app"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -18,7 +17,7 @@ func Test_translateSubmission(t *testing.T) {
 	var sub xchain.Submission
 	fuzz.New().NilChance(0).Fuzz(&sub)
 
-	xsub := relayer.SubmissionToBinding(sub)
+	xsub := submissionToBinding(sub)
 	reversedSub := submissionFromBinding(xsub, sub.DestChainID)
 
 	// Zero TxHash for comparison since it isn't translated.

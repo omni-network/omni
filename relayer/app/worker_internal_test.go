@@ -1,4 +1,4 @@
-package relayer_test
+package relayer
 
 import (
 	"context"
@@ -8,7 +8,6 @@ import (
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
-	relayer "github.com/omni-network/omni/relayer/app"
 
 	"github.com/stretchr/testify/require"
 )
@@ -69,10 +68,10 @@ func TestWorker_Run(t *testing.T) {
 	var mutex = &sync.Mutex{}
 	submissionsChan := make(chan xchain.Submission)
 
-	mockCreateFunc := func(streamUpdate relayer.StreamUpdate) ([]xchain.Submission, error) {
+	mockCreateFunc := func(streamUpdate StreamUpdate) ([]xchain.Submission, error) {
 		mutex.Lock()
 		defer mutex.Unlock()
-		subs, err := relayer.CreateSubmissions(streamUpdate)
+		subs, err := CreateSubmissions(streamUpdate)
 		if err != nil {
 			return nil, err
 		}
@@ -124,10 +123,10 @@ func TestWorker_Run(t *testing.T) {
 		{ID: destChainB, Name: "chain_b"},
 	}}
 
-	state := relayer.NewEmptyState("/tmp/relayer-state.json")
+	state := NewEmptyState("/tmp/relayer-state.json")
 
 	for _, chain := range network.Chains {
-		w := relayer.NewWorker(chain, network, mockProvider, mockXClient, mockCreateFunc, func() (relayer.SendFunc, error) {
+		w := NewWorker(chain, network, mockProvider, mockXClient, mockCreateFunc, func() (SendFunc, error) {
 			return mockSender.SendTransaction, nil
 		}, state)
 		go w.Run(ctx)

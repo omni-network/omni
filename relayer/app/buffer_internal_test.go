@@ -17,7 +17,7 @@ func Test_activeBuffer_AddInput(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
 	limit := int64(5)
-	sender := &mockSender{}
+	sender := &mockBufSender{}
 	buffer := newActiveBuffer("test", limit, sender.Send)
 
 	// Have a reader ready as we are unbuffered and blocking
@@ -36,22 +36,22 @@ func Test_activeBuffer_AddInput(t *testing.T) {
 	}
 }
 
-type mockSender struct {
+type mockBufSender struct {
 	sendChan chan xchain.Submission
 }
 
-func newMockSender() *mockSender {
-	return &mockSender{
+func newMockSender() *mockBufSender {
+	return &mockBufSender{
 		sendChan: make(chan xchain.Submission),
 	}
 }
 
-func (m *mockSender) Send(_ context.Context, sub xchain.Submission) error {
+func (m *mockBufSender) Send(_ context.Context, sub xchain.Submission) error {
 	m.sendChan <- sub
 	return nil
 }
 
-func (m *mockSender) Next() xchain.Submission {
+func (m *mockBufSender) Next() xchain.Submission {
 	return <-m.sendChan
 }
 

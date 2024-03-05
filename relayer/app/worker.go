@@ -75,7 +75,7 @@ func (w *Worker) runOnce(ctx context.Context) error {
 	buf := newActiveBuffer(w.destChain.Name, mempoolLimit, sender)
 
 	var logAttrs []any //nolint:prealloc // Not worth it
-	for srcChainID, fromHeight := range FromHeights(cursors, w.destChain, w.network.Chains, w.state) {
+	for srcChainID, fromHeight := range fromHeights(cursors, w.destChain, w.network.Chains, w.state) {
 		if srcChainID == w.destChain.ID { // Sanity check
 			return errors.New("unexpected cursor [BUG]")
 		}
