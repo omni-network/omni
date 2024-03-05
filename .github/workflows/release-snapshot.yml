@@ -1,12 +1,11 @@
-name: go releaser
+name: release snapshot
+# Snapshot releases on push to main.
 
 on:
   workflow_call:
 
-# TODO(corver): Figure out which images to publish and how to do this via goreleaser.
-
 jobs:
-  goreleaser:
+  release-snapshot:
     runs-on: namespace-profile-default
     steps:
       - uses: actions/checkout@v4
