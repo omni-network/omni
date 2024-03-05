@@ -27,7 +27,7 @@ if ! echo $PATH | grep -q "$HOME/bin"; then
     fi
 
     echo "ℹ️ Adding $HOME/bin to your PATH in $SHELL_PROFILE"
-    echo "export PATH="$PATH:$HOME/bin"" >> "$SHELL_PROFILE"
+    echo 'export PATH="$PATH:$HOME/bin"' >> "$SHELL_PROFILE"
     export PATH=\$PATH:$HOME/bin
 fi
 
