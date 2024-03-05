@@ -6,7 +6,7 @@
 
 <p align="center">
     <a href="https://github.com/omni-network/omni/actions?query=workflow%3Agoreleaser">
-        <img src="https://img.shields.io/github/actions/workflow/status/omni-network/omni/goreleaser.yml?branch=main&label=Build&logo=github-actions&logoColor=white&style=flat" alt="Build">
+        <img src="https://img.shields.io/github/actions/workflow/status/omni-network/omni/release-snapshot.yml?branch=main&label=Build&logo=github-actions&logoColor=white&style=flat" alt="Build">
     </a>
     <a href="https://github.com/omni-network/omni/actions?query=workflow%3Aci-main">
         <img src="https://img.shields.io/github/actions/workflow/status/omni-network/omni/ci-main.yml?branch=main&label=Tests&logo=github-actions&logoColor=white&style=flat" alt="Tests">
