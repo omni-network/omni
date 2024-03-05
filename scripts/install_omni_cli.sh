@@ -31,4 +31,4 @@ if ! echo $PATH | grep -q "$HOME/bin"; then
     export PATH=\$PATH:$HOME/bin
 fi
 
-which omni &> /dev/null && echo "✅ omni is now installed: try running 'omni --help' to get started" || echo "Error: omni executable not found in PATH, you may need to add $HOME/bin to your PATH"
+which omni &> /dev/null && echo "✅ omni is now installed: try running 'omni --help' to get started" || echo "Error: omni executable not found in PATH, you may need to run 'source $SHELL_PROFILE' or open a new terminal to use omni"
