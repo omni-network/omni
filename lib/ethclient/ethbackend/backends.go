@@ -1,4 +1,4 @@
-package backend
+package ethbackend
 
 import (
 	"context"
@@ -34,10 +34,10 @@ var (
 //
 // See Backends godoc for more information.
 type Backends struct {
-	backends map[uint64]*backend
+	backends map[uint64]*Backend
 }
 
-func New(testnet types.Testnet, deployKeyFile string) (Backends, error) {
+func NewBackends(testnet types.Testnet, deployKeyFile string) (Backends, error) {
 	var err error
 
 	var publicDeployKey *ecdsa.PrivateKey
@@ -54,9 +54,9 @@ func New(testnet types.Testnet, deployKeyFile string) (Backends, error) {
 		return Backends{}, errors.Wrap(err, "load deploy key")
 	}
 
-	backends := make(map[uint64]*backend)
+	inner := make(map[uint64]*Backend)
 
-	// Configure omni EVM backend
+	// Configure omni EVM Backend
 	{
 		chain := testnet.OmniEVMs[0] // Connect to the first omni evm instance for now.
 		ethCl, err := ethclient.Dial(chain.Chain.Name, chain.ExternalRPC)
@@ -64,26 +64,26 @@ func New(testnet types.Testnet, deployKeyFile string) (Backends, error) {
 			return Backends{}, errors.Wrap(err, "dial")
 		}
 
-		backends[chain.Chain.ID], err = newBackend(chain.Chain.Name, chain.Chain.ID, chain.Chain.BlockPeriod, ethCl, privateDeployKey)
+		inner[chain.Chain.ID], err = NewBackend(chain.Chain.Name, chain.Chain.ID, chain.Chain.BlockPeriod, ethCl, privateDeployKey)
 		if err != nil {
-			return Backends{}, errors.Wrap(err, "new omni backend")
+			return Backends{}, errors.Wrap(err, "new omni Backend")
 		}
 	}
 
-	// Configure anvil EVM backends
+	// Configure anvil EVM Backends
 	for _, chain := range testnet.AnvilChains {
 		ethCl, err := ethclient.Dial(chain.Chain.Name, chain.ExternalRPC)
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "dial")
 		}
 
-		backends[chain.Chain.ID], err = newBackend(chain.Chain.Name, chain.Chain.ID, chain.Chain.BlockPeriod, ethCl, privateDeployKey)
+		inner[chain.Chain.ID], err = NewBackend(chain.Chain.Name, chain.Chain.ID, chain.Chain.BlockPeriod, ethCl, privateDeployKey)
 		if err != nil {
-			return Backends{}, errors.Wrap(err, "new anvil backend")
+			return Backends{}, errors.Wrap(err, "new anvil Backend")
 		}
 	}
 
-	// Configure public EVM backends
+	// Configure public EVM Backends
 	for _, chain := range testnet.PublicChains {
 		if publicDeployKey == nil {
 			return Backends{}, errors.New("public deploy key required")
@@ -93,26 +93,26 @@ func New(testnet types.Testnet, deployKeyFile string) (Backends, error) {
 			return Backends{}, errors.Wrap(err, "dial")
 		}
 
-		backends[chain.Chain.ID], err = newBackend(chain.Chain.Name, chain.Chain.ID, chain.Chain.BlockPeriod, ethCl, publicDeployKey)
+		inner[chain.Chain.ID], err = NewBackend(chain.Chain.Name, chain.Chain.ID, chain.Chain.BlockPeriod, ethCl, publicDeployKey)
 		if err != nil {
-			return Backends{}, errors.Wrap(err, "new public backend")
+			return Backends{}, errors.Wrap(err, "new public Backend")
 		}
 	}
 
 	return Backends{
-		backends: backends,
+		backends: inner,
 	}, nil
 }
 
-// BindOpts is a convenience function that returns the single account and bind.TransactOpts and backend for a given chain.
-func (b Backends) BindOpts(ctx context.Context, sourceChainID uint64) (common.Address, *bind.TransactOpts, Backend, error) {
+// BindOpts is a convenience function that returns the single account and bind.TransactOpts and Backend for a given chain.
+func (b Backends) BindOpts(ctx context.Context, sourceChainID uint64) (common.Address, *bind.TransactOpts, *Backend, error) {
 	backend, ok := b.backends[sourceChainID]
 	if !ok {
 		return common.Address{}, nil, nil, errors.New("unknown chain", "chain", sourceChainID)
 	}
 
 	if len(backend.accounts) != 1 {
-		return common.Address{}, nil, nil, errors.New("only single account backends supported")
+		return common.Address{}, nil, nil, errors.New("only single account Backends supported")
 	}
 
 	// Get the first account

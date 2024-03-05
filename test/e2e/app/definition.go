@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/test/e2e/backend"
 	"github.com/omni-network/omni/test/e2e/docker"
 	"github.com/omni-network/omni/test/e2e/netman"
 	"github.com/omni-network/omni/test/e2e/types"
@@ -59,7 +59,7 @@ type Definition struct {
 	Testnet  types.Testnet // Note that testnet is the cometBFT term.
 	Infra    types.InfraProvider
 	Netman   netman.Manager
-	Backends backend.Backends
+	Backends ethbackend.Backends
 }
 
 func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
@@ -86,7 +86,7 @@ func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
 		return Definition{}, errors.Wrap(err, "loading testnet")
 	}
 
-	backends, err := backend.New(testnet, cfg.DeployKeyFile)
+	backends, err := ethbackend.NewBackends(testnet, cfg.DeployKeyFile)
 	if err != nil {
 		return Definition{}, errors.Wrap(err, "new backends")
 	}

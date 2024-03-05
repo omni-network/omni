@@ -6,7 +6,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/test/e2e/backend"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -19,7 +19,7 @@ var (
 )
 
 // RegisterOperatorWithEigen registers the operator with the eigen layer delegation manager.
-func RegisterOperatorWithEigen(ctx context.Context, avs Contracts, backend backend.Backend, operator common.Address, metadataURI string) (*ethtypes.Receipt, error) {
+func RegisterOperatorWithEigen(ctx context.Context, avs Contracts, backend *ethbackend.Backend, operator common.Address, metadataURI string) (*ethtypes.Receipt, error) {
 	operatorDetails := bindings.IDelegationManagerOperatorDetails{
 		EarningsReceiver:         operator,
 		DelegationApprover:       zeroDelegationApprover,
@@ -45,7 +45,7 @@ func RegisterOperatorWithEigen(ctx context.Context, avs Contracts, backend backe
 }
 
 // DelegateWETH delegates WETH to the Eigen Layer strategy manager's WETH strategy.
-func DelegateWETH(ctx context.Context, contracts Contracts, backend backend.Backend, delegator common.Address, amount int64) error {
+func DelegateWETH(ctx context.Context, contracts Contracts, backend *ethbackend.Backend, delegator common.Address, amount int64) error {
 	txOpts, err := backend.BindOpts(ctx, delegator)
 	if err != nil {
 		return err
@@ -75,7 +75,7 @@ func DelegateWETH(ctx context.Context, contracts Contracts, backend backend.Back
 }
 
 // Undelegate undelegates WETH from the Eigen Layer strategy manager's WETH strategy.
-func Undelegate(ctx context.Context, contracts Contracts, backend backend.Backend, delegator common.Address) error {
+func Undelegate(ctx context.Context, contracts Contracts, backend *ethbackend.Backend, delegator common.Address) error {
 	txOpts, err := backend.BindOpts(ctx, delegator)
 	if err != nil {
 		return err
