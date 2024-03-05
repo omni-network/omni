@@ -5,8 +5,8 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/test/e2e/backend"
 	"github.com/omni-network/omni/test/e2e/netman"
 	"github.com/omni-network/omni/test/e2e/types"
 
@@ -59,7 +59,7 @@ func NewDeployer(
 }
 
 // Contracts returns the deployed contracts.
-func (d *Deployer) Contracts(backend backend.Backend) (Contracts, error) {
+func (d *Deployer) Contracts(backend *ethbackend.Backend) (Contracts, error) {
 	if d.contract == nil {
 		return Contracts{}, errors.New("avs not deployed")
 	}
@@ -116,7 +116,7 @@ func (d *Deployer) Contracts(backend backend.Backend) (Contracts, error) {
 	}, nil
 }
 
-func (d *Deployer) Deploy(ctx context.Context, backend backend.Backend, owner common.Address) error {
+func (d *Deployer) Deploy(ctx context.Context, backend *ethbackend.Backend, owner common.Address) error {
 	if d.contract != nil {
 		return errors.New("avs already deployed")
 	}
@@ -174,7 +174,7 @@ func (d *Deployer) ExportDeployInfo(i types.DeployInfos) {
 	i.Set(d.chainID, types.ContractELWETHStrategy, d.eigen.Strategies["WETH"], elHeight)
 }
 
-func (d *Deployer) deployContracts(ctx context.Context, txOpts *bind.TransactOpts, backend backend.Backend,
+func (d *Deployer) deployContracts(ctx context.Context, txOpts *bind.TransactOpts, backend *ethbackend.Backend,
 	proxyAdmin common.Address, owner common.Address,
 ) (common.Address, error) {
 	if txOpts.From != owner {

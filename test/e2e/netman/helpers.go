@@ -9,8 +9,8 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/test/e2e/backend"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -19,7 +19,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-func deployOmniContracts(ctx context.Context, txOpts *bind.TransactOpts, backend backend.Backend,
+func deployOmniContracts(ctx context.Context, txOpts *bind.TransactOpts, backend *ethbackend.Backend,
 	valSetID uint64, validators []bindings.Validator,
 ) (common.Address, *bindings.OmniPortal, error) {
 	// TODO: make these configurable
@@ -49,15 +49,15 @@ func deployOmniContracts(ctx context.Context, txOpts *bind.TransactOpts, backend
 	return portal, contract, nil
 }
 
-func DeployProxyAdmin(ctx context.Context, txOpts *bind.TransactOpts, ethCl backend.Backend) (
+func DeployProxyAdmin(ctx context.Context, txOpts *bind.TransactOpts, backend *ethbackend.Backend) (
 	common.Address, error,
 ) {
-	proxyAdmin, tx, _, err := bindings.DeployProxyAdmin(txOpts, ethCl)
+	proxyAdmin, tx, _, err := bindings.DeployProxyAdmin(txOpts, backend)
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "deploy proxy admin")
 	}
 
-	receipt, err := bind.WaitMined(ctx, ethCl, tx)
+	receipt, err := bind.WaitMined(ctx, backend, tx)
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "wait mined proxy admin")
 	} else if receipt.Status != types.ReceiptStatusSuccessful {
@@ -67,15 +67,15 @@ func DeployProxyAdmin(ctx context.Context, txOpts *bind.TransactOpts, ethCl back
 	return proxyAdmin, nil
 }
 
-func deployFeeOracleV1(ctx context.Context, txOpts *bind.TransactOpts, ethCl backend.Backend,
+func deployFeeOracleV1(ctx context.Context, txOpts *bind.TransactOpts, backend *ethbackend.Backend,
 	proxyAdmin common.Address, owner common.Address, fee *big.Int,
 ) (common.Address, error) {
-	impl, tx, _, err := bindings.DeployFeeOracleV1(txOpts, ethCl)
+	impl, tx, _, err := bindings.DeployFeeOracleV1(txOpts, backend)
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "deploy fee oracle impl")
 	}
 
-	receipt, err := bind.WaitMined(ctx, ethCl, tx)
+	receipt, err := bind.WaitMined(ctx, backend, tx)
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "wait mined fee oracle impl")
 	} else if receipt.Status != types.ReceiptStatusSuccessful {
@@ -92,12 +92,12 @@ func deployFeeOracleV1(ctx context.Context, txOpts *bind.TransactOpts, ethCl bac
 		return common.Address{}, errors.Wrap(err, "encode fee oracle initializer")
 	}
 
-	proxy, tx, _, err := bindings.DeployTransparentUpgradeableProxy(txOpts, ethCl, impl, proxyAdmin, enc)
+	proxy, tx, _, err := bindings.DeployTransparentUpgradeableProxy(txOpts, backend, impl, proxyAdmin, enc)
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "deploy fee oracle proxy")
 	}
 
-	receipt, err = bind.WaitMined(ctx, ethCl, tx)
+	receipt, err = bind.WaitMined(ctx, backend, tx)
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "wait mined transparent proxy")
 	} else if receipt.Status != types.ReceiptStatusSuccessful {
@@ -107,16 +107,16 @@ func deployFeeOracleV1(ctx context.Context, txOpts *bind.TransactOpts, ethCl bac
 	return proxy, nil
 }
 
-func deployPortal(ctx context.Context, txOpts *bind.TransactOpts, ethCl backend.Backend,
+func deployPortal(ctx context.Context, txOpts *bind.TransactOpts, backend *ethbackend.Backend,
 	proxyAdmin common.Address, owner common.Address, feeOracle common.Address, valSetID uint64,
 	validators []bindings.Validator,
 ) (common.Address, error) {
-	impl, tx, _, err := bindings.DeployOmniPortal(txOpts, ethCl)
+	impl, tx, _, err := bindings.DeployOmniPortal(txOpts, backend)
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "deploy portal impl")
 	}
 
-	receipt, err := bind.WaitMined(ctx, ethCl, tx)
+	receipt, err := bind.WaitMined(ctx, backend, tx)
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "wait mined portal")
 	} else if receipt.Status != types.ReceiptStatusSuccessful {
@@ -133,12 +133,12 @@ func deployPortal(ctx context.Context, txOpts *bind.TransactOpts, ethCl backend.
 		return common.Address{}, errors.Wrap(err, "encode portal initializer")
 	}
 
-	proxy, tx, _, err := bindings.DeployTransparentUpgradeableProxy(txOpts, ethCl, impl, proxyAdmin, enc)
+	proxy, tx, _, err := bindings.DeployTransparentUpgradeableProxy(txOpts, backend, impl, proxyAdmin, enc)
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "deploy portal proxy")
 	}
 
-	receipt, err = bind.WaitMined(ctx, ethCl, tx)
+	receipt, err = bind.WaitMined(ctx, backend, tx)
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "wait mined upgradable proxy")
 	} else if receipt.Status != types.ReceiptStatusSuccessful {
@@ -148,7 +148,7 @@ func deployPortal(ctx context.Context, txOpts *bind.TransactOpts, ethCl backend.
 	return proxy, nil
 }
 
-func logBalance(ctx context.Context, backend backend.Backend, chain string, addr common.Address, name string,
+func logBalance(ctx context.Context, backend *ethbackend.Backend, chain string, addr common.Address, name string,
 ) error {
 	b, err := backend.BalanceAt(ctx, addr, nil)
 	if err != nil {

@@ -7,10 +7,10 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings/examples"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/forkjoin"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/test/e2e/backend"
 	"github.com/omni-network/omni/test/e2e/netman"
 	"github.com/omni-network/omni/test/e2e/types"
 
@@ -26,10 +26,10 @@ import (
 type XDapp struct {
 	contracts map[uint64]contract
 	edges     []Edge
-	backends  backend.Backends
+	backends  ethbackend.Backends
 }
 
-func Deploy(ctx context.Context, netMgr netman.Manager, backends backend.Backends) (XDapp, error) {
+func Deploy(ctx context.Context, netMgr netman.Manager, backends ethbackend.Backends) (XDapp, error) {
 	log.Info(ctx, "Deploying ping pong contracts")
 
 	// Define a deploy function that deploys a ping pong contract to a chain.

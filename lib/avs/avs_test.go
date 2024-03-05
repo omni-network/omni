@@ -18,9 +18,9 @@ import (
 	"github.com/omni-network/omni/lib/avs"
 	"github.com/omni-network/omni/lib/avs/anvil"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/txmgr"
 	"github.com/omni-network/omni/test/e2e/app/static"
-	"github.com/omni-network/omni/test/e2e/backend"
 	"github.com/omni-network/omni/test/tutil"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -90,7 +90,7 @@ func setup(t *testing.T) (context.Context, ethclient.Client, *avs.Deployer) {
 func TestEigenAndOmniAVS(t *testing.T) {
 	ctx, ethCl, avsDeploy := setup(t)
 
-	backend, err := backend.NewBackend(chainName, chainID, blockPeriod, ethCl)
+	backend, err := ethbackend.NewBackend(chainName, chainID, blockPeriod, ethCl)
 	require.NoError(t, err)
 
 	// Add the two owner accounts to the backend
@@ -214,7 +214,7 @@ func checkIfContractsAreDeployed(
 func mintWETHToAddresses(
 	t *testing.T,
 	ctx context.Context,
-	backend backend.Backend,
+	backend *ethbackend.Backend,
 	contracts avs.Contracts,
 	funder common.Address,
 	amount int64,
@@ -239,7 +239,7 @@ func addOperatorToAllowList(
 	ctx context.Context,
 	contracts avs.Contracts,
 	ownerAVS common.Address,
-	backend backend.Backend,
+	backend *ethbackend.Backend,
 	operator common.Address) {
 	t.Helper()
 
@@ -254,7 +254,7 @@ func addOperatorToAllowList(
 func checkForOperatorRegisteredToELLog(
 	t *testing.T,
 	ctx context.Context,
-	backend backend.Backend,
+	backend *ethbackend.Backend,
 	contracts avs.Contracts,
 	operator common.Address,
 	height uint64) {
@@ -288,7 +288,7 @@ func checkForOperatorRegisteredToELLog(
 func whiteListStrategy(
 	t *testing.T,
 	ctx context.Context,
-	backend backend.Backend,
+	backend *ethbackend.Backend,
 	contracts avs.Contracts,
 	ownerEigen common.Address) {
 	t.Helper()
@@ -307,7 +307,7 @@ func whiteListStrategy(
 func delegateToOperator(t *testing.T,
 	ctx context.Context,
 	contracts avs.Contracts,
-	backend backend.Backend,
+	backend *ethbackend.Backend,
 	delegator common.Address,
 	operator common.Address) {
 	t.Helper()
@@ -397,7 +397,7 @@ func mustHexToKey(privKeyHex string) *ecdsa.PrivateKey {
 	return privKey
 }
 
-func fundAccount(t *testing.T, ctx context.Context, backend backend.Backend, funder, account common.Address) {
+func fundAccount(t *testing.T, ctx context.Context, backend *ethbackend.Backend, funder, account common.Address) {
 	t.Helper()
 	tx, _, err := backend.Send(ctx, funder, txmgr.TxCandidate{
 		To:    &account,
@@ -418,7 +418,7 @@ func genPrivKey(t *testing.T) *ecdsa.PrivateKey {
 	return privKey
 }
 
-func registerOperatorCLI(t *testing.T, ctx context.Context, contracts avs.Contracts, b backend.Backend, key *ecdsa.PrivateKey) {
+func registerOperatorCLI(t *testing.T, ctx context.Context, contracts avs.Contracts, b *ethbackend.Backend, key *ecdsa.PrivateKey) {
 	t.Helper()
 
 	addr := crypto.PubkeyToAddress(key.PublicKey)
@@ -454,7 +454,7 @@ func registerOperatorCLI(t *testing.T, ctx context.Context, contracts avs.Contra
 	// Override register options for testing.
 	testOpts := func(deps *clicmd.RegDeps) {
 		deps.Prompter = stubPrompter{password: password}
-		deps.NewBackendFunc = func(_ string, _ uint64, _ time.Duration, _ ethclient.Client, _ ...*ecdsa.PrivateKey) (backend.Backend, error) {
+		deps.NewBackendFunc = func(_ string, _ uint64, _ time.Duration, _ ethclient.Client, _ ...*ecdsa.PrivateKey) (*ethbackend.Backend, error) {
 			return b, nil // Have to provide the test backend for nonce management
 		}
 		deps.VerifyFunc = func(eigensdktypes.Operator) error {

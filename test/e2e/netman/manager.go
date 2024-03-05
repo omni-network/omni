@@ -7,11 +7,11 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/forkjoin"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
-	"github.com/omni-network/omni/test/e2e/backend"
 	"github.com/omni-network/omni/test/e2e/types"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -52,7 +52,7 @@ type Manager interface {
 	RelayerKey() *ecdsa.PrivateKey
 }
 
-func NewManager(testnet types.Testnet, backends backend.Backends, relayerKeyFile string,
+func NewManager(testnet types.Testnet, backends ethbackend.Backends, relayerKeyFile string,
 ) (Manager, error) {
 	// Create partial portals. This will be updated by Deploy*Portals.
 	portals := make(map[uint64]Portal)
@@ -133,7 +133,7 @@ type manager struct {
 	portals     map[uint64]Portal // Note that this is mutable, Portals are updated by Deploy*Portals.
 	omniChainID uint64
 	relayerKey  *ecdsa.PrivateKey
-	backends    backend.Backends
+	backends    ethbackend.Backends
 }
 
 func (m *manager) DeployInfo() map[types.EVMChain]DeployInfo {

@@ -11,7 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/avs"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/test/e2e/backend"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -28,7 +28,7 @@ const l1BlockPeriod = time.Second * 12
 // RegDeps contains the Register dependencies that are abstracted for testing.
 type RegDeps struct {
 	Prompter       eigenutils.Prompter
-	NewBackendFunc func(chainName string, chainID uint64, blockPeriod time.Duration, ethCl ethclient.Client, privateKeys ...*ecdsa.PrivateKey) (backend.Backend, error)
+	NewBackendFunc func(chainName string, chainID uint64, blockPeriod time.Duration, ethCl ethclient.Client, privateKeys ...*ecdsa.PrivateKey) (*ethbackend.Backend, error)
 	VerifyFunc     func(eigensdktypes.Operator) error
 }
 
@@ -42,7 +42,7 @@ func Register(ctx context.Context, configFile string, avsAddr string, opts ...re
 	// Default dependencies.
 	deps := RegDeps{
 		Prompter:       eigenutils.NewPrompter(),
-		NewBackendFunc: backend.NewBackend,
+		NewBackendFunc: ethbackend.NewBackend,
 		VerifyFunc: func(op eigensdktypes.Operator) error {
 			return op.Validate() //nolint:wrapcheck // Wrapped below
 		},
@@ -102,7 +102,7 @@ func Register(ctx context.Context, configFile string, avsAddr string, opts ...re
 
 // makeContracts returns a avs Contracts struct with the given backend and delegation manager, avs directory, and omni avs contracts.
 // Note only those three contracts are populated.
-func makeContracts(ctx context.Context, backend backend.Backend, cfg eigentypes.OperatorConfigNew, avsAddr common.Address) (avs.Contracts, error) {
+func makeContracts(ctx context.Context, backend *ethbackend.Backend, cfg eigentypes.OperatorConfigNew, avsAddr common.Address) (avs.Contracts, error) {
 	if !common.IsHexAddress(cfg.ELDelegationManagerAddress) {
 		return avs.Contracts{}, errors.New("invalid delegation manager address")
 	}
