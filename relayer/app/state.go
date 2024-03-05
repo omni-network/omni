@@ -52,6 +52,7 @@ func (s *State) GetHeight(dstID, srcID uint64) uint64 {
 	if !ok {
 		return 0
 	}
+
 	return height
 }
 
