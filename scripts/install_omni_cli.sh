@@ -48,5 +48,5 @@ fi
 if command -v omni &> /dev/null; then
     echo "✅ omni is now installed. Run first 'source ~/$FILE' and then 'omni --help' to get started."
 else
-    echo "Error: omni executable not found in PATH. You may need to add '\$HOME/bin' to your PATH manually."
+    echo "❌ Error: omni executable not found in PATH. You may need to add '\$HOME/bin' to your PATH manually."
 fi
