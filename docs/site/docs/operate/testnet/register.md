@@ -35,5 +35,5 @@ chain_id: 100 # The chain ID of the Omni Network
 2. Run the following command to register as an operator:
 
 ```bash
-omni operator register --config-file ~/path/to/operator.yml --avs-address 0xa513E6E4b8f2a923D98304ec87F64353C4D5C853
+omni operator register --config-file ~/path/to/operator.yml --avs-address <AVS_CONTRACT_ADDRESS>
 ```
