@@ -69,7 +69,7 @@ fix-golden: ## Fixes golden test fixtures.
 	@./scripts/fix_golden_tests.sh
 
 .PHONY: build-cli
-build-cli: ## Build the omnicli.
+build-cli: ## Build the omni cli.
 	@go build -o omni cli/main.go
 
 ###############################################################################

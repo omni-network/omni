@@ -23,6 +23,9 @@ abstract contract OmniAVSStorage {
     /// @notice OmniPortal.xcall base gas limit in syncWithOmni()
     uint64 public xcallBaseGasLimit;
 
+    /// @notice Whether or not the allowlist is enabled
+    bool public allowlistEnabled;
+
     /// @notice Address of EthStakeInbox contract, predeployed on Omni
     address public ethStakeInbox;
 
