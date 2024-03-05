@@ -45,7 +45,7 @@ func newDevnetFundCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "fund",
 		Short:   "Fund a local devnet account with 1 ETH",
-		Example: "  omnicli devnet fund <address> <rpc_url>",
+		Example: "  omni devnet fund <address> <rpc_url>",
 		Args:    cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return fund(cmd.Context(), args[0], args[1])
@@ -61,7 +61,7 @@ func newDevnetAVSAllow() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "avs-allow",
 		Short:   "Add an operator to the omni AVS allow list",
-		Example: "  omnicli devnet avs-allow <operator-address> <rpc-url> [avs-address]",
+		Example: "  omni devnet avs-allow <operator-address> <rpc-url> [avs-address]",
 		Args:    cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return devnetAllow(cmd.Context(), args[0], args[1], omniAVSAddress)

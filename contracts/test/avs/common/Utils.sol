@@ -65,6 +65,12 @@ contract Utils is Fixtures {
         omniAVS.removeFromAllowlist(operator);
     }
 
+    /// @dev disable the allowlist
+    function _disableAllowlist() internal {
+        vm.prank(omniAVSOwner);
+        omniAVS.disableAllowlist();
+    }
+
     /// @dev deregister an operator from OmniAVS
     function _deregisterOperatorFromAVS(address operator) internal {
         vm.prank(operator);

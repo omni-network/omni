@@ -22,6 +22,16 @@ interface IOmniAVSAdmin {
     event OperatorDisallowed(address operator);
 
     /**
+     * @notice Emitted when the allowlist is enabled.
+     */
+    event AllowlistEnabled();
+
+    /**
+     * @notice Emitted when the allowlist is disabled.
+     */
+    event AllowlistDisabled();
+
+    /**
      * @notice Initialize the Omni AVS admin contract.
      * @param owner             Intiial contract owner
      * @param omni              Omni portal contract
@@ -85,6 +95,16 @@ interface IOmniAVSAdmin {
      * @param operator The operator to remove
      */
     function removeFromAllowlist(address operator) external;
+
+    /**
+     * @notice Enable the allowlist.
+     */
+    function enableAllowlist() external;
+
+    /**
+     * @notice Disable the allowlist.
+     */
+    function disableAllowlist() external;
 
     /**
      * @notice Pause the contract.
