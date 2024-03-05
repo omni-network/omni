@@ -17,6 +17,7 @@ type State struct {
 	cursors  map[uint64]map[uint64]uint64 // destChainID -> srcChainID -> height
 }
 
+// NewEmptyState creates a new empty state with the given file path.
 func NewEmptyState(filePath string) *State {
 	return &State{
 		filePath: filePath,

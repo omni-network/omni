@@ -44,6 +44,9 @@ func mapByStreamID(msgs []xchain.Msg) map[xchain.StreamID][]xchain.Msg {
 	return m
 }
 
+// filterMsgs filters messages based on offsets for a specific stream.
+// It takes a slice of messages, offsets indexed by stream ID, and the target stream ID,
+// and returns a filtered slice containing only messages with offsets greater than the specified offset.
 func filterMsgs(msgs []xchain.Msg, offsets map[xchain.StreamID]uint64, streamID xchain.StreamID) []xchain.Msg {
 	offset, ok := offsets[streamID]
 	if !ok {
@@ -62,7 +65,10 @@ func filterMsgs(msgs []xchain.Msg, offsets map[xchain.StreamID]uint64, streamID 
 	return res
 }
 
-func FromHeights(cursors []xchain.StreamCursor, destChain netconf.Chain, chains []netconf.Chain,
+// fromHeights calculates the starting heights for streaming from source chains to a destination chain.
+// It takes stream cursors, destination and source chains, and the current state, and returns
+// a map where keys are source chain IDs and values are the starting heights for streaming.
+func fromHeights(cursors []xchain.StreamCursor, destChain netconf.Chain, chains []netconf.Chain,
 	state *State) map[uint64]uint64 {
 	res := make(map[uint64]uint64)
 

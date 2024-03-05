@@ -89,7 +89,7 @@ func (o OpSender) SendTransaction(ctx context.Context, submission xchain.Submiss
 
 	const gasLimit = 1_000_000 // TODO(lazar): make configurable
 
-	txData, err := o.getXSubmitBytes(SubmissionToBinding(submission))
+	txData, err := o.getXSubmitBytes(submissionToBinding(submission))
 	if err != nil {
 		return err
 	}
