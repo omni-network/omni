@@ -85,8 +85,9 @@ archives:
       {{- if .Arm }}v{{ .Arm }}{{ end }}
 
 release:
+  # Only create release binary artefacts for omni cli.
   ids:
-    - omni # Only create release binary artefacts for omni cli.
+    - omni
   draft: true
   replace_existing_draft: true
   prerelease: auto
