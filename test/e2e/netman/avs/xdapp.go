@@ -5,14 +5,13 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/test/e2e/backend"
 	"github.com/omni-network/omni/test/e2e/netman"
 	"github.com/omni-network/omni/test/e2e/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 type XDapp struct {
@@ -22,7 +21,7 @@ type XDapp struct {
 	portalAddr  common.Address
 	chain       types.EVMChain
 	omniChainID uint64
-	backends    backend.Backends
+	backends    ethbackend.Backends
 
 	// Mutable state
 	contract     *bindings.OmniAVS
@@ -31,7 +30,7 @@ type XDapp struct {
 }
 
 func New(cfg AVSConfig, eigen EigenDeployments, portalAddr common.Address,
-	chain types.EVMChain, omniChainID uint64, backends backend.Backends) *XDapp {
+	chain types.EVMChain, omniChainID uint64, backends ethbackend.Backends) *XDapp {
 	return &XDapp{
 		cfg:         cfg,
 		eigen:       eigen,
@@ -97,19 +96,17 @@ func (d *XDapp) ExportDeployInfo(i types.DeployInfos) {
 	i.Set(d.chain.ID, types.ContractELWETHStrategy, d.eigen.Strategies["WETH"], elHeight)
 }
 
-func (d *XDapp) deployOmniAVS(ctx context.Context, client backend.Backend, txOpts *bind.TransactOpts,
+func (d *XDapp) deployOmniAVS(ctx context.Context, backend *ethbackend.Backend, txOpts *bind.TransactOpts,
 	proxyAdmin common.Address, owner common.Address,
 ) (common.Address, error) {
-	impl, tx, _, err := bindings.DeployOmniAVS(txOpts, client, d.eigen.DelegationManager, d.eigen.AVSDirectory)
+	impl, tx, _, err := bindings.DeployOmniAVS(txOpts, backend, d.eigen.DelegationManager, d.eigen.AVSDirectory)
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "deploy avs impl")
 	}
 
-	receipt, err := bind.WaitMined(ctx, client, tx)
+	_, err = backend.WaitMined(ctx, tx)
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "wait mined avs impl")
-	} else if receipt.Status != ethtypes.ReceiptStatusSuccessful {
-		return common.Address{}, errors.New("deploy avs impl failed")
 	}
 
 	abi, err := bindings.OmniAVSMetaData.GetAbi()
@@ -130,16 +127,14 @@ func (d *XDapp) deployOmniAVS(ctx context.Context, client backend.Backend, txOpt
 		return common.Address{}, errors.Wrap(err, "encode avs initializer")
 	}
 
-	proxy, tx, _, err := bindings.DeployTransparentUpgradeableProxy(txOpts, client, impl, proxyAdmin, enc)
+	proxy, tx, _, err := bindings.DeployTransparentUpgradeableProxy(txOpts, backend, impl, proxyAdmin, enc)
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "deploy avs proxy")
 	}
 
-	receipt, err = bind.WaitMined(ctx, client, tx)
+	_, err = backend.WaitMined(ctx, tx)
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "wait mined avs proxy")
-	} else if receipt.Status != ethtypes.ReceiptStatusSuccessful {
-		return common.Address{}, errors.New("deploy avs proxy failed")
 	}
 
 	return proxy, nil

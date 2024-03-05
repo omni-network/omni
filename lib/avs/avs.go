@@ -7,14 +7,14 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/test/e2e/backend"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-func RegisterOperatorWithAVS(ctx context.Context, contracts Contracts, backend backend.Backend, operator common.Address) error {
+func RegisterOperatorWithAVS(ctx context.Context, contracts Contracts, backend *ethbackend.Backend, operator common.Address) error {
 	if err := verifyRegisterOperator(ctx, contracts, operator); err != nil {
 		return errors.Wrap(err, "verify register operator")
 	}
@@ -57,7 +57,7 @@ func RegisterOperatorWithAVS(ctx context.Context, contracts Contracts, backend b
 	return nil
 }
 
-func DeregisterOperatorFromAVS(ctx context.Context, contracts Contracts, backend backend.Backend, operator common.Address) error {
+func DeregisterOperatorFromAVS(ctx context.Context, contracts Contracts, backend *ethbackend.Backend, operator common.Address) error {
 	txOpts, err := backend.BindOpts(ctx, operator)
 	if err != nil {
 		return err

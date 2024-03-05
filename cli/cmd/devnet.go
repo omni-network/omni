@@ -10,9 +10,9 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/txmgr"
-	"github.com/omni-network/omni/test/e2e/backend"
 
 	"github.com/ethereum/go-ethereum/common"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
@@ -151,7 +151,7 @@ func fund(ctx context.Context, address string, rpcURL string) error {
 }
 
 // devnetBackend returns a backend populated with the default anvil account 0 private key.
-func devnetBackend(ctx context.Context, rpcURL string) (common.Address, backend.Backend, error) {
+func devnetBackend(ctx context.Context, rpcURL string) (common.Address, *ethbackend.Backend, error) {
 	ethCl, err := ethclient.Dial("", rpcURL)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "dial eth client", "url", rpcURL)
@@ -167,7 +167,7 @@ func devnetBackend(ctx context.Context, rpcURL string) (common.Address, backend.
 		return common.Address{}, nil, errors.Wrap(err, "parse private key")
 	}
 
-	backend, err := backend.NewBackend("", chainID.Uint64(), time.Second, ethCl)
+	backend, err := ethbackend.NewBackend("", chainID.Uint64(), time.Second, ethCl)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "create backend")
 	}

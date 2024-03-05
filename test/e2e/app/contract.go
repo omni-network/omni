@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/test/e2e/backend"
 	"github.com/omni-network/omni/test/e2e/netman"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -16,7 +16,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func StartSendingXMsgs(ctx context.Context, netman netman.Manager, backends backend.Backends, batches ...int) <-chan error {
+func StartSendingXMsgs(ctx context.Context, netman netman.Manager, backends ethbackend.Backends, batches ...int) <-chan error {
 	log.Info(ctx, "Generating cross chain messages async", "batches", batches)
 
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
@@ -42,7 +42,7 @@ func StartSendingXMsgs(ctx context.Context, netman netman.Manager, backends back
 }
 
 // SendXMsgs sends <count> xmsgs from every chain to every other chain, then waits for them to be mined.
-func SendXMsgs(ctx context.Context, netman netman.Manager, backends backend.Backends, count int) error {
+func SendXMsgs(ctx context.Context, netman netman.Manager, backends ethbackend.Backends, count int) error {
 	waiter := backends.NewWaiter()
 	var eg errgroup.Group
 	for _, from := range netman.Portals() {
@@ -81,7 +81,7 @@ func SendXMsgs(ctx context.Context, netman netman.Manager, backends backend.Back
 }
 
 // xcall sends a ethereum transaction to the portal contract, triggering a xcall.
-func xcall(ctx context.Context, backends backend.Backends, from netman.Portal, destChainID uint64) (*ethtypes.Transaction, error) {
+func xcall(ctx context.Context, backends ethbackend.Backends, from netman.Portal, destChainID uint64) (*ethtypes.Transaction, error) {
 	// TODO: use calls to actual contracts
 	var data []byte
 	to := common.Address{}

@@ -1,4 +1,4 @@
-package backend
+package ethbackend
 
 import (
 	"context"
@@ -22,46 +22,13 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-// Backend represents an ethclient with one or more private keys (accounts).
-// It can be used to send transactions and sign data on behalf of these accounts.
-// It is designed to be used with bindings based contracts.
-// It improves on normal bindings transactor by using txmgr for reliable sending.
-type Backend interface {
-	ethclient.Client
-
-	// AddAccount adds a new account to the backend, it returns the address of the account for convenience.
-	AddAccount(privkey *ecdsa.PrivateKey) (common.Address, error)
-
-	// BindOpts returns a new TransactOpts for interacting with bindings based contracts for the provided account.
-	// The TransactOpts are partially stubbed, since txmgr handles nonces and signing.
-	//
-	// Do not cache or store the TransactOpts, as they are not safe for concurrent use (pointer).
-	// Rather create a new TransactOpts for each transaction.
-	BindOpts(ctx context.Context, account common.Address) (*bind.TransactOpts, error)
-
-	// Send provides access to underlying txmgr directly of the provided account.
-	Send(ctx context.Context, account common.Address, candidate txmgr.TxCandidate) (*ethtypes.Transaction, *ethtypes.Receipt, error)
-
-	// WaitMined waits for the given transaction to be mined and returns the receipt.
-	WaitMined(ctx context.Context, tx *ethtypes.Transaction) (*ethtypes.Receipt, error)
-
-	// Sign signs the given input with the account's private key.
-	// It returns a 65-byte Ethereum signature in the format [R || S || V].
-	Sign(from common.Address, input [32]byte) ([65]byte, error)
-
-	// Chain returns the chainName and chainID of the chain.
-	Chain() (string, uint64)
-}
-
-var _ Backend = (*backend)(nil)
-
 type account struct {
 	from       common.Address
 	privateKey *ecdsa.PrivateKey
 	txMgr      txmgr.TxManager
 }
 
-type backend struct {
+type Backend struct {
 	ethclient.Client
 
 	accounts    map[common.Address]account
@@ -70,11 +37,7 @@ type backend struct {
 	blockPeriod time.Duration
 }
 
-func NewBackend(chainName string, chainID uint64, blockPeriod time.Duration, ethCl ethclient.Client, privateKeys ...*ecdsa.PrivateKey) (Backend, error) {
-	return newBackend(chainName, chainID, blockPeriod, ethCl, privateKeys...)
-}
-
-func newBackend(chainName string, chainID uint64, blockPeriod time.Duration, ethCl ethclient.Client, privateKeys ...*ecdsa.PrivateKey) (*backend, error) {
+func NewBackend(chainName string, chainID uint64, blockPeriod time.Duration, ethCl ethclient.Client, privateKeys ...*ecdsa.PrivateKey) (*Backend, error) {
 	accounts := make(map[common.Address]account)
 	for _, pk := range privateKeys {
 		txMgr, err := newTxMgr(ethCl, chainName, chainID, blockPeriod, pk)
@@ -90,7 +53,7 @@ func newBackend(chainName string, chainID uint64, blockPeriod time.Duration, eth
 		}
 	}
 
-	return &backend{
+	return &Backend{
 		Client:      ethCl,
 		accounts:    accounts,
 		chainName:   chainName,
@@ -99,7 +62,7 @@ func newBackend(chainName string, chainID uint64, blockPeriod time.Duration, eth
 	}, nil
 }
 
-func (b *backend) AddAccount(privkey *ecdsa.PrivateKey) (common.Address, error) {
+func (b *Backend) AddAccount(privkey *ecdsa.PrivateKey) (common.Address, error) {
 	txMgr, err := newTxMgr(b.Client, b.chainName, b.chainID, b.blockPeriod, privkey)
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "deploy tx txMgr")
@@ -116,11 +79,11 @@ func (b *backend) AddAccount(privkey *ecdsa.PrivateKey) (common.Address, error) 
 	return addr, nil
 }
 
-func (b *backend) Chain() (string, uint64) {
+func (b *Backend) Chain() (string, uint64) {
 	return b.chainName, b.chainID
 }
 
-func (b *backend) Sign(from common.Address, input [32]byte) ([65]byte, error) {
+func (b *Backend) Sign(from common.Address, input [32]byte) ([65]byte, error) {
 	acc, ok := b.accounts[from]
 	if !ok {
 		return [65]byte{}, errors.New("unknown from address", "from", from)
@@ -131,7 +94,7 @@ func (b *backend) Sign(from common.Address, input [32]byte) ([65]byte, error) {
 	return k1util.Sign(pk, input)
 }
 
-func (b *backend) Send(ctx context.Context, from common.Address, candidate txmgr.TxCandidate) (*ethtypes.Transaction, *ethtypes.Receipt, error) {
+func (b *Backend) Send(ctx context.Context, from common.Address, candidate txmgr.TxCandidate) (*ethtypes.Transaction, *ethtypes.Receipt, error) {
 	acc, ok := b.accounts[from]
 	if !ok {
 		return nil, nil, errors.New("unknown from address", "from", from)
@@ -140,7 +103,7 @@ func (b *backend) Send(ctx context.Context, from common.Address, candidate txmgr
 	return acc.txMgr.Send(ctx, candidate)
 }
 
-func (b *backend) WaitMined(ctx context.Context, tx *ethtypes.Transaction) (*ethtypes.Receipt, error) {
+func (b *Backend) WaitMined(ctx context.Context, tx *ethtypes.Transaction) (*ethtypes.Receipt, error) {
 	rec, err := bind.WaitMined(ctx, b, tx)
 	if err != nil {
 		return nil, errors.Wrap(err, "wait mined", "chain", b.chainName)
@@ -156,11 +119,11 @@ func (b *backend) WaitMined(ctx context.Context, tx *ethtypes.Transaction) (*eth
 //
 // Do not cache or store the TransactOpts, as they are not safe for concurrent use (pointer).
 // Rather create a new TransactOpts for each transaction.
-func (b *backend) BindOpts(ctx context.Context, from common.Address) (*bind.TransactOpts, error) {
+func (b *Backend) BindOpts(ctx context.Context, from common.Address) (*bind.TransactOpts, error) {
 	if header, err := b.HeaderByNumber(ctx, nil); err != nil {
 		return nil, errors.Wrap(err, "header by number")
 	} else if header.BaseFee == nil {
-		return nil, errors.New("only dynamic transaction backends supported")
+		return nil, errors.New("only dynamic transaction Backends supported")
 	}
 
 	_, ok := b.accounts[from]
@@ -187,7 +150,7 @@ func (b *backend) BindOpts(ctx context.Context, from common.Address) (*bind.Tran
 
 // SendTransaction intercepts the tx that bindings generates, extracts the from address (assuming the
 // backendStubSigner was used), the strips fields, and passes it to the txmgr for reliable broadcasting.
-func (b *backend) SendTransaction(ctx context.Context, in *ethtypes.Transaction) error {
+func (b *Backend) SendTransaction(ctx context.Context, in *ethtypes.Transaction) error {
 	from, err := backendStubSigner{}.Sender(in)
 	if err != nil {
 		return errors.Wrap(err, "from signer sender")
@@ -240,19 +203,19 @@ func randomHex7() string {
 
 var _ ethtypes.Signer = backendStubSigner{}
 
-// backendStubSigner is a stub signer that is used by bindings to sign transactions for a backend.
+// backendStubSigner is a stub signer that is used by bindings to sign transactions for a Backend.
 // It just encodes the from address into the signature, since there is no other way to pass the from
-// address from TxOpts to the backend. The backend then extracts the from address,
+// address from TxOpts to the Backend. The Backend then extracts the from address,
 // gets the account txmgr, and sends the transaction.
 type backendStubSigner struct {
 	ethtypes.Signer
 }
 
-func (f backendStubSigner) ChainID() *big.Int {
+func (backendStubSigner) ChainID() *big.Int {
 	return new(big.Int)
 }
 
-func (f backendStubSigner) Sender(tx *ethtypes.Transaction) (common.Address, error) {
+func (backendStubSigner) Sender(tx *ethtypes.Transaction) (common.Address, error) {
 	// Convert R,S,V into a 20 byte signature into:
 	// R: 8 bytes uint64
 	// S: 8 bytes uint64
@@ -277,7 +240,7 @@ func (f backendStubSigner) Sender(tx *ethtypes.Transaction) (common.Address, err
 }
 
 //nolint:nonamedreturns // Ambiguous return values
-func (f backendStubSigner) SignatureValues(_ *ethtypes.Transaction, sig []byte) (r, s, v *big.Int, err error) {
+func (backendStubSigner) SignatureValues(_ *ethtypes.Transaction, sig []byte) (r, s, v *big.Int, err error) {
 	if len(sig) != len(common.Address{}) {
 		return nil, nil, nil, errors.New("invalid from signature length", "length", len(sig))
 	}
