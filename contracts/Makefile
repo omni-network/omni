@@ -34,7 +34,7 @@ deploy-eigenlayer-save-anvil-state: ## Deploy eigenlayer contracts and dump anvi
 .PHONY: avs-fork-test-goerli
 avs-fork-test-goerli: ## Run OmniAVS tests on a goerli fork.
 	@if [ -z "${INFURA_KEY}" ]; then echo "INFURA_KEY is not set"; exit 1; fi
-	@FOUNDRY_FUZZ_RUNS=10 forge test --fork-url https://goerli.infura.io/v3/${INFURA_KEY} --fork-block-number 10580259 --match-contract OmniAVS_Test
+	@FOUNDRY_FUZZ_RUNS=10 forge test --fork-url https://goerli.infura.io/v3/${INFURA_KEY} --fork-block-number 10580259 --match-path "test/avs/**/*.sol"
 
 .PHONY: check-abigen-version
 check-abigen-version: ## Check abigen version, exit(1) if not 1.13.14-stable.
