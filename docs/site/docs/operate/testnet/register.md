@@ -15,8 +15,8 @@ For further information on this reference, please refer to the [EigenLayer refer
 
 ```yaml
 operator:
-    address: 0xfd23f7f705344bce1582fcf9bc6a0dc8e33b3b61 # Your node address
-    earnings_receiver_address: 0xfd23f7f705344bce1582fcf9bc6a0dc8e33b3b61 # Your payout address
+    address: 0xfd23f7f705344bce1582fcf9bc6a0dc8e33b3b61 # Your operator address
+    earnings_receiver_address: 0xfd23f7f705344bce1582fcf9bc6a0dc8e33b3b61 # Your operator payout address, may be the same as above
     delegation_approver_address: "0x0000000000000000000000000000000000000000" # Your delegation approver address, may be left as shown
     staker_opt_out_window_blocks: 0 # may be left as shown, and can be updated later using EigenLayer CLI
     metadata_url: "https://raw.githubusercontent.com/idea404/resources/main/eigenlayer/metadata.json" # Your metadata URL
@@ -35,5 +35,5 @@ chain_id: 100 # The chain ID of the Omni Network
 2. Run the following command to register as an operator:
 
 ```bash
-omni operator register --config ~/path/to/operator.yml --avs-contract 0xa513E6E4b8f2a923D98304ec87F64353C4D5C853
+omni operator register --config-file ~/path/to/operator.yml --avs-address 0xa513E6E4b8f2a923D98304ec87F64353C4D5C853
 ```
