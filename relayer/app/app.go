@@ -46,6 +46,13 @@ func Run(ctx context.Context, cfg Config) error {
 	cprov := cprovider.NewABCIProvider(tmClient, network.ChainNamesByIDs())
 	xprov := xprovider.New(network, rpcClientPerChain)
 
+	state, ok, err := LoadCursors(cfg.StateFile)
+	if err != nil {
+		return err
+	} else if !ok {
+		state = NewEmptyState(cfg.StateFile)
+	}
+
 	for _, destChain := range network.Chains {
 		sendProvider := func() (SendFunc, error) {
 			sender, err := NewOpSender(destChain, rpcClientPerChain[destChain.ID], *privateKey,
@@ -61,7 +68,8 @@ func Run(ctx context.Context, cfg Config) error {
 			cprov,
 			xprov,
 			CreateSubmissions,
-			sendProvider)
+			sendProvider,
+			state)
 
 		go worker.Run(ctx)
 	}

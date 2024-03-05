@@ -2,6 +2,7 @@ package relayer_test
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
 	"github.com/omni-network/omni/lib/cchain"
@@ -14,9 +15,19 @@ import (
 
 func Test_FromHeights(t *testing.T) {
 	t.Parallel()
+
+	state := relayer.NewEmptyState(filepath.Join(t.TempDir(), "state.json"))
+	err := state.Persist(4, 1, 300)
+	require.NoError(t, err)
+	err = state.Persist(4, 2, 53)
+	require.NoError(t, err)
+	err = state.Persist(4, 3, 20)
+	require.NoError(t, err)
+
 	type args struct {
 		cursors []xchain.StreamCursor
 		chains  []netconf.Chain
+		state   *relayer.State
 	}
 	tests := []struct {
 		name string
@@ -30,6 +41,7 @@ func Test_FromHeights(t *testing.T) {
 					{StreamID: xchain.StreamID{SourceChainID: 2, DestChainID: 3}, SourceBlockHeight: 250},
 				},
 				chains: []netconf.Chain{{ID: 1}, {ID: 2}, {ID: 3}},
+				state:  relayer.NewEmptyState(filepath.Join(t.TempDir(), "state.json")),
 			}, want: map[uint64]uint64{
 				1: 200,
 				2: 250,
@@ -43,6 +55,7 @@ func Test_FromHeights(t *testing.T) {
 					{StreamID: xchain.StreamID{SourceChainID: 2, DestChainID: 3}, SourceBlockHeight: 100},
 				},
 				chains: []netconf.Chain{{ID: 1}, {ID: 2, DeployHeight: 55}, {ID: 3}},
+				state:  relayer.NewEmptyState(filepath.Join(t.TempDir(), "state.json")),
 			}, want: map[uint64]uint64{
 				1: 200,
 				2: 100,
@@ -55,8 +68,23 @@ func Test_FromHeights(t *testing.T) {
 					{StreamID: xchain.StreamID{SourceChainID: 1, DestChainID: 2}, SourceBlockHeight: 200},
 				},
 				chains: []netconf.Chain{{ID: 1}, {ID: 2, DeployHeight: 55}, {ID: 3}},
+				state:  relayer.NewEmptyState(filepath.Join(t.TempDir(), "state.json")),
 			}, want: map[uint64]uint64{
 				1: 200,
+				2: 55,
+				3: 0,
+			},
+		},
+		{
+			name: "4",
+			args: args{
+				cursors: []xchain.StreamCursor{
+					{StreamID: xchain.StreamID{SourceChainID: 1, DestChainID: 2}, SourceBlockHeight: 200},
+				},
+				chains: []netconf.Chain{{ID: 1}, {ID: 2, DeployHeight: 55}, {ID: 3}},
+				state:  state,
+			}, want: map[uint64]uint64{
+				1: 300,
 				2: 55,
 				3: 0,
 			},
@@ -65,7 +93,7 @@ func Test_FromHeights(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got := relayer.FromHeights(tt.args.cursors, netconf.Chain{ID: 4}, tt.args.chains)
+			got := relayer.FromHeights(tt.args.cursors, netconf.Chain{ID: 4}, tt.args.chains, tt.args.state)
 			require.Equal(t, tt.want, got)
 		})
 	}

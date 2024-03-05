@@ -18,6 +18,9 @@ halo-url = "localhost:26657"
 # The path to the Omni network configuration file.
 network-file = "network.json"
 
+# The path to the relayer state file used to track cursors.
+state-file = "relayer-state.json"
+
 #######################################################################
 ###                         Logging Options                         ###
 #######################################################################

@@ -62,7 +62,8 @@ func filterMsgs(msgs []xchain.Msg, offsets map[xchain.StreamID]uint64, streamID 
 	return res
 }
 
-func FromHeights(cursors []xchain.StreamCursor, destChain netconf.Chain, chains []netconf.Chain) map[uint64]uint64 {
+func FromHeights(cursors []xchain.StreamCursor, destChain netconf.Chain, chains []netconf.Chain,
+	state *State) map[uint64]uint64 {
 	res := make(map[uint64]uint64)
 
 	for _, chain := range chains {
@@ -81,7 +82,13 @@ func FromHeights(cursors []xchain.StreamCursor, destChain netconf.Chain, chains 
 		if cursor.SourceChainID == destChain.ID {
 			continue // Sanity check
 		}
+
 		res[cursor.SourceChainID] = cursor.SourceBlockHeight
+
+		// If local persisted state is higher, use that instead, skipping a bunch of empty blocks on startup.
+		if height := state.GetHeight(destChain.ID, cursor.SourceChainID); height > cursor.SourceBlockHeight {
+			res[cursor.SourceChainID] = height
+		}
 	}
 
 	return res
