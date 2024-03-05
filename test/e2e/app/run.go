@@ -14,8 +14,8 @@ import (
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
-// defaultPingPongN defines a few hours of ping pong messages after each deploy.
-const defaultPingPongN = 1000
+// defaultPingPongN defines a few days of ping pong messages after each deploy.
+const defaultPingPongN = 100_000
 
 func DefaultDeployConfig() DeployConfig {
 	return DeployConfig{
