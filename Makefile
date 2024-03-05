@@ -35,6 +35,11 @@ explorer-gen: ## Generates code for our explorer
 ###                                Utils                                 	###
 ###############################################################################
 
+.PHONY: install-cli
+install-cli: ## Install the omni cli to $GOPATH/bin/omni.
+	@go install github.com/omni-network/omni/cli/cmd/omni || echo "❌go install failed"
+	@which omni || echo '❌ `which omni` failed, fix go environment: "export PATH=$$PATH:$$(go env GOPATH)/bin" # Or see https://go.dev/doc/gopath_code'
+
 .PHONY: ensure-go-releaser
 ensure-go-releaser: ## Installs the go-releaser tool.
 	@which goreleaser > /dev/null || echo "go-releaser not installed, see https://goreleaser.com/install/"
@@ -67,10 +72,6 @@ secrets-baseline: ensure-detect-secrets ## Update secrets baseline.
 .PHONY: fix-golden
 fix-golden: ## Fixes golden test fixtures.
 	@./scripts/fix_golden_tests.sh
-
-.PHONY: build-cli
-build-cli: ## Build the omni cli.
-	@go build -o omni cli/main.go
 
 ###############################################################################
 ###                                Testing                                 	###

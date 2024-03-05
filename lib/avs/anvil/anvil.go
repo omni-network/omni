@@ -24,7 +24,9 @@ import (
 // If useLogProxy is true, all requests are routed via a reserve proxy that logs all requests, which will be printed
 // at stop.
 func Start(ctx context.Context, dir string, chainID uint64) (ethclient.Client, func(), error) {
-	if !composeDown(dir) { //nolint:contextcheck // Composedown uses a fresh context
+	ctx, cancel := context.WithTimeout(ctx, time.Second*15)
+	defer cancel()
+	if !composeDown(ctx, dir) {
 		return nil, nil, errors.New("failure to clean up previous anvil instance")
 	}
 
@@ -57,11 +59,14 @@ func Start(ctx context.Context, dir string, chainID uint64) (ethclient.Client, f
 	}
 
 	stop := func() {
-		composeDown(dir)
+		// Fresh stop context since above context might be canceled.
+		stopCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		defer cancel()
+		composeDown(stopCtx, dir)
 	}
 
-	// Wait up to 30 secs for RPC to be available
-	const retry = 30
+	// Wait up to 10 secs for RPC to be available
+	const retry = 10
 	for i := 0; i < retry; i++ {
 		if i == retry-1 {
 			stop()
@@ -88,9 +93,7 @@ func Start(ctx context.Context, dir string, chainID uint64) (ethclient.Client, f
 }
 
 // composeDown runs docker-compose down in the provided directory.
-func composeDown(dir string) bool {
-	ctx := context.Background() // Use a new context to ensure we always stop
-
+func composeDown(ctx context.Context, dir string) bool {
 	if _, err := os.Stat(dir + "/compose.yaml"); os.IsNotExist(err) {
 		return true
 	}

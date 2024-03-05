@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/omni-network/omni/lib/buildinfo"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 
 	"github.com/spf13/cobra"
@@ -13,6 +14,7 @@ func New() *cobra.Command {
 		"CLI providing tools for omni operators",
 		newOperatorCmds(),
 		newDevnetCmds(),
+		buildinfo.NewVersionCmd(),
 	)
 }
 
@@ -23,13 +25,15 @@ func newOperatorCmds() *cobra.Command {
 		Args:  cobra.NoArgs,
 	}
 
-	cmd.AddCommand(newRegisterCmd())
+	cmd.AddCommand(
+		newRegisterCmd(),
+	)
 
 	return cmd
 }
 
 func newRegisterCmd() *cobra.Command {
-	var omniAVSAddress string
+	var cfg RegConfig
 
 	cmd := &cobra.Command{
 		Use:   "register",
@@ -38,14 +42,13 @@ func newRegisterCmd() *cobra.Command {
 to successfully register an operator address with the Omni AVS contract.
 
 Note the operator must already be registered with Eigen-Layer.`,
-		Example: "  omni operator register <eigen-configuration-file>",
-		Args:    cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return Register(cmd.Context(), args[0], omniAVSAddress)
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return Register(cmd.Context(), cfg)
 		},
 	}
 
-	cmd.Flags().StringVar(&omniAVSAddress, "omni-avs-address", omniAVSAddress, "Optional address of the Omni AVS contract.")
+	bindRegConfig(cmd, &cfg)
 
 	return cmd
 }
