@@ -11,8 +11,6 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/monitor/avs"
 
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -27,7 +25,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	if err := avs.Monitor(ctx, network, common.HexToAddress(cfg.AVSAddress)); err != nil {
+	if err := avs.Monitor(ctx, network); err != nil {
 		return errors.Wrap(err, "monitor AVS")
 	}
 
