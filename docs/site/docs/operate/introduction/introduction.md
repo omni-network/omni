@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Introduction
 
-## What is a node operator in Omni?
+## What Is a Node Operator in Omni?
 
 Operators run Omni node software and play an active role in validating the Omni network.
 
