@@ -11,7 +11,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -56,7 +56,7 @@ func RegisterOperatorWithAVS(ctx context.Context, contracts Contracts, backend *
 		return errors.Wrap(err, "wait mined")
 	}
 
-	if receipt.Status != types.ReceiptStatusSuccessful {
+	if receipt.Status != ethtypes.ReceiptStatusSuccessful {
 		return errors.New("receipt status failed")
 	}
 
@@ -79,7 +79,7 @@ func DeregisterOperatorFromAVS(ctx context.Context, contracts Contracts, backend
 		return errors.Wrap(err, "wait mined")
 	}
 
-	if receipt.Status != types.ReceiptStatusSuccessful {
+	if receipt.Status != ethtypes.ReceiptStatusSuccessful {
 		return errors.New("receipt status failed")
 	}
 
