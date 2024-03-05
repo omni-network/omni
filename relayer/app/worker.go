@@ -22,15 +22,13 @@ type Worker struct {
 	cProvider    cchain.Provider
 	xProvider    xchain.Provider
 	creator      CreateFunc
-	state        *PersistentState
-	heights      map[uint64]uint64 // srcChainID -> height
+	state        *State
 	sendProvider func() (SendFunc, error)
 }
 
 // NewWorker creates a new worker for a single destination chain.
 func NewWorker(destChain netconf.Chain, network netconf.Network, cProvider cchain.Provider,
-	xProvider xchain.Provider, creator CreateFunc, sendProvider func() (SendFunc, error),
-	state *PersistentState, heights map[uint64]uint64,
+	xProvider xchain.Provider, creator CreateFunc, sendProvider func() (SendFunc, error), state *State,
 ) *Worker {
 	return &Worker{
 		destChain:    destChain,
@@ -40,7 +38,6 @@ func NewWorker(destChain netconf.Chain, network netconf.Network, cProvider cchai
 		creator:      creator,
 		sendProvider: sendProvider,
 		state:        state,
-		heights:      heights,
 	}
 }
 
@@ -78,14 +75,15 @@ func (w *Worker) runOnce(ctx context.Context) error {
 	buf := newActiveBuffer(w.destChain.Name, mempoolLimit, sender)
 
 	var logAttrs []any //nolint:prealloc // Not worth it
-	for srcChainID, fromHeight := range FromHeights(cursors, w.destChain, w.network.Chains, w.heights) {
+	for srcChainID, fromHeight := range FromHeights(cursors, w.destChain, w.network.Chains, w.state) {
 		if srcChainID == w.destChain.ID { // Sanity check
 			return errors.New("unexpected cursor [BUG]")
 		}
 
-		callback := newCallback(w.xProvider, initialOffsets, w.creator, buf.AddInput, w.destChain.ID, w.state)
+		callback := newCallback(w.xProvider, initialOffsets, w.creator, buf.AddInput, w.destChain.ID)
+		wrapCb := wrapStatePersist(callback, w.state, w.destChain.ID)
 
-		w.cProvider.Subscribe(ctx, srcChainID, fromHeight, w.destChain.Name, callback)
+		w.cProvider.Subscribe(ctx, srcChainID, fromHeight, w.destChain.Name, wrapCb)
 
 		srcChain, f := w.network.Chain(srcChainID)
 		if !f {
@@ -100,7 +98,7 @@ func (w *Worker) runOnce(ctx context.Context) error {
 }
 
 func newCallback(xProvider xchain.Provider, initialOffsets map[xchain.StreamID]uint64, creator CreateFunc,
-	sender SendFunc, destChainID uint64, state *PersistentState) cchain.ProviderCallback {
+	sender SendFunc, destChainID uint64) cchain.ProviderCallback {
 	return func(ctx context.Context, att xchain.Attestation) error {
 		// Get the xblock from the source chain.
 		block, ok, err := xProvider.GetBlock(ctx, att.SourceChainID, att.BlockHeight)
@@ -113,14 +111,13 @@ func newCallback(xProvider xchain.Provider, initialOffsets map[xchain.StreamID]u
 				log.Hex7("attestation_hash", att.BlockHash[:]),
 				log.Hex7("block_hash", block.BlockHash[:]),
 			)
+		} else if len(block.Msgs) == 0 {
+			return nil
 		}
 
-		var tree xchain.BlockTree
-		if len(block.Msgs) > 0 {
-			tree, err = xchain.NewBlockTree(block)
-			if err != nil {
-				return err
-			}
+		tree, err := xchain.NewBlockTree(block)
+		if err != nil {
+			return err
 		}
 		// Split into streams
 		for streamID, msgs := range mapByStreamID(block.Msgs) {
@@ -152,7 +149,17 @@ func newCallback(xProvider xchain.Provider, initialOffsets map[xchain.StreamID]u
 			}
 		}
 
-		if err = state.Persist(block.SourceChainID, destChainID, block.BlockHeight); err != nil {
+		return nil
+	}
+}
+
+func wrapStatePersist(cb cchain.ProviderCallback, state *State, destChainID uint64) cchain.ProviderCallback {
+	return func(ctx context.Context, att xchain.Attestation) error {
+		if err := cb(ctx, att); err != nil {
+			return err
+		}
+
+		if err := state.Persist(destChainID, att.SourceChainID, att.BlockHeight); err != nil {
 			return errors.Wrap(err, "persist state")
 		}
 

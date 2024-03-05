@@ -50,10 +50,8 @@ func Run(ctx context.Context, cfg Config) error {
 	if err != nil {
 		return err
 	} else if !ok {
-		state = NewPersistentState(cfg.StateFile)
+		state = NewEmptyState(cfg.StateFile)
 	}
-
-	cursors := state.Get()
 
 	for _, destChain := range network.Chains {
 		sendProvider := func() (SendFunc, error) {
@@ -71,8 +69,7 @@ func Run(ctx context.Context, cfg Config) error {
 			xprov,
 			CreateSubmissions,
 			sendProvider,
-			state,
-			cursors[destChain.ID])
+			state)
 
 		go worker.Run(ctx)
 	}

@@ -13,7 +13,7 @@ func TestPersistState(t *testing.T) {
 	fuzzer := fuzz.New().NilChance(0).NumElements(1, 5)
 	path := filepath.Join(t.TempDir(), "state.json")
 
-	ps := &PersistentState{
+	ps := &State{
 		cursors:  make(map[uint64]map[uint64]uint64),
 		filePath: path,
 	}
@@ -23,7 +23,7 @@ func TestPersistState(t *testing.T) {
 
 	for dstChainID, sourceMap := range expected {
 		for srcChainID, height := range sourceMap {
-			err := ps.Persist(srcChainID, dstChainID, height)
+			err := ps.Persist(dstChainID, srcChainID, height)
 			require.NoError(t, err)
 		}
 	}
