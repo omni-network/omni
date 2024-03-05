@@ -10,16 +10,18 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
 <Tabs>
-  <TabItem value="source" label="Source">
+  <TabItem value="source" label="Source with `make`">
     ```bash
     git clone https://github.com/omni-network/omni.git
     cd omni
     make install-cli
     ```
   </TabItem>
-  <TabItem value="go" label="Go">
+  <TabItem value="go" label="Source with `go`">
     ```bash
-    go install github.com/omni-network/omni/cli/omni@latest
+    git clone https://github.com/omni-network/omni.git
+    cd omni
+    go install ./cli/cmd/omni
     ```
   </TabItem>
 </Tabs>
