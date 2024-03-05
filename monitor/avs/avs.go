@@ -15,8 +15,8 @@ import (
 // use hardcoded avs address for now
 // TODO: add avs address to network config.
 const (
-	devnetAvsAddr  = "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853"
-	testnetAvsAddr = "" // TODO
+	devnetAVSAddr = "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853"
+	goerliAVSAddr = "" // TODO
 )
 
 // Monitor starts monitoring the AVS contract.
@@ -28,10 +28,10 @@ func Monitor(ctx context.Context, network netconf.Network) error {
 		return err
 	}
 
-	addr := common.HexToAddress(devnetAvsAddr)
-	// monitor testnet avs in staging, for now
+	addr := common.HexToAddress(devnetAVSAddr)
+	// monitor goerli avs in staging, for now
 	if network.Name == "staging" {
-		addr = common.HexToAddress(testnetAvsAddr)
+		addr = common.HexToAddress(goerliAVSAddr)
 	}
 
 	avs, err := newAVS(l1Client, addr)
