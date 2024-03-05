@@ -10,7 +10,7 @@ import (
 	"github.com/cometbft/cometbft/libs/tempfile"
 )
 
-// State represents the state of the relayer. It keeps track of the last submitted height for each source chain on each destination chain.
+// State represents the state of the relayer. It keeps track of the last successfully processed block.
 type State struct {
 	mu       sync.Mutex
 	filePath string
@@ -24,36 +24,12 @@ func NewEmptyState(filePath string) *State {
 	}
 }
 
-// Get returns the current state.
-func (s *State) Get() map[uint64]map[uint64]uint64 {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	// Create a copy of the map to avoid race conditions
-	copyMap := make(map[uint64]map[uint64]uint64)
-	for k, v := range s.cursors {
-		innerMap := make(map[uint64]uint64)
-		for k2, v2 := range v {
-			innerMap[k2] = v2
-		}
-		copyMap[k] = innerMap
-	}
-
-	return copyMap
-}
-
 // GetHeight returns the last submitted height for the given destChainID and srcChainID.
 func (s *State) GetHeight(dstID, srcID uint64) uint64 {
-	srcMap, ok := s.Get()[dstID]
-	if !ok {
-		return 0
-	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
-	height, ok := srcMap[srcID]
-	if !ok {
-		return 0
-	}
-
-	return height
+	return s.cursors[dstID][srcID]
 }
 
 // Persist saves the given height for the given chainID.

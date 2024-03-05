@@ -32,7 +32,7 @@ func TestPersistState(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, ok)
 	require.NotNil(t, loadedState)
-	require.True(t, mapsEqual(expected, loadedState.Get()))
+	require.True(t, mapsEqual(expected, loadedState.cursors))
 }
 
 func mapsEqual(map1, map2 map[uint64]map[uint64]uint64) bool {
