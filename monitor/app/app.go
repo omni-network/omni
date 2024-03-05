@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/gitinfo"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/monitor/avs"
@@ -20,7 +20,7 @@ import (
 func Run(ctx context.Context, cfg Config) error {
 	log.Info(ctx, "Starting monitor service")
 
-	gitinfo.Instrument(ctx)
+	buildinfo.Instrument(ctx)
 
 	network, err := netconf.Load(cfg.NetworkFile)
 	if err != nil {
