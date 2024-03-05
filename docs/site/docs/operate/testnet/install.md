@@ -10,6 +10,11 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
 <Tabs>
+  <TabItem value="binary" label="Binary Install">
+    ```bash
+    curl -sSfL https://raw.githubusercontent.com/omni-network/omni/main/scripts/install_omni_cli.sh | sh -s
+    ```
+  </TabItem>
   <TabItem value="source" label="src with make">
     ```bash
     git clone https://github.com/omni-network/omni.git
@@ -25,3 +30,5 @@ import TabItem from '@theme/TabItem';
     ```
   </TabItem>
 </Tabs>
+
+<!-- TODO(idea404): mention home path installation -->
