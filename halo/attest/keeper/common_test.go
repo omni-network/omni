@@ -1,8 +1,9 @@
-package keeper
+package keeper_test
 
 import (
 	"testing"
 
+	"github.com/omni-network/omni/halo/attest/keeper"
 	"github.com/omni-network/omni/halo/attest/testutil"
 	"github.com/omni-network/omni/halo/attest/types"
 
@@ -23,7 +24,7 @@ type mocks struct {
 
 func mockDefaultExpectations(_ sdk.Context, m mocks) {}
 
-func setupKeeper(t *testing.T, expectations ...func(sdk.Context, mocks)) (*Keeper, sdk.Context) {
+func setupKeeper(t *testing.T, expectations ...func(sdk.Context, mocks)) (*keeper.Keeper, sdk.Context) {
 	t.Helper()
 
 	key := storetypes.NewKVStoreKey(types.StoreKey)
@@ -48,17 +49,17 @@ func setupKeeper(t *testing.T, expectations ...func(sdk.Context, mocks)) (*Keepe
 
 	const voteWindow = 1
 	const voteLimit = 4
-	k, err := New(codec, storeSvc, m.skeeper, m.namer.ChainName, voteWindow, voteLimit)
+	k, err := keeper.New(codec, storeSvc, m.skeeper, m.namer.ChainName, voteWindow, voteLimit)
 	require.NoError(t, err, "new keeper")
 
 	return k, ctx
 }
 
 // dumpTables returns all the items in the atestation and signature tables as slices.
-func dumpTables(t *testing.T, ctx sdk.Context, k *Keeper) ([]*Attestation, []*Signature) {
+func dumpTables(t *testing.T, ctx sdk.Context, k *keeper.Keeper) ([]*keeper.Attestation, []*keeper.Signature) {
 	t.Helper()
-	var atts []*Attestation
-	aitr, err := k.attTable.List(ctx, AttestationIdIndexKey{})
+	var atts []*keeper.Attestation
+	aitr, err := k.AttestTable().List(ctx, keeper.AttestationIdIndexKey{})
 	require.NoError(t, err, "list attestations")
 	defer aitr.Close()
 
@@ -68,8 +69,8 @@ func dumpTables(t *testing.T, ctx sdk.Context, k *Keeper) ([]*Attestation, []*Si
 		atts = append(atts, a)
 	}
 
-	var sigs []*Signature
-	sitr, err := k.sigTable.List(ctx, SignatureIdIndexKey{})
+	var sigs []*keeper.Signature
+	sitr, err := k.SignatureTable().List(ctx, keeper.SignatureIdIndexKey{})
 	require.NoError(t, err, "list signatures")
 	defer sitr.Close()
 
