@@ -19,10 +19,10 @@ jobs:
     uses: ./.github/workflows/golangci-lint.yml
   sol-tests:
       uses: ./.github/workflows/soltest.yml
-  go-releaser:
-    uses: ./.github/workflows/goreleaser.yml
+  release-snapshot:
+    uses: ./.github/workflows/release-snapshot.yml
     needs: [pre-commit, go-tests, go-lint, sol-tests]
     secrets: inherit
   e2e:
     uses: ./.github/workflows/e2etest.yml
-    needs: [go-releaser]
+    needs: [release-snapshot]
