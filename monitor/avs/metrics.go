@@ -1,6 +1,8 @@
 package avs
 
 import (
+	"github.com/omni-network/omni/lib/promutil"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -20,14 +22,14 @@ var (
 		Help:      "The total amount of delegations made all operators registered with the AVS",
 	})
 
-	operatorStake = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	operatorStake = promutil.NewResetGaugeVec(prometheus.GaugeOpts{
 		Namespace: "monitor",
 		Subsystem: "avs",
 		Name:      "operator_stake",
 		Help:      "The total amount staked (self-delegations) by operators registered with the AVS",
 	}, []string{"operator"})
 
-	operatorDelegations = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	operatorDelegations = promutil.NewResetGaugeVec(prometheus.GaugeOpts{
 		Namespace: "monitor",
 		Subsystem: "avs",
 		Name:      "operator_delegations",

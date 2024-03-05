@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 // monitorAVSOperatorsForever blocks and periodically monitors AVS operators.
@@ -42,25 +43,30 @@ func monitorAVSOnce(avs *bindings.OmniAVS) error {
 		return errors.Wrap(err, "get operators")
 	}
 
-	total := uint64(0)
+	// Reset all operator labeled metrics since some operators may have been removed.
+	operatorStake.Reset()
+	operatorDelegations.Reset()
+
+	var total float64
 	for _, operator := range operators {
 		addr := operator.Addr.Hex()
 		staked := weiToEth(operator.Staked)
 		delegated := weiToEth(operator.Delegated)
 
-		operatorStake.WithLabelValues(addr).Set(float64(staked))
-		operatorDelegations.WithLabelValues(addr).Set(float64(delegated))
+		operatorStake.WithLabelValues(addr).Set(staked)
+		operatorDelegations.WithLabelValues(addr).Set(delegated)
 
-		total = total + delegated + staked
+		total += delegated + staked
 	}
 
 	numOperators.Set(float64(len(operators)))
-	totalDelegations.Set(float64(total))
+	totalDelegations.Set(total)
 
 	return nil
 }
 
 // weiToEth converts a wei amount to an ether amount.
-func weiToEth(wei *big.Int) uint64 {
-	return wei.Div(wei, big.NewInt(1e18)).Uint64()
+func weiToEth(wei *big.Int) float64 {
+	f, _ := wei.Float64()
+	return f / params.Ether
 }
