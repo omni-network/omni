@@ -103,12 +103,13 @@ func (b *Backend) Send(ctx context.Context, from common.Address, candidate txmgr
 	return acc.txMgr.Send(ctx, candidate)
 }
 
+// WaitMined waits for the transaction to be mined and asserts the receipt is successful.
 func (b *Backend) WaitMined(ctx context.Context, tx *ethtypes.Transaction) (*ethtypes.Receipt, error) {
 	rec, err := bind.WaitMined(ctx, b, tx)
 	if err != nil {
 		return nil, errors.Wrap(err, "wait mined", "chain", b.chainName)
-	} else if rec.Status == ethtypes.ReceiptStatusSuccessful {
-		return rec, nil
+	} else if rec.Status != ethtypes.ReceiptStatusSuccessful {
+		return rec, errors.New("receipt status unsuccessful", "status", rec.Status)
 	}
 
 	return rec, nil
