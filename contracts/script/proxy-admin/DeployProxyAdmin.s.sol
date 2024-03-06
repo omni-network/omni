@@ -17,7 +17,7 @@ contract DeployProxyAdmin is Script {
     function run() external {
         uint256 deployerKey = vm.envUint("PROXY_ADMIN_DEPLOYER_KEY");
 
-        require(block.chainid == 5 || block.chainid == 31_337, "Don't deploy on this chain yes!");
+        require(block.chainid == 5 || block.chainid == 31_337, "Do not deploy on this chain yes!");
 
         if (block.chainid == 5) require(vm.addr(deployerKey) == _goerliDeployer, "wrong goerli deployer key");
         if (block.chainid == 31_337) require(vm.addr(deployerKey) == _anvilDeployer, "wrong anvil deployer key");
