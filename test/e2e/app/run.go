@@ -132,7 +132,9 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, secrets age
 	}
 
 	if def.Testnet.HasPerturbations() {
-		return errors.New("perturbations not supported yet")
+		if err := perturb(ctx, def.Testnet.Testnet); err != nil {
+			return err
+		}
 	}
 
 	if def.Testnet.Evidence > 0 {

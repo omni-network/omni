@@ -16,37 +16,39 @@ import (
 
 // StartInitial starts the initial nodes (start_at==0).
 func StartInitial(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
-	nodeQueue, err := getSortedNodes(testnet)
+	allNodes, err := getSortedNodes(testnet)
 	if err != nil {
 		return err
 	}
 
-	if nodeQueue[0].StartAt > 0 {
+	// Start initial nodes (StartAt: 0)
+	initialNodes := make([]*e2e.Node, 0)
+	for _, node := range allNodes {
+		if node.StartAt > 0 {
+			continue
+		}
+		initialNodes = append(initialNodes, node)
+	}
+	if len(initialNodes) == 0 {
 		return errors.New("no initial nodes in testnet")
 	}
 
-	// Start initial nodes (StartAt: 0)
-	log.Info(ctx, "Starting initial network nodes...")
-	nodesAtZero := make([]*e2e.Node, 0)
-	for len(nodeQueue) > 0 && nodeQueue[0].StartAt == 0 {
-		nodesAtZero = append(nodesAtZero, nodeQueue[0])
-		nodeQueue = nodeQueue[1:]
-	}
+	log.Info(ctx, "Starting initial network nodes...", "count", len(initialNodes))
 
-	if err = p.StartNodes(ctx, nodesAtZero...); err != nil {
+	if err = p.StartNodes(ctx, initialNodes...); err != nil {
 		return errors.Wrap(err, "starting initial nodes")
 	}
 
-	for _, node := range nodesAtZero {
-		if _, err := waitForNode(ctx, node, 0, 15*time.Second); err != nil {
-			return err
-		}
+	for _, node := range initialNodes {
 		log.Info(ctx, "Starting node",
 			"name", node.Name,
 			"external_ip", node.ExternalIP,
 			"proxy_port", node.ProxyPort,
 			"prom", node.PrometheusProxyPort,
 		)
+		if _, err := waitForNode(ctx, node, 0, 15*time.Second); err != nil {
+			return err
+		}
 	}
 
 	networkHeight := testnet.InitialHeight
@@ -54,8 +56,8 @@ func StartInitial(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) e
 	// Wait for initial height
 	log.Info(ctx, "Waiting for initial height",
 		"height", networkHeight,
-		"nodes", len(testnet.Nodes)-len(nodeQueue),
-		"pending", len(nodeQueue))
+		"initial", len(initialNodes),
+		"pending", len(allNodes)-len(initialNodes))
 
 	_, _, err = waitForHeight(ctx, testnet, networkHeight)
 	if err != nil {
