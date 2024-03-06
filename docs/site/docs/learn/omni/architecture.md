@@ -18,7 +18,7 @@ At the heart of Omni's network lies the **Consensus Layer**, powered by the Come
 
 ## The Execution Layer
 
-Parallel to the Consensus Layer is the **Execution Layer**, or the Omni EVM, mirroring the Ethereum L1 execution layer's functionality. This is where users' transactions are processed, and the following features stand out:
+Additional to the Consensus Layer is the **Execution Layer**, or the Omni EVM, mirroring the Ethereum L1 execution layer's functionality. This is where users' transactions are processed, and the following features stand out:
 
 - **Scalable Transaction Processing**: The Omni EVM handles transactions in its mempool, enabling high throughput without overloading the network.
 - **Compatibility with Ethereum Clients**: Omni leverages existing Ethereum execution clients (e.g., Geth, Besu, Erigon), ensuring stability and up-to-date features.
@@ -26,6 +26,6 @@ Parallel to the Consensus Layer is the **Execution Layer**, or the Omni EVM, mir
 
 ## Unifying Consensus and Execution
 
-Omni's dual-chain architecture facilitates **Parallelized Consensus**, allowing validators to simultaneously run consensus for the Omni EVM and cross-network messages. This innovative design, supported by tools like ABCI++ and the Engine API, makes Omni's sub-second finality possible. Validators efficiently attest to the state of external rollup VMs, ensuring seamless state transitions and unified state management.
+Omni's dual-chain architecture facilitates **Integrated Consensus**, allowing validators to simultaneously run consensus for the Omni EVM and cross-network messages. This innovative design, supported by tools like ABCI++ and the Engine API, makes Omni's sub-second finality possible. Validators efficiently attest to the state of external rollup VMs, ensuring seamless state transitions and unified state management.
 
 By separating consensus operations from transaction execution, Omni effectively scales activity across its network and connected rollups. This architecture not only mitigates the risk of network congestion but also enhances the security and reliability of cross-network transactions.

@@ -47,20 +47,20 @@ Cosmos’ [ABCI++](https://docs.cometbft.com/v0.37/spec/abci/) is a supplementar
 
 During consensus, validators also use ABCI++ to attest to the state of external Rollup VMs. Omni validators run the state transition function, $f(i, S_n)$, for each Rollup VM and compute the output, $S_{n+1}$.
 
-### Parallelized Consensus & CometBFT
+### Integrated Consensus & CometBFT
 
-Omni introduces Parallelized Consensus, a consensus framework that allows validators to run consensus for the Omni EVM in parallel with consensus for cross-network messages without compromising on performance.
+Omni introduces Integrated Consensus, a consensus framework that allows validators to run consensus for the Omni EVM additional to the consensus framework for cross-network messages without compromising on performance.
 
-Omni’s Parallelized Consensus contains two sub-processes:
+Omni’s Integrated Consensus contains two sub-processes:
 
 - validating state changes within the Omni EVM and
 - attesting to `XBlock` hashes originating from external rollup VMs.
 
-The aggregate Parallelized Consensus process is visualized below.
+The aggregate Integrated Consensus process is visualized below.
 
 <figure>
-  <img src="/img/parallel-consensus.png" alt="Parallel Consensus" />
-  <figcaption>*Parallelized Consensus: Validating Omni EVM State Changes and Rollup `XBlock` Hash Attestation*</figcaption>
+  <img src="/img/integrated-consensus.png" alt="Integrated Consensus" />
+  <figcaption>*Integrated Consensus: Validating Omni EVM State Changes and Rollup `XBlock` Hash Attestation*</figcaption>
 </figure>
 
 1. Every `halo` client runs a node for each rollup VM to check for `XMsg` events emitted from Portal contracts.
