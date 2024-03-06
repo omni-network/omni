@@ -41,13 +41,11 @@ const (
 	AppAddressTCP  = "tcp://127.0.0.1:30000"
 	AppAddressUNIX = "unix:///var/run/app.sock"
 
-	PrivvalAddressTCP     = "tcp://0.0.0.0:27559"
-	PrivvalAddressUNIX    = "unix:///var/run/privval.sock"
-	PrivvalKeyFile        = "config/priv_validator_key.json"
-	PrivvalStateFile      = "data/priv_validator_state.json"
-	PrivvalDummyKeyFile   = "config/dummy_validator_key.json"
-	PrivvalDummyStateFile = "data/dummy_validator_state.json"
-	NetworkConfigFile     = "config/network.json"
+	PrivvalAddressTCP  = "tcp://0.0.0.0:27559"
+	PrivvalAddressUNIX = "unix:///var/run/privval.sock"
+	PrivvalKeyFile     = "config/priv_validator_key.json"
+	PrivvalStateFile   = "data/priv_validator_state.json"
+	NetworkConfigFile  = "config/network.json"
 )
 
 // Setup sets up the testnet configuration.
@@ -59,8 +57,8 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 	}
 
 	var vals []crypto.PubKey
-	for _, node := range def.Testnet.Nodes {
-		vals = append(vals, node.PrivvalKey.PubKey())
+	for val := range def.Testnet.Validators {
+		vals = append(vals, val.PrivvalKey.PubKey())
 	}
 
 	cosmosGenesis, err := genutil.MakeGenesis(def.Testnet.Name, time.Now(), vals...)
@@ -242,8 +240,8 @@ func MakeConfig(node *e2e.Node, nodeDir string) (*config.Config, error) {
 	// key here by default, and use the real key for actual validators that should use
 	// the file privval.
 	cfg.PrivValidatorListenAddr = ""
-	cfg.PrivValidatorKey = PrivvalDummyKeyFile
-	cfg.PrivValidatorState = PrivvalDummyStateFile
+	cfg.PrivValidatorKey = PrivvalKeyFile
+	cfg.PrivValidatorState = PrivvalStateFile
 
 	switch node.Mode {
 	case e2e.ModeValidator:

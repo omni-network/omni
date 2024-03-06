@@ -8,3 +8,7 @@ avs_target = "mock_l1"
 [node.validator04]
 start_at = 20
 state_sync = true
+
+[node.full01]
+mode = "full"
+perturb = ["restart"]
