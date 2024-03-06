@@ -24,7 +24,7 @@ import (
 // If useLogProxy is true, all requests are routed via a reserve proxy that logs all requests, which will be printed
 // at stop.
 func Start(ctx context.Context, dir string, chainID uint64) (ethclient.Client, func(), error) {
-	ctx, cancel := context.WithTimeout(ctx, time.Second*15)
+	ctx, cancel := context.WithTimeout(ctx, time.Minute) // Allow 1 minute for edge case of pulling images.
 	defer cancel()
 	if !composeDown(ctx, dir) {
 		return nil, nil, errors.New("failure to clean up previous anvil instance")

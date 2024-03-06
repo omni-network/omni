@@ -13,8 +13,9 @@ import (
 func Test(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name   string
-		txData ethtypes.TxData
+		name    string
+		txData  ethtypes.TxData
+		fromHex string
 	}{
 		{
 			name:   "legacy tx",
@@ -23,6 +24,11 @@ func Test(t *testing.T) {
 		{
 			name:   "dynamic fee tx",
 			txData: &ethtypes.DynamicFeeTx{},
+		},
+		{
+			name:    "legacy tx with zero prefix",
+			txData:  &ethtypes.LegacyTx{},
+			fromHex: "0x002985c832a67c0b31a05e909f443b641624da52",
 		},
 	}
 	for _, test := range tests {
@@ -34,6 +40,10 @@ func Test(t *testing.T) {
 			var from common.Address
 			f.Fuzz(&from)
 			f.Fuzz(test.txData)
+
+			if test.fromHex != "" {
+				from = common.HexToAddress(test.fromHex)
+			}
 
 			signer := backendStubSigner{}
 
