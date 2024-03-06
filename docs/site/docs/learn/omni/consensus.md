@@ -2,13 +2,13 @@
 sidebar_position: 7
 ---
 
-# Omni Parallelized Consensus
+# Omni Integrated Consensus
 
-Omni introduces a groundbreaking approach to blockchain consensus known as **Parallelized Consensus**. This innovative method allows the Omni network to simultaneously process consensus on its Ethereum Virtual Machine (EVM) and manage cross-chain data or messages, known as XBlocks. This dual-path consensus mechanism enhances network performance, ensuring swift and secure validation of transactions and cross-chain interactions.
+Omni introduces a groundbreaking approach to blockchain consensus known as **Integrated Consensus**. This innovative method allows the Omni network to simultaneously process consensus on its Ethereum Virtual Machine (EVM) and manage cross-chain data or messages, known as XBlocks. This dual-path consensus mechanism enhances network performance, ensuring swift and secure validation of transactions and cross-chain interactions.
 
-## How Parallelized Consensus Works
+## How Integrated Consensus Works
 
-Parallelized Consensus in Omni consists of two main sub-processes, each handling a distinct aspect of network operations:
+Integrated Consensus in Omni consists of two main sub-processes, each handling a distinct aspect of network operations:
 
 ### Omni EVM Consensus
 
@@ -27,14 +27,14 @@ Parallelized Consensus in Omni consists of two main sub-processes, each handling
 
 The combined efforts of validating Omni EVM transactions and attesting to `XBlock` hashes culminate in a unified consensus vote. If a proposed block garners approval from two-thirds of the validator set, it is finalized and added to the Omni chain. These finalized blocks encompass both the Omni EVM transactions and attested XBlock hashes, enabling full node operators of specific rollup VMs to reconstruct and verify XBlock contents.
 
-## The Significance of Parallelized Consensus
+## The Significance of Integrated Consensus
 
-Omni's Parallelized Consensus represents a significant leap forward in blockchain technology, enabling:
+Omni's Integrated Consensus represents a significant leap forward in blockchain technology, enabling:
 
 - **Efficient Processing**: By separating the consensus processes for the Omni EVM and `XBlock`s, Omni achieves rapid state transitions and block finalization.
 - **Enhanced Security and Reliability**: The dual-path consensus strengthens the network's integrity, providing robust security for both on-chain transactions and cross-chain communications.
 - **Global Scalability**: This consensus model paves the way for a scalable and interoperable blockchain ecosystem, where diverse networks can communicate and transact seamlessly.
 
-Omni's adoption of Parallelized Consensus underscores its commitment to fostering a more connected and efficient blockchain world, where the boundaries between different chains and technologies blur, creating a unified and powerful platform for decentralized applications and services.
+Omni's adoption of Integrated Consensus underscores its commitment to fostering a more connected and efficient blockchain world, where the boundaries between different chains and technologies blur, creating a unified and powerful platform for decentralized applications and services.
 
-For a deeper dive into Omni's Parallelized Consensus and its impact on blockchain interoperability, [visit the protocol section](../../protocol/introduction.md).
+For a deeper dive into Omni's Integrated Consensus and its impact on blockchain interoperability, [visit the protocol section](../../protocol/introduction.md).
