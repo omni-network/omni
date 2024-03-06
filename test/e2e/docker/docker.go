@@ -141,9 +141,10 @@ type ComposeDef struct {
 	NetworkCIDR string
 	BindAll     bool
 
-	Nodes         []*e2e.Node
-	OmniEVMs      []types.OmniEVM
-	Anvils        []types.AnvilChain
+	Nodes    []*e2e.Node
+	OmniEVMs []types.OmniEVM
+	Anvils   []types.AnvilChain
+
 	Relayer       bool
 	Prometheus    bool
 	RelayerTag    string

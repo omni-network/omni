@@ -30,7 +30,7 @@ func Monitor(ctx context.Context, network netconf.Network) error {
 
 	addr := common.HexToAddress(devnetAVSAddr)
 	// monitor goerli avs in staging, for now
-	if network.Name == "staging" {
+	if network.Name == netconf.Staging {
 		addr = common.HexToAddress(goerliAVSAddr)
 	}
 

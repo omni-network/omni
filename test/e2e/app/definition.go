@@ -216,6 +216,9 @@ func TestnetFromManifest(manifest types.Manifest, infd types.InfrastructureData,
 		if infd.Provider == docker.ProviderName {
 			internalIP = chain.Name // For docker, we use container names
 		}
+		if infd.Provider == vmcompose.ProviderName {
+			chain.BlockPeriod = time.Second * 12 // Slow block times for anvils on long-lived VMs to reduce disk usage.
+		}
 
 		anvils = append(anvils, types.AnvilChain{
 			Chain:       chain,
