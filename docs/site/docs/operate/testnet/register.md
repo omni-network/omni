@@ -6,7 +6,7 @@ sidebar_position: 3
 
 This tells EigenLayer that you'd like to be an operator specifically for the Omni AVS. Thus, the **\$ETH** that you, and your delegators restaked, will be used to secure Omni.
 
-You will need to have an `operator.yml` file to perform this registration. This file is created as part of [registering as an operator with the EigenLayer CLI](https://docs.eigenlayer.xyz/eigenlayer/operator-guides/operator-installation).
+You will need to have an `operator.yml` file to perform this registration. This file is created as part of [registering as an operator with the EigenLayer CLI](https://docs.eigenlayer.xyz/eigenlayer/operator-guides/operator-installation). You don't need to modify it at all.
 
 <details>
 <summary>`operator.yml` Reference</summary>
@@ -20,11 +20,11 @@ operator:
     delegation_approver_address: "0x0000000000000000000000000000000000000000" # Your delegation approver address, may be left as shown
     staker_opt_out_window_blocks: 0 # may be left as shown, and can be updated later using EigenLayer CLI
     metadata_url: "https://raw.githubusercontent.com/idea404/resources/main/eigenlayer/metadata.json" # Your metadata URL
-el_delegation_manager_address: 0x8ce361602B935680E8DeC218b820ff5056BeB7af # The address of the EigenLayer delegation manager on the Omni Network
+el_delegation_manager_address: 0x1b7b8F6b258f95Cf9596EabB9aa18B62940Eb0a8 # The address of the EigenLayer delegation manager on Goerli
 eth_rpc_url: http://127.0.0.1:8002 # Your node Ethereum RPC URL
 private_key_store_path: /Users/idea404/.eigenlayer/operator_keys/OpKeys1.ecdsa.key.json # Your private key store path generated or imported by EigenLayer CLI
 signer_type: local_keystore # Your signer type, may be left as shown
-chain_id: 100 # The chain ID of the Omni Network
+chain_id: 5 # The chain ID of Goerli
 ```
 
 </details>
