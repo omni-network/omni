@@ -8,4 +8,4 @@ sidebar_position: 1
 
 To register with Omni, operators must first register as an operator in Eigenlayer testnet.
 
-This registers your Ethereum public key with the Eigenlayer system. You can follow Eigenlayer's instructions [here](https://docs.eigenlayer.xyz/eigenlayer/operator-guides/operator-installation).
+This registers your Ethereum public key with the Eigenlayer smart contracts. You can follow Eigenlayer's instructions [here](https://docs.eigenlayer.xyz/eigenlayer/operator-guides/operator-installation).
