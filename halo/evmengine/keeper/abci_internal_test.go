@@ -67,6 +67,16 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 				wantErr: false,
 			},
 			{
+				name:       "with  transactions",
+				mockEngine: mockEngineAPI{},
+				req: &abci.RequestPrepareProposal{
+					Txs:    [][]byte{[]byte("tx1")}, // simulate transactions
+					Height: 1,
+					Time:   time.Now(),
+				},
+				wantErr: true,
+			},
+			{
 				name: "block number err",
 				mockEngine: mockEngineAPI{
 					blockNumberFunc: func(ctx context.Context) (uint64, error) {
@@ -113,6 +123,38 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 					forkchoiceUpdatedV2Func: func(ctx context.Context, update eengine.ForkchoiceStateV1,
 						payloadAttributes *eengine.PayloadAttributes) (eengine.ForkChoiceResponse, error) {
 						return eengine.ForkChoiceResponse{}, errors.New("mocked error")
+					},
+				},
+				req: &abci.RequestPrepareProposal{
+					Txs:    nil,
+					Height: 2,
+					Time:   time.Now(),
+				},
+				wantErr: true,
+			},
+			{
+				name: "forkchoiceUpdateV2  not valid",
+				mockEngine: mockEngineAPI{
+					blockNumberFunc: func(ctx context.Context) (uint64, error) {
+						return 0, nil
+					},
+					blockByNumberFunc: func(ctx context.Context, number *big.Int) (*types.Block, error) {
+						fuzzer := ethclient.NewFuzzer(0)
+						var block *types.Block
+						fuzzer.Fuzz(&block)
+
+						return block, nil
+					},
+					forkchoiceUpdatedV2Func: func(ctx context.Context, update eengine.ForkchoiceStateV1,
+						payloadAttributes *eengine.PayloadAttributes) (eengine.ForkChoiceResponse, error) {
+						return eengine.ForkChoiceResponse{
+							PayloadStatus: eengine.PayloadStatusV1{
+								Status:          eengine.INVALID,
+								LatestValidHash: nil,
+								ValidationError: nil,
+							},
+							PayloadID: nil,
+						}, nil
 					},
 				},
 				req: &abci.RequestPrepareProposal{
@@ -326,6 +368,7 @@ type mockEngineAPI struct {
 	blockByNumberFunc       func(ctx context.Context, number *big.Int) (*types.Block, error)
 	forkchoiceUpdatedV2Func func(ctx context.Context, update eengine.ForkchoiceStateV1,
 		payloadAttributes *eengine.PayloadAttributes) (eengine.ForkChoiceResponse, error)
+	newPayloadV2Func func(ctx context.Context, params eengine.ExecutableData) (eengine.PayloadStatusV1, error)
 }
 
 // newMockEngineAPI returns a new mock engine API with a fuzzer and a mock engine client.
@@ -374,6 +417,9 @@ func (m *mockEngineAPI) BlockByNumber(ctx context.Context, number *big.Int) (*ty
 }
 
 func (m *mockEngineAPI) NewPayloadV2(ctx context.Context, params eengine.ExecutableData) (eengine.PayloadStatusV1, error) {
+	if m.newPayloadV2Func != nil {
+		return m.newPayloadV2Func(ctx, params)
+	}
 	return m.mock.NewPayloadV2(ctx, params)
 }
 
