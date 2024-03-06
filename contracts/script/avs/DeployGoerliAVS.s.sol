@@ -31,6 +31,8 @@ contract DeployGoerliAVS is Script {
     /// @dev forge script entrypoint
     function run() public {
         require(_create3Factory != address(0), "create3Factory not set");
+        require(_proxyAdmin != address(0), "proxyAdmin not set");
+        require(_owner != address(0), "owner not set");
 
         uint256 deployerKey = vm.envUint("DEPLOYER_KEY");
         vm.startBroadcast(deployerKey);
