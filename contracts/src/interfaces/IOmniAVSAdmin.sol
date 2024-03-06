@@ -13,13 +13,13 @@ interface IOmniAVSAdmin {
      * @notice Emitted when an operator is added to the allowlist.
      * @param operator The operator
      */
-    event OperatorAllowed(address operator);
+    event OperatorAllowed(address indexed operator);
 
     /**
      * @notice Emitted when an operator is removed from the allowlist.
      * @param operator The operator
      */
-    event OperatorDisallowed(address operator);
+    event OperatorDisallowed(address indexed operator);
 
     /**
      * @notice Emitted when the allowlist is enabled.
@@ -30,6 +30,41 @@ interface IOmniAVSAdmin {
      * @notice Emitted when the allowlist is disabled.
      */
     event AllowlistDisabled();
+
+    /**
+     * @notice Emitted when the omni portal is set.
+     */
+    event OmniPortalSet(address indexed portal);
+
+    /**
+     * @notice Emitted when the omni chain id is set.
+     */
+    event OmniChainIdSet(uint64 indexed chainID);
+
+    /**
+     * @notice Emitted when the EthStakeInbox contract address is set.
+     */
+    event EthStakeInboxSet(address indexed inbox);
+
+    /**
+     * @notice Emitted when the minimum operator stake is set.
+     */
+    event MinOperatorStakeSet(uint96 minOperatorStake);
+
+    /**
+     * @notice Emitted when the maximum operator count is set.
+     */
+    event MaxOperatorCountSet(uint32 maxOperatorCount);
+
+    /**
+     * @notice Emitted when the strategy parameters are set.
+     */
+    event StrategyParamsSet(IOmniAVS.StrategyParam[] params);
+
+    /**
+     * @notice Emitted when the xcall gas limits are set.
+     */
+    event XCallGasLimitsSet(uint64 base, uint64 perValidator);
 
     /**
      * @notice Initialize the Omni AVS admin contract.

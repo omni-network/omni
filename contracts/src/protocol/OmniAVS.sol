@@ -64,17 +64,15 @@ contract OmniAVS is
         uint32 maxOperatorCount_,
         StrategyParam[] calldata strategyParams_
     ) external initializer {
-        omni = omni_;
-        omniChainId = omniChainId_;
-        xcallGasLimitPerOperator = 50_000;
-        xcallBaseGasLimit = 75_000;
-        allowlistEnabled = true;
-        minOperatorStake = minOperatorStake_;
-        maxOperatorCount = maxOperatorCount_;
-        ethStakeInbox = ethStakeInbox_;
-
-        _transferOwnership(owner_);
+        _setOmniPortal(omni_);
+        _setOmniChainId(omniChainId_);
+        _setXCallGasLimits({ base: 75_000, perOperator: 50_000 });
+        _setEthStakeInbox(ethStakeInbox_);
+        _setMinOperatorStake(minOperatorStake_);
+        _setMaxOperatorCount(maxOperatorCount_);
         _setStrategyParams(strategyParams_);
+        _enableAllowlist(); // enable allowlist by default
+        _transferOwnership(owner_);
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -244,7 +242,7 @@ contract OmniAVS is
      * @param portal The Omni portal contract
      */
     function setOmniPortal(IOmniPortal portal) external onlyOwner {
-        omni = portal;
+        _setOmniPortal(portal);
     }
 
     /**
@@ -252,7 +250,7 @@ contract OmniAVS is
      * @param chainId The Omni chain id
      */
     function setOmniChainId(uint64 chainId) external onlyOwner {
-        omniChainId = chainId;
+        _setOmniChainId(chainId);
     }
 
     /**
@@ -260,7 +258,7 @@ contract OmniAVS is
      * @param inbox The EthStakeInbox contract address
      */
     function setEthStakeInbox(address inbox) external onlyOwner {
-        ethStakeInbox = inbox;
+        _setEthStakeInbox(inbox);
     }
 
     /**
@@ -276,7 +274,7 @@ contract OmniAVS is
      * @param stake The minimum operator stake, not including delegations
      */
     function setMinOperatorStake(uint96 stake) external onlyOwner {
-        minOperatorStake = stake;
+        _setMinOperatorStake(stake);
     }
 
     /**
@@ -284,7 +282,7 @@ contract OmniAVS is
      * @param count The maximum operator count
      */
     function setMaxOperatorCount(uint32 count) external onlyOwner {
-        maxOperatorCount = count;
+        _setMaxOperatorCount(count);
     }
 
     /**
@@ -293,8 +291,7 @@ contract OmniAVS is
      * @param perOperator   The per-operator additional xcall gas limit
      */
     function setXCallGasLimits(uint64 base, uint64 perOperator) external onlyOwner {
-        xcallBaseGasLimit = base;
-        xcallGasLimitPerOperator = perOperator;
+        _setXCallGasLimits(base, perOperator);
     }
 
     /**
@@ -322,18 +319,14 @@ contract OmniAVS is
      * @notice Enable the allowlist.
      */
     function enableAllowlist() external onlyOwner {
-        require(!allowlistEnabled, "OmniAVS: already enabled");
-        allowlistEnabled = true;
-        emit AllowlistEnabled();
+        _enableAllowlist();
     }
 
     /**
      * @notice Disable the allowlist.
      */
     function disableAllowlist() external onlyOwner {
-        require(allowlistEnabled, "OmniAVS: already disabled");
-        allowlistEnabled = false;
-        emit AllowlistDisabled();
+        _disableAllowlist();
     }
 
     /**
@@ -379,10 +372,84 @@ contract OmniAVS is
     }
 
     /**
+     * @notice Set the Omni portal contract.
+     * @param portal The Omni portal contract
+     */
+    function _setOmniPortal(IOmniPortal portal) private {
+        omni = portal;
+        emit OmniPortalSet(address(portal));
+    }
+
+    /**
+     * @notice Set the Omni chain id.
+     * @param chainId The Omni chain id
+     */
+    function _setOmniChainId(uint64 chainId) private {
+        omniChainId = chainId;
+        emit OmniChainIdSet(chainId);
+    }
+
+    /**
+     * @notice Set the EthStakeInbox contract address.
+     * @param inbox The EthStakeInbox contract address
+     */
+    function _setEthStakeInbox(address inbox) private {
+        ethStakeInbox = inbox;
+        emit EthStakeInboxSet(inbox);
+    }
+
+    /**
+     * @notice Set the minimum operator stake.
+     * @param stake The minimum operator stake, not including delegations
+     */
+    function _setMinOperatorStake(uint96 stake) private {
+        minOperatorStake = stake;
+        emit MinOperatorStakeSet(stake);
+    }
+
+    /**
+     * @notice Set the maximum operator count.
+     * @param count The maximum operator count
+     */
+    function _setMaxOperatorCount(uint32 count) private {
+        maxOperatorCount = count;
+        emit MaxOperatorCountSet(count);
+    }
+
+    /**
+     * @notice Set the xcall gas limits.
+     * @param base          The base xcall gas limit
+     * @param perOperator   The per-operator additional xcall gas limit
+     */
+    function _setXCallGasLimits(uint64 base, uint64 perOperator) private {
+        xcallBaseGasLimit = base;
+        xcallGasLimitPerOperator = perOperator;
+        emit XCallGasLimitsSet(base, perOperator);
+    }
+
+    /**
+     * @notice Enable the allowlist.
+     */
+    function _enableAllowlist() private {
+        require(!allowlistEnabled, "OmniAVS: already enabled");
+        allowlistEnabled = true;
+        emit AllowlistEnabled();
+    }
+
+    /**
+     * @notice Disable the allowlist.
+     */
+    function _disableAllowlist() private {
+        require(allowlistEnabled, "OmniAVS: already disabled");
+        allowlistEnabled = false;
+        emit AllowlistDisabled();
+    }
+
+    /**
      * @notice Set the strategy parameters.
      * @param params The strategy parameters
      */
-    function _setStrategyParams(StrategyParam[] calldata params) internal {
+    function _setStrategyParams(StrategyParam[] calldata params) private {
         delete _strategyParams;
 
         for (uint256 i = 0; i < params.length;) {
@@ -401,6 +468,8 @@ contract OmniAVS is
                 i++;
             }
         }
+
+        emit StrategyParamsSet(params);
     }
 
     //////////////////////////////////////////////////////////////////////////////
