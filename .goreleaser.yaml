@@ -99,7 +99,8 @@ archives:
       {{- if .Arm }}v{{ .Arm }}{{ end }}
 
 release:
-  draft: false
+  draft: true
+  replace_existing_draft: true
   prerelease: auto
   mode: append
 
