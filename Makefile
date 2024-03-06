@@ -55,7 +55,7 @@ install-pre-commit: ## Installs the pre-commit tool as the git pre-commit hook f
 
 .PHONY: install-go-tools
 install-go-tools: ## Installs the go-dev-tools, like buf.
-	@go generate tools.go
+	@go generate scripts/tools.go
 
 .PHONY: lint
 lint: ## Runs linters via pre-commit.

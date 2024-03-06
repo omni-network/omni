@@ -35,6 +35,9 @@ var _ sdk.VerifyVoteExtensionHandler = (*Keeper)(nil).VerifyVoteExtension
 
 // Keeper is the attestation keeper.
 // It keeps tracks of all attestations included on-chain and detects when they are approved.
+//
+// TODOs:
+//   - Delete attestations that have been submitted to dest chains by including src chain offsets in votes (from receipts).
 type Keeper struct {
 	attTable     AttestationTable
 	sigTable     SignatureTable
@@ -45,6 +48,7 @@ type Keeper struct {
 	cmtAPI       comet.API
 	namer        types.ChainNameFunc
 	voteWindow   uint64
+	voteExtLimit uint64
 }
 
 // New returns a new attestation keeper.
@@ -54,6 +58,7 @@ func New(
 	skeeper baseapp.ValidatorStore,
 	namer types.ChainNameFunc,
 	voteWindow uint64,
+	voteExtLimit uint64,
 ) (*Keeper, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
 		{Id: 1, ProtoFileName: File_halo_attest_keeper_attestation_proto.Path()},
@@ -77,6 +82,7 @@ func New(
 		skeeper:      skeeper,
 		namer:        namer,
 		voteWindow:   voteWindow,
+		voteExtLimit: voteExtLimit,
 	}
 
 	return k, nil
@@ -378,7 +384,7 @@ func (k *Keeper) EndBlock(ctx context.Context) error {
 func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
 	votes := k.voter.GetAvailable()
 
-	// Filter by vote window
+	// Filter by vote window and if limited exceeded.
 	var filtered []*types.Vote
 	for _, vote := range votes {
 		if cmp, err := k.windowCompare(ctx, vote.BlockHeader.ChainId, vote.BlockHeader.Height); err != nil {
@@ -387,9 +393,12 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 			continue
 		}
 		filtered = append(filtered, vote)
+
+		if len(filtered) >= int(k.voteExtLimit) {
+			break
+		}
 	}
 
-	// TODO(corver): ensure max size.
 	bz, err := proto.Marshal(&types.Votes{
 		Votes: filtered,
 	})
@@ -447,6 +456,9 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 	} else if !ok {
 		log.Info(ctx, "Accepting nil vote extension", err) // This can happen in some edge-cases.
 		return respAccept, nil
+	} else if len(votes.Votes) > int(k.voteExtLimit) {
+		log.Warn(ctx, "Rejecting vote extension exceeding limit", nil, "count", len(votes.Votes), "limit", k.voteExtLimit)
+		return respReject, nil
 	}
 
 	for _, vote := range votes.Votes {
@@ -462,7 +474,6 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 		}
 	}
 
-	// TODO(corver): Ensure max size.
 	return respAccept, nil
 }
 

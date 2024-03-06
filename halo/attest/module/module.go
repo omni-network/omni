@@ -132,6 +132,7 @@ func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
 		in.SKeeper,
 		in.Namer,
 		in.Config.GetVoteWindow(),
+		in.Config.GetVoteExtensionLimit(),
 	)
 	if err != nil {
 		return ModuleOutputs{}, err

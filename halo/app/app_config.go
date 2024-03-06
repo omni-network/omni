@@ -31,7 +31,9 @@ import (
 const (
 	Bech32HRP = "omni"
 
-	genesisVoteWindow = 64 // TODO(corver): Maybe move this to genesis itself.
+	// TODO(corver): Maybe move these to genesis itself.
+	genesisVoteWindow   = 64
+	genesisVoteExtLimit = 256
 )
 
 // init initializes the Cosmos SDK configuration.
@@ -157,7 +159,8 @@ var (
 			{
 				Name: attesttypes.ModuleName,
 				Config: appconfig.WrapAny(&attestmodule.Module{
-					VoteWindow: genesisVoteWindow,
+					VoteWindow:         genesisVoteWindow,
+					VoteExtensionLimit: genesisVoteExtLimit,
 				}),
 			},
 		},

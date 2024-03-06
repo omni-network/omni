@@ -18,4 +18,7 @@ message Module {
   // vote_window defines the number of blocks before and after the latest approved attestation
   // that votes are allowed for.
   uint64 vote_window = 2;
+
+  // vote_extension_limit defines the maximum number of votes that a validator may include in a single vote extension.
+  uint64 vote_extension_limit = 3;
 }
