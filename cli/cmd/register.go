@@ -12,7 +12,6 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
-	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -44,7 +43,7 @@ type regOpt func(*RegDeps)
 //
 // It assumes that the operator is already registered with the Eigen-Layer
 // and that the eigen-layer configuration file (and ecdsa keystore) is present on disk.
-func Register(ctx context.Context, cfg RegConfig, opts ...regOpt) error {
+func Register(ctx context.Context, cfg RegConfig, opts ...regOpt) (common.Address, error) {
 	// Default dependencies.
 	deps := RegDeps{
 		Prompter:       eigenutils.NewPrompter(),
@@ -59,9 +58,9 @@ func Register(ctx context.Context, cfg RegConfig, opts ...regOpt) error {
 
 	eigenCfg, err := readConfig(cfg.ConfigFile)
 	if err != nil {
-		return err
+		return common.Address{}, err
 	} else if err := deps.VerifyFunc(eigenCfg.Operator); err != nil {
-		return errors.Wrap(err, "config validation failed")
+		return common.Address{}, errors.Wrap(err, "config validation failed")
 	}
 
 	password, err := deps.Prompter.InputHiddenString("Enter password to decrypt the ecdsa private key:", "",
@@ -70,47 +69,45 @@ func Register(ctx context.Context, cfg RegConfig, opts ...regOpt) error {
 		},
 	)
 	if err != nil {
-		return errors.Wrap(err, "read input")
+		return common.Address{}, errors.Wrap(err, "read input")
 	}
 
 	privKey, err := eigenecdsa.ReadKey(eigenCfg.PrivateKeyStorePath, password)
 	if err != nil {
-		return errors.Wrap(err, "read private key", "path", eigenCfg.PrivateKeyStorePath)
+		return common.Address{}, errors.Wrap(err, "read private key", "path", eigenCfg.PrivateKeyStorePath)
 	}
 
 	ethCl, err := ethclient.Dial(chainNameFromID(eigenCfg.ChainId), eigenCfg.EthRPCUrl)
 	if err != nil {
-		return errors.Wrap(err, "dial eth client", "url", eigenCfg.EthRPCUrl)
+		return common.Address{}, errors.Wrap(err, "dial eth client", "url", eigenCfg.EthRPCUrl)
 	}
 
 	avsAddress, err := avsAddressOrDefault(cfg.AVSAddr, &eigenCfg.ChainId)
 	if err != nil {
-		return err
+		return common.Address{}, err
 	}
 
 	backend, err := deps.NewBackendFunc(chainNameFromID(eigenCfg.ChainId), eigenCfg.ChainId.Uint64(), l1BlockPeriod, ethCl)
 	if err != nil {
-		return errors.Wrap(err, "create backend")
+		return common.Address{}, errors.Wrap(err, "create backend")
 	}
 
 	contracts, err := makeContracts(ctx, backend, eigenCfg, avsAddress)
 	if err != nil {
-		return err
+		return common.Address{}, err
 	}
 
 	operator, err := backend.AddAccount(privKey)
 	if err != nil {
-		return errors.Wrap(err, "add account")
+		return common.Address{}, errors.Wrap(err, "add account")
 	}
 
 	err = avs.RegisterOperatorWithAVS(ctx, contracts, backend, operator)
 	if err != nil {
-		return errors.Wrap(err, "register")
+		return common.Address{}, err
 	}
 
-	log.Info(ctx, "Operator registered with Omni AVS contract", "operator", operator.Hex())
-
-	return nil
+	return operator, nil
 }
 
 // makeContracts returns a avs Contracts struct with the given backend and delegation manager, avs directory, and omni avs contracts.

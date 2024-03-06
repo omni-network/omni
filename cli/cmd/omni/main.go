@@ -2,10 +2,13 @@
 package main
 
 import (
+	"context"
+
 	clicmd "github.com/omni-network/omni/cli/cmd"
 	libcmd "github.com/omni-network/omni/lib/cmd"
+	"github.com/omni-network/omni/lib/log"
 )
 
 func main() {
-	libcmd.Main(clicmd.New())
+	libcmd.MainWithCtx(log.WithNoopLogger(context.Background()), clicmd.New())
 }

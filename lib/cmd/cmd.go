@@ -27,7 +27,17 @@ import (
 //		     libcmd.Main(appcmd.New())
 //	   }
 func Main(cmd *cobra.Command) {
-	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	MainWithCtx(context.Background(), cmd)
+}
+
+// MainWithCtx is the main entry point for the command line tool with a context.
+// Usage:
+//
+//	   func main() {
+//		     libcmd.MainWithCtx(context.Background(), appcmd.New())
+//	   }
+func MainWithCtx(ctx context.Context, cmd *cobra.Command) {
+	ctx, cancel := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 
 	silenceErrUsage(cmd)
 

@@ -11,13 +11,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
 func RegisterOperatorWithAVS(ctx context.Context, contracts Contracts, backend *ethbackend.Backend, operator common.Address) error {
 	if err := verifyRegisterOperator(ctx, contracts, operator); err != nil {
-		return errors.Wrap(err, "verify register operator")
+		return err
 	}
 
 	salt := crypto.Keccak256Hash(operator.Bytes())         // Salt can be anything, it should just be unique.
@@ -51,13 +50,9 @@ func RegisterOperatorWithAVS(ctx context.Context, contracts Contracts, backend *
 		return errors.Wrap(err, "register operator to avs")
 	}
 
-	receipt, err := backend.WaitMined(ctx, tx)
+	_, err = backend.WaitMined(ctx, tx)
 	if err != nil {
 		return errors.Wrap(err, "wait mined")
-	}
-
-	if receipt.Status != ethtypes.ReceiptStatusSuccessful {
-		return errors.New("receipt status failed")
 	}
 
 	return nil
@@ -74,13 +69,9 @@ func DeregisterOperatorFromAVS(ctx context.Context, contracts Contracts, backend
 		return errors.Wrap(err, "deregister operator from avs")
 	}
 
-	receipt, err := backend.WaitMined(ctx, tx)
+	_, err = backend.WaitMined(ctx, tx)
 	if err != nil {
 		return errors.Wrap(err, "wait mined")
-	}
-
-	if receipt.Status != ethtypes.ReceiptStatusSuccessful {
-		return errors.New("receipt status failed")
 	}
 
 	return nil
@@ -93,7 +84,7 @@ func verifyRegisterOperator(ctx context.Context, contracts Contracts, operator c
 	}
 
 	if !canRegister {
-		return errors.New("cannot register", "reason", reason)
+		return errors.New(reason)
 	}
 
 	return nil

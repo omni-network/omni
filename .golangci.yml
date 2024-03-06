@@ -101,6 +101,9 @@ issues:
     - path: 'scripts/.+\.go'
       linters:        # Relax linters for scripts only (non-production code)
         - forbidigo   # Allow debug printing
+    - path: 'cli/cmd/.+\.go'
+      linters:
+        - forbidigo   # Allow fmt.Print in cli cmds
     - path: '.+_test\.go'
       linters:
         - maintidx   # Relax linter for table driven tests

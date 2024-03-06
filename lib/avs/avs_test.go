@@ -492,7 +492,7 @@ func registerOperatorCLI(t *testing.T, ctx context.Context, contracts avs.Contra
 		ConfigFile: configFile,
 		AVSAddr:    contracts.OmniAVSAddr.Hex(),
 	}
-	err = clicmd.Register(ctx, regCfg, testOpts)
+	_, err = clicmd.Register(ctx, regCfg, testOpts)
 	tutil.RequireNoError(t, err)
 }
 
