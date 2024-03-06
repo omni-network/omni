@@ -55,7 +55,6 @@ contract Fixtures is EigenLayerFixtures {
         proxyAdmin = new ProxyAdmin();
 
         // allow avs contract to be set by env for, for fork tests
-        // i.e. AVS_OVERRIDE=0x848BE3DBcd054c17EbC712E0d29D15C2e638aBCe
         // proxyAdmin override not required
         address avsOverride = vm.envOr("AVS_OVERRIDE", address(0));
         if (avsOverride != address(0)) {
