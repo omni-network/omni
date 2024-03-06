@@ -18,27 +18,36 @@ import { Script } from "forge-std/Script.sol";
  *      deploy script.
  */
 contract DeployGoerliAVS is Script {
+    uint32 internal _maxOperatorCount = 200;
     uint64 internal _omniChainId = 165;
-    address internal _create3Factory = address(uint160(uint256(keccak256("TODO"))));
-    address internal _proxyAdmin = address(uint160(uint256(keccak256("TODO"))));
-    address internal _owner = address(uint160(uint256(keccak256("TODO"))));
+    uint96 internal _minOperatorStake = 1 ether;
+    address internal _create3Factory = address(0); // TODO
+    address internal _proxyAdmin = address(0); // TODO
+    address internal _owner = address(0); // TODO
     address internal _portal = address(0);
     address internal _ethStakeInbox = address(0);
-    bytes32 internal _create3Salt = keccak256("TODO");
+    bytes32 internal _create3Salt = keccak256("omni-avs");
 
     /// @dev forge script entrypoint
     function run() public {
-        uint64 omniChainId = uint64(vm.envUint("OMNI_CHAIN_ID"));
-        uint256 deployerKey = vm.envUint("DEPLOYER_KEY");
-        address factory = vm.envOr("CREATE3_FACTORY_ADDRESS", _create3Factory);
-        address proxyAdmin = vm.envOr("PROXY_ADMIN", _proxyAdmin);
-        address owner = vm.envOr("AVS_OWNER", _owner);
-        address portal = vm.envOr("PORTAL_ADDRESS", _portal);
-        address ethStakeInbox = vm.envOr("ETH_STAKE_INBOX", _ethStakeInbox);
-        bytes32 salt = vm.envOr("CREATE3_SALT", _create3Salt);
+        require(_create3Factory != address(0), "create3Factory not set");
+        require(_proxyAdmin != address(0), "proxyAdmin not set");
+        require(_owner != address(0), "owner not set");
 
+        uint256 deployerKey = vm.envUint("DEPLOYER_KEY");
         vm.startBroadcast(deployerKey);
-        deploy(factory, salt, owner, proxyAdmin, portal, omniChainId, ethStakeInbox);
+
+        deploy(
+            _create3Factory,
+            _create3Salt,
+            _owner,
+            _proxyAdmin,
+            _portal,
+            _omniChainId,
+            _ethStakeInbox,
+            _minOperatorStake,
+            _maxOperatorCount
+        );
     }
 
     /// @dev defines goerli deployment logic
@@ -49,7 +58,9 @@ contract DeployGoerliAVS is Script {
         address proxyAdmin,
         address portal,
         uint64 omniChainId,
-        address ethStakeInbox
+        address ethStakeInbox,
+        uint96 minOperatorStake,
+        uint32 maxOperatorCount
     ) public returns (address) {
         address impl = address(
             new OmniAVS(
@@ -64,7 +75,14 @@ contract DeployGoerliAVS is Script {
                 address(impl),
                 proxyAdmin,
                 abi.encodeWithSelector(
-                    OmniAVS.initialize.selector, owner, portal, omniChainId, ethStakeInbox, StrategyParams.goerli()
+                    OmniAVS.initialize.selector,
+                    owner,
+                    portal,
+                    omniChainId,
+                    ethStakeInbox,
+                    minOperatorStake,
+                    maxOperatorCount,
+                    StrategyParams.goerli()
                 )
             )
         );
@@ -85,10 +103,22 @@ contract DeployGoerliAVS is Script {
         address proxyAdmin,
         address portal,
         uint64 omniChainId,
-        address ethStakeInbox
+        address ethStakeInbox,
+        uint96 minOperatorStake,
+        uint32 maxOperatorCount
     ) public returns (address) {
         vm.startPrank(prank);
-        address avs = deploy(create3Factory, create3Salt, owner, proxyAdmin, portal, omniChainId, ethStakeInbox);
+        address avs = deploy(
+            create3Factory,
+            create3Salt,
+            owner,
+            proxyAdmin,
+            portal,
+            omniChainId,
+            ethStakeInbox,
+            minOperatorStake,
+            maxOperatorCount
+        );
         vm.stopPrank();
         return avs;
     }

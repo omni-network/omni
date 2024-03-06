@@ -53,8 +53,8 @@ contract OmniAVS_allowlist_Test is Base {
         address operator = _operator(0);
 
         _addToAllowlist(operator);
-        _depositIntoSupportedStrategy(operator, 1 ether);
         _registerAsOperator(operator);
+        _depositIntoSupportedStrategy(operator, minOperatorStake);
         _registerOperatorWithAVS(operator);
 
         IOmniAVS.Operator[] memory operators = omniAVS.operators();
@@ -123,6 +123,7 @@ contract OmniAVS_allowlist_Test is Base {
 
         _disableAllowlist();
         _registerAsOperator(operator);
+        _depositIntoSupportedStrategy(operator, minOperatorStake);
         _registerOperatorWithAVS(operator);
 
         IOmniAVS.Operator[] memory operators = omniAVS.operators();

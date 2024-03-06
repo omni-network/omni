@@ -27,6 +27,8 @@ contract OmniAVS_initialize_Test is Base {
         IOmniPortal omni;
         uint64 omniChainId;
         address ethStakeInbox;
+        uint96 minOperatorStake;
+        uint32 maxOperatorCount;
         IOmniAVS.StrategyParam[] strategyParams;
     }
 
@@ -36,6 +38,8 @@ contract OmniAVS_initialize_Test is Base {
             omni: IOmniPortal(address(portal)),
             omniChainId: omniChainId,
             ethStakeInbox: MockOmniPredeploys.ETH_STAKE_INBOX,
+            minOperatorStake: minOperatorStake,
+            maxOperatorCount: maxOperatorCount,
             strategyParams: _localStrategyParams()
         });
     }
@@ -57,6 +61,8 @@ contract OmniAVS_initialize_Test is Base {
                 params.omni,
                 params.omniChainId,
                 params.ethStakeInbox,
+                params.minOperatorStake,
+                params.maxOperatorCount,
                 params.strategyParams
             )
         );
@@ -74,6 +80,8 @@ contract OmniAVS_initialize_Test is Base {
         assertEq(address(omniAVS.omni()), address(params.omni));
         assertEq(omniAVS.omniChainId(), params.omniChainId);
         assertEq(omniAVS.ethStakeInbox(), params.ethStakeInbox);
+        assertEq(omniAVS.minOperatorStake(), params.minOperatorStake);
+        assertEq(omniAVS.maxOperatorCount(), params.maxOperatorCount);
 
         IOmniAVS.StrategyParam[] memory strategyParams = omniAVS.strategyParams();
         assertEq(strategyParams.length, params.strategyParams.length);

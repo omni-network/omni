@@ -85,6 +85,10 @@ func verifyRegisterOperator(ctx context.Context, contracts Contracts, operator c
 		return errors.New("operator not registered with eigen layer delegation manager")
 	}
 
+	// TODO: check if avs at maxOperatorCount
+	// TODO: check if operator has minimum stake
+	// TODO: handle allowlist disabled
+
 	ok, err = contracts.OmniAVS.IsInAllowlist(callOpts, operator)
 	if err != nil {
 		return errors.Wrap(err, "is in allowlist")
