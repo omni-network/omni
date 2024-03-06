@@ -25,6 +25,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 
@@ -47,15 +48,6 @@ const (
 
 	// pk used to deploy EigenLayer contracts, anvil account 9.
 	eigenDeployPk = "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
-
-	// initial funding of WETH for operators and delegators.
-	InitialWETHFunding = 1000
-
-	// funding operator during registering to omniAVS.
-	InitialOperatorStake = 100
-
-	// initial stake that a delegator will do for an operator.
-	InitialDelegatorStake = 50
 
 	// the zero-address string.
 	zeroAddr = "0x0000000000000000000000000000000000000000"
@@ -88,6 +80,10 @@ func setup(t *testing.T) (context.Context, ethclient.Client, *avs.Deployer) {
 
 //nolint:paralleltest // Parallel tests not supported since we start docker containers.
 func TestEigenAndOmniAVS(t *testing.T) {
+	initialWETHFunding := toWei(1000)  // initial funding of WETH for operators and delegators.
+	initialOperatorStake := toWei(100) // funding operator during registering to omniAVS.
+	initialDelegatorStake := toWei(50) // initial stake that a delegator will do for an operator.
+
 	ctx, ethCl, avsDeploy := setup(t)
 
 	backend, err := ethbackend.NewBackend(chainName, chainID, blockPeriod, ethCl)
@@ -126,7 +122,7 @@ func TestEigenAndOmniAVS(t *testing.T) {
 	// Fund operators and delegators with ETH and WETH (using the pre-funded eigen owner account)
 	for _, account := range slices.Concat(operators, delegators) {
 		fundAccount(t, ctx, backend, ownerEigen, account)
-		mintWETHToAddresses(t, ctx, backend, contracts, ownerEigen, InitialWETHFunding, account)
+		mintWETHToAddresses(t, ctx, backend, contracts, ownerEigen, initialWETHFunding, account)
 	}
 
 	// Register operators with EigenLayer
@@ -146,8 +142,7 @@ func TestEigenAndOmniAVS(t *testing.T) {
 		addOperatorToAllowList(t, ctx, contracts, ownerAVS, backend, operator)
 
 		// Delegate some WETH to Eigen strategy manager
-		err = avs.DelegateWETH(ctx, contracts, backend, operator, InitialOperatorStake)
-		require.NoError(t, err)
+		delegateWETH(t, ctx, contracts, backend, operator, initialOperatorStake)
 
 		registerOperatorCLI(t, ctx, contracts, backend, operatorKeys[i])
 
@@ -162,16 +157,15 @@ func TestEigenAndOmniAVS(t *testing.T) {
 		delegateToOperator(t, ctx, contracts, backend, delegator, operator)
 
 		// Delegate actual tokens
-		err = avs.DelegateWETH(ctx, contracts, backend, delegator, InitialDelegatorStake)
-		require.NoError(t, err)
+		delegateWETH(t, ctx, contracts, backend, delegator, initialDelegatorStake)
 
-		assertOperatorBalance(t, ctx, contracts, operator, InitialOperatorStake, InitialDelegatorStake)
+		assertOperatorBalance(t, ctx, contracts, operator, initialOperatorStake, initialDelegatorStake)
 	}
 
 	// Undelegate delegator 1 and check if the stake is removed from operator
 	err = avs.Undelegate(ctx, contracts, backend, delegators[0])
 	require.NoError(t, err)
-	assertOperatorBalance(t, ctx, contracts, operators[0], InitialOperatorStake, 0)
+	assertOperatorBalance(t, ctx, contracts, operators[0], initialOperatorStake, big.NewInt(0))
 
 	// Deregister operators
 	for _, operator := range operators {
@@ -217,7 +211,7 @@ func mintWETHToAddresses(
 	backend *ethbackend.Backend,
 	contracts avs.Contracts,
 	funder common.Address,
-	amount int64,
+	amount *big.Int,
 	addrs ...common.Address) {
 	t.Helper()
 
@@ -225,13 +219,42 @@ func mintWETHToAddresses(
 		txOpts, err := backend.BindOpts(ctx, funder)
 		require.NoError(t, err)
 
-		tx, err := contracts.WETHToken.Mint(txOpts, addr, big.NewInt(amount))
+		tx, err := contracts.WETHToken.Mint(txOpts, addr, amount)
 		require.NoError(t, err)
 		_, err = backend.WaitMined(ctx, tx)
 		require.NoError(t, err)
 
-		require.Equal(t, uint64(amount), wETHBalance(t, ctx, contracts, addr))
+		require.Equal(t, amount, wETHBalance(t, ctx, contracts, addr))
 	}
+}
+
+func delegateWETH(
+	t *testing.T,
+	ctx context.Context,
+	contracts avs.Contracts,
+	backend *ethbackend.Backend,
+	delegator common.Address,
+	amount *big.Int) {
+	t.Helper()
+
+	txOpts, err := backend.BindOpts(ctx, delegator)
+	require.NoError(t, err)
+
+	// First approve the strategy manager to "assign" the WETH to itself.
+	tx, err := contracts.WETHToken.Approve(txOpts, contracts.StrategyManagerAddr, amount)
+	require.NoError(t, err)
+
+	receipt, err := backend.WaitMined(ctx, tx)
+	require.NoError(t, err)
+	require.Equal(t, ethtypes.ReceiptStatusSuccessful, receipt.Status)
+
+	// Then deposit the WETH into the strategy (it will assign it to itself).
+	tx, err = contracts.StrategyManager.DepositIntoStrategy(txOpts, contracts.WETHStrategyAddr, contracts.WETHTokenAddr, amount)
+	require.NoError(t, err)
+
+	receipt, err = backend.WaitMined(ctx, tx)
+	require.NoError(t, err)
+	require.Equal(t, ethtypes.ReceiptStatusSuccessful, receipt.Status)
 }
 
 func addOperatorToAllowList(
@@ -334,8 +357,8 @@ func assertOperatorBalance(
 	ctx context.Context,
 	contracts avs.Contracts,
 	operator common.Address,
-	oprStake int,
-	delStake int) {
+	oprStake *big.Int,
+	delStake *big.Int) {
 	t.Helper()
 
 	callOpts := bind.CallOpts{
@@ -349,8 +372,11 @@ func assertOperatorBalance(
 	for _, op := range operators {
 		if op.Addr == operator {
 			found = true
-			require.EqualValues(t, oprStake, op.Staked.Uint64())
-			require.EqualValues(t, delStake, op.Delegated.Uint64())
+
+			// when one of staked/delegated is zero, require.Equal(*big.Int, *big.Int) fails
+			// so we compare strings
+			require.Equal(t, oprStake.String(), op.Staked.String())
+			require.Equal(t, delStake.String(), op.Delegated.String())
 
 			break
 		}
@@ -361,7 +387,7 @@ func assertOperatorBalance(
 func wETHBalance(t *testing.T,
 	ctx context.Context,
 	contracts avs.Contracts,
-	account common.Address) uint64 {
+	account common.Address) *big.Int {
 	t.Helper()
 
 	callOpts := bind.CallOpts{
@@ -373,7 +399,7 @@ func wETHBalance(t *testing.T,
 	balance, err := contracts.WETHToken.BalanceOf(&callOpts, account)
 	require.NoError(t, err)
 
-	return balance.Uint64()
+	return balance
 }
 
 func checkIfCodePresent(
@@ -479,4 +505,8 @@ type stubPrompter struct {
 
 func (s stubPrompter) InputHiddenString(_, _ string, _ func(string) error) (string, error) {
 	return s.password, nil
+}
+
+func toWei(amount int64) *big.Int {
+	return new(big.Int).Mul(big.NewInt(amount), big.NewInt(params.Ether))
 }
