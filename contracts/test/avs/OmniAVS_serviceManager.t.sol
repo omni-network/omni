@@ -65,13 +65,13 @@ contract OmniAVS_admin_Test is Base {
     ///      In ServiceManagerBase, they return the aggregate list of strategies for the quorums the operator
     ///      is a member of. We only have one "quorum", so we return all strategies.
     function test_getOperatorRestakedStrategies_succeeds() public {
-        _setStrategyParams(strategyParams);
-
         address operator = _operator(0);
         _registerAsOperator(operator);
         _addToAllowlist(operator);
+        _depositIntoSupportedStrategy(operator, minOperatorStake);
         _registerOperatorWithAVS(operator);
 
+        _setStrategyParams(strategyParams);
         address[] memory operatorRestakedStrategies = omniAVS.getOperatorRestakedStrategies(operator);
 
         assertEq(operatorRestakedStrategies.length, 3);
@@ -82,13 +82,13 @@ contract OmniAVS_admin_Test is Base {
 
     /// @dev Test that getOperatorRestakedStrategies() returns an empty list when AVS.strategyParams is empty
     function test_getOperatorRestakedStrategies_noStrategies_succeeds() public {
-        _setStrategyParams(new IOmniAVS.StrategyParam[](0));
-
         address operator = _operator(0);
         _registerAsOperator(operator);
         _addToAllowlist(operator);
+        _depositIntoSupportedStrategy(operator, minOperatorStake);
         _registerOperatorWithAVS(operator);
 
+        _setStrategyParams(new IOmniAVS.StrategyParam[](0));
         address[] memory operatorRestakedStrategies = omniAVS.getOperatorRestakedStrategies(operator);
 
         assertEq(operatorRestakedStrategies.length, 0);

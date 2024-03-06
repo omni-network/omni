@@ -20,7 +20,7 @@ contract OmniAVS_admin_Test is Base {
         // register operator
         _registerAsOperator(operator);
         _addToAllowlist(operator);
-        _depositBeaconEth(operator, 1 ether);
+        _depositBeaconEth(operator, minOperatorStake);
         _registerOperatorWithAVS(operator);
 
         // assert operator is registered
@@ -192,5 +192,35 @@ contract OmniAVS_admin_Test is Base {
     function test_setXCallGasLimits_notOwner_reverts() public {
         vm.expectRevert("Ownable: caller is not the owner");
         omniAVS.setXCallGasLimits(0, 0);
+    }
+
+    /// @dev Test that the owner can set the min operator stake
+    function test_setMinOperatorStake_succeeds() public {
+        uint96 stake = minOperatorStake + 10_000;
+
+        vm.prank(omniAVSOwner);
+        omniAVS.setMinOperatorStake(stake);
+        assertEq(omniAVS.minOperatorStake(), stake);
+    }
+
+    /// @dev Test that only the owner can set the min operator stake
+    function test_setMinOperatorStake_notOwner_reverts() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        omniAVS.setMinOperatorStake(0);
+    }
+
+    /// @dev Test that the owner can set the max operator count
+    function test_setMaxOperatorCount_succeeds() public {
+        uint32 count = omniAVS.maxOperatorCount() + 10;
+
+        vm.prank(omniAVSOwner);
+        omniAVS.setMaxOperatorCount(count);
+        assertEq(omniAVS.maxOperatorCount(), count);
+    }
+
+    /// @dev Test that only the owner can set the max operator count
+    function test_setMaxOperatorCount_notOwner_reverts() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        omniAVS.setMaxOperatorCount(0);
     }
 }

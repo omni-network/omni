@@ -36,6 +36,8 @@ contract Fixtures is EigenLayerFixtures {
     address proxyAdminOwner = multisig;
     address omniAVSOwner = multisig;
 
+    uint32 maxOperatorCount = 10;
+    uint96 minOperatorStake = 1 ether;
     uint64 omniChainId = 111;
     address ethStakeInbox = MockOmniPredeploys.ETH_STAKE_INBOX;
 
@@ -72,7 +74,9 @@ contract Fixtures is EigenLayerFixtures {
                 address(proxyAdmin),
                 address(portal),
                 omniChainId,
-                ethStakeInbox
+                ethStakeInbox,
+                minOperatorStake,
+                maxOperatorCount
             )
         );
     }
@@ -95,6 +99,8 @@ contract Fixtures is EigenLayerFixtures {
                     portal,
                     omniChainId,
                     ethStakeInbox,
+                    minOperatorStake,
+                    maxOperatorCount,
                     _localStrategyParams()
                 )
             )

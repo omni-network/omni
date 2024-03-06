@@ -14,6 +14,9 @@ abstract contract OmniAVSStorage {
     /// @notice Set of operators that are allowed to register
     mapping(address => bool) internal _allowlist;
 
+    /// @notice Maximum number of operators that can be registered
+    uint32 public maxOperatorCount;
+
     /// @notice Omni chain id, used to make xcalls to Omni
     uint64 public omniChainId;
 
@@ -22,6 +25,9 @@ abstract contract OmniAVSStorage {
 
     /// @notice OmniPortal.xcall base gas limit in syncWithOmni()
     uint64 public xcallBaseGasLimit;
+
+    /// @notice Minimum stake required for an operator to register
+    uint96 public minOperatorStake;
 
     /// @notice Whether or not the allowlist is enabled
     bool public allowlistEnabled;

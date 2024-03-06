@@ -37,6 +37,8 @@ interface IOmniAVSAdmin {
      * @param omni              Omni portal contract
      * @param omniChainId       Omni chain id
      * @param ethStakeInbox     EthStakeInbox contract address, on Omni
+     * @param minOperatorStake  Minimum operator stake
+     * @param maxOperatorCount  Maximum operator count
      * @param strategyParams    List of accepted strategies and their multipliers
      */
     function initialize(
@@ -44,6 +46,8 @@ interface IOmniAVSAdmin {
         IOmniPortal omni,
         uint64 omniChainId,
         address ethStakeInbox,
+        uint96 minOperatorStake,
+        uint32 maxOperatorCount,
         IOmniAVS.StrategyParam[] calldata strategyParams
     ) external;
 

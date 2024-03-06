@@ -203,7 +203,8 @@ func (d *Deployer) deployContracts(ctx context.Context, txOpts *bind.TransactOpt
 		}
 	}
 
-	enc, err := abi.Pack("initialize", owner, d.portalAddr, d.omniChainID, d.cfg.EthStakeInbox, stratParms)
+	enc, err := abi.Pack("initialize", owner, d.portalAddr, d.omniChainID, d.cfg.EthStakeInbox,
+		d.cfg.MinOperatorStake, d.cfg.MaxOperatorCount, stratParms)
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "encode avs initializer")
 	}

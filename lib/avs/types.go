@@ -11,8 +11,10 @@ import (
 )
 
 type Config struct {
-	StrategyParams []StrategyParam `json:"strategyParams"`
-	EthStakeInbox  common.Address  `json:"restakedEthInbox"`
+	StrategyParams   []StrategyParam `json:"strategyParams"`
+	EthStakeInbox    common.Address  `json:"restakedEthInbox"`
+	MinOperatorStake *big.Int        `json:"minOperatorStake"`
+	MaxOperatorCount uint32          `json:"maxOperatorStake"`
 }
 
 type StrategyParam struct {
@@ -54,7 +56,9 @@ func DefaultTestAVSConfig(eigen EigenDeployments) Config {
 	}
 
 	return Config{
-		StrategyParams: strategyParams,
-		EthStakeInbox:  common.HexToAddress("0x1234"), // TODO: replace with actual address
+		StrategyParams:   strategyParams,
+		EthStakeInbox:    common.HexToAddress("0x1234"), // TODO: replace with actual address
+		MinOperatorStake: big.NewInt(1e18),              // 1 ETH
+		MaxOperatorCount: 10,
 	}
 }
