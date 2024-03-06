@@ -87,34 +87,13 @@ func DeregisterOperatorFromAVS(ctx context.Context, contracts Contracts, backend
 }
 
 func verifyRegisterOperator(ctx context.Context, contracts Contracts, operator common.Address) error {
-	callOpts := &bind.CallOpts{Context: ctx}
-
-	ok, err := contracts.DelegationManager.IsOperator(callOpts, operator)
+	canRegister, reason, err := contracts.OmniAVS.CanRegister(&bind.CallOpts{Context: ctx}, operator)
 	if err != nil {
-		return errors.Wrap(err, "is operator")
-	} else if !ok {
-		return errors.New("operator not registered with eigen layer delegation manager")
+		return errors.Wrap(err, "can register")
 	}
 
-	// TODO: check if avs at maxOperatorCount
-	// TODO: check if operator has minimum stake
-	// TODO: handle allowlist disabled
-
-	ok, err = contracts.OmniAVS.IsInAllowlist(callOpts, operator)
-	if err != nil {
-		return errors.Wrap(err, "is in allowlist")
-	} else if !ok {
-		return errors.New("operator not in omni avs allow list")
-	}
-
-	operators, err := contracts.OmniAVS.Operators(callOpts)
-	if err != nil {
-		return errors.Wrap(err, "operators")
-	}
-	for _, op := range operators {
-		if op.Addr == operator {
-			return errors.New("operator already registered with omni avs")
-		}
+	if !canRegister {
+		return errors.New("cannot register", "reason", reason)
 	}
 
 	return nil

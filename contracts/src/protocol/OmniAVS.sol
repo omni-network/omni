@@ -209,6 +209,24 @@ contract OmniAVS is
         return _getRestakeableStrategies();
     }
 
+    /**
+     * @notice Check if an operator can register to the AVS.
+     *         Returns true, with no reason, if the operator can register to the AVS.
+     *         Returns false, with a reason, if the operator cannot register to the AVS.
+     * @dev This function is intented to be called off-chain.
+     * @param operator The operator to check
+     * @return canRegister True if the operator can register, false otherwise
+     * @return reason      The reason the operator cannot register. Empty if canRegister is true.
+     */
+    function canRegister(address operator) external view returns (bool, string memory) {
+        if (!_delegationManager.isOperator(operator)) return (false, "not an operator");
+        if (allowlistEnabled && !_allowlist[operator]) return (false, "not in allowlist");
+        if (_isOperator(operator)) return (false, "already registered");
+        if (_operators.length >= maxOperatorCount) return (false, "max operators reached");
+        if (_getTotalDelegations(operator) < minOperatorStake) return (false, "min stake not met");
+        return (true, "");
+    }
+
     //////////////////////////////////////////////////////////////////////////////
     //                              Admin functions                             //
     //////////////////////////////////////////////////////////////////////////////
