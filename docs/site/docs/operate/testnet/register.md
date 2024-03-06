@@ -40,6 +40,6 @@ omni operator register --config-file ~/path/to/operator.yml
 
 :::info
 
-The AVS address (`0x848BE3DBcd054c17EbC712E0d29D15C2e638aBCe`) is the address of the Omni AVS contract [deployed on Goerli testnet](https://goerli.etherscan.io/address/0x848BE3DBcd054c17EbC712E0d29D15C2e638aBCe) that will be called by the `regiser` command.
+The AVS address (`0x848BE3DBcd054c17EbC712E0d29D15C2e638aBCe`) is the address of the Omni AVS contract [deployed on Goerli testnet](https://goerli.etherscan.io/address/0x848BE3DBcd054c17EbC712E0d29D15C2e638aBCe) that will be called by the `register` command.
 
 :::
