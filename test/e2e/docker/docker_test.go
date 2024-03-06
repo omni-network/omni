@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/omni-network/omni/test/e2e/docker"
 	"github.com/omni-network/omni/test/e2e/types"
@@ -62,12 +63,12 @@ func TestComposeTemplate(t *testing.T) {
 				},
 				AnvilChains: []types.AnvilChain{
 					{
-						Chain:      types.EVMChain{Name: "mock_rollup", ID: 99},
+						Chain:      types.EVMChain{Name: "mock_rollup", ID: 99, BlockPeriod: time.Second},
 						InternalIP: ipNet.IP,
 						ProxyPort:  9000,
 					},
 					{
-						Chain:      types.EVMChain{Name: "mock_l1", ID: 1},
+						Chain:      types.EVMChain{Name: "mock_l1", ID: 1, BlockPeriod: time.Hour},
 						InternalIP: ipNet.IP,
 						ProxyPort:  9000,
 						LoadState:  "path/to/anvil/state.json",
