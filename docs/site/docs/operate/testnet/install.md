@@ -8,7 +8,7 @@ The Omni CLI will allow you to interact with the Omni network and simplifies the
 
 ## Install from Binary
 
-The easiest way to install the Omni CLI is to download the latest release from the [GitHub releases page](https://github.com/omni-network/omni/releases). Once downloaded, you can extract the binary and move it to a location in your PATH.
+The easiest way to install the Omni CLI is to download the latest release from the [GitHub releases page](https://github.com/omni-network/omni/releases). Once downloaded, you can extract the binary and move it to a location in your $PATH.
 
 ## Install from Script
 
