@@ -13,6 +13,8 @@ import { IEigenPodManager } from "eigenlayer-contracts/src/contracts/interfaces/
 import { IStrategyManager } from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
 import { ISlasher } from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 
+import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
+import { StrategyParams } from "script/avs/StrategyParams.sol";
 import { IEigenDeployer } from "./IEigenDeployer.sol";
 import { EigenM2GoerliDeployments } from "./EigenM2GoerliDeployments.sol";
 import { EigenPodManagerHarness } from "./EigenPodManagerHarness.sol";
@@ -26,19 +28,24 @@ import { Test } from "forge-std/Test.sol";
  *      returns the addresses of the contracts that are already deployed on goerli.
  */
 contract EigenLayerGoerli is IEigenDeployer, Test {
+    address beaconEthStrategy = 0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0;
+
     function deploy() public returns (Deployments memory deps) {
         address proxyAdminAddr = _proxyAdmin(EigenM2GoerliDeployments.EigenPodManager);
         address proxyAdminOwner = ProxyAdmin(proxyAdminAddr).owner();
 
-        address[] memory strategies = new address[](2);
-        strategies[0] = EigenM2GoerliDeployments.stETHStrategy;
-        strategies[1] = EigenM2GoerliDeployments.rETHStrategy;
+        IOmniAVS.StrategyParam[] memory stratParams = StrategyParams.goerli();
 
-        IERC20 stETH = IStrategy(EigenM2GoerliDeployments.stETHStrategy).underlyingToken();
-        IERC20 rETH = IStrategy(EigenM2GoerliDeployments.rETHStrategy).underlyingToken();
+        address[] memory strategies = new address[](stratParams.length);
+        for (uint256 i = 0; i < stratParams.length; i++) {
+            address strat = address(stratParams[i].strategy);
+            strategies[i] = strat;
 
-        _replaceERC20(EigenM2GoerliDeployments.stETHStrategy, address(stETH));
-        _replaceERC20(EigenM2GoerliDeployments.rETHStrategy, address(rETH));
+            if (strat == beaconEthStrategy) continue;
+
+            IERC20 underlying = IStrategy(strat).underlyingToken();
+            _replaceERC20(strat, address(underlying));
+        }
 
         deps = Deployments({
             proxyAdminOwner: proxyAdminOwner,

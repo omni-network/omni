@@ -91,10 +91,7 @@ contract OmniAVS_syncWithOmni_Test is Base {
         // assert no operator for omni avs quorum, because no operator has been registered
         assertEq(ops.length, 0, "_testRegisterOperators: no operators should be registered");
 
-        // TODO: should we revert if no operators are registered?
-        // current thinking is no, to allow all operators to be deregistered
-        _expectXCall(ops);
-        omniAVS.syncWithOmni{ value: syncFee }();
+        _assertSyncWithOmni(ops);
     }
 
     /// @dev Register operators with OmniAVS, assert OmniAVS quorum is populated with initial stake
@@ -121,8 +118,7 @@ contract OmniAVS_syncWithOmni_Test is Base {
             assertEq(ops[i].delegated, 0, "_testRegisterOperatorsWithAVS: validator.delegated should be 0");
         }
 
-        _expectXCall(ops);
-        omniAVS.syncWithOmni{ value: syncFee }();
+        _assertSyncWithOmni(ops);
     }
 
     /// @dev Delegate to operators, assert OmniAVS quorum is populated with initial stake + delegations
@@ -163,8 +159,7 @@ contract OmniAVS_syncWithOmni_Test is Base {
             assertEq(ops[i].delegated, totalDelegated, "_testDelegateToOperators: validator.delegated unexpected");
         }
 
-        _expectXCall(ops);
-        omniAVS.syncWithOmni{ value: syncFee }();
+        _assertSyncWithOmni(ops);
     }
 
     /// @dev Increase delegations for first half of operators, assert OmniAVS quorum is updated
@@ -212,8 +207,7 @@ contract OmniAVS_syncWithOmni_Test is Base {
             );
         }
 
-        _expectXCall(ops);
-        omniAVS.syncWithOmni{ value: syncFee }();
+        _assertSyncWithOmni(ops);
     }
 
     /// @dev Increase stake for second half of operators, assert OmniAVS quorum is updated
@@ -261,8 +255,7 @@ contract OmniAVS_syncWithOmni_Test is Base {
             );
         }
 
-        _expectXCall(ops);
-        omniAVS.syncWithOmni{ value: syncFee }();
+        _assertSyncWithOmni(ops);
     }
 
     /// @dev Undelegate all delegators, assert OmniAVS quorum is updated
@@ -300,8 +293,7 @@ contract OmniAVS_syncWithOmni_Test is Base {
             assertEq(ops[i].delegated, 0, "_testtUndelegateAllDelegators: validator.delegated should be 0");
         }
 
-        _expectXCall(ops);
-        omniAVS.syncWithOmni{ value: syncFee }();
+        _assertSyncWithOmni(ops);
     }
 
     /// @dev Deregister operators, assert OmniAVS quorum is updated after each deregistration
@@ -327,6 +319,14 @@ contract OmniAVS_syncWithOmni_Test is Base {
                 );
             }
         }
+    }
+
+    /// @dev Asset syncWithOmni() makes an xcall to OmniPortal with correct ops
+    function _assertSyncWithOmni(IOmniAVS.Operator[] memory ops) internal {
+        // skip fork tests in which portal is not set
+        if (address(omniAVS.omni()) == address(0)) return;
+        _expectXCall(ops);
+        omniAVS.syncWithOmni{ value: syncFee }();
     }
 
     /// @dev Expect an OmniPortal.xcall to IOmniEthRestaking.sync(ops), with correct fee and gasLimit
@@ -358,7 +358,6 @@ contract OmniAVS_syncWithOmni_Test is Base {
         assertEq(ops[0].staked, amount);
         assertEq(ops[0].delegated, 0);
 
-        _expectXCall(ops);
-        omniAVS.syncWithOmni{ value: syncFee }();
+        _assertSyncWithOmni(ops);
     }
 }

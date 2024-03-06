@@ -15,4 +15,9 @@ library EigenM2GoerliDeployments {
     // strategies
     address internal constant stETHStrategy = 0xB613E78E2068d7489bb66419fB1cfa11275d14da;
     address internal constant rETHStrategy = 0x879944A8cB437a5f8061361f82A6d4EED59070b5;
+    address internal constant wBETHStrategy = 0xD89dc4C40d901D4622C203Fb8808e6e7C7fcE164;
+    address internal constant LsETHStrategy = 0xa9DC3c93ae59B8d26AF17Ae63c96Be78793537A9;
+    address internal constant ankrETHStrategy = 0x98b47798B68b734af53c930495595729E96cdB8E;
+    address internal constant ETHxStrategy = 0x5d1E9DC056C906CBfe06205a39B0D965A6Df7C14;
+    address internal constant mETHSTrategy = 0x1755d34476BB4DaEd726ee4a81E8132dF00F9b14;
 }

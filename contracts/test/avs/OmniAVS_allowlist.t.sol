@@ -65,6 +65,8 @@ contract OmniAVS_allowlist_Test is Base {
 
     /// @dev Test that an operator can't register if not in allowlist
     function test_registerOperator_nowAllowed_reverts() public {
+        if (!omniAVS.allowlistEnabled()) _enableAllowlist();
+
         address operator = _operator(0);
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
 
@@ -75,6 +77,8 @@ contract OmniAVS_allowlist_Test is Base {
 
     /// @dev Test that the owner can disable the allowlist
     function test_disableAllowlist_succeeds() public {
+        if (!omniAVS.allowlistEnabled()) _enableAllowlist();
+
         vm.prank(omniAVSOwner);
         omniAVS.disableAllowlist();
         assertFalse(omniAVS.allowlistEnabled());
@@ -88,7 +92,8 @@ contract OmniAVS_allowlist_Test is Base {
 
     /// @dev Test that the allowlist can't be disabled if already disabled
     function test_disableAllowlist_alreadyDisabled_reverts() public {
-        _disableAllowlist();
+        if (omniAVS.allowlistEnabled()) _disableAllowlist();
+
         assertFalse(omniAVS.allowlistEnabled());
         vm.expectRevert("OmniAVS: already disabled");
         vm.prank(omniAVSOwner);
@@ -97,7 +102,8 @@ contract OmniAVS_allowlist_Test is Base {
 
     /// @dev Test that the owner can enable the allowlist
     function test_enableAllowlist_succeeds() public {
-        _disableAllowlist();
+        if (omniAVS.allowlistEnabled()) _disableAllowlist();
+
         vm.prank(omniAVSOwner);
         omniAVS.enableAllowlist();
         assertTrue(omniAVS.allowlistEnabled());
@@ -111,6 +117,8 @@ contract OmniAVS_allowlist_Test is Base {
 
     /// @dev Test that the allowlist can't be enabled if already enabled
     function test_enableAllowlist_alreadyEnabled_reverts() public {
+        if (!omniAVS.allowlistEnabled()) _enableAllowlist();
+
         assertTrue(omniAVS.allowlistEnabled());
         vm.expectRevert("OmniAVS: already enabled");
         vm.prank(omniAVSOwner);
@@ -119,9 +127,10 @@ contract OmniAVS_allowlist_Test is Base {
 
     /// @dev Test that an operator can register if not in allowlist, if allowlist is disabled
     function test_registerOperator_allowlistDisabled_succeeds() public {
+        if (omniAVS.allowlistEnabled()) _disableAllowlist();
+
         address operator = _operator(0);
 
-        _disableAllowlist();
         _registerAsOperator(operator);
         _depositIntoSupportedStrategy(operator, minOperatorStake);
         _registerOperatorWithAVS(operator);

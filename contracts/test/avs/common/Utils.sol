@@ -12,6 +12,8 @@ import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
 import { EigenPodManagerHarness } from "./eigen/EigenPodManagerHarness.sol";
 import { Fixtures } from "./Fixtures.sol";
 
+import { console } from "forge-std/console.sol";
+
 /**
  * @title Utils
  * @dev Common utilities for AVS tests
@@ -69,6 +71,12 @@ contract Utils is Fixtures {
     function _disableAllowlist() internal {
         vm.prank(omniAVSOwner);
         omniAVS.disableAllowlist();
+    }
+
+    /// @dev enable the allowlist
+    function _enableAllowlist() internal {
+        vm.prank(omniAVSOwner);
+        omniAVS.enableAllowlist();
     }
 
     /// @dev deregister an operator from OmniAVS

@@ -18,7 +18,7 @@ library StrategyParams {
 
     /// @notice Goerli strategy params
     function goerli() external pure returns (IOmniAVS.StrategyParam[] memory params) {
-        params = new IOmniAVS.StrategyParam[](3);
+        params = new IOmniAVS.StrategyParam[](8);
 
         params[0] = IOmniAVS.StrategyParam({
             strategy: IStrategy(EigenM2GoerliDeployments.stETHStrategy),
@@ -30,7 +30,32 @@ library StrategyParams {
             multiplier: STD_MULTIPLIER
         });
 
-        params[2] =
+        params[2] = IOmniAVS.StrategyParam({
+            strategy: IStrategy(EigenM2GoerliDeployments.wBETHStrategy),
+            multiplier: STD_MULTIPLIER
+        });
+
+        params[3] = IOmniAVS.StrategyParam({
+            strategy: IStrategy(EigenM2GoerliDeployments.LsETHStrategy),
+            multiplier: STD_MULTIPLIER
+        });
+
+        params[4] = IOmniAVS.StrategyParam({
+            strategy: IStrategy(EigenM2GoerliDeployments.ankrETHStrategy),
+            multiplier: STD_MULTIPLIER
+        });
+
+        params[5] = IOmniAVS.StrategyParam({
+            strategy: IStrategy(EigenM2GoerliDeployments.ETHxStrategy),
+            multiplier: STD_MULTIPLIER
+        });
+
+        params[6] = IOmniAVS.StrategyParam({
+            strategy: IStrategy(EigenM2GoerliDeployments.mETHSTrategy),
+            multiplier: STD_MULTIPLIER
+        });
+
+        params[7] =
             IOmniAVS.StrategyParam({ strategy: IStrategy(BEACON_CHAIN_ETH_STRATEGY), multiplier: STD_MULTIPLIER });
     }
 

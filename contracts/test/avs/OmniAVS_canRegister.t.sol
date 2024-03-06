@@ -21,6 +21,8 @@ contract OmniAVS_canRegister_Test is Base {
     function test_canRegister_notAllowed() public {
         address operator = _operator(0);
 
+        if (!omniAVS.allowlistEnabled()) _enableAllowlist();
+
         _registerAsOperator(operator);
 
         (bool canRegister, string memory reason) = omniAVS.canRegister(operator);
@@ -45,8 +47,9 @@ contract OmniAVS_canRegister_Test is Base {
     function test_canRegister_minStakeNotMet() public {
         address operator = _operator(0);
 
+        if (omniAVS.allowlistEnabled()) _addToAllowlist(operator);
+
         _registerAsOperator(operator);
-        _addToAllowlist(operator);
         _depositIntoSupportedStrategy(operator, minOperatorStake - 1);
 
         (bool canRegister, string memory reason) = omniAVS.canRegister(operator);
@@ -57,8 +60,9 @@ contract OmniAVS_canRegister_Test is Base {
     function test_canRegister_allowed() public {
         address operator = _operator(0);
 
+        if (omniAVS.allowlistEnabled()) _addToAllowlist(operator);
+
         _registerAsOperator(operator);
-        _addToAllowlist(operator);
         _depositIntoSupportedStrategy(operator, minOperatorStake);
 
         (bool canRegister, string memory reason) = omniAVS.canRegister(operator);
@@ -69,11 +73,10 @@ contract OmniAVS_canRegister_Test is Base {
     function test_canRegister_allowlistDisabled() public {
         address operator = _operator(0);
 
+        if (omniAVS.allowlistEnabled()) _disableAllowlist();
+
         _registerAsOperator(operator);
         _depositIntoSupportedStrategy(operator, minOperatorStake);
-
-        vm.prank(omniAVSOwner);
-        omniAVS.disableAllowlist();
 
         (bool canRegister, string memory reason) = omniAVS.canRegister(operator);
         assertTrue(canRegister);
@@ -83,8 +86,9 @@ contract OmniAVS_canRegister_Test is Base {
     function test_canRegister_alreadyRegistered() public {
         address operator = _operator(0);
 
+        if (omniAVS.allowlistEnabled()) _addToAllowlist(operator);
+
         _registerAsOperator(operator);
-        _addToAllowlist(operator);
         _depositIntoSupportedStrategy(operator, minOperatorStake);
         _registerOperatorWithAVS(operator);
 
