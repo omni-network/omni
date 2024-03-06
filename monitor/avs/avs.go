@@ -12,8 +12,15 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+// use hardcoded avs address for now
+// TODO: add avs address to network config.
+const (
+	devnetAVSAddr = "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853"
+	goerliAVSAddr = "" // TODO
+)
+
 // Monitor starts monitoring the AVS contract.
-func Monitor(ctx context.Context, network netconf.Network, address common.Address) error {
+func Monitor(ctx context.Context, network netconf.Network) error {
 	log.Info(ctx, "Starting AVS monitor")
 
 	l1Client, err := newL1Client(network)
@@ -21,7 +28,13 @@ func Monitor(ctx context.Context, network netconf.Network, address common.Addres
 		return err
 	}
 
-	avs, err := newAVS(l1Client, address)
+	addr := common.HexToAddress(devnetAVSAddr)
+	// monitor goerli avs in staging, for now
+	if network.Name == "staging" {
+		addr = common.HexToAddress(goerliAVSAddr)
+	}
+
+	avs, err := newAVS(l1Client, addr)
 	if err != nil {
 		return err
 	}

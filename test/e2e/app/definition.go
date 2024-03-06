@@ -284,6 +284,7 @@ func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 			DeployHeight:      deployInfo[anvil.Chain].DeployHeight,
 			BlockPeriod:       anvil.Chain.BlockPeriod,
 			FinalizationStrat: anvil.Chain.FinalizationStrat,
+			IsEthereum:        anvil.Chain.IsAVSTarget,
 		})
 	}
 
@@ -297,6 +298,7 @@ func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 			DeployHeight:      deployInfo[public.Chain].DeployHeight,
 			BlockPeriod:       public.Chain.BlockPeriod,
 			FinalizationStrat: public.Chain.FinalizationStrat,
+			IsEthereum:        public.Chain.IsAVSTarget,
 		})
 	}
 
@@ -333,6 +335,7 @@ func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 			DeployHeight:      deployInfo[anvil.Chain].DeployHeight,
 			BlockPeriod:       anvil.Chain.BlockPeriod,
 			FinalizationStrat: anvil.Chain.FinalizationStrat,
+			IsEthereum:        anvil.Chain.IsAVSTarget,
 		})
 	}
 
@@ -346,6 +349,7 @@ func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 			DeployHeight:      deployInfo[public.Chain].DeployHeight,
 			BlockPeriod:       public.Chain.BlockPeriod,
 			FinalizationStrat: public.Chain.FinalizationStrat,
+			IsEthereum:        public.Chain.IsAVSTarget,
 		})
 	}
 
