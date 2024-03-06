@@ -107,6 +107,7 @@ issues:
     - path: '.+_test\.go'
       linters:
         - maintidx   # Relax linter for table driven tests
+        - dupl       # Many tests share similar testing logic but call different methods with different args
   exclude:
     - add-constant         # Ignore "add-constant: avoid magic numbers like" since it is too strict
     - fieldalignment # Ignore "fieldalignment: struct with XXX pointer bytes could be YYY"

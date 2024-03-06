@@ -138,6 +138,20 @@ func (mr *MockVoterMockRecorder) SetProposed(headers any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetProposed", reflect.TypeOf((*MockVoter)(nil).SetProposed), headers)
 }
 
+// TrimBehind mocks base method.
+func (m *MockVoter) TrimBehind(edgesByChain map[uint64]uint64) int {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TrimBehind", edgesByChain)
+	ret0, _ := ret[0].(int)
+	return ret0
+}
+
+// TrimBehind indicates an expected call of TrimBehind.
+func (mr *MockVoterMockRecorder) TrimBehind(edgesByChain any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TrimBehind", reflect.TypeOf((*MockVoter)(nil).TrimBehind), edgesByChain)
+}
+
 // MockCommetAPI is a mock of CommetAPI interface.
 type MockCommetAPI struct {
 	ctrl     *gomock.Controller
@@ -159,6 +173,20 @@ func NewMockCommetAPI(ctrl *gomock.Controller) *MockCommetAPI {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockCommetAPI) EXPECT() *MockCommetAPIMockRecorder {
 	return m.recorder
+}
+
+// IsValidator mocks base method.
+func (m *MockCommetAPI) IsValidator(ctx context.Context, valAddress common.Address) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsValidator", ctx, valAddress)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsValidator indicates an expected call of IsValidator.
+func (mr *MockCommetAPIMockRecorder) IsValidator(ctx, valAddress any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsValidator", reflect.TypeOf((*MockCommetAPI)(nil).IsValidator), ctx, valAddress)
 }
 
 // Validators mocks base method.
