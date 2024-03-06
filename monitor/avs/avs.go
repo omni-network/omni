@@ -16,7 +16,7 @@ import (
 // TODO: add avs address to network config.
 const (
 	devnetAVSAddr = "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853"
-	goerliAVSAddr = "" // TODO
+	goerliAVSAddr = "0x848BE3DBcd054c17EbC712E0d29D15C2e638aBCe"
 )
 
 // Monitor starts monitoring the AVS contract.
