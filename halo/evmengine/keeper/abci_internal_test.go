@@ -420,6 +420,7 @@ func (m *mockEngineAPI) NewPayloadV2(ctx context.Context, params eengine.Executa
 	if m.newPayloadV2Func != nil {
 		return m.newPayloadV2Func(ctx, params)
 	}
+
 	return m.mock.NewPayloadV2(ctx, params)
 }
 

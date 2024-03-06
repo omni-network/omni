@@ -4,13 +4,11 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
-	"fmt"
 	"math/big"
 	"reflect"
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
@@ -18,6 +16,7 @@ import (
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
+	"github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -112,6 +111,8 @@ func toPayloadID(payload engine.ExecutableData) (engine.PayloadID, error) {
 }
 
 func Test_pushPayload(t *testing.T) {
+	t.Parallel()
+
 	newPayload := func(ctx context.Context, mockEngine mockEngineAPI, address common.Address) ([]byte, engine.PayloadID) {
 		// get latest block to build on top
 		latestHeight, err := mockEngine.BlockNumber(ctx)
@@ -125,10 +126,10 @@ func Test_pushPayload(t *testing.T) {
 		// Create execution payload message
 		payloadData, err := json.Marshal(execPayload)
 		require.NoError(t, err)
+
 		return payloadData, payloadID
 	}
 	type args struct {
-		ctx              context.Context
 		msg              *types.MsgExecutionPayload
 		newPayloadV2Func func(ctx context.Context, params engine.ExecutableData) (engine.PayloadStatusV1, error)
 	}
@@ -140,7 +141,6 @@ func Test_pushPayload(t *testing.T) {
 		{
 			name: "fail to unmarshal",
 			args: args{
-				ctx: context.Background(),
 				msg: &types.MsgExecutionPayload{Data: []byte("invalid")},
 			},
 			wantErr: true,
@@ -148,7 +148,6 @@ func Test_pushPayload(t *testing.T) {
 		{
 			name: "new payload error",
 			args: args{
-				ctx: context.Background(),
 				newPayloadV2Func: func(ctx context.Context, params engine.ExecutableData) (engine.PayloadStatusV1, error) {
 					return engine.PayloadStatusV1{}, errors.New("error")
 				},
@@ -158,7 +157,6 @@ func Test_pushPayload(t *testing.T) {
 		{
 			name: "new payload invalid",
 			args: args{
-				ctx: context.Background(),
 				newPayloadV2Func: func(ctx context.Context, params engine.ExecutableData) (engine.PayloadStatusV1, error) {
 					return engine.PayloadStatusV1{
 						Status:          engine.INVALID,
@@ -172,7 +170,6 @@ func Test_pushPayload(t *testing.T) {
 		{
 			name: "new payload invalid val err",
 			args: args{
-				ctx: context.Background(),
 				newPayloadV2Func: func(ctx context.Context, params engine.ExecutableData) (engine.PayloadStatusV1, error) {
 					return engine.PayloadStatusV1{
 						Status:          engine.INVALID,
@@ -184,34 +181,32 @@ func Test_pushPayload(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "valid payload",
-			args: args{
-				ctx: context.Background(),
-			},
+			name:    "valid payload",
+			args:    args{},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			mockEngine, err := newMockEngineAPI()
 			require.NoError(t, err)
 			mockEngine.newPayloadV2Func = tt.args.newPayloadV2Func
-			payload, payloadID := newPayload(tt.args.ctx, mockEngine, common.Address{})
+			payload, payloadID := newPayload(context.Background(), mockEngine, common.Address{})
 			if tt.args.msg == nil {
 				tt.args.msg = &types.MsgExecutionPayload{
 					Data: payload,
 				}
 			}
 
-			got, err := pushPayload(tt.args.ctx, &mockEngine, tt.args.msg)
-			fmt.Println(err != nil)
+			got, err := pushPayload(context.Background(), &mockEngine, tt.args.msg)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("pushPayload() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
 			if !tt.wantErr {
-				want, err := mockEngine.GetPayloadV2(tt.args.ctx, payloadID)
+				want, err := mockEngine.GetPayloadV2(context.Background(), payloadID)
 				require.NoError(t, err)
 				if !reflect.DeepEqual(got, *want.ExecutionPayload) {
 					t.Errorf("pushPayload() got = %v, want %v", got, want)
