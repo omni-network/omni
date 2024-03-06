@@ -32,7 +32,7 @@ func TestVotesFromCommit(t *testing.T) {
 	vals := []k1.PrivKey{k1.GenPrivKey(), k1.GenPrivKey(), k1.GenPrivKey()}
 	batches := [][]uint64{{1, 2}, {3}, { /*empty*/ }}
 
-	expected := make(map[xchain.Vote]bool)
+	expected := make(map[string]bool)
 
 	var evotes []abci.ExtendedVoteInfo
 	for _, chain := range chains {
@@ -62,10 +62,18 @@ func TestVotesFromCommit(t *testing.T) {
 							ValidatorAddress: addr[:],
 							Signature:        sig[:],
 						},
+						MsgOffsets: []*types.MsgOffset{
+							{DestChainId: chain, StreamOffset: height},
+							{DestChainId: chain + 1, StreamOffset: height + 1},
+						},
+						ReceiptOffsets: []*types.ReceiptOffset{
+							{SourceChainId: chain, StreamOffset: height},
+							{SourceChainId: chain + 1, StreamOffset: height + 1},
+						},
 					}
 
 					if i != skipVal {
-						expected[vote.ToXChain()] = true
+						expected[proto.MarshalTextString(vote)] = true
 					}
 					votes = append(votes, vote)
 				}
@@ -93,14 +101,18 @@ func TestVotesFromCommit(t *testing.T) {
 
 	for _, agg := range resp.Votes {
 		for _, sig := range agg.Signatures {
-			att := xchain.Vote{
-				BlockHeader: agg.BlockHeader.ToXChain(),
-				BlockRoot:   common.Hash(agg.BlockRoot),
-				Signature:   sig.ToXChain(),
+			actual := &types.Vote{
+				BlockHeader:    agg.BlockHeader,
+				BlockRoot:      agg.BlockRoot,
+				Signature:      sig,
+				MsgOffsets:     agg.MsgOffsets,
+				ReceiptOffsets: agg.ReceiptOffsets,
 			}
 
-			require.True(t, expected[att], att)
-			delete(expected, att)
+			str := proto.MarshalTextString(actual)
+
+			require.True(t, expected[str], str)
+			delete(expected, str)
 		}
 	}
 

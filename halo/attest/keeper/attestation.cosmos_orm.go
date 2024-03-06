@@ -386,16 +386,410 @@ func NewSignatureTable(db ormtable.Schema) (SignatureTable, error) {
 	return signatureTable{table.(ormtable.AutoIncrementTable)}, nil
 }
 
+type MsgOffsetTable interface {
+	Insert(ctx context.Context, msgOffset *MsgOffset) error
+	InsertReturningId(ctx context.Context, msgOffset *MsgOffset) (uint64, error)
+	LastInsertedSequence(ctx context.Context) (uint64, error)
+	Update(ctx context.Context, msgOffset *MsgOffset) error
+	Save(ctx context.Context, msgOffset *MsgOffset) error
+	Delete(ctx context.Context, msgOffset *MsgOffset) error
+	Has(ctx context.Context, id uint64) (found bool, err error)
+	// Get returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
+	Get(ctx context.Context, id uint64) (*MsgOffset, error)
+	HasByAttIdDestChainId(ctx context.Context, att_id uint64, dest_chain_id uint64) (found bool, err error)
+	// GetByAttIdDestChainId returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
+	GetByAttIdDestChainId(ctx context.Context, att_id uint64, dest_chain_id uint64) (*MsgOffset, error)
+	List(ctx context.Context, prefixKey MsgOffsetIndexKey, opts ...ormlist.Option) (MsgOffsetIterator, error)
+	ListRange(ctx context.Context, from, to MsgOffsetIndexKey, opts ...ormlist.Option) (MsgOffsetIterator, error)
+	DeleteBy(ctx context.Context, prefixKey MsgOffsetIndexKey) error
+	DeleteRange(ctx context.Context, from, to MsgOffsetIndexKey) error
+
+	doNotImplement()
+}
+
+type MsgOffsetIterator struct {
+	ormtable.Iterator
+}
+
+func (i MsgOffsetIterator) Value() (*MsgOffset, error) {
+	var msgOffset MsgOffset
+	err := i.UnmarshalMessage(&msgOffset)
+	return &msgOffset, err
+}
+
+type MsgOffsetIndexKey interface {
+	id() uint32
+	values() []interface{}
+	msgOffsetIndexKey()
+}
+
+// primary key starting index..
+type MsgOffsetPrimaryKey = MsgOffsetIdIndexKey
+
+type MsgOffsetIdIndexKey struct {
+	vs []interface{}
+}
+
+func (x MsgOffsetIdIndexKey) id() uint32            { return 0 }
+func (x MsgOffsetIdIndexKey) values() []interface{} { return x.vs }
+func (x MsgOffsetIdIndexKey) msgOffsetIndexKey()    {}
+
+func (this MsgOffsetIdIndexKey) WithId(id uint64) MsgOffsetIdIndexKey {
+	this.vs = []interface{}{id}
+	return this
+}
+
+type MsgOffsetAttIdDestChainIdIndexKey struct {
+	vs []interface{}
+}
+
+func (x MsgOffsetAttIdDestChainIdIndexKey) id() uint32            { return 1 }
+func (x MsgOffsetAttIdDestChainIdIndexKey) values() []interface{} { return x.vs }
+func (x MsgOffsetAttIdDestChainIdIndexKey) msgOffsetIndexKey()    {}
+
+func (this MsgOffsetAttIdDestChainIdIndexKey) WithAttId(att_id uint64) MsgOffsetAttIdDestChainIdIndexKey {
+	this.vs = []interface{}{att_id}
+	return this
+}
+
+func (this MsgOffsetAttIdDestChainIdIndexKey) WithAttIdDestChainId(att_id uint64, dest_chain_id uint64) MsgOffsetAttIdDestChainIdIndexKey {
+	this.vs = []interface{}{att_id, dest_chain_id}
+	return this
+}
+
+type MsgOffsetAttIdIndexKey struct {
+	vs []interface{}
+}
+
+func (x MsgOffsetAttIdIndexKey) id() uint32            { return 2 }
+func (x MsgOffsetAttIdIndexKey) values() []interface{} { return x.vs }
+func (x MsgOffsetAttIdIndexKey) msgOffsetIndexKey()    {}
+
+func (this MsgOffsetAttIdIndexKey) WithAttId(att_id uint64) MsgOffsetAttIdIndexKey {
+	this.vs = []interface{}{att_id}
+	return this
+}
+
+type MsgOffsetSubmittedSourceChainIdDestChainIdStreamOffsetIndexKey struct {
+	vs []interface{}
+}
+
+func (x MsgOffsetSubmittedSourceChainIdDestChainIdStreamOffsetIndexKey) id() uint32 { return 3 }
+func (x MsgOffsetSubmittedSourceChainIdDestChainIdStreamOffsetIndexKey) values() []interface{} {
+	return x.vs
+}
+func (x MsgOffsetSubmittedSourceChainIdDestChainIdStreamOffsetIndexKey) msgOffsetIndexKey() {}
+
+func (this MsgOffsetSubmittedSourceChainIdDestChainIdStreamOffsetIndexKey) WithSubmitted(submitted bool) MsgOffsetSubmittedSourceChainIdDestChainIdStreamOffsetIndexKey {
+	this.vs = []interface{}{submitted}
+	return this
+}
+
+func (this MsgOffsetSubmittedSourceChainIdDestChainIdStreamOffsetIndexKey) WithSubmittedSourceChainId(submitted bool, source_chain_id uint64) MsgOffsetSubmittedSourceChainIdDestChainIdStreamOffsetIndexKey {
+	this.vs = []interface{}{submitted, source_chain_id}
+	return this
+}
+
+func (this MsgOffsetSubmittedSourceChainIdDestChainIdStreamOffsetIndexKey) WithSubmittedSourceChainIdDestChainId(submitted bool, source_chain_id uint64, dest_chain_id uint64) MsgOffsetSubmittedSourceChainIdDestChainIdStreamOffsetIndexKey {
+	this.vs = []interface{}{submitted, source_chain_id, dest_chain_id}
+	return this
+}
+
+func (this MsgOffsetSubmittedSourceChainIdDestChainIdStreamOffsetIndexKey) WithSubmittedSourceChainIdDestChainIdStreamOffset(submitted bool, source_chain_id uint64, dest_chain_id uint64, stream_offset uint64) MsgOffsetSubmittedSourceChainIdDestChainIdStreamOffsetIndexKey {
+	this.vs = []interface{}{submitted, source_chain_id, dest_chain_id, stream_offset}
+	return this
+}
+
+type msgOffsetTable struct {
+	table ormtable.AutoIncrementTable
+}
+
+func (this msgOffsetTable) Insert(ctx context.Context, msgOffset *MsgOffset) error {
+	return this.table.Insert(ctx, msgOffset)
+}
+
+func (this msgOffsetTable) Update(ctx context.Context, msgOffset *MsgOffset) error {
+	return this.table.Update(ctx, msgOffset)
+}
+
+func (this msgOffsetTable) Save(ctx context.Context, msgOffset *MsgOffset) error {
+	return this.table.Save(ctx, msgOffset)
+}
+
+func (this msgOffsetTable) Delete(ctx context.Context, msgOffset *MsgOffset) error {
+	return this.table.Delete(ctx, msgOffset)
+}
+
+func (this msgOffsetTable) InsertReturningId(ctx context.Context, msgOffset *MsgOffset) (uint64, error) {
+	return this.table.InsertReturningPKey(ctx, msgOffset)
+}
+
+func (this msgOffsetTable) LastInsertedSequence(ctx context.Context) (uint64, error) {
+	return this.table.LastInsertedSequence(ctx)
+}
+
+func (this msgOffsetTable) Has(ctx context.Context, id uint64) (found bool, err error) {
+	return this.table.PrimaryKey().Has(ctx, id)
+}
+
+func (this msgOffsetTable) Get(ctx context.Context, id uint64) (*MsgOffset, error) {
+	var msgOffset MsgOffset
+	found, err := this.table.PrimaryKey().Get(ctx, &msgOffset, id)
+	if err != nil {
+		return nil, err
+	}
+	if !found {
+		return nil, ormerrors.NotFound
+	}
+	return &msgOffset, nil
+}
+
+func (this msgOffsetTable) HasByAttIdDestChainId(ctx context.Context, att_id uint64, dest_chain_id uint64) (found bool, err error) {
+	return this.table.GetIndexByID(1).(ormtable.UniqueIndex).Has(ctx,
+		att_id,
+		dest_chain_id,
+	)
+}
+
+func (this msgOffsetTable) GetByAttIdDestChainId(ctx context.Context, att_id uint64, dest_chain_id uint64) (*MsgOffset, error) {
+	var msgOffset MsgOffset
+	found, err := this.table.GetIndexByID(1).(ormtable.UniqueIndex).Get(ctx, &msgOffset,
+		att_id,
+		dest_chain_id,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if !found {
+		return nil, ormerrors.NotFound
+	}
+	return &msgOffset, nil
+}
+
+func (this msgOffsetTable) List(ctx context.Context, prefixKey MsgOffsetIndexKey, opts ...ormlist.Option) (MsgOffsetIterator, error) {
+	it, err := this.table.GetIndexByID(prefixKey.id()).List(ctx, prefixKey.values(), opts...)
+	return MsgOffsetIterator{it}, err
+}
+
+func (this msgOffsetTable) ListRange(ctx context.Context, from, to MsgOffsetIndexKey, opts ...ormlist.Option) (MsgOffsetIterator, error) {
+	it, err := this.table.GetIndexByID(from.id()).ListRange(ctx, from.values(), to.values(), opts...)
+	return MsgOffsetIterator{it}, err
+}
+
+func (this msgOffsetTable) DeleteBy(ctx context.Context, prefixKey MsgOffsetIndexKey) error {
+	return this.table.GetIndexByID(prefixKey.id()).DeleteBy(ctx, prefixKey.values()...)
+}
+
+func (this msgOffsetTable) DeleteRange(ctx context.Context, from, to MsgOffsetIndexKey) error {
+	return this.table.GetIndexByID(from.id()).DeleteRange(ctx, from.values(), to.values())
+}
+
+func (this msgOffsetTable) doNotImplement() {}
+
+var _ MsgOffsetTable = msgOffsetTable{}
+
+func NewMsgOffsetTable(db ormtable.Schema) (MsgOffsetTable, error) {
+	table := db.GetTable(&MsgOffset{})
+	if table == nil {
+		return nil, ormerrors.TableNotFound.Wrap(string((&MsgOffset{}).ProtoReflect().Descriptor().FullName()))
+	}
+	return msgOffsetTable{table.(ormtable.AutoIncrementTable)}, nil
+}
+
+type ReceiptOffsetTable interface {
+	Insert(ctx context.Context, receiptOffset *ReceiptOffset) error
+	InsertReturningId(ctx context.Context, receiptOffset *ReceiptOffset) (uint64, error)
+	LastInsertedSequence(ctx context.Context) (uint64, error)
+	Update(ctx context.Context, receiptOffset *ReceiptOffset) error
+	Save(ctx context.Context, receiptOffset *ReceiptOffset) error
+	Delete(ctx context.Context, receiptOffset *ReceiptOffset) error
+	Has(ctx context.Context, id uint64) (found bool, err error)
+	// Get returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
+	Get(ctx context.Context, id uint64) (*ReceiptOffset, error)
+	HasByAttIdSourceChainId(ctx context.Context, att_id uint64, source_chain_id uint64) (found bool, err error)
+	// GetByAttIdSourceChainId returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
+	GetByAttIdSourceChainId(ctx context.Context, att_id uint64, source_chain_id uint64) (*ReceiptOffset, error)
+	List(ctx context.Context, prefixKey ReceiptOffsetIndexKey, opts ...ormlist.Option) (ReceiptOffsetIterator, error)
+	ListRange(ctx context.Context, from, to ReceiptOffsetIndexKey, opts ...ormlist.Option) (ReceiptOffsetIterator, error)
+	DeleteBy(ctx context.Context, prefixKey ReceiptOffsetIndexKey) error
+	DeleteRange(ctx context.Context, from, to ReceiptOffsetIndexKey) error
+
+	doNotImplement()
+}
+
+type ReceiptOffsetIterator struct {
+	ormtable.Iterator
+}
+
+func (i ReceiptOffsetIterator) Value() (*ReceiptOffset, error) {
+	var receiptOffset ReceiptOffset
+	err := i.UnmarshalMessage(&receiptOffset)
+	return &receiptOffset, err
+}
+
+type ReceiptOffsetIndexKey interface {
+	id() uint32
+	values() []interface{}
+	receiptOffsetIndexKey()
+}
+
+// primary key starting index..
+type ReceiptOffsetPrimaryKey = ReceiptOffsetIdIndexKey
+
+type ReceiptOffsetIdIndexKey struct {
+	vs []interface{}
+}
+
+func (x ReceiptOffsetIdIndexKey) id() uint32             { return 0 }
+func (x ReceiptOffsetIdIndexKey) values() []interface{}  { return x.vs }
+func (x ReceiptOffsetIdIndexKey) receiptOffsetIndexKey() {}
+
+func (this ReceiptOffsetIdIndexKey) WithId(id uint64) ReceiptOffsetIdIndexKey {
+	this.vs = []interface{}{id}
+	return this
+}
+
+type ReceiptOffsetAttIdSourceChainIdIndexKey struct {
+	vs []interface{}
+}
+
+func (x ReceiptOffsetAttIdSourceChainIdIndexKey) id() uint32             { return 1 }
+func (x ReceiptOffsetAttIdSourceChainIdIndexKey) values() []interface{}  { return x.vs }
+func (x ReceiptOffsetAttIdSourceChainIdIndexKey) receiptOffsetIndexKey() {}
+
+func (this ReceiptOffsetAttIdSourceChainIdIndexKey) WithAttId(att_id uint64) ReceiptOffsetAttIdSourceChainIdIndexKey {
+	this.vs = []interface{}{att_id}
+	return this
+}
+
+func (this ReceiptOffsetAttIdSourceChainIdIndexKey) WithAttIdSourceChainId(att_id uint64, source_chain_id uint64) ReceiptOffsetAttIdSourceChainIdIndexKey {
+	this.vs = []interface{}{att_id, source_chain_id}
+	return this
+}
+
+type ReceiptOffsetAttIdIndexKey struct {
+	vs []interface{}
+}
+
+func (x ReceiptOffsetAttIdIndexKey) id() uint32             { return 2 }
+func (x ReceiptOffsetAttIdIndexKey) values() []interface{}  { return x.vs }
+func (x ReceiptOffsetAttIdIndexKey) receiptOffsetIndexKey() {}
+
+func (this ReceiptOffsetAttIdIndexKey) WithAttId(att_id uint64) ReceiptOffsetAttIdIndexKey {
+	this.vs = []interface{}{att_id}
+	return this
+}
+
+type receiptOffsetTable struct {
+	table ormtable.AutoIncrementTable
+}
+
+func (this receiptOffsetTable) Insert(ctx context.Context, receiptOffset *ReceiptOffset) error {
+	return this.table.Insert(ctx, receiptOffset)
+}
+
+func (this receiptOffsetTable) Update(ctx context.Context, receiptOffset *ReceiptOffset) error {
+	return this.table.Update(ctx, receiptOffset)
+}
+
+func (this receiptOffsetTable) Save(ctx context.Context, receiptOffset *ReceiptOffset) error {
+	return this.table.Save(ctx, receiptOffset)
+}
+
+func (this receiptOffsetTable) Delete(ctx context.Context, receiptOffset *ReceiptOffset) error {
+	return this.table.Delete(ctx, receiptOffset)
+}
+
+func (this receiptOffsetTable) InsertReturningId(ctx context.Context, receiptOffset *ReceiptOffset) (uint64, error) {
+	return this.table.InsertReturningPKey(ctx, receiptOffset)
+}
+
+func (this receiptOffsetTable) LastInsertedSequence(ctx context.Context) (uint64, error) {
+	return this.table.LastInsertedSequence(ctx)
+}
+
+func (this receiptOffsetTable) Has(ctx context.Context, id uint64) (found bool, err error) {
+	return this.table.PrimaryKey().Has(ctx, id)
+}
+
+func (this receiptOffsetTable) Get(ctx context.Context, id uint64) (*ReceiptOffset, error) {
+	var receiptOffset ReceiptOffset
+	found, err := this.table.PrimaryKey().Get(ctx, &receiptOffset, id)
+	if err != nil {
+		return nil, err
+	}
+	if !found {
+		return nil, ormerrors.NotFound
+	}
+	return &receiptOffset, nil
+}
+
+func (this receiptOffsetTable) HasByAttIdSourceChainId(ctx context.Context, att_id uint64, source_chain_id uint64) (found bool, err error) {
+	return this.table.GetIndexByID(1).(ormtable.UniqueIndex).Has(ctx,
+		att_id,
+		source_chain_id,
+	)
+}
+
+func (this receiptOffsetTable) GetByAttIdSourceChainId(ctx context.Context, att_id uint64, source_chain_id uint64) (*ReceiptOffset, error) {
+	var receiptOffset ReceiptOffset
+	found, err := this.table.GetIndexByID(1).(ormtable.UniqueIndex).Get(ctx, &receiptOffset,
+		att_id,
+		source_chain_id,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if !found {
+		return nil, ormerrors.NotFound
+	}
+	return &receiptOffset, nil
+}
+
+func (this receiptOffsetTable) List(ctx context.Context, prefixKey ReceiptOffsetIndexKey, opts ...ormlist.Option) (ReceiptOffsetIterator, error) {
+	it, err := this.table.GetIndexByID(prefixKey.id()).List(ctx, prefixKey.values(), opts...)
+	return ReceiptOffsetIterator{it}, err
+}
+
+func (this receiptOffsetTable) ListRange(ctx context.Context, from, to ReceiptOffsetIndexKey, opts ...ormlist.Option) (ReceiptOffsetIterator, error) {
+	it, err := this.table.GetIndexByID(from.id()).ListRange(ctx, from.values(), to.values(), opts...)
+	return ReceiptOffsetIterator{it}, err
+}
+
+func (this receiptOffsetTable) DeleteBy(ctx context.Context, prefixKey ReceiptOffsetIndexKey) error {
+	return this.table.GetIndexByID(prefixKey.id()).DeleteBy(ctx, prefixKey.values()...)
+}
+
+func (this receiptOffsetTable) DeleteRange(ctx context.Context, from, to ReceiptOffsetIndexKey) error {
+	return this.table.GetIndexByID(from.id()).DeleteRange(ctx, from.values(), to.values())
+}
+
+func (this receiptOffsetTable) doNotImplement() {}
+
+var _ ReceiptOffsetTable = receiptOffsetTable{}
+
+func NewReceiptOffsetTable(db ormtable.Schema) (ReceiptOffsetTable, error) {
+	table := db.GetTable(&ReceiptOffset{})
+	if table == nil {
+		return nil, ormerrors.TableNotFound.Wrap(string((&ReceiptOffset{}).ProtoReflect().Descriptor().FullName()))
+	}
+	return receiptOffsetTable{table.(ormtable.AutoIncrementTable)}, nil
+}
+
 type AttestationStore interface {
 	AttestationTable() AttestationTable
 	SignatureTable() SignatureTable
+	MsgOffsetTable() MsgOffsetTable
+	ReceiptOffsetTable() ReceiptOffsetTable
 
 	doNotImplement()
 }
 
 type attestationStore struct {
-	attestation AttestationTable
-	signature   SignatureTable
+	attestation   AttestationTable
+	signature     SignatureTable
+	msgOffset     MsgOffsetTable
+	receiptOffset ReceiptOffsetTable
 }
 
 func (x attestationStore) AttestationTable() AttestationTable {
@@ -404,6 +798,14 @@ func (x attestationStore) AttestationTable() AttestationTable {
 
 func (x attestationStore) SignatureTable() SignatureTable {
 	return x.signature
+}
+
+func (x attestationStore) MsgOffsetTable() MsgOffsetTable {
+	return x.msgOffset
+}
+
+func (x attestationStore) ReceiptOffsetTable() ReceiptOffsetTable {
+	return x.receiptOffset
 }
 
 func (attestationStore) doNotImplement() {}
@@ -421,8 +823,20 @@ func NewAttestationStore(db ormtable.Schema) (AttestationStore, error) {
 		return nil, err
 	}
 
+	msgOffsetTable, err := NewMsgOffsetTable(db)
+	if err != nil {
+		return nil, err
+	}
+
+	receiptOffsetTable, err := NewReceiptOffsetTable(db)
+	if err != nil {
+		return nil, err
+	}
+
 	return attestationStore{
 		attestationTable,
 		signatureTable,
+		msgOffsetTable,
+		receiptOffsetTable,
 	}, nil
 }

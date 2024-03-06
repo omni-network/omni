@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCreateVerifyVotesn(t *testing.T) {
+func TestCreateVerifyVotes(t *testing.T) {
 	t.Parallel()
 
 	privKey := k1.GenPrivKey()

@@ -18,6 +18,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/gogoproto/proto"
+	"golang.org/x/exp/maps"
 )
 
 var _ evmenginetypes.CPayloadProvider = (*Keeper)(nil)
@@ -31,6 +32,9 @@ func (k *Keeper) PreparePayload(ctx context.Context, height uint64, commit abci.
 
 	msg, err := votesFromLastCommit(commit)
 	if err != nil {
+		// TODO(corver): Byzantine validators can stall block production by extending unaggregatable votes.
+		//  We should probably aggregate based on uniq vote metadata hash, not just uniq block header.
+		//  Same goes for Attestation table in keeper.
 		return nil, err
 	}
 
@@ -55,40 +59,43 @@ func votesFromLastCommit(info abci.ExtendedCommitInfo) (*types.MsgAddVotes, erro
 		allVotes = append(allVotes, votes.Votes...)
 	}
 
+	aggVotes, err := aggregateVotes(allVotes)
+	if err != nil {
+		return nil, errors.Wrap(err, "aggregate votes")
+	}
+
 	return &types.MsgAddVotes{
 		Authority: authtypes.NewModuleAddress(types.ModuleName).String(),
-		Votes:     aggregateVotes(allVotes),
+		Votes:     aggVotes,
 	}, nil
 }
 
 // aggregateVotes aggregates the provided attestations by block header.
-func aggregateVotes(votes []*types.Vote) []*types.AggVote {
+func aggregateVotes(votes []*types.Vote) ([]*types.AggVote, error) {
 	aggsByHeader := make(map[xchain.BlockHeader]*types.AggVote) // map[BlockHash]Attestation
 	for _, vote := range votes {
 		header := vote.BlockHeader.ToXChain()
 		agg, ok := aggsByHeader[header]
 		if !ok {
 			agg = &types.AggVote{
-				BlockHeader: vote.BlockHeader,
-				BlockRoot:   vote.BlockRoot,
+				BlockHeader:    vote.BlockHeader,
+				BlockRoot:      vote.BlockRoot,
+				MsgOffsets:     vote.MsgOffsets,
+				ReceiptOffsets: vote.ReceiptOffsets,
 			}
+		} else if !bytes.Equal(agg.BlockRoot, vote.BlockRoot) {
+			return nil, errors.New("conflicting vote block roots", log.Hex7("agg", agg.BlockRoot), log.Hex7("vote", vote.BlockRoot))
+		} else if !msgOffsetsEqual(agg.MsgOffsets, vote.MsgOffsets) {
+			return nil, errors.New("conflicting vote message offsets")
+		} else if !receiptOffsetsEqual(agg.ReceiptOffsets, vote.ReceiptOffsets) {
+			return nil, errors.New("conflicting vote receipt offsets")
 		}
 
 		agg.Signatures = append(agg.Signatures, vote.Signature)
 		aggsByHeader[header] = agg
 	}
 
-	return flattenAggsByHeader(aggsByHeader)
-}
-
-// flattenAggsByHeader returns the provided map of aggregates by header as a slice in a deterministic order.
-func flattenAggsByHeader(aggsByHeader map[xchain.BlockHeader]*types.AggVote) []*types.AggVote {
-	aggs := make([]*types.AggVote, 0, len(aggsByHeader))
-	for _, agg := range aggsByHeader {
-		aggs = append(aggs, agg)
-	}
-
-	return sortAggregates(aggs)
+	return sortAggregates(maps.Values(aggsByHeader)), nil
 }
 
 // sortAggregates returns the provided aggregates in a deterministic order.
@@ -120,4 +127,33 @@ func votesFromExtension(voteExtension []byte) (*types.Votes, bool, error) {
 	}
 
 	return resp, true, nil
+}
+
+func msgOffsetsEqual(a, b []*types.MsgOffset) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i := range a {
+		if a[i].DestChainId != b[i].DestChainId || a[i].StreamOffset != b[i].StreamOffset {
+			return false
+		}
+	}
+
+	return true
+}
+
+// receiptOffsetsEqual returns true if the provided receipt offsets are equal.
+func receiptOffsetsEqual(a, b []*types.ReceiptOffset) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i := range a {
+		if a[i].SourceChainId != b[i].SourceChainId || a[i].StreamOffset != b[i].StreamOffset {
+			return false
+		}
+	}
+
+	return true
 }

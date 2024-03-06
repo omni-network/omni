@@ -56,13 +56,6 @@ type Block struct {
 	Timestamp time.Time // Timestamp of the source chain block
 }
 
-// Vote by a validator of a cross-chain Block.
-type Vote struct {
-	BlockHeader             // BlockHeader identifies the cross-chain Block
-	BlockRoot   common.Hash // Merkle root of the cross-chain Block
-	Signature   SigTuple    // Validator signature and public key
-}
-
 // Attestation containing quorum votes by the validator set of a cross-chain Block.
 type Attestation struct {
 	BlockHeader                  // BlockHeader identifies the cross-chain Block

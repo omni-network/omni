@@ -48,6 +48,22 @@ func (a *Vote) Verify() error {
 		return errors.New("invalid attestation signature")
 	}
 
+	dupMsgs := make(map[uint64]bool)
+	for _, offset := range a.MsgOffsets {
+		if dupMsgs[offset.DestChainId] {
+			return errors.New("duplicate destination chain ID in message offsets")
+		}
+		dupMsgs[offset.DestChainId] = true
+	}
+
+	dupReceipts := make(map[uint64]bool)
+	for _, offset := range a.ReceiptOffsets {
+		if dupReceipts[offset.SourceChainId] {
+			return errors.New("duplicate source chain ID in receipt offsets")
+		}
+		dupReceipts[offset.SourceChainId] = true
+	}
+
 	return nil
 }
 
@@ -161,13 +177,5 @@ func (a *Attestation) ToXChain() xchain.Attestation {
 		ValidatorSetHash: common.Hash(a.ValidatorsHash),
 		BlockRoot:        common.Hash(a.BlockRoot),
 		Signatures:       sigs,
-	}
-}
-
-func (a *Vote) ToXChain() xchain.Vote {
-	return xchain.Vote{
-		BlockHeader: a.BlockHeader.ToXChain(),
-		BlockRoot:   common.Hash(a.BlockRoot),
-		Signature:   a.Signature.ToXChain(),
 	}
 }

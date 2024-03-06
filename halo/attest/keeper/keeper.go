@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strconv"
 
 	"github.com/omni-network/omni/halo/attest/types"
@@ -36,15 +37,17 @@ var _ sdk.VerifyVoteExtensionHandler = (*Keeper)(nil).VerifyVoteExtension
 // Keeper is the attestation keeper.
 // It keeps tracks of all attestations included on-chain and detects when they are approved.
 type Keeper struct {
-	attTable     AttestationTable
-	sigTable     SignatureTable
-	cdc          codec.BinaryCodec
-	storeService store.KVStoreService
-	voter        types.Voter
-	skeeper      baseapp.ValidatorStore
-	cmtAPI       comet.API
-	namer        types.ChainNameFunc
-	voteWindow   uint64
+	attTable           AttestationTable
+	sigTable           SignatureTable
+	msgOffsetTable     MsgOffsetTable
+	receiptOffsetTable ReceiptOffsetTable
+	cdc                codec.BinaryCodec
+	storeService       store.KVStoreService
+	voter              types.Voter
+	skeeper            baseapp.ValidatorStore
+	cmtAPI             comet.API
+	namer              types.ChainNameFunc
+	voteWindow         uint64
 }
 
 // New returns a new attestation keeper.
@@ -113,6 +116,8 @@ func (k *Keeper) Add(ctx context.Context, msg *types.MsgAddVotes) error {
 
 // addOne adds the given aggregate vote to the store.
 // It merges it if the attestation already exists.
+//
+//nolint:nestif // Wip
 func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote) error {
 	header := agg.BlockHeader
 
@@ -132,10 +137,17 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote) error {
 		if err != nil {
 			return errors.Wrap(err, "insert")
 		}
+
+		if err := k.insertMsgOffsets(ctx, attID, agg.BlockHeader.ChainId, agg.MsgOffsets); err != nil {
+			return errors.Wrap(err, "insert msg offsets")
+		}
+		if err := k.insertReceiptOffsets(ctx, attID, agg.BlockHeader.ChainId, agg.ReceiptOffsets); err != nil {
+			return errors.Wrap(err, "insert receipt offsets")
+		}
 	} else if err != nil {
 		return errors.Wrap(err, "by block header")
 	} else if !bytes.Equal(existing.GetBlockRoot(), agg.BlockRoot) {
-		return errors.New("mismatching block root")
+		return errors.New("conflicting block root")
 	} else {
 		attID = existing.GetId()
 	}
@@ -213,9 +225,16 @@ func (k *Keeper) Approve(ctx context.Context, valset *cmttypes.ValidatorSet) err
 		// Update status
 		att.Status = int32(Status_Approved)
 		att.ValidatorsHash = valset.Hash()
-		err = k.attTable.Save(ctx, att)
+		err = k.attTable.Update(ctx, att)
 		if err != nil {
 			return errors.Wrap(err, "save")
+		}
+
+		// Mark all source chain messages as submitted (for receipts included in this approved attestation).
+		if attIDs, err := k.processApprovedReceipts(ctx, att.GetId()); err != nil {
+			return errors.Wrap(err, "process approved receipts")
+		} else if err := k.maybeUpdateAttsSubmitted(ctx, attIDs); err != nil {
+			return errors.Wrap(err, "maybe update atts submitted")
 		}
 
 		edgesByChain[att.GetChainId()] = uintSub(att.GetHeight(), k.voteWindow)
@@ -230,13 +249,33 @@ func (k *Keeper) Approve(ctx context.Context, valset *cmttypes.ValidatorSet) err
 	return nil
 }
 
-// attestationFrom returns the subsequent approved attestations from the provided height (inclusive).
+// attestationFrom returns the subsequent approved (or submitted) attestations from the provided height (inclusive).
 func (k *Keeper) attestationFrom(ctx context.Context, chainID uint64, height uint64, max uint64,
 ) ([]*types.Attestation, error) {
+	submitted, err := k.attestationWithStatusFrom(ctx, chainID, height, max, Status_Submitted)
+	if err != nil {
+		return nil, errors.Wrap(err, "get submitted")
+	}
+
+	approved, err := k.attestationWithStatusFrom(ctx, chainID, height, max, Status_Approved)
+	if err != nil {
+		return nil, errors.Wrap(err, "get approved")
+	}
+
+	resp := slices.Concat(submitted, approved)
+	if len(resp) > int(max) {
+		resp = resp[:max]
+	}
+
+	return resp, nil
+}
+
+func (k *Keeper) attestationWithStatusFrom(ctx context.Context, chainID uint64, height uint64, max uint64,
+	status Status) ([]*types.Attestation, error) {
 	from := AttestationStatusChainIdHeightIndexKey{}.WithStatusChainIdHeight(
-		int32(Status_Approved), chainID, height)
+		int32(status), chainID, height)
 	to := AttestationStatusChainIdHeightIndexKey{}.WithStatusChainIdHeight(
-		int32(Status_Approved), chainID, height+max)
+		int32(status), chainID, height+max)
 
 	iter, err := k.attTable.ListRange(ctx, from, to)
 	if err != nil {
@@ -523,6 +562,39 @@ func (k *Keeper) verifyAggVotes(ctx context.Context, validators map[common.Addre
 			return errors.Wrap(err, "windower")
 		} else if resp != 0 {
 			return errors.New("vote outside window", "resp", resp)
+		}
+	}
+
+	return nil
+}
+
+func (k *Keeper) insertMsgOffsets(ctx context.Context, attID uint64, srcChainID uint64, offsets []*types.MsgOffset) error {
+	for _, offset := range offsets {
+		err := k.msgOffsetTable.Insert(ctx, &MsgOffset{
+			AttId:         attID,
+			SourceChainId: srcChainID,
+			DestChainId:   offset.DestChainId,
+			StreamOffset:  offset.StreamOffset,
+			Submitted:     false, // Submitted is false by default.
+		})
+		if err != nil {
+			return errors.Wrap(err, "insert msg offset")
+		}
+	}
+
+	return nil
+}
+
+func (k *Keeper) insertReceiptOffsets(ctx context.Context, attID uint64, destChainID uint64, offsets []*types.ReceiptOffset) error {
+	for _, offset := range offsets {
+		err := k.receiptOffsetTable.Insert(ctx, &ReceiptOffset{
+			AttId:         attID,
+			SourceChainId: offset.SourceChainId,
+			DestChainId:   destChainID,
+			StreamOffset:  offset.StreamOffset,
+		})
+		if err != nil {
+			return errors.Wrap(err, "insert receipt offset")
 		}
 	}
 

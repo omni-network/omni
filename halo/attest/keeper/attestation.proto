@@ -8,8 +8,9 @@ option go_package = "halo/attest/keeper";
 
 enum Status {
   Unknown   = 0;
-  Pending = 1;
-  Approved  = 2;
+  Pending   = 1; // At least one vote from a validator.
+  Approved  = 2; // Quorum votes from a validator set.
+  Submitted = 3; // All msgs have been submitted. Msg offsets included in receipts of approved destination chain blocks.
 }
 
 message Attestation {
@@ -28,7 +29,7 @@ message Attestation {
   bytes  hash        = 4; // Hash of the block
 
   bytes block_root      = 5; // Merkle root of the cross-chain Block
-  int32 status          = 6; // Status of the block; pending, approved.\
+  int32 status          = 6; // Status of the block; pending, approved, submitted.
   bytes validators_hash = 7; // Merkle root hash of the validator set that approved this attestation.
 }
 
@@ -45,4 +46,36 @@ message Signature {
   bytes  signature          = 3; // Validator signature over XBlockRoot; Ethereum 65 bytes [R || S || V] format.
   bytes  validator_address  = 2; // Validator ethereum address; 20 bytes.
   uint64 att_id             = 4; // Attestation ID to which this signature belongs.
+}
+
+message MsgOffset {
+  option (cosmos.orm.v1.table) = {
+    id: 3;
+    primary_key: { fields: "id", auto_increment: true }
+    index: {id: 1, fields: "att_id,dest_chain_id", unique: true}      // Only allow one msg offset per dest chain per block.
+    index: {id: 2, fields: "att_id"}                                  // Allow querying by Attestation ID
+    index: {id: 3, fields: "submitted,source_chain_id,dest_chain_id,stream_offset"} // Allow querying by approved receipts.
+  };
+
+  uint64 id              = 1; // Auto-incremented ID
+  uint64 source_chain_id = 2; // Source chain ID as per https://chainlist.org
+  uint64 dest_chain_id   = 3; // Dest chain ID as per https://chainlist.org
+  uint64 stream_offset   = 4; // Highest stream offset per destination chain per attestation.
+  uint64 att_id          = 5; // Attestation ID to which this offset belongs.
+  bool   submitted       = 6; // Whether the offset has been submitted to the destination chain. Offset included in ReceiptOffset of future block.
+}
+
+message ReceiptOffset {
+  option (cosmos.orm.v1.table) = {
+    id: 4;
+    primary_key: { fields: "id", auto_increment: true }
+    index: {id: 1, fields: "att_id,source_chain_id", unique: true} // Only allow one receipt offset per source chain per block.
+    index: {id: 2, fields: "att_id"} // Allow querying by Attestation ID
+  };
+
+  uint64 id              = 1; // Auto-incremented ID
+  uint64 source_chain_id = 2; // Source chain ID as per https://chainlist.org
+  uint64 dest_chain_id   = 3; // Dest chain ID as per https://chainlist.org
+  uint64 stream_offset   = 4; // Highest stream offset per destination chain per attestation.
+  uint64 att_id          = 5; // Attestation ID to which this offset belongs.
 }

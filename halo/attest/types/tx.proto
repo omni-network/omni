@@ -26,18 +26,22 @@ message AddVotesResponse {}
 
 // Attestation contains quorum votes for a cross-chain block of a specific validator set.
 message Attestation {
-  BlockHeader       block_header     = 1; // BlockHeader identifies the cross-chain Block
-  bytes             block_root       = 2; // Merkle root of the cross-chain Block
-  repeated SigTuple signatures       = 3; // Validator signatures and public keys
-  bytes             validators_hash  = 4; // Merkle root hash of the validator set that approved this aggregate.
+  BlockHeader            block_header    = 1; // BlockHeader identifies the cross-chain Block
+  bytes                  block_root      = 2; // Merkle root of the cross-chain Block
+  repeated SigTuple      signatures      = 3; // Validator signatures and public keys
+  bytes                  validators_hash = 4; // Merkle root hash of the validator set that approved this aggregate.
+  repeated MsgOffset     msg_offsets     = 5; // Highest StreamOffset per destination chain of the msgs included in this cross-chain block.
+  repeated ReceiptOffset receipt_offsets = 6; // Highest StreamOffset per source chain of the receipts included in this cross-chain block.
 }
 
 
 // AggVote aggregates multiple votes of a cross-chain Block.
 message AggVote {
-  BlockHeader       block_header     = 1; // BlockHeader identifies the cross-chain Block
-  bytes             block_root       = 2; // Merkle root of the cross-chain Block
-  repeated SigTuple signatures       = 3; // Validator signatures and public keys
+  BlockHeader            block_header    = 1; // BlockHeader identifies the cross-chain Block
+  bytes                  block_root      = 2; // Merkle root of the cross-chain Block
+  repeated SigTuple      signatures      = 3; // Validator signatures and public keys
+  repeated MsgOffset     msg_offsets     = 4; // Highest StreamOffset per destination chain of the msgs included in this cross-chain block.
+  repeated ReceiptOffset receipt_offsets = 5; // Highest StreamOffset per source chain of the receipts included in this cross-chain block.
 }
 
 // Votes contains multiple votes for different cross-chain Blocks. Usually by the same validator.
@@ -47,9 +51,11 @@ message Votes {
 
 // Vote by a validator of a cross-chain Block.
 message Vote {
-  BlockHeader block_header     = 1; // BlockHeader identifies the cross-chain Block
-  bytes       block_root       = 2; // Merkle root of the cross-chain Block
-  SigTuple    signature        = 3; // Validator signatures and public keys
+  BlockHeader            block_header    = 1; // BlockHeader identifies the cross-chain Block
+  bytes                  block_root      = 2; // Merkle root of the cross-chain Block
+  SigTuple               signature       = 3; // Validator signatures and public keys
+  repeated MsgOffset     msg_offsets     = 4; // Highest StreamOffset per destination chain of the msgs included in this cross-chain block.
+  repeated ReceiptOffset receipt_offsets = 5; // Highest StreamOffset per source chain of the receipts included in this cross-chain block.
 }
 
 // BlockHeader uniquely identifies a cross chain block.
@@ -63,4 +69,17 @@ message BlockHeader {
 message SigTuple {
   bytes validator_address = 1; // Validator ethereum address; 20 bytes.
   bytes signature         = 2; // Validator signature over XBlockRoot; Ethereum 65 bytes [R || S || V] format.
+}
+
+// ReceiptOffset represents the highest StreamOffset per source chain of the receipts included in a xblock.
+message ReceiptOffset {
+  uint64 source_chain_id = 1; // Chain ID as per https://chainlist.org
+  uint64 stream_offset   = 2; // XMsg stream offset
+}
+
+
+// MsgOffset represents the highest StreamOffset per destination chain of the msgs included in a xblock.
+message MsgOffset {
+  uint64 dest_chain_id   = 1; // Chain ID as per https://chainlist.org
+  uint64 stream_offset   = 2; // XMsg stream offset
 }

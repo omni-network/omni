@@ -43,5 +43,45 @@ func CreateVote(privKey crypto.PrivKey, block xchain.Block) (*types.Vote, error)
 			ValidatorAddress: address[:],
 			Signature:        sig[:],
 		},
+		MsgOffsets:     msgOffsets(block),
+		ReceiptOffsets: receiptOffsets(block),
 	}, nil
+}
+
+func msgOffsets(block xchain.Block) []*types.MsgOffset {
+	maxes := make(map[uint64]uint64)
+	for _, msg := range block.Msgs {
+		if msg.StreamOffset > maxes[msg.DestChainID] {
+			maxes[msg.DestChainID] = msg.StreamOffset
+		}
+	}
+
+	offsets := make([]*types.MsgOffset, 0, len(maxes))
+	for destChainIO, offset := range maxes {
+		offsets = append(offsets, &types.MsgOffset{
+			DestChainId:  destChainIO,
+			StreamOffset: offset,
+		})
+	}
+
+	return offsets
+}
+
+func receiptOffsets(block xchain.Block) []*types.ReceiptOffset {
+	maxes := make(map[uint64]uint64)
+	for _, receipt := range block.Receipts {
+		if receipt.StreamOffset > maxes[receipt.SourceChainID] {
+			maxes[receipt.SourceChainID] = receipt.StreamOffset
+		}
+	}
+
+	offsets := make([]*types.ReceiptOffset, 0, len(maxes))
+	for srcChainID, offset := range maxes {
+		offsets = append(offsets, &types.ReceiptOffset{
+			SourceChainId: srcChainID,
+			StreamOffset:  offset,
+		})
+	}
+
+	return offsets
 }
