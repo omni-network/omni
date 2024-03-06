@@ -2,6 +2,9 @@
 pragma solidity =0.8.12;
 
 // solhint-disable no-console
+// solhint-disable var-name-mixedcase
+// solhint-disable max-states-count
+// solhint-disable state-visibility
 
 import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import { IDelegationManager } from "src/interfaces/IDelegationManager.sol";
@@ -12,7 +15,6 @@ import { EigenM2GoerliDeployments } from "test/avs/common/eigen/EigenM2GoerliDep
 import { StrategyParams } from "./StrategyParams.sol";
 
 import { Script } from "forge-std/Script.sol";
-import { console } from "forge-std/console.sol";
 
 /**
  * @title DeployGoerliAVS
@@ -21,17 +23,26 @@ import { console } from "forge-std/console.sol";
  *      deploy script.
  */
 contract DeployGoerliAVS is Script {
-    uint32 internal _maxOperatorCount = 200;
-    uint64 internal _omniChainId = 165;
-    uint96 internal _minOperatorStake = 1 ether;
-    address internal _create3Factory = 0x30C9242B7b5Ec92500a2752b651BEDE1a42dc12D;
-    address internal _proxyAdmin = 0x6Ecc7b4588fa09d7aB468fE5D778c97dF28c021E;
-    address internal _deployer = 0x28D1a0B2C6E11fAf43582054694587c762b03A38;
-    address internal _owner = 0x46D005a3D18740Cd63e8072078796f043d040191;
-    address internal _portal = address(0);
-    address internal _ethStakeInbox = address(0);
-    bytes32 internal _create3Salt = keccak256("omni-avs");
-    string internal _metadataURI = "https://raw.githubusercontent.com/omni-network/omni/main/static/avs-metadata.json";
+    uint32 _maxOperatorCount = 200;
+    uint64 _omniChainId = 165;
+    uint96 _minOperatorStake = 1 ether;
+    address _create3Factory = 0x30C9242B7b5Ec92500a2752b651BEDE1a42dc12D;
+    address _proxyAdmin = 0x6Ecc7b4588fa09d7aB468fE5D778c97dF28c021E;
+    address _deployer = 0x28D1a0B2C6E11fAf43582054694587c762b03A38;
+    address _owner = 0x46D005a3D18740Cd63e8072078796f043d040191;
+    address _portal = address(0);
+    address _ethStakeInbox = address(0);
+    bytes32 _create3Salt = keccak256("omni-avs");
+    string _metadataURI = "https://raw.githubusercontent.com/omni-network/omni/main/static/avs-metadata.json";
+
+    // set by deploy(...)
+    address _impl;
+    bytes _implConstructorArgs;
+    address _proxy;
+    bytes _proxyConstructorArgs;
+
+    // where to write the output
+    string _outputFile = "script/avs/output/deploy-goerli-avs.json";
 
     /// @dev forge script entrypoint
     function run() public {
@@ -66,7 +77,7 @@ contract DeployGoerliAVS is Script {
         avs.setMetadataURI(_metadataURI);
         vm.stopBroadcast();
 
-        console.log("OmniAVS deployed at: ", address(avs));
+        _writeOutput();
     }
 
     /// @dev defines goerli deployment logic
@@ -83,9 +94,6 @@ contract DeployGoerliAVS is Script {
     ) public returns (OmniAVS) {
         Create3 create3 = Create3(create3Factory);
 
-        address deployed = create3.getDeployed(address(this), create3Salt);
-        require(deployed.code.length == 0, "already deployed");
-
         address impl = address(
             new OmniAVS(
                 IDelegationManager(EigenM2GoerliDeployments.DelegationManager),
@@ -93,54 +101,60 @@ contract DeployGoerliAVS is Script {
             )
         );
 
-        bytes memory bytecode = abi.encodePacked(
-            vm.getCode("TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy.0.8.12"),
-            abi.encode(
-                address(impl),
-                proxyAdmin,
-                abi.encodeWithSelector(
-                    OmniAVS.initialize.selector,
-                    owner,
-                    portal,
-                    omniChainId,
-                    ethStakeInbox,
-                    minOperatorStake,
-                    maxOperatorCount,
-                    StrategyParams.goerli()
-                )
+        _impl = impl;
+        _implConstructorArgs = abi.encode(
+            IDelegationManager(EigenM2GoerliDeployments.DelegationManager),
+            IAVSDirectory(EigenM2GoerliDeployments.AVSDirectory)
+        );
+
+        bytes memory proxyConstructorArgs = abi.encode(
+            address(impl),
+            proxyAdmin,
+            abi.encodeWithSelector(
+                OmniAVS.initialize.selector,
+                owner,
+                portal,
+                omniChainId,
+                ethStakeInbox,
+                minOperatorStake,
+                maxOperatorCount,
+                StrategyParams.goerli()
             )
         );
 
-        return OmniAVS(create3.deploy(create3Salt, bytecode));
+        bytes memory bytecode = abi.encodePacked(
+            vm.getCode("TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy.0.8.12"), proxyConstructorArgs
+        );
+
+        address proxy = create3.deploy(create3Salt, bytecode);
+
+        _proxy = proxy;
+        _proxyConstructorArgs = proxyConstructorArgs;
+
+        return OmniAVS(proxy);
     }
 
-    /// @dev deploy OmniAVS, but with a prank. necessary because we cannot
-    //       vm.startPrank() outside of this contract
-    function prankDeploy(
-        address prank,
-        address create3Factory,
-        bytes32 create3Salt,
-        address owner,
-        address proxyAdmin,
-        address portal,
-        uint64 omniChainId,
-        address ethStakeInbox,
-        uint96 minOperatorStake,
-        uint32 maxOperatorCount
-    ) public returns (OmniAVS) {
-        vm.startPrank(prank);
-        OmniAVS avs = deploy(
-            create3Factory,
-            create3Salt,
-            owner,
-            proxyAdmin,
-            portal,
-            omniChainId,
-            ethStakeInbox,
-            minOperatorStake,
-            maxOperatorCount
-        );
-        vm.stopPrank();
-        return avs;
+    function _writeOutput() internal {
+        string memory root = "root";
+        vm.serializeAddress(root, "deployer", _deployer);
+        vm.serializeAddress(root, "proxyAdmin", _proxyAdmin);
+        vm.serializeAddress(root, "owner", _owner);
+        vm.serializeAddress(root, "create3Factory", _create3Factory);
+        vm.serializeBytes32(root, "create3Salt", _create3Salt);
+
+        string memory proxy = "proxy";
+        vm.serializeAddress(proxy, "address", _proxy);
+        string memory proxyJson = vm.serializeBytes(proxy, "constructorArgs", _proxyConstructorArgs);
+
+        string memory impl = "impl";
+        vm.serializeAddress(impl, "address", _impl);
+        string memory implJson = vm.serializeBytes(impl, "constructorArgs", _implConstructorArgs);
+
+        string memory contracts = "contracts";
+        vm.serializeString(contracts, "TransparentUpgradeableProxy", proxyJson);
+        string memory contractsJson = vm.serializeString(contracts, "OmniAVS", implJson);
+
+        string memory finalJson = vm.serializeString(root, "contracts", contractsJson);
+        vm.writeFile(_outputFile, finalJson);
     }
 }

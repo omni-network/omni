@@ -73,19 +73,16 @@ contract Fixtures is EigenLayerFixtures {
         Create3 create3 = new Create3();
         bytes32 create3Salt = keccak256("avs-goerli-fork-test");
 
-        return OmniAVS(
-            deployer.prankDeploy(
-                proxyAdminOwner,
-                address(create3),
-                create3Salt,
-                omniAVSOwner,
-                address(proxyAdmin),
-                address(portal),
-                omniChainId,
-                ethStakeInbox,
-                minOperatorStake,
-                maxOperatorCount
-            )
+        return deployer.deploy(
+            address(create3),
+            create3Salt,
+            omniAVSOwner,
+            address(proxyAdmin),
+            address(portal),
+            omniChainId,
+            ethStakeInbox,
+            minOperatorStake,
+            maxOperatorCount
         );
     }
 
