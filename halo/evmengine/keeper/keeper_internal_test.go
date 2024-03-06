@@ -25,6 +25,7 @@ func TestKeeper_isNextProposer(t *testing.T) {
 		validatorsFunc func(context.Context, int64) (*cmttypes.ValidatorSet, bool, error)
 		current        int
 		next           int
+		header         func(height int64, address []byte) cmtproto.Header
 	}
 	height := int64(1)
 	tests := []struct {
@@ -40,6 +41,9 @@ func TestKeeper_isNextProposer(t *testing.T) {
 				height:  height,
 				current: 0,
 				next:    1,
+				header: func(height int64, address []byte) cmtproto.Header {
+					return cmtproto.Header{Height: height, ProposerAddress: address}
+				},
 			},
 			want:       true,
 			wantHeight: 2,
@@ -51,6 +55,9 @@ func TestKeeper_isNextProposer(t *testing.T) {
 				height:  height,
 				current: 0,
 				next:    2,
+				header: func(height int64, address []byte) cmtproto.Header {
+					return cmtproto.Header{Height: height, ProposerAddress: address}
+				},
 			},
 			want:       false,
 			wantHeight: 2,
@@ -65,6 +72,9 @@ func TestKeeper_isNextProposer(t *testing.T) {
 				validatorsFunc: func(ctx context.Context, i int64) (*cmttypes.ValidatorSet, bool, error) {
 					return nil, false, errors.New("error")
 				},
+				header: func(height int64, address []byte) cmtproto.Header {
+					return cmtproto.Header{Height: height, ProposerAddress: address}
+				},
 			},
 			want:    false,
 			wantErr: true,
@@ -77,6 +87,23 @@ func TestKeeper_isNextProposer(t *testing.T) {
 				next:    1,
 				validatorsFunc: func(ctx context.Context, i int64) (*cmttypes.ValidatorSet, bool, error) {
 					return nil, false, nil
+				},
+				header: func(height int64, address []byte) cmtproto.Header {
+					return cmtproto.Header{Height: height, ProposerAddress: address}
+				},
+			},
+			want:    false,
+			wantErr: true,
+		},
+		{
+			name: "invalid val index",
+			args: args{
+				height:  height,
+				current: 0,
+				next:    1,
+
+				header: func(height int64, address []byte) cmtproto.Header {
+					return cmtproto.Header{Height: height, ProposerAddress: []byte("invalid")}
 				},
 			},
 			want:    false,
@@ -93,8 +120,7 @@ func TestKeeper_isNextProposer(t *testing.T) {
 			require.NoError(t, err)
 
 			cmtAPI := newMockCometAPI(t, tt.args.validatorsFunc)
-			header := cmtproto.Header{Height: tt.args.height}
-			header.ProposerAddress = cmtAPI.validatorSet.Validators[tt.args.current].Address
+			header := tt.args.header(height, cmtAPI.validatorSet.Validators[tt.args.current].Address)
 
 			nxtAddr, err := k1util.PubKeyToAddress(cmtAPI.validatorSet.Validators[tt.args.next].PubKey)
 			require.NoError(t, err)
