@@ -35,5 +35,11 @@ chain_id: 100 # The chain ID of the Omni Network
 2. Run the following command to register as an operator:
 
 ```bash
-omni operator register --config-file ~/path/to/operator.yml --avs-address <AVS_CONTRACT_ADDRESS>
+omni operator register --config-file ~/path/to/operator.yml --avs-address 0x848BE3DBcd054c17EbC712E0d29D15C2e638aBCe
 ```
+
+:::info
+
+The AVS address (`0x848BE3DBcd054c17EbC712E0d29D15C2e638aBCe`) is the address of the Omni AVS contract [deployed on Goerli testnet](https://goerli.etherscan.io/address/0x848BE3DBcd054c17EbC712E0d29D15C2e638aBCe).
+
+:::
