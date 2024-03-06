@@ -12,8 +12,6 @@ import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
 import { EigenPodManagerHarness } from "./eigen/EigenPodManagerHarness.sol";
 import { Fixtures } from "./Fixtures.sol";
 
-import { console } from "forge-std/console.sol";
-
 /**
  * @title Utils
  * @dev Common utilities for AVS tests

@@ -23,8 +23,6 @@ import { MockPortal } from "test/utils/MockPortal.sol";
 import { EigenLayerFixtures } from "./eigen/EigenLayerFixtures.sol";
 import { Empty } from "./Empty.sol";
 
-import { console } from "forge-std/console.sol";
-
 /**
  * @title Fixtures
  * @dev Common fixtures contract for all AVS tests.
@@ -63,8 +61,6 @@ contract Fixtures is EigenLayerFixtures {
         if (avsOverride != address(0)) {
             omniAVS = OmniAVS(avsOverride);
             omniAVSOwner = omniAVS.owner();
-
-            console.log("OmniAVS set to ", avsOverride);
 
             return;
         }
