@@ -13,7 +13,7 @@ The Portal Contract exposes both an `xcall` method for cross-chain calls to anot
 - `xcall` is called by the `omni.xcall()` helper and requires the parameters listed above, with the Portal Contract emitting an `XMsg` Event for every call to it.
 - `xsubmit` accepts only calls from valid signatures (currently the Relayer) and requires the destination contract `address` and `data` (containing `method` and method params `data`).
 
-See more on performing cross chain transactions in the [developer section](../../develop/introduction.md).
+See more on performing cross chain transactions in the [developer section](../../../develop/introduction.md).
 
 ## `Submission` Validation
 

@@ -15,18 +15,6 @@ Omni nodes are configured with a new modular framework based on [Ethereum’s En
 
 Using the Engine API, Omni nodes pair existing high performance Ethereum execution clients with a new consensus client, referred to as `halo`, that implements CometBFT consensus.The Engine API allows clients to be substituted or upgraded without breaking the system. This allows the protocol to maintain flexibility on Ethereum and Cosmos technology while promoting client diversity within its execution layer and consensus layer. We consider this new network framework to be a public good that future projects may leverage for their own network designs.
 
-## Halo
-
-It implements the server side of the ABCI++ interface and drives the Omni Execution Layer via the Engine API. CometBFT validators attest to source chain blocks containing cross chain messages using CometBFT Vote Extensions.
-
-Omni's consensus layer is established through the Halo consensus client which supports a Delegated Proof of Stake (DPoS) consensus mechanism implemented by the [CometBFT consensus engine](https://docs.cometbft.com/v0.38/) (formerly known as Tendermint). CometBFT stands out as the optimal consensus engine for Omni nodes for three reasons:
-
-1. CometBFT achieves immediate transaction finalization upon block inclusion, eliminating the need for additional confirmations. This feature allows Omni validators to agree on a single global state for all connected networks, updated every second.
-2. CometBFT provides support for DPoS consensus mechanisms, allowing re-staked ETH to be delegated directly to individual Omni validators as part of the network’s security model.
-3. CometBFT is one of the most robust and widely tested PoS consensus models and is already used in many production blockchain networks securing billions of dollars.
-
-By default, Omni validators ensure the integrity of rollup transactions by awaiting their posting and finalization on the Ethereum L1 before attesting to them. This proactive approach mitigates the risk of reorganizations on both Ethereum L1 and the rollup, enhancing the overall security and reliability of the system.
-
 ### Consensus Process
 
 Omni Consensus clients process the consensus blocks and maintain consensus state that tracks the “status” of each `XBlock` (by the validator set) from `Pending` to `Approved` (including an `AggregateAttestation`). Then only the “latest approved” `XBlock` for each source chain needs to be maintained; earlier `XBlock`s can be trimmed from the state. Validators in the current validator set must attest to all subsequent (after the “last approved”) `XBlock`.
@@ -41,15 +29,9 @@ When the validator set changes, all `XBlock`s marked as `Pending` need to be upd
 
 Validators that already attest to the `Pending` marked `XBlock` during the previous validator set, do not need to re-attest. Only the new set validators must attest (ie. to all `XBlock`s after the latest approved).
 
-### ABCI++
-
-Cosmos’ [ABCI++](https://docs.cometbft.com/v0.37/spec/abci/) is a supplementary tool that allows `halo` clients to adapt the CometBFT consensus engine to the node’s architecture. An ABCI++ adapter is wrapped around the CometBFT consensus engine to convert messages from the Engine API into a format that can be used in CometBFT consensus. These messages are inserted into CometBFT blocks as single transactions – this makes Omni consensus lightweight and enables Omni’s sub-second finality time.
-
-During consensus, validators also use ABCI++ to attest to the state of external Rollup VMs. Omni validators run the state transition function, $f(i, S_n)$, for each Rollup VM and compute the output, $S_{n+1}$.
-
 ### Integrated Consensus & CometBFT
 
-Omni introduces Integrated Consensus, a consensus framework that allows validators to run consensus for the Omni EVM additional to the consensus framework for cross-network messages without compromising on performance.
+Omni introduces Integrated Consensus, a consensus framework that allows validators to run consensus for the Omni EVM in parallel with consensus for cross-network messages without compromising on performance.
 
 Omni’s Integrated Consensus contains two sub-processes:
 
