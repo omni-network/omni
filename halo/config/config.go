@@ -6,6 +6,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
@@ -103,10 +104,12 @@ func WriteConfigTOML(cfg Config, logCfg log.Config) error {
 
 	s := struct {
 		Config
-		Log log.Config
+		Log     log.Config
+		Version string
 	}{
-		Config: cfg,
-		Log:    logCfg,
+		Config:  cfg,
+		Log:     logCfg,
+		Version: buildinfo.Version(),
 	}
 
 	if err := t.Execute(&buffer, s); err != nil {
