@@ -6,7 +6,7 @@ sidebar_position: 3
 
 This tells EigenLayer that you'd like to be an operator specifically for the Omni AVS. Thus, the **\$ETH** that you, and your delegators restaked, will be used to secure Omni.
 
-You will need to have an `operator.yml` file to perform this registration. This file is created as part of [registering as an operator with the EigenLayer CLI](https://docs.eigenlayer.xyz/eigenlayer/operator-guides/operator-installation). You don't need to modify it at all.
+You will need to have an `operator.yml` file to perform this registration. This file is created as part of [registering as an operator with the EigenLayer CLI](https://docs.eigenlayer.xyz/eigenlayer/operator-guides/operator-installation). You should use the same file created then, and don't need to modify it at all.
 
 <details>
 <summary>`operator.yml` Reference</summary>
