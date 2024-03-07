@@ -118,7 +118,7 @@ func (p *Provider) Upgrade(ctx context.Context) error {
 		log.Debug(ctx, "Upgrading docker-compose", "vm", vmName)
 
 		composeFile := vmComposeFile(instance.IPAddress.String())
-		err := copyToVM(ctx, vmName, filepath.Join(p.Testnet.Dir, composeFile))
+		err := copyFileToVM(ctx, vmName, filepath.Join(p.Testnet.Dir, composeFile))
 		if err != nil {
 			return errors.Wrap(err, "copy compose", "vm", vmName)
 		}
@@ -215,40 +215,34 @@ func groupByVM(instances map[string]e2e.InstanceData) map[string]map[string]bool
 }
 
 func execOnVM(ctx context.Context, vmName string, cmd string) error {
-	f, err := os.CreateTemp("", "exec-*.sh")
-	if err != nil {
-		return errors.Wrap(err, "create a tempfile")
-	}
-	defer os.Remove(f.Name())
-
 	ssh := fmt.Sprintf("gcloud compute ssh --zone=us-east1-c %s --quiet -- \"%s\"", vmName, cmd)
 
-	fmt.Fprintln(f, "#! /bin/bash\n"+ssh)
-
-	out, err := exec.CommandContext(ctx, "bash", f.Name()).CombinedOutput()
+	out, err := exec.CommandContext(ctx, "bash", "-c", ssh).CombinedOutput()
 	if err != nil {
-		return errors.Wrap(err, "exec on VM", "output", string(out))
+		return errors.Wrap(err, "exec on VM", "output", string(out), "cmd", ssh)
 	}
 
 	return nil
 }
 
 func copyToVM(ctx context.Context, vmName string, path string) error {
-	f, err := os.CreateTemp("", "copy-*.sh")
-	if err != nil {
-		return errors.Wrap(err, "create a tempfile")
-	}
-	defer os.Remove(f.Name())
+	tarscp := fmt.Sprintf("tar czf - %s | gcloud compute ssh --zone=us-east1-c %s --quiet -- \"cd /omni && tar xzf -\"", filepath.Base(path), vmName)
 
-	tarscp := fmt.Sprintf("tar czf - %s | gcloud compute ssh --zone=us-east1-c %s --quiet -- \"cd /omni && tar xvzf -\"",
-		filepath.Base(path), vmName)
-
-	fmt.Fprintln(f, "#! /bin/bash\n"+tarscp)
-
-	cmd := exec.CommandContext(ctx, "bash", f.Name())
+	cmd := exec.CommandContext(ctx, "bash", "-c", tarscp)
 	cmd.Dir = filepath.Dir(path)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrap(err, "copy to VM", "output", string(out))
+	}
+
+	return nil
+}
+
+func copyFileToVM(ctx context.Context, vmName string, path string) error {
+	scp := fmt.Sprintf("gcloud compute scp --zone=us-east1-c --quiet %s %s:/omni/", path, vmName)
+
+	cmd := exec.CommandContext(ctx, "bash", "-c", scp)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return errors.Wrap(err, "copy to VM", "output", string(out), "cmd", scp)
 	}
 
 	return nil
