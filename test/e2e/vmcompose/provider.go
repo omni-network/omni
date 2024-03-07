@@ -118,7 +118,7 @@ func (p *Provider) Upgrade(ctx context.Context) error {
 		log.Debug(ctx, "Upgrading docker-compose", "vm", vmName)
 
 		composeFile := vmComposeFile(instance.IPAddress.String())
-		err := copyToVM(ctx, vmName, filepath.Join(p.Testnet.Dir, composeFile))
+		err := copyFileToVM(ctx, vmName, filepath.Join(p.Testnet.Dir, composeFile))
 		if err != nil {
 			return errors.Wrap(err, "copy compose", "vm", vmName)
 		}
@@ -251,6 +251,19 @@ func copyToVM(ctx context.Context, vmName string, path string) error {
 		return errors.Wrap(err, "copy to VM", "output", string(out))
 	} else {
 		log.Debug(ctx, "CopyToVM", "output", string(out))
+	}
+
+	return nil
+}
+
+func copyFileToVM(ctx context.Context, vmName string, path string) error {
+	scp := fmt.Sprintf("gcloud compute scp --zone=us-east1-c  --quiet %s %s:/omni/", path, vmName)
+
+	cmd := exec.CommandContext(ctx, "bash", "-c", scp)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return errors.Wrap(err, "copy to VM", "output", string(out), "cmd", scp)
+	} else {
+		log.Debug(ctx, "CopyToVM", "output", string(out), "cmd", scp)
 	}
 
 	return nil
