@@ -240,12 +240,12 @@ func copyToVM(ctx context.Context, vmName string, path string) error {
 	}
 	defer os.Remove(f.Name())
 
-	tarscp := fmt.Sprintf("tar czf - %s | gcloud compute ssh --zone=us-east1-c %s --quiet -- \"cd /omni && echo \"debug copyToVM\" && tar xvzf -\"",
+	tarscp := fmt.Sprintf("tar czf - %s | gcloud compute ssh --zone=us-east1-c %s --quiet -- \"cd /omni && echo \"debug copyToVM\" && tar xzf -\"",
 		filepath.Base(path), vmName)
 
 	fmt.Fprintln(f, "#! /bin/bash\n"+tarscp)
 
-	cmd := exec.CommandContext(ctx, "cat", f.Name(), "&&", "bash", f.Name())
+	cmd := exec.CommandContext(ctx, "bash", f.Name())
 	cmd.Dir = filepath.Dir(path)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrap(err, "copy to VM", "output", string(out))
