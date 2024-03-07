@@ -215,8 +215,17 @@ func groupByVM(instances map[string]e2e.InstanceData) map[string]map[string]bool
 }
 
 func execOnVM(ctx context.Context, vmName string, cmd string) error {
+	f, err := os.CreateTemp("", "exec-*.sh")
+	if err != nil {
+		return errors.Wrap(err, "create a tempfile")
+	}
+	defer os.Remove(f.Name())
+
 	ssh := fmt.Sprintf("gcloud compute ssh --zone=us-east1-c %s --quiet -- \"%s\"", vmName, cmd)
-	out, err := exec.CommandContext(ctx, "bash", "-c", ssh).CombinedOutput()
+
+	fmt.Fprintln(f, "#! /bin/bash\n"+ssh)
+
+	out, err := exec.CommandContext(ctx, "bash", f.Name()).CombinedOutput()
 	if err != nil {
 		return errors.Wrap(err, "exec on VM", "output", string(out))
 	}
@@ -225,10 +234,18 @@ func execOnVM(ctx context.Context, vmName string, cmd string) error {
 }
 
 func copyToVM(ctx context.Context, vmName string, path string) error {
+	f, err := os.CreateTemp("", "copy-*.sh")
+	if err != nil {
+		return errors.Wrap(err, "create a tempfile")
+	}
+	defer os.Remove(f.Name())
+
 	tarscp := fmt.Sprintf("tar czf - %s | gcloud compute ssh --zone=us-east1-c %s --quiet -- \"cd /omni && tar xvzf -\"",
 		filepath.Base(path), vmName)
 
-	cmd := exec.CommandContext(ctx, "bash", "-c", tarscp)
+	fmt.Fprintln(f, "#! /bin/bash\n"+tarscp)
+
+	cmd := exec.CommandContext(ctx, "bash", f.Name())
 	cmd.Dir = filepath.Dir(path)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrap(err, "copy to VM", "output", string(out))
