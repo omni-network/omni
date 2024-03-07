@@ -3,6 +3,7 @@ package vmcompose
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -240,15 +241,24 @@ func copyToVM(ctx context.Context, vmName string, path string) error {
 	}
 	defer os.Remove(f.Name())
 
-	tarscp := fmt.Sprintf("tar czf - %s | gcloud compute ssh --zone=us-east1-c %s --quiet -- \"cd /omni && tar xvzf -\"",
+	tarscp := fmt.Sprintf("tar czf - %s | gcloud compute ssh --zone=us-east1-c %s --quiet -- \"cd /omni && echo \"debug copyToVM\" && tar xvzf -\"",
 		filepath.Base(path), vmName)
 
 	fmt.Fprintln(f, "#! /bin/bash\n"+tarscp)
+
+	script, err := io.ReadAll(f)
+	if err != nil {
+		return errors.Wrap(err, "read bash file")
+	}
+
+	log.Debug(ctx, "CopyToVM", "bash_script", string(script))
 
 	cmd := exec.CommandContext(ctx, "bash", f.Name())
 	cmd.Dir = filepath.Dir(path)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrap(err, "copy to VM", "output", string(out))
+	} else {
+		log.Debug(ctx, "CopyToVM", "output", string(out))
 	}
 
 	return nil
