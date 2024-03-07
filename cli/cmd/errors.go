@@ -2,36 +2,32 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 )
 
-// reportError reports an error to the user. If it's a known error, it will
-// print a helpful message.
-func reportError(err error) {
-	msg := err.Error()
+// cliError is a custom error type for CLI usage that adds a helpful suggestion.
+// It wraps the Msg like a normal error
+// It doesn't support attributes yet.
+type cliError struct {
+	Msg     string
+	Suggest string
+	Attrs   []any // Attributes not yet implemented.
+}
 
-	printErr := func() {
-		fmt.Printf("❌ registration failed: \033[1m%s\033[0m\n", msg)
+func (e *cliError) Error() string {
+	var sb strings.Builder
+	_, _ = sb.WriteString(e.Msg)
+	if e.Suggest != "" {
+		_, _ = sb.WriteString("\n")
+		_, _ = sb.WriteString("🤔 " + e.Suggest)
 	}
 
-	switch msg {
-	case "already registered":
-		fmt.Println("You're already registered.")
-	case "not an operator":
-		printErr()
-		fmt.Println("🤔 Have you registered as an operator with Eigen-Layer?")
-	case "not in allowlist":
-		fmt.Println("Your operator address is not in the allowlist.")
-	case "max operators reached":
-		fmt.Println("The maximum number of operators has been reached.")
-	case "min stake not met":
-		fmt.Println("You do not meet the minimum stake requirement.")
-	case "invalid delegation manager address":
-		printErr()
-		fmt.Println("🤔 Is el_delegation_manager set correctly in your operator.yaml?")
-	case "no contract code at given address":
-		printErr()
-		fmt.Println("🤔 Is eth_rpc_url set correctly in your operator.yaml?")
-	default:
-		printErr()
-	}
+	return sb.String()
+}
+
+func (e *cliError) Wrap(msg string, attrs ...any) error {
+	e.Msg = fmt.Sprintf("%s: %s", msg, e.Msg)
+	e.Attrs = append(e.Attrs, attrs...)
+
+	return e
 }

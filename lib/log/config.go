@@ -11,6 +11,7 @@ import (
 )
 
 const (
+	FormatCLI     = "cli"
 	FormatConsole = "console"
 	FormatJSON    = "json"
 	FormatLogfmt  = "logfmt"
@@ -35,6 +36,7 @@ var loggerFuncs = map[string]func(...func(*options)) *slog.Logger{
 	FormatConsole: newConsoleLogger,
 	FormatJSON:    newJSONLogger,
 	FormatLogfmt:  newLogfmtLogger,
+	FormatCLI:     newCLILogger,
 }
 
 //nolint:gochecknoglobals // Static mapping.

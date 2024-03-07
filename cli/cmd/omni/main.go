@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"os"
 
 	clicmd "github.com/omni-network/omni/cli/cmd"
 	libcmd "github.com/omni-network/omni/lib/cmd"
@@ -10,5 +11,14 @@ import (
 )
 
 func main() {
-	libcmd.MainWithCtx(log.WithNoopLogger(context.Background()), clicmd.New())
+	cmd := clicmd.New()
+	libcmd.SilenceErrUsage(cmd)
+
+	ctx := log.WithCLILogger(context.Background())
+
+	err := cmd.ExecuteContext(ctx)
+	if err != nil {
+		log.Error(ctx, "❌ "+err.Error(), nil)
+		os.Exit(1)
+	}
 }

@@ -27,19 +27,9 @@ import (
 //		     libcmd.Main(appcmd.New())
 //	   }
 func Main(cmd *cobra.Command) {
-	MainWithCtx(context.Background(), cmd)
-}
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
-// MainWithCtx is the main entry point for the command line tool with a context.
-// Usage:
-//
-//	   func main() {
-//		     libcmd.MainWithCtx(context.Background(), appcmd.New())
-//	   }
-func MainWithCtx(ctx context.Context, cmd *cobra.Command) {
-	ctx, cancel := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
-
-	silenceErrUsage(cmd)
+	SilenceErrUsage(cmd)
 
 	err := cmd.ExecuteContext(ctx)
 
@@ -71,12 +61,12 @@ func NewRootCmd(appName string, appDescription string, subCmds ...*cobra.Command
 	return root
 }
 
-// silenceErrUsage silences the usage and error printing.
-func silenceErrUsage(cmd *cobra.Command) {
+// SilenceErrUsage silences the usage and error printing.
+func SilenceErrUsage(cmd *cobra.Command) {
 	cmd.SilenceUsage = true
 	cmd.SilenceErrors = true
 	for _, cmd := range cmd.Commands() {
-		silenceErrUsage(cmd)
+		SilenceErrUsage(cmd)
 	}
 }
 
