@@ -1,8 +1,8 @@
 ---
-sidebar_position: 2
+sidebar_position: 1
 ---
 
-# Multi-Chain Staking
+# Overview
 
 ## From Single-Chain Staking to Multi-Chain
 
