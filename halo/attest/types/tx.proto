@@ -27,7 +27,7 @@ message AddVotesResponse {}
 // Attestation contains quorum votes for a cross-chain block of a specific validator set.
 message Attestation {
   BlockHeader       block_header     = 1; // BlockHeader identifies the cross-chain Block
-  bytes             block_root       = 2; // Merkle root of the cross-chain Block
+  bytes             attestation_root = 2; // Attestation merkle root of the cross-chain Block
   repeated SigTuple signatures       = 3; // Validator signatures and public keys
   bytes             validators_hash  = 4; // Merkle root hash of the validator set that approved this aggregate.
 }
@@ -36,7 +36,7 @@ message Attestation {
 // AggVote aggregates multiple votes of a cross-chain Block.
 message AggVote {
   BlockHeader       block_header     = 1; // BlockHeader identifies the cross-chain Block
-  bytes             block_root       = 2; // Merkle root of the cross-chain Block
+  bytes             attestation_root = 2; // Attestation merkle root of the cross-chain Block
   repeated SigTuple signatures       = 3; // Validator signatures and public keys
 }
 
@@ -48,7 +48,7 @@ message Votes {
 // Vote by a validator of a cross-chain Block.
 message Vote {
   BlockHeader block_header     = 1; // BlockHeader identifies the cross-chain Block
-  bytes       block_root       = 2; // Merkle root of the cross-chain Block
+  bytes       attestation_root = 2; // Attestation merkle root of the cross-chain Block
   SigTuple    signature        = 3; // Validator signatures and public keys
 }
 
@@ -59,8 +59,8 @@ message BlockHeader {
   bytes  hash        = 3; // Hash of the block
 }
 
-// SigTuple is a validator signature and public key.
+// SigTuple is a validator public key and signature (over the attestation root).
 message SigTuple {
   bytes validator_address = 1; // Validator ethereum address; 20 bytes.
-  bytes signature         = 2; // Validator signature over XBlockRoot; Ethereum 65 bytes [R || S || V] format.
+  bytes signature         = 2; // Validator signature over AttestationRoot; Ethereum 65 bytes [R || S || V] format.
 }

@@ -22,7 +22,9 @@ type mocks struct {
 	namer   *testutil.MockChainNamer
 }
 
-func mockDefaultExpectations(_ sdk.Context, m mocks) {}
+func mockDefaultExpectations(_ sdk.Context, m mocks) {
+	m.namer.EXPECT().ChainName(uint64(1)).Return("test_chain").AnyTimes()
+}
 
 func setupKeeper(t *testing.T, expectations ...func(sdk.Context, mocks)) (*keeper.Keeper, sdk.Context) {
 	t.Helper()

@@ -63,7 +63,7 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 	att := xchain.Attestation{
 		BlockHeader:      vote.BlockHeader.ToXChain(),
 		ValidatorSetHash: valSetHash,
-		BlockRoot:        [32]byte(vote.BlockRoot),
+		AttestationRoot:  [32]byte(vote.AttestationRoot),
 		Signatures:       []xchain.SigTuple{vote.Signature.ToXChain()},
 	}
 
@@ -106,7 +106,7 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 			for _, sub := range subs {
 				require.EqualValues(t, valSetHash, sub.ValidatorSetHash)
 				require.NotNil(t, sub.AttestationRoot)
-				require.Equal(t, sub.AttestationRoot, att.BlockRoot)
+				require.Equal(t, sub.AttestationRoot, att.AttestationRoot)
 				require.NotNil(t, sub.ProofFlags)
 				require.NotNil(t, sub.Signatures)
 				for _, msg := range sub.Msgs {

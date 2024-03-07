@@ -24,7 +24,7 @@ var (
 	val1        = cmttypes.NewValidator(vals[0].PubKey(), 10)
 	val2        = cmttypes.NewValidator(vals[1].PubKey(), 15)
 	val3        = cmttypes.NewValidator(vals[2].PubKey(), 15)
-	blockRoot   = []byte{11, 5, 3, 67, 25, 34}
+	attRoot     = []byte("test attestation root")
 )
 
 type MsgBuilder struct {
@@ -84,8 +84,8 @@ func (b *AggVoteBuilder) Default() *AggVoteBuilder {
 			Height:  500,
 			Hash:    blockHashes[0].Bytes(),
 		},
-		BlockRoot:  blockRoot,
-		Signatures: sigsTuples(val1, val2),
+		AttestationRoot: attRoot,
+		Signatures:      sigsTuples(val1, val2),
 	}
 
 	return b
@@ -137,11 +137,11 @@ func (b *AggVoteBuilder) WithBlockHeader(chainID uint64, height uint64, hash com
 	return b
 }
 
-func (b *AggVoteBuilder) WithBlockRoot(r []byte) *AggVoteBuilder {
+func (b *AggVoteBuilder) WithAttestationRoot(r []byte) *AggVoteBuilder {
 	if b.vote == nil {
 		b.vote = &types.AggVote{}
 	}
-	b.vote.BlockRoot = r
+	b.vote.AttestationRoot = r
 
 	return b
 }

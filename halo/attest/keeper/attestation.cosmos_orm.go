@@ -19,9 +19,9 @@ type AttestationTable interface {
 	Has(ctx context.Context, id uint64) (found bool, err error)
 	// Get returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
 	Get(ctx context.Context, id uint64) (*Attestation, error)
-	HasByChainIdHeightHash(ctx context.Context, chain_id uint64, height uint64, hash []byte) (found bool, err error)
-	// GetByChainIdHeightHash returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
-	GetByChainIdHeightHash(ctx context.Context, chain_id uint64, height uint64, hash []byte) (*Attestation, error)
+	HasByChainIdHeightHashAttestationRoot(ctx context.Context, chain_id uint64, height uint64, hash []byte, attestation_root []byte) (found bool, err error)
+	// GetByChainIdHeightHashAttestationRoot returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
+	GetByChainIdHeightHashAttestationRoot(ctx context.Context, chain_id uint64, height uint64, hash []byte, attestation_root []byte) (*Attestation, error)
 	List(ctx context.Context, prefixKey AttestationIndexKey, opts ...ormlist.Option) (AttestationIterator, error)
 	ListRange(ctx context.Context, from, to AttestationIndexKey, opts ...ormlist.Option) (AttestationIterator, error)
 	DeleteBy(ctx context.Context, prefixKey AttestationIndexKey) error
@@ -62,26 +62,31 @@ func (this AttestationIdIndexKey) WithId(id uint64) AttestationIdIndexKey {
 	return this
 }
 
-type AttestationChainIdHeightHashIndexKey struct {
+type AttestationChainIdHeightHashAttestationRootIndexKey struct {
 	vs []interface{}
 }
 
-func (x AttestationChainIdHeightHashIndexKey) id() uint32            { return 1 }
-func (x AttestationChainIdHeightHashIndexKey) values() []interface{} { return x.vs }
-func (x AttestationChainIdHeightHashIndexKey) attestationIndexKey()  {}
+func (x AttestationChainIdHeightHashAttestationRootIndexKey) id() uint32            { return 1 }
+func (x AttestationChainIdHeightHashAttestationRootIndexKey) values() []interface{} { return x.vs }
+func (x AttestationChainIdHeightHashAttestationRootIndexKey) attestationIndexKey()  {}
 
-func (this AttestationChainIdHeightHashIndexKey) WithChainId(chain_id uint64) AttestationChainIdHeightHashIndexKey {
+func (this AttestationChainIdHeightHashAttestationRootIndexKey) WithChainId(chain_id uint64) AttestationChainIdHeightHashAttestationRootIndexKey {
 	this.vs = []interface{}{chain_id}
 	return this
 }
 
-func (this AttestationChainIdHeightHashIndexKey) WithChainIdHeight(chain_id uint64, height uint64) AttestationChainIdHeightHashIndexKey {
+func (this AttestationChainIdHeightHashAttestationRootIndexKey) WithChainIdHeight(chain_id uint64, height uint64) AttestationChainIdHeightHashAttestationRootIndexKey {
 	this.vs = []interface{}{chain_id, height}
 	return this
 }
 
-func (this AttestationChainIdHeightHashIndexKey) WithChainIdHeightHash(chain_id uint64, height uint64, hash []byte) AttestationChainIdHeightHashIndexKey {
+func (this AttestationChainIdHeightHashAttestationRootIndexKey) WithChainIdHeightHash(chain_id uint64, height uint64, hash []byte) AttestationChainIdHeightHashAttestationRootIndexKey {
 	this.vs = []interface{}{chain_id, height, hash}
+	return this
+}
+
+func (this AttestationChainIdHeightHashAttestationRootIndexKey) WithChainIdHeightHashAttestationRoot(chain_id uint64, height uint64, hash []byte, attestation_root []byte) AttestationChainIdHeightHashAttestationRootIndexKey {
+	this.vs = []interface{}{chain_id, height, hash, attestation_root}
 	return this
 }
 
@@ -152,20 +157,22 @@ func (this attestationTable) Get(ctx context.Context, id uint64) (*Attestation, 
 	return &attestation, nil
 }
 
-func (this attestationTable) HasByChainIdHeightHash(ctx context.Context, chain_id uint64, height uint64, hash []byte) (found bool, err error) {
+func (this attestationTable) HasByChainIdHeightHashAttestationRoot(ctx context.Context, chain_id uint64, height uint64, hash []byte, attestation_root []byte) (found bool, err error) {
 	return this.table.GetIndexByID(1).(ormtable.UniqueIndex).Has(ctx,
 		chain_id,
 		height,
 		hash,
+		attestation_root,
 	)
 }
 
-func (this attestationTable) GetByChainIdHeightHash(ctx context.Context, chain_id uint64, height uint64, hash []byte) (*Attestation, error) {
+func (this attestationTable) GetByChainIdHeightHashAttestationRoot(ctx context.Context, chain_id uint64, height uint64, hash []byte, attestation_root []byte) (*Attestation, error) {
 	var attestation Attestation
 	found, err := this.table.GetIndexByID(1).(ormtable.UniqueIndex).Get(ctx, &attestation,
 		chain_id,
 		height,
 		hash,
+		attestation_root,
 	)
 	if err != nil {
 		return nil, err
