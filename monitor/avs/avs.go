@@ -39,7 +39,7 @@ func Monitor(ctx context.Context, network netconf.Network) error {
 		return err
 	}
 
-	go monitorAVSOperatorsForever(ctx, avs)
+	startMonitoring(ctx, avs)
 
 	return nil
 }
