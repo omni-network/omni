@@ -3,7 +3,6 @@ package vmcompose
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -246,14 +245,7 @@ func copyToVM(ctx context.Context, vmName string, path string) error {
 
 	fmt.Fprintln(f, "#! /bin/bash\n"+tarscp)
 
-	script, err := io.ReadAll(f)
-	if err != nil {
-		return errors.Wrap(err, "read bash file")
-	}
-
-	log.Debug(ctx, "CopyToVM", "bash_script", string(script))
-
-	cmd := exec.CommandContext(ctx, "bash", f.Name())
+	cmd := exec.CommandContext(ctx, "cat", f.Name(), "&&", "bash", f.Name())
 	cmd.Dir = filepath.Dir(path)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrap(err, "copy to VM", "output", string(out))
