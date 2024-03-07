@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log/slog"
@@ -106,8 +107,17 @@ func (k *Keeper) RegisterProposalService(server grpc1.Server) {
 // Add adds the given aggregate votes as pen the store.
 // It merges the votes with attestations it already exists.
 func (k *Keeper) Add(ctx context.Context, msg *types.MsgAddVotes) error {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	valset, ok, err := k.cmtAPI.Validators(ctx, sdkCtx.BlockHeight())
+	if err != nil {
+		return errors.Wrap(err, "fetch validators")
+	} else if !ok {
+		return errors.New("current validators not available [BUG]")
+	}
+	valSetHash := valset.Hash()
+
 	for _, vote := range msg.Votes {
-		err := k.addOne(ctx, vote)
+		err := k.addOne(ctx, vote, valSetHash)
 		if err != nil {
 			return errors.Wrap(err, "add one")
 		}
@@ -118,7 +128,7 @@ func (k *Keeper) Add(ctx context.Context, msg *types.MsgAddVotes) error {
 
 // addOne adds the given aggregate vote to the store.
 // It merges it if the attestation already exists.
-func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote) error {
+func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetHash []byte) error {
 	header := agg.BlockHeader
 
 	// Get existing attestation (by unique key) or insert new one.
@@ -140,6 +150,16 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote) error {
 		}
 	} else if err != nil {
 		return errors.Wrap(err, "by att unique key")
+	} else if isApprovedByDifferentSet(existing, valSetHash) {
+		log.Debug(ctx, "Ignoring vote for attestation approved by different validator set",
+			"agg_id", attID,
+			"chain", k.namer(header.ChainId),
+			"height", header.Height,
+		)
+		// Technically these new votes could be from validators also in that previous set, but
+		// we don't have consistent access to historical validator sets.
+
+		return nil
 	} else {
 		attID = existing.GetId()
 	}
@@ -579,4 +599,13 @@ func uintSub(a, b uint64) uint64 {
 	}
 
 	return a - b
+}
+
+// isApprovedByDifferentSet returns true if the attestation is approved by a different validator set.
+func isApprovedByDifferentSet(att *Attestation, valSetHash []byte) bool {
+	if att.GetStatus() != int32(Status_Approved) {
+		return false
+	}
+
+	return !bytes.Equal(att.GetValidatorsHash(), valSetHash)
 }
