@@ -24,3 +24,6 @@ seed = "0x6eed"
 [fmt]
 bracket_spacing = true
 number_underscore = "thousands"
+
+[etherscan]
+goerli = { key = "${ETHERSCAN_GOERLI_KEY}" }

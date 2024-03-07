@@ -32,22 +32,32 @@ deploy-eigenlayer-save-anvil-state: ## Deploy eigenlayer contracts and dump anvi
 	./script/eigen/deploy-eigenlayer-save-anvil-state.sh
 
 GOERLI_FORK_BLOCK_NUMBER ?= 10641114
+GOERLI_RPC = https://goerli.infura.io/v3/${INFURA_KEY}
+LOCAL_RPC = http://localhost:8545
 
 .PHONY: avs-fork-test-goerli
-avs-fork-test-goerli: ## Run OmniAVS tests on a goerli fork.
-	@if [ -z "${INFURA_KEY}" ]; then echo "INFURA_KEY is not set"; exit 1; fi
-	@FOUNDRY_FUZZ_RUNS=10 forge test --fork-url https://goerli.infura.io/v3/${INFURA_KEY} --fork-block-number ${GOERLI_FORK_BLOCK_NUMBER} --match-path "test/avs/**/*.sol"
+avs-fork-test-goerli: check-infura-key ## Run OmniAVS tests on a goerli fork.
+	@FOUNDRY_FUZZ_RUNS=10 forge test --fork-url ${GOERLI_RPC} --fork-block-number ${GOERLI_FORK_BLOCK_NUMBER} --match-path "test/avs/**/*.sol"
 
 .PHONY: avs-fork-test-local
-avs-fork-test-local: ## Run OmniAVS tests on a local fork.
-	@if [ -z "${INFURA_KEY}" ]; then echo "INFURA_KEY is not set"; exit 1; fi
-	@FOUNDRY_FUZZ_RUNS=10 forge test --fork-url http://localhost:8545 --match-path "test/avs/**/*.sol"
+avs-fork-test-local: check-infura-key ## Run OmniAVS tests on a local fork.
+	@FOUNDRY_FUZZ_RUNS=10 forge test --fork-url ${LOCAL_RPC} --match-path "test/avs/**/*.sol"
 
 .PHONY: avs-fork-goerli
-anvil-fork-goerli: ## Run an anvil goerli fork
-	@if [ -z "${INFURA_KEY}" ]; then echo "INFURA_KEY is not set"; exit 1; fi
-	@anvil --fork-url https://goerli.infura.io/v3/${INFURA_KEY} --fork-block-number ${GOERLI_FORK_BLOCK_NUMBER}
+anvil-fork-goerli: check-infura-key ## Run an anvil goerli fork
+	@anvil --fork-url ${GOERLI_RPC} --fork-block-number ${GOERLI_FORK_BLOCK_NUMBER}
 
+.PHONY: deploy-goerli-avs
+deploy-goerli-avs: check-infura-key ## Deploy OmniAVS to goerli.
+	@./script/avs/deploy-goerli-avs.sh ${GOERLI_RPC}
+
+.PHONY: deploy-local-goerli-avs
+deploy-local-goerli-avs: ## Deploy OmniAVS to local goerli fork.
+	@./script/avs/deploy-goerli-avs.sh ${LOCAL_RPC}
+
+.PHONY: verify-goerli-avs
+verify-goerli-avs: ## Verify OmniAVS on goerli etherscan.
+	@./script/avs/verify-goerli-avs.sh
 
 .PHONY: check-abigen-version
 check-abigen-version: ## Check abigen version, exit(1) if not 1.13.14-stable.
@@ -57,3 +67,7 @@ check-abigen-version: ## Check abigen version, exit(1) if not 1.13.14-stable.
 		echo "Install with go install github.com/ethereum/go-ethereum/cmd/abigen@v1.13.14"; \
 		exit 1; \
 	fi
+
+.PHONY: check-infura-key
+check-infura-key: ## Check if INFURA_KEY is set.
+	@if [ -z "${INFURA_KEY}" ]; then echo "INFURA_KEY is not set"; exit 1; fi
