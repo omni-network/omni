@@ -226,8 +226,7 @@ func execOnVM(ctx context.Context, vmName string, cmd string) error {
 }
 
 func copyToVM(ctx context.Context, vmName string, path string) error {
-	tarscp := fmt.Sprintf("tar czf - %s | gcloud compute ssh --zone=us-east1-c %s --quiet -- \"cd /omni && tar xzf -\"",
-		filepath.Base(path), vmName)
+	tarscp := fmt.Sprintf("tar czf - %s | gcloud compute ssh --zone=us-east1-c %s --quiet -- \"cd /omni && tar xzf -\"", filepath.Base(path), vmName)
 
 	cmd := exec.CommandContext(ctx, "bash", "-c", tarscp)
 	cmd.Dir = filepath.Dir(path)
@@ -244,8 +243,6 @@ func copyFileToVM(ctx context.Context, vmName string, path string) error {
 	cmd := exec.CommandContext(ctx, "bash", "-c", scp)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrap(err, "copy to VM", "output", string(out), "cmd", scp)
-	} else {
-		log.Debug(ctx, "CopyToVM", "output", string(out), "cmd", scp)
 	}
 
 	return nil
