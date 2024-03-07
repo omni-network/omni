@@ -1,21 +1,40 @@
 ---
-sidebar_position: 4
+sidebar_position: 3
 ---
 
 # Relayer
 
-The Relayer is a permissionless actor that submits cross chain messages to destination chains and monitors the Omni Consensus Layer until ⅔ (>66%) of the validator set attested to the next block on each source chain. It then submits the applicable cross-chain messages to each destination chain providing the quorum validator signatures and a multi-merkle-proof. Will be incentivized in future versions of the network.
+## Role and Functions
 
-The Relayer is also responsible for monitoring attestations. Similar to validators, relayers should maintain an `XBlock` cache. I.e., track all source chain blocks, convert them to `XBlock`s, cache them, and make them available for internal indexed querying. Relayers monitor the Omni Consensus Chain state for attested `XBlock`.
+The Relayer plays a pivotal role in the Omni protocol as a permissionless entity that bridges cross-chain messages between source and destination chains. It performs critical functions that ensure the smooth and secure transmission of messages across the network.
 
-For each destination chain, the relayer has to decide how many `XMsg`s to submit, which defines the [cost](./fees.md) of transactions being submitted to the destination chain. This is primarily defined by the data size and gas limit of the messages and the portal contract verification and processing overhead.
+## Responsibilities
 
-A merkle-multi-proof is generated for the set of identified `XMsg`s that match the quorum `XBlock` attestations root. The relayer submits a EVM transaction to the destination chain, ensuring it gets included on-chain as soon as possible. The transaction contains the following data:
+### Submission of Cross-Chain Messages
+
+The Relayer waits for the Omni Consensus Layer to confirm that over two-thirds (>66%) of the validator set have attested to the next block for each source chain. Once this quorum is achieved, the Relayer is responsible for submitting the validated cross-chain messages to their respective destination chains, accompanied by the necessary validator signatures and a multi-merkle-proof. Future iterations of the network plan to incentivize this crucial function.
+
+### Attestation Monitoring and XBlock Cache Management
+
+Like validators, Relayers are tasked with monitoring attestations within the Omni Consensus Chain. This involves:
+
+- Maintaining an `XBlock` cache by tracking all source chain blocks, converting them into `XBlock` format, caching these blocks, and enabling internal indexed querying. This ensures the Relayer has timely access to relevant data for cross-chain message processing.
+- Keeping a vigilant eye on the Omni Consensus Chain state for attested `XBlocks`, preparing for the submission of cross-chain messages once a consensus is reached.
+
+### Decision Making for Message Submission
+
+A key decision that Relayers face is determining the number of `XMsg`s to submit to each destination chain. This decision directly influences the cost of transactions due to factors like data size, gas limits, and the computational overhead required for portal contract verification and message processing.
+
+### Submission Transaction
+
+For the actual submission to a destination chain, Relayers generate a merkle-multi-proof for the `XMsg`s that are to be included, based on the `XBlock` attestations root that has reached a quorum. They then craft an EVM transaction containing this data, aiming to ensure its swift inclusion on the destination chain. The transaction structure is as follows:
 
 ```go
 type Submission (
-  AggregateAttestation att    // Aggregate attestation containing quorum signatures for a specific validator set.
-  XMsg[]               msgs   // Subset of XMsgs in a XBlock (could also be all)
-  bytes                Proofs // Merkle-multi-proof for XMsgBatch
+  AggregateAttestation att    // Aggregate attestation with quorum signatures for a specific validator set.
+  XMsg[]               msgs   // A subset or the entirety of XMsgs in a XBlock
+  bytes                Proofs // Merkle-multi-proof for the XMsgBatch
 )
 ```
+
+This transaction is a critical step in the relaying process, encapsulating the essence of the Relayer's role in maintaining the integrity and efficiency of cross-chain communication within the Omni protocol.

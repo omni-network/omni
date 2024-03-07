@@ -85,7 +85,7 @@ const sidebars: SidebarsConfig = {
           className: "sidebar-title",
           collapsible: false,
           items: [
-            "protocol/xmessages/components/portal",
+            "protocol/xmessages/components/portal-send",
             {
               type: "category",
               label: "Validator",
@@ -97,11 +97,12 @@ const sidebars: SidebarsConfig = {
                 }
               ]
             },
-            "protocol/xmessages/components/fees",
             "protocol/xmessages/components/relayer",
+            "protocol/xmessages/components/portal-receive",
           ]
         },
         "protocol/xmessages/xmsg",
+        "protocol/xmessages/fees",
         "protocol/xmessages/finality",
       ]
     },
