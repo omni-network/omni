@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/omni-network/omni/lib/buildinfo"
 	libcmd "github.com/omni-network/omni/lib/cmd"
+	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/spf13/cobra"
 )
@@ -44,7 +45,12 @@ to successfully register an operator address with the Omni AVS contract.
 Note the operator must already be registered with Eigen-Layer.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return Register(cmd.Context(), cfg)
+			err := Register(cmd.Context(), cfg)
+			if err != nil {
+				return errors.Wrap(err, "registration failed")
+			}
+
+			return nil
 		},
 	}
 

@@ -18,9 +18,16 @@ func New(msg string, attrs ...any) error {
 
 // Wrap returns a new error wrapping the provided with additional
 // structured fields.
+//
+//nolint:wrapcheck,errorlint,inamedparam // This function does custom wrapping and errors.
 func Wrap(err error, msg string, attrs ...any) error {
 	if err == nil {
 		panic("wrap nil error")
+	}
+
+	// Support error types that do their own wrapping.
+	if wrapper, ok := err.(interface{ Wrap(string, ...any) error }); ok {
+		return wrapper.Wrap(msg, attrs...)
 	}
 
 	var inner structured

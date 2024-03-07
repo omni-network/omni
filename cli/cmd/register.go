@@ -105,10 +105,40 @@ func Register(ctx context.Context, cfg RegConfig, opts ...regOpt) error {
 
 	err = avs.RegisterOperatorWithAVS(ctx, contracts, backend, operator)
 	if err != nil {
-		return errors.Wrap(err, "register")
+		// Parse solidity returned reason from CanRegister.
+		switch err.Error() {
+		case "already registered":
+			return &cliError{Msg: "operator address already registered"}
+		case "not an operator":
+			return &cliError{
+				Msg:     "not an eigen layer operator",
+				Suggest: "Have you registered as an operator with Eigen-Layer?",
+			}
+		case "not in allowlist":
+			return &cliError{Msg: "operator address not in Omni AVS allow-list"}
+		case "max operators reached":
+			return &cliError{Msg: "maximum number of operators in Omni AVS reached"}
+		case "min stake not met":
+			return &cliError{
+				Msg:     "minimum stake requirement not met",
+				Suggest: "Delegate more stake with Eigen-Layer.",
+			}
+		case "invalid delegation manager address":
+			return &cliError{
+				Msg:     "invalid Eigen-Layer delegation manager address",
+				Suggest: "Is el_delegation_manager set correctly in your operator.yaml?",
+			}
+		case "no contract code at given address":
+			return &cliError{
+				Msg:     "no contract code at given address",
+				Suggest: "Is eth_rpc_url set correctly in your operator.yaml?",
+			}
+		default:
+			return err
+		}
 	}
 
-	log.Info(ctx, "Operator registered with Omni AVS contract", "operator", operator.Hex())
+	log.Info(ctx, "✅ Registration successful", "operator", operator.Hex())
 
 	return nil
 }

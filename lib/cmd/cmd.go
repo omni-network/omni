@@ -29,7 +29,7 @@ import (
 func Main(cmd *cobra.Command) {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
-	silenceErrUsage(cmd)
+	SilenceErrUsage(cmd)
 
 	err := cmd.ExecuteContext(ctx)
 
@@ -61,12 +61,12 @@ func NewRootCmd(appName string, appDescription string, subCmds ...*cobra.Command
 	return root
 }
 
-// silenceErrUsage silences the usage and error printing.
-func silenceErrUsage(cmd *cobra.Command) {
+// SilenceErrUsage silences the usage and error printing.
+func SilenceErrUsage(cmd *cobra.Command) {
 	cmd.SilenceUsage = true
 	cmd.SilenceErrors = true
 	for _, cmd := range cmd.Commands() {
-		silenceErrUsage(cmd)
+		SilenceErrUsage(cmd)
 	}
 }
 

@@ -22,7 +22,7 @@ var (
 type loggerKey struct{}
 
 // Init initializes the global logger with the given config.
-// It also returns a copy of the context with the global attached, see WithLogger.
+// It also returns a copy of the context with the logger attached, see WithLogger.
 // It returns an error if the config is invalid.
 func Init(ctx context.Context, cfg Config) (context.Context, error) {
 	l, err := cfg.make()
@@ -39,7 +39,7 @@ func Init(ctx context.Context, cfg Config) (context.Context, error) {
 	return WithLogger(ctx, l), nil
 }
 
-// WithLogger returns a copy of the context with which the global
+// WithLogger returns a copy of the context with which the logger
 // is associated replacing the default global logger when logging with this context.
 func WithLogger(ctx context.Context, logger *slog.Logger) context.Context {
 	return context.WithValue(ctx, loggerKey{}, logger)
@@ -87,7 +87,35 @@ func newJSONLogger(opts ...func(*options)) *slog.Logger {
 	return slog.New(handler)
 }
 
-// newConsoleLogger returns a new console global for the following opinionated style:
+// newCLILogger returns a new cli logger which doesn't print timestamps, level, source or stacktraces.
+func newCLILogger(opts ...func(*options)) *slog.Logger {
+	o := defaultOptions()
+	for _, opt := range opts {
+		opt(&o)
+	}
+
+	charmLevel, _ := charm.ParseLevel(o.Level.String()) // Ignore error as all slog levels are valid charm levels.
+
+	logger := charm.NewWithOptions(o.Writer, charm.Options{
+		ReportTimestamp: false,
+		Level:           charmLevel,
+	})
+
+	styles := charm.DefaultStyles()
+	const padWidth = 40
+	styles.Message = styles.Message.Width(padWidth).Inline(true)
+	styles.Levels = nil
+	logger.SetStyles(styles)
+	logger.SetColorProfile(o.Color)
+
+	if o.Test {
+		return slog.New(stubHandler{Handler: logger, skip: true})
+	}
+
+	return slog.New(logger)
+}
+
+// newConsoleLogger returns a new console logger for the following opinionated style:
 // - Colored log levels (if tty supports it)
 // - Timestamps are concise with millisecond precision
 // - Timestamps and structured keys are faint
@@ -143,16 +171,22 @@ func defaultOptions() options {
 	}
 }
 
-// WithNoopLogger returns a copy of the context with a noop global which discards all logs.
+// WithNoopLogger returns a copy of the context with a noop logger which discards all logs.
 func WithNoopLogger(ctx context.Context) context.Context {
 	return WithLogger(ctx, newConsoleLogger(func(o *options) {
 		o.Writer = io.Discard
 	}))
 }
 
+// WithCLILogger returns a copy of the context with a cli logger.
+func WithCLILogger(ctx context.Context) context.Context {
+	return WithLogger(ctx, newCLILogger())
+}
+
 // stubHandler is a handler that replaces the stacktrace and source attributes with stubs.
 type stubHandler struct {
 	slog.Handler
+	skip bool // Skip instead of stubbing.
 }
 
 func (t stubHandler) Handle(ctx context.Context, r slog.Record) error {
@@ -160,6 +194,9 @@ func (t stubHandler) Handle(ctx context.Context, r slog.Record) error {
 
 	r.Attrs(func(a slog.Attr) bool {
 		if a.Key == "stacktrace" {
+			if t.skip {
+				return true
+			}
 			resp.AddAttrs(slog.String("stacktrace", "<stacktrace>"))
 		} else {
 			resp.AddAttrs(a)
