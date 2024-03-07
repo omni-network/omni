@@ -58,16 +58,16 @@ type Block struct {
 
 // Vote by a validator of a cross-chain Block.
 type Vote struct {
-	BlockHeader             // BlockHeader identifies the cross-chain Block
-	BlockRoot   common.Hash // Merkle root of the cross-chain Block
-	Signature   SigTuple    // Validator signature and public key
+	BlockHeader                 // BlockHeader identifies the cross-chain Block
+	AttestationRoot common.Hash // Attestation merkle root of the cross-chain Block
+	Signature       SigTuple    // Validator signature and public key
 }
 
 // Attestation containing quorum votes by the validator set of a cross-chain Block.
 type Attestation struct {
 	BlockHeader                  // BlockHeader identifies the cross-chain Block
 	ValidatorSetHash common.Hash // Merkle root hash of the validator set that approved this attestation.
-	BlockRoot        common.Hash // Merkle root of the cross-chain Block
+	AttestationRoot  common.Hash // Attestation merkle root of the cross-chain Block
 	Signatures       []SigTuple  // Validator signatures and public keys
 }
 
@@ -79,7 +79,7 @@ type SigTuple struct {
 
 // Submission is a cross-chain submission of a set of messages and their proofs.
 type Submission struct {
-	AttestationRoot  common.Hash // Merkle root of the cross-chain Block
+	AttestationRoot  common.Hash // Attestation merkle root of the cross-chain Block
 	ValidatorSetHash common.Hash // Merkle root hash of the validator set that approved the attestation.
 	BlockHeader      BlockHeader // BlockHeader identifies the cross-chain Block
 	Msgs             []Msg       // Messages to be submitted

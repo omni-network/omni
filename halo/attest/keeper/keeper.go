@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"log/slog"
@@ -37,7 +36,7 @@ var _ sdk.VerifyVoteExtensionHandler = (*Keeper)(nil).VerifyVoteExtension
 // It keeps tracks of all attestations included on-chain and detects when they are approved.
 //
 // TODOs:
-//   - Delete attestations that have been submitted to dest chains by including src chain offsets in votes (from receipts).
+//   - Delete attestations after 14 days.
 type Keeper struct {
 	attTable     AttestationTable
 	sigTable     SignatureTable
@@ -122,26 +121,25 @@ func (k *Keeper) Add(ctx context.Context, msg *types.MsgAddVotes) error {
 func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote) error {
 	header := agg.BlockHeader
 
-	// Get existing attestation or insert new one.
+	// Get existing attestation (by unique key) or insert new one.
 	var attID uint64
-	existing, err := k.attTable.GetByChainIdHeightHash(ctx, header.ChainId, header.Height, header.Hash)
+	existing, err := k.attTable.GetByChainIdHeightHashAttestationRoot(ctx,
+		header.ChainId, header.Height, header.Hash, agg.AttestationRoot)
 	if ormerrors.IsNotFound(err) {
 		// Insert new attestation
 		attID, err = k.attTable.InsertReturningId(ctx, &Attestation{
-			ChainId:        agg.BlockHeader.ChainId,
-			Height:         agg.BlockHeader.Height,
-			Hash:           agg.BlockHeader.Hash,
-			BlockRoot:      agg.BlockRoot,
-			Status:         int32(Status_Pending),
-			ValidatorsHash: nil, // Unknown at this point.
+			ChainId:         agg.BlockHeader.ChainId,
+			Height:          agg.BlockHeader.Height,
+			Hash:            agg.BlockHeader.Hash,
+			AttestationRoot: agg.AttestationRoot,
+			Status:          int32(Status_Pending),
+			ValidatorsHash:  nil, // Unknown at this point.
 		})
 		if err != nil {
 			return errors.Wrap(err, "insert")
 		}
 	} else if err != nil {
-		return errors.Wrap(err, "by block header")
-	} else if !bytes.Equal(existing.GetBlockRoot(), agg.BlockRoot) {
-		return errors.New("mismatching block root")
+		return errors.Wrap(err, "by att unique key")
 	} else {
 		attID = existing.GetId()
 	}
@@ -153,12 +151,13 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote) error {
 			ValidatorAddress: sig.ValidatorAddress,
 			AttId:            attID,
 		})
+
 		if errors.Is(err, ormerrors.UniqueKeyViolation) {
 			// TODO(corver): We should prevent this from happening earlier.
 			log.Warn(ctx, "Ignoring duplicate vote", nil,
 				"agg_id", attID,
-				"chain_id", agg.BlockHeader.ChainId,
-				"height", agg.BlockHeader.Height,
+				"chain", k.namer(header.ChainId),
+				"height", header.Height,
 				log.Hex7("validator", sig.ValidatorAddress),
 			)
 		} else if err != nil {
@@ -219,7 +218,7 @@ func (k *Keeper) Approve(ctx context.Context, valset *cmttypes.ValidatorSet) err
 		// Update status
 		att.Status = int32(Status_Approved)
 		att.ValidatorsHash = valset.Hash()
-		err = k.attTable.Save(ctx, att)
+		err = k.attTable.Update(ctx, att)
 		if err != nil {
 			return errors.Wrap(err, "save")
 		}
@@ -282,9 +281,9 @@ func (k *Keeper) attestationFrom(ctx context.Context, chainID uint64, height uin
 				Height:  att.GetHeight(),
 				Hash:    att.GetHash(),
 			},
-			ValidatorsHash: att.GetValidatorsHash(),
-			BlockRoot:      att.GetBlockRoot(),
-			Signatures:     sigs,
+			ValidatorsHash:  att.GetValidatorsHash(),
+			AttestationRoot: att.GetAttestationRoot(),
+			Signatures:      sigs,
 		})
 	}
 
@@ -333,9 +332,9 @@ func (k *Keeper) latestAttestation(ctx context.Context, chainID uint64) (*types.
 			Height:  att.GetHeight(),
 			Hash:    att.GetHash(),
 		},
-		ValidatorsHash: att.GetValidatorsHash(),
-		BlockRoot:      att.GetBlockRoot(),
-		Signatures:     sigs,
+		ValidatorsHash:  att.GetValidatorsHash(),
+		AttestationRoot: att.GetAttestationRoot(),
+		Signatures:      sigs,
 	}, true, nil
 }
 

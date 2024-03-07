@@ -44,7 +44,7 @@ func TestKeeper_Add(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					{Id: 1, BlockRoot: blockRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: 500, Status: int32(keeper.Status_Pending)},
+					{Id: 1, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: 500, Status: int32(keeper.Status_Pending)},
 				},
 				sigs: []*keeper.Signature{
 					{Id: 1, AttId: 1, Signature: val1.Bytes(), ValidatorAddress: val1.Address},
@@ -63,8 +63,8 @@ func TestKeeper_Add(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					{Id: 1, BlockRoot: blockRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: 500, Status: int32(keeper.Status_Pending)},
-					{Id: 2, BlockRoot: blockRoot, ChainId: 1, Hash: blockHashes[1].Bytes(), Height: 501, Status: int32(keeper.Status_Pending)},
+					{Id: 1, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: 500, Status: int32(keeper.Status_Pending)},
+					{Id: 2, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[1].Bytes(), Height: 501, Status: int32(keeper.Status_Pending)},
 				},
 				sigs: []*keeper.Signature{
 					{Id: 1, AttId: 1, Signature: val1.Bytes(), ValidatorAddress: val1.Address},
@@ -86,7 +86,7 @@ func TestKeeper_Add(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					{Id: 1, BlockRoot: blockRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: 500, Status: int32(keeper.Status_Pending)},
+					{Id: 1, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: 500, Status: int32(keeper.Status_Pending)},
 				},
 				sigs: []*keeper.Signature{
 					{Id: 1, AttId: 1, Signature: val1.Bytes(), ValidatorAddress: val1.Address},
@@ -111,7 +111,7 @@ func TestKeeper_Add(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					{Id: 1, BlockRoot: blockRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: 500, Status: int32(keeper.Status_Pending)},
+					{Id: 1, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: 500, Status: int32(keeper.Status_Pending)},
 				},
 				sigs: []*keeper.Signature{
 					{Id: 1, AttId: 1, Signature: val1.Bytes(), ValidatorAddress: val1.Address},
@@ -125,7 +125,7 @@ func TestKeeper_Add(t *testing.T) {
 				msg: defaultMsg().
 					WithVotes(
 						defaultAggVote().
-							WithBlockRoot([]byte("different root")). // the block root is intentionally different to cause an error
+							WithAttestationRoot([]byte("different root")).
 							Vote(),
 					).Msg(),
 			},
@@ -138,14 +138,16 @@ func TestKeeper_Add(t *testing.T) {
 					require.NoError(t, err)
 				},
 			},
-			wantErr: true,
 			want: want{
 				atts: []*keeper.Attestation{
-					{Id: 1, BlockRoot: blockRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: 500, Status: int32(keeper.Status_Pending)},
+					{Id: 1, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: 500, Status: int32(keeper.Status_Pending)},
+					{Id: 2, AttestationRoot: []byte("different root"), ChainId: 1, Hash: blockHashes[0].Bytes(), Height: 500, Status: int32(keeper.Status_Pending)},
 				},
 				sigs: []*keeper.Signature{
 					{Id: 1, AttId: 1, Signature: val1.Bytes(), ValidatorAddress: val1.Address},
 					{Id: 2, AttId: 1, Signature: val2.Bytes(), ValidatorAddress: val2.Address},
+					{Id: 3, AttId: 2, Signature: val1.Bytes(), ValidatorAddress: val1.Address},
+					{Id: 4, AttId: 2, Signature: val2.Bytes(), ValidatorAddress: val2.Address},
 				},
 			},
 		},

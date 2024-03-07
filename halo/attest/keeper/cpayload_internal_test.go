@@ -19,6 +19,45 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestVotesFromCommitNonUnique(t *testing.T) {
+	t.Parallel()
+
+	const chainID = 100
+	const height = 200
+	var valAddr common.Address
+	var valSig [65]byte
+
+	newVote := func(hash, attRoot common.Hash) *types.Vote {
+		return &types.Vote{
+			BlockHeader: &types.BlockHeader{
+				ChainId: chainID,
+				Height:  height,
+				Hash:    hash[:],
+			},
+			AttestationRoot: attRoot[:],
+			Signature: &types.SigTuple{
+				ValidatorAddress: valAddr[:],
+				Signature:        valSig[:],
+			},
+		}
+	}
+
+	hash1 := common.BytesToHash([]byte("hash1"))
+	hash2 := common.BytesToHash([]byte("hash2"))
+	root1 := common.BytesToHash([]byte("root1"))
+	root2 := common.BytesToHash([]byte("root2"))
+
+	// Same chainID and Height, but different hash and attRoots combinations.
+	aggs := aggregateVotes([]*types.Vote{
+		newVote(hash1, root1),
+		newVote(hash2, root2),
+		newVote(hash1, root2),
+	})
+
+	// Result in different aggregates
+	require.Len(t, aggs, 3)
+}
+
 func TestVotesFromCommit(t *testing.T) {
 	t.Parallel()
 	fuzzer := fuzz.New().NilChance(0)
@@ -33,6 +72,7 @@ func TestVotesFromCommit(t *testing.T) {
 	batches := [][]uint64{{1, 2}, {3}, { /*empty*/ }}
 
 	expected := make(map[xchain.Vote]bool)
+	total := len(chains) * 3 // 2 chains * 3 heights
 
 	var evotes []abci.ExtendedVoteInfo
 	for _, chain := range chains {
@@ -57,7 +97,7 @@ func TestVotesFromCommit(t *testing.T) {
 							Height:  height,
 							Hash:    blockHash[:],
 						},
-						BlockRoot: blockHash[:],
+						AttestationRoot: blockHash[:],
 						Signature: &types.SigTuple{
 							ValidatorAddress: addr[:],
 							Signature:        sig[:],
@@ -91,12 +131,14 @@ func TestVotesFromCommit(t *testing.T) {
 	resp, err := votesFromLastCommit(info)
 	require.NoError(t, err)
 
+	require.Len(t, resp.Votes, total)
+
 	for _, agg := range resp.Votes {
 		for _, sig := range agg.Signatures {
 			att := xchain.Vote{
-				BlockHeader: agg.BlockHeader.ToXChain(),
-				BlockRoot:   common.Hash(agg.BlockRoot),
-				Signature:   sig.ToXChain(),
+				BlockHeader:     agg.BlockHeader.ToXChain(),
+				AttestationRoot: common.Hash(agg.AttestationRoot),
+				Signature:       sig.ToXChain(),
 			}
 
 			require.True(t, expected[att], att)

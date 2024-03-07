@@ -8,39 +8,54 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func (a *Vote) Verify() error {
-	if a == nil {
+// UniqueKey uniquely identifies a vote/aggregate vote/attestation.
+type UniqueKey struct {
+	xchain.BlockHeader
+	AttestationRoot common.Hash
+}
+
+// UniqueKey returns a unique key for the vote
+// It panics if the vote is invalid. Ensure Verify() is called before UniqueKey().
+func (v *Vote) UniqueKey() UniqueKey {
+	return UniqueKey{
+		BlockHeader:     v.BlockHeader.ToXChain(),
+		AttestationRoot: common.Hash(v.AttestationRoot),
+	}
+}
+
+func (v *Vote) Verify() error {
+	if v == nil {
 		return errors.New("nil attestation")
 	}
 
-	if a.BlockHeader == nil {
+	if v.BlockHeader == nil {
 		return errors.New("nil block header")
 	}
 
-	if a.Signature == nil {
+	if v.Signature == nil {
 		return errors.New("nil signature")
 	}
 
-	if len(a.BlockRoot) != len(common.Hash{}) {
-		return errors.New("invalid block root length")
+	if len(v.AttestationRoot) != len(common.Hash{}) {
+		return errors.New("invalid attestation root length")
 	}
 
-	if len(a.BlockHeader.Hash) != len(common.Hash{}) {
+	if len(v.BlockHeader.Hash) != len(common.Hash{}) {
 		return errors.New("invalid block header hash length")
 	}
 
-	if len(a.Signature.Signature) != len(xchain.Signature65{}) {
+	if len(v.Signature.Signature) != len(xchain.Signature65{}) {
 		return errors.New("invalid signature length")
 	}
 
-	if len(a.Signature.ValidatorAddress) != len(common.Address{}) {
+	if len(v.Signature.ValidatorAddress) != len(common.Address{}) {
 		return errors.New("invalid validator address length")
 	}
 
 	ok, err := k1util.Verify(
-		common.Address(a.Signature.ValidatorAddress),
-		common.Hash(a.BlockRoot),
-		xchain.Signature65(a.Signature.Signature),
+		common.Address(v.Signature.ValidatorAddress),
+		common.Hash(v.AttestationRoot),
+		xchain.Signature65(v.Signature.Signature),
 	)
 	if err != nil {
 		return err
@@ -71,26 +86,26 @@ func (h *BlockHeader) ToXChain() xchain.BlockHeader {
 	}
 }
 
-func (m *SigTuple) Verify() error {
-	if m == nil {
+func (s *SigTuple) Verify() error {
+	if s == nil {
 		return errors.New("nil sig tuple")
 	}
 
-	if len(m.ValidatorAddress) != len(common.Address{}) {
+	if len(s.ValidatorAddress) != len(common.Address{}) {
 		return errors.New("invalid validator address length")
 	}
 
-	if len(m.Signature) != len(xchain.Signature65{}) {
+	if len(s.Signature) != len(xchain.Signature65{}) {
 		return errors.New("invalid signature length")
 	}
 
 	return nil
 }
 
-func (m *SigTuple) ToXChain() xchain.SigTuple {
+func (s *SigTuple) ToXChain() xchain.SigTuple {
 	return xchain.SigTuple{
-		ValidatorAddress: common.Address(m.ValidatorAddress),
-		Signature:        xchain.Signature65(m.Signature),
+		ValidatorAddress: common.Address(s.ValidatorAddress),
+		Signature:        xchain.Signature65(s.Signature),
 	}
 }
 
@@ -103,8 +118,8 @@ func (a *AggVote) Verify() error {
 		return errors.Wrap(err, "block header")
 	}
 
-	if len(a.BlockRoot) != len(common.Hash{}) {
-		return errors.New("invalid block root length")
+	if len(a.AttestationRoot) != len(common.Hash{}) {
+		return errors.New("invalid attestation root length")
 	}
 
 	if len(a.Signatures) == 0 {
@@ -129,8 +144,8 @@ func (a *Attestation) Verify() error {
 		return errors.Wrap(err, "block header")
 	}
 
-	if len(a.BlockRoot) != len(common.Hash{}) {
-		return errors.New("invalid block root length")
+	if len(a.AttestationRoot) != len(common.Hash{}) {
+		return errors.New("invalid attestation root length")
 	}
 
 	if len(a.ValidatorsHash) != len(common.Hash{}) {
@@ -159,15 +174,15 @@ func (a *Attestation) ToXChain() xchain.Attestation {
 	return xchain.Attestation{
 		BlockHeader:      a.BlockHeader.ToXChain(),
 		ValidatorSetHash: common.Hash(a.ValidatorsHash),
-		BlockRoot:        common.Hash(a.BlockRoot),
+		AttestationRoot:  common.Hash(a.AttestationRoot),
 		Signatures:       sigs,
 	}
 }
 
-func (a *Vote) ToXChain() xchain.Vote {
+func (v *Vote) ToXChain() xchain.Vote {
 	return xchain.Vote{
-		BlockHeader: a.BlockHeader.ToXChain(),
-		BlockRoot:   common.Hash(a.BlockRoot),
-		Signature:   a.Signature.ToXChain(),
+		BlockHeader:     v.BlockHeader.ToXChain(),
+		AttestationRoot: common.Hash(v.AttestationRoot),
+		Signature:       v.Signature.ToXChain(),
 	}
 }
