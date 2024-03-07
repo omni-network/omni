@@ -24,8 +24,8 @@ func startMonitoring(ctx context.Context, avs *bindings.OmniAVS) {
 	go monitorForever(ctx, avs, "strategyParams", monitorStrategyParamsOnce)
 }
 
-func monitorOperatorsOnce(avs *bindings.OmniAVS) error {
-	operators, err := avs.Operators(&bind.CallOpts{})
+func monitorOperatorsOnce(ctx context.Context, avs *bindings.OmniAVS) error {
+	operators, err := avs.Operators(&bind.CallOpts{Context: ctx})
 	if err != nil {
 		return errors.Wrap(err, "get operators")
 	}
@@ -52,8 +52,8 @@ func monitorOperatorsOnce(avs *bindings.OmniAVS) error {
 	return nil
 }
 
-func monitorOwnerOnce(avs *bindings.OmniAVS) error {
-	owner, err := avs.Owner(&bind.CallOpts{})
+func monitorOwnerOnce(ctx context.Context, avs *bindings.OmniAVS) error {
+	owner, err := avs.Owner(&bind.CallOpts{Context: ctx})
 	if err != nil {
 		return errors.Wrap(err, "get owner")
 	}
@@ -63,8 +63,8 @@ func monitorOwnerOnce(avs *bindings.OmniAVS) error {
 	return nil
 }
 
-func monitorAllowlistEnabledOnce(avs *bindings.OmniAVS) error {
-	enababled, err := avs.AllowlistEnabled(&bind.CallOpts{})
+func monitorAllowlistEnabledOnce(ctx context.Context, avs *bindings.OmniAVS) error {
+	enababled, err := avs.AllowlistEnabled(&bind.CallOpts{Context: ctx})
 	if err != nil {
 		return errors.Wrap(err, "get allowlist")
 	}
@@ -78,8 +78,8 @@ func monitorAllowlistEnabledOnce(avs *bindings.OmniAVS) error {
 	return nil
 }
 
-func monitorPausedOnce(avs *bindings.OmniAVS) error {
-	paused, err := avs.Paused(&bind.CallOpts{})
+func monitorPausedOnce(ctx context.Context, avs *bindings.OmniAVS) error {
+	paused, err := avs.Paused(&bind.CallOpts{Context: ctx})
 	if err != nil {
 		return errors.Wrap(err, "get paused")
 	}
@@ -93,8 +93,8 @@ func monitorPausedOnce(avs *bindings.OmniAVS) error {
 	return nil
 }
 
-func monitorMinStakeOnce(avs *bindings.OmniAVS) error {
-	stake, err := avs.MinOperatorStake(&bind.CallOpts{})
+func monitorMinStakeOnce(ctx context.Context, avs *bindings.OmniAVS) error {
+	stake, err := avs.MinOperatorStake(&bind.CallOpts{Context: ctx})
 	if err != nil {
 		return errors.Wrap(err, "get min stake")
 	}
@@ -104,8 +104,8 @@ func monitorMinStakeOnce(avs *bindings.OmniAVS) error {
 	return nil
 }
 
-func monitorMaxOperatorsOnce(avs *bindings.OmniAVS) error {
-	max, err := avs.MaxOperatorCount(&bind.CallOpts{})
+func monitorMaxOperatorsOnce(ctx context.Context, avs *bindings.OmniAVS) error {
+	max, err := avs.MaxOperatorCount(&bind.CallOpts{Context: ctx})
 	if err != nil {
 		return errors.Wrap(err, "get max operators")
 	}
@@ -115,8 +115,8 @@ func monitorMaxOperatorsOnce(avs *bindings.OmniAVS) error {
 	return nil
 }
 
-func monitorStrategyParamsOnce(avs *bindings.OmniAVS) error {
-	params, err := avs.StrategyParams(&bind.CallOpts{})
+func monitorStrategyParamsOnce(ctx context.Context, avs *bindings.OmniAVS) error {
+	params, err := avs.StrategyParams(&bind.CallOpts{Context: ctx})
 	if err != nil {
 		return errors.Wrap(err, "get strategy params")
 	}
@@ -131,11 +131,12 @@ func monitorStrategyParamsOnce(avs *bindings.OmniAVS) error {
 	return nil
 }
 
-type monitorOnce func(avs *bindings.OmniAVS) error
+type monitorOnce func(ctx context.Context, avs *bindings.OmniAVS) error
 
 // monitorForever runs the given monitor function every 30 seconds until the context is canceled.
 func monitorForever(ctx context.Context, avs *bindings.OmniAVS, name string, f monitorOnce) {
-	ticker := time.NewTicker(time.Second * 30)
+	interval := time.Second * 30
+	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
 	for {
@@ -143,12 +144,15 @@ func monitorForever(ctx context.Context, avs *bindings.OmniAVS, name string, f m
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			err := f(avs)
-			if ctx.Err() != nil {
-				return
-			} else if err != nil {
+			err := func() error {
+				ctx, cancel := context.WithTimeout(ctx, interval)
+				defer cancel()
+
+				return f(ctx, avs)
+			}()
+
+			if err != nil {
 				log.Error(ctx, fmt.Sprintf("Monitoring AVS %s failed (will retry)", name), err)
-				continue
 			}
 		}
 	}
