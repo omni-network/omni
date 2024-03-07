@@ -27,7 +27,7 @@ The native token is integral to Omni's ecosystem, serving three primary function
 
 This design allows Omni to manage DDoS attacks, provide "gas liquidity" for seamless transactions across rollups, and progressively decentralize governance. This approach ensures backward compatibility with local gas tokens through an abstracted gas marketplace, highlighting the native token's role in enhancing the network's functionality and security.
 
-For detailed information on how the native token is utilized for gas abstraction and supports global application development, refer to the protocol [Fees](../protocol/architecture/fees.md) section.
+For detailed information on how the native token is utilized for gas abstraction and supports global application development, refer to the protocol [Fees](../protocol/xmessages/components/fees.md) section.
 
 ## Restaking ETH
 
