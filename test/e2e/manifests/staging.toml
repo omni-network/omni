@@ -1,5 +1,5 @@
 network = "staging"
-public_chains = ["arb_goerli", "goerli"]
+public_chains = ["goerli"]
 anvil_chains = ["chain_a"]
 avs_target = "goerli"
 multi_omni_evms = true
