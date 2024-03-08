@@ -2,6 +2,7 @@ package avs
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -13,39 +14,25 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-// monitorAVSOperatorsForever blocks and periodically monitors AVS operators.
-func monitorAVSOperatorsForever(ctx context.Context, avs *bindings.OmniAVS) {
-	ticker := time.NewTicker(time.Second * 30)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			err := monitorAVSOnce(avs)
-			if ctx.Err() != nil {
-				return
-			} else if err != nil {
-				log.Error(ctx, "Monitoring AVS failed (will retry)", err)
-
-				continue
-			}
-		}
-	}
+func startMonitoring(ctx context.Context, avs *bindings.OmniAVS) {
+	go monitorForever(ctx, avs, "operators", monitorOperatorsOnce)
+	go monitorForever(ctx, avs, "owner", monitorOwnerOnce)
+	go monitorForever(ctx, avs, "allowlistEnabled", monitorAllowlistEnabledOnce)
+	go monitorForever(ctx, avs, "paused", monitorPausedOnce)
+	go monitorForever(ctx, avs, "minOperatorStake", monitorMinStakeOnce)
+	go monitorForever(ctx, avs, "maxOperatorCount", monitorMaxOperatorsOnce)
+	go monitorForever(ctx, avs, "strategyParams", monitorStrategyParamsOnce)
 }
 
-// monitorAVSOperatorsOnce monitors the AVS operators once, tracking operators
-// registered, total delegations, and delegations per operator.
-func monitorAVSOnce(avs *bindings.OmniAVS) error {
-	operators, err := avs.Operators(&bind.CallOpts{})
+func monitorOperatorsOnce(ctx context.Context, avs *bindings.OmniAVS) error {
+	operators, err := avs.Operators(&bind.CallOpts{Context: ctx})
 	if err != nil {
 		return errors.Wrap(err, "get operators")
 	}
 
 	// Reset all operator labeled metrics since some operators may have been removed.
-	operatorStake.Reset()
-	operatorDelegations.Reset()
+	operatorStakeGuage.Reset()
+	operatorDelegationsGuage.Reset()
 
 	var total float64
 	for _, operator := range operators {
@@ -53,16 +40,122 @@ func monitorAVSOnce(avs *bindings.OmniAVS) error {
 		staked := weiToEth(operator.Staked)
 		delegated := weiToEth(operator.Delegated)
 
-		operatorStake.WithLabelValues(addr).Set(staked)
-		operatorDelegations.WithLabelValues(addr).Set(delegated)
+		operatorStakeGuage.WithLabelValues(addr).Set(staked)
+		operatorDelegationsGuage.WithLabelValues(addr).Set(delegated)
 
 		total += delegated + staked
 	}
 
-	numOperators.Set(float64(len(operators)))
-	totalDelegations.Set(total)
+	numOperatorsGuage.Set(float64(len(operators)))
+	totalDelegationsGuage.Set(total)
 
 	return nil
+}
+
+func monitorOwnerOnce(ctx context.Context, avs *bindings.OmniAVS) error {
+	owner, err := avs.Owner(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		return errors.Wrap(err, "get owner")
+	}
+
+	ownerGauge.WithLabelValues(owner.Hex()).Set(1)
+
+	return nil
+}
+
+func monitorAllowlistEnabledOnce(ctx context.Context, avs *bindings.OmniAVS) error {
+	enababled, err := avs.AllowlistEnabled(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		return errors.Wrap(err, "get allowlist")
+	}
+
+	if enababled {
+		allowlistEnabledGuage.Set(1)
+	} else {
+		allowlistEnabledGuage.Set(0)
+	}
+
+	return nil
+}
+
+func monitorPausedOnce(ctx context.Context, avs *bindings.OmniAVS) error {
+	paused, err := avs.Paused(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		return errors.Wrap(err, "get paused")
+	}
+
+	if paused {
+		pausedGuage.Set(1)
+	} else {
+		pausedGuage.Set(0)
+	}
+
+	return nil
+}
+
+func monitorMinStakeOnce(ctx context.Context, avs *bindings.OmniAVS) error {
+	stake, err := avs.MinOperatorStake(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		return errors.Wrap(err, "get min stake")
+	}
+
+	minStakeGuage.Set(weiToEth(stake))
+
+	return nil
+}
+
+func monitorMaxOperatorsOnce(ctx context.Context, avs *bindings.OmniAVS) error {
+	max, err := avs.MaxOperatorCount(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		return errors.Wrap(err, "get max operators")
+	}
+
+	maxOperatorsGuage.Set(float64(max))
+
+	return nil
+}
+
+func monitorStrategyParamsOnce(ctx context.Context, avs *bindings.OmniAVS) error {
+	params, err := avs.StrategyParams(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		return errors.Wrap(err, "get strategy params")
+	}
+
+	strategyParamsGuage.Reset()
+	for _, p := range params {
+		start := p.Strategy.Hex()
+		multiplier := p.Multiplier.Int64()
+		strategyParamsGuage.WithLabelValues(start).Set(float64(multiplier))
+	}
+
+	return nil
+}
+
+type monitorOnce func(ctx context.Context, avs *bindings.OmniAVS) error
+
+// monitorForever runs the given monitor function every 30 seconds until the context is canceled.
+func monitorForever(ctx context.Context, avs *bindings.OmniAVS, name string, f monitorOnce) {
+	interval := time.Second * 30
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			err := func() error {
+				ctx, cancel := context.WithTimeout(ctx, interval)
+				defer cancel()
+
+				return f(ctx, avs)
+			}()
+
+			if err != nil {
+				log.Error(ctx, fmt.Sprintf("Monitoring AVS %s failed (will retry)", name), err)
+			}
+		}
+	}
 }
 
 // weiToEth converts a wei amount to an ether amount.
