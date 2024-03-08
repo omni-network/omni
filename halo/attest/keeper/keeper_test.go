@@ -195,6 +195,9 @@ func TestKeeper_Approve(t *testing.T) {
 
 	defaultExpectations := func(_ sdk.Context, m mocks) {
 		m.voter.EXPECT().TrimBehind(gomock.Any()).Times(1).Return(0)
+		m.cometAPI.EXPECT().Validators(gomock.Any(), int64(0)).
+			Return(&cmttypes.ValidatorSet{}, true, nil).
+			AnyTimes()
 	}
 
 	valset1_2_3 := cmttypes.NewValidatorSet([]*cmttypes.Validator{val1, val2, val3})
