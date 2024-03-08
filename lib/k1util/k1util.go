@@ -1,5 +1,4 @@
 // Package k1util provides functions to sign and verify Ethereum RSV style signatures.
-// It was copied from https://github.com/ObolNetwork/charon/blob/main/app/k1util/k1util.go.
 package k1util
 
 import (
