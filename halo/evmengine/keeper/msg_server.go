@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
+	"github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -70,6 +71,10 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 		return nil, errors.New("status not valid")
 	}
 
+	if err := s.deliverLogs(ctx, payload.Number-1, payload.ParentHash, msg.PrevPayloadLogs); err != nil {
+		return nil, errors.Wrap(err, "deliver logs")
+	}
+
 	if isNext {
 		s.setOptimisticPayload(fcr.PayloadID, nextHeight)
 	}
@@ -77,12 +82,41 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 	return &types.ExecutionPayloadResponse{}, nil
 }
 
+// deliverLogs delivers the given logs to the registered log providers.
+func (s msgServer) deliverLogs(ctx context.Context, height uint64, blockHash common.Hash, logs []*types.EVMLog) error {
+	providers := make(map[common.Address]types.EvmLogProvider)
+	for _, provider := range s.logProviders {
+		for _, addr := range provider.Addresses() {
+			providers[addr] = provider
+		}
+	}
+
+	for _, evmLog := range logs {
+		if err := evmLog.Verify(); err != nil {
+			return errors.Wrap(err, "verify log [BUG]") // This shouldn't happen
+		}
+
+		p, ok := providers[common.BytesToAddress(evmLog.Address)]
+		if !ok {
+			return errors.New("unknown log address [BUG]", log.Hex7("address", evmLog.Address))
+		}
+
+		if err := p.DeliverLog(ctx, blockHash, evmLog); err != nil {
+			return errors.Wrap(err, "deliver log")
+		}
+	}
+
+	log.Debug(ctx, "Delivered evm logs", "height", height, "count", len(logs))
+
+	return nil
+}
+
 // pushPayload creates a new payload from the given message and pushes it to the execution client.
 // It returns the new forkchoice state.
 func pushPayload(ctx context.Context, engineCl ethclient.EngineClient, msg *types.MsgExecutionPayload,
 ) (engine.ExecutableData, error) {
 	var payload engine.ExecutableData
-	if err := json.Unmarshal(msg.Data, &payload); err != nil {
+	if err := json.Unmarshal(msg.ExecutionPayload, &payload); err != nil {
 		return engine.ExecutableData{}, errors.Wrap(err, "unmarshal payload")
 	}
 

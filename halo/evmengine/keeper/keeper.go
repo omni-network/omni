@@ -25,7 +25,8 @@ type Keeper struct {
 	storeService    store.KVStoreService
 	engineCl        ethclient.EngineClient
 	txConfig        client.TxConfig
-	providers       []types.CPayloadProvider
+	voteProvider    types.VoteExtensionProvider
+	logProviders    []types.EvmLogProvider
 	cmtAPI          comet.API
 	addrProvider    types.AddressProvider
 	buildDelay      time.Duration
@@ -57,8 +58,12 @@ func NewKeeper(
 }
 
 // TODO(corver): Figure out how to use depinject for this.
-func (k *Keeper) AddProvider(p types.CPayloadProvider) {
-	k.providers = append(k.providers, p)
+func (k *Keeper) AddLogProvider(p types.EvmLogProvider) {
+	k.logProviders = append(k.logProviders, p)
+}
+
+func (k *Keeper) SetVoteProvider(p types.VoteExtensionProvider) {
+	k.voteProvider = p
 }
 
 // SetCometAPI sets the comet API client.

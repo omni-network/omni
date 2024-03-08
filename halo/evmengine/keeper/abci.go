@@ -113,27 +113,28 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 		return nil, errors.Wrap(err, "encode")
 	}
 
-	// Collect all msgs to include in our single consensus transaction.
-	msgs := []sdk.Msg{
-		// First and most important is the execution payload.
-		&types.MsgExecutionPayload{
-			Authority: authtypes.NewModuleAddress(types.ModuleName).String(),
-			Data:      payloadData,
-		},
+	// First, collect all vote extension msgs from the vote provider.
+	voteMsgs, err := k.voteProvider.PrepareVotes(ctx, req.LocalLastCommit)
+	if err != nil {
+		return nil, errors.Wrap(err, "prepare votes")
 	}
 
-	// Next, collect all msgs from the CPayload providers.
-	// These include msgs from vote extensions and/or any msgs from EVM contracts.
-	for _, provider := range k.providers {
-		cmsgs, err := provider.PreparePayload(ctx, uint64(req.Height), req.LocalLastCommit)
-		if err != nil {
-			return nil, errors.Wrap(err, "prepare payload")
-		}
-		msgs = append(msgs, cmsgs...)
+	// Next, collect all prev payload evm logs.
+	evmLogs, err := k.evmLogs(ctx, payloadResp.ExecutionPayload.ParentHash)
+	if err != nil {
+		return nil, errors.Wrap(err, "prepare evm logs")
 	}
 
+	// Then construct the execution payload message.
+	payloadMsg := &types.MsgExecutionPayload{
+		Authority:        authtypes.NewModuleAddress(types.ModuleName).String(),
+		ExecutionPayload: payloadData,
+		PrevPayloadLogs:  evmLogs,
+	}
+
+	// Combine all the votes messages and the payload message into a single transaction.
 	b := k.txConfig.NewTxBuilder()
-	if err := b.SetMsgs(msgs...); err != nil {
+	if err := b.SetMsgs(append(voteMsgs, payloadMsg)...); err != nil {
 		return nil, errors.Wrap(err, "set tx builder msgs")
 	}
 
@@ -146,7 +147,8 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 	log.Info(ctx, "Proposing new block",
 		"height", req.Height,
 		log.Hex7("execution_block_hash", payloadResp.ExecutionPayload.BlockHash[:]),
-		"msgs", len(msgs),
+		"vote_msgs", len(voteMsgs),
+		"evm_logs", len(evmLogs),
 	)
 
 	return &abci.ResponsePrepareProposal{Txs: [][]byte{tx}}, nil
