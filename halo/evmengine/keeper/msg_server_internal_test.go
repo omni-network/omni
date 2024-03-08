@@ -74,8 +74,8 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 
 	assertExecutionPayload := func() {
 		resp, err := msgSrv.ExecutionPayload(ctx, &types.MsgExecutionPayload{
-			Authority: authtypes.NewModuleAddress(types.ModuleName).String(),
-			Data:      payloadData,
+			Authority:        authtypes.NewModuleAddress(types.ModuleName).String(),
+			ExecutionPayload: payloadData,
 		})
 		require.NoError(t, err)
 		require.NotNil(t, resp)
@@ -141,7 +141,7 @@ func Test_pushPayload(t *testing.T) {
 		{
 			name: "fail to unmarshal",
 			args: args{
-				msg: &types.MsgExecutionPayload{Data: []byte("invalid")},
+				msg: &types.MsgExecutionPayload{ExecutionPayload: []byte("invalid")},
 			},
 			wantErr: true,
 		},
@@ -195,7 +195,7 @@ func Test_pushPayload(t *testing.T) {
 			payload, payloadID := newPayload(context.Background(), mockEngine, common.Address{})
 			if tt.args.msg == nil {
 				tt.args.msg = &types.MsgExecutionPayload{
-					Data: payload,
+					ExecutionPayload: payload,
 				}
 			}
 

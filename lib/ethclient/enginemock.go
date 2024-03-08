@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -56,6 +57,15 @@ func NewEngineMock() (EngineClient, error) {
 		head:     genesisBlock,
 		payloads: make(map[engine.PayloadID]engine.ExecutableData),
 	}, nil
+}
+
+func (*engineMock) FilterLogs(_ context.Context, q ethereum.FilterQuery) ([]types.Log, error) {
+	f := fuzz.NewWithSeed(int64(q.BlockHash[0])).NilChance(0).NumElements(1, 4)
+	var resp1, resp2 types.Log
+	f.Fuzz(&resp1)
+	f.Fuzz(&resp2)
+
+	return []types.Log{resp1, resp2}, nil
 }
 
 func (m *engineMock) BlockNumber(_ context.Context) (uint64, error) {

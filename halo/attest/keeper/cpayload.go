@@ -19,12 +19,12 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 )
 
-var _ evmenginetypes.CPayloadProvider = (*Keeper)(nil)
+var _ evmenginetypes.VoteExtensionProvider = (*Keeper)(nil)
 
-func (k *Keeper) PreparePayload(ctx context.Context, height uint64, commit abci.ExtendedCommitInfo) ([]sdk.Msg, error) {
+func (k *Keeper) PrepareVotes(ctx context.Context, commit abci.ExtendedCommitInfo) ([]sdk.Msg, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	if err := baseapp.ValidateVoteExtensions(sdkCtx, k.skeeper, int64(height), sdkCtx.ChainID(), commit); err != nil {
-		log.Error(ctx, "Cannot include invalid vote extensions in payload", err, "height", height)
+	if err := baseapp.ValidateVoteExtensions(sdkCtx, k.skeeper, sdkCtx.BlockHeight(), sdkCtx.ChainID(), commit); err != nil {
+		log.Error(ctx, "Cannot include invalid vote extensions in payload", err, "height", sdkCtx.BlockHeight())
 		return nil, nil
 	}
 

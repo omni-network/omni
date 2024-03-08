@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"math/big"
@@ -16,6 +17,7 @@ import (
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 
+	"github.com/ethereum/go-ethereum"
 	eengine "github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -199,6 +201,8 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 			address: common.BytesToAddress([]byte("test")),
 		}
 		keeper.SetAddressProvider(ap)
+		keeper.SetVoteProvider(mockVEProvider{})
+		keeper.AddLogProvider(mockLogProvider{})
 
 		// get the genesis block to build on top of
 		ts := time.Now()
@@ -256,7 +260,8 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		}
 		keeper.SetAddressProvider(ap)
 
-		keeper.providers = []etypes.CPayloadProvider{mockCPayloadProvider{}, mockCPayloadProvider{}}
+		keeper.AddLogProvider(mockLogProvider{})
+		keeper.SetVoteProvider(mockVEProvider{})
 
 		// get the genesis block to build on top of
 		ts := time.Now()
@@ -288,7 +293,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		tx, err := txConfig.TxDecoder()(resp.Txs[0])
 		require.NoError(t, err)
 
-		actualDelCount := 0
+		var actualDelCount int
 		// assert that the message is an executable payload
 		for _, msg := range tx.GetMsgs() {
 			if _, ok := msg.(*etypes.MsgExecutionPayload); ok {
@@ -300,7 +305,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 			}
 		}
 		// make sure all msg.Delegate are present
-		require.Len(t, keeper.providers, actualDelCount)
+		require.Equal(t, 1, actualDelCount)
 	})
 }
 
@@ -310,14 +315,19 @@ func assertExecutablePayload(t *testing.T, msg sdk.Msg, ts int64, blockHash comm
 	executionPayload, ok := msg.(*etypes.MsgExecutionPayload)
 	require.True(t, ok)
 	require.NotNil(t, executionPayload)
-	var ep *eengine.ExecutableData
-	err := json.Unmarshal(executionPayload.GetData(), &ep)
+
+	payload := new(eengine.ExecutableData)
+	err := json.Unmarshal(executionPayload.GetExecutionPayload(), payload)
 	require.NoError(t, err)
-	require.Equal(t, int64(ep.Timestamp), ts)
-	require.Equal(t, ep.Random, blockHash)
-	require.Equal(t, ep.FeeRecipient, ap.LocalAddress())
-	require.Empty(t, ep.Withdrawals)
-	require.Equal(t, ep.Number, height)
+	require.Equal(t, int64(payload.Timestamp), ts)
+	require.Equal(t, payload.Random, blockHash)
+	require.Equal(t, payload.FeeRecipient, ap.LocalAddress())
+	require.Empty(t, payload.Withdrawals)
+	require.Equal(t, payload.Number, height)
+
+	require.Len(t, executionPayload.PrevPayloadLogs, 1)
+	evmLog := executionPayload.PrevPayloadLogs[0]
+	require.Equal(t, evmLog.Address, zeroAddr.Bytes())
 }
 
 func setupCtxStore(t *testing.T, header *cmtproto.Header) (sdk.Context, store.KVStoreService) {
@@ -358,7 +368,8 @@ func getCodec(t *testing.T) codec.Codec {
 
 var _ ethclient.EngineClient = (*mockEngineAPI)(nil)
 var _ etypes.AddressProvider = (*mockAddressProvider)(nil)
-var _ etypes.CPayloadProvider = (*mockCPayloadProvider)(nil)
+var _ etypes.EvmLogProvider = (*mockLogProvider)(nil)
+var _ etypes.VoteExtensionProvider = (*mockVEProvider)(nil)
 
 type mockEngineAPI struct {
 	ethclient.EngineClient
@@ -387,17 +398,48 @@ func newMockEngineAPI() (mockEngineAPI, error) {
 type mockAddressProvider struct {
 	address common.Address
 }
-type mockCPayloadProvider struct{}
 
-func (m mockCPayloadProvider) PreparePayload(ctx context.Context, height uint64, commit abci.ExtendedCommitInfo) ([]sdk.Msg, error) {
+type mockVEProvider struct{}
+
+func (m mockVEProvider) PrepareVotes(_ context.Context, _ abci.ExtendedCommitInfo) ([]sdk.Msg, error) {
 	coin := sdk.NewInt64Coin("stake", 100)
 	msg := stypes.NewMsgDelegate("addr", "addr", coin)
 
 	return []sdk.Msg{msg}, nil
 }
 
+type mockLogProvider struct{}
+
+func (m mockLogProvider) Logs(_ context.Context, blockHash common.Hash) ([]*etypes.EVMLog, error) {
+	f := fuzz.NewWithSeed(int64(blockHash[0]))
+
+	var topic common.Hash
+	f.Fuzz(&topic)
+
+	return []*etypes.EVMLog{{
+		Address: zeroAddr.Bytes(),
+		Topics:  [][]byte{topic[:]},
+	}}, nil
+}
+
+func (m mockLogProvider) Addresses() []common.Address {
+	return []common.Address{zeroAddr}
+}
+
+func (m mockLogProvider) DeliverLog(_ context.Context, _ common.Hash, log *etypes.EVMLog) error {
+	if bytes.Equal(log.Address, zeroAddr.Bytes()) {
+		panic("unexpected evm log address")
+	}
+
+	return nil
+}
+
 func (m mockAddressProvider) LocalAddress() common.Address {
 	return m.address
+}
+
+func (mockEngineAPI) FilterLogs(context.Context, ethereum.FilterQuery) ([]types.Log, error) {
+	return nil, nil
 }
 
 func (m *mockEngineAPI) BlockNumber(ctx context.Context) (uint64, error) {

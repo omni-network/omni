@@ -92,8 +92,9 @@ func newApp(
 		return nil, errors.Wrap(err, "dep inject")
 	}
 
-	// Add CProviders to evmengine keeper.
-	app.EVMEngKeeper.AddProvider(app.AttestKeeper)
+	// Set evmengine vote and evm msg providers.
+	app.EVMEngKeeper.SetVoteProvider(app.AttestKeeper)
+	app.EVMEngKeeper.AddLogProvider(evmengkeeper.NewPocLogProvider(app.EVMEngKeeper))
 
 	proposalHandler := makeProcessProposalHandler(app)
 

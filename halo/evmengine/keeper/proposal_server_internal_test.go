@@ -56,8 +56,8 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 
 	assertExecutionPayload := func() {
 		resp, err := propSrv.ExecutionPayload(ctx, &types.MsgExecutionPayload{
-			Authority: authtypes.NewModuleAddress(types.ModuleName).String(),
-			Data:      payloadData,
+			Authority:        authtypes.NewModuleAddress(types.ModuleName).String(),
+			ExecutionPayload: payloadData,
 		})
 		require.NoError(t, err)
 		require.NotNil(t, resp)
@@ -74,8 +74,8 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 	assertExecutionPayload()
 
 	_, err = propSrv.ExecutionPayload(ctx, &types.MsgExecutionPayload{
-		Authority: authtypes.NewModuleAddress(types.ModuleName).String(),
-		Data:      []byte("invalid"),
+		Authority:        authtypes.NewModuleAddress(types.ModuleName).String(),
+		ExecutionPayload: []byte("invalid"),
 	})
 	require.Error(t, err)
 }
