@@ -11,6 +11,8 @@ Omni’s Integrated Consensus contains two sub-processes:
 - validating state changes within the Omni EVM and
 - attesting to `XBlock` hashes originating from external rollup VMs.
 
+## Integrated Consensus
+
 The aggregate Integrated Consensus process is visualized below.
 
 <figure>
