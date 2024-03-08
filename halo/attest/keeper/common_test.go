@@ -22,11 +22,20 @@ type mocks struct {
 	namer   *testutil.MockChainNamer
 }
 
+type expectation func(sdk.Context, mocks)
+type prerequisite func(t *testing.T, k *keeper.Keeper, ctx sdk.Context)
+
 func mockDefaultExpectations(_ sdk.Context, m mocks) {
 	m.namer.EXPECT().ChainName(uint64(1)).Return("test_chain").AnyTimes()
 }
 
-func setupKeeper(t *testing.T, expectations ...func(sdk.Context, mocks)) (*keeper.Keeper, sdk.Context) {
+func namerCalled(times int) expectation {
+	return func(_ sdk.Context, m mocks) {
+		m.namer.EXPECT().ChainName(uint64(1)).Times(times).Return("test-chain")
+	}
+}
+
+func setupKeeper(t *testing.T, expectations ...expectation) (*keeper.Keeper, sdk.Context) {
 	t.Helper()
 
 	key := storetypes.NewKVStoreKey(types.StoreKey)
@@ -41,6 +50,7 @@ func setupKeeper(t *testing.T, expectations ...func(sdk.Context, mocks)) (*keepe
 		voter:   testutil.NewMockVoter(ctrl),
 		namer:   testutil.NewMockChainNamer(ctrl),
 	}
+
 	if len(expectations) == 0 {
 		mockDefaultExpectations(ctx, m)
 	} else {
@@ -53,6 +63,7 @@ func setupKeeper(t *testing.T, expectations ...func(sdk.Context, mocks)) (*keepe
 	const voteLimit = 4
 	k, err := keeper.New(codec, storeSvc, m.skeeper, m.namer.ChainName, voteWindow, voteLimit)
 	require.NoError(t, err, "new keeper")
+	k.SetVoter(m.voter)
 
 	return k, ctx
 }

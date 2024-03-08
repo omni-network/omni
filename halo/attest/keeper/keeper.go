@@ -170,6 +170,9 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote) error {
 
 // Approve approves any pending attestations that have quorum signatures from the provided set.
 func (k *Keeper) Approve(ctx context.Context, valset *cmttypes.ValidatorSet) error {
+	if valset == nil {
+		return errors.New("validator set cannot be nil")
+	}
 	pendingIdx := AttestationStatusChainIdHeightIndexKey{}.WithStatus(int32(Status_Pending))
 	iter, err := k.attTable.List(ctx, pendingIdx)
 	if err != nil {
@@ -236,12 +239,9 @@ func (k *Keeper) Approve(ctx context.Context, valset *cmttypes.ValidatorSet) err
 }
 
 // attestationFrom returns the subsequent approved attestations from the provided height (inclusive).
-func (k *Keeper) attestationFrom(ctx context.Context, chainID uint64, height uint64, max uint64,
-) ([]*types.Attestation, error) {
-	from := AttestationStatusChainIdHeightIndexKey{}.WithStatusChainIdHeight(
-		int32(Status_Approved), chainID, height)
-	to := AttestationStatusChainIdHeightIndexKey{}.WithStatusChainIdHeight(
-		int32(Status_Approved), chainID, height+max)
+func (k *Keeper) attestationFrom(ctx context.Context, chainID uint64, height uint64, max uint64) ([]*types.Attestation, error) {
+	from := AttestationStatusChainIdHeightIndexKey{}.WithStatusChainIdHeight(int32(Status_Approved), chainID, height)
+	to := AttestationStatusChainIdHeightIndexKey{}.WithStatusChainIdHeight(int32(Status_Approved), chainID, height+max)
 
 	iter, err := k.attTable.ListRange(ctx, from, to)
 	if err != nil {

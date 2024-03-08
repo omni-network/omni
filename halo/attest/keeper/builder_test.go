@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"github.com/omni-network/omni/halo/attest/types"
+	"github.com/omni-network/omni/lib/k1util"
 
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 	cmttypes "github.com/cometbft/cometbft/types"
@@ -24,8 +25,20 @@ var (
 	val1        = cmttypes.NewValidator(vals[0].PubKey(), 10)
 	val2        = cmttypes.NewValidator(vals[1].PubKey(), 15)
 	val3        = cmttypes.NewValidator(vals[2].PubKey(), 15)
+	valAddr1    = mustValAddr(val1)
+	valAddr2    = mustValAddr(val2)
+	valAddr3    = mustValAddr(val3)
 	attRoot     = []byte("test attestation root")
 )
+
+func mustValAddr(v *cmttypes.Validator) common.Address {
+	addr, err := k1util.PubKeyToAddress(v.PubKey)
+	if err != nil {
+		panic(err)
+	}
+
+	return addr
+}
 
 type MsgBuilder struct {
 	msg *types.MsgAddVotes
@@ -174,7 +187,8 @@ func sigsTuples(vals ...*cmttypes.Validator) []*types.SigTuple {
 		if v == nil {
 			continue
 		}
-		sigs = append(sigs, &types.SigTuple{ValidatorAddress: v.Address, Signature: v.Bytes()})
+		addr := mustValAddr(v)
+		sigs = append(sigs, &types.SigTuple{ValidatorAddress: addr.Bytes(), Signature: v.Bytes()})
 	}
 
 	return sigs
