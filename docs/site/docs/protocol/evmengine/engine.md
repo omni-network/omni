@@ -4,4 +4,54 @@ sidebar_position: 2
 
 # Engine API
 
-The Engine API allows the Omni execution layer (Omni EVM) to mirror the functionality and design of Ethereum L1’s execution layer (EVM). Users send transactions to the Omni EVM mempool and execution clients share those transactions through the execution layer’s peer-to-peer (P2P) node network. For each block of transactions, a node’s execution client computes the state transition function for the Omni EVM and shares the output with its `halo` client through the Engine API. Since the transaction mempool resides on the execution layer, Omni can scale activity without congesting the CometBFT mempool used by validators on the consensus layer. Previously, using the CometBFT mempool to handle transaction requests caused the network to become overloaded and resulted in liveness disruptions. Similar challenges have been observed in other projects that adopted a comparable approach.
+The Engine API is an integral part of the Omni blockchain architecture, enabling seamless interaction between the Omni execution layer (Omni EVM) and the underlying CometBFT consensus mechanism. By allowing transactions to be sent directly to the Omni EVM mempool, it ensures efficient distribution across the network's nodes through the execution layer's peer-to-peer (P2P) network.
+
+## Core Functionality
+
+At its core, the Engine API facilitates the computation of state transitions for each transaction block by the execution client. This is critical for sharing the resultant state with the `halo` client, which relies on accurate and timely information to maintain network consensus.
+
+### Transaction Handling
+
+```go
+// PrepareProposal is a critical function that prepares a proposal for the next block.
+func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
+    // Implementation details...
+}
+```
+
+This function illustrates how the Engine API processes transactions, ensuring that each proposal is correctly prepared according to the network's current state and requirements.
+
+### Error Recovery
+
+The Engine API is designed with robust error recovery mechanisms to maintain network stability and reliability. This includes detailed logging and recovery procedures in case of unexpected failures during proposal preparation.
+
+```go
+defer func() {
+    if r := recover(); r != nil {
+        log.Error(ctx, "PrepareProposal panic", nil, "recover", r)
+        // Additional error handling...
+    }
+}()
+```
+
+## Integration with CometBFT
+
+The integration with CometBFT is achieved through a series of interactions between the Engine API and the consensus layer. This relationship is vital for optimizing the proposal process and ensuring the swift finalization of blocks.
+
+### ABCI++ and Payload Management
+
+An essential aspect of the Engine API's functionality is its use of ABCI++ and the management of execution payloads. This includes the generation, validation, and submission of payloads to the consensus layer, demonstrating the Engine API's role in bridging execution and consensus.
+
+```go
+// Engine API interactions for payload management
+payloadResp, err := k.engineCl.GetPayloadV2(ctx, *payloadID)
+if err != nil {
+    // Error handling...
+}
+```
+
+## Benefits and Innovations
+
+The Engine API introduces several innovations and benefits, including improved scalability by offloading the transaction mempool to the execution layer and enhancing consensus efficiency by avoiding congestion in the CometBFT mempool.
+
+Furthermore, the modular framework inspired by Ethereum's PoS architecture, along with the flexibility to support various Ethereum execution clients without specialized modifications, marks a significant advancement in blockchain technology.
