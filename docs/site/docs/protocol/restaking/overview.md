@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Overview
 
-## From Single-Chain Staking to Multi-Chain
+## AVS Restaking
 
 <figure>
   <img src="/img/staking.png" alt="Staking" />
