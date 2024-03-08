@@ -7,6 +7,8 @@ import (
 	"github.com/omni-network/omni/halo/attest/testutil"
 	"github.com/omni-network/omni/halo/attest/types"
 
+	comettypes "github.com/cometbft/cometbft/types"
+
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdktestutil "github.com/cosmos/cosmos-sdk/testutil"
@@ -17,9 +19,10 @@ import (
 )
 
 type mocks struct {
-	skeeper *testutil.MockStakingKeeper
-	voter   *testutil.MockVoter
-	namer   *testutil.MockChainNamer
+	skeeper  *testutil.MockStakingKeeper
+	voter    *testutil.MockVoter
+	namer    *testutil.MockChainNamer
+	cometAPI *testutil.MockCommetAPI
 }
 
 type expectation func(sdk.Context, mocks)
@@ -27,6 +30,9 @@ type prerequisite func(t *testing.T, k *keeper.Keeper, ctx sdk.Context)
 
 func mockDefaultExpectations(_ sdk.Context, m mocks) {
 	m.namer.EXPECT().ChainName(uint64(1)).Return("test_chain").AnyTimes()
+	m.cometAPI.EXPECT().Validators(gomock.Any(), int64(0)).
+		Return(&comettypes.ValidatorSet{}, true, nil).
+		AnyTimes()
 }
 
 func namerCalled(times int) expectation {
@@ -46,9 +52,10 @@ func setupKeeper(t *testing.T, expectations ...expectation) (*keeper.Keeper, sdk
 	// gomock initialization
 	ctrl := gomock.NewController(t)
 	m := mocks{
-		skeeper: testutil.NewMockStakingKeeper(ctrl),
-		voter:   testutil.NewMockVoter(ctrl),
-		namer:   testutil.NewMockChainNamer(ctrl),
+		skeeper:  testutil.NewMockStakingKeeper(ctrl),
+		voter:    testutil.NewMockVoter(ctrl),
+		namer:    testutil.NewMockChainNamer(ctrl),
+		cometAPI: testutil.NewMockCommetAPI(ctrl),
 	}
 
 	if len(expectations) == 0 {
@@ -64,6 +71,8 @@ func setupKeeper(t *testing.T, expectations ...expectation) (*keeper.Keeper, sdk
 	k, err := keeper.New(codec, storeSvc, m.skeeper, m.namer.ChainName, voteWindow, voteLimit)
 	require.NoError(t, err, "new keeper")
 	k.SetVoter(m.voter)
+
+	k.SetCometAPI(m.cometAPI)
 
 	return k, ctx
 }
