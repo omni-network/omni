@@ -2,7 +2,7 @@
 sidebar_position: 3
 ---
 
-# EVM Engine ABCI++
+# Engine ABCI++
 
 ABCI++ plays a pivotal role in the Omni blockchain, enabling a novel architecture that combines the Ethereum Virtual Machine (EVM) with the CometBFT consensus mechanism in a scalable manner. This integration is made possible through the use of Ethereum’s Engine API alongside ABCI++, drawing from Ethereum’s Proof of Stake (PoS) architecture to create a modular framework that distinctly separates Omni's execution and consensus layers.
 
