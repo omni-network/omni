@@ -2,56 +2,38 @@
 sidebar_position: 3
 ---
 
-# ABCI++
+# EVM Engine ABCI++
 
-ABCI++ plays a critical role in the Omni blockchain architecture, enhancing the interaction between the execution layer and the CometBFT consensus mechanism. This page explores how ABCI++ is used within `halo`, showcasing its significance in the blockchain's functionality.
+ABCI++ plays a pivotal role in the Omni blockchain, enabling a novel architecture that combines the Ethereum Virtual Machine (EVM) with the CometBFT consensus mechanism in a scalable manner. This integration is made possible through the use of Ethereum’s Engine API alongside ABCI++, drawing from Ethereum’s Proof of Stake (PoS) architecture to create a modular framework that distinctly separates Omni's execution and consensus layers.
 
 ## Overview
 
-ABCI++ extends the Application Blockchain Interface (ABCI) used by CometBFT, introducing additional methods and functionalities that are essential for a more flexible and efficient consensus process. The implementation within Omni leverages ABCI++ to manage state transitions, validate transactions, and ensure seamless communication between different layers of the blockchain infrastructure.
+Omni's innovative use of ABCI++ facilitates a clear separation between the execution and consensus layers of the blockchain, addressing the bottlenecks that have hindered performance in previous blockchain designs. By leveraging ABCI++, Omni achieves a truly scalable solution, capable of handling increased network activity without compromising consensus speed or efficiency.
 
-### Key Functions
+### Handling Transaction Requests
 
-ABCI++ is instrumental in the preparation of proposals and the management of payloads, as evidenced by the source code. One of the primary functions highlighted is `PrepareProposal`, which plays a pivotal role in assembling proposals for the next block.
+Previous approaches relied on the CometBFT mempool to manage transaction requests, leading to network congestion and compromised consensus speed as activity increased. Omni addresses this challenge by utilizing the Engine API, alongside ABCI++, to move the transaction mempool to the execution layer. This strategic move ensures the CometBFT consensus process remains lightweight and efficient.
 
 ```go
-// Example: PrepareProposal function illustrating ABCI++ usage
-func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
-    // Simplified logic for preparing a proposal...
+// Example: Using ABCI++ for processing proposals and managing consensus payloads
+func makeProcessProposalHandler(app *App) sdk.ProcessProposalHandler {
+    // ProcessProposalHandler implementation...
 }
 ```
 
-This function demonstrates the comprehensive approach taken to ensure that each proposal is adequately prepared, considering the network's current state and transaction requirements.
+ABCI++ is integrated within the Omni framework to process proposals and manage consensus payloads effectively to maintain a seamless consensus mechanism.
 
-### Error Handling and Recovery
+### State Translation
 
-The robust error handling and recovery mechanisms within the ABCI++ implementation are vital for maintaining the network's integrity and reliability.
-
-```go
-defer func() {
-    if r := recover(); r != nil {
-        log.Error(ctx, "PrepareProposal panic", nil, "recover", r)
-        // Additional error handling...
-    }
-}()
-```
-
-### Integration with Execution and Consensus Layers
-
-ABCI++ facilitates the integration between the execution layer (e.g., Omni EVM) and the consensus layer (CometBFT), enabling efficient state translation and payload management. This integration is crucial for optimizing the proposal process and ensuring the network's high performance.
+One of the major challenges in previous designs was translating the EVM state to a format compatible with CometBFT. Omni overcomes this hurdle by incorporating an ABCI++ wrapper around the CometBFT engine, enabling seamless state translation and ensuring that Omni EVM blocks are efficiently converted into CometBFT transactions.
 
 ```go
-// ABCI++ and execution layer interaction for payload management
-payloadResp, err := k.engineCl.GetPayloadV2(ctx, *payloadID)
-if err != nil {
-    // Error handling...
+// Example: ABCI++ wrapper for state translation
+func (k *Keeper) PreparePayload(ctx context.Context, height uint64, commit abci.ExtendedCommitInfo) ([]sdk.Msg, error) {
+    // Payload preparation logic...
 }
 ```
 
-## Innovations and Advancements
+## Advancements and Flexibility
 
-The utilization of ABCI++ within Omni introduces several innovations and advancements, including improved scalability, enhanced consensus efficiency, and a modular framework that supports a clear separation between execution and consensus layers. The ability to manage execution payloads effectively and ensure accurate state transitions underscores the significance of ABCI++ in Omni's architecture.
-
-## Conclusion
-
-Through its strategic implementation, ABCI++ underpins the efficient operation and scalability of the Omni blockchain. By enabling detailed control over the consensus process and facilitating seamless communication between the blockchain's layers, ABCI++ contributes to Omni's goal of achieving sub-second transaction finality at scale, marking a significant step forward in blockchain technology.
+The architectural advancements introduced by ABCI++ in Omni not only boost scalability and consensus efficiency but also provide remarkable flexibility. Omni supports the interchangeability and upgrading of execution clients without system disruptions, enabling compatibility with various Ethereum execution clients and ensuring ongoing adaptability to future blockchain innovations.

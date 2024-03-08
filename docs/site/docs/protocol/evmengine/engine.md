@@ -2,7 +2,7 @@
 sidebar_position: 2
 ---
 
-# Engine API and Its Integration in Omni
+# Engine API
 
 The Engine API represents a cornerstone in the Omni architecture, enabling seamless integration between the Ethereum Virtual Machine (EVM) and the CometBFT consensus engine. This page delves into the practical aspects of the Engine API as illustrated in the provided source files, highlighting its pivotal role in the Omni ecosystem.
 
