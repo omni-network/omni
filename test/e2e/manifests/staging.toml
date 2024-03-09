@@ -1,6 +1,7 @@
 network = "staging"
 public_chains = ["arb_sepolia", "op_sepolia"]
 anvil_chains = ["chain_a"]
+avs_target = "chain_a"
 multi_omni_evms = true
 prometheus = true
 
