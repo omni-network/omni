@@ -2,28 +2,35 @@
 sidebar_position: 5
 ---
 
-# EVM Equivalence
+# Complete EVM Equivalence
 
-The Omni architecture addresses two main challenges faced by existing blockchain frameworks: scalability and EVM compatibility. By moving the transaction mempool to the execution layer and employing an ABCI++ wrapper for state translation, Omni ensures that the consensus process remains lightweight and efficient, even under high network activity.
+Omni offers complete EVM equivalence, ensuring that developers can deploy their Ethereum smart contracts to the Omni network without any modifications. Unlike other platforms that claim "EVM compatibility," Omni provides a truly equivalent environment by running an unmodified version of the Ethereum Virtual Machine (EVM). This fidelity guarantees that opcode compatibility issues are non-existent, and all developer tooling designed for Ethereum L1 seamlessly works with the Omni EVM.
 
-### Engine API and State Translation
+### Omni Validators Run Unmodified EVM Code
 
-The integration of the Ethereum Engine API and the use of an ABCI++ wrapper around the CometBFT engine facilitate seamless state translation between the Omni EVM and the CometBFT consensus layer. This architecture allows Omni to convert EVM blocks into single transactions that can be easily processed by CometBFT, significantly enhancing throughput and reducing consensus overhead.
+At the heart of Omni's EVM equivalence is the fact that Omni validators execute the same EVM code as Ethereum L1 validators. This direct execution model means that smart contracts operate under the same conditions as they would on Ethereum, offering an unparalleled level of consistency and reliability for developers.
+
+### Zero Changes Needed for Smart Contracts
+
+Developers can migrate their DApps to Omni without worrying about the compatibility or operational differences often encountered on other EVM-compatible chains. The Omni EVM's adherence to Ethereum's standards ensures that smart contracts execute as intended, without requiring any adjustments or special considerations.
+
+### Full Support for All EVM Opcodes and Upgrades
+
+Omni's commitment to maintaining an unmodified EVM client extends to full support for all EVM opcodes and the inclusion of the latest EVM upgrades. This dedication ensures that Omni remains in lockstep with Ethereum's evolution, providing developers with a stable and feature-rich environment for their applications.
 
 ```go
-// ForkchoiceUpdatedV2 integration for state translation and consensus
-forkchoiceResp, err := k.engineCl.ForkchoiceUpdatedV2(ctx, forkchoiceState, &payloadAttrs)
-if err != nil {
-    // Handle error...
-} else if forkchoiceResp.PayloadStatus.Status != engine.VALID {
-    // Handle invalid status...
+// pushPayload creates a new payload from the given message and pushes it to the execution client.
+// It returns the new forkchoice state.
+func pushPayload(ctx context.Context, engineCl ethclient.EngineClient, msg *types.MsgExecutionPayload,
+) (engine.ExecutableData, error) {
+    // Transaction execution logic, forwarding payload to EVM client...
 }
 ```
 
-The Engine API is employed to manage the fork choice and payload attributes, ensuring efficient consensus and state synchronization.
+[`pushPayload`](https://github.com/omni-network/omni/blob/0f09c724ac941afc45c5f7eb1ed1a773f51dac81/halo/evmengine/keeper/msg_server.go#L116) showcases the execution of EVM transactions, which implement strictly the same behavior of Ethereum and ensures a frictionless experience for developers.
 
-### Flexibility and Compatibility
+## Advantages of Omni's EVM Equivalence
 
-Omni's design philosophy prioritizes flexibility and compatibility, supporting the use of any existing Ethereum execution client without the need for specialized modifications. This approach not only reduces the risk of introducing new bugs but also ensures ongoing compatibility with Ethereum's evolving ecosystem.
-
-Omni's commitment to EVM equivalence extends to adopting recent upgrades such as dynamic transaction fees from EIP-1559 and future enhancements like proposer-builder separation. This ensures that Omni remains at the forefront of blockchain technology, offering a platform that is both cutting-edge and deeply integrated with the Ethereum ecosystem.
+- **Seamless Migration:** Developers can port their DApps to Omni without any modifications, significantly reducing the effort and complexity involved in accessing a new blockchain ecosystem.
+- **Developer Tooling Compatibility:** All the tools, libraries, and frameworks designed for Ethereum development are fully compatible with the Omni EVM, streamlining the development process.
+- **Future-Proof:** Omni's alignment with Ethereum's upgrade path ensures that developers can leverage the latest features and improvements without delay.
