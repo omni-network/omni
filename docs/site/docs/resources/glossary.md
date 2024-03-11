@@ -6,7 +6,7 @@ sidebar_position: 1
 
 ## Domain
 
-A distinct blockchain or a rollup: an isolated environment with its own execution layer, by default not interoperable with other environments. Examples include Layer 1 chains (Ethereum L1, Avalanche, Solana...), L2 rollups (e.g., Arbitrum, Optimism, Starknet, ZKsync), modular rollups/chains (e.g., leveraging Celestia DA) and app-specific rollups (e.g., Cosmos-based chains).
+A distinct blockchain or a rollup: an isolated environment with its own execution layer, by default not interoperable with other environments. Examples include Layer 1 chains (Ethereum, Avalanche, Solana...), L2 rollups (e.g., Arbitrum, Optimism, Starknet, ZKsync), modular rollups/chains (e.g., leveraging Celestia DA) and app-specific rollups (e.g., Cosmos-based chains).
 
 ## Cross Domain
 
