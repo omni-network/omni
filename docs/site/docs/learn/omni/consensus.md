@@ -37,4 +37,4 @@ Omni's Integrated Consensus represents a significant leap forward in blockchain 
 
 Omni's adoption of Integrated Consensus underscores its commitment to fostering a more connected and efficient blockchain world, where the boundaries between different chains and technologies blur, creating a unified and powerful platform for decentralized applications and services.
 
-For a deeper dive into Omni's Integrated Consensus and its impact on blockchain interoperability, [visit the protocol section](../../protocol/introduction.md).
+For a deeper dive into Omni's Integrated Consensus and its impact on blockchain interoperability, [visit the protocol section](../../protocol/introduction/introduction.md).

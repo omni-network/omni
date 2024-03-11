@@ -1,8 +1,29 @@
 ---
-sidebar_position: 7
+sidebar_position: 3
 ---
 
-# Fee Handling
+# Fees
+
+## Fee Model
+
+Omni fees start with a basic, Solidity-based fee payment interface and an uncomplicated pricing mechanism, with room for future enhancements. The network only supports **\$ETH** for fee payments presently. In the future, developers will also be able to pay with **\$OMNI** and potentially other tokens if they desire, but **\$ETH** will always be supported.
+
+Fees are paid in **\$ETH** and calculated in real-time during transactions via the payable `xcall` function on the portal contracts, ensuring simplicity for developers and compatibility with existing Ethereum tooling. This setup allows for easy off-chain fee estimations and the possibility for developers to pass the cost on to users, with a straightforward upgrade path to a more dynamic fee structure that can adapt to the network's evolving needs without necessitating changes to developer contracts.
+
+### Collection
+
+Each portal will be configured with a `feeTo` address. All collected fees will be sent to this address. This address is set to the relayer address.
+
+### Pricing
+
+Portal contracts need to know how much to charge for each transaction, implemented in the `feeFor` method. The parameters to fee calculation are:
+
+- Destination chain id
+- Calldata
+- Gas limit
+
+
+## Fee Handling
 
 Omni fees are charged synchronously on `xcall` call to a portal contract. This function is therefore `payable`. It allows specification of a custom gas limit, enforced at the destination chain.
 
@@ -77,15 +98,3 @@ returns (uint256);
     // ...
 }
 ```
-
-## Collection
-
-Each portal will be configured with a `feeTo` address. All collected fees will be sent to this address. This address is set to the relayer address.
-
-## Pricing
-
-Portal contracts need to know how much to charge for each transaction, implemented in the `feeFor` method. The parameters to fee calculation are:
-
-- Destination chain id
-- Calldata
-- Gas limit

@@ -17,7 +17,7 @@ In the Omni network, **validators** have the critical job of verifying the authe
 Omni's staking implementation is supported by a suite of smart contracts designed to facilitate the staking process:
 
 - **Omni Staking Contract**: Implemented on the Omni EVM, this contract tracks each validator’s stake and delegations, distributes rewards, and manages slashing events.
-- **Omni AVS Contract**: Located on Ethereum L1, it registers Omni as an application with the EigenLayer protocol, enabling operators to provide validation services to the Omni blockchain.
+- **Omni AVS Contract**: Located on Ethereum, it registers Omni as an application with the EigenLayer protocol, enabling operators to provide validation services to the Omni blockchain.
 - **Omni Portal Contracts**: Deployed on the Omni EVM and connected rollup VMs, these contracts maintain a record of the Omni validator set’s stake, delegations, and voting power.
 
 ## Securing the Omni Chain with Restaked **\$ETH**
