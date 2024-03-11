@@ -156,3 +156,9 @@ svg text {
 .sidebar-title > div:hover {
   background-color: transparent;
 }
+
+figcaption {
+  font-size: 0.8em;
+  font-style: italic;
+  font-family: 'Inter';
+}
