@@ -29,7 +29,7 @@ var (
 		ID:                5,
 		IsPublic:          true,
 		BlockPeriod:       15 * time.Second,
-		FinalizationStrat: netconf.StratFinalized,
+		FinalizationStrat: netconf.StartLatest,
 	}
 )
 
