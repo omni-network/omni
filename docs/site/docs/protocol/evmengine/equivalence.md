@@ -4,11 +4,11 @@ sidebar_position: 5
 
 # Complete EVM Equivalence
 
-Omni offers complete EVM equivalence, ensuring that developers can deploy their Ethereum smart contracts to the Omni network without any modifications. Unlike other platforms that claim "EVM compatibility," Omni provides a truly equivalent environment by running an unmodified version of the Ethereum Virtual Machine (EVM). This fidelity guarantees that opcode compatibility issues are non-existent, and all developer tooling designed for Ethereum L1 seamlessly works with the Omni EVM.
+Omni offers complete EVM equivalence, ensuring that developers can deploy their Ethereum smart contracts to the Omni network without any modifications. Unlike other platforms that claim "EVM compatibility," Omni provides a truly equivalent environment by running an unmodified version of the Ethereum Virtual Machine (EVM). This fidelity guarantees that opcode compatibility issues are non-existent, and all developer tooling designed for Ethereum seamlessly works with the Omni EVM.
 
 ### Omni Validators Run Unmodified EVM Code
 
-At the heart of Omni's EVM equivalence is the fact that Omni validators execute the same EVM code as Ethereum L1 validators. This direct execution model means that smart contracts operate under the same conditions as they would on Ethereum, offering an unparalleled level of consistency and reliability for developers.
+At the heart of Omni's EVM equivalence is the fact that Omni validators execute the same EVM code as Ethereum validators. This direct execution model means that smart contracts operate under the same conditions as they would on Ethereum, offering an unparalleled level of consistency and reliability for developers.
 
 ### Zero Changes Needed for Smart Contracts
 

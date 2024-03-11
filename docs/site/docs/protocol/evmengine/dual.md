@@ -22,4 +22,4 @@ The aggregate Integrated Consensus process is visualized below.
 
 1. Every `halo` client runs a node for each rollup VM to check for `XMsg` events emitted from Portal contracts.
 2. For every rollup VM block that contains `XMsg`s, `halo` clients build `XBlock`s that contain the corresponding `XMsg`s.
-3. Once the calldata for a rollup VM block has been posted and finalized on Ethereum L1, Omni validators use ABCI++ vote extensions to attest to the hash of the corresponding `XBlock`. These attestations are appended to the current consensus layer block.
+3. Once the calldata for a rollup VM block has been posted and finalized on Ethereum, Omni validators use ABCI++ vote extensions to attest to the hash of the corresponding `XBlock`. These attestations are appended to the current consensus layer block.
