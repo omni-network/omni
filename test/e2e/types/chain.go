@@ -29,7 +29,7 @@ var (
 		ID:                5,
 		IsPublic:          true,
 		BlockPeriod:       15 * time.Second,
-		FinalizationStrat: netconf.StratFinalized,
+		FinalizationStrat: netconf.StratLatest,
 	}
 )
 
@@ -43,7 +43,7 @@ func AnvilChainsByNames(names []string) []EVMChain {
 			Name:              name,
 			ID:                anvilChainIDFactor * uint64(i+1),
 			BlockPeriod:       time.Second,
-			FinalizationStrat: netconf.StartLatest, // anvil doesn't support finalized
+			FinalizationStrat: netconf.StratLatest, // anvil doesn't support finalized
 		})
 	}
 
