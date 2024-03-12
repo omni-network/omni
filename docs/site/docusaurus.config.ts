@@ -35,7 +35,7 @@ const config: Config = {
           sidebarPath: "./sidebars.ts",
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
-          editUrl: "https://github.com/omni-network/omni/docs/site/",
+          editUrl: "https://github.com/omni-network/omni/tree/main/docs/site",
           remarkPlugins: [remarkMath],
           rehypePlugins: [rehypeKatex],
         },
