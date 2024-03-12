@@ -8,10 +8,16 @@ import (
 	clicmd "github.com/omni-network/omni/cli/cmd"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/log"
+
+	"github.com/common-nighthawk/go-figure"
 )
 
 func main() {
 	cmd := clicmd.New()
+
+	fig := figure.NewFigure("omni", "", true)
+	cmd.SetHelpTemplate(fig.String() + cmd.HelpTemplate())
+
 	libcmd.SilenceErrUsage(cmd)
 
 	ctx := log.WithCLILogger(context.Background())
