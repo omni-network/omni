@@ -22,3 +22,9 @@ omni.xmsg().sender        // who sent it (msg.sender of the source xcall)
 ```
 
 `omni` is a reference to the [OmniPortal](./contracts.md#omniportal) contract. One portal is deployed on each supported chain. To make interacting with the portal easier, inherit from the [XApp](./xapp/xapp.md) contract.
+
+:::info Only Finalized Cross-Chain Messages are Relayed
+
+`XMsg` can only be relayed to the destination chain once the transaction it belongs to finalizes on Ethereum.
+
+:::
