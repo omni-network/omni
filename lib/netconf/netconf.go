@@ -107,12 +107,12 @@ func (h FinalizationStrat) Verify() error {
 //nolint:gochecknoglobals // Static mappings
 var allStrats = map[FinalizationStrat]bool{
 	StratFinalized: true,
-	StartLatest:    true,
+	StratLatest:    true,
 }
 
 const (
 	StratFinalized = FinalizationStrat(ethclient.HeadFinalized)
-	StartLatest    = FinalizationStrat(ethclient.HeadLatest)
+	StratLatest    = FinalizationStrat(ethclient.HeadLatest)
 )
 
 // Chain defines the configuration of an execution chain that supports

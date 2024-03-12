@@ -135,7 +135,7 @@ type monitorOnce func(ctx context.Context, avs *bindings.OmniAVS) error
 
 // monitorForever runs the given monitor function every 30 seconds until the context is canceled.
 func monitorForever(ctx context.Context, avs *bindings.OmniAVS, name string, f monitorOnce) {
-	interval := time.Second * 30
+	interval := time.Minute * 1
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 

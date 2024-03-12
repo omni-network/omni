@@ -15,26 +15,26 @@ import (
 // use hardcoded avs address for now
 // TODO: add avs address to network config.
 const (
-	devnetAVSAddr = "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853"
 	goerliAVSAddr = "0x848BE3DBcd054c17EbC712E0d29D15C2e638aBCe"
+	goerliRPC     = "https://ethereum-goerli-rpc.publicnode.com"
 )
 
 // Monitor starts monitoring the AVS contract.
 func Monitor(ctx context.Context, network netconf.Network) error {
+	if network.Name != netconf.Staging {
+		// only monitor in staging for now
+		return nil
+	}
+
 	log.Info(ctx, "Starting AVS monitor")
 
-	l1Client, err := newL1Client(network)
+	client, err := ethclient.Dial("goerli", goerliRPC)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "dialing goerli")
 	}
 
-	addr := common.HexToAddress(devnetAVSAddr)
-	// monitor goerli avs in staging, for now
-	if network.Name == netconf.Staging {
-		addr = common.HexToAddress(goerliAVSAddr)
-	}
-
-	avs, err := newAVS(l1Client, addr)
+	addr := common.HexToAddress(goerliAVSAddr)
+	avs, err := newAVS(client, addr)
 	if err != nil {
 		return err
 	}
@@ -42,22 +42,6 @@ func Monitor(ctx context.Context, network netconf.Network) error {
 	startMonitoring(ctx, avs)
 
 	return nil
-}
-
-// newL1Client returns a new ethclient.Client for the chain marked `IsEthereum` in the network config.
-func newL1Client(network netconf.Network) (ethclient.Client, error) {
-	for _, chain := range network.Chains {
-		if chain.IsEthereum {
-			client, err := ethclient.Dial(chain.Name, chain.RPCURL)
-			if err != nil {
-				return nil, errors.Wrap(err, "dial eth client")
-			}
-
-			return client, nil
-		}
-	}
-
-	return nil, errors.New("no ethereum chain found")
 }
 
 // newAVS returns a new AVS contract instance.
