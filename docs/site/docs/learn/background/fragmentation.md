@@ -27,6 +27,6 @@ The Omni protocol aims to address these fragmentation challenges by enabling sea
 
 The vision for the future is an interconnected blockchain landscape where fragmentation is a thing of the past. Rollups will continue to play a critical role in scaling, and protocols like Omni are key to ensuring that the ecosystem remains unified and user-friendly.
 
-For more information on how Omni tackles fragmentation and promotes a cohesive blockchain environment read further on [Omni's vision](../introduction/vision.md) and [EigenLayer's enhancing of security through restaking](https://eigenlayer.com/).
+For more information on how Omni tackles fragmentation and promotes a cohesive blockchain environment read further on [Omni and its background](../introduction/introduction.md) and [EigenLayer's enhancing of security through restaking](https://eigenlayer.com/).
 
 Omni is dedicated to bridging the gaps between isolated rollups, fostering a more connected and powerful blockchain infrastructure. Through its innovative protocols, Omni is paving the way for a future where the full potential of blockchain can be realized without the barriers of fragmentation.

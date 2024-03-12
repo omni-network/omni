@@ -5,6 +5,13 @@ set -e
 OS=$(uname -s)
 ARCH=$(uname -m)
 
+# Check if running on Windows
+if [[ "$OS" == CYGWIN* ]] || [[ "$OS" == MINGW* ]] || [[ "$OS" == MSYS* ]]; then
+    echo "😮 It looks like you're running this script on Windows."
+    echo "✅ Please use Ubuntu or macOS to run this script, or use WSL or another VM service if you are on Windows."
+    exit 0
+fi
+
 case $ARCH in
     arm64) ARCH="arm64" ;;
     aarch64) ARCH="arm64" ;;
@@ -23,7 +30,10 @@ echo "ℹ️ Downloading omni from $URL"
 echo "ℹ️ Installing omni to $TARGET"
 mkdir -p "$(dirname "${TARGET}")"
 
-curl -L -s "$URL" | tar -xz -C "$(dirname "${TARGET}")" omni
+# Download and extract omni
+curl -L -s -v "$URL" -o omni.tar.gz
+tar -xzv -C "$(dirname "${TARGET}")" -f omni.tar.gz
+rm omni.tar.gz
 chmod +x "$TARGET"
 
 # Add to PATH if not already there
