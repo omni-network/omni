@@ -102,8 +102,8 @@ func newCLILogger(opts ...func(*options)) *slog.Logger {
 	})
 
 	styles := charm.DefaultStyles()
-	const padWidth = 40
-	styles.Message = styles.Message.Width(padWidth).Inline(true)
+	const padWidth = 90
+	styles.Message = styles.Message.Width(padWidth)
 	styles.Levels = nil
 	logger.SetStyles(styles)
 	logger.SetColorProfile(o.Color)
