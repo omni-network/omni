@@ -30,6 +30,7 @@ func (w *Waiter) Add(chainID uint64, tx *ethtypes.Transaction) {
 func (w *Waiter) Wait(ctx context.Context) error {
 	for chainID, txs := range w.txs {
 		for _, tx := range txs {
+			//nolint:typecheck // this is fine
 			rec, err := bind.WaitMined(ctx, w.b.backends[chainID], tx)
 			if err != nil {
 				return errors.Wrap(err, "wait mined", "chain_id", chainID)

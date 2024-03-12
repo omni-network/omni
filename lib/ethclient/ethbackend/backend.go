@@ -105,6 +105,7 @@ func (b *Backend) Send(ctx context.Context, from common.Address, candidate txmgr
 
 // WaitMined waits for the transaction to be mined and asserts the receipt is successful.
 func (b *Backend) WaitMined(ctx context.Context, tx *ethtypes.Transaction) (*ethtypes.Receipt, error) {
+	//nolint:typecheck // this is fine
 	rec, err := bind.WaitMined(ctx, b, tx)
 	if err != nil {
 		return nil, errors.Wrap(err, "wait mined", "chain", b.chainName)
@@ -121,6 +122,7 @@ func (b *Backend) WaitMined(ctx context.Context, tx *ethtypes.Transaction) (*eth
 // Do not cache or store the TransactOpts, as they are not safe for concurrent use (pointer).
 // Rather create a new TransactOpts for each transaction.
 func (b *Backend) BindOpts(ctx context.Context, from common.Address) (*bind.TransactOpts, error) {
+	//nolint:typecheck // this is fine
 	if header, err := b.HeaderByNumber(ctx, nil); err != nil {
 		return nil, errors.Wrap(err, "header by number")
 	} else if header.BaseFee == nil {
