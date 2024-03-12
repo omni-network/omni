@@ -16,7 +16,7 @@ func main() {
 	cmd := clicmd.New()
 
 	fig := figure.NewFigure("omni", "", true)
-	cmd.SetHelpTemplate(fig.String() + cmd.HelpTemplate())
+	cmd.SetHelpTemplate(fig.String() + "\n" + cmd.HelpTemplate())
 
 	libcmd.SilenceErrUsage(cmd)
 
