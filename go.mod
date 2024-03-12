@@ -15,7 +15,7 @@ require (
 	entgo.io/ent v0.13.1
 	github.com/BurntSushi/toml v1.3.2
 	github.com/Layr-Labs/eigenlayer-cli v0.6.2
-	github.com/Layr-Labs/eigensdk-go v0.1.1
+	github.com/Layr-Labs/eigensdk-go v0.1.2
 	github.com/bufbuild/buf v1.30.0
 	github.com/charmbracelet/log v0.3.1
 	github.com/cometbft/cometbft v0.38.5
@@ -206,9 +206,9 @@ require (
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pkg/profile v1.7.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/prometheus/client_golang v1.18.0
+	github.com/prometheus/client_golang v1.19.0
 	github.com/prometheus/client_model v0.6.0 // indirect
-	github.com/prometheus/common v0.47.0 // indirect
+	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
