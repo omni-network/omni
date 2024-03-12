@@ -25,8 +25,9 @@ func DefaultDeployConfig() DeployConfig {
 }
 
 type DeployConfig struct {
+	AVSDeployConfig
+
 	AgentSecrets agent.Secrets
-	EigenFile    string
 	PingPongN    uint64
 
 	// Internal use parameters (no command line flags).
@@ -67,7 +68,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 
 	deployInfo := make(types.DeployInfos)
 
-	if err := deployAVS(ctx, def, cfg, deployInfo); err != nil {
+	if err := deployAVS(ctx, def, cfg.AVSDeployConfig, deployInfo); err != nil {
 		return nil, nil, err
 	}
 

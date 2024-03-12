@@ -9,11 +9,40 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/test/e2e/app/static"
 	"github.com/omni-network/omni/test/e2e/types"
-
-	_ "embed"
 )
 
-func deployAVS(ctx context.Context, def Definition, cfg DeployConfig, deployInfo types.DeployInfos) error {
+func DefaultAVSDeployConfig() AVSDeployConfig {
+	return AVSDeployConfig{}
+}
+
+type AVSDeployConfig struct {
+	EigenFile string
+}
+
+// AVSDeploy deploys the Omni AVS contracts.
+func AVSDeploy(ctx context.Context, def Definition, cfg AVSDeployConfig) error {
+	info := make(types.DeployInfos)
+	err := deployAVS(ctx, def, cfg, info)
+	if err != nil {
+		return err
+	}
+
+	chain, err := def.Testnet.AVSChain()
+	if err != nil {
+		return err
+	}
+
+	addr, found := info.Addr(chain.ID, types.ContractOmniAVS)
+	if !found {
+		return errors.New("avs contract not found")
+	}
+
+	log.Info(ctx, "AVS contract deployed", "addr", addr.Hex())
+
+	return nil
+}
+
+func deployAVS(ctx context.Context, def Definition, cfg AVSDeployConfig, deployInfo types.DeployInfos) error {
 	var (
 		elDeps avs.EigenDeployments
 		err    error

@@ -316,7 +316,7 @@ func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 	var chains []netconf.Chain
 
 	// Connect to a random omni evm
-	omniEVM := random(testnet.OmniEVMs)
+	omniEVM := random[types.OmniEVM](testnet.OmniEVMs)
 	chains = append(chains, netconf.Chain{
 		ID:                omniEVM.Chain.ID,
 		Name:              omniEVM.Chain.Name,
