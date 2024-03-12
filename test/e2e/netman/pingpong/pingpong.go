@@ -62,6 +62,7 @@ func Deploy(ctx context.Context, netMgr netman.Manager, backends ethbackend.Back
 	}
 
 	// Start forkjoin for all portals
+
 	results, cancel := forkjoin.NewWithInputs(ctx, deployFunc, flatten(netMgr.Portals()))
 	defer cancel()
 
