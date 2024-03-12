@@ -12,7 +12,7 @@ import (
 func New() *cobra.Command {
 	return libcmd.NewRootCmd(
 		"omni",
-		"CLI providing tools for omni operators",
+		"CLI providing tools for interacting with omni",
 		newOperatorCmds(),
 		newDevnetCmds(),
 		buildinfo.NewVersionCmd(),
