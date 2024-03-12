@@ -373,7 +373,6 @@ func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 // Or the only omniEVM if there is only one.
 func omniEVMByPrefix(testnet types.Testnet, prefix string) types.OmniEVM {
 	if prefix == "" {
-		//nolint:typecheck // this is fine
 		return random(testnet.OmniEVMs)
 	} else if len(testnet.OmniEVMs) == 1 {
 		return testnet.OmniEVMs[0]
