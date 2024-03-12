@@ -16,6 +16,7 @@ import (
 	halocmd "github.com/omni-network/omni/halo/cmd"
 	halocfg "github.com/omni-network/omni/halo/config"
 	"github.com/omni-network/omni/halo/genutil"
+	evmgenutil "github.com/omni-network/omni/halo/genutil/evm"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -344,9 +345,6 @@ func updateConfigStateSync(nodeDir string, height int64, hash []byte) error {
 }
 
 var (
-	//go:embed static/geth-genesis.json
-	gethGenesis []byte
-
 	//go:embed static/geth-keystore.json
 	gethKeystore []byte
 )
@@ -356,8 +354,14 @@ func writeOmniEVMConfig(testnet types.Testnet) error {
 	var jwtSecret [32]byte
 	_, _ = rand.Read(jwtSecret[:])
 
+	gethGenesis := evmgenutil.MakeDevGenesis()
+	gethGenesisBz, err := json.MarshalIndent(gethGenesis, "", "  ")
+	if err != nil {
+		return errors.Wrap(err, "marshal genesis")
+	}
+
 	files := map[string][]byte{
-		"genesis.json":      gethGenesis,
+		"genesis.json":      gethGenesisBz,
 		"keystore/keystore": gethKeystore,
 		"jwtsecret":         []byte(fmt.Sprintf("%#x", jwtSecret)),
 		"geth_password.txt": []byte(""), // Empty password
