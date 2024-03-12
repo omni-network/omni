@@ -270,3 +270,6 @@ require github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be
 // See https://github.com/cosmos/cosmos-sdk/pull/14952
 // Also https://github.com/cosmos/cosmos-db/blob/main/go.mod#L11-L12
 replace github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
+
+// remove this when go ethereum release new version
+replace github.com/cockroachdb/pebble => github.com/cockroachdb/pebble v0.0.0-20231101195458-481da04154d6
