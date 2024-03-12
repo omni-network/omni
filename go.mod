@@ -272,4 +272,4 @@ require github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be
 replace github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 
 // remove this when go ethereum release new version
-replace github.com/cockroachdb/pebble => github.com/cockroachdb/pebble v0.0.0-20231101195458-481da04154d6
+replace github.com/cockroachdb/pebble v1.1.0 => github.com/cockroachdb/pebble v0.0.0-20231101195458-481da04154d6
