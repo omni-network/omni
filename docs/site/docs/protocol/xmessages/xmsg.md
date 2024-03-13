@@ -82,7 +82,7 @@ The following steps provide a comprehensive overview of how an XMsg travels from
 
     </details>
 
-    `XMsg` are associated with an `XStream`. An `XStream`  is a logical connection between a source and destination network. It contains many `XMsg`, each with a monotonically incrementing `XStreamOffset` (the offset is like a EOA nonce, it is incremented for each subsequent message sent from a source network to a destination network). `XMsg`  are therefore uniquely identified and strictly ordered by their associated `XStream` and `XStreamOffset`.
+    `XMsg`s are associated with an `XStream`. An `XStream`  is a logical connection between a source and destination network. It contains many `XMsg`s, each with a monotonically incrementing `XStreamOffset` (the offset is like a EOA nonce, it is incremented for each subsequent message sent from a source network to a destination network). `XMsg`s  are therefore uniquely identified and strictly ordered by their associated `XStream` and `XStreamOffset`.
 
     `XStreamOffset` allows for exactly-once delivery guarantees with strict ordering per source-destination network pair.
 
