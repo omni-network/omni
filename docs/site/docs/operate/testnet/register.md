@@ -35,7 +35,7 @@ chain_id: 5 # The chain ID of Goerli
 2. Run the following command to register as an operator:
 
 ```bash
-omni operator register --config-file ~/path/to/operator.yml
+omni operator register --config-file ~/path/to/operator.yaml
 ```
 
 :::info
