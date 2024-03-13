@@ -31,8 +31,8 @@ var (
 
 // OmniStakeMetaData contains all meta data concerning the OmniStake contract.
 var OmniStakeMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"deposit\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"event\",\"name\":\"Deposit\",\"inputs\":[{\"name\":\"depositor\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false}]",
-	Bin: "0x608060405234801561001057600080fd5b5061014d806100206000396000f3fe60806040526004361061001e5760003560e01c8063d0e30db014610023575b600080fd5b61002b61002d565b005b670de0b6b3a764000034116100895760405162461bcd60e51b815260206004820152601e60248201527f4f6d6e695374616b653a206465706f73697420616d7420746f6f206c6f77000060448201526064015b60405180910390fd5b67ffffffffffffffff34106100e05760405162461bcd60e51b815260206004820152601f60248201527f4f6d6e695374616b653a206465706f73697420616d7420746f6f2068696768006044820152606401610080565b60405134815233907fe1fffcc4923d04b559f4d29a8bfc6cda04eb5b0d3c460751c2402c5c5cc9109c9060200160405180910390a256fea26469706673582212206e76a260e57762025788567f63dff0cbd777fcbc8bbffc63a41e6b20c6012e6f64736f6c63430008170033",
+	ABI: "[{\"type\":\"function\",\"name\":\"deposit\",\"inputs\":[{\"name\":\"pubkey\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"event\",\"name\":\"Deposit\",\"inputs\":[{\"name\":\"depositor\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"pubkey\",\"type\":\"bytes\",\"indexed\":false,\"internalType\":\"bytes\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false}]",
+	Bin: "0x608060405234801561001057600080fd5b5061034b806100206000396000f3fe60806040526004361061001e5760003560e01c806398b1e06a14610023575b600080fd5b61003661003136600461020f565b610038565b005b6100418161019a565b6001600160a01b0316336001600160a01b0316146100a65760405162461bcd60e51b815260206004820152601a60248201527f4f6d6e695374616b653a207075626b6579206d69736d6174636800000000000060448201526064015b60405180910390fd5b670de0b6b3a764000034116100fd5760405162461bcd60e51b815260206004820152601e60248201527f4f6d6e695374616b653a206465706f73697420616d7420746f6f206c6f770000604482015260640161009d565b67ffffffffffffffff34106101545760405162461bcd60e51b815260206004820152601f60248201527f4f6d6e695374616b653a206465706f73697420616d7420746f6f206869676800604482015260640161009d565b336001600160a01b03167f68051bc50b1ef1654bf1e6204b5f8fa9badcd038e00fa5b43f21f898fc2728ca823460405161018f9291906102c0565b60405180910390a250565b600081516041146101ed5760405162461bcd60e51b815260206004820181905260248201527f4f6d6e695374616b653a20696e76616c6964207075626b6579206c656e677468604482015260640161009d565b50805160209091012090565b634e487b7160e01b600052604160045260246000fd5b60006020828403121561022157600080fd5b813567ffffffffffffffff8082111561023957600080fd5b818401915084601f83011261024d57600080fd5b81358181111561025f5761025f6101f9565b604051601f8201601f19908116603f01168101908382118183101715610287576102876101f9565b816040528281528760208487010111156102a057600080fd5b826020860160208301376000928101602001929092525095945050505050565b604081526000835180604084015260005b818110156102ee57602081870181015160608684010152016102d1565b506000606082850101526060601f19601f830116840101915050826020830152939250505056fea2646970667358221220c900cdad11a50ac5db4d08169db8a40301664e8c38f63e5869aae4888d78813264736f6c63430008170033",
 }
 
 // OmniStakeABI is the input ABI used to generate the binding from.
@@ -202,25 +202,25 @@ func (_OmniStake *OmniStakeTransactorRaw) Transact(opts *bind.TransactOpts, meth
 	return _OmniStake.Contract.contract.Transact(opts, method, params...)
 }
 
-// Deposit is a paid mutator transaction binding the contract method 0xd0e30db0.
+// Deposit is a paid mutator transaction binding the contract method 0x98b1e06a.
 //
-// Solidity: function deposit() payable returns()
-func (_OmniStake *OmniStakeTransactor) Deposit(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _OmniStake.contract.Transact(opts, "deposit")
+// Solidity: function deposit(bytes pubkey) payable returns()
+func (_OmniStake *OmniStakeTransactor) Deposit(opts *bind.TransactOpts, pubkey []byte) (*types.Transaction, error) {
+	return _OmniStake.contract.Transact(opts, "deposit", pubkey)
 }
 
-// Deposit is a paid mutator transaction binding the contract method 0xd0e30db0.
+// Deposit is a paid mutator transaction binding the contract method 0x98b1e06a.
 //
-// Solidity: function deposit() payable returns()
-func (_OmniStake *OmniStakeSession) Deposit() (*types.Transaction, error) {
-	return _OmniStake.Contract.Deposit(&_OmniStake.TransactOpts)
+// Solidity: function deposit(bytes pubkey) payable returns()
+func (_OmniStake *OmniStakeSession) Deposit(pubkey []byte) (*types.Transaction, error) {
+	return _OmniStake.Contract.Deposit(&_OmniStake.TransactOpts, pubkey)
 }
 
-// Deposit is a paid mutator transaction binding the contract method 0xd0e30db0.
+// Deposit is a paid mutator transaction binding the contract method 0x98b1e06a.
 //
-// Solidity: function deposit() payable returns()
-func (_OmniStake *OmniStakeTransactorSession) Deposit() (*types.Transaction, error) {
-	return _OmniStake.Contract.Deposit(&_OmniStake.TransactOpts)
+// Solidity: function deposit(bytes pubkey) payable returns()
+func (_OmniStake *OmniStakeTransactorSession) Deposit(pubkey []byte) (*types.Transaction, error) {
+	return _OmniStake.Contract.Deposit(&_OmniStake.TransactOpts, pubkey)
 }
 
 // OmniStakeDepositIterator is returned from FilterDeposit and is used to iterate over the raw logs and unpacked data for Deposit events raised by the OmniStake contract.
@@ -293,13 +293,14 @@ func (it *OmniStakeDepositIterator) Close() error {
 // OmniStakeDeposit represents a Deposit event raised by the OmniStake contract.
 type OmniStakeDeposit struct {
 	Depositor common.Address
+	Pubkey    []byte
 	Amount    *big.Int
 	Raw       types.Log // Blockchain specific contextual infos
 }
 
-// FilterDeposit is a free log retrieval operation binding the contract event 0xe1fffcc4923d04b559f4d29a8bfc6cda04eb5b0d3c460751c2402c5c5cc9109c.
+// FilterDeposit is a free log retrieval operation binding the contract event 0x68051bc50b1ef1654bf1e6204b5f8fa9badcd038e00fa5b43f21f898fc2728ca.
 //
-// Solidity: event Deposit(address indexed depositor, uint256 amount)
+// Solidity: event Deposit(address indexed depositor, bytes pubkey, uint256 amount)
 func (_OmniStake *OmniStakeFilterer) FilterDeposit(opts *bind.FilterOpts, depositor []common.Address) (*OmniStakeDepositIterator, error) {
 
 	var depositorRule []interface{}
@@ -314,9 +315,9 @@ func (_OmniStake *OmniStakeFilterer) FilterDeposit(opts *bind.FilterOpts, deposi
 	return &OmniStakeDepositIterator{contract: _OmniStake.contract, event: "Deposit", logs: logs, sub: sub}, nil
 }
 
-// WatchDeposit is a free log subscription operation binding the contract event 0xe1fffcc4923d04b559f4d29a8bfc6cda04eb5b0d3c460751c2402c5c5cc9109c.
+// WatchDeposit is a free log subscription operation binding the contract event 0x68051bc50b1ef1654bf1e6204b5f8fa9badcd038e00fa5b43f21f898fc2728ca.
 //
-// Solidity: event Deposit(address indexed depositor, uint256 amount)
+// Solidity: event Deposit(address indexed depositor, bytes pubkey, uint256 amount)
 func (_OmniStake *OmniStakeFilterer) WatchDeposit(opts *bind.WatchOpts, sink chan<- *OmniStakeDeposit, depositor []common.Address) (event.Subscription, error) {
 
 	var depositorRule []interface{}
@@ -356,9 +357,9 @@ func (_OmniStake *OmniStakeFilterer) WatchDeposit(opts *bind.WatchOpts, sink cha
 	}), nil
 }
 
-// ParseDeposit is a log parse operation binding the contract event 0xe1fffcc4923d04b559f4d29a8bfc6cda04eb5b0d3c460751c2402c5c5cc9109c.
+// ParseDeposit is a log parse operation binding the contract event 0x68051bc50b1ef1654bf1e6204b5f8fa9badcd038e00fa5b43f21f898fc2728ca.
 //
-// Solidity: event Deposit(address indexed depositor, uint256 amount)
+// Solidity: event Deposit(address indexed depositor, bytes pubkey, uint256 amount)
 func (_OmniStake *OmniStakeFilterer) ParseDeposit(log types.Log) (*OmniStakeDeposit, error) {
 	event := new(OmniStakeDeposit)
 	if err := _OmniStake.contract.UnpackLog(event, "Deposit", log); err != nil {
