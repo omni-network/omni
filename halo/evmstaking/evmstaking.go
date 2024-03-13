@@ -147,7 +147,7 @@ func (p EventProcessor) Deliver(ctx context.Context, _ common.Hash, elog *evmeng
 		amountCoin,
 		stypes.Description{Moniker: ethAddr.Hex()},
 		stypes.NewCommissionRates(math.LegacyZeroDec(), math.LegacyZeroDec(), math.LegacyZeroDec()),
-		math.ZeroInt())
+		math.NewInt(1)) // Stub out minimum self delegation for now, just use 1.
 	if err != nil {
 		return errors.Wrap(err, "create validator message")
 	}

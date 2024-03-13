@@ -42,7 +42,7 @@
      "coins": [
       {
        "denom": "stake",
-       "amount": "1000000"
+       "amount": "1000000000000000000"
       }
      ]
     },
@@ -51,7 +51,7 @@
      "coins": [
       {
        "denom": "stake",
-       "amount": "1000000"
+       "amount": "1000000000000000000"
       }
      ]
     }
@@ -59,7 +59,7 @@
    "supply": [
     {
      "denom": "stake",
-     "amount": "2000000"
+     "amount": "2000000000000000000"
     }
    ],
    "denom_metadata": [],
@@ -103,7 +103,7 @@
          "max_rate": "0.000000000000000000",
          "max_change_rate": "0.000000000000000000"
         },
-        "min_self_delegation": "1000000",
+        "min_self_delegation": "1000000000000000000",
         "delegator_address": "",
         "validator_address": "omnivaloper1lmet2guatml9h9qsm2pvc525xk0mrkfylr3vxp",
         "pubkey": {
@@ -112,7 +112,7 @@
         },
         "value": {
          "denom": "stake",
-         "amount": "1000000"
+         "amount": "1000000000000000000"
         }
        }
       ],
@@ -150,7 +150,7 @@
          "max_rate": "0.000000000000000000",
          "max_change_rate": "0.000000000000000000"
         },
-        "min_self_delegation": "1000000",
+        "min_self_delegation": "1000000000000000000",
         "delegator_address": "",
         "validator_address": "omnivaloper1anz94xtvltxrfr3ejllev7fegc8ntgkjtdhv7d",
         "pubkey": {
@@ -159,7 +159,7 @@
         },
         "value": {
          "denom": "stake",
-         "amount": "1000000"
+         "amount": "1000000000000000000"
         }
        }
       ],
