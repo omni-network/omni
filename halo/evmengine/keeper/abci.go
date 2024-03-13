@@ -119,17 +119,17 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 		return nil, errors.Wrap(err, "prepare votes")
 	}
 
-	// Next, collect all prev payload evm logs.
-	evmLogs, err := k.evmLogs(ctx, payloadResp.ExecutionPayload.ParentHash)
+	// Next, collect all prev payload evm event logs.
+	evmEvents, err := k.evmEvents(ctx, payloadResp.ExecutionPayload.ParentHash)
 	if err != nil {
-		return nil, errors.Wrap(err, "prepare evm logs")
+		return nil, errors.Wrap(err, "prepare evm event logs")
 	}
 
 	// Then construct the execution payload message.
 	payloadMsg := &types.MsgExecutionPayload{
-		Authority:        authtypes.NewModuleAddress(types.ModuleName).String(),
-		ExecutionPayload: payloadData,
-		PrevPayloadLogs:  evmLogs,
+		Authority:         authtypes.NewModuleAddress(types.ModuleName).String(),
+		ExecutionPayload:  payloadData,
+		PrevPayloadEvents: evmEvents,
 	}
 
 	// Combine all the votes messages and the payload message into a single transaction.
@@ -148,7 +148,7 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 		"height", req.Height,
 		log.Hex7("execution_block_hash", payloadResp.ExecutionPayload.BlockHash[:]),
 		"vote_msgs", len(voteMsgs),
-		"evm_logs", len(evmLogs),
+		"evm_events", len(evmEvents),
 	)
 
 	return &abci.ResponsePrepareProposal{Txs: [][]byte{tx}}, nil

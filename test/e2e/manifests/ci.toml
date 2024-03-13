@@ -12,3 +12,7 @@ state_sync = true
 [node.full01]
 mode = "full"
 perturb = ["restart"]
+
+# Enable this once we have deposit pubkeys
+#[validator_update.10]
+#full01 = 10

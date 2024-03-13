@@ -24,14 +24,14 @@ func (s proposalServer) ExecutionPayload(ctx context.Context, msg *types.MsgExec
 	}
 
 	// Collect local view of the evm logs from the previous payload.
-	evmLogs, err := s.evmLogs(ctx, payload.ParentHash)
+	evmEvents, err := s.evmEvents(ctx, payload.ParentHash)
 	if err != nil {
-		return nil, errors.Wrap(err, "prepare evm logs")
+		return nil, errors.Wrap(err, "prepare evm event logs")
 	}
 
-	// Ensure the proposed evm logs are equal to the local view.
-	if err := evmLogsEqual(evmLogs, msg.PrevPayloadLogs); err != nil {
-		return nil, errors.Wrap(err, "verify prev payload logs")
+	// Ensure the proposed evm event logs are equal to the local view.
+	if err := evmEventsEqual(evmEvents, msg.PrevPayloadEvents); err != nil {
+		return nil, errors.Wrap(err, "verify prev payload events")
 	}
 
 	return &types.ExecutionPayloadResponse{}, nil
@@ -45,7 +45,7 @@ func NewProposalServer(keeper *Keeper) types.MsgServiceServer {
 
 var _ types.MsgServiceServer = proposalServer{}
 
-func evmLogsEqual(a, b []*types.EVMLog) error {
+func evmEventsEqual(a, b []*types.EVMEvent) error {
 	if len(a) != len(b) {
 		return errors.New("count mismatch")
 	}

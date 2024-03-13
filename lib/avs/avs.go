@@ -2,13 +2,13 @@ package avs
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"math/big"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/k1util"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -47,7 +47,9 @@ func RegisterOperatorWithAVS(ctx context.Context, contracts Contracts, backend *
 		return errors.Wrap(err, "public key")
 	}
 
-	tx, err := contracts.OmniAVS.RegisterOperator(txOpts, pubkeyBytes(pubkey), bindings.ISignatureUtilsSignatureWithSaltAndExpiry{
+	pubkey64 := k1util.PubKeyToBytes64(pubkey)
+
+	tx, err := contracts.OmniAVS.RegisterOperator(txOpts, pubkey64, bindings.ISignatureUtilsSignatureWithSaltAndExpiry{
 		Signature: sig[:],
 		Salt:      salt,
 		Expiry:    expiry,
@@ -94,9 +96,4 @@ func verifyRegisterOperator(ctx context.Context, contracts Contracts, operator c
 	}
 
 	return nil
-}
-
-// pubkeyBytes returns the bytes of the public key, removing the prefix (0x04 for uncompressed keys).
-func pubkeyBytes(pubkey *ecdsa.PublicKey) []byte {
-	return crypto.FromECDSAPub(pubkey)[1:]
 }

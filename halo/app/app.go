@@ -5,6 +5,7 @@ import (
 	atypes "github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/halo/comet"
 	evmengkeeper "github.com/omni-network/omni/halo/evmengine/keeper"
+	"github.com/omni-network/omni/halo/evmstaking"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 
@@ -92,9 +93,16 @@ func newApp(
 		return nil, errors.Wrap(err, "dep inject")
 	}
 
+	// TODO(corver): Refactor this to use depinject
+	evmStaking, err := evmstaking.New(engineCl, app.StakingKeeper, app.BankKeeper, app.AccountKeeper)
+	if err != nil {
+		return nil, errors.Wrap(err, "create evm staking")
+	}
+
 	// Set evmengine vote and evm msg providers.
 	app.EVMEngKeeper.SetVoteProvider(app.AttestKeeper)
-	app.EVMEngKeeper.AddLogProvider(evmengkeeper.NewPocLogProvider(app.EVMEngKeeper))
+	app.EVMEngKeeper.AddEventProcessor(evmengkeeper.NewPocEventProvider(app.EVMEngKeeper))
+	app.EVMEngKeeper.AddEventProcessor(evmStaking)
 
 	proposalHandler := makeProcessProposalHandler(app)
 
