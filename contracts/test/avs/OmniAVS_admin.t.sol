@@ -13,8 +13,8 @@ import { Base } from "./common/Base.sol";
  * @dev Test suite for the AVS admin functionality
  */
 contract OmniAVS_admin_Test is Base {
-    /// @dev Test that the owner can deregister an operator
-    function test_deregisterOperator_byOwner_succeeds() public {
+    /// @dev Test that the owner can eject an operator
+    function test_ejectOwner_byOwner_succeeds() public {
         address operator = _operator(0);
 
         // register operator
@@ -30,11 +30,18 @@ contract OmniAVS_admin_Test is Base {
 
         // deregister operator
         vm.prank(omniAVSOwner);
-        omniAVS.deregisterOperatorFromAVS(operator);
+        omniAVS.ejectOperator(operator);
 
         // assert operator is deregistered
         operators = omniAVS.operators();
         assertEq(operators.length, 0);
+    }
+
+    /// @dev Test that only the owner can eject an operator
+    function test_ejectOwner_notOwner_reverts() public {
+        address operator = _operator(0);
+        vm.expectRevert("Ownable: caller is not the owner");
+        omniAVS.ejectOperator(operator);
     }
 
     /// @dev Test that the owner can set the strategy parameters

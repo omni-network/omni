@@ -2,6 +2,7 @@ package avs
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"math/big"
 	"time"
 
@@ -41,7 +42,12 @@ func RegisterOperatorWithAVS(ctx context.Context, contracts Contracts, backend *
 		return err
 	}
 
-	tx, err := contracts.OmniAVS.RegisterOperatorToAVS(txOpts, operator, bindings.ISignatureUtilsSignatureWithSaltAndExpiry{
+	pubkey, err := backend.PublicKey(operator)
+	if err != nil {
+		return errors.Wrap(err, "public key")
+	}
+
+	tx, err := contracts.OmniAVS.RegisterOperator(txOpts, pubkeyBytes(pubkey), bindings.ISignatureUtilsSignatureWithSaltAndExpiry{
 		Signature: sig[:],
 		Salt:      salt,
 		Expiry:    expiry,
@@ -64,7 +70,7 @@ func DeregisterOperatorFromAVS(ctx context.Context, contracts Contracts, backend
 		return err
 	}
 
-	tx, err := contracts.OmniAVS.DeregisterOperatorFromAVS(txOpts, operator)
+	tx, err := contracts.OmniAVS.DeregisterOperator(txOpts)
 	if err != nil {
 		return errors.Wrap(err, "deregister operator from avs")
 	}
@@ -88,4 +94,9 @@ func verifyRegisterOperator(ctx context.Context, contracts Contracts, operator c
 	}
 
 	return nil
+}
+
+// pubkeyBytes returns the bytes of the public key, removing the prefix (0x04 for uncompressed keys).
+func pubkeyBytes(pubkey *ecdsa.PublicKey) []byte {
+	return crypto.FromECDSAPub(pubkey)[1:]
 }

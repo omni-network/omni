@@ -72,7 +72,7 @@ contract OmniAVS_allowlist_Test is Base {
 
         vm.expectRevert("OmniAVS: not allowed");
         vm.prank(operator);
-        omniAVS.registerOperatorToAVS(operator, emptySig);
+        omniAVS.registerOperator(_pubkey(operator), emptySig);
     }
 
     /// @dev Test that the owner can disable the allowlist

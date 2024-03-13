@@ -2,6 +2,7 @@
 pragma solidity ^0.8.12;
 
 import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
+import { ISignatureUtils } from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 
 /**
  * @title IOmniAVS
@@ -24,11 +25,13 @@ interface IOmniAVS {
     /**
      * @notice Struct representing an OmniAVS operator
      * @custom:field addr       The operator's ethereum address
+     * @custom:field pubkey     The operator's 64 byte uncompressed secp256k1 public key
      * @custom:field delegated  The total amount delegated, not including operator stake
      * @custom:field staked     The total amount staked by the operator, not including delegations
      */
     struct Operator {
         address addr;
+        bytes pubkey;
         uint96 delegated;
         uint96 staked;
     }
@@ -62,6 +65,22 @@ interface IOmniAVS {
      * @notice Returns the current strategy parameters.
      */
     function strategyParams() external view returns (StrategyParam[] memory);
+
+    /**
+     * @notice Register an operator with the AVS. Forwards call to EigenLayer' AVSDirectory.
+     * @param pubkey            64 byte uncompressed secp256k1 public key (no 0x04 prefix)
+     *                          Pubkey must match operator's address (msg.sender)
+     * @param operatorSignature The signature, salt, and expiry of the operator's signature.
+     */
+    function registerOperator(
+        bytes calldata pubkey,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    ) external;
+
+    /**
+     * @notice Deregister an operator from the AVS. Forwards a call to EigenLayer's AVSDirectory.
+     */
+    function deregisterOperator() external;
 
     /**
      * @notice Check if an operator can register to the AVS.

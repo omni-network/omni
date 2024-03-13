@@ -94,6 +94,15 @@ func (b *Backend) Sign(from common.Address, input [32]byte) ([65]byte, error) {
 	return k1util.Sign(pk, input)
 }
 
+func (b *Backend) PublicKey(from common.Address) (*ecdsa.PublicKey, error) {
+	acc, ok := b.accounts[from]
+	if !ok {
+		return nil, errors.New("unknown from address", "from", from)
+	}
+
+	return &acc.privateKey.PublicKey, nil
+}
+
 func (b *Backend) Send(ctx context.Context, from common.Address, candidate txmgr.TxCandidate) (*ethtypes.Transaction, *ethtypes.Receipt, error) {
 	acc, ok := b.accounts[from]
 	if !ok {
