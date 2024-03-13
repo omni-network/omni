@@ -65,8 +65,9 @@ type Portal struct {
 }
 
 type testFunc struct {
-	TestNode   func(*testing.T, e2e.Node, []Portal)
-	TestPortal func(*testing.T, Portal, []Portal)
+	TestNode    func(*testing.T, e2e.Node, []Portal)
+	TestPortal  func(*testing.T, Portal, []Portal)
+	TestOmniEVM func(*testing.T, ethclient.Client)
 }
 
 func testNode(t *testing.T, fn func(*testing.T, e2e.Node, []Portal)) {
@@ -77,6 +78,11 @@ func testNode(t *testing.T, fn func(*testing.T, e2e.Node, []Portal)) {
 func testPortal(t *testing.T, fn func(*testing.T, Portal, []Portal)) {
 	t.Helper()
 	test(t, testFunc{TestPortal: fn})
+}
+
+func testOmniEVM(t *testing.T, fn func(*testing.T, ethclient.Client)) {
+	t.Helper()
+	test(t, testFunc{TestOmniEVM: fn})
 }
 
 // test runs tests for testnet nodes. The callback functions are respectively given a
@@ -124,6 +130,20 @@ func test(t *testing.T, testFunc testFunc) {
 				t.Parallel()
 				testFunc.TestPortal(t, portal, portals)
 			})
+		}
+	}
+
+	if testFunc.TestOmniEVM != nil {
+		for _, chain := range network.Chains {
+			if chain.IsOmni {
+				client, err := ethclient.Dial(chain.Name, chain.RPCURL)
+				require.NoError(t, err)
+
+				t.Run(chain.Name, func(t *testing.T) {
+					t.Parallel()
+					testFunc.TestOmniEVM(t, client)
+				})
+			}
 		}
 	}
 }
