@@ -5,6 +5,7 @@ import (
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
 	engevmmodule "github.com/omni-network/omni/halo/evmengine/module"
 	engevmtypes "github.com/omni-network/omni/halo/evmengine/types"
+	"github.com/omni-network/omni/halo/evmstaking"
 
 	runtimev1alpha1 "cosmossdk.io/api/cosmos/app/runtime/v1alpha1"
 	appv1alpha1 "cosmossdk.io/api/cosmos/app/v1alpha1"
@@ -96,6 +97,7 @@ var (
 		{Account: distrtypes.ModuleName},
 		{Account: stakingtypes.BondedPoolName, Permissions: []string{authtypes.Burner, stakingtypes.ModuleName}},
 		{Account: stakingtypes.NotBondedPoolName, Permissions: []string{authtypes.Burner, stakingtypes.ModuleName}},
+		{Account: evmstaking.AccountName, Permissions: []string{authtypes.Burner, authtypes.Minter}},
 	}
 
 	// appConfig application configuration (used by depinject).

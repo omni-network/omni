@@ -18,6 +18,8 @@ import (
 	cmttypes "github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 
+	"github.com/ethereum/go-ethereum/crypto"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -70,6 +72,20 @@ func TestRandom(t *testing.T) {
 	require.True(t, ok)
 }
 
+func TestCosmosPbukey(t *testing.T) {
+	t.Parallel()
+
+	priv, err := crypto.GenerateKey()
+	require.NoError(t, err)
+
+	cosmosPub, err := k1util.StdPubKeyToCosmos(&priv.PublicKey)
+	require.NoError(t, err)
+
+	require.NotPanics(t, func() {
+		cosmosPub.Address()
+	})
+}
+
 // TestCometBFT tests that CometBFT and k1util can produce the same signatures.
 // This ensures that we can use web3signer to sign votes and proposals.
 func TestCometBFT(t *testing.T) {
@@ -99,6 +115,21 @@ func TestCometBFT(t *testing.T) {
 
 	require.Equal(t, votePB1.Signature, votePB2.Signature)
 	require.Equal(t, votePB1.ExtensionSignature, votePB2.ExtensionSignature)
+}
+
+func TestPubkey64(t *testing.T) {
+	t.Parallel()
+
+	priv, err := crypto.GenerateKey()
+	require.NoError(t, err)
+
+	bz64 := k1util.PubKeyToBytes64(&priv.PublicKey)
+	require.Len(t, bz64, 64)
+
+	pub, err := k1util.PubKeyFromBytes64(bz64)
+	require.NoError(t, err)
+
+	require.True(t, pub.Equal(&priv.PublicKey))
 }
 
 func signVote(t *testing.T, key k1.PrivKey, chainID string, vote *cmtproto.Vote) {
