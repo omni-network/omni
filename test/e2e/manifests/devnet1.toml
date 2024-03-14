@@ -12,9 +12,5 @@ prometheus = true
 [node.seed01]
 mode = "seed"
 
-#[node.seed02]
-#mode = "seed"
-
-#
-#[node.fullnode01]
-#mode = "full"
+[node.fullnode01]
+mode = "full"
