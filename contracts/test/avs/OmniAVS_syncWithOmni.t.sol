@@ -5,6 +5,7 @@ import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
 import { IEthStakeInbox } from "src/interfaces/IEthStakeInbox.sol";
 
 import { Base } from "./common/Base.sol";
+import { console } from "forge-std/console.sol";
 
 /**
  * @title OmniAVS_syncWithOmni_Test
@@ -80,7 +81,6 @@ contract OmniAVS_syncWithOmni_Test is Base {
         // NOTE: it is not necessary for operator to have deposited minimumStakeForQuorum
         // other staker(s) could have deposited and delegated to the operator
         for (uint32 i = 0; i < numOperators; i++) {
-            operators[i] = _operator(i);
             _registerAsOperator(operators[i]);
             _depositIntoSupportedStrategy(operators[i], initialOperatorStake);
         }
