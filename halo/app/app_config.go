@@ -7,6 +7,8 @@ import (
 	engevmtypes "github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/halo/evmstaking"
 
+	"github.com/ethereum/go-ethereum/params"
+
 	runtimev1alpha1 "cosmossdk.io/api/cosmos/app/runtime/v1alpha1"
 	appv1alpha1 "cosmossdk.io/api/cosmos/app/v1alpha1"
 	authmodulev1 "cosmossdk.io/api/cosmos/auth/module/v1"
@@ -18,6 +20,7 @@ import (
 	txconfigv1 "cosmossdk.io/api/cosmos/tx/config/v1"
 	"cosmossdk.io/core/appconfig"
 	"cosmossdk.io/depinject"
+	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -54,6 +57,9 @@ func init() {
 	cfg.SetBech32PrefixForValidator(validatorAddressPrefix, validatorPubKeyPrefix)
 	cfg.SetBech32PrefixForConsensusNode(consNodeAddressPrefix, consNodePubKeyPrefix)
 	cfg.Seal()
+
+	// Override default power reduction: 1 ether (1e18) $STAKE == 1 power.
+	sdk.DefaultPowerReduction = sdkmath.NewInt(params.Ether)
 }
 
 // DepConfig returns the default app depinject config.

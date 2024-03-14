@@ -13,6 +13,6 @@ state_sync = true
 mode = "full"
 perturb = ["restart"]
 
-# Enable this once we have deposit pubkeys
-#[validator_update.10]
-#full01 = 10
+# Trigger validator updates at height 20
+[validator_update.20]
+full01 = 2 # Add full01 as validator by depositing 2 ether $OMNI

@@ -29,6 +29,9 @@ type valUpdate struct {
 func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 	errChan := make(chan error, 1)
 	returnErr := func(err error) {
+		if err != nil {
+			log.Error(ctx, "Validator updates failed", err)
+		}
 		select {
 		case errChan <- err:
 		default:
@@ -120,7 +123,7 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 					returnErr(errors.Wrap(err, "bind opts"))
 					return
 				}
-				txOpts.Value = math.NewInt(power).MulRaw(params.GWei).BigInt()
+				txOpts.Value = math.NewInt(power).MulRaw(params.Ether).BigInt()
 
 				pubkey, err := valBackend.PublicKey(addr)
 				if err != nil {
@@ -128,19 +131,22 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 					return
 				}
 
-				log.Info(ctx, "Depositing stake",
-					"validator", node.Name,
-					"power", power,
-				)
-
 				tx, err := omniStake.Deposit(txOpts, k1util.PubKeyToBytes64(pubkey))
 				if err != nil {
 					returnErr(errors.Wrap(err, "deposit"))
 					return
-				} else if _, err := valBackend.WaitMined(ctx, tx); err != nil {
+				}
+				rec, err := valBackend.WaitMined(ctx, tx)
+				if err != nil {
 					returnErr(errors.Wrap(err, "wait minded"))
 					return
 				}
+
+				log.Info(ctx, "Deposited stake",
+					"validator", node.Name,
+					"power", power,
+					"height", rec.BlockNumber.Uint64(),
+				)
 			}
 		}
 
