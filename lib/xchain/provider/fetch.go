@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -106,6 +107,7 @@ func (p *Provider) GetBlock(ctx context.Context, chainID uint64, height uint64) 
 
 	// ignore if our height is greater than the finalized height
 	if height > finalisedHeader.Number.Uint64() {
+		log.Warn(ctx, "Trying to fetch block height > finalized height", nil, "chain", chainID, "attested height", height, "finalized height", finalisedHeader.Number.Uint64())
 		return xchain.Block{}, false, nil
 	}
 
