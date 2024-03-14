@@ -16,6 +16,13 @@ import (
 	"github.com/ethereum/go-ethereum/p2p/enode"
 )
 
+type GcMode string
+
+const (
+	GcModeFull    GcMode = "full"    // default mode for geth
+	GcModeArchive GcMode = "archive" // archival mode for geth
+)
+
 // Testnet wraps e2e.Testnet with additional omni-specific fields.
 type Testnet struct {
 	*e2e.Testnet
@@ -60,6 +67,7 @@ type OmniEVM struct {
 	InternalRPC     string   // For JSON-RPC queries from halo/relayer
 	InternalAuthRPC string   // For engine API queries from halo
 	ExternalRPC     string   // For JSON-RPC queries from e2e app.
+	Gcmode          GcMode   // Geth config for archive or full mode
 
 	// P2P networking
 	NodeKey   *ecdsa.PrivateKey // Private key

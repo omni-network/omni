@@ -160,7 +160,7 @@ func TestnetFromManifest(manifest types.Manifest, infd types.InfrastructureData,
 	}
 
 	var omniEVMS []types.OmniEVM
-	for _, name := range manifest.OmniEVMs() {
+	for name, gcmode := range manifest.OmniEVMs() {
 		inst, ok := infd.Instances[name]
 		if !ok {
 			return types.Testnet{}, errors.New("omni evm instance not found in infrastructure data")
@@ -188,6 +188,7 @@ func TestnetFromManifest(manifest types.Manifest, infd types.InfrastructureData,
 			ExternalRPC:     fmt.Sprintf("http://%s:%d", inst.ExtIPAddress.String(), inst.Port),
 			NodeKey:         nodeKey,
 			Enode:           en,
+			Gcmode:          gcmode,
 		})
 	}
 
