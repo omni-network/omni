@@ -10,22 +10,22 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-var _ types.EvmLogProvider = pocLogProvider{}
+var _ types.EvmEventProcessor = pocEventProvider{}
 
 //nolint:gochecknoglobals // Will remove with PoC
 var zeroAddr common.Address
 
-func NewPocLogProvider(k *Keeper) types.EvmLogProvider {
-	return pocLogProvider{k: k}
+func NewPocEventProvider(k *Keeper) types.EvmEventProcessor {
+	return pocEventProvider{k: k}
 }
 
-// pocLogProvider is a temporary PoC that queries previous block EVM logs and includes
+// pocEventProvider is a temporary PoC that queries previous block EVM logs and includes
 // the total as cosmosSDK msg.
-type pocLogProvider struct {
+type pocEventProvider struct {
 	k *Keeper
 }
 
-func (p pocLogProvider) Logs(ctx context.Context, blockHash common.Hash) ([]*types.EVMLog, error) {
+func (p pocEventProvider) Prepare(ctx context.Context, blockHash common.Hash) ([]*types.EVMEvent, error) {
 	logs, err := p.k.engineCl.FilterLogs(ctx, ethereum.FilterQuery{
 		BlockHash: &blockHash,
 	})
@@ -33,23 +33,23 @@ func (p pocLogProvider) Logs(ctx context.Context, blockHash common.Hash) ([]*typ
 		return nil, errors.Wrap(err, "filter logs")
 	}
 
-	evmLogs := make([]*types.EVMLog, len(logs))
-	for i, l := range logs {
-		evmLogs[i] = &types.EVMLog{
+	evmEvents := make([]*types.EVMEvent, 0, len(logs))
+	for _, l := range logs {
+		evmEvents = append(evmEvents, &types.EVMEvent{
 			Address: zeroAddr.Bytes(), // Stub addresses
 			Topics:  topicBytes(l.Topics),
 			Data:    l.Data,
-		}
+		})
 	}
 
-	return evmLogs, nil
+	return evmEvents, nil
 }
 
-func (pocLogProvider) Addresses() []common.Address {
+func (pocEventProvider) Addresses() []common.Address {
 	return []common.Address{zeroAddr}
 }
 
-func (pocLogProvider) DeliverLog(context.Context, common.Hash, *types.EVMLog) error {
+func (pocEventProvider) Deliver(context.Context, common.Hash, *types.EVMEvent) error {
 	return nil
 }
 

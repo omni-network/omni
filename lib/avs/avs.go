@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/k1util"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -41,7 +42,14 @@ func RegisterOperatorWithAVS(ctx context.Context, contracts Contracts, backend *
 		return err
 	}
 
-	tx, err := contracts.OmniAVS.RegisterOperatorToAVS(txOpts, operator, bindings.ISignatureUtilsSignatureWithSaltAndExpiry{
+	pubkey, err := backend.PublicKey(operator)
+	if err != nil {
+		return errors.Wrap(err, "public key")
+	}
+
+	pubkey64 := k1util.PubKeyToBytes64(pubkey)
+
+	tx, err := contracts.OmniAVS.RegisterOperator(txOpts, pubkey64, bindings.ISignatureUtilsSignatureWithSaltAndExpiry{
 		Signature: sig[:],
 		Salt:      salt,
 		Expiry:    expiry,
@@ -64,7 +72,7 @@ func DeregisterOperatorFromAVS(ctx context.Context, contracts Contracts, backend
 		return err
 	}
 
-	tx, err := contracts.OmniAVS.DeregisterOperatorFromAVS(txOpts, operator)
+	tx, err := contracts.OmniAVS.DeregisterOperator(txOpts)
 	if err != nil {
 		return errors.Wrap(err, "deregister operator from avs")
 	}

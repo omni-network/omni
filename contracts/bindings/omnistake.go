@@ -31,8 +31,8 @@ var (
 
 // OmniStakeMetaData contains all meta data concerning the OmniStake contract.
 var OmniStakeMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"deposit\",\"inputs\":[{\"name\":\"pubkey\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"event\",\"name\":\"Deposit\",\"inputs\":[{\"name\":\"depositor\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"pubkey\",\"type\":\"bytes\",\"indexed\":false,\"internalType\":\"bytes\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false}]",
-	Bin: "0x608060405234801561001057600080fd5b5061034b806100206000396000f3fe60806040526004361061001e5760003560e01c806398b1e06a14610023575b600080fd5b61003661003136600461020f565b610038565b005b6100418161019a565b6001600160a01b0316336001600160a01b0316146100a65760405162461bcd60e51b815260206004820152601a60248201527f4f6d6e695374616b653a207075626b6579206d69736d6174636800000000000060448201526064015b60405180910390fd5b670de0b6b3a764000034116100fd5760405162461bcd60e51b815260206004820152601e60248201527f4f6d6e695374616b653a206465706f73697420616d7420746f6f206c6f770000604482015260640161009d565b67ffffffffffffffff34106101545760405162461bcd60e51b815260206004820152601f60248201527f4f6d6e695374616b653a206465706f73697420616d7420746f6f206869676800604482015260640161009d565b336001600160a01b03167f68051bc50b1ef1654bf1e6204b5f8fa9badcd038e00fa5b43f21f898fc2728ca823460405161018f9291906102c0565b60405180910390a250565b600081516041146101ed5760405162461bcd60e51b815260206004820181905260248201527f4f6d6e695374616b653a20696e76616c6964207075626b6579206c656e677468604482015260640161009d565b50805160209091012090565b634e487b7160e01b600052604160045260246000fd5b60006020828403121561022157600080fd5b813567ffffffffffffffff8082111561023957600080fd5b818401915084601f83011261024d57600080fd5b81358181111561025f5761025f6101f9565b604051601f8201601f19908116603f01168101908382118183101715610287576102876101f9565b816040528281528760208487010111156102a057600080fd5b826020860160208301376000928101602001929092525095945050505050565b604081526000835180604084015260005b818110156102ee57602081870181015160608684010152016102d1565b506000606082850101526060601f19601f830116840101915050826020830152939250505056fea2646970667358221220c900cdad11a50ac5db4d08169db8a40301664e8c38f63e5869aae4888d78813264736f6c63430008170033",
+	ABI: "[{\"type\":\"function\",\"name\":\"deposit\",\"inputs\":[{\"name\":\"pubkey\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"event\",\"name\":\"Deposit\",\"inputs\":[{\"name\":\"pubkey\",\"type\":\"bytes\",\"indexed\":false,\"internalType\":\"bytes\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false}]",
+	Bin: "0x608060405234801561001057600080fd5b50610341806100206000396000f3fe60806040526004361061001e5760003560e01c806398b1e06a14610023575b600080fd5b610036610031366004610205565b610038565b005b670de0b6b3a764000034116100945760405162461bcd60e51b815260206004820152601e60248201527f4f6d6e695374616b653a206465706f73697420616d7420746f6f206c6f77000060448201526064015b60405180910390fd5b67ffffffffffffffff34106100eb5760405162461bcd60e51b815260206004820152601f60248201527f4f6d6e695374616b653a206465706f73697420616d7420746f6f206869676800604482015260640161008b565b6100f481610190565b6001600160a01b0316336001600160a01b0316146101545760405162461bcd60e51b815260206004820152601c60248201527f4f6d6e695374616b653a207075626b6579206e6f742073656e64657200000000604482015260640161008b565b7f3884ea6795b4d6e562e2ed70773e296848c9e2d02715686fe7adfc60e4d9abca81346040516101859291906102b6565b60405180910390a150565b600081516040146101e35760405162461bcd60e51b815260206004820181905260248201527f536563703235366b313a20696e76616c6964207075626b6579206c656e677468604482015260640161008b565b50805160209091012090565b634e487b7160e01b600052604160045260246000fd5b60006020828403121561021757600080fd5b813567ffffffffffffffff8082111561022f57600080fd5b818401915084601f83011261024357600080fd5b813581811115610255576102556101ef565b604051601f8201601f19908116603f0116810190838211818310171561027d5761027d6101ef565b8160405282815287602084870101111561029657600080fd5b826020860160208301376000928101602001929092525095945050505050565b604081526000835180604084015260005b818110156102e457602081870181015160608684010152016102c7565b506000606082850101526060601f19601f830116840101915050826020830152939250505056fea2646970667358221220b43fed2064505347ee4427fc95d8e6ead177fd3a58e2dc98014271b49141323b64736f6c63430008170033",
 }
 
 // OmniStakeABI is the input ABI used to generate the binding from.
@@ -292,40 +292,29 @@ func (it *OmniStakeDepositIterator) Close() error {
 
 // OmniStakeDeposit represents a Deposit event raised by the OmniStake contract.
 type OmniStakeDeposit struct {
-	Depositor common.Address
-	Pubkey    []byte
-	Amount    *big.Int
-	Raw       types.Log // Blockchain specific contextual infos
+	Pubkey []byte
+	Amount *big.Int
+	Raw    types.Log // Blockchain specific contextual infos
 }
 
-// FilterDeposit is a free log retrieval operation binding the contract event 0x68051bc50b1ef1654bf1e6204b5f8fa9badcd038e00fa5b43f21f898fc2728ca.
+// FilterDeposit is a free log retrieval operation binding the contract event 0x3884ea6795b4d6e562e2ed70773e296848c9e2d02715686fe7adfc60e4d9abca.
 //
-// Solidity: event Deposit(address indexed depositor, bytes pubkey, uint256 amount)
-func (_OmniStake *OmniStakeFilterer) FilterDeposit(opts *bind.FilterOpts, depositor []common.Address) (*OmniStakeDepositIterator, error) {
+// Solidity: event Deposit(bytes pubkey, uint256 amount)
+func (_OmniStake *OmniStakeFilterer) FilterDeposit(opts *bind.FilterOpts) (*OmniStakeDepositIterator, error) {
 
-	var depositorRule []interface{}
-	for _, depositorItem := range depositor {
-		depositorRule = append(depositorRule, depositorItem)
-	}
-
-	logs, sub, err := _OmniStake.contract.FilterLogs(opts, "Deposit", depositorRule)
+	logs, sub, err := _OmniStake.contract.FilterLogs(opts, "Deposit")
 	if err != nil {
 		return nil, err
 	}
 	return &OmniStakeDepositIterator{contract: _OmniStake.contract, event: "Deposit", logs: logs, sub: sub}, nil
 }
 
-// WatchDeposit is a free log subscription operation binding the contract event 0x68051bc50b1ef1654bf1e6204b5f8fa9badcd038e00fa5b43f21f898fc2728ca.
+// WatchDeposit is a free log subscription operation binding the contract event 0x3884ea6795b4d6e562e2ed70773e296848c9e2d02715686fe7adfc60e4d9abca.
 //
-// Solidity: event Deposit(address indexed depositor, bytes pubkey, uint256 amount)
-func (_OmniStake *OmniStakeFilterer) WatchDeposit(opts *bind.WatchOpts, sink chan<- *OmniStakeDeposit, depositor []common.Address) (event.Subscription, error) {
+// Solidity: event Deposit(bytes pubkey, uint256 amount)
+func (_OmniStake *OmniStakeFilterer) WatchDeposit(opts *bind.WatchOpts, sink chan<- *OmniStakeDeposit) (event.Subscription, error) {
 
-	var depositorRule []interface{}
-	for _, depositorItem := range depositor {
-		depositorRule = append(depositorRule, depositorItem)
-	}
-
-	logs, sub, err := _OmniStake.contract.WatchLogs(opts, "Deposit", depositorRule)
+	logs, sub, err := _OmniStake.contract.WatchLogs(opts, "Deposit")
 	if err != nil {
 		return nil, err
 	}
@@ -357,9 +346,9 @@ func (_OmniStake *OmniStakeFilterer) WatchDeposit(opts *bind.WatchOpts, sink cha
 	}), nil
 }
 
-// ParseDeposit is a log parse operation binding the contract event 0x68051bc50b1ef1654bf1e6204b5f8fa9badcd038e00fa5b43f21f898fc2728ca.
+// ParseDeposit is a log parse operation binding the contract event 0x3884ea6795b4d6e562e2ed70773e296848c9e2d02715686fe7adfc60e4d9abca.
 //
-// Solidity: event Deposit(address indexed depositor, bytes pubkey, uint256 amount)
+// Solidity: event Deposit(bytes pubkey, uint256 amount)
 func (_OmniStake *OmniStakeFilterer) ParseDeposit(log types.Log) (*OmniStakeDeposit, error) {
 	event := new(OmniStakeDeposit)
 	if err := _OmniStake.contract.UnpackLog(event, "Deposit", log); err != nil {

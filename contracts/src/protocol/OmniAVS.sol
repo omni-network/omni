@@ -7,8 +7,8 @@ import { PausableUpgradeable } from "@openzeppelin-upgrades/contracts/security/P
 import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import { ISignatureUtils } from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
-import { IServiceManager } from "eigenlayer-middleware/src/interfaces/IServiceManager.sol";
 
+import { Secp256k1 } from "../libraries/Secp256k1.sol";
 import { IDelegationManager } from "../interfaces/IDelegationManager.sol";
 import { IEthStakeInbox } from "../interfaces/IEthStakeInbox.sol";
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
@@ -22,14 +22,7 @@ import { OmniAVSStorage } from "./OmniAVSStorage.sol";
  * @notice Omni's AVS contract. It is responsible for faciiltating registration / deregistration of
  *         EigenLayer opators, and for syncing operator delegations with the Omni chain.
  */
-contract OmniAVS is
-    IOmniAVS,
-    IOmniAVSAdmin,
-    IServiceManager,
-    OwnableUpgradeable,
-    PausableUpgradeable,
-    OmniAVSStorage
-{
+contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable, PausableUpgradeable, OmniAVSStorage {
     /// @notice Constant used as a divisor in calculating weights
     uint256 internal constant STRATEGY_WEIGHTING_DIVISOR = 1e18;
 
@@ -80,41 +73,34 @@ contract OmniAVS is
     //////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @notice Forwards a call to EigenLayer's DelegationManager contract to confirm operator
-     *         registration with the AVS
-     * @dev Adds operator address to internally tracked list of operators
-     * @param operator          The address of the operator to register.
+     * @notice Register an operator with the AVS. Forwards call to EigenLayer' AVSDirectory.
+     * @param pubkey            64 byte uncompressed secp256k1 public key (no 0x04 prefix)
+     *                          Pubkey must match operator's address (msg.sender)
      * @param operatorSignature The signature, salt, and expiry of the operator's signature.
      */
-    function registerOperatorToAVS(
-        address operator,
+    function registerOperator(
+        bytes calldata pubkey,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external whenNotPaused {
-        require(msg.sender == operator, "OmniAVS: only operator");
+        address operator = msg.sender;
+
+        require(operator == Secp256k1.pubkeyToAddress(pubkey), "OmniAVS: pubkey != sender");
         require(!allowlistEnabled || _allowlist[operator], "OmniAVS: not allowed");
         require(!_isOperator(operator), "OmniAVS: already an operator");
         require(_operators.length < maxOperatorCount, "OmniAVS: max operators reached");
         require(_getTotalDelegations(operator) >= minOperatorStake, "OmniAVS: min stake not met");
 
-        _addOperator(operator);
+        _addOperator(operator, pubkey);
         _avsDirectory.registerOperatorToAVS(operator, operatorSignature);
 
         emit OperatorAdded(operator);
     }
 
     /**
-     * @notice Forwards a call to EigenLayer's DelegationManager contract to confirm operator deregistration from the AVS
-     * @dev Removes operator address from internally tracked list of operators
-     * @param operator The address of the operator to deregister.
+     * @notice Deregister an operator from the AVS. Forwards a call to EigenLayer's AVSDirectory.
      */
-    function deregisterOperatorFromAVS(address operator) external whenNotPaused {
-        require(msg.sender == operator || msg.sender == owner(), "OmniAVS: only operator or owner");
-        require(_isOperator(operator), "OmniAVS: not an operator");
-
-        _removeOperator(operator);
-        _avsDirectory.deregisterOperatorFromAVS(operator);
-
-        emit OperatorRemoved(operator);
+    function deregisterOperator() external whenNotPaused {
+        _deregisterOperator(msg.sender);
     }
 
     /**
@@ -126,7 +112,7 @@ contract OmniAVS is
     }
 
     /**
-     * @inheritdoc IServiceManager
+     * @notice Returns the EigenLayer AVSDirectory contract.
      * @dev Implemented to match IServiceManager interface - required for compatibility with
      *      eigenlayer frontend.
      */
@@ -168,6 +154,7 @@ contract OmniAVS is
     /**
      * @notice Returns the currrent list of operator registered as OmniAVS.
      *         Operator.addr        = The operator's ethereum address
+     *         Operator.pubkey      = The operator's 64 byte uncompressed secp256k1 public key
      *         Operator.staked      = The total amount staked by the operator, not including delegations
      *         Operator.delegated   = The total amount delegated, not including operator stake
      */
@@ -184,7 +171,7 @@ contract OmniAVS is
     }
 
     /**
-     * @inheritdoc IServiceManager
+     * @notice Returns the list of strategies that the AVS supports for restaking.
      * @dev Implemented to match IServiceManager interface - required for compatibility with
      *      eigenlayer frontend.
      */
@@ -193,14 +180,17 @@ contract OmniAVS is
     }
 
     /**
-     * @inheritdoc IServiceManager
+     * @notice Returns the list of strategies that the operator has potentially restaked on the AVS
      * @dev Implemented to match IServiceManager interface - required for compatibility with
      *      eigenlayer frontend.
      *
-     *      No work to determine which strategies the operator has restaked. This matches the
-     *      behavior defined in eigenlayer-middleware's ServiceManagerBase. In ServiceManagerBase,
-     *      they return the aggregate list of strategies for the quorums the operator is a member of.
-     *      We only have one "quorum", so we return all strategies.
+     *      This function is intended to be called off-chain
+     *
+     *      No guarantee is made on whether the operator has shares for a strategy. The off-chain
+     *      service should do that validation separately. This matches the behavior defined in
+     *      eigenlayer-middleware's ServiceManagerBase.
+     *
+     * @param operator The address of the operator to get restaked strategies for
      */
     function getOperatorRestakedStrategies(address operator) external view returns (address[] memory) {
         if (!_isOperator(operator)) return new address[](0);
@@ -230,8 +220,7 @@ contract OmniAVS is
     //////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @inheritdoc IServiceManager
-     * @dev Sets AVS metadata URI with the AVSDirectory. Implemented to match IServiceManager interface
+     * @notice Sets AVS metadata URI with the AVSDirectory.
      */
     function setMetadataURI(string memory metadataURI) external onlyOwner {
         _avsDirectory.updateAVSMetadataURI(metadataURI);
@@ -330,6 +319,13 @@ contract OmniAVS is
     }
 
     /**
+     * @notice Eject an operator from the AVS.
+     */
+    function ejectOperator(address operator) external onlyOwner {
+        _deregisterOperator(operator);
+    }
+
+    /**
      * @notice Pause the contract.
      * @dev This pauses registerOperatorToAVS, deregisterOperatorFromAVS, and syncWithOmni.
      */
@@ -349,14 +345,29 @@ contract OmniAVS is
     //////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @dev Adds an operator to the list of operators, does not check if operator already exists
+     * @notice Deregister an operator from the AVS. Forwards a call to EigenLayer's AVSDirectory.
      */
-    function _addOperator(address operator) private {
-        _operators.push(operator);
+    function _deregisterOperator(address operator) private {
+        require(_isOperator(operator), "OmniAVS: not an operator");
+
+        _removeOperator(operator);
+        _avsDirectory.deregisterOperatorFromAVS(operator);
+
+        emit OperatorRemoved(operator);
     }
 
     /**
-     * @notice Removes an operator from the list of operators
+     * @notice Add an operator to internal AVS state (_operators, _operatorPubkeys)
+     * @dev Does not check if operator already exists
+     */
+    function _addOperator(address operator, bytes calldata pubkey) private {
+        _operators.push(operator);
+        _operatorPubkeys[operator] = pubkey;
+    }
+
+    /**
+     * @notice Removes an operator from internal AVS state (_operators, _operatorPubkeys)
+     * @dev Does not check if operator exists
      */
     function _removeOperator(address operator) private {
         for (uint256 i = 0; i < _operators.length;) {
@@ -369,6 +380,7 @@ contract OmniAVS is
                 i++;
             }
         }
+        delete _operatorPubkeys[operator];
     }
 
     /**
@@ -512,8 +524,9 @@ contract OmniAVS is
 
             // this should never happen, but just in case
             uint96 delegated = total > staked ? total - staked : 0;
+            bytes memory pubkey = _operatorPubkeys[operator];
 
-            ops[i] = Operator(operator, delegated, staked);
+            ops[i] = Operator(operator, pubkey, delegated, staked);
             unchecked {
                 i++;
             }

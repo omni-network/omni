@@ -11,6 +11,7 @@ import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
 
 import { EigenPodManagerHarness } from "./eigen/EigenPodManagerHarness.sol";
 import { Fixtures } from "./Fixtures.sol";
+import { Vm } from "forge-std/Vm.sol";
 
 /**
  * @title Utils
@@ -18,7 +19,7 @@ import { Fixtures } from "./Fixtures.sol";
  */
 contract Utils is Fixtures {
     // map addr to private key
-    mapping(address => uint256) _pks;
+    mapping(address => Vm.Wallet) _wallets;
 
     /// @dev register an operator with eigenlayer core
     function _registerAsOperator(address operator) internal {
@@ -50,7 +51,7 @@ contract Utils is Fixtures {
         sig.signature = _sign(operator, operatorRegistrationDigestHash);
 
         vm.prank(operator);
-        omniAVS.registerOperatorToAVS(operator, sig);
+        omniAVS.registerOperator(_pubkey(operator), sig);
     }
 
     /// @dev add an operator to the allowlist
@@ -80,7 +81,7 @@ contract Utils is Fixtures {
     /// @dev deregister an operator from OmniAVS
     function _deregisterOperatorFromAVS(address operator) internal {
         vm.prank(operator);
-        omniAVS.deregisterOperatorFromAVS(operator);
+        omniAVS.deregisterOperator();
     }
 
     /// @dev create an operator address
@@ -93,16 +94,22 @@ contract Utils is Fixtures {
         return _addr("delegator", index);
     }
 
-    /// @dev create a namespaced address
+    /// @dev create a namespaced address, save the addresses wallet
     function _addr(string memory namespace, uint256 index) internal returns (address) {
-        (address addr, uint256 pk) = makeAddrAndKey(string(abi.encodePacked(namespace, index)));
-        _pks[addr] = pk;
-        return addr;
+        Vm.Wallet memory w = vm.createWallet(uint256(keccak256(abi.encode(namespace, index))));
+        _wallets[w.addr] = w;
+        return w.addr;
+    }
+
+    /// @dev return the public key of an operator
+    function _pubkey(address operator) internal view returns (bytes memory) {
+        Vm.Wallet memory w = _wallets[operator];
+        return abi.encodePacked(w.publicKeyX, w.publicKeyY);
     }
 
     /// @dev sign a digest
     function _sign(address signer, bytes32 digest) internal view returns (bytes memory) {
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(_pks[signer], digest);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(_wallets[signer].privateKey, digest);
         return abi.encodePacked(r, s, v);
     }
 

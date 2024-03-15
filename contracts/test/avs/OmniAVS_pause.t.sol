@@ -36,7 +36,8 @@ contract OmniAVS_admin_Test is Base {
         ISignatureUtils.SignatureWithSaltAndExpiry memory emptySig;
 
         vm.expectRevert("Pausable: paused");
-        omniAVS.registerOperatorToAVS(operator, emptySig);
+        vm.prank(operator);
+        omniAVS.registerOperator(_pubkey(operator), emptySig);
     }
 
     /// @dev Test that when paused, you cannot deregister an operator
@@ -47,7 +48,8 @@ contract OmniAVS_admin_Test is Base {
         address operator = _operator(0);
 
         vm.expectRevert("Pausable: paused");
-        omniAVS.deregisterOperatorFromAVS(operator);
+        vm.prank(operator);
+        omniAVS.deregisterOperator();
     }
 
     /// @dev Test that when paused, you cannot syncWithOmni

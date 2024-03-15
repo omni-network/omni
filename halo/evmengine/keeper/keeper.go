@@ -26,7 +26,7 @@ type Keeper struct {
 	engineCl        ethclient.EngineClient
 	txConfig        client.TxConfig
 	voteProvider    types.VoteExtensionProvider
-	logProviders    []types.EvmLogProvider
+	eventProcs      []types.EvmEventProcessor
 	cmtAPI          comet.API
 	addrProvider    types.AddressProvider
 	buildDelay      time.Duration
@@ -58,8 +58,8 @@ func NewKeeper(
 }
 
 // TODO(corver): Figure out how to use depinject for this.
-func (k *Keeper) AddLogProvider(p types.EvmLogProvider) {
-	k.logProviders = append(k.logProviders, p)
+func (k *Keeper) AddEventProcessor(p types.EvmEventProcessor) {
+	k.eventProcs = append(k.eventProcs, p)
 }
 
 func (k *Keeper) SetVoteProvider(p types.VoteExtensionProvider) {

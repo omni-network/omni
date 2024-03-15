@@ -71,8 +71,8 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 		return nil, errors.New("status not valid")
 	}
 
-	if err := s.deliverLogs(ctx, payload.Number-1, payload.ParentHash, msg.PrevPayloadLogs); err != nil {
-		return nil, errors.Wrap(err, "deliver logs")
+	if err := s.deliverEvents(ctx, payload.Number-1, payload.ParentHash, msg.PrevPayloadEvents); err != nil {
+		return nil, errors.Wrap(err, "deliver event logs")
 	}
 
 	if isNext {
@@ -82,12 +82,12 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 	return &types.ExecutionPayloadResponse{}, nil
 }
 
-// deliverLogs delivers the given logs to the registered log providers.
-func (s msgServer) deliverLogs(ctx context.Context, height uint64, blockHash common.Hash, logs []*types.EVMLog) error {
-	providers := make(map[common.Address]types.EvmLogProvider)
-	for _, provider := range s.logProviders {
-		for _, addr := range provider.Addresses() {
-			providers[addr] = provider
+// deliverEvents delivers the given logs to the registered log providers.
+func (s msgServer) deliverEvents(ctx context.Context, height uint64, blockHash common.Hash, logs []*types.EVMEvent) error {
+	procs := make(map[common.Address]types.EvmEventProcessor)
+	for _, proc := range s.eventProcs {
+		for _, addr := range proc.Addresses() {
+			procs[addr] = proc
 		}
 	}
 
@@ -96,12 +96,12 @@ func (s msgServer) deliverLogs(ctx context.Context, height uint64, blockHash com
 			return errors.Wrap(err, "verify log [BUG]") // This shouldn't happen
 		}
 
-		p, ok := providers[common.BytesToAddress(evmLog.Address)]
+		proc, ok := procs[common.BytesToAddress(evmLog.Address)]
 		if !ok {
 			return errors.New("unknown log address [BUG]", log.Hex7("address", evmLog.Address))
 		}
 
-		if err := p.DeliverLog(ctx, blockHash, evmLog); err != nil {
+		if err := proc.Deliver(ctx, blockHash, evmLog); err != nil {
 			return errors.Wrap(err, "deliver log")
 		}
 	}

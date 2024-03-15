@@ -11,6 +11,9 @@ abstract contract OmniAVSStorage {
     /// @notice Ethereum addresses of currently register operators
     address[] internal _operators;
 
+    /// @notice Map operator address to secp256k1 public key
+    mapping(address => bytes) internal _operatorPubkeys;
+
     /// @notice Set of operators that are allowed to register
     mapping(address => bool) internal _allowlist;
 

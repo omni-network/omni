@@ -19,14 +19,14 @@ type VoteExtensionProvider interface {
 	PrepareVotes(ctx context.Context, commit abci.ExtendedCommitInfo) ([]sdk.Msg, error)
 }
 
-// EvmLogProvider abstracts logic that provide EVM logs of the
+// EvmEventProcessor abstracts logic that processes EVM log events of the
 // previous execution payload (current head) identified by
 // the provided block hash.
 //
-// EVMEngine calls this during PreparePayload to collect all EVM-logs to include in
-// the consensus block. It is also called during ProcessPayload to verify the proposed EVM logs.
-type EvmLogProvider interface {
-	Logs(ctx context.Context, blockHash common.Hash) ([]*EVMLog, error)
+// EVMEngine calls this during PreparePayload to collect all EVM-log-events to include in
+// the consensus block. It is also called during ProcessPayload to verify the proposed EVM events.
+type EvmEventProcessor interface {
+	Prepare(ctx context.Context, blockHash common.Hash) ([]*EVMEvent, error)
 	Addresses() []common.Address
-	DeliverLog(ctx context.Context, blockHash common.Hash, log *EVMLog) error
+	Deliver(ctx context.Context, blockHash common.Hash, log *EVMEvent) error
 }

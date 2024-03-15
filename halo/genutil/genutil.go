@@ -156,6 +156,7 @@ func addValidator(txConfig client.TxConfig, pubkey crypto.PubKey, cdc codec.Code
 		return nil, err
 	}
 
+	// Add validator with 1 power (1e18 $STAKE ~= 1 ether $STAKE)
 	amount := sdk.NewCoin(sdk.DefaultBondDenom, sdk.DefaultPowerReduction)
 
 	err = genutil.AddGenesisAccount(cdc, addr.Bytes(), false, genFile, amount.String(), "", 0, 0, "")
