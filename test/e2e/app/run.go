@@ -60,6 +60,12 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 		return nil, nil, err
 	}
 
+	if len(def.Testnet.OmniEVMs) > 1 {
+		if err := waitForGethPeers(ctx, &def.Testnet, int64(len(def.Testnet.OmniEVMs)-1)); err != nil {
+			return nil, nil, err
+		}
+	}
+
 	if err := def.Netman.DeployPrivatePortals(ctx, genesisValSetID, genesisVals); err != nil {
 		return nil, nil, err
 	}

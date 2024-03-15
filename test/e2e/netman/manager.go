@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"math/big"
-	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
@@ -234,7 +233,7 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 func (m *manager) DeployPrivatePortals(ctx context.Context, valSetID uint64, validators []bindings.Validator,
 ) error {
 	log.Info(ctx, "Deploying private portal contracts")
-	time.Sleep(2 * time.Second)
+
 	// Define a forkjoin work function that will deploy the omni contracts for each chain
 	deployFunc := func(ctx context.Context, portal Portal) (*bindings.OmniPortal, error) {
 		chain := portal.Chain.Name
