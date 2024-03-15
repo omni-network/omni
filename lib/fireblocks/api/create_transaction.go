@@ -98,6 +98,7 @@ type TransactionRequestOptions struct {
 }
 
 func NewTransactionRequest(opt TransactionRequestOptions) (*CreateTransactionRequest, error) {
+	// TODO: remove fields as needed
 	req := &CreateTransactionRequest{
 		Operation:          "RAW",
 		Note:               "",
@@ -118,7 +119,9 @@ func NewTransactionRequest(opt TransactionRequestOptions) (*CreateTransactionReq
 		NetworkFee:         "",
 		ReplaceTxByHash:    "",
 		CustomerRefID:      "",
-		ExtraParameters:    RawMessageData{},
+		ExtraParameters: RawMessageData{
+			Messages: opt.Messages,
+		},
 	}
 
 	return req, nil
