@@ -26,7 +26,8 @@ func genJWTToken(opts JWTOpts) (string, error) {
 			"iat":      time.Now().Unix(),
 			"sub":      opts.APIKey,
 			"bodyHash": bodyHash,
-			"exp":      time.Now().Add(time.Hour * 24).Unix(),
+			// The expiration time on and after which the JWT must not be accepted for processing, in seconds since Epoch. (Must be less than iat+30sec.)
+			"exp": time.Now().Add(time.Second * 15).Unix(),
 		})
 
 	tokenString, err := token.SignedString(opts.SecretKey)
