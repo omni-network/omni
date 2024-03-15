@@ -84,6 +84,7 @@ services:
     container_name: {{ .InstanceName }}
     image: "ethereum/client-go:latest"
     command:
+      - --config=/geth/config.toml
       - --http
       - --http.vhosts=*
       - --http.api=eth,net,web3

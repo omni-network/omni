@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/json"
@@ -11,8 +12,10 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"text/template"
 	"time"
 
+	cmtos "github.com/cometbft/cometbft/libs/os"
 	halocmd "github.com/omni-network/omni/halo/cmd"
 	halocfg "github.com/omni-network/omni/halo/config"
 	"github.com/omni-network/omni/halo/genutil"
@@ -377,6 +380,16 @@ func writeOmniEVMConfig(testnet types.Testnet) error {
 				return errors.Wrap(err, "write geth config")
 			}
 		}
+		cfg := struct {
+			BootstrapNodes string
+			StaticNodes    string
+		}{
+			BootstrapNodes: evm.BootNodesStrArr(),
+			StaticNodes:    evm.BootNodesStrArr(),
+		}
+		if err := WriteGethConfigTOML(cfg, filepath.Join(testnet.Dir, evm.InstanceName, "config.toml")); err != nil {
+			return errors.Wrap(err, "write geth config")
+		}
 	}
 
 	return nil
@@ -430,4 +443,27 @@ func logConfig() log.Config {
 		Level:  slog.LevelDebug.String(),
 		Color:  log.ColorForce,
 	}
+}
+
+//go:embed template/geth.toml.tmpl
+var gethTomlTemplate []byte
+
+// WriteGethConfigTOML writes the toml config to disk.
+func WriteGethConfigTOML(cfg any, path string) error {
+	var buffer bytes.Buffer
+
+	t, err := template.New("").Parse(string(gethTomlTemplate))
+	if err != nil {
+		return errors.Wrap(err, "parse template")
+	}
+
+	if err := t.Execute(&buffer, cfg); err != nil {
+		return errors.Wrap(err, "execute template")
+	}
+
+	if err := cmtos.WriteFile(path, buffer.Bytes(), 0o644); err != nil {
+		return errors.Wrap(err, "write config")
+	}
+
+	return nil
 }

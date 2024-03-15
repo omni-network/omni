@@ -3,6 +3,7 @@ package types
 import (
 	"crypto/ecdsa"
 	"encoding/hex"
+	"fmt"
 	"net"
 	"strings"
 	"time"
@@ -83,6 +84,15 @@ func (o OmniEVM) BootNodesStr() string {
 	var resp []string
 	for _, b := range o.BootNodes {
 		resp = append(resp, b.String())
+	}
+
+	return strings.Join(resp, ",")
+}
+
+func (o OmniEVM) BootNodesStrArr() string {
+	var resp []string
+	for _, b := range o.BootNodes {
+		resp = append(resp, fmt.Sprintf(`"%s"`, b.String()))
 	}
 
 	return strings.Join(resp, ",")

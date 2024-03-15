@@ -64,9 +64,9 @@ func (m Manifest) OmniEVMs() map[string]GcMode {
 
 	// Sort keys with "validator" nodes first
 	sort.Slice(keys, func(i, j int) bool {
-		if strings.Contains(keys[i], "validator") && !strings.Contains(keys[j], "validator") {
+		if strings.Contains(keys[i], "seed") && !strings.Contains(keys[j], "seed") {
 			return true
-		} else if !strings.Contains(keys[i], "validator") && strings.Contains(keys[j], "validator") {
+		} else if !strings.Contains(keys[i], "seed") && strings.Contains(keys[j], "seed") {
 			return false
 		}
 		return keys[i] < keys[j]
