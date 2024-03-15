@@ -32,9 +32,9 @@ func NewClient(apiKey string, clientSecret string, host string) *Client {
 	}
 }
 
-func (c *Client) sendRequest(ctx context.Context, req *http.Request, endpoint string, request []byte) ([]byte, error) {
+func (c *Client) sendRequest(ctx context.Context, req *http.Request, endpoint string, request []byte, nonce string) ([]byte, error) {
 	bodyHash := sha256.Sum256(request)
-	authToken, err := genJWTToken(endpoint, "nonce", c.apiKey, string(bodyHash[:]), c.clientSecret)
+	authToken, err := genJWTToken(endpoint, nonce, c.apiKey, string(bodyHash[:]), c.clientSecret)
 	if err != nil {
 		return nil, errors.Wrap(err, "genJWTToken")
 	}

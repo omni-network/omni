@@ -76,6 +76,7 @@ func (c *Client) CreateTransaction(ctx context.Context, opts TransactionRequestO
 		httpReq,
 		TransactionEndpoint,
 		req,
+		opts.Nonce,
 	)
 
 	if err != nil {

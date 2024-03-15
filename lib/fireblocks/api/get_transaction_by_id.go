@@ -21,6 +21,7 @@ func (c *Client) GetTransactionByID(ctx context.Context, transactionID string) (
 		httpReq,
 		endpoint,
 		nil,
+		"",
 	)
 	if err != nil {
 		return nil, err
