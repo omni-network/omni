@@ -1,18 +1,14 @@
-package fireblocks
+package http
 
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
-
-	"github.com/golang-jwt/jwt"
 )
 
 type Client struct {
@@ -22,8 +18,6 @@ type Client struct {
 	http         http.Client
 }
 
-const TransactionEndpoint string = "v1/transactions"
-
 func NewClient(apiKey string, clientSecret string, host string) *Client {
 	return &Client{
 		apiKey:       apiKey,       // pragma: allowlist secret
@@ -32,9 +26,8 @@ func NewClient(apiKey string, clientSecret string, host string) *Client {
 	}
 }
 
-func (c *Client) sendRequest(ctx context.Context, req *http.Request, endpoint string, request []byte, nonce string) ([]byte, error) {
-	bodyHash := sha256.Sum256(request)
-	authToken, err := genJWTToken(endpoint, nonce, c.apiKey, string(bodyHash[:]), c.clientSecret)
+func (c *Client) SendRequest(ctx context.Context, req *http.Request, opts JWTOpts) ([]byte, error) {
+	authToken, err := genJWTToken(opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "genJWTToken")
 	}
@@ -62,7 +55,7 @@ func (c *Client) sendRequest(ctx context.Context, req *http.Request, endpoint st
 	return body, nil
 }
 
-func (c *Client) createPostRequest(ctx context.Context, endpoint string, request []byte) (*http.Request, error) {
+func (c *Client) CreatePostRequest(ctx context.Context, endpoint string, request []byte) (*http.Request, error) {
 	endpoint = fmt.Sprintf("%s/%s", c.host, endpoint)
 	req, err := http.NewRequestWithContext(
 		ctx,
@@ -77,7 +70,7 @@ func (c *Client) createPostRequest(ctx context.Context, endpoint string, request
 	return req, nil
 }
 
-func (c *Client) createGetRequest(ctx context.Context, endpoint string) (*http.Request, error) {
+func (c *Client) CreateGetRequest(ctx context.Context, endpoint string) (*http.Request, error) {
 	endpoint = fmt.Sprintf("%s/%s", c.host, endpoint)
 	req, err := http.NewRequestWithContext(
 		ctx,
@@ -101,23 +94,4 @@ func getHeader(jwtToken string, apiKey string) http.Header {
 	header.Add("Authorization", fmt.Sprintf("Bearer %x", jwtToken))
 
 	return header
-}
-
-func genJWTToken(uri string, nonce string, apiKey string, secretKey string, body string) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
-		jwt.MapClaims{
-			"uri":      uri,
-			"nonce":    nonce,
-			"iat":      time.Now().Unix(),
-			"sub":      apiKey,
-			"bodyHash": body,
-			"exp":      time.Now().Add(time.Hour * 24).Unix(),
-		})
-
-	tokenString, err := token.SignedString(secretKey)
-	if err != nil {
-		return "", errors.Wrap(err, "jwt")
-	}
-
-	return tokenString, nil
 }

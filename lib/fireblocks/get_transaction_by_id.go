@@ -6,22 +6,24 @@ import (
 	"fmt"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/fireblocks/http"
 )
 
-func (c *Client) GetTransactionByID(ctx context.Context, transactionID string) (*TransactionResponse, error) {
+func (c *Client) GetTransactionByID(ctx context.Context, transactionID string, opts http.JWTOpts) (*TransactionResponse, error) {
 	var res TransactionResponse
-	endpoint := fmt.Sprintf("%s/%s", TransactionEndpoint, transactionID)
 
-	httpReq, err := c.createGetRequest(ctx, TransactionEndpoint)
+	endpoint := fmt.Sprintf("%s/%s", TransactionEndpoint, transactionID)
+	opts.URI = endpoint
+
+	httpReq, err := c.http.CreateGetRequest(ctx, TransactionEndpoint)
 	if err != nil {
 		return nil, errors.Wrap(err, "getPostRequest")
 	}
-	response, err := c.sendRequest(
+
+	response, err := c.http.SendRequest(
 		ctx,
 		httpReq,
-		endpoint,
-		nil,
-		"",
+		opts,
 	)
 	if err != nil {
 		return nil, err

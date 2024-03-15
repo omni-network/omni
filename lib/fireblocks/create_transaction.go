@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/fireblocks/http"
 )
 
 type CreateTransactionRequest struct {
@@ -54,7 +55,7 @@ type SystemMessages struct {
 	Message string `json:"message"`
 }
 
-func (c *Client) CreateTransaction(ctx context.Context, opts TransactionRequestOptions) (*TransactionResponse, error) {
+func (c *Client) CreateTransaction(ctx context.Context, opts TransactionRequestOptions, jwtOpts http.JWTOpts) (*TransactionResponse, error) {
 	var res TransactionResponse
 
 	request, err := NewTransactionRequest(opts)
@@ -67,16 +68,14 @@ func (c *Client) CreateTransaction(ctx context.Context, opts TransactionRequestO
 		return nil, errors.Wrap(err, "marshal")
 	}
 
-	httpReq, err := c.createPostRequest(ctx, TransactionEndpoint, req)
+	httpReq, err := c.http.CreatePostRequest(ctx, TransactionEndpoint, req)
 	if err != nil {
 		return nil, errors.Wrap(err, "getPostRequest")
 	}
-	response, err := c.sendRequest(
+	response, err := c.http.SendRequest(
 		ctx,
 		httpReq,
-		TransactionEndpoint,
-		req,
-		opts.Nonce,
+		jwtOpts,
 	)
 
 	if err != nil {
