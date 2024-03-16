@@ -23,6 +23,7 @@ type Testnet struct {
 	OmniEVMs     []OmniEVM
 	AnvilChains  []AnvilChain
 	PublicChains []PublicChain
+	OnlyMonitor  bool
 }
 
 func (t Testnet) AVSChain() (EVMChain, error) {

@@ -12,29 +12,26 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// use hardcoded avs address for now
-// TODO: add avs address to network config.
-const (
-	goerliAVSAddr = "0x848BE3DBcd054c17EbC712E0d29D15C2e638aBCe"
-	goerliRPC     = "https://ethereum-goerli-rpc.publicnode.com"
-)
-
 // Monitor starts monitoring the AVS contract.
 func Monitor(ctx context.Context, network netconf.Network) error {
-	if network.Name != netconf.Staging {
-		// only monitor in staging for now
+	if network.Name != netconf.Testnet && network.Name != netconf.Mainnet {
+		// only monitor in Testned and Mainnet
 		return nil
+	}
+
+	ch, ok := network.EthereumChain()
+	if !ok {
+		return errors.New("no avs chain found")
 	}
 
 	log.Info(ctx, "Starting AVS monitor")
 
-	client, err := ethclient.Dial("goerli", goerliRPC)
+	client, err := ethclient.Dial(ch.Name, ch.RPCURL)
 	if err != nil {
-		return errors.Wrap(err, "dialing goerli")
+		return errors.Wrap(err, "dialing "+ch.Name)
 	}
 
-	addr := common.HexToAddress(goerliAVSAddr)
-	avs, err := newAVS(client, addr)
+	avs, err := newAVS(client, ch.AVSContractAddr)
 	if err != nil {
 		return err
 	}

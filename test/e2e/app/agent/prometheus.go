@@ -81,10 +81,16 @@ func genPromConfig(ctx context.Context, testnet types.Testnet, secrets Secrets, 
 				JobName:     "relayer",
 				MetricsPath: "/metrics",
 				targets:     []string{fmt.Sprintf("relayer:%d", promPort)},
-			}, {
+			},
+			{
 				JobName:     "halo",
 				MetricsPath: "/metrics",
 				targets:     nodeTargets,
+			},
+			{
+				JobName:     "monitor",
+				MetricsPath: "/metrics",
+				targets:     []string{fmt.Sprintf("monitor:%d", promPort)},
 			},
 		},
 	}

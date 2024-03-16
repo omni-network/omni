@@ -31,3 +31,11 @@ scrape_configs:
           network: 'staging'
           host: 'vm'
 
+  - job_name: "monitor"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: [monitor:26660] # monitor targets
+        labels:
+          network: 'staging'
+          host: 'vm'
+

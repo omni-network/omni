@@ -44,3 +44,8 @@ jobs:
         run: |
           docker push omniops/relayer:${GITHUB_SHA::7}
           docker push omniops/relayer:main
+
+      - name: Push Monitor to Dockerhub
+        run: |
+          docker push omniops/monitor:${GITHUB_SHA::7}
+          docker push omniops/monitor:main

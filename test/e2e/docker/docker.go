@@ -36,6 +36,7 @@ type Provider struct {
 	*cmtdocker.Provider
 	servicesOnce sync.Once
 	testnet      types.Testnet
+	monitorTag   string
 	relayerTag   string
 }
 
@@ -53,7 +54,7 @@ func (p *Provider) Clean(ctx context.Context) error {
 }
 
 // NewProvider returns a new Provider.
-func NewProvider(testnet types.Testnet, infd types.InfrastructureData, haloTag string) *Provider {
+func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag string) *Provider {
 	return &Provider{
 		Provider: &cmtdocker.Provider{
 			ProviderData: infra.ProviderData{
@@ -62,7 +63,8 @@ func NewProvider(testnet types.Testnet, infd types.InfrastructureData, haloTag s
 			},
 		},
 		testnet:    testnet,
-		relayerTag: haloTag,
+		monitorTag: imgTag,
+		relayerTag: imgTag,
 	}
 }
 
@@ -79,6 +81,8 @@ func (p *Provider) Setup() error {
 		Anvils:        p.testnet.AnvilChains,
 		Relayer:       true,
 		Prometheus:    p.testnet.Prometheus,
+		Monitor:       true,
+		MonitorTag:    p.monitorTag,
 		RelayerTag:    p.relayerTag,
 		OmniLogFormat: log.FormatConsole, // Local docker compose always use console log format.
 	}
@@ -122,6 +126,10 @@ func (p *Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 		return err
 	}
 
+	if len(nodes) == 0 {
+		return nil
+	}
+
 	// Start all requested nodes (use --no-deps to avoid starting the additional services again).
 	nodeNames := make([]string, len(nodes))
 	for i, n := range nodes {
@@ -145,6 +153,8 @@ type ComposeDef struct {
 	OmniEVMs []types.OmniEVM
 	Anvils   []types.AnvilChain
 
+	Monitor       bool
+	MonitorTag    string
 	Relayer       bool
 	Prometheus    bool
 	RelayerTag    string
@@ -218,7 +228,11 @@ func additionalServices(testnet types.Testnet) []string {
 		resp = append(resp, "prometheus")
 	}
 
-	resp = append(resp, "relayer")
+	if !testnet.OnlyMonitor {
+		resp = append(resp, "relayer")
+	}
+
+	resp = append(resp, "monitor")
 
 	return resp
 }
