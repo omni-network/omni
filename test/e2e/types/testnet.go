@@ -64,6 +64,7 @@ type OmniEVM struct {
 	Chain           EVMChain // For netconf (all instances must have the same chain)
 	InstanceName    string   // For docker container name
 	InternalIP      net.IP   // For docker container IP
+	ExternalIP      net.IP   // For setting up NAT on geth bootnode
 	ProxyPort       uint32   // For binding
 	InternalRPC     string   // For JSON-RPC queries from halo/relayer
 	InternalAuthRPC string   // For engine API queries from halo

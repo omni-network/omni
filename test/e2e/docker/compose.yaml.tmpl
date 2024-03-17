@@ -107,6 +107,7 @@ services:
       - --nodekeyhex={{.NodeKeyHex}}
       - --bootnodes={{.BootNodesStr}}
       - --miner.recommit=500ms
+      - --nat=extip:{{.ExternalIP}}
     ports:
       - {{ if $.BindAll }}8551:{{end}}8551
       - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}8545
