@@ -3,7 +3,6 @@ package fireblocks
 import (
 	"context"
 	"encoding/json"
-	"strconv"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/fireblocks/http"
@@ -14,9 +13,9 @@ type CreateTransactionRequest struct {
 	Note               string         `json:"note"`
 	ExternalTxID       string         `json:"externalTxId"`
 	AssetID            string         `json:"assetId"`
-	Source             any            `json:"source"`
-	Destination        any            `json:"destination"`
-	Destinations       any            `json:"destinations"`
+	Source             Source         `json:"source"`
+	Destination        Destination    `json:"destination"`
+	Destinations       []Destinations `json:"destinations"`
 	Amount             string         `json:"amount"`
 	TreatAsGrossAmount bool           `json:"treatAsGrossAmount"`
 	ForceSweep         bool           `json:"forceSweep"`
@@ -31,6 +30,33 @@ type CreateTransactionRequest struct {
 	ReplaceTxByHash    string         `json:"replaceTxByHash"`
 	CustomerRefID      string         `json:"customerRefId"`
 	ExtraParameters    RawMessageData `json:"extraParameters"`
+}
+
+type Source struct {
+	Type     string `json:"type"`
+	SubType  string `json:"subType"`
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	WalletID string `json:"walletId"`
+}
+
+type Destination struct {
+	Type           string         `json:"type"`
+	SubType        string         `json:"subType"`
+	ID             string         `json:"id"`
+	Name           string         `json:"name"`
+	WalletID       string         `json:"walletId"`
+	OneTimeAddress OneTimeAddress `json:"oneTimeAddress"`
+}
+
+type Destinations struct {
+	Amount      string      `json:"amount"`
+	Destination Destination `json:"destination"`
+}
+
+type OneTimeAddress struct {
+	Address string `json:"address"`
+	Tag     string `json:"tag"`
 }
 
 type RawMessageData struct {
@@ -55,13 +81,8 @@ type SystemMessages struct {
 	Message string `json:"message"`
 }
 
-func (c *Client) CreateTransaction(ctx context.Context, opts TransactionRequestOptions, jwtOpts http.JWTOpts) (*TransactionResponse, error) {
+func (c *Client) CreateTransaction(ctx context.Context, request CreateTransactionRequest, jwtOpts http.JWTOpts) (*TransactionResponse, error) {
 	var res TransactionResponse
-
-	request, err := NewTransactionRequest(opts)
-	if err != nil {
-		return nil, errors.Wrap(err, "newTransactionRequest")
-	}
 
 	req, err := json.Marshal(request)
 	if err != nil {
@@ -99,25 +120,13 @@ type TransactionRequestOptions struct {
 func NewTransactionRequest(opt TransactionRequestOptions) (*CreateTransactionRequest, error) {
 	// TODO: remove fields as needed
 	req := &CreateTransactionRequest{
-		Operation:          "RAW",
-		Note:               "",
-		ExternalTxID:       "",
-		AssetID:            "",
-		Source:             nil,
-		Destination:        nil,
-		Amount:             strconv.Itoa(int(opt.Amount)),
-		TreatAsGrossAmount: false,
-		ForceSweep:         false,
-		FeeLevel:           "",
-		Fee:                "",
-		PriorityFee:        "",
-		FailOnLowFee:       false,
-		MaxFee:             "",
-		GasLimit:           "",
-		GasPrice:           "",
-		NetworkFee:         "",
-		ReplaceTxByHash:    "",
-		CustomerRefID:      "",
+		Operation: "RAW",
+		Note:      "testing transaction",
+		Source: Source{
+			Type: "VAULT_ACCOUNT",
+		},
+		Destination:   Destination{},
+		CustomerRefID: "",
 		ExtraParameters: RawMessageData{
 			Messages: opt.Messages,
 		},
