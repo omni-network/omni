@@ -105,7 +105,6 @@ services:
       - --syncmode=full
       - --gcmode={{.GcMode}}
       - --nodekeyhex={{.NodeKeyHex}}
-      - --bootnodes={{.BootNodesStr}}
       - --miner.recommit=500ms
       - --nat=extip:{{.ExternalIP}}
     ports:
