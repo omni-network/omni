@@ -109,7 +109,7 @@ type PublicChain struct {
 	RPCAddress string   // For JSON-RPC queries from halo/relayer/e2e app.
 }
 
-// GethConfig represents part of the geth configuration that can't be initialized through the command line args
+// GethConfig represents part of the geth configuration that can't be initialized through the command line args.
 type GethConfig struct {
 	// BootstrapNodes are used to establish connectivity
 	// with the rest of the network.
