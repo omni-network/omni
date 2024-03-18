@@ -8,9 +8,9 @@ import (
 	"github.com/omni-network/omni/lib/log"
 )
 
-func (c Client) WaitSigned(ctx context.Context, opts TransactionRequestOptions, jwtOpts JWTOpts) (*TransactionResponse, error) {
+func (c Client) WaitSigned(ctx context.Context, opts TransactionRequestOptions) (*TransactionResponse, error) {
 	createTransactionRequest := NewTransactionRequest(opts)
-	resp, err := c.CreateTransaction(ctx, createTransactionRequest, jwtOpts)
+	resp, err := c.CreateTransaction(ctx, createTransactionRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -25,7 +25,7 @@ func (c Client) WaitSigned(ctx context.Context, opts TransactionRequestOptions, 
 		case <-ctx.Done():
 			return nil, errors.Wrap(ctx.Err(), "context canceled")
 		case <-queryTicker.C:
-			resp, err := c.GetTransactionByID(ctx, transactionID, jwtOpts)
+			resp, err := c.GetTransactionByID(ctx, transactionID)
 			if err != nil {
 				return nil, err
 			}

@@ -8,12 +8,11 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 )
 
-func (c Client) GetTransactionByID(ctx context.Context, transactionID string, jwtOpts JWTOpts) (*TransactionResponse, error) {
+func (c Client) GetTransactionByID(ctx context.Context, transactionID string) (*TransactionResponse, error) {
 	var res TransactionResponse
 
 	endpoint := filepath.Join(transactionEndpoint, transactionID)
-	jwtOpts.URI = endpoint
-	jwtToken, err := genJWTToken(jwtOpts)
+	jwtToken, err := c.genJWTToken(endpoint, nil)
 	if err != nil {
 		return nil, err
 	}

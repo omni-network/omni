@@ -17,13 +17,13 @@ type FireBlocks interface {
 
 	// CreateTransaction creates a new transaction on the FireBlocks API.
 	// We use raw signing by default
-	CreateTransaction(ctx context.Context, request CreateTransactionRequest, jwtOpts JWTOpts) (string, error)
+	CreateTransaction(ctx context.Context, request CreateTransactionRequest) (string, error)
 
 	// GetTransactionById retrieves a transaction by its ID.
-	GetTransactionById(ctx context.Context, transactionID string, jwtOpts JWTOpts) (*TransactionResponse, error)
+	GetTransactionById(ctx context.Context, transactionID string) (*TransactionResponse, error)
 
 	// WaitSigned waits for a transaction to be signed.
-	WaitSigned(ctx context.Context, opts TransactionRequestOptions, jwtOpts JWTOpts) (*TransactionResponse, error)
+	WaitSigned(ctx context.Context, opts TransactionRequestOptions) (*TransactionResponse, error)
 }
 
 type Client struct {

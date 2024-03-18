@@ -9,12 +9,11 @@ import (
 )
 
 type TransactionRequestOptions struct {
-	Nonce    string
-	Amount   int64
-	Messages []UnsignedRawMessage
+	Amount  int64
+	Message UnsignedRawMessage
 }
 
-func (c Client) CreateTransaction(ctx context.Context, request CreateTransactionRequest, jwtOpts JWTOpts) (*TransactionResponse, error) {
+func (c Client) CreateTransaction(ctx context.Context, request CreateTransactionRequest) (*TransactionResponse, error) {
 	var res TransactionResponse
 
 	req, err := json.Marshal(request)
@@ -22,8 +21,7 @@ func (c Client) CreateTransaction(ctx context.Context, request CreateTransaction
 		return nil, errors.Wrap(err, "marshal")
 	}
 
-	jwtOpts.URI = transactionEndpoint
-	jwtToken, err := genJWTToken(jwtOpts)
+	jwtToken, err := c.genJWTToken(transactionEndpoint, req)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +58,7 @@ func NewTransactionRequest(opt TransactionRequestOptions) CreateTransactionReque
 		Destination:   Destination{},
 		CustomerRefID: "",
 		ExtraParameters: RawMessageData{
-			Messages: opt.Messages,
+			Messages: []UnsignedRawMessage{opt.Message},
 		},
 	}
 
