@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package halo.valsync.types;
+
+option go_package = "halo/valsync/types";
+
+// GenesisState is an empty genesis state required to trigger valsync genesis logic only.
+message GenesisState {}

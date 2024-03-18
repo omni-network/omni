@@ -198,7 +198,8 @@
    "unbonding_delegations": [],
    "redelegations": [],
    "exported": false
-  }
+  },
+  "valsync": {}
  },
  "consensus": {
   "params": {
