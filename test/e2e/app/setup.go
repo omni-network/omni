@@ -108,21 +108,7 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 		}
 		config.WriteConfigFile(filepath.Join(nodeDir, "config", "config.toml"), cfg) // panics
 
-		var minRetainBlocks uint64
-		var pruningOption string
-		switch node.Mode {
-		case e2e.ModeValidator, e2e.ModeFull:
-			pruningOption = "nothing"
-			minRetainBlocks = 0
-		case e2e.ModeSeed, e2e.ModeLight:
-			pruningOption = "everything"
-			minRetainBlocks = 1
-		default:
-			pruningOption = "nothing"
-			minRetainBlocks = 0
-		}
-
-		if err := writeHaloConfig(nodeDir, logCfg, testCfg, minRetainBlocks, pruningOption); err != nil {
+		if err := writeHaloConfig(nodeDir, logCfg, testCfg, node.Mode); err != nil {
 			return err
 		}
 
@@ -320,12 +306,24 @@ func MakeConfig(node *e2e.Node, nodeDir string) (*config.Config, error) {
 }
 
 // writeHaloConfig generates an halo application config for a node and writes it to disk.
-func writeHaloConfig(nodeDir string, logCfg log.Config, testCfg bool, minRetainBlocks uint64, pruningOption string) error {
+func writeHaloConfig(nodeDir string, logCfg log.Config, testCfg bool, mode e2e.Mode) error {
 	cfg := halocfg.DefaultConfig()
+
+	switch mode {
+	case e2e.ModeValidator, e2e.ModeFull:
+		cfg.PruningOption = "nothing"
+		cfg.MinRetainBlocks = 0
+	case e2e.ModeSeed, e2e.ModeLight:
+		cfg.PruningOption = "everything"
+		cfg.MinRetainBlocks = 1
+	default:
+		cfg.PruningOption = "nothing"
+		cfg.MinRetainBlocks = 0
+	}
+
 	cfg.HomeDir = nodeDir
 	cfg.EngineJWTFile = "/geth/jwtsecret" // As per docker-compose mount
-	cfg.PruningOption = pruningOption
-	cfg.MinRetainBlocks = minRetainBlocks
+
 	if testCfg {
 		cfg.SnapshotInterval = 1   // Write snapshots each block in e2e tests
 		cfg.SnapshotKeepRecent = 0 // Keep all snapshots in e2e tests
@@ -461,7 +459,7 @@ func logConfig() log.Config {
 	}
 }
 
-//go:embed template/geth.toml.tmpl
+//go:embed geth.toml.tmpl
 var gethTomlTemplate []byte
 
 // WriteGethConfigTOML writes the toml config to disk.

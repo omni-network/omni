@@ -189,7 +189,7 @@ func TestnetFromManifest(manifest types.Manifest, infd types.InfrastructureData,
 			ExternalRPC:     fmt.Sprintf("http://%s:%d", inst.ExtIPAddress.String(), inst.Port),
 			NodeKey:         nodeKey,
 			Enode:           en,
-			Gcmode:          gcmode,
+			GcMode:          gcmode,
 		})
 	}
 

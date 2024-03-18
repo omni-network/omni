@@ -72,7 +72,7 @@ services:
       e2e: true
     container_name: {{ .InstanceName }}-init
     image: "ethereum/client-go:latest"
-    command: {{ if eq .Gcmode "archive" }}--state.scheme=hash {{ end }}--datadir=/geth init /geth/genesis.json
+    command: {{ if eq .GcMode "archive" }}--state.scheme=hash {{ end }}--datadir=/geth init /geth/genesis.json
     volumes:
       - ./{{ .InstanceName }}:/geth
     networks:
@@ -103,7 +103,7 @@ services:
       - --password=/geth/geth_password.txt
       - --nodiscover
       - --syncmode=full
-      - --gcmode={{.Gcmode}}
+      - --gcmode={{.GcMode}}
       - --nodekeyhex={{.NodeKeyHex}}
       - --bootnodes={{.BootNodesStr}}
       - --miner.recommit=500ms

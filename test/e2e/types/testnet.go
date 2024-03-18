@@ -17,6 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/p2p/enode"
 )
 
+// GcMode represents the garbage collection mode for geth. Either "full" or "archive".
 type GcMode string
 
 const (
@@ -69,7 +70,7 @@ type OmniEVM struct {
 	InternalRPC     string   // For JSON-RPC queries from halo/relayer
 	InternalAuthRPC string   // For engine API queries from halo
 	ExternalRPC     string   // For JSON-RPC queries from e2e app.
-	Gcmode          GcMode   // Geth config for archive or full mode
+	GcMode          GcMode   // Geth config for archive or full mode
 
 	// P2P networking
 	NodeKey   *ecdsa.PrivateKey // Private key
