@@ -16,8 +16,7 @@ interface IFeeOracleV1 is IFeeOracle {
     event FeeChanged(uint256 oldFee, uint256 newFee);
 
     /**
-     * @notice The current fee per transaction, in wei.
-     * @return The fee.
+     * @notice Returns the current fee per transaction, in wei.
      */
     function fee() external view returns (uint256);
 
