@@ -4,9 +4,25 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/ethereum/go-ethereum/common"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
-func (l *EVMLog) Verify() error {
+// ToEthLog converts an EVMEvent to an Ethereum Log.
+// Note it assumes that Verify has been called before.
+func (l *EVMEvent) ToEthLog() ethtypes.Log {
+	topics := make([]common.Hash, 0, len(l.Topics))
+	for _, t := range l.Topics {
+		topics = append(topics, common.BytesToHash(t))
+	}
+
+	return ethtypes.Log{
+		Address: common.BytesToAddress(l.Address),
+		Topics:  topics,
+		Data:    l.Data,
+	}
+}
+
+func (l *EVMEvent) Verify() error {
 	if l == nil {
 		return errors.New("nil log")
 	}

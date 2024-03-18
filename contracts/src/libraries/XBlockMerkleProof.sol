@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity =0.8.24;
 
 import { MerkleProof } from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import { XTypes } from "./XTypes.sol";
@@ -10,14 +10,14 @@ import { XTypes } from "./XTypes.sol";
  */
 library XBlockMerkleProof {
     /**
-     * @dev Verifies a multi merkle proof for the provided block header and messages, against the provided root.
+     * @notice Verifies a multi merkle proof for the provided block header and messages, against the provided root.
      *      Msgs order must match the order used to construct the merkle proof.
-     * @param root The root of the xblock merkle tree, generally XSubmission.attestationRoot.
-     * @param blockHeader The xblock header.
-     * @param msgs The xmsgs to verify.
-     * @param proof The merkle proof.
-     * @param proofFlags The merkle proof flags.
-     * @return True if the proof is valid.
+     * @param root          The root of the xblock merkle tree, generally XSubmission.attestationRoot.
+     * @param blockHeader   The xblock header.
+     * @param msgs          The xmsgs to verify.
+     * @param proof         The merkle proof.
+     * @param proofFlags    The merkle proof flags.
+     * @return              True if the proof is valid, false otherwise.
      */
     function verify(
         bytes32 root,

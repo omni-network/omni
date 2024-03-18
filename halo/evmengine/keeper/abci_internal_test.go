@@ -202,7 +202,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		}
 		keeper.SetAddressProvider(ap)
 		keeper.SetVoteProvider(mockVEProvider{})
-		keeper.AddLogProvider(mockLogProvider{})
+		keeper.AddEventProcessor(mockLogProvider{})
 
 		// get the genesis block to build on top of
 		ts := time.Now()
@@ -260,7 +260,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		}
 		keeper.SetAddressProvider(ap)
 
-		keeper.AddLogProvider(mockLogProvider{})
+		keeper.AddEventProcessor(mockLogProvider{})
 		keeper.SetVoteProvider(mockVEProvider{})
 
 		// get the genesis block to build on top of
@@ -325,8 +325,8 @@ func assertExecutablePayload(t *testing.T, msg sdk.Msg, ts int64, blockHash comm
 	require.Empty(t, payload.Withdrawals)
 	require.Equal(t, payload.Number, height)
 
-	require.Len(t, executionPayload.PrevPayloadLogs, 1)
-	evmLog := executionPayload.PrevPayloadLogs[0]
+	require.Len(t, executionPayload.PrevPayloadEvents, 1)
+	evmLog := executionPayload.PrevPayloadEvents[0]
 	require.Equal(t, evmLog.Address, zeroAddr.Bytes())
 }
 
@@ -368,7 +368,7 @@ func getCodec(t *testing.T) codec.Codec {
 
 var _ ethclient.EngineClient = (*mockEngineAPI)(nil)
 var _ etypes.AddressProvider = (*mockAddressProvider)(nil)
-var _ etypes.EvmLogProvider = (*mockLogProvider)(nil)
+var _ etypes.EvmEventProcessor = (*mockLogProvider)(nil)
 var _ etypes.VoteExtensionProvider = (*mockVEProvider)(nil)
 
 type mockEngineAPI struct {
@@ -410,13 +410,13 @@ func (m mockVEProvider) PrepareVotes(_ context.Context, _ abci.ExtendedCommitInf
 
 type mockLogProvider struct{}
 
-func (m mockLogProvider) Logs(_ context.Context, blockHash common.Hash) ([]*etypes.EVMLog, error) {
+func (m mockLogProvider) Prepare(_ context.Context, blockHash common.Hash) ([]*etypes.EVMEvent, error) {
 	f := fuzz.NewWithSeed(int64(blockHash[0]))
 
 	var topic common.Hash
 	f.Fuzz(&topic)
 
-	return []*etypes.EVMLog{{
+	return []*etypes.EVMEvent{{
 		Address: zeroAddr.Bytes(),
 		Topics:  [][]byte{topic[:]},
 	}}, nil
@@ -426,7 +426,7 @@ func (m mockLogProvider) Addresses() []common.Address {
 	return []common.Address{zeroAddr}
 }
 
-func (m mockLogProvider) DeliverLog(_ context.Context, _ common.Hash, log *etypes.EVMLog) error {
+func (m mockLogProvider) Deliver(_ context.Context, _ common.Hash, log *etypes.EVMEvent) error {
 	if bytes.Equal(log.Address, zeroAddr.Bytes()) {
 		panic("unexpected evm log address")
 	}

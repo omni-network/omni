@@ -3,6 +3,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/omni-network/omni/lib/log"
 
@@ -63,12 +64,18 @@ func (l loggingABCIApp) ProcessProposal(ctx context.Context, proposal *abci.Requ
 }
 
 func (l loggingABCIApp) FinalizeBlock(ctx context.Context, block *abci.RequestFinalizeBlock) (*abci.ResponseFinalizeBlock, error) {
-	log.Debug(ctx, "👾 ABCI call: FinalizeBlock")
 	resp, err := l.Application.FinalizeBlock(ctx, block)
 	if err != nil {
 		log.Error(ctx, "Finalize block failed [BUG]", err, "height", block.Height)
 		return resp, err
 	}
+
+	attrs := []any{"val_updates", len(resp.ValidatorUpdates)}
+	for i, update := range resp.ValidatorUpdates {
+		attrs = append(attrs, log.Hex7(fmt.Sprintf("pubkey_%d", i), update.PubKey.GetSecp256K1()))
+		attrs = append(attrs, fmt.Sprintf("power_%d", i), update.Power)
+	}
+	log.Debug(ctx, "👾 ABCI response: FinalizeBlock", attrs...)
 
 	for i, res := range resp.TxResults {
 		if res.Code == 0 {

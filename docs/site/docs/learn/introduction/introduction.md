@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Background
 
-Ethereum’s commitment to the rollup-centric roadmap has forced the network to scale via isolated execution environments. While this allows rollups to support various execution environments and programming languages, creates negative externalities that degrade Ethereum’s network effects. Specifically, liquidity, users, and developers are fragmented between disparate ecosystems. The expanding variety of rollup designs and their growing adoption will only exacerbate these issues. Consequently, Ethereum requires a native interoperability protocol that realigns the network with its original vision of being a single, unified operating system for decentralized applications.
+Ethereum’s commitment to the rollup-centric roadmap has forced the network to scale via isolated execution environments. While this allows rollups to support various execution environments and programming languages, it creates negative externalities that degrade Ethereum’s network effects. Specifically, liquidity, users, and developers are fragmented between disparate ecosystems. The expanding variety of rollup designs and their growing adoption will only exacerbate these issues. Consequently, Ethereum requires a native interoperability protocol that realigns the network with its original vision of being a single, unified operating system for decentralized applications.
 
 ### The Ideal Interoperability Solution
 

@@ -127,6 +127,8 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, secrets age
 
 	stopReceiptMonitor := StartMonitoringReceipts(ctx, def)
 
+	stopValidatorUpdates := StartValidatorUpdates(ctx, def)
+
 	msgBatches := []int{3, 2, 1} // Send 6 msgs from each chain to each other chain
 	msgsErr := StartSendingXMsgs(ctx, def.Netman, def.Backends, msgBatches...)
 
@@ -178,6 +180,10 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, secrets age
 
 	if err := stopReceiptMonitor(); err != nil {
 		return errors.Wrap(err, "stop deploy")
+	}
+
+	if err := stopValidatorUpdates(); err != nil {
+		return errors.Wrap(err, "stop validator updates")
 	}
 
 	// Start unit tests.

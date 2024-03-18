@@ -9,7 +9,7 @@
  "EVMBuildDelay": 600000000,
  "EVMBuildOptimistic": true,
  "Comet": {
-  "Version": "0.38.5",
+  "Version": "0.38.6",
   "RootDir": "foo",
   "ProxyApp": "tcp://127.0.0.1:26658",
   "Moniker": "testmoniker",

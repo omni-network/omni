@@ -60,6 +60,11 @@ func NewEngineMock() (EngineClient, error) {
 }
 
 func (*engineMock) FilterLogs(_ context.Context, q ethereum.FilterQuery) ([]types.Log, error) {
+	if len(q.Addresses) > 0 {
+		return nil, nil // We can't mock contract specific logs
+	}
+
+	// If no addresses are provided, we return two random logs
 	f := fuzz.NewWithSeed(int64(q.BlockHash[0])).NilChance(0).NumElements(1, 4)
 	var resp1, resp2 types.Log
 	f.Fuzz(&resp1)

@@ -238,7 +238,7 @@ func TestKeeper_Approve(t *testing.T) {
 			prerequisites: []prerequisite{
 				func(t *testing.T, k *keeper.Keeper, ctx sdk.Context) {
 					t.Helper()
-					msg := defaultMsg().Msg()
+					msg := defaultMsg().Msg() // Signed by 1 and 2, but also approved by 1 and 2
 					err := k.Add(ctx, msg)
 					require.NoError(t, err)
 				},
@@ -248,11 +248,11 @@ func TestKeeper_Approve(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					{Id: 1, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: 500, Status: int32(keeper.Status_Approved), ValidatorsHash: valset1_2.Hash()},
+					expectApprovedAtt(1, 500, valset1_2),
 				},
 				sigs: []*keeper.Signature{
-					{Id: 1, AttId: 1, Signature: val1.Bytes(), ValidatorAddress: valAddr1[:]},
-					{Id: 2, AttId: 1, Signature: val2.Bytes(), ValidatorAddress: valAddr2[:]},
+					expectValSig(1, 1, val1),
+					expectValSig(2, 1, val2),
 				},
 			},
 		},
@@ -264,7 +264,7 @@ func TestKeeper_Approve(t *testing.T) {
 			prerequisites: []prerequisite{
 				func(t *testing.T, k *keeper.Keeper, ctx sdk.Context) {
 					t.Helper()
-					msg := defaultMsg().Msg()
+					msg := defaultMsg().Msg() // Only signed by 1 and 2 (25), approved by 1,2,3 (40)
 					err := k.Add(ctx, msg)
 					require.NoError(t, err)
 				},
@@ -274,11 +274,11 @@ func TestKeeper_Approve(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					{Id: 1, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: 500, Status: int32(keeper.Status_Pending)},
+					expectPendingAtt(1, 500),
 				},
 				sigs: []*keeper.Signature{
-					{Id: 1, AttId: 1, Signature: val1.Bytes(), ValidatorAddress: valAddr1[:]},
-					{Id: 2, AttId: 1, Signature: val2.Bytes(), ValidatorAddress: valAddr2[:]},
+					expectValSig(1, 1, val1),
+					expectValSig(2, 1, val2),
 				},
 			},
 		},
@@ -302,49 +302,87 @@ func TestKeeper_Approve(t *testing.T) {
 				},
 			},
 			args: args{
-				valset: valset2_3,
+				valset: valset2_3, // Approve from 2_3 only (so sig 1 is deleted)
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					{Id: 1, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: 500, Status: int32(keeper.Status_Approved), ValidatorsHash: valset2_3.Hash()},
+					expectApprovedAtt(1, 500, valset2_3),
 				},
 				sigs: []*keeper.Signature{
-					{Id: 2, AttId: 1, Signature: val2.Bytes(), ValidatorAddress: valAddr2[:]},
-					{Id: 3, AttId: 1, Signature: val3.Bytes(), ValidatorAddress: valAddr3[:]},
+					expectValSig(2, 1, val2),
+					expectValSig(3, 1, val3),
 				},
 			},
 		},
 		{
-			name: "two_attestations_same_chain_skip_second",
+			name: "sequential_attestations",
 			expectations: []expectation{
+				namerCalled(2),
 				defaultExpectations,
 			},
 			prerequisites: []prerequisite{
 				func(t *testing.T, k *keeper.Keeper, ctx sdk.Context) {
 					t.Helper()
-					msg := defaultMsg().Msg() // has sigs of val1 and val2 - not approved
-					err := k.Add(ctx, msg)
-					require.NoError(t, err)
+					vote500 := defaultAggVote().WithBlockHeight(500).Vote()
+					vote501 := defaultAggVote().WithBlockHeight(501).Vote()
 
-					vote := defaultAggVote().WithSignatures(sigsTuples(val2, val3)...).WithBlockHeight(501).Vote()
-					msg2 := defaultMsg().Default().WithVotes(vote).Msg()
-					err = k.Add(ctx, msg2)
+					msg500 := defaultMsg().Default().WithVotes(vote500).Msg()
+					err := k.Add(ctx, msg500)
+					require.NoError(t, err)
+					msg501 := defaultMsg().Default().WithVotes(vote501).Msg()
+					err = k.Add(ctx, msg501)
 					require.NoError(t, err)
 				},
 			},
 			args: args{
-				valset: valset1_2_3,
+				valset: valset1_2,
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					{Id: 1, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: 500, Status: int32(keeper.Status_Pending)},
-					{Id: 2, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: 501, Status: int32(keeper.Status_Pending)},
+					expectApprovedAtt(1, 500, valset1_2),
+					expectApprovedAtt(2, 501, valset1_2),
 				},
 				sigs: []*keeper.Signature{
-					{Id: 1, AttId: 1, Signature: val1.Bytes(), ValidatorAddress: valAddr1[:]},
-					{Id: 2, AttId: 1, Signature: val2.Bytes(), ValidatorAddress: valAddr2[:]},
-					{Id: 3, AttId: 2, Signature: val2.Bytes(), ValidatorAddress: valAddr2[:]},
-					{Id: 4, AttId: 2, Signature: val3.Bytes(), ValidatorAddress: valAddr3[:]},
+					expectValSig(1, 1, val1),
+					expectValSig(2, 1, val2),
+					expectValSig(3, 2, val1),
+					expectValSig(4, 2, val2),
+				},
+			},
+		},
+		{
+			name: "non_sequential_attestations",
+			expectations: []expectation{
+				namerCalled(1),
+				defaultExpectations,
+			},
+			prerequisites: []prerequisite{
+				func(t *testing.T, k *keeper.Keeper, ctx sdk.Context) {
+					t.Helper()
+					vote500 := defaultAggVote().WithBlockHeight(500).Vote()
+					vote502 := defaultAggVote().WithBlockHeight(502).Vote()
+
+					msg500 := defaultMsg().Default().WithVotes(vote500).Msg()
+					err := k.Add(ctx, msg500)
+					require.NoError(t, err)
+					msg502 := defaultMsg().Default().WithVotes(vote502).Msg()
+					err = k.Add(ctx, msg502)
+					require.NoError(t, err)
+				},
+			},
+			args: args{
+				valset: valset1_2,
+			},
+			want: want{
+				atts: []*keeper.Attestation{
+					expectApprovedAtt(1, 500, valset1_2),
+					expectPendingAtt(2, 502),
+				},
+				sigs: []*keeper.Signature{
+					expectValSig(1, 1, val1),
+					expectValSig(2, 1, val2),
+					expectValSig(3, 2, val1),
+					expectValSig(4, 2, val2),
 				},
 			},
 		},
@@ -376,4 +414,16 @@ func TestKeeper_Approve(t *testing.T) {
 			}
 		})
 	}
+}
+
+func expectValSig(id uint64, attID uint64, val *cmttypes.Validator) *keeper.Signature {
+	return &keeper.Signature{Id: id, AttId: attID, Signature: val.Bytes(), ValidatorAddress: mustValAddr(val).Bytes()}
+}
+
+func expectPendingAtt(id uint64, height uint64) *keeper.Attestation {
+	return &keeper.Attestation{Id: id, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: height, Status: int32(keeper.Status_Pending)}
+}
+
+func expectApprovedAtt(id uint64, height uint64, valset *cmttypes.ValidatorSet) *keeper.Attestation {
+	return &keeper.Attestation{Id: id, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: height, Status: int32(keeper.Status_Approved), ValidatorsHash: valset.Hash()}
 }

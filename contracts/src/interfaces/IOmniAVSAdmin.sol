@@ -146,6 +146,11 @@ interface IOmniAVSAdmin {
     function disableAllowlist() external;
 
     /**
+     * @notice Eject an operator from the AVS.
+     */
+    function ejectOperator(address operator) external;
+
+    /**
      * @notice Pause the contract.
      */
     function pause() external;

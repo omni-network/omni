@@ -78,7 +78,7 @@ const sidebars: SidebarsConfig = {
       className: "sidebar-title",
       collapsible: false,
       items: [
-        "protocol/xmessages/overview",
+        "protocol/xmessages/xmsg",
         {
           type: "category",
           label: "Components",
@@ -101,7 +101,6 @@ const sidebars: SidebarsConfig = {
             "protocol/xmessages/components/portal-receive",
           ]
         },
-        "protocol/xmessages/xmsg",
         "protocol/xmessages/fees",
         "protocol/xmessages/finality",
       ]
