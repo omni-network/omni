@@ -14,6 +14,12 @@ func bindAVSAddress(cmd *cobra.Command, addr *string) {
 	cmd.Flags().StringVar(addr, "avs-address", *addr, "Optional address of the Omni AVS contract")
 }
 
+func bindNewProjConfig(cmd *cobra.Command, projName *string) {
+	const flagName = "name"
+	cmd.Flags().StringVar(projName, flagName, *projName, "Name of the new project")
+	_ = cmd.MarkFlagRequired(flagName)
+}
+
 func bindDevnetAVSAllowConfig(cmd *cobra.Command, cfg *devnetAllowConfig) {
 	bindRPCURL(cmd, &cfg.RPCURL)
 	bindAVSAddress(cmd, &cfg.AVSAddr)
