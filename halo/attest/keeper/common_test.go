@@ -44,7 +44,7 @@ func namerCalled(times int) expectation {
 func setupKeeper(t *testing.T, expectations ...expectation) (*keeper.Keeper, sdk.Context) {
 	t.Helper()
 
-	key := storetypes.NewKVStoreKey(types.StoreKey)
+	key := storetypes.NewKVStoreKey(types.ModuleName)
 	storeSvc := runtime.NewKVStoreService(key)
 	ctx := sdktestutil.DefaultContext(key, storetypes.NewTransientStoreKey("test_key"))
 	codec := moduletestutil.MakeTestEncodingConfig().Codec

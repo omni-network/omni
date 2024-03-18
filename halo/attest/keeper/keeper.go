@@ -209,15 +209,30 @@ func (k *Keeper) Approve(ctx context.Context, valset *cmttypes.ValidatorSet) err
 		valsByPower[addr] = val.VotingPower
 	}
 
-	skip := make(map[uint64]bool)           // Skip processing chains as soon as a pending attestation is found.
-	edgesByChain := make(map[uint64]uint64) // Track new minimum edges for updated vote windows.
+	approvedByChain := make(map[uint64]uint64) // Cache the latest approved attestation by chain.
 	for iter.Next() {
 		att, err := iter.Value()
 		if err != nil {
 			return errors.Wrap(err, "value")
 		}
-		if skip[att.GetChainId()] {
-			continue
+
+		// Ensure we approve sequentially, not skipping any heights.
+		{
+			// Populate the cache if not already.
+			if _, ok := approvedByChain[att.GetChainId()]; ok {
+				latest, found, err := k.latestAttestation(ctx, att.GetChainId())
+				if err != nil {
+					return errors.Wrap(err, "latest approved")
+				} else if found {
+					approvedByChain[att.GetChainId()] = latest.BlockHeader.Height
+				}
+			}
+			head, ok := approvedByChain[att.GetChainId()]
+			if ok && head+1 != att.GetHeight() {
+				// This isn't the next attestation to approve, so we can't approve it yet.
+				continue
+			}
+			// TODO(corver): We should ensure we start approving from portal deploy height.
 		}
 
 		sigs, err := k.getSigs(ctx, att.GetId())
@@ -227,7 +242,6 @@ func (k *Keeper) Approve(ctx context.Context, valset *cmttypes.ValidatorSet) err
 
 		toDelete, ok := isApproved(sigs, valsByPower, valset.TotalVotingPower())
 		if !ok {
-			skip[att.GetChainId()] = true
 			continue
 		}
 
@@ -246,11 +260,17 @@ func (k *Keeper) Approve(ctx context.Context, valset *cmttypes.ValidatorSet) err
 			return errors.Wrap(err, "save")
 		}
 
-		edgesByChain[att.GetChainId()] = uintSub(att.GetHeight(), k.voteWindow)
 		approvedHeight.WithLabelValues(k.namer(att.GetChainId())).Set(float64(att.GetHeight()))
+		approvedByChain[att.GetChainId()] = att.GetHeight()
 	}
 
-	count := k.voter.TrimBehind(edgesByChain)
+	// Trim votes behind minimum vote-window
+	minVoteWindows := make(map[uint64]uint64)
+	for chainID, head := range approvedByChain {
+		minVoteWindows[chainID] = uintSub(head, k.voteWindow)
+	}
+
+	count := k.voter.TrimBehind(minVoteWindows)
 	if count > 0 {
 		log.Warn(ctx, "Trimmed votes behind vote-window (expected if node was struggling)", nil, "count", count)
 	}
