@@ -265,10 +265,7 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-require (
-	github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be
-	github.com/golang-jwt/jwt v3.2.2+incompatible
-)
+require github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be
 
 replace (
 	// todo(lazar): remove this when go ethereum release new version
