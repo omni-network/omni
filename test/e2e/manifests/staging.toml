@@ -1,5 +1,5 @@
 network = "staging"
-public_chains = ["arb_sepolia", "op_sepolia"]
+public_chains = ["op_sepolia"]
 anvil_chains = ["chain_a"]
 avs_target = "chain_a"
 multi_omni_evms = true
