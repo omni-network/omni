@@ -394,10 +394,8 @@ func writeOmniEVMConfig(testnet types.Testnet) error {
 				return errors.Wrap(err, "write geth config")
 			}
 		}
-		cfg := struct {
-			BootstrapNodes string
-			StaticNodes    string
-		}{
+
+		cfg := types.GethConfig{
 			BootstrapNodes: evm.BootNodesStrArr(),
 			StaticNodes:    evm.BootNodesStrArr(),
 		}
@@ -463,7 +461,7 @@ func logConfig() log.Config {
 var gethTomlTemplate []byte
 
 // WriteGethConfigTOML writes the toml config to disk.
-func WriteGethConfigTOML(cfg any, path string) error {
+func WriteGethConfigTOML(cfg types.GethConfig, path string) error {
 	var buffer bytes.Buffer
 
 	t, err := template.New("").Parse(string(gethTomlTemplate))

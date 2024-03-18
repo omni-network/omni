@@ -78,19 +78,12 @@ type OmniEVM struct {
 	BootNodes []*enode.Node     // Peer public keys
 }
 
+// NodeKeyHex returns the hex-encoded node key. Used for geth's config.
 func (o OmniEVM) NodeKeyHex() string {
 	return hex.EncodeToString(crypto.FromECDSA(o.NodeKey))
 }
 
-func (o OmniEVM) BootNodesStr() string {
-	var resp []string
-	for _, b := range o.BootNodes {
-		resp = append(resp, b.String())
-	}
-
-	return strings.Join(resp, ",")
-}
-
+// BootNodesStrArr returns a string array of bootnodes for use in geth's config for bootnodes.
 func (o OmniEVM) BootNodesStrArr() string {
 	var resp []string
 	for _, b := range o.BootNodes {
@@ -114,4 +107,15 @@ type AnvilChain struct {
 type PublicChain struct {
 	Chain      EVMChain // For netconf
 	RPCAddress string   // For JSON-RPC queries from halo/relayer/e2e app.
+}
+
+// GethConfig represents part of the geth configuration that can't be initialized through the command line args
+type GethConfig struct {
+	// BootstrapNodes are used to establish connectivity
+	// with the rest of the network.
+	BootstrapNodes string
+
+	// Static nodes are used as pre-configured connections which are always
+	// maintained and re-connected on disconnects.
+	StaticNodes string
 }

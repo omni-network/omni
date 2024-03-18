@@ -69,7 +69,6 @@ services:
       - --syncmode=full
       - --gcmode=full
       - --nodekeyhex=<nodekeyhex>
-      - --bootnodes=enode://<enode_pubkey>@127.0.0.1:30303
       - --miner.recommit=500ms
       - --nat=extip:<nil>
     ports:
