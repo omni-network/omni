@@ -1,4 +1,4 @@
-package http
+package fireblocks
 
 import (
 	"crypto/sha256"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type JWTOpts struct {

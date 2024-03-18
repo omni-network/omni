@@ -5,16 +5,12 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/fireblocks/http"
 	"github.com/omni-network/omni/lib/log"
 )
 
-func (c *Client) WaitSigned(ctx context.Context, opts TransactionRequestOptions, jwtOpts http.JWTOpts) (*TransactionResponse, error) {
-	createTransactionRequest, err := NewTransactionRequest(opts)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := c.CreateTransaction(ctx, *createTransactionRequest, jwtOpts)
+func (c Client) WaitSigned(ctx context.Context, opts TransactionRequestOptions, jwtOpts JWTOpts) (*TransactionResponse, error) {
+	createTransactionRequest := NewTransactionRequest(opts)
+	resp, err := c.CreateTransaction(ctx, createTransactionRequest, jwtOpts)
 	if err != nil {
 		return nil, err
 	}
