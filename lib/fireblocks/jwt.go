@@ -12,7 +12,7 @@ import (
 
 func (c Client) genJWTToken(uri string, body []byte) (string, error) {
 	bodyHash := sha256.Sum256(body)
-	uuid := uuid2.NewString()
+	nonce := uuid2.NewString() // this is our nonce
 	// uri - The URI part of the request (e.g., /v1/transactions).
 	// nonce - Unique number or string. Each API request needs to have a different nonce.
 	// iat - The time at which the JWT was issued, in seconds since Epoch.
@@ -22,12 +22,11 @@ func (c Client) genJWTToken(uri string, body []byte) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		jwt.MapClaims{
 			"uri":      uri,
-			"nonce":    uuid,
+			"nonce":    nonce,
 			"iat":      time.Now().Unix(),
 			"sub":      c.apiKey,
 			"bodyHash": bodyHash,
-			// The expiration time on and after which the JWT must not be accepted for processing, in seconds since Epoch. (Must be less than iat+30sec.)
-			"exp": time.Now().Add(time.Second * 15).Unix(),
+			"exp":      time.Now().Add(time.Second * 15).Unix(),
 		})
 
 	tokenString, err := token.SignedString(c.clientSecret)
