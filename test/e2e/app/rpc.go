@@ -9,13 +9,14 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	e2etypes "github.com/omni-network/omni/test/e2e/types"
 
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	rpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/types"
+
 	gethrpc "github.com/ethereum/go-ethereum/rpc"
-	e2etypes "github.com/omni-network/omni/test/e2e/types"
 )
 
 // waitForHeight waits for the network to reach a certain height (or above),
@@ -157,16 +158,17 @@ func waitForAllNodes(ctx context.Context, testnet *e2e.Testnet, height int64, ti
 	return lastHeight, nil
 }
 
-// waitForGethPeers waits for all geth nodes to connect to each other
+// waitForGethPeers waits for all geth nodes to connect to each other.
 func waitForGethPeers(ctx context.Context, testnet *e2etypes.Testnet, wanted int64) error {
 	peerCount := func(ctx context.Context, client *gethrpc.Client) (int64, error) {
 		ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 		defer cancel()
 		var peerCount string
-		err := client.CallContext(context.Background(), &peerCount, "net_peerCount")
+		err := client.CallContext(ctx, &peerCount, "net_peerCount")
 		if err != nil {
 			return -1, errors.Wrap(err, "get peer count")
 		}
+
 		return strconv.ParseInt(peerCount, 0, 64)
 	}
 

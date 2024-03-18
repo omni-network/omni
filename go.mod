@@ -267,11 +267,6 @@ require (
 
 require github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be
 
-require (
-	github.com/huin/goupnp v1.3.0 // indirect
-	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
-)
-
 replace (
 	// todo(lazar): remove this when go ethereum release new version
 	github.com/cockroachdb/pebble v1.1.0 => github.com/cockroachdb/pebble v0.0.0-20231101195458-481da04154d6

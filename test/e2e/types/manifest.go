@@ -1,9 +1,6 @@
 package types
 
 import (
-	"sort"
-	"strings"
-
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
@@ -55,28 +52,5 @@ func (m Manifest) OmniEVMs() map[string]GcMode {
 		resp[name+"_evm"] = gcmode
 	}
 
-	// todo(lazar): tmp: figure out why deploying to seed and full node omnievms resulsts in tx not mined errors
-	// Extract keys
-	keys := make([]string, 0, len(resp))
-	for key := range resp {
-		keys = append(keys, key)
-	}
-
-	// Sort keys with "validator" nodes first
-	sort.Slice(keys, func(i, j int) bool {
-		if strings.Contains(keys[i], "seed") && !strings.Contains(keys[j], "seed") {
-			return true
-		} else if !strings.Contains(keys[i], "seed") && strings.Contains(keys[j], "seed") {
-			return false
-		}
-		return keys[i] < keys[j]
-	})
-
-	// Create sorted map
-	sortedResp := make(map[string]GcMode)
-	for _, key := range keys {
-		sortedResp[key] = resp[key]
-	}
-
-	return sortedResp
+	return resp
 }

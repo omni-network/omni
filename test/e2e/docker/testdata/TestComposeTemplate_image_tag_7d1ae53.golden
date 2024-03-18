@@ -93,6 +93,7 @@ services:
     container_name: omni_evm_0
     image: "ethereum/client-go:latest"
     command:
+      - --config=/geth/config.toml
       - --http
       - --http.vhosts=*
       - --http.api=eth,net,web3
@@ -106,14 +107,16 @@ services:
       - --authrpc.addr=0.0.0.0
       - --authrpc.jwtsecret=/geth/jwtsecret
       - --datadir=/geth
-      - --allow-insecure-unlock
       - --unlock=0x123463a4b065722e99115d6c222f267d9cabb524
+      - --allow-insecure-unlock
       - --password=/geth/geth_password.txt
       - --nodiscover
       - --syncmode=full
+      - --gcmode=
       - --nodekeyhex=59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
       - --bootnodes=enode://ba5734d8f7091719471e7f7ed6b9df170dc70cc661ca05e688601ad984f068b0d67351e5f06073092499336ab0839ef8a521afd334e53807205fa2f08eec74f4@10.186.73.0:30303
       - --miner.recommit=500ms
+      - --nat=extip:<nil>
     ports:
       - 8551
       - 8000:8545
