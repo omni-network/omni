@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/cometbft/cometbft/rpc/client"
+	"github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/omni-network/omni/lib/buildinfo"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
@@ -11,10 +13,6 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
-	"github.com/omni-network/omni/monitor/avs"
-
-	"github.com/cometbft/cometbft/rpc/client"
-	"github.com/cometbft/cometbft/rpc/client/http"
 
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 )
@@ -73,10 +71,6 @@ func Run(ctx context.Context, cfg Config) error {
 			state)
 
 		go worker.Run(ctx)
-	}
-
-	if err := avs.Monitor(ctx, network); err != nil {
-		return errors.Wrap(err, "monitor avs")
 	}
 
 	startMonitoring(ctx, network, xprov, cprov, ethcrypto.PubkeyToAddress(privateKey.PublicKey), rpcClientPerChain)
