@@ -1,27 +1,15 @@
 package fireblocks
 
 type CreateTransactionRequest struct {
-	Operation          string         `json:"operation"`
-	Note               string         `json:"note"`
-	ExternalTxID       string         `json:"externalTxId"`
-	AssetID            string         `json:"assetId"`
-	Source             Source         `json:"source"`
-	Destination        Destination    `json:"destination"`
-	Destinations       []Destinations `json:"destinations"`
-	Amount             string         `json:"amount"`
-	TreatAsGrossAmount bool           `json:"treatAsGrossAmount"`
-	ForceSweep         bool           `json:"forceSweep"`
-	FeeLevel           string         `json:"feeLevel"`
-	Fee                string         `json:"fee"`
-	PriorityFee        string         `json:"priorityFee"`
-	FailOnLowFee       bool           `json:"failOnLowFee"`
-	MaxFee             string         `json:"maxFee"`
-	GasLimit           string         `json:"gasLimit"`
-	GasPrice           string         `json:"gasPrice"`
-	NetworkFee         string         `json:"networkFee"`
-	ReplaceTxByHash    string         `json:"replaceTxByHash"`
-	CustomerRefID      string         `json:"customerRefId"`
-	ExtraParameters    RawMessageData `json:"extraParameters"`
+	Operation       string         `json:"operation"`
+	Note            string         `json:"note"`
+	Source          Source         `json:"source"`
+	Destination     Destination    `json:"destination"`
+	Destinations    []Destinations `json:"destinations"`
+	AssetID         string         `json:"assetId"`
+	Amount          string         `json:"amount"`
+	CustomerRefID   string         `json:"customerRefId"`
+	ExtraParameters RawMessageData `json:"extraParameters"`
 }
 
 type Source struct {
@@ -52,15 +40,11 @@ type OneTimeAddress struct {
 }
 
 type RawMessageData struct {
-	Messages  []UnsignedRawMessage `json:"messages"`
-	Algorithm string               `json:"algorithm"`
+	Messages []UnsignedRawMessage `json:"messages"`
 }
 
 type UnsignedRawMessage struct {
-	Content           string    `json:"content"`
-	Bip44addressIndex float64   `json:"bip44AddressIndex"`
-	Bip44change       float64   `json:"bip44Change"`
-	DerivationPath    []float64 `json:"derivationPath"`
+	Content string `json:"content"`
 }
 
 type TransactionResponse struct {

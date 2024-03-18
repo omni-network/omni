@@ -9,7 +9,6 @@ import (
 )
 
 type TransactionRequestOptions struct {
-	Amount  int64
 	Message UnsignedRawMessage
 }
 
@@ -48,7 +47,6 @@ func (c Client) CreateTransaction(ctx context.Context, request CreateTransaction
 }
 
 func NewTransactionRequest(opt TransactionRequestOptions) CreateTransactionRequest {
-	// TODO: remove fields as needed
 	req := CreateTransactionRequest{
 		Operation: "RAW",
 		Note:      "testing transaction",
