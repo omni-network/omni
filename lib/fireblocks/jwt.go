@@ -19,7 +19,7 @@ func (c Client) genJWTToken(uri string, body []byte) (string, error) {
 	// exp - The expiration time on and after which the JWT must not be accepted for processing, in seconds since Epoch. (Must be less than iat+30sec.)
 	// sub - The API Key.
 	// bodyHash - Hex-encoded SHA-256 hash of the raw HTTP request body.
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256,
 		jwt.MapClaims{
 			"uri":      uri,
 			"nonce":    nonce,
@@ -29,7 +29,7 @@ func (c Client) genJWTToken(uri string, body []byte) (string, error) {
 			"exp":      time.Now().Add(time.Second * 15).Unix(),
 		})
 
-	tokenString, err := token.SignedString(c.clientSecret)
+	tokenString, err := token.SignedString(c.privateKey)
 	if err != nil {
 		return "", errors.Wrap(err, "jwt")
 	}

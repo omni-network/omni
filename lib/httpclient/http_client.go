@@ -19,11 +19,11 @@ type Client struct {
 	http         http.Client
 }
 
-func NewClient(apiKey string, clientSecret string, host string) *Client {
+func NewClient(host string, apiKey string, clientSecret string) *Client {
 	return &Client{
+		host:         host,
 		apiKey:       apiKey,       // pragma: allowlist secret
 		clientSecret: clientSecret, // pragma: allowlist secret
-		host:         host,
 	}
 }
 

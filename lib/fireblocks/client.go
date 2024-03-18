@@ -2,10 +2,14 @@ package fireblocks
 
 import (
 	"context"
+	"crypto/rsa"
 	"fmt"
+	"os"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/httpclient"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 const transactionEndpoint string = "v1/transactions"
@@ -28,23 +32,30 @@ type FireBlocks interface {
 
 type Client struct {
 	FireBlocks
-	cfg          Config
-	apiKey       string
-	clientSecret string
-	host         string
-	http         httpclient.Client
+	cfg            Config
+	apiKey         string
+	privateKeyPath string
+	privateKey     rsa.PrivateKey
+	host           string
+	http           httpclient.Client
 }
 
-func NewClientWithConfig(apiKey string, clientSecret string, host string, cfg Config) (*Client, error) {
-	httpClient := httpclient.NewClient(apiKey, clientSecret, host)
-	client := &Client{
-		apiKey:       apiKey,       // pragma: allowlist secret
-		clientSecret: clientSecret, // pragma: allowlist secret
-		host:         host,
-		http:         *httpClient,
-		cfg:          cfg,
+func NewClientWithConfig(apiKey string, privateKeyPath string, host string, cfg Config) (*Client, error) {
+	privateKey, err := genPrivateKey(privateKeyPath)
+	if err != nil {
+		return nil, errors.Wrap(err, "genPrivateKey")
 	}
-	err := client.check()
+	httpClient := httpclient.NewClient(host, apiKey, "")
+	client := &Client{
+		apiKey:         apiKey,         // pragma: allowlist secret
+		privateKeyPath: privateKeyPath, // pragma: allowlist secret
+		privateKey:     *privateKey,
+		host:           host,
+		http:           *httpClient,
+		cfg:            cfg,
+	}
+
+	err = client.check()
 	if err != nil {
 		return nil, errors.Wrap(err, "client check")
 	}
@@ -72,9 +83,23 @@ func (c Client) check() error {
 	if c.apiKey == "" {
 		return errors.New("apiKey is required")
 	}
-	if c.clientSecret == "" {
-		return errors.New("clientSecret is required")
+	if c.privateKeyPath == "" {
+		return errors.New("private key path required")
 	}
 
 	return nil
+}
+
+func genPrivateKey(privateKeyPath string) (*rsa.PrivateKey, error) {
+	privateKeyBytes, err := os.ReadFile(privateKeyPath)
+	if err != nil {
+		return nil, errors.Wrap(err, "error reading private key from %s: %w", "private key path", privateKeyPath)
+	}
+
+	privateKey, err := jwt.ParseRSAPrivateKeyFromPEM(privateKeyBytes)
+	if err != nil {
+		return nil, errors.Wrap(err, "error parsing RSA private key")
+	}
+
+	return privateKey, nil
 }
