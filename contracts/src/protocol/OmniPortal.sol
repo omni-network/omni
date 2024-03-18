@@ -41,7 +41,11 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
         __Ownable_init();
         _transferOwnership(owner_);
         _setFeeOracle(feeOracle_);
-        _addValidators(valSetId, validators);
+        _addValidatorSet(valSetId, validators);
+
+        // cchain stream offset & block heights are equal to valSetId
+        inXStreamOffset[_CCHAIN_ID] = valSetId;
+        inXStreamBlockHeight[_CCHAIN_ID] = valSetId;
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -102,6 +106,8 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
         require(gasLimit <= XMSG_MAX_GAS_LIMIT, "OmniPortal: gasLimit too high");
         require(gasLimit >= XMSG_MIN_GAS_LIMIT, "OmniPortal: gasLimit too low");
         require(destChainId != chainId, "OmniPortal: no same-chain xcall");
+        require(destChainId != _BROADCAST_CHAIN_ID, "OmniPortal: no broadcast xcall");
+        require(to != _VIRTUAL_PORTAL_ADDRESS, "OmniPortal: no portal xcall");
 
         outXStreamOffset[destChainId] += 1;
 
@@ -118,16 +124,15 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
      *              and a block header and message batch, proven against the attestation root.
      */
     function xsubmit(XTypes.Submission calldata xsub) external {
-        // TODO: change to uint64 valSetId = xsub.validatorSetId; when validatorSetId is added to aggregate attestation (see halo/comet/helpers.go:aggregate)
-        uint64 valSetId = latestValidatorSetId;
+        require(validatorSetTotalPower[xsub.validatorSetId] > 0, "OmniPortal: uknown validator set");
 
         // check that the attestationRoot is signed by a quorum of validators in xsub.validatorsSetId
         require(
             Quorum.verify(
                 xsub.attestationRoot,
                 xsub.signatures,
-                validatorSet[valSetId],
-                validatorSetTotalPower[valSetId],
+                validatorSet[xsub.validatorSetId],
+                validatorSetTotalPower[xsub.validatorSetId],
                 XSUB_QUORUM_NUMERATOR,
                 XSUB_QUORUM_DENOMINATOR
             ),
@@ -158,14 +163,14 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
      *          - xmsg().sender         == address(0)
      */
     function xmsg() external view returns (XTypes.MsgShort memory) {
-        return _currentXmsg;
+        return _xmsg;
     }
 
     /**
      * @notice Returns true the current transaction is an xcall, false otherwise
      */
     function isXCall() external view returns (bool) {
-        return _currentXmsg.sourceChainId != 0;
+        return _xmsg.sourceChainId != 0;
     }
 
     /**
@@ -173,25 +178,36 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
      * @dev Verify an XMsg is next in its XStream, execute it, increment inXStreamOffset, emit an XReceipt
      */
     function _exec(XTypes.Msg calldata xmsg_) internal {
-        require(xmsg_.destChainId == chainId, "OmniPortal: wrong destChainId");
+        require(
+            xmsg_.destChainId == chainId || xmsg_.destChainId == _BROADCAST_CHAIN_ID, "OmniPortal: wrong destChainId"
+        );
         require(xmsg_.streamOffset == inXStreamOffset[xmsg_.sourceChainId] + 1, "OmniPortal: wrong streamOffset");
 
         // set xmsg to the one we're executing
-        _currentXmsg = XTypes.MsgShort(xmsg_.sourceChainId, xmsg_.sender);
+        _xmsg = XTypes.MsgShort(xmsg_.sourceChainId, xmsg_.sender);
 
         // increment offset before executing xcall, to avoid reentrancy loop
         inXStreamOffset[xmsg_.sourceChainId] += 1;
 
-        // we enforce a maximum on xcall, but we trim to max here just in case
-        uint256 gasLimit = xmsg_.gasLimit > XMSG_MAX_GAS_LIMIT ? XMSG_MAX_GAS_LIMIT : xmsg_.gasLimit;
+        // xcalls to _VIRTUAL_PORTAL_ADDRESS are system calls
+        bool isSysCall = xmsg_.to == _VIRTUAL_PORTAL_ADDRESS;
 
-        // execute xmsg, tracking gas used
+        // for system calls, target is this contract
+        address target = isSysCall ? address(this) : xmsg_.to;
+
+        // trim gasLimit to max. this requirement is checked in xcall(...), but we trim here to be safe
+        uint256 gasLimit = xmsg_.gasLimit > XMSG_MAX_GAS_LIMIT ? xmsg_.gasLimit : XMSG_MAX_GAS_LIMIT;
+
+        // track gas used, for the xreceipt
         uint256 gasUsed = gasleft();
-        (bool success,) = xmsg_.to.call{ gas: gasLimit }(xmsg_.data);
+
+        // execute the call - do not meter the system calls
+        (bool success,) = isSysCall ? target.call(xmsg_.data) : target.call{ gas: gasLimit }(xmsg_.data);
+
         gasUsed = gasUsed - gasleft();
 
         // reset xmsg to zero
-        delete _currentXmsg;
+        delete _xmsg;
 
         emit XReceipt(xmsg_.sourceChainId, xmsg_.streamOffset, gasUsed, msg.sender, success);
     }
@@ -234,32 +250,42 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
     }
 
     /**
+     * @notice Add a new validator set.
+     * @dev Only callable via xcall from Omni's consensus chain
+     * @param valSetId      Validator set id
+     * @param validators    Validator set
+     */
+    function addValidatorSet(uint64 valSetId, XTypes.Validator[] memory validators) external {
+        require(msg.sender == address(this), "OmniPortal: only self");
+        require(_xmsg.sourceChainId == _CCHAIN_ID, "OmniPortal: only cchain");
+        require(_xmsg.sender == _CCHAIN_SENDER, "OmniPortal: only cchain sender");
+        _addValidatorSet(valSetId, validators);
+    }
+
+    /**
      * @notice Add a new validator set
      * @param valSetId      Validator set id
      * @param validators    Validator set
      */
-    function _addValidators(uint64 valSetId, XTypes.Validator[] memory validators) private {
-        require(valSetId == latestValidatorSetId + 1, "OmniPortal: invalid valSetId");
+    function _addValidatorSet(uint64 valSetId, XTypes.Validator[] memory validators) private {
         require(validators.length > 0, "OmniPortal: no validators");
-
-        // TODO: check for duplicates, consider requiring sorted input
 
         uint64 totalPower;
         XTypes.Validator memory val;
-        mapping(address => uint64) storage set = validatorSet[valSetId];
+        mapping(address => uint64) storage valSet = validatorSet[valSetId];
 
         for (uint256 i = 0; i < validators.length; i++) {
             val = validators[i];
 
             require(val.addr != address(0), "OmniPortal: no zero validator");
             require(val.power > 0, "OmniPortal: no zero power");
+            require(valSet[val.addr] == 0, "OmniPortal: duplicate validator");
 
             totalPower += val.power;
-            set[val.addr] = val.power;
+            valSet[val.addr] = val.power;
         }
 
         validatorSetTotalPower[valSetId] = totalPower;
-        latestValidatorSetId = valSetId;
 
         emit ValidatorSetAdded(valSetId);
     }
