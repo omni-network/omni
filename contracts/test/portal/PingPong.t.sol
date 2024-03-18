@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity =0.8.24;
 
 import { MockPortal } from "test/utils/MockPortal.sol";
 import { PingPong } from "src/examples/PingPong.sol";

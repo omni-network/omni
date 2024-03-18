@@ -41,30 +41,26 @@ interface IOmniPortal {
     event ValidatorSetAdded(uint64 indexed setId);
 
     /**
-     * @notice Chain ID of the chain to which this portal is deployed
-     * @dev Used as sourceChainId for all outbound XMsgs
-     * @return Chain ID
+     * @notice Returns Chain ID of the chain to which this portal is deployed
      */
     function chainId() external view returns (uint64);
 
     /**
-     * @notice Offset of the last outbound XMsg that was sent to destChainId
+     * @notice Returns the offset of the last outbound XMsg that was sent to destChainId
      * @param destChainId Destination chain ID
-     * @return Offset
      */
     function outXStreamOffset(uint64 destChainId) external view returns (uint64);
 
     /**
-     * @notice Offset of the last inbound XMsg that was received from sourceChainId
+     * @notice Returns the offset of the last inbound XMsg that was received from sourceChainId
      * @param sourceChainId Source chain ID
-     * @return Offset
      */
     function inXStreamOffset(uint64 sourceChainId) external view returns (uint64);
 
     /**
-     * @notice Source block height of the last inbound XMsg that was received from sourceChainId
+     * @notice Returns the source block height of the last inbound XMsg that was received from
+     *         sourceChainId
      * @param sourceChainId Source chain ID
-     * @return Block height
      */
     function inXStreamBlockHeight(uint64 sourceChainId) external view returns (uint64);
 
@@ -79,54 +75,51 @@ interface IOmniPortal {
     function xmsg() external view returns (XTypes.MsgShort memory);
 
     /**
-     * @notice Whether the current transaction is an xcall
-     * @return True if current transaction is an xcall, false otherwise
+     * @notice Returns true the current transaction is an xcall, false otherwise
      */
     function isXCall() external view returns (bool);
 
     /**
-     * @notice Calculate the fee for calling a contract on another chain
-     * @dev Uses OmniPortal.XMSG_DEFAULT_GAS_LIMIT
-     * @dev Fees denominated in wei
-     * @param destChainId Destination chain ID
-     * @param data Encoded function calldata
+     * @notice Calculate the fee for calling a contract on another chain. Uses
+     *         OmniPortal.XMSG_DEFAULT_GAS_LIMIT. Fees denominated in wei.
+     * @param destChainId   Destination chain ID
+     * @param data          Encoded function calldata
      */
     function feeFor(uint64 destChainId, bytes calldata data) external view returns (uint256);
 
     /**
      * @notice Calculate the fee for calling a contract on another chain
-     * @dev Fees denominated in wei
-     * @param destChainId Destination chain ID
-     * @param data Encoded function calldata
-     * @param gasLimit Execution gas limit, enforced on destination chain
+     *         Fees denominated in wei.
+     * @param destChainId   Destination chain ID
+     * @param data          Encoded function calldata
+     * @param gasLimit      Execution gas limit, enforced on destination chain
      */
     function feeFor(uint64 destChainId, bytes calldata data, uint64 gasLimit) external view returns (uint256);
 
     /**
-     * @notice Call a contract on another chain
-     * @dev Uses OmniPortal.XMSG_DEFAULT_GAS_LIMIT as execution gas limit on destination chain
-     * @param destChainId Destination chain ID
-     * @param to Address of contract to call on destination chain
-     * @param data Encoded function calldata (use abi.encodeWithSignature
-     * 	or abi.encodeWithSelector)
+     * @notice Call a contract on another chain Uses OmniPortal.XMSG_DEFAULT_GAS_LIMIT as execution
+     *         gas limit on destination chain
+     * @param destChainId   Destination chain ID
+     * @param to            Address of contract to call on destination chain
+     * @param data          ABI Encoded function calldata
      */
     function xcall(uint64 destChainId, address to, bytes calldata data) external payable;
 
     /**
-     * @notice Call a contract on another chain
-     * @dev Uses provide gasLimit as execution gas limit on destination chain.
-     *      Reverts if gasLimit < XMSG_MAX_GAS_LIMIT or gasLimit > XMSG_MAX_GAS_LIMIT
-     * @param destChainId Destination chain ID
-     * @param to Address of contract to call on destination chain
-     * @param data Encoded function calldata (use abi.encodeWithSignature
-     * 	or abi.encodeWithSelector)
+     * @notice Call a contract on another chain Uses provide gasLimit as execution gas limit on
+     *          destination chain. Reverts if gasLimit < XMSG_MAX_GAS_LIMIT or gasLimit >
+     *          XMSG_MAX_GAS_LIMIT
+     * @param destChainId   Destination chain ID
+     * @param to            Address of contract to call on destination chain
+     * @param data          ABI Encoded function calldata
+     * @param gasLimit      Execution gas limit, enforced on destination chain
      */
     function xcall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit) external payable;
 
     /**
      * @notice Submit a batch of XMsgs to be executed on this chain
-     * @param xsub An xchain submisison, including an attestation root w/ validator signatures,
-     *        and a block header and message batch, proven against the attestation root.
+     * @param xsub  An xchain submisison, including an attestation root w/ validator signatures,
+     *              and a block header and message batch, proven against the attestation root.
      */
     function xsubmit(XTypes.Submission calldata xsub) external;
 }

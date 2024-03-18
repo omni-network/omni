@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity ^0.8.12;
+pragma solidity =0.8.24;
 
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { XTypes } from "./XTypes.sol";
@@ -10,13 +10,13 @@ import { XTypes } from "./XTypes.sol";
  */
 library Quorum {
     /**
-     * @dev Verifies that the given percentage of the total power has signed the given digest.
-     * @param digest Signed hash
-     * @param sigs Signatures to verify, must be sorted by validator address
-     * @param validators Maps validator addresses to their voting power
-     * @param totalPower Total voting power
-     * @param qNumerator Numerator of the quorum threshold. Ex: 2/3 -> 2
-     * @param qDenominator Denominator of the quorum threshold. Ex: 2/3 -> 3
+     * @notice Verifies that the given percentage of the total power has signed the given digest.
+     * @param digest        Signed hash
+     * @param sigs          Signatures to verify, must be sorted by validator address
+     * @param validators    Maps validator addresses to their voting power
+     * @param totalPower    Total voting power
+     * @param qNumerator    Numerator of the quorum threshold. Ex: 2/3 -> 2
+     * @param qDenominator  Denominator of the quorum threshold. Ex: 2/3 -> 3
      */
     function verify(
         bytes32 digest,

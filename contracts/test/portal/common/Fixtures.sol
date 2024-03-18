@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity =0.8.24;
 
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ProxyAdmin } from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
