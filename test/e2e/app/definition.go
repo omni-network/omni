@@ -322,6 +322,7 @@ func publicChains(manifest types.Manifest, cfg DefinitionConfig) ([]types.Public
 func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman.DeployInfo, evmPrefix string) netconf.Network {
 	var chains []netconf.Chain
 
+	// in monitor only mode there are no anvil chains and omni EVMs
 	if !testnet.OnlyMonitor {
 		omniEVM := omniEVMByPrefix(testnet, evmPrefix)
 		chains = append(chains, netconf.Chain{
@@ -362,10 +363,7 @@ func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 			BlockPeriod:       public.Chain.BlockPeriod,
 			FinalizationStrat: public.Chain.FinalizationStrat,
 			IsEthereum:        public.Chain.IsAVSTarget,
-		}
-
-		if public.Chain.IsAVSTarget && testnet.Name == netconf.Testnet {
-			pc.AVSContractAddr = netconf.AVSContracts[netconf.Testnet]
+			AVSContractAddr:   public.Chain.AVSContractAddress,
 		}
 
 		chains = append(chains, pc)

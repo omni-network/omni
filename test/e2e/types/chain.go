@@ -5,6 +5,8 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 //nolint:gochecknoglobals // Static mappings
@@ -25,11 +27,12 @@ var (
 	}
 
 	chainGoerli = EVMChain{
-		Name:              "goerli",
-		ID:                5,
-		IsPublic:          true,
-		BlockPeriod:       15 * time.Second,
-		FinalizationStrat: netconf.StratLatest,
+		Name:               "goerli",
+		ID:                 5,
+		IsPublic:           true,
+		BlockPeriod:        15 * time.Second,
+		FinalizationStrat:  netconf.StratLatest,
+		AVSContractAddress: common.HexToAddress("0x848BE3DBcd054c17EbC712E0d29D15C2e638aBCe"),
 	}
 
 	chainArbSepolia = EVMChain{

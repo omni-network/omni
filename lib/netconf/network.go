@@ -1,7 +1,5 @@
 package netconf
 
-import "github.com/ethereum/go-ethereum/common"
-
 const (
 	// Simnet is a simulated network for very simple testing of individual binaries.
 	// It is a single binary with mocked clients (no networking).
@@ -34,11 +32,4 @@ var supported = map[string]bool{
 	Staging: true,
 	Testnet: true,
 	Mainnet: false,
-}
-
-// AVSContracts contains the AVS contract address for each testnet.
-//
-//nolint:gochecknoglobals // Global state here is fine.
-var AVSContracts = map[string]common.Address{
-	Testnet: common.HexToAddress("0x848BE3DBcd054c17EbC712E0d29D15C2e638aBCe"),
 }
