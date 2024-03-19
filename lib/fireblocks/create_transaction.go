@@ -20,7 +20,8 @@ func (c Client) CreateTransaction(ctx context.Context, request CreateTransaction
 		return nil, errors.Wrap(err, "marshal")
 	}
 
-	jwtToken, err := c.genJWTToken(transactionEndpoint, req)
+	uri := "/v1/" + transactionEndpoint
+	jwtToken, err := c.GenJWTToken(uri, req)
 	if err != nil {
 		return nil, err
 	}

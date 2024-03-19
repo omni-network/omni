@@ -3,7 +3,6 @@ package fireblocks
 import (
 	"context"
 	"crypto/rsa"
-	"fmt"
 	"os"
 
 	"github.com/omni-network/omni/lib/errors"
@@ -12,7 +11,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-const transactionEndpoint string = "v1/transactions"
+const transactionEndpoint string = "/v1/transactions"
 
 type FireBlocks interface {
 	NewClientWithConfig(apiKey string, clientSecret string, host string, cfg Config) *Client
@@ -35,7 +34,7 @@ type Client struct {
 	cfg            Config
 	apiKey         string
 	privateKeyPath string
-	privateKey     rsa.PrivateKey
+	privateKey     *rsa.PrivateKey
 	host           string
 	http           httpclient.Client
 }
@@ -49,7 +48,7 @@ func NewClientWithConfig(apiKey string, privateKeyPath string, host string, cfg 
 	client := &Client{
 		apiKey:         apiKey,         // pragma: allowlist secret
 		privateKeyPath: privateKeyPath, // pragma: allowlist secret
-		privateKey:     *privateKey,
+		privateKey:     privateKey,     // pragma: allowlist secret
 		host:           host,
 		http:           *httpClient,
 		cfg:            cfg,
@@ -70,8 +69,8 @@ func NewDefaultClient(apiKey string, clientSecret string, host string) (*Client,
 
 func (c Client) getHeaders(jwtToken string) map[string]string {
 	header := make(map[string]string)
-	header["X-API-Key"] = c.apiKey
-	header["Authorization"] = fmt.Sprintf("Bearer %x", jwtToken)
+	header["X-API-KEY"] = c.apiKey
+	header["Authorization"] = "Bearer " + jwtToken
 
 	return header
 }

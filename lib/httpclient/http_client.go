@@ -58,11 +58,13 @@ func (c *Client) SendRequest(ctx context.Context, endpoint string, httpMethod st
 
 	body, err = io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, errors.Wrap(err, "read response body")
+		return nil, errors.Wrap(err, "read response body", "body")
 	}
 
+	bodyString := string(body)
+	log.Info(ctx, "Http: response body", "body", bodyString)
 	if resp.StatusCode != http.StatusOK {
-		return body, errors.Wrap(err, "http response code not okay", "status code", resp.StatusCode)
+		return body, errors.Wrap(err, "http response code not okay", "status code", resp.StatusCode, "body", bodyString)
 	}
 
 	err = json.Unmarshal(body, response)
@@ -76,11 +78,11 @@ func (c *Client) SendRequest(ctx context.Context, endpoint string, httpMethod st
 func getHeaders(m map[string]string) http.Header {
 	header := http.Header{}
 
-	header.Add("Accept", "application/json")
-	header.Add("Content-Type", "application/json")
+	header.Set("Accept", "application/json")
+	header.Set("Content-Type", "application/json")
 
 	for k, v := range m {
-		header.Add(k, v)
+		header.Set(k, v)
 	}
 
 	return header

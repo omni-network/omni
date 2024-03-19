@@ -12,7 +12,7 @@ func (c Client) GetTransactionByID(ctx context.Context, transactionID string) (*
 	var res TransactionResponse
 
 	endpoint := filepath.Join(transactionEndpoint, transactionID)
-	jwtToken, err := c.genJWTToken(endpoint, nil)
+	jwtToken, err := c.GenJWTToken(endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
