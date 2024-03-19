@@ -1,4 +1,4 @@
-package httpclient
+package apirequestor
 
 import (
 	"bytes"
@@ -27,7 +27,7 @@ func NewClient(host string, apiKey string, clientSecret string) *Client {
 	}
 }
 
-func (c *Client) SendRequest(ctx context.Context, endpoint string, httpMethod string, bodyJSON any, headers map[string]string) (string, error) {
+func (c *Client) Send(ctx context.Context, endpoint string, httpMethod string, bodyJSON any, headers map[string]string) (string, error) {
 	endpoint = fmt.Sprintf("%s/%s", c.host, endpoint)
 	req, err := http.NewRequestWithContext(
 		ctx,
@@ -66,7 +66,6 @@ func (c *Client) SendRequest(ctx context.Context, endpoint string, httpMethod st
 	}
 
 	bodyString := string(body)
-	log.Info(ctx, "Http: response body", "body", bodyString)
 	if resp.StatusCode != http.StatusOK {
 		return bodyString, errors.Wrap(err, "http response code not okay", "status code", resp.StatusCode, "body", bodyString)
 	}

@@ -9,16 +9,15 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 )
 
+// GetTransactionByID gets a transaction by its ID.
 func (c Client) GetTransactionByID(ctx context.Context, transactionID string) (*TransactionResponse, error) {
-	var res TransactionResponse
-
 	endpoint := filepath.Join(transactionEndpoint, transactionID)
-	jwtToken, err := c.GenJWTToken(endpoint, nil)
+	jwtToken, err := c.genJWTToken(endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	response, err := c.http.SendRequest(
+	response, err := c.apiRequest.Send(
 		ctx,
 		endpoint,
 		http.MethodGet,
@@ -29,6 +28,7 @@ func (c Client) GetTransactionByID(ctx context.Context, transactionID string) (*
 		return nil, err
 	}
 
+	var res TransactionResponse
 	err = json.Unmarshal([]byte(response), &res)
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshaling response")

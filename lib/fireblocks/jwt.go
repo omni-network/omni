@@ -12,10 +12,11 @@ import (
 	"github.com/google/uuid"
 )
 
-func (c Client) GenJWTToken(uri string, bodyJSON any) (string, error) {
+// genJWTToken generates a JWT token for the Fireblocks API.
+func (c Client) genJWTToken(uri string, bodyJSON any) (string, error) {
 	nonce := uuid.New().String()
 	now := time.Now().Unix()
-	expiration := now + 55
+	expiration := now + 29 // Must be less than iat+30sec. (their example code uses 55 though)
 
 	bodyBytes, err := json.Marshal(bodyJSON)
 	if err != nil {

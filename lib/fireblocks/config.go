@@ -23,6 +23,7 @@ type Config struct {
 	LogFreqFactor int
 }
 
+// DefaultConfig returns a Config with default values.
 func DefaultConfig() Config {
 	cfg, err := NewConfig(
 		time.Duration(30)*time.Second,
@@ -36,6 +37,7 @@ func DefaultConfig() Config {
 	return cfg
 }
 
+// NewConfig returns a new Config with the given parameters.
 func NewConfig(networkTimeout time.Duration, queryInterval time.Duration, logFreqFactor int) (Config, error) {
 	cfg := Config{
 		NetworkTimeout: networkTimeout,
@@ -50,6 +52,7 @@ func NewConfig(networkTimeout time.Duration, queryInterval time.Duration, logFre
 	return cfg, nil
 }
 
+// check validates the Config.
 func (m Config) check() error {
 	if m.LogFreqFactor <= 0 {
 		return errors.New("must provide LogFreqFactor")

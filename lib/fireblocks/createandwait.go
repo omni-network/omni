@@ -8,13 +8,9 @@ import (
 	"github.com/omni-network/omni/lib/log"
 )
 
-func (c Client) WaitSigned(ctx context.Context, opts TransactionRequestOptions) (*TransactionResponse, error) {
-	createTransactionRequest, err := NewTransactionRequest(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := c.CreateTransaction(ctx, createTransactionRequest)
+// CreateAndWait creates a transaction and waits for it to be signed.
+func (c Client) CreateAndWait(ctx context.Context, opts TransactionRequestOptions) (*TransactionResponse, error) {
+	resp, err := c.CreateTransaction(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -37,14 +33,14 @@ func (c Client) WaitSigned(ctx context.Context, opts TransactionRequestOptions) 
 				return nil, errors.New("failed to fetch transaction by id")
 			}
 
-			pending, err := evaluateTransactionStatus(*resp)
+			isCompleted, err := evaluateTransactionStatus(*resp)
 			if err != nil {
 				return resp, err
 			}
 			if attempt%c.cfg.LogFreqFactor == 0 {
 				log.Warn(ctx, "Transaction not signed yet", nil, "attempt", attempt)
 			}
-			if !pending {
+			if !isCompleted {
 				return resp, nil
 			}
 			attempt++
@@ -52,7 +48,7 @@ func (c Client) WaitSigned(ctx context.Context, opts TransactionRequestOptions) 
 	}
 }
 
-// EvaluateTransactionStatus checks the status of a transaction and returns a boolean indicating whether the transaction is still pending or not.
+// evaluateTransactionStatus checks the status of a transaction and returns a boolean indicating whether the transaction is still pending or not.
 func evaluateTransactionStatus(resp TransactionResponse) (bool, error) {
 	switch resp.Status {
 	case "COMPLETED":

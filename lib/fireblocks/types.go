@@ -1,13 +1,13 @@
 package fireblocks
 
-type CreateTransactionRequest struct {
+type createTransactionRequest struct {
 	Operation          string           `json:"operation"`
 	Note               string           `json:"note,omitempty"`
 	ExternalTxID       string           `json:"externalTxId,omitempty"`
 	AssetID            string           `json:"assetId,omitempty"`
-	Source             Source           `json:"source"`
-	Destination        *Destination     `json:"destination,omitempty"`
-	Destinations       []Destinations   `json:"destinations,omitempty"`
+	Source             source           `json:"source"`
+	Destination        *destination     `json:"destination,omitempty"`
+	Destinations       []destinations   `json:"destinations,omitempty"`
 	CustomerRefID      string           `json:"customerRefId,omitempty"`
 	Amount             string           `json:"amountAll,omitempty"`
 	TreatAsGrossAmount bool             `json:"treatAsGrossAmount,omitempty"`
@@ -20,10 +20,10 @@ type CreateTransactionRequest struct {
 	GasPrice           string           `json:"gasPrice,omitempty"`
 	NetworkFee         string           `json:"networkFee,omitempty"`
 	ReplaceTxByHash    string           `json:"replaceTxByHash,omitempty"`
-	ExtraParameters    *ExtraParameters `json:"extraParameters,omitempty"`
+	ExtraParameters    *extraParameters `json:"extraParameters,omitempty"`
 }
 
-type Source struct {
+type source struct {
 	Type     string `json:"type"`
 	SubType  string `json:"subType,omitempty"`
 	ID       string `json:"id,omitempty"`
@@ -31,26 +31,26 @@ type Source struct {
 	WalletID string `json:"walletId,omitempty"`
 }
 
-type Destination struct {
+type destination struct {
 	Type           string          `json:"type"`
 	SubType        string          `json:"subType,omitempty"`
 	ID             string          `json:"id,omitempty"`
 	Name           string          `json:"name,omitempty"`
 	WalletID       string          `json:"walletId,omitempty"`
-	OneTimeAddress *OneTimeAddress `json:"oneTimeAddress,omitempty"`
+	OneTimeAddress *oneTimeAddress `json:"oneTimeAddress,omitempty"`
 }
 
-type Destinations struct {
+type destinations struct {
 	Amount      string      `json:"amount"`
-	Destination Destination `json:"destination"`
+	Destination destination `json:"destination"`
 }
 
-type OneTimeAddress struct {
+type oneTimeAddress struct {
 	Address string `json:"address,omitempty"`
 	Tag     string `json:"tag,omitempty"`
 }
 
-type ExtraParameters struct {
+type extraParameters struct {
 	RawMessageData RawMessageData `json:"rawMessageData"`
 }
 
