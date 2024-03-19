@@ -44,13 +44,18 @@ func NewTransactionRequest(opt TransactionRequestOptions) CreateTransactionReque
 	req := CreateTransactionRequest{
 		Operation: "RAW",
 		Note:      "testing transaction",
+		AssetID:   "ETH",
 		Source: Source{
 			Type: "VAULT_ACCOUNT",
+			ID:   "0",
 		},
-		Destination:   Destination{},
+		Destination: &Destination{
+			Type: "VAULT_ACCOUNT",
+		},
 		CustomerRefID: "",
-		ExtraParameters: RawMessageData{
-			Messages: []UnsignedRawMessage{opt.Message},
+		ExtraParameters: &RawMessageData{
+			Algorithm: "MPC_ECDSA_SECP256K1",
+			Messages:  []UnsignedRawMessage{opt.Message},
 		},
 	}
 
