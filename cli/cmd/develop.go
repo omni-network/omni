@@ -32,15 +32,15 @@ func newForgeProjectCmd() *cobra.Command {
 accompanied by simple mocked testing and a multi-chain deployment script.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return newProjectTemplate()
+			return newForgeProjectTemplate()
 		},
 	}
 
 	return cmd
 }
 
-// newProjectTemplate creates a new project using the forge template.
-func newProjectTemplate() error {
+// newForgeProjectTemplate creates a new project using the forge template.
+func newForgeProjectTemplate() error {
 	// Check if forge is installed
 	if !checkForgeInstalled() {
 		// Forge is not installed, return an error with a suggestion.
