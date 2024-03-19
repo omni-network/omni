@@ -219,6 +219,8 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 		return errors.New("network config file must be pre-generated", "path", networkFile)
 	}
 
+	static := netconf.GetStatic(initCfg.Network)
+
 	// Setup genesis file
 	genFile := comet.GenesisFile()
 	if cmtos.FileExists(genFile) {
@@ -231,7 +233,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 
 		var genDoc *types.GenesisDoc
 		if initCfg.Cosmos {
-			cosmosGen, err := genutil.MakeGenesis(initCfg.Network, time.Now(), pubKey)
+			cosmosGen, err := genutil.MakeGenesis(static.OmniConsensusChainID, time.Now(), pubKey)
 			if err != nil {
 				return err
 			}

@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/test/e2e/docker"
 	"github.com/omni-network/omni/test/e2e/types"
 	"github.com/omni-network/omni/test/tutil"
@@ -52,7 +53,7 @@ func TestComposeTemplate(t *testing.T) {
 				},
 				OmniEVMs: []types.OmniEVM{
 					{
-						Chain:        types.ChainOmniEVM,
+						Chain:        types.OmniEVMByNetwork(netconf.Simnet),
 						InstanceName: "omni_evm_0",
 						InternalIP:   ipNet.IP,
 						ProxyPort:    8000,

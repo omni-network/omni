@@ -9,9 +9,9 @@ import (
 
 //nolint:gochecknoglobals // Static mappings
 var (
-	ChainOmniEVM = EVMChain{
-		Name:              "omni_evm",
-		ID:                1,
+	chainOmniEVM = EVMChain{
+		Name: "omni_evm",
+		// ID:  // Depends on netconf.Static.
 		BlockPeriod:       2 * time.Second, // TODO(corver): Make this more robust.
 		FinalizationStrat: netconf.StratFinalized,
 	}
@@ -50,6 +50,16 @@ var (
 )
 
 const anvilChainIDFactor = 100
+
+// OmniEVMByNetwork returns the Omni evm chain definition by netconf network.
+func OmniEVMByNetwork(name string) EVMChain {
+	static := netconf.GetStatic(name)
+
+	resp := chainOmniEVM
+	resp.ID = static.OmniExecutionChainID
+
+	return resp
+}
 
 // AnvilChainsByNames returns the Anvil evm chain definitions by names.
 func AnvilChainsByNames(names []string) []EVMChain {

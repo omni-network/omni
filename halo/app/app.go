@@ -122,6 +122,10 @@ func newApp(
 
 	app.App = appBuilder.Build(db, nil, baseAppOpts...)
 
+	// Workaround for official endblockers since valsync replaces staking endblocker, but cosmos panics if it's not there.
+	app.ModuleManager.OrderEndBlockers = endBlockers
+	app.SetEndBlocker(app.EndBlocker)
+
 	if err := app.Load(true); err != nil {
 		return nil, errors.Wrap(err, "load app")
 	}

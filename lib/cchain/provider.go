@@ -50,5 +50,5 @@ type Provider interface {
 // Validator is a consensus chain validator in a validator set.
 type Validator struct {
 	Address common.Address
-	Power   uint64
+	Power   int64
 }

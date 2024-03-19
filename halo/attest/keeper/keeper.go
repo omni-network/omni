@@ -278,8 +278,8 @@ func (k *Keeper) Approve(ctx context.Context, valset *cmttypes.ValidatorSet) err
 	return nil
 }
 
-// attestationFrom returns the subsequent approved attestations from the provided height (inclusive).
-func (k *Keeper) attestationFrom(ctx context.Context, chainID uint64, height uint64, max uint64) ([]*types.Attestation, error) {
+// ListAttestationsFrom returns the subsequent approved attestations from the provided height (inclusive).
+func (k *Keeper) ListAttestationsFrom(ctx context.Context, chainID uint64, height uint64, max uint64) ([]*types.Attestation, error) {
 	from := AttestationStatusChainIdHeightIndexKey{}.WithStatusChainIdHeight(int32(Status_Approved), chainID, height)
 	to := AttestationStatusChainIdHeightIndexKey{}.WithStatusChainIdHeight(int32(Status_Approved), chainID, height+max)
 
