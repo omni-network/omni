@@ -54,6 +54,7 @@ func New() *cobra.Command {
 
 	// Add subcommands
 	cmd.AddCommand(
+		newCreate3DeployCmd(&def),
 		newAVSDeployCmd(&def),
 		newDeployCmd(&def),
 		newLogsCmd(&def),
@@ -134,6 +135,22 @@ func newAVSDeployCmd(def *app.Definition) *cobra.Command {
 	}
 
 	bindAVSDeployFlags(cmd.Flags(), &cfg)
+
+	return cmd
+}
+
+func newCreate3DeployCmd(def *app.Definition) *cobra.Command {
+	cfg := app.DefaultCreate3DeployConfig()
+
+	cmd := &cobra.Command{
+		Use:   "create3-deploy",
+		Short: "Deploys the Create3 factory",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return app.Create3Deploy(cmd.Context(), *def, cfg)
+		},
+	}
+
+	bindCreate3DeployFlags(cmd.Flags(), &cfg)
 
 	return cmd
 }

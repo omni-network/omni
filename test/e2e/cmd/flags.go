@@ -37,3 +37,9 @@ func bindDeployFlags(flags *pflag.FlagSet, cfg *app.DeployConfig) {
 func bindAVSDeployFlags(flags *pflag.FlagSet, cfg *app.AVSDeployConfig) {
 	flags.StringVar(&cfg.EigenFile, "eigen-file", cfg.EigenFile, "path to json file defining eigenlayer deployments. Defaults to ./e2e/app/static/el_deployments.json")
 }
+
+func bindCreate3DeployFlags(flags *pflag.FlagSet, cfg *app.Create3DeployConfig) {
+	flags.Uint64Var(&cfg.ChainID, "chain-id", cfg.ChainID, "chain id of the chain to deploy to")
+	flags.StringVar(&cfg.Create3Deployer, "deployer", cfg.Create3Deployer, "required Create3 factory deployer address")
+	flags.BoolVar(&cfg.RequireNonceZero, "require-nonce-zero", cfg.RequireNonceZero, "require the deployer to have a zero nonce")
+}
