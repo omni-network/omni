@@ -35,6 +35,9 @@ contract Fixtures is CommonBase, StdCheats {
     uint64 constant chainAId = 2;
     uint64 constant chainBId = 3;
 
+    // omni consensus chain id
+    uint64 constant cchainId = 0;
+
     uint64 constant baseValPower = 100;
     uint64 constant genesisValSetId = 1;
     uint256 constant baseFee = 1 gwei;
@@ -153,6 +156,7 @@ contract Fixtures is CommonBase, StdCheats {
         XTypes.Submission memory xsub = abi.decode(parsed, (XTypes.Submission));
 
         xsub.signatures = getSignatures(valSetId, xsub.attestationRoot);
+        xsub.validatorSetId = valSetId;
 
         return xsub;
     }
