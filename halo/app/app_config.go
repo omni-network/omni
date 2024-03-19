@@ -6,6 +6,8 @@ import (
 	engevmmodule "github.com/omni-network/omni/halo/evmengine/module"
 	engevmtypes "github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/halo/evmstaking"
+	valsetmodule "github.com/omni-network/omni/halo/valsync/module"
+	valsettypes "github.com/omni-network/omni/halo/valsync/types"
 
 	"github.com/ethereum/go-ethereum/params"
 
@@ -78,6 +80,7 @@ var (
 		distrtypes.ModuleName,
 		stakingtypes.ModuleName,
 		genutiltypes.ModuleName,
+		valsettypes.ModuleName,
 	}
 
 	beginBlockers = []string{
@@ -88,6 +91,7 @@ var (
 	endBlockers = []string{
 		stakingtypes.ModuleName,
 		attesttypes.ModuleName,
+		valsettypes.ModuleName,
 	}
 
 	// blocked account addresses.
@@ -170,6 +174,10 @@ var (
 					VoteWindow:         genesisVoteWindow,
 					VoteExtensionLimit: genesisVoteExtLimit,
 				}),
+			},
+			{
+				Name:   valsettypes.ModuleName,
+				Config: appconfig.WrapAny(&valsetmodule.Module{}),
 			},
 		},
 	})

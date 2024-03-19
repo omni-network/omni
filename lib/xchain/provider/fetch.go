@@ -8,7 +8,6 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -95,6 +94,10 @@ func (p *Provider) GetSubmittedCursor(ctx context.Context, destChainID uint64, s
 // GetBlock returns the XBlock for the provided chain and height, or false if not available yet (not finalized),
 // or an error.
 func (p *Provider) GetBlock(ctx context.Context, chainID uint64, height uint64) (xchain.Block, bool, error) {
+	if chainID == cChainID {
+		return p.cprov.XBlock(ctx, height)
+	}
+
 	chain, rpcClient, err := p.getChain(chainID)
 	if err != nil {
 		return xchain.Block{}, false, err
@@ -107,7 +110,6 @@ func (p *Provider) GetBlock(ctx context.Context, chainID uint64, height uint64) 
 
 	// ignore if our height is greater than the finalized height
 	if height > finalisedHeader.Number.Uint64() {
-		log.Warn(ctx, "Trying to fetch block height > finalized height", nil, "chain", chainID, "height", height, "finalized height", finalisedHeader.Number.Uint64())
 		return xchain.Block{}, false, nil
 	}
 
