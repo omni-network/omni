@@ -12,9 +12,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newDevelopCmds() *cobra.Command {
+func newDeveloperCmds() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "develop",
+		Use:   "developer",
 		Short: "XApp development commands",
 		Args:  cobra.NoArgs,
 	}

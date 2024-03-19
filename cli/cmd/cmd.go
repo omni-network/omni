@@ -14,7 +14,7 @@ func New() *cobra.Command {
 		"omni",
 		"CLI providing tools for interacting with omni",
 		newOperatorCmds(),
-		newDevelopCmds(),
+		newDeveloperCmds(),
 		newDevnetCmds(),
 		buildinfo.NewVersionCmd(),
 	)
@@ -22,7 +22,7 @@ func New() *cobra.Command {
 
 func newOperatorCmds() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "operate",
+		Use:   "operator",
 		Short: "Operator commands",
 		Args:  cobra.NoArgs,
 	}
