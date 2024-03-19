@@ -36,8 +36,7 @@ type Provider struct {
 	*cmtdocker.Provider
 	servicesOnce sync.Once
 	testnet      types.Testnet
-	monitorTag   string
-	relayerTag   string
+	omniTag      string
 }
 
 func (p *Provider) Clean(ctx context.Context) error {
@@ -62,9 +61,8 @@ func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag st
 				InfrastructureData: infd.InfrastructureData,
 			},
 		},
-		testnet:    testnet,
-		monitorTag: imgTag,
-		relayerTag: imgTag,
+		testnet: testnet,
+		omniTag: imgTag,
 	}
 }
 
@@ -82,8 +80,7 @@ func (p *Provider) Setup() error {
 		Relayer:       true,
 		Prometheus:    p.testnet.Prometheus,
 		Monitor:       true,
-		MonitorTag:    p.monitorTag,
-		RelayerTag:    p.relayerTag,
+		OmniTag:       p.omniTag,
 		OmniLogFormat: log.FormatConsole, // Local docker compose always use console log format.
 	}
 
@@ -126,6 +123,7 @@ func (p *Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 		return err
 	}
 
+	// when we run only a (monitor) service there are no halo nodes available therefore exit early to prevent panics
 	if len(nodes) == 0 {
 		return nil
 	}
@@ -154,10 +152,9 @@ type ComposeDef struct {
 	Anvils   []types.AnvilChain
 
 	Monitor       bool
-	MonitorTag    string
+	OmniTag       string
 	Relayer       bool
 	Prometheus    bool
-	RelayerTag    string
 	OmniLogFormat string
 }
 

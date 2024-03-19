@@ -23,17 +23,17 @@ const ProviderName = "vmcompose"
 var _ types.InfraProvider = (*Provider)(nil)
 
 type Provider struct {
-	Testnet    types.Testnet
-	Data       types.InfrastructureData
-	once       sync.Once
-	relayerTag string
+	Testnet types.Testnet
+	Data    types.InfrastructureData
+	once    sync.Once
+	omniTag string
 }
 
-func NewProvider(testnet types.Testnet, data types.InfrastructureData, relayerTag string) *Provider {
+func NewProvider(testnet types.Testnet, data types.InfrastructureData, imgTag string) *Provider {
 	return &Provider{
-		Testnet:    testnet,
-		Data:       data,
-		relayerTag: relayerTag,
+		Testnet: testnet,
+		Data:    data,
+		omniTag: imgTag,
 	}
 }
 
@@ -76,8 +76,9 @@ func (p *Provider) Setup() error {
 			OmniEVMs:      omniEVMs,
 			Anvils:        anvilChains,
 			Relayer:       services["relayer"],
+			Monitor:       services["monitor"],
 			Prometheus:    p.Testnet.Prometheus,
-			RelayerTag:    p.relayerTag,
+			OmniTag:       p.omniTag,
 			OmniLogFormat: log.FormatLogfmt, // VM compose always use logfmt log format.
 		}
 		compose, err := docker.GenerateComposeFile(def)
@@ -102,7 +103,7 @@ func (p *Provider) Setup() error {
 		}
 
 		hostname := vmIP // TODO(corver): Add hostnames to infra instances.
-		agentCfg = agent.ConfigForHost(agentCfg, hostname, halos, services["relayer"])
+		agentCfg = agent.ConfigForHost(agentCfg, hostname, halos, services["relayer"], services["monitor"])
 		err = os.WriteFile(filepath.Join(p.Testnet.Dir, vmAgentFile(vmIP)), agentCfg, 0o644)
 		if err != nil {
 			return errors.Wrap(err, "write compose file")

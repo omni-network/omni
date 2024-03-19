@@ -21,21 +21,21 @@ scrape_configs:
       - targets: [relayer:26660] # relayer targets
         labels:
           network: 'staging'
-          host: 'vm-2'
+          host: 'vm'
 
   - job_name: "halo"
     metrics_path: "/metrics"
     static_configs:
-      - targets: ["fullnode04:26660"] # halo targets
+      - targets: [validator01:26660,validator02:26660,fullnode03:26660] # halo targets
         labels:
           network: 'staging'
-          host: 'vm-2'
+          host: 'vm'
 
   - job_name: "monitor"
     metrics_path: "/metrics"
     static_configs:
-      - targets: [] # monitor targets
+      - targets: [monitor:26660] # monitor targets
         labels:
           network: 'staging'
-          host: 'vm-2'
+          host: 'vm'
 

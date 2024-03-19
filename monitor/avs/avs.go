@@ -28,7 +28,7 @@ func Monitor(ctx context.Context, network netconf.Network) error {
 
 	client, err := ethclient.Dial(ch.Name, ch.RPCURL)
 	if err != nil {
-		return errors.Wrap(err, "dialing "+ch.Name)
+		return errors.Wrap(err, "dialing", "chain", ch.Name)
 	}
 
 	avs, err := newAVS(client, ch.AVSContractAddr)

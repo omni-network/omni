@@ -6,24 +6,24 @@ scrape_configs:
   - job_name: "relayer"
     metrics_path: "/metrics"
     static_configs:
-      - targets: [] # relayer targets
+      - targets: [relayer:26660] # relayer targets
         labels:
-          network: 'manifest1-localhost'
-          host: 'localhost-2'
+          network: 'manifest3-localhost'
+          host: 'localhost'
 
   - job_name: "halo"
     metrics_path: "/metrics"
     static_configs:
-      - targets: ["validator01:26660"] # halo targets
+      - targets: [validator01:26660,validator02:26660] # halo targets
         labels:
-          network: 'manifest1-localhost'
-          host: 'localhost-2'
+          network: 'manifest3-localhost'
+          host: 'localhost'
 
   - job_name: "monitor"
     metrics_path: "/metrics"
     static_configs:
-      - targets: [] # monitor targets
+      - targets: [monitor:26660] # monitor targets
         labels:
-          network: 'manifest1-localhost'
-          host: 'localhost-2'
+          network: 'manifest3-localhost'
+          host: 'localhost'
 
