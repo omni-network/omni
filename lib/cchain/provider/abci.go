@@ -5,11 +5,15 @@ import (
 	"context"
 
 	atypes "github.com/omni-network/omni/halo/attest/types"
+	vtypes "github.com/omni-network/omni/halo/valsync/types"
+	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/xchain"
 
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	errorsmod "cosmossdk.io/errors"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -23,14 +27,40 @@ func NewABCIProvider(abci rpcclient.ABCIClient, chains map[uint64]string) Provid
 		return expbackoff.NewWithReset(ctx, expbackoff.WithFastConfig())
 	}
 
-	cl := atypes.NewQueryClient(rpcAdaptor{abci: abci})
+	acl := atypes.NewQueryClient(rpcAdaptor{abci: abci})
+	vcl := vtypes.NewQueryClient(rpcAdaptor{abci: abci})
 
 	return Provider{
-		fetch:       newABCIFetchFunc(cl),
-		latest:      newABCILatestFunc(cl),
-		window:      newABCIWindowFunc(cl),
+		fetch:       newABCIFetchFunc(acl),
+		latest:      newABCILatestFunc(acl),
+		window:      newABCIWindowFunc(acl),
+		valset:      newABCIValsetFunc(vcl),
 		backoffFunc: backoffFunc,
 		chainNames:  chains,
+	}
+}
+
+func newABCIValsetFunc(cl vtypes.QueryClient) ValsetFunc {
+	return func(ctx context.Context, valSetID uint64) ([]cchain.Validator, bool, error) {
+		const endpoint = "valset"
+		defer latency(endpoint)()
+		resp, err := cl.ValidatorSet(ctx, &vtypes.ValidatorSetRequest{Id: valSetID})
+		if errors.Is(err, sdkerrors.ErrKeyNotFound) {
+			return nil, false, nil
+		} else if err != nil {
+			incQueryErr(endpoint)
+			return nil, false, errors.Wrap(err, "abci query valset")
+		}
+
+		vals := make([]cchain.Validator, 0, len(resp.Validators))
+		for _, v := range resp.Validators {
+			vals = append(vals, cchain.Validator{
+				Address: common.BytesToAddress(v.Address),
+				Power:   v.Power,
+			})
+		}
+
+		return vals, true, nil
 	}
 }
 

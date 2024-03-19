@@ -84,7 +84,7 @@ func SendXMsgs(ctx context.Context, netman netman.Manager, backends ethbackend.B
 func xcall(ctx context.Context, backends ethbackend.Backends, from netman.Portal, destChainID uint64) (*ethtypes.Transaction, error) {
 	// TODO: use calls to actual contracts
 	var data []byte
-	to := common.Address{}
+	to := common.HexToAddress("0x1234")
 
 	fee, err := from.Contract.FeeFor(&bind.CallOpts{}, destChainID, data)
 	if err != nil {

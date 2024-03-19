@@ -59,7 +59,8 @@ func deployAVS(ctx context.Context, def Definition, cfg AVSDeployConfig, deployI
 
 	chain, err := def.Testnet.AVSChain()
 	if err != nil {
-		return err
+		log.Warn(ctx, "Not deploying AVS Contract", err)
+		return nil
 	}
 
 	portal := def.Netman.Portals()[chain.ID]

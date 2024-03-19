@@ -7,6 +7,7 @@ import (
 
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
 	etypes "github.com/omni-network/omni/halo/evmengine/types"
+	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 
@@ -198,6 +199,7 @@ func defaultAppState(marshal func(proto.Message) []byte) map[string]json.RawMess
 		atypes.ModuleName: marshal(atypes.DefaultGenesisState()),
 		btypes.ModuleName: marshal(btypes.DefaultGenesisState()),
 		dtypes.ModuleName: marshal(dtypes.DefaultGenesisState()),
+		vtypes.ModuleName: marshal(vtypes.DefaultGenesisState()),
 	}
 }
 

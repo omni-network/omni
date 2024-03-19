@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity =0.8.24;
 
 import { XTypes } from "src/libraries/XTypes.sol";
 import { Base } from "./common/Base.sol";
@@ -152,5 +152,41 @@ contract OmniPortal_xsubmit_Test is Base {
 
         vm.expectRevert("OmniPortal: invalid proof");
         portal.xsubmit(xsub);
+    }
+
+    function test_xsubmit_addValidatorSet_succeeds() public {
+        XTypes.Submission memory xsub = readXSubmission("addValSet2", 0);
+
+        portal.xsubmit(xsub);
+
+        // test that validatorSet[2] is set correctly
+        uint64 valSet2Id = 2;
+        XTypes.Validator[] storage valSet2 = validatorSet[valSet2Id];
+        uint64 totalPower;
+
+        for (uint256 i = 0; i < valSet2.length; i++) {
+            totalPower += valSet2[i].power;
+            assertEq(portal.validatorSet(valSet2Id, valSet2[i].addr), valSet2[i].power);
+        }
+
+        assertEq(portal.validatorSetTotalPower(valSet2Id), totalPower);
+
+        // test that we can submit a block with the new validatorSet
+        xsub = readXSubmission("xblock1", portal.chainId(), valSet2Id);
+
+        uint64 sourceChainId = xsub.blockHeader.sourceChainId;
+        uint64 expectedOffset = xsub.msgs[xsub.msgs.length - 1].streamOffset;
+        uint256 expectedCount = numIncrements(xsub.msgs);
+
+        vm.prank(relayer);
+        vm.recordLogs();
+        expectCalls(xsub.msgs);
+        portal.xsubmit(xsub);
+
+        assertEq(portal.inXStreamOffset(sourceChainId), expectedOffset);
+        assertEq(portal.inXStreamBlockHeight(sourceChainId), xsub.blockHeader.blockHeight);
+        assertEq(counter.count(), expectedCount);
+        assertEq(counter.countByChainId(sourceChainId), expectedCount);
+        assertReceipts(vm.getRecordedLogs(), xsub.msgs);
     }
 }
