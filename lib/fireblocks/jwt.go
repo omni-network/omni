@@ -30,7 +30,7 @@ func (c Client) GenJWTToken(uri string, bodyJSON any) (string, error) {
 	hashed := h.Sum(nil)
 
 	claims := jwt.MapClaims{
-		"uri":      uri,                        // uri - The URI part of the request (e.g., /v1/transactions).
+		"uri":      "/" + uri,                  // uri - The URI part of the request (e.g., /v1/transactions).
 		"nonce":    nonce,                      // nonce - Unique number or string. Each API request needs to have a different nonce.
 		"iat":      now,                        // iat - The time at which the JWT was issued, in seconds since Epoch.
 		"exp":      expiration,                 // exp - The expiration time on and after which the JWT must not be accepted for processing, in seconds since Epoch. (Must be less than iat+30sec.)

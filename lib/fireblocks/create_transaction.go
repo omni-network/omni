@@ -14,8 +14,7 @@ type TransactionRequestOptions struct {
 func (c Client) CreateTransaction(ctx context.Context, request CreateTransactionRequest) (*TransactionResponse, error) {
 	var res TransactionResponse
 
-	uri := "/" + transactionEndpoint
-	jwtToken, err := c.GenJWTToken(uri, request)
+	jwtToken, err := c.GenJWTToken(transactionEndpoint, request)
 	if err != nil {
 		return nil, err
 	}
