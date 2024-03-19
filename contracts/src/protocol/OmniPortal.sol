@@ -124,15 +124,25 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
      *              and a block header and message batch, proven against the attestation root.
      */
     function xsubmit(XTypes.Submission calldata xsub) external {
-        require(validatorSetTotalPower[xsub.validatorSetId] > 0, "OmniPortal: uknown validator set");
+        // validator set id for this submission
+        uint64 valSetId = xsub.validatorSetId;
+
+        // last seen validator set id for this source chain
+        uint64 lastValSetId = inXStreamValidatorSetId[xsub.blockHeader.sourceChainId];
+
+        // check that the validator set is known and has non-zero power
+        require(validatorSetTotalPower[valSetId] > 0, "OmniPortal: unknown val set");
+
+        // check that the submission's validator set is the same as the last, or the next one
+        require(valSetId >= lastValSetId, "OmniPortal: old val set");
 
         // check that the attestationRoot is signed by a quorum of validators in xsub.validatorsSetId
         require(
             Quorum.verify(
                 xsub.attestationRoot,
                 xsub.signatures,
-                validatorSet[xsub.validatorSetId],
-                validatorSetTotalPower[xsub.validatorSetId],
+                validatorSet[valSetId],
+                validatorSetTotalPower[valSetId],
                 XSUB_QUORUM_NUMERATOR,
                 XSUB_QUORUM_DENOMINATOR
             ),
@@ -145,8 +155,17 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
             "OmniPortal: invalid proof"
         );
 
-        // update in stream block height
-        inXStreamBlockHeight[xsub.blockHeader.sourceChainId] = xsub.blockHeader.blockHeight;
+        // source chain block height of this submission
+        uint64 blockHeight = xsub.blockHeader.blockHeight;
+
+        // last seen block height for this source chain
+        uint64 lastBlockHeight = inXStreamBlockHeight[xsub.blockHeader.sourceChainId];
+
+        // update in stream block height, if it's new
+        if (blockHeight > lastBlockHeight) inXStreamBlockHeight[xsub.blockHeader.sourceChainId] = blockHeight;
+
+        // update in stream validator set id, if it's new
+        if (valSetId > lastValSetId) inXStreamValidatorSetId[xsub.blockHeader.sourceChainId] = valSetId;
 
         // execute xmsgs
         for (uint256 i = 0; i < xsub.msgs.length; i++) {
@@ -183,7 +202,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
         );
         require(xmsg_.streamOffset == inXStreamOffset[xmsg_.sourceChainId] + 1, "OmniPortal: wrong streamOffset");
 
-        // set xmsg to the one we're executing
+        // set _xmsg to the one we're executing
         _xmsg = XTypes.MsgShort(xmsg_.sourceChainId, xmsg_.sender);
 
         // increment offset before executing xcall, to avoid reentrancy loop
@@ -201,7 +220,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
         // track gas used, for the xreceipt
         uint256 gasUsed = gasleft();
 
-        // execute the call - do not meter the system calls
+        // execute the call - do not meter system calls
         (bool success,) = isSysCall ? target.call(xmsg_.data) : target.call{ gas: gasLimit }(xmsg_.data);
 
         gasUsed = gasUsed - gasleft();

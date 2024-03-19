@@ -26,9 +26,14 @@ abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
     mapping(uint64 => uint64) public inXStreamOffset;
 
     /**
-     * @notice Offset of the last inbound XMsg that was received from sourceChainId
+     * @notice Soure block height of the last XSubmission that was received from sourceChainId
      */
     mapping(uint64 => uint64) public inXStreamBlockHeight;
+
+    /**
+     * @notice Validator set id of the last XSubmission that was received from sourceChainId
+     */
+    mapping(uint64 => uint64) public inXStreamValidatorSetId;
 
     /**
      * @notice Maps validator set id -> total power
