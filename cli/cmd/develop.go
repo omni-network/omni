@@ -2,10 +2,8 @@ package cmd
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 
 	"github.com/omni-network/omni/lib/errors"
 
@@ -27,8 +25,6 @@ func newDeveloperCmds() *cobra.Command {
 }
 
 func newForgeProjectCmd() *cobra.Command {
-	var projName string
-
 	cmd := &cobra.Command{
 		Use:   "new",
 		Short: "Scaffold a Forge project",
@@ -36,17 +32,15 @@ func newForgeProjectCmd() *cobra.Command {
 accompanied by simple mocked testing and a multi-chain deployment script.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return newProjectTemplate(projName)
+			return newProjectTemplate()
 		},
 	}
-
-	bindNewProjConfig(cmd, &projName)
 
 	return cmd
 }
 
 // newProjectTemplate creates a new project using the forge template.
-func newProjectTemplate(projectName string) error {
+func newProjectTemplate() error {
 	// Check if forge is installed
 	if !checkForgeInstalled() {
 		// Forge is not installed, return an error with a suggestion.
@@ -62,15 +56,6 @@ func newProjectTemplate(projectName string) error {
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
 		return errors.Wrap(err, "failed to run forge init")
-	}
-
-	// If a new directory was created, print its path to inform the user.
-	if projectName != "" {
-		absolutePath, err := filepath.Abs(".")
-		if err != nil {
-			return errors.Wrap(err, "failed to get absolute path")
-		}
-		fmt.Printf("Project created at %s\n", absolutePath)
 	}
 
 	return nil
