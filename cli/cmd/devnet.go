@@ -49,7 +49,7 @@ func newDevnetFundCmd() *cobra.Command {
 		Short: "Fund a local devnet account with 1 ETH",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return devnetFund(cmd.Context(), cfg)
+			return spinnedDevnetFund(cmd.Context(), cfg)
 		},
 	}
 

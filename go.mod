@@ -211,7 +211,7 @@ require (
 	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
-	github.com/rivo/uniseg v0.2.0 // indirect
+	github.com/rivo/uniseg v0.4.6 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/rs/cors v1.10.1 // indirect
 	github.com/rs/zerolog v1.32.0 // indirect
@@ -265,7 +265,18 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-require github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be
+require (
+	github.com/charmbracelet/bubbles v0.18.0
+	github.com/charmbracelet/bubbletea v0.25.0
+	github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be
+)
+
+require (
+	github.com/containerd/console v1.0.4-0.20230313162750-1ae8d489ac81 // indirect
+	github.com/mattn/go-localereader v0.0.1 // indirect
+	github.com/muesli/ansi v0.0.0-20211018074035-2e021307bc4b // indirect
+	github.com/muesli/cancelreader v0.2.2 // indirect
+)
 
 replace (
 	// todo(lazar): remove this when go ethereum release new version
