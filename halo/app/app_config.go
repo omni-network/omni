@@ -6,8 +6,8 @@ import (
 	engevmmodule "github.com/omni-network/omni/halo/evmengine/module"
 	engevmtypes "github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/halo/evmstaking"
-	valsetmodule "github.com/omni-network/omni/halo/valsync/module"
-	valsettypes "github.com/omni-network/omni/halo/valsync/types"
+	valsyncmodule "github.com/omni-network/omni/halo/valsync/module"
+	valsynctypes "github.com/omni-network/omni/halo/valsync/types"
 
 	"github.com/ethereum/go-ethereum/params"
 
@@ -80,7 +80,7 @@ var (
 		distrtypes.ModuleName,
 		stakingtypes.ModuleName,
 		genutiltypes.ModuleName,
-		valsettypes.ModuleName,
+		valsynctypes.ModuleName,
 	}
 
 	beginBlockers = []string{
@@ -89,9 +89,8 @@ var (
 	}
 
 	endBlockers = []string{
-		stakingtypes.ModuleName,
 		attesttypes.ModuleName,
-		valsettypes.ModuleName,
+		valsynctypes.ModuleName, // Wraps staking module end blocker (must come after attest module)
 	}
 
 	// blocked account addresses.
@@ -118,8 +117,8 @@ var (
 				Config: appconfig.WrapAny(&runtimev1alpha1.Module{
 					AppName:       Name,
 					BeginBlockers: beginBlockers,
-					EndBlockers:   endBlockers,
-					InitGenesis:   genesisModuleOrder,
+					// Setting endblockers in newApp since valsync replaces staking endblocker.
+					InitGenesis: genesisModuleOrder,
 					OverrideStoreKeys: []*runtimev1alpha1.StoreKeyConfig{
 						{
 							ModuleName: authtypes.ModuleName,
@@ -176,8 +175,8 @@ var (
 				}),
 			},
 			{
-				Name:   valsettypes.ModuleName,
-				Config: appconfig.WrapAny(&valsetmodule.Module{}),
+				Name:   valsynctypes.ModuleName,
+				Config: appconfig.WrapAny(&valsyncmodule.Module{}),
 			},
 		},
 	})

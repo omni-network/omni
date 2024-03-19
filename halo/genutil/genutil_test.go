@@ -21,7 +21,7 @@ func TestMakeGenesis(t *testing.T) {
 	val1 := k1.GenPrivKeySecp256k1([]byte("secret1")).PubKey()
 	val2 := k1.GenPrivKeySecp256k1([]byte("secret2")).PubKey()
 
-	resp, err := genutil.MakeGenesis("test", timestamp, val1, val2)
+	resp, err := genutil.MakeGenesis(999, timestamp, val1, val2)
 	tutil.RequireNoError(t, err)
 
 	tutil.RequireGoldenJSON(t, resp)

@@ -2,7 +2,7 @@
  "app_name": "halo",
  "app_version": "TBD",
  "genesis_time": "1970-01-01T00:00:01Z",
- "chain_id": "test",
+ "chain_id": "999",
  "initial_height": 1,
  "app_hash": null,
  "app_state": {

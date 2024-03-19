@@ -4,9 +4,12 @@ import (
 	"context"
 	"encoding/json"
 
+	akeeper "github.com/omni-network/omni/halo/attest/keeper"
 	"github.com/omni-network/omni/halo/valsync/keeper"
 	"github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/errors"
+
+	abci "github.com/cometbft/cometbft/abci/types"
 
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/core/store"
@@ -21,10 +24,10 @@ import (
 )
 
 var (
-	_ module.AppModuleBasic   = (*AppModule)(nil)
-	_ module.HasGenesis       = (*AppModule)(nil)
-	_ appmodule.AppModule     = (*AppModule)(nil)
-	_ appmodule.HasEndBlocker = (*AppModule)(nil)
+	_ module.AppModuleBasic  = (*AppModule)(nil)
+	_ module.HasGenesis      = (*AppModule)(nil)
+	_ module.HasABCIEndBlock = (*AppModule)(nil)
+	_ appmodule.AppModule    = (*AppModule)(nil)
 )
 
 // ----------------------------------------------------------------------------
@@ -67,8 +70,12 @@ type AppModule struct {
 	keeper keeper.Keeper
 }
 
+func (m AppModule) EndBlock(ctx context.Context) ([]abci.ValidatorUpdate, error) {
+	return m.keeper.EndBlock(ctx)
+}
+
 func (m AppModule) InitGenesis(ctx sdk.Context, _ codec.JSONCodec, _ json.RawMessage) {
-	if err := m.keeper.InsertValset(ctx); err != nil {
+	if err := m.keeper.InsertGenesisSet(ctx); err != nil {
 		panic(errors.Wrap(err, "insert genesis valset"))
 	}
 }
@@ -91,10 +98,6 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingCo
 	}
 
 	return nil
-}
-
-func (m AppModule) EndBlock(ctx context.Context) error {
-	return m.keeper.InsertValsetIfUpdated(ctx)
 }
 
 func NewAppModule(
@@ -141,6 +144,7 @@ type ModuleInputs struct {
 	Config       *Module
 	TXConfig     client.TxConfig
 	SKeeper      *skeeper.Keeper // TODO(corver): Use interface.
+	AKeeper      *akeeper.Keeper
 }
 
 //nolint:revive // Cosmos-style
@@ -157,6 +161,7 @@ func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
 		in.StoreService,
 		in.TXConfig,
 		in.SKeeper,
+		in.AKeeper,
 	)
 	if err != nil {
 		return ModuleOutputs{}, err

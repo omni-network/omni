@@ -179,7 +179,7 @@ func TestnetFromManifest(manifest types.Manifest, infd types.InfrastructureData,
 		}
 
 		omniEVMS = append(omniEVMS, types.OmniEVM{
-			Chain:           types.ChainOmniEVM,
+			Chain:           types.OmniEVMByNetwork(manifest.Network),
 			InstanceName:    name,
 			InternalIP:      inst.IPAddress,
 			ProxyPort:       inst.Port,

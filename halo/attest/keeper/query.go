@@ -18,7 +18,7 @@ func (k *Keeper) AttestationsFrom(ctx context.Context, req *types.AttestationsFr
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
-	atts, err := k.attestationFrom(ctx, req.ChainId, req.FromHeight, approvedFromLimit)
+	atts, err := k.ListAttestationsFrom(ctx, req.ChainId, req.FromHeight, approvedFromLimit)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

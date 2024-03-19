@@ -19,6 +19,9 @@ type ValidatorSetTable interface {
 	Has(ctx context.Context, id uint64) (found bool, err error)
 	// Get returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
 	Get(ctx context.Context, id uint64) (*ValidatorSet, error)
+	HasByAttestedCreatedHeight(ctx context.Context, attested bool, created_height uint64) (found bool, err error)
+	// GetByAttestedCreatedHeight returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
+	GetByAttestedCreatedHeight(ctx context.Context, attested bool, created_height uint64) (*ValidatorSet, error)
 	List(ctx context.Context, prefixKey ValidatorSetIndexKey, opts ...ormlist.Option) (ValidatorSetIterator, error)
 	ListRange(ctx context.Context, from, to ValidatorSetIndexKey, opts ...ormlist.Option) (ValidatorSetIterator, error)
 	DeleteBy(ctx context.Context, prefixKey ValidatorSetIndexKey) error
@@ -59,6 +62,24 @@ func (this ValidatorSetIdIndexKey) WithId(id uint64) ValidatorSetIdIndexKey {
 	return this
 }
 
+type ValidatorSetAttestedCreatedHeightIndexKey struct {
+	vs []interface{}
+}
+
+func (x ValidatorSetAttestedCreatedHeightIndexKey) id() uint32            { return 2 }
+func (x ValidatorSetAttestedCreatedHeightIndexKey) values() []interface{} { return x.vs }
+func (x ValidatorSetAttestedCreatedHeightIndexKey) validatorSetIndexKey() {}
+
+func (this ValidatorSetAttestedCreatedHeightIndexKey) WithAttested(attested bool) ValidatorSetAttestedCreatedHeightIndexKey {
+	this.vs = []interface{}{attested}
+	return this
+}
+
+func (this ValidatorSetAttestedCreatedHeightIndexKey) WithAttestedCreatedHeight(attested bool, created_height uint64) ValidatorSetAttestedCreatedHeightIndexKey {
+	this.vs = []interface{}{attested, created_height}
+	return this
+}
+
 type validatorSetTable struct {
 	table ormtable.AutoIncrementTable
 }
@@ -94,6 +115,28 @@ func (this validatorSetTable) Has(ctx context.Context, id uint64) (found bool, e
 func (this validatorSetTable) Get(ctx context.Context, id uint64) (*ValidatorSet, error) {
 	var validatorSet ValidatorSet
 	found, err := this.table.PrimaryKey().Get(ctx, &validatorSet, id)
+	if err != nil {
+		return nil, err
+	}
+	if !found {
+		return nil, ormerrors.NotFound
+	}
+	return &validatorSet, nil
+}
+
+func (this validatorSetTable) HasByAttestedCreatedHeight(ctx context.Context, attested bool, created_height uint64) (found bool, err error) {
+	return this.table.GetIndexByID(2).(ormtable.UniqueIndex).Has(ctx,
+		attested,
+		created_height,
+	)
+}
+
+func (this validatorSetTable) GetByAttestedCreatedHeight(ctx context.Context, attested bool, created_height uint64) (*ValidatorSet, error) {
+	var validatorSet ValidatorSet
+	found, err := this.table.GetIndexByID(2).(ormtable.UniqueIndex).Get(ctx, &validatorSet,
+		attested,
+		created_height,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -143,9 +186,6 @@ type ValidatorTable interface {
 	Has(ctx context.Context, id uint64) (found bool, err error)
 	// Get returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
 	Get(ctx context.Context, id uint64) (*Validator, error)
-	HasByValsetIdAddress(ctx context.Context, valset_id uint64, address []byte) (found bool, err error)
-	// GetByValsetIdAddress returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
-	GetByValsetIdAddress(ctx context.Context, valset_id uint64, address []byte) (*Validator, error)
 	List(ctx context.Context, prefixKey ValidatorIndexKey, opts ...ormlist.Option) (ValidatorIterator, error)
 	ListRange(ctx context.Context, from, to ValidatorIndexKey, opts ...ormlist.Option) (ValidatorIterator, error)
 	DeleteBy(ctx context.Context, prefixKey ValidatorIndexKey) error
@@ -186,21 +226,16 @@ func (this ValidatorIdIndexKey) WithId(id uint64) ValidatorIdIndexKey {
 	return this
 }
 
-type ValidatorValsetIdAddressIndexKey struct {
+type ValidatorValsetIdIndexKey struct {
 	vs []interface{}
 }
 
-func (x ValidatorValsetIdAddressIndexKey) id() uint32            { return 2 }
-func (x ValidatorValsetIdAddressIndexKey) values() []interface{} { return x.vs }
-func (x ValidatorValsetIdAddressIndexKey) validatorIndexKey()    {}
+func (x ValidatorValsetIdIndexKey) id() uint32            { return 2 }
+func (x ValidatorValsetIdIndexKey) values() []interface{} { return x.vs }
+func (x ValidatorValsetIdIndexKey) validatorIndexKey()    {}
 
-func (this ValidatorValsetIdAddressIndexKey) WithValsetId(valset_id uint64) ValidatorValsetIdAddressIndexKey {
+func (this ValidatorValsetIdIndexKey) WithValsetId(valset_id uint64) ValidatorValsetIdIndexKey {
 	this.vs = []interface{}{valset_id}
-	return this
-}
-
-func (this ValidatorValsetIdAddressIndexKey) WithValsetIdAddress(valset_id uint64, address []byte) ValidatorValsetIdAddressIndexKey {
-	this.vs = []interface{}{valset_id, address}
 	return this
 }
 
@@ -239,28 +274,6 @@ func (this validatorTable) Has(ctx context.Context, id uint64) (found bool, err 
 func (this validatorTable) Get(ctx context.Context, id uint64) (*Validator, error) {
 	var validator Validator
 	found, err := this.table.PrimaryKey().Get(ctx, &validator, id)
-	if err != nil {
-		return nil, err
-	}
-	if !found {
-		return nil, ormerrors.NotFound
-	}
-	return &validator, nil
-}
-
-func (this validatorTable) HasByValsetIdAddress(ctx context.Context, valset_id uint64, address []byte) (found bool, err error) {
-	return this.table.GetIndexByID(2).(ormtable.UniqueIndex).Has(ctx,
-		valset_id,
-		address,
-	)
-}
-
-func (this validatorTable) GetByValsetIdAddress(ctx context.Context, valset_id uint64, address []byte) (*Validator, error) {
-	var validator Validator
-	found, err := this.table.GetIndexByID(2).(ormtable.UniqueIndex).Get(ctx, &validator,
-		valset_id,
-		address,
-	)
 	if err != nil {
 		return nil, err
 	}

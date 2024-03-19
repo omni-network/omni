@@ -59,7 +59,7 @@ func toPortalVals(vals []cchain.Validator) []bindings.Validator {
 	for i, val := range vals {
 		portalVals[i] = bindings.Validator{
 			Addr:  val.Address,
-			Power: val.Power,
+			Power: uint64(val.Power),
 		}
 	}
 

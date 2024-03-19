@@ -62,7 +62,9 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 		vals = append(vals, val.PrivvalKey.PubKey())
 	}
 
-	cosmosGenesis, err := genutil.MakeGenesis(def.Testnet.Name, time.Now(), vals...)
+	consChainID := netconf.GetStatic(def.Manifest.Network).OmniConsensusChainID
+
+	cosmosGenesis, err := genutil.MakeGenesis(consChainID, time.Now(), vals...)
 	if err != nil {
 		return errors.Wrap(err, "make genesis")
 	}
