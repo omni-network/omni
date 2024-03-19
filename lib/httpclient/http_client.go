@@ -27,8 +27,12 @@ func NewClient(host string, apiKey string, clientSecret string) *Client {
 	}
 }
 
-func (c *Client) SendRequest(ctx context.Context, endpoint string, httpMethod string, body []byte, headers map[string]string, response any) (any, error) {
+func (c *Client) SendRequest(ctx context.Context, endpoint string, httpMethod string, bodyJSON any, headers map[string]string, response any) (any, error) {
 	endpoint = fmt.Sprintf("%s/%s", c.host, endpoint)
+	bodyBytes, err := json.Marshal(bodyJSON)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshaling JSON")
+	}
 
 	req, err := http.NewRequestWithContext(
 		ctx,
@@ -40,8 +44,8 @@ func (c *Client) SendRequest(ctx context.Context, endpoint string, httpMethod st
 		return nil, errors.Wrap(err, "new http request")
 	}
 
-	if len(body) > 0 {
-		req.Body = io.NopCloser(bytes.NewReader(body))
+	if len(bodyBytes) > 0 {
+		req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
 	}
 
 	req.Header = getHeaders(headers)
@@ -56,7 +60,7 @@ func (c *Client) SendRequest(ctx context.Context, endpoint string, httpMethod st
 		}
 	}()
 
-	body, err = io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, errors.Wrap(err, "read response body", "body")
 	}

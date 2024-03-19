@@ -11,7 +11,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-const transactionEndpoint string = "/v1/transactions"
+const transactionEndpoint string = "v1/transactions"
 
 type FireBlocks interface {
 	NewClientWithConfig(apiKey string, clientSecret string, host string, cfg Config) *Client

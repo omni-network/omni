@@ -2,7 +2,6 @@ package fireblocks
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 
 	"github.com/omni-network/omni/lib/errors"
@@ -15,13 +14,8 @@ type TransactionRequestOptions struct {
 func (c Client) CreateTransaction(ctx context.Context, request CreateTransactionRequest) (*TransactionResponse, error) {
 	var res TransactionResponse
 
-	req, err := json.Marshal(request)
-	if err != nil {
-		return nil, errors.Wrap(err, "marshal")
-	}
-
-	uri := "/v1/" + transactionEndpoint
-	jwtToken, err := c.GenJWTToken(uri, req)
+	uri := "/" + transactionEndpoint
+	jwtToken, err := c.GenJWTToken(uri, request)
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +24,7 @@ func (c Client) CreateTransaction(ctx context.Context, request CreateTransaction
 		ctx,
 		transactionEndpoint,
 		http.MethodPost,
-		req,
+		request,
 		c.getHeaders(jwtToken),
 		res,
 	)
