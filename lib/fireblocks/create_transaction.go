@@ -2,7 +2,11 @@ package fireblocks
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/omni-network/omni/lib/errors"
 )
@@ -12,7 +16,7 @@ type TransactionRequestOptions struct {
 }
 
 func (c Client) CreateTransaction(ctx context.Context, request CreateTransactionRequest) (*TransactionResponse, error) {
-	var res TransactionResponse
+	res := TransactionResponse{}
 
 	jwtToken, err := c.GenJWTToken(transactionEndpoint, request)
 	if err != nil {
@@ -25,22 +29,36 @@ func (c Client) CreateTransaction(ctx context.Context, request CreateTransaction
 		http.MethodPost,
 		request,
 		c.getHeaders(jwtToken),
-		res,
 	)
 
 	if err != nil {
 		return nil, err
 	}
 
-	res, ok := response.(TransactionResponse)
-	if !ok {
-		return nil, errors.New("response is not a TransactionResponse")
+	err = json.Unmarshal([]byte(response), &res)
+	if err != nil {
+		return nil, errors.Wrap(err, "unmarshaling response")
 	}
 
 	return &res, nil
 }
 
-func NewTransactionRequest(opt TransactionRequestOptions) CreateTransactionRequest {
+func NewTransactionRequest(opt TransactionRequestOptions) (CreateTransactionRequest, error) {
+	var rawMessageData RawMessageData
+	h := sha256.New()
+	wrappedMessage := "\x19Ethereum Signed Message:\n" + strconv.Itoa(len(opt.Message.Content)) + opt.Message.Content
+	_, err := h.Write([]byte(wrappedMessage))
+	if err != nil {
+		return CreateTransactionRequest{}, errors.Wrap(err, "sha256")
+	}
+	hash := h.Sum(nil)
+	str := hex.EncodeToString(hash)
+
+	rawSigningMessage := UnsignedRawMessage{
+		Content: str,
+	}
+	rawMessageData.Messages = append(rawMessageData.Messages, rawSigningMessage)
+
 	req := CreateTransactionRequest{
 		Operation: "RAW",
 		Note:      "testing transaction",
@@ -53,11 +71,10 @@ func NewTransactionRequest(opt TransactionRequestOptions) CreateTransactionReque
 			Type: "VAULT_ACCOUNT",
 		},
 		CustomerRefID: "",
-		ExtraParameters: &RawMessageData{
-			Algorithm: "MPC_ECDSA_SECP256K1",
-			Messages:  []UnsignedRawMessage{opt.Message},
+		ExtraParameters: &ExtraParameters{
+			RawMessageData: rawMessageData,
 		},
 	}
 
-	return req
+	return req, nil
 }

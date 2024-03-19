@@ -2,6 +2,7 @@ package fireblocks
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"path/filepath"
 
@@ -23,15 +24,14 @@ func (c Client) GetTransactionByID(ctx context.Context, transactionID string) (*
 		http.MethodGet,
 		nil,
 		c.getHeaders(jwtToken),
-		res,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	res, ok := response.(TransactionResponse)
-	if !ok {
-		return nil, errors.New("response is not a TransactionResponse")
+	err = json.Unmarshal([]byte(response), &res)
+	if err != nil {
+		return nil, errors.Wrap(err, "unmarshaling response")
 	}
 
 	return &res, nil

@@ -1,26 +1,26 @@
 package fireblocks
 
 type CreateTransactionRequest struct {
-	Operation          string          `json:"operation"`
-	Note               string          `json:"note,omitempty"`
-	ExternalTxID       string          `json:"externalTxId,omitempty"`
-	AssetID            string          `json:"assetId,omitempty"`
-	Source             Source          `json:"source"`
-	Destination        *Destination    `json:"destination,omitempty"`
-	Destinations       []Destinations  `json:"destinations,omitempty"`
-	CustomerRefID      string          `json:"customerRefId,omitempty"`
-	Amount             string          `json:"amountAll,omitempty"`
-	TreatAsGrossAmount bool            `json:"treatAsGrossAmount,omitempty"`
-	ForceSweep         bool            `json:"forceSweep,omitempty"`
-	FeeLevel           string          `json:"feeLevel,omitempty"`
-	Fee                string          `json:"fee,omitempty"`
-	PriorityFee        string          `json:"priorityFee,omitempty"`
-	MaxFee             string          `json:"maxFee,omitempty"`
-	GasLimit           string          `json:"gasLimit,omitempty"`
-	GasPrice           string          `json:"gasPrice,omitempty"`
-	NetworkFee         string          `json:"networkFee,omitempty"`
-	ReplaceTxByHash    string          `json:"replaceTxByHash,omitempty"`
-	ExtraParameters    *RawMessageData `json:"extraParameters,omitempty"`
+	Operation          string           `json:"operation"`
+	Note               string           `json:"note,omitempty"`
+	ExternalTxID       string           `json:"externalTxId,omitempty"`
+	AssetID            string           `json:"assetId,omitempty"`
+	Source             Source           `json:"source"`
+	Destination        *Destination     `json:"destination,omitempty"`
+	Destinations       []Destinations   `json:"destinations,omitempty"`
+	CustomerRefID      string           `json:"customerRefId,omitempty"`
+	Amount             string           `json:"amountAll,omitempty"`
+	TreatAsGrossAmount bool             `json:"treatAsGrossAmount,omitempty"`
+	ForceSweep         bool             `json:"forceSweep,omitempty"`
+	FeeLevel           string           `json:"feeLevel,omitempty"`
+	Fee                string           `json:"fee,omitempty"`
+	PriorityFee        string           `json:"priorityFee,omitempty"`
+	MaxFee             string           `json:"maxFee,omitempty"`
+	GasLimit           string           `json:"gasLimit,omitempty"`
+	GasPrice           string           `json:"gasPrice,omitempty"`
+	NetworkFee         string           `json:"networkFee,omitempty"`
+	ReplaceTxByHash    string           `json:"replaceTxByHash,omitempty"`
+	ExtraParameters    *ExtraParameters `json:"extraParameters,omitempty"`
 }
 
 type Source struct {
@@ -50,6 +50,10 @@ type OneTimeAddress struct {
 	Tag     string `json:"tag,omitempty"`
 }
 
+type ExtraParameters struct {
+	RawMessageData RawMessageData `json:"rawMessageData"`
+}
+
 type RawMessageData struct {
 	Messages  []UnsignedRawMessage `json:"messages"`
 	Algorithm string               `json:"algorithm,omitempty"`
@@ -61,9 +65,9 @@ type UnsignedRawMessage struct {
 }
 
 type TransactionResponse struct {
-	ID             string         `json:"id"`
-	Status         string         `json:"status"`
-	SystemMessages SystemMessages `json:"systemMessages"`
+	ID             string          `json:"id"`
+	Status         string          `json:"status"`
+	SystemMessages *SystemMessages `json:"systemMessages,omitempty"`
 }
 
 type SystemMessages struct {

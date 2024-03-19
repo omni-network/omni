@@ -27,13 +27,8 @@ func NewClient(host string, apiKey string, clientSecret string) *Client {
 	}
 }
 
-func (c *Client) SendRequest(ctx context.Context, endpoint string, httpMethod string, bodyJSON any, headers map[string]string, response any) (any, error) {
+func (c *Client) SendRequest(ctx context.Context, endpoint string, httpMethod string, bodyJSON any, headers map[string]string) (string, error) {
 	endpoint = fmt.Sprintf("%s/%s", c.host, endpoint)
-	bodyBytes, err := json.Marshal(bodyJSON)
-	if err != nil {
-		return nil, errors.Wrap(err, "marshaling JSON")
-	}
-
 	req, err := http.NewRequestWithContext(
 		ctx,
 		httpMethod,
@@ -41,10 +36,15 @@ func (c *Client) SendRequest(ctx context.Context, endpoint string, httpMethod st
 		nil,
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "new http request")
+		return "", errors.Wrap(err, "new http request")
 	}
 
-	if len(bodyBytes) > 0 {
+	bodyBytes, err := json.Marshal(bodyJSON)
+	if err != nil {
+		return "", errors.Wrap(err, "marshaling JSON")
+	}
+
+	if bodyJSON != nil {
 		req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
 	}
 
@@ -52,7 +52,7 @@ func (c *Client) SendRequest(ctx context.Context, endpoint string, httpMethod st
 
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return nil, errors.Wrap(err, "http Do")
+		return "", errors.Wrap(err, "http Do")
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
@@ -62,21 +62,16 @@ func (c *Client) SendRequest(ctx context.Context, endpoint string, httpMethod st
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, errors.Wrap(err, "read response body", "body")
+		return "", errors.Wrap(err, "read response body", "body")
 	}
 
 	bodyString := string(body)
 	log.Info(ctx, "Http: response body", "body", bodyString)
 	if resp.StatusCode != http.StatusOK {
-		return body, errors.Wrap(err, "http response code not okay", "status code", resp.StatusCode, "body", bodyString)
+		return bodyString, errors.Wrap(err, "http response code not okay", "status code", resp.StatusCode, "body", bodyString)
 	}
 
-	err = json.Unmarshal(body, response)
-	if err != nil {
-		return nil, errors.Wrap(err, "unmarshal response JSON")
-	}
-
-	return response, nil
+	return bodyString, nil
 }
 
 func getHeaders(m map[string]string) http.Header {

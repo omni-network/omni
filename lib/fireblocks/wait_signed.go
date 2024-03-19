@@ -9,7 +9,11 @@ import (
 )
 
 func (c Client) WaitSigned(ctx context.Context, opts TransactionRequestOptions) (*TransactionResponse, error) {
-	createTransactionRequest := NewTransactionRequest(opts)
+	createTransactionRequest, err := NewTransactionRequest(opts)
+	if err != nil {
+		return nil, err
+	}
+
 	resp, err := c.CreateTransaction(ctx, createTransactionRequest)
 	if err != nil {
 		return nil, err
@@ -54,7 +58,7 @@ func evaluateTransactionStatus(resp TransactionResponse) (bool, error) {
 	case "COMPLETED":
 		return false, nil
 	case "CANCELED", "BLOCKED_BY_POLICY", "REJECTED", "FAILED":
-		return false, errors.New("transaction failed, status: %s, system message: %s", resp.Status, resp.SystemMessages.Message)
+		return false, errors.New("transaction failed", "status", resp.Status)
 	default:
 		return true, nil
 	}
