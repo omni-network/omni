@@ -42,7 +42,7 @@ func NewBackend(chainName string, chainID uint64, blockPeriod time.Duration, eth
 	for _, pk := range privateKeys {
 		txMgr, err := newTxMgr(ethCl, chainName, chainID, blockPeriod, pk)
 		if err != nil {
-			return nil, errors.Wrap(err, "deploy tx txMgr")
+			return nil, errors.Wrap(err, "new txmgr")
 		}
 
 		addr := crypto.PubkeyToAddress(pk.PublicKey)
@@ -65,7 +65,7 @@ func NewBackend(chainName string, chainID uint64, blockPeriod time.Duration, eth
 func (b *Backend) AddAccount(privkey *ecdsa.PrivateKey) (common.Address, error) {
 	txMgr, err := newTxMgr(b.Client, b.chainName, b.chainID, b.blockPeriod, privkey)
 	if err != nil {
-		return common.Address{}, errors.Wrap(err, "deploy tx txMgr")
+		return common.Address{}, errors.Wrap(err, "new txmgr")
 	}
 
 	addr := crypto.PubkeyToAddress(privkey.PublicKey)
