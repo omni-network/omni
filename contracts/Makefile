@@ -19,7 +19,7 @@ build: version ## Build contracts.
 
 .PHONY: bindings
 bindings: check-abigen-version build ## Generate golang contract bindings.
-	./bindings/scripts/gen.sh OmniPortal FeeOracleV1 OmniAVS OmniStake TransparentUpgradeableProxy ProxyAdmin DelegationManager StrategyManager StrategyBase AVSDirectory test/avs/common/MockERC20.sol:MockERC20
+	./bindings/scripts/gen.sh OmniPortal FeeOracleV1 OmniAVS OmniStake Create3 TransparentUpgradeableProxy ProxyAdmin DelegationManager StrategyManager StrategyBase AVSDirectory test/avs/common/MockERC20.sol:MockERC20
 	./bindings/scripts/genmore.sh OmniStake
 	go run ./bindings/scripts/commenttypes.go -- bindings/strategymanager.go IStrategyManagerDeprecatedStructQueuedWithdrawal IStrategyManagerDeprecatedStructWithdrawerAndNonce
 	go run ./bindings/scripts/commenttypes.go -- bindings/avsdirectory.go ISignatureUtilsSignatureWithSaltAndExpiry
