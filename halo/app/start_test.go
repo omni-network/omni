@@ -1,6 +1,7 @@
 package app_test
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"testing"
@@ -15,6 +16,7 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+	"github.com/cometbft/cometbft/types"
 
 	db "github.com/cosmos/cosmos-db"
 	"github.com/stretchr/testify/require"
@@ -66,7 +68,20 @@ func TestSmoke(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, ok)
 
-	srcChain := uint64(999)
+	genSet, err := cl.Validators(ctx, int64Ptr(1), nil, nil)
+	require.NoError(t, err)
+	getSetHash := types.NewValidatorSet(genSet.Validators).Hash()
+
+	// Wait for cometBFT validator set to change
+	require.Eventually(t, func() bool {
+		set, err := cl.Validators(ctx, nil, nil, nil)
+		require.NoError(t, err)
+		setHash := types.NewValidatorSet(set.Validators).Hash()
+
+		return !bytes.Equal(getSetHash, setHash)
+	}, time.Second*time.Duration(target*2), time.Millisecond*100)
+
+	srcChain := netconf.GetStatic(netconf.Simnet).OmniExecutionChainID
 	// Ensure all blocks are attested and approved.
 	cprov.Subscribe(ctx, srcChain, 0, "test", func(ctx context.Context, approved xchain.Attestation) error {
 		// Sanity check we can fetch latest directly as well.
@@ -128,4 +143,8 @@ func setupSimnet(t *testing.T) haloapp.Config {
 	})
 
 	return cfg
+}
+
+func int64Ptr(i int64) *int64 {
+	return &i
 }
