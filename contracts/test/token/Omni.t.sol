@@ -2,7 +2,7 @@
 pragma solidity 0.8.24;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { Omni } from "src/protocol/Omni.sol";
+import { Omni } from "src/token/Omni.sol";
 import { Test } from "forge-std/Test.sol";
 
 contract Omni_Test is Test {
