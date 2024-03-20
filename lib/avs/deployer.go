@@ -137,7 +137,7 @@ func (d *Deployer) Deploy(ctx context.Context, backend *ethbackend.Backend, owne
 	}
 
 	// TODO: use same proxy admin for portal & avs on same chain
-	proxyAdmin, err := netman.DeployProxyAdmin(ctx, txOpts, backend)
+	proxyAdmin, err := netman.DeployProxyAdmin(ctx, txOpts, backend, owner)
 	if err != nil {
 		return errors.Wrap(err, "deploy proxy admin")
 	}
