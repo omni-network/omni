@@ -19,3 +19,11 @@ scrape_configs:
           network: 'manifest1-localhost'
           host: 'localhost-2'
 
+  - job_name: "monitor"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: [] # monitor targets
+        labels:
+          network: 'manifest1-localhost'
+          host: 'localhost-2'
+

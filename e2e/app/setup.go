@@ -24,6 +24,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	monapp "github.com/omni-network/omni/monitor/app"
 	relayapp "github.com/omni-network/omni/relayer/app"
 
 	"github.com/cometbft/cometbft/config"
@@ -57,6 +58,10 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 		return errors.Wrap(err, "mkdir")
 	}
 
+	if def.Manifest.OnnyMonitor {
+		return SetupOnlyMonitor(ctx, def, agentSecrets, testCfg)
+	}
+
 	var vals []crypto.PubKey
 	for val := range def.Testnet.Validators {
 		vals = append(vals, val.PrivvalKey.PubKey())
@@ -78,6 +83,9 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 	}
 
 	logCfg := logConfig()
+	if err := writeMonitorConfig(def, logCfg); err != nil {
+		return err
+	}
 
 	if err := writeRelayerConfig(def, logCfg); err != nil {
 		return err
@@ -137,6 +145,25 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 		if err := halocmd.InitFiles(log.WithNoopLogger(ctx), initCfg); err != nil {
 			return errors.Wrap(err, "init files")
 		}
+	}
+
+	if def.Testnet.Prometheus {
+		if err := agent.WriteConfig(ctx, def.Testnet, agentSecrets); err != nil {
+			return errors.Wrap(err, "write prom config")
+		}
+	}
+
+	if err := def.Infra.Setup(); err != nil {
+		return errors.Wrap(err, "setup provider")
+	}
+
+	return nil
+}
+
+func SetupOnlyMonitor(ctx context.Context, def Definition, agentSecrets agent.Secrets, testCfg bool) error {
+	logCfg := logConfig()
+	if err := writeMonitorConfig(def, logCfg); err != nil {
+		return err
 	}
 
 	if def.Testnet.Prometheus {
@@ -419,6 +446,38 @@ func writeRelayerConfig(def Definition, logCfg log.Config) error {
 	ralayCfg.HaloURL = random(def.Testnet.Nodes).AddressRPC()
 
 	if err := relayapp.WriteConfigTOML(ralayCfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
+		return errors.Wrap(err, "write relayer config")
+	}
+
+	return nil
+}
+
+func writeMonitorConfig(def Definition, logCfg log.Config) error {
+	confRoot := filepath.Join(def.Testnet.Dir, "monitor")
+
+	const (
+		networkFile = "network.json"
+		configFile  = "monitor.toml"
+	)
+
+	if err := os.MkdirAll(confRoot, 0o755); err != nil {
+		return errors.Wrap(err, "mkdir", "path", confRoot)
+	}
+
+	// Save network config
+	network := internalNetwork(def.Testnet, def.Netman.DeployInfo(), "")
+	if def.Infra.GetInfrastructureData().Provider == vmcompose.ProviderName {
+		network = externalNetwork(def.Testnet, def.Netman.DeployInfo())
+	}
+
+	if err := netconf.Save(network, filepath.Join(confRoot, networkFile)); err != nil {
+		return errors.Wrap(err, "save network config")
+	}
+
+	cfg := monapp.DefaultConfig()
+	cfg.NetworkFile = networkFile
+
+	if err := monapp.WriteConfigTOML(cfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write relayer config")
 	}
 

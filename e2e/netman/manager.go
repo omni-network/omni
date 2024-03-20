@@ -52,8 +52,17 @@ type Manager interface {
 	RelayerKey() *ecdsa.PrivateKey
 }
 
-func NewManager(testnet types.Testnet, backends ethbackend.Backends, relayerKeyFile string,
-) (Manager, error) {
+func NewManager(testnet types.Testnet, backends ethbackend.Backends, relayerKeyFile string) (Manager, error) {
+	if testnet.OnlyMonitor {
+		if testnet.Name != netconf.Testnet {
+			return nil, errors.New("the AVS contract is currently only deployed to testnet")
+		}
+
+		return &manager{
+			backends: backends,
+		}, nil
+	}
+
 	// Create partial portals. This will be updated by Deploy*Portals.
 	portals := make(map[uint64]Portal)
 

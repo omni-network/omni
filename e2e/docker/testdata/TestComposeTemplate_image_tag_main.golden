@@ -146,6 +146,20 @@ services:
       test:
         ipv4_address: 10.186.73.200
 
+  monitor:
+    labels:
+      e2e: true
+    container_name: monitor
+    image: omniops/monitor:main
+    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    environment:
+      - LOG_FORMAT=console
+    volumes:
+      - ./monitor:/monitor
+    networks:
+      test:
+        ipv4_address: 10.186.73.201
+
   prometheus:
     labels:
       e2e: true
@@ -162,5 +176,5 @@ services:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     networks:
       test:
-        ipv4_address: 10.186.73.201
+        ipv4_address: 10.186.73.202
 

@@ -81,10 +81,16 @@ func genPromConfig(ctx context.Context, testnet types.Testnet, secrets Secrets, 
 				JobName:     "relayer",
 				MetricsPath: "/metrics",
 				targets:     []string{fmt.Sprintf("relayer:%d", promPort)},
-			}, {
+			},
+			{
 				JobName:     "halo",
 				MetricsPath: "/metrics",
 				targets:     nodeTargets,
+			},
+			{
+				JobName:     "monitor",
+				MetricsPath: "/metrics",
+				targets:     []string{fmt.Sprintf("monitor:%d", promPort)},
 			},
 		},
 	}
@@ -126,11 +132,17 @@ func (c promScrapConfig) Targets() string {
 //	It removes the relayer targets if not enabled.
 //	It replaces the halo targets with provided.
 //	It replaces the host label.
-func ConfigForHost(bz []byte, newHost string, halos []string, relayer bool) []byte {
+func ConfigForHost(bz []byte, newHost string, halos []string, relayer bool, monitor bool) []byte {
 	if !relayer {
 		// Remove relayer target if not needed.
 		bz = regexp.MustCompile(`(?m)\[.*\] # relayer targets$`).
 			ReplaceAll(bz, []byte(`[] # relayer targets`))
+	}
+
+	if !monitor {
+		// Remove monitor target if not needed.
+		bz = regexp.MustCompile(`(?m)\[.*\] # monitor targets$`).
+			ReplaceAll(bz, []byte(`[] # monitor targets`))
 	}
 
 	var haloTargets []string

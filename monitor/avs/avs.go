@@ -3,7 +3,7 @@ package avs
 import (
 	"context"
 
-	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/contracts/bindingsv1"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
@@ -12,29 +12,26 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// use hardcoded avs address for now
-// TODO: add avs address to network config.
-const (
-	goerliAVSAddr = "0x848BE3DBcd054c17EbC712E0d29D15C2e638aBCe"
-	goerliRPC     = "https://ethereum-goerli-rpc.publicnode.com"
-)
-
 // Monitor starts monitoring the AVS contract.
 func Monitor(ctx context.Context, network netconf.Network) error {
-	if network.Name != netconf.Staging {
-		// only monitor in staging for now
+	if network.Name != netconf.Testnet && network.Name != netconf.Mainnet {
+		// only monitor in Testned and Mainnet
 		return nil
+	}
+
+	ch, ok := network.EthereumChain()
+	if !ok {
+		return errors.New("no avs chain found")
 	}
 
 	log.Info(ctx, "Starting AVS monitor")
 
-	client, err := ethclient.Dial("goerli", goerliRPC)
+	client, err := ethclient.Dial(ch.Name, ch.RPCURL)
 	if err != nil {
-		return errors.Wrap(err, "dialing goerli")
+		return errors.Wrap(err, "dialing", "chain", ch.Name)
 	}
 
-	addr := common.HexToAddress(goerliAVSAddr)
-	avs, err := newAVS(client, addr)
+	avs, err := newAVS(client, ch.AVSContractAddr)
 	if err != nil {
 		return err
 	}
@@ -45,8 +42,8 @@ func Monitor(ctx context.Context, network netconf.Network) error {
 }
 
 // newAVS returns a new AVS contract instance.
-func newAVS(client ethclient.Client, address common.Address) (*bindings.OmniAVS, error) {
-	avs, err := bindings.NewOmniAVS(address, client)
+func newAVS(client ethclient.Client, address common.Address) (*bindingsv1.OmniAVS, error) {
+	avs, err := bindingsv1.NewOmniAVS(address, client)
 	if err != nil {
 		return nil, errors.Wrap(err, "new AVS")
 	}

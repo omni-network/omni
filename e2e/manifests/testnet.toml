@@ -1,0 +1,7 @@
+network       = "testnet"
+
+public_chains = ["goerli"]
+avs_target    = "goerli"
+
+only_monitor  = true
+prometheus    = true

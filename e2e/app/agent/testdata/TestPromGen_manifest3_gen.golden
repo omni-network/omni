@@ -8,7 +8,7 @@ scrape_configs:
     static_configs:
       - targets: [relayer:26660] # relayer targets
         labels:
-          network: 'manifest1-localhost'
+          network: 'manifest3-localhost'
           host: 'localhost'
 
   - job_name: "halo"
@@ -16,7 +16,7 @@ scrape_configs:
     static_configs:
       - targets: [validator01:26660,validator02:26660] # halo targets
         labels:
-          network: 'manifest1-localhost'
+          network: 'manifest3-localhost'
           host: 'localhost'
 
   - job_name: "monitor"
@@ -24,6 +24,6 @@ scrape_configs:
     static_configs:
       - targets: [monitor:26660] # monitor targets
         labels:
-          network: 'manifest1-localhost'
+          network: 'manifest3-localhost'
           host: 'localhost'
 

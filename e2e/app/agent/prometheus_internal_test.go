@@ -23,6 +23,7 @@ func TestPromGen(t *testing.T) {
 		nodes        []string
 		newNodes     []string
 		newRelayer   bool
+		newMonitor   bool
 		hostname     string
 		agentSecrets bool
 	}{
@@ -33,6 +34,7 @@ func TestPromGen(t *testing.T) {
 			hostname:     "localhost",
 			newNodes:     []string{"validator01"},
 			newRelayer:   false,
+			newMonitor:   false,
 			agentSecrets: false,
 		},
 		{
@@ -41,6 +43,27 @@ func TestPromGen(t *testing.T) {
 			nodes:        []string{"validator01", "validator02", "fullnode03"},
 			hostname:     "vm",
 			newNodes:     []string{"fullnode04"},
+			newRelayer:   true,
+			newMonitor:   false,
+			agentSecrets: true,
+		},
+		{
+			name:         "manifest3",
+			network:      netconf.Devnet,
+			nodes:        []string{"validator01", "validator02"},
+			hostname:     "localhost",
+			newNodes:     []string{"validator01"},
+			newMonitor:   true,
+			newRelayer:   false,
+			agentSecrets: false,
+		},
+		{
+			name:         "manifest4",
+			network:      netconf.Staging,
+			nodes:        []string{"validator01", "validator02", "fullnode03"},
+			hostname:     "vm",
+			newNodes:     []string{"fullnode04"},
+			newMonitor:   true,
 			newRelayer:   true,
 			agentSecrets: true,
 		},
@@ -75,7 +98,7 @@ func TestPromGen(t *testing.T) {
 			cfg1, err := genPromConfig(ctx, testnet, agentSecrets, test.hostname)
 			require.NoError(t, err)
 
-			cfg2 := ConfigForHost(cfg1, test.hostname+"-2", test.newNodes, test.newRelayer)
+			cfg2 := ConfigForHost(cfg1, test.hostname+"-2", test.newNodes, test.newRelayer, test.newMonitor)
 
 			t.Run("gen", func(t *testing.T) {
 				t.Parallel()

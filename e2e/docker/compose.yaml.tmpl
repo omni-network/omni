@@ -129,7 +129,7 @@ services:
     labels:
       e2e: true
     container_name: relayer
-    image: omniops/relayer:{{or .RelayerTag "main"}}
+    image: omniops/relayer:{{or .OmniTag "main"}}
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     environment:
     - RELAYER_LOG_FORMAT={{ $.OmniLogFormat }}
@@ -139,6 +139,22 @@ services:
       {{ $.NetworkName }}:
         {{ if $.Network }}ipv4_address: 10.186.73.200{{ end }}
 {{end}}
+
+{{- if .Monitor }}
+  monitor:
+    labels:
+      e2e: true
+    container_name: monitor
+    image: omniops/monitor:{{or .OmniTag "main"}}
+    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    environment:
+      - LOG_FORMAT={{ $.OmniLogFormat }}
+    volumes:
+      - ./monitor:/monitor
+    networks:
+      {{ $.NetworkName }}:
+        {{ if $.Network }}ipv4_address: 10.186.73.201{{ end }}
+{{ end }}
 
 {{- if .Prometheus }}
   prometheus:
@@ -157,5 +173,5 @@ services:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     networks:
       {{ $.NetworkName }}:
-        {{ if $.Network }}ipv4_address: 10.186.73.201{{ end }}
+        {{ if $.Network }}ipv4_address: 10.186.73.202{{ end }}
 {{ end }}
