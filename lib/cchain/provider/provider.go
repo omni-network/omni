@@ -14,19 +14,17 @@ import (
 
 var _ cchain.Provider = Provider{}
 
-// FetchFunc abstracts fetching attestations from the consensus chain.
-type FetchFunc func(ctx context.Context, chainID uint64, fromHeight uint64,
-) ([]xchain.Attestation, error)
-
-// LatestFunc abstracts fetching the latest attestation from the consensus chain.
+type FetchFunc func(ctx context.Context, chainID uint64, fromHeight uint64) ([]xchain.Attestation, error)
 type LatestFunc func(ctx context.Context, chainID uint64) (xchain.Attestation, bool, error)
 type WindowFunc func(ctx context.Context, chainID uint64, height uint64) (int, error)
+type ValsetFunc func(ctx context.Context, valSetID uint64) ([]cchain.Validator, bool, error)
 
 // Provider implements cchain.Provider.
 type Provider struct {
 	fetch       FetchFunc
 	latest      LatestFunc
 	window      WindowFunc
+	valset      ValsetFunc
 	backoffFunc func(context.Context) (func(), func())
 	chainNames  map[uint64]string
 }
@@ -55,6 +53,10 @@ func (p Provider) LatestAttestation(ctx context.Context, sourceChainID uint64,
 
 func (p Provider) WindowCompare(ctx context.Context, sourceChainID uint64, height uint64) (int, error) {
 	return p.window(ctx, sourceChainID, height)
+}
+
+func (p Provider) ValidatorSet(ctx context.Context, valSetID uint64) ([]cchain.Validator, bool, error) {
+	return p.valset(ctx, valSetID)
 }
 
 // Subscribe implements cchain.Provider.

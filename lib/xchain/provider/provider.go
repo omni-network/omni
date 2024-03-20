@@ -7,6 +7,7 @@ package provider
 import (
 	"context"
 
+	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/expbackoff"
@@ -18,10 +19,13 @@ import (
 
 var _ xchain.Provider = (*Provider)(nil)
 
+const cChainID = 0
+
 // Provider stores the source chain configuration and the global quit channel.
 type Provider struct {
 	network     netconf.Network
 	rpcClients  map[uint64]ethclient.Client // store config for every chain ID
+	cprov       cchain.Provider             // TODO(corver): Populate this.
 	backoffFunc func(context.Context) (func(), func())
 }
 
@@ -49,7 +53,7 @@ func (p *Provider) StreamAsync(
 	fromHeight uint64,
 	callback xchain.ProviderCallback,
 ) error {
-	if _, _, err := p.getChain(chainID); err != nil {
+	if err := p.verifyChainIDInclCChain(chainID); err != nil {
 		return err
 	}
 
@@ -133,6 +137,16 @@ func (p *Provider) stream(
 	log.Info(ctx, "Streaming xprovider blocks", "from_height", fromHeight)
 
 	return stream.Stream(ctx, deps, chainID, fromHeight, cb)
+}
+
+func (p *Provider) verifyChainIDInclCChain(chainID uint64) error {
+	if chainID == cChainID {
+		return nil
+	}
+
+	_, _, err := p.getChain(chainID)
+
+	return err
 }
 
 // getChain provides the configuration of the given chainID.

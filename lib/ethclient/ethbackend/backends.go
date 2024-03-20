@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
-	"github.com/omni-network/omni/test/e2e/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"

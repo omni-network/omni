@@ -1,0 +1,29 @@
+global:
+  scrape_interval: 30s # Set the scrape interval to every 30 seconds.
+  evaluation_interval: 30s # Evaluate rules every 30 seconds.
+
+scrape_configs:
+  - job_name: "relayer"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: [relayer:26660] # relayer targets
+        labels:
+          network: 'manifest3-localhost'
+          host: 'localhost'
+
+  - job_name: "halo"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: [validator01:26660,validator02:26660] # halo targets
+        labels:
+          network: 'manifest3-localhost'
+          host: 'localhost'
+
+  - job_name: "monitor"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: [monitor:26660] # monitor targets
+        labels:
+          network: 'manifest3-localhost'
+          host: 'localhost'
+

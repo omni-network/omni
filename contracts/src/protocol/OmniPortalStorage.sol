@@ -11,11 +11,6 @@ import { IOmniPortalAdmin } from "../interfaces/IOmniPortalAdmin.sol";
  */
 abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
     /**
-     * @notice Track latest seen validator set id. Validator set ids increment monotonically
-     */
-    uint64 public latestValidatorSetId;
-
-    /**
      * @notice The address of the fee oracle contract
      */
     address public feeOracle;
@@ -31,9 +26,14 @@ abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
     mapping(uint64 => uint64) public inXStreamOffset;
 
     /**
-     * @notice Offset of the last inbound XMsg that was received from sourceChainId
+     * @notice Soure block height of the last XSubmission that was received from sourceChainId
      */
     mapping(uint64 => uint64) public inXStreamBlockHeight;
+
+    /**
+     * @notice Validator set id of the last XSubmission that was received from sourceChainId
+     */
+    mapping(uint64 => uint64) public inXStreamValidatorSetId;
 
     /**
      * @notice Maps validator set id -> total power
@@ -50,5 +50,5 @@ abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
      * @dev Internal state + public getter preferred over public state with default getter
      *      so that we can use the XMsg struct type in the interface.
      */
-    XTypes.MsgShort internal _currentXmsg;
+    XTypes.MsgShort internal _xmsg;
 }

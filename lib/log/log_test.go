@@ -7,9 +7,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/omni-network/omni/e2e/tutil"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/test/tutil"
 
 	pkgerrors "github.com/pkg/errors"
 )

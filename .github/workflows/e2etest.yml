@@ -20,7 +20,7 @@ jobs:
         if: failure()
         with:
           name: failed-logs
-          path: test/e2e/failed-logs.txt
+          path: e2e/failed-logs.txt
           retention-days: 3
 
       - name: e2e-logs

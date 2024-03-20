@@ -2,7 +2,10 @@
 pragma solidity =0.8.24;
 
 import { XTypes } from "src/libraries/XTypes.sol";
+import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
+
 import { Base } from "./common/Base.sol";
+import { Counter } from "./common/Counter.sol";
 import { Vm } from "forge-std/Vm.sol";
 
 /**
@@ -11,22 +14,7 @@ import { Vm } from "forge-std/Vm.sol";
  */
 contract OmniPortal_xsubmit_Test is Base {
     function test_xsubmit_xblock1_succeeds() public {
-        XTypes.Submission memory xsub = readXSubmission("xblock1", portal.chainId());
-
-        uint64 sourceChainId = xsub.blockHeader.sourceChainId;
-        uint64 expectedOffset = xsub.msgs[xsub.msgs.length - 1].streamOffset;
-        uint256 expectedCount = numIncrements(xsub.msgs);
-
-        vm.prank(relayer);
-        vm.recordLogs();
-        expectCalls(xsub.msgs);
-        portal.xsubmit(xsub);
-
-        assertEq(portal.inXStreamOffset(sourceChainId), expectedOffset);
-        assertEq(portal.inXStreamBlockHeight(sourceChainId), xsub.blockHeader.blockHeight);
-        assertEq(counter.count(), expectedCount);
-        assertEq(counter.countByChainId(sourceChainId), expectedCount);
-        assertReceipts(vm.getRecordedLogs(), xsub.msgs);
+        _testSubmitXBlock("xblock1", genesisValSetId, portal, counter);
     }
 
     function test_xsubmit_xblock2_succeeds() public {
@@ -34,41 +22,11 @@ contract OmniPortal_xsubmit_Test is Base {
         XTypes.Submission memory xsub1 = readXSubmission("xblock1", portal.chainId());
         portal.xsubmit(xsub1);
 
-        XTypes.Submission memory xsub2 = readXSubmission("xblock2", portal.chainId());
-
-        uint64 sourceChainId = xsub2.blockHeader.sourceChainId;
-        uint64 expectedOffset = xsub2.msgs[xsub2.msgs.length - 1].streamOffset;
-        uint256 expectedCount = numIncrements(xsub1.msgs) + numIncrements(xsub2.msgs);
-
-        vm.prank(relayer);
-        vm.recordLogs();
-        expectCalls(xsub2.msgs);
-        portal.xsubmit(xsub2);
-
-        assertEq(portal.inXStreamOffset(sourceChainId), expectedOffset);
-        assertEq(portal.inXStreamBlockHeight(sourceChainId), xsub2.blockHeader.blockHeight);
-        assertEq(counter.count(), expectedCount);
-        assertEq(counter.countByChainId(sourceChainId), expectedCount);
-        assertReceipts(vm.getRecordedLogs(), xsub2.msgs);
+        _testSubmitXBlock("xblock2", genesisValSetId, portal, counter);
     }
 
     function test_xsubmit_xblock1_chainB_succeeds() public {
-        XTypes.Submission memory xsub = readXSubmission("xblock1", chainBId);
-
-        uint64 sourceChainId = xsub.blockHeader.sourceChainId;
-        uint64 expectedOffset = xsub.msgs[xsub.msgs.length - 1].streamOffset;
-        uint256 expectedCount = numIncrements(xsub.msgs);
-
-        vm.prank(relayer);
-        vm.recordLogs();
-        expectCalls(xsub.msgs);
-        chainBPortal.xsubmit(xsub);
-
-        assertEq(chainBPortal.inXStreamOffset(sourceChainId), expectedOffset);
-        assertEq(chainBPortal.inXStreamBlockHeight(sourceChainId), xsub.blockHeader.blockHeight);
-        assertEq(chainBCounter.count(), expectedCount);
-        assertEq(chainBCounter.countByChainId(sourceChainId), expectedCount);
-        assertReceipts(vm.getRecordedLogs(), xsub.msgs);
+        _testSubmitXBlock("xblock1", genesisValSetId, chainBPortal, chainBCounter);
     }
 
     function test_xsubmit_xblock2_chainB_succeeds() public {
@@ -76,22 +34,7 @@ contract OmniPortal_xsubmit_Test is Base {
         XTypes.Submission memory xsub1 = readXSubmission("xblock1", chainBId);
         chainBPortal.xsubmit(xsub1);
 
-        XTypes.Submission memory xsub2 = readXSubmission("xblock2", chainBId);
-
-        uint64 sourceChainId = xsub2.blockHeader.sourceChainId;
-        uint64 expectedOffset = xsub2.msgs[xsub2.msgs.length - 1].streamOffset;
-        uint256 expectedCount = numIncrements(xsub1.msgs) + numIncrements(xsub2.msgs);
-
-        vm.prank(relayer);
-        vm.recordLogs();
-        expectCalls(xsub2.msgs);
-        chainBPortal.xsubmit(xsub2);
-
-        assertEq(chainBPortal.inXStreamOffset(sourceChainId), expectedOffset);
-        assertEq(chainBPortal.inXStreamBlockHeight(sourceChainId), xsub2.blockHeader.blockHeight);
-        assertEq(chainBCounter.count(), expectedCount);
-        assertEq(chainBCounter.countByChainId(sourceChainId), expectedCount);
-        assertReceipts(vm.getRecordedLogs(), xsub2.msgs);
+        _testSubmitXBlock("xblock2", genesisValSetId, chainBPortal, chainBCounter);
     }
 
     function test_xsubmit_wrongChainId_reverts() public {
@@ -152,5 +95,83 @@ contract OmniPortal_xsubmit_Test is Base {
 
         vm.expectRevert("OmniPortal: invalid proof");
         portal.xsubmit(xsub);
+    }
+
+    function test_xsubmit_addValidatorSet_succeeds() public {
+        XTypes.Submission memory xsub = readXSubmission("addValSet2", cchainId);
+        portal.xsubmit(xsub);
+
+        // test that validatorSet[2] is set correctly
+        uint64 valSet2Id = 2;
+        XTypes.Validator[] storage valSet2 = validatorSet[valSet2Id];
+        uint64 totalPower;
+
+        for (uint256 i = 0; i < valSet2.length; i++) {
+            totalPower += valSet2[i].power;
+            assertEq(portal.validatorSet(valSet2Id, valSet2[i].addr), valSet2[i].power);
+        }
+
+        assertEq(portal.validatorSetTotalPower(valSet2Id), totalPower);
+
+        // test that we can submit a block with the new validatorSet
+        _testSubmitXBlock("xblock1", valSet2Id, portal, counter);
+    }
+
+    /// @dev test that an xsubmission from a source chain can still use the last valSetId, if an
+    ///      xsubmission with the new valSetId has not been submitted for that source chain
+    function test_xsubmit_notNewValSet_succeeds() public {
+        // add new validator set
+        XTypes.Submission memory xsub = readXSubmission("addValSet2", cchainId);
+        portal.xsubmit(xsub);
+
+        // test that we can submit a block with the genesisValSetId
+        _testSubmitXBlock("xblock1", genesisValSetId, portal, counter);
+    }
+
+    /// @dev test that an xsubmission from a source chain cannot use an old valSetId, if an
+    ///      xsubmission with a newer valSetId has been submitted for that source chain
+    function test_xsubmit_oldValSet_reverts() public {
+        // add new validator set
+        XTypes.Submission memory xsub = readXSubmission("addValSet2", cchainId);
+        portal.xsubmit(xsub);
+
+        // submit a block with the valSetId 2
+        _testSubmitXBlock("xblock1", 2, portal, counter);
+
+        // test that we cannot submit a block with the genesisValSetId
+        xsub = readXSubmission("xblock1", portal.chainId(), genesisValSetId);
+
+        vm.expectRevert("OmniPortal: old val set");
+        portal.xsubmit(xsub);
+    }
+
+    // test that an xsubmission with an unknown valSetId reverts
+    function test_xsubmit_uknownValSetId_reverts() public {
+        // generate an xsubmission for val set 2, without submitting the val set
+        XTypes.Submission memory xsub = readXSubmission("xblock1", portal.chainId(), 2);
+
+        vm.expectRevert("OmniPortal: unknown val set");
+        portal.xsubmit(xsub);
+    }
+
+    /// @dev helper to test that an xsubmission makes the appropriate calls (to counter_), and emits
+    ///      the correct receipts
+    function _testSubmitXBlock(string memory name, uint64 valSetId, IOmniPortal portal_, Counter counter_) internal {
+        XTypes.Submission memory xsub = readXSubmission(name, portal_.chainId(), valSetId);
+
+        uint64 sourceChainId = xsub.blockHeader.sourceChainId;
+        uint64 expectedOffset = xsub.msgs[xsub.msgs.length - 1].streamOffset;
+        uint256 expectedCount = numIncrements(xsub.msgs) + counter_.count();
+
+        vm.prank(relayer);
+        vm.recordLogs();
+        expectCalls(xsub.msgs);
+        portal_.xsubmit(xsub);
+
+        assertEq(portal_.inXStreamOffset(sourceChainId), expectedOffset);
+        assertEq(portal_.inXStreamBlockHeight(sourceChainId), xsub.blockHeader.blockHeight);
+        assertEq(counter_.count(), expectedCount);
+        assertEq(counter_.countByChainId(sourceChainId), expectedCount);
+        assertReceipts(vm.getRecordedLogs(), xsub.msgs);
     }
 }
