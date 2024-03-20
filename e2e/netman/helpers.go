@@ -26,7 +26,7 @@ func deployOmniContracts(ctx context.Context, txOpts *bind.TransactOpts, backend
 	owner := txOpts.From
 	fee := new(big.Int).SetUint64(params.GWei)
 
-	proxyAdmin, err := DeployProxyAdmin(ctx, txOpts, backend)
+	proxyAdmin, err := DeployProxyAdmin(ctx, txOpts, backend, owner)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "deploy proxy admin")
 	}
@@ -49,10 +49,9 @@ func deployOmniContracts(ctx context.Context, txOpts *bind.TransactOpts, backend
 	return portal, contract, nil
 }
 
-func DeployProxyAdmin(ctx context.Context, txOpts *bind.TransactOpts, backend *ethbackend.Backend) (
-	common.Address, error,
-) {
-	proxyAdmin, tx, _, err := bindings.DeployProxyAdmin(txOpts, backend)
+func DeployProxyAdmin(ctx context.Context, txOpts *bind.TransactOpts, backend *ethbackend.Backend, owner common.Address,
+) (common.Address, error) {
+	proxyAdmin, tx, _, err := bindings.DeployProxyAdmin(txOpts, backend, owner)
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "deploy proxy admin")
 	}
