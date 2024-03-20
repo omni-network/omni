@@ -3,6 +3,8 @@ package provider
 
 import (
 	"context"
+	"strconv"
+	"sync"
 
 	atypes "github.com/omni-network/omni/halo/attest/types"
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
@@ -22,7 +24,13 @@ import (
 	"google.golang.org/grpc"
 )
 
-func NewABCIProvider(abci rpcclient.ABCIClient, chains map[uint64]string) Provider {
+// ABCIClient abstracts the cometBFT RPC client consisting of only the required methods.
+type ABCIClient interface {
+	rpcclient.ABCIClient
+	rpcclient.SignClient
+}
+
+func NewABCIProvider(abci ABCIClient, chains map[uint64]string) Provider {
 	backoffFunc := func(ctx context.Context) (func(), func()) {
 		return expbackoff.NewWithReset(ctx, expbackoff.WithFastConfig())
 	}
@@ -35,8 +43,35 @@ func NewABCIProvider(abci rpcclient.ABCIClient, chains map[uint64]string) Provid
 		latest:      newABCILatestFunc(acl),
 		window:      newABCIWindowFunc(acl),
 		valset:      newABCIValsetFunc(vcl),
+		chainID:     newChainIDFunc(abci),
 		backoffFunc: backoffFunc,
 		chainNames:  chains,
+	}
+}
+
+// newChainIDFunc returns a function that returns the consensus chain ID. It caches the result.
+func newChainIDFunc(abci rpcclient.SignClient) ChainIDFunc {
+	var mu sync.Mutex
+	var chainID uint64
+
+	return func(ctx context.Context) (uint64, error) {
+		mu.Lock()
+		defer mu.Unlock()
+		if chainID != 0 {
+			return chainID, nil
+		}
+
+		resp, err := abci.Header(ctx, nil)
+		if err != nil {
+			return 0, errors.Wrap(err, "abci header")
+		}
+
+		chainID, err = strconv.ParseUint(resp.Header.ChainID, 10, 64)
+		if err != nil {
+			return 0, errors.Wrap(err, "parse chain ID")
+		}
+
+		return chainID, nil
 	}
 }
 

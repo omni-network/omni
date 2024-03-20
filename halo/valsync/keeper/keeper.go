@@ -151,7 +151,12 @@ func (k Keeper) insertValidatorSet(ctx context.Context, isUpdate func(crypto.Pub
 		}
 	}
 
-	log.Info(ctx, "💫 Storing new unattested validator set",
+	msg := "💫 Storing new unattested validator set"
+	if isGenesis(ctx) {
+		msg = "💫 Storing genesis validator set"
+	}
+
+	log.Info(ctx, msg,
 		"valset_id", valsetID,
 		"len", len(valset),
 		"total_updates", totalUpdates,

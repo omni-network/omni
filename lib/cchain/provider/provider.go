@@ -18,6 +18,7 @@ type FetchFunc func(ctx context.Context, chainID uint64, fromHeight uint64) ([]x
 type LatestFunc func(ctx context.Context, chainID uint64) (xchain.Attestation, bool, error)
 type WindowFunc func(ctx context.Context, chainID uint64, height uint64) (int, error)
 type ValsetFunc func(ctx context.Context, valSetID uint64) ([]cchain.Validator, bool, error)
+type ChainIDFunc func(ctx context.Context) (uint64, error)
 
 // Provider implements cchain.Provider.
 type Provider struct {
@@ -25,6 +26,7 @@ type Provider struct {
 	latest      LatestFunc
 	window      WindowFunc
 	valset      ValsetFunc
+	chainID     ChainIDFunc
 	backoffFunc func(context.Context) (func(), func())
 	chainNames  map[uint64]string
 }
