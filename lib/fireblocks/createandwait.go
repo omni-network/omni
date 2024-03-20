@@ -9,47 +9,47 @@ import (
 )
 
 // CreateAndWait creates a transaction and waits for it to be signed.
-func (c Client) CreateAndWait(ctx context.Context, opts TransactionRequestOptions) (*TransactionResponse, error) {
+func (c Client) CreateAndWait(ctx context.Context, opts TransactionRequestOptions) (TransactionResponse, error) {
 	resp, err := c.CreateTransaction(ctx, opts)
 	if err != nil {
-		return nil, err
+		return TransactionResponse{}, err
 	}
 
-	transactionID := resp.ID
-	attempt := 1
+	var attempt int
 	queryTicker := time.NewTicker(c.cfg.QueryInterval)
-
 	defer queryTicker.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
-			return nil, errors.Wrap(ctx.Err(), "context canceled")
+			return TransactionResponse{}, errors.Wrap(ctx.Err(), "context canceled")
 		case <-queryTicker.C:
-			resp, err := c.GetTransactionByID(ctx, transactionID)
+			resp, err := c.GetTransactionByID(ctx, resp.ID)
 			if err != nil {
-				return nil, err
-			}
-			if resp == nil {
-				return nil, errors.New("failed to fetch transaction by id")
+				return TransactionResponse{}, err
 			}
 
-			isCompleted, err := evaluateTransactionStatus(*resp)
+			ok, err := isComplete(resp)
 			if err != nil {
-				return resp, err
-			}
-			if attempt%c.cfg.LogFreqFactor == 0 {
-				log.Warn(ctx, "Transaction not signed yet", nil, "attempt", attempt)
-			}
-			if isCompleted {
+				return TransactionResponse{}, err
+			} else if ok {
 				return resp, nil
 			}
+
 			attempt++
+			if attempt%c.cfg.LogFreqFactor == 0 {
+				log.Warn(ctx, "Transaction not signed yet", nil,
+					"attempt", attempt,
+					"id", resp.ID,
+					"status", resp.Status,
+				)
+			}
 		}
 	}
 }
 
-// evaluateTransactionStatus checks the status of a transaction and returns a boolean indicating whether the transaction is still pending or not.
-func evaluateTransactionStatus(resp TransactionResponse) (bool, error) {
+// isComplete returns true if the transaction is complete, false if still pending, or an error if it failed.
+func isComplete(resp TransactionResponse) (bool, error) {
 	switch resp.Status {
 	case "COMPLETED":
 		return true, nil
