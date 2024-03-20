@@ -15,7 +15,7 @@ build: ## builds our docker images
 run: stop ## Deploys e2e devnet1, copies network.json locally, and starts explorer docker compose
 	@echo "Starting devnet"
 	@make -C ../ devnet-deploy
-	@cp ../test/e2e/runs/devnet1/relayer/network.json ./network.json
+	@cp ../e2e/runs/devnet1/relayer/network.json ./network.json
 	@docker-compose up
 
 stop: ## stops our docker compose

@@ -34,13 +34,13 @@ jobs:
 
       - name: Run devnet1 e2e test
         run: |
-          go install github.com/omni-network/omni/test/e2e
-          cd test/e2e && ./run-multiple.sh manifests/devnet1.toml
+          go install github.com/omni-network/omni/e2e
+          cd e2e && ./run-multiple.sh manifests/devnet1.toml
 
       - name: Upload failed logs
         uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: failed-logs
-          path: test/e2e/failed-logs.txt
+          path: e2e/failed-logs.txt
           retention-days: 3

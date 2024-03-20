@@ -15,13 +15,13 @@ import (
 
 	clicmd "github.com/omni-network/omni/cli/cmd"
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/static"
+	"github.com/omni-network/omni/e2e/tutil"
 	"github.com/omni-network/omni/lib/avs"
 	"github.com/omni-network/omni/lib/avs/anvil"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/txmgr"
-	"github.com/omni-network/omni/test/e2e/app/static"
-	"github.com/omni-network/omni/test/tutil"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"

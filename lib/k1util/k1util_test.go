@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/omni-network/omni/e2e/tutil"
 	"github.com/omni-network/omni/lib/k1util"
-	"github.com/omni-network/omni/test/tutil"
 
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/privval"

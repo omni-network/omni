@@ -11,10 +11,10 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/omni-network/omni/e2e/app/static"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/test/e2e/app/static"
 
 	_ "embed"
 )
