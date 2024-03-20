@@ -12,25 +12,26 @@ import (
 	"github.com/google/uuid"
 )
 
+const expirationSecs = 29 // Must be less than 30sec.
+
 // genJWTToken generates a JWT token for the Fireblocks API.
 func (c Client) genJWTToken(uri string, data any) (string, error) {
 	nonce := uuid.New().String()
 	now := time.Now().Unix()
-	expiration := now + 29 // Must be less than iat+30sec. (their example code uses 55 though)
 
 	bytes, err := json.Marshal(data)
 	if err != nil {
 		return "", errors.Wrap(err, "marshaling JSON")
 	}
-	sha := sha256.Sum256(bytes)
+	reqHash := sha256.Sum256(bytes)
 
 	claims := jwt.MapClaims{
-		"uri":      "/" + uri,                  // uri - The URI part of the request (e.g., /v1/transactions).
-		"nonce":    nonce,                      // nonce - Unique number or string. Each API request needs to have a different nonce.
-		"iat":      now,                        // iat - The time at which the JWT was issued, in seconds since Epoch.
-		"exp":      expiration,                 // exp - The expiration time on and after which the JWT must not be accepted for processing, in seconds since Epoch. (Must be less than iat+30sec.)
-		"sub":      c.apiKey,                   // sub - The API Key.
-		"bodyHash": hex.EncodeToString(sha[:]), // bodyHash - Hex-encoded SHA-256 hash of the raw HTTP request body.
+		"uri":      "/" + uri,                      // uri - The URI part of the request (e.g., /v1/transactions).
+		"nonce":    nonce,                          // nonce - Unique number or string. Each API request needs to have a different nonce.
+		"iat":      now,                            // iat - The time at which the JWT was issued, in seconds since Epoch.
+		"exp":      now + expirationSecs,           // exp - The expiration time on and after which the JWT must not be accepted for processing, in seconds since Epoch. (Must be less than iat+30sec.)
+		"sub":      c.apiKey,                       // sub - The API Key.
+		"bodyHash": hex.EncodeToString(reqHash[:]), // bodyHash - Hex-encoded SHA-256 hash of the raw HTTP request body.
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)

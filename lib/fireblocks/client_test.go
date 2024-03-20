@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/omni-network/omni/lib/fireblocks"
 
@@ -16,6 +17,99 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
+
+func TestCreateTransactionGolden(t *testing.T) {
+	ctx := context.Background()
+	apiKey := uuid.New().String()
+	t.Parallel()
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"id": "7931eb22-9901-4eae-8816-8c24e3db021a", "status": "SUBMITTED"}`))
+	}))
+	defer ts.Close()
+
+	test4096Key := parseKey(t, testPrivateKey)
+	client, err := fireblocks.NewDefaultClient(apiKey, test4096Key, ts.URL)
+	require.NoError(t, err)
+
+	opts := fireblocks.TransactionRequestOptions{
+		Message: fireblocks.UnsignedRawMessage{
+			Content: "test",
+		},
+	}
+	resp, err := client.CreateTransaction(ctx, opts)
+	require.NoError(t, err)
+	cmp.Equal(expectSubmittedTransaction(resp.ID), resp)
+}
+
+func TestCreateAndWaitGolden(t *testing.T) {
+	t.Parallel()
+	mux := http.NewServeMux()
+	id := uuid.New().String()
+	ctx := context.Background()
+	apiKey := uuid.New().String()
+	transactionsURL := "/v1/transactions"
+	transactionIDURL := transactionsURL + "/" + id
+
+	mux.HandleFunc(transactionIDURL, func(res http.ResponseWriter, req *http.Request) {
+		res.WriteHeader(http.StatusOK)
+		response := expectCompletedTransaction(id)
+		data, _ := json.Marshal(response)
+		_, _ = res.Write(data)
+	})
+
+	mux.HandleFunc(transactionsURL, func(res http.ResponseWriter, req *http.Request) {
+		res.WriteHeader(http.StatusOK)
+		response := expectSubmittedTransaction(id)
+		data, _ := json.Marshal(response)
+		_, _ = res.Write(data)
+	})
+
+	ts := httptest.NewServer(mux)
+	defer ts.Close()
+
+	test4096Key := parseKey(t, testPrivateKey)
+
+	// Fast timeouts for testing
+	cfg, err := fireblocks.NewConfig(time.Second, time.Millisecond, 10)
+	require.NoError(t, err)
+
+	client, err := fireblocks.NewClientWithConfig(apiKey, test4096Key, ts.URL, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, client)
+
+	resp, err := client.CreateAndWait(ctx, fireblocks.TransactionRequestOptions{
+		Message: fireblocks.UnsignedRawMessage{
+			Content: "test",
+		},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+}
+
+func expectSubmittedTransaction(id string) *fireblocks.TransactionResponse {
+	return &fireblocks.TransactionResponse{
+		ID:     id,
+		Status: "SUBMITTED",
+	}
+}
+
+func expectCompletedTransaction(id string) *fireblocks.TransactionResponse {
+	return &fireblocks.TransactionResponse{
+		ID:     id,
+		Status: "COMPLETED",
+	}
+}
+
+func parseKey(t *testing.T, s string) *rsa.PrivateKey {
+	t.Helper()
+
+	p, _ := pem.Decode([]byte(s))
+	k, err := x509.ParsePKCS8PrivateKey(p.Bytes)
+	require.NoError(t, err)
+
+	return k.(*rsa.PrivateKey) //nolint:forcetypeassert // parseKey is only used for testing
+}
 
 // copied from https://go.dev/src/crypto/rsa/rsa_test.go
 const testPrivateKey = `-----BEGIN TESTING KEY-----
@@ -70,99 +164,3 @@ T10qfQol54KjGld/HVDhzbsZJxzLDqvPlroWgwLdOLDMXhwJYfTnqMEQkaG4Aawr
 Nx2YZ03g6Kt6B6c43LJx1a/zEPYSZcPERgWOSHlcjmwRfTs6uoN9xt1qs4zEUaKv
 Axreud3rJ0rekUp6rI1joG717Wls
 -----END TESTING KEY-----`
-
-func TestCreateTransactionGolden(t *testing.T) {
-	ctx := context.Background()
-	apiKey := uuid.New().String()
-	t.Parallel()
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"id": "7931eb22-9901-4eae-8816-8c24e3db021a", "status": "SUBMITTED"}`))
-	}))
-	defer ts.Close()
-
-	test4096Key := parseKey(testPrivateKey)
-	client, err := fireblocks.NewDefaultClient(apiKey, test4096Key, ts.URL)
-	require.NoError(t, err)
-
-	opts := fireblocks.TransactionRequestOptions{
-		Message: fireblocks.UnsignedRawMessage{
-			Content: "test",
-		},
-	}
-	resp, err := client.CreateTransaction(ctx, opts)
-	require.NoError(t, err)
-	cmp.Equal(expectSubmittedTransaction(resp.ID), resp)
-}
-
-func TestCreateAndWaitGolden(t *testing.T) {
-	t.Parallel()
-	mux := http.NewServeMux()
-	id := uuid.New().String()
-	ctx := context.Background()
-	apiKey := uuid.New().String()
-	transactionsURL := "/v1/transactions"
-	transactionIDURL := transactionsURL + "/" + id
-
-	mux.HandleFunc(transactionIDURL, func(res http.ResponseWriter, req *http.Request) {
-		res.WriteHeader(http.StatusOK)
-		response := expectCompletedTransaction(id)
-		data, _ := json.Marshal(response)
-		_, _ = res.Write(data)
-	})
-
-	mux.HandleFunc(transactionsURL, func(res http.ResponseWriter, req *http.Request) {
-		res.WriteHeader(http.StatusOK)
-		response := expectSubmittedTransaction(id)
-		data, _ := json.Marshal(response)
-		_, _ = res.Write(data)
-	})
-
-	ts := httptest.NewServer(mux)
-	defer ts.Close()
-
-	test4096Key := parseKey(testPrivateKey)
-	client, err := fireblocks.NewDefaultClient(apiKey, test4096Key, ts.URL)
-	require.NoError(t, err)
-	require.NotNil(t, client)
-
-	resp, err := client.CreateAndWait(ctx, fireblocks.TransactionRequestOptions{
-		Message: fireblocks.UnsignedRawMessage{
-			Content: "test",
-		},
-	})
-	require.NoError(t, err)
-	require.NotNil(t, resp)
-}
-
-func expectSubmittedTransaction(id string) *fireblocks.TransactionResponse {
-	return &fireblocks.TransactionResponse{
-		ID:     id,
-		Status: "SUBMITTED",
-	}
-}
-
-func expectCompletedTransaction(id string) *fireblocks.TransactionResponse {
-	return &fireblocks.TransactionResponse{
-		ID:     id,
-		Status: "COMPLETED",
-	}
-}
-
-func parseKey(s string) *rsa.PrivateKey {
-	p, _ := pem.Decode([]byte(s))
-	if p.Type == "PRIVATE KEY" {
-		k, err := x509.ParsePKCS8PrivateKey(p.Bytes)
-		if err != nil {
-			panic(err)
-		}
-
-		return k.(*rsa.PrivateKey) //nolint:forcetypeassert // parseKey is only used for testing
-	}
-	k, err := x509.ParsePKCS8PrivateKey(p.Bytes)
-	if err != nil {
-		panic(err)
-	}
-
-	return k.(*rsa.PrivateKey) //nolint:forcetypeassert // parseKey is only used for testing
-}

@@ -51,10 +51,10 @@ type oneTimeAddress struct {
 }
 
 type extraParameters struct {
-	RawMessageData RawMessageData `json:"rawMessageData"`
+	RawMessageData rawMessageData `json:"rawMessageData"`
 }
 
-type RawMessageData struct {
+type rawMessageData struct {
 	Messages  []UnsignedRawMessage `json:"messages"`
 	Algorithm string               `json:"algorithm,omitempty"`
 }
