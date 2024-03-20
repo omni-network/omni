@@ -1,4 +1,4 @@
-package apirequestor
+package fireblocks
 
 import (
 	"bytes"
@@ -12,22 +12,22 @@ import (
 	"github.com/omni-network/omni/lib/log"
 )
 
-type Client struct {
+type HTTPClient struct {
 	apiKey       string
 	clientSecret string
 	host         string
 	http         http.Client
 }
 
-func NewClient(host string, apiKey string, clientSecret string) *Client {
-	return &Client{
+func NewHTTPClient(host string, apiKey string, clientSecret string) *HTTPClient {
+	return &HTTPClient{
 		host:         host,
 		apiKey:       apiKey,       // pragma: allowlist secret
 		clientSecret: clientSecret, // pragma: allowlist secret
 	}
 }
 
-func (c *Client) Send(ctx context.Context, endpoint string, httpMethod string, bodyJSON any, headers map[string]string) (string, error) {
+func (c *HTTPClient) Send(ctx context.Context, endpoint string, httpMethod string, bodyJSON any, headers map[string]string) (string, error) {
 	endpoint = fmt.Sprintf("%s/%s", c.host, endpoint)
 	req, err := http.NewRequestWithContext(
 		ctx,
