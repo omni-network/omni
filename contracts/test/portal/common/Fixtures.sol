@@ -2,9 +2,9 @@
 pragma solidity =0.8.24;
 
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { ProxyAdmin } from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
+import { ProxyAdmin } from "src/deploy/ProxyAdmin.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
 import { FeeOracleV1 } from "src/protocol/FeeOracleV1.sol";
 import { OmniPortal } from "src/protocol/OmniPortal.sol";
@@ -322,8 +322,7 @@ contract Fixtures is CommonBase, StdCheats {
 
         vm.chainId(thisChainId); // portal constructor uses block.chainid
 
-        proxyAdmin = new ProxyAdmin();
-        proxyAdmin.transferOwnership(owner);
+        proxyAdmin = new ProxyAdmin(owner);
 
         feeOracleImpl = new FeeOracleV1();
         feeOracle = FeeOracleV1(
@@ -356,8 +355,7 @@ contract Fixtures is CommonBase, StdCheats {
 
         vm.chainId(chainAId);
 
-        chainAProxyAdmin = new ProxyAdmin();
-        chainAProxyAdmin.transferOwnership(owner);
+        chainAProxyAdmin = new ProxyAdmin(owner);
 
         chainAfeeOracleImpl = new FeeOracleV1();
         chainAFeeOracle = FeeOracleV1(
@@ -390,8 +388,7 @@ contract Fixtures is CommonBase, StdCheats {
 
         vm.chainId(chainBId);
 
-        chainBProxyAdmin = new ProxyAdmin();
-        chainBProxyAdmin.transferOwnership(owner);
+        chainBProxyAdmin = new ProxyAdmin(owner);
 
         chainBfeeOracleImpl = new FeeOracleV1();
         chainBFeeOracle = FeeOracleV1(

@@ -332,11 +332,20 @@ func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 			Name:              omniEVM.Chain.Name,
 			RPCURL:            omniEVM.InternalRPC,
 			AuthRPCURL:        omniEVM.InternalAuthRPC,
-			PortalAddress:     deployInfo[omniEVM.Chain].PortalAddress.Hex(),
+			PortalAddress:     deployInfo[omniEVM.Chain].PortalAddress,
 			DeployHeight:      deployInfo[omniEVM.Chain].DeployHeight,
 			BlockPeriod:       omniEVM.Chain.BlockPeriod,
 			FinalizationStrat: omniEVM.Chain.FinalizationStrat,
-			IsOmni:            true,
+			IsOmniEVM:         true,
+		})
+
+		chains = append(chains, netconf.Chain{
+			ID:   netconf.GetStatic(testnet.Network).OmniConsensusChainID,
+			Name: "omni_consensus",
+			// No RPC URLs, since we are going to remove it from netconf in any case.
+			DeployHeight:    0,
+			BlockPeriod:     omniEVM.Chain.BlockPeriod, // Same block period as omniEVM
+			IsOmniConsensus: true,
 		})
 
 		// Add all anvil chains
@@ -345,7 +354,7 @@ func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 				ID:                anvil.Chain.ID,
 				Name:              anvil.Chain.Name,
 				RPCURL:            anvil.InternalRPC,
-				PortalAddress:     deployInfo[anvil.Chain].PortalAddress.Hex(),
+				PortalAddress:     deployInfo[anvil.Chain].PortalAddress,
 				DeployHeight:      deployInfo[anvil.Chain].DeployHeight,
 				BlockPeriod:       anvil.Chain.BlockPeriod,
 				FinalizationStrat: anvil.Chain.FinalizationStrat,
@@ -360,7 +369,7 @@ func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 			ID:                public.Chain.ID,
 			Name:              public.Chain.Name,
 			RPCURL:            public.RPCAddress,
-			PortalAddress:     deployInfo[public.Chain].PortalAddress.Hex(),
+			PortalAddress:     deployInfo[public.Chain].PortalAddress,
 			DeployHeight:      deployInfo[public.Chain].DeployHeight,
 			BlockPeriod:       public.Chain.BlockPeriod,
 			FinalizationStrat: public.Chain.FinalizationStrat,
@@ -382,16 +391,26 @@ func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 	var chains []netconf.Chain
 
 	// Connect to a random omni evm
-	omniEVM := random[types.OmniEVM](testnet.OmniEVMs)
+	omniEVM := random(testnet.OmniEVMs)
 	chains = append(chains, netconf.Chain{
 		ID:                omniEVM.Chain.ID,
 		Name:              omniEVM.Chain.Name,
 		RPCURL:            omniEVM.ExternalRPC,
-		PortalAddress:     deployInfo[omniEVM.Chain].PortalAddress.Hex(),
+		PortalAddress:     deployInfo[omniEVM.Chain].PortalAddress,
 		DeployHeight:      deployInfo[omniEVM.Chain].DeployHeight,
 		BlockPeriod:       omniEVM.Chain.BlockPeriod,
 		FinalizationStrat: omniEVM.Chain.FinalizationStrat,
-		IsOmni:            true,
+		IsOmniEVM:         true,
+	})
+
+	// Add omni consensus chain
+	chains = append(chains, netconf.Chain{
+		ID:   netconf.GetStatic(testnet.Network).OmniConsensusChainID,
+		Name: "omni_consensus",
+		// No RPC URLs, since we are going to remove it from netconf in any case.
+		DeployHeight:    0,
+		BlockPeriod:     omniEVM.Chain.BlockPeriod, // Same block period as omniEVM
+		IsOmniConsensus: true,
 	})
 
 	// Add all anvil chains
@@ -400,7 +419,7 @@ func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 			ID:                anvil.Chain.ID,
 			Name:              anvil.Chain.Name,
 			RPCURL:            anvil.ExternalRPC,
-			PortalAddress:     deployInfo[anvil.Chain].PortalAddress.Hex(),
+			PortalAddress:     deployInfo[anvil.Chain].PortalAddress,
 			DeployHeight:      deployInfo[anvil.Chain].DeployHeight,
 			BlockPeriod:       anvil.Chain.BlockPeriod,
 			FinalizationStrat: anvil.Chain.FinalizationStrat,
@@ -414,7 +433,7 @@ func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 			ID:                public.Chain.ID,
 			Name:              public.Chain.Name,
 			RPCURL:            public.RPCAddress,
-			PortalAddress:     deployInfo[public.Chain].PortalAddress.Hex(),
+			PortalAddress:     deployInfo[public.Chain].PortalAddress,
 			DeployHeight:      deployInfo[public.Chain].DeployHeight,
 			BlockPeriod:       public.Chain.BlockPeriod,
 			FinalizationStrat: public.Chain.FinalizationStrat,
@@ -423,6 +442,9 @@ func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 	}
 
 	for _, chain := range chains {
+		if chain.IsOmniConsensus {
+			continue
+		}
 		if err := chain.FinalizationStrat.Verify(); err != nil {
 			panic(err) // Ok to panic since this e2e and is build-time issue.
 		}

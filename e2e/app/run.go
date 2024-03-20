@@ -240,7 +240,7 @@ func toPortalValidators(validators map[*e2e.Node]int64) ([]bindings.Validator, e
 
 func logRPCs(ctx context.Context, def Definition) {
 	network := externalNetwork(def.Testnet, def.Netman.DeployInfo())
-	for _, chain := range network.Chains {
+	for _, chain := range network.EVMChains() {
 		log.Info(ctx, "EVM Chain RPC available", "chain_id", chain.ID,
 			"chain_name", chain.Name, "url", chain.RPCURL)
 	}

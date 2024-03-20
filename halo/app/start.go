@@ -16,7 +16,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
-	"github.com/omni-network/omni/lib/xchain/provider"
+	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 
 	cmtcfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/node"
@@ -110,11 +110,6 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 		return nil, err
 	}
 
-	xprovider, err := newXProvider(network)
-	if err != nil {
-		return nil, errors.Wrap(err, "create xchain provider")
-	}
-
 	//nolint:contextcheck // False positive
 	app, err := newApp(
 		newSDKLogger(ctx),
@@ -135,10 +130,18 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 		return nil, errors.Wrap(err, "create comet node")
 	}
 
-	cmtAPI := comet.NewAPI(rpclocal.New(cmtNode))
+	rpcClient := rpclocal.New(cmtNode)
+	cmtAPI := comet.NewAPI(rpcClient)
 	app.SetCometAPI(cmtAPI)
 
-	voter, err := newVoter(cmtAPI, network, privVal, xprovider, cmtNode, cfg.VoterStateFile())
+	cProvider := cprovider.NewABCIProvider(rpcClient, network.ChainNamesByIDs())
+
+	xProvider, err := newXProvider(network, cProvider)
+	if err != nil {
+		return nil, errors.Wrap(err, "create xchain provider")
+	}
+
+	voter, err := newVoter(cmtAPI, network, privVal, xProvider, cProvider, cfg.VoterStateFile())
 	if err != nil {
 		return nil, errors.Wrap(err, "create voter")
 	}
@@ -170,18 +173,18 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 }
 
 // newXProvider returns a new xchain provider.
-func newXProvider(network netconf.Network) (xchain.Provider, error) {
+func newXProvider(network netconf.Network, cProvider cchain.Provider) (xchain.Provider, error) {
 	if network.Name == netconf.Simnet {
-		omniChain, ok := network.OmniChain()
+		omniEVM, ok := network.OmniEVMChain()
 		if !ok {
 			return nil, errors.New("omni chain not found in network")
 		}
 
-		return provider.NewMock(omniChain.BlockPeriod * 8 / 10), nil // Slightly faster than our chain.
+		return xprovider.NewMock(omniEVM.BlockPeriod * 8 / 10), nil // Slightly faster than our chain.
 	}
 
 	clients := make(map[uint64]ethclient.Client)
-	for _, chain := range network.Chains {
+	for _, chain := range network.EVMChains() {
 		ethCl, err := ethclient.Dial(chain.Name, chain.RPCURL)
 		if err != nil {
 			return nil, errors.Wrap(err, "dial chain",
@@ -193,7 +196,7 @@ func newXProvider(network netconf.Network) (xchain.Provider, error) {
 		clients[chain.ID] = ethCl
 	}
 
-	return provider.New(network, clients), nil
+	return xprovider.New(network, clients, cProvider), nil
 }
 
 func newCometNode(ctx context.Context, cfg *cmtcfg.Config, app *App, privVal cmttypes.PrivValidator,
@@ -281,7 +284,7 @@ func newEngineClient(ctx context.Context, cfg Config, network netconf.Network) (
 		return nil, errors.Wrap(err, "load engine JWT file")
 	}
 
-	omniChain, ok := network.OmniChain()
+	omniChain, ok := network.OmniEVMChain()
 	if !ok {
 		return nil, errors.New("omni chain not found in network")
 	}
@@ -315,12 +318,12 @@ func newVoter(
 	network netconf.Network,
 	privVal *privval.FilePV,
 	xprovider xchain.Provider,
-	tmNode *node.Node,
+	cProvider cchain.Provider,
 	stateFile string,
 ) (*voter.Voter, error) {
 	deps := voteDeps{
 		API:      cmtAPI,
-		Provider: cprovider.NewABCIProvider(rpclocal.New(tmNode), network.ChainNamesByIDs()),
+		Provider: cProvider,
 	}
 	voterI, err := voter.LoadVoter(privVal.Key.PrivKey, stateFile, xprovider, deps, network.ChainNamesByIDs())
 	if err != nil {

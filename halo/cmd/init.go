@@ -194,19 +194,19 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 				{
 					ID:          999,
 					Name:        "omni",
-					IsOmni:      true,
+					IsOmniEVM:   true,
 					BlockPeriod: time.Millisecond * 500, // Speed up block times for testing
 				},
 				{
 					ID:         100, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
 					Name:       "chain_a",
-					IsOmni:     false,
+					IsOmniEVM:  false,
 					IsEthereum: false,
 				},
 				{
 					ID:         200, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
 					Name:       "chain_b",
-					IsOmni:     false,
+					IsOmniEVM:  false,
 					IsEthereum: false,
 				},
 			},

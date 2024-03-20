@@ -36,7 +36,7 @@ func LogMetrics(ctx context.Context, def Definition) error {
 // It returns a stopfunc that returns an error if any failed receipt was detected before the stopfunc was called.
 func StartMonitoringReceipts(ctx context.Context, def Definition) func() error {
 	network := externalNetwork(def.Testnet, def.Netman.DeployInfo())
-	xprovider := provider.New(network, def.Backends.RPCClients())
+	xprovider := provider.New(network, def.Backends.RPCClients(), nil)
 
 	type void any
 
@@ -89,7 +89,7 @@ func StartMonitoringReceipts(ctx context.Context, def Definition) func() error {
 			})
 	}
 
-	results, cancel := forkjoin.NewWithInputs(ctx, streamReceipts, network.Chains)
+	results, cancel := forkjoin.NewWithInputs(ctx, streamReceipts, network.EVMChains())
 
 	return func() error {
 		log.Debug(ctx, "Checking receipts")
@@ -105,8 +105,8 @@ func StartMonitoringReceipts(ctx context.Context, def Definition) func() error {
 }
 
 func MonitorCursors(ctx context.Context, portals map[uint64]netman.Portal, network netconf.Network) error {
-	for _, dest := range network.Chains {
-		for _, src := range network.Chains {
+	for _, dest := range network.EVMChains() {
+		for _, src := range network.EVMChains() {
 			if src.ID == dest.ID {
 				continue
 			}

@@ -27,9 +27,11 @@ type Provider interface {
 
 	// GetSubmittedCursor returns the submitted cursor for the source chain on the destination chain,
 	// or false if not available, or an error. Calls the destination chain portal InXStreamOffset method.
+	// Note this is only supported for EVM chains, no the consensus chain.
 	GetSubmittedCursor(ctx context.Context, destChainID uint64, sourceChainID uint64) (StreamCursor, bool, error)
 
 	// GetEmittedCursor returns the emitted cursor for the destination chain on the source chain,
 	// or false if not available, or an error. Calls the source chain portal OutXStreamOffset method.
+	// Note this is only supported for EVM chains, no the consensus chain.
 	GetEmittedCursor(ctx context.Context, srcChainID uint64, destChainID uint64) (StreamCursor, bool, error)
 }

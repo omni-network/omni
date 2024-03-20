@@ -21,11 +21,11 @@ import (
 // startMonitoring starts the monitoring goroutines.
 func startMonitoring(ctx context.Context, network netconf.Network, xprovider xchain.Provider,
 	cprovider cchain.Provider, addr common.Address, rpcClients map[uint64]ethclient.Client) {
-	for _, srcChain := range network.Chains {
+	for _, srcChain := range network.EVMChains() {
 		go monitorAccountForever(ctx, addr, srcChain.Name, rpcClients[srcChain.ID])
 		go monitorHeightsForever(ctx, srcChain, cprovider, rpcClients[srcChain.ID])
 
-		for _, dstChain := range network.Chains {
+		for _, dstChain := range network.EVMChains() {
 			if srcChain.ID == dstChain.ID {
 				continue
 			}

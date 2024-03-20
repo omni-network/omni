@@ -11,14 +11,13 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 // GetEmittedCursor returns the emitted cursor for the destination chain on the source chain,
 // or false if not available, or an error. Calls the source chain portal OutXStreamOffset method.
 func (p *Provider) GetEmittedCursor(ctx context.Context, sourceChainID uint64, destinationChainID uint64,
 ) (xchain.StreamCursor, bool, error) {
-	chain, rpcClient, err := p.getChain(sourceChainID)
+	chain, rpcClient, err := p.getEVMChain(sourceChainID)
 	if err != nil {
 		return xchain.StreamCursor{}, false, err
 	}
@@ -28,7 +27,7 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, sourceChainID uint64, d
 		return xchain.StreamCursor{}, false, errors.Wrap(err, "get block number")
 	}
 
-	caller, err := bindings.NewOmniPortalCaller(common.HexToAddress(chain.PortalAddress), rpcClient)
+	caller, err := bindings.NewOmniPortalCaller(chain.PortalAddress, rpcClient)
 	if err != nil {
 		return xchain.StreamCursor{}, false, errors.Wrap(err, "new caller")
 	}
@@ -57,12 +56,12 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, sourceChainID uint64, d
 // or false if not available, or an error. Calls the destination chain portal InXStreamOffset method.
 func (p *Provider) GetSubmittedCursor(ctx context.Context, destChainID uint64, sourceChainID uint64,
 ) (xchain.StreamCursor, bool, error) {
-	chain, rpcClient, err := p.getChain(destChainID)
+	chain, rpcClient, err := p.getEVMChain(destChainID)
 	if err != nil {
 		return xchain.StreamCursor{}, false, err
 	}
 
-	caller, err := bindings.NewOmniPortalCaller(common.HexToAddress(chain.PortalAddress), rpcClient)
+	caller, err := bindings.NewOmniPortalCaller(chain.PortalAddress, rpcClient)
 	if err != nil {
 		return xchain.StreamCursor{}, false, errors.Wrap(err, "new caller")
 	}
@@ -94,11 +93,11 @@ func (p *Provider) GetSubmittedCursor(ctx context.Context, destChainID uint64, s
 // GetBlock returns the XBlock for the provided chain and height, or false if not available yet (not finalized),
 // or an error.
 func (p *Provider) GetBlock(ctx context.Context, chainID uint64, height uint64) (xchain.Block, bool, error) {
-	if chainID == cChainID {
-		return p.cprov.XBlock(ctx, height)
+	if chainID == p.cChainID {
+		return p.cProvider.XBlock(ctx, height)
 	}
 
-	chain, rpcClient, err := p.getChain(chainID)
+	chain, rpcClient, err := p.getEVMChain(chainID)
 	if err != nil {
 		return xchain.Block{}, false, err
 	}
@@ -148,12 +147,12 @@ func (p *Provider) GetBlock(ctx context.Context, chainID uint64, height uint64) 
 }
 
 func (p *Provider) getXReceiptLogs(ctx context.Context, chainID uint64, height uint64) ([]xchain.Receipt, error) {
-	chain, rpcClient, err := p.getChain(chainID)
+	chain, rpcClient, err := p.getEVMChain(chainID)
 	if err != nil {
 		return nil, err
 	}
 
-	filterer, err := bindings.NewOmniPortalFilterer(common.HexToAddress(chain.PortalAddress), rpcClient)
+	filterer, err := bindings.NewOmniPortalFilterer(chain.PortalAddress, rpcClient)
 	if err != nil {
 		return nil, errors.Wrap(err, "new filterer")
 	}
@@ -194,12 +193,12 @@ func (p *Provider) getXReceiptLogs(ctx context.Context, chainID uint64, height u
 }
 
 func (p *Provider) getXMsgLogs(ctx context.Context, chainID uint64, height uint64) ([]xchain.Msg, error) {
-	chain, rpcClient, err := p.getChain(chainID)
+	chain, rpcClient, err := p.getEVMChain(chainID)
 	if err != nil {
 		return nil, err
 	}
 
-	filterer, err := bindings.NewOmniPortalFilterer(common.HexToAddress(chain.PortalAddress), rpcClient)
+	filterer, err := bindings.NewOmniPortalFilterer(chain.PortalAddress, rpcClient)
 	if err != nil {
 		return nil, err
 	}

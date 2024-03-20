@@ -21,7 +21,7 @@ contract OmniStake {
      * @param pubkey 64 byte uncompressed secp256k1 public key (no 0x04 prefix)
      */
     function deposit(bytes memory pubkey) external payable {
-        require(msg.value > 1 ether, "OmniStake: deposit amt too low");
+        require(msg.value >= 1 ether, "OmniStake: deposit amt too low");
         require(msg.value < type(uint64).max, "OmniStake: deposit amt too high");
         require(msg.sender == Secp256k1.pubkeyToAddress(pubkey), "OmniStake: pubkey not sender");
         emit Deposit(pubkey, msg.value);

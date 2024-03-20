@@ -34,16 +34,6 @@ func getSubmittedCursors(ctx context.Context, network netconf.Network, dstChainI
 	return cursors, initialOffsets, nil
 }
 
-// TODO(corver): Add support for empty submissions by passing a map of chainIDs to generate empty submissions for.
-func mapByStreamID(msgs []xchain.Msg) map[xchain.StreamID][]xchain.Msg {
-	m := make(map[xchain.StreamID][]xchain.Msg)
-	for _, msg := range msgs {
-		m[msg.StreamID] = append(m[msg.StreamID], msg)
-	}
-
-	return m
-}
-
 // filterMsgs filters messages based on offsets for a specific stream.
 // It takes a slice of messages, offsets indexed by stream ID, and the target stream ID,
 // and returns a filtered slice containing only messages with offsets greater than the specified offset.

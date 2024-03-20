@@ -6,36 +6,37 @@
    "name": "鎢屃裂À",
    "rpcurl": "飖Ǒp!ǪŰM旰綷罨袢捺悲ȅ-@",
    "auth_rpcurl": "ʛ,^籿Ź濓\u003c鈡鶭ŁPyÌ",
-   "portal_address": "笨Gń條ģ|2諱4",
-   "deploy_height": 15080552979306262733,
-   "is_omni": true,
-   "block_period": "241333h25m56.476018686s",
-   "finalization_start": "YF墄[C_睿ȉǫ蹟t´ûș$0đ",
-   "avs_contract_address": "0xbd78130cb999edd3788b807d4c57ad49482d598c"
+   "portal_address": "0x2ceFB439380e1E4066cDEFfEe9ec171d0F345D33",
+   "deploy_height": 5437755693941739170,
+   "is_omni_consensus": true,
+   "block_period": "2354805h17m7.671536598s",
+   "finalization_start": "鄏þƿ髈儱Ŀ蒫÷K鬣壈",
+   "avs_contract_address": "0xac7367A66A13087A9889EF3f0C9437545dF513a2"
   },
   {
-   "id": 10003960657631690200,
-   "name": "滢w",
-   "rpcurl": "ĥ腲ʤa",
-   "auth_rpcurl": "蘳G",
-   "portal_address": "瑻霳鸻ȉĔ",
-   "deploy_height": 15169603301682944176,
-   "is_omni": true,
-   "block_period": "-2239141h21m12.413871484s",
-   "finalization_start": "uVǭ",
-   "avs_contract_address": "0x8ee771ab0091897e6e91900dd713bdedf81e7675"
-  },
-  {
-   "id": 2353700406492424228,
-   "name": "榣ǝ祇Fæƭō跮ɽ溢煮FɀÄf渂",
-   "rpcurl": "僚\u0026ņČuvȭƹ棳ɷk",
-   "auth_rpcurl": "蕓ư銩6ĳ憏",
-   "portal_address": "+",
-   "deploy_height": 8862094247420957458,
+   "id": 13459205444906724476,
+   "name": "aǇ趴x瑻霳鸻ȉ",
+   "rpcurl": "+ËQLuVǭz瘯霡豐Ȭ-ƀh婉Ţ飦t",
+   "auth_rpcurl": "R涞!Ä\u003e漌Ǭ顼溹*",
+   "portal_address": "0x87F059AC134759D71E5AF9669ba97e342c6B656b",
+   "deploy_height": 10254432012947362948,
+   "is_omni_evm": true,
    "is_ethereum": true,
-   "block_period": "1917216h7m39.416311452s",
-   "finalization_start": "ȻG炕炎鷖Ʊ腘愫躧ǏȬ¹ʍctƓ晲",
-   "avs_contract_address": "0x9cc669cf964ae890446ce6c0ea4621aa548b8783"
+   "block_period": "1392685h44m1.507918464s",
+   "finalization_start": "ʈ劉j蕓ư銩6ĳ憏歅%ɜ¤0Ȼ",
+   "avs_contract_address": "0x9365C528Deb1d9De9E7Fc8B0126586329CC669Cf"
+  },
+  {
+   "id": 694998618745504662,
+   "name": "殪\"g踮螧喘夓麑Y·L继Ɂɯz剩Ʉ",
+   "rpcurl": "Ƒ»",
+   "auth_rpcurl": "3瓯洼籏Ħ*噷·oũ答Bc黰¢ơđ?ȵ",
+   "portal_address": "0x30D6c076C7d6A929AaAf991153a5915Eb2909435",
+   "deploy_height": 17022257212851920996,
+   "is_omni_evm": true,
+   "block_period": "-1600609h58m29.865376476s",
+   "finalization_start": "ą韥Üfǅ噊",
+   "avs_contract_address": "0xDcD190a024C9Fe6b853D4af6838F022787D34C00"
   }
  ]
 }

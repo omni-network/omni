@@ -6,7 +6,7 @@ sidebar_position: 4
 
 This is the component that participates in network validation. Our consensus clients track delegations and stake from our AVS contracts.
 
-Similar to Ethereum, Omni validators run 2 components: our consensus client, `halo`, and an EVM execution client `geth`, `erigon`, `nethermind`, etc.
+Similar to Ethereum, Omni validators run 2 components: our consensus client, `halo`, and an EVM execution client `geth`, `erigon`, `nethermind`, etc. The EVM execution client does not require any modifications.
 
 :::info
 
