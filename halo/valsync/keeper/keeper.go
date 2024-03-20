@@ -9,7 +9,6 @@ import (
 	"github.com/omni-network/omni/lib/log"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 
 	ormv1alpha1 "cosmossdk.io/api/cosmos/orm/v1alpha1"
 	"cosmossdk.io/core/store"
@@ -19,6 +18,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	skeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 type Keeper struct {
@@ -76,19 +76,21 @@ func (k Keeper) EndBlock(ctx context.Context) ([]abci.ValidatorUpdate, error) {
 		return nil, errors.Wrap(err, "staking keeper end block")
 	}
 
+	// Insert the new validator set.
 	if len(updates) > 0 {
-		isUpdate := func(pubkey crypto.PublicKey) bool {
-			for _, update := range updates {
-				if update.PubKey.Equal(pubkey) {
-					return true
-				}
-			}
-
-			return false
+		valset, err := k.sKeeper.GetLastValidators(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "get last validators")
+		} else if len(valset) == 0 {
+			return nil, errors.New("empty validator set")
 		}
 
-		// Insert the new validator set.
-		if err := k.insertValidatorSet(ctx, isUpdate); err != nil {
+		merged, err := mergeValidatorSet(valset, updates)
+		if err != nil {
+			return nil, errors.Wrap(err, "merge validator set")
+		}
+
+		if err := k.insertValidatorSet(ctx, merged, false); err != nil {
 			return nil, errors.Wrap(err, "insert updates")
 		}
 	}
@@ -100,66 +102,79 @@ func (k Keeper) EndBlock(ctx context.Context) ([]abci.ValidatorUpdate, error) {
 // InsertGenesisSet inserts the current genesis validator set into the database.
 // This should only be called during InitGenesis AFTER the staking module's InitGenesis.
 func (k Keeper) InsertGenesisSet(ctx context.Context) error {
-	// All validators are "updated" in the genesis set.
-	allUpdated := func(crypto.PublicKey) bool { return true }
+	valset, err := k.sKeeper.GetLastValidators(ctx)
+	if err != nil {
+		return errors.Wrap(err, "get genesis validators")
+	} else if len(valset) == 0 {
+		return errors.New("empty validator set")
+	}
 
-	return k.insertValidatorSet(ctx, allUpdated)
+	// Convert
+	vals := make([]*Validator, 0, len(valset))
+	for _, val := range valset {
+		pubkey, err := val.ConsPubKey()
+		if err != nil {
+			return errors.Wrap(err, "get consensus public key")
+		}
+		vals = append(vals, &Validator{
+			PubKey:  pubkey.Bytes(),
+			Power:   val.ConsensusPower(sdk.DefaultPowerReduction),
+			Updated: true, // All validators are "updated" in the genesis set.
+		})
+	}
+
+	return k.insertValidatorSet(ctx, vals, true)
 }
 
 // insertValidatorSet inserts the current validator set into the database.
-func (k Keeper) insertValidatorSet(ctx context.Context, isUpdate func(crypto.PublicKey) bool) error {
+func (k Keeper) insertValidatorSet(ctx context.Context, vals []*Validator, isGenesis bool) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	valset, err := k.sKeeper.GetLastValidators(ctx)
-	if err != nil {
-		return errors.Wrap(err, "get last validators")
-	} else if len(valset) == 0 {
-		return errors.New("empty validator set")
+	if len(vals) == 0 {
+		return errors.New("empty validators")
 	}
 
 	// TODO(corver): Ensure we are not inserting the same validator set twice.
 
 	valsetID, err := k.valsetTable.InsertReturningId(ctx, &ValidatorSet{
 		CreatedHeight: uint64(sdkCtx.BlockHeight()),
-		Attested:      isGenesis(ctx), // Only genesis set is automatically attested.
+		Attested:      isGenesis, // Only genesis set is automatically attested.
 	})
 	if err != nil {
 		return errors.Wrap(err, "insert valset")
 	}
 
-	var totalPower, totalUpdates int64
-	for _, val := range valset {
-		pubkey, err := val.CmtConsPublicKey()
-		if err != nil {
-			return errors.Wrap(err, "get consensus public key")
-		}
-
-		power := val.ConsensusPower(sdk.DefaultPowerReduction)
-		err = k.valTable.Insert(ctx, &Validator{
-			ValsetId: valsetID,
-			PubKey:   pubkey.GetSecp256K1(),
-			Power:    power,
-			Updated:  isUpdate(pubkey),
-		})
+	var totalPower, totalUpdated, totalLen, totalRemoved int64
+	for _, val := range vals {
+		val.ValsetId = valsetID
+		err = k.valTable.Insert(ctx, val)
 		if err != nil {
 			return errors.Wrap(err, "insert validator")
 		}
 
-		totalPower += power
-		if isUpdate(pubkey) {
-			totalUpdates++
+		totalPower += val.GetPower()
+		if val.GetUpdated() {
+			totalUpdated++
+		}
+		if val.GetPower() > 0 {
+			totalLen++
+		} else if val.GetPower() == 0 {
+			totalRemoved++
+		} else {
+			return errors.New("negative power")
 		}
 	}
 
 	msg := "💫 Storing new unattested validator set"
-	if isGenesis(ctx) {
+	if isGenesis {
 		msg = "💫 Storing genesis validator set"
 	}
 
 	log.Info(ctx, msg,
 		"valset_id", valsetID,
-		"len", len(valset),
-		"total_updates", totalUpdates,
+		"len", totalLen,
+		"updated", totalUpdated,
+		"removed", totalRemoved,
 		"total_power", totalPower,
 		"height", sdkCtx.BlockHeight(),
 	)
@@ -245,7 +260,37 @@ func (k Keeper) nextUnattestedSet(ctx context.Context) (*ValidatorSet, bool, err
 	return valset, true, nil
 }
 
-// isGenesis returns true if the current block is the genesis block (0).
-func isGenesis(ctx context.Context) bool {
-	return sdk.UnwrapSDKContext(ctx).BlockHeight() == 0
+// mergeValidatorSet returns the validator set with any zero power updates merged in.
+// The valsetID is not set.
+func mergeValidatorSet(valset []stypes.Validator, updates []abci.ValidatorUpdate) ([]*Validator, error) {
+	var resp []*Validator //nolint:prealloc // We don't know the length of the result.
+
+	added := make(map[string]bool)
+	for _, update := range updates {
+		resp = append(resp, &Validator{
+			PubKey:  update.PubKey.GetSecp256K1(),
+			Power:   update.Power,
+			Updated: true,
+		})
+		added[update.PubKey.String()] = true
+	}
+
+	for _, val := range valset {
+		pubkey, err := val.CmtConsPublicKey()
+		if err != nil {
+			return nil, errors.Wrap(err, "get consensus public key")
+		}
+
+		if added[pubkey.String()] {
+			continue
+		}
+
+		resp = append(resp, &Validator{
+			PubKey:  pubkey.GetSecp256K1(),
+			Power:   val.ConsensusPower(sdk.DefaultPowerReduction),
+			Updated: false,
+		})
+	}
+
+	return resp, nil
 }

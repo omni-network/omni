@@ -52,6 +52,10 @@ func (k Keeper) ValidatorsAtHeight(ctx context.Context, height uint64) ([]*Valid
 			return nil, errors.Wrap(err, "failed to get validator")
 		}
 
+		if val.GetPower() == 0 {
+			continue // Skip zero power validators.
+		}
+
 		vals = append(vals, val)
 	}
 
@@ -78,6 +82,10 @@ func (k Keeper) ValidatorSet(ctx context.Context, req *types.ValidatorSetRequest
 		val, err := valIter.Value()
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		if val.GetPower() == 0 {
+			continue // Skip zero power validators.
 		}
 
 		addr, err := val.Address()
