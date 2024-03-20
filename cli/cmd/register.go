@@ -7,14 +7,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/omni-network/omni/contracts/bindings"
-	"github.com/omni-network/omni/lib/avs"
+	"github.com/omni-network/omni/lib/contracts/avs"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
 	eigentypes "github.com/Layr-Labs/eigenlayer-cli/pkg/types"
@@ -93,17 +91,12 @@ func Register(ctx context.Context, cfg RegConfig, opts ...regOpt) error {
 		return errors.Wrap(err, "create backend")
 	}
 
-	contracts, err := makeContracts(ctx, backend, eigenCfg, avsAddress)
-	if err != nil {
-		return err
-	}
-
 	operator, err := backend.AddAccount(privKey)
 	if err != nil {
 		return errors.Wrap(err, "add account")
 	}
 
-	err = avs.RegisterOperatorWithAVS(ctx, contracts, backend, operator)
+	err = avs.RegisterOperatorWithAVS(ctx, avsAddress, backend, operator)
 	if err != nil {
 		// Parse solidity returned reason from CanRegister.
 		switch err.Error() {
@@ -141,44 +134,6 @@ func Register(ctx context.Context, cfg RegConfig, opts ...regOpt) error {
 	log.Info(ctx, "✅ Registration successful", "operator", operator.Hex())
 
 	return nil
-}
-
-// makeContracts returns a avs Contracts struct with the given backend and delegation manager, avs directory, and omni avs contracts.
-// Note only those three contracts are populated.
-func makeContracts(ctx context.Context, backend *ethbackend.Backend, cfg eigentypes.OperatorConfigNew, avsAddr common.Address) (avs.Contracts, error) {
-	if !common.IsHexAddress(cfg.ELDelegationManagerAddress) {
-		return avs.Contracts{}, errors.New("invalid delegation manager address")
-	}
-
-	delManAddr := common.HexToAddress(cfg.ELDelegationManagerAddress)
-	delMan, err := bindings.NewDelegationManager(delManAddr, backend)
-	if err != nil {
-		return avs.Contracts{}, errors.Wrap(err, "delegation manager")
-	}
-
-	omniAVS, err := bindings.NewOmniAVS(avsAddr, backend)
-	if err != nil {
-		return avs.Contracts{}, errors.Wrap(err, "omni avs")
-	}
-
-	avsDirecAddr, err := omniAVS.AvsDirectory(&bind.CallOpts{Context: ctx})
-	if err != nil {
-		return avs.Contracts{}, errors.Wrap(err, "avs directory")
-	}
-	avsDirec, err := bindings.NewAVSDirectory(avsDirecAddr, backend)
-	if err != nil {
-		return avs.Contracts{}, errors.Wrap(err, "avs directory")
-	}
-
-	return avs.Contracts{
-		DelegationManager: delMan,
-		AVSDirectory:      avsDirec,
-		OmniAVS:           omniAVS,
-
-		DelegationManagerAddr: delManAddr,
-		AVSDirectoryAddr:      avsDirecAddr,
-		OmniAVSAddr:           avsAddr,
-	}, nil
 }
 
 // readConfig returns the eigen-layer operator configuration from the given file.

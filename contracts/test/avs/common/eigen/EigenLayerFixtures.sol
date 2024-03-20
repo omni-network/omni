@@ -6,6 +6,7 @@ import { ERC20PresetFixedSupply } from "@openzeppelin/contracts/token/ERC20/pres
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { IStrategyManager } from "eigenlayer-contracts/src/contracts/interfaces/IStrategyManager.sol";
+import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 import { StrategyManager } from "eigenlayer-contracts/src/contracts/core/StrategyManager.sol";
 import { DelegationManager } from "eigenlayer-contracts/src/contracts/core/DelegationManager.sol";
 import { AVSDirectory } from "eigenlayer-contracts/src/contracts/core/AVSDirectory.sol";
@@ -65,6 +66,8 @@ contract EigenLayerFixtures is Test {
         for (uint256 i = 0; i < deployments.strategies.length; i++) {
             strategies.push(deployments.strategies[i]);
         }
+
+        _whitelistStrategies(strategies);
     }
 
     function _deployUnsupportedStrategy(address strategyManager_, address proxyAdmin_, address pauserRegistry_)
@@ -80,5 +83,21 @@ contract EigenLayerFixtures is Test {
                 abi.encodeWithSelector(StrategyBase.initialize.selector, unsupportedToken, pauserRegistry_)
             )
         );
+    }
+
+    function _whitelistStrategies(address[] memory strats) internal {
+        vm.startPrank(strategyManager.strategyWhitelister());
+
+        IStrategy[] memory _strategy = new IStrategy[](strats.length);
+        bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](strats.length);
+
+        for (uint256 i = 0; i < strats.length; i++) {
+            _strategy[i] = IStrategy(strats[i]);
+            _thirdPartyTransfersForbiddenValues[i] = false;
+        }
+
+        strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
+
+        vm.stopPrank();
     }
 }

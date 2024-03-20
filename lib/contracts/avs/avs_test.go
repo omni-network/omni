@@ -17,8 +17,9 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/static"
 	"github.com/omni-network/omni/e2e/tutil"
-	"github.com/omni-network/omni/lib/avs"
-	"github.com/omni-network/omni/lib/avs/anvil"
+	"github.com/omni-network/omni/lib/anvil"
+	"github.com/omni-network/omni/lib/contracts/avs"
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/txmgr"
@@ -40,20 +41,25 @@ import (
 const (
 	chainName   = "test"
 	chainID     = 99
-	omniChainID = 10
 	blockPeriod = time.Second
-
-	// pk used to deploy omniAVS contracts.
-	omniDeployPk = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-
-	// pk used to deploy EigenLayer contracts, anvil account 9.
-	eigenDeployPk = "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
-
-	// the zero-address string.
-	zeroAddr = "0x0000000000000000000000000000000000000000"
 )
 
-func setup(t *testing.T) (context.Context, ethclient.Client, *avs.Deployer) {
+//nolint:gochecknoglobals // These are test constants.
+var (
+	// account used to deploy omniAVS contracts (anvil account 0).
+	avsOwnerPk = mustHexToKey("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")
+
+	// account used to deploy eigen contracts (anvil account 1).
+	eigenOwnerPk = mustHexToKey("0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6")
+
+	// eigen strategy manger, and test weth strategy.
+	stratMngrAddr = common.HexToAddress("0xe1DA8919f262Ee86f9BE05059C9280142CF23f48")
+	wethStratAddr = common.HexToAddress("0xdBD296711eC8eF9Aacb623ee3F1C0922dce0D7b2")
+
+	zeroAddr = common.HexToAddress("0x0000000000000000000000000000000000000000")
+)
+
+func setup(t *testing.T) (context.Context, *ethbackend.Backend, Contracts, EOAS) {
 	t.Helper()
 
 	ctx := context.Background()
@@ -62,20 +68,20 @@ func setup(t *testing.T) (context.Context, ethclient.Client, *avs.Deployer) {
 	require.NoError(t, err)
 	t.Cleanup(stop)
 
-	// Create a backend for deploying AVS contract using the omniDeployPk.
-	var deployments avs.EigenDeployments
-	err = json.Unmarshal(static.GetElDeployments(), &deployments)
+	backend, err := ethbackend.NewBackend(chainName, chainID, blockPeriod, ethCl)
 	require.NoError(t, err)
 
-	// Deploy the OmniAVS contract using omniDeployKey
-	ad := avs.NewDeployer(
-		avs.DefaultTestAVSConfig(deployments),
-		deployments,
-		common.Address{},
-		omniChainID,
-	)
+	eoas := makeEOAS(t, backend)
 
-	return ctx, ethCl, ad
+	addr, _, err := avs.DeployDevnet(ctx, backend)
+	require.NoError(t, err)
+
+	contracts, err := makeContracts(addr, devnetEigenDeployments(t), backend)
+	require.NoError(t, err)
+
+	checkIfContractsAreDeployed(t, ctx, ethCl, contracts)
+
+	return ctx, backend, contracts, eoas
 }
 
 //nolint:paralleltest // Parallel tests not supported since we start docker containers.
@@ -84,40 +90,21 @@ func TestEigenAndOmniAVS(t *testing.T) {
 	initialOperatorStake := toWei(100) // funding operator during registering to omniAVS.
 	initialDelegatorStake := toWei(50) // initial stake that a delegator will do for an operator.
 
-	ctx, ethCl, avsDeploy := setup(t)
+	ctx, backend, contracts, eoas := setup(t)
 
-	backend, err := ethbackend.NewBackend(chainName, chainID, blockPeriod, ethCl)
-	require.NoError(t, err)
-
-	// Add the two owner accounts to the backend
-	ownerAVS, err := backend.AddAccount(mustHexToKey(omniDeployPk))
-	require.NoError(t, err)
-	ownerEigen, err := backend.AddAccount(mustHexToKey(eigenDeployPk))
-	require.NoError(t, err)
-
-	operator1Key := genPrivKey(t)
-	operator1, err := backend.AddAccount(operator1Key)
-	require.NoError(t, err)
-	operator2Key := genPrivKey(t)
-	operator2, err := backend.AddAccount(operator2Key)
-	require.NoError(t, err)
-	delegator1, err := backend.AddAccount(genPrivKey(t))
-	require.NoError(t, err)
-	delegator2, err := backend.AddAccount(genPrivKey(t))
-	require.NoError(t, err)
-
-	// Deploy the AVS contract and get the contracts struct to interact with it.
-	require.NoError(t, avsDeploy.Deploy(ctx, backend, ownerAVS))
-	contracts, err := avsDeploy.Contracts(backend)
-	require.NoError(t, err)
+	ownerAVS := eoas.AVSOwner
+	ownerEigen := eoas.EigenOwner
+	operator1 := eoas.Operator1
+	operator1Key := eoas.Operator1Key
+	operator2 := eoas.Operator2
+	operator2Key := eoas.Operator2Key
+	delegator1 := eoas.Delgator1
+	delegator2 := eoas.Delgator2
 
 	// Combine 2 operators and 2 delegators
 	operatorKeys := []*ecdsa.PrivateKey{operator1Key, operator2Key}
 	operators := []common.Address{operator1, operator2}
 	delegators := []common.Address{delegator1, delegator2}
-
-	// Check if contracts are deployed and configured properly
-	checkIfContractsAreDeployed(t, ctx, ethCl, contracts)
 
 	// Fund operators and delegators with ETH and WETH (using the pre-funded eigen owner account)
 	for _, account := range slices.Concat(operators, delegators) {
@@ -127,7 +114,7 @@ func TestEigenAndOmniAVS(t *testing.T) {
 
 	// Register operators with EigenLayer
 	for i, operator := range operators {
-		rec, err := avs.RegisterOperatorWithEigen(ctx, contracts, backend, operator, fmt.Sprintf("https://operator%d.com", i))
+		rec, err := registerOperatorWithEigen(ctx, contracts, backend, operator, fmt.Sprintf("https://operator%d.com", i))
 		tutil.RequireNoError(t, err)
 
 		checkForOperatorRegisteredToELLog(t, ctx, backend, contracts, operator, rec.BlockNumber.Uint64())
@@ -163,18 +150,186 @@ func TestEigenAndOmniAVS(t *testing.T) {
 	}
 
 	// Undelegate delegator 1 and check if the stake is removed from operator
-	err = avs.Undelegate(ctx, contracts, backend, delegators[0])
+	err := undelegate(ctx, contracts, backend, delegators[0])
 	require.NoError(t, err)
 	assertOperatorBalance(t, ctx, contracts, operators[0], initialOperatorStake, big.NewInt(0))
 
 	// Deregister operators
 	for _, operator := range operators {
-		err := avs.DeregisterOperatorFromAVS(ctx, contracts, backend, operator)
+		err := avs.DeregisterOperatorFromAVS(ctx, contracts.OmniAVSAddr, backend, operator)
 		require.NoError(t, err)
 	}
 }
 
-func assertOperatorRegistered(t *testing.T, ctx context.Context, contracts avs.Contracts, operator common.Address) {
+func devnetEigenDeployments(t *testing.T) avs.EigenDeployments {
+	t.Helper()
+
+	var el avs.EigenDeployments
+	err := json.Unmarshal(static.GetDevnetElDeployments(), &el)
+	require.NoError(t, err)
+
+	return el
+}
+
+type EOAS struct {
+	AVSOwner     common.Address
+	EigenOwner   common.Address
+	Operator1    common.Address
+	Operator1Key *ecdsa.PrivateKey
+	Operator2    common.Address
+	Operator2Key *ecdsa.PrivateKey
+	Delgator1    common.Address
+	Delgator2    common.Address
+}
+
+func makeEOAS(t *testing.T, backend *ethbackend.Backend) EOAS {
+	t.Helper()
+
+	// setup accounts
+	avsOwner, err := backend.AddAccount(avsOwnerPk)
+	require.NoError(t, err)
+	eigenOwner, err := backend.AddAccount(eigenOwnerPk)
+	require.NoError(t, err)
+	operator1Key := genPrivKey(t)
+	operator1, err := backend.AddAccount(operator1Key)
+	require.NoError(t, err)
+	operator2Key := genPrivKey(t)
+	operator2, err := backend.AddAccount(operator2Key)
+	require.NoError(t, err)
+	delegator1, err := backend.AddAccount(genPrivKey(t))
+	require.NoError(t, err)
+	delegator2, err := backend.AddAccount(genPrivKey(t))
+	require.NoError(t, err)
+
+	return EOAS{
+		AVSOwner:     avsOwner,
+		EigenOwner:   eigenOwner,
+		Operator1:    operator1,
+		Operator1Key: operator1Key,
+		Operator2:    operator2,
+		Operator2Key: operator2Key,
+		Delgator1:    delegator1,
+		Delgator2:    delegator2,
+	}
+}
+
+type Contracts struct {
+	OmniAVS           *bindings.OmniAVS
+	DelegationManager *bindings.DelegationManager
+	StrategyManager   *bindings.StrategyManager
+	WETHStrategy      *bindings.StrategyBase
+	WETHToken         *bindings.MockERC20
+	AVSDirectory      *bindings.AVSDirectory
+
+	OmniAVSAddr           common.Address
+	DelegationManagerAddr common.Address
+	StrategyManagerAddr   common.Address
+	WETHStrategyAddr      common.Address
+	WETHTokenAddr         common.Address
+	AVSDirectoryAddr      common.Address
+}
+
+func makeContracts(
+	avsAddr common.Address,
+	eigen avs.EigenDeployments,
+	backend *ethbackend.Backend,
+) (Contracts, error) {
+	delMan, err := bindings.NewDelegationManager(eigen.DelegationManager, backend)
+	if err != nil {
+		return Contracts{}, errors.Wrap(err, "delegation manager")
+	}
+
+	stratMan, err := bindings.NewStrategyManager(stratMngrAddr, backend)
+	if err != nil {
+		return Contracts{}, errors.Wrap(err, "strategy manager")
+	}
+
+	wethStrategy, err := bindings.NewStrategyBase(wethStratAddr, backend)
+	if err != nil {
+		return Contracts{}, errors.Wrap(err, "weth strategy")
+	}
+
+	wethTokenAddr, err := wethStrategy.UnderlyingToken(&bind.CallOpts{})
+	if err != nil {
+		return Contracts{}, errors.Wrap(err, "underlying token")
+	}
+
+	wethToken, err := bindings.NewMockERC20(wethTokenAddr, backend)
+	if err != nil {
+		return Contracts{}, errors.Wrap(err, "weth token")
+	}
+
+	avsDir, err := bindings.NewAVSDirectory(eigen.AVSDirectory, backend)
+	if err != nil {
+		return Contracts{}, errors.Wrap(err, "avs directory")
+	}
+
+	avs, err := bindings.NewOmniAVS(avsAddr, backend)
+	if err != nil {
+		return Contracts{}, errors.Wrap(err, "omni avs")
+	}
+
+	return Contracts{
+		OmniAVS:           avs,
+		DelegationManager: delMan,
+		StrategyManager:   stratMan,
+		WETHStrategy:      wethStrategy,
+		WETHToken:         wethToken,
+		AVSDirectory:      avsDir,
+
+		OmniAVSAddr:           avsAddr,
+		DelegationManagerAddr: eigen.DelegationManager,
+		StrategyManagerAddr:   stratMngrAddr,
+		WETHStrategyAddr:      wethStratAddr,
+		WETHTokenAddr:         wethTokenAddr,
+		AVSDirectoryAddr:      eigen.AVSDirectory,
+	}, nil
+}
+
+func registerOperatorWithEigen(ctx context.Context, contracts Contracts, backend *ethbackend.Backend, operator common.Address, metadataURI string) (*ethtypes.Receipt, error) {
+	operatorDetails := bindings.IDelegationManagerOperatorDetails{
+		EarningsReceiver:         operator,
+		DelegationApprover:       common.Address{},
+		StakerOptOutWindowBlocks: uint32(0), // Currently unused by Eigen
+	}
+
+	txOpts, err := backend.BindOpts(ctx, operator)
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := contracts.DelegationManager.RegisterAsOperator(txOpts, operatorDetails, metadataURI)
+	if err != nil {
+		return nil, errors.Wrap(err, "register as operator")
+	}
+
+	receipt, err := backend.WaitMined(ctx, tx)
+	if err != nil {
+		return nil, errors.Wrap(err, "wait mined")
+	}
+
+	return receipt, nil
+}
+
+func undelegate(ctx context.Context, contracts Contracts, backend *ethbackend.Backend, delegator common.Address) error {
+	txOpts, err := backend.BindOpts(ctx, delegator)
+	if err != nil {
+		return err
+	}
+
+	tx, err := contracts.DelegationManager.Undelegate(txOpts, delegator)
+	if err != nil {
+		return errors.Wrap(err, "deposit into strategy")
+	}
+
+	if _, err = backend.WaitMined(ctx, tx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func assertOperatorRegistered(t *testing.T, ctx context.Context, contracts Contracts, operator common.Address) {
 	t.Helper()
 
 	ops, err := contracts.OmniAVS.Operators(&bind.CallOpts{Context: ctx})
@@ -193,7 +348,7 @@ func checkIfContractsAreDeployed(
 	t *testing.T,
 	ctx context.Context,
 	ethCl ethclient.Client,
-	contracts avs.Contracts) {
+	contracts Contracts) {
 	t.Helper()
 
 	// check if the contract has code in its respective contract addresses
@@ -209,7 +364,7 @@ func mintWETHToAddresses(
 	t *testing.T,
 	ctx context.Context,
 	backend *ethbackend.Backend,
-	contracts avs.Contracts,
+	contracts Contracts,
 	funder common.Address,
 	amount *big.Int,
 	addrs ...common.Address) {
@@ -231,7 +386,7 @@ func mintWETHToAddresses(
 func delegateWETH(
 	t *testing.T,
 	ctx context.Context,
-	contracts avs.Contracts,
+	contracts Contracts,
 	backend *ethbackend.Backend,
 	delegator common.Address,
 	amount *big.Int) {
@@ -260,7 +415,7 @@ func delegateWETH(
 func addOperatorToAllowList(
 	t *testing.T,
 	ctx context.Context,
-	contracts avs.Contracts,
+	contracts Contracts,
 	ownerAVS common.Address,
 	backend *ethbackend.Backend,
 	operator common.Address) {
@@ -278,7 +433,7 @@ func checkForOperatorRegisteredToELLog(
 	t *testing.T,
 	ctx context.Context,
 	backend *ethbackend.Backend,
-	contracts avs.Contracts,
+	contracts Contracts,
 	operator common.Address,
 	height uint64) {
 	t.Helper()
@@ -299,7 +454,7 @@ func checkForOperatorRegisteredToELLog(
 		e := iter.Event
 		require.Equal(t, e.Operator, operator,
 			"operator is not matching")
-		require.Equal(t, e.OperatorDetails.DelegationApprover, common.HexToAddress(zeroAddr),
+		require.Equal(t, e.OperatorDetails.DelegationApprover, zeroAddr,
 			"delegation approver is not matching")
 		require.Equal(t, e.OperatorDetails.EarningsReceiver, operator,
 			"earnings receiver is not matching")
@@ -312,7 +467,7 @@ func whiteListStrategy(
 	t *testing.T,
 	ctx context.Context,
 	backend *ethbackend.Backend,
-	contracts avs.Contracts,
+	contracts Contracts,
 	ownerEigen common.Address) {
 	t.Helper()
 
@@ -329,7 +484,7 @@ func whiteListStrategy(
 
 func delegateToOperator(t *testing.T,
 	ctx context.Context,
-	contracts avs.Contracts,
+	contracts Contracts,
 	backend *ethbackend.Backend,
 	delegator common.Address,
 	operator common.Address) {
@@ -355,7 +510,7 @@ func delegateToOperator(t *testing.T,
 func assertOperatorBalance(
 	t *testing.T,
 	ctx context.Context,
-	contracts avs.Contracts,
+	contracts Contracts,
 	operator common.Address,
 	oprStake *big.Int,
 	delStake *big.Int) {
@@ -386,7 +541,7 @@ func assertOperatorBalance(
 
 func wETHBalance(t *testing.T,
 	ctx context.Context,
-	contracts avs.Contracts,
+	contracts Contracts,
 	account common.Address) *big.Int {
 	t.Helper()
 
@@ -444,7 +599,7 @@ func genPrivKey(t *testing.T) *ecdsa.PrivateKey {
 	return privKey
 }
 
-func registerOperatorCLI(t *testing.T, ctx context.Context, contracts avs.Contracts, b *ethbackend.Backend, key *ecdsa.PrivateKey) {
+func registerOperatorCLI(t *testing.T, ctx context.Context, contracts Contracts, b *ethbackend.Backend, key *ecdsa.PrivateKey) {
 	t.Helper()
 
 	addr := crypto.PubkeyToAddress(key.PublicKey)

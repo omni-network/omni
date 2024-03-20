@@ -25,8 +25,6 @@ func DefaultDeployConfig() DeployConfig {
 }
 
 type DeployConfig struct {
-	AVSDeployConfig
-
 	AgentSecrets agent.Secrets
 	PingPongN    uint64
 
@@ -79,7 +77,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 
 	var pp pingpong.XDapp
 	if !def.Testnet.OnlyMonitor {
-		if err := deployAVS(ctx, def, cfg.AVSDeployConfig, deployInfo); err != nil {
+		if err := deployAVSWithExport(ctx, def, deployInfo); err != nil {
 			return nil, nil, err
 		}
 
