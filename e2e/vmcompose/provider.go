@@ -117,7 +117,7 @@ func (p *Provider) Upgrade(ctx context.Context) error {
 	log.Info(ctx, "Upgrading docker-compose on VMs", "image", p.Testnet.UpgradeVersion)
 
 	var filePaths []string
-	// add all artefacts for each node
+	// add all artifacts for each node
 	for _, node := range p.Testnet.Nodes {
 		nodeDir := filepath.Join(p.Testnet.Dir, node.Name)
 
