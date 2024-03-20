@@ -89,7 +89,7 @@ issues:
     - path: 'metrics.go'
       linters:
         - gochecknoglobals # Promauto metrics are global variables
-    - path: '(.*)(test|scripts)(.*)'
+    - path: '(.*)(test|e2e|scripts)(.*)' # TODO: remove e2e and fix
       linters:         # Relax linters for both tests/scripts (non-production code)
         - gosec        # Security not an issue here
         - revive       # Relax revive rules

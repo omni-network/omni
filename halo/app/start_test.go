@@ -53,7 +53,16 @@ func TestSmoke(t *testing.T) {
 		return s.SyncInfo.LatestBlockHeight >= int64(target)
 	}, time.Second*time.Duration(target*2), time.Millisecond*100)
 
-	_, ok, err := cprov.LatestAttestation(ctx, 0)
+	_, ok, err := cprov.LatestAttestation(ctx, 0) // Ensure it doesn't error for unknown chains.
+	require.NoError(t, err)
+	require.False(t, ok)
+
+	valset, ok, err := cprov.ValidatorSet(ctx, 1) // Genesis validator set
+	require.NoError(t, err)
+	require.True(t, ok)
+	require.Len(t, valset, 1)
+
+	_, ok, err = cprov.ValidatorSet(ctx, 33) // Ensure it doesn't error for unknown validator sets.
 	require.NoError(t, err)
 	require.False(t, ok)
 

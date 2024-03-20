@@ -4,8 +4,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/omni-network/omni/e2e/tutil"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/test/tutil"
 
 	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"

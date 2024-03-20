@@ -14,6 +14,7 @@ func New() *cobra.Command {
 		"omni",
 		"CLI providing tools for interacting with omni",
 		newOperatorCmds(),
+		newDeveloperCmds(),
 		newDevnetCmds(),
 		buildinfo.NewVersionCmd(),
 	)

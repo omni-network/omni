@@ -2,12 +2,12 @@
 
 project_root="$(git rev-parse --show-toplevel)"
 
-# we dump anvil state to a tmp file, and copy to test/e2e/app/static
-e2e_anvil_state_file="${project_root}/test/e2e/app/static/el-anvil-state.json"
+# we dump anvil state to a tmp file, and copy to e2e/app/static
+e2e_anvil_state_file="${project_root}/e2e/app/static/el-anvil-state.json"
 tmp_anvil_state_file=$(mktemp)
 
-# forge script outputs to ./output/script/deployments.json, we copy this to test/e2e/app/static
-e2e_deployments_file="${project_root}/test/e2e/app/static/el-deployments.json"
+# forge script outputs to ./output/script/deployments.json, we copy this to e2e/app/static
+e2e_deployments_file="${project_root}/e2e/app/static/el-deployments.json"
 script_output_file="${project_root}/contracts/script/eigen/output/deployments.json"
 
 # anvil private key 9

@@ -30,6 +30,6 @@ var supported = map[string]bool{
 	Simnet:  true,
 	Devnet:  true,
 	Staging: true,
-	Testnet: false,
+	Testnet: true,
 	Mainnet: false,
 }

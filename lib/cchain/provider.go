@@ -3,7 +3,10 @@ package cchain
 import (
 	"context"
 
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/xchain"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // ProviderCallback is the callback function signature that will be called with each approved attestation per
@@ -32,8 +35,33 @@ type Provider interface {
 	// if none exist.
 	LatestAttestation(ctx context.Context, sourceChainID uint64) (xchain.Attestation, bool, error)
 
-	// WindowCompare returns wether the given attestation block header is behind (-1), or in (0), or ahead (1)
+	// WindowCompare returns whether the given attestation block header is behind (-1), or in (0), or ahead (1)
 	// of the current vote window. The vote window is a configured number of blocks around the latest approved
 	// attestation for the provided chain.
 	WindowCompare(ctx context.Context, sourceChainID uint64, height uint64) (int, error)
+
+	// ValidatorSet returns the validators for the given validator set ID or false if none exist or an error.
+	// Note the genesis validator set has ID 1.
+	ValidatorSet(ctx context.Context, valSetID uint64) ([]Validator, bool, error)
+
+	// XBlock returns the validator sync xblock for the given height or false if none exist or an error.
+	XBlock(ctx context.Context, height uint64) (xchain.Block, bool, error)
+}
+
+// Validator is a consensus chain validator in a validator set.
+type Validator struct {
+	Address common.Address
+	Power   int64
+}
+
+// Verify returns an error if the validator is invalid.
+func (v Validator) Verify() error {
+	if v.Address == (common.Address{}) {
+		return errors.New("empty validator address")
+	}
+	if v.Power <= 0 {
+		return errors.New("invalid validator power")
+	}
+
+	return nil
 }

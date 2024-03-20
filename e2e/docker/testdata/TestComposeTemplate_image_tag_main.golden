@@ -1,0 +1,182 @@
+version: '2.4'
+networks:
+  test:
+    labels:
+      e2e: true
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+      - subnet: 10.186.73.0/24
+
+services:
+  node0:
+    labels:
+      e2e: true
+    container_name: node0
+    image: omniops/halo:main
+    init: true
+    ports:
+    - 26656
+    - 8584:26657
+    - 6060
+    environment:
+    - HALO_LOG_FORMAT=console
+    volumes:
+    - ./node0:/halo
+    - ./omni_evm_0/jwtsecret:/geth/jwtsecret
+    depends_on:
+      omni_evm_0:
+        condition: service_healthy
+    networks:
+      test:
+        ipv4_address: 10.186.73.0
+
+  # Initialises geth files and folder from provided genesis file.
+  mock_rollup:
+    labels:
+      e2e: true
+    container_name: mock_rollup
+    image: ghcr.io/foundry-rs/foundry:latest
+    entrypoint:
+      - anvil
+      - --host=0.0.0.0
+      - --chain-id=99
+      - --block-time=1
+      - --silent
+      
+    ports:
+      - 9000:8545
+    networks:
+      test:
+        ipv4_address: 10.186.73.0
+    
+  # Initialises geth files and folder from provided genesis file.
+  mock_l1:
+    labels:
+      e2e: true
+    container_name: mock_l1
+    image: ghcr.io/foundry-rs/foundry:latest
+    entrypoint:
+      - anvil
+      - --host=0.0.0.0
+      - --chain-id=1
+      - --block-time=3600
+      - --silent
+      - --load-state=/anvil/state.json
+    ports:
+      - 9000:8545
+    networks:
+      test:
+        ipv4_address: 10.186.73.0
+    
+    volumes:
+      - path/to/anvil/state.json:/anvil/state.json
+    
+
+  # Use geth as the omni EVMs.
+  # Initialises geth files and folder from provided genesis file.
+  omni_evm_0-init:
+    labels:
+      e2e: true
+    container_name: omni_evm_0-init
+    image: "ethereum/client-go:latest"
+    command: --datadir=/geth init /geth/genesis.json
+    volumes:
+      - ./omni_evm_0:/geth
+    networks:
+      test:
+
+  omni_evm_0:
+    labels:
+      e2e: true
+    container_name: omni_evm_0
+    image: "ethereum/client-go:latest"
+    command:
+      - --config=/geth/config.toml
+      - --http
+      - --http.vhosts=*
+      - --http.api=eth,net,web3
+      - --http.addr=0.0.0.0
+      - --http.corsdomain=*
+      - --ws
+      - --ws.api=eth,net,web3
+      - --ws.addr=0.0.0.0
+      - --ws.origins=*
+      - --authrpc.vhosts=*
+      - --authrpc.addr=0.0.0.0
+      - --authrpc.jwtsecret=/geth/jwtsecret
+      - --datadir=/geth
+      - --unlock=0x123463a4b065722e99115d6c222f267d9cabb524
+      - --allow-insecure-unlock
+      - --password=/geth/geth_password.txt
+      - --nodiscover
+      - --syncmode=full
+      - --gcmode=
+      - --nodekeyhex=59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
+      - --miner.recommit=500ms
+      - --nat=extip:<nil>
+    ports:
+      - 8551
+      - 8000:8545
+      - 30303
+      - 8546
+    depends_on:
+      omni_evm_0-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: "nc -z localhost 8545"
+      interval: 1s
+      retries: 30
+    volumes:
+      - ./omni_evm_0:/geth
+    networks:
+      test:
+        ipv4_address: 10.186.73.0
+
+  relayer:
+    labels:
+      e2e: true
+    container_name: relayer
+    image: omniops/relayer:main
+    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    environment:
+    - RELAYER_LOG_FORMAT=console
+    volumes:
+      - ./relayer:/relayer
+    networks:
+      test:
+        ipv4_address: 10.186.73.200
+
+  monitor:
+    labels:
+      e2e: true
+    container_name: monitor
+    image: omniops/monitor:main
+    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    environment:
+      - LOG_FORMAT=console
+    volumes:
+      - ./monitor:/monitor
+    networks:
+      test:
+        ipv4_address: 10.186.73.201
+
+  prometheus:
+    labels:
+      e2e: true
+    container_name: prometheus
+    image: prom/prometheus:latest
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.console.libraries=/usr/share/prometheus/console_libraries
+      - --web.console.templates=/usr/share/prometheus/consoles
+      - --enable-feature=exemplar-storage
+      - --enable-feature=agent
+    restart: unless-stopped
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      test:
+        ipv4_address: 10.186.73.202
+
