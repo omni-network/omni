@@ -3,6 +3,7 @@ package cchain
 import (
 	"context"
 
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -51,4 +52,16 @@ type Provider interface {
 type Validator struct {
 	Address common.Address
 	Power   int64
+}
+
+// Verify returns an error if the validator is invalid.
+func (v Validator) Verify() error {
+	if v.Address == (common.Address{}) {
+		return errors.New("empty validator address")
+	}
+	if v.Power <= 0 {
+		return errors.New("invalid validator power")
+	}
+
+	return nil
 }

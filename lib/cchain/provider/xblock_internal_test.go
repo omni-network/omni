@@ -15,7 +15,16 @@ import (
 
 func TestXBlock(t *testing.T) {
 	t.Parallel()
-	f := fuzz.NewWithSeed(99).NilChance(0)
+	f := fuzz.NewWithSeed(99).NilChance(0).Funcs(
+		// Fuzz valid validators.
+		func(e *cchain.Validator, c fuzz.Continue) {
+			c.FuzzNoCustom(e)
+			if e.Power < 0 {
+				e.Power = -e.Power
+			} else if e.Power == 0 {
+				e.Power = 1
+			}
+		})
 
 	var height uint64
 	f.Fuzz(&height)
@@ -27,7 +36,11 @@ func TestXBlock(t *testing.T) {
 
 		return resp, true, nil
 	}
-	prov := Provider{valset: valFunc}
+	chainFunc := func(ctx context.Context) (uint64, error) {
+		return 77, nil
+	}
+
+	prov := Provider{valset: valFunc, chainID: chainFunc}
 
 	block, ok, err := prov.XBlock(context.Background(), height)
 	require.NoError(t, err)
