@@ -52,6 +52,17 @@ func (t Testnet) AVSChain() (EVMChain, error) {
 	return EVMChain{}, errors.New("avs target chain found")
 }
 
+// OmniEVMValidator returns the omni evm validator instance.
+func (t Testnet) OmniEVMValidator() (OmniEVM, error) {
+	for _, evm := range t.OmniEVMs {
+		if strings.Contains(evm.InstanceName, "validator") {
+			return evm, nil
+		}
+	}
+
+	return OmniEVM{}, errors.New("omni evm validator not found")
+}
+
 // EVMChain represents a EVM chain in a omni network.
 type EVMChain struct {
 	Name               string // Chain Nam.

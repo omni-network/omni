@@ -61,7 +61,7 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 		return errors.Wrap(err, "mkdir")
 	}
 
-	if def.Manifest.OnnyMonitor {
+	if def.Manifest.OnlyMonitor {
 		return SetupOnlyMonitor(ctx, def, agentSecrets, testCfg)
 	}
 
