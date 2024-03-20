@@ -51,7 +51,7 @@ func startXProvider(ctx context.Context, network netconf.Network, entCl *ent.Cli
 		return err
 	}
 
-	xprovider := provider.New(network, rpcClientPerChain)
+	xprovider := provider.New(network, rpcClientPerChain, nil)
 	callback := newCallback(entCl)
 
 	for _, chain := range network.Chains {

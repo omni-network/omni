@@ -22,8 +22,6 @@ import (
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	cmttypes "github.com/cometbft/cometbft/types"
 
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/stretchr/testify/require"
 )
 
@@ -135,7 +133,7 @@ func test(t *testing.T, testFunc testFunc) {
 
 	if testFunc.TestOmniEVM != nil {
 		for _, chain := range network.Chains {
-			if chain.IsOmni {
+			if chain.IsOmniEVM {
 				client, err := ethclient.Dial(chain.Name, chain.RPCURL)
 				require.NoError(t, err)
 
@@ -152,13 +150,13 @@ func test(t *testing.T, testFunc testFunc) {
 func makePortals(t *testing.T, network netconf.Network) []Portal {
 	t.Helper()
 
-	resp := make([]Portal, 0, len(network.Chains))
-	for _, chain := range network.Chains {
+	resp := make([]Portal, 0, len(network.EVMChains()))
+	for _, chain := range network.EVMChains() {
 		ethClient, err := ethclient.Dial(chain.Name, chain.RPCURL)
 		require.NoError(t, err)
 
 		// create our Omni Portal Contract
-		contract, err := bindings.NewOmniPortal(common.HexToAddress(chain.PortalAddress), ethClient)
+		contract, err := bindings.NewOmniPortal(chain.PortalAddress, ethClient)
 		require.NoError(t, err)
 		require.NotNil(t, contract, "contract is nil")
 

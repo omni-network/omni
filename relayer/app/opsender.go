@@ -56,7 +56,7 @@ func NewOpSender(chain netconf.Chain, rpcClient ethclient.Client,
 
 	return OpSender{
 		txMgr:      txMgr,
-		portal:     common.HexToAddress(chain.PortalAddress),
+		portal:     chain.PortalAddress,
 		abi:        &parsedAbi,
 		chain:      chain,
 		chainNames: chainNames,

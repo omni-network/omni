@@ -19,26 +19,29 @@ import (
 
 var _ xchain.Provider = (*Provider)(nil)
 
-const cChainID = 0
-
 // Provider stores the source chain configuration and the global quit channel.
 type Provider struct {
 	network     netconf.Network
-	rpcClients  map[uint64]ethclient.Client // store config for every chain ID
-	cprov       cchain.Provider             // TODO(corver): Populate this.
+	ethClients  map[uint64]ethclient.Client // store config for every chain ID
+	cChainID    uint64
+	cProvider   cchain.Provider
 	backoffFunc func(context.Context) (func(), func())
 }
 
 // New instantiates the provider instance which will be ready to accept
 // subscriptions for respective destination XBlocks.
-func New(network netconf.Network, rpcClients map[uint64]ethclient.Client) *Provider {
+func New(network netconf.Network, rpcClients map[uint64]ethclient.Client, cProvider cchain.Provider) *Provider {
 	backoffFunc := func(ctx context.Context) (func(), func()) {
 		return expbackoff.NewWithReset(ctx, expbackoff.WithFastConfig())
 	}
 
+	cChain, _ := network.OmniConsensusChain()
+
 	return &Provider{
 		network:     network,
-		rpcClients:  rpcClients,
+		ethClients:  rpcClients,
+		cChainID:    cChain.ID,
+		cProvider:   cProvider,
 		backoffFunc: backoffFunc,
 	}
 }
@@ -53,8 +56,8 @@ func (p *Provider) StreamAsync(
 	fromHeight uint64,
 	callback xchain.ProviderCallback,
 ) error {
-	if err := p.verifyChainIDInclCChain(chainID); err != nil {
-		return err
+	if _, ok := p.network.Chain(chainID); !ok {
+		return errors.New("unknown chain ID")
 	}
 
 	go func() {
@@ -86,10 +89,9 @@ func (p *Provider) stream(
 	callback xchain.ProviderCallback,
 	retryCallback bool,
 ) error {
-	// retrieve the respective config
-	chain, _, err := p.getChain(chainID)
-	if err != nil {
-		return err
+	chain, ok := p.network.Chain(chainID)
+	if !ok {
+		return errors.New("unknown chain ID")
 	}
 
 	deps := stream.Deps[xchain.Block]{
@@ -139,24 +141,18 @@ func (p *Provider) stream(
 	return stream.Stream(ctx, deps, chainID, fromHeight, cb)
 }
 
-func (p *Provider) verifyChainIDInclCChain(chainID uint64) error {
-	if chainID == cChainID {
-		return nil
+// getEVMChain provides the configuration of the given chainID.
+func (p *Provider) getEVMChain(chainID uint64) (netconf.Chain, ethclient.Client, error) {
+	if chainID == p.cChainID {
+		return netconf.Chain{}, nil, errors.New("consensus chain not supported")
 	}
 
-	_, _, err := p.getChain(chainID)
-
-	return err
-}
-
-// getChain provides the configuration of the given chainID.
-func (p *Provider) getChain(chainID uint64) (netconf.Chain, ethclient.Client, error) {
 	chain, ok := p.network.Chain(chainID)
 	if !ok {
 		return netconf.Chain{}, nil, errors.New("unknown chain ID for network")
 	}
 
-	client, ok := p.rpcClients[chainID]
+	client, ok := p.ethClients[chainID]
 	if !ok {
 		return netconf.Chain{}, nil, errors.New("no rpc client for chain ID")
 	}

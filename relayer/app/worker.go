@@ -50,6 +50,8 @@ func (w *Worker) Run(ctx context.Context) {
 			return
 		}
 
+		// TODO(corver): Clear worker persisted state on error, so it bootstraps from on-chain state.
+
 		log.Error(ctx, "Worker failed, resetting", err)
 		workerResets.WithLabelValues(w.destChain.Name).Inc()
 		backoff()
@@ -80,7 +82,7 @@ func (w *Worker) runOnce(ctx context.Context) error {
 			return errors.New("unexpected cursor [BUG]")
 		}
 
-		callback := newCallback(w.xProvider, initialOffsets, w.creator, buf.AddInput, w.destChain.ID)
+		callback := newCallback(w.xProvider, initialOffsets, w.creator, buf.AddInput, w.destChain.ID, newMsgStreamMapper(w.network))
 		wrapCb := wrapStatePersist(callback, w.state, w.destChain.ID)
 
 		w.cProvider.Subscribe(ctx, srcChainID, fromHeight, w.destChain.Name, wrapCb)
@@ -97,8 +99,39 @@ func (w *Worker) runOnce(ctx context.Context) error {
 	return buf.Run(ctx)
 }
 
+// msgStreamMapper maps messages by stream ID.
+type msgStreamMapper func([]xchain.Msg) map[xchain.StreamID][]xchain.Msg
+
+// newMsgStreamMapper creates a new message stream mapper for the given network.
+// It maps consensus chain messages to all EVM chains (broadcast), and normal messages to their stream ID.
+func newMsgStreamMapper(network netconf.Network) msgStreamMapper {
+	consensusChain, _ := network.OmniConsensusChain()
+
+	return func(msgs []xchain.Msg) map[xchain.StreamID][]xchain.Msg {
+		resp := make(map[xchain.StreamID][]xchain.Msg)
+		for _, msg := range msgs {
+			// Normal messages are mapped to their stream ID.
+			if msg.SourceChainID != consensusChain.ID {
+				resp[msg.StreamID] = append(resp[msg.StreamID], msg)
+				continue
+			}
+
+			// Consensus chain messages are broadcasted to all EVM chains.
+			for _, evmChain := range network.EVMChains() {
+				streamID := xchain.StreamID{
+					SourceChainID: consensusChain.ID,
+					DestChainID:   evmChain.ID,
+				}
+				resp[streamID] = append(resp[streamID], msg)
+			}
+		}
+
+		return resp
+	}
+}
+
 func newCallback(xProvider xchain.Provider, initialOffsets map[xchain.StreamID]uint64, creator CreateFunc,
-	sender SendFunc, destChainID uint64) cchain.ProviderCallback {
+	sender SendFunc, destChainID uint64, msgStreamMapper msgStreamMapper) cchain.ProviderCallback {
 	return func(ctx context.Context, att xchain.Attestation) error {
 		// Get the xblock from the source chain.
 		block, ok, err := xProvider.GetBlock(ctx, att.SourceChainID, att.BlockHeight)
@@ -120,7 +153,7 @@ func newCallback(xProvider xchain.Provider, initialOffsets map[xchain.StreamID]u
 			return err
 		}
 		// Split into streams
-		for streamID, msgs := range mapByStreamID(block.Msgs) {
+		for streamID, msgs := range msgStreamMapper(block.Msgs) {
 			if streamID.DestChainID != destChainID {
 				continue
 			}

@@ -40,7 +40,7 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 	}
 
 	network := externalNetwork(def.Testnet, def.Netman.DeployInfo())
-	omniEVM, _ := network.OmniChain()
+	omniEVM, _ := network.OmniEVMChain()
 	funder, _, fundBackend, err := def.Backends.BindOpts(ctx, omniEVM.ID)
 	if err != nil {
 		return func() error { return errors.Wrap(err, "bind opts") }
