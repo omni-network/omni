@@ -15,6 +15,15 @@ func (c Client) CreateAndWait(ctx context.Context, opts TransactionRequestOption
 		return TransactionResponse{}, err
 	}
 
+	// see if the transaction returned is already completed and exit early if it is
+	isCompleted, err := isComplete(*resp)
+	if err != nil {
+		return *resp, err
+	}
+	if isCompleted {
+		return *resp, nil
+	}
+
 	var attempt int
 	queryTicker := time.NewTicker(c.cfg.QueryInterval)
 	defer queryTicker.Stop()

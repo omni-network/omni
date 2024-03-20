@@ -15,7 +15,7 @@ type TransactionRequestOptions struct {
 // CreateTransaction creates a new transaction on the FireBlocks API.
 func (c Client) CreateTransaction(ctx context.Context, opt TransactionRequestOptions) (*TransactionResponse, error) {
 	request := newTransactionRequest(opt)
-	jwtToken, err := c.genJWTToken(transactionEndpoint, request)
+	jwtToken, err := c.token(transactionEndpoint, request)
 	if err != nil {
 		return nil, err
 	}
@@ -43,19 +43,17 @@ func newTransactionRequest(opt TransactionRequestOptions) createTransactionReque
 	return createTransactionRequest{
 		Operation: "RAW",
 		Note:      "testing transaction",
-		AssetID:   "ETH",
 		Source: source{
 			Type: "VAULT_ACCOUNT",
 			ID:   "0",
 		},
-		Destination: &destination{
-			Type: "VAULT_ACCOUNT",
-		},
 		CustomerRefID: "",
 		ExtraParameters: &extraParameters{
 			RawMessageData: rawMessageData{
+				Algorithm: "MPC_ECDSA_SECP256K1",
 				Messages: []UnsignedRawMessage{{
-					Content: hex.EncodeToString(contentHash[:]),
+					Content:        hex.EncodeToString(contentHash[:]),
+					DerivationPath: opt.Message.DerivationPath,
 				}},
 			},
 		},

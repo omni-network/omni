@@ -80,7 +80,8 @@ func TestCreateAndWaitGolden(t *testing.T) {
 
 	resp, err := client.CreateAndWait(ctx, fireblocks.TransactionRequestOptions{
 		Message: fireblocks.UnsignedRawMessage{
-			Content: "test",
+			Content:        "test",
+			DerivationPath: []int{44, 60, 0, 0, 0},
 		},
 	})
 	require.NoError(t, err)

@@ -60,8 +60,8 @@ type rawMessageData struct {
 }
 
 type UnsignedRawMessage struct {
-	Content   string `json:"content"`
-	Algorithm string `json:"algorithm,omitempty"`
+	Content        string `json:"content"`
+	DerivationPath []int  `json:"derivationPath,omitempty"`
 }
 
 type TransactionResponse struct {
