@@ -40,7 +40,7 @@ func (c Client) CreateAndWait(ctx context.Context, opts TransactionRequestOption
 			if attempt%c.cfg.LogFreqFactor == 0 {
 				log.Warn(ctx, "Transaction not signed yet", nil, "attempt", attempt)
 			}
-			if !isCompleted {
+			if isCompleted {
 				return resp, nil
 			}
 			attempt++
@@ -52,10 +52,10 @@ func (c Client) CreateAndWait(ctx context.Context, opts TransactionRequestOption
 func evaluateTransactionStatus(resp TransactionResponse) (bool, error) {
 	switch resp.Status {
 	case "COMPLETED":
-		return false, nil
+		return true, nil
 	case "CANCELED", "BLOCKED_BY_POLICY", "REJECTED", "FAILED":
 		return false, errors.New("transaction failed", "status", resp.Status)
 	default:
-		return true, nil
+		return false, nil
 	}
 }

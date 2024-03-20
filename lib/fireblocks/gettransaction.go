@@ -29,7 +29,7 @@ func (c Client) GetTransactionByID(ctx context.Context, transactionID string) (*
 	}
 
 	var res TransactionResponse
-	err = json.Unmarshal([]byte(response), &res)
+	err = json.Unmarshal(response, &res)
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshaling response")
 	}

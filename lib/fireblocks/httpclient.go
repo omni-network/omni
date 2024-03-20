@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -27,32 +27,32 @@ func NewHTTPClient(host string, apiKey string, clientSecret string) *HTTPClient 
 	}
 }
 
-func (c *HTTPClient) Send(ctx context.Context, endpoint string, httpMethod string, bodyJSON any, headers map[string]string) (string, error) {
-	endpoint = fmt.Sprintf("%s/%s", c.host, endpoint)
-	req, err := http.NewRequestWithContext(
+func (c *HTTPClient) Send(ctx context.Context, endpoint string, httpMethod string, data any, headers map[string]string) ([]byte, error) {
+	endpoint, err := url.JoinPath(c.host, endpoint)
+	if err != nil {
+		return nil, errors.Wrap(err, "joining endpoint")
+	}
+
+	req, err := json.Marshal(data)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshaling JSON")
+	}
+
+	request, err := http.NewRequestWithContext(
 		ctx,
 		httpMethod,
 		endpoint,
-		nil,
+		io.NopCloser(bytes.NewReader(req)),
 	)
 	if err != nil {
-		return "", errors.Wrap(err, "new http request")
+		return nil, errors.Wrap(err, "new http request")
 	}
 
-	bodyBytes, err := json.Marshal(bodyJSON)
+	request.Header = getHeaders(headers)
+
+	resp, err := c.http.Do(request)
 	if err != nil {
-		return "", errors.Wrap(err, "marshaling JSON")
-	}
-
-	if bodyJSON != nil {
-		req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
-	}
-
-	req.Header = getHeaders(headers)
-
-	resp, err := c.http.Do(req)
-	if err != nil {
-		return "", errors.Wrap(err, "http Do")
+		return nil, errors.Wrap(err, "http Do")
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
@@ -62,15 +62,14 @@ func (c *HTTPClient) Send(ctx context.Context, endpoint string, httpMethod strin
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", errors.Wrap(err, "read response body", "body")
+		return nil, errors.Wrap(err, "read response body")
 	}
 
-	bodyString := string(body)
 	if resp.StatusCode != http.StatusOK {
-		return bodyString, errors.Wrap(err, "http response code not okay", "status code", resp.StatusCode, "body", bodyString)
+		return nil, errors.Wrap(err, "http response code not okay", "status code", resp.StatusCode, "body", string(body))
 	}
 
-	return bodyString, nil
+	return body, nil
 }
 
 func getHeaders(m map[string]string) http.Header {

@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"github.com/omni-network/omni/lib/errors"
 )
@@ -18,10 +17,7 @@ type TransactionRequestOptions struct {
 
 // CreateTransaction creates a new transaction on the FireBlocks API.
 func (c Client) CreateTransaction(ctx context.Context, opt TransactionRequestOptions) (*TransactionResponse, error) {
-	request, err := newTransactionRequest(opt)
-	if err != nil {
-		return nil, errors.Wrap(err, "new transaction request")
-	}
+	request := newTransactionRequest(opt)
 	jwtToken, err := c.genJWTToken(transactionEndpoint, request)
 	if err != nil {
 		return nil, err
@@ -40,7 +36,7 @@ func (c Client) CreateTransaction(ctx context.Context, opt TransactionRequestOpt
 	}
 
 	var res TransactionResponse
-	err = json.Unmarshal([]byte(response), &res)
+	err = json.Unmarshal(response, &res)
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshalling response")
 	}
@@ -49,18 +45,11 @@ func (c Client) CreateTransaction(ctx context.Context, opt TransactionRequestOpt
 }
 
 // newTransactionRequest creates a new transaction request.
-func newTransactionRequest(opt TransactionRequestOptions) (createTransactionRequest, error) {
-	h := sha256.New()
-	wrappedMessage := "\x19Ethereum Signed Message:\n" + strconv.Itoa(len(opt.Message.Content)) + opt.Message.Content
-	_, err := h.Write([]byte(wrappedMessage))
-	if err != nil {
-		return createTransactionRequest{}, errors.Wrap(err, "sha256")
-	}
-	hash := h.Sum(nil)
-
+func newTransactionRequest(opt TransactionRequestOptions) createTransactionRequest {
+	sha := sha256.Sum256([]byte(opt.Message.Content))
 	var rawMessageData RawMessageData
 	rawSigningMessage := UnsignedRawMessage{
-		Content: hex.EncodeToString(hash),
+		Content: hex.EncodeToString(sha[:]),
 	}
 	rawMessageData.Messages = []UnsignedRawMessage{rawSigningMessage}
 
@@ -81,5 +70,5 @@ func newTransactionRequest(opt TransactionRequestOptions) (createTransactionRequ
 		},
 	}
 
-	return req, nil
+	return req
 }
