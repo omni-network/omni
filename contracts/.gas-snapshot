@@ -81,7 +81,7 @@ OmniPortal_xsubmit_Test:test_xsubmit_invalidAttestationRoot_reverts() (gas: 1502
 OmniPortal_xsubmit_Test:test_xsubmit_invalidMsgs_reverts() (gas: 15012865)
 OmniPortal_xsubmit_Test:test_xsubmit_noQuorum_reverts() (gas: 14987458)
 OmniPortal_xsubmit_Test:test_xsubmit_notNewValSet_succeeds() (gas: 15564370)
-OmniPortal_xsubmit_Test:test_xsubmit_oldValSet_reverts() (gas: 15747138)
+OmniPortal_xsubmit_Test:test_xsubmit_oldValSet_reverts() (gas: 15747152)
 OmniPortal_xsubmit_Test:test_xsubmit_uknownValSetId_reverts() (gas: 14971246)
 OmniPortal_xsubmit_Test:test_xsubmit_wrongChainId_reverts() (gas: 15068188)
 OmniPortal_xsubmit_Test:test_xsubmit_wrongStreamOffset_reverts() (gas: 15059827)

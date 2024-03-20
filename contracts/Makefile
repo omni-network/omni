@@ -17,10 +17,17 @@ version: ## Print tool versions.
 build: version ## Build contracts.
 	forge build
 
+
+
+CONTRACTS := OmniPortal FeeOracleV1 OmniAVS OmniStake Create3 TransparentUpgradeableProxy \
+			DelegationManager StrategyManager StrategyBase AVSDirectory \
+			src/deploy/ProxyAdmin.sol:ProxyAdmin \
+			test/avs/common/MockERC20.sol:MockERC20
+
 .PHONY: bindings
 bindings: check-abigen-version build ## Generate golang contract bindings.
-	./bindings/scripts/gen.sh OmniPortal FeeOracleV1 OmniAVS OmniStake Create3 TransparentUpgradeableProxy ProxyAdmin DelegationManager StrategyManager StrategyBase AVSDirectory test/avs/common/MockERC20.sol:MockERC20
-	./bindings/scripts/genmore.sh OmniStake
+	./bindings/scripts/gen.sh $(CONTRACTS)
+	./bindings/scripts/genmore.sh OmniStake # Need OmniStake deployedBytecode
 	go run ./bindings/scripts/commenttypes.go -- bindings/strategymanager.go IStrategyManagerDeprecatedStructQueuedWithdrawal IStrategyManagerDeprecatedStructWithdrawerAndNonce
 	go run ./bindings/scripts/commenttypes.go -- bindings/avsdirectory.go ISignatureUtilsSignatureWithSaltAndExpiry
 
