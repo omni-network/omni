@@ -25,6 +25,9 @@ type Manifest struct {
 
 	// SlowTests defines whether to run slow tests (e.g. tests/eigen_tests.go)
 	SlowTests bool `toml:"slow_tests"`
+
+	// OnnyMonitor indicates that the monitor is the only thing that we deploy in this network.
+	OnnyMonitor bool `toml:"only_monitor"`
 }
 
 // OmniEVMs returns the names Omni EVMs to deploy.

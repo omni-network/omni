@@ -42,55 +42,67 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 	}
 
 	genesisValSetID := uint64(1) // validator set IDs start at 1
-	genesisVals, err := toPortalValidators(def.Testnet.Validators)
-	if err != nil {
-		return nil, nil, err
-	}
+	var genesisVals []bindings.Validator
+	var err error
+	if !def.Manifest.OnnyMonitor {
+		genesisVals, err = toPortalValidators(def.Testnet.Validators)
+		if err != nil {
+			return nil, nil, err
+		}
 
-	// Deploy public portals first so their addresses are available for setup.
-	if err := def.Netman.DeployPublicPortals(ctx, genesisValSetID, genesisVals); err != nil {
-		return nil, nil, err
+		// Deploy public portals first so their addresses are available for setup.
+		if err := def.Netman.DeployPublicPortals(ctx, genesisValSetID, genesisVals); err != nil {
+			return nil, nil, err
+		}
 	}
 
 	if err := Setup(ctx, def, cfg.AgentSecrets, cfg.testConfig); err != nil {
 		return nil, nil, err
 	}
 
-	if err := StartInitial(ctx, def.Testnet.Testnet, def.Infra); err != nil {
-		return nil, nil, err
-	}
+	if def.Testnet.OnlyMonitor {
+		if err = def.Infra.StartNodes(ctx); err != nil {
+			return nil, nil, errors.Wrap(err, "starting initial nodes")
+		}
+	} else {
+		if err := StartInitial(ctx, def.Testnet.Testnet, def.Infra); err != nil {
+			return nil, nil, err
+		}
 
-	if err := def.Netman.DeployPrivatePortals(ctx, genesisValSetID, genesisVals); err != nil {
-		return nil, nil, err
+		if err := def.Netman.DeployPrivatePortals(ctx, genesisValSetID, genesisVals); err != nil {
+			return nil, nil, err
+		}
+		logRPCs(ctx, def)
 	}
-
-	logRPCs(ctx, def)
 
 	deployInfo := make(types.DeployInfos)
 
-	if err := deployAVS(ctx, def, cfg.AVSDeployConfig, deployInfo); err != nil {
-		return nil, nil, err
-	}
+	var pp pingpong.XDapp
+	if !def.Testnet.OnlyMonitor {
+		if err := deployAVS(ctx, def, cfg.AVSDeployConfig, deployInfo); err != nil {
+			return nil, nil, err
+		}
 
-	for chain, info := range def.Netman.DeployInfo() {
-		deployInfo.Set(chain.ID, types.ContractPortal, info.PortalAddress, info.DeployHeight)
-	}
+		for chain, info := range def.Netman.DeployInfo() {
+			deployInfo.Set(chain.ID, types.ContractPortal, info.PortalAddress, info.DeployHeight)
+		}
 
-	if cfg.PingPongN == 0 {
-		return deployInfo, nil, nil
-	}
+		if cfg.PingPongN == 0 {
+			return deployInfo, nil, nil
+		}
 
-	pp, err := pingpong.Deploy(ctx, def.Netman, def.Backends)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "deploy pingpong")
-	}
+		pp, err = pingpong.Deploy(ctx, def.Netman, def.Backends)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "deploy pingpong")
+		}
 
-	err = pp.StartAllEdges(ctx, cfg.PingPongN)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "start all edges")
-	}
+		err = pp.StartAllEdges(ctx, cfg.PingPongN)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "start all edges")
+		}
 
-	pp.ExportDeployInfo(deployInfo)
+		pp.ExportDeployInfo(deployInfo)
+	}
 
 	return deployInfo, &pp, nil
 }

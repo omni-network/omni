@@ -13,6 +13,8 @@ build-docker: ensure-go-releaser ## Builds the docker images.
 build-halo-relayer: ensure-go-releaser ## Builds the halo and relayer docker images only (slightly faster than above).
 	@scripts/build_docker.sh halo
 	@scripts/build_docker.sh relayer
+	@scripts/build_docker.sh monitor
+
 
 ###############################################################################
 ###                                Contracts                                 ###

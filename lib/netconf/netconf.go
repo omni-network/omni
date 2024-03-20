@@ -9,6 +9,8 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // Network defines a deployment of the Omni cross chain protocol.
@@ -129,6 +131,7 @@ type Chain struct {
 	IsEthereum        bool              // Whether this is the ethereum layer1 chain
 	BlockPeriod       time.Duration     // Block period of the chain
 	FinalizationStrat FinalizationStrat // Finalization strategy of the chain
+	AVSContractAddr   common.Address    // Address of Omni AVS contracts for the chain
 }
 
 // Load loads the network configuration from the given path.
@@ -171,6 +174,7 @@ type chainJSON struct {
 	IsEthereum        bool              `json:"is_ethereum,omitempty"`
 	BlockPeriod       string            `json:"block_period"`
 	FinalizationStrat FinalizationStrat `json:"finalization_start"`
+	AVSContractAddr   common.Address    `json:"avs_contract_address"`
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
@@ -196,6 +200,7 @@ func (c *Chain) UnmarshalJSON(bz []byte) error {
 		IsEthereum:        cj.IsEthereum,
 		BlockPeriod:       blockPeriod,
 		FinalizationStrat: cj.FinalizationStrat,
+		AVSContractAddr:   cj.AVSContractAddr,
 	}
 
 	return nil
@@ -214,6 +219,7 @@ func (c Chain) MarshalJSON() ([]byte, error) {
 		IsEthereum:        c.IsEthereum,
 		BlockPeriod:       c.BlockPeriod.String(),
 		FinalizationStrat: c.FinalizationStrat,
+		AVSContractAddr:   c.AVSContractAddr,
 	}
 
 	bz, err := json.Marshal(cj)

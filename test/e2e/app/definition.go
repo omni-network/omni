@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"net"
 	"path/filepath"
 	"strings"
 	"time"
@@ -86,9 +87,12 @@ func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
 		return Definition{}, errors.Wrap(err, "loading testnet")
 	}
 
-	backends, err := ethbackend.NewBackends(testnet, cfg.DeployKeyFile)
-	if err != nil {
-		return Definition{}, errors.Wrap(err, "new backends")
+	var backends ethbackend.Backends
+	if !testnet.OnlyMonitor {
+		backends, err = ethbackend.NewBackends(testnet, cfg.DeployKeyFile)
+		if err != nil {
+			return Definition{}, errors.Wrap(err, "new backends")
+		}
 	}
 
 	netman, err := netman.NewManager(testnet, backends, cfg.RelayerKeyFile)
@@ -151,9 +155,55 @@ func LoadManifest(path string) (types.Manifest, error) {
 	return manifest, nil
 }
 
+func MonitorOnlyTestnet(manifest types.Manifest, infd types.InfrastructureData, cfg DefinitionConfig) (types.Testnet, error) {
+	publics, err := publicChains(manifest, cfg)
+	if err != nil {
+		return types.Testnet{}, err
+	}
+
+	cmtTestnet, err := monitorCometTestnet(manifest.Manifest, cfg.ManifestFile, infd.InfrastructureData)
+	if err != nil {
+		return types.Testnet{}, errors.Wrap(err, "testnet from manifest")
+	}
+
+	return types.Testnet{
+		Network:      manifest.Network,
+		Testnet:      cmtTestnet,
+		PublicChains: publics,
+		OnlyMonitor:  true,
+	}, nil
+}
+
+// monitorCometTestnet returns a bare minimum instance of *e2e.Testnet. It doesn't have any nodes or chain details setup.
+func monitorCometTestnet(manifest e2e.Manifest, file string, ifd e2e.InfrastructureData) (*e2e.Testnet, error) {
+	dir := strings.TrimSuffix(file, filepath.Ext(file))
+
+	_, ipNet, err := net.ParseCIDR(ifd.Network)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("invalid IP network address %q", ifd.Network))
+	}
+
+	testnet := &e2e.Testnet{
+		Name:         filepath.Base(dir),
+		File:         file,
+		Dir:          runsDir(file),
+		IP:           ipNet,
+		InitialState: manifest.InitialState,
+		Prometheus:   manifest.Prometheus,
+	}
+
+	return testnet, nil
+}
+
 //nolint:nosprintfhostport // Not an issue for non-critical e2e test code.
-func TestnetFromManifest(manifest types.Manifest, infd types.InfrastructureData, cfg DefinitionConfig,
-) (types.Testnet, error) {
+func TestnetFromManifest(manifest types.Manifest, infd types.InfrastructureData, cfg DefinitionConfig) (types.Testnet, error) {
+	if manifest.OnnyMonitor {
+		// Create a bare minimum comet testnet only with test di, prometheus and ipnet.
+		// Otherwise e2e.NewTestnetFromManifest panics because there are no nodes set
+		// in the only_monitor manifest.
+		return MonitorOnlyTestnet(manifest, infd, cfg)
+	}
+
 	cmtTestnet, err := e2e.NewTestnetFromManifest(manifest.Manifest, cfg.ManifestFile, infd.InfrastructureData)
 	if err != nil {
 		return types.Testnet{}, errors.Wrap(err, "testnet from manifest")
@@ -230,11 +280,26 @@ func TestnetFromManifest(manifest types.Manifest, infd types.InfrastructureData,
 		})
 	}
 
+	publics, err := publicChains(manifest, cfg)
+	if err != nil {
+		return types.Testnet{}, err
+	}
+
+	return types.Testnet{
+		Network:      manifest.Network,
+		Testnet:      adaptCometTestnet(cmtTestnet, cfg.OmniImgTag),
+		OmniEVMs:     omniEVMS,
+		AnvilChains:  anvils,
+		PublicChains: publics,
+	}, nil
+}
+
+func publicChains(manifest types.Manifest, cfg DefinitionConfig) ([]types.PublicChain, error) {
 	var publics []types.PublicChain
 	for _, name := range manifest.PublicChains {
 		chain, err := types.PublicChainByName(name)
 		if err != nil {
-			return types.Testnet{}, errors.Wrap(err, "get public chain")
+			return nil, errors.Wrap(err, "get public chain")
 		}
 
 		chain.IsAVSTarget = chain.Name == manifest.AVSTarget
@@ -250,50 +315,46 @@ func TestnetFromManifest(manifest types.Manifest, infd types.InfrastructureData,
 		})
 	}
 
-	return types.Testnet{
-		Network:      manifest.Network,
-		Testnet:      adaptCometTestnet(cmtTestnet, cfg.OmniImgTag),
-		OmniEVMs:     omniEVMS,
-		AnvilChains:  anvils,
-		PublicChains: publics,
-	}, nil
+	return publics, nil
 }
 
 // internalNetwork returns a internal intra-network netconf.Network from the testnet and deployInfo.
-func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman.DeployInfo, evmPrefix string,
-) netconf.Network {
+func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman.DeployInfo, evmPrefix string) netconf.Network {
 	var chains []netconf.Chain
 
-	omniEVM := omniEVMByPrefix(testnet, evmPrefix)
-	chains = append(chains, netconf.Chain{
-		ID:                omniEVM.Chain.ID,
-		Name:              omniEVM.Chain.Name,
-		RPCURL:            omniEVM.InternalRPC,
-		AuthRPCURL:        omniEVM.InternalAuthRPC,
-		PortalAddress:     deployInfo[omniEVM.Chain].PortalAddress.Hex(),
-		DeployHeight:      deployInfo[omniEVM.Chain].DeployHeight,
-		BlockPeriod:       omniEVM.Chain.BlockPeriod,
-		FinalizationStrat: omniEVM.Chain.FinalizationStrat,
-		IsOmni:            true,
-	})
-
-	// Add all anvil chains
-	for _, anvil := range testnet.AnvilChains {
+	// in monitor only mode there are no anvil chains and omni EVMs
+	if !testnet.OnlyMonitor {
+		omniEVM := omniEVMByPrefix(testnet, evmPrefix)
 		chains = append(chains, netconf.Chain{
-			ID:                anvil.Chain.ID,
-			Name:              anvil.Chain.Name,
-			RPCURL:            anvil.InternalRPC,
-			PortalAddress:     deployInfo[anvil.Chain].PortalAddress.Hex(),
-			DeployHeight:      deployInfo[anvil.Chain].DeployHeight,
-			BlockPeriod:       anvil.Chain.BlockPeriod,
-			FinalizationStrat: anvil.Chain.FinalizationStrat,
-			IsEthereum:        anvil.Chain.IsAVSTarget,
+			ID:                omniEVM.Chain.ID,
+			Name:              omniEVM.Chain.Name,
+			RPCURL:            omniEVM.InternalRPC,
+			AuthRPCURL:        omniEVM.InternalAuthRPC,
+			PortalAddress:     deployInfo[omniEVM.Chain].PortalAddress.Hex(),
+			DeployHeight:      deployInfo[omniEVM.Chain].DeployHeight,
+			BlockPeriod:       omniEVM.Chain.BlockPeriod,
+			FinalizationStrat: omniEVM.Chain.FinalizationStrat,
+			IsOmni:            true,
 		})
+
+		// Add all anvil chains
+		for _, anvil := range testnet.AnvilChains {
+			chains = append(chains, netconf.Chain{
+				ID:                anvil.Chain.ID,
+				Name:              anvil.Chain.Name,
+				RPCURL:            anvil.InternalRPC,
+				PortalAddress:     deployInfo[anvil.Chain].PortalAddress.Hex(),
+				DeployHeight:      deployInfo[anvil.Chain].DeployHeight,
+				BlockPeriod:       anvil.Chain.BlockPeriod,
+				FinalizationStrat: anvil.Chain.FinalizationStrat,
+				IsEthereum:        anvil.Chain.IsAVSTarget,
+			})
+		}
 	}
 
 	// Add all public chains
 	for _, public := range testnet.PublicChains {
-		chains = append(chains, netconf.Chain{
+		pc := netconf.Chain{
 			ID:                public.Chain.ID,
 			Name:              public.Chain.Name,
 			RPCURL:            public.RPCAddress,
@@ -302,7 +363,10 @@ func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 			BlockPeriod:       public.Chain.BlockPeriod,
 			FinalizationStrat: public.Chain.FinalizationStrat,
 			IsEthereum:        public.Chain.IsAVSTarget,
-		})
+			AVSContractAddr:   public.Chain.AVSContractAddress,
+		}
+
+		chains = append(chains, pc)
 	}
 
 	return netconf.Network{
