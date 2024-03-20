@@ -28,7 +28,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	rpcClientPerChain, err := initializeRPCClients(network.Chains)
+	rpcClientPerChain, err := initializeRPCClients(network.EVMChains())
 	if err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 
 	cprov := cprovider.NewABCIProvider(tmClient, network.ChainNamesByIDs())
-	xprov := xprovider.New(network, rpcClientPerChain)
+	xprov := xprovider.New(network, rpcClientPerChain, cprov)
 
 	state, ok, err := LoadCursors(cfg.StateFile)
 	if err != nil {
@@ -53,7 +53,7 @@ func Run(ctx context.Context, cfg Config) error {
 		state = NewEmptyState(cfg.StateFile)
 	}
 
-	for _, destChain := range network.Chains {
+	for _, destChain := range network.EVMChains() {
 		sendProvider := func() (SendFunc, error) {
 			sender, err := NewOpSender(destChain, rpcClientPerChain[destChain.ID], *privateKey,
 				network.ChainNamesByIDs())
