@@ -3,7 +3,7 @@ package avs
 import (
 	"context"
 
-	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/contracts/bindingsv1"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
@@ -42,8 +42,8 @@ func Monitor(ctx context.Context, network netconf.Network) error {
 }
 
 // newAVS returns a new AVS contract instance.
-func newAVS(client ethclient.Client, address common.Address) (*bindings.OmniAVS, error) {
-	avs, err := bindings.NewOmniAVS(address, client)
+func newAVS(client ethclient.Client, address common.Address) (*bindingsv1.OmniAVS, error) {
+	avs, err := bindingsv1.NewOmniAVS(address, client)
 	if err != nil {
 		return nil, errors.Wrap(err, "new AVS")
 	}
