@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/agent"
@@ -68,6 +69,10 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 		if err := StartInitial(ctx, def.Testnet.Testnet, def.Infra); err != nil {
 			return nil, nil, err
 		}
+
+		// todo(lazar): remove this when we figure out why txs are stuck in geth mempool upon initial run
+		// wait for geth nodes to connect
+		time.Sleep(3 * time.Second)
 
 		if err := def.Netman.DeployPrivatePortals(ctx, genesisValSetID, genesisVals); err != nil {
 			return nil, nil, err
