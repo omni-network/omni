@@ -115,12 +115,36 @@ func (p *Provider) Setup() error {
 
 func (p *Provider) Upgrade(ctx context.Context) error {
 	log.Info(ctx, "Upgrading docker-compose on VMs", "image", p.Testnet.UpgradeVersion)
+
+	var filePaths []string
+	// add all artefacts for each node
+	for _, node := range p.Testnet.Nodes {
+		nodeDir := filepath.Join(p.Testnet.Dir, node.Name)
+
+		filePaths = append(filePaths,
+			filepath.Join(nodeDir, "config", "halo.toml"),
+			filepath.Join(nodeDir, "config", "config.toml"),
+			filepath.Join(nodeDir, "config", "network.json"),
+		)
+	}
+
+	relayerDir := filepath.Join(p.Testnet.Dir, "relayer")
+	filePaths = append(filePaths,
+		filepath.Join(relayerDir, "relayer.toml"),
+		filepath.Join(relayerDir, "network.json"),
+	)
+
 	for vmName, instance := range p.Data.VMs {
 		log.Debug(ctx, "Upgrading docker-compose", "vm", vmName)
 
+		for _, filePath := range filePaths {
+			if err := copyFileToVM(ctx, vmName, filePath); err != nil {
+				return errors.Wrap(err, "copy file", "vm", vmName, "file", filePath)
+			}
+		}
+
 		composeFile := vmComposeFile(instance.IPAddress.String())
-		err := copyFileToVM(ctx, vmName, filepath.Join(p.Testnet.Dir, composeFile))
-		if err != nil {
+		if err := copyFileToVM(ctx, vmName, filepath.Join(p.Testnet.Dir, composeFile)); err != nil {
 			return errors.Wrap(err, "copy compose", "vm", vmName)
 		}
 
@@ -130,8 +154,7 @@ func (p *Provider) Upgrade(ctx context.Context) error {
 			"sudo docker compose up -d",
 			composeFile, p.Testnet.Name, p.Testnet.Name)
 
-		err = execOnVM(ctx, vmName, startCmd)
-		if err != nil {
+		if err := execOnVM(ctx, vmName, startCmd); err != nil {
 			return errors.Wrap(err, "compose up", "vm", vmName)
 		}
 	}
