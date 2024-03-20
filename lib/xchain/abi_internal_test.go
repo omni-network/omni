@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/omni-network/omni/test/tutil"
+	"github.com/omni-network/omni/e2e/tutil"
 
 	"github.com/ethereum/go-ethereum/common"
 

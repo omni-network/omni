@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/omni-network/omni/e2e/tutil"
 	"github.com/omni-network/omni/lib/log"
 	monitor "github.com/omni-network/omni/monitor/app"
-	"github.com/omni-network/omni/test/tutil"
 
 	"github.com/stretchr/testify/require"
 )

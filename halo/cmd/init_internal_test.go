@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/omni-network/omni/e2e/tutil"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/test/tutil"
 
 	"github.com/stretchr/testify/require"
 )

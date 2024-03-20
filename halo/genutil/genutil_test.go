@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/omni-network/omni/e2e/tutil"
 	"github.com/omni-network/omni/halo/genutil"
-	"github.com/omni-network/omni/test/tutil"
 
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 
