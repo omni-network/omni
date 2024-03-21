@@ -9,19 +9,10 @@ import (
 )
 
 // CreateAndWait creates a transaction and waits for it to be signed.
-func (c Client) CreateAndWait(ctx context.Context, opts TransactionRequestOptions) (TransactionResponse, error) {
+func (c Client) CreateAndWait(ctx context.Context, opts TransactionRequestOptions) (GetTransactionResponse, error) {
 	resp, err := c.CreateTransaction(ctx, opts)
 	if err != nil {
-		return TransactionResponse{}, err
-	}
-
-	// see if the transaction returned is already completed and exit early if it is
-	isCompleted, err := isComplete(*resp)
-	if err != nil {
-		return *resp, err
-	}
-	if isCompleted {
-		return *resp, nil
+		return GetTransactionResponse{}, err
 	}
 
 	var attempt int
@@ -31,16 +22,16 @@ func (c Client) CreateAndWait(ctx context.Context, opts TransactionRequestOption
 	for {
 		select {
 		case <-ctx.Done():
-			return TransactionResponse{}, errors.Wrap(ctx.Err(), "context canceled")
+			return GetTransactionResponse{}, errors.Wrap(ctx.Err(), "context canceled")
 		case <-queryTicker.C:
 			resp, err := c.GetTransactionByID(ctx, resp.ID)
 			if err != nil {
-				return TransactionResponse{}, err
+				return GetTransactionResponse{}, err
 			}
 
 			ok, err := isComplete(resp)
 			if err != nil {
-				return TransactionResponse{}, err
+				return GetTransactionResponse{}, err
 			} else if ok {
 				return resp, nil
 			}
@@ -58,7 +49,7 @@ func (c Client) CreateAndWait(ctx context.Context, opts TransactionRequestOption
 }
 
 // isComplete returns true if the transaction is complete, false if still pending, or an error if it failed.
-func isComplete(resp TransactionResponse) (bool, error) {
+func isComplete(resp GetTransactionResponse) (bool, error) {
 	switch resp.Status {
 	case "COMPLETED":
 		return true, nil

@@ -7,14 +7,14 @@ import (
 )
 
 // GetTransactionByID gets a transaction by its ID.
-func (c Client) GetTransactionByID(ctx context.Context, transactionID string) (TransactionResponse, error) {
+func (c Client) GetTransactionByID(ctx context.Context, transactionID string) (GetTransactionResponse, error) {
 	endpoint := filepath.Join(transactionEndpoint, transactionID)
 	jwtToken, err := c.token(endpoint, nil)
 	if err != nil {
-		return TransactionResponse{}, err
+		return GetTransactionResponse{}, err
 	}
 
-	var res TransactionResponse
+	var res GetTransactionResponse
 	err = c.jsonHTTP.Send(
 		ctx,
 		endpoint,
@@ -24,7 +24,7 @@ func (c Client) GetTransactionByID(ctx context.Context, transactionID string) (T
 		&res,
 	)
 	if err != nil {
-		return TransactionResponse{}, err
+		return GetTransactionResponse{}, err
 	}
 
 	return res, nil

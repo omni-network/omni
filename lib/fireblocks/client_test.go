@@ -88,15 +88,15 @@ func TestCreateAndWaitGolden(t *testing.T) {
 	require.NotNil(t, resp)
 }
 
-func expectSubmittedTransaction(id string) *fireblocks.TransactionResponse {
-	return &fireblocks.TransactionResponse{
+func expectSubmittedTransaction(id string) *fireblocks.GetTransactionResponse {
+	return &fireblocks.GetTransactionResponse{
 		ID:     id,
 		Status: "SUBMITTED",
 	}
 }
 
-func expectCompletedTransaction(id string) *fireblocks.TransactionResponse {
-	return &fireblocks.TransactionResponse{
+func expectCompletedTransaction(id string) *fireblocks.GetTransactionResponse {
+	return &fireblocks.GetTransactionResponse{
 		ID:     id,
 		Status: "COMPLETED",
 	}
