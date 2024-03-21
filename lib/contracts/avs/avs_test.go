@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strings"
 	"testing"
 	"time"
 
@@ -46,11 +45,11 @@ const (
 
 //nolint:gochecknoglobals // These are test constants.
 var (
-	// account used to deploy omniAVS contracts (anvil account 0).
-	avsOwnerPk = mustHexToKey("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")
+	// account used to deploy omniAVS contracts.
+	avsOwnerPk = anvil.Account0Pk
 
-	// account used to deploy eigen contracts (anvil account 1).
-	eigenOwnerPk = mustHexToKey("0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6")
+	// account used to deploy eigen contracts.
+	eigenOwnerPk = anvil.Account9Pk
 
 	// eigen strategy manger, and test weth strategy.
 	stratMngrAddr = common.HexToAddress("0xe1DA8919f262Ee86f9BE05059C9280142CF23f48")
@@ -64,7 +63,7 @@ func setup(t *testing.T) (context.Context, *ethbackend.Backend, Contracts, EOAS)
 
 	ctx := context.Background()
 
-	ethCl, stop, err := anvil.Start(ctx, t.TempDir(), chainID)
+	ethCl, stop, err := anvil.Start(ctx, tutil.TempDir(t), chainID)
 	require.NoError(t, err)
 	t.Cleanup(stop)
 
@@ -567,15 +566,6 @@ func checkIfCodePresent(
 	codeBytes, err := ethCl.CodeAt(ctx, addr, nil)
 	require.NoError(t, err)
 	require.NotEmpty(t, len(codeBytes))
-}
-
-func mustHexToKey(privKeyHex string) *ecdsa.PrivateKey {
-	privKey, err := crypto.HexToECDSA(strings.TrimPrefix(privKeyHex, "0x"))
-	if err != nil {
-		panic(err)
-	}
-
-	return privKey
 }
 
 func fundAccount(t *testing.T, ctx context.Context, backend *ethbackend.Backend, funder, account common.Address) {

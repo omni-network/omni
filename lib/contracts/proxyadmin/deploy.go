@@ -6,6 +6,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/chainids"
 	"github.com/omni-network/omni/lib/contracts"
+	"github.com/omni-network/omni/lib/contracts/create3"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 
@@ -19,6 +20,7 @@ type DeploymentConfig struct {
 	Create3Salt    string
 	Owner          common.Address
 	Deployer       common.Address
+	ExpectedAddr   common.Address
 }
 
 func (cfg DeploymentConfig) Validate() error {
@@ -67,11 +69,11 @@ func testnetDeployCfg(network string) DeploymentConfig {
 
 func devnetDeployCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory: common.HexToAddress("0x1234"), // TODO: currently unused
+		Create3Factory: contracts.DevnetCreate3Factory,
 		Create3Salt:    "devnet-proxy-admin",
-		// anvil account 0
-		Owner:    common.HexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"),
-		Deployer: common.HexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"),
+		Owner:          contracts.DevnetProxyAdminOwner,
+		Deployer:       contracts.DevnetDeployer,
+		ExpectedAddr:   contracts.DevnetProxyAdmin,
 	}
 }
 
@@ -111,7 +113,26 @@ func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backe
 		return common.Address{}, nil, errors.Wrap(err, "bind opts")
 	}
 
-	addr, tx, _, err := bindings.DeployProxyAdmin(txOpts, backend, cfg.Owner)
+	factory, err := bindings.NewCreate3(cfg.Create3Factory, backend)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "new create3")
+	}
+
+	salt := create3.HashSalt(cfg.Create3Salt)
+
+	addr, err := factory.GetDeployed(nil, txOpts.From, salt)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "get deployed")
+	} else if (cfg.ExpectedAddr != common.Address{}) && addr != cfg.ExpectedAddr {
+		return common.Address{}, nil, errors.New("unexpected address", "expected", cfg.ExpectedAddr, "actual", addr)
+	}
+
+	initCode, err := packInitCode(cfg)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "pack init code")
+	}
+
+	tx, err := factory.Deploy(txOpts, salt, initCode)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "deploy proxy admin")
 	}
@@ -124,4 +145,13 @@ func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backe
 	}
 
 	return addr, receipt, nil
+}
+
+func packInitCode(cfg DeploymentConfig) ([]byte, error) {
+	abi, err := bindings.ProxyAdminMetaData.GetAbi()
+	if err != nil {
+		return nil, errors.Wrap(err, "get abi")
+	}
+
+	return contracts.PackInitCode(abi, bindings.ProxyAdminBin, cfg.Owner)
 }
