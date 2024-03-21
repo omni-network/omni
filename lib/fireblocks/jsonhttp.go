@@ -41,6 +41,11 @@ func (c jsonHTTP) Send(ctx context.Context, endpoint string, httpMethod string, 
 	if err != nil {
 		return errors.Wrap(err, "marshaling JSON")
 	}
+	// on get requests even will a nil request, we are passing in a non nil request body as the body marshaled to equal `null`
+	// so we just set it to nil if the request is nil
+	if request == nil {
+		reqBytes = nil
+	}
 
 	req, err := http.NewRequestWithContext(
 		ctx,
