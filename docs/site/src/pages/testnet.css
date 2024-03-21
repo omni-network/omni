@@ -1,19 +1,27 @@
 .banner {
-    /* background-image: url('/img/banner-2-light.png'); */
-    background-size: cover;
-    background-position: center;
-    padding: 40px 0;
+    background-image: url('/img/banner-wide-light.png');
+    background-size: 100% auto;
+    background-repeat: no-repeat;
+    background-position: center center;
+    padding: 60px 0;
     text-align: center;
+    color: white; /* Adjust the text color for better visibility depending on your image */
 }
 
-/* [data-theme="dark"] .banner {
-    background-image: url('/img/banner-2.png');
-} */
+[data-theme="dark"] .banner {
+    background-image: url('/img/banner-wide.png');
+}
 
 .banner-title {
     margin: 0;
     /* color: #0056b3; */
-    font-size: 60px;
+    font-size: 70px;
+    font-weight: 300;
+}
+
+h2 {
+    font-weight: 300;
+    margin-bottom: 0.25em;
 }
 
 .banner-title::after {
@@ -22,6 +30,7 @@
 
 .banner-subtitle {
     color: #6c757d;
+    font-weight: 300;
 }
 
 .start-section,
