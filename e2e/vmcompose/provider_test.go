@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/e2e/app"
-	"github.com/omni-network/omni/e2e/tutil"
 	"github.com/omni-network/omni/e2e/vmcompose"
+	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/stretchr/testify/require"
 )

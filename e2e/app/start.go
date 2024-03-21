@@ -129,7 +129,7 @@ func StartRemaining(ctx context.Context, testnet *e2e.Testnet, p infra.Provider)
 
 		err := p.StartNodes(ctx, node)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "starting catchup node")
 		}
 		status, err := waitForNode(ctx, node, node.StartAt, 3*time.Minute)
 		if err != nil {

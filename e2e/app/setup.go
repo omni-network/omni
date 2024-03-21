@@ -62,7 +62,7 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 	}
 
 	if def.Manifest.OnlyMonitor {
-		return SetupOnlyMonitor(ctx, def, agentSecrets, testCfg)
+		return SetupOnlyMonitor(ctx, def, agentSecrets)
 	}
 
 	var vals []crypto.PubKey
@@ -129,7 +129,7 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 
 		err = (&p2p.NodeKey{PrivKey: node.NodeKey}).SaveAs(filepath.Join(nodeDir, "config", "node_key.json"))
 		if err != nil {
-			return err
+			return errors.Wrap(err, "write node key")
 		}
 
 		(privval.NewFilePV(node.PrivvalKey,
@@ -163,7 +163,7 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 	return nil
 }
 
-func SetupOnlyMonitor(ctx context.Context, def Definition, agentSecrets agent.Secrets, testCfg bool) error {
+func SetupOnlyMonitor(ctx context.Context, def Definition, agentSecrets agent.Secrets) error {
 	logCfg := logConfig()
 	if err := writeMonitorConfig(def, logCfg); err != nil {
 		return err

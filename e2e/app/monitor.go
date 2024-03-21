@@ -74,7 +74,11 @@ func StartMonitoringReceipts(ctx context.Context, def Definition) func() error {
 						return errors.New("invalid receipt, missing msg", attrs...)
 					}
 
-					msg := m.(xchain.Msg) //nolint:forcetypeassert // We know it's a msg.
+					msg, ok := m.(xchain.Msg)
+					if !ok {
+						return errors.New("invalid msg")
+					}
+
 					attrs = append(attrs,
 						"msg_address", msg.DestAddress.String(),
 						"gas_limit", msg.DestGasLimit,

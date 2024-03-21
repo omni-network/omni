@@ -9,11 +9,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omni-network/omni/e2e/tutil"
 	"github.com/omni-network/omni/halo/app"
 	halocfg "github.com/omni-network/omni/halo/config"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/tutil"
 
 	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"

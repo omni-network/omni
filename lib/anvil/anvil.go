@@ -121,7 +121,6 @@ func execCmd(ctx context.Context, dir string, cmd string, args ...string) (strin
 	return string(out), nil
 }
 
-//nolint:gosec // Test helper code, writable perms are required.
 func writeAnvilState(dir string) error {
 	anvilStateFile := filepath.Join(dir, "state.json")
 	if err := os.WriteFile(anvilStateFile, static.GetDevnetElAnvilState(), 0o644); err != nil {
@@ -134,7 +133,6 @@ func writeAnvilState(dir string) error {
 //go:embed compose.yaml.tmpl
 var composeTpl []byte
 
-//nolint:gosec // Test helper code, writable perms are required.
 func writeComposeFile(dir string, chainID uint64, port string) error {
 	tpl, err := template.New("").Parse(string(composeTpl))
 	if err != nil {

@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/e2e/docker"
-	"github.com/omni-network/omni/e2e/tutil"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tutil"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 

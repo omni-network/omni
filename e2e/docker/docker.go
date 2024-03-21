@@ -39,7 +39,7 @@ type Provider struct {
 	omniTag      string
 }
 
-func (p *Provider) Clean(ctx context.Context) error {
+func (*Provider) Clean(ctx context.Context) error {
 	log.Info(ctx, "Removing docker containers and networks")
 
 	for _, cmd := range CleanCmds(false, runtime.GOOS == "linux") {
@@ -91,7 +91,7 @@ func (p *Provider) Setup() error {
 
 	err = os.WriteFile(filepath.Join(p.Testnet.Dir, "docker-compose.yml"), bz, 0o644)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "write compose file")
 	}
 
 	return nil

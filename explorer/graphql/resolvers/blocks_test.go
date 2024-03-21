@@ -17,7 +17,7 @@ func TestXBlockQuery(t *testing.T) {
 	ctx := context.Background()
 
 	client := resolvers.CreateTestEntClient(t)
-	resolvers.CreateTestBlock(t, ctx, client)
+	resolvers.CreateTestBlock(ctx, t, client)
 	defer client.Close()
 
 	opts := []graphql.SchemaOpt{

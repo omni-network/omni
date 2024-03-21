@@ -19,11 +19,7 @@ func Cleanup(ctx context.Context, def Definition) error {
 		return errors.Wrap(err, "cleaning infrastructure")
 	}
 
-	if err := cleanupDir(ctx, def.Testnet.Dir); err != nil {
-		return err
-	}
-
-	return nil
+	return cleanupDir(ctx, def.Testnet.Dir)
 }
 
 // cleanupDir cleans up a testnet directory.

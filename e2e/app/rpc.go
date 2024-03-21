@@ -100,7 +100,7 @@ func waitForNode(ctx context.Context, node *e2e.Node, height int64, timeout time
 ) (*rpctypes.ResultStatus, error) {
 	client, err := node.Client()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "getting client")
 	}
 
 	timer := time.NewTimer(0)

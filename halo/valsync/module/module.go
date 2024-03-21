@@ -135,7 +135,6 @@ func init() {
 	)
 }
 
-//nolint:revive // Cosmos-style
 type ModuleInputs struct {
 	depinject.In
 
@@ -147,7 +146,6 @@ type ModuleInputs struct {
 	AKeeper      *akeeper.Keeper
 }
 
-//nolint:revive // Cosmos-style
 type ModuleOutputs struct {
 	depinject.Out
 

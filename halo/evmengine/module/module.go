@@ -98,7 +98,6 @@ func init() {
 	)
 }
 
-//nolint:revive // Cosmos-style
 type ModuleInputs struct {
 	depinject.In
 
@@ -109,7 +108,6 @@ type ModuleInputs struct {
 	EngineCl     ethclient.EngineClient
 }
 
-//nolint:revive // Cosmos-style
 type ModuleOutputs struct {
 	depinject.Out
 

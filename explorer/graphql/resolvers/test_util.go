@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func CreateTestBlock(t *testing.T, ctx context.Context, client *ent.Client) {
+func CreateTestBlock(ctx context.Context, t *testing.T, client *ent.Client) {
 	t.Helper()
 
 	sourceChainID := uint64(1234)
