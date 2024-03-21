@@ -12,6 +12,12 @@ Take part in Omni Missions to help drive Omni forward and get rewards! Read more
 
 ## Delegating \$ETH
 
+:::warning EigenLayer Still Migrating to Holesky
+
+The URL for the EignLayer Dashboard and a list of the supported Omni Operators will be added here soon.
+
+:::
+
 You can delegate testnet **\$ETH** to securing Omni through EigenLayer through the EigenLayer dashboard. Once there you can:
 
 1. Have Holesky as a network to your browser wallet, funded with Holesky **\$ETH**. [Read more on how here](https://www.coingecko.com/learn/holesky-testnet-eth).
@@ -19,5 +25,3 @@ You can delegate testnet **\$ETH** to securing Omni through EigenLayer through t
 3. Connect your wallet to the EigenLayer dashboard.
 4. Restake your restaking tokens to any of the Omni Operators.
 5. 🎉 You are helping secure the Omni Omega Testnet! 🎉
-
-<!-- TODO: verify links and add links to Omni Operators search filter -->
