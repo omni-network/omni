@@ -72,7 +72,7 @@ services:
       e2e: true
     container_name: {{ .InstanceName }}-init
     image: "ethereum/client-go:latest"
-    command: --datadir=/geth init /geth/genesis.json
+    command: {{ if eq .GcMode "archive" }}--state.scheme=hash {{ end }}--datadir=/geth init /geth/genesis.json
     volumes:
       - ./{{ .InstanceName }}:/geth
     networks:
@@ -84,6 +84,7 @@ services:
     container_name: {{ .InstanceName }}
     image: "ethereum/client-go:latest"
     command:
+      - --config=/geth/config.toml
       - --http
       - --http.vhosts=*
       - --http.api=eth,net,web3
@@ -97,14 +98,15 @@ services:
       - --authrpc.addr=0.0.0.0
       - --authrpc.jwtsecret=/geth/jwtsecret
       - --datadir=/geth
-      - --allow-insecure-unlock
       - --unlock=0x123463a4b065722e99115d6c222f267d9cabb524
+      - --allow-insecure-unlock
       - --password=/geth/geth_password.txt
       - --nodiscover
       - --syncmode=full
+      - --gcmode={{.GcMode}}
       - --nodekeyhex={{.NodeKeyHex}}
-      - --bootnodes={{.BootNodesStr}}
       - --miner.recommit=500ms
+      - --nat=extip:{{.ExternalIP}}
     ports:
       - {{ if $.BindAll }}8551:{{end}}8551
       - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}8545

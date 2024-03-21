@@ -42,7 +42,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 	genesisValSetID := uint64(1) // validator set IDs start at 1
 	var genesisVals []bindings.Validator
 	var err error
-	if !def.Manifest.OnnyMonitor {
+	if !def.Manifest.OnlyMonitor {
 		genesisVals, err = toPortalValidators(def.Testnet.Validators)
 		if err != nil {
 			return nil, nil, err

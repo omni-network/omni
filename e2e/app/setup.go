@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/json"
@@ -11,6 +12,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/omni-network/omni/e2e/app/agent"
@@ -29,6 +31,7 @@ import (
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
+	cmtos "github.com/cometbft/cometbft/libs/os"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -58,7 +61,7 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 		return errors.Wrap(err, "mkdir")
 	}
 
-	if def.Manifest.OnnyMonitor {
+	if def.Manifest.OnlyMonitor {
 		return SetupOnlyMonitor(ctx, def, agentSecrets, testCfg)
 	}
 
@@ -115,7 +118,7 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 		}
 		config.WriteConfigFile(filepath.Join(nodeDir, "config", "config.toml"), cfg) // panics
 
-		if err := writeHaloConfig(nodeDir, logCfg, testCfg); err != nil {
+		if err := writeHaloConfig(nodeDir, logCfg, testCfg, node.Mode); err != nil {
 			return err
 		}
 
@@ -332,10 +335,24 @@ func MakeConfig(node *e2e.Node, nodeDir string) (*config.Config, error) {
 }
 
 // writeHaloConfig generates an halo application config for a node and writes it to disk.
-func writeHaloConfig(nodeDir string, logCfg log.Config, testCfg bool) error {
+func writeHaloConfig(nodeDir string, logCfg log.Config, testCfg bool, mode e2e.Mode) error {
 	cfg := halocfg.DefaultConfig()
+
+	switch mode {
+	case e2e.ModeValidator, e2e.ModeFull:
+		cfg.PruningOption = "nothing"
+		cfg.MinRetainBlocks = 0
+	case e2e.ModeSeed, e2e.ModeLight:
+		cfg.PruningOption = "everything"
+		cfg.MinRetainBlocks = 1
+	default:
+		cfg.PruningOption = "default"
+		cfg.MinRetainBlocks = 0
+	}
+
 	cfg.HomeDir = nodeDir
 	cfg.EngineJWTFile = "/geth/jwtsecret" // As per docker-compose mount
+
 	if testCfg {
 		cfg.SnapshotInterval = 1   // Write snapshots each block in e2e tests
 		cfg.SnapshotKeepRecent = 0 // Keep all snapshots in e2e tests
@@ -405,6 +422,14 @@ func writeOmniEVMConfig(testnet types.Testnet) error {
 			if err := os.WriteFile(path, data, 0o644); err != nil {
 				return errors.Wrap(err, "write geth config")
 			}
+		}
+
+		cfg := types.GethConfig{
+			BootstrapNodes: evm.BootNodesStrArr(),
+			StaticNodes:    evm.BootNodesStrArr(),
+		}
+		if err := WriteGethConfigTOML(cfg, filepath.Join(testnet.Dir, evm.InstanceName, "config.toml")); err != nil {
+			return errors.Wrap(err, "write geth config")
 		}
 	}
 
@@ -491,4 +516,27 @@ func logConfig() log.Config {
 		Level:  slog.LevelDebug.String(),
 		Color:  log.ColorForce,
 	}
+}
+
+//go:embed geth.toml.tmpl
+var gethTomlTemplate []byte
+
+// WriteGethConfigTOML writes the toml config to disk.
+func WriteGethConfigTOML(cfg types.GethConfig, path string) error {
+	var buffer bytes.Buffer
+
+	t, err := template.New("").Parse(string(gethTomlTemplate))
+	if err != nil {
+		return errors.Wrap(err, "parse template")
+	}
+
+	if err := t.Execute(&buffer, cfg); err != nil {
+		return errors.Wrap(err, "execute template")
+	}
+
+	if err := cmtos.WriteFile(path, buffer.Bytes(), 0o644); err != nil {
+		return errors.Wrap(err, "write config")
+	}
+
+	return nil
 }

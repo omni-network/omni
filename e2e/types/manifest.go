@@ -26,21 +26,33 @@ type Manifest struct {
 	// SlowTests defines whether to run slow tests (e.g. tests/eigen_tests.go)
 	SlowTests bool `toml:"slow_tests"`
 
-	// OnnyMonitor indicates that the monitor is the only thing that we deploy in this network.
-	OnnyMonitor bool `toml:"only_monitor"`
+	// OnlyMonitor indicates that the monitor is the only thing that we deploy in this network.
+	OnlyMonitor bool `toml:"only_monitor"`
 }
 
-// OmniEVMs returns the names Omni EVMs to deploy.
+// OmniEVMs returns the map names and GcMode of Omni EVMs to deploy.
 // If only a single Omni EVM is to be deployed, the name is "omni_evm".
 // Otherwise, the names are "<node>_evm".
-func (m Manifest) OmniEVMs() []string {
+func (m Manifest) OmniEVMs() map[string]GcMode {
 	if !m.MultiOmniEVMs {
-		return []string{"omni_evm"}
+		return map[string]GcMode{
+			"omni_evm": GcModeFull,
+		}
 	}
 
-	var resp []string
-	for node := range m.Nodes {
-		resp = append(resp, node+"_evm")
+	resp := make(map[string]GcMode)
+	for name, node := range m.Nodes {
+		var gcmode GcMode
+		switch node.Mode {
+		case "full":
+			gcmode = GcModeArchive
+		case "seed":
+			gcmode = GcModeFull
+		default:
+			gcmode = GcModeFull
+		}
+
+		resp[name+"_evm"] = gcmode
 	}
 
 	return resp

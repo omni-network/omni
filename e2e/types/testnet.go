@@ -3,6 +3,7 @@ package types
 import (
 	"crypto/ecdsa"
 	"encoding/hex"
+	"fmt"
 	"net"
 	"strings"
 	"time"
@@ -15,6 +16,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p/enode"
+)
+
+// GcMode represents the garbage collection mode for geth. Either "full" or "archive".
+type GcMode string
+
+const (
+	GcModeFull    GcMode = "full"    // default mode for geth
+	GcModeArchive GcMode = "archive" // archival mode for geth
 )
 
 // Testnet wraps e2e.Testnet with additional omni-specific fields.
@@ -43,6 +52,17 @@ func (t Testnet) AVSChain() (EVMChain, error) {
 	return EVMChain{}, errors.New("avs target chain found")
 }
 
+// OmniEVMValidator returns the omni evm validator instance.
+func (t Testnet) OmniEVMValidator() (OmniEVM, error) {
+	for _, evm := range t.OmniEVMs {
+		if strings.Contains(evm.InstanceName, "validator") {
+			return evm, nil
+		}
+	}
+
+	return OmniEVM{}, errors.New("omni evm validator not found")
+}
+
 // EVMChain represents a EVM chain in a omni network.
 type EVMChain struct {
 	Name               string // Chain Nam.
@@ -59,10 +79,12 @@ type OmniEVM struct {
 	Chain           EVMChain // For netconf (all instances must have the same chain)
 	InstanceName    string   // For docker container name
 	InternalIP      net.IP   // For docker container IP
+	ExternalIP      net.IP   // For setting up NAT on geth bootnode
 	ProxyPort       uint32   // For binding
 	InternalRPC     string   // For JSON-RPC queries from halo/relayer
 	InternalAuthRPC string   // For engine API queries from halo
 	ExternalRPC     string   // For JSON-RPC queries from e2e app.
+	GcMode          GcMode   // Geth config for archive or full mode
 
 	// P2P networking
 	NodeKey   *ecdsa.PrivateKey // Private key
@@ -70,14 +92,16 @@ type OmniEVM struct {
 	BootNodes []*enode.Node     // Peer public keys
 }
 
+// NodeKeyHex returns the hex-encoded node key. Used for geth's config.
 func (o OmniEVM) NodeKeyHex() string {
 	return hex.EncodeToString(crypto.FromECDSA(o.NodeKey))
 }
 
-func (o OmniEVM) BootNodesStr() string {
+// BootNodesStrArr returns a string array of bootnodes for use in geth's config for bootnodes.
+func (o OmniEVM) BootNodesStrArr() string {
 	var resp []string
 	for _, b := range o.BootNodes {
-		resp = append(resp, b.String())
+		resp = append(resp, fmt.Sprintf(`"%s"`, b.String()))
 	}
 
 	return strings.Join(resp, ",")
@@ -97,4 +121,15 @@ type AnvilChain struct {
 type PublicChain struct {
 	Chain      EVMChain // For netconf
 	RPCAddress string   // For JSON-RPC queries from halo/relayer/e2e app.
+}
+
+// GethConfig represents part of the geth configuration that can't be initialized through the command line args.
+type GethConfig struct {
+	// BootstrapNodes are used to establish connectivity
+	// with the rest of the network.
+	BootstrapNodes string
+
+	// Static nodes are used as pre-configured connections which are always
+	// maintained and re-connected on disconnects.
+	StaticNodes string
 }

@@ -197,7 +197,7 @@ func monitorCometTestnet(manifest e2e.Manifest, file string, ifd e2e.Infrastruct
 
 //nolint:nosprintfhostport // Not an issue for non-critical e2e test code.
 func TestnetFromManifest(manifest types.Manifest, infd types.InfrastructureData, cfg DefinitionConfig) (types.Testnet, error) {
-	if manifest.OnnyMonitor {
+	if manifest.OnlyMonitor {
 		// Create a bare minimum comet testnet only with test di, prometheus and ipnet.
 		// Otherwise e2e.NewTestnetFromManifest panics because there are no nodes set
 		// in the only_monitor manifest.
@@ -210,7 +210,7 @@ func TestnetFromManifest(manifest types.Manifest, infd types.InfrastructureData,
 	}
 
 	var omniEVMS []types.OmniEVM
-	for _, name := range manifest.OmniEVMs() {
+	for name, gcmode := range manifest.OmniEVMs() {
 		inst, ok := infd.Instances[name]
 		if !ok {
 			return types.Testnet{}, errors.New("omni evm instance not found in infrastructure data")
@@ -232,12 +232,14 @@ func TestnetFromManifest(manifest types.Manifest, infd types.InfrastructureData,
 			Chain:           types.OmniEVMByNetwork(manifest.Network),
 			InstanceName:    name,
 			InternalIP:      inst.IPAddress,
+			ExternalIP:      inst.ExtIPAddress,
 			ProxyPort:       inst.Port,
 			InternalRPC:     fmt.Sprintf("http://%s:8545", internalIP),
 			InternalAuthRPC: fmt.Sprintf("http://%s:8551", internalIP),
 			ExternalRPC:     fmt.Sprintf("http://%s:%d", inst.ExtIPAddress.String(), inst.Port),
 			NodeKey:         nodeKey,
 			Enode:           en,
+			GcMode:          gcmode,
 		})
 	}
 

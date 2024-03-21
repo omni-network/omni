@@ -48,6 +48,7 @@ services:
     container_name: validator02_evm
     image: "ethereum/client-go:latest"
     command:
+      - --config=/geth/config.toml
       - --http
       - --http.vhosts=*
       - --http.api=eth,net,web3
@@ -61,14 +62,15 @@ services:
       - --authrpc.addr=0.0.0.0
       - --authrpc.jwtsecret=/geth/jwtsecret
       - --datadir=/geth
-      - --allow-insecure-unlock
       - --unlock=0x123463a4b065722e99115d6c222f267d9cabb524
+      - --allow-insecure-unlock
       - --password=/geth/geth_password.txt
       - --nodiscover
       - --syncmode=full
+      - --gcmode=full
       - --nodekeyhex=<nodekeyhex>
-      - --bootnodes=enode://<enode_pubkey>@127.0.0.1:30303
       - --miner.recommit=500ms
+      - --nat=extip:<nil>
     ports:
       - 8551:8551
       - 8545:8545

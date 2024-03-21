@@ -40,7 +40,7 @@ func NewInfraData(manifest types.Manifest) (types.InfrastructureData, error) {
 		return uint32(port)
 	}
 
-	for _, name := range manifest.OmniEVMs() {
+	for name := range manifest.OmniEVMs() {
 		infd.Instances[name] = e2e.InstanceData{
 			IPAddress:    nextInternalIP(),
 			ExtIPAddress: localhost,
