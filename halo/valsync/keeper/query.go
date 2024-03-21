@@ -62,7 +62,6 @@ func (k Keeper) ValidatorsAtHeight(ctx context.Context, height uint64) ([]*Valid
 	return vals, nil
 }
 
-//nolint:wrapcheck // This is a grpc server method, so has to return grpc errors.
 func (k Keeper) ValidatorSet(ctx context.Context, req *types.ValidatorSetRequest) (*types.ValidatorSetResponse, error) {
 	vatset, err := k.valsetTable.Get(ctx, req.Id)
 	if errors.Is(err, ormerrors.NotFound) {

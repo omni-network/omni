@@ -260,7 +260,7 @@ func writeTemplate(methods []Method, providers []string, imprts []string) error 
 		return errors.Wrap(err, "format")
 	}
 
-	err = os.WriteFile(filename, out, 0o644) //nolint:gosec // Code is editable.
+	err = os.WriteFile(filename, out, 0o644)
 	if err != nil {
 		return errors.Wrap(err, "write file")
 	}

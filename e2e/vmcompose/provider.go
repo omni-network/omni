@@ -215,7 +215,7 @@ func (p *Provider) Clean(ctx context.Context) error {
 	return nil
 }
 
-func (p *Provider) StopTestnet(ctx context.Context) error {
+func (*Provider) StopTestnet(context.Context) error {
 	return errors.New("not implemented")
 }
 

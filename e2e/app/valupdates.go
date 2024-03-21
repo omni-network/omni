@@ -158,7 +158,7 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 		case err := <-errChan:
 			return err
 		case <-ctx.Done():
-			return ctx.Err()
+			return errors.Wrap(ctx.Err(), "timeout")
 		}
 	}
 }

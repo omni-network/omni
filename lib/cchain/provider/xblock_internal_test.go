@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/omni-network/omni/e2e/tutil"
 	"github.com/omni-network/omni/lib/cchain"
+	"github.com/omni-network/omni/lib/tutil"
 
 	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"
