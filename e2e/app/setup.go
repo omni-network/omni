@@ -346,7 +346,7 @@ func writeHaloConfig(nodeDir string, logCfg log.Config, testCfg bool, mode e2e.M
 		cfg.PruningOption = "everything"
 		cfg.MinRetainBlocks = 1
 	default:
-		cfg.PruningOption = "nothing"
+		cfg.PruningOption = "default"
 		cfg.MinRetainBlocks = 0
 	}
 
