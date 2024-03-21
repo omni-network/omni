@@ -124,7 +124,7 @@ func execCmd(ctx context.Context, dir string, cmd string, args ...string) (strin
 //nolint:gosec // Test helper code, writable perms are required.
 func writeAnvilState(dir string) error {
 	anvilStateFile := filepath.Join(dir, "state.json")
-	if err := os.WriteFile(anvilStateFile, static.GetElAnvilState(), 0o644); err != nil {
+	if err := os.WriteFile(anvilStateFile, static.GetDevnetElAnvilState(), 0o644); err != nil {
 		return errors.Wrap(err, "write anvil state")
 	}
 
