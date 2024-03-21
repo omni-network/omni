@@ -187,15 +187,23 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	if cmtos.FileExists(networkFile) {
 		log.Info(ctx, "Found network config", "path", networkFile)
 	} else if initCfg.Network == netconf.Simnet {
+		static := netconf.GetStatic(initCfg.Network)
 		// Create a simnet (single binary with mocked clients).
 		network := netconf.Network{
 			Name: initCfg.Network,
 			Chains: []netconf.Chain{
 				{
-					ID:          999,
-					Name:        "omni",
+					ID:          static.OmniExecutionChainID,
+					Name:        "omni_evm",
 					IsOmniEVM:   true,
 					BlockPeriod: time.Millisecond * 500, // Speed up block times for testing
+				},
+				{
+					ID:              static.OmniConsensusChainID,
+					Name:            "omni_consensus",
+					IsOmniConsensus: true,
+					DeployHeight:    1,                      // Validator sets start at height 1, not 0.
+					BlockPeriod:     time.Millisecond * 500, // Speed up block times for testing
 				},
 				{
 					ID:         100, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go

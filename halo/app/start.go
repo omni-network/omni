@@ -19,6 +19,7 @@ import (
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 
 	cmtcfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/node"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
@@ -105,7 +106,7 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 		return nil, errors.Wrap(err, "validate network configuration")
 	}
 
-	engineCl, err := newEngineClient(ctx, cfg, network)
+	engineCl, err := newEngineClient(ctx, cfg, network, privVal.Key.PubKey)
 	if err != nil {
 		return nil, err
 	}
@@ -175,12 +176,12 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 // newXProvider returns a new xchain provider.
 func newXProvider(network netconf.Network, cProvider cchain.Provider) (xchain.Provider, error) {
 	if network.Name == netconf.Simnet {
-		omniEVM, ok := network.OmniEVMChain()
+		omni, ok := network.OmniConsensusChain()
 		if !ok {
 			return nil, errors.New("omni chain not found in network")
 		}
 
-		return xprovider.NewMock(omniEVM.BlockPeriod * 8 / 10), nil // Slightly faster than our chain.
+		return xprovider.NewMock(omni.BlockPeriod*8/10, omni.ID, cProvider), nil // Slightly faster than our chain.
 	}
 
 	clients := make(map[uint64]ethclient.Client)
@@ -274,9 +275,9 @@ func chainIDFromGenesis(cfg Config) (string, error) {
 }
 
 // newEngineClient returns a new engine API client.
-func newEngineClient(ctx context.Context, cfg Config, network netconf.Network) (ethclient.EngineClient, error) {
+func newEngineClient(ctx context.Context, cfg Config, network netconf.Network, pubkey crypto.PubKey) (ethclient.EngineClient, error) {
 	if network.Name == netconf.Simnet {
-		return ethclient.NewEngineMock()
+		return ethclient.NewEngineMock(ethclient.WithMockDeposit(pubkey, 1))
 	}
 
 	jwtBytes, err := ethclient.LoadJWTHexFile(cfg.EngineJWTFile)

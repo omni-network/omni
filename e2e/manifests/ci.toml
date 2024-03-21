@@ -15,4 +15,5 @@ perturb = ["restart"]
 
 # Trigger validator updates at height 20
 [validator_update.20]
+validator01 = 2 # Additional self-delegation of 2 ether $OMNI by validator01
 full01 = 2 # Add full01 as validator by depositing 2 ether $OMNI

@@ -341,7 +341,7 @@ func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 			ID:   netconf.GetStatic(testnet.Network).OmniConsensusChainID,
 			Name: "omni_consensus",
 			// No RPC URLs, since we are going to remove it from netconf in any case.
-			DeployHeight:    0,
+			DeployHeight:    1,                         // Validator sets start at height 1, not 0.
 			BlockPeriod:     omniEVM.Chain.BlockPeriod, // Same block period as omniEVM
 			IsOmniConsensus: true,
 		})
@@ -406,7 +406,7 @@ func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 		ID:   netconf.GetStatic(testnet.Network).OmniConsensusChainID,
 		Name: "omni_consensus",
 		// No RPC URLs, since we are going to remove it from netconf in any case.
-		DeployHeight:    0,
+		DeployHeight:    1,                         // Validator sets start at height 1, not 0.
 		BlockPeriod:     omniEVM.Chain.BlockPeriod, // Same block period as omniEVM
 		IsOmniConsensus: true,
 	})
