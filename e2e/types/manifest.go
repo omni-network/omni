@@ -13,7 +13,7 @@ type Manifest struct {
 	// AnvilChains defines the anvil chains to deploy; chain_a, chain_b, etc.
 	AnvilChains []string `toml:"anvil_chains"`
 
-	// PublicChains defines the public chains to connect to; arb_goerli, etc.
+	// PublicChains defines the public chains to connect to; arb_sepolia, etc.
 	PublicChains []string `toml:"public_chains"`
 
 	// AVSTarget identifies the chain to deploy the AVS contracts to.

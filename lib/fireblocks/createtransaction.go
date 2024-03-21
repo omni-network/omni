@@ -4,10 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"net/http"
-
-	"github.com/omni-network/omni/lib/errors"
 )
 
 // TransactionRequestOptions are the options for creating a new transaction.
@@ -23,22 +20,17 @@ func (c Client) CreateTransaction(ctx context.Context, opt TransactionRequestOpt
 		return nil, err
 	}
 
-	response, err := c.apiRequest.Send(
+	var res TransactionResponse
+	err = c.jsonHTTP.Send(
 		ctx,
 		transactionEndpoint,
 		http.MethodPost,
 		request,
-		c.getHeaders(jwtToken),
+		c.getAuthHeaders(jwtToken),
+		&res,
 	)
-
 	if err != nil {
 		return nil, err
-	}
-
-	var res TransactionResponse
-	err = json.Unmarshal(response, &res)
-	if err != nil {
-		return nil, errors.Wrap(err, "unmarshalling response")
 	}
 
 	return &res, nil
@@ -46,14 +38,9 @@ func (c Client) CreateTransaction(ctx context.Context, opt TransactionRequestOpt
 
 // newTransactionRequest creates a new transaction request.
 func newTransactionRequest(opt TransactionRequestOptions) createTransactionRequest {
-	sha := sha256.Sum256([]byte(opt.Message.Content))
-	var rawMessageData RawMessageData
-	rawSigningMessage := UnsignedRawMessage{
-		Content: hex.EncodeToString(sha[:]),
-	}
-	rawMessageData.Messages = []UnsignedRawMessage{rawSigningMessage}
+	contentHash := sha256.Sum256([]byte(opt.Message.Content))
 
-	req := createTransactionRequest{
+	return createTransactionRequest{
 		Operation: "RAW",
 		Note:      "testing transaction",
 		AssetID:   "ETH",
@@ -66,9 +53,11 @@ func newTransactionRequest(opt TransactionRequestOptions) createTransactionReque
 		},
 		CustomerRefID: "",
 		ExtraParameters: &extraParameters{
-			RawMessageData: rawMessageData,
+			RawMessageData: rawMessageData{
+				Messages: []UnsignedRawMessage{{
+					Content: hex.EncodeToString(contentHash[:]),
+				}},
+			},
 		},
 	}
-
-	return req
 }

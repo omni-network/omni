@@ -8,22 +8,21 @@ import (
 
 const transactionEndpoint string = "v1/transactions"
 
+// Client is a JSON HTTP client for the FireBlocks API.
 type Client struct {
 	cfg        Config
 	apiKey     string
 	privateKey *rsa.PrivateKey
-	host       string
-	apiRequest HTTPClient
+	jsonHTTP   jsonHTTP
 }
 
 // NewClientWithConfig creates a new FireBlocks client with a custom configuration.
 func NewClientWithConfig(apiKey string, privateKey *rsa.PrivateKey, host string, cfg Config) (*Client, error) {
-	apiRequestClient := NewHTTPClient(host, apiKey, "")
+	jsonHTTP := newJSONHTTP(host, apiKey, "")
 	client := &Client{
-		apiKey:     apiKey,     // pragma: allowlist secret
-		privateKey: privateKey, // pragma: allowlist secret
-		host:       host,
-		apiRequest: *apiRequestClient,
+		apiKey:     apiKey,
+		privateKey: privateKey,
+		jsonHTTP:   jsonHTTP,
 		cfg:        cfg,
 	}
 
@@ -37,12 +36,11 @@ func NewClientWithConfig(apiKey string, privateKey *rsa.PrivateKey, host string,
 
 // NewDefaultClient creates a new FireBlocks client with default configuration.
 func NewDefaultClient(apiKey string, privateKey *rsa.PrivateKey, host string) (*Client, error) {
-	client, err := NewClientWithConfig(apiKey, privateKey, host, DefaultConfig())
-	return client, err
+	return NewClientWithConfig(apiKey, privateKey, host, DefaultConfig())
 }
 
-// getHeaders returns the headers for the FireBlocks API.
-func (c Client) getHeaders(jwtToken string) map[string]string {
+// getAuthHeaders returns the authentication headers for the FireBlocks API.
+func (c Client) getAuthHeaders(jwtToken string) map[string]string {
 	header := make(map[string]string)
 	header["X-API-KEY"] = c.apiKey
 	header["Authorization"] = "Bearer " + jwtToken
@@ -52,11 +50,11 @@ func (c Client) getHeaders(jwtToken string) map[string]string {
 
 // check checks if the client is properly configured.
 func (c Client) check() error {
-	if c.host == "" {
-		return errors.New("host is required")
-	}
 	if c.apiKey == "" {
 		return errors.New("apiKey is required")
+	}
+	if c.privateKey == nil {
+		return errors.New("privateKey is required")
 	}
 
 	return nil

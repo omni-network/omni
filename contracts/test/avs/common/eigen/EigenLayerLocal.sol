@@ -190,8 +190,6 @@ contract EigenLayerLocal is IEigenDeployer, CommonBase {
         strategies[0] = _deployWETHStrategy();
         strategies[1] = beaconChainETHStrategy;
 
-        _whitelistStrategies(strategies);
-
         return Deployments({
             proxyAdminOwner: proxyAdminOwner,
             proxyAdmin: address(proxyAdmin),
@@ -218,21 +216,5 @@ contract EigenLayerLocal is IEigenDeployer, CommonBase {
             )
         );
         return address(wethStrat);
-    }
-
-    function _whitelistStrategies(address[] memory strats) internal {
-        vm.startPrank(strategyManager.strategyWhitelister());
-
-        IStrategy[] memory _strategy = new IStrategy[](strats.length);
-        bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](strats.length);
-
-        for (uint256 i = 0; i < strats.length; i++) {
-            _strategy[i] = IStrategy(strats[i]);
-            _thirdPartyTransfersForbiddenValues[i] = false;
-        }
-
-        strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
-
-        vm.stopPrank();
     }
 }

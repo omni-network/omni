@@ -117,17 +117,6 @@ func (p EventProcessor) Deliver(ctx context.Context, _ common.Hash, elog *evmeng
 	ethAddr := crypto.PubkeyToAddress(*stdPubkey)
 	accAddr := sdk.AccAddress(ethAddr.Bytes())
 	valAddr := sdk.ValAddress(ethAddr.Bytes())
-	consAddr := sdk.GetConsAddress(pubkey)
-
-	log.Info(ctx, "EVM staking deposit detected, adding new validator",
-		"depositor", ethAddr.Hex(),
-		"amount", deposit.Amount.String())
-
-	if _, err := p.sKeeper.GetValidator(ctx, valAddr); err == nil {
-		return errors.New("validator already exists")
-	} else if _, err := p.sKeeper.GetValidatorByConsAddr(ctx, consAddr); err == nil {
-		return errors.New("validator pubkey already exists")
-	}
 
 	amountCoin, amountCoins := omniToBondCoin(deposit.Amount)
 
@@ -140,6 +129,25 @@ func (p EventProcessor) Deliver(ctx context.Context, _ common.Hash, elog *evmeng
 	if err := p.bKeeper.SendCoinsFromModuleToAccount(ctx, AccountName, accAddr, amountCoins); err != nil {
 		return errors.Wrap(err, "send coins")
 	}
+
+	if _, err := p.sKeeper.GetValidator(ctx, valAddr); err == nil {
+		log.Info(ctx, "EVM staking deposit detected, adding self-delegation",
+			"depositor", ethAddr.Hex(),
+			"amount", deposit.Amount.String())
+
+		// Validator already exists, add deposit to self delegation
+		msg := stypes.NewMsgDelegate(accAddr.String(), valAddr.String(), amountCoin)
+		_, err = skeeper.NewMsgServerImpl(p.sKeeper).Delegate(ctx, msg)
+		if err != nil {
+			return errors.Wrap(err, "delegate")
+		}
+
+		return nil
+	}
+
+	log.Info(ctx, "EVM staking deposit detected, adding new validator",
+		"depositor", ethAddr.Hex(),
+		"amount", deposit.Amount.String())
 
 	msg, err := stypes.NewMsgCreateValidator(
 		valAddr.String(),

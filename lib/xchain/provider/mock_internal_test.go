@@ -20,7 +20,7 @@ func TestMock(t *testing.T) {
 		total      = 5
 	)
 
-	mock := NewMock(time.Millisecond)
+	mock := NewMock(time.Millisecond, 0, nil)
 
 	var blocks []xchain.Block
 	err := mock.StreamAsync(ctx, chainID, fromHeight, func(ctx context.Context, block xchain.Block) error {

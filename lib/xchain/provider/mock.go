@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
 )
@@ -22,18 +23,24 @@ const (
 	destChainB = 200
 )
 
-// Mock is a mock implementation of the xchain.Provider interface as well as the relayer.XChainClient.
+// Mock is a mock implementation of the xchain.Provider interface.
+// It generates deterministic blocks and messages for any chain that is queried.
+// Except for omni consensus chain, we use the real cprovider to fetch blocks.
 type Mock struct {
-	period time.Duration
-	mu     sync.Mutex
-	blocks []xchain.Block
-	uniq   map[uint64]bool
+	period    time.Duration
+	mu        sync.Mutex
+	blocks    []xchain.Block
+	uniq      map[uint64]bool
+	cChainID  uint64
+	cProvider cchain.Provider
 }
 
-func NewMock(period time.Duration) *Mock {
+func NewMock(period time.Duration, cChainID uint64, cProvider cchain.Provider) *Mock {
 	return &Mock{
-		period: period,
-		uniq:   make(map[uint64]bool),
+		period:    period,
+		uniq:      make(map[uint64]bool),
+		cChainID:  cChainID,
+		cProvider: cProvider,
 	}
 }
 
@@ -62,9 +69,17 @@ func (m *Mock) stream(
 ) error {
 	offset := make(offseter).offset
 
-	// Populate historical blocks so offsets are consistent for heights.
-	for i := uint64(0); i < fromHeight; i++ {
-		m.addBlock(nextBlock(chainID, i, offset))
+	// Similarly to real xprovider, we bump fromHeight to netconf.DeployHeight if below,
+	// this is only required for consensus chain in the mock.
+	if chainID == m.cChainID {
+		if fromHeight < 1 {
+			fromHeight = 1
+		}
+	} else {
+		// Populate historical blocks for mocked chains so offsets are consistent for heights.
+		for i := uint64(0); i < fromHeight; i++ {
+			m.addBlock(m.nextBlock(ctx, chainID, i, offset))
+		}
 	}
 
 	defer func() {
@@ -73,7 +88,7 @@ func (m *Mock) stream(
 	height := fromHeight
 
 	for ctx.Err() == nil {
-		block := nextBlock(chainID, height, offset)
+		block := m.nextBlock(ctx, chainID, height, offset)
 		m.addBlock(block)
 
 		err := callback(ctx, block)
@@ -139,7 +154,24 @@ func (m *Mock) addBlock(block xchain.Block) {
 	m.uniq[block.BlockHeight] = true
 }
 
-func nextBlock(chainID uint64, height uint64, offsetFunc func(xchain.StreamID) uint64) xchain.Block {
+func (m *Mock) nextBlock(ctx context.Context, chainID uint64, height uint64, offsetFunc func(xchain.StreamID) uint64) xchain.Block {
+	if m.cChainID == chainID {
+		// For omni consensus chain, we query the real cprovider for blocks.
+		for {
+			b, ok, err := m.cProvider.XBlock(ctx, height)
+			if ctx.Err() != nil {
+				return xchain.Block{}
+			} else if err != nil {
+				panic(err)
+			} else if !ok {
+				time.Sleep(m.period / 3)
+				continue
+			}
+
+			return b
+		}
+	}
+
 	// Use deterministic randomness based on the chainID and height.
 	r := rand.New(rand.NewSource(int64(chainID ^ height)))
 

@@ -7,32 +7,67 @@ import (
 	"sync"
 	"time"
 
+	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 
+	"github.com/cometbft/cometbft/crypto"
+
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	ethcrypto "github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/trie"
 
 	fuzz "github.com/google/gofuzz"
 )
+
+//nolint:gochecknoglobals // This is a static mapping.
+var depositEvent = mustGetABI(bindings.OmniStakeMetaData).Events["Deposit"]
 
 // engineMock mocks the Engine API for testing purposes.
 type engineMock struct {
 	Client
 	fuzzer *fuzz.Fuzzer
 
-	mu       sync.Mutex
-	head     *types.Block
-	payloads map[engine.PayloadID]engine.ExecutableData
+	mu          sync.Mutex
+	head        *types.Block
+	pendingLogs []types.Log
+	logs        map[common.Hash][]types.Log
+	payloads    map[engine.PayloadID]engine.ExecutableData
+}
+
+// WithMockDeposit returns an option to add a deposit event to the mock.
+func WithMockDeposit(pubkey crypto.PubKey, ether int64) func(*engineMock) {
+	return func(mock *engineMock) {
+		mock.mu.Lock()
+		defer mock.mu.Unlock()
+
+		pk, _ := ethcrypto.DecompressPubkey(pubkey.Bytes())
+
+		wei := new(big.Int).Mul(big.NewInt(ether), big.NewInt(params.Ether))
+
+		data, err := depositEvent.Inputs.Pack(k1util.PubKeyToBytes64(pk), wei)
+		if err != nil {
+			panic(err)
+		}
+
+		mock.pendingLogs = append(mock.pendingLogs, types.Log{
+			Topics: []common.Hash{depositEvent.ID},
+			Data:   data,
+		})
+	}
 }
 
 // NewEngineMock returns a new mock engine API client.
 //
 // Note only some methods are implemented, it will panic if you call an unimplemented method.
-func NewEngineMock() (EngineClient, error) {
+func NewEngineMock(opts ...func(mock *engineMock)) (EngineClient, error) {
 	var (
 		// Deterministic genesis block
 		height     uint64 // 0
@@ -52,16 +87,41 @@ func NewEngineMock() (EngineClient, error) {
 		return nil, errors.Wrap(err, "executable data to block")
 	}
 
-	return &engineMock{
+	m := &engineMock{
 		fuzzer:   fuzzer,
 		head:     genesisBlock,
 		payloads: make(map[engine.PayloadID]engine.ExecutableData),
-	}, nil
+		logs:     make(map[common.Hash][]types.Log),
+	}
+
+	for _, opt := range opts {
+		opt(m)
+	}
+
+	return m, nil
 }
 
-func (*engineMock) FilterLogs(_ context.Context, q ethereum.FilterQuery) ([]types.Log, error) {
-	if len(q.Addresses) > 0 {
-		return nil, nil // We can't mock contract specific logs
+func (m *engineMock) FilterLogs(_ context.Context, q ethereum.FilterQuery) ([]types.Log, error) {
+	// Assume all filter queries with addresses are for deposit events... :/
+	if len(q.Addresses) > 0 && q.BlockHash != nil {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+
+		if logs, ok := m.logs[*q.BlockHash]; ok { // Ensure we returns the same logs for the same query.
+			return logs, nil
+		}
+		if len(m.pendingLogs) == 0 {
+			return nil, nil
+		}
+
+		next := m.pendingLogs[0]
+		next.Address = q.Addresses[0]
+		m.pendingLogs = m.pendingLogs[1:]
+
+		resp := []types.Log{next}
+		m.logs[*q.BlockHash] = resp
+
+		return resp, nil
 	}
 
 	// If no addresses are provided, we return two random logs
@@ -272,4 +332,15 @@ func verifyChild(parent *types.Block, child *types.Block) error {
 	}
 
 	return nil
+}
+
+// mustGetABI returns the metadata's ABI as an abi.ABI type.
+// It panics on error.
+func mustGetABI(metadata *bind.MetaData) *abi.ABI {
+	abi, err := metadata.GetAbi()
+	if err != nil {
+		panic(err)
+	}
+
+	return abi
 }
