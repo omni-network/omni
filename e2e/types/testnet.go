@@ -55,7 +55,8 @@ func (t Testnet) AVSChain() (EVMChain, error) {
 // OmniEVMValidator returns the omni evm validator instance.
 func (t Testnet) OmniEVMValidator() (OmniEVM, error) {
 	for _, evm := range t.OmniEVMs {
-		if strings.Contains(evm.InstanceName, "validator") {
+		if strings.Contains(evm.InstanceName, "validator") ||
+			strings.Contains(evm.InstanceName, "omni_evm") {
 			return evm, nil
 		}
 	}
