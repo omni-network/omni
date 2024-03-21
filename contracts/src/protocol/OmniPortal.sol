@@ -124,6 +124,8 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
      *              and a block header and message batch, proven against the attestation root.
      */
     function xsubmit(XTypes.Submission calldata xsub) external {
+        require(xsub.msgs.length > 0, "OmniPortal: no xmsgs");
+
         // validator set id for this submission
         uint64 valSetId = xsub.validatorSetId;
 
