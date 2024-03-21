@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/chainids"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -94,20 +95,13 @@ func holeskeyDeployCfg() DeploymentConfig {
 }
 
 func devnetDeployCfg() DeploymentConfig {
-	// anvil account 0
-	devnetDeployer := common.HexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
-	devnetOwner := common.HexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
-
-	// anvil account 1 - does not matter devnet (yet)
-	devnetProxyAdmin := common.HexToAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
-
 	return DeploymentConfig{
 		Create3Factory:   common.HexToAddress("0x1234"), // TODO: currently unused
 		Create3Salt:      "devnet-avs",                  // TODO: currently unused
-		Deployer:         devnetDeployer,
-		Owner:            devnetOwner,
+		Deployer:         anvil.Account0,
+		Owner:            anvil.Account0,
 		Eigen:            devnetEigenDeployments,
-		ProxyAdmin:       devnetProxyAdmin,
+		ProxyAdmin:       anvil.Account1, // should not be an eoa, but does not matter for devnet (yet)
 		MetadataURI:      "https://test.com",
 		OmniChainID:      netconf.GetStatic("Devnet").OmniExecutionChainID,
 		AllowlistEnabled: true,

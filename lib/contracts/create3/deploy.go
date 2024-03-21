@@ -55,8 +55,7 @@ func mainnetDeployCfg() DeploymentConfig {
 
 func devnetDeployCfg() DeploymentConfig {
 	return DeploymentConfig{
-		// anvil account 0
-		Deployer:          common.HexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"),
+		Deployer:          contracts.DevnetCreate3Deployer,
 		AllowNonZeroNonce: true,
 	}
 }
