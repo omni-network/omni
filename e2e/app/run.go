@@ -110,7 +110,11 @@ func DefaultE2ETestConfig() E2ETestConfig {
 
 // E2ETest runs a full e2e test.
 func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, secrets agent.Secrets) error {
-	const pingpongN = 3 // Deploy and start ping pong
+	var pingpongN = uint64(3)
+	if def.Manifest.PingPongN != 0 {
+		pingpongN = def.Manifest.PingPongN
+	}
+
 	depCfg := DeployConfig{
 		AgentSecrets: secrets,
 		PingPongN:    pingpongN,

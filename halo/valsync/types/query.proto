@@ -14,9 +14,10 @@ message ValidatorSetRequest {
 }
 
 message ValidatorSetResponse {
-  uint64             id             = 1;
-  uint64             created_height = 2;
-  repeated Validator validators     = 3;
+  uint64             id               = 1;
+  uint64             created_height   = 2;
+  uint64             activated_height = 3;
+  repeated Validator validators       = 4;
 }
 
 message Validator {

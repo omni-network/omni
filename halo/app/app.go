@@ -6,6 +6,7 @@ import (
 	"github.com/omni-network/omni/halo/comet"
 	evmengkeeper "github.com/omni-network/omni/halo/evmengine/keeper"
 	"github.com/omni-network/omni/halo/evmstaking"
+	valsynckeeper "github.com/omni-network/omni/halo/valsync/keeper"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 
@@ -56,6 +57,7 @@ type App struct {
 	ConsensusParamsKeeper consensuskeeper.Keeper
 	EVMEngKeeper          *evmengkeeper.Keeper
 	AttestKeeper          *attestkeeper.Keeper
+	ValSyncKeeper         valsynckeeper.Keeper
 }
 
 // newApp returns a reference to an initialized App.
@@ -89,6 +91,7 @@ func newApp(
 		&app.ConsensusParamsKeeper,
 		&app.EVMEngKeeper,
 		&app.AttestKeeper,
+		&app.ValSyncKeeper,
 	); err != nil {
 		return nil, errors.Wrap(err, "dep inject")
 	}
@@ -101,10 +104,8 @@ func newApp(
 
 	// Set evmengine vote and evm msg providers.
 	app.EVMEngKeeper.SetVoteProvider(app.AttestKeeper)
-	app.EVMEngKeeper.AddEventProcessor(evmengkeeper.NewPocEventProvider(app.EVMEngKeeper))
 	app.EVMEngKeeper.AddEventProcessor(evmStaking)
-
-	proposalHandler := makeProcessProposalHandler(app)
+	app.AttestKeeper.SetValidatorProvider(app.ValSyncKeeper)
 
 	baseAppOpts = append(baseAppOpts, func(bapp *baseapp.BaseApp) {
 		// Use evm engine to create block proposals.
@@ -113,7 +114,7 @@ func newApp(
 		bapp.SetPrepareProposal(app.EVMEngKeeper.PrepareProposal)
 
 		// Route proposed messaged to keepers for verification and external state updates.
-		bapp.SetProcessProposal(proposalHandler)
+		bapp.SetProcessProposal(makeProcessProposalHandler(app))
 
 		// Use attest keeper to extend votes.
 		bapp.SetExtendVoteHandler(app.AttestKeeper.ExtendVote)
@@ -123,8 +124,10 @@ func newApp(
 	app.App = appBuilder.Build(db, nil, baseAppOpts...)
 
 	// Workaround for official endblockers since valsync replaces staking endblocker, but cosmos panics if it's not there.
-	app.ModuleManager.OrderEndBlockers = endBlockers
-	app.SetEndBlocker(app.EndBlocker)
+	{
+		app.ModuleManager.OrderEndBlockers = endBlockers
+		app.SetEndBlocker(app.EndBlocker)
+	}
 
 	if err := app.Load(true); err != nil {
 		return nil, errors.Wrap(err, "load app")
@@ -149,7 +152,6 @@ func (App) SimulationManager() *module.SimulationManager {
 // SetCometAPI sets the comet API client.
 // TODO(corver): Figure out how to use depinject to set this.
 func (a App) SetCometAPI(api comet.API) {
-	a.AttestKeeper.SetCometAPI(api)
 	a.EVMEngKeeper.SetCometAPI(api)
 }
 

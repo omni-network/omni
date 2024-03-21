@@ -11,7 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
-	"github.com/omni-network/omni/lib/xchain/provider"
+	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
@@ -35,22 +35,22 @@ func LogMetrics(ctx context.Context, def Definition) error {
 // StartMonitoringReceipts starts goroutines that streams all xblock receipts ensuring all are successful.
 // It returns a stopfunc that returns an error if any failed receipt was detected before the stopfunc was called.
 func StartMonitoringReceipts(ctx context.Context, def Definition) func() error {
+	client, err := def.Testnet.Nodes[0].Client()
+	if err != nil {
+		return func() error { return errors.Wrap(err, "getting client") }
+	}
+
 	network := externalNetwork(def.Testnet, def.Netman.DeployInfo())
-	xprovider := provider.New(network, def.Backends.RPCClients(), nil)
+	cProvider := cprovider.NewABCIProvider(client, network.ChainNamesByIDs())
+	xProvider := xprovider.New(network, def.Backends.RPCClients(), cProvider)
+	cChainID := netconf.GetStatic(def.Testnet.Network).OmniConsensusChainID
 
 	type void any
-
 	var msgCache sync.Map
 
 	streamReceipts := func(ctx context.Context, chain netconf.Chain) (void, error) {
-		return nil, xprovider.StreamBlocks(ctx, chain.ID, chain.DeployHeight,
+		return nil, xProvider.StreamBlocks(ctx, chain.ID, chain.DeployHeight,
 			func(ctx context.Context, block xchain.Block) error {
-				var failed int
-				for _, receipt := range block.Receipts {
-					if !receipt.Success {
-						failed++
-					}
-				}
 				for _, msg := range block.Msgs {
 					msgCache.Store(msg.MsgID, msg)
 				}
@@ -65,6 +65,11 @@ func StartMonitoringReceipts(ctx context.Context, def Definition) func() error {
 						"dest_chain", network.ChainName(receipt.DestChainID),
 						"src_chain", network.ChainName(receipt.SourceChainID),
 						"gas_used", receipt.GasUsed,
+					}
+
+					// Adapt consensus chain msg destination to 0 for lookup, since it does "broadcast".
+					if receipt.SourceChainID == cChainID {
+						receipt.DestChainID = 0
 					}
 
 					m, ok := msgCache.Load(receipt.MsgID)
@@ -93,7 +98,7 @@ func StartMonitoringReceipts(ctx context.Context, def Definition) func() error {
 			})
 	}
 
-	results, cancel := forkjoin.NewWithInputs(ctx, streamReceipts, network.EVMChains())
+	results, cancel := forkjoin.NewWithInputs(ctx, streamReceipts, network.Chains)
 
 	return func() error {
 		log.Debug(ctx, "Checking receipts")

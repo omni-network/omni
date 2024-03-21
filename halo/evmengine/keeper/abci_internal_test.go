@@ -43,6 +43,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var zeroAddr common.Address
+
 func TestKeeper_PrepareProposal(t *testing.T) {
 	t.Parallel()
 

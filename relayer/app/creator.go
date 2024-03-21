@@ -27,14 +27,14 @@ func CreateSubmissions(up StreamUpdate) ([]xchain.Submission, error) {
 		}
 
 		resp = append(resp, xchain.Submission{
-			AttestationRoot:  att.AttestationRoot,
-			ValidatorSetHash: att.ValidatorSetHash,
-			BlockHeader:      att.BlockHeader,
-			Msgs:             msgs,
-			Proof:            multi.Proof,
-			ProofFlags:       multi.ProofFlags,
-			Signatures:       att.Signatures,
-			DestChainID:      up.DestChainID,
+			AttestationRoot: att.AttestationRoot,
+			ValidatorSetID:  att.ValidatorSetID,
+			BlockHeader:     att.BlockHeader,
+			Msgs:            msgs,
+			Proof:           multi.Proof,
+			ProofFlags:      multi.ProofFlags,
+			Signatures:      att.Signatures,
+			DestChainID:     up.DestChainID,
 		})
 	}
 

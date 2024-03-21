@@ -14,10 +14,10 @@ import (
 	reflect "reflect"
 
 	crypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
-	types "github.com/cometbft/cometbft/types"
-	types0 "github.com/cosmos/cosmos-sdk/types"
+	types "github.com/cosmos/cosmos-sdk/types"
 	common "github.com/ethereum/go-ethereum/common"
-	types1 "github.com/omni-network/omni/halo/attest/types"
+	types0 "github.com/omni-network/omni/halo/attest/types"
+	types1 "github.com/omni-network/omni/halo/valsync/types"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -45,7 +45,7 @@ func (m *MockStakingKeeper) EXPECT() *MockStakingKeeperMockRecorder {
 }
 
 // GetPubKeyByConsAddr mocks base method.
-func (m *MockStakingKeeper) GetPubKeyByConsAddr(arg0 context.Context, arg1 types0.ConsAddress) (crypto.PublicKey, error) {
+func (m *MockStakingKeeper) GetPubKeyByConsAddr(arg0 context.Context, arg1 types.ConsAddress) (crypto.PublicKey, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPubKeyByConsAddr", arg0, arg1)
 	ret0, _ := ret[0].(crypto.PublicKey)
@@ -83,10 +83,10 @@ func (m *MockVoter) EXPECT() *MockVoterMockRecorder {
 }
 
 // GetAvailable mocks base method.
-func (m *MockVoter) GetAvailable() []*types1.Vote {
+func (m *MockVoter) GetAvailable() []*types0.Vote {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAvailable")
-	ret0, _ := ret[0].([]*types1.Vote)
+	ret0, _ := ret[0].([]*types0.Vote)
 	return ret0
 }
 
@@ -111,7 +111,7 @@ func (mr *MockVoterMockRecorder) LocalAddress() *gomock.Call {
 }
 
 // SetCommitted mocks base method.
-func (m *MockVoter) SetCommitted(headers []*types1.BlockHeader) error {
+func (m *MockVoter) SetCommitted(headers []*types0.BlockHeader) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetCommitted", headers)
 	ret0, _ := ret[0].(error)
@@ -125,7 +125,7 @@ func (mr *MockVoterMockRecorder) SetCommitted(headers any) *gomock.Call {
 }
 
 // SetProposed mocks base method.
-func (m *MockVoter) SetProposed(headers []*types1.BlockHeader) error {
+func (m *MockVoter) SetProposed(headers []*types0.BlockHeader) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetProposed", headers)
 	ret0, _ := ret[0].(error)
@@ -152,57 +152,42 @@ func (mr *MockVoterMockRecorder) TrimBehind(edgesByChain any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TrimBehind", reflect.TypeOf((*MockVoter)(nil).TrimBehind), edgesByChain)
 }
 
-// MockCommetAPI is a mock of CommetAPI interface.
-type MockCommetAPI struct {
+// MockValProvider is a mock of ValProvider interface.
+type MockValProvider struct {
 	ctrl     *gomock.Controller
-	recorder *MockCommetAPIMockRecorder
+	recorder *MockValProviderMockRecorder
 }
 
-// MockCommetAPIMockRecorder is the mock recorder for MockCommetAPI.
-type MockCommetAPIMockRecorder struct {
-	mock *MockCommetAPI
+// MockValProviderMockRecorder is the mock recorder for MockValProvider.
+type MockValProviderMockRecorder struct {
+	mock *MockValProvider
 }
 
-// NewMockCommetAPI creates a new mock instance.
-func NewMockCommetAPI(ctrl *gomock.Controller) *MockCommetAPI {
-	mock := &MockCommetAPI{ctrl: ctrl}
-	mock.recorder = &MockCommetAPIMockRecorder{mock}
+// NewMockValProvider creates a new mock instance.
+func NewMockValProvider(ctrl *gomock.Controller) *MockValProvider {
+	mock := &MockValProvider{ctrl: ctrl}
+	mock.recorder = &MockValProviderMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockCommetAPI) EXPECT() *MockCommetAPIMockRecorder {
+func (m *MockValProvider) EXPECT() *MockValProviderMockRecorder {
 	return m.recorder
 }
 
-// IsValidator mocks base method.
-func (m *MockCommetAPI) IsValidator(ctx context.Context, valAddress common.Address) bool {
+// ActiveSetByHeight mocks base method.
+func (m *MockValProvider) ActiveSetByHeight(ctx context.Context, height uint64) (*types1.ValidatorSetResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsValidator", ctx, valAddress)
-	ret0, _ := ret[0].(bool)
-	return ret0
+	ret := m.ctrl.Call(m, "ActiveSetByHeight", ctx, height)
+	ret0, _ := ret[0].(*types1.ValidatorSetResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// IsValidator indicates an expected call of IsValidator.
-func (mr *MockCommetAPIMockRecorder) IsValidator(ctx, valAddress any) *gomock.Call {
+// ActiveSetByHeight indicates an expected call of ActiveSetByHeight.
+func (mr *MockValProviderMockRecorder) ActiveSetByHeight(ctx, height any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsValidator", reflect.TypeOf((*MockCommetAPI)(nil).IsValidator), ctx, valAddress)
-}
-
-// Validators mocks base method.
-func (m *MockCommetAPI) Validators(ctx context.Context, height int64) (*types.ValidatorSet, bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Validators", ctx, height)
-	ret0, _ := ret[0].(*types.ValidatorSet)
-	ret1, _ := ret[1].(bool)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// Validators indicates an expected call of Validators.
-func (mr *MockCommetAPIMockRecorder) Validators(ctx, height any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Validators", reflect.TypeOf((*MockCommetAPI)(nil).Validators), ctx, height)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ActiveSetByHeight", reflect.TypeOf((*MockValProvider)(nil).ActiveSetByHeight), ctx, height)
 }
 
 // MockChainNamer is a mock of ChainNamer interface.

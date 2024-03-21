@@ -28,7 +28,7 @@ contract OmniPortalConstants {
     uint64 internal constant _BROADCAST_CHAIN_ID = 0;
 
     // @dev xmsg.sourceChainId of xmsgs from Omni's consensus chain
-    uint64 internal constant _CCHAIN_ID = 0;
+    uint64 internal constant _CCHAIN_ID = 2; // TODO: move this to constructor
 
     // @dev xmg.sender for xmsgs from Omni's consensus chain
     address internal constant _CCHAIN_SENDER = address(0);

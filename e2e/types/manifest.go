@@ -28,6 +28,9 @@ type Manifest struct {
 
 	// OnlyMonitor indicates that the monitor is the only thing that we deploy in this network.
 	OnlyMonitor bool `toml:"only_monitor"`
+
+	// PingPongN defines the number of ping pong messages to send. Defaults 3 if 0.
+	PingPongN uint64 `toml:"pingpong_n"`
 }
 
 // OmniEVMs returns the map names and GcMode of Omni EVMs to deploy.

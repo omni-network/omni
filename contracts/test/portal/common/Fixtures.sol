@@ -31,12 +31,12 @@ contract Fixtures is CommonBase, StdCheats {
     // That way tests can refer to them without introducing the idea of a "chain". Most
     // test cases need only think about "this" chain.
 
-    uint64 constant thisChainId = 1;
-    uint64 constant chainAId = 2;
-    uint64 constant chainBId = 3;
+    uint64 constant thisChainId = 100;
+    uint64 constant chainAId = 102;
+    uint64 constant chainBId = 103;
 
-    // omni consensus chain id
-    uint64 constant cchainId = 0;
+    uint64 constant cchainId = 2; // PORTAL._CCHAIN_ID - omni consensus chain id
+    uint64 constant broadcastChainId = 0; // PORTAL._BROADCAST_CHAIN_ID
 
     uint64 constant baseValPower = 100;
     uint64 constant genesisValSetId = 1;
@@ -217,16 +217,16 @@ contract Fixtures is CommonBase, StdCheats {
     function _addValidatorSet_xblock(uint64 valSetId) internal view returns (TestXTypes.Block memory) {
         XTypes.Msg[] memory xmsgs = new XTypes.Msg[](1);
         xmsgs[0] = XTypes.Msg({
-            sourceChainId: 0,
-            destChainId: 0,
+            sourceChainId: cchainId,
+            destChainId: broadcastChainId,
             streamOffset: valSetId,
-            sender: address(0),
-            to: address(0),
+            sender: address(0), // Portal._CCHAIN_SENDER
+            to: address(0), // Portal._VIRTUAL_PORTAL_ADDRRESS
             data: abi.encodeWithSelector(OmniPortal.addValidatorSet.selector, valSetId, validatorSet[valSetId]),
             gasLimit: 0
         });
 
-        return TestXTypes.Block(XTypes.BlockHeader(0, valSetId, bytes32(0)), xmsgs);
+        return TestXTypes.Block(XTypes.BlockHeader(cchainId, valSetId, bytes32(0)), xmsgs);
     }
 
     /// @dev Create a Counter.increment() XMsg from thisChainId to chainAId

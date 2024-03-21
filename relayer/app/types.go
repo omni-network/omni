@@ -53,7 +53,7 @@ func submissionToBinding(sub xchain.Submission) bindings.XSubmission {
 
 	return bindings.XSubmission{
 		AttestationRoot: sub.AttestationRoot,
-		ValidatorSetId:  1, // TODO(corver): Use sub.ValSetHash once bindings supports it.
+		ValidatorSetId:  sub.ValidatorSetID,
 		BlockHeader: bindings.XBlockHeader{
 			SourceChainId: sub.BlockHeader.SourceChainID,
 			BlockHeight:   sub.BlockHeader.BlockHeight,

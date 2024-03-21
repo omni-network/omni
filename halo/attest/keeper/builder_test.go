@@ -2,10 +2,11 @@ package keeper_test
 
 import (
 	"github.com/omni-network/omni/halo/attest/types"
+	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/k1util"
 
+	"github.com/cometbft/cometbft/crypto"
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
-	cmttypes "github.com/cometbft/cometbft/types"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -22,22 +23,28 @@ func init() {
 var (
 	blockHashes []common.Hash
 	vals        = []k1.PrivKey{k1.GenPrivKey(), k1.GenPrivKey(), k1.GenPrivKey()}
-	val1        = cmttypes.NewValidator(vals[0].PubKey(), 10)
-	val2        = cmttypes.NewValidator(vals[1].PubKey(), 15)
-	val3        = cmttypes.NewValidator(vals[2].PubKey(), 15)
-	valAddr1    = mustValAddr(val1)
-	valAddr2    = mustValAddr(val2)
-	valAddr3    = mustValAddr(val3)
+	val1        = newValidator(vals[0].PubKey(), 10)
+	val2        = newValidator(vals[1].PubKey(), 15)
+	val3        = newValidator(vals[2].PubKey(), 15)
 	attRoot     = []byte("test attestation root")
 )
 
-func mustValAddr(v *cmttypes.Validator) common.Address {
-	addr, err := k1util.PubKeyToAddress(v.PubKey)
-	if err != nil {
-		panic(err)
+func newValSet(id uint64, vals ...*vtypes.Validator) *vtypes.ValidatorSetResponse {
+	return &vtypes.ValidatorSetResponse{
+		Id:              id,
+		CreatedHeight:   0,
+		ActivatedHeight: 0,
+		Validators:      vals,
 	}
+}
 
-	return addr
+func newValidator(key crypto.PubKey, power int64) *vtypes.Validator {
+	addr, _ := k1util.PubKeyToAddress(key)
+
+	return &vtypes.Validator{
+		Address: addr.Bytes(),
+		Power:   power,
+	}
 }
 
 type MsgBuilder struct {
@@ -181,14 +188,13 @@ func (b *AggVoteBuilder) Vote() *types.AggVote {
 	return b.vote
 }
 
-func sigsTuples(vals ...*cmttypes.Validator) []*types.SigTuple {
+func sigsTuples(vals ...*vtypes.Validator) []*types.SigTuple {
 	var sigs []*types.SigTuple
 	for _, v := range vals {
-		if v == nil {
-			continue
-		}
-		addr := mustValAddr(v)
-		sigs = append(sigs, &types.SigTuple{ValidatorAddress: addr.Bytes(), Signature: v.Bytes()})
+		sigs = append(sigs, &types.SigTuple{
+			ValidatorAddress: v.Address,
+			Signature:        v.Address, // Just make it non-nil for now
+		})
 	}
 
 	return sigs
