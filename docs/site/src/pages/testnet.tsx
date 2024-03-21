@@ -77,7 +77,7 @@ function TestnetPage() {
                 {/* Timeline Section */}
                 <div className="timeline-section">
                     <h1>Timeline</h1>
-                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+                    <p>⏳ A timeline for Omega Testnet will soon be released, stay tuned! ⏳</p>
                 </div>
 
                 {/* Reach out to the Community Section */}
