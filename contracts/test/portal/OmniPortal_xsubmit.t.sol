@@ -37,6 +37,14 @@ contract OmniPortal_xsubmit_Test is Base {
         _testSubmitXBlock("xblock2", genesisValSetId, chainBPortal, chainBCounter);
     }
 
+    function test_xsubmit_noXmsgs_reverts() public {
+        XTypes.Submission memory xsub = readXSubmission("xblock1", portal.chainId());
+        xsub.msgs = new XTypes.Msg[](0);
+
+        vm.expectRevert("OmniPortal: no xmsgs");
+        portal.xsubmit(xsub);
+    }
+
     function test_xsubmit_wrongChainId_reverts() public {
         XTypes.Submission memory xsub = readXSubmission("xblock1", portal.chainId());
 
