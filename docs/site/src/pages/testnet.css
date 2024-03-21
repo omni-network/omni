@@ -110,6 +110,10 @@ h2 {
     fill: var(--ifm-color-primary); /* Adjust if you want to use the primary color */
 }
 
+[data-theme="dark"] .community-box svg {
+    fill: var(--ifm-color-primary-lightest); /* Adjust if you want to use the text color */
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
 

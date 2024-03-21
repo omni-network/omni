@@ -85,8 +85,8 @@ function TestnetPage() {
                     <h1>Reach out to the Community</h1>
                     <div className="community-container">
                         <a href="https://twitter.com/OmniFDN" className="community-box"><XLogo /></a>
-                        <a href="https://discord.com" className="community-box"><DiscordLogo /></a>
-                        <div className="community-box"><TelegramLogo /></div>
+                        <a href="https://discord.gg/bKNXmaX9VD" className="community-box"><DiscordLogo /></a>
+                        <a href="https://t.me/omnifdn" className="community-box"><TelegramLogo /></a>
                     </div>
                 </div>
 
