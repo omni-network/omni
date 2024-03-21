@@ -33,7 +33,7 @@ mode = "full"
 	err := os.WriteFile(manifestFile, []byte(manifest), 0o644)
 	require.NoError(t, err)
 
-	const vm1, vm2, vm3, vm4 = "vm1", "vm2", "vm3", "vm4"
+	const vm1, vm2, vm3, vm4, vm5 = "vm1", "vm2", "vm3", "vm4", "vm5"
 
 	dataJSON := dataJSON{
 		NetworkCIDR: "127.0.0.1/24",
@@ -42,6 +42,7 @@ mode = "full"
 			{Name: vm2, IP: "127.0.0.2"},
 			{Name: vm3, IP: "127.0.0.3"},
 			{Name: vm4, IP: "127.0.0.4"},
+			{Name: vm5, IP: "127.0.0.5"},
 		},
 		ServicesByVM: map[string]string{
 			"validator01":     vm1,
@@ -50,13 +51,14 @@ mode = "full"
 			"validator02":     vm2,
 			"validator02_evm": vm2,
 
-			"chain_a":    vm3,
-			"relayer":    vm3,
-			"seed01":     vm3,
-			"seed01_evm": vm3,
+			"chain_a": vm3,
+			"relayer": vm3,
 
-			"fullnode01":     vm4,
-			"fullnode01_evm": vm4,
+			"seed01":     vm4,
+			"seed01_evm": vm4,
+
+			"fullnode01":     vm5,
+			"fullnode01_evm": vm5,
 		},
 	}
 
