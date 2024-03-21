@@ -52,7 +52,7 @@ func (t Testnet) AVSChain() (EVMChain, error) {
 	return EVMChain{}, errors.New("avs target chain found")
 }
 
-// OmniEVMValidator returns the omni evm validator instance.
+// OmniEVMValidator returns the first omni evm validator instance.
 func (t Testnet) OmniEVMValidator() (OmniEVM, error) {
 	for _, evm := range t.OmniEVMs {
 		if strings.Contains(evm.InstanceName, "validator") ||
