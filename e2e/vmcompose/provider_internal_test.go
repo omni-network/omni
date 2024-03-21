@@ -22,12 +22,18 @@ multi_omni_evms = true
 
 [node.validator01]
 [node.validator02]
+
+[node.seed01]
+mode = "seed"
+
+[node.fullnode01]
+mode = "full"
 `
 	manifestFile := filepath.Join(t.TempDir(), "test.toml")
 	err := os.WriteFile(manifestFile, []byte(manifest), 0o644)
 	require.NoError(t, err)
 
-	const vm1, vm2, vm3 = "vm1", "vm2", "vm3"
+	const vm1, vm2, vm3, vm4 = "vm1", "vm2", "vm3", "vm4"
 
 	dataJSON := dataJSON{
 		NetworkCIDR: "127.0.0.1/24",
@@ -35,6 +41,7 @@ multi_omni_evms = true
 			{Name: vm1, IP: "127.0.0.1"},
 			{Name: vm2, IP: "127.0.0.2"},
 			{Name: vm3, IP: "127.0.0.3"},
+			{Name: vm4, IP: "127.0.0.4"},
 		},
 		ServicesByVM: map[string]string{
 			"validator01":     vm1,
@@ -43,8 +50,13 @@ multi_omni_evms = true
 			"validator02":     vm2,
 			"validator02_evm": vm2,
 
-			"chain_a": vm3,
-			"relayer": vm3,
+			"chain_a":    vm3,
+			"relayer":    vm3,
+			"seed01":     vm3,
+			"seed01_evm": vm3,
+
+			"fullnode01":     vm4,
+			"fullnode01_evm": vm4,
 		},
 	}
 

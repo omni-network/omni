@@ -6,10 +6,10 @@ networks:
     driver: bridge
 
 services:
-  seed01:
+  fullnode01:
     labels:
       e2e: true
-    container_name: seed01
+    container_name: fullnode01
     image: omniops/halo:7d1ae53
     init: true
     ports:
@@ -19,55 +19,33 @@ services:
     environment:
     - HALO_LOG_FORMAT=logfmt
     volumes:
-    - ./seed01:/halo
-    - ./seed01_evm/jwtsecret:/geth/jwtsecret
+    - ./fullnode01:/halo
+    - ./fullnode01_evm/jwtsecret:/geth/jwtsecret
     depends_on:
-      seed01_evm:
+      fullnode01_evm:
         condition: service_healthy
     networks:
       test:
         
 
-  # Initialises geth files and folder from provided genesis file.
-  chain_a:
-    labels:
-      e2e: true
-    container_name: chain_a
-    image: ghcr.io/foundry-rs/foundry:latest
-    entrypoint:
-      - anvil
-      - --host=0.0.0.0
-      - --chain-id=100
-      - --block-time=12
-      - --silent
-      - --load-state=/anvil/state.json
-    ports:
-      - 8545:8545
-    networks:
-      test:
-        
-    
-    volumes:
-      - ./anvil/state.json:/anvil/state.json
-    
 
   # Use geth as the omni EVMs.
   # Initialises geth files and folder from provided genesis file.
-  seed01_evm-init:
+  fullnode01_evm-init:
     labels:
       e2e: true
-    container_name: seed01_evm-init
+    container_name: fullnode01_evm-init
     image: "ethereum/client-go:latest"
-    command: --datadir=/geth init /geth/genesis.json
+    command: --state.scheme=hash --datadir=/geth init /geth/genesis.json
     volumes:
-      - ./seed01_evm:/geth
+      - ./fullnode01_evm:/geth
     networks:
       test:
 
-  seed01_evm:
+  fullnode01_evm:
     labels:
       e2e: true
-    container_name: seed01_evm
+    container_name: fullnode01_evm
     image: "ethereum/client-go:latest"
     command:
       - --config=/geth/config.toml
@@ -89,7 +67,7 @@ services:
       - --password=/geth/geth_password.txt
       - --nodiscover
       - --syncmode=full
-      - --gcmode=full
+      - --gcmode=archive
       - --nodekeyhex=<nodekeyhex>
       - --miner.recommit=500ms
       - --nat=extip:<nil>
@@ -99,28 +77,14 @@ services:
       - 30303:30303
       - 8546
     depends_on:
-      seed01_evm-init:
+      fullnode01_evm-init:
         condition: service_completed_successfully
     healthcheck:
       test: "nc -z localhost 8545"
       interval: 1s
       retries: 30
     volumes:
-      - ./seed01_evm:/geth
-    networks:
-      test:
-        
-
-  relayer:
-    labels:
-      e2e: true
-    container_name: relayer
-    image: omniops/relayer:7d1ae53
-    restart: unless-stopped # Restart on crash to mitigate startup race issues
-    environment:
-    - RELAYER_LOG_FORMAT=logfmt
-    volumes:
-      - ./relayer:/relayer
+      - ./fullnode01_evm:/geth
     networks:
       test:
         
