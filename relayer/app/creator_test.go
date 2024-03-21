@@ -44,8 +44,8 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 	var block xchain.Block
 	fuzzer.NilChance(0).NumElements(1, 64).Fuzz(&block)
 
-	var valSetHash common.Hash
-	fuzzer.Fuzz(&valSetHash)
+	var valSetID uint64
+	fuzzer.Fuzz(&valSetID)
 
 	// make all msg offset sequential
 	for i := range block.Msgs {
@@ -61,10 +61,10 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 	require.NoError(t, err)
 
 	att := xchain.Attestation{
-		BlockHeader:      vote.BlockHeader.ToXChain(),
-		ValidatorSetHash: valSetHash,
-		AttestationRoot:  [32]byte(vote.AttestationRoot),
-		Signatures:       []xchain.SigTuple{vote.Signature.ToXChain()},
+		BlockHeader:     vote.BlockHeader.ToXChain(),
+		ValidatorSetID:  valSetID,
+		AttestationRoot: [32]byte(vote.AttestationRoot),
+		Signatures:      []xchain.SigTuple{vote.Signature.ToXChain()},
 	}
 
 	ensureNoDuplicates := func(t *testing.T, msgs []xchain.Msg) {
@@ -104,7 +104,7 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 			msgCount := 0
 			msgs := make([]xchain.Msg, 0, len(tt.streamUpdate.Msgs))
 			for _, sub := range subs {
-				require.EqualValues(t, valSetHash, sub.ValidatorSetHash)
+				require.EqualValues(t, valSetID, sub.ValidatorSetID)
 				require.NotNil(t, sub.AttestationRoot)
 				require.Equal(t, sub.AttestationRoot, att.AttestationRoot)
 				require.NotNil(t, sub.ProofFlags)

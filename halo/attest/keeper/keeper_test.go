@@ -5,8 +5,9 @@ import (
 
 	"github.com/omni-network/omni/halo/attest/keeper"
 	"github.com/omni-network/omni/halo/attest/types"
+	vtypes "github.com/omni-network/omni/halo/valsync/types"
 
-	cmttypes "github.com/cometbft/cometbft/types"
+	"github.com/ethereum/go-ethereum/common"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/google/go-cmp/cmp"
@@ -50,8 +51,8 @@ func TestKeeper_Add(t *testing.T) {
 					{Id: 1, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: 500, Status: int32(keeper.Status_Pending)},
 				},
 				sigs: []*keeper.Signature{
-					{Id: 1, AttId: 1, Signature: val1.Bytes(), ValidatorAddress: valAddr1[:]},
-					{Id: 2, AttId: 1, Signature: val2.Bytes(), ValidatorAddress: valAddr2[:]},
+					expectValSig(1, 1, val1),
+					expectValSig(2, 1, val2),
 				},
 			},
 		},
@@ -70,10 +71,10 @@ func TestKeeper_Add(t *testing.T) {
 					{Id: 2, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[1].Bytes(), Height: 501, Status: int32(keeper.Status_Pending)},
 				},
 				sigs: []*keeper.Signature{
-					{Id: 1, AttId: 1, Signature: val1.Bytes(), ValidatorAddress: valAddr1[:]},
-					{Id: 2, AttId: 1, Signature: val2.Bytes(), ValidatorAddress: valAddr2[:]},
-					{Id: 3, AttId: 2, Signature: val1.Bytes(), ValidatorAddress: valAddr1[:]},
-					{Id: 4, AttId: 2, Signature: val3.Bytes(), ValidatorAddress: valAddr3[:]},
+					expectValSig(1, 1, val1),
+					expectValSig(2, 1, val2),
+					expectValSig(3, 2, val1),
+					expectValSig(4, 2, val3),
 				},
 			},
 		},
@@ -92,9 +93,9 @@ func TestKeeper_Add(t *testing.T) {
 					{Id: 1, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: 500, Status: int32(keeper.Status_Pending)},
 				},
 				sigs: []*keeper.Signature{
-					{Id: 1, AttId: 1, Signature: val1.Bytes(), ValidatorAddress: valAddr1[:]},
-					{Id: 2, AttId: 1, Signature: val2.Bytes(), ValidatorAddress: valAddr2[:]},
-					{Id: 3, AttId: 1, Signature: val3.Bytes(), ValidatorAddress: valAddr3[:]},
+					expectValSig(1, 1, val1),
+					expectValSig(2, 1, val2),
+					expectValSig(3, 1, val3),
 				},
 			},
 		},
@@ -117,8 +118,8 @@ func TestKeeper_Add(t *testing.T) {
 					{Id: 1, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: 500, Status: int32(keeper.Status_Pending)},
 				},
 				sigs: []*keeper.Signature{
-					{Id: 1, AttId: 1, Signature: val1.Bytes(), ValidatorAddress: valAddr1[:]},
-					{Id: 2, AttId: 1, Signature: val2.Bytes(), ValidatorAddress: valAddr2[:]},
+					expectValSig(1, 1, val1),
+					expectValSig(2, 1, val2),
 				},
 			},
 		},
@@ -147,10 +148,10 @@ func TestKeeper_Add(t *testing.T) {
 					{Id: 2, AttestationRoot: []byte("different root"), ChainId: 1, Hash: blockHashes[0].Bytes(), Height: 500, Status: int32(keeper.Status_Pending)},
 				},
 				sigs: []*keeper.Signature{
-					{Id: 1, AttId: 1, Signature: val1.Bytes(), ValidatorAddress: valAddr1[:]},
-					{Id: 2, AttId: 1, Signature: val2.Bytes(), ValidatorAddress: valAddr2[:]},
-					{Id: 3, AttId: 2, Signature: val1.Bytes(), ValidatorAddress: valAddr1[:]},
-					{Id: 4, AttId: 2, Signature: val2.Bytes(), ValidatorAddress: valAddr2[:]},
+					expectValSig(1, 1, val1),
+					expectValSig(2, 1, val2),
+					expectValSig(3, 2, val1),
+					expectValSig(4, 2, val2),
 				},
 			},
 		},
@@ -193,21 +194,21 @@ func TestKeeper_Approve(t *testing.T) {
 		sigsCmpOpts = cmp.Options{cmpopts.IgnoreUnexported(keeper.Signature{})}
 	)
 
+	valset1_2_3 := newValSet(7, val1, val2, val3)
+	valset1_2 := newValSet(8, val1, val2)
+	valset2_3 := newValSet(9, val2, val3)
+
 	defaultExpectations := func(_ sdk.Context, m mocks) {
 		m.voter.EXPECT().TrimBehind(gomock.Any()).Times(1).Return(0)
-		m.cometAPI.EXPECT().Validators(gomock.Any(), int64(0)).
-			Return(&cmttypes.ValidatorSet{}, true, nil).
+		m.valProvider.EXPECT().ActiveSetByHeight(gomock.Any(), uint64(0)).
+			Return(valset1_2_3, nil).
 			AnyTimes()
 	}
-
-	valset1_2_3 := cmttypes.NewValidatorSet([]*cmttypes.Validator{val1, val2, val3})
-	valset1_2 := cmttypes.NewValidatorSet([]*cmttypes.Validator{val1, val2})
-	valset2_3 := cmttypes.NewValidatorSet([]*cmttypes.Validator{val2, val3})
 
 	_ = valset1_2_3
 	_ = valset1_2
 	type args struct {
-		valset *cmttypes.ValidatorSet
+		valset *vtypes.ValidatorSetResponse
 	}
 	type want struct {
 		atts []*keeper.Attestation
@@ -224,10 +225,12 @@ func TestKeeper_Approve(t *testing.T) {
 	}{
 		{
 			name: "nil_validator_set",
+			expectations: []expectation{
+				defaultExpectations,
+			},
 			args: args{
 				valset: nil,
 			},
-			wantErr: true,
 		},
 		{
 			name: "single_attestation_two_validators_approve",
@@ -296,7 +299,7 @@ func TestKeeper_Approve(t *testing.T) {
 					require.NoError(t, err)
 
 					// add sig from val3
-					sig := &keeper.Signature{AttId: 1, Signature: val3.Bytes(), ValidatorAddress: valAddr3[:]}
+					sig := &keeper.Signature{AttId: 1, Signature: val3.Address, ValidatorAddress: val3.Address}
 					err = k.SignatureTable().Insert(ctx, sig)
 					require.NoError(t, err)
 				},
@@ -397,7 +400,7 @@ func TestKeeper_Approve(t *testing.T) {
 				p(t, k, ctx)
 			}
 
-			err := k.Approve(ctx, tt.args.valset)
+			err := k.Approve(ctx, toValSet(tt.args.valset))
 			if (err != nil) != tt.wantErr {
 				t.Errorf("keeper.Add() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -416,14 +419,30 @@ func TestKeeper_Approve(t *testing.T) {
 	}
 }
 
-func expectValSig(id uint64, attID uint64, val *cmttypes.Validator) *keeper.Signature {
-	return &keeper.Signature{Id: id, AttId: attID, Signature: val.Bytes(), ValidatorAddress: mustValAddr(val).Bytes()}
+func toValSet(valset *vtypes.ValidatorSetResponse) keeper.ValSet {
+	if valset == nil {
+		return keeper.ValSet{}
+	}
+
+	vals := make(map[common.Address]int64)
+	for _, v := range valset.Validators {
+		vals[common.BytesToAddress(v.Address)] = v.Power
+	}
+
+	return keeper.ValSet{
+		ID:   valset.Id,
+		Vals: vals,
+	}
+}
+
+func expectValSig(id uint64, attID uint64, val *vtypes.Validator) *keeper.Signature {
+	return &keeper.Signature{Id: id, AttId: attID, Signature: val.Address, ValidatorAddress: val.Address}
 }
 
 func expectPendingAtt(id uint64, height uint64) *keeper.Attestation {
 	return &keeper.Attestation{Id: id, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: height, Status: int32(keeper.Status_Pending)}
 }
 
-func expectApprovedAtt(id uint64, height uint64, valset *cmttypes.ValidatorSet) *keeper.Attestation {
-	return &keeper.Attestation{Id: id, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: height, Status: int32(keeper.Status_Approved), ValidatorsHash: valset.Hash()}
+func expectApprovedAtt(id uint64, height uint64, valset *vtypes.ValidatorSetResponse) *keeper.Attestation {
+	return &keeper.Attestation{Id: id, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: height, Status: int32(keeper.Status_Approved), ValidatorSetId: valset.Id}
 }

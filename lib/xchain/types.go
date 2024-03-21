@@ -65,10 +65,10 @@ type Vote struct {
 
 // Attestation containing quorum votes by the validator set of a cross-chain Block.
 type Attestation struct {
-	BlockHeader                  // BlockHeader identifies the cross-chain Block
-	ValidatorSetHash common.Hash // Merkle root hash of the validator set that approved this attestation.
-	AttestationRoot  common.Hash // Attestation merkle root of the cross-chain Block
-	Signatures       []SigTuple  // Validator signatures and public keys
+	BlockHeader                 // BlockHeader identifies the cross-chain Block
+	ValidatorSetID  uint64      // Validator set that approved this attestation.
+	AttestationRoot common.Hash // Attestation merkle root of the cross-chain Block
+	Signatures      []SigTuple  // Validator signatures and public keys
 }
 
 // SigTuple is a validator signature and address.
@@ -79,14 +79,14 @@ type SigTuple struct {
 
 // Submission is a cross-chain submission of a set of messages and their proofs.
 type Submission struct {
-	AttestationRoot  common.Hash // Attestation merkle root of the cross-chain Block
-	ValidatorSetHash common.Hash // Merkle root hash of the validator set that approved the attestation.
-	BlockHeader      BlockHeader // BlockHeader identifies the cross-chain Block
-	Msgs             []Msg       // Messages to be submitted
-	Proof            [][32]byte  // Merkle multi proofs of the messages
-	ProofFlags       []bool      // Flags indicating whether the proof is a left or right proof
-	Signatures       []SigTuple  // Validator signatures and public keys
-	DestChainID      uint64      // Destination chain ID, for internal use only
+	AttestationRoot common.Hash // Attestation merkle root of the cross-chain Block
+	ValidatorSetID  uint64      // Validator set that approved the attestation.
+	BlockHeader     BlockHeader // BlockHeader identifies the cross-chain Block
+	Msgs            []Msg       // Messages to be submitted
+	Proof           [][32]byte  // Merkle multi proofs of the messages
+	ProofFlags      []bool      // Flags indicating whether the proof is a left or right proof
+	Signatures      []SigTuple  // Validator signatures and public keys
+	DestChainID     uint64      // Destination chain ID, for internal use only
 }
 
 // StreamCursor is a cursor that tracks the progress of a cross-chain stream on destination portal contracts.

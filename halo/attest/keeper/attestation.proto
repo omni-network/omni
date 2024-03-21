@@ -26,8 +26,8 @@ message Attestation {
   uint64 height           = 3; // Height of the block
   bytes  hash             = 4; // Hash of the block
   bytes  attestation_root = 5; // Attestation merkle root of the cross-chain Block
-  int32  status           = 6; // Status of the block; pending, approved.\
-  bytes  validators_hash  = 7; // Merkle root hash of the validator set that approved this attestation.
+  int32  status           = 6; // Status of the block; pending, approved.
+  uint64 validator_set_id = 7; // Validator set that approved this attestation.
 }
 
 // Signature is the attestation signature of the validator over the block root.

@@ -55,7 +55,7 @@ func Run(ctx context.Context, cfg Config) error {
 
 	for _, destChain := range network.EVMChains() {
 		sendProvider := func() (SendFunc, error) {
-			sender, err := NewOpSender(destChain, rpcClientPerChain[destChain.ID], *privateKey,
+			sender, err := NewSender(destChain, rpcClientPerChain[destChain.ID], *privateKey,
 				network.ChainNamesByIDs())
 			if err != nil {
 				return nil, err

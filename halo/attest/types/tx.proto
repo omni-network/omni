@@ -29,7 +29,7 @@ message Attestation {
   BlockHeader       block_header     = 1; // BlockHeader identifies the cross-chain Block
   bytes             attestation_root = 2; // Attestation merkle root of the cross-chain Block
   repeated SigTuple signatures       = 3; // Validator signatures and public keys
-  bytes             validators_hash  = 4; // Merkle root hash of the validator set that approved this aggregate.
+  uint64            validator_set_id = 4; // Validator set that approved this attestation.
 }
 
 

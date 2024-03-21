@@ -148,8 +148,8 @@ func (a *Attestation) Verify() error {
 		return errors.New("invalid attestation root length")
 	}
 
-	if len(a.ValidatorsHash) != len(common.Hash{}) {
-		return errors.New("invalid validator set hash length")
+	if a.ValidatorSetId == 0 {
+		return errors.New("zero validator set ID")
 	}
 
 	if len(a.Signatures) == 0 {
@@ -172,10 +172,10 @@ func (a *Attestation) ToXChain() xchain.Attestation {
 	}
 
 	return xchain.Attestation{
-		BlockHeader:      a.BlockHeader.ToXChain(),
-		ValidatorSetHash: common.Hash(a.ValidatorsHash),
-		AttestationRoot:  common.Hash(a.AttestationRoot),
-		Signatures:       sigs,
+		BlockHeader:     a.BlockHeader.ToXChain(),
+		ValidatorSetID:  a.ValidatorSetId,
+		AttestationRoot: common.Hash(a.AttestationRoot),
+		Signatures:      sigs,
 	}
 }
 

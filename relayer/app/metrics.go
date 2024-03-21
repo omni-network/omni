@@ -41,6 +41,13 @@ var (
 		Help:      "The total number of messages submitted to a destination chain from a specific source chain",
 	}, []string{"src_chain", "dst_chain"})
 
+	revertedSubmissionTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "relayer",
+		Subsystem: "worker",
+		Name:      "reverted_submission_total",
+		Help:      "The total number of reverted (unsuccessful) submissions to destination chain from a specific source chain",
+	}, []string{"src_chain", "dst_chain"})
+
 	emitCursor = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "relayer",
 		Subsystem: "monitor",

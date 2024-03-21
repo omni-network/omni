@@ -21,6 +21,11 @@ import (
 	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
+// cometValidatorActiveDelay is the number of blocks after a validator update is provided to
+// cometBFT before that set becomes the active set.
+// If a validator update is provided to cometBFT in block X, then the new set will become active in block X+2.
+const cometValidatorActiveDelay = 2
+
 type Keeper struct {
 	cdc          codec.BinaryCodec
 	storeService store.KVStoreService
@@ -209,6 +214,7 @@ func (k Keeper) processAttested(ctx context.Context) ([]abci.ValidatorUpdate, er
 
 	// Mark the valset as attested.
 	valset.Attested = true
+	valset.ActivatedHeight = uint64(sdkCtx.BlockHeight()) + cometValidatorActiveDelay
 	if err := k.valsetTable.Update(ctx, valset); err != nil {
 		return nil, errors.Wrap(err, "update valset")
 	}

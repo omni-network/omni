@@ -98,7 +98,7 @@ contract OmniPortal_xsubmit_Test is Base {
     }
 
     function test_xsubmit_addValidatorSet_succeeds() public {
-        XTypes.Submission memory xsub = readXSubmission("addValSet2", cchainId);
+        XTypes.Submission memory xsub = readXSubmission("addValSet2", broadcastChainId);
         portal.xsubmit(xsub);
 
         // test that validatorSet[2] is set correctly
@@ -121,7 +121,7 @@ contract OmniPortal_xsubmit_Test is Base {
     ///      xsubmission with the new valSetId has not been submitted for that source chain
     function test_xsubmit_notNewValSet_succeeds() public {
         // add new validator set
-        XTypes.Submission memory xsub = readXSubmission("addValSet2", cchainId);
+        XTypes.Submission memory xsub = readXSubmission("addValSet2", broadcastChainId);
         portal.xsubmit(xsub);
 
         // test that we can submit a block with the genesisValSetId
@@ -132,7 +132,7 @@ contract OmniPortal_xsubmit_Test is Base {
     ///      xsubmission with a newer valSetId has been submitted for that source chain
     function test_xsubmit_oldValSet_reverts() public {
         // add new validator set
-        XTypes.Submission memory xsub = readXSubmission("addValSet2", cchainId);
+        XTypes.Submission memory xsub = readXSubmission("addValSet2", broadcastChainId);
         portal.xsubmit(xsub);
 
         // submit a block with the valSetId 2

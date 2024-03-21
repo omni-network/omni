@@ -1,20 +1,17 @@
 package keeper
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"log/slog"
 	"strconv"
 
 	"github.com/omni-network/omni/halo/attest/types"
-	"github.com/omni-network/omni/halo/comet"
+	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	cmttypes "github.com/cometbft/cometbft/types"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -45,7 +42,7 @@ type Keeper struct {
 	storeService store.KVStoreService
 	voter        types.Voter
 	skeeper      baseapp.ValidatorStore
-	cmtAPI       comet.API
+	valProvider  vtypes.ValidatorProvider
 	namer        types.ChainNameFunc
 	voteWindow   uint64
 	voteExtLimit uint64
@@ -88,9 +85,9 @@ func New(
 	return k, nil
 }
 
-// SetCometAPI sets the comet API client.
-func (k *Keeper) SetCometAPI(cmtAPI comet.API) {
-	k.cmtAPI = cmtAPI
+// SetValidatorProvider sets the validator provider.
+func (k *Keeper) SetValidatorProvider(valProvider vtypes.ValidatorProvider) {
+	k.valProvider = valProvider
 }
 
 // SetVoter sets the voter.
@@ -107,17 +104,20 @@ func (k *Keeper) RegisterProposalService(server grpc1.Server) {
 // Add adds the given aggregate votes as pen the store.
 // It merges the votes with attestations it already exists.
 func (k *Keeper) Add(ctx context.Context, msg *types.MsgAddVotes) error {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	valset, ok, err := k.cmtAPI.Validators(ctx, sdkCtx.BlockHeight())
+	valset, err := k.prevBlockValSet(ctx)
 	if err != nil {
 		return errors.Wrap(err, "fetch validators")
-	} else if !ok {
-		return errors.New("current validators not available [BUG]")
 	}
-	valSetHash := valset.Hash()
 
-	for _, vote := range msg.Votes {
-		err := k.addOne(ctx, vote, valSetHash)
+	for _, aggVote := range msg.Votes {
+		// Sanity check that all votes are from prev block validators.
+		for _, sig := range aggVote.Signatures {
+			if !valset.Contains(common.BytesToAddress(sig.ValidatorAddress)) {
+				return errors.New("vote from unknown validator [BUG]")
+			}
+		}
+
+		err := k.addOne(ctx, aggVote, valset.ID)
 		if err != nil {
 			return errors.Wrap(err, "add one")
 		}
@@ -128,7 +128,7 @@ func (k *Keeper) Add(ctx context.Context, msg *types.MsgAddVotes) error {
 
 // addOne adds the given aggregate vote to the store.
 // It merges it if the attestation already exists.
-func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetHash []byte) error {
+func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64) error {
 	header := agg.BlockHeader
 
 	// Get existing attestation (by unique key) or insert new one.
@@ -143,14 +143,14 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetHash []by
 			Hash:            agg.BlockHeader.Hash,
 			AttestationRoot: agg.AttestationRoot,
 			Status:          int32(Status_Pending),
-			ValidatorsHash:  nil, // Unknown at this point.
+			ValidatorSetId:  0, // Unknown at this point.
 		})
 		if err != nil {
 			return errors.Wrap(err, "insert")
 		}
 	} else if err != nil {
 		return errors.Wrap(err, "by att unique key")
-	} else if isApprovedByDifferentSet(existing, valSetHash) {
+	} else if isApprovedByDifferentSet(existing, valSetID) {
 		log.Debug(ctx, "Ignoring vote for attestation approved by different validator set",
 			"agg_id", attID,
 			"chain", k.namer(header.ChainId),
@@ -189,25 +189,13 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetHash []by
 }
 
 // Approve approves any pending attestations that have quorum signatures from the provided set.
-func (k *Keeper) Approve(ctx context.Context, valset *cmttypes.ValidatorSet) error {
-	if valset == nil {
-		return errors.New("validator set cannot be nil")
-	}
+func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 	pendingIdx := AttestationStatusChainIdHeightIndexKey{}.WithStatus(int32(Status_Pending))
 	iter, err := k.attTable.List(ctx, pendingIdx)
 	if err != nil {
 		return errors.Wrap(err, "list pending")
 	}
 	defer iter.Close()
-
-	valsByPower := make(map[common.Address]int64)
-	for _, val := range valset.Validators {
-		addr, err := k1util.PubKeyToAddress(val.PubKey)
-		if err != nil {
-			return errors.Wrap(err, "pubkey to address")
-		}
-		valsByPower[addr] = val.VotingPower
-	}
 
 	approvedByChain := make(map[uint64]uint64) // Cache the latest approved attestation by chain.
 	for iter.Next() {
@@ -240,7 +228,7 @@ func (k *Keeper) Approve(ctx context.Context, valset *cmttypes.ValidatorSet) err
 			return errors.Wrap(err, "get att signatures")
 		}
 
-		toDelete, ok := isApproved(sigs, valsByPower, valset.TotalVotingPower())
+		toDelete, ok := isApproved(sigs, valset)
 		if !ok {
 			continue
 		}
@@ -254,7 +242,7 @@ func (k *Keeper) Approve(ctx context.Context, valset *cmttypes.ValidatorSet) err
 
 		// Update status
 		att.Status = int32(Status_Approved)
-		att.ValidatorsHash = valset.Hash()
+		att.ValidatorSetId = valset.ID
 		err = k.attTable.Update(ctx, att)
 		if err != nil {
 			return errors.Wrap(err, "save")
@@ -321,7 +309,7 @@ func (k *Keeper) ListAttestationsFrom(ctx context.Context, chainID uint64, heigh
 				Height:  att.GetHeight(),
 				Hash:    att.GetHash(),
 			},
-			ValidatorsHash:  att.GetValidatorsHash(),
+			ValidatorSetId:  att.GetValidatorSetId(),
 			AttestationRoot: att.GetAttestationRoot(),
 			Signatures:      sigs,
 		})
@@ -372,7 +360,7 @@ func (k *Keeper) latestAttestation(ctx context.Context, chainID uint64) (*types.
 			Height:  att.GetHeight(),
 			Hash:    att.GetHash(),
 		},
-		ValidatorsHash:  att.GetValidatorsHash(),
+		ValidatorSetId:  att.GetValidatorSetId(),
 		AttestationRoot: att.GetAttestationRoot(),
 		Signatures:      sigs,
 	}, true, nil
@@ -406,14 +394,9 @@ func (k *Keeper) EndBlock(ctx context.Context) error {
 		return nil // First block doesn't have any vote extensions to approve.
 	}
 
-	// We should technically use the validators from the previous block, but that isn't available immediately
-	// after a snapshot restore, so workaround is just to use current set. Only drawback is that the last
-	// votes from validators that are no longer in the set will be ignored.
-	valset, ok, err := k.cmtAPI.Validators(ctx, sdkCtx.BlockHeight())
+	valset, err := k.prevBlockValSet(ctx)
 	if err != nil {
 		return errors.Wrap(err, "fetch validators")
-	} else if !ok {
-		return errors.New("current validators not available [BUG]")
 	}
 
 	return k.Approve(ctx, valset)
@@ -429,6 +412,7 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 		if cmp, err := k.windowCompare(ctx, vote.BlockHeader.ChainId, vote.BlockHeader.Height); err != nil {
 			return nil, errors.Wrap(err, "windower")
 		} else if cmp != 0 {
+			// Skip votes no in the window
 			continue
 		}
 		filtered = append(filtered, vote)
@@ -516,25 +500,43 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 	return respAccept, nil
 }
 
-// validatorsByAddress returns the validator set by ethereum address for the provided height or false if not available.
-func (k *Keeper) validatorsByAddress(ctx context.Context, height int64) (map[common.Address]bool, bool, error) {
-	valset, ok, err := k.cmtAPI.Validators(ctx, height)
+type ValSet struct {
+	ID   uint64
+	Vals map[common.Address]int64
+}
+
+func (s ValSet) Contains(addr common.Address) bool {
+	_, ok := s.Vals[addr]
+	return ok
+}
+
+func (s ValSet) TotalPower() int64 {
+	var resp int64
+	for _, power := range s.Vals {
+		resp += power
+	}
+
+	return resp
+}
+
+// prevBlockValSet returns the previous blocks active validator set.
+// Previous block is used since vote extensions are delayed by one block.
+func (k *Keeper) prevBlockValSet(ctx context.Context) (ValSet, error) {
+	prevBlock := sdk.UnwrapSDKContext(ctx).BlockHeight() - 1
+	resp, err := k.valProvider.ActiveSetByHeight(ctx, uint64(prevBlock))
 	if err != nil {
-		return nil, false, err
-	} else if !ok {
-		return nil, false, nil
+		return ValSet{}, err
 	}
 
-	resp := make(map[common.Address]bool)
-	for _, val := range valset.Validators {
-		addr, err := k1util.PubKeyToAddress(val.PubKey)
-		if err != nil {
-			return nil, false, err
-		}
-		resp[addr] = true
+	valsByPower := make(map[common.Address]int64)
+	for _, val := range resp.Validators {
+		valsByPower[common.BytesToAddress(val.Address)] = val.Power
 	}
 
-	return resp, true, nil
+	return ValSet{
+		ID:   resp.Id,
+		Vals: valsByPower,
+	}, nil
 }
 
 func (k *Keeper) windowCompare(ctx context.Context, chainID uint64, height uint64) (int, error) {
@@ -552,8 +554,8 @@ func (k *Keeper) windowCompare(ctx context.Context, chainID uint64, height uint6
 // verifyAggVotes verifies the given aggregates votes:
 // - Ensure all votes are from validators in the provided set.
 // - Ensure the vote block header is in the vote window.
-// - Ensure votes represent at least 2/3 of the total voting power.
-func (k *Keeper) verifyAggVotes(ctx context.Context, validators map[common.Address]bool, aggs []*types.AggVote) error {
+// - Ensure votes represent at least 2/3 of the total voting power. <- This isn't done?
+func (k *Keeper) verifyAggVotes(ctx context.Context, valset ValSet, aggs []*types.AggVote) error {
 	for _, agg := range aggs {
 		if err := agg.Verify(); err != nil {
 			return errors.Wrap(err, "verify aggregate vote")
@@ -562,8 +564,7 @@ func (k *Keeper) verifyAggVotes(ctx context.Context, validators map[common.Addre
 		// Ensure all votes are from validators in the set
 		for _, sig := range agg.Signatures {
 			addr := common.BytesToAddress(sig.GetValidatorAddress())
-			_, ok := validators[addr]
-			if !ok {
+			if !valset.Contains(addr) {
 				return errors.New("vote from unknown validator")
 			}
 		}
@@ -581,11 +582,11 @@ func (k *Keeper) verifyAggVotes(ctx context.Context, validators map[common.Addre
 
 // isApproved returns whether the given signatures are approved by the given validators.
 // It also returns the signatures to delete (not in the validator set).
-func isApproved(sigs []*Signature, valsByPower map[common.Address]int64, total int64) ([]*Signature, bool) {
+func isApproved(sigs []*Signature, valset ValSet) ([]*Signature, bool) {
 	var sum int64
 	var toDelete []*Signature
 	for _, sig := range sigs {
-		power, ok := valsByPower[common.BytesToAddress(sig.GetValidatorAddress())]
+		power, ok := valset.Vals[common.BytesToAddress(sig.GetValidatorAddress())]
 		if !ok {
 			toDelete = append(toDelete, sig)
 			continue
@@ -594,7 +595,7 @@ func isApproved(sigs []*Signature, valsByPower map[common.Address]int64, total i
 		sum += power
 	}
 
-	return toDelete, sum > total*2/3
+	return toDelete, sum > valset.TotalPower()*2/3
 }
 
 func windowCompare(voteWindow uint64, header *types.BlockHeader, latest uint64) int {
@@ -622,10 +623,10 @@ func uintSub(a, b uint64) uint64 {
 }
 
 // isApprovedByDifferentSet returns true if the attestation is approved by a different validator set.
-func isApprovedByDifferentSet(att *Attestation, valSetHash []byte) bool {
+func isApprovedByDifferentSet(att *Attestation, valSetID uint64) bool {
 	if att.GetStatus() != int32(Status_Approved) {
 		return false
 	}
 
-	return !bytes.Equal(att.GetValidatorsHash(), valSetHash)
+	return att.GetValidatorSetId() != valSetID
 }

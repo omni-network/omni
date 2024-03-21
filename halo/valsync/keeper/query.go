@@ -12,40 +12,45 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-var _ types.QueryServer = (*Keeper)(nil)
+var _ types.QueryServer = Keeper{}
+var _ types.ValidatorProvider = Keeper{}
 
-// ValidatorsAtHeight returns the validators at the given height.
+// ActiveSetByHeight returns the active cometBFT validator set at the given height. Zero power validators are skipped.
 // Note: This MUST only be used for querying last few sets, it is inefficient otherwise.
-func (k Keeper) ValidatorsAtHeight(ctx context.Context, height uint64) ([]*Validator, error) {
+// Note2: We could add an index, but that would be a waste of space.
+func (k Keeper) ActiveSetByHeight(ctx context.Context, height uint64) (*types.ValidatorSetResponse, error) {
 	setIter, err := k.valsetTable.List(ctx, ValidatorSetPrimaryKey{}, ormlist.Reverse())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list validators")
 	}
 	defer setIter.Close()
 
-	// Find the latest set less-than-or-equal to the given height.
-	var valsetID uint64
+	// Find the latest activated set less-than-or-equal to the given height.
+	var valset *ValidatorSet
 	for setIter.Next() {
 		set, err := setIter.Value()
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get validator")
 		}
-		if set.GetCreatedHeight() <= height {
-			valsetID = set.GetId()
+		if !set.GetAttested() {
+			continue // Skip unattested sets.
+		}
+		if set.GetActivatedHeight() <= height {
+			valset = set
 			break
 		}
 	}
-	if valsetID == 0 {
+	if valset == nil {
 		return nil, errors.New("no validator set found for height")
 	}
 
-	valIter, err := k.valTable.List(ctx, ValidatorValsetIdIndexKey{}.WithValsetId(valsetID))
+	valIter, err := k.valTable.List(ctx, ValidatorValsetIdIndexKey{}.WithValsetId(valset.GetId()))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list validators")
 	}
 	defer valIter.Close()
 
-	var vals []*Validator
+	var vals []*types.Validator
 	for valIter.Next() {
 		val, err := valIter.Value()
 		if err != nil {
@@ -56,10 +61,23 @@ func (k Keeper) ValidatorsAtHeight(ctx context.Context, height uint64) ([]*Valid
 			continue // Skip zero power validators.
 		}
 
-		vals = append(vals, val)
+		addr, err := val.Address()
+		if err != nil {
+			return nil, err
+		}
+
+		vals = append(vals, &types.Validator{
+			Address: addr.Bytes(),
+			Power:   val.GetPower(),
+		})
 	}
 
-	return vals, nil
+	return &types.ValidatorSetResponse{
+		Id:              valset.GetId(),
+		CreatedHeight:   valset.GetCreatedHeight(),
+		ActivatedHeight: valset.GetActivatedHeight(),
+		Validators:      vals,
+	}, nil
 }
 
 func (k Keeper) ValidatorSet(ctx context.Context, req *types.ValidatorSetRequest) (*types.ValidatorSetResponse, error) {

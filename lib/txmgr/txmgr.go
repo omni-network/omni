@@ -447,9 +447,12 @@ func (m *SimpleTxManager) publishTx(ctx context.Context, tx *types.Transaction, 
 func (m *SimpleTxManager) waitForTx(ctx context.Context, tx *types.Transaction, sendState *SendState,
 	receiptChan chan *types.Receipt) {
 	t := time.Now()
+
 	// Poll for the transaction to be ready & then doSend the result to receiptChan
 	receipt, err := m.waitMined(ctx, tx, sendState)
-	if err != nil {
+	if ctx.Err() != nil {
+		return
+	} else if err != nil {
 		// this will happen if the tx was successfully replaced by a tx with bumped fees
 		log.Warn(ctx, "Transaction receipt not mined, probably replaced", err)
 		return

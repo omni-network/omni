@@ -3,7 +3,7 @@ package testutil
 
 import (
 	"github.com/omni-network/omni/halo/attest/types"
-	"github.com/omni-network/omni/halo/comet"
+	vtypes "github.com/omni-network/omni/halo/valsync/types"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 )
@@ -16,8 +16,8 @@ type Voter interface {
 	types.Voter
 }
 
-type CommetAPI interface {
-	comet.API
+type ValProvider interface {
+	vtypes.ValidatorProvider
 }
 
 type ChainNamer interface {
