@@ -56,6 +56,37 @@ h2 {
     transition: all 0.3s ease-in-out;
 }
 
+/* Initially hide the dot */
+.dot {
+    content: '';
+    position: absolute;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ifm-color-primary);
+    box-shadow:
+      0 0 10px var(--ifm-color-primary),
+      0 0 20px var(--ifm-color-primary);
+    opacity: 0;
+    top: 20.2%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    transition: opacity 1.5s ease;
+}
+
+[data-theme="dark"] .dot {
+    background: var(--ifm-color-primary-lightest); /* Circle color */
+    box-shadow:
+      0 0 10px var(--ifm-color-primary-lightest), /* Inner glow effect */
+      0 0 20px var(--ifm-color-primary-lightest); /* Outer glow effect */
+}
+
+/* Show the dot when the container is hovered */
+.start-box:hover .dot {
+    opacity: 1; /* Make dot visible on hover */
+    transition: opacity 0.3s ease; /* Smooth transition for the opacity */
+}
+
 .icon {
     height: 50px; /* Adjust the size as needed */
     width: auto;
