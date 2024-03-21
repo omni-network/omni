@@ -225,11 +225,14 @@ func additionalServices(testnet types.Testnet) []string {
 		resp = append(resp, "prometheus")
 	}
 
-	if !testnet.OnlyMonitor {
-		resp = append(resp, "relayer")
+	resp = append(resp, "monitor")
+
+	// In monitor only mode, we don't need to start the relayer (above omni and anvils will also be empty).
+	if testnet.OnlyMonitor {
+		return resp
 	}
 
-	resp = append(resp, "monitor")
+	resp = append(resp, "relayer")
 
 	return resp
 }

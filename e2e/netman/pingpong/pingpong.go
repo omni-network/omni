@@ -196,7 +196,7 @@ func (d *XDapp) WaitDone(ctx context.Context) error {
 					log.Debug(ctx, "Ping pong done", "from", from.Chain.Name,
 						"to", d.contracts[edge.To].Chain.Name, "times", iter.Event.Times)
 					found = true
-
+					
 					break
 				}
 			}

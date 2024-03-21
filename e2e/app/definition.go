@@ -324,45 +324,6 @@ func publicChains(manifest types.Manifest, cfg DefinitionConfig) ([]types.Public
 func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman.DeployInfo, evmPrefix string) netconf.Network {
 	var chains []netconf.Chain
 
-	// in monitor only mode there are no anvil chains and omni EVMs
-	if !testnet.OnlyMonitor {
-		omniEVM := omniEVMByPrefix(testnet, evmPrefix)
-		chains = append(chains, netconf.Chain{
-			ID:                omniEVM.Chain.ID,
-			Name:              omniEVM.Chain.Name,
-			RPCURL:            omniEVM.InternalRPC,
-			AuthRPCURL:        omniEVM.InternalAuthRPC,
-			PortalAddress:     deployInfo[omniEVM.Chain].PortalAddress,
-			DeployHeight:      deployInfo[omniEVM.Chain].DeployHeight,
-			BlockPeriod:       omniEVM.Chain.BlockPeriod,
-			FinalizationStrat: omniEVM.Chain.FinalizationStrat,
-			IsOmniEVM:         true,
-		})
-
-		chains = append(chains, netconf.Chain{
-			ID:   netconf.GetStatic(testnet.Network).OmniConsensusChainID,
-			Name: "omni_consensus",
-			// No RPC URLs, since we are going to remove it from netconf in any case.
-			DeployHeight:    1,                         // Validator sets start at height 1, not 0.
-			BlockPeriod:     omniEVM.Chain.BlockPeriod, // Same block period as omniEVM
-			IsOmniConsensus: true,
-		})
-
-		// Add all anvil chains
-		for _, anvil := range testnet.AnvilChains {
-			chains = append(chains, netconf.Chain{
-				ID:                anvil.Chain.ID,
-				Name:              anvil.Chain.Name,
-				RPCURL:            anvil.InternalRPC,
-				PortalAddress:     deployInfo[anvil.Chain].PortalAddress,
-				DeployHeight:      deployInfo[anvil.Chain].DeployHeight,
-				BlockPeriod:       anvil.Chain.BlockPeriod,
-				FinalizationStrat: anvil.Chain.FinalizationStrat,
-				IsEthereum:        anvil.Chain.IsAVSTarget,
-			})
-		}
-	}
-
 	// Add all public chains
 	for _, public := range testnet.PublicChains {
 		pc := netconf.Chain{
@@ -378,6 +339,50 @@ func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 		}
 
 		chains = append(chains, pc)
+	}
+
+	// In monitor only mode, there is only public chains, so skip omni and anvil chains.
+	if testnet.OnlyMonitor {
+		return netconf.Network{
+			Name:   testnet.Network,
+			Chains: chains,
+		}
+	}
+
+	omniEVM := omniEVMByPrefix(testnet, evmPrefix)
+	chains = append(chains, netconf.Chain{
+		ID:                omniEVM.Chain.ID,
+		Name:              omniEVM.Chain.Name,
+		RPCURL:            omniEVM.InternalRPC,
+		AuthRPCURL:        omniEVM.InternalAuthRPC,
+		PortalAddress:     deployInfo[omniEVM.Chain].PortalAddress,
+		DeployHeight:      deployInfo[omniEVM.Chain].DeployHeight,
+		BlockPeriod:       omniEVM.Chain.BlockPeriod,
+		FinalizationStrat: omniEVM.Chain.FinalizationStrat,
+		IsOmniEVM:         true,
+	})
+
+	chains = append(chains, netconf.Chain{
+		ID:   netconf.GetStatic(testnet.Network).OmniConsensusChainID,
+		Name: "omni_consensus",
+		// No RPC URLs, since we are going to remove it from netconf in any case.
+		DeployHeight:    1,                         // Validator sets start at height 1, not 0.
+		BlockPeriod:     omniEVM.Chain.BlockPeriod, // Same block period as omniEVM
+		IsOmniConsensus: true,
+	})
+
+	// Add all anvil chains
+	for _, anvil := range testnet.AnvilChains {
+		chains = append(chains, netconf.Chain{
+			ID:                anvil.Chain.ID,
+			Name:              anvil.Chain.Name,
+			RPCURL:            anvil.InternalRPC,
+			PortalAddress:     deployInfo[anvil.Chain].PortalAddress,
+			DeployHeight:      deployInfo[anvil.Chain].DeployHeight,
+			BlockPeriod:       anvil.Chain.BlockPeriod,
+			FinalizationStrat: anvil.Chain.FinalizationStrat,
+			IsEthereum:        anvil.Chain.IsAVSTarget,
+		})
 	}
 
 	return netconf.Network{
