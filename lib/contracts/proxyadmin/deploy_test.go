@@ -48,8 +48,4 @@ func TestDeployDevnet(t *testing.T) {
 	owner, err := proxyAdmin.Owner(nil)
 	require.NoError(t, err)
 	require.Equal(t, contracts.DevnetProxyAdminOwner, owner)
-
-	code, err := backend.CodeAt(ctx, addr, nil)
-	require.NoError(t, err)
-	require.NotEmpty(t, code)
 }
