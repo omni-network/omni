@@ -1,7 +1,6 @@
 .banner {
     background-image: url('/img/banner-wide-light.png');
     background-size: 100% auto;
-    background-repeat: no-repeat;
     background-position: center center;
     padding: 60px 0;
     text-align: center;
@@ -48,6 +47,7 @@ h2 {
 
 .start-box,
 .community-box {
+    position: relative;
     background-color: var(--ifm-color-secondary);
     border-radius: 8px;
     padding: 20px;
@@ -64,8 +64,8 @@ h2 {
 
 .start-box:hover,
 .community-box:hover {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    transform: translateY(-5px);
+    box-shadow: 0px 0px 2px 2px var(--ifm-heading-color);
+    transform: translateY(-2px);
 }
 
 /* Responsive adjustments */
