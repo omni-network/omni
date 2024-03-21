@@ -100,6 +100,16 @@ h2 {
     transform: translateY(-1px);
 }
 
+.community-box svg {
+    width: 30px; /* Example size, adjust as needed */
+    height: auto;
+    fill: var(--ifm-heading-color); /* Adjust if you want to use the text color */
+}
+
+.community-box:hover svg {
+    fill: var(--ifm-color-primary); /* Adjust if you want to use the primary color */
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
 
