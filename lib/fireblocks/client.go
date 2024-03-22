@@ -8,6 +8,8 @@ import (
 
 const transactionEndpoint string = "v1/transactions"
 const supportedAssetsEndpoint string = "v1/supported_assets"
+const ethHoleskyTestNet string = "ETH_TEST6" // eth holesky testnet
+const ethMainNet string = "ETH"              // base eth
 
 // Client is a JSON HTTP client for the FireBlocks API.
 type Client struct {
@@ -59,4 +61,15 @@ func (c Client) check() error {
 	}
 
 	return nil
+}
+
+func (c Client) getAssetID() string {
+	switch c.cfg.Network {
+	case TestNet:
+		return ethHoleskyTestNet
+	case MainNet:
+		return ethMainNet
+	default:
+		return ethMainNet
+	}
 }

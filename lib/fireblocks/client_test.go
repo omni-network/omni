@@ -77,7 +77,7 @@ func TestCreateAndWaitGolden(t *testing.T) {
 	test4096Key := parseKey(t, testPrivateKey)
 
 	// Fast timeouts for testing
-	cfg, err := fireblocks.NewConfig(time.Second, time.Millisecond, 10)
+	cfg, err := fireblocks.NewConfig(time.Second, time.Millisecond, 10, fireblocks.TestNet)
 	require.NoError(t, err)
 
 	client, err := fireblocks.NewClientWithConfig(apiKey, test4096Key, ts.URL, cfg)
