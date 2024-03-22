@@ -42,7 +42,7 @@ h2 {
 .community-container {
     display: flex;
     justify-content: space-around;
-    padding: 20px 0;
+    padding: 10px 0;
 }
 
 .start-box,
@@ -112,6 +112,20 @@ h2 {
 
 [data-theme="dark"] .community-box svg {
     fill: var(--ifm-color-primary-lightest); /* Adjust if you want to use the text color */
+}
+
+.start-box-link {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1; /* Ensure it's above other content for clicking */
+    cursor: pointer; /* Show a pointer cursor on hover */
+    text-decoration: none; /* No underline */
+    background: transparent; /* No background color */
 }
 
 /* Responsive adjustments */
