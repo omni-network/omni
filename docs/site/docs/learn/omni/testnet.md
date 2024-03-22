@@ -28,13 +28,15 @@ You can delegate testnet **\$ETH** to securing Omni through EigenLayer through t
 
 ## Adding the Omni Network to Your Wallet
 
-To add the Omni network to your wallet, you will need to add the following information:
+To add the Omni network to your wallet, you can go to the settings for adding a new network of your wallet and add the following information:
 
 - **Network Name**: Omni Omega Testnet
 - **RPC URL**: `$OMNI_TESTNET_RPC_URL$`
 - **Chain ID**: `$OMNI_TESTNET_CHAIN_ID$`
 - **Symbol**: `$OMNI`
 - **Block Explorer URL**: `$OMNI_TESTNET_EXPLORER_URL$`
+
+Alternatively, you can follow a tutorial like the [Metamask Adding a Custom Network Tutorial](https://metamask.zendesk.com/hc/en-us/articles/360043227612-How-to-add-a-custom-network-RPC-and-or-Block-Explorer) to add the Omni Omega Testnet network to your wallet.
 
 ## Omni Omega Testnet Explorer
 
