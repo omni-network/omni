@@ -181,3 +181,12 @@ type systemMessages struct {
 	Type    string `json:"type"`
 	Message string `json:"message"`
 }
+
+type SupportedAssets struct {
+	ID              string `json:"id"`
+	Name            string `json:"name"`
+	Type            string `json:"type"`
+	ContractAddress string `json:"contractAddress,omitempty"`
+	NativeAsset     string `json:"nativeAsset,omitempty"`
+	Decimals        int    `json:"decimals,omitempty"`
+}

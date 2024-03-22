@@ -7,6 +7,7 @@ import (
 )
 
 const transactionEndpoint string = "v1/transactions"
+const supportedAssetsEndpoint string = "v1/supported_assets"
 
 // Client is a JSON HTTP client for the FireBlocks API.
 type Client struct {
