@@ -4,27 +4,33 @@ import (
 	"context"
 	"net/http"
 	"path/filepath"
+
+	"github.com/omni-network/omni/lib/errors"
 )
 
-// GetTransactionByID gets a transaction by its ID.
-func (c Client) GetTransactionByID(ctx context.Context, transactionID string) (TransactionResponse, error) {
-	endpoint := filepath.Join(transactionEndpoint, transactionID)
-	jwtToken, err := c.genJWTToken(endpoint, nil)
+// getTransactionByID gets a transaction by its ID.
+func (c Client) getTransactionByID(ctx context.Context, transactionID string) (transaction, error) {
+	endpoint := filepath.Join(endpointTransactions, transactionID)
+	headers, err := c.authHeaders(endpoint, nil)
 	if err != nil {
-		return TransactionResponse{}, err
+		return transaction{}, err
 	}
 
-	var res TransactionResponse
-	err = c.jsonHTTP.Send(
+	var res transaction
+	var errRes errorResponse
+	ok, err := c.jsonHTTP.Send(
 		ctx,
 		endpoint,
 		http.MethodGet,
 		nil,
-		c.getAuthHeaders(jwtToken),
+		headers,
 		&res,
+		&errRes,
 	)
 	if err != nil {
-		return TransactionResponse{}, err
+		return transaction{}, err
+	} else if !ok {
+		return transaction{}, errors.New("failed to get transaction", "msg", errRes.Message, "code", errRes.Code)
 	}
 
 	return res, nil
