@@ -1,8 +1,6 @@
 package contracts
 
 import (
-	"bytes"
-
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -40,37 +38,30 @@ func Create3Address(
 	deployer common.Address,
 ) common.Address {
 	// Omni's Create3 factory namespaces salt with the deployer address.
-	namespacedSalt := crypto.Keccak256(deployer.Bytes(), crypto.Keccak256([]byte(salt)))
+	namespacedSalt := crypto.Keccak256(
+		deployer.Bytes(),
+		crypto.Keccak256([]byte(salt)),
+	)
 
 	// First, get the CREATE2 intermediate proxy address
 	proxyAddress := common.BytesToAddress(
 		crypto.Keccak256(
-			bytes.Join(
-				[][]byte{
-					{0xff},
-					factory.Bytes(),
-					namespacedSalt,
-					proxyBytecodeHash,
-				},
-				nil,
-			),
+			[]byte{0xff},
+			factory.Bytes(),
+			namespacedSalt,
+			proxyBytecodeHash,
 		),
 	)
 
 	// Return the CREATE address the proxy deploys to
 	return common.BytesToAddress(
 		crypto.Keccak256(
-			bytes.Join(
-				[][]byte{
-					// 0xd6 = 0xc0 (short RLP prefix) + 0x16 (length of: 0x94 ++ proxy ++ 0x01)
-					// 0x94 = 0x80 + 0x14 (0x14 = the length of an address, 20 bytes, in hex)
-					{0xd6, 0x94},
-					proxyAddress.Bytes(),
-					// 0x01 = nonce of the proxy
-					{0x01},
-				},
-				nil,
-			),
+			// 0xd6 = 0xc0 (short RLP prefix) + 0x16 (length of: 0x94 ++ proxy ++ 0x01)
+			// 0x94 = 0x80 + 0x14 (0x14 = the length of an address, 20 bytes, in hex)
+			[]byte{0xd6, 0x94},
+			proxyAddress.Bytes(),
+			// 0x01 = nonce of the proxy
+			[]byte{0x01},
 		),
 	)
 }
