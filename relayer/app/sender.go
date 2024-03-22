@@ -44,9 +44,9 @@ func NewSender(chain netconf.Chain, rpcClient ethclient.Client,
 		return Sender{}, err
 	}
 
-	txMgr, err := initTxMgr(cfg, chain.Name)
+	txMgr, err := txmgr.NewSimple(chain.Name, cfg)
 	if err != nil {
-		return Sender{}, err
+		return Sender{}, errors.Wrap(err, "create tx mgr")
 	}
 
 	// Create ABI
@@ -134,16 +134,6 @@ func (o Sender) SendTransaction(ctx context.Context, submission xchain.Submissio
 	log.Info(ctx, "Sent submission", receiptAttrs...)
 
 	return nil
-}
-
-// initTxMgr creates a new txmgr.TxManager from the given config.
-func initTxMgr(cfg txmgr.Config, chainName string) (txmgr.TxManager, error) {
-	txMgr, err := txmgr.NewSimpleTxManagerFromConfig(chainName, cfg)
-	if err != nil {
-		return nil, errors.New("failed to create tx mgr", "error", err)
-	}
-
-	return txMgr, nil
 }
 
 // getXSubmitBytes returns the byte representation of the xsubmit function call.

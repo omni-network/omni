@@ -1,11 +1,11 @@
 package fireblocks
 
 import (
+	"crypto/ecdsa"
 	"encoding/hex"
 
 	"github.com/omni-network/omni/lib/errors"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -109,25 +109,25 @@ type transaction struct {
 	AddressType                   string              `json:"addressType"`
 }
 
-// Addr0 returns the Ethereum address of the first signed message in the transaction.
-func (t transaction) Addr0() (common.Address, error) {
+// Pubkey0 returns the public key of the first signed message in the transaction.
+func (t transaction) Pubkey0() (*ecdsa.PublicKey, error) {
 	if len(t.SignedMessages) != 1 {
-		return common.Address{}, errors.New("unexpected number of signed messages", "count", len(t.SignedMessages))
+		return nil, errors.New("unexpected number of signed messages", "count", len(t.SignedMessages))
 	}
 
 	msg := t.SignedMessages[0]
 
 	pk, err := hex.DecodeString(msg.PublicKey)
 	if err != nil {
-		return common.Address{}, errors.Wrap(err, "decode public key")
+		return nil, errors.Wrap(err, "decode public key")
 	}
 
 	pubkey, err := crypto.DecompressPubkey(pk)
 	if err != nil {
-		return common.Address{}, errors.Wrap(err, "decompress public key")
+		return nil, errors.Wrap(err, "decompress public key")
 	}
 
-	return crypto.PubkeyToAddress(*pubkey), nil
+	return pubkey, nil
 }
 
 // Sig0 returns the signature (Ethereum RSV format) of the first signed message in the transaction.
@@ -146,8 +146,8 @@ func (t transaction) Sig0() ([65]byte, error) {
 		return [65]byte{}, errors.New("unexpected signature length", "length", len(sig))
 	}
 
-	// V is either 0 or 1, convert to 27 or 28.
-	sig = append(sig, byte(msg.Signature.V+27))
+	// V is either 0 or 1
+	sig = append(sig, byte(msg.Signature.V))
 
 	return [65]byte(sig), nil
 }

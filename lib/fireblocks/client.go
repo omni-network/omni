@@ -47,7 +47,7 @@ func New(apiKey string, privateKey *rsa.PrivateKey, opts ...func(*options)) (Cli
 	return Client{
 		apiKey:     apiKey,
 		privateKey: privateKey,
-		jsonHTTP:   newJSONHTTP(o.host(), apiKey, ""),
+		jsonHTTP:   newJSONHTTP(o.host(), apiKey),
 		opts:       o,
 	}, nil
 }
