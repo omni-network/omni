@@ -25,7 +25,7 @@ func (c Client) token(uri string, reqBody any) (string, error) {
 	reqHash := sha256.Sum256(bz)
 
 	claims := jwt.MapClaims{
-		"uri":      uri,                             // uri - The URI part of the request (e.g., /v1/transactions).
+		"uri":      uri,                             // uri - The URI part of the request (e.g., /v1/transactions?foo=bar).
 		"nonce":    nonce,                           // nonce - Unique number or string. Each API request needs to have a different nonce.
 		"iat":      time.Now().Unix(),               // iat - The time at which the JWT was issued, in seconds since Epoch.
 		"exp":      time.Now().Add(validFor).Unix(), // exp - The expiration time on and after which the JWT must not be accepted for processing, in seconds since Epoch. (Must be less than iat+30sec.)

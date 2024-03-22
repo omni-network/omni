@@ -9,9 +9,10 @@ import (
 const (
 	endpointTransactions = "/v1/transactions"
 	endpointAssets       = "/v1/supported_assets"
-	endpointPubkeyTmpl   = "/v1/vault/accounts/{{.VaultAccountId}}/{{.AssetId}}/0/0/public_key_info"
+	endpointPubkeyTmpl   = "/v1/vault/accounts/{{.VaultAccountID}}/{{.AssetID}}/0/0/public_key_info?compressed"
 
 	assetHolesky = "ETH_TEST6"
+	assetSepolia = "ETH_TEST5"
 	assetMainnet = "ETH"
 
 	hostProd    = "https://api.fireblocks.io"

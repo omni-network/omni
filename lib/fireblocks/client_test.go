@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/google/uuid"
@@ -112,9 +114,38 @@ func TestSmoke(t *testing.T) {
 	client, err := fireblocks.New(apiKey, parseKey(t, privKey))
 	require.NoError(t, err)
 
-	digest := crypto.Keccak256([]byte("test"))
-	require.NoError(t, err)
+	t.Run("asserts", func(t *testing.T) {
+		t.Parallel()
 
-	_, err = client.Sign(ctx, [32]byte(digest), common.Address{})
-	tutil.RequireNoError(t, err)
+		assets, err := client.GetSupportedAssets(ctx)
+		require.NoError(t, err)
+
+		for i, asset := range assets {
+			if !strings.Contains(asset.ID, "ETH_TEST") {
+				continue
+			}
+			t.Logf("asset %d: %#v", i, asset)
+		}
+	})
+
+	t.Run("pubkey", func(t *testing.T) {
+		t.Parallel()
+
+		pubkey, err := client.GetPublicKey(ctx)
+		tutil.RequireNoError(t, err)
+
+		t.Logf("address: %#v", crypto.PubkeyToAddress(*pubkey))
+	})
+
+	t.Run("sign", func(t *testing.T) {
+		t.Parallel()
+
+		digest := crypto.Keccak256([]byte("test"))
+		require.NoError(t, err)
+
+		addr := hexutil.MustDecode("0x9914cb686527261B52B614E43D0db7bCDAB5bC50")
+
+		_, err = client.Sign(ctx, [32]byte(digest), common.BytesToAddress(addr))
+		tutil.RequireNoError(t, err)
+	})
 }

@@ -100,7 +100,7 @@ type transaction struct {
 	CustomerRefID                 string              `json:"customerRefId,omitempty"`
 	AmlScreeningResult            *amlScreeningResult `json:"amlScreeningResult,omitempty"`
 	ExtraParameters               map[string]any      `json:"extraParameters,omitempty"`
-	SignedMessages                []signedMessage     `json:"signedMessage"`
+	SignedMessages                []signedMessage     `json:"signedMessages"`
 	NumOfConfirmations            int                 `json:"numOfConfirmations"`
 	BlockInfo                     *blockInfo          `json:"blockInfo"`
 	Index                         int                 `json:"index"`
@@ -242,6 +242,11 @@ type Asset struct {
 	Decimals        int    `json:"decimals,omitempty"`
 }
 
+type pubkeyResponse struct {
+	Algorithm      string `json:"algorithm"`
+	DerivationPath []int  `json:"derivationPath"`
+	PublicKey      string `json:"publicKey"`
+}
 type errorResponse struct {
 	Message string `json:"message"`
 	Code    int    `json:"code"`

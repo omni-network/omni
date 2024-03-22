@@ -31,10 +31,10 @@ func newJSONHTTP(host string, apiKey string, clientSecret string) jsonHTTP {
 // Send sends an JSON HTTP request with the json formatted request as body.
 // If the response status code is 2XX, it marshals the response body into the response pointer and returns true.
 // Else, it marshals the response body into the errResponse pointer and returns false.
-func (c jsonHTTP) Send(ctx context.Context, endpoint string, httpMethod string, request any, headers map[string]string, response any, errResponse any) (bool, error) {
-	endpoint, err := url.JoinPath(c.host, endpoint)
+func (c jsonHTTP) Send(ctx context.Context, uri string, httpMethod string, request any, headers map[string]string, response any, errResponse any) (bool, error) {
+	endpoint, err := url.Parse(c.host + uri)
 	if err != nil {
-		return false, errors.Wrap(err, "joining endpoint")
+		return false, errors.Wrap(err, "parse")
 	}
 
 	// on get requests even will a nil request, we are passing in a non nil request body as the body marshaled to equal `null`
@@ -50,7 +50,7 @@ func (c jsonHTTP) Send(ctx context.Context, endpoint string, httpMethod string, 
 	req, err := http.NewRequestWithContext(
 		ctx,
 		httpMethod,
-		endpoint,
+		endpoint.String(),
 		bytes.NewReader(reqBytes),
 	)
 	if err != nil {
