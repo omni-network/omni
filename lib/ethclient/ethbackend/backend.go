@@ -10,6 +10,7 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/fireblocks"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/txmgr"
@@ -24,7 +25,8 @@ import (
 
 type account struct {
 	from       common.Address
-	privateKey *ecdsa.PrivateKey
+	privateKey *ecdsa.PrivateKey // Either local private key is set,
+	fireCl     fireblocks.Client // or, Fireblocks is used
 	txMgr      txmgr.TxManager
 }
 
@@ -37,6 +39,38 @@ type Backend struct {
 	blockPeriod time.Duration
 }
 
+// NewFireBackend returns a backend that supports all accounts supported by the configured fireblocks client.
+// Note that private keys can still be added via AddAccount.
+func NewFireBackend(ctx context.Context, chainName string, chainID uint64, blockPeriod time.Duration, ethCl ethclient.Client, fireCl fireblocks.Client) (*Backend, error) {
+	accs, err := fireCl.Accounts(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "fireblocks accounts")
+	}
+
+	accounts := make(map[common.Address]account)
+	for addr := range accs {
+		txMgr, err := newFireblocksTxMgr(ethCl, chainName, chainID, blockPeriod, addr, fireCl)
+		if err != nil {
+			return nil, errors.Wrap(err, "new txmgr")
+		}
+
+		accounts[addr] = account{
+			from:   addr,
+			fireCl: fireCl,
+			txMgr:  txMgr,
+		}
+	}
+
+	return &Backend{
+		Client:      ethCl,
+		accounts:    accounts,
+		chainName:   chainName,
+		chainID:     chainID,
+		blockPeriod: blockPeriod,
+	}, nil
+}
+
+// NewBackend returns a new backend backed by in-memory private keys.
 func NewBackend(chainName string, chainID uint64, blockPeriod time.Duration, ethCl ethclient.Client, privateKeys ...*ecdsa.PrivateKey) (*Backend, error) {
 	accounts := make(map[common.Address]account)
 	for _, pk := range privateKeys {
@@ -62,6 +96,8 @@ func NewBackend(chainName string, chainID uint64, blockPeriod time.Duration, eth
 	}, nil
 }
 
+// AddAccount adds a in-memory private key account to the backend.
+// Note this can be called even if other accounts are fireblocks based.
 func (b *Backend) AddAccount(privkey *ecdsa.PrivateKey) (common.Address, error) {
 	txMgr, err := newTxMgr(b.Client, b.chainName, b.chainID, b.blockPeriod, privkey)
 	if err != nil {
@@ -83,10 +119,12 @@ func (b *Backend) Chain() (string, uint64) {
 	return b.chainName, b.chainID
 }
 
-func (b *Backend) Sign(from common.Address, input [32]byte) ([65]byte, error) {
+func (b *Backend) Sign(ctx context.Context, from common.Address, input [32]byte) ([65]byte, error) {
 	acc, ok := b.accounts[from]
 	if !ok {
 		return [65]byte{}, errors.New("unknown from address", "from", from)
+	} else if acc.privateKey == nil {
+		return acc.fireCl.Sign(ctx, input, from)
 	}
 
 	pk := k1.PrivKey(crypto.FromECDSA(acc.privateKey))

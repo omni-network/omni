@@ -4,15 +4,9 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
-)
-
-type Environment int
-
-const (
-	TestNet Environment = iota + 1 // EnumIndex = 1
-	MainNet                        // EnumIndex = 2
 )
 
 // options houses parameters for altering the behavior of a SimpleTxManager.
@@ -30,31 +24,24 @@ type options struct {
 	// log a warning message if the transaction has not been signed yet
 	LogFreqFactor int
 
-	// Network is the environment that we have deployed in, either testnet or mainnet
-	Network Environment
-
 	// HostOverride overrides the network based host if populated.
 	HostOverride string
 
+	// TestAccounts overrides dynamic account
 	TestAccounts map[common.Address]uint64
 }
 
-func (c options) host() string {
-	if c.HostOverride != "" {
-		return c.HostOverride
+func host(network string, o options) string {
+	if o.HostOverride != "" {
+		return o.HostOverride
 	}
 
-	switch c.Network {
-	case MainNet:
+	switch network {
+	case netconf.Mainnet, netconf.Testnet:
 		return hostProd
 	default:
 		return hostSandbox
 	}
-}
-
-// String - Creating common behavior - give the type a String function.
-func (e Environment) String() string {
-	return [...]string{"testnet", "mainnet"}[e-1]
 }
 
 // defaultOptions returns a options with default values.
@@ -63,7 +50,6 @@ func defaultOptions() options {
 		NetworkTimeout: time.Duration(30) * time.Second,
 		QueryInterval:  time.Duration(500) * time.Millisecond,
 		LogFreqFactor:  10,
-		Network:        TestNet,
 		TestAccounts:   make(map[common.Address]uint64),
 	}
 }
@@ -92,12 +78,6 @@ func WithHost(host string) func(*options) {
 	}
 }
 
-func WithEnvironment(env Environment) func(*options) {
-	return func(cfg *options) {
-		cfg.Network = env
-	}
-}
-
 // check validates the options.
 func (c options) check() error {
 	if c.LogFreqFactor <= 0 {
@@ -110,10 +90,6 @@ func (c options) check() error {
 
 	if c.QueryInterval <= 0 {
 		return errors.New("must provide QueryInterval")
-	}
-
-	if c.Network != TestNet && c.Network != MainNet {
-		return errors.New("must provide valid Network")
 	}
 
 	return nil
