@@ -14,8 +14,8 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-func (c Client) createRawSignTransaction(ctx context.Context, digest common.Hash) (string, error) {
-	request := c.newRawSignRequest(digest)
+func (c Client) createRawSignTransaction(ctx context.Context, account uint64, digest common.Hash) (string, error) {
+	request := c.newRawSignRequest(account, digest)
 	headers, err := c.authHeaders(endpointTransactions, request)
 	if err != nil {
 		return "", err
@@ -44,7 +44,12 @@ func (c Client) createRawSignTransaction(ctx context.Context, digest common.Hash
 // Sign creates a raw sign transaction and waits for it to complete, returning the resulting signature (Ethereum RSV format).
 // The signer address is checked against the resulting signed address.
 func (c Client) Sign(ctx context.Context, digest common.Hash, signer common.Address) ([65]byte, error) {
-	id, err := c.createRawSignTransaction(ctx, digest)
+	account, err := c.getAccount(ctx, signer)
+	if err != nil {
+		return [65]byte{}, err
+	}
+
+	id, err := c.createRawSignTransaction(ctx, account, digest)
 	if err != nil {
 		return [65]byte{}, err
 	}
@@ -133,12 +138,12 @@ func isComplete(tx transaction) (bool, error) {
 }
 
 // newRawSignRequest creates a new transaction request.
-func (c Client) newRawSignRequest(digest common.Hash) createTransactionRequest {
+func (c Client) newRawSignRequest(account uint64, digest common.Hash) createTransactionRequest {
 	return createTransactionRequest{
 		Operation: "RAW",
 		Source: source{
 			Type: "VAULT_ACCOUNT",
-			ID:   strconv.FormatUint(c.opts.VaultAccountID, 10),
+			ID:   strconv.FormatUint(account, 10),
 		},
 		AssetID: c.getAssetID(),
 		ExtraParameters: &extraParameters{

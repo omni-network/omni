@@ -39,6 +39,7 @@ func TestSignOK(t *testing.T) {
 	// Create a private key and sign an expected message
 	privKey, err := crypto.GenerateKey()
 	require.NoError(t, err)
+	addr := crypto.PubkeyToAddress(privKey.PublicKey)
 	digest := crypto.Keccak256([]byte("test"))
 	expectSig, err := crypto.Sign(digest, privKey)
 	require.NoError(t, err)
@@ -70,10 +71,12 @@ func TestSignOK(t *testing.T) {
 	client, err := fireblocks.New(apiKey, parseKey(t, testPrivateKey),
 		fireblocks.WithHost(ts.URL),                    // Use the test server for all requests.
 		fireblocks.WithQueryInterval(time.Millisecond), // Fast timeout and interval for testing
-		fireblocks.WithLogFreqFactor(1))
+		fireblocks.WithLogFreqFactor(1),
+		fireblocks.WithTestAccount(addr, 0),
+	)
 	require.NoError(t, err)
 
-	actualSig, err := client.Sign(ctx, [32]byte(digest), crypto.PubkeyToAddress(privKey.PublicKey))
+	actualSig, err := client.Sign(ctx, [32]byte(digest), addr)
 	require.NoError(t, err)
 
 	require.Equal(t, [65]byte(expectSig), actualSig)
@@ -113,6 +116,8 @@ func TestSmoke(t *testing.T) {
 	client, err := fireblocks.New(apiKey, parseKey(t, privKey))
 	require.NoError(t, err)
 
+	addr := common.BytesToAddress(hexutil.MustDecode("0x9914cb686527261B52B614E43D0db7bCDAB5bC50"))
+
 	t.Run("asserts", func(t *testing.T) {
 		t.Parallel()
 
@@ -130,7 +135,7 @@ func TestSmoke(t *testing.T) {
 	t.Run("pubkey", func(t *testing.T) {
 		t.Parallel()
 
-		pubkey, err := client.GetPublicKey(ctx)
+		pubkey, err := client.GetPublicKey(ctx, 0)
 		tutil.RequireNoError(t, err)
 
 		t.Logf("address: %#v", crypto.PubkeyToAddress(*pubkey))
@@ -142,9 +147,7 @@ func TestSmoke(t *testing.T) {
 		digest := crypto.Keccak256([]byte("test"))
 		require.NoError(t, err)
 
-		addr := hexutil.MustDecode("0x9914cb686527261B52B614E43D0db7bCDAB5bC50")
-
-		_, err = client.Sign(ctx, [32]byte(digest), common.BytesToAddress(addr))
+		_, err = client.Sign(ctx, [32]byte(digest), addr)
 		tutil.RequireNoError(t, err)
 	})
 }

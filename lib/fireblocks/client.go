@@ -2,13 +2,17 @@ package fireblocks
 
 import (
 	"crypto/rsa"
+	"sync"
 
 	"github.com/omni-network/omni/lib/errors"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 const (
 	endpointTransactions = "/v1/transactions"
 	endpointAssets       = "/v1/supported_assets"
+	endpointVaults       = "/v1/vault/accounts_paged"
 	endpointPubkeyTmpl   = "/v1/vault/accounts/{{.VaultAccountID}}/{{.AssetID}}/0/0/public_key_info?compressed"
 
 	assetHolesky = "ETH_TEST6"
@@ -25,6 +29,7 @@ type Client struct {
 	apiKey     string
 	privateKey *rsa.PrivateKey
 	jsonHTTP   jsonHTTP
+	cache      *accountCache
 }
 
 // New creates a new FireBlocks client.
@@ -49,6 +54,7 @@ func New(apiKey string, privateKey *rsa.PrivateKey, opts ...func(*options)) (Cli
 		privateKey: privateKey,
 		jsonHTTP:   newJSONHTTP(o.host(), apiKey),
 		opts:       o,
+		cache:      newAccountCache(o.TestAccounts),
 	}, nil
 }
 
@@ -74,4 +80,31 @@ func (c Client) getAssetID() string {
 	default:
 		return assetMainnet
 	}
+}
+
+func newAccountCache(init map[common.Address]uint64) *accountCache {
+	return &accountCache{
+		accountsByAddress: init,
+	}
+}
+
+type accountCache struct {
+	sync.Mutex
+	accountsByAddress map[common.Address]uint64
+}
+
+func (c *accountCache) Get(addr common.Address) (uint64, bool) {
+	c.Lock()
+	defer c.Unlock()
+
+	acc, ok := c.accountsByAddress[addr]
+
+	return acc, ok
+}
+
+func (c *accountCache) Set(addr common.Address, id uint64) {
+	c.Lock()
+	defer c.Unlock()
+
+	c.accountsByAddress[addr] = id
 }

@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type Environment int
@@ -31,11 +33,10 @@ type options struct {
 	// Network is the environment that we have deployed in, either testnet or mainnet
 	Network Environment
 
-	// VaultAccountID is the ID of the vault account to use for signing.
-	VaultAccountID uint64
-
 	// HostOverride overrides the network based host if populated.
 	HostOverride string
+
+	TestAccounts map[common.Address]uint64
 }
 
 func (c options) host() string {
@@ -63,7 +64,7 @@ func defaultOptions() options {
 		QueryInterval:  time.Duration(500) * time.Millisecond,
 		LogFreqFactor:  10,
 		Network:        TestNet,
-		VaultAccountID: 0,
+		TestAccounts:   make(map[common.Address]uint64),
 	}
 }
 
@@ -79,6 +80,12 @@ func WithLogFreqFactor(factor int) func(*options) {
 	}
 }
 
+func WithTestAccount(addr common.Address, accID uint64) func(*options) {
+	return func(cfg *options) {
+		cfg.TestAccounts[addr] = accID
+	}
+}
+
 func WithHost(host string) func(*options) {
 	return func(cfg *options) {
 		cfg.HostOverride = host
@@ -88,12 +95,6 @@ func WithHost(host string) func(*options) {
 func WithEnvironment(env Environment) func(*options) {
 	return func(cfg *options) {
 		cfg.Network = env
-	}
-}
-
-func WithVaultAccountID(id uint64) func(*options) {
-	return func(cfg *options) {
-		cfg.VaultAccountID = id
 	}
 }
 
