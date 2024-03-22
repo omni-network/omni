@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
 	"net/http"
@@ -15,7 +16,6 @@ import (
 	"github.com/omni-network/omni/lib/fireblocks"
 	"github.com/omni-network/omni/lib/k1util"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 
@@ -199,23 +199,28 @@ func TestSmoke(t *testing.T) {
 	r := hexutil.Encode([]byte(msg.Signature.R))
 	s := hexutil.Encode([]byte(msg.Signature.S))
 	v := hexutil.Encode([]byte(strconv.Itoa(msg.Signature.V)))
-
 	require.NotNil(t, r)
 	require.NotNil(t, s)
 	require.NotNil(t, v)
 
-	var addr common.Address
-	// pubKey := parseKey(t, msg.PublicKey)
-	addr.SetBytes([]byte(msg.PublicKey))
-
-	byteSig := []byte("0x" + msg.Signature.FullSig)
-	require.NotNil(t, byteSig)
-
-	match := crypto.VerifySignature([]byte(msg.PublicKey), hashRaw, []byte(msg.Signature.FullSig))
-	require.NotNil(t, match)
-
-	valid, err := k1util.Verify(addr, [32]byte(hashRaw), [65]byte(byteSig))
+	content, err := hex.DecodeString(msg.Content)
 	require.NoError(t, err)
-	require.NotNil(t, valid)
-	// require.Truef(t, ok, "signature verification failed")
+	require.Len(t, content, 32)
+
+	sig, err := hex.DecodeString(msg.Signature.FullSig)
+	require.NoError(t, err)
+	require.Len(t, sig, 64)
+
+	sig = append(sig, byte(msg.Signature.V+27))
+
+	pk, err := hex.DecodeString(msg.PublicKey)
+	require.NoError(t, err)
+	pubkey, err := crypto.DecompressPubkey(pk)
+	require.NoError(t, err)
+
+	addr := crypto.PubkeyToAddress(*pubkey)
+
+	valid, err := k1util.Verify(addr, [32]byte(content), [65]byte(sig))
+	require.NoError(t, err)
+	require.True(t, valid)
 }
