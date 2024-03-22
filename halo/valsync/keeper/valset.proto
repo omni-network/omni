@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package halo.valsync.keeper;
+
+import "cosmos/orm/v1/orm.proto";
+
+option go_package = "halo/valsync/keeper";
+
+// ValidatorSet defines a set of consensus chain validators.
+// The genesis set is created and implicitly attested and activated at height 0.
+message ValidatorSet {
+  option (cosmos.orm.v1.table) = {
+    id: 1;
+    primary_key: { fields: "id", auto_increment: true }
+    index: {id: 2, fields: "attested,created_height", unique: true} // Allow querying unattested ordered by created_height.
+  };
+
+  uint64 id               = 1; // Auto-incremented ID
+  uint64 created_height   = 2; // Height this validator set was created at.
+  bool   attested         = 3; // Whether this validator set has been attested to.
+  uint64 activated_height = 4; // Height this validator set is activated in cometBFT (0 while not attested).
+}
+
+// Validator represents a single validator in a validator set.
+message Validator {
+  option (cosmos.orm.v1.table) = {
+    id: 2;
+    primary_key: { fields: "id", auto_increment: true }
+    index: {id: 2, fields: "valset_id"} // Allow querying by ValidatorSet ID
+  };
+
+  uint64 id        = 1; // Auto-incremented ID
+  uint64 valset_id = 2; // ValidatorSet ID to which this validator belongs
+  bytes  pub_key   = 3; // Validator public key
+  int64  power     = 4; // Voting power of the validator
+  bool   updated   = 5; // Whether this validator was updated in this set (wrt previous set)
+}

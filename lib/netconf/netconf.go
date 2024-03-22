@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // Network defines a deployment of the Omni cross chain protocol.
@@ -27,6 +30,20 @@ func (n Network) Validate() error {
 	// TODO(corver): Validate chains
 
 	return nil
+}
+
+// EVMChains returns all evm chains in the network. It excludes the omni consensus chain.
+func (n Network) EVMChains() []Chain {
+	resp := make([]Chain, 0, len(n.Chains))
+	for _, chain := range n.Chains {
+		if chain.IsOmniConsensus {
+			continue
+		}
+
+		resp = append(resp, chain)
+	}
+
+	return resp
 }
 
 // ChainIDs returns the all chain IDs in the network.
@@ -51,10 +68,32 @@ func (n Network) ChainNamesByIDs() map[uint64]string {
 	return resp
 }
 
-// OmniChain returns the Omni execution chain config or false if it does not exist.
-func (n Network) OmniChain() (Chain, bool) {
+// OmniEVMChain returns the Omni execution chain config or false if it does not exist.
+func (n Network) OmniEVMChain() (Chain, bool) {
 	for _, chain := range n.Chains {
-		if chain.IsOmni {
+		if chain.IsOmniEVM {
+			return chain, true
+		}
+	}
+
+	return Chain{}, false
+}
+
+// OmniConsensusChain returns the Omni consensus chain config or false if it does not exist.
+func (n Network) OmniConsensusChain() (Chain, bool) {
+	for _, chain := range n.Chains {
+		if chain.IsOmniConsensus {
+			return chain, true
+		}
+	}
+
+	return Chain{}, false
+}
+
+// EthereumChain returns the Eth Layer1 chain config or false if it does not exist.
+func (n Network) EthereumChain() (Chain, bool) {
+	for _, chain := range n.Chains {
+		if chain.IsEthereum {
 			return chain, true
 		}
 	}
@@ -79,27 +118,46 @@ func (n Network) Chain(id uint64) (Chain, bool) {
 	return Chain{}, false
 }
 
-// FinalizationStrat defines the level of finalization of a block to define query strategies.
+// FinalizationStrat defines the finalization strategy of a chain.
+// This is mostly ethclient.HeadFinalized, but some chains may not support
+// it, like zkEVM chains which would need a much more involved strategy.
 type FinalizationStrat string
 
+func (h FinalizationStrat) Verify() error {
+	if !allStrats[h] {
+		return errors.New("invalid finalization strategy", "start", h)
+	}
+
+	return nil
+}
+
+//nolint:gochecknoglobals // Static mappings
+var allStrats = map[FinalizationStrat]bool{
+	StratFinalized: true,
+	StratLatest:    true,
+}
+
 const (
-	StratFinalized FinalizationStrat = "finalized"
-	StartLatest    FinalizationStrat = "latest"
+	StratFinalized = FinalizationStrat(ethclient.HeadFinalized)
+	StratLatest    = FinalizationStrat(ethclient.HeadLatest)
 )
 
 // Chain defines the configuration of an execution chain that supports
-// the Omni cross chain protocol. This is most supported Rollup EVM, but
-// also the Omni EVM.
+// the Omni cross chain protocol. This is most supported Rollup EVMs, but
+// also the Omni EVM, and the Omni Consensus chain.
 type Chain struct {
 	ID                uint64            // Chain ID asa per https://chainlist.org
 	Name              string            // Chain name as per https://chainlist.org
 	RPCURL            string            // RPC URL of the chain
 	AuthRPCURL        string            // RPC URL of the chain with JWT authentication enabled
-	PortalAddress     string            // Address of the omni portal contract on the chain
+	PortalAddress     common.Address    // Address of the omni portal contract on the chain
 	DeployHeight      uint64            // Height that the portal contracts were deployed
-	IsOmni            bool              // Whether this is the Omni chain
+	IsOmniEVM         bool              // Whether this is the Omni EVM chain
+	IsOmniConsensus   bool              // Whether this is the Omni consensus chain
+	IsEthereum        bool              // Whether this is the ethereum layer1 chain
 	BlockPeriod       time.Duration     // Block period of the chain
 	FinalizationStrat FinalizationStrat // Finalization strategy of the chain
+	AVSContractAddr   common.Address    // Address of Omni AVS contracts for the chain
 }
 
 // Load loads the network configuration from the given path.
@@ -136,11 +194,14 @@ type chainJSON struct {
 	Name              string            `json:"name"`
 	RPCURL            string            `json:"rpcurl"`
 	AuthRPCURL        string            `json:"auth_rpcurl,omitempty"`
-	PortalAddress     string            `json:"portal_address"`
+	PortalAddress     string            `json:"portal_address,omitempty"`
 	DeployHeight      uint64            `json:"deploy_height"`
-	IsOmni            bool              `json:"is_omni,omitempty"`
+	IsOmniEVM         bool              `json:"is_omni_evm,omitempty"`
+	IsOmniConsensus   bool              `json:"is_omni_consensus,omitempty"`
+	IsEthereum        bool              `json:"is_ethereum,omitempty"`
 	BlockPeriod       string            `json:"block_period"`
-	FinalizationStrat FinalizationStrat `json:"finalization_start"`
+	FinalizationStrat FinalizationStrat `json:"finalization_start,omitempty"`
+	AVSContractAddr   string            `json:"avs_contract_address,omitempty"`
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
@@ -155,16 +216,29 @@ func (c *Chain) UnmarshalJSON(bz []byte) error {
 		return errors.Wrap(err, "parse block period")
 	}
 
+	var avsAddr common.Address
+	if cj.AVSContractAddr != "" {
+		avsAddr = common.HexToAddress(cj.AVSContractAddr)
+	}
+
+	var portalAddr common.Address
+	if cj.PortalAddress != "" {
+		portalAddr = common.HexToAddress(cj.PortalAddress)
+	}
+
 	*c = Chain{
 		ID:                cj.ID,
 		Name:              cj.Name,
 		RPCURL:            cj.RPCURL,
 		AuthRPCURL:        cj.AuthRPCURL,
-		PortalAddress:     cj.PortalAddress,
+		PortalAddress:     portalAddr,
 		DeployHeight:      cj.DeployHeight,
-		IsOmni:            cj.IsOmni,
+		IsOmniEVM:         cj.IsOmniEVM,
+		IsOmniConsensus:   cj.IsOmniConsensus,
+		IsEthereum:        cj.IsEthereum,
 		BlockPeriod:       blockPeriod,
 		FinalizationStrat: cj.FinalizationStrat,
+		AVSContractAddr:   avsAddr,
 	}
 
 	return nil
@@ -172,16 +246,28 @@ func (c *Chain) UnmarshalJSON(bz []byte) error {
 
 // MarshalJSON implements the json.Marshaler interface.
 func (c Chain) MarshalJSON() ([]byte, error) {
+	portalAddr := c.PortalAddress.Hex()
+	if c.PortalAddress == (common.Address{}) {
+		portalAddr = ""
+	}
+	avsAddr := c.AVSContractAddr.Hex()
+	if c.AVSContractAddr == (common.Address{}) {
+		avsAddr = ""
+	}
+
 	cj := chainJSON{
 		ID:                c.ID,
 		Name:              c.Name,
 		RPCURL:            c.RPCURL,
 		AuthRPCURL:        c.AuthRPCURL,
-		PortalAddress:     c.PortalAddress,
+		PortalAddress:     portalAddr,
 		DeployHeight:      c.DeployHeight,
-		IsOmni:            c.IsOmni,
+		IsOmniEVM:         c.IsOmniEVM,
+		IsOmniConsensus:   c.IsOmniConsensus,
+		IsEthereum:        c.IsEthereum,
 		BlockPeriod:       c.BlockPeriod.String(),
 		FinalizationStrat: c.FinalizationStrat,
+		AVSContractAddr:   avsAddr,
 	}
 
 	bz, err := json.Marshal(cj)

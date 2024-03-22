@@ -20,9 +20,9 @@ func CreateVote(privKey crypto.PrivKey, block xchain.Block) (*types.Vote, error)
 	if err != nil {
 		return nil, err
 	}
-	root := tree.Root()
+	attRoot := tree.Root()
 
-	sig, err := k1util.Sign(privKey, root)
+	sig, err := k1util.Sign(privKey, attRoot)
 	if err != nil {
 		return nil, errors.Wrap(err, "sign attestation")
 	}
@@ -38,7 +38,7 @@ func CreateVote(privKey crypto.PrivKey, block xchain.Block) (*types.Vote, error)
 			Height:  block.BlockHeight,
 			Hash:    block.BlockHash[:],
 		},
-		BlockRoot: root[:],
+		AttestationRoot: attRoot[:],
 		Signature: &types.SigTuple{
 			ValidatorAddress: address[:],
 			Signature:        sig[:],

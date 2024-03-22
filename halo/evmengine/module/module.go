@@ -3,7 +3,7 @@ package module
 import (
 	"github.com/omni-network/omni/halo/evmengine/keeper"
 	"github.com/omni-network/omni/halo/evmengine/types"
-	"github.com/omni-network/omni/lib/engine"
+	"github.com/omni-network/omni/lib/ethclient"
 
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/core/store"
@@ -12,6 +12,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	staking "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 )
 
@@ -97,7 +98,6 @@ func init() {
 	)
 }
 
-//nolint:revive // Cosmos-style
 type ModuleInputs struct {
 	depinject.In
 
@@ -105,30 +105,32 @@ type ModuleInputs struct {
 	Cdc          codec.Codec
 	Config       *Module
 	TXConfig     client.TxConfig
-	EthClient    engine.API
-	AddrProvider types.AddressProvider
+	EngineCl     ethclient.EngineClient
 }
 
-//nolint:revive // Cosmos-style
 type ModuleOutputs struct {
 	depinject.Out
 
 	EngEVMKeeper *keeper.Keeper
 	Module       appmodule.AppModule
+	Hooks        staking.StakingHooksWrapper
 }
 
 func ProvideModule(in ModuleInputs) ModuleOutputs {
 	k := keeper.NewKeeper(
 		in.Cdc,
 		in.StoreService,
-		in.EthClient,
+		in.EngineCl,
 		in.TXConfig,
-		in.AddrProvider,
 	)
 	m := NewAppModule(
 		in.Cdc,
 		k,
 	)
 
-	return ModuleOutputs{EngEVMKeeper: k, Module: m}
+	return ModuleOutputs{
+		EngEVMKeeper: k,
+		Module:       m,
+		Hooks:        staking.StakingHooksWrapper{StakingHooks: keeper.Hooks{}},
+	}
 }

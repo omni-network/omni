@@ -32,6 +32,7 @@ func newActiveBuffer(chainName string, mempoolLimit int64, sender SendFunc) *act
 	}
 }
 
+// AddInput adds a new submission to the buffer.
 func (b *activeBuffer) AddInput(ctx context.Context, submission xchain.Submission) error {
 	select {
 	case <-ctx.Done():
@@ -44,6 +45,7 @@ func (b *activeBuffer) AddInput(ctx context.Context, submission xchain.Submissio
 	return nil
 }
 
+// Run processes the buffer, sending submissions to the opsender.
 func (b *activeBuffer) Run(ctx context.Context) error {
 	sema := semaphore.NewWeighted(b.mempoolLimit)
 	for {

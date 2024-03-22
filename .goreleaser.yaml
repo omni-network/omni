@@ -9,10 +9,21 @@ builds:
     env: [CGO_ENABLED=0]
     goos: [linux, darwin]
     goarch: [amd64, arm64]
+    ldflags:
+      - -s -w -X github.com/omni-network/omni/lib/buildinfo.version={{.Version}}
 
   - id: relayer
     main: ./relayer
     binary: relayer
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w -X github.com/omni-network/omni/lib/buildinfo.version={{.Version}}
+
+  - id: monitor
+    main: ./monitor
+    binary: monitor
     env: [CGO_ENABLED=0]
     goos: [linux, darwin]
     goarch: [amd64, arm64]
@@ -31,6 +42,15 @@ builds:
     goos: [ linux, darwin ]
     goarch: [ amd64, arm64 ]
 
+  - id: omni
+    main: ./cli/cmd/omni
+    binary: omni
+    env: [ CGO_ENABLED=0 ]
+    goos: [ linux, darwin ]
+    goarch: [ amd64, arm64 ]
+    ldflags:
+      - -s -w -X github.com/omni-network/omni/lib/buildinfo.version={{.Version}}
+
 dockers:
   - ids: [halo]
     dockerfile: ./halo/Dockerfile
@@ -45,6 +65,13 @@ dockers:
      - omniops/relayer:{{ .ShortCommit }}
      - omniops/relayer:{{ if .IsSnapshot }}main{{ else }}latest{{ end }}
      - omniops/relayer:{{ if .IsSnapshot }}main{{ else }}{{.Tag}}{{ end }}
+
+  - ids: [monitor]
+    dockerfile: ./monitor/Dockerfile
+    image_templates:
+     - omniops/monitor:{{ .ShortCommit }}
+     - omniops/monitor:{{ if .IsSnapshot }}main{{ else }}latest{{ end }}
+     - omniops/monitor:{{ if .IsSnapshot }}main{{ else }}{{.Tag}}{{ end }}
 
   - ids: [explorer-graphql]
     dockerfile: ./explorer/graphql/Dockerfile
@@ -70,6 +97,12 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
+
+release:
+  draft: true
+  replace_existing_draft: true
+  prerelease: auto
+  mode: append
 
 changelog:
   sort: asc

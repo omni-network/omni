@@ -7,8 +7,8 @@ import (
 
 	"github.com/omni-network/omni/halo/comet"
 	"github.com/omni-network/omni/halo/evmengine/types"
-	"github.com/omni-network/omni/lib/engine"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/k1util"
 
 	eengine "github.com/ethereum/go-ethereum/beacon/engine"
@@ -23,9 +23,10 @@ import (
 type Keeper struct {
 	cdc             codec.BinaryCodec
 	storeService    store.KVStoreService
-	ethCl           engine.API
+	engineCl        ethclient.EngineClient
 	txConfig        client.TxConfig
-	providers       []types.CPayloadProvider
+	voteProvider    types.VoteExtensionProvider
+	eventProcs      []types.EvmEventProcessor
 	cmtAPI          comet.API
 	addrProvider    types.AddressProvider
 	buildDelay      time.Duration
@@ -45,27 +46,33 @@ type Keeper struct {
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService store.KVStoreService,
-	ethCl engine.API,
+	engineCl ethclient.EngineClient,
 	txConfig client.TxConfig,
-	addrProvider types.AddressProvider,
 ) *Keeper {
 	return &Keeper{
 		cdc:          cdc,
 		storeService: storeService,
-		ethCl:        ethCl,
+		engineCl:     engineCl,
 		txConfig:     txConfig,
-		addrProvider: addrProvider,
 	}
 }
 
 // TODO(corver): Figure out how to use depinject for this.
-func (k *Keeper) AddProvider(p types.CPayloadProvider) {
-	k.providers = append(k.providers, p)
+func (k *Keeper) AddEventProcessor(p types.EvmEventProcessor) {
+	k.eventProcs = append(k.eventProcs, p)
+}
+
+func (k *Keeper) SetVoteProvider(p types.VoteExtensionProvider) {
+	k.voteProvider = p
 }
 
 // SetCometAPI sets the comet API client.
 func (k *Keeper) SetCometAPI(c comet.API) {
 	k.cmtAPI = c
+}
+
+func (k *Keeper) SetAddressProvider(p types.AddressProvider) {
+	k.addrProvider = p
 }
 
 // SetBuildDelay sets the build delay parameter.
@@ -94,9 +101,11 @@ func (k *Keeper) isNextProposer(ctx context.Context) (bool, uint64, error) {
 	header := sdkCtx.BlockHeader()
 	nextHeight := header.Height + 1
 
-	valset, err := k.cmtAPI.Validators(ctx, header.Height)
+	valset, ok, err := k.cmtAPI.Validators(ctx, header.Height)
 	if err != nil {
 		return false, 0, err
+	} else if !ok {
+		return false, 0, errors.New("validators not available")
 	}
 
 	idx, _ := valset.GetByAddress(header.ProposerAddress)

@@ -1,0 +1,60 @@
+name: cli install test
+
+on:
+  workflow_call:
+
+jobs:
+  test-install:
+    name: ${{ matrix.os }} ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: x86_64
+          - os: ubuntu-latest
+            arch: arm64
+          - os: macos-latest
+            arch: x86_64
+          - os: macos-latest
+            arch: arm64
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Install Command
+      run: bash scripts/install_omni_cli.sh
+      shell: bash
+
+    - name: Confirm Installation Location
+      run: ls -la ~/bin
+
+    - name: Check Installation
+      run: |
+        export PATH=$PATH:~/bin
+        omni version
+      shell: bash
+
+  test-prompt:
+    name: windows-latest
+    runs-on: windows-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Install Command
+      run: bash scripts/install_omni_cli.sh || true
+      shell: bash
+
+    - name: Check for Windows Prompt
+      run: |
+        OUTPUT=$(bash scripts/install_omni_cli.sh || true)
+        echo "$OUTPUT"
+        if [[ "$OUTPUT" == *"Please use Ubuntu or macOS to run this script"* ]]; then
+          echo "Correct prompt detected for Windows."
+        else
+          echo "Correct prompt NOT detected for Windows."
+          exit 1
+        fi
+      shell: bash

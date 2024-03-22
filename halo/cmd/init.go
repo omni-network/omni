@@ -187,25 +187,35 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	if cmtos.FileExists(networkFile) {
 		log.Info(ctx, "Found network config", "path", networkFile)
 	} else if initCfg.Network == netconf.Simnet {
+		static := netconf.GetStatic(initCfg.Network)
 		// Create a simnet (single binary with mocked clients).
 		network := netconf.Network{
 			Name: initCfg.Network,
 			Chains: []netconf.Chain{
 				{
-					ID:          999,
-					Name:        "omni",
-					IsOmni:      true,
+					ID:          static.OmniExecutionChainID,
+					Name:        "omni_evm",
+					IsOmniEVM:   true,
 					BlockPeriod: time.Millisecond * 500, // Speed up block times for testing
 				},
 				{
-					ID:     100, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
-					Name:   "chain_a",
-					IsOmni: false,
+					ID:              static.OmniConsensusChainID,
+					Name:            "omni_consensus",
+					IsOmniConsensus: true,
+					DeployHeight:    1,                      // Validator sets start at height 1, not 0.
+					BlockPeriod:     time.Millisecond * 500, // Speed up block times for testing
 				},
 				{
-					ID:     200, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
-					Name:   "chain_b",
-					IsOmni: false,
+					ID:         100, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
+					Name:       "chain_a",
+					IsOmniEVM:  false,
+					IsEthereum: false,
+				},
+				{
+					ID:         200, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
+					Name:       "chain_b",
+					IsOmniEVM:  false,
+					IsEthereum: false,
 				},
 			},
 		}
@@ -216,6 +226,8 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	} else {
 		return errors.New("network config file must be pre-generated", "path", networkFile)
 	}
+
+	static := netconf.GetStatic(initCfg.Network)
 
 	// Setup genesis file
 	genFile := comet.GenesisFile()
@@ -229,7 +241,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 
 		var genDoc *types.GenesisDoc
 		if initCfg.Cosmos {
-			cosmosGen, err := genutil.MakeGenesis(initCfg.Network, time.Now(), pubKey)
+			cosmosGen, err := genutil.MakeGenesis(static.OmniConsensusChainID, time.Now(), pubKey)
 			if err != nil {
 				return err
 			}
@@ -253,14 +265,14 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 		return errors.New("genesis file must be pre-generated", "path", networkFile)
 	}
 
-	// Attest state
-	attStateFile := cfg.AttestStateFile()
-	if cmtos.FileExists(attStateFile) {
-		log.Info(ctx, "Found attest state file", "path", attStateFile)
-	} else if err := voter.GenEmptyStateFile(attStateFile); err != nil {
+	// Vote state
+	voterStateFile := cfg.VoterStateFile()
+	if cmtos.FileExists(voterStateFile) {
+		log.Info(ctx, "Found voter state file", "path", voterStateFile)
+	} else if err := voter.GenEmptyStateFile(voterStateFile); err != nil {
 		return err
 	} else {
-		log.Info(ctx, "Generated attest state file", "path", attStateFile)
+		log.Info(ctx, "Generated voter state file", "path", voterStateFile)
 	}
 
 	return nil

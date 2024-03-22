@@ -3,7 +3,7 @@
 
 # The version of the Halo binary that created or
 # last modified the config file. Do not modify this.
-version = "unknown"
+version = "v0.1.1"
 
 #######################################################################
 ###                         Relayer Options                         ###
@@ -17,6 +17,9 @@ halo-url = "localhost:26657"
 
 # The path to the Omni network configuration file.
 network-file = "network.json"
+
+# The path to the relayer state file used to track cursors.
+state-file = "relayer-state.json"
 
 #######################################################################
 ###                         Logging Options                         ###

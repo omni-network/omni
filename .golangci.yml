@@ -82,22 +82,26 @@ linters-settings:
   wrapcheck:
     ignoreSigs:
       - github.com/omni-network/omni/
+      - google.golang.org/grpc/status # No point wrapping gRPC/network errors.
+      - github.com/ethereum/go-ethereum # We wrap these automatically in lib/ethclient
 
 issues:
   fix: true
   exclude-rules:
-    - path: 'metrics.go'
-      linters:
-        - gochecknoglobals # Promauto metrics are global variables
-    - path: '(.*)(test|scripts)(.*)'
-      linters:        # Relax linters for both tests/scripts (non-production code)
-        - gosec       # Security not an issue here
-        - revive      # Relax revive rules
-        - wrapcheck   # Wrapping not required
-        - gocognit    # Cognitive complexity not an issue here
-        - prealloc    # Prealloc not an issue here
-    - path: 'scripts/.+\.go'
-      linters:        # Relax linters for scripts only (non-production code)
+    - path: '(.*)(_test|tutil|scripts)(.*)'
+      linters:         # Relax linters for both tests/scripts (non-production code)
+        - gosec        # Security not required
+        - revive       # Relax revive rules
+        - wrapcheck    # Wrapping not required
+        - perfsprint   # Performance not an issue here
+        - contextcheck # Context not an issue here
+        - maintidx     # Relax linter for table driven tests
+        - dupl         # Many tests share similar testing logic but call different methods with different args
+    - path: '(.*)(e2e)(.*)'
+      linters:         # Relax linters for both e2e (performance not required)
+        - perfsprint   # Performance not an issue here
+    - path: '(.*)(scripts|cli)(.*)'
+      linters:        # Relax linters for scripts and clis
         - forbidigo   # Allow debug printing
   exclude:
     - add-constant         # Ignore "add-constant: avoid magic numbers like" since it is too strict
@@ -106,6 +110,10 @@ issues:
     - "shadows an import name" # Relax revive
     - "ifElseChain: rewrite if-else to switch statement"   # IfElseChain actually preferred to switches
     - "nested-structs: no nested structs are allowed"      # Relax revive
+    - "confusing-naming" #  Relax revive, we often use Foo and foo function names.
+    - "flag-parameter" # Relax revive, flag parameters are ok if used sparingly.
+    - "G306: Expect WriteFile permissions to be 0600 or less" # We write a lot of files that need to be editable.
+    - "exported: type name will be used as module.Module" # Cosmos style
 
     # Loop variable issues have been fixed in Go 1.22, so can be ignored
     - "G601: Implicit memory aliasing in for loop"
@@ -122,6 +130,8 @@ linters:
     - depguard             # Dependency guard is for enterprise users
     - exhaustruct          # Exhaustive structs results in super verbose go code
     - funlen               # Some functions will be long
+    - gocognit             # We tend to write long multi-step functions
+    - gochecknoglobals     # We use globals in many places
     - goerr113             # We do not religiously follow the Go 1.13 package level error convention
     - godox                # Allow TODOs
     - goimports            # Handled by gci
@@ -129,6 +139,7 @@ linters:
     - gomnd                # Too many false positives
     - gomoddirectives      # We have a replace directive
     - ireturn              # Too many false positives
+    - prealloc             # Too many false positives
     - tagliatelle          # Too strict
     - varnamelen           # False positives
     - wsl                  # Way to strict and opinionated

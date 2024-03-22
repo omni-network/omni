@@ -1,42 +1,115 @@
+//nolint:revive // Defer chains is best for latency metrics.
 package provider
 
 import (
 	"context"
+	"strconv"
+	"sync"
 
 	atypes "github.com/omni-network/omni/halo/attest/types"
+	vtypes "github.com/omni-network/omni/halo/valsync/types"
+	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/xchain"
 
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 
+	"github.com/ethereum/go-ethereum/common"
+
+	errorsmod "cosmossdk.io/errors"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	gogogrpc "github.com/cosmos/gogoproto/grpc"
 	"github.com/cosmos/gogoproto/proto"
 	"google.golang.org/grpc"
 )
 
-func NewABCIProvider(abci rpcclient.ABCIClient, chains map[uint64]string) Provider {
+// ABCIClient abstracts the cometBFT RPC client consisting of only the required methods.
+type ABCIClient interface {
+	rpcclient.ABCIClient
+	rpcclient.SignClient
+}
+
+func NewABCIProvider(abci ABCIClient, chains map[uint64]string) Provider {
 	backoffFunc := func(ctx context.Context) (func(), func()) {
 		return expbackoff.NewWithReset(ctx, expbackoff.WithFastConfig())
 	}
 
-	cl := atypes.NewQueryClient(rpcAdaptor{abci: abci})
+	acl := atypes.NewQueryClient(rpcAdaptor{abci: abci})
+	vcl := vtypes.NewQueryClient(rpcAdaptor{abci: abci})
 
 	return Provider{
-		fetch:       newABCIFetchFunc(cl),
+		fetch:       newABCIFetchFunc(acl),
+		latest:      newABCILatestFunc(acl),
+		window:      newABCIWindowFunc(acl),
+		valset:      newABCIValsetFunc(vcl),
+		chainID:     newChainIDFunc(abci),
 		backoffFunc: backoffFunc,
 		chainNames:  chains,
+	}
+}
+
+// newChainIDFunc returns a function that returns the consensus chain ID. It caches the result.
+func newChainIDFunc(abci rpcclient.SignClient) ChainIDFunc {
+	var mu sync.Mutex
+	var chainID uint64
+
+	return func(ctx context.Context) (uint64, error) {
+		mu.Lock()
+		defer mu.Unlock()
+		if chainID != 0 {
+			return chainID, nil
+		}
+
+		resp, err := abci.Header(ctx, nil)
+		if err != nil {
+			return 0, errors.Wrap(err, "abci header")
+		}
+
+		chainID, err = strconv.ParseUint(resp.Header.ChainID, 10, 64)
+		if err != nil {
+			return 0, errors.Wrap(err, "parse chain ID")
+		}
+
+		return chainID, nil
+	}
+}
+
+func newABCIValsetFunc(cl vtypes.QueryClient) ValsetFunc {
+	return func(ctx context.Context, valSetID uint64) ([]cchain.Validator, bool, error) {
+		const endpoint = "valset"
+		defer latency(endpoint)()
+		resp, err := cl.ValidatorSet(ctx, &vtypes.ValidatorSetRequest{Id: valSetID})
+		if errors.Is(err, sdkerrors.ErrKeyNotFound) {
+			return nil, false, nil
+		} else if err != nil {
+			incQueryErr(endpoint)
+			return nil, false, errors.Wrap(err, "abci query valset")
+		}
+
+		vals := make([]cchain.Validator, 0, len(resp.Validators))
+		for _, v := range resp.Validators {
+			vals = append(vals, cchain.Validator{
+				Address: common.BytesToAddress(v.Address),
+				Power:   v.Power,
+			})
+		}
+
+		return vals, true, nil
 	}
 }
 
 func newABCIFetchFunc(cl atypes.QueryClient) func(ctx context.Context, chainID uint64, fromHeight uint64,
 ) ([]xchain.Attestation, error) {
 	return func(ctx context.Context, chainID uint64, fromHeight uint64) ([]xchain.Attestation, error) {
+		const endpoint = "attestations_from"
+		defer latency(endpoint)()
 		resp, err := cl.AttestationsFrom(ctx, &atypes.AttestationsFromRequest{
 			ChainId:    chainID,
 			FromHeight: fromHeight,
 		})
 		if err != nil {
+			incQueryErr(endpoint)
 			return nil, errors.Wrap(err, "abci query approved-from")
 		}
 
@@ -46,6 +119,48 @@ func newABCIFetchFunc(cl atypes.QueryClient) func(ctx context.Context, chainID u
 		}
 
 		return atts, nil
+	}
+}
+
+func newABCIWindowFunc(cl atypes.QueryClient) func(ctx context.Context, chainID uint64, height uint64,
+) (int, error) {
+	return func(ctx context.Context, chainID uint64, height uint64) (int, error) {
+		const endpoint = "window_compare"
+		defer latency(endpoint)()
+		resp, err := cl.WindowCompare(ctx, &atypes.WindowCompareRequest{
+			ChainId: chainID,
+			Height:  height,
+		})
+		if err != nil {
+			incQueryErr(endpoint)
+			return 0, errors.Wrap(err, "abci query window compare")
+		}
+
+		return int(resp.Cmp), nil
+	}
+}
+
+func newABCILatestFunc(cl atypes.QueryClient) func(ctx context.Context, chainID uint64,
+) (xchain.Attestation, bool, error) {
+	return func(ctx context.Context, chainID uint64) (xchain.Attestation, bool, error) {
+		const endpoint = "latest_attestation"
+		defer latency(endpoint)()
+		resp, err := cl.LatestAttestation(ctx, &atypes.LatestAttestationRequest{
+			ChainId: chainID,
+		})
+		if errors.Is(err, sdkerrors.ErrKeyNotFound) {
+			return xchain.Attestation{}, false, nil
+		} else if err != nil {
+			incQueryErr(endpoint)
+			return xchain.Attestation{}, false, errors.Wrap(err, "abci query latest attestation")
+		}
+
+		att, err := atypes.AttestationFromProto(resp.Attestation)
+		if err != nil {
+			return xchain.Attestation{}, false, errors.Wrap(err, "attestations from proto")
+		}
+
+		return att, true, nil
 	}
 }
 
@@ -75,7 +190,8 @@ func (a rpcAdaptor) Invoke(ctx context.Context, method string, req, resp any, _ 
 	if err != nil {
 		return errors.Wrap(err, "abci query")
 	} else if !r.Response.IsOK() {
-		return errors.New("abci query failed", "code", r.Response.Code, "info", r.Response.Info, "log", r.Response.Log)
+		err := errorsmod.ABCIError(r.Response.Codespace, r.Response.Code, r.Response.Log)
+		return errors.Wrap(err, "abci query failed", "code", r.Response.Code, "info", r.Response.Info, "log", r.Response.Log)
 	}
 
 	err = proto.Unmarshal(r.Response.Value, resppb)

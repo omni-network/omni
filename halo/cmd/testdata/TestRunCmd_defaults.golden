@@ -1,15 +1,15 @@
 {
  "HomeDir": "./halo",
  "EngineJWTFile": "",
- "AppStatePersistInterval": 1,
  "SnapshotInterval": 1000,
+ "SnapshotKeepRecent": 2,
  "BackendType": "goleveldb",
  "MinRetainBlocks": 0,
  "PruningOption": "nothing",
  "EVMBuildDelay": 600000000,
  "EVMBuildOptimistic": true,
  "Comet": {
-  "Version": "0.38.5",
+  "Version": "0.38.6",
   "RootDir": "./halo",
   "ProxyApp": "tcp://127.0.0.1:26658",
   "Moniker": "testmoniker",

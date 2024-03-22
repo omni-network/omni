@@ -5,6 +5,11 @@ import (
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
 	engevmmodule "github.com/omni-network/omni/halo/evmengine/module"
 	engevmtypes "github.com/omni-network/omni/halo/evmengine/types"
+	"github.com/omni-network/omni/halo/evmstaking"
+	valsyncmodule "github.com/omni-network/omni/halo/valsync/module"
+	valsynctypes "github.com/omni-network/omni/halo/valsync/types"
+
+	"github.com/ethereum/go-ethereum/params"
 
 	runtimev1alpha1 "cosmossdk.io/api/cosmos/app/runtime/v1alpha1"
 	appv1alpha1 "cosmossdk.io/api/cosmos/app/v1alpha1"
@@ -17,6 +22,7 @@ import (
 	txconfigv1 "cosmossdk.io/api/cosmos/tx/config/v1"
 	"cosmossdk.io/core/appconfig"
 	"cosmossdk.io/depinject"
+	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -28,7 +34,13 @@ import (
 )
 
 // Bech32HRP is the human-readable-part of the Bech32 address format.
-const Bech32HRP = "omni"
+const (
+	Bech32HRP = "omni"
+
+	// TODO(corver): Maybe move these to genesis itself.
+	genesisVoteWindow   = 64
+	genesisVoteExtLimit = 256
+)
 
 // init initializes the Cosmos SDK configuration.
 //
@@ -47,6 +59,9 @@ func init() {
 	cfg.SetBech32PrefixForValidator(validatorAddressPrefix, validatorPubKeyPrefix)
 	cfg.SetBech32PrefixForConsensusNode(consNodeAddressPrefix, consNodePubKeyPrefix)
 	cfg.Seal()
+
+	// Override default power reduction: 1 ether (1e18) $STAKE == 1 power.
+	sdk.DefaultPowerReduction = sdkmath.NewInt(params.Ether)
 }
 
 // DepConfig returns the default app depinject config.
@@ -65,6 +80,7 @@ var (
 		distrtypes.ModuleName,
 		stakingtypes.ModuleName,
 		genutiltypes.ModuleName,
+		valsynctypes.ModuleName,
 	}
 
 	beginBlockers = []string{
@@ -73,8 +89,8 @@ var (
 	}
 
 	endBlockers = []string{
-		stakingtypes.ModuleName,
 		attesttypes.ModuleName,
+		valsynctypes.ModuleName, // Wraps staking module end blocker (must come after attest module)
 	}
 
 	// blocked account addresses.
@@ -90,6 +106,7 @@ var (
 		{Account: distrtypes.ModuleName},
 		{Account: stakingtypes.BondedPoolName, Permissions: []string{authtypes.Burner, stakingtypes.ModuleName}},
 		{Account: stakingtypes.NotBondedPoolName, Permissions: []string{authtypes.Burner, stakingtypes.ModuleName}},
+		{Account: evmstaking.AccountName, Permissions: []string{authtypes.Burner, authtypes.Minter}},
 	}
 
 	// appConfig application configuration (used by depinject).
@@ -100,8 +117,8 @@ var (
 				Config: appconfig.WrapAny(&runtimev1alpha1.Module{
 					AppName:       Name,
 					BeginBlockers: beginBlockers,
-					EndBlockers:   endBlockers,
-					InitGenesis:   genesisModuleOrder,
+					// Setting endblockers in newApp since valsync replaces staking endblocker.
+					InitGenesis: genesisModuleOrder,
 					OverrideStoreKeys: []*runtimev1alpha1.StoreKeyConfig{
 						{
 							ModuleName: authtypes.ModuleName,
@@ -151,8 +168,15 @@ var (
 				Config: appconfig.WrapAny(&engevmmodule.Module{}),
 			},
 			{
-				Name:   attesttypes.ModuleName,
-				Config: appconfig.WrapAny(&attestmodule.Module{}),
+				Name: attesttypes.ModuleName,
+				Config: appconfig.WrapAny(&attestmodule.Module{
+					VoteWindow:         genesisVoteWindow,
+					VoteExtensionLimit: genesisVoteExtLimit,
+				}),
+			},
+			{
+				Name:   valsynctypes.ModuleName,
+				Config: appconfig.WrapAny(&valsyncmodule.Module{}),
 			},
 		},
 	})

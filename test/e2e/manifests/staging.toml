@@ -1,8 +1,0 @@
-network = "staging"
-public_chains = ["arb_goerli", "goerli"]
-avs_target = "goerli"
-multi_omni_evms = true
-prometheus = true
-
-[node.validator01]
-[node.validator02]

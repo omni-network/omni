@@ -7,8 +7,8 @@ import (
 
 	"github.com/omni-network/omni/explorer/db"
 	"github.com/omni-network/omni/explorer/graphql/data"
+	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/gitinfo"
 	"github.com/omni-network/omni/lib/log"
 
 	"github.com/rs/cors"
@@ -21,7 +21,7 @@ func Run(ctx context.Context, cfg Config) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	gitinfo.Instrument(ctx)
+	buildinfo.Instrument(ctx)
 
 	// create ent client
 	entCl, err := db.NewPostgressClient(cfg.DBUrl)

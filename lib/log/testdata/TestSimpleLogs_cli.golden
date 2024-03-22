@@ -1,0 +1,9 @@
+info message                                                                               with=args
+debug this code for me please                                                              number=1
+watch out!                                                                                 err="file already exists"
+something went wrong                                                                       float=1.234 err=EOF
+err1                                                                                       err=first 1=1
+err2                                                                                       err="second: first" 2=2 1=1
+ctx debug message                                                                          ctx_key1=ctx_value1 debug_key1=debug_value1
+ctx info message                                                                           ctx_key1=ctx_value1 ctx_key2=ctx_value2 info_key2=info_value2
+Pkg wrapped error                                                                          err="pkg wrap: omni wrap: new" wrap=wrap new=new

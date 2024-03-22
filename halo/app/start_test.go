@@ -1,6 +1,7 @@
 package app_test
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"testing"
@@ -15,6 +16,7 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+	"github.com/cometbft/cometbft/types"
 
 	db "github.com/cosmos/cosmos-db"
 	"github.com/stretchr/testify/require"
@@ -53,9 +55,41 @@ func TestSmoke(t *testing.T) {
 		return s.SyncInfo.LatestBlockHeight >= int64(target)
 	}, time.Second*time.Duration(target*2), time.Millisecond*100)
 
-	srcChain := uint64(999)
+	_, ok, err := cprov.LatestAttestation(ctx, 0) // Ensure it doesn't error for unknown chains.
+	require.NoError(t, err)
+	require.False(t, ok)
+
+	valset, ok, err := cprov.ValidatorSet(ctx, 1) // Genesis validator set
+	require.NoError(t, err)
+	require.True(t, ok)
+	require.Len(t, valset, 1)
+
+	_, ok, err = cprov.ValidatorSet(ctx, 33) // Ensure it doesn't error for unknown validator sets.
+	require.NoError(t, err)
+	require.False(t, ok)
+
+	genSet, err := cl.Validators(ctx, int64Ptr(1), nil, nil)
+	require.NoError(t, err)
+	getSetHash := types.NewValidatorSet(genSet.Validators).Hash()
+
+	// Wait for cometBFT validator set to change
+	require.Eventually(t, func() bool {
+		set, err := cl.Validators(ctx, nil, nil, nil)
+		require.NoError(t, err)
+		setHash := types.NewValidatorSet(set.Validators).Hash()
+
+		return !bytes.Equal(getSetHash, setHash)
+	}, time.Second*time.Duration(target*2), time.Millisecond*100)
+
+	srcChain := netconf.GetStatic(netconf.Simnet).OmniExecutionChainID
 	// Ensure all blocks are attested and approved.
 	cprov.Subscribe(ctx, srcChain, 0, "test", func(ctx context.Context, approved xchain.Attestation) error {
+		// Sanity check we can fetch latest directly as well.
+		att, ok, err := cprov.LatestAttestation(ctx, srcChain)
+		require.NoError(t, err)
+		require.True(t, ok)
+		require.Equal(t, srcChain, att.SourceChainID)
+
 		require.Equal(t, srcChain, approved.SourceChainID)
 		t.Logf("cprovider streamed approved block: %d", approved.BlockHeight)
 		if approved.BlockHeight >= target {
@@ -109,4 +143,8 @@ func setupSimnet(t *testing.T) haloapp.Config {
 	})
 
 	return cfg
+}
+
+func int64Ptr(i int64) *int64 {
+	return &i
 }

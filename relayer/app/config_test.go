@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/tutil"
 	relayer "github.com/omni-network/omni/relayer/app"
-	"github.com/omni-network/omni/test/tutil"
 
 	"github.com/stretchr/testify/require"
 )

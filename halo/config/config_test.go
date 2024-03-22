@@ -7,7 +7,7 @@ import (
 
 	halocfg "github.com/omni-network/omni/halo/config"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/test/tutil"
+	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/stretchr/testify/require"
 )

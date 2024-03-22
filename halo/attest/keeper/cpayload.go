@@ -9,7 +9,6 @@ import (
 	evmenginetypes "github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/xchain"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
@@ -20,20 +19,18 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 )
 
-var _ evmenginetypes.CPayloadProvider = (*Keeper)(nil)
+var _ evmenginetypes.VoteExtensionProvider = (*Keeper)(nil)
 
-func (k *Keeper) PreparePayload(ctx context.Context, height uint64, commit abci.ExtendedCommitInfo) ([]sdk.Msg, error) {
+func (k *Keeper) PrepareVotes(ctx context.Context, commit abci.ExtendedCommitInfo) ([]sdk.Msg, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	if err := baseapp.ValidateVoteExtensions(sdkCtx, k.skeeper, int64(height), sdkCtx.ChainID(), commit); err != nil {
-		log.Error(ctx, "Cannot include invalid vote extensions in payload", err, "height", height)
+	if err := baseapp.ValidateVoteExtensions(sdkCtx, k.skeeper, sdkCtx.BlockHeight(), sdkCtx.ChainID(), commit); err != nil {
+		log.Error(ctx, "Cannot include invalid vote extensions in payload", err, "height", sdkCtx.BlockHeight())
 		return nil, nil
 	}
 
-	msg, ok, err := votesFromLastCommit(commit)
+	msg, err := votesFromLastCommit(commit)
 	if err != nil {
 		return nil, err
-	} else if !ok {
-		return nil, nil
 	}
 
 	return []sdk.Msg{msg}, nil
@@ -41,7 +38,7 @@ func (k *Keeper) PreparePayload(ctx context.Context, height uint64, commit abci.
 
 // votesFromLastCommit returns the aggregated votes contained in vote extensions
 // of the last local commit.
-func votesFromLastCommit(info abci.ExtendedCommitInfo) (*types.MsgAddVotes, bool, error) {
+func votesFromLastCommit(info abci.ExtendedCommitInfo) (*types.MsgAddVotes, error) {
 	var allVotes []*types.Vote
 	for _, vote := range info.Votes {
 		if vote.BlockIdFlag != cmtproto.BlockIDFlagCommit {
@@ -49,7 +46,7 @@ func votesFromLastCommit(info abci.ExtendedCommitInfo) (*types.MsgAddVotes, bool
 		}
 		votes, ok, err := votesFromExtension(vote.VoteExtension)
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		} else if !ok {
 			continue
 		}
@@ -60,37 +57,37 @@ func votesFromLastCommit(info abci.ExtendedCommitInfo) (*types.MsgAddVotes, bool
 	return &types.MsgAddVotes{
 		Authority: authtypes.NewModuleAddress(types.ModuleName).String(),
 		Votes:     aggregateVotes(allVotes),
-	}, len(allVotes) > 0, nil
+	}, nil
 }
 
 // aggregateVotes aggregates the provided attestations by block header.
 func aggregateVotes(votes []*types.Vote) []*types.AggVote {
-	aggsByHeader := make(map[xchain.BlockHeader]*types.AggVote) // map[BlockHash]Attestation
+	uniqueAggs := make(map[types.UniqueKey]*types.AggVote)
 	for _, vote := range votes {
-		header := vote.BlockHeader.ToXChain()
-		agg, ok := aggsByHeader[header]
+		key := vote.UniqueKey()
+		agg, ok := uniqueAggs[key]
 		if !ok {
 			agg = &types.AggVote{
-				BlockHeader: vote.BlockHeader,
-				BlockRoot:   vote.BlockRoot,
+				BlockHeader:     vote.BlockHeader,
+				AttestationRoot: vote.AttestationRoot,
 			}
 		}
 
 		agg.Signatures = append(agg.Signatures, vote.Signature)
-		aggsByHeader[header] = agg
+		uniqueAggs[key] = agg
 	}
 
-	return flattenAggsByHeader(aggsByHeader)
+	return sortAggregates(flattenAggs(uniqueAggs))
 }
 
-// flattenAggsByHeader returns the provided map of aggregates by header as a slice in a deterministic order.
-func flattenAggsByHeader(aggsByHeader map[xchain.BlockHeader]*types.AggVote) []*types.AggVote {
+// flattenAggs returns the values of the provided map.
+func flattenAggs(aggsByHeader map[types.UniqueKey]*types.AggVote) []*types.AggVote {
 	aggs := make([]*types.AggVote, 0, len(aggsByHeader))
 	for _, agg := range aggsByHeader {
 		aggs = append(aggs, agg)
 	}
 
-	return sortAggregates(aggs)
+	return aggs
 }
 
 // sortAggregates returns the provided aggregates in a deterministic order.

@@ -1,0 +1,51 @@
+name: PR e2e test
+
+on:
+  workflow_call:
+
+jobs:
+  pr_e2e_tests:
+    runs-on: namespace-profile-default
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Build halo and relayer binaries
+        uses: goreleaser/goreleaser-action@v5
+        env:
+          GOOS: linux
+        with:
+          version: latest
+          args: build --single-target --snapshot --clean --id=halo --id=relayer --id=monitor
+
+      - name: Build halo image
+        run: |
+          cd dist/halo_linux_amd64_v1
+          docker build -f "../../halo/Dockerfile" . -t "omniops/halo:${GITHUB_SHA::7}"
+
+      - name: Build relayer image
+        run: |
+          cd dist/relayer_linux_amd64_v1
+          docker build -f "../../relayer/Dockerfile" . -t "omniops/relayer:${GITHUB_SHA::7}"
+
+      - name: Build monitor image
+        run: |
+          cd dist/monitor_linux_amd64_v1
+          docker build -f "../../monitor/Dockerfile" . -t "omniops/monitor:${GITHUB_SHA::7}"
+
+      - name: Run devnet1 e2e test
+        run: |
+          go install github.com/omni-network/omni/e2e
+          cd e2e && ./run-multiple.sh manifests/devnet1.toml
+
+      - name: Upload failed logs
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: failed-logs
+          path: e2e/failed-logs.txt
+          retention-days: 3

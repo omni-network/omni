@@ -5,19 +5,18 @@ import (
 
 	"github.com/omni-network/omni/explorer/db"
 	"github.com/omni-network/omni/explorer/db/ent"
+	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/gitinfo"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain/provider"
-
-	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 func Run(ctx context.Context, cfg Config) error {
 	log.Info(ctx, "Starting Explorer Indexer")
 
-	gitinfo.Instrument(ctx)
+	buildinfo.Instrument(ctx)
 
 	network, err := netconf.Load(cfg.NetworkFile)
 	if err != nil {
@@ -52,7 +51,7 @@ func startXProvider(ctx context.Context, network netconf.Network, entCl *ent.Cli
 		return err
 	}
 
-	xprovider := provider.New(network, rpcClientPerChain)
+	xprovider := provider.New(network, rpcClientPerChain, nil)
 	callback := newCallback(entCl)
 
 	for _, chain := range network.Chains {
@@ -61,7 +60,7 @@ func startXProvider(ctx context.Context, network netconf.Network, entCl *ent.Cli
 			return errors.Wrap(err, "initialize chain cursor", "chain_id", chain.ID)
 		}
 
-		err = xprovider.Subscribe(ctx, chain.ID, fromHeight, callback)
+		err = xprovider.StreamAsync(ctx, chain.ID, fromHeight, callback)
 		if err != nil {
 			return errors.Wrap(err, "subscribe", "chain_id", chain.ID)
 		}
@@ -70,10 +69,10 @@ func startXProvider(ctx context.Context, network netconf.Network, entCl *ent.Cli
 	return nil
 }
 
-func initializeRPCClients(chains []netconf.Chain) (map[uint64]*ethclient.Client, error) {
-	rpcClientPerChain := make(map[uint64]*ethclient.Client)
+func initializeRPCClients(chains []netconf.Chain) (map[uint64]ethclient.Client, error) {
+	rpcClientPerChain := make(map[uint64]ethclient.Client)
 	for _, chain := range chains {
-		client, err := ethclient.Dial(chain.RPCURL)
+		client, err := ethclient.Dial(chain.Name, chain.RPCURL)
 		if err != nil {
 			return nil, errors.Wrap(err, "dial rpc", "chain_id", chain.ID, "rpc_url", chain.RPCURL)
 		}

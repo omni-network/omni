@@ -2,7 +2,7 @@
  "app_name": "halo",
  "app_version": "TBD",
  "genesis_time": "1970-01-01T00:00:01Z",
- "chain_id": "test",
+ "chain_id": "999",
  "initial_height": 1,
  "app_hash": null,
  "app_state": {
@@ -42,7 +42,7 @@
      "coins": [
       {
        "denom": "stake",
-       "amount": "1000000"
+       "amount": "1000000000000000000"
       }
      ]
     },
@@ -51,7 +51,7 @@
      "coins": [
       {
        "denom": "stake",
-       "amount": "1000000"
+       "amount": "1000000000000000000"
       }
      ]
     }
@@ -59,7 +59,7 @@
    "supply": [
     {
      "denom": "stake",
-     "amount": "2000000"
+     "amount": "2000000000000000000"
     }
    ],
    "denom_metadata": [],
@@ -103,7 +103,7 @@
          "max_rate": "0.000000000000000000",
          "max_change_rate": "0.000000000000000000"
         },
-        "min_self_delegation": "1000000",
+        "min_self_delegation": "1000000000000000000",
         "delegator_address": "",
         "validator_address": "omnivaloper1lmet2guatml9h9qsm2pvc525xk0mrkfylr3vxp",
         "pubkey": {
@@ -112,7 +112,7 @@
         },
         "value": {
          "denom": "stake",
-         "amount": "1000000"
+         "amount": "1000000000000000000"
         }
        }
       ],
@@ -150,7 +150,7 @@
          "max_rate": "0.000000000000000000",
          "max_change_rate": "0.000000000000000000"
         },
-        "min_self_delegation": "1000000",
+        "min_self_delegation": "1000000000000000000",
         "delegator_address": "",
         "validator_address": "omnivaloper1anz94xtvltxrfr3ejllev7fegc8ntgkjtdhv7d",
         "pubkey": {
@@ -159,7 +159,7 @@
         },
         "value": {
          "denom": "stake",
-         "amount": "1000000"
+         "amount": "1000000000000000000"
         }
        }
       ],
@@ -198,7 +198,8 @@
    "unbonding_delegations": [],
    "redelegations": [],
    "exported": false
-  }
+  },
+  "valsync": {}
  },
  "consensus": {
   "params": {

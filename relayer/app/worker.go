@@ -22,12 +22,13 @@ type Worker struct {
 	cProvider    cchain.Provider
 	xProvider    xchain.Provider
 	creator      CreateFunc
+	state        *State
 	sendProvider func() (SendFunc, error)
 }
 
 // NewWorker creates a new worker for a single destination chain.
 func NewWorker(destChain netconf.Chain, network netconf.Network, cProvider cchain.Provider,
-	xProvider xchain.Provider, creator CreateFunc, sendProvider func() (SendFunc, error),
+	xProvider xchain.Provider, creator CreateFunc, sendProvider func() (SendFunc, error), state *State,
 ) *Worker {
 	return &Worker{
 		destChain:    destChain,
@@ -36,6 +37,7 @@ func NewWorker(destChain netconf.Chain, network netconf.Network, cProvider cchai
 		xProvider:    xProvider,
 		creator:      creator,
 		sendProvider: sendProvider,
+		state:        state,
 	}
 }
 
@@ -47,6 +49,8 @@ func (w *Worker) Run(ctx context.Context) {
 		if ctx.Err() != nil {
 			return
 		}
+
+		// TODO(corver): Clear worker persisted state on error, so it bootstraps from on-chain state.
 
 		log.Error(ctx, "Worker failed, resetting", err)
 		workerResets.WithLabelValues(w.destChain.Name).Inc()
@@ -73,14 +77,15 @@ func (w *Worker) runOnce(ctx context.Context) error {
 	buf := newActiveBuffer(w.destChain.Name, mempoolLimit, sender)
 
 	var logAttrs []any //nolint:prealloc // Not worth it
-	for srcChainID, fromHeight := range FromHeights(cursors, w.destChain, w.network.Chains) {
+	for srcChainID, fromHeight := range fromHeights(cursors, w.destChain, w.network.Chains, w.state) {
 		if srcChainID == w.destChain.ID { // Sanity check
 			return errors.New("unexpected cursor [BUG]")
 		}
 
-		callback := newCallback(w.xProvider, initialOffsets, w.creator, buf.AddInput, w.destChain.ID)
+		callback := newCallback(w.xProvider, initialOffsets, w.creator, buf.AddInput, w.destChain.ID, newMsgStreamMapper(w.network))
+		wrapCb := wrapStatePersist(callback, w.state, w.destChain.ID)
 
-		w.cProvider.Subscribe(ctx, srcChainID, fromHeight, w.destChain.Name, callback)
+		w.cProvider.Subscribe(ctx, srcChainID, fromHeight, w.destChain.Name, wrapCb)
 
 		srcChain, f := w.network.Chain(srcChainID)
 		if !f {
@@ -94,8 +99,39 @@ func (w *Worker) runOnce(ctx context.Context) error {
 	return buf.Run(ctx)
 }
 
+// msgStreamMapper maps messages by stream ID.
+type msgStreamMapper func([]xchain.Msg) map[xchain.StreamID][]xchain.Msg
+
+// newMsgStreamMapper creates a new message stream mapper for the given network.
+// It maps consensus chain messages to all EVM chains (broadcast), and normal messages to their stream ID.
+func newMsgStreamMapper(network netconf.Network) msgStreamMapper {
+	consensusChain, _ := network.OmniConsensusChain()
+
+	return func(msgs []xchain.Msg) map[xchain.StreamID][]xchain.Msg {
+		resp := make(map[xchain.StreamID][]xchain.Msg)
+		for _, msg := range msgs {
+			// Normal messages are mapped to their stream ID.
+			if msg.SourceChainID != consensusChain.ID {
+				resp[msg.StreamID] = append(resp[msg.StreamID], msg)
+				continue
+			}
+
+			// Consensus chain messages are broadcasted to all EVM chains.
+			for _, evmChain := range network.EVMChains() {
+				streamID := xchain.StreamID{
+					SourceChainID: consensusChain.ID,
+					DestChainID:   evmChain.ID,
+				}
+				resp[streamID] = append(resp[streamID], msg)
+			}
+		}
+
+		return resp
+	}
+}
+
 func newCallback(xProvider xchain.Provider, initialOffsets map[xchain.StreamID]uint64, creator CreateFunc,
-	sender SendFunc, destChainID uint64) cchain.ProviderCallback {
+	sender SendFunc, destChainID uint64, msgStreamMapper msgStreamMapper) cchain.ProviderCallback {
 	return func(ctx context.Context, att xchain.Attestation) error {
 		// Get the xblock from the source chain.
 		block, ok, err := xProvider.GetBlock(ctx, att.SourceChainID, att.BlockHeight)
@@ -116,9 +152,8 @@ func newCallback(xProvider xchain.Provider, initialOffsets map[xchain.StreamID]u
 		if err != nil {
 			return err
 		}
-
 		// Split into streams
-		for streamID, msgs := range mapByStreamID(block.Msgs) {
+		for streamID, msgs := range msgStreamMapper(block.Msgs) {
 			if streamID.DestChainID != destChainID {
 				continue
 			}
@@ -145,6 +180,20 @@ func newCallback(xProvider xchain.Provider, initialOffsets map[xchain.StreamID]u
 					return err
 				}
 			}
+		}
+
+		return nil
+	}
+}
+
+func wrapStatePersist(cb cchain.ProviderCallback, state *State, destChainID uint64) cchain.ProviderCallback {
+	return func(ctx context.Context, att xchain.Attestation) error {
+		if err := cb(ctx, att); err != nil {
+			return err
+		}
+
+		if err := state.Persist(destChainID, att.SourceChainID, att.BlockHeight); err != nil {
+			return errors.Wrap(err, "persist state")
 		}
 
 		return nil

@@ -9,7 +9,7 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/test/tutil"
+	"github.com/omni-network/omni/lib/tutil"
 
 	pkgerrors "github.com/pkg/errors"
 )

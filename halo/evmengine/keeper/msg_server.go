@@ -6,11 +6,12 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/halo/evmengine/types"
-	engineapi "github.com/omni-network/omni/lib/engine"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
+	"github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -29,7 +30,7 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 		return nil, errors.New("only allowed in finalize mode")
 	}
 
-	payload, err := pushPayload(ctx, s.ethCl, msg)
+	payload, err := pushPayload(ctx, s.engineCl, msg)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +52,7 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 	if s.buildOptimistic && isNext {
 		log.Debug(ctx, "Triggering optimistic EVM payload build", "next_height", nextHeight)
 		ts := uint64(time.Now().Unix())
-		if payload.Timestamp <= ts {
+		if ts <= payload.Timestamp {
 			ts = payload.Timestamp + 1 // Subsequent blocks must have a higher timestamp.
 		}
 		attrs = &engine.PayloadAttributes{
@@ -63,11 +64,15 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 		}
 	}
 
-	fcr, err := s.ethCl.ForkchoiceUpdatedV2(ctx, fcs, attrs)
+	fcr, err := s.engineCl.ForkchoiceUpdatedV2(ctx, fcs, attrs)
 	if err != nil {
 		return nil, err
 	} else if fcr.PayloadStatus.Status != engine.VALID {
 		return nil, errors.New("status not valid")
+	}
+
+	if err := s.deliverEvents(ctx, payload.Number-1, payload.ParentHash, msg.PrevPayloadEvents); err != nil {
+		return nil, errors.Wrap(err, "deliver event logs")
 	}
 
 	if isNext {
@@ -77,17 +82,46 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 	return &types.ExecutionPayloadResponse{}, nil
 }
 
+// deliverEvents delivers the given logs to the registered log providers.
+func (s msgServer) deliverEvents(ctx context.Context, height uint64, blockHash common.Hash, logs []*types.EVMEvent) error {
+	procs := make(map[common.Address]types.EvmEventProcessor)
+	for _, proc := range s.eventProcs {
+		for _, addr := range proc.Addresses() {
+			procs[addr] = proc
+		}
+	}
+
+	for _, evmLog := range logs {
+		if err := evmLog.Verify(); err != nil {
+			return errors.Wrap(err, "verify log [BUG]") // This shouldn't happen
+		}
+
+		proc, ok := procs[common.BytesToAddress(evmLog.Address)]
+		if !ok {
+			return errors.New("unknown log address [BUG]", log.Hex7("address", evmLog.Address))
+		}
+
+		if err := proc.Deliver(ctx, blockHash, evmLog); err != nil {
+			return errors.Wrap(err, "deliver log")
+		}
+	}
+
+	log.Debug(ctx, "Delivered evm logs", "height", height, "count", len(logs))
+
+	return nil
+}
+
 // pushPayload creates a new payload from the given message and pushes it to the execution client.
 // It returns the new forkchoice state.
-func pushPayload(ctx context.Context, ethCl engineapi.API, msg *types.MsgExecutionPayload,
+func pushPayload(ctx context.Context, engineCl ethclient.EngineClient, msg *types.MsgExecutionPayload,
 ) (engine.ExecutableData, error) {
 	var payload engine.ExecutableData
-	if err := json.Unmarshal(msg.Data, &payload); err != nil {
+	if err := json.Unmarshal(msg.ExecutionPayload, &payload); err != nil {
 		return engine.ExecutableData{}, errors.Wrap(err, "unmarshal payload")
 	}
 
 	// Push it back to the execution client (mark it as possible new head).
-	status, err := ethCl.NewPayloadV2(ctx, payload)
+	status, err := engineCl.NewPayloadV2(ctx, payload)
 	if err != nil {
 		return engine.ExecutableData{}, errors.Wrap(err, "new payload")
 	} else if status.Status != engine.VALID {

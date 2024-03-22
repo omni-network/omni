@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"text/template"
 
+	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
@@ -17,6 +18,7 @@ type Config struct {
 	HaloURL        string
 	NetworkFile    string
 	MonitoringAddr string
+	StateFile      string
 }
 
 func DefaultConfig() Config {
@@ -25,6 +27,7 @@ func DefaultConfig() Config {
 		HaloURL:        "localhost:26657",
 		NetworkFile:    "network.json",
 		MonitoringAddr: ":26660",
+		StateFile:      "relayer-state.json",
 	}
 }
 
@@ -42,10 +45,12 @@ func WriteConfigTOML(cfg Config, logCfg log.Config, path string) error {
 
 	s := struct {
 		Config
-		Log log.Config
+		Log     log.Config
+		Version string
 	}{
-		Config: cfg,
-		Log:    logCfg,
+		Config:  cfg,
+		Log:     logCfg,
+		Version: buildinfo.Version(),
 	}
 
 	if err := t.Execute(&buffer, s); err != nil {

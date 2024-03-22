@@ -1,101 +1,150 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity 0.8.23;
+pragma solidity =0.8.24;
 
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+
 import { IFeeOracle } from "../interfaces/IFeeOracle.sol";
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
 import { IOmniPortalAdmin } from "../interfaces/IOmniPortalAdmin.sol";
 import { XBlockMerkleProof } from "../libraries/XBlockMerkleProof.sol";
 import { XTypes } from "../libraries/XTypes.sol";
-import { Validators } from "../libraries/Validators.sol";
+import { Quorum } from "../libraries/Quorum.sol";
 
-contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable {
-    /// @inheritdoc IOmniPortal
-    uint64 public constant XMSG_DEFAULT_GAS_LIMIT = 200_000;
+import { OmniPortalConstants } from "./OmniPortalConstants.sol";
+import { OmniPortalStorage } from "./OmniPortalStorage.sol";
 
-    /// @inheritdoc IOmniPortal
-    uint64 public constant XMSG_MAX_GAS_LIMIT = 5_000_000;
-
-    /// @inheritdoc IOmniPortal
-    uint64 public constant XMSG_MIN_GAS_LIMIT = 21_000;
-
-    /// @inheritdoc IOmniPortal
-    uint8 public constant XSUB_QUORUM_NUMERATOR = 2;
-
-    /// @inheritdoc IOmniPortal
-    uint8 public constant XSUB_QUORUM_DENOMINATOR = 3;
-
-    /// @inheritdoc IOmniPortal
+contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPortalConstants, OmniPortalStorage {
+    /**
+     * @notice Chain ID of the chain to which this portal is deployed
+     */
     uint64 public immutable chainId;
 
-    /// @inheritdoc IOmniPortalAdmin
-    address public feeOracle;
-
-    /// @inheritdoc IOmniPortal
-    mapping(uint64 => uint64) public outXStreamOffset;
-
-    /// @inheritdoc IOmniPortal
-    mapping(uint64 => uint64) public inXStreamOffset;
-
-    /// @inheritdoc IOmniPortal
-    mapping(uint64 => uint64) public inXStreamBlockHeight;
-
-    /// @dev Track latest seen valSetId, to avoid writing the same validator set multiple times.
-    ///      Validator set ids increment monotonically
-    uint64 private _latestValSetId;
-
-    /// @dev Maps validator set id -> validator address -> power
-    mapping(uint64 => mapping(address => uint64)) private _validatorSet;
-
-    /// @dev Maps validator set id -> total power
-    mapping(uint64 => uint64) private _validatorSetTotalPower;
-
-    /// @dev The current XMsg being executed, exposed via xmsg() getter
-    ///      Private state + public getter preferred over public state with default getter,
-    ///      so that we can use the XMsg struct type in the interface.
-    XTypes.Msg private _currentXmsg;
-
+    /**
+     * @notice Construct the OmniPortal contract
+     */
     constructor() {
         _disableInitializers();
         chainId = uint64(block.chainid);
     }
 
-    function initialize(address owner_, address feeOracle_, uint64 valSetId, Validators.Validator[] memory validators)
+    /**
+     * @notice Initialize the OmniPortal contract
+     * @param owner_        The owner of the contract
+     * @param feeOracle_    Address of the fee oracle contract
+     * @param valSetId      Initial validator set id
+     * @param validators    Initial validator set
+     */
+    function initialize(address owner_, address feeOracle_, uint64 valSetId, XTypes.Validator[] memory validators)
         public
         initializer
     {
         __Ownable_init();
         _transferOwnership(owner_);
         _setFeeOracle(feeOracle_);
-        _addValidators(valSetId, validators);
+        _addValidatorSet(valSetId, validators);
+
+        // cchain stream offset & block heights are equal to valSetId
+        inXStreamOffset[_CCHAIN_ID] = valSetId;
+        inXStreamBlockHeight[_CCHAIN_ID] = valSetId;
     }
 
-    /**
-     * XMsg functions
-     */
+    //////////////////////////////////////////////////////////////////////////////
+    //                      Outbound xcall functions                            //
+    //////////////////////////////////////////////////////////////////////////////
 
-    /// @inheritdoc IOmniPortal
+    /**
+     * @notice Call a contract on another chain Uses OmniPortal.XMSG_DEFAULT_GAS_LIMIT as execution
+     *         gas limit on destination chain
+     * @param destChainId   Destination chain ID
+     * @param to            Address of contract to call on destination chain
+     * @param data          ABI Encoded function calldata
+     */
     function xcall(uint64 destChainId, address to, bytes calldata data) external payable {
         _xcall(destChainId, msg.sender, to, data, XMSG_DEFAULT_GAS_LIMIT);
     }
 
-    /// @inheritdoc IOmniPortal
+    /**
+     * @notice Call a contract on another chain Uses provide gasLimit as execution gas limit on
+     *          destination chain. Reverts if gasLimit < XMSG_MAX_GAS_LIMIT or gasLimit >
+     *          XMSG_MAX_GAS_LIMIT
+     * @param destChainId   Destination chain ID
+     * @param to            Address of contract to call on destination chain
+     * @param data          ABI Encoded function calldata
+     * @param gasLimit      Execution gas limit, enforced on destination chain
+     */
     function xcall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit) external payable {
         _xcall(destChainId, msg.sender, to, data, gasLimit);
     }
 
-    /// @inheritdoc IOmniPortal
+    /**
+     * @notice Calculate the fee for calling a contract on another chain. Uses
+     *         OmniPortal.XMSG_DEFAULT_GAS_LIMIT. Fees denominated in wei.
+     * @param destChainId   Destination chain ID
+     * @param data          Encoded function calldata
+     */
+    function feeFor(uint64 destChainId, bytes calldata data) public view returns (uint256) {
+        return IFeeOracle(feeOracle).feeFor(destChainId, data, XMSG_DEFAULT_GAS_LIMIT);
+    }
+
+    /**
+     * @notice Calculate the fee for calling a contract on another chain
+     *         Fees denominated in wei.
+     * @param destChainId   Destination chain ID
+     * @param data          Encoded function calldata
+     * @param gasLimit      Execution gas limit, enforced on destination chain
+     */
+    function feeFor(uint64 destChainId, bytes calldata data, uint64 gasLimit) public view returns (uint256) {
+        return IFeeOracle(feeOracle).feeFor(destChainId, data, gasLimit);
+    }
+
+    /**
+     * @notice Initiate an xcall.
+     * @dev Validate the xcall, emit an XMsg, increment dest chain outXStreamOffset
+     */
+    function _xcall(uint64 destChainId, address sender, address to, bytes calldata data, uint64 gasLimit) private {
+        require(msg.value >= feeFor(destChainId, data, gasLimit), "OmniPortal: insufficient fee");
+        require(gasLimit <= XMSG_MAX_GAS_LIMIT, "OmniPortal: gasLimit too high");
+        require(gasLimit >= XMSG_MIN_GAS_LIMIT, "OmniPortal: gasLimit too low");
+        require(destChainId != chainId, "OmniPortal: no same-chain xcall");
+        require(destChainId != _BROADCAST_CHAIN_ID, "OmniPortal: no broadcast xcall");
+        require(to != _VIRTUAL_PORTAL_ADDRESS, "OmniPortal: no portal xcall");
+
+        outXStreamOffset[destChainId] += 1;
+
+        emit XMsg(destChainId, outXStreamOffset[destChainId], sender, to, data, gasLimit);
+    }
+
+    //////////////////////////////////////////////////////////////////////////////
+    //                      Inbound xcall functions                             //
+    //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * @notice Submit a batch of XMsgs to be executed on this chain
+     * @param xsub  An xchain submisison, including an attestation root w/ validator signatures,
+     *              and a block header and message batch, proven against the attestation root.
+     */
     function xsubmit(XTypes.Submission calldata xsub) external {
-        // TODO: change to uint64 valSetId = xsub.validatorSetId; when validatorSetId is added to aggregate attestation (see halo/comet/helpers.go:aggregate)
-        uint64 valSetId = _latestValSetId;
+        require(xsub.msgs.length > 0, "OmniPortal: no xmsgs");
+
+        // validator set id for this submission
+        uint64 valSetId = xsub.validatorSetId;
+
+        // last seen validator set id for this source chain
+        uint64 lastValSetId = inXStreamValidatorSetId[xsub.blockHeader.sourceChainId];
+
+        // check that the validator set is known and has non-zero power
+        require(validatorSetTotalPower[valSetId] > 0, "OmniPortal: unknown val set");
+
+        // check that the submission's validator set is the same as the last, or the next one
+        require(valSetId >= lastValSetId, "OmniPortal: old val set");
 
         // check that the attestationRoot is signed by a quorum of validators in xsub.validatorsSetId
         require(
-            Validators.verifyQuorum(
+            Quorum.verify(
                 xsub.attestationRoot,
                 xsub.signatures,
-                _validatorSet[valSetId],
-                _validatorSetTotalPower[valSetId],
+                validatorSet[valSetId],
+                validatorSetTotalPower[valSetId],
                 XSUB_QUORUM_NUMERATOR,
                 XSUB_QUORUM_DENOMINATOR
             ),
@@ -108,8 +157,17 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable {
             "OmniPortal: invalid proof"
         );
 
-        // update in stream block height
-        inXStreamBlockHeight[xsub.blockHeader.sourceChainId] = xsub.blockHeader.blockHeight;
+        // source chain block height of this submission
+        uint64 blockHeight = xsub.blockHeader.blockHeight;
+
+        // last seen block height for this source chain
+        uint64 lastBlockHeight = inXStreamBlockHeight[xsub.blockHeader.sourceChainId];
+
+        // update in stream block height, if it's new
+        if (blockHeight > lastBlockHeight) inXStreamBlockHeight[xsub.blockHeader.sourceChainId] = blockHeight;
+
+        // update in stream validator set id, if it's new
+        if (valSetId > lastValSetId) inXStreamValidatorSetId[xsub.blockHeader.sourceChainId] = valSetId;
 
         // execute xmsgs
         for (uint256 i = 0; i < xsub.msgs.length; i++) {
@@ -117,77 +175,79 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable {
         }
     }
 
-    /// @inheritdoc IOmniPortal
-    function feeFor(uint64 destChainId, bytes calldata data) public view returns (uint256) {
-        return IFeeOracle(feeOracle).feeFor(destChainId, data, XMSG_DEFAULT_GAS_LIMIT);
+    /**
+     * @notice Returns the current XMsg being executed via this portal.
+     *          - xmsg().sourceChainId  Chain ID of the source xcall
+     *          - xmsg().sender         msg.sender of the source xcall
+     *         If no XMsg is being executed, all fields will be zero.
+     *          - xmsg().sourceChainId  == 0
+     *          - xmsg().sender         == address(0)
+     */
+    function xmsg() external view returns (XTypes.MsgShort memory) {
+        return _xmsg;
     }
 
-    /// @inheritdoc IOmniPortal
-    function feeFor(uint64 destChainId, bytes calldata data, uint64 gasLimit) public view returns (uint256) {
-        return IFeeOracle(feeOracle).feeFor(destChainId, data, gasLimit);
+    /**
+     * @notice Returns true the current transaction is an xcall, false otherwise
+     */
+    function isXCall() external view returns (bool) {
+        return _xmsg.sourceChainId != 0;
     }
 
-    /// @dev Emit an XMsg event, increment dest chain outXStreamOffset
-    function _xcall(uint64 destChainId, address sender, address to, bytes calldata data, uint64 gasLimit) private {
-        require(msg.value >= feeFor(destChainId, data, gasLimit), "OmniPortal: insufficient fee");
-        require(gasLimit <= XMSG_MAX_GAS_LIMIT, "OmniPortal: gasLimit too high");
-        require(gasLimit >= XMSG_MIN_GAS_LIMIT, "OmniPortal: gasLimit too low");
-        require(destChainId != chainId, "OmniPortal: no same-chain xcall");
-
-        outXStreamOffset[destChainId] += 1;
-
-        emit XMsg(destChainId, outXStreamOffset[destChainId], sender, to, data, gasLimit);
-    }
-
-    /// @dev Verify an XMsg is next in its XStream, execute it, increment inXStreamOffset, emit an XReceipt
+    /**
+     * @notice Execute an xmsg.
+     * @dev Verify an XMsg is next in its XStream, execute it, increment inXStreamOffset, emit an XReceipt
+     */
     function _exec(XTypes.Msg calldata xmsg_) internal {
-        require(xmsg_.destChainId == chainId, "OmniPortal: wrong destChainId");
+        require(
+            xmsg_.destChainId == chainId || xmsg_.destChainId == _BROADCAST_CHAIN_ID, "OmniPortal: wrong destChainId"
+        );
         require(xmsg_.streamOffset == inXStreamOffset[xmsg_.sourceChainId] + 1, "OmniPortal: wrong streamOffset");
 
-        // set xmsg to the one we're executing
-        _currentXmsg = xmsg_;
+        // set _xmsg to the one we're executing
+        _xmsg = XTypes.MsgShort(xmsg_.sourceChainId, xmsg_.sender);
 
         // increment offset before executing xcall, to avoid reentrancy loop
         inXStreamOffset[xmsg_.sourceChainId] += 1;
 
-        // we enforce a maximum on xcall, but we trim to max here just in case
-        uint256 gasLimit = xmsg_.gasLimit > XMSG_MAX_GAS_LIMIT ? XMSG_MAX_GAS_LIMIT : xmsg_.gasLimit;
+        // xcalls to _VIRTUAL_PORTAL_ADDRESS are system calls
+        bool isSysCall = xmsg_.to == _VIRTUAL_PORTAL_ADDRESS;
 
-        // execute xmsg, tracking gas used
+        // for system calls, target is this contract
+        address target = isSysCall ? address(this) : xmsg_.to;
+
+        // trim gasLimit to max. this requirement is checked in xcall(...), but we trim here to be safe
+        uint256 gasLimit = xmsg_.gasLimit > XMSG_MAX_GAS_LIMIT ? xmsg_.gasLimit : XMSG_MAX_GAS_LIMIT;
+
+        // track gas used, for the xreceipt
         uint256 gasUsed = gasleft();
-        (bool success,) = xmsg_.to.call{ gas: gasLimit }(xmsg_.data);
+
+        // execute the call - do not meter system calls
+        (bool success,) = isSysCall ? target.call(xmsg_.data) : target.call{ gas: gasLimit }(xmsg_.data);
+
         gasUsed = gasUsed - gasleft();
 
         // reset xmsg to zero
-        _currentXmsg = XTypes.zeroMsg();
+        delete _xmsg;
 
         emit XReceipt(xmsg_.sourceChainId, xmsg_.streamOffset, gasUsed, msg.sender, success);
     }
 
-    /**
-     * XMsg metadata functions
-     */
-
-    /// @inheritdoc IOmniPortal
-    function xmsg() external view returns (XTypes.Msg memory) {
-        return _currentXmsg;
-    }
-
-    /// @inheritdoc IOmniPortal
-    function isXCall() external view returns (bool) {
-        return _currentXmsg.sourceChainId != 0;
-    }
+    //////////////////////////////////////////////////////////////////////////////
+    //                          Admin functions                                 //
+    //////////////////////////////////////////////////////////////////////////////
 
     /**
-     * Admin functions
+     * @notice Set the fee oracle
      */
-
-    /// @inheritdoc IOmniPortalAdmin
     function setFeeOracle(address feeOracle_) external onlyOwner {
         _setFeeOracle(feeOracle_);
     }
 
-    /// @inheritdoc IOmniPortalAdmin
+    /**
+     * @notice Transfer all collected fees to the give address
+     * @param to    The address to transfer the fees to
+     */
     function collectFees(address to) external onlyOwner {
         uint256 amount = address(this).balance;
 
@@ -198,7 +258,9 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable {
         emit FeesCollected(to, amount);
     }
 
-    /// @dev Set the fee oracle
+    /**
+     * @notice Set the fee oracle
+     */
     function _setFeeOracle(address feeOracle_) private {
         require(feeOracle_ != address(0), "OmniPortal: no zero feeOracle");
 
@@ -208,28 +270,43 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable {
         emit FeeOracleChanged(oldFeeOracle, feeOracle);
     }
 
-    function _addValidators(uint64 valSetId, Validators.Validator[] memory validators) private {
-        require(valSetId == _latestValSetId + 1, "OmniPortal: invalid valSetId");
+    /**
+     * @notice Add a new validator set.
+     * @dev Only callable via xcall from Omni's consensus chain
+     * @param valSetId      Validator set id
+     * @param validators    Validator set
+     */
+    function addValidatorSet(uint64 valSetId, XTypes.Validator[] memory validators) external {
+        require(msg.sender == address(this), "OmniPortal: only self");
+        require(_xmsg.sourceChainId == _CCHAIN_ID, "OmniPortal: only cchain");
+        require(_xmsg.sender == _CCHAIN_SENDER, "OmniPortal: only cchain sender");
+        _addValidatorSet(valSetId, validators);
+    }
+
+    /**
+     * @notice Add a new validator set
+     * @param valSetId      Validator set id
+     * @param validators    Validator set
+     */
+    function _addValidatorSet(uint64 valSetId, XTypes.Validator[] memory validators) private {
         require(validators.length > 0, "OmniPortal: no validators");
 
-        // TODO: check for duplicates, consider requiring sorted input
-
         uint64 totalPower;
-        Validators.Validator memory val;
-        mapping(address => uint64) storage set = _validatorSet[valSetId];
+        XTypes.Validator memory val;
+        mapping(address => uint64) storage valSet = validatorSet[valSetId];
 
         for (uint256 i = 0; i < validators.length; i++) {
             val = validators[i];
 
             require(val.addr != address(0), "OmniPortal: no zero validator");
             require(val.power > 0, "OmniPortal: no zero power");
+            require(valSet[val.addr] == 0, "OmniPortal: duplicate validator");
 
             totalPower += val.power;
-            set[val.addr] = val.power;
+            valSet[val.addr] = val.power;
         }
 
-        _validatorSetTotalPower[valSetId] = totalPower;
-        _latestValSetId = valSetId;
+        validatorSetTotalPower[valSetId] = totalPower;
 
         emit ValidatorSetAdded(valSetId);
     }

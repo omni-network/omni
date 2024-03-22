@@ -3,10 +3,12 @@ package genutil
 import (
 	"encoding/json"
 	"os"
+	"strconv"
 	"time"
 
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
 	etypes "github.com/omni-network/omni/halo/evmengine/types"
+	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 
@@ -31,7 +33,7 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 )
 
-func MakeGenesis(chainID string, genesisTime time.Time, valPubkeys ...crypto.PubKey) (*gtypes.AppGenesis, error) {
+func MakeGenesis(chainID uint64, genesisTime time.Time, valPubkeys ...crypto.PubKey) (*gtypes.AppGenesis, error) {
 	cdc := getCodec()
 	txConfig := authtx.NewTxConfig(cdc, nil)
 
@@ -47,7 +49,7 @@ func MakeGenesis(chainID string, genesisTime time.Time, valPubkeys ...crypto.Pub
 		AppName:       "halo",
 		AppVersion:    "TBD",
 		GenesisTime:   genesisTime.UTC(),
-		ChainID:       chainID,
+		ChainID:       strconv.FormatUint(chainID, 10),
 		InitialHeight: 1,
 		Consensus:     defaultConsensusGenesis(),
 		AppState:      appStateBz,
@@ -156,6 +158,7 @@ func addValidator(txConfig client.TxConfig, pubkey crypto.PubKey, cdc codec.Code
 		return nil, err
 	}
 
+	// Add validator with 1 power (1e18 $STAKE ~= 1 ether $STAKE)
 	amount := sdk.NewCoin(sdk.DefaultBondDenom, sdk.DefaultPowerReduction)
 
 	err = genutil.AddGenesisAccount(cdc, addr.Bytes(), false, genFile, amount.String(), "", 0, 0, "")
@@ -197,6 +200,7 @@ func defaultAppState(marshal func(proto.Message) []byte) map[string]json.RawMess
 		atypes.ModuleName: marshal(atypes.DefaultGenesisState()),
 		btypes.ModuleName: marshal(btypes.DefaultGenesisState()),
 		dtypes.ModuleName: marshal(dtypes.DefaultGenesisState()),
+		vtypes.ModuleName: marshal(vtypes.DefaultGenesisState()),
 	}
 }
 

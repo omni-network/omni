@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/halo/genutil"
-	"github.com/omni-network/omni/test/tutil"
+	"github.com/omni-network/omni/lib/tutil"
 
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 
@@ -21,7 +21,7 @@ func TestMakeGenesis(t *testing.T) {
 	val1 := k1.GenPrivKeySecp256k1([]byte("secret1")).PubKey()
 	val2 := k1.GenPrivKeySecp256k1([]byte("secret2")).PubKey()
 
-	resp, err := genutil.MakeGenesis("test", timestamp, val1, val2)
+	resp, err := genutil.MakeGenesis(999, timestamp, val1, val2)
 	tutil.RequireNoError(t, err)
 
 	tutil.RequireGoldenJSON(t, resp)

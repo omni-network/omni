@@ -2,9 +2,10 @@
 pragma solidity ^0.8.12;
 
 import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
+import { ISignatureUtils } from "eigenlayer-contracts/src/contracts/interfaces/ISignatureUtils.sol";
 
 /**
- * @title OmniAVS
+ * @title IOmniAVS
  * @notice Interface for the Omni AVS contract. It is responsible for syncing Omni AVS operator
  *         stake and delegations with the Omni chain.
  */
@@ -21,44 +22,74 @@ interface IOmniAVS {
      */
     event OperatorRemoved(address indexed operator);
 
-    struct Validator {
-        // ethereum address of the operator
+    /**
+     * @notice Struct representing an OmniAVS operator
+     * @custom:field addr       The operator's ethereum address
+     * @custom:field pubkey     The operator's 64 byte uncompressed secp256k1 public key
+     * @custom:field delegated  The total amount delegated, not including operator stake
+     * @custom:field staked     The total amount staked by the operator, not including delegations
+     */
+    struct Operator {
         address addr;
-        // total amount delegated, not including operator stake
+        bytes pubkey;
         uint96 delegated;
-        // total amount staked by the operator, not including delegations
         uint96 staked;
     }
 
-    struct StrategyParams {
-        // strategy contract
+    /**
+     * @notice Represents a single supported strategy.
+     * @custom:field strategy   The strategy contract
+     * @custom:field multiplier The stake multiplier, to weight strategy against others
+     */
+    struct StrategyParam {
         IStrategy strategy;
-        // stake multiplier, to weight strategy against others
         uint96 multiplier;
     }
 
     /**
-     * @notice Calculate the omni xcall fee for a syncWithOmni call.
-     * @dev This is not a view function because it updates state in the OmniAVS
-     *      StakeRegistry, by syncing state with EigenLayer core. It is meant to
-     *      be called offchain with an eth_call.
-     * @return The fee in wei
+     * @notice Returns the fee required for syncWithOmni(), for the current operator set.
      */
-    function feeForSync() external returns (uint256);
+    function feeForSync() external view returns (uint256);
 
     /**
-     * @notice Sync OmniAVS validator stake & delegations with Omni chain.
+     * @notice Sync OmniAVS operator stake & delegations with Omni chain.
      */
     function syncWithOmni() external payable;
 
     /**
-     * @notice Returns the currrent list of validators registered as OmniAVS
-     *         operators, with their stake / delegations.
+     * @notice Returns the currrent list of operator registered as OmniAVS.
      */
-    function getValidators() external view returns (Validator[] memory);
+    function operators() external view returns (Operator[] memory);
 
     /**
      * @notice Returns the current strategy parameters.
      */
-    function strategyParams() external view returns (StrategyParams[] memory);
+    function strategyParams() external view returns (StrategyParam[] memory);
+
+    /**
+     * @notice Register an operator with the AVS. Forwards call to EigenLayer' AVSDirectory.
+     * @param pubkey            64 byte uncompressed secp256k1 public key (no 0x04 prefix)
+     *                          Pubkey must match operator's address (msg.sender)
+     * @param operatorSignature The signature, salt, and expiry of the operator's signature.
+     */
+    function registerOperator(
+        bytes calldata pubkey,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+    ) external;
+
+    /**
+     * @notice Deregister an operator from the AVS. Forwards a call to EigenLayer's AVSDirectory.
+     */
+    function deregisterOperator() external;
+
+    /**
+     * @notice Check if an operator can register to the AVS.
+     *         Returns true, with no reason, if the operator can register to the AVS.
+     *         Returns false, with a reason, if the operator cannot register to the AVS.
+     * @dev This function is intented to be called off-chain.
+     * @param operator The operator to check
+     * @return canRegister True if the operator can register, false otherwise
+     * @return reason      The reason the operator cannot register. Empty if canRegister is true.
+     */
+    function canRegister(address operator) external view returns (bool, string memory);
 }

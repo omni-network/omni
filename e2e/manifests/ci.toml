@@ -1,0 +1,21 @@
+network = "devnet"
+anvil_chains = ["mock_rollup", "mock_l1"]
+avs_target = "mock_l1"
+
+pingpong_n = 5 # Increased ping pong to span validator updates
+
+[node.validator01]
+[node.validator02]
+[node.validator03]
+[node.validator04]
+start_at = 20
+state_sync = true
+
+[node.full01]
+mode = "full"
+perturb = ["restart"]
+
+# Trigger validator updates at height 10
+[validator_update.10]
+validator01 = 2 # Additional self-delegation of 2 ether $OMNI by validator01
+full01 = 2 # Add full01 as validator by depositing 2 ether $OMNI

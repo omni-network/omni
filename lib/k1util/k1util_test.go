@@ -4,12 +4,21 @@ package k1util_test
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
+	"path/filepath"
 	"testing"
 
 	"github.com/omni-network/omni/lib/k1util"
+	"github.com/omni-network/omni/lib/tutil"
 
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/privval"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmttypes "github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
+
+	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/stretchr/testify/require"
 )
@@ -63,10 +72,101 @@ func TestRandom(t *testing.T) {
 	require.True(t, ok)
 }
 
+func TestCosmosPbukey(t *testing.T) {
+	t.Parallel()
+
+	priv, err := crypto.GenerateKey()
+	require.NoError(t, err)
+
+	cosmosPub, err := k1util.StdPubKeyToCosmos(&priv.PublicKey)
+	require.NoError(t, err)
+
+	require.NotPanics(t, func() {
+		cosmosPub.Address()
+	})
+}
+
+// TestCometBFT tests that CometBFT and k1util can produce the same signatures.
+// This ensures that we can use web3signer to sign votes and proposals.
+func TestCometBFT(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+
+	const chainID = "test"
+
+	// Create a key
+	key := k1.GenPrivKey()
+	pv := privval.NewFilePV(key, filepath.Join(dir, "key"), filepath.Join(dir, "state"))
+
+	// Create a vote
+	block := cmttypes.BlockID{Hash: tutil.RandomBytes(32)}
+	vote := newVote(pv.Key.Address, 1, 2, 3, cmtproto.PrecommitType, block, []byte("vote extension"))
+	votePB1 := vote.ToProto()
+	votePB2 := vote.ToProto()
+
+	// Sign it with CometBFT privval.
+	err := pv.SignVote(chainID, votePB1)
+	require.NoError(t, err)
+
+	require.Nil(t, votePB2.Signature) // Ensure no pointer shenanigans.
+
+	// Sign it with k1util.
+	signVote(t, key, chainID, votePB2)
+
+	require.Equal(t, votePB1.Signature, votePB2.Signature)
+	require.Equal(t, votePB1.ExtensionSignature, votePB2.ExtensionSignature)
+}
+
+func TestPubkey64(t *testing.T) {
+	t.Parallel()
+
+	priv, err := crypto.GenerateKey()
+	require.NoError(t, err)
+
+	bz64 := k1util.PubKeyToBytes64(&priv.PublicKey)
+	require.Len(t, bz64, 64)
+
+	pub, err := k1util.PubKeyFromBytes64(bz64)
+	require.NoError(t, err)
+
+	require.True(t, pub.Equal(&priv.PublicKey))
+}
+
+func signVote(t *testing.T, key k1.PrivKey, chainID string, vote *cmtproto.Vote) {
+	t.Helper()
+
+	sigBytes := cmttypes.VoteSignBytes(chainID, vote)
+	hashed := sha256.Sum256(sigBytes)
+	sig, err := k1util.Sign(key, hashed)
+	require.NoError(t, err)
+
+	extSignBytes := cmttypes.VoteExtensionSignBytes(chainID, vote)
+	extHashed := sha256.Sum256(extSignBytes)
+	extSig, err := k1util.Sign(key, extHashed)
+	require.NoError(t, err)
+
+	vote.Signature = sig[:64]             // CometBFT drops recovery id.
+	vote.ExtensionSignature = extSig[:64] // CometBFT drops recovery id.
+}
+
 func fromHex(t *testing.T, hexStr string) []byte {
 	t.Helper()
 	b, err := hex.DecodeString(hexStr)
 	require.NoError(t, err)
 
 	return b
+}
+
+func newVote(addr cmttypes.Address, idx int32, height int64, round int32,
+	typ cmtproto.SignedMsgType, blockID cmttypes.BlockID, extension []byte) *cmttypes.Vote {
+	return &cmttypes.Vote{
+		ValidatorAddress: addr,
+		ValidatorIndex:   idx,
+		Height:           height,
+		Round:            round,
+		Type:             typ,
+		Timestamp:        cmttime.Now(),
+		BlockID:          blockID,
+		Extension:        extension,
+	}
 }

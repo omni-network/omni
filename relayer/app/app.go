@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/omni-network/omni/lib/buildinfo"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/gitinfo"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
@@ -15,20 +16,19 @@ import (
 	"github.com/cometbft/cometbft/rpc/client/http"
 
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 func Run(ctx context.Context, cfg Config) error {
 	log.Info(ctx, "Starting relayer")
 
-	gitinfo.Instrument(ctx)
+	buildinfo.Instrument(ctx)
 
 	network, err := netconf.Load(cfg.NetworkFile)
 	if err != nil {
 		return err
 	}
 
-	rpcClientPerChain, err := initializeRPCClients(network.Chains)
+	rpcClientPerChain, err := initializeRPCClients(network.EVMChains())
 	if err != nil {
 		return err
 	}
@@ -44,11 +44,18 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 
 	cprov := cprovider.NewABCIProvider(tmClient, network.ChainNamesByIDs())
-	xprov := xprovider.New(network, rpcClientPerChain)
+	xprov := xprovider.New(network, rpcClientPerChain, cprov)
 
-	for _, destChain := range network.Chains {
+	state, ok, err := LoadCursors(cfg.StateFile)
+	if err != nil {
+		return err
+	} else if !ok {
+		state = NewEmptyState(cfg.StateFile)
+	}
+
+	for _, destChain := range network.EVMChains() {
 		sendProvider := func() (SendFunc, error) {
-			sender, err := NewOpSender(destChain, rpcClientPerChain[destChain.ID], *privateKey,
+			sender, err := NewSender(destChain, rpcClientPerChain[destChain.ID], *privateKey,
 				network.ChainNamesByIDs())
 			if err != nil {
 				return nil, err
@@ -61,12 +68,13 @@ func Run(ctx context.Context, cfg Config) error {
 			cprov,
 			xprov,
 			CreateSubmissions,
-			sendProvider)
+			sendProvider,
+			state)
 
 		go worker.Run(ctx)
 	}
 
-	startMonitoring(ctx, network, xprov, ethcrypto.PubkeyToAddress(privateKey.PublicKey), rpcClientPerChain)
+	startMonitoring(ctx, network, xprov, cprov, ethcrypto.PubkeyToAddress(privateKey.PublicKey), rpcClientPerChain)
 
 	select {
 	case <-ctx.Done():
@@ -86,10 +94,10 @@ func newClient(tmNodeAddr string) (client.Client, error) {
 	return c, nil
 }
 
-func initializeRPCClients(chains []netconf.Chain) (map[uint64]*ethclient.Client, error) {
-	rpcClientPerChain := make(map[uint64]*ethclient.Client)
+func initializeRPCClients(chains []netconf.Chain) (map[uint64]ethclient.Client, error) {
+	rpcClientPerChain := make(map[uint64]ethclient.Client)
 	for _, chain := range chains {
-		c, err := ethclient.Dial(chain.RPCURL)
+		c, err := ethclient.Dial(chain.Name, chain.RPCURL)
 		if err != nil {
 			return nil, errors.Wrap(err, "dial rpc", "chain_id", chain.ID, "rpc_url", chain.RPCURL)
 		}

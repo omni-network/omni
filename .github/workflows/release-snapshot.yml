@@ -1,0 +1,51 @@
+name: release snapshot
+# Snapshot releases on push to main.
+
+on:
+  workflow_call:
+
+jobs:
+  release-snapshot:
+    runs-on: namespace-profile-default
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Login to Dockerhub container registry
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build docker images
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          version: latest
+          # Use --snapshot to build current HEAD commit (this doesn't publish images)
+          args: release --snapshot --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push Explorer Graphql to Dockerhub
+        run: |
+          docker push omniops/explorer-graphql:${GITHUB_SHA::7}
+          docker push omniops/explorer-graphql:main
+
+      - name: Push Indexer to Dockerhub
+        run: |
+          docker push omniops/explorer-indexer:${GITHUB_SHA::7}
+          docker push omniops/explorer-indexer:main
+
+      - name: Push Halo to Dockerhub
+        run: |
+          docker push omniops/halo:${GITHUB_SHA::7}
+          docker push omniops/halo:main
+
+      - name: Push Relayer to Dockerhub
+        run: |
+          docker push omniops/relayer:${GITHUB_SHA::7}
+          docker push omniops/relayer:main
+
+      - name: Push Monitor to Dockerhub
+        run: |
+          docker push omniops/monitor:${GITHUB_SHA::7}
+          docker push omniops/monitor:main

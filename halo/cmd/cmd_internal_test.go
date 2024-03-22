@@ -6,13 +6,14 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/omni-network/omni/halo/app"
 	halocfg "github.com/omni-network/omni/halo/config"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/test/tutil"
+	"github.com/omni-network/omni/lib/tutil"
 
 	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"
@@ -81,7 +82,12 @@ func TestCLIReference(t *testing.T) {
 
 			var args []string
 			if test.Command != root {
-				args = append(args, test.Command)
+				if strings.Contains(test.Command, "operator") {
+					subCmd := strings.Split(test.Command, " ")
+					args = append(args, subCmd...)
+				} else {
+					args = append(args, test.Command)
+				}
 			}
 			args = append(args, "--help")
 

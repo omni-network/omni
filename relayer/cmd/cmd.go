@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"github.com/omni-network/omni/lib/buildinfo"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/log"
 	relayer "github.com/omni-network/omni/relayer/app"
@@ -14,6 +15,7 @@ func New() *cobra.Command {
 	cmd := libcmd.NewRootCmd(
 		"relayer",
 		"Relayer is a service that relays txs between the omni network and rollups",
+		buildinfo.NewVersionCmd(),
 	)
 
 	cfg := relayer.DefaultConfig()

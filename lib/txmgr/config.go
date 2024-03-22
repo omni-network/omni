@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 type DefaultFlagValues struct {
@@ -100,12 +100,33 @@ func (m CLIConfig) Check() error {
 	return nil
 }
 
-// privateKeySignerFn returns a SignerFn that signs transactions with the given private key.
-func privateKeySignerFn(key *ecdsa.PrivateKey, chainID *big.Int) bind.SignerFn {
-	from := crypto.PubkeyToAddress(key.PublicKey)
-	signer := types.LatestSignerForChainID(chainID)
+func externalSignerFn(external ExternalSigner, address common.Address, chainID uint64) SignerFn {
+	signer := types.LatestSignerForChainID(big.NewInt(int64(chainID)))
+	return func(ctx context.Context, from common.Address, tx *types.Transaction) (*types.Transaction, error) {
+		if address != from {
+			return nil, bind.ErrNotAuthorized
+		}
 
-	return func(address common.Address, tx *types.Transaction) (*types.Transaction, error) {
+		sig, err := external(ctx, signer.Hash(tx), from)
+		if err != nil {
+			return nil, errors.Wrap(err, "external sign")
+		}
+
+		res, err := tx.WithSignature(signer, sig[:])
+		if err != nil {
+			return nil, errors.Wrap(err, "set signature")
+		}
+
+		return res, nil
+	}
+}
+
+// privateKeySignerFn returns a SignerFn that signs transactions with the given private key.
+func privateKeySignerFn(key *ecdsa.PrivateKey, chainID uint64) SignerFn {
+	from := crypto.PubkeyToAddress(key.PublicKey)
+	signer := types.LatestSignerForChainID(big.NewInt(int64(chainID)))
+
+	return func(_ context.Context, address common.Address, tx *types.Transaction) (*types.Transaction, error) {
 		if address != from {
 			return nil, bind.ErrNotAuthorized
 		}
@@ -122,6 +143,9 @@ func privateKeySignerFn(key *ecdsa.PrivateKey, chainID *big.Int) bind.SignerFn {
 	}
 }
 
+// ExternalSigner is a function that signs a transaction with a given address and returns the signature.
+type ExternalSigner func(context.Context, common.Hash, common.Address) ([65]byte, error)
+
 // SignerFn is a generic transaction signing function. It may be a remote signer so it takes a context.
 // It also takes the address that should be used to sign the transaction with.
 type SignerFn func(context.Context, common.Address, *types.Transaction) (*types.Transaction, error)
@@ -129,9 +153,10 @@ type SignerFn func(context.Context, common.Address, *types.Transaction) (*types.
 // SignerFactory creates a SignerFn that is bound to a specific chainID.
 type SignerFactory func(chainID *big.Int) SignerFn
 
-// Config houses parameters for altering the behavior of a SimpleTxManager.
+// Config houses parameters for altering the behavior of a simple.
 type Config struct {
-	Backend ETHBackend
+	Backend ethclient.Client
+
 	// ResubmissionTimeout is the interval at which, if no previously
 	// published transaction has been mined, the new tx with a bumped gas
 	// price will be published. Only one publication at MaxGasPrice will be
@@ -184,20 +209,28 @@ type Config struct {
 
 	// Signer is used to sign transactions when the gas price is increased.
 	Signer SignerFn
-	From   common.Address
+
+	From common.Address
 }
 
-// NewConfig - creates a new txmgr config from the given CLI config and private key. This is taken and modified from op.
-func NewConfig(cfg CLIConfig, privateKey *ecdsa.PrivateKey, client *ethclient.Client) (Config, error) {
+// NewConfigWithSigner returns a new txmgr config from the given CLI config and external signer.
+func NewConfigWithSigner(cfg CLIConfig, external ExternalSigner, from common.Address, client ethclient.Client) (Config, error) {
+	signer := externalSignerFn(external, from, cfg.ChainID)
+
+	return newConfig(cfg, signer, from, client)
+}
+
+// NewConfig returns a new txmgr config from the given CLI config and private key.
+func NewConfig(cfg CLIConfig, privateKey *ecdsa.PrivateKey, client ethclient.Client) (Config, error) {
+	signer := privateKeySignerFn(privateKey, cfg.ChainID)
+	addr := crypto.PubkeyToAddress(privateKey.PublicKey)
+
+	return newConfig(cfg, signer, addr, client)
+}
+
+func newConfig(cfg CLIConfig, signer SignerFn, from common.Address, client ethclient.Client) (Config, error) {
 	if err := cfg.Check(); err != nil {
 		return Config{}, errors.New("invalid config", err)
-	}
-
-	signer := func(chainID *big.Int) SignerFn {
-		s := privateKeySignerFn(privateKey, chainID)
-		return func(_ context.Context, addr common.Address, tx *types.Transaction) (*types.Transaction, error) {
-			return s(addr, tx)
-		}
 	}
 
 	feeLimitThreshold, err := GweiToWei(cfg.FeeLimitThresholdGwei)
@@ -231,8 +264,8 @@ func NewConfig(cfg CLIConfig, privateKey *ecdsa.PrivateKey, client *ethclient.Cl
 		ReceiptQueryInterval:      cfg.ReceiptQueryInterval,
 		NumConfirmations:          cfg.NumConfirmations,
 		SafeAbortNonceTooLowCount: cfg.SafeAbortNonceTooLowCount,
-		Signer:                    signer(chainID),
-		From:                      crypto.PubkeyToAddress(privateKey.PublicKey),
+		Signer:                    signer,
+		From:                      from,
 	}, nil
 }
 

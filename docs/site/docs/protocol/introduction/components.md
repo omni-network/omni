@@ -1,0 +1,20 @@
+---
+sidebar_position: 2
+---
+
+# Component Overview
+
+<figure>
+  <img src="/img/components.png" alt="Components" />
+  <figcaption>*Overview of the Components of the Network*</figcaption>
+</figure>
+
+- It consists of two internal chains, a consensus layer and an execution layer, similar to post-merge Ethereum.
+    - Similar to Ethereum, Omni nodes are separated into distinct execution and consensus environments
+        - The **execution layer** is implemented by standard Ethereum execution clients. like  **`geth`**, **`erigon`**, etc, to provide the Omni EVM.
+        - The **consensus** layer is implemented by the Omni consensus client, halo, and uses CometBFT for consensus on XMsgs and Omni EVM blocks.
+- **EigenLayer restaking contracts** exist on Ethereum L1 and connect Omni with its restaking participants. Omni is registered with EigenLayer as an [Actively Validated Service](https://docs.eigenlayer.xyz/eigenlayer/overview/key-terms) (AVS) and Omni validators serve the [Operator](https://docs.eigenlayer.xyz/eigenlayer/overview/key-terms) for the AVS.
+- **[Portal contracts](../xmessages/components/portal-send.md)** implement the on-chain logic of the Omni protocol and serve as the main interface for creating cross-network messages. They are deployed to all supported rollup VMs as well as the Omni EVM on the Omni network. They all have the same address and calls to and from are abstracted with the [solidity interface](https://github.com/omni-network/omni/blob/22bd4460e254eee4ebf79239897ea04ba9b2db43/contracts/src/interfaces/IOmniPortal.sol).
+    - **[Portal contracts](../xmessages/components/portal-send.md)** implement Omni’s on-chain logic on external rollup networks. Portals are deployed on each connected rollup VM and the Omni EVM. Portal contracts use the same address on every rollup. Calls to and from Portals are abstracted with the [solidity interface](https://github.com/omni-network/omni/blob/22bd4460e254eee4ebf79239897ea04ba9b2db43/contracts/src/interfaces/IOmniPortal.sol).
+- **[Relayer](../xmessages/components/relayer.md)** responsible for delivering attested cross-network messages from the Omni network to destination rollup VMs. Monitors the Omni Consensus Layer until ⅔ (>66%) of the validator set attested to the “next” block on each source chain, then proceeds to forwarding the respective `XMsg` list included in the block.
+    - Relayers are responsible for delivering confirmed cross-network messages from Omni to destination rollups. When 2/3 (>66%) of Omni validators attest to a given XBlock, relayers forward the XBlock’s corresponding XMsg list to destination rollup networks.

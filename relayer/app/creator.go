@@ -10,7 +10,7 @@ import (
 func CreateSubmissions(up StreamUpdate) ([]xchain.Submission, error) {
 	// Sanity check on input, should only be for a single stream.
 	for i, msg := range up.Msgs {
-		if msg.DestChainID != up.DestChainID || msg.SourceChainID != up.SourceChainID {
+		if msg.SourceChainID != up.SourceChainID {
 			return nil, errors.New("invalid msgs [BUG]")
 		} else if i > 0 && msg.StreamOffset != up.Msgs[i-1].StreamOffset+1 {
 			return nil, errors.New("msgs not sequential [BUG]")
@@ -27,14 +27,14 @@ func CreateSubmissions(up StreamUpdate) ([]xchain.Submission, error) {
 		}
 
 		resp = append(resp, xchain.Submission{
-			AttestationRoot:  att.BlockRoot,
-			ValidatorSetHash: att.ValidatorSetHash,
-			BlockHeader:      att.BlockHeader,
-			Msgs:             msgs,
-			Proof:            multi.Proof,
-			ProofFlags:       multi.ProofFlags,
-			Signatures:       att.Signatures,
-			DestChainID:      up.DestChainID,
+			AttestationRoot: att.AttestationRoot,
+			ValidatorSetID:  att.ValidatorSetID,
+			BlockHeader:     att.BlockHeader,
+			Msgs:            msgs,
+			Proof:           multi.Proof,
+			ProofFlags:      multi.ProofFlags,
+			Signatures:      att.Signatures,
+			DestChainID:     up.DestChainID,
 		})
 	}
 

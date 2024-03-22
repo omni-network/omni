@@ -1,8 +1,9 @@
 // Package k1util provides functions to sign and verify Ethereum RSV style signatures.
-// It was copied from https://github.com/ObolNetwork/charon/blob/main/app/k1util/k1util.go.
 package k1util
 
 import (
+	stdecdsa "crypto/ecdsa"
+
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/cometbft/cometbft/crypto"
@@ -20,8 +21,11 @@ import (
 // privKeyLen is the length of a secp256k1 private key.
 const privKeyLen = 32
 
-// pubkeyLen is the length of a secp256k1 compressed public key.
-const pubkeyLen = 33
+// pubkeyCompressedLen is the length of a secp256k1 compressed public key.
+const pubkeyCompressedLen = 33
+
+// pubkeyUncompressedLen is the length of a secp256k1 uncompressed public key.
+const pubkeyUncompressedLen = 65
 
 // Sign returns a signature from input data.
 //
@@ -63,7 +67,7 @@ func Verify(address common.Address, hash [32]byte, sig [65]byte) (bool, error) {
 // PubKeyToAddress returns the Ethereum address for the given k1 public key.
 func PubKeyToAddress(pubkey crypto.PubKey) (common.Address, error) {
 	pubkeyBytes := pubkey.Bytes()
-	if len(pubkeyBytes) != pubkeyLen {
+	if len(pubkeyBytes) != pubkeyCompressedLen {
 		return common.Address{}, errors.New("invalid pubkey length", "length", len(pubkeyBytes))
 	}
 
@@ -75,9 +79,20 @@ func PubKeyToAddress(pubkey crypto.PubKey) (common.Address, error) {
 	return ethcrypto.PubkeyToAddress(*ethPubKey), nil
 }
 
+func StdPubKeyToCosmos(pubkey *stdecdsa.PublicKey) (cosmoscrypto.PubKey, error) {
+	pubkeyBytes := ethcrypto.CompressPubkey(pubkey)
+	if len(pubkeyBytes) != pubkeyCompressedLen {
+		return nil, errors.New("invalid pubkey length", "length", len(pubkeyBytes))
+	}
+
+	return &cosmosk1.PubKey{
+		Key: pubkeyBytes,
+	}, nil
+}
+
 func PubKeyToCosmos(pubkey crypto.PubKey) (cosmoscrypto.PubKey, error) {
 	pubkeyBytes := pubkey.Bytes()
-	if len(pubkeyBytes) != pubkeyLen {
+	if len(pubkeyBytes) != pubkeyCompressedLen {
 		return nil, errors.New("invalid pubkey length", "length", len(pubkeyBytes))
 	}
 
@@ -89,7 +104,7 @@ func PubKeyToCosmos(pubkey crypto.PubKey) (cosmoscrypto.PubKey, error) {
 // PubKeyPBToAddress returns the Ethereum address for the given k1 public key.
 func PubKeyPBToAddress(pubkey cryptopb.PublicKey) (common.Address, error) {
 	pubkeyBytes := pubkey.GetSecp256K1()
-	if len(pubkeyBytes) != pubkeyLen {
+	if len(pubkeyBytes) != pubkeyCompressedLen {
 		return common.Address{}, errors.New("invalid pubkey length", "length", len(pubkeyBytes))
 	}
 
@@ -99,4 +114,26 @@ func PubKeyPBToAddress(pubkey cryptopb.PublicKey) (common.Address, error) {
 	}
 
 	return ethcrypto.PubkeyToAddress(*ethPubKey), nil
+}
+
+// PubKeyToBytes64 returns the 64 byte uncompressed version of the public key, by removing the prefix (0x04 for uncompressed keys).
+func PubKeyToBytes64(pubkey *stdecdsa.PublicKey) []byte {
+	return ethcrypto.FromECDSAPub(pubkey)[1:]
+}
+
+// PubKeyFromBytes64 returns the public key from the 64 byte uncompressed version.
+// It adds the prefix (0x04 for uncompressed keys) to the input bytes.
+func PubKeyFromBytes64(pubkey []byte) (*stdecdsa.PublicKey, error) {
+	if len(pubkey) != pubkeyUncompressedLen-1 {
+		return nil, errors.New("invalid pubkey length", "length", len(pubkey))
+	}
+
+	const prefix = 0x04
+
+	resp, err := ethcrypto.UnmarshalPubkey(append([]byte{prefix}, pubkey...))
+	if err != nil {
+		return nil, errors.Wrap(err, "unmarshal pubkey")
+	}
+
+	return resp, nil
 }

@@ -5,7 +5,6 @@ import (
 
 	"github.com/omni-network/omni/halo/attest/keeper"
 	"github.com/omni-network/omni/halo/attest/types"
-	"github.com/omni-network/omni/lib/engine"
 
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/core/store"
@@ -115,9 +114,7 @@ type ModuleInputs struct {
 	Config       *Module
 	Logger       log.Logger
 	TXConfig     client.TxConfig
-	EthClient    engine.API
 	SKeeper      *skeeper.Keeper
-	Voter        types.Voter
 	Namer        types.ChainNameFunc
 }
 
@@ -129,13 +126,13 @@ type ModuleOutputs struct {
 }
 
 func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
-	k, err := keeper.NewKeeper(
+	k, err := keeper.New(
 		in.Cdc,
 		in.StoreService,
-		in.EthClient,
 		in.SKeeper,
-		in.Voter,
 		in.Namer,
+		in.Config.GetVoteWindow(),
+		in.Config.GetVoteExtensionLimit(),
 	)
 	if err != nil {
 		return ModuleOutputs{}, err

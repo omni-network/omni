@@ -23,8 +23,8 @@ type CreateFunc func(streamUpdate StreamUpdate) ([]xchain.Submission, error)
 // SendFunc sends a submission to the destination chain by invoking "xsubmit" on portal contract.
 type SendFunc func(ctx context.Context, submission xchain.Submission) error
 
-// SubmissionToBinding converts a go xchain submission to a solidity binding submission.
-func SubmissionToBinding(sub xchain.Submission) bindings.XTypesSubmission {
+// submissionToBinding converts a go xchain submission to a solidity binding submission.
+func submissionToBinding(sub xchain.Submission) bindings.XSubmission {
 	// Sort the signatures by validator address to ensure deterministic ordering.
 	sort.Slice(sub.Signatures, func(i, j int) bool {
 		return sub.Signatures[i].ValidatorAddress.Cmp(sub.Signatures[j].ValidatorAddress) < 0
@@ -38,9 +38,9 @@ func SubmissionToBinding(sub xchain.Submission) bindings.XTypesSubmission {
 		})
 	}
 
-	msgs := make([]bindings.XTypesMsg, 0, len(sub.Msgs))
+	msgs := make([]bindings.XMsg, 0, len(sub.Msgs))
 	for _, msg := range sub.Msgs {
-		msgs = append(msgs, bindings.XTypesMsg{
+		msgs = append(msgs, bindings.XMsg{
 			SourceChainId: msg.SourceChainID,
 			DestChainId:   msg.DestChainID,
 			StreamOffset:  msg.StreamOffset,
@@ -51,10 +51,10 @@ func SubmissionToBinding(sub xchain.Submission) bindings.XTypesSubmission {
 		})
 	}
 
-	return bindings.XTypesSubmission{
+	return bindings.XSubmission{
 		AttestationRoot: sub.AttestationRoot,
-		ValidatorSetId:  1, // TODO(corver): Use sub.ValSetHash once bindings supports it.
-		BlockHeader: bindings.XTypesBlockHeader{
+		ValidatorSetId:  sub.ValidatorSetID,
+		BlockHeader: bindings.XBlockHeader{
 			SourceChainId: sub.BlockHeader.SourceChainID,
 			BlockHeight:   sub.BlockHeader.BlockHeight,
 			BlockHash:     sub.BlockHeader.BlockHash,
@@ -66,6 +66,7 @@ func SubmissionToBinding(sub xchain.Submission) bindings.XTypesSubmission {
 	}
 }
 
+// randomHex7 returns a random 7-character hex string.
 func randomHex7() string {
 	bytes := make([]byte, 4)
 	_, _ = rand.Read(bytes)
