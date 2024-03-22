@@ -10,11 +10,7 @@ The Omni Omega Testnet is currently under construction. Please check back soon f
 
 :::
 
-During the Omni Omega Testnet, users will be able to delegate restaked **\$ETH** to the Omni Operators and can participate on missions in the [Omni Mission Center](https://missions.omni.network/).
-
-## Omni Missions Center
-
-Take part in Omni Missions to help drive Omni forward and get rewards! Read more on the [mission center dashboard](https://missions.omni.network/).
+During the Omni Omega Testnet, users will be able to delegate restaked **\$ETH** to the Omni Operators and take part in challenges posted in a site soon to be released.
 
 ## Delegating Holesky \$ETH
 
