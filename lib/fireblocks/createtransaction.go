@@ -42,13 +42,11 @@ func newTransactionRequest(opt TransactionRequestOptions) createTransactionReque
 
 	return createTransactionRequest{
 		Operation: "RAW",
-		Note:      "testing transaction",
 		Source: source{
 			Type: "VAULT_ACCOUNT",
 			ID:   "0",
 		},
-		AssetID:       "ETH_TEST3",
-		CustomerRefID: "",
+		AssetID: "ETH_TEST3",
 		ExtraParameters: &extraParameters{
 			RawMessageData: rawMessageData{
 				// Algorithm: "MPC_EDDSA_ED25519",
