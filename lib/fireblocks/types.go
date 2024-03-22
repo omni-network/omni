@@ -59,11 +59,11 @@ type extraParameters struct {
 }
 
 type rawMessageData struct {
-	Messages  []UnsignedRawMessage `json:"messages"`
+	Messages  []unsignedRawMessage `json:"messages"`
 	Algorithm string               `json:"algorithm,omitempty"`
 }
 
-type UnsignedRawMessage struct {
+type unsignedRawMessage struct {
 	Content string `json:"content"`
 }
 

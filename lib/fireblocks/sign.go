@@ -14,11 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// TransactionRequestOptions are the options for creating a new transaction.
-type TransactionRequestOptions struct {
-	Message UnsignedRawMessage
-}
-
 func (c Client) createRawSignTransaction(ctx context.Context, digest common.Hash) (string, error) {
 	request := c.newRawSignRequest(digest)
 	headers, err := c.authHeaders(endpointTransactions, request)
@@ -148,7 +143,7 @@ func (c Client) newRawSignRequest(digest common.Hash) createTransactionRequest {
 		AssetID: c.getAssetID(),
 		ExtraParameters: &extraParameters{
 			RawMessageData: rawMessageData{
-				Messages: []UnsignedRawMessage{{
+				Messages: []unsignedRawMessage{{
 					Content: hex.EncodeToString(digest[:]), // No 0x prefix, just hex.
 				}},
 			},
