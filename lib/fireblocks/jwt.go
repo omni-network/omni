@@ -15,17 +15,17 @@ import (
 const validFor = 29 * time.Second // Must be less than 30sec.
 
 // token generates a JWT token for the Fireblocks API.
-func (c Client) token(uri string, data any) (string, error) {
+func (c Client) token(uri string, reqBody any) (string, error) {
 	nonce := uuid.New().String()
 
-	bytes, err := json.Marshal(data)
+	bz, err := json.Marshal(reqBody)
 	if err != nil {
 		return "", errors.Wrap(err, "marshaling JSON")
 	}
-	reqHash := sha256.Sum256(bytes)
+	reqHash := sha256.Sum256(bz)
 
 	claims := jwt.MapClaims{
-		"uri":      "/" + uri,                       // uri - The URI part of the request (e.g., /v1/transactions).
+		"uri":      uri,                             // uri - The URI part of the request (e.g., /v1/transactions).
 		"nonce":    nonce,                           // nonce - Unique number or string. Each API request needs to have a different nonce.
 		"iat":      time.Now().Unix(),               // iat - The time at which the JWT was issued, in seconds since Epoch.
 		"exp":      time.Now().Add(validFor).Unix(), // exp - The expiration time on and after which the JWT must not be accepted for processing, in seconds since Epoch. (Must be less than iat+30sec.)

@@ -6,70 +6,71 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 )
 
-const transactionEndpoint string = "v1/transactions"
-const supportedAssetsEndpoint string = "v1/supported_assets"
-const ethHoleskyTestNet string = "ETH_TEST6" // eth holesky testnet
-const ethMainNet string = "ETH"              // base eth
+const (
+	endpointTransactions = "/v1/transactions"
+	endpointAssets       = "/v1/supported_assets"
+	endpointPubkeyTmpl   = "/v1/vault/accounts/{{.VaultAccountId}}/{{.AssetId}}/0/0/public_key_info"
+
+	assetHolesky = "ETH_TEST6"
+	assetMainnet = "ETH"
+
+	hostProd    = "https://api.fireblocks.io"
+	hostSandbox = "https://sandbox-api.fireblocks.io"
+)
 
 // Client is a JSON HTTP client for the FireBlocks API.
 type Client struct {
-	cfg        Config
+	opts       options
 	apiKey     string
 	privateKey *rsa.PrivateKey
 	jsonHTTP   jsonHTTP
 }
 
-// NewClientWithConfig creates a new FireBlocks client with a custom configuration.
-func NewClientWithConfig(apiKey string, privateKey *rsa.PrivateKey, host string, cfg Config) (*Client, error) {
-	jsonHTTP := newJSONHTTP(host, apiKey, "")
-	client := &Client{
+// New creates a new FireBlocks client.
+func New(apiKey string, privateKey *rsa.PrivateKey, opts ...func(*options)) (Client, error) {
+	if apiKey == "" {
+		return Client{}, errors.New("apiKey is required")
+	}
+	if privateKey == nil {
+		return Client{}, errors.New("privateKey is required")
+	}
+
+	o := defaultOptions()
+	for _, opt := range opts {
+		opt(&o)
+	}
+	if err := o.check(); err != nil {
+		return Client{}, errors.Wrap(err, "options check")
+	}
+
+	return Client{
 		apiKey:     apiKey,
 		privateKey: privateKey,
-		jsonHTTP:   jsonHTTP,
-		cfg:        cfg,
-	}
+		jsonHTTP:   newJSONHTTP(o.host(), apiKey, ""),
+		opts:       o,
+	}, nil
+}
 
-	err := client.check()
+// authHeaders returns the authentication headers for the FireBlocks API.
+func (c Client) authHeaders(endpoint string, request any) (map[string]string, error) {
+	token, err := c.token(endpoint, request)
 	if err != nil {
-		return nil, errors.Wrap(err, "client check")
+		return nil, errors.Wrap(err, "generating token")
 	}
 
-	return client, nil
-}
-
-// NewDefaultClient creates a new FireBlocks client with default configuration.
-func NewDefaultClient(apiKey string, privateKey *rsa.PrivateKey, host string) (*Client, error) {
-	return NewClientWithConfig(apiKey, privateKey, host, DefaultConfig())
-}
-
-// getAuthHeaders returns the authentication headers for the FireBlocks API.
-func (c Client) getAuthHeaders(jwtToken string) map[string]string {
-	header := make(map[string]string)
-	header["X-API-KEY"] = c.apiKey
-	header["Authorization"] = "Bearer " + jwtToken
-
-	return header
-}
-
-// check checks if the client is properly configured.
-func (c Client) check() error {
-	if c.apiKey == "" {
-		return errors.New("apiKey is required")
-	}
-	if c.privateKey == nil {
-		return errors.New("privateKey is required")
-	}
-
-	return nil
+	return map[string]string{
+		"X-API-KEY":     c.apiKey,
+		"Authorization": "Bearer " + token,
+	}, nil
 }
 
 func (c Client) getAssetID() string {
-	switch c.cfg.Network {
+	switch c.opts.Network {
 	case TestNet:
-		return ethHoleskyTestNet
+		return assetHolesky
 	case MainNet:
-		return ethMainNet
+		return assetMainnet
 	default:
-		return ethMainNet
+		return assetMainnet
 	}
 }

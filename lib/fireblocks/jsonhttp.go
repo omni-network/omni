@@ -9,7 +9,6 @@ import (
 	"net/url"
 
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/log"
 )
 
 // jsonHTTP provides a simple interface for sending JSON HTTP requests.
@@ -30,11 +29,12 @@ func newJSONHTTP(host string, apiKey string, clientSecret string) jsonHTTP {
 }
 
 // Send sends an JSON HTTP request with the json formatted request as body.
-// It marshals the response body into the provided response pointer if not nil.
-func (c jsonHTTP) Send(ctx context.Context, endpoint string, httpMethod string, request any, headers map[string]string, response any) error {
+// If the response status code is 2XX, it marshals the response body into the response pointer and returns true.
+// Else, it marshals the response body into the errResponse pointer and returns false.
+func (c jsonHTTP) Send(ctx context.Context, endpoint string, httpMethod string, request any, headers map[string]string, response any, errResponse any) (bool, error) {
 	endpoint, err := url.JoinPath(c.host, endpoint)
 	if err != nil {
-		return errors.Wrap(err, "joining endpoint")
+		return false, errors.Wrap(err, "joining endpoint")
 	}
 
 	// on get requests even will a nil request, we are passing in a non nil request body as the body marshaled to equal `null`
@@ -43,7 +43,7 @@ func (c jsonHTTP) Send(ctx context.Context, endpoint string, httpMethod string, 
 	if request != nil {
 		reqBytes, err = json.Marshal(request)
 		if err != nil {
-			return errors.Wrap(err, "marshaling JSON")
+			return false, errors.Wrap(err, "marshaling JSON")
 		}
 	}
 
@@ -54,38 +54,41 @@ func (c jsonHTTP) Send(ctx context.Context, endpoint string, httpMethod string, 
 		bytes.NewReader(reqBytes),
 	)
 	if err != nil {
-		return errors.Wrap(err, "new http request")
+		return false, errors.Wrap(err, "new http request")
 	}
 
 	req.Header = mergeJSONHeaders(headers)
 
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return errors.Wrap(err, "http do")
+		return false, errors.Wrap(err, "http do")
 	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			log.Error(ctx, "Http: closing body failure", err)
-		}
-	}()
+	defer resp.Body.Close()
 
 	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return errors.Wrap(err, "read response body")
+		return false, errors.Wrap(err, "read response body")
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return errors.Wrap(err, "http response code not okay", "status code", resp.StatusCode, "body", string(respBytes))
+	if resp.StatusCode/100 != 2 {
+		if errResponse != nil {
+			err = json.Unmarshal(respBytes, errResponse)
+			if err != nil {
+				return false, errors.Wrap(err, "unmarshal error response", "status code", resp.StatusCode, "body", string(respBytes))
+			}
+		}
+
+		return false, nil
 	}
 
 	if response != nil {
 		err = json.Unmarshal(respBytes, response)
 		if err != nil {
-			return errors.Wrap(err, "unmarshal response")
+			return false, errors.Wrap(err, "unmarshal response")
 		}
 	}
 
-	return nil
+	return true, nil
 }
 
 // mergeJSONHeaders merges the default JSON headers with the given headers.

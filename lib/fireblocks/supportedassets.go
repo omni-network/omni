@@ -3,26 +3,32 @@ package fireblocks
 import (
 	"context"
 	"net/http"
+
+	"github.com/omni-network/omni/lib/errors"
 )
 
-// GetSupportedAssets returns a list of supported assets.
-func (c Client) GetSupportedAssets(ctx context.Context) ([]SupportedAssets, error) {
-	jwtToken, err := c.token(supportedAssetsEndpoint, nil)
+// GetSupportedAssets returns all asset types supported by Fireblocks.
+func (c Client) GetSupportedAssets(ctx context.Context) ([]Asset, error) {
+	headers, err := c.authHeaders(endpointAssets, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	var res []SupportedAssets
-	err = c.jsonHTTP.Send(
+	var res []Asset
+	var errRes errorResponse
+	ok, err := c.jsonHTTP.Send(
 		ctx,
-		supportedAssetsEndpoint,
+		endpointAssets,
 		http.MethodGet,
 		nil,
-		c.getAuthHeaders(jwtToken),
+		headers,
 		&res,
+		&errRes,
 	)
 	if err != nil {
 		return nil, err
+	} else if !ok {
+		return nil, errors.New("failed to get supported assets", "msg", errRes.Message, "code", errRes.Code)
 	}
 
 	return res, nil

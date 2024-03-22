@@ -1,5 +1,14 @@
 package fireblocks
 
+import (
+	"encoding/hex"
+
+	"github.com/omni-network/omni/lib/errors"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+)
+
 type createTransactionRequest struct {
 	Operation          string           `json:"operation"`
 	Note               string           `json:"note,omitempty"`
@@ -55,11 +64,10 @@ type rawMessageData struct {
 }
 
 type UnsignedRawMessage struct {
-	Content        string `json:"content"`
-	DerivationPath []int  `json:"derivationPath,omitempty"`
+	Content string `json:"content"`
 }
 
-type GetTransactionResponse struct {
+type transaction struct {
 	ID                            string              `json:"id"`
 	ExternalTxID                  string              `json:"externalTxId,omitempty"`
 	Status                        string              `json:"status"`
@@ -92,13 +100,56 @@ type GetTransactionResponse struct {
 	CustomerRefID                 string              `json:"customerRefId,omitempty"`
 	AmlScreeningResult            *amlScreeningResult `json:"amlScreeningResult,omitempty"`
 	ExtraParameters               map[string]any      `json:"extraParameters,omitempty"`
-	SignedMessages                []signedMessages    `json:"signedMessages"`
+	SignedMessages                []signedMessage     `json:"signedMessage"`
 	NumOfConfirmations            int                 `json:"numOfConfirmations"`
 	BlockInfo                     *blockInfo          `json:"blockInfo"`
 	Index                         int                 `json:"index"`
 	RewardInfo                    *rewardInfo         `json:"rewardInfo,omitempty"`
 	SystemMessages                *systemMessages     `json:"systemMessages,omitempty"`
 	AddressType                   string              `json:"addressType"`
+}
+
+// Addr0 returns the Ethereum address of the first signed message in the transaction.
+func (t transaction) Addr0() (common.Address, error) {
+	if len(t.SignedMessages) != 1 {
+		return common.Address{}, errors.New("unexpected number of signed messages", "count", len(t.SignedMessages))
+	}
+
+	msg := t.SignedMessages[0]
+
+	pk, err := hex.DecodeString(msg.PublicKey)
+	if err != nil {
+		return common.Address{}, errors.Wrap(err, "decode public key")
+	}
+
+	pubkey, err := crypto.DecompressPubkey(pk)
+	if err != nil {
+		return common.Address{}, errors.Wrap(err, "decompress public key")
+	}
+
+	return crypto.PubkeyToAddress(*pubkey), nil
+}
+
+// Sig0 returns the signature (Ethereum RSV format) of the first signed message in the transaction.
+func (t transaction) Sig0() ([65]byte, error) {
+	if len(t.SignedMessages) != 1 {
+		return [65]byte{}, errors.New("unexpected number of signed messages", "count", len(t.SignedMessages))
+	}
+
+	msg := t.SignedMessages[0]
+
+	// FullSig field is [R || S] in hex format.
+	sig, err := hex.DecodeString(msg.Signature.FullSig)
+	if err != nil {
+		return [65]byte{}, errors.Wrap(err, "decode signature")
+	} else if len(sig) != 64 {
+		return [65]byte{}, errors.New("unexpected signature length", "length", len(sig))
+	}
+
+	// V is either 0 or 1, convert to 27 or 28.
+	sig = append(sig, byte(msg.Signature.V+27))
+
+	return [65]byte(sig), nil
 }
 
 type amountInfo struct {
@@ -146,7 +197,7 @@ type signature struct {
 	S       string `json:"s"`
 	V       int    `json:"v"`
 }
-type signedMessages struct {
+type signedMessage struct {
 	Content        string    `json:"content"`
 	Algorithm      string    `json:"algorithm"`
 	DerivationPath []int     `json:"derivationPath"`
@@ -171,7 +222,7 @@ type authorizationInfo struct {
 	Groups                    []groups `json:"groups"`
 }
 
-type CreateTransactionResponse struct {
+type createTransactionResponse struct {
 	ID             string          `json:"id"`
 	Status         string          `json:"status"`
 	SystemMessages *systemMessages `json:"systemMessages,omitempty"`
@@ -182,11 +233,16 @@ type systemMessages struct {
 	Message string `json:"message"`
 }
 
-type SupportedAssets struct {
+type Asset struct {
 	ID              string `json:"id"`
 	Name            string `json:"name"`
 	Type            string `json:"type"`
 	ContractAddress string `json:"contractAddress,omitempty"`
 	NativeAsset     string `json:"nativeAsset,omitempty"`
 	Decimals        int    `json:"decimals,omitempty"`
+}
+
+type errorResponse struct {
+	Message string `json:"message"`
+	Code    int    `json:"code"`
 }
