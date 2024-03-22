@@ -2,6 +2,8 @@ package contracts
 
 import (
 	"github.com/omni-network/omni/lib/anvil"
+	"github.com/omni-network/omni/lib/buildinfo"
+	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -14,7 +16,7 @@ var (
 	TestnetCreate3Factory = addr("0x0")
 
 	// ProxyAdmin.
-	DevnetProxyAdmin  = addr("0x733AA9e7E4025E9F69DBEd9e05155e081D720565")
+	DevnetProxyAdmin  = Create3Address(DevnetCreate3Factory, ProxyAdminSalt(netconf.Devnet), DevnetDeployer)
 	MainnetProxyAdmin = addr("0x0")
 	TestnetProxyAdmin = addr("0x0")
 
@@ -44,7 +46,7 @@ var (
 	TestnetAVSAAdmin = addr("0x0")
 
 	// Omni Portal.
-	DevnetPortal  = addr("0x1Fa76B04A827b7BBF34646815358E2ADE0dFCB77")
+	DevnetPortal  = Create3Address(DevnetCreate3Factory, PortalSalt(netconf.Devnet), DevnetDeployer)
 	MainnetPortal = addr("0x0")
 	TestnetPortal = addr("0x0")
 
@@ -53,6 +55,25 @@ var (
 	MainnetFeeOracleV1 = addr("0x0")
 	TestnetFeeOracleV1 = addr("0x0")
 )
+
+func ProxyAdminSalt(network string) string {
+	return salt(network, "proxy-admin")
+}
+
+func PortalSalt(network string) string {
+	return salt(network, "portal")
+}
+
+// salt generates a salt for a contract deployment, adding git build info for staging.
+func salt(network string, contract string) string {
+	salt := network + "-" + contract
+
+	if network == netconf.Staging {
+		return salt + "-" + buildinfo.Version()
+	}
+
+	return salt
+}
 
 func addr(hex string) common.Address {
 	return common.HexToAddress(hex)
