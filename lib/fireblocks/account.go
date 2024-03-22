@@ -15,19 +15,26 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
+// Accounts returns all the vault accounts from the account cache, populating it if empty.
+func (c Client) Accounts(ctx context.Context) (map[common.Address]uint64, error) {
+	if !c.cache.Populated() {
+		if err := c.populateAccountCache(ctx); err != nil {
+			return nil, errors.Wrap(err, "populating account cache")
+		}
+	}
+
+	return c.cache.Clone(), nil
+}
+
 // getAccount returns the Fireblocks account ID for the given address from the account cache.
 // It populates the cache if the account is not found.
 func (c Client) getAccount(ctx context.Context, addr common.Address) (uint64, error) {
-	account, ok := c.cache.Get(addr)
-	if ok {
-		return account, nil
+	accounts, err := c.Accounts(ctx)
+	if err != nil {
+		return 0, err
 	}
 
-	if err := c.populateAccountCache(ctx); err != nil {
-		return 0, errors.Wrap(err, "populating account cache")
-	}
-
-	account, ok = c.cache.Get(addr)
+	account, ok := accounts[addr]
 	if !ok {
 		return 0, errors.New("account not found")
 	}

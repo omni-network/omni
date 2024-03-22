@@ -14,6 +14,7 @@ import (
 	"github.com/omni-network/omni/e2e/vmcompose"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/fireblocks"
 	"github.com/omni-network/omni/lib/netconf"
 
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
@@ -34,6 +35,8 @@ type DefinitionConfig struct {
 	// Secrets (not required for devnet)
 	DeployKeyFile  string
 	RelayerKeyFile string
+	FireAPIKey     string
+	FireKeyPath    string
 	RPCOverrides   map[string]string
 
 	InfraDataFile string // Not required for docker provider
@@ -63,7 +66,7 @@ type Definition struct {
 	Backends ethbackend.Backends
 }
 
-func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
+func MakeDefinition(ctx context.Context, cfg DefinitionConfig) (Definition, error) {
 	manifest, err := LoadManifest(cfg.ManifestFile)
 	if err != nil {
 		return Definition{}, errors.Wrap(err, "loading manifest")
@@ -87,12 +90,9 @@ func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
 		return Definition{}, errors.Wrap(err, "loading testnet")
 	}
 
-	var backends ethbackend.Backends
-	if !testnet.OnlyMonitor {
-		backends, err = ethbackend.NewBackends(testnet, cfg.DeployKeyFile)
-		if err != nil {
-			return Definition{}, errors.Wrap(err, "new backends")
-		}
+	backends, err := newBackends(ctx, cfg, testnet)
+	if err != nil {
+		return Definition{}, err
 	}
 
 	netman, err := netman.NewManager(testnet, backends, cfg.RelayerKeyFile)
@@ -117,6 +117,32 @@ func MakeDefinition(cfg DefinitionConfig) (Definition, error) {
 		Backends: backends,
 		Netman:   netman,
 	}, nil
+}
+
+func newBackends(ctx context.Context, cfg DefinitionConfig, testnet types.Testnet) (ethbackend.Backends, error) {
+	// Skip backends if only deploying monitor, since there are no EVM to connect to.
+	if testnet.OnlyMonitor {
+		return ethbackend.Backends{}, nil
+	}
+
+	// If no fireblocks API key, use in-memory keys.
+	if cfg.FireAPIKey == "" {
+		return ethbackend.NewBackends(testnet, cfg.DeployKeyFile)
+	}
+
+	key, err := fireblocks.LoadKey(cfg.FireKeyPath)
+	if err != nil {
+		return ethbackend.Backends{}, err
+	}
+
+	fireCl, err := fireblocks.New(testnet.Network, cfg.FireAPIKey, key)
+	if err != nil {
+		return ethbackend.Backends{}, err
+	}
+
+	// TODO(corver): Fireblocks keys need to be funded on private/internal chains we deploy.
+
+	return ethbackend.NewFireBackends(ctx, testnet, fireCl)
 }
 
 func adaptCometTestnet(testnet *e2e.Testnet, imgTag string) *e2e.Testnet {

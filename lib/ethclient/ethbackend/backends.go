@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/fireblocks"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
 
@@ -37,6 +38,61 @@ type Backends struct {
 	backends map[uint64]*Backend
 }
 
+// NewFireBackends returns a multi-backends backed by fireblocks keys that supports configured all chains.
+func NewFireBackends(ctx context.Context, testnet types.Testnet, fireCl fireblocks.Client) (Backends, error) {
+	inner := make(map[uint64]*Backend)
+
+	// Configure omni EVM Backend
+	{
+		// todo(lazar): remove this when we figure out why txs are stuck in geth mempool upon initial run
+		// task https://app.asana.com/0/1206208509925075/1206887969751598/f
+		chain, err := testnet.FirstOmniValidatorEVM() // Connect to a geth node connected to a validator
+		if err != nil {
+			return Backends{}, errors.Wrap(err, "omni evm validator")
+		}
+		ethCl, err := ethclient.Dial(chain.Chain.Name, chain.ExternalRPC)
+		if err != nil {
+			return Backends{}, errors.Wrap(err, "dial")
+		}
+
+		inner[chain.Chain.ID], err = NewFireBackend(ctx, chain.Chain.Name, chain.Chain.ID, chain.Chain.BlockPeriod, ethCl, fireCl)
+		if err != nil {
+			return Backends{}, errors.Wrap(err, "new omni Backend")
+		}
+	}
+
+	// Configure anvil EVM Backends
+	for _, chain := range testnet.AnvilChains {
+		ethCl, err := ethclient.Dial(chain.Chain.Name, chain.ExternalRPC)
+		if err != nil {
+			return Backends{}, errors.Wrap(err, "dial")
+		}
+
+		inner[chain.Chain.ID], err = NewFireBackend(ctx, chain.Chain.Name, chain.Chain.ID, chain.Chain.BlockPeriod, ethCl, fireCl)
+		if err != nil {
+			return Backends{}, errors.Wrap(err, "new anvil Backend")
+		}
+	}
+
+	// Configure public EVM Backends
+	for _, chain := range testnet.PublicChains {
+		ethCl, err := ethclient.Dial(chain.Chain.Name, chain.RPCAddress)
+		if err != nil {
+			return Backends{}, errors.Wrap(err, "dial")
+		}
+
+		inner[chain.Chain.ID], err = NewFireBackend(ctx, chain.Chain.Name, chain.Chain.ID, chain.Chain.BlockPeriod, ethCl, fireCl)
+		if err != nil {
+			return Backends{}, errors.Wrap(err, "new public Backend")
+		}
+	}
+
+	return Backends{
+		backends: inner,
+	}, nil
+}
+
+// NewBackends returns a multi-backends backed by in-memory keys that supports configured all chains.
 func NewBackends(testnet types.Testnet, deployKeyFile string) (Backends, error) {
 	var err error
 
@@ -142,6 +198,29 @@ func (b Backends) RPCClients() map[uint64]ethclient.Client {
 	}
 
 	return clients
+}
+
+func newFireblocksTxMgr(ethCl ethclient.Client, chainName string, chainID uint64, blockPeriod time.Duration, from common.Address, fireCl fireblocks.Client) (txmgr.TxManager, error) {
+	// creates our new CLI config for our tx manager
+	cliConfig := txmgr.NewCLIConfig(
+		chainID,
+		blockPeriod/interval,
+		txmgr.DefaultSenderFlagValues,
+	)
+
+	// get the config for our tx manager
+	cfg, err := txmgr.NewConfigWithSigner(cliConfig, fireCl.Sign, from, ethCl)
+	if err != nil {
+		return nil, errors.Wrap(err, "new config")
+	}
+
+	// create a simple tx manager from our config
+	txMgr, err := txmgr.NewSimple(chainName, cfg)
+	if err != nil {
+		return nil, errors.Wrap(err, "new simple")
+	}
+
+	return txMgr, nil
 }
 
 func newTxMgr(ethCl ethclient.Client, chainName string, chainID uint64, blockPeriod time.Duration, privateKey *ecdsa.PrivateKey) (txmgr.TxManager, error) {

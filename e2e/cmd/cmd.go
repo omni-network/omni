@@ -28,16 +28,17 @@ func New() *cobra.Command {
 
 	cmd := libcmd.NewRootCmd("e2e", "e2e network generator and test runner")
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		if _, err := log.Init(cmd.Context(), logCfg); err != nil {
+		ctx := cmd.Context()
+		if _, err := log.Init(ctx, logCfg); err != nil {
 			return err
 		}
 
-		if err := libcmd.LogFlags(cmd.Context(), cmd.Flags()); err != nil {
+		if err := libcmd.LogFlags(ctx, cmd.Flags()); err != nil {
 			return err
 		}
 
 		var err error
-		def, err = app.MakeDefinition(defCfg)
+		def, err = app.MakeDefinition(ctx, defCfg)
 
 		return err
 	}
