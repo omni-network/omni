@@ -8,6 +8,7 @@ import (
 	"encoding/pem"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/omni-network/omni/lib/k1util"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/google/go-cmp/cmp"
@@ -179,37 +181,41 @@ func TestSmoke(t *testing.T) {
 		t.Skip("API key and private key are required")
 	}
 	client, err := fireblocks.NewDefaultClient(apiKey, parseKey(t, privateTestKey), "https://sandbox-api.fireblocks.io")
-	input := crypto.Keccak256([]byte("test"))
+	message := "tokenXYZ,amount=10,price=1.23"
+	prefix := "\x19Ethereum Signed Message\n"
+	preSigned := prefix + strconv.Itoa(len(message)) + message
+	hashRaw := crypto.Keccak256([]byte(preSigned))
 	require.NoError(t, err)
 	resp, err := client.CreateAndWait(ctx, fireblocks.TransactionRequestOptions{
 		Message: fireblocks.UnsignedRawMessage{
-			Content:        string(input),
+			Content:        string(hashRaw),
 			DerivationPath: []int{44, 60, 0, 0},
 		},
 	})
 	require.NoError(t, err)
 	require.NotNil(t, resp)
-	msg := resp.SignedMessages[0]
-	content := msg.Content
 
-	r := msg.Signature.R
-	s := msg.Signature.S
-	v := msg.Signature.V
+	msg := resp.SignedMessages[0]
+	r := hexutil.Encode([]byte(msg.Signature.R))
+	s := hexutil.Encode([]byte(msg.Signature.S))
+	v := hexutil.Encode([]byte(strconv.Itoa(msg.Signature.V)))
 
 	require.NotNil(t, r)
 	require.NotNil(t, s)
 	require.NotNil(t, v)
 
-	require.NotEmpty(t, content)
-
 	var addr common.Address
-	publicKey := msg.PublicKey
-	addr.SetBytes([]byte(publicKey))
+	// pubKey := parseKey(t, msg.PublicKey)
+	addr.SetBytes([]byte(msg.PublicKey))
 
 	byteSig := []byte("0x" + msg.Signature.FullSig)
 	require.NotNil(t, byteSig)
 
-	_, err = k1util.Verify(addr, [32]byte(input), [65]byte(byteSig))
+	match := crypto.VerifySignature([]byte(msg.PublicKey), hashRaw, []byte(msg.Signature.FullSig))
+	require.NotNil(t, match)
+
+	valid, err := k1util.Verify(addr, [32]byte(hashRaw), [65]byte(byteSig))
 	require.NoError(t, err)
+	require.NotNil(t, valid)
 	// require.Truef(t, ok, "signature verification failed")
 }
