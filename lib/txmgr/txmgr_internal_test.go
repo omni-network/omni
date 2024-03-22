@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/omni-network/omni/lib/ethclient"
+
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -28,10 +30,10 @@ func testSendState() *SendState {
 	return NewSendState(100, time.Hour)
 }
 
-// testHarness houses the necessary resources to test the SimpleTxManager.
+// testHarness houses the necessary resources to test the simple.
 type testHarness struct {
 	cfg       Config
-	mgr       *SimpleTxManager
+	mgr       *simple
 	backend   *mockBackend
 	gasPricer *gasPricer
 }
@@ -42,7 +44,7 @@ func newTestHarnessWithConfig(_ *testing.T, cfg Config) *testHarness {
 	g := newGasPricer(3)
 	backend := newMockBackend(g)
 	cfg.Backend = backend
-	mgr := &SimpleTxManager{
+	mgr := &simple{
 		chainID:   cfg.ChainID,
 		chainName: "TEST",
 		cfg:       cfg,
@@ -158,6 +160,7 @@ type minedTxInfo struct {
 // mockBackend implements ReceiptSource that tracks mined transactions
 // along with the gas price used.
 type mockBackend struct {
+	ethclient.Client
 	mu sync.RWMutex
 
 	g    *gasPricer
@@ -206,11 +209,6 @@ func (b *mockBackend) BlockNumber(ctx context.Context) (uint64, error) {
 	defer b.mu.RUnlock()
 
 	return b.blockHeight, nil
-}
-
-// Call mocks a call to the EVM.
-func (b *mockBackend) CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error) {
-	return nil, nil
 }
 
 func (b *mockBackend) HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error) {
@@ -719,6 +717,7 @@ func TestWaitMinedMultipleConfs(t *testing.T) {
 // first call but a success on the second call. This allows us to test that the
 // inner loop of waitMined properly handles this case.
 type failingBackend struct {
+	ethclient.Client
 	returnSuccessBlockNumber bool
 	returnSuccessHeader      bool
 	returnSuccessReceipt     bool
@@ -728,7 +727,7 @@ type failingBackend struct {
 
 // BlockNumber for the failingBackend returns errRPCFailure on the first
 // invocation and a fixed block height on subsequent calls.
-func (b *failingBackend) BlockNumber(ctx context.Context) (uint64, error) {
+func (b *failingBackend) BlockNumber(_ context.Context) (uint64, error) {
 	if !b.returnSuccessBlockNumber {
 		b.returnSuccessBlockNumber = true
 		return 0, errRPCFailure
@@ -740,7 +739,7 @@ func (b *failingBackend) BlockNumber(ctx context.Context) (uint64, error) {
 // TransactionReceipt for the failingBackend returns errRPCFailure on the first
 // invocation, and a receipt containing the passed TxHash on the second.
 func (b *failingBackend) TransactionReceipt(
-	ctx context.Context, txHash common.Hash,
+	_ context.Context, txHash common.Hash,
 ) (*types.Receipt, error) {
 	if !b.returnSuccessReceipt {
 		b.returnSuccessReceipt = true
@@ -753,20 +752,12 @@ func (b *failingBackend) TransactionReceipt(
 	}, nil
 }
 
-func (b *failingBackend) HeaderByNumber(ctx context.Context, _ *big.Int) (*types.Header, error) {
+func (b *failingBackend) HeaderByNumber(_ context.Context, _ *big.Int) (*types.Header, error) {
 	return &types.Header{
 		Number:        big.NewInt(1),
 		BaseFee:       b.baseFee,
 		ExcessBlobGas: b.excessBlobGas,
 	}, nil
-}
-
-func (b *failingBackend) CallContract(_ context.Context, _ ethereum.CallMsg, _ *big.Int) ([]byte, error) {
-	return nil, errors.New("unimplemented")
-}
-
-func (b *failingBackend) SendTransaction(_ context.Context, _ *types.Transaction) error {
-	return errors.New("unimplemented")
 }
 
 func (b *failingBackend) SuggestGasTipCap(_ context.Context) (*big.Int, error) {
@@ -777,21 +768,6 @@ func (b *failingBackend) EstimateGas(_ context.Context, msg ethereum.CallMsg) (u
 	return b.baseFee.Uint64(), nil
 }
 
-func (b *failingBackend) NonceAt(_ context.Context, _ common.Address, _ *big.Int) (uint64, error) {
-	return 0, errors.New("unimplemented")
-}
-
-func (b *failingBackend) PendingNonceAt(_ context.Context, _ common.Address) (uint64, error) {
-	return 0, errors.New("unimplemented")
-}
-
-func (b *failingBackend) ChainID(ctx context.Context) (*big.Int, error) {
-	return nil, errors.New("unimplemented")
-}
-
-func (b *failingBackend) Close() {
-}
-
 // TestWaitMinedReturnsReceiptAfterNotFound asserts that waitMined is able to
 // recover from failed calls to the backend. It uses the failedBackend to
 // simulate an rpc call failure, followed by the successful return of a receipt.
@@ -800,7 +776,7 @@ func TestWaitMinedReturnsReceiptAfterNotFound(t *testing.T) {
 
 	var borkedBackend failingBackend
 
-	mgr := &SimpleTxManager{
+	mgr := &simple{
 		cfg: Config{
 			ResubmissionTimeout:       time.Second,
 			ReceiptQueryInterval:      50 * time.Millisecond,
@@ -832,7 +808,7 @@ func doGasPriceIncrease(_ *testing.T, txTipCap, txFeeCap, newTip,
 		returnSuccessHeader: true,
 	}
 
-	mgr := &SimpleTxManager{
+	mgr := &simple{
 		cfg: Config{
 			ResubmissionTimeout:       time.Second,
 			ReceiptQueryInterval:      50 * time.Millisecond,
@@ -1018,7 +994,7 @@ func testIncreaseGasPriceLimit(t *testing.T, lt gasPriceLimitTest) {
 		returnSuccessHeader: true,
 	}
 
-	mgr := &SimpleTxManager{
+	mgr := &simple{
 		cfg: Config{
 			ResubmissionTimeout:       time.Second,
 			ReceiptQueryInterval:      50 * time.Millisecond,

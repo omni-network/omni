@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 func (c Client) createRawSignTransaction(ctx context.Context, digest common.Hash) (string, error) {
@@ -102,18 +102,18 @@ func (c Client) maybeGetSignature(ctx context.Context, txID string, digest commo
 		return [65]byte{}, false, errors.Wrap(err, "get signature")
 	}
 
-	// Get the address from the signer pubkey.
-	addr, err := tx.Addr0()
+	// Get the signer pubkey.
+	pubkey, err := tx.Pubkey0()
 	if err != nil {
 		return [65]byte{}, false, err
-	} else if addr != signer { // Ensure it matches the expected signer.
+	}
+	addr := crypto.PubkeyToAddress(*pubkey)
+	if addr != signer { // Ensure it matches the expected signer.
 		return [65]byte{}, false, errors.New("signed address mismatch", "expect", signer, "actual", addr)
 	}
 
 	// Ensure the signature is valid.
-	if ok, err := k1util.Verify(addr, digest, sig); err != nil {
-		return [65]byte{}, false, errors.Wrap(err, "verify signature")
-	} else if !ok {
+	if !crypto.VerifySignature(crypto.CompressPubkey(pubkey), digest[:], sig[:64]) {
 		return [65]byte{}, false, errors.New("signature verification failed")
 	}
 

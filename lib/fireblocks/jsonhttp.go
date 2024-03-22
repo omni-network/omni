@@ -13,18 +13,16 @@ import (
 
 // jsonHTTP provides a simple interface for sending JSON HTTP requests.
 type jsonHTTP struct {
-	apiKey       string
-	clientSecret string
-	host         string
-	http         http.Client
+	apiKey string
+	host   string
+	http   http.Client
 }
 
 // newJSONHTTP creates a new jsonHTTP.
-func newJSONHTTP(host string, apiKey string, clientSecret string) jsonHTTP {
+func newJSONHTTP(host string, apiKey string) jsonHTTP {
 	return jsonHTTP{
-		host:         host,
-		apiKey:       apiKey,
-		clientSecret: clientSecret,
+		host:   host,
+		apiKey: apiKey,
 	}
 }
 

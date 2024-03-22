@@ -76,7 +76,6 @@ func TestSignOK(t *testing.T) {
 	actualSig, err := client.Sign(ctx, [32]byte(digest), crypto.PubkeyToAddress(privKey.PublicKey))
 	require.NoError(t, err)
 
-	expectSig[64] += 27 // convert expected V to 27 or 28
 	require.Equal(t, [65]byte(expectSig), actualSig)
 }
 

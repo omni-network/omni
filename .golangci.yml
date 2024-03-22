@@ -83,6 +83,7 @@ linters-settings:
     ignoreSigs:
       - github.com/omni-network/omni/
       - google.golang.org/grpc/status # No point wrapping gRPC/network errors.
+      - github.com/ethereum/go-ethereum # We wrap these automatically in lib/ethclient
 
 issues:
   fix: true

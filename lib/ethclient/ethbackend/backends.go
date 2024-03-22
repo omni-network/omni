@@ -159,7 +159,7 @@ func newTxMgr(ethCl ethclient.Client, chainName string, chainID uint64, blockPer
 	}
 
 	// create a simple tx manager from our config
-	txMgr, err := txmgr.NewSimpleTxManagerFromConfig(chainName, cfg)
+	txMgr, err := txmgr.NewSimple(chainName, cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "new simple")
 	}
