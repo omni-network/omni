@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Installing the Omni CLI
 
-The Omni CLI will allow you to interact with the Omni network and simplifies the process of performing actions as an operator.
+The Omni CLI will allow you to interact with the Omni network and simplifies the process of performing actions.
 
 ## Install from Binary
 
