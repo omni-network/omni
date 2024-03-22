@@ -12,6 +12,10 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/fireblocks"
+	"github.com/omni-network/omni/lib/k1util"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
@@ -165,3 +169,47 @@ T10qfQol54KjGld/HVDhzbsZJxzLDqvPlroWgwLdOLDMXhwJYfTnqMEQkaG4Aawr
 Nx2YZ03g6Kt6B6c43LJx1a/zEPYSZcPERgWOSHlcjmwRfTs6uoN9xt1qs4zEUaKv
 Axreud3rJ0rekUp6rI1joG717Wls
 -----END TESTING KEY-----`
+
+func TestSmoke(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	apiKey := ""
+	privateTestKey := ""
+	if apiKey == "" || privateTestKey == "" {
+		t.Skip("API key and private key are required")
+	}
+	client, err := fireblocks.NewDefaultClient(apiKey, parseKey(t, privateTestKey), "https://sandbox-api.fireblocks.io")
+	input := crypto.Keccak256([]byte("test"))
+	require.NoError(t, err)
+	resp, err := client.CreateAndWait(ctx, fireblocks.TransactionRequestOptions{
+		Message: fireblocks.UnsignedRawMessage{
+			Content:        string(input),
+			DerivationPath: []int{44, 60, 0, 0},
+		},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	msg := resp.SignedMessages[0]
+	content := msg.Content
+
+	r := msg.Signature.R
+	s := msg.Signature.S
+	v := msg.Signature.V
+
+	require.NotNil(t, r)
+	require.NotNil(t, s)
+	require.NotNil(t, v)
+
+	require.NotEmpty(t, content)
+
+	var addr common.Address
+	publicKey := msg.PublicKey
+	addr.SetBytes([]byte(publicKey))
+
+	byteSig := []byte("0x" + msg.Signature.FullSig)
+	require.NotNil(t, byteSig)
+
+	_, err = k1util.Verify(addr, [32]byte(input), [65]byte(byteSig))
+	require.NoError(t, err)
+	// require.Truef(t, ok, "signature verification failed")
+}
