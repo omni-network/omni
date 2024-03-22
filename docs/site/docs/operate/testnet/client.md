@@ -8,6 +8,10 @@ This is the component that participates in network validation. Our consensus cli
 
 Similar to Ethereum, Omni validators run 2 components: our consensus client, `halo`, and an EVM execution client `geth`, `erigon`, `nethermind`, etc. The EVM execution client does not require any modifications.
 
+## Obtain $OMNI
+
+To run the client, you will need **\$OMNI**. You can obtain $OMNI by reaching out to the team.
+
 ## Initialize and Run the Client
 
 :::warning Feature not yet enabled
