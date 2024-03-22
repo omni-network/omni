@@ -8,7 +8,7 @@ import './testnet.css';
 // Define the ThemedIcon component
 const ThemedIcon = () => {
     const { colorMode } = useColorMode();
-    const iconSrc = colorMode === 'dark' ? 'img/logo-white.svg' : 'img/logo.svg';
+    const iconSrc = colorMode === 'dark' ? 'img/logo-white.svg' : 'img/logo-dark-blue.svg';
 
     return <img src={iconSrc} alt="Omni Omega Logo" className="icon" />;
 };

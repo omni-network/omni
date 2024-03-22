@@ -63,10 +63,10 @@ h2 {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: var(--ifm-color-primary);
+    background: var(--ifm-heading-color);
     box-shadow:
-      0 0 10px var(--ifm-color-primary),
-      0 0 20px var(--ifm-color-primary);
+      0 0 10px var(--ifm-heading-color),
+      0 0 20px var(--ifm-heading-color);
     opacity: 0;
     top: 20.2%;
     left: 50%;
