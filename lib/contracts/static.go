@@ -8,25 +8,52 @@ import (
 
 //nolint:gochecknoglobals // Static addresses
 var (
-	DevnetCreate3Factory  = common.HexToAddress("0x5FbDB2315678afecb367f032d93F642f64180aa3")
-	MainnetCreate3Factory = common.HexToAddress("0x0") // TODO
-	TestnetCreate3Factory = common.HexToAddress("0x0") // TODO
+	// Create3Factory.
+	DevnetCreate3Factory  = addr("0x5FbDB2315678afecb367f032d93F642f64180aa3")
+	MainnetCreate3Factory = addr("0x0")
+	TestnetCreate3Factory = addr("0x0")
 
-	DevnetProxyAdmin  = common.HexToAddress("0x733AA9e7E4025E9F69DBEd9e05155e081D720565")
-	MainnetProxyAdmin = common.HexToAddress("0x0") // TODO
-	TestnetProxyAdmin = common.HexToAddress("0x0") // TODO
+	// ProxyAdmin.
+	DevnetProxyAdmin  = addr("0x733AA9e7E4025E9F69DBEd9e05155e081D720565")
+	MainnetProxyAdmin = addr("0x0")
+	TestnetProxyAdmin = addr("0x0")
 
+	// ProxyAdminOwner.
 	DevnetProxyAdminOwner  = anvil.Account2
-	MainnetProxyAdminOwner = common.HexToAddress("0x0") // TODO
-	TestnetProxyAdminOwner = common.HexToAddress("0x0") // TODO
+	MainnetProxyAdminOwner = addr("0x0")
+	TestnetProxyAdminOwner = addr("0x0")
 
-	// addrress that can deploy the create3 factory.
+	// Create3 Deployer - addrress that can deploy the create3 factory.
 	DevnetCreate3Deployer  = anvil.Account0
-	MainnetCreate3Deployer = common.HexToAddress("0x0") // TODO
-	TestnetCreate3Deployer = common.HexToAddress("0x0") // TODO
+	MainnetCreate3Deployer = addr("0x0")
+	TestnetCreate3Deployer = addr("0x0")
 
-	// address that can deploy protocol contracts via Create3 factory.
+	// Deployer - address that can deploy protocol contracts via Create3 factory.
 	DevnetDeployer  = anvil.Account1
-	MainnetDeployer = common.HexToAddress("0x0") // TODO
-	TestnetDeployer = common.HexToAddress("0x0") // TODO
+	MainnetDeployer = addr("0x0")
+	TestnetDeployer = addr("0x0")
+
+	// Portal Admin.
+	DevnetPortalAdmin  = anvil.Account2
+	MainnetPortalAdmin = addr("0x0")
+	TestnetPortalAdmin = addr("0x0")
+
+	// AVS Admin.
+	DevnetAVSAAdmin  = anvil.Account2
+	MainnetAVSAAdmin = addr("0x0")
+	TestnetAVSAAdmin = addr("0x0")
+
+	// Omni Portal.
+	DevnetPortal  = addr("0x1Fa76B04A827b7BBF34646815358E2ADE0dFCB77")
+	MainnetPortal = addr("0x0")
+	TestnetPortal = addr("0x0")
+
+	// Fee Oracle V1.
+	DevnetFeeOracleV1  = addr("0x1234") // TODO: stubbed for now, so portal tests don't fail
+	MainnetFeeOracleV1 = addr("0x0")
+	TestnetFeeOracleV1 = addr("0x0")
 )
+
+func addr(hex string) common.Address {
+	return common.HexToAddress(hex)
+}
