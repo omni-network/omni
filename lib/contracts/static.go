@@ -3,22 +3,24 @@ package contracts
 import (
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/buildinfo"
+	"github.com/omni-network/omni/lib/create3"
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 //nolint:gochecknoglobals // Static addresses
 var (
 	// Create3Factory.
-	DevnetCreate3Factory  = addr("0x5FbDB2315678afecb367f032d93F642f64180aa3")
-	MainnetCreate3Factory = addr("0x0")
-	TestnetCreate3Factory = addr("0x0")
+	DevnetCreate3Factory  = crypto.CreateAddress(DevnetCreate3Deployer, 0)
+	MainnetCreate3Factory = crypto.CreateAddress(MainnetCreate3Deployer, 0)
+	TestnetCreate3Factory = crypto.CreateAddress(TestnetCreate3Deployer, 0)
 
 	// ProxyAdmin.
-	DevnetProxyAdmin  = Create3Address(DevnetCreate3Factory, ProxyAdminSalt(netconf.Devnet), DevnetDeployer)
-	MainnetProxyAdmin = addr("0x0")
-	TestnetProxyAdmin = addr("0x0")
+	DevnetProxyAdmin  = create3.Address(DevnetCreate3Factory, ProxyAdminSalt(netconf.Devnet), DevnetDeployer)
+	MainnetProxyAdmin = create3.Address(MainnetCreate3Factory, ProxyAdminSalt(netconf.Mainnet), MainnetDeployer)
+	TestnetProxyAdmin = create3.Address(TestnetCreate3Factory, ProxyAdminSalt(netconf.Testnet), TestnetDeployer)
 
 	// ProxyAdminOwner.
 	DevnetProxyAdminOwner  = anvil.Account2
@@ -46,9 +48,9 @@ var (
 	TestnetAVSAAdmin = addr("0x0")
 
 	// Omni Portal.
-	DevnetPortal  = Create3Address(DevnetCreate3Factory, PortalSalt(netconf.Devnet), DevnetDeployer)
-	MainnetPortal = addr("0x0")
-	TestnetPortal = addr("0x0")
+	DevnetPortal  = create3.Address(DevnetCreate3Factory, PortalSalt(netconf.Devnet), DevnetDeployer)
+	MainnetPortal = create3.Address(MainnetCreate3Factory, PortalSalt(netconf.Mainnet), MainnetDeployer)
+	TestnetPortal = create3.Address(TestnetCreate3Factory, PortalSalt(netconf.Testnet), TestnetDeployer)
 
 	// Fee Oracle V1.
 	DevnetFeeOracleV1  = addr("0x1234") // TODO: stubbed for now, so portal tests don't fail

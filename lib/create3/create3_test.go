@@ -1,10 +1,10 @@
-package contracts_test
+package create3_test
 
 import (
 	"testing"
 
 	"github.com/omni-network/omni/lib/contracts"
-	"github.com/omni-network/omni/lib/contracts/create3"
+	"github.com/omni-network/omni/lib/create3"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -24,12 +24,12 @@ func TestHashSalt(t *testing.T) {
 	)
 }
 
-func TestGetAddress(t *testing.T) {
+func TestAddress(t *testing.T) {
 	t.Parallel()
 
 	// test case is Devent proxy admin deployment
 
 	factory := common.HexToAddress("0x5FbDB2315678afecb367f032d93F642f64180aa3")
 	expected := common.HexToAddress("0x733AA9e7E4025E9F69DBEd9e05155e081D720565")
-	require.Equal(t, expected, contracts.Create3Address(factory, "devnet-proxy-admin", contracts.DevnetDeployer))
+	require.Equal(t, expected, create3.Address(factory, "devnet-proxy-admin", contracts.DevnetDeployer))
 }
