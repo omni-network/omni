@@ -2,9 +2,11 @@ package fireblocks
 
 import (
 	"crypto/rsa"
+	"maps"
 	"sync"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -27,13 +29,14 @@ const (
 type Client struct {
 	opts       options
 	apiKey     string
+	network    string
 	privateKey *rsa.PrivateKey
 	jsonHTTP   jsonHTTP
 	cache      *accountCache
 }
 
 // New creates a new FireBlocks client.
-func New(apiKey string, privateKey *rsa.PrivateKey, opts ...func(*options)) (Client, error) {
+func New(network string, apiKey string, privateKey *rsa.PrivateKey, opts ...func(*options)) (Client, error) {
 	if apiKey == "" {
 		return Client{}, errors.New("apiKey is required")
 	}
@@ -52,9 +55,10 @@ func New(apiKey string, privateKey *rsa.PrivateKey, opts ...func(*options)) (Cli
 	return Client{
 		apiKey:     apiKey,
 		privateKey: privateKey,
-		jsonHTTP:   newJSONHTTP(o.host(), apiKey),
+		jsonHTTP:   newJSONHTTP(host(network, o), apiKey),
 		opts:       o,
 		cache:      newAccountCache(o.TestAccounts),
+		network:    network,
 	}, nil
 }
 
@@ -72,13 +76,11 @@ func (c Client) authHeaders(endpoint string, request any) (map[string]string, er
 }
 
 func (c Client) getAssetID() string {
-	switch c.opts.Network {
-	case TestNet:
-		return assetHolesky
-	case MainNet:
+	switch c.network {
+	case netconf.Mainnet:
 		return assetMainnet
 	default:
-		return assetMainnet
+		return assetHolesky
 	}
 }
 
@@ -91,6 +93,13 @@ func newAccountCache(init map[common.Address]uint64) *accountCache {
 type accountCache struct {
 	sync.Mutex
 	accountsByAddress map[common.Address]uint64
+}
+
+func (c *accountCache) Populated() bool {
+	c.Lock()
+	defer c.Unlock()
+
+	return len(c.accountsByAddress) > 0
 }
 
 func (c *accountCache) Get(addr common.Address) (uint64, bool) {
@@ -107,4 +116,11 @@ func (c *accountCache) Set(addr common.Address, id uint64) {
 	defer c.Unlock()
 
 	c.accountsByAddress[addr] = id
+}
+
+func (c *accountCache) Clone() map[common.Address]uint64 {
+	c.Lock()
+	defer c.Unlock()
+
+	return maps.Clone(c.accountsByAddress)
 }

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/fireblocks"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -68,7 +69,7 @@ func TestSignOK(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	client, err := fireblocks.New(apiKey, parseKey(t, testPrivateKey),
+	client, err := fireblocks.New(netconf.Simnet, apiKey, parseKey(t, testPrivateKey),
 		fireblocks.WithHost(ts.URL),                    // Use the test server for all requests.
 		fireblocks.WithQueryInterval(time.Millisecond), // Fast timeout and interval for testing
 		fireblocks.WithLogFreqFactor(1),
@@ -113,7 +114,7 @@ func TestSmoke(t *testing.T) {
 	privKey, err := os.ReadFile(privKeyFile)
 	require.NoError(t, err)
 
-	client, err := fireblocks.New(apiKey, parseKey(t, privKey))
+	client, err := fireblocks.New(netconf.Simnet, apiKey, parseKey(t, privKey))
 	require.NoError(t, err)
 
 	addr := common.BytesToAddress(hexutil.MustDecode("0x9914cb686527261B52B614E43D0db7bCDAB5bC50"))

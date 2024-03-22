@@ -47,7 +47,7 @@ func RegisterOperatorWithAVS(ctx context.Context, addr common.Address, backend *
 		return errors.Wrap(err, "calculate digest hash")
 	}
 
-	sig, err := backend.Sign(operator, digestHash)
+	sig, err := backend.Sign(ctx, operator, digestHash)
 	if err != nil {
 		return errors.Wrap(err, "sign")
 	}

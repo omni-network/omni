@@ -1,6 +1,7 @@
 package vmcompose_test
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -19,7 +20,7 @@ func TestSetup(t *testing.T) {
 	t.Parallel()
 	manifestFile, dataFile := vmcompose.SetupDataFixtures(t)
 
-	def, err := app.MakeDefinition(app.DefinitionConfig{
+	def, err := app.MakeDefinition(context.Background(), app.DefinitionConfig{
 		ManifestFile:  manifestFile,
 		InfraProvider: vmcompose.ProviderName,
 		InfraDataFile: dataFile,
