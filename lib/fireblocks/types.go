@@ -247,7 +247,23 @@ type pubkeyResponse struct {
 	DerivationPath []int  `json:"derivationPath"`
 	PublicKey      string `json:"publicKey"`
 }
+
 type errorResponse struct {
 	Message string `json:"message"`
 	Code    int    `json:"code"`
+}
+
+type vaultsResponse struct {
+	Accounts []account
+	Paging   paging
+}
+
+type account struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type paging struct {
+	Before string `json:"before"`
+	After  string `json:"after"`
 }
