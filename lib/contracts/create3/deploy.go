@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -27,33 +28,37 @@ func (cfg DeploymentConfig) Validate() error {
 	return nil
 }
 
-func getDeployCfg(chainID uint64) (DeploymentConfig, error) {
-	if chainids.IsMainnet(chainID) {
-		return mainnetDeployCfg(), nil
+func getDeployCfg(chainID uint64, network string) (DeploymentConfig, error) {
+	if !chainids.IsMainnetOrTestnet(chainID) && network == netconf.Devnet {
+		return devnetCfg(), nil
 	}
 
-	if chainids.IsTestnet(chainID) {
-		return testnetDeployCfg(), nil
+	if chainids.IsMainnet(chainID) && network == netconf.Mainnet {
+		return mainnetCfg(), nil
 	}
 
-	return DeploymentConfig{}, errors.New("unsupported chain")
+	if chainids.IsTestnet(chainID) && network == netconf.Testnet {
+		return testnetCfg(), nil
+	}
+
+	return DeploymentConfig{}, errors.New("unsupported chain for network", "chain_id", chainID, "network", network)
 }
 
-func testnetDeployCfg() DeploymentConfig {
+func testnetCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Deployer:          contracts.TestnetCreate3Deployer,
 		AllowNonZeroNonce: false,
 	}
 }
 
-func mainnetDeployCfg() DeploymentConfig {
+func mainnetCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Deployer:          contracts.MainnetCreate3Deployer,
 		AllowNonZeroNonce: false,
 	}
 }
 
-func devnetDeployCfg() DeploymentConfig {
+func devnetCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Deployer:          contracts.DevnetCreate3Deployer,
 		AllowNonZeroNonce: true,
@@ -62,32 +67,18 @@ func devnetDeployCfg() DeploymentConfig {
 
 // Deploy deploys a new Create3 factory contract and returns the address and receipt.
 // It only allows deployments to explicitly supported chains.
-func Deploy(ctx context.Context, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func Deploy(ctx context.Context, network string, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
 	chainID, err := backend.ChainID(ctx)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "chain id")
 	}
 
-	cfg, err := getDeployCfg(chainID.Uint64())
+	cfg, err := getDeployCfg(chainID.Uint64(), network)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "get deployment config")
 	}
 
 	return deploy(ctx, cfg, backend)
-}
-
-// DeployDevnet deploys the devnet AVS contract and returns the address receipt.
-func DeployDevnet(ctx context.Context, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
-	chainID, err := backend.ChainID(ctx)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "chain id")
-	}
-
-	if chainids.IsMainnetOrTestnet(chainID.Uint64()) {
-		return common.Address{}, nil, errors.New("not a devnet")
-	}
-
-	return deploy(ctx, devnetDeployCfg(), backend)
 }
 
 func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {

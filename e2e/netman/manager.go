@@ -24,8 +24,9 @@ const (
 	// privKeyHex1 of pre-funded anvil account 1.
 	privKeyHex1 = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
 
-	// Fifth contract address of privKeyHex0 (ProxyAdmin, FeeOracleV1Impl, FeeOracleV1Proxy, PortalImpl come first).
-	privatePortalAddr = "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"
+	// Sixth contract address of privKeyHex0 (Create3, ProxyAdmin, FeeOracleV1Impl, FeeOracleV1Proxy, PortalImpl come first).
+	// TODO: replace with static network address from lib/contracts, requires refactoring deployment flow.
+	privatePortalAddr = "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"
 )
 
 //nolint:gochecknoglobals // Static mapping.

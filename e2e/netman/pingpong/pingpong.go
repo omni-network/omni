@@ -34,6 +34,8 @@ func Deploy(ctx context.Context, netMgr netman.Manager, backends ethbackend.Back
 
 	// Define a deploy function that deploys a ping pong contract to a chain.
 	deployFunc := func(ctx context.Context, portal netman.Portal) (contract, error) {
+		log.Debug(ctx, "Deploying ping pong contract", "chain", portal.Chain.Name, "chainID", portal.Chain.ID, "portal", portal.DeployInfo.PortalAddress)
+
 		portalAddr := portal.DeployInfo.PortalAddress
 
 		_, txOpts, backend, err := backends.BindOpts(ctx, portal.Chain.ID)
@@ -64,11 +66,16 @@ func Deploy(ctx context.Context, netMgr netman.Manager, backends ethbackend.Back
 	// Start forkjoin for all portals
 	portals := flatten[uint64, netman.Portal](netMgr.Portals())
 	results, cancel := forkjoin.NewWithInputs(ctx, deployFunc, portals)
+
 	defer cancel()
 
 	// Collect the resulting contracts
 	contracts := make(map[uint64]contract)
 	for res := range results {
+		if res.Err != nil {
+			return XDapp{}, errors.Wrap(res.Err, "deploy")
+		}
+
 		contracts[res.Input.Chain.ID] = res.Output
 	}
 
