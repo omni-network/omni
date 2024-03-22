@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts/create3"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -57,31 +58,31 @@ func (cfg DeploymentConfig) Validate() error {
 }
 
 func getDeployCfg(chainID uint64, network string) (DeploymentConfig, error) {
-	if chainids.IsMainnet(chainID) {
-		return mainnetDeployCfg(network), nil
+	if chainids.IsMainnet(chainID) && network == netconf.Mainnet {
+		return mainnetDeployCfg(), nil
 	}
 
-	if chainids.IsTestnet(chainID) {
-		return testnetDeployCfg(network), nil
+	if chainids.IsTestnet(chainID) && network == netconf.Testnet {
+		return testnetDeployCfg(), nil
 	}
 
-	return DeploymentConfig{}, errors.New("unsupported chain id")
+	return DeploymentConfig{}, errors.New("unsupported chain for network", "chain_id", chainID, "network", network)
 }
 
-func mainnetDeployCfg(network string) DeploymentConfig {
+func mainnetDeployCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory: contracts.MainnetCreate3Factory,
-		Create3Salt:    network + "-portal",
+		Create3Salt:    contracts.PortalSalt(netconf.Mainnet),
 		Owner:          contracts.MainnetPortalAdmin,
 		Deployer:       contracts.MainnetDeployer,
 		// TODO: fill in the rest
 	}
 }
 
-func testnetDeployCfg(network string) DeploymentConfig {
+func testnetDeployCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory: contracts.TestnetCreate3Factory,
-		Create3Salt:    network + "-portal",
+		Create3Salt:    contracts.PortalSalt(netconf.Testnet),
 		Owner:          contracts.TestnetPortalAdmin,
 		Deployer:       contracts.TestnetDeployer,
 		// TODO: fill in the rest
@@ -91,7 +92,7 @@ func testnetDeployCfg(network string) DeploymentConfig {
 func devnetDeployCfg(vals []bindings.Validator) DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory: contracts.DevnetCreate3Factory,
-		Create3Salt:    "devnet-portal",
+		Create3Salt:    contracts.PortalSalt(netconf.Devnet),
 		FeeOracle:      contracts.DevnetFeeOracleV1,
 		Owner:          contracts.DevnetPortalAdmin,
 		Deployer:       contracts.DevnetDeployer,
