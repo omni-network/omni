@@ -6,7 +6,9 @@ import (
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/contracts/avs"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -42,24 +44,23 @@ func deployAVS(ctx context.Context, def Definition) (types.EVMChain, common.Addr
 		return types.EVMChain{}, common.Address{}, nil, errors.Wrap(err, "avs chain")
 	}
 
-	_, _, backend, err := def.Backends.BindOpts(ctx, chain.ID)
+	backend, err := def.Backends.Backend(chain.ID)
 	if err != nil {
-		return types.EVMChain{}, common.Address{}, nil, errors.Wrap(err, "bind opts")
+		return types.EVMChain{}, common.Address{}, nil, errors.Wrap(err, "backend")
 	}
 
-	var addr common.Address
-	var receipt *ethtypes.Receipt
+	// temporary fix until backend.Backends support multiple accounts
+	// avs.Deploy requires multiple accounts
+	if def.Testnet.Network == netconf.Devnet {
+		backend, err = ethbackend.NewAnvilBackend(chain.Name, chain.ID, chain.BlockPeriod, backend.Client)
+		if err != nil {
+			return types.EVMChain{}, common.Address{}, nil, errors.Wrap(err, "anvil backend")
+		}
+	}
 
-	if chain.IsPublic {
-		addr, receipt, err = avs.Deploy(ctx, backend)
-		if err != nil {
-			return types.EVMChain{}, common.Address{}, nil, errors.Wrap(err, "deploy")
-		}
-	} else {
-		addr, receipt, err = avs.DeployDevnet(ctx, backend)
-		if err != nil {
-			return types.EVMChain{}, common.Address{}, nil, errors.Wrap(err, "deploy")
-		}
+	addr, receipt, err := avs.Deploy(ctx, def.Testnet.Network, backend)
+	if err != nil {
+		return types.EVMChain{}, common.Address{}, nil, errors.Wrap(err, "deploy")
 	}
 
 	return chain, addr, receipt, nil

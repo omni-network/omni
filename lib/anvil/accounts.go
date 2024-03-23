@@ -3,10 +3,6 @@ package anvil
 import (
 	"crypto/ecdsa"
 	"strings"
-	"time"
-
-	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -36,15 +32,11 @@ var (
 	Account8Pk = mustHexToKey("0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97")
 	Account9Pk = mustHexToKey("0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6")
 
-	pks = []*ecdsa.PrivateKey{
+	DevPrivateKeys = []*ecdsa.PrivateKey{
 		Account0Pk, Account1Pk, Account2Pk, Account3Pk, Account4Pk,
 		Account5Pk, Account6Pk, Account7Pk, Account8Pk, Account9Pk,
 	}
 )
-
-func NewBackend(chainName string, chainID uint64, blockPeriod time.Duration, ethCl ethclient.Client) (*ethbackend.Backend, error) {
-	return ethbackend.NewBackend(chainName, chainID, blockPeriod, ethCl, pks...)
-}
 
 func mustHexToKey(privKeyHex string) *ecdsa.PrivateKey {
 	privKey, err := crypto.HexToECDSA(strings.TrimPrefix(privKeyHex, "0x"))

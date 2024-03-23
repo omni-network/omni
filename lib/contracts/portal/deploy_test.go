@@ -10,6 +10,8 @@ import (
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/create3"
 	"github.com/omni-network/omni/lib/contracts/portal"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -32,11 +34,11 @@ func TestDeployDevnet(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(stop)
 
-	backend, err := anvil.NewBackend(chainName, chainID, blockPeriod, client)
+	backend, err := ethbackend.NewAnvilBackend(chainName, chainID, blockPeriod, client)
 	require.NoError(t, err)
 
 	// devnet create3 factory is required
-	addr, _, err := create3.DeployDevnet(ctx, backend)
+	addr, _, err := create3.Deploy(ctx, netconf.Devnet, backend)
 	require.NoError(t, err)
 	require.Equal(t, contracts.DevnetCreate3Factory, addr)
 
@@ -46,7 +48,7 @@ func TestDeployDevnet(t *testing.T) {
 		{Addr: common.HexToAddress("0x3333"), Power: 100},
 	}
 
-	addr, _, err = portal.DeployDevnet(ctx, backend, vals)
+	addr, _, err = portal.Deploy(ctx, netconf.Devnet, backend, vals)
 	require.NoError(t, err)
 	require.Equal(t, contracts.DevnetPortal, addr)
 

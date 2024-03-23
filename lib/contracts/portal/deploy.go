@@ -57,19 +57,23 @@ func (cfg DeploymentConfig) Validate() error {
 	return nil
 }
 
-func getDeployCfg(chainID uint64, network string) (DeploymentConfig, error) {
+func getDeployCfg(chainID uint64, network string, vals []bindings.Validator) (DeploymentConfig, error) {
+	if !chainids.IsMainnetOrTestnet(chainID) && network == netconf.Devnet {
+		return devnetCfg(vals), nil
+	}
+
 	if chainids.IsMainnet(chainID) && network == netconf.Mainnet {
-		return mainnetDeployCfg(), nil
+		return mainnetCfg(), nil
 	}
 
 	if chainids.IsTestnet(chainID) && network == netconf.Testnet {
-		return testnetDeployCfg(), nil
+		return testnetCfg(), nil
 	}
 
 	return DeploymentConfig{}, errors.New("unsupported chain for network", "chain_id", chainID, "network", network)
 }
 
-func mainnetDeployCfg() DeploymentConfig {
+func mainnetCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory: contracts.MainnetCreate3Factory,
 		Create3Salt:    contracts.PortalSalt(netconf.Mainnet),
@@ -79,7 +83,7 @@ func mainnetDeployCfg() DeploymentConfig {
 	}
 }
 
-func testnetDeployCfg() DeploymentConfig {
+func testnetCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory: contracts.TestnetCreate3Factory,
 		Create3Salt:    contracts.PortalSalt(netconf.Testnet),
@@ -89,7 +93,7 @@ func testnetDeployCfg() DeploymentConfig {
 	}
 }
 
-func devnetDeployCfg(vals []bindings.Validator) DeploymentConfig {
+func devnetCfg(vals []bindings.Validator) DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory: contracts.DevnetCreate3Factory,
 		Create3Salt:    contracts.PortalSalt(netconf.Devnet),
@@ -105,32 +109,18 @@ func devnetDeployCfg(vals []bindings.Validator) DeploymentConfig {
 
 // Deploy deploys a new Portal contract and returns the address and receipt.
 // It only allows deployments to explicitly supported chains.
-func Deploy(ctx context.Context, network string, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func Deploy(ctx context.Context, network string, backend *ethbackend.Backend, vals []bindings.Validator) (common.Address, *ethtypes.Receipt, error) {
 	chainID, err := backend.ChainID(ctx)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "chain id")
 	}
 
-	cfg, err := getDeployCfg(chainID.Uint64(), network)
+	cfg, err := getDeployCfg(chainID.Uint64(), network, vals)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "get deployment config")
 	}
 
 	return deploy(ctx, cfg, backend)
-}
-
-// DeployDevnet deploys the devnet Portal and returns the address receipt.
-func DeployDevnet(ctx context.Context, backend *ethbackend.Backend, vals []bindings.Validator) (common.Address, *ethtypes.Receipt, error) {
-	chainID, err := backend.ChainID(ctx)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "chain id")
-	}
-
-	if chainids.IsMainnetOrTestnet(chainID.Uint64()) {
-		return common.Address{}, nil, errors.New("not a devnet")
-	}
-
-	return deploy(ctx, devnetDeployCfg(vals), backend)
 }
 
 func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
@@ -159,14 +149,14 @@ func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backe
 
 	impl, tx, _, err := bindings.DeployOmniPortal(txOpts, backend)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "deploy portal impl")
+		return common.Address{}, nil, errors.Wrap(err, "deploy impl")
 	}
 
 	receipt, err := bind.WaitMined(ctx, backend, tx)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "wait mined portal")
 	} else if receipt.Status != ethtypes.ReceiptStatusSuccessful {
-		return common.Address{}, nil, errors.New("deploy portal failed")
+		return common.Address{}, nil, errors.New("deploy impl failed")
 	}
 
 	initCode, err := packInitCode(cfg, impl)
@@ -176,14 +166,14 @@ func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backe
 
 	tx, err = factory.Deploy(txOpts, salt, initCode)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "deploy proxy admin")
+		return common.Address{}, nil, errors.Wrap(err, "deploy proxy")
 	}
 
 	receipt, err = bind.WaitMined(ctx, backend, tx)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "wait mined upgradable proxy")
+		return common.Address{}, nil, errors.Wrap(err, "wait mined proxy")
 	} else if receipt.Status != ethtypes.ReceiptStatusSuccessful {
-		return common.Address{}, nil, errors.New("deploy upgradable proxy failed")
+		return common.Address{}, nil, errors.New("deploy proxy failed")
 	}
 
 	return addr, receipt, nil

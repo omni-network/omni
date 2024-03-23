@@ -43,9 +43,9 @@ var (
 	TestnetPortalAdmin = addr("0x0")
 
 	// AVS Admin.
-	DevnetAVSAAdmin  = anvil.Account2
-	MainnetAVSAAdmin = addr("0x0")
-	TestnetAVSAAdmin = addr("0x0")
+	DevnetAVSAdmin  = anvil.Account2
+	MainnetAVSAdmin = addr("0x0")
+	TestnetAVSAdmin = addr("0x0")
 
 	// Omni Portal.
 	DevnetPortal  = create3.Address(DevnetCreate3Factory, PortalSalt(netconf.Devnet), DevnetDeployer)
@@ -56,6 +56,11 @@ var (
 	DevnetFeeOracleV1  = addr("0x1234") // TODO: stubbed for now, so portal tests don't fail
 	MainnetFeeOracleV1 = addr("0x0")
 	TestnetFeeOracleV1 = addr("0x0")
+
+	// AVS.
+	DevnetAVS  = create3.Address(DevnetCreate3Factory, AVSSalt(netconf.Devnet), DevnetDeployer)
+	MainnetAVS = create3.Address(MainnetCreate3Factory, AVSSalt(netconf.Mainnet), MainnetDeployer)
+	TestnetAVS = create3.Address(TestnetCreate3Factory, AVSSalt(netconf.Testnet), TestnetDeployer)
 )
 
 func ProxyAdminSalt(network string) string {
@@ -64,6 +69,10 @@ func ProxyAdminSalt(network string) string {
 
 func PortalSalt(network string) string {
 	return salt(network, "portal")
+}
+
+func AVSSalt(network string) string {
+	return salt(network, "avs")
 }
 
 // salt generates a salt for a contract deployment, adding git build info for staging.

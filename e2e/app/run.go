@@ -63,6 +63,10 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 		return nil, nil, err
 	}
 
+	if err := deployCreate3Factories(ctx, def); err != nil {
+		return nil, nil, err
+	}
+
 	if err := def.Netman.DeployPrivatePortals(ctx, genesisValSetID, genesisVals); err != nil {
 		return nil, nil, err
 	}

@@ -9,15 +9,15 @@ type Static struct {
 //nolint:gochecknoglobals // Static mappings.
 var statics = map[string]Static{
 	Simnet: {
-		OmniExecutionChainID: 1,
+		OmniExecutionChainID: 16561,
 		OmniConsensusChainID: 2,
 	},
 	Devnet: {
-		OmniExecutionChainID: 1,
+		OmniExecutionChainID: 16561,
 		OmniConsensusChainID: 2,
 	},
 	Staging: {
-		OmniExecutionChainID: 1,
+		OmniExecutionChainID: 16561,
 		OmniConsensusChainID: 2,
 	},
 }
