@@ -40,14 +40,6 @@ func FundValidatorsForTesting(ctx context.Context, def Definition) error {
 		return errors.Wrap(err, "bind opts")
 	}
 
-	bal, err := fundBackend.BalanceAt(ctx, funder, nil)
-	if err != nil {
-		return errors.Wrap(err, "balance at")
-	}
-
-	f, _ := bal.Float64()
-	log.Info(ctx, "Funder balance", "balance", f/1e18)
-
 	// Iterate over all nodes, since all maybe become validators.
 	for _, node := range def.Testnet.Nodes {
 		addr, _ := k1util.PubKeyToAddress(node.PrivvalKey.PubKey())

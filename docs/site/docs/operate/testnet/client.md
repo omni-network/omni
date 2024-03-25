@@ -10,7 +10,7 @@ Similar to Ethereum, Omni validators run 2 components: our consensus client, `ha
 
 ## Obtain $OMNI
 
-To run the client, you will need **\$OMNI**. You can obtain $OMNI by reaching out to the team.
+To run the client, you will need **\$OMNI**. You can obtain **\$OMNI** by reaching out to the team.
 
 ## Initialize and Run the Client
 

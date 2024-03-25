@@ -34,6 +34,7 @@ Precompiles on the Omni EVM are equivalent to the Ethereum EVM precompiles.
 ## Faucets
 
 | Network | Faucet |
+|----------|---------|
 | Omni Omega | Please reach out to the team in [Discord](https://discord.gg/bKNXmaX9VD) for testnet **\$OMNI**. |
 | Ethereum Holesky | Any of the well-known Ethereum testnet faucets. |
 | Arbitrum Sepolia | Any of the well-known Arbitrum testnet faucets. |
@@ -41,7 +42,9 @@ Precompiles on the Omni EVM are equivalent to the Ethereum EVM precompiles.
 
 ## Explorer
 
-- Omni Omega Explorer - To be shared soon
-- [Ethereum Holesky](https://holesky.etherscan.io/)
-- [Arbitrum Sepolia Explorer](https://sepolia.arbiscan.io/)
-- [Optimism Sepolia Explorer](https://sepolia-optimism.etherscan.io/)
+| Network                | Explorer                                      |
+|------------------------|-----------------------------------------------|
+| Omni Omega             | Coming Soon |
+| Ethereum Holesky       | https://holesky.etherscan.io/ |
+| Arbitrum Sepolia       | https://sepolia.arbiscan.io/ |
+| Optimism Sepolia       | https://sepolia-optimism.etherscan.io/ |
