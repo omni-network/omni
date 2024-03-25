@@ -27,7 +27,7 @@ CONTRACTS := OmniPortal FeeOracleV1 OmniAVS OmniStake Create3 TransparentUpgrade
 .PHONY: bindings
 bindings: check-abigen-version build ## Generate golang contract bindings.
 	./bindings/scripts/gen.sh $(CONTRACTS)
-	./bindings/scripts/genmore.sh OmniStake # Need OmniStake deployedBytecode
+	./bindings/scripts/genmore.sh OmniStake Create3
 	go run ./bindings/scripts/commenttypes.go -- bindings/strategymanager.go IStrategyManagerDeprecatedStructQueuedWithdrawal IStrategyManagerDeprecatedStructWithdrawerAndNonce
 	go run ./bindings/scripts/commenttypes.go -- bindings/avsdirectory.go ISignatureUtilsSignatureWithSaltAndExpiry
 

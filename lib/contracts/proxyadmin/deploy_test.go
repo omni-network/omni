@@ -10,6 +10,8 @@ import (
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/create3"
 	"github.com/omni-network/omni/lib/contracts/proxyadmin"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/stretchr/testify/require"
@@ -30,22 +32,22 @@ func TestDeployDevnet(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(stop)
 
-	backend, err := anvil.NewBackend(chainName, chainID, blockPeriod, client)
+	backend, err := ethbackend.NewAnvilBackend(chainName, chainID, blockPeriod, client)
 	require.NoError(t, err)
 
 	// devnet create3 factory is required
-	addr, _, err := create3.DeployDevnet(ctx, backend)
+	addr, _, err := create3.Deploy(ctx, netconf.Devnet, backend)
 	require.NoError(t, err)
-	require.Equal(t, contracts.DevnetCreate3Factory, addr)
+	require.Equal(t, contracts.DevnetCreate3Factory(), addr)
 
-	addr, _, err = proxyadmin.DeployDevnet(ctx, backend)
+	addr, _, err = proxyadmin.Deploy(ctx, netconf.Devnet, backend)
 	require.NoError(t, err)
-	require.Equal(t, contracts.DevnetProxyAdmin, addr)
+	require.Equal(t, contracts.DevnetProxyAdmin(), addr)
 
 	proxyAdmin, err := bindings.NewProxyAdmin(addr, backend)
 	require.NoError(t, err)
 
 	owner, err := proxyAdmin.Owner(nil)
 	require.NoError(t, err)
-	require.Equal(t, contracts.DevnetProxyAdminOwner, owner)
+	require.Equal(t, contracts.DevnetProxyAdminOwner(), owner)
 }

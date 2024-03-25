@@ -39,43 +39,95 @@ func (cfg DeploymentConfig) Validate() error {
 }
 
 func getDeployCfg(chainID uint64, network string) (DeploymentConfig, error) {
+	if !chainids.IsMainnetOrTestnet(chainID) && network == netconf.Devnet {
+		return devnetCfg(), nil
+	}
+
 	if chainids.IsMainnet(chainID) && network == netconf.Mainnet {
-		return mainnetDeployCfg(), nil
+		return mainnetCfg(), nil
 	}
 
 	if chainids.IsTestnet(chainID) && network == netconf.Testnet {
-		return testnetDeployCfg(), nil
+		return testnetCfg(), nil
 	}
 
 	return DeploymentConfig{}, errors.New("unsupported chain for network", "chain_id", chainID, "network", network)
 }
 
-func mainnetDeployCfg() DeploymentConfig {
+func mainnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory: contracts.MainnetCreate3Factory,
+		Create3Factory: contracts.MainnetCreate3Factory(),
 		Create3Salt:    contracts.ProxyAdminSalt(netconf.Mainnet),
-		Owner:          contracts.MainnetProxyAdminOwner,
-		Deployer:       contracts.MainnetDeployer,
+		Owner:          contracts.MainnetProxyAdminOwner(),
+		Deployer:       contracts.MainnetDeployer(),
 	}
 }
 
-func testnetDeployCfg() DeploymentConfig {
+func testnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory: contracts.TestnetCreate3Factory,
+		Create3Factory: contracts.TestnetCreate3Factory(),
 		Create3Salt:    contracts.ProxyAdminSalt(netconf.Testnet),
-		Owner:          contracts.TestnetProxyAdminOwner,
-		Deployer:       contracts.TestnetDeployer,
+		Owner:          contracts.TestnetProxyAdminOwner(),
+		Deployer:       contracts.TestnetDeployer(),
 	}
 }
 
-func devnetDeployCfg() DeploymentConfig {
+func devnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory: contracts.DevnetCreate3Factory,
+		Create3Factory: contracts.DevnetCreate3Factory(),
 		Create3Salt:    contracts.ProxyAdminSalt(netconf.Devnet),
-		Owner:          contracts.DevnetProxyAdminOwner,
-		Deployer:       contracts.DevnetDeployer,
-		ExpectedAddr:   contracts.DevnetProxyAdmin,
+		Owner:          contracts.DevnetProxyAdminOwner(),
+		Deployer:       contracts.DevnetDeployer(),
+		ExpectedAddr:   contracts.DevnetProxyAdmin(),
 	}
+}
+
+func AddrForNetwork(network string) (common.Address, bool) {
+	switch network {
+	case netconf.Mainnet:
+		return contracts.MainnetProxyAdmin(), true
+	case netconf.Testnet:
+		return contracts.TestnetProxyAdmin(), true
+	case netconf.Staging:
+		return contracts.StagingProxyAdmin(), true
+	case netconf.Devnet:
+		return contracts.DevnetProxyAdmin(), true
+	default:
+		return common.Address{}, false
+	}
+}
+
+// IsDeployed checks if the ProxyAdmin contract is deployed to the provided backend
+// to its expected network address.
+func IsDeployed(ctx context.Context, network string, backend *ethbackend.Backend) (bool, common.Address, error) {
+	addr, ok := AddrForNetwork(network)
+	if !ok {
+		return false, addr, errors.New("unsupported network", "network", network)
+	}
+
+	code, err := backend.CodeAt(ctx, addr, nil)
+	if err != nil {
+		return false, addr, errors.Wrap(err, "code at")
+	}
+
+	if len(code) == 0 {
+		return false, addr, nil
+	}
+
+	return true, addr, nil
+}
+
+// DeployIfNeeded deploys a new ProxyAdmin contract if it is not already deployed.
+func DeployIfNeeded(ctx context.Context, network string, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+	deployed, addr, err := IsDeployed(ctx, network, backend)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "is deployed")
+	}
+	if deployed {
+		return addr, nil, nil
+	}
+
+	return Deploy(ctx, network, backend)
 }
 
 // Deploy deploys a new ProxyAdmin contract and returns the address and receipt.
@@ -92,20 +144,6 @@ func Deploy(ctx context.Context, network string, backend *ethbackend.Backend) (c
 	}
 
 	return deploy(ctx, cfg, backend)
-}
-
-// DeployDevnet deploys the devnet AVS contract and returns the address receipt.
-func DeployDevnet(ctx context.Context, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
-	chainID, err := backend.ChainID(ctx)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "chain id")
-	}
-
-	if chainids.IsMainnetOrTestnet(chainID.Uint64()) {
-		return common.Address{}, nil, errors.New("not a devnet")
-	}
-
-	return deploy(ctx, devnetDeployCfg(), backend)
 }
 
 func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {

@@ -16,10 +16,13 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/static"
 	"github.com/omni-network/omni/lib/anvil"
+	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/avs"
+	"github.com/omni-network/omni/lib/contracts/create3"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/lib/txmgr"
 
@@ -45,12 +48,6 @@ const (
 
 //nolint:gochecknoglobals // These are test constants.
 var (
-	// account used to deploy omniAVS contracts.
-	avsOwnerPk = anvil.Account0Pk
-
-	// account used to deploy eigen contracts.
-	eigenOwnerPk = anvil.Account9Pk
-
 	// eigen strategy manger, and test weth strategy.
 	stratMngrAddr = common.HexToAddress("0xe1DA8919f262Ee86f9BE05059C9280142CF23f48")
 	wethStratAddr = common.HexToAddress("0xdBD296711eC8eF9Aacb623ee3F1C0922dce0D7b2")
@@ -67,12 +64,15 @@ func setup(t *testing.T) (context.Context, *ethbackend.Backend, Contracts, EOAS)
 	require.NoError(t, err)
 	t.Cleanup(stop)
 
-	backend, err := ethbackend.NewBackend(chainName, chainID, blockPeriod, ethCl)
+	backend, err := ethbackend.NewAnvilBackend(chainName, chainID, blockPeriod, ethCl)
 	require.NoError(t, err)
 
 	eoas := makeEOAS(t, backend)
 
-	addr, _, err := avs.DeployDevnet(ctx, backend)
+	_, _, err = create3.Deploy(ctx, netconf.Devnet, backend)
+	require.NoError(t, err)
+
+	addr, _, err := avs.Deploy(ctx, netconf.Devnet, backend)
 	require.NoError(t, err)
 
 	contracts, err := makeContracts(addr, devnetEigenDeployments(t), backend)
@@ -185,10 +185,6 @@ func makeEOAS(t *testing.T, backend *ethbackend.Backend) EOAS {
 	t.Helper()
 
 	// setup accounts
-	avsOwner, err := backend.AddAccount(avsOwnerPk)
-	require.NoError(t, err)
-	eigenOwner, err := backend.AddAccount(eigenOwnerPk)
-	require.NoError(t, err)
 	operator1Key := genPrivKey(t)
 	operator1, err := backend.AddAccount(operator1Key)
 	require.NoError(t, err)
@@ -201,8 +197,8 @@ func makeEOAS(t *testing.T, backend *ethbackend.Backend) EOAS {
 	require.NoError(t, err)
 
 	return EOAS{
-		AVSOwner:     avsOwner,
-		EigenOwner:   eigenOwner,
+		AVSOwner:     contracts.DevnetAVSAdmin(),
+		EigenOwner:   anvil.DevAccount9(), // account used to deploy eigen contracts
 		Operator1:    operator1,
 		Operator1Key: operator1Key,
 		Operator2:    operator2,

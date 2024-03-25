@@ -31,5 +31,5 @@ func TestAddress(t *testing.T) {
 
 	factory := common.HexToAddress("0x5FbDB2315678afecb367f032d93F642f64180aa3")
 	expected := common.HexToAddress("0x733AA9e7E4025E9F69DBEd9e05155e081D720565")
-	require.Equal(t, expected, create3.Address(factory, "devnet-proxy-admin", contracts.DevnetDeployer))
+	require.Equal(t, expected, create3.Address(factory, "devnet-proxy-admin", contracts.DevnetDeployer()))
 }

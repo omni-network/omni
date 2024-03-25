@@ -27,16 +27,21 @@ type XDapp struct {
 	contracts map[uint64]contract
 	edges     []Edge
 	backends  ethbackend.Backends
+	operator  common.Address
 }
 
 func Deploy(ctx context.Context, netMgr netman.Manager, backends ethbackend.Backends) (XDapp, error) {
 	log.Info(ctx, "Deploying ping pong contracts")
 
+	operator := netMgr.Operator()
+
 	// Define a deploy function that deploys a ping pong contract to a chain.
 	deployFunc := func(ctx context.Context, portal netman.Portal) (contract, error) {
+		log.Debug(ctx, "Deploying ping pong contract", "chain", portal.Chain.Name, "chainID", portal.Chain.ID, "portal", portal.DeployInfo.PortalAddress)
+
 		portalAddr := portal.DeployInfo.PortalAddress
 
-		_, txOpts, backend, err := backends.BindOpts(ctx, portal.Chain.ID)
+		txOpts, backend, err := backends.BindOpts(ctx, portal.Chain.ID, operator)
 		if err != nil {
 			return contract{}, errors.Wrap(err, "deploy opts")
 		}
@@ -64,11 +69,16 @@ func Deploy(ctx context.Context, netMgr netman.Manager, backends ethbackend.Back
 	// Start forkjoin for all portals
 	portals := flatten[uint64, netman.Portal](netMgr.Portals())
 	results, cancel := forkjoin.NewWithInputs(ctx, deployFunc, portals)
+
 	defer cancel()
 
 	// Collect the resulting contracts
 	contracts := make(map[uint64]contract)
 	for res := range results {
+		if res.Err != nil {
+			return XDapp{}, errors.Wrap(res.Err, "deploy")
+		}
+
 		contracts[res.Input.Chain.ID] = res.Output
 	}
 
@@ -76,6 +86,7 @@ func Deploy(ctx context.Context, netMgr netman.Manager, backends ethbackend.Back
 		contracts: contracts,
 		backends:  backends,
 		edges:     edges(contracts),
+		operator:  operator,
 	}
 
 	if err := dapp.fund(ctx); err != nil {
@@ -93,7 +104,7 @@ func (d *XDapp) ExportDeployInfo(resp types.DeployInfos) {
 
 func (d *XDapp) LogBalances(ctx context.Context) error {
 	for _, contract := range d.contracts {
-		_, _, backend, err := d.backends.BindOpts(ctx, contract.Chain.ID)
+		backend, err := d.backends.Backend(contract.Chain.ID)
 		if err != nil {
 			return err
 		}
@@ -114,7 +125,7 @@ func (d *XDapp) LogBalances(ctx context.Context) error {
 
 func (d *XDapp) fund(ctx context.Context) error {
 	for _, contract := range d.contracts {
-		_, txOpts, backend, err := d.backends.BindOpts(ctx, contract.Chain.ID)
+		txOpts, backend, err := d.backends.BindOpts(ctx, contract.Chain.ID, d.operator)
 		if err != nil {
 			return err
 		}
@@ -149,7 +160,7 @@ func (d *XDapp) StartAllEdges(ctx context.Context, count uint64) error {
 			"count", count,
 		)
 
-		_, txOpts, backend, err := d.backends.BindOpts(ctx, from.Chain.ID)
+		txOpts, backend, err := d.backends.BindOpts(ctx, from.Chain.ID, d.operator)
 		if err != nil {
 			return err
 		}

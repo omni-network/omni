@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/tutil"
 	monitor "github.com/omni-network/omni/monitor/app"
+	"github.com/omni-network/omni/monitor/loadgen"
 
 	"github.com/stretchr/testify/require"
 )
@@ -19,6 +20,9 @@ func TestDefaultConfigReference(t *testing.T) {
 	tempDir := t.TempDir()
 
 	cfg := monitor.DefaultConfig()
+	cfg.LoadGen = loadgen.Config{
+		ValidatorKeysGlob: "path/*/1",
+	}
 
 	path := filepath.Join(tempDir, "monitor.toml")
 

@@ -19,7 +19,7 @@ func AVSDeploy(ctx context.Context, def Definition) error {
 		return err
 	}
 
-	log.Info(ctx, "AVS contract deployed", "chain", chain.Name, "chain-id", chain.ID, "addr", addr.Hex(), "block", receipt.BlockNumber)
+	logAVSDeployment(ctx, chain.Name, addr, receipt)
 
 	return nil
 }
@@ -33,6 +33,8 @@ func deployAVSWithExport(ctx context.Context, def Definition, deployInfo types.D
 
 	deployInfo.Set(chain.ID, types.ContractOmniAVS, addr, receipt.BlockNumber.Uint64())
 
+	logAVSDeployment(ctx, chain.Name, addr, receipt)
+
 	return nil
 }
 
@@ -42,25 +44,23 @@ func deployAVS(ctx context.Context, def Definition) (types.EVMChain, common.Addr
 		return types.EVMChain{}, common.Address{}, nil, errors.Wrap(err, "avs chain")
 	}
 
-	_, _, backend, err := def.Backends.BindOpts(ctx, chain.ID)
+	backend, err := def.Backends.Backend(chain.ID)
 	if err != nil {
-		return types.EVMChain{}, common.Address{}, nil, errors.Wrap(err, "bind opts")
+		return types.EVMChain{}, common.Address{}, nil, errors.Wrap(err, "backend")
 	}
 
-	var addr common.Address
-	var receipt *ethtypes.Receipt
-
-	if chain.IsPublic {
-		addr, receipt, err = avs.Deploy(ctx, backend)
-		if err != nil {
-			return types.EVMChain{}, common.Address{}, nil, errors.Wrap(err, "deploy")
-		}
-	} else {
-		addr, receipt, err = avs.DeployDevnet(ctx, backend)
-		if err != nil {
-			return types.EVMChain{}, common.Address{}, nil, errors.Wrap(err, "deploy")
-		}
+	addr, receipt, err := avs.DeployIfNeeded(ctx, def.Testnet.Network, backend)
+	if err != nil {
+		return types.EVMChain{}, common.Address{}, nil, errors.Wrap(err, "deploy")
 	}
 
 	return chain, addr, receipt, nil
+}
+
+func logAVSDeployment(ctx context.Context, chain string, addr common.Address, receipt *ethtypes.Receipt) {
+	if receipt == nil {
+		log.Info(ctx, "AVS contract already deployed", "chain", chain, "addr", addr.Hex())
+	} else {
+		log.Info(ctx, "AVS contract deployed", "chain", chain, "addr", addr.Hex(), "block", receipt.BlockNumber)
+	}
 }

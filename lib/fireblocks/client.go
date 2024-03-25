@@ -55,7 +55,7 @@ func New(network string, apiKey string, privateKey *rsa.PrivateKey, opts ...func
 	return Client{
 		apiKey:     apiKey,
 		privateKey: privateKey,
-		jsonHTTP:   newJSONHTTP(host(network, o), apiKey),
+		jsonHTTP:   newJSONHTTP(o.Host, apiKey),
 		opts:       o,
 		cache:      newAccountCache(o.TestAccounts),
 		network:    network,

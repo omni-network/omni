@@ -19,9 +19,10 @@ import (
 )
 
 var (
-	_ module.AppModuleBasic   = (*AppModule)(nil)
-	_ appmodule.AppModule     = (*AppModule)(nil)
-	_ appmodule.HasEndBlocker = (*AppModule)(nil)
+	_ module.AppModuleBasic     = (*AppModule)(nil)
+	_ appmodule.AppModule       = (*AppModule)(nil)
+	_ appmodule.HasBeginBlocker = (*AppModule)(nil)
+	_ appmodule.HasEndBlocker   = (*AppModule)(nil)
 )
 
 // ----------------------------------------------------------------------------
@@ -74,6 +75,10 @@ func NewAppModule(
 		AppModuleBasic: NewAppModuleBasic(cdc),
 		keeper:         keeper,
 	}
+}
+
+func (m AppModule) BeginBlock(ctx context.Context) error {
+	return m.keeper.BeginBlock(ctx)
 }
 
 func (m AppModule) EndBlock(ctx context.Context) error {
@@ -133,6 +138,7 @@ func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
 		in.Namer,
 		in.Config.GetVoteWindow(),
 		in.Config.GetVoteExtensionLimit(),
+		in.Config.GetTrimLag(),
 	)
 	if err != nil {
 		return ModuleOutputs{}, err

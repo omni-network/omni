@@ -543,7 +543,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable, PausableUpgrade
         (IStrategy[] memory strategies, uint256[] memory shares) = _delegationManager.getDelegatableShares(operator);
 
         uint96 staked;
-        for (uint256 i = 0; i < strategies.length;) {
+        for (uint256 i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
 
             // find the strategy params for the strategy
@@ -562,9 +562,6 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable, PausableUpgrade
             if (address(params.strategy) == address(0)) continue;
 
             staked += _weight(shares[i], params.multiplier);
-            unchecked {
-                i++;
-            }
         }
 
         return staked;

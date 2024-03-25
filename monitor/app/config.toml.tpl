@@ -29,3 +29,12 @@ format = "{{ .Log.Format }}"
 
 # Logging color if console format is chosen. Options are: auto, force, disable.
 color = "{{ .Log.Color }}"
+
+#######################################################################
+###                         Load Generation                         ###
+#######################################################################
+
+# Note that load generation is only used for testing purposes; ie on devent or staging.
+[loadgen]
+# Validator keys glob defines the validator keys to use for self-delegation.
+validator-keys-glob = "{{ .LoadGen.ValidatorKeysGlob }}"
