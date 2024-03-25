@@ -1,7 +1,7 @@
-import React from "react";
-import { CountdownCircleTimer } from "react-countdown-circle-timer";
 import { useColorMode } from '@docusaurus/theme-common';
-import "./CountdownTimer.css"; // Make sure this path matches your file structure
+import { CountdownCircleTimer } from "react-countdown-circle-timer";
+
+import "./CountdownTimer.css";
 
 const minuteSeconds = 60;
 const hourSeconds = 3600;

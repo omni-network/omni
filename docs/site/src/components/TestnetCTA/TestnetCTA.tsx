@@ -1,7 +1,7 @@
-import React from 'react';
 import Link from '@docusaurus/Link';
+import React from 'react';
 
-import './TestnetCTA.css';
+import "./TestnetCTA.css";
 
 const TestnetCTA: React.FC = () => {
   return (
