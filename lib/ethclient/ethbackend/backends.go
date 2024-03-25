@@ -165,6 +165,15 @@ func NewBackends(testnet types.Testnet, deployKeyFile string) (Backends, error) 
 	}, nil
 }
 
+func (b Backends) Backend(sourceChainID uint64) (*Backend, error) {
+	backend, ok := b.backends[sourceChainID]
+	if !ok {
+		return nil, errors.New("unknown chain", "chain", sourceChainID)
+	}
+
+	return backend, nil
+}
+
 // BindOpts is a convenience function that returns the single account and bind.TransactOpts and Backend for a given chain.
 func (b Backends) BindOpts(ctx context.Context, sourceChainID uint64) (common.Address, *bind.TransactOpts, *Backend, error) {
 	backend, ok := b.backends[sourceChainID]

@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
+	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -15,7 +16,7 @@ func newUint64(val uint64) *uint64 { return &val }
 
 func DefaultDevConfig() params.ChainConfig {
 	return params.ChainConfig{
-		ChainID:                       big.NewInt(1), // TODO: choose new dev chain id
+		ChainID:                       big.NewInt(int64(netconf.GetStatic(netconf.Devnet).OmniExecutionChainID)),
 		HomesteadBlock:                big.NewInt(0),
 		EIP150Block:                   big.NewInt(0),
 		EIP155Block:                   big.NewInt(0),
