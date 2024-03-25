@@ -117,9 +117,9 @@ func TestSmoke(t *testing.T) {
 	client, err := fireblocks.New(netconf.Simnet, apiKey, parseKey(t, privKey))
 	require.NoError(t, err)
 
-	addr := common.BytesToAddress(hexutil.MustDecode("0x9914cb686527261B52B614E43D0db7bCDAB5bC50"))
+	addr := common.BytesToAddress(hexutil.MustDecode("0x7a6cF389082dc698285474976d7C75CAdE08ab7e"))
 
-	t.Run("asserts", func(t *testing.T) {
+	t.Run("assets", func(t *testing.T) {
 		t.Parallel()
 
 		assets, err := client.GetSupportedAssets(ctx)
@@ -131,6 +131,15 @@ func TestSmoke(t *testing.T) {
 			}
 			t.Logf("asset %d: %#v", i, asset)
 		}
+	})
+
+	t.Run("accounts", func(t *testing.T) {
+		t.Parallel()
+
+		accounts, err := client.Accounts(ctx)
+		tutil.RequireNoError(t, err)
+
+		t.Logf("accounts: %#v", accounts)
 	})
 
 	t.Run("pubkey", func(t *testing.T) {

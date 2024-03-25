@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -24,24 +23,11 @@ type options struct {
 	// log a warning message if the transaction has not been signed yet
 	LogFreqFactor int
 
-	// HostOverride overrides the network based host if populated.
-	HostOverride string
+	// Host is the base URL for the FireBlocks API.
+	Host string
 
 	// TestAccounts overrides dynamic account
 	TestAccounts map[common.Address]uint64
-}
-
-func host(network string, o options) string {
-	if o.HostOverride != "" {
-		return o.HostOverride
-	}
-
-	switch network {
-	case netconf.Mainnet, netconf.Testnet:
-		return hostProd
-	default:
-		return hostSandbox
-	}
 }
 
 // defaultOptions returns a options with default values.
@@ -50,6 +36,7 @@ func defaultOptions() options {
 		NetworkTimeout: time.Duration(30) * time.Second,
 		QueryInterval:  time.Duration(500) * time.Millisecond,
 		LogFreqFactor:  10,
+		Host:           hostProd,
 		TestAccounts:   make(map[common.Address]uint64),
 	}
 }
@@ -74,7 +61,7 @@ func WithTestAccount(addr common.Address, accID uint64) func(*options) {
 
 func WithHost(host string) func(*options) {
 	return func(cfg *options) {
-		cfg.HostOverride = host
+		cfg.Host = host
 	}
 }
 

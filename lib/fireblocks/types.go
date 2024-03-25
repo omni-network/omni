@@ -9,6 +9,40 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
+// Status of a transaction. See https://developers.fireblocks.com/reference/primary-transaction-statuses.
+type Status string
+
+const (
+	StatusCompleted            Status = "COMPLETED"
+	StatusFailed               Status = "FAILED"
+	StatusRejected             Status = "REJECTED"
+	StatusBlocked              Status = "BLOCKED"
+	StatusCancelled            Status = "CANCELED"
+	StatusCancelling           Status = "CANCELING"
+	StatusConfirming           Status = "CONFIRMING"
+	StatusBroadcasting         Status = "BROADCASTING"
+	StatusPending3rdParty      Status = "PENDING_3RD_PARTY"
+	StatusPendingSignature     Status = "PENDING_SIGNATURE"
+	StatusQueued               Status = "QUEUED"
+	StatusPendingAuthorization Status = "PENDING_AUTHORIZATION"
+	StatusPendingAmlScreening  Status = "PENDING_AML_SCREENING"
+	StatusSubmitted            Status = "SUBMITTED"
+)
+
+func (s Status) Completed() bool {
+	return s == StatusCompleted
+}
+
+func (s Status) Failed() bool {
+	return map[Status]bool{
+		StatusFailed:     true,
+		StatusRejected:   true,
+		StatusBlocked:    true,
+		StatusCancelled:  true,
+		StatusCancelling: true,
+	}[s]
+}
+
 type createTransactionRequest struct {
 	Operation          string           `json:"operation"`
 	Note               string           `json:"note,omitempty"`
@@ -70,7 +104,7 @@ type unsignedRawMessage struct {
 type transaction struct {
 	ID                            string              `json:"id"`
 	ExternalTxID                  string              `json:"externalTxId,omitempty"`
-	Status                        string              `json:"status"`
+	Status                        Status              `json:"status"`
 	SubStatus                     string              `json:"subStatus,omitempty"`
 	TxHash                        string              `json:"txHash"`
 	Operation                     string              `json:"operation"`
