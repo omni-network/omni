@@ -24,6 +24,7 @@ import (
 	"github.com/omni-network/omni/halo/genutil"
 	evmgenutil "github.com/omni-network/omni/halo/genutil/evm"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	monapp "github.com/omni-network/omni/monitor/app"
@@ -66,8 +67,10 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 	}
 
 	var vals []crypto.PubKey
+	var valPrivKeys []crypto.PrivKey
 	for val := range def.Testnet.Validators {
 		vals = append(vals, val.PrivvalKey.PubKey())
+		valPrivKeys = append(valPrivKeys, val.PrivvalKey)
 	}
 
 	consChainID := netconf.GetStatic(def.Manifest.Network).OmniConsensusChainID
@@ -86,7 +89,7 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 	}
 
 	logCfg := logConfig()
-	if err := writeMonitorConfig(def, logCfg); err != nil {
+	if err := writeMonitorConfig(def, logCfg, valPrivKeys); err != nil {
 		return err
 	}
 
@@ -165,7 +168,7 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 
 func SetupOnlyMonitor(ctx context.Context, def Definition, agentSecrets agent.Secrets) error {
 	logCfg := logConfig()
-	if err := writeMonitorConfig(def, logCfg); err != nil {
+	if err := writeMonitorConfig(def, logCfg, nil); err != nil {
 		return err
 	}
 
@@ -477,7 +480,7 @@ func writeRelayerConfig(def Definition, logCfg log.Config) error {
 	return nil
 }
 
-func writeMonitorConfig(def Definition, logCfg log.Config) error {
+func writeMonitorConfig(def Definition, logCfg log.Config, valPrivKeys []crypto.PrivKey) error {
 	confRoot := filepath.Join(def.Testnet.Dir, "monitor")
 
 	const (
@@ -499,8 +502,26 @@ func writeMonitorConfig(def Definition, logCfg log.Config) error {
 		return errors.Wrap(err, "save network config")
 	}
 
+	var validatorKeyGlob string
+	for i, privKey := range valPrivKeys {
+		validatorKeyGlob = "validator_*"
+
+		pk, err := k1util.StdPrivKeyFromComet(privKey)
+		if err != nil {
+			return errors.Wrap(err, "convert priv key")
+		}
+
+		file := fmt.Sprintf("validator_%d", i)
+
+		// Save private key
+		if err := ethcrypto.SaveECDSA(filepath.Join(confRoot, file), pk); err != nil {
+			return errors.Wrap(err, "write private key")
+		}
+	}
+
 	cfg := monapp.DefaultConfig()
 	cfg.NetworkFile = networkFile
+	cfg.LoadGen.ValidatorKeysGlob = validatorKeyGlob
 
 	if err := monapp.WriteConfigTOML(cfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write relayer config")

@@ -55,7 +55,7 @@ func precompilesAlloc() types.GenesisAlloc {
 // devPrefundAlloc returns allocs for pre-funded geth dev accounts.
 func devPrefundAlloc() types.GenesisAlloc {
 	eth1k := new(big.Int).Mul(
-		big.NewInt(1000),
+		big.NewInt(1_000_000),
 		big.NewInt(params.Ether),
 	)
 

@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/monitor/avs"
+	"github.com/omni-network/omni/monitor/loadgen"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -27,6 +28,10 @@ func Run(ctx context.Context, cfg Config) error {
 
 	if err := avs.Monitor(ctx, network); err != nil {
 		return errors.Wrap(err, "monitor AVS")
+	}
+
+	if err := startLoadGen(ctx, cfg, network); err != nil {
+		return errors.Wrap(err, "start load generator")
 	}
 
 	select {
@@ -57,4 +62,12 @@ func serveMonitoring(address string) <-chan error {
 	}()
 
 	return errChan
+}
+
+func startLoadGen(ctx context.Context, cfg Config, network netconf.Network) error {
+	if err := loadgen.Start(ctx, network, cfg.LoadGen); err != nil {
+		return errors.Wrap(err, "start load generator")
+	}
+
+	return nil
 }

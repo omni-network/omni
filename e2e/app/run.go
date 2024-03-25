@@ -99,6 +99,10 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 
 	pp.ExportDeployInfo(deployInfo)
 
+	if err := FundValidatorsForTesting(ctx, def); err != nil {
+		return nil, nil, err
+	}
+
 	return deployInfo, &pp, nil
 }
 

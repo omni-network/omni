@@ -2,24 +2,68 @@ package app
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"sort"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 
 	"cosmossdk.io/math"
 )
+
+// FundValidatorsForTesting funds validators in ephemeral networks: devnet and staging.
+// This is required by load generation for periodic validator self-delegation.
+func FundValidatorsForTesting(ctx context.Context, def Definition) error {
+	if def.Testnet.Network != netconf.Devnet && def.Testnet.Network != netconf.Staging {
+		// Only fund validators in ephemeral networks, devnet and staging.
+		return nil
+	}
+
+	log.Info(ctx, "Funding validators for testing")
+
+	network := externalNetwork(def.Testnet, def.Netman.DeployInfo())
+	omniEVM, _ := network.OmniEVMChain()
+	funder, _, fundBackend, err := def.Backends.BindOpts(ctx, omniEVM.ID)
+	if err != nil {
+		return errors.Wrap(err, "bind opts")
+	}
+
+	bal, err := fundBackend.BalanceAt(ctx, funder, nil)
+	if err != nil {
+		return errors.Wrap(err, "balance at")
+	}
+
+	f, _ := bal.Float64()
+	log.Info(ctx, "Funder balance", "balance", f/1e18)
+
+	for node := range def.Testnet.Validators {
+		addr, _ := k1util.PubKeyToAddress(node.PrivvalKey.PubKey())
+		tx, _, err := fundBackend.Send(ctx, funder, txmgr.TxCandidate{
+			To:       &addr,
+			GasLimit: 100_000,
+			Value:    math.NewInt(1000).MulRaw(params.Ether).BigInt(),
+		})
+		if err != nil {
+			return errors.Wrap(err, "send")
+		} else if _, err := fundBackend.WaitMined(ctx, tx); err != nil {
+			return errors.Wrap(err, "wait mined")
+		}
+	}
+
+	return nil
+}
 
 type valUpdate struct {
 	Height int64
@@ -39,67 +83,50 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 		}
 	}
 
-	network := externalNetwork(def.Testnet, def.Netman.DeployInfo())
-	omniEVM, _ := network.OmniEVMChain()
-	funder, _, fundBackend, err := def.Backends.BindOpts(ctx, omniEVM.ID)
-	if err != nil {
-		return func() error { return errors.Wrap(err, "bind opts") }
-	}
-
 	go func() {
-		// Get a sorted list of validator updates (and a map of total power per validator)
+		// Get all validator private keys
+		var privkeys []*ecdsa.PrivateKey
+		for node := range def.Testnet.Validators {
+			pk, err := k1util.StdPrivKeyFromComet(node.PrivvalKey)
+			if err != nil {
+				returnErr(err)
+				return
+			}
+
+			privkeys = append(privkeys, pk)
+		}
+
+		// Get a sorted list of validator updates
 		var updates []valUpdate
-		totalPowers := make(map[*e2e.Node]int64)
 		for height, powers := range def.Testnet.ValidatorUpdates {
 			updates = append(updates, valUpdate{
 				Height: height,
 				Powers: powers,
 			})
-			for node, power := range powers {
-				totalPowers[node] += power
-			}
 		}
 		sort.Slice(updates, func(i, j int) bool {
 			return updates[i].Height < updates[j].Height
 		})
 
-		valBackend, err := ethbackend.NewBackend(omniEVM.Name, omniEVM.ID, omniEVM.BlockPeriod, fundBackend.Client)
+		// Create a backend to trigger deposits from
+		network := externalNetwork(def.Testnet, def.Netman.DeployInfo())
+		omniEVM, _ := network.OmniEVMChain()
+		ethCl, err := ethclient.Dial(omniEVM.Name, omniEVM.RPCURL)
+		if err != nil {
+			returnErr(errors.Wrap(err, "dial"))
+			return
+		}
+		valBackend, err := ethbackend.NewBackend(omniEVM.Name, omniEVM.ID, omniEVM.BlockPeriod, ethCl, privkeys...)
 		if err != nil {
 			returnErr(errors.Wrap(err, "new backend"))
 			return
 		}
 
+		// Create the OmniStake contract
 		omniStake, err := bindings.NewOmniStake(common.HexToAddress(predeploys.OmniStake), valBackend)
 		if err != nil {
 			returnErr(errors.Wrap(err, "new omni stake"))
 			return
-		}
-
-		// Fund each validator with <total_power>+1 $OMNI to stake and pay for gas
-		for node, power := range totalPowers {
-			addr, _ := k1util.PubKeyToAddress(node.PrivvalKey.PubKey())
-			tx, _, err := fundBackend.Send(ctx, funder, txmgr.TxCandidate{
-				To:       &addr,
-				GasLimit: 100_000,
-				Value:    math.NewInt(power + 1).MulRaw(params.Ether).BigInt(),
-			})
-			if err != nil {
-				returnErr(err)
-				return
-			} else if _, err := fundBackend.WaitMined(ctx, tx); err != nil {
-				returnErr(err)
-				return
-			}
-
-			// Add the validator privkey to the backend so we trigger deposits in its name.
-			privKey, err := crypto.ToECDSA(node.PrivvalKey.Bytes())
-			if err != nil {
-				returnErr(errors.Wrap(err, "privkey to ecdsa"))
-				return
-			} else if _, err := valBackend.AddAccount(privKey); err != nil {
-				returnErr(errors.Wrap(err, "add account"))
-				return
-			}
 		}
 
 		// Wait for each update, then submit deposit txns.
