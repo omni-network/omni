@@ -4,15 +4,46 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
+
+	"cosmossdk.io/math"
 )
 
+var eth1k = math.NewInt(1000).MulRaw(params.Ether).BigInt()
+var eth1m = math.NewInt(1000000).MulRaw(params.Ether).BigInt()
+
 func newUint64(val uint64) *uint64 { return &val }
+
+// MakeDevGenesis returns a genesis block for a development chain.
+func MakeGenesis(network string) (core.Genesis, error) {
+	// TODO: set config values for devnet, staging, testnet
+	config := DefaultDevConfig()
+
+	allocs := mergeAllocs(precompilesAlloc(), predeploys.Alloc())
+
+	switch network {
+	case netconf.Simnet, netconf.Devnet, netconf.Staging:
+		allocs = mergeAllocs(allocs, stagingPrefundAlloc())
+	case netconf.Testnet:
+		allocs = mergeAllocs(allocs, testnetPrefundAlloc())
+	default:
+		return core.Genesis{}, errors.New("unsupported network")
+	}
+
+	return core.Genesis{
+		Config:     &config,
+		GasLimit:   params.GenesisGasLimit,
+		BaseFee:    big.NewInt(params.InitialBaseFee),
+		Difficulty: big.NewInt(1),
+		Alloc:      allocs,
+	}, nil
+}
 
 func DefaultDevConfig() params.ChainConfig {
 	return params.ChainConfig{
@@ -53,23 +84,39 @@ func precompilesAlloc() types.GenesisAlloc {
 }
 
 // devPrefundAlloc returns allocs for pre-funded geth dev accounts.
-func devPrefundAlloc() types.GenesisAlloc {
-	eth1k := new(big.Int).Mul(
-		big.NewInt(1_000_000),
-		big.NewInt(params.Ether),
-	)
-
+func stagingPrefundAlloc() types.GenesisAlloc {
 	return types.GenesisAlloc{
-		common.HexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"): {Balance: eth1k},
-		common.HexToAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"): {Balance: eth1k},
-		common.HexToAddress("0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"): {Balance: eth1k},
-		common.HexToAddress("0x90F79bf6EB2c4f870365E785982E1f101E93b906"): {Balance: eth1k},
-		common.HexToAddress("0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65"): {Balance: eth1k},
-		common.HexToAddress("0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc"): {Balance: eth1k},
-		common.HexToAddress("0x976EA74026E726554dB657fA54763abd0C3a0aa9"): {Balance: eth1k},
-		common.HexToAddress("0x14dC79964da2C08b23698B3D3cc7Ca32193d9955"): {Balance: eth1k},
-		common.HexToAddress("0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f"): {Balance: eth1k},
-		common.HexToAddress("0xa0Ee7A142d267C1f36714E4a8F75612F20a79720"): {Balance: eth1k},
+		// anvil pre-funded accounts
+		common.HexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"): {Balance: eth1m},
+		common.HexToAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"): {Balance: eth1m},
+		common.HexToAddress("0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"): {Balance: eth1m},
+		common.HexToAddress("0x90F79bf6EB2c4f870365E785982E1f101E93b906"): {Balance: eth1m},
+		common.HexToAddress("0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65"): {Balance: eth1m},
+		common.HexToAddress("0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc"): {Balance: eth1m},
+		common.HexToAddress("0x976EA74026E726554dB657fA54763abd0C3a0aa9"): {Balance: eth1m},
+		common.HexToAddress("0x14dC79964da2C08b23698B3D3cc7Ca32193d9955"): {Balance: eth1m},
+		common.HexToAddress("0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f"): {Balance: eth1m},
+		common.HexToAddress("0xa0Ee7A142d267C1f36714E4a8F75612F20a79720"): {Balance: eth1m},
+
+		// team ops accounts
+		common.HexToAddress("0xfE921e06Ed0a22c035b4aCFF0A5D3a434A330c96"): {Balance: eth1k}, // dev relayer (local)
+		common.HexToAddress("0xfC9D554D69DdCfC0A731b2DC64550177b0723bE5"): {Balance: eth1k}, // dev deployer (local)
+		common.HexToAddress("0x7a6cF389082dc698285474976d7C75CAdE08ab7e"): {Balance: eth1k}, // fb: dev
+	}
+}
+
+func testnetPrefundAlloc() types.GenesisAlloc {
+	return types.GenesisAlloc{
+		// team dev accounts
+		common.HexToAddress("0x00000d4De727593D6fbbFe39eE9EbddB49ED5b8"):  {Balance: eth1m},
+		common.HexToAddress("0x38E2a3FC1923767F74d2308a529a353e91763EBF"): {Balance: eth1m},
+
+		// team ops accounts
+		common.HexToAddress("0xeC5134556da0797A5C5cD51DD622b689Cac97Fe9"): {Balance: eth1k}, // fb: create3-deployer
+		common.HexToAddress("0x0CdCc644158b7D03f40197f55454dc7a11Bd92c1"): {Balance: eth1k}, // fb: deployer
+		common.HexToAddress("0xEAD625eB2011394cdD739E91Bf9D51A7169C22F5"): {Balance: eth1k}, // fb: owner
+
+		// TODO: add validators, relayer
 	}
 }
 
@@ -83,22 +130,4 @@ func mergeAllocs(allocs ...types.GenesisAlloc) types.GenesisAlloc {
 	}
 
 	return merged
-}
-
-// MakeDevGenesis returns a genesis block for a development chain
-// TODO: add staging / testnet / mainnet genesis.
-func MakeDevGenesis() core.Genesis {
-	config := DefaultDevConfig()
-
-	return core.Genesis{
-		Config:     &config,
-		GasLimit:   params.GenesisGasLimit,
-		BaseFee:    big.NewInt(params.InitialBaseFee),
-		Difficulty: big.NewInt(1),
-		Alloc: mergeAllocs(
-			precompilesAlloc(),
-			predeploys.Alloc(),
-			devPrefundAlloc(),
-		),
-	}
 }
