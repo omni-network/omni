@@ -5,6 +5,8 @@ displayed_sidebar: learnSidebar
 slug: /
 ---
 
+import TestnetCTA from '@site/src/components/TestnetCTA/TestnetCTA';
+
 # Home
 
 ![omni banner](../static/img/omni-banner.png)
@@ -20,3 +22,5 @@ Omni is an Ethereum-native interoperability protocol that establishes low latenc
 [**Develop**](./develop/contracts.md): Ready to build on Omni? Explore our developer resources and examples to easily integrate Omni into your application. This area is tailored for developers seeking practical tools and examples to expand their applications to all Ethereum rollups.
 
 [**Operate**](./operate/introduction/introduction.md): Learn how to run an Omni validator and contribute security to Omni’s network.
+
+<TestnetCTA />
