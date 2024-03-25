@@ -21,3 +21,17 @@ jobs:
     uses: ./.github/workflows/soltest.yml
   e2e-tests:
     uses: ./.github/workflows/pr-e2etest.yml
+  vtest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+      # TODO(corver): add coverage
+      - run: go test -v github.com/omni-network/omni/lib/fireblocks
+        env:
+          - TESTNET_FIREBLOCKS_API_KEY: ${{ secrets.TESTNET_FIREBLOCKS_API_KEY }}
+          - TESTNET_FIREBLOCKS_SECRET: ${{ secrets.TESTNET_FIREBLOCKS_SECRET }}

@@ -4,10 +4,6 @@ on:
   pull_request:
     types: [opened, reopened, edited, synchronize]
 
-permissions:
-  contents: read
-  pull-requests: read
-
 jobs:
   verify:
     runs-on: ubuntu-latest
