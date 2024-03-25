@@ -4,7 +4,7 @@
     background-position: center center;
     padding: 60px 0;
     text-align: center;
-    color: white; /* Adjust the text color for better visibility depending on your image */
+    color: white;
 }
 
 [data-theme="dark"] .banner {
@@ -13,7 +13,6 @@
 
 .banner-title {
     margin: 0;
-    /* color: #0056b3; */
     font-size: 70px;
     font-weight: 300;
 }
@@ -32,21 +31,30 @@ h2 {
     font-weight: 300;
 }
 
-.start-section,
-.timeline-section,
-.community-section {
-    margin-top: 40px;
+.timeline-section h2 {
+    text-align: center;
+    font-size: 48px;
 }
 
-.start-container,
-.community-container {
+.timeline-section p {
+    margin-top: 10px;
+    text-align: center;
+    font-size: 18px;
+}
+
+.start-section,
+.timeline-section {
+    margin-top: 40px;
+    margin-bottom: 40px;
+}
+
+.start-container {
     display: flex;
     justify-content: space-around;
     padding: 10px 0;
 }
 
-.start-box,
-.community-box {
+.start-box {
     position: relative;
     background-color: var(--ifm-color-secondary);
     border-radius: 8px;
@@ -71,7 +79,6 @@ h2 {
     top: 20.2%;
     left: 50%;
     transform: translate(-50%, -50%);
-    /* transition: opacity 1.5s ease; */
 }
 
 [data-theme="dark"] .dot {
@@ -94,25 +101,11 @@ h2 {
     margin-bottom: 10px; /* Space between icon and text */
   }
 
-.start-box:hover,
-.community-box:hover {
+.start-box:hover {
     box-shadow: 0px 0px 2px 2px var(--ifm-heading-color);
     transform: translateY(-1px);
 }
 
-.community-box svg {
-    width: 30px; /* Example size, adjust as needed */
-    height: auto;
-    fill: var(--ifm-heading-color); /* Adjust if you want to use the text color */
-}
-
-.community-box:hover svg {
-    fill: var(--ifm-color-primary); /* Adjust if you want to use the primary color */
-}
-
-[data-theme="dark"] .community-box svg {
-    fill: var(--ifm-color-primary-lightest); /* Adjust if you want to use the text color */
-}
 
 .start-box-link {
     position: absolute;
