@@ -3,17 +3,17 @@
 
 # The version of the Halo binary that created or
 # last modified the config file. Do not modify this.
-version = "{{ .Version}}"
+version = "v0.1.1"
 
 #######################################################################
 ###                         Monitor Options                         ###
 #######################################################################
 
 # The path to the Omni network configuration file.
-network-file = "{{ .NetworkFile }}"
+network-file = "network.json"
 
 # The address that the monitor listens for metric scrape requests.
-monitoring-addr = "{{ .MonitoringAddr }}"
+monitoring-addr = ":26660"
 
 #######################################################################
 ###                         Logging Options                         ###
@@ -22,13 +22,13 @@ monitoring-addr = "{{ .MonitoringAddr }}"
 [log]
 # Logging level. Note cometBFT internal logs are configured in config.yaml.
 # Options are: debug, info, warn, error.
-level = "{{ .Log.Level }}"
+level = "info"
 
 # Logging format. Options are: console, json.
-format = "{{ .Log.Format }}"
+format = "console"
 
 # Logging color if console format is chosen. Options are: auto, force, disable.
-color = "{{ .Log.Color }}"
+color = "auto"
 
 #######################################################################
 ###                         Load Generation                         ###
@@ -36,5 +36,4 @@ color = "{{ .Log.Color }}"
 
 # Note that load generation is only used for testing purposes; ie on devent or staging.
 [loadgen]
-# Validator keys glob defines the validator keys to use for self-delegation.
-validator-keys-glob = "{{ .LoadGen.ValidatorKeysGlob }}"
+validator-keys = ["path/1", "path/2"]
