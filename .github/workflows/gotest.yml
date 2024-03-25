@@ -1,16 +1,12 @@
-name: vtest
+name: go tests
 # Run this separately from pre-commit for nice visual coverage.
 
 on:
-  pull_request:
-
-permissions:
-  contents: read
-  pull-requests: read
+  workflow_call:
 
 jobs:
-  vtest:
-    runs-on: ubuntu-latest
+  unit_tests:
+    runs-on: namespace-profile-default
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
@@ -19,7 +15,4 @@ jobs:
         with:
           go-version: 'stable'
       # TODO(corver): add coverage
-      - run: go test -v github.com/omni-network/omni/lib/fireblocks
-        env:
-          - TESTNET_FIREBLOCKS_API_KEY: ${{ secrets.TESTNET_FIREBLOCKS_API_KEY }}
-          - TESTNET_FIREBLOCKS_SECRET: ${{ secrets.TESTNET_FIREBLOCKS_SECRET }}
+      - run: go test -timeout=5m -race -tags=verify_logs ./...

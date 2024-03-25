@@ -6,7 +6,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -104,24 +103,20 @@ func TestSmoke(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	fmt.Printf("🔥!! os.Environ()=%v\n", os.Environ())
-
 	apiKey, ok := os.LookupEnv("TESTNET_FIREBLOCKS_API_KEY")
 	if !ok {
 		t.Skip("TESTNET_FIREBLOCKS_API_KEY not set")
 	} else if apiKey == "" {
 		t.Skip("TESTNET_FIREBLOCKS_API_KEY is empty")
 	}
-	privKeyFile, ok := os.LookupEnv("TESTNET_FIREBLOCKS_SECRET")
+	privKey, ok := os.LookupEnv("TESTNET_FIREBLOCKS_SECRET")
 	if !ok {
 		t.Skip("TESTNET_FIREBLOCKS_SECRET not set")
-	} else if privKeyFile == "" {
+	} else if privKey == "" {
 		t.Skip("TESTNET_FIREBLOCKS_SECRET is empty")
 	}
-	privKey, err := os.ReadFile(privKeyFile)
-	require.NoError(t, err)
 
-	client, err := fireblocks.New(netconf.Simnet, apiKey, parseKey(t, privKey))
+	client, err := fireblocks.New(netconf.Simnet, apiKey, parseKey(t, []byte(privKey)))
 	require.NoError(t, err)
 
 	addr := common.BytesToAddress(hexutil.MustDecode("0x9914cb686527261B52B614E43D0db7bCDAB5bC50"))
