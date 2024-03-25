@@ -143,22 +143,35 @@ func AddrForNetwork(network string) (common.Address, bool) {
 
 // IsDeployed checks if the OmniAVS contract is deployed to the provided backend
 // to its expected network address.
-func IsDeployed(ctx context.Context, network string, backend *ethbackend.Backend) (bool, error) {
+func IsDeployed(ctx context.Context, network string, backend *ethbackend.Backend) (bool, common.Address, error) {
 	addr, ok := AddrForNetwork(network)
 	if !ok {
-		return false, errors.New("unsupported network", "network", network)
+		return false, addr, errors.New("unsupported network", "network", network)
 	}
 
 	code, err := backend.CodeAt(ctx, addr, nil)
 	if err != nil {
-		return false, errors.Wrap(err, "code at")
+		return false, addr, errors.Wrap(err, "code at")
 	}
 
 	if len(code) == 0 {
-		return false, nil
+		return false, addr, nil
 	}
 
-	return true, nil
+	return true, addr, nil
+}
+
+// DeployIfNeeded deploys a new AVS contract if it is not already deployed.
+func DeployIfNeeded(ctx context.Context, network string, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+	deployed, addr, err := IsDeployed(ctx, network, backend)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "is deployed")
+	}
+	if deployed {
+		return addr, nil, nil
+	}
+
+	return Deploy(ctx, network, backend)
 }
 
 // Deploy deploys the AVS contract and returns the address and receipt.
