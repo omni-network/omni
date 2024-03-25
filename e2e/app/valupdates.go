@@ -35,7 +35,8 @@ func FundValidatorsForTesting(ctx context.Context, def Definition) error {
 
 	network := externalNetwork(def.Testnet, def.Netman.DeployInfo())
 	omniEVM, _ := network.OmniEVMChain()
-	funder, _, fundBackend, err := def.Backends.BindOpts(ctx, omniEVM.ID)
+	funder := def.Netman.Operator()
+	_, fundBackend, err := def.Backends.BindOpts(ctx, omniEVM.ID, funder)
 	if err != nil {
 		return errors.Wrap(err, "bind opts")
 	}

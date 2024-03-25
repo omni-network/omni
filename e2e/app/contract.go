@@ -54,7 +54,7 @@ func SendXMsgs(ctx context.Context, netman netman.Manager, backends ethbackend.B
 			for i := 0; i < count; i++ {
 				// Send async so whole batch included in same block. Important for testing.
 				eg.Go(func() error {
-					tx, err := xcall(ctx, backends, from, to.Chain.ID)
+					tx, err := xcall(ctx, backends, netman.Operator(), from, to.Chain.ID)
 					if err != nil {
 						return errors.Wrap(err, "xcall")
 					}
@@ -81,7 +81,8 @@ func SendXMsgs(ctx context.Context, netman netman.Manager, backends ethbackend.B
 }
 
 // xcall sends a ethereum transaction to the portal contract, triggering a xcall.
-func xcall(ctx context.Context, backends ethbackend.Backends, from netman.Portal, destChainID uint64) (*ethtypes.Transaction, error) {
+func xcall(ctx context.Context, backends ethbackend.Backends, sender common.Address, from netman.Portal, destChainID uint64,
+) (*ethtypes.Transaction, error) {
 	// TODO: use calls to actual contracts
 	var data []byte
 	to := common.HexToAddress("0x1234")
@@ -94,7 +95,7 @@ func xcall(ctx context.Context, backends ethbackend.Backends, from netman.Portal
 		)
 	}
 
-	_, txOpts, _, err := backends.BindOpts(ctx, from.Chain.ID)
+	txOpts, _, err := backends.BindOpts(ctx, from.Chain.ID, sender)
 	if err != nil {
 		return nil, errors.Wrap(err, "bindOpts")
 	}

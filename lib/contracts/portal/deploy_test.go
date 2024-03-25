@@ -40,39 +40,40 @@ func TestDeployDevnet(t *testing.T) {
 	// devnet create3 factory is required
 	addr, _, err := create3.Deploy(ctx, netconf.Devnet, backend)
 	require.NoError(t, err)
-	require.Equal(t, contracts.DevnetCreate3Factory, addr)
+	require.Equal(t, contracts.DevnetCreate3Factory(), addr)
 
+	valSetID := uint64(1)
 	vals := []bindings.Validator{
 		{Addr: common.HexToAddress("0x1111"), Power: 100},
 		{Addr: common.HexToAddress("0x2222"), Power: 100},
 		{Addr: common.HexToAddress("0x3333"), Power: 100},
 	}
 
-	addr, _, err = portal.Deploy(ctx, netconf.Devnet, backend, vals)
+	addr, _, err = portal.Deploy(ctx, netconf.Devnet, backend, valSetID, vals)
 	require.NoError(t, err)
-	require.Equal(t, contracts.DevnetPortal, addr)
+	require.Equal(t, contracts.DevnetPortal(), addr)
 
 	portal, err := bindings.NewOmniPortal(addr, backend)
 	require.NoError(t, err)
 
 	owner, err := portal.Owner(nil)
 	require.NoError(t, err)
-	require.Equal(t, contracts.DevnetPortalAdmin, owner)
+	require.Equal(t, contracts.DevnetPortalAdmin(), owner)
 
 	// check validators
 	totalPower, err := portal.ValidatorSetTotalPower(nil, 1)
 	require.NoError(t, err)
 	require.Equal(t, uint64(300), totalPower)
 
-	val1Power, err := portal.ValidatorSet(nil, 1, vals[0].Addr)
+	val1Power, err := portal.ValidatorSet(nil, valSetID, vals[0].Addr)
 	require.NoError(t, err)
 	require.Equal(t, uint64(100), val1Power)
 
-	val2Power, err := portal.ValidatorSet(nil, 1, vals[1].Addr)
+	val2Power, err := portal.ValidatorSet(nil, valSetID, vals[1].Addr)
 	require.NoError(t, err)
 	require.Equal(t, uint64(100), val2Power)
 
-	val3Power, err := portal.ValidatorSet(nil, 1, vals[2].Addr)
+	val3Power, err := portal.ValidatorSet(nil, valSetID, vals[2].Addr)
 	require.NoError(t, err)
 	require.Equal(t, uint64(100), val3Power)
 }

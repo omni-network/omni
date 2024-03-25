@@ -73,7 +73,7 @@ func NewFireBackend(ctx context.Context, chainName string, chainID uint64, block
 
 // NewAnvilBackend returns a backend with all pre-funded anvil dev accounts.
 func NewAnvilBackend(chainName string, chainID uint64, blockPeriod time.Duration, ethCl ethclient.Client) (*Backend, error) {
-	return NewBackend(chainName, chainID, blockPeriod, ethCl, anvil.DevPrivateKeys...)
+	return NewBackend(chainName, chainID, blockPeriod, ethCl, anvil.DevPrivateKeys()...)
 }
 
 // NewBackend returns a new backend backed by in-memory private keys.

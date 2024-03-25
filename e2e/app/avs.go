@@ -6,9 +6,7 @@ import (
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/contracts/avs"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -21,19 +19,23 @@ func AVSDeploy(ctx context.Context, def Definition) error {
 		return err
 	}
 
-	log.Info(ctx, "AVS contract deployed", "chain", chain.Name, "chain-id", chain.ID, "addr", addr.Hex(), "block", receipt.BlockNumber)
+	log.Info(ctx, "AVS contract deployed", "chain", chain.Name, "addr", addr.Hex(), "block", receipt.BlockNumber)
 
 	return nil
 }
 
 // deployAVSWithExport deploys the Omni AVS contracts and exports the deployment information.
 func deployAVSWithExport(ctx context.Context, def Definition, deployInfo types.DeployInfos) error {
+	log.Info(ctx, "Deploying AVS contract")
+
 	chain, addr, receipt, err := deployAVS(ctx, def)
 	if err != nil {
 		return err
 	}
 
 	deployInfo.Set(chain.ID, types.ContractOmniAVS, addr, receipt.BlockNumber.Uint64())
+
+	log.Info(ctx, "AVS contract deployed", "chain", chain.Name, "addr", addr.Hex(), "block", receipt.BlockNumber)
 
 	return nil
 }
@@ -47,15 +49,6 @@ func deployAVS(ctx context.Context, def Definition) (types.EVMChain, common.Addr
 	backend, err := def.Backends.Backend(chain.ID)
 	if err != nil {
 		return types.EVMChain{}, common.Address{}, nil, errors.Wrap(err, "backend")
-	}
-
-	// temporary fix until backend.Backends support multiple accounts
-	// avs.Deploy requires multiple accounts
-	if def.Testnet.Network == netconf.Devnet {
-		backend, err = ethbackend.NewAnvilBackend(chain.Name, chain.ID, chain.BlockPeriod, backend.Client)
-		if err != nil {
-			return types.EVMChain{}, common.Address{}, nil, errors.Wrap(err, "anvil backend")
-		}
 	}
 
 	addr, receipt, err := avs.Deploy(ctx, def.Testnet.Network, backend)

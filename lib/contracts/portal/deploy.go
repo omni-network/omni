@@ -22,7 +22,6 @@ type DeploymentConfig struct {
 	ProxyAdmin     common.Address
 	Deployer       common.Address
 	Owner          common.Address
-	FeeOracle      common.Address
 	ValSetID       uint64
 	Validators     []bindings.Validator
 	ExpectedAddr   common.Address
@@ -44,9 +43,6 @@ func (cfg DeploymentConfig) Validate() error {
 	if (cfg.Owner == common.Address{}) {
 		return errors.New("owner is zero")
 	}
-	if (cfg.FeeOracle == common.Address{}) {
-		return errors.New("fee oracle is zero")
-	}
 	if cfg.ValSetID == 0 {
 		return errors.New("validator set ID is zero")
 	}
@@ -57,9 +53,9 @@ func (cfg DeploymentConfig) Validate() error {
 	return nil
 }
 
-func getDeployCfg(chainID uint64, network string, vals []bindings.Validator) (DeploymentConfig, error) {
+func getDeployCfg(chainID uint64, network string, valSetID uint64, vals []bindings.Validator) (DeploymentConfig, error) {
 	if !chainids.IsMainnetOrTestnet(chainID) && network == netconf.Devnet {
-		return devnetCfg(vals), nil
+		return devnetCfg(valSetID, vals), nil
 	}
 
 	if chainids.IsMainnet(chainID) && network == netconf.Mainnet {
@@ -75,47 +71,96 @@ func getDeployCfg(chainID uint64, network string, vals []bindings.Validator) (De
 
 func mainnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory: contracts.MainnetCreate3Factory,
+		Create3Factory: contracts.MainnetCreate3Factory(),
 		Create3Salt:    contracts.PortalSalt(netconf.Mainnet),
-		Owner:          contracts.MainnetPortalAdmin,
-		Deployer:       contracts.MainnetDeployer,
+		Owner:          contracts.MainnetPortalAdmin(),
+		Deployer:       contracts.MainnetDeployer(),
 		// TODO: fill in the rest
 	}
 }
 
 func testnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory: contracts.TestnetCreate3Factory,
+		Create3Factory: contracts.TestnetCreate3Factory(),
 		Create3Salt:    contracts.PortalSalt(netconf.Testnet),
-		Owner:          contracts.TestnetPortalAdmin,
-		Deployer:       contracts.TestnetDeployer,
+		Owner:          contracts.TestnetPortalAdmin(),
+		Deployer:       contracts.TestnetDeployer(),
 		// TODO: fill in the rest
 	}
 }
 
-func devnetCfg(vals []bindings.Validator) DeploymentConfig {
+func devnetCfg(valSetID uint64, vals []bindings.Validator) DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory: contracts.DevnetCreate3Factory,
+		Create3Factory: contracts.DevnetCreate3Factory(),
 		Create3Salt:    contracts.PortalSalt(netconf.Devnet),
-		FeeOracle:      contracts.DevnetFeeOracleV1,
-		Owner:          contracts.DevnetPortalAdmin,
-		Deployer:       contracts.DevnetDeployer,
-		ProxyAdmin:     contracts.DevnetProxyAdmin,
-		ValSetID:       1,
+		Owner:          contracts.DevnetPortalAdmin(),
+		Deployer:       contracts.DevnetDeployer(),
+		ProxyAdmin:     contracts.DevnetProxyAdmin(),
+		ValSetID:       valSetID,
 		Validators:     vals,
-		ExpectedAddr:   contracts.DevnetPortal,
+		ExpectedAddr:   contracts.DevnetPortal(),
 	}
+}
+
+func AddrForNetwork(network string) (common.Address, bool) {
+	switch network {
+	case netconf.Mainnet:
+		return contracts.MainnetPortal(), true
+	case netconf.Testnet:
+		return contracts.TestnetPortal(), true
+	case netconf.Staging:
+		return contracts.StagingPortal(), true
+	case netconf.Devnet:
+		return contracts.DevnetPortal(), true
+	default:
+		return common.Address{}, false
+	}
+}
+
+// IsDeployed checks if the Portal contract is deployed to the provided backend
+// to its expected network address.
+func IsDeployed(ctx context.Context, network string, backend *ethbackend.Backend) (bool, common.Address, error) {
+	addr, ok := AddrForNetwork(network)
+	if !ok {
+		return false, addr, errors.New("unsupported network", "network", network)
+	}
+
+	code, err := backend.CodeAt(ctx, addr, nil)
+	if err != nil {
+		return false, addr, errors.Wrap(err, "code at")
+	}
+
+	if len(code) == 0 {
+		return false, addr, nil
+	}
+
+	return true, addr, nil
+}
+
+// DeployIfNeeded deploys a new Portal contract if it is not already deployed.
+func DeployIfNeeded(ctx context.Context, network string, backend *ethbackend.Backend, valSetID uint64, validators []bindings.Validator,
+) (common.Address, *ethtypes.Receipt, error) {
+	deployed, addr, err := IsDeployed(ctx, network, backend)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "is deployed")
+	}
+	if deployed {
+		return addr, nil, nil
+	}
+
+	return Deploy(ctx, network, backend, valSetID, validators)
 }
 
 // Deploy deploys a new Portal contract and returns the address and receipt.
 // It only allows deployments to explicitly supported chains.
-func Deploy(ctx context.Context, network string, backend *ethbackend.Backend, vals []bindings.Validator) (common.Address, *ethtypes.Receipt, error) {
+func Deploy(ctx context.Context, network string, backend *ethbackend.Backend, valSetID uint64, validators []bindings.Validator,
+) (common.Address, *ethtypes.Receipt, error) {
 	chainID, err := backend.ChainID(ctx)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "chain id")
 	}
 
-	cfg, err := getDeployCfg(chainID.Uint64(), network, vals)
+	cfg, err := getDeployCfg(chainID.Uint64(), network, valSetID, validators)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "get deployment config")
 	}
@@ -147,19 +192,31 @@ func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backe
 		return common.Address{}, nil, errors.New("unexpected address", "expected", cfg.ExpectedAddr, "actual", addr)
 	}
 
+	feeOracle, tx, _, err := bindings.DeployFeeOracleV1(txOpts, backend)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "deploy fee oracle")
+	}
+
+	receipt, err := bind.WaitMined(ctx, backend, tx)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "wait mined fee oracle")
+	} else if receipt.Status != ethtypes.ReceiptStatusSuccessful {
+		return common.Address{}, nil, errors.New("deploy fee oracle failed")
+	}
+
 	impl, tx, _, err := bindings.DeployOmniPortal(txOpts, backend)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "deploy impl")
 	}
 
-	receipt, err := bind.WaitMined(ctx, backend, tx)
+	receipt, err = bind.WaitMined(ctx, backend, tx)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "wait mined portal")
 	} else if receipt.Status != ethtypes.ReceiptStatusSuccessful {
 		return common.Address{}, nil, errors.New("deploy impl failed")
 	}
 
-	initCode, err := packInitCode(cfg, impl)
+	initCode, err := packInitCode(cfg, feeOracle, impl)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "pack init code")
 	}
@@ -179,7 +236,7 @@ func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backe
 	return addr, receipt, nil
 }
 
-func packInitCode(cfg DeploymentConfig, impl common.Address) ([]byte, error) {
+func packInitCode(cfg DeploymentConfig, feeOracle common.Address, impl common.Address) ([]byte, error) {
 	portalAbi, err := bindings.OmniPortalMetaData.GetAbi()
 	if err != nil {
 		return nil, errors.Wrap(err, "get portal abi")
@@ -190,7 +247,7 @@ func packInitCode(cfg DeploymentConfig, impl common.Address) ([]byte, error) {
 		return nil, errors.Wrap(err, "get proxy abi")
 	}
 
-	initializer, err := portalAbi.Pack("initialize", cfg.Owner, cfg.FeeOracle, cfg.ValSetID, cfg.Validators)
+	initializer, err := portalAbi.Pack("initialize", cfg.Owner, feeOracle, cfg.ValSetID, cfg.Validators)
 	if err != nil {
 		return nil, errors.Wrap(err, "encode portal initializer")
 	}

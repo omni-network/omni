@@ -12,12 +12,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 type DeploymentConfig struct {
-	Deployer          common.Address
-	AllowNonZeroNonce bool
+	Deployer common.Address
 }
 
 func (cfg DeploymentConfig) Validate() error {
@@ -46,23 +46,73 @@ func getDeployCfg(chainID uint64, network string) (DeploymentConfig, error) {
 
 func testnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Deployer:          contracts.TestnetCreate3Deployer,
-		AllowNonZeroNonce: false,
+		Deployer: contracts.TestnetCreate3Deployer(),
 	}
 }
 
 func mainnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Deployer:          contracts.MainnetCreate3Deployer,
-		AllowNonZeroNonce: false,
+		Deployer: contracts.MainnetCreate3Deployer(),
 	}
 }
 
 func devnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Deployer:          contracts.DevnetCreate3Deployer,
-		AllowNonZeroNonce: true,
+		Deployer: contracts.DevnetCreate3Deployer(),
 	}
+}
+
+func AddrForNetwork(network string) (common.Address, bool) {
+	switch network {
+	case netconf.Mainnet:
+		return contracts.MainnetCreate3Factory(), true
+	case netconf.Testnet:
+		return contracts.TestnetCreate3Factory(), true
+	case netconf.Staging:
+		return contracts.StagingCreate3Factory(), true
+	case netconf.Devnet:
+		return contracts.DevnetCreate3Factory(), true
+	default:
+		return common.Address{}, false
+	}
+}
+
+// IsDeployed checks if the Create3 factory contract is deployed to the provided backend
+// to its expected network address.
+func IsDeployed(ctx context.Context, network string, backend *ethbackend.Backend) (bool, common.Address, error) {
+	addr, ok := AddrForNetwork(network)
+	if !ok {
+		return false, addr, errors.New("unsupported network", "network", network)
+	}
+
+	code, err := backend.CodeAt(ctx, addr, nil)
+	if err != nil {
+		return false, addr, errors.Wrap(err, "code at", "address", addr)
+	}
+
+	if len(code) == 0 {
+		return false, addr, nil
+	}
+
+	if hexutil.Encode(code) != bindings.Create3Bin {
+		chain, chainID := backend.Chain()
+		return false, addr, errors.New("unexpected code at factory", "address", addr, "chain", chain, "chain_id", chainID)
+	}
+
+	return true, addr, nil
+}
+
+// DeployIfNeeded deploys a new Create3 factory contract if it is not already deployed.
+func DeployIfNeeded(ctx context.Context, network string, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+	deployed, addr, err := IsDeployed(ctx, network, backend)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "is deployed")
+	}
+	if deployed {
+		return addr, nil, nil
+	}
+
+	return Deploy(ctx, network, backend)
 }
 
 // Deploy deploys a new Create3 factory contract and returns the address and receipt.
@@ -91,13 +141,11 @@ func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backe
 		return common.Address{}, nil, errors.Wrap(err, "bind opts")
 	}
 
-	if !cfg.AllowNonZeroNonce {
-		nonce, err := backend.PendingNonceAt(ctx, cfg.Deployer)
-		if err != nil {
-			return common.Address{}, nil, errors.Wrap(err, "pending nonce")
-		} else if nonce != 0 {
-			return common.Address{}, nil, errors.New("nonce not zero")
-		}
+	nonce, err := backend.PendingNonceAt(ctx, cfg.Deployer)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "pending nonce")
+	} else if nonce != 0 {
+		return common.Address{}, nil, errors.New("nonce not zero")
 	}
 
 	addr, tx, _, err := bindings.DeployCreate3(txOpts, backend)
