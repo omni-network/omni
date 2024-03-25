@@ -400,7 +400,10 @@ func writeOmniEVMConfig(testnet types.Testnet) error {
 	var jwtSecret [32]byte
 	_, _ = rand.Read(jwtSecret[:])
 
-	gethGenesis := evmgenutil.MakeDevGenesis()
+	gethGenesis, err := evmgenutil.MakeGenesis(testnet.Network)
+	if err != nil {
+		return errors.Wrap(err, "make genesis")
+	}
 	gethGenesisBz, err := json.MarshalIndent(gethGenesis, "", "  ")
 	if err != nil {
 		return errors.Wrap(err, "marshal genesis")
