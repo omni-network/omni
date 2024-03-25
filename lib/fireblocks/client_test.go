@@ -103,11 +103,11 @@ func TestSmoke(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	apiKey, ok := os.LookupEnv("FIREBLOCKS_APIKEY")
+	apiKey, ok := os.LookupEnv("TESTNET_FIREBLOCKS_API_KEY")
 	if !ok {
 		t.Skip("FIREBLOCKS_APIKEY not set")
 	}
-	privKeyFile, ok := os.LookupEnv("FIREBLOCKS_KEY_PATH")
+	privKeyFile, ok := os.LookupEnv("TESTNET_FIREBLOCKS_SECRET")
 	if !ok {
 		t.Skip("FIREBLOCKS_KEY_PATH not set")
 	}
