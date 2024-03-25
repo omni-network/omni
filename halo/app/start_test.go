@@ -44,7 +44,7 @@ func TestSmoke(t *testing.T) {
 	cprov := cprovider.NewABCIProvider(cl, nil)
 
 	// Wait until we get to block 3.
-	const target = uint64(3)
+	const target = uint64(10)
 	require.Eventually(t, func() bool {
 		s, err := cl.Status(ctx)
 		if err != nil {
