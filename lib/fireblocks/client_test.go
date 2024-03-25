@@ -125,7 +125,7 @@ func TestSmoke(t *testing.T) {
 		t.Parallel()
 
 		assets, err := client.GetSupportedAssets(ctx)
-		require.NoError(t, err)
+		tutil.RequireNoError(t, err)
 
 		for i, asset := range assets {
 			if !strings.Contains(asset.ID, "ETH_TEST") {
@@ -133,6 +133,15 @@ func TestSmoke(t *testing.T) {
 			}
 			t.Logf("asset %d: %#v", i, asset)
 		}
+	})
+
+	t.Run("accounts", func(t *testing.T) {
+		t.Parallel()
+
+		accounts, err := client.Accounts(ctx)
+		tutil.RequireNoError(t, err)
+
+		t.Logf("accounts: %#v", accounts)
 	})
 
 	t.Run("pubkey", func(t *testing.T) {
