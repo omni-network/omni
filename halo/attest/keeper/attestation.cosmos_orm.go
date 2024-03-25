@@ -113,6 +113,19 @@ func (this AttestationStatusChainIdHeightIndexKey) WithStatusChainIdHeight(statu
 	return this
 }
 
+type AttestationCreatedHeightIndexKey struct {
+	vs []interface{}
+}
+
+func (x AttestationCreatedHeightIndexKey) id() uint32            { return 3 }
+func (x AttestationCreatedHeightIndexKey) values() []interface{} { return x.vs }
+func (x AttestationCreatedHeightIndexKey) attestationIndexKey()  {}
+
+func (this AttestationCreatedHeightIndexKey) WithCreatedHeight(created_height uint64) AttestationCreatedHeightIndexKey {
+	this.vs = []interface{}{created_height}
+	return this
+}
+
 type attestationTable struct {
 	table ormtable.AutoIncrementTable
 }

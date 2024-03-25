@@ -79,6 +79,20 @@ func PubKeyToAddress(pubkey crypto.PubKey) (common.Address, error) {
 	return ethcrypto.PubkeyToAddress(*ethPubKey), nil
 }
 
+func StdPrivKeyFromComet(privkey crypto.PrivKey) (*stdecdsa.PrivateKey, error) {
+	bz := privkey.Bytes()
+	if len(bz) != privKeyLen {
+		return nil, errors.New("invalid private key length")
+	}
+
+	resp, err := ethcrypto.ToECDSA(bz)
+	if err != nil {
+		return nil, errors.Wrap(err, "convert to ECDSA")
+	}
+
+	return resp, nil
+}
+
 func StdPubKeyToCosmos(pubkey *stdecdsa.PublicKey) (cosmoscrypto.PubKey, error) {
 	pubkeyBytes := ethcrypto.CompressPubkey(pubkey)
 	if len(pubkeyBytes) != pubkeyCompressedLen {

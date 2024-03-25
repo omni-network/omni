@@ -39,18 +39,22 @@ func (cfg DeploymentConfig) Validate() error {
 }
 
 func getDeployCfg(chainID uint64, network string) (DeploymentConfig, error) {
+	if !chainids.IsMainnetOrTestnet(chainID) && network == netconf.Devnet {
+		return devnetCfg(), nil
+	}
+
 	if chainids.IsMainnet(chainID) && network == netconf.Mainnet {
-		return mainnetDeployCfg(), nil
+		return mainnetCfg(), nil
 	}
 
 	if chainids.IsTestnet(chainID) && network == netconf.Testnet {
-		return testnetDeployCfg(), nil
+		return testnetCfg(), nil
 	}
 
 	return DeploymentConfig{}, errors.New("unsupported chain for network", "chain_id", chainID, "network", network)
 }
 
-func mainnetDeployCfg() DeploymentConfig {
+func mainnetCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory: contracts.MainnetCreate3Factory,
 		Create3Salt:    contracts.ProxyAdminSalt(netconf.Mainnet),
@@ -59,7 +63,7 @@ func mainnetDeployCfg() DeploymentConfig {
 	}
 }
 
-func testnetDeployCfg() DeploymentConfig {
+func testnetCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory: contracts.TestnetCreate3Factory,
 		Create3Salt:    contracts.ProxyAdminSalt(netconf.Testnet),
@@ -68,7 +72,7 @@ func testnetDeployCfg() DeploymentConfig {
 	}
 }
 
-func devnetDeployCfg() DeploymentConfig {
+func devnetCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory: contracts.DevnetCreate3Factory,
 		Create3Salt:    contracts.ProxyAdminSalt(netconf.Devnet),
@@ -92,20 +96,6 @@ func Deploy(ctx context.Context, network string, backend *ethbackend.Backend) (c
 	}
 
 	return deploy(ctx, cfg, backend)
-}
-
-// DeployDevnet deploys the devnet AVS contract and returns the address receipt.
-func DeployDevnet(ctx context.Context, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
-	chainID, err := backend.ChainID(ctx)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "chain id")
-	}
-
-	if chainids.IsMainnetOrTestnet(chainID.Uint64()) {
-		return common.Address{}, nil, errors.New("not a devnet")
-	}
-
-	return deploy(ctx, devnetDeployCfg(), backend)
 }
 
 func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {

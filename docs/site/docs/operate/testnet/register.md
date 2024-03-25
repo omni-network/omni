@@ -20,16 +20,22 @@ operator:
     delegation_approver_address: "0x0000000000000000000000000000000000000000" # Your delegation approver address, may be left as shown
     staker_opt_out_window_blocks: 0 # may be left as shown, and can be updated later using EigenLayer CLI
     metadata_url: "https://raw.githubusercontent.com/idea404/resources/main/eigenlayer/metadata.json" # Your metadata URL
-el_delegation_manager_address: 0x1b7b8F6b258f95Cf9596EabB9aa18B62940Eb0a8 # The address of the EigenLayer delegation manager on Goerli
-eth_rpc_url: http://127.0.0.1:8002 # Your node Ethereum RPC URL
+el_delegation_manager_address: 0xA44151489861Fe9e3055d95adC98FbD462B948e7 # The address of the EigenLayer delegation manager on Holesky
+eth_rpc_url: https://ethereum-holesky-rpc.publicnode.com # Holesky RPC URL
 private_key_store_path: /Users/idea404/.eigenlayer/operator_keys/OpKeys1.ecdsa.key.json # Your private key store path generated or imported by EigenLayer CLI
 signer_type: local_keystore # Your signer type, may be left as shown
-chain_id: 5 # The chain ID of Goerli
+chain_id: 17000 # The chain ID of Holesky
 ```
 
 </details>
 
 ## Register as an Operator
+
+:::warning
+
+The CLI will be updated to include the Holesky AVS address soon. For now, do not run the command below.
+
+:::
 
 1. Ensure that your node address has been added to the allowed list of operators.
 2. Run the following command to register as an operator:
@@ -40,6 +46,6 @@ omni operator register --config-file ~/path/to/operator.yaml
 
 :::info
 
-The AVS address (`0x848BE3DBcd054c17EbC712E0d29D15C2e638aBCe`) is the address of the Omni AVS contract [deployed on Goerli testnet](https://goerli.etherscan.io/address/0x848BE3DBcd054c17EbC712E0d29D15C2e638aBCe) that will be called by the `register` command.
+The AVS address (`$OMNI_HOLESKY_AVS_ADDRESS`) is the address of the Omni AVS contract [deployed on Holesky testnet](https://holesky.etherscan.io/) that will be called by the `register` command.
 
 :::

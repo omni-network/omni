@@ -1,0 +1,39 @@
+# This is a TOML config file.
+# For more information, see https://github.com/toml-lang/toml
+
+# The version of the Halo binary that created or
+# last modified the config file. Do not modify this.
+version = "v0.1.1"
+
+#######################################################################
+###                         Monitor Options                         ###
+#######################################################################
+
+# The path to the Omni network configuration file.
+network-file = "network.json"
+
+# The address that the monitor listens for metric scrape requests.
+monitoring-addr = ":26660"
+
+#######################################################################
+###                         Logging Options                         ###
+#######################################################################
+
+[log]
+# Logging level. Note cometBFT internal logs are configured in config.yaml.
+# Options are: debug, info, warn, error.
+level = "info"
+
+# Logging format. Options are: console, json.
+format = "console"
+
+# Logging color if console format is chosen. Options are: auto, force, disable.
+color = "auto"
+
+#######################################################################
+###                         Load Generation                         ###
+#######################################################################
+
+# Note that load generation is only used for testing purposes; ie on devent or staging.
+[loadgen]
+validator-keys = ["path/1", "path/2"]

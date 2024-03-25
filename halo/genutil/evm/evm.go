@@ -45,7 +45,7 @@ func MakeGenesis(network string) (core.Genesis, error) {
 
 func DefaultDevConfig() params.ChainConfig {
 	return params.ChainConfig{
-		ChainID:                       big.NewInt(1), // TODO: choose new dev chain id
+		ChainID:                       big.NewInt(int64(netconf.GetStatic(netconf.Devnet).OmniExecutionChainID)),
 		HomesteadBlock:                big.NewInt(0),
 		EIP150Block:                   big.NewInt(0),
 		EIP155Block:                   big.NewInt(0),
