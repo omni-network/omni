@@ -87,6 +87,10 @@ func getDeployCfg(chainID uint64, network string) (DeploymentConfig, error) {
 		return testnetCfg(), nil
 	}
 
+	if !chainids.IsMainnet(chainID) && network == netconf.Staging {
+		return stagingCfg(), nil
+	}
+
 	return DeploymentConfig{}, errors.New("unsupported chain for network", "chain_id", chainID, "network", network)
 }
 
@@ -104,6 +108,25 @@ func testnetCfg() DeploymentConfig {
 		MinOperatorStake: big.NewInt(1e18), // 1 ETH
 		MaxOperatorCount: 200,
 		AllowlistEnabled: false,
+		ExpectedAddr:     contracts.TestnetAVS(),
+	}
+}
+
+func stagingCfg() DeploymentConfig {
+	return DeploymentConfig{
+		Create3Factory:   contracts.StagingCreate3Factory(),
+		Create3Salt:      contracts.AVSSalt(netconf.Staging),
+		Deployer:         contracts.StagingDeployer(),
+		Owner:            contracts.StagingAVSAdmin(),
+		ProxyAdmin:       contracts.StagingProxyAdmin(),
+		Eigen:            devnetEigenDeployments,
+		StrategyParams:   devnetStrategyParams(),
+		MetadataURI:      metadataURI,
+		OmniChainID:      netconf.GetStatic(netconf.Staging).OmniExecutionChainID,
+		MinOperatorStake: big.NewInt(1e18), // 1 ETH
+		MaxOperatorCount: 10,
+		AllowlistEnabled: true,
+		ExpectedAddr:     contracts.StagingAVS(),
 	}
 }
 
@@ -115,7 +138,7 @@ func devnetCfg() DeploymentConfig {
 		Owner:            contracts.DevnetAVSAdmin(),
 		ProxyAdmin:       contracts.DevnetProxyAdmin(),
 		Eigen:            devnetEigenDeployments,
-		MetadataURI:      "https://test.com",
+		MetadataURI:      metadataURI,
 		OmniChainID:      netconf.GetStatic(netconf.Devnet).OmniExecutionChainID,
 		StrategyParams:   devnetStrategyParams(),
 		EthStakeInbox:    common.HexToAddress("0x1234"), // TODO: replace with actual address

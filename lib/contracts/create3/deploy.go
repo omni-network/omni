@@ -41,7 +41,17 @@ func getDeployCfg(chainID uint64, network string) (DeploymentConfig, error) {
 		return testnetCfg(), nil
 	}
 
+	if !chainids.IsMainnet(chainID) && network == netconf.Staging {
+		return stagingCfg(), nil
+	}
+
 	return DeploymentConfig{}, errors.New("unsupported chain for network", "chain_id", chainID, "network", network)
+}
+
+func mainnetCfg() DeploymentConfig {
+	return DeploymentConfig{
+		Deployer: contracts.MainnetCreate3Deployer(),
+	}
 }
 
 func testnetCfg() DeploymentConfig {
@@ -50,9 +60,9 @@ func testnetCfg() DeploymentConfig {
 	}
 }
 
-func mainnetCfg() DeploymentConfig {
+func stagingCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Deployer: contracts.MainnetCreate3Deployer(),
+		Deployer: contracts.StagingCreate3Deployer(),
 	}
 }
 
