@@ -7,6 +7,9 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/types"
+	"github.com/omni-network/omni/lib/anvil"
+	"github.com/omni-network/omni/lib/contracts"
+	"github.com/omni-network/omni/lib/contracts/portal"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/forkjoin"
@@ -19,19 +22,9 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-const (
-
-	// privKeyHex1 of pre-funded anvil account 1.
-	privKeyHex1 = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
-
-	// Sixth contract address of privKeyHex0 (Create3, ProxyAdmin, FeeOracleV1Impl, FeeOracleV1Proxy, PortalImpl come first).
-	// TODO: replace with static network address from lib/contracts, requires refactoring deployment flow.
-	privatePortalAddr = "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"
-)
-
 //nolint:gochecknoglobals // Static mapping.
 var (
-	privateRelayerKey = mustHexToKey(privKeyHex1)
+	privateRelayerKey = anvil.DevPrivateKey1()
 )
 
 // Manager abstract logic to deploy and bootstrap a network.
@@ -51,6 +44,9 @@ type Manager interface {
 
 	// RelayerKey returns the relayer private key hex.
 	RelayerKey() *ecdsa.PrivateKey
+
+	// Operator returns the address of the account that operates the network.
+	Operator() common.Address
 }
 
 func NewManager(testnet types.Testnet, backends ethbackend.Backends, relayerKeyFile string) (Manager, error) {
@@ -64,13 +60,20 @@ func NewManager(testnet types.Testnet, backends ethbackend.Backends, relayerKeyF
 		}, nil
 	}
 
+	network := testnet.Network
+
+	privPortalAddr, found := portal.AddrForNetwork(network)
+	if !found {
+		return nil, errors.New("unknown network", "network", network)
+	}
+
 	// Create partial portals. This will be updated by Deploy*Portals.
 	portals := make(map[uint64]Portal)
 
 	// Private chains have deterministic deploy height and addresses.
 	privateChainDeployInfo := DeployInfo{
 		DeployHeight:  0,
-		PortalAddress: common.HexToAddress(privatePortalAddr),
+		PortalAddress: privPortalAddr,
 	}
 
 	// Just use the first omni evm instance for now.
@@ -106,6 +109,15 @@ func NewManager(testnet types.Testnet, backends ethbackend.Backends, relayerKeyF
 			omniChainID: omniEVM.Chain.ID,
 			relayerKey:  privateRelayerKey,
 			backends:    backends,
+			network:     netconf.Devnet,
+			// operator:    contracts.DevnetDeployer()
+			//
+			// Using dev deployer caused "Transaction not yet mined" & "Nonce too low" errors in e2e SendXMsgs loop
+			// Somehow, the backend / txmngr managing the nonce gets out of sync.
+			// TODO: figure out why that happens and fix it.
+			//
+			// For now, use a different account.
+			operator: anvil.DevAccount5(),
 		}, nil
 	case netconf.Staging:
 		relayerKey, err := crypto.LoadECDSA(relayerKeyFile)
@@ -118,6 +130,8 @@ func NewManager(testnet types.Testnet, backends ethbackend.Backends, relayerKeyF
 			omniChainID: omniEVM.Chain.ID,
 			relayerKey:  relayerKey,
 			backends:    backends,
+			network:     netconf.Staging,
+			operator:    contracts.StagingDeployer(), // just use deployer as operator, for now.
 		}, nil
 	default:
 		return nil, errors.New("unknown network")
@@ -144,6 +158,8 @@ type manager struct {
 	omniChainID uint64
 	relayerKey  *ecdsa.PrivateKey
 	backends    ethbackend.Backends
+	network     string
+	operator    common.Address
 }
 
 func (m *manager) DeployInfo() map[types.EVMChain]DeployInfo {
@@ -163,7 +179,7 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 			continue // Only log public chain balances.
 		}
 
-		_, txOpts, backend, err := m.backends.BindOpts(ctx, portal.Chain.ID)
+		txOpts, backend, err := m.backends.BindOpts(ctx, portal.Chain.ID, m.operator)
 		if err != nil {
 			return errors.Wrap(err, "deploy opts", "chain", portal.Chain.Name)
 		}
@@ -181,30 +197,28 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 	log.Info(ctx, "Deploying public portal contracts")
 
 	// Define a forkjoin work function that will deploy the omni contracts for each chain
-	deployFunc := func(ctx context.Context, portal Portal) (*deployResult, error) {
-		log.Debug(ctx, "Deploying to", "chain", portal.Chain.Name)
+	deployFunc := func(ctx context.Context, p Portal) (*deployResult, error) {
+		log.Debug(ctx, "Deploying to", "chain", p.Chain.Name)
 
-		_, txOpts, backend, err := m.backends.BindOpts(ctx, portal.Chain.ID)
+		backend, err := m.backends.Backend(p.Chain.ID)
 		if err != nil {
-			return nil, errors.Wrap(err, "deploy opts", "chain", portal.Chain.Name)
+			return nil, errors.Wrap(err, "deploy opts", "chain", p.Chain.Name)
 		}
 
-		height, err := backend.BlockNumber(ctx)
+		addr, receipt, err := portal.DeployIfNeeded(ctx, m.network, backend, valSetID, validators)
 		if err != nil {
-			return nil, errors.Wrap(err, "get block number", "chain", portal.Chain.Name)
+			return nil, errors.Wrap(err, "deploy public omni contracts", "chain", p.Chain.Name)
 		}
 
-		addr, contract, err := deployOmniContracts(
-			ctx, txOpts, backend, valSetID, validators,
-		)
+		contract, err := bindings.NewOmniPortal(addr, backend)
 		if err != nil {
-			return nil, errors.Wrap(err, "deploy public omni contracts", "chain", portal.Chain.Name)
+			return nil, errors.Wrap(err, "bind contract", "chain", p.Chain.Name)
 		}
 
 		return &deployResult{
 			Contract: contract,
 			Addr:     addr,
-			Height:   height,
+			Height:   receipt.BlockNumber.Uint64(),
 		}, nil
 	}
 
@@ -245,21 +259,27 @@ func (m *manager) DeployPrivatePortals(ctx context.Context, valSetID uint64, val
 	log.Info(ctx, "Deploying private portal contracts")
 
 	// Define a forkjoin work function that will deploy the omni contracts for each chain
-	deployFunc := func(ctx context.Context, portal Portal) (*bindings.OmniPortal, error) {
-		chain := portal.Chain.Name
-		_, txOpts, backend, err := m.backends.BindOpts(ctx, portal.Chain.ID)
+	deployFunc := func(ctx context.Context, p Portal) (*bindings.OmniPortal, error) {
+		chain := p.Chain.Name
+		backend, err := m.backends.Backend(p.Chain.ID)
 		if err != nil {
 			return nil, errors.Wrap(err, "deploy opts", "chain", chain)
 		}
 
-		addr, contract, err := deployOmniContracts(ctx, txOpts, backend, valSetID, validators)
+		addr, _, err := portal.DeployIfNeeded(ctx, m.network, backend, valSetID, validators)
+
 		if err != nil {
 			return nil, errors.Wrap(err, "deploy private omni contracts", "chain", chain)
-		} else if addr != portal.DeployInfo.PortalAddress {
+		} else if addr != p.DeployInfo.PortalAddress {
 			return nil, errors.New("deployed address does not match existing address",
-				"expected", portal.DeployInfo.PortalAddress.Hex(),
+				"expected", p.DeployInfo.PortalAddress.Hex(),
 				"actual", addr.Hex(),
 				"chain", chain)
+		}
+
+		contract, err := bindings.NewOmniPortal(addr, backend)
+		if err != nil {
+			return nil, errors.Wrap(err, "bind contract", "chain", chain)
 		}
 
 		return contract, nil
@@ -300,6 +320,10 @@ func (m *manager) RelayerKey() *ecdsa.PrivateKey {
 	return m.relayerKey
 }
 
+func (m *manager) Operator() common.Address {
+	return m.operator
+}
+
 func (m *manager) fundPrivateRelayer(ctx context.Context) error {
 	if privateRelayerKey.Equal(m.relayerKey) {
 		return nil // No need to fund relayer if key is private.
@@ -312,12 +336,12 @@ func (m *manager) fundPrivateRelayer(ctx context.Context) error {
 			continue // We use relayer key for public chain, it should already be funded.
 		}
 
-		addr, _, backend, err := m.backends.BindOpts(ctx, portal.Chain.ID)
+		backend, err := m.backends.Backend(portal.Chain.ID)
 		if err != nil {
-			return errors.Wrap(err, "deploy opts")
+			return errors.Wrap(err, "backend", "chain", portal.Chain.Name)
 		}
 
-		tx, _, err := backend.Send(ctx, addr, txmgr.TxCandidate{
+		tx, _, err := backend.Send(ctx, m.operator, txmgr.TxCandidate{
 			To:       &relayerAddr,
 			GasLimit: 100_000,                                                    // 100k is fine,
 			Value:    new(big.Int).Mul(big.NewInt(10), big.NewInt(params.Ether)), // 10 ETH

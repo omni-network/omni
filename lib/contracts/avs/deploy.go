@@ -92,11 +92,11 @@ func getDeployCfg(chainID uint64, network string) (DeploymentConfig, error) {
 
 func testnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory:   contracts.TestnetCreate3Factory,
+		Create3Factory:   contracts.TestnetCreate3Factory(),
 		Create3Salt:      contracts.AVSSalt(netconf.Testnet),
-		Deployer:         contracts.TestnetDeployer,
-		Owner:            contracts.TestnetAVSAdmin,
-		ProxyAdmin:       contracts.TestnetProxyAdmin,
+		Deployer:         contracts.TestnetDeployer(),
+		Owner:            contracts.TestnetAVSAdmin(),
+		ProxyAdmin:       contracts.TestnetProxyAdmin(),
 		Eigen:            holeskyEigenDeployments(),
 		StrategyParams:   holeskeyStrategyParams(),
 		MetadataURI:      metadataURI,
@@ -109,11 +109,11 @@ func testnetCfg() DeploymentConfig {
 
 func devnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory:   contracts.DevnetCreate3Factory,
+		Create3Factory:   contracts.DevnetCreate3Factory(),
 		Create3Salt:      contracts.AVSSalt(netconf.Devnet),
-		Deployer:         contracts.DevnetDeployer,
-		Owner:            contracts.DevnetAVSAdmin,
-		ProxyAdmin:       contracts.DevnetProxyAdmin,
+		Deployer:         contracts.DevnetDeployer(),
+		Owner:            contracts.DevnetAVSAdmin(),
+		ProxyAdmin:       contracts.DevnetProxyAdmin(),
 		Eigen:            devnetEigenDeployments,
 		MetadataURI:      "https://test.com",
 		OmniChainID:      netconf.GetStatic(netconf.Devnet).OmniExecutionChainID,
@@ -122,8 +122,43 @@ func devnetCfg() DeploymentConfig {
 		MinOperatorStake: big.NewInt(1e18),              // 1 ETH
 		MaxOperatorCount: 10,
 		AllowlistEnabled: true,
-		ExpectedAddr:     contracts.DevnetAVS,
+		ExpectedAddr:     contracts.DevnetAVS(),
 	}
+}
+
+func AddrForNetwork(network string) (common.Address, bool) {
+	switch network {
+	case netconf.Mainnet:
+		return contracts.MainnetAVS(), true
+	case netconf.Testnet:
+		return contracts.TestnetAVS(), true
+	case netconf.Staging:
+		return contracts.StagingAVS(), true
+	case netconf.Devnet:
+		return contracts.DevnetAVS(), true
+	default:
+		return common.Address{}, false
+	}
+}
+
+// IsDeployed checks if the OmniAVS contract is deployed to the provided backend
+// to its expected network address.
+func IsDeployed(ctx context.Context, network string, backend *ethbackend.Backend) (bool, error) {
+	addr, ok := AddrForNetwork(network)
+	if !ok {
+		return false, errors.New("unsupported network", "network", network)
+	}
+
+	code, err := backend.CodeAt(ctx, addr, nil)
+	if err != nil {
+		return false, errors.Wrap(err, "code at")
+	}
+
+	if len(code) == 0 {
+		return false, nil
+	}
+
+	return true, nil
 }
 
 // Deploy deploys the AVS contract and returns the address and receipt.

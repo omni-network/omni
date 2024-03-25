@@ -50,6 +50,12 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 		return nil, nil, err
 	}
 
+	if err := deployPublicCreate3(ctx, def); err != nil {
+		return nil, nil, err
+	}
+
+	// TODO: deploy public proxy admins
+
 	// Deploy public portals first so their addresses are available for setup.
 	if err := def.Netman.DeployPublicPortals(ctx, genesisValSetID, genesisVals); err != nil {
 		return nil, nil, err
@@ -63,9 +69,11 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 		return nil, nil, err
 	}
 
-	if err := deployCreate3Factories(ctx, def); err != nil {
+	if err := deployPrivateCreate3(ctx, def); err != nil {
 		return nil, nil, err
 	}
+
+	// TODO: deploy private proxy admins
 
 	if err := def.Netman.DeployPrivatePortals(ctx, genesisValSetID, genesisVals); err != nil {
 		return nil, nil, err
@@ -74,7 +82,6 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 
 	deployInfo := make(types.DeployInfos)
 
-	var pp pingpong.XDapp
 	if err := deployAVSWithExport(ctx, def, deployInfo); err != nil {
 		return nil, nil, err
 	}
@@ -87,7 +94,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 		return deployInfo, nil, nil
 	}
 
-	pp, err = pingpong.Deploy(ctx, def.Netman, def.Backends)
+	pp, err := pingpong.Deploy(ctx, def.Netman, def.Backends)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "deploy pingpong")
 	}

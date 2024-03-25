@@ -3,7 +3,6 @@ package ethbackend
 import (
 	"context"
 	"crypto/ecdsa"
-	"strings"
 	"time"
 
 	"github.com/omni-network/omni/e2e/types"
@@ -20,14 +19,6 @@ import (
 
 const (
 	interval = 3
-
-	// keys of pre-funded anvil account 0.
-	privKeyHex0 = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-)
-
-//nolint:gochecknoglobals // Static mapping.
-var (
-	privateDeployKey = mustHexToKey(privKeyHex0)
 )
 
 // Backends is a wrapper around a set of Backends, one for each chain.
@@ -125,10 +116,14 @@ func NewBackends(testnet types.Testnet, deployKeyFile string) (Backends, error) 
 			return Backends{}, errors.Wrap(err, "dial")
 		}
 
-		inner[chain.Chain.ID], err = NewBackend(chain.Chain.Name, chain.Chain.ID, chain.Chain.BlockPeriod, ethCl, privateDeployKey)
+		// dev omni evm uses same dev accounts as anvil
+		// TODO: do not use dev anvil backend for prod omni evms
+		backend, err := NewAnvilBackend(chain.Chain.Name, chain.Chain.ID, chain.Chain.BlockPeriod, ethCl)
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "new omni Backend")
 		}
+
+		inner[chain.Chain.ID] = backend
 	}
 
 	// Configure anvil EVM Backends
@@ -138,10 +133,12 @@ func NewBackends(testnet types.Testnet, deployKeyFile string) (Backends, error) 
 			return Backends{}, errors.Wrap(err, "dial")
 		}
 
-		inner[chain.Chain.ID], err = NewBackend(chain.Chain.Name, chain.Chain.ID, chain.Chain.BlockPeriod, ethCl, privateDeployKey)
+		backend, err := NewAnvilBackend(chain.Chain.Name, chain.Chain.ID, chain.Chain.BlockPeriod, ethCl)
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "new anvil Backend")
 		}
+
+		inner[chain.Chain.ID] = backend
 	}
 
 	// Configure public EVM Backends
@@ -165,6 +162,10 @@ func NewBackends(testnet types.Testnet, deployKeyFile string) (Backends, error) 
 	}, nil
 }
 
+func (b Backends) All() map[uint64]*Backend {
+	return b.backends
+}
+
 func (b Backends) Backend(sourceChainID uint64) (*Backend, error) {
 	backend, ok := b.backends[sourceChainID]
 	if !ok {
@@ -174,30 +175,19 @@ func (b Backends) Backend(sourceChainID uint64) (*Backend, error) {
 	return backend, nil
 }
 
-// BindOpts is a convenience function that returns the single account and bind.TransactOpts and Backend for a given chain.
-func (b Backends) BindOpts(ctx context.Context, sourceChainID uint64) (common.Address, *bind.TransactOpts, *Backend, error) {
+// BindOpts is a convenience function that an accounts' bind.TransactOpts and Backend for a given chain.
+func (b Backends) BindOpts(ctx context.Context, sourceChainID uint64, addr common.Address) (*bind.TransactOpts, *Backend, error) {
 	backend, ok := b.backends[sourceChainID]
 	if !ok {
-		return common.Address{}, nil, nil, errors.New("unknown chain", "chain", sourceChainID)
-	}
-
-	if len(backend.accounts) != 1 {
-		return common.Address{}, nil, nil, errors.New("only single account Backends supported")
-	}
-
-	// Get the first account
-	var addr common.Address
-	for a := range backend.accounts {
-		addr = a
-		break
+		return nil, nil, errors.New("unknown chain", "chain", sourceChainID)
 	}
 
 	opts, err := backend.BindOpts(ctx, addr)
 	if err != nil {
-		return common.Address{}, nil, nil, errors.Wrap(err, "bind opts")
+		return nil, nil, errors.Wrap(err, "bind opts")
 	}
 
-	return addr, opts, backend, nil
+	return opts, backend, nil
 }
 
 func (b Backends) RPCClients() map[uint64]ethclient.Client {
@@ -253,13 +243,4 @@ func newTxMgr(ethCl ethclient.Client, chainName string, chainID uint64, blockPer
 	}
 
 	return txMgr, nil
-}
-
-func mustHexToKey(privKeyHex string) *ecdsa.PrivateKey {
-	privKey, err := crypto.HexToECDSA(strings.TrimPrefix(privKeyHex, "0x"))
-	if err != nil {
-		panic(err)
-	}
-
-	return privKey
 }
