@@ -35,7 +35,7 @@ func (c Client) createRawSignTransaction(ctx context.Context, account uint64, di
 	if err != nil {
 		return "", err
 	} else if !ok {
-		return "", errors.New("failed to create transaction", "msg", errRes.Message, "code", errRes.Code)
+		return "", errors.New("failed to create transaction", "resp_msg", errRes.Message, "resp_code", errRes.Code)
 	}
 
 	return res.ID, nil
@@ -55,9 +55,9 @@ func (c Client) Sign(ctx context.Context, digest common.Hash, signer common.Addr
 	}
 
 	// First try immediately.
-	if resp, ok, err := c.maybeGetSignature(ctx, id, digest, signer); err != nil {
+	if resp, status, err := c.maybeGetSignature(ctx, id, digest, signer); err != nil {
 		return [65]byte{}, err
-	} else if ok {
+	} else if status.Completed() {
 		return resp, nil
 	}
 
@@ -71,9 +71,10 @@ func (c Client) Sign(ctx context.Context, digest common.Hash, signer common.Addr
 		case <-ctx.Done():
 			return [65]byte{}, errors.Wrap(ctx.Err(), "context canceled")
 		case <-queryTicker.C:
-			if resp, ok, err := c.maybeGetSignature(ctx, id, digest, signer); err != nil {
+			resp, status, err := c.maybeGetSignature(ctx, id, digest, signer)
+			if err != nil {
 				return [65]byte{}, err
-			} else if ok {
+			} else if status.Completed() {
 				return resp, nil
 			}
 
@@ -81,6 +82,7 @@ func (c Client) Sign(ctx context.Context, digest common.Hash, signer common.Addr
 			if attempt%c.opts.LogFreqFactor == 0 {
 				log.Warn(ctx, "Fireblocks transaction not signed yet (will retry)", nil,
 					"attempt", attempt,
+					"status", status,
 					"id", id,
 				)
 			}
@@ -88,53 +90,42 @@ func (c Client) Sign(ctx context.Context, digest common.Hash, signer common.Addr
 	}
 }
 
-func (c Client) maybeGetSignature(ctx context.Context, txID string, digest common.Hash, signer common.Address) ([65]byte, bool, error) {
+// maybeGetSignature returns the resulting signature and "completed" status if the transaction has been signed.
+// If the transaction is still pending, it returns an empty signature and the "pending" status.
+// If the transaction has failed, it returns an empty signature and the "failed" status and an error.
+func (c Client) maybeGetSignature(ctx context.Context, txID string, digest common.Hash, signer common.Address) ([65]byte, Status, error) {
 	tx, err := c.getTransactionByID(ctx, txID)
 	if err != nil {
-		return [65]byte{}, false, err
+		return [65]byte{}, "", err
 	}
 
-	ok, err := isComplete(tx)
-	if err != nil {
-		return [65]byte{}, false, err
-	} else if !ok {
-		return [65]byte{}, false, nil
+	if tx.Status.Failed() {
+		return [65]byte{}, tx.Status, errors.New("transaction failed", "status", tx.Status)
+	} else if !tx.Status.Completed() {
+		return [65]byte{}, tx.Status, nil
 	}
-
 	// Get the resulting signature.
 	sig, err := tx.Sig0()
 	if err != nil {
-		return [65]byte{}, false, errors.Wrap(err, "get signature")
+		return [65]byte{}, "", errors.Wrap(err, "get signature")
 	}
 
 	// Get the signer pubkey.
 	pubkey, err := tx.Pubkey0()
 	if err != nil {
-		return [65]byte{}, false, err
+		return [65]byte{}, "", err
 	}
 	addr := crypto.PubkeyToAddress(*pubkey)
 	if addr != signer { // Ensure it matches the expected signer.
-		return [65]byte{}, false, errors.New("signed address mismatch", "expect", signer, "actual", addr)
+		return [65]byte{}, "", errors.New("signed address mismatch", "expect", signer, "actual", addr)
 	}
 
 	// Ensure the signature is valid.
 	if !crypto.VerifySignature(crypto.CompressPubkey(pubkey), digest[:], sig[:64]) {
-		return [65]byte{}, false, errors.New("signature verification failed")
+		return [65]byte{}, "", errors.New("signature verification failed")
 	}
 
-	return sig, true, nil
-}
-
-// isComplete returns true if the transaction is complete, false if still pending, or an error if it failed.
-func isComplete(tx transaction) (bool, error) {
-	switch tx.Status {
-	case "COMPLETED":
-		return true, nil
-	case "CANCELED", "BLOCKED_BY_POLICY", "REJECTED", "FAILED":
-		return false, errors.New("transaction failed", "status", tx.Status)
-	default:
-		return false, nil
-	}
+	return sig, tx.Status, nil
 }
 
 // newRawSignRequest creates a new transaction request.

@@ -30,7 +30,7 @@ func (c Client) getTransactionByID(ctx context.Context, transactionID string) (t
 	if err != nil {
 		return transaction{}, err
 	} else if !ok {
-		return transaction{}, errors.New("failed to get transaction", "msg", errRes.Message, "code", errRes.Code)
+		return transaction{}, errors.New("failed to get transaction", "resp_msg", errRes.Message, "resp_code", errRes.Code)
 	}
 
 	return res, nil
