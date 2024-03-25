@@ -109,10 +109,14 @@ func TestSmoke(t *testing.T) {
 	apiKey, ok := os.LookupEnv("TESTNET_FIREBLOCKS_API_KEY")
 	if !ok {
 		t.Skip("TESTNET_FIREBLOCKS_API_KEY not set")
+	} else if apiKey == "" {
+		t.Skip("TESTNET_FIREBLOCKS_API_KEY is empty")
 	}
 	privKeyFile, ok := os.LookupEnv("TESTNET_FIREBLOCKS_SECRET")
 	if !ok {
-		t.Skip("TESTNET_FIREBLOCKS_API_KEY not set")
+		t.Skip("TESTNET_FIREBLOCKS_SECRET not set")
+	} else if privKeyFile == "" {
+		t.Skip("TESTNET_FIREBLOCKS_SECRET is empty")
 	}
 	privKey, err := os.ReadFile(privKeyFile)
 	require.NoError(t, err)
