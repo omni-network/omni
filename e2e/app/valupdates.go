@@ -48,7 +48,8 @@ func FundValidatorsForTesting(ctx context.Context, def Definition) error {
 	f, _ := bal.Float64()
 	log.Info(ctx, "Funder balance", "balance", f/1e18)
 
-	for node := range def.Testnet.Validators {
+	// Iterate over all nodes, since all maybe become validators.
+	for _, node := range def.Testnet.Nodes {
 		addr, _ := k1util.PubKeyToAddress(node.PrivvalKey.PubKey())
 		tx, _, err := fundBackend.Send(ctx, funder, txmgr.TxCandidate{
 			To:       &addr,
@@ -84,9 +85,9 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 	}
 
 	go func() {
-		// Get all validator private keys
+		// Get all halo private keys
 		var privkeys []*ecdsa.PrivateKey
-		for node := range def.Testnet.Validators {
+		for _, node := range def.Testnet.Nodes {
 			pk, err := k1util.StdPrivKeyFromComet(node.PrivvalKey)
 			if err != nil {
 				returnErr(err)
