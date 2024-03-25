@@ -40,6 +40,7 @@ const (
 	// TODO(corver): Maybe move these to genesis itself.
 	genesisVoteWindow   = 64
 	genesisVoteExtLimit = 256
+	genesisTrimLag      = 1_000_000 // Delete application state after +-2 weeks (given period of 1.2s).
 )
 
 // init initializes the Cosmos SDK configuration.
@@ -86,6 +87,7 @@ var (
 	beginBlockers = []string{
 		distrtypes.ModuleName,   // Note: slashing happens after distr.BeginBlocker
 		stakingtypes.ModuleName, // Note: staking module is required if HistoricalEntries param > 0
+		attesttypes.ModuleName,
 	}
 
 	endBlockers = []string{
@@ -99,6 +101,7 @@ var (
 		distrtypes.ModuleName,
 		stakingtypes.BondedPoolName,
 		stakingtypes.NotBondedPoolName,
+		evmstaking.AccountName,
 	}
 
 	moduleAccPerms = []*authmodulev1.ModuleAccountPermission{
@@ -172,6 +175,7 @@ var (
 				Config: appconfig.WrapAny(&attestmodule.Module{
 					VoteWindow:         genesisVoteWindow,
 					VoteExtensionLimit: genesisVoteExtLimit,
+					TrimLag:            genesisTrimLag,
 				}),
 			},
 			{

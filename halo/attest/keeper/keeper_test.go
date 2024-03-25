@@ -48,7 +48,7 @@ func TestKeeper_Add(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					{Id: 1, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: 500, Status: int32(keeper.Status_Pending)},
+					expectPendingAtt(1, 500),
 				},
 				sigs: []*keeper.Signature{
 					expectValSig(1, 1, val1),
@@ -67,8 +67,13 @@ func TestKeeper_Add(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					{Id: 1, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: 500, Status: int32(keeper.Status_Pending)},
-					{Id: 2, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[1].Bytes(), Height: 501, Status: int32(keeper.Status_Pending)},
+					expectPendingAtt(1, 500),
+					update(
+						expectPendingAtt(2, 501),
+						func(att *keeper.Attestation) {
+							att.Hash = blockHashes[1].Bytes()
+						},
+					),
 				},
 				sigs: []*keeper.Signature{
 					expectValSig(1, 1, val1),
@@ -90,7 +95,7 @@ func TestKeeper_Add(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					{Id: 1, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: 500, Status: int32(keeper.Status_Pending)},
+					expectPendingAtt(1, 500),
 				},
 				sigs: []*keeper.Signature{
 					expectValSig(1, 1, val1),
@@ -115,7 +120,7 @@ func TestKeeper_Add(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					{Id: 1, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: 500, Status: int32(keeper.Status_Pending)},
+					expectPendingAtt(1, 500),
 				},
 				sigs: []*keeper.Signature{
 					expectValSig(1, 1, val1),
@@ -144,8 +149,13 @@ func TestKeeper_Add(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					{Id: 1, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: 500, Status: int32(keeper.Status_Pending)},
-					{Id: 2, AttestationRoot: []byte("different root"), ChainId: 1, Hash: blockHashes[0].Bytes(), Height: 500, Status: int32(keeper.Status_Pending)},
+					expectPendingAtt(1, 500),
+					update(
+						expectPendingAtt(2, 500),
+						func(att *keeper.Attestation) {
+							att.AttestationRoot = []byte("different root")
+						},
+					),
 				},
 				sigs: []*keeper.Signature{
 					expectValSig(1, 1, val1),
@@ -440,9 +450,15 @@ func expectValSig(id uint64, attID uint64, val *vtypes.Validator) *keeper.Signat
 }
 
 func expectPendingAtt(id uint64, height uint64) *keeper.Attestation {
-	return &keeper.Attestation{Id: id, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: height, Status: int32(keeper.Status_Pending)}
+	return &keeper.Attestation{Id: id, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: height, CreatedHeight: 1, Status: int32(keeper.Status_Pending)}
 }
 
 func expectApprovedAtt(id uint64, height uint64, valset *vtypes.ValidatorSetResponse) *keeper.Attestation {
-	return &keeper.Attestation{Id: id, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: height, Status: int32(keeper.Status_Approved), ValidatorSetId: valset.Id}
+	return &keeper.Attestation{Id: id, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: height, CreatedHeight: 1, Status: int32(keeper.Status_Approved), ValidatorSetId: valset.Id}
+}
+
+func update[T any](t T, fn func(T)) T {
+	fn(t)
+
+	return t
 }

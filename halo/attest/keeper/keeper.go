@@ -32,9 +32,6 @@ var _ sdk.VerifyVoteExtensionHandler = (*Keeper)(nil).VerifyVoteExtension
 
 // Keeper is the attestation keeper.
 // It keeps tracks of all attestations included on-chain and detects when they are approved.
-//
-// TODOs:
-//   - Delete attestations after 14 days.
 type Keeper struct {
 	attTable     AttestationTable
 	sigTable     SignatureTable
@@ -46,6 +43,7 @@ type Keeper struct {
 	namer        types.ChainNameFunc
 	voteWindow   uint64
 	voteExtLimit uint64
+	trimLag      uint64
 }
 
 // New returns a new attestation keeper.
@@ -56,6 +54,7 @@ func New(
 	namer types.ChainNameFunc,
 	voteWindow uint64,
 	voteExtLimit uint64,
+	trimLag uint64,
 ) (*Keeper, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
 		{Id: 1, ProtoFileName: File_halo_attest_keeper_attestation_proto.Path()},
@@ -80,6 +79,7 @@ func New(
 		namer:        namer,
 		voteWindow:   voteWindow,
 		voteExtLimit: voteExtLimit,
+		trimLag:      trimLag,
 	}
 
 	return k, nil
@@ -144,6 +144,7 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 			AttestationRoot: agg.AttestationRoot,
 			Status:          int32(Status_Pending),
 			ValidatorSetId:  0, // Unknown at this point.
+			CreatedHeight:   uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()),
 		})
 		if err != nil {
 			return errors.Wrap(err, "insert")
@@ -388,6 +389,12 @@ func (k *Keeper) getSigs(ctx context.Context, attID uint64) ([]*Signature, error
 	return sigs, nil
 }
 
+func (k *Keeper) BeginBlock(ctx context.Context) error {
+	head := uint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
+
+	return k.deleteBefore(ctx, uintSub(head, k.trimLag))
+}
+
 func (k *Keeper) EndBlock(ctx context.Context) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if sdkCtx.BlockHeight() <= 1 {
@@ -574,6 +581,40 @@ func (k *Keeper) verifyAggVotes(ctx context.Context, valset ValSet, aggs []*type
 			return errors.Wrap(err, "windower")
 		} else if resp != 0 {
 			return errors.New("vote outside window", "resp", resp)
+		}
+	}
+
+	return nil
+}
+
+// deleteBefore deletes all attestations and signatures before the given height (inclusive).
+// Note this always deletes block 0, but genesis block doesn't contain any attestations.
+func (k *Keeper) deleteBefore(ctx context.Context, height uint64) error {
+	start := AttestationCreatedHeightIndexKey{}
+	end := AttestationCreatedHeightIndexKey{}.WithCreatedHeight(height)
+	iter, err := k.attTable.ListRange(ctx, start, end)
+	if err != nil {
+		return errors.Wrap(err, "list atts")
+	}
+	defer iter.Close()
+
+	for iter.Next() {
+		att, err := iter.Value()
+		if err != nil {
+			return errors.Wrap(err, "value att")
+		} else if att.GetCreatedHeight() > height {
+			return errors.New("query sanity check [BUG]")
+		}
+
+		// Delete signatures
+		if err := k.sigTable.DeleteBy(ctx, SignatureAttIdIndexKey{}.WithAttId(att.GetId())); err != nil {
+			return errors.Wrap(err, "delete sigs")
+		}
+
+		// Delete attestation
+		err = k.attTable.Delete(ctx, att)
+		if err != nil {
+			return errors.Wrap(err, "delete att")
 		}
 	}
 
