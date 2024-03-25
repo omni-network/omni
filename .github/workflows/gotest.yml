@@ -1,4 +1,4 @@
-name: go tests
+name: vtest
 # Run this separately from pre-commit for nice visual coverage.
 
 on:
@@ -9,7 +9,7 @@ permissions:
   pull-requests: read
 
 jobs:
-  unit_tests:
+  vtest:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
