@@ -63,7 +63,7 @@ func (c Client) populateAccountCache(ctx context.Context) error {
 	if err != nil {
 		return err
 	} else if !ok {
-		return errors.New("failed to get vaults", "msg", errResp.Message, "code", errResp.Code)
+		return errors.New("failed to get vaults", "err_msg", errResp.Message, "err_code", errResp.Code)
 	} else if resp.Paging.After != "" {
 		return errors.New("paging not implemented")
 	}
@@ -111,7 +111,7 @@ func (c Client) GetPublicKey(ctx context.Context, account uint64) (*ecdsa.Public
 	if err != nil {
 		return nil, err
 	} else if !ok {
-		return nil, errors.New("failed to get public key", "msg", errRes.Message, "code", errRes.Code)
+		return nil, errors.New("failed to get public key", "err_msg", errRes.Message, "err_code", errRes.Code)
 	}
 
 	pk, err := hex.DecodeString(res.PublicKey)

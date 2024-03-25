@@ -28,7 +28,7 @@ func (c Client) GetSupportedAssets(ctx context.Context) ([]Asset, error) {
 	if err != nil {
 		return nil, err
 	} else if !ok {
-		return nil, errors.New("failed to get supported assets", "msg", errRes.Message, "code", errRes.Code)
+		return nil, errors.New("failed to get supported assets", "err_msg", errRes.Message, "err_code", errRes.Code)
 	}
 
 	return res, nil

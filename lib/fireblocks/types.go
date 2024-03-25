@@ -250,7 +250,7 @@ type pubkeyResponse struct {
 
 type errorResponse struct {
 	Message string `json:"message"`
-	Code    int    `json:"code"`
+	Code    int    `json:"err_code"`
 }
 
 type vaultsResponse struct {

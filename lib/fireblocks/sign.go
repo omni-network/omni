@@ -35,7 +35,7 @@ func (c Client) createRawSignTransaction(ctx context.Context, account uint64, di
 	if err != nil {
 		return "", err
 	} else if !ok {
-		return "", errors.New("failed to create transaction", "msg", errRes.Message, "code", errRes.Code)
+		return "", errors.New("failed to create transaction", "err_msg", errRes.Message, "err_code", errRes.Code)
 	}
 
 	return res.ID, nil
