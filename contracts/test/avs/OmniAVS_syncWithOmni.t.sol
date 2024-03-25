@@ -360,4 +360,35 @@ contract OmniAVS_syncWithOmni_Test is Base {
 
         _assertSyncWithOmni(ops);
     }
+
+    /// @dev Test that delegations (self & other) to unsupported strategies are not counted in AVS stake
+    function test_unsupportedStrategyDeposit_succeeds() public {
+        address operator = _operator(0);
+        address delegator = _delegator(0);
+
+        uint96 stakeAmt = 10 ether;
+        uint96 delegateAmt = 1 ether;
+
+        _registerAsOperator(operator);
+
+        // should be counted by avs
+        _depositIntoSupportedStrategy(operator, stakeAmt);
+        _depositIntoSupportedStrategy(delegator, delegateAmt);
+
+        // should NOT be counted by avs
+        _depositIntoUnsupportedStrategy(operator, stakeAmt);
+        _depositIntoUnsupportedStrategy(delegator, delegateAmt);
+
+        _testDelegateToOperator(delegator, operator);
+        _addToAllowlist(operator);
+        _registerOperatorWithAVS(operator);
+
+        IOmniAVS.Operator[] memory ops = omniAVS.operators();
+
+        // assert unsupported strategy deposit does not affect operator stake
+        assertEq(ops.length, 1);
+        assertEq(ops[0].addr, operator);
+        assertEq(ops[0].staked, stakeAmt);
+        assertEq(ops[0].delegated, delegateAmt);
+    }
 }
