@@ -43,7 +43,6 @@ func Run(ctx context.Context, cfg Config) error {
 	return nil
 }
 
-// provider: dial rpc: dial: dial unix: missing address" chain_id=2 rpc_url="" chain=omni_consensus url="" stacktrace="[app.go:38 cmd.go:34 command.go:983 command.go:1115 command.go:1039 command.go:1032 cmd.go:34 main.go:10 proc.go:271]"
 // startXProvider all of our providers and subscribes to the chains in the network config.
 func startXProvider(ctx context.Context, network netconf.Network, entCl *ent.Client) error {
 	rpcClientPerChain, err := initializeRPCClients(network.EVMChains())
