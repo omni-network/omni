@@ -66,27 +66,3 @@ func (b *BlocksResolver) XBlockCount(ctx context.Context) (*hexutil.Big, error) 
 
 	return res, nil
 }
-
-func (b *BlocksResolver) XMsgCount(ctx context.Context) (*hexutil.Big, error) {
-	res, found, err := b.BlocksProvider.XMsgCount(ctx)
-	if err != nil {
-		return nil, errors.New("failed to fetch message count")
-	}
-	if !found {
-		return nil, errors.New("message count not found")
-	}
-
-	return res, nil
-}
-
-func (b *BlocksResolver) XReceiptCount(ctx context.Context) (*hexutil.Big, error) {
-	res, found, err := b.BlocksProvider.XReceiptCount(ctx)
-	if err != nil {
-		return nil, errors.New("failed to fetch receipt count")
-	}
-	if !found {
-		return nil, errors.New("receipt count not found")
-	}
-
-	return res, nil
-}

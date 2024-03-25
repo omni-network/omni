@@ -22,7 +22,6 @@ func Run(ctx context.Context, cfg Config) error {
 	if err != nil {
 		return errors.Wrap(err, "load network config")
 	}
-
 	entCl, err := db.NewPostgressClient(cfg.DBUrl)
 	if err != nil {
 		return errors.Wrap(err, "new db client")
@@ -44,17 +43,21 @@ func Run(ctx context.Context, cfg Config) error {
 	return nil
 }
 
+// provider: dial rpc: dial: dial unix: missing address" chain_id=2 rpc_url="" chain=omni_consensus url="" stacktrace="[app.go:38 cmd.go:34 command.go:983 command.go:1115 command.go:1039 command.go:1032 cmd.go:34 main.go:10 proc.go:271]"
 // startXProvider all of our providers and subscribes to the chains in the network config.
 func startXProvider(ctx context.Context, network netconf.Network, entCl *ent.Client) error {
-	rpcClientPerChain, err := initializeRPCClients(network.Chains)
+	rpcClientPerChain, err := initializeRPCClients(network.EVMChains())
 	if err != nil {
 		return err
 	}
 
 	xprovider := provider.New(network, rpcClientPerChain, nil)
+	if xprovider == nil {
+		return errors.New("failed to create xchain provider")
+	}
 	callback := newCallback(entCl)
 
-	for _, chain := range network.Chains {
+	for _, chain := range network.EVMChains() {
 		fromHeight, err := initChainCursor(ctx, entCl, chain)
 		if err != nil {
 			return errors.Wrap(err, "initialize chain cursor", "chain_id", chain.ID)
@@ -69,6 +72,7 @@ func startXProvider(ctx context.Context, network netconf.Network, entCl *ent.Cli
 	return nil
 }
 
+// initializeRPCClients initializes the rpc clients for all evm chains in the network.
 func initializeRPCClients(chains []netconf.Chain) (map[uint64]ethclient.Client, error) {
 	rpcClientPerChain := make(map[uint64]ethclient.Client)
 	for _, chain := range chains {
