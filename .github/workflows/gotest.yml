@@ -16,3 +16,4 @@ jobs:
           go-version: 'stable'
       # TODO(corver): add coverage
       - run: go test -timeout=5m -race -tags=verify_logs ./...
+      - run: go test -v github.com/omni-network/omni/lib/fireblocks
