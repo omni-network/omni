@@ -102,7 +102,7 @@ func stagingCfg(valSetID uint64, vals []bindings.Validator) DeploymentConfig {
 		ProxyAdmin:     contracts.StagingProxyAdmin(),
 		ValSetID:       valSetID,
 		Validators:     vals,
-		ExpectedAddr:   contracts.StagingPortalAdmin(),
+		ExpectedAddr:   contracts.StagingPortal(),
 	}
 }
 
