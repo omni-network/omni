@@ -31,8 +31,8 @@ var (
 
 // Create3MetaData contains all meta data concerning the Create3 contract.
 var Create3MetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"deploy\",\"inputs\":[{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"creationCode\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"deployed\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"getDeployed\",\"inputs\":[{\"name\":\"deployer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"deployed\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"}]",
-	Bin: "0x608060405234801561001057600080fd5b506104be806100206000396000f3fe6080604052600436106100295760003560e01c806350f1c4641461002e578063cdcb760a1461006a575b600080fd5b34801561003a57600080fd5b5061004e610049366004610344565b61007d565b6040516001600160a01b03909116815260200160405180910390f35b61004e610078366004610392565b6100c9565b6040516001600160601b0319606084901b166020820152603481018290526000906054016040516020818303038152906040528051906020012091506100c28261010f565b9392505050565b6040516001600160601b03193360601b166020820152603481018390526000906054016040516020818303038152906040528051906020012092506100c28383346101e9565b604080518082018252601081526f67363d3d37363d34f03d5260086018f360801b60209182015290516001600160f81b0319918101919091526001600160601b03193060601b166021820152603581018290527f21c35dbe1b344a2488cf3321d6ce542f8e9f305544ff09e4993a62319a497c1f605582015260009081906101ae906075015b6040516020818303038152906040528051906020012090565b6040516135a560f21b60208201526001600160601b0319606083901b166022820152600160f81b60368201529091506100c290603701610195565b6000806040518060400160405280601081526020016f67363d3d37363d34f03d5260086018f360801b81525090506000858251602084016000f590506001600160a01b0381166102745760405162461bcd60e51b81526020600482015260116024820152701111541313d65351539517d19052531151607a1b60448201526064015b60405180910390fd5b61027d8661010f565b92506000816001600160a01b0316858760405161029a919061044d565b60006040518083038185875af1925050503d80600081146102d7576040519150601f19603f3d011682016040523d82523d6000602084013e6102dc565b606091505b505090508080156102f657506001600160a01b0384163b15155b61033a5760405162461bcd60e51b815260206004820152601560248201527412539255125053125690551253d397d19052531151605a1b604482015260640161026b565b5050509392505050565b6000806040838503121561035757600080fd5b82356001600160a01b038116811461036e57600080fd5b946020939093013593505050565b634e487b7160e01b600052604160045260246000fd5b600080604083850312156103a557600080fd5b82359150602083013567ffffffffffffffff808211156103c457600080fd5b818501915085601f8301126103d857600080fd5b8135818111156103ea576103ea61037c565b604051601f8201601f19908116603f011681019083821181831017156104125761041261037c565b8160405282815288602084870101111561042b57600080fd5b8260208601602083013760006020848301015280955050505050509250929050565b6000825160005b8181101561046e5760208186018101518583015201610454565b8181111561047d576000828501525b50919091019291505056fea2646970667358221220ccc99d424c1e4f54644c481711f1d188e9ca8036aa11a3530c8cb0397dd18abe64736f6c634300080c0033",
+	ABI: "[{\"type\":\"function\",\"name\":\"deploy\",\"inputs\":[{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"creationCode\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"deployed\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"getDeployedAddr\",\"inputs\":[{\"name\":\"deployer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"deployed\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getDeployedHeight\",\"inputs\":[{\"name\":\"deployer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"}]",
+	Bin: "0x608060405234801561001057600080fd5b50610551806100206000396000f3fe6080604052600436106100345760003560e01c80631b5e6d381461003957806373840bff14610076578063cdcb760a146100a4575b600080fd5b34801561004557600080fd5b506100596100543660046103ba565b6100b7565b6040516001600160a01b0390911681526020015b60405180910390f35b34801561008257600080fd5b506100966100913660046103ba565b6100f4565b60405190815260200161006d565b6100596100b2366004610408565b610134565b600082826040516020016100cc9291906104c3565b6040516020818303038152906040528051906020012091506100ed82610185565b9392505050565b600082826040516020016101099291906104c3565b60408051808303601f1901815291815281516020928301206000908152918290529020549392505050565b600033836040516020016101499291906104c3565b60405160208183030381529060405280519060200120925061016c83833461025f565b6000848152602081905260409020439055905092915050565b604080518082018252601081526f67363d3d37363d34f03d5260086018f360801b60209182015290516001600160f81b0319918101919091526001600160601b03193060601b166021820152603581018290527f21c35dbe1b344a2488cf3321d6ce542f8e9f305544ff09e4993a62319a497c1f60558201526000908190610224906075015b6040516020818303038152906040528051906020012090565b6040516135a560f21b60208201526001600160601b0319606083901b166022820152600160f81b60368201529091506100ed9060370161020b565b6000806040518060400160405280601081526020016f67363d3d37363d34f03d5260086018f360801b81525090506000858251602084016000f590506001600160a01b0381166102ea5760405162461bcd60e51b81526020600482015260116024820152701111541313d65351539517d19052531151607a1b60448201526064015b60405180910390fd5b6102f386610185565b92506000816001600160a01b0316858760405161031091906104e0565b60006040518083038185875af1925050503d806000811461034d576040519150601f19603f3d011682016040523d82523d6000602084013e610352565b606091505b5050905080801561036c57506001600160a01b0384163b15155b6103b05760405162461bcd60e51b815260206004820152601560248201527412539255125053125690551253d397d19052531151605a1b60448201526064016102e1565b5050509392505050565b600080604083850312156103cd57600080fd5b82356001600160a01b03811681146103e457600080fd5b946020939093013593505050565b634e487b7160e01b600052604160045260246000fd5b6000806040838503121561041b57600080fd5b82359150602083013567ffffffffffffffff8082111561043a57600080fd5b818501915085601f83011261044e57600080fd5b813581811115610460576104606103f2565b604051601f8201601f19908116603f01168101908382118183101715610488576104886103f2565b816040528281528860208487010111156104a157600080fd5b8260208601602083013760006020848301015280955050505050509250929050565b60609290921b6001600160601b0319168252601482015260340190565b6000825160005b8181101561050157602081860181015185830152016104e7565b81811115610510576000828501525b50919091019291505056fea2646970667358221220960f3f9115e8e4a72ea67c63cbf8b5fc196508a54561a05ff85e18780b4c151364736f6c634300080c0033",
 }
 
 // Create3ABI is the input ABI used to generate the binding from.
@@ -202,12 +202,12 @@ func (_Create3 *Create3TransactorRaw) Transact(opts *bind.TransactOpts, method s
 	return _Create3.Contract.contract.Transact(opts, method, params...)
 }
 
-// GetDeployed is a free data retrieval call binding the contract method 0x50f1c464.
+// GetDeployedAddr is a free data retrieval call binding the contract method 0x1b5e6d38.
 //
-// Solidity: function getDeployed(address deployer, bytes32 salt) view returns(address deployed)
-func (_Create3 *Create3Caller) GetDeployed(opts *bind.CallOpts, deployer common.Address, salt [32]byte) (common.Address, error) {
+// Solidity: function getDeployedAddr(address deployer, bytes32 salt) view returns(address deployed)
+func (_Create3 *Create3Caller) GetDeployedAddr(opts *bind.CallOpts, deployer common.Address, salt [32]byte) (common.Address, error) {
 	var out []interface{}
-	err := _Create3.contract.Call(opts, &out, "getDeployed", deployer, salt)
+	err := _Create3.contract.Call(opts, &out, "getDeployedAddr", deployer, salt)
 
 	if err != nil {
 		return *new(common.Address), err
@@ -219,18 +219,49 @@ func (_Create3 *Create3Caller) GetDeployed(opts *bind.CallOpts, deployer common.
 
 }
 
-// GetDeployed is a free data retrieval call binding the contract method 0x50f1c464.
+// GetDeployedAddr is a free data retrieval call binding the contract method 0x1b5e6d38.
 //
-// Solidity: function getDeployed(address deployer, bytes32 salt) view returns(address deployed)
-func (_Create3 *Create3Session) GetDeployed(deployer common.Address, salt [32]byte) (common.Address, error) {
-	return _Create3.Contract.GetDeployed(&_Create3.CallOpts, deployer, salt)
+// Solidity: function getDeployedAddr(address deployer, bytes32 salt) view returns(address deployed)
+func (_Create3 *Create3Session) GetDeployedAddr(deployer common.Address, salt [32]byte) (common.Address, error) {
+	return _Create3.Contract.GetDeployedAddr(&_Create3.CallOpts, deployer, salt)
 }
 
-// GetDeployed is a free data retrieval call binding the contract method 0x50f1c464.
+// GetDeployedAddr is a free data retrieval call binding the contract method 0x1b5e6d38.
 //
-// Solidity: function getDeployed(address deployer, bytes32 salt) view returns(address deployed)
-func (_Create3 *Create3CallerSession) GetDeployed(deployer common.Address, salt [32]byte) (common.Address, error) {
-	return _Create3.Contract.GetDeployed(&_Create3.CallOpts, deployer, salt)
+// Solidity: function getDeployedAddr(address deployer, bytes32 salt) view returns(address deployed)
+func (_Create3 *Create3CallerSession) GetDeployedAddr(deployer common.Address, salt [32]byte) (common.Address, error) {
+	return _Create3.Contract.GetDeployedAddr(&_Create3.CallOpts, deployer, salt)
+}
+
+// GetDeployedHeight is a free data retrieval call binding the contract method 0x73840bff.
+//
+// Solidity: function getDeployedHeight(address deployer, bytes32 salt) view returns(uint256)
+func (_Create3 *Create3Caller) GetDeployedHeight(opts *bind.CallOpts, deployer common.Address, salt [32]byte) (*big.Int, error) {
+	var out []interface{}
+	err := _Create3.contract.Call(opts, &out, "getDeployedHeight", deployer, salt)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetDeployedHeight is a free data retrieval call binding the contract method 0x73840bff.
+//
+// Solidity: function getDeployedHeight(address deployer, bytes32 salt) view returns(uint256)
+func (_Create3 *Create3Session) GetDeployedHeight(deployer common.Address, salt [32]byte) (*big.Int, error) {
+	return _Create3.Contract.GetDeployedHeight(&_Create3.CallOpts, deployer, salt)
+}
+
+// GetDeployedHeight is a free data retrieval call binding the contract method 0x73840bff.
+//
+// Solidity: function getDeployedHeight(address deployer, bytes32 salt) view returns(uint256)
+func (_Create3 *Create3CallerSession) GetDeployedHeight(deployer common.Address, salt [32]byte) (*big.Int, error) {
+	return _Create3.Contract.GetDeployedHeight(&_Create3.CallOpts, deployer, salt)
 }
 
 // Deploy is a paid mutator transaction binding the contract method 0xcdcb760a.

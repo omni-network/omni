@@ -69,13 +69,13 @@ func setup(t *testing.T) (context.Context, *ethbackend.Backend, Contracts, EOAS)
 
 	eoas := makeEOAS(t, backend)
 
-	_, _, err = create3.Deploy(ctx, netconf.Devnet, backend)
+	_, err = create3.Deploy(ctx, netconf.Devnet, backend)
 	require.NoError(t, err)
 
-	addr, _, err := avs.Deploy(ctx, netconf.Devnet, backend)
+	deployment, err := avs.Deploy(ctx, netconf.Devnet, backend)
 	require.NoError(t, err)
 
-	contracts, err := makeContracts(addr, devnetEigenDeployments(t), backend)
+	contracts, err := makeContracts(deployment.Address, devnetEigenDeployments(t), backend)
 	require.NoError(t, err)
 
 	checkIfContractsAreDeployed(t, ctx, ethCl, contracts)

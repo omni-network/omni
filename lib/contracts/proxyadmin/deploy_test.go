@@ -36,15 +36,15 @@ func TestDeployDevnet(t *testing.T) {
 	require.NoError(t, err)
 
 	// devnet create3 factory is required
-	addr, _, err := create3.Deploy(ctx, netconf.Devnet, backend)
+	factory, err := create3.Deploy(ctx, netconf.Devnet, backend)
 	require.NoError(t, err)
-	require.Equal(t, contracts.DevnetCreate3Factory(), addr)
+	require.Equal(t, contracts.DevnetCreate3Factory(), factory)
 
-	addr, _, err = proxyadmin.Deploy(ctx, netconf.Devnet, backend)
+	deployment, err := proxyadmin.Deploy(ctx, netconf.Devnet, backend)
 	require.NoError(t, err)
-	require.Equal(t, contracts.DevnetProxyAdmin(), addr)
+	require.Equal(t, contracts.DevnetProxyAdmin(), deployment.Address)
 
-	proxyAdmin, err := bindings.NewProxyAdmin(addr, backend)
+	proxyAdmin, err := bindings.NewProxyAdmin(deployment.Address, backend)
 	require.NoError(t, err)
 
 	owner, err := proxyAdmin.Owner(nil)

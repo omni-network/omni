@@ -113,32 +113,48 @@ func AddrForNetwork(network netconf.ID) (common.Address, bool) {
 
 // IsDeployed checks if the ProxyAdmin contract is deployed to the provided backend
 // to its expected network address.
-func IsDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (bool, common.Address, error) {
-	addr, ok := AddrForNetwork(network)
-	if !ok {
-		return false, addr, errors.New("unsupported network", "network", network)
-	}
-
-	code, err := backend.CodeAt(ctx, addr, nil)
+func IsDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (bool, contracts.Deployment, error) {
+	chainID, err := backend.ChainID(ctx)
 	if err != nil {
-		return false, addr, errors.Wrap(err, "code at")
+		return false, contracts.Deployment{}, errors.Wrap(err, "chain id")
 	}
 
-	if len(code) == 0 {
-		return false, addr, nil
+	cfg, err := getDeployCfg(chainID.Uint64(), network)
+	if err != nil {
+		return false, contracts.Deployment{}, errors.Wrap(err, "get deployment config")
 	}
 
-	return true, addr, nil
+	factory, err := bindings.NewCreate3(cfg.Create3Factory, backend)
+	if err != nil {
+		return false, contracts.Deployment{}, errors.Wrap(err, "new create3")
+	}
+
+	salt := create3.HashSalt(cfg.Create3Salt)
+	height, err := factory.GetDeployedHeight(nil, cfg.Deployer, salt)
+	if err != nil {
+		return false, contracts.Deployment{}, errors.Wrap(err, "get deployed height")
+	}
+
+	if height.Uint64() == 0 {
+		return false, contracts.Deployment{}, nil
+	}
+
+	deployment := contracts.Deployment{
+		Address:     create3.Address(cfg.Create3Factory, cfg.Create3Salt, cfg.Deployer),
+		BlockHeight: height.Uint64(),
+	}
+
+	return true, deployment, nil
 }
 
 // DeployIfNeeded deploys a new ProxyAdmin contract if it is not already deployed.
-func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
-	deployed, addr, err := IsDeployed(ctx, network, backend)
+func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (contracts.Deployment, error) {
+	deployed, deployment, err := IsDeployed(ctx, network, backend)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "is deployed")
+		return contracts.Deployment{}, errors.Wrap(err, "is deployed")
 	}
 	if deployed {
-		return addr, nil, nil
+		return deployment, nil
 	}
 
 	return Deploy(ctx, network, backend)
@@ -146,58 +162,63 @@ func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend
 
 // Deploy deploys a new ProxyAdmin contract and returns the address and receipt.
 // It only allows deployments to explicitly supported chains.
-func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (contracts.Deployment, error) {
 	chainID, err := backend.ChainID(ctx)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "chain id")
+		return contracts.Deployment{}, errors.Wrap(err, "chain id")
 	}
 
 	cfg, err := getDeployCfg(chainID.Uint64(), network)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "get deployment config")
+		return contracts.Deployment{}, errors.Wrap(err, "get deployment config")
 	}
 
 	return deploy(ctx, cfg, backend)
 }
 
-func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backend) (contracts.Deployment, error) {
 	txOpts, err := backend.BindOpts(ctx, cfg.Deployer)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "bind opts")
+		return contracts.Deployment{}, errors.Wrap(err, "bind opts")
 	}
 
 	factory, err := bindings.NewCreate3(cfg.Create3Factory, backend)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "new create3")
+		return contracts.Deployment{}, errors.Wrap(err, "new create3")
 	}
 
 	salt := create3.HashSalt(cfg.Create3Salt)
 
-	addr, err := factory.GetDeployed(nil, txOpts.From, salt)
+	addr, err := factory.GetDeployedAddr(nil, txOpts.From, salt)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "get deployed")
+		return contracts.Deployment{}, errors.Wrap(err, "get deployed")
 	} else if (cfg.ExpectedAddr != common.Address{}) && addr != cfg.ExpectedAddr {
-		return common.Address{}, nil, errors.New("unexpected address", "expected", cfg.ExpectedAddr, "actual", addr)
+		return contracts.Deployment{}, errors.New("unexpected address", "expected", cfg.ExpectedAddr, "actual", addr)
 	}
 
 	initCode, err := packInitCode(cfg)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "pack init code")
+		return contracts.Deployment{}, errors.Wrap(err, "pack init code")
 	}
 
 	tx, err := factory.Deploy(txOpts, salt, initCode)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "deploy proxy admin")
+		return contracts.Deployment{}, errors.Wrap(err, "deploy proxy admin")
 	}
 
 	receipt, err := bind.WaitMined(ctx, backend, tx)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "wait mined proxy admin")
+		return contracts.Deployment{}, errors.Wrap(err, "wait mined proxy admin")
 	} else if receipt.Status != ethtypes.ReceiptStatusSuccessful {
-		return common.Address{}, nil, errors.New("deploy proxy failed")
+		return contracts.Deployment{}, errors.New("deploy proxy failed")
 	}
 
-	return addr, receipt, nil
+	deployment := contracts.Deployment{
+		Address:     addr,
+		BlockHeight: receipt.BlockNumber.Uint64(),
+	}
+
+	return deployment, nil
 }
 
 func packInitCode(cfg DeploymentConfig) ([]byte, error) {

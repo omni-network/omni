@@ -203,20 +203,20 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 			return nil, errors.Wrap(err, "deploy opts", "chain", p.Chain.Name)
 		}
 
-		addr, receipt, err := portal.DeployIfNeeded(ctx, m.network, backend, valSetID, validators)
+		deployment, err := portal.DeployIfNeeded(ctx, m.network, backend, valSetID, validators)
 		if err != nil {
 			return nil, errors.Wrap(err, "deploy public omni contracts", "chain", p.Chain.Name)
 		}
 
-		contract, err := bindings.NewOmniPortal(addr, backend)
+		contract, err := bindings.NewOmniPortal(deployment.Address, backend)
 		if err != nil {
 			return nil, errors.Wrap(err, "bind contract", "chain", p.Chain.Name)
 		}
 
 		return &deployResult{
 			Contract: contract,
-			Addr:     addr,
-			Height:   receipt.BlockNumber.Uint64(),
+			Addr:     deployment.Address,
+			Height:   deployment.BlockHeight,
 		}, nil
 	}
 
@@ -264,18 +264,18 @@ func (m *manager) DeployPrivatePortals(ctx context.Context, valSetID uint64, val
 			return nil, errors.Wrap(err, "deploy opts", "chain", chain)
 		}
 
-		addr, _, err := portal.DeployIfNeeded(ctx, m.network, backend, valSetID, validators)
+		deployment, err := portal.DeployIfNeeded(ctx, m.network, backend, valSetID, validators)
 
 		if err != nil {
 			return nil, errors.Wrap(err, "deploy private omni contracts", "chain", chain)
-		} else if addr != p.DeployInfo.PortalAddress {
+		} else if deployment.Address != p.DeployInfo.PortalAddress {
 			return nil, errors.New("deployed address does not match existing address",
 				"expected", p.DeployInfo.PortalAddress.Hex(),
-				"actual", addr.Hex(),
+				"actual", deployment.Address.Hex(),
 				"chain", chain)
 		}
 
-		contract, err := bindings.NewOmniPortal(addr, backend)
+		contract, err := bindings.NewOmniPortal(deployment.Address, backend)
 		if err != nil {
 			return nil, errors.Wrap(err, "bind contract", "chain", chain)
 		}

@@ -113,13 +113,13 @@ func IsDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Bac
 }
 
 // DeployIfNeeded deploys a new Create3 factory contract if it is not already deployed.
-func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, error) {
 	deployed, addr, err := IsDeployed(ctx, network, backend)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "is deployed")
+		return common.Address{}, errors.Wrap(err, "is deployed")
 	}
 	if deployed {
-		return addr, nil, nil
+		return addr, nil
 	}
 
 	return Deploy(ctx, network, backend)
@@ -127,48 +127,48 @@ func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend
 
 // Deploy deploys a new Create3 factory contract and returns the address and receipt.
 // It only allows deployments to explicitly supported chains.
-func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, error) {
 	chainID, err := backend.ChainID(ctx)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "chain id")
+		return common.Address{}, errors.Wrap(err, "chain id")
 	}
 
 	cfg, err := getDeployCfg(chainID.Uint64(), network)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "get deployment config")
+		return common.Address{}, errors.Wrap(err, "get deployment config")
 	}
 
 	return deploy(ctx, cfg, backend)
 }
 
-func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backend) (common.Address, error) {
 	if err := cfg.Validate(); err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "validate config")
+		return common.Address{}, errors.Wrap(err, "validate config")
 	}
 
 	txOpts, err := backend.BindOpts(ctx, cfg.Deployer)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "bind opts")
+		return common.Address{}, errors.Wrap(err, "bind opts")
 	}
 
 	nonce, err := backend.PendingNonceAt(ctx, cfg.Deployer)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "pending nonce")
+		return common.Address{}, errors.Wrap(err, "pending nonce")
 	} else if nonce != 0 {
-		return common.Address{}, nil, errors.New("nonce not zero")
+		return common.Address{}, errors.New("nonce not zero")
 	}
 
 	addr, tx, _, err := bindings.DeployCreate3(txOpts, backend)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "deploy create3")
+		return common.Address{}, errors.Wrap(err, "deploy create3")
 	}
 
 	receipt, err := bind.WaitMined(ctx, backend, tx)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "wait mined")
+		return common.Address{}, errors.Wrap(err, "wait mined")
 	} else if receipt.Status != ethtypes.ReceiptStatusSuccessful {
-		return common.Address{}, nil, errors.New("receipt status failed")
+		return common.Address{}, errors.New("receipt status failed")
 	}
 
-	return addr, receipt, nil
+	return addr, nil
 }

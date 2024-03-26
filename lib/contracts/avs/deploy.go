@@ -166,32 +166,48 @@ func AddrForNetwork(network netconf.ID) (common.Address, bool) {
 
 // IsDeployed checks if the OmniAVS contract is deployed to the provided backend
 // to its expected network address.
-func IsDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (bool, common.Address, error) {
-	addr, ok := AddrForNetwork(network)
-	if !ok {
-		return false, addr, errors.New("unsupported network", "network", network)
-	}
-
-	code, err := backend.CodeAt(ctx, addr, nil)
+func IsDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (bool, contracts.Deployment, error) {
+	chainID, err := backend.ChainID(ctx)
 	if err != nil {
-		return false, addr, errors.Wrap(err, "code at")
+		return false, contracts.Deployment{}, errors.Wrap(err, "chain id")
 	}
 
-	if len(code) == 0 {
-		return false, addr, nil
+	cfg, err := getDeployCfg(chainID.Uint64(), network)
+	if err != nil {
+		return false, contracts.Deployment{}, errors.Wrap(err, "get deployment config")
 	}
 
-	return true, addr, nil
+	factory, err := bindings.NewCreate3(cfg.Create3Factory, backend)
+	if err != nil {
+		return false, contracts.Deployment{}, errors.Wrap(err, "new create3")
+	}
+
+	salt := create3.HashSalt(cfg.Create3Salt)
+	height, err := factory.GetDeployedHeight(nil, cfg.Deployer, salt)
+	if err != nil {
+		return false, contracts.Deployment{}, errors.Wrap(err, "get deployed height")
+	}
+
+	if height.Uint64() == 0 {
+		return false, contracts.Deployment{}, nil
+	}
+
+	deployment := contracts.Deployment{
+		Address:     create3.Address(cfg.Create3Factory, cfg.Create3Salt, cfg.Deployer),
+		BlockHeight: height.Uint64(),
+	}
+
+	return true, deployment, nil
 }
 
 // DeployIfNeeded deploys a new AVS contract if it is not already deployed.
-func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
-	deployed, addr, err := IsDeployed(ctx, network, backend)
+func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (contracts.Deployment, error) {
+	deployed, deployment, err := IsDeployed(ctx, network, backend)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "is deployed")
+		return contracts.Deployment{}, errors.Wrap(err, "is deployed")
 	}
 	if deployed {
-		return addr, nil, nil
+		return deployment, nil
 	}
 
 	return Deploy(ctx, network, backend)
@@ -199,105 +215,113 @@ func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend
 
 // Deploy deploys the AVS contract and returns the address and receipt.
 // It only allows deployments to explicitly supported chains.
-func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (contracts.Deployment, error) {
 	chainID, err := backend.ChainID(ctx)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "chain id")
+		return contracts.Deployment{}, errors.Wrap(err, "chain id")
 	}
 
 	cfg, err := getDeployCfg(chainID.Uint64(), network)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "get deployment config")
+		return contracts.Deployment{}, errors.Wrap(err, "get deployment config")
 	}
 
 	return deploy(ctx, cfg, backend)
 }
 
-func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backend) (contracts.Deployment, error) {
 	if err := cfg.Validate(); err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "validate config")
+		return contracts.Deployment{}, errors.Wrap(err, "validate config")
 	}
 
 	deployerTxOpts, err := backend.BindOpts(ctx, cfg.Deployer)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "bind deployer opts")
+		return contracts.Deployment{}, errors.Wrap(err, "bind deployer opts")
 	}
 
 	ownerTxOpts, err := backend.BindOpts(ctx, cfg.Owner)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "bind owner opts")
+		return contracts.Deployment{}, errors.Wrap(err, "bind owner opts")
 	}
 
 	factory, err := bindings.NewCreate3(cfg.Create3Factory, backend)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "new create3")
+		return contracts.Deployment{}, errors.Wrap(err, "new create3")
 	}
 
 	salt := create3.HashSalt(cfg.Create3Salt)
 
-	addr, err := factory.GetDeployed(nil, deployerTxOpts.From, salt)
+	addr, err := factory.GetDeployedAddr(nil, deployerTxOpts.From, salt)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "get deployed")
+		return contracts.Deployment{}, errors.Wrap(err, "get deployed")
 	} else if (cfg.ExpectedAddr != common.Address{}) && addr != cfg.ExpectedAddr {
-		return common.Address{}, nil, errors.New("unexpected address", "expected", cfg.ExpectedAddr, "actual", addr)
+		return contracts.Deployment{}, errors.New("unexpected address", "expected", cfg.ExpectedAddr, "actual", addr)
 	}
 
 	impl, tx, _, err := bindings.DeployOmniAVS(deployerTxOpts, backend, cfg.Eigen.DelegationManager, cfg.Eigen.AVSDirectory)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "deploy impl")
+		return contracts.Deployment{}, errors.Wrap(err, "deploy impl")
 	}
 
 	deployReceipt, err := backend.WaitMined(ctx, tx)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "wait mined portal")
+		return contracts.Deployment{}, errors.Wrap(err, "wait mined portal")
 	} else if deployReceipt.Status != ethtypes.ReceiptStatusSuccessful {
-		return common.Address{}, nil, errors.New("deploy impl failed")
+		return contracts.Deployment{}, errors.New("deploy impl failed")
 	}
 
 	initCode, err := packInitCode(cfg, impl)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "pack init code")
+		return contracts.Deployment{}, errors.Wrap(err, "pack init code")
 	}
 
 	tx, err = factory.Deploy(deployerTxOpts, salt, initCode)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "deploy proxy")
+		return contracts.Deployment{}, errors.Wrap(err, "deploy proxy")
 	}
 
 	receipt, err := backend.WaitMined(ctx, tx)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "wait mined proxy")
+		return contracts.Deployment{}, errors.Wrap(err, "wait mined proxy")
 	} else if receipt.Status != ethtypes.ReceiptStatusSuccessful {
-		return common.Address{}, nil, errors.New("deploy proxy failed")
+		return contracts.Deployment{}, errors.New("deploy proxy failed")
 	}
+
+	deployment := contracts.Deployment{
+		Address:     addr,
+		BlockHeight: receipt.BlockNumber.Uint64(),
+	}
+
+	// the contract has been deployed. transactions below are admin calls
+	// TODO: move to avs initializer, so that deployment is the last transaction
 
 	avs, err := bindings.NewOmniAVS(addr, backend)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "bind avs")
+		return deployment, errors.Wrap(err, "bind avs")
 	}
 
 	if !cfg.AllowlistEnabled {
 		// only wait mained second admin call below (SetMetadataURI)
 		_, err = avs.DisableAllowlist(ownerTxOpts)
 		if err != nil {
-			return common.Address{}, nil, errors.Wrap(err, "disable allowlist")
+			return deployment, errors.Wrap(err, "disable allowlist")
 		}
 	}
 
 	tx, err = avs.SetMetadataURI(ownerTxOpts, cfg.MetadataURI)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "set metadata uri")
+		return deployment, errors.Wrap(err, "set metadata uri")
 	}
 
 	receipt, err = backend.WaitMined(ctx, tx)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "wait mined set metadata uri")
+		return deployment, errors.Wrap(err, "wait mined set metadata uri")
 	}
 	if receipt.Status != ethtypes.ReceiptStatusSuccessful {
-		return common.Address{}, nil, errors.New("set metadata uri failed")
+		return deployment, errors.New("set metadata uri failed")
 	}
 
-	return addr, deployReceipt, nil
+	return deployment, nil
 }
 
 func packInitCode(cfg DeploymentConfig, impl common.Address) ([]byte, error) {

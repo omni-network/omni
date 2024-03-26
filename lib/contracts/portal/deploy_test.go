@@ -38,9 +38,9 @@ func TestDeployDevnet(t *testing.T) {
 	require.NoError(t, err)
 
 	// devnet create3 factory is required
-	addr, _, err := create3.Deploy(ctx, netconf.Devnet, backend)
+	factory, err := create3.Deploy(ctx, netconf.Devnet, backend)
 	require.NoError(t, err)
-	require.Equal(t, contracts.DevnetCreate3Factory(), addr)
+	require.Equal(t, contracts.DevnetCreate3Factory(), factory)
 
 	valSetID := uint64(1)
 	vals := []bindings.Validator{
@@ -49,11 +49,11 @@ func TestDeployDevnet(t *testing.T) {
 		{Addr: common.HexToAddress("0x3333"), Power: 100},
 	}
 
-	addr, _, err = portal.Deploy(ctx, netconf.Devnet, backend, valSetID, vals)
+	deployment, err := portal.Deploy(ctx, netconf.Devnet, backend, valSetID, vals)
 	require.NoError(t, err)
-	require.Equal(t, contracts.DevnetPortal(), addr)
+	require.Equal(t, contracts.DevnetPortal(), deployment.Address)
 
-	portal, err := bindings.NewOmniPortal(addr, backend)
+	portal, err := bindings.NewOmniPortal(deployment.Address, backend)
 	require.NoError(t, err)
 
 	owner, err := portal.Owner(nil)

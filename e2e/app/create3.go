@@ -6,9 +6,6 @@ import (
 	"github.com/omni-network/omni/lib/contracts/create3"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
-
-	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 type Create3DeployConfig struct {
@@ -30,19 +27,17 @@ func Create3Deploy(ctx context.Context, def Definition, cfg Create3DeployConfig)
 		return errors.Wrap(err, "validate")
 	}
 
-	addr, receipt, err := deployCreate3(ctx, def, cfg.ChainID)
+	err := deployCreate3(ctx, def, cfg.ChainID)
 	if err != nil {
 		return errors.Wrap(err, "deploy create3")
 	}
-
-	log.Info(ctx, "Create3 factory deployed", "chain", cfg.ChainID, "addr", addr.Hex(), "block", receipt.BlockNumber)
 
 	return nil
 }
 
 func deployPrivateCreate3(ctx context.Context, def Definition) error {
 	for _, c := range def.Testnet.AnvilChains {
-		_, _, err := deployCreate3(ctx, def, c.Chain.ID)
+		err := deployCreate3(ctx, def, c.Chain.ID)
 		if err != nil {
 			return errors.Wrap(err, "deploy create3")
 		}
@@ -51,7 +46,7 @@ func deployPrivateCreate3(ctx context.Context, def Definition) error {
 	// only deploy to omni evm once
 	if len(def.Testnet.OmniEVMs) > 0 {
 		c := def.Testnet.OmniEVMs[0]
-		_, _, err := deployCreate3(ctx, def, c.Chain.ID)
+		err := deployCreate3(ctx, def, c.Chain.ID)
 		if err != nil {
 			return errors.Wrap(err, "deploy create3")
 		}
@@ -62,7 +57,7 @@ func deployPrivateCreate3(ctx context.Context, def Definition) error {
 
 func deployPublicCreate3(ctx context.Context, def Definition) error {
 	for _, c := range def.Testnet.PublicChains {
-		_, _, err := deployCreate3(ctx, def, c.Chain.ID)
+		err := deployCreate3(ctx, def, c.Chain.ID)
 		if err != nil {
 			return errors.Wrap(err, "deploy create3")
 		}
@@ -71,11 +66,18 @@ func deployPublicCreate3(ctx context.Context, def Definition) error {
 	return nil
 }
 
-func deployCreate3(ctx context.Context, def Definition, chainID uint64) (common.Address, *ethtypes.Receipt, error) {
+func deployCreate3(ctx context.Context, def Definition, chainID uint64) error {
 	backend, err := def.Backends.Backend(chainID)
 	if err != nil {
-		return common.Address{}, nil, err
+		return errors.Wrap(err, "backend")
 	}
 
-	return create3.DeployIfNeeded(ctx, def.Testnet.Network, backend)
+	addr, err := create3.DeployIfNeeded(ctx, def.Testnet.Network, backend)
+	if err != nil {
+		return errors.Wrap(err, "deploy")
+	}
+
+	log.Info(ctx, "Create3 factory deployed", "chain", chainID, "addr", addr.Hex())
+
+	return nil
 }
