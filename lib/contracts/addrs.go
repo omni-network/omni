@@ -24,37 +24,48 @@ const (
 
 	// address of the "staging-owner" fireblocks account.
 	// fbStagingAdmin = "0x4891925c4f13A34FC26453FD168Db80aF3273014".
+
+	// TODO: use proper testnet addresses below, rather than fbDev.
+
+	// address of the "testnet-create3-deployer" fireblocks account.
+	// fbTestnetCreate3Deployer = "0xeC5134556da0797A5C5cD51DD622b689Cac97Fe9".
+
+	// address of the "testnet-deployer" fireblocks account.
+	// fbTestnetDeployer = "0x0CdCc644158b7D03f40197f55454dc7a11Bd92c1".
+
+	// address of the "testnet-owner" fireblocks account.
+	// fbTestnetAdmin = "0xEAD625eB2011394cdD739E91Bf9D51A7169C22F5".
 )
 
 //nolint:gochecknoglobals // Static addresses
 var (
 	// ProxyAdminOwner.
 	mainnetProxyAdminOwner = addr("0x0")
-	testnetProxyAdminOwner = addr("0x0")
+	testnetProxyAdminOwner = addr(fbDev)
 	stagingProxyAdminOwner = addr(fbDev)
 	devnetProxyAdminOwner  = anvil.DevAccount2()
 
 	// Create3 Deployer - addrress that can deploy the create3 factory.
 	mainnetCreate3Deployer = addr("0x0")
-	testnetCreate3Deployer = addr("0x0")
+	testnetCreate3Deployer = addr(fbDev)
 	stagingCreate3Deployer = addr(fbDev)
 	devnetCreate3Deployer  = anvil.DevAccount0()
 
 	// Deployer - address that can deploy protocol contracts via Create3 factory.
 	mainnetDeployer = addr("0x0")
-	testnetDeployer = addr("0x0")
+	testnetDeployer = addr(fbDev)
 	stagingDeployer = addr(fbDev)
 	devnetDeployer  = anvil.DevAccount1()
 
 	// Portal Admin.
 	mainnetPortalAdmin = addr("0x0")
-	testnetPortalAdmin = addr("0x0")
+	testnetPortalAdmin = addr(fbDev)
 	stagingPortalAdmin = addr(fbDev)
 	devnetPortalAdmin  = anvil.DevAccount2()
 
 	// AVS Admin.
 	mainnetAVSAdmin = addr("0x0")
-	testnetAVSAdmin = addr("0x0")
+	testnetAVSAdmin = addr(fbDev)
 	stagingAVSAdmin = addr(fbDev)
 	devnetAVSAdmin  = anvil.DevAccount2()
 )

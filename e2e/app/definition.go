@@ -132,14 +132,14 @@ func newBackends(ctx context.Context, cfg DefinitionConfig, testnet types.Testne
 
 	key, err := fireblocks.LoadKey(cfg.FireKeyPath)
 	if err != nil {
-		return ethbackend.Backends{}, err
+		return ethbackend.Backends{}, errors.Wrap(err, "load fireblocks key")
 	}
 
 	fireCl, err := fireblocks.New(testnet.Network, cfg.FireAPIKey, key,
 		fireblocks.WithSignNote(fmt.Sprintf("omni e2e %s %s", commandName, testnet.Network)),
 	)
 	if err != nil {
-		return ethbackend.Backends{}, err
+		return ethbackend.Backends{}, errors.Wrap(err, "new fireblocks")
 	}
 
 	// TODO(corver): Fireblocks keys need to be funded on private/internal chains we deploy.
@@ -183,13 +183,13 @@ func LoadManifest(path string) (types.Manifest, error) {
 	return manifest, nil
 }
 
-func MonitorOnlyTestnet(manifest types.Manifest, infd types.InfrastructureData, cfg DefinitionConfig) (types.Testnet, error) {
+func NoNodesTestnet(manifest types.Manifest, infd types.InfrastructureData, cfg DefinitionConfig) (types.Testnet, error) {
 	publics, err := publicChains(manifest, cfg)
 	if err != nil {
 		return types.Testnet{}, err
 	}
 
-	cmtTestnet, err := monitorCometTestnet(manifest.Manifest, cfg.ManifestFile, infd.InfrastructureData)
+	cmtTestnet, err := noNodesTestnet(manifest.Manifest, cfg.ManifestFile, infd.InfrastructureData)
 	if err != nil {
 		return types.Testnet{}, errors.Wrap(err, "testnet from manifest")
 	}
@@ -198,12 +198,12 @@ func MonitorOnlyTestnet(manifest types.Manifest, infd types.InfrastructureData, 
 		Network:      manifest.Network,
 		Testnet:      cmtTestnet,
 		PublicChains: publics,
-		OnlyMonitor:  true,
+		OnlyMonitor:  manifest.OnlyMonitor,
 	}, nil
 }
 
-// monitorCometTestnet returns a bare minimum instance of *e2e.Testnet. It doesn't have any nodes or chain details setup.
-func monitorCometTestnet(manifest e2e.Manifest, file string, ifd e2e.InfrastructureData) (*e2e.Testnet, error) {
+// noNodesTestnet returns a bare minimum instance of *e2e.Testnet. It doesn't have any nodes or chain details setup.
+func noNodesTestnet(manifest e2e.Manifest, file string, ifd e2e.InfrastructureData) (*e2e.Testnet, error) {
 	dir := strings.TrimSuffix(file, filepath.Ext(file))
 
 	_, ipNet, err := net.ParseCIDR(ifd.Network)
@@ -225,11 +225,11 @@ func monitorCometTestnet(manifest e2e.Manifest, file string, ifd e2e.Infrastruct
 
 //nolint:nosprintfhostport // Not an issue for non-critical e2e test code.
 func TestnetFromManifest(manifest types.Manifest, infd types.InfrastructureData, cfg DefinitionConfig) (types.Testnet, error) {
-	if manifest.OnlyMonitor {
+	if manifest.OnlyMonitor || len(manifest.Nodes) == 0 {
 		// Create a bare minimum comet testnet only with test di, prometheus and ipnet.
 		// Otherwise e2e.NewTestnetFromManifest panics because there are no nodes set
 		// in the only_monitor manifest.
-		return MonitorOnlyTestnet(manifest, infd, cfg)
+		return NoNodesTestnet(manifest, infd, cfg)
 	}
 
 	cmtTestnet, err := e2e.NewTestnetFromManifest(manifest.Manifest, cfg.ManifestFile, infd.InfrastructureData)

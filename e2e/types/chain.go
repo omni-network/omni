@@ -4,10 +4,9 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/chainids"
+	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
-
-	"github.com/ethereum/go-ethereum/common"
 )
 
 //nolint:gochecknoglobals // Static mappings
@@ -19,14 +18,13 @@ var (
 		FinalizationStrat: netconf.StratFinalized,
 	}
 
-	// TODO: remove for holesky.
-	chainGoerli = EVMChain{
-		Name:               "goerli",
-		ID:                 chainids.Goerli,
+	chainHolesky = EVMChain{
+		Name:               "holesky",
+		ID:                 chainids.Holesky,
 		IsPublic:           true,
 		BlockPeriod:        15 * time.Second,
 		FinalizationStrat:  netconf.StratLatest,
-		AVSContractAddress: common.HexToAddress("0x848BE3DBcd054c17EbC712E0d29D15C2e638aBCe"),
+		AVSContractAddress: contracts.TestnetAVS(),
 	}
 
 	chainArbSepolia = EVMChain{
@@ -74,8 +72,8 @@ func AnvilChainsByNames(names []string) []EVMChain {
 // PublicChainByName returns the public chain definition by name.
 func PublicChainByName(name string) (EVMChain, error) {
 	switch name {
-	case chainGoerli.Name:
-		return chainGoerli, nil
+	case chainHolesky.Name:
+		return chainHolesky, nil
 	case chainArbSepolia.Name:
 		return chainArbSepolia, nil
 	case chainOpSepolia.Name:
@@ -88,8 +86,8 @@ func PublicChainByName(name string) (EVMChain, error) {
 // PublicRPCByName returns the public chain RPC address by name.
 func PublicRPCByName(name string) string {
 	switch name {
-	case chainGoerli.Name:
-		return "https://rpc.ankr.com/eth_goerli"
+	case chainHolesky.Name:
+		return "https://ethereum-holesky-rpc.publicnode.com"
 	case chainArbSepolia.Name:
 		return "https://sepolia-rollup.arbitrum.io/rpc"
 	case chainOpSepolia.Name:
