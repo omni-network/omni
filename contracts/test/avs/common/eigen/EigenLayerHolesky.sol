@@ -14,27 +14,27 @@ import { IStrategyManager } from "eigenlayer-contracts/src/contracts/interfaces/
 import { ISlasher } from "eigenlayer-contracts/src/contracts/interfaces/ISlasher.sol";
 
 import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
-import { StrategyParams } from "script/avs/StrategyParams.sol";
+import { StrategyParams } from "../StrategyParams.sol";
 import { IEigenDeployer } from "./IEigenDeployer.sol";
-import { EigenM2GoerliDeployments } from "./EigenM2GoerliDeployments.sol";
+import { EigenM2HoleskyDeployments } from "./EigenM2HoleskyDeployments.sol";
 import { EigenPodManagerHarness } from "./EigenPodManagerHarness.sol";
 
 import { Test } from "forge-std/Test.sol";
 
 /**
- * @title EigenLayerGoerli
- * @dev A goerli IEigenDeployer. This contract is used when "deploying"
- *      EigenLayer on a goerli fork. It does not actually deploy anything, it just
- *      returns the addresses of the contracts that are already deployed on goerli.
+ * @title EigenLayerHolesky
+ * @dev A holesky IEigenDeployer. This contract is used when "deploying"
+ *      EigenLayer on a holesky fork. It does not actually deploy anything, it just
+ *      returns the addresses of the contracts that are already deployed on holesky.
  */
-contract EigenLayerGoerli is IEigenDeployer, Test {
+contract EigenLayerHolesky is IEigenDeployer, Test {
     address beaconEthStrategy = 0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0;
 
     function deploy() public returns (Deployments memory deps) {
-        address proxyAdminAddr = _proxyAdmin(EigenM2GoerliDeployments.EigenPodManager);
+        address proxyAdminAddr = _proxyAdmin(EigenM2HoleskyDeployments.EigenPodManager);
         address proxyAdminOwner = ProxyAdmin(proxyAdminAddr).owner();
 
-        IOmniAVS.StrategyParam[] memory stratParams = StrategyParams.goerli();
+        IOmniAVS.StrategyParam[] memory stratParams = StrategyParams.holesky();
 
         address[] memory strategies = new address[](stratParams.length);
         for (uint256 i = 0; i < stratParams.length; i++) {
@@ -50,12 +50,12 @@ contract EigenLayerGoerli is IEigenDeployer, Test {
         deps = Deployments({
             proxyAdminOwner: proxyAdminOwner,
             proxyAdmin: proxyAdminAddr,
-            pauserRegistry: EigenM2GoerliDeployments.PauserRegistry,
-            delegationManager: EigenM2GoerliDeployments.DelegationManager,
-            eigenPodManager: EigenM2GoerliDeployments.EigenPodManager,
-            strategyManager: EigenM2GoerliDeployments.StrategyManager,
-            slasher: EigenM2GoerliDeployments.Slasher,
-            avsDirectory: EigenM2GoerliDeployments.AVSDirectory,
+            pauserRegistry: EigenM2HoleskyDeployments.PauserRegistry,
+            delegationManager: EigenM2HoleskyDeployments.DelegationManager,
+            eigenPodManager: EigenM2HoleskyDeployments.EigenPodManager,
+            strategyManager: EigenM2HoleskyDeployments.StrategyManager,
+            slasher: EigenM2HoleskyDeployments.Slasher,
+            avsDirectory: EigenM2HoleskyDeployments.AVSDirectory,
             strategies: strategies
         });
 

@@ -13,7 +13,7 @@ import { AVSDirectory } from "eigenlayer-contracts/src/contracts/core/AVSDirecto
 import { StrategyBase } from "eigenlayer-contracts/src/contracts/strategies/StrategyBase.sol";
 
 import { EigenPodManagerHarness } from "./EigenPodManagerHarness.sol";
-import { EigenLayerGoerli } from "./EigenLayerGoerli.sol";
+import { EigenLayerHolesky } from "./EigenLayerHolesky.sol";
 import { EigenLayerLocal } from "./EigenLayerLocal.sol";
 import { IEigenDeployer } from "./IEigenDeployer.sol";
 
@@ -38,15 +38,15 @@ contract EigenLayerFixtures is Test {
     // unsupported strategy (always excluded from OmniAVS strategy params)
     StrategyBase unsupportedStrat;
 
-    function isGoerli() public view returns (bool) {
-        return block.chainid == 5;
+    function isHolesky() public view returns (bool) {
+        return block.chainid == 17_000;
     }
 
     function setUp() public virtual {
         IEigenDeployer deployer;
 
-        if (isGoerli()) {
-            deployer = new EigenLayerGoerli();
+        if (isHolesky()) {
+            deployer = new EigenLayerHolesky();
         } else {
             deployer = new EigenLayerLocal();
         }
