@@ -75,6 +75,8 @@ interface IOmniAVSAdmin {
      * @param minOperatorStake  Minimum operator stake
      * @param maxOperatorCount  Maximum operator count
      * @param strategyParams    List of accepted strategies and their multipliers
+     * @param metadataURI       Metadata URI
+     * @param allowlistEnabled  Whether the allowlist is enabled
      */
     function initialize(
         address owner,
@@ -83,7 +85,9 @@ interface IOmniAVSAdmin {
         address ethStakeInbox,
         uint96 minOperatorStake,
         uint32 maxOperatorCount,
-        IOmniAVS.StrategyParam[] calldata strategyParams
+        IOmniAVS.StrategyParam[] calldata strategyParams,
+        string calldata metadataURI,
+        bool allowlistEnabled
     ) external;
 
     /**
