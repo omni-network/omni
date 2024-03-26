@@ -3,4 +3,5 @@ network       = "testnet"
 public_chains = ["holesky"]
 avs_target    = "holesky"
 
-prometheus    = true
+only_monitor = true
+prometheus   = true

@@ -6,7 +6,7 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/omni-network/omni/contracts/bindingsv1"
+	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
@@ -14,7 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-func startMonitoring(ctx context.Context, avs *bindingsv1.OmniAVS) {
+func startMonitoring(ctx context.Context, avs *bindings.OmniAVS) {
 	go monitorForever(ctx, avs, "operators", monitorOperatorsOnce)
 	go monitorForever(ctx, avs, "owner", monitorOwnerOnce)
 	go monitorForever(ctx, avs, "allowlistEnabled", monitorAllowlistEnabledOnce)
@@ -24,7 +24,7 @@ func startMonitoring(ctx context.Context, avs *bindingsv1.OmniAVS) {
 	go monitorForever(ctx, avs, "strategyParams", monitorStrategyParamsOnce)
 }
 
-func monitorOperatorsOnce(ctx context.Context, avs *bindingsv1.OmniAVS) error {
+func monitorOperatorsOnce(ctx context.Context, avs *bindings.OmniAVS) error {
 	operators, err := avs.Operators(&bind.CallOpts{Context: ctx})
 	if err != nil {
 		return errors.Wrap(err, "get operators")
@@ -52,7 +52,7 @@ func monitorOperatorsOnce(ctx context.Context, avs *bindingsv1.OmniAVS) error {
 	return nil
 }
 
-func monitorOwnerOnce(ctx context.Context, avs *bindingsv1.OmniAVS) error {
+func monitorOwnerOnce(ctx context.Context, avs *bindings.OmniAVS) error {
 	owner, err := avs.Owner(&bind.CallOpts{Context: ctx})
 	if err != nil {
 		return errors.Wrap(err, "get owner")
@@ -63,7 +63,7 @@ func monitorOwnerOnce(ctx context.Context, avs *bindingsv1.OmniAVS) error {
 	return nil
 }
 
-func monitorAllowlistEnabledOnce(ctx context.Context, avs *bindingsv1.OmniAVS) error {
+func monitorAllowlistEnabledOnce(ctx context.Context, avs *bindings.OmniAVS) error {
 	enababled, err := avs.AllowlistEnabled(&bind.CallOpts{Context: ctx})
 	if err != nil {
 		return errors.Wrap(err, "get allowlist")
@@ -78,7 +78,7 @@ func monitorAllowlistEnabledOnce(ctx context.Context, avs *bindingsv1.OmniAVS) e
 	return nil
 }
 
-func monitorPausedOnce(ctx context.Context, avs *bindingsv1.OmniAVS) error {
+func monitorPausedOnce(ctx context.Context, avs *bindings.OmniAVS) error {
 	paused, err := avs.Paused(&bind.CallOpts{Context: ctx})
 	if err != nil {
 		return errors.Wrap(err, "get paused")
@@ -93,7 +93,7 @@ func monitorPausedOnce(ctx context.Context, avs *bindingsv1.OmniAVS) error {
 	return nil
 }
 
-func monitorMinStakeOnce(ctx context.Context, avs *bindingsv1.OmniAVS) error {
+func monitorMinStakeOnce(ctx context.Context, avs *bindings.OmniAVS) error {
 	stake, err := avs.MinOperatorStake(&bind.CallOpts{Context: ctx})
 	if err != nil {
 		return errors.Wrap(err, "get min stake")
@@ -104,7 +104,7 @@ func monitorMinStakeOnce(ctx context.Context, avs *bindingsv1.OmniAVS) error {
 	return nil
 }
 
-func monitorMaxOperatorsOnce(ctx context.Context, avs *bindingsv1.OmniAVS) error {
+func monitorMaxOperatorsOnce(ctx context.Context, avs *bindings.OmniAVS) error {
 	max, err := avs.MaxOperatorCount(&bind.CallOpts{Context: ctx})
 	if err != nil {
 		return errors.Wrap(err, "get max operators")
@@ -115,7 +115,7 @@ func monitorMaxOperatorsOnce(ctx context.Context, avs *bindingsv1.OmniAVS) error
 	return nil
 }
 
-func monitorStrategyParamsOnce(ctx context.Context, avs *bindingsv1.OmniAVS) error {
+func monitorStrategyParamsOnce(ctx context.Context, avs *bindings.OmniAVS) error {
 	params, err := avs.StrategyParams(&bind.CallOpts{Context: ctx})
 	if err != nil {
 		return errors.Wrap(err, "get strategy params")
@@ -131,10 +131,10 @@ func monitorStrategyParamsOnce(ctx context.Context, avs *bindingsv1.OmniAVS) err
 	return nil
 }
 
-type monitorOnce func(ctx context.Context, avs *bindingsv1.OmniAVS) error
+type monitorOnce func(ctx context.Context, avs *bindings.OmniAVS) error
 
 // monitorForever runs the given monitor function every 30 seconds until the context is canceled.
-func monitorForever(ctx context.Context, avs *bindingsv1.OmniAVS, name string, f monitorOnce) {
+func monitorForever(ctx context.Context, avs *bindings.OmniAVS, name string, f monitorOnce) {
 	interval := time.Minute * 1
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
