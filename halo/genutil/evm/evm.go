@@ -21,18 +21,17 @@ var eth1m = math.NewInt(1000000).MulRaw(params.Ether).BigInt()
 func newUint64(val uint64) *uint64 { return &val }
 
 // MakeDevGenesis returns a genesis block for a development chain.
-func MakeGenesis(network string) (core.Genesis, error) {
+func MakeGenesis(network netconf.ID) (core.Genesis, error) {
 	// TODO: set config values for devnet, staging, testnet
 	config := DefaultDevConfig()
 
 	allocs := mergeAllocs(precompilesAlloc(), predeploys.Alloc())
 
-	switch network {
-	case netconf.Simnet, netconf.Devnet, netconf.Staging:
+	if network.IsEphemeral() {
 		allocs = mergeAllocs(allocs, stagingPrefundAlloc())
-	case netconf.Testnet:
+	} else if network == netconf.Testnet {
 		allocs = mergeAllocs(allocs, testnetPrefundAlloc())
-	default:
+	} else {
 		return core.Genesis{}, errors.New("unsupported network")
 	}
 
@@ -47,7 +46,7 @@ func MakeGenesis(network string) (core.Genesis, error) {
 
 func DefaultDevConfig() params.ChainConfig {
 	return params.ChainConfig{
-		ChainID:                       big.NewInt(int64(netconf.GetStatic(netconf.Devnet).OmniExecutionChainID)),
+		ChainID:                       big.NewInt(int64(netconf.Devnet.Static().OmniExecutionChainID)),
 		HomesteadBlock:                big.NewInt(0),
 		EIP150Block:                   big.NewInt(0),
 		EIP155Block:                   big.NewInt(0),

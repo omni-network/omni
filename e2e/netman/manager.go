@@ -56,7 +56,7 @@ type Manager interface {
 
 func NewManager(testnet types.Testnet, backends ethbackend.Backends, relayerKeyFile string) (Manager, error) {
 	if testnet.OnlyMonitor {
-		if testnet.Name != netconf.Testnet {
+		if testnet.Network != netconf.Testnet {
 			return nil, errors.New("the AVS contract is currently only deployed to testnet")
 		}
 
@@ -156,7 +156,7 @@ type manager struct {
 	omniChainID uint64
 	relayerKey  *ecdsa.PrivateKey
 	backends    ethbackend.Backends
-	network     string
+	network     netconf.ID
 	operator    common.Address
 }
 

@@ -10,8 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
-	"strings"
 	"text/template"
 	"time"
 
@@ -36,7 +34,6 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
-	cmttypes "github.com/cometbft/cometbft/types"
 
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 
@@ -73,9 +70,7 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 		valPrivKeys = append(valPrivKeys, val.PrivvalKey)
 	}
 
-	consChainID := netconf.GetStatic(def.Manifest.Network).OmniConsensusChainID
-
-	cosmosGenesis, err := genutil.MakeGenesis(consChainID, time.Now(), vals...)
+	cosmosGenesis, err := genutil.MakeGenesis(def.Manifest.Network, time.Now(), vals...)
 	if err != nil {
 		return errors.Wrap(err, "make genesis")
 	}
@@ -197,46 +192,6 @@ func writeAnvilState(testnet types.Testnet) error {
 	}
 
 	return nil
-}
-
-// MakeGenesis generates a genesis document.
-func MakeGenesis(testnet *e2e.Testnet) (cmttypes.GenesisDoc, error) {
-	genesis := cmttypes.GenesisDoc{
-		GenesisTime:     time.Now(),
-		ChainID:         testnet.Name,
-		ConsensusParams: genutil.DefaultConsensusParams(),
-		InitialHeight:   testnet.InitialHeight,
-	}
-	// set the app version to 1
-	genesis.ConsensusParams.Version.App = 1
-	genesis.ConsensusParams.Evidence.MaxAgeNumBlocks = e2e.EvidenceAgeHeight
-	genesis.ConsensusParams.Evidence.MaxAgeDuration = e2e.EvidenceAgeTime
-	for validator, power := range testnet.Validators {
-		genesis.Validators = append(genesis.Validators, cmttypes.GenesisValidator{
-			Name:    validator.Name,
-			Address: validator.PrivvalKey.PubKey().Address(),
-			PubKey:  validator.PrivvalKey.PubKey(),
-			Power:   power,
-		})
-	}
-	// The validator set will be sorted internally by CometBFT ranked by power,
-	// but we sort it here as well so that all genesis files are identical.
-	sort.Slice(genesis.Validators, func(i, j int) bool {
-		return strings.Compare(genesis.Validators[i].Name, genesis.Validators[j].Name) == -1
-	})
-	if len(testnet.InitialState) > 0 {
-		appState, err := json.Marshal(testnet.InitialState)
-		if err != nil {
-			return genesis, errors.Wrap(err, "marshal initial state")
-		}
-		genesis.AppState = appState
-	}
-
-	if err := genesis.ValidateAndComplete(); err != nil {
-		return genesis, errors.Wrap(err, "validate genesis")
-	}
-
-	return genesis, nil
 }
 
 // MakeConfig generates a CometBFT config for a node.

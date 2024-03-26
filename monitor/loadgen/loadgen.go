@@ -28,7 +28,7 @@ type Config struct {
 // - Validator self-delegation on periodic basis.
 func Start(ctx context.Context, network netconf.Network, cfg Config) error {
 	// Only generate load in ephemeral networks, devnet and staging.
-	if network.Name == netconf.Testnet || network.Name == netconf.Mainnet {
+	if !network.ID.IsEphemeral() {
 		return nil
 	} else if cfg.ValidatorKeysGlob == "" {
 		// Skip if no validator keys are provided.
@@ -70,7 +70,7 @@ func Start(ctx context.Context, network netconf.Network, cfg Config) error {
 	}
 
 	var period = time.Hour
-	if network.Name == netconf.Devnet {
+	if network.ID == netconf.Devnet {
 		period = time.Second * 10
 	}
 

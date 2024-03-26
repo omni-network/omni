@@ -30,14 +30,14 @@ const (
 type Client struct {
 	opts       options
 	apiKey     string
-	network    string
+	network    netconf.ID
 	privateKey *rsa.PrivateKey
 	jsonHTTP   jsonHTTP
 	cache      *accountCache
 }
 
 // New creates a new FireBlocks client.
-func New(network string, apiKey string, privateKey *rsa.PrivateKey, opts ...func(*options)) (Client, error) {
+func New(network netconf.ID, apiKey string, privateKey *rsa.PrivateKey, opts ...func(*options)) (Client, error) {
 	if apiKey == "" {
 		return Client{}, errors.New("apiKey is required")
 	}

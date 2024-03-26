@@ -3,7 +3,6 @@ package provider
 
 import (
 	"context"
-	"strconv"
 	"sync"
 
 	atypes "github.com/omni-network/omni/halo/attest/types"
@@ -11,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/expbackoff"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
@@ -66,7 +66,7 @@ func newChainIDFunc(abci rpcclient.SignClient) ChainIDFunc {
 			return 0, errors.Wrap(err, "abci header")
 		}
 
-		chainID, err = strconv.ParseUint(resp.Header.ChainID, 10, 64)
+		chainID, err = netconf.ConsensusChainIDStr2Uint64(resp.Header.ChainID)
 		if err != nil {
 			return 0, errors.Wrap(err, "parse chain ID")
 		}

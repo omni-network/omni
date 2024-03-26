@@ -25,7 +25,7 @@ func noAnvilDev(accounts []common.Address) []common.Address {
 }
 
 // accountsToFund returns a list of accounts to fund on anvil chains, based on the network.
-func accountsToFund(network string) []common.Address {
+func accountsToFund(network netconf.ID) []common.Address {
 	switch network {
 	case netconf.Staging:
 		return []common.Address{

@@ -243,15 +243,15 @@ func DevnetAVS() common.Address {
 // Salts.
 //
 
-func ProxyAdminSalt(network string) string {
+func ProxyAdminSalt(network netconf.ID) string {
 	return salt(network, "proxy-admin")
 }
 
-func PortalSalt(network string) string {
+func PortalSalt(network netconf.ID) string {
 	return salt(network, "portal")
 }
 
-func AVSSalt(network string) string {
+func AVSSalt(network netconf.ID) string {
 	return salt(network, "avs")
 }
 
@@ -260,8 +260,8 @@ func AVSSalt(network string) string {
 //
 
 // salt generates a salt for a contract deployment, adding git build info.
-func salt(network string, contract string) string {
-	return network + "-" + contract + "-" + buildinfo.Version()
+func salt(network netconf.ID, contract string) string {
+	return string(network) + "-" + contract + "-" + buildinfo.Version()
 }
 
 func addr(hex string) common.Address {

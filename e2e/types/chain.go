@@ -49,11 +49,9 @@ var (
 const anvilChainIDFactor = 100
 
 // OmniEVMByNetwork returns the Omni evm chain definition by netconf network.
-func OmniEVMByNetwork(name string) EVMChain {
-	static := netconf.GetStatic(name)
-
+func OmniEVMByNetwork(network netconf.ID) EVMChain {
 	resp := chainOmniEVM
-	resp.ID = static.OmniExecutionChainID
+	resp.ID = network.Static().OmniExecutionChainID
 
 	return resp
 }
