@@ -1,9 +1,8 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Telegram, Discord, Github, Twitter } from './icons'
+import { Telegram, Discord, Twitter } from './icons'
 import 'react-social-icons/discord'
 import 'react-social-icons/twitter'
 import 'react-social-icons/telegram'
-import logo from '~/components/ui/Horizontal_Word Black_Symbol Black.png'
+import logo from '../../../public/Horizontal_Word Black_Symbol Black.png'
 
 export function Footer() {
   return (

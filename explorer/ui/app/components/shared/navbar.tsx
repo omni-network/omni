@@ -1,6 +1,6 @@
 import { SearchBar } from './search'
 import { ThemeButton } from './themebutton'
-import logo from '~/components/ui/Horizontal_Word Black_Symbol Black.png'
+import logo from '../../../public/Horizontal_Word Black_Symbol Black.png'
 
 export default function Navbar() {
   return (

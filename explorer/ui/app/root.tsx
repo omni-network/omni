@@ -2,14 +2,14 @@ import { cssBundleHref } from '@remix-run/css-bundle'
 import type { LinksFunction } from '@remix-run/node'
 import stylesheet from '~/tailwind.css'
 import { Links, LiveReload, Meta, Outlet, Scripts, ScrollRestoration } from '@remix-run/react'
-import { Client, Provider, cacheExchange, fetchExchange } from 'urql';
+import { Client, Provider, cacheExchange, fetchExchange } from 'urql'
 
 export const links: LinksFunction = () => [{ rel: 'stylesheet', href: stylesheet }]
 
 const client = new Client({
   url: 'http://localhost:8080/query',
   exchanges: [fetchExchange, cacheExchange],
-});
+})
 
 function App() {
   return (

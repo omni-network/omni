@@ -1,53 +1,16 @@
 import { json } from '@remix-run/node'
-import { useLoaderData } from '@remix-run/react'
 import React from 'react'
 import { XMsg } from '~/graphql/graphql'
 import { ColumnDef } from '@tanstack/react-table'
 import SimpleTable from '../shared/simpleTable'
-import { useQuery } from 'urql'
-import { xblockrange } from '../queries/block'
+import { GetXMessagesInRange } from '../queries/messages'
 
 export async function loader() {
   return json<XMsg[]>(new Array())
 }
 
 export default function XMsgDataTable() {
-  // let data = useLoaderData<typeof loader>()
-  // console.log(data)
-
-  let amt = "0x" + (1000).toString(16)
-  let offset = "0x" + (0).toString(16)
-
-  const [result] = useQuery({
-    query: xblockrange,
-    variables: {
-      amount: amt,
-      offset: offset,
-    }
-  })
-  const { data, fetching, error } = result;
-
-  var rows: XMsg[] = []
-  data?.xblockrange.map((xblock: any) => {
-
-    if (xblock.Messages.length == 0) {
-      return
-    }
-
-    xblock.Messages.map((msg: any) => {
-      let xmsg = {
-        DestAddress: msg.DestAddress,
-        DestChainID: msg.DestChainID,
-        DestGasLimit: "",
-        SourceChainID: msg.SourceChainID,
-        SourceMessageSender: "",
-        StreamOffset: "",
-        TxHash: msg.TxHash,
-      }
-      rows.push(xmsg)
-    })
-
-  })
+  let rows = GetXMessagesInRange(1000, 0)
 
   const columns = React.useMemo<ColumnDef<XMsg>[]>(
     () => [
