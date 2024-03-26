@@ -175,7 +175,7 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 
 // newXProvider returns a new xchain provider.
 func newXProvider(network netconf.Network, cProvider cchain.Provider) (xchain.Provider, error) {
-	if network.Name == netconf.Simnet {
+	if network.ID == netconf.Simnet {
 		omni, ok := network.OmniConsensusChain()
 		if !ok {
 			return nil, errors.New("omni chain not found in network")
@@ -276,7 +276,7 @@ func chainIDFromGenesis(cfg Config) (string, error) {
 
 // newEngineClient returns a new engine API client.
 func newEngineClient(ctx context.Context, cfg Config, network netconf.Network, pubkey crypto.PubKey) (ethclient.EngineClient, error) {
-	if network.Name == netconf.Simnet {
+	if network.ID == netconf.Simnet {
 		return ethclient.NewEngineMock(ethclient.WithMockDeposit(pubkey, 1))
 	}
 

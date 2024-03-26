@@ -2,11 +2,11 @@ package keeper
 
 import (
 	"context"
-	"strconv"
 
 	akeeper "github.com/omni-network/omni/halo/attest/keeper"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
@@ -200,7 +200,7 @@ func (k Keeper) processAttested(ctx context.Context) ([]abci.ValidatorUpdate, er
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	chainID, err := strconv.ParseUint(sdkCtx.ChainID(), 10, 64)
+	chainID, err := netconf.ConsensusChainIDStr2Uint64(sdkCtx.ChainID())
 	if err != nil {
 		return nil, errors.Wrap(err, "parse chain id")
 	}

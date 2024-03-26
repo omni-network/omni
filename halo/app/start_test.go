@@ -44,7 +44,7 @@ func TestSmoke(t *testing.T) {
 	cprov := cprovider.NewABCIProvider(cl, nil)
 
 	// Wait until we get to block 3.
-	const target = uint64(10)
+	const target = uint64(3)
 	require.Eventually(t, func() bool {
 		s, err := cl.Status(ctx)
 		if err != nil {
@@ -81,7 +81,7 @@ func TestSmoke(t *testing.T) {
 		return !bytes.Equal(getSetHash, setHash)
 	}, time.Second*time.Duration(target*2), time.Millisecond*100)
 
-	srcChain := netconf.GetStatic(netconf.Simnet).OmniExecutionChainID
+	srcChain := netconf.Simnet.Static().OmniExecutionChainID
 	// Ensure all blocks are attested and approved.
 	cprov.Subscribe(ctx, srcChain, 0, "test", func(ctx context.Context, approved xchain.Attestation) error {
 		// Sanity check we can fetch latest directly as well.

@@ -59,8 +59,8 @@ func genPromConfig(ctx context.Context, testnet types.Testnet, secrets Secrets, 
 		nodeTargets = append(nodeTargets, fmt.Sprintf("%s:%d", node.Name, promPort))
 	}
 
-	network := testnet.Network
-	if network == netconf.Devnet {
+	network := string(testnet.Network)
+	if testnet.Network == netconf.Devnet {
 		network = fmt.Sprintf("%s-%s", testnet.Name, hostname)
 	}
 

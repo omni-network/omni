@@ -27,7 +27,7 @@ import (
 // InitConfig is the config for the init command.
 type InitConfig struct {
 	HomeDir string
-	Network string
+	Network netconf.ID
 	Force   bool
 	Clean   bool
 	Cosmos  bool
@@ -187,19 +187,18 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	if cmtos.FileExists(networkFile) {
 		log.Info(ctx, "Found network config", "path", networkFile)
 	} else if initCfg.Network == netconf.Simnet {
-		static := netconf.GetStatic(initCfg.Network)
 		// Create a simnet (single binary with mocked clients).
 		network := netconf.Network{
-			Name: initCfg.Network,
+			ID: initCfg.Network,
 			Chains: []netconf.Chain{
 				{
-					ID:          static.OmniExecutionChainID,
+					ID:          initCfg.Network.Static().OmniExecutionChainID,
 					Name:        "omni_evm",
 					IsOmniEVM:   true,
 					BlockPeriod: time.Millisecond * 500, // Speed up block times for testing
 				},
 				{
-					ID:              static.OmniConsensusChainID,
+					ID:              initCfg.Network.Static().OmniConsensusChainIDUint64(),
 					Name:            "omni_consensus",
 					IsOmniConsensus: true,
 					DeployHeight:    1,                      // Validator sets start at height 1, not 0.
@@ -227,8 +226,6 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 		return errors.New("network config file must be pre-generated", "path", networkFile)
 	}
 
-	static := netconf.GetStatic(initCfg.Network)
-
 	// Setup genesis file
 	genFile := comet.GenesisFile()
 	if cmtos.FileExists(genFile) {
@@ -241,7 +238,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 
 		var genDoc *types.GenesisDoc
 		if initCfg.Cosmos {
-			cosmosGen, err := genutil.MakeGenesis(static.OmniConsensusChainID, time.Now(), pubKey)
+			cosmosGen, err := genutil.MakeGenesis(initCfg.Network, time.Now(), pubKey)
 			if err != nil {
 				return err
 			}

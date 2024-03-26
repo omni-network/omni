@@ -78,7 +78,7 @@ func (cfg DeploymentConfig) Validate() error {
 	return nil
 }
 
-func getDeployCfg(chainID uint64, network string) (DeploymentConfig, error) {
+func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) {
 	if !chainids.IsMainnetOrTestnet(chainID) && network == netconf.Devnet {
 		return devnetCfg(), nil
 	}
@@ -104,7 +104,7 @@ func testnetCfg() DeploymentConfig {
 		Eigen:            holeskyEigenDeployments(),
 		StrategyParams:   holeskeyStrategyParams(),
 		MetadataURI:      metadataURI,
-		OmniChainID:      netconf.GetStatic(netconf.Devnet).OmniExecutionChainID,
+		OmniChainID:      netconf.Testnet.Static().OmniExecutionChainID,
 		MinOperatorStake: big.NewInt(1e18), // 1 ETH
 		MaxOperatorCount: 200,
 		AllowlistEnabled: false,
@@ -122,7 +122,7 @@ func stagingCfg() DeploymentConfig {
 		Eigen:            devnetEigenDeployments,
 		StrategyParams:   devnetStrategyParams(),
 		MetadataURI:      metadataURI,
-		OmniChainID:      netconf.GetStatic(netconf.Staging).OmniExecutionChainID,
+		OmniChainID:      netconf.Staging.Static().OmniExecutionChainID,
 		MinOperatorStake: big.NewInt(1e18), // 1 ETH
 		MaxOperatorCount: 10,
 		AllowlistEnabled: true,
@@ -139,7 +139,7 @@ func devnetCfg() DeploymentConfig {
 		ProxyAdmin:       contracts.DevnetProxyAdmin(),
 		Eigen:            devnetEigenDeployments,
 		MetadataURI:      metadataURI,
-		OmniChainID:      netconf.GetStatic(netconf.Devnet).OmniExecutionChainID,
+		OmniChainID:      netconf.Devnet.Static().OmniExecutionChainID,
 		StrategyParams:   devnetStrategyParams(),
 		EthStakeInbox:    common.HexToAddress("0x1234"), // TODO: replace with actual address
 		MinOperatorStake: big.NewInt(1e18),              // 1 ETH
@@ -149,7 +149,7 @@ func devnetCfg() DeploymentConfig {
 	}
 }
 
-func AddrForNetwork(network string) (common.Address, bool) {
+func AddrForNetwork(network netconf.ID) (common.Address, bool) {
 	switch network {
 	case netconf.Mainnet:
 		return contracts.MainnetAVS(), true
@@ -166,7 +166,7 @@ func AddrForNetwork(network string) (common.Address, bool) {
 
 // IsDeployed checks if the OmniAVS contract is deployed to the provided backend
 // to its expected network address.
-func IsDeployed(ctx context.Context, network string, backend *ethbackend.Backend) (bool, common.Address, error) {
+func IsDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (bool, common.Address, error) {
 	addr, ok := AddrForNetwork(network)
 	if !ok {
 		return false, addr, errors.New("unsupported network", "network", network)
@@ -185,7 +185,7 @@ func IsDeployed(ctx context.Context, network string, backend *ethbackend.Backend
 }
 
 // DeployIfNeeded deploys a new AVS contract if it is not already deployed.
-func DeployIfNeeded(ctx context.Context, network string, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
 	deployed, addr, err := IsDeployed(ctx, network, backend)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "is deployed")
@@ -199,7 +199,7 @@ func DeployIfNeeded(ctx context.Context, network string, backend *ethbackend.Bac
 
 // Deploy deploys the AVS contract and returns the address and receipt.
 // It only allows deployments to explicitly supported chains.
-func Deploy(ctx context.Context, network string, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
 	chainID, err := backend.ChainID(ctx)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "chain id")

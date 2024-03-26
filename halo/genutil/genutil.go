@@ -3,7 +3,6 @@ package genutil
 import (
 	"encoding/json"
 	"os"
-	"strconv"
 	"time"
 
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
@@ -11,6 +10,7 @@ import (
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
+	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/cometbft/cometbft/crypto"
 
@@ -33,7 +33,7 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 )
 
-func MakeGenesis(chainID uint64, genesisTime time.Time, valPubkeys ...crypto.PubKey) (*gtypes.AppGenesis, error) {
+func MakeGenesis(network netconf.ID, genesisTime time.Time, valPubkeys ...crypto.PubKey) (*gtypes.AppGenesis, error) {
 	cdc := getCodec()
 	txConfig := authtx.NewTxConfig(cdc, nil)
 
@@ -49,7 +49,7 @@ func MakeGenesis(chainID uint64, genesisTime time.Time, valPubkeys ...crypto.Pub
 		AppName:       "halo",
 		AppVersion:    "TBD",
 		GenesisTime:   genesisTime.UTC(),
-		ChainID:       strconv.FormatUint(chainID, 10),
+		ChainID:       network.Static().OmniConsensusChainIDStr(),
 		InitialHeight: 1,
 		Consensus:     defaultConsensusGenesis(),
 		AppState:      appStateBz,

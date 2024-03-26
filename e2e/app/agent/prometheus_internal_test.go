@@ -19,7 +19,7 @@ func TestPromGen(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name         string
-		network      string
+		network      netconf.ID
 		nodes        []string
 		newNodes     []string
 		newRelayer   bool

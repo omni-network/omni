@@ -372,7 +372,7 @@ func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 	// In monitor only mode, there is only public chains, so skip omni and anvil chains.
 	if testnet.OnlyMonitor {
 		return netconf.Network{
-			Name:   testnet.Network,
+			ID:     testnet.Network,
 			Chains: chains,
 		}
 	}
@@ -391,7 +391,7 @@ func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 	})
 
 	chains = append(chains, netconf.Chain{
-		ID:   netconf.GetStatic(testnet.Network).OmniConsensusChainID,
+		ID:   testnet.Network.Static().OmniConsensusChainIDUint64(),
 		Name: "omni_consensus",
 		// No RPC URLs, since we are going to remove it from netconf in any case.
 		DeployHeight:    1,                         // Validator sets start at height 1, not 0.
@@ -414,7 +414,7 @@ func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 	}
 
 	return netconf.Network{
-		Name:   testnet.Network,
+		ID:     testnet.Network,
 		Chains: chains,
 	}
 }
@@ -438,7 +438,7 @@ func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 
 	// Add omni consensus chain
 	chains = append(chains, netconf.Chain{
-		ID:   netconf.GetStatic(testnet.Network).OmniConsensusChainID,
+		ID:   testnet.Network.Static().OmniConsensusChainIDUint64(),
 		Name: "omni_consensus",
 		// No RPC URLs, since we are going to remove it from netconf in any case.
 		DeployHeight:    1,                         // Validator sets start at height 1, not 0.
@@ -484,7 +484,7 @@ func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 	}
 
 	return netconf.Network{
-		Name:   testnet.Network,
+		ID:     testnet.Network,
 		Chains: chains,
 	}
 }
