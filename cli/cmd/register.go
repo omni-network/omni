@@ -173,8 +173,8 @@ func avsAddressOrDefault(avsAddr string, chainID *big.Int) (common.Address, erro
 
 func avsFromChainID(chainID *big.Int) (common.Address, bool) {
 	switch chainID.Int64() {
-	case eigenutils.GoerliChainId:
-		return common.HexToAddress("0x848BE3DBcd054c17EbC712E0d29D15C2e638aBCe"), true
+	case eigenutils.HoleskyChainId:
+		return common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92"), true
 	// TODO(corver): We need to publish our AVS addresses somewhere
 	default:
 		return common.Address{}, false
