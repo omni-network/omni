@@ -104,7 +104,7 @@ func IsDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Bac
 		return false, addr, nil
 	}
 
-	if hexutil.Encode(code) != bindings.Create3Bin {
+	if hexutil.Encode(code) != bindings.Create3DeployedBytecode {
 		chain, chainID := backend.Chain()
 		return false, addr, errors.New("unexpected code at factory", "address", addr, "chain", chain, "chain_id", chainID)
 	}
