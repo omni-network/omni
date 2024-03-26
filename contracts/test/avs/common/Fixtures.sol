@@ -43,6 +43,9 @@ contract Fixtures is EigenLayerFixtures {
     MockPortal portal;
     OmniAVS omniAVS;
 
+    bool allowlistEnabled = true;
+    string metadataURI = "https://raw.githubusercontent.com/omni-network/omni/main/static/avs-metadata.json";
+
     /// Canonical, virtual beacon chain ETH strategy
     address constant beaconChainETHStrategy = 0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0;
 
@@ -105,7 +108,9 @@ contract Fixtures is EigenLayerFixtures {
                     ethStakeInbox,
                     minOperatorStake,
                     maxOperatorCount,
-                    _localStrategyParams()
+                    _localStrategyParams(),
+                    metadataURI,
+                    allowlistEnabled
                 )
             )
         );

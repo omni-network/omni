@@ -12,6 +12,9 @@ import { StrategyParams } from "./StrategyParams.sol";
 import { Test } from "forge-std/Test.sol";
 
 contract HoleskyAVS is Test {
+    bool allowlistEnabled = false;
+    string metadaURI = "https://raw.githubusercontent.com/omni-network/omni/main/static/avs-metadata.json";
+
     /// @dev defines holesky deployment logic
     function deploy(
         address create3Factory,
@@ -44,7 +47,9 @@ contract HoleskyAVS is Test {
                 ethStakeInbox,
                 minOperatorStake,
                 maxOperatorCount,
-                StrategyParams.holesky()
+                StrategyParams.holesky(),
+                metadaURI,
+                allowlistEnabled
             )
         );
 

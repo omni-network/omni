@@ -218,14 +218,9 @@ func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backe
 		return common.Address{}, nil, errors.Wrap(err, "validate config")
 	}
 
-	deployerTxOpts, err := backend.BindOpts(ctx, cfg.Deployer)
+	txOpts, err := backend.BindOpts(ctx, cfg.Deployer)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "bind deployer opts")
-	}
-
-	ownerTxOpts, err := backend.BindOpts(ctx, cfg.Owner)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "bind owner opts")
 	}
 
 	factory, err := bindings.NewCreate3(cfg.Create3Factory, backend)
@@ -235,22 +230,22 @@ func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backe
 
 	salt := create3.HashSalt(cfg.Create3Salt)
 
-	addr, err := factory.GetDeployed(nil, deployerTxOpts.From, salt)
+	addr, err := factory.GetDeployed(nil, txOpts.From, salt)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "get deployed")
 	} else if (cfg.ExpectedAddr != common.Address{}) && addr != cfg.ExpectedAddr {
 		return common.Address{}, nil, errors.New("unexpected address", "expected", cfg.ExpectedAddr, "actual", addr)
 	}
 
-	impl, tx, _, err := bindings.DeployOmniAVS(deployerTxOpts, backend, cfg.Eigen.DelegationManager, cfg.Eigen.AVSDirectory)
+	impl, tx, _, err := bindings.DeployOmniAVS(txOpts, backend, cfg.Eigen.DelegationManager, cfg.Eigen.AVSDirectory)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "deploy impl")
 	}
 
-	deployReceipt, err := backend.WaitMined(ctx, tx)
+	receipt, err := backend.WaitMined(ctx, tx)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "wait mined portal")
-	} else if deployReceipt.Status != ethtypes.ReceiptStatusSuccessful {
+	} else if receipt.Status != ethtypes.ReceiptStatusSuccessful {
 		return common.Address{}, nil, errors.New("deploy impl failed")
 	}
 
@@ -259,45 +254,19 @@ func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backe
 		return common.Address{}, nil, errors.Wrap(err, "pack init code")
 	}
 
-	tx, err = factory.Deploy(deployerTxOpts, salt, initCode)
+	tx, err = factory.Deploy(txOpts, salt, initCode)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "deploy proxy")
 	}
 
-	receipt, err := backend.WaitMined(ctx, tx)
+	receipt, err = backend.WaitMined(ctx, tx)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "wait mined proxy")
 	} else if receipt.Status != ethtypes.ReceiptStatusSuccessful {
 		return common.Address{}, nil, errors.New("deploy proxy failed")
 	}
 
-	avs, err := bindings.NewOmniAVS(addr, backend)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "bind avs")
-	}
-
-	if !cfg.AllowlistEnabled {
-		// only wait mained second admin call below (SetMetadataURI)
-		_, err = avs.DisableAllowlist(ownerTxOpts)
-		if err != nil {
-			return common.Address{}, nil, errors.Wrap(err, "disable allowlist")
-		}
-	}
-
-	tx, err = avs.SetMetadataURI(ownerTxOpts, cfg.MetadataURI)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "set metadata uri")
-	}
-
-	receipt, err = backend.WaitMined(ctx, tx)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "wait mined set metadata uri")
-	}
-	if receipt.Status != ethtypes.ReceiptStatusSuccessful {
-		return common.Address{}, nil, errors.New("set metadata uri failed")
-	}
-
-	return addr, deployReceipt, nil
+	return addr, receipt, nil
 }
 
 func packInitCode(cfg DeploymentConfig, impl common.Address) ([]byte, error) {
@@ -313,7 +282,8 @@ func packInitCode(cfg DeploymentConfig, impl common.Address) ([]byte, error) {
 func packInitialzer(cfg DeploymentConfig) ([]byte, error) {
 	enc, err := avsABI.Pack("initialize",
 		cfg.Owner, cfg.Portal, cfg.OmniChainID, cfg.EthStakeInbox,
-		cfg.MinOperatorStake, cfg.MaxOperatorCount, strategyParams(cfg))
+		cfg.MinOperatorStake, cfg.MaxOperatorCount, strategyParams(cfg),
+		cfg.MetadataURI, cfg.AllowlistEnabled)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "pack initializer")

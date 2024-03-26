@@ -17,6 +17,8 @@ import { MockOmniPredeploys } from "test/utils/MockOmniPredeploys.sol";
 import { Empty } from "./common/Empty.sol";
 import { Base } from "./common/Base.sol";
 
+import { Vm } from "forge-std/Vm.sol";
+
 /**
  * @title OmniAVS_initialize_Test
  * @dev Test suite for the AVS initialization
@@ -30,6 +32,8 @@ contract OmniAVS_initialize_Test is Base {
         uint96 minOperatorStake;
         uint32 maxOperatorCount;
         IOmniAVS.StrategyParam[] strategyParams;
+        string metadataURI;
+        bool allowlistEnabled;
     }
 
     function _defaultInitializeParams() internal view returns (InitializeParams memory) {
@@ -40,7 +44,9 @@ contract OmniAVS_initialize_Test is Base {
             ethStakeInbox: MockOmniPredeploys.ETH_STAKE_INBOX,
             minOperatorStake: minOperatorStake,
             maxOperatorCount: maxOperatorCount,
-            strategyParams: _localStrategyParams()
+            strategyParams: _localStrategyParams(),
+            allowlistEnabled: true,
+            metadataURI: metadataURI
         });
     }
 
@@ -52,47 +58,66 @@ contract OmniAVS_initialize_Test is Base {
         address impl =
             address(new OmniAVS(IDelegationManager(address(delegation)), IAVSDirectory(address(avsDirectory))));
 
-        ProxyAdmin(proxyAdmin).upgradeAndCall(
-            ITransparentUpgradeableProxy(proxy),
-            impl,
-            abi.encodeWithSelector(
-                OmniAVS.initialize.selector,
-                params.owner,
-                params.omni,
-                params.omniChainId,
-                params.ethStakeInbox,
-                params.minOperatorStake,
-                params.maxOperatorCount,
-                params.strategyParams
-            )
-        );
+        ProxyAdmin(proxyAdmin).upgradeAndCall(ITransparentUpgradeableProxy(proxy), impl, _initializer(params));
         vm.stopPrank();
 
         return OmniAVS(proxy);
     }
 
+    function _initializer(InitializeParams memory params) internal pure returns (bytes memory) {
+        return abi.encodeWithSelector(
+            OmniAVS.initialize.selector,
+            params.owner,
+            params.omni,
+            params.omniChainId,
+            params.ethStakeInbox,
+            params.minOperatorStake,
+            params.maxOperatorCount,
+            params.strategyParams,
+            params.metadataURI,
+            params.allowlistEnabled
+        );
+    }
+
     /// @dev Test that the default initialization parameters are set correctly
     function test_initialize_defaultParams_succeeds() public {
         InitializeParams memory params = _defaultInitializeParams();
-        OmniAVS omniAVS = _deployAndInitialize(params);
 
-        assertEq(omniAVS.owner(), params.owner);
-        assertEq(address(omniAVS.omni()), address(params.omni));
-        assertEq(omniAVS.omniChainId(), params.omniChainId);
-        assertEq(omniAVS.ethStakeInbox(), params.ethStakeInbox);
-        assertEq(omniAVS.minOperatorStake(), params.minOperatorStake);
-        assertEq(omniAVS.maxOperatorCount(), params.maxOperatorCount);
+        vm.recordLogs();
+        OmniAVS avs = _deployAndInitialize(params);
+        _assertMetadataURIUpdated(vm.getRecordedLogs(), params.metadataURI, address(avs));
 
-        IOmniAVS.StrategyParam[] memory strategyParams = omniAVS.strategyParams();
+        assertEq(avs.owner(), params.owner);
+        assertEq(address(avs.omni()), address(params.omni));
+        assertEq(avs.omniChainId(), params.omniChainId);
+        assertEq(avs.ethStakeInbox(), params.ethStakeInbox);
+        assertEq(avs.minOperatorStake(), params.minOperatorStake);
+        assertEq(avs.maxOperatorCount(), params.maxOperatorCount);
+        assertEq(avs.allowlistEnabled(), params.allowlistEnabled);
+
+        IOmniAVS.StrategyParam[] memory strategyParams = avs.strategyParams();
         assertEq(strategyParams.length, params.strategyParams.length);
         for (uint256 i = 0; i < strategyParams.length; i++) {
             assertEq(address(strategyParams[i].strategy), address(params.strategyParams[i].strategy));
             assertEq(strategyParams[i].multiplier, params.strategyParams[i].multiplier);
         }
 
-        assertTrue(omniAVS.allowlistEnabled());
-        assertFalse(omniAVS.paused());
+        assertFalse(avs.paused());
     }
 
-    // TODO: add more initialization tests
+    function _assertMetadataURIUpdated(Vm.Log[] memory logs, string memory metadataURI, address avs) internal {
+        bool sawMetadataURIUpdated = false;
+        for (uint256 i = 0; i < logs.length; i++) {
+            Vm.Log memory log = logs[i];
+            if (
+                log.emitter == address(avsDirectory)
+                    && log.topics[0] == keccak256("AVSMetadataURIUpdated(address,string)")
+            ) {
+                assertEq(avs, address(uint160(uint256(log.topics[1]))));
+                assertEq(metadataURI, abi.decode(log.data, (string)));
+                sawMetadataURIUpdated = true;
+            }
+        }
+        assertTrue(sawMetadataURIUpdated);
+    }
 }
