@@ -34,7 +34,7 @@ func NewFireBackends(ctx context.Context, testnet types.Testnet, fireCl firebloc
 	inner := make(map[uint64]*Backend)
 
 	// Configure omni EVM Backend
-	{
+	if testnet.HasOmniEVM() {
 		// todo(lazar): remove this when we figure out why txs are stuck in geth mempool upon initial run
 		// task https://app.asana.com/0/1206208509925075/1206887969751598/f
 		chain, err := testnet.FirstOmniValidatorEVM() // Connect to a geth node connected to a validator

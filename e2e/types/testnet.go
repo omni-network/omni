@@ -64,6 +64,10 @@ func (t Testnet) FirstOmniValidatorEVM() (OmniEVM, error) {
 	return OmniEVM{}, errors.New("omni evm validator not found")
 }
 
+func (t Testnet) HasOmniEVM() bool {
+	return len(t.OmniEVMs) > 0
+}
+
 // EVMChain represents a EVM chain in a omni network.
 type EVMChain struct {
 	Name               string // Chain Nam.

@@ -81,11 +81,13 @@ func NewManager(testnet types.Testnet, backends ethbackend.Backends, relayerKeyF
 		PortalAddress: privPortalAddr,
 	}
 
-	// Just use the first omni evm instance for now.
-	omniEVM := testnet.OmniEVMs[0]
-	portals[omniEVM.Chain.ID] = Portal{
-		Chain:      omniEVM.Chain,
-		DeployInfo: privateChainDeployInfo,
+	if testnet.HasOmniEVM() {
+		// Just use the first omni evm instance for now.
+		omniEVM := testnet.OmniEVMs[0]
+		portals[omniEVM.Chain.ID] = Portal{
+			Chain:      omniEVM.Chain,
+			DeployInfo: privateChainDeployInfo,
+		}
 	}
 
 	// Add all portals
@@ -111,7 +113,7 @@ func NewManager(testnet types.Testnet, backends ethbackend.Backends, relayerKeyF
 
 		return &manager{
 			portals:     portals,
-			omniChainID: omniEVM.Chain.ID,
+			omniChainID: netconf.Devnet.Static().OmniExecutionChainID,
 			relayerKey:  privateRelayerKey,
 			backends:    backends,
 			network:     netconf.Devnet,
@@ -125,14 +127,23 @@ func NewManager(testnet types.Testnet, backends ethbackend.Backends, relayerKeyF
 
 		return &manager{
 			portals:     portals,
-			omniChainID: omniEVM.Chain.ID,
+			omniChainID: netconf.Staging.Static().OmniExecutionChainID,
 			relayerKey:  relayerKey,
 			backends:    backends,
 			network:     netconf.Staging,
 			operator:    fbDev,
 		}, nil
+	case netconf.Testnet:
+		// no testnet relayer
+		return &manager{
+			portals:     portals,
+			omniChainID: netconf.Testnet.Static().OmniExecutionChainID,
+			backends:    backends,
+			network:     netconf.Testnet,
+			operator:    fbDev,
+		}, nil
 	default:
-		return nil, errors.New("unknown network")
+		return nil, errors.New("unknown network", "network", network)
 	}
 }
 

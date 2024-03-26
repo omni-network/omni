@@ -5,7 +5,6 @@ const (
 	Ethereum = uint64(1)
 
 	// testnets.
-	Goerli     = uint64(5)
 	Holesky    = uint64(17000)
 	ArbSepolia = uint64(421614)
 	OpSepolia  = uint64(11155420)
@@ -18,7 +17,6 @@ var (
 	}
 
 	testnets = []uint64{
-		Goerli,
 		Holesky,
 		ArbSepolia,
 		OpSepolia,

@@ -39,12 +39,15 @@ examples-bindings: check-abigen-version build ## Generate golang contract bindin
 deploy-eigenlayer-save-anvil-state: ## Deploy eigenlayer contracts and dump anvil state.
 	./script/eigen/deploy-eigenlayer-save-anvil-state.sh
 
-HOLESKY_FORK_BLOCKNUMER ?= 1220946
-HOLEKSY_RPC ?= https://ethereum-holesky-rpc.publicnode.com
 
-.PHONY: avs-holesky-fork-test
-avs-holesky-fork-test:
-	@FOUNDRY_FUZZ_RUNS=10 forge test --fork-url ${HOLESKY_RPC} --fork-block-number ${HOLESKY_FORK_BLOCKNUMER} --match-path "test/avs/**/*.sol"
+.PHONY: avs-fork-test
+avs-fork-test: ## Run AVS tests againts a local fork.
+	@FOUNDRY_FUZZ_RUNS=10 forge test --fork-url http://localhost:8545 --match-path "test/avs/**/*.sol"
+
+
+.PHONY: fork-holesky
+fork-holesky: ## Run an anvil holesky fork.
+	anvil --fork-url https://ethereum-holesky-rpc.publicnode.com
 
 .PHONY: check-abigen-version
 check-abigen-version: ## Check abigen version, exit(1) if not 1.13.14-stable.
