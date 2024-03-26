@@ -203,7 +203,12 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 			return nil, errors.Wrap(err, "deploy opts", "chain", p.Chain.Name)
 		}
 
-		addr, receipt, err := portal.DeployIfNeeded(ctx, m.network, backend, valSetID, validators)
+		height, err := backend.BlockNumber(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "block number", "chain", p.Chain.Name)
+		}
+
+		addr, _, err := portal.DeployIfNeeded(ctx, m.network, backend, valSetID, validators)
 		if err != nil {
 			return nil, errors.Wrap(err, "deploy public omni contracts", "chain", p.Chain.Name)
 		}
@@ -216,7 +221,7 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 		return &deployResult{
 			Contract: contract,
 			Addr:     addr,
-			Height:   receipt.BlockNumber.Uint64(),
+			Height:   height,
 		}, nil
 	}
 
