@@ -11,9 +11,19 @@ import (
 )
 
 const (
-	// fireblocksDev is the address of the dev fireblocks account.
-	// Currently used for all staging deployments / operations.
-	fireblocksDev = "0x7a6cF389082dc698285474976d7C75CAdE08ab7e"
+	// fbDev is the address of the fireblocks "dev" account.
+	fbDev = "0x7a6cF389082dc698285474976d7C75CAdE08ab7e"
+
+	// TODO: use proper staging addresses below, rather than fbDev.
+
+	// address of the "staging-create3-deployer" fireblocks account.
+	// fbStagingCreate3Deployer = "0xC8103859Ac7CB547d70307EdeF1A2319FC305fdC".
+
+	// address of the "staging-deployer" fireblocks account.
+	// fbStagingDeployer = "0x274c4B3e5d27A65196d63964532366872F81D261".
+
+	// address of the "staging-owner" fireblocks account.
+	// fbStagingAdmin = "0x4891925c4f13A34FC26453FD168Db80aF3273014".
 )
 
 //nolint:gochecknoglobals // Static addresses
@@ -21,31 +31,31 @@ var (
 	// ProxyAdminOwner.
 	mainnetProxyAdminOwner = addr("0x0")
 	testnetProxyAdminOwner = addr("0x0")
-	stagingProxyAdminOwner = addr(fireblocksDev)
+	stagingProxyAdminOwner = addr(fbDev)
 	devnetProxyAdminOwner  = anvil.DevAccount2()
 
 	// Create3 Deployer - addrress that can deploy the create3 factory.
 	mainnetCreate3Deployer = addr("0x0")
 	testnetCreate3Deployer = addr("0x0")
-	stagingCreate3Deployer = addr(fireblocksDev)
+	stagingCreate3Deployer = addr(fbDev)
 	devnetCreate3Deployer  = anvil.DevAccount0()
 
 	// Deployer - address that can deploy protocol contracts via Create3 factory.
 	mainnetDeployer = addr("0x0")
 	testnetDeployer = addr("0x0")
-	stagingDeployer = addr("0x0")
+	stagingDeployer = addr(fbDev)
 	devnetDeployer  = anvil.DevAccount1()
 
 	// Portal Admin.
 	mainnetPortalAdmin = addr("0x0")
 	testnetPortalAdmin = addr("0x0")
-	stagingPortalAdmin = addr(fireblocksDev)
+	stagingPortalAdmin = addr(fbDev)
 	devnetPortalAdmin  = anvil.DevAccount2()
 
 	// AVS Admin.
 	mainnetAVSAdmin = addr("0x0")
 	testnetAVSAdmin = addr("0x0")
-	stagingAVSAdmin = addr(fireblocksDev)
+	stagingAVSAdmin = addr(fbDev)
 	devnetAVSAdmin  = anvil.DevAccount2()
 )
 
