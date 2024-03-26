@@ -66,7 +66,7 @@ type Definition struct {
 	Backends ethbackend.Backends
 }
 
-func MakeDefinition(ctx context.Context, cfg DefinitionConfig) (Definition, error) {
+func MakeDefinition(ctx context.Context, cfg DefinitionConfig, commandName string) (Definition, error) {
 	manifest, err := LoadManifest(cfg.ManifestFile)
 	if err != nil {
 		return Definition{}, errors.Wrap(err, "loading manifest")
@@ -90,7 +90,7 @@ func MakeDefinition(ctx context.Context, cfg DefinitionConfig) (Definition, erro
 		return Definition{}, errors.Wrap(err, "loading testnet")
 	}
 
-	backends, err := newBackends(ctx, cfg, testnet)
+	backends, err := newBackends(ctx, cfg, testnet, commandName)
 	if err != nil {
 		return Definition{}, err
 	}
@@ -119,7 +119,7 @@ func MakeDefinition(ctx context.Context, cfg DefinitionConfig) (Definition, erro
 	}, nil
 }
 
-func newBackends(ctx context.Context, cfg DefinitionConfig, testnet types.Testnet) (ethbackend.Backends, error) {
+func newBackends(ctx context.Context, cfg DefinitionConfig, testnet types.Testnet, commandName string) (ethbackend.Backends, error) {
 	// Skip backends if only deploying monitor, since there are no EVM to connect to.
 	if testnet.OnlyMonitor {
 		return ethbackend.Backends{}, nil
@@ -135,7 +135,9 @@ func newBackends(ctx context.Context, cfg DefinitionConfig, testnet types.Testne
 		return ethbackend.Backends{}, err
 	}
 
-	fireCl, err := fireblocks.New(testnet.Network, cfg.FireAPIKey, key)
+	fireCl, err := fireblocks.New(testnet.Network, cfg.FireAPIKey, key,
+		fireblocks.WithSignNote(fmt.Sprintf("omni e2e %s %s", commandName, testnet.Network)),
+	)
 	if err != nil {
 		return ethbackend.Backends{}, err
 	}

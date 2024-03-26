@@ -51,12 +51,13 @@ func (c Client) Sign(ctx context.Context, digest common.Hash, signer common.Addr
 
 	id, err := c.createRawSignTransaction(ctx, account, digest)
 	if err != nil {
-		return [65]byte{}, err
+		return [65]byte{}, errors.Wrap(err, "create raw sign tx")
 	}
 
 	// First try immediately.
-	if resp, status, err := c.maybeGetSignature(ctx, id, digest, signer); err != nil {
-		return [65]byte{}, err
+	resp, status, err := c.maybeGetSignature(ctx, id, digest, signer)
+	if err != nil {
+		return [65]byte{}, errors.Wrap(err, "get sig")
 	} else if status.Completed() {
 		return resp, nil
 	}
@@ -66,17 +67,20 @@ func (c Client) Sign(ctx context.Context, digest common.Hash, signer common.Addr
 	defer queryTicker.Stop()
 
 	var attempt int
+	prevStatus := status
 	for {
 		select {
 		case <-ctx.Done():
-			return [65]byte{}, errors.Wrap(ctx.Err(), "context canceled")
+			return [65]byte{}, errors.Wrap(ctx.Err(), "timeout waiting", "prev_status", prevStatus)
 		case <-queryTicker.C:
-			resp, status, err := c.maybeGetSignature(ctx, id, digest, signer)
+			resp, status, err = c.maybeGetSignature(ctx, id, digest, signer)
 			if err != nil {
-				return [65]byte{}, err
+				return [65]byte{}, errors.Wrap(err, "get sig", "prev_status", prevStatus)
 			} else if status.Completed() {
 				return resp, nil
 			}
+
+			prevStatus = status
 
 			attempt++
 			if attempt%c.opts.LogFreqFactor == 0 {
@@ -96,7 +100,7 @@ func (c Client) Sign(ctx context.Context, digest common.Hash, signer common.Addr
 func (c Client) maybeGetSignature(ctx context.Context, txID string, digest common.Hash, signer common.Address) ([65]byte, Status, error) {
 	tx, err := c.getTransactionByID(ctx, txID)
 	if err != nil {
-		return [65]byte{}, "", err
+		return [65]byte{}, "", errors.Wrap(err, "get tx")
 	}
 
 	if tx.Status.Failed() {
@@ -144,5 +148,6 @@ func (c Client) newRawSignRequest(account uint64, digest common.Hash) createTran
 				}},
 			},
 		},
+		Note: c.opts.SignNote,
 	}
 }

@@ -23,6 +23,9 @@ type options struct {
 	// log a warning message if the transaction has not been signed yet
 	LogFreqFactor int
 
+	// SignNote is a note to include in the sign request
+	SignNote string
+
 	// Host is the base URL for the FireBlocks API.
 	Host string
 
@@ -34,10 +37,11 @@ type options struct {
 func defaultOptions() options {
 	return options{
 		NetworkTimeout: time.Duration(30) * time.Second,
-		QueryInterval:  time.Duration(500) * time.Millisecond,
+		QueryInterval:  time.Second,
 		LogFreqFactor:  10,
 		Host:           hostProd,
 		TestAccounts:   make(map[common.Address]uint64),
+		SignNote:       "omni sign note not set",
 	}
 }
 
@@ -62,6 +66,12 @@ func WithTestAccount(addr common.Address, accID uint64) func(*options) {
 func WithHost(host string) func(*options) {
 	return func(cfg *options) {
 		cfg.Host = host
+	}
+}
+
+func WithSignNote(note string) func(*options) {
+	return func(cfg *options) {
+		cfg.SignNote = note
 	}
 }
 
