@@ -59,6 +59,12 @@ func NewVersionCmd() *cobra.Command {
 	}
 }
 
+// Get returns the git commit short sha hash.
+func ShortSha() string {
+	commit, _ := get()
+	return commit
+}
+
 // get returns the git commit hash and timestamp from the runtime build info.
 func get() (hash string, timestamp string) { //nolint:nonamedreturns // Disambiguate identical return types.
 	hash, timestamp = "unknown", "unknown"

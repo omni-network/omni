@@ -261,7 +261,11 @@ func AVSSalt(network netconf.ID) string {
 
 // salt generates a salt for a contract deployment, adding git build info.
 func salt(network netconf.ID, contract string) string {
-	return string(network) + "-" + contract + "-" + buildinfo.Version()
+	if network.IsEphemeral() {
+		return string(network) + "-" + contract + "-" + buildinfo.ShortSha()
+	}
+
+	return string(network) + "-" + contract
 }
 
 func addr(hex string) common.Address {
