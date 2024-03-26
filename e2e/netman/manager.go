@@ -8,7 +8,6 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/anvil"
-	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/portal"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -24,7 +23,13 @@ import (
 
 //nolint:gochecknoglobals // Static mapping.
 var (
-	privateRelayerKey = anvil.DevPrivateKey1()
+	// this must be different than netman.Operator(), otherwise the txmgr nonce
+	// get's out of sync, because the relayer TXMgr and the operator TXMgr are running
+	// in separate services.
+	privateRelayerKey = anvil.DevPrivateKey5()
+
+	// fbDev is the address of the fireblocks "dev" account.
+	fbDev = common.HexToAddress("0x7a6cF389082dc698285474976d7C75CAdE08ab7e")
 )
 
 // Manager abstract logic to deploy and bootstrap a network.
@@ -110,14 +115,7 @@ func NewManager(testnet types.Testnet, backends ethbackend.Backends, relayerKeyF
 			relayerKey:  privateRelayerKey,
 			backends:    backends,
 			network:     netconf.Devnet,
-			// operator:    contracts.DevnetDeployer()
-			//
-			// Using dev deployer caused "Transaction not yet mined" & "Nonce too low" errors in e2e SendXMsgs loop
-			// Somehow, the backend / txmngr managing the nonce gets out of sync.
-			// TODO: figure out why that happens and fix it.
-			//
-			// For now, use a different account.
-			operator: anvil.DevAccount5(),
+			operator:    anvil.DevAccount4(),
 		}, nil
 	case netconf.Staging:
 		relayerKey, err := crypto.LoadECDSA(relayerKeyFile)
@@ -131,7 +129,7 @@ func NewManager(testnet types.Testnet, backends ethbackend.Backends, relayerKeyF
 			relayerKey:  relayerKey,
 			backends:    backends,
 			network:     netconf.Staging,
-			operator:    contracts.StagingDeployer(), // just use deployer as operator, for now.
+			operator:    fbDev,
 		}, nil
 	default:
 		return nil, errors.New("unknown network")
