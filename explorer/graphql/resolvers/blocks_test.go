@@ -22,7 +22,7 @@ type gqlTest struct {
 
 func createGqlTest(t *testing.T) *gqlTest {
 	t.Helper()
-	client := resolvers.CreateTestEntClient(t)
+	client := createTestEntClient(t)
 	provider := &d.Provider{
 		EntClient: client,
 	}
@@ -47,13 +47,12 @@ func TestXBlockQuery(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	test := createGqlTest(t)
-	defer func(Client *ent.Client) {
-		err := Client.Close()
-		if err != nil {
+	t.Cleanup(func() {
+		if err := test.Client.Close(); err != nil {
 			t.Error(err)
 		}
-	}(test.Client)
-	resolvers.CreateTestBlock(ctx, t, test.Client)
+	})
+	createTestBlock(ctx, t, test.Client)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
@@ -86,13 +85,12 @@ func TestXBlocksQuery(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	test := createGqlTest(t)
-	defer func(Client *ent.Client) {
-		err := Client.Close()
-		if err != nil {
+	t.Cleanup(func() {
+		if err := test.Client.Close(); err != nil {
 			t.Error(err)
 		}
-	}(test.Client)
-	resolvers.CreateTestBlocks(ctx, t, test.Client, 2)
+	})
+	createTestBlocks(ctx, t, test.Client, 2)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
@@ -132,13 +130,12 @@ func TestXBlocksCount(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	test := createGqlTest(t)
-	defer func(Client *ent.Client) {
-		err := Client.Close()
-		if err != nil {
+	t.Cleanup(func() {
+		if err := test.Client.Close(); err != nil {
 			t.Error(err)
 		}
-	}(test.Client)
-	resolvers.CreateTestBlocks(ctx, t, test.Client, 2)
+	})
+	createTestBlocks(ctx, t, test.Client, 2)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{

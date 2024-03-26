@@ -1,4 +1,4 @@
-package resolvers
+package resolvers_test
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func CreateTestBlock(ctx context.Context, t *testing.T, client *ent.Client) ent.Block {
+func createTestBlock(ctx context.Context, t *testing.T, client *ent.Client) ent.Block {
 	t.Helper()
 
 	sourceChainID := uint64(1)
@@ -29,12 +29,12 @@ func CreateTestBlock(ctx context.Context, t *testing.T, client *ent.Client) ent.
 	return *block
 }
 
-// CreateTestBlocks creates n test blocks with n messages and n-1 receipts.
-func CreateTestBlocks(ctx context.Context, t *testing.T, client *ent.Client, count int) {
+// createTestBlocks creates n test blocks with n messages and n-1 receipts.
+func createTestBlocks(ctx context.Context, t *testing.T, client *ent.Client, count int) {
 	t.Helper()
 	var msg *ent.Msg
 	for i := 0; i < count; i++ {
-		block := CreateTestBlock(ctx, t, client)
+		block := createTestBlock(ctx, t, client)
 		if msg != nil {
 			createReceipt(ctx, t, client, *msg)
 		}
@@ -83,7 +83,7 @@ func createReceipt(ctx context.Context, t *testing.T, client *ent.Client, msg en
 	return *receipt
 }
 
-func CreateTestEntClient(t *testing.T) *ent.Client {
+func createTestEntClient(t *testing.T) *ent.Client {
 	t.Helper()
 
 	entOpts := []enttest.Option{

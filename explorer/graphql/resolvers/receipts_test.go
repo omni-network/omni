@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/omni-network/omni/explorer/db/ent"
 	"github.com/omni-network/omni/explorer/graphql/app"
 	"github.com/omni-network/omni/explorer/graphql/resolvers"
 
@@ -16,13 +15,12 @@ func TestXReceiptCount(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	test := createGqlTest(t)
-	defer func(Client *ent.Client) {
-		err := Client.Close()
-		if err != nil {
+	t.Cleanup(func() {
+		if err := test.Client.Close(); err != nil {
 			t.Error(err)
 		}
-	}(test.Client)
-	resolvers.CreateTestBlocks(ctx, t, test.Client, 2)
+	})
+	createTestBlocks(ctx, t, test.Client, 3)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
@@ -35,7 +33,7 @@ func TestXReceiptCount(t *testing.T) {
 			`,
 			ExpectedResult: `
 				{
-					"xreceiptcount": "0x1"
+					"xreceiptcount": "0x2"
 				}
 			`,
 		},

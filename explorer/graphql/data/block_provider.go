@@ -63,12 +63,10 @@ func (p Provider) XBlockCount(ctx context.Context) (*hexutil.Big, bool, error) {
 
 	res := query
 
-	big, err := hexutil.DecodeBig(hexutil.EncodeUint64(uint64(res)))
+	big, err := Uint2Hex(uint64(res))
 	if err != nil {
 		return nil, false, errors.Wrap(err, "decoding block count")
 	}
 
-	b := hexutil.Big(*big)
-
-	return &b, true, nil
+	return &big, true, nil
 }

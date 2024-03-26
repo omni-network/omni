@@ -13,19 +13,19 @@ import (
 
 // EntBlockToGraphQLBlock converts an ent.Block to a resolvers.XBlock.
 func EntBlockToGraphQLBlock(block *ent.Block) (*resolvers.XBlock, error) {
-	sourceChainIDBig, err := hexutil.DecodeBig(hexutil.EncodeUint64(block.SourceChainID))
+	sourceChainIDBig, err := Uint2Big(block.SourceChainID)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding source chain id")
 	}
 
-	blockHeight, err := hexutil.DecodeBig(hexutil.EncodeUint64(block.BlockHeight))
+	blockHeight, err := Uint2Big(block.BlockHeight)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding block height")
 	}
 
 	res := resolvers.XBlock{
-		SourceChainID: hexutil.Big(*sourceChainIDBig),
-		BlockHeight:   hexutil.Big(*blockHeight),
+		SourceChainID: hexutil.Big(sourceChainIDBig),
+		BlockHeight:   hexutil.Big(blockHeight),
 		BlockHash:     common.Hash(block.BlockHash),
 		Timestamp:     graphql.Time{Time: block.CreatedAt},
 	}
@@ -53,33 +53,33 @@ func EntBlockToGraphQLBlock(block *ent.Block) (*resolvers.XBlock, error) {
 
 // EntMsgToGraphQLXMsg converts an ent.Msg to a resolvers.XMsg.
 func EntMsgToGraphQLXMsg(msg *ent.Msg) (*resolvers.XMsg, error) {
-	sourceChainIDBig, err := hexutil.DecodeBig(hexutil.EncodeUint64(msg.SourceChainID))
+	sourceChainIDBig, err := Uint2Big(msg.SourceChainID)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding source chain id")
 	}
 
-	destChainIDBig, err := hexutil.DecodeBig(hexutil.EncodeUint64(msg.DestChainID))
+	destChainIDBig, err := Uint2Big(msg.DestChainID)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding source chain id")
 	}
 
-	destGasLimit, err := hexutil.DecodeBig(hexutil.EncodeUint64(msg.DestGasLimit))
+	destGasLimit, err := Uint2Big(msg.DestGasLimit)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding dest gas limit")
 	}
 
-	streamOffset, err := hexutil.DecodeBig(hexutil.EncodeUint64(msg.StreamOffset))
+	streamOffset, err := Uint2Big(msg.StreamOffset)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding stream offset")
 	}
 
 	return &resolvers.XMsg{
 		SourceMessageSender: common.Address(msg.SourceMsgSender),
-		SourceChainID:       hexutil.Big(*sourceChainIDBig),
+		SourceChainID:       hexutil.Big(sourceChainIDBig),
 		DestAddress:         common.Address(msg.DestAddress),
-		DestGasLimit:        hexutil.Big(*destGasLimit),
-		DestChainID:         hexutil.Big(*destChainIDBig),
-		StreamOffset:        hexutil.Big(*streamOffset),
+		DestGasLimit:        hexutil.Big(destGasLimit),
+		DestChainID:         hexutil.Big(destChainIDBig),
+		StreamOffset:        hexutil.Big(streamOffset),
 		TxHash:              common.Hash(msg.TxHash),
 		Data:                msg.Data,
 	}, nil
@@ -87,22 +87,22 @@ func EntMsgToGraphQLXMsg(msg *ent.Msg) (*resolvers.XMsg, error) {
 
 // EntReceiptToGraphQLXReceipt converts an ent.Receipt to a resolvers.XReceipt.
 func EntReceiptToGraphQLXReceipt(receipt *ent.Receipt) (*resolvers.XReceipt, error) {
-	gasUsed, err := hexutil.DecodeBig(hexutil.EncodeUint64(receipt.GasUsed))
+	gasUsed, err := Uint2Big(receipt.GasUsed)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding gas used")
 	}
 
-	sourceChainIDBig, err := hexutil.DecodeBig(hexutil.EncodeUint64(receipt.SourceChainID))
+	sourceChainIDBig, err := Uint2Big(receipt.SourceChainID)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding source chain id")
 	}
 
-	destChainIDBig, err := hexutil.DecodeBig(hexutil.EncodeUint64(receipt.DestChainID))
+	destChainIDBig, err := Uint2Big(receipt.DestChainID)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding source chain id")
 	}
 
-	streamOffset, err := hexutil.DecodeBig(hexutil.EncodeUint64(receipt.StreamOffset))
+	streamOffset, err := Uint2Big(receipt.StreamOffset)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding stream offset")
 	}
@@ -110,11 +110,11 @@ func EntReceiptToGraphQLXReceipt(receipt *ent.Receipt) (*resolvers.XReceipt, err
 	return &resolvers.XReceipt{
 		UUID:           graphql.ID(receipt.UUID.String()),
 		Success:        graphql.NullBool{Value: &receipt.Success, Set: receipt.Success},
-		GasUsed:        hexutil.Big(*gasUsed),
+		GasUsed:        hexutil.Big(gasUsed),
 		RelayerAddress: common.Address(receipt.RelayerAddress),
-		SourceChainID:  hexutil.Big(*sourceChainIDBig),
-		DestChainID:    hexutil.Big(*destChainIDBig),
-		StreamOffset:   hexutil.Big(*streamOffset),
+		SourceChainID:  hexutil.Big(sourceChainIDBig),
+		DestChainID:    hexutil.Big(destChainIDBig),
+		StreamOffset:   hexutil.Big(streamOffset),
 		TxHash:         common.Hash(receipt.TxHash),
 		Timestamp:      graphql.Time{Time: receipt.CreatedAt},
 	}, nil

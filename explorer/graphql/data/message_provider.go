@@ -16,12 +16,10 @@ func (p Provider) XMsgCount(ctx context.Context) (*hexutil.Big, bool, error) {
 		return nil, false, err
 	}
 
-	big, err := hexutil.DecodeBig(hexutil.EncodeUint64(uint64(query)))
+	hex, err := Uint2Hex(uint64(query))
 	if err != nil {
 		return nil, false, errors.Wrap(err, "decoding block count")
 	}
 
-	b := hexutil.Big(*big)
-
-	return &b, true, nil
+	return &hex, true, nil
 }
