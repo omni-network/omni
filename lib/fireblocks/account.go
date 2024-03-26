@@ -17,10 +17,8 @@ import (
 
 // Accounts returns all the vault accounts from the account cache, populating it if empty.
 func (c Client) Accounts(ctx context.Context) (map[common.Address]uint64, error) {
-	if !c.cache.Populated() {
-		if err := c.populateAccountCache(ctx); err != nil {
-			return nil, errors.Wrap(err, "populating account cache")
-		}
+	if err := c.cache.MaybePopulate(ctx, c.queryAccounts); err != nil {
+		return nil, errors.Wrap(err, "populating account cache")
 	}
 
 	return c.cache.Clone(), nil
@@ -42,11 +40,11 @@ func (c Client) getAccount(ctx context.Context, addr common.Address) (uint64, er
 	return account, nil
 }
 
-// populateAccountCache populates the accounts cache with all vault account addresses.
-func (c Client) populateAccountCache(ctx context.Context) error {
+// queryAccounts returns all the vault accounts from the Fireblocks API.
+func (c Client) queryAccounts(ctx context.Context) (map[common.Address]uint64, error) {
 	header, err := c.authHeaders(endpointVaults, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var resp vaultsResponse
@@ -61,28 +59,29 @@ func (c Client) populateAccountCache(ctx context.Context) error {
 		&errResp,
 	)
 	if err != nil {
-		return err
+		return nil, err
 	} else if !ok {
-		return errors.New("failed to get vaults", "resp_msg", errResp.Message, "resp_code", errResp.Code)
+		return nil, errors.New("failed to get vaults", "resp_msg", errResp.Message, "resp_code", errResp.Code)
 	} else if resp.Paging.After != "" {
-		return errors.New("paging not implemented")
+		return nil, errors.New("paging not implemented")
 	}
 
+	accounts := make(map[common.Address]uint64, len(resp.Accounts))
 	for _, account := range resp.Accounts {
 		id, err := strconv.ParseUint(account.ID, 10, 64)
 		if err != nil {
-			return errors.Wrap(err, "parsing account ID")
+			return nil, errors.Wrap(err, "parsing account ID")
 		}
 
 		pubkey, err := c.GetPublicKey(ctx, id)
 		if err != nil {
-			return errors.Wrap(err, "getting public key")
+			return nil, errors.Wrap(err, "getting public key")
 		}
 
-		c.cache.Set(crypto.PubkeyToAddress(*pubkey), id)
+		accounts[crypto.PubkeyToAddress(*pubkey)] = id
 	}
 
-	return nil
+	return accounts, nil
 }
 
 // GetPublicKey returns the public key for the given vault account.

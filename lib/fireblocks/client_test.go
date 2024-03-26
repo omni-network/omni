@@ -114,7 +114,7 @@ func TestSmoke(t *testing.T) {
 	privKey, err := os.ReadFile(privKeyFile)
 	require.NoError(t, err)
 
-	client, err := fireblocks.New(netconf.Simnet, apiKey, parseKey(t, privKey))
+	client, err := fireblocks.New(netconf.Staging, apiKey, parseKey(t, privKey))
 	require.NoError(t, err)
 
 	addr := common.BytesToAddress(hexutil.MustDecode("0x7a6cF389082dc698285474976d7C75CAdE08ab7e"))
@@ -154,10 +154,10 @@ func TestSmoke(t *testing.T) {
 	t.Run("sign", func(t *testing.T) {
 		t.Parallel()
 
-		digest := crypto.Keccak256([]byte("test"))
-		require.NoError(t, err)
+		ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+		defer cancel()
 
-		_, err = client.Sign(ctx, [32]byte(digest), addr)
+		_, err = client.Sign(ctx, tutil.RandomHash(), addr)
 		tutil.RequireNoError(t, err)
 	})
 }

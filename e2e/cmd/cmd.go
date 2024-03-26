@@ -38,7 +38,7 @@ func New() *cobra.Command {
 		}
 
 		var err error
-		def, err = app.MakeDefinition(ctx, defCfg)
+		def, err = app.MakeDefinition(ctx, defCfg, cmd.Use)
 
 		return err
 	}

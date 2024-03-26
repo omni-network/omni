@@ -25,7 +25,7 @@ func TestSetup(t *testing.T) {
 		InfraProvider: vmcompose.ProviderName,
 		InfraDataFile: dataFile,
 		OmniImgTag:    "7d1ae53",
-	})
+	}, "")
 	require.NoError(t, err)
 
 	err = os.MkdirAll(def.Testnet.Dir, 0o755)
