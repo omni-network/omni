@@ -69,6 +69,10 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 		return nil, nil, err
 	}
 
+	if err := fundAccounts(ctx, def); err != nil {
+		return nil, nil, err
+	}
+
 	if err := deployPrivateCreate3(ctx, def); err != nil {
 		return nil, nil, err
 	}

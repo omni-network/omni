@@ -51,6 +51,10 @@ func getDeployCfg(chainID uint64, network string) (DeploymentConfig, error) {
 		return testnetCfg(), nil
 	}
 
+	if !chainids.IsMainnet(chainID) && network == netconf.Staging {
+		return stagingCfg(), nil
+	}
+
 	return DeploymentConfig{}, errors.New("unsupported chain for network", "chain_id", chainID, "network", network)
 }
 
@@ -69,6 +73,16 @@ func testnetCfg() DeploymentConfig {
 		Create3Salt:    contracts.ProxyAdminSalt(netconf.Testnet),
 		Owner:          contracts.TestnetProxyAdminOwner(),
 		Deployer:       contracts.TestnetDeployer(),
+	}
+}
+
+func stagingCfg() DeploymentConfig {
+	return DeploymentConfig{
+		Create3Factory: contracts.StagingCreate3Factory(),
+		Create3Salt:    contracts.ProxyAdminSalt(netconf.Staging),
+		Owner:          contracts.StagingProxyAdminOwner(),
+		Deployer:       contracts.StagingDeployer(),
+		ExpectedAddr:   contracts.StagingProxyAdmin(),
 	}
 }
 
