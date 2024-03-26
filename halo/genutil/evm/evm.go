@@ -98,9 +98,9 @@ func stagingPrefundAlloc() types.GenesisAlloc {
 		common.HexToAddress("0xa0Ee7A142d267C1f36714E4a8F75612F20a79720"): {Balance: eth1m},
 
 		// team ops accounts
-		common.HexToAddress("0xfE921e06Ed0a22c035b4aCFF0A5D3a434A330c96"): {Balance: eth1k}, // dev relayer (local)
-		common.HexToAddress("0xfC9D554D69DdCfC0A731b2DC64550177b0723bE5"): {Balance: eth1k}, // dev deployer (local)
-		common.HexToAddress("0x7a6cF389082dc698285474976d7C75CAdE08ab7e"): {Balance: eth1k}, // fb: dev
+		common.HexToAddress("0xfE921e06Ed0a22c035b4aCFF0A5D3a434A330c96"): {Balance: eth1m}, // dev relayer (local)
+		common.HexToAddress("0xfC9D554D69DdCfC0A731b2DC64550177b0723bE5"): {Balance: eth1m}, // dev deployer (local)
+		common.HexToAddress("0x7a6cF389082dc698285474976d7C75CAdE08ab7e"): {Balance: eth1m}, // fb: dev
 	}
 }
 
