@@ -23,39 +23,39 @@ import (
 // The dir parameter is the location of the docker compose.
 // If useLogProxy is true, all requests are routed via a reserve proxy that logs all requests, which will be printed
 // at stop.
-func Start(ctx context.Context, dir string, chainID uint64) (ethclient.Client, func(), error) {
+func Start(ctx context.Context, dir string, chainID uint64) (ethclient.Client, string, func(), error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Minute) // Allow 1 minute for edge case of pulling images.
 	defer cancel()
 	if !composeDown(ctx, dir) {
-		return nil, nil, errors.New("failure to clean up previous anvil instance")
+		return nil, "", nil, errors.New("failure to clean up previous anvil instance")
 	}
 
 	// Ensure ports are available
 	port, err := getAvailablePort()
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "get available port")
+		return nil, "", nil, errors.Wrap(err, "get available port")
 	}
 
 	if err := writeComposeFile(dir, chainID, port); err != nil {
-		return nil, nil, errors.Wrap(err, "write compose file")
+		return nil, "", nil, errors.Wrap(err, "write compose file")
 	}
 
 	if err := writeAnvilState(dir); err != nil {
-		return nil, nil, errors.Wrap(err, "write anvil state")
+		return nil, "", nil, errors.Wrap(err, "write anvil state")
 	}
 
 	log.Info(ctx, "Starting anvil")
 
 	out, err := execCmd(ctx, dir, "docker", "compose", "up", "-d", "--remove-orphans")
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "docker compose up: "+out)
+		return nil, "", nil, errors.Wrap(err, "docker compose up: "+out)
 	}
 
 	endpoint := fmt.Sprintf("http://localhost:%s", port)
 
 	ethCl, err := ethclient.Dial("anvil", endpoint)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "new eth client")
+		return nil, "", nil, errors.Wrap(err, "new eth client")
 	}
 
 	stop := func() {
@@ -70,12 +70,12 @@ func Start(ctx context.Context, dir string, chainID uint64) (ethclient.Client, f
 	for i := 0; i < retry; i++ {
 		if i == retry-1 {
 			stop()
-			return nil, nil, errors.New("wait for RPC timed out")
+			return nil, "", nil, errors.New("wait for RPC timed out")
 		}
 
 		select {
 		case <-ctx.Done():
-			return nil, nil, errors.Wrap(ctx.Err(), "timeout")
+			return nil, "", nil, errors.Wrap(ctx.Err(), "timeout")
 		case <-time.After(time.Millisecond * 500):
 		}
 
@@ -89,7 +89,7 @@ func Start(ctx context.Context, dir string, chainID uint64) (ethclient.Client, f
 
 	log.Info(ctx, "Anvil: RPC is available", "addr", endpoint)
 
-	return ethCl, stop, nil
+	return ethCl, endpoint, stop, nil
 }
 
 // composeDown runs docker-compose down in the provided directory.
