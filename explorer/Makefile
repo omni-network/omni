@@ -13,11 +13,21 @@ build: ## builds our docker images
 	@echo "Building containers"
 	@make -C ../ build-docker
 
-run: stop ## Deploys e2e devnet1, copies network.json locally, and starts explorer docker compose
+copy-network-file:
+	if [ -z "$(NETWORK)" ]; then echo "⚠️  Please specify a network: NETWORK=devnet-1" && exit 1; fi
+	@echo "Using NETWORK=$(NETWORK)"
+	@cp ../e2e/runs/$(NETWORK)/relayer/network.json ./network.json
+
+run-devnet: ## starts our devnet
 	@echo "Starting devnet"
-	@make -C ../ devnet-deploy
 	@cp ../e2e/runs/devnet1/relayer/network.json ./network.json
+	@make -C ../ devnet-deploy
+
+run-explorer: ## starts our explorer
+	@echo "Starting explorer"
 	@docker-compose up
+
+run: stop run-devnet run-explorer ## Deploys e2e devnet1, copies network.json locally, and starts explorer docker compose
 
 stop: ## stops our docker compose
 	@echo "Stopping devnet"
