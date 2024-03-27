@@ -17,6 +17,7 @@ func TestMsgHooks(t *testing.T) {
 	blocks := db.CreateTestBlocks(ctx, t, client, 2)
 
 	b := blocks[0]
+	// TODO: fix this
 	msg := b.QueryMsgs().FirstX(ctx)
 	msgCount := msg.QueryReceipts().CountX(ctx)
 	// receiptIds := msg.QueryReceipts().IDsX(ctx)
