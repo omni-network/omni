@@ -46,12 +46,13 @@ If you want to stop the components you can run:
 make stop
 ```
 
-### Advanced Configurations
+### Local Advanced Configurations
 
 The explorer needs a copy of the network.json file to be able to know which network to connect to. You can find the network.json file in the `explorer` directory. If you want to run the explorer against a different network you can set the `NETWORK` environment variable to the network you want to run against. For example:
 
+The following command assumes you have some network running locally, and you want to run the explorer against it. This will grab the `network.json` file via `@cp ../e2e/runs/$(NETWORK)/relayer/network.json` and copy it to the explorer directory. Then it will run the explorer.
+
 ```bash
 make copy-network NETWORK=devnet-1
+make run-explorer
 ```
-
-This assumes however that you're running it locally as it grabs the `network.json` file via `@cp ../e2e/runs/$(NETWORK)/relayer/network.json`
