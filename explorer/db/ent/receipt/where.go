@@ -454,6 +454,29 @@ func HasBlockWith(preds ...predicate.Block) predicate.Receipt {
 	})
 }
 
+// HasMsgs applies the HasEdge predicate on the "Msgs" edge.
+func HasMsgs() predicate.Receipt {
+	return predicate.Receipt(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, MsgsTable, MsgsPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasMsgsWith applies the HasEdge predicate on the "Msgs" edge with a given conditions (other predicates).
+func HasMsgsWith(preds ...predicate.Msg) predicate.Receipt {
+	return predicate.Receipt(func(s *sql.Selector) {
+		step := newMsgsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Receipt) predicate.Receipt {
 	return predicate.Receipt(sql.AndPredicates(predicates...))

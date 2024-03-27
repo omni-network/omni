@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 	"github.com/omni-network/omni/explorer/db/ent/block"
+	"github.com/omni-network/omni/explorer/db/ent/msg"
 	"github.com/omni-network/omni/explorer/db/ent/receipt"
 )
 
@@ -109,6 +110,21 @@ func (rc *ReceiptCreate) SetNillableBlockID(id *int) *ReceiptCreate {
 // SetBlock sets the "Block" edge to the Block entity.
 func (rc *ReceiptCreate) SetBlock(b *Block) *ReceiptCreate {
 	return rc.SetBlockID(b.ID)
+}
+
+// AddMsgIDs adds the "Msgs" edge to the Msg entity by IDs.
+func (rc *ReceiptCreate) AddMsgIDs(ids ...int) *ReceiptCreate {
+	rc.mutation.AddMsgIDs(ids...)
+	return rc
+}
+
+// AddMsgs adds the "Msgs" edges to the Msg entity.
+func (rc *ReceiptCreate) AddMsgs(m ...*Msg) *ReceiptCreate {
+	ids := make([]int, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return rc.AddMsgIDs(ids...)
 }
 
 // Mutation returns the ReceiptMutation object of the builder.
@@ -272,6 +288,22 @@ func (rc *ReceiptCreate) createSpec() (*Receipt, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.block_receipts = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := rc.mutation.MsgsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   receipt.MsgsTable,
+			Columns: receipt.MsgsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(msg.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

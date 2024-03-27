@@ -1424,6 +1424,9 @@ type MsgMutation struct {
 	clearedFields     map[string]struct{}
 	_Block            *int
 	cleared_Block     bool
+	_Receipts         map[int]struct{}
+	removed_Receipts  map[int]struct{}
+	cleared_Receipts  bool
 	done              bool
 	oldValue          func(context.Context) (*Msg, error)
 	predicates        []predicate.Msg
@@ -2006,6 +2009,60 @@ func (m *MsgMutation) ResetBlock() {
 	m.cleared_Block = false
 }
 
+// AddReceiptIDs adds the "Receipts" edge to the Receipt entity by ids.
+func (m *MsgMutation) AddReceiptIDs(ids ...int) {
+	if m._Receipts == nil {
+		m._Receipts = make(map[int]struct{})
+	}
+	for i := range ids {
+		m._Receipts[ids[i]] = struct{}{}
+	}
+}
+
+// ClearReceipts clears the "Receipts" edge to the Receipt entity.
+func (m *MsgMutation) ClearReceipts() {
+	m.cleared_Receipts = true
+}
+
+// ReceiptsCleared reports if the "Receipts" edge to the Receipt entity was cleared.
+func (m *MsgMutation) ReceiptsCleared() bool {
+	return m.cleared_Receipts
+}
+
+// RemoveReceiptIDs removes the "Receipts" edge to the Receipt entity by IDs.
+func (m *MsgMutation) RemoveReceiptIDs(ids ...int) {
+	if m.removed_Receipts == nil {
+		m.removed_Receipts = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m._Receipts, ids[i])
+		m.removed_Receipts[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedReceipts returns the removed IDs of the "Receipts" edge to the Receipt entity.
+func (m *MsgMutation) RemovedReceiptsIDs() (ids []int) {
+	for id := range m.removed_Receipts {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ReceiptsIDs returns the "Receipts" edge IDs in the mutation.
+func (m *MsgMutation) ReceiptsIDs() (ids []int) {
+	for id := range m._Receipts {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetReceipts resets all changes to the "Receipts" edge.
+func (m *MsgMutation) ResetReceipts() {
+	m._Receipts = nil
+	m.cleared_Receipts = false
+	m.removed_Receipts = nil
+}
+
 // Where appends a list predicates to the MsgMutation builder.
 func (m *MsgMutation) Where(ps ...predicate.Msg) {
 	m.predicates = append(m.predicates, ps...)
@@ -2343,9 +2400,12 @@ func (m *MsgMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *MsgMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m._Block != nil {
 		edges = append(edges, msg.EdgeBlock)
+	}
+	if m._Receipts != nil {
+		edges = append(edges, msg.EdgeReceipts)
 	}
 	return edges
 }
@@ -2358,27 +2418,47 @@ func (m *MsgMutation) AddedIDs(name string) []ent.Value {
 		if id := m._Block; id != nil {
 			return []ent.Value{*id}
 		}
+	case msg.EdgeReceipts:
+		ids := make([]ent.Value, 0, len(m._Receipts))
+		for id := range m._Receipts {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *MsgMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
+	if m.removed_Receipts != nil {
+		edges = append(edges, msg.EdgeReceipts)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *MsgMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case msg.EdgeReceipts:
+		ids := make([]ent.Value, 0, len(m.removed_Receipts))
+		for id := range m.removed_Receipts {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *MsgMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.cleared_Block {
 		edges = append(edges, msg.EdgeBlock)
+	}
+	if m.cleared_Receipts {
+		edges = append(edges, msg.EdgeReceipts)
 	}
 	return edges
 }
@@ -2389,6 +2469,8 @@ func (m *MsgMutation) EdgeCleared(name string) bool {
 	switch name {
 	case msg.EdgeBlock:
 		return m.cleared_Block
+	case msg.EdgeReceipts:
+		return m.cleared_Receipts
 	}
 	return false
 }
@@ -2410,6 +2492,9 @@ func (m *MsgMutation) ResetEdge(name string) error {
 	switch name {
 	case msg.EdgeBlock:
 		m.ResetBlock()
+		return nil
+	case msg.EdgeReceipts:
+		m.ResetReceipts()
 		return nil
 	}
 	return fmt.Errorf("unknown Msg edge %s", name)
@@ -2437,6 +2522,9 @@ type ReceiptMutation struct {
 	clearedFields     map[string]struct{}
 	_Block            *int
 	cleared_Block     bool
+	_Msgs             map[int]struct{}
+	removed_Msgs      map[int]struct{}
+	cleared_Msgs      bool
 	done              bool
 	oldValue          func(context.Context) (*Receipt, error)
 	predicates        []predicate.Receipt
@@ -2983,6 +3071,60 @@ func (m *ReceiptMutation) ResetBlock() {
 	m.cleared_Block = false
 }
 
+// AddMsgIDs adds the "Msgs" edge to the Msg entity by ids.
+func (m *ReceiptMutation) AddMsgIDs(ids ...int) {
+	if m._Msgs == nil {
+		m._Msgs = make(map[int]struct{})
+	}
+	for i := range ids {
+		m._Msgs[ids[i]] = struct{}{}
+	}
+}
+
+// ClearMsgs clears the "Msgs" edge to the Msg entity.
+func (m *ReceiptMutation) ClearMsgs() {
+	m.cleared_Msgs = true
+}
+
+// MsgsCleared reports if the "Msgs" edge to the Msg entity was cleared.
+func (m *ReceiptMutation) MsgsCleared() bool {
+	return m.cleared_Msgs
+}
+
+// RemoveMsgIDs removes the "Msgs" edge to the Msg entity by IDs.
+func (m *ReceiptMutation) RemoveMsgIDs(ids ...int) {
+	if m.removed_Msgs == nil {
+		m.removed_Msgs = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m._Msgs, ids[i])
+		m.removed_Msgs[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedMsgs returns the removed IDs of the "Msgs" edge to the Msg entity.
+func (m *ReceiptMutation) RemovedMsgsIDs() (ids []int) {
+	for id := range m.removed_Msgs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// MsgsIDs returns the "Msgs" edge IDs in the mutation.
+func (m *ReceiptMutation) MsgsIDs() (ids []int) {
+	for id := range m._Msgs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetMsgs resets all changes to the "Msgs" edge.
+func (m *ReceiptMutation) ResetMsgs() {
+	m._Msgs = nil
+	m.cleared_Msgs = false
+	m.removed_Msgs = nil
+}
+
 // Where appends a list predicates to the ReceiptMutation builder.
 func (m *ReceiptMutation) Where(ps ...predicate.Receipt) {
 	m.predicates = append(m.predicates, ps...)
@@ -3303,9 +3445,12 @@ func (m *ReceiptMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ReceiptMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m._Block != nil {
 		edges = append(edges, receipt.EdgeBlock)
+	}
+	if m._Msgs != nil {
+		edges = append(edges, receipt.EdgeMsgs)
 	}
 	return edges
 }
@@ -3318,27 +3463,47 @@ func (m *ReceiptMutation) AddedIDs(name string) []ent.Value {
 		if id := m._Block; id != nil {
 			return []ent.Value{*id}
 		}
+	case receipt.EdgeMsgs:
+		ids := make([]ent.Value, 0, len(m._Msgs))
+		for id := range m._Msgs {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ReceiptMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
+	if m.removed_Msgs != nil {
+		edges = append(edges, receipt.EdgeMsgs)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *ReceiptMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case receipt.EdgeMsgs:
+		ids := make([]ent.Value, 0, len(m.removed_Msgs))
+		for id := range m.removed_Msgs {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ReceiptMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.cleared_Block {
 		edges = append(edges, receipt.EdgeBlock)
+	}
+	if m.cleared_Msgs {
+		edges = append(edges, receipt.EdgeMsgs)
 	}
 	return edges
 }
@@ -3349,6 +3514,8 @@ func (m *ReceiptMutation) EdgeCleared(name string) bool {
 	switch name {
 	case receipt.EdgeBlock:
 		return m.cleared_Block
+	case receipt.EdgeMsgs:
+		return m.cleared_Msgs
 	}
 	return false
 }
@@ -3370,6 +3537,9 @@ func (m *ReceiptMutation) ResetEdge(name string) error {
 	switch name {
 	case receipt.EdgeBlock:
 		m.ResetBlock()
+		return nil
+	case receipt.EdgeMsgs:
+		m.ResetMsgs()
 		return nil
 	}
 	return fmt.Errorf("unknown Receipt edge %s", name)

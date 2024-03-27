@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -11,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/omni-network/omni/explorer/db/ent/block"
+	"github.com/omni-network/omni/explorer/db/ent/msg"
 	"github.com/omni-network/omni/explorer/db/ent/predicate"
 	"github.com/omni-network/omni/explorer/db/ent/receipt"
 )
@@ -23,6 +25,7 @@ type ReceiptQuery struct {
 	inters     []Interceptor
 	predicates []predicate.Receipt
 	withBlock  *BlockQuery
+	withMsgs   *MsgQuery
 	withFKs    bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -75,6 +78,28 @@ func (rq *ReceiptQuery) QueryBlock() *BlockQuery {
 			sqlgraph.From(receipt.Table, receipt.FieldID, selector),
 			sqlgraph.To(block.Table, block.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, receipt.BlockTable, receipt.BlockColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryMsgs chains the current query on the "Msgs" edge.
+func (rq *ReceiptQuery) QueryMsgs() *MsgQuery {
+	query := (&MsgClient{config: rq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := rq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := rq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(receipt.Table, receipt.FieldID, selector),
+			sqlgraph.To(msg.Table, msg.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, receipt.MsgsTable, receipt.MsgsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
 		return fromU, nil
@@ -275,6 +300,7 @@ func (rq *ReceiptQuery) Clone() *ReceiptQuery {
 		inters:     append([]Interceptor{}, rq.inters...),
 		predicates: append([]predicate.Receipt{}, rq.predicates...),
 		withBlock:  rq.withBlock.Clone(),
+		withMsgs:   rq.withMsgs.Clone(),
 		// clone intermediate query.
 		sql:  rq.sql.Clone(),
 		path: rq.path,
@@ -289,6 +315,17 @@ func (rq *ReceiptQuery) WithBlock(opts ...func(*BlockQuery)) *ReceiptQuery {
 		opt(query)
 	}
 	rq.withBlock = query
+	return rq
+}
+
+// WithMsgs tells the query-builder to eager-load the nodes that are connected to
+// the "Msgs" edge. The optional arguments are used to configure the query builder of the edge.
+func (rq *ReceiptQuery) WithMsgs(opts ...func(*MsgQuery)) *ReceiptQuery {
+	query := (&MsgClient{config: rq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	rq.withMsgs = query
 	return rq
 }
 
@@ -371,8 +408,9 @@ func (rq *ReceiptQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Rece
 		nodes       = []*Receipt{}
 		withFKs     = rq.withFKs
 		_spec       = rq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			rq.withBlock != nil,
+			rq.withMsgs != nil,
 		}
 	)
 	if rq.withBlock != nil {
@@ -402,6 +440,13 @@ func (rq *ReceiptQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Rece
 	if query := rq.withBlock; query != nil {
 		if err := rq.loadBlock(ctx, query, nodes, nil,
 			func(n *Receipt, e *Block) { n.Edges.Block = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := rq.withMsgs; query != nil {
+		if err := rq.loadMsgs(ctx, query, nodes,
+			func(n *Receipt) { n.Edges.Msgs = []*Msg{} },
+			func(n *Receipt, e *Msg) { n.Edges.Msgs = append(n.Edges.Msgs, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -436,6 +481,67 @@ func (rq *ReceiptQuery) loadBlock(ctx context.Context, query *BlockQuery, nodes 
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (rq *ReceiptQuery) loadMsgs(ctx context.Context, query *MsgQuery, nodes []*Receipt, init func(*Receipt), assign func(*Receipt, *Msg)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[int]*Receipt)
+	nids := make(map[int]map[*Receipt]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(receipt.MsgsTable)
+		s.Join(joinT).On(s.C(msg.FieldID), joinT.C(receipt.MsgsPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(receipt.MsgsPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(receipt.MsgsPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(sql.NullInt64)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := int(values[0].(*sql.NullInt64).Int64)
+				inValue := int(values[1].(*sql.NullInt64).Int64)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Receipt]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Msg](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "Msgs" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
 		}
 	}
 	return nil

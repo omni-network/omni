@@ -117,6 +117,31 @@ var (
 			},
 		},
 	}
+	// MsgReceiptsColumns holds the columns for the "msg_Receipts" table.
+	MsgReceiptsColumns = []*schema.Column{
+		{Name: "msg_id", Type: field.TypeInt},
+		{Name: "receipt_id", Type: field.TypeInt},
+	}
+	// MsgReceiptsTable holds the schema information for the "msg_Receipts" table.
+	MsgReceiptsTable = &schema.Table{
+		Name:       "msg_Receipts",
+		Columns:    MsgReceiptsColumns,
+		PrimaryKey: []*schema.Column{MsgReceiptsColumns[0], MsgReceiptsColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "msg_Receipts_msg_id",
+				Columns:    []*schema.Column{MsgReceiptsColumns[0]},
+				RefColumns: []*schema.Column{MsgsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "msg_Receipts_receipt_id",
+				Columns:    []*schema.Column{MsgReceiptsColumns[1]},
+				RefColumns: []*schema.Column{ReceiptsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		BlocksTable,
@@ -124,10 +149,13 @@ var (
 		MsgsTable,
 		ReceiptsTable,
 		XproviderCursorsTable,
+		MsgReceiptsTable,
 	}
 )
 
 func init() {
 	MsgsTable.ForeignKeys[0].RefTable = BlocksTable
 	ReceiptsTable.ForeignKeys[0].RefTable = BlocksTable
+	MsgReceiptsTable.ForeignKeys[0].RefTable = MsgsTable
+	MsgReceiptsTable.ForeignKeys[1].RefTable = ReceiptsTable
 }
