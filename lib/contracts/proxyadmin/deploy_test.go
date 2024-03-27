@@ -28,7 +28,7 @@ func TestDeployDevnet(t *testing.T) {
 
 	ctx := context.Background()
 
-	client, stop, err := anvil.Start(ctx, tutil.TempDir(t), chainID)
+	client, _, stop, err := anvil.Start(ctx, tutil.TempDir(t), chainID)
 	require.NoError(t, err)
 	t.Cleanup(stop)
 

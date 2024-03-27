@@ -7,6 +7,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
@@ -20,7 +21,7 @@ func FundAccounts(ctx context.Context, rpc string, amount *big.Int, accounts ...
 
 	for _, account := range accounts {
 		result := make(map[string]any)
-		err = client.Client().CallContext(ctx, &result, "anvil_setBalance", account, amount)
+		err = client.Client().CallContext(ctx, &result, "anvil_setBalance", account, hexutil.EncodeBig(amount))
 		if err != nil {
 			return errors.Wrap(err, "set balance", "account", account)
 		}

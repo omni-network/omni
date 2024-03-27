@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 // noAnvilDev returns a list of accounts that are not dev anvil accounts.
@@ -51,8 +52,9 @@ func accountsToFund(network netconf.ID) []common.Address {
 // fundAccounts funds the EOAs that need funding (just on anvil chains, for now).
 func fundAccounts(ctx context.Context, def Definition) error {
 	accounts := accountsToFund(def.Testnet.Network)
+	eth100 := new(big.Int).Mul(big.NewInt(params.Ether), big.NewInt(100))
 	for _, chain := range def.Testnet.AnvilChains {
-		if err := anvil.FundAccounts(ctx, chain.ExternalRPC, big.NewInt(1e18), noAnvilDev(accounts)...); err != nil {
+		if err := anvil.FundAccounts(ctx, chain.ExternalRPC, eth100, noAnvilDev(accounts)...); err != nil {
 			return errors.Wrap(err, "fund anvil account")
 		}
 	}

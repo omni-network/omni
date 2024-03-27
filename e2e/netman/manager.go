@@ -355,7 +355,17 @@ func (m *manager) fundPrivateRelayer(ctx context.Context) error {
 			return errors.Wrap(err, "backend", "chain", portal.Chain.Name)
 		}
 
-		tx, _, err := backend.Send(ctx, m.operator, txmgr.TxCandidate{
+		pctx := log.WithCtx(ctx, "chain", portal.Chain.Name)
+
+		bal, err := backend.BalanceAt(pctx, m.operator, nil)
+		if err != nil {
+			return err
+		}
+		b, _ := bal.Float64()
+		log.Info(pctx, "Funding relayer operator balance", "balance", b/params.Ether, "operator", m.operator.Hex())
+		// TODO(corver): Remove this debug log
+
+		tx, _, err := backend.Send(pctx, m.operator, txmgr.TxCandidate{
 			To:       &relayerAddr,
 			GasLimit: 100_000,                                                    // 100k is fine,
 			Value:    new(big.Int).Mul(big.NewInt(10), big.NewInt(params.Ether)), // 10 ETH

@@ -59,10 +59,11 @@ func TestSmoke(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, ok)
 
-	valset, ok, err := cprov.ValidatorSet(ctx, 1) // Genesis validator set
+	xblock, ok, err := cprov.XBlock(ctx, 0, true) // Ensure getting latest xblock.
 	require.NoError(t, err)
 	require.True(t, ok)
-	require.Len(t, valset, 1)
+	require.GreaterOrEqual(t, xblock.BlockHeight, uint64(1))
+	require.Len(t, xblock.Msgs, 1)
 
 	_, ok, err = cprov.ValidatorSet(ctx, 33) // Ensure it doesn't error for unknown validator sets.
 	require.NoError(t, err)

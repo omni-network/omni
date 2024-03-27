@@ -17,7 +17,7 @@ var _ cchain.Provider = Provider{}
 type FetchFunc func(ctx context.Context, chainID uint64, fromHeight uint64) ([]xchain.Attestation, error)
 type LatestFunc func(ctx context.Context, chainID uint64) (xchain.Attestation, bool, error)
 type WindowFunc func(ctx context.Context, chainID uint64, height uint64) (int, error)
-type ValsetFunc func(ctx context.Context, valSetID uint64) ([]cchain.Validator, bool, error)
+type ValsetFunc func(ctx context.Context, valSetID uint64, latest bool) ([]cchain.Validator, uint64, bool, error)
 type ChainIDFunc func(ctx context.Context) (uint64, error)
 
 // Provider implements cchain.Provider.
@@ -58,7 +58,8 @@ func (p Provider) WindowCompare(ctx context.Context, sourceChainID uint64, heigh
 }
 
 func (p Provider) ValidatorSet(ctx context.Context, valSetID uint64) ([]cchain.Validator, bool, error) {
-	return p.valset(ctx, valSetID)
+	valest, _, ok, err := p.valset(ctx, valSetID, false)
+	return valest, ok, err
 }
 
 // Subscribe implements cchain.Provider.

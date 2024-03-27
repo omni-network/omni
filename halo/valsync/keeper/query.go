@@ -8,6 +8,7 @@ import (
 
 	"cosmossdk.io/orm/model/ormlist"
 	"cosmossdk.io/orm/types/ormerrors"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -81,6 +82,17 @@ func (k Keeper) ActiveSetByHeight(ctx context.Context, height uint64) (*types.Va
 }
 
 func (k Keeper) ValidatorSet(ctx context.Context, req *types.ValidatorSetRequest) (*types.ValidatorSetResponse, error) {
+	if req.Latest {
+		// Use HeaderInfo() to get the latest height, since BlockHeight() can be defined by the query client.
+		latest := uint64(sdk.UnwrapSDKContext(ctx).HeaderInfo().Height)
+		resp, err := k.ActiveSetByHeight(ctx, latest)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		return resp, nil
+	}
+
 	vatset, err := k.valsetTable.Get(ctx, req.Id)
 	if errors.Is(err, ormerrors.NotFound) {
 		return nil, status.Error(codes.NotFound, "no validator set found for id")
