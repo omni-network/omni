@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/buildinfo"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
@@ -54,6 +55,7 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 
 	for _, destChain := range network.EVMChains() {
+		// Setup sender
 		sendProvider := func() (SendFunc, error) {
 			sender, err := NewSender(destChain, rpcClientPerChain[destChain.ID], *privateKey,
 				network.ChainNamesByIDs())
@@ -64,12 +66,23 @@ func Run(ctx context.Context, cfg Config) error {
 			return sender.SendTransaction, nil
 		}
 
-		worker := NewWorker(destChain, network,
+		// Setup validator set awaiter
+		portal, err := bindings.NewOmniPortal(destChain.PortalAddress, rpcClientPerChain[destChain.ID])
+		if err != nil {
+			return errors.Wrap(err, "create portal contract")
+		}
+		awaitValSet := newValSetAwaiter(portal, destChain.BlockPeriod)
+
+		// Start worker
+		worker := NewWorker(
+			destChain,
+			network,
 			cprov,
 			xprov,
 			CreateSubmissions,
 			sendProvider,
-			state)
+			state,
+			awaitValSet)
 
 		go worker.Run(ctx)
 	}
