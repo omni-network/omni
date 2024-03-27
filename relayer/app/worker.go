@@ -120,7 +120,7 @@ func newValSetAwaiter(portal *bindings.OmniPortal, blockPeriod time.Duration) aw
 		backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(blockPeriod))
 		var attempt int
 		for ctx.Err() == nil {
-			power, err := portal.GetValidatorSetTotalPower(&bind.CallOpts{Context: ctx}, valsetID)
+			power, err := portal.ValidatorSetTotalPower(&bind.CallOpts{Context: ctx}, valsetID)
 			if err != nil {
 				return errors.Wrap(err, "get validator set power")
 			}

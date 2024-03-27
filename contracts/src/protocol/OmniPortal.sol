@@ -310,13 +310,4 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
 
         emit ValidatorSetAdded(valSetId);
     }
-
-    /**
-     * @notice Query a validator set total power by id
-     * @param valSetId      Validator set id
-     * @return totalPower  Total power of the validator set
-     */
-    function getValidatorSetTotalPower(uint64 valSetId) external view returns (uint64 totalPower) {
-        return validatorSetTotalPower[valSetId];
-    }
 }

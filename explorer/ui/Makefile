@@ -5,4 +5,10 @@ gen: ## generates our openapi.yaml bindings for our ui
 	npx openapi-typescript ./app/openapi/openapi.yaml -o ./app/openapi/openapi.d.ts
 
 gen-graphql: # generates our graphql codegen
-	pnpm run codegen
+	pnpm run codegen -o -v
+
+format-check:  ## Check if the code is formatted correctly
+	npx prettier --check .
+
+format: ## Format the code
+	npx prettier --write .

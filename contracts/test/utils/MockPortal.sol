@@ -79,13 +79,20 @@ contract MockPortal is OmniPortalConstants {
     //                              Portal Mocks                                //
     //////////////////////////////////////////////////////////////////////////////
 
-    /// @notice Execute a mock xcall, default gas limit. Reverts if the call fails, or if the gas limit is too low
-    function mockXCall(uint64 sourceChainId, address sender, address to, bytes calldata data) external {
-        mockXCall(sourceChainId, sender, to, data, XMSG_DEFAULT_GAS_LIMIT);
+    /// @notice Execute a mock xcall, default gas limit. Passes the revert for call fails or too low gas limit
+    function mockXCall(uint64 sourceChainId, address to, bytes calldata data) external {
+        mockXCall(sourceChainId, msg.sender, to, data, XMSG_DEFAULT_GAS_LIMIT);
     }
 
-    /// @dev Execute a mock xcall, custom gas limit. Reverts if the call fails, or if the gas limit is too low
+    /// @dev Execute a mock xcall, custom gas limit. Passes the revert for call fails or too low gas limit
     function mockXCall(uint64 sourceChainId, address sender, address to, bytes calldata data, uint64 gasLimit) public {
+        _mockXCall(sourceChainId, sender, to, data, gasLimit);
+    }
+
+    /// @dev Execute a mock xcall, custom gas limit, passing the revert message if the call fails
+    function _mockXCall(uint64 sourceChainId, address sender, address to, bytes calldata data, uint64 gasLimit)
+        private
+    {
         require(gasLimit <= XMSG_MAX_GAS_LIMIT, "OmniPortal: gasLimit too high");
         require(gasLimit >= XMSG_MIN_GAS_LIMIT, "OmniPortal: gasLimit too low");
 
@@ -96,6 +103,10 @@ contract MockPortal is OmniPortalConstants {
         gasUsed = gasUsed - gasleft();
 
         if (!success && gasUsed >= gasLimit) revert("MockPortal: out of gas");
-        require(success, string(returnData));
+        if (!success) {
+            assembly {
+                revert(add(returnData, 32), mload(returnData))
+            }
+        }
     }
 }
