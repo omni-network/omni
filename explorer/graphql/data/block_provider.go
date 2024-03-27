@@ -22,7 +22,7 @@ func (p Provider) XBlock(ctx context.Context, sourceChainID uint64, height uint6
 		return nil, false, err
 	}
 
-	b, err := EntBlockToGraphQLBlock(query)
+	b, err := EntBlockToGraphQLBlock(ctx, query)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "failed to decode block")
 	}
@@ -30,20 +30,21 @@ func (p Provider) XBlock(ctx context.Context, sourceChainID uint64, height uint6
 	return b, true, nil
 }
 
-func (p Provider) XBlockRange(ctx context.Context, amount uint64, offset uint64) ([]*resolvers.XBlock, bool, error) {
+func (p Provider) XBlockRange(ctx context.Context, from uint64, to uint64) ([]*resolvers.XBlock, bool, error) {
+	amount := to - from
 	query, err := p.EntClient.Block.Query().
 		Order(ent.Desc(block.FieldTimestamp)).
 		Limit(int(amount)).
-		Offset(int(offset)).
+		Offset(int(from)).
 		All(ctx)
 	if err != nil {
-		log.Error(ctx, "Graphql provider err", err)
+		log.Error(ctx, "Ent query", err)
 		return nil, false, err
 	}
 
-	res := []*resolvers.XBlock{}
+	var res []*resolvers.XBlock
 	for _, b := range query {
-		graphQL, err := EntBlockToGraphQLBlock(b)
+		graphQL, err := EntBlockToGraphQLBlock(ctx, b)
 		if err != nil {
 			return nil, false, errors.Wrap(err, "failed to decode block")
 		}

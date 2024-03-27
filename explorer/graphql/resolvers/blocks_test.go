@@ -98,7 +98,7 @@ func TestXBlocksQuery(t *testing.T) {
 			Schema:  graphql.MustParseSchema(app.Schema, &resolvers.Query{BlocksResolver: test.Resolver}, test.Opts...),
 			Query: `
 				{
-					xblockrange(amount: 2, offset: 0){
+					xblockrange(from: 0, to: 2){
 						SourceChainID
 						BlockHeight
 						BlockHash

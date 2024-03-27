@@ -3,19 +3,17 @@ import { graphql } from '~/graphql'
 import { XBlock, XMsg } from '~/graphql/graphql'
 
 export function GetBlocksInRange(amount: number, offset: number): XBlock[] {
-  let amt = '0x' + amount.toString(16)
-  let off = '0x' + offset.toString(16)
-
   const [result] = useQuery({
     query: xblockrange,
     variables: {
-      amount: amt,
-      offset: off,
+      from: '0x' + amount.toString(16),
+      to: '0x' + offset.toString(16),
     },
   })
   const { data, fetching, error } = result
 
   var rows: XBlock[] = []
+
   data?.xblockrange.map((xblock: any) => {
     var msgs: XMsg[] = []
     let block = {
@@ -38,6 +36,8 @@ export function GetBlocksInRange(amount: number, offset: number): XBlock[] {
         SourceMessageSender: '',
         StreamOffset: '',
         TxHash: '',
+        BlockHeight: '',
+        BlockHash: '',
       }
       msgs.push(xmsg)
     })
@@ -67,8 +67,8 @@ export const xblock = graphql(`
 `)
 
 export const xblockrange = graphql(`
-  query XBlockRange($amount: BigInt!, $offset: BigInt!) {
-    xblockrange(amount: $amount, offset: $offset) {
+  query XBlockRange($from: BigInt!, $to: BigInt!) {
+    xblockrange(from: $from, to: $to) {
       SourceChainID
       BlockHash
       BlockHeight
