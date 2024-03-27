@@ -31,7 +31,7 @@ func Monitor(ctx context.Context, network netconf.Network) error {
 		return errors.Wrap(err, "dialing", "chain", ch.Name)
 	}
 
-	avs, err := newAVS(client, ch.AVSContractAddr)
+	avs, err := newAVS(client, network.ID.Static().AVSContractAddress)
 	if err != nil {
 		return err
 	}
