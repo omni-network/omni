@@ -15,7 +15,7 @@ var (
 	stdMultiplier = big.NewInt(1e18) // OmniAVS.STRATEGY_WEIGHTING_DIVISOR
 )
 
-func holeskeyStrategyParams() []StrategyParam {
+func holeskyStrategyParams() []StrategyParam {
 	return []StrategyParam{
 		// sETH
 		{
