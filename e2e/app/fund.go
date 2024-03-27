@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"math/big"
 
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/contracts"
@@ -10,8 +11,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
-
-	"cosmossdk.io/math"
 )
 
 // noAnvilDev returns a list of accounts that are not dev anvil accounts.
@@ -53,9 +52,9 @@ func accountsToFund(network netconf.ID) []common.Address {
 // fundAccounts funds the EOAs that need funding (just on anvil chains, for now).
 func fundAccounts(ctx context.Context, def Definition) error {
 	accounts := accountsToFund(def.Testnet.Network)
-	eth100 := math.NewInt(100).MulRaw(params.Ether) // 100 ETH
+	eth100 := big.NewInt(100 * params.Ether) // 100 ETH
 	for _, chain := range def.Testnet.AnvilChains {
-		if err := anvil.FundAccounts(ctx, chain.ExternalRPC, eth100.BigInt(), noAnvilDev(accounts)...); err != nil {
+		if err := anvil.FundAccounts(ctx, chain.ExternalRPC, eth100, noAnvilDev(accounts)...); err != nil {
 			return errors.Wrap(err, "fund anvil account")
 		}
 	}
