@@ -2,12 +2,13 @@ package contracts
 
 import (
 	"github.com/omni-network/omni/lib/anvil"
-	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/create3"
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+
+	"github.com/google/uuid"
 )
 
 const (
@@ -268,10 +269,15 @@ func AVSSalt(network netconf.ID) string {
 // Utils.
 //
 
-// salt generates a salt for a contract deployment, adding git build info.
+//nolint:gochecknoglobals // Static ID
+var runid = uuid.New().String()
+
+// salt generates a salt for a contract deployment. For ephemeral networks,
+// the salt includes a random per-run suffix. For persistent networks, the
+// sale is static.
 func salt(network netconf.ID, contract string) string {
 	if network.IsEphemeral() {
-		return string(network) + "-" + contract + "-" + buildinfo.ShortSha()
+		return string(network) + "-" + contract + "-" + runid
 	}
 
 	return string(network) + "-" + contract

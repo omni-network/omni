@@ -154,20 +154,6 @@ func IsDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Bac
 	return true, addr, nil
 }
 
-// DeployIfNeeded deploys a new Portal contract if it is not already deployed.
-func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, valSetID uint64, validators []bindings.Validator,
-) (common.Address, *ethtypes.Receipt, error) {
-	deployed, addr, err := IsDeployed(ctx, network, backend)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "is deployed")
-	}
-	if deployed {
-		return addr, nil, nil
-	}
-
-	return Deploy(ctx, network, backend, valSetID, validators)
-}
-
 // Deploy deploys a new Portal contract and returns the address and receipt.
 // It only allows deployments to explicitly supported chains.
 func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, valSetID uint64, validators []bindings.Validator,

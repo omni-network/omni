@@ -214,12 +214,11 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 			return nil, errors.Wrap(err, "deploy opts", "chain", p.Chain.Name)
 		}
 
-		height, err := backend.BlockNumber(ctx)
-		if err != nil {
-			return nil, errors.Wrap(err, "block number", "chain", p.Chain.Name)
+		if err := m.checkIfDeployed(ctx, p.Chain.Name, backend); err != nil {
+			return nil, err
 		}
 
-		addr, _, err := portal.DeployIfNeeded(ctx, m.network, backend, valSetID, validators)
+		addr, receipt, err := portal.Deploy(ctx, m.network, backend, valSetID, validators)
 		if err != nil {
 			return nil, errors.Wrap(err, "deploy public omni contracts", "chain", p.Chain.Name)
 		}
@@ -232,7 +231,7 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 		return &deployResult{
 			Contract: contract,
 			Addr:     addr,
-			Height:   height,
+			Height:   receipt.BlockNumber.Uint64(),
 		}, nil
 	}
 
@@ -280,7 +279,11 @@ func (m *manager) DeployPrivatePortals(ctx context.Context, valSetID uint64, val
 			return nil, errors.Wrap(err, "deploy opts", "chain", chain)
 		}
 
-		addr, _, err := portal.DeployIfNeeded(ctx, m.network, backend, valSetID, validators)
+		if err := m.checkIfDeployed(ctx, chain, backend); err != nil {
+			return nil, err
+		}
+
+		addr, _, err := portal.Deploy(ctx, m.network, backend, valSetID, validators)
 
 		if err != nil {
 			return nil, errors.Wrap(err, "deploy private omni contracts", "chain", chain)
@@ -375,6 +378,27 @@ func (m *manager) fundPrivateRelayer(ctx context.Context) error {
 		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
 			return errors.Wrap(err, "wait mined")
 		}
+	}
+
+	return nil
+}
+
+// checkIfDeployed checks if the portal is already deployed on the chain.
+// In the case it is deployed, it:
+//   - returns an error if the network is ephemeral
+//   - logs a warning if the network is persistent
+func (m *manager) checkIfDeployed(ctx context.Context, chain string, backend *ethbackend.Backend) error {
+	isDeployed, addr, err := portal.IsDeployed(ctx, m.network, backend)
+	if err != nil {
+		return errors.Wrap(err, "is deployed", "chain", chain)
+	} else if isDeployed {
+		if m.network.IsEphemeral() {
+			// for ephemeral networks, require that the portal is not already deployed
+			return errors.New("portal already deployed", "network", m.network, "chain", chain, "address", addr.Hex())
+		}
+
+		// for persistent networks, log a warning
+		log.Warn(ctx, "Portal is already deployed", errors.New("portal already deployed"), "network", m.network, "chain", chain, "address", addr.Hex())
 	}
 
 	return nil
