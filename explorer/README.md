@@ -3,17 +3,17 @@
 The explorer has four components broken down into their own respective directory
 
 ```
-/api
 /db
+/graphql
 /indexer
 /ui
 ```
 
-## GraphQL
-We have a graphql server that serves data from our `db` component. We use `gqlgen` to generate our graphql schema and resolvers.
-
 ## DB
 The db is driven by the [ent framework](entgo.io). It is an ORM where we generate our schemas as code and automatically create migrations and update our DB.
+
+## GraphQL
+We have a graphql server that serves data from our `db` component. We use `gqlgen` to generate our graphql schema and resolvers.
 
 ## Indexer
 The Indexer listens to events published by the `xprovider` subscription that we generate for each rollup.
@@ -21,19 +21,37 @@ The Indexer listens to events published by the `xprovider` subscription that we 
 ## UI
 The UI is a [remix](https://remix.run/) application using `react`, `typescript` and hosted on the `remix app server`. We use `tailwind` to drive all of our CSS as well.
 
-### How to run the explorer
+## Running the Explorer
 
 In order to run the explorer locally you need a few things.
 1. A devnet running on your local machine
 2. Indexer
 3. DB
-3. GraphQL
-4. UI
+4. GraphQL
+5. UI
 
-You can run this all with the following command:
+### Fist Time Setup
+
+You can run this all with the following command to build all the images and run them:
 
 ```bash
 make run-clean
 ```
 
 This will create a fresh build of all the components, run a dev net and start the components in the background. You can access the UI at `http://localhost:3000`, you can access the GraphQL at `http://localhost:8080`.
+
+If you want to stop the components you can run:
+
+```bash
+make stop
+```
+
+### Advanced Configurations
+
+The explorer needs a copy of the network.json file to be able to know which network to connect to. You can find the network.json file in the `explorer` directory. If you want to run the explorer against a different network you can set the `NETWORK` environment variable to the network you want to run against. For example:
+
+```bash
+make copy-network NETWORK=devnet-1
+```
+
+This assumes however that you're running it locally as it grabs the `network.json` file via `@cp ../e2e/runs/$(NETWORK)/relayer/network.json`
