@@ -1,41 +1,33 @@
-import type { MetaFunction } from "@remix-run/node";
+import type { MetaFunction } from '@remix-run/node'
+import XBlockDataTable from '~/components/home/blockDataTable'
+import XMsgDataTable from '~/components/home/messageDataTable'
+import { Footer } from '~/components/shared/footer'
+import Navbar from '~/components/shared/navbar'
 
 export const meta: MetaFunction = () => {
   return [
-    { title: "New Remix App" },
-    { name: "description", content: "Welcome to Remix!" },
-  ];
-};
+    { title: 'Omni Network Explorer' },
+    { name: 'description', content: 'Omni Network Explorer' },
+  ]
+}
 
 export default function Index() {
   return (
-    <div style={{ fontFamily: "system-ui, sans-serif", lineHeight: "1.8" }}>
-      <h1>Welcome to Remix</h1>
-      <ul>
-        <li>
-          <a
-            target="_blank"
-            href="https://remix.run/tutorials/blog"
-            rel="noreferrer"
-          >
-            15m Quickstart Blog Tutorial
-          </a>
-        </li>
-        <li>
-          <a
-            target="_blank"
-            href="https://remix.run/tutorials/jokes"
-            rel="noreferrer"
-          >
-            Deep Dive Jokes App Tutorial
-          </a>
-        </li>
-        <li>
-          <a target="_blank" href="https://remix.run/docs" rel="noreferrer">
-            Remix Docs
-          </a>
-        </li>
-      </ul>
+    <div>
+      <Navbar />
+      <div className="flex">
+        <div className="grow"></div>
+        <div className="flex-auto w-full max-w-screen-xl grid grid-cols-2 gap-4 place-items-stretch m3">
+          <div className="flex-auto">
+            <XBlockDataTable />
+          </div>
+          <div className="flex-auto">
+            <XMsgDataTable />
+          </div>
+        </div>
+        <div className="grow"></div>
+      </div>
+      <Footer />
     </div>
-  );
+  )
 }

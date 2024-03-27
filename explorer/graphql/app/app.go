@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
+	"github.com/rs/cors"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -29,10 +30,6 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 	defer entCl.Close()
 
-	if err := db.CreateSchema(ctx, entCl); err != nil {
-		return errors.Wrap(err, "create schema")
-	}
-
 	provider := data.Provider{
 		EntClient: entCl,
 	}
@@ -40,13 +37,14 @@ func Run(ctx context.Context, cfg Config) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", home)
 	mux.Handle("/query", GraphQL(provider))
+	handler := cors.Default().Handler(mux)
 
 	httpServer := &http.Server{
 		Addr:              cfg.ListenAddress,
 		ReadHeaderTimeout: 30 * time.Second,
 		IdleTimeout:       30 * time.Second,
 		WriteTimeout:      30 * time.Second,
-		Handler:           mux,
+		Handler:           handler,
 	}
 
 	var eg errgroup.Group

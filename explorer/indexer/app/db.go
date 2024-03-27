@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"time"
 
 	"github.com/omni-network/omni/explorer/db/ent"
 	"github.com/omni-network/omni/explorer/db/ent/xprovidercursor"
@@ -103,6 +104,8 @@ func insertBlock(ctx context.Context, tx *ent.Tx, block xchain.Block) (*ent.Bloc
 		SetBlockHeight(block.BlockHeight).
 		SetBlockHash(block.BlockHash[:]).
 		SetSourceChainID(block.SourceChainID).
+		SetTimestamp(block.Timestamp).
+		SetCreatedAt(time.Now()).
 		Save(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "inserting block to db")
@@ -116,16 +119,16 @@ func insertMessages(ctx context.Context, tx *ent.Tx, block xchain.Block, dbBlock
 		_, err := tx.Msg.Create().
 			SetBlock(dbBlock).
 			SetBlockID(dbBlock.ID).
-			SetData(msg.Data). // mock provider has no data? should this be nullable?
+			SetData(msg.Data).
 			SetDestAddress(msg.DestAddress[:]).
 			SetDestChainID(msg.DestChainID).
-			// mock provider error: failed to encode args[4]: unable to encode 0xb70a309734fbef40
-			// into binary format for int8 (OID 20): 13189407884695039808 is greater than maximum value for int64
+			SetCreatedAt(time.Now()).
 			SetSourceChainID(msg.SourceChainID).
 			SetDestGasLimit(msg.DestGasLimit).
 			SetSourceMsgSender(msg.SourceMsgSender[:]).
 			SetStreamOffset(msg.StreamOffset).
 			SetTxHash(msg.TxHash[:]).
+			SetCreatedAt(time.Now()).
 			Save(ctx)
 		if err != nil {
 			return errors.Wrap(err, "inserting message")
@@ -137,13 +140,17 @@ func insertMessages(ctx context.Context, tx *ent.Tx, block xchain.Block, dbBlock
 
 func insertReceipts(ctx context.Context, tx *ent.Tx, block xchain.Block, dbBlock *ent.Block) error {
 	for _, receipt := range block.Receipts {
-		// FIXME: fix receipt schema we have some mismatch fields and missing fields
 		_, err := tx.Receipt.Create().
 			SetBlock(dbBlock).
 			SetBlockID(dbBlock.ID).
+			SetGasUsed(receipt.GasUsed).
 			SetDestChainID(receipt.DestChainID).
 			SetSourceChainID(receipt.SourceChainID).
 			SetStreamOffset(receipt.StreamOffset).
+			SetSuccess(receipt.Success).
+			SetRelayerAddress(receipt.RelayerAddress.Bytes()).
+			SetTxHash(receipt.TxHash.Bytes()).
+			SetCreatedAt(time.Now()).
 			Save(ctx)
 		if err != nil {
 			return errors.Wrap(err, "inserting message")

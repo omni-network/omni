@@ -27,6 +27,19 @@ type XBlock struct {
 	CreatedAt     graphql.Time
 	BlockHash     common.Hash
 
-	// TODO(Pavel): add paging for the messages.
+	// TODO: add paging for the messages.
 	Messages []XMsg
+	Receipts []XReceipt
+}
+
+type XReceipt struct {
+	UUID           graphql.ID
+	Success        graphql.NullBool
+	GasUsed        hexutil.Big
+	RelayerAddress common.Address
+	SourceChainID  hexutil.Big
+	DestChainID    hexutil.Big
+	StreamOffset   hexutil.Big
+	TxHash         common.Hash
+	Timestamp      graphql.Time
 }

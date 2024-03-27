@@ -1,0 +1,7 @@
+@import '@fontsource/urbanist';
+@import '@fontsource/urbanist/400.css';
+@import '@fontsource/urbanist/400-italic.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
