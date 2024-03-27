@@ -4,10 +4,9 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/chainids"
+	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
-
-	"github.com/ethereum/go-ethereum/common"
 )
 
 //nolint:gochecknoglobals // Static mappings
@@ -25,7 +24,7 @@ var (
 		IsPublic:           true,
 		BlockPeriod:        15 * time.Second,
 		FinalizationStrat:  netconf.StratLatest,
-		AVSContractAddress: common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92"),
+		AVSContractAddress: contracts.TestnetAVS(),
 	}
 
 	chainArbSepolia = EVMChain{

@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/omni-network/omni/lib/errors"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 const consensusIDPrefix = "omni-"
@@ -14,6 +16,7 @@ const consensusIDOffset = 1_000_000 //nolint:unused // Will use
 // Static defines static config and data for a network.
 type Static struct {
 	OmniExecutionChainID uint64
+	AVSContractAddress   common.Address
 }
 
 // OmniConsensusChainIDStr returns the chain ID string for the Omni consensus chain.
@@ -38,6 +41,10 @@ var statics = map[ID]Static{
 		OmniExecutionChainID: 16561,
 	},
 	Staging: {
+		OmniExecutionChainID: 16561,
+	},
+	Testnet: {
+		AVSContractAddress:   common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92"),
 		OmniExecutionChainID: 16561,
 	},
 }
