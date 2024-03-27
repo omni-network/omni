@@ -9,8 +9,8 @@ import (
 )
 
 type XMsgRangeArgs struct {
-	Amount hexutil.Big
-	Offset hexutil.Big
+	From hexutil.Big
+	To   hexutil.Big
 }
 
 func (b *BlocksResolver) XMsgCount(ctx context.Context) (*hexutil.Big, error) {
@@ -26,7 +26,11 @@ func (b *BlocksResolver) XMsgCount(ctx context.Context) (*hexutil.Big, error) {
 }
 
 func (b *BlocksResolver) XMsgRange(ctx context.Context, args XMsgRangeArgs) ([]*XMsg, error) {
-	res, found, err := b.BlocksProvider.XMsgRange(ctx, args.Amount.ToInt().Uint64(), args.Offset.ToInt().Uint64())
+	if args.From.ToInt().Cmp(args.To.ToInt()) >= 0 {
+		return nil, errors.New("invalid range")
+	}
+
+	res, found, err := b.BlocksProvider.XMsgRange(ctx, args.From.ToInt().Uint64(), args.To.ToInt().Uint64())
 	if err != nil {
 		return nil, errors.New("failed to fetch messages")
 	}

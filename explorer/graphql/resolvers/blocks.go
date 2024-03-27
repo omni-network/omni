@@ -28,8 +28,8 @@ type XBlockArgs struct {
 }
 
 type XBlockRangeArgs struct {
-	Amount hexutil.Big
-	Offset hexutil.Big
+	From hexutil.Big
+	To   hexutil.Big
 }
 
 func (b *BlocksResolver) XBlock(ctx context.Context, args XBlockArgs) (*XBlock, error) {
@@ -45,7 +45,10 @@ func (b *BlocksResolver) XBlock(ctx context.Context, args XBlockArgs) (*XBlock, 
 }
 
 func (b *BlocksResolver) XBlockRange(ctx context.Context, args XBlockRangeArgs) ([]*XBlock, error) {
-	res, found, err := b.BlocksProvider.XBlockRange(ctx, args.Amount.ToInt().Uint64(), args.Offset.ToInt().Uint64())
+	if args.From.ToInt().Cmp(args.To.ToInt()) >= 0 {
+		return nil, errors.New("invalid range")
+	}
+	res, found, err := b.BlocksProvider.XBlockRange(ctx, args.From.ToInt().Uint64(), args.To.ToInt().Uint64())
 	if err != nil {
 		return nil, errors.New("failed to fetch block range")
 	}

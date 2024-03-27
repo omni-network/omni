@@ -122,9 +122,9 @@ type XReceipt {
 
 type Query {
   xblock(sourceChainID: BigInt!, height: BigInt!): XBlock
-  xblockrange(amount: BigInt!, offset: BigInt!): [XBlock]!
+  xblockrange(from: BigInt!, to: BigInt!): [XBlock]!
   xblockcount: BigInt
-  xmsgrange(amount: BigInt!, offset: BigInt!): [XMsg]!
+  xmsgrange(from: BigInt!, to: BigInt!): [XMsg]!
   xmsgcount: BigInt
   xreceiptcount: BigInt
 }

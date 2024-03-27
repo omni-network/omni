@@ -57,7 +57,7 @@ func TestXMsgRange(t *testing.T) {
 			Schema:  graphql.MustParseSchema(app.Schema, &resolvers.Query{BlocksResolver: test.Resolver}, test.Opts...),
 			Query: `
 				{
-					xmsgrange(amount: 2, offset: 0){
+					xmsgrange(from: 0, to: 2){
 						SourceMessageSender
 						TxHash
 						BlockHeight

@@ -27,10 +27,11 @@ func (p Provider) XMsgCount(ctx context.Context) (*hexutil.Big, bool, error) {
 	return &hex, true, nil
 }
 
-func (p Provider) XMsgRange(ctx context.Context, amount uint64, offset uint64) ([]*resolvers.XMsg, bool, error) {
+func (p Provider) XMsgRange(ctx context.Context, from uint64, to uint64) ([]*resolvers.XMsg, bool, error) {
+	amount := to - from
 	query, err := p.EntClient.Msg.Query().
 		Order(ent.Desc(msg.FieldCreatedAt)).
-		Offset(int(offset)).
+		Offset(int(from)).
 		Limit(int(amount)).
 		All(ctx)
 	if err != nil {

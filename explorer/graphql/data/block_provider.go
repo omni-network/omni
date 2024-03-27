@@ -30,11 +30,12 @@ func (p Provider) XBlock(ctx context.Context, sourceChainID uint64, height uint6
 	return b, true, nil
 }
 
-func (p Provider) XBlockRange(ctx context.Context, amount uint64, offset uint64) ([]*resolvers.XBlock, bool, error) {
+func (p Provider) XBlockRange(ctx context.Context, from uint64, to uint64) ([]*resolvers.XBlock, bool, error) {
+	amount := to - from
 	query, err := p.EntClient.Block.Query().
 		Order(ent.Desc(block.FieldTimestamp)).
 		Limit(int(amount)).
-		Offset(int(offset)).
+		Offset(int(from)).
 		All(ctx)
 	if err != nil {
 		log.Error(ctx, "Ent query", err)
