@@ -29,12 +29,12 @@ func TestXBlock(t *testing.T) {
 	var height uint64
 	f.Fuzz(&height)
 
-	valFunc := func(ctx context.Context, h uint64) ([]cchain.Validator, bool, error) {
+	valFunc := func(ctx context.Context, h uint64, _ bool) ([]cchain.Validator, uint64, bool, error) {
 		require.EqualValues(t, height, h)
 		var resp []cchain.Validator
 		f.Fuzz(&resp)
 
-		return resp, true, nil
+		return resp, height, true, nil
 	}
 	chainFunc := func(ctx context.Context) (uint64, error) {
 		return 77, nil
@@ -42,7 +42,7 @@ func TestXBlock(t *testing.T) {
 
 	prov := Provider{valset: valFunc, chainID: chainFunc}
 
-	block, ok, err := prov.XBlock(context.Background(), height)
+	block, ok, err := prov.XBlock(context.Background(), height, false)
 	require.NoError(t, err)
 	require.True(t, ok)
 	tutil.RequireGoldenJSON(t, block)

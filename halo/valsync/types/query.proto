@@ -10,7 +10,8 @@ service Query {
 }
 
 message ValidatorSetRequest {
-  uint64 id = 1;
+  uint64 id     = 1;
+  bool   latest = 2; // If true, id is ignored and the latest validator set is returned.
 }
 
 message ValidatorSetResponse {

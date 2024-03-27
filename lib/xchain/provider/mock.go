@@ -158,7 +158,7 @@ func (m *Mock) nextBlock(ctx context.Context, chainID uint64, height uint64, off
 	if m.cChainID == chainID {
 		// For omni consensus chain, we query the real cprovider for blocks.
 		for {
-			b, ok, err := m.cProvider.XBlock(ctx, height)
+			b, ok, err := m.cProvider.XBlock(ctx, height, false)
 			if ctx.Err() != nil {
 				return xchain.Block{}
 			} else if err != nil {
