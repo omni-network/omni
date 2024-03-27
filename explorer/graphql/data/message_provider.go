@@ -3,6 +3,9 @@ package data
 import (
 	"context"
 
+	"github.com/omni-network/omni/explorer/db/ent"
+	"github.com/omni-network/omni/explorer/db/ent/msg"
+	"github.com/omni-network/omni/explorer/graphql/resolvers"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
@@ -22,4 +25,28 @@ func (p Provider) XMsgCount(ctx context.Context) (*hexutil.Big, bool, error) {
 	}
 
 	return &hex, true, nil
+}
+
+func (p Provider) XMsgRange(ctx context.Context, from uint64, to uint64) ([]*resolvers.XMsg, bool, error) {
+	amount := to - from
+	query, err := p.EntClient.Msg.Query().
+		Order(ent.Desc(msg.FieldCreatedAt)).
+		Offset(int(from)).
+		Limit(int(amount)).
+		All(ctx)
+	if err != nil {
+		log.Error(ctx, "Ent query", err)
+		return nil, false, err
+	}
+
+	var res []*resolvers.XMsg
+	for _, m := range query {
+		graphQL, err := EntMsgToGraphQLXMsg(ctx, m, nil)
+		if err != nil {
+			return nil, false, errors.Wrap(err, " decode message")
+		}
+		res = append(res, graphQL)
+	}
+
+	return res, true, nil
 }

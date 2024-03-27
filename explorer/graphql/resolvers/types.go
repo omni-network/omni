@@ -17,6 +17,8 @@ type XMsg struct {
 	DestChainID         hexutil.Big
 	StreamOffset        hexutil.Big
 	TxHash              common.Hash
+	BlockHeight         hexutil.Big
+	BlockHash           common.Hash
 }
 
 type XBlock struct {

@@ -2,15 +2,12 @@ import { useQuery } from 'urql'
 import { XMsg } from '~/graphql/graphql'
 import { xblockrange } from './block'
 
-export function GetXMessagesInRange(amount: number, offset: number): XMsg[] {
-  let amt = '0x' + amount.toString(16)
-  let off = '0x' + offset.toString(16)
-
+export function GetXMessagesInRange(from: number, to: number): XMsg[] {
   const [result] = useQuery({
     query: xblockrange,
     variables: {
-      amount: amt,
-      offset: off,
+      from: '0x' + from.toString(16),
+      to: '0x' + to.toString(16),
     },
   })
   const { data, fetching, error } = result
@@ -30,6 +27,8 @@ export function GetXMessagesInRange(amount: number, offset: number): XMsg[] {
         SourceMessageSender: '',
         StreamOffset: '',
         TxHash: msg.TxHash,
+        BlockHeight: msg.BlockHeight,
+        BlockHash: msg.BlockHash,
       }
       rows.push(xmsg)
     })
