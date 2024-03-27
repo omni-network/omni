@@ -102,7 +102,7 @@ func testnetCfg() DeploymentConfig {
 		Owner:            contracts.TestnetAVSAdmin(),
 		ProxyAdmin:       contracts.TestnetProxyAdmin(),
 		Eigen:            holeskyEigenDeployments(),
-		StrategyParams:   holeskeyStrategyParams(),
+		StrategyParams:   holeskyStrategyParams(),
 		MetadataURI:      metadataURI,
 		OmniChainID:      netconf.Testnet.Static().OmniExecutionChainID,
 		MinOperatorStake: big.NewInt(1e18), // 1 ETH
