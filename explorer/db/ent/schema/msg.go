@@ -5,6 +5,7 @@ import (
 	gen "github.com/omni-network/omni/explorer/db/ent"
 	"github.com/omni-network/omni/explorer/db/ent/hook"
 	"github.com/omni-network/omni/explorer/db/ent/receipt"
+	"github.com/omni-network/omni/lib/errors"
 	"time"
 
 	"entgo.io/ent"
@@ -59,22 +60,22 @@ func (Msg) Hooks() []ent.Hook {
 					// go and find the associated receipt using source chain id, dest chain id and txhash
 					sourceChainID, ok := m.SourceChainID()
 					if !ok {
-						return nil, nil
+						return nil, errors.New("source chain id missing")
 					}
 
 					destChainID, ok := m.DestChainID()
 					if !ok {
-						return nil, nil
+						return nil, errors.New("dest chain id missing")
 					}
 
-					txHash, ok := m.TxHash()
+					streamOffset, ok := m.StreamOffset()
 					if !ok {
-						return nil, nil
+						return nil, errors.New("stream offset missing")
 					}
 					receipts, err := m.Client().Receipt.Query().Where(
 						receipt.SourceChainID(sourceChainID),
 						receipt.DestChainID(destChainID),
-						receipt.TxHash(txHash),
+						receipt.StreamOffset(streamOffset),
 					).All(ctx)
 					if err != nil {
 						return nil, err
@@ -83,6 +84,7 @@ func (Msg) Hooks() []ent.Hook {
 					for _, r := range receipts {
 						m.AddReceiptIDs(r.ID)
 					}
+
 					return next.Mutate(ctx, m)
 				})
 			},

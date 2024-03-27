@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/omni-network/omni/explorer/db"
 	"github.com/omni-network/omni/explorer/graphql/app"
 	"github.com/omni-network/omni/explorer/graphql/resolvers"
 
@@ -20,7 +21,7 @@ func TestXMsgCount(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	createTestBlocks(ctx, t, test.Client, 2)
+	db.CreateTestBlocks(ctx, t, test.Client, 2)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
@@ -49,7 +50,7 @@ func TestXMsgRange(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	createTestBlocks(ctx, t, test.Client, 2)
+	db.CreateTestBlocks(ctx, t, test.Client, 2)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{

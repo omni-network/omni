@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/omni-network/omni/explorer/db"
 	"github.com/omni-network/omni/explorer/db/ent"
 	"github.com/omni-network/omni/explorer/graphql/app"
 	d "github.com/omni-network/omni/explorer/graphql/data"
@@ -22,7 +23,7 @@ type gqlTest struct {
 
 func createGqlTest(t *testing.T) *gqlTest {
 	t.Helper()
-	client := createTestEntClient(t)
+	client := db.CreateTestEntClient(t)
 	provider := &d.Provider{
 		EntClient: client,
 	}
@@ -52,7 +53,7 @@ func TestXBlockQuery(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	createTestBlock(ctx, t, test.Client)
+	db.CreateTestBlock(ctx, t, test.Client)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
@@ -90,7 +91,7 @@ func TestXBlocksQuery(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	createTestBlocks(ctx, t, test.Client, 2)
+	db.CreateTestBlocks(ctx, t, test.Client, 2)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
@@ -135,7 +136,7 @@ func TestXBlocksCount(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	createTestBlocks(ctx, t, test.Client, 2)
+	db.CreateTestBlocks(ctx, t, test.Client, 2)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{

@@ -5,6 +5,7 @@ import (
 	gen "github.com/omni-network/omni/explorer/db/ent"
 	"github.com/omni-network/omni/explorer/db/ent/hook"
 	"github.com/omni-network/omni/explorer/db/ent/msg"
+	"github.com/omni-network/omni/lib/errors"
 	"time"
 
 	"entgo.io/ent"
@@ -54,35 +55,36 @@ func (Receipt) Hooks() []ent.Hook {
 		// First hook.
 		hook.On(
 			func(next ent.Mutator) ent.Mutator {
-				return hook.MsgFunc(func(ctx context.Context, m *gen.MsgMutation) (ent.Value, error) {
+				return hook.ReceiptFunc(func(ctx context.Context, r *gen.ReceiptMutation) (ent.Value, error) {
 					// go and find the associated message using source chain id, dest chain id and txhash
-					sourceChainID, ok := m.SourceChainID()
+					sourceChainID, ok := r.SourceChainID()
 					if !ok {
-						return nil, nil
+						return nil, errors.New("source chain id missing")
 					}
 
-					destChainID, ok := m.DestChainID()
+					destChainID, ok := r.DestChainID()
 					if !ok {
-						return nil, nil
+						return nil, errors.New("dest chain id missing")
 					}
 
-					txHash, ok := m.TxHash()
+					streamOffset, ok := r.StreamOffset()
 					if !ok {
-						return nil, nil
+						return nil, errors.New("stream offset missing")
 					}
-					matches, err := m.Client().Msg.Query().Where(
+					matches, err := r.Client().Msg.Query().Where(
 						msg.SourceChainID(sourceChainID),
 						msg.DestChainID(destChainID),
-						msg.TxHash(txHash),
+						msg.StreamOffset(streamOffset),
 					).All(ctx)
 					if err != nil {
 						return nil, err
 					}
 
 					for _, match := range matches {
-						m.AddReceiptIDs(match.ID)
+						r.AddMsgIDs(match.ID)
 					}
-					return next.Mutate(ctx, m)
+
+					return next.Mutate(ctx, r)
 				})
 			},
 			// Limit the hook only for the create operation.
