@@ -8,7 +8,6 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/anvil"
-	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/portal"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -24,7 +23,13 @@ import (
 
 //nolint:gochecknoglobals // Static mapping.
 var (
-	privateRelayerKey = anvil.DevPrivateKey1()
+	// this must be different than netman.Operator(), otherwise the txmgr nonce
+	// get's out of sync, because the relayer TXMgr and the operator TXMgr are running
+	// in separate services.
+	privateRelayerKey = anvil.DevPrivateKey5()
+
+	// fbDev is the address of the fireblocks "dev" account.
+	fbDev = common.HexToAddress("0x7a6cF389082dc698285474976d7C75CAdE08ab7e")
 )
 
 // Manager abstract logic to deploy and bootstrap a network.
@@ -51,7 +56,7 @@ type Manager interface {
 
 func NewManager(testnet types.Testnet, backends ethbackend.Backends, relayerKeyFile string) (Manager, error) {
 	if testnet.OnlyMonitor {
-		if testnet.Name != netconf.Testnet {
+		if testnet.Network != netconf.Testnet {
 			return nil, errors.New("the AVS contract is currently only deployed to testnet")
 		}
 
@@ -76,11 +81,13 @@ func NewManager(testnet types.Testnet, backends ethbackend.Backends, relayerKeyF
 		PortalAddress: privPortalAddr,
 	}
 
-	// Just use the first omni evm instance for now.
-	omniEVM := testnet.OmniEVMs[0]
-	portals[omniEVM.Chain.ID] = Portal{
-		Chain:      omniEVM.Chain,
-		DeployInfo: privateChainDeployInfo,
+	if testnet.HasOmniEVM() {
+		// Just use the first omni evm instance for now.
+		omniEVM := testnet.OmniEVMs[0]
+		portals[omniEVM.Chain.ID] = Portal{
+			Chain:      omniEVM.Chain,
+			DeployInfo: privateChainDeployInfo,
+		}
 	}
 
 	// Add all portals
@@ -106,18 +113,11 @@ func NewManager(testnet types.Testnet, backends ethbackend.Backends, relayerKeyF
 
 		return &manager{
 			portals:     portals,
-			omniChainID: omniEVM.Chain.ID,
+			omniChainID: netconf.Devnet.Static().OmniExecutionChainID,
 			relayerKey:  privateRelayerKey,
 			backends:    backends,
 			network:     netconf.Devnet,
-			// operator:    contracts.DevnetDeployer()
-			//
-			// Using dev deployer caused "Transaction not yet mined" & "Nonce too low" errors in e2e SendXMsgs loop
-			// Somehow, the backend / txmngr managing the nonce gets out of sync.
-			// TODO: figure out why that happens and fix it.
-			//
-			// For now, use a different account.
-			operator: anvil.DevAccount5(),
+			operator:    anvil.DevAccount4(),
 		}, nil
 	case netconf.Staging:
 		relayerKey, err := crypto.LoadECDSA(relayerKeyFile)
@@ -127,14 +127,23 @@ func NewManager(testnet types.Testnet, backends ethbackend.Backends, relayerKeyF
 
 		return &manager{
 			portals:     portals,
-			omniChainID: omniEVM.Chain.ID,
+			omniChainID: netconf.Staging.Static().OmniExecutionChainID,
 			relayerKey:  relayerKey,
 			backends:    backends,
 			network:     netconf.Staging,
-			operator:    contracts.StagingDeployer(), // just use deployer as operator, for now.
+			operator:    fbDev,
+		}, nil
+	case netconf.Testnet:
+		// no testnet relayer
+		return &manager{
+			portals:     portals,
+			omniChainID: netconf.Testnet.Static().OmniExecutionChainID,
+			backends:    backends,
+			network:     netconf.Testnet,
+			operator:    fbDev,
 		}, nil
 	default:
-		return nil, errors.New("unknown network")
+		return nil, errors.New("unknown network", "network", network)
 	}
 }
 
@@ -158,7 +167,7 @@ type manager struct {
 	omniChainID uint64
 	relayerKey  *ecdsa.PrivateKey
 	backends    ethbackend.Backends
-	network     string
+	network     netconf.ID
 	operator    common.Address
 }
 
@@ -205,7 +214,11 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 			return nil, errors.Wrap(err, "deploy opts", "chain", p.Chain.Name)
 		}
 
-		addr, receipt, err := portal.DeployIfNeeded(ctx, m.network, backend, valSetID, validators)
+		if err := m.checkIfDeployed(ctx, p.Chain.Name, backend); err != nil {
+			return nil, err
+		}
+
+		addr, receipt, err := portal.Deploy(ctx, m.network, backend, valSetID, validators)
 		if err != nil {
 			return nil, errors.Wrap(err, "deploy public omni contracts", "chain", p.Chain.Name)
 		}
@@ -266,7 +279,11 @@ func (m *manager) DeployPrivatePortals(ctx context.Context, valSetID uint64, val
 			return nil, errors.Wrap(err, "deploy opts", "chain", chain)
 		}
 
-		addr, _, err := portal.DeployIfNeeded(ctx, m.network, backend, valSetID, validators)
+		if err := m.checkIfDeployed(ctx, chain, backend); err != nil {
+			return nil, err
+		}
+
+		addr, _, err := portal.Deploy(ctx, m.network, backend, valSetID, validators)
 
 		if err != nil {
 			return nil, errors.Wrap(err, "deploy private omni contracts", "chain", chain)
@@ -341,7 +358,17 @@ func (m *manager) fundPrivateRelayer(ctx context.Context) error {
 			return errors.Wrap(err, "backend", "chain", portal.Chain.Name)
 		}
 
-		tx, _, err := backend.Send(ctx, m.operator, txmgr.TxCandidate{
+		pctx := log.WithCtx(ctx, "chain", portal.Chain.Name)
+
+		bal, err := backend.BalanceAt(pctx, m.operator, nil)
+		if err != nil {
+			return err
+		}
+		b, _ := bal.Float64()
+		log.Info(pctx, "Funding relayer operator balance", "balance", b/params.Ether, "operator", m.operator.Hex())
+		// TODO(corver): Remove this debug log
+
+		tx, _, err := backend.Send(pctx, m.operator, txmgr.TxCandidate{
 			To:       &relayerAddr,
 			GasLimit: 100_000,                                                    // 100k is fine,
 			Value:    new(big.Int).Mul(big.NewInt(10), big.NewInt(params.Ether)), // 10 ETH
@@ -351,6 +378,27 @@ func (m *manager) fundPrivateRelayer(ctx context.Context) error {
 		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
 			return errors.Wrap(err, "wait mined")
 		}
+	}
+
+	return nil
+}
+
+// checkIfDeployed checks if the portal is already deployed on the chain.
+// In the case it is deployed, it:
+//   - returns an error if the network is ephemeral
+//   - logs a warning if the network is persistent
+func (m *manager) checkIfDeployed(ctx context.Context, chain string, backend *ethbackend.Backend) error {
+	isDeployed, addr, err := portal.IsDeployed(ctx, m.network, backend)
+	if err != nil {
+		return errors.Wrap(err, "is deployed", "chain", chain)
+	} else if isDeployed {
+		if m.network.IsEphemeral() {
+			// for ephemeral networks, require that the portal is not already deployed
+			return errors.New("portal already deployed", "network", m.network, "chain", chain, "address", addr.Hex())
+		}
+
+		// for persistent networks, log a warning
+		log.Warn(ctx, "Portal is already deployed", errors.New("portal already deployed"), "network", m.network, "chain", chain, "address", addr.Hex())
 	}
 
 	return nil

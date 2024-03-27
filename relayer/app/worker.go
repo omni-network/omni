@@ -2,13 +2,18 @@ package relayer
 
 import (
 	"context"
+	"sync/atomic"
+	"time"
 
+	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
+
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 )
 
 const (
@@ -24,11 +29,13 @@ type Worker struct {
 	creator      CreateFunc
 	state        *State
 	sendProvider func() (SendFunc, error)
+	awaitValSet  awaitValSet
 }
 
 // NewWorker creates a new worker for a single destination chain.
 func NewWorker(destChain netconf.Chain, network netconf.Network, cProvider cchain.Provider,
 	xProvider xchain.Provider, creator CreateFunc, sendProvider func() (SendFunc, error), state *State,
+	awaitValSet awaitValSet,
 ) *Worker {
 	return &Worker{
 		destChain:    destChain,
@@ -38,6 +45,7 @@ func NewWorker(destChain netconf.Chain, network netconf.Network, cProvider cchai
 		creator:      creator,
 		sendProvider: sendProvider,
 		state:        state,
+		awaitValSet:  awaitValSet,
 	}
 }
 
@@ -82,7 +90,7 @@ func (w *Worker) runOnce(ctx context.Context) error {
 			return errors.New("unexpected cursor [BUG]")
 		}
 
-		callback := newCallback(w.xProvider, initialOffsets, w.creator, buf.AddInput, w.destChain.ID, newMsgStreamMapper(w.network))
+		callback := newCallback(w.xProvider, initialOffsets, w.creator, buf.AddInput, w.destChain.ID, newMsgStreamMapper(w.network), w.awaitValSet)
 		wrapCb := wrapStatePersist(callback, w.state, w.destChain.ID)
 
 		w.cProvider.Subscribe(ctx, srcChainID, fromHeight, w.destChain.Name, wrapCb)
@@ -97,6 +105,42 @@ func (w *Worker) runOnce(ctx context.Context) error {
 	log.Info(ctx, "Worker subscribed to chains", logAttrs...)
 
 	return buf.Run(ctx)
+}
+
+// awaitValSet blocks until the portal is aware of this validator set ID.
+type awaitValSet func(ctx context.Context, valsetID uint64) error
+
+// newValSetAwaiter creates a new awaitValSet function for the given portal.
+func newValSetAwaiter(portal *bindings.OmniPortal, blockPeriod time.Duration) awaitValSet {
+	var prev atomic.Uint64 // Cache previous to reduce network lookups.
+	return func(ctx context.Context, valsetID uint64) error {
+		if prev.Load() == valsetID {
+			return nil
+		}
+		backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(blockPeriod))
+		var attempt int
+		for ctx.Err() == nil {
+			power, err := portal.ValidatorSetTotalPower(&bind.CallOpts{Context: ctx}, valsetID)
+			if err != nil {
+				return errors.Wrap(err, "get validator set power")
+			}
+			if power == 0 {
+				attempt++
+				if attempt%10 == 0 {
+					log.Warn(ctx, "Validator set not known by portal (will retry)", nil, "valset_id", valsetID, "attempt", attempt)
+				}
+				backoff()
+
+				continue
+			}
+
+			prev.Store(valsetID)
+
+			return nil
+		}
+
+		return errors.Wrap(ctx.Err(), "context done")
+	}
 }
 
 // msgStreamMapper maps messages by stream ID.
@@ -131,7 +175,7 @@ func newMsgStreamMapper(network netconf.Network) msgStreamMapper {
 }
 
 func newCallback(xProvider xchain.Provider, initialOffsets map[xchain.StreamID]uint64, creator CreateFunc,
-	sender SendFunc, destChainID uint64, msgStreamMapper msgStreamMapper) cchain.ProviderCallback {
+	sender SendFunc, destChainID uint64, msgStreamMapper msgStreamMapper, awaitValSet awaitValSet) cchain.ProviderCallback {
 	return func(ctx context.Context, att xchain.Attestation) error {
 		// Get the xblock from the source chain.
 		block, ok, err := xProvider.GetBlock(ctx, att.SourceChainID, att.BlockHeight)
@@ -156,6 +200,10 @@ func newCallback(xProvider xchain.Provider, initialOffsets map[xchain.StreamID]u
 		for streamID, msgs := range msgStreamMapper(block.Msgs) {
 			if streamID.DestChainID != destChainID {
 				continue
+			}
+
+			if err := awaitValSet(ctx, att.ValidatorSetID); err != nil {
+				return errors.Wrap(err, "await validator set")
 			}
 
 			msgs = filterMsgs(msgs, initialOffsets, streamID) // Filter out any partially submitted stream updates.

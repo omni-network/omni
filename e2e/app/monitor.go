@@ -43,7 +43,7 @@ func StartMonitoringReceipts(ctx context.Context, def Definition) func() error {
 	network := externalNetwork(def.Testnet, def.Netman.DeployInfo())
 	cProvider := cprovider.NewABCIProvider(client, network.ChainNamesByIDs())
 	xProvider := xprovider.New(network, def.Backends.RPCClients(), cProvider)
-	cChainID := netconf.GetStatic(def.Testnet.Network).OmniConsensusChainID
+	cChainID := def.Testnet.Network.Static().OmniConsensusChainIDUint64()
 
 	type void any
 	var msgCache sync.Map

@@ -16,8 +16,8 @@ import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
 import { OmniAVS } from "src/protocol/OmniAVS.sol";
 
 import { Create3 } from "src/deploy/Create3.sol";
-import { DeployGoerliAVS } from "script/avs/DeployGoerliAVS.s.sol";
-import { StrategyParams } from "script/avs/StrategyParams.sol";
+import { HoleskyAVS } from "./HoleskyAVS.sol";
+import { StrategyParams } from "./StrategyParams.sol";
 import { MockOmniPredeploys } from "test/utils/MockOmniPredeploys.sol";
 import { MockPortal } from "test/utils/MockPortal.sol";
 import { EigenLayerFixtures } from "./eigen/EigenLayerFixtures.sol";
@@ -43,6 +43,9 @@ contract Fixtures is EigenLayerFixtures {
     MockPortal portal;
     OmniAVS omniAVS;
 
+    bool allowlistEnabled = true;
+    string metadataURI = "https://raw.githubusercontent.com/omni-network/omni/main/static/avs-metadata.json";
+
     /// Canonical, virtual beacon chain ETH strategy
     address constant beaconChainETHStrategy = 0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0;
 
@@ -60,18 +63,17 @@ contract Fixtures is EigenLayerFixtures {
         if (avsOverride != address(0)) {
             omniAVS = OmniAVS(avsOverride);
             omniAVSOwner = omniAVS.owner();
-
             return;
         }
 
-        omniAVS = isGoerli() ? _deployGoerliAVS() : _deployLocalAVS();
+        omniAVS = isHolesky() ? _deployHoleskyAVS() : _deployLocalAVS();
     }
 
-    function _deployGoerliAVS() internal returns (OmniAVS) {
-        DeployGoerliAVS deployer = new DeployGoerliAVS();
+    function _deployHoleskyAVS() internal returns (OmniAVS) {
+        HoleskyAVS deployer = new HoleskyAVS();
 
         Create3 create3 = new Create3();
-        bytes32 create3Salt = keccak256("avs-goerli-fork-test");
+        bytes32 create3Salt = keccak256("avs-holesky-fork-test");
 
         return deployer.deploy(
             address(create3),
@@ -106,7 +108,9 @@ contract Fixtures is EigenLayerFixtures {
                     ethStakeInbox,
                     minOperatorStake,
                     maxOperatorCount,
-                    _localStrategyParams()
+                    _localStrategyParams(),
+                    metadataURI,
+                    allowlistEnabled
                 )
             )
         );

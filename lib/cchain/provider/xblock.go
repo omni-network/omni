@@ -15,10 +15,10 @@ import (
 //nolint:gochecknoglobals // Static ABI types
 var portalABI = mustGetABI(bindings.OmniPortalMetaData)
 
-// XBlock returns the valsync XBlock at the given height, or false if not available, or an error.
+// XBlock returns the valsync XBlock at the given height or latest, or false if not available, or an error.
 // The height is equivalent to the validator set id.
-func (p Provider) XBlock(ctx context.Context, height uint64) (xchain.Block, bool, error) {
-	vals, ok, err := p.ValidatorSet(ctx, height)
+func (p Provider) XBlock(ctx context.Context, height uint64, latest bool) (xchain.Block, bool, error) {
+	vals, valsetID, ok, err := p.valset(ctx, height, latest)
 	if err != nil {
 		return xchain.Block{}, false, err
 	} else if !ok {
@@ -35,7 +35,7 @@ func (p Provider) XBlock(ctx context.Context, height uint64) (xchain.Block, bool
 		return xchain.Block{}, false, errors.Wrap(err, "convert validators")
 	}
 
-	data, err := portalABI.Pack("addValidatorSet", height, portalVals)
+	data, err := portalABI.Pack("addValidatorSet", valsetID, portalVals)
 	if err != nil {
 		return xchain.Block{}, false, errors.Wrap(err, "pack validators")
 	}
@@ -44,14 +44,14 @@ func (p Provider) XBlock(ctx context.Context, height uint64) (xchain.Block, bool
 	return xchain.Block{
 		BlockHeader: xchain.BlockHeader{
 			SourceChainID: chainID,
-			BlockHeight:   height,
+			BlockHeight:   valsetID,
 		},
 		Msgs: []xchain.Msg{{
 			MsgID: xchain.MsgID{
 				StreamID: xchain.StreamID{
 					SourceChainID: chainID,
 				},
-				StreamOffset: height,
+				StreamOffset: valsetID,
 			},
 			Data: data,
 		}},

@@ -77,6 +77,15 @@ func DevAccount9() common.Address {
 	return acc9
 }
 
+func IsDevAccount(addr common.Address) bool {
+	switch addr {
+	case acc0, acc1, acc2, acc3, acc4, acc5, acc6, acc7, acc8, acc9:
+		return true
+	}
+
+	return false
+}
+
 //
 // Private keys.
 //

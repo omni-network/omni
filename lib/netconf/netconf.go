@@ -17,14 +17,14 @@ import (
 // It spans an omni chain (both execution and consensus) and a set of
 // supported rollup EVMs.
 type Network struct {
-	Name   string  `json:"name"`   // Name of the network. e.g. "simnet", "testnet", "staging", "mainnet"
+	ID     ID      `json:"name"`   // ID of the network. e.g. "simnet", "testnet", "staging", "mainnet"
 	Chains []Chain `json:"chains"` // Chains that are part of the network
 }
 
 // Validate returns an error if the configuration is invalid.
 func (n Network) Validate() error {
-	if !supported[n.Name] {
-		return errors.New("unsupported network", "name", n.Name)
+	if !supported[n.ID] {
+		return errors.New("unsupported network", "name", n.ID)
 	}
 
 	// TODO(corver): Validate chains

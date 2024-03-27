@@ -6,10 +6,17 @@ slug: /
 ---
 
 import TestnetCTA from '@site/src/components/TestnetCTA/TestnetCTA';
+import ThemedBanner from '@site/src/components/ThemedBanner/ThemedBanner';
 
-# Home
+#
 
-![omni banner](../static/img/omni-banner.png)
+<ThemedBanner
+  lightSrc="/img/light-banner.png"
+  darkSrc="/img/dark-banner.png"
+  alt="Omni banner"
+/>
+
+#
 
 ### _Welcome to the documentation portal for all things Omni!_
 

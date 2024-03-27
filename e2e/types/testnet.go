@@ -29,7 +29,7 @@ const (
 // Testnet wraps e2e.Testnet with additional omni-specific fields.
 type Testnet struct {
 	*e2e.Testnet
-	Network      string
+	Network      netconf.ID
 	OmniEVMs     []OmniEVM
 	AnvilChains  []AnvilChain
 	PublicChains []PublicChain
@@ -62,6 +62,10 @@ func (t Testnet) FirstOmniValidatorEVM() (OmniEVM, error) {
 	}
 
 	return OmniEVM{}, errors.New("omni evm validator not found")
+}
+
+func (t Testnet) HasOmniEVM() bool {
+	return len(t.OmniEVMs) > 0
 }
 
 // EVMChain represents a EVM chain in a omni network.

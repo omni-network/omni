@@ -28,7 +28,7 @@ func (cfg DeploymentConfig) Validate() error {
 	return nil
 }
 
-func getDeployCfg(chainID uint64, network string) (DeploymentConfig, error) {
+func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) {
 	if !chainids.IsMainnetOrTestnet(chainID) && network == netconf.Devnet {
 		return devnetCfg(), nil
 	}
@@ -41,7 +41,17 @@ func getDeployCfg(chainID uint64, network string) (DeploymentConfig, error) {
 		return testnetCfg(), nil
 	}
 
+	if !chainids.IsMainnet(chainID) && network == netconf.Staging {
+		return stagingCfg(), nil
+	}
+
 	return DeploymentConfig{}, errors.New("unsupported chain for network", "chain_id", chainID, "network", network)
+}
+
+func mainnetCfg() DeploymentConfig {
+	return DeploymentConfig{
+		Deployer: contracts.MainnetCreate3Deployer(),
+	}
 }
 
 func testnetCfg() DeploymentConfig {
@@ -50,9 +60,9 @@ func testnetCfg() DeploymentConfig {
 	}
 }
 
-func mainnetCfg() DeploymentConfig {
+func stagingCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Deployer: contracts.MainnetCreate3Deployer(),
+		Deployer: contracts.StagingCreate3Deployer(),
 	}
 }
 
@@ -62,7 +72,7 @@ func devnetCfg() DeploymentConfig {
 	}
 }
 
-func AddrForNetwork(network string) (common.Address, bool) {
+func AddrForNetwork(network netconf.ID) (common.Address, bool) {
 	switch network {
 	case netconf.Mainnet:
 		return contracts.MainnetCreate3Factory(), true
@@ -79,7 +89,7 @@ func AddrForNetwork(network string) (common.Address, bool) {
 
 // IsDeployed checks if the Create3 factory contract is deployed to the provided backend
 // to its expected network address.
-func IsDeployed(ctx context.Context, network string, backend *ethbackend.Backend) (bool, common.Address, error) {
+func IsDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (bool, common.Address, error) {
 	addr, ok := AddrForNetwork(network)
 	if !ok {
 		return false, addr, errors.New("unsupported network", "network", network)
@@ -94,7 +104,7 @@ func IsDeployed(ctx context.Context, network string, backend *ethbackend.Backend
 		return false, addr, nil
 	}
 
-	if hexutil.Encode(code) != bindings.Create3Bin {
+	if hexutil.Encode(code) != bindings.Create3DeployedBytecode {
 		chain, chainID := backend.Chain()
 		return false, addr, errors.New("unexpected code at factory", "address", addr, "chain", chain, "chain_id", chainID)
 	}
@@ -103,7 +113,7 @@ func IsDeployed(ctx context.Context, network string, backend *ethbackend.Backend
 }
 
 // DeployIfNeeded deploys a new Create3 factory contract if it is not already deployed.
-func DeployIfNeeded(ctx context.Context, network string, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
 	deployed, addr, err := IsDeployed(ctx, network, backend)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "is deployed")
@@ -117,7 +127,7 @@ func DeployIfNeeded(ctx context.Context, network string, backend *ethbackend.Bac
 
 // Deploy deploys a new Create3 factory contract and returns the address and receipt.
 // It only allows deployments to explicitly supported chains.
-func Deploy(ctx context.Context, network string, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
 	chainID, err := backend.ChainID(ctx)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "chain id")

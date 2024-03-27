@@ -44,8 +44,8 @@ type Provider interface {
 	// Note the genesis validator set has ID 1.
 	ValidatorSet(ctx context.Context, valSetID uint64) ([]Validator, bool, error)
 
-	// XBlock returns the validator sync xblock for the given height or false if none exist or an error.
-	XBlock(ctx context.Context, height uint64) (xchain.Block, bool, error)
+	// XBlock returns the validator sync xblock for the given height (or latest) or false if none exist or an error.
+	XBlock(ctx context.Context, height uint64, latest bool) (xchain.Block, bool, error)
 }
 
 // Validator is a consensus chain validator in a validator set.

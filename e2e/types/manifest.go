@@ -1,6 +1,8 @@
 package types
 
 import (
+	"github.com/omni-network/omni/lib/netconf"
+
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
@@ -8,7 +10,7 @@ import (
 type Manifest struct {
 	e2e.Manifest
 
-	Network string `toml:"network"`
+	Network netconf.ID `toml:"network"`
 
 	// AnvilChains defines the anvil chains to deploy; chain_a, chain_b, etc.
 	AnvilChains []string `toml:"anvil_chains"`

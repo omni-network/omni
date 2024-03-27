@@ -38,7 +38,7 @@ func (cfg DeploymentConfig) Validate() error {
 	return nil
 }
 
-func getDeployCfg(chainID uint64, network string) (DeploymentConfig, error) {
+func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) {
 	if !chainids.IsMainnetOrTestnet(chainID) && network == netconf.Devnet {
 		return devnetCfg(), nil
 	}
@@ -49,6 +49,10 @@ func getDeployCfg(chainID uint64, network string) (DeploymentConfig, error) {
 
 	if chainids.IsTestnet(chainID) && network == netconf.Testnet {
 		return testnetCfg(), nil
+	}
+
+	if !chainids.IsMainnet(chainID) && network == netconf.Staging {
+		return stagingCfg(), nil
 	}
 
 	return DeploymentConfig{}, errors.New("unsupported chain for network", "chain_id", chainID, "network", network)
@@ -72,6 +76,16 @@ func testnetCfg() DeploymentConfig {
 	}
 }
 
+func stagingCfg() DeploymentConfig {
+	return DeploymentConfig{
+		Create3Factory: contracts.StagingCreate3Factory(),
+		Create3Salt:    contracts.ProxyAdminSalt(netconf.Staging),
+		Owner:          contracts.StagingProxyAdminOwner(),
+		Deployer:       contracts.StagingDeployer(),
+		ExpectedAddr:   contracts.StagingProxyAdmin(),
+	}
+}
+
 func devnetCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory: contracts.DevnetCreate3Factory(),
@@ -82,7 +96,7 @@ func devnetCfg() DeploymentConfig {
 	}
 }
 
-func AddrForNetwork(network string) (common.Address, bool) {
+func AddrForNetwork(network netconf.ID) (common.Address, bool) {
 	switch network {
 	case netconf.Mainnet:
 		return contracts.MainnetProxyAdmin(), true
@@ -99,7 +113,7 @@ func AddrForNetwork(network string) (common.Address, bool) {
 
 // IsDeployed checks if the ProxyAdmin contract is deployed to the provided backend
 // to its expected network address.
-func IsDeployed(ctx context.Context, network string, backend *ethbackend.Backend) (bool, common.Address, error) {
+func IsDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (bool, common.Address, error) {
 	addr, ok := AddrForNetwork(network)
 	if !ok {
 		return false, addr, errors.New("unsupported network", "network", network)
@@ -118,7 +132,7 @@ func IsDeployed(ctx context.Context, network string, backend *ethbackend.Backend
 }
 
 // DeployIfNeeded deploys a new ProxyAdmin contract if it is not already deployed.
-func DeployIfNeeded(ctx context.Context, network string, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
 	deployed, addr, err := IsDeployed(ctx, network, backend)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "is deployed")
@@ -132,7 +146,7 @@ func DeployIfNeeded(ctx context.Context, network string, backend *ethbackend.Bac
 
 // Deploy deploys a new ProxyAdmin contract and returns the address and receipt.
 // It only allows deployments to explicitly supported chains.
-func Deploy(ctx context.Context, network string, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
 	chainID, err := backend.ChainID(ctx)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "chain id")

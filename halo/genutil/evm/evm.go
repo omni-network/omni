@@ -21,18 +21,17 @@ var eth1m = math.NewInt(1000000).MulRaw(params.Ether).BigInt()
 func newUint64(val uint64) *uint64 { return &val }
 
 // MakeDevGenesis returns a genesis block for a development chain.
-func MakeGenesis(network string) (core.Genesis, error) {
+func MakeGenesis(network netconf.ID) (core.Genesis, error) {
 	// TODO: set config values for devnet, staging, testnet
 	config := DefaultDevConfig()
 
 	allocs := mergeAllocs(precompilesAlloc(), predeploys.Alloc())
 
-	switch network {
-	case netconf.Simnet, netconf.Devnet, netconf.Staging:
+	if network.IsEphemeral() {
 		allocs = mergeAllocs(allocs, stagingPrefundAlloc())
-	case netconf.Testnet:
+	} else if network == netconf.Testnet {
 		allocs = mergeAllocs(allocs, testnetPrefundAlloc())
-	default:
+	} else {
 		return core.Genesis{}, errors.New("unsupported network")
 	}
 
@@ -47,7 +46,7 @@ func MakeGenesis(network string) (core.Genesis, error) {
 
 func DefaultDevConfig() params.ChainConfig {
 	return params.ChainConfig{
-		ChainID:                       big.NewInt(int64(netconf.GetStatic(netconf.Devnet).OmniExecutionChainID)),
+		ChainID:                       big.NewInt(int64(netconf.Devnet.Static().OmniExecutionChainID)),
 		HomesteadBlock:                big.NewInt(0),
 		EIP150Block:                   big.NewInt(0),
 		EIP155Block:                   big.NewInt(0),
@@ -99,9 +98,9 @@ func stagingPrefundAlloc() types.GenesisAlloc {
 		common.HexToAddress("0xa0Ee7A142d267C1f36714E4a8F75612F20a79720"): {Balance: eth1m},
 
 		// team ops accounts
-		common.HexToAddress("0xfE921e06Ed0a22c035b4aCFF0A5D3a434A330c96"): {Balance: eth1k}, // dev relayer (local)
-		common.HexToAddress("0xfC9D554D69DdCfC0A731b2DC64550177b0723bE5"): {Balance: eth1k}, // dev deployer (local)
-		common.HexToAddress("0x7a6cF389082dc698285474976d7C75CAdE08ab7e"): {Balance: eth1k}, // fb: dev
+		common.HexToAddress("0xfE921e06Ed0a22c035b4aCFF0A5D3a434A330c96"): {Balance: eth1m}, // dev relayer (local)
+		common.HexToAddress("0xfC9D554D69DdCfC0A731b2DC64550177b0723bE5"): {Balance: eth1m}, // dev deployer (local)
+		common.HexToAddress("0x7a6cF389082dc698285474976d7C75CAdE08ab7e"): {Balance: eth1m}, // fb: dev
 	}
 }
 

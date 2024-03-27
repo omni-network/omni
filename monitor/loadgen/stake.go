@@ -14,6 +14,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
+
+	"math/rand/v2"
 )
 
 const selfDelegateJitter = 0.2 // 20% jitter
@@ -22,7 +24,7 @@ func selfDelegateForever(ctx context.Context, contract *bindings.OmniStake, back
 	log.Info(ctx, "Starting periodic self-delegation", "validator", crypto.PubkeyToAddress(*validator).Hex(), "period", period)
 
 	nextPeriod := func() time.Duration {
-		jitter := time.Duration(float64(period) * selfDelegateJitter)
+		jitter := time.Duration(float64(period) * rand.Float64() * selfDelegateJitter)
 		return period + jitter
 	}
 

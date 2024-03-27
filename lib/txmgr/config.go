@@ -49,7 +49,7 @@ var (
 		FeeLimitMultiplier:        uint64(5),
 		FeeLimitThresholdGwei:     100.0,
 		ResubmissionTimeout:       48 * time.Second,
-		NetworkTimeout:            10 * time.Second,
+		NetworkTimeout:            30 * time.Second,
 		TxSendTimeout:             0 * time.Second,
 		TxNotInMempoolTimeout:     2 * time.Minute,
 	}

@@ -47,6 +47,8 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable, PausableUpgrade
      * @param minOperatorStake_ Minimum operator stake
      * @param maxOperatorCount_ Maximum operator count
      * @param strategyParams_   List of accepted strategies and their multipliers
+     * @param metadataURI_      Metadata URI for the AVS
+     * @param allowlistEnabled_ Whether the allowlist is enabled
      */
     function initialize(
         address owner_,
@@ -55,7 +57,9 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable, PausableUpgrade
         address ethStakeInbox_,
         uint96 minOperatorStake_,
         uint32 maxOperatorCount_,
-        StrategyParam[] calldata strategyParams_
+        StrategyParam[] calldata strategyParams_,
+        string calldata metadataURI_,
+        bool allowlistEnabled_
     ) external initializer {
         _setOmniPortal(omni_);
         _setOmniChainId(omniChainId_);
@@ -64,7 +68,17 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable, PausableUpgrade
         _setMinOperatorStake(minOperatorStake_);
         _setMaxOperatorCount(maxOperatorCount_);
         _setStrategyParams(strategyParams_);
-        _enableAllowlist(); // enable allowlist by default
+
+        // if necessary, enable allowlist
+        if (allowlistEnabled_) {
+            _enableAllowlist();
+        }
+
+        // if provided, set metadata URI
+        if (bytes(metadataURI_).length > 0) {
+            _avsDirectory.updateAVSMetadataURI(metadataURI_);
+        }
+
         _transferOwnership(owner_);
     }
 

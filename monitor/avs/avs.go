@@ -3,7 +3,7 @@ package avs
 import (
 	"context"
 
-	"github.com/omni-network/omni/contracts/bindingsv1"
+	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
@@ -14,7 +14,7 @@ import (
 
 // Monitor starts monitoring the AVS contract.
 func Monitor(ctx context.Context, network netconf.Network) error {
-	if network.Name != netconf.Testnet && network.Name != netconf.Mainnet {
+	if network.ID != netconf.Testnet && network.ID != netconf.Mainnet {
 		// only monitor in Testned and Mainnet
 		return nil
 	}
@@ -31,7 +31,7 @@ func Monitor(ctx context.Context, network netconf.Network) error {
 		return errors.Wrap(err, "dialing", "chain", ch.Name)
 	}
 
-	avs, err := newAVS(client, ch.AVSContractAddr)
+	avs, err := newAVS(client, network.ID.Static().AVSContractAddress)
 	if err != nil {
 		return err
 	}
@@ -42,8 +42,8 @@ func Monitor(ctx context.Context, network netconf.Network) error {
 }
 
 // newAVS returns a new AVS contract instance.
-func newAVS(client ethclient.Client, address common.Address) (*bindingsv1.OmniAVS, error) {
-	avs, err := bindingsv1.NewOmniAVS(address, client)
+func newAVS(client ethclient.Client, address common.Address) (*bindings.OmniAVS, error) {
+	avs, err := bindings.NewOmniAVS(address, client)
 	if err != nil {
 		return nil, errors.Wrap(err, "new AVS")
 	}

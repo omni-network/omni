@@ -17,6 +17,29 @@ import (
 // or false if not available, or an error. Calls the source chain portal OutXStreamOffset method.
 func (p *Provider) GetEmittedCursor(ctx context.Context, sourceChainID uint64, destinationChainID uint64,
 ) (xchain.StreamCursor, bool, error) {
+	if sourceChainID == p.cChainID {
+		// For consensus chain, we can query the latest consensus xblock.
+		// And since consensus xmsgs are broadcast, we use the provided destination chain ID.
+		xblock, ok, err := p.cProvider.XBlock(ctx, 0, true)
+		if err != nil {
+			return xchain.StreamCursor{}, false, errors.Wrap(err, "fetch consensus xblock")
+		} else if !ok {
+			return xchain.StreamCursor{}, false, errors.New("no consensus xblocks [BUG]")
+		} else if len(xblock.Msgs) != 1 {
+			return xchain.StreamCursor{}, false, errors.New("unexpected xblock msg conut [BUG]")
+		} else if xblock.Msgs[0].DestChainID != 0 {
+			return xchain.StreamCursor{}, false, errors.New("non-broadcast consensus chain xmsg [BUG]")
+		}
+
+		return xchain.StreamCursor{
+			StreamID: xchain.StreamID{
+				SourceChainID: sourceChainID,
+				DestChainID:   destinationChainID,
+			},
+			Offset: xblock.Msgs[0].StreamOffset,
+		}, true, nil
+	}
+
 	chain, rpcClient, err := p.getEVMChain(sourceChainID)
 	if err != nil {
 		return xchain.StreamCursor{}, false, err
@@ -94,7 +117,7 @@ func (p *Provider) GetSubmittedCursor(ctx context.Context, destChainID uint64, s
 // or an error.
 func (p *Provider) GetBlock(ctx context.Context, chainID uint64, height uint64) (xchain.Block, bool, error) {
 	if chainID == p.cChainID {
-		return p.cProvider.XBlock(ctx, height)
+		return p.cProvider.XBlock(ctx, height, false)
 	}
 
 	chain, rpcClient, err := p.getEVMChain(chainID)

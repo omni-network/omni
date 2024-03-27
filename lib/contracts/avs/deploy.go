@@ -78,13 +78,17 @@ func (cfg DeploymentConfig) Validate() error {
 	return nil
 }
 
-func getDeployCfg(chainID uint64, network string) (DeploymentConfig, error) {
+func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) {
 	if !chainids.IsMainnetOrTestnet(chainID) && network == netconf.Devnet {
 		return devnetCfg(), nil
 	}
 
 	if chainID == chainids.Holesky && network == netconf.Testnet {
 		return testnetCfg(), nil
+	}
+
+	if !chainids.IsMainnet(chainID) && network == netconf.Staging {
+		return stagingCfg(), nil
 	}
 
 	return DeploymentConfig{}, errors.New("unsupported chain for network", "chain_id", chainID, "network", network)
@@ -98,12 +102,31 @@ func testnetCfg() DeploymentConfig {
 		Owner:            contracts.TestnetAVSAdmin(),
 		ProxyAdmin:       contracts.TestnetProxyAdmin(),
 		Eigen:            holeskyEigenDeployments(),
-		StrategyParams:   holeskeyStrategyParams(),
+		StrategyParams:   holeskyStrategyParams(),
 		MetadataURI:      metadataURI,
-		OmniChainID:      netconf.GetStatic(netconf.Devnet).OmniExecutionChainID,
+		OmniChainID:      netconf.Testnet.Static().OmniExecutionChainID,
 		MinOperatorStake: big.NewInt(1e18), // 1 ETH
 		MaxOperatorCount: 200,
 		AllowlistEnabled: false,
+		ExpectedAddr:     contracts.TestnetAVS(),
+	}
+}
+
+func stagingCfg() DeploymentConfig {
+	return DeploymentConfig{
+		Create3Factory:   contracts.StagingCreate3Factory(),
+		Create3Salt:      contracts.AVSSalt(netconf.Staging),
+		Deployer:         contracts.StagingDeployer(),
+		Owner:            contracts.StagingAVSAdmin(),
+		ProxyAdmin:       contracts.StagingProxyAdmin(),
+		Eigen:            devnetEigenDeployments,
+		StrategyParams:   devnetStrategyParams(),
+		MetadataURI:      metadataURI,
+		OmniChainID:      netconf.Staging.Static().OmniExecutionChainID,
+		MinOperatorStake: big.NewInt(1e18), // 1 ETH
+		MaxOperatorCount: 10,
+		AllowlistEnabled: true,
+		ExpectedAddr:     contracts.StagingAVS(),
 	}
 }
 
@@ -115,8 +138,8 @@ func devnetCfg() DeploymentConfig {
 		Owner:            contracts.DevnetAVSAdmin(),
 		ProxyAdmin:       contracts.DevnetProxyAdmin(),
 		Eigen:            devnetEigenDeployments,
-		MetadataURI:      "https://test.com",
-		OmniChainID:      netconf.GetStatic(netconf.Devnet).OmniExecutionChainID,
+		MetadataURI:      metadataURI,
+		OmniChainID:      netconf.Devnet.Static().OmniExecutionChainID,
 		StrategyParams:   devnetStrategyParams(),
 		EthStakeInbox:    common.HexToAddress("0x1234"), // TODO: replace with actual address
 		MinOperatorStake: big.NewInt(1e18),              // 1 ETH
@@ -126,7 +149,7 @@ func devnetCfg() DeploymentConfig {
 	}
 }
 
-func AddrForNetwork(network string) (common.Address, bool) {
+func AddrForNetwork(network netconf.ID) (common.Address, bool) {
 	switch network {
 	case netconf.Mainnet:
 		return contracts.MainnetAVS(), true
@@ -143,7 +166,7 @@ func AddrForNetwork(network string) (common.Address, bool) {
 
 // IsDeployed checks if the OmniAVS contract is deployed to the provided backend
 // to its expected network address.
-func IsDeployed(ctx context.Context, network string, backend *ethbackend.Backend) (bool, common.Address, error) {
+func IsDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (bool, common.Address, error) {
 	addr, ok := AddrForNetwork(network)
 	if !ok {
 		return false, addr, errors.New("unsupported network", "network", network)
@@ -162,7 +185,7 @@ func IsDeployed(ctx context.Context, network string, backend *ethbackend.Backend
 }
 
 // DeployIfNeeded deploys a new AVS contract if it is not already deployed.
-func DeployIfNeeded(ctx context.Context, network string, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
 	deployed, addr, err := IsDeployed(ctx, network, backend)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "is deployed")
@@ -176,7 +199,7 @@ func DeployIfNeeded(ctx context.Context, network string, backend *ethbackend.Bac
 
 // Deploy deploys the AVS contract and returns the address and receipt.
 // It only allows deployments to explicitly supported chains.
-func Deploy(ctx context.Context, network string, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
 	chainID, err := backend.ChainID(ctx)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "chain id")
@@ -195,14 +218,9 @@ func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backe
 		return common.Address{}, nil, errors.Wrap(err, "validate config")
 	}
 
-	deployerTxOpts, err := backend.BindOpts(ctx, cfg.Deployer)
+	txOpts, err := backend.BindOpts(ctx, cfg.Deployer)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "bind deployer opts")
-	}
-
-	ownerTxOpts, err := backend.BindOpts(ctx, cfg.Owner)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "bind owner opts")
 	}
 
 	factory, err := bindings.NewCreate3(cfg.Create3Factory, backend)
@@ -212,22 +230,22 @@ func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backe
 
 	salt := create3.HashSalt(cfg.Create3Salt)
 
-	addr, err := factory.GetDeployed(nil, deployerTxOpts.From, salt)
+	addr, err := factory.GetDeployed(nil, txOpts.From, salt)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "get deployed")
 	} else if (cfg.ExpectedAddr != common.Address{}) && addr != cfg.ExpectedAddr {
 		return common.Address{}, nil, errors.New("unexpected address", "expected", cfg.ExpectedAddr, "actual", addr)
 	}
 
-	impl, tx, _, err := bindings.DeployOmniAVS(deployerTxOpts, backend, cfg.Eigen.DelegationManager, cfg.Eigen.AVSDirectory)
+	impl, tx, _, err := bindings.DeployOmniAVS(txOpts, backend, cfg.Eigen.DelegationManager, cfg.Eigen.AVSDirectory)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "deploy impl")
 	}
 
-	deployReceipt, err := backend.WaitMined(ctx, tx)
+	receipt, err := backend.WaitMined(ctx, tx)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "wait mined portal")
-	} else if deployReceipt.Status != ethtypes.ReceiptStatusSuccessful {
+	} else if receipt.Status != ethtypes.ReceiptStatusSuccessful {
 		return common.Address{}, nil, errors.New("deploy impl failed")
 	}
 
@@ -236,45 +254,19 @@ func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backe
 		return common.Address{}, nil, errors.Wrap(err, "pack init code")
 	}
 
-	tx, err = factory.Deploy(deployerTxOpts, salt, initCode)
+	tx, err = factory.Deploy(txOpts, salt, initCode)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "deploy proxy")
 	}
 
-	receipt, err := backend.WaitMined(ctx, tx)
+	receipt, err = backend.WaitMined(ctx, tx)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "wait mined proxy")
 	} else if receipt.Status != ethtypes.ReceiptStatusSuccessful {
 		return common.Address{}, nil, errors.New("deploy proxy failed")
 	}
 
-	avs, err := bindings.NewOmniAVS(addr, backend)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "bind avs")
-	}
-
-	if !cfg.AllowlistEnabled {
-		// only wait mained second admin call below (SetMetadataURI)
-		_, err = avs.DisableAllowlist(ownerTxOpts)
-		if err != nil {
-			return common.Address{}, nil, errors.Wrap(err, "disable allowlist")
-		}
-	}
-
-	tx, err = avs.SetMetadataURI(ownerTxOpts, cfg.MetadataURI)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "set metadata uri")
-	}
-
-	receipt, err = backend.WaitMined(ctx, tx)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "wait mined set metadata uri")
-	}
-	if receipt.Status != ethtypes.ReceiptStatusSuccessful {
-		return common.Address{}, nil, errors.New("set metadata uri failed")
-	}
-
-	return addr, deployReceipt, nil
+	return addr, receipt, nil
 }
 
 func packInitCode(cfg DeploymentConfig, impl common.Address) ([]byte, error) {
@@ -290,7 +282,8 @@ func packInitCode(cfg DeploymentConfig, impl common.Address) ([]byte, error) {
 func packInitialzer(cfg DeploymentConfig) ([]byte, error) {
 	enc, err := avsABI.Pack("initialize",
 		cfg.Owner, cfg.Portal, cfg.OmniChainID, cfg.EthStakeInbox,
-		cfg.MinOperatorStake, cfg.MaxOperatorCount, strategyParams(cfg))
+		cfg.MinOperatorStake, cfg.MaxOperatorCount, strategyParams(cfg),
+		cfg.MetadataURI, cfg.AllowlistEnabled)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "pack initializer")

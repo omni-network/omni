@@ -1,6 +1,7 @@
 package fireblocks
 
 import (
+	"context"
 	"crypto/rsa"
 	"maps"
 	"sync"
@@ -29,14 +30,14 @@ const (
 type Client struct {
 	opts       options
 	apiKey     string
-	network    string
+	network    netconf.ID
 	privateKey *rsa.PrivateKey
 	jsonHTTP   jsonHTTP
 	cache      *accountCache
 }
 
 // New creates a new FireBlocks client.
-func New(network string, apiKey string, privateKey *rsa.PrivateKey, opts ...func(*options)) (Client, error) {
+func New(network netconf.ID, apiKey string, privateKey *rsa.PrivateKey, opts ...func(*options)) (Client, error) {
 	if apiKey == "" {
 		return Client{}, errors.New("apiKey is required")
 	}
@@ -95,11 +96,22 @@ type accountCache struct {
 	accountsByAddress map[common.Address]uint64
 }
 
-func (c *accountCache) Populated() bool {
+func (c *accountCache) MaybePopulate(ctx context.Context, fn func(context.Context) (map[common.Address]uint64, error)) error {
 	c.Lock()
 	defer c.Unlock()
 
-	return len(c.accountsByAddress) > 0
+	if len(c.accountsByAddress) > 0 {
+		return nil
+	}
+
+	accounts, err := fn(ctx)
+	if err != nil {
+		return err
+	}
+
+	c.accountsByAddress = accounts
+
+	return nil
 }
 
 func (c *accountCache) Get(addr common.Address) (uint64, bool) {
