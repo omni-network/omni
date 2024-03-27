@@ -46,6 +46,6 @@ omni operator register --config-file ~/path/to/operator.yaml
 
 :::info
 
-The AVS address (`$OMNI_HOLESKY_AVS_ADDRESS`) is the address of the Omni AVS contract [deployed on Holesky testnet](https://holesky.etherscan.io/) that will be called by the `register` command.
+The AVS address (`0xa7b2e7830C51728832D33421670DbBE30299fD92`) is the address of the Omni AVS contract [deployed on Holesky testnet](https://holesky.etherscan.io/address/0xa7b2e7830C51728832D33421670DbBE30299fD92) that will be called by the `register` command.
 
 :::
