@@ -8,6 +8,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+
+	"github.com/google/uuid"
 )
 
 const (
@@ -268,10 +270,23 @@ func AVSSalt(network netconf.ID) string {
 // Utils.
 //
 
-// salt generates a salt for a contract deployment, adding git build info.
+//nolint:gochecknoglobals // Static ID
+var runid = uuid.New().String()
+
+// salt generates a salt for a contract deployment. For ephemeral networks, the
+// salt includes a unique suffix - the git commit, if known, or a random run ID.
 func salt(network netconf.ID, contract string) string {
+	// for ephemeral networks, we add a unique salt suffix
 	if network.IsEphemeral() {
-		return string(network) + "-" + contract + "-" + buildinfo.ShortSha()
+		// use the git commit, if it's known
+		suffix := buildinfo.ShortSha()
+
+		// if the git commit is unknown, use a random run ID
+		if suffix == "unknown" {
+			suffix = runid
+		}
+
+		return string(network) + "-" + contract + "-" + suffix
 	}
 
 	return string(network) + "-" + contract
