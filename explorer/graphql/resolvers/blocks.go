@@ -15,6 +15,7 @@ type BlocksProvider interface {
 	XBlockCount(ctx context.Context) (*hexutil.Big, bool, error)
 	XMsgCount(ctx context.Context) (*hexutil.Big, bool, error)
 	XReceiptCount(ctx context.Context) (*hexutil.Big, bool, error)
+	XMsgRange(ctx context.Context, Amount uint64, Offset uint64) ([]*XMsg, bool, error)
 }
 
 type BlocksResolver struct {

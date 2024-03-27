@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/explorer/db/ent"
+	"github.com/omni-network/omni/explorer/db/ent/block"
 	"github.com/omni-network/omni/explorer/db/ent/enttest"
 	"github.com/omni-network/omni/explorer/db/ent/migrate"
 
@@ -34,34 +35,34 @@ func createTestBlocks(ctx context.Context, t *testing.T, client *ent.Client, cou
 	t.Helper()
 	var msg *ent.Msg
 	for i := 0; i < count; i++ {
-		block := createTestBlock(ctx, t, client)
+		b := createTestBlock(ctx, t, client)
 		if msg != nil {
 			createReceipt(ctx, t, client, *msg)
 		}
-		msg = createXMsg(ctx, t, client, block)
+		msg = createXMsg(ctx, t, client, b)
 	}
 }
 
-func createXMsg(ctx context.Context, t *testing.T, client *ent.Client, block ent.Block) *ent.Msg {
+func createXMsg(ctx context.Context, t *testing.T, client *ent.Client, b ent.Block) *ent.Msg {
 	t.Helper()
 
 	destChain := uint64(2)
 	sourceMessageSender := [20]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
 	destAddress := [20]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21}
 	data := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
-	txHash := []byte{1, 2, 3, 4}
+	txHash := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32}
 	msg := client.Msg.Create().
 		SetSourceMsgSender(sourceMessageSender[:]).
 		SetDestAddress(destAddress[:]).
 		SetData(data).
 		SetDestGasLimit(100).
-		SetSourceChainID(block.SourceChainID).
+		SetSourceChainID(b.SourceChainID).
 		SetDestChainID(destChain).
-		SetStreamOffset(block.BlockHeight).
+		SetStreamOffset(b.BlockHeight).
 		SetTxHash(txHash).
-		SetBlockID(block.ID).
-		SetBlock(&block).
 		SaveX(ctx)
+
+	client.Block.Update().Where(block.UUID(b.UUID)).AddMsgs(msg).SaveX(ctx)
 
 	return msg
 }

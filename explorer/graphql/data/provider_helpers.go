@@ -1,6 +1,8 @@
 package data
 
 import (
+	"context"
+
 	"github.com/omni-network/omni/explorer/db/ent"
 	"github.com/omni-network/omni/explorer/graphql/resolvers"
 	"github.com/omni-network/omni/lib/errors"
@@ -12,7 +14,7 @@ import (
 )
 
 // EntBlockToGraphQLBlock converts an ent.Block to a resolvers.XBlock.
-func EntBlockToGraphQLBlock(block *ent.Block) (*resolvers.XBlock, error) {
+func EntBlockToGraphQLBlock(ctx context.Context, block *ent.Block) (*resolvers.XBlock, error) {
 	sourceChainIDBig, err := Uint2Big(block.SourceChainID)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding source chain id")
@@ -32,7 +34,7 @@ func EntBlockToGraphQLBlock(block *ent.Block) (*resolvers.XBlock, error) {
 
 	// Decode messages
 	for _, msg := range block.Edges.Msgs {
-		msg, err := EntMsgToGraphQLXMsg(msg)
+		msg, err := EntMsgToGraphQLXMsg(ctx, msg, block)
 		if err != nil {
 			return nil, errors.Wrap(err, "decoding msg for block")
 		}
@@ -52,7 +54,15 @@ func EntBlockToGraphQLBlock(block *ent.Block) (*resolvers.XBlock, error) {
 }
 
 // EntMsgToGraphQLXMsg converts an ent.Msg to a resolvers.XMsg.
-func EntMsgToGraphQLXMsg(msg *ent.Msg) (*resolvers.XMsg, error) {
+func EntMsgToGraphQLXMsg(ctx context.Context, msg *ent.Msg, block *ent.Block) (*resolvers.XMsg, error) {
+	if block == nil {
+		b, err := msg.QueryBlock().Only(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "querying block for message")
+		}
+		block = b
+	}
+
 	sourceChainIDBig, err := Uint2Big(msg.SourceChainID)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding source chain id")
@@ -73,6 +83,11 @@ func EntMsgToGraphQLXMsg(msg *ent.Msg) (*resolvers.XMsg, error) {
 		return nil, errors.Wrap(err, "decoding stream offset")
 	}
 
+	blockHeight, err := Uint2Big(block.BlockHeight)
+	if err != nil {
+		return nil, errors.Wrap(err, "decoding block height")
+	}
+
 	return &resolvers.XMsg{
 		SourceMessageSender: common.Address(msg.SourceMsgSender),
 		SourceChainID:       hexutil.Big(sourceChainIDBig),
@@ -82,6 +97,8 @@ func EntMsgToGraphQLXMsg(msg *ent.Msg) (*resolvers.XMsg, error) {
 		StreamOffset:        hexutil.Big(streamOffset),
 		TxHash:              common.Hash(msg.TxHash),
 		Data:                msg.Data,
+		BlockHeight:         hexutil.Big(blockHeight),
+		BlockHash:           common.Hash(block.BlockHash),
 	}, nil
 }
 

@@ -54,6 +54,12 @@ type XMsg {
 
   "Hash of the source chain transaction that emitted the message"
   TxHash: Bytes32!
+
+  "Height of the source chain block"
+  BlockHeight: BigInt!
+
+  "Hash of the source chain block"
+  BlockHash: Bytes32!
 }
 
 """
@@ -118,6 +124,7 @@ type Query {
   xblock(sourceChainID: BigInt!, height: BigInt!): XBlock
   xblockrange(amount: BigInt!, offset: BigInt!): [XBlock]!
   xblockcount: BigInt
+  xmsgrange(amount: BigInt!, offset: BigInt!): [XMsg]!
   xmsgcount: BigInt
   xreceiptcount: BigInt
 }
