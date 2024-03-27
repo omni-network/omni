@@ -76,15 +76,15 @@ func newChainIDFunc(abci rpcclient.SignClient) ChainIDFunc {
 }
 
 func newABCIValsetFunc(cl vtypes.QueryClient) ValsetFunc {
-	return func(ctx context.Context, valSetID uint64) ([]cchain.Validator, bool, error) {
+	return func(ctx context.Context, valSetID uint64, latest bool) ([]cchain.Validator, uint64, bool, error) {
 		const endpoint = "valset"
 		defer latency(endpoint)()
-		resp, err := cl.ValidatorSet(ctx, &vtypes.ValidatorSetRequest{Id: valSetID})
+		resp, err := cl.ValidatorSet(ctx, &vtypes.ValidatorSetRequest{Id: valSetID, Latest: latest})
 		if errors.Is(err, sdkerrors.ErrKeyNotFound) {
-			return nil, false, nil
+			return nil, 0, false, nil
 		} else if err != nil {
 			incQueryErr(endpoint)
-			return nil, false, errors.Wrap(err, "abci query valset")
+			return nil, 0, false, errors.Wrap(err, "abci query valset")
 		}
 
 		vals := make([]cchain.Validator, 0, len(resp.Validators))
@@ -95,7 +95,7 @@ func newABCIValsetFunc(cl vtypes.QueryClient) ValsetFunc {
 			})
 		}
 
-		return vals, true, nil
+		return vals, resp.Id, true, nil
 	}
 }
 

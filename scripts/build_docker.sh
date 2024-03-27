@@ -12,7 +12,7 @@ fi
 
 GOOS=linux goreleaser build --single-target --snapshot --clean --id="${APP}"
 
-GITREF=$(git rev-parse --short HEAD)
+GITREF=$(git rev-parse --short=7 HEAD)
 
 cd dist/${APP}* || exit 1
 
