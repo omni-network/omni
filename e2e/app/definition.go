@@ -423,6 +423,28 @@ func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman.DeployInfo) netconf.Network {
 	var chains []netconf.Chain
 
+	// Add all public chains
+	for _, public := range testnet.PublicChains {
+		chains = append(chains, netconf.Chain{
+			ID:                public.Chain.ID,
+			Name:              public.Chain.Name,
+			RPCURL:            public.RPCAddress,
+			PortalAddress:     deployInfo[public.Chain].PortalAddress,
+			DeployHeight:      deployInfo[public.Chain].DeployHeight,
+			BlockPeriod:       public.Chain.BlockPeriod,
+			FinalizationStrat: public.Chain.FinalizationStrat,
+			IsEthereum:        public.Chain.IsAVSTarget,
+		})
+	}
+
+	// In monitor only mode, there is only public chains, so skip omni and anvil chains.
+	if testnet.OnlyMonitor {
+		return netconf.Network{
+			ID:     testnet.Network,
+			Chains: chains,
+		}
+	}
+
 	// Connect to a random omni evm
 	omniEVM := random(testnet.OmniEVMs)
 	chains = append(chains, netconf.Chain{
@@ -457,20 +479,6 @@ func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 			BlockPeriod:       anvil.Chain.BlockPeriod,
 			FinalizationStrat: anvil.Chain.FinalizationStrat,
 			IsEthereum:        anvil.Chain.IsAVSTarget,
-		})
-	}
-
-	// Add all public chains
-	for _, public := range testnet.PublicChains {
-		chains = append(chains, netconf.Chain{
-			ID:                public.Chain.ID,
-			Name:              public.Chain.Name,
-			RPCURL:            public.RPCAddress,
-			PortalAddress:     deployInfo[public.Chain].PortalAddress,
-			DeployHeight:      deployInfo[public.Chain].DeployHeight,
-			BlockPeriod:       public.Chain.BlockPeriod,
-			FinalizationStrat: public.Chain.FinalizationStrat,
-			IsEthereum:        public.Chain.IsAVSTarget,
 		})
 	}
 
