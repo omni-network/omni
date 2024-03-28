@@ -14,6 +14,6 @@ func DeleteSecretForT(ctx context.Context, t *testing.T, network netconf.ID, nod
 	t.Helper()
 	name := secretName(network, node, typ, addr)
 
-	out, err := exec.CommandContext(ctx, "gcloud", "secrets", "delete", name).CombinedOutput()
+	out, err := exec.CommandContext(ctx, "gcloud", "secrets", "delete", name, "--quiet").CombinedOutput()
 	require.NoError(t, err, string(out))
 }
