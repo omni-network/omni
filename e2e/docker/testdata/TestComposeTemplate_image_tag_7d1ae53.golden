@@ -80,7 +80,7 @@ services:
     labels:
       e2e: true
     container_name: omni_evm_0-init
-    image: "ethereum/client-go:latest"
+    image: "ethereum/client-go:v1.13.14"
     command: --datadir=/geth init /geth/genesis.json
     volumes:
       - ./omni_evm_0:/geth

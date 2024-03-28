@@ -35,7 +35,7 @@ services:
     labels:
       e2e: true
     container_name: validator02_evm-init
-    image: "ethereum/client-go:latest"
+    image: "ethereum/client-go:v1.13.14"
     command: --datadir=/geth init /geth/genesis.json
     volumes:
       - ./validator02_evm:/geth

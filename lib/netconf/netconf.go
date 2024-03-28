@@ -23,8 +23,8 @@ type Network struct {
 
 // Validate returns an error if the configuration is invalid.
 func (n Network) Validate() error {
-	if !supported[n.ID] {
-		return errors.New("unsupported network", "name", n.ID)
+	if err := n.ID.Verify(); err != nil {
+		return err
 	}
 
 	// TODO(corver): Validate chains

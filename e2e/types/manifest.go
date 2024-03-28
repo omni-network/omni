@@ -33,6 +33,18 @@ type Manifest struct {
 
 	// PingPongN defines the number of ping pong messages to send. Defaults 3 if 0.
 	PingPongN uint64 `toml:"pingpong_n"`
+
+	// Keys contains long-lived private keys by node name.
+	Keys map[string]NodeKeys `toml:"keys"`
+}
+
+// NodeKeys defines long-lived private keys by address.
+// If configured, these keys will be fetched from GCP.
+// If not configured, new keys will be generated.
+type NodeKeys struct {
+	Validator    string `toml:"validator"`
+	P2PConsensus string `toml:"p2p_consensus"`
+	P2PExecution string `toml:"p2p_execution"`
 }
 
 // OmniEVMs returns the map names and GcMode of Omni EVMs to deploy.

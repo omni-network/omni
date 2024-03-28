@@ -35,7 +35,7 @@ services:
     labels:
       e2e: true
     container_name: seed01_evm-init
-    image: "ethereum/client-go:latest"
+    image: "ethereum/client-go:v1.13.14"
     command: --datadir=/geth init /geth/genesis.json
     volumes:
       - ./seed01_evm:/geth
