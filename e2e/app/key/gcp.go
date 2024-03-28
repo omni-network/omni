@@ -53,7 +53,7 @@ func getGCPSecret(ctx context.Context, name string) ([]byte, error) {
 	}
 
 	// Decode the base64 encoded secret data
-	bz, err := base64.StdEncoding.DecodeString(resp.Payload.DataBase64)
+	bz, err := base64.URLEncoding.DecodeString(resp.Payload.DataBase64)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode secret data")
 	}
