@@ -11,9 +11,36 @@ import { IOmniPortalAdmin } from "../interfaces/IOmniPortalAdmin.sol";
  */
 abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
     /**
+     * @notice Emitted when a new chain is added. The portal can now send messages to this chain.
+     * @param chainId The chain id of the new chain
+     */
+    event ChainAdded(uint64 indexed chainId);
+
+    /**
+     * @notice Emitted when a chain is removed. The portal can no longer send messages to this chain.
+     * @param chainId The chain id of the removed chain
+     */
+    event ChainRemoved(uint64 indexed chainId);
+
+    /**
+     * @notice Chain ID for Omni's EVM execution chain.
+     */
+    uint64 public omniChainId;
+
+    /**
+     * @notice Virtual chain id for Omni's consensus chain.
+     */
+    uint64 public omniCChainId;
+
+    /**
      * @notice The address of the fee oracle contract
      */
     address public feeOracle;
+
+    /**
+     * @notice The address of the XRegistry contract
+     */
+    address public xregistry;
 
     /**
      * @notice Offset of the last outbound XMsg that was sent to destChainId

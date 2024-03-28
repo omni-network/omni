@@ -29,23 +29,32 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
 
     /**
      * @notice Initialize the OmniPortal contract
-     * @param owner_        The owner of the contract
-     * @param feeOracle_    Address of the fee oracle contract
-     * @param valSetId      Initial validator set id
-     * @param validators    Initial validator set
+     * @param owner_                The owner of the contract
+     * @param feeOracle_            Address of the fee oracle contract
+     * @param omniChainId_          Chain ID for Omni's EVM execution chain.
+     * @param omniConsensusChainId_ Virtual chain id for Omni's consensus chain.
+     * @param valSetId              Initial validator set id
+     * @param validators            Initial validator set
      */
-    function initialize(address owner_, address feeOracle_, uint64 valSetId, XTypes.Validator[] memory validators)
-        public
-        initializer
-    {
+    function initialize(
+        address owner_,
+        address feeOracle_,
+        uint64 omniChainId_,
+        uint64 omniConsensusChainId_,
+        uint64 valSetId,
+        XTypes.Validator[] memory validators
+    ) public initializer {
         __Ownable_init();
         _transferOwnership(owner_);
         _setFeeOracle(feeOracle_);
         _addValidatorSet(valSetId, validators);
 
+        omniChainId = omniChainId_;
+        omniConsensusChainId = omniConsensusChainId_;
+
         // cchain stream offset & block heights are equal to valSetId
-        inXStreamOffset[_CCHAIN_ID] = valSetId;
-        inXStreamBlockHeight[_CCHAIN_ID] = valSetId;
+        inXStreamOffset[omniConsensusChainId] = valSetId;
+        inXStreamBlockHeight[omniConsensusChainId] = valSetId;
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -103,15 +112,19 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
      */
     function _xcall(uint64 destChainId, address sender, address to, bytes calldata data, uint64 gasLimit) private {
         require(msg.value >= feeFor(destChainId, data, gasLimit), "OmniPortal: insufficient fee");
+        // require(isSupportedChain(destChainId), "OmniPortal: unsupported chain"); TODO: add supported chains in tests
         require(gasLimit <= XMSG_MAX_GAS_LIMIT, "OmniPortal: gasLimit too high");
         require(gasLimit >= XMSG_MIN_GAS_LIMIT, "OmniPortal: gasLimit too low");
-        require(destChainId != chainId, "OmniPortal: no same-chain xcall");
         require(destChainId != _BROADCAST_CHAIN_ID, "OmniPortal: no broadcast xcall");
-        require(to != _VIRTUAL_PORTAL_ADDRESS, "OmniPortal: no portal xcall");
+        require(destChainId != chainId, "OmniPortal: no same-chain xcall");
 
         outXStreamOffset[destChainId] += 1;
 
         emit XMsg(destChainId, outXStreamOffset[destChainId], sender, to, data, gasLimit);
+    }
+
+    function _isSupportedChain(uint64 chainId) private view returns (bool) {
+        return supportedChains.contains(chainId);
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -190,7 +203,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
     /**
      * @notice Returns true the current transaction is an xcall, false otherwise
      */
-    function isXCall() external view returns (bool) {
+    function isXCall() public view returns (bool) {
         return _xmsg.sourceChainId != 0;
     }
 
@@ -210,8 +223,8 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
         // increment offset before executing xcall, to avoid reentrancy loop
         inXStreamOffset[xmsg_.sourceChainId] += 1;
 
-        // xcalls to _VIRTUAL_PORTAL_ADDRESS are system calls
-        bool isSysCall = xmsg_.to == _VIRTUAL_PORTAL_ADDRESS;
+        // xcalls to VIRTUAL_PORTAL_ADDRESS are system calls
+        bool isSysCall = xmsg_.to == VIRTUAL_PORTAL_ADDRESS;
 
         // for system calls, target is this contract
         address target = isSysCall ? address(this) : xmsg_.to;
@@ -278,7 +291,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
      */
     function addValidatorSet(uint64 valSetId, XTypes.Validator[] memory validators) external {
         require(msg.sender == address(this), "OmniPortal: only self");
-        require(_xmsg.sourceChainId == _CCHAIN_ID, "OmniPortal: only cchain");
+        require(_xmsg.sourceChainId == omniConsensusChainId, "OmniPortal: only cchain");
         require(_xmsg.sender == _CCHAIN_SENDER, "OmniPortal: only cchain sender");
         _addValidatorSet(valSetId, validators);
     }
