@@ -58,7 +58,7 @@ func deployAVSWithExport(ctx context.Context, def Definition, deployInfo types.D
 }
 
 func deployAVS(ctx context.Context, def Definition, chainID uint64) (common.Address, *ethtypes.Receipt, error) {
-	backend, err := def.Backends.Backend(chainID)
+	backend, err := def.Backends().Backend(chainID)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "backend")
 	}

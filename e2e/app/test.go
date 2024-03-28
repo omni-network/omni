@@ -17,7 +17,7 @@ import (
 // Test runs test cases under tests/.
 func Test(ctx context.Context, def Definition, deployInfo types.DeployInfos, verbose bool) error {
 	log.Info(ctx, "Running tests in ./test/...")
-	extNetwork := externalNetwork(def.Testnet, def.Netman.DeployInfo())
+	extNetwork := externalNetwork(def.Testnet, def.Netman().DeployInfo())
 
 	networkDir, err := os.MkdirTemp("", "omni-e2e")
 	if err != nil {

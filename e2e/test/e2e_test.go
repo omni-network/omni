@@ -214,7 +214,7 @@ func loadEnv(t *testing.T) (types.Testnet, netconf.Network, types.DeployInfos) {
 	cfg := app.DefinitionConfig{
 		ManifestFile: manifestFile,
 	}
-	testnet, err := app.TestnetFromManifest(m, ifd, cfg)
+	testnet, err := app.TestnetFromManifest(context.Background(), m, ifd, cfg)
 	require.NoError(t, err)
 	testnetCache[manifestFile] = testnet
 
