@@ -17,14 +17,16 @@ import (
 )
 
 type DeploymentConfig struct {
-	Create3Factory common.Address
-	Create3Salt    string
-	ProxyAdmin     common.Address
-	Deployer       common.Address
-	Owner          common.Address
-	ValSetID       uint64
-	Validators     []bindings.Validator
-	ExpectedAddr   common.Address
+	Create3Factory       common.Address
+	Create3Salt          string
+	ProxyAdmin           common.Address
+	Deployer             common.Address
+	Owner                common.Address
+	OmniExecutionChainID uint64
+	OmniConsensusChainID uint64
+	ValSetID             uint64
+	Validators           []bindings.Validator
+	ExpectedAddr         common.Address
 }
 
 func (cfg DeploymentConfig) Validate() error {
@@ -75,47 +77,55 @@ func getDeployCfg(chainID uint64, network netconf.ID, valSetID uint64, vals []bi
 
 func mainnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory: contracts.MainnetCreate3Factory(),
-		Create3Salt:    contracts.PortalSalt(netconf.Mainnet),
-		Owner:          contracts.MainnetPortalAdmin(),
-		Deployer:       contracts.MainnetDeployer(),
+		Create3Factory:       contracts.MainnetCreate3Factory(),
+		Create3Salt:          contracts.PortalSalt(netconf.Mainnet),
+		Owner:                contracts.MainnetPortalAdmin(),
+		Deployer:             contracts.MainnetDeployer(),
+		OmniExecutionChainID: netconf.Mainnet.Static().OmniExecutionChainID,
+		OmniConsensusChainID: netconf.Mainnet.Static().OmniConsensusChainIDUint64(),
 		// TODO: fill in the rest
 	}
 }
 
 func testnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory: contracts.TestnetCreate3Factory(),
-		Create3Salt:    contracts.PortalSalt(netconf.Testnet),
-		Owner:          contracts.TestnetPortalAdmin(),
-		Deployer:       contracts.TestnetDeployer(),
+		Create3Factory:       contracts.TestnetCreate3Factory(),
+		Create3Salt:          contracts.PortalSalt(netconf.Testnet),
+		Owner:                contracts.TestnetPortalAdmin(),
+		Deployer:             contracts.TestnetDeployer(),
+		OmniExecutionChainID: netconf.Testnet.Static().OmniExecutionChainID,
+		OmniConsensusChainID: netconf.Testnet.Static().OmniConsensusChainIDUint64(),
 		// TODO: fill in the rest
 	}
 }
 
 func stagingCfg(valSetID uint64, vals []bindings.Validator) DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory: contracts.StagingCreate3Factory(),
-		Create3Salt:    contracts.PortalSalt(netconf.Staging),
-		Owner:          contracts.StagingPortalAdmin(),
-		Deployer:       contracts.StagingDeployer(),
-		ProxyAdmin:     contracts.StagingProxyAdmin(),
-		ValSetID:       valSetID,
-		Validators:     vals,
-		ExpectedAddr:   contracts.StagingPortal(),
+		Create3Factory:       contracts.StagingCreate3Factory(),
+		Create3Salt:          contracts.PortalSalt(netconf.Staging),
+		Owner:                contracts.StagingPortalAdmin(),
+		Deployer:             contracts.StagingDeployer(),
+		ProxyAdmin:           contracts.StagingProxyAdmin(),
+		OmniExecutionChainID: netconf.Staging.Static().OmniExecutionChainID,
+		OmniConsensusChainID: netconf.Staging.Static().OmniConsensusChainIDUint64(),
+		ValSetID:             valSetID,
+		Validators:           vals,
+		ExpectedAddr:         contracts.StagingPortal(),
 	}
 }
 
 func devnetCfg(valSetID uint64, vals []bindings.Validator) DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory: contracts.DevnetCreate3Factory(),
-		Create3Salt:    contracts.PortalSalt(netconf.Devnet),
-		Owner:          contracts.DevnetPortalAdmin(),
-		Deployer:       contracts.DevnetDeployer(),
-		ProxyAdmin:     contracts.DevnetProxyAdmin(),
-		ValSetID:       valSetID,
-		Validators:     vals,
-		ExpectedAddr:   contracts.DevnetPortal(),
+		Create3Factory:       contracts.DevnetCreate3Factory(),
+		Create3Salt:          contracts.PortalSalt(netconf.Devnet),
+		Owner:                contracts.DevnetPortalAdmin(),
+		Deployer:             contracts.DevnetDeployer(),
+		ProxyAdmin:           contracts.DevnetProxyAdmin(),
+		OmniExecutionChainID: netconf.Devnet.Static().OmniExecutionChainID,
+		OmniConsensusChainID: netconf.Devnet.Static().OmniConsensusChainIDUint64(),
+		ValSetID:             valSetID,
+		Validators:           vals,
+		ExpectedAddr:         contracts.DevnetPortal(),
 	}
 }
 
@@ -250,7 +260,9 @@ func packInitCode(cfg DeploymentConfig, feeOracle common.Address, impl common.Ad
 		return nil, errors.Wrap(err, "get proxy abi")
 	}
 
-	initializer, err := portalAbi.Pack("initialize", cfg.Owner, feeOracle, cfg.ValSetID, cfg.Validators)
+	initializer, err := portalAbi.Pack("initialize", cfg.Owner, feeOracle,
+		cfg.OmniExecutionChainID, cfg.OmniConsensusChainID, cfg.ValSetID, cfg.Validators)
+
 	if err != nil {
 		return nil, errors.Wrap(err, "encode portal initializer")
 	}

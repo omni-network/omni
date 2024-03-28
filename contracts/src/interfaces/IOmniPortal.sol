@@ -80,6 +80,12 @@ interface IOmniPortal {
     function isXCall() external view returns (bool);
 
     /**
+     * @notice Returns true if the chainId is a supported destination chain.
+     * @param chainId Chain ID
+     */
+    function isSupportedChain(uint64 chainId) external view returns (bool);
+
+    /**
      * @notice Calculate the fee for calling a contract on another chain. Uses
      *         OmniPortal.XMSG_DEFAULT_GAS_LIMIT. Fees denominated in wei.
      * @param destChainId   Destination chain ID
