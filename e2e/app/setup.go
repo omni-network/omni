@@ -135,7 +135,7 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 			filepath.Join(nodeDir, PrivvalStateFile),
 		)).Save()
 
-		intNetwork := internalNetwork(def.Testnet, def.Netman.DeployInfo(), node.Name)
+		intNetwork := internalNetwork(def.Testnet, def.Netman().DeployInfo(), node.Name)
 
 		if err := netconf.Save(intNetwork, filepath.Join(nodeDir, NetworkConfigFile)); err != nil {
 			return errors.Wrap(err, "write network config")
@@ -411,9 +411,9 @@ func writeRelayerConfig(def Definition, logCfg log.Config) error {
 	}
 
 	// Save network config
-	network := internalNetwork(def.Testnet, def.Netman.DeployInfo(), "")
+	network := internalNetwork(def.Testnet, def.Netman().DeployInfo(), "")
 	if def.Infra.GetInfrastructureData().Provider == vmcompose.ProviderName {
-		network = externalNetwork(def.Testnet, def.Netman.DeployInfo())
+		network = externalNetwork(def.Testnet, def.Netman().DeployInfo())
 	}
 
 	if err := netconf.Save(network, filepath.Join(confRoot, networkFile)); err != nil {
@@ -421,7 +421,7 @@ func writeRelayerConfig(def Definition, logCfg log.Config) error {
 	}
 
 	// Save private key
-	if err := ethcrypto.SaveECDSA(filepath.Join(confRoot, privKeyFile), def.Netman.RelayerKey()); err != nil {
+	if err := ethcrypto.SaveECDSA(filepath.Join(confRoot, privKeyFile), def.Netman().RelayerKey()); err != nil {
 		return errors.Wrap(err, "write private key")
 	}
 
@@ -451,9 +451,9 @@ func writeMonitorConfig(def Definition, logCfg log.Config, valPrivKeys []crypto.
 	}
 
 	// Save network config
-	network := internalNetwork(def.Testnet, def.Netman.DeployInfo(), "")
+	network := internalNetwork(def.Testnet, def.Netman().DeployInfo(), "")
 	if def.Infra.GetInfrastructureData().Provider == vmcompose.ProviderName {
-		network = externalNetwork(def.Testnet, def.Netman.DeployInfo())
+		network = externalNetwork(def.Testnet, def.Netman().DeployInfo())
 	}
 
 	if err := netconf.Save(network, filepath.Join(confRoot, networkFile)); err != nil {

@@ -4,7 +4,9 @@ package cmd
 import (
 	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/e2e/app/agent"
+	"github.com/omni-network/omni/e2e/app/key"
 
+	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
@@ -37,4 +39,12 @@ func bindDeployFlags(flags *pflag.FlagSet, cfg *app.DeployConfig) {
 
 func bindCreate3DeployFlags(flags *pflag.FlagSet, cfg *app.Create3DeployConfig) {
 	flags.Uint64Var(&cfg.ChainID, "chain-id", cfg.ChainID, "chain id of the chain to deploy to")
+}
+
+func bindKeyCreateFlags(cmd *cobra.Command, cfg *key.UploadConfig) {
+	cmd.Flags().StringVar(&cfg.NodeName, "node", cfg.NodeName, "node name")
+	cmd.Flags().StringVar((*string)(&cfg.Type), "type", string(cfg.Type), "key type: validator, p2p_execution, p2p_consensus")
+
+	_ = cmd.MarkFlagRequired("node")
+	_ = cmd.MarkFlagRequired("type")
 }

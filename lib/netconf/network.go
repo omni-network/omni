@@ -1,5 +1,7 @@
 package netconf
 
+import "github.com/omni-network/omni/lib/errors"
+
 // ID is a network identifier.
 type ID string
 
@@ -16,6 +18,18 @@ func (i ID) IsProtected() bool {
 // Static returns the static config and data for the network.
 func (i ID) Static() Static {
 	return statics[i]
+}
+
+func (i ID) Verify() error {
+	if !supported[i] {
+		return errors.New("unsupported network", "name", i)
+	}
+
+	return nil
+}
+
+func (i ID) String() string {
+	return string(i)
 }
 
 const (

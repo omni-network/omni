@@ -13,3 +13,9 @@ mode = "seed"
 
 [node.fullnode01]
 mode = "full"
+
+# Testing long-lived keys on staging while testnet doens't exist. Remove this.
+[keys.validator01]
+validator = "0xD6CD71dF91a6886f69761826A9C4D123178A8d9D"
+p2p_consensus = "324F0A865DB7EAFBF53A387FC74E58169EDFA6C4"
+p2p_execution = "0x86e640Ac9c8c693BBFFd2E31f91522b95c1274BF"

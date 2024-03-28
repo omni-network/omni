@@ -2,13 +2,16 @@ package cmd
 
 import (
 	"log/slog"
+	"regexp"
 
 	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/e2e/app/agent"
+	"github.com/omni-network/omni/e2e/app/key"
 	"github.com/omni-network/omni/e2e/types"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 
 	cmtdocker "github.com/cometbft/cometbft/test/e2e/pkg/infra/docker"
 
@@ -39,6 +42,16 @@ func New() *cobra.Command {
 
 		var err error
 		def, err = app.MakeDefinition(ctx, defCfg, cmd.Use)
+		if err != nil {
+			return errors.Wrap(err, "make definition")
+		}
+
+		// Some commands require networking, this ensures proper errors instead of panics.
+		if matchAny(cmd.Use, ".*deploy.*", ".*update.*", "e2e") {
+			if err := def.InitLazyNetwork(); err != nil {
+				return errors.Wrap(err, "init network")
+			}
+		}
 
 		return err
 	}
@@ -63,9 +76,20 @@ func New() *cobra.Command {
 		newCleanCmd(&def),
 		newTestCmd(&def),
 		newUpgradeCmd(&def),
+		newKeyCreate(&def),
 	)
 
 	return cmd
+}
+
+func matchAny(str string, patterns ...string) bool {
+	for _, pattern := range patterns {
+		if ok, _ := regexp.MatchString(pattern, str); ok {
+			return true
+		}
+	}
+
+	return false
 }
 
 func newDeployCmd(def *app.Definition) *cobra.Command {
@@ -156,4 +180,59 @@ func newCreate3DeployCmd(def *app.Definition) *cobra.Command {
 	bindCreate3DeployFlags(cmd.Flags(), &cfg)
 
 	return cmd
+}
+
+func newKeyCreate(def *app.Definition) *cobra.Command {
+	cfg := key.UploadConfig{}
+
+	cmd := &cobra.Command{
+		Use:   "key-create",
+		Short: "Creates a private key in GCP secret manager for a node in a manifest",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if def.Testnet.Network == netconf.Simnet || def.Testnet.Network == netconf.Devnet {
+				return errors.New("cannot create keys for simnet or devnet")
+			}
+
+			cfg.Network = def.Testnet.Network
+
+			if err := verifyKeyNodeType(*def, cfg); err != nil {
+				return err
+			}
+
+			return key.UploadNew(cmd.Context(), cfg)
+		},
+	}
+
+	bindKeyCreateFlags(cmd, &cfg)
+
+	return cmd
+}
+
+// verifyKeyNodeType checks if the node exists in the manifest and if the key type is allowed for the node.
+func verifyKeyNodeType(def app.Definition, cfg key.UploadConfig) error {
+	if err := cfg.Type.Verify(); err != nil {
+		return err
+	}
+
+	for _, node := range def.Testnet.Nodes {
+		if node.Name == cfg.NodeName {
+			if cfg.Type == key.P2PExecution {
+				return errors.New("cannot create execution key for halo node")
+			}
+
+			return nil
+		}
+	}
+
+	for _, evm := range def.Testnet.OmniEVMs {
+		if evm.InstanceName == cfg.NodeName {
+			if cfg.Type != key.P2PExecution {
+				return errors.New("only execution keys allowed for evm nodes")
+			}
+
+			return nil
+		}
+	}
+
+	return errors.New("node not found", "node", cfg.NodeName)
 }

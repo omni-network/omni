@@ -17,7 +17,7 @@ import (
 )
 
 func LogMetrics(ctx context.Context, def Definition) error {
-	extNetwork := externalNetwork(def.Testnet, def.Netman.DeployInfo())
+	extNetwork := externalNetwork(def.Testnet, def.Netman().DeployInfo())
 
 	// Pick a random node to monitor.
 
@@ -25,7 +25,7 @@ func LogMetrics(ctx context.Context, def Definition) error {
 		return errors.Wrap(err, "monitoring cchain provider")
 	}
 
-	if err := MonitorCursors(ctx, def.Netman.Portals(), extNetwork); err != nil {
+	if err := MonitorCursors(ctx, def.Netman().Portals(), extNetwork); err != nil {
 		return errors.Wrap(err, "monitoring cursors")
 	}
 
@@ -40,9 +40,9 @@ func StartMonitoringReceipts(ctx context.Context, def Definition) func() error {
 		return func() error { return errors.Wrap(err, "getting client") }
 	}
 
-	network := externalNetwork(def.Testnet, def.Netman.DeployInfo())
+	network := externalNetwork(def.Testnet, def.Netman().DeployInfo())
 	cProvider := cprovider.NewABCIProvider(client, network.ChainNamesByIDs())
-	xProvider := xprovider.New(network, def.Backends.RPCClients(), cProvider)
+	xProvider := xprovider.New(network, def.Backends().RPCClients(), cProvider)
 	cChainID := def.Testnet.Network.Static().OmniConsensusChainIDUint64()
 
 	type void any

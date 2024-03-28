@@ -72,7 +72,7 @@ func deployPublicCreate3(ctx context.Context, def Definition) error {
 }
 
 func deployCreate3(ctx context.Context, def Definition, chainID uint64) (common.Address, *ethtypes.Receipt, error) {
-	backend, err := def.Backends.Backend(chainID)
+	backend, err := def.Backends().Backend(chainID)
 	if err != nil {
 		return common.Address{}, nil, err
 	}

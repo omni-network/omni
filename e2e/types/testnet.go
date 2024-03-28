@@ -61,7 +61,7 @@ func (t Testnet) FirstOmniValidatorEVM() (OmniEVM, error) {
 		}
 	}
 
-	return OmniEVM{}, errors.New("omni evm validator not found")
+	return OmniEVM{}, errors.New("first omni evm validator not found", "omni_evms", t.OmniEVMs)
 }
 
 func (t Testnet) HasOmniEVM() bool {

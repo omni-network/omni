@@ -57,7 +57,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 	// TODO: deploy public proxy admins
 
 	// Deploy public portals first so their addresses are available for setup.
-	if err := def.Netman.DeployPublicPortals(ctx, genesisValSetID, genesisVals); err != nil {
+	if err := def.Netman().DeployPublicPortals(ctx, genesisValSetID, genesisVals); err != nil {
 		return nil, nil, err
 	}
 
@@ -79,7 +79,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 
 	// TODO: deploy private proxy admins
 
-	if err := def.Netman.DeployPrivatePortals(ctx, genesisValSetID, genesisVals); err != nil {
+	if err := def.Netman().DeployPrivatePortals(ctx, genesisValSetID, genesisVals); err != nil {
 		return nil, nil, err
 	}
 	logRPCs(ctx, def)
@@ -90,7 +90,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 		return nil, nil, err
 	}
 
-	for chain, info := range def.Netman.DeployInfo() {
+	for chain, info := range def.Netman().DeployInfo() {
 		deployInfo.Set(chain.ID, types.ContractPortal, info.PortalAddress, info.DeployHeight)
 	}
 
@@ -98,7 +98,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 		return deployInfo, nil, nil
 	}
 
-	pp, err := pingpong.Deploy(ctx, def.Netman, def.Backends)
+	pp, err := pingpong.Deploy(ctx, def.Netman(), def.Backends())
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "deploy pingpong")
 	}
@@ -150,7 +150,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, secrets age
 	stopValidatorUpdates := StartValidatorUpdates(ctx, def)
 
 	msgBatches := []int{3, 2, 1} // Send 6 msgs from each chain to each other chain
-	msgsErr := StartSendingXMsgs(ctx, def.Netman, def.Backends, msgBatches...)
+	msgsErr := StartSendingXMsgs(ctx, def.Netman(), def.Backends(), msgBatches...)
 
 	if err := StartRemaining(ctx, def.Testnet.Testnet, def.Infra); err != nil {
 		return err
@@ -186,7 +186,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, secrets age
 		}
 	}
 
-	if err := WaitAllSubmissions(ctx, def.Netman.Portals(), sum(msgBatches)); err != nil {
+	if err := WaitAllSubmissions(ctx, def.Netman().Portals(), sum(msgBatches)); err != nil {
 		return err
 	}
 
@@ -253,7 +253,7 @@ func toPortalValidators(validators map[*e2e.Node]int64) ([]bindings.Validator, e
 }
 
 func logRPCs(ctx context.Context, def Definition) {
-	network := externalNetwork(def.Testnet, def.Netman.DeployInfo())
+	network := externalNetwork(def.Testnet, def.Netman().DeployInfo())
 	for _, chain := range network.EVMChains() {
 		log.Info(ctx, "EVM Chain RPC available", "chain_id", chain.ID,
 			"chain_name", chain.Name, "url", chain.RPCURL)
