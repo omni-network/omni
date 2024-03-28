@@ -53,7 +53,7 @@ func TestXBlockQuery(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	db.CreateTestBlock(ctx, t, test.Client)
+	db.CreateTestBlock(ctx, t, test.Client, 0)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
@@ -117,7 +117,7 @@ func TestXBlocksQuery(t *testing.T) {
 					},
 					{
 						"BlockHash":"0x0000000000000000000000000103176f1b2d62675e370103176f1b2d62675e37",
-						"BlockHeight":"0x0",
+						"BlockHeight":"0x1",
 						"SourceChainID":
 						"0x1"
 					}]

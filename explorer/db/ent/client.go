@@ -843,7 +843,8 @@ func (c *ReceiptClient) QueryMsgs(r *Receipt) *MsgQuery {
 
 // Hooks returns the client hooks.
 func (c *ReceiptClient) Hooks() []Hook {
-	return c.hooks.Receipt
+	hooks := c.hooks.Receipt
+	return append(hooks[:len(hooks):len(hooks)], receipt.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.

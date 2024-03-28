@@ -134,7 +134,9 @@ func (rc *ReceiptCreate) Mutation() *ReceiptMutation {
 
 // Save creates the Receipt in the database.
 func (rc *ReceiptCreate) Save(ctx context.Context) (*Receipt, error) {
-	rc.defaults()
+	if err := rc.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, rc.sqlSave, rc.mutation, rc.hooks)
 }
 
@@ -161,8 +163,11 @@ func (rc *ReceiptCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (rc *ReceiptCreate) defaults() {
+func (rc *ReceiptCreate) defaults() error {
 	if _, ok := rc.mutation.UUID(); !ok {
+		if receipt.DefaultUUID == nil {
+			return fmt.Errorf("ent: uninitialized receipt.DefaultUUID (forgotten import ent/runtime?)")
+		}
 		v := receipt.DefaultUUID()
 		rc.mutation.SetUUID(v)
 	}
@@ -170,6 +175,7 @@ func (rc *ReceiptCreate) defaults() {
 		v := receipt.DefaultCreatedAt
 		rc.mutation.SetCreatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

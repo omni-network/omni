@@ -8,23 +8,21 @@ import (
 	"github.com/omni-network/omni/explorer/db/ent/block"
 	"github.com/omni-network/omni/explorer/db/ent/enttest"
 	"github.com/omni-network/omni/explorer/db/ent/migrate"
-	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func CreateTestBlock(ctx context.Context, t *testing.T, client *ent.Client) ent.Block {
+func CreateTestBlock(ctx context.Context, t *testing.T, client *ent.Client, offset int) ent.Block {
 	t.Helper()
 
 	sourceChainID := uint64(1)
-	blockHeight := uint64(0)
 	blockHashBytes := []byte{1, 3, 23, 111, 27, 45, 98, 103, 94, 55, 1, 3, 23, 111, 27, 45, 98, 103, 94, 55}
 	blockHashValue := common.Hash{}
 	blockHashValue.SetBytes(blockHashBytes)
 
 	block := client.Block.Create().
 		SetSourceChainID(sourceChainID).
-		SetBlockHeight(blockHeight).
+		SetBlockHeight(uint64(offset)).
 		SetBlockHash(blockHashValue.Bytes()).
 		SaveX(ctx)
 
@@ -37,10 +35,9 @@ func CreateTestBlocks(ctx context.Context, t *testing.T, client *ent.Client, cou
 	var msg *ent.Msg
 	var blocks []ent.Block
 	for i := 0; i < count; i++ {
-		b := CreateTestBlock(ctx, t, client)
+		b := CreateTestBlock(ctx, t, client, i)
 		if msg != nil {
-			receipt := CreateReceipt(ctx, t, client, *msg)
-			log.Info(ctx, "Created receipt", "receipt", receipt)
+			CreateReceipt(ctx, t, client, *msg)
 		}
 		msg = CreateXMsg(ctx, t, client, b)
 		blocks = append(blocks, b)

@@ -70,6 +70,8 @@ func init() {
 	msgDescCreatedAt := msgFields[9].Descriptor()
 	// msg.DefaultCreatedAt holds the default value on creation for the CreatedAt field.
 	msg.DefaultCreatedAt = msgDescCreatedAt.Default.(time.Time)
+	receiptHooks := schema.Receipt{}.Hooks()
+	receipt.Hooks[0] = receiptHooks[0]
 	receiptFields := schema.Receipt{}.Fields()
 	_ = receiptFields
 	// receiptDescUUID is the schema descriptor for UUID field.
