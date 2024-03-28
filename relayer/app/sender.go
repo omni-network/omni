@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"math/big"
+	"slices"
 	"strings"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -14,8 +15,10 @@ import (
 	"github.com/omni-network/omni/lib/txmgr"
 	"github.com/omni-network/omni/lib/xchain"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // Sender uses txmgr to send transactions to the destination chain.
@@ -126,9 +129,29 @@ func (o Sender) SendTransaction(ctx context.Context, submission xchain.Submissio
 	}
 
 	if rec.Status == 0 {
+		// Try and get debug information of the reverted transaction
+		resp, err := o.rpcClient.CallContract(ctx, ethereum.CallMsg{
+			From:          o.txMgr.From(),
+			To:            tx.To(),
+			Gas:           tx.Gas(),
+			GasPrice:      tx.GasPrice(),
+			GasFeeCap:     tx.GasFeeCap(),
+			GasTipCap:     tx.GasTipCap(),
+			Value:         tx.Value(),
+			Data:          tx.Data(),
+			AccessList:    tx.AccessList(),
+			BlobGasFeeCap: tx.BlobGasFeeCap(),
+			BlobHashes:    tx.BlobHashes(),
+		}, rec.BlockNumber)
+
+		errAttrs := slices.Concat(receiptAttrs, reqAttrs, []any{
+			"call_resp", hexutil.Encode(resp),
+			"call_err", err,
+		})
+
 		revertedSubmissionTotal.WithLabelValues(srcChain, dstChain).Inc()
 
-		return errors.New("submission reverted", append(receiptAttrs, reqAttrs...)...)
+		return errors.New("submission reverted", errAttrs...)
 	}
 
 	log.Info(ctx, "Sent submission", receiptAttrs...)

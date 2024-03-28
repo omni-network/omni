@@ -35,7 +35,7 @@ services:
     labels:
       e2e: true
     container_name: fullnode01_evm-init
-    image: "ethereum/client-go:latest"
+    image: "ethereum/client-go:v1.13.14"
     command: --state.scheme=hash --datadir=/geth init /geth/genesis.json
     volumes:
       - ./fullnode01_evm:/geth

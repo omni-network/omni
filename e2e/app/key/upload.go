@@ -16,31 +16,31 @@ type UploadConfig struct {
 }
 
 // UploadNew generates a new key and uploads it to the gcp secret manager.
-func UploadNew(ctx context.Context, cfg UploadConfig) error {
+func UploadNew(ctx context.Context, cfg UploadConfig) (Key, error) {
 	if err := cfg.Network.Verify(); err != nil {
-		return err
+		return Key{}, err
 	}
 	if err := cfg.Type.Verify(); err != nil {
-		return err
+		return Key{}, err
 	}
 
 	k := Generate(cfg.Type)
 
 	addr, err := k.Addr()
 	if err != nil {
-		return err
+		return Key{}, err
 	}
 
 	// TODO(corver): Delete or overwrite existing key with matching labels.
 
 	name := secretName(cfg.Network, cfg.NodeName, cfg.Type, addr)
 	if err := createGCPSecret(ctx, name, k.Bytes(), nil); err != nil {
-		return errors.Wrap(err, "upload key")
+		return Key{}, errors.Wrap(err, "upload key")
 	}
 
 	log.Info(ctx, "🔐 Key uploaded: "+name, "address", addr, "type", cfg.Type, "network", cfg.Network, "node", cfg.NodeName)
 
-	return nil
+	return k, nil
 }
 
 // Download retrieves a key from the gcp secret manager.

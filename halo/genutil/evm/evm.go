@@ -20,7 +20,7 @@ var eth1m = math.NewInt(1000000).MulRaw(params.Ether).BigInt()
 
 func newUint64(val uint64) *uint64 { return &val }
 
-// MakeDevGenesis returns a genesis block for a development chain.
+// MakeGenesis returns a genesis block for a development chain.
 func MakeGenesis(network netconf.ID) (core.Genesis, error) {
 	// TODO: set config values for devnet, staging, testnet
 	config := DefaultDevConfig()

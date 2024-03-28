@@ -199,7 +199,9 @@ func newKeyCreate(def *app.Definition) *cobra.Command {
 				return err
 			}
 
-			return key.UploadNew(cmd.Context(), cfg)
+			_, err := key.UploadNew(cmd.Context(), cfg)
+
+			return err
 		},
 	}
 

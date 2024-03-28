@@ -1,9 +1,13 @@
 package key_test
 
 import (
+	"context"
+	"flag"
 	"testing"
 
 	"github.com/omni-network/omni/e2e/app/key"
+	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/ethereum/go-ethereum/crypto"
 
@@ -39,6 +43,44 @@ func TestKeys(t *testing.T) {
 			case key.P2PConsensus:
 				require.Error(t, err)
 			}
+		})
+	}
+}
+
+var integration = flag.Bool("integration", false, "run integration tests")
+
+//go:generate go test . -integration -run=TestIntegration -v
+
+func TestIntegration(t *testing.T) {
+	t.Parallel()
+	if !*integration {
+		t.Skip("skipping integration tests")
+	}
+
+	for _, typ := range []key.Type{key.Validator, key.P2PConsensus, key.P2PExecution} {
+		t.Run(typ.String(), func(t *testing.T) {
+			t.Parallel()
+
+			ctx := context.Background()
+			network := netconf.Simnet
+			node := "deleteme"
+
+			k, err := key.UploadNew(ctx, key.UploadConfig{
+				Network:  network,
+				NodeName: node,
+				Type:     typ,
+			})
+			require.NoError(t, err)
+
+			addr, err := k.Addr()
+			require.NoError(t, err)
+
+			k2, err := key.Download(ctx, network, node, typ, addr)
+			tutil.RequireNoError(t, err)
+
+			require.True(t, k.Equals(k2.PrivKey))
+
+			key.DeleteSecretForT(ctx, t, network, node, typ, addr)
 		})
 	}
 }
