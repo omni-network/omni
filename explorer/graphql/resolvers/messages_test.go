@@ -21,7 +21,7 @@ func TestXMsgCount(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	db.CreateTestBlocks(ctx, t, test.Client, 2)
+	db.CreateTestBlocks(t, ctx, test.Client, 2)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
@@ -50,7 +50,7 @@ func TestXMsgRange(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	db.CreateTestBlocks(ctx, t, test.Client, 2)
+	db.CreateTestBlocks(t, ctx, test.Client, 2)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{

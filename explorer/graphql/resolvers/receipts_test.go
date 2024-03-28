@@ -21,7 +21,7 @@ func TestXReceiptCount(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	db.CreateTestBlocks(ctx, t, test.Client, 3)
+	db.CreateTestBlocks(t, ctx, test.Client, 3)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{

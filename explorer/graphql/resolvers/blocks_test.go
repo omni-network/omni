@@ -53,7 +53,7 @@ func TestXBlockQuery(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	db.CreateTestBlock(ctx, t, test.Client, 0)
+	db.CreateTestBlock(t, ctx, test.Client, 0)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
@@ -91,7 +91,7 @@ func TestXBlocksQuery(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	db.CreateTestBlocks(ctx, t, test.Client, 2)
+	db.CreateTestBlocks(t, ctx, test.Client, 2)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
@@ -136,7 +136,7 @@ func TestXBlocksCount(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	db.CreateTestBlocks(ctx, t, test.Client, 2)
+	db.CreateTestBlocks(t, ctx, test.Client, 2)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
