@@ -659,9 +659,26 @@ func (c *MsgClient) QueryBlock(m *Msg) *BlockQuery {
 	return query
 }
 
+// QueryReceipts queries the Receipts edge of a Msg.
+func (c *MsgClient) QueryReceipts(m *Msg) *ReceiptQuery {
+	query := (&ReceiptClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(msg.Table, msg.FieldID, id),
+			sqlgraph.To(receipt.Table, receipt.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, msg.ReceiptsTable, msg.ReceiptsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *MsgClient) Hooks() []Hook {
-	return c.hooks.Msg
+	hooks := c.hooks.Msg
+	return append(hooks[:len(hooks):len(hooks)], msg.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -808,9 +825,26 @@ func (c *ReceiptClient) QueryBlock(r *Receipt) *BlockQuery {
 	return query
 }
 
+// QueryMsgs queries the Msgs edge of a Receipt.
+func (c *ReceiptClient) QueryMsgs(r *Receipt) *MsgQuery {
+	query := (&MsgClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := r.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(receipt.Table, receipt.FieldID, id),
+			sqlgraph.To(msg.Table, msg.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, receipt.MsgsTable, receipt.MsgsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *ReceiptClient) Hooks() []Hook {
-	return c.hooks.Receipt
+	hooks := c.hooks.Receipt
+	return append(hooks[:len(hooks):len(hooks)], receipt.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.

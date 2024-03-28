@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -13,17 +14,19 @@ import (
 	"github.com/omni-network/omni/explorer/db/ent/block"
 	"github.com/omni-network/omni/explorer/db/ent/msg"
 	"github.com/omni-network/omni/explorer/db/ent/predicate"
+	"github.com/omni-network/omni/explorer/db/ent/receipt"
 )
 
 // MsgQuery is the builder for querying Msg entities.
 type MsgQuery struct {
 	config
-	ctx        *QueryContext
-	order      []msg.OrderOption
-	inters     []Interceptor
-	predicates []predicate.Msg
-	withBlock  *BlockQuery
-	withFKs    bool
+	ctx          *QueryContext
+	order        []msg.OrderOption
+	inters       []Interceptor
+	predicates   []predicate.Msg
+	withBlock    *BlockQuery
+	withReceipts *ReceiptQuery
+	withFKs      bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -75,6 +78,28 @@ func (mq *MsgQuery) QueryBlock() *BlockQuery {
 			sqlgraph.From(msg.Table, msg.FieldID, selector),
 			sqlgraph.To(block.Table, block.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, msg.BlockTable, msg.BlockColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(mq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryReceipts chains the current query on the "Receipts" edge.
+func (mq *MsgQuery) QueryReceipts() *ReceiptQuery {
+	query := (&ReceiptClient{config: mq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := mq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := mq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(msg.Table, msg.FieldID, selector),
+			sqlgraph.To(receipt.Table, receipt.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, msg.ReceiptsTable, msg.ReceiptsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(mq.driver.Dialect(), step)
 		return fromU, nil
@@ -269,12 +294,13 @@ func (mq *MsgQuery) Clone() *MsgQuery {
 		return nil
 	}
 	return &MsgQuery{
-		config:     mq.config,
-		ctx:        mq.ctx.Clone(),
-		order:      append([]msg.OrderOption{}, mq.order...),
-		inters:     append([]Interceptor{}, mq.inters...),
-		predicates: append([]predicate.Msg{}, mq.predicates...),
-		withBlock:  mq.withBlock.Clone(),
+		config:       mq.config,
+		ctx:          mq.ctx.Clone(),
+		order:        append([]msg.OrderOption{}, mq.order...),
+		inters:       append([]Interceptor{}, mq.inters...),
+		predicates:   append([]predicate.Msg{}, mq.predicates...),
+		withBlock:    mq.withBlock.Clone(),
+		withReceipts: mq.withReceipts.Clone(),
 		// clone intermediate query.
 		sql:  mq.sql.Clone(),
 		path: mq.path,
@@ -289,6 +315,17 @@ func (mq *MsgQuery) WithBlock(opts ...func(*BlockQuery)) *MsgQuery {
 		opt(query)
 	}
 	mq.withBlock = query
+	return mq
+}
+
+// WithReceipts tells the query-builder to eager-load the nodes that are connected to
+// the "Receipts" edge. The optional arguments are used to configure the query builder of the edge.
+func (mq *MsgQuery) WithReceipts(opts ...func(*ReceiptQuery)) *MsgQuery {
+	query := (&ReceiptClient{config: mq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	mq.withReceipts = query
 	return mq
 }
 
@@ -371,8 +408,9 @@ func (mq *MsgQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Msg, err
 		nodes       = []*Msg{}
 		withFKs     = mq.withFKs
 		_spec       = mq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			mq.withBlock != nil,
+			mq.withReceipts != nil,
 		}
 	)
 	if mq.withBlock != nil {
@@ -402,6 +440,13 @@ func (mq *MsgQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Msg, err
 	if query := mq.withBlock; query != nil {
 		if err := mq.loadBlock(ctx, query, nodes, nil,
 			func(n *Msg, e *Block) { n.Edges.Block = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := mq.withReceipts; query != nil {
+		if err := mq.loadReceipts(ctx, query, nodes,
+			func(n *Msg) { n.Edges.Receipts = []*Receipt{} },
+			func(n *Msg, e *Receipt) { n.Edges.Receipts = append(n.Edges.Receipts, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -436,6 +481,67 @@ func (mq *MsgQuery) loadBlock(ctx context.Context, query *BlockQuery, nodes []*M
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (mq *MsgQuery) loadReceipts(ctx context.Context, query *ReceiptQuery, nodes []*Msg, init func(*Msg), assign func(*Msg, *Receipt)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[int]*Msg)
+	nids := make(map[int]map[*Msg]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(msg.ReceiptsTable)
+		s.Join(joinT).On(s.C(receipt.FieldID), joinT.C(msg.ReceiptsPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(msg.ReceiptsPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(msg.ReceiptsPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(sql.NullInt64)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := int(values[0].(*sql.NullInt64).Int64)
+				inValue := int(values[1].(*sql.NullInt64).Int64)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Msg]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Receipt](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "Receipts" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
 		}
 	}
 	return nil

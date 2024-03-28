@@ -48,22 +48,31 @@ type Receipt struct {
 type ReceiptEdges struct {
 	// Block holds the value of the Block edge.
 	Block *Block `json:"Block,omitempty"`
+	// Msgs holds the value of the Msgs edge.
+	Msgs []*Msg `json:"Msgs,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // BlockOrErr returns the Block value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e ReceiptEdges) BlockOrErr() (*Block, error) {
-	if e.loadedTypes[0] {
-		if e.Block == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: block.Label}
-		}
+	if e.Block != nil {
 		return e.Block, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: block.Label}
 	}
 	return nil, &NotLoadedError{edge: "Block"}
+}
+
+// MsgsOrErr returns the Msgs value or an error if the edge
+// was not loaded in eager-loading.
+func (e ReceiptEdges) MsgsOrErr() ([]*Msg, error) {
+	if e.loadedTypes[1] {
+		return e.Msgs, nil
+	}
+	return nil, &NotLoadedError{edge: "Msgs"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -181,6 +190,11 @@ func (r *Receipt) Value(name string) (ent.Value, error) {
 // QueryBlock queries the "Block" edge of the Receipt entity.
 func (r *Receipt) QueryBlock() *BlockQuery {
 	return NewReceiptClient(r.config).QueryBlock(r)
+}
+
+// QueryMsgs queries the "Msgs" edge of the Receipt entity.
+func (r *Receipt) QueryMsgs() *MsgQuery {
+	return NewReceiptClient(r.config).QueryMsgs(r)
 }
 
 // Update returns a builder for updating this Receipt.

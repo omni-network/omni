@@ -15,6 +15,7 @@ import (
 	"github.com/omni-network/omni/explorer/db/ent/block"
 	"github.com/omni-network/omni/explorer/db/ent/msg"
 	"github.com/omni-network/omni/explorer/db/ent/predicate"
+	"github.com/omni-network/omni/explorer/db/ent/receipt"
 )
 
 // MsgUpdate is the builder for updating Msg entities.
@@ -185,6 +186,21 @@ func (mu *MsgUpdate) SetBlock(b *Block) *MsgUpdate {
 	return mu.SetBlockID(b.ID)
 }
 
+// AddReceiptIDs adds the "Receipts" edge to the Receipt entity by IDs.
+func (mu *MsgUpdate) AddReceiptIDs(ids ...int) *MsgUpdate {
+	mu.mutation.AddReceiptIDs(ids...)
+	return mu
+}
+
+// AddReceipts adds the "Receipts" edges to the Receipt entity.
+func (mu *MsgUpdate) AddReceipts(r ...*Receipt) *MsgUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return mu.AddReceiptIDs(ids...)
+}
+
 // Mutation returns the MsgMutation object of the builder.
 func (mu *MsgUpdate) Mutation() *MsgMutation {
 	return mu.mutation
@@ -194,6 +210,27 @@ func (mu *MsgUpdate) Mutation() *MsgMutation {
 func (mu *MsgUpdate) ClearBlock() *MsgUpdate {
 	mu.mutation.ClearBlock()
 	return mu
+}
+
+// ClearReceipts clears all "Receipts" edges to the Receipt entity.
+func (mu *MsgUpdate) ClearReceipts() *MsgUpdate {
+	mu.mutation.ClearReceipts()
+	return mu
+}
+
+// RemoveReceiptIDs removes the "Receipts" edge to Receipt entities by IDs.
+func (mu *MsgUpdate) RemoveReceiptIDs(ids ...int) *MsgUpdate {
+	mu.mutation.RemoveReceiptIDs(ids...)
+	return mu
+}
+
+// RemoveReceipts removes "Receipts" edges to Receipt entities.
+func (mu *MsgUpdate) RemoveReceipts(r ...*Receipt) *MsgUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return mu.RemoveReceiptIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -319,6 +356,51 @@ func (mu *MsgUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(block.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if mu.mutation.ReceiptsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   msg.ReceiptsTable,
+			Columns: msg.ReceiptsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(receipt.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := mu.mutation.RemovedReceiptsIDs(); len(nodes) > 0 && !mu.mutation.ReceiptsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   msg.ReceiptsTable,
+			Columns: msg.ReceiptsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(receipt.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := mu.mutation.ReceiptsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   msg.ReceiptsTable,
+			Columns: msg.ReceiptsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(receipt.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -501,6 +583,21 @@ func (muo *MsgUpdateOne) SetBlock(b *Block) *MsgUpdateOne {
 	return muo.SetBlockID(b.ID)
 }
 
+// AddReceiptIDs adds the "Receipts" edge to the Receipt entity by IDs.
+func (muo *MsgUpdateOne) AddReceiptIDs(ids ...int) *MsgUpdateOne {
+	muo.mutation.AddReceiptIDs(ids...)
+	return muo
+}
+
+// AddReceipts adds the "Receipts" edges to the Receipt entity.
+func (muo *MsgUpdateOne) AddReceipts(r ...*Receipt) *MsgUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return muo.AddReceiptIDs(ids...)
+}
+
 // Mutation returns the MsgMutation object of the builder.
 func (muo *MsgUpdateOne) Mutation() *MsgMutation {
 	return muo.mutation
@@ -510,6 +607,27 @@ func (muo *MsgUpdateOne) Mutation() *MsgMutation {
 func (muo *MsgUpdateOne) ClearBlock() *MsgUpdateOne {
 	muo.mutation.ClearBlock()
 	return muo
+}
+
+// ClearReceipts clears all "Receipts" edges to the Receipt entity.
+func (muo *MsgUpdateOne) ClearReceipts() *MsgUpdateOne {
+	muo.mutation.ClearReceipts()
+	return muo
+}
+
+// RemoveReceiptIDs removes the "Receipts" edge to Receipt entities by IDs.
+func (muo *MsgUpdateOne) RemoveReceiptIDs(ids ...int) *MsgUpdateOne {
+	muo.mutation.RemoveReceiptIDs(ids...)
+	return muo
+}
+
+// RemoveReceipts removes "Receipts" edges to Receipt entities.
+func (muo *MsgUpdateOne) RemoveReceipts(r ...*Receipt) *MsgUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return muo.RemoveReceiptIDs(ids...)
 }
 
 // Where appends a list predicates to the MsgUpdate builder.
@@ -665,6 +783,51 @@ func (muo *MsgUpdateOne) sqlSave(ctx context.Context) (_node *Msg, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(block.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if muo.mutation.ReceiptsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   msg.ReceiptsTable,
+			Columns: msg.ReceiptsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(receipt.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := muo.mutation.RemovedReceiptsIDs(); len(nodes) > 0 && !muo.mutation.ReceiptsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   msg.ReceiptsTable,
+			Columns: msg.ReceiptsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(receipt.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := muo.mutation.ReceiptsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   msg.ReceiptsTable,
+			Columns: msg.ReceiptsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(receipt.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/omni-network/omni/explorer/db/ent/block"
 	"github.com/omni-network/omni/explorer/db/ent/msg"
+	"github.com/omni-network/omni/explorer/db/ent/receipt"
 )
 
 // MsgCreate is the builder for creating a Msg entity.
@@ -117,6 +118,21 @@ func (mc *MsgCreate) SetBlock(b *Block) *MsgCreate {
 	return mc.SetBlockID(b.ID)
 }
 
+// AddReceiptIDs adds the "Receipts" edge to the Receipt entity by IDs.
+func (mc *MsgCreate) AddReceiptIDs(ids ...int) *MsgCreate {
+	mc.mutation.AddReceiptIDs(ids...)
+	return mc
+}
+
+// AddReceipts adds the "Receipts" edges to the Receipt entity.
+func (mc *MsgCreate) AddReceipts(r ...*Receipt) *MsgCreate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return mc.AddReceiptIDs(ids...)
+}
+
 // Mutation returns the MsgMutation object of the builder.
 func (mc *MsgCreate) Mutation() *MsgMutation {
 	return mc.mutation
@@ -124,7 +140,9 @@ func (mc *MsgCreate) Mutation() *MsgMutation {
 
 // Save creates the Msg in the database.
 func (mc *MsgCreate) Save(ctx context.Context) (*Msg, error) {
-	mc.defaults()
+	if err := mc.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, mc.sqlSave, mc.mutation, mc.hooks)
 }
 
@@ -151,8 +169,11 @@ func (mc *MsgCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (mc *MsgCreate) defaults() {
+func (mc *MsgCreate) defaults() error {
 	if _, ok := mc.mutation.UUID(); !ok {
+		if msg.DefaultUUID == nil {
+			return fmt.Errorf("ent: uninitialized msg.DefaultUUID (forgotten import ent/runtime?)")
+		}
 		v := msg.DefaultUUID()
 		mc.mutation.SetUUID(v)
 	}
@@ -160,6 +181,7 @@ func (mc *MsgCreate) defaults() {
 		v := msg.DefaultCreatedAt
 		mc.mutation.SetCreatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -290,6 +312,22 @@ func (mc *MsgCreate) createSpec() (*Msg, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.block_msgs = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := mc.mutation.ReceiptsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   msg.ReceiptsTable,
+			Columns: msg.ReceiptsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(receipt.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

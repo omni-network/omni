@@ -10,8 +10,9 @@ import (
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
 
-	_ "github.com/jackc/pgx/v5/stdlib" // importing postgres sql driver
-	_ "github.com/mattn/go-sqlite3"    // importing sqlite driver
+	_ "github.com/jackc/pgx/v5/stdlib"                       // importing postgres sql driver
+	_ "github.com/mattn/go-sqlite3"                          // importing sqlite driver
+	_ "github.com/omni-network/omni/explorer/db/ent/runtime" // import the runtime package to register hooks
 )
 
 func NewPostgressClient(dbURL string) (*ent.Client, error) {

@@ -1,4 +1,4 @@
-package resolvers_test
+package db
 
 import (
 	"context"
@@ -12,38 +12,41 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func createTestBlock(ctx context.Context, t *testing.T, client *ent.Client) ent.Block {
+func CreateTestBlock(ctx context.Context, t *testing.T, client *ent.Client, offset int) ent.Block {
 	t.Helper()
 
 	sourceChainID := uint64(1)
-	blockHeight := uint64(0)
 	blockHashBytes := []byte{1, 3, 23, 111, 27, 45, 98, 103, 94, 55, 1, 3, 23, 111, 27, 45, 98, 103, 94, 55}
 	blockHashValue := common.Hash{}
 	blockHashValue.SetBytes(blockHashBytes)
 
 	block := client.Block.Create().
 		SetSourceChainID(sourceChainID).
-		SetBlockHeight(blockHeight).
+		SetBlockHeight(uint64(offset)).
 		SetBlockHash(blockHashValue.Bytes()).
 		SaveX(ctx)
 
 	return *block
 }
 
-// createTestBlocks creates n test blocks with n messages and n-1 receipts.
-func createTestBlocks(ctx context.Context, t *testing.T, client *ent.Client, count int) {
+// CreateTestBlocks creates n test blocks with n messages and n-1 receipts.
+func CreateTestBlocks(ctx context.Context, t *testing.T, client *ent.Client, count int) []ent.Block {
 	t.Helper()
 	var msg *ent.Msg
+	var blocks []ent.Block
 	for i := 0; i < count; i++ {
-		b := createTestBlock(ctx, t, client)
+		b := CreateTestBlock(ctx, t, client, i)
 		if msg != nil {
-			createReceipt(ctx, t, client, *msg)
+			CreateReceipt(ctx, t, client, *msg)
 		}
-		msg = createXMsg(ctx, t, client, b)
+		msg = CreateXMsg(ctx, t, client, b)
+		blocks = append(blocks, b)
 	}
+
+	return blocks
 }
 
-func createXMsg(ctx context.Context, t *testing.T, client *ent.Client, b ent.Block) *ent.Msg {
+func CreateXMsg(ctx context.Context, t *testing.T, client *ent.Client, b ent.Block) *ent.Msg {
 	t.Helper()
 
 	destChain := uint64(2)
@@ -58,7 +61,7 @@ func createXMsg(ctx context.Context, t *testing.T, client *ent.Client, b ent.Blo
 		SetDestGasLimit(100).
 		SetSourceChainID(b.SourceChainID).
 		SetDestChainID(destChain).
-		SetStreamOffset(b.BlockHeight).
+		SetStreamOffset(b.BlockHeight). // this is just for testing
 		SetTxHash(txHash).
 		SaveX(ctx)
 
@@ -67,7 +70,7 @@ func createXMsg(ctx context.Context, t *testing.T, client *ent.Client, b ent.Blo
 	return msg
 }
 
-func createReceipt(ctx context.Context, t *testing.T, client *ent.Client, msg ent.Msg) ent.Receipt {
+func CreateReceipt(ctx context.Context, t *testing.T, client *ent.Client, msg ent.Msg) ent.Receipt {
 	t.Helper()
 
 	relayerAddress := [20]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 22}
@@ -84,7 +87,7 @@ func createReceipt(ctx context.Context, t *testing.T, client *ent.Client, msg en
 	return *receipt
 }
 
-func createTestEntClient(t *testing.T) *ent.Client {
+func CreateTestEntClient(t *testing.T) *ent.Client {
 	t.Helper()
 
 	entOpts := []enttest.Option{

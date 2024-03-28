@@ -5,6 +5,7 @@ package msg
 import (
 	"time"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/google/uuid"
@@ -37,6 +38,8 @@ const (
 	FieldCreatedAt = "created_at"
 	// EdgeBlock holds the string denoting the block edge name in mutations.
 	EdgeBlock = "Block"
+	// EdgeReceipts holds the string denoting the receipts edge name in mutations.
+	EdgeReceipts = "Receipts"
 	// Table holds the table name of the msg in the database.
 	Table = "msgs"
 	// BlockTable is the table that holds the Block relation/edge.
@@ -46,6 +49,11 @@ const (
 	BlockInverseTable = "blocks"
 	// BlockColumn is the table column denoting the Block relation/edge.
 	BlockColumn = "block_msgs"
+	// ReceiptsTable is the table that holds the Receipts relation/edge. The primary key declared below.
+	ReceiptsTable = "msg_Receipts"
+	// ReceiptsInverseTable is the table name for the Receipt entity.
+	// It exists in this package in order to avoid circular dependency with the "receipt" package.
+	ReceiptsInverseTable = "receipts"
 )
 
 // Columns holds all SQL columns for msg fields.
@@ -69,6 +77,12 @@ var ForeignKeys = []string{
 	"block_msgs",
 }
 
+var (
+	// ReceiptsPrimaryKey and ReceiptsColumn2 are the table columns denoting the
+	// primary key for the Receipts relation (M2M).
+	ReceiptsPrimaryKey = []string{"msg_id", "receipt_id"}
+)
+
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
@@ -84,7 +98,13 @@ func ValidColumn(column string) bool {
 	return false
 }
 
+// Note that the variables below are initialized by the runtime
+// package on the initialization of the application. Therefore,
+// it should be imported in the main as follows:
+//
+//	import _ "github.com/omni-network/omni/explorer/db/ent/runtime"
 var (
+	Hooks [1]ent.Hook
 	// DefaultUUID holds the default value on creation for the "UUID" field.
 	DefaultUUID func() uuid.UUID
 	// SourceMsgSenderValidator is a validator for the "SourceMsgSender" field. It is called by the builders before save.
@@ -141,10 +161,31 @@ func ByBlockField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newBlockStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByReceiptsCount orders the results by Receipts count.
+func ByReceiptsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newReceiptsStep(), opts...)
+	}
+}
+
+// ByReceipts orders the results by Receipts terms.
+func ByReceipts(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newReceiptsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newBlockStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(BlockInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, BlockTable, BlockColumn),
+	)
+}
+func newReceiptsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ReceiptsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, ReceiptsTable, ReceiptsPrimaryKey...),
 	)
 }

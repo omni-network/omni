@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/omni-network/omni/explorer/db"
 	"github.com/omni-network/omni/explorer/graphql/app"
 	"github.com/omni-network/omni/explorer/graphql/resolvers"
 
@@ -20,7 +21,7 @@ func TestXReceiptCount(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	createTestBlocks(ctx, t, test.Client, 3)
+	db.CreateTestBlocks(ctx, t, test.Client, 3)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
