@@ -6,7 +6,7 @@ import (
 
 	"github.com/omni-network/omni/explorer/db"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMsgHooks(t *testing.T) {
@@ -40,6 +40,6 @@ func TestMsgHooks(t *testing.T) {
 	// count the number of messages from the receipt
 	receiptIds := receipt.QueryMsgs().CountX(ctx)
 
-	assert.Equal(t, 1, msgCount)
-	assert.Equal(t, 1, receiptIds)
+	require.Equal(t, 1, msgCount)
+	require.Equal(t, 1, receiptIds)
 }
