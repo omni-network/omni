@@ -71,7 +71,7 @@ services:
     labels:
       e2e: true
     container_name: {{ .InstanceName }}-init
-    image: "ethereum/client-go:latest"
+    image: "ethereum/client-go:{{ $.GethTag }}"
     command: {{ if eq .GcMode "archive" }}--state.scheme=hash {{ end }}--datadir=/geth init /geth/genesis.json
     volumes:
       - ./{{ .InstanceName }}:/geth

@@ -3,6 +3,8 @@ package key
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"os/exec"
 
 	"github.com/omni-network/omni/lib/errors"
@@ -33,7 +35,7 @@ func createGCPSecret(ctx context.Context, name string, value []byte, labels map[
 // getGCPSecret fetches the latest version of the specified secret.
 func getGCPSecret(ctx context.Context, name string) ([]byte, error) {
 	// Init the gcloud command to access the secret
-	cmd := exec.CommandContext(ctx, "gcloud", "secrets", "versions", "access", "latest", "--secret", name)
+	cmd := exec.CommandContext(ctx, "gcloud", "secrets", "versions", "access", "latest", "--secret", name, "--format=json")
 
 	var stdOut, stdErr bytes.Buffer
 	cmd.Stderr = &stdErr
@@ -44,5 +46,26 @@ func getGCPSecret(ctx context.Context, name string) ([]byte, error) {
 		return nil, errors.Wrap(err, "gcloud fetch secret", "out", stdErr.String())
 	}
 
-	return stdOut.Bytes(), nil
+	// Unmarshal the json response
+	var resp response
+	if err := json.Unmarshal(stdOut.Bytes(), &resp); err != nil {
+		return nil, errors.Wrap(err, "unmarshal secret response")
+	}
+
+	// Decode the base64 encoded secret data
+	bz, err := base64.StdEncoding.DecodeString(resp.Payload.DataBase64)
+	if err != nil {
+		return nil, errors.Wrap(err, "decode secret data")
+	}
+
+	return bz, nil
+}
+
+// response from gloud secret manager --format=json.
+type response struct {
+	Name    string `json:"name"`
+	Payload struct {
+		DataBase64 string `json:"data"`
+		DataCRC32c string `json:"dataCrc32c"`
+	} `json:"payload"`
 }

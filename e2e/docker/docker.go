@@ -24,6 +24,9 @@ import (
 
 const ProviderName = "docker"
 
+// gethTag defines the geth version deployed to all networks.
+const gethTag = "v1.13.14"
+
 // composeTmpl is our own custom docker compose template. This differs from cometBFT's.
 //
 //go:embed compose.yaml.tmpl
@@ -156,6 +159,10 @@ type ComposeDef struct {
 	Relayer       bool
 	Prometheus    bool
 	OmniLogFormat string
+}
+
+func (ComposeDef) GethTag() string {
+	return gethTag
 }
 
 // NodeOmniEVMs returns a map of node name to OmniEVM instance name; map[node_name]omni_evm.
