@@ -5,6 +5,7 @@ package receipt
 import (
 	"time"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/google/uuid"
@@ -35,6 +36,8 @@ const (
 	FieldCreatedAt = "created_at"
 	// EdgeBlock holds the string denoting the block edge name in mutations.
 	EdgeBlock = "Block"
+	// EdgeMsgs holds the string denoting the msgs edge name in mutations.
+	EdgeMsgs = "Msgs"
 	// Table holds the table name of the receipt in the database.
 	Table = "receipts"
 	// BlockTable is the table that holds the Block relation/edge.
@@ -44,6 +47,11 @@ const (
 	BlockInverseTable = "blocks"
 	// BlockColumn is the table column denoting the Block relation/edge.
 	BlockColumn = "block_receipts"
+	// MsgsTable is the table that holds the Msgs relation/edge. The primary key declared below.
+	MsgsTable = "msg_Receipts"
+	// MsgsInverseTable is the table name for the Msg entity.
+	// It exists in this package in order to avoid circular dependency with the "msg" package.
+	MsgsInverseTable = "msgs"
 )
 
 // Columns holds all SQL columns for receipt fields.
@@ -66,6 +74,12 @@ var ForeignKeys = []string{
 	"block_receipts",
 }
 
+var (
+	// MsgsPrimaryKey and MsgsColumn2 are the table columns denoting the
+	// primary key for the Msgs relation (M2M).
+	MsgsPrimaryKey = []string{"msg_id", "receipt_id"}
+)
+
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
@@ -81,7 +95,13 @@ func ValidColumn(column string) bool {
 	return false
 }
 
+// Note that the variables below are initialized by the runtime
+// package on the initialization of the application. Therefore,
+// it should be imported in the main as follows:
+//
+//	import _ "github.com/omni-network/omni/explorer/db/ent/runtime"
 var (
+	Hooks [1]ent.Hook
 	// DefaultUUID holds the default value on creation for the "UUID" field.
 	DefaultUUID func() uuid.UUID
 	// RelayerAddressValidator is a validator for the "RelayerAddress" field. It is called by the builders before save.
@@ -141,10 +161,31 @@ func ByBlockField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newBlockStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByMsgsCount orders the results by Msgs count.
+func ByMsgsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newMsgsStep(), opts...)
+	}
+}
+
+// ByMsgs orders the results by Msgs terms.
+func ByMsgs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newMsgsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newBlockStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(BlockInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, BlockTable, BlockColumn),
+	)
+}
+func newMsgsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(MsgsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, true, MsgsTable, MsgsPrimaryKey...),
 	)
 }

@@ -155,6 +155,18 @@ var schemaGraph = func() *sqlgraph.Schema {
 		"Block",
 	)
 	graph.MustAddE(
+		"Receipts",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   msg.ReceiptsTable,
+			Columns: msg.ReceiptsPrimaryKey,
+			Bidi:    false,
+		},
+		"Msg",
+		"Receipt",
+	)
+	graph.MustAddE(
 		"Block",
 		&sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -165,6 +177,18 @@ var schemaGraph = func() *sqlgraph.Schema {
 		},
 		"Receipt",
 		"Block",
+	)
+	graph.MustAddE(
+		"Msgs",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   receipt.MsgsTable,
+			Columns: receipt.MsgsPrimaryKey,
+			Bidi:    false,
+		},
+		"Receipt",
+		"Msg",
 	)
 	return graph
 }()
@@ -437,6 +461,20 @@ func (f *MsgFilter) WhereHasBlockWith(preds ...predicate.Block) {
 	})))
 }
 
+// WhereHasReceipts applies a predicate to check if query has an edge Receipts.
+func (f *MsgFilter) WhereHasReceipts() {
+	f.Where(entql.HasEdge("Receipts"))
+}
+
+// WhereHasReceiptsWith applies a predicate to check if query has an edge Receipts with a given conditions (other predicates).
+func (f *MsgFilter) WhereHasReceiptsWith(preds ...predicate.Receipt) {
+	f.Where(entql.HasEdgeWith("Receipts", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
 // addPredicate implements the predicateAdder interface.
 func (rq *ReceiptQuery) addPredicate(pred func(s *sql.Selector)) {
 	rq.predicates = append(rq.predicates, pred)
@@ -530,6 +568,20 @@ func (f *ReceiptFilter) WhereHasBlock() {
 // WhereHasBlockWith applies a predicate to check if query has an edge Block with a given conditions (other predicates).
 func (f *ReceiptFilter) WhereHasBlockWith(preds ...predicate.Block) {
 	f.Where(entql.HasEdgeWith("Block", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// WhereHasMsgs applies a predicate to check if query has an edge Msgs.
+func (f *ReceiptFilter) WhereHasMsgs() {
+	f.Where(entql.HasEdge("Msgs"))
+}
+
+// WhereHasMsgsWith applies a predicate to check if query has an edge Msgs with a given conditions (other predicates).
+func (f *ReceiptFilter) WhereHasMsgsWith(preds ...predicate.Msg) {
+	f.Where(entql.HasEdgeWith("Msgs", sqlgraph.WrapFunc(func(s *sql.Selector) {
 		for _, p := range preds {
 			p(s)
 		}

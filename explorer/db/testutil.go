@@ -1,90 +1,96 @@
-package resolvers_test
+package db
 
 import (
 	"context"
 	"testing"
 
 	"github.com/omni-network/omni/explorer/db/ent"
-	"github.com/omni-network/omni/explorer/db/ent/block"
 	"github.com/omni-network/omni/explorer/db/ent/enttest"
 	"github.com/omni-network/omni/explorer/db/ent/migrate"
 
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func createTestBlock(ctx context.Context, t *testing.T, client *ent.Client) ent.Block {
+func CreateTestBlock(t *testing.T, ctx context.Context, client *ent.Client, height int) ent.Block {
 	t.Helper()
 
 	sourceChainID := uint64(1)
-	blockHeight := uint64(0)
 	blockHashBytes := []byte{1, 3, 23, 111, 27, 45, 98, 103, 94, 55, 1, 3, 23, 111, 27, 45, 98, 103, 94, 55}
 	blockHashValue := common.Hash{}
 	blockHashValue.SetBytes(blockHashBytes)
 
-	block := client.Block.Create().
+	b := client.Block.Create().
 		SetSourceChainID(sourceChainID).
-		SetBlockHeight(blockHeight).
+		SetBlockHeight(uint64(height)).
 		SetBlockHash(blockHashValue.Bytes()).
 		SaveX(ctx)
 
-	return *block
+	return *b
 }
 
-// createTestBlocks creates n test blocks with n messages and n-1 receipts.
-func createTestBlocks(ctx context.Context, t *testing.T, client *ent.Client, count int) {
+// CreateTestBlocks creates n test blocks with n messages and n-1 receipts.
+func CreateTestBlocks(t *testing.T, ctx context.Context, client *ent.Client, count int) []ent.Block {
 	t.Helper()
+	destChainID := uint64(2)
 	var msg *ent.Msg
+	var blocks []ent.Block
 	for i := 0; i < count; i++ {
-		b := createTestBlock(ctx, t, client)
+		b := CreateTestBlock(t, ctx, client, i)
 		if msg != nil {
-			createReceipt(ctx, t, client, *msg)
+			CreateReceipt(t, ctx, client, b, msg.DestChainID, msg.StreamOffset)
 		}
-		msg = createXMsg(ctx, t, client, b)
+		msg = CreateXMsg(t, ctx, client, b, destChainID, uint64(i))
+		blocks = append(blocks, b)
 	}
+
+	return blocks
 }
 
-func createXMsg(ctx context.Context, t *testing.T, client *ent.Client, b ent.Block) *ent.Msg {
+func CreateXMsg(t *testing.T, ctx context.Context, client *ent.Client, b ent.Block, destChainID uint64, streamOffset uint64) *ent.Msg {
 	t.Helper()
 
-	destChain := uint64(2)
 	sourceMessageSender := [20]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
 	destAddress := [20]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21}
 	data := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	txHash := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32}
+
 	msg := client.Msg.Create().
 		SetSourceMsgSender(sourceMessageSender[:]).
 		SetDestAddress(destAddress[:]).
+		SetDestChainID(destChainID).
+		SetStreamOffset(streamOffset).
 		SetData(data).
 		SetDestGasLimit(100).
 		SetSourceChainID(b.SourceChainID).
-		SetDestChainID(destChain).
-		SetStreamOffset(b.BlockHeight).
 		SetTxHash(txHash).
 		SaveX(ctx)
 
-	client.Block.Update().Where(block.UUID(b.UUID)).AddMsgs(msg).SaveX(ctx)
+	client.Block.UpdateOne(&b).AddMsgs(msg).SaveX(ctx)
 
 	return msg
 }
 
-func createReceipt(ctx context.Context, t *testing.T, client *ent.Client, msg ent.Msg) ent.Receipt {
+func CreateReceipt(t *testing.T, ctx context.Context, client *ent.Client, b ent.Block, destChainID uint64, streamOffset uint64) *ent.Receipt {
 	t.Helper()
-
 	relayerAddress := [20]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 22}
+	txHash := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32}
+
 	receipt := client.Receipt.Create().
 		SetGasUsed(100).
 		SetSuccess(true).
 		SetRelayerAddress(relayerAddress[:]).
-		SetSourceChainID(msg.SourceChainID).
-		SetDestChainID(msg.DestChainID).
-		SetStreamOffset(msg.StreamOffset).
-		SetTxHash(msg.TxHash).
+		SetSourceChainID(b.SourceChainID).
+		SetDestChainID(destChainID).
+		SetStreamOffset(streamOffset).
+		SetTxHash(txHash).
 		SaveX(ctx)
 
-	return *receipt
+	client.Block.UpdateOne(&b).AddReceipts(receipt).SaveX(ctx)
+
+	return receipt
 }
 
-func createTestEntClient(t *testing.T) *ent.Client {
+func CreateTestEntClient(t *testing.T) *ent.Client {
 	t.Helper()
 
 	entOpts := []enttest.Option{
