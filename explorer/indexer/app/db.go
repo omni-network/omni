@@ -20,7 +20,7 @@ func newCallback(client *ent.Client) xchain.ProviderCallback {
 			return errors.Wrap(err, "begin transaction")
 		}
 
-		if err := insertBlockTX(ctx, tx, block); err != nil {
+		if err := InsertBlockTX(ctx, tx, block); err != nil {
 			if err := tx.Rollback(); err != nil { // Just log on rollback failure
 				log.Error(ctx, "Rollback transaction failed", err)
 			}
@@ -39,7 +39,7 @@ func newCallback(client *ent.Client) xchain.ProviderCallback {
 
 // insertBlockTX inserts the block as part of a tx and commits it.
 // The caller should handle rollback on any error.
-func insertBlockTX(ctx context.Context, tx *ent.Tx, block xchain.Block) error {
+func InsertBlockTX(ctx context.Context, tx *ent.Tx, block xchain.Block) error {
 	insertedBlock, err := insertBlock(ctx, tx, block)
 	if err != nil {
 		return errors.Wrap(err, "insert block")
@@ -115,19 +115,19 @@ func insertBlock(ctx context.Context, tx *ent.Tx, block xchain.Block) (*ent.Bloc
 }
 
 func insertMessages(ctx context.Context, tx *ent.Tx, block xchain.Block, dbBlock *ent.Block) error {
-	for _, msg := range block.Msgs {
+	for _, m := range block.Msgs {
 		_, err := tx.Msg.Create().
 			SetBlock(dbBlock).
 			SetBlockID(dbBlock.ID).
-			SetData(msg.Data).
-			SetDestAddress(msg.DestAddress[:]).
-			SetDestChainID(msg.DestChainID).
+			SetData(m.Data).
+			SetDestAddress(m.DestAddress[:]).
+			SetDestChainID(m.DestChainID).
 			SetCreatedAt(time.Now()).
-			SetSourceChainID(msg.SourceChainID).
-			SetDestGasLimit(msg.DestGasLimit).
-			SetSourceMsgSender(msg.SourceMsgSender[:]).
-			SetStreamOffset(msg.StreamOffset).
-			SetTxHash(msg.TxHash[:]).
+			SetSourceChainID(m.SourceChainID).
+			SetDestGasLimit(m.DestGasLimit).
+			SetSourceMsgSender(m.SourceMsgSender[:]).
+			SetStreamOffset(m.StreamOffset).
+			SetTxHash(m.TxHash[:]).
 			SetCreatedAt(time.Now()).
 			Save(ctx)
 		if err != nil {
@@ -139,17 +139,17 @@ func insertMessages(ctx context.Context, tx *ent.Tx, block xchain.Block, dbBlock
 }
 
 func insertReceipts(ctx context.Context, tx *ent.Tx, block xchain.Block, dbBlock *ent.Block) error {
-	for _, receipt := range block.Receipts {
+	for _, r := range block.Receipts {
 		_, err := tx.Receipt.Create().
 			SetBlock(dbBlock).
 			SetBlockID(dbBlock.ID).
-			SetGasUsed(receipt.GasUsed).
-			SetDestChainID(receipt.DestChainID).
-			SetSourceChainID(receipt.SourceChainID).
-			SetStreamOffset(receipt.StreamOffset).
-			SetSuccess(receipt.Success).
-			SetRelayerAddress(receipt.RelayerAddress.Bytes()).
-			SetTxHash(receipt.TxHash.Bytes()).
+			SetGasUsed(r.GasUsed).
+			SetDestChainID(r.DestChainID).
+			SetSourceChainID(r.SourceChainID).
+			SetStreamOffset(r.StreamOffset).
+			SetSuccess(r.Success).
+			SetRelayerAddress(r.RelayerAddress.Bytes()).
+			SetTxHash(r.TxHash.Bytes()).
 			SetCreatedAt(time.Now()).
 			Save(ctx)
 		if err != nil {
