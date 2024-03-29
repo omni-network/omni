@@ -16,9 +16,9 @@ type results struct {
 	receipts []*ent.Receipt
 }
 
-type prerequisite func(t *testing.T, ctx context.Context) results
+type prerequisite func(t *testing.T, ctx context.Context, client *ent.Client) results
 
-func TestMsgHooks(t *testing.T) {
+func TestMsgAndReceiptHooks(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -33,19 +33,12 @@ func TestMsgHooks(t *testing.T) {
 	tests := []struct {
 		name          string
 		prerequisites prerequisite // These functions create entries on our db before the evaluation
-		wantErr       bool
 		want          want
 	}{
 		{
 			name: "create_initial_block_with_msg_then_following_contain_receipts",
-			prerequisites: func(t *testing.T, ctx context.Context) results {
+			prerequisites: func(t *testing.T, ctx context.Context, client *ent.Client) results {
 				t.Helper()
-				client := db.CreateTestEntClient(t)
-				t.Cleanup(func() {
-					if err := client.Close(); err != nil {
-						t.Error(err)
-					}
-				})
 				blocks := db.CreateTestBlocks(t, ctx, client, 2)
 
 				var messages []*ent.Msg
@@ -68,18 +61,11 @@ func TestMsgHooks(t *testing.T) {
 				StrayReceiptCount: 0,
 				StrayMessageCount: 1,
 			},
-			wantErr: false,
 		},
 		{
 			name: "create_block_then_receipt_then_msg",
-			prerequisites: func(t *testing.T, ctx context.Context) results {
+			prerequisites: func(t *testing.T, ctx context.Context, client *ent.Client) results {
 				t.Helper()
-				client := db.CreateTestEntClient(t)
-				t.Cleanup(func() {
-					if err := client.Close(); err != nil {
-						t.Error(err)
-					}
-				})
 				destChainID := uint64(2)
 				streamOffset := uint64(0)
 				block1 := db.CreateTestBlock(t, ctx, client, 0)
@@ -104,13 +90,13 @@ func TestMsgHooks(t *testing.T) {
 				StrayReceiptCount: 0,
 				StrayMessageCount: 0,
 			},
-			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			results := tt.prerequisites(t, ctx)
+			client := setupDB(t)
+			results := tt.prerequisites(t, ctx, client)
 			actual := want{
 				len(results.blocks),
 				len(results.messages),
@@ -137,6 +123,18 @@ func calcStrayMessages(ctx context.Context, messages []*ent.Msg) int {
 	}
 
 	return count
+}
+
+func setupDB(t *testing.T) *ent.Client {
+	t.Helper()
+	client := db.CreateTestEntClient(t)
+	t.Cleanup(func() {
+		if err := client.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+
+	return client
 }
 
 // Calculate the number of receipts that are not associated with a message.

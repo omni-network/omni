@@ -2,11 +2,12 @@ package schema
 
 import (
 	"context"
+	"time"
+
 	gen "github.com/omni-network/omni/explorer/db/ent"
 	"github.com/omni-network/omni/explorer/db/ent/hook"
 	"github.com/omni-network/omni/explorer/db/ent/msg"
 	"github.com/omni-network/omni/lib/errors"
-	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"

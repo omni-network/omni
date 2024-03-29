@@ -1,8 +1,9 @@
 package schema
 
 import (
-	"entgo.io/ent/schema/index"
 	"time"
+
+	"entgo.io/ent/schema/index"
 
 	"entgo.io/ent"
 	"entgo.io/ent/schema/field"
