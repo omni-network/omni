@@ -482,6 +482,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable, PausableUpgrade
 
         for (uint256 i = 0; i < params.length;) {
             require(address(params[i].strategy) != address(0), "OmniAVS: no zero strategy");
+            require(params[i].multiplier > 0, "OmniAVS: no zero multiplier");
 
             // ensure no duplicates
             for (uint256 j = i + 1; j < params.length;) {
