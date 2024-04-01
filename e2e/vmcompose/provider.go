@@ -23,17 +23,19 @@ const ProviderName = "vmcompose"
 var _ types.InfraProvider = (*Provider)(nil)
 
 type Provider struct {
-	Testnet types.Testnet
-	Data    types.InfrastructureData
-	once    sync.Once
-	omniTag string
+	Testnet     types.Testnet
+	Data        types.InfrastructureData
+	once        sync.Once
+	omniTag     string
+	explorerTag string
 }
 
-func NewProvider(testnet types.Testnet, data types.InfrastructureData, imgTag string) *Provider {
+func NewProvider(testnet types.Testnet, data types.InfrastructureData, imgTag, explorerTag string) *Provider {
 	return &Provider{
-		Testnet: testnet,
-		Data:    data,
-		omniTag: imgTag,
+		Testnet:     testnet,
+		Data:        data,
+		omniTag:     imgTag,
+		explorerTag: explorerTag,
 	}
 }
 
@@ -75,18 +77,23 @@ func (p *Provider) Setup() error {
 		}
 
 		def := docker.ComposeDef{
-			Network:       false,
-			BindAll:       true,
-			NetworkName:   p.Testnet.Name,
-			NetworkCIDR:   p.Testnet.IP.String(),
-			Nodes:         nodes,
-			OmniEVMs:      omniEVMs,
-			Anvils:        anvilChains,
-			Relayer:       services["relayer"],
-			Monitor:       services["monitor"],
-			Prometheus:    p.Testnet.Prometheus,
-			OmniTag:       p.omniTag,
-			OmniLogFormat: log.FormatLogfmt, // VM compose always use logfmt log format.
+			Network:         false,
+			BindAll:         true,
+			NetworkName:     p.Testnet.Name,
+			NetworkCIDR:     p.Testnet.IP.String(),
+			Nodes:           nodes,
+			OmniEVMs:        omniEVMs,
+			Anvils:          anvilChains,
+			Relayer:         services["relayer"],
+			Monitor:         services["monitor"],
+			Prometheus:      p.Testnet.Prometheus,
+			OmniTag:         p.omniTag,
+			OmniLogFormat:   log.FormatLogfmt, // VM compose always use logfmt log format.
+			ExplorerIndexer: p.Testnet.Explorer && services["explorer_indexer"],
+			ExplorerGraphql: p.Testnet.Explorer && services["explorer_graphql"],
+			ExplorerUI:      p.Testnet.Explorer && services["explorer_ui"],
+			ExplorerTag:     p.explorerTag,
+			IndexerDBConn:   p.Testnet.IndexerDBConn,
 		}
 		compose, err := docker.GenerateComposeFile(def)
 		if err != nil {

@@ -141,6 +141,38 @@ services:
         {{ if $.Network }}ipv4_address: 10.186.73.201{{ end }}
 {{ end }}
 
+{{- if .ExplorerIndexer }}
+  explorer_indexer:
+    labels:
+      e2e: true
+    container_name: explorer_indexer
+    image: omniops/explorer-indexer:{{or .ExplorerTag "main"}}
+    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    environment:
+      - LOG_FORMAT={{ $.OmniLogFormat }}
+    volumes:
+      - ./explorer_indexer:/explorer_indexer
+    networks:
+      {{ $.NetworkName }}:
+        {{ if $.Network }}ipv4_address: 10.186.73.204{{ end }}
+{{ end }}
+
+{{- if .ExplorerGraphql }}
+  explorer_graphql:
+    labels:
+      e2e: true
+    container_name: explorer_graphql
+    image: omniops/explorer-graphql:{{or .ExplorerTag "main"}}
+    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    environment:
+      - LOG_FORMAT={{ $.OmniLogFormat }}
+    volumes:
+      - ./explorer_graphql:/explorer_graphql
+    networks:
+      {{ $.NetworkName }}:
+        {{ if $.Network }}ipv4_address: 10.186.73.203{{ end }}
+{{ end }}
+
 {{- if .Prometheus }}
   prometheus:
     labels:

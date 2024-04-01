@@ -1,0 +1,38 @@
+version: '2.4'
+networks:
+  test:
+    labels:
+      e2e: true
+    driver: bridge
+
+services:
+
+  # Use geth as the omni EVMs.
+  explorer_indexer:
+    labels:
+      e2e: true
+    container_name: explorer_indexer
+    image: omniops/explorer-indexer:7d1ae53
+    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    environment:
+      - LOG_FORMAT=logfmt
+    volumes:
+      - ./explorer_indexer:/explorer_indexer
+    networks:
+      test:
+        
+
+  explorer_graphql:
+    labels:
+      e2e: true
+    container_name: explorer_graphql
+    image: omniops/explorer-graphql:7d1ae53
+    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    environment:
+      - LOG_FORMAT=logfmt
+    volumes:
+      - ./explorer_graphql:/explorer_graphql
+    networks:
+      test:
+        
+

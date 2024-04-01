@@ -20,11 +20,13 @@ import (
 // Testnet wraps e2e.Testnet with additional omni-specific fields.
 type Testnet struct {
 	*e2e.Testnet
-	Network      netconf.ID
-	OmniEVMs     []OmniEVM
-	AnvilChains  []AnvilChain
-	PublicChains []PublicChain
-	OnlyMonitor  bool
+	Network       netconf.ID
+	OmniEVMs      []OmniEVM
+	AnvilChains   []AnvilChain
+	PublicChains  []PublicChain
+	OnlyMonitor   bool
+	Explorer      bool
+	IndexerDBConn string
 }
 
 func (t Testnet) AVSChain() (EVMChain, error) {

@@ -5,3 +5,4 @@ avs_target    = "holesky"
 
 only_monitor = true
 prometheus   = true
+explorer = true

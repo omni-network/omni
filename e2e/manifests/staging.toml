@@ -4,6 +4,7 @@ anvil_chains = ["chain_a"]
 avs_target = "chain_a"
 multi_omni_evms = true
 prometheus = true
+explorer = true
 
 [node.validator01]
 [node.validator02]

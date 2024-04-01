@@ -40,6 +40,7 @@ type Provider struct {
 	servicesOnce sync.Once
 	testnet      types.Testnet
 	omniTag      string
+	explorerTag  string
 }
 
 func (*Provider) Clean(ctx context.Context) error {
@@ -56,7 +57,7 @@ func (*Provider) Clean(ctx context.Context) error {
 }
 
 // NewProvider returns a new Provider.
-func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag string) *Provider {
+func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag, explorerTag string) *Provider {
 	return &Provider{
 		Provider: &cmtdocker.Provider{
 			ProviderData: infra.ProviderData{
@@ -64,27 +65,33 @@ func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag st
 				InfrastructureData: infd.InfrastructureData,
 			},
 		},
-		testnet: testnet,
-		omniTag: imgTag,
+		testnet:     testnet,
+		omniTag:     imgTag,
+		explorerTag: explorerTag,
 	}
 }
 
 // Setup generates the docker-compose file and write it to disk, erroring if
-// any of these operations fail. It writes.
+// any of these operations fail.
 func (p *Provider) Setup() error {
 	def := ComposeDef{
-		Network:       true,
-		NetworkName:   p.testnet.Name,
-		NetworkCIDR:   p.testnet.IP.String(),
-		BindAll:       false,
-		Nodes:         p.testnet.Nodes,
-		OmniEVMs:      p.testnet.OmniEVMs,
-		Anvils:        p.testnet.AnvilChains,
-		Relayer:       true,
-		Prometheus:    p.testnet.Prometheus,
-		Monitor:       true,
-		OmniTag:       p.omniTag,
-		OmniLogFormat: log.FormatConsole, // Local docker compose always use console log format.
+		Network:         true,
+		NetworkName:     p.testnet.Name,
+		NetworkCIDR:     p.testnet.IP.String(),
+		BindAll:         false,
+		Nodes:           p.testnet.Nodes,
+		OmniEVMs:        p.testnet.OmniEVMs,
+		Anvils:          p.testnet.AnvilChains,
+		Relayer:         true,
+		Prometheus:      p.testnet.Prometheus,
+		Monitor:         true,
+		ExplorerTag:     p.explorerTag,
+		ExplorerIndexer: true,
+		ExplorerUI:      true,
+		ExplorerGraphql: true,
+		OmniTag:         p.omniTag,
+		OmniLogFormat:   log.FormatConsole, // Local docker compose always use console log format.
+		IndexerDBConn:   p.testnet.IndexerDBConn,
 	}
 
 	bz, err := GenerateComposeFile(def)
@@ -159,6 +166,12 @@ type ComposeDef struct {
 	Relayer       bool
 	Prometheus    bool
 	OmniLogFormat string
+
+	ExplorerIndexer bool
+	ExplorerGraphql bool
+	ExplorerUI      bool
+	ExplorerTag     string
+	IndexerDBConn   string
 }
 
 func (ComposeDef) GethTag() string {
@@ -233,6 +246,11 @@ func additionalServices(testnet types.Testnet) []string {
 	}
 
 	resp = append(resp, "monitor")
+
+	if testnet.Explorer {
+		resp = append(resp, "explorer_indexer")
+		resp = append(resp, "explorer_graphql")
+	}
 
 	// In monitor only mode, we don't need to start the relayer (above omni and anvils will also be empty).
 	if testnet.OnlyMonitor {
