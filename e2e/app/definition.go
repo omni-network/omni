@@ -373,21 +373,8 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 
 // getOrGenKey gets (based on manifest) or creates a private key for the given node and type.
 func getOrGenKey(ctx context.Context, manifest types.Manifest, nodeName string, typ key.Type) (key.Key, error) {
-	keys := manifest.Keys[nodeName]
-
-	var addr string
-	switch typ {
-	case key.P2PExecution:
-		addr = keys.P2PExecution
-	case key.P2PConsensus:
-		addr = keys.P2PConsensus
-	case key.Validator:
-		addr = keys.Validator
-	default:
-		return key.Key{}, errors.New("unsupported key type", "type", typ)
-	}
-
-	if addr == "" {
+	addr, ok := manifest.Keys[nodeName][typ]
+	if !ok {
 		// No key in manifest, generate a new one.
 		return key.Generate(typ), nil
 	}
