@@ -14,6 +14,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
+	"github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -75,15 +76,17 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 			timestamp = latestEBlock.Time() + 1
 		}
 
+		var zeroHash common.Hash
+
 		payloadAttrs := engine.PayloadAttributes{
 			Timestamp:             timestamp,
 			Random:                latestEBlock.Hash(), // TODO(corver): implement proper randao.
 			SuggestedFeeRecipient: k.addrProvider.LocalAddress(),
 			Withdrawals:           []*etypes.Withdrawal{}, // Withdrawals not supported yet.
-			BeaconRoot:            nil,
+			BeaconRoot:            &zeroHash,              // TODO(corver): Figure out what to use here.
 		}
 
-		forkchoiceResp, err := k.engineCl.ForkchoiceUpdatedV2(ctx, forkchoiceState, &payloadAttrs)
+		forkchoiceResp, err := k.engineCl.ForkchoiceUpdatedV3(ctx, forkchoiceState, &payloadAttrs)
 		if err != nil {
 			return nil, errors.Wrap(err, "forkchoice updated")
 		} else if forkchoiceResp.PayloadStatus.Status != engine.VALID {
@@ -102,7 +105,7 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 	case <-time.After(time.Until(waitTo)):
 	}
 
-	payloadResp, err := k.engineCl.GetPayloadV2(ctx, *payloadID)
+	payloadResp, err := k.engineCl.GetPayloadV3(ctx, *payloadID)
 	if err != nil {
 		return nil, errors.Wrap(err, "get payload")
 	}

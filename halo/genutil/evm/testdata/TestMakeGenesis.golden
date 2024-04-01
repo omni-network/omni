@@ -15,6 +15,7 @@
   "arrowGlacierBlock": 0,
   "grayGlacierBlock": 0,
   "shanghaiTime": 0,
+  "cancunTime": 0,
   "terminalTotalDifficulty": 0,
   "terminalTotalDifficultyPassed": true
  },
@@ -22,7 +23,7 @@
  "timestamp": "0x0",
  "extraData": "0x",
  "gasLimit": "0x47e7c4",
- "difficulty": "0x1",
+ "difficulty": "0x0",
  "mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
  "coinbase": "0x0000000000000000000000000000000000000000",
  "alloc": {

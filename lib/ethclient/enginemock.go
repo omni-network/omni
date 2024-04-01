@@ -30,6 +30,8 @@ import (
 //nolint:gochecknoglobals // This is a static mapping.
 var depositEvent = mustGetABI(bindings.OmniStakeMetaData).Events["Deposit"]
 
+var _ EngineClient = (*engineMock)(nil)
+
 // engineMock mocks the Engine API for testing purposes.
 type engineMock struct {
 	Client
@@ -151,7 +153,7 @@ func (m *engineMock) BlockByNumber(_ context.Context, number *big.Int) (*types.B
 	return m.head, nil
 }
 
-func (m *engineMock) NewPayloadV2(ctx context.Context, params engine.ExecutableData) (engine.PayloadStatusV1, error) {
+func (m *engineMock) NewPayloadV3(ctx context.Context, params engine.ExecutableData, _ []common.Hash, _ *common.Hash) (engine.PayloadStatusV1, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -172,7 +174,7 @@ func (m *engineMock) NewPayloadV2(ctx context.Context, params engine.ExecutableD
 	}, nil
 }
 
-func (m *engineMock) ForkchoiceUpdatedV2(ctx context.Context, update engine.ForkchoiceStateV1,
+func (m *engineMock) ForkchoiceUpdatedV3(ctx context.Context, update engine.ForkchoiceStateV1,
 	attrs *engine.PayloadAttributes,
 ) (engine.ForkChoiceResponse, error) {
 	m.mu.Lock()
@@ -245,7 +247,7 @@ func (m *engineMock) ForkchoiceUpdatedV2(ctx context.Context, update engine.Fork
 	return resp, nil
 }
 
-func (m *engineMock) GetPayloadV2(_ context.Context, payloadID engine.PayloadID) (*engine.ExecutionPayloadEnvelope, error) {
+func (m *engineMock) GetPayloadV3(_ context.Context, payloadID engine.PayloadID) (*engine.ExecutionPayloadEnvelope, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -261,17 +263,16 @@ func (m *engineMock) GetPayloadV2(_ context.Context, payloadID engine.PayloadID)
 
 // TODO(corver): Add support for V3
 
-func (*engineMock) NewPayloadV3(context.Context, engine.ExecutableData, []common.Hash, *common.Hash,
-) (engine.PayloadStatusV1, error) {
+func (*engineMock) NewPayloadV2(context.Context, engine.ExecutableData) (engine.PayloadStatusV1, error) {
 	panic("implement me")
 }
 
-func (*engineMock) ForkchoiceUpdatedV3(context.Context, engine.ForkchoiceStateV1, *engine.PayloadAttributes,
+func (*engineMock) ForkchoiceUpdatedV2(context.Context, engine.ForkchoiceStateV1, *engine.PayloadAttributes,
 ) (engine.ForkChoiceResponse, error) {
 	panic("implement me")
 }
 
-func (*engineMock) GetPayloadV3(context.Context, engine.PayloadID) (*engine.ExecutionPayloadEnvelope, error) {
+func (*engineMock) GetPayloadV2(context.Context, engine.PayloadID) (*engine.ExecutionPayloadEnvelope, error) {
 	panic("implement me")
 }
 
