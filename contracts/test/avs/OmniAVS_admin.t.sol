@@ -168,6 +168,13 @@ contract OmniAVS_admin_Test is Base {
         omniAVS.setEthStakeInbox(ethStakeInbox);
     }
 
+    /// @dev Test that the ethStakeInbox cannot be the 0 address
+    function test_setEthStakeInbox_zeroAddress_reverts() public {
+        vm.expectRevert("OmniAVS: no zero inbox");
+        vm.prank(omniAVSOwner);
+        omniAVS.setEthStakeInbox(address(0));
+    }
+
     /// @dev Test thath the owner can set the portal address
     function test_setPortal_succeeds() public {
         address portal = address(1);
@@ -181,6 +188,13 @@ contract OmniAVS_admin_Test is Base {
         address portal = address(1);
         vm.expectRevert("Ownable: caller is not the owner");
         omniAVS.setOmniPortal(IOmniPortal(portal));
+    }
+
+    /// @dev Test that the portal address cannot be the 0 address
+    function test_setPortal_zeroAddress_reverts() public {
+        vm.expectRevert("OmniAVS: no zero portal");
+        vm.prank(omniAVSOwner);
+        omniAVS.setOmniPortal(IOmniPortal(address(0)));
     }
 
     /// @dev Test that the owner can set the xcall gas limit params

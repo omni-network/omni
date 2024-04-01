@@ -402,6 +402,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable, PausableUpgrade
      * @param portal The Omni portal contract
      */
     function _setOmniPortal(IOmniPortal portal) private {
+        require(address(portal) != address(0), "OmniAVS: no zero portal");
         omni = portal;
         emit OmniPortalSet(address(portal));
     }
@@ -420,6 +421,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable, PausableUpgrade
      * @param inbox The EthStakeInbox contract address
      */
     function _setEthStakeInbox(address inbox) private {
+        require(inbox != address(0), "OmniAVS: no zero inbox");
         ethStakeInbox = inbox;
         emit EthStakeInboxSet(inbox);
     }
