@@ -24,7 +24,6 @@ services:
     - HALO_LOG_FORMAT=console
     volumes:
     - ./node0:/halo
-    - ./omni_evm_0/jwtsecret:/geth/jwtsecret
     depends_on:
       omni_evm_0:
         condition: service_healthy
@@ -81,7 +80,7 @@ services:
       e2e: true
     container_name: omni_evm_0-init
     image: "ethereum/client-go:v1.13.14"
-    command: --datadir=/geth init /geth/genesis.json
+    command: --state.scheme=path --datadir=/geth init /geth/genesis.json
     volumes:
       - ./omni_evm_0:/geth
     networks:
@@ -91,31 +90,12 @@ services:
     labels:
       e2e: true
     container_name: omni_evm_0
-    image: "ethereum/client-go:latest"
+    image: "ethereum/client-go:v1.13.14"
     command:
       - --config=/geth/config.toml
-      - --http
-      - --http.vhosts=*
-      - --http.api=eth,net,web3
-      - --http.addr=0.0.0.0
-      - --http.corsdomain=*
-      - --ws
-      - --ws.api=eth,net,web3
-      - --ws.addr=0.0.0.0
-      - --ws.origins=*
-      - --authrpc.vhosts=*
-      - --authrpc.addr=0.0.0.0
-      - --authrpc.jwtsecret=/geth/jwtsecret
-      - --datadir=/geth
-      - --unlock=0x123463a4b065722e99115d6c222f267d9cabb524
-      - --allow-insecure-unlock
-      - --password=/geth/geth_password.txt
-      - --nodiscover
-      - --syncmode=full
-      - --gcmode=
-      - --nodekeyhex=59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
-      - --miner.recommit=500ms
-      - --nat=extip:<nil>
+      # Flags not available via config.toml
+      - --nat=extip:10.186.73.0
+      
     ports:
       - 8551
       - 8000:8545

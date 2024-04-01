@@ -12,7 +12,7 @@ prometheus = true
 mode = "seed"
 
 [node.fullnode01]
-mode = "full"
+mode = "archive"
 
 # Testing long-lived keys on staging while testnet doens't exist. Remove this.
 [keys.validator01]

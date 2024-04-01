@@ -18,6 +18,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/fireblocks"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tutil"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/test/e2e/pkg/exec"
@@ -281,7 +282,7 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 	}
 
 	var omniEVMS []types.OmniEVM
-	for name, gcmode := range manifest.OmniEVMs() {
+	for name, isArchive := range manifest.OmniEVMs() {
 		inst, ok := infd.Instances[name]
 		if !ok {
 			return types.Testnet{}, errors.New("omni evm instance not found in infrastructure data")
@@ -299,22 +300,24 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 		en := enode.NewV4(&nodeKey.PublicKey, inst.IPAddress, 30303, 30303)
 
 		internalIP := inst.IPAddress.String()
+		advertisedIP := inst.ExtIPAddress // EVM P2P NAT advertised address.
 		if infd.Provider == docker.ProviderName {
-			internalIP = name // For docker, we use container names
+			internalIP = name             // For docker, we use container names
+			advertisedIP = inst.IPAddress // For docker, we use container IPs for evm p2p networking, not localhost.
 		}
 
 		omniEVMS = append(omniEVMS, types.OmniEVM{
 			Chain:           types.OmniEVMByNetwork(manifest.Network),
 			InstanceName:    name,
-			InternalIP:      inst.IPAddress,
-			ExternalIP:      inst.ExtIPAddress,
+			AdvertisedIP:    advertisedIP,
 			ProxyPort:       inst.Port,
 			InternalRPC:     fmt.Sprintf("http://%s:8545", internalIP),
 			InternalAuthRPC: fmt.Sprintf("http://%s:8551", internalIP),
 			ExternalRPC:     fmt.Sprintf("http://%s:%d", inst.ExtIPAddress.String(), inst.Port),
 			NodeKey:         nodeKey,
 			Enode:           en,
-			GcMode:          gcmode,
+			IsArchive:       isArchive,
+			JWTSecret:       tutil.RandomHash().Hex(),
 		})
 	}
 
@@ -327,7 +330,7 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 			}
 			bootnodes = append(bootnodes, bootEVM.Enode)
 		}
-		omniEVMS[i].BootNodes = bootnodes
+		omniEVMS[i].Peers = bootnodes
 	}
 
 	var anvils []types.AnvilChain
