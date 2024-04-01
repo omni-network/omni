@@ -17,13 +17,16 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	fuzz "github.com/google/gofuzz"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
 type results struct {
-	blocks   []ent.Block
-	messages []*ent.Msg
-	receipts []*ent.Receipt
+	blocks     []ent.Block
+	messages   []*ent.Msg
+	receipts   []*ent.Receipt
+	receiptMap map[uuid.UUID][]*ent.Receipt
+	messageMap map[uuid.UUID][]*ent.Msg
 }
 
 type prerequisite func(t *testing.T, ctx context.Context, client *ent.Client) results
@@ -131,10 +134,18 @@ func TestDbTransaction(t *testing.T) {
 				require.NotNil(t, m)
 				require.NotNil(t, r)
 
+				receiptMap := make(map[uuid.UUID][]*ent.Receipt)
+				receiptMap[b.UUID] = []*ent.Receipt{r}
+
+				messageMap := make(map[uuid.UUID][]*ent.Msg)
+				messageMap[b.UUID] = []*ent.Msg{m}
+
 				return results{
-					blocks:   []ent.Block{*b},
-					messages: []*ent.Msg{m},
-					receipts: []*ent.Receipt{r},
+					blocks:     []ent.Block{*b},
+					messages:   []*ent.Msg{m},
+					receipts:   []*ent.Receipt{r},
+					messageMap: messageMap,
+					receiptMap: receiptMap,
 				}
 			},
 			want: want{
@@ -151,17 +162,7 @@ func TestDbTransaction(t *testing.T) {
 			t.Parallel()
 			client := setupDB(t)
 			results := tt.prerequisites(t, ctx, client)
-			actual := want{
-				len(results.blocks),
-				len(results.messages),
-				len(results.receipts),
-				calcStrayReceipts(ctx, results.receipts),
-				calcStrayMessages(ctx, results.messages),
-			}
-
-			if !cmp.Equal(tt.want, actual) {
-				t.Errorf("unexpected results: %s", cmp.Diff(tt.want, actual))
-			}
+			eval(t, results)
 		})
 	}
 }
@@ -178,28 +179,30 @@ func setupDB(t *testing.T) *ent.Client {
 	return client
 }
 
-// Calculate the number of receipts that are not associated with a block.
-func calcStrayReceipts(ctx context.Context, receipts []*ent.Receipt) int {
-	var count int
-	for _, r := range receipts {
-		cnt := r.QueryBlock().CountX(ctx)
-		if cnt == 0 {
-			count++
+func eval(t *testing.T, r results) {
+	t.Helper()
+
+	for _, b := range r.blocks {
+		expectedMessages := r.messageMap[b.UUID]
+		var expectedMessageIDs []int
+		for _, m := range expectedMessages {
+			expectedMessageIDs = append(expectedMessageIDs, m.ID)
+		}
+		actualMessageIDs := b.QueryMsgs().IDsX(context.Background())
+
+		if !cmp.Equal(expectedMessageIDs, actualMessageIDs) {
+			t.Errorf("unexpected receipts: %s", cmp.Diff(expectedMessageIDs, actualMessageIDs))
+		}
+
+		expectedReceipts := r.receiptMap[b.UUID]
+		var expectedReceiptIDs []int
+		for _, r := range expectedReceipts {
+			expectedReceiptIDs = append(expectedReceiptIDs, r.ID)
+		}
+		actualReceiptIDs := b.QueryReceipts().IDsX(context.Background())
+
+		if !cmp.Equal(expectedReceiptIDs, actualReceiptIDs) {
+			t.Errorf("unexpected receipts: %s", cmp.Diff(expectedReceiptIDs, actualReceiptIDs))
 		}
 	}
-
-	return count
-}
-
-// Calculate the number of receipts that are not associated with a block.
-func calcStrayMessages(ctx context.Context, msgs []*ent.Msg) int {
-	var count int
-	for _, b := range msgs {
-		cnt := b.QueryBlock().CountX(ctx)
-		if cnt == 0 {
-			count++
-		}
-	}
-
-	return count
 }
