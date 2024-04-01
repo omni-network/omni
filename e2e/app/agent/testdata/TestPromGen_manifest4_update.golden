@@ -31,6 +31,14 @@ scrape_configs:
           network: 'staging'
           host: 'vm-2'
 
+  - job_name: "geth"
+    metrics_path: "/debug/metrics/prometheus"
+    static_configs:
+      - targets: [] # geth targets
+        labels:
+          network: 'staging'
+          host: 'vm-2'
+
   - job_name: "monitor"
     metrics_path: "/metrics"
     static_configs:

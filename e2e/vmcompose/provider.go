@@ -51,6 +51,13 @@ func (p *Provider) Setup() error {
 			}
 		}
 
+		var geths []string
+		for _, omniEVM := range p.Testnet.OmniEVMs {
+			if services[omniEVM.InstanceName] {
+				geths = append(geths, omniEVM.InstanceName)
+			}
+		}
+
 		// Get all omniEVMs in this VM
 		var omniEVMs []types.OmniEVM
 		for _, omniEVM := range p.Testnet.OmniEVMs {
@@ -103,7 +110,7 @@ func (p *Provider) Setup() error {
 		}
 
 		hostname := vmIP // TODO(corver): Add hostnames to infra instances.
-		agentCfg = agent.ConfigForHost(agentCfg, hostname, halos, services["relayer"], services["monitor"])
+		agentCfg = agent.ConfigForHost(agentCfg, hostname, halos, geths, services["relayer"], services["monitor"])
 		err = os.WriteFile(filepath.Join(p.Testnet.Dir, vmAgentFile(vmIP)), agentCfg, 0o644)
 		if err != nil {
 			return errors.Wrap(err, "write compose file")

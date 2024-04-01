@@ -25,6 +25,7 @@ type Secrets struct {
 }
 
 const promPort = 26660 // Default metrics port for all omni apps (from cometBFT)
+const gethPromPort = 6060
 
 //go:embed prometheus.yml.tmpl
 var promConfigTmpl []byte
@@ -59,6 +60,11 @@ func genPromConfig(ctx context.Context, testnet types.Testnet, secrets Secrets, 
 		nodeTargets = append(nodeTargets, fmt.Sprintf("%s:%d", node.Name, promPort))
 	}
 
+	var evmTargets []string
+	for _, omniEVM := range testnet.OmniEVMs {
+		evmTargets = append(evmTargets, fmt.Sprintf("%s:%d", omniEVM.InstanceName, gethPromPort))
+	}
+
 	network := string(testnet.Network)
 	if testnet.Network == netconf.Devnet {
 		network = fmt.Sprintf("%s-%s", testnet.Name, hostname)
@@ -86,6 +92,11 @@ func genPromConfig(ctx context.Context, testnet types.Testnet, secrets Secrets, 
 				JobName:     "halo",
 				MetricsPath: "/metrics",
 				targets:     nodeTargets,
+			},
+			{
+				JobName:     "geth",
+				MetricsPath: "/debug/metrics/prometheus",
+				targets:     evmTargets,
 			},
 			{
 				JobName:     "monitor",
@@ -131,8 +142,9 @@ func (c promScrapConfig) Targets() string {
 //
 //	It removes the relayer targets if not enabled.
 //	It replaces the halo targets with provided.
+//	It replaces the geth targets with provided.
 //	It replaces the host label.
-func ConfigForHost(bz []byte, newHost string, halos []string, relayer bool, monitor bool) []byte {
+func ConfigForHost(bz []byte, newHost string, halos []string, geths []string, relayer bool, monitor bool) []byte {
 	if !relayer {
 		// Remove relayer target if not needed.
 		bz = regexp.MustCompile(`(?m)\[.*\] # relayer targets$`).
@@ -151,6 +163,14 @@ func ConfigForHost(bz []byte, newHost string, halos []string, relayer bool, moni
 	}
 	replace := fmt.Sprintf(`[%s] # halo targets`, strings.Join(haloTargets, ","))
 	bz = regexp.MustCompile(`(?m)\[.*\] # halo targets$`).
+		ReplaceAll(bz, []byte(replace))
+
+	var gethTargets []string
+	for _, geth := range geths {
+		gethTargets = append(gethTargets, fmt.Sprintf(`"%s:%d"`, geth, gethPromPort))
+	}
+	replace = fmt.Sprintf(`[%s] # geth targets`, strings.Join(gethTargets, ","))
+	bz = regexp.MustCompile(`(?m)\[.*\] # geth targets$`).
 		ReplaceAll(bz, []byte(replace))
 
 	bz = regexp.MustCompile(`(?m)host: '.*'$`).

@@ -27,5 +27,7 @@ BootstrapNodes = {{ .BootstrapNodes }}
 TrustedNodes = {{ .TrustedNodes }}
 ListenAddr = "0.0.0.0:30303"
 
-# TODO(corver): Enable prometheus metrics.
-# [Metrics]
+[Metrics]
+Enabled = true
+HTTP = "0.0.0.0"
+Port = 6060
