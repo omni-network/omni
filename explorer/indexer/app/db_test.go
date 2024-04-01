@@ -22,11 +22,11 @@ import (
 )
 
 type results struct {
-	blocks     []ent.Block
-	messages   []*ent.Msg
-	receipts   []*ent.Receipt
-	receiptMap map[uuid.UUID][]*ent.Receipt
-	messageMap map[uuid.UUID][]*ent.Msg
+	blocks        []ent.Block
+	messages      []*ent.Msg
+	receipts      []*ent.Receipt
+	blockReceipts map[uuid.UUID][]*ent.Receipt
+	blockMessages map[uuid.UUID][]*ent.Msg
 }
 
 type prerequisite func(t *testing.T, ctx context.Context, client *ent.Client) results
@@ -134,18 +134,18 @@ func TestDbTransaction(t *testing.T) {
 				require.NotNil(t, m)
 				require.NotNil(t, r)
 
-				receiptMap := make(map[uuid.UUID][]*ent.Receipt)
-				receiptMap[b.UUID] = []*ent.Receipt{r}
+				blockReceipts := make(map[uuid.UUID][]*ent.Receipt)
+				blockReceipts[b.UUID] = []*ent.Receipt{r}
 
-				messageMap := make(map[uuid.UUID][]*ent.Msg)
-				messageMap[b.UUID] = []*ent.Msg{m}
+				blockMessages := make(map[uuid.UUID][]*ent.Msg)
+				blockMessages[b.UUID] = []*ent.Msg{m}
 
 				return results{
-					blocks:     []ent.Block{*b},
-					messages:   []*ent.Msg{m},
-					receipts:   []*ent.Receipt{r},
-					messageMap: messageMap,
-					receiptMap: receiptMap,
+					blocks:        []ent.Block{*b},
+					messages:      []*ent.Msg{m},
+					receipts:      []*ent.Receipt{r},
+					blockMessages: blockMessages,
+					blockReceipts: blockReceipts,
 				}
 			},
 			want: want{
@@ -183,7 +183,7 @@ func eval(t *testing.T, r results) {
 	t.Helper()
 
 	for _, b := range r.blocks {
-		expectedMessages := r.messageMap[b.UUID]
+		expectedMessages := r.blockMessages[b.UUID]
 		var expectedMessageIDs []int
 		for _, m := range expectedMessages {
 			expectedMessageIDs = append(expectedMessageIDs, m.ID)
@@ -194,7 +194,7 @@ func eval(t *testing.T, r results) {
 			t.Errorf("unexpected receipts: %s", cmp.Diff(expectedMessageIDs, actualMessageIDs))
 		}
 
-		expectedReceipts := r.receiptMap[b.UUID]
+		expectedReceipts := r.blockReceipts[b.UUID]
 		var expectedReceiptIDs []int
 		for _, r := range expectedReceipts {
 			expectedReceiptIDs = append(expectedReceiptIDs, r.ID)
