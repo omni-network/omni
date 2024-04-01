@@ -515,15 +515,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable, PausableUpgrade
      * @notice Returns true if the operator is in the list of operators
      */
     function _isOperator(address operator) private view returns (bool) {
-        for (uint256 i = 0; i < _operators.length;) {
-            if (_operators[i] == operator) {
-                return true;
-            }
-            unchecked {
-                i++;
-            }
-        }
-        return false;
+        return _operatorPubkeys[operator].length > 0;
     }
 
     /**
