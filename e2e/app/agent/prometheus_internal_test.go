@@ -22,6 +22,8 @@ func TestPromGen(t *testing.T) {
 		network      netconf.ID
 		nodes        []string
 		newNodes     []string
+		geths        []string
+		newGeths     []string
 		newRelayer   bool
 		newMonitor   bool
 		hostname     string
@@ -33,6 +35,8 @@ func TestPromGen(t *testing.T) {
 			nodes:        []string{"validator01", "validator02"},
 			hostname:     "localhost",
 			newNodes:     []string{"validator01"},
+			geths:        []string{"omni_evm"},
+			newGeths:     []string{"omni_evm"},
 			newRelayer:   false,
 			newMonitor:   false,
 			agentSecrets: false,
@@ -43,6 +47,8 @@ func TestPromGen(t *testing.T) {
 			nodes:        []string{"validator01", "validator02", "fullnode03"},
 			hostname:     "vm",
 			newNodes:     []string{"fullnode04"},
+			geths:        []string{"validator01_evm", "validator02_evm", "validator03_evm"},
+			newGeths:     []string{"fullnode04_evm"},
 			newRelayer:   true,
 			newMonitor:   false,
 			agentSecrets: true,
@@ -78,12 +84,18 @@ func TestPromGen(t *testing.T) {
 				nodes = append(nodes, &e2e.Node{Name: name})
 			}
 
+			var geths []types.OmniEVM
+			for _, name := range test.geths {
+				geths = append(geths, types.OmniEVM{InstanceName: name})
+			}
+
 			testnet := types.Testnet{
 				Network: test.network,
 				Testnet: &e2e.Testnet{
 					Name:  test.name,
 					Nodes: nodes,
 				},
+				OmniEVMs: geths,
 			}
 
 			var agentSecrets Secrets
@@ -98,7 +110,7 @@ func TestPromGen(t *testing.T) {
 			cfg1, err := genPromConfig(ctx, testnet, agentSecrets, test.hostname)
 			require.NoError(t, err)
 
-			cfg2 := ConfigForHost(cfg1, test.hostname+"-2", test.newNodes, test.newRelayer, test.newMonitor)
+			cfg2 := ConfigForHost(cfg1, test.hostname+"-2", test.newNodes, test.newGeths, test.newRelayer, test.newMonitor)
 
 			t.Run("gen", func(t *testing.T) {
 				t.Parallel()

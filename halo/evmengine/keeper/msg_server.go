@@ -55,16 +55,18 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 		if ts <= payload.Timestamp {
 			ts = payload.Timestamp + 1 // Subsequent blocks must have a higher timestamp.
 		}
+		var zero common.Hash
+
 		attrs = &engine.PayloadAttributes{
 			Timestamp:             ts,
 			Random:                fcs.HeadBlockHash, // We use head block hash as randao.
 			SuggestedFeeRecipient: s.addrProvider.LocalAddress(),
 			Withdrawals:           []*etypes.Withdrawal{}, // Withdrawals not supported yet.
-			BeaconRoot:            nil,
+			BeaconRoot:            &zero,
 		}
 	}
 
-	fcr, err := s.engineCl.ForkchoiceUpdatedV2(ctx, fcs, attrs)
+	fcr, err := s.engineCl.ForkchoiceUpdatedV3(ctx, fcs, attrs)
 	if err != nil {
 		return nil, err
 	} else if fcr.PayloadStatus.Status != engine.VALID {
@@ -120,8 +122,12 @@ func pushPayload(ctx context.Context, engineCl ethclient.EngineClient, msg *type
 		return engine.ExecutableData{}, errors.Wrap(err, "unmarshal payload")
 	}
 
+	// TODO(corver): Figure out what to use for BeaconBlockRoot.
+	var zeroBeaconBlockRoot common.Hash
+	emptyVersionHashes := make([]common.Hash, 0) // Cannot use nil.
+
 	// Push it back to the execution client (mark it as possible new head).
-	status, err := engineCl.NewPayloadV2(ctx, payload)
+	status, err := engineCl.NewPayloadV3(ctx, payload, emptyVersionHashes, &zeroBeaconBlockRoot)
 	if err != nil {
 		return engine.ExecutableData{}, errors.Wrap(err, "new payload")
 	} else if status.Status != engine.VALID {

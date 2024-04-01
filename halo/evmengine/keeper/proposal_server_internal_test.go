@@ -62,7 +62,7 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, resp)
 
-		gotPayload, err := mockEngine.GetPayloadV2(ctx, payloadID)
+		gotPayload, err := mockEngine.GetPayloadV3(ctx, payloadID)
 		require.NoError(t, err)
 		require.Equal(t, latestHeight+1, gotPayload.ExecutionPayload.Number)
 		require.Equal(t, block.Hash(), gotPayload.ExecutionPayload.BlockHash)
