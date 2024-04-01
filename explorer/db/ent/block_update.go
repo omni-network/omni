@@ -11,7 +11,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/omni-network/omni/explorer/db/ent/block"
 	"github.com/omni-network/omni/explorer/db/ent/msg"
 	"github.com/omni-network/omni/explorer/db/ent/predicate"
@@ -28,20 +27,6 @@ type BlockUpdate struct {
 // Where appends a list predicates to the BlockUpdate builder.
 func (bu *BlockUpdate) Where(ps ...predicate.Block) *BlockUpdate {
 	bu.mutation.Where(ps...)
-	return bu
-}
-
-// SetUUID sets the "UUID" field.
-func (bu *BlockUpdate) SetUUID(u uuid.UUID) *BlockUpdate {
-	bu.mutation.SetUUID(u)
-	return bu
-}
-
-// SetNillableUUID sets the "UUID" field if the given value is not nil.
-func (bu *BlockUpdate) SetNillableUUID(u *uuid.UUID) *BlockUpdate {
-	if u != nil {
-		bu.SetUUID(*u)
-	}
 	return bu
 }
 
@@ -247,9 +232,6 @@ func (bu *BlockUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := bu.mutation.UUID(); ok {
-		_spec.SetField(block.FieldUUID, field.TypeUUID, value)
-	}
 	if value, ok := bu.mutation.SourceChainID(); ok {
 		_spec.SetField(block.FieldSourceChainID, field.TypeUint64, value)
 	}
@@ -379,20 +361,6 @@ type BlockUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *BlockMutation
-}
-
-// SetUUID sets the "UUID" field.
-func (buo *BlockUpdateOne) SetUUID(u uuid.UUID) *BlockUpdateOne {
-	buo.mutation.SetUUID(u)
-	return buo
-}
-
-// SetNillableUUID sets the "UUID" field if the given value is not nil.
-func (buo *BlockUpdateOne) SetNillableUUID(u *uuid.UUID) *BlockUpdateOne {
-	if u != nil {
-		buo.SetUUID(*u)
-	}
-	return buo
 }
 
 // SetSourceChainID sets the "SourceChainID" field.
@@ -626,9 +594,6 @@ func (buo *BlockUpdateOne) sqlSave(ctx context.Context) (_node *Block, err error
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := buo.mutation.UUID(); ok {
-		_spec.SetField(block.FieldUUID, field.TypeUUID, value)
 	}
 	if value, ok := buo.mutation.SourceChainID(); ok {
 		_spec.SetField(block.FieldSourceChainID, field.TypeUint64, value)

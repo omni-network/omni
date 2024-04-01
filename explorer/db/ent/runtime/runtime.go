@@ -20,20 +20,16 @@ import (
 func init() {
 	blockFields := schema.Block{}.Fields()
 	_ = blockFields
-	// blockDescUUID is the schema descriptor for UUID field.
-	blockDescUUID := blockFields[0].Descriptor()
-	// block.DefaultUUID holds the default value on creation for the UUID field.
-	block.DefaultUUID = blockDescUUID.Default.(func() uuid.UUID)
 	// blockDescBlockHash is the schema descriptor for BlockHash field.
-	blockDescBlockHash := blockFields[3].Descriptor()
+	blockDescBlockHash := blockFields[2].Descriptor()
 	// block.BlockHashValidator is a validator for the "BlockHash" field. It is called by the builders before save.
 	block.BlockHashValidator = blockDescBlockHash.Validators[0].(func([]byte) error)
 	// blockDescTimestamp is the schema descriptor for Timestamp field.
-	blockDescTimestamp := blockFields[4].Descriptor()
+	blockDescTimestamp := blockFields[3].Descriptor()
 	// block.DefaultTimestamp holds the default value on creation for the Timestamp field.
 	block.DefaultTimestamp = blockDescTimestamp.Default.(time.Time)
 	// blockDescCreatedAt is the schema descriptor for CreatedAt field.
-	blockDescCreatedAt := blockFields[5].Descriptor()
+	blockDescCreatedAt := blockFields[4].Descriptor()
 	// block.DefaultCreatedAt holds the default value on creation for the CreatedAt field.
 	block.DefaultCreatedAt = blockDescCreatedAt.Default.(time.Time)
 	chainFields := schema.Chain{}.Fields()

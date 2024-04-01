@@ -42,7 +42,6 @@ type BlockMutation struct {
 	op                Op
 	typ               string
 	id                *int
-	_UUID             *uuid.UUID
 	_SourceChainID    *uint64
 	add_SourceChainID *int64
 	_BlockHeight      *uint64
@@ -158,42 +157,6 @@ func (m *BlockMutation) IDs(ctx context.Context) ([]int, error) {
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
-}
-
-// SetUUID sets the "UUID" field.
-func (m *BlockMutation) SetUUID(u uuid.UUID) {
-	m._UUID = &u
-}
-
-// UUID returns the value of the "UUID" field in the mutation.
-func (m *BlockMutation) UUID() (r uuid.UUID, exists bool) {
-	v := m._UUID
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldUUID returns the old "UUID" field's value of the Block entity.
-// If the Block object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BlockMutation) OldUUID(ctx context.Context) (v uuid.UUID, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldUUID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldUUID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldUUID: %w", err)
-	}
-	return oldValue.UUID, nil
-}
-
-// ResetUUID resets all changes to the "UUID" field.
-func (m *BlockMutation) ResetUUID() {
-	m._UUID = nil
 }
 
 // SetSourceChainID sets the "SourceChainID" field.
@@ -558,10 +521,7 @@ func (m *BlockMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BlockMutation) Fields() []string {
-	fields := make([]string, 0, 6)
-	if m._UUID != nil {
-		fields = append(fields, block.FieldUUID)
-	}
+	fields := make([]string, 0, 5)
 	if m._SourceChainID != nil {
 		fields = append(fields, block.FieldSourceChainID)
 	}
@@ -585,8 +545,6 @@ func (m *BlockMutation) Fields() []string {
 // schema.
 func (m *BlockMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case block.FieldUUID:
-		return m.UUID()
 	case block.FieldSourceChainID:
 		return m.SourceChainID()
 	case block.FieldBlockHeight:
@@ -606,8 +564,6 @@ func (m *BlockMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *BlockMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case block.FieldUUID:
-		return m.OldUUID(ctx)
 	case block.FieldSourceChainID:
 		return m.OldSourceChainID(ctx)
 	case block.FieldBlockHeight:
@@ -627,13 +583,6 @@ func (m *BlockMutation) OldField(ctx context.Context, name string) (ent.Value, e
 // type.
 func (m *BlockMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case block.FieldUUID:
-		v, ok := value.(uuid.UUID)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetUUID(v)
-		return nil
 	case block.FieldSourceChainID:
 		v, ok := value.(uint64)
 		if !ok {
@@ -745,9 +694,6 @@ func (m *BlockMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *BlockMutation) ResetField(name string) error {
 	switch name {
-	case block.FieldUUID:
-		m.ResetUUID()
-		return nil
 	case block.FieldSourceChainID:
 		m.ResetSourceChainID()
 		return nil

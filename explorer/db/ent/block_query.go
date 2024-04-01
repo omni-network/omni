@@ -334,12 +334,12 @@ func (bq *BlockQuery) WithReceipts(opts ...func(*ReceiptQuery)) *BlockQuery {
 // Example:
 //
 //	var v []struct {
-//		UUID uuid.UUID `json:"UUID,omitempty"`
+//		SourceChainID uint64 `json:"SourceChainID,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Block.Query().
-//		GroupBy(block.FieldUUID).
+//		GroupBy(block.FieldSourceChainID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (bq *BlockQuery) GroupBy(field string, fields ...string) *BlockGroupBy {
@@ -357,11 +357,11 @@ func (bq *BlockQuery) GroupBy(field string, fields ...string) *BlockGroupBy {
 // Example:
 //
 //	var v []struct {
-//		UUID uuid.UUID `json:"UUID,omitempty"`
+//		SourceChainID uint64 `json:"SourceChainID,omitempty"`
 //	}
 //
 //	client.Block.Query().
-//		Select(block.FieldUUID).
+//		Select(block.FieldSourceChainID).
 //		Scan(ctx, &v)
 func (bq *BlockQuery) Select(fields ...string) *BlockSelect {
 	bq.ctx.Fields = append(bq.ctx.Fields, fields...)

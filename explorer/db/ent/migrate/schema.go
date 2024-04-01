@@ -11,7 +11,6 @@ var (
 	// BlocksColumns holds the columns for the "blocks" table.
 	BlocksColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "uuid", Type: field.TypeUUID},
 		{Name: "source_chain_id", Type: field.TypeUint64},
 		{Name: "block_height", Type: field.TypeUint64},
 		{Name: "block_hash", Type: field.TypeBytes, Size: 32},

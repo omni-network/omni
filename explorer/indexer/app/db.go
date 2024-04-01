@@ -9,8 +9,6 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
-
-	"github.com/google/uuid"
 )
 
 // newCallback returns the indexer xprovider callback that
@@ -103,7 +101,6 @@ func getCursor(ctx context.Context, client *ent.XProviderCursorClient, chainID u
 
 func insertBlock(ctx context.Context, tx *ent.Tx, block xchain.Block) (*ent.Block, error) {
 	b, err := tx.Block.Create().
-		SetUUID(uuid.New()).
 		SetBlockHeight(block.BlockHeight).
 		SetBlockHash(block.BlockHash[:]).
 		SetSourceChainID(block.SourceChainID).

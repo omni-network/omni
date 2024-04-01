@@ -17,7 +17,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	fuzz "github.com/google/gofuzz"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -25,8 +24,8 @@ type results struct {
 	blocks        []ent.Block
 	messages      []*ent.Msg
 	receipts      []*ent.Receipt
-	blockReceipts map[uuid.UUID][]*ent.Receipt
-	blockMessages map[uuid.UUID][]*ent.Msg
+	blockReceipts map[uint64][]*ent.Receipt
+	blockMessages map[uint64][]*ent.Msg
 }
 
 type prerequisite func(t *testing.T, ctx context.Context, client *ent.Client) results
@@ -134,11 +133,11 @@ func TestDbTransaction(t *testing.T) {
 				require.NotNil(t, m)
 				require.NotNil(t, r)
 
-				blockReceipts := make(map[uuid.UUID][]*ent.Receipt)
-				blockReceipts[b.UUID] = []*ent.Receipt{r}
+				blockReceipts := make(map[uint64][]*ent.Receipt)
+				blockReceipts[b.BlockHeight] = []*ent.Receipt{r}
 
-				blockMessages := make(map[uuid.UUID][]*ent.Msg)
-				blockMessages[b.UUID] = []*ent.Msg{m}
+				blockMessages := make(map[uint64][]*ent.Msg)
+				blockMessages[b.BlockHeight] = []*ent.Msg{m}
 
 				return results{
 					blocks:        []ent.Block{*b},
@@ -183,7 +182,7 @@ func eval(t *testing.T, r results) {
 	t.Helper()
 
 	for _, b := range r.blocks {
-		expectedMessages := r.blockMessages[b.UUID]
+		expectedMessages := r.blockMessages[b.BlockHeight]
 		var expectedMessageIDs []int
 		for _, m := range expectedMessages {
 			expectedMessageIDs = append(expectedMessageIDs, m.ID)
@@ -194,7 +193,7 @@ func eval(t *testing.T, r results) {
 			t.Errorf("got %v want %v", actualMessageIDs, expectedMessageIDs)
 		}
 
-		expectedReceipts := r.blockReceipts[b.UUID]
+		expectedReceipts := r.blockReceipts[b.BlockHeight]
 		var expectedReceiptIDs []int
 		for _, r := range expectedReceipts {
 			expectedReceiptIDs = append(expectedReceiptIDs, r.ID)
