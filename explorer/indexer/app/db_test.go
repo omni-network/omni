@@ -16,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/google/go-cmp/cmp"
+	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"
 )
 
@@ -49,6 +50,21 @@ func TestDbTransaction(t *testing.T) {
 			prerequisites: func(t *testing.T, ctx context.Context, client *ent.Client) results {
 				t.Helper()
 
+				var msgTxHash, receiptTxHash common.Hash
+				fuzz.New().NilChance(0).Fuzz(&msgTxHash)
+				fuzz.New().NilChance(0).Fuzz(&receiptTxHash)
+
+				var blockHash common.Hash
+				fuzz.New().NilChance(0).Fuzz(&blockHash)
+
+				var sourceMessageSender, destAddress, relayerAddress [20]byte
+				fuzz.New().NilChance(0).Fuzz(&sourceMessageSender)
+				fuzz.New().NilChance(0).Fuzz(&destAddress)
+				fuzz.New().NilChance(0).Fuzz(&relayerAddress)
+
+				var msgData []byte
+				fuzz.New().NilChance(0).Fuzz(&msgData)
+
 				sourceChainID := uint64(1)
 				destChainID := uint64(2)
 
@@ -58,19 +74,10 @@ func TestDbTransaction(t *testing.T) {
 				_, err = client.XProviderCursor.Create().SetChainID(destChainID).SetHeight(0).Save(ctx)
 				require.NoError(t, err, "creating dest chain cursor")
 
-				blockHash := common.Hash([32]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 30})
 				blockHeight := uint64(1)
-
-				sourceMessageSender := [20]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
-				destAddress := [20]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21}
-				msgData := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 				gasLimit := uint64(1000)
-				msgTxHash := common.Hash([32]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32})
 				streamOffset := uint64(0)
-
 				gasUsed := uint64(100)
-				relayerAddress := [20]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 22}
-				receiptTxHash := common.Hash([32]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 33})
 
 				tx, err := client.BeginTx(ctx, nil)
 				require.NoError(t, err)
