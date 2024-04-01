@@ -50,7 +50,8 @@ services:
       - --config=/geth/config.toml
       # Flags not available via config.toml
       - --nat=extip:<nil>
-      - --metrics
+      - --pprof
+      - --pprof.addr=0.0.0.0
       
     ports:
       - 8551:8551

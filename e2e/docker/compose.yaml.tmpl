@@ -86,7 +86,8 @@ services:
       - --config=/geth/config.toml
       # Flags not available via config.toml
       - --nat=extip:{{ .AdvertisedIP }}
-      - --metrics
+      - --pprof
+      - --pprof.addr=0.0.0.0
       {{ if .IsArchive }}- --gcmode=archive{{ end }}
     ports:
       - {{ if $.BindAll }}8551:{{end}}8551

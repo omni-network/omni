@@ -95,7 +95,8 @@ services:
       - --config=/geth/config.toml
       # Flags not available via config.toml
       - --nat=extip:10.186.73.0
-      - --metrics
+      - --pprof
+      - --pprof.addr=0.0.0.0
       
     ports:
       - 8551
