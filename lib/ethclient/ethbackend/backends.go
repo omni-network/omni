@@ -35,12 +35,7 @@ func NewFireBackends(ctx context.Context, testnet types.Testnet, fireCl firebloc
 
 	// Configure omni EVM Backend
 	if testnet.HasOmniEVM() {
-		// todo(lazar): remove this when we figure out why txs are stuck in geth mempool upon initial run
-		// task https://app.asana.com/0/1206208509925075/1206887969751598/f
-		chain, err := testnet.FirstOmniValidatorEVM() // Connect to a geth node connected to a validator
-		if err != nil {
-			return Backends{}, errors.Wrap(err, "omni evm validator")
-		}
+		chain := testnet.BroadcastOmniEVM()
 		ethCl, err := ethclient.Dial(chain.Chain.Name, chain.ExternalRPC)
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "dial")
@@ -105,12 +100,7 @@ func NewBackends(testnet types.Testnet, deployKeyFile string) (Backends, error) 
 
 	// Configure omni EVM Backend
 	{
-		// todo(lazar): remove this when we figure out why txs are stuck in geth mempool upon initial run
-		// task https://app.asana.com/0/1206208509925075/1206887969751598/f
-		chain, err := testnet.FirstOmniValidatorEVM() // Connect to a geth node connected to a validator
-		if err != nil {
-			return Backends{}, errors.Wrap(err, "omni evm validator")
-		}
+		chain := testnet.BroadcastOmniEVM()
 		ethCl, err := ethclient.Dial(chain.Chain.Name, chain.ExternalRPC)
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "dial")

@@ -55,11 +55,11 @@ func TestComposeTemplate(t *testing.T) {
 					{
 						Chain:        types.OmniEVMByNetwork(netconf.Simnet),
 						InstanceName: "omni_evm_0",
-						InternalIP:   ipNet.IP,
+						AdvertisedIP: ipNet.IP,
 						ProxyPort:    8000,
 						NodeKey:      key,
 						Enode:        en,
-						BootNodes:    []*enode.Node{en},
+						Peers:        []*enode.Node{en},
 					},
 				},
 				AnvilChains: []types.AnvilChain{

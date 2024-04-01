@@ -1,3 +1,31 @@
+[Eth]
+NetworkId = {{ .ChainID }}
+SyncMode = {{ if .IsArchive }}"full"{{else}}"snap"{{end}}
+NoPruning = {{ .IsArchive }}
+
+[Eth.Miner]
+# Recommit defines the time interval for miner to re-create mining work. Required for fast block times.
+Recommit = 500000000 # 500ms
+
+[Node]
+DataDir = "/geth"
+HTTPHost = "0.0.0.0"
+HTTPPort = 8545
+HTTPVirtualHosts = ["*"]
+HTTPModules = ["net", "web3", "eth"]
+AuthAddr = "0.0.0.0"
+AuthPort = 8551
+AuthVirtualHosts = ["*"]
+WSHost = "0.0.0.0"
+WSPort = 8546
+WSModules = ["net", "web3", "eth"]
+
 [Node.P2P]
-BootstrapNodes = [{{ .BootstrapNodes }}]
-StaticNodes = [{{ .StaticNodes }}]
+NoDiscovery = false
+DiscoveryV4 = true
+BootstrapNodes = {{ .BootstrapNodes }}
+TrustedNodes = {{ .TrustedNodes }}
+ListenAddr = "0.0.0.0:30303"
+
+# TODO(corver): Enable prometheus metrics.
+# [Metrics]

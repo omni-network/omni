@@ -3,13 +3,13 @@ package app
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"text/template"
 	"time"
 
@@ -36,6 +36,7 @@ import (
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/p2p/enode"
 
 	_ "embed"
 )
@@ -118,6 +119,11 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 
 		if err := writeHaloConfig(nodeDir, logCfg, testCfg, node.Mode); err != nil {
 			return err
+		}
+
+		omniEVM := omniEVMByPrefix(def.Testnet, node.Name)
+		if err := os.WriteFile(filepath.Join(nodeDir, "config", "jwtsecret"), []byte(omniEVM.JWTSecret), 0o600); err != nil {
+			return errors.Wrap(err, "write jwtsecret")
 		}
 
 		err = cmtGenesis.SaveAs(filepath.Join(nodeDir, "config", "genesis.json"))
@@ -234,26 +240,13 @@ func MakeConfig(node *e2e.Node, nodeDir string) (*config.Config, error) {
 	cfg.PrivValidatorKey = PrivvalKeyFile
 	cfg.PrivValidatorState = PrivvalStateFile
 
-	switch node.Mode {
-	case e2e.ModeValidator:
-		switch node.PrivvalProtocol {
-		case e2e.ProtocolFile:
-			cfg.PrivValidatorKey = PrivvalKeyFile
-			cfg.PrivValidatorState = PrivvalStateFile
-		case e2e.ProtocolUNIX:
-			cfg.PrivValidatorListenAddr = PrivvalAddressUNIX
-		case e2e.ProtocolTCP:
-			cfg.PrivValidatorListenAddr = PrivvalAddressTCP
-		default:
-			return nil, errors.New("unexpected privval protocol")
-		}
-	case e2e.ModeSeed:
+	if node.PrivvalProtocol != e2e.ProtocolFile {
+		return nil, errors.New("only PrivvalKeyFile is supported")
+	}
+
+	if node.Mode == types.ModeSeed {
 		cfg.P2P.SeedMode = true
 		cfg.P2P.PexReactor = true
-	case e2e.ModeFull, e2e.ModeLight:
-		// Don't need to do anything, since we're using a dummy privval key by default.
-	default:
-		return nil, errors.New("unexpected mode")
 	}
 
 	if node.StateSync {
@@ -309,7 +302,7 @@ func writeHaloConfig(nodeDir string, logCfg log.Config, testCfg bool, mode e2e.M
 	}
 
 	cfg.HomeDir = nodeDir
-	cfg.EngineJWTFile = "/geth/jwtsecret" // As per docker-compose mount
+	cfg.EngineJWTFile = "/halo/config/jwtsecret" // Absolute path inside docker container
 
 	if testCfg {
 		cfg.SnapshotInterval = 1   // Write snapshots each block in e2e tests
@@ -355,9 +348,6 @@ var (
 
 // writeOmniEVMConfig writes the omni evms (geth) config to <root>/<omni_evm>.
 func writeOmniEVMConfig(testnet types.Testnet) error {
-	var jwtSecret [32]byte
-	_, _ = rand.Read(jwtSecret[:])
-
 	gethGenesis, err := evmgenutil.MakeGenesis(testnet.Network)
 	if err != nil {
 		return errors.Wrap(err, "make genesis")
@@ -367,15 +357,18 @@ func writeOmniEVMConfig(testnet types.Testnet) error {
 		return errors.Wrap(err, "marshal genesis")
 	}
 
-	files := map[string][]byte{
-		"genesis.json":      gethGenesisBz,
-		"keystore/keystore": gethKeystore,
-		"jwtsecret":         []byte(fmt.Sprintf("%#x", jwtSecret)),
-		"geth_password.txt": []byte(""), // Empty password
+	gethConfigFiles := func(evm types.OmniEVM) map[string][]byte {
+		return map[string][]byte{
+			"genesis.json":      gethGenesisBz,
+			"keystore/keystore": gethKeystore, // TODO(corver): Remove this, it isn't used.
+			"geth_password.txt": []byte(""),   // Empty password
+			"geth/nodekey":      ethcrypto.FromECDSA(evm.NodeKey),
+			"geth/jwtsecret":    []byte(evm.JWTSecret),
+		}
 	}
 
 	for _, evm := range testnet.OmniEVMs {
-		for file, data := range files {
+		for file, data := range gethConfigFiles(evm) {
 			path := filepath.Join(testnet.Dir, evm.InstanceName, file)
 			if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 				return errors.Wrap(err, "mkdir", "path", path)
@@ -385,9 +378,10 @@ func writeOmniEVMConfig(testnet types.Testnet) error {
 			}
 		}
 
-		cfg := types.GethConfig{
-			BootstrapNodes: evm.BootNodesStrArr(),
-			StaticNodes:    evm.BootNodesStrArr(),
+		cfg := GethConfig{
+			peers:     evm.Peers,
+			IsArchive: evm.IsArchive,
+			ChainID:   evm.Chain.ID,
 		}
 		if err := WriteGethConfigTOML(cfg, filepath.Join(testnet.Dir, evm.InstanceName, "config.toml")); err != nil {
 			return errors.Wrap(err, "write geth config")
@@ -497,11 +491,39 @@ func logConfig() log.Config {
 	}
 }
 
+// GethConfig defines the geth/config.toml config file template variables.
+type GethConfig struct {
+	peers     []*enode.Node
+	ChainID   uint64
+	IsArchive bool
+}
+
+// TrustedNodes defines nodes that geth will always connect to. They are excluded from maxPeers calculations.
+func (c GethConfig) peerENRs() []string {
+	var peers []string
+	for _, peer := range c.peers {
+		peers = append(peers, peer.String())
+	}
+
+	return peers
+}
+
+// TrustedNodes defines nodes that geth will always connect to. They are excluded from maxPeers calculations.
+func (c GethConfig) TrustedNodes() string {
+	return quotedStrArr(c.peerENRs())
+}
+
+// BootstrapNodes defines nodes that geth will connect to during bootstrapping to find other nodes in the network.
+// TODO(corver): Replace this with network seed nodes.
+func (c GethConfig) BootstrapNodes() string {
+	return quotedStrArr(c.peerENRs())
+}
+
 //go:embed geth.toml.tmpl
 var gethTomlTemplate []byte
 
 // WriteGethConfigTOML writes the toml config to disk.
-func WriteGethConfigTOML(cfg types.GethConfig, path string) error {
+func WriteGethConfigTOML(cfg GethConfig, path string) error {
 	var buffer bytes.Buffer
 
 	t, err := template.New("").Parse(string(gethTomlTemplate))
@@ -518,4 +540,14 @@ func WriteGethConfigTOML(cfg types.GethConfig, path string) error {
 	}
 
 	return nil
+}
+
+// quotedStrArr returns the string slices as quoted string array.
+// e.g. ["a", "b", "c"] -> `["a","b","c"]`.
+func quotedStrArr(arr []string) string {
+	if len(arr) == 0 {
+		return "[]"
+	}
+
+	return `["` + strings.Join(arr, `","`) + `"]`
 }

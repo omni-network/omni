@@ -30,7 +30,6 @@ services:
     - HALO_LOG_FORMAT={{ $.OmniLogFormat }}
     volumes:
     - ./{{ .Name }}:/halo
-    - ./{{ index $.NodeOmniEVMs .Name }}/jwtsecret:/geth/jwtsecret
     depends_on:
       {{ index $.NodeOmniEVMs .Name }}:
         condition: service_healthy
@@ -72,7 +71,7 @@ services:
       e2e: true
     container_name: {{ .InstanceName }}-init
     image: "ethereum/client-go:{{ $.GethTag }}"
-    command: {{ if eq .GcMode "archive" }}--state.scheme=hash {{ end }}--datadir=/geth init /geth/genesis.json
+    command: --state.scheme={{ if .IsArchive }}hash{{ else }}path{{ end }} --datadir=/geth init /geth/genesis.json
     volumes:
       - ./{{ .InstanceName }}:/geth
     networks:
@@ -82,31 +81,12 @@ services:
     labels:
       e2e: true
     container_name: {{ .InstanceName }}
-    image: "ethereum/client-go:latest"
+    image: "ethereum/client-go:{{ $.GethTag }}"
     command:
       - --config=/geth/config.toml
-      - --http
-      - --http.vhosts=*
-      - --http.api=eth,net,web3
-      - --http.addr=0.0.0.0
-      - --http.corsdomain=*
-      - --ws
-      - --ws.api=eth,net,web3
-      - --ws.addr=0.0.0.0
-      - --ws.origins=*
-      - --authrpc.vhosts=*
-      - --authrpc.addr=0.0.0.0
-      - --authrpc.jwtsecret=/geth/jwtsecret
-      - --datadir=/geth
-      - --unlock=0x123463a4b065722e99115d6c222f267d9cabb524
-      - --allow-insecure-unlock
-      - --password=/geth/geth_password.txt
-      - --nodiscover
-      - --syncmode=full
-      - --gcmode={{.GcMode}}
-      - --nodekeyhex={{.NodeKeyHex}}
-      - --miner.recommit=500ms
-      - --nat=extip:{{.ExternalIP}}
+      # Flags not available via config.toml
+      - --nat=extip:{{ .AdvertisedIP }}
+      {{ if .IsArchive }}- --gcmode=archive{{ end }}
     ports:
       - {{ if $.BindAll }}8551:{{end}}8551
       - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}8545
@@ -123,7 +103,7 @@ services:
       - ./{{ .InstanceName }}:/geth
     networks:
       {{ $.NetworkName }}:
-        {{ if $.Network }}ipv4_address: {{ .InternalIP }}{{ end }}
+        {{ if $.Network }}ipv4_address: {{ .AdvertisedIP }}{{ end }}
 {{end}}
 
 {{- if .Relayer }}

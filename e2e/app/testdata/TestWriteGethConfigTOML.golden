@@ -1,0 +1,31 @@
+[Eth]
+NetworkId = 15651
+SyncMode = "full"
+NoPruning = true
+
+[Eth.Miner]
+# Recommit defines the time interval for miner to re-create mining work. Required for fast block times.
+Recommit = 500000000 # 500ms
+
+[Node]
+DataDir = "/geth"
+HTTPHost = "0.0.0.0"
+HTTPPort = 8545
+HTTPVirtualHosts = ["*"]
+HTTPModules = ["net", "web3", "eth"]
+AuthAddr = "0.0.0.0"
+AuthPort = 8551
+AuthVirtualHosts = ["*"]
+WSHost = "0.0.0.0"
+WSPort = 8546
+WSModules = ["net", "web3", "eth"]
+
+[Node.P2P]
+NoDiscovery = false
+DiscoveryV4 = true
+BootstrapNodes = ["enode://3a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d8072e77939dc03ba44790779b7a1025baf3003f6732430e20cd9b76d953391b3@127.0.0.1:1","enode://3a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d8072e77939dc03ba44790779b7a1025baf3003f6732430e20cd9b76d953391b3@127.0.0.2:2"]
+TrustedNodes = ["enode://3a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d8072e77939dc03ba44790779b7a1025baf3003f6732430e20cd9b76d953391b3@127.0.0.1:1","enode://3a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d8072e77939dc03ba44790779b7a1025baf3003f6732430e20cd9b76d953391b3@127.0.0.2:2"]
+ListenAddr = "0.0.0.0:30303"
+
+# TODO(corver): Enable prometheus metrics.
+# [Metrics]
