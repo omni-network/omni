@@ -50,12 +50,14 @@ services:
       - --config=/geth/config.toml
       # Flags not available via config.toml
       - --nat=extip:<nil>
+      - --metrics
       
     ports:
       - 8551:8551
       - 8545:8545
       - 30303:30303
       - 8546
+      - 6060
     depends_on:
       fullnode01_evm-init:
         condition: service_completed_successfully

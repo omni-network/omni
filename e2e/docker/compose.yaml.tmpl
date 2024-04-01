@@ -86,12 +86,14 @@ services:
       - --config=/geth/config.toml
       # Flags not available via config.toml
       - --nat=extip:{{ .AdvertisedIP }}
+      - --metrics
       {{ if .IsArchive }}- --gcmode=archive{{ end }}
     ports:
       - {{ if $.BindAll }}8551:{{end}}8551
       - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}8545
       - {{ if $.BindAll }}30303:{{end}}30303
       - 8546
+      - 6060
     depends_on:
       {{ .InstanceName }}-init:
         condition: service_completed_successfully
