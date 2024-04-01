@@ -191,7 +191,7 @@ func eval(t *testing.T, r results) {
 		actualMessageIDs := b.QueryMsgs().IDsX(context.Background())
 
 		if !cmp.Equal(expectedMessageIDs, actualMessageIDs) {
-			t.Errorf("unexpected receipts: %s", cmp.Diff(expectedMessageIDs, actualMessageIDs))
+			t.Errorf("got %v want %v", actualMessageIDs, expectedMessageIDs)
 		}
 
 		expectedReceipts := r.blockReceipts[b.UUID]
@@ -202,7 +202,7 @@ func eval(t *testing.T, r results) {
 		actualReceiptIDs := b.QueryReceipts().IDsX(context.Background())
 
 		if !cmp.Equal(expectedReceiptIDs, actualReceiptIDs) {
-			t.Errorf("unexpected receipts: %s", cmp.Diff(expectedReceiptIDs, actualReceiptIDs))
+			t.Errorf("got %v want %v", actualReceiptIDs, expectedReceiptIDs)
 		}
 	}
 }
