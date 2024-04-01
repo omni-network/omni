@@ -80,7 +80,7 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, resp)
 
-		gotPayload, err := mockEngine.GetPayloadV2(ctx, payloadID)
+		gotPayload, err := mockEngine.GetPayloadV3(ctx, payloadID)
 		require.NoError(t, err)
 		// make sure height is increasing in engine, blocks being built
 		require.Equal(t, gotPayload.ExecutionPayload.Number, latestHeight+1)
@@ -131,7 +131,7 @@ func Test_pushPayload(t *testing.T) {
 	}
 	type args struct {
 		msg              *types.MsgExecutionPayload
-		newPayloadV2Func func(ctx context.Context, params engine.ExecutableData) (engine.PayloadStatusV1, error)
+		newPayloadV3Func func(context.Context, engine.ExecutableData, []common.Hash, *common.Hash) (engine.PayloadStatusV1, error)
 	}
 	tests := []struct {
 		name    string
@@ -148,7 +148,7 @@ func Test_pushPayload(t *testing.T) {
 		{
 			name: "new payload error",
 			args: args{
-				newPayloadV2Func: func(ctx context.Context, params engine.ExecutableData) (engine.PayloadStatusV1, error) {
+				newPayloadV3Func: func(context.Context, engine.ExecutableData, []common.Hash, *common.Hash) (engine.PayloadStatusV1, error) {
 					return engine.PayloadStatusV1{}, errors.New("error")
 				},
 			},
@@ -157,7 +157,7 @@ func Test_pushPayload(t *testing.T) {
 		{
 			name: "new payload invalid",
 			args: args{
-				newPayloadV2Func: func(ctx context.Context, params engine.ExecutableData) (engine.PayloadStatusV1, error) {
+				newPayloadV3Func: func(context.Context, engine.ExecutableData, []common.Hash, *common.Hash) (engine.PayloadStatusV1, error) {
 					return engine.PayloadStatusV1{
 						Status:          engine.INVALID,
 						LatestValidHash: nil,
@@ -170,7 +170,7 @@ func Test_pushPayload(t *testing.T) {
 		{
 			name: "new payload invalid val err",
 			args: args{
-				newPayloadV2Func: func(ctx context.Context, params engine.ExecutableData) (engine.PayloadStatusV1, error) {
+				newPayloadV3Func: func(context.Context, engine.ExecutableData, []common.Hash, *common.Hash) (engine.PayloadStatusV1, error) {
 					return engine.PayloadStatusV1{
 						Status:          engine.INVALID,
 						LatestValidHash: nil,
@@ -191,7 +191,7 @@ func Test_pushPayload(t *testing.T) {
 			t.Parallel()
 			mockEngine, err := newMockEngineAPI()
 			require.NoError(t, err)
-			mockEngine.newPayloadV2Func = tt.args.newPayloadV2Func
+			mockEngine.newPayloadV3Func = tt.args.newPayloadV3Func
 			payload, payloadID := newPayload(context.Background(), mockEngine, common.Address{})
 			if tt.args.msg == nil {
 				tt.args.msg = &types.MsgExecutionPayload{
@@ -206,7 +206,7 @@ func Test_pushPayload(t *testing.T) {
 			}
 
 			if !tt.wantErr {
-				want, err := mockEngine.GetPayloadV2(context.Background(), payloadID)
+				want, err := mockEngine.GetPayloadV3(context.Background(), payloadID)
 				require.NoError(t, err)
 				if !reflect.DeepEqual(got, *want.ExecutionPayload) {
 					t.Errorf("pushPayload() got = %v, want %v", got, want)

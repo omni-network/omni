@@ -22,9 +22,6 @@ func newUint64(val uint64) *uint64 { return &val }
 
 // MakeGenesis returns a genesis block for a development chain.
 func MakeGenesis(network netconf.ID) (core.Genesis, error) {
-	// TODO: set config values for devnet, staging, testnet
-	config := DefaultDevConfig()
-
 	allocs := mergeAllocs(precompilesAlloc(), predeploys.Alloc())
 
 	if network.IsEphemeral() {
@@ -32,21 +29,22 @@ func MakeGenesis(network netconf.ID) (core.Genesis, error) {
 	} else if network == netconf.Testnet {
 		allocs = mergeAllocs(allocs, testnetPrefundAlloc())
 	} else {
-		return core.Genesis{}, errors.New("unsupported network")
+		return core.Genesis{}, errors.New("unsupported network", "network", network.String())
 	}
 
 	return core.Genesis{
-		Config:     &config,
+		Config:     defaultChainConfig(network),
 		GasLimit:   params.GenesisGasLimit,
 		BaseFee:    big.NewInt(params.InitialBaseFee),
-		Difficulty: big.NewInt(1),
+		Difficulty: big.NewInt(0),
 		Alloc:      allocs,
 	}, nil
 }
 
-func DefaultDevConfig() params.ChainConfig {
-	return params.ChainConfig{
-		ChainID:                       big.NewInt(int64(netconf.Devnet.Static().OmniExecutionChainID)),
+// defaultChainConfig returns the default chain config for a network.
+func defaultChainConfig(network netconf.ID) *params.ChainConfig {
+	return &params.ChainConfig{
+		ChainID:                       big.NewInt(int64(network.Static().OmniExecutionChainID)),
 		HomesteadBlock:                big.NewInt(0),
 		EIP150Block:                   big.NewInt(0),
 		EIP155Block:                   big.NewInt(0),
@@ -61,6 +59,7 @@ func DefaultDevConfig() params.ChainConfig {
 		ArrowGlacierBlock:             big.NewInt(0),
 		GrayGlacierBlock:              big.NewInt(0),
 		ShanghaiTime:                  newUint64(0),
+		CancunTime:                    newUint64(0),
 		TerminalTotalDifficulty:       big.NewInt(0),
 		TerminalTotalDifficultyPassed: true,
 	}

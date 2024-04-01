@@ -124,7 +124,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 
 						return block, nil
 					},
-					forkchoiceUpdatedV2Func: func(ctx context.Context, update eengine.ForkchoiceStateV1,
+					forkchoiceUpdatedV3Func: func(ctx context.Context, update eengine.ForkchoiceStateV1,
 						payloadAttributes *eengine.PayloadAttributes) (eengine.ForkChoiceResponse, error) {
 						return eengine.ForkChoiceResponse{}, errors.New("mocked error")
 					},
@@ -149,7 +149,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 
 						return block, nil
 					},
-					forkchoiceUpdatedV2Func: func(ctx context.Context, update eengine.ForkchoiceStateV1,
+					forkchoiceUpdatedV3Func: func(ctx context.Context, update eengine.ForkchoiceStateV1,
 						payloadAttributes *eengine.PayloadAttributes) (eengine.ForkChoiceResponse, error) {
 						return eengine.ForkChoiceResponse{
 							PayloadStatus: eengine.PayloadStatusV1{
@@ -216,7 +216,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		// build next two blocks and get the PayloadID of the second
 		mockEngine.pushPayload(t, ctx, ap.LocalAddress(), latestBlock.Hash(), ts)
 		nextBlock, blockPayload := mockEngine.nextBlock(t, latestHeight+1, uint64(ts.Unix()), latestBlock.Hash(), ap.LocalAddress())
-		_, err = mockEngine.mock.NewPayloadV2(ctx, blockPayload)
+		_, err = mockEngine.mock.NewPayloadV3(ctx, blockPayload, nil, nil)
 		require.NoError(t, err)
 		payloadID := mockEngine.pushPayload(t, ctx, ap.LocalAddress(), nextBlock.Hash(), ts)
 
@@ -275,7 +275,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		// build next two blocks and get the PayloadID of the second
 		mockEngine.pushPayload(t, ctx, ap.LocalAddress(), latestBlock.Hash(), ts)
 		nextBlock, blockPayload := mockEngine.nextBlock(t, latestHeight+1, uint64(ts.Unix()), latestBlock.Hash(), ap.LocalAddress())
-		_, err = mockEngine.NewPayloadV2(ctx, blockPayload)
+		_, err = mockEngine.NewPayloadV3(ctx, blockPayload, nil, nil)
 		require.NoError(t, err)
 		mockEngine.pushPayload(t, ctx, ap.LocalAddress(), nextBlock.Hash(), ts)
 
@@ -377,11 +377,10 @@ type mockEngineAPI struct {
 	ethclient.EngineClient
 	fuzzer                  *fuzz.Fuzzer
 	mock                    ethclient.EngineClient // avoid repeating the implementation but also allow for custom implementations of mocks
-	blockNumberFunc         func(ctx context.Context) (uint64, error)
-	blockByNumberFunc       func(ctx context.Context, number *big.Int) (*types.Block, error)
-	forkchoiceUpdatedV2Func func(ctx context.Context, update eengine.ForkchoiceStateV1,
-		payloadAttributes *eengine.PayloadAttributes) (eengine.ForkChoiceResponse, error)
-	newPayloadV2Func func(ctx context.Context, params eengine.ExecutableData) (eengine.PayloadStatusV1, error)
+	blockNumberFunc         func(context.Context) (uint64, error)
+	blockByNumberFunc       func(context.Context, *big.Int) (*types.Block, error)
+	forkchoiceUpdatedV3Func func(context.Context, eengine.ForkchoiceStateV1, *eengine.PayloadAttributes) (eengine.ForkChoiceResponse, error)
+	newPayloadV3Func        func(context.Context, eengine.ExecutableData, []common.Hash, *common.Hash) (eengine.PayloadStatusV1, error)
 }
 
 // newMockEngineAPI returns a new mock engine API with a fuzzer and a mock engine client.
@@ -461,27 +460,27 @@ func (m *mockEngineAPI) BlockByNumber(ctx context.Context, number *big.Int) (*ty
 }
 
 func (m *mockEngineAPI) NewPayloadV2(ctx context.Context, params eengine.ExecutableData) (eengine.PayloadStatusV1, error) {
-	if m.newPayloadV2Func != nil {
-		return m.newPayloadV2Func(ctx, params)
-	}
-
 	return m.mock.NewPayloadV2(ctx, params)
 }
 
 func (m *mockEngineAPI) NewPayloadV3(ctx context.Context, params eengine.ExecutableData, versionedHashes []common.Hash, beaconRoot *common.Hash) (eengine.PayloadStatusV1, error) {
+	if m.newPayloadV3Func != nil {
+		return m.newPayloadV3Func(ctx, params, versionedHashes, beaconRoot)
+	}
+
 	return m.mock.NewPayloadV3(ctx, params, versionedHashes, beaconRoot)
 }
 
-func (m *mockEngineAPI) ForkchoiceUpdatedV2(ctx context.Context, update eengine.ForkchoiceStateV1, payloadAttributes *eengine.PayloadAttributes) (eengine.ForkChoiceResponse, error) {
-	if m.forkchoiceUpdatedV2Func != nil {
-		return m.forkchoiceUpdatedV2Func(ctx, update, payloadAttributes)
+func (m *mockEngineAPI) ForkchoiceUpdatedV3(ctx context.Context, update eengine.ForkchoiceStateV1, payloadAttributes *eengine.PayloadAttributes) (eengine.ForkChoiceResponse, error) {
+	if m.forkchoiceUpdatedV3Func != nil {
+		return m.forkchoiceUpdatedV3Func(ctx, update, payloadAttributes)
 	}
 
-	return m.mock.ForkchoiceUpdatedV2(ctx, update, payloadAttributes)
+	return m.mock.ForkchoiceUpdatedV3(ctx, update, payloadAttributes)
 }
 
-func (m *mockEngineAPI) GetPayloadV2(ctx context.Context, payloadID eengine.PayloadID) (*eengine.ExecutionPayloadEnvelope, error) {
-	return m.mock.GetPayloadV2(ctx, payloadID)
+func (m *mockEngineAPI) GetPayloadV3(ctx context.Context, payloadID eengine.PayloadID) (*eengine.ExecutionPayloadEnvelope, error) {
+	return m.mock.GetPayloadV3(ctx, payloadID)
 }
 
 // pushPayload - invokes the ForkchoiceUpdatedV2 method on the mock engine and returns the payload ID.
@@ -493,15 +492,17 @@ func (m *mockEngineAPI) pushPayload(t *testing.T, ctx context.Context, feeRecipi
 		FinalizedBlockHash: blockHash,
 	}
 
+	var zero common.Hash
+
 	payloadAttrs := eengine.PayloadAttributes{
 		Timestamp:             uint64(ts.Unix()),
 		Random:                blockHash,
 		SuggestedFeeRecipient: feeRecipient,
 		Withdrawals:           []*types.Withdrawal{},
-		BeaconRoot:            nil,
+		BeaconRoot:            &zero,
 	}
 
-	resp, err := m.ForkchoiceUpdatedV2(ctx, state, &payloadAttrs)
+	resp, err := m.ForkchoiceUpdatedV3(ctx, state, &payloadAttrs)
 	require.NoError(t, err)
 
 	return resp.PayloadID
