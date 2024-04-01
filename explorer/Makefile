@@ -20,8 +20,8 @@ copy-network-file:
 
 run-devnet: ## starts our devnet
 	@echo "Starting devnet"
-	@cp ../e2e/runs/devnet1/relayer/network.json ./network.json
 	@make -C ../ devnet-deploy
+	@cp ../e2e/runs/devnet1/relayer/network.json ./network.json
 
 run-explorer: ## starts our explorer
 	@echo "Starting explorer"
