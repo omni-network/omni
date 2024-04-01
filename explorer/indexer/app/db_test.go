@@ -48,14 +48,15 @@ func TestDbTransaction(t *testing.T) {
 			name: "insert_block_with_msgs_and_receipts",
 			prerequisites: func(t *testing.T, ctx context.Context, client *ent.Client) results {
 				t.Helper()
-				tx, err := client.BeginTx(ctx, nil)
-				require.NoError(t, err)
 
 				sourceChainID := uint64(1)
 				destChainID := uint64(2)
 
-				//client.XProviderCursor.Create().SetChainID(sourceChainID).SetHeight(0).SaveX(ctx)
-				//client.XProviderCursor.Create().SetChainID(destChainID).SetHeight(0).SaveX(ctx)
+				_, err := client.XProviderCursor.Create().SetChainID(sourceChainID).SetHeight(0).Save(ctx)
+				require.NoError(t, err, "creating source chain cursor")
+
+				_, err = client.XProviderCursor.Create().SetChainID(destChainID).SetHeight(0).Save(ctx)
+				require.NoError(t, err, "creating dest chain cursor")
 
 				blockHash := common.Hash([32]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 30})
 				blockHeight := uint64(1)
@@ -70,6 +71,9 @@ func TestDbTransaction(t *testing.T) {
 				gasUsed := uint64(100)
 				relayerAddress := [20]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 22}
 				receiptTxHash := common.Hash([32]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 33})
+
+				tx, err := client.BeginTx(ctx, nil)
+				require.NoError(t, err)
 
 				err = app.InsertBlockTX(ctx, tx, xchain.Block{
 					BlockHeader: xchain.BlockHeader{
@@ -170,9 +174,11 @@ func setupDB(t *testing.T) *ent.Client {
 // Calculate the number of receipts that are not associated with a block.
 func calcStrayReceipts(ctx context.Context, receipts []*ent.Receipt) int {
 	var count int
-	for _, b := range receipts {
-		cnt := b.QueryBlock().CountX(ctx)
-		count += cnt
+	for _, r := range receipts {
+		cnt := r.QueryBlock().CountX(ctx)
+		if cnt == 0 {
+			count++
+		}
 	}
 
 	return count
@@ -183,7 +189,9 @@ func calcStrayMessages(ctx context.Context, msgs []*ent.Msg) int {
 	var count int
 	for _, b := range msgs {
 		cnt := b.QueryBlock().CountX(ctx)
-		count += cnt
+		if cnt == 0 {
+			count++
+		}
 	}
 
 	return count

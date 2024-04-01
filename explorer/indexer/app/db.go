@@ -9,6 +9,8 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
+
+	"github.com/google/uuid"
 )
 
 // newCallback returns the indexer xprovider callback that
@@ -37,7 +39,7 @@ func newCallback(client *ent.Client) xchain.ProviderCallback {
 	}
 }
 
-// insertBlockTX inserts the block as part of a tx and commits it.
+// InsertBlockTX inserts the block as part of a tx and commits it.
 // The caller should handle rollback on any error.
 func InsertBlockTX(ctx context.Context, tx *ent.Tx, block xchain.Block) error {
 	insertedBlock, err := insertBlock(ctx, tx, block)
@@ -101,6 +103,7 @@ func getCursor(ctx context.Context, client *ent.XProviderCursorClient, chainID u
 
 func insertBlock(ctx context.Context, tx *ent.Tx, block xchain.Block) (*ent.Block, error) {
 	b, err := tx.Block.Create().
+		SetUUID(uuid.New()).
 		SetBlockHeight(block.BlockHeight).
 		SetBlockHash(block.BlockHash[:]).
 		SetSourceChainID(block.SourceChainID).
@@ -116,9 +119,7 @@ func insertBlock(ctx context.Context, tx *ent.Tx, block xchain.Block) (*ent.Bloc
 
 func insertMessages(ctx context.Context, tx *ent.Tx, block xchain.Block, dbBlock *ent.Block) error {
 	for _, m := range block.Msgs {
-		_, err := tx.Msg.Create().
-			SetBlock(dbBlock).
-			SetBlockID(dbBlock.ID).
+		msg, err := tx.Msg.Create().
 			SetData(m.Data).
 			SetDestAddress(m.DestAddress[:]).
 			SetDestChainID(m.DestChainID).
@@ -133,6 +134,11 @@ func insertMessages(ctx context.Context, tx *ent.Tx, block xchain.Block, dbBlock
 		if err != nil {
 			return errors.Wrap(err, "inserting message")
 		}
+
+		_, err = tx.Block.UpdateOne(dbBlock).AddMsgs(msg).Save(ctx)
+		if err != nil {
+			return errors.Wrap(err, "setting message edge to block")
+		}
 	}
 
 	return nil
@@ -140,9 +146,7 @@ func insertMessages(ctx context.Context, tx *ent.Tx, block xchain.Block, dbBlock
 
 func insertReceipts(ctx context.Context, tx *ent.Tx, block xchain.Block, dbBlock *ent.Block) error {
 	for _, r := range block.Receipts {
-		_, err := tx.Receipt.Create().
-			SetBlock(dbBlock).
-			SetBlockID(dbBlock.ID).
+		receipt, err := tx.Receipt.Create().
 			SetGasUsed(r.GasUsed).
 			SetDestChainID(r.DestChainID).
 			SetSourceChainID(r.SourceChainID).
@@ -154,6 +158,11 @@ func insertReceipts(ctx context.Context, tx *ent.Tx, block xchain.Block, dbBlock
 			Save(ctx)
 		if err != nil {
 			return errors.Wrap(err, "inserting message")
+		}
+
+		_, err = tx.Block.UpdateOne(dbBlock).AddReceipts(receipt).Save(ctx)
+		if err != nil {
+			return errors.Wrap(err, "setting receipt edge to block")
 		}
 	}
 
