@@ -82,6 +82,16 @@ contract OmniAVS_admin_Test is Base {
         omniAVS.setStrategyParams(params);
     }
 
+    /// @dev Test that a stratey cannot have a multiplier of 0
+    function test_setStrategyParams_zeroMul_reverts() public {
+        IOmniAVS.StrategyParam[] memory params = new IOmniAVS.StrategyParam[](1);
+        params[0] = IOmniAVS.StrategyParam({ strategy: IStrategy(address(1)), multiplier: 0 });
+
+        vm.prank(omniAVSOwner);
+        vm.expectRevert("OmniAVS: no zero multiplier");
+        omniAVS.setStrategyParams(params);
+    }
+
     /// @dev Test that there cannot be duplicate strategies
     function test_setStrategyParams_duplicateStrategy_reverts() public {
         IOmniAVS.StrategyParam[] memory params = new IOmniAVS.StrategyParam[](2);
