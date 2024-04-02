@@ -249,7 +249,7 @@ func additionalServices(testnet types.Testnet) []string {
 	}
 
 	if testnet.ExplorerMockDB {
-		resp = append(resp, "explorer_mock_db")
+		resp = append(resp, "explorer_db")
 	}
 
 	// In monitor only mode, we don't need to start the relayer (above omni and anvils will also be empty).
