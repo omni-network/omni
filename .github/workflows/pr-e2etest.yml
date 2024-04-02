@@ -20,7 +20,7 @@ jobs:
           GOOS: linux
         with:
           version: latest
-          args: build --single-target --snapshot --clean --id=halo --id=relayer --id=monitor
+          args: build --single-target --snapshot --clean --id=halo --id=relayer --id=monitor --id=explorer-indexer --id=explorer-graphql
 
       - name: Build halo image
         run: |
