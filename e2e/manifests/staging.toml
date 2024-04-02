@@ -9,7 +9,7 @@ prometheus = true
 [node.validator02]
 
 [node.seed01]
-mode = "seed"
+mode = "full"
 
 [node.fullnode01]
 mode = "archive"
