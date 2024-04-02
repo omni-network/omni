@@ -178,7 +178,7 @@ func adaptCometTestnet(ctx context.Context, manifest types.Manifest, testnet *e2
 
 	for i := range testnet.Nodes {
 		var err error
-		testnet.Nodes[i], err = adaptNode(ctx, manifest, testnet.Nodes[i], imgTag)
+		testnet.Nodes[i], err = adaptNode(ctx, manifest, testnet, testnet.Nodes[i], imgTag)
 		if err != nil {
 			return nil, err
 		}
@@ -188,7 +188,7 @@ func adaptCometTestnet(ctx context.Context, manifest types.Manifest, testnet *e2
 }
 
 // adaptNode adapts the default comet node for omni specific changes and custom config.
-func adaptNode(ctx context.Context, manifest types.Manifest, node *e2e.Node, tag string) (*e2e.Node, error) {
+func adaptNode(ctx context.Context, manifest types.Manifest, testnet *e2e.Testnet, node *e2e.Node, tag string) (*e2e.Node, error) {
 	valKey, err := getOrGenKey(ctx, manifest, node.Name, key.Validator)
 	if err != nil {
 		return nil, err
@@ -201,6 +201,24 @@ func adaptNode(ctx context.Context, manifest types.Manifest, node *e2e.Node, tag
 	node.Version = "omniops/halo:" + tag
 	node.PrivvalKey = valKey.PrivKey
 	node.NodeKey = nodeKey.PrivKey
+
+	// Add seeds (cometBFT only adds seeds defined explicitly per node, we auto-add all seeds).
+	seeds := manifest.Seeds()
+	for seed := range seeds {
+		if seed == node.Name {
+			continue // Skip self
+		}
+		node.Seeds = append(node.Seeds, testnet.LookupNode(seed))
+	}
+	// Remove seeds from persisted peers (cometBFT adds all nodes as peers by default).
+	var persisted []*e2e.Node
+	for _, peer := range node.PersistentPeers {
+		if seeds[peer.Name] {
+			continue
+		}
+		persisted = append(persisted, peer)
+	}
+	node.PersistentPeers = persisted
 
 	return node, nil
 }
