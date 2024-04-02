@@ -86,6 +86,7 @@ services:
       - --nat=extip:{{ .AdvertisedIP }}
       - --pprof
       - --pprof.addr=0.0.0.0
+      - --metrics
       {{ if .IsArchive }}- --gcmode=archive{{ end }}
     ports:
       - {{ if $.BindAll }}8551:{{end}}8551

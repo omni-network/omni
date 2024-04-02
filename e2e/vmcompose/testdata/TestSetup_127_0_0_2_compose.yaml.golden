@@ -50,6 +50,7 @@ services:
       - --nat=extip:<nil>
       - --pprof
       - --pprof.addr=0.0.0.0
+      - --metrics
       
     ports:
       - 8551:8551
