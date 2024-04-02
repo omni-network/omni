@@ -7,7 +7,6 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 const (
@@ -15,8 +14,6 @@ const (
 	Label = "block"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldUUID holds the string denoting the uuid field in the database.
-	FieldUUID = "uuid"
 	// FieldSourceChainID holds the string denoting the sourcechainid field in the database.
 	FieldSourceChainID = "source_chain_id"
 	// FieldBlockHeight holds the string denoting the blockheight field in the database.
@@ -52,7 +49,6 @@ const (
 // Columns holds all SQL columns for block fields.
 var Columns = []string{
 	FieldID,
-	FieldUUID,
 	FieldSourceChainID,
 	FieldBlockHeight,
 	FieldBlockHash,
@@ -71,8 +67,6 @@ func ValidColumn(column string) bool {
 }
 
 var (
-	// DefaultUUID holds the default value on creation for the "UUID" field.
-	DefaultUUID func() uuid.UUID
 	// BlockHashValidator is a validator for the "BlockHash" field. It is called by the builders before save.
 	BlockHashValidator func([]byte) error
 	// DefaultTimestamp holds the default value on creation for the "Timestamp" field.
@@ -87,11 +81,6 @@ type OrderOption func(*sql.Selector)
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
-}
-
-// ByUUID orders the results by the UUID field.
-func ByUUID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldUUID, opts...).ToFunc()
 }
 
 // BySourceChainID orders the results by the SourceChainID field.

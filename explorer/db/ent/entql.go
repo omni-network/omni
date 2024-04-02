@@ -30,7 +30,6 @@ var schemaGraph = func() *sqlgraph.Schema {
 		},
 		Type: "Block",
 		Fields: map[string]*sqlgraph.FieldSpec{
-			block.FieldUUID:          {Type: field.TypeUUID, Column: block.FieldUUID},
 			block.FieldSourceChainID: {Type: field.TypeUint64, Column: block.FieldSourceChainID},
 			block.FieldBlockHeight:   {Type: field.TypeUint64, Column: block.FieldBlockHeight},
 			block.FieldBlockHash:     {Type: field.TypeBytes, Column: block.FieldBlockHash},
@@ -237,11 +236,6 @@ func (f *BlockFilter) Where(p entql.P) {
 // WhereID applies the entql int predicate on the id field.
 func (f *BlockFilter) WhereID(p entql.IntP) {
 	f.Where(p.Field(block.FieldID))
-}
-
-// WhereUUID applies the entql [16]byte predicate on the UUID field.
-func (f *BlockFilter) WhereUUID(p entql.ValueP) {
-	f.Where(p.Field(block.FieldUUID))
 }
 
 // WhereSourceChainID applies the entql uint64 predicate on the SourceChainID field.

@@ -9,7 +9,6 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 	"github.com/omni-network/omni/explorer/db/ent/block"
 )
 
@@ -18,8 +17,6 @@ type Block struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
-	// UUID holds the value of the "UUID" field.
-	UUID uuid.UUID `json:"UUID,omitempty"`
 	// SourceChainID holds the value of the "SourceChainID" field.
 	SourceChainID uint64 `json:"SourceChainID,omitempty"`
 	// BlockHeight holds the value of the "BlockHeight" field.
@@ -76,8 +73,6 @@ func (*Block) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case block.FieldTimestamp, block.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case block.FieldUUID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -99,12 +94,6 @@ func (b *Block) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			b.ID = int(value.Int64)
-		case block.FieldUUID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field UUID", values[i])
-			} else if value != nil {
-				b.UUID = *value
-			}
 		case block.FieldSourceChainID:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field SourceChainID", values[i])
@@ -181,9 +170,6 @@ func (b *Block) String() string {
 	var builder strings.Builder
 	builder.WriteString("Block(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", b.ID))
-	builder.WriteString("UUID=")
-	builder.WriteString(fmt.Sprintf("%v", b.UUID))
-	builder.WriteString(", ")
 	builder.WriteString("SourceChainID=")
 	builder.WriteString(fmt.Sprintf("%v", b.SourceChainID))
 	builder.WriteString(", ")

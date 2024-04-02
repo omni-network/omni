@@ -7,7 +7,6 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 	"github.com/omni-network/omni/explorer/db/ent/predicate"
 )
 
@@ -56,11 +55,6 @@ func IDLTE(id int) predicate.Block {
 	return predicate.Block(sql.FieldLTE(FieldID, id))
 }
 
-// UUID applies equality check predicate on the "UUID" field. It's identical to UUIDEQ.
-func UUID(v uuid.UUID) predicate.Block {
-	return predicate.Block(sql.FieldEQ(FieldUUID, v))
-}
-
 // SourceChainID applies equality check predicate on the "SourceChainID" field. It's identical to SourceChainIDEQ.
 func SourceChainID(v uint64) predicate.Block {
 	return predicate.Block(sql.FieldEQ(FieldSourceChainID, v))
@@ -84,46 +78,6 @@ func Timestamp(v time.Time) predicate.Block {
 // CreatedAt applies equality check predicate on the "CreatedAt" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.Block {
 	return predicate.Block(sql.FieldEQ(FieldCreatedAt, v))
-}
-
-// UUIDEQ applies the EQ predicate on the "UUID" field.
-func UUIDEQ(v uuid.UUID) predicate.Block {
-	return predicate.Block(sql.FieldEQ(FieldUUID, v))
-}
-
-// UUIDNEQ applies the NEQ predicate on the "UUID" field.
-func UUIDNEQ(v uuid.UUID) predicate.Block {
-	return predicate.Block(sql.FieldNEQ(FieldUUID, v))
-}
-
-// UUIDIn applies the In predicate on the "UUID" field.
-func UUIDIn(vs ...uuid.UUID) predicate.Block {
-	return predicate.Block(sql.FieldIn(FieldUUID, vs...))
-}
-
-// UUIDNotIn applies the NotIn predicate on the "UUID" field.
-func UUIDNotIn(vs ...uuid.UUID) predicate.Block {
-	return predicate.Block(sql.FieldNotIn(FieldUUID, vs...))
-}
-
-// UUIDGT applies the GT predicate on the "UUID" field.
-func UUIDGT(v uuid.UUID) predicate.Block {
-	return predicate.Block(sql.FieldGT(FieldUUID, v))
-}
-
-// UUIDGTE applies the GTE predicate on the "UUID" field.
-func UUIDGTE(v uuid.UUID) predicate.Block {
-	return predicate.Block(sql.FieldGTE(FieldUUID, v))
-}
-
-// UUIDLT applies the LT predicate on the "UUID" field.
-func UUIDLT(v uuid.UUID) predicate.Block {
-	return predicate.Block(sql.FieldLT(FieldUUID, v))
-}
-
-// UUIDLTE applies the LTE predicate on the "UUID" field.
-func UUIDLTE(v uuid.UUID) predicate.Block {
-	return predicate.Block(sql.FieldLTE(FieldUUID, v))
 }
 
 // SourceChainIDEQ applies the EQ predicate on the "SourceChainID" field.
