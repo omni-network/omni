@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -360,9 +361,9 @@ func writeOmniEVMConfig(testnet types.Testnet) error {
 	gethConfigFiles := func(evm types.OmniEVM) map[string][]byte {
 		return map[string][]byte{
 			"genesis.json":      gethGenesisBz,
-			"keystore/keystore": gethKeystore, // TODO(corver): Remove this, it isn't used.
-			"geth_password.txt": []byte(""),   // Empty password
-			"geth/nodekey":      ethcrypto.FromECDSA(evm.NodeKey),
+			"keystore/keystore": gethKeystore,                                                 // TODO(corver): Remove this, it isn't used.
+			"geth_password.txt": []byte(""),                                                   // Empty password
+			"geth/nodekey":      []byte(hex.EncodeToString(ethcrypto.FromECDSA(evm.NodeKey))), // Nodekey is hex encoded
 			"geth/jwtsecret":    []byte(evm.JWTSecret),
 		}
 	}
