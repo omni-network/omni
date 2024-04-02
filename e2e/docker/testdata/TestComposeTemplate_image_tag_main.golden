@@ -20,8 +20,6 @@ services:
     - 26656
     - 8584:26657
     - 6060
-    environment:
-    - HALO_LOG_FORMAT=console
     volumes:
     - ./node0:/halo
     depends_on:
@@ -123,8 +121,6 @@ services:
     container_name: relayer
     image: omniops/relayer:main
     restart: unless-stopped # Restart on crash to mitigate startup race issues
-    environment:
-    - RELAYER_LOG_FORMAT=console
     volumes:
       - ./relayer:/relayer
     networks:
@@ -137,8 +133,6 @@ services:
     container_name: monitor
     image: omniops/monitor:main
     restart: unless-stopped # Restart on crash to mitigate startup race issues
-    environment:
-      - LOG_FORMAT=console
     volumes:
       - ./monitor:/monitor
     networks:

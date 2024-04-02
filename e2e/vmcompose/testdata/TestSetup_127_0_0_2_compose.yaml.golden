@@ -16,8 +16,6 @@ services:
     - 26656:26656
     - 26657:26657
     - 6060
-    environment:
-    - HALO_LOG_FORMAT=logfmt
     volumes:
     - ./validator02:/halo
     depends_on:

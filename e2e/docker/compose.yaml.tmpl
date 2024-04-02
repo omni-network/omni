@@ -26,8 +26,6 @@ services:
     - {{ .PrometheusProxyPort }}:26660
 {{- end }}
     - 6060
-    environment:
-    - HALO_LOG_FORMAT={{ $.OmniLogFormat }}
     volumes:
     - ./{{ .Name }}:/halo
     depends_on:
@@ -116,8 +114,6 @@ services:
     container_name: relayer
     image: omniops/relayer:{{or .OmniTag "main"}}
     restart: unless-stopped # Restart on crash to mitigate startup race issues
-    environment:
-    - RELAYER_LOG_FORMAT={{ $.OmniLogFormat }}
     volumes:
       - ./relayer:/relayer
     networks:
@@ -132,8 +128,6 @@ services:
     container_name: monitor
     image: omniops/monitor:{{or .OmniTag "main"}}
     restart: unless-stopped # Restart on crash to mitigate startup race issues
-    environment:
-      - LOG_FORMAT={{ $.OmniLogFormat }}
     volumes:
       - ./monitor:/monitor
     networks:
