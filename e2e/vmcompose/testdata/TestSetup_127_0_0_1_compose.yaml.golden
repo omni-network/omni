@@ -16,8 +16,6 @@ services:
     - 26656:26656
     - 26657:26657
     - 6060
-    environment:
-    - HALO_LOG_FORMAT=logfmt
     volumes:
     - ./validator01:/halo
     depends_on:
@@ -52,6 +50,7 @@ services:
       - --nat=extip:<nil>
       - --pprof
       - --pprof.addr=0.0.0.0
+      - --metrics
       
     ports:
       - 8551:8551

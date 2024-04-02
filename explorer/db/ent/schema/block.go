@@ -6,7 +6,6 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // Block holds the schema definition for the Block entity.
@@ -17,8 +16,6 @@ type Block struct {
 // Fields of the XBlock.
 func (Block) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("UUID", uuid.UUID{}).
-			Default(uuid.New),
 		field.Uint64("SourceChainID"),
 		field.Uint64("BlockHeight"),
 		field.Bytes("BlockHash").MaxLen(32),

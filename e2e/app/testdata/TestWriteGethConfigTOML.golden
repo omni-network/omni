@@ -4,8 +4,10 @@ SyncMode = "full"
 NoPruning = true
 
 [Eth.Miner]
-# Recommit defines the time interval for miner to re-create mining work. Required for fast block times.
-Recommit = 500000000 # 500ms
+# Geth has slow block building times, but we need fast times.
+# Decrease recommit to minimum (1s) and newPayloadTimeout to 500ms so blocks are built in less than 1s.
+Recommit = 1000000000 # 1s
+NewPayloadTimeout = 500000000 # 500ms
 
 [Node]
 DataDir = "/geth"

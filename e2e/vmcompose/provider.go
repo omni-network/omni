@@ -86,7 +86,6 @@ func (p *Provider) Setup() error {
 			Monitor:         services["monitor"],
 			Prometheus:      p.Testnet.Prometheus,
 			OmniTag:         p.omniTag,
-			OmniLogFormat:   log.FormatLogfmt, // VM compose always use logfmt log format.
 			ExplorerIndexer: p.Testnet.Explorer && services["explorer_indexer"],
 			ExplorerGraphql: p.Testnet.Explorer && services["explorer_graphql"],
 			ExplorerUI:      p.Testnet.Explorer && services["explorer_ui"],

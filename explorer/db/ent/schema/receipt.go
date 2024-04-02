@@ -53,7 +53,7 @@ func (Receipt) Edges() []ent.Edge {
 // Hooks of the Msg.
 func (Receipt) Hooks() []ent.Hook {
 	return []ent.Hook{
-		// First hook.
+		// Hook for setting edges to messages.
 		hook.On(
 			func(next ent.Mutator) ent.Mutator {
 				return hook.ReceiptFunc(func(ctx context.Context, r *gen.ReceiptMutation) (ent.Value, error) {
@@ -89,7 +89,7 @@ func (Receipt) Hooks() []ent.Hook {
 				})
 			},
 			// Limit the hook only for the create operation.
-			// If we added update, we would get an infinite loop here
+			// If we added update, we would get an infinite loop here if we ever updated messages which we don't do currently
 			// This mutation checks for the existence of messages that it should be associated with when we create a receipt
 			// We also do the inverse of this, checking for receipts when we create a message
 			ent.OpCreate,

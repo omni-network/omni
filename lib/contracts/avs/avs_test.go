@@ -152,12 +152,6 @@ func TestEigenAndOmniAVS(t *testing.T) {
 	err := undelegate(ctx, contracts, backend, delegators[0])
 	require.NoError(t, err)
 	assertOperatorBalance(t, ctx, contracts, operators[0], initialOperatorStake, big.NewInt(0))
-
-	// Deregister operators
-	for _, operator := range operators {
-		err := avs.DeregisterOperatorFromAVS(ctx, contracts.OmniAVSAddr, backend, operator)
-		require.NoError(t, err)
-	}
 }
 
 func devnetEigenDeployments(t *testing.T) avs.EigenDeployments {

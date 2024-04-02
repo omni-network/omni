@@ -81,6 +81,18 @@ type Manifest struct {
 	ExplorerMockDB bool `toml:"explorer_mock_db"`
 }
 
+// Seeds returns a map of seed nodes by name.
+func (m Manifest) Seeds() map[string]bool {
+	resp := make(map[string]bool)
+	for name, node := range m.Nodes {
+		if Mode(node.Mode) == ModeSeed {
+			resp[name] = true
+		}
+	}
+
+	return resp
+}
+
 // OmniEVMs returns a map of omni evm instances names by <IsArchive> to deploy.
 // If only a single Omni EVM is to be deployed, the name is "omni_evm".
 // Otherwise, the names are "<node>_evm".

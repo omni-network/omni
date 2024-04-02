@@ -88,7 +88,6 @@ func (p *Provider) Setup() error {
 		ExplorerGraphql: true,
 		ExplorerMockDB:  p.testnet.ExplorerMockDB,
 		OmniTag:         p.omniTag,
-		OmniLogFormat:   log.FormatConsole, // Local docker compose always use console log format.
 	}
 
 	bz, err := GenerateComposeFile(def)
@@ -158,11 +157,10 @@ type ComposeDef struct {
 	OmniEVMs []types.OmniEVM
 	Anvils   []types.AnvilChain
 
-	Monitor       bool
-	OmniTag       string
-	Relayer       bool
-	Prometheus    bool
-	OmniLogFormat string
+	Monitor    bool
+	OmniTag    string
+	Relayer    bool
+	Prometheus bool
 
 	ExplorerIndexer bool
 	ExplorerGraphql bool

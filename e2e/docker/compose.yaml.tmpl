@@ -26,8 +26,6 @@ services:
     - {{ .PrometheusProxyPort }}:26660
 {{- end }}
     - 6060
-    environment:
-    - HALO_LOG_FORMAT={{ $.OmniLogFormat }}
     volumes:
     - ./{{ .Name }}:/halo
     depends_on:
@@ -88,6 +86,7 @@ services:
       - --nat=extip:{{ .AdvertisedIP }}
       - --pprof
       - --pprof.addr=0.0.0.0
+      - --metrics
       {{ if .IsArchive }}- --gcmode=archive{{ end }}
     ports:
       - {{ if $.BindAll }}8551:{{end}}8551
@@ -116,8 +115,6 @@ services:
     container_name: relayer
     image: omniops/relayer:{{or .OmniTag "main"}}
     restart: unless-stopped # Restart on crash to mitigate startup race issues
-    environment:
-    - RELAYER_LOG_FORMAT={{ $.OmniLogFormat }}
     volumes:
       - ./relayer:/relayer
     networks:
@@ -132,8 +129,6 @@ services:
     container_name: monitor
     image: omniops/monitor:{{or .OmniTag "main"}}
     restart: unless-stopped # Restart on crash to mitigate startup race issues
-    environment:
-      - LOG_FORMAT={{ $.OmniLogFormat }}
     volumes:
       - ./monitor:/monitor
     networks:
@@ -152,8 +147,6 @@ services:
       - --db-url=postgres://omni:password@explorer_db:5432/omni_db # pragma: allowlist secret
     {{- end}}
     restart: unless-stopped # Restart on crash to mitigate startup race issues
-    environment:
-      - LOG_FORMAT={{ $.OmniLogFormat }}
     volumes:
       - ./explorer_indexer:/explorer_indexer
     networks:
@@ -172,8 +165,6 @@ services:
       - --db-url=postgres://omni:password@explorer_db:5432/omni_db # pragma: allowlist secret
     {{- end}}
     restart: unless-stopped # Restart on crash to mitigate startup race issues
-    environment:
-      - LOG_FORMAT={{ $.OmniLogFormat }}
     volumes:
       - ./explorer_graphql:/explorer_graphql
     networks:

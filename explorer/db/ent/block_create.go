@@ -10,7 +10,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/omni-network/omni/explorer/db/ent/block"
 	"github.com/omni-network/omni/explorer/db/ent/msg"
 	"github.com/omni-network/omni/explorer/db/ent/receipt"
@@ -21,20 +20,6 @@ type BlockCreate struct {
 	config
 	mutation *BlockMutation
 	hooks    []Hook
-}
-
-// SetUUID sets the "UUID" field.
-func (bc *BlockCreate) SetUUID(u uuid.UUID) *BlockCreate {
-	bc.mutation.SetUUID(u)
-	return bc
-}
-
-// SetNillableUUID sets the "UUID" field if the given value is not nil.
-func (bc *BlockCreate) SetNillableUUID(u *uuid.UUID) *BlockCreate {
-	if u != nil {
-		bc.SetUUID(*u)
-	}
-	return bc
 }
 
 // SetSourceChainID sets the "SourceChainID" field.
@@ -148,10 +133,6 @@ func (bc *BlockCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (bc *BlockCreate) defaults() {
-	if _, ok := bc.mutation.UUID(); !ok {
-		v := block.DefaultUUID()
-		bc.mutation.SetUUID(v)
-	}
 	if _, ok := bc.mutation.Timestamp(); !ok {
 		v := block.DefaultTimestamp
 		bc.mutation.SetTimestamp(v)
@@ -164,9 +145,6 @@ func (bc *BlockCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (bc *BlockCreate) check() error {
-	if _, ok := bc.mutation.UUID(); !ok {
-		return &ValidationError{Name: "UUID", err: errors.New(`ent: missing required field "Block.UUID"`)}
-	}
 	if _, ok := bc.mutation.SourceChainID(); !ok {
 		return &ValidationError{Name: "SourceChainID", err: errors.New(`ent: missing required field "Block.SourceChainID"`)}
 	}
@@ -213,10 +191,6 @@ func (bc *BlockCreate) createSpec() (*Block, *sqlgraph.CreateSpec) {
 		_node = &Block{config: bc.config}
 		_spec = sqlgraph.NewCreateSpec(block.Table, sqlgraph.NewFieldSpec(block.FieldID, field.TypeInt))
 	)
-	if value, ok := bc.mutation.UUID(); ok {
-		_spec.SetField(block.FieldUUID, field.TypeUUID, value)
-		_node.UUID = value
-	}
 	if value, ok := bc.mutation.SourceChainID(); ok {
 		_spec.SetField(block.FieldSourceChainID, field.TypeUint64, value)
 		_node.SourceChainID = value

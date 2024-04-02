@@ -73,7 +73,7 @@ contract OmniAVS_syncWithOmni_Test is Base {
         _testIncreaseDelegationsToFirstHalfOfOperators();
         _testIncreaseStakeOfSecondHalfOfOperators();
         _testUndelegateAllDelegators();
-        _testDeregisterOperators();
+        _testEjectOperators();
     }
 
     /// @dev Register operators with eigen layer core, assert OmniAVS quorum is still empty
@@ -296,14 +296,14 @@ contract OmniAVS_syncWithOmni_Test is Base {
         _assertSyncWithOmni(ops);
     }
 
-    /// @dev Deregister operators, assert OmniAVS quorum is updated after each deregistration
-    function _testDeregisterOperators() internal {
+    /// @dev Eject operators, assert OmniAVS quorum is updated after each deregistration
+    function _testEjectOperators() internal {
         IOmniAVS.Operator[] memory ops;
 
         for (uint32 i = 0; i < numOperators; i++) {
             address operator = operators[i];
 
-            _deregisterOperatorFromAVS(operator);
+            _ejectOperatorFromAVS(operator);
 
             ops = omniAVS.operators();
 
@@ -312,11 +312,9 @@ contract OmniAVS_syncWithOmni_Test is Base {
             // assert there are only numOperatorsLeft
             assertEq(ops.length, numOperatorsLeft);
 
-            // assert that none of the operators left is the operator that just deregistered
+            // assert that none of the operators left is the operator that was just deregistered
             for (uint32 j = 0; j < numOperatorsLeft; j++) {
-                assertNotEq(
-                    ops[j].addr, operator, "_testDeregisterOperators: operator should not be in validators list"
-                );
+                assertNotEq(ops[j].addr, operator, "_testEjectOperators: operator should not be in validators list");
             }
         }
     }

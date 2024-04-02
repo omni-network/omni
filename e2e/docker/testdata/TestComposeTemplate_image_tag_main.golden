@@ -20,8 +20,6 @@ services:
     - 26656
     - 8584:26657
     - 6060
-    environment:
-    - HALO_LOG_FORMAT=console
     volumes:
     - ./node0:/halo
     depends_on:
@@ -97,6 +95,7 @@ services:
       - --nat=extip:10.186.73.0
       - --pprof
       - --pprof.addr=0.0.0.0
+      - --metrics
       
     ports:
       - 8551
@@ -123,8 +122,6 @@ services:
     container_name: relayer
     image: omniops/relayer:main
     restart: unless-stopped # Restart on crash to mitigate startup race issues
-    environment:
-    - RELAYER_LOG_FORMAT=console
     volumes:
       - ./relayer:/relayer
     networks:
@@ -137,8 +134,6 @@ services:
     container_name: monitor
     image: omniops/monitor:main
     restart: unless-stopped # Restart on crash to mitigate startup race issues
-    environment:
-      - LOG_FORMAT=console
     volumes:
       - ./monitor:/monitor
     networks:
@@ -151,8 +146,6 @@ services:
     container_name: explorer_indexer
     image: omniops/explorer-indexer:main
     restart: unless-stopped # Restart on crash to mitigate startup race issues
-    environment:
-      - LOG_FORMAT=console
     volumes:
       - ./explorer_indexer:/explorer_indexer
     networks:
@@ -165,8 +158,6 @@ services:
     container_name: explorer_graphql
     image: omniops/explorer-graphql:main
     restart: unless-stopped # Restart on crash to mitigate startup race issues
-    environment:
-      - LOG_FORMAT=console
     volumes:
       - ./explorer_graphql:/explorer_graphql
     networks:

@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -86,7 +87,7 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 		return err
 	}
 
-	logCfg := logConfig()
+	logCfg := logConfig(def)
 	if err := writeMonitorConfig(def, logCfg, valPrivKeys); err != nil {
 		return err
 	}
@@ -178,7 +179,7 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 }
 
 func SetupOnlyMonitor(ctx context.Context, def Definition, agentSecrets agent.Secrets) error {
-	logCfg := logConfig()
+	logCfg := logConfig(def)
 	if err := writeMonitorConfig(def, logCfg, nil); err != nil {
 		return err
 	}
@@ -370,9 +371,9 @@ func writeOmniEVMConfig(testnet types.Testnet) error {
 	gethConfigFiles := func(evm types.OmniEVM) map[string][]byte {
 		return map[string][]byte{
 			"genesis.json":      gethGenesisBz,
-			"keystore/keystore": gethKeystore, // TODO(corver): Remove this, it isn't used.
-			"geth_password.txt": []byte(""),   // Empty password
-			"geth/nodekey":      ethcrypto.FromECDSA(evm.NodeKey),
+			"keystore/keystore": gethKeystore,                                                 // TODO(corver): Remove this, it isn't used.
+			"geth_password.txt": []byte(""),                                                   // Empty password
+			"geth/nodekey":      []byte(hex.EncodeToString(ethcrypto.FromECDSA(evm.NodeKey))), // Nodekey is hex encoded
 			"geth/jwtsecret":    []byte(evm.JWTSecret),
 		}
 	}
@@ -549,9 +550,15 @@ func writeExplorerGraphqlConfig(def Definition, logCfg log.Config, explorerDB st
 }
 
 // logConfig returns a default e2e log config.
-func logConfig() log.Config {
+// Default format is console (local dev), but vmcompose uses logfmt.
+func logConfig(def Definition) log.Config {
+	format := log.FormatConsole
+	if def.Infra.GetInfrastructureData().Provider == vmcompose.ProviderName {
+		format = log.FormatLogfmt
+	}
+
 	return log.Config{
-		Format: log.FormatConsole,
+		Format: format,
 		Level:  slog.LevelDebug.String(),
 		Color:  log.ColorForce,
 	}

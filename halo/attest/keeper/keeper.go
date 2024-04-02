@@ -484,7 +484,7 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 		log.Warn(ctx, "Rejecting invalid vote extension", err)
 		return respReject, nil
 	} else if !ok {
-		log.Info(ctx, "Accepting nil vote extension", err) // This can happen in some edge-cases.
+		log.Info(ctx, "Accepting nil vote extension") // This can happen in some edge-cases.
 		return respAccept, nil
 	} else if len(votes.Votes) > int(k.voteExtLimit) {
 		log.Warn(ctx, "Rejecting vote extension exceeding limit", nil, "count", len(votes.Votes), "limit", k.voteExtLimit)
