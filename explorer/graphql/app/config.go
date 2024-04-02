@@ -3,8 +3,8 @@ package app
 import (
 	"bytes"
 	"html/template"
-	"path/filepath"
 
+	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
@@ -33,10 +33,8 @@ func DefaultConfig() Config {
 //go:embed config.toml.tmpl
 var tomlTemplate []byte
 
-// WriteConfigTOML writes the toml halo config to disk.
-func WriteConfigTOML(cfg Config, logCfg log.Config, dir string) error {
-	var buffer bytes.Buffer
-
+// WriteConfigTOML writes the toml graphql config to disk.
+func WriteConfigTOML(cfg Config, logCfg log.Config, path string) error {
 	t, err := template.New("").Parse(string(tomlTemplate))
 	if err != nil {
 		return errors.Wrap(err, "parse template")
@@ -44,18 +42,20 @@ func WriteConfigTOML(cfg Config, logCfg log.Config, dir string) error {
 
 	s := struct {
 		Config
-		Log log.Config
+		Log     log.Config
+		Version string
 	}{
-		Config: cfg,
-		Log:    logCfg,
+		Config:  cfg,
+		Log:     logCfg,
+		Version: buildinfo.Version(),
 	}
 
+	var buffer bytes.Buffer
 	if err := t.Execute(&buffer, s); err != nil {
 		return errors.Wrap(err, "execute template")
 	}
 
-	file := filepath.Join(dir, "graphql.toml")
-	if err := cmtos.WriteFile(file, buffer.Bytes(), 0o644); err != nil {
+	if err := cmtos.WriteFile(path, buffer.Bytes(), 0o644); err != nil {
 		return errors.Wrap(err, "write config")
 	}
 

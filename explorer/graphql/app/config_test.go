@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/omni-network/omni/explorer/graphql/app"
+	graphql "github.com/omni-network/omni/explorer/graphql/app"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/tutil"
 
@@ -14,19 +14,19 @@ import (
 
 //go:generate go test . -golden -clean
 
-func TestWriteConfigTOML(t *testing.T) {
+func TestDefaultConfigReference(t *testing.T) {
 	t.Parallel()
+	tempDir := t.TempDir()
 
-	cfg := app.DefaultConfig()
-	logCfg := log.DefaultConfig()
+	cfg := graphql.DefaultConfig()
 
-	dir := t.TempDir()
+	path := filepath.Join(tempDir, "explorer_graphql.toml")
 
-	err := app.WriteConfigTOML(cfg, logCfg, dir)
+	require.NoError(t, os.MkdirAll(tempDir, 0o755))
+	require.NoError(t, graphql.WriteConfigTOML(cfg, log.DefaultConfig(), path))
+
+	b, err := os.ReadFile(path)
 	require.NoError(t, err)
 
-	bz, err := os.ReadFile(filepath.Join(dir, "graphql.toml"))
-	require.NoError(t, err)
-
-	tutil.RequireGoldenBytes(t, bz)
+	tutil.RequireGoldenBytes(t, b, tutil.WithFilename("default_explorer_graphql.toml"))
 }

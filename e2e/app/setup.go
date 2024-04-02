@@ -500,7 +500,8 @@ func writeExplorerIndexerConfig(def Definition, logCfg log.Config, _ []crypto.Pr
 		configFile  = "indexer.toml"
 	)
 
-	if err := os.MkdirAll(confRoot, 0o755); err != nil {
+	err := os.MkdirAll(confRoot, 0o755)
+	if err != nil {
 		return errors.Wrap(err, "mkdir", "path", confRoot)
 	}
 
@@ -532,7 +533,8 @@ func writeExplorerGraphqlConfig(def Definition, logCfg log.Config, _ []crypto.Pr
 		configFile = "graphql.toml"
 	)
 
-	if err := os.MkdirAll(confRoot, 0o755); err != nil {
+	err := os.MkdirAll(confRoot, 0o755)
+	if err != nil {
 		return errors.Wrap(err, "mkdir", "path", confRoot)
 	}
 

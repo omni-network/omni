@@ -8,7 +8,7 @@ version = "unknown"
 #######################################################################
 ###                     Explorer-GraphQL Options                    ###
 #######################################################################
-``
+
 # URL at which the postgres database can be reached.
 dburl = "postgres://omni:password@db:5432/omni_db"
 
