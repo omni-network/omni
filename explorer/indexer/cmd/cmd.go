@@ -12,14 +12,17 @@ import (
 
 // New returns a new root cobra command that handles our command line tool.
 func New() *cobra.Command {
-	cfg := app.DefaultConfig()
-	logCfg := log.DefaultConfig()
-
 	cmd := libcmd.NewRootCmd(
 		"indexer",
 		"Indexer is a service that will initialize our streams to listen to our portals and index "+
 			"data and put it in our Omni Blocks DB",
 	)
+
+	cfg := app.DefaultConfig()
+	bindIndexerFlags(cmd.Flags(), &cfg)
+
+	logCfg := log.DefaultConfig()
+	log.BindFlags(cmd.Flags(), &logCfg)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx, err := log.Init(cmd.Context(), logCfg)
@@ -34,13 +37,10 @@ func New() *cobra.Command {
 		return app.Run(ctx, cfg)
 	}
 
-	bindIndexerFlags(cmd.Flags(), &cfg)
-	log.BindFlags(cmd.Flags(), &logCfg)
-
 	return cmd
 }
 
 func bindIndexerFlags(flags *pflag.FlagSet, cfg *app.Config) {
-	flags.StringVar(&cfg.NetworkFile, "network-file", cfg.NetworkFile, "Path to the network configuration file")
+	flags.StringVar(&cfg.NetworkFile, "network-file", cfg.NetworkFile, "The path to the network file e.g path/network.json")
 	flags.StringVar(&cfg.DBUrl, "db-url", cfg.DBUrl, "URL to the database")
 }

@@ -22,10 +22,18 @@ func Run(ctx context.Context, cfg Config) error {
 	if err != nil {
 		return errors.Wrap(err, "load network config")
 	}
+
 	entCl, err := db.NewPostgressClient(cfg.DBUrl)
 	if err != nil {
 		return errors.Wrap(err, "new db client")
 	}
+
+	defer func(entCl *ent.Client) {
+		err := entCl.Close()
+		if err != nil {
+			log.Error(ctx, "Failed to close ent client", err)
+		}
+	}(entCl)
 
 	if err := db.CreateSchema(ctx, entCl); err != nil {
 		return errors.Wrap(err, "create schema")

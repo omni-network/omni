@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/explorer/db"
+	"github.com/omni-network/omni/explorer/db/ent"
 	"github.com/omni-network/omni/explorer/graphql/data"
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
@@ -17,7 +18,7 @@ import (
 
 func Run(ctx context.Context, cfg Config) error {
 	log.Info(ctx, "Starting Explorer GraphQL server")
-
+	log.Info(ctx, "Listening on", "address", cfg.ListenAddress)
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -28,7 +29,13 @@ func Run(ctx context.Context, cfg Config) error {
 	if err != nil {
 		return errors.Wrap(err, "create db client")
 	}
-	defer entCl.Close()
+
+	defer func(entCl *ent.Client) {
+		err := entCl.Close()
+		if err != nil {
+			log.Error(ctx, "Failed to close ent client", err)
+		}
+	}(entCl)
 
 	provider := data.Provider{
 		EntClient: entCl,
@@ -46,6 +53,8 @@ func Run(ctx context.Context, cfg Config) error {
 		WriteTimeout:      30 * time.Second,
 		Handler:           handler,
 	}
+
+	log.Info(ctx, "Starting server", "address", httpServer.Addr)
 
 	var eg errgroup.Group
 	eg.Go(func() error {
