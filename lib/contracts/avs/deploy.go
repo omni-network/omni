@@ -22,10 +22,11 @@ const (
 	metadataURI = "https://raw.githubusercontent.com/omni-network/omni/main/static/avs-metadata.json"
 )
 
-//nolint:gochecknoglobals // static abi type
+//nolint:gochecknoglobals // static abi type & addresses
 var (
-	avsABI   = mustGetABI(bindings.OmniAVSMetaData)
-	proxyABI = mustGetABI(bindings.TransparentUpgradeableProxyMetaData)
+	avsABI            = mustGetABI(bindings.OmniAVSMetaData)
+	proxyABI          = mustGetABI(bindings.TransparentUpgradeableProxyMetaData)
+	stubEthStakeInbox = common.HexToAddress("0x1234") // TODO: replace with actual address halo/genutil/evm/predeploys.EthStakeInbox
 )
 
 type DeploymentConfig struct {
@@ -74,6 +75,15 @@ func (cfg DeploymentConfig) Validate() error {
 	if cfg.MaxOperatorCount == 0 {
 		return errors.New("max operator count not set")
 	}
+	if (cfg.ExpectedAddr == common.Address{}) {
+		return errors.New("expected address is zero")
+	}
+	if (cfg.Portal == common.Address{}) {
+		return errors.New("portal is zero")
+	}
+	if (cfg.EthStakeInbox == common.Address{}) {
+		return errors.New("eth stake inbox is zero")
+	}
 
 	return nil
 }
@@ -105,6 +115,8 @@ func testnetCfg() DeploymentConfig {
 		StrategyParams:   holeskyStrategyParams(),
 		MetadataURI:      metadataURI,
 		OmniChainID:      netconf.Testnet.Static().OmniExecutionChainID,
+		Portal:           contracts.TestnetPortal(),
+		EthStakeInbox:    stubEthStakeInbox,
 		MinOperatorStake: big.NewInt(1e18), // 1 ETH
 		MaxOperatorCount: 200,
 		AllowlistEnabled: false,
@@ -123,6 +135,8 @@ func stagingCfg() DeploymentConfig {
 		StrategyParams:   devnetStrategyParams(),
 		MetadataURI:      metadataURI,
 		OmniChainID:      netconf.Staging.Static().OmniExecutionChainID,
+		Portal:           contracts.StagingPortal(),
+		EthStakeInbox:    stubEthStakeInbox,
 		MinOperatorStake: big.NewInt(1e18), // 1 ETH
 		MaxOperatorCount: 10,
 		AllowlistEnabled: true,
@@ -141,8 +155,9 @@ func devnetCfg() DeploymentConfig {
 		MetadataURI:      metadataURI,
 		OmniChainID:      netconf.Devnet.Static().OmniExecutionChainID,
 		StrategyParams:   devnetStrategyParams(),
-		EthStakeInbox:    common.HexToAddress("0x1234"), // TODO: replace with actual address
-		MinOperatorStake: big.NewInt(1e18),              // 1 ETH
+		Portal:           contracts.DevnetPortal(),
+		EthStakeInbox:    stubEthStakeInbox,
+		MinOperatorStake: big.NewInt(1e18), // 1 ETH
 		MaxOperatorCount: 10,
 		AllowlistEnabled: true,
 		ExpectedAddr:     contracts.DevnetAVS(),
