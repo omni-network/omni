@@ -40,7 +40,6 @@ type Provider struct {
 	servicesOnce sync.Once
 	testnet      types.Testnet
 	omniTag      string
-	explorerTag  string
 }
 
 func (*Provider) Clean(ctx context.Context) error {
@@ -57,7 +56,7 @@ func (*Provider) Clean(ctx context.Context) error {
 }
 
 // NewProvider returns a new Provider.
-func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag, explorerTag string) *Provider {
+func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag string) *Provider {
 	return &Provider{
 		Provider: &cmtdocker.Provider{
 			ProviderData: infra.ProviderData{
@@ -65,9 +64,8 @@ func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag, e
 				InfrastructureData: infd.InfrastructureData,
 			},
 		},
-		testnet:     testnet,
-		omniTag:     imgTag,
-		explorerTag: explorerTag,
+		testnet: testnet,
+		omniTag: imgTag,
 	}
 }
 
@@ -85,13 +83,12 @@ func (p *Provider) Setup() error {
 		Relayer:         true,
 		Prometheus:      p.testnet.Prometheus,
 		Monitor:         true,
-		ExplorerTag:     p.explorerTag,
 		ExplorerIndexer: true,
 		ExplorerUI:      true,
 		ExplorerGraphql: true,
+		ExplorerMockDB:  p.testnet.ExplorerMockDB,
 		OmniTag:         p.omniTag,
 		OmniLogFormat:   log.FormatConsole, // Local docker compose always use console log format.
-		IndexerDBConn:   p.testnet.IndexerDBConn,
 	}
 
 	bz, err := GenerateComposeFile(def)
@@ -169,9 +166,8 @@ type ComposeDef struct {
 
 	ExplorerIndexer bool
 	ExplorerGraphql bool
+	ExplorerMockDB  bool
 	ExplorerUI      bool
-	ExplorerTag     string
-	IndexerDBConn   string
 }
 
 func (ComposeDef) GethTag() string {
@@ -250,6 +246,10 @@ func additionalServices(testnet types.Testnet) []string {
 	if testnet.Explorer {
 		resp = append(resp, "explorer_indexer")
 		resp = append(resp, "explorer_graphql")
+	}
+
+	if testnet.ExplorerMockDB {
+		resp = append(resp, "explorer_mock_db")
 	}
 
 	// In monitor only mode, we don't need to start the relayer (above omni and anvils will also be empty).

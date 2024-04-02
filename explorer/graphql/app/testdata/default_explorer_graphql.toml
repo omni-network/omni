@@ -10,7 +10,7 @@ version = "unknown"
 #######################################################################
 
 # URL at which the postgres database can be reached.
-dburl = "postgres://omni:password@db:5432/omni_db"
+dburl = "postgres://omni:password@explorer_db:5432/omni_db"
 
 #######################################################################
 ###                         Logging Options                         ###

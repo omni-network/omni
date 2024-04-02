@@ -3,7 +3,7 @@ version: '3.9'
 services:
   db:
     image: postgres:14-alpine
-    container_name: omni-db
+    container_name: explorer_db
     environment:
       POSTGRES_DB: omni_db
       POSTGRES_USER: omni

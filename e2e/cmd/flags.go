@@ -37,6 +37,7 @@ func bindPromFlags(flags *pflag.FlagSet, cfg *agent.Secrets) {
 func bindDeployFlags(flags *pflag.FlagSet, cfg *app.DeployConfig) {
 	bindPromFlags(flags, &cfg.AgentSecrets)
 	flags.Uint64Var(&cfg.PingPongN, "ping-pong", cfg.PingPongN, "Number of ping pongs messages to send. 0 disables it")
+	flags.StringVar(&cfg.ExplorerDB, "explorer-db", cfg.ExplorerDB, "Explorer DB connection string")
 }
 
 func bindCreate3DeployFlags(flags *pflag.FlagSet, cfg *app.Create3DeployConfig) {

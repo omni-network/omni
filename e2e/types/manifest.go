@@ -76,6 +76,9 @@ type Manifest struct {
 
 	// Explorer defines whether to deploy the explorer.
 	Explorer bool `toml:"explorer"`
+
+	// ExplorerMockDB defines whether to deploy the explorer db locally.
+	ExplorerMockDB bool `toml:"explorer_mock_db"`
 }
 
 // OmniEVMs returns a map of omni evm instances names by <IsArchive> to deploy.

@@ -30,14 +30,14 @@ builds:
 
   - id: explorer-graphql
     main: ./explorer/graphql
-    binary: /explorer/graphql
+    binary: graphql
     env: [ CGO_ENABLED=0 ]
     goos: [ linux, darwin ]
     goarch: [ amd64, arm64 ]
 
   - id: explorer-indexer
     main: ./explorer/indexer
-    binary: explorer/indexer
+    binary: indexer
     env: [ CGO_ENABLED=0 ]
     goos: [ linux, darwin ]
     goarch: [ amd64, arm64 ]

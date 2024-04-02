@@ -75,10 +75,9 @@ func TestComposeTemplate(t *testing.T) {
 						LoadState:  "path/to/anvil/state.json",
 					},
 				},
-				IndexerDBConn: "fake_connection",
 			}
 
-			p := docker.NewProvider(testnet, types.InfrastructureData{}, tag, tag)
+			p := docker.NewProvider(testnet, types.InfrastructureData{}, tag)
 			require.NoError(t, err)
 
 			require.NoError(t, p.Setup())

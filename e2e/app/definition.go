@@ -130,9 +130,9 @@ func MakeDefinition(ctx context.Context, cfg DefinitionConfig, commandName strin
 	var infp types.InfraProvider
 	switch cfg.InfraProvider {
 	case docker.ProviderName:
-		infp = docker.NewProvider(testnet, infd, cfg.OmniImgTag, cfg.ExplorerImageTag)
+		infp = docker.NewProvider(testnet, infd, cfg.OmniImgTag)
 	case vmcompose.ProviderName:
-		infp = vmcompose.NewProvider(testnet, infd, cfg.OmniImgTag, cfg.ExplorerImageTag)
+		infp = vmcompose.NewProvider(testnet, infd, cfg.OmniImgTag)
 	default:
 		return Definition{}, errors.New("unknown infra provider", "provider", cfg.InfraProvider)
 	}
@@ -369,13 +369,13 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 	}
 
 	return types.Testnet{
-		Network:       manifest.Network,
-		Testnet:       cmtTestnet,
-		OmniEVMs:      omniEVMS,
-		AnvilChains:   anvils,
-		PublicChains:  publics,
-		Explorer:      manifest.Explorer,
-		IndexerDBConn: cfg.IndexerDBConn,
+		Network:        manifest.Network,
+		Testnet:        cmtTestnet,
+		OmniEVMs:       omniEVMS,
+		AnvilChains:    anvils,
+		PublicChains:   publics,
+		Explorer:       manifest.Explorer,
+		ExplorerMockDB: manifest.ExplorerMockDB,
 	}, nil
 }
 

@@ -18,7 +18,6 @@ import (
 
 func Run(ctx context.Context, cfg Config) error {
 	log.Info(ctx, "Starting Explorer GraphQL server")
-	log.Info(ctx, "Listening on", "address", cfg.ListenAddress)
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 

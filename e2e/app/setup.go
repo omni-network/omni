@@ -55,7 +55,7 @@ const (
 )
 
 // Setup sets up the testnet configuration.
-func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, testCfg bool) error {
+func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, testCfg bool, explorerDB string) error {
 	log.Info(ctx, "Setup testnet", "dir", def.Testnet.Dir)
 
 	if err := os.MkdirAll(def.Testnet.Dir, os.ModePerm); err != nil {
@@ -99,11 +99,11 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 		return err
 	}
 
-	if err := writeExplorerIndexerConfig(def, logCfg, valPrivKeys); err != nil {
+	if err := writeExplorerIndexerConfig(def, logCfg, explorerDB); err != nil {
 		return err
 	}
 
-	if err := writeExplorerGraphqlConfig(def, logCfg, valPrivKeys); err != nil {
+	if err := writeExplorerGraphqlConfig(def, logCfg, explorerDB); err != nil {
 		return err
 	}
 
@@ -492,7 +492,7 @@ func writeMonitorConfig(def Definition, logCfg log.Config, valPrivKeys []crypto.
 	return nil
 }
 
-func writeExplorerIndexerConfig(def Definition, logCfg log.Config, _ []crypto.PrivKey) error {
+func writeExplorerIndexerConfig(def Definition, logCfg log.Config, explorerDB string) error {
 	confRoot := filepath.Join(def.Testnet.Dir, "explorer_indexer")
 
 	const (
@@ -517,7 +517,7 @@ func writeExplorerIndexerConfig(def Definition, logCfg log.Config, _ []crypto.Pr
 
 	cfg := indexerapp.DefaultConfig()
 	cfg.NetworkFile = networkFile
-	cfg.DBUrl = def.Testnet.IndexerDBConn
+	cfg.DBUrl = explorerDB
 
 	if err := indexerapp.WriteConfigTOML(cfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write indexer config")
@@ -526,7 +526,7 @@ func writeExplorerIndexerConfig(def Definition, logCfg log.Config, _ []crypto.Pr
 	return nil
 }
 
-func writeExplorerGraphqlConfig(def Definition, logCfg log.Config, _ []crypto.PrivKey) error {
+func writeExplorerGraphqlConfig(def Definition, logCfg log.Config, explorerDB string) error {
 	confRoot := filepath.Join(def.Testnet.Dir, "explorer_graphql")
 
 	const (
@@ -539,7 +539,7 @@ func writeExplorerGraphqlConfig(def Definition, logCfg log.Config, _ []crypto.Pr
 	}
 
 	cfg := graphqlapp.DefaultConfig()
-	cfg.DBUrl = def.Testnet.IndexerDBConn
+	cfg.DBUrl = explorerDB
 
 	if err := graphqlapp.WriteConfigTOML(cfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write graphql config")
