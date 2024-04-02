@@ -73,18 +73,17 @@ func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag st
 // any of these operations fail. It writes.
 func (p *Provider) Setup() error {
 	def := ComposeDef{
-		Network:       true,
-		NetworkName:   p.testnet.Name,
-		NetworkCIDR:   p.testnet.IP.String(),
-		BindAll:       false,
-		Nodes:         p.testnet.Nodes,
-		OmniEVMs:      p.testnet.OmniEVMs,
-		Anvils:        p.testnet.AnvilChains,
-		Relayer:       true,
-		Prometheus:    p.testnet.Prometheus,
-		Monitor:       true,
-		OmniTag:       p.omniTag,
-		OmniLogFormat: log.FormatConsole, // Local docker compose always use console log format.
+		Network:     true,
+		NetworkName: p.testnet.Name,
+		NetworkCIDR: p.testnet.IP.String(),
+		BindAll:     false,
+		Nodes:       p.testnet.Nodes,
+		OmniEVMs:    p.testnet.OmniEVMs,
+		Anvils:      p.testnet.AnvilChains,
+		Relayer:     true,
+		Prometheus:  p.testnet.Prometheus,
+		Monitor:     true,
+		OmniTag:     p.omniTag,
 	}
 
 	bz, err := GenerateComposeFile(def)
@@ -154,11 +153,10 @@ type ComposeDef struct {
 	OmniEVMs []types.OmniEVM
 	Anvils   []types.AnvilChain
 
-	Monitor       bool
-	OmniTag       string
-	Relayer       bool
-	Prometheus    bool
-	OmniLogFormat string
+	Monitor    bool
+	OmniTag    string
+	Relayer    bool
+	Prometheus bool
 }
 
 func (ComposeDef) GethTag() string {

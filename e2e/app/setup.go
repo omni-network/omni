@@ -84,7 +84,7 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 		return err
 	}
 
-	logCfg := logConfig()
+	logCfg := logConfig(def)
 	if err := writeMonitorConfig(def, logCfg, valPrivKeys); err != nil {
 		return err
 	}
@@ -168,7 +168,7 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 }
 
 func SetupOnlyMonitor(ctx context.Context, def Definition, agentSecrets agent.Secrets) error {
-	logCfg := logConfig()
+	logCfg := logConfig(def)
 	if err := writeMonitorConfig(def, logCfg, nil); err != nil {
 		return err
 	}
@@ -483,9 +483,15 @@ func writeMonitorConfig(def Definition, logCfg log.Config, valPrivKeys []crypto.
 }
 
 // logConfig returns a default e2e log config.
-func logConfig() log.Config {
+// Default format is console (local dev), but vmcompose uses logfmt.
+func logConfig(def Definition) log.Config {
+	format := log.FormatConsole
+	if def.Infra.GetInfrastructureData().Provider == vmcompose.ProviderName {
+		format = log.FormatLogfmt
+	}
+
 	return log.Config{
-		Format: log.FormatConsole,
+		Format: format,
 		Level:  slog.LevelDebug.String(),
 		Color:  log.ColorForce,
 	}
