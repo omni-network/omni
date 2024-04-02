@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	defaultDBURL       = "postgres://omni:password@explorer_db:5432/omni_db"
+	defaultDBURL       = "postgres://omni:password@db:5432/omni_db"
 	defaultNetworkFile = "network.json"
 )
 
