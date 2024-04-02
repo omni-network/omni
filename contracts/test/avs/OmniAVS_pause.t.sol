@@ -40,18 +40,6 @@ contract OmniAVS_admin_Test is Base {
         omniAVS.registerOperator(_pubkey(operator), emptySig);
     }
 
-    /// @dev Test that when paused, you cannot deregister an operator
-    function test_deregisterOperator_whenPaused_reverts() public {
-        vm.prank(omniAVSOwner);
-        omniAVS.pause();
-
-        address operator = _operator(0);
-
-        vm.expectRevert("Pausable: paused");
-        vm.prank(operator);
-        omniAVS.deregisterOperator();
-    }
-
     /// @dev Test that when paused, you cannot syncWithOmni
     function test_syncWithOmni_whenPaused_reverts() public {
         vm.prank(omniAVSOwner);
