@@ -131,12 +131,12 @@ func pushPayload(ctx context.Context, engineCl ethclient.EngineClient, msg *type
 	if err != nil {
 		return engine.ExecutableData{}, errors.Wrap(err, "new payload")
 	} else if status.Status != engine.VALID {
-		msg := "unknown"
+		validationErr := "unknown"
 		if status.ValidationError != nil {
-			msg = *status.ValidationError
+			validationErr = *status.ValidationError
 		}
 
-		return engine.ExecutableData{}, errors.New("new payload invalid", "msg", msg)
+		return engine.ExecutableData{}, errors.New("new payload invalid", "validation_err", validationErr)
 	}
 
 	return payload, nil

@@ -44,7 +44,10 @@ func (l loggingABCIApp) InitChain(ctx context.Context, chain *abci.RequestInitCh
 }
 
 func (l loggingABCIApp) PrepareProposal(ctx context.Context, proposal *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
-	log.Debug(ctx, "👾 ABCI call: PrepareProposal")
+	log.Debug(ctx, "👾 ABCI call: PrepareProposal",
+		"height", proposal.Height,
+		log.Hex7("proposer", proposal.ProposerAddress),
+	)
 	resp, err := l.Application.PrepareProposal(ctx, proposal)
 	if err != nil {
 		log.Error(ctx, "PrepareProposal failed [BUG]", err)
@@ -54,7 +57,10 @@ func (l loggingABCIApp) PrepareProposal(ctx context.Context, proposal *abci.Requ
 }
 
 func (l loggingABCIApp) ProcessProposal(ctx context.Context, proposal *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
-	log.Debug(ctx, "👾 ABCI call: ProcessProposal")
+	log.Debug(ctx, "👾 ABCI call: ProcessProposal",
+		"height", proposal.Height,
+		log.Hex7("proposer", proposal.ProposerAddress),
+	)
 	resp, err := l.Application.ProcessProposal(ctx, proposal)
 	if err != nil {
 		log.Error(ctx, "ProcessProposal failed [BUG]", err)
@@ -70,7 +76,10 @@ func (l loggingABCIApp) FinalizeBlock(ctx context.Context, block *abci.RequestFi
 		return resp, err
 	}
 
-	attrs := []any{"val_updates", len(resp.ValidatorUpdates)}
+	attrs := []any{
+		"val_updates", len(resp.ValidatorUpdates),
+		"height", block.Height,
+	}
 	for i, update := range resp.ValidatorUpdates {
 		attrs = append(attrs, log.Hex7(fmt.Sprintf("pubkey_%d", i), update.PubKey.GetSecp256K1()))
 		attrs = append(attrs, fmt.Sprintf("power_%d", i), update.Power)
@@ -90,7 +99,9 @@ func (l loggingABCIApp) FinalizeBlock(ctx context.Context, block *abci.RequestFi
 }
 
 func (l loggingABCIApp) ExtendVote(ctx context.Context, vote *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
-	log.Debug(ctx, "👾 ABCI call: ExtendVote")
+	log.Debug(ctx, "👾 ABCI call: ExtendVote",
+		"height", vote.Height,
+	)
 	resp, err := l.Application.ExtendVote(ctx, vote)
 	if err != nil {
 		log.Error(ctx, "ExtendVote failed [BUG]", err)
@@ -100,7 +111,9 @@ func (l loggingABCIApp) ExtendVote(ctx context.Context, vote *abci.RequestExtend
 }
 
 func (l loggingABCIApp) VerifyVoteExtension(ctx context.Context, extension *abci.RequestVerifyVoteExtension) (*abci.ResponseVerifyVoteExtension, error) {
-	log.Debug(ctx, "👾 ABCI call: VerifyVoteExtension")
+	log.Debug(ctx, "👾 ABCI call: VerifyVoteExtension",
+		"height", extension.Height,
+	)
 	resp, err := l.Application.VerifyVoteExtension(ctx, extension)
 	if err != nil {
 		log.Error(ctx, "VerifyVoteExtension failed [BUG]", err)
