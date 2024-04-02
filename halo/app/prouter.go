@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -47,7 +48,9 @@ func makeProcessProposalHandler(app *App) sdk.ProcessProposalHandler {
 			for _, msg := range tx.GetMsgs() {
 				handler := router.Handler(msg)
 				if handler == nil {
-					return handleErr(ctx, errors.Wrap(err, "msg handler not found"))
+					return handleErr(ctx, errors.New("msg handler not found",
+						"msg_type", fmt.Sprintf("%T", msg),
+					))
 				}
 
 				_, err := handler(ctx, msg)
