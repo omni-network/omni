@@ -1,6 +1,6 @@
 [Eth]
 NetworkId = {{ .ChainID }}
-SyncMode = {{ if .IsArchive }}"full"{{else}}"snap"{{end}}
+SyncMode = "full"
 NoPruning = {{ .IsArchive }}
 
 [Eth.Miner]
