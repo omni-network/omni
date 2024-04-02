@@ -37,16 +37,6 @@ jobs:
           cd dist/monitor_linux_amd64_v1
           docker build -f "../../monitor/Dockerfile" . -t "omniops/monitor:${GITHUB_SHA::7}"
 
-      - name: Build explorer indexer image
-        run: |
-          cd dist/monitor_linux_amd64_v1
-          docker build -f "../../explorer/indexer/Dockerfile" . -t "omniops/monitor:${GITHUB_SHA::7}"
-
-      - name: Build explorer graphql image
-        run: |
-          cd dist/monitor_linux_amd64_v1
-          docker build -f "../../explorer/graphql/Dockerfile" . -t "omniops/monitor:${GITHUB_SHA::7}"
-
       - name: Run devnet1 e2e test
         run: |
           go install github.com/omni-network/omni/e2e

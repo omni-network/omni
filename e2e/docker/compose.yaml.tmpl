@@ -144,7 +144,7 @@ services:
     image: omniops/explorer-indexer:{{or .OmniTag "main"}}
     {{- if .ExplorerMockDB}}
     command:
-      - --db-url=postgres://omni:password@explorer_db:5432/omni_db # pragma: allowlist secret
+      - --db-url=postgres://omni:password@explorer_db:5432/omni_db
     {{- end}}
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     volumes:
@@ -162,7 +162,7 @@ services:
     image: omniops/explorer-graphql:{{or .OmniTag "main"}}
     {{- if .ExplorerMockDB}}
     command:
-      - --db-url=postgres://omni:password@explorer_db:5432/omni_db # pragma: allowlist secret
+      - --db-url=postgres://omni:password@explorer_db:5432/omni_db
     {{- end}}
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     volumes:
