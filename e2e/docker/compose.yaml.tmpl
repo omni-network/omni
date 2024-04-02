@@ -171,6 +171,8 @@ services:
     networks:
       {{ $.NetworkName }}:
         {{ if $.Network }}ipv4_address: 10.186.73.203{{ end }}
+    ports:
+        - 59754:59754
 {{ end }}
 
 {{- if .Prometheus }}

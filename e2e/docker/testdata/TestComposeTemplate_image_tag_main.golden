@@ -172,6 +172,8 @@ services:
     networks:
       test:
         ipv4_address: 10.186.73.203
+    ports:
+        - 59754:59754
 
   prometheus:
     labels:

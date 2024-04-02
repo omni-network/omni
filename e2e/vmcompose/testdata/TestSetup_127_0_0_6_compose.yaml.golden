@@ -35,4 +35,6 @@ services:
     networks:
       test:
         
+    ports:
+        - 59754:59754
 
