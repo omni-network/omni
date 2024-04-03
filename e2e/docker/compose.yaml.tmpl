@@ -136,7 +136,7 @@ services:
         {{ if $.Network }}ipv4_address: 10.186.73.201{{ end }}
 {{ end }}
 
-{{- if .ExplorerIndexer }}
+{{- if .Explorer }}
   explorer_indexer:
     labels:
       e2e: true
@@ -151,10 +151,10 @@ services:
       - ./explorer_indexer:/explorer_indexer
     networks:
       {{ $.NetworkName }}:
-        {{ if $.Network }}ipv4_address: 10.186.73.204{{ end }}
+        {{ if $.Network }}ipv4_address: 10.186.73.203{{ end }}
 {{ end }}
 
-{{- if .ExplorerGraphql }}
+{{- if .Explorer }}
   explorer_graphql:
     labels:
       e2e: true
@@ -169,9 +169,25 @@ services:
       - ./explorer_graphql:/explorer_graphql
     networks:
       {{ $.NetworkName }}:
-        {{ if $.Network }}ipv4_address: 10.186.73.203{{ end }}
+        {{ if $.Network }}ipv4_address: 10.186.73.204{{ end }}
     ports:
-        - 59754:8080
+        - 21335:8080
+{{ end }}
+
+{{- if .Explorer }}
+  explorer_ui:
+    labels:
+      e2e: true
+    container_name: explorer_ui
+    image: omniops/explorer-ui:{{or .OmniTag "main"}}
+    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    command:
+      - --graphql-url=http://explorer.staging.omni.network/graphql  # TODO: Update to use the DNS name when available service
+    networks:
+      {{ $.NetworkName }}:
+        {{ if $.Network }}ipv4_address: 10.186.73.205{{ end }}
+    ports:
+        - 21334:8080
 {{ end }}
 
 {{- if .ExplorerMockDB }}
@@ -193,7 +209,7 @@ services:
     restart: unless-stopped
     networks:
       {{ $.NetworkName }}:
-        {{ if $.Network }}ipv4_address: 10.186.73.205{{ end }}
+        {{ if $.Network }}ipv4_address: 10.186.73.206{{ end }}
 {{ end }}
 
 {{- if .Prometheus }}

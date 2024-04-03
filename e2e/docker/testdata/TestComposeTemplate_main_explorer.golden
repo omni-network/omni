@@ -150,7 +150,7 @@ services:
       - ./explorer_indexer:/explorer_indexer
     networks:
       test:
-        ipv4_address: 10.186.73.204
+        ipv4_address: 10.186.73.203
 
   explorer_graphql:
     labels:
@@ -162,9 +162,23 @@ services:
       - ./explorer_graphql:/explorer_graphql
     networks:
       test:
-        ipv4_address: 10.186.73.203
+        ipv4_address: 10.186.73.204
     ports:
-        - 59754:8080
+        - 21335:8080
+
+  explorer_ui:
+    labels:
+      e2e: true
+    container_name: explorer_ui
+    image: omniops/explorer-ui:main
+    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    command:
+      - --graphql-url=http://explorer.staging.omni.network/graphql  # TODO: Update to use the DNS name when available service
+    networks:
+      test:
+        ipv4_address: 10.186.73.205
+    ports:
+        - 21334:8080
 
   prometheus:
     labels:
