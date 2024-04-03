@@ -58,9 +58,12 @@ func (w *Worker) Run(ctx context.Context) {
 			return
 		}
 
-		// TODO(corver): Clear worker persisted state on error, so it bootstraps from on-chain state.
-
 		log.Error(ctx, "Worker failed, resetting", err)
+
+		if err := w.state.Clear(w.destChain.ID); err != nil {
+			log.Error(ctx, "Failed to clear worker state", err)
+		}
+
 		workerResets.WithLabelValues(w.destChain.Name).Inc()
 		backoff()
 	}
