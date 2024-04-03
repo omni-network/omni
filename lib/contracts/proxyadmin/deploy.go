@@ -64,6 +64,7 @@ func mainnetCfg() DeploymentConfig {
 		Create3Salt:    contracts.ProxyAdminSalt(netconf.Mainnet),
 		Owner:          contracts.MainnetProxyAdminOwner(),
 		Deployer:       contracts.MainnetDeployer(),
+		ExpectedAddr:   contracts.MainnetProxyAdmin(),
 	}
 }
 
@@ -73,6 +74,7 @@ func testnetCfg() DeploymentConfig {
 		Create3Salt:    contracts.ProxyAdminSalt(netconf.Testnet),
 		Owner:          contracts.TestnetProxyAdminOwner(),
 		Deployer:       contracts.TestnetDeployer(),
+		ExpectedAddr:   contracts.TestnetProxyAdmin(),
 	}
 }
 

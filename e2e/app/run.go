@@ -55,7 +55,9 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 		return nil, nil, err
 	}
 
-	// TODO: deploy public proxy admins
+	if err := deployPublicProxyAdmin(ctx, def); err != nil {
+		return nil, nil, err
+	}
 
 	// Deploy public portals first so their addresses are available for setup.
 	if err := def.Netman().DeployPublicPortals(ctx, genesisValSetID, genesisVals); err != nil {
@@ -78,7 +80,9 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.Deploy
 		return nil, nil, err
 	}
 
-	// TODO: deploy private proxy admins
+	if err := deployPrivateProxyAdmin(ctx, def); err != nil {
+		return nil, nil, err
+	}
 
 	if err := def.Netman().DeployPrivatePortals(ctx, genesisValSetID, genesisVals); err != nil {
 		return nil, nil, err
