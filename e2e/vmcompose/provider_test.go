@@ -30,6 +30,8 @@ func TestSetup(t *testing.T) {
 	}, "")
 	require.NoError(t, err)
 
+	def.Testnet.Deploy = true
+
 	err = os.MkdirAll(def.Testnet.Dir, 0o755)
 	require.NoError(t, err)
 

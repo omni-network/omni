@@ -62,9 +62,10 @@ mode = "full"
 			"fullnode01":     vm5,
 			"fullnode01_evm": vm5,
 
-			"explorer_indexer": vm6,
-			"explorer_graphql": vm6,
-			"explorer_ui":      vm6,
+			"explorer-indexer-init": vm6,
+			"explorer_indexer":      vm6,
+			"explorer_graphql":      vm6,
+			"explorer_ui":           vm6,
 		},
 	}
 

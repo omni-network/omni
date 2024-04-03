@@ -90,6 +90,7 @@ func (p *Provider) Setup() error {
 			ExplorerGraphql: p.Testnet.Explorer && services["explorer_graphql"],
 			ExplorerUI:      p.Testnet.Explorer && services["explorer_ui"],
 			ExplorerMockDB:  p.Testnet.ExplorerMockDB && services["explorer_mock_db"],
+			Deploy:          p.Testnet.Deploy,
 		}
 		compose, err := docker.GenerateComposeFile(def)
 		if err != nil {

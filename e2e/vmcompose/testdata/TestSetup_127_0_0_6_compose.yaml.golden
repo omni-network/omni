@@ -8,6 +8,8 @@ networks:
 services:
 
   # Use geth as the omni EVMs.
+  
+
   explorer_indexer:
     labels:
       e2e: true
@@ -16,6 +18,7 @@ services:
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     volumes:
       - ./explorer_indexer:/explorer_indexer
+    
     networks:
       test:
         

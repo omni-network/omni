@@ -137,6 +137,19 @@ services:
 {{ end }}
 
 {{- if .ExplorerIndexer }}
+  {{ if .InitialDeploy }}
+  explorer-indexer-init:
+    labels:
+      e2e: true
+    container_name: explorer_indexer-init
+    image: "busybox:latest"
+    command: psql -h explorer_db -U root -d explorer_db -f ./scripts/clean.sql
+    volumes:
+      - ./explorer_indexer/scripts:/scripts
+    networks:
+      {{ $.NetworkName }}:
+  {{- end }}
+
   explorer_indexer:
     labels:
       e2e: true
@@ -149,6 +162,10 @@ services:
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     volumes:
       - ./explorer_indexer:/explorer_indexer
+    {{ if .InitialDeploy }}
+    depends_on:
+      explorer-indexer-init
+    {{- end }}
     networks:
       {{ $.NetworkName }}:
         {{ if $.Network }}ipv4_address: 10.186.73.204{{ end }}

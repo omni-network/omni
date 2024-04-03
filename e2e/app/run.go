@@ -36,6 +36,8 @@ type DeployConfig struct {
 // Deploy a new e2e network. It also starts all services in order to deploy private portals.
 // It also returns an optional deployed ping pong contract is enabled.
 func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.DeployInfos, *pingpong.XDapp, error) {
+	def.Testnet.Deploy = true
+
 	if err := Cleanup(ctx, def); err != nil {
 		return nil, nil, err
 	}
@@ -232,6 +234,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, secrets age
 // Upgrade generates all local artifacts, but only copies the docker-compose file to the VMs.
 // It them calls docker-compose up.
 func Upgrade(ctx context.Context, def Definition) error {
+	def.Testnet.Deploy = false
 	if err := Setup(ctx, def, agent.Secrets{}, false, ""); err != nil {
 		return err
 	}
@@ -268,6 +271,7 @@ func logRPCs(ctx context.Context, def Definition) {
 // deployMonitorOnly deploys the monitor service only.
 // It merely sets up config files and then starts the monitor service.
 func deployMonitorOnly(ctx context.Context, def Definition, cfg DeployConfig) error {
+	def.Testnet.Deploy = false
 	if err := Setup(ctx, def, cfg.AgentSecrets, cfg.testConfig, ""); err != nil {
 		return err
 	}
