@@ -10,6 +10,7 @@ import (
 	"sync"
 	"text/template"
 
+	"github.com/omni-network/omni/e2e/app/geth"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -23,9 +24,6 @@ import (
 )
 
 const ProviderName = "docker"
-
-// gethTag defines the geth version deployed to all networks.
-const gethTag = "v1.13.14"
 
 // composeTmpl is our own custom docker compose template. This differs from cometBFT's.
 //
@@ -83,9 +81,9 @@ func (p *Provider) Setup() error {
 		Relayer:         true,
 		Prometheus:      p.testnet.Prometheus,
 		Monitor:         true,
-		ExplorerIndexer: true,
-		ExplorerUI:      true,
-		ExplorerGraphql: true,
+		ExplorerIndexer: p.testnet.Explorer,
+		ExplorerUI:      p.testnet.Explorer,
+		ExplorerGraphql: p.testnet.Explorer,
 		ExplorerMockDB:  p.testnet.ExplorerMockDB,
 		OmniTag:         p.omniTag,
 	}
@@ -169,7 +167,7 @@ type ComposeDef struct {
 }
 
 func (ComposeDef) GethTag() string {
-	return gethTag
+	return geth.Version
 }
 
 // NodeOmniEVMs returns a map of node name to OmniEVM instance name; map[node_name]omni_evm.

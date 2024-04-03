@@ -22,8 +22,8 @@
  "nonce": "0x0",
  "timestamp": "0x0",
  "extraData": "0x",
- "gasLimit": "0x47e7c4",
- "difficulty": "0x0",
+ "gasLimit": "0x1c9c380",
+ "difficulty": "0x1",
  "mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
  "coinbase": "0x0000000000000000000000000000000000000000",
  "alloc": {

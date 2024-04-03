@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/miner"
 	"github.com/ethereum/go-ethereum/params"
 
 	"cosmossdk.io/math"
@@ -21,6 +22,7 @@ var eth1m = math.NewInt(1000000).MulRaw(params.Ether).BigInt()
 func newUint64(val uint64) *uint64 { return &val }
 
 // MakeGenesis returns a genesis block for a development chain.
+// See geth reference: https://github.com/ethereum/go-ethereum/blob/master/core/genesis.go#L564
 func MakeGenesis(network netconf.ID) (core.Genesis, error) {
 	allocs := mergeAllocs(precompilesAlloc(), predeploys.Alloc())
 
@@ -34,14 +36,15 @@ func MakeGenesis(network netconf.ID) (core.Genesis, error) {
 
 	return core.Genesis{
 		Config:     defaultChainConfig(network),
-		GasLimit:   params.GenesisGasLimit,
+		GasLimit:   miner.DefaultConfig.GasCeil,
 		BaseFee:    big.NewInt(params.InitialBaseFee),
-		Difficulty: big.NewInt(0),
+		Difficulty: big.NewInt(1),
 		Alloc:      allocs,
 	}, nil
 }
 
 // defaultChainConfig returns the default chain config for a network.
+// See geth reference: https://github.com/ethereum/go-ethereum/blob/master/params/config.go#L65
 func defaultChainConfig(network netconf.ID) *params.ChainConfig {
 	return &params.ChainConfig{
 		ChainID:                       big.NewInt(int64(network.Static().OmniExecutionChainID)),
@@ -113,6 +116,9 @@ func testnetPrefundAlloc() types.GenesisAlloc {
 		common.HexToAddress("0xeC5134556da0797A5C5cD51DD622b689Cac97Fe9"): {Balance: eth1k}, // fb: create3-deployer
 		common.HexToAddress("0x0CdCc644158b7D03f40197f55454dc7a11Bd92c1"): {Balance: eth1k}, // fb: deployer
 		common.HexToAddress("0xEAD625eB2011394cdD739E91Bf9D51A7169C22F5"): {Balance: eth1k}, // fb: owner
+
+		// team personal accounts
+		common.HexToAddress("0xFbD05C5dD1c09970D30Ad8BBf29BC34283E84E20"): {Balance: eth1m}, // corver
 
 		// TODO: add validators, relayer
 	}

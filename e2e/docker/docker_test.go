@@ -25,10 +25,25 @@ import (
 func TestComposeTemplate(t *testing.T) {
 	t.Parallel()
 
-	tags := []string{"main", "7d1ae53"}
+	tests := []struct {
+		name     string
+		tag      string
+		explorer bool
+	}{
+		{
+			name:     "main_explorer",
+			tag:      "main",
+			explorer: true,
+		},
+		{
+			name:     "commit_no_explorer",
+			tag:      "7d1ae53",
+			explorer: false,
+		},
+	}
 
-	for _, tag := range tags {
-		t.Run("image_tag_"+tag, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			_, ipNet, err := net.ParseCIDR("10.186.73.0/24")
 			require.NoError(t, err)
@@ -46,7 +61,7 @@ func TestComposeTemplate(t *testing.T) {
 					Prometheus: true,
 					Nodes: []*e2e.Node{{
 						Name:       "node0",
-						Version:    "omniops/halo:" + tag,
+						Version:    "omniops/halo:" + test.tag,
 						InternalIP: ipNet.IP,
 						ProxyPort:  8584,
 					}},
@@ -75,9 +90,10 @@ func TestComposeTemplate(t *testing.T) {
 						LoadState:  "path/to/anvil/state.json",
 					},
 				},
+				Explorer: test.explorer,
 			}
 
-			p := docker.NewProvider(testnet, types.InfrastructureData{}, tag)
+			p := docker.NewProvider(testnet, types.InfrastructureData{}, test.tag)
 			require.NoError(t, err)
 
 			require.NoError(t, p.Setup())

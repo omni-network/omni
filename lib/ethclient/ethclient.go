@@ -109,3 +109,17 @@ func (w Wrapper) HeaderByType(ctx context.Context, typ HeadType) (*types.Header,
 
 	return header, nil
 }
+
+// PeerCount returns the number of p2p peers as reported by the net_peerCount method.
+func (w Wrapper) PeerCount(ctx context.Context) (uint64, error) {
+	const endpoint = "peer_count"
+	defer latency(w.chain, endpoint)() //nolint:revive // Defer chain is fine here.
+
+	resp, err := w.cl.PeerCount(ctx)
+	if err != nil {
+		incError(w.chain, endpoint)
+		return 0, errors.Wrap(err, "rpc get payload v3")
+	}
+
+	return resp, nil
+}

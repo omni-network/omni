@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -77,7 +76,6 @@ func Test(ctx context.Context, def Definition, deployInfo types.DeployInfos, ver
 		args = append(args, "-v")
 	}
 	args = append(args, "github.com/omni-network/omni/e2e/test")
-	args = append(args, fmt.Sprintf("-slow=%v", def.Manifest.SlowTests))
 	log.Debug(ctx, "Test command", "args", args)
 
 	err = exec.CommandVerbose(ctx, args...)
