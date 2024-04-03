@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	indexer "github.com/omni-network/omni/explorer/indexer/app"
+	graphql "github.com/omni-network/omni/explorer/graphql/app"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/tutil"
 
@@ -18,15 +18,15 @@ func TestDefaultConfigReference(t *testing.T) {
 	t.Parallel()
 	tempDir := t.TempDir()
 
-	cfg := indexer.DefaultConfig()
+	cfg := graphql.DefaultConfig()
 
-	path := filepath.Join(tempDir, "explorer_indexer.toml")
+	path := filepath.Join(tempDir, "explorer_graphql.toml")
 
 	require.NoError(t, os.MkdirAll(tempDir, 0o755))
-	require.NoError(t, indexer.WriteConfigTOML(cfg, log.DefaultConfig(), path))
+	require.NoError(t, graphql.WriteConfigTOML(cfg, log.DefaultConfig(), path))
 
 	b, err := os.ReadFile(path)
 	require.NoError(t, err)
 
-	tutil.RequireGoldenBytes(t, b, tutil.WithFilename("default_explorer_indexer.toml"))
+	tutil.RequireGoldenBytes(t, b, tutil.WithFilename("default_explorer_graphql.toml"))
 }

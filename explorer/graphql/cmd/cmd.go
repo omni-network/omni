@@ -12,10 +12,17 @@ import (
 
 // New returns a new root cobra command that runs the graphql server.
 func New() *cobra.Command {
-	cfg := app.DefaultConfig()
-	logCfg := log.DefaultConfig()
+	cmd := libcmd.NewRootCmd(
+		"graphql",
+		"Explorer GraphQL Server",
+	)
 
-	cmd := libcmd.NewRootCmd("graphql", "Explorer GraphQL Server")
+	cfg := app.DefaultConfig()
+	bindGraphQLFlags(cmd.Flags(), &cfg)
+
+	logCfg := log.DefaultConfig()
+	log.BindFlags(cmd.Flags(), &logCfg)
+
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx, err := log.Init(cmd.Context(), logCfg)
 		if err != nil {
@@ -28,9 +35,6 @@ func New() *cobra.Command {
 
 		return app.Run(ctx, cfg)
 	}
-
-	bindGraphQLFlags(cmd.Flags(), &cfg)
-	log.BindFlags(cmd.Flags(), &logCfg)
 
 	return cmd
 }

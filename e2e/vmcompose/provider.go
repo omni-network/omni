@@ -75,17 +75,21 @@ func (p *Provider) Setup() error {
 		}
 
 		def := docker.ComposeDef{
-			Network:     false,
-			BindAll:     true,
-			NetworkName: p.Testnet.Name,
-			NetworkCIDR: p.Testnet.IP.String(),
-			Nodes:       nodes,
-			OmniEVMs:    omniEVMs,
-			Anvils:      anvilChains,
-			Relayer:     services["relayer"],
-			Monitor:     services["monitor"],
-			Prometheus:  p.Testnet.Prometheus,
-			OmniTag:     p.omniTag,
+			Network:         false,
+			BindAll:         true,
+			NetworkName:     p.Testnet.Name,
+			NetworkCIDR:     p.Testnet.IP.String(),
+			Nodes:           nodes,
+			OmniEVMs:        omniEVMs,
+			Anvils:          anvilChains,
+			Relayer:         services["relayer"],
+			Monitor:         services["monitor"],
+			Prometheus:      p.Testnet.Prometheus,
+			OmniTag:         p.omniTag,
+			ExplorerIndexer: p.Testnet.Explorer && services["explorer_indexer"],
+			ExplorerGraphql: p.Testnet.Explorer && services["explorer_graphql"],
+			ExplorerUI:      p.Testnet.Explorer && services["explorer_ui"],
+			ExplorerMockDB:  p.Testnet.ExplorerMockDB && services["explorer_mock_db"],
 		}
 		compose, err := docker.GenerateComposeFile(def)
 		if err != nil {

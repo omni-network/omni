@@ -19,6 +19,8 @@ func bindDefFlags(flags *pflag.FlagSet, cfg *app.DefinitionConfig) {
 	flags.StringVar(&cfg.FireAPIKey, "fireblocks-api-key", cfg.FireAPIKey, "FireBlocks api key")
 	flags.StringVar(&cfg.FireKeyPath, "fireblocks-key-path", cfg.FireKeyPath, "FireBlocks RSA private key path")
 	flags.StringVar(&cfg.OmniImgTag, "omni-image-tag", cfg.OmniImgTag, "Omni docker images tag (halo, relayer). Defaults to working dir git commit.")
+	flags.StringVar(&cfg.ExplorerImageTag, "explorer-image-tag", cfg.ExplorerImageTag, "Explorer docker images tag (indexer, graphql, ui). Defaults to working dir git commit.")
+	flags.StringVar(&cfg.IndexerDBConn, "indexer-db-conn-url", cfg.IndexerDBConn, "Indexer database connection url")
 	flags.StringToStringVar(&cfg.RPCOverrides, "rpc-overrides", cfg.RPCOverrides, "Pubilc chain rpc overrides: '<chain1>=<url1>'")
 }
 
@@ -35,6 +37,7 @@ func bindPromFlags(flags *pflag.FlagSet, cfg *agent.Secrets) {
 func bindDeployFlags(flags *pflag.FlagSet, cfg *app.DeployConfig) {
 	bindPromFlags(flags, &cfg.AgentSecrets)
 	flags.Uint64Var(&cfg.PingPongN, "ping-pong", cfg.PingPongN, "Number of ping pongs messages to send. 0 disables it")
+	flags.StringVar(&cfg.ExplorerDB, "explorer-db", cfg.ExplorerDB, "Explorer DB connection string")
 }
 
 func bindCreate3DeployFlags(flags *pflag.FlagSet, cfg *app.Create3DeployConfig) {

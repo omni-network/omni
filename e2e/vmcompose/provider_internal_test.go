@@ -19,6 +19,7 @@ func SetupDataFixtures(t *testing.T) (string, string) {
 network = "devnet"
 anvil_chains = ["chain_a"]
 multi_omni_evms = true
+explorer=true
 
 [node.validator01]
 [node.validator02]
@@ -33,7 +34,7 @@ mode = "full"
 	err := os.WriteFile(manifestFile, []byte(manifest), 0o644)
 	require.NoError(t, err)
 
-	const vm1, vm2, vm3, vm4, vm5 = "vm1", "vm2", "vm3", "vm4", "vm5"
+	const vm1, vm2, vm3, vm4, vm5, vm6 = "vm1", "vm2", "vm3", "vm4", "vm5", "vm6"
 
 	dataJSON := dataJSON{
 		NetworkCIDR: "127.0.0.1/24",
@@ -43,6 +44,7 @@ mode = "full"
 			{Name: vm3, IP: "127.0.0.3"},
 			{Name: vm4, IP: "127.0.0.4"},
 			{Name: vm5, IP: "127.0.0.5"},
+			{Name: vm6, IP: "127.0.0.6"},
 		},
 		ServicesByVM: map[string]string{
 			"validator01":     vm1,
@@ -59,6 +61,10 @@ mode = "full"
 
 			"fullnode01":     vm5,
 			"fullnode01_evm": vm5,
+
+			"explorer_indexer": vm6,
+			"explorer_graphql": vm6,
+			"explorer_ui":      vm6,
 		},
 	}
 

@@ -31,7 +31,7 @@ func DefaultConfig() Config {
 //go:embed config.toml.tpl
 var tomlTemplate []byte
 
-// WriteConfigTOML writes the toml halo config to disk.
+// WriteConfigTOML writes the toml monitor config to disk.
 func WriteConfigTOML(cfg Config, logCfg log.Config, path string) error {
 	t, err := template.New("").Parse(string(tomlTemplate))
 	if err != nil {

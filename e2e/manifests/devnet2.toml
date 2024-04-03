@@ -1,0 +1,12 @@
+# Devnet2 is the smallest devnet possible. It only a single validator with the explorer enabled.
+network = "devnet"
+anvil_chains = ["mock_l1", "mock_rollup"]
+avs_target = "mock_l1"
+
+multi_omni_evms = true
+prometheus = true
+explorer=true
+explorer_mock_db=true
+
+[node.validator01]
+[node.validator02]

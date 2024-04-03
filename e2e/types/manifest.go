@@ -73,6 +73,12 @@ type Manifest struct {
 
 	// Keys contains long-lived private keys (address by type) by node name.
 	Keys map[string]map[key.Type]string `toml:"keys"`
+
+	// Explorer defines whether to deploy the explorer.
+	Explorer bool `toml:"explorer"`
+
+	// ExplorerMockDB defines whether to deploy the explorer db locally.
+	ExplorerMockDB bool `toml:"explorer_mock_db"`
 }
 
 // Seeds returns a map of seed nodes by name.

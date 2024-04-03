@@ -140,6 +140,32 @@ services:
       test:
         ipv4_address: 10.186.73.201
 
+  explorer_indexer:
+    labels:
+      e2e: true
+    container_name: explorer_indexer
+    image: omniops/explorer-indexer:main
+    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    volumes:
+      - ./explorer_indexer:/explorer_indexer
+    networks:
+      test:
+        ipv4_address: 10.186.73.204
+
+  explorer_graphql:
+    labels:
+      e2e: true
+    container_name: explorer_graphql
+    image: omniops/explorer-graphql:main
+    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    volumes:
+      - ./explorer_graphql:/explorer_graphql
+    networks:
+      test:
+        ipv4_address: 10.186.73.203
+    ports:
+        - 59754:8080
+
   prometheus:
     labels:
       e2e: true

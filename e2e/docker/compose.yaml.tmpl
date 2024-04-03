@@ -136,6 +136,66 @@ services:
         {{ if $.Network }}ipv4_address: 10.186.73.201{{ end }}
 {{ end }}
 
+{{- if .ExplorerIndexer }}
+  explorer_indexer:
+    labels:
+      e2e: true
+    container_name: explorer_indexer
+    image: omniops/explorer-indexer:{{or .OmniTag "main"}}
+    {{- if .ExplorerMockDB}}
+    command:
+      - --db-url=postgres://omni:password@explorer_db:5432/omni_db
+    {{- end}}
+    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    volumes:
+      - ./explorer_indexer:/explorer_indexer
+    networks:
+      {{ $.NetworkName }}:
+        {{ if $.Network }}ipv4_address: 10.186.73.204{{ end }}
+{{ end }}
+
+{{- if .ExplorerGraphql }}
+  explorer_graphql:
+    labels:
+      e2e: true
+    container_name: explorer_graphql
+    image: omniops/explorer-graphql:{{or .OmniTag "main"}}
+    {{- if .ExplorerMockDB}}
+    command:
+      - --db-url=postgres://omni:password@explorer_db:5432/omni_db
+    {{- end}}
+    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    volumes:
+      - ./explorer_graphql:/explorer_graphql
+    networks:
+      {{ $.NetworkName }}:
+        {{ if $.Network }}ipv4_address: 10.186.73.203{{ end }}
+    ports:
+        - 59754:8080
+{{ end }}
+
+{{- if .ExplorerMockDB }}
+  explorer_db:
+    labels:
+      e2e: true
+    image: postgres:14-alpine
+    container_name: explorer_db
+    environment:
+      POSTGRES_DB: omni_db
+      POSTGRES_USER: omni
+      POSTGRES_PASSWORD: password
+      ports: 5432:5432
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U omni -d omni_db" ]
+      interval: 3s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      {{ $.NetworkName }}:
+        {{ if $.Network }}ipv4_address: 10.186.73.205{{ end }}
+{{ end }}
+
 {{- if .Prometheus }}
   prometheus:
     labels:

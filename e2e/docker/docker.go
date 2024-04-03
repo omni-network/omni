@@ -70,20 +70,24 @@ func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag st
 }
 
 // Setup generates the docker-compose file and write it to disk, erroring if
-// any of these operations fail. It writes.
+// any of these operations fail.
 func (p *Provider) Setup() error {
 	def := ComposeDef{
-		Network:     true,
-		NetworkName: p.testnet.Name,
-		NetworkCIDR: p.testnet.IP.String(),
-		BindAll:     false,
-		Nodes:       p.testnet.Nodes,
-		OmniEVMs:    p.testnet.OmniEVMs,
-		Anvils:      p.testnet.AnvilChains,
-		Relayer:     true,
-		Prometheus:  p.testnet.Prometheus,
-		Monitor:     true,
-		OmniTag:     p.omniTag,
+		Network:         true,
+		NetworkName:     p.testnet.Name,
+		NetworkCIDR:     p.testnet.IP.String(),
+		BindAll:         false,
+		Nodes:           p.testnet.Nodes,
+		OmniEVMs:        p.testnet.OmniEVMs,
+		Anvils:          p.testnet.AnvilChains,
+		Relayer:         true,
+		Prometheus:      p.testnet.Prometheus,
+		Monitor:         true,
+		ExplorerIndexer: true,
+		ExplorerUI:      true,
+		ExplorerGraphql: true,
+		ExplorerMockDB:  p.testnet.ExplorerMockDB,
+		OmniTag:         p.omniTag,
 	}
 
 	bz, err := GenerateComposeFile(def)
@@ -157,6 +161,11 @@ type ComposeDef struct {
 	OmniTag    string
 	Relayer    bool
 	Prometheus bool
+
+	ExplorerIndexer bool
+	ExplorerGraphql bool
+	ExplorerMockDB  bool
+	ExplorerUI      bool
 }
 
 func (ComposeDef) GethTag() string {
@@ -231,6 +240,15 @@ func additionalServices(testnet types.Testnet) []string {
 	}
 
 	resp = append(resp, "monitor")
+
+	if testnet.Explorer {
+		resp = append(resp, "explorer_indexer")
+		resp = append(resp, "explorer_graphql")
+	}
+
+	if testnet.ExplorerMockDB {
+		resp = append(resp, "explorer_db")
+	}
 
 	// In monitor only mode, we don't need to start the relayer (above omni and anvils will also be empty).
 	if testnet.OnlyMonitor {
