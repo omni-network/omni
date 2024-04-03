@@ -198,7 +198,7 @@ func (b *Backend) BindOpts(ctx context.Context, from common.Address) (*bind.Tran
 
 			return resp, nil
 		},
-		Context: ctx,
+		Context: log.WithCtx(ctx, "dest_chain", b.chainName, "from_addr", from.Hex()[6]),
 	}, nil
 }
 
