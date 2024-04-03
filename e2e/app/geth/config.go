@@ -13,13 +13,6 @@ import (
 
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/eth/downloader"
-
-	_ "embed"
-)
-
-var (
-	//go:embed geth-keystore.json
-	gethKeystore []byte
 )
 
 // WriteAllConfig writes all the geth config files for all omniEVMs.
@@ -35,11 +28,9 @@ func WriteAllConfig(testnet types.Testnet) error {
 
 	gethConfigFiles := func(evm types.OmniEVM) map[string][]byte {
 		return map[string][]byte{
-			"genesis.json":      gethGenesisBz,
-			"keystore/keystore": gethKeystore,                                                 // TODO(corver): Remove this, it isn't used.
-			"geth_password.txt": []byte(""),                                                   // Empty password
-			"geth/nodekey":      []byte(hex.EncodeToString(ethcrypto.FromECDSA(evm.NodeKey))), // Nodekey is hex encoded
-			"geth/jwtsecret":    []byte(evm.JWTSecret),
+			"genesis.json":   gethGenesisBz,
+			"geth/nodekey":   []byte(hex.EncodeToString(ethcrypto.FromECDSA(evm.NodeKey))), // Nodekey is hex encoded
+			"geth/jwtsecret": []byte(evm.JWTSecret),
 		}
 	}
 
