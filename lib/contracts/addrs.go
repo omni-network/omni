@@ -12,19 +12,14 @@ import (
 )
 
 const (
-	// fbDev is the address of the fireblocks "dev" account.
-	fbDev = "0x7a6cF389082dc698285474976d7C75CAdE08ab7e"
-
-	// TODO: use proper staging addresses below, rather than fbDev.
-
 	// address of the "staging-create3-deployer" fireblocks account.
-	// fbStagingCreate3Deployer = "0xC8103859Ac7CB547d70307EdeF1A2319FC305fdC".
+	fbStagingCreate3Deployer = "0xC8103859Ac7CB547d70307EdeF1A2319FC305fdC"
 
 	// address of the "staging-deployer" fireblocks account.
-	// fbStagingDeployer = "0x274c4B3e5d27A65196d63964532366872F81D261".
+	fbStagingDeployer = "0x274c4B3e5d27A65196d63964532366872F81D261"
 
 	// address of the "staging-owner" fireblocks account.
-	// fbStagingAdmin = "0x4891925c4f13A34FC26453FD168Db80aF3273014".
+	fbStagingAdmin = "0x4891925c4f13A34FC26453FD168Db80aF3273014"
 
 	// address of the "testnet-create3-deployer" fireblocks account.
 	fbTestnetCreate3Deployer = "0xeC5134556da0797A5C5cD51DD622b689Cac97Fe9"
@@ -41,31 +36,31 @@ var (
 	// ProxyAdminOwner.
 	mainnetProxyAdminOwner = addr("0x0")
 	testnetProxyAdminOwner = addr(fbTestnetAdmin)
-	stagingProxyAdminOwner = addr(fbDev)
+	stagingProxyAdminOwner = addr(fbStagingAdmin)
 	devnetProxyAdminOwner  = anvil.DevAccount2()
 
 	// Create3 Deployer - addrress that can deploy the create3 factory.
 	mainnetCreate3Deployer = addr("0x0")
 	testnetCreate3Deployer = addr(fbTestnetCreate3Deployer)
-	stagingCreate3Deployer = addr(fbDev)
+	stagingCreate3Deployer = addr(fbStagingCreate3Deployer)
 	devnetCreate3Deployer  = anvil.DevAccount0()
 
 	// Deployer - address that can deploy protocol contracts via Create3 factory.
 	mainnetDeployer = addr("0x0")
 	testnetDeployer = addr(fbTestnetDeployer)
-	stagingDeployer = addr(fbDev)
+	stagingDeployer = addr(fbStagingDeployer)
 	devnetDeployer  = anvil.DevAccount1()
 
 	// Portal Admin.
 	mainnetPortalAdmin = addr("0x0")
 	testnetPortalAdmin = addr(fbTestnetAdmin)
-	stagingPortalAdmin = addr(fbDev)
+	stagingPortalAdmin = addr(fbStagingAdmin)
 	devnetPortalAdmin  = anvil.DevAccount2()
 
 	// AVS Admin.
 	mainnetAVSAdmin = addr("0x0")
 	testnetAVSAdmin = addr(fbTestnetAdmin)
-	stagingAVSAdmin = addr(fbDev)
+	stagingAVSAdmin = addr(fbStagingAdmin)
 	devnetAVSAdmin  = anvil.DevAccount2()
 )
 
