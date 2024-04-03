@@ -193,7 +193,7 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 			return errors.Wrap(err, "deploy opts", "chain", portal.Chain.Name)
 		}
 
-		if err := logBalance(ctx, backend, portal.Chain.Name, txOpts.From, "deploy_key"); err != nil {
+		if err := logBalance(ctx, backend, portal.Chain.Name, txOpts.From, "operator_key"); err != nil {
 			return err
 		}
 
@@ -214,13 +214,9 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 			return nil, errors.Wrap(err, "deploy opts", "chain", p.Chain.Name)
 		}
 
-		if err := m.checkIfDeployed(ctx, p.Chain.Name, backend); err != nil {
-			return nil, err
-		}
-
-		addr, receipt, err := portal.Deploy(ctx, m.network, backend, valSetID, validators)
+		addr, deployHeight, err := m.deployIfNeeded(ctx, p.Chain, backend, valSetID, validators)
 		if err != nil {
-			return nil, errors.Wrap(err, "deploy public omni contracts", "chain", p.Chain.Name)
+			return nil, errors.Wrap(err, "deploy public portals", "chain", p.Chain.Name)
 		}
 
 		contract, err := bindings.NewOmniPortal(addr, backend)
@@ -231,7 +227,7 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 		return &deployResult{
 			Contract: contract,
 			Addr:     addr,
-			Height:   receipt.BlockNumber.Uint64(),
+			Height:   deployHeight,
 		}, nil
 	}
 
@@ -273,30 +269,24 @@ func (m *manager) DeployPrivatePortals(ctx context.Context, valSetID uint64, val
 
 	// Define a forkjoin work function that will deploy the omni contracts for each chain
 	deployFunc := func(ctx context.Context, p Portal) (*bindings.OmniPortal, error) {
-		chain := p.Chain.Name
 		backend, err := m.backends.Backend(p.Chain.ID)
 		if err != nil {
-			return nil, errors.Wrap(err, "deploy opts", "chain", chain)
+			return nil, errors.Wrap(err, "deploy opts", "chain", p.Chain.Name)
 		}
 
-		if err := m.checkIfDeployed(ctx, chain, backend); err != nil {
-			return nil, err
-		}
-
-		addr, _, err := portal.Deploy(ctx, m.network, backend, valSetID, validators)
-
+		addr, _, err := m.deployIfNeeded(ctx, p.Chain, backend, valSetID, validators)
 		if err != nil {
-			return nil, errors.Wrap(err, "deploy private omni contracts", "chain", chain)
+			return nil, errors.Wrap(err, "deploy private portals", "chain", p.Chain.Name)
 		} else if addr != p.DeployInfo.PortalAddress {
 			return nil, errors.New("deployed address does not match existing address",
 				"expected", p.DeployInfo.PortalAddress.Hex(),
 				"actual", addr.Hex(),
-				"chain", chain)
+				"chain", p.Chain.Name)
 		}
 
 		contract, err := bindings.NewOmniPortal(addr, backend)
 		if err != nil {
-			return nil, errors.Wrap(err, "bind contract", "chain", chain)
+			return nil, errors.Wrap(err, "bind contract", "chain", p.Chain.Name)
 		}
 
 		return contract, nil
@@ -365,6 +355,7 @@ func (m *manager) fundPrivateRelayer(ctx context.Context) error {
 			return err
 		}
 		b, _ := bal.Float64()
+
 		log.Info(pctx, "Funding relayer operator balance", "balance", b/params.Ether, "operator", m.operator.Hex())
 		// TODO(corver): Remove this debug log
 
@@ -383,25 +374,55 @@ func (m *manager) fundPrivateRelayer(ctx context.Context) error {
 	return nil
 }
 
-// checkIfDeployed checks if the portal is already deployed on the chain.
+// deployIfNeeded deploys a portal if it is not already deployed.
+//
 // In the case it is deployed, it:
 //   - returns an error if the network is ephemeral
-//   - logs a warning if the network is persistent
-func (m *manager) checkIfDeployed(ctx context.Context, chain string, backend *ethbackend.Backend) error {
+//   - returns an error if the deployment is not set in the static network static
+//   - else, it returns the deployment address and height.
+//
+// In the case it is not deployed, it:
+//   - returns an error if the deployment is set in the static network static
+//   - else, it deploys the portal and returns the deployment address and height.
+func (m *manager) deployIfNeeded(ctx context.Context, chain types.EVMChain, backend *ethbackend.Backend, valSetID uint64, validators []bindings.Validator,
+) (common.Address, uint64, error) {
 	isDeployed, addr, err := portal.IsDeployed(ctx, m.network, backend)
 	if err != nil {
-		return errors.Wrap(err, "is deployed", "chain", chain)
-	} else if isDeployed {
-		if m.network.IsEphemeral() {
-			// for ephemeral networks, require that the portal is not already deployed
-			return errors.New("portal already deployed", "network", m.network, "chain", chain, "address", addr.Hex())
-		}
-
-		// for persistent networks, log a warning
-		log.Warn(ctx, "Portal is already deployed", errors.New("portal already deployed"), "network", m.network, "chain", chain, "address", addr.Hex())
+		return common.Address{}, 0, errors.Wrap(err, "is deployed", "chain", chain)
 	}
 
-	return nil
+	hasStatic := m.network.Static().HasPortalDeployment(chain.ID)
+
+	// for ephemeral networks, require that the portal is not already deployed
+	if isDeployed && m.network.IsEphemeral() {
+		return common.Address{}, 0, errors.New("ephemeral portal already deployed", "network", m.network, "chain", chain.Name, "address", addr.Hex())
+	}
+
+	// if the portal is deployed, but not set in the network static, return an error
+	if isDeployed && !hasStatic {
+		return common.Address{}, 0, errors.New("portal deployed, but not set in network static", "chain", chain.Name, "address", addr.Hex())
+	}
+
+	// if the portal is not deployed, but set in the network static, return an error
+	if !isDeployed && hasStatic {
+		return common.Address{}, 0, errors.New("portal not deployed, but set in network static", "chain", chain.Name)
+	}
+
+	// if the static deployment is set, return it
+	if hasStatic {
+		dep := m.network.Static().PortalDeployment(chain.ID)
+		return dep.Address, dep.DeployHeight, nil
+	}
+
+	// at this point, we need to deploy the portal
+	addr, receipt, err := portal.Deploy(ctx, m.network, backend, valSetID, validators)
+	if err != nil {
+		return common.Address{}, 0, errors.Wrap(err, "deploy public omni contracts", "chain", chain.Name)
+	} else if receipt == nil {
+		return common.Address{}, 0, errors.New("no receipt", "chain", chain.Name)
+	}
+
+	return addr, receipt.BlockNumber.Uint64(), nil
 }
 
 type deployResult struct {
