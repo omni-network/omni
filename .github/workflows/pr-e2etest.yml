@@ -14,7 +14,7 @@ jobs:
         with:
           go-version: 'stable'
 
-      - name: Build halo and relayer binaries
+      - name: Build binaries
         uses: goreleaser/goreleaser-action@v5
         env:
           GOOS: linux
@@ -39,12 +39,12 @@ jobs:
 
       - name: Build explorer indexer image
         run: |
-          cd dist/monitor_linux_amd64_v1
+          cd dist/explorer-indexer_linux_amd64_v1
           docker build -f "../../explorer/indexer/Dockerfile" . -t "omniops/explorer-indexer:${GITHUB_SHA::7}"
 
       - name: Build explorer graphql image
         run: |
-          cd dist/monitor_linux_amd64_v1
+          cd dist/explorer-graphql_linux_amd64_v1
           docker build -f "../../explorer/graphql/Dockerfile" . -t "omniops/explorer-graphql:${GITHUB_SHA::7}"
 
       - name: Run devnet1 e2e test
