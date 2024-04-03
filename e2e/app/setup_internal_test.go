@@ -1,15 +1,11 @@
 package app
 
 import (
-	"net"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/omni-network/omni/lib/tutil"
-
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/p2p/enode"
 
 	"github.com/stretchr/testify/require"
 )
@@ -46,30 +42,6 @@ trust_period = "168h0m0s"
 	require.NoError(t, err)
 
 	bz, err := os.ReadFile(configFile)
-	require.NoError(t, err)
-
-	tutil.RequireGoldenBytes(t, bz)
-}
-
-func TestWriteGethConfigTOML(t *testing.T) {
-	t.Parallel()
-
-	testKey, _ := crypto.HexToECDSA("45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8")
-	node1 := enode.NewV4(&testKey.PublicKey, net.IP{127, 0, 0, 1}, 1, 1)
-	node2 := enode.NewV4(&testKey.PublicKey, net.IP{127, 0, 0, 2}, 2, 2)
-
-	cfg := GethConfig{
-		peers:     []*enode.Node{node1, node2},
-		ChainID:   15651,
-		IsArchive: true,
-	}
-
-	tempFile := filepath.Join(t.TempDir(), "geth.toml")
-
-	err := WriteGethConfigTOML(cfg, tempFile)
-	require.NoError(t, err)
-
-	bz, err := os.ReadFile(tempFile)
 	require.NoError(t, err)
 
 	tutil.RequireGoldenBytes(t, bz)

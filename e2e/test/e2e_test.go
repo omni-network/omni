@@ -2,7 +2,6 @@ package e2e_test
 
 import (
 	"context"
-	"flag"
 	"os"
 	"path/filepath"
 	"sync"
@@ -24,17 +23,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 )
-
-//nolint:gochecknoglobals // Tests flags need to use globals.
-var slow = flag.Bool("slow", false, "run slow tests")
-
-func SkipUnlessSlow(t *testing.T) {
-	t.Helper()
-
-	if !*slow {
-		t.Skip("skipping slow test, since --slow=false")
-	}
-}
 
 const (
 	EnvInfraType     = "INFRASTRUCTURE_TYPE"

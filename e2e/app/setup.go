@@ -1,20 +1,16 @@
 package app
 
 import (
-	"bytes"
 	"context"
-	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
-	"strings"
-	"text/template"
 	"time"
 
 	"github.com/omni-network/omni/e2e/app/agent"
+	"github.com/omni-network/omni/e2e/app/geth"
 	"github.com/omni-network/omni/e2e/app/static"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/e2e/vmcompose"
@@ -23,7 +19,6 @@ import (
 	halocmd "github.com/omni-network/omni/halo/cmd"
 	halocfg "github.com/omni-network/omni/halo/config"
 	"github.com/omni-network/omni/halo/genutil"
-	evmgenutil "github.com/omni-network/omni/halo/genutil/evm"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
@@ -33,15 +28,13 @@ import (
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
-	cmtos "github.com/cometbft/cometbft/libs/os"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/p2p/enode"
 
-	_ "embed"
+	_ "embed" // Embed requires blank import
 )
 
 const (
@@ -83,7 +76,7 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 		return errors.Wrap(err, "convert genesis")
 	}
 
-	if err := writeOmniEVMConfig(def.Testnet); err != nil {
+	if err := geth.WriteAllConfig(def.Testnet); err != nil {
 		return err
 	}
 
@@ -352,56 +345,6 @@ func updateConfigStateSync(nodeDir string, height int64, hash []byte) error {
 	return nil
 }
 
-var (
-	//go:embed static/geth-keystore.json
-	gethKeystore []byte
-)
-
-// writeOmniEVMConfig writes the omni evms (geth) config to <root>/<omni_evm>.
-func writeOmniEVMConfig(testnet types.Testnet) error {
-	gethGenesis, err := evmgenutil.MakeGenesis(testnet.Network)
-	if err != nil {
-		return errors.Wrap(err, "make genesis")
-	}
-	gethGenesisBz, err := json.MarshalIndent(gethGenesis, "", "  ")
-	if err != nil {
-		return errors.Wrap(err, "marshal genesis")
-	}
-
-	gethConfigFiles := func(evm types.OmniEVM) map[string][]byte {
-		return map[string][]byte{
-			"genesis.json":      gethGenesisBz,
-			"keystore/keystore": gethKeystore,                                                 // TODO(corver): Remove this, it isn't used.
-			"geth_password.txt": []byte(""),                                                   // Empty password
-			"geth/nodekey":      []byte(hex.EncodeToString(ethcrypto.FromECDSA(evm.NodeKey))), // Nodekey is hex encoded
-			"geth/jwtsecret":    []byte(evm.JWTSecret),
-		}
-	}
-
-	for _, evm := range testnet.OmniEVMs {
-		for file, data := range gethConfigFiles(evm) {
-			path := filepath.Join(testnet.Dir, evm.InstanceName, file)
-			if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-				return errors.Wrap(err, "mkdir", "path", path)
-			}
-			if err := os.WriteFile(path, data, 0o644); err != nil {
-				return errors.Wrap(err, "write geth config")
-			}
-		}
-
-		cfg := GethConfig{
-			peers:     evm.Peers,
-			IsArchive: evm.IsArchive,
-			ChainID:   evm.Chain.ID,
-		}
-		if err := WriteGethConfigTOML(cfg, filepath.Join(testnet.Dir, evm.InstanceName, "config.toml")); err != nil {
-			return errors.Wrap(err, "write geth config")
-		}
-	}
-
-	return nil
-}
-
 func writeRelayerConfig(def Definition, logCfg log.Config) error {
 	confRoot := filepath.Join(def.Testnet.Dir, "relayer")
 
@@ -562,65 +505,4 @@ func logConfig(def Definition) log.Config {
 		Level:  slog.LevelDebug.String(),
 		Color:  log.ColorForce,
 	}
-}
-
-// GethConfig defines the geth/config.toml config file template variables.
-type GethConfig struct {
-	peers     []*enode.Node
-	ChainID   uint64
-	IsArchive bool
-}
-
-// TrustedNodes defines nodes that geth will always connect to. They are excluded from maxPeers calculations.
-func (c GethConfig) peerENRs() []string {
-	var peers []string
-	for _, peer := range c.peers {
-		peers = append(peers, peer.String())
-	}
-
-	return peers
-}
-
-// TrustedNodes defines nodes that geth will always connect to. They are excluded from maxPeers calculations.
-func (c GethConfig) TrustedNodes() string {
-	return quotedStrArr(c.peerENRs())
-}
-
-// BootstrapNodes defines nodes that geth will connect to during bootstrapping to find other nodes in the network.
-// TODO(corver): Replace this with network seed nodes.
-func (c GethConfig) BootstrapNodes() string {
-	return quotedStrArr(c.peerENRs())
-}
-
-//go:embed geth.toml.tmpl
-var gethTomlTemplate []byte
-
-// WriteGethConfigTOML writes the toml config to disk.
-func WriteGethConfigTOML(cfg GethConfig, path string) error {
-	var buffer bytes.Buffer
-
-	t, err := template.New("").Parse(string(gethTomlTemplate))
-	if err != nil {
-		return errors.Wrap(err, "parse template")
-	}
-
-	if err := t.Execute(&buffer, cfg); err != nil {
-		return errors.Wrap(err, "execute template")
-	}
-
-	if err := cmtos.WriteFile(path, buffer.Bytes(), 0o644); err != nil {
-		return errors.Wrap(err, "write config")
-	}
-
-	return nil
-}
-
-// quotedStrArr returns the string slices as quoted string array.
-// e.g. ["a", "b", "c"] -> `["a","b","c"]`.
-func quotedStrArr(arr []string) string {
-	if len(arr) == 0 {
-		return "[]"
-	}
-
-	return `["` + strings.Join(arr, `","`) + `"]`
 }

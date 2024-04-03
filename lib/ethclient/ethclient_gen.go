@@ -28,6 +28,7 @@ type Client interface {
 	ethereum.TransactionReader
 	ethereum.TransactionSender
 	HeaderByType(ctx context.Context, typ HeadType) (*types.Header, error)
+	PeerCount(ctx context.Context) (uint64, error)
 	Address() string
 	Close()
 }
