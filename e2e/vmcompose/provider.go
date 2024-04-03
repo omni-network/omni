@@ -123,26 +123,40 @@ func (p *Provider) Setup() error {
 	return nil
 }
 
+// Upgrade copies some of the local e2e generated artifacts to the VMs and starts the docker-compose services.
 func (p *Provider) Upgrade(ctx context.Context) error {
 	log.Info(ctx, "Upgrading docker-compose on VMs", "image", p.Testnet.UpgradeVersion)
 
 	var filePaths []string
-	// add all artifacts for each node
-	for _, node := range p.Testnet.Nodes {
-		nodeDir := filepath.Join(p.Testnet.Dir, node.Name)
-
-		filePaths = append(filePaths,
-			filepath.Join(nodeDir, "config", "halo.toml"),
-			filepath.Join(nodeDir, "config", "config.toml"),
-			filepath.Join(nodeDir, "config", "network.json"),
-		)
+	addFile := func(dir string, file string) {
+		filePaths = append(filePaths, filepath.Join(p.Testnet.Dir, dir, file))
 	}
 
-	relayerDir := filepath.Join(p.Testnet.Dir, "relayer")
-	filePaths = append(filePaths,
-		filepath.Join(relayerDir, "relayer.toml"),
-		filepath.Join(relayerDir, "network.json"),
-	)
+	// TODO(corver): Also upgrade long-lived keys if changed
+	// - validator: ensure privval_state.json and voter_state.json doesn't complain
+
+	// Include halo config
+	for _, node := range p.Testnet.Nodes {
+		addFile(node.Name, "config/halo.toml")
+		addFile(node.Name, "config/config.toml")
+		addFile(node.Name, "config/network.json")
+		addFile(node.Name, "config/jwtsecret")
+	}
+
+	// Include geth config
+	for _, omniEVM := range p.Testnet.OmniEVMs {
+		addFile(omniEVM.InstanceName, "config.toml")
+		addFile(omniEVM.InstanceName, "geth/jwtsecret")
+	}
+
+	// Also relayer and monitor
+	addFile("relayer", "relayer.toml")
+	addFile("relayer", "network.json")
+	addFile("monitor", "monitor.toml")
+	addFile("monitor", "network.json")
+	// TODO(corver): Add explorer stuff
+
+	addFile("prometheus", "prometheus.yml")
 
 	for vmName, instance := range p.Data.VMs {
 		log.Debug(ctx, "Upgrading docker-compose", "vm", vmName)
