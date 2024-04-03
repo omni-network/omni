@@ -64,7 +64,6 @@ mode = "full"
 
 			"explorer_indexer": vm6,
 			"explorer_graphql": vm6,
-			"explorer_ui":      vm6,
 		},
 	}
 
