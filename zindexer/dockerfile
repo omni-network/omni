@@ -1,0 +1,25 @@
+FROM alpine:3.14
+
+# Install dependencies (including yq)
+RUN apk add --no-cache postgresql-client bash curl
+
+# Download yq binary directly (latest version as of writing this)
+ARG YQ_VERSION=4.9.6
+RUN curl -L -o /usr/bin/yq "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64" && \
+  chmod +x /usr/bin/yq
+
+COPY <<EOF /clean.sql
+DROP SCHEMA public CASCADE;
+CREATE SCHEMA public;
+
+GRANT ALL ON SCHEMA public TO postgres;
+GRANT ALL ON SCHEMA public TO public;
+EOF
+
+RUN cat /clean.sql
+
+CMD yq --version  \
+  conn_str=$(/usr/bin/yq eval '.dburl' /explorer_indexer/indexer.toml) \
+  echo "conn = ${conn_str}"\
+  cat /clean.sql
+#  psql "$conn_str" -f /clean.sql
