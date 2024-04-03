@@ -33,6 +33,16 @@ func (s *State) GetHeight(dstID, srcID uint64) uint64 {
 	return s.cursors[dstID][srcID]
 }
 
+// Clear deletes all destination chain cursors.
+func (s *State) Clear(dstID uint64) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	delete(s.cursors, dstID)
+
+	return s.saveUnsafe()
+}
+
 // Persist saves the given height for the given chainID.
 func (s *State) Persist(dstID, srcID, height uint64) error {
 	s.mu.Lock()

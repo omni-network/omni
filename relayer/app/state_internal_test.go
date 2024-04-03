@@ -28,11 +28,27 @@ func TestPersistState(t *testing.T) {
 		}
 	}
 
-	loadedState, ok, err := LoadCursors(path)
-	require.NoError(t, err)
-	require.True(t, ok)
-	require.NotNil(t, loadedState)
-	require.True(t, mapsEqual(expected, loadedState.cursors))
+	load := func(t *testing.T) *State {
+		t.Helper()
+		loadedState, ok, err := LoadCursors(path)
+		require.NoError(t, err)
+		require.True(t, ok)
+		require.NotNil(t, loadedState)
+
+		return loadedState
+	}
+
+	require.True(t, mapsEqual(expected, load(t).cursors))
+
+	// Clear each destination
+	for dstChainID := range expected {
+		require.NoError(t, ps.Clear(dstChainID))
+		require.Empty(t, ps.cursors[dstChainID])
+		require.Empty(t, load(t).cursors[dstChainID])
+	}
+
+	require.Empty(t, ps.cursors)
+	require.Empty(t, load(t).cursors)
 }
 
 func mapsEqual(map1, map2 map[uint64]map[uint64]uint64) bool {
