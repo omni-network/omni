@@ -32,5 +32,19 @@ services:
       test:
         
     ports:
-        - 59754:8080
+        - 21335:8080
+
+  explorer_ui:
+    labels:
+      e2e: true
+    container_name: explorer_ui
+    image: omniops/explorer-ui:7d1ae53
+    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    command:
+      - --graphql-url=http://explorer.staging.omni.network/graphql  # TODO: Update to use the DNS name when available service
+    networks:
+      test:
+        
+    ports:
+        - 21334:8080
 

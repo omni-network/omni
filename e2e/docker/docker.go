@@ -71,21 +71,19 @@ func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag st
 // any of these operations fail.
 func (p *Provider) Setup() error {
 	def := ComposeDef{
-		Network:         true,
-		NetworkName:     p.testnet.Name,
-		NetworkCIDR:     p.testnet.IP.String(),
-		BindAll:         false,
-		Nodes:           p.testnet.Nodes,
-		OmniEVMs:        p.testnet.OmniEVMs,
-		Anvils:          p.testnet.AnvilChains,
-		Relayer:         true,
-		Prometheus:      p.testnet.Prometheus,
-		Monitor:         true,
-		ExplorerIndexer: p.testnet.Explorer,
-		ExplorerUI:      p.testnet.Explorer,
-		ExplorerGraphql: p.testnet.Explorer,
-		ExplorerMockDB:  p.testnet.ExplorerMockDB,
-		OmniTag:         p.omniTag,
+		Network:        true,
+		NetworkName:    p.testnet.Name,
+		NetworkCIDR:    p.testnet.IP.String(),
+		BindAll:        false,
+		Nodes:          p.testnet.Nodes,
+		OmniEVMs:       p.testnet.OmniEVMs,
+		Anvils:         p.testnet.AnvilChains,
+		Relayer:        true,
+		Prometheus:     p.testnet.Prometheus,
+		Monitor:        true,
+		Explorer:       p.testnet.Explorer,
+		ExplorerMockDB: p.testnet.ExplorerMockDB,
+		OmniTag:        p.omniTag,
 	}
 
 	bz, err := GenerateComposeFile(def)
@@ -160,10 +158,8 @@ type ComposeDef struct {
 	Relayer    bool
 	Prometheus bool
 
-	ExplorerIndexer bool
-	ExplorerGraphql bool
-	ExplorerMockDB  bool
-	ExplorerUI      bool
+	ExplorerMockDB bool
+	Explorer       bool
 }
 
 func (ComposeDef) GethTag() string {
@@ -242,6 +238,7 @@ func additionalServices(testnet types.Testnet) []string {
 	if testnet.Explorer {
 		resp = append(resp, "explorer_indexer")
 		resp = append(resp, "explorer_graphql")
+		resp = append(resp, "explorer_ui")
 	}
 
 	if testnet.ExplorerMockDB {
