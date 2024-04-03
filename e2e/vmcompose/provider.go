@@ -172,10 +172,19 @@ func (p *Provider) Upgrade(ctx context.Context) error {
 			return errors.Wrap(err, "copy compose", "vm", vmName)
 		}
 
+		// Figure out whether we need to call "docker compose down" before "docker compose up"
+		var maybeDown string
+		if services := p.Data.ServicesByInstance(instance); containsEVM(services) {
+			if containsAnvil(services) {
+				return errors.New("cannot upgrade VM with both omni_evm and anvil containers since omni_evm needs downing and anvil cannot be restarted", "vm", vmName)
+			}
+			maybeDown = "sudo docker compose down && "
+		}
+
 		startCmd := fmt.Sprintf("cd /omni && "+
 			"sudo mv %s %s/docker-compose.yaml && "+
 			"cd %s && "+
-			"sudo docker compose down && "+
+			maybeDown+
 			"sudo docker compose up -d",
 			composeFile, p.Testnet.Name, p.Testnet.Name)
 
@@ -303,4 +312,34 @@ func vmAgentFile(internalIP string) string {
 
 func vmComposeFile(internalIP string) string {
 	return strings.ReplaceAll(internalIP, ".", "_") + "_compose.yaml"
+}
+
+// containsEVM returns true if the services map contains an omni evm.
+// TODO(corver): This isn't very robust.
+func containsEVM(services map[string]bool) bool {
+	for service, ok := range services {
+		if !ok {
+			continue
+		}
+		if strings.Contains(service, "evm") {
+			return true
+		}
+	}
+
+	return false
+}
+
+// containsAnvil returns true if the services map contains an anvil chain.
+// TODO(corver): This isn't very robust.
+func containsAnvil(services map[string]bool) bool {
+	for service, ok := range services {
+		if !ok {
+			continue
+		}
+		if strings.Contains(service, "mock") || strings.Contains(service, "chain") {
+			return true
+		}
+	}
+
+	return false
 }
