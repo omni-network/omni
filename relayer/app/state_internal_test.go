@@ -42,7 +42,11 @@ func TestPersistState(t *testing.T) {
 
 	// Clear each destination
 	for dstChainID := range expected {
+		require.NotEmpty(t, ps.cursors[dstChainID])
+		require.NotEmpty(t, load(t).cursors[dstChainID])
+
 		require.NoError(t, ps.Clear(dstChainID))
+
 		require.Empty(t, ps.cursors[dstChainID])
 		require.Empty(t, load(t).cursors[dstChainID])
 	}
