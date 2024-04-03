@@ -7,8 +7,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-
-	"github.com/google/uuid"
 )
 
 const (
@@ -253,7 +251,8 @@ func ProxyAdminSalt(network netconf.ID) string {
 }
 
 func PortalSalt(network netconf.ID) string {
-	return salt(network, "portal")
+	// only portal salts are versioned
+	return salt(network, "portal-"+network.Version())
 }
 
 func AVSSalt(network netconf.ID) string {
@@ -264,17 +263,10 @@ func AVSSalt(network netconf.ID) string {
 // Utils.
 //
 
-//nolint:gochecknoglobals // Static ID
-var runid = uuid.New().String()
-
 // salt generates a salt for a contract deployment. For ephemeral networks,
 // the salt includes a random per-run suffix. For persistent networks, the
 // sale is static.
 func salt(network netconf.ID, contract string) string {
-	if network.IsEphemeral() {
-		return string(network) + "-" + contract + "-" + runid
-	}
-
 	return string(network) + "-" + contract
 }
 

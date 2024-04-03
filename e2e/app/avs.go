@@ -50,7 +50,19 @@ func deployAVSWithExport(ctx context.Context, def Definition, deployInfo types.D
 		return err
 	}
 
-	deployInfo.Set(chain.ID, types.ContractOmniAVS, addr, receipt.BlockNumber.Uint64())
+	// If receipt is nil, the avs has already been deployed, in which case we
+	// don't know the deploy height. This is fine for the AVS contract - we only
+	// need deploy heights for Portal contracts.
+	//
+	// It may be worth refactoring DeployInfos to allow for explicitly nil deploy heights.
+	// Or, do not track AVS in e2e run deploy info - it does not look like it is used.
+
+	blockNumber := uint64(0)
+	if receipt != nil {
+		blockNumber = receipt.BlockNumber.Uint64()
+	}
+
+	deployInfo.Set(chain.ID, types.ContractOmniAVS, addr, blockNumber)
 
 	logAVSDeployment(ctx, chain.Name, addr, receipt)
 

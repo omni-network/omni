@@ -8,6 +8,8 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/google/uuid"
 )
 
 const consensusIDPrefix = "omni-"
@@ -15,8 +17,16 @@ const consensusIDOffset = 1_000_000 //nolint:unused // Will use
 
 // Static defines static config and data for a network.
 type Static struct {
+	Version              string
 	OmniExecutionChainID uint64
 	AVSContractAddress   common.Address
+	Portals              []Deployment
+}
+
+type Deployment struct {
+	ChainID      uint64
+	Address      common.Address
+	DeployHeight uint64
 }
 
 // OmniConsensusChainIDStr returns the chain ID string for the Omni consensus chain.
@@ -32,20 +42,53 @@ func (Static) OmniConsensusChainIDUint64() uint64 {
 	return 2 // TODO(corver): Fix this once portal takes ID in constructor.
 }
 
+// PortalDeployments returns the portal deployment for the given chainID.
+// If there is none, it returns an empty deployment.
+func (Static) PortalDeployment(chainID uint64) Deployment {
+	for _, d := range statics[Testnet].Portals {
+		if d.ChainID == chainID {
+			return d
+		}
+	}
+
+	return Deployment{}
+}
+
+// HasPortalDeployment returns true if there is a portal deployment for the given chainID.
+func (Static) HasPortalDeployment(chainID uint64) bool {
+	for _, d := range statics[Testnet].Portals {
+		if d.ChainID == chainID {
+			return true
+		}
+	}
+
+	return false
+}
+
+// Use random runid for version in ephemeral networks.
+//
+//nolint:gochecknoglobals // Static ID
+var runid = uuid.New().String()
+
 //nolint:gochecknoglobals // Static mappings.
 var statics = map[ID]Static{
 	Simnet: {
+		Version:              runid,
 		OmniExecutionChainID: 16561,
 	},
 	Devnet: {
+		Version:              runid,
 		OmniExecutionChainID: 16561,
 	},
 	Staging: {
+		Version:              runid,
 		OmniExecutionChainID: 16561,
 	},
 	Testnet: {
+		Version:              "v0.0.1",
 		AVSContractAddress:   common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92"),
 		OmniExecutionChainID: 16561,
+		Portals:              []Deployment{},
 	},
 }
 
@@ -65,4 +108,9 @@ func ConsensusChainIDStr2Uint64(id string) (uint64, error) {
 	// return resp, nil
 
 	return 2, nil // TODO(corver): Fix this once portal takes ID in constructor.
+}
+
+// Version returns the version for the given network.
+func Version(network ID) string {
+	return statics[network].Version
 }
