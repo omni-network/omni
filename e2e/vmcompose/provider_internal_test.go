@@ -62,7 +62,7 @@ mode = "full"
 			"fullnode01":     vm5,
 			"fullnode01_evm": vm5,
 
-			"explorer-indexer-init": vm6,
+			"explorer_indexer_init": vm6,
 			"explorer_indexer":      vm6,
 			"explorer_graphql":      vm6,
 			"explorer_ui":           vm6,
@@ -72,6 +72,7 @@ mode = "full"
 	// Write raw data json to disk
 	bz, err := json.Marshal(dataJSON)
 	require.NoError(t, err)
+
 	dataFile := filepath.Join(t.TempDir(), "data.json")
 	err = os.WriteFile(dataFile, bz, 0o644)
 	require.NoError(t, err)

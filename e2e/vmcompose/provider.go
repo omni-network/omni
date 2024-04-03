@@ -23,17 +23,19 @@ const ProviderName = "vmcompose"
 var _ types.InfraProvider = (*Provider)(nil)
 
 type Provider struct {
-	Testnet types.Testnet
-	Data    types.InfrastructureData
-	once    sync.Once
-	omniTag string
+	Testnet       types.Testnet
+	Data          types.InfrastructureData
+	once          sync.Once
+	omniTag       string
+	InitialDeploy bool
 }
 
-func NewProvider(testnet types.Testnet, data types.InfrastructureData, imgTag string) *Provider {
+func NewProvider(testnet types.Testnet, data types.InfrastructureData, imgTag string, initialDeploy bool) *Provider {
 	return &Provider{
-		Testnet: testnet,
-		Data:    data,
-		omniTag: imgTag,
+		Testnet:       testnet,
+		Data:          data,
+		omniTag:       imgTag,
+		InitialDeploy: initialDeploy,
 	}
 }
 
@@ -90,7 +92,7 @@ func (p *Provider) Setup() error {
 			ExplorerGraphql: p.Testnet.Explorer && services["explorer_graphql"],
 			ExplorerUI:      p.Testnet.Explorer && services["explorer_ui"],
 			ExplorerMockDB:  p.Testnet.ExplorerMockDB && services["explorer_mock_db"],
-			Deploy:          p.Testnet.Deploy,
+			CleanExplorerDB: p.InitialDeploy,
 		}
 		compose, err := docker.GenerateComposeFile(def)
 		if err != nil {

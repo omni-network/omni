@@ -1,0 +1,75 @@
+version: '2.4'
+networks:
+  test:
+    labels:
+      e2e: true
+    driver: bridge
+
+services:
+
+  # Use geth as the omni EVMs.
+  
+  explorer_indexer-init:
+    labels:
+      e2e: true
+    container_name: explorer_indexer-init
+    context: .
+    dockerfile_inline: |
+      FROM alpine:3.14
+
+      # Install dependencies (including yq)
+      RUN apk add --no-cache postgresql-client bash
+
+      # Download yq binary directly
+      ARG YQ_VERSION=4.9.6
+      RUN wget https://github.com/mikefarah/yq/releases/${YQ_VERSION}/download/yq_linux_amd64 -O /usr/bin/yq &&\
+        chmod +x /usr/bin/yq
+
+      COPY <<EOF /clean.sql
+      DROP SCHEMA public CASCADE;
+      CREATE SCHEMA public;
+
+      GRANT ALL ON SCHEMA public TO postgres;
+      GRANT ALL ON SCHEMA public TO public;
+      EOF
+
+      RUN cat /clean.sql
+
+      CMD yq -V && \
+        conn_str=$(yq eval '.dburl' /explorer_indexer/indexer.toml) && \
+        psql "$conn_str" -f /clean.sql
+    volumes:
+      - ./explorer_indexer:/explorer_indexer
+    networks:
+      test:
+
+  explorer_indexer:
+    labels:
+      e2e: true
+    container_name: explorer_indexer
+    image: omniops/explorer-indexer:7d1ae53
+    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    volumes:
+      - ./explorer_indexer:/explorer_indexer
+    
+    depends_on:
+      explorer_indexer-init:
+        condition: service_completed_successfully
+    networks:
+      test:
+        
+
+  explorer_graphql:
+    labels:
+      e2e: true
+    container_name: explorer_graphql
+    image: omniops/explorer-graphql:7d1ae53
+    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    volumes:
+      - ./explorer_graphql:/explorer_graphql
+    networks:
+      test:
+        
+    ports:
+        - 59754:8080
+

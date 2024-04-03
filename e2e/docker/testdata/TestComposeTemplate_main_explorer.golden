@@ -140,6 +140,8 @@ services:
       test:
         ipv4_address: 10.186.73.201
 
+  
+
   explorer_indexer:
     labels:
       e2e: true
@@ -148,6 +150,7 @@ services:
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     volumes:
       - ./explorer_indexer:/explorer_indexer
+    
     networks:
       test:
         ipv4_address: 10.186.73.204

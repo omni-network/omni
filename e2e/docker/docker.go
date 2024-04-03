@@ -86,7 +86,7 @@ func (p *Provider) Setup() error {
 		ExplorerGraphql: p.testnet.Explorer,
 		ExplorerMockDB:  p.testnet.ExplorerMockDB,
 		OmniTag:         p.omniTag,
-		InitialDeploy:   p.testnet.Deploy,
+		CleanExplorerDB: false,
 	}
 
 	bz, err := GenerateComposeFile(def)
@@ -165,7 +165,8 @@ type ComposeDef struct {
 	ExplorerGraphql bool
 	ExplorerMockDB  bool
 	ExplorerUI      bool
-	InitialDeploy   bool
+	CleanExplorerDB bool
+	ExplorerDBConn  string
 }
 
 func (ComposeDef) GethTag() string {

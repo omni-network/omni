@@ -85,6 +85,9 @@ func (d Definition) Netman() netman.Manager {
 }
 
 func MakeDefinition(ctx context.Context, cfg DefinitionConfig, commandName string) (Definition, error) {
+	// Initial deploy is only used to deploy the network, not for any other command.
+	initialDeploy := commandName == "deploy"
+
 	if strings.TrimSpace(cfg.ManifestFile) == "" {
 		return Definition{}, errors.New("manifest not specified, use --manifest-file or -f")
 	}
@@ -132,7 +135,7 @@ func MakeDefinition(ctx context.Context, cfg DefinitionConfig, commandName strin
 	case docker.ProviderName:
 		infp = docker.NewProvider(testnet, infd, cfg.OmniImgTag)
 	case vmcompose.ProviderName:
-		infp = vmcompose.NewProvider(testnet, infd, cfg.OmniImgTag)
+		infp = vmcompose.NewProvider(testnet, infd, cfg.OmniImgTag, initialDeploy)
 	default:
 		return Definition{}, errors.New("unknown infra provider", "provider", cfg.InfraProvider)
 	}

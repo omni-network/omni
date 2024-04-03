@@ -1,0 +1,44 @@
+version: '2.4'
+networks:
+  test:
+    labels:
+      e2e: true
+    driver: bridge
+
+services:
+  # Initialises geth files and folder from provided genesis file.
+  chain_a:
+    labels:
+      e2e: true
+    container_name: chain_a
+    image: ghcr.io/foundry-rs/foundry:latest
+    entrypoint:
+      - anvil
+      - --host=0.0.0.0
+      - --chain-id=100
+      - --block-time=12
+      - --silent
+      - --load-state=/anvil/state.json
+    ports:
+      - 8545:8545
+    networks:
+      test:
+        
+    
+    volumes:
+      - ./anvil/state.json:/anvil/state.json
+    
+
+  # Use geth as the omni EVMs.
+  relayer:
+    labels:
+      e2e: true
+    container_name: relayer
+    image: omniops/relayer:7d1ae53
+    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    volumes:
+      - ./relayer:/relayer
+    networks:
+      test:
+        
+
