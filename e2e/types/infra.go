@@ -24,3 +24,19 @@ type InfrastructureData struct {
 	// Note this differs from e2e.InfrastructureData.Instances, which maps the service names to its instance data.
 	VMs map[string]e2e.InstanceData
 }
+
+// ServicesByInstance returns the set of services associated to the instance.
+func (d InfrastructureData) ServicesByInstance(data e2e.InstanceData) map[string]bool {
+	resp := make(map[string]bool)
+	for serviceName, instance := range d.Instances {
+		if instancesEqual(data, instance) {
+			resp[serviceName] = true
+		}
+	}
+
+	return resp
+}
+
+func instancesEqual(a, b e2e.InstanceData) bool {
+	return a.IPAddress.Equal(b.IPAddress) && a.ExtIPAddress.Equal(b.ExtIPAddress) && a.Port == b.Port
+}
