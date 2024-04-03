@@ -141,6 +141,7 @@ services:
   explorer_indexer-init:
     labels:
       e2e: true
+    restart: on-failure # Do not restart under any circumstances
     container_name: explorer_indexer-init
     context: .
     dockerfile_inline: |
