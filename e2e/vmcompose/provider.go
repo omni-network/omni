@@ -175,6 +175,7 @@ func (p *Provider) Upgrade(ctx context.Context) error {
 		startCmd := fmt.Sprintf("cd /omni && "+
 			"sudo mv %s %s/docker-compose.yaml && "+
 			"cd %s && "+
+			"sudo docker compose down && "+
 			"sudo docker compose up -d",
 			composeFile, p.Testnet.Name, p.Testnet.Name)
 
