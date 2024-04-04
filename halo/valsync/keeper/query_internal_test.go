@@ -1,0 +1,169 @@
+package keeper
+
+import (
+	"testing"
+
+	"github.com/omni-network/omni/halo/valsync/types"
+	"github.com/omni-network/omni/lib/netconf"
+
+	"github.com/ethereum/go-ethereum/crypto"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
+)
+
+func TestValidatorSet(t *testing.T) {
+	t.Parallel()
+
+	set1 := newSet(t, 1, 2)
+	set2 := newSet(t, 1, 2, 3)
+	set3 := newSet(t, 3, 4)
+
+	sets12 := [][]*Validator{set1, set2}
+	sets123 := [][]*Validator{set1, set2, set3}
+
+	tests := []struct {
+		name        string
+		populate    [][]*Validator
+		expectation expectation
+		req         *types.ValidatorSetRequest
+		resp        *types.ValidatorSetResponse
+	}{
+		{
+			name:        "query_set_1_of_3",
+			populate:    sets123,
+			expectation: defaultExpectation(),
+			req:         newReqID(1),
+			resp:        newResp(1, set1),
+		},
+		{
+			name:        "query_set_3_of_3",
+			populate:    sets123,
+			expectation: defaultExpectation(),
+			req:         newReqID(3),
+			resp:        newResp(3, set3),
+		},
+		{
+			name:        "query_latest_of_2",
+			populate:    sets12,
+			expectation: defaultExpectation(),
+			req:         newReqLatest(),
+			resp:        newResp(2, set2),
+		},
+		{
+			name:        "query_latest_of_3",
+			populate:    sets123,
+			expectation: defaultExpectation(),
+			req:         newReqLatest(),
+			resp:        newResp(3, set3),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			keeper, sdkCtx := setupKeeper(t, tt.expectation)
+
+			for i, set := range tt.populate {
+				sdkCtx = sdkCtx.WithBlockHeight(int64(i + 1))
+				err := keeper.insertValidatorSet(sdkCtx, clone(set), i == 0)
+				require.NoError(t, err)
+			}
+
+			_, err := keeper.processAttested(sdkCtx)
+			require.NoError(t, err)
+
+			resp, err := keeper.ValidatorSet(sdkCtx, tt.req)
+			require.NoError(t, err)
+
+			if !cmp.Equal(resp, tt.resp, cmpOpts) {
+				t.Error(cmp.Diff(resp, tt.resp, cmpOpts))
+			}
+		})
+	}
+}
+
+func defaultExpectation() expectation {
+	return func(ctx sdk.Context, m mocks) {
+		m.aKeeper.EXPECT().ListAttestationsFrom(
+			gomock.Any(),
+			netconf.Simnet.Static().OmniConsensusChainIDUint64(),
+			uint64(2), // Setup 1 is genesis, so auto approved, so it always queries from 2.
+			uint64(1), // Only query for 1 attestation.
+		).AnyTimes().
+			Return(nil, nil)
+	}
+}
+
+func newReqID(id uint64) *types.ValidatorSetRequest {
+	return &types.ValidatorSetRequest{
+		Id: id,
+	}
+}
+
+func newReqLatest() *types.ValidatorSetRequest {
+	return &types.ValidatorSetRequest{
+		Id:     0,
+		Latest: true,
+	}
+}
+
+func newResp(id uint64, set []*Validator) *types.ValidatorSetResponse {
+	var vals []*types.Validator
+	for _, v := range set {
+		addr, _ := v.Address()
+		vals = append(vals, &types.Validator{
+			Address: addr.Bytes(),
+			Power:   v.GetPower(),
+		})
+	}
+
+	return &types.ValidatorSetResponse{
+		Id:              id,
+		CreatedHeight:   id,
+		ActivatedHeight: 0,
+		Validators:      vals,
+	}
+}
+
+func newSet(t *testing.T, pubkeys ...int) []*Validator {
+	t.Helper()
+
+	var resp []*Validator
+	for _, pubkey := range pubkeys {
+		var pk [32]byte
+		pk[0] = byte(pubkey)
+		priv, err := crypto.ToECDSA(pk[:])
+		require.NoError(t, err)
+
+		resp = append(resp, &Validator{
+			PubKey: crypto.CompressPubkey(&priv.PublicKey),
+			Power:  1,
+		})
+	}
+
+	return resp
+}
+
+func clone(set []*Validator) []*Validator {
+	var resp []*Validator
+	for _, v := range set {
+		resp = append(resp, &Validator{
+			PubKey: v.GetPubKey(),
+			Power:  v.GetPower(),
+		})
+	}
+
+	return resp
+}
+
+var cmpOpts = cmp.Options{cmpopts.IgnoreUnexported(
+	Validator{},
+	types.Validator{},
+	types.ValidatorSetRequest{},
+	types.ValidatorSetResponse{},
+)}

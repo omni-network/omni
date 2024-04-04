@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 
-	akeeper "github.com/omni-network/omni/halo/attest/keeper"
 	"github.com/omni-network/omni/halo/valsync/keeper"
 	"github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/errors"
@@ -19,7 +18,6 @@ import (
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	skeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 )
 
@@ -141,9 +139,8 @@ type ModuleInputs struct {
 	StoreService store.KVStoreService
 	Cdc          codec.Codec
 	Config       *Module
-	TXConfig     client.TxConfig
-	SKeeper      *skeeper.Keeper // TODO(corver): Use interface.
-	AKeeper      *akeeper.Keeper
+	SKeeper      types.StakingKeeper
+	AKeeper      types.AttestKeeper
 }
 
 type ModuleOutputs struct {
@@ -157,7 +154,6 @@ func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
 	k, err := keeper.NewKeeper(
 		in.Cdc,
 		in.StoreService,
-		in.TXConfig,
 		in.SKeeper,
 		in.AKeeper,
 	)
