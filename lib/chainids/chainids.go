@@ -3,20 +3,27 @@ package chainids
 const (
 	// mainnets.
 	Ethereum = uint64(1)
+	Omni     = uint64(166)
 
 	// testnets.
-	Holesky    = uint64(17000)
-	ArbSepolia = uint64(421614)
-	OpSepolia  = uint64(11155420)
+	OmniTestnet = uint64(165)
+	Holesky     = uint64(17000)
+	ArbSepolia  = uint64(421614)
+	OpSepolia   = uint64(11155420)
+
+	// localnets.
+	OmniDevnet = uint64(16561)
 )
 
 //nolint:gochecknoglobals // constant values
 var (
 	mainnets = []uint64{
 		Ethereum,
+		Omni,
 	}
 
 	testnets = []uint64{
+		OmniTestnet,
 		Holesky,
 		ArbSepolia,
 		OpSepolia,
