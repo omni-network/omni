@@ -22,6 +22,8 @@ type DeploymentConfig struct {
 	ProxyAdmin     common.Address
 	Deployer       common.Address
 	Owner          common.Address
+	OmniEChainID   uint64
+	OmniCChainID   uint64
 	ValSetID       uint64
 	Validators     []bindings.Validator
 	ExpectedAddr   common.Address
@@ -49,6 +51,15 @@ func (cfg DeploymentConfig) Validate() error {
 	if len(cfg.Validators) == 0 {
 		return errors.New("validators is empty")
 	}
+	if cfg.OmniEChainID == 0 {
+		return errors.New("omni EVM chain ID is zero")
+	}
+	if cfg.OmniCChainID == 0 {
+		return errors.New("omni cons chain ID is zero")
+	}
+	if (cfg.ExpectedAddr == common.Address{}) {
+		return errors.New("expected address is zero")
+	}
 
 	return nil
 }
@@ -63,7 +74,7 @@ func getDeployCfg(chainID uint64, network netconf.ID, valSetID uint64, vals []bi
 	}
 
 	if chainids.IsTestnet(chainID) && network == netconf.Testnet {
-		return testnetCfg(), nil
+		return testnetCfg(valSetID, vals), nil
 	}
 
 	if !chainids.IsMainnet(chainID) && network == netconf.Staging {
@@ -83,13 +94,18 @@ func mainnetCfg() DeploymentConfig {
 	}
 }
 
-func testnetCfg() DeploymentConfig {
+func testnetCfg(valSetID uint64, vals []bindings.Validator) DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory: contracts.TestnetCreate3Factory(),
 		Create3Salt:    contracts.PortalSalt(netconf.Testnet),
 		Owner:          contracts.TestnetPortalAdmin(),
 		Deployer:       contracts.TestnetDeployer(),
-		// TODO: fill in the rest
+		ProxyAdmin:     contracts.TestnetProxyAdmin(),
+		OmniEChainID:   netconf.Testnet.Static().OmniExecutionChainID,
+		OmniCChainID:   netconf.Testnet.Static().OmniConsensusChainIDUint64(),
+		ValSetID:       valSetID,
+		Validators:     vals,
+		ExpectedAddr:   contracts.TestnetPortal(),
 	}
 }
 
@@ -100,6 +116,8 @@ func stagingCfg(valSetID uint64, vals []bindings.Validator) DeploymentConfig {
 		Owner:          contracts.StagingPortalAdmin(),
 		Deployer:       contracts.StagingDeployer(),
 		ProxyAdmin:     contracts.StagingProxyAdmin(),
+		OmniEChainID:   netconf.Staging.Static().OmniExecutionChainID,
+		OmniCChainID:   netconf.Staging.Static().OmniConsensusChainIDUint64(),
 		ValSetID:       valSetID,
 		Validators:     vals,
 		ExpectedAddr:   contracts.StagingPortal(),
@@ -113,6 +131,8 @@ func devnetCfg(valSetID uint64, vals []bindings.Validator) DeploymentConfig {
 		Owner:          contracts.DevnetPortalAdmin(),
 		Deployer:       contracts.DevnetDeployer(),
 		ProxyAdmin:     contracts.DevnetProxyAdmin(),
+		OmniEChainID:   netconf.Devnet.Static().OmniExecutionChainID,
+		OmniCChainID:   netconf.Devnet.Static().OmniConsensusChainIDUint64(),
 		ValSetID:       valSetID,
 		Validators:     vals,
 		ExpectedAddr:   contracts.DevnetPortal(),
@@ -250,7 +270,8 @@ func packInitCode(cfg DeploymentConfig, feeOracle common.Address, impl common.Ad
 		return nil, errors.Wrap(err, "get proxy abi")
 	}
 
-	initializer, err := portalAbi.Pack("initialize", cfg.Owner, feeOracle, cfg.ValSetID, cfg.Validators)
+	initializer, err := portalAbi.Pack("initialize", cfg.Owner, feeOracle,
+		cfg.OmniEChainID, cfg.OmniCChainID, cfg.ValSetID, cfg.Validators)
 	if err != nil {
 		return nil, errors.Wrap(err, "encode portal initializer")
 	}

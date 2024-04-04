@@ -13,7 +13,7 @@ import (
 )
 
 const consensusIDPrefix = "omni-"
-const consensusIDOffset = 1_000_000 //nolint:unused // Will use
+const consensusIDOffset = 1_000_000
 
 // Static defines static config and data for a network.
 type Static struct {
@@ -37,9 +37,8 @@ func (s Static) OmniConsensusChainIDStr() string {
 
 // OmniConsensusChainIDUint64 returns the chain ID uint64 for the Omni consensus chain.
 // It is calculated as 1_000_000 + OmniExecutionChainID.
-func (Static) OmniConsensusChainIDUint64() uint64 {
-	// return consensusIDOffset + s.OmniExecutionChainID
-	return 2 // TODO(corver): Fix this once portal takes ID in constructor.
+func (s Static) OmniConsensusChainIDUint64() uint64 {
+	return consensusIDOffset + s.OmniExecutionChainID
 }
 
 // PortalDeployments returns the portal deployment for the given chainID.
@@ -100,14 +99,12 @@ func ConsensusChainIDStr2Uint64(id string) (uint64, error) {
 
 	suffix := strings.TrimPrefix(id, consensusIDPrefix)
 
-	_, err := strconv.ParseUint(suffix, 10, 64)
+	resp, err := strconv.ParseUint(suffix, 10, 64)
 	if err != nil {
 		return 0, errors.Wrap(err, "parse consensus chain ID", "id", id)
 	}
 
-	// return resp, nil
-
-	return 2, nil // TODO(corver): Fix this once portal takes ID in constructor.
+	return resp, nil
 }
 
 // Version returns the version for the given network.

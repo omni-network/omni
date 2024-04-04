@@ -35,7 +35,8 @@ contract Fixtures is CommonBase, StdCheats {
     uint64 constant chainAId = 102;
     uint64 constant chainBId = 103;
 
-    uint64 constant cchainId = 2; // PORTAL._CCHAIN_ID - omni consensus chain id
+    uint64 constant omniEChainID = 166;
+    uint64 constant omniCChainID = 1_000_166;
     uint64 constant broadcastChainId = 0; // PORTAL._BROADCAST_CHAIN_ID
 
     uint64 constant baseValPower = 100;
@@ -217,7 +218,7 @@ contract Fixtures is CommonBase, StdCheats {
     function _addValidatorSet_xblock(uint64 valSetId) internal view returns (TestXTypes.Block memory) {
         XTypes.Msg[] memory xmsgs = new XTypes.Msg[](1);
         xmsgs[0] = XTypes.Msg({
-            sourceChainId: cchainId,
+            sourceChainId: omniCChainID,
             destChainId: broadcastChainId,
             streamOffset: valSetId,
             sender: address(0), // Portal._CCHAIN_SENDER
@@ -226,7 +227,7 @@ contract Fixtures is CommonBase, StdCheats {
             gasLimit: 0
         });
 
-        return TestXTypes.Block(XTypes.BlockHeader(cchainId, valSetId, bytes32(0)), xmsgs);
+        return TestXTypes.Block(XTypes.BlockHeader(omniCChainID, valSetId, bytes32(0)), xmsgs);
     }
 
     /// @dev Create a Counter.increment() XMsg from thisChainId to chainAId
@@ -344,6 +345,8 @@ contract Fixtures is CommonBase, StdCheats {
                         OmniPortal.initialize.selector,
                         owner,
                         address(feeOracle),
+                        omniEChainID,
+                        omniCChainID,
                         genesisValSetId,
                         validatorSet[genesisValSetId]
                     )
@@ -377,6 +380,8 @@ contract Fixtures is CommonBase, StdCheats {
                         OmniPortal.initialize.selector,
                         owner,
                         address(feeOracle),
+                        omniEChainID,
+                        omniCChainID,
                         genesisValSetId,
                         validatorSet[genesisValSetId]
                     )
@@ -410,6 +415,8 @@ contract Fixtures is CommonBase, StdCheats {
                         OmniPortal.initialize.selector,
                         owner,
                         address(feeOracle),
+                        omniEChainID,
+                        omniCChainID,
                         genesisValSetId,
                         validatorSet[genesisValSetId]
                     )
