@@ -14,19 +14,17 @@ import (
 )
 
 const (
-	defaultDBURL       = ""
-	defaultNetworkFile = ""
+	defaultNetworkFile = "network.json"
 )
 
 type Config struct {
-	NetworkFile string
-	DBUrl       string
+	NetworkFile    string
+	ExplorerDBConn string
 }
 
 func DefaultConfig() Config {
 	return Config{
 		NetworkFile: defaultNetworkFile,
-		DBUrl:       defaultDBURL,
 	}
 }
 

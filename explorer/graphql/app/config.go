@@ -15,18 +15,16 @@ import (
 
 const (
 	defaultListenAddr = ":8080"
-	defaultDBURL      = ""
 )
 
 type Config struct {
-	ListenAddress string
-	DBUrl         string
+	ListenAddress  string
+	ExplorerDBConn string
 }
 
 func DefaultConfig() Config {
 	return Config{
 		ListenAddress: defaultListenAddr,
-		DBUrl:         defaultDBURL,
 	}
 }
 

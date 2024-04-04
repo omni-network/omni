@@ -10,10 +10,10 @@ version = "unknown"
 #######################################################################
 
 # URL at which the postgres database can be reached.
-dburl = ""
+explorerDBConn = ""
 
 # Path to the network configuration file.
-network-file = ""
+network-file = "network.json"
 
 #######################################################################
 ###                         Logging Options                         ###

@@ -143,7 +143,7 @@ services:
     container_name: explorer_indexer
     image: omniops/explorer-indexer:{{or .OmniTag "main"}}
     command:
-      - --db-url={{ .ExplorerDBConn }}
+      - --explorer-db-conn={{ .ExplorerDBConn }}
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     volumes:
       - ./explorer_indexer:/explorer_indexer
@@ -159,7 +159,7 @@ services:
     container_name: explorer_graphql
     image: omniops/explorer-graphql:{{or .OmniTag "main"}}
     command:
-      - --db-url={{ .ExplorerDBConn }}
+      - --explorer-db-conn={{ .ExplorerDBConn }}
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     volumes:
       - ./explorer_graphql:/explorer_graphql

@@ -461,7 +461,7 @@ func writeExplorerIndexerConfig(def Definition, logCfg log.Config, explorerDB st
 
 	cfg := indexerapp.DefaultConfig()
 	cfg.NetworkFile = networkFile
-	cfg.DBUrl = explorerDB
+	cfg.ExplorerDBConn = explorerDB
 
 	if err := indexerapp.WriteConfigTOML(cfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write indexer config")
@@ -483,7 +483,7 @@ func writeExplorerGraphqlConfig(def Definition, logCfg log.Config, explorerDB st
 	}
 
 	cfg := graphqlapp.DefaultConfig()
-	cfg.DBUrl = explorerDB
+	cfg.ExplorerDBConn = explorerDB
 
 	if err := graphqlapp.WriteConfigTOML(cfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write graphql config")

@@ -131,7 +131,7 @@ func MakeDefinition(ctx context.Context, cfg DefinitionConfig, commandName strin
 	case docker.ProviderName:
 		infp = docker.NewProvider(testnet, infd, cfg.OmniImgTag, cfg.ExplorerDBConn)
 	case vmcompose.ProviderName:
-		infp = vmcompose.NewProvider(testnet, infd, cfg.OmniImgTag)
+		infp = vmcompose.NewProvider(testnet, infd, cfg.OmniImgTag, cfg.ExplorerDBConn)
 	default:
 		return Definition{}, errors.New("unknown infra provider", "provider", cfg.InfraProvider)
 	}
