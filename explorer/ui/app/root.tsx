@@ -1,17 +1,40 @@
-import { cssBundleHref } from '@remix-run/css-bundle'
 import type { LinksFunction } from '@remix-run/node'
 import stylesheet from '~/tailwind.css'
-import { Links, LiveReload, Meta, Outlet, Scripts, ScrollRestoration } from '@remix-run/react'
+import { Links, LiveReload, Meta, Outlet, Scripts, ScrollRestoration, json, useLoaderData } from '@remix-run/react'
 import { Client, Provider, cacheExchange, fetchExchange } from 'urql'
 
 export const links: LinksFunction = () => [{ rel: 'stylesheet', href: stylesheet }]
 
 const client = new Client({
-  url: 'http://localhost:8080/query',
+  url: 'http://localhost:21335/query',
   exchanges: [fetchExchange, cacheExchange],
 })
 
+function GetGraphQLHost(): string {
+  const v = (window as any).ENV.GRAPHQL_HOST
+  console.log('testing fetching env variables')
+  return 'http://localhost:21335/query'
+}
+
+export async function loader() {
+  console.log('loader called')
+  console.log('TEST=' + process.env.TEST?.toString());
+  console.log('TEST2=' + process.env.TEST2?.toString());
+  console.log('GRAPHQL_HOST=' + process.env.GRAPHQL_HOST?.toString());
+  console.log('FOO=' + process.env.FOO?.toString());
+  console.log('loader done')
+  return json({
+    ENV: {
+      GRAPHQL_HOST: process.env.GRAPHQL_HOST,
+      FOO: process.env.FOO,
+      TEST: process.env.TEST,
+      TEST2: process.env.TEST2,
+    },
+  });
+}
+
 function App() {
+  const data = useLoaderData<typeof loader>();
   return (
     <html lang="en" data-theme="light">
       <head>
@@ -22,6 +45,13 @@ function App() {
       </head>
       <body>
         <Outlet />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.ENV = ${JSON.stringify(
+              data.ENV
+            )}`,
+          }}
+        />
         <ScrollRestoration />
         <Scripts />
         <LiveReload />

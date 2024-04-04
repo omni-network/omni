@@ -15,7 +15,7 @@ build: ## builds our docker images
 
 run-devnet: stop ## starts our devnet with the main tag for our docker containers
 	@echo "Starting devnet"
-	@go run github.com/omni-network/omni/e2e deploy -f e2e/manifests/devnet2.toml --explorer-db-conn="postgres://omni:password@explorer_db:5432/omni_db" --omni-image-tag="main"
+	@cd .. && go run github.com/omni-network/omni/e2e deploy -f e2e/manifests/devnet2.toml --explorer-db-conn="postgres://omni:password@explorer_db:5432/omni_db" --omni-image-tag="main"
 
 run-explorer:
 	@echo "Starting explorer"

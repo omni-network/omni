@@ -52,6 +52,8 @@
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
     "prettier": "3.2.5",
+    "react-error-overlay": "6.0.9",
+    "react-scripts": "5.0.0",
     "solid": "link:@heroicons/react/solid",
     "tailwindcss": "3.4.1",
     "theme-change": "2.5.0",
