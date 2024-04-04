@@ -14,35 +14,33 @@ explorer = true
 
 [node.seed01]
 mode = "seed"
+[node.seed02]
+mode = "seed"
 
-[node.fullnode01]
+[node.archive01]
 mode = "archive"
 
 
 [keys.validator01]
 validator = "0x5e7B5b243824E15796c33a8829F7807F2C5EeDc0"
-p2p_consensus = "C98F9DFD1F4C94D1E78F74F51BB9E2276B60F0EB"
-
-[keys.validator01_evm]
-p2p_execution = "0x9552600f1331E2d7902C7Fe1b3080136a66594ce"
 
 [keys.validator02]
 validator = "0xD10A6A65C5586aF6093A4F993C3d609758c2a32b"
-p2p_consensus = "29901ADBFD0E8508408B667ACD1AF06DD7C73E88"
-
-[keys.validator02_evm]
-p2p_execution = "0x679eDdBdcE727eeE80A07640E1833eE9df412D3C"
 
 [keys.validator03]
 validator = "0xf64deF685fF01761D7b5D58452016D0dC9fa43eF"
-p2p_consensus = "474AC0E04DC545802024EE25410A55521DC0B5B7"
-
-[keys.validator03_evm]
-p2p_execution = "0x94AD01320Fa4E05658195cD435BeC05023DBEe7C"
 
 [keys.validator04]
 validator = "0x34E0afB2FC3f43D469d9C07436c1A885A0979922"
-p2p_consensus = "A4EFCC27445A05D27DD642CD996BB70A978DDE0E"
 
-[keys.validator04_evm]
-p2p_execution = "0xa10B605100256fcDD5073f8d5407c5A483A53dA5"
+[keys.seed01]
+p2p_consensus = "9644D22FCC9D3966CFF5789E6C411FDD40B101ED"
+
+[keys.seed01_evm]
+p2p_execution = "0xA49cdBbFfF2fD0a3bD5a5780b5a4eB717A3D2c00"
+
+[keys.seed02]
+p2p_consensus = "A839711D734491E1BA99A69E3FEEEBB965223792"
+
+[keys.seed02_evm]
+p2p_execution = "0xf6d3676305dBf0Ba4BC97ad17833792dE6dC4AB7"
