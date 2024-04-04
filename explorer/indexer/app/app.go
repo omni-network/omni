@@ -23,7 +23,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "load network config")
 	}
 
-	entCl, err := db.NewPostgressClient(cfg.DBUrl)
+	entCl, err := db.NewPostgressClient(cfg.ExplorerDBConn)
 	if err != nil {
 		return errors.Wrap(err, "new db client")
 	}

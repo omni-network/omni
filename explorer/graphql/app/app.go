@@ -24,7 +24,7 @@ func Run(ctx context.Context, cfg Config) error {
 	buildinfo.Instrument(ctx)
 
 	// create ent client
-	entCl, err := db.NewPostgressClient(cfg.DBUrl)
+	entCl, err := db.NewPostgressClient(cfg.ExplorerDBConn)
 	if err != nil {
 		return errors.Wrap(err, "create db client")
 	}

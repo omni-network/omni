@@ -40,6 +40,6 @@ func New() *cobra.Command {
 }
 
 func bindGraphQLFlags(flags *pflag.FlagSet, cfg *app.Config) {
-	flags.StringVar(&cfg.DBUrl, "db-url", cfg.DBUrl, "URL to the database")
+	flags.StringVar(&cfg.ExplorerDBConn, "explorer-db-conn", cfg.ExplorerDBConn, "URL to the database")
 	flags.StringVar(&cfg.ListenAddress, "listen-addr", cfg.ListenAddress, "Address to listen on")
 }

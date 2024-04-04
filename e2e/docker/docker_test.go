@@ -93,7 +93,7 @@ func TestComposeTemplate(t *testing.T) {
 				Explorer: test.explorer,
 			}
 
-			p := docker.NewProvider(testnet, types.InfrastructureData{}, test.tag)
+			p := docker.NewProvider(testnet, types.InfrastructureData{}, test.tag, "fake_connection")
 			require.NoError(t, err)
 
 			require.NoError(t, p.Setup())

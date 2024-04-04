@@ -14,19 +14,17 @@ import (
 )
 
 const (
-	defaultDBURL       = "postgres://omni:password@db:5432/omni_db"
 	defaultNetworkFile = "network.json"
 )
 
 type Config struct {
-	NetworkFile string
-	DBUrl       string
+	NetworkFile    string
+	ExplorerDBConn string
 }
 
 func DefaultConfig() Config {
 	return Config{
 		NetworkFile: defaultNetworkFile,
-		DBUrl:       defaultDBURL,
 	}
 }
 

@@ -35,9 +35,10 @@ var _ types.InfraProvider = (*Provider)(nil)
 // Provider wraps the cometBFT docker provider, writing a different compose file.
 type Provider struct {
 	*cmtdocker.Provider
-	servicesOnce sync.Once
-	testnet      types.Testnet
-	omniTag      string
+	servicesOnce   sync.Once
+	testnet        types.Testnet
+	omniTag        string
+	explorerDBConn string
 }
 
 func (*Provider) Clean(ctx context.Context) error {
@@ -54,7 +55,7 @@ func (*Provider) Clean(ctx context.Context) error {
 }
 
 // NewProvider returns a new Provider.
-func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag string) *Provider {
+func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag string, explorerDBConn string) *Provider {
 	return &Provider{
 		Provider: &cmtdocker.Provider{
 			ProviderData: infra.ProviderData{
@@ -62,8 +63,9 @@ func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag st
 				InfrastructureData: infd.InfrastructureData,
 			},
 		},
-		testnet: testnet,
-		omniTag: imgTag,
+		testnet:        testnet,
+		omniTag:        imgTag,
+		explorerDBConn: explorerDBConn,
 	}
 }
 
@@ -83,6 +85,7 @@ func (p *Provider) Setup() error {
 		Monitor:        true,
 		Explorer:       p.testnet.Explorer,
 		ExplorerMockDB: p.testnet.ExplorerMockDB,
+		ExplorerDBConn: p.explorerDBConn,
 		OmniTag:        p.omniTag,
 	}
 
@@ -160,6 +163,7 @@ type ComposeDef struct {
 
 	ExplorerMockDB bool
 	Explorer       bool
+	ExplorerDBConn string
 }
 
 func (ComposeDef) GethTag() string {
