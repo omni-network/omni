@@ -145,13 +145,19 @@ func newTestCmd(def *app.Definition) *cobra.Command {
 }
 
 func newUpgradeCmd(def *app.Definition) *cobra.Command {
-	return &cobra.Command{
+	cfg := app.DefaultDeployConfig()
+
+	cmd := &cobra.Command{
 		Use:   "upgrade",
 		Short: "Upgrades docker containers of a previously preserved network",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return app.Upgrade(cmd.Context(), *def)
+			return app.Upgrade(cmd.Context(), *def, cfg)
 		},
 	}
+
+	bindDeployFlags(cmd.Flags(), &cfg)
+
+	return cmd
 }
 
 func newAVSDeployCmd(def *app.Definition) *cobra.Command {
