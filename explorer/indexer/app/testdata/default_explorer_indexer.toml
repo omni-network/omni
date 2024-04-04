@@ -10,10 +10,10 @@ version = "unknown"
 #######################################################################
 
 # URL at which the postgres database can be reached.
-dburl = "postgres://omni:password@db:5432/omni_db"
+dburl = ""
 
 # Path to the network configuration file.
-network-file = "network.json"
+network-file = ""
 
 #######################################################################
 ###                         Logging Options                         ###

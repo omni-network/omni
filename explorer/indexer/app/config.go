@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	defaultDBURL       = "postgres://omni:password@db:5432/omni_db"
-	defaultNetworkFile = "network.json"
+	defaultDBURL       = ""
+	defaultNetworkFile = ""
 )
 
 type Config struct {
