@@ -32,27 +32,31 @@ In order to run the explorer locally you need a few things.
 
 ### Fist Time Setup
 
-You can run this all with the following command to build all the images and run them:
+#### Devnet
+You can run this all with the following command to build all the backend go binaries and run them. The components in the devnet include the omni network dev net, indexer, db and the graphql server.
 
+You need to have docker installed and running to execute the following command:
 ```bash
-make run-clean
+make run-clena
 ```
 
-This will create a fresh build of all the components, run a dev net and start the components in the background. You can access the UI at `http://localhost:3000`, you can access the GraphQL at `http://localhost:8080`.
-
-If you want to stop the components you can run:
+If you want to stop the local devnet you can run:
 
 ```bash
 make stop
 ```
 
-### Local Advanced Configurations
-
-The explorer needs a copy of the network.json file to be able to know which network to connect to. You can find the network.json file in the `explorer` directory. If you want to run the explorer against a different network you can set the `NETWORK` environment variable to the network you want to run against. For example:
-
-The following command assumes you have some network running locally, and you want to run the explorer against it. This will grab the `network.json` file via `@cp ../e2e/runs/$(NETWORK)/relayer/network.json` and copy it to the explorer directory. Then it will run the explorer.
+or from the `omni` root folder:
 
 ```bash
-make copy-network NETWORK=devnet-1
-make run-explorer
+make devnet-clean
 ```
+
+#### Explorer UI
+Currently we aren't deploying the UI (yet) as part of our devnet. You can run it from the `explorer/ui` folder with the following:
+
+```bash
+pnpm run build && pnpm run start
+```
+
+This is also useful for local development.
