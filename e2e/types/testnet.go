@@ -27,6 +27,7 @@ type Testnet struct {
 	OnlyMonitor    bool
 	Explorer       bool
 	ExplorerMockDB bool
+	ExplorerDBConn string
 }
 
 func (t Testnet) AVSChain() (EVMChain, error) {

@@ -80,6 +80,9 @@ type Manifest struct {
 
 	// ExplorerMockDB defines whether to deploy the explorer db locally.
 	ExplorerMockDB bool `toml:"explorer_mock_db"`
+
+	// ExplorerMockDB defines whether to deploy the explorer db locally.
+	ExplorerDBConn string `toml:"explorer_db_conn"`
 }
 
 // Seeds returns a map of seed nodes by name.

@@ -43,8 +43,7 @@ type DefinitionConfig struct {
 	InfraDataFile string // Not required for docker provider
 	OmniImgTag    string // OmniImgTag is the docker image tag used for halo and relayer.
 
-	ExplorerImageTag string // ExplorerImageTag is the docker image tag used for indexer, graphql, and ui.
-	IndexerDBConn    string // IndexerDBConn is the connection string for the indexer database.
+	ExplorerDBConn string // ExplorerDBConn is the connection string for the explorer database.
 }
 
 // DefaultDefinitionConfig returns a default configuration for a Definition.
@@ -130,7 +129,7 @@ func MakeDefinition(ctx context.Context, cfg DefinitionConfig, commandName strin
 	var infp types.InfraProvider
 	switch cfg.InfraProvider {
 	case docker.ProviderName:
-		infp = docker.NewProvider(testnet, infd, cfg.OmniImgTag)
+		infp = docker.NewProvider(testnet, infd, cfg.OmniImgTag, cfg.ExplorerDBConn)
 	case vmcompose.ProviderName:
 		infp = vmcompose.NewProvider(testnet, infd, cfg.OmniImgTag)
 	default:
@@ -394,6 +393,7 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 		PublicChains:   publics,
 		Explorer:       manifest.Explorer,
 		ExplorerMockDB: manifest.ExplorerMockDB,
+		ExplorerDBConn: cfg.ExplorerDBConn,
 	}, nil
 }
 

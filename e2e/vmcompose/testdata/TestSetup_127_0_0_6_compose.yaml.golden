@@ -13,6 +13,8 @@ services:
       e2e: true
     container_name: explorer_indexer
     image: omniops/explorer-indexer:7d1ae53
+    command:
+      - --db-url=
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     volumes:
       - ./explorer_indexer:/explorer_indexer
@@ -25,6 +27,8 @@ services:
       e2e: true
     container_name: explorer_graphql
     image: omniops/explorer-graphql:7d1ae53
+    command:
+      - --db-url=
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     volumes:
       - ./explorer_graphql:/explorer_graphql

@@ -13,29 +13,20 @@ build: ## builds our docker images
 	@echo "Building containers"
 	@make -C ../ build-docker
 
-copy-network-file:
-	if [ -z "$(NETWORK)" ]; then echo "⚠️  Please specify a network: NETWORK=devnet-1" && exit 1; fi
-	@echo "Using NETWORK=$(NETWORK)"
-	@cp ../e2e/runs/$(NETWORK)/relayer/network.json ./network.json
-
-run-devnet: ## starts our devnet
+run-devnet : ## starts our devnet with the main tag for our docker containers
 	@echo "Starting devnet"
-	@make -C ../ devnet-deploy
-	@cp ../e2e/runs/devnet1/relayer/network.json ./network.json
+	@go run github.com/omni-network/omni/e2e deploy -f e2e/manifests/devnet2.toml --explorer-db-conn="postgres://omni:password@explorer_db:5432/omni_db" --omni-image-tag="main"
 
-run-explorer: ## starts our explorer
+run-explorer:
 	@echo "Starting explorer"
-	@docker-compose up
+	@cd ./ui && pnpm run start
 
-run: stop run-devnet run-explorer ## Deploys e2e devnet1, copies network.json locally, and starts explorer docker compose
+run: stop run-devnet ## Deploys e2e devnet1, copies network.json locally, and starts explorer docker compose
 
 stop: ## stops our docker compose
 	@echo "Stopping devnet"
-	@docker-compose down
 	@make -C ../ devnet-clean
 
-run-clean: build run ## docker build and run
-
-gen-graphql: ## generates our graphql bindings for the ui
-	cp ./graphql/app/schema.graphql ./ui/app/graphql/schema.graphql
-	make -C ./ui gen-graphql
+run-clean: build
+	@echo "Starting devnet"
+	@cd .. && go run github.com/omni-network/omni/e2e deploy -f e2e/manifests/devnet2.toml --explorer-db-conn="postgres://omni:password@explorer_db:5432/omni_db"
