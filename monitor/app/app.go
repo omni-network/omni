@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/monitor/account"
 	"github.com/omni-network/omni/monitor/avs"
 	"github.com/omni-network/omni/monitor/loadgen"
 
@@ -28,6 +29,10 @@ func Run(ctx context.Context, cfg Config) error {
 
 	if err := avs.Monitor(ctx, network); err != nil {
 		return errors.Wrap(err, "monitor AVS")
+	}
+
+	if err := account.Monitor(ctx, network); err != nil {
+		return errors.Wrap(err, "monitor account balances")
 	}
 
 	if err := startLoadGen(ctx, cfg, network); err != nil {
