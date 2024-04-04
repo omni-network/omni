@@ -74,20 +74,20 @@ var runid = uuid.New().String()
 var statics = map[ID]Static{
 	Simnet: {
 		Version:              runid,
-		OmniExecutionChainID: 16561,
+		OmniExecutionChainID: chainids.OmniDevnet,
 	},
 	Devnet: {
 		Version:              runid,
-		OmniExecutionChainID: 16561,
+		OmniExecutionChainID: chainids.OmniDevnet,
 	},
 	Staging: {
 		Version:              runid,
-		OmniExecutionChainID: 16561,
+		OmniExecutionChainID: chainids.OmniDevnet,
 	},
 	Testnet: {
 		Version:              "v0.0.1",
 		AVSContractAddress:   common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92"),
-		OmniExecutionChainID: 16561,
+		OmniExecutionChainID: chainids.OmniTestnet,
 		Portals: []Deployment{
 			{
 				ChainID: chainids.Holesky,
