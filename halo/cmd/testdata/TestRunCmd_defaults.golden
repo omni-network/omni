@@ -1,5 +1,6 @@
 {
  "HomeDir": "./halo",
+ "EigenKeyPassword": "",
  "EngineJWTFile": "",
  "SnapshotInterval": 1000,
  "SnapshotKeepRecent": 2,
