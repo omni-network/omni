@@ -80,12 +80,15 @@ contract MockPortal is OmniPortalConstants {
     //////////////////////////////////////////////////////////////////////////////
 
     /// @notice Execute a mock xcall, default gas limit. Passes the revert for call fails or too low gas limit
-    function mockXCall(uint64 sourceChainId, address to, bytes calldata data) external {
+    function mockXCall(uint64 sourceChainId, address to, bytes calldata data) external payable {
         mockXCall(sourceChainId, msg.sender, to, data, XMSG_DEFAULT_GAS_LIMIT);
     }
 
     /// @dev Execute a mock xcall, custom gas limit. Passes the revert for call fails or too low gas limit
-    function mockXCall(uint64 sourceChainId, address sender, address to, bytes calldata data, uint64 gasLimit) public {
+    function mockXCall(uint64 sourceChainId, address sender, address to, bytes calldata data, uint64 gasLimit)
+        public
+        payable
+    {
         _mockXCall(sourceChainId, sender, to, data, gasLimit);
     }
 
@@ -99,7 +102,7 @@ contract MockPortal is OmniPortalConstants {
         _currentXmsg = XTypes.MsgShort({ sourceChainId: sourceChainId, sender: sender });
 
         uint256 gasUsed = gasleft();
-        (bool success, bytes memory returnData) = to.call{ gas: gasLimit }(data);
+        (bool success, bytes memory returnData) = to.call{ gas: gasLimit, value: msg.value }(data);
         gasUsed = gasUsed - gasleft();
 
         if (!success && gasUsed >= gasLimit) revert("MockPortal: out of gas");
