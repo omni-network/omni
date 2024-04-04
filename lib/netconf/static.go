@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/omni-network/omni/lib/chainids"
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -87,7 +88,15 @@ var statics = map[ID]Static{
 		Version:              "v0.0.1",
 		AVSContractAddress:   common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92"),
 		OmniExecutionChainID: 16561,
-		Portals:              []Deployment{},
+		Portals: []Deployment{
+			{
+				ChainID: chainids.Holesky,
+				// Address matches lib/contracts.TestnetPortal()
+				// We do not import to avoid cylic dependencies.
+				Address:      common.HexToAddress("0x71d510f4dc4e7E7716D03209c603C76F4398cF53"),
+				DeployHeight: 1280141,
+			},
+		},
 	},
 }
 
