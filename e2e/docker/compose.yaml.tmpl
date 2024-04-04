@@ -174,22 +174,6 @@ services:
         - 21335:8080
 {{ end }}
 
-{{- if .Explorer }}
-  explorer_ui:
-    labels:
-      e2e: true
-    container_name: explorer_ui
-    image: omniops/explorer-ui:{{or .OmniTag "main"}}
-    restart: unless-stopped # Restart on crash to mitigate startup race issues
-    command:
-      - --graphql-url=http://explorer.staging.omni.network/graphql  # TODO: Update to use the DNS name when available service
-    networks:
-      {{ $.NetworkName }}:
-        {{ if $.Network }}ipv4_address: 10.186.73.205{{ end }}
-    ports:
-        - 21334:8080
-{{ end }}
-
 {{- if .ExplorerMockDB }}
   explorer_db:
     labels:
