@@ -4,10 +4,6 @@ help:  ## Display this help message.
 gen-db: ## generates our ent orm schemas
 	make -C ./db gen
 
-open-dev: ## opens all of the local host endpoints
-	python -m webbrowser "http://localhost:3000"
-	python -m webbrowser "http://localhost:8080"
-
 build: ## builds our docker images
 	@docker-compose build
 	@echo "Building containers"
@@ -17,9 +13,9 @@ run-devnet: stop ## starts our devnet with the main tag for our docker container
 	@echo "Starting devnet"
 	@cd .. && go run github.com/omni-network/omni/e2e deploy -f e2e/manifests/devnet2.toml --explorer-db-conn="postgres://omni:password@explorer_db:5432/omni_db" --omni-image-tag="main"
 
-run-explorer:
+run-explorer: ## starts our explorer in production mode
 	@echo "Starting explorer"
-	@cd ./ui && pnpm run start
+	@cd ./ui && pnpm run build && pnpm run start
 
 run: stop run-devnet ## Deploys e2e devnet1, copies network.json locally, and starts explorer docker compose
 

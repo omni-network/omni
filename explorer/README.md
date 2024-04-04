@@ -30,16 +30,30 @@ In order to run the explorer locally you need a few things.
 4. GraphQL
 5. UI
 
-### Fist Time Setup
 
-#### Devnet
+
+### Devnet
 You can run this all with the following command to build all the backend go binaries and run them. The components in the devnet include the omni network dev net, indexer, db and the graphql server.
 
+### Fist Time Setup
 You need to have docker installed and running to execute the following command:
+
+You can either build all of the component with the following:
 ```bash
-make run-clena
+make build
 ```
 
+then run:
+```bash
+make run-devnet
+```
+
+or run:
+```bash
+make run-clean
+```
+
+### Stopping the network
 If you want to stop the local devnet you can run:
 
 ```bash
@@ -52,11 +66,14 @@ or from the `omni` root folder:
 make devnet-clean
 ```
 
-#### Explorer UI
+### Explorer UI
 Currently we aren't deploying the UI (yet) as part of our devnet. You can run it from the `explorer/ui` folder with the following:
 
 ```bash
-pnpm run build && pnpm run start
+make run-explorer
 ```
 
-This is also useful for local development.
+For local development in the `explorer/ui` folder:
+```bash
+pnpm run dev
+```
