@@ -1,13 +1,13 @@
 {
   "addValSet2": {
     "blockHeader": {
-      "sourceChainId": "2",
+      "sourceChainId": "1000166",
       "blockHeight": "2",
       "blockHash": "0x0000000000000000000000000000000000000000000000000000000000000000"
     },
     "msgs": [
       {
-        "sourceChainId": "2",
+        "sourceChainId": "1000166",
         "destChainId": "0",
         "streamOffset": "2",
         "sender": "0x0000000000000000000000000000000000000000",
