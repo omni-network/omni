@@ -16,13 +16,13 @@ import (
 // startMonitoring starts the monitoring goroutines.
 func startMonitoring(ctx context.Context, network netconf.Network,
 	addresses []common.Address, rpcClients map[uint64]ethclient.Client) {
-	for _, srcChain := range network.Chains {
-		if srcChain.IsOmniConsensus {
-			continue // Below monitors only apply to EVM chains.
+	for _, chain := range network.Chains {
+		if chain.IsOmniConsensus {
+			continue // skip non-EVM chains.
 		}
 
 		for _, addr := range addresses {
-			go monitorAccountForever(ctx, addr, srcChain.Name, rpcClients[srcChain.ID])
+			go monitorAccountForever(ctx, addr, chain.Name, rpcClients[chain.ID])
 		}
 	}
 }

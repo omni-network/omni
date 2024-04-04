@@ -16,7 +16,7 @@ func Monitor(ctx context.Context, network netconf.Network) error {
 	rpcClientPerChain := make(map[uint64]ethclient.Client)
 	for _, chain := range network.Chains {
 		if chain.IsOmniConsensus {
-			continue // Below monitors only apply to EVM chains.
+			continue // skip non-EVM chains
 		}
 		c, err := ethclient.Dial(chain.Name, chain.RPCURL)
 		if err != nil {
