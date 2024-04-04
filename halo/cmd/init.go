@@ -155,12 +155,13 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	}
 
 	// Setup comet private validator
+	// TODO(corver): Handle the eigenlayer keystore case.
 	var pv *privval.FilePV
 	privValKeyFile := comet.PrivValidatorKeyFile()
 	privValStateFile := comet.PrivValidatorStateFile()
 	if cmtos.FileExists(privValKeyFile) {
 		pv = privval.LoadFilePV(privValKeyFile, privValStateFile) // This hard exits on any error.
-		log.Info(ctx, "Found private validator",
+		log.Info(ctx, "Found cometBFT private validator",
 			"key_file", privValKeyFile,
 			"state_file", privValStateFile,
 		)

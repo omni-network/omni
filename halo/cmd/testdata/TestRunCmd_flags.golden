@@ -1,5 +1,6 @@
 {
  "HomeDir": "foo",
+ "EigenKeyPassword": "",
  "EngineJWTFile": "bar",
  "SnapshotInterval": 1000,
  "SnapshotKeepRecent": 2,
