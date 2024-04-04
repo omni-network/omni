@@ -17,6 +17,17 @@ mode = "seed"
 [node.seed02]
 mode = "seed"
 
+[node.fullnode01]
+mode = "full"
+[node.fullnode02]
+mode = "full"
+[node.fullnode03]
+mode = "full"
+[node.fullnode04]
+mode = "full"
+[node.fullnode05]
+mode = "full"
+
 [node.archive01]
 mode = "archive"
 
