@@ -86,8 +86,10 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 		return nil, errors.Wrap(err, "enable cosmos-sdk telemetry")
 	}
 
-	// Load private validator key and state from disk (this hard exits on any error).
-	privVal := privval.LoadFilePV(cfg.Comet.PrivValidatorKeyFile(), cfg.Comet.PrivValidatorStateFile())
+	privVal, err := loadPrivVal(cfg)
+	if err != nil {
+		return nil, errors.Wrap(err, "load validator key")
+	}
 
 	db, err := dbm.NewDB("application", cfg.BackendType(), cfg.DataDir())
 	if err != nil {

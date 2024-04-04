@@ -1,5 +1,6 @@
 {
  "HomeDir": "testinput/input1",
+ "EigenKeyPassword": "",
  "EngineJWTFile": "jwt.toml",
  "SnapshotInterval": 999,
  "SnapshotKeepRecent": 2,

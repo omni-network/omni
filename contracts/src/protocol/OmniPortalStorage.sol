@@ -11,6 +11,16 @@ import { IOmniPortalAdmin } from "../interfaces/IOmniPortalAdmin.sol";
  */
 abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
     /**
+     * @notice  Chain ID of Omni's EVM execution chain
+     */
+    uint64 public omniEChainId;
+
+    /**
+     * @notice Virtual chain ID used in xmsgs from Omni's consensus chain
+     */
+    uint64 public omniCChainID;
+
+    /**
      * @notice The address of the fee oracle contract
      */
     address public feeOracle;

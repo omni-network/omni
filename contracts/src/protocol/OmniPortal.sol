@@ -31,21 +31,30 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
      * @notice Initialize the OmniPortal contract
      * @param owner_        The owner of the contract
      * @param feeOracle_    Address of the fee oracle contract
+     * @param omniEChainId_ Chain ID of Omni's EVM execution chain
+     * @param omniCChainID_ Virtual chain ID used in xmsgs from Omni's consensus chain
      * @param valSetId      Initial validator set id
      * @param validators    Initial validator set
      */
-    function initialize(address owner_, address feeOracle_, uint64 valSetId, XTypes.Validator[] memory validators)
-        public
-        initializer
-    {
+    function initialize(
+        address owner_,
+        address feeOracle_,
+        uint64 omniEChainId_,
+        uint64 omniCChainID_,
+        uint64 valSetId,
+        XTypes.Validator[] memory validators
+    ) public initializer {
         __Ownable_init();
         _transferOwnership(owner_);
         _setFeeOracle(feeOracle_);
         _addValidatorSet(valSetId, validators);
 
+        omniEChainId = omniEChainId_;
+        omniCChainID = omniCChainID_;
+
         // cchain stream offset & block heights are equal to valSetId
-        inXStreamOffset[_CCHAIN_ID] = valSetId;
-        inXStreamBlockHeight[_CCHAIN_ID] = valSetId;
+        inXStreamOffset[omniCChainID_] = valSetId;
+        inXStreamBlockHeight[omniCChainID_] = valSetId;
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -278,7 +287,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
      */
     function addValidatorSet(uint64 valSetId, XTypes.Validator[] memory validators) external {
         require(msg.sender == address(this), "OmniPortal: only self");
-        require(_xmsg.sourceChainId == _CCHAIN_ID, "OmniPortal: only cchain");
+        require(_xmsg.sourceChainId == omniCChainID, "OmniPortal: only cchain");
         require(_xmsg.sender == _CCHAIN_SENDER, "OmniPortal: only cchain sender");
         _addValidatorSet(valSetId, validators);
     }

@@ -7,6 +7,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/cometbft/cometbft/crypto"
+	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 	cryptopb "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -77,6 +78,15 @@ func PubKeyToAddress(pubkey crypto.PubKey) (common.Address, error) {
 	}
 
 	return ethcrypto.PubkeyToAddress(*ethPubKey), nil
+}
+
+func StdPrivKeyToComet(privkey *stdecdsa.PrivateKey) (crypto.PrivKey, error) {
+	bz := ethcrypto.FromECDSA(privkey)
+	if len(bz) != privKeyLen {
+		return nil, errors.New("invalid private key length")
+	}
+
+	return k1.PrivKey(bz), nil
 }
 
 func StdPrivKeyFromComet(privkey crypto.PrivKey) (*stdecdsa.PrivateKey, error) {

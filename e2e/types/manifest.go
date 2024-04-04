@@ -18,17 +18,21 @@ type Mode = e2e.Mode
 
 const (
 	// ModeValidator defines a validator node.
+	// It's validator key has staked tokens and it actively participates in consensus and is subject to rewards and penalties.
+	// It must always be online, otherwise it will get stashed/jailed.
 	// [genesis_validator_set=true,pruning=default,consensus=default,special_p2p=false].
 	// Note technically a validator node is also a "full node".
 	ModeValidator = e2e.ModeValidator
 
-	// ModeArchive defines an archive node.∂
+	// ModeArchive defines an archive node.
+	// It stores all historical blocks and state, it doesn't delete anything ever. It will require TBs of disk.
 	// [genesis_validator_set=false,pruning=none,consensus=default,special_p2p=false].
 	// Note technically an archive node is also a "full node".
 	ModeArchive Mode = "archive"
 
-	// ModeSeed defines a seed node. It must have a long lived pubkey and address (encoded in repo).
-	// It trawls the network regularly, making it available to new nodes.
+	// ModeSeed defines a seed node. It must have a long-lived p2p pubkey and address (encoded in repo).
+	// It acts as notice board for external nodes to learn about the network and connect to publicly available nodes.
+	// It crawls the network regularly, making it available to new nodes.
 	// [genesis_validator_set=false,pruning=default,consensus=default,special_p2p=true].
 	// Note technically a seed node is also a "full node".
 	ModeSeed = e2e.ModeSeed

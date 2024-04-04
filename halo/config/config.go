@@ -25,6 +25,7 @@ const (
 	snapshotDataDir = "snapshots"
 	networkFile     = "network.json"
 	voterStateFile  = "voter_state.json"
+	keystoreGlob    = "*.ecdsa.key.json" // From https://github.com/Layr-Labs/eigenlayer-cli/blob/master/pkg/operator/keys/create.go#L165
 
 	DefaultHomeDir            = "./halo" // Defaults to "halo" in current directory
 	defaultSnapshotInterval   = 1000     // Roughly once an hour (given 3s blocks)
@@ -41,6 +42,7 @@ const (
 func DefaultConfig() Config {
 	return Config{
 		HomeDir:            DefaultHomeDir,
+		EigenKeyPassword:   "", // No default
 		EngineJWTFile:      "", // No default
 		SnapshotInterval:   defaultSnapshotInterval,
 		SnapshotKeepRecent: defaultSnapshotKeepRecent,
@@ -55,6 +57,7 @@ func DefaultConfig() Config {
 // Config defines all halo specific config.
 type Config struct {
 	HomeDir            string
+	EigenKeyPassword   string
 	EngineJWTFile      string
 	SnapshotInterval   uint64 // See cosmossdk.io/store/snapshots/types/options.go
 	SnapshotKeepRecent uint64 // See cosmossdk.io/store/snapshots/types/options.go
@@ -90,6 +93,18 @@ func (c Config) SnapshotDir() string {
 	return filepath.Join(c.DataDir(), snapshotDataDir)
 }
 
+// KeystoreGlob returns the glob pattern for the eigenlayer-format ethereum keystore.
+func (c Config) KeystoreGlob() string {
+	return filepath.Join(c.HomeDir, configDir, keystoreGlob)
+}
+
+// KeystoreFile returns the path to the eigenlayer-format ethereum keystore file and true if it exists.
+// It returns false if the file does not exist.
+// It returns an error if multiple files are found.
+func (c Config) KeystoreFile() (string, bool, error) {
+	return statGlobSingle(c.KeystoreGlob())
+}
+
 //go:embed config.toml.tmpl
 var tomlTemplate []byte
 
@@ -121,4 +136,22 @@ func WriteConfigTOML(cfg Config, logCfg log.Config) error {
 	}
 
 	return nil
+}
+
+// statGlobSingle returns the single file path for the given glob pattern and true if it exists.
+// It returns false if no matching files are found.
+// It returns an error if multiple files are found.
+func statGlobSingle(pattern string) (string, bool, error) {
+	matches, err := filepath.Glob(pattern)
+	if err != nil {
+		return "", false, errors.Wrap(err, "bad glob pattern", "pattern", pattern)
+	}
+
+	if len(matches) == 0 {
+		return "", false, nil
+	} else if len(matches) > 1 {
+		return "", true, errors.New("multiple files found for glob pattern", "pattern", pattern, "matches", matches)
+	}
+
+	return matches[0], true, nil
 }

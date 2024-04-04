@@ -3,7 +3,7 @@ package keeper
 import (
 	"context"
 
-	akeeper "github.com/omni-network/omni/halo/attest/keeper"
+	"github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -14,10 +14,8 @@ import (
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/orm/model/ormdb"
 	"cosmossdk.io/orm/model/ormlist"
-	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	skeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
@@ -29,9 +27,8 @@ const cometValidatorActiveDelay = 2
 type Keeper struct {
 	cdc          codec.BinaryCodec
 	storeService store.KVStoreService
-	sKeeper      *skeeper.Keeper
-	aKeeper      *akeeper.Keeper
-	txConfig     client.TxConfig
+	sKeeper      types.StakingKeeper
+	aKeeper      types.AttestKeeper
 	valsetTable  ValidatorSetTable
 	valTable     ValidatorTable
 }
@@ -39,9 +36,8 @@ type Keeper struct {
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService store.KVStoreService,
-	txConfig client.TxConfig,
-	sKeeper *skeeper.Keeper,
-	aKeeper *akeeper.Keeper,
+	sKeeper types.StakingKeeper,
+	aKeeper types.AttestKeeper,
 ) (Keeper, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
 		{Id: 1, ProtoFileName: File_halo_valsync_keeper_valset_proto.Path()},
@@ -60,7 +56,6 @@ func NewKeeper(
 	return Keeper{
 		cdc:          cdc,
 		storeService: storeService,
-		txConfig:     txConfig,
 		valsetTable:  valsetStore.ValidatorSetTable(),
 		valTable:     valsetStore.ValidatorTable(),
 		sKeeper:      sKeeper,
