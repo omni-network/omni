@@ -26,7 +26,7 @@ func Monitor(ctx context.Context, network netconf.Network) error {
 	}
 
 	addresses := map[netconf.ID][]common.Address{
-		netconf.Devnet: {
+		netconf.Testnet: {
 			contracts.TestnetCreate3Deployer(),
 			contracts.TestnetDeployer(),
 		},
