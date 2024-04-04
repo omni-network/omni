@@ -87,13 +87,6 @@ dockers:
       - omniops/explorer-indexer:{{ if .IsSnapshot }}main{{ else }}latest{{ end }}
       - omniops/explorer-indexer:{{ if .IsSnapshot }}main{{ else }}{{.Tag}}{{ end }}
 
-  - ids: [explorer-ui]
-    dockerfile: ./explorer/ui/Dockerfile
-    image_templates:
-      - omniops/explorer-ui:{{ .ShortCommit }}
-      - omniops/explorer-ui:{{ if .IsSnapshot }}main{{ else }}latest{{ end }}
-      - omniops/explorer-ui:{{ if .IsSnapshot }}main{{ else }}{{.Tag}}{{ end }}
-
 archives:
   - format: tar.gz
     # this name template makes the OS and Arch compatible with the results of `uname`.
