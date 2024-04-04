@@ -3,16 +3,16 @@ package account
 import (
 	"context"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/netconf"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // Monitor starts monitoring account balances.
 func Monitor(ctx context.Context, network netconf.Network) error {
-
 	rpcClientPerChain := make(map[uint64]ethclient.Client)
 	for _, chain := range network.Chains {
 		if chain.IsOmniConsensus {

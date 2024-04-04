@@ -4,12 +4,13 @@ import (
 	"context"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 // startMonitoring starts the monitoring goroutines.
@@ -26,7 +27,7 @@ func startMonitoring(ctx context.Context, network netconf.Network,
 	}
 }
 
-// monitorAccountsForever blocks and periodically monitors the relayer accounts for the given chain.
+// monitorAccountsForever blocks and periodically monitors accounts for the given chain.
 func monitorAccountForever(ctx context.Context, addr common.Address, chainName string, client ethclient.Client) {
 	ticker := time.NewTicker(time.Second * 30)
 	defer ticker.Stop()
@@ -49,7 +50,7 @@ func monitorAccountForever(ctx context.Context, addr common.Address, chainName s
 	}
 }
 
-// monitorAccountOnce monitors the relayer account for the given chain.
+// monitorAccountOnce monitors account for the given chain.
 func monitorAccountOnce(ctx context.Context, addr common.Address, chainName string, client ethclient.Client) error {
 	balance, err := client.BalanceAt(ctx, addr, nil)
 	if err != nil {

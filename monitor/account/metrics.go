@@ -17,6 +17,6 @@ var (
 		Namespace: "monitor",
 		Subsystem: "account",
 		Name:      "nonce",
-		Help:      "The nonce of the the account on a specific chain",
+		Help:      "The nonce of the account on a specific chain",
 	}, []string{"chain"})
 )
