@@ -134,13 +134,18 @@ func NewManager(testnet types.Testnet, backends ethbackend.Backends, relayerKeyF
 			operator:    fbDev,
 		}, nil
 	case netconf.Testnet:
-		// no testnet relayer
+		relayerKey, err := crypto.LoadECDSA(relayerKeyFile)
+		if err != nil {
+			return nil, errors.Wrap(err, "read relayer key file", "path", relayerKeyFile)
+		}
+
 		return &manager{
 			portals:     portals,
 			omniChainID: netconf.Testnet.Static().OmniExecutionChainID,
 			backends:    backends,
 			network:     netconf.Testnet,
 			operator:    fbDev,
+			relayerKey:  relayerKey,
 		}, nil
 	default:
 		return nil, errors.New("unknown network", "network", network)
@@ -182,6 +187,10 @@ func (m *manager) DeployInfo() map[types.EVMChain]DeployInfo {
 
 func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, validators []bindings.Validator,
 ) error {
+	if m.relayerKey == nil {
+		return errors.New("relayer key is nil")
+	}
+
 	// Log provided key balances for public chains (just FYI).
 	for _, portal := range m.portals {
 		if !portal.Chain.IsPublic {
