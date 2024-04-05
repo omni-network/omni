@@ -568,11 +568,15 @@ func (k *Keeper) verifyAggVotes(ctx context.Context, valset ValSet, aggs []*type
 			return errors.Wrap(err, "verify aggregate vote")
 		}
 
+		errAttrs := []any{"chain_id", agg.BlockHeader.ChainId, "height", agg.BlockHeader.Height, log.Hex7("val0", agg.Signatures[0].ValidatorAddress)}
+
 		// Ensure all votes are from validators in the set
 		for _, sig := range agg.Signatures {
 			addr := common.BytesToAddress(sig.GetValidatorAddress())
 			if !valset.Contains(addr) {
-				return errors.New("vote from unknown validator")
+				errAttrs = append(errAttrs, log.Hex7("validator", sig.GetValidatorAddress()))
+
+				return errors.New("vote from unknown validator", errAttrs...)
 			}
 		}
 
@@ -580,7 +584,9 @@ func (k *Keeper) verifyAggVotes(ctx context.Context, valset ValSet, aggs []*type
 		if resp, err := k.windowCompare(ctx, agg.BlockHeader.ChainId, agg.BlockHeader.Height); err != nil {
 			return errors.Wrap(err, "windower")
 		} else if resp != 0 {
-			return errors.New("vote outside window", "resp", resp)
+			errAttrs = append(errAttrs, "resp", resp)
+
+			return errors.New("vote outside window", errAttrs...)
 		}
 	}
 
