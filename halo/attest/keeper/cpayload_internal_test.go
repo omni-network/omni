@@ -2,6 +2,7 @@
 package keeper
 
 import (
+	"context"
 	"testing"
 
 	"github.com/omni-network/omni/halo/attest/types"
@@ -66,13 +67,14 @@ func TestVotesFromCommit(t *testing.T) {
 	fuzzer.Fuzz(&blockHash)
 
 	// Generate attestations for following matrix: chains, vals, height batches
-	const skipVal = 2 // Skip this validator
-	chains := []uint64{100, 200}
+	const skipVal = 2     // Skip this validator
+	const skipChain = 300 // Skip this chain (out of window)
+	chains := []uint64{100, 200, 300}
 	vals := []k1.PrivKey{k1.GenPrivKey(), k1.GenPrivKey(), k1.GenPrivKey()}
 	batches := [][]uint64{{1, 2}, {3}, { /*empty*/ }}
 
 	expected := make(map[xchain.Vote]bool)
-	total := len(chains) * 3 // 2 chains * 3 heights
+	total := 2 * 3 // 2 chains * 3 heights
 
 	var evotes []abci.ExtendedVoteInfo
 	for _, chain := range chains {
@@ -104,7 +106,7 @@ func TestVotesFromCommit(t *testing.T) {
 						},
 					}
 
-					if i != skipVal {
+					if i != skipVal && chain != skipChain {
 						expected[vote.ToXChain()] = true
 					}
 					votes = append(votes, vote)
@@ -128,7 +130,15 @@ func TestVotesFromCommit(t *testing.T) {
 		Votes: evotes,
 	}
 
-	resp, err := votesFromLastCommit(info)
+	comparer := func(ctx context.Context, chainID uint64, height uint64) (int, error) {
+		if chainID == skipChain {
+			return 1, nil
+		}
+
+		return 0, nil
+	}
+
+	resp, err := votesFromLastCommit(context.Background(), comparer, info)
 	require.NoError(t, err)
 
 	require.Len(t, resp.Votes, total)

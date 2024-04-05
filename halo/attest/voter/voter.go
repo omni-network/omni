@@ -24,7 +24,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-const prodBackoff = time.Second
+const (
+	prodBackoff  = time.Second
+	maxAvailable = 1000
+)
 
 var _ types.Voter = (*Voter)(nil)
 
@@ -156,8 +159,14 @@ func (a *Voter) runOnce(ctx context.Context, chainID uint64) error {
 			if err != nil {
 				return errors.Wrap(err, "window compare")
 			} else if cmp < 0 {
-				return errors.New("behind vote window (too slow)")
-			} // Being ahead is not a problem, since we buffer on disk.
+				return errors.New("behind vote window (too slow)", "vote_height", block.BlockHeight)
+			} else if cmp > 0 {
+				backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Minute))
+				for a.AvailableCount() > maxAvailable {
+					log.Warn(ctx, "Voting paused, latest approved attestation is too far behind (stuck?)", nil, "vote_height", block.BlockHeight)
+					backoff()
+				}
+			}
 
 			if err := a.Vote(block, first); err != nil {
 				return errors.Wrap(err, "vote")
@@ -218,6 +227,14 @@ func (a *Voter) TrimBehind(thresholds map[uint64]uint64) int {
 	a.available = stillAvailable
 
 	return trimmed
+}
+
+// AvailableCount returns the number of available votes.
+func (a *Voter) AvailableCount() int {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	return len(a.available)
 }
 
 // GetAvailable returns a copy of all the available votes.

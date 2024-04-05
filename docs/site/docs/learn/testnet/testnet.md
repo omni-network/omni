@@ -14,7 +14,7 @@ During the Omni Omega Testnet, users will be able to delegate restaked **\$ETH**
 
 ## Delegating Holesky \$ETH
 
-You can delegate testnet **\$ETH** to securing Omni through EigenLayer through the EigenLayer dashboard. Once there you can:
+You can delegate testnet **\$ETH** to secure Omni through EigenLayer. Check out [this blog post](https://news.omni.network/omni-omega-phase-two-how-to-delegate/) and follow the instructions to delegate. A succinct summary of the steps is below:
 
 1. Have Holesky as a network to your browser wallet, funded with Holesky **\$ETH**. [Read more on how here](https://www.coingecko.com/learn/holesky-testnet-eth).
 2. Swap Holesky **\$ETH** for any of the [EigenLayer supported restaking tokens](https://docs.eigenlayer.xyz/eigenlayer/restaking-guides/restaking-user-guide/stage-2-testnet/obtaining-testnet-eth-and-liquid-staking-tokens-lsts).
@@ -23,18 +23,4 @@ You can delegate testnet **\$ETH** to securing Omni through EigenLayer through t
 5. Delegate your restaked tokens to any of the Omni Operators.
 5. 🎉 You are helping secure the Omni Omega Testnet! 🎉
 
-## Adding the Omni Network to Your Wallet
-
-To add the Omni network to your wallet, you can go to the settings for adding a new network of your wallet and add the following information:
-
-- **Network Name**: Omni Omega Testnet
-- **RPC URL**: `$OMNI_TESTNET_RPC_URL$`
-- **Chain ID**: `$OMNI_TESTNET_CHAIN_ID$`
-- **Symbol**: `$OMNI`
-- **Block Explorer URL**: `$OMNI_TESTNET_EXPLORER_URL$`
-
-Alternatively, you can follow a tutorial like the [Metamask Adding a Custom Network Tutorial](https://metamask.zendesk.com/hc/en-us/articles/360043227612-How-to-add-a-custom-network-RPC-and-or-Block-Explorer) to add the Omni Omega Testnet network to your wallet.
-
-## Omni Omega Testnet Explorer
-
-The Omni Omega Testnet Explorer will be published soon. Stay tuned for more information!
+Stay tuned for more!

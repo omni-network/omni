@@ -1,17 +1,42 @@
-import { cssBundleHref } from '@remix-run/css-bundle'
-import type { LinksFunction } from '@remix-run/node'
+import type { LinksFunction, SerializeFrom } from '@remix-run/node'
 import stylesheet from '~/tailwind.css'
-import { Links, LiveReload, Meta, Outlet, Scripts, ScrollRestoration } from '@remix-run/react'
+import {
+  Links,
+  LiveReload,
+  Meta,
+  Outlet,
+  Scripts,
+  ScrollRestoration,
+  json,
+  useLoaderData,
+} from '@remix-run/react'
 import { Client, Provider, cacheExchange, fetchExchange } from 'urql'
+import { useEnv } from './lib/use-env'
 
 export const links: LinksFunction = () => [{ rel: 'stylesheet', href: stylesheet }]
+export type LoaderData = SerializeFrom<typeof loader>
 
 const client = new Client({
-  url: 'http://localhost:8080/query',
+  url: 'http://localhost:21335/query',
   exchanges: [fetchExchange, cacheExchange],
 })
 
+// This loads in our environment variables from the .env file
+export function loader() {
+  const ENV = {
+    GRAPHQL_HOST: process.env.GRAPHQL_HOST ?? 'http://localhost:8080/query',
+  }
+  return json({ ENV })
+}
+
+function GetGraphQLHost() {
+  const ENV = useEnv()
+  return ENV.GRAPHQL_HOST
+}
+
 function App() {
+  const data = useLoaderData<typeof loader>()
+  GetGraphQLHost()
   return (
     <html lang="en" data-theme="light">
       <head>
