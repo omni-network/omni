@@ -5,6 +5,9 @@ package log
 import (
 	"context"
 	"log/slog"
+	"runtime"
+	"strings"
+	"time"
 
 	pkgerrors "github.com/pkg/errors" //nolint:revive // Need this for stacktraces.
 )
@@ -23,37 +26,58 @@ func WithCtx(ctx context.Context, attrs ...any) context.Context {
 
 // Debug logs the message and attributes at default level.
 func Debug(ctx context.Context, msg string, attrs ...any) {
-	logTotal.WithLabelValues(levelDebug).Inc()
-	getLogger(ctx).DebugContext(ctx, msg, mergeAttrs(ctx, attrs)...)
+	log(ctx, slog.LevelDebug, msg, mergeAttrs(ctx, attrs)...)
 }
 
 // Info logs the message and attributes at info level.
 func Info(ctx context.Context, msg string, attrs ...any) {
-	logTotal.WithLabelValues(levelInfo).Inc()
-	getLogger(ctx).InfoContext(ctx, msg, mergeAttrs(ctx, attrs)...)
+	log(ctx, slog.LevelInfo, msg, mergeAttrs(ctx, attrs)...)
 }
 
 // Warn logs the message and error and attributes at warning level.
 // If err is nil, it will not be logged.
 func Warn(ctx context.Context, msg string, err error, attrs ...any) {
-	logTotal.WithLabelValues(levelWarn).Inc()
 	if err != nil {
 		attrs = append(attrs, slog.String("err", err.Error()))
 		attrs = append(attrs, errAttrs(err)...)
 	}
 
-	getLogger(ctx).WarnContext(ctx, msg, mergeAttrs(ctx, attrs)...)
+	log(ctx, slog.LevelWarn, msg, mergeAttrs(ctx, attrs)...)
 }
 
 // Error logs the message and error and arguments at error level.
 // If err is nil, it will not be logged.
 func Error(ctx context.Context, msg string, err error, attrs ...any) {
-	logTotal.WithLabelValues(levelError).Inc()
 	if err != nil {
 		attrs = append(attrs, slog.String("err", err.Error()))
 		attrs = append(attrs, errAttrs(err)...)
 	}
-	getLogger(ctx).ErrorContext(ctx, msg, mergeAttrs(ctx, attrs)...)
+	log(ctx, slog.LevelError, msg, mergeAttrs(ctx, attrs)...)
+}
+
+// log is the low-level logging method for methods that take ...any.
+// It must always be called directly by an exported logging method
+// or function, because it uses a fixed call depth to obtain the pc.
+//
+// Copied from stdlib since we wrap slog and the source/caller is incorrect otherwise.
+// See https://github.com/golang/go/blob/master/src/log/slog/logger.go#L241
+func log(ctx context.Context, level slog.Level, msg string, attrs ...any) {
+	logTotal.WithLabelValues(strings.ToLower(level.String())).Inc()
+
+	logger := getLogger(ctx)
+
+	if !logger.Enabled(ctx, level) {
+		return
+	}
+
+	// skip [runtime.Callers, this function, this function's caller]
+	var pcs [1]uintptr
+	runtime.Callers(3, pcs[:])
+
+	r := slog.NewRecord(time.Now(), level, msg, pcs[0])
+	r.Add(attrs...)
+
+	_ = logger.Handler().Handle(ctx, r)
 }
 
 // errFields is similar to z.Err and returns the structured error fields and
@@ -61,26 +85,37 @@ func Error(ctx context.Context, msg string, err error, attrs ...any) {
 // since it is used as the main log message in Error above.
 func errAttrs(err error) []any {
 	type structErr interface {
-		Attrs() []any
 		StackTrace() pkgerrors.StackTrace
+		Attrs() []any
 	}
 
-	// Find the first structured error in the cause chain. CometBFT wraps our errors
-	// in pkgErrors so we need to unwrap them to find our structured error.
-	cause := err
-	for cause != nil {
-		// Using cast instead of errors.As since no other wrapping library
-		// is used and this avoids exporting the structured error type.
-		serr, ok := cause.(structErr) //nolint:errorlint // See comment above
-		if !ok {
-			cause = pkgerrors.Unwrap(cause)
-			continue
+	var attrs []any
+	var stackTrace pkgerrors.StackTrace
+
+	// Go up the cause chain (from the outermost error to the innermost error)
+	for {
+		if serr, ok := err.(structErr); ok { //nolint:errorlint // Using cast instead of errors.As since we do custom logic
+			// Use the first encountered structErr's attributes.
+			if len(attrs) == 0 {
+				attrs = serr.Attrs()
+			}
+
+			// Use the last encountered structErr's stack trace.
+			stackTrace = serr.StackTrace()
 		}
 
-		return append(serr.Attrs(), slog.Any("stacktrace", serr.StackTrace()))
-	}
+		if cause := pkgerrors.Unwrap(err); cause != nil {
+			err = cause
+			continue // Continue up the cause chain.
+		}
 
-	return nil
+		// Root cause reached, break the loop.
+		if len(stackTrace) > 0 {
+			attrs = append(attrs, slog.Any("stacktrace", stackTrace))
+		}
+
+		return attrs
+	}
 }
 
 // mergeAttrs returns the attributes from the context merged with the provided attributes.
