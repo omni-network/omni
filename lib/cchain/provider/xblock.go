@@ -18,11 +18,25 @@ var portalABI = mustGetABI(bindings.OmniPortalMetaData)
 // XBlock returns the valsync XBlock at the given height or latest, or false if not available, or an error.
 // The height is equivalent to the validator set id.
 func (p Provider) XBlock(ctx context.Context, height uint64, latest bool) (xchain.Block, bool, error) {
-	vals, valsetID, ok, err := p.valset(ctx, height, latest)
+	resp, ok, err := p.valset(ctx, height, latest)
 	if err != nil {
 		return xchain.Block{}, false, err
 	} else if !ok {
 		return xchain.Block{}, false, nil
+	}
+
+	// Use the created height to fetch the header to use as the timestamp.
+	h := int64(resp.CreatedHeight)
+	if h == 0 {
+		// Can't fetch header for genesis, workaround is to use height 1 for now.
+		// This isn't critical, since timestamp is only used for display purposes.
+		h = 1
+	}
+	header, err := p.header(ctx, &h)
+	if err != nil {
+		return xchain.Block{}, false, errors.Wrap(err, "get header")
+	} else if header.Header == nil {
+		return xchain.Block{}, false, errors.New("created height header is nil")
 	}
 
 	chainID, err := p.chainID(ctx)
@@ -30,12 +44,12 @@ func (p Provider) XBlock(ctx context.Context, height uint64, latest bool) (xchai
 		return xchain.Block{}, false, errors.Wrap(err, "get chain ID")
 	}
 
-	portalVals, err := toPortalVals(vals)
+	portalVals, err := toPortalVals(resp.Validators)
 	if err != nil {
 		return xchain.Block{}, false, errors.Wrap(err, "convert validators")
 	}
 
-	data, err := portalABI.Pack("addValidatorSet", valsetID, portalVals)
+	data, err := portalABI.Pack("addValidatorSet", resp.ValSetID, portalVals)
 	if err != nil {
 		return xchain.Block{}, false, errors.Wrap(err, "pack validators")
 	}
@@ -44,17 +58,18 @@ func (p Provider) XBlock(ctx context.Context, height uint64, latest bool) (xchai
 	return xchain.Block{
 		BlockHeader: xchain.BlockHeader{
 			SourceChainID: chainID,
-			BlockHeight:   valsetID,
+			BlockHeight:   resp.ValSetID,
 		},
 		Msgs: []xchain.Msg{{
 			MsgID: xchain.MsgID{
 				StreamID: xchain.StreamID{
 					SourceChainID: chainID,
 				},
-				StreamOffset: valsetID,
+				StreamOffset: resp.ValSetID,
 			},
 			Data: data,
 		}},
+		Timestamp: header.Header.Time,
 	}, true, nil
 }
 
