@@ -22,6 +22,21 @@ func (p Provider) XBlock(ctx context.Context, sourceChainID uint64, height uint6
 		return nil, false, err
 	}
 
+	msgs, err := query.QueryMsgs().All(ctx)
+	if err != nil {
+		log.Error(ctx, "Block msg edges query", err)
+		return nil, false, err
+	}
+
+	receipts, err := query.QueryReceipts().All(ctx)
+	if err != nil {
+		log.Error(ctx, "Block receipt edges query", err)
+		return nil, false, err
+	}
+
+	query.Edges.Msgs = msgs
+	query.Edges.Receipts = receipts
+
 	b, err := EntBlockToGraphQLBlock(ctx, query)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "failed to decode block")
