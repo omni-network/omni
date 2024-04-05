@@ -53,7 +53,9 @@ func TestXBlockQuery(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	db.CreateTestBlock(t, ctx, test.Client, 0)
+	block := db.CreateTestBlock(t, ctx, test.Client, 0)
+	db.CreateXMsg(t, ctx, test.Client, block, 2, 0)
+	db.CreateReceipt(t, ctx, test.Client, block, 2, 0)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
@@ -65,6 +67,12 @@ func TestXBlockQuery(t *testing.T) {
 						SourceChainID
 						BlockHeight
 						BlockHash
+						Messages{
+							SourceChainID
+						}
+						Receipts{
+							SourceChainID
+						}
 					}
 				}
 			`,
@@ -74,7 +82,17 @@ func TestXBlockQuery(t *testing.T) {
 					{
 						"BlockHash":"0x0000000000000000000000000103176f1b2d62675e370103176f1b2d62675e37",
 						"BlockHeight":"0x0",
-						"SourceChainID":"0x1"
+						"SourceChainID":"0x1",
+						"Messages":[
+							{
+								"SourceChainID":"0x1"
+							}
+						],
+						"Receipts":[
+							{
+								"SourceChainID":"0x1"
+							}
+						]
 					}
 				}
 			`,
