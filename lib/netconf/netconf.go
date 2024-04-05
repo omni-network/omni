@@ -175,8 +175,36 @@ func Load(path string) (Network, error) {
 	return net, nil
 }
 
+// Below is used for a temprorary hack to shuffle the holesky rpcs
+
+var (
+	holeksyRPCs = []string{
+		"https://ethereum-holesky-rpc.publicnode.com",
+		"https://rpc.holesky.ethpandaops.io",
+		"https://1rpc.io/holesky",
+		"https://holesky.drpc.org",
+	}
+)
+
+// nextHoleskyRPC cycles through the public Holesky RPCs.
+func nextHoleskyRPC() string {
+	rpcs := holeksyRPCs
+	holeksyRPCs = append(holeksyRPCs[1:], holeksyRPCs[0])
+
+	return rpcs[0]
+}
+
 // Save saves the network configuration to the given path.
 func Save(network Network, path string) error {
+	// Hack to shuffle holesky rpc
+	chains := network.Chains
+	for i, chain := range chains {
+		if chain.Name == "holesky" {
+			chains[i].RPCURL = nextHoleskyRPC()
+		}
+	}
+	network.Chains = chains
+
 	bz, err := json.MarshalIndent(network, "", "  ")
 	if err != nil {
 		return errors.Wrap(err, "marshal network config file")
