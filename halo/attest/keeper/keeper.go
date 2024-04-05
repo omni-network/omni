@@ -639,14 +639,13 @@ func isApproved(sigs []*Signature, valset ValSet) ([]*Signature, bool) {
 	return toDelete, sum > valset.TotalPower()*2/3
 }
 
-func windowCompare(voteWindow uint64, header *types.BlockHeader, latest uint64) int {
-	x := header.Height
-	mid := latest
-	delta := voteWindow
+// windowCompare returns -1 if x < mid-voteWindow, 1 if x > mid+voteWindow, else 0.
+func windowCompare(voteWindow uint64, midHeader *types.BlockHeader, x uint64) int {
+	mid := midHeader.Height
 
-	if x < uintSub(mid, delta) {
+	if x < uintSub(mid, voteWindow) {
 		return -1
-	} else if x > mid+delta {
+	} else if x > mid+voteWindow {
 		return 1
 	}
 
