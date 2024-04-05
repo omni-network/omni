@@ -66,7 +66,9 @@ or from the `omni` root folder:
 make devnet-clean
 ```
 
-#### Chains
+#### GraphQL
+
+Locally visit: http://localhost:21335 for the GraphiQL interface
 
 We currently have 3 chains in the devnet currently, those chainids are:
 - 100
@@ -78,11 +80,14 @@ So if you were to go and query an xblock, you would need to set one of those as 
 ex:
 ```graphql
 query{
-  xblock(sourceChainID: 16561, height: 20){
+  xblock(sourceChainID: 200, height: 35){
 		SourceChainID
     BlockHeight
     Messages{
       StreamOffset
+    }
+    Receipts{
+      TxHash
     }
   }
 }
