@@ -89,35 +89,60 @@ contract Fixtures is EigenLayerFixtures {
     }
 
     function _deployLocalAVS() internal returns (OmniAVS) {
-        Create3 create3 = new Create3();
-        bytes32 create3Salt = keccak256("avs-local-test");
-
         address impl =
             address(new OmniAVS(IDelegationManager(address(delegation)), IAVSDirectory(address(avsDirectory))));
 
-        bytes memory bytecode = abi.encodePacked(
-            vm.getCode("TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy.0.8.12"),
-            abi.encode(
-                address(impl),
-                proxyAdmin,
-                abi.encodeWithSelector(
-                    OmniAVS.initialize.selector,
-                    omniAVSOwner,
-                    portal,
-                    omniChainId,
-                    ethStakeInbox,
-                    minOperatorStake,
-                    maxOperatorCount,
-                    _localStrategyParams(),
-                    metadataURI,
-                    allowlistEnabled
-                )
+        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
+            impl,
+            address(proxyAdmin),
+            abi.encodeWithSelector(
+                OmniAVS.initialize.selector,
+                omniAVSOwner,
+                address(portal),
+                omniChainId,
+                ethStakeInbox,
+                minOperatorStake,
+                maxOperatorCount,
+                _localStrategyParams(),
+                metadataURI,
+                allowlistEnabled
             )
         );
 
-        address proxy = create3.deploy(create3Salt, bytecode);
+        return OmniAVS(address(proxy));
 
-        return OmniAVS(proxy);
+        // Below is the code to deploy OmniAVS contract using Create3. It requires vm.getCode(),
+        // which seems to be broken in the most recent veresion of forge.
+        //
+        // Create3 create3 = new Create3();
+        // bytes32 create3Salt = keccak256("avs-local-test");
+        //
+        // address impl =
+        //     address(new OmniAVS(IDelegationManager(address(delegation)), IAVSDirectory(address(avsDirectory))));
+        //
+        // bytes memory bytecode = abi.encodePacked(
+        //     vm.getCode("TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy.0.8.12"),
+        //     abi.encode(
+        //         address(impl),
+        //         proxyAdmin,
+        //         abi.encodeWithSelector(
+        //             OmniAVS.initialize.selector,
+        //             omniAVSOwner,
+        //             portal,
+        //             omniChainId,
+        //             ethStakeInbox,
+        //             minOperatorStake,
+        //             maxOperatorCount,
+        //             _localStrategyParams(),
+        //             metadataURI,
+        //             allowlistEnabled
+        //         )
+        //     )
+        // );
+        //
+        // address proxy = create3.deploy(create3Salt, bytecode);
+        //
+        // return OmniAVS(proxy);
     }
 
     function _localStrategyParams() internal view returns (IOmniAVS.StrategyParam[] memory params) {
