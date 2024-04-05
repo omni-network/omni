@@ -15,8 +15,8 @@ export const loader = async () => {
   const [{ data }] = useQuery({
     query: xblockrange,
     variables: {
-      amount: amt,
-      offset: offset,
+      from: amt,
+      to: offset,
     },
   })
 

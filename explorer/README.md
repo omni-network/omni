@@ -66,6 +66,28 @@ or from the `omni` root folder:
 make devnet-clean
 ```
 
+#### Chains
+
+We currently have 3 chains in the devnet currently, those chainids are:
+- 100
+- 200
+- 16561
+
+So if you were to go and query an xblock, you would need to set one of those as the `sourceChainID` field.
+
+ex:
+```graphql
+query{
+  xblock(sourceChainID: 16561, height: 20){
+		SourceChainID
+    BlockHeight
+    Messages{
+      StreamOffset
+    }
+  }
+}
+```
+
 ### Explorer UI
 Currently we aren't deploying the UI (yet) as part of our devnet. You can run it from the `explorer/ui` folder with the following:
 
