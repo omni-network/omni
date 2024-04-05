@@ -157,6 +157,7 @@ const sidebars: SidebarsConfig = {
       type: "html",
       value: "<div class='sidebar-separator'></div>",
     },
+    "protocol/audits",
     "protocol/future"
   ],
   developSidebar: [
