@@ -20,7 +20,7 @@ You can delegate testnet **\$ETH** to secure Omni through EigenLayer. Check out 
 2. Swap Holesky **\$ETH** for any of the [EigenLayer supported restaking tokens](https://docs.eigenlayer.xyz/eigenlayer/restaking-guides/restaking-user-guide/stage-2-testnet/obtaining-testnet-eth-and-liquid-staking-tokens-lsts).
 3. Connect your wallet to the [EigenLayer dashboard](https://holesky.eigenlayer.xyz/).
 4. Restake your restaking tokens on the [dashboard restake section](https://holesky.eigenlayer.xyz/restake).
-5. Delegate your restaked tokens to any of the Omni Operators.
+5. Delegate your restaked tokens to any of the [Omni Operators](https://holesky.eigenlayer.xyz/avs/0xa7b2e7830c51728832d33421670dbbe30299fd92).
 5. 🎉 You are helping secure the Omni Omega Testnet! 🎉
 
 Stay tuned for more!

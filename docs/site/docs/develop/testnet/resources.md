@@ -16,7 +16,7 @@ Fields will be updated soon.
 
 | Network | Chain ID | RPC URL |
 |---------|----------|---------|
-| Omni    | `$OMNI_TESNET_CHAIN_ID$` | `$OMNI_TESTNET_RPC_URL$` |
+| Omni    | `165` | `$OMNI_TESTNET_RPC_URL$` |
 | Ethereum Holesky |    `17000`    | [See ChainList Page](https://chainlist.org/chain/17000) |
 | Arbitrum Sepolia |   `421614`      | `https://sepolia-rollup.arbitrum.io/rpc` |
 | Optimism Sepolia |    `11155420`    | `https://sepolia.optimism.io` |
@@ -25,7 +25,7 @@ Fields will be updated soon.
 
 | Contract | Omni Omega | Ethereum Holesky | Arbitrum Sepolia | Optimism Sepolia |
 |---------|------------|----------|----------|----------|
-| Portal |`$OMNI-OMEGA-ADDRESS$` | `$HOLESKY-ADDRESS$` |`$ARBITRUM-ADDRESS$` |`$OPTIMISM-ADDRESS$` |
+| Portal |`0x71d510f4dc4e7E7716D03209c603C76F4398cF53` | `0x71d510f4dc4e7E7716D03209c603C76F4398cF53` |`0x71d510f4dc4e7E7716D03209c603C76F4398cF53` |`0x71d510f4dc4e7E7716D03209c603C76F4398cF53` |
 
 ### Precompiled Contracts
 
