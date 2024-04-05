@@ -156,7 +156,7 @@ func (a *Voter) runOnce(ctx context.Context, chainID uint64) error {
 			if err != nil {
 				return errors.Wrap(err, "window compare")
 			} else if cmp < 0 {
-				return errors.New("behind vote window (too slow)")
+				return errors.New("behind vote window (too slow)", "height", block.BlockHeight)
 			} // Being ahead is not a problem, since we buffer on disk.
 
 			if err := a.Vote(block, first); err != nil {
