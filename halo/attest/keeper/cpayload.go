@@ -28,7 +28,7 @@ func (k *Keeper) PrepareVotes(ctx context.Context, commit abci.ExtendedCommitInf
 		return nil, nil
 	}
 
-	msg, err := votesFromLastCommit(commit)
+	msg, err := votesFromLastCommit(ctx, k.windowCompare, commit)
 	if err != nil {
 		return nil, err
 	}
@@ -36,9 +36,11 @@ func (k *Keeper) PrepareVotes(ctx context.Context, commit abci.ExtendedCommitInf
 	return []sdk.Msg{msg}, nil
 }
 
+type windowCompareFunc func(context.Context, uint64, uint64) (int, error)
+
 // votesFromLastCommit returns the aggregated votes contained in vote extensions
 // of the last local commit.
-func votesFromLastCommit(info abci.ExtendedCommitInfo) (*types.MsgAddVotes, error) {
+func votesFromLastCommit(ctx context.Context, windowCompare windowCompareFunc, info abci.ExtendedCommitInfo) (*types.MsgAddVotes, error) {
 	var allVotes []*types.Vote
 	for _, vote := range info.Votes {
 		if vote.BlockIdFlag != cmtproto.BlockIDFlagCommit {
@@ -51,7 +53,20 @@ func votesFromLastCommit(info abci.ExtendedCommitInfo) (*types.MsgAddVotes, erro
 			continue
 		}
 
-		allVotes = append(allVotes, votes.Votes...)
+		var selected []*types.Vote
+		for _, v := range votes.Votes {
+			cmp, err := windowCompare(ctx, v.BlockHeader.ChainId, v.BlockHeader.Height)
+			if err != nil {
+				return nil, err
+			} else if cmp != 0 {
+				// Skip votes that are not in the current window anymore.
+				continue
+			}
+
+			selected = append(selected, v)
+		}
+
+		allVotes = append(allVotes, selected...)
 	}
 
 	return &types.MsgAddVotes{

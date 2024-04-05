@@ -44,13 +44,14 @@ func NewABCIProvider(abci ABCIClient, chains map[uint64]string) Provider {
 		window:      newABCIWindowFunc(acl),
 		valset:      newABCIValsetFunc(vcl),
 		chainID:     newChainIDFunc(abci),
+		header:      abci.Header,
 		backoffFunc: backoffFunc,
 		chainNames:  chains,
 	}
 }
 
 // newChainIDFunc returns a function that returns the consensus chain ID. It caches the result.
-func newChainIDFunc(abci rpcclient.SignClient) ChainIDFunc {
+func newChainIDFunc(abci rpcclient.SignClient) chainIDFunc {
 	var mu sync.Mutex
 	var chainID uint64
 
@@ -75,16 +76,16 @@ func newChainIDFunc(abci rpcclient.SignClient) ChainIDFunc {
 	}
 }
 
-func newABCIValsetFunc(cl vtypes.QueryClient) ValsetFunc {
-	return func(ctx context.Context, valSetID uint64, latest bool) ([]cchain.Validator, uint64, bool, error) {
+func newABCIValsetFunc(cl vtypes.QueryClient) valsetFunc {
+	return func(ctx context.Context, valSetID uint64, latest bool) (valSetResponse, bool, error) {
 		const endpoint = "valset"
 		defer latency(endpoint)()
 		resp, err := cl.ValidatorSet(ctx, &vtypes.ValidatorSetRequest{Id: valSetID, Latest: latest})
 		if errors.Is(err, sdkerrors.ErrKeyNotFound) {
-			return nil, 0, false, nil
+			return valSetResponse{}, false, nil
 		} else if err != nil {
 			incQueryErr(endpoint)
-			return nil, 0, false, errors.Wrap(err, "abci query valset")
+			return valSetResponse{}, false, errors.Wrap(err, "abci query valset")
 		}
 
 		vals := make([]cchain.Validator, 0, len(resp.Validators))
@@ -95,7 +96,12 @@ func newABCIValsetFunc(cl vtypes.QueryClient) ValsetFunc {
 			})
 		}
 
-		return vals, resp.Id, true, nil
+		return valSetResponse{
+			ValSetID:      resp.Id,
+			Validators:    vals,
+			CreatedHeight: resp.CreatedHeight,
+			activedHeight: resp.ActivatedHeight,
+		}, true, nil
 	}
 }
 

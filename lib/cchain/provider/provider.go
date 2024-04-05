@@ -10,29 +10,40 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/stream"
 	"github.com/omni-network/omni/lib/xchain"
+
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 )
 
 var _ cchain.Provider = Provider{}
 
-type FetchFunc func(ctx context.Context, chainID uint64, fromHeight uint64) ([]xchain.Attestation, error)
-type LatestFunc func(ctx context.Context, chainID uint64) (xchain.Attestation, bool, error)
-type WindowFunc func(ctx context.Context, chainID uint64, height uint64) (int, error)
-type ValsetFunc func(ctx context.Context, valSetID uint64, latest bool) ([]cchain.Validator, uint64, bool, error)
-type ChainIDFunc func(ctx context.Context) (uint64, error)
+type fetchFunc func(ctx context.Context, chainID uint64, fromHeight uint64) ([]xchain.Attestation, error)
+type latestFunc func(ctx context.Context, chainID uint64) (xchain.Attestation, bool, error)
+type windowFunc func(ctx context.Context, chainID uint64, height uint64) (int, error)
+type valsetFunc func(ctx context.Context, valSetID uint64, latest bool) (valSetResponse, bool, error)
+type headerFunc func(ctx context.Context, height *int64) (*ctypes.ResultHeader, error)
+type chainIDFunc func(ctx context.Context) (uint64, error)
+
+type valSetResponse struct {
+	ValSetID      uint64
+	Validators    []cchain.Validator
+	CreatedHeight uint64
+	activedHeight uint64
+}
 
 // Provider implements cchain.Provider.
 type Provider struct {
-	fetch       FetchFunc
-	latest      LatestFunc
-	window      WindowFunc
-	valset      ValsetFunc
-	chainID     ChainIDFunc
+	fetch       fetchFunc
+	latest      latestFunc
+	window      windowFunc
+	valset      valsetFunc
+	chainID     chainIDFunc
+	header      headerFunc
 	backoffFunc func(context.Context) (func(), func())
 	chainNames  map[uint64]string
 }
 
 // NewProviderForT creates a new provider for testing.
-func NewProviderForT(_ *testing.T, fetch FetchFunc, latest LatestFunc, window WindowFunc,
+func NewProviderForT(_ *testing.T, fetch fetchFunc, latest latestFunc, window windowFunc,
 	backoffFunc func(context.Context) (func(), func()),
 ) Provider {
 	return Provider{
@@ -58,8 +69,8 @@ func (p Provider) WindowCompare(ctx context.Context, sourceChainID uint64, heigh
 }
 
 func (p Provider) ValidatorSet(ctx context.Context, valSetID uint64) ([]cchain.Validator, bool, error) {
-	valest, _, ok, err := p.valset(ctx, valSetID, false)
-	return valest, ok, err
+	resp, ok, err := p.valset(ctx, valSetID, false)
+	return resp.Validators, ok, err
 }
 
 // Subscribe implements cchain.Provider.

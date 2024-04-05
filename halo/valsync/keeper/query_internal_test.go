@@ -3,6 +3,7 @@ package keeper
 import (
 	"testing"
 
+	types1 "github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/netconf"
 
@@ -60,6 +61,13 @@ func TestValidatorSet(t *testing.T) {
 			req:         newReqLatest(),
 			resp:        newResp(3, set3),
 		},
+		{
+			name:        "query_approved_2_of_2",
+			populate:    sets12,
+			expectation: approvedExpectation(),
+			req:         newReqLatest(),
+			resp:        newActivatedResp(2, set2),
+		},
 	}
 
 	for _, tt := range tests {
@@ -87,6 +95,18 @@ func TestValidatorSet(t *testing.T) {
 	}
 }
 
+func approvedExpectation() expectation {
+	return func(ctx sdk.Context, m mocks) {
+		m.aKeeper.EXPECT().ListAttestationsFrom(
+			gomock.Any(),
+			netconf.Simnet.Static().OmniConsensusChainIDUint64(),
+			uint64(2), // Setup 1 is genesis, so auto approved, so it always queries from 2.
+			uint64(1), // Only query for 1 attestation.
+		).AnyTimes().
+			Return([]*types1.Attestation{{}}, nil)
+	}
+}
+
 func defaultExpectation() expectation {
 	return func(ctx sdk.Context, m mocks) {
 		m.aKeeper.EXPECT().ListAttestationsFrom(
@@ -110,6 +130,13 @@ func newReqLatest() *types.ValidatorSetRequest {
 		Id:     0,
 		Latest: true,
 	}
+}
+
+func newActivatedResp(id uint64, set []*Validator) *types.ValidatorSetResponse {
+	resp := newResp(id, set)
+	resp.ActivatedHeight = id + 2
+
+	return resp
 }
 
 func newResp(id uint64, set []*Validator) *types.ValidatorSetResponse {

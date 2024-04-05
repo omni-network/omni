@@ -54,7 +54,7 @@ func TestProvider(t *testing.T) {
 	}
 }
 
-// testFetcher implements FetchFunc.
+// testFetcher implements fetchFunc.
 // It first returns errs errors.
 // Then it returns 0,1,2,3,4,5... attestations up to max.
 type testFetcher struct {

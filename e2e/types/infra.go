@@ -37,6 +37,7 @@ func (d InfrastructureData) ServicesByInstance(data e2e.InstanceData) map[string
 	return resp
 }
 
+// instancesEqual returns true if the two instances are equal, as identified by IPs.
 func instancesEqual(a, b e2e.InstanceData) bool {
-	return a.IPAddress.Equal(b.IPAddress) && a.ExtIPAddress.Equal(b.ExtIPAddress) && a.Port == b.Port
+	return a.IPAddress.Equal(b.IPAddress) && a.ExtIPAddress.Equal(b.ExtIPAddress)
 }
