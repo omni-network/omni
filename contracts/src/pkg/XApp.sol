@@ -53,6 +53,7 @@ contract XApp {
      */
     function xcall(uint64 destChainId, address to, bytes memory data) internal returns (uint256) {
         uint256 fee = omni.feeFor(destChainId, data);
+        require(address(this).balance >= fee || msg.value >= fee, "XApp: insufficient funds");
         omni.xcall{ value: fee }(destChainId, to, data);
         return fee;
     }
@@ -63,6 +64,7 @@ contract XApp {
      */
     function xcall(uint64 destChainId, address to, bytes memory data, uint64 gasLimit) internal returns (uint256) {
         uint256 fee = omni.feeFor(destChainId, data, gasLimit);
+        require(address(this).balance >= fee || msg.value >= fee, "XApp: insufficient funds");
         omni.xcall{ value: fee }(destChainId, to, data, gasLimit);
         return fee;
     }
