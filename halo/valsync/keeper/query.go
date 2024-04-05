@@ -126,8 +126,9 @@ func (k Keeper) ValidatorSet(ctx context.Context, req *types.ValidatorSetRequest
 	}
 
 	return &types.ValidatorSetResponse{
-		Id:            vatset.GetId(),
-		CreatedHeight: vatset.GetCreatedHeight(),
-		Validators:    vals,
+		Id:              vatset.GetId(),
+		CreatedHeight:   vatset.GetCreatedHeight(),
+		ActivatedHeight: vatset.GetActivatedHeight(),
+		Validators:      vals,
 	}, nil
 }
