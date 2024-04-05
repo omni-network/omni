@@ -1,33 +1,19 @@
 import { json } from '@remix-run/node'
 import { useLoaderData } from '@remix-run/react'
 import React from 'react'
-import { XBlock, XMsg } from '~/graphql/graphql'
+import { XBlock } from '~/graphql/graphql'
 import { ColumnDef } from '@tanstack/react-table'
 import SimpleTable from '../shared/simpleTable'
-import { graphql } from '~/graphql'
-import { useQuery } from 'urql'
-import { GetBlockCount, GetBlocksInRange, xblockrange } from '../queries/block'
+import { GetBlockCount, GetBlocksInRange } from '../queries/block'
 
 export const loader = async () => {
-  console.log('loader')
-  let amt = (500).toString(16)
-  let offset = (0).toString(16)
-  const [{ data }] = useQuery({
-    query: xblockrange,
-    variables: {
-      from: amt,
-      to: offset,
-    },
-  })
-
-  return json(data)
+  return json<XBlock[]>(new Array())
 }
 
 export default function XBlockDataTable() {
   const d = useLoaderData<typeof loader>()
-  console.log(d)
 
-  let rows = GetBlocksInRange(1000, 0)
+  let rows = GetBlocksInRange(0, 1000)
   let count = GetBlockCount()
 
   const columns = React.useMemo<ColumnDef<XBlock>[]>(

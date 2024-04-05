@@ -2,12 +2,12 @@ import { useQuery } from 'urql'
 import { graphql } from '~/graphql'
 import { XBlock, XMsg } from '~/graphql/graphql'
 
-export function GetBlocksInRange(amount: number, offset: number): XBlock[] {
+export function GetBlocksInRange(from: number, to: number): XBlock[] {
   const [result] = useQuery({
     query: xblockrange,
     variables: {
-      from: '0x' + amount.toString(16),
-      to: '0x' + offset.toString(16),
+      from: '0x' + from.toString(16),
+      to: '0x' + to.toString(16),
     },
   })
   const { data, fetching, error } = result
