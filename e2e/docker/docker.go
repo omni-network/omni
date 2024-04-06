@@ -218,7 +218,7 @@ func CleanCmds(sudo bool, isLinux bool) []string {
 	return []string{
 		fmt.Sprintf("%s docker container ls -qa --filter label=e2e | xargs -r %v %s docker container rm -f",
 			perm, xargsR, perm),
-		fmt.Sprintf("%s docker network ls -q --filter label=e2e | xargs -r %v %s docker network rm",
+		fmt.Sprintf("%s docker network ls -q --filter label=e2e | xargs %v %s docker network rm",
 			perm, xargsR, perm),
 	}
 }
