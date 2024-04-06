@@ -44,7 +44,7 @@ type Provider struct {
 func (*Provider) Clean(ctx context.Context) error {
 	log.Info(ctx, "Removing docker containers and networks")
 
-	for _, cmd := range CleanCmds(false, runtime.GOOS == "linux") {
+	for _, cmd := range CleanCmds(false, runtime.GOOS == "linux" || runtime.GOOS == "windows") {
 		err := exec.Command(ctx, "bash", "-c", cmd)
 		if err != nil {
 			return errors.Wrap(err, "remove docker containers")
@@ -216,7 +216,7 @@ func CleanCmds(sudo bool, isLinux bool) []string {
 	}
 
 	return []string{
-		fmt.Sprintf("%s docker container ls -qa --filter label=e2e | xargs -r %v %s docker container rm -f",
+		fmt.Sprintf("%s docker container ls -qa --filter label=e2e | xargs %v %s docker container rm -f",
 			perm, xargsR, perm),
 		fmt.Sprintf("%s docker network ls -q --filter label=e2e | xargs %v %s docker network rm",
 			perm, xargsR, perm),
