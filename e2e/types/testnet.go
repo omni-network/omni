@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"net"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
@@ -38,8 +39,8 @@ func (t Testnet) AVSChain() (EVMChain, error) {
 	}
 
 	for _, c := range t.PublicChains {
-		if c.Chain.IsAVSTarget {
-			return c.Chain, nil
+		if c.chain.IsAVSTarget {
+			return c.chain, nil
 		}
 	}
 
@@ -109,6 +110,35 @@ type AnvilChain struct {
 
 // PublicChain represents a public chain in a omni network.
 type PublicChain struct {
-	Chain      EVMChain // For netconf
-	RPCAddress string   // For JSON-RPC queries from halo/relayer/e2e app.
+	chain        EVMChain      // For netconf
+	rpcAddresses []string      // For JSON-RPC queries from halo/relayer/e2e app.
+	next         *atomic.Int32 // For round-robin RPC address selection
+}
+
+func NewPublicChain(chain EVMChain, rpcAddresses []string) PublicChain {
+	return PublicChain{
+		chain:        chain,
+		rpcAddresses: rpcAddresses,
+		next:         new(atomic.Int32),
+	}
+}
+
+// Chain returns the EVM chain.
+func (c PublicChain) Chain() EVMChain {
+	return c.chain
+}
+
+// NextRPCAddress returns the next RPC address in the list.
+func (c PublicChain) NextRPCAddress() string {
+	i := c.next.Load()
+	defer func() {
+		c.next.Store(i + 1)
+	}()
+
+	l := len(c.rpcAddresses)
+	if l == 0 {
+		return ""
+	}
+
+	return strings.TrimSpace(c.rpcAddresses[int(i)%l])
 }

@@ -62,7 +62,7 @@ func deployPrivateCreate3(ctx context.Context, def Definition) error {
 
 func deployPublicCreate3(ctx context.Context, def Definition) error {
 	for _, c := range def.Testnet.PublicChains {
-		_, _, err := deployCreate3(ctx, def, c.Chain.ID)
+		_, _, err := deployCreate3(ctx, def, c.Chain().ID)
 		if err != nil {
 			return errors.Wrap(err, "deploy create3")
 		}
