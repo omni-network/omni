@@ -28,7 +28,7 @@ type sdkLogger struct {
 
 func newSDKLogger(ctx context.Context) sdkLogger {
 	return sdkLogger{
-		ctx: ctx,
+		ctx: log.WithSkip(ctx, 4), // Skip this logger.
 	}
 }
 
