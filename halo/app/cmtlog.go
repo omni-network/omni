@@ -41,7 +41,7 @@ func newCmtLogger(ctx context.Context, levelStr string) (cmtlog.Logger, error) {
 	}
 
 	return cmtLogger{
-		ctx:   ctx,
+		ctx:   log.WithSkip(ctx, 4), // Skip this logger.
 		level: level,
 	}, nil
 }

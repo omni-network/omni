@@ -13,6 +13,7 @@ import (
 )
 
 type attrsKey struct{}
+type skipKey struct{}
 
 // WithCtx returns a copy of the context with which the logging attributes are associated.
 // Usage:
@@ -70,9 +71,14 @@ func log(ctx context.Context, level slog.Level, msg string, attrs ...any) {
 		return
 	}
 
-	// skip [runtime.Callers, this function, this function's caller]
+	// Default skip [runtime.Callers, this function, this function's caller]
+	var skip = 3
+	if v, ok := ctx.Value(skipKey{}).(int); ok {
+		skip = v
+	}
+
 	var pcs [1]uintptr
-	runtime.Callers(3, pcs[:])
+	runtime.Callers(skip, pcs[:])
 
 	r := slog.NewRecord(time.Now(), level, msg, pcs[0])
 	r.Add(attrs...)
@@ -84,24 +90,29 @@ func log(ctx context.Context, level slog.Level, msg string, attrs ...any) {
 // stack trace but without the error message. It avoids duplication of the error message
 // since it is used as the main log message in Error above.
 func errAttrs(err error) []any {
-	type structErr interface {
+	type stackTracer interface {
 		StackTrace() pkgerrors.StackTrace
+	}
+
+	type omniErr interface {
 		Attrs() []any
 	}
 
 	var attrs []any
-	var stackTrace pkgerrors.StackTrace
+	var stack pkgerrors.StackTrace
 
 	// Go up the cause chain (from the outermost error to the innermost error)
 	for {
-		if serr, ok := err.(structErr); ok { //nolint:errorlint // Using cast instead of errors.As since we do custom logic
-			// Use the first encountered structErr's attributes.
-			if len(attrs) == 0 {
+		// Use the first encountered omniErr's attributes.
+		if len(attrs) == 0 {
+			if serr, ok := err.(omniErr); ok { //nolint:errorlint // Using cast instead of errors.As since we do custom logic
 				attrs = serr.Attrs()
 			}
+		}
 
-			// Use the last encountered structErr's stack trace.
-			stackTrace = serr.StackTrace()
+		// Use the last encountered stack trace.
+		if serr, ok := err.(stackTracer); ok { //nolint:errorlint // Using cast instead of errors.As since we do custom logic
+			stack = serr.StackTrace()
 		}
 
 		if cause := pkgerrors.Unwrap(err); cause != nil {
@@ -110,8 +121,9 @@ func errAttrs(err error) []any {
 		}
 
 		// Root cause reached, break the loop.
-		if len(stackTrace) > 0 {
-			attrs = append(attrs, slog.Any("stacktrace", stackTrace))
+
+		if len(stack) > 0 {
+			attrs = append(attrs, slog.Any("stacktrace", stack))
 		}
 
 		return attrs
@@ -124,4 +136,10 @@ func mergeAttrs(ctx context.Context, attrs []any) []any {
 	resp = append(resp, attrs...)
 
 	return resp
+}
+
+// WithSkip returns a copy of the context with the skip value set.
+// This is used to control the number of stack frames to skip when `source` is calculated.
+func WithSkip(ctx context.Context, skip int) context.Context {
+	return context.WithValue(ctx, skipKey{}, skip)
 }
