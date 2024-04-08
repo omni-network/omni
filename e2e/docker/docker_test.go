@@ -26,19 +26,28 @@ func TestComposeTemplate(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name     string
-		tag      string
-		explorer bool
+		name       string
+		tag        string
+		explorer   bool
+		isEmpheral bool
 	}{
 		{
-			name:     "main_explorer",
-			tag:      "main",
-			explorer: true,
+			name:       "main_explorer",
+			tag:        "main",
+			explorer:   true,
+			isEmpheral: false,
 		},
 		{
-			name:     "commit_no_explorer",
-			tag:      "7d1ae53",
-			explorer: false,
+			name:       "commit_no_explorer",
+			tag:        "7d1ae53",
+			explorer:   false,
+			isEmpheral: false,
+		},
+		{
+			name:       "empheral_network",
+			tag:        "main",
+			explorer:   true,
+			isEmpheral: true,
 		},
 	}
 
@@ -91,6 +100,11 @@ func TestComposeTemplate(t *testing.T) {
 					},
 				},
 				Explorer: test.explorer,
+			}
+
+			// If the network is empheral, we use the devnet configuration.
+			if test.isEmpheral {
+				testnet.Network = netconf.Devnet
 			}
 
 			p := docker.NewProvider(testnet, types.InfrastructureData{}, test.tag, "fake_connection")

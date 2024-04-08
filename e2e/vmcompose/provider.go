@@ -89,7 +89,7 @@ func (p *Provider) Setup() error {
 			Prometheus:     p.Testnet.Prometheus,
 			OmniTag:        p.omniTag,
 			Explorer:       p.Testnet.Explorer && (services["explorer_ui"] || services["explorer_graphql"] || services["explorer_indexer"]),
-			ExplorerMockDB: p.Testnet.ExplorerMockDB && services["explorer_mock_db"],
+			ExplorerMockDB: p.Testnet.Network.IsEphemeral() && services["explorer_mock_db"],
 			ExplorerDBConn: p.ExplorerDBConn,
 		}
 		compose, err := docker.GenerateComposeFile(def)
