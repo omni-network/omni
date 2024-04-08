@@ -13,6 +13,7 @@ import (
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/lib/xchain"
 
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
@@ -128,7 +129,7 @@ func setupSimnet(t *testing.T) haloapp.Config {
 		Network: netconf.Simnet,
 		Cosmos:  true,
 	})
-	require.NoError(t, err)
+	tutil.RequireNoError(t, err)
 
 	// CometBFT doesn't shutdown cleanly. It leaves goroutines running that write to disk.
 	// The test sometimes fails with: TempDir RemoveAll cleanup: unlinkat ... directory not empty

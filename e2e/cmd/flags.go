@@ -11,11 +11,12 @@ import (
 )
 
 func bindDefFlags(flags *pflag.FlagSet, cfg *app.DefinitionConfig) {
+	var void string
 	flags.StringVarP(&cfg.ManifestFile, "manifest-file", "f", cfg.ManifestFile, "path to manifest file")
 	flags.StringVar(&cfg.InfraProvider, "infra", cfg.InfraProvider, "infrastructure provider: docker, vmcompose")
 	flags.StringVar(&cfg.InfraDataFile, "infra-file", cfg.InfraDataFile, "infrastructure data file (not required for docker provider)")
 	flags.StringVar(&cfg.DeployKeyFile, "deploy-key", cfg.DeployKeyFile, "path to deploy private key file")
-	flags.StringVar(&cfg.RelayerKeyFile, "relayer-key", cfg.RelayerKeyFile, "path to relayer private key file")
+	flags.StringVar(&void, "relayer-key", "", "DEPRECATED. Not used") // TODO(corver): Remove once ops repo updated.
 	flags.StringVar(&cfg.FireAPIKey, "fireblocks-api-key", cfg.FireAPIKey, "FireBlocks api key")
 	flags.StringVar(&cfg.FireKeyPath, "fireblocks-key-path", cfg.FireKeyPath, "FireBlocks RSA private key path")
 	flags.StringVar(&cfg.OmniImgTag, "omni-image-tag", cfg.OmniImgTag, "Omni docker images tag (halo, relayer). Defaults to working dir git commit.")
@@ -44,9 +45,9 @@ func bindCreate3DeployFlags(flags *pflag.FlagSet, cfg *app.Create3DeployConfig) 
 }
 
 func bindKeyCreateFlags(cmd *cobra.Command, cfg *key.UploadConfig) {
-	cmd.Flags().StringVar(&cfg.NodeName, "node", cfg.NodeName, "node name")
-	cmd.Flags().StringVar((*string)(&cfg.Type), "type", string(cfg.Type), "key type: validator, p2p_execution, p2p_consensus")
+	cmd.Flags().StringVar(&cfg.Name, "name", cfg.Name, "key name: either node name or eoa account type")
+	cmd.Flags().StringVar((*string)(&cfg.Type), "type", string(cfg.Type), "key type: validator, p2p_execution, p2p_consensus, eoa")
 
-	_ = cmd.MarkFlagRequired("node")
+	_ = cmd.MarkFlagRequired("name")
 	_ = cmd.MarkFlagRequired("type")
 }

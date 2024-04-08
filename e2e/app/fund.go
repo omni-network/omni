@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/big"
 
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
@@ -42,6 +43,8 @@ func accountsToFund(network netconf.ID) []common.Address {
 			contracts.StagingProxyAdminOwner(),
 			contracts.StagingPortalAdmin(),
 			contracts.StagingAVSAdmin(),
+			eoa.MustAddress(netconf.Staging, eoa.TypeRelayer),
+			eoa.MustAddress(netconf.Staging, eoa.TypeMonitor),
 		}
 	case netconf.Devnet:
 		return []common.Address{
@@ -51,6 +54,8 @@ func accountsToFund(network netconf.ID) []common.Address {
 			contracts.DevnetProxyAdminOwner(),
 			contracts.DevnetPortalAdmin(),
 			contracts.DevnetAVSAdmin(),
+			eoa.MustAddress(netconf.Devnet, eoa.TypeRelayer),
+			eoa.MustAddress(netconf.Devnet, eoa.TypeMonitor),
 		}
 	default:
 		return []common.Address{}

@@ -13,7 +13,6 @@ import (
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 
@@ -87,13 +86,12 @@ func (t Testnet) HasOmniEVM() bool {
 
 // EVMChain represents a EVM chain in a omni network.
 type EVMChain struct {
-	Name               string // Chain Nam.
-	ID                 uint64 // Chain ID
-	IsPublic           bool
-	IsAVSTarget        bool
-	BlockPeriod        time.Duration
-	FinalizationStrat  netconf.FinalizationStrat
-	AVSContractAddress common.Address
+	Name              string // Chain Name
+	ID                uint64 // Chain ID
+	IsPublic          bool
+	IsAVSTarget       bool
+	BlockPeriod       time.Duration
+	FinalizationStrat netconf.FinalizationStrat
 }
 
 // OmniEVM represents a omni evm instance in a omni network. Similar to e2e.Node for halo instances.

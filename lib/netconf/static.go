@@ -42,27 +42,16 @@ func (s Static) OmniConsensusChainIDUint64() uint64 {
 	return consensusIDOffset + s.OmniExecutionChainID
 }
 
-// PortalDeployments returns the portal deployment for the given chainID.
+// PortalDeployment returns the portal deployment for the given chainID.
 // If there is none, it returns an empty deployment.
-func (Static) PortalDeployment(chainID uint64) Deployment {
-	for _, d := range statics[Testnet].Portals {
+func (s Static) PortalDeployment(chainID uint64) (Deployment, bool) {
+	for _, d := range s.Portals {
 		if d.ChainID == chainID {
-			return d
+			return d, true
 		}
 	}
 
-	return Deployment{}
-}
-
-// HasPortalDeployment returns true if there is a portal deployment for the given chainID.
-func (Static) HasPortalDeployment(chainID uint64) bool {
-	for _, d := range statics[Testnet].Portals {
-		if d.ChainID == chainID {
-			return true
-		}
-	}
-
-	return false
+	return Deployment{}, false
 }
 
 // Use random runid for version in ephemeral networks.

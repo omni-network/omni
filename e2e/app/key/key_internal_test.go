@@ -10,10 +10,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func DeleteSecretForT(ctx context.Context, t *testing.T, network netconf.ID, node string, typ Type, addr string) {
+func DeleteSecretForT(ctx context.Context, t *testing.T, network netconf.ID, name string, typ Type, addr string) {
 	t.Helper()
-	name := secretName(network, node, typ, addr)
+	secret := secretName(network, name, typ, addr)
 
-	out, err := exec.CommandContext(ctx, "gcloud", "secrets", "delete", name, "--quiet").CombinedOutput()
+	out, err := exec.CommandContext(ctx, "gcloud", "secrets", "delete", secret, "--quiet").CombinedOutput()
 	require.NoError(t, err, string(out))
 }
