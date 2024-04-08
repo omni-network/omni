@@ -25,7 +25,7 @@ jobs:
       - name: Set GIT_SHA7 env var (windows)
         run: |
           $GIT_SHA7 = git rev-parse --short=7 HEAD
-          Add-Content -Path $env:GITHUB_ENV -Value ("GIT_SHA7=$GIT_SHA7")
+          Add-Content -Path $env:GITHUB_ENV -Value ("GIT_SHA7=main")
 
       - name: Build halo image
         env:
