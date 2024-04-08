@@ -70,6 +70,15 @@ func (Static) HasPortalDeployment(chainID uint64) bool {
 //nolint:gochecknoglobals // Static ID
 var runid = uuid.New().String()
 
+// Address matches lib/contracts.TestnetPortal() and lib/contracts.TestnetAVS().
+// We do not import to avoid cylic dependencies.
+//
+//nolint:gochecknoglobals // Static addresses
+var (
+	testnetPortal = common.HexToAddress("0x71d510f4dc4e7E7716D03209c603C76F4398cF53")
+	testnetAVS    = common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
+)
+
 //nolint:gochecknoglobals // Static mappings.
 var statics = map[ID]Static{
 	Simnet: {
@@ -86,15 +95,23 @@ var statics = map[ID]Static{
 	},
 	Testnet: {
 		Version:              "v0.0.1",
-		AVSContractAddress:   common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92"),
+		AVSContractAddress:   testnetAVS,
 		OmniExecutionChainID: chainids.OmniTestnet,
 		Portals: []Deployment{
 			{
-				ChainID: chainids.Holesky,
-				// Address matches lib/contracts.TestnetPortal()
-				// We do not import to avoid cylic dependencies.
-				Address:      common.HexToAddress("0x71d510f4dc4e7E7716D03209c603C76F4398cF53"),
+				ChainID:      chainids.Holesky,
+				Address:      testnetPortal,
 				DeployHeight: 1280141,
+			},
+			{
+				ChainID:      chainids.OpSepolia,
+				Address:      testnetPortal,
+				DeployHeight: 10401431,
+			},
+			{
+				ChainID:      chainids.ArbSepolia,
+				Address:      testnetPortal,
+				DeployHeight: 31688713,
 			},
 		},
 	},
