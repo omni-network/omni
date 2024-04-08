@@ -3,6 +3,7 @@ package contracts
 import (
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/create3"
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -31,11 +32,11 @@ const (
 
 //nolint:gochecknoglobals // Static addresses
 var (
-	// ProxyAdminOwner.
-	mainnetProxyAdminOwner = addr("0x0")
-	testnetProxyAdminOwner = addr(fbTestnetAdmin)
-	stagingProxyAdminOwner = addr(fbStagingAdmin)
-	devnetProxyAdminOwner  = anvil.DevAccount2()
+	// Admin - used as contract owner.
+	mainnetAdmin = addr("0x0")
+	testnetAdmin = addr(fbTestnetAdmin)
+	stagingAdmin = addr(fbStagingAdmin)
+	devnetAdmin  = anvil.DevAccount2()
 
 	// Create3 Deployer - addrress that can deploy the create3 factory.
 	mainnetCreate3Deployer = addr("0x0")
@@ -48,38 +49,42 @@ var (
 	testnetDeployer = addr(fbTestnetDeployer)
 	stagingDeployer = addr(fbStagingDeployer)
 	devnetDeployer  = anvil.DevAccount1()
-
-	// Portal Admin.
-	mainnetPortalAdmin = addr("0x0")
-	testnetPortalAdmin = addr(fbTestnetAdmin)
-	stagingPortalAdmin = addr(fbStagingAdmin)
-	devnetPortalAdmin  = anvil.DevAccount2()
-
-	// AVS Admin.
-	mainnetAVSAdmin = addr("0x0")
-	testnetAVSAdmin = addr(fbTestnetAdmin)
-	stagingAVSAdmin = addr(fbStagingAdmin)
-	devnetAVSAdmin  = anvil.DevAccount2()
 )
+
+// Admin returns the address of the admin for the given network.
+func Admin(network netconf.ID) (common.Address, error) {
+	switch network {
+	case netconf.Mainnet:
+		return mainnetAdmin, nil
+	case netconf.Testnet:
+		return testnetAdmin, nil
+	case netconf.Staging:
+		return stagingAdmin, nil
+	case netconf.Devnet:
+		return devnetAdmin, nil
+	default:
+		return common.Address{}, errors.New("unknown network", "network", network)
+	}
+}
 
 //
 // ProxyAdminOwner.
 //
 
 func MainnetProxyAdminOwner() common.Address {
-	return mainnetProxyAdminOwner
+	return mainnetAdmin
 }
 
 func TestnetProxyAdminOwner() common.Address {
-	return testnetProxyAdminOwner
+	return testnetAdmin
 }
 
 func StagingProxyAdminOwner() common.Address {
-	return stagingProxyAdminOwner
+	return stagingAdmin
 }
 
 func DevnetProxyAdminOwner() common.Address {
-	return devnetProxyAdminOwner
+	return devnetAdmin
 }
 
 //
@@ -127,19 +132,19 @@ func DevnetDeployer() common.Address {
 //
 
 func MainnetPortalAdmin() common.Address {
-	return mainnetPortalAdmin
+	return mainnetAdmin
 }
 
 func TestnetPortalAdmin() common.Address {
-	return testnetPortalAdmin
+	return testnetAdmin
 }
 
 func StagingPortalAdmin() common.Address {
-	return stagingPortalAdmin
+	return stagingAdmin
 }
 
 func DevnetPortalAdmin() common.Address {
-	return devnetPortalAdmin
+	return devnetAdmin
 }
 
 //
@@ -147,19 +152,19 @@ func DevnetPortalAdmin() common.Address {
 //
 
 func MainnetAVSAdmin() common.Address {
-	return mainnetAVSAdmin
+	return mainnetAdmin
 }
 
 func TestnetAVSAdmin() common.Address {
-	return testnetAVSAdmin
+	return testnetAdmin
 }
 
 func StagingAVSAdmin() common.Address {
-	return stagingAVSAdmin
+	return stagingAdmin
 }
 
 func DevnetAVSAdmin() common.Address {
-	return devnetAVSAdmin
+	return devnetAdmin
 }
 
 //
