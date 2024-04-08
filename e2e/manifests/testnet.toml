@@ -1,6 +1,6 @@
 network = "testnet"
 
-public_chains = ["holesky"]
+public_chains = ["holesky","op_sepolia","arb_sepolia"]
 avs_target = "holesky"
 
 multi_omni_evms = true
