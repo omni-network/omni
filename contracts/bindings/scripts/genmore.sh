@@ -18,6 +18,11 @@ gen_binding() {
   # convert to lower case to respect golang package naming conventions
   name_lower=$(echo ${name} | tr '[:upper:]' '[:lower:]')
 
+
+  # gen storage layout json
+  storage_layout_file=${DIR}/${name_lower}_storage_layout.json
+  forge inspect ${contract} storageLayout > ${storage_layout_file}
+
   # abigen does not generate the deployedBytecode, so we add it manually to {name_lower}_more.go
 
   deployed_bytecode=$(forge inspect ${contract} deployedBytecode)
@@ -26,9 +31,18 @@ gen_binding() {
   cat <<EOF > ${file}
 package ${PKG}
 
+import (
+    _ "embed"
+)
+
 const (
     ${name}DeployedBytecode = "${deployed_bytecode}"
 )
+
+//go:embed ${name_lower}_storage_layout.json
+var ${name_lower}StorageLayoutJSON []byte
+
+var ${name}StorageLayout = mustGetStorageLayout(${name_lower}StorageLayoutJSON)
 EOF
 
   # gofmt expects 600 permissions
