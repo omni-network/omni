@@ -11,6 +11,19 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+type addressType string
+
+const (
+	deployer        addressType = "deployer"
+	create3Deployer addressType = "create3-deployer"
+	devFireblocks   addressType = "dev-devFireblocks"
+)
+
+type accountType struct {
+	addr        common.Address
+	addressType addressType
+}
+
 // Monitor starts monitoring account balances.
 func Monitor(ctx context.Context, network netconf.Network) error {
 	rpcClientPerChain := make(map[uint64]ethclient.Client)
@@ -25,15 +38,15 @@ func Monitor(ctx context.Context, network netconf.Network) error {
 		rpcClientPerChain[chain.ID] = c
 	}
 
-	addresses := map[netconf.ID][]common.Address{
+	addresses := map[netconf.ID][]accountType{
 		netconf.Testnet: {
-			contracts.TestnetCreate3Deployer(),
-			contracts.TestnetDeployer(),
+			{contracts.TestnetCreate3Deployer(), create3Deployer},
+			{contracts.TestnetDeployer(), deployer},
 		},
 		netconf.Staging: {
-			contracts.StagingCreate3Deployer(),
-			contracts.StagingDeployer(),
-			common.HexToAddress("0x7a6cF389082dc698285474976d7C75CAdE08ab7e"), // fb: dev
+			{contracts.StagingCreate3Deployer(), create3Deployer},
+			{contracts.StagingDeployer(), deployer},
+			{common.HexToAddress("0x7a6cF389082dc698285474976d7C75CAdE08ab7e"), devFireblocks}, // fb: dev
 		},
 	}
 
