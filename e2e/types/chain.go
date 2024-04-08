@@ -23,7 +23,7 @@ var (
 		ID:                 chainids.Holesky,
 		IsPublic:           true,
 		BlockPeriod:        15 * time.Second,
-		FinalizationStrat:  netconf.StratLatest,
+		FinalizationStrat:  netconf.StratFinalized,
 		AVSContractAddress: contracts.TestnetAVS(),
 	}
 
