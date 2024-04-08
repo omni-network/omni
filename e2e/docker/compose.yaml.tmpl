@@ -149,7 +149,7 @@ services:
       - ./explorer_indexer:/explorer_indexer
     networks:
       {{ $.NetworkName }}:
-        {{ if $.Network }}ipv4_address: 10.186.73.203{{ end }}
+        {{ if $.Network }}ipv4_address: 10.186.73.300{{ end }}
 {{ end }}
 
 {{- if .Explorer }}
@@ -165,7 +165,23 @@ services:
       - ./explorer_graphql:/explorer_graphql
     networks:
       {{ $.NetworkName }}:
-        {{ if $.Network }}ipv4_address: 10.186.73.204{{ end }}
+        {{ if $.Network }}ipv4_address: 10.186.73.301{{ end }}
+    ports:
+        - 21335:8080
+{{ end }}
+
+{{- if .Explorer }}
+  explorer_ui:
+    labels:
+      e2e: true
+    container_name: explorer_ui
+    image: omniops/explorer-ui:{{or .OmniTag "main"}}
+    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    volumes:
+      - ./explorer_ui:/explorer_ui
+    networks:
+      {{ $.NetworkName }}:
+        {{ if $.Network }}ipv4_address: 10.186.73.302{{ end }}
     ports:
         - 21335:8080
 {{ end }}
