@@ -16,7 +16,7 @@ type accountType string
 const (
 	deployer        accountType = "deployer"
 	create3Deployer accountType = "create3-deployer"
-	devFireblocks   accountType = "dev-devFireblocks"
+	devFireblocks   accountType = "dev-fireblocks"
 )
 
 type account struct {
