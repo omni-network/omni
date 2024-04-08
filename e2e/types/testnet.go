@@ -16,6 +16,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p/enode"
+
+	"math/rand/v2"
 )
 
 // Testnet wraps e2e.Testnet with additional omni-specific fields.
@@ -29,6 +31,25 @@ type Testnet struct {
 	Explorer       bool
 	ExplorerMockDB bool
 	ExplorerDBConn string
+}
+
+// RandomHaloAddr returns a random halo address for cprovider and cometBFT rpc clients.
+// It uses the internal IP address of a random node that isn't delayed or a seed.
+func (t Testnet) RandomHaloAddr() string {
+	var eligible []string
+	for _, node := range t.Nodes {
+		if node.StartAt != 0 || node.Mode == ModeSeed {
+			continue // Skip delayed nodes or seed nodes
+		}
+
+		eligible = append(eligible, node.AddressRPC())
+	}
+
+	if len(eligible) == 0 {
+		return ""
+	}
+
+	return eligible[rand.IntN(len(eligible))]
 }
 
 func (t Testnet) AVSChain() (EVMChain, error) {
