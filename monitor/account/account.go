@@ -11,17 +11,17 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type addressType string
+type accountType string
 
 const (
-	deployer        addressType = "deployer"
-	create3Deployer addressType = "create3-deployer"
-	devFireblocks   addressType = "dev-devFireblocks"
+	deployer        accountType = "deployer"
+	create3Deployer accountType = "create3-deployer"
+	devFireblocks   accountType = "dev-devFireblocks"
 )
 
-type accountType struct {
+type account struct {
 	addr        common.Address
-	addressType addressType
+	addressType accountType
 }
 
 // Monitor starts monitoring account balances.
@@ -38,7 +38,7 @@ func Monitor(ctx context.Context, network netconf.Network) error {
 		rpcClientPerChain[chain.ID] = c
 	}
 
-	addresses := map[netconf.ID][]accountType{
+	accounts := map[netconf.ID][]account{
 		netconf.Testnet: {
 			{contracts.TestnetCreate3Deployer(), create3Deployer},
 			{contracts.TestnetDeployer(), deployer},
@@ -50,7 +50,7 @@ func Monitor(ctx context.Context, network netconf.Network) error {
 		},
 	}
 
-	startMonitoring(ctx, network, addresses[network.ID], rpcClientPerChain)
+	startMonitoring(ctx, network, accounts[network.ID], rpcClientPerChain)
 
 	return nil
 }
