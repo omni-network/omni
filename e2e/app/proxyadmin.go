@@ -28,7 +28,7 @@ func deployPrivateProxyAdmin(ctx context.Context, def Definition) error {
 
 func deployPublicProxyAdmin(ctx context.Context, def Definition) error {
 	for _, c := range def.Testnet.PublicChains {
-		if err := deployProxyAdmin(ctx, def, c.Chain.ID); err != nil {
+		if err := deployProxyAdmin(ctx, def, c.Chain().ID); err != nil {
 			return errors.Wrap(err, "deploy proxy admin")
 		}
 	}

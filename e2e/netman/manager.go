@@ -99,8 +99,8 @@ func NewManager(testnet types.Testnet, backends ethbackend.Backends, relayerKeyF
 	}
 	// Add all public chains
 	for _, public := range testnet.PublicChains {
-		portals[public.Chain.ID] = Portal{
-			Chain: public.Chain,
+		portals[public.Chain().ID] = Portal{
+			Chain: public.Chain(),
 			// Public chain deploy height and address will be updated by DeployPublicPortals.
 		}
 	}

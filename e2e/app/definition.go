@@ -38,7 +38,7 @@ type DefinitionConfig struct {
 	RelayerKeyFile string
 	FireAPIKey     string
 	FireKeyPath    string
-	RPCOverrides   map[string]string
+	RPCOverrides   map[string]string // map[chainName]rpcURL1,rpcURL2,...
 
 	InfraDataFile string // Not required for docker provider
 	OmniImgTag    string // OmniImgTag is the docker image tag used for halo and relayer.
@@ -424,10 +424,7 @@ func publicChains(manifest types.Manifest, cfg DefinitionConfig) ([]types.Public
 			addr = types.PublicRPCByName(name)
 		}
 
-		publics = append(publics, types.PublicChain{
-			Chain:      chain,
-			RPCAddress: addr,
-		})
+		publics = append(publics, types.NewPublicChain(chain, strings.Split(addr, ",")))
 	}
 
 	return publics, nil
@@ -440,15 +437,15 @@ func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 	// Add all public chains
 	for _, public := range testnet.PublicChains {
 		pc := netconf.Chain{
-			ID:                public.Chain.ID,
-			Name:              public.Chain.Name,
-			RPCURL:            public.RPCAddress,
-			PortalAddress:     deployInfo[public.Chain].PortalAddress,
-			DeployHeight:      deployInfo[public.Chain].DeployHeight,
-			BlockPeriod:       public.Chain.BlockPeriod,
-			FinalizationStrat: public.Chain.FinalizationStrat,
-			IsEthereum:        public.Chain.IsAVSTarget,
-			AVSContractAddr:   public.Chain.AVSContractAddress,
+			ID:                public.Chain().ID,
+			Name:              public.Chain().Name,
+			RPCURL:            public.NextRPCAddress(),
+			PortalAddress:     deployInfo[public.Chain()].PortalAddress,
+			DeployHeight:      deployInfo[public.Chain()].DeployHeight,
+			BlockPeriod:       public.Chain().BlockPeriod,
+			FinalizationStrat: public.Chain().FinalizationStrat,
+			IsEthereum:        public.Chain().IsAVSTarget,
+			AVSContractAddr:   public.Chain().AVSContractAddress,
 		}
 
 		chains = append(chains, pc)
@@ -511,14 +508,14 @@ func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 	// Add all public chains
 	for _, public := range testnet.PublicChains {
 		chains = append(chains, netconf.Chain{
-			ID:                public.Chain.ID,
-			Name:              public.Chain.Name,
-			RPCURL:            public.RPCAddress,
-			PortalAddress:     deployInfo[public.Chain].PortalAddress,
-			DeployHeight:      deployInfo[public.Chain].DeployHeight,
-			BlockPeriod:       public.Chain.BlockPeriod,
-			FinalizationStrat: public.Chain.FinalizationStrat,
-			IsEthereum:        public.Chain.IsAVSTarget,
+			ID:                public.Chain().ID,
+			Name:              public.Chain().Name,
+			RPCURL:            public.NextRPCAddress(),
+			PortalAddress:     deployInfo[public.Chain()].PortalAddress,
+			DeployHeight:      deployInfo[public.Chain()].DeployHeight,
+			BlockPeriod:       public.Chain().BlockPeriod,
+			FinalizationStrat: public.Chain().FinalizationStrat,
+			IsEthereum:        public.Chain().IsAVSTarget,
 		})
 	}
 
