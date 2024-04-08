@@ -187,15 +187,6 @@ func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backe
 		return common.Address{}, nil, errors.Wrap(err, "pack init code")
 	}
 
-	// Suggest gas price - thise forces bindings to use legacy txns.
-	// Some chains (i.e. arbitrum) struggle with proper dynamic tx gas
-	// estimation for create3 deployments. Using legacy txns is a workaround.
-	gasPrice, err := backend.SuggestGasPrice(ctx)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "suggest gas price")
-	}
-	txOpts.GasPrice = gasPrice
-
 	tx, err := factory.Deploy(txOpts, salt, initCode)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "deploy proxy admin")
