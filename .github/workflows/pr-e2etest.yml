@@ -55,7 +55,7 @@ jobs:
 
       - name: Upload failed logs
         uses: actions/upload-artifact@v4
-        if: failure()
+        if: always()
         with:
           name: failed-logs
           path: e2e/failed-logs.txt
