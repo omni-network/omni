@@ -376,8 +376,7 @@ func writeRelayerConfig(def Definition, logCfg log.Config) error {
 	ralayCfg := relayapp.DefaultConfig()
 	ralayCfg.PrivateKey = privKeyFile
 	ralayCfg.NetworkFile = networkFile
-
-	ralayCfg.HaloURL = random(def.Testnet.Nodes).AddressRPC()
+	ralayCfg.HaloURL = def.Testnet.RandomHaloAddr()
 
 	if err := relayapp.WriteConfigTOML(ralayCfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write relayer config")
