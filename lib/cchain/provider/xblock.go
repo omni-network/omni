@@ -25,20 +25,6 @@ func (p Provider) XBlock(ctx context.Context, height uint64, latest bool) (xchai
 		return xchain.Block{}, false, nil
 	}
 
-	// Use the created height to fetch the header to use as the timestamp.
-	h := int64(resp.CreatedHeight)
-	if h == 0 {
-		// Can't fetch header for genesis, workaround is to use height 1 for now.
-		// This isn't critical, since timestamp is only used for display purposes.
-		h = 1
-	}
-	header, err := p.header(ctx, &h)
-	if err != nil {
-		return xchain.Block{}, false, errors.Wrap(err, "get header")
-	} else if header.Header == nil {
-		return xchain.Block{}, false, errors.New("created height header is nil")
-	}
-
 	chainID, err := p.chainID(ctx)
 	if err != nil {
 		return xchain.Block{}, false, errors.Wrap(err, "get chain ID")
@@ -69,7 +55,6 @@ func (p Provider) XBlock(ctx context.Context, height uint64, latest bool) (xchai
 			},
 			Data: data,
 		}},
-		Timestamp: header.Header.Time,
 	}, true, nil
 }
 
