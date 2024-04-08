@@ -191,10 +191,12 @@ func (b Backends) RPCClients() map[uint64]ethclient.Client {
 
 func newFireblocksTxMgr(ethCl ethclient.Client, chainName string, chainID uint64, blockPeriod time.Duration, from common.Address, fireCl fireblocks.Client) (txmgr.TxManager, error) {
 	// creates our new CLI config for our tx manager
+	defaults := txmgr.DefaultSenderFlagValues
+	defaults.NetworkTimeout = time.Minute * 5
 	cliConfig := txmgr.NewCLIConfig(
 		chainID,
 		blockPeriod/interval,
-		txmgr.DefaultSenderFlagValues,
+		defaults,
 	)
 
 	// get the config for our tx manager
