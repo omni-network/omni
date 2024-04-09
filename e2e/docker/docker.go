@@ -102,7 +102,7 @@ func (p *Provider) Setup() error {
 	return nil
 }
 
-func (*Provider) Upgrade(_ context.Context) error {
+func (*Provider) Upgrade(context.Context, types.UpgradeConfig) error {
 	return errors.New("upgrade not supported for docker provider")
 }
 
