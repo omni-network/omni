@@ -117,7 +117,7 @@ func (p *Provider) Setup() error {
 		}
 
 		hostname := vmIP // TODO(corver): Add hostnames to infra instances.
-		agentCfg = agent.ConfigForHost(agentCfg, hostname, halos, geths, services["relayer"], services["monitor"])
+		agentCfg = agent.ConfigForHost(agentCfg, hostname, halos, geths, services)
 		err = os.WriteFile(filepath.Join(p.Testnet.Dir, vmAgentFile(vmIP)), agentCfg, 0o644)
 		if err != nil {
 			return errors.Wrap(err, "write compose file")

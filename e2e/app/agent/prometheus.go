@@ -84,11 +84,6 @@ func genPromConfig(ctx context.Context, testnet types.Testnet, secrets Secrets, 
 		RemotePassword: secrets.Pass,
 		ScrapeConfigs: []promScrapConfig{
 			{
-				JobName:     "relayer",
-				MetricsPath: "/metrics",
-				targets:     []string{fmt.Sprintf("relayer:%d", promPort)},
-			},
-			{
 				JobName:     "halo",
 				MetricsPath: "/metrics",
 				targets:     nodeTargets,
@@ -99,9 +94,24 @@ func genPromConfig(ctx context.Context, testnet types.Testnet, secrets Secrets, 
 				targets:     evmTargets,
 			},
 			{
+				JobName:     "relayer",
+				MetricsPath: "/metrics",
+				targets:     []string{fmt.Sprintf("relayer:%d", promPort)},
+			},
+			{
 				JobName:     "monitor",
 				MetricsPath: "/metrics",
 				targets:     []string{fmt.Sprintf("monitor:%d", promPort)},
+			},
+			{
+				JobName:     "explorer_indexer",
+				MetricsPath: "/metrics",
+				targets:     []string{fmt.Sprintf("explorer_indexer:%d", promPort)},
+			},
+			{
+				JobName:     "explorer_graphql",
+				MetricsPath: "/metrics",
+				targets:     []string{fmt.Sprintf("explorer_graphql:%d", promPort)},
 			},
 		},
 	}
@@ -140,21 +150,19 @@ func (c promScrapConfig) Targets() string {
 
 // ConfigForHost returns a new prometheus agent config with the given host and halo targets.
 //
-//	It removes the relayer targets if not enabled.
+//	It removes the serviceX targets if not enabled.
 //	It replaces the halo targets with provided.
 //	It replaces the geth targets with provided.
 //	It replaces the host label.
-func ConfigForHost(bz []byte, newHost string, halos []string, geths []string, relayer bool, monitor bool) []byte {
-	if !relayer {
-		// Remove relayer target if not needed.
-		bz = regexp.MustCompile(`(?m)\[.*\] # relayer targets$`).
-			ReplaceAll(bz, []byte(`[] # relayer targets`))
-	}
+func ConfigForHost(bz []byte, newHost string, halos []string, geths []string, services map[string]bool) []byte {
+	for _, service := range []string{"relayer", "monitor", "explorer_indexer", "explorer_graphql"} {
+		if services[service] {
+			continue
+		}
 
-	if !monitor {
-		// Remove monitor target if not needed.
-		bz = regexp.MustCompile(`(?m)\[.*\] # monitor targets$`).
-			ReplaceAll(bz, []byte(`[] # monitor targets`))
+		// Remove service target if not needed.
+		bz = regexp.MustCompile(`(?m)\[.*\] # `+service+` targets$`).
+			ReplaceAll(bz, []byte(`[] # `+service+` targets`))
 	}
 
 	var haloTargets []string

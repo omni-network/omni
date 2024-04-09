@@ -20,11 +20,14 @@ const (
 type Config struct {
 	NetworkFile    string
 	ExplorerDBConn string
+	MonitoringAddr string
 }
 
 func DefaultConfig() Config {
 	return Config{
-		NetworkFile: defaultNetworkFile,
+		NetworkFile:    defaultNetworkFile,
+		ExplorerDBConn: "",
+		MonitoringAddr: ":26660",
 	}
 }
 
