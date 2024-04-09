@@ -84,7 +84,7 @@ func (p *Provider) Setup() error {
 		Prometheus:     p.testnet.Prometheus,
 		Monitor:        true,
 		Explorer:       p.testnet.Explorer,
-		ExplorerMockDB: p.testnet.ExplorerMockDB,
+		ExplorerMockDB: p.testnet.Network.IsEphemeral(),
 		ExplorerDBConn: p.explorerDBConn,
 		OmniTag:        p.omniTag,
 	}
@@ -102,7 +102,7 @@ func (p *Provider) Setup() error {
 	return nil
 }
 
-func (*Provider) Upgrade(_ context.Context) error {
+func (*Provider) Upgrade(context.Context, types.UpgradeConfig) error {
 	return errors.New("upgrade not supported for docker provider")
 }
 

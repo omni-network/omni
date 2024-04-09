@@ -35,91 +35,83 @@ type DeployConfig struct {
 
 // Deploy a new e2e network. It also starts all services in order to deploy private portals.
 // It also returns an optional deployed ping pong contract is enabled.
-func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (types.DeployInfos, *pingpong.XDapp, error) {
+func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XDapp, error) {
 	if err := Cleanup(ctx, def); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	if def.Testnet.OnlyMonitor {
-		return nil, nil, deployMonitorOnly(ctx, def, cfg)
+		return nil, deployMonitorOnly(ctx, def, cfg)
 	}
 
 	const genesisValSetID = uint64(1) // validator set IDs start at 1
 
 	genesisVals, err := toPortalValidators(def.Testnet.Validators)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	if err := deployPublicCreate3(ctx, def); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	if err := deployPublicProxyAdmin(ctx, def); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// Deploy public portals first so their addresses are available for setup.
 	if err := def.Netman().DeployPublicPortals(ctx, genesisValSetID, genesisVals); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	if err := Setup(ctx, def, cfg.AgentSecrets, cfg.testConfig, cfg.ExplorerDB); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	if err := StartInitial(ctx, def.Testnet.Testnet, def.Infra); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	if err := fundAccounts(ctx, def); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	if err := deployPrivateCreate3(ctx, def); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	if err := deployPrivateProxyAdmin(ctx, def); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	if err := def.Netman().DeployPrivatePortals(ctx, genesisValSetID, genesisVals); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	logRPCs(ctx, def)
 
-	deployInfo := make(types.DeployInfos)
-
-	if err := deployAVSWithExport(ctx, def, deployInfo); err != nil {
-		return nil, nil, err
-	}
-
-	for chain, info := range def.Netman().DeployInfo() {
-		deployInfo.Set(chain.ID, types.ContractPortal, info.PortalAddress, info.DeployHeight)
+	if err := deployAVS(ctx, def); err != nil {
+		return nil, err
 	}
 
 	if cfg.PingPongN == 0 {
-		return deployInfo, nil, nil
+		return nil, nil //nolint:nilnil // No ping pong, no XDapp to return.
 	}
 
 	pp, err := pingpong.Deploy(ctx, def.Netman(), def.Backends())
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "deploy pingpong")
+		return nil, errors.Wrap(err, "deploy pingpong")
 	}
 
 	err = pp.StartAllEdges(ctx, cfg.PingPongN)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "start all edges")
+		return nil, errors.Wrap(err, "start all edges")
 	}
-
-	pp.ExportDeployInfo(deployInfo)
 
 	if err := FundValidatorsForTesting(ctx, def); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return deployInfo, &pp, nil
+	return &pp, nil
 }
 
 // E2ETestConfig is the configuration required to run a full e2e test.
@@ -145,7 +137,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, secrets age
 		testConfig:   true,
 	}
 
-	deployInfo, pingpong, err := Deploy(ctx, def, depCfg)
+	pingpong, err := Deploy(ctx, def, depCfg)
 	if err != nil {
 		return err
 	}
@@ -212,7 +204,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, secrets age
 	}
 
 	// Start unit tests.
-	if err := Test(ctx, def, deployInfo, false); err != nil {
+	if err := Test(ctx, def, false); err != nil {
 		return err
 	}
 
@@ -231,12 +223,12 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, secrets age
 
 // Upgrade generates all local artifacts, but only copies the docker-compose file to the VMs.
 // It them calls docker-compose up.
-func Upgrade(ctx context.Context, def Definition, cfg DeployConfig) error {
+func Upgrade(ctx context.Context, def Definition, cfg DeployConfig, upgradeCfg types.UpgradeConfig) error {
 	if err := Setup(ctx, def, agent.Secrets{}, false, cfg.ExplorerDB); err != nil {
 		return err
 	}
 
-	return def.Infra.Upgrade(ctx)
+	return def.Infra.Upgrade(ctx, upgradeCfg)
 }
 
 // toPortalValidators returns the provided validator set as a lice of portal validators.
@@ -258,7 +250,7 @@ func toPortalValidators(validators map[*e2e.Node]int64) ([]bindings.Validator, e
 }
 
 func logRPCs(ctx context.Context, def Definition) {
-	network := externalNetwork(def.Testnet, def.Netman().DeployInfo())
+	network := externalNetwork(def)
 	for _, chain := range network.EVMChains() {
 		log.Info(ctx, "EVM Chain RPC available", "chain_id", chain.ID,
 			"chain_name", chain.Name, "url", chain.RPCURL)

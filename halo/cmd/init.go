@@ -21,6 +21,8 @@ import (
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/types"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/spf13/cobra"
 )
 
@@ -188,15 +190,18 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	if cmtos.FileExists(networkFile) {
 		log.Info(ctx, "Found network config", "path", networkFile)
 	} else if initCfg.Network == netconf.Simnet {
+		dummyAddr := common.HexToAddress("0x000000000000000000000000000000000000dead")
+
 		// Create a simnet (single binary with mocked clients).
 		network := netconf.Network{
 			ID: initCfg.Network,
 			Chains: []netconf.Chain{
 				{
-					ID:          initCfg.Network.Static().OmniExecutionChainID,
-					Name:        "omni_evm",
-					IsOmniEVM:   true,
-					BlockPeriod: time.Millisecond * 500, // Speed up block times for testing
+					ID:            initCfg.Network.Static().OmniExecutionChainID,
+					Name:          "omni_evm",
+					IsOmniEVM:     true,
+					BlockPeriod:   time.Millisecond * 500, // Speed up block times for testing
+					PortalAddress: dummyAddr,
 				},
 				{
 					ID:              initCfg.Network.Static().OmniConsensusChainIDUint64(),
@@ -204,18 +209,21 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 					IsOmniConsensus: true,
 					DeployHeight:    1,                      // Validator sets start at height 1, not 0.
 					BlockPeriod:     time.Millisecond * 500, // Speed up block times for testing
+					PortalAddress:   dummyAddr,
 				},
 				{
-					ID:         100, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
-					Name:       "chain_a",
-					IsOmniEVM:  false,
-					IsEthereum: false,
+					ID:            100, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
+					Name:          "chain_a",
+					IsOmniEVM:     false,
+					IsEthereum:    false,
+					PortalAddress: dummyAddr,
 				},
 				{
-					ID:         200, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
-					Name:       "chain_b",
-					IsOmniEVM:  false,
-					IsEthereum: false,
+					ID:            200, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
+					Name:          "chain_b",
+					IsOmniEVM:     false,
+					IsEthereum:    false,
+					PortalAddress: dummyAddr,
 				},
 			},
 		}

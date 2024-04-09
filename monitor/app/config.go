@@ -17,12 +17,14 @@ import (
 type Config struct {
 	NetworkFile    string
 	MonitoringAddr string
+	PrivateKey     string
 
 	LoadGen loadgen.Config
 }
 
 func DefaultConfig() Config {
 	return Config{
+		PrivateKey:     "monitor.key",
 		NetworkFile:    "network.json",
 		MonitoringAddr: ":26660",
 	}

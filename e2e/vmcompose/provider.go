@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -16,6 +17,8 @@ import (
 	"github.com/omni-network/omni/lib/log"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+
+	"golang.org/x/sync/errgroup"
 )
 
 const ProviderName = "vmcompose"
@@ -89,7 +92,7 @@ func (p *Provider) Setup() error {
 			Prometheus:     p.Testnet.Prometheus,
 			OmniTag:        p.omniTag,
 			Explorer:       p.Testnet.Explorer && (services["explorer_ui"] || services["explorer_graphql"] || services["explorer_indexer"]),
-			ExplorerMockDB: p.Testnet.ExplorerMockDB && services["explorer_mock_db"],
+			ExplorerMockDB: p.Testnet.Network.IsEphemeral() && services["explorer_mock_db"],
 			ExplorerDBConn: p.ExplorerDBConn,
 		}
 		compose, err := docker.GenerateComposeFile(def)
@@ -125,7 +128,7 @@ func (p *Provider) Setup() error {
 }
 
 // Upgrade copies some of the local e2e generated artifacts to the VMs and starts the docker-compose services.
-func (p *Provider) Upgrade(ctx context.Context) error {
+func (p *Provider) Upgrade(ctx context.Context, cfg types.UpgradeConfig) error {
 	log.Info(ctx, "Upgrading docker-compose on VMs", "image", p.Testnet.UpgradeVersion)
 
 	var filePaths []string
@@ -133,68 +136,114 @@ func (p *Provider) Upgrade(ctx context.Context) error {
 		filePaths = append(filePaths, filepath.Join(p.Testnet.Dir, dir, file))
 	}
 
-	// TODO(corver): Also upgrade long-lived keys if changed
-	// - validator: ensure privval_state.json and voter_state.json doesn't complain
-
 	// Include halo config
 	for _, node := range p.Testnet.Nodes {
 		addFile(node.Name, "config/halo.toml")
 		addFile(node.Name, "config/config.toml")
 		addFile(node.Name, "config/network.json")
 		addFile(node.Name, "config/jwtsecret")
+		addFile(node.Name, "config/priv_validator_key.json")
+		addFile(node.Name, "config/node_key.json")
 	}
 
 	// Include geth config
 	for _, omniEVM := range p.Testnet.OmniEVMs {
 		addFile(omniEVM.InstanceName, "config.toml")
 		addFile(omniEVM.InstanceName, "geth/jwtsecret")
+		addFile(omniEVM.InstanceName, "geth/nodekey")
 	}
 
 	// Also relayer and monitor
 	addFile("relayer", "relayer.toml")
 	addFile("relayer", "network.json")
+	addFile("relayer", "privatekey")
 	addFile("monitor", "monitor.toml")
 	addFile("monitor", "network.json")
+	addFile("monitor", "privatekey")
+
 	// TODO(corver): Add explorer stuff
 
 	addFile("prometheus", "prometheus.yml")
 
+	// Do initial sequential ssh to each VM, ensure we can connect.
 	for vmName, instance := range p.Data.VMs {
-		log.Debug(ctx, "Upgrading docker-compose", "vm", vmName)
-
-		for _, filePath := range filePaths {
-			if err := copyFileToVM(ctx, vmName, filePath); err != nil {
-				return errors.Wrap(err, "copy file", "vm", vmName, "file", filePath)
-			}
+		if !matchAny(cfg, p.Data.ServicesByInstance(instance)) {
+			log.Debug(ctx, "Skipping vm upgrade, no matching services", "vm", vmName, "regexp", cfg.ServiceRegexp)
+			continue
 		}
 
-		composeFile := vmComposeFile(instance.IPAddress.String())
-		if err := copyFileToVM(ctx, vmName, filepath.Join(p.Testnet.Dir, composeFile)); err != nil {
-			return errors.Wrap(err, "copy compose", "vm", vmName)
-		}
-
-		// Figure out whether we need to call "docker compose down" before "docker compose up"
-		var maybeDown string
-		if services := p.Data.ServicesByInstance(instance); containsEVM(services) {
-			if containsAnvil(services) {
-				return errors.New("cannot upgrade VM with both omni_evm and anvil containers since omni_evm needs downing and anvil cannot be restarted", "vm", vmName)
-			}
-			maybeDown = "sudo docker compose down && "
-		}
-
-		startCmd := fmt.Sprintf("cd /omni && "+
-			"sudo mv %s %s/docker-compose.yaml && "+
-			"cd %s && "+
-			maybeDown+
-			"sudo docker compose up -d",
-			composeFile, p.Testnet.Name, p.Testnet.Name)
-
-		if err := execOnVM(ctx, vmName, startCmd); err != nil {
-			return errors.Wrap(err, "compose up", "vm", vmName)
+		if err := execOnVM(ctx, vmName, "ls"); err != nil {
+			return errors.Wrap(err, "test exec on vm", "vm", vmName)
 		}
 	}
 
+	// Then upgrade VMs in parallel
+	eg, ctx := errgroup.WithContext(ctx)
+	for vmName, instance := range p.Data.VMs {
+		if !matchAny(cfg, p.Data.ServicesByInstance(instance)) {
+			continue
+		}
+
+		eg.Go(func() error {
+			log.Debug(ctx, "Upgrading docker-compose", "vm", vmName)
+
+			for _, filePath := range filePaths {
+				if err := copyFileToVM(ctx, vmName, filePath); err != nil {
+					return errors.Wrap(err, "copy file", "vm", vmName, "file", filePath)
+				}
+			}
+
+			composeFile := vmComposeFile(instance.IPAddress.String())
+			if err := copyFileToVM(ctx, vmName, filepath.Join(p.Testnet.Dir, composeFile)); err != nil {
+				return errors.Wrap(err, "copy compose", "vm", vmName)
+			}
+
+			// Figure out whether we need to call "docker compose down" before "docker compose up"
+			var maybeDown string
+			if services := p.Data.ServicesByInstance(instance); containsEVM(services) {
+				if containsAnvil(services) {
+					return errors.New("cannot upgrade VM with both omni_evm and anvil containers since omni_evm needs downing and anvil cannot be restarted", "vm", vmName)
+				}
+				maybeDown = "sudo docker compose down && "
+			}
+
+			startCmd := fmt.Sprintf("cd /omni && "+
+				"sudo mv %s %s/docker-compose.yaml && "+
+				"cd %s && "+
+				maybeDown+
+				"sudo docker compose up -d",
+				composeFile, p.Testnet.Name, p.Testnet.Name)
+
+			if err := execOnVM(ctx, vmName, startCmd); err != nil {
+				return errors.Wrap(err, "compose up", "vm", vmName)
+			}
+
+			return nil
+		})
+	}
+
+	if err := eg.Wait(); err != nil {
+		return errors.Wrap(err, "wait errgroup")
+	}
+
 	return nil
+}
+
+// matchAny returns true if the pattern matches any of the services in the services map.
+// An empty pattern returns true, matching anything.
+func matchAny(cfg types.UpgradeConfig, services map[string]bool) bool {
+	if cfg.ServiceRegexp == "" {
+		return true
+	}
+
+	for service := range services {
+		matched, _ := regexp.MatchString(cfg.ServiceRegexp, service)
+		if matched {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (p *Provider) StartNodes(ctx context.Context, _ ...*e2e.Node) error {

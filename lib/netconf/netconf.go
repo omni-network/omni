@@ -177,6 +177,15 @@ func Load(path string) (Network, error) {
 
 // Save saves the network configuration to the given path.
 func Save(network Network, path string) error {
+	for _, chain := range network.Chains {
+		if chain.IsOmniConsensus {
+			continue
+		}
+		if chain.PortalAddress == (common.Address{}) {
+			return errors.New("empty portal address", "chain", chain.Name)
+		}
+	}
+
 	bz, err := json.MarshalIndent(network, "", "  ")
 	if err != nil {
 		return errors.Wrap(err, "marshal network config file")
@@ -194,13 +203,13 @@ type chainJSON struct {
 	Name              string            `json:"name"`
 	RPCURL            string            `json:"rpcurl"`
 	AuthRPCURL        string            `json:"auth_rpcurl,omitempty"`
-	PortalAddress     string            `json:"portal_address,omitempty"`
+	PortalAddress     string            `json:"portal_address"`
 	DeployHeight      uint64            `json:"deploy_height"`
 	IsOmniEVM         bool              `json:"is_omni_evm,omitempty"`
 	IsOmniConsensus   bool              `json:"is_omni_consensus,omitempty"`
 	IsEthereum        bool              `json:"is_ethereum,omitempty"`
 	BlockPeriod       string            `json:"block_period"`
-	FinalizationStrat FinalizationStrat `json:"finalization_start,omitempty"`
+	FinalizationStrat FinalizationStrat `json:"finalization_start"`
 	AVSContractAddr   string            `json:"avs_contract_address,omitempty"`
 }
 

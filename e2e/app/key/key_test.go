@@ -16,7 +16,7 @@ import (
 
 func TestKeys(t *testing.T) {
 	t.Parallel()
-	for _, typ := range []key.Type{key.Validator, key.P2PConsensus, key.P2PExecution} {
+	for _, typ := range []key.Type{key.Validator, key.P2PConsensus, key.P2PExecution, key.EOA} {
 		t.Run(typ.String(), func(t *testing.T) {
 			t.Parallel()
 
@@ -36,7 +36,7 @@ func TestKeys(t *testing.T) {
 
 			ecdsaKey, err := key1.ECDSA()
 			switch typ {
-			case key.Validator, key.P2PExecution:
+			case key.Validator, key.P2PExecution, key.EOA:
 				require.NoError(t, err)
 				addrC := crypto.PubkeyToAddress(ecdsaKey.PublicKey)
 				require.Equal(t, addrA, addrC.Hex())
@@ -63,24 +63,24 @@ func TestIntegration(t *testing.T) {
 
 			ctx := context.Background()
 			network := netconf.Simnet
-			node := "deleteme"
+			name := "deleteme"
 
 			k, err := key.UploadNew(ctx, key.UploadConfig{
-				Network:  network,
-				NodeName: node,
-				Type:     typ,
+				Network: network,
+				Name:    name,
+				Type:    typ,
 			})
 			require.NoError(t, err)
 
 			addr, err := k.Addr()
 			require.NoError(t, err)
 
-			k2, err := key.Download(ctx, network, node, typ, addr)
+			k2, err := key.Download(ctx, network, name, typ, addr)
 			tutil.RequireNoError(t, err)
 
 			require.True(t, k.Equals(k2.PrivKey))
 
-			key.DeleteSecretForT(ctx, t, network, node, typ, addr)
+			key.DeleteSecretForT(ctx, t, network, name, typ, addr)
 		})
 	}
 }

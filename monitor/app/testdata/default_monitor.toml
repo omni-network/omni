@@ -9,6 +9,9 @@ version = "v0.1.2"
 ###                         Monitor Options                         ###
 #######################################################################
 
+# Path to the ethereum private key used to sign avs omni sync transactions.
+private-key = "monitor.key"
+
 # The path to the Omni network configuration file.
 network-file = "network.json"
 

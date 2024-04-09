@@ -39,6 +39,10 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "start load generator")
 	}
 
+	if err := startAVSSync(ctx, cfg, network); err != nil {
+		return errors.Wrap(err, "start AVS sync")
+	}
+
 	select {
 	case <-ctx.Done():
 		log.Info(ctx, "Shutdown detected, stopping...")
