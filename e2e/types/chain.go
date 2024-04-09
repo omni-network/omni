@@ -29,7 +29,7 @@ var (
 		Name:              "arb_sepolia",
 		ID:                chainids.ArbSepolia,
 		IsPublic:          true,
-		BlockPeriod:       6 * time.Second,
+		BlockPeriod:       300 * time.Millisecond,
 		FinalizationStrat: netconf.StratFinalized,
 	}
 
@@ -37,7 +37,7 @@ var (
 		Name:              "op_sepolia",
 		ID:                chainids.OpSepolia,
 		IsPublic:          true,
-		BlockPeriod:       6 * time.Second,
+		BlockPeriod:       2 * time.Second,
 		FinalizationStrat: netconf.StratFinalized,
 	}
 )
