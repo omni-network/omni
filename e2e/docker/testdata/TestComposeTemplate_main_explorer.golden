@@ -140,6 +140,24 @@ services:
       test:
         ipv4_address: 10.186.73.201
 
+  prometheus:
+    labels:
+      e2e: true
+    container_name: prometheus
+    image: prom/prometheus:latest
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.console.libraries=/usr/share/prometheus/console_libraries
+      - --web.console.templates=/usr/share/prometheus/consoles
+      - --enable-feature=exemplar-storage
+      - --enable-feature=agent
+    restart: unless-stopped
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      test:
+        ipv4_address: 10.186.73.202
+
   explorer_indexer:
     labels:
       e2e: true
@@ -170,21 +188,17 @@ services:
     ports:
         - 21335:8080
 
-  prometheus:
+  explorer_ui:
     labels:
       e2e: true
-    container_name: prometheus
-    image: prom/prometheus:latest
-    command:
-      - --config.file=/etc/prometheus/prometheus.yml
-      - --web.console.libraries=/usr/share/prometheus/console_libraries
-      - --web.console.templates=/usr/share/prometheus/consoles
-      - --enable-feature=exemplar-storage
-      - --enable-feature=agent
-    restart: unless-stopped
+    container_name: explorer_ui
+    image: omniops/explorer-ui:main
+    restart: unless-stopped # Restart on crash to mitigate startup race issues
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./explorer_ui:/explorer_ui
     networks:
       test:
-        ipv4_address: 10.186.73.202
+        ipv4_address: 10.186.73.205
+    ports:
+        - 57017:3000
 

@@ -242,6 +242,7 @@ func additionalServices(testnet types.Testnet) []string {
 	if testnet.Explorer {
 		resp = append(resp, "explorer_indexer")
 		resp = append(resp, "explorer_graphql")
+		resp = append(resp, "explorer_ui")
 	}
 
 	if testnet.ExplorerMockDB {
