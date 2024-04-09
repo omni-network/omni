@@ -203,7 +203,7 @@ services:
       {{ $.NetworkName }}:
         {{ if $.Network }}ipv4_address: 10.186.73.205{{ end }}
     ports:
-        - 21335:8080
+        - 57017:3000
 {{ end }}
 
 {{- if .ExplorerMockDB }}

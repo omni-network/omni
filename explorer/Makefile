@@ -5,10 +5,11 @@ gen-db: ## generates our ent orm schemas
 	make -C ./db gen
 
 build-ui: ## builds our ui docker image
-	@docker buildx build ./ui -t omniops/explorer-ui:${GITHUB_SHA::7} --platform linux/amd64,linux/arm64 --push
-	@docker buildx build ./ui -t omniops/explorer-ui:${GITHUB_BRANCHNAME} --platform linux/amd64,linux/arm64 --push
+	@make -C ./ui build-docker
 
 build: ## builds our docker images
+	@echo "building ui container"
+	@make -C ./ui build-docker
 	@echo "Building containers"
 	@make -C ../ build-docker
 
@@ -18,7 +19,7 @@ run-devnet: stop ## starts our devnet with the main tag for our docker container
 
 run-explorer: ## starts our explorer in production mode
 	@echo "Starting explorer"
-	@cd ./ui && pnpm run build && pnpm run start
+	@cd ./ui && pnpm i && pnpm run build && pnpm run start
 
 run: stop run-devnet ## Deploys e2e devnet1, copies network.json locally, and starts explorer docker compose
 

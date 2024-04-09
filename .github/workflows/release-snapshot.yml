@@ -25,12 +25,20 @@ jobs:
           args: release --snapshot --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Explorer UI to Dockerhub
+        uses: docker/build-push-action@v5
+        with:
+          context: "{{defaultContext}}:explorer/ui"
+          push: true
+          tags: omniops/explorer-ui:main, omniops/explorer-ui:${GITHUB_SHA::7}
+
       - name: Push Explorer Graphql to Dockerhub
         run: |
           docker push omniops/explorer-graphql:${GITHUB_SHA::7}
           docker push omniops/explorer-graphql:main
 
-      - name: Push Indexer to Dockerhub
+      - name: Push Explorer Indexer to Dockerhub
         run: |
           docker push omniops/explorer-indexer:${GITHUB_SHA::7}
           docker push omniops/explorer-indexer:main
