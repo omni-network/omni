@@ -224,7 +224,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, secrets age
 // Upgrade generates all local artifacts, but only copies the docker-compose file to the VMs.
 // It them calls docker-compose up.
 func Upgrade(ctx context.Context, def Definition, cfg DeployConfig, upgradeCfg types.UpgradeConfig) error {
-	if err := Setup(ctx, def, agent.Secrets{}, false, cfg.ExplorerDB); err != nil {
+	if err := Setup(ctx, def, cfg.AgentSecrets, false, cfg.ExplorerDB); err != nil {
 		return err
 	}
 

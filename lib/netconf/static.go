@@ -121,8 +121,3 @@ func ConsensusChainIDStr2Uint64(id string) (uint64, error) {
 
 	return resp, nil
 }
-
-// Version returns the version for the given network.
-func Version(network ID) string {
-	return statics[network].Version
-}

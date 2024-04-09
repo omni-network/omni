@@ -14,7 +14,7 @@ remote_write:
         regex: '(.+):(\d+)'
         target_label: container
         replacement: '${1}'
-{{end }}
+{{ end }}
 
 scrape_configs:
 {{- range .ScrapeConfigs }}

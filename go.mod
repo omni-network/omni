@@ -14,8 +14,8 @@ require (
 	cosmossdk.io/x/tx v0.13.1
 	entgo.io/ent v0.13.1
 	github.com/BurntSushi/toml v1.3.2
-	github.com/Layr-Labs/eigenlayer-cli v0.7.0
-	github.com/Layr-Labs/eigensdk-go v0.1.4-0.20240405211625-8a09b7da494c
+	github.com/Layr-Labs/eigenlayer-cli v0.7.2
+	github.com/Layr-Labs/eigensdk-go v0.1.5
 	github.com/bufbuild/buf v1.30.1
 	github.com/charmbracelet/log v0.4.0
 	github.com/cometbft/cometbft v0.38.6
@@ -46,7 +46,7 @@ require (
 	go.uber.org/mock v0.4.0
 	golang.org/x/sync v0.7.0
 	golang.org/x/tools v0.20.0
-	google.golang.org/grpc v1.63.0
+	google.golang.org/grpc v1.63.2
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.3.0
 	google.golang.org/protobuf v1.33.0
 	gopkg.in/yaml.v3 v3.0.1
