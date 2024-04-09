@@ -244,7 +244,7 @@ func additionalServices(testnet types.Testnet) []string {
 		resp = append(resp, "explorer_graphql")
 	}
 
-	if testnet.ExplorerMockDB {
+	if testnet.Network.IsEphemeral() {
 		resp = append(resp, "explorer_db")
 	}
 
