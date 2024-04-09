@@ -6,7 +6,7 @@ help:  ## Display this help message
 ###############################################################################
 
 .PHONY: build-docker
-build-docker: ensure-go-releaser ## Builds the docker images.
+build-docker: ensure-go-releaser build-explorer-ui ## Builds the docker images.
 	@goreleaser release --snapshot --clean
 
 .PHONY: build-halo-relayer
@@ -15,6 +15,9 @@ build-halo-relayer: ensure-go-releaser ## Builds the halo and relayer docker ima
 	@scripts/build_docker.sh relayer
 	@scripts/build_docker.sh monitor
 
+.PHONY:  ## Builds the explorer-ui docker image.
+build-explorer-ui:
+	@make -C ./explorer build-ui
 
 ###############################################################################
 ###                                Contracts                                 ###

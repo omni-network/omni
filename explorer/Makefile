@@ -4,8 +4,11 @@ help:  ## Display this help message.
 gen-db: ## generates our ent orm schemas
 	make -C ./db gen
 
+build-ui: ## builds our ui docker image
+	@docker buildx build ./ui -t omniops/explorer-ui:${GITHUB_SHA::7} --platform linux/amd64,linux/arm64 --push
+	@docker buildx build ./ui -t omniops/explorer-ui:${GITHUB_BRANCHNAME} --platform linux/amd64,linux/arm64 --push
+
 build: ## builds our docker images
-	@docker-compose build
 	@echo "Building containers"
 	@make -C ../ build-docker
 

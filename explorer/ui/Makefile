@@ -9,3 +9,6 @@ format-check:  ## Check if the code is formatted correctly
 
 format: ## Format the code
 	npx prettier --write .
+
+build: ## Build the UI Docker Image
+	docker buildx build . -t omniops/explorer-ui:${GITHUB_SHA::7} --platform linux/amd64,linux/arm64
