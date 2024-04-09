@@ -165,15 +165,26 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.UpgradeConfig) error {
 
 	addFile("prometheus", "prometheus.yml")
 
-	// Upgrade VMs in parallel
-	eg, ctx := errgroup.WithContext(ctx)
-
+	// Do initial sequential ssh to each VM, ensure we can connect.
 	for vmName, instance := range p.Data.VMs {
+		if !matchAny(cfg, p.Data.ServicesByInstance(instance)) {
+			log.Debug(ctx, "Skipping vm upgrade, no matching services", "vm", vmName, "regexp", cfg.ServiceRegexp)
+			continue
+		}
+
+		if err := execOnVM(ctx, vmName, "ls"); err != nil {
+			return errors.Wrap(err, "test exec on vm", "vm", vmName)
+		}
+	}
+
+	// Then upgrade VMs in parallel
+	eg, ctx := errgroup.WithContext(ctx)
+	for vmName, instance := range p.Data.VMs {
+		if !matchAny(cfg, p.Data.ServicesByInstance(instance)) {
+			continue
+		}
+
 		eg.Go(func() error {
-			if !matchAny(cfg, p.Data.ServicesByInstance(instance)) {
-				log.Debug(ctx, "Skipping vm upgrade, no matching services", "vm", vmName, "regexp", cfg.ServiceRegexp)
-				return nil
-			}
 			log.Debug(ctx, "Upgrading docker-compose", "vm", vmName)
 
 			for _, filePath := range filePaths {
