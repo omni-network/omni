@@ -14,6 +14,7 @@ import (
 	"github.com/omni-network/omni/e2e/netman"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/e2e/vmcompose"
+	"github.com/omni-network/omni/lib/contracts/avs"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/fireblocks"
@@ -34,11 +35,10 @@ type DefinitionConfig struct {
 	InfraProvider string
 
 	// Secrets (not required for devnet)
-	DeployKeyFile  string
-	RelayerKeyFile string
-	FireAPIKey     string
-	FireKeyPath    string
-	RPCOverrides   map[string]string // map[chainName]rpcURL1,rpcURL2,...
+	DeployKeyFile string
+	FireAPIKey    string
+	FireKeyPath   string
+	RPCOverrides  map[string]string // map[chainName]rpcURL1,rpcURL2,...
 
 	InfraDataFile string // Not required for docker provider
 	OmniImgTag    string // OmniImgTag is the docker image tag used for halo and relayer.
@@ -83,6 +83,29 @@ func (d Definition) Netman() netman.Manager {
 	return d.lazyNetwork.MustNetman()
 }
 
+// DeployInfos returns the deploy information of the OmniPortal and OmniAVS contracts.
+func (d Definition) DeployInfos() types.DeployInfos {
+	resp := make(types.DeployInfos)
+
+	for chain, info := range d.Netman().DeployInfo() {
+		resp.Set(chain.ID, types.ContractPortal, info.PortalAddress, info.DeployHeight)
+	}
+
+	ethL1, err := d.Testnet.AVSChain()
+	if err != nil {
+		return resp
+	}
+
+	addr, ok := avs.AddrForNetwork(d.Testnet.Network)
+	if !ok {
+		return resp
+	}
+
+	resp.Set(ethL1.ID, types.ContractOmniAVS, addr, 0) // Note that deploy height of omni avs isn't set or used.
+
+	return resp
+}
+
 func MakeDefinition(ctx context.Context, cfg DefinitionConfig, commandName string) (Definition, error) {
 	if strings.TrimSpace(cfg.ManifestFile) == "" {
 		return Definition{}, errors.New("manifest not specified, use --manifest-file or -f")
@@ -118,7 +141,7 @@ func MakeDefinition(ctx context.Context, cfg DefinitionConfig, commandName strin
 			return ethbackend.Backends{}, nil, errors.Wrap(err, "new backends")
 		}
 
-		netman, err := netman.NewManager(testnet, backends, cfg.RelayerKeyFile)
+		netman, err := netman.NewManager(testnet, backends)
 		if err != nil {
 			return ethbackend.Backends{}, nil, errors.Wrap(err, "get network")
 		}
@@ -431,49 +454,52 @@ func publicChains(manifest types.Manifest, cfg DefinitionConfig) ([]types.Public
 }
 
 // internalNetwork returns a internal intra-network netconf.Network from the testnet and deployInfo.
-func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman.DeployInfo, evmPrefix string) netconf.Network {
+func internalNetwork(def Definition, evmPrefix string) netconf.Network {
 	var chains []netconf.Chain
 
 	// Add all public chains
-	for _, public := range testnet.PublicChains {
+	for _, public := range def.Testnet.PublicChains {
+		depInfo := def.DeployInfos()[public.Chain().ID]
 		pc := netconf.Chain{
 			ID:                public.Chain().ID,
 			Name:              public.Chain().Name,
 			RPCURL:            public.NextRPCAddress(),
-			PortalAddress:     deployInfo[public.Chain()].PortalAddress,
-			DeployHeight:      deployInfo[public.Chain()].DeployHeight,
 			BlockPeriod:       public.Chain().BlockPeriod,
 			FinalizationStrat: public.Chain().FinalizationStrat,
 			IsEthereum:        public.Chain().IsAVSTarget,
-			AVSContractAddr:   public.Chain().AVSContractAddress,
+			PortalAddress:     depInfo[types.ContractPortal].Address,
+			DeployHeight:      depInfo[types.ContractPortal].Height,
+			AVSContractAddr:   depInfo[types.ContractOmniAVS].Address,
 		}
 
 		chains = append(chains, pc)
 	}
 
 	// In monitor only mode, there is only public chains, so skip omni and anvil chains.
-	if testnet.OnlyMonitor {
+	if def.Testnet.OnlyMonitor {
 		return netconf.Network{
-			ID:     testnet.Network,
+			ID:     def.Testnet.Network,
 			Chains: chains,
 		}
 	}
 
-	omniEVM := omniEVMByPrefix(testnet, evmPrefix)
+	omniEVM := omniEVMByPrefix(def.Testnet, evmPrefix)
+	omniEVMDepInfo := def.DeployInfos()[omniEVM.Chain.ID]
 	chains = append(chains, netconf.Chain{
 		ID:                omniEVM.Chain.ID,
 		Name:              omniEVM.Chain.Name,
 		RPCURL:            omniEVM.InternalRPC,
 		AuthRPCURL:        omniEVM.InternalAuthRPC,
-		PortalAddress:     deployInfo[omniEVM.Chain].PortalAddress,
-		DeployHeight:      deployInfo[omniEVM.Chain].DeployHeight,
 		BlockPeriod:       omniEVM.Chain.BlockPeriod,
 		FinalizationStrat: omniEVM.Chain.FinalizationStrat,
 		IsOmniEVM:         true,
+		PortalAddress:     omniEVMDepInfo[types.ContractPortal].Address,
+		DeployHeight:      omniEVMDepInfo[types.ContractPortal].Height,
+		AVSContractAddr:   omniEVMDepInfo[types.ContractOmniAVS].Address,
 	})
 
 	chains = append(chains, netconf.Chain{
-		ID:   testnet.Network.Static().OmniConsensusChainIDUint64(),
+		ID:   def.Testnet.Network.Static().OmniConsensusChainIDUint64(),
 		Name: "omni_consensus",
 		// No RPC URLs, since we are going to remove it from netconf in any case.
 		DeployHeight:    1,                         // Validator sets start at height 1, not 0.
@@ -482,67 +508,73 @@ func internalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 	})
 
 	// Add all anvil chains
-	for _, anvil := range testnet.AnvilChains {
+	for _, anvil := range def.Testnet.AnvilChains {
+		depInfo := def.DeployInfos()[anvil.Chain.ID]
 		chains = append(chains, netconf.Chain{
 			ID:                anvil.Chain.ID,
 			Name:              anvil.Chain.Name,
 			RPCURL:            anvil.InternalRPC,
-			PortalAddress:     deployInfo[anvil.Chain].PortalAddress,
-			DeployHeight:      deployInfo[anvil.Chain].DeployHeight,
 			BlockPeriod:       anvil.Chain.BlockPeriod,
 			FinalizationStrat: anvil.Chain.FinalizationStrat,
 			IsEthereum:        anvil.Chain.IsAVSTarget,
+			PortalAddress:     depInfo[types.ContractPortal].Address,
+			DeployHeight:      depInfo[types.ContractPortal].Height,
+			AVSContractAddr:   depInfo[types.ContractOmniAVS].Address,
 		})
 	}
 
 	return netconf.Network{
-		ID:     testnet.Network,
+		ID:     def.Testnet.Network,
 		Chains: chains,
 	}
 }
 
 // externalNetwork returns a external e2e-app netconf.Network from the testnet and deployInfo.
-func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman.DeployInfo) netconf.Network {
+func externalNetwork(def Definition) netconf.Network {
 	var chains []netconf.Chain
 
 	// Add all public chains
-	for _, public := range testnet.PublicChains {
+	for _, public := range def.Testnet.PublicChains {
+		depInfo := def.DeployInfos()[public.Chain().ID]
 		chains = append(chains, netconf.Chain{
 			ID:                public.Chain().ID,
 			Name:              public.Chain().Name,
 			RPCURL:            public.NextRPCAddress(),
-			PortalAddress:     deployInfo[public.Chain()].PortalAddress,
-			DeployHeight:      deployInfo[public.Chain()].DeployHeight,
 			BlockPeriod:       public.Chain().BlockPeriod,
 			FinalizationStrat: public.Chain().FinalizationStrat,
 			IsEthereum:        public.Chain().IsAVSTarget,
+			PortalAddress:     depInfo[types.ContractPortal].Address,
+			DeployHeight:      depInfo[types.ContractPortal].Height,
+			AVSContractAddr:   depInfo[types.ContractOmniAVS].Address,
 		})
 	}
 
 	// In monitor only mode, there is only public chains, so skip omni and anvil chains.
-	if testnet.OnlyMonitor {
+	if def.Testnet.OnlyMonitor {
 		return netconf.Network{
-			ID:     testnet.Network,
+			ID:     def.Testnet.Network,
 			Chains: chains,
 		}
 	}
 
 	// Connect to a random omni evm
-	omniEVM := random(testnet.OmniEVMs)
+	omniEVM := random(def.Testnet.OmniEVMs)
+	omniEVMDepInfo := def.DeployInfos()[omniEVM.Chain.ID]
 	chains = append(chains, netconf.Chain{
 		ID:                omniEVM.Chain.ID,
 		Name:              omniEVM.Chain.Name,
 		RPCURL:            omniEVM.ExternalRPC,
-		PortalAddress:     deployInfo[omniEVM.Chain].PortalAddress,
-		DeployHeight:      deployInfo[omniEVM.Chain].DeployHeight,
 		BlockPeriod:       omniEVM.Chain.BlockPeriod,
 		FinalizationStrat: omniEVM.Chain.FinalizationStrat,
 		IsOmniEVM:         true,
+		PortalAddress:     omniEVMDepInfo[types.ContractPortal].Address,
+		DeployHeight:      omniEVMDepInfo[types.ContractPortal].Height,
+		AVSContractAddr:   omniEVMDepInfo[types.ContractOmniAVS].Address,
 	})
 
 	// Add omni consensus chain
 	chains = append(chains, netconf.Chain{
-		ID:   testnet.Network.Static().OmniConsensusChainIDUint64(),
+		ID:   def.Testnet.Network.Static().OmniConsensusChainIDUint64(),
 		Name: "omni_consensus",
 		// No RPC URLs, since we are going to remove it from netconf in any case.
 		DeployHeight:    1,                         // Validator sets start at height 1, not 0.
@@ -551,16 +583,18 @@ func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 	})
 
 	// Add all anvil chains
-	for _, anvil := range testnet.AnvilChains {
+	for _, anvil := range def.Testnet.AnvilChains {
+		depInfo := def.DeployInfos()[anvil.Chain.ID]
 		chains = append(chains, netconf.Chain{
 			ID:                anvil.Chain.ID,
 			Name:              anvil.Chain.Name,
 			RPCURL:            anvil.ExternalRPC,
-			PortalAddress:     deployInfo[anvil.Chain].PortalAddress,
-			DeployHeight:      deployInfo[anvil.Chain].DeployHeight,
 			BlockPeriod:       anvil.Chain.BlockPeriod,
 			FinalizationStrat: anvil.Chain.FinalizationStrat,
 			IsEthereum:        anvil.Chain.IsAVSTarget,
+			PortalAddress:     depInfo[types.ContractPortal].Address,
+			DeployHeight:      depInfo[types.ContractPortal].Height,
+			AVSContractAddr:   depInfo[types.ContractOmniAVS].Address,
 		})
 	}
 
@@ -574,7 +608,7 @@ func externalNetwork(testnet types.Testnet, deployInfo map[types.EVMChain]netman
 	}
 
 	return netconf.Network{
-		ID:     testnet.Network,
+		ID:     def.Testnet.Network,
 		Chains: chains,
 	}
 }

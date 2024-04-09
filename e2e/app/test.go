@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -14,9 +13,9 @@ import (
 )
 
 // Test runs test cases under tests/.
-func Test(ctx context.Context, def Definition, deployInfo types.DeployInfos, verbose bool) error {
+func Test(ctx context.Context, def Definition, verbose bool) error {
 	log.Info(ctx, "Running tests in ./test/...")
-	extNetwork := externalNetwork(def.Testnet, def.Netman().DeployInfo())
+	extNetwork := externalNetwork(def)
 
 	networkDir, err := os.MkdirTemp("", "omni-e2e")
 	if err != nil {
@@ -57,7 +56,7 @@ func Test(ctx context.Context, def Definition, deployInfo types.DeployInfos, ver
 	}
 
 	deployInfoFile := filepath.Join(networkDir, "deployinfo.json")
-	if err := deployInfo.Save(deployInfoFile); err != nil {
+	if err := def.DeployInfos().Save(deployInfoFile); err != nil {
 		return errors.Wrap(err, "saving deployinfo")
 	}
 	if err = os.Setenv("E2E_DEPLOY_INFO", deployInfoFile); err != nil {

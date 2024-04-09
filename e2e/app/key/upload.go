@@ -10,9 +10,9 @@ import (
 
 // UploadConfig is the configuration for uploading a key.
 type UploadConfig struct {
-	Network  netconf.ID
-	NodeName string
-	Type     Type
+	Network netconf.ID
+	Name    string
+	Type    Type
 }
 
 // UploadNew generates a new key and uploads it to the gcp secret manager.
@@ -33,21 +33,21 @@ func UploadNew(ctx context.Context, cfg UploadConfig) (Key, error) {
 
 	// TODO(corver): Delete or overwrite existing key with matching labels.
 
-	name := secretName(cfg.Network, cfg.NodeName, cfg.Type, addr)
-	if err := createGCPSecret(ctx, name, k.Bytes(), nil); err != nil {
+	secret := secretName(cfg.Network, cfg.Name, cfg.Type, addr)
+	if err := createGCPSecret(ctx, secret, k.Bytes(), nil); err != nil {
 		return Key{}, errors.Wrap(err, "upload key")
 	}
 
-	log.Info(ctx, "🔐 Key uploaded: "+name, "address", addr, "type", cfg.Type, "network", cfg.Network, "node", cfg.NodeName)
+	log.Info(ctx, "🔐 Key uploaded: "+secret, "address", addr, "type", cfg.Type, "network", cfg.Network, "secret", cfg.Name)
 
 	return k, nil
 }
 
 // Download retrieves a key from the gcp secret manager.
-func Download(ctx context.Context, network netconf.ID, node string, typ Type, addr string) (Key, error) {
-	bz, err := getGCPSecret(ctx, secretName(network, node, typ, addr))
+func Download(ctx context.Context, network netconf.ID, name string, typ Type, addr string) (Key, error) {
+	bz, err := getGCPSecret(ctx, secretName(network, name, typ, addr))
 	if err != nil {
-		return Key{}, errors.Wrap(err, "download key", "network", network, "node", node, "type", typ, "addr", addr)
+		return Key{}, errors.Wrap(err, "download key", "network", network, "name", name, "type", typ, "addr", addr)
 	}
 
 	k, err := FromBytes(typ, bz)
@@ -66,6 +66,6 @@ func Download(ctx context.Context, network netconf.ID, node string, typ Type, ad
 }
 
 // secretName returns the name of the secret in the gcp secret manager.
-func secretName(network netconf.ID, node string, typ Type, addr string) string {
-	return network.String() + "-" + node + "-" + typ.String() + "-" + addr
+func secretName(network netconf.ID, name string, typ Type, addr string) string {
+	return network.String() + "-" + name + "-" + typ.String() + "-" + addr
 }

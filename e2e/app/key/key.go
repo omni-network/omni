@@ -20,6 +20,7 @@ const (
 	Validator    Type = "validator"
 	P2PConsensus Type = "p2p_consensus"
 	P2PExecution Type = "p2p_execution"
+	EOA          Type = "eoa"
 )
 
 func (t Type) Verify() error {
@@ -27,7 +28,7 @@ func (t Type) Verify() error {
 		return errors.New("empty key type")
 	}
 	switch t {
-	case Validator, P2PConsensus, P2PExecution:
+	case Validator, P2PConsensus, P2PExecution, EOA:
 		return nil
 	default:
 		return errors.New("invalid key type")
@@ -82,7 +83,7 @@ func (k Key) ECDSA() (*ecdsa.PrivateKey, error) {
 // It panics since it assumes that the type is valid.
 func Generate(typ Type) Key {
 	switch typ {
-	case Validator, P2PExecution:
+	case Validator, P2PExecution, EOA:
 		return Key{
 			PrivKey: k1.GenPrivKey(),
 		}
@@ -99,7 +100,7 @@ func Generate(typ Type) Key {
 // FromBytes parses the given bytes into th eprovided key type.
 func FromBytes(typ Type, b []byte) (Key, error) {
 	switch typ {
-	case Validator, P2PExecution:
+	case Validator, P2PExecution, EOA:
 		if len(b) != k1.PrivKeySize {
 			return Key{}, errors.New("invalid key size")
 		}

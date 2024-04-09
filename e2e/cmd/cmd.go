@@ -6,8 +6,8 @@ import (
 
 	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/e2e/app/agent"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/app/key"
-	"github.com/omni-network/omni/e2e/types"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -99,7 +99,7 @@ func newDeployCmd(def *app.Definition) *cobra.Command {
 		Use:   "deploy",
 		Short: "Deploys the e2e network",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, _, err := app.Deploy(cmd.Context(), *def, cfg)
+			_, err := app.Deploy(cmd.Context(), *def, cfg)
 			return err
 		},
 	}
@@ -139,7 +139,7 @@ func newTestCmd(def *app.Definition) *cobra.Command {
 		Use:   "test",
 		Short: "Runs go tests against the a previously preserved network",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return app.Test(cmd.Context(), *def, types.DeployInfos{}, true)
+			return app.Test(cmd.Context(), *def, true)
 		},
 	}
 }
@@ -165,7 +165,7 @@ func newAVSDeployCmd(def *app.Definition) *cobra.Command {
 		Use:   "avs-deploy",
 		Short: "Deploys the Omni AVS contracts",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return app.AVSDeploy(cmd.Context(), *def)
+			return app.DeployAVSAndCreate3(cmd.Context(), *def)
 		},
 	}
 
@@ -222,8 +222,21 @@ func verifyKeyNodeType(def app.Definition, cfg key.UploadConfig) error {
 		return err
 	}
 
+	if cfg.Type == key.EOA {
+		eoaType := eoa.Type(cfg.Name)
+		if err := eoaType.Verify(); err != nil {
+			return errors.Wrap(err, "verifying name as eoa type")
+		}
+
+		if addr, ok := eoa.Address(def.Testnet.Network, eoaType); ok {
+			return errors.New("cannot create eoa key already defined", "addr", addr)
+		}
+
+		return nil
+	}
+
 	for _, node := range def.Testnet.Nodes {
-		if node.Name == cfg.NodeName {
+		if node.Name == cfg.Name {
 			if cfg.Type == key.P2PExecution {
 				return errors.New("cannot create execution key for halo node")
 			}
@@ -233,7 +246,7 @@ func verifyKeyNodeType(def app.Definition, cfg key.UploadConfig) error {
 	}
 
 	for _, evm := range def.Testnet.OmniEVMs {
-		if evm.InstanceName == cfg.NodeName {
+		if evm.InstanceName == cfg.Name {
 			if cfg.Type != key.P2PExecution {
 				return errors.New("only execution keys allowed for evm nodes")
 			}
@@ -242,5 +255,5 @@ func verifyKeyNodeType(def app.Definition, cfg key.UploadConfig) error {
 		}
 	}
 
-	return errors.New("node not found", "node", cfg.NodeName)
+	return errors.New("node not found", "name", cfg.Name)
 }
