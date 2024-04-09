@@ -5,6 +5,8 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -122,4 +124,58 @@ func (w Wrapper) PeerCount(ctx context.Context) (uint64, error) {
 	}
 
 	return resp, nil
+}
+
+// PendingEstimateGas estimates gas for the given msg at the "pending" block. This block should include pending transactions.
+// Repurposed from go-ethereum/ethclient/ethclient.go.
+func (w Wrapper) PendingEstimateGas(ctx context.Context, call ethereum.CallMsg) (uint64, error) {
+	const endpoint = "pending_estimate_gas"
+	defer latency(w.chain, endpoint)() //nolint:revive // Defer chain is fine here.
+
+	var hex hexutil.Uint64
+	err := w.cl.Client().CallContext(ctx, &hex, "eth_estimateGas", toCallArg(call), "pending")
+	if err != nil {
+		incError(w.chain, endpoint)
+		return 0, errors.Wrap(err, "pending estimate gas")
+	}
+
+	return uint64(hex), nil
+}
+
+// toCallArg converts a CallMsg to a map[string]any for use in RPC calls.
+// Repurposed from go-ethereum/ethclient/ethclient.go.
+func toCallArg(msg ethereum.CallMsg) any {
+	arg := map[string]any{
+		"from": msg.From,
+		"to":   msg.To,
+	}
+	if len(msg.Data) > 0 {
+		arg["input"] = hexutil.Bytes(msg.Data)
+	}
+	if msg.Value != nil {
+		arg["value"] = (*hexutil.Big)(msg.Value)
+	}
+	if msg.Gas != 0 {
+		arg["gas"] = hexutil.Uint64(msg.Gas)
+	}
+	if msg.GasPrice != nil {
+		arg["gasPrice"] = (*hexutil.Big)(msg.GasPrice)
+	}
+	if msg.GasFeeCap != nil {
+		arg["maxFeePerGas"] = (*hexutil.Big)(msg.GasFeeCap)
+	}
+	if msg.GasTipCap != nil {
+		arg["maxPriorityFeePerGas"] = (*hexutil.Big)(msg.GasTipCap)
+	}
+	if msg.AccessList != nil {
+		arg["accessList"] = msg.AccessList
+	}
+	if msg.BlobGasFeeCap != nil {
+		arg["maxFeePerBlobGas"] = (*hexutil.Big)(msg.BlobGasFeeCap)
+	}
+	if msg.BlobHashes != nil {
+		arg["blobVersionedHashes"] = msg.BlobHashes
+	}
+
+	return arg
 }

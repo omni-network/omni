@@ -98,18 +98,15 @@ func (o Sender) SendTransaction(ctx context.Context, submission xchain.Submissio
 		"msgs", len(submission.Msgs),
 	)
 
-	const gasLimit = 1_000_000 // TODO(lazar): make configurable
-
 	txData, err := o.getXSubmitBytes(submissionToBinding(submission))
 	if err != nil {
 		return err
 	}
 
 	candidate := txmgr.TxCandidate{
-		TxData:   txData,
-		To:       &o.portal,
-		GasLimit: gasLimit,
-		Value:    big.NewInt(0),
+		TxData: txData,
+		To:     &o.portal,
+		Value:  big.NewInt(0),
 	}
 
 	tx, rec, err := o.txMgr.Send(ctx, candidate)

@@ -240,6 +240,10 @@ func (b *mockBackend) EstimateGas(ctx context.Context, msg ethereum.CallMsg) (ui
 	return b.g.baseFee().Uint64(), nil
 }
 
+func (b *mockBackend) PendingEstimateGas(ctx context.Context, msg ethereum.CallMsg) (uint64, error) {
+	return b.EstimateGas(ctx, msg)
+}
+
 func (b *mockBackend) SuggestGasTipCap(ctx context.Context) (*big.Int, error) {
 	tip, _ := b.g.sample()
 	return tip, nil

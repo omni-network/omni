@@ -44,6 +44,7 @@ import (
 type Client interface {
     {{range .Providers}} ethereum.{{.}}
     {{end -}}
+	PendingEstimateGas(ctx context.Context, call ethereum.CallMsg) (uint64, error)
 	HeaderByType(ctx context.Context, typ HeadType) (*types.Header, error)
     PeerCount(ctx context.Context) (uint64, error)
 	Address() string
