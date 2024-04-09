@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/e2e/app/agent"
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/app/key"
+	"github.com/omni-network/omni/e2e/types"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -146,16 +147,18 @@ func newTestCmd(def *app.Definition) *cobra.Command {
 
 func newUpgradeCmd(def *app.Definition) *cobra.Command {
 	cfg := app.DefaultDeployConfig()
+	upgradeCfg := types.DefaultUpgradeConfig()
 
 	cmd := &cobra.Command{
 		Use:   "upgrade",
 		Short: "Upgrades docker containers of a previously preserved network",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return app.Upgrade(cmd.Context(), *def, cfg)
+			return app.Upgrade(cmd.Context(), *def, cfg, upgradeCfg)
 		},
 	}
 
 	bindDeployFlags(cmd.Flags(), &cfg)
+	bindUpgradeFlags(cmd.Flags(), &upgradeCfg)
 
 	return cmd
 }

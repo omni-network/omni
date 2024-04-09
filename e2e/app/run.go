@@ -6,6 +6,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/agent"
 	"github.com/omni-network/omni/e2e/netman/pingpong"
+	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
@@ -222,12 +223,12 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, secrets age
 
 // Upgrade generates all local artifacts, but only copies the docker-compose file to the VMs.
 // It them calls docker-compose up.
-func Upgrade(ctx context.Context, def Definition, cfg DeployConfig) error {
+func Upgrade(ctx context.Context, def Definition, cfg DeployConfig, upgradeCfg types.UpgradeConfig) error {
 	if err := Setup(ctx, def, agent.Secrets{}, false, cfg.ExplorerDB); err != nil {
 		return err
 	}
 
-	return def.Infra.Upgrade(ctx)
+	return def.Infra.Upgrade(ctx, upgradeCfg)
 }
 
 // toPortalValidators returns the provided validator set as a lice of portal validators.

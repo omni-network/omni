@@ -5,6 +5,7 @@ import (
 	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/e2e/app/agent"
 	"github.com/omni-network/omni/e2e/app/key"
+	"github.com/omni-network/omni/e2e/types"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -38,6 +39,10 @@ func bindDeployFlags(flags *pflag.FlagSet, cfg *app.DeployConfig) {
 	bindPromFlags(flags, &cfg.AgentSecrets)
 	flags.Uint64Var(&cfg.PingPongN, "ping-pong", cfg.PingPongN, "Number of ping pongs messages to send. 0 disables it")
 	flags.StringVar(&cfg.ExplorerDB, "explorer-db", cfg.ExplorerDB, "Explorer DB connection string")
+}
+
+func bindUpgradeFlags(flags *pflag.FlagSet, cfg *types.UpgradeConfig) {
+	flags.StringVar(&cfg.ServiceRegexp, "services", cfg.ServiceRegexp, "Regexp applied to services per VM. Any match results in the VM being upgraded (all services on that VM are upgraded, not only matching services)")
 }
 
 func bindCreate3DeployFlags(flags *pflag.FlagSet, cfg *app.Create3DeployConfig) {

@@ -7,10 +7,20 @@ import (
 	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
 )
 
+func DefaultUpgradeConfig() UpgradeConfig {
+	return UpgradeConfig{
+		ServiceRegexp: ".*",
+	}
+}
+
+type UpgradeConfig struct {
+	ServiceRegexp string
+}
+
 type InfraProvider interface {
 	infra.Provider
 
-	Upgrade(ctx context.Context) error
+	Upgrade(ctx context.Context, cfg UpgradeConfig) error
 
 	// Clean deletes all containers, networks, and data on disk.
 	Clean(ctx context.Context) error
