@@ -188,7 +188,7 @@ services:
     restart: unless-stopped
     networks:
       test:
-        ipv4_address: 10.186.73.206
+        ipv4_address: 10.186.73.205
 
   prometheus:
     labels:
