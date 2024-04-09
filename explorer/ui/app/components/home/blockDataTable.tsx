@@ -5,16 +5,17 @@ import { XBlock } from '~/graphql/graphql'
 import { ColumnDef } from '@tanstack/react-table'
 import SimpleTable from '../shared/simpleTable'
 import { GetBlockCount, GetBlocksInRange } from '../queries/block'
+import { dateFormatter } from '~/lib/formatting'
 
 export const loader = async () => {
-  return json<XBlock[]>(new Array())
+  return json<XBlock[]>([])
 }
 
 export default function XBlockDataTable() {
   const d = useLoaderData<typeof loader>()
 
-  let rows = GetBlocksInRange(0, 1000)
-  let count = GetBlockCount()
+  const rows = GetBlocksInRange(0, 1000)
+  const count = GetBlockCount()
 
   const columns = React.useMemo<ColumnDef<XBlock>[]>(
     () => [
@@ -34,7 +35,7 @@ export default function XBlockDataTable() {
       },
       {
         accessorKey: 'time',
-        accessorFn: row => row.Timestamp, // TODO: format this
+        accessorFn: row => dateFormatter(row.Timestamp),
         header: () => <span>Time</span>,
         canFilter: false,
         enableColumnFilter: false,

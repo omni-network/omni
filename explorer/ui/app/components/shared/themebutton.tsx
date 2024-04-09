@@ -1,8 +1,26 @@
+import { useState, useEffect } from 'react'
+
 export function ThemeButton() {
+  const [theme, setTheme] = useState<string | undefined>(undefined)
+
+  useEffect(() => {
+    // set it once and prefer user preferences
+    if (theme === undefined) {
+      setTheme(localStorage.getItem('theme') ?? 'light')
+    } else {
+      localStorage.setItem('theme', theme)
+      document.querySelector('html')?.setAttribute('data-theme', theme)
+    }
+  }, [theme])
+
+  const toggleTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light')
+  }
+
   return (
     <label className="swap swap-rotate items-start display-flex">
       {/* this hidden checkbox controls the state */}
-      <input type="checkbox" className="theme-controller" value="dracula" />
+      <input onClick={toggleTheme} type="checkbox" className="theme-controller" value="dracula" />
 
       {/* sun icon */}
       <svg
