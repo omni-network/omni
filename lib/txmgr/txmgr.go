@@ -351,8 +351,6 @@ func (m *simple) sendTx(ctx context.Context, tx *types.Transaction) (*types.Rece
 // publishTx publishes the transaction to the transaction pool. If it receives any underpriced errors
 // it will bump the fees and retry.
 // Returns the latest fee bumped tx, and a boolean indicating whether the tx was sent or not.
-//
-
 func (m *simple) publishTx(ctx context.Context, tx *types.Transaction, sendState *SendState,
 	bumpFeesImmediately bool) (*types.Transaction, bool) {
 	for {

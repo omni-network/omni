@@ -70,12 +70,6 @@ func PrivateKey(ctx context.Context, network netconf.ID, typ Type) (*ecdsa.Priva
 		return devnetKeys[typ], nil
 	}
 
-	// TODO(corver): Remove this workaround once the new testnet relayer key is funded.
-	// For now we keep on using the same staging key for testnet.
-	if network == netconf.Testnet && typ == TypeRelayer {
-		network = netconf.Staging
-	}
-
 	addr, ok := secureAddrs[network][typ]
 	if !ok {
 		return nil, errors.New("eoa key not defined", "network", network, "type", typ)
