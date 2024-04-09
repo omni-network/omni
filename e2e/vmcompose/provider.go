@@ -131,26 +131,26 @@ func (p *Provider) Setup() error {
 func (p *Provider) Upgrade(ctx context.Context, cfg types.UpgradeConfig) error {
 	log.Info(ctx, "Upgrading docker-compose on VMs", "image", p.Testnet.UpgradeVersion)
 
-	var filePaths []string
-	addFile := func(dir string, file string) {
-		filePaths = append(filePaths, filepath.Join(p.Testnet.Dir, dir, file))
+	filesByService := make(map[string][]string)
+	addFile := func(service string, paths ...string) {
+		filesByService[service] = append(filesByService[service], filepath.Join(paths...))
 	}
 
 	// Include halo config
 	for _, node := range p.Testnet.Nodes {
-		addFile(node.Name, "config/halo.toml")
-		addFile(node.Name, "config/config.toml")
-		addFile(node.Name, "config/network.json")
-		addFile(node.Name, "config/jwtsecret")
-		addFile(node.Name, "config/priv_validator_key.json")
-		addFile(node.Name, "config/node_key.json")
+		addFile(node.Name, "config", "halo.toml")
+		addFile(node.Name, "config", "config.toml")
+		addFile(node.Name, "config", "network.json")
+		addFile(node.Name, "config", "jwtsecret")
+		addFile(node.Name, "config", "priv_validator_key.json")
+		addFile(node.Name, "config", "node_key.json")
 	}
 
 	// Include geth config
 	for _, omniEVM := range p.Testnet.OmniEVMs {
 		addFile(omniEVM.InstanceName, "config.toml")
-		addFile(omniEVM.InstanceName, "geth/jwtsecret")
-		addFile(omniEVM.InstanceName, "geth/nodekey")
+		addFile(omniEVM.InstanceName, "geth", "jwtsecret")
+		addFile(omniEVM.InstanceName, "geth", "nodekey")
 	}
 
 	// Also relayer and monitor
@@ -163,7 +163,7 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.UpgradeConfig) error {
 
 	// TODO(corver): Add explorer stuff
 
-	addFile("prometheus", "prometheus.yml")
+	addFile("prometheus", "prometheus.yml") // Prometheus isn't a "service", so not actually copied
 
 	// Do initial sequential ssh to each VM, ensure we can connect.
 	for vmName, instance := range p.Data.VMs {
@@ -172,6 +172,7 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.UpgradeConfig) error {
 			continue
 		}
 
+		log.Debug(ctx, "Ensuring VM SSH connection", "vm", vmName)
 		if err := execOnVM(ctx, vmName, "ls"); err != nil {
 			return errors.Wrap(err, "test exec on vm", "vm", vmName)
 		}
@@ -180,22 +181,32 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.UpgradeConfig) error {
 	// Then upgrade VMs in parallel
 	eg, ctx := errgroup.WithContext(ctx)
 	for vmName, instance := range p.Data.VMs {
-		if !matchAny(cfg, p.Data.ServicesByInstance(instance)) {
+		services := p.Data.ServicesByInstance(instance)
+		if !matchAny(cfg, services) {
 			continue
 		}
 
 		eg.Go(func() error {
-			log.Debug(ctx, "Upgrading docker-compose", "vm", vmName)
-
-			for _, filePath := range filePaths {
-				if err := copyFileToVM(ctx, vmName, filePath); err != nil {
-					return errors.Wrap(err, "copy file", "vm", vmName, "file", filePath)
+			log.Debug(ctx, "Copying artifacts", "vm", vmName, "count", len(filesByService))
+			for service, filePaths := range filesByService {
+				if !services[service] {
+					continue
+				}
+				for _, filePath := range filePaths {
+					localPath := filepath.Join(p.Testnet.Dir, service, filePath)
+					remotePath := filepath.Join("/omni", p.Testnet.Name, service, filePath)
+					if err := copyFileToVM(ctx, vmName, localPath, remotePath); err != nil {
+						return errors.Wrap(err, "copy file", "vm", vmName, "service", service, "file", filePath)
+					}
 				}
 			}
 
+			log.Debug(ctx, "Copying docker-compose.yml", "vm", vmName)
 			composeFile := vmComposeFile(instance.IPAddress.String())
-			if err := copyFileToVM(ctx, vmName, filepath.Join(p.Testnet.Dir, composeFile)); err != nil {
-				return errors.Wrap(err, "copy compose", "vm", vmName)
+			localComposePath := filepath.Join(p.Testnet.Dir, composeFile)
+			remoteComposePath := filepath.Join("/omni", p.Testnet.Name, composeFile)
+			if err := copyFileToVM(ctx, vmName, localComposePath, remoteComposePath); err != nil {
+				return errors.Wrap(err, "copy docker compose", "vm", vmName)
 			}
 
 			// Figure out whether we need to call "docker compose down" before "docker compose up"
@@ -207,13 +218,13 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.UpgradeConfig) error {
 				maybeDown = "sudo docker compose down && "
 			}
 
-			startCmd := fmt.Sprintf("cd /omni && "+
-				"sudo mv %s %s/docker-compose.yaml && "+
-				"cd %s && "+
+			startCmd := fmt.Sprintf("cd /omni/%s && "+
+				"sudo mv %s docker-compose.yaml && "+
 				maybeDown+
 				"sudo docker compose up -d",
-				composeFile, p.Testnet.Name, p.Testnet.Name)
+				p.Testnet.Name, composeFile)
 
+			log.Debug(ctx, "Executing docker-compose up", "vm", vmName)
 			if err := execOnVM(ctx, vmName, startCmd); err != nil {
 				return errors.Wrap(err, "compose up", "vm", vmName)
 			}
@@ -345,9 +356,8 @@ func copyToVM(ctx context.Context, vmName string, path string) error {
 	return nil
 }
 
-func copyFileToVM(ctx context.Context, vmName string, path string) error {
-	scp := fmt.Sprintf("gcloud compute scp --zone=us-east1-c --quiet %s %s:/omni/", path, vmName)
-
+func copyFileToVM(ctx context.Context, vmName string, localPath string, remotePath string) error {
+	scp := fmt.Sprintf("gcloud compute scp --zone=us-east1-c --quiet %s %s:%s", localPath, vmName, remotePath)
 	cmd := exec.CommandContext(ctx, "bash", "-c", scp)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrap(err, "copy to VM", "output", string(out), "cmd", scp)
