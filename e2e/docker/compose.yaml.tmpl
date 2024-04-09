@@ -169,7 +169,7 @@ services:
       - ./explorer_indexer:/explorer_indexer
     networks:
       {{ $.NetworkName }}:
-        {{ if $.Network }}ipv4_address: 10.186.73.202{{ end }}
+        {{ if $.Network }}ipv4_address: 10.186.73.203{{ end }}
 {{ end }}
 
 {{- if .Explorer }}
@@ -185,7 +185,7 @@ services:
       - ./explorer_graphql:/explorer_graphql
     networks:
       {{ $.NetworkName }}:
-        {{ if $.Network }}ipv4_address: 10.186.73.203{{ end }}
+        {{ if $.Network }}ipv4_address: 10.186.73.204{{ end }}
     ports:
         - 21335:8080
 {{ end }}
@@ -201,7 +201,7 @@ services:
       - ./explorer_ui:/explorer_ui
     networks:
       {{ $.NetworkName }}:
-        {{ if $.Network }}ipv4_address: 10.186.73.204{{ end }}
+        {{ if $.Network }}ipv4_address: 10.186.73.205{{ end }}
     ports:
         - 21335:8080
 {{ end }}
@@ -225,5 +225,5 @@ services:
     restart: unless-stopped
     networks:
       {{ $.NetworkName }}:
-        {{ if $.Network }}ipv4_address: 10.186.73.205{{ end }}
+        {{ if $.Network }}ipv4_address: 10.186.73.206{{ end }}
 {{ end }}
