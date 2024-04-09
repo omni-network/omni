@@ -24,7 +24,12 @@ func newUint64(val uint64) *uint64 { return &val }
 // MakeGenesis returns a genesis block for a development chain.
 // See geth reference: https://github.com/ethereum/go-ethereum/blob/master/core/genesis.go#L564
 func MakeGenesis(network netconf.ID) (core.Genesis, error) {
-	allocs := mergeAllocs(precompilesAlloc(), predeploys.Alloc())
+	predeps, err := predeploys.Alloc(network)
+	if err != nil {
+		return core.Genesis{}, errors.Wrap(err, "predeploys")
+	}
+
+	allocs := mergeAllocs(precompilesAlloc(), predeps)
 
 	if network.IsEphemeral() {
 		allocs = mergeAllocs(allocs, stagingPrefundAlloc())
@@ -111,10 +116,6 @@ func stagingPrefundAlloc() types.GenesisAlloc {
 
 func testnetPrefundAlloc() types.GenesisAlloc {
 	return types.GenesisAlloc{
-		// team dev accounts
-		common.HexToAddress("0x00000d4De727593D6fbbFe39eE9EbddB49ED5b8A"): {Balance: eth1m},
-		common.HexToAddress("0x38E2a3FC1923767F74d2308a529a353e91763EBF"): {Balance: eth1m},
-
 		// team ops accounts
 		common.HexToAddress("0x7a6cF389082dc698285474976d7C75CAdE08ab7e"): {Balance: eth1m}, // fb: dev
 		common.HexToAddress("0xeC5134556da0797A5C5cD51DD622b689Cac97Fe9"): {Balance: eth1k}, // fb: create3-deployer
@@ -123,9 +124,11 @@ func testnetPrefundAlloc() types.GenesisAlloc {
 		common.HexToAddress("0xf63316AA39fEc9D2109AB0D9c7B1eE3a6F60AEA4"): {Balance: eth1k}, // fb: funder
 		common.HexToAddress("0xfE921e06Ed0a22c035b4aCFF0A5D3a434A330c96"): {Balance: eth1k}, // dev: relayer
 
-		// team personal accounts
+		// team dev accounts
+		common.HexToAddress("0x00000d4De727593D6fbbFe39eE9EbddB49ED5b8A"): {Balance: eth1m}, // shared
 		common.HexToAddress("0xFbD05C5dD1c09970D30Ad8BBf29BC34283E84E20"): {Balance: eth1m}, // corver
 		common.HexToAddress("0xe3481474b23f88a8917DbcB4cBC55Efcf0f68CC7"): {Balance: eth1m}, // kevin
+		common.HexToAddress("0x38E2a3FC1923767F74d2308a529a353e91763EBF"): {Balance: eth1m}, // tt
 
 		// TODO: add validators, relayer
 	}

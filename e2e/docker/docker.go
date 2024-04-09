@@ -84,7 +84,7 @@ func (p *Provider) Setup() error {
 		Prometheus:     p.testnet.Prometheus,
 		Monitor:        true,
 		Explorer:       p.testnet.Explorer,
-		ExplorerMockDB: p.testnet.ExplorerMockDB,
+		ExplorerMockDB: p.testnet.Network.IsEphemeral(),
 		ExplorerDBConn: p.explorerDBConn,
 		OmniTag:        p.omniTag,
 	}
