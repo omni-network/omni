@@ -136,6 +136,26 @@ services:
         {{ if $.Network }}ipv4_address: 10.186.73.201{{ end }}
 {{ end }}
 
+{{- if .Prometheus }}
+  prometheus:
+    labels:
+      e2e: true
+    container_name: prometheus
+    image: prom/prometheus:latest
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.console.libraries=/usr/share/prometheus/console_libraries
+      - --web.console.templates=/usr/share/prometheus/consoles
+      - --enable-feature=exemplar-storage
+      - --enable-feature=agent
+    restart: unless-stopped
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      {{ $.NetworkName }}:
+        {{ if $.Network }}ipv4_address: 10.186.73.202{{ end }}
+{{ end }}
+
 {{- if .Explorer }}
   explorer_indexer:
     labels:
@@ -149,7 +169,7 @@ services:
       - ./explorer_indexer:/explorer_indexer
     networks:
       {{ $.NetworkName }}:
-        {{ if $.Network }}ipv4_address: 10.186.73.300{{ end }}
+        {{ if $.Network }}ipv4_address: 10.186.73.202{{ end }}
 {{ end }}
 
 {{- if .Explorer }}
@@ -165,7 +185,7 @@ services:
       - ./explorer_graphql:/explorer_graphql
     networks:
       {{ $.NetworkName }}:
-        {{ if $.Network }}ipv4_address: 10.186.73.301{{ end }}
+        {{ if $.Network }}ipv4_address: 10.186.73.203{{ end }}
     ports:
         - 21335:8080
 {{ end }}
@@ -181,7 +201,7 @@ services:
       - ./explorer_ui:/explorer_ui
     networks:
       {{ $.NetworkName }}:
-        {{ if $.Network }}ipv4_address: 10.186.73.302{{ end }}
+        {{ if $.Network }}ipv4_address: 10.186.73.204{{ end }}
     ports:
         - 21335:8080
 {{ end }}
@@ -205,25 +225,5 @@ services:
     restart: unless-stopped
     networks:
       {{ $.NetworkName }}:
-        {{ if $.Network }}ipv4_address: 10.186.73.206{{ end }}
-{{ end }}
-
-{{- if .Prometheus }}
-  prometheus:
-    labels:
-      e2e: true
-    container_name: prometheus
-    image: prom/prometheus:latest
-    command:
-      - --config.file=/etc/prometheus/prometheus.yml
-      - --web.console.libraries=/usr/share/prometheus/console_libraries
-      - --web.console.templates=/usr/share/prometheus/consoles
-      - --enable-feature=exemplar-storage
-      - --enable-feature=agent
-    restart: unless-stopped
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-    networks:
-      {{ $.NetworkName }}:
-        {{ if $.Network }}ipv4_address: 10.186.73.202{{ end }}
+        {{ if $.Network }}ipv4_address: 10.186.73.205{{ end }}
 {{ end }}
