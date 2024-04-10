@@ -17,6 +17,7 @@ import (
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -24,7 +25,8 @@ import (
 // Sender uses txmgr to send transactions to the destination chain.
 type Sender struct {
 	txMgr      txmgr.TxManager
-	portal     common.Address
+	portal     *bindings.OmniPortal
+	portalAddr common.Address
 	abi        *abi.ABI
 	chain      netconf.Chain
 	chainNames map[uint64]string
@@ -58,9 +60,15 @@ func NewSender(chain netconf.Chain, rpcClient ethclient.Client,
 		return Sender{}, errors.Wrap(err, "parse abi error")
 	}
 
+	portal, err := bindings.NewOmniPortal(chain.PortalAddress, rpcClient)
+	if err != nil {
+		return Sender{}, errors.Wrap(err, "new portal")
+	}
+
 	return Sender{
 		txMgr:      txMgr,
-		portal:     chain.PortalAddress,
+		portalAddr: chain.PortalAddress,
+		portal:     portal,
 		abi:        &parsedAbi,
 		chain:      chain,
 		chainNames: chainNames,
@@ -98,17 +106,22 @@ func (o Sender) SendTransaction(ctx context.Context, submission xchain.Submissio
 		"msgs", len(submission.Msgs),
 	)
 
-	const gasLimit = 1_000_000 // TODO(lazar): make configurable
+	xsub := submissionToBinding(submission)
 
-	txData, err := o.getXSubmitBytes(submissionToBinding(submission))
+	gasLimit, err := o.portal.EstimateGas(&bind.CallOpts{Context: ctx}, xsub)
+	if err != nil {
+		return errors.Wrap(err, "estimate xsubmit gas", reqAttrs...)
+	}
+
+	txData, err := o.getXSubmitBytes(xsub)
 	if err != nil {
 		return err
 	}
 
 	candidate := txmgr.TxCandidate{
 		TxData:   txData,
-		To:       &o.portal,
-		GasLimit: gasLimit,
+		To:       &o.portalAddr,
+		GasLimit: gasLimit.Uint64(),
 		Value:    big.NewInt(0),
 	}
 
@@ -125,6 +138,7 @@ func (o Sender) SendTransaction(ctx context.Context, submission xchain.Submissio
 		"status", rec.Status,
 		"nonce", tx.Nonce(),
 		"gas_used", rec.GasUsed,
+		"gas_limit", tx.Gas(),
 		"tx_hash", rec.TxHash,
 	}
 

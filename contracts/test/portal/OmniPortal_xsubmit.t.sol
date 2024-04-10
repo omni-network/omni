@@ -2,11 +2,12 @@
 pragma solidity =0.8.24;
 
 import { XTypes } from "src/libraries/XTypes.sol";
-import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
+import { OmniPortal } from "src/protocol/OmniPortal.sol";
 
 import { Base } from "./common/Base.sol";
 import { Counter } from "./common/Counter.sol";
 import { Vm } from "forge-std/Vm.sol";
+import { console } from "forge-std/console.sol";
 
 /**
  * @title OmniPortal_xsubmit_Test
@@ -107,7 +108,7 @@ contract OmniPortal_xsubmit_Test is Base {
 
     function test_xsubmit_addValidatorSet_succeeds() public {
         XTypes.Submission memory xsub = readXSubmission("addValSet2", broadcastChainId);
-        portal.xsubmit(xsub);
+        _testXSubmit(portal, xsub);
 
         // test that validatorSet[2] is set correctly
         uint64 valSet2Id = 2;
@@ -130,7 +131,7 @@ contract OmniPortal_xsubmit_Test is Base {
     function test_xsubmit_notNewValSet_succeeds() public {
         // add new validator set
         XTypes.Submission memory xsub = readXSubmission("addValSet2", broadcastChainId);
-        portal.xsubmit(xsub);
+        _testXSubmit(portal, xsub);
 
         // test that we can submit a block with the genesisValSetId
         _testSubmitXBlock("xblock1", genesisValSetId, portal, counter);
@@ -141,7 +142,7 @@ contract OmniPortal_xsubmit_Test is Base {
     function test_xsubmit_oldValSet_reverts() public {
         // add new validator set
         XTypes.Submission memory xsub = readXSubmission("addValSet2", broadcastChainId);
-        portal.xsubmit(xsub);
+        _testXSubmit(portal, xsub);
 
         // submit a block with the valSetId 2
         _testSubmitXBlock("xblock1", 2, portal, counter);
@@ -163,23 +164,57 @@ contract OmniPortal_xsubmit_Test is Base {
     }
 
     /// @dev helper to test that an xsubmission makes the appropriate calls (to counter_), and emits
-    ///      the correct receipts
-    function _testSubmitXBlock(string memory name, uint64 valSetId, IOmniPortal portal_, Counter counter_) internal {
+    ///      the correct receipts.
+    function _testSubmitXBlock(string memory name, uint64 valSetId, OmniPortal portal_, Counter counter_) internal {
         XTypes.Submission memory xsub = readXSubmission(name, portal_.chainId(), valSetId);
 
+        uint256 expectedCount = numIncrements(xsub.msgs) + counter_.count();
+        uint64 sourceChainId = xsub.blockHeader.sourceChainId;
+
+        _testXSubmit(portal_, xsub);
+
+        assertEq(counter_.count(), expectedCount);
+        assertEq(counter_.countByChainId(sourceChainId), expectedCount);
+    }
+
+    /// @dev Helper to test and submit an XSubmission. It verifies gas usage matches
+    ///      portal.estimageGas(...), verifies all xcalls are made, and verifies stream
+    ///      offsets and block heights are updated.
+    function _testXSubmit(OmniPortal portal_, XTypes.Submission memory xsub) internal {
         uint64 sourceChainId = xsub.blockHeader.sourceChainId;
         uint64 expectedOffset = xsub.msgs[xsub.msgs.length - 1].streamOffset;
-        uint256 expectedCount = numIncrements(xsub.msgs) + counter_.count();
+
+        // relayer will use this call to estimate gas for an xsubmit
+        // this gas limit must be >= the gas used by the xsubmit
+        uint256 gasLimit = portal_.estimateGas(xsub);
+
+        bool isCChain = sourceChainId == portal_.omniCChainID();
+
+        // cchain xcalls are executed at the portal, and not detected by vm.expectCall()
+        if (!isCChain) {
+            expectCalls(xsub.msgs);
+            vm.recordLogs();
+        }
+
+        uint256 gasUsed = gasleft();
 
         vm.prank(relayer);
-        vm.recordLogs();
-        expectCalls(xsub.msgs);
         portal_.xsubmit(xsub);
+
+        gasUsed = gasUsed - gasleft();
+
+        // log gas usage
+        console.log("gasUsed: ", gasUsed);
+        console.log("gasLimit: ", gasLimit);
+
+        require(gasUsed < gasLimit, "gasLimit exceeded");
+        console.log("gasLimit - gasUsed: ", gasLimit - gasUsed);
 
         assertEq(portal_.inXStreamOffset(sourceChainId), expectedOffset);
         assertEq(portal_.inXStreamBlockHeight(sourceChainId), xsub.blockHeader.blockHeight);
-        assertEq(counter_.count(), expectedCount);
-        assertEq(counter_.countByChainId(sourceChainId), expectedCount);
-        assertReceipts(vm.getRecordedLogs(), xsub.msgs);
+
+        if (!isCChain) {
+            assertReceipts(vm.getRecordedLogs(), xsub.msgs);
+        }
     }
 }

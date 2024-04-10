@@ -128,11 +128,100 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
     //////////////////////////////////////////////////////////////////////////////
 
     /**
+     * @notice Calculate the gas required to submit a batch of XMsgs to this chain.
+     *         gasForSubmission(xsub) must be >= the gas required to execute the submission.
+     *         Implementaion matches xsubmit, but replaces storage writes and xmsg exeuction with
+     *         gas additions.
+     */
+    function estimateGas(XTypes.Submission calldata xsub) external view returns (uint256) {
+        // track gas used during estimate
+        uint256 gasStart = gasleft();
+
+        // additional gas, to account for operations that are not included in the gas estimate
+        uint256 gasAdditions = 0;
+
+        // verify the submission
+        _verifiy(xsub);
+
+        // validator set id for this submission
+        uint64 valSetId = xsub.validatorSetId;
+
+        // last seen validator set id for this source chain
+        uint64 lastValSetId = inXStreamValidatorSetId[xsub.blockHeader.sourceChainId];
+
+        // source chain block height of this submission
+        uint64 blockHeight = xsub.blockHeader.blockHeight;
+
+        // last seen block height for this source chain
+        uint64 lastBlockHeight = inXStreamBlockHeight[xsub.blockHeader.sourceChainId];
+
+        // update in stream block height, if it's new
+        if (blockHeight > lastBlockHeight) {
+            // 20,000 gas for new SSSTORe, 2,900 gas for overwtie SSTORE
+            gasAdditions += lastBlockHeight == 0 ? 20_000 : 2900;
+        }
+
+        // update in stream validator set id, if it's new
+        if (valSetId > lastValSetId) {
+            // 20,000 gas for new SSSTORE, 2,900 gas for overwtie SSTORE
+            gasAdditions += lastValSetId == 0 ? 20_000 : 2900;
+        }
+
+        for (uint256 i = 0; i < xsub.msgs.length; i++) {
+            XTypes.Msg calldata xmsg_ = xsub.msgs[i];
+
+            // add each xmsg's gasLimit
+            // sys xcalls do not have gas limit, so we estimate their gas
+            gasAdditions += _isSysCall(xmsg_) ? _estimateGas(xmsg_.data) : xmsg_.gasLimit;
+
+            // per-xmsg overhead, to account _exec gas usage (SLOAD / STORE offset, checks, etc.)
+            gasAdditions += 20_000;
+        }
+
+        // general overhead, and gas missed in estimate
+        // we'd rather overestimate than underestimate
+        gasAdditions += 20_000;
+
+        return (gasStart - gasleft()) + gasAdditions;
+    }
+
+    /**
      * @notice Submit a batch of XMsgs to be executed on this chain
      * @param xsub  An xchain submisison, including an attestation root w/ validator signatures,
      *              and a block header and message batch, proven against the attestation root.
      */
     function xsubmit(XTypes.Submission calldata xsub) external {
+        // verify the submission
+        _verifiy(xsub);
+
+        // validator set id for this submission
+        uint64 valSetId = xsub.validatorSetId;
+
+        // last seen validator set id for this source chain
+        uint64 lastValSetId = inXStreamValidatorSetId[xsub.blockHeader.sourceChainId];
+
+        // source chain block height of this submission
+        uint64 blockHeight = xsub.blockHeader.blockHeight;
+
+        // last seen block height for this source chain
+        uint64 lastBlockHeight = inXStreamBlockHeight[xsub.blockHeader.sourceChainId];
+
+        // update in stream block height, if it's new
+        if (blockHeight > lastBlockHeight) inXStreamBlockHeight[xsub.blockHeader.sourceChainId] = blockHeight;
+
+        // update in stream validator set id, if it's new
+        if (valSetId > lastValSetId) inXStreamValidatorSetId[xsub.blockHeader.sourceChainId] = valSetId;
+
+        // execute xmsgs
+        for (uint256 i = 0; i < xsub.msgs.length; i++) {
+            _exec(xsub.msgs[i]);
+        }
+    }
+
+    /**
+     * @notice Verify an xsbmission. Reverts if the submission is invalid.
+     */
+    function _verifiy(XTypes.Submission calldata xsub) internal view {
         require(xsub.msgs.length > 0, "OmniPortal: no xmsgs");
 
         // validator set id for this submission
@@ -165,23 +254,6 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
             XBlockMerkleProof.verify(xsub.attestationRoot, xsub.blockHeader, xsub.msgs, xsub.proof, xsub.proofFlags),
             "OmniPortal: invalid proof"
         );
-
-        // source chain block height of this submission
-        uint64 blockHeight = xsub.blockHeader.blockHeight;
-
-        // last seen block height for this source chain
-        uint64 lastBlockHeight = inXStreamBlockHeight[xsub.blockHeader.sourceChainId];
-
-        // update in stream block height, if it's new
-        if (blockHeight > lastBlockHeight) inXStreamBlockHeight[xsub.blockHeader.sourceChainId] = blockHeight;
-
-        // update in stream validator set id, if it's new
-        if (valSetId > lastValSetId) inXStreamValidatorSetId[xsub.blockHeader.sourceChainId] = valSetId;
-
-        // execute xmsgs
-        for (uint256 i = 0; i < xsub.msgs.length; i++) {
-            _exec(xsub.msgs[i]);
-        }
     }
 
     /**
@@ -219,10 +291,8 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
         // increment offset before executing xcall, to avoid reentrancy loop
         inXStreamOffset[xmsg_.sourceChainId] += 1;
 
-        // xcalls to _VIRTUAL_PORTAL_ADDRESS are system calls
-        bool isSysCall = xmsg_.to == _VIRTUAL_PORTAL_ADDRESS;
-
-        (bool success, uint256 gasUsed) = isSysCall ? _execSys(xmsg_.data) : _exec(xmsg_.to, xmsg_.gasLimit, xmsg_.data);
+        (bool success, uint256 gasUsed) =
+            _isSysCall(xmsg_) ? _execSys(xmsg_.data) : _exec(xmsg_.to, xmsg_.gasLimit, xmsg_.data);
 
         // reset xmsg to zero
         delete _xmsg;
@@ -290,6 +360,66 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
         }
 
         return abi.decode(result, (string));
+    }
+
+    /**
+     * @notice Returns true if the xmsg is a system call, false otherwise
+     */
+    function _isSysCall(XTypes.Msg calldata xmsg_) internal pure returns (bool) {
+        return xmsg_.to == _VIRTUAL_PORTAL_ADDRESS;
+    }
+
+    /**
+     * @notice Estimate the gas used by a system call with `data`
+     */
+    function _estimateGas(bytes calldata data) internal view returns (uint256) {
+        bytes4 sig = bytes4(data[:4]);
+        bytes memory args = data[4:];
+
+        if (sig == this.addValidatorSet.selector) {
+            (uint64 valSetId, XTypes.Validator[] memory validators) = abi.decode(args, (uint64, XTypes.Validator[]));
+            return _estimateGas_addValidatorSet(valSetId, validators);
+        }
+
+        revert("OmniPortal: invalid sys call");
+    }
+
+    /**
+     * @notice Estimate the gas used by a system call with `data`. Matches addValidatorSet
+     *         implementation, but replaces storage writes with gas additions.
+     */
+    // solhint-disable-next-line func-name-mixedcase
+    function _estimateGas_addValidatorSet(uint64 valSetId, XTypes.Validator[] memory validators)
+        internal
+        view
+        returns (uint256)
+    {
+        uint256 gasStart = gasleft();
+        uint256 gasAdditions;
+
+        require(validators.length > 0, "OmniPortal: no validators");
+
+        uint64 totalPower;
+        XTypes.Validator memory val;
+        mapping(address => uint64) storage valSet = validatorSet[valSetId];
+
+        for (uint256 i = 0; i < validators.length; i++) {
+            val = validators[i];
+
+            require(val.addr != address(0), "OmniPortal: no zero validator");
+            require(val.power > 0, "OmniPortal: no zero power");
+            require(valSet[val.addr] == 0, "OmniPortal: duplicate validator");
+
+            totalPower += val.power;
+
+            // fresh SSTORE for validator
+            gasAdditions += 25_000;
+        }
+
+        // fresh SSTORE for totalPower
+        gasAdditions += 25_000;
+
+        return (gasStart - gasleft()) + gasAdditions;
     }
 
     //////////////////////////////////////////////////////////////////////////////

@@ -31,7 +31,7 @@
         "sender": "0x1c831bF4656866662B04c8FED126d432a007BD08",
         "to": "0xa5906e11c3b7F5B832bcBf389295D44e7695b4A6",
         "data": "0xd09de08a",
-        "gasLimit": "200000"
+        "gasLimit": "50000"
       },
       {
         "sourceChainId": "102",
@@ -40,7 +40,7 @@
         "sender": "0x1c831bF4656866662B04c8FED126d432a007BD08",
         "to": "0xa5906e11c3b7F5B832bcBf389295D44e7695b4A6",
         "data": "0xd09de08a",
-        "gasLimit": "200000"
+        "gasLimit": "50000"
       },
       {
         "sourceChainId": "102",
@@ -49,7 +49,7 @@
         "sender": "0x1c831bF4656866662B04c8FED126d432a007BD08",
         "to": "0xa5906e11c3b7F5B832bcBf389295D44e7695b4A6",
         "data": "0xd09de08a",
-        "gasLimit": "200000"
+        "gasLimit": "50000"
       },
       {
         "sourceChainId": "102",
@@ -58,7 +58,7 @@
         "sender": "0xD1c5ea2610b894FA66333cb5F3b512ea037ba1F0",
         "to": "0x8584361C55e82129246aDAEb93E6a2b4d4C7891b",
         "data": "0x11cf11ae",
-        "gasLimit": "200000"
+        "gasLimit": "21000"
       },
       {
         "sourceChainId": "102",
@@ -67,7 +67,7 @@
         "sender": "0x1c831bF4656866662B04c8FED126d432a007BD08",
         "to": "0xa5906e11c3b7F5B832bcBf389295D44e7695b4A6",
         "data": "0xd09de08a",
-        "gasLimit": "200000"
+        "gasLimit": "50000"
       },
       {
         "sourceChainId": "102",
@@ -76,7 +76,7 @@
         "sender": "0x1c831bF4656866662B04c8FED126d432a007BD08",
         "to": "0xB623292e2766E11489b030EBE5876011a4e79183",
         "data": "0xd09de08a",
-        "gasLimit": "200000"
+        "gasLimit": "50000"
       },
       {
         "sourceChainId": "102",
@@ -85,7 +85,7 @@
         "sender": "0x1c831bF4656866662B04c8FED126d432a007BD08",
         "to": "0xB623292e2766E11489b030EBE5876011a4e79183",
         "data": "0xd09de08a",
-        "gasLimit": "200000"
+        "gasLimit": "50000"
       },
       {
         "sourceChainId": "102",
@@ -94,7 +94,7 @@
         "sender": "0x1c831bF4656866662B04c8FED126d432a007BD08",
         "to": "0xB623292e2766E11489b030EBE5876011a4e79183",
         "data": "0xd09de08a",
-        "gasLimit": "200000"
+        "gasLimit": "50000"
       },
       {
         "sourceChainId": "102",
@@ -103,7 +103,7 @@
         "sender": "0xD1c5ea2610b894FA66333cb5F3b512ea037ba1F0",
         "to": "0x569e464014e8A98bACC94fEA81E349Bc7Aae67Dc",
         "data": "0x11cf11ae",
-        "gasLimit": "200000"
+        "gasLimit": "21000"
       },
       {
         "sourceChainId": "102",
@@ -112,7 +112,7 @@
         "sender": "0x1c831bF4656866662B04c8FED126d432a007BD08",
         "to": "0xB623292e2766E11489b030EBE5876011a4e79183",
         "data": "0xd09de08a",
-        "gasLimit": "200000"
+        "gasLimit": "50000"
       }
     ]
   },
@@ -130,7 +130,7 @@
         "sender": "0x1c831bF4656866662B04c8FED126d432a007BD08",
         "to": "0xa5906e11c3b7F5B832bcBf389295D44e7695b4A6",
         "data": "0xd09de08a",
-        "gasLimit": "200000"
+        "gasLimit": "50000"
       },
       {
         "sourceChainId": "102",
@@ -139,7 +139,7 @@
         "sender": "0x1c831bF4656866662B04c8FED126d432a007BD08",
         "to": "0xa5906e11c3b7F5B832bcBf389295D44e7695b4A6",
         "data": "0xd09de08a",
-        "gasLimit": "200000"
+        "gasLimit": "50000"
       },
       {
         "sourceChainId": "102",
@@ -148,7 +148,7 @@
         "sender": "0x1c831bF4656866662B04c8FED126d432a007BD08",
         "to": "0xa5906e11c3b7F5B832bcBf389295D44e7695b4A6",
         "data": "0xd09de08a",
-        "gasLimit": "200000"
+        "gasLimit": "50000"
       },
       {
         "sourceChainId": "102",
@@ -157,7 +157,7 @@
         "sender": "0xD1c5ea2610b894FA66333cb5F3b512ea037ba1F0",
         "to": "0x8584361C55e82129246aDAEb93E6a2b4d4C7891b",
         "data": "0x11cf11ae",
-        "gasLimit": "200000"
+        "gasLimit": "21000"
       },
       {
         "sourceChainId": "102",
@@ -166,7 +166,7 @@
         "sender": "0x1c831bF4656866662B04c8FED126d432a007BD08",
         "to": "0xa5906e11c3b7F5B832bcBf389295D44e7695b4A6",
         "data": "0xd09de08a",
-        "gasLimit": "200000"
+        "gasLimit": "50000"
       },
       {
         "sourceChainId": "102",
@@ -175,7 +175,7 @@
         "sender": "0x1c831bF4656866662B04c8FED126d432a007BD08",
         "to": "0xB623292e2766E11489b030EBE5876011a4e79183",
         "data": "0xd09de08a",
-        "gasLimit": "200000"
+        "gasLimit": "50000"
       },
       {
         "sourceChainId": "102",
@@ -184,7 +184,7 @@
         "sender": "0x1c831bF4656866662B04c8FED126d432a007BD08",
         "to": "0xB623292e2766E11489b030EBE5876011a4e79183",
         "data": "0xd09de08a",
-        "gasLimit": "200000"
+        "gasLimit": "50000"
       },
       {
         "sourceChainId": "102",
@@ -193,7 +193,7 @@
         "sender": "0x1c831bF4656866662B04c8FED126d432a007BD08",
         "to": "0xB623292e2766E11489b030EBE5876011a4e79183",
         "data": "0xd09de08a",
-        "gasLimit": "200000"
+        "gasLimit": "50000"
       },
       {
         "sourceChainId": "102",
@@ -202,7 +202,7 @@
         "sender": "0xD1c5ea2610b894FA66333cb5F3b512ea037ba1F0",
         "to": "0x569e464014e8A98bACC94fEA81E349Bc7Aae67Dc",
         "data": "0x11cf11ae",
-        "gasLimit": "200000"
+        "gasLimit": "21000"
       },
       {
         "sourceChainId": "102",
@@ -211,7 +211,7 @@
         "sender": "0x1c831bF4656866662B04c8FED126d432a007BD08",
         "to": "0xB623292e2766E11489b030EBE5876011a4e79183",
         "data": "0xd09de08a",
-        "gasLimit": "200000"
+        "gasLimit": "50000"
       }
     ]
   }

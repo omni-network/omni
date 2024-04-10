@@ -258,8 +258,8 @@ contract Fixtures is CommonBase, StdCheats {
             sender: _counters[sourceChainId],
             to: _counters[destChainId],
             data: abi.encodeWithSignature("increment()"),
-            gasLimit: portal.XMSG_DEFAULT_GAS_LIMIT()
-        });
+            gasLimit: 50_000 // two SSTOREs
+         });
     }
 
     /// @dev Create a Reverter.forceRevert() XMsg
@@ -275,8 +275,8 @@ contract Fixtures is CommonBase, StdCheats {
             sender: _reverters[sourceChainId],
             to: _reverters[destChainId],
             data: abi.encodeWithSignature("forceRevert()"),
-            gasLimit: portal.XMSG_DEFAULT_GAS_LIMIT()
-        });
+            gasLimit: portal.XMSG_MIN_GAS_LIMIT() // reverts take less gas than minimum
+         });
     }
 
     /// @dev Initialize test addresses
