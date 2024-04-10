@@ -42,6 +42,22 @@ var (
 		Help:      "Current number of proposed votes per source chain. Alert if growing.",
 	}, []string{"chain"})
 
+	proposedPerBlock = promauto.NewHistogram(prometheus.HistogramOpts{
+		Namespace: "halo",
+		Subsystem: "voter",
+		Name:      "proposed_per_block",
+		Help:      "Number of proposed votes per block.",
+		Buckets:   []float64{1, 2, 5, 10, 25, 50, 100, 250, 500, 1000},
+	})
+
+	committedPerBlock = promauto.NewHistogram(prometheus.HistogramOpts{
+		Namespace: "halo",
+		Subsystem: "voter",
+		Name:      "committed_per_block",
+		Help:      "Number of committed votes per block.",
+		Buckets:   []float64{1, 2, 5, 10, 25, 50, 100, 250, 500, 1000},
+	})
+
 	trimTotal = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "halo",
 		Subsystem: "voter",
