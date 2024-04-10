@@ -161,7 +161,7 @@ func (a *Voter) runOnce(ctx context.Context, chainID uint64) error {
 			} else if cmp < 0 {
 				return errors.New("behind vote window (too slow)", "vote_height", block.BlockHeight)
 			} else if cmp > 0 {
-				backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Minute))
+				backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second*5))
 				for a.AvailableCount() > maxAvailable {
 					log.Warn(ctx, "Voting paused, latest approved attestation is too far behind (stuck?)", nil, "vote_height", block.BlockHeight)
 					backoff()

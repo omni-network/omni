@@ -1,4 +1,3 @@
-//nolint:revive // Defer chains is best for latency metrics.
 package provider
 
 import (

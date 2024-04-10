@@ -1,4 +1,3 @@
-//nolint:revive // Defer chain is better in this case.
 package ethclient
 
 import (

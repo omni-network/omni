@@ -92,7 +92,7 @@ func (w Wrapper) Address() string {
 // HeaderByType returns the block header for the given head type.
 func (w Wrapper) HeaderByType(ctx context.Context, typ HeadType) (*types.Header, error) {
 	const endpoint = "header_by_type"
-	defer latency(w.chain, endpoint)() //nolint:revive // Defer chain is fine here.
+	defer latency(w.chain, endpoint)()
 
 	var header *types.Header
 	err := w.cl.Client().CallContext(
@@ -113,7 +113,7 @@ func (w Wrapper) HeaderByType(ctx context.Context, typ HeadType) (*types.Header,
 // PeerCount returns the number of p2p peers as reported by the net_peerCount method.
 func (w Wrapper) PeerCount(ctx context.Context) (uint64, error) {
 	const endpoint = "peer_count"
-	defer latency(w.chain, endpoint)() //nolint:revive // Defer chain is fine here.
+	defer latency(w.chain, endpoint)()
 
 	resp, err := w.cl.PeerCount(ctx)
 	if err != nil {
