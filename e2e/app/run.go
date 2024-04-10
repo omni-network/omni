@@ -14,19 +14,25 @@ import (
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
-// defaultPingPongN defines a few days of ping pong messages after each deploy.
-const defaultPingPongN = 100_000
+const (
+	// defaultPingPongN defines a few days of ping pong hops after each deploy.
+	defaultPingPongN = 100_000
+	// defaultPingPongP defines 10 parallel ping pongs per edge.
+	defaultPingPongP = 10
+)
 
 func DefaultDeployConfig() DeployConfig {
 	return DeployConfig{
 		AgentSecrets: agent.Secrets{}, // Empty secrets
 		PingPongN:    defaultPingPongN,
+		PingPongP:    defaultPingPongP,
 	}
 }
 
 type DeployConfig struct {
 	AgentSecrets agent.Secrets
-	PingPongN    uint64
+	PingPongP    uint64 // Number of parallel ping pongs to start per edge.
+	PingPongN    uint64 // Number of hops per ping pong.
 	ExplorerDB   string
 
 	// Internal use parameters (no command line flags).
@@ -102,7 +108,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, errors.Wrap(err, "deploy pingpong")
 	}
 
-	err = pp.StartAllEdges(ctx, cfg.PingPongN)
+	err = pp.StartAllEdges(ctx, cfg.PingPongN, cfg.PingPongP)
 	if err != nil {
 		return nil, errors.Wrap(err, "start all edges")
 	}
@@ -127,6 +133,7 @@ func DefaultE2ETestConfig() E2ETestConfig {
 // E2ETest runs a full e2e test.
 func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, secrets agent.Secrets) error {
 	var pingpongN = uint64(3)
+	const pingpongP = uint64(2)
 	if def.Manifest.PingPongN != 0 {
 		pingpongN = def.Manifest.PingPongN
 	}
@@ -134,6 +141,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, secrets age
 	depCfg := DeployConfig{
 		AgentSecrets: secrets,
 		PingPongN:    pingpongN,
+		PingPongP:    pingpongP,
 		testConfig:   true,
 	}
 
