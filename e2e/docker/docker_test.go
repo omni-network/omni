@@ -107,7 +107,7 @@ func TestComposeTemplate(t *testing.T) {
 				testnet.Network = netconf.Devnet
 			}
 
-			p := docker.NewProvider(testnet, types.InfrastructureData{}, test.tag, "fake_connection")
+			p := docker.NewProvider(testnet, types.InfrastructureData{}, test.tag)
 			require.NoError(t, err)
 
 			require.NoError(t, p.Setup())

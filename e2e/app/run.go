@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/contracts/bindings"
-	"github.com/omni-network/omni/e2e/app/agent"
 	"github.com/omni-network/omni/e2e/netman/pingpong"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/errors"
@@ -23,17 +22,14 @@ const (
 
 func DefaultDeployConfig() DeployConfig {
 	return DeployConfig{
-		AgentSecrets: agent.Secrets{}, // Empty secrets
-		PingPongN:    defaultPingPongN,
-		PingPongP:    defaultPingPongP,
+		PingPongN: defaultPingPongN,
+		PingPongP: defaultPingPongP,
 	}
 }
 
 type DeployConfig struct {
-	AgentSecrets agent.Secrets
-	PingPongP    uint64 // Number of parallel ping pongs to start per edge.
-	PingPongN    uint64 // Number of hops per ping pong.
-	ExplorerDB   string
+	PingPongN uint64 // Number of hops per ping pong.
+	PingPongP uint64 // Number of parallel ping pongs to start per edge.
 
 	// Internal use parameters (no command line flags).
 	testConfig bool
@@ -70,7 +66,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, err
 	}
 
-	if err := Setup(ctx, def, cfg.AgentSecrets, cfg.testConfig, cfg.ExplorerDB); err != nil {
+	if err := Setup(ctx, def, cfg); err != nil {
 		return nil, err
 	}
 
@@ -131,7 +127,7 @@ func DefaultE2ETestConfig() E2ETestConfig {
 }
 
 // E2ETest runs a full e2e test.
-func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, secrets agent.Secrets) error {
+func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 	var pingpongN = uint64(3)
 	const pingpongP = uint64(2)
 	if def.Manifest.PingPongN != 0 {
@@ -139,10 +135,9 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, secrets age
 	}
 
 	depCfg := DeployConfig{
-		AgentSecrets: secrets,
-		PingPongN:    pingpongN,
-		PingPongP:    pingpongP,
-		testConfig:   true,
+		PingPongN:  pingpongN,
+		PingPongP:  pingpongP,
+		testConfig: true,
 	}
 
 	pingpong, err := Deploy(ctx, def, depCfg)
@@ -232,7 +227,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig, secrets age
 // Upgrade generates all local artifacts, but only copies the docker-compose file to the VMs.
 // It them calls docker-compose up.
 func Upgrade(ctx context.Context, def Definition, cfg DeployConfig, upgradeCfg types.UpgradeConfig) error {
-	if err := Setup(ctx, def, cfg.AgentSecrets, false, cfg.ExplorerDB); err != nil {
+	if err := Setup(ctx, def, cfg); err != nil {
 		return err
 	}
 
@@ -268,7 +263,7 @@ func logRPCs(ctx context.Context, def Definition) {
 // deployMonitorOnly deploys the monitor service only.
 // It merely sets up config files and then starts the monitor service.
 func deployMonitorOnly(ctx context.Context, def Definition, cfg DeployConfig) error {
-	if err := Setup(ctx, def, cfg.AgentSecrets, cfg.testConfig, ""); err != nil {
+	if err := Setup(ctx, def, cfg); err != nil {
 		return err
 	}
 

@@ -22,14 +22,12 @@ import (
 // Testnet wraps e2e.Testnet with additional omni-specific fields.
 type Testnet struct {
 	*e2e.Testnet
-	Network        netconf.ID
-	OmniEVMs       []OmniEVM
-	AnvilChains    []AnvilChain
-	PublicChains   []PublicChain
-	OnlyMonitor    bool
-	Explorer       bool
-	ExplorerMockDB bool
-	ExplorerDBConn string
+	Network      netconf.ID
+	OmniEVMs     []OmniEVM
+	AnvilChains  []AnvilChain
+	PublicChains []PublicChain
+	OnlyMonitor  bool
+	Explorer     bool
 }
 
 // RandomHaloAddr returns a random halo address for cprovider and cometBFT rpc clients.

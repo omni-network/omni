@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/omni-network/omni/e2e/app/agent"
 	"github.com/omni-network/omni/e2e/app/key"
 	"github.com/omni-network/omni/e2e/docker"
 	"github.com/omni-network/omni/e2e/netman"
@@ -31,6 +32,8 @@ import (
 
 // DefinitionConfig is the configuration required to create a full Definition.
 type DefinitionConfig struct {
+	AgentSecrets agent.Secrets
+
 	ManifestFile  string
 	InfraProvider string
 
@@ -54,8 +57,10 @@ func DefaultDefinitionConfig() DefinitionConfig {
 	}
 
 	return DefinitionConfig{
-		InfraProvider: docker.ProviderName,
-		OmniImgTag:    defaultTag,
+		AgentSecrets:   agent.Secrets{}, // empty agent.Secrets by default
+		InfraProvider:  docker.ProviderName,
+		OmniImgTag:     defaultTag,
+		ExplorerDBConn: "postgres://omni:password@explorer_db:5432/omni_db",
 	}
 }
 
@@ -65,7 +70,8 @@ type Definition struct {
 	Manifest    types.Manifest
 	Testnet     types.Testnet // Note that testnet is the cometBFT term.
 	Infra       types.InfraProvider
-	lazyNetwork *lazyNetwork // lazyNetwork does lazy setup of backends and netman (only if required).
+	Cfg         DefinitionConfig // Original config used to construct the Definition.
+	lazyNetwork *lazyNetwork     // lazyNetwork does lazy setup of backends and netman (only if required).
 }
 
 // InitLazyNetwork initializes the lazy network, which is the backends and netman.
@@ -152,9 +158,9 @@ func MakeDefinition(ctx context.Context, cfg DefinitionConfig, commandName strin
 	var infp types.InfraProvider
 	switch cfg.InfraProvider {
 	case docker.ProviderName:
-		infp = docker.NewProvider(testnet, infd, cfg.OmniImgTag, cfg.ExplorerDBConn)
+		infp = docker.NewProvider(testnet, infd, cfg.OmniImgTag)
 	case vmcompose.ProviderName:
-		infp = vmcompose.NewProvider(testnet, infd, cfg.OmniImgTag, cfg.ExplorerDBConn)
+		infp = vmcompose.NewProvider(testnet, infd, cfg.OmniImgTag)
 	default:
 		return Definition{}, errors.New("unknown infra provider", "provider", cfg.InfraProvider)
 	}
@@ -164,6 +170,7 @@ func MakeDefinition(ctx context.Context, cfg DefinitionConfig, commandName strin
 		Testnet:     testnet,
 		Infra:       infp,
 		lazyNetwork: &lazyNetwork{initFunc: lazy},
+		Cfg:         cfg,
 	}, nil
 }
 
@@ -409,14 +416,12 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 	}
 
 	return types.Testnet{
-		Network:        manifest.Network,
-		Testnet:        cmtTestnet,
-		OmniEVMs:       omniEVMS,
-		AnvilChains:    anvils,
-		PublicChains:   publics,
-		Explorer:       manifest.Explorer,
-		ExplorerMockDB: manifest.ExplorerMockDB,
-		ExplorerDBConn: cfg.ExplorerDBConn,
+		Network:      manifest.Network,
+		Testnet:      cmtTestnet,
+		OmniEVMs:     omniEVMS,
+		AnvilChains:  anvils,
+		PublicChains: publics,
+		Explorer:     manifest.Explorer,
 	}, nil
 }
 
