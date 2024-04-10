@@ -165,13 +165,13 @@ func (d *XDapp) StartAllEdges(ctx context.Context, parallel, count uint64) error
 			"count", count,
 		)
 
-		txOpts, backend, err := d.backends.BindOpts(ctx, from.Chain.ID, d.operator)
-		if err != nil {
-			return err
-		}
-
 		for i := uint64(0); i < parallel; i++ {
 			eg.Go(func() error {
+				txOpts, backend, err := d.backends.BindOpts(ctx, from.Chain.ID, d.operator)
+				if err != nil {
+					return err
+				}
+
 				tx, err := from.PingPong.Start(txOpts, to.Chain.ID, to.Address, count)
 				if err != nil {
 					return errors.Wrap(err, "start ping pong", "from", from.Chain.Name, "to", to.Chain.Name)

@@ -104,7 +104,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, errors.Wrap(err, "deploy pingpong")
 	}
 
-	err = pp.StartAllEdges(ctx, cfg.PingPongN, cfg.PingPongP)
+	err = pp.StartAllEdges(ctx, cfg.PingPongP, cfg.PingPongN)
 	if err != nil {
 		return nil, errors.Wrap(err, "start all edges")
 	}
