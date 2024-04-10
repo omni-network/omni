@@ -35,10 +35,9 @@ var _ types.InfraProvider = (*Provider)(nil)
 // Provider wraps the cometBFT docker provider, writing a different compose file.
 type Provider struct {
 	*cmtdocker.Provider
-	servicesOnce   sync.Once
-	testnet        types.Testnet
-	omniTag        string
-	explorerDBConn string
+	servicesOnce sync.Once
+	testnet      types.Testnet
+	omniTag      string
 }
 
 func (*Provider) Clean(ctx context.Context) error {
@@ -55,7 +54,7 @@ func (*Provider) Clean(ctx context.Context) error {
 }
 
 // NewProvider returns a new Provider.
-func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag string, explorerDBConn string) *Provider {
+func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag string) *Provider {
 	return &Provider{
 		Provider: &cmtdocker.Provider{
 			ProviderData: infra.ProviderData{
@@ -63,9 +62,8 @@ func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag st
 				InfrastructureData: infd.InfrastructureData,
 			},
 		},
-		testnet:        testnet,
-		omniTag:        imgTag,
-		explorerDBConn: explorerDBConn,
+		testnet: testnet,
+		omniTag: imgTag,
 	}
 }
 
@@ -73,20 +71,19 @@ func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag st
 // any of these operations fail.
 func (p *Provider) Setup() error {
 	def := ComposeDef{
-		Network:        true,
-		NetworkName:    p.testnet.Name,
-		NetworkCIDR:    p.testnet.IP.String(),
-		BindAll:        false,
-		Nodes:          p.testnet.Nodes,
-		OmniEVMs:       p.testnet.OmniEVMs,
-		Anvils:         p.testnet.AnvilChains,
-		Relayer:        true,
-		Prometheus:     p.testnet.Prometheus,
-		Monitor:        true,
-		Explorer:       p.testnet.Explorer,
-		ExplorerMockDB: p.testnet.Network.IsEphemeral(),
-		ExplorerDBConn: p.explorerDBConn,
-		OmniTag:        p.omniTag,
+		Network:     true,
+		NetworkName: p.testnet.Name,
+		NetworkCIDR: p.testnet.IP.String(),
+		BindAll:     false,
+		Nodes:       p.testnet.Nodes,
+		OmniEVMs:    p.testnet.OmniEVMs,
+		Anvils:      p.testnet.AnvilChains,
+		Relayer:     true,
+		Prometheus:  p.testnet.Prometheus,
+		Monitor:     true,
+		Explorer:    p.testnet.Explorer,
+		ExplorerDB:  p.testnet.Explorer && p.testnet.Network.IsEphemeral(),
+		OmniTag:     p.omniTag,
 	}
 
 	bz, err := GenerateComposeFile(def)
@@ -161,9 +158,8 @@ type ComposeDef struct {
 	Relayer    bool
 	Prometheus bool
 
-	ExplorerMockDB bool
-	Explorer       bool
-	ExplorerDBConn string
+	ExplorerDB bool
+	Explorer   bool
 }
 
 func (ComposeDef) GethTag() string {
@@ -226,35 +222,34 @@ func CleanCmds(sudo bool, isLinux bool) []string {
 // additionalServices returns additional (to halo) docker-compose services to start.
 func additionalServices(testnet types.Testnet) []string {
 	var resp []string
-	for _, omniEVM := range testnet.OmniEVMs {
-		resp = append(resp, omniEVM.InstanceName)
-	}
-	for _, anvil := range testnet.AnvilChains {
-		resp = append(resp, anvil.Chain.Name)
-	}
-
 	if testnet.Prometheus {
 		resp = append(resp, "prometheus")
 	}
 
 	resp = append(resp, "monitor")
 
-	if testnet.Explorer {
-		resp = append(resp, "explorer_indexer")
-		resp = append(resp, "explorer_graphql")
-		resp = append(resp, "explorer_ui")
-	}
-
-	if testnet.Network.IsEphemeral() {
-		resp = append(resp, "explorer_db")
-	}
-
-	// In monitor only mode, we don't need to start the relayer (above omni and anvils will also be empty).
+	// In monitor only mode, we only start monitor and prometheus.
 	if testnet.OnlyMonitor {
 		return resp
 	}
 
+	for _, omniEVM := range testnet.OmniEVMs {
+		resp = append(resp, omniEVM.InstanceName)
+	}
+	for _, anvil := range testnet.AnvilChains {
+		resp = append(resp, anvil.Chain.Name)
+	}
 	resp = append(resp, "relayer")
+
+	if testnet.Explorer {
+		resp = append(resp, "explorer_indexer")
+		resp = append(resp, "explorer_graphql")
+		resp = append(resp, "explorer_ui")
+
+		if testnet.Network.IsEphemeral() {
+			resp = append(resp, "explorer_db")
+		}
+	}
 
 	return resp
 }

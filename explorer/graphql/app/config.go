@@ -26,7 +26,7 @@ type Config struct {
 func DefaultConfig() Config {
 	return Config{
 		ListenAddress:  defaultListenAddr,
-		ExplorerDBConn: "",
+		ExplorerDBConn: "postgres://omni:password@explorer_db:5432/omni_db",
 		MonitoringAddr: ":26660",
 	}
 }

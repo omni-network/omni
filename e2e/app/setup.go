@@ -50,7 +50,7 @@ const (
 )
 
 // Setup sets up the testnet configuration.
-func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, testCfg bool, explorerDB string) error {
+func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	log.Info(ctx, "Setup testnet", "dir", def.Testnet.Dir)
 
 	if err := os.MkdirAll(def.Testnet.Dir, os.ModePerm); err != nil {
@@ -58,7 +58,7 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 	}
 
 	if def.Manifest.OnlyMonitor {
-		return SetupOnlyMonitor(ctx, def, agentSecrets)
+		return SetupOnlyMonitor(ctx, def)
 	}
 
 	var vals []crypto.PubKey
@@ -94,11 +94,11 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 		return err
 	}
 
-	if err := writeExplorerIndexerConfig(def, logCfg, explorerDB); err != nil {
+	if err := writeExplorerIndexerConfig(def, logCfg); err != nil {
 		return err
 	}
 
-	if err := writeExplorerGraphqlConfig(def, logCfg, explorerDB); err != nil {
+	if err := writeExplorerGraphqlConfig(def, logCfg); err != nil {
 		return err
 	}
 
@@ -122,7 +122,7 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 		}
 		config.WriteConfigFile(filepath.Join(nodeDir, "config", "config.toml"), cfg) // panics
 
-		if err := writeHaloConfig(nodeDir, logCfg, testCfg, node.Mode); err != nil {
+		if err := writeHaloConfig(nodeDir, logCfg, depCfg.testConfig, node.Mode); err != nil {
 			return err
 		}
 
@@ -160,7 +160,7 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 	}
 
 	if def.Testnet.Prometheus {
-		if err := agent.WriteConfig(ctx, def.Testnet, agentSecrets); err != nil {
+		if err := agent.WriteConfig(ctx, def.Testnet, def.Cfg.AgentSecrets); err != nil {
 			return errors.Wrap(err, "write prom config")
 		}
 	}
@@ -172,14 +172,14 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 	return nil
 }
 
-func SetupOnlyMonitor(ctx context.Context, def Definition, agentSecrets agent.Secrets) error {
+func SetupOnlyMonitor(ctx context.Context, def Definition) error {
 	logCfg := logConfig(def)
 	if err := writeMonitorConfig(ctx, def, logCfg, nil); err != nil {
 		return err
 	}
 
 	if def.Testnet.Prometheus {
-		if err := agent.WriteConfig(ctx, def.Testnet, agentSecrets); err != nil {
+		if err := agent.WriteConfig(ctx, def.Testnet, def.Cfg.AgentSecrets); err != nil {
 			return errors.Wrap(err, "write prom config")
 		}
 	}
@@ -451,7 +451,7 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 	return nil
 }
 
-func writeExplorerIndexerConfig(def Definition, logCfg log.Config, explorerDB string) error {
+func writeExplorerIndexerConfig(def Definition, logCfg log.Config) error {
 	confRoot := filepath.Join(def.Testnet.Dir, "explorer_indexer")
 
 	const (
@@ -476,7 +476,7 @@ func writeExplorerIndexerConfig(def Definition, logCfg log.Config, explorerDB st
 
 	cfg := indexerapp.DefaultConfig()
 	cfg.NetworkFile = networkFile
-	cfg.ExplorerDBConn = explorerDB
+	cfg.ExplorerDBConn = def.Cfg.ExplorerDBConn
 
 	if err := indexerapp.WriteConfigTOML(cfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write indexer config")
@@ -485,7 +485,7 @@ func writeExplorerIndexerConfig(def Definition, logCfg log.Config, explorerDB st
 	return nil
 }
 
-func writeExplorerGraphqlConfig(def Definition, logCfg log.Config, explorerDB string) error {
+func writeExplorerGraphqlConfig(def Definition, logCfg log.Config) error {
 	confRoot := filepath.Join(def.Testnet.Dir, "explorer_graphql")
 
 	const (
@@ -498,7 +498,7 @@ func writeExplorerGraphqlConfig(def Definition, logCfg log.Config, explorerDB st
 	}
 
 	cfg := graphqlapp.DefaultConfig()
-	cfg.ExplorerDBConn = explorerDB
+	cfg.ExplorerDBConn = def.Cfg.ExplorerDBConn
 
 	if err := graphqlapp.WriteConfigTOML(cfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write graphql config")

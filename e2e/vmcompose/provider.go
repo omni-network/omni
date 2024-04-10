@@ -26,19 +26,17 @@ const ProviderName = "vmcompose"
 var _ types.InfraProvider = (*Provider)(nil)
 
 type Provider struct {
-	Testnet        types.Testnet
-	Data           types.InfrastructureData
-	ExplorerDBConn string
-	once           sync.Once
-	omniTag        string
+	Testnet types.Testnet
+	Data    types.InfrastructureData
+	once    sync.Once
+	omniTag string
 }
 
-func NewProvider(testnet types.Testnet, data types.InfrastructureData, imgTag string, explorerDBConn string) *Provider {
+func NewProvider(testnet types.Testnet, data types.InfrastructureData, imgTag string) *Provider {
 	return &Provider{
-		Testnet:        testnet,
-		Data:           data,
-		ExplorerDBConn: explorerDBConn,
-		omniTag:        imgTag,
+		Testnet: testnet,
+		Data:    data,
+		omniTag: imgTag,
 	}
 }
 
@@ -79,21 +77,23 @@ func (p *Provider) Setup() error {
 			}
 		}
 
+		// All explorer containers are run on the same VM
+		explorer := p.Testnet.Explorer && (services["explorer_ui"] || services["explorer_graphql"] || services["explorer_indexer"])
+
 		def := docker.ComposeDef{
-			Network:        false,
-			BindAll:        true,
-			NetworkName:    p.Testnet.Name,
-			NetworkCIDR:    p.Testnet.IP.String(),
-			Nodes:          nodes,
-			OmniEVMs:       omniEVMs,
-			Anvils:         anvilChains,
-			Relayer:        services["relayer"],
-			Monitor:        services["monitor"],
-			Prometheus:     p.Testnet.Prometheus,
-			OmniTag:        p.omniTag,
-			Explorer:       p.Testnet.Explorer && (services["explorer_ui"] || services["explorer_graphql"] || services["explorer_indexer"]),
-			ExplorerMockDB: p.Testnet.Network.IsEphemeral() && services["explorer_mock_db"],
-			ExplorerDBConn: p.ExplorerDBConn,
+			Network:     false,
+			BindAll:     true,
+			NetworkName: p.Testnet.Name,
+			NetworkCIDR: p.Testnet.IP.String(),
+			Nodes:       nodes,
+			OmniEVMs:    omniEVMs,
+			Anvils:      anvilChains,
+			Relayer:     services["relayer"],
+			Monitor:     services["monitor"],
+			Prometheus:  p.Testnet.Prometheus,
+			OmniTag:     p.omniTag,
+			Explorer:    explorer,
+			ExplorerDB:  explorer && p.Testnet.Network.IsEphemeral(),
 		}
 		compose, err := docker.GenerateComposeFile(def)
 		if err != nil {

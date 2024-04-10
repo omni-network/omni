@@ -5,7 +5,6 @@ import (
 	"regexp"
 
 	"github.com/omni-network/omni/e2e/app"
-	"github.com/omni-network/omni/e2e/app/agent"
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/app/key"
 	"github.com/omni-network/omni/e2e/types"
@@ -28,7 +27,6 @@ func New() *cobra.Command {
 	defCfg := app.DefaultDefinitionConfig()
 
 	var def app.Definition
-	var secrets agent.Secrets
 
 	cmd := libcmd.NewRootCmd("e2e", "e2e network generator and test runner")
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
@@ -58,14 +56,13 @@ func New() *cobra.Command {
 	}
 
 	bindDefFlags(cmd.PersistentFlags(), &defCfg)
-	bindPromFlags(cmd.PersistentFlags(), &secrets)
 	log.BindFlags(cmd.PersistentFlags(), &logCfg)
 
 	// Root command runs the full E2E test.
 	e2eTestCfg := app.DefaultE2ETestConfig()
 	bindE2EFlags(cmd.Flags(), &e2eTestCfg)
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		return app.E2ETest(cmd.Context(), def, e2eTestCfg, secrets)
+		return app.E2ETest(cmd.Context(), def, e2eTestCfg)
 	}
 
 	// Add subcommands
