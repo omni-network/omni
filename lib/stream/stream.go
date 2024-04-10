@@ -3,6 +3,7 @@ package stream
 
 import (
 	"context"
+	"time"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -26,9 +27,10 @@ type Deps[E any] struct {
 	RetryCallback bool
 
 	// Metrics
-	IncFetchErr     func()
-	IncCallbackErr  func()
-	SetStreamHeight func(uint64)
+	IncFetchErr        func()
+	IncCallbackErr     func()
+	SetStreamHeight    func(uint64)
+	SetCallbackLatency func(time.Duration)
 }
 
 // Stream streams elements from the provided height (inclusive) on a specific chain.
@@ -71,7 +73,9 @@ func Stream[E any](ctx context.Context, deps Deps[E], srcChainID uint64, height 
 
 			// Retry callback on error
 			for ectx.Err() == nil {
+				t0 := time.Now()
 				err := callback(ectx, elem)
+				deps.SetCallbackLatency(time.Since(t0))
 				if ectx.Err() != nil {
 					return nil // Don't backoff or log on ctx cancel, just return nil.
 				} else if err != nil && !deps.RetryCallback {

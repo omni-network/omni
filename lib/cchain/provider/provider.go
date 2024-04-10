@@ -4,6 +4,7 @@ package provider
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
@@ -102,6 +103,9 @@ func (p Provider) Subscribe(in context.Context, srcChainID uint64, height uint64
 		},
 		SetStreamHeight: func(h uint64) {
 			streamHeight.WithLabelValues(workerName, srcChain).Set(float64(h))
+		},
+		SetCallbackLatency: func(d time.Duration) {
+			callbackLatency.WithLabelValues(workerName, srcChain).Observe(d.Seconds())
 		},
 	}
 
