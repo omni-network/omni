@@ -101,7 +101,7 @@ func (k *Keeper) RegisterProposalService(server grpc1.Server) {
 	types.RegisterMsgServiceServer(server, NewProposalServer(k))
 }
 
-// Add adds the given aggregate votes as pen the store.
+// Add adds the given aggregate votes as pending attestations to the store.
 // It merges the votes with attestations it already exists.
 func (k *Keeper) Add(ctx context.Context, msg *types.MsgAddVotes) error {
 	valset, err := k.prevBlockValSet(ctx)
@@ -109,7 +109,10 @@ func (k *Keeper) Add(ctx context.Context, msg *types.MsgAddVotes) error {
 		return errors.Wrap(err, "fetch validators")
 	}
 
+	countsByChain := make(map[uint64]int)
 	for _, aggVote := range msg.Votes {
+		countsByChain[aggVote.BlockHeader.ChainId]++
+
 		// Sanity check that all votes are from prev block validators.
 		for _, sig := range aggVote.Signatures {
 			if !valset.Contains(common.BytesToAddress(sig.ValidatorAddress)) {
@@ -123,12 +126,18 @@ func (k *Keeper) Add(ctx context.Context, msg *types.MsgAddVotes) error {
 		}
 	}
 
+	for chainID, count := range countsByChain {
+		votesProposed.WithLabelValues(k.namer(chainID)).Observe(float64(count))
+	}
+
 	return nil
 }
 
 // addOne adds the given aggregate vote to the store.
 // It merges it if the attestation already exists.
 func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64) error {
+	defer latency("add_one")()
+
 	header := agg.BlockHeader
 
 	// Get existing attestation (by unique key) or insert new one.
@@ -191,6 +200,8 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 
 // Approve approves any pending attestations that have quorum signatures from the provided set.
 func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
+	defer latency("approve")()
+
 	pendingIdx := AttestationStatusChainIdHeightIndexKey{}.WithStatus(int32(Status_Pending))
 	iter, err := k.attTable.List(ctx, pendingIdx)
 	if err != nil {
@@ -269,6 +280,8 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 
 // ListAttestationsFrom returns the subsequent approved attestations from the provided height (inclusive).
 func (k *Keeper) ListAttestationsFrom(ctx context.Context, chainID uint64, height uint64, max uint64) ([]*types.Attestation, error) {
+	defer latency("attestations_from")()
+
 	from := AttestationStatusChainIdHeightIndexKey{}.WithStatusChainIdHeight(int32(Status_Approved), chainID, height)
 	to := AttestationStatusChainIdHeightIndexKey{}.WithStatusChainIdHeight(int32(Status_Approved), chainID, height+max)
 
@@ -322,6 +335,8 @@ func (k *Keeper) ListAttestationsFrom(ctx context.Context, chainID uint64, heigh
 // latestAttestation returns the latest approved attestation for the given chain or
 // false if none is found.
 func (k *Keeper) latestAttestation(ctx context.Context, chainID uint64) (*types.Attestation, bool, error) {
+	defer latency("latest_attestation")()
+
 	idx := AttestationStatusChainIdHeightIndexKey{}.WithStatusChainId(int32(Status_Approved), chainID)
 	iter, err := k.attTable.List(ctx, idx, ormlist.Reverse(), ormlist.DefaultLimit(1))
 	if err != nil {
@@ -414,6 +429,7 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 	votes := k.voter.GetAvailable()
 
 	// Filter by vote window and if limited exceeded.
+	countsByChain := make(map[uint64]int)
 	var filtered []*types.Vote
 	for _, vote := range votes {
 		if cmp, err := k.windowCompare(ctx, vote.BlockHeader.ChainId, vote.BlockHeader.Height); err != nil {
@@ -422,6 +438,7 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 			// Skip votes no in the window
 			continue
 		}
+		countsByChain[vote.BlockHeader.ChainId]++
 		filtered = append(filtered, vote)
 
 		if len(filtered) >= int(k.voteExtLimit) {
@@ -434,6 +451,10 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal atts")
+	}
+
+	for chainID, count := range countsByChain {
+		votesExtended.WithLabelValues(k.namer(chainID)).Observe(float64(count))
 	}
 
 	// Make nice logs
@@ -567,7 +588,6 @@ func (k *Keeper) verifyAggVotes(ctx context.Context, valset ValSet, aggs []*type
 		if err := agg.Verify(); err != nil {
 			return errors.Wrap(err, "verify aggregate vote")
 		}
-
 		errAttrs := []any{"chain_id", agg.BlockHeader.ChainId, "height", agg.BlockHeader.Height, log.Hex7("val0", agg.Signatures[0].ValidatorAddress)}
 
 		// Ensure all votes are from validators in the set
@@ -596,6 +616,8 @@ func (k *Keeper) verifyAggVotes(ctx context.Context, valset ValSet, aggs []*type
 // deleteBefore deletes all attestations and signatures before the given height (inclusive).
 // Note this always deletes block 0, but genesis block doesn't contain any attestations.
 func (k *Keeper) deleteBefore(ctx context.Context, height uint64) error {
+	defer latency("delete_before")()
+
 	start := AttestationCreatedHeightIndexKey{}
 	end := AttestationCreatedHeightIndexKey{}.WithCreatedHeight(height)
 	iter, err := k.attTable.ListRange(ctx, start, end)
