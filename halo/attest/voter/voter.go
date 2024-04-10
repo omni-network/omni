@@ -247,6 +247,8 @@ func (a *Voter) GetAvailable() []*types.Vote {
 
 // SetProposed sets the votes as proposed.
 func (a *Voter) SetProposed(headers []*types.BlockHeader) error {
+	proposedPerBlock.Observe(float64(len(headers)))
+
 	if len(headers) == 0 {
 		return nil
 	}
@@ -274,6 +276,8 @@ func (a *Voter) SetProposed(headers []*types.BlockHeader) error {
 
 // SetCommitted sets the votes as committed. Persisting the result to disk.
 func (a *Voter) SetCommitted(headers []*types.BlockHeader) error {
+	committedPerBlock.Observe(float64(len(headers)))
+
 	if len(headers) == 0 {
 		return nil
 	}
