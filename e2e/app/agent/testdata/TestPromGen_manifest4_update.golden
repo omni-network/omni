@@ -15,14 +15,6 @@ remote_write:
 
 
 scrape_configs:
-  - job_name: "relayer"
-    metrics_path: "/metrics"
-    static_configs:
-      - targets: [relayer:26660] # relayer targets
-        labels:
-          network: 'staging'
-          host: 'vm-2'
-
   - job_name: "halo"
     metrics_path: "/metrics"
     static_configs:
@@ -39,10 +31,34 @@ scrape_configs:
           network: 'staging'
           host: 'vm-2'
 
+  - job_name: "relayer"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: [relayer:26660] # relayer targets
+        labels:
+          network: 'staging'
+          host: 'vm-2'
+
   - job_name: "monitor"
     metrics_path: "/metrics"
     static_configs:
       - targets: [monitor:26660] # monitor targets
+        labels:
+          network: 'staging'
+          host: 'vm-2'
+
+  - job_name: "explorer_indexer"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: [] # explorer_indexer targets
+        labels:
+          network: 'staging'
+          host: 'vm-2'
+
+  - job_name: "explorer_graphql"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: [] # explorer_graphql targets
         labels:
           network: 'staging'
           host: 'vm-2'

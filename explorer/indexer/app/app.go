@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"net/http"
+	"time"
 
 	"github.com/omni-network/omni/explorer/db"
 	"github.com/omni-network/omni/explorer/db/ent"
@@ -11,6 +13,8 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain/provider"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func Run(ctx context.Context, cfg Config) error {
@@ -44,11 +48,13 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "provider")
 	}
 
-	<-ctx.Done()
-
-	log.Info(ctx, "Shutdown detected, stopping indexer")
-
-	return nil
+	select {
+	case <-ctx.Done():
+		log.Info(ctx, "Shutdown detected, stopping...")
+		return nil
+	case err := <-serveMonitoring(cfg.MonitoringAddr):
+		return err
+	}
 }
 
 // startXProvider all of our providers and subscribes to the chains in the network config.
@@ -120,4 +126,25 @@ func initChainCursor(ctx context.Context, entCl *ent.Client, chain netconf.Chain
 	}
 
 	return chain.DeployHeight, nil
+}
+
+// serveMonitoring starts a goroutine that serves the monitoring API. It
+// returns a channel that will receive an error if the server fails to start.
+func serveMonitoring(address string) <-chan error {
+	errChan := make(chan error)
+	go func() {
+		mux := http.NewServeMux()
+		mux.Handle("/metrics", promhttp.Handler())
+
+		srv := &http.Server{
+			Addr:              address,
+			ReadHeaderTimeout: 5 * time.Second,
+			IdleTimeout:       5 * time.Second,
+			WriteTimeout:      5 * time.Second,
+			Handler:           mux,
+		}
+		errChan <- errors.Wrap(srv.ListenAndServe(), "serve monitoring")
+	}()
+
+	return errChan
 }

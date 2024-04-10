@@ -24,8 +24,7 @@ func TestPromGen(t *testing.T) {
 		newNodes     []string
 		geths        []string
 		newGeths     []string
-		newRelayer   bool
-		newMonitor   bool
+		newServices  []string
 		hostname     string
 		agentSecrets bool
 	}{
@@ -37,8 +36,7 @@ func TestPromGen(t *testing.T) {
 			newNodes:     []string{"validator01"},
 			geths:        []string{"omni_evm"},
 			newGeths:     []string{"omni_evm"},
-			newRelayer:   false,
-			newMonitor:   false,
+			newServices:  nil,
 			agentSecrets: false,
 		},
 		{
@@ -49,8 +47,7 @@ func TestPromGen(t *testing.T) {
 			newNodes:     []string{"fullnode04"},
 			geths:        []string{"validator01_evm", "validator02_evm", "validator03_evm"},
 			newGeths:     []string{"fullnode04_evm"},
-			newRelayer:   true,
-			newMonitor:   false,
+			newServices:  []string{"relayer", "explorer_indexer"},
 			agentSecrets: true,
 		},
 		{
@@ -59,8 +56,7 @@ func TestPromGen(t *testing.T) {
 			nodes:        []string{"validator01", "validator02"},
 			hostname:     "localhost",
 			newNodes:     []string{"validator01"},
-			newMonitor:   true,
-			newRelayer:   false,
+			newServices:  []string{"monitor"},
 			agentSecrets: false,
 		},
 		{
@@ -69,8 +65,7 @@ func TestPromGen(t *testing.T) {
 			nodes:        []string{"validator01", "validator02", "fullnode03"},
 			hostname:     "vm",
 			newNodes:     []string{"fullnode04"},
-			newMonitor:   true,
-			newRelayer:   true,
+			newServices:  []string{"relayer", "monitor"},
 			agentSecrets: true,
 		},
 	}
@@ -110,7 +105,12 @@ func TestPromGen(t *testing.T) {
 			cfg1, err := genPromConfig(ctx, testnet, agentSecrets, test.hostname)
 			require.NoError(t, err)
 
-			cfg2 := ConfigForHost(cfg1, test.hostname+"-2", test.newNodes, test.newGeths, test.newRelayer, test.newMonitor)
+			services := make(map[string]bool)
+			for _, newService := range test.newServices {
+				services[newService] = true
+			}
+
+			cfg2 := ConfigForHost(cfg1, test.hostname+"-2", test.newNodes, test.newGeths, services)
 
 			t.Run("gen", func(t *testing.T) {
 				t.Parallel()

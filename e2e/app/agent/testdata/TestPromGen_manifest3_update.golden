@@ -3,14 +3,6 @@ global:
   evaluation_interval: 30s # Evaluate rules every 30 seconds.
 
 scrape_configs:
-  - job_name: "relayer"
-    metrics_path: "/metrics"
-    static_configs:
-      - targets: [] # relayer targets
-        labels:
-          network: 'manifest3-localhost'
-          host: 'localhost-2'
-
   - job_name: "halo"
     metrics_path: "/metrics"
     static_configs:
@@ -27,10 +19,34 @@ scrape_configs:
           network: 'manifest3-localhost'
           host: 'localhost-2'
 
+  - job_name: "relayer"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: [] # relayer targets
+        labels:
+          network: 'manifest3-localhost'
+          host: 'localhost-2'
+
   - job_name: "monitor"
     metrics_path: "/metrics"
     static_configs:
       - targets: [monitor:26660] # monitor targets
+        labels:
+          network: 'manifest3-localhost'
+          host: 'localhost-2'
+
+  - job_name: "explorer_indexer"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: [] # explorer_indexer targets
+        labels:
+          network: 'manifest3-localhost'
+          host: 'localhost-2'
+
+  - job_name: "explorer_graphql"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: [] # explorer_graphql targets
         labels:
           network: 'manifest3-localhost'
           host: 'localhost-2'

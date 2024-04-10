@@ -20,11 +20,14 @@ const (
 type Config struct {
 	ListenAddress  string
 	ExplorerDBConn string
+	MonitoringAddr string
 }
 
 func DefaultConfig() Config {
 	return Config{
-		ListenAddress: defaultListenAddr,
+		ListenAddress:  defaultListenAddr,
+		ExplorerDBConn: "",
+		MonitoringAddr: ":26660",
 	}
 }
 
