@@ -15,7 +15,11 @@ build: ## builds our docker images
 
 run-devnet: stop ## starts our devnet with the main tag for our docker containers
 	@echo "Starting devnet"
-	@cd .. && go run github.com/omni-network/omni/e2e deploy -f e2e/manifests/devnet2.toml --explorer-db-conn="postgres://omni:password@explorer_db:5432/omni_db" --omni-image-tag="main"
+	@cd .. && go run github.com/omni-network/omni/e2e deploy -f e2e/manifests/devnet2.toml \
+	--explorer-db-conn="postgres://omni:password@explorer_db:5432/omni_db" \
+	--omni-image-tag="main" \
+	--graphql-port=8080 \
+	--graphql-host="http://localhost:21335"
 
 run-explorer: ## starts our explorer in production mode
 	@echo "Starting explorer"
@@ -27,6 +31,4 @@ stop: ## stops our docker compose
 	@echo "Stopping devnet"
 	@make -C ../ devnet-clean
 
-run-clean: build
-	@echo "Starting devnet"
-	@cd .. && go run github.com/omni-network/omni/e2e deploy -f e2e/manifests/devnet2.toml --explorer-db-conn="postgres://omni:password@explorer_db:5432/omni_db"
+run-clean: build run-devnet

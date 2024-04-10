@@ -94,6 +94,8 @@ func (p *Provider) Setup() error {
 			OmniTag:     p.omniTag,
 			Explorer:    explorer,
 			ExplorerDB:  explorer && p.Testnet.Network.IsEphemeral(),
+			GraphQLPort: p.Testnet.GraphQLPort,
+			GraphQLHost: p.Testnet.GraphQLHost,
 		}
 		compose, err := docker.GenerateComposeFile(def)
 		if err != nil {

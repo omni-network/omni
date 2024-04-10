@@ -99,7 +99,9 @@ func TestComposeTemplate(t *testing.T) {
 						LoadState:  "path/to/anvil/state.json",
 					},
 				},
-				Explorer: test.explorer,
+				Explorer:    test.explorer,
+				GraphQLPort: 8080,
+				GraphQLHost: "graphql.omni.dev",
 			}
 
 			// If the network is empheral, we use the devnet configuration.

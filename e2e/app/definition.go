@@ -47,6 +47,8 @@ type DefinitionConfig struct {
 	OmniImgTag    string // OmniImgTag is the docker image tag used for halo and relayer.
 
 	ExplorerDBConn string // ExplorerDBConn is the connection string for the explorer database.
+	GraphQLHost    string // GraphQLHost is the host for the GraphQL server.
+	GraphQLPort    uint   // GraphQLPort is the port for the GraphQL server.
 }
 
 // DefaultDefinitionConfig returns a default configuration for a Definition.
@@ -422,6 +424,8 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 		AnvilChains:  anvils,
 		PublicChains: publics,
 		Explorer:     manifest.Explorer,
+		GraphQLPort:  cfg.GraphQLPort,
+		GraphQLHost:  cfg.GraphQLHost,
 	}, nil
 }
 

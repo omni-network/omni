@@ -84,6 +84,8 @@ func (p *Provider) Setup() error {
 		Explorer:    p.testnet.Explorer,
 		ExplorerDB:  p.testnet.Explorer && p.testnet.Network.IsEphemeral(),
 		OmniTag:     p.omniTag,
+		GraphQLPort: p.testnet.GraphQLPort,
+		GraphQLHost: p.testnet.GraphQLHost,
 	}
 
 	bz, err := GenerateComposeFile(def)
@@ -160,6 +162,9 @@ type ComposeDef struct {
 
 	ExplorerDB bool
 	Explorer   bool
+
+	GraphQLPort uint
+	GraphQLHost string
 }
 
 func (ComposeDef) GethTag() string {

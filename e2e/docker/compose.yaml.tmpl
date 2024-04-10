@@ -181,7 +181,7 @@ services:
       {{ $.NetworkName }}:
         {{ if $.Network }}ipv4_address: 10.186.73.204{{ end }}
     ports:
-        - 21335:8080
+        - 21335:{{ .GraphQLPort }}
 
   explorer_ui:
     labels:
@@ -189,6 +189,8 @@ services:
     container_name: explorer_ui
     image: omniops/explorer-ui:{{or .OmniTag "main"}}
     restart: unless-stopped # Restart on crash to mitigate startup race issues
+    command:
+      -e GRAPHQL_PORT={{ .GraphQLPort }} GRAPHQL_HOST={{ .GraphQLHost }}
     volumes:
       - ./explorer_ui:/explorer_ui
     networks:
@@ -217,5 +219,5 @@ services:
     restart: unless-stopped
     networks:
       {{ $.NetworkName }}:
-        {{ if $.Network }}ipv4_address: 10.186.73.205{{ end }}
+        {{ if $.Network }}ipv4_address: 10.186.73.206{{ end }}
 {{ end }}

@@ -190,6 +190,8 @@ services:
     container_name: explorer_ui
     image: omniops/explorer-ui:main
     restart: unless-stopped # Restart on crash to mitigate startup race issues
+    command:
+      -e GRAPHQL_PORT=8080 GRAPHQL_HOST=graphql.omni.dev
     volumes:
       - ./explorer_ui:/explorer_ui
     networks:
