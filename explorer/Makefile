@@ -19,7 +19,7 @@ run-devnet: stop ## starts our devnet with the main tag for our docker container
 	--explorer-db-conn="postgres://omni:password@explorer_db:5432/omni_db" \
 	--omni-image-tag="main" \
 	--graphql-port=8080 \
-	--graphql-host="http://localhost:21335"
+	--graphql-host="http://localhost:21335/query"
 
 run-explorer: ## starts our explorer in production mode
 	@echo "Starting explorer"
