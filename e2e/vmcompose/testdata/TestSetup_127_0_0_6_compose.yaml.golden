@@ -38,3 +38,17 @@ services:
     ports:
         - 21335:8080
 
+  explorer_ui:
+    labels:
+      e2e: true
+    container_name: explorer_ui
+    image: omniops/explorer-ui:7d1ae53
+    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    volumes:
+      - ./explorer_ui:/explorer_ui
+    networks:
+      test:
+        
+    ports:
+        - 57017:3000
+
