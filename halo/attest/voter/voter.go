@@ -26,7 +26,7 @@ import (
 
 const (
 	prodBackoff  = time.Second
-	maxAvailable = 1000
+	maxAvailable = 10_000
 )
 
 var _ types.Voter = (*Voter)(nil)
