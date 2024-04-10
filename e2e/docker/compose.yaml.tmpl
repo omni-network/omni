@@ -189,8 +189,9 @@ services:
     container_name: explorer_ui
     image: omniops/explorer-ui:{{or .OmniTag "main"}}
     restart: unless-stopped # Restart on crash to mitigate startup race issues
-    command:
-      - --GRAPHQL_PORT={{ .GraphQLPort }} --GRAPHQL_HOST={{ .GraphQLHost }}
+    environment:
+      GRAPHQL_PORT: {{ .GraphQLPort }}
+      GRAPHQL_HOST: {{ .GraphQLHost }}
     volumes:
       - ./explorer_ui:/explorer_ui
     networks:

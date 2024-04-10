@@ -19,6 +19,7 @@ export type LoaderData = SerializeFrom<typeof loader>
 export function loader() {
   const ENV = {
     GRAPHQL_PORT: process.env.GRAPHQL_PORT,
+    GRAPHQL_HOST: process.env.GRAPHQL_HOST,
   }
   return json({ ENV })
 }
@@ -46,12 +47,10 @@ export default function AppWithProviders() {
   useLoaderData<typeof loader>()
 
   const ENV = useEnv()
-  const graphQLURL = `http://localhost:${ENV.GRAPHQL_PORT}/query`
   let client = new Client({
-    url: graphQLURL,
+    url: ENV.GRAPHQL_HOST ?? '',
     exchanges: [fetchExchange, cacheExchange],
   })
-  console.log(graphQLURL)
 
   return (
     <Provider value={client}>
