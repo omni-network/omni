@@ -29,6 +29,14 @@ var (
 		Help:      "Latest streamed xblock height per worker per source chain. Alert if not growing.",
 	}, []string{"worker", "chain"})
 
+	callbackLatency = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: "lib",
+		Subsystem: "cprovider",
+		Name:      "callback_latency_seconds",
+		Help:      "Callback latency in seconds per worker per source chain. Alert if growing.",
+		Buckets:   []float64{.001, .002, .005, .01, .025, .05, .1, .25, .5, 1, 2.5},
+	}, []string{"worker", "chain"})
+
 	queryLatency = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "lib",
 		Subsystem: "cprovider",
