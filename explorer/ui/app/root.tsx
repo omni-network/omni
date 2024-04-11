@@ -18,8 +18,7 @@ export type LoaderData = SerializeFrom<typeof loader>
 
 export function loader() {
   const ENV = {
-    GRAPHQL_PORT: process.env.GRAPHQL_PORT,
-    GRAPHQL_HOST: process.env.GRAPHQL_HOST,
+    GRAPHQL_URL: process.env.GRAPHQL_URL,
   }
   return json({ ENV })
 }
@@ -48,10 +47,10 @@ export default function AppWithProviders() {
 
   const ENV = useEnv()
   let client = new Client({
-    url: ENV.GRAPHQL_HOST ?? '',
+    url: ENV.GRAPHQL_URL ?? '',
     exchanges: [fetchExchange, cacheExchange],
   })
-
+  console.log(ENV.GRAPHQL_URL)
   return (
     <Provider value={client}>
       <App />

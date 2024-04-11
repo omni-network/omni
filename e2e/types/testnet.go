@@ -28,8 +28,6 @@ type Testnet struct {
 	PublicChains []PublicChain
 	OnlyMonitor  bool
 	Explorer     bool
-	GraphQLPort  uint
-	GraphQLHost  string
 }
 
 // RandomHaloAddr returns a random halo address for cprovider and cometBFT rpc clients.

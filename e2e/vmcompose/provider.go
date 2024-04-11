@@ -26,17 +26,19 @@ const ProviderName = "vmcompose"
 var _ types.InfraProvider = (*Provider)(nil)
 
 type Provider struct {
-	Testnet types.Testnet
-	Data    types.InfrastructureData
-	once    sync.Once
-	omniTag string
+	Testnet    types.Testnet
+	Data       types.InfrastructureData
+	once       sync.Once
+	omniTag    string
+	graphQLURL string
 }
 
-func NewProvider(testnet types.Testnet, data types.InfrastructureData, imgTag string) *Provider {
+func NewProvider(testnet types.Testnet, data types.InfrastructureData, imgTag, graphQLURL string) *Provider {
 	return &Provider{
-		Testnet: testnet,
-		Data:    data,
-		omniTag: imgTag,
+		Testnet:    testnet,
+		Data:       data,
+		omniTag:    imgTag,
+		graphQLURL: graphQLURL,
 	}
 }
 
@@ -94,8 +96,7 @@ func (p *Provider) Setup() error {
 			OmniTag:     p.omniTag,
 			Explorer:    explorer,
 			ExplorerDB:  explorer && p.Testnet.Network.IsEphemeral(),
-			GraphQLPort: p.Testnet.GraphQLPort,
-			GraphQLHost: p.Testnet.GraphQLHost,
+			GraphQLURL:  p.graphQLURL,
 		}
 		compose, err := docker.GenerateComposeFile(def)
 		if err != nil {

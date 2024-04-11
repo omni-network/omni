@@ -28,12 +28,14 @@ func TestComposeTemplate(t *testing.T) {
 	tests := []struct {
 		name       string
 		tag        string
+		graphqlURL string
 		explorer   bool
 		isEmpheral bool
 	}{
 		{
 			name:       "main_explorer",
 			tag:        "main",
+			graphqlURL: "http://localhost:8080/graphql",
 			explorer:   true,
 			isEmpheral: false,
 		},
@@ -46,6 +48,7 @@ func TestComposeTemplate(t *testing.T) {
 		{
 			name:       "empheral_network",
 			tag:        "main",
+			graphqlURL: "http://localhost:8080/graphql",
 			explorer:   true,
 			isEmpheral: true,
 		},
@@ -99,9 +102,7 @@ func TestComposeTemplate(t *testing.T) {
 						LoadState:  "path/to/anvil/state.json",
 					},
 				},
-				Explorer:    test.explorer,
-				GraphQLPort: 8080,
-				GraphQLHost: "graphql.omni.dev",
+				Explorer: test.explorer,
 			}
 
 			// If the network is empheral, we use the devnet configuration.
@@ -109,7 +110,7 @@ func TestComposeTemplate(t *testing.T) {
 				testnet.Network = netconf.Devnet
 			}
 
-			p := docker.NewProvider(testnet, types.InfrastructureData{}, test.tag)
+			p := docker.NewProvider(testnet, types.InfrastructureData{}, test.tag, test.graphqlURL)
 			require.NoError(t, err)
 
 			require.NoError(t, p.Setup())

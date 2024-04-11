@@ -191,8 +191,7 @@ services:
     image: omniops/explorer-ui:main
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     environment:
-      GRAPHQL_PORT: 8080
-      GRAPHQL_HOST: graphql.omni.dev
+      GRAPHQL_URL: http://localhost:8080/graphql
     volumes:
       - ./explorer_ui:/explorer_ui
     networks:

@@ -26,8 +26,7 @@ func TestSetup(t *testing.T) {
 		InfraDataFile:  dataFile,
 		OmniImgTag:     "7d1ae53",
 		ExplorerDBConn: "fake_connection",
-		GraphQLPort:    8080,
-		GraphQLHost:    "graphql.omni.network",
+		GraphQLURL:     "http://localhost:8080/graphql",
 	}, "")
 	require.NoError(t, err)
 
