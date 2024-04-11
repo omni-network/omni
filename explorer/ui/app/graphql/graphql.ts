@@ -43,6 +43,7 @@ export type Query = {
   xblock?: Maybe<XBlock>;
   xblockcount?: Maybe<Scalars['BigInt']['output']>;
   xblockrange: Array<Maybe<XBlock>>;
+  xmsg?: Maybe<XMsg>;
   xmsgcount?: Maybe<Scalars['BigInt']['output']>;
   xmsgrange: Array<Maybe<XMsg>>;
   xreceiptcount?: Maybe<Scalars['BigInt']['output']>;
@@ -58,6 +59,13 @@ export type QueryXblockArgs = {
 export type QueryXblockrangeArgs = {
   from: Scalars['BigInt']['input'];
   to: Scalars['BigInt']['input'];
+};
+
+
+export type QueryXmsgArgs = {
+  destChainID: Scalars['BigInt']['input'];
+  sourceChainID: Scalars['BigInt']['input'];
+  streamOffset: Scalars['BigInt']['input'];
 };
 
 
