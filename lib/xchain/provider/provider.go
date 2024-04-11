@@ -135,8 +135,8 @@ func (p *Provider) stream(
 			callbackLatency.WithLabelValues(chain.Name).Observe(d.Seconds())
 		},
 		StartTrace: func(ctx context.Context, height uint64, spanName string) (context.Context, trace.Span) {
-			return tracer.StartChainHeight(ctx, chain.Name, height,
-				path.Join("cprovider", spanName),
+			return tracer.StartChainHeight(ctx, p.network.ID, chain.Name, height,
+				path.Join("xprovider", spanName),
 			)
 		},
 	}

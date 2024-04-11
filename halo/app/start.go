@@ -90,7 +90,8 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 		return nil, errors.Wrap(err, "validate network configuration")
 	}
 
-	stopTracer, err := tracer.Init(ctx, network.ID, cfg.Tracer)
+	tracerIDs := tracer.Identifiers{Network: network.ID, Service: "halo", Instance: cfg.Comet.Moniker}
+	stopTracer, err := tracer.Init(ctx, tracerIDs, cfg.Tracer)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +144,7 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 	cmtAPI := comet.NewAPI(rpcClient)
 	app.SetCometAPI(cmtAPI)
 
-	cProvider := cprovider.NewABCIProvider(rpcClient, network.ChainNamesByIDs())
+	cProvider := cprovider.NewABCIProvider(rpcClient, network.ID, network.ChainNamesByIDs())
 
 	xProvider, err := newXProvider(network, cProvider)
 	if err != nil {

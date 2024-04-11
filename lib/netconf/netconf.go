@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/ethclient"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -138,8 +137,8 @@ var allStrats = map[FinalizationStrat]bool{
 }
 
 const (
-	StratFinalized = FinalizationStrat(ethclient.HeadFinalized)
-	StratLatest    = FinalizationStrat(ethclient.HeadLatest)
+	StratFinalized = FinalizationStrat("finalized")
+	StratLatest    = FinalizationStrat("latest")
 )
 
 // Chain defines the configuration of an execution chain that supports
