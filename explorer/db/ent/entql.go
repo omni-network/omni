@@ -66,6 +66,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 		Type: "Msg",
 		Fields: map[string]*sqlgraph.FieldSpec{
 			msg.FieldUUID:            {Type: field.TypeUUID, Column: msg.FieldUUID},
+			msg.FieldBlockID:         {Type: field.TypeInt, Column: msg.FieldBlockID},
 			msg.FieldSourceMsgSender: {Type: field.TypeBytes, Column: msg.FieldSourceMsgSender},
 			msg.FieldDestAddress:     {Type: field.TypeBytes, Column: msg.FieldDestAddress},
 			msg.FieldData:            {Type: field.TypeBytes, Column: msg.FieldData},
@@ -89,6 +90,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 		Type: "Receipt",
 		Fields: map[string]*sqlgraph.FieldSpec{
 			receipt.FieldUUID:           {Type: field.TypeUUID, Column: receipt.FieldUUID},
+			receipt.FieldBlockID:        {Type: field.TypeInt, Column: receipt.FieldBlockID},
 			receipt.FieldGasUsed:        {Type: field.TypeUint64, Column: receipt.FieldGasUsed},
 			receipt.FieldSuccess:        {Type: field.TypeBool, Column: receipt.FieldSuccess},
 			receipt.FieldRelayerAddress: {Type: field.TypeBytes, Column: receipt.FieldRelayerAddress},
@@ -396,6 +398,11 @@ func (f *MsgFilter) WhereUUID(p entql.ValueP) {
 	f.Where(p.Field(msg.FieldUUID))
 }
 
+// WhereBlockID applies the entql int predicate on the Block_ID field.
+func (f *MsgFilter) WhereBlockID(p entql.IntP) {
+	f.Where(p.Field(msg.FieldBlockID))
+}
+
 // WhereSourceMsgSender applies the entql []byte predicate on the SourceMsgSender field.
 func (f *MsgFilter) WhereSourceMsgSender(p entql.BytesP) {
 	f.Where(p.Field(msg.FieldSourceMsgSender))
@@ -512,6 +519,11 @@ func (f *ReceiptFilter) WhereID(p entql.IntP) {
 // WhereUUID applies the entql [16]byte predicate on the UUID field.
 func (f *ReceiptFilter) WhereUUID(p entql.ValueP) {
 	f.Where(p.Field(receipt.FieldUUID))
+}
+
+// WhereBlockID applies the entql int predicate on the Block_ID field.
+func (f *ReceiptFilter) WhereBlockID(p entql.IntP) {
+	f.Where(p.Field(receipt.FieldBlockID))
 }
 
 // WhereGasUsed applies the entql uint64 predicate on the GasUsed field.

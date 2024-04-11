@@ -21,6 +21,8 @@ type Receipt struct {
 	ID int `json:"id,omitempty"`
 	// UUID holds the value of the "UUID" field.
 	UUID uuid.UUID `json:"UUID,omitempty"`
+	// BlockID holds the value of the "Block_ID" field.
+	BlockID int `json:"Block_ID,omitempty"`
 	// GasUsed holds the value of the "GasUsed" field.
 	GasUsed uint64 `json:"GasUsed,omitempty"`
 	// Success holds the value of the "Success" field.
@@ -39,9 +41,8 @@ type Receipt struct {
 	CreatedAt time.Time `json:"CreatedAt,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ReceiptQuery when eager-loading is set.
-	Edges          ReceiptEdges `json:"edges"`
-	block_receipts *int
-	selectValues   sql.SelectValues
+	Edges        ReceiptEdges `json:"edges"`
+	selectValues sql.SelectValues
 }
 
 // ReceiptEdges holds the relations/edges for other nodes in the graph.
@@ -84,14 +85,12 @@ func (*Receipt) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case receipt.FieldSuccess:
 			values[i] = new(sql.NullBool)
-		case receipt.FieldID, receipt.FieldGasUsed, receipt.FieldSourceChainID, receipt.FieldDestChainID, receipt.FieldStreamOffset:
+		case receipt.FieldID, receipt.FieldBlockID, receipt.FieldGasUsed, receipt.FieldSourceChainID, receipt.FieldDestChainID, receipt.FieldStreamOffset:
 			values[i] = new(sql.NullInt64)
 		case receipt.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
 		case receipt.FieldUUID:
 			values[i] = new(uuid.UUID)
-		case receipt.ForeignKeys[0]: // block_receipts
-			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -118,6 +117,12 @@ func (r *Receipt) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field UUID", values[i])
 			} else if value != nil {
 				r.UUID = *value
+			}
+		case receipt.FieldBlockID:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field Block_ID", values[i])
+			} else if value.Valid {
+				r.BlockID = int(value.Int64)
 			}
 		case receipt.FieldGasUsed:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -167,13 +172,6 @@ func (r *Receipt) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				r.CreatedAt = value.Time
 			}
-		case receipt.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field block_receipts", value)
-			} else if value.Valid {
-				r.block_receipts = new(int)
-				*r.block_receipts = int(value.Int64)
-			}
 		default:
 			r.selectValues.Set(columns[i], values[i])
 		}
@@ -222,6 +220,9 @@ func (r *Receipt) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v, ", r.ID))
 	builder.WriteString("UUID=")
 	builder.WriteString(fmt.Sprintf("%v", r.UUID))
+	builder.WriteString(", ")
+	builder.WriteString("Block_ID=")
+	builder.WriteString(fmt.Sprintf("%v", r.BlockID))
 	builder.WriteString(", ")
 	builder.WriteString("GasUsed=")
 	builder.WriteString(fmt.Sprintf("%v", r.GasUsed))

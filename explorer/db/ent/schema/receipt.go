@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
 )
 
@@ -25,6 +26,7 @@ func (Receipt) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("UUID", uuid.UUID{}).
 			Default(uuid.New),
+		field.Int("Block_ID").Optional(),
 		field.Uint64("GasUsed"),
 		field.Bool("Success"),
 		field.Bytes("RelayerAddress").
@@ -39,14 +41,22 @@ func (Receipt) Fields() []ent.Field {
 	}
 }
 
-// Edges of the XReceipt.
+// Edges of the Receipt.
 func (Receipt) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("Block", Block.Type).
 			Ref("Receipts").
+			Field("Block_ID").
 			Unique(),
 		edge.From("Msgs", Msg.Type).
 			Ref("Receipts"),
+	}
+}
+
+// Indexes of the Receipt.
+func (Receipt) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("SourceChainID", "DestChainID", "StreamOffset", "Block_ID"),
 	}
 }
 

@@ -37,6 +37,20 @@ func (mc *MsgCreate) SetNillableUUID(u *uuid.UUID) *MsgCreate {
 	return mc
 }
 
+// SetBlockID sets the "Block_ID" field.
+func (mc *MsgCreate) SetBlockID(i int) *MsgCreate {
+	mc.mutation.SetBlockID(i)
+	return mc
+}
+
+// SetNillableBlockID sets the "Block_ID" field if the given value is not nil.
+func (mc *MsgCreate) SetNillableBlockID(i *int) *MsgCreate {
+	if i != nil {
+		mc.SetBlockID(*i)
+	}
+	return mc
+}
+
 // SetSourceMsgSender sets the "SourceMsgSender" field.
 func (mc *MsgCreate) SetSourceMsgSender(b []byte) *MsgCreate {
 	mc.mutation.SetSourceMsgSender(b)
@@ -95,20 +109,6 @@ func (mc *MsgCreate) SetCreatedAt(t time.Time) *MsgCreate {
 func (mc *MsgCreate) SetNillableCreatedAt(t *time.Time) *MsgCreate {
 	if t != nil {
 		mc.SetCreatedAt(*t)
-	}
-	return mc
-}
-
-// SetBlockID sets the "Block" edge to the Block entity by ID.
-func (mc *MsgCreate) SetBlockID(id int) *MsgCreate {
-	mc.mutation.SetBlockID(id)
-	return mc
-}
-
-// SetNillableBlockID sets the "Block" edge to the Block entity by ID if the given value is not nil.
-func (mc *MsgCreate) SetNillableBlockID(id *int) *MsgCreate {
-	if id != nil {
-		mc = mc.SetBlockID(*id)
 	}
 	return mc
 }
@@ -311,7 +311,7 @@ func (mc *MsgCreate) createSpec() (*Msg, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.block_msgs = &nodes[0]
+		_node.BlockID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := mc.mutation.ReceiptsIDs(); len(nodes) > 0 {

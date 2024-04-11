@@ -37,6 +37,20 @@ func (rc *ReceiptCreate) SetNillableUUID(u *uuid.UUID) *ReceiptCreate {
 	return rc
 }
 
+// SetBlockID sets the "Block_ID" field.
+func (rc *ReceiptCreate) SetBlockID(i int) *ReceiptCreate {
+	rc.mutation.SetBlockID(i)
+	return rc
+}
+
+// SetNillableBlockID sets the "Block_ID" field if the given value is not nil.
+func (rc *ReceiptCreate) SetNillableBlockID(i *int) *ReceiptCreate {
+	if i != nil {
+		rc.SetBlockID(*i)
+	}
+	return rc
+}
+
 // SetGasUsed sets the "GasUsed" field.
 func (rc *ReceiptCreate) SetGasUsed(u uint64) *ReceiptCreate {
 	rc.mutation.SetGasUsed(u)
@@ -89,20 +103,6 @@ func (rc *ReceiptCreate) SetCreatedAt(t time.Time) *ReceiptCreate {
 func (rc *ReceiptCreate) SetNillableCreatedAt(t *time.Time) *ReceiptCreate {
 	if t != nil {
 		rc.SetCreatedAt(*t)
-	}
-	return rc
-}
-
-// SetBlockID sets the "Block" edge to the Block entity by ID.
-func (rc *ReceiptCreate) SetBlockID(id int) *ReceiptCreate {
-	rc.mutation.SetBlockID(id)
-	return rc
-}
-
-// SetNillableBlockID sets the "Block" edge to the Block entity by ID if the given value is not nil.
-func (rc *ReceiptCreate) SetNillableBlockID(id *int) *ReceiptCreate {
-	if id != nil {
-		rc = rc.SetBlockID(*id)
 	}
 	return rc
 }
@@ -293,7 +293,7 @@ func (rc *ReceiptCreate) createSpec() (*Receipt, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.block_receipts = &nodes[0]
+		_node.BlockID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := rc.mutation.MsgsIDs(); len(nodes) > 0 {
