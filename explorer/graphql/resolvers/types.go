@@ -47,3 +47,8 @@ type XReceipt struct {
 	TxHash         common.Hash
 	Timestamp      graphql.Time
 }
+
+type Chain struct {
+	Name    string
+	ChainID hexutil.Big
+}

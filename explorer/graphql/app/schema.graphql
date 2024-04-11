@@ -126,6 +126,17 @@ type XReceipt {
   Timestamp: Time!
 }
 
+"""
+Chain represents a chain.
+"""
+type Chain {
+  "Chain ID as per https://chainlist.org"
+  ChainID: BigInt!
+
+  "Chain name"
+  Name: String!
+}
+
 type Query {
   xblock(sourceChainID: BigInt!, height: BigInt!): XBlock
   xblockrange(from: BigInt!, to: BigInt!): [XBlock]!
@@ -134,4 +145,5 @@ type Query {
   xmsgcount: BigInt
   xreceiptcount: BigInt
   xmsg(sourceChainID: BigInt!, destChainID: BigInt! streamOffset: BigInt!): XMsg
+  supportedchains(): [Chain]!
 }

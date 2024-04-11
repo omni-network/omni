@@ -136,3 +136,15 @@ func EntReceiptToGraphQLXReceipt(receipt *ent.Receipt) (*resolvers.XReceipt, err
 		Timestamp:      graphql.Time{Time: receipt.CreatedAt},
 	}, nil
 }
+
+func EntChainToGraphQLChain(chain *ent.Chain) resolvers.Chain {
+	chainID, err := Uint2Big(chain.ChainID)
+	if err != nil {
+		panic(errors.Wrap(err, "decoding chain id"))
+	}
+
+	return resolvers.Chain{
+		Name:    chain.Name,
+		ChainID: hexutil.Big(chainID),
+	}
+}
