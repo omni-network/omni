@@ -3,6 +3,8 @@ package data
 import (
 	"context"
 
+	"github.com/omni-network/omni/explorer/db/ent/receipt"
+	"github.com/omni-network/omni/explorer/graphql/resolvers"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
@@ -23,4 +25,25 @@ func (p Provider) XReceiptCount(ctx context.Context) (*hexutil.Big, bool, error)
 	}
 
 	return &hex, true, nil
+}
+
+func (p Provider) XReceipt(ctx context.Context, sourceChainID, destChainID, streamOffset uint64) (*resolvers.XReceipt, bool, error) {
+	query, err := p.EntClient.Receipt.Query().
+		Where(
+			receipt.SourceChainID(sourceChainID),
+			receipt.DestChainID(destChainID),
+			receipt.StreamOffset(streamOffset),
+		).
+		First(ctx)
+	if err != nil {
+		log.Error(ctx, "Receipt query", err)
+		return nil, false, err
+	}
+
+	res, err := EntReceiptToGraphQLXReceipt(ctx, query, nil)
+	if err != nil {
+		return nil, false, errors.Wrap(err, "decoding message")
+	}
+
+	return res, true, nil
 }

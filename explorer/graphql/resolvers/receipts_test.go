@@ -40,3 +40,36 @@ func TestXReceiptCount(t *testing.T) {
 		},
 	})
 }
+
+func TestReceipt(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	test := createGqlTest(t)
+	t.Cleanup(func() {
+		if err := test.Client.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+	db.CreateTestBlocks(t, ctx, test.Client, 2)
+
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Context: ctx,
+			Schema:  graphql.MustParseSchema(app.Schema, &resolvers.Query{BlocksResolver: test.Resolver}, test.Opts...),
+			Query: `
+				{
+					xreceipt(sourceChainID: 1, destChainID: 2, streamOffset: 0){
+						TxHash
+					}
+				}
+			`,
+			ExpectedResult: `
+			{
+				"xreceipt":{
+					"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
+				}
+			}
+			`,
+		},
+	})
+}

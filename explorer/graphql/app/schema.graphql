@@ -127,4 +127,5 @@ type Query {
   xmsgrange(from: BigInt!, to: BigInt!): [XMsg]!
   xmsgcount: BigInt
   xreceiptcount: BigInt
+  xreceipt(sourceChainID: BigInt!, destChainID: BigInt!, streamOffset: BigInt!): XReceipt
 }
