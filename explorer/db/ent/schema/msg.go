@@ -48,7 +48,6 @@ func (Msg) Fields() []ent.Field {
 func (Msg) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("SourceChainID", "DestChainID", "StreamOffset", "Block_ID"),
-		index.Fields("TXHash").Unique(),
 	}
 }
 

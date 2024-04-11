@@ -21,6 +21,8 @@ type Msg struct {
 	ID int `json:"id,omitempty"`
 	// UUID holds the value of the "UUID" field.
 	UUID uuid.UUID `json:"UUID,omitempty"`
+	// BlockID holds the value of the "Block_ID" field.
+	BlockID int `json:"Block_ID,omitempty"`
 	// SourceMsgSender holds the value of the "SourceMsgSender" field.
 	SourceMsgSender []byte `json:"SourceMsgSender,omitempty"`
 	// DestAddress holds the value of the "DestAddress" field.
@@ -42,7 +44,6 @@ type Msg struct {
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the MsgQuery when eager-loading is set.
 	Edges        MsgEdges `json:"edges"`
-	block_msgs   *int
 	selectValues sql.SelectValues
 }
 
@@ -84,14 +85,12 @@ func (*Msg) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case msg.FieldSourceMsgSender, msg.FieldDestAddress, msg.FieldData, msg.FieldTxHash:
 			values[i] = new([]byte)
-		case msg.FieldID, msg.FieldDestGasLimit, msg.FieldSourceChainID, msg.FieldDestChainID, msg.FieldStreamOffset:
+		case msg.FieldID, msg.FieldBlockID, msg.FieldDestGasLimit, msg.FieldSourceChainID, msg.FieldDestChainID, msg.FieldStreamOffset:
 			values[i] = new(sql.NullInt64)
 		case msg.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
 		case msg.FieldUUID:
 			values[i] = new(uuid.UUID)
-		case msg.ForeignKeys[0]: // block_msgs
-			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -118,6 +117,12 @@ func (m *Msg) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field UUID", values[i])
 			} else if value != nil {
 				m.UUID = *value
+			}
+		case msg.FieldBlockID:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field Block_ID", values[i])
+			} else if value.Valid {
+				m.BlockID = int(value.Int64)
 			}
 		case msg.FieldSourceMsgSender:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -173,13 +178,6 @@ func (m *Msg) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				m.CreatedAt = value.Time
 			}
-		case msg.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field block_msgs", value)
-			} else if value.Valid {
-				m.block_msgs = new(int)
-				*m.block_msgs = int(value.Int64)
-			}
 		default:
 			m.selectValues.Set(columns[i], values[i])
 		}
@@ -228,6 +226,9 @@ func (m *Msg) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v, ", m.ID))
 	builder.WriteString("UUID=")
 	builder.WriteString(fmt.Sprintf("%v", m.UUID))
+	builder.WriteString(", ")
+	builder.WriteString("Block_ID=")
+	builder.WriteString(fmt.Sprintf("%v", m.BlockID))
 	builder.WriteString(", ")
 	builder.WriteString("SourceMsgSender=")
 	builder.WriteString(fmt.Sprintf("%v", m.SourceMsgSender))

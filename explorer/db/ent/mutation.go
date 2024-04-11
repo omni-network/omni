@@ -1512,6 +1512,55 @@ func (m *MsgMutation) ResetUUID() {
 	m._UUID = nil
 }
 
+// SetBlockID sets the "Block_ID" field.
+func (m *MsgMutation) SetBlockID(i int) {
+	m._Block = &i
+}
+
+// BlockID returns the value of the "Block_ID" field in the mutation.
+func (m *MsgMutation) BlockID() (r int, exists bool) {
+	v := m._Block
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBlockID returns the old "Block_ID" field's value of the Msg entity.
+// If the Msg object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MsgMutation) OldBlockID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBlockID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBlockID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBlockID: %w", err)
+	}
+	return oldValue.BlockID, nil
+}
+
+// ClearBlockID clears the value of the "Block_ID" field.
+func (m *MsgMutation) ClearBlockID() {
+	m._Block = nil
+	m.clearedFields[msg.FieldBlockID] = struct{}{}
+}
+
+// BlockIDCleared returns if the "Block_ID" field was cleared in this mutation.
+func (m *MsgMutation) BlockIDCleared() bool {
+	_, ok := m.clearedFields[msg.FieldBlockID]
+	return ok
+}
+
+// ResetBlockID resets all changes to the "Block_ID" field.
+func (m *MsgMutation) ResetBlockID() {
+	m._Block = nil
+	delete(m.clearedFields, msg.FieldBlockID)
+}
+
 // SetSourceMsgSender sets the "SourceMsgSender" field.
 func (m *MsgMutation) SetSourceMsgSender(b []byte) {
 	m._SourceMsgSender = &b
@@ -1916,27 +1965,15 @@ func (m *MsgMutation) ResetCreatedAt() {
 	m._CreatedAt = nil
 }
 
-// SetBlockID sets the "Block" edge to the Block entity by id.
-func (m *MsgMutation) SetBlockID(id int) {
-	m._Block = &id
-}
-
 // ClearBlock clears the "Block" edge to the Block entity.
 func (m *MsgMutation) ClearBlock() {
 	m.cleared_Block = true
+	m.clearedFields[msg.FieldBlockID] = struct{}{}
 }
 
 // BlockCleared reports if the "Block" edge to the Block entity was cleared.
 func (m *MsgMutation) BlockCleared() bool {
-	return m.cleared_Block
-}
-
-// BlockID returns the "Block" edge ID in the mutation.
-func (m *MsgMutation) BlockID() (id int, exists bool) {
-	if m._Block != nil {
-		return *m._Block, true
-	}
-	return
+	return m.BlockIDCleared() || m.cleared_Block
 }
 
 // BlockIDs returns the "Block" edge IDs in the mutation.
@@ -2043,9 +2080,12 @@ func (m *MsgMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *MsgMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m._UUID != nil {
 		fields = append(fields, msg.FieldUUID)
+	}
+	if m._Block != nil {
+		fields = append(fields, msg.FieldBlockID)
 	}
 	if m._SourceMsgSender != nil {
 		fields = append(fields, msg.FieldSourceMsgSender)
@@ -2084,6 +2124,8 @@ func (m *MsgMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case msg.FieldUUID:
 		return m.UUID()
+	case msg.FieldBlockID:
+		return m.BlockID()
 	case msg.FieldSourceMsgSender:
 		return m.SourceMsgSender()
 	case msg.FieldDestAddress:
@@ -2113,6 +2155,8 @@ func (m *MsgMutation) OldField(ctx context.Context, name string) (ent.Value, err
 	switch name {
 	case msg.FieldUUID:
 		return m.OldUUID(ctx)
+	case msg.FieldBlockID:
+		return m.OldBlockID(ctx)
 	case msg.FieldSourceMsgSender:
 		return m.OldSourceMsgSender(ctx)
 	case msg.FieldDestAddress:
@@ -2146,6 +2190,13 @@ func (m *MsgMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUUID(v)
+		return nil
+	case msg.FieldBlockID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBlockID(v)
 		return nil
 	case msg.FieldSourceMsgSender:
 		v, ok := value.([]byte)
@@ -2290,7 +2341,11 @@ func (m *MsgMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *MsgMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(msg.FieldBlockID) {
+		fields = append(fields, msg.FieldBlockID)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -2303,6 +2358,11 @@ func (m *MsgMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *MsgMutation) ClearField(name string) error {
+	switch name {
+	case msg.FieldBlockID:
+		m.ClearBlockID()
+		return nil
+	}
 	return fmt.Errorf("unknown Msg nullable field %s", name)
 }
 
@@ -2312,6 +2372,9 @@ func (m *MsgMutation) ResetField(name string) error {
 	switch name {
 	case msg.FieldUUID:
 		m.ResetUUID()
+		return nil
+	case msg.FieldBlockID:
+		m.ResetBlockID()
 		return nil
 	case msg.FieldSourceMsgSender:
 		m.ResetSourceMsgSender()
@@ -2608,6 +2671,55 @@ func (m *ReceiptMutation) OldUUID(ctx context.Context) (v uuid.UUID, err error) 
 // ResetUUID resets all changes to the "UUID" field.
 func (m *ReceiptMutation) ResetUUID() {
 	m._UUID = nil
+}
+
+// SetBlockID sets the "Block_ID" field.
+func (m *ReceiptMutation) SetBlockID(i int) {
+	m._Block = &i
+}
+
+// BlockID returns the value of the "Block_ID" field in the mutation.
+func (m *ReceiptMutation) BlockID() (r int, exists bool) {
+	v := m._Block
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBlockID returns the old "Block_ID" field's value of the Receipt entity.
+// If the Receipt object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ReceiptMutation) OldBlockID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBlockID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBlockID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBlockID: %w", err)
+	}
+	return oldValue.BlockID, nil
+}
+
+// ClearBlockID clears the value of the "Block_ID" field.
+func (m *ReceiptMutation) ClearBlockID() {
+	m._Block = nil
+	m.clearedFields[receipt.FieldBlockID] = struct{}{}
+}
+
+// BlockIDCleared returns if the "Block_ID" field was cleared in this mutation.
+func (m *ReceiptMutation) BlockIDCleared() bool {
+	_, ok := m.clearedFields[receipt.FieldBlockID]
+	return ok
+}
+
+// ResetBlockID resets all changes to the "Block_ID" field.
+func (m *ReceiptMutation) ResetBlockID() {
+	m._Block = nil
+	delete(m.clearedFields, receipt.FieldBlockID)
 }
 
 // SetGasUsed sets the "GasUsed" field.
@@ -2978,27 +3090,15 @@ func (m *ReceiptMutation) ResetCreatedAt() {
 	m._CreatedAt = nil
 }
 
-// SetBlockID sets the "Block" edge to the Block entity by id.
-func (m *ReceiptMutation) SetBlockID(id int) {
-	m._Block = &id
-}
-
 // ClearBlock clears the "Block" edge to the Block entity.
 func (m *ReceiptMutation) ClearBlock() {
 	m.cleared_Block = true
+	m.clearedFields[receipt.FieldBlockID] = struct{}{}
 }
 
 // BlockCleared reports if the "Block" edge to the Block entity was cleared.
 func (m *ReceiptMutation) BlockCleared() bool {
-	return m.cleared_Block
-}
-
-// BlockID returns the "Block" edge ID in the mutation.
-func (m *ReceiptMutation) BlockID() (id int, exists bool) {
-	if m._Block != nil {
-		return *m._Block, true
-	}
-	return
+	return m.BlockIDCleared() || m.cleared_Block
 }
 
 // BlockIDs returns the "Block" edge IDs in the mutation.
@@ -3105,9 +3205,12 @@ func (m *ReceiptMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ReceiptMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 10)
 	if m._UUID != nil {
 		fields = append(fields, receipt.FieldUUID)
+	}
+	if m._Block != nil {
+		fields = append(fields, receipt.FieldBlockID)
 	}
 	if m._GasUsed != nil {
 		fields = append(fields, receipt.FieldGasUsed)
@@ -3143,6 +3246,8 @@ func (m *ReceiptMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case receipt.FieldUUID:
 		return m.UUID()
+	case receipt.FieldBlockID:
+		return m.BlockID()
 	case receipt.FieldGasUsed:
 		return m.GasUsed()
 	case receipt.FieldSuccess:
@@ -3170,6 +3275,8 @@ func (m *ReceiptMutation) OldField(ctx context.Context, name string) (ent.Value,
 	switch name {
 	case receipt.FieldUUID:
 		return m.OldUUID(ctx)
+	case receipt.FieldBlockID:
+		return m.OldBlockID(ctx)
 	case receipt.FieldGasUsed:
 		return m.OldGasUsed(ctx)
 	case receipt.FieldSuccess:
@@ -3201,6 +3308,13 @@ func (m *ReceiptMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUUID(v)
+		return nil
+	case receipt.FieldBlockID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBlockID(v)
 		return nil
 	case receipt.FieldGasUsed:
 		v, ok := value.(uint64)
@@ -3338,7 +3452,11 @@ func (m *ReceiptMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *ReceiptMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(receipt.FieldBlockID) {
+		fields = append(fields, receipt.FieldBlockID)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -3351,6 +3469,11 @@ func (m *ReceiptMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *ReceiptMutation) ClearField(name string) error {
+	switch name {
+	case receipt.FieldBlockID:
+		m.ClearBlockID()
+		return nil
+	}
 	return fmt.Errorf("unknown Receipt nullable field %s", name)
 }
 
@@ -3360,6 +3483,9 @@ func (m *ReceiptMutation) ResetField(name string) error {
 	switch name {
 	case receipt.FieldUUID:
 		m.ResetUUID()
+		return nil
+	case receipt.FieldBlockID:
+		m.ResetBlockID()
 		return nil
 	case receipt.FieldGasUsed:
 		m.ResetGasUsed()

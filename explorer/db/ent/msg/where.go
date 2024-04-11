@@ -61,6 +61,11 @@ func UUID(v uuid.UUID) predicate.Msg {
 	return predicate.Msg(sql.FieldEQ(FieldUUID, v))
 }
 
+// BlockID applies equality check predicate on the "Block_ID" field. It's identical to BlockIDEQ.
+func BlockID(v int) predicate.Msg {
+	return predicate.Msg(sql.FieldEQ(FieldBlockID, v))
+}
+
 // SourceMsgSender applies equality check predicate on the "SourceMsgSender" field. It's identical to SourceMsgSenderEQ.
 func SourceMsgSender(v []byte) predicate.Msg {
 	return predicate.Msg(sql.FieldEQ(FieldSourceMsgSender, v))
@@ -144,6 +149,36 @@ func UUIDLT(v uuid.UUID) predicate.Msg {
 // UUIDLTE applies the LTE predicate on the "UUID" field.
 func UUIDLTE(v uuid.UUID) predicate.Msg {
 	return predicate.Msg(sql.FieldLTE(FieldUUID, v))
+}
+
+// BlockIDEQ applies the EQ predicate on the "Block_ID" field.
+func BlockIDEQ(v int) predicate.Msg {
+	return predicate.Msg(sql.FieldEQ(FieldBlockID, v))
+}
+
+// BlockIDNEQ applies the NEQ predicate on the "Block_ID" field.
+func BlockIDNEQ(v int) predicate.Msg {
+	return predicate.Msg(sql.FieldNEQ(FieldBlockID, v))
+}
+
+// BlockIDIn applies the In predicate on the "Block_ID" field.
+func BlockIDIn(vs ...int) predicate.Msg {
+	return predicate.Msg(sql.FieldIn(FieldBlockID, vs...))
+}
+
+// BlockIDNotIn applies the NotIn predicate on the "Block_ID" field.
+func BlockIDNotIn(vs ...int) predicate.Msg {
+	return predicate.Msg(sql.FieldNotIn(FieldBlockID, vs...))
+}
+
+// BlockIDIsNil applies the IsNil predicate on the "Block_ID" field.
+func BlockIDIsNil() predicate.Msg {
+	return predicate.Msg(sql.FieldIsNull(FieldBlockID))
+}
+
+// BlockIDNotNil applies the NotNil predicate on the "Block_ID" field.
+func BlockIDNotNil() predicate.Msg {
+	return predicate.Msg(sql.FieldNotNull(FieldBlockID))
 }
 
 // SourceMsgSenderEQ applies the EQ predicate on the "SourceMsgSender" field.

@@ -45,6 +45,26 @@ func (mu *MsgUpdate) SetNillableUUID(u *uuid.UUID) *MsgUpdate {
 	return mu
 }
 
+// SetBlockID sets the "Block_ID" field.
+func (mu *MsgUpdate) SetBlockID(i int) *MsgUpdate {
+	mu.mutation.SetBlockID(i)
+	return mu
+}
+
+// SetNillableBlockID sets the "Block_ID" field if the given value is not nil.
+func (mu *MsgUpdate) SetNillableBlockID(i *int) *MsgUpdate {
+	if i != nil {
+		mu.SetBlockID(*i)
+	}
+	return mu
+}
+
+// ClearBlockID clears the value of the "Block_ID" field.
+func (mu *MsgUpdate) ClearBlockID() *MsgUpdate {
+	mu.mutation.ClearBlockID()
+	return mu
+}
+
 // SetSourceMsgSender sets the "SourceMsgSender" field.
 func (mu *MsgUpdate) SetSourceMsgSender(b []byte) *MsgUpdate {
 	mu.mutation.SetSourceMsgSender(b)
@@ -163,20 +183,6 @@ func (mu *MsgUpdate) SetCreatedAt(t time.Time) *MsgUpdate {
 func (mu *MsgUpdate) SetNillableCreatedAt(t *time.Time) *MsgUpdate {
 	if t != nil {
 		mu.SetCreatedAt(*t)
-	}
-	return mu
-}
-
-// SetBlockID sets the "Block" edge to the Block entity by ID.
-func (mu *MsgUpdate) SetBlockID(id int) *MsgUpdate {
-	mu.mutation.SetBlockID(id)
-	return mu
-}
-
-// SetNillableBlockID sets the "Block" edge to the Block entity by ID if the given value is not nil.
-func (mu *MsgUpdate) SetNillableBlockID(id *int) *MsgUpdate {
-	if id != nil {
-		mu = mu.SetBlockID(*id)
 	}
 	return mu
 }
@@ -442,6 +448,26 @@ func (muo *MsgUpdateOne) SetNillableUUID(u *uuid.UUID) *MsgUpdateOne {
 	return muo
 }
 
+// SetBlockID sets the "Block_ID" field.
+func (muo *MsgUpdateOne) SetBlockID(i int) *MsgUpdateOne {
+	muo.mutation.SetBlockID(i)
+	return muo
+}
+
+// SetNillableBlockID sets the "Block_ID" field if the given value is not nil.
+func (muo *MsgUpdateOne) SetNillableBlockID(i *int) *MsgUpdateOne {
+	if i != nil {
+		muo.SetBlockID(*i)
+	}
+	return muo
+}
+
+// ClearBlockID clears the value of the "Block_ID" field.
+func (muo *MsgUpdateOne) ClearBlockID() *MsgUpdateOne {
+	muo.mutation.ClearBlockID()
+	return muo
+}
+
 // SetSourceMsgSender sets the "SourceMsgSender" field.
 func (muo *MsgUpdateOne) SetSourceMsgSender(b []byte) *MsgUpdateOne {
 	muo.mutation.SetSourceMsgSender(b)
@@ -560,20 +586,6 @@ func (muo *MsgUpdateOne) SetCreatedAt(t time.Time) *MsgUpdateOne {
 func (muo *MsgUpdateOne) SetNillableCreatedAt(t *time.Time) *MsgUpdateOne {
 	if t != nil {
 		muo.SetCreatedAt(*t)
-	}
-	return muo
-}
-
-// SetBlockID sets the "Block" edge to the Block entity by ID.
-func (muo *MsgUpdateOne) SetBlockID(id int) *MsgUpdateOne {
-	muo.mutation.SetBlockID(id)
-	return muo
-}
-
-// SetNillableBlockID sets the "Block" edge to the Block entity by ID if the given value is not nil.
-func (muo *MsgUpdateOne) SetNillableBlockID(id *int) *MsgUpdateOne {
-	if id != nil {
-		muo = muo.SetBlockID(*id)
 	}
 	return muo
 }

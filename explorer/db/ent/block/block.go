@@ -36,14 +36,14 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "msg" package.
 	MsgsInverseTable = "msgs"
 	// MsgsColumn is the table column denoting the Msgs relation/edge.
-	MsgsColumn = "block_msgs"
+	MsgsColumn = "block_id"
 	// ReceiptsTable is the table that holds the Receipts relation/edge.
 	ReceiptsTable = "receipts"
 	// ReceiptsInverseTable is the table name for the Receipt entity.
 	// It exists in this package in order to avoid circular dependency with the "receipt" package.
 	ReceiptsInverseTable = "receipts"
 	// ReceiptsColumn is the table column denoting the Receipts relation/edge.
-	ReceiptsColumn = "block_receipts"
+	ReceiptsColumn = "block_id"
 )
 
 // Columns holds all SQL columns for block fields.
