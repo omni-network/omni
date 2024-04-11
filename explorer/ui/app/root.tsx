@@ -16,27 +16,14 @@ import { useEnv } from './lib/use-env'
 export const links: LinksFunction = () => [{ rel: 'stylesheet', href: stylesheet }]
 export type LoaderData = SerializeFrom<typeof loader>
 
-const client = new Client({
-  url: 'http://localhost:21335/query',
-  exchanges: [fetchExchange, cacheExchange],
-})
-
-// This loads in our environment variables from the .env file
 export function loader() {
   const ENV = {
-    GRAPHQL_HOST: process.env.GRAPHQL_HOST ?? 'http://localhost:8080/query',
+    GRAPHQL_URL: process.env.GRAPHQL_URL,
   }
   return json({ ENV })
 }
 
-function GetGraphQLHost() {
-  const ENV = useEnv()
-  return ENV.GRAPHQL_HOST
-}
-
 function App() {
-  const data = useLoaderData<typeof loader>()
-  GetGraphQLHost()
   return (
     <html lang="en" data-theme="light">
       <head>
@@ -56,6 +43,14 @@ function App() {
 }
 
 export default function AppWithProviders() {
+  useLoaderData<typeof loader>()
+
+  const ENV = useEnv()
+  let client = new Client({
+    url: ENV.GRAPHQL_URL ?? '',
+    exchanges: [fetchExchange, cacheExchange],
+  })
+  console.log(ENV.GRAPHQL_URL)
   return (
     <Provider value={client}>
       <App />

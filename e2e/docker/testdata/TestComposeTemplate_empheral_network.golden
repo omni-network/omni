@@ -190,6 +190,8 @@ services:
     container_name: explorer_ui
     image: omniops/explorer-ui:main
     restart: unless-stopped # Restart on crash to mitigate startup race issues
+    environment:
+      GRAPHQL_URL: http://localhost:8080/graphql
     volumes:
       - ./explorer_ui:/explorer_ui
     networks:
