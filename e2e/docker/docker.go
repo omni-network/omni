@@ -38,6 +38,7 @@ type Provider struct {
 	servicesOnce sync.Once
 	testnet      types.Testnet
 	omniTag      string
+	graphQLURL   string
 }
 
 func (*Provider) Clean(ctx context.Context) error {
@@ -54,7 +55,7 @@ func (*Provider) Clean(ctx context.Context) error {
 }
 
 // NewProvider returns a new Provider.
-func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag string) *Provider {
+func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag, graphQLURL string) *Provider {
 	return &Provider{
 		Provider: &cmtdocker.Provider{
 			ProviderData: infra.ProviderData{
@@ -62,8 +63,9 @@ func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag st
 				InfrastructureData: infd.InfrastructureData,
 			},
 		},
-		testnet: testnet,
-		omniTag: imgTag,
+		testnet:    testnet,
+		omniTag:    imgTag,
+		graphQLURL: graphQLURL,
 	}
 }
 
@@ -84,6 +86,7 @@ func (p *Provider) Setup() error {
 		Explorer:    p.testnet.Explorer,
 		ExplorerDB:  p.testnet.Explorer && p.testnet.Network.IsEphemeral(),
 		OmniTag:     p.omniTag,
+		GraphQLURL:  p.graphQLURL,
 	}
 
 	bz, err := GenerateComposeFile(def)
@@ -160,6 +163,8 @@ type ComposeDef struct {
 
 	ExplorerDB bool
 	Explorer   bool
+
+	GraphQLURL string
 }
 
 func (ComposeDef) GethTag() string {
