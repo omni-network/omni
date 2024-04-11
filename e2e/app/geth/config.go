@@ -121,6 +121,7 @@ func MakeGethConfig(conf Config) FullConfig {
 	cfg.Node.HTTPVirtualHosts = []string{"*"}
 	cfg.Node.AuthVirtualHosts = []string{"*"}
 	cfg.Node.WSOrigins = []string{"*"}
+	cfg.Node.HTTPCors = []string{"*"}
 
 	return cfg
 }
