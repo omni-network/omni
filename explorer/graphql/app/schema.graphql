@@ -124,6 +124,12 @@ type XReceipt {
 
   "Timestamp of the receipt"
   Timestamp: Time!
+
+  "XBlock message was emitted in"
+  Block: XBlock!
+
+  "Messages associated wit this receipt"
+  Messages: [XMsg!]!
 }
 
 type Query {
