@@ -96,6 +96,8 @@ export type XBlock = {
 /** XMsg is a cross-chain message. */
 export type XMsg = {
   __typename?: 'XMsg';
+  /** XBlock message was emitted in */
+  Block: XBlock;
   /** Hash of the source chain block */
   BlockHash: Scalars['Bytes32']['output'];
   /** Height of the source chain block */
@@ -106,6 +108,8 @@ export type XMsg = {
   DestChainID: Scalars['BigInt']['output'];
   /** Gas limit to use for 'call' on destination chain */
   DestGasLimit: Scalars['BigInt']['output'];
+  /** Receipts of the message */
+  Receipts: Array<XReceipt>;
   /** Source chain ID as per https://chainlist.org/ */
   SourceChainID: Scalars['BigInt']['output'];
   /** Sender on source chain, set to msg.Sender */
