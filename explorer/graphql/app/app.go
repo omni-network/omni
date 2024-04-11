@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -48,7 +47,7 @@ func Run(ctx context.Context, cfg Config) error {
 	handler := cors.Default().Handler(mux)
 
 	httpServer := &http.Server{
-		Addr:              fmt.Sprintf(":%v", cfg.GraphQLPort),
+		Addr:              cfg.ListenAddr,
 		ReadHeaderTimeout: 30 * time.Second,
 		IdleTimeout:       30 * time.Second,
 		WriteTimeout:      30 * time.Second,

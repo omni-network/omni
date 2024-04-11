@@ -12,9 +12,6 @@ version = "unknown"
 # URL at which the postgres database can be reached.
 explorer-db-conn = "postgres://omni:password@explorer_db:5432/omni_db"
 
-# Port on which the GraphQL server will listen.
-graphql-port = "8080"
-
 #######################################################################
 ###                         Logging Options                         ###
 #######################################################################
