@@ -27,7 +27,7 @@ func (p Provider) XReceiptCount(ctx context.Context) (*hexutil.Big, bool, error)
 	return &hex, true, nil
 }
 
-// nolint: dupl // graphql library looks for the function name to match the resolver
+//nolint:dupl // graphql library looks for the function name to match the resolver
 func (p Provider) XReceipt(ctx context.Context, sourceChainID, destChainID, streamOffset uint64) (*resolvers.XReceipt, bool, error) {
 	query, err := p.EntClient.Receipt.Query().
 		Where(
