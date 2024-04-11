@@ -51,7 +51,7 @@ func (p Provider) XMsgRange(ctx context.Context, from uint64, to uint64) ([]*res
 	return res, true, nil
 }
 
-// nolint: dupl // graphql library looks for the function name to match the resolver
+//nolint: dupl // graphql library looks for the function name to match the resolver
 func (p Provider) XMsg(ctx context.Context, sourceChainID, destChainID, streamOffset uint64) (*resolvers.XMsg, bool, error) {
 	query, err := p.EntClient.Msg.Query().
 		Where(
