@@ -122,7 +122,7 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 		}
 		config.WriteConfigFile(filepath.Join(nodeDir, "config", "config.toml"), cfg) // panics
 
-		if err := writeHaloConfig(nodeDir, logCfg, depCfg.testConfig, node.Mode); err != nil {
+		if err := writeHaloConfig(nodeDir, def.Cfg, logCfg, depCfg.testConfig, node.Mode); err != nil {
 			return err
 		}
 
@@ -291,7 +291,7 @@ func MakeConfig(node *e2e.Node, nodeDir string) (*config.Config, error) {
 }
 
 // writeHaloConfig generates an halo application config for a node and writes it to disk.
-func writeHaloConfig(nodeDir string, logCfg log.Config, testCfg bool, mode e2e.Mode) error {
+func writeHaloConfig(nodeDir string, defCfg DefinitionConfig, logCfg log.Config, testCfg bool, mode e2e.Mode) error {
 	cfg := halocfg.DefaultConfig()
 
 	switch mode {
@@ -308,6 +308,8 @@ func writeHaloConfig(nodeDir string, logCfg log.Config, testCfg bool, mode e2e.M
 
 	cfg.HomeDir = nodeDir
 	cfg.EngineJWTFile = "/halo/config/jwtsecret" // Absolute path inside docker container
+	cfg.Tracer.Endpoint = defCfg.TracingEndpoint
+	cfg.Tracer.Headers = defCfg.TracingHeaders
 
 	if testCfg {
 		cfg.SnapshotInterval = 1   // Write snapshots each block in e2e tests

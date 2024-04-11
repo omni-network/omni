@@ -9,6 +9,10 @@
  "PruningOption": "nothing",
  "EVMBuildDelay": 600000000,
  "EVMBuildOptimistic": true,
+ "Tracer": {
+  "Endpoint": "http://tracing.com",
+  "Headers": "Authorization=Basic 123456"
+ },
  "Comet": {
   "Version": "0.38.6",
   "RootDir": "testinput/input1",

@@ -4,3 +4,7 @@ snapshot-interval=999
 
 [state]
 persist-interval=99
+
+[tracing]
+endpoint="http://tracing.com"
+headers="Authorization=Basic 123456"

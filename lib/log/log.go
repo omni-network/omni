@@ -4,12 +4,15 @@ package log
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"runtime"
 	"strings"
 	"time"
 
 	pkgerrors "github.com/pkg/errors" //nolint:revive // Need this for stacktraces.
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type attrsKey struct{}
@@ -82,6 +85,17 @@ func log(ctx context.Context, level slog.Level, msg string, attrs ...any) {
 
 	r := slog.NewRecord(time.Now(), level, msg, pcs[0])
 	r.Add(attrs...)
+
+	// Build trace event
+	traceAttrs := []attribute.KeyValue{attribute.String("msg", msg)}
+	r.Attrs(func(attr slog.Attr) bool {
+		traceAttrs = append(traceAttrs, attribute.Stringer(attr.Key, attr.Value))
+		return true
+	})
+	trace.SpanFromContext(ctx).AddEvent(
+		fmt.Sprintf("log.%s", level.String()),
+		trace.WithAttributes(traceAttrs...),
+	)
 
 	_ = logger.Handler().Handle(ctx, r)
 }
