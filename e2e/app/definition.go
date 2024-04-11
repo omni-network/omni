@@ -48,6 +48,9 @@ type DefinitionConfig struct {
 
 	ExplorerDBConn string // ExplorerDBConn is the connection string for the explorer database.
 	GraphQLURL     string // GraphQLURL is the host for the GraphQL server.
+
+	TracingEndpoint string
+	TracingHeaders  string
 }
 
 // DefaultDefinitionConfig returns a default configuration for a Definition.

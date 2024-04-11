@@ -23,6 +23,8 @@ func bindDefFlags(flags *pflag.FlagSet, cfg *app.DefinitionConfig) {
 	flags.StringVar(&cfg.ExplorerDBConn, "explorer-db-conn", cfg.ExplorerDBConn, "Explorer database connection url")
 	flags.StringVar(&cfg.GraphQLURL, "graphql-url", cfg.GraphQLURL, "Url for graphql server")
 	flags.StringToStringVar(&cfg.RPCOverrides, "rpc-overrides", cfg.RPCOverrides, "Public chain rpc overrides: '<chain1>=<url1>,<url2>'")
+	flags.StringVar(&cfg.TracingEndpoint, "tracing-endpoint", cfg.TracingEndpoint, "Tracing endpoint")
+	flags.StringVar(&cfg.TracingHeaders, "tracing-headers", cfg.TracingHeaders, "Tracing headers")
 }
 
 func bindE2EFlags(flags *pflag.FlagSet, cfg *app.E2ETestConfig) {

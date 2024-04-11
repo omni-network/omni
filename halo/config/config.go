@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/tracer"
 
 	cmtos "github.com/cometbft/cometbft/libs/os"
 
@@ -51,6 +52,7 @@ func DefaultConfig() Config {
 		PruningOption:      defaultPruningOption,
 		EVMBuildDelay:      defaultEVMBuildDelay,
 		EVMBuildOptimistic: defaultEVMBuildOptimistic,
+		Tracer:             tracer.DefaultConfig(),
 	}
 }
 
@@ -66,6 +68,7 @@ type Config struct {
 	PruningOption      string // See cosmossdk.io/store/pruning/types/options.go
 	EVMBuildDelay      time.Duration
 	EVMBuildOptimistic bool
+	Tracer             tracer.Config
 }
 
 // ConfigFile returns the default path to the toml halo config file.

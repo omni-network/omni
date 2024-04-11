@@ -48,6 +48,7 @@ func redact(flag, val string) string {
 		strings.Contains(flag, "password") ||
 		strings.Contains(flag, "secret") ||
 		strings.Contains(flag, "db") ||
+		strings.Contains(flag, "header") ||
 		strings.Contains(flag, "key") {
 		return "xxxxx"
 	}

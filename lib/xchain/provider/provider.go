@@ -6,6 +6,7 @@ package provider
 
 import (
 	"context"
+	"path"
 	"time"
 
 	"github.com/omni-network/omni/lib/cchain"
@@ -15,7 +16,10 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/stream"
+	"github.com/omni-network/omni/lib/tracer"
 	"github.com/omni-network/omni/lib/xchain"
+
+	"go.opentelemetry.io/otel/trace"
 )
 
 var _ xchain.Provider = (*Provider)(nil)
@@ -129,6 +133,11 @@ func (p *Provider) stream(
 		},
 		SetCallbackLatency: func(d time.Duration) {
 			callbackLatency.WithLabelValues(chain.Name).Observe(d.Seconds())
+		},
+		StartTrace: func(ctx context.Context, height uint64, spanName string) (context.Context, trace.Span) {
+			return tracer.StartChainHeight(ctx, chain.Name, height,
+				path.Join("cprovider", spanName),
+			)
 		},
 	}
 
