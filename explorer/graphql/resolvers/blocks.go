@@ -17,6 +17,7 @@ type BlocksProvider interface {
 	XReceiptCount(ctx context.Context) (*hexutil.Big, bool, error)
 	XMsgRange(ctx context.Context, Amount uint64, Offset uint64) ([]*XMsg, bool, error)
 	XReceipt(ctx context.Context, SourceChainID, DestChainID, StreamOffset uint64) (*XReceipt, bool, error)
+	XMsg(ctx context.Context, SourceChainID uint64, DestChainID uint64, StreamOffset uint64) (*XMsg, bool, error)
 }
 
 type BlocksResolver struct {

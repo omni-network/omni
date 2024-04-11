@@ -19,6 +19,8 @@ type XMsg struct {
 	TxHash              common.Hash
 	BlockHeight         hexutil.Big
 	BlockHash           common.Hash
+	Block               XBlock
+	Receipts            []XReceipt
 }
 
 type XBlock struct {

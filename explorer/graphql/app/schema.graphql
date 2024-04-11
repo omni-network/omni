@@ -60,6 +60,12 @@ type XMsg {
 
   "Hash of the source chain block"
   BlockHash: Bytes32!
+
+  "XBlock message was emitted in"
+  Block: XBlock!
+
+  "Receipts of the message"
+  Receipts: [XReceipt!]!
 }
 
 """
@@ -128,4 +134,5 @@ type Query {
   xmsgcount: BigInt
   xreceiptcount: BigInt
   xreceipt(sourceChainID: BigInt!, destChainID: BigInt!, streamOffset: BigInt!): XReceipt
+  xmsg(sourceChainID: BigInt!, destChainID: BigInt! streamOffset: BigInt!): XMsg
 }
