@@ -33,7 +33,6 @@ func (Block) Fields() []ent.Field {
 // Indexes of the Block.
 func (Block) Indexes() []ent.Index {
 	return []ent.Index{
-		// non-unique index.
 		index.Fields("SourceChainID", "BlockHeight"),
 	}
 }
