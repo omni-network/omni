@@ -40,10 +40,24 @@ func (p Provider) XReceipt(ctx context.Context, sourceChainID, destChainID, stre
 		return nil, false, err
 	}
 
-	res, err := EntReceiptToGraphQLXReceipt(ctx, query, nil)
+	block := query.QueryBlock().OnlyX(ctx)
+	messages := query.QueryMsgs().AllX(ctx)
+
+	res, err := EntReceiptToGraphQLXReceipt(ctx, query, block)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "decoding message")
 	}
+
+	var msgs []resolvers.XMsg
+	for _, m := range messages {
+		msg, err := EntMsgToGraphQLXMsg(ctx, m, nil)
+		if err != nil {
+			return nil, false, errors.Wrap(err, "decoding message")
+		}
+		msgs = append(msgs, *msg)
+	}
+
+	res.Messages = msgs
 
 	return res, true, nil
 }

@@ -46,4 +46,6 @@ type XReceipt struct {
 	Timestamp      graphql.Time
 	BlockHeight    hexutil.Big
 	BlockHash      common.Hash
+	Block          XBlock
+	Messages       []XMsg
 }
