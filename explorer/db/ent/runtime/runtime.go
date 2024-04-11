@@ -51,19 +51,19 @@ func init() {
 	// msg.DefaultUUID holds the default value on creation for the UUID field.
 	msg.DefaultUUID = msgDescUUID.Default.(func() uuid.UUID)
 	// msgDescSourceMsgSender is the schema descriptor for SourceMsgSender field.
-	msgDescSourceMsgSender := msgFields[1].Descriptor()
+	msgDescSourceMsgSender := msgFields[2].Descriptor()
 	// msg.SourceMsgSenderValidator is a validator for the "SourceMsgSender" field. It is called by the builders before save.
 	msg.SourceMsgSenderValidator = msgDescSourceMsgSender.Validators[0].(func([]byte) error)
 	// msgDescDestAddress is the schema descriptor for DestAddress field.
-	msgDescDestAddress := msgFields[2].Descriptor()
+	msgDescDestAddress := msgFields[3].Descriptor()
 	// msg.DestAddressValidator is a validator for the "DestAddress" field. It is called by the builders before save.
 	msg.DestAddressValidator = msgDescDestAddress.Validators[0].(func([]byte) error)
 	// msgDescTxHash is the schema descriptor for TxHash field.
-	msgDescTxHash := msgFields[8].Descriptor()
+	msgDescTxHash := msgFields[9].Descriptor()
 	// msg.TxHashValidator is a validator for the "TxHash" field. It is called by the builders before save.
 	msg.TxHashValidator = msgDescTxHash.Validators[0].(func([]byte) error)
 	// msgDescCreatedAt is the schema descriptor for CreatedAt field.
-	msgDescCreatedAt := msgFields[9].Descriptor()
+	msgDescCreatedAt := msgFields[10].Descriptor()
 	// msg.DefaultCreatedAt holds the default value on creation for the CreatedAt field.
 	msg.DefaultCreatedAt = msgDescCreatedAt.Default.(time.Time)
 	receiptHooks := schema.Receipt{}.Hooks()
@@ -75,15 +75,15 @@ func init() {
 	// receipt.DefaultUUID holds the default value on creation for the UUID field.
 	receipt.DefaultUUID = receiptDescUUID.Default.(func() uuid.UUID)
 	// receiptDescRelayerAddress is the schema descriptor for RelayerAddress field.
-	receiptDescRelayerAddress := receiptFields[3].Descriptor()
+	receiptDescRelayerAddress := receiptFields[4].Descriptor()
 	// receipt.RelayerAddressValidator is a validator for the "RelayerAddress" field. It is called by the builders before save.
 	receipt.RelayerAddressValidator = receiptDescRelayerAddress.Validators[0].(func([]byte) error)
 	// receiptDescTxHash is the schema descriptor for TxHash field.
-	receiptDescTxHash := receiptFields[7].Descriptor()
+	receiptDescTxHash := receiptFields[8].Descriptor()
 	// receipt.TxHashValidator is a validator for the "TxHash" field. It is called by the builders before save.
 	receipt.TxHashValidator = receiptDescTxHash.Validators[0].(func([]byte) error)
 	// receiptDescCreatedAt is the schema descriptor for CreatedAt field.
-	receiptDescCreatedAt := receiptFields[8].Descriptor()
+	receiptDescCreatedAt := receiptFields[9].Descriptor()
 	// receipt.DefaultCreatedAt holds the default value on creation for the CreatedAt field.
 	receipt.DefaultCreatedAt = receiptDescCreatedAt.Default.(time.Time)
 	xprovidercursorFields := schema.XProviderCursor{}.Fields()

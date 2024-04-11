@@ -26,7 +26,6 @@ type ReceiptQuery struct {
 	predicates []predicate.Receipt
 	withBlock  *BlockQuery
 	withMsgs   *MsgQuery
-	withFKs    bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -406,19 +405,12 @@ func (rq *ReceiptQuery) prepareQuery(ctx context.Context) error {
 func (rq *ReceiptQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Receipt, error) {
 	var (
 		nodes       = []*Receipt{}
-		withFKs     = rq.withFKs
 		_spec       = rq.querySpec()
 		loadedTypes = [2]bool{
 			rq.withBlock != nil,
 			rq.withMsgs != nil,
 		}
 	)
-	if rq.withBlock != nil {
-		withFKs = true
-	}
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, receipt.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Receipt).scanValues(nil, columns)
 	}
@@ -457,10 +449,7 @@ func (rq *ReceiptQuery) loadBlock(ctx context.Context, query *BlockQuery, nodes 
 	ids := make([]int, 0, len(nodes))
 	nodeids := make(map[int][]*Receipt)
 	for i := range nodes {
-		if nodes[i].block_receipts == nil {
-			continue
-		}
-		fk := *nodes[i].block_receipts
+		fk := nodes[i].BlockID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -477,7 +466,7 @@ func (rq *ReceiptQuery) loadBlock(ctx context.Context, query *BlockQuery, nodes 
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "block_receipts" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "Block_ID" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -571,6 +560,9 @@ func (rq *ReceiptQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != receipt.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if rq.withBlock != nil {
+			_spec.Node.AddColumnOnce(receipt.FieldBlockID)
 		}
 	}
 	if ps := rq.predicates; len(ps) > 0 {

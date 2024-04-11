@@ -456,7 +456,9 @@ func (bq *BlockQuery) loadMsgs(ctx context.Context, query *MsgQuery, nodes []*Bl
 			init(nodes[i])
 		}
 	}
-	query.withFKs = true
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(msg.FieldBlockID)
+	}
 	query.Where(predicate.Msg(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(block.MsgsColumn), fks...))
 	}))
@@ -465,13 +467,10 @@ func (bq *BlockQuery) loadMsgs(ctx context.Context, query *MsgQuery, nodes []*Bl
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.block_msgs
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "block_msgs" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
+		fk := n.BlockID
+		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "block_msgs" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "Block_ID" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -487,7 +486,9 @@ func (bq *BlockQuery) loadReceipts(ctx context.Context, query *ReceiptQuery, nod
 			init(nodes[i])
 		}
 	}
-	query.withFKs = true
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(receipt.FieldBlockID)
+	}
 	query.Where(predicate.Receipt(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(block.ReceiptsColumn), fks...))
 	}))
@@ -496,13 +497,10 @@ func (bq *BlockQuery) loadReceipts(ctx context.Context, query *ReceiptQuery, nod
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.block_receipts
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "block_receipts" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
+		fk := n.BlockID
+		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "block_receipts" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "Block_ID" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

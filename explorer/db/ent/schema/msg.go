@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
 )
 
@@ -25,6 +26,8 @@ func (Msg) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("UUID", uuid.UUID{}).
 			Default(uuid.New),
+		field.Int("Block_ID").
+			Optional(),
 		field.Bytes("SourceMsgSender").
 			MaxLen(20),
 		field.Bytes("DestAddress").
@@ -41,11 +44,19 @@ func (Msg) Fields() []ent.Field {
 	}
 }
 
+// Indexes of the Msg.
+func (Msg) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("SourceChainID", "DestChainID", "StreamOffset", "Block_ID"),
+	}
+}
+
 // Edges of the XMsg.
 func (Msg) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("Block", Block.Type).
 			Ref("Msgs").
+			Field("Block_ID").
 			Unique(),
 		edge.To("Receipts", Receipt.Type),
 	}

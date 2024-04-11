@@ -45,6 +45,26 @@ func (ru *ReceiptUpdate) SetNillableUUID(u *uuid.UUID) *ReceiptUpdate {
 	return ru
 }
 
+// SetBlockID sets the "Block_ID" field.
+func (ru *ReceiptUpdate) SetBlockID(i int) *ReceiptUpdate {
+	ru.mutation.SetBlockID(i)
+	return ru
+}
+
+// SetNillableBlockID sets the "Block_ID" field if the given value is not nil.
+func (ru *ReceiptUpdate) SetNillableBlockID(i *int) *ReceiptUpdate {
+	if i != nil {
+		ru.SetBlockID(*i)
+	}
+	return ru
+}
+
+// ClearBlockID clears the value of the "Block_ID" field.
+func (ru *ReceiptUpdate) ClearBlockID() *ReceiptUpdate {
+	ru.mutation.ClearBlockID()
+	return ru
+}
+
 // SetGasUsed sets the "GasUsed" field.
 func (ru *ReceiptUpdate) SetGasUsed(u uint64) *ReceiptUpdate {
 	ru.mutation.ResetGasUsed()
@@ -165,20 +185,6 @@ func (ru *ReceiptUpdate) SetCreatedAt(t time.Time) *ReceiptUpdate {
 func (ru *ReceiptUpdate) SetNillableCreatedAt(t *time.Time) *ReceiptUpdate {
 	if t != nil {
 		ru.SetCreatedAt(*t)
-	}
-	return ru
-}
-
-// SetBlockID sets the "Block" edge to the Block entity by ID.
-func (ru *ReceiptUpdate) SetBlockID(id int) *ReceiptUpdate {
-	ru.mutation.SetBlockID(id)
-	return ru
-}
-
-// SetNillableBlockID sets the "Block" edge to the Block entity by ID if the given value is not nil.
-func (ru *ReceiptUpdate) SetNillableBlockID(id *int) *ReceiptUpdate {
-	if id != nil {
-		ru = ru.SetBlockID(*id)
 	}
 	return ru
 }
@@ -436,6 +442,26 @@ func (ruo *ReceiptUpdateOne) SetNillableUUID(u *uuid.UUID) *ReceiptUpdateOne {
 	return ruo
 }
 
+// SetBlockID sets the "Block_ID" field.
+func (ruo *ReceiptUpdateOne) SetBlockID(i int) *ReceiptUpdateOne {
+	ruo.mutation.SetBlockID(i)
+	return ruo
+}
+
+// SetNillableBlockID sets the "Block_ID" field if the given value is not nil.
+func (ruo *ReceiptUpdateOne) SetNillableBlockID(i *int) *ReceiptUpdateOne {
+	if i != nil {
+		ruo.SetBlockID(*i)
+	}
+	return ruo
+}
+
+// ClearBlockID clears the value of the "Block_ID" field.
+func (ruo *ReceiptUpdateOne) ClearBlockID() *ReceiptUpdateOne {
+	ruo.mutation.ClearBlockID()
+	return ruo
+}
+
 // SetGasUsed sets the "GasUsed" field.
 func (ruo *ReceiptUpdateOne) SetGasUsed(u uint64) *ReceiptUpdateOne {
 	ruo.mutation.ResetGasUsed()
@@ -556,20 +582,6 @@ func (ruo *ReceiptUpdateOne) SetCreatedAt(t time.Time) *ReceiptUpdateOne {
 func (ruo *ReceiptUpdateOne) SetNillableCreatedAt(t *time.Time) *ReceiptUpdateOne {
 	if t != nil {
 		ruo.SetCreatedAt(*t)
-	}
-	return ruo
-}
-
-// SetBlockID sets the "Block" edge to the Block entity by ID.
-func (ruo *ReceiptUpdateOne) SetBlockID(id int) *ReceiptUpdateOne {
-	ruo.mutation.SetBlockID(id)
-	return ruo
-}
-
-// SetNillableBlockID sets the "Block" edge to the Block entity by ID if the given value is not nil.
-func (ruo *ReceiptUpdateOne) SetNillableBlockID(id *int) *ReceiptUpdateOne {
-	if id != nil {
-		ruo = ruo.SetBlockID(*id)
 	}
 	return ruo
 }

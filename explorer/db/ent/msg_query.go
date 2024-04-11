@@ -26,7 +26,6 @@ type MsgQuery struct {
 	predicates   []predicate.Msg
 	withBlock    *BlockQuery
 	withReceipts *ReceiptQuery
-	withFKs      bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -406,19 +405,12 @@ func (mq *MsgQuery) prepareQuery(ctx context.Context) error {
 func (mq *MsgQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Msg, error) {
 	var (
 		nodes       = []*Msg{}
-		withFKs     = mq.withFKs
 		_spec       = mq.querySpec()
 		loadedTypes = [2]bool{
 			mq.withBlock != nil,
 			mq.withReceipts != nil,
 		}
 	)
-	if mq.withBlock != nil {
-		withFKs = true
-	}
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, msg.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Msg).scanValues(nil, columns)
 	}
@@ -457,10 +449,7 @@ func (mq *MsgQuery) loadBlock(ctx context.Context, query *BlockQuery, nodes []*M
 	ids := make([]int, 0, len(nodes))
 	nodeids := make(map[int][]*Msg)
 	for i := range nodes {
-		if nodes[i].block_msgs == nil {
-			continue
-		}
-		fk := *nodes[i].block_msgs
+		fk := nodes[i].BlockID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -477,7 +466,7 @@ func (mq *MsgQuery) loadBlock(ctx context.Context, query *BlockQuery, nodes []*M
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "block_msgs" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "Block_ID" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -571,6 +560,9 @@ func (mq *MsgQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != msg.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if mq.withBlock != nil {
+			_spec.Node.AddColumnOnce(msg.FieldBlockID)
 		}
 	}
 	if ps := mq.predicates; len(ps) > 0 {
