@@ -6,6 +6,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 )
 
 // Block holds the schema definition for the Block entity.
@@ -23,6 +24,14 @@ func (Block) Fields() []ent.Field {
 			Default(time.Now()),
 		field.Time("CreatedAt").
 			Default(time.Now()),
+	}
+}
+
+// Indexes of the Block.
+func (Block) Indexes() []ent.Index {
+	return []ent.Index{
+		// non-unique index.
+		index.Fields("SourceChainID", "BlockHeight"),
 	}
 }
 

@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
 )
 
@@ -38,6 +39,13 @@ func (Msg) Fields() []ent.Field {
 			MaxLen(32),
 		field.Time("CreatedAt").
 			Default(time.Now()),
+	}
+}
+
+// Indexes of the Msg.
+func (Msg) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("SourceChainID", "DestChainID", "StreamOffset"),
 	}
 }
 
