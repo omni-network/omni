@@ -26,6 +26,8 @@ func (Msg) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("UUID", uuid.UUID{}).
 			Default(uuid.New),
+		field.Int("Block_ID").
+			Optional(),
 		field.Bytes("SourceMsgSender").
 			MaxLen(20),
 		field.Bytes("DestAddress").
@@ -45,7 +47,8 @@ func (Msg) Fields() []ent.Field {
 // Indexes of the Msg.
 func (Msg) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("SourceChainID", "DestChainID", "StreamOffset"),
+		index.Fields("SourceChainID", "DestChainID", "StreamOffset", "Block_ID"),
+		index.Fields("TXHash").Unique(),
 	}
 }
 
@@ -54,6 +57,7 @@ func (Msg) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("Block", Block.Type).
 			Ref("Msgs").
+			Field("Block_ID").
 			Unique(),
 		edge.To("Receipts", Receipt.Type),
 	}

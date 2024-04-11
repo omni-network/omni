@@ -26,6 +26,7 @@ func (Receipt) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("UUID", uuid.UUID{}).
 			Default(uuid.New),
+		field.Int("Block_ID").Optional(),
 		field.Uint64("GasUsed"),
 		field.Bool("Success"),
 		field.Bytes("RelayerAddress").
@@ -45,6 +46,7 @@ func (Receipt) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("Block", Block.Type).
 			Ref("Receipts").
+			Field("Block_ID").
 			Unique(),
 		edge.From("Msgs", Msg.Type).
 			Ref("Receipts"),
@@ -54,7 +56,7 @@ func (Receipt) Edges() []ent.Edge {
 // Indexes of the Receipt.
 func (Receipt) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("SourceChainID", "DestChainID", "StreamOffset"),
+		index.Fields("SourceChainID", "DestChainID", "StreamOffset", "Block_ID"),
 	}
 }
 
