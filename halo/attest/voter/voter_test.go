@@ -137,6 +137,9 @@ func TestVoteWindow(t *testing.T) {
 	w.Available(t, chain1, 2, true)
 	w.Available(t, chain1, 3, true)
 
+	// Propose 1
+	w.Propose(t, chain1, 1)
+
 	// Trim behind 3 (deletes 1 and 2)
 	l := w.v.TrimBehind(map[uint64]uint64{chain1: 3})
 	require.EqualValues(t, 2, l)
@@ -152,6 +155,11 @@ func TestVoteWindow(t *testing.T) {
 	w.Available(t, chain1, 1, false)
 	w.Available(t, chain1, 2, false)
 	w.Available(t, chain1, 3, false)
+
+	// Ensure latest by chain not trimmed.
+	latest, ok := w.v.LatestByChain(chain1)
+	require.True(t, ok)
+	require.EqualValues(t, 3, latest.BlockHeader.Height)
 }
 
 func TestVoter(t *testing.T) {
@@ -254,10 +262,11 @@ func TestVoter(t *testing.T) {
 	var stateJSON map[string]any
 	require.NoError(t, json.Unmarshal(bz, &stateJSON))
 
-	require.Len(t, stateJSON, 3)
+	require.Len(t, stateJSON, 4)
 	require.Empty(t, stateJSON["available"])
 	require.Empty(t, stateJSON["proposed"])
 	require.Len(t, stateJSON["committed"], 2) // One per chain
+	require.Len(t, stateJSON["latest"], 2)    // One per chain
 
 	v.AddErr(t, 1, 3)
 	v.AddErr(t, 1, 2)

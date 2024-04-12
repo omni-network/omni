@@ -25,3 +25,8 @@ func LoadVoterForT(t *testing.T, privKey crypto.PrivKey, path string, provider x
 
 	return v
 }
+
+// LatestByChain returns the latest vote by chain for testing purposes only.
+func (v *Voter) LatestByChain(chainID uint64) (*types.Vote, bool) {
+	return v.latestByChain(chainID)
+}
