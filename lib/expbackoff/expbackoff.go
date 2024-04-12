@@ -15,11 +15,6 @@ import (
 	"math/rand"
 	"testing"
 	"time"
-
-	"github.com/omni-network/omni/lib/tracer"
-
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 )
 
 // Config defines the configuration options for backoff.
@@ -131,9 +126,6 @@ func NewWithReset(ctx context.Context, opts ...func(*Config)) (backoff func(), r
 	var retries int
 
 	backoff = func() {
-		ctx, span := tracer.Start(ctx, "backoff", trace.WithAttributes(attribute.Int("retry", retries)))
-		defer span.End()
-
 		if ctx.Err() != nil {
 			return
 		}

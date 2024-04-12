@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
 
@@ -28,4 +29,13 @@ func TestSaveLoad(t *testing.T) {
 
 	require.Equal(t, net, net2)
 	tutil.RequireGoldenJSON(t, net)
+}
+
+// TestStrats ensures the netconf.StratX matches ethclient.HeadX.
+// Netconf shouldn't import ethclient, so using this test to keep in-sync.
+func TestStrats(t *testing.T) {
+	t.Parallel()
+
+	require.EqualValues(t, ethclient.HeadLatest, netconf.StratLatest)
+	require.EqualValues(t, ethclient.HeadFinalized, netconf.StratFinalized)
 }

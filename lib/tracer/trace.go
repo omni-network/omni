@@ -43,8 +43,17 @@ func RootedCtx(ctx context.Context, traceID trace.TraceID) context.Context {
 	}))
 }
 
+// Identifiers defines the global tracer attributes
+// That uniquely identifies the network/service/instance
+// that produced each trace.
+type Identifiers struct {
+	Network  netconf.ID
+	Service  string // halo/relayer/monitor
+	Instance string // validator01/seed01
+}
+
 // Init initializes the global tracer via the option(s) defaulting to a noop tracer. It returns a shutdown function.
-func Init(ctx context.Context, network netconf.ID, cfg Config, opts ...func(*options)) (func(context.Context) error, error) {
+func Init(ctx context.Context, ids Identifiers, cfg Config, opts ...func(*options)) (func(context.Context) error, error) {
 	tracerMu.Lock()
 	defer tracerMu.Unlock()
 
@@ -69,7 +78,7 @@ func Init(ctx context.Context, network netconf.ID, cfg Config, opts ...func(*opt
 		return nil, err
 	}
 
-	tp, err := newTraceProvider(exporter, network)
+	tp, err := newTraceProvider(exporter, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -119,17 +128,20 @@ func WithOTLP(endpoint string, headers map[string]string) func(*options) {
 	}
 }
 
-func newTraceProvider(exp sdktrace.SpanExporter, network netconf.ID) (*sdktrace.TracerProvider, error) {
+func newTraceProvider(exp sdktrace.SpanExporter, ids Identifiers) (*sdktrace.TracerProvider, error) {
 	r, err := resource.Merge(
 		resource.Default(),
-		resource.NewWithAttributes(semconv.SchemaURL, attribute.String("network", network.String())),
-	)
+		resource.NewWithAttributes(semconv.SchemaURL,
+			semconv.ServiceName(ids.Service),
+			semconv.ServiceInstanceID(ids.Instance),
+			semconv.DeploymentEnvironment(ids.Network.String()),
+		))
 	if err != nil {
 		return nil, errors.Wrap(err, "merge resource")
 	}
 
 	return sdktrace.NewTracerProvider(
-		sdktrace.WithSampler(sdktrace.AlwaysSample()), // TODO(corver): Reconsider 100% sampling.
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
 		sdktrace.WithBatcher(exp),
 		sdktrace.WithResource(r),
 	), nil

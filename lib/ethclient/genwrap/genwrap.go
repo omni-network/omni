@@ -56,6 +56,8 @@ type Client interface {
 		const endpoint = "{{.Label}}"
 		{{if .Latency}}defer latency(w.chain, endpoint)() {{end}}
 
+		ctx, span := tracer.Start(ctx, spanName(endpoint))
+		defer span.End()
 
 		{{.ResultNames}} := w.cl.{{.Name}}({{.ParamNames}})
 		if err != nil {
