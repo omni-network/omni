@@ -3,11 +3,13 @@
 package netconf
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -177,13 +179,13 @@ func Load(path string) (Network, error) {
 }
 
 // Save saves the network configuration to the given path.
-func Save(network Network, path string) error {
+func Save(ctx context.Context, network Network, path string) error {
 	for _, chain := range network.Chains {
 		if chain.IsOmniConsensus {
 			continue
 		}
 		if chain.PortalAddress == (common.Address{}) {
-			return errors.New("empty portal address", "chain", chain.Name)
+			log.Warn(ctx, "Netconf network.json portal address empty", nil, "chain", chain.Name, "path", path)
 		}
 	}
 

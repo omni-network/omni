@@ -22,7 +22,7 @@ func Test(ctx context.Context, def Definition, verbose bool) error {
 		return errors.Wrap(err, "creating temp dir")
 	}
 	networkFile := filepath.Join(networkDir, "network.json")
-	if err := netconf.Save(extNetwork, networkFile); err != nil {
+	if err := netconf.Save(ctx, extNetwork, networkFile); err != nil {
 		return errors.Wrap(err, "saving network")
 	}
 

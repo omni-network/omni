@@ -94,7 +94,7 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 		return err
 	}
 
-	if err := writeExplorerIndexerConfig(def, logCfg); err != nil {
+	if err := writeExplorerIndexerConfig(ctx, def, logCfg); err != nil {
 		return err
 	}
 
@@ -148,7 +148,7 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 
 		intNetwork := internalNetwork(def, node.Name)
 
-		if err := netconf.Save(intNetwork, filepath.Join(nodeDir, NetworkConfigFile)); err != nil {
+		if err := netconf.Save(ctx, intNetwork, filepath.Join(nodeDir, NetworkConfigFile)); err != nil {
 			return errors.Wrap(err, "write network config")
 		}
 
@@ -367,7 +367,7 @@ func writeRelayerConfig(ctx context.Context, def Definition, logCfg log.Config) 
 		network = externalNetwork(def)
 	}
 
-	if err := netconf.Save(network, filepath.Join(confRoot, networkFile)); err != nil {
+	if err := netconf.Save(ctx, network, filepath.Join(confRoot, networkFile)); err != nil {
 		return errors.Wrap(err, "save network config")
 	}
 
@@ -411,7 +411,7 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 		network = externalNetwork(def)
 	}
 
-	if err := netconf.Save(network, filepath.Join(confRoot, networkFile)); err != nil {
+	if err := netconf.Save(ctx, network, filepath.Join(confRoot, networkFile)); err != nil {
 		return errors.Wrap(err, "save network config")
 	}
 
@@ -453,7 +453,7 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 	return nil
 }
 
-func writeExplorerIndexerConfig(def Definition, logCfg log.Config) error {
+func writeExplorerIndexerConfig(ctx context.Context, def Definition, logCfg log.Config) error {
 	confRoot := filepath.Join(def.Testnet.Dir, "explorer_indexer")
 
 	const (
@@ -472,7 +472,7 @@ func writeExplorerIndexerConfig(def Definition, logCfg log.Config) error {
 		network = externalNetwork(def)
 	}
 
-	if err := netconf.Save(network, filepath.Join(confRoot, networkFile)); err != nil {
+	if err := netconf.Save(ctx, network, filepath.Join(confRoot, networkFile)); err != nil {
 		return errors.Wrap(err, "save network config")
 	}
 

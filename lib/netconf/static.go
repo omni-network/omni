@@ -92,6 +92,7 @@ var statics = map[ID]Static{
 		Portals:              []Deployment{},
 	},
 	Mainnet: {
+		Version:            "v0.0.1",
 		AVSContractAddress: mainnetAVS,
 	},
 }

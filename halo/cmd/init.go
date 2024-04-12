@@ -227,7 +227,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 				},
 			},
 		}
-		if err := netconf.Save(network, networkFile); err != nil {
+		if err := netconf.Save(ctx, network, networkFile); err != nil {
 			return errors.Wrap(err, "save network file")
 		}
 		log.Info(ctx, "Generated simnet network config", "path", networkFile)
