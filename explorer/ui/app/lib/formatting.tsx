@@ -16,13 +16,13 @@ export const dateFormatter = (date: Date) => {
 
   // on the second txs show as Just now
   if (hours === 0 && minutes === 0 && seconds === 0) {
-    return "Just now"
+    return 'Just now'
   }
 
   // less than a minute shows seconds ago
   if (hours === 0 && minutes === 0) {
     return `${seconds}s ago`
-  } 
+  }
 
   // less than an hour, but show minutes
   if (hours === 0 && minutes !== 0) {

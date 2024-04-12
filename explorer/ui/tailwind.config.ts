@@ -78,7 +78,7 @@ export default {
 
           '--color-icon-primary': '#5588E4',
           '--color-icon-critical': '#F6D5D5',
-          
+
           '--color-border': '#69748B',
           '--color-border-subtle': '#394866',
           '--color-border-disabled': '#B0B7C3',

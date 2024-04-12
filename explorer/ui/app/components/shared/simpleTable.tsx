@@ -17,7 +17,7 @@ import {
   ChevronDoubleRightIcon,
 } from '@heroicons/react/24/solid'
 import { Button, PageButton } from './button'
-import { Link } from '@remix-run/react';
+import { Link } from '@remix-run/react'
 
 export default function SimpleTable({ data, columns }: { data: any[]; columns: ColumnDef<any>[] }) {
   const table = useReactTable({
@@ -65,7 +65,9 @@ export default function SimpleTable({ data, columns }: { data: any[]; columns: C
                 {row.getVisibleCells().map(cell => {
                   return (
                     <td key={cell.id} className="px-3 py-2 whitespace-nowrap" role="cell">
-                      <Link to={`/xblock/${row.original.SourceChainID}?height=${row.original.BlockHeight}`}>
+                      <Link
+                        to={`/xblock/${row.original.SourceChainID}?height=${row.original.BlockHeight}`}
+                      >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </Link>
                     </td>
