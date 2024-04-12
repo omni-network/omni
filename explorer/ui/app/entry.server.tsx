@@ -18,7 +18,7 @@ const ABORT_DELAY = 5_000
 let reqsCount: any = null
 
 // Collect metrics in production env
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
   collectDefaultMetrics()
   reqsCount = new Counter({
     name: 'remix_requests_count_total',
