@@ -323,6 +323,10 @@ contract OmniAVS_syncWithOmni_Test is Base {
     function _assertSyncWithOmni(IOmniAVS.Operator[] memory ops) internal {
         // skip fork tests in which portal is not set
         if (address(omniAVS.omni()) == address(0)) return;
+
+        // portal not deployed on mainnet (but address is not 0)
+        if (isMainnet()) return;
+
         _expectXCall(ops);
         omniAVS.syncWithOmni{ value: syncFee }();
     }
