@@ -12,7 +12,7 @@ export const loader = async () => {
 }
 
 export default function XBlockDataTable() {
-  const d = useLoaderData<typeof loader>()
+  useLoaderData<typeof loader>()
 
   const rows = GetBlocksInRange(0, 1000)
   const count = GetBlockCount()
@@ -47,7 +47,7 @@ export default function XBlockDataTable() {
   return (
     <div className="m-3">
       <div className="">
-        <h1 className="prose text-xl font-semibold mb-3">XBlocks</h1>
+        <h1 className="prose text-primary font-semibold mb-3">XBlocks</h1>
       </div>
       <div>
         <SimpleTable columns={columns} data={rows} />

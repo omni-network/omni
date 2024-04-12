@@ -29,5 +29,5 @@ export const dateFormatter = (date: Date) => {
     return `${minutes} min, ${seconds}s ago`
   }
 
-  return txsTimestamp.toLocaleString() + `###  ${hours}:${minutes}:${seconds}`
+  return txsTimestamp.toLocaleString()
 }
