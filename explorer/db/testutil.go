@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"strconv"
 	"testing"
 
 	"github.com/omni-network/omni/explorer/db/ent"
@@ -10,6 +11,18 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 )
+
+func CreateTestChain(t *testing.T, ctx context.Context, client *ent.Client, chainID uint64) ent.Chain {
+	t.Helper()
+
+	name := "test-chain" + strconv.FormatUint(chainID, 10)
+	chain := client.Chain.Create().
+		SetChainID(chainID).
+		SetName(name).
+		SaveX(ctx)
+
+	return *chain
+}
 
 func CreateTestBlock(t *testing.T, ctx context.Context, client *ent.Client, height int) ent.Block {
 	t.Helper()
