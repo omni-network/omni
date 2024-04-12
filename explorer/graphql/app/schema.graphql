@@ -132,6 +132,17 @@ type XReceipt {
   Messages: [XMsg!]!
 }
 
+"""
+Chain represents a blockchain on the https://chainlist.org.
+"""
+type Chain {
+  "Chain ID as per https://chainlist.org"
+  ChainID: BigInt!
+
+  "Chain name"
+  Name: String!
+}
+
 type Query {
   xblock(sourceChainID: BigInt!, height: BigInt!): XBlock
   xblockrange(from: BigInt!, to: BigInt!): [XBlock]!
@@ -141,4 +152,5 @@ type Query {
   xreceiptcount: BigInt
   xreceipt(sourceChainID: BigInt!, destChainID: BigInt!, streamOffset: BigInt!): XReceipt
   xmsg(sourceChainID: BigInt!, destChainID: BigInt! streamOffset: BigInt!): XMsg
+  supportedchains: [Chain]!
 }

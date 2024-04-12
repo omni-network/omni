@@ -151,3 +151,15 @@ func EntReceiptToGraphQLXReceipt(ctx context.Context, receipt *ent.Receipt, bloc
 		BlockHash:      common.Hash(block.BlockHash),
 	}, nil
 }
+
+func EntChainToGraphQLChain(chain *ent.Chain) resolvers.Chain {
+	chainID, err := Uint2Big(chain.ChainID)
+	if err != nil {
+		panic(errors.Wrap(err, "decoding chain id"))
+	}
+
+	return resolvers.Chain{
+		Name:    chain.Name,
+		ChainID: hexutil.Big(chainID),
+	}
+}

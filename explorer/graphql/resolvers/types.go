@@ -51,3 +51,8 @@ type XReceipt struct {
 	Block          XBlock
 	Messages       []XMsg
 }
+
+type Chain struct {
+	Name    string
+	ChainID hexutil.Big
+}
