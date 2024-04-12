@@ -38,6 +38,8 @@ export function GetBlocksInRange(from: number, to: number): XBlock[] {
         TxHash: '',
         BlockHeight: '',
         BlockHash: '',
+        Receipts: [],
+        Block: block,
       }
       msgs.push(xmsg)
     })
