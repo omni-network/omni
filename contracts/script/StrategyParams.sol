@@ -14,7 +14,7 @@ library StrategyParams {
     uint96 public constant STD_MULTIPLIER = 1e18;
 
     /// @notice Mainnet strategy params
-    function mainnet() external pure returns (IOmniAVS.StrategyParam[] memory params) {
+    function mainnet() internal pure returns (IOmniAVS.StrategyParam[] memory params) {
         params = new IOmniAVS.StrategyParam[](5);
         params[0] = _stdStrategyParam(EigenM2Deployments.cbETHStrategy);
         params[1] = _stdStrategyParam(EigenM2Deployments.stETHStrategy);
