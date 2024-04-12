@@ -25,7 +25,7 @@ contract DeployAVS is Script {
     uint32 _maxOperatorCount = 30;
     uint64 _omniChainId = 166;
     uint96 _minOperatorStake = 1 ether;
-    address _proxyAdmin = address(0); // TODO
+    address _proxyAdmin = 0x42A72499eDDB0374ebFba44Fc880F82CCe736614;
     address _deployer = 0x00000072e2740F8a9A4D20Ed05C1832d12498642;
     address _owner = 0xFf89C654846B2E4BC572cEABE77056daf7b299a3;
     address _portal = 0x000000000000000000000000000000000000dEaD;
