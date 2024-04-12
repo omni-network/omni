@@ -38,8 +38,18 @@ export type Scalars = {
   Time: { input: any; output: any; }
 };
 
+/** Chain represents a blockchain on the https://chainlist.org. */
+export type Chain = {
+  __typename?: 'Chain';
+  /** Chain ID as per https://chainlist.org */
+  ChainID: Scalars['BigInt']['output'];
+  /** Chain name */
+  Name: Scalars['String']['output'];
+};
+
 export type Query = {
   __typename?: 'Query';
+  supportedchains: Array<Maybe<Chain>>;
   xblock?: Maybe<XBlock>;
   xblockcount?: Maybe<Scalars['BigInt']['output']>;
   xblockrange: Array<Maybe<XBlock>>;

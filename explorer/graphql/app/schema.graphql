@@ -145,5 +145,5 @@ type Query {
   xmsgcount: BigInt
   xreceiptcount: BigInt
   xmsg(sourceChainID: BigInt!, destChainID: BigInt! streamOffset: BigInt!): XMsg
-  supportedchains(): [Chain]!
+  supportedchains: [Chain]!
 }
