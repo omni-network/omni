@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/tracer"
 )
 
 // Client defines all ethereum interfaces used in omni.
@@ -37,6 +38,9 @@ func (w Wrapper) BlockByHash(ctx context.Context, hash common.Hash) (*types.Bloc
 	const endpoint = "block_by_hash"
 	defer latency(w.chain, endpoint)()
 
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
+
 	res0, err := w.cl.BlockByHash(ctx, hash)
 	if err != nil {
 		incError(w.chain, endpoint)
@@ -49,6 +53,9 @@ func (w Wrapper) BlockByHash(ctx context.Context, hash common.Hash) (*types.Bloc
 func (w Wrapper) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
 	const endpoint = "block_by_number"
 	defer latency(w.chain, endpoint)()
+
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
 
 	res0, err := w.cl.BlockByNumber(ctx, number)
 	if err != nil {
@@ -63,6 +70,9 @@ func (w Wrapper) HeaderByHash(ctx context.Context, hash common.Hash) (*types.Hea
 	const endpoint = "header_by_hash"
 	defer latency(w.chain, endpoint)()
 
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
+
 	res0, err := w.cl.HeaderByHash(ctx, hash)
 	if err != nil {
 		incError(w.chain, endpoint)
@@ -75,6 +85,9 @@ func (w Wrapper) HeaderByHash(ctx context.Context, hash common.Hash) (*types.Hea
 func (w Wrapper) HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error) {
 	const endpoint = "header_by_number"
 	defer latency(w.chain, endpoint)()
+
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
 
 	res0, err := w.cl.HeaderByNumber(ctx, number)
 	if err != nil {
@@ -89,6 +102,9 @@ func (w Wrapper) TransactionCount(ctx context.Context, blockHash common.Hash) (u
 	const endpoint = "transaction_count"
 	defer latency(w.chain, endpoint)()
 
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
+
 	res0, err := w.cl.TransactionCount(ctx, blockHash)
 	if err != nil {
 		incError(w.chain, endpoint)
@@ -101,6 +117,9 @@ func (w Wrapper) TransactionCount(ctx context.Context, blockHash common.Hash) (u
 func (w Wrapper) TransactionInBlock(ctx context.Context, blockHash common.Hash, index uint) (*types.Transaction, error) {
 	const endpoint = "transaction_in_block"
 	defer latency(w.chain, endpoint)()
+
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
 
 	res0, err := w.cl.TransactionInBlock(ctx, blockHash, index)
 	if err != nil {
@@ -117,6 +136,9 @@ func (w Wrapper) TransactionInBlock(ctx context.Context, blockHash common.Hash, 
 func (w Wrapper) SubscribeNewHead(ctx context.Context, ch chan<- *types.Header) (ethereum.Subscription, error) {
 	const endpoint = "subscribe_new_head"
 	defer latency(w.chain, endpoint)()
+
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
 
 	res0, err := w.cl.SubscribeNewHead(ctx, ch)
 	if err != nil {
@@ -136,6 +158,9 @@ func (w Wrapper) TransactionByHash(ctx context.Context, txHash common.Hash) (*ty
 	const endpoint = "transaction_by_hash"
 	defer latency(w.chain, endpoint)()
 
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
+
 	res0, res1, err := w.cl.TransactionByHash(ctx, txHash)
 	if err != nil {
 		incError(w.chain, endpoint)
@@ -153,6 +178,9 @@ func (w Wrapper) TransactionReceipt(ctx context.Context, txHash common.Hash) (*t
 	const endpoint = "transaction_receipt"
 	defer latency(w.chain, endpoint)()
 
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
+
 	res0, err := w.cl.TransactionReceipt(ctx, txHash)
 	if err != nil {
 		incError(w.chain, endpoint)
@@ -165,6 +193,9 @@ func (w Wrapper) TransactionReceipt(ctx context.Context, txHash common.Hash) (*t
 func (w Wrapper) BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (*big.Int, error) {
 	const endpoint = "balance_at"
 	defer latency(w.chain, endpoint)()
+
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
 
 	res0, err := w.cl.BalanceAt(ctx, account, blockNumber)
 	if err != nil {
@@ -179,6 +210,9 @@ func (w Wrapper) StorageAt(ctx context.Context, account common.Address, key comm
 	const endpoint = "storage_at"
 	defer latency(w.chain, endpoint)()
 
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
+
 	res0, err := w.cl.StorageAt(ctx, account, key, blockNumber)
 	if err != nil {
 		incError(w.chain, endpoint)
@@ -191,6 +225,9 @@ func (w Wrapper) StorageAt(ctx context.Context, account common.Address, key comm
 func (w Wrapper) CodeAt(ctx context.Context, account common.Address, blockNumber *big.Int) ([]byte, error) {
 	const endpoint = "code_at"
 	defer latency(w.chain, endpoint)()
+
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
 
 	res0, err := w.cl.CodeAt(ctx, account, blockNumber)
 	if err != nil {
@@ -205,6 +242,9 @@ func (w Wrapper) NonceAt(ctx context.Context, account common.Address, blockNumbe
 	const endpoint = "nonce_at"
 	defer latency(w.chain, endpoint)()
 
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
+
 	res0, err := w.cl.NonceAt(ctx, account, blockNumber)
 	if err != nil {
 		incError(w.chain, endpoint)
@@ -217,6 +257,9 @@ func (w Wrapper) NonceAt(ctx context.Context, account common.Address, blockNumbe
 func (w Wrapper) SyncProgress(ctx context.Context) (*ethereum.SyncProgress, error) {
 	const endpoint = "sync_progress"
 	defer latency(w.chain, endpoint)()
+
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
 
 	res0, err := w.cl.SyncProgress(ctx)
 	if err != nil {
@@ -231,6 +274,9 @@ func (w Wrapper) CallContract(ctx context.Context, call ethereum.CallMsg, blockN
 	const endpoint = "call_contract"
 	defer latency(w.chain, endpoint)()
 
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
+
 	res0, err := w.cl.CallContract(ctx, call, blockNumber)
 	if err != nil {
 		incError(w.chain, endpoint)
@@ -243,6 +289,9 @@ func (w Wrapper) CallContract(ctx context.Context, call ethereum.CallMsg, blockN
 func (w Wrapper) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]types.Log, error) {
 	const endpoint = "filter_logs"
 	defer latency(w.chain, endpoint)()
+
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
 
 	res0, err := w.cl.FilterLogs(ctx, q)
 	if err != nil {
@@ -257,6 +306,9 @@ func (w Wrapper) SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery
 	const endpoint = "subscribe_filter_logs"
 	defer latency(w.chain, endpoint)()
 
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
+
 	res0, err := w.cl.SubscribeFilterLogs(ctx, q, ch)
 	if err != nil {
 		incError(w.chain, endpoint)
@@ -269,6 +321,9 @@ func (w Wrapper) SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery
 func (w Wrapper) SendTransaction(ctx context.Context, tx *types.Transaction) error {
 	const endpoint = "send_transaction"
 	defer latency(w.chain, endpoint)()
+
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
 
 	err := w.cl.SendTransaction(ctx, tx)
 	if err != nil {
@@ -283,6 +338,9 @@ func (w Wrapper) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
 	const endpoint = "suggest_gas_price"
 	defer latency(w.chain, endpoint)()
 
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
+
 	res0, err := w.cl.SuggestGasPrice(ctx)
 	if err != nil {
 		incError(w.chain, endpoint)
@@ -295,6 +353,9 @@ func (w Wrapper) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
 func (w Wrapper) SuggestGasTipCap(ctx context.Context) (*big.Int, error) {
 	const endpoint = "suggest_gas_tip_cap"
 	defer latency(w.chain, endpoint)()
+
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
 
 	res0, err := w.cl.SuggestGasTipCap(ctx)
 	if err != nil {
@@ -309,6 +370,9 @@ func (w Wrapper) PendingBalanceAt(ctx context.Context, account common.Address) (
 	const endpoint = "pending_balance_at"
 	defer latency(w.chain, endpoint)()
 
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
+
 	res0, err := w.cl.PendingBalanceAt(ctx, account)
 	if err != nil {
 		incError(w.chain, endpoint)
@@ -321,6 +385,9 @@ func (w Wrapper) PendingBalanceAt(ctx context.Context, account common.Address) (
 func (w Wrapper) PendingStorageAt(ctx context.Context, account common.Address, key common.Hash) ([]byte, error) {
 	const endpoint = "pending_storage_at"
 	defer latency(w.chain, endpoint)()
+
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
 
 	res0, err := w.cl.PendingStorageAt(ctx, account, key)
 	if err != nil {
@@ -335,6 +402,9 @@ func (w Wrapper) PendingCodeAt(ctx context.Context, account common.Address) ([]b
 	const endpoint = "pending_code_at"
 	defer latency(w.chain, endpoint)()
 
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
+
 	res0, err := w.cl.PendingCodeAt(ctx, account)
 	if err != nil {
 		incError(w.chain, endpoint)
@@ -347,6 +417,9 @@ func (w Wrapper) PendingCodeAt(ctx context.Context, account common.Address) ([]b
 func (w Wrapper) PendingNonceAt(ctx context.Context, account common.Address) (uint64, error) {
 	const endpoint = "pending_nonce_at"
 	defer latency(w.chain, endpoint)()
+
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
 
 	res0, err := w.cl.PendingNonceAt(ctx, account)
 	if err != nil {
@@ -361,6 +434,9 @@ func (w Wrapper) PendingTransactionCount(ctx context.Context) (uint, error) {
 	const endpoint = "pending_transaction_count"
 	defer latency(w.chain, endpoint)()
 
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
+
 	res0, err := w.cl.PendingTransactionCount(ctx)
 	if err != nil {
 		incError(w.chain, endpoint)
@@ -373,6 +449,9 @@ func (w Wrapper) PendingTransactionCount(ctx context.Context) (uint, error) {
 func (w Wrapper) EstimateGas(ctx context.Context, call ethereum.CallMsg) (uint64, error) {
 	const endpoint = "estimate_gas"
 	defer latency(w.chain, endpoint)()
+
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
 
 	res0, err := w.cl.EstimateGas(ctx, call)
 	if err != nil {
@@ -387,6 +466,9 @@ func (w Wrapper) BlockNumber(ctx context.Context) (uint64, error) {
 	const endpoint = "block_number"
 	defer latency(w.chain, endpoint)()
 
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
+
 	res0, err := w.cl.BlockNumber(ctx)
 	if err != nil {
 		incError(w.chain, endpoint)
@@ -399,6 +481,9 @@ func (w Wrapper) BlockNumber(ctx context.Context) (uint64, error) {
 func (w Wrapper) ChainID(ctx context.Context) (*big.Int, error) {
 	const endpoint = "chain_id"
 	defer latency(w.chain, endpoint)()
+
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
 
 	res0, err := w.cl.ChainID(ctx)
 	if err != nil {

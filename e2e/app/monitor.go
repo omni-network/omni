@@ -41,7 +41,7 @@ func StartMonitoringReceipts(ctx context.Context, def Definition) func() error {
 	}
 
 	network := externalNetwork(def)
-	cProvider := cprovider.NewABCIProvider(client, network.ChainNamesByIDs())
+	cProvider := cprovider.NewABCIProvider(client, def.Testnet.Network, network.ChainNamesByIDs())
 	xProvider := xprovider.New(network, def.Backends().RPCClients(), cProvider)
 	cChainID := def.Testnet.Network.Static().OmniConsensusChainIDUint64()
 
@@ -148,7 +148,7 @@ func MonitorCProvider(ctx context.Context, node *e2e.Node, network netconf.Netwo
 		return errors.Wrap(err, "getting client")
 	}
 
-	cprov := cprovider.NewABCIProvider(client, network.ChainNamesByIDs())
+	cprov := cprovider.NewABCIProvider(client, network.ID, network.ChainNamesByIDs())
 
 	for _, chain := range network.Chains {
 		atts, err := cprov.AttestationsFrom(ctx, chain.ID, chain.DeployHeight)

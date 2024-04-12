@@ -6,6 +6,7 @@ import (
 
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/cchain/provider"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -21,7 +22,7 @@ func TestApprovedAttestations(t *testing.T) {
 		t.Helper()
 		client, err := node.Client()
 		require.NoError(t, err)
-		cprov := provider.NewABCIProvider(client, nil)
+		cprov := provider.NewABCIProvider(client, netconf.Simnet, nil)
 
 		ctx := context.Background()
 		for _, portal := range portals {

@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/tracer"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -116,6 +117,9 @@ func (p *Provider) GetSubmittedCursor(ctx context.Context, destChainID uint64, s
 // GetBlock returns the XBlock for the provided chain and height, or false if not available yet (not finalized),
 // or an error.
 func (p *Provider) GetBlock(ctx context.Context, chainID uint64, height uint64) (xchain.Block, bool, error) {
+	ctx, span := tracer.Start(ctx, spanName("get_block"))
+	defer span.End()
+
 	if chainID == p.cChainID {
 		return p.cProvider.XBlock(ctx, height, false)
 	}
@@ -170,6 +174,9 @@ func (p *Provider) GetBlock(ctx context.Context, chainID uint64, height uint64) 
 }
 
 func (p *Provider) getXReceiptLogs(ctx context.Context, chainID uint64, height uint64) ([]xchain.Receipt, error) {
+	ctx, span := tracer.Start(ctx, spanName("get_receipt_logs"))
+	defer span.End()
+
 	chain, rpcClient, err := p.getEVMChain(chainID)
 	if err != nil {
 		return nil, err
@@ -216,6 +223,9 @@ func (p *Provider) getXReceiptLogs(ctx context.Context, chainID uint64, height u
 }
 
 func (p *Provider) getXMsgLogs(ctx context.Context, chainID uint64, height uint64) ([]xchain.Msg, error) {
+	ctx, span := tracer.Start(ctx, spanName("get_msg_logs"))
+	defer span.End()
+
 	chain, rpcClient, err := p.getEVMChain(chainID)
 	if err != nil {
 		return nil, err
@@ -260,4 +270,8 @@ func (p *Provider) getXMsgLogs(ctx context.Context, chainID uint64, height uint6
 	}
 
 	return xmsgs, nil
+}
+
+func spanName(method string) string {
+	return "xprovider/" + method
 }
