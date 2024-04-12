@@ -46,6 +46,7 @@ export type Query = {
   xmsg?: Maybe<XMsg>;
   xmsgcount?: Maybe<Scalars['BigInt']['output']>;
   xmsgrange: Array<Maybe<XMsg>>;
+  xreceipt?: Maybe<XReceipt>;
   xreceiptcount?: Maybe<Scalars['BigInt']['output']>;
 };
 
@@ -72,6 +73,13 @@ export type QueryXmsgArgs = {
 export type QueryXmsgrangeArgs = {
   from: Scalars['BigInt']['input'];
   to: Scalars['BigInt']['input'];
+};
+
+
+export type QueryXreceiptArgs = {
+  destChainID: Scalars['BigInt']['input'];
+  sourceChainID: Scalars['BigInt']['input'];
+  streamOffset: Scalars['BigInt']['input'];
 };
 
 /** XBlock represents a cross-chain block. */

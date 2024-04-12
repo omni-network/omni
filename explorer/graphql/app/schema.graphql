@@ -124,6 +124,12 @@ type XReceipt {
 
   "Timestamp of the receipt"
   Timestamp: Time!
+
+  "XBlock message was emitted in"
+  Block: XBlock!
+
+  "Messages associated wit this receipt"
+  Messages: [XMsg!]!
 }
 
 type Query {
@@ -133,5 +139,6 @@ type Query {
   xmsgrange(from: BigInt!, to: BigInt!): [XMsg]!
   xmsgcount: BigInt
   xreceiptcount: BigInt
+  xreceipt(sourceChainID: BigInt!, destChainID: BigInt!, streamOffset: BigInt!): XReceipt
   xmsg(sourceChainID: BigInt!, destChainID: BigInt! streamOffset: BigInt!): XMsg
 }
