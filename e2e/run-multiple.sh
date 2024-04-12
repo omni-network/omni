@@ -21,7 +21,7 @@ for MANIFEST in "$@"; do
 	START=$SECONDS
 	echo "🌊==> Running manifest: $MANIFEST"
 
-	if ! e2e -f "$MANIFEST" --omni-image-tag=main; then
+	if ! e2e -f "$MANIFEST"; then
 		echo "🌊==> ❌ Testnet $MANIFEST failed, dumping manifest..."
 		cat "$MANIFEST"
 

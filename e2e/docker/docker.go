@@ -44,7 +44,7 @@ type Provider struct {
 func (*Provider) Clean(ctx context.Context) error {
 	log.Info(ctx, "Removing docker containers and networks")
 
-	for _, cmd := range CleanCmds(false, runtime.GOOS == "linux" || runtime.GOOS == "windows") {
+	for _, cmd := range CleanCmds(false, runtime.GOOS == "linux") {
 		err := exec.Command(ctx, "bash", "-c", cmd)
 		if err != nil {
 			return errors.Wrap(err, "remove docker containers")
