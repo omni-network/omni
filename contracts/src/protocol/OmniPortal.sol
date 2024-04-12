@@ -222,24 +222,74 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
         // xcalls to _VIRTUAL_PORTAL_ADDRESS are system calls
         bool isSysCall = xmsg_.to == _VIRTUAL_PORTAL_ADDRESS;
 
-        // for system calls, target is this contract
-        address target = isSysCall ? address(this) : xmsg_.to;
-
-        // trim gasLimit to max. this requirement is checked in xcall(...), but we trim here to be safe
-        uint256 gasLimit = xmsg_.gasLimit > XMSG_MAX_GAS_LIMIT ? xmsg_.gasLimit : XMSG_MAX_GAS_LIMIT;
-
-        // track gas used, for the xreceipt
-        uint256 gasUsed = gasleft();
-
-        // execute the call - do not meter system calls
-        (bool success,) = isSysCall ? target.call(xmsg_.data) : target.call{ gas: gasLimit }(xmsg_.data);
-
-        gasUsed = gasUsed - gasleft();
+        (bool success, uint256 gasUsed) = isSysCall ? _execSys(xmsg_.data) : _exec(xmsg_.to, xmsg_.gasLimit, xmsg_.data);
 
         // reset xmsg to zero
         delete _xmsg;
 
         emit XReceipt(xmsg_.sourceChainId, xmsg_.streamOffset, gasUsed, msg.sender, success);
+    }
+
+    /**
+     * @notice Execute a call at `to` with `data`, enfocring `gasLimit`. Returns success (true/false) and gasUsed.
+     *         Requires that enough gas is left to execute the call.
+     */
+    function _exec(address to, uint64 gasLimit, bytes calldata data) internal returns (bool, uint256) {
+        // trim gasLimit to max. this requirement is checked in xcall(...), but we trim here to be safe
+        if (gasLimit > XMSG_MAX_GAS_LIMIT) gasLimit = XMSG_MAX_GAS_LIMIT;
+
+        // require gasLeft is enough to execute the call. this protects against malicious relayers
+        // purposefully setting gasLimit just low enough such that the last xmsg in a submission
+        // fails, despite it's sufficient gasLimit
+        //
+        // We add a small buffer to account for the gas usage from here up until the call.
+        // TODO: is buffer of 100 correct? Better more than less
+        require(gasLimit + 100 < gasleft(), "OmniPortal: gasLimit too low");
+
+        uint256 gasUsed = gasleft();
+
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success,) = to.call{ gas: gasLimit }(data);
+
+        gasUsed = gasUsed - gasleft();
+
+        return (success, gasUsed);
+    }
+
+    /**
+     * @notice Execute a system call with `data` at this contract, returning success and gasUsed.
+     *         System calls must succeed.
+     */
+    function _execSys(bytes calldata data) internal returns (bool, uint256) {
+        uint256 gasUsed = gasleft();
+
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success, bytes memory result) = address(this).call(data);
+
+        gasUsed = gasUsed - gasleft();
+
+        // if not success, revert with the error message
+        if (!success) revert(_revertReason(result));
+
+        return (success, gasUsed);
+    }
+
+    /**
+     * @notice Returns the revert reason from an address.call result.
+     * @dev Only works for address.call() that were unsuccessful, and reverted with a reason.
+     * @custom:attriubtion  https://github.com/Uniswap/v3-periphery/blob/v1.0.0/contracts/base/Multicall.sol#L17
+     * @custom:attriubtion  https://ethereum.stackexchange.com/a/83577
+     * @param result    The result of an address.call
+     */
+    function _revertReason(bytes memory result) internal pure returns (string memory) {
+        if (result.length < 68) return "no revert reason";
+
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            result := add(result, 0x04)
+        }
+
+        return abi.decode(result, (string));
     }
 
     //////////////////////////////////////////////////////////////////////////////

@@ -136,30 +136,44 @@ services:
         {{ if $.Network }}ipv4_address: 10.186.73.201{{ end }}
 {{ end }}
 
+{{- if .Prometheus }}
+  prometheus:
+    labels:
+      e2e: true
+    container_name: prometheus
+    image: prom/prometheus:latest
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.console.libraries=/usr/share/prometheus/console_libraries
+      - --web.console.templates=/usr/share/prometheus/consoles
+      - --enable-feature=exemplar-storage
+      - --enable-feature=agent
+    restart: unless-stopped
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      {{ $.NetworkName }}:
+        {{ if $.Network }}ipv4_address: 10.186.73.202{{ end }}
+{{ end }}
+
 {{- if .Explorer }}
   explorer_indexer:
     labels:
       e2e: true
     container_name: explorer_indexer
     image: omniops/explorer-indexer:{{or .OmniTag "main"}}
-    command:
-      - --explorer-db-conn={{ .ExplorerDBConn }}
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     volumes:
       - ./explorer_indexer:/explorer_indexer
     networks:
       {{ $.NetworkName }}:
         {{ if $.Network }}ipv4_address: 10.186.73.203{{ end }}
-{{ end }}
 
-{{- if .Explorer }}
   explorer_graphql:
     labels:
       e2e: true
     container_name: explorer_graphql
     image: omniops/explorer-graphql:{{or .OmniTag "main"}}
-    command:
-      - --explorer-db-conn={{ .ExplorerDBConn }}
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     volumes:
       - ./explorer_graphql:/explorer_graphql
@@ -168,9 +182,25 @@ services:
         {{ if $.Network }}ipv4_address: 10.186.73.204{{ end }}
     ports:
         - 21335:8080
+
+  explorer_ui:
+    labels:
+      e2e: true
+    container_name: explorer_ui
+    image: omniops/explorer-ui:{{or .OmniTag "main"}}
+    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    environment:
+      GRAPHQL_URL: {{ .GraphQLURL }}
+    volumes:
+      - ./explorer_ui:/explorer_ui
+    networks:
+      {{ $.NetworkName }}:
+        {{ if $.Network }}ipv4_address: 10.186.73.205{{ end }}
+    ports:
+        - 57017:3000
 {{ end }}
 
-{{- if .ExplorerMockDB }}
+{{- if .ExplorerDB }}
   explorer_db:
     labels:
       e2e: true
@@ -190,24 +220,4 @@ services:
     networks:
       {{ $.NetworkName }}:
         {{ if $.Network }}ipv4_address: 10.186.73.206{{ end }}
-{{ end }}
-
-{{- if .Prometheus }}
-  prometheus:
-    labels:
-      e2e: true
-    container_name: prometheus
-    image: prom/prometheus:latest
-    command:
-      - --config.file=/etc/prometheus/prometheus.yml
-      - --web.console.libraries=/usr/share/prometheus/console_libraries
-      - --web.console.templates=/usr/share/prometheus/consoles
-      - --enable-feature=exemplar-storage
-      - --enable-feature=agent
-    restart: unless-stopped
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-    networks:
-      {{ $.NetworkName }}:
-        {{ if $.Network }}ipv4_address: 10.186.73.202{{ end }}
 {{ end }}

@@ -17,7 +17,7 @@ import (
 )
 
 func LogMetrics(ctx context.Context, def Definition) error {
-	extNetwork := externalNetwork(def.Testnet, def.Netman().DeployInfo())
+	extNetwork := externalNetwork(def)
 
 	// Pick a random node to monitor.
 
@@ -40,8 +40,8 @@ func StartMonitoringReceipts(ctx context.Context, def Definition) func() error {
 		return func() error { return errors.Wrap(err, "getting client") }
 	}
 
-	network := externalNetwork(def.Testnet, def.Netman().DeployInfo())
-	cProvider := cprovider.NewABCIProvider(client, network.ChainNamesByIDs())
+	network := externalNetwork(def)
+	cProvider := cprovider.NewABCIProvider(client, def.Testnet.Network, network.ChainNamesByIDs())
 	xProvider := xprovider.New(network, def.Backends().RPCClients(), cProvider)
 	cChainID := def.Testnet.Network.Static().OmniConsensusChainIDUint64()
 
@@ -148,7 +148,7 @@ func MonitorCProvider(ctx context.Context, node *e2e.Node, network netconf.Netwo
 		return errors.Wrap(err, "getting client")
 	}
 
-	cprov := cprovider.NewABCIProvider(client, network.ChainNamesByIDs())
+	cprov := cprovider.NewABCIProvider(client, network.ID, network.ChainNamesByIDs())
 
 	for _, chain := range network.Chains {
 		atts, err := cprov.AttestationsFrom(ctx, chain.ID, chain.DeployHeight)

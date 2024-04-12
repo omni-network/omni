@@ -61,6 +61,11 @@ func UUID(v uuid.UUID) predicate.Receipt {
 	return predicate.Receipt(sql.FieldEQ(FieldUUID, v))
 }
 
+// BlockID applies equality check predicate on the "Block_ID" field. It's identical to BlockIDEQ.
+func BlockID(v int) predicate.Receipt {
+	return predicate.Receipt(sql.FieldEQ(FieldBlockID, v))
+}
+
 // GasUsed applies equality check predicate on the "GasUsed" field. It's identical to GasUsedEQ.
 func GasUsed(v uint64) predicate.Receipt {
 	return predicate.Receipt(sql.FieldEQ(FieldGasUsed, v))
@@ -139,6 +144,36 @@ func UUIDLT(v uuid.UUID) predicate.Receipt {
 // UUIDLTE applies the LTE predicate on the "UUID" field.
 func UUIDLTE(v uuid.UUID) predicate.Receipt {
 	return predicate.Receipt(sql.FieldLTE(FieldUUID, v))
+}
+
+// BlockIDEQ applies the EQ predicate on the "Block_ID" field.
+func BlockIDEQ(v int) predicate.Receipt {
+	return predicate.Receipt(sql.FieldEQ(FieldBlockID, v))
+}
+
+// BlockIDNEQ applies the NEQ predicate on the "Block_ID" field.
+func BlockIDNEQ(v int) predicate.Receipt {
+	return predicate.Receipt(sql.FieldNEQ(FieldBlockID, v))
+}
+
+// BlockIDIn applies the In predicate on the "Block_ID" field.
+func BlockIDIn(vs ...int) predicate.Receipt {
+	return predicate.Receipt(sql.FieldIn(FieldBlockID, vs...))
+}
+
+// BlockIDNotIn applies the NotIn predicate on the "Block_ID" field.
+func BlockIDNotIn(vs ...int) predicate.Receipt {
+	return predicate.Receipt(sql.FieldNotIn(FieldBlockID, vs...))
+}
+
+// BlockIDIsNil applies the IsNil predicate on the "Block_ID" field.
+func BlockIDIsNil() predicate.Receipt {
+	return predicate.Receipt(sql.FieldIsNull(FieldBlockID))
+}
+
+// BlockIDNotNil applies the NotNil predicate on the "Block_ID" field.
+func BlockIDNotNil() predicate.Receipt {
+	return predicate.Receipt(sql.FieldNotNull(FieldBlockID))
 }
 
 // GasUsedEQ applies the EQ predicate on the "GasUsed" field.

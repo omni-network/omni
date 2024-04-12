@@ -22,6 +22,13 @@ var (
 		Name:       "blocks",
 		Columns:    BlocksColumns,
 		PrimaryKey: []*schema.Column{BlocksColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "block_source_chain_id_block_height",
+				Unique:  false,
+				Columns: []*schema.Column{BlocksColumns[1], BlocksColumns[2]},
+			},
+		},
 	}
 	// ChainsColumns holds the columns for the "chains" table.
 	ChainsColumns = []*schema.Column{
@@ -50,7 +57,7 @@ var (
 		{Name: "stream_offset", Type: field.TypeUint64},
 		{Name: "tx_hash", Type: field.TypeBytes, Size: 32},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "block_msgs", Type: field.TypeInt, Nullable: true},
+		{Name: "block_id", Type: field.TypeInt, Nullable: true},
 	}
 	// MsgsTable holds the schema information for the "msgs" table.
 	MsgsTable = &schema.Table{
@@ -63,6 +70,13 @@ var (
 				Columns:    []*schema.Column{MsgsColumns[11]},
 				RefColumns: []*schema.Column{BlocksColumns[0]},
 				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "msg_source_chain_id_dest_chain_id_stream_offset_block_id",
+				Unique:  false,
+				Columns: []*schema.Column{MsgsColumns[6], MsgsColumns[7], MsgsColumns[8], MsgsColumns[11]},
 			},
 		},
 	}
@@ -78,7 +92,7 @@ var (
 		{Name: "stream_offset", Type: field.TypeUint64},
 		{Name: "tx_hash", Type: field.TypeBytes, Size: 32},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "block_receipts", Type: field.TypeInt, Nullable: true},
+		{Name: "block_id", Type: field.TypeInt, Nullable: true},
 	}
 	// ReceiptsTable holds the schema information for the "receipts" table.
 	ReceiptsTable = &schema.Table{
@@ -91,6 +105,13 @@ var (
 				Columns:    []*schema.Column{ReceiptsColumns[10]},
 				RefColumns: []*schema.Column{BlocksColumns[0]},
 				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "receipt_source_chain_id_dest_chain_id_stream_offset_block_id",
+				Unique:  false,
+				Columns: []*schema.Column{ReceiptsColumns[5], ReceiptsColumns[6], ReceiptsColumns[7], ReceiptsColumns[10]},
 			},
 		},
 	}

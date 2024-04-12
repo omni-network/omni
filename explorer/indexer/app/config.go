@@ -20,11 +20,14 @@ const (
 type Config struct {
 	NetworkFile    string
 	ExplorerDBConn string
+	MonitoringAddr string
 }
 
 func DefaultConfig() Config {
 	return Config{
-		NetworkFile: defaultNetworkFile,
+		NetworkFile:    defaultNetworkFile,
+		ExplorerDBConn: "postgres://omni:password@explorer_db:5432/omni_db",
+		MonitoringAddr: ":26660",
 	}
 }
 

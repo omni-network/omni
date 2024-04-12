@@ -2,8 +2,6 @@ package netman
 
 import (
 	"context"
-	"crypto/ecdsa"
-	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/types"
@@ -14,20 +12,12 @@ import (
 	"github.com/omni-network/omni/lib/forkjoin"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/txmgr"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 //nolint:gochecknoglobals // Static mapping.
 var (
-	// this must be different than netman.Operator(), otherwise the txmgr nonce
-	// get's out of sync, because the relayer TXMgr and the operator TXMgr are running
-	// in separate services.
-	privateRelayerKey = anvil.DevPrivateKey5()
-
 	// fbDev is the address of the fireblocks "dev" account.
 	fbDev = common.HexToAddress("0x7a6cF389082dc698285474976d7C75CAdE08ab7e")
 )
@@ -47,14 +37,11 @@ type Manager interface {
 	// Portals returns the deployed portals from both public and private chains.
 	Portals() map[uint64]Portal
 
-	// RelayerKey returns the relayer private key hex.
-	RelayerKey() *ecdsa.PrivateKey
-
 	// Operator returns the address of the account that operates the network.
 	Operator() common.Address
 }
 
-func NewManager(testnet types.Testnet, backends ethbackend.Backends, relayerKeyFile string) (Manager, error) {
+func NewManager(testnet types.Testnet, backends ethbackend.Backends) (Manager, error) {
 	if testnet.OnlyMonitor {
 		if testnet.Network != netconf.Testnet {
 			return nil, errors.New("the AVS contract is currently only deployed to testnet")
@@ -99,53 +86,41 @@ func NewManager(testnet types.Testnet, backends ethbackend.Backends, relayerKeyF
 	}
 	// Add all public chains
 	for _, public := range testnet.PublicChains {
-		portals[public.Chain.ID] = Portal{
-			Chain: public.Chain,
-			// Public chain deploy height and address will be updated by DeployPublicPortals.
+		// Public chain deploy height and address may be statically populated.
+		staticDeploy, _ := testnet.Network.Static().PortalDeployment(public.Chain().ID)
+		portals[public.Chain().ID] = Portal{
+			Chain: public.Chain(),
+			DeployInfo: DeployInfo{
+				PortalAddress: staticDeploy.Address,
+				DeployHeight:  staticDeploy.DeployHeight,
+			},
 		}
 	}
 
 	switch testnet.Network {
 	case netconf.Devnet:
-		if relayerKeyFile != "" {
-			return nil, errors.New("relayer keys not supported in devnet")
-		}
-
 		return &manager{
 			portals:     portals,
 			omniChainID: netconf.Devnet.Static().OmniExecutionChainID,
-			relayerKey:  privateRelayerKey,
 			backends:    backends,
 			network:     netconf.Devnet,
 			operator:    anvil.DevAccount4(),
 		}, nil
 	case netconf.Staging:
-		relayerKey, err := crypto.LoadECDSA(relayerKeyFile)
-		if err != nil {
-			return nil, errors.Wrap(err, "read relayer key file", "path", relayerKeyFile)
-		}
-
 		return &manager{
 			portals:     portals,
 			omniChainID: netconf.Staging.Static().OmniExecutionChainID,
-			relayerKey:  relayerKey,
 			backends:    backends,
 			network:     netconf.Staging,
 			operator:    fbDev,
 		}, nil
 	case netconf.Testnet:
-		relayerKey, err := crypto.LoadECDSA(relayerKeyFile)
-		if err != nil {
-			return nil, errors.Wrap(err, "read relayer key file", "path", relayerKeyFile)
-		}
-
 		return &manager{
 			portals:     portals,
 			omniChainID: netconf.Testnet.Static().OmniExecutionChainID,
 			backends:    backends,
 			network:     netconf.Testnet,
 			operator:    fbDev,
-			relayerKey:  relayerKey,
 		}, nil
 	default:
 		return nil, errors.New("unknown network", "network", network)
@@ -170,7 +145,6 @@ var _ Manager = (*manager)(nil)
 type manager struct {
 	portals     map[uint64]Portal // Note that this is mutable, Portals are updated by Deploy*Portals.
 	omniChainID uint64
-	relayerKey  *ecdsa.PrivateKey
 	backends    ethbackend.Backends
 	network     netconf.ID
 	operator    common.Address
@@ -187,10 +161,6 @@ func (m *manager) DeployInfo() map[types.EVMChain]DeployInfo {
 
 func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, validators []bindings.Validator,
 ) error {
-	if m.relayerKey == nil {
-		return errors.New("relayer key is nil")
-	}
-
 	// Log provided key balances for public chains (just FYI).
 	for _, portal := range m.portals {
 		if !portal.Chain.IsPublic {
@@ -203,11 +173,6 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 		}
 
 		if err := logBalance(ctx, backend, portal.Chain.Name, txOpts.From, "operator_key"); err != nil {
-			return err
-		}
-
-		relayerAddr := crypto.PubkeyToAddress(m.relayerKey.PublicKey)
-		if err := logBalance(ctx, backend, portal.Chain.Name, relayerAddr, "relayer_key"); err != nil {
 			return err
 		}
 	}
@@ -325,62 +290,15 @@ func (m *manager) DeployPrivatePortals(ctx context.Context, valSetID uint64, val
 		m.portals[res.Input.Chain.ID] = portal
 	}
 
-	return m.fundPrivateRelayer(ctx)
+	return nil
 }
 
 func (m *manager) Portals() map[uint64]Portal {
 	return m.portals
 }
 
-func (m *manager) RelayerKey() *ecdsa.PrivateKey {
-	return m.relayerKey
-}
-
 func (m *manager) Operator() common.Address {
 	return m.operator
-}
-
-func (m *manager) fundPrivateRelayer(ctx context.Context) error {
-	if privateRelayerKey.Equal(m.relayerKey) {
-		return nil // No need to fund relayer if key is private.
-	}
-
-	relayerAddr := crypto.PubkeyToAddress(m.relayerKey.PublicKey)
-
-	for _, portal := range m.portals {
-		if portal.Chain.IsPublic {
-			continue // We use relayer key for public chain, it should already be funded.
-		}
-
-		backend, err := m.backends.Backend(portal.Chain.ID)
-		if err != nil {
-			return errors.Wrap(err, "backend", "chain", portal.Chain.Name)
-		}
-
-		pctx := log.WithCtx(ctx, "chain", portal.Chain.Name)
-
-		bal, err := backend.BalanceAt(pctx, m.operator, nil)
-		if err != nil {
-			return err
-		}
-		b, _ := bal.Float64()
-
-		log.Info(pctx, "Funding relayer operator balance", "balance", b/params.Ether, "operator", m.operator.Hex())
-		// TODO(corver): Remove this debug log
-
-		tx, _, err := backend.Send(pctx, m.operator, txmgr.TxCandidate{
-			To:       &relayerAddr,
-			GasLimit: 100_000,                                                    // 100k is fine,
-			Value:    new(big.Int).Mul(big.NewInt(10), big.NewInt(params.Ether)), // 10 ETH
-		})
-		if err != nil {
-			return errors.Wrap(err, "send ether")
-		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
-			return errors.Wrap(err, "wait mined")
-		}
-	}
-
-	return nil
 }
 
 // deployIfNeeded deploys a portal if it is not already deployed.
@@ -400,7 +318,7 @@ func (m *manager) deployIfNeeded(ctx context.Context, chain types.EVMChain, back
 		return common.Address{}, 0, errors.Wrap(err, "is deployed", "chain", chain)
 	}
 
-	hasStatic := m.network.Static().HasPortalDeployment(chain.ID)
+	staticDeploy, hasStatic := m.network.Static().PortalDeployment(chain.ID)
 
 	// for ephemeral networks, require that the portal is not already deployed
 	if isDeployed && m.network.IsEphemeral() {
@@ -419,8 +337,7 @@ func (m *manager) deployIfNeeded(ctx context.Context, chain types.EVMChain, back
 
 	// if the static deployment is set, return it
 	if hasStatic {
-		dep := m.network.Static().PortalDeployment(chain.ID)
-		return dep.Address, dep.DeployHeight, nil
+		return staticDeploy.Address, staticDeploy.DeployHeight, nil
 	}
 
 	// at this point, we need to deploy the portal

@@ -9,6 +9,10 @@
  "PruningOption": "nothing",
  "EVMBuildDelay": 600000000,
  "EVMBuildOptimistic": true,
+ "Tracer": {
+  "Endpoint": "",
+  "Headers": ""
+ },
  "Comet": {
   "Version": "0.38.6",
   "RootDir": "foo",

@@ -42,33 +42,31 @@ func (s Static) OmniConsensusChainIDUint64() uint64 {
 	return consensusIDOffset + s.OmniExecutionChainID
 }
 
-// PortalDeployments returns the portal deployment for the given chainID.
+// PortalDeployment returns the portal deployment for the given chainID.
 // If there is none, it returns an empty deployment.
-func (Static) PortalDeployment(chainID uint64) Deployment {
-	for _, d := range statics[Testnet].Portals {
+func (s Static) PortalDeployment(chainID uint64) (Deployment, bool) {
+	for _, d := range s.Portals {
 		if d.ChainID == chainID {
-			return d
+			return d, true
 		}
 	}
 
-	return Deployment{}
-}
-
-// HasPortalDeployment returns true if there is a portal deployment for the given chainID.
-func (Static) HasPortalDeployment(chainID uint64) bool {
-	for _, d := range statics[Testnet].Portals {
-		if d.ChainID == chainID {
-			return true
-		}
-	}
-
-	return false
+	return Deployment{}, false
 }
 
 // Use random runid for version in ephemeral networks.
 //
 //nolint:gochecknoglobals // Static ID
 var runid = uuid.New().String()
+
+// Address matches lib/contracts.TestnetPortal() and lib/contracts.TestnetAVS().
+// We do not import to avoid cylic dependencies.
+//
+//nolint:gochecknoglobals // Static addresses
+var (
+	testnetPortal = common.HexToAddress("0x71d510f4dc4e7E7716D03209c603C76F4398cF53")
+	testnetAVS    = common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
+)
 
 //nolint:gochecknoglobals // Static mappings.
 var statics = map[ID]Static{
@@ -86,15 +84,23 @@ var statics = map[ID]Static{
 	},
 	Testnet: {
 		Version:              "v0.0.1",
-		AVSContractAddress:   common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92"),
+		AVSContractAddress:   testnetAVS,
 		OmniExecutionChainID: chainids.OmniTestnet,
 		Portals: []Deployment{
 			{
-				ChainID: chainids.Holesky,
-				// Address matches lib/contracts.TestnetPortal()
-				// We do not import to avoid cylic dependencies.
-				Address:      common.HexToAddress("0x71d510f4dc4e7E7716D03209c603C76F4398cF53"),
+				ChainID:      chainids.Holesky,
+				Address:      testnetPortal,
 				DeployHeight: 1280141,
+			},
+			{
+				ChainID:      chainids.OpSepolia,
+				Address:      testnetPortal,
+				DeployHeight: 10401431,
+			},
+			{
+				ChainID:      chainids.ArbSepolia,
+				Address:      testnetPortal,
+				DeployHeight: 31688713,
 			},
 		},
 	},
@@ -114,9 +120,4 @@ func ConsensusChainIDStr2Uint64(id string) (uint64, error) {
 	}
 
 	return resp, nil
-}
-
-// Version returns the version for the given network.
-func Version(network ID) string {
-	return statics[network].Version
 }

@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/chainids"
-	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
 )
@@ -19,19 +18,18 @@ var (
 	}
 
 	chainHolesky = EVMChain{
-		Name:               "holesky",
-		ID:                 chainids.Holesky,
-		IsPublic:           true,
-		BlockPeriod:        15 * time.Second,
-		FinalizationStrat:  netconf.StratLatest,
-		AVSContractAddress: contracts.TestnetAVS(),
+		Name:              "holesky",
+		ID:                chainids.Holesky,
+		IsPublic:          true,
+		BlockPeriod:       12 * time.Second,
+		FinalizationStrat: netconf.StratFinalized,
 	}
 
 	chainArbSepolia = EVMChain{
 		Name:              "arb_sepolia",
 		ID:                chainids.ArbSepolia,
 		IsPublic:          true,
-		BlockPeriod:       6 * time.Second,
+		BlockPeriod:       300 * time.Millisecond,
 		FinalizationStrat: netconf.StratFinalized,
 	}
 
@@ -39,7 +37,7 @@ var (
 		Name:              "op_sepolia",
 		ID:                chainids.OpSepolia,
 		IsPublic:          true,
-		BlockPeriod:       6 * time.Second,
+		BlockPeriod:       2 * time.Second,
 		FinalizationStrat: netconf.StratFinalized,
 	}
 )

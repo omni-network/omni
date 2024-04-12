@@ -29,6 +29,8 @@ export function GetXMessagesInRange(from: number, to: number): XMsg[] {
         TxHash: msg.TxHash,
         BlockHeight: msg.BlockHeight,
         BlockHash: msg.BlockHash,
+        Receipts: msg.Receipts,
+        Block: msg.Block,
       }
       rows.push(xmsg)
     })

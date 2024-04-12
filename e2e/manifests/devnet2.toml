@@ -6,7 +6,6 @@ avs_target = "mock_l1"
 multi_omni_evms = true
 prometheus = true
 explorer=true
-explorer_mock_db=true
 
 [node.validator01]
 [node.validator02]

@@ -209,6 +209,7 @@ func TestKeeper_Approve(t *testing.T) {
 	valset2_3 := newValSet(9, val2, val3)
 
 	defaultExpectations := func(_ sdk.Context, m mocks) {
+		m.namer.EXPECT().ChainName(gomock.Any()).AnyTimes().Return("")
 		m.voter.EXPECT().TrimBehind(gomock.Any()).Times(1).Return(0)
 		m.valProvider.EXPECT().ActiveSetByHeight(gomock.Any(), uint64(0)).
 			Return(valset1_2_3, nil).

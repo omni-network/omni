@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
 	"golang.org/x/sync/errgroup"
 )
@@ -46,7 +47,7 @@ func Run(ctx context.Context, cfg Config) error {
 	handler := cors.Default().Handler(mux)
 
 	httpServer := &http.Server{
-		Addr:              cfg.ListenAddress,
+		Addr:              cfg.ListenAddr,
 		ReadHeaderTimeout: 30 * time.Second,
 		IdleTimeout:       30 * time.Second,
 		WriteTimeout:      30 * time.Second,
@@ -76,6 +77,9 @@ func Run(ctx context.Context, cfg Config) error {
 
 		return nil
 	})
+	eg.Go(func() error {
+		return serveMonitoring(cfg.MonitoringAddr)
+	})
 
 	if err := eg.Wait(); errors.Is(err, http.ErrServerClosed) {
 		return nil // No error on shutdown.
@@ -84,4 +88,20 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 
 	return nil
+}
+
+// serveMonitoring serves the monitoring API.
+func serveMonitoring(address string) error {
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.Handler())
+
+	srv := &http.Server{
+		Addr:              address,
+		ReadHeaderTimeout: 5 * time.Second,
+		IdleTimeout:       5 * time.Second,
+		WriteTimeout:      5 * time.Second,
+		Handler:           mux,
+	}
+
+	return errors.Wrap(srv.ListenAndServe(), "serve monitoring")
 }

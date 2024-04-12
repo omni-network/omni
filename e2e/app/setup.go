@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/e2e/app/agent"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/app/geth"
 	"github.com/omni-network/omni/e2e/app/static"
 	"github.com/omni-network/omni/e2e/types"
@@ -49,7 +50,7 @@ const (
 )
 
 // Setup sets up the testnet configuration.
-func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, testCfg bool, explorerDB string) error {
+func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	log.Info(ctx, "Setup testnet", "dir", def.Testnet.Dir)
 
 	if err := os.MkdirAll(def.Testnet.Dir, os.ModePerm); err != nil {
@@ -57,7 +58,7 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 	}
 
 	if def.Manifest.OnlyMonitor {
-		return SetupOnlyMonitor(ctx, def, agentSecrets)
+		return SetupOnlyMonitor(ctx, def)
 	}
 
 	var vals []crypto.PubKey
@@ -81,11 +82,11 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 	}
 
 	logCfg := logConfig(def)
-	if err := writeMonitorConfig(def, logCfg, valPrivKeys); err != nil {
+	if err := writeMonitorConfig(ctx, def, logCfg, valPrivKeys); err != nil {
 		return err
 	}
 
-	if err := writeRelayerConfig(def, logCfg); err != nil {
+	if err := writeRelayerConfig(ctx, def, logCfg); err != nil {
 		return err
 	}
 
@@ -93,11 +94,11 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 		return err
 	}
 
-	if err := writeExplorerIndexerConfig(def, logCfg, explorerDB); err != nil {
+	if err := writeExplorerIndexerConfig(def, logCfg); err != nil {
 		return err
 	}
 
-	if err := writeExplorerGraphqlConfig(def, logCfg, explorerDB); err != nil {
+	if err := writeExplorerGraphqlConfig(def, logCfg); err != nil {
 		return err
 	}
 
@@ -121,7 +122,7 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 		}
 		config.WriteConfigFile(filepath.Join(nodeDir, "config", "config.toml"), cfg) // panics
 
-		if err := writeHaloConfig(nodeDir, logCfg, testCfg, node.Mode); err != nil {
+		if err := writeHaloConfig(nodeDir, def.Cfg, logCfg, depCfg.testConfig, node.Mode); err != nil {
 			return err
 		}
 
@@ -145,7 +146,7 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 			filepath.Join(nodeDir, PrivvalStateFile),
 		)).Save()
 
-		intNetwork := internalNetwork(def.Testnet, def.Netman().DeployInfo(), node.Name)
+		intNetwork := internalNetwork(def, node.Name)
 
 		if err := netconf.Save(intNetwork, filepath.Join(nodeDir, NetworkConfigFile)); err != nil {
 			return errors.Wrap(err, "write network config")
@@ -159,7 +160,7 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 	}
 
 	if def.Testnet.Prometheus {
-		if err := agent.WriteConfig(ctx, def.Testnet, agentSecrets); err != nil {
+		if err := agent.WriteConfig(ctx, def.Testnet, def.Cfg.AgentSecrets); err != nil {
 			return errors.Wrap(err, "write prom config")
 		}
 	}
@@ -171,14 +172,14 @@ func Setup(ctx context.Context, def Definition, agentSecrets agent.Secrets, test
 	return nil
 }
 
-func SetupOnlyMonitor(ctx context.Context, def Definition, agentSecrets agent.Secrets) error {
+func SetupOnlyMonitor(ctx context.Context, def Definition) error {
 	logCfg := logConfig(def)
-	if err := writeMonitorConfig(def, logCfg, nil); err != nil {
+	if err := writeMonitorConfig(ctx, def, logCfg, nil); err != nil {
 		return err
 	}
 
 	if def.Testnet.Prometheus {
-		if err := agent.WriteConfig(ctx, def.Testnet, agentSecrets); err != nil {
+		if err := agent.WriteConfig(ctx, def.Testnet, def.Cfg.AgentSecrets); err != nil {
 			return errors.Wrap(err, "write prom config")
 		}
 	}
@@ -290,7 +291,7 @@ func MakeConfig(node *e2e.Node, nodeDir string) (*config.Config, error) {
 }
 
 // writeHaloConfig generates an halo application config for a node and writes it to disk.
-func writeHaloConfig(nodeDir string, logCfg log.Config, testCfg bool, mode e2e.Mode) error {
+func writeHaloConfig(nodeDir string, defCfg DefinitionConfig, logCfg log.Config, testCfg bool, mode e2e.Mode) error {
 	cfg := halocfg.DefaultConfig()
 
 	switch mode {
@@ -307,6 +308,8 @@ func writeHaloConfig(nodeDir string, logCfg log.Config, testCfg bool, mode e2e.M
 
 	cfg.HomeDir = nodeDir
 	cfg.EngineJWTFile = "/halo/config/jwtsecret" // Absolute path inside docker container
+	cfg.Tracer.Endpoint = defCfg.TracingEndpoint
+	cfg.Tracer.Headers = defCfg.TracingHeaders
 
 	if testCfg {
 		cfg.SnapshotInterval = 1   // Write snapshots each block in e2e tests
@@ -345,7 +348,7 @@ func updateConfigStateSync(nodeDir string, height int64, hash []byte) error {
 	return nil
 }
 
-func writeRelayerConfig(def Definition, logCfg log.Config) error {
+func writeRelayerConfig(ctx context.Context, def Definition, logCfg log.Config) error {
 	confRoot := filepath.Join(def.Testnet.Dir, "relayer")
 
 	const (
@@ -359,9 +362,9 @@ func writeRelayerConfig(def Definition, logCfg log.Config) error {
 	}
 
 	// Save network config
-	network := internalNetwork(def.Testnet, def.Netman().DeployInfo(), "")
+	network := internalNetwork(def, "")
 	if def.Infra.GetInfrastructureData().Provider == vmcompose.ProviderName {
-		network = externalNetwork(def.Testnet, def.Netman().DeployInfo())
+		network = externalNetwork(def)
 	}
 
 	if err := netconf.Save(network, filepath.Join(confRoot, networkFile)); err != nil {
@@ -369,15 +372,18 @@ func writeRelayerConfig(def Definition, logCfg log.Config) error {
 	}
 
 	// Save private key
-	if err := ethcrypto.SaveECDSA(filepath.Join(confRoot, privKeyFile), def.Netman().RelayerKey()); err != nil {
+	privKey, err := eoa.PrivateKey(ctx, def.Testnet.Network, eoa.TypeRelayer)
+	if err != nil {
+		return errors.Wrap(err, "get relayer key")
+	}
+	if err := ethcrypto.SaveECDSA(filepath.Join(confRoot, privKeyFile), privKey); err != nil {
 		return errors.Wrap(err, "write private key")
 	}
 
 	ralayCfg := relayapp.DefaultConfig()
 	ralayCfg.PrivateKey = privKeyFile
 	ralayCfg.NetworkFile = networkFile
-
-	ralayCfg.HaloURL = random(def.Testnet.Nodes).AddressRPC()
+	ralayCfg.HaloURL = def.Testnet.RandomHaloAddr()
 
 	if err := relayapp.WriteConfigTOML(ralayCfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write relayer config")
@@ -386,10 +392,11 @@ func writeRelayerConfig(def Definition, logCfg log.Config) error {
 	return nil
 }
 
-func writeMonitorConfig(def Definition, logCfg log.Config, valPrivKeys []crypto.PrivKey) error {
+func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, valPrivKeys []crypto.PrivKey) error {
 	confRoot := filepath.Join(def.Testnet.Dir, "monitor")
 
 	const (
+		privKeyFile = "privatekey"
 		networkFile = "network.json"
 		configFile  = "monitor.toml"
 	)
@@ -399,13 +406,22 @@ func writeMonitorConfig(def Definition, logCfg log.Config, valPrivKeys []crypto.
 	}
 
 	// Save network config
-	network := internalNetwork(def.Testnet, def.Netman().DeployInfo(), "")
+	network := internalNetwork(def, "")
 	if def.Infra.GetInfrastructureData().Provider == vmcompose.ProviderName {
-		network = externalNetwork(def.Testnet, def.Netman().DeployInfo())
+		network = externalNetwork(def)
 	}
 
 	if err := netconf.Save(network, filepath.Join(confRoot, networkFile)); err != nil {
 		return errors.Wrap(err, "save network config")
+	}
+
+	// Save private key
+	privKey, err := eoa.PrivateKey(ctx, def.Testnet.Network, eoa.TypeMonitor)
+	if err != nil {
+		return errors.Wrap(err, "get relayer key")
+	}
+	if err := ethcrypto.SaveECDSA(filepath.Join(confRoot, privKeyFile), privKey); err != nil {
+		return errors.Wrap(err, "write private key")
 	}
 
 	var validatorKeyGlob string
@@ -426,6 +442,7 @@ func writeMonitorConfig(def Definition, logCfg log.Config, valPrivKeys []crypto.
 	}
 
 	cfg := monapp.DefaultConfig()
+	cfg.PrivateKey = privKeyFile
 	cfg.NetworkFile = networkFile
 	cfg.LoadGen.ValidatorKeysGlob = validatorKeyGlob
 
@@ -436,7 +453,7 @@ func writeMonitorConfig(def Definition, logCfg log.Config, valPrivKeys []crypto.
 	return nil
 }
 
-func writeExplorerIndexerConfig(def Definition, logCfg log.Config, explorerDB string) error {
+func writeExplorerIndexerConfig(def Definition, logCfg log.Config) error {
 	confRoot := filepath.Join(def.Testnet.Dir, "explorer_indexer")
 
 	const (
@@ -450,9 +467,9 @@ func writeExplorerIndexerConfig(def Definition, logCfg log.Config, explorerDB st
 	}
 
 	// Save network config
-	network := internalNetwork(def.Testnet, def.Netman().DeployInfo(), "")
+	network := internalNetwork(def, "")
 	if def.Infra.GetInfrastructureData().Provider == vmcompose.ProviderName {
-		network = externalNetwork(def.Testnet, def.Netman().DeployInfo())
+		network = externalNetwork(def)
 	}
 
 	if err := netconf.Save(network, filepath.Join(confRoot, networkFile)); err != nil {
@@ -461,7 +478,7 @@ func writeExplorerIndexerConfig(def Definition, logCfg log.Config, explorerDB st
 
 	cfg := indexerapp.DefaultConfig()
 	cfg.NetworkFile = networkFile
-	cfg.ExplorerDBConn = explorerDB
+	cfg.ExplorerDBConn = def.Cfg.ExplorerDBConn
 
 	if err := indexerapp.WriteConfigTOML(cfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write indexer config")
@@ -470,7 +487,7 @@ func writeExplorerIndexerConfig(def Definition, logCfg log.Config, explorerDB st
 	return nil
 }
 
-func writeExplorerGraphqlConfig(def Definition, logCfg log.Config, explorerDB string) error {
+func writeExplorerGraphqlConfig(def Definition, logCfg log.Config) error {
 	confRoot := filepath.Join(def.Testnet.Dir, "explorer_graphql")
 
 	const (
@@ -483,7 +500,7 @@ func writeExplorerGraphqlConfig(def Definition, logCfg log.Config, explorerDB st
 	}
 
 	cfg := graphqlapp.DefaultConfig()
-	cfg.ExplorerDBConn = explorerDB
+	cfg.ExplorerDBConn = def.Cfg.ExplorerDBConn
 
 	if err := graphqlapp.WriteConfigTOML(cfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write graphql config")

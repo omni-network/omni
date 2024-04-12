@@ -18,6 +18,8 @@ const (
 	FieldID = "id"
 	// FieldUUID holds the string denoting the uuid field in the database.
 	FieldUUID = "uuid"
+	// FieldBlockID holds the string denoting the block_id field in the database.
+	FieldBlockID = "block_id"
 	// FieldSourceMsgSender holds the string denoting the sourcemsgsender field in the database.
 	FieldSourceMsgSender = "source_msg_sender"
 	// FieldDestAddress holds the string denoting the destaddress field in the database.
@@ -48,7 +50,7 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "block" package.
 	BlockInverseTable = "blocks"
 	// BlockColumn is the table column denoting the Block relation/edge.
-	BlockColumn = "block_msgs"
+	BlockColumn = "block_id"
 	// ReceiptsTable is the table that holds the Receipts relation/edge. The primary key declared below.
 	ReceiptsTable = "msg_Receipts"
 	// ReceiptsInverseTable is the table name for the Receipt entity.
@@ -60,6 +62,7 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldUUID,
+	FieldBlockID,
 	FieldSourceMsgSender,
 	FieldDestAddress,
 	FieldData,
@@ -69,12 +72,6 @@ var Columns = []string{
 	FieldStreamOffset,
 	FieldTxHash,
 	FieldCreatedAt,
-}
-
-// ForeignKeys holds the SQL foreign-keys that are owned by the "msgs"
-// table and are not defined as standalone fields in the schema.
-var ForeignKeys = []string{
-	"block_msgs",
 }
 
 var (
@@ -87,11 +84,6 @@ var (
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
-			return true
-		}
-	}
-	for i := range ForeignKeys {
-		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -128,6 +120,11 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 // ByUUID orders the results by the UUID field.
 func ByUUID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUUID, opts...).ToFunc()
+}
+
+// ByBlockID orders the results by the Block_ID field.
+func ByBlockID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBlockID, opts...).ToFunc()
 }
 
 // ByDestGasLimit orders the results by the DestGasLimit field.

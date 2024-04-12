@@ -15,6 +15,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tracer"
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 
@@ -82,6 +83,19 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 
 	buildinfo.Instrument(ctx)
 
+	network, err := netconf.Load(cfg.NetworkFile())
+	if err != nil {
+		return nil, errors.Wrap(err, "load network")
+	} else if err := network.Validate(); err != nil {
+		return nil, errors.Wrap(err, "validate network configuration")
+	}
+
+	tracerIDs := tracer.Identifiers{Network: network.ID, Service: "halo", Instance: cfg.Comet.Moniker}
+	stopTracer, err := tracer.Init(ctx, tracerIDs, cfg.Tracer)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := enableSDKTelemetry(); err != nil {
 		return nil, errors.Wrap(err, "enable cosmos-sdk telemetry")
 	}
@@ -99,13 +113,6 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 	baseAppOpts, err := makeBaseAppOpts(cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "make base app opts")
-	}
-
-	network, err := netconf.Load(cfg.NetworkFile())
-	if err != nil {
-		return nil, errors.Wrap(err, "load network")
-	} else if err := network.Validate(); err != nil {
-		return nil, errors.Wrap(err, "validate network configuration")
 	}
 
 	engineCl, err := newEngineClient(ctx, cfg, network, privVal.Key.PubKey)
@@ -137,7 +144,7 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 	cmtAPI := comet.NewAPI(rpcClient)
 	app.SetCometAPI(cmtAPI)
 
-	cProvider := cprovider.NewABCIProvider(rpcClient, network.ChainNamesByIDs())
+	cProvider := cprovider.NewABCIProvider(rpcClient, network.ID, network.ChainNamesByIDs())
 
 	xProvider, err := newXProvider(network, cProvider)
 	if err != nil {
@@ -170,6 +177,10 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 		cmtNode.Wait()
 
 		// Note that cometBFT doesn't shut down cleanly. It leaves a bunch of goroutines running...
+
+		if err := stopTracer(ctx); err != nil {
+			return errors.Wrap(err, "stop tracer")
+		}
 
 		return nil
 	}, nil

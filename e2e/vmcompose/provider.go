@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -16,6 +17,8 @@ import (
 	"github.com/omni-network/omni/lib/log"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+
+	"golang.org/x/sync/errgroup"
 )
 
 const ProviderName = "vmcompose"
@@ -23,19 +26,19 @@ const ProviderName = "vmcompose"
 var _ types.InfraProvider = (*Provider)(nil)
 
 type Provider struct {
-	Testnet        types.Testnet
-	Data           types.InfrastructureData
-	ExplorerDBConn string
-	once           sync.Once
-	omniTag        string
+	Testnet    types.Testnet
+	Data       types.InfrastructureData
+	once       sync.Once
+	omniTag    string
+	graphQLURL string
 }
 
-func NewProvider(testnet types.Testnet, data types.InfrastructureData, imgTag string, explorerDBConn string) *Provider {
+func NewProvider(testnet types.Testnet, data types.InfrastructureData, imgTag, graphQLURL string) *Provider {
 	return &Provider{
-		Testnet:        testnet,
-		Data:           data,
-		ExplorerDBConn: explorerDBConn,
-		omniTag:        imgTag,
+		Testnet:    testnet,
+		Data:       data,
+		omniTag:    imgTag,
+		graphQLURL: graphQLURL,
 	}
 }
 
@@ -76,21 +79,24 @@ func (p *Provider) Setup() error {
 			}
 		}
 
+		// All explorer containers are run on the same VM
+		explorer := p.Testnet.Explorer && (services["explorer_ui"] || services["explorer_graphql"] || services["explorer_indexer"])
+
 		def := docker.ComposeDef{
-			Network:        false,
-			BindAll:        true,
-			NetworkName:    p.Testnet.Name,
-			NetworkCIDR:    p.Testnet.IP.String(),
-			Nodes:          nodes,
-			OmniEVMs:       omniEVMs,
-			Anvils:         anvilChains,
-			Relayer:        services["relayer"],
-			Monitor:        services["monitor"],
-			Prometheus:     p.Testnet.Prometheus,
-			OmniTag:        p.omniTag,
-			Explorer:       p.Testnet.Explorer && (services["explorer_ui"] || services["explorer_graphql"] || services["explorer_indexer"]),
-			ExplorerMockDB: p.Testnet.ExplorerMockDB && services["explorer_mock_db"],
-			ExplorerDBConn: p.ExplorerDBConn,
+			Network:     false,
+			BindAll:     true,
+			NetworkName: p.Testnet.Name,
+			NetworkCIDR: p.Testnet.IP.String(),
+			Nodes:       nodes,
+			OmniEVMs:    omniEVMs,
+			Anvils:      anvilChains,
+			Relayer:     services["relayer"],
+			Monitor:     services["monitor"],
+			Prometheus:  p.Testnet.Prometheus,
+			OmniTag:     p.omniTag,
+			Explorer:    explorer,
+			ExplorerDB:  explorer && p.Testnet.Network.IsEphemeral(),
+			GraphQLURL:  p.graphQLURL,
 		}
 		compose, err := docker.GenerateComposeFile(def)
 		if err != nil {
@@ -114,7 +120,7 @@ func (p *Provider) Setup() error {
 		}
 
 		hostname := vmIP // TODO(corver): Add hostnames to infra instances.
-		agentCfg = agent.ConfigForHost(agentCfg, hostname, halos, geths, services["relayer"], services["monitor"])
+		agentCfg = agent.ConfigForHost(agentCfg, hostname, halos, geths, services)
 		err = os.WriteFile(filepath.Join(p.Testnet.Dir, vmAgentFile(vmIP)), agentCfg, 0o644)
 		if err != nil {
 			return errors.Wrap(err, "write compose file")
@@ -125,76 +131,133 @@ func (p *Provider) Setup() error {
 }
 
 // Upgrade copies some of the local e2e generated artifacts to the VMs and starts the docker-compose services.
-func (p *Provider) Upgrade(ctx context.Context) error {
+func (p *Provider) Upgrade(ctx context.Context, cfg types.UpgradeConfig) error {
 	log.Info(ctx, "Upgrading docker-compose on VMs", "image", p.Testnet.UpgradeVersion)
 
-	var filePaths []string
-	addFile := func(dir string, file string) {
-		filePaths = append(filePaths, filepath.Join(p.Testnet.Dir, dir, file))
+	filesByService := make(map[string][]string)
+	addFile := func(service string, paths ...string) {
+		filesByService[service] = append(filesByService[service], filepath.Join(paths...))
 	}
-
-	// TODO(corver): Also upgrade long-lived keys if changed
-	// - validator: ensure privval_state.json and voter_state.json doesn't complain
 
 	// Include halo config
 	for _, node := range p.Testnet.Nodes {
-		addFile(node.Name, "config/halo.toml")
-		addFile(node.Name, "config/config.toml")
-		addFile(node.Name, "config/network.json")
-		addFile(node.Name, "config/jwtsecret")
+		addFile(node.Name, "config", "halo.toml")
+		addFile(node.Name, "config", "config.toml")
+		addFile(node.Name, "config", "network.json")
+		addFile(node.Name, "config", "jwtsecret")
+		addFile(node.Name, "config", "priv_validator_key.json")
+		addFile(node.Name, "config", "node_key.json")
 	}
 
 	// Include geth config
 	for _, omniEVM := range p.Testnet.OmniEVMs {
 		addFile(omniEVM.InstanceName, "config.toml")
-		addFile(omniEVM.InstanceName, "geth/jwtsecret")
+		addFile(omniEVM.InstanceName, "geth", "jwtsecret")
+		addFile(omniEVM.InstanceName, "geth", "nodekey")
 	}
 
 	// Also relayer and monitor
 	addFile("relayer", "relayer.toml")
 	addFile("relayer", "network.json")
+	addFile("relayer", "privatekey")
 	addFile("monitor", "monitor.toml")
 	addFile("monitor", "network.json")
+	addFile("monitor", "privatekey")
+
 	// TODO(corver): Add explorer stuff
 
-	addFile("prometheus", "prometheus.yml")
+	addFile("prometheus", "prometheus.yml") // Prometheus isn't a "service", so not actually copied
 
+	// Do initial sequential ssh to each VM, ensure we can connect.
 	for vmName, instance := range p.Data.VMs {
-		log.Debug(ctx, "Upgrading docker-compose", "vm", vmName)
-
-		for _, filePath := range filePaths {
-			if err := copyFileToVM(ctx, vmName, filePath); err != nil {
-				return errors.Wrap(err, "copy file", "vm", vmName, "file", filePath)
-			}
+		if !matchAny(cfg, p.Data.ServicesByInstance(instance)) {
+			log.Debug(ctx, "Skipping vm upgrade, no matching services", "vm", vmName, "regexp", cfg.ServiceRegexp)
+			continue
 		}
 
-		composeFile := vmComposeFile(instance.IPAddress.String())
-		if err := copyFileToVM(ctx, vmName, filepath.Join(p.Testnet.Dir, composeFile)); err != nil {
-			return errors.Wrap(err, "copy compose", "vm", vmName)
-		}
-
-		// Figure out whether we need to call "docker compose down" before "docker compose up"
-		var maybeDown string
-		if services := p.Data.ServicesByInstance(instance); containsEVM(services) {
-			if containsAnvil(services) {
-				return errors.New("cannot upgrade VM with both omni_evm and anvil containers since omni_evm needs downing and anvil cannot be restarted", "vm", vmName)
-			}
-			maybeDown = "sudo docker compose down && "
-		}
-
-		startCmd := fmt.Sprintf("cd /omni && "+
-			"sudo mv %s %s/docker-compose.yaml && "+
-			"cd %s && "+
-			maybeDown+
-			"sudo docker compose up -d",
-			composeFile, p.Testnet.Name, p.Testnet.Name)
-
-		if err := execOnVM(ctx, vmName, startCmd); err != nil {
-			return errors.Wrap(err, "compose up", "vm", vmName)
+		log.Debug(ctx, "Ensuring VM SSH connection", "vm", vmName)
+		if err := execOnVM(ctx, vmName, "ls"); err != nil {
+			return errors.Wrap(err, "test exec on vm", "vm", vmName)
 		}
 	}
 
+	// Then upgrade VMs in parallel
+	eg, ctx := errgroup.WithContext(ctx)
+	for vmName, instance := range p.Data.VMs {
+		services := p.Data.ServicesByInstance(instance)
+		if !matchAny(cfg, services) {
+			continue
+		}
+
+		eg.Go(func() error {
+			log.Debug(ctx, "Copying artifacts", "vm", vmName, "count", len(filesByService))
+			for service, filePaths := range filesByService {
+				if !services[service] {
+					continue
+				}
+				for _, filePath := range filePaths {
+					localPath := filepath.Join(p.Testnet.Dir, service, filePath)
+					remotePath := filepath.Join("/omni", p.Testnet.Name, service, filePath)
+					if err := copyFileToVM(ctx, vmName, localPath, remotePath); err != nil {
+						return errors.Wrap(err, "copy file", "vm", vmName, "service", service, "file", filePath)
+					}
+				}
+			}
+
+			log.Debug(ctx, "Copying docker-compose.yml", "vm", vmName)
+			composeFile := vmComposeFile(instance.IPAddress.String())
+			localComposePath := filepath.Join(p.Testnet.Dir, composeFile)
+			remoteComposePath := filepath.Join("/omni", p.Testnet.Name, composeFile)
+			if err := copyFileToVM(ctx, vmName, localComposePath, remoteComposePath); err != nil {
+				return errors.Wrap(err, "copy docker compose", "vm", vmName)
+			}
+
+			// Figure out whether we need to call "docker compose down" before "docker compose up"
+			var maybeDown string
+			if services := p.Data.ServicesByInstance(instance); containsEVM(services) {
+				if containsAnvil(services) {
+					return errors.New("cannot upgrade VM with both omni_evm and anvil containers since omni_evm needs downing and anvil cannot be restarted", "vm", vmName)
+				}
+				maybeDown = "sudo docker compose down && "
+			}
+
+			startCmd := fmt.Sprintf("cd /omni/%s && "+
+				"sudo mv %s docker-compose.yaml && "+
+				maybeDown+
+				"sudo docker compose up -d",
+				p.Testnet.Name, composeFile)
+
+			log.Debug(ctx, "Executing docker-compose up", "vm", vmName)
+			if err := execOnVM(ctx, vmName, startCmd); err != nil {
+				return errors.Wrap(err, "compose up", "vm", vmName)
+			}
+
+			return nil
+		})
+	}
+
+	if err := eg.Wait(); err != nil {
+		return errors.Wrap(err, "wait errgroup")
+	}
+
 	return nil
+}
+
+// matchAny returns true if the pattern matches any of the services in the services map.
+// An empty pattern returns true, matching anything.
+func matchAny(cfg types.UpgradeConfig, services map[string]bool) bool {
+	if cfg.ServiceRegexp == "" {
+		return true
+	}
+
+	for service := range services {
+		matched, _ := regexp.MatchString(cfg.ServiceRegexp, service)
+		if matched {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (p *Provider) StartNodes(ctx context.Context, _ ...*e2e.Node) error {
@@ -296,9 +359,8 @@ func copyToVM(ctx context.Context, vmName string, path string) error {
 	return nil
 }
 
-func copyFileToVM(ctx context.Context, vmName string, path string) error {
-	scp := fmt.Sprintf("gcloud compute scp --zone=us-east1-c --quiet %s %s:/omni/", path, vmName)
-
+func copyFileToVM(ctx context.Context, vmName string, localPath string, remotePath string) error {
+	scp := fmt.Sprintf("gcloud compute scp --zone=us-east1-c --quiet %s %s:%s", localPath, vmName, remotePath)
 	cmd := exec.CommandContext(ctx, "bash", "-c", scp)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrap(err, "copy to VM", "output", string(out), "cmd", scp)

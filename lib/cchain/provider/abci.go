@@ -1,4 +1,3 @@
-//nolint:revive // Defer chains is best for latency metrics.
 package provider
 
 import (
@@ -11,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tracer"
 	"github.com/omni-network/omni/lib/xchain"
 
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
@@ -30,7 +30,7 @@ type ABCIClient interface {
 	rpcclient.SignClient
 }
 
-func NewABCIProvider(abci ABCIClient, chains map[uint64]string) Provider {
+func NewABCIProvider(abci ABCIClient, network netconf.ID, chains map[uint64]string) Provider {
 	backoffFunc := func(ctx context.Context) (func(), func()) {
 		return expbackoff.NewWithReset(ctx, expbackoff.WithFastConfig())
 	}
@@ -47,6 +47,7 @@ func NewABCIProvider(abci ABCIClient, chains map[uint64]string) Provider {
 		header:      abci.Header,
 		backoffFunc: backoffFunc,
 		chainNames:  chains,
+		network:     network,
 	}
 }
 
@@ -61,6 +62,9 @@ func newChainIDFunc(abci rpcclient.SignClient) chainIDFunc {
 		if chainID != 0 {
 			return chainID, nil
 		}
+
+		ctx, span := tracer.Start(ctx, spanName("chain_id"))
+		defer span.End()
 
 		resp, err := abci.Header(ctx, nil)
 		if err != nil {
@@ -80,6 +84,10 @@ func newABCIValsetFunc(cl vtypes.QueryClient) valsetFunc {
 	return func(ctx context.Context, valSetID uint64, latest bool) (valSetResponse, bool, error) {
 		const endpoint = "valset"
 		defer latency(endpoint)()
+
+		ctx, span := tracer.Start(ctx, spanName(endpoint))
+		defer span.End()
+
 		resp, err := cl.ValidatorSet(ctx, &vtypes.ValidatorSetRequest{Id: valSetID, Latest: latest})
 		if errors.Is(err, sdkerrors.ErrKeyNotFound) {
 			return valSetResponse{}, false, nil
@@ -110,6 +118,10 @@ func newABCIFetchFunc(cl atypes.QueryClient) func(ctx context.Context, chainID u
 	return func(ctx context.Context, chainID uint64, fromHeight uint64) ([]xchain.Attestation, error) {
 		const endpoint = "attestations_from"
 		defer latency(endpoint)()
+
+		ctx, span := tracer.Start(ctx, spanName(endpoint))
+		defer span.End()
+
 		resp, err := cl.AttestationsFrom(ctx, &atypes.AttestationsFromRequest{
 			ChainId:    chainID,
 			FromHeight: fromHeight,
@@ -133,6 +145,10 @@ func newABCIWindowFunc(cl atypes.QueryClient) func(ctx context.Context, chainID 
 	return func(ctx context.Context, chainID uint64, height uint64) (int, error) {
 		const endpoint = "window_compare"
 		defer latency(endpoint)()
+
+		ctx, span := tracer.Start(ctx, spanName(endpoint))
+		defer span.End()
+
 		resp, err := cl.WindowCompare(ctx, &atypes.WindowCompareRequest{
 			ChainId: chainID,
 			Height:  height,
@@ -151,6 +167,10 @@ func newABCILatestFunc(cl atypes.QueryClient) func(ctx context.Context, chainID 
 	return func(ctx context.Context, chainID uint64) (xchain.Attestation, bool, error) {
 		const endpoint = "latest_attestation"
 		defer latency(endpoint)()
+
+		ctx, span := tracer.Start(ctx, spanName(endpoint))
+		defer span.End()
+
 		resp, err := cl.LatestAttestation(ctx, &atypes.LatestAttestationRequest{
 			ChainId: chainID,
 		})
@@ -206,4 +226,8 @@ func (a rpcAdaptor) Invoke(ctx context.Context, method string, req, resp any, _ 
 	}
 
 	return nil
+}
+
+func spanName(endpoint string) string {
+	return "cprovider/" + endpoint
 }

@@ -18,6 +18,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
+
+	"golang.org/x/sync/errgroup"
 )
 
 // XDapp defines the deployed pingpong contract xdapp.
@@ -148,8 +150,10 @@ func (d *XDapp) fund(ctx context.Context) error {
 	return nil
 }
 
-func (d *XDapp) StartAllEdges(ctx context.Context, count uint64) error {
+// StartAllEdges starts <parallel> ping pongs for all edges, each doing <count> hops.
+func (d *XDapp) StartAllEdges(ctx context.Context, parallel, count uint64) error {
 	log.Info(ctx, "Starting ping pong contracts")
+	eg, ctx := errgroup.WithContext(ctx)
 	for _, edge := range d.edges {
 		from := d.contracts[edge.From]
 		to := d.contracts[edge.To]
@@ -157,29 +161,40 @@ func (d *XDapp) StartAllEdges(ctx context.Context, count uint64) error {
 		log.Debug(ctx, "Starting ping pong contract",
 			"from", from.Chain.Name,
 			"to", to.Chain.Name,
+			"parallel", parallel,
 			"count", count,
 		)
 
-		txOpts, backend, err := d.backends.BindOpts(ctx, from.Chain.ID, d.operator)
-		if err != nil {
-			return err
-		}
+		for i := uint64(0); i < parallel; i++ {
+			eg.Go(func() error {
+				txOpts, backend, err := d.backends.BindOpts(ctx, from.Chain.ID, d.operator)
+				if err != nil {
+					return err
+				}
 
-		tx, err := from.PingPong.Start(txOpts, to.Chain.ID, to.Address, count)
-		if err != nil {
-			return errors.Wrap(err, "start ping pong", "from", from.Chain.Name, "to", to.Chain.Name)
-		}
+				tx, err := from.PingPong.Start(txOpts, to.Chain.ID, to.Address, count)
+				if err != nil {
+					return errors.Wrap(err, "start ping pong", "from", from.Chain.Name, "to", to.Chain.Name)
+				}
 
-		if _, err := bind.WaitMined(ctx, backend, tx); err != nil {
-			return errors.Wrap(err, "wait mined", "chain", from.Chain.Name, "tx", tx.Hash())
+				if _, err := bind.WaitMined(ctx, backend, tx); err != nil {
+					return errors.Wrap(err, "wait mined", "chain", from.Chain.Name, "tx", tx.Hash())
+				}
+
+				return nil
+			})
 		}
+	}
+
+	if err := eg.Wait(); err != nil {
+		return errors.Wrap(err, "wait parallel start")
 	}
 
 	return nil
 }
 
-// WaitDone waits for all ping pongs to be done.
-// Note this doesn't work on anvil since it doesn't support subscriptions.
+// WaitDone waits for all edges to complete the hops of a single ping pong.
+// Note this doesn't wait for all parallel ping pongs to complete, it only waits for one of P.
 func (d *XDapp) WaitDone(ctx context.Context) error {
 	log.Info(ctx, "Waiting for ping pongs to complete")
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)

@@ -14,17 +14,22 @@ import (
 )
 
 const (
-	defaultListenAddr = ":8080"
+	defaultListenAddr     = ":8080"
+	defaultExplorerDBConn = "postgres://omni:password@explorer_db:5432/omni_db"
+	defaultMonitoringAddr = ":26660"
 )
 
 type Config struct {
-	ListenAddress  string
+	ListenAddr     string
 	ExplorerDBConn string
+	MonitoringAddr string
 }
 
 func DefaultConfig() Config {
 	return Config{
-		ListenAddress: defaultListenAddr,
+		ListenAddr:     defaultListenAddr,
+		ExplorerDBConn: defaultExplorerDBConn,
+		MonitoringAddr: defaultMonitoringAddr,
 	}
 }
 

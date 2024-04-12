@@ -3,15 +3,22 @@ package provider
 
 import (
 	"context"
+	"path"
 	"testing"
+	"time"
 
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/stream"
+	"github.com/omni-network/omni/lib/tracer"
 	"github.com/omni-network/omni/lib/xchain"
 
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var _ cchain.Provider = Provider{}
@@ -40,6 +47,7 @@ type Provider struct {
 	header      headerFunc
 	backoffFunc func(context.Context) (func(), func())
 	chainNames  map[uint64]string
+	network     netconf.ID
 }
 
 // NewProviderForT creates a new provider for testing.
@@ -102,6 +110,15 @@ func (p Provider) Subscribe(in context.Context, srcChainID uint64, height uint64
 		},
 		SetStreamHeight: func(h uint64) {
 			streamHeight.WithLabelValues(workerName, srcChain).Set(float64(h))
+		},
+		SetCallbackLatency: func(d time.Duration) {
+			callbackLatency.WithLabelValues(workerName, srcChain).Observe(d.Seconds())
+		},
+		StartTrace: func(ctx context.Context, height uint64, spanName string) (context.Context, trace.Span) {
+			return tracer.StartChainHeight(ctx, p.network, srcChain, height,
+				path.Join("cprovider", spanName),
+				trace.WithAttributes(attribute.String("worker", workerName)),
+			)
 		},
 	}
 

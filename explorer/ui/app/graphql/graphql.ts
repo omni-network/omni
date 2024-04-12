@@ -38,13 +38,25 @@ export type Scalars = {
   Time: { input: any; output: any; }
 };
 
+/** Chain represents a blockchain on the https://chainlist.org. */
+export type Chain = {
+  __typename?: 'Chain';
+  /** Chain ID as per https://chainlist.org */
+  ChainID: Scalars['BigInt']['output'];
+  /** Chain name */
+  Name: Scalars['String']['output'];
+};
+
 export type Query = {
   __typename?: 'Query';
+  supportedchains: Array<Maybe<Chain>>;
   xblock?: Maybe<XBlock>;
   xblockcount?: Maybe<Scalars['BigInt']['output']>;
   xblockrange: Array<Maybe<XBlock>>;
+  xmsg?: Maybe<XMsg>;
   xmsgcount?: Maybe<Scalars['BigInt']['output']>;
   xmsgrange: Array<Maybe<XMsg>>;
+  xreceipt?: Maybe<XReceipt>;
   xreceiptcount?: Maybe<Scalars['BigInt']['output']>;
 };
 
@@ -61,9 +73,23 @@ export type QueryXblockrangeArgs = {
 };
 
 
+export type QueryXmsgArgs = {
+  destChainID: Scalars['BigInt']['input'];
+  sourceChainID: Scalars['BigInt']['input'];
+  streamOffset: Scalars['BigInt']['input'];
+};
+
+
 export type QueryXmsgrangeArgs = {
   from: Scalars['BigInt']['input'];
   to: Scalars['BigInt']['input'];
+};
+
+
+export type QueryXreceiptArgs = {
+  destChainID: Scalars['BigInt']['input'];
+  sourceChainID: Scalars['BigInt']['input'];
+  streamOffset: Scalars['BigInt']['input'];
 };
 
 /** XBlock represents a cross-chain block. */
@@ -88,6 +114,8 @@ export type XBlock = {
 /** XMsg is a cross-chain message. */
 export type XMsg = {
   __typename?: 'XMsg';
+  /** XBlock message was emitted in */
+  Block: XBlock;
   /** Hash of the source chain block */
   BlockHash: Scalars['Bytes32']['output'];
   /** Height of the source chain block */
@@ -98,6 +126,8 @@ export type XMsg = {
   DestChainID: Scalars['BigInt']['output'];
   /** Gas limit to use for 'call' on destination chain */
   DestGasLimit: Scalars['BigInt']['output'];
+  /** Receipts of the message */
+  Receipts: Array<XReceipt>;
   /** Source chain ID as per https://chainlist.org/ */
   SourceChainID: Scalars['BigInt']['output'];
   /** Sender on source chain, set to msg.Sender */

@@ -13,8 +13,6 @@ services:
       e2e: true
     container_name: explorer_indexer
     image: omniops/explorer-indexer:7d1ae53
-    command:
-      - --explorer-db-conn=fake_connection
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     volumes:
       - ./explorer_indexer:/explorer_indexer
@@ -27,8 +25,6 @@ services:
       e2e: true
     container_name: explorer_graphql
     image: omniops/explorer-graphql:7d1ae53
-    command:
-      - --explorer-db-conn=fake_connection
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     volumes:
       - ./explorer_graphql:/explorer_graphql
@@ -37,4 +33,40 @@ services:
         
     ports:
         - 21335:8080
+
+  explorer_ui:
+    labels:
+      e2e: true
+    container_name: explorer_ui
+    image: omniops/explorer-ui:7d1ae53
+    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    environment:
+      GRAPHQL_URL: http://localhost:8080/graphql
+    volumes:
+      - ./explorer_ui:/explorer_ui
+    networks:
+      test:
+        
+    ports:
+        - 57017:3000
+
+  explorer_db:
+    labels:
+      e2e: true
+    image: postgres:14-alpine
+    container_name: explorer_db
+    environment:
+      POSTGRES_DB: omni_db
+      POSTGRES_USER: omni
+      POSTGRES_PASSWORD: password
+      ports: 5432:5432
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U omni -d omni_db" ]
+      interval: 3s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      test:
+        
 

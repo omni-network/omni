@@ -3,9 +3,12 @@ package stream
 
 import (
 	"context"
+	"time"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+
+	"go.opentelemetry.io/otel/trace"
 )
 
 type Callback[E any] func(ctx context.Context, elem E) error
@@ -26,9 +29,11 @@ type Deps[E any] struct {
 	RetryCallback bool
 
 	// Metrics
-	IncFetchErr     func()
-	IncCallbackErr  func()
-	SetStreamHeight func(uint64)
+	IncFetchErr        func()
+	IncCallbackErr     func()
+	SetStreamHeight    func(uint64)
+	SetCallbackLatency func(time.Duration)
+	StartTrace         func(ctx context.Context, height uint64, spanName string) (context.Context, trace.Span)
 }
 
 // Stream streams elements from the provided height (inclusive) on a specific chain.
@@ -39,16 +44,18 @@ type Deps[E any] struct {
 // It returns (nil) when the context is canceled.
 //
 //nolint:nilerr // The function contract states it returns nil on context errors.
-func Stream[E any](ctx context.Context, deps Deps[E], srcChainID uint64, height uint64, callback Callback[E]) error {
-	backoff, reset := deps.Backoff(ctx) // Note that backoff returns immediately on ctx cancel.
+func Stream[E any](rootCtx context.Context, deps Deps[E], srcChainID uint64, height uint64, callback Callback[E]) error {
+	backoff, reset := deps.Backoff(rootCtx) // Note that backoff returns immediately on ctx cancel.
 
-	for ctx.Err() == nil {
-		// Fetch next batch of attestations.
-		batch, err := deps.FetchBatch(ctx, srcChainID, height)
-		if ctx.Err() != nil {
+	for rootCtx.Err() == nil {
+		// Fetch next batch of elements.
+		fetchCtx, span := deps.StartTrace(rootCtx, height, "fetch")
+		batch, err := deps.FetchBatch(fetchCtx, srcChainID, height)
+		span.End()
+		if rootCtx.Err() != nil {
 			return nil // Don't backoff or log on ctx cancel, just return nil.
 		} else if err != nil {
-			log.Warn(ctx, "Failed fetching "+deps.ElemLabel+" (will retry)", err, "height", height)
+			log.Warn(rootCtx, "Failed fetching "+deps.ElemLabel+" (will retry)", err, "height", height)
 			deps.IncFetchErr()
 			backoff()
 
@@ -63,22 +70,27 @@ func Stream[E any](ctx context.Context, deps Deps[E], srcChainID uint64, height 
 		reset() // Reset fetch backoff
 
 		// Call callback for each element
-		for _, elem := range batch {
-			ectx := log.WithCtx(ctx, "height", height)
-			if err := deps.Verify(ectx, elem, height); err != nil {
+		err = forEach(rootCtx, batch, func(ctx context.Context, elem E) error {
+			ctx, span := deps.StartTrace(ctx, height, "callback")
+			defer span.End()
+			ctx = log.WithCtx(ctx, "height", height)
+
+			if err := deps.Verify(ctx, elem, height); err != nil {
 				return errors.Wrap(err, "verify")
 			}
 
 			// Retry callback on error
-			for ectx.Err() == nil {
-				err := callback(ectx, elem)
-				if ectx.Err() != nil {
+			for ctx.Err() == nil {
+				t0 := time.Now()
+				err := callback(ctx, elem)
+				deps.SetCallbackLatency(time.Since(t0))
+				if ctx.Err() != nil {
 					return nil // Don't backoff or log on ctx cancel, just return nil.
 				} else if err != nil && !deps.RetryCallback {
 					deps.IncCallbackErr()
 					return errors.Wrap(err, "callback")
 				} else if err != nil {
-					log.Warn(ectx, "Failed processing "+deps.ElemLabel+" (will retry)", err)
+					log.Warn(ctx, "Failed processing "+deps.ElemLabel+" (will retry)", err)
 					deps.IncCallbackErr()
 					backoff()
 
@@ -91,8 +103,24 @@ func Stream[E any](ctx context.Context, deps Deps[E], srcChainID uint64, height 
 
 			deps.SetStreamHeight(height)
 			height++
+
+			return nil
+		})
+		if err != nil {
+			return err
 		}
 	}
 
 	return nil // Context canceled.
+}
+
+func forEach[E any](ctx context.Context, slice []E, fn func(context.Context, E) error) error {
+	for _, elem := range slice {
+		err := fn(ctx, elem)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

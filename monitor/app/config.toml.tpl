@@ -9,6 +9,9 @@ version = "{{ .Version}}"
 ###                         Monitor Options                         ###
 #######################################################################
 
+# Path to the ethereum private key used to sign avs omni sync transactions.
+private-key = "{{ .PrivateKey }}"
+
 # The path to the Omni network configuration file.
 network-file = "{{ .NetworkFile }}"
 

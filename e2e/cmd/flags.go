@@ -5,22 +5,26 @@ import (
 	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/e2e/app/agent"
 	"github.com/omni-network/omni/e2e/app/key"
+	"github.com/omni-network/omni/e2e/types"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
 func bindDefFlags(flags *pflag.FlagSet, cfg *app.DefinitionConfig) {
+	bindPromFlags(flags, &cfg.AgentSecrets)
 	flags.StringVarP(&cfg.ManifestFile, "manifest-file", "f", cfg.ManifestFile, "path to manifest file")
 	flags.StringVar(&cfg.InfraProvider, "infra", cfg.InfraProvider, "infrastructure provider: docker, vmcompose")
 	flags.StringVar(&cfg.InfraDataFile, "infra-file", cfg.InfraDataFile, "infrastructure data file (not required for docker provider)")
 	flags.StringVar(&cfg.DeployKeyFile, "deploy-key", cfg.DeployKeyFile, "path to deploy private key file")
-	flags.StringVar(&cfg.RelayerKeyFile, "relayer-key", cfg.RelayerKeyFile, "path to relayer private key file")
 	flags.StringVar(&cfg.FireAPIKey, "fireblocks-api-key", cfg.FireAPIKey, "FireBlocks api key")
 	flags.StringVar(&cfg.FireKeyPath, "fireblocks-key-path", cfg.FireKeyPath, "FireBlocks RSA private key path")
 	flags.StringVar(&cfg.OmniImgTag, "omni-image-tag", cfg.OmniImgTag, "Omni docker images tag (halo, relayer). Defaults to working dir git commit.")
-	flags.StringVar(&cfg.ExplorerDBConn, "explorer-db-conn", cfg.ExplorerDBConn, "Indexer database connection url")
-	flags.StringToStringVar(&cfg.RPCOverrides, "rpc-overrides", cfg.RPCOverrides, "Pubilc chain rpc overrides: '<chain1>=<url1>'")
+	flags.StringVar(&cfg.ExplorerDBConn, "explorer-db-conn", cfg.ExplorerDBConn, "Explorer database connection url")
+	flags.StringVar(&cfg.GraphQLURL, "graphql-url", cfg.GraphQLURL, "Url for graphql server")
+	flags.StringToStringVar(&cfg.RPCOverrides, "rpc-overrides", cfg.RPCOverrides, "Public chain rpc overrides: '<chain1>=<url1>,<url2>'")
+	flags.StringVar(&cfg.TracingEndpoint, "tracing-endpoint", cfg.TracingEndpoint, "Tracing endpoint")
+	flags.StringVar(&cfg.TracingHeaders, "tracing-headers", cfg.TracingHeaders, "Tracing headers")
 }
 
 func bindE2EFlags(flags *pflag.FlagSet, cfg *app.E2ETestConfig) {
@@ -34,9 +38,11 @@ func bindPromFlags(flags *pflag.FlagSet, cfg *agent.Secrets) {
 }
 
 func bindDeployFlags(flags *pflag.FlagSet, cfg *app.DeployConfig) {
-	bindPromFlags(flags, &cfg.AgentSecrets)
 	flags.Uint64Var(&cfg.PingPongN, "ping-pong", cfg.PingPongN, "Number of ping pongs messages to send. 0 disables it")
-	flags.StringVar(&cfg.ExplorerDB, "explorer-db", cfg.ExplorerDB, "Explorer DB connection string")
+}
+
+func bindUpgradeFlags(flags *pflag.FlagSet, cfg *types.UpgradeConfig) {
+	flags.StringVar(&cfg.ServiceRegexp, "services", cfg.ServiceRegexp, "Regexp applied to services per VM. Any match results in the VM being upgraded (all services on that VM are upgraded, not only matching services)")
 }
 
 func bindCreate3DeployFlags(flags *pflag.FlagSet, cfg *app.Create3DeployConfig) {
@@ -44,9 +50,9 @@ func bindCreate3DeployFlags(flags *pflag.FlagSet, cfg *app.Create3DeployConfig) 
 }
 
 func bindKeyCreateFlags(cmd *cobra.Command, cfg *key.UploadConfig) {
-	cmd.Flags().StringVar(&cfg.NodeName, "node", cfg.NodeName, "node name")
-	cmd.Flags().StringVar((*string)(&cfg.Type), "type", string(cfg.Type), "key type: validator, p2p_execution, p2p_consensus")
+	cmd.Flags().StringVar(&cfg.Name, "name", cfg.Name, "key name: either node name or eoa account type")
+	cmd.Flags().StringVar((*string)(&cfg.Type), "type", string(cfg.Type), "key type: validator, p2p_execution, p2p_consensus, eoa")
 
-	_ = cmd.MarkFlagRequired("node")
+	_ = cmd.MarkFlagRequired("name")
 	_ = cmd.MarkFlagRequired("type")
 }

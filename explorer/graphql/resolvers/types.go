@@ -19,6 +19,8 @@ type XMsg struct {
 	TxHash              common.Hash
 	BlockHeight         hexutil.Big
 	BlockHash           common.Hash
+	Block               XBlock
+	Receipts            []XReceipt
 }
 
 type XBlock struct {
@@ -44,4 +46,13 @@ type XReceipt struct {
 	StreamOffset   hexutil.Big
 	TxHash         common.Hash
 	Timestamp      graphql.Time
+	BlockHeight    hexutil.Big
+	BlockHash      common.Hash
+	Block          XBlock
+	Messages       []XMsg
+}
+
+type Chain struct {
+	Name    string
+	ChainID hexutil.Big
 }

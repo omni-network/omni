@@ -18,3 +18,5 @@ Flags:
       --pruning string                   Pruning strategy (default|nothing|everything) (default "nothing")
       --snapshot-interval uint           State sync snapshot interval (default 1000)
       --snapshot-keep-recent uint        State sync snapshot to keep (default 2)
+      --tracing-endpoint string          Tracing OTLP endpoint
+      --tracing-headers string           Tracing OTLP headers

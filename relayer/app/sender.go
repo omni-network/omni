@@ -69,22 +69,22 @@ func NewSender(chain netconf.Chain, rpcClient ethclient.Client,
 }
 
 // SendTransaction sends the submission to the destination chain.
-func (o Sender) SendTransaction(ctx context.Context, submission xchain.Submission) error {
+func (o Sender) SendTransaction(ctx context.Context, sub xchain.Submission) error {
 	if o.txMgr == nil {
-		return errors.New("tx mgr not found", "dest_chain_id", submission.DestChainID)
-	} else if submission.DestChainID != o.chain.ID {
+		return errors.New("tx mgr not found", "dest_chain_id", sub.DestChainID)
+	} else if sub.DestChainID != o.chain.ID {
 		return errors.New("unexpected destination chain [BUG]",
-			"got", submission.DestChainID, "expect", o.chain.ID)
+			"got", sub.DestChainID, "expect", o.chain.ID)
 	}
 
 	// Get some info for logging
 	var startOffset uint64
-	if len(submission.Msgs) > 0 {
-		startOffset = submission.Msgs[0].StreamOffset
+	if len(sub.Msgs) > 0 {
+		startOffset = sub.Msgs[0].StreamOffset
 	}
 
 	dstChain := o.chain.Name
-	srcChain := o.chainNames[submission.BlockHeader.SourceChainID]
+	srcChain := o.chainNames[sub.BlockHeader.SourceChainID]
 
 	// Request attributes added to context (for downstream logging) and manually added to errors (for upstream logging).
 	reqAttrs := []any{
@@ -95,20 +95,20 @@ func (o Sender) SendTransaction(ctx context.Context, submission xchain.Submissio
 	ctx = log.WithCtx(ctx, reqAttrs...)
 	log.Debug(ctx, "Received submission",
 		"start_offset", startOffset,
-		"msgs", len(submission.Msgs),
+		"msgs", len(sub.Msgs),
 	)
 
-	const gasLimit = 1_000_000 // TODO(lazar): make configurable
-
-	txData, err := o.getXSubmitBytes(submissionToBinding(submission))
+	txData, err := o.getXSubmitBytes(submissionToBinding(sub))
 	if err != nil {
 		return err
 	}
 
+	estimatedGas := estimateGas(sub.Msgs)
+
 	candidate := txmgr.TxCandidate{
 		TxData:   txData,
 		To:       &o.portal,
-		GasLimit: gasLimit,
+		GasLimit: estimatedGas,
 		Value:    big.NewInt(0),
 	}
 
@@ -118,10 +118,11 @@ func (o Sender) SendTransaction(ctx context.Context, submission xchain.Submissio
 	}
 
 	submissionTotal.WithLabelValues(srcChain, dstChain).Inc()
-	msgTotal.WithLabelValues(srcChain, dstChain).Add(float64(len(submission.Msgs)))
+	msgTotal.WithLabelValues(srcChain, dstChain).Add(float64(len(sub.Msgs)))
+	gasEstimated.WithLabelValues(dstChain).Observe(float64(estimatedGas))
 
 	receiptAttrs := []any{
-		"valset_id", submission.ValidatorSetID,
+		"valset_id", sub.ValidatorSetID,
 		"status", rec.Status,
 		"nonce", tx.Nonce(),
 		"gas_used", rec.GasUsed,

@@ -62,12 +62,12 @@ func NewFireBackends(ctx context.Context, testnet types.Testnet, fireCl firebloc
 
 	// Configure public EVM Backends
 	for _, chain := range testnet.PublicChains {
-		ethCl, err := ethclient.Dial(chain.Chain.Name, chain.RPCAddress)
+		ethCl, err := ethclient.Dial(chain.Chain().Name, chain.NextRPCAddress())
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "dial")
 		}
 
-		inner[chain.Chain.ID], err = NewFireBackend(ctx, chain.Chain.Name, chain.Chain.ID, chain.Chain.BlockPeriod, ethCl, fireCl)
+		inner[chain.Chain().ID], err = NewFireBackend(ctx, chain.Chain().Name, chain.Chain().ID, chain.Chain().BlockPeriod, ethCl, fireCl)
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "new public Backend")
 		}
@@ -136,12 +136,12 @@ func NewBackends(testnet types.Testnet, deployKeyFile string) (Backends, error) 
 		if publicDeployKey == nil {
 			return Backends{}, errors.New("public deploy key required")
 		}
-		ethCl, err := ethclient.Dial(chain.Chain.Name, chain.RPCAddress)
+		ethCl, err := ethclient.Dial(chain.Chain().Name, chain.NextRPCAddress())
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "dial")
 		}
 
-		inner[chain.Chain.ID], err = NewBackend(chain.Chain.Name, chain.Chain.ID, chain.Chain.BlockPeriod, ethCl, publicDeployKey)
+		inner[chain.Chain().ID], err = NewBackend(chain.Chain().Name, chain.Chain().ID, chain.Chain().BlockPeriod, ethCl, publicDeployKey)
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "new public Backend")
 		}
@@ -191,10 +191,12 @@ func (b Backends) RPCClients() map[uint64]ethclient.Client {
 
 func newFireblocksTxMgr(ethCl ethclient.Client, chainName string, chainID uint64, blockPeriod time.Duration, from common.Address, fireCl fireblocks.Client) (txmgr.TxManager, error) {
 	// creates our new CLI config for our tx manager
+	defaults := txmgr.DefaultSenderFlagValues
+	defaults.NetworkTimeout = time.Minute * 5
 	cliConfig := txmgr.NewCLIConfig(
 		chainID,
 		blockPeriod/interval,
-		txmgr.DefaultSenderFlagValues,
+		defaults,
 	)
 
 	// get the config for our tx manager
