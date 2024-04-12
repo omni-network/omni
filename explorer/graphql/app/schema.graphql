@@ -127,7 +127,7 @@ type XReceipt {
 }
 
 """
-Chain represents a chain.
+Chain represents a blockchain on the https://chainlist.org.
 """
 type Chain {
   "Chain ID as per https://chainlist.org"
