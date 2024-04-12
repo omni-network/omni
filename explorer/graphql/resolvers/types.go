@@ -46,6 +46,10 @@ type XReceipt struct {
 	StreamOffset   hexutil.Big
 	TxHash         common.Hash
 	Timestamp      graphql.Time
+	BlockHeight    hexutil.Big
+	BlockHash      common.Hash
+	Block          XBlock
+	Messages       []XMsg
 }
 
 type Chain struct {

@@ -43,7 +43,7 @@ func EntBlockToGraphQLBlock(ctx context.Context, block *ent.Block) (*resolvers.X
 
 	// Decode receipts
 	for _, receipt := range block.Edges.Receipts {
-		receipt, err := EntReceiptToGraphQLXReceipt(receipt)
+		receipt, err := EntReceiptToGraphQLXReceipt(ctx, receipt, block)
 		if err != nil {
 			return nil, errors.Wrap(err, "decoding receipt for block")
 		}
@@ -103,7 +103,15 @@ func EntMsgToGraphQLXMsg(ctx context.Context, msg *ent.Msg, block *ent.Block) (*
 }
 
 // EntReceiptToGraphQLXReceipt converts an ent.Receipt to a resolvers.XReceipt.
-func EntReceiptToGraphQLXReceipt(receipt *ent.Receipt) (*resolvers.XReceipt, error) {
+func EntReceiptToGraphQLXReceipt(ctx context.Context, receipt *ent.Receipt, block *ent.Block) (*resolvers.XReceipt, error) {
+	if block == nil {
+		b, err := receipt.QueryBlock().Only(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "querying block for message")
+		}
+		block = b
+	}
+
 	gasUsed, err := Uint2Big(receipt.GasUsed)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding gas used")
@@ -124,6 +132,11 @@ func EntReceiptToGraphQLXReceipt(receipt *ent.Receipt) (*resolvers.XReceipt, err
 		return nil, errors.Wrap(err, "decoding stream offset")
 	}
 
+	blockHeight, err := Uint2Big(block.BlockHeight)
+	if err != nil {
+		return nil, errors.Wrap(err, "decoding block height")
+	}
+
 	return &resolvers.XReceipt{
 		UUID:           graphql.ID(receipt.UUID.String()),
 		Success:        graphql.NullBool{Value: &receipt.Success, Set: receipt.Success},
@@ -134,6 +147,8 @@ func EntReceiptToGraphQLXReceipt(receipt *ent.Receipt) (*resolvers.XReceipt, err
 		StreamOffset:   hexutil.Big(streamOffset),
 		TxHash:         common.Hash(receipt.TxHash),
 		Timestamp:      graphql.Time{Time: receipt.CreatedAt},
+		BlockHeight:    hexutil.Big(blockHeight),
+		BlockHash:      common.Hash(block.BlockHash),
 	}, nil
 }
 
