@@ -3,7 +3,7 @@ package provider_test
 import (
 	"context"
 	"errors"
-	"math/rand"
+	"sync"
 	"testing"
 
 	"github.com/omni-network/omni/lib/cchain/provider"
@@ -20,12 +20,12 @@ func TestProvider(t *testing.T) {
 	const (
 		errs  = 2
 		total = 10
+
+		chainID    = uint64(999)
+		fromHeight = uint64(100)
 	)
 
-	chainID := rand.Uint64()
-	fromHeight := rand.Uint64()
-
-	var backoff testBackOff
+	backoff := new(testBackOff)
 	fetcher := &testFetcher{errs: errs}
 
 	p := provider.NewProviderForT(t, fetcher.Fetch, nil, nil, backoff.BackOff)
@@ -42,10 +42,17 @@ func TestProvider(t *testing.T) {
 
 	<-ctx.Done()
 
-	require.Empty(t, fetcher.errs) // All errors returned
-	require.Equal(t, total, fetcher.fetched)
-	require.Equal(t, errs+1, backoff.backoff) // 2 errors + 1 empty fetch
-	require.Equal(t, total+errs+1, backoff.reset)
+	// Test fetcher returns <errs> errors, then 0,1,2,3,4,... attestations per fetch.
+	var expectFetched, expectCount int
+	for i := 0; expectFetched <= total; i++ {
+		expectCount++
+		expectFetched += i
+	}
+
+	require.Empty(t, fetcher.Errs()) // All errors returned
+	require.Equal(t, expectFetched, fetcher.Fetched())
+	require.Equal(t, expectCount, fetcher.Count())
+	require.Equal(t, errs+1, backoff.Count()) // 2 errors + 1 empty fetch
 
 	require.Len(t, actual, total)
 	for i, attestation := range actual {
@@ -58,13 +65,38 @@ func TestProvider(t *testing.T) {
 // It first returns errs errors.
 // Then it returns 0,1,2,3,4,5... attestations up to max.
 type testFetcher struct {
+	mu      sync.Mutex
 	errs    int
 	count   int
 	fetched int
 }
 
+func (f *testFetcher) Count() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	return f.count
+}
+
+func (f *testFetcher) Fetched() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	return f.fetched
+}
+
+func (f *testFetcher) Errs() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	return f.errs
+}
+
 func (f *testFetcher) Fetch(_ context.Context, chainID uint64, fromHeight uint64,
 ) ([]xchain.Attestation, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
 	if f.errs > 0 {
 		f.errs--
 		return nil, errors.New("test error")
@@ -89,10 +121,21 @@ func (f *testFetcher) Fetch(_ context.Context, chainID uint64, fromHeight uint64
 }
 
 type testBackOff struct {
+	mu      sync.Mutex
 	backoff int
-	reset   int
 }
 
-func (b *testBackOff) BackOff(context.Context) (func(), func()) {
-	return func() { b.backoff++ }, func() { b.reset++ }
+func (b *testBackOff) Count() int {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	return b.backoff
+}
+
+func (b *testBackOff) BackOff(context.Context) func() {
+	return func() {
+		b.mu.Lock()
+		defer b.mu.Unlock()
+		b.backoff++
+	}
 }

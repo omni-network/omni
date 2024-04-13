@@ -45,14 +45,14 @@ type Provider struct {
 	valset      valsetFunc
 	chainID     chainIDFunc
 	header      headerFunc
-	backoffFunc func(context.Context) (func(), func())
+	backoffFunc func(context.Context) func()
 	chainNames  map[uint64]string
 	network     netconf.ID
 }
 
 // NewProviderForT creates a new provider for testing.
 func NewProviderForT(_ *testing.T, fetch fetchFunc, latest latestFunc, window windowFunc,
-	backoffFunc func(context.Context) (func(), func()),
+	backoffFunc func(context.Context) func(),
 ) Provider {
 	return Provider{
 		latest:      latest,
@@ -93,11 +93,18 @@ func (p Provider) Subscribe(in context.Context, srcChainID uint64, height uint64
 		Backoff:       p.backoffFunc,
 		ElemLabel:     "attestation",
 		RetryCallback: true,
+		FetchWorkers:  1, // Only single worker supported since we fetch batches of unknown lengths so can't shard.
+		Height: func(att xchain.Attestation) uint64 {
+			return att.BlockHeight
+		},
 		Verify: func(ctx context.Context, att xchain.Attestation, h uint64) error {
 			if att.SourceChainID != srcChainID {
 				return errors.New("invalid attestation source chain ID")
 			} else if att.BlockHeight != h {
-				return errors.New("invalid attestation height")
+				return errors.New("invalid attestation height",
+					"actual", att.BlockHeight,
+					"expected", h,
+				)
 			}
 
 			return nil
