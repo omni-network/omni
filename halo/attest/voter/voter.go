@@ -48,6 +48,7 @@ type Voter struct {
 	wg            sync.WaitGroup
 
 	mu        sync.Mutex
+	latest    map[uint64]*types.Vote // Latest vote per chain
 	available []*types.Vote
 	proposed  []*types.Vote
 	committed []*types.Vote
@@ -89,36 +90,37 @@ func LoadVoter(privKey crypto.PrivKey, path string, provider xchain.Provider, de
 		available: s.Available,
 		proposed:  s.Proposed,
 		committed: s.Committed,
+		latest:    s.Latest,
 	}, nil
 }
 
 // Start starts runners that attest to each source chain. It does not block, it returns immediately.
-func (a *Voter) Start(ctx context.Context) {
-	for chainID := range a.chains {
-		go a.runForever(ctx, chainID)
+func (v *Voter) Start(ctx context.Context) {
+	for chainID := range v.chains {
+		go v.runForever(ctx, chainID)
 	}
 }
 
 // WaitDone waits for all runners to exit. Note the original Start context must be canceled to exit.
-func (a *Voter) WaitDone() {
-	a.wg.Wait()
+func (v *Voter) WaitDone() {
+	v.wg.Wait()
 }
 
 // runForever blocks, repeatedly calling runOnce (with backoff) for the provided chain until the context is canceled.
-func (a *Voter) runForever(ctx context.Context, chainID uint64) {
-	a.wg.Add(1)
-	defer a.wg.Done()
+func (v *Voter) runForever(ctx context.Context, chainID uint64) {
+	v.wg.Add(1)
+	defer v.wg.Done()
 
-	ctx = log.WithCtx(ctx, "chain", a.chains[chainID])
+	ctx = log.WithCtx(ctx, "chain", v.chains[chainID])
 
-	backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(a.backoffPeriod))
+	backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(v.backoffPeriod))
 	for ctx.Err() == nil {
-		if !a.deps.IsValidator(ctx, a.address) {
+		if !v.deps.IsValidator(ctx, v.address) {
 			backoff()
 			continue
 		}
 
-		err := a.runOnce(ctx, chainID)
+		err := v.runOnce(ctx, chainID)
 		if ctx.Err() != nil {
 			return // Don't log or sleep on context cancel.
 		}
@@ -130,17 +132,17 @@ func (a *Voter) runForever(ctx context.Context, chainID uint64) {
 
 // runOnce blocks, streaming xblocks from the provided chain until an error is encountered.
 // It always returns a non-nil error.
-func (a *Voter) runOnce(ctx context.Context, chainID uint64) error {
+func (v *Voter) runOnce(ctx context.Context, chainID uint64) error {
 	// Determine what height to stream from.
 	var fromHeight uint64
 
 	// Get latest state from disk.
-	if latest, ok := a.latestByChain(chainID); ok {
+	if latest, ok := v.latestByChain(chainID); ok {
 		fromHeight = latest.BlockHeader.Height + 1
 	}
 
 	// Get latest approved attestation from the chain.
-	if latest, ok, err := a.deps.LatestAttestationHeight(ctx, chainID); err != nil {
+	if latest, ok, err := v.deps.LatestAttestationHeight(ctx, chainID); err != nil {
 		return errors.Wrap(err, "latest attestation")
 	} else if ok && fromHeight < latest+1 {
 		// Allows skipping ahead of we were behind for some reason.
@@ -149,26 +151,26 @@ func (a *Voter) runOnce(ctx context.Context, chainID uint64) error {
 
 	first := true // Allow skipping on first attestation.
 
-	return a.provider.StreamBlocks(ctx, chainID, fromHeight,
+	return v.provider.StreamBlocks(ctx, chainID, fromHeight,
 		func(ctx context.Context, block xchain.Block) error {
-			if !a.deps.IsValidator(ctx, a.address) {
+			if !v.deps.IsValidator(ctx, v.address) {
 				return errors.New("not a validator anymore")
 			}
 
-			cmp, err := a.deps.WindowCompare(ctx, block.SourceChainID, block.BlockHeight)
+			cmp, err := v.deps.WindowCompare(ctx, block.SourceChainID, block.BlockHeight)
 			if err != nil {
 				return errors.Wrap(err, "window compare")
 			} else if cmp < 0 {
 				return errors.New("behind vote window (too slow)", "vote_height", block.BlockHeight)
 			} else if cmp > 0 {
 				backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second*5))
-				for a.AvailableCount() > maxAvailable {
+				for v.AvailableCount() > maxAvailable {
 					log.Warn(ctx, "Voting paused, latest approved attestation is too far behind (stuck?)", nil, "vote_height", block.BlockHeight)
 					backoff()
 				}
 			}
 
-			if err := a.Vote(block, first); err != nil {
+			if err := v.Vote(block, first); err != nil {
 				return errors.Wrap(err, "vote")
 			}
 			first = false
@@ -179,17 +181,17 @@ func (a *Voter) runOnce(ctx context.Context, chainID uint64) error {
 }
 
 // Vote creates a vote for the given block and adds it to the internal state.
-func (a *Voter) Vote(block xchain.Block, allowSkip bool) error {
-	a.mu.Lock()
-	defer a.mu.Unlock()
+func (v *Voter) Vote(block xchain.Block, allowSkip bool) error {
+	v.mu.Lock()
+	defer v.mu.Unlock()
 
-	vote, err := CreateVote(a.privKey, block)
+	vote, err := CreateVote(v.privKey, block)
 	if err != nil {
 		return err
 	}
 
 	// Ensure attestation is sequential and not a duplicate.
-	latest, ok := a.latestByChainUnsafe(vote.BlockHeader.ChainId)
+	latest, ok := v.latest[vote.BlockHeader.ChainId]
 	if ok && latest.BlockHeader.Height >= vote.BlockHeader.Height {
 		return errors.New("attestation height already exists",
 			"latest", latest.BlockHeader.Height, "new", vote.BlockHeader.Height)
@@ -198,68 +200,78 @@ func (a *Voter) Vote(block xchain.Block, allowSkip bool) error {
 			"existing", latest.BlockHeader.Height, "new", vote.BlockHeader.Height)
 	}
 
-	a.available = append(a.available, vote)
+	v.latest[vote.BlockHeader.ChainId] = vote
+	v.available = append(v.available, vote)
 
 	lag := time.Since(block.Timestamp).Seconds()
-	createLag.WithLabelValues(a.chains[vote.BlockHeader.ChainId]).Set(lag)
-	createHeight.WithLabelValues(a.chains[vote.BlockHeader.ChainId]).Set(float64(vote.BlockHeader.Height))
+	createLag.WithLabelValues(v.chains[vote.BlockHeader.ChainId]).Set(lag)
+	createHeight.WithLabelValues(v.chains[vote.BlockHeader.ChainId]).Set(float64(vote.BlockHeader.Height))
 
-	return a.saveUnsafe()
+	return v.saveUnsafe()
 }
 
-// TrimBehind trims all votes that are behind the vote window thresholds (map[chainID]height) and returns the number that was deleted.
-func (a *Voter) TrimBehind(thresholds map[uint64]uint64) int {
-	a.mu.Lock()
-	defer a.mu.Unlock()
+// TrimBehind trims all available and proposed votes that are behind the vote window thresholds (map[chainID]height)
+// and returns the number that was deleted.
+func (v *Voter) TrimBehind(thresholds map[uint64]uint64) int {
+	v.mu.Lock()
+	defer v.mu.Unlock()
 
-	var stillAvailable []*types.Vote
-	for _, vote := range a.available {
-		threshold, ok := thresholds[vote.BlockHeader.ChainId]
-		if ok && vote.BlockHeader.Height < threshold {
-			trimTotal.WithLabelValues(a.chains[vote.BlockHeader.ChainId]).Inc()
-			continue // Skip/Trim
+	trim := func(votes []*types.Vote) []*types.Vote {
+		var remaining []*types.Vote
+		for _, vote := range votes {
+			threshold, ok := thresholds[vote.BlockHeader.ChainId]
+			if ok && vote.BlockHeader.Height < threshold {
+				trimTotal.WithLabelValues(v.chains[vote.BlockHeader.ChainId]).Inc()
+				continue // Skip/Trim
+			}
+			remaining = append(remaining, vote) // Retain all others
 		}
-		stillAvailable = append(stillAvailable, vote) // Retain all others
+
+		return remaining
 	}
 
-	trimmed := len(a.available) - len(stillAvailable)
+	remainingAvailable := trim(v.available)
+	remainingProposed := trim(v.proposed)
 
-	a.available = stillAvailable
+	trimmed := (len(v.available) - len(remainingAvailable)) + (len(v.proposed) - len(remainingProposed))
+
+	v.available = remainingAvailable
+	v.proposed = remainingProposed
 
 	return trimmed
 }
 
 // AvailableCount returns the number of available votes.
-func (a *Voter) AvailableCount() int {
-	a.mu.Lock()
-	defer a.mu.Unlock()
+func (v *Voter) AvailableCount() int {
+	v.mu.Lock()
+	defer v.mu.Unlock()
 
-	return len(a.available)
+	return len(v.available)
 }
 
 // GetAvailable returns a copy of all the available votes.
-func (a *Voter) GetAvailable() []*types.Vote {
-	a.mu.Lock()
-	defer a.mu.Unlock()
+func (v *Voter) GetAvailable() []*types.Vote {
+	v.mu.Lock()
+	defer v.mu.Unlock()
 
-	return slices.Clone(a.available)
+	return slices.Clone(v.available)
 }
 
 // SetProposed sets the votes as proposed.
-func (a *Voter) SetProposed(headers []*types.BlockHeader) error {
+func (v *Voter) SetProposed(headers []*types.BlockHeader) error {
 	proposedPerBlock.Observe(float64(len(headers)))
 
 	if len(headers) == 0 {
 		return nil
 	}
 
-	a.mu.Lock()
-	defer a.mu.Unlock()
+	v.mu.Lock()
+	defer v.mu.Unlock()
 
 	proposed := headerMap(headers)
 
 	var newAvailable, newProposed []*types.Vote
-	for _, vote := range a.availableAndProposedUnsafe() {
+	for _, vote := range v.availableAndProposedUnsafe() {
 		// If proposed, move it to the proposed list.
 		if proposed[vote.BlockHeader.ToXChain()] {
 			newProposed = append(newProposed, vote)
@@ -268,29 +280,29 @@ func (a *Voter) SetProposed(headers []*types.BlockHeader) error {
 		}
 	}
 
-	a.available = newAvailable
-	a.proposed = newProposed
+	v.available = newAvailable
+	v.proposed = newProposed
 
-	return a.saveUnsafe()
+	return v.saveUnsafe()
 }
 
 // SetCommitted sets the votes as committed. Persisting the result to disk.
-func (a *Voter) SetCommitted(headers []*types.BlockHeader) error {
+func (v *Voter) SetCommitted(headers []*types.BlockHeader) error {
 	committedPerBlock.Observe(float64(len(headers)))
 
 	if len(headers) == 0 {
 		return nil
 	}
 
-	a.mu.Lock()
-	defer a.mu.Unlock()
+	v.mu.Lock()
+	defer v.mu.Unlock()
 
 	committed := headerMap(headers)
 
-	newCommitted := a.committed
+	newCommitted := v.committed
 
 	var newAvailable []*types.Vote
-	for _, vote := range a.availableAndProposedUnsafe() {
+	for _, vote := range v.availableAndProposedUnsafe() {
 		// If newly committed, add to committed.
 		if committed[vote.BlockHeader.ToXChain()] {
 			newCommitted = append(newCommitted, vote)
@@ -299,66 +311,46 @@ func (a *Voter) SetCommitted(headers []*types.BlockHeader) error {
 		}
 	}
 
-	a.available = newAvailable
-	a.proposed = nil
-	a.committed = pruneLatestPerChain(newCommitted)
+	v.available = newAvailable
+	v.proposed = nil
+	v.committed = pruneLatestPerChain(newCommitted)
 
 	// Update committed height metrics.
-	for _, vote := range a.committed {
-		commitHeight.WithLabelValues(a.chains[vote.BlockHeader.ChainId]).Set(float64(vote.BlockHeader.Height))
+	for _, vote := range v.committed {
+		commitHeight.WithLabelValues(v.chains[vote.BlockHeader.ChainId]).Set(float64(vote.BlockHeader.Height))
 	}
 
-	return a.saveUnsafe()
+	return v.saveUnsafe()
 }
 
-func (a *Voter) LocalAddress() common.Address {
-	a.mu.Lock()
-	defer a.mu.Unlock()
+func (v *Voter) LocalAddress() common.Address {
+	v.mu.Lock()
+	defer v.mu.Unlock()
 
-	return a.address
+	return v.address
 }
 
 // availableAndProposed returns all the available and proposed votes.
 // It is unsafe since it assumes the lock is held.
-func (a *Voter) availableAndProposedUnsafe() []*types.Vote {
+func (v *Voter) availableAndProposedUnsafe() []*types.Vote {
 	var resp []*types.Vote
-	resp = append(resp, a.available...)
-	resp = append(resp, a.proposed...)
+	resp = append(resp, v.available...)
+	resp = append(resp, v.proposed...)
 
 	return resp
 }
 
-func (a *Voter) latestByChain(chainID uint64) (*types.Vote, bool) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
+func (v *Voter) latestByChain(chainID uint64) (*types.Vote, bool) {
+	v.mu.Lock()
+	defer v.mu.Unlock()
 
-	return a.latestByChainUnsafe(chainID)
-}
+	vote, ok := v.latest[chainID]
 
-// LatestByChainUnsafe returns the latest attestation for the given chain.
-// It is unsafe since it assumes the lock is held.
-func (a *Voter) latestByChainUnsafe(chainID uint64) (*types.Vote, bool) {
-	var found bool
-	resp := &types.Vote{BlockHeader: &types.BlockHeader{}} // Zero value is safe to use.
-	iter := func(votes []*types.Vote) {
-		for _, vote := range votes {
-			if vote.BlockHeader.ChainId != chainID || vote.BlockHeader.Height <= resp.BlockHeader.Height {
-				continue
-			}
-			resp = vote
-			found = true
-		}
-	}
-
-	iter(a.available)
-	iter(a.proposed)
-	iter(a.committed)
-
-	return resp, found
+	return vote, ok
 }
 
 // saveUnsafe saves the state to disk. It is unsafe since it assumes the lock is held.
-func (a *Voter) saveUnsafe() error {
+func (v *Voter) saveUnsafe() error {
 	sortVotes := func(atts []*types.Vote) {
 		sort.Slice(atts, func(i, j int) bool {
 			if atts[i].BlockHeader.ChainId != atts[j].BlockHeader.ChainId {
@@ -368,31 +360,32 @@ func (a *Voter) saveUnsafe() error {
 			return atts[i].BlockHeader.Height < atts[j].BlockHeader.Height
 		})
 	}
-	sortVotes(a.available)
-	sortVotes(a.proposed)
-	sortVotes(a.committed)
+	sortVotes(v.available)
+	sortVotes(v.proposed)
+	sortVotes(v.committed)
 
 	s := stateJSON{
-		Available: a.available,
-		Proposed:  a.proposed,
-		Committed: a.committed,
+		Available: v.available,
+		Proposed:  v.proposed,
+		Committed: v.committed,
+		Latest:    v.latest,
 	}
 	bz, err := json.Marshal(s)
 	if err != nil {
 		return errors.Wrap(err, "marshal state path")
 	}
 
-	if err := tempfile.WriteFileAtomic(a.path, bz, 0o600); err != nil {
+	if err := tempfile.WriteFileAtomic(v.path, bz, 0o600); err != nil {
 		return errors.Wrap(err, "write state path")
 	}
 
-	a.instrumentUnsafe()
+	v.instrumentUnsafe()
 
 	return nil
 }
 
 // instrumentUnsafe updates metrics. It is unsafe since it assumes the lock is held.
-func (a *Voter) instrumentUnsafe() {
+func (v *Voter) instrumentUnsafe() {
 	count := func(atts []*types.Vote, gaugeVec *prometheus.GaugeVec) {
 		counts := make(map[uint64]int)
 		for _, vote := range atts {
@@ -400,19 +393,20 @@ func (a *Voter) instrumentUnsafe() {
 		}
 
 		for chain, count := range counts {
-			gaugeVec.WithLabelValues(a.chains[chain]).Set(float64(count))
+			gaugeVec.WithLabelValues(v.chains[chain]).Set(float64(count))
 		}
 	}
 
-	count(a.available, availableCount)
-	count(a.proposed, proposedCount)
+	count(v.available, availableCount)
+	count(v.proposed, proposedCount)
 }
 
 // stateJSON is the JSON representation of the attester state.
 type stateJSON struct {
-	Available []*types.Vote `json:"available"`
-	Proposed  []*types.Vote `json:"proposed"`
-	Committed []*types.Vote `json:"committed"`
+	Available []*types.Vote          `json:"available"`
+	Proposed  []*types.Vote          `json:"proposed"`
+	Committed []*types.Vote          `json:"committed"`
+	Latest    map[uint64]*types.Vote `json:"latest"`
 }
 
 // loadState loads a path state from the given path.
@@ -426,8 +420,32 @@ func loadState(path string) (stateJSON, error) {
 	if err := json.Unmarshal(bz, &s); err != nil {
 		return stateJSON{}, errors.Wrap(err, "unmarshal state path")
 	}
+	if s.Latest == nil {
+		s.Latest = bootstrapLatest(s)
+	}
 
 	return s, nil
+}
+
+// bootstrapLatest returns the latest attestations for the given state.
+// It can be used to bootstrap the new field if not present on disk.
+func bootstrapLatest(s stateJSON) map[uint64]*types.Vote {
+	resp := make(map[uint64]*types.Vote)
+	iter := func(votes []*types.Vote) {
+		for _, vote := range votes {
+			existing, ok := resp[vote.BlockHeader.ChainId]
+			if ok && vote.BlockHeader.Height <= existing.BlockHeader.Height {
+				continue
+			}
+			resp[vote.BlockHeader.ChainId] = vote
+		}
+	}
+
+	iter(s.Available)
+	iter(s.Proposed)
+	iter(s.Committed)
+
+	return resp
 }
 
 // headerMap converts a list of headers to a bool map (set).
