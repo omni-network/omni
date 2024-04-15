@@ -22,9 +22,21 @@ This feature is not yet enabled. Please do not attempt to run it.
 
 After adding the `halo` binary to your system, you can initialize and run the client with the following command:
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+<Tabs>
+  <TabItem value="testnet" label="testnet">
 ```bash
 halo init --network testnet
 ```
+  </TabItem>
+  <TabItem value="mainnet" label="mainnet">
+```bash
+halo init --network mainnet
+```
+   </TabItem>
+ </Tabs>
 
 :::tip Using EigenLayer-Generated Private Keys
 
