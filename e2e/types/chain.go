@@ -30,7 +30,7 @@ var (
 		ID:                chainids.ArbSepolia,
 		IsPublic:          true,
 		BlockPeriod:       300 * time.Millisecond,
-		FinalizationStrat: netconf.StratFinalized,
+		FinalizationStrat: netconf.StratSafe,
 	}
 
 	chainOpSepolia = EVMChain{
@@ -38,7 +38,7 @@ var (
 		ID:                chainids.OpSepolia,
 		IsPublic:          true,
 		BlockPeriod:       2 * time.Second,
-		FinalizationStrat: netconf.StratFinalized,
+		FinalizationStrat: netconf.StratSafe,
 	}
 )
 
