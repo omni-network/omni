@@ -233,25 +233,23 @@ func (v *Voter) Vote(block xchain.Block, allowSkip bool) error {
 
 // UpdateValidators caches whether this voter is a validator in the provided set.
 func (v *Voter) UpdateValidators(valset []abci.ValidatorUpdate) {
-	var isVal bool
+	v.mu.Lock()
+	defer v.mu.Unlock()
+
 	for _, val := range valset {
-		if val.Power == 0 {
-			continue
-		}
 		addr, err := k1util.PubKeyPBToAddress(val.PubKey)
 		if err != nil {
 			continue
 		}
-		if v.address == addr {
-			isVal = true
-			break
+		if v.address != addr {
+			continue
 		}
+
+		v.isVal = val.Power > 0
+
+		return
 	}
-
-	v.mu.Lock()
-	defer v.mu.Unlock()
-
-	v.isVal = isVal
+	// If validator not updated, then isVal didn't change.
 }
 
 // TrimBehind trims all available and proposed votes that are behind the vote window thresholds (map[chainID]height)
