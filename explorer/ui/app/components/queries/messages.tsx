@@ -13,12 +13,12 @@ export function GetXMessagesInRange(from: number, to: number): XMsg[] {
   const { data, fetching, error } = result
 
   var rows: XMsg[] = []
-  data?.xmsgrange.map((xblock: any) => {
-    if (xblock.Messages.length == 0) {
+  data?.xmsgrange.map((msgs: any) => {
+    if (msgs.Messages.length == 0) {
       return
     }
 
-    xblock.Messages.map((msg: any) => {
+    msgs.Messages.map((msg: any) => {
       let xmsg = {
         DestAddress: msg.DestAddress,
         DestChainID: msg.DestChainID,
@@ -29,7 +29,7 @@ export function GetXMessagesInRange(from: number, to: number): XMsg[] {
         TxHash: msg.TxHash,
         BlockHeight: msg.BlockHeight,
         BlockHash: msg.BlockHash,
-        Receipts: msg.Receipts,
+        Receipts: [],
         Block: msg.Block,
       }
       rows.push(xmsg)
