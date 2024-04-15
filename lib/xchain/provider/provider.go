@@ -7,6 +7,7 @@ package provider
 import (
 	"context"
 	"path"
+	"sync"
 	"time"
 
 	"github.com/omni-network/omni/lib/cchain"
@@ -31,6 +32,14 @@ type Provider struct {
 	cChainID    uint64
 	cProvider   cchain.Provider
 	backoffFunc func(context.Context) (func(), func())
+
+	mu sync.Mutex
+	// stratHeads caches highest finalized height by chain.
+	// It reduces HeaderByType queries if the stream is lagging
+	// behind finalized head.
+	// Also, since many L2s finalize in batches, the stream
+	// lags behind finalized head every time a new batch is finalized.
+	stratHeads map[uint64]uint64
 }
 
 // New instantiates the provider instance which will be ready to accept
@@ -48,6 +57,7 @@ func New(network netconf.Network, rpcClients map[uint64]ethclient.Client, cProvi
 		cChainID:    cChain.ID,
 		cProvider:   cProvider,
 		backoffFunc: backoffFunc,
+		stratHeads:  make(map[uint64]uint64),
 	}
 }
 
