@@ -29,6 +29,7 @@ func newCallback(client *ent.Client) xchain.ProviderCallback {
 		}
 
 		log.Info(ctx, "Inserted xblock",
+			"chain", block.SourceChainID,
 			"msgs", len(block.Msgs),
 			"receipts", len(block.Receipts),
 		)
