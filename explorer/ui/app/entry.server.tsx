@@ -15,15 +15,14 @@ import { Counter, collectDefaultMetrics } from 'prom-client'
 
 const ABORT_DELAY = 5_000
 
-let reqsCount: any = null
+const reqsCount: Counter<string> = new Counter({
+  name: 'remix_requests_count_total',
+  help: 'Records total FIRST requests of Application service',
+})
 
 // Collect metrics in production env
 if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
   collectDefaultMetrics()
-  reqsCount = new Counter({
-    name: 'remix_requests_count_total',
-    help: 'Records total FIRST requests of Application service',
-  })
 }
 
 export default function handleRequest(
@@ -37,9 +36,7 @@ export default function handleRequest(
   loadContext: AppLoadContext,
 ) {
 
-  if (reqsCount !== null) {
-    reqsCount.inc()
-  }
+  reqsCount.inc()
   return isbot(request.headers.get('user-agent') || '')
     ? handleBotRequest(request, responseStatusCode, responseHeaders, remixContext)
     : handleBrowserRequest(request, responseStatusCode, responseHeaders, remixContext)
