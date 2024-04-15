@@ -89,23 +89,7 @@ var statics = map[ID]Static{
 		Version:              "v0.0.2",
 		AVSContractAddress:   testnetAVS,
 		OmniExecutionChainID: chainids.OmniTestnet,
-		Portals: []Deployment{
-			{
-				ChainID:      chainids.Holesky,
-				Address:      testnetPortal,
-				DeployHeight: 1280141,
-			},
-			{
-				ChainID:      chainids.OpSepolia,
-				Address:      testnetPortal,
-				DeployHeight: 10401431,
-			},
-			{
-				ChainID:      chainids.ArbSepolia,
-				Address:      testnetPortal,
-				DeployHeight: 31688713,
-			},
-		},
+		Portals:              []Deployment{},
 	},
 	Mainnet: {
 		AVSContractAddress: mainnetAVS,
