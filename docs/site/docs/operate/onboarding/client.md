@@ -33,7 +33,7 @@ halo init --network testnet
   </TabItem>
   <TabItem value="mainnet" label="mainnet">
 ```bash
-halo init
+halo init --network mainnet
 ```
    </TabItem>
  </Tabs>
