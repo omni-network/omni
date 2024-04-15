@@ -117,6 +117,11 @@ func MakeGethConfig(conf Config) FullConfig {
 	cfg.Node.HTTPModules = append(cfg.Node.HTTPModules, "eth")
 	cfg.Node.WSModules = append(cfg.Node.WSModules, "eth")
 
+	if conf.IsArchive {
+		cfg.Node.HTTPModules = append(cfg.Node.HTTPModules, "debug")
+		cfg.Node.WSModules = append(cfg.Node.WSModules, "debug")
+	}
+
 	// Allow all incoming connections.
 	cfg.Node.HTTPVirtualHosts = []string{"*"}
 	cfg.Node.AuthVirtualHosts = []string{"*"}

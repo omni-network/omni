@@ -134,11 +134,13 @@ func (h FinalizationStrat) Verify() error {
 var allStrats = map[FinalizationStrat]bool{
 	StratFinalized: true,
 	StratLatest:    true,
+	StratSafe:      true,
 }
 
 const (
 	StratFinalized = FinalizationStrat("finalized")
 	StratLatest    = FinalizationStrat("latest")
+	StratSafe      = FinalizationStrat("safe")
 )
 
 // Chain defines the configuration of an execution chain that supports

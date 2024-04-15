@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -174,7 +175,9 @@ func avsAddressOrDefault(avsAddr string, chainID *big.Int) (common.Address, erro
 func avsFromChainID(chainID *big.Int) (common.Address, bool) {
 	switch chainID.Int64() {
 	case eigenutils.HoleskyChainId:
-		return common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92"), true
+		return netconf.Testnet.Static().AVSContractAddress, true
+	case eigenutils.MainnetChainId:
+		return netconf.Mainnet.Static().AVSContractAddress, true
 	// TODO(corver): We need to publish our AVS addresses somewhere
 	default:
 		return common.Address{}, false

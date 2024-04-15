@@ -31,8 +31,8 @@ type ABCIClient interface {
 }
 
 func NewABCIProvider(abci ABCIClient, network netconf.ID, chains map[uint64]string) Provider {
-	backoffFunc := func(ctx context.Context) (func(), func()) {
-		return expbackoff.NewWithReset(ctx, expbackoff.WithFastConfig())
+	backoffFunc := func(ctx context.Context) func() {
+		return expbackoff.New(ctx)
 	}
 
 	acl := atypes.NewQueryClient(rpcAdaptor{abci: abci})

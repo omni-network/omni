@@ -3,6 +3,8 @@ package types
 import (
 	"context"
 
+	abci "github.com/cometbft/cometbft/abci/types"
+
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -33,20 +35,18 @@ type Voter interface {
 	// LocalAddress returns the local validator's ethereum address.
 	LocalAddress() common.Address
 
-	// TrimBehind deletes all available votes that are behind the vote window edges (map[chainID]edge) since
+	// TrimBehind deletes all available votes that are behind the vote window minimums (map[chainID]minimum) since
 	// they will never be committed. It returns the number that was deleted.
-	TrimBehind(edgesByChain map[uint64]uint64) int
+	TrimBehind(minsByChain map[uint64]uint64) int
+
+	// UpdateValidators sets the latest validator set when passed to cometBFT.
+	// This is used to calculate whether the voter is in-or-out of the validator set.
+	UpdateValidators(valset []abci.ValidatorUpdate)
 }
 
 // VoterDeps abstracts the Voter's internal cosmosSDK dependencies; basically the attest keeper.
 // They have a circular dependency.
 type VoterDeps interface {
-	// IsValidator returns true if the given address is a validator on the given chain at the time of calling.
-	IsValidator(ctx context.Context, address common.Address) bool
-	// WindowCompare returns wether the given attestation block header is behind (-1), or in (0), or ahead (1)
-	// of the current vote window. The vote window is a configured number of blocks around the latest approved
-	// attestation for the provided chain.
-	WindowCompare(ctx context.Context, chainID uint64, height uint64) (int, error)
 	// LatestAttestationHeight returns the latest approved attestation height for the given chain.
 	LatestAttestationHeight(ctx context.Context, chainID uint64) (uint64, bool, error)
 }

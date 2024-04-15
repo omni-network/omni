@@ -14,11 +14,13 @@ import { StrategyBase } from "eigenlayer-contracts/src/contracts/strategies/Stra
 
 import { EigenPodManagerHarness } from "./EigenPodManagerHarness.sol";
 import { EigenLayerHolesky } from "./EigenLayerHolesky.sol";
+import { EigenLayerMainnet } from "./EigenLayerMainnet.sol";
 import { EigenLayerLocal } from "./EigenLayerLocal.sol";
 import { IEigenDeployer } from "./IEigenDeployer.sol";
 
 import { Test } from "forge-std/Test.sol";
 import { MockERC20 } from "test/avs/common/MockERC20.sol";
+import { console } from "forge-std/console.sol";
 
 /**
  * @title EigenLayerFixtures
@@ -42,10 +44,16 @@ contract EigenLayerFixtures is Test {
         return block.chainid == 17_000;
     }
 
+    function isMainnet() public view returns (bool) {
+        return block.chainid == 1;
+    }
+
     function setUp() public virtual {
         IEigenDeployer deployer;
 
-        if (isHolesky()) {
+        if (isMainnet()) {
+            deployer = new EigenLayerMainnet();
+        } else if (isHolesky()) {
             deployer = new EigenLayerHolesky();
         } else {
             deployer = new EigenLayerLocal();
