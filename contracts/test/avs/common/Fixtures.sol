@@ -16,6 +16,7 @@ import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
 import { OmniAVS } from "src/protocol/OmniAVS.sol";
 
 import { Create3 } from "src/deploy/Create3.sol";
+import { DeployAVS as MainnetAVS } from "script/DeployAVS.sol";
 import { HoleskyAVS } from "./HoleskyAVS.sol";
 import { StrategyParams } from "./StrategyParams.sol";
 import { MockOmniPredeploys } from "test/utils/MockOmniPredeploys.sol";
@@ -66,7 +67,31 @@ contract Fixtures is EigenLayerFixtures {
             return;
         }
 
-        omniAVS = isHolesky() ? _deployHoleskyAVS() : _deployLocalAVS();
+        if (isMainnet()) {
+            omniAVS = _deployMainnet();
+            return;
+        }
+
+        if (isHolesky()) {
+            omniAVS = _deployHoleskyAVS();
+            return;
+        }
+
+        omniAVS = _deployLocalAVS();
+    }
+
+    function _deployMainnet() internal returns (OmniAVS) {
+        MainnetAVS deployer = new MainnetAVS();
+
+        return deployer.deploy(
+            omniAVSOwner,
+            address(proxyAdmin),
+            address(portal),
+            omniChainId,
+            ethStakeInbox,
+            minOperatorStake,
+            maxOperatorCount
+        );
     }
 
     function _deployHoleskyAVS() internal returns (OmniAVS) {

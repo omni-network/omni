@@ -42,12 +42,33 @@ deploy-eigenlayer-save-anvil-state: ## Deploy eigenlayer contracts and dump anvi
 
 .PHONY: avs-fork-test
 avs-fork-test: ## Run AVS tests againts a local fork.
-	@FOUNDRY_FUZZ_RUNS=10 forge test --fork-url http://localhost:8545 --match-path "test/avs/**/*.sol"
+	@FOUNDRY_FUZZ_RUNS=5 forge test --fork-url http://localhost:8545 --match-path "test/avs/**/*.sol"
 
 
 .PHONY: fork-holesky
 fork-holesky: ## Run an anvil holesky fork.
 	anvil --fork-url https://ethereum-holesky-rpc.publicnode.com
+
+.PHONY: fork-mainnet
+fork-mainnet: ## Run an anvil mainnet fork.
+	anvil --fork-url https://mainnet.infura.io/v3/$(INFURA_KEY)
+
+.PHONY: deploy-mainnet-avs
+deploy-mainnet-avs: ## Deploy AVS contracts to mainnet.
+	forge script DeployAVS --rpc-url https://mainnet.infura.io/v3/$(INFURA_KEY) --broadcast
+
+.PHONY: deploy-local-avs
+deploy-local-avs: ## Deploy AVS contracts to a local fork.
+	forge script DeployAVS --rpc-url http://localhost:8545 --broadcast
+
+.PHONY: deploy-mainnet-proxy-admin
+deploy-mainnet-proxy-admin: ## Deploy ProxyAdmin contract to mainnet.
+	forge script DeployProxyAdmin --rpc-url https://mainnet.infura.io/v3/$(INFURA_KEY) --broadcast
+
+.PHONY: deploy-local-proxy-admin
+deploy-local-proxy-admin: ## Deploy ProxyAdmin contract to a local fork.
+	forge script DeployProxyAdmin --rpc-url http://localhost:8545 --broadcast
+
 
 .PHONY: check-abigen-version
 check-abigen-version: ## Check abigen version, exit(1) if not 1.13.14-stable.

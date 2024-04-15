@@ -65,7 +65,7 @@ func (AppModuleBasic) RegisterGRPCGatewayRoutes(client.Context, *runtime.ServeMu
 type AppModule struct {
 	AppModuleBasic
 
-	keeper keeper.Keeper
+	keeper *keeper.Keeper
 }
 
 func (m AppModule) EndBlock(ctx context.Context) ([]abci.ValidatorUpdate, error) {
@@ -100,7 +100,7 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingCo
 
 func NewAppModule(
 	cdc codec.Codec,
-	keeper keeper.Keeper,
+	keeper *keeper.Keeper,
 ) AppModule {
 	return AppModule{
 		AppModuleBasic: NewAppModuleBasic(cdc),
@@ -146,7 +146,7 @@ type ModuleInputs struct {
 type ModuleOutputs struct {
 	depinject.Out
 
-	Keeper keeper.Keeper
+	Keeper *keeper.Keeper
 	Module appmodule.AppModule
 }
 

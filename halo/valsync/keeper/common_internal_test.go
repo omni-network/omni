@@ -17,13 +17,14 @@ import (
 )
 
 type mocks struct {
-	sKeeper *testutil.MockStakingKeeper
-	aKeeper *testutil.MockAttestKeeper
+	sKeeper    *testutil.MockStakingKeeper
+	aKeeper    *testutil.MockAttestKeeper
+	subscriber *testutil.MockSubscriber
 }
 
 type expectation func(sdk.Context, mocks)
 
-func setupKeeper(t *testing.T, expectations ...expectation) (Keeper, sdk.Context) {
+func setupKeeper(t *testing.T, expectations ...expectation) (*Keeper, sdk.Context) {
 	t.Helper()
 
 	key := storetypes.NewKVStoreKey(types.ModuleName)
@@ -36,8 +37,9 @@ func setupKeeper(t *testing.T, expectations ...expectation) (Keeper, sdk.Context
 	// gomock initialization
 	ctrl := gomock.NewController(t)
 	m := mocks{
-		sKeeper: testutil.NewMockStakingKeeper(ctrl),
-		aKeeper: testutil.NewMockAttestKeeper(ctrl),
+		sKeeper:    testutil.NewMockStakingKeeper(ctrl),
+		aKeeper:    testutil.NewMockAttestKeeper(ctrl),
+		subscriber: testutil.NewMockSubscriber(ctrl),
 	}
 
 	for _, exp := range expectations {
@@ -46,6 +48,7 @@ func setupKeeper(t *testing.T, expectations ...expectation) (Keeper, sdk.Context
 
 	k, err := NewKeeper(codec, storeSvc, m.sKeeper, m.aKeeper)
 	require.NoError(t, err, "new keeper")
+	k.SetSubscriber(m.subscriber)
 
 	return k, ctx
 }

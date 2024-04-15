@@ -38,9 +38,4 @@ library StrategyParams {
         params[3] =
             IOmniAVS.StrategyParam({ strategy: IStrategy(BEACON_CHAIN_ETH_STRATEGY), multiplier: STD_MULTIPLIER });
     }
-
-    /// @notice Mainnet strategy params
-    function mainnet() external pure returns (IOmniAVS.StrategyParam[] memory) {
-        revert("Not implemented");
-    }
 }

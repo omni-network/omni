@@ -12,3 +12,7 @@ type StakingKeeper interface {
 type AttestKeeper interface {
 	types.AttestKeeper
 }
+
+type Subscriber interface {
+	types.ValSetSubscriber
+}

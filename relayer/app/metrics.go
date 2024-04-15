@@ -53,7 +53,7 @@ var (
 		Subsystem: "worker",
 		Name:      "estimated_gas",
 		Help:      "Estimated max gas usage by submissions by destination chain",
-		Buckets:   prometheus.ExponentialBuckets(21_000, 10_000_000, 8),
+		Buckets:   prometheus.ExponentialBucketsRange(21_000, 10_000_000, 8),
 	}, []string{"dst_chain"})
 
 	emitCursor = promauto.NewGaugeVec(prometheus.GaugeOpts{

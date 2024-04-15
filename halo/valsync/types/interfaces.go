@@ -18,3 +18,7 @@ type StakingKeeper interface {
 	EndBlocker(ctx context.Context) ([]abci.ValidatorUpdate, error)
 	GetLastValidators(ctx context.Context) ([]stypes.Validator, error)
 }
+
+type ValSetSubscriber interface {
+	UpdateValidators(valset []abci.ValidatorUpdate)
+}

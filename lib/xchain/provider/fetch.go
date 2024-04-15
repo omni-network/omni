@@ -12,6 +12,9 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/core/types"
+
+	"golang.org/x/sync/errgroup"
 )
 
 // GetEmittedCursor returns the emitted cursor for the destination chain on the source chain,
@@ -124,41 +127,64 @@ func (p *Provider) GetBlock(ctx context.Context, chainID uint64, height uint64) 
 		return p.cProvider.XBlock(ctx, height, false)
 	}
 
-	chain, rpcClient, err := p.getEVMChain(chainID)
+	_, ethCl, err := p.getEVMChain(chainID)
 	if err != nil {
 		return xchain.Block{}, false, err
 	}
 
-	finalisedHeader, err := rpcClient.HeaderByType(ctx, ethclient.HeadType(chain.FinalizationStrat))
-	if err != nil {
-		return xchain.Block{}, false, err
-	}
+	// An xblock is constructed from an eth header, and xmsg logs, and xreceipt logs.
+	var (
+		header   *types.Header
+		msgs     []xchain.Msg
+		receipts []xchain.Receipt
+	)
 
-	// ignore if our height is greater than the finalized height
-	if height > finalisedHeader.Number.Uint64() {
-		return xchain.Block{}, false, nil
-	}
-
-	// check if we can reuse the header
-	header := finalisedHeader
-	if height != finalisedHeader.Number.Uint64() {
-		// fetch the block header for the given height
-		header, err = rpcClient.HeaderByNumber(ctx, big.NewInt(int64(height)))
+	// First check if height is finalized by the chain's finalization strategy.
+	if !p.finalisedInCache(chainID, height) {
+		// No higher cached header available, so fetch the latest head
+		latest, err := p.headerByStrategy(ctx, chainID)
 		if err != nil {
-			return xchain.Block{}, false, errors.Wrap(err, "could not get header by number")
+			return xchain.Block{}, false, errors.Wrap(err, "header by strategy")
+		}
+
+		// If still lower, we reached the head of the chain, return false
+		if latest.Number.Uint64() < height {
+			return xchain.Block{}, false, nil
+		}
+
+		// Use this header if it matches height
+		if latest.Number.Uint64() == height {
+			header = latest
 		}
 	}
 
-	// Filter xmsgs logs.
-	xmsgs, err := p.getXMsgLogs(ctx, chainID, height)
-	if err != nil {
-		return xchain.Block{}, false, err
-	}
+	// Fetch the msgs and receipts (and header if required) in parallel.
+	var eg errgroup.Group
+	eg.Go(func() error {
+		if header != nil {
+			return nil // No need to fetch header again.
+		}
 
-	// Filter xreceipts logs.
-	receipts, err := p.getXReceiptLogs(ctx, chainID, height)
-	if err != nil {
-		return xchain.Block{}, false, err
+		var err error
+		header, err = ethCl.HeaderByNumber(ctx, big.NewInt(int64(height)))
+
+		return err
+	})
+	eg.Go(func() error {
+		var err error
+		msgs, err = p.getXMsgLogs(ctx, chainID, height)
+
+		return err
+	})
+	eg.Go(func() error {
+		var err error
+		receipts, err = p.getXReceiptLogs(ctx, chainID, height)
+
+		return err
+	})
+
+	if err := eg.Wait(); err != nil {
+		return xchain.Block{}, false, errors.Wrap(err, "wait")
 	}
 
 	return xchain.Block{
@@ -167,7 +193,7 @@ func (p *Provider) GetBlock(ctx context.Context, chainID uint64, height uint64) 
 			BlockHeight:   height,
 			BlockHash:     header.Hash(),
 		},
-		Msgs:      xmsgs,
+		Msgs:      msgs,
 		Receipts:  receipts,
 		Timestamp: time.Unix(int64(header.Time), 0),
 	}, true, nil
@@ -270,6 +296,37 @@ func (p *Provider) getXMsgLogs(ctx context.Context, chainID uint64, height uint6
 	}
 
 	return xmsgs, nil
+}
+
+// finalisedInCache returns true if the chain height is finalized based
+// on the cached strategy head.
+func (p *Provider) finalisedInCache(chainID uint64, height uint64) bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	return p.stratHeads[chainID] >= height
+}
+
+// headerByStrategy returns the chain's header by strategy (finalization/latest)
+// by querying via ethclient. It caches the result.
+func (p *Provider) headerByStrategy(ctx context.Context, chainID uint64) (*types.Header, error) {
+	chain, rpcClient, err := p.getEVMChain(chainID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Fetch the header from the ethclient
+	header, err := rpcClient.HeaderByType(ctx, ethclient.HeadType(chain.FinalizationStrat))
+	if err != nil {
+		return nil, err
+	}
+
+	// Update the strategy cache
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.stratHeads[chainID] = header.Number.Uint64()
+
+	return header, nil
 }
 
 func spanName(method string) string {

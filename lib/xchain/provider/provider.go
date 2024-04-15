@@ -7,6 +7,7 @@ package provider
 import (
 	"context"
 	"path"
+	"sync"
 	"time"
 
 	"github.com/omni-network/omni/lib/cchain"
@@ -22,6 +23,17 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+// fetchWorkerThresholds defines the number of concurrent workers
+// to fetch xblocks by chain block period.
+var fetchWorkerThresholds = []struct {
+	Workers   uint64        // Number of workers
+	MinPeriod time.Duration // Minimum threshold
+}{
+	{Workers: 1, MinPeriod: time.Second},     // 1 worker for normal chains.
+	{Workers: 2, MinPeriod: time.Second / 2}, // 2 workers for fast chains (op_sepolia)
+	{Workers: 4, MinPeriod: 0},               // 4 workers for fastest chains (arb_sepolia)
+}
+
 var _ xchain.Provider = (*Provider)(nil)
 
 // Provider stores the source chain configuration and the global quit channel.
@@ -30,14 +42,22 @@ type Provider struct {
 	ethClients  map[uint64]ethclient.Client // store config for every chain ID
 	cChainID    uint64
 	cProvider   cchain.Provider
-	backoffFunc func(context.Context) (func(), func())
+	backoffFunc func(context.Context) func()
+
+	mu sync.Mutex
+	// stratHeads caches highest finalized height by chain.
+	// It reduces HeaderByType queries if the stream is lagging
+	// behind finalized head.
+	// Also, since many L2s finalize in batches, the stream
+	// lags behind finalized head every time a new batch is finalized.
+	stratHeads map[uint64]uint64
 }
 
 // New instantiates the provider instance which will be ready to accept
 // subscriptions for respective destination XBlocks.
 func New(network netconf.Network, rpcClients map[uint64]ethclient.Client, cProvider cchain.Provider) *Provider {
-	backoffFunc := func(ctx context.Context) (func(), func()) {
-		return expbackoff.NewWithReset(ctx, expbackoff.WithFastConfig())
+	backoffFunc := func(ctx context.Context) func() {
+		return expbackoff.New(ctx)
 	}
 
 	cChain, _ := network.OmniConsensusChain()
@@ -48,6 +68,7 @@ func New(network netconf.Network, rpcClients map[uint64]ethclient.Client, cProvi
 		cChainID:    cChain.ID,
 		cProvider:   cProvider,
 		backoffFunc: backoffFunc,
+		stratHeads:  make(map[uint64]uint64),
 	}
 }
 
@@ -99,7 +120,16 @@ func (p *Provider) stream(
 		return errors.New("unknown chain ID")
 	}
 
+	var workers uint64 // Pick the first threshold that matches (or the last one)
+	for _, threshold := range fetchWorkerThresholds {
+		workers = threshold.Workers
+		if chain.BlockPeriod >= threshold.MinPeriod {
+			break
+		}
+	}
+
 	deps := stream.Deps[xchain.Block]{
+		FetchWorkers: workers,
 		FetchBatch: func(ctx context.Context, chainID uint64, height uint64) ([]xchain.Block, error) {
 			xBlock, exists, err := p.GetBlock(ctx, chainID, height)
 			if err != nil {
@@ -113,6 +143,9 @@ func (p *Provider) stream(
 		Backoff:       p.backoffFunc,
 		ElemLabel:     "attestation",
 		RetryCallback: retryCallback,
+		Height: func(block xchain.Block) uint64 {
+			return block.BlockHeight
+		},
 		Verify: func(ctx context.Context, block xchain.Block, h uint64) error {
 			if block.SourceChainID != chainID {
 				return errors.New("invalid block source chain id")

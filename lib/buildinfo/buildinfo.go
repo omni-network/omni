@@ -13,7 +13,7 @@ import (
 
 // version of the whole omni-monorepo and all binaries built from this git commit.
 // This value is set by goreleaser at build-time and should be the git tag for official releases.
-var version = "v0.1.2"
+var version = "v0.1.3"
 
 // Version returns the version of the whole omni-monorepo and all binaries built from this git commit.
 func Version() string {
