@@ -86,7 +86,7 @@ var statics = map[ID]Static{
 		OmniExecutionChainID: chainids.OmniDevnet,
 	},
 	Testnet: {
-		Version:              "v0.0.1",
+		Version:              "v0.0.2",
 		AVSContractAddress:   testnetAVS,
 		OmniExecutionChainID: chainids.OmniTestnet,
 		Portals: []Deployment{
