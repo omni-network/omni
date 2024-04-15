@@ -32,6 +32,6 @@ var (
 		Subsystem: "txmgr",
 		Name:      "tx_gas_used",
 		Help:      "Gas used by transactions",
-		Buckets:   prometheus.ExponentialBuckets(21_000, 10_000_000, 8),
+		Buckets:   prometheus.ExponentialBucketsRange(21_000, 10_000_000, 8),
 	}, []string{"chain"})
 )
