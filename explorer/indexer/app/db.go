@@ -75,7 +75,7 @@ func incrementCursor(ctx context.Context, tx *ent.Tx, chainID, height uint64) er
 		return errors.New("cursor not found")
 	} else if cursor.Height != 0 && cursor.Height != height-1 {
 		// Sanity check, we MUST insert sequentially (after 0).
-		return errors.New("unexpected cursor vs block height mismatch [BUG]", "cursor height", cursor.Height, "block height", height)
+		return errors.New("unexpected cursor vs block height mismatch [BUG]", "cursor_height", cursor.Height, "block_height", height)
 	}
 
 	cursor.Height = height
