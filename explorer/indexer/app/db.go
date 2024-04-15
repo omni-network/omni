@@ -29,6 +29,7 @@ func newCallback(client *ent.Client) xchain.ProviderCallback {
 		}
 
 		log.Info(ctx, "Inserted xblock",
+			"chain", block.SourceChainID,
 			"msgs", len(block.Msgs),
 			"receipts", len(block.Receipts),
 		)
@@ -75,7 +76,7 @@ func incrementCursor(ctx context.Context, tx *ent.Tx, chainID, height uint64) er
 		return errors.New("cursor not found")
 	} else if cursor.Height != 0 && cursor.Height != height-1 {
 		// Sanity check, we MUST insert sequentially (after 0).
-		return errors.New("unexpected cursor vs block height mismatch [BUG]")
+		return errors.New("unexpected cursor vs block height mismatch [BUG]", "cursor_height", cursor.Height, "block_height", height)
 	}
 
 	cursor.Height = height
