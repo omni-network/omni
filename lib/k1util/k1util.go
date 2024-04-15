@@ -125,6 +125,14 @@ func PubKeyToCosmos(pubkey crypto.PubKey) (cosmoscrypto.PubKey, error) {
 	}, nil
 }
 
+func PBPubKeyFromBytes(pubkey []byte) (cryptopb.PublicKey, error) {
+	if len(pubkey) != pubkeyCompressedLen {
+		return cryptopb.PublicKey{}, errors.New("invalid pubkey length", "length", len(pubkey))
+	}
+
+	return cryptopb.PublicKey{Sum: &cryptopb.PublicKey_Secp256K1{Secp256K1: pubkey}}, nil
+}
+
 // PubKeyPBToAddress returns the Ethereum address for the given k1 public key.
 func PubKeyPBToAddress(pubkey cryptopb.PublicKey) (common.Address, error) {
 	pubkeyBytes := pubkey.GetSecp256K1()

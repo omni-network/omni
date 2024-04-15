@@ -104,6 +104,8 @@ func approvedExpectation() expectation {
 			uint64(1), // Only query for 1 attestation.
 		).AnyTimes().
 			Return([]*types1.Attestation{{}}, nil)
+
+		m.subscriber.EXPECT().UpdateValidators(gomock.Any()).AnyTimes()
 	}
 }
 

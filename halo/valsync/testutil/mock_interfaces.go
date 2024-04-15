@@ -109,3 +109,38 @@ func (mr *MockAttestKeeperMockRecorder) ListAttestationsFrom(ctx, chainID, heigh
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAttestationsFrom", reflect.TypeOf((*MockAttestKeeper)(nil).ListAttestationsFrom), ctx, chainID, height, max)
 }
+
+// MockSubscriber is a mock of Subscriber interface.
+type MockSubscriber struct {
+	ctrl     *gomock.Controller
+	recorder *MockSubscriberMockRecorder
+}
+
+// MockSubscriberMockRecorder is the mock recorder for MockSubscriber.
+type MockSubscriberMockRecorder struct {
+	mock *MockSubscriber
+}
+
+// NewMockSubscriber creates a new mock instance.
+func NewMockSubscriber(ctrl *gomock.Controller) *MockSubscriber {
+	mock := &MockSubscriber{ctrl: ctrl}
+	mock.recorder = &MockSubscriberMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockSubscriber) EXPECT() *MockSubscriberMockRecorder {
+	return m.recorder
+}
+
+// UpdateValidators mocks base method.
+func (m *MockSubscriber) UpdateValidators(arg0 []types.ValidatorUpdate) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdateValidators", arg0)
+}
+
+// UpdateValidators indicates an expected call of UpdateValidators.
+func (mr *MockSubscriberMockRecorder) UpdateValidators(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateValidators", reflect.TypeOf((*MockSubscriber)(nil).UpdateValidators), arg0)
+}
