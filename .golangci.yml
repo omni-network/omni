@@ -5,6 +5,7 @@ run:
     - ".*\\.pb\\.go$" # Ignore generated protobuf files
   skip-dirs:
     - explorer/db/ent
+    - explorer/ui/graphql
 linters-settings:
   exhaustive:
     default-signifies-exhaustive: true

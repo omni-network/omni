@@ -51,6 +51,31 @@ export function GetBlocksInRange(from: number, to: number): XBlock[] {
   return rows
 }
 
+export function GetBlock(sourceChainID: number, height: number): XBlock {
+  const [result] = useQuery({
+    query: xblock,
+    variables: {
+      sourceChainID: '0x' + sourceChainID.toString(16),
+      height: '0x' + height.toString(16),
+    },
+  })
+  const { data, fetching, error } = result
+
+  if (data?.xblock === undefined || data?.xblock === null) {
+    return {
+      BlockHeight: height,
+      Messages: [],
+      Receipts: [],
+      BlockHash: '',
+      SourceChainID: '',
+      Timestamp: '',
+      UUID: '',
+    }
+  }
+
+  return data?.xblock as XBlock
+}
+
 export function GetBlockCount(): number {
   const [result] = useQuery({
     query: xblockcount,
@@ -64,6 +89,12 @@ export const xblock = graphql(`
   query Xblock($sourceChainID: BigInt!, $height: BigInt!) {
     xblock(sourceChainID: $sourceChainID, height: $height) {
       BlockHash
+      Messages {
+        TxHash
+      }
+      Receipts {
+        TxHash
+      }
     }
   }
 `)
