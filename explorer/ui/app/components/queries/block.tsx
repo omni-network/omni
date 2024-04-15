@@ -88,12 +88,28 @@ export function GetBlockCount(): number {
 export const xblock = graphql(`
   query Xblock($sourceChainID: BigInt!, $height: BigInt!) {
     xblock(sourceChainID: $sourceChainID, height: $height) {
+      SourceChainID
+      BlockHeight
       BlockHash
+      Timestamp
       Messages {
+        StreamOffset
+        SourceMessageSender
+        DestAddress
+        DestGasLimit
+        SourceChainID
+        DestChainID
         TxHash
       }
       Receipts {
+        GasUsed
+        Success
+        RelayerAddress
+        SourceChainID
+        DestChainID
+        StreamOffset
         TxHash
+        Timestamp
       }
     }
   }
@@ -105,12 +121,6 @@ export const xblockrange = graphql(`
       SourceChainID
       BlockHash
       BlockHeight
-      Messages {
-        TxHash
-        DestAddress
-        DestChainID
-        SourceChainID
-      }
       Timestamp
     }
   }
