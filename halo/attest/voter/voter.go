@@ -16,6 +16,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/tempfile"
 
@@ -26,7 +27,7 @@ import (
 
 const (
 	prodBackoff  = time.Second
-	maxAvailable = 10_000
+	maxAvailable = 1_000
 )
 
 var _ types.Voter = (*Voter)(nil)
@@ -38,20 +39,22 @@ var _ types.Voter = (*Voter)(nil)
 // Note Start must be called only once on startup.
 // GetAvailable, SetProposed, and SetCommitted are thread safe, but must be called after Start.
 type Voter struct {
-	path          string
-	privKey       crypto.PrivKey
-	chains        map[uint64]string
-	address       common.Address
-	provider      xchain.Provider
-	deps          types.VoterDeps
-	backoffPeriod time.Duration
-	wg            sync.WaitGroup
+	path        string
+	privKey     crypto.PrivKey
+	chains      map[uint64]string
+	address     common.Address
+	provider    xchain.Provider
+	deps        types.VoterDeps
+	backoffFunc func(context.Context) func()
+	wg          sync.WaitGroup
 
-	mu        sync.Mutex
-	latest    map[uint64]*types.Vote // Latest vote per chain
-	available []*types.Vote
-	proposed  []*types.Vote
-	committed []*types.Vote
+	mu          sync.Mutex
+	latest      map[uint64]*types.Vote // Latest vote per chain
+	available   []*types.Vote
+	proposed    []*types.Vote
+	committed   []*types.Vote
+	minsByChain map[uint64]uint64
+	isVal       bool
 }
 
 // GenEmptyStateFile generates an empty attester state file at the given path.
@@ -79,13 +82,15 @@ func LoadVoter(privKey crypto.PrivKey, path string, provider xchain.Provider, de
 	}
 
 	return &Voter{
-		privKey:       privKey,
-		address:       addr,
-		path:          path,
-		chains:        chains,
-		provider:      provider,
-		deps:          deps,
-		backoffPeriod: prodBackoff,
+		privKey:  privKey,
+		address:  addr,
+		path:     path,
+		chains:   chains,
+		provider: provider,
+		deps:     deps,
+		backoffFunc: func(ctx context.Context) func() {
+			return expbackoff.New(ctx, expbackoff.WithPeriodicConfig(prodBackoff))
+		},
 
 		available: s.Available,
 		proposed:  s.Proposed,
@@ -106,6 +111,24 @@ func (v *Voter) WaitDone() {
 	v.wg.Wait()
 }
 
+// minWindow returns the minimum.
+func (v *Voter) minWindow(chainID uint64) (uint64, bool) {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+
+	resp, ok := v.minsByChain[chainID]
+
+	return resp, ok
+}
+
+// minWindow returns the minimum.
+func (v *Voter) isValidator() bool {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+
+	return v.isVal
+}
+
 // runForever blocks, repeatedly calling runOnce (with backoff) for the provided chain until the context is canceled.
 func (v *Voter) runForever(ctx context.Context, chainID uint64) {
 	v.wg.Add(1)
@@ -113,9 +136,9 @@ func (v *Voter) runForever(ctx context.Context, chainID uint64) {
 
 	ctx = log.WithCtx(ctx, "chain", v.chains[chainID])
 
-	backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(v.backoffPeriod))
+	backoff := v.backoffFunc(ctx)
 	for ctx.Err() == nil {
-		if !v.deps.IsValidator(ctx, v.address) {
+		if !v.isValidator() {
 			backoff()
 			continue
 		}
@@ -153,21 +176,19 @@ func (v *Voter) runOnce(ctx context.Context, chainID uint64) error {
 
 	return v.provider.StreamBlocks(ctx, chainID, fromHeight,
 		func(ctx context.Context, block xchain.Block) error {
-			if !v.deps.IsValidator(ctx, v.address) {
+			if !v.isValidator() {
 				return errors.New("not a validator anymore")
 			}
 
-			cmp, err := v.deps.WindowCompare(ctx, block.SourceChainID, block.BlockHeight)
-			if err != nil {
-				return errors.Wrap(err, "window compare")
-			} else if cmp < 0 {
-				return errors.New("behind vote window (too slow)", "vote_height", block.BlockHeight)
-			} else if cmp > 0 {
-				backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second*5))
-				for v.AvailableCount() > maxAvailable {
-					log.Warn(ctx, "Voting paused, latest approved attestation is too far behind (stuck?)", nil, "vote_height", block.BlockHeight)
-					backoff()
-				}
+			minimum, ok := v.minWindow(block.SourceChainID)
+			if ok && block.BlockHeight < minimum {
+				return errors.New("behind vote window (too slow)", "vote_height", block.BlockHeight, "window_minimum", minimum)
+			}
+
+			backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second*5))
+			for v.AvailableCount() > maxAvailable {
+				log.Warn(ctx, "Voting paused, latest approved attestation is too far behind (stuck?)", nil, "vote_height", block.BlockHeight)
+				backoff()
 			}
 
 			if err := v.Vote(block, first); err != nil {
@@ -210,17 +231,40 @@ func (v *Voter) Vote(block xchain.Block, allowSkip bool) error {
 	return v.saveUnsafe()
 }
 
+// UpdateValidators caches whether this voter is a validator in the provided set.
+func (v *Voter) UpdateValidators(valset []abci.ValidatorUpdate) {
+	var isVal bool
+	for _, val := range valset {
+		if val.Power == 0 {
+			continue
+		}
+		addr, err := k1util.PubKeyPBToAddress(val.PubKey)
+		if err != nil {
+			continue
+		}
+		if v.address == addr {
+			isVal = true
+			break
+		}
+	}
+
+	v.mu.Lock()
+	defer v.mu.Unlock()
+
+	v.isVal = isVal
+}
+
 // TrimBehind trims all available and proposed votes that are behind the vote window thresholds (map[chainID]height)
 // and returns the number that was deleted.
-func (v *Voter) TrimBehind(thresholds map[uint64]uint64) int {
+func (v *Voter) TrimBehind(minsByChain map[uint64]uint64) int {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 
 	trim := func(votes []*types.Vote) []*types.Vote {
 		var remaining []*types.Vote
 		for _, vote := range votes {
-			threshold, ok := thresholds[vote.BlockHeader.ChainId]
-			if ok && vote.BlockHeader.Height < threshold {
+			minimum, ok := minsByChain[vote.BlockHeader.ChainId]
+			if ok && vote.BlockHeader.Height < minimum {
 				trimTotal.WithLabelValues(v.chains[vote.BlockHeader.ChainId]).Inc()
 				continue // Skip/Trim
 			}
@@ -237,6 +281,8 @@ func (v *Voter) TrimBehind(thresholds map[uint64]uint64) int {
 
 	v.available = remainingAvailable
 	v.proposed = remainingProposed
+
+	v.minsByChain = minsByChain
 
 	return trimmed
 }

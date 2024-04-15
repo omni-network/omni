@@ -25,12 +25,14 @@ import (
 const cometValidatorActiveDelay = 2
 
 type Keeper struct {
-	cdc          codec.BinaryCodec
-	storeService store.KVStoreService
-	sKeeper      types.StakingKeeper
-	aKeeper      types.AttestKeeper
-	valsetTable  ValidatorSetTable
-	valTable     ValidatorTable
+	cdc               codec.BinaryCodec
+	storeService      store.KVStoreService
+	sKeeper           types.StakingKeeper
+	aKeeper           types.AttestKeeper
+	valsetTable       ValidatorSetTable
+	valTable          ValidatorTable
+	subscriber        types.ValSetSubscriber
+	subscriberInitted bool
 }
 
 func NewKeeper(
@@ -38,22 +40,22 @@ func NewKeeper(
 	storeService store.KVStoreService,
 	sKeeper types.StakingKeeper,
 	aKeeper types.AttestKeeper,
-) (Keeper, error) {
+) (*Keeper, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
 		{Id: 1, ProtoFileName: File_halo_valsync_keeper_valset_proto.Path()},
 	}}
 
 	modDB, err := ormdb.NewModuleDB(schema, ormdb.ModuleDBOptions{KVStoreService: storeService})
 	if err != nil {
-		return Keeper{}, errors.Wrap(err, "create module db")
+		return nil, errors.Wrap(err, "create module db")
 	}
 
 	valsetStore, err := NewValsetStore(modDB)
 	if err != nil {
-		return Keeper{}, errors.Wrap(err, "create valset store")
+		return nil, errors.Wrap(err, "create valset store")
 	}
 
-	return Keeper{
+	return &Keeper{
 		cdc:          cdc,
 		storeService: storeService,
 		valsetTable:  valsetStore.ValidatorSetTable(),
@@ -63,6 +65,10 @@ func NewKeeper(
 	}, nil
 }
 
+func (k *Keeper) SetSubscriber(subscriber types.ValSetSubscriber) {
+	k.subscriber = subscriber
+}
+
 // EndBlock has two responsibilities:
 //
 // 1. It wraps the staking module EndBlocker, intercepting the resulting validator updates and storing it as
@@ -70,7 +76,7 @@ func NewKeeper(
 //
 // 2. It checks if any previously unattested validator set has been attested to, marks it as so, and returns its updates
 // to pass along to cometBFT to activate that new set.
-func (k Keeper) EndBlock(ctx context.Context) ([]abci.ValidatorUpdate, error) {
+func (k *Keeper) EndBlock(ctx context.Context) ([]abci.ValidatorUpdate, error) {
 	updates, err := k.sKeeper.EndBlocker(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "staking keeper end block")
@@ -95,13 +101,18 @@ func (k Keeper) EndBlock(ctx context.Context) ([]abci.ValidatorUpdate, error) {
 		}
 	}
 
+	// The subscriber is only added after `InitGenesis`, so ensure we notify it of the latest valset.
+	if err := k.maybeInitSubscriber(ctx); err != nil {
+		return nil, err
+	}
+
 	// Check if any unattested set has been attested to (and return its updates).
 	return k.processAttested(ctx)
 }
 
 // InsertGenesisSet inserts the current genesis validator set into the database.
 // This should only be called during InitGenesis AFTER the staking module's InitGenesis.
-func (k Keeper) InsertGenesisSet(ctx context.Context) error {
+func (k *Keeper) InsertGenesisSet(ctx context.Context) error {
 	valset, err := k.sKeeper.GetLastValidators(ctx)
 	if err != nil {
 		return errors.Wrap(err, "get genesis validators")
@@ -116,6 +127,7 @@ func (k Keeper) InsertGenesisSet(ctx context.Context) error {
 		if err != nil {
 			return errors.Wrap(err, "get consensus public key")
 		}
+
 		vals = append(vals, &Validator{
 			PubKey:  pubkey.Bytes(),
 			Power:   val.ConsensusPower(sdk.DefaultPowerReduction),
@@ -127,7 +139,7 @@ func (k Keeper) InsertGenesisSet(ctx context.Context) error {
 }
 
 // insertValidatorSet inserts the current validator set into the database.
-func (k Keeper) insertValidatorSet(ctx context.Context, vals []*Validator, isGenesis bool) error {
+func (k *Keeper) insertValidatorSet(ctx context.Context, vals []*Validator, isGenesis bool) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	if len(vals) == 0 {
@@ -182,11 +194,32 @@ func (k Keeper) insertValidatorSet(ctx context.Context, vals []*Validator, isGen
 	return nil
 }
 
+func (k *Keeper) maybeInitSubscriber(ctx context.Context) error {
+	if k.subscriber == nil || k.subscriberInitted {
+		return nil
+	}
+
+	_, vals, err := k.activeSetByHeight(ctx, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+	if err != nil {
+		return err
+	}
+
+	var updates []abci.ValidatorUpdate
+	for _, val := range vals {
+		updates = append(updates, val.ValidatorUpdate())
+	}
+
+	k.subscriber.UpdateValidators(updates)
+	k.subscriberInitted = true
+
+	return nil
+}
+
 // processAttested possibly marks the next unattested set as attested by querying approved attestations.
 // If found, it returns the validator updates for that set.
 //
 // Note the order doesn't match that of the staking keeper's original updates.
-func (k Keeper) processAttested(ctx context.Context) ([]abci.ValidatorUpdate, error) {
+func (k *Keeper) processAttested(ctx context.Context) ([]abci.ValidatorUpdate, error) {
 	valset, ok, err := k.nextUnattestedSet(ctx)
 	if err != nil {
 		return nil, err
@@ -233,6 +266,8 @@ func (k Keeper) processAttested(ctx context.Context) ([]abci.ValidatorUpdate, er
 		updates = append(updates, val.ValidatorUpdate())
 	}
 
+	k.subscriber.UpdateValidators(updates)
+
 	log.Info(ctx, "💫 Activating attested validator set",
 		"valset_id", valset.GetId(),
 		"created_height", valset.GetCreatedHeight(),
@@ -242,7 +277,7 @@ func (k Keeper) processAttested(ctx context.Context) ([]abci.ValidatorUpdate, er
 }
 
 // nextUnattestedSet returns the next unattested validator set (lowest id), or false if none are found.
-func (k Keeper) nextUnattestedSet(ctx context.Context) (*ValidatorSet, bool, error) {
+func (k *Keeper) nextUnattestedSet(ctx context.Context) (*ValidatorSet, bool, error) {
 	iter, err := k.valsetTable.List(ctx, ValidatorSetAttestedCreatedHeightIndexKey{}.WithAttested(false), ormlist.DefaultLimit(1))
 	if err != nil {
 		return nil, false, errors.Wrap(err, "list unattested")

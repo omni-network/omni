@@ -57,7 +57,7 @@ type App struct {
 	ConsensusParamsKeeper consensuskeeper.Keeper
 	EVMEngKeeper          *evmengkeeper.Keeper
 	AttestKeeper          *attestkeeper.Keeper
-	ValSyncKeeper         valsynckeeper.Keeper
+	ValSyncKeeper         *valsynckeeper.Keeper
 }
 
 // newApp returns a reference to an initialized App.
@@ -160,6 +160,7 @@ func (a App) SetCometAPI(api comet.API) {
 func (a App) SetVoter(voter atypes.Voter) {
 	a.AttestKeeper.SetVoter(voter)
 	a.EVMEngKeeper.SetAddressProvider(voter)
+	a.ValSyncKeeper.SetSubscriber(voter)
 }
 
 var (
