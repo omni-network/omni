@@ -372,7 +372,7 @@ func writeRelayerConfig(ctx context.Context, def Definition, logCfg log.Config) 
 	}
 
 	// Save private key
-	privKey, err := eoa.PrivateKey(ctx, def.Testnet.Network, eoa.TypeRelayer)
+	privKey, err := eoa.PrivateKey(ctx, def.Testnet.Network, eoa.RoleRelayer)
 	if err != nil {
 		return errors.Wrap(err, "get relayer key")
 	}
@@ -416,7 +416,7 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 	}
 
 	// Save private key
-	privKey, err := eoa.PrivateKey(ctx, def.Testnet.Network, eoa.TypeMonitor)
+	privKey, err := eoa.PrivateKey(ctx, def.Testnet.Network, eoa.RoleMonitor)
 	if err != nil {
 		return errors.Wrap(err, "get relayer key")
 	}

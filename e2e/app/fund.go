@@ -43,8 +43,8 @@ func accountsToFund(network netconf.ID) []common.Address {
 			contracts.StagingProxyAdminOwner(),
 			contracts.StagingPortalAdmin(),
 			contracts.StagingAVSAdmin(),
-			eoa.MustAddress(netconf.Staging, eoa.TypeRelayer),
-			eoa.MustAddress(netconf.Staging, eoa.TypeMonitor),
+			eoa.MustAddress(netconf.Staging, eoa.RoleRelayer),
+			eoa.MustAddress(netconf.Staging, eoa.RoleMonitor),
 		}
 	case netconf.Devnet:
 		return []common.Address{
@@ -54,8 +54,8 @@ func accountsToFund(network netconf.ID) []common.Address {
 			contracts.DevnetProxyAdminOwner(),
 			contracts.DevnetPortalAdmin(),
 			contracts.DevnetAVSAdmin(),
-			eoa.MustAddress(netconf.Devnet, eoa.TypeRelayer),
-			eoa.MustAddress(netconf.Devnet, eoa.TypeMonitor),
+			eoa.MustAddress(netconf.Devnet, eoa.RoleRelayer),
+			eoa.MustAddress(netconf.Devnet, eoa.RoleMonitor),
 		}
 	default:
 		return []common.Address{}

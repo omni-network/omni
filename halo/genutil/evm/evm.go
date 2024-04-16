@@ -107,8 +107,8 @@ func stagingPrefundAlloc() types.GenesisAlloc {
 		anvil.DevAccount9(): {Balance: eth1m},
 
 		// Relayer and Monitor EOAs
-		eoa.MustAddress(netconf.Staging, eoa.TypeMonitor): {Balance: eth1m},
-		eoa.MustAddress(netconf.Staging, eoa.TypeRelayer): {Balance: eth1m},
+		eoa.MustAddress(netconf.Staging, eoa.RoleMonitor): {Balance: eth1m},
+		eoa.MustAddress(netconf.Staging, eoa.RoleRelayer): {Balance: eth1m},
 
 		// team ops accounts
 		common.HexToAddress("0xfE921e06Ed0a22c035b4aCFF0A5D3a434A330c96"): {Balance: eth1m}, // dev relayer (local)

@@ -223,7 +223,7 @@ func verifyKeyNodeType(def app.Definition, cfg key.UploadConfig) error {
 	}
 
 	if cfg.Type == key.EOA {
-		eoaType := eoa.Type(cfg.Name)
+		eoaType := eoa.Role(cfg.Name)
 		if err := eoaType.Verify(); err != nil {
 			return errors.Wrap(err, "verifying name as eoa type")
 		}
