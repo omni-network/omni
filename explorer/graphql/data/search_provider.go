@@ -2,12 +2,14 @@ package data
 
 import (
 	"context"
+	"encoding/hex"
 
 	"github.com/omni-network/omni/explorer/db/ent"
 	"github.com/omni-network/omni/explorer/db/ent/block"
 	"github.com/omni-network/omni/explorer/db/ent/msg"
 	"github.com/omni-network/omni/explorer/db/ent/receipt"
 	"github.com/omni-network/omni/explorer/graphql/resolvers"
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -19,14 +21,15 @@ import (
 // - Receipt (finds matching tx hash)
 // TODO (Dan): This is a very naive search implementation. It should be improved. We also should search by address?
 func (p Provider) Search(ctx context.Context, query string) (*resolvers.SearchResult, bool, error) {
-	hash := []byte(query)
 	searchResult := &resolvers.SearchResult{}
+	hash, err := hex.DecodeString(query)
+	if err != nil {
+		return nil, false, errors.Wrap(err, "decode hex string")
+	}
 
 	blockQuery, err := p.EntClient.Block.Query().Where(block.BlockHash(hash)).First(ctx)
 	if err != nil && !ent.IsNotFound(err) {
-		log.Error(ctx, "Block query graphql provider err", err)
-
-		return nil, false, err
+		return nil, false, errors.Wrap(err, "search block graphql provider")
 	}
 
 	if blockQuery != nil {
@@ -52,9 +55,7 @@ func (p Provider) Search(ctx context.Context, query string) (*resolvers.SearchRe
 
 	msgQuery, err := p.EntClient.Msg.Query().Where(msg.TxHash(hash)).First(ctx)
 	if err != nil && !ent.IsNotFound(err) {
-		log.Error(ctx, "Search msg graphql provider err", err)
-
-		return nil, false, err
+		return nil, false, errors.Wrap(err, "search msg graphql provider")
 	}
 
 	if msgQuery != nil {
@@ -66,9 +67,7 @@ func (p Provider) Search(ctx context.Context, query string) (*resolvers.SearchRe
 
 	receiptQuery, err := p.EntClient.Receipt.Query().Where(receipt.TxHash(hash)).First(ctx)
 	if err != nil && !ent.IsNotFound(err) {
-		log.Error(ctx, "Search receipt graphql provider err", err)
-
-		return nil, false, err
+		return nil, false, errors.Wrap(err, "search receipt graphql provider")
 	}
 
 	if receiptQuery != nil {
