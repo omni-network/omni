@@ -141,10 +141,14 @@ export type XMsg = {
 /** XReceipt represents a cross-chain receipt. */
 export type XReceipt = {
   __typename?: 'XReceipt';
+  /** XBlock message was emitted in */
+  Block: XBlock;
   /** Destination chain ID as per https://chainlist.org */
   DestChainID: Scalars['BigInt']['output'];
   /** Gas used for the cross-chain message */
   GasUsed: Scalars['BigInt']['output'];
+  /** Messages associated wit this receipt */
+  Messages: Array<XMsg>;
   /** Address of the relayer */
   RelayerAddress: Scalars['Address']['output'];
   /** Source chain ID as per https://chainlist.org */
@@ -167,7 +171,7 @@ export type XblockQueryVariables = Exact<{
 }>;
 
 
-export type XblockQuery = { __typename?: 'Query', xblock?: { __typename?: 'XBlock', BlockHash: any } | null };
+export type XblockQuery = { __typename?: 'Query', xblock?: { __typename?: 'XBlock', BlockHash: any, BlockHeight: any } | null };
 
 export type XBlockRangeQueryVariables = Exact<{
   from: Scalars['BigInt']['input'];
@@ -183,6 +187,6 @@ export type XblockCountQueryVariables = Exact<{ [key: string]: never; }>;
 export type XblockCountQuery = { __typename?: 'Query', xblockcount?: any | null };
 
 
-export const XblockDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Xblock"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"sourceChainID"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"BigInt"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"height"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"BigInt"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"xblock"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"sourceChainID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"sourceChainID"}}},{"kind":"Argument","name":{"kind":"Name","value":"height"},"value":{"kind":"Variable","name":{"kind":"Name","value":"height"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"BlockHash"}}]}}]}}]} as unknown as DocumentNode<XblockQuery, XblockQueryVariables>;
+export const XblockDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Xblock"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"sourceChainID"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"BigInt"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"height"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"BigInt"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"xblock"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"sourceChainID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"sourceChainID"}}},{"kind":"Argument","name":{"kind":"Name","value":"height"},"value":{"kind":"Variable","name":{"kind":"Name","value":"height"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"BlockHash"}},{"kind":"Field","name":{"kind":"Name","value":"BlockHeight"}}]}}]}}]} as unknown as DocumentNode<XblockQuery, XblockQueryVariables>;
 export const XBlockRangeDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"XBlockRange"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"from"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"BigInt"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"to"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"BigInt"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"xblockrange"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"from"},"value":{"kind":"Variable","name":{"kind":"Name","value":"from"}}},{"kind":"Argument","name":{"kind":"Name","value":"to"},"value":{"kind":"Variable","name":{"kind":"Name","value":"to"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"SourceChainID"}},{"kind":"Field","name":{"kind":"Name","value":"BlockHash"}},{"kind":"Field","name":{"kind":"Name","value":"BlockHeight"}},{"kind":"Field","name":{"kind":"Name","value":"Messages"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"TxHash"}},{"kind":"Field","name":{"kind":"Name","value":"DestAddress"}},{"kind":"Field","name":{"kind":"Name","value":"DestChainID"}},{"kind":"Field","name":{"kind":"Name","value":"SourceChainID"}}]}},{"kind":"Field","name":{"kind":"Name","value":"Timestamp"}}]}}]}}]} as unknown as DocumentNode<XBlockRangeQuery, XBlockRangeQueryVariables>;
 export const XblockCountDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"XblockCount"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"xblockcount"}}]}}]} as unknown as DocumentNode<XblockCountQuery, XblockCountQueryVariables>;
