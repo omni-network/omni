@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -105,6 +106,13 @@ func deployDevnet(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	// Retrieve the home directory from the environment variable
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return errors.Wrap(err, "failed to get user home directory")
+	}
+	def.Testnet.Dir = filepath.Join(homeDir, ".omni_devnet") // Use filepath to correctly handle paths
 
 	deployCfg := app.DefaultDeployConfig()
 	_, err = app.Deploy(ctx, def, deployCfg)
