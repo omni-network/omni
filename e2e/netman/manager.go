@@ -43,8 +43,8 @@ type Manager interface {
 
 func NewManager(testnet types.Testnet, backends ethbackend.Backends) (Manager, error) {
 	if testnet.OnlyMonitor {
-		if testnet.Network != netconf.Testnet {
-			return nil, errors.New("the AVS contract is currently only deployed to testnet")
+		if !netconf.IsAny(testnet.Network, netconf.Testnet, netconf.Mainnet) {
+			return nil, errors.New("monitor-only only supported for testnet and mainnet")
 		}
 
 		return &manager{
