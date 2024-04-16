@@ -2,12 +2,17 @@ package cmd
 
 import (
 	"context"
+	"embed"
 	"fmt"
+	"io/fs"
 	"math/big"
+	"os"
+	"os/exec"
 	"strings"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -20,6 +25,9 @@ import (
 
 	"github.com/spf13/cobra"
 )
+
+//go:embed devnet1.toml
+var embeddedFiles embed.FS
 
 const (
 	// privKeyHex0 of pre-funded anvil account 0.
@@ -36,6 +44,7 @@ func newDevnetCmds() *cobra.Command {
 	cmd.AddCommand(
 		newDevnetFundCmd(),
 		newDevnetAVSAllow(),
+		newDevnetStartCmd(),
 	)
 
 	return cmd
@@ -73,6 +82,87 @@ func newDevnetAVSAllow() *cobra.Command {
 	bindDevnetAVSAllowConfig(cmd, &cfg)
 
 	return cmd
+}
+
+func newDevnetStartCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "start",
+		Short: "Build and deploy a local dev environment with 2 anvil nodes and a halo node using Docker",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return devnetStart(cmd.Context())
+		},
+	}
+}
+
+// devnetStart handles the pulling of Docker images and the deployment of the devnet.
+func devnetStart(ctx context.Context) error {
+	// Pull Docker images
+	if err := pullDockerImages(ctx); err != nil {
+		return err
+	}
+	// Deploy the devnet
+	return deployDevnet(ctx)
+}
+
+// pullDockerImages pulls the necessary Docker images from DockerHub.
+func pullDockerImages(ctx context.Context) error {
+	apps := []string{"halo", "relayer", "monitor"}
+	for _, app := range apps {
+		if err := runDockerCommand(ctx, "pull", fmt.Sprintf("omniops/%s:latest", app)); err != nil {
+			return errors.Wrap(err, "failed to pull docker image for "+fmt.Sprintf("omniops/%s:latest", app))
+		}
+	}
+
+	return nil
+}
+
+// runDockerCommand is a helper to run Docker CLI commands.
+func runDockerCommand(ctx context.Context, args ...string) error {
+	cmd := exec.CommandContext(ctx, "docker", args...)
+	cmd.Stdout = cmd.Stderr // Combine output and error streams
+	if err := cmd.Run(); err != nil {
+		return errors.Wrap(err, "docker command failed. command="+args[0], "arg=", args[1])
+	}
+
+	return nil
+}
+
+// deployDevnetNetwork encapsulates the logic to initialize and deploy the devnet network using the e2e package.
+func deployDevnet(ctx context.Context) error {
+	manifestContent, err := fs.ReadFile(embeddedFiles, "devnet1.toml")
+	if err != nil {
+		return errors.Wrap(err, "failed to read embedded manifest file")
+	}
+
+	tempManifestPath := writeTempManifest(manifestContent)
+	defer os.Remove(tempManifestPath)
+
+	//nolint:contextcheck // The function does not support context passing, ignoring.
+	defCfg := app.DefaultDefinitionConfig()
+	defCfg.ManifestFile = tempManifestPath
+	def, err := app.MakeDefinition(ctx, defCfg, "deploy") // holds dir var
+	if err != nil {
+		return err
+	}
+
+	deployCfg := app.DefaultDeployConfig()
+	_, err = app.Deploy(ctx, def, deployCfg)
+
+	return err
+}
+
+func writeTempManifest(content []byte) string {
+	tempFile, err := os.CreateTemp("", "devnet_manifest_*.toml")
+	if err != nil {
+		panic(fmt.Errorf("failed to create temp manifest file: %w", err))
+	}
+	defer tempFile.Close()
+
+	if _, err := tempFile.Write(content); err != nil {
+		panic(fmt.Errorf("failed to write to temp manifest file: %w", err))
+	}
+
+	return tempFile.Name()
 }
 
 type devnetAllowConfig struct {
