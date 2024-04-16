@@ -17,6 +17,14 @@ var (
 		FinalizationStrat: netconf.StratFinalized,
 	}
 
+	chainEthereum = EVMChain{
+		Name:              "ethereum",
+		ID:                chainids.Ethereum,
+		IsPublic:          true,
+		BlockPeriod:       12 * time.Second,
+		FinalizationStrat: netconf.StratFinalized,
+	}
+
 	chainHolesky = EVMChain{
 		Name:              "holesky",
 		ID:                chainids.Holesky,
@@ -76,6 +84,8 @@ func PublicChainByName(name string) (EVMChain, error) {
 		return chainArbSepolia, nil
 	case chainOpSepolia.Name:
 		return chainOpSepolia, nil
+	case chainEthereum.Name:
+		return chainEthereum, nil
 	default:
 		return EVMChain{}, errors.New("unknown chain name")
 	}
@@ -90,6 +100,8 @@ func PublicRPCByName(name string) string {
 		return "https://sepolia-rollup.arbitrum.io/rpc"
 	case chainOpSepolia.Name:
 		return "https://sepolia.optimism.io"
+	case chainEthereum.Name:
+		return "https://ethereum-rpc.publicnode.com"
 	default:
 		return ""
 	}

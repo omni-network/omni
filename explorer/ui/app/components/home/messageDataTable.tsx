@@ -3,7 +3,6 @@ import React from 'react'
 import { XMsg } from '~/graphql/graphql'
 import { ColumnDef } from '@tanstack/react-table'
 import SimpleTable from '../shared/simpleTable'
-import { GetXMessagesInRange } from '../queries/messages'
 import { useLoaderData } from '@remix-run/react'
 
 export async function loader() {
@@ -13,7 +12,7 @@ export async function loader() {
 export default function XMsgDataTable() {
   const d = useLoaderData<typeof loader>()
 
-  let rows = GetXMessagesInRange(0, 1000)
+  let rows = []
 
   const columns = React.useMemo<ColumnDef<XMsg>[]>(
     () => [

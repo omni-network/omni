@@ -1,7 +1,70 @@
-@import '@fontsource/urbanist';
-@import '@fontsource/urbanist/400.css';
-@import '@fontsource/urbanist/400-italic.css';
+@import '@fontsource/manrope';
+/* @import '@fontsource/manrope/400.css';
+@import '@fontsource/manrope/400-italic.css'; */
 
 @tailwind base;
+@layer base {
+  .text-d1 {
+    @apply text-7xl;
+    line-height: 6.75rem;
+  }
+  .text-d2 {
+    font-size: 3.5rem;
+    line-height: 4.75rem;
+  }
+  h1 {
+    font-size: 2.625rem;
+    line-height: 3.625rem;
+  }
+  h2 {
+    font-size: 2.25rem;
+    line-height: 3.125rem;
+  }
+  h3 {
+    font-size: 1.875rem;
+    line-height: 2.625rem;
+  }
+  h4 {
+    font-size: 1.5rem;
+    line-height: 2.125rem;
+  }
+  h5 {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+  .text-b-lg {
+    font-size: 1.125rem;
+    line-height: 1.68rem;
+  }
+  .text-b,
+  .text-b-md {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+  .text-b-sm {
+    font-size: 0.875rem;
+    line-height: 1.3125rem;
+  }
+  .text-b-xs {
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+  }
+  .text-ol-lg {
+    font-size: 0.875rem;
+    line-height: 0.875rem;
+    text-transform: uppercase;
+  }
+  .text-ol,
+  .text-ol-md {
+    font-size: 0.75rem;
+    line-height: 0.75rem;
+    text-transform: uppercase;
+  }
+  .text-ol-sm {
+    font-size: 0.625rem;
+    line-height: 0.625rem;
+    text-transform: uppercase;
+  }
+}
 @tailwind components;
 @tailwind utilities;

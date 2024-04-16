@@ -50,7 +50,6 @@ export default function AppWithProviders() {
     url: ENV.GRAPHQL_URL ?? '',
     exchanges: [fetchExchange, cacheExchange],
   })
-  console.log(ENV.GRAPHQL_URL)
   return (
     <Provider value={client}>
       <App />

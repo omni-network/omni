@@ -64,9 +64,9 @@ dependencies:
     version: 2.9.0
 
 devDependencies:
-  '@fontsource/urbanist':
-    specifier: 5.0.18
-    version: 5.0.18
+  '@fontsource/manrope':
+    specifier: 5.0.19
+    version: 5.0.19
   '@fortawesome/fontawesome-common-types':
     specifier: 6.5.1
     version: 6.5.1
@@ -1254,8 +1254,8 @@ packages:
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
     dev: true
 
-  /@fontsource/urbanist@5.0.18:
-    resolution: {integrity: sha512-jljGSpFGWyl2WAgDK5l+rpQ7RxTQ1rTLmIk/pQ/PdZSqGe4E027qSz5qwrqjpH/te0TvIZLXbfhUV7I2wwnzBQ==}
+  /@fontsource/manrope@5.0.19:
+    resolution: {integrity: sha512-5AbXsYyl9pwc60VnfWcWoq7gNggaByqINfD/hTBUrvqpm2AzZTqqpkQzfff3SMWR6mJIXQjBgrn/OzR9wPkcdg==}
     dev: true
 
   /@fortawesome/fontawesome-common-types@6.5.1:
