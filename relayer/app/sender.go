@@ -103,6 +103,12 @@ func (o Sender) SendTransaction(ctx context.Context, sub xchain.Submission) erro
 		return err
 	}
 
+	// Reserve a nonce here to ensure correctly ordered submissions.
+	nonce, err := o.txMgr.ReserveNextNonce(ctx)
+	if err != nil {
+		return err
+	}
+
 	estimatedGas := estimateGas(sub.Msgs)
 
 	candidate := txmgr.TxCandidate{
@@ -110,6 +116,7 @@ func (o Sender) SendTransaction(ctx context.Context, sub xchain.Submission) erro
 		To:       &o.portal,
 		GasLimit: estimatedGas,
 		Value:    big.NewInt(0),
+		Nonce:    &nonce,
 	}
 
 	tx, rec, err := o.txMgr.Send(ctx, candidate)
@@ -135,9 +142,9 @@ func (o Sender) SendTransaction(ctx context.Context, sub xchain.Submission) erro
 			From:          o.txMgr.From(),
 			To:            tx.To(),
 			Gas:           tx.Gas(),
-			GasPrice:      tx.GasPrice(),
-			GasFeeCap:     tx.GasFeeCap(),
-			GasTipCap:     tx.GasTipCap(),
+			GasPrice:      positiveOrNil(tx.GasPrice()),
+			GasFeeCap:     positiveOrNil(tx.GasFeeCap()),
+			GasTipCap:     positiveOrNil(tx.GasTipCap()),
 			Value:         tx.Value(),
 			Data:          tx.Data(),
 			AccessList:    tx.AccessList(),
@@ -168,4 +175,12 @@ func (o Sender) getXSubmitBytes(sub bindings.XSubmission) ([]byte, error) {
 	}
 
 	return bytes, nil
+}
+
+func positiveOrNil(i *big.Int) *big.Int {
+	if i == nil || i.Sign() == 0 {
+		return nil
+	}
+
+	return i
 }
