@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"os"
@@ -42,6 +43,7 @@ func newDevnetCmds() *cobra.Command {
 		newDevnetFundCmd(),
 		newDevnetAVSAllow(),
 		newDevnetStartCmd(),
+		newDevnetInfoCmd(),
 	)
 
 	return cmd
@@ -91,6 +93,166 @@ func newDevnetStartCmd() *cobra.Command {
 	}
 }
 
+func newDevnetInfoCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "info",
+		Short: "Display Portal Addresses and RPC URLs for the deployed dev environment",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return getDevnetInfo(cmd.Context())
+		},
+	}
+}
+
+func getDevnetInfo(ctx context.Context) error {
+	// Fetch portal data from the helper function
+	portals, err := getDevnetPortalsFromNetworkJSON(ctx)
+	if err != nil {
+		return errors.Wrap(err, "failed to fetch portal data: %w")
+	}
+
+	// Fetch RPC data from the helper function
+	rpcs, err := getDevnetRPCsFromManifestDef(ctx)
+	if err != nil {
+		return errors.Wrap(err, "failed to fetch RPC data: %w")
+	}
+
+	// Convert RPCs slice to a map for easier lookup
+	rpcMap := make(map[uint64]string)
+	for _, rpc := range rpcs {
+		rpcMap[rpc.ID] = rpc.RPCURL
+	}
+
+	// Prepare combined info structure
+	combinedInfo := make([]struct {
+		ChainID       int    `json:"chain_id"`
+		ServiceName   string `json:"service_name"`
+		PortalAddress string `json:"portal_address"`
+		RPCURL        string `json:"rpc_url"`
+	}, 0)
+
+	// Merge data based on chain ID
+	for _, portal := range portals {
+		rpcURL, ok := rpcMap[uint64(portal.ChainID)]
+		if !ok {
+			fmt.Printf("Missing RPC URL for chain_id %d\n", portal.ChainID)
+			continue
+		}
+		combinedInfo = append(combinedInfo, struct {
+			ChainID       int    `json:"chain_id"`
+			ServiceName   string `json:"service_name"`
+			PortalAddress string `json:"portal_address"`
+			RPCURL        string `json:"rpc_url"`
+		}{
+			ChainID:       portal.ChainID,
+			ServiceName:   portal.ServiceName,
+			PortalAddress: portal.PortalAddress,
+			RPCURL:        rpcURL,
+		})
+	}
+
+	// Marshal and print the final combined JSON output
+	jsonOutput, err := json.MarshalIndent(combinedInfo, "", "  ")
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal combined info into JSON: %w")
+	}
+	fmt.Println(string(jsonOutput))
+
+	return nil
+}
+
+type chainInfo struct {
+	ID     uint64
+	Name   string
+	RPCURL string
+	Portal string
+}
+
+func getDevnetRPCsFromManifestDef(ctx context.Context) ([]chainInfo, error) {
+	manifestContent := manifests.Devnet1()
+	tempManifestPath := writeTempManifest(manifestContent)
+	defer os.Remove(tempManifestPath)
+
+	//nolint:contextcheck // The function does not support context passing, ignoring.
+	defCfg := app.DefaultDefinitionConfig()
+	defCfg.ManifestFile = tempManifestPath
+	defCfg.OmniImgTag = buildinfo.Version()
+	def, err := app.MakeDefinition(ctx, defCfg, "deploy")
+	if err != nil {
+		return nil, err
+	}
+
+	var chains []chainInfo
+
+	omniEVM := def.Testnet.OmniEVMs[1]
+	chains = append(chains, chainInfo{
+		ID:     omniEVM.Chain.ID,
+		Name:   omniEVM.Chain.Name,
+		RPCURL: omniEVM.ExternalRPC,
+	})
+
+	for _, anvil := range def.Testnet.AnvilChains {
+		chains = append(chains, chainInfo{
+			ID:     anvil.Chain.ID,
+			Name:   anvil.Chain.Name,
+			RPCURL: anvil.ExternalRPC,
+		})
+	}
+
+	return chains, nil
+}
+
+// chainJSONInfo is a structure to hold the simplified chain information.
+type chainJSONInfo struct {
+	ChainID       int    `json:"chain_id"`
+	ServiceName   string `json:"service_name"`
+	PortalAddress string `json:"portal_address"`
+}
+
+func getDevnetPortalsFromNetworkJSON(_ context.Context) ([]chainJSONInfo, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get user home directory: %w")
+	}
+	devnetPath := filepath.Join(homeDir, ".omni", "devnet")
+	if _, err := os.Stat(devnetPath); os.IsNotExist(err) {
+		return nil, errors.Wrap(err, "no config files detected. Have you run `omni devnet start` yet?")
+	}
+	jsonFilePath := filepath.Join(devnetPath, "validator01", "config", "network.json")
+
+	// Read the JSON file using os.ReadFile
+	jsonData, err := os.ReadFile(jsonFilePath)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read JSON file: %w")
+	}
+
+	// Parse the JSON data
+	var data struct {
+		Chains []struct {
+			ID            int    `json:"id"`
+			Name          string `json:"name"`
+			PortalAddress string `json:"portal_address"`
+		} `json:"chains"`
+	}
+
+	if err := json.Unmarshal(jsonData, &data); err != nil {
+		return nil, errors.Wrap(err, "failed to parse JSON data: %w")
+	}
+
+	// Filter and collect the necessary chain info
+	var results []chainJSONInfo
+	for _, chain := range data.Chains {
+		if chain.PortalAddress != "" {
+			results = append(results, chainJSONInfo{
+				ChainID:       chain.ID,
+				ServiceName:   chain.Name,
+				PortalAddress: chain.PortalAddress,
+			})
+		}
+	}
+
+	return results, nil
+}
+
 // deployDevnetNetwork initializes and deploys the devnet network using the e2e app.
 func deployDevnet(ctx context.Context) error {
 	manifestContent := manifests.Devnet1()
@@ -102,7 +264,7 @@ func deployDevnet(ctx context.Context) error {
 	defCfg := app.DefaultDefinitionConfig()
 	defCfg.ManifestFile = tempManifestPath
 	defCfg.OmniImgTag = buildinfo.Version()
-	def, err := app.MakeDefinition(ctx, defCfg, "deploy") // holds dir var
+	def, err := app.MakeDefinition(ctx, defCfg, "deploy")
 	if err != nil {
 		return err
 	}
@@ -112,7 +274,7 @@ func deployDevnet(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to get user home directory")
 	}
-	def.Testnet.Dir = filepath.Join(homeDir, ".omni_devnet") // Use filepath to correctly handle paths
+	def.Testnet.Dir = filepath.Join(homeDir, ".omni", "devnet") // Use filepath to correctly handle paths
 
 	deployCfg := app.DefaultDeployConfig()
 	_, err = app.Deploy(ctx, def, deployCfg)
