@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // This searches for matches for the following:
@@ -21,9 +22,16 @@ import (
 // TODO (Dan): This is a very naive search implementation. It should be improved. We also should search by address?
 func (p Provider) Search(ctx context.Context, query string) (*resolvers.SearchResult, bool, error) {
 	searchResult := &resolvers.SearchResult{}
-	hash := common.HexToHash(query)
+	// no working methods:
+	// - coverting straight to byte[] from string
+	// - hex.decodeString
+	// - common.HexToHash(query)
+	hash, err := hexutil.Decode(query)
+	if err != nil {
+		return nil, false, errors.Wrap(err, "search hexutil.Decode")
+	}
 
-	blockQuery, err := p.EntClient.Block.Query().Where(block.BlockHash(hash.Bytes())).First(ctx)
+	blockQuery, err := p.EntClient.Block.Query().Where(block.BlockHash(hash)).First(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, false, errors.Wrap(err, "search block graphql provider")
 	}
@@ -49,7 +57,7 @@ func (p Provider) Search(ctx context.Context, query string) (*resolvers.SearchRe
 		return nil, true, nil
 	}
 
-	msgQuery, err := p.EntClient.Msg.Query().Where(msg.TxHash(hash.Bytes())).First(ctx)
+	msgQuery, err := p.EntClient.Msg.Query().Where(msg.TxHash(hash)).First(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, false, errors.Wrap(err, "search msg graphql provider")
 	}
@@ -61,7 +69,7 @@ func (p Provider) Search(ctx context.Context, query string) (*resolvers.SearchRe
 		return searchResult, true, nil
 	}
 
-	receiptQuery, err := p.EntClient.Receipt.Query().Where(receipt.TxHash(hash.Bytes())).First(ctx)
+	receiptQuery, err := p.EntClient.Receipt.Query().Where(receipt.TxHash(hash)).First(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, false, errors.Wrap(err, "search receipt graphql provider")
 	}
