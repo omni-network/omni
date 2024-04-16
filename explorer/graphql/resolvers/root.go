@@ -20,6 +20,7 @@ type BlocksProvider interface {
 	XMsg(ctx context.Context, SourceChainID uint64, DestChainID uint64, StreamOffset uint64) (*XMsg, bool, error)
 	XReceipt(ctx context.Context, SourceChainID, DestChainID, StreamOffset uint64) (*XReceipt, bool, error)
 	SupportedChains(ctx context.Context) ([]*Chain, bool, error)
+	Search(ctx context.Context, query string) (*SearchResult, bool, error)
 }
 
 type BlocksResolver struct {

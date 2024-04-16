@@ -143,6 +143,23 @@ type Chain {
   Name: String!
 }
 
+"""
+Search for cross-chain messages and receipts.
+"""
+type SearchResult {
+  "Type"
+  Type: String!
+
+  "Hash"
+  TxHash: Bytes32!
+
+  "Source chain ID"
+  SourceChainID: BigInt!
+
+  "Block Height"
+  BlockHeight: BigInt!
+}
+
 type Query {
   xblock(sourceChainID: BigInt!, height: BigInt!): XBlock
   xblockrange(from: BigInt!, to: BigInt!): [XBlock]!
@@ -153,4 +170,5 @@ type Query {
   xreceipt(sourceChainID: BigInt!, destChainID: BigInt!, streamOffset: BigInt!): XReceipt
   xmsg(sourceChainID: BigInt!, destChainID: BigInt! streamOffset: BigInt!): XMsg
   supportedchains: [Chain]!
+  search(query: Bytes32!): SearchResult
 }

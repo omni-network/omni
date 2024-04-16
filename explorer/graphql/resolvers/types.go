@@ -56,3 +56,10 @@ type Chain struct {
 	Name    string
 	ChainID hexutil.Big
 }
+
+type SearchResult struct {
+	BlockHeight   hexutil.Big
+	TxHash        common.Hash
+	SourceChainID hexutil.Big
+	Type          string
+}
