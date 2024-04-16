@@ -67,5 +67,16 @@ var supported = map[ID]bool{
 	Devnet:  true,
 	Staging: true,
 	Testnet: true,
-	Mainnet: false,
+	Mainnet: true,
+}
+
+// IsAny returns true if the `ID` matches any of the provided targets.
+func IsAny(id ID, targets ...ID) bool {
+	for _, target := range targets {
+		if id == target {
+			return true
+		}
+	}
+
+	return false
 }

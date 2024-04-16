@@ -63,7 +63,7 @@ var runid = uuid.New().String()
 var (
 	// Address matches lib/contracts.TestnetPortal() and lib/contracts.TestnetAVS().
 	// We do not import to avoid cylic dependencies.
-	testnetPortal = common.HexToAddress("0x71d510f4dc4e7E7716D03209c603C76F4398cF53")
+	testnetPortal = common.HexToAddress("0xFf22F3532C19a6f890c52c4CfcDB94007aA471Dc")
 	testnetAVS    = common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
 
 	// This address DOES NOT match lib/contracts.MainnetAVS().
@@ -93,21 +93,22 @@ var statics = map[ID]Static{
 			{
 				ChainID:      chainids.Holesky,
 				Address:      testnetPortal,
-				DeployHeight: 1280141,
+				DeployHeight: 1357819,
 			},
 			{
 				ChainID:      chainids.OpSepolia,
 				Address:      testnetPortal,
-				DeployHeight: 10401431,
+				DeployHeight: 10731455,
 			},
 			{
 				ChainID:      chainids.ArbSepolia,
 				Address:      testnetPortal,
-				DeployHeight: 31688713,
+				DeployHeight: 34237972,
 			},
 		},
 	},
 	Mainnet: {
+		Version:            "v0.0.1",
 		AVSContractAddress: mainnetAVS,
 	},
 }
