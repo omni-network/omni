@@ -20,7 +20,7 @@ import (
 func startAVSSync(ctx context.Context, cfg Config, network netconf.Network) error {
 	privateKey, err := ethcrypto.LoadECDSA(cfg.PrivateKey)
 	if err != nil {
-		return errors.Wrap(err, "failed to load private key")
+		return errors.Wrap(err, "load private key")
 	}
 
 	ethL1, ok := network.EthereumChain()
@@ -29,6 +29,12 @@ func startAVSSync(ctx context.Context, cfg Config, network netconf.Network) erro
 		return nil
 	} else if ethL1.AVSContractAddr == (common.Address{}) {
 		log.Warn(ctx, "Not syncing avs since AVSContractAddr empty", nil)
+		return nil
+	} else if ethL1.PortalAddress == (common.Address{}) {
+		log.Warn(ctx, "Not syncing avs since no l1 portal defined", nil)
+		return nil
+	} else if omniEVM, ok := network.OmniEVMChain(); !ok || omniEVM.PortalAddress == (common.Address{}) {
+		log.Warn(ctx, "Not syncing avs since no omni evm portal defined", nil)
 		return nil
 	}
 

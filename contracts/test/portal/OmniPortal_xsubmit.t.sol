@@ -171,15 +171,49 @@ contract OmniPortal_xsubmit_Test is Base {
         uint64 expectedOffset = xsub.msgs[xsub.msgs.length - 1].streamOffset;
         uint256 expectedCount = numIncrements(xsub.msgs) + counter_.count();
 
-        vm.prank(relayer);
         vm.recordLogs();
         expectCalls(xsub.msgs);
-        portal_.xsubmit(xsub);
+
+        vm.prank(relayer);
+        portal_.xsubmit{ gas: _xsubGasLimit(xsub) }(xsub);
 
         assertEq(portal_.inXStreamOffset(sourceChainId), expectedOffset);
         assertEq(portal_.inXStreamBlockHeight(sourceChainId), xsub.blockHeader.blockHeight);
         assertEq(counter_.count(), expectedCount);
         assertEq(counter_.countByChainId(sourceChainId), expectedCount);
         assertReceipts(vm.getRecordedLogs(), xsub.msgs);
+    }
+
+    /// @dev A simple algo to over-esimate the gas limit for an xsubmission
+    ///      We include this in tests because we mirror this estimation in the relayer, and should
+    //       therefore confirm the over-estimation is appropriate.
+    function _xsubGasLimit(XTypes.Submission memory xsub) internal pure returns (uint256) {
+        // start with a base 500k gas limit
+        uint256 gasLimit = 500_000;
+
+        XTypes.Msg memory xmsg;
+
+        // add gas limit for each xmsg
+        for (uint256 i = 0; i < xsub.msgs.length; i++) {
+            xmsg = xsub.msgs[i];
+
+            if (xmsg.gasLimit > 0) {
+                // add application defined xmsg gas limit
+                gasLimit += xmsg.gasLimit;
+
+                // add additional 100k per xmsg, to cover overhead
+                gasLimit += 100_000;
+            } else {
+                // only system calls can have 0 gas limit
+                // for these, we add 1M gas, as a safe over-estimate
+                //
+                // sys calls currently only come from the consesus chain, with a single xmsg per
+                // submission. these xblock submissions do not need to be split, and therefore do
+                // not need accurate gas estimation.
+                gasLimit += 1_000_000;
+            }
+        }
+
+        return gasLimit;
     }
 }

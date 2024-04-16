@@ -3,7 +3,7 @@ module github.com/omni-network/omni
 go 1.22.0
 
 require (
-	cosmossdk.io/api v0.7.3
+	cosmossdk.io/api v0.7.4
 	cosmossdk.io/core v0.11.0 // Pegged to v0.11.0 for cosmos-sdk v0.50.3
 	cosmossdk.io/depinject v1.0.0-alpha.4
 	cosmossdk.io/errors v1.0.1

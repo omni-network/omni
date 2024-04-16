@@ -130,6 +130,10 @@ func testnetPrefundAlloc() types.GenesisAlloc {
 		common.HexToAddress("0xf63316AA39fEc9D2109AB0D9c7B1eE3a6F60AEA4"): {Balance: eth1k}, // fb: funder
 		common.HexToAddress("0xfE921e06Ed0a22c035b4aCFF0A5D3a434A330c96"): {Balance: eth1k}, // dev: relayer
 
+		// Relayer and Monitor EOAs
+		eoa.MustAddress(netconf.Testnet, eoa.TypeMonitor): {Balance: eth1m},
+		eoa.MustAddress(netconf.Testnet, eoa.TypeRelayer): {Balance: eth1m},
+
 		// team dev accounts
 		common.HexToAddress("0x00000d4De727593D6fbbFe39eE9EbddB49ED5b8A"): {Balance: eth1m}, // shared
 		common.HexToAddress("0xFbD05C5dD1c09970D30Ad8BBf29BC34283E84E20"): {Balance: eth1m}, // corver
