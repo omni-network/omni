@@ -41,7 +41,12 @@ func TestSearchQueryBlock(t *testing.T) {
 			`,
 			ExpectedResult: `
 				{
-					"search": null
+					"search":{
+						"BlockHeight":"0x0",
+						"SourceChainID":"0x1",
+						"TxHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
+						"Type":"block"
+					}
 				}
 			`,
 		},
@@ -77,7 +82,12 @@ func TestSearchQueryMessage(t *testing.T) {
 			`,
 			ExpectedResult: `
 				{
-					"search": null
+					"search":{
+						"BlockHeight":"0x0",
+						"SourceChainID":"0x0",
+						"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20",
+						"Type":"message"
+					}
 				}
 			`,
 		},
@@ -113,7 +123,12 @@ func TestSearchQueryReceipt(t *testing.T) {
 			`,
 			ExpectedResult: `
 				{
-					"search": null
+					"search":{
+						"BlockHeight":"0x0",
+						"SourceChainID":"0x0",
+						"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20",
+						"Type":"message"
+					}
 				}
 			`,
 		},

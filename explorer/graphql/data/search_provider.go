@@ -22,10 +22,6 @@ import (
 // TODO (Dan): This is a very naive search implementation. It should be improved. We also should search by address?
 func (p Provider) Search(ctx context.Context, query string) (*resolvers.SearchResult, bool, error) {
 	searchResult := &resolvers.SearchResult{}
-	// no working methods:
-	// - coverting straight to byte[] from string
-	// - hex.decodeString
-	// - common.HexToHash(query)
 	hash, err := hexutil.Decode(query)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "search hexutil.Decode")
@@ -54,7 +50,7 @@ func (p Provider) Search(ctx context.Context, query string) (*resolvers.SearchRe
 		searchResult.SourceChainID = chainID
 		searchResult.Type = "block"
 
-		return nil, true, nil
+		return searchResult, true, nil
 	}
 
 	msgQuery, err := p.EntClient.Msg.Query().Where(msg.TxHash(hash)).First(ctx)
