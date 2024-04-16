@@ -11,8 +11,19 @@ import { createReadableStreamFromReadable } from '@remix-run/node'
 import { RemixServer } from '@remix-run/react'
 import { isbot } from 'isbot'
 import { renderToPipeableStream } from 'react-dom/server'
+import { Counter, collectDefaultMetrics } from 'prom-client'
 
 const ABORT_DELAY = 5_000
+
+const reqsCount: Counter<string> = new Counter({
+  name: 'remix_requests_count_total',
+  help: 'Records total FIRST requests of Application service',
+})
+
+// Collect metrics in production env
+if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
+  collectDefaultMetrics()
+}
 
 export default function handleRequest(
   request: Request,
@@ -24,6 +35,8 @@ export default function handleRequest(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   loadContext: AppLoadContext,
 ) {
+
+  reqsCount.inc()
   return isbot(request.headers.get('user-agent') || '')
     ? handleBotRequest(request, responseStatusCode, responseHeaders, remixContext)
     : handleBrowserRequest(request, responseStatusCode, responseHeaders, remixContext)

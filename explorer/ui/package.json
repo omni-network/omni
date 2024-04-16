@@ -25,6 +25,7 @@
     "graphql-request": "6.1.0",
     "isbot": "^4.1.0",
     "openapi-fetch": "^0.8.2",
+    "prom-client": "15.1.1",
     "react": "^18.2.0",
     "react-daisyui": "5.0.0",
     "react-dom": "^18.2.0",
