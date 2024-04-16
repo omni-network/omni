@@ -48,7 +48,7 @@ func (p Provider) Search(ctx context.Context, query string) (*resolvers.SearchRe
 		}
 
 		searchResult.SourceChainID = chainID
-		searchResult.Type = "block"
+		searchResult.Type = resolvers.BLOCK
 
 		return searchResult, true, nil
 	}
@@ -60,7 +60,7 @@ func (p Provider) Search(ctx context.Context, query string) (*resolvers.SearchRe
 
 	if msgQuery != nil {
 		searchResult.TxHash = common.Hash(msgQuery.TxHash)
-		searchResult.Type = "message"
+		searchResult.Type = resolvers.MESSAGE
 
 		return searchResult, true, nil
 	}
@@ -72,7 +72,7 @@ func (p Provider) Search(ctx context.Context, query string) (*resolvers.SearchRe
 
 	if receiptQuery != nil {
 		searchResult.TxHash = common.Hash(receiptQuery.TxHash)
-		searchResult.Type = "receipt"
+		searchResult.Type = resolvers.RECEIPT
 
 		return searchResult, true, nil
 	}

@@ -61,5 +61,14 @@ type SearchResult struct {
 	BlockHeight   hexutil.Big
 	TxHash        common.Hash
 	SourceChainID hexutil.Big
-	Type          string
+	Type          SearchResultType
 }
+
+type SearchResultType string
+
+const (
+	BLOCK   SearchResultType = "BLOCK"
+	MESSAGE SearchResultType = "MESSAGE"
+	RECEIPT SearchResultType = "RECEIPT"
+	ADDRESS SearchResultType = "ADDRESS"
+)
