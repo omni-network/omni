@@ -6,11 +6,11 @@ import (
 	"math/big"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum"
@@ -24,10 +24,6 @@ import (
 const (
 	// PriceBump geth requires a minimum fee bump of 10% for regular tx resubmission.
 	PriceBump int64 = 10
-)
-
-var (
-	ErrClosed = errors.New("transaction manager is closed")
 )
 
 // TxManager is an interface that allows callers to reliably publish txs,
@@ -45,11 +41,8 @@ type TxManager interface {
 	// It is static for a single instance of a TxManager.
 	From() common.Address
 
-	// BlockNumber returns the most recent block number from the underlying network.
-	BlockNumber(ctx context.Context) (uint64, error)
-
-	// Close the underlying connection
-	Close()
+	// ReserveNextNonce returns the next available nonce and increments the available nonce.
+	ReserveNextNonce(ctx context.Context) (uint64, error)
 }
 
 // simple is a implementation of TxManager that performs linear fee
@@ -61,12 +54,8 @@ type simple struct {
 
 	backend ethclient.Client
 
-	nonce     *uint64
-	nonceLock sync.RWMutex
-
-	pending atomic.Int64
-
-	closed atomic.Bool
+	nonce     *uint64 // nil == unset, 0 == unused account
+	nonceLock sync.Mutex
 }
 
 // NewSimple initializes a new simple with the passed Config.
@@ -83,24 +72,30 @@ func NewSimple(chainName string, conf Config) (TxManager, error) {
 	}, nil
 }
 
+func (m *simple) ReserveNextNonce(ctx context.Context) (uint64, error) {
+	m.nonceLock.Lock()
+	defer m.nonceLock.Unlock()
+
+	if m.nonce == nil {
+		nonce, err := m.backend.NonceAt(ctx, m.cfg.From, nil)
+		if err != nil {
+			return 0, errors.Wrap(err, "failed to get nonce")
+		}
+		m.nonce = &nonce
+	}
+
+	defer func() {
+		*m.nonce++
+	}()
+
+	return *m.nonce, nil
+}
+
 func (m *simple) From() common.Address {
 	return m.cfg.From
 }
 
-func (m *simple) BlockNumber(ctx context.Context) (uint64, error) {
-	return m.backend.BlockNumber(ctx)
-}
-
-// Close closes the underlying connection, and sets the closed flag.
-// once closed, the tx manager will refuse to doSend any new transactions, and may abandon pending ones.
-func (m *simple) Close() {
-	m.backend.Close()
-	m.closed.Store(true)
-}
-
 // txFields returns a logger with the transaction hash and nonce fields set.
-//
-
 func txFields(tx *types.Transaction, logGas bool) []any {
 	fields := []any{
 		slog.Int64("nonce", int64(tx.Nonce())),
@@ -128,6 +123,8 @@ type TxCandidate struct {
 	GasLimit uint64
 	// Value is the value to be used in the constructed tx.
 	Value *big.Int
+	// Nonce to use for the transaction. If nil, the current nonce is used.
+	Nonce *uint64
 }
 
 // Send is used to publish a transaction with incrementally higher gas prices
@@ -140,15 +137,6 @@ type TxCandidate struct {
 //
 // NOTE: Send can be called concurrently, the nonce will be managed internally.
 func (m *simple) Send(ctx context.Context, candidate TxCandidate) (*types.Transaction, *types.Receipt, error) {
-	// refuse new requests if the tx manager is closed
-	if m.closed.Load() {
-		return nil, nil, ErrClosed
-	}
-	// todo(lazar): replace m.pending with package level prometheus gauge
-	m.pending.Add(1)
-	defer func() {
-		m.pending.Add(-1)
-	}()
 	tx, rec, err := m.doSend(ctx, candidate)
 	if err != nil {
 		m.resetNonce()
@@ -160,33 +148,44 @@ func (m *simple) Send(ctx context.Context, candidate TxCandidate) (*types.Transa
 
 // doSend performs the actual transaction creation and sending.
 func (m *simple) doSend(ctx context.Context, candidate TxCandidate) (*types.Transaction, *types.Receipt, error) {
-	if m.cfg.TxSendTimeout != 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, m.cfg.TxSendTimeout)
-		defer cancel()
-	}
-	// todo(lazar): use our exp backoff, with fast backoff
-	tx, err := Do(ctx, 30, Fixed(2*time.Second), func() (*types.Transaction, error) {
-		if m.closed.Load() {
-			return nil, ErrClosed
+	ctx, cancel := maybeSetTimeout(ctx, m.cfg.TxSendTimeout)
+	defer cancel()
+
+	backoff := expbackoff.New(ctx, expbackoff.WithFastConfig())
+	for {
+		if ctx.Err() != nil {
+			return nil, nil, errors.Wrap(ctx.Err(), "send timeout")
 		}
+
+		// Set a candidate nonce if not already set
+		if candidate.Nonce == nil {
+			nonce, err := m.ReserveNextNonce(ctx)
+			if err != nil {
+				log.Warn(ctx, "Failed to reserve nonce (will retry)", err)
+				backoff()
+
+				continue
+			}
+			candidate.Nonce = &nonce
+		}
+
+		// Create the initial transaction
 		tx, err := m.craftTx(ctx, candidate)
 		if err != nil {
-			log.Debug(ctx, "Failed to create a transaction, will retry", "err", err)
+			log.Warn(ctx, "Failed to create transaction (will retry)", err)
+			backoff()
+
+			continue
 		}
 
-		return tx, err
-	})
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "create the tx")
-	}
+		// Send it (note this has internal retries bumping fees)
+		rec, err := m.sendTx(ctx, tx)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "send tx")
+		}
 
-	rec, err := m.sendTx(ctx, tx)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "send the tx")
+		return tx, rec, nil
 	}
-
-	return tx, rec, nil
 }
 
 // craftTx creates the signed transaction
@@ -195,6 +194,10 @@ func (m *simple) doSend(ctx context.Context, candidate TxCandidate) (*types.Tran
 // NOTE: If the [TxCandidate.GasLimit] is non-zero, it will be used as the transaction's gas.
 // NOTE: Otherwise, the [simple] will query the specified backend for an estimate.
 func (m *simple) craftTx(ctx context.Context, candidate TxCandidate) (*types.Transaction, error) {
+	if candidate.Nonce == nil {
+		return nil, errors.New("invalid nil nonce")
+	}
+
 	gasTipCap, baseFee, err := m.suggestGasPriceCaps(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get gas price info")
@@ -228,48 +231,13 @@ func (m *simple) craftTx(ctx context.Context, candidate TxCandidate) (*types.Tra
 		Value:     candidate.Value,
 		Data:      candidate.TxData,
 		Gas:       gasLimit,
+		Nonce:     *candidate.Nonce,
 	}
 
-	return m.signWithNextNonce(ctx, txMessage) // signer sets the nonce field of the tx
-}
-
-// signWithNextNonce returns a signed transaction with the next available nonce.
-// The nonce is fetched once using eth_getTransactionCount with "latest", and
-// then subsequent calls simply increment this number. If the transaction manager
-// is reset, it will query the eth_getTransactionCount nonce again. If signing
-// fails, the nonce is not incremented.
-func (m *simple) signWithNextNonce(ctx context.Context, txMessage types.TxData) (*types.Transaction, error) {
-	m.nonceLock.Lock()
-	defer m.nonceLock.Unlock()
-	if m.nonce == nil {
-		// Fetch the sender'm nonce from the latest known block (nil `blockNumber`)
-		childCtx, cancel := context.WithTimeout(ctx, m.cfg.NetworkTimeout)
-		defer cancel()
-		nonce, err := m.backend.NonceAt(childCtx, m.cfg.From, nil)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get nonce")
-		}
-		m.nonce = &nonce
-	} else {
-		*m.nonce++
-	}
-
-	switch x := txMessage.(type) {
-	case *types.DynamicFeeTx:
-		x.Nonce = *m.nonce
-	default:
-		return nil, errors.New("unrecognized tx type", x)
-	}
 	ctx, cancel := context.WithTimeout(ctx, m.cfg.NetworkTimeout)
 	defer cancel()
-	tx, err := m.cfg.Signer(ctx, m.cfg.From, types.NewTx(txMessage))
-	if err != nil {
-		// decrement the nonce, so we can retry signing with the same nonce next time
-		// signWithNextNonce is called
-		*m.nonce--
-	}
 
-	return tx, err
+	return m.cfg.Signer(ctx, m.cfg.From, types.NewTx(txMessage))
 }
 
 // resetNonce resets the internal nonce tracking. This is called if any pending doSend
@@ -326,14 +294,10 @@ func (m *simple) sendTx(ctx context.Context, tx *types.Transaction) (*types.Rece
 			if sendState.ShouldAbortImmediately() {
 				return nil, errors.New("aborted transaction sending", txFields(tx, false)...)
 			}
-			// if the tx manager closed while we were waiting for the tx, give up
-			if m.closed.Load() {
-				return nil, ErrClosed
-			}
 			tx = publishAndWait(tx, true)
 
 		case <-ctx.Done():
-			return nil, errors.Wrap(ctx.Err(), "context canceled")
+			return nil, errors.Wrap(ctx.Err(), "timeout")
 
 		case receipt := <-receiptChan:
 			if receipt.EffectiveGasPrice != nil {
@@ -354,10 +318,10 @@ func (m *simple) sendTx(ctx context.Context, tx *types.Transaction) (*types.Rece
 func (m *simple) publishTx(ctx context.Context, tx *types.Transaction, sendState *SendState,
 	bumpFeesImmediately bool) (*types.Transaction, bool) {
 	for {
-		// if the tx manager closed, give up without bumping fees or retrying
-		if m.closed.Load() {
+		if ctx.Err() != nil {
 			return tx, false
 		}
+
 		if bumpFeesImmediately {
 			newTx, err := m.increaseGasPrice(ctx, tx)
 			if err != nil {
@@ -408,9 +372,8 @@ func (m *simple) publishTx(ctx context.Context, tx *types.Transaction, sendState
 
 // waitForTx calls waitMined, and then sends the receipt to receiptChan in a non-blocking way if a receipt is found
 // for the transaction. It should be called in a separate goroutine.
-func (m *simple) waitForTx(ctx context.Context, tx *types.Transaction, sendState *SendState,
-	receiptChan chan *types.Receipt) {
-	t := time.Now()
+func (m *simple) waitForTx(ctx context.Context, tx *types.Transaction, sendState *SendState, receiptChan chan *types.Receipt) {
+	t0 := time.Now()
 
 	// Poll for the transaction to be ready & then doSend the result to receiptChan
 	receipt, err := m.waitMined(ctx, tx, sendState)
@@ -421,7 +384,7 @@ func (m *simple) waitForTx(ctx context.Context, tx *types.Transaction, sendState
 		log.Warn(ctx, "Transaction receipt not mined, probably replaced", err)
 		return
 	}
-	txConfirmationLatency.WithLabelValues(m.chainName).Set(time.Since(t).Seconds())
+	txConfirmationLatency.WithLabelValues(m.chainName).Set(time.Since(t0).Seconds())
 
 	select {
 	case receiptChan <- receipt:
@@ -691,4 +654,14 @@ func errStringMatch(err, target error) bool {
 	}
 
 	return strings.Contains(err.Error(), target.Error())
+}
+
+// maybeSetTimeout returns a copy of the context with the timeout set if timeout is not zero.
+// If the timeout is zero, it doesn't set it and just returns the context.
+func maybeSetTimeout(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
+	if timeout == 0 {
+		return ctx, func() {}
+	}
+
+	return context.WithTimeout(ctx, timeout)
 }
