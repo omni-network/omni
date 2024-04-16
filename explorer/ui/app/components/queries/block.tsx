@@ -68,7 +68,7 @@ export const GetXBlock = (sourceChainID: string, height: string): XBlock | null 
     },
   })
   const { data, fetching, error } = result
-  // TODO: handle error properly here
+  // TODO handle error properly here
   if (!error) {
     return data as XBlock
   } else {
