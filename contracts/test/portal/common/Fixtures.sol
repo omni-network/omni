@@ -12,6 +12,7 @@ import { TestXTypes } from "./TestXTypes.sol";
 import { PortalHarness } from "./PortalHarness.sol";
 import { Counter } from "./Counter.sol";
 import { Reverter } from "./Reverter.sol";
+import { GasGuzzler } from "./GasGuzzler.sol";
 
 import { CommonBase } from "forge-std/Base.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
@@ -91,6 +92,8 @@ contract Fixtures is CommonBase, StdCheats {
     Reverter chainAReverter;
     Reverter chainBReverter;
 
+    GasGuzzler gasGuzzler;
+
     // helper mappings to generate XMsg.to and XMsg.sender for some sourceChainId & destChainId
     mapping(uint64 => address) _reverters;
     mapping(uint64 => address) _counters;
@@ -119,15 +122,30 @@ contract Fixtures is CommonBase, StdCheats {
         string memory root = vm.projectRoot();
         string memory fullpath = string.concat(root, "/", XBLOCKS_PATH);
 
-        TestXTypes.Block memory xblock1 = _xblock(1, 1); // sourceBlockHeight: 1, startOffset: 1
-        TestXTypes.Block memory xblock2 = _xblock(2, 6); // sourceBlockHeight: 2, startOffset: 6
-        TestXTypes.Block memory addValSet2 = _addValidatorSet_xblock(2); // valSetId: 2
+        TestXTypes.Block memory xblock1 = _xblock({ sourceBlockHeight: 1, startOffset: 1 });
+        TestXTypes.Block memory xblock2 = _xblock({ sourceBlockHeight: 2, startOffset: 6 });
+
+        TestXTypes.Block memory guzzle1 = _guzzle_xblock({ numGuzzles: 1 });
+        TestXTypes.Block memory guzzle5 = _guzzle_xblock({ numGuzzles: 5 });
+        TestXTypes.Block memory guzzle10 = _guzzle_xblock({ numGuzzles: 10 });
+        TestXTypes.Block memory guzzle25 = _guzzle_xblock({ numGuzzles: 25 });
+        TestXTypes.Block memory guzzle50 = _guzzle_xblock({ numGuzzles: 50 });
+
+        TestXTypes.Block memory addValSet2 = _addValidatorSet_xblock({ valSetId: 2 });
 
         // id identifies the json object we are writing to within vm state
         // see https://book.getfoundry.sh/cheatcodes/serialize-json
         string memory id = "ID";
+
         vm.serializeBytes(id, "xblock1", abi.encode(xblock1));
         vm.serializeBytes(id, "xblock2", abi.encode(xblock2));
+
+        vm.serializeBytes(id, "guzzle1", abi.encode(guzzle1));
+        vm.serializeBytes(id, "guzzle5", abi.encode(guzzle5));
+        vm.serializeBytes(id, "guzzle10", abi.encode(guzzle10));
+        vm.serializeBytes(id, "guzzle25", abi.encode(guzzle25));
+        vm.serializeBytes(id, "guzzle50", abi.encode(guzzle50));
+
         string memory json = vm.serializeBytes(id, "addValSet2", abi.encode(addValSet2));
 
         vm.writeJson(json, fullpath);
@@ -230,6 +248,19 @@ contract Fixtures is CommonBase, StdCheats {
         return TestXTypes.Block(XTypes.BlockHeader(omniCChainID, valSetId, bytes32(0)), xmsgs);
     }
 
+    function _guzzle_xblock(uint256 numGuzzles) internal view returns (TestXTypes.Block memory) {
+        uint64 offset = 1;
+        XTypes.Msg[] memory xmsgs = new XTypes.Msg[](numGuzzles);
+
+        for (uint256 i = 0; i < numGuzzles; i++) {
+            // all guzzles from chain a to this chain
+            xmsgs[i] = _guzzle(chainAId, thisChainId, offset, 100_000);
+            offset += 1;
+        }
+
+        return TestXTypes.Block(XTypes.BlockHeader(chainAId, 1, keccak256("blockhash")), xmsgs);
+    }
+
     /// @dev Create a Counter.increment() XMsg from thisChainId to chainAId
     function _outbound_increment() internal view returns (XTypes.Msg memory) {
         return _increment(thisChainId, chainAId, 0);
@@ -261,8 +292,8 @@ contract Fixtures is CommonBase, StdCheats {
             gasLimit: portal.XMSG_DEFAULT_GAS_LIMIT()
         });
     }
-
     /// @dev Create a Reverter.forceRevert() XMsg
+
     function _revert(uint64 sourceChainId, uint64 destChainId, uint64 offset)
         internal
         view
@@ -276,6 +307,23 @@ contract Fixtures is CommonBase, StdCheats {
             to: _reverters[destChainId],
             data: abi.encodeWithSignature("forceRevert()"),
             gasLimit: portal.XMSG_DEFAULT_GAS_LIMIT()
+        });
+    }
+
+    /// @dev Create a GasGuzzler.guzzle() XMsg
+    function _guzzle(uint64 sourceChainId, uint64 destChainId, uint64 offset, uint64 gasLimit)
+        internal
+        view
+        returns (XTypes.Msg memory)
+    {
+        return XTypes.Msg({
+            sourceChainId: sourceChainId,
+            destChainId: destChainId,
+            streamOffset: offset,
+            sender: address(gasGuzzler),
+            to: address(gasGuzzler),
+            data: abi.encodeWithSignature("guzzle()"),
+            gasLimit: gasLimit
         });
     }
 
@@ -425,6 +473,8 @@ contract Fixtures is CommonBase, StdCheats {
         );
         chainBCounter = new Counter(chainBPortal);
         chainBReverter = new Reverter();
+
+        gasGuzzler = new GasGuzzler();
 
         vm.stopPrank();
 
