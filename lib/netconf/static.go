@@ -63,7 +63,7 @@ var runid = uuid.New().String()
 var (
 	// Address matches lib/contracts.TestnetPortal() and lib/contracts.TestnetAVS().
 	// We do not import to avoid cylic dependencies.
-	testnetPortal = common.HexToAddress("0xFf22F3532C19a6f890c52c4CfcDB94007aA471Dc ")
+	testnetPortal = common.HexToAddress("0xFf22F3532C19a6f890c52c4CfcDB94007aA471Dc")
 	testnetAVS    = common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
 
 	// This address DOES NOT match lib/contracts.MainnetAVS().
