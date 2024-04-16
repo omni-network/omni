@@ -11,7 +11,6 @@ export function GetBlocksInRange(from: number, to: number): XBlock[] {
     },
   })
   const { data, fetching, error } = result
-
   var rows: XBlock[] = []
 
   data?.xblockrange.map((xblock: any) => {
@@ -60,10 +59,28 @@ export function GetBlockCount(): number {
   return Number(hex)
 }
 
+export const GetXBlock = (sourceChainID: string, height: string): XBlock | null => {
+  const [result] = useQuery({
+    query: xblock,
+    variables: {
+      sourceChainID,
+      height,
+    },
+  })
+  const { data, fetching, error } = result
+  // TODO handle error properly here
+  if (!error) {
+    return data as XBlock
+  } else {
+    return null
+  }
+}
+
 export const xblock = graphql(`
   query Xblock($sourceChainID: BigInt!, $height: BigInt!) {
     xblock(sourceChainID: $sourceChainID, height: $height) {
       BlockHash
+      BlockHeight
     }
   }
 `)

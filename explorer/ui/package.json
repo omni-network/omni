@@ -33,7 +33,7 @@
     "save": "2.9.0"
   },
   "devDependencies": {
-    "@fontsource/urbanist": "5.0.18",
+    "@fontsource/manrope": "5.0.19",
     "@fortawesome/fontawesome-common-types": "6.5.1",
     "@fortawesome/react-fontawesome": "0.2.0",
     "@graphql-codegen/cli": "5.0.0",
