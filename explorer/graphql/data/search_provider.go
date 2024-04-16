@@ -2,7 +2,6 @@ package data
 
 import (
 	"context"
-	"encoding/hex"
 
 	"github.com/omni-network/omni/explorer/db/ent"
 	"github.com/omni-network/omni/explorer/db/ent/block"
@@ -22,12 +21,9 @@ import (
 // TODO (Dan): This is a very naive search implementation. It should be improved. We also should search by address?
 func (p Provider) Search(ctx context.Context, query string) (*resolvers.SearchResult, bool, error) {
 	searchResult := &resolvers.SearchResult{}
-	hash, err := hex.DecodeString(query)
-	if err != nil {
-		return nil, false, errors.Wrap(err, "decode hex string")
-	}
+	hash := common.HexToHash(query)
 
-	blockQuery, err := p.EntClient.Block.Query().Where(block.BlockHash(hash)).First(ctx)
+	blockQuery, err := p.EntClient.Block.Query().Where(block.BlockHash(hash.Bytes())).First(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, false, errors.Wrap(err, "search block graphql provider")
 	}
@@ -53,7 +49,7 @@ func (p Provider) Search(ctx context.Context, query string) (*resolvers.SearchRe
 		return nil, true, nil
 	}
 
-	msgQuery, err := p.EntClient.Msg.Query().Where(msg.TxHash(hash)).First(ctx)
+	msgQuery, err := p.EntClient.Msg.Query().Where(msg.TxHash(hash.Bytes())).First(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, false, errors.Wrap(err, "search msg graphql provider")
 	}
@@ -65,7 +61,7 @@ func (p Provider) Search(ctx context.Context, query string) (*resolvers.SearchRe
 		return searchResult, true, nil
 	}
 
-	receiptQuery, err := p.EntClient.Receipt.Query().Where(receipt.TxHash(hash)).First(ctx)
+	receiptQuery, err := p.EntClient.Receipt.Query().Where(receipt.TxHash(hash.Bytes())).First(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, false, errors.Wrap(err, "search receipt graphql provider")
 	}
