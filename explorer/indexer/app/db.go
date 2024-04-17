@@ -79,7 +79,6 @@ func incrementCursor(ctx context.Context, tx *ent.Tx, chainID, height uint64) er
 		return errors.New("unexpected cursor vs block height mismatch [BUG]", "cursor_height", cursor.Height, "block_height", height)
 	}
 
-	cursor.Height = height
 	if _, err := tx.XProviderCursor.UpdateOne(cursor).SetHeight(height).Save(ctx); err != nil {
 		return errors.Wrap(err, "update cursor")
 	}
