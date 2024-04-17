@@ -82,7 +82,7 @@ func Address(network netconf.ID, role Role) (common.Address, bool) {
 // PrivateKey returns the private key for the EOA identified by the network and role.
 func PrivateKey(ctx context.Context, network netconf.ID, role Role) (*ecdsa.PrivateKey, error) {
 	acc, ok := accountForRole(network, role)
-	if ok {
+	if !ok {
 		return nil, errors.New("eoa key not defined", "network", network, "role", role)
 	}
 	if network == netconf.Devnet {
