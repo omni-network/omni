@@ -3,7 +3,7 @@ package account
 import (
 	"context"
 
-	"github.com/omni-network/omni/lib/contracts"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/netconf"
@@ -40,12 +40,12 @@ func Monitor(ctx context.Context, network netconf.Network) error {
 
 	accounts := map[netconf.ID][]account{
 		netconf.Testnet: {
-			{contracts.TestnetCreate3Deployer(), create3Deployer},
-			{contracts.TestnetDeployer(), deployer},
+			{eoa.TestnetCreate3Deployer(), create3Deployer},
+			{eoa.TestnetDeployer(), deployer},
 		},
 		netconf.Staging: {
-			{contracts.StagingCreate3Deployer(), create3Deployer},
-			{contracts.StagingDeployer(), deployer},
+			{eoa.StagingCreate3Deployer(), create3Deployer},
+			{eoa.StagingDeployer(), deployer},
 			{common.HexToAddress("0x7a6cF389082dc698285474976d7C75CAdE08ab7e"), devFireblocks}, // fb: dev
 		},
 	}

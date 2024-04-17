@@ -223,12 +223,12 @@ func verifyKeyNodeType(def app.Definition, cfg key.UploadConfig) error {
 	}
 
 	if cfg.Type == key.EOA {
-		eoaType := eoa.Role(cfg.Name)
-		if err := eoaType.Verify(); err != nil {
+		eoaRole := eoa.Role(cfg.Name)
+		if err := eoaRole.Verify(); err != nil {
 			return errors.Wrap(err, "verifying name as eoa type")
 		}
 
-		if addr, ok := eoa.Address(def.Testnet.Network, eoaType); ok {
+		if addr, ok := eoa.Address(def.Testnet.Network, eoaRole); ok {
 			return errors.New("cannot create eoa key already defined", "addr", addr)
 		}
 

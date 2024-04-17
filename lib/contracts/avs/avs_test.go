@@ -14,9 +14,9 @@ import (
 
 	clicmd "github.com/omni-network/omni/cli/cmd"
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/app/static"
 	"github.com/omni-network/omni/lib/anvil"
-	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/avs"
 	"github.com/omni-network/omni/lib/contracts/create3"
 	"github.com/omni-network/omni/lib/errors"
@@ -191,7 +191,7 @@ func makeEOAS(t *testing.T, backend *ethbackend.Backend) EOAS {
 	require.NoError(t, err)
 
 	return EOAS{
-		AVSOwner:     contracts.DevnetAVSAdmin(),
+		AVSOwner:     eoa.DevnetAVSAdmin(),
 		EigenOwner:   anvil.DevAccount9(), // account used to deploy eigen contracts
 		Operator1:    operator1,
 		Operator1Key: operator1Key,

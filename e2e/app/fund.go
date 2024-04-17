@@ -6,7 +6,6 @@ import (
 
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/anvil"
-	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
 
@@ -38,22 +37,22 @@ func accountsToFund(network netconf.ID) []common.Address {
 	case netconf.Staging:
 		return []common.Address{
 			fbDev,
-			contracts.StagingCreate3Deployer(),
-			contracts.StagingDeployer(),
-			contracts.StagingProxyAdminOwner(),
-			contracts.StagingPortalAdmin(),
-			contracts.StagingAVSAdmin(),
+			eoa.StagingCreate3Deployer(),
+			eoa.StagingDeployer(),
+			eoa.StagingProxyAdminOwner(),
+			eoa.StagingPortalAdmin(),
+			eoa.StagingAVSAdmin(),
 			eoa.MustAddress(netconf.Staging, eoa.RoleRelayer),
 			eoa.MustAddress(netconf.Staging, eoa.RoleMonitor),
 		}
 	case netconf.Devnet:
 		return []common.Address{
 			fbDev,
-			contracts.DevnetCreate3Deployer(),
-			contracts.DevnetDeployer(),
-			contracts.DevnetProxyAdminOwner(),
-			contracts.DevnetPortalAdmin(),
-			contracts.DevnetAVSAdmin(),
+			eoa.DevnetCreate3Deployer(),
+			eoa.DevnetDeployer(),
+			eoa.DevnetProxyAdminOwner(),
+			eoa.DevnetPortalAdmin(),
+			eoa.DevnetAVSAdmin(),
 			eoa.MustAddress(netconf.Devnet, eoa.RoleRelayer),
 			eoa.MustAddress(netconf.Devnet, eoa.RoleMonitor),
 		}

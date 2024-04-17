@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/chainids"
-	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
@@ -50,38 +50,38 @@ func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) 
 
 func mainnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Deployer: contracts.MainnetCreate3Deployer(),
+		Deployer: eoa.MainnetCreate3Deployer(),
 	}
 }
 
 func testnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Deployer: contracts.TestnetCreate3Deployer(),
+		Deployer: eoa.TestnetCreate3Deployer(),
 	}
 }
 
 func stagingCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Deployer: contracts.StagingCreate3Deployer(),
+		Deployer: eoa.StagingCreate3Deployer(),
 	}
 }
 
 func devnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Deployer: contracts.DevnetCreate3Deployer(),
+		Deployer: eoa.DevnetCreate3Deployer(),
 	}
 }
 
 func AddrForNetwork(network netconf.ID) (common.Address, bool) {
 	switch network {
 	case netconf.Mainnet:
-		return contracts.MainnetCreate3Factory(), true
+		return eoa.MainnetCreate3Factory(), true
 	case netconf.Testnet:
-		return contracts.TestnetCreate3Factory(), true
+		return eoa.TestnetCreate3Factory(), true
 	case netconf.Staging:
-		return contracts.StagingCreate3Factory(), true
+		return eoa.StagingCreate3Factory(), true
 	case netconf.Devnet:
-		return contracts.DevnetCreate3Factory(), true
+		return eoa.DevnetCreate3Factory(), true
 	default:
 		return common.Address{}, false
 	}

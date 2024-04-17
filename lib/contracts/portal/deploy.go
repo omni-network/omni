@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/chainids"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/create3"
@@ -86,69 +87,69 @@ func getDeployCfg(chainID uint64, network netconf.ID, valSetID uint64, vals []bi
 
 func mainnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory: contracts.MainnetCreate3Factory(),
-		Create3Salt:    contracts.PortalSalt(netconf.Mainnet),
-		Owner:          contracts.MainnetPortalAdmin(),
-		Deployer:       contracts.MainnetDeployer(),
+		Create3Factory: eoa.MainnetCreate3Factory(),
+		Create3Salt:    eoa.PortalSalt(netconf.Mainnet),
+		Owner:          eoa.MainnetPortalAdmin(),
+		Deployer:       eoa.MainnetDeployer(),
 		// TODO: fill in the rest
 	}
 }
 
 func testnetCfg(valSetID uint64, vals []bindings.Validator) DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory: contracts.TestnetCreate3Factory(),
-		Create3Salt:    contracts.PortalSalt(netconf.Testnet),
-		Owner:          contracts.TestnetPortalAdmin(),
-		Deployer:       contracts.TestnetDeployer(),
-		ProxyAdmin:     contracts.TestnetProxyAdmin(),
+		Create3Factory: eoa.TestnetCreate3Factory(),
+		Create3Salt:    eoa.PortalSalt(netconf.Testnet),
+		Owner:          eoa.TestnetPortalAdmin(),
+		Deployer:       eoa.TestnetDeployer(),
+		ProxyAdmin:     eoa.TestnetProxyAdmin(),
 		OmniEChainID:   netconf.Testnet.Static().OmniExecutionChainID,
 		OmniCChainID:   netconf.Testnet.Static().OmniConsensusChainIDUint64(),
 		ValSetID:       valSetID,
 		Validators:     vals,
-		ExpectedAddr:   contracts.TestnetPortal(),
+		ExpectedAddr:   eoa.TestnetPortal(),
 	}
 }
 
 func stagingCfg(valSetID uint64, vals []bindings.Validator) DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory: contracts.StagingCreate3Factory(),
-		Create3Salt:    contracts.PortalSalt(netconf.Staging),
-		Owner:          contracts.StagingPortalAdmin(),
-		Deployer:       contracts.StagingDeployer(),
-		ProxyAdmin:     contracts.StagingProxyAdmin(),
+		Create3Factory: eoa.StagingCreate3Factory(),
+		Create3Salt:    eoa.PortalSalt(netconf.Staging),
+		Owner:          eoa.StagingPortalAdmin(),
+		Deployer:       eoa.StagingDeployer(),
+		ProxyAdmin:     eoa.StagingProxyAdmin(),
 		OmniEChainID:   netconf.Staging.Static().OmniExecutionChainID,
 		OmniCChainID:   netconf.Staging.Static().OmniConsensusChainIDUint64(),
 		ValSetID:       valSetID,
 		Validators:     vals,
-		ExpectedAddr:   contracts.StagingPortal(),
+		ExpectedAddr:   eoa.StagingPortal(),
 	}
 }
 
 func devnetCfg(valSetID uint64, vals []bindings.Validator) DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory: contracts.DevnetCreate3Factory(),
-		Create3Salt:    contracts.PortalSalt(netconf.Devnet),
-		Owner:          contracts.DevnetPortalAdmin(),
-		Deployer:       contracts.DevnetDeployer(),
-		ProxyAdmin:     contracts.DevnetProxyAdmin(),
+		Create3Factory: eoa.DevnetCreate3Factory(),
+		Create3Salt:    eoa.PortalSalt(netconf.Devnet),
+		Owner:          eoa.DevnetPortalAdmin(),
+		Deployer:       eoa.DevnetDeployer(),
+		ProxyAdmin:     eoa.DevnetProxyAdmin(),
 		OmniEChainID:   netconf.Devnet.Static().OmniExecutionChainID,
 		OmniCChainID:   netconf.Devnet.Static().OmniConsensusChainIDUint64(),
 		ValSetID:       valSetID,
 		Validators:     vals,
-		ExpectedAddr:   contracts.DevnetPortal(),
+		ExpectedAddr:   eoa.DevnetPortal(),
 	}
 }
 
 func AddrForNetwork(network netconf.ID) (common.Address, bool) {
 	switch network {
 	case netconf.Mainnet:
-		return contracts.MainnetPortal(), true
+		return eoa.MainnetPortal(), true
 	case netconf.Testnet:
-		return contracts.TestnetPortal(), true
+		return eoa.TestnetPortal(), true
 	case netconf.Staging:
-		return contracts.StagingPortal(), true
+		return eoa.StagingPortal(), true
 	case netconf.Devnet:
-		return contracts.DevnetPortal(), true
+		return eoa.DevnetPortal(), true
 	default:
 		return common.Address{}, false
 	}

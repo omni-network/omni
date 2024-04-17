@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/anvil"
-	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/create3"
 	"github.com/omni-network/omni/lib/contracts/portal"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -40,7 +40,7 @@ func TestDeployDevnet(t *testing.T) {
 	// devnet create3 factory is required
 	addr, _, err := create3.Deploy(ctx, netconf.Devnet, backend)
 	require.NoError(t, err)
-	require.Equal(t, contracts.DevnetCreate3Factory(), addr)
+	require.Equal(t, eoa.DevnetCreate3Factory(), addr)
 
 	valSetID := uint64(1)
 	vals := []bindings.Validator{
@@ -51,14 +51,14 @@ func TestDeployDevnet(t *testing.T) {
 
 	addr, _, err = portal.Deploy(ctx, netconf.Devnet, backend, valSetID, vals)
 	require.NoError(t, err)
-	require.Equal(t, contracts.DevnetPortal(), addr)
+	require.Equal(t, eoa.DevnetPortal(), addr)
 
 	portal, err := bindings.NewOmniPortal(addr, backend)
 	require.NoError(t, err)
 
 	owner, err := portal.Owner(nil)
 	require.NoError(t, err)
-	require.Equal(t, contracts.DevnetPortalAdmin(), owner)
+	require.Equal(t, eoa.DevnetPortalAdmin(), owner)
 
 	// check validators
 	totalPower, err := portal.ValidatorSetTotalPower(nil, 1)

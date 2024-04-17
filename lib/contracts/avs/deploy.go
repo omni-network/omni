@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/chainids"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/create3"
@@ -106,74 +107,74 @@ func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) 
 
 func testnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory:   contracts.TestnetCreate3Factory(),
-		Create3Salt:      contracts.AVSSalt(netconf.Testnet),
-		Deployer:         contracts.TestnetDeployer(),
-		Owner:            contracts.TestnetAVSAdmin(),
-		ProxyAdmin:       contracts.TestnetProxyAdmin(),
+		Create3Factory:   eoa.TestnetCreate3Factory(),
+		Create3Salt:      eoa.AVSSalt(netconf.Testnet),
+		Deployer:         eoa.TestnetDeployer(),
+		Owner:            eoa.TestnetAVSAdmin(),
+		ProxyAdmin:       eoa.TestnetProxyAdmin(),
 		Eigen:            holeskyEigenDeployments(),
 		StrategyParams:   holeskyStrategyParams(),
 		MetadataURI:      metadataURI,
 		OmniChainID:      netconf.Testnet.Static().OmniExecutionChainID,
-		Portal:           contracts.TestnetPortal(),
+		Portal:           eoa.TestnetPortal(),
 		EthStakeInbox:    stubEthStakeInbox,
 		MinOperatorStake: big.NewInt(1e18), // 1 ETH
 		MaxOperatorCount: 200,
 		AllowlistEnabled: false,
-		ExpectedAddr:     contracts.TestnetAVS(),
+		ExpectedAddr:     eoa.TestnetAVS(),
 	}
 }
 
 func stagingCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory:   contracts.StagingCreate3Factory(),
-		Create3Salt:      contracts.AVSSalt(netconf.Staging),
-		Deployer:         contracts.StagingDeployer(),
-		Owner:            contracts.StagingAVSAdmin(),
-		ProxyAdmin:       contracts.StagingProxyAdmin(),
+		Create3Factory:   eoa.StagingCreate3Factory(),
+		Create3Salt:      eoa.AVSSalt(netconf.Staging),
+		Deployer:         eoa.StagingDeployer(),
+		Owner:            eoa.StagingAVSAdmin(),
+		ProxyAdmin:       eoa.StagingProxyAdmin(),
 		Eigen:            devnetEigenDeployments,
 		StrategyParams:   devnetStrategyParams(),
 		MetadataURI:      metadataURI,
 		OmniChainID:      netconf.Staging.Static().OmniExecutionChainID,
-		Portal:           contracts.StagingPortal(),
+		Portal:           eoa.StagingPortal(),
 		EthStakeInbox:    stubEthStakeInbox,
 		MinOperatorStake: big.NewInt(1e18), // 1 ETH
 		MaxOperatorCount: 10,
 		AllowlistEnabled: true,
-		ExpectedAddr:     contracts.StagingAVS(),
+		ExpectedAddr:     eoa.StagingAVS(),
 	}
 }
 
 func devnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory:   contracts.DevnetCreate3Factory(),
-		Create3Salt:      contracts.AVSSalt(netconf.Devnet),
-		Deployer:         contracts.DevnetDeployer(),
-		Owner:            contracts.DevnetAVSAdmin(),
-		ProxyAdmin:       contracts.DevnetProxyAdmin(),
+		Create3Factory:   eoa.DevnetCreate3Factory(),
+		Create3Salt:      eoa.AVSSalt(netconf.Devnet),
+		Deployer:         eoa.DevnetDeployer(),
+		Owner:            eoa.DevnetAVSAdmin(),
+		ProxyAdmin:       eoa.DevnetProxyAdmin(),
 		Eigen:            devnetEigenDeployments,
 		MetadataURI:      metadataURI,
 		OmniChainID:      netconf.Devnet.Static().OmniExecutionChainID,
 		StrategyParams:   devnetStrategyParams(),
-		Portal:           contracts.DevnetPortal(),
+		Portal:           eoa.DevnetPortal(),
 		EthStakeInbox:    stubEthStakeInbox,
 		MinOperatorStake: big.NewInt(1e18), // 1 ETH
 		MaxOperatorCount: 10,
 		AllowlistEnabled: true,
-		ExpectedAddr:     contracts.DevnetAVS(),
+		ExpectedAddr:     eoa.DevnetAVS(),
 	}
 }
 
 func AddrForNetwork(network netconf.ID) (common.Address, bool) {
 	switch network {
 	case netconf.Mainnet:
-		return contracts.MainnetAVS(), true
+		return eoa.MainnetAVS(), true
 	case netconf.Testnet:
-		return contracts.TestnetAVS(), true
+		return eoa.TestnetAVS(), true
 	case netconf.Staging:
-		return contracts.StagingAVS(), true
+		return eoa.StagingAVS(), true
 	case netconf.Devnet:
-		return contracts.DevnetAVS(), true
+		return eoa.DevnetAVS(), true
 	default:
 		return common.Address{}, false
 	}
