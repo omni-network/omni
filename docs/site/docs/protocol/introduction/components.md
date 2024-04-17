@@ -4,12 +4,15 @@ sidebar_position: 2
 
 # Component Overview
 
+The Omni protocol is composed of five primary components: **rollup networks**, **the Omni Network**, **EigenLayer restaking contracts**, **Omni Portal contracts**, and **relayers**.
+
 <figure>
   <img src="/img/components.png" alt="Components" />
   <figcaption>*Overview of the Components of the Network*</figcaption>
 </figure>
 
-- It consists of two internal chains, a consensus layer and an execution layer, similar to post-merge Ethereum.
+- A **rollup network** is any Ethereum rollup that performs off-chain transaction execution before settling to Ethereum L1.
+- The **Omni Network** is a layer 1 blockchain that connects rollup VMs. Similar to Ethereum, Omni nodes are separated into distinct execution and consensus layers. It consists of two internal chains, a consensus layer and an execution layer, similar to post-merge Ethereum.
     - Similar to Ethereum, Omni nodes are separated into distinct execution and consensus environments
         - The **execution layer** is implemented by standard Ethereum execution clients. like  **`geth`**, **`erigon`**, etc, to provide the Omni EVM.
         - The **consensus** layer is implemented by the Omni consensus client, halo, and uses CometBFT for consensus on XMsgs and Omni EVM blocks.
