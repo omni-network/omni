@@ -100,7 +100,7 @@ func initializeRPCClients(chains []netconf.Chain) (map[uint64]ethclient.Client, 
 	return rpcClientPerChain, nil
 }
 
-// initChainCursor return the initial cursor height to start streaming from (inclusive).
+// InitChainCursor return the initial cursor height to start streaming from (inclusive).
 // If a cursor exists, it returns the cursor height + 1.
 // Else a new cursor is created with chain deploy height.
 func InitChainCursor(ctx context.Context, entCl *ent.Client, chain netconf.Chain) (uint64, error) {
@@ -124,6 +124,16 @@ func InitChainCursor(ctx context.Context, entCl *ent.Client, chain netconf.Chain
 		Save(ctx)
 	if err != nil {
 		return 0, errors.Wrap(err, "create cursor")
+	}
+
+	// if the cursor doesn't exist that means the chain doesn't exist so we have to create it as well
+	_, err = entCl.Chain.
+		Create().
+		SetChainID(chain.ID).
+		SetName(chain.Name).
+		Save(ctx)
+	if err != nil {
+		return 0, errors.Wrap(err, "create chain")
 	}
 
 	log.Info(ctx, "Created cursor", "chain_id", chain.ID, "height", deployHeight)
