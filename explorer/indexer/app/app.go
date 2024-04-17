@@ -125,6 +125,16 @@ func initChainCursor(ctx context.Context, entCl *ent.Client, chain netconf.Chain
 		return 0, errors.Wrap(err, "create cursor")
 	}
 
+	// if the cursor doesn't exist that means the chain doesn't exist so we have to create it as well
+	_, err = entCl.Chain.
+		Create().
+		SetChainID(chain.ID).
+		SetName(chain.Name).
+		Save(ctx)
+	if err != nil {
+		return 0, errors.Wrap(err, "create chain")
+	}
+
 	return chain.DeployHeight, nil
 }
 
