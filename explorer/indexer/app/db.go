@@ -80,7 +80,7 @@ func incrementCursor(ctx context.Context, tx *ent.Tx, chainID, height uint64) er
 	}
 
 	cursor.Height = height
-	if _, err := tx.XProviderCursor.UpdateOne(cursor).Save(ctx); err != nil {
+	if _, err := tx.XProviderCursor.UpdateOne(cursor).SetHeight(height).Save(ctx); err != nil {
 		return errors.Wrap(err, "update cursor")
 	}
 

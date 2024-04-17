@@ -75,6 +75,7 @@ func startXProvider(ctx context.Context, network netconf.Network, entCl *ent.Cli
 		if err != nil {
 			return errors.Wrap(err, "initialize chain cursor", "chain_id", chain.ID)
 		}
+		log.Info(ctx, "Subscribing to chain", "chain_id", chain.ID, "from_height", fromHeight)
 
 		err = xprovider.StreamAsync(ctx, chain.ID, fromHeight, callback)
 		if err != nil {
@@ -124,6 +125,8 @@ func initChainCursor(ctx context.Context, entCl *ent.Client, chain netconf.Chain
 	if err != nil {
 		return 0, errors.Wrap(err, "create cursor")
 	}
+
+	log.Info(ctx, "Created cursor", "chain_id", chain.ID, "height", deployHeight)
 
 	return deployHeight, nil
 }
