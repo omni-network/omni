@@ -1,6 +1,9 @@
 @import '@fontsource/manrope';
-/* @import '@fontsource/manrope/400.css';
-@import '@fontsource/manrope/400-italic.css'; */
+@import '@fontsource/manrope/400.css';
+@import '@fontsource/manrope/500.css';
+@import '@fontsource/manrope/700.css';
+@import './assets/icons/css/omni.css';
+
 
 @tailwind base;
 @layer base {
@@ -65,6 +68,178 @@
     line-height: 0.625rem;
     text-transform: uppercase;
   }
+
+  /* component button */
+  .text-cb-lg {
+    font-size: 1.125rem;
+    font-weight: 700;
+    line-height: 1.125rem;
+    letter-spacing: 0.03125rem;
+  }
+
+  .text-cb-md, .text-cb {
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1rem;
+    letter-spacing: 0.03125rem;
+  }
+
+  .text-cb-sm {
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 0.875rem;
+    letter-spacing: 0.03125rem;
+  }
+
+  .text-cb-xs {
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 0.75rem;
+    letter-spacing: 0.03125rem;
+  }
+
+  /* overwriting original class to keep naming conventions consistent */
+  .bg-positive {
+    @apply bg-bg-positive !important; 
+  }
+
+  .bg-input-default {
+    @apply bg-bg-input-default !important;
+  }
+
+  .bg-input-hover {
+    @apply bg-bg-input-hover !important;
+  }
+
+  .bg-input-active {
+    @apply bg-bg-input-active !important;
+  }
+
+  .bg-search-default {
+    @apply bg-bg-search-default !important;
+  }
+
+  .bg-search-hover {
+    @apply bg-bg-search-hover !important;
+  }
+
+  .bg-search-active {
+    @apply bg-bg-search-active !important;
+  }
+
+  .text-positive {
+    color: var(--color-text-positive);
+  }
+
+  .bg-critical {
+    @apply bg-bg-critical !important; 
+  }
+
+  .bg-hover {
+    @apply bg-bg-hover !important;
+  }
+
+  .bg-active {
+    @apply bg-bg-active !important;
+  }
+
+  .text-critical {
+    color: var(--color-text-critical);
+  }
+
+  .bg-subtle {
+    @apply bg-bg-subtle !important; 
+  }
+
+  .text-subtle {
+    color: var(--color-text-subtle);
+  }
+
+  .bg-secondary {
+    @apply bg-bg-secondary !important; 
+  }
+
+  
+
+  .text-secondary {
+    color: var(--color-text-secondary);
+  }
+
+  .text-btn-lg {
+    font-size: 1.125rem;
+    font-weight:700;
+    line-height: 1.125rem;
+  }
+
+  .text-btn-md, .text-btn {
+    font-size: 1rem;
+    font-weight:700;
+    line-height: 1rem;
+  }
+
+  .text-btn-sm {
+    font-size: 0.875rem;
+    font-weight:700;
+    line-height: 0.875rem;
+  }
+
+  .text-btn-xs {
+    font-size: 0.75rem;
+    font-weight:700;
+    line-height: 0.75rem;
+  }
+  
+  .link {
+    @apply text-link hover:text-link-hover active:text-link-pressed visited:text-link-visited;
+    transition: color 0.2s ease-out;
+    text-decoration: none;
+  }
 }
 @tailwind components;
 @tailwind utilities;
+
+@layer utilities {
+  .table-highlight {
+    background-color: #FBFBFC05;
+  }
+
+  .font-thin {
+    font-variation-settings: 'wght' 100;
+  }
+  .font-extralight {
+      font-variation-settings: 'wght' 200;
+  }
+  .font-light {
+      font-variation-settings: 'wght' 300;
+  }
+  .font-normal {
+      font-variation-settings: 'wght' 400;
+  }
+  .font-medium {
+      font-variation-settings: 'wght' 500;
+  }
+  .font-semibold {
+      font-variation-settings: 'wght' 600;
+  }
+  .font-bold {
+      font-variation-settings: 'wght' 700;
+  }
+  .font-extrabold {
+      font-variation-settings: 'wght' 800;
+  }
+  .font-black {
+      font-variation-settings: 'wght' 900;
+  }
+
+  .border-default {
+    border-color: var(--color-border-default) !important;
+  }
+
+  .border-subtle {
+    border-color: var(--color-border-subtle) !important;
+  }
+
+  .border-disabled {
+    border-color: var(--color-border-disabled) !important;
+  }
+}
