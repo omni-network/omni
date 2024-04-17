@@ -71,7 +71,7 @@ func startXProvider(ctx context.Context, network netconf.Network, entCl *ent.Cli
 	callback := newCallback(entCl)
 
 	for _, chain := range network.EVMChains() {
-		fromHeight, err := initChainCursor(ctx, entCl, chain)
+		fromHeight, err := InitChainCursor(ctx, entCl, chain)
 		if err != nil {
 			return errors.Wrap(err, "initialize chain cursor", "chain_id", chain.ID)
 		}
@@ -99,10 +99,10 @@ func initializeRPCClients(chains []netconf.Chain) (map[uint64]ethclient.Client, 
 	return rpcClientPerChain, nil
 }
 
-// initChainCursor return the initial cursor height to start streaming from (inclusive).
+// InitChainCursor return the initial cursor height to start streaming from (inclusive).
 // If a cursor exists, it returns the cursor height + 1.
 // Else a new cursor is created with chain deploy height.
-func initChainCursor(ctx context.Context, entCl *ent.Client, chain netconf.Chain) (uint64, error) {
+func InitChainCursor(ctx context.Context, entCl *ent.Client, chain netconf.Chain) (uint64, error) {
 	cursor, ok, err := getCursor(ctx, entCl.XProviderCursor, chain.ID)
 	if err != nil {
 		return 0, errors.Wrap(err, "get cursor")
