@@ -44,9 +44,9 @@ type Account struct {
 	Address    common.Address
 	PrivateKey *ecdsa.PrivateKey // only for devnet (well-known type)
 
-	Chains        ChainSelector
-	MinBalance    *big.Int
-	TargetBalance *big.Int
+	Chains        ChainSelector // all vs specific chains
+	MinBalance    *big.Int      // check if below this balance
+	TargetBalance *big.Int      // fund to this balance
 }
 
 func (r Role) Verify() error {
