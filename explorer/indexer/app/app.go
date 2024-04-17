@@ -128,7 +128,7 @@ func initChainCursor(ctx context.Context, entCl *ent.Client, chain netconf.Chain
 
 	log.Info(ctx, "Created cursor", "chain_id", chain.ID, "height", deployHeight)
 
-	return deployHeight, nil
+	return chain.DeployHeight, nil
 }
 
 // serveMonitoring starts a goroutine that serves the monitoring API. It
