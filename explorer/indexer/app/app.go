@@ -111,21 +111,21 @@ func initChainCursor(ctx context.Context, entCl *ent.Client, chain netconf.Chain
 	}
 
 	// Store the cursor at deploy height - 1, so first cursor update will be at deploy height.
-	deployMinOne := chain.DeployHeight - 1
+	deployHeight := chain.DeployHeight - 1
 	if chain.DeployHeight == 0 { // Except for 0, we handle this explicitly.
-		deployMinOne = 0
+		deployHeight = 0
 	}
 
 	// cursor doesn't exist yet, create it
 	_, err = entCl.XProviderCursor.Create().
 		SetChainID(chain.ID).
-		SetHeight(deployMinOne).
+		SetHeight(deployHeight).
 		Save(ctx)
 	if err != nil {
 		return 0, errors.Wrap(err, "create cursor")
 	}
 
-	return chain.DeployHeight, nil
+	return deployHeight, nil
 }
 
 // serveMonitoring starts a goroutine that serves the monitoring API. It

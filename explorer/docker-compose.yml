@@ -45,8 +45,3 @@ services:
     depends_on:
       db:
         condition: service_healthy
-
-networks:
-  default:
-    name: devnet1_devnet1
-    external: true
