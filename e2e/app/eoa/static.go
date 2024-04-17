@@ -4,29 +4,49 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/netconf"
 )
 
 const (
 	// address of the "staging-create3-deployer" fireblocks account.
 	fbStagingCreate3Deployer = "0xC8103859Ac7CB547d70307EdeF1A2319FC305fdC"
-
 	// address of the "staging-deployer" fireblocks account.
 	fbStagingDeployer = "0x274c4B3e5d27A65196d63964532366872F81D261"
-
 	// address of the "staging-owner" fireblocks account.
 	fbStagingAdmin = "0x4891925c4f13A34FC26453FD168Db80aF3273014"
-
 	// address of the "testnet-create3-deployer" fireblocks account.
 	fbTestnetCreate3Deployer = "0xeC5134556da0797A5C5cD51DD622b689Cac97Fe9"
-
 	// address of the "testnet-deployer" fireblocks account.
 	fbTestnetDeployer = "0x0CdCc644158b7D03f40197f55454dc7a11Bd92c1"
-
 	// address of the "testnet-owner" fireblocks account.
 	fbTestnetAdmin = "0xEAD625eB2011394cdD739E91Bf9D51A7169C22F5"
 
 	fbDev = "0x7a6cF389082dc698285474976d7C75CAdE08ab7e"
+)
+
+//nolint:gochecknoglobals // Static addresses
+var (
+	// Admin - used as contract owner.
+
+	MainnetAdmin = addr("0x0")
+	TestnetAdmin = addr(fbTestnetAdmin)
+	StagingAdmin = addr(fbStagingAdmin)
+	DevnetAdmin  = anvil.DevAccount2()
+
+	// Create3 Deployer - addrress that can deploy the create3 factory.
+
+	MainnetCreate3Deployer = addr("0x0")
+	TestnetCreate3Deployer = addr(fbTestnetCreate3Deployer)
+	StagingCreate3Deployer = addr(fbStagingCreate3Deployer)
+	DevnetCreate3Deployer  = anvil.DevAccount0()
+
+	// Deployer - address that can deploy protocol contracts via Create3 factory.
+
+	MainnetDeployer = addr("0x0")
+	TestnetDeployer = addr(fbTestnetDeployer)
+	StagingDeployer = addr(fbStagingDeployer)
+	DevnetDeployer  = anvil.DevAccount1()
 )
 
 //nolint:gochecknoglobals // Static mappings.
@@ -35,7 +55,7 @@ var statics = map[netconf.ID][]Account{
 		{
 			Type:          TypeRemote,
 			Role:          RoleCreate3Deployer,
-			Address:       addr(fbStagingCreate3Deployer),
+			Address:       StagingCreate3Deployer,
 			Chains:        ChainSelectorAll,
 			MinBalance:    big.NewInt(1),
 			TargetBalance: big.NewInt(5)},
@@ -43,7 +63,7 @@ var statics = map[netconf.ID][]Account{
 		{
 			Type:          TypeRemote,
 			Role:          RoleDeployer,
-			Address:       addr(fbStagingDeployer),
+			Address:       StagingDeployer,
 			Chains:        ChainSelectorAll,
 			MinBalance:    big.NewInt(1),
 			TargetBalance: big.NewInt(5),
@@ -51,7 +71,7 @@ var statics = map[netconf.ID][]Account{
 		{
 			Type:          TypeRemote,
 			Role:          RoleAdmin,
-			Address:       addr(fbStagingAdmin),
+			Address:       StagingAdmin,
 			Chains:        ChainSelectorAll,
 			MinBalance:    big.NewInt(1),
 			TargetBalance: big.NewInt(5),
@@ -85,7 +105,7 @@ var statics = map[netconf.ID][]Account{
 		{
 			Type:          TypeRemote,
 			Role:          RoleCreate3Deployer,
-			Address:       addr(fbTestnetCreate3Deployer),
+			Address:       TestnetCreate3Deployer,
 			Chains:        ChainSelectorAll,
 			MinBalance:    big.NewInt(1),
 			TargetBalance: big.NewInt(5),
@@ -93,7 +113,7 @@ var statics = map[netconf.ID][]Account{
 		{
 			Type:          TypeRemote,
 			Role:          RoleDeployer,
-			Address:       addr(fbTestnetDeployer),
+			Address:       TestnetDeployer,
 			Chains:        ChainSelectorAll,
 			MinBalance:    big.NewInt(1),
 			TargetBalance: big.NewInt(5),
@@ -101,7 +121,7 @@ var statics = map[netconf.ID][]Account{
 		{
 			Type:          TypeRemote,
 			Role:          RoleAdmin,
-			Address:       addr(fbTestnetAdmin),
+			Address:       TestnetAdmin,
 			Chains:        ChainSelectorAll,
 			MinBalance:    big.NewInt(1),
 			TargetBalance: big.NewInt(5),

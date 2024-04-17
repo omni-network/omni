@@ -1,7 +1,7 @@
 package contracts
 
 import (
-	"github.com/omni-network/omni/lib/anvil"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/create3"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
@@ -10,58 +10,17 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-const (
-	// address of the "staging-create3-deployer" fireblocks account.
-	fbStagingCreate3Deployer = "0xC8103859Ac7CB547d70307EdeF1A2319FC305fdC"
-
-	// address of the "staging-deployer" fireblocks account.
-	fbStagingDeployer = "0x274c4B3e5d27A65196d63964532366872F81D261"
-
-	// address of the "staging-owner" fireblocks account.
-	fbStagingAdmin = "0x4891925c4f13A34FC26453FD168Db80aF3273014"
-
-	// address of the "testnet-create3-deployer" fireblocks account.
-	fbTestnetCreate3Deployer = "0xeC5134556da0797A5C5cD51DD622b689Cac97Fe9"
-
-	// address of the "testnet-deployer" fireblocks account.
-	fbTestnetDeployer = "0x0CdCc644158b7D03f40197f55454dc7a11Bd92c1"
-
-	// address of the "testnet-owner" fireblocks account.
-	fbTestnetAdmin = "0xEAD625eB2011394cdD739E91Bf9D51A7169C22F5"
-)
-
-//nolint:gochecknoglobals // Static addresses
-var (
-	// Admin - used as contract owner.
-	mainnetAdmin = addr("0x0")
-	testnetAdmin = addr(fbTestnetAdmin)
-	stagingAdmin = addr(fbStagingAdmin)
-	devnetAdmin  = anvil.DevAccount2()
-
-	// Create3 Deployer - addrress that can deploy the create3 factory.
-	mainnetCreate3Deployer = addr("0x0")
-	testnetCreate3Deployer = addr(fbTestnetCreate3Deployer)
-	stagingCreate3Deployer = addr(fbStagingCreate3Deployer)
-	devnetCreate3Deployer  = anvil.DevAccount0()
-
-	// Deployer - address that can deploy protocol contracts via Create3 factory.
-	mainnetDeployer = addr("0x0")
-	testnetDeployer = addr(fbTestnetDeployer)
-	stagingDeployer = addr(fbStagingDeployer)
-	devnetDeployer  = anvil.DevAccount1()
-)
-
 // Admin returns the address of the admin for the given network.
 func Admin(network netconf.ID) (common.Address, error) {
 	switch network {
 	case netconf.Mainnet:
-		return mainnetAdmin, nil
+		return eoa.MainnetAdmin, nil
 	case netconf.Testnet:
-		return testnetAdmin, nil
+		return eoa.TestnetAdmin, nil
 	case netconf.Staging:
-		return stagingAdmin, nil
+		return eoa.StagingAdmin, nil
 	case netconf.Devnet:
-		return devnetAdmin, nil
+		return eoa.DevnetAdmin, nil
 	default:
 		return common.Address{}, errors.New("unknown network", "network", network)
 	}
@@ -72,19 +31,19 @@ func Admin(network netconf.ID) (common.Address, error) {
 //
 
 func MainnetProxyAdminOwner() common.Address {
-	return mainnetAdmin
+	return eoa.MainnetAdmin
 }
 
 func TestnetProxyAdminOwner() common.Address {
-	return testnetAdmin
+	return eoa.TestnetAdmin
 }
 
 func StagingProxyAdminOwner() common.Address {
-	return stagingAdmin
+	return eoa.StagingAdmin
 }
 
 func DevnetProxyAdminOwner() common.Address {
-	return devnetAdmin
+	return eoa.DevnetAdmin
 }
 
 //
@@ -92,19 +51,19 @@ func DevnetProxyAdminOwner() common.Address {
 //
 
 func MainnetCreate3Deployer() common.Address {
-	return mainnetCreate3Deployer
+	return eoa.MainnetCreate3Deployer
 }
 
 func TestnetCreate3Deployer() common.Address {
-	return testnetCreate3Deployer
+	return eoa.TestnetCreate3Deployer
 }
 
 func StagingCreate3Deployer() common.Address {
-	return stagingCreate3Deployer
+	return eoa.StagingCreate3Deployer
 }
 
 func DevnetCreate3Deployer() common.Address {
-	return devnetCreate3Deployer
+	return eoa.DevnetCreate3Deployer
 }
 
 //
@@ -112,19 +71,19 @@ func DevnetCreate3Deployer() common.Address {
 //
 
 func MainnetDeployer() common.Address {
-	return mainnetDeployer
+	return eoa.MainnetDeployer
 }
 
 func TestnetDeployer() common.Address {
-	return testnetDeployer
+	return eoa.TestnetDeployer
 }
 
 func StagingDeployer() common.Address {
-	return stagingDeployer
+	return eoa.StagingDeployer
 }
 
 func DevnetDeployer() common.Address {
-	return devnetDeployer
+	return eoa.DevnetDeployer
 }
 
 //
@@ -132,19 +91,19 @@ func DevnetDeployer() common.Address {
 //
 
 func MainnetPortalAdmin() common.Address {
-	return mainnetAdmin
+	return eoa.MainnetAdmin
 }
 
 func TestnetPortalAdmin() common.Address {
-	return testnetAdmin
+	return eoa.TestnetAdmin
 }
 
 func StagingPortalAdmin() common.Address {
-	return stagingAdmin
+	return eoa.StagingAdmin
 }
 
 func DevnetPortalAdmin() common.Address {
-	return devnetAdmin
+	return eoa.DevnetAdmin
 }
 
 //
@@ -152,19 +111,19 @@ func DevnetPortalAdmin() common.Address {
 //
 
 func MainnetAVSAdmin() common.Address {
-	return mainnetAdmin
+	return eoa.MainnetAdmin
 }
 
 func TestnetAVSAdmin() common.Address {
-	return testnetAdmin
+	return eoa.TestnetAdmin
 }
 
 func StagingAVSAdmin() common.Address {
-	return stagingAdmin
+	return eoa.StagingAdmin
 }
 
 func DevnetAVSAdmin() common.Address {
-	return devnetAdmin
+	return eoa.DevnetAdmin
 }
 
 //
@@ -172,19 +131,19 @@ func DevnetAVSAdmin() common.Address {
 //
 
 func MainnetCreate3Factory() common.Address {
-	return crypto.CreateAddress(mainnetCreate3Deployer, 0)
+	return crypto.CreateAddress(eoa.MainnetCreate3Deployer, 0)
 }
 
 func TestnetCreate3Factory() common.Address {
-	return crypto.CreateAddress(testnetCreate3Deployer, 0)
+	return crypto.CreateAddress(eoa.TestnetCreate3Deployer, 0)
 }
 
 func StagingCreate3Factory() common.Address {
-	return crypto.CreateAddress(stagingCreate3Deployer, 0)
+	return crypto.CreateAddress(eoa.StagingCreate3Deployer, 0)
 }
 
 func DevnetCreate3Factory() common.Address {
-	return crypto.CreateAddress(devnetCreate3Deployer, 0)
+	return crypto.CreateAddress(eoa.DevnetCreate3Deployer, 0)
 }
 
 //
@@ -192,19 +151,19 @@ func DevnetCreate3Factory() common.Address {
 //
 
 func MainnetProxyAdmin() common.Address {
-	return create3.Address(MainnetCreate3Factory(), ProxyAdminSalt(netconf.Mainnet), mainnetDeployer)
+	return create3.Address(MainnetCreate3Factory(), ProxyAdminSalt(netconf.Mainnet), eoa.MainnetDeployer)
 }
 
 func TestnetProxyAdmin() common.Address {
-	return create3.Address(TestnetCreate3Factory(), ProxyAdminSalt(netconf.Testnet), testnetDeployer)
+	return create3.Address(TestnetCreate3Factory(), ProxyAdminSalt(netconf.Testnet), eoa.TestnetDeployer)
 }
 
 func StagingProxyAdmin() common.Address {
-	return create3.Address(StagingCreate3Factory(), ProxyAdminSalt(netconf.Staging), stagingDeployer)
+	return create3.Address(StagingCreate3Factory(), ProxyAdminSalt(netconf.Staging), eoa.StagingDeployer)
 }
 
 func DevnetProxyAdmin() common.Address {
-	return create3.Address(DevnetCreate3Factory(), ProxyAdminSalt(netconf.Devnet), devnetDeployer)
+	return create3.Address(DevnetCreate3Factory(), ProxyAdminSalt(netconf.Devnet), eoa.DevnetDeployer)
 }
 
 //
@@ -212,19 +171,19 @@ func DevnetProxyAdmin() common.Address {
 //
 
 func MainnetPortal() common.Address {
-	return create3.Address(MainnetCreate3Factory(), PortalSalt(netconf.Mainnet), mainnetDeployer)
+	return create3.Address(MainnetCreate3Factory(), PortalSalt(netconf.Mainnet), eoa.MainnetDeployer)
 }
 
 func TestnetPortal() common.Address {
-	return create3.Address(TestnetCreate3Factory(), PortalSalt(netconf.Testnet), testnetDeployer)
+	return create3.Address(TestnetCreate3Factory(), PortalSalt(netconf.Testnet), eoa.TestnetDeployer)
 }
 
 func StagingPortal() common.Address {
-	return create3.Address(StagingCreate3Factory(), PortalSalt(netconf.Staging), stagingDeployer)
+	return create3.Address(StagingCreate3Factory(), PortalSalt(netconf.Staging), eoa.StagingDeployer)
 }
 
 func DevnetPortal() common.Address {
-	return create3.Address(DevnetCreate3Factory(), PortalSalt(netconf.Devnet), devnetDeployer)
+	return create3.Address(DevnetCreate3Factory(), PortalSalt(netconf.Devnet), eoa.DevnetDeployer)
 }
 
 //
@@ -232,19 +191,19 @@ func DevnetPortal() common.Address {
 //
 
 func MainnetAVS() common.Address {
-	return create3.Address(MainnetCreate3Factory(), AVSSalt(netconf.Mainnet), mainnetDeployer)
+	return create3.Address(MainnetCreate3Factory(), AVSSalt(netconf.Mainnet), eoa.MainnetDeployer)
 }
 
 func TestnetAVS() common.Address {
-	return create3.Address(TestnetCreate3Factory(), AVSSalt(netconf.Testnet), testnetDeployer)
+	return create3.Address(TestnetCreate3Factory(), AVSSalt(netconf.Testnet), eoa.TestnetDeployer)
 }
 
 func StagingAVS() common.Address {
-	return create3.Address(StagingCreate3Factory(), AVSSalt(netconf.Staging), stagingDeployer)
+	return create3.Address(StagingCreate3Factory(), AVSSalt(netconf.Staging), eoa.StagingDeployer)
 }
 
 func DevnetAVS() common.Address {
-	return create3.Address(DevnetCreate3Factory(), AVSSalt(netconf.Devnet), devnetDeployer)
+	return create3.Address(DevnetCreate3Factory(), AVSSalt(netconf.Devnet), eoa.DevnetDeployer)
 }
 
 //
