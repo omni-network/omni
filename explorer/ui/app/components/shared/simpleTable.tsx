@@ -29,55 +29,59 @@ export default function SimpleTable({ data, columns }: { data: any[]; columns: C
   })
 
   return (
-    <div className="shadow-xl overflow-hidden border border-gray-200 sm:rounded-lg">
-      <div className="" />
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="">
-          {table.getHeaderGroups().map(headerGroup => (
-            <tr key={headerGroup.id}>
-              {headerGroup.headers.map(header => {
-                return (
-                  <th
-                    className="group px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                    key={header.id}
-                    colSpan={header.colSpan}
-                  >
-                    {header.isPlaceholder ? null : (
-                      <div>
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        {header.column.getCanFilter() ? (
-                          <div>
-                            <Filter column={header.column} table={table} />
-                          </div>
-                        ) : null}
-                      </div>
-                    )}
-                  </th>
-                )
-              })}
-            </tr>
-          ))}
-        </thead>
-        <tbody className="divide-y divide">
-          {table.getRowModel().rows.map(row => {
-            return (
-              <tr key={row.id}>
-                {row.getVisibleCells().map(cell => {
+    <div>
+      <div className="w-full bg-raised rounded-lg">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="">
+            {table.getHeaderGroups().map(headerGroup => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header, headerIndex) => {
                   return (
-                    <td key={cell.id} className="px-3 py-2 whitespace-nowrap" role="cell">
-                      <Link
-                        to={`/xblock/${row.original.SourceChainID}?height=${row.original.BlockHeight}`}
-                      >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </Link>
-                    </td>
+                    <th
+                      className={`pt-[15px] pb-[7px] px-4 py-2 text-start ${headerIndex < 3 && 'table-highlight'}`}
+                      key={header.id}
+                      colSpan={header.colSpan}
+                    >
+                      {header.isPlaceholder ? null : (
+                        <div>
+                          <span className="text-b-sm text-subtlest font-bold text-start">
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                          </span>
+                          {header.column.getCanFilter() ? (
+                            <div>
+                              <Filter column={header.column} table={table} />
+                            </div>
+                          ) : null}
+                        </div>
+                      )}
+                    </th>
                   )
                 })}
               </tr>
-            )
-          })}
-        </tbody>
-      </table>
+            ))}
+          </thead>
+          <tbody className="divide-y divide">
+            {table.getRowModel().rows.map(row => {
+              return (
+                <tr key={row.id}>
+                  {row.getVisibleCells().map((cell, cellIndex) => {
+                    return (
+                      <td
+                        key={cell.id}
+                        className={`px-4 py-2 whitespace-nowrap ${cellIndex < 3 && 'table-highlight'} ${cellIndex === 0 && 'text-center'}`}
+                        role="cell"
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    )
+                  })}
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+
+      </div>
       <div className="m-auto">
         {/* Pagination */}
         <div className="flex items-center m-3">
