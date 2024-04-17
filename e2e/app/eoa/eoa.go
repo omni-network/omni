@@ -23,6 +23,7 @@ const (
 	RoleCreate3Deployer Role = "create3-deployer"
 	RoleDeployer        Role = "deployer"
 	RoleAdmin           Role = "admin"
+	RoleFbDev           Role = "fb-dev"
 )
 
 type Type string
