@@ -74,6 +74,10 @@ var secureAddrs = map[netconf.ID]map[Role]common.Address{
 		RoleRelayer: common.HexToAddress("0x01654f55E4F5E2f2ff8080702676F1984CBf7d8a"),
 		RoleMonitor: common.HexToAddress("0x12Dc870b3F5b7f810c3d1e489e32a64d4E25AaCA"),
 	},
+	netconf.Mainnet: {
+		TypeMonitor: common.HexToAddress("0x07082fcbFA5F5AC9FBc03A48B7f6391441DB8332"),
+		TypeRelayer: common.HexToAddress("0x07804D7B8be635c0C68Cdf3E946114221B12f4F7"),
+	},
 }
 
 // MustAddress returns the address for the EOA identified by the network and role.

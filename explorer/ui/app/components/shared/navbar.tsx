@@ -7,7 +7,7 @@ export default function Navbar() {
     <header className="static m-auto border-b">
       <div className="w-full flex max-w-screen-xl m-auto">
         <div className="mx-auto px-4 flex-none grid justify-start">
-          <a href="#" className="m-auto">
+          <a href="/" className="m-auto">
             <img className="h-8 w-auto" src={logo} alt="" />
           </a>
         </div>

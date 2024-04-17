@@ -11,40 +11,20 @@ export function GetBlocksInRange(from: number, to: number): XBlock[] {
     },
   })
   const { data, fetching, error } = result
-
   var rows: XBlock[] = []
 
   data?.xblockrange.map((xblock: any) => {
-    var msgs: XMsg[] = []
     let block = {
       id: xblock.BlockHeight,
       UUID: '',
       SourceChainID: xblock.SourceChainID,
       BlockHash: xblock.BlockHash,
       BlockHeight: xblock.BlockHeight,
-      Messages: msgs,
+      Messages: [],
       Timestamp: xblock.Timestamp,
       Receipts: [],
     }
 
-    xblock.Messages.map((msg: any) => {
-      let xmsg = {
-        DestAddress: '',
-        DestChainID: '',
-        DestGasLimit: '',
-        SourceChainID: '',
-        SourceMessageSender: '',
-        StreamOffset: '',
-        TxHash: '',
-        BlockHeight: '',
-        BlockHash: '',
-        Receipts: [],
-        Block: block,
-      }
-      msgs.push(xmsg)
-    })
-
-    block.Messages = msgs
     rows.push(block)
   })
 
@@ -60,10 +40,49 @@ export function GetBlockCount(): number {
   return Number(hex)
 }
 
+export const GetXBlock = (sourceChainID: string, height: string): XBlock | null => {
+  const [result] = useQuery({
+    query: xblock,
+    variables: {
+      sourceChainID,
+      height,
+    },
+  })
+  const { data, fetching, error } = result
+  // TODO handle error properly here
+  if (!error) {
+    return data as XBlock
+  } else {
+    return null
+  }
+}
+
 export const xblock = graphql(`
   query Xblock($sourceChainID: BigInt!, $height: BigInt!) {
     xblock(sourceChainID: $sourceChainID, height: $height) {
+      SourceChainID
+      BlockHeight
       BlockHash
+      Timestamp
+      Messages {
+        StreamOffset
+        SourceMessageSender
+        DestAddress
+        DestGasLimit
+        SourceChainID
+        DestChainID
+        TxHash
+      }
+      Receipts {
+        GasUsed
+        Success
+        RelayerAddress
+        SourceChainID
+        DestChainID
+        StreamOffset
+        TxHash
+        Timestamp
+      }
     }
   }
 `)
@@ -74,12 +93,6 @@ export const xblockrange = graphql(`
       SourceChainID
       BlockHash
       BlockHeight
-      Messages {
-        TxHash
-        DestAddress
-        DestChainID
-        SourceChainID
-      }
       Timestamp
     }
   }

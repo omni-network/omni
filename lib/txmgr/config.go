@@ -50,7 +50,7 @@ var (
 		FeeLimitThresholdGwei:     100.0,
 		ResubmissionTimeout:       48 * time.Second,
 		NetworkTimeout:            30 * time.Second,
-		TxSendTimeout:             0 * time.Second,
+		TxSendTimeout:             20 * time.Minute,
 		TxNotInMempoolTimeout:     2 * time.Minute,
 	}
 )

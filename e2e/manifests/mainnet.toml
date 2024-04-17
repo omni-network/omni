@@ -1,0 +1,6 @@
+network = "mainnet"
+public_chains = ["ethereum"]
+avs_target    = "ethereum"
+
+only_monitor = true
+prometheus   = true

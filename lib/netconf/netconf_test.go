@@ -1,6 +1,7 @@
 package netconf_test
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
@@ -21,7 +22,7 @@ func TestSaveLoad(t *testing.T) {
 	fuzz.NewWithSeed(0).NilChance(0).NumElements(1, 5).Fuzz(&net)
 
 	path := filepath.Join(t.TempDir(), "network.json")
-	err := netconf.Save(net, path)
+	err := netconf.Save(context.Background(), net, path)
 	require.NoError(t, err)
 
 	net2, err := netconf.Load(path)
