@@ -5,64 +5,79 @@
 @import './assets/icons/css/omni.css';
 
 
+
 @tailwind base;
+
 @layer base {
   .text-d1 {
     @apply text-7xl;
     line-height: 6.75rem;
   }
+
   .text-d2 {
     font-size: 3.5rem;
     line-height: 4.75rem;
   }
+
   h1 {
     font-size: 2.625rem;
     line-height: 3.625rem;
   }
+
   h2 {
     font-size: 2.25rem;
     line-height: 3.125rem;
   }
+
   h3 {
     font-size: 1.875rem;
     line-height: 2.625rem;
   }
+
   h4 {
     font-size: 1.5rem;
     line-height: 2.125rem;
   }
+
   h5 {
     font-size: 1.25rem;
     line-height: 1.75rem;
   }
+
   .text-b-lg {
     font-size: 1.125rem;
     line-height: 1.68rem;
   }
+
   .text-b,
   .text-b-md {
     font-size: 1rem;
     line-height: 1.5rem;
   }
+
   .text-b-sm {
     font-size: 0.875rem;
     line-height: 1.3125rem;
   }
+
   .text-b-xs {
     font-size: 0.75rem;
     line-height: 1.125rem;
   }
+
   .text-ol-lg {
     font-size: 0.875rem;
     line-height: 0.875rem;
     text-transform: uppercase;
   }
+
   .text-ol,
   .text-ol-md {
     font-size: 0.75rem;
     line-height: 0.75rem;
     text-transform: uppercase;
   }
+
   .text-ol-sm {
     font-size: 0.625rem;
     line-height: 0.625rem;
@@ -77,7 +92,8 @@
     letter-spacing: 0.03125rem;
   }
 
-  .text-cb-md, .text-cb {
+  .text-cb-md,
+  .text-cb {
     font-size: 1rem;
     font-weight: 700;
     line-height: 1rem;
@@ -100,7 +116,7 @@
 
   /* overwriting original class to keep naming conventions consistent */
   .bg-positive {
-    @apply bg-bg-positive !important; 
+    @apply bg-bg-positive !important;
   }
 
   .bg-input-default {
@@ -132,7 +148,7 @@
   }
 
   .bg-critical {
-    @apply bg-bg-critical !important; 
+    @apply bg-bg-critical !important;
   }
 
   .bg-hover {
@@ -148,7 +164,7 @@
   }
 
   .bg-subtle {
-    @apply bg-bg-subtle !important; 
+    @apply bg-bg-subtle !important;
   }
 
   .text-subtle {
@@ -156,10 +172,10 @@
   }
 
   .bg-secondary {
-    @apply bg-bg-secondary !important; 
+    @apply bg-bg-secondary !important;
   }
 
-  
+
 
   .text-secondary {
     color: var(--color-text-secondary);
@@ -167,34 +183,36 @@
 
   .text-btn-lg {
     font-size: 1.125rem;
-    font-weight:700;
+    font-weight: 700;
     line-height: 1.125rem;
   }
 
-  .text-btn-md, .text-btn {
+  .text-btn-md,
+  .text-btn {
     font-size: 1rem;
-    font-weight:700;
+    font-weight: 700;
     line-height: 1rem;
   }
 
   .text-btn-sm {
     font-size: 0.875rem;
-    font-weight:700;
+    font-weight: 700;
     line-height: 0.875rem;
   }
 
   .text-btn-xs {
     font-size: 0.75rem;
-    font-weight:700;
+    font-weight: 700;
     line-height: 0.75rem;
   }
-  
+
   .link {
     @apply text-link hover:text-link-hover active:text-link-pressed visited:text-link-visited;
     transition: color 0.2s ease-out;
     text-decoration: none;
   }
 }
+
 @tailwind components;
 @tailwind utilities;
 
@@ -206,29 +224,37 @@
   .font-thin {
     font-variation-settings: 'wght' 100;
   }
+
   .font-extralight {
-      font-variation-settings: 'wght' 200;
+    font-variation-settings: 'wght' 200;
   }
+
   .font-light {
-      font-variation-settings: 'wght' 300;
+    font-variation-settings: 'wght' 300;
   }
+
   .font-normal {
-      font-variation-settings: 'wght' 400;
+    font-variation-settings: 'wght' 400;
   }
+
   .font-medium {
-      font-variation-settings: 'wght' 500;
+    font-variation-settings: 'wght' 500;
   }
+
   .font-semibold {
-      font-variation-settings: 'wght' 600;
+    font-variation-settings: 'wght' 600;
   }
+
   .font-bold {
-      font-variation-settings: 'wght' 700;
+    font-variation-settings: 'wght' 700;
   }
+
   .font-extrabold {
-      font-variation-settings: 'wght' 800;
+    font-variation-settings: 'wght' 800;
   }
+
   .font-black {
-      font-variation-settings: 'wght' 900;
+    font-variation-settings: 'wght' 900;
   }
 
   .border-default {

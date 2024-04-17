@@ -80,79 +80,79 @@ export default function SimpleTable({ data, columns }: { data: any[]; columns: C
             })}
           </tbody>
         </table>
-        
+
       </div>
       <div className="m-auto">
-          {/* Pagination */}
-          <div className="flex items-center m-3">
-            {/* Page N of N */}
-            <div className="flex-none flex m-3">
-              <div className="flex gap-x-2 items-baseline">
+        {/* Pagination */}
+        <div className="flex items-center m-3">
+          {/* Page N of N */}
+          <div className="flex-none flex m-3">
+            <div className="flex gap-x-2 items-baseline">
+              <span className="prose">
+                Page <span className="prose">{table.getState().pagination.pageIndex + 1}</span> of{' '}
                 <span className="prose">
-                  Page <span className="prose">{table.getState().pagination.pageIndex + 1}</span> of{' '}
-                  <span className="prose">
-                    {table.getPageCount() == 0 ? 1 : table.getPageCount()}
-                  </span>
+                  {table.getPageCount() == 0 ? 1 : table.getPageCount()}
                 </span>
-              </div>
-            </div>
-            {/* Page Size Dropdown */}
-            <div className="flex-none flex items-center m-3">
-              <label>
-                <select
-                  className="btn btn-sm prose rounded-md shadow-sm"
-                  value={table.getState().pagination.pageSize}
-                  onChange={e => {
-                    table.setPageSize(Number(e.target.value))
-                  }}
-                >
-                  {[5, 10, 20].map(pageSize => (
-                    <option key={pageSize} value={pageSize}>
-                      Show {pageSize}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            {/* middle element */}
-            <div className="grow"></div>
-            {/* Nav Buttons */}
-            <div className="flex-none items-center jusify-between">
-              <PageButton
-                className="rounded-l-md rounded-r-none"
-                onClick={() => table.setPageIndex(0)}
-                disabled={!table.getCanPreviousPage()}
-              >
-                <span className="sr-only">First</span>
-                <ChevronDoubleLeftIcon className="h-5 w-5" aria-hidden="true" />
-              </PageButton>
-              <PageButton
-                className="rounded-none"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-              >
-                <span className="sr-only">Previous</span>
-                <ChevronLeftIcon className="h-5 w-5" aria-hidden="true" />
-              </PageButton>
-              <PageButton
-                className="rounded-none"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-              >
-                <span className="sr-only">Next</span>
-                <ChevronRightIcon className="h-5 w-5" aria-hidden="true" />
-              </PageButton>
-              <PageButton
-                className="rounded-r-md rounded-l-none"
-                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                disabled={!table.getCanNextPage()}
-              >
-                <span className="sr-only">Last</span>
-                <ChevronDoubleRightIcon className="h-5 w-5" aria-hidden="true" />
-              </PageButton>
+              </span>
             </div>
           </div>
+          {/* Page Size Dropdown */}
+          <div className="flex-none flex items-center m-3">
+            <label>
+              <select
+                className="btn btn-sm prose rounded-md shadow-sm"
+                value={table.getState().pagination.pageSize}
+                onChange={e => {
+                  table.setPageSize(Number(e.target.value))
+                }}
+              >
+                {[5, 10, 20].map(pageSize => (
+                  <option key={pageSize} value={pageSize}>
+                    Show {pageSize}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          {/* middle element */}
+          <div className="grow"></div>
+          {/* Nav Buttons */}
+          <div className="flex-none items-center jusify-between">
+            <PageButton
+              className="rounded-l-md rounded-r-none"
+              onClick={() => table.setPageIndex(0)}
+              disabled={!table.getCanPreviousPage()}
+            >
+              <span className="sr-only">First</span>
+              <ChevronDoubleLeftIcon className="h-5 w-5" aria-hidden="true" />
+            </PageButton>
+            <PageButton
+              className="rounded-none"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              <span className="sr-only">Previous</span>
+              <ChevronLeftIcon className="h-5 w-5" aria-hidden="true" />
+            </PageButton>
+            <PageButton
+              className="rounded-none"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              <span className="sr-only">Next</span>
+              <ChevronRightIcon className="h-5 w-5" aria-hidden="true" />
+            </PageButton>
+            <PageButton
+              className="rounded-r-md rounded-l-none"
+              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+              disabled={!table.getCanNextPage()}
+            >
+              <span className="sr-only">Last</span>
+              <ChevronDoubleRightIcon className="h-5 w-5" aria-hidden="true" />
+            </PageButton>
+          </div>
         </div>
+      </div>
     </div>
   )
 }
