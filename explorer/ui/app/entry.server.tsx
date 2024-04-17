@@ -38,7 +38,7 @@ export default function handleRequest(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   loadContext: AppLoadContext,
 ) {
-  
+
   reqsCount.inc()
   return isbot(request.headers.get('user-agent') || '')
     ? handleBotRequest(request, responseStatusCode, responseHeaders, remixContext)
@@ -136,7 +136,6 @@ function handleBrowserRequest(
     setTimeout(abort, ABORT_DELAY)
   })
 }
-
 
 export const gqlClient = new Client({
   url: process.env.GRAPHQL_URL || '',
