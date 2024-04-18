@@ -1,17 +1,19 @@
-import React from 'react'
+import React, { forwardRef } from 'react'
 interface Props {
   // children: Array<React.ReactNode> | React.ReactNode
   placeholder?: string
   onInput?: Function
+  ref?: any
 }
 
-const SearchBar: React.FC<Props> = ({ placeholder = 'Search', onInput, ...props }) => {
+const SearchBar: React.FC<Props> = forwardRef(({ placeholder = 'Search', onInput, ...props }, ref: any) => {
   return (
     <div
       className={`relative w-full rounded-[1000px] rounded-l-none bg-search-default bg-opacity-[0.05] border-[1px] border-subtle overflow-hidden`}
     >
       <span className="icon-search absolute top-3 left-3 text-[22px] text-default" />
       <input
+        ref={ref}
         onInput={e => {
           onInput && onInput(e)
         }}
@@ -21,6 +23,6 @@ const SearchBar: React.FC<Props> = ({ placeholder = 'Search', onInput, ...props 
       />
     </div>
   )
-}
+})
 
 export default SearchBar

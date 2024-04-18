@@ -1,5 +1,5 @@
 import { json } from '@remix-run/node'
-import React, { useCallback, useEffect, useMemo } from 'react'
+import React, { RefObject, useCallback, useEffect, useMemo } from 'react'
 import { XMsg } from '~/graphql/graphql'
 import { ColumnDef } from '@tanstack/react-table'
 import SimpleTable from '../shared/simpleTable'
@@ -17,10 +17,10 @@ import FilterOptions from '../shared/filterOptions'
 import { getAddressUrl, getBlockUrl, getTxUrl } from '~/lib/sourceChains'
 import debounce from 'lodash.debounce'
 
-
 export default function XMsgDataTable() {
   const data = useLoaderData<typeof loader>()
   const revalidator = useRevalidator()
+  const searchFieldRef = React.useRef<HTMLInputElement>(null)
 
   const [filterCategory, setFilterCategory] = React.useState<
     'sourceAddress' | 'sourceTxHash' | 'destinationAddress' | 'destinationTxHash'
@@ -90,28 +90,27 @@ export default function XMsgDataTable() {
     revalidator.revalidate()
   }, [filterParams])
 
-
-
-
   // here we set the filter params by clearing the old ones, and setting the current one and its value
   // TODO: implement
-  const searchBarInputCB = (e) => {
+  const searchBarInputCB = e => {
     console.log("Search bar input changed", e.target.value)
-    
-    // switch(filterCategory) {
-    //   case 'sourceTxHash':
-    //     setFilterParams(prev => ({
-    //       ...prev,
 
-    //     }))
-    // }
+    setFilterParams(prev => {
+      const params = {
+        ...prev,
+        destinationAddress: null,
+        destinationTxHash: null,
+        sourceAddress: null,
+        sourceTxHash: null,
+      }
+
+      params[filterCategory] = e.target.value
+
+      return params
+    })
   }
 
-
-  const searchBarInput = useCallback(
-    debounce(searchBarInputCB, 600),
-    []
-  );
+  const searchBarInput = useCallback(debounce(searchBarInputCB, 600), [filterCategory])
 
   const columns = React.useMemo<ColumnDef<any>[]>(
     () => [
@@ -242,13 +241,17 @@ export default function XMsgDataTable() {
               position="left"
               options={filterOptions}
               onChange={value => {
+                setFilterCategory(value)
+                if (searchFieldRef.current) {
+                  searchFieldRef.current.value = ''
+                }
                 setSearchPlaceholder(
                   `Search by ${(filterOptions.find(option => option.value === value)?.display || filterOptions[0].display).toLowerCase()}`,
                 )
               }}
               defaultValue={filterOptions[0].value}
             />
-            <SearchBar onInput={searchBarInput} placeholder={searchPlaceholder} />
+            <SearchBar ref={searchFieldRef} onInput={searchBarInput} placeholder={searchPlaceholder} />
           </div>
           <ChainDropdown placeholder="Select source" label="From" options={sourceChainList} />
           <ChainDropdown placeholder="Select destination" label="To" options={sourceChainList} />
