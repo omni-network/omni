@@ -15,7 +15,7 @@ require (
 	entgo.io/ent v0.13.1
 	github.com/BurntSushi/toml v1.3.2
 	github.com/Layr-Labs/eigenlayer-cli v0.7.2
-	github.com/Layr-Labs/eigensdk-go v0.1.5
+	github.com/Layr-Labs/eigensdk-go v0.1.6
 	github.com/bufbuild/buf v1.30.1
 	github.com/charmbracelet/log v0.4.0
 	github.com/cometbft/cometbft v0.38.6
