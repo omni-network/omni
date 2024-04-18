@@ -13,7 +13,7 @@ import {
 import { Client, Provider, cacheExchange, fetchExchange } from 'urql'
 import { useEnv } from './lib/use-env'
 import Navbar from './components/shared/navbar'
-import { Footer } from './components/shared/footer'
+import {Footer} from './components/shared/footer'
 import { gqlClient } from './entry.server'
 
 export const links: LinksFunction = () => [{ rel: 'stylesheet', href: stylesheet }]
@@ -26,12 +26,9 @@ export function loader() {
   return json({ ENV })
 }
 
-
-
-
 function App() {
   return (
-    <html lang="en" data-theme="dark" className='h-full'>
+    <html lang="en" data-theme="dark" className="h-full bg-surface">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -41,7 +38,7 @@ function App() {
       <body className="bg-surface flex flex-col justify-start content-start  h-full">
         <Navbar />
         <Outlet />
-        <div className='grow'></div>
+        <div className="grow"></div>
         <Footer />
         <ScrollRestoration />
         <Scripts />

@@ -11,6 +11,7 @@ export default {
         'inverse': 'var(--color-text-inverse)',
         'primary': 'var(--color-text-primary)',
         'critical': 'var(--color-text-critical)',
+        'moderate': 'var(--color-text-moderate)',
         'positive': 'var(--color-text-positive)',
         'disabled': 'var(--color-text-disabled)',
         'white': 'var(--color-text-white)',
@@ -22,6 +23,7 @@ export default {
 
         'icon-positive': 'var(--color-icon-primary)',
         'icon-critical': 'var(--color-icon-critical)',
+        'icon-moderate': 'var(--color-icon-moderate)',
 
         'border-default': 'var(--color-border-default)',
         'border-subtle': 'var(--color-border-subtle)',
@@ -34,7 +36,7 @@ export default {
         'bg-positive': 'var(--color-bg-positive)',
         'bg-critical': 'var(--color-bg-critical)',
         'bg-subtle': 'var(--color-bg-subtle)',
-        'bg-secondary': 'var(--color-bg-secondary)',
+        'bg-moderate': 'var(--color-bg-moderate)',
 
         'bg-interactive-default': 'var(--color-bg-interactive-default)',
         'bg-interactive-hover': 'var(--color-bg-interactive-hover)',
@@ -68,6 +70,7 @@ export default {
           '--color-text-primary': '#1B52B8',
           '--color-text-critical': '#BB372B',
           '--color-text-positive': '#2E7B41',
+          '--color-text-moderate': '#80720B',
           '--color-text-disabled': '#B0B7C3',
           '--color-text-white': '#FDFDFD',
           '--color-link': '#0564FF',
@@ -77,6 +80,7 @@ export default {
 
           '--color-icon-positive': '#2E7B41',
           '--color-icon-critical': '#BB372B',
+          '--color-icon-moderate': '#CCB612',
 
           '--color-border-default': '#DCDFE3',
           '--color-border-subtle': '#EEEFF0',
@@ -89,7 +93,7 @@ export default {
           '--color-bg-positive': '#2E7B4126',
           '--color-bg-critical': '#BB372B26',
           '--color-bg-subtle':'#F7F7F7',
-          '--color-bg-secondary':'#FFE316',
+          '--color-bg-moderate':'#FFE31624',
           '--color-bg-hover': '#1023460D',
           '--color-bg-active': '#1023460D',
 
@@ -116,6 +120,7 @@ export default {
           '--color-text-primary': '#7CAEFF',
           '--color-text-critical': '#F6D5D5',
           '--color-text-positive': '#C7E6D5',
+          '--color-text-moderate': '#FFFCE1',
           '--color-text-disabled': '#B0B7C3',
           '--color-text-white': '#FDFDFD',
           '--color-link': '#7CAEFF',
@@ -125,6 +130,7 @@ export default {
 
           '--color-icon-positive': '#5588E4',
           '--color-icon-critical': '#F6D5D5',
+          '--color-icon-moderate': '#CCB612',
 
           '--color-border-default': '#69748B',
           '--color-border-subtle': '#394866',
@@ -137,13 +143,13 @@ export default {
           '--color-bg-positive': '#2E7B4166',
           '--color-bg-critical': '#BB372B66',
           '--color-bg-subtle':'#FBFBFC1F',
-          '--color-bg-secondary':'#FFE316',
+          '--color-bg-moderate':'#FFE31633',
           '--color-bg-hover': '#FBFBFC0D',
           '--color-bg-active': '#FBFBFC0D',
 
           '--color-bg-input-default': '#FBFBFC0D',
-          '--color-bg-input-hover': '#FBFBFC0D',
-          '--color-bg-input-active': '#FBFBFC0D',
+          '--color-bg-input-hover': '#FBFBFC14',
+          '--color-bg-input-active': '#394866',
 
           '--color-bg-search-default': '#FBFBFC0D',
           '--color-bg-search-hover': '#1023460D',

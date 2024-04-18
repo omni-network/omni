@@ -10,6 +10,7 @@ import { xblockcount } from '~/components/queries/block'
 import { xmsgrange } from '~/components/queries/messages'
 import { XMsg } from '~/graphql/graphql'
 import { supportedchains } from '~/components/queries/chains'
+import { mappedSourceChains } from '~/lib/sourceChains'
 
 export const meta: MetaFunction = () => {
   return [
@@ -29,15 +30,16 @@ export const loader: LoaderFunction = async ({ request, params, context }) => {
     gqlClient.query(supportedchains, {}),
   ])
 
-  const supportedChains = supportedChainsRes.data?.supportedchains || []
+  const supportedChains = mappedSourceChains(supportedChainsRes.data?.supportedchains || [])
   const xmsgs = xmsgRes?.data?.xmsgrange ?? []
 
-  console.log('Supported chains', supportedChainsRes.data?.supportedchains)
+  console.log('Supported chains', supportedChains)
   console.log('xmsgData', xmsgRes?.data?.xmsgrange.length)
 
   const pollData = async () => {
     return json({
       // count: Number(res?.data?.xblockcount || '0x'),
+      supportedChains,
       xmsgs,
     })
   }
@@ -54,7 +56,7 @@ export default function Index() {
   }, 5000)
 
   return (
-    <div className="px-20">
+    <div className="px-8 md:px-20">
       <div className="flex h-full w-full flex-col">
         <Overview />
         <div className="w-full">
