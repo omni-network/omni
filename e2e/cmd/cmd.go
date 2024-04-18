@@ -15,6 +15,8 @@ import (
 
 	cmtdocker "github.com/cometbft/cometbft/test/e2e/pkg/infra/docker"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/spf13/cobra"
 )
 
@@ -228,8 +230,17 @@ func verifyKeyNodeType(def app.Definition, cfg key.UploadConfig) error {
 			return errors.Wrap(err, "verifying name as eoa type")
 		}
 
-		if addr, ok := eoa.Address(def.Testnet.Network, eoaRole); ok {
-			return errors.New("cannot create eoa key already defined", "addr", addr)
+		account, ok := eoa.AccountForRole(def.Testnet.Network, eoaRole)
+		if !ok {
+			return errors.New("eoa account not found", "role", eoaRole)
+		}
+
+		if account.Type != eoa.TypeSecret {
+			return errors.New("cannot create eoa key for non secret account")
+		}
+
+		if account.Address != (common.Address{}) {
+			return errors.New("cannot create eoa key already defined", "addr", account.Address.Hex())
 		}
 
 		return nil
