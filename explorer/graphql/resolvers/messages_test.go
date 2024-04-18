@@ -137,6 +137,8 @@ func TestXMsg(t *testing.T) {
 	})
 }
 
+// TODO (DAN): Fix tests (why does our auto increment id start super high? Add test for cursor out of range, negative cursor, negative limit
+
 func TestXMsgsNoCursor(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -352,5 +354,3 @@ func TestXMsgsCursorOffset(t *testing.T) {
 		},
 	})
 }
-
-// TODO (DAN): Add test for cursor out of range, negative cursor, negative limit

@@ -197,5 +197,8 @@ type Query {
   xreceipt(sourceChainID: BigInt!, destChainID: BigInt!, streamOffset: BigInt!): XReceipt
   xmsg(sourceChainID: BigInt!, destChainID: BigInt! streamOffset: BigInt!): XMsg
   supportedchains: [Chain]!
+  """
+  Get XMsgs with pagination, sorted by latest (cursor goes to zero as the last page)
+  """
   xmsgs(limit: BigInt, cursor: BigInt): XMsgResult
 }
