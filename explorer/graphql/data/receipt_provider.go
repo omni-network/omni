@@ -5,6 +5,7 @@ import (
 
 	"github.com/omni-network/omni/explorer/db/ent/receipt"
 	"github.com/omni-network/omni/explorer/graphql/resolvers"
+	"github.com/omni-network/omni/explorer/graphql/utils"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
@@ -19,7 +20,7 @@ func (p Provider) XReceiptCount(ctx context.Context) (*hexutil.Big, bool, error)
 		return nil, false, err
 	}
 
-	hex, err := Uint2Hex(uint64(query))
+	hex, err := utils.Uint2Hex(uint64(query))
 	if err != nil {
 		return nil, false, errors.Wrap(err, "decoding block count")
 	}
