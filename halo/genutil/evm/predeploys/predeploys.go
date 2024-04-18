@@ -4,8 +4,8 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/halo/genutil/evm/state"
-	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/solc"
@@ -96,7 +96,7 @@ func setOmniStake(db *state.MemDB) error {
 
 // setProxyAdmin sets the proxy admin predeploy.
 func setProxyAdmin(db *state.MemDB, network netconf.ID) error {
-	owner, err := contracts.Admin(network)
+	owner, err := eoa.Admin(network)
 	if err != nil {
 		return errors.Wrap(err, "network admin")
 	}

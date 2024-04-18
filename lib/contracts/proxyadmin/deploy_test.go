@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/create3"
@@ -49,5 +50,5 @@ func TestDeployDevnet(t *testing.T) {
 
 	owner, err := proxyAdmin.Owner(nil)
 	require.NoError(t, err)
-	require.Equal(t, contracts.DevnetProxyAdminOwner(), owner)
+	require.Equal(t, eoa.MustAddress(netconf.Devnet, eoa.RoleProxyAdminOwner), owner)
 }
