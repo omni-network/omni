@@ -148,6 +148,7 @@ func devnetDefinition(ctx context.Context) (app.Definition, error) {
 		return app.Definition{}, err
 	}
 
+	def.Testnet.Name = "devnet0"
 	def.Testnet.Dir, err = devnetDir()
 	if err != nil {
 		return app.Definition{}, err
