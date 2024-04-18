@@ -4,7 +4,7 @@ import XMsgDataTable from '~/components/home/messageDataTable'
 import Overview from '~/components/home/overview'
 import { json } from '@remix-run/node'
 import { gqlClient } from '~/entry.server'
-import { useFetcher, useRevalidator } from '@remix-run/react'
+import { useFetcher, useRevalidator, useSearchParams } from '@remix-run/react'
 import { useInterval } from '~/hooks/useInterval'
 import { xblockcount } from '~/components/queries/block'
 import { xmsgrange } from '~/components/queries/messages'
@@ -19,9 +19,10 @@ export const meta: MetaFunction = () => {
   ]
 }
 
-export const loader: LoaderFunction = async ({ request, params, context }) => {
+export const loader: LoaderFunction = async ({ request}) => {
   // const res = await gqlClient.query(xblockcount, {})
 
+  console.log(request)
   const [xmsgRes, supportedChainsRes] = await Promise.all([
     gqlClient.query(xmsgrange, {
       from: '0x' + (0).toString(16),
@@ -33,8 +34,8 @@ export const loader: LoaderFunction = async ({ request, params, context }) => {
   const supportedChains = mappedSourceChains(supportedChainsRes.data?.supportedchains || [])
   const xmsgs = xmsgRes?.data?.xmsgrange ?? []
 
-  console.log('Supported chains', supportedChains)
-  console.log('xmsgData', xmsgRes?.data?.xmsgrange.length)
+  // console.log('Supported chains', supportedChains)
+  // console.log('xmsgData', xmsgRes?.data?.xmsgrange.length)
 
   const pollData = async () => {
     return json({
@@ -49,8 +50,8 @@ export const loader: LoaderFunction = async ({ request, params, context }) => {
 
 export default function Index() {
   const revalidator = useRevalidator()
-  const fetcher = useFetcher()
-
+  
+  // poll server every 5 seconds
   useInterval(() => {
     revalidator.revalidate()
   }, 5000)

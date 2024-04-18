@@ -1,9 +1,9 @@
 import { json } from '@remix-run/node'
-import React, { useEffect } from 'react'
+import React, { useCallback, useEffect, useMemo } from 'react'
 import { XMsg } from '~/graphql/graphql'
 import { ColumnDef } from '@tanstack/react-table'
 import SimpleTable from '../shared/simpleTable'
-import { useLoaderData } from '@remix-run/react'
+import { useLoaderData, useRevalidator, useSearchParams } from '@remix-run/react'
 import { dateFormatter, hashShortener } from '~/lib/formatting'
 import Tag from '../shared/tag'
 import RollupIcon from '../shared/rollupIcon'
@@ -15,10 +15,34 @@ import Dropdown from '../shared/dropdown'
 import ChainDropdown from './chainDropdown'
 import FilterOptions from '../shared/filterOptions'
 import { getAddressUrl, getBlockUrl, getTxUrl } from '~/lib/sourceChains'
+import debounce from 'lodash.debounce'
+
 
 export default function XMsgDataTable() {
   const data = useLoaderData<typeof loader>()
+  const revalidator = useRevalidator()
 
+  const [filterCategory, setFilterCategory] = React.useState<
+    'sourceAddress' | 'sourceTxHash' | 'destinationAddress' | 'destinationTxHash'
+  >('sourceAddress')
+
+  const [filterParams, setFilterParams] = React.useState<{
+    sourceAddress: string | null
+    sourceTxHash: string | null
+    destinationAddress: string | null
+    destinationTxHash: string | null
+    status: 'Success' | 'Failed' | 'Pending' | null
+  }>({
+    sourceAddress: null,
+    sourceTxHash: null,
+    destinationAddress: null,
+    destinationTxHash: null,
+    status: null,
+  })
+
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // search filters
   const filterOptions = [
     { display: 'Source address', value: 'sourceAddress' },
     {
@@ -27,11 +51,11 @@ export default function XMsgDataTable() {
     },
     {
       display: 'Destination address',
-      value: 'destAddress',
+      value: 'destinationAddress',
     },
     {
       display: 'Destination tx hash',
-      value: 'destTxHash',
+      value: 'destinationTxHash',
     },
   ]
 
@@ -50,6 +74,44 @@ export default function XMsgDataTable() {
     canFilter: false,
     enableColumnFilter: false,
   }
+
+  // Listen for filter changes here and append search params
+  useEffect(() => {
+    const newParams = new URLSearchParams()
+    for (var key in filterParams) {
+      if (filterParams[key] !== null) {
+        newParams.set(key, filterParams[key])
+      } else {
+        newParams.delete(key)
+      }
+    }
+
+    setSearchParams(newParams)
+    revalidator.revalidate()
+  }, [filterParams])
+
+
+
+
+  // here we set the filter params by clearing the old ones, and setting the current one and its value
+  // TODO: implement
+  const searchBarInputCB = (e) => {
+    console.log("Search bar input changed", e.target.value)
+    
+    // switch(filterCategory) {
+    //   case 'sourceTxHash':
+    //     setFilterParams(prev => ({
+    //       ...prev,
+
+    //     }))
+    // }
+  }
+
+
+  const searchBarInput = useCallback(
+    debounce(searchBarInputCB, 600),
+    []
+  );
 
   const columns = React.useMemo<ColumnDef<any>[]>(
     () => [
@@ -186,7 +248,7 @@ export default function XMsgDataTable() {
               }}
               defaultValue={filterOptions[0].value}
             />
-            <SearchBar placeholder={searchPlaceholder} />
+            <SearchBar onInput={searchBarInput} placeholder={searchPlaceholder} />
           </div>
           <ChainDropdown placeholder="Select source" label="From" options={sourceChainList} />
           <ChainDropdown placeholder="Select destination" label="To" options={sourceChainList} />
@@ -199,8 +261,11 @@ export default function XMsgDataTable() {
               <div className="table-highlight  w-[21.856%] min-w-[221px]"></div>
               <div className={`px-6 py-3`}>
                 <FilterOptions
-                  onSelection={e => {
-                    console.log('Filter selected', e)
+                  onSelection={status => {
+                    setFilterParams(prev => ({
+                      ...prev,
+                      status: status === 'all' ? null : status,
+                    }))
                   }}
                   options={['All', 'Success', 'Pending', 'Failed']}
                 />

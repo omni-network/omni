@@ -41,6 +41,9 @@ dependencies:
   isbot:
     specifier: ^4.1.0
     version: 4.4.0
+  lodash.debounce:
+    specifier: 4.0.8
+    version: 4.0.8
   openapi-fetch:
     specifier: ^0.8.2
     version: 0.8.2
@@ -5900,7 +5903,6 @@ packages:
 
   /lodash.debounce@4.0.8:
     resolution: {integrity: sha512-FT1yDzDYEoYWhnSGnpE/4Kj1fLZkDFyqRb7fNt6FdYOSxlUWAtp42Eh6Wb0rGIv/m9Bgo7x4GhQbm5Ys4SG5ow==}
-    dev: true
 
   /lodash.isplainobject@4.0.6:
     resolution: {integrity: sha512-oSXzaWypCMHkPC3NvBEaPHf0KsA5mvPrOPgQWDsbg8n7orZ290M0BmC/jgRZ4vcJ6DTAhjrsSYgdsW/F+MFOBA==}
