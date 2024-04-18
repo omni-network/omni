@@ -4,9 +4,9 @@ import (
 	_ "embed"
 )
 
-//go:embed devnet1.toml
-var devnet1 []byte
+//go:embed devnet0.toml
+var devnet0 []byte
 
-func Devnet1() []byte {
-	return devnet1
+func Devnet0() []byte {
+	return devnet0
 }

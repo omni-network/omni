@@ -7,29 +7,24 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/e2e/manifests"
+	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
 
 	"github.com/ethereum/go-ethereum/common"
-	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 
 	"github.com/spf13/cobra"
-)
-
-const (
-	// privKeyHex0 of pre-funded anvil account 0.
-	privKeyHex0 = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 )
 
 func newDevnetCmds() *cobra.Command {
@@ -86,7 +81,7 @@ func newDevnetAVSAllow() *cobra.Command {
 func newDevnetStartCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "start",
-		Short: "Build and deploy a local dev environment with 2 anvil nodes and a halo node using Docker",
+		Short: "Build and deploy a local docker compose devnet with 2 anvil nodes and a halo node",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return deployDevnet(cmd.Context())
 		},
@@ -96,204 +91,113 @@ func newDevnetStartCmd() *cobra.Command {
 func newDevnetInfoCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "info",
-		Short: "Display Portal Addresses and RPC URLs for the deployed dev environment",
+		Short: "Display portal addresses and RPC URLs for the deployed devnet",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return getDevnetInfo(cmd.Context())
+			return printDevnetInfo()
 		},
 	}
 }
 
-func getDevnetInfo(ctx context.Context) error {
-	// Fetch portal data from the helper function
-	portals, err := getDevnetPortalsFromNetworkJSON(ctx)
+func printDevnetInfo() error {
+	// Read the actual devnet external network.json.
+	// It contains correct portal addrs and external (localhost) RPCs.
+	network, err := loadDevnetNetwork()
 	if err != nil {
-		return errors.Wrap(err, "failed to fetch portal data: %w")
+		return errors.Wrap(err, "load internal network")
 	}
 
-	// Fetch RPC data from the helper function
-	rpcs, err := getDevnetRPCsFromManifestDef(ctx)
-	if err != nil {
-		return errors.Wrap(err, "failed to fetch RPC data: %w")
+	type info struct {
+		ChainID       uint64         `json:"chain_id"`
+		ChainName     string         `json:"chain_name"`
+		PortalAddress common.Address `json:"portal_address"`
+		RPCURL        string         `json:"rpc_url"`
 	}
 
-	// Convert RPCs slice to a map for easier lookup
-	rpcMap := make(map[uint64]string)
-	for _, rpc := range rpcs {
-		rpcMap[rpc.ID] = rpc.RPCURL
-	}
-
-	// Prepare combined info structure
-	combinedInfo := make([]struct {
-		ChainID       int    `json:"chain_id"`
-		ServiceName   string `json:"service_name"`
-		PortalAddress string `json:"portal_address"`
-		RPCURL        string `json:"rpc_url"`
-	}, 0)
-
-	// Merge data based on chain ID
-	for _, portal := range portals {
-		rpcURL, ok := rpcMap[uint64(portal.ChainID)]
-		if !ok {
-			fmt.Printf("Missing RPC URL for chain_id %d\n", portal.ChainID)
-			continue
-		}
-		combinedInfo = append(combinedInfo, struct {
-			ChainID       int    `json:"chain_id"`
-			ServiceName   string `json:"service_name"`
-			PortalAddress string `json:"portal_address"`
-			RPCURL        string `json:"rpc_url"`
-		}{
-			ChainID:       portal.ChainID,
-			ServiceName:   portal.ServiceName,
-			PortalAddress: portal.PortalAddress,
-			RPCURL:        rpcURL,
+	var infos []info
+	for _, chain := range network.EVMChains() {
+		infos = append(infos, info{
+			ChainID:       chain.ID,
+			ChainName:     chain.Name,
+			PortalAddress: chain.PortalAddress,
+			RPCURL:        chain.RPCURL,
 		})
 	}
 
 	// Marshal and print the final combined JSON output
-	jsonOutput, err := json.MarshalIndent(combinedInfo, "", "  ")
+	jsonOutput, err := json.MarshalIndent(infos, "", "  ")
 	if err != nil {
-		return errors.Wrap(err, "failed to marshal combined info into JSON: %w")
+		return errors.Wrap(err, "marshal infos")
 	}
 	fmt.Println(string(jsonOutput))
 
 	return nil
 }
 
-type chainInfo struct {
-	ID     uint64
-	Name   string
-	RPCURL string
-	Portal string
-}
+func devnetDefinition(ctx context.Context) (app.Definition, error) {
+	manifestFile, err := writeTempFile(manifests.Devnet0())
+	if err != nil {
+		return app.Definition{}, err
+	}
 
-func getDevnetRPCsFromManifestDef(ctx context.Context) ([]chainInfo, error) {
-	manifestContent := manifests.Devnet1()
-	tempManifestPath := writeTempManifest(manifestContent)
-	defer os.Remove(tempManifestPath)
-
-	//nolint:contextcheck // The function does not support context passing, ignoring.
-	defCfg := app.DefaultDefinitionConfig()
-	defCfg.ManifestFile = tempManifestPath
+	defCfg := app.DefaultDefinitionConfig(ctx)
+	defCfg.ManifestFile = manifestFile
 	defCfg.OmniImgTag = buildinfo.Version()
-	def, err := app.MakeDefinition(ctx, defCfg, "deploy")
+
+	def, err := app.MakeDefinition(ctx, defCfg, "devnet")
 	if err != nil {
-		return nil, err
+		return app.Definition{}, err
 	}
 
-	var chains []chainInfo
-
-	omniEVM := def.Testnet.OmniEVMs[1]
-	chains = append(chains, chainInfo{
-		ID:     omniEVM.Chain.ID,
-		Name:   omniEVM.Chain.Name,
-		RPCURL: omniEVM.ExternalRPC,
-	})
-
-	for _, anvil := range def.Testnet.AnvilChains {
-		chains = append(chains, chainInfo{
-			ID:     anvil.Chain.ID,
-			Name:   anvil.Chain.Name,
-			RPCURL: anvil.ExternalRPC,
-		})
+	def.Testnet.Dir, err = devnetDir()
+	if err != nil {
+		return app.Definition{}, err
 	}
 
-	return chains, nil
+	return def, nil
 }
 
-// chainJSONInfo is a structure to hold the simplified chain information.
-type chainJSONInfo struct {
-	ChainID       int    `json:"chain_id"`
-	ServiceName   string `json:"service_name"`
-	PortalAddress string `json:"portal_address"`
-}
-
-func getDevnetPortalsFromNetworkJSON(_ context.Context) ([]chainJSONInfo, error) {
-	homeDir, err := os.UserHomeDir()
+func loadDevnetNetwork() (netconf.Network, error) {
+	devnetPath, err := devnetDir()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get user home directory: %w")
-	}
-	devnetPath := filepath.Join(homeDir, ".omni", "devnet")
-	if _, err := os.Stat(devnetPath); os.IsNotExist(err) {
-		return nil, errors.Wrap(err, "no config files detected. Have you run `omni devnet start` yet?")
-	}
-	jsonFilePath := filepath.Join(devnetPath, "validator01", "config", "network.json")
-
-	// Read the JSON file using os.ReadFile
-	jsonData, err := os.ReadFile(jsonFilePath)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to read JSON file: %w")
+		return netconf.Network{}, err
 	}
 
-	// Parse the JSON data
-	var data struct {
-		Chains []struct {
-			ID            int    `json:"id"`
-			Name          string `json:"name"`
-			PortalAddress string `json:"portal_address"`
-		} `json:"chains"`
-	}
+	networkFile := filepath.Join(devnetPath, "network.json")
 
-	if err := json.Unmarshal(jsonData, &data); err != nil {
-		return nil, errors.Wrap(err, "failed to parse JSON data: %w")
-	}
-
-	// Filter and collect the necessary chain info
-	var results []chainJSONInfo
-	for _, chain := range data.Chains {
-		if chain.PortalAddress != "" {
-			results = append(results, chainJSONInfo{
-				ChainID:       chain.ID,
-				ServiceName:   chain.Name,
-				PortalAddress: chain.PortalAddress,
-			})
+	if _, err := os.Stat(networkFile); os.IsNotExist(err) {
+		return netconf.Network{}, &cliError{
+			Msg:     "failed to load ~/.omni/devnet/network.json",
+			Suggest: "Have you run `omni devnet start` yet?",
 		}
 	}
 
-	return results, nil
+	return netconf.Load(networkFile)
 }
 
-// deployDevnetNetwork initializes and deploys the devnet network using the e2e app.
+// deployDevnet initializes and deploys the devnet network using the e2e app.
 func deployDevnet(ctx context.Context) error {
-	manifestContent := manifests.Devnet1()
-
-	tempManifestPath := writeTempManifest(manifestContent)
-	defer os.Remove(tempManifestPath)
-
-	//nolint:contextcheck // The function does not support context passing, ignoring.
-	defCfg := app.DefaultDefinitionConfig()
-	defCfg.ManifestFile = tempManifestPath
-	defCfg.OmniImgTag = buildinfo.Version()
-	def, err := app.MakeDefinition(ctx, defCfg, "deploy")
+	def, err := devnetDefinition(ctx)
 	if err != nil {
 		return err
 	}
 
-	// Retrieve the home directory from the environment variable
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return errors.Wrap(err, "failed to get user home directory")
-	}
-	def.Testnet.Dir = filepath.Join(homeDir, ".omni", "devnet") // Use filepath to correctly handle paths
+	_, err = app.Deploy(ctx, def, app.DefaultDeployConfig())
 
-	deployCfg := app.DefaultDeployConfig()
-	_, err = app.Deploy(ctx, def, deployCfg)
-
-	return err
+	return errors.Wrap(err, "deploy devnet")
 }
 
-func writeTempManifest(content []byte) string {
-	tempFile, err := os.CreateTemp("", "devnet_manifest_*.toml")
+func writeTempFile(content []byte) (string, error) {
+	f, err := os.CreateTemp("", "")
 	if err != nil {
-		panic(fmt.Errorf("failed to create temp manifest file: %w", err))
+		return "", errors.Wrap(err, "create temp file")
 	}
-	defer tempFile.Close()
+	defer f.Close()
 
-	if _, err := tempFile.Write(content); err != nil {
-		panic(fmt.Errorf("failed to write to temp manifest file: %w", err))
+	if _, err := f.Write(content); err != nil {
+		return "", errors.Wrap(err, "write temp manifest")
 	}
 
-	return tempFile.Name()
+	return f.Name(), nil
 }
 
 type devnetAllowConfig struct {
@@ -398,20 +302,24 @@ func devnetBackend(ctx context.Context, rpcURL string) (common.Address, *ethback
 		return common.Address{}, nil, errors.Wrap(err, "get chain id")
 	}
 
-	funderPrivKey, err := ethcrypto.HexToECDSA(strings.TrimPrefix(privKeyHex0, "0x"))
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "parse private key")
-	}
-
 	backend, err := ethbackend.NewBackend("", chainID.Uint64(), time.Second, ethCl)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "create backend")
 	}
 
-	funderAddr, err := backend.AddAccount(funderPrivKey)
+	funderAddr, err := backend.AddAccount(anvil.DevPrivateKey0())
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "add account")
 	}
 
 	return funderAddr, backend, nil
+}
+
+func devnetDir() (string, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", errors.Wrap(err, "user home dir")
+	}
+
+	return filepath.Join(homeDir, ".omni", "devnet"), nil
 }
