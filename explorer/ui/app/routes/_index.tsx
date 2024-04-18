@@ -19,7 +19,7 @@ export const meta: MetaFunction = () => {
   ]
 }
 
-export const loader: LoaderFunction = async ({ request}) => {
+export const loader: LoaderFunction = async ({ request }) => {
   // const res = await gqlClient.query(xblockcount, {})
 
   console.log(request)
@@ -50,7 +50,7 @@ export const loader: LoaderFunction = async ({ request}) => {
 
 export default function Index() {
   const revalidator = useRevalidator()
-  
+
   // poll server every 5 seconds
   useInterval(() => {
     revalidator.revalidate()
