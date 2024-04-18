@@ -14,6 +14,7 @@ export type FragmentType<TDocumentType extends DocumentTypeDecoration<any, any>>
     : never
   : never;
 
+
 // return non-nullable if `fragmentType` is non-nullable
 export function useFragment<TType>(
   _documentNode: DocumentTypeDecoration<TType, any>,

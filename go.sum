@@ -52,10 +52,10 @@ github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3
 github.com/DataDog/zstd v1.5.5 h1:oWf5W7GtOLgp6bciQYDmhHHjdhYkALu6S/5Ni9ZgSvQ=
 github.com/DataDog/zstd v1.5.5/go.mod h1:g4AWEaM3yOg3HYfnJ3YIawPnVdXJh9QME85blwSAmyw=
 github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8Leh48TZaKVeNIfJntJ2wa0=
-github.com/Layr-Labs/eigenlayer-cli v0.7.2 h1:HNjkmE6GVO5sekm1uS3gjcR19sBVXgL6Ufibc4Ca99U=
-github.com/Layr-Labs/eigenlayer-cli v0.7.2/go.mod h1:9aHAPKUx7GbUcL4ck7ZitYxJ7TxEHvjgZdd6m99c4/8=
-github.com/Layr-Labs/eigensdk-go v0.1.5 h1:djVnl8z8Ay+88AyiafcOJ4U8+ACaAgDxwyXvAIdtRVM=
-github.com/Layr-Labs/eigensdk-go v0.1.5/go.mod h1:HOSNuZcwaKbP4cnNk9c1hK2B2RitcMQ36Xj2msBBBpE=
+github.com/Layr-Labs/eigenlayer-cli v0.7.3 h1:E43UwD3AU/3ysDsse4LwaQRSv58y0E0gZsTUM51ZL+Q=
+github.com/Layr-Labs/eigenlayer-cli v0.7.3/go.mod h1:uWTnE+/MIuWbLjW55WkqlPSxLSufHqaJGwKQFOTQfWQ=
+github.com/Layr-Labs/eigensdk-go v0.1.6 h1:LEJ8QZFAjuXH3H7BkwixFAxm1GVbCiTmsj1Q21xxsEA=
+github.com/Layr-Labs/eigensdk-go v0.1.6/go.mod h1:HOSNuZcwaKbP4cnNk9c1hK2B2RitcMQ36Xj2msBBBpE=
 github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migciow=
 github.com/Microsoft/go-winio v0.6.1/go.mod h1:LRdKpFKfdobln8UmuiYcKPot9D2v6svN5+sAH+4kjUM=
 github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2 h1:+vx7roKuyA63nhn5WAunQHLTznkw5W8b1Xc0dNjp83s=
@@ -306,8 +306,8 @@ github.com/envoyproxy/protoc-gen-validate v1.0.4 h1:gVPz/FMfvh57HdSJQyvBtF00j8JU
 github.com/envoyproxy/protoc-gen-validate v1.0.4/go.mod h1:qys6tmnRsYrQqIhm2bvKZH4Blx/1gTIZ2UKVY1M+Yew=
 github.com/ethereum/c-kzg-4844 v0.4.0 h1:3MS1s4JtA868KpJxroZoepdV0ZKBp3u/O5HcZ7R3nlY=
 github.com/ethereum/c-kzg-4844 v0.4.0/go.mod h1:VewdlzQmpT5QSrVhbBuGoCdFJkpaJlO1aQputP83wc0=
-github.com/ethereum/go-ethereum v1.13.14 h1:EwiY3FZP94derMCIam1iW4HFVrSgIcpsu0HwTQtm6CQ=
-github.com/ethereum/go-ethereum v1.13.14/go.mod h1:TN8ZiHrdJwSe8Cb6x+p0hs5CxhJZPbqB7hHkaUXcmIU=
+github.com/ethereum/go-ethereum v1.13.15 h1:U7sSGYGo4SPjP6iNIifNoyIAiNjrmQkz6EwQG+/EZWo=
+github.com/ethereum/go-ethereum v1.13.15/go.mod h1:TN8ZiHrdJwSe8Cb6x+p0hs5CxhJZPbqB7hHkaUXcmIU=
 github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
 github.com/fatih/color v1.13.0/go.mod h1:kLAiJbzzSOZDVNGyDpeOxJ47H46qBXwg5ILebYFFOfk=
 github.com/fatih/color v1.15.0 h1:kOqh6YHBtK8aywxGerMG2Eq3H6Qgoqeo13Bk2Mv/nBs=

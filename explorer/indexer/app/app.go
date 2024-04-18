@@ -71,10 +71,11 @@ func startXProvider(ctx context.Context, network netconf.Network, entCl *ent.Cli
 	callback := newCallback(entCl)
 
 	for _, chain := range network.EVMChains() {
-		fromHeight, err := initChainCursor(ctx, entCl, chain)
+		fromHeight, err := InitChainCursor(ctx, entCl, chain)
 		if err != nil {
 			return errors.Wrap(err, "initialize chain cursor", "chain_id", chain.ID)
 		}
+		log.Info(ctx, "Subscribing to chain", "chain_id", chain.ID, "from_height", fromHeight)
 
 		err = xprovider.StreamAsync(ctx, chain.ID, fromHeight, callback)
 		if err != nil {
@@ -99,10 +100,10 @@ func initializeRPCClients(chains []netconf.Chain) (map[uint64]ethclient.Client, 
 	return rpcClientPerChain, nil
 }
 
-// initChainCursor return the initial cursor height to start streaming from (inclusive).
+// InitChainCursor return the initial cursor height to start streaming from (inclusive).
 // If a cursor exists, it returns the cursor height + 1.
 // Else a new cursor is created with chain deploy height.
-func initChainCursor(ctx context.Context, entCl *ent.Client, chain netconf.Chain) (uint64, error) {
+func InitChainCursor(ctx context.Context, entCl *ent.Client, chain netconf.Chain) (uint64, error) {
 	cursor, ok, err := getCursor(ctx, entCl.XProviderCursor, chain.ID)
 	if err != nil {
 		return 0, errors.Wrap(err, "get cursor")
@@ -111,19 +112,31 @@ func initChainCursor(ctx context.Context, entCl *ent.Client, chain netconf.Chain
 	}
 
 	// Store the cursor at deploy height - 1, so first cursor update will be at deploy height.
-	deployMinOne := chain.DeployHeight - 1
+	deployHeight := chain.DeployHeight - 1
 	if chain.DeployHeight == 0 { // Except for 0, we handle this explicitly.
-		deployMinOne = 0
+		deployHeight = 0
 	}
 
 	// cursor doesn't exist yet, create it
 	_, err = entCl.XProviderCursor.Create().
 		SetChainID(chain.ID).
-		SetHeight(deployMinOne).
+		SetHeight(deployHeight).
 		Save(ctx)
 	if err != nil {
 		return 0, errors.Wrap(err, "create cursor")
 	}
+
+	// if the cursor doesn't exist that means the chain doesn't exist so we have to create it as well
+	_, err = entCl.Chain.
+		Create().
+		SetChainID(chain.ID).
+		SetName(chain.Name).
+		Save(ctx)
+	if err != nil {
+		return 0, errors.Wrap(err, "create chain")
+	}
+
+	log.Info(ctx, "Created cursor", "chain_id", chain.ID, "height", deployHeight)
 
 	return chain.DeployHeight, nil
 }
