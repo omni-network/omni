@@ -75,8 +75,8 @@ type Account struct {
 	TargetBalance *big.Int      // fund to this balance
 }
 
-// PrivateKey returns the private key for the account.
-func (a Account) PrivateKey() *ecdsa.PrivateKey {
+// privKey returns the private key for the account.
+func (a Account) privKey() *ecdsa.PrivateKey {
 	return a.privateKey
 }
 
@@ -113,7 +113,7 @@ func PrivateKey(ctx context.Context, network netconf.ID, role Role) (*ecdsa.Priv
 		return nil, errors.New("eoa key not defined", "network", network, "role", role)
 	}
 	if acc.Type == TypeWellKnown {
-		return acc.PrivateKey(), nil
+		return acc.privKey(), nil
 	} else if acc.Type == TypeRemote {
 		return nil, errors.New("private key not available for remote keys", "network", network, "role", role)
 	}
