@@ -6,6 +6,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/chainids"
+	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
@@ -75,13 +76,13 @@ func devnetCfg() DeploymentConfig {
 func AddrForNetwork(network netconf.ID) (common.Address, bool) {
 	switch network {
 	case netconf.Mainnet:
-		return eoa.MainnetCreate3Factory(), true
+		return contracts.MainnetCreate3Factory(), true
 	case netconf.Testnet:
-		return eoa.TestnetCreate3Factory(), true
+		return contracts.TestnetCreate3Factory(), true
 	case netconf.Staging:
-		return eoa.StagingCreate3Factory(), true
+		return contracts.StagingCreate3Factory(), true
 	case netconf.Devnet:
-		return eoa.DevnetCreate3Factory(), true
+		return contracts.DevnetCreate3Factory(), true
 	default:
 		return common.Address{}, false
 	}

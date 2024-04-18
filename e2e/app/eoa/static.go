@@ -3,10 +3,30 @@ package eoa
 import (
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/netconf"
 
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/common"
+)
+
+var (
+	gwei100 = new(big.Int).Mul(big.NewInt(100), big.NewInt(params.GWei))
+	gwei500 = new(big.Int).Mul(big.NewInt(500), big.NewInt(params.GWei))
+
+	ether1   = new(big.Int).Mul(big.NewInt(1), big.NewInt(params.Ether))
+	ether5   = new(big.Int).Mul(big.NewInt(5), big.NewInt(params.Ether))
+	ether10  = new(big.Int).Mul(big.NewInt(10), big.NewInt(params.Ether))
+	ether100 = new(big.Int).Mul(big.NewInt(100), big.NewInt(params.Ether))
+
+	minBalanceSmall    = gwei100
+	targetBalanceSmall = gwei500
+
+	minBalanceMedium    = ether1
+	targetBalanceMedium = ether5
+
+	minBalanceLarge    = ether10
+	targetBalanceLarge = ether100
 )
 
 //nolint:gochecknoglobals // Static mappings.
@@ -16,7 +36,7 @@ var statics = map[netconf.ID][]Account{
 			Type:          TypeRemote,
 			Role:          RoleCreate3Deployer,
 			Address:       devnetCreate3Deployer,
-			Chains:        ChainSelectorAll,
+			Chains:        chainSelectorAll,
 			MinBalance:    big.NewInt(10),
 			TargetBalance: big.NewInt(100)},
 
@@ -24,7 +44,7 @@ var statics = map[netconf.ID][]Account{
 			Type:          TypeRemote,
 			Role:          RoleDeployer,
 			Address:       devnetDeployer,
-			Chains:        ChainSelectorAll,
+			Chains:        chainSelectorAll,
 			MinBalance:    big.NewInt(10),
 			TargetBalance: big.NewInt(100),
 		},
@@ -32,33 +52,33 @@ var statics = map[netconf.ID][]Account{
 			Type:          TypeRemote,
 			Role:          RoleAdmin,
 			Address:       devnetAdmin,
-			Chains:        ChainSelectorAll,
+			Chains:        chainSelectorAll,
 			MinBalance:    big.NewInt(10),
 			TargetBalance: big.NewInt(100),
 		},
 		{
 			Type:          TypeWellKnown,
 			Role:          RoleRelayer,
-			Address:       crypto.PubkeyToAddress((anvil.DevPrivateKey5()).PublicKey),
-			PrivateKey:    anvil.DevPrivateKey5(),
-			Chains:        ChainSelectorAll,
+			Address:       anvil.DevAccount5(),
+			privateKey:    anvil.DevPrivateKey5(),
+			Chains:        chainSelectorAll,
 			MinBalance:    big.NewInt(10),
 			TargetBalance: big.NewInt(100),
 		},
 		{
 			Type:          TypeWellKnown,
 			Role:          RoleMonitor,
-			Address:       crypto.PubkeyToAddress((anvil.DevPrivateKey6()).PublicKey),
-			PrivateKey:    anvil.DevPrivateKey6(),
-			Chains:        ChainSelectorAll,
+			Address:       anvil.DevAccount6(),
+			privateKey:    anvil.DevPrivateKey6(),
+			Chains:        chainSelectorAll,
 			MinBalance:    big.NewInt(10),
 			TargetBalance: big.NewInt(100),
 		},
 		{
 			Type:          TypeRemote,
 			Role:          RoleFbDev,
-			Address:       addr(fbDev),
-			Chains:        ChainSelectorAll,
+			Address:       common.HexToAddress(fbDev),
+			Chains:        chainSelectorAll,
 			MinBalance:    big.NewInt(10),
 			TargetBalance: big.NewInt(100),
 		},
@@ -68,7 +88,7 @@ var statics = map[netconf.ID][]Account{
 			Type:          TypeRemote,
 			Role:          RoleCreate3Deployer,
 			Address:       stagingCreate3Deployer,
-			Chains:        ChainSelectorAll,
+			Chains:        chainSelectorAll,
 			MinBalance:    big.NewInt(2),
 			TargetBalance: big.NewInt(10)},
 
@@ -76,7 +96,7 @@ var statics = map[netconf.ID][]Account{
 			Type:          TypeRemote,
 			Role:          RoleDeployer,
 			Address:       stagingDeployer,
-			Chains:        ChainSelectorAll,
+			Chains:        chainSelectorAll,
 			MinBalance:    big.NewInt(2),
 			TargetBalance: big.NewInt(10),
 		},
@@ -84,7 +104,7 @@ var statics = map[netconf.ID][]Account{
 			Type:          TypeRemote,
 			Role:          RoleAdmin,
 			Address:       stagingAdmin,
-			Chains:        ChainSelectorAll,
+			Chains:        chainSelectorAll,
 			MinBalance:    big.NewInt(1),
 			TargetBalance: big.NewInt(5),
 		},
@@ -92,7 +112,7 @@ var statics = map[netconf.ID][]Account{
 			Type:          TypeSecret,
 			Role:          RoleRelayer,
 			Address:       stagingRelayer,
-			Chains:        ChainSelectorAll,
+			Chains:        chainSelectorAll,
 			MinBalance:    big.NewInt(1),
 			TargetBalance: big.NewInt(5),
 		},
@@ -100,15 +120,15 @@ var statics = map[netconf.ID][]Account{
 			Type:          TypeSecret,
 			Role:          RoleMonitor,
 			Address:       stagingMonitor,
-			Chains:        ChainSelectorAll,
+			Chains:        chainSelectorAll,
 			MinBalance:    big.NewInt(1),
 			TargetBalance: big.NewInt(5),
 		},
 		{
 			Type:          TypeRemote,
 			Role:          RoleFbDev,
-			Address:       addr(fbDev),
-			Chains:        ChainSelectorAll,
+			Address:       common.HexToAddress(fbDev),
+			Chains:        chainSelectorAll,
 			MinBalance:    big.NewInt(5),
 			TargetBalance: big.NewInt(10),
 		},
@@ -118,7 +138,7 @@ var statics = map[netconf.ID][]Account{
 			Type:          TypeRemote,
 			Role:          RoleCreate3Deployer,
 			Address:       testnetCreate3Deployer,
-			Chains:        ChainSelectorAll,
+			Chains:        chainSelectorAll,
 			MinBalance:    big.NewInt(2),
 			TargetBalance: big.NewInt(10),
 		},
@@ -126,7 +146,7 @@ var statics = map[netconf.ID][]Account{
 			Type:          TypeRemote,
 			Role:          RoleDeployer,
 			Address:       testnetDeployer,
-			Chains:        ChainSelectorAll,
+			Chains:        chainSelectorAll,
 			MinBalance:    big.NewInt(2),
 			TargetBalance: big.NewInt(10),
 		},
@@ -134,7 +154,7 @@ var statics = map[netconf.ID][]Account{
 			Type:          TypeRemote,
 			Role:          RoleAdmin,
 			Address:       testnetAdmin,
-			Chains:        ChainSelectorAll,
+			Chains:        chainSelectorAll,
 			MinBalance:    big.NewInt(1),
 			TargetBalance: big.NewInt(5),
 		},
@@ -142,7 +162,7 @@ var statics = map[netconf.ID][]Account{
 			Type:          TypeSecret,
 			Role:          RoleRelayer,
 			Address:       testnetRelayer,
-			Chains:        ChainSelectorAll,
+			Chains:        chainSelectorAll,
 			MinBalance:    big.NewInt(1),
 			TargetBalance: big.NewInt(5),
 		},
@@ -150,7 +170,7 @@ var statics = map[netconf.ID][]Account{
 			Type:          TypeSecret,
 			Role:          RoleMonitor,
 			Address:       testnetMonitor,
-			Chains:        ChainSelectorAll,
+			Chains:        chainSelectorAll,
 			MinBalance:    big.NewInt(1),
 			TargetBalance: big.NewInt(5),
 		},
@@ -160,7 +180,7 @@ var statics = map[netconf.ID][]Account{
 			Type:          TypeSecret,
 			Role:          RoleRelayer,
 			Address:       mainnetRelayer,
-			Chains:        ChainSelectorAll,
+			Chains:        chainSelectorAll,
 			MinBalance:    big.NewInt(1),
 			TargetBalance: big.NewInt(5),
 		},
@@ -168,7 +188,7 @@ var statics = map[netconf.ID][]Account{
 			Type:          TypeSecret,
 			Role:          RoleMonitor,
 			Address:       mainnetMonitor,
-			Chains:        ChainSelectorAll,
+			Chains:        chainSelectorAll,
 			MinBalance:    big.NewInt(1),
 			TargetBalance: big.NewInt(5),
 		},

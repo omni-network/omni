@@ -107,74 +107,74 @@ func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) 
 
 func testnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory:   eoa.TestnetCreate3Factory(),
-		Create3Salt:      eoa.AVSSalt(netconf.Testnet),
+		Create3Factory:   contracts.TestnetCreate3Factory(),
+		Create3Salt:      contracts.AVSSalt(netconf.Testnet),
 		Deployer:         eoa.TestnetDeployer(),
 		Owner:            eoa.TestnetAVSAdmin(),
-		ProxyAdmin:       eoa.TestnetProxyAdmin(),
+		ProxyAdmin:       contracts.TestnetProxyAdmin(),
 		Eigen:            holeskyEigenDeployments(),
 		StrategyParams:   holeskyStrategyParams(),
 		MetadataURI:      metadataURI,
 		OmniChainID:      netconf.Testnet.Static().OmniExecutionChainID,
-		Portal:           eoa.TestnetPortal(),
+		Portal:           contracts.TestnetPortal(),
 		EthStakeInbox:    stubEthStakeInbox,
 		MinOperatorStake: big.NewInt(1e18), // 1 ETH
 		MaxOperatorCount: 200,
 		AllowlistEnabled: false,
-		ExpectedAddr:     eoa.TestnetAVS(),
+		ExpectedAddr:     contracts.TestnetAVS(),
 	}
 }
 
 func stagingCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory:   eoa.StagingCreate3Factory(),
-		Create3Salt:      eoa.AVSSalt(netconf.Staging),
+		Create3Factory:   contracts.StagingCreate3Factory(),
+		Create3Salt:      contracts.AVSSalt(netconf.Staging),
 		Deployer:         eoa.StagingDeployer(),
 		Owner:            eoa.StagingAVSAdmin(),
-		ProxyAdmin:       eoa.StagingProxyAdmin(),
+		ProxyAdmin:       contracts.StagingProxyAdmin(),
 		Eigen:            devnetEigenDeployments,
 		StrategyParams:   devnetStrategyParams(),
 		MetadataURI:      metadataURI,
 		OmniChainID:      netconf.Staging.Static().OmniExecutionChainID,
-		Portal:           eoa.StagingPortal(),
+		Portal:           contracts.StagingPortal(),
 		EthStakeInbox:    stubEthStakeInbox,
 		MinOperatorStake: big.NewInt(1e18), // 1 ETH
 		MaxOperatorCount: 10,
 		AllowlistEnabled: true,
-		ExpectedAddr:     eoa.StagingAVS(),
+		ExpectedAddr:     contracts.StagingAVS(),
 	}
 }
 
 func devnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory:   eoa.DevnetCreate3Factory(),
-		Create3Salt:      eoa.AVSSalt(netconf.Devnet),
+		Create3Factory:   contracts.DevnetCreate3Factory(),
+		Create3Salt:      contracts.AVSSalt(netconf.Devnet),
 		Deployer:         eoa.DevnetDeployer(),
 		Owner:            eoa.DevnetAVSAdmin(),
-		ProxyAdmin:       eoa.DevnetProxyAdmin(),
+		ProxyAdmin:       contracts.DevnetProxyAdmin(),
 		Eigen:            devnetEigenDeployments,
 		MetadataURI:      metadataURI,
 		OmniChainID:      netconf.Devnet.Static().OmniExecutionChainID,
 		StrategyParams:   devnetStrategyParams(),
-		Portal:           eoa.DevnetPortal(),
+		Portal:           contracts.DevnetPortal(),
 		EthStakeInbox:    stubEthStakeInbox,
 		MinOperatorStake: big.NewInt(1e18), // 1 ETH
 		MaxOperatorCount: 10,
 		AllowlistEnabled: true,
-		ExpectedAddr:     eoa.DevnetAVS(),
+		ExpectedAddr:     contracts.DevnetAVS(),
 	}
 }
 
 func AddrForNetwork(network netconf.ID) (common.Address, bool) {
 	switch network {
 	case netconf.Mainnet:
-		return eoa.MainnetAVS(), true
+		return contracts.MainnetAVS(), true
 	case netconf.Testnet:
-		return eoa.TestnetAVS(), true
+		return contracts.TestnetAVS(), true
 	case netconf.Staging:
-		return eoa.StagingAVS(), true
+		return contracts.StagingAVS(), true
 	case netconf.Devnet:
-		return eoa.DevnetAVS(), true
+		return contracts.DevnetAVS(), true
 	default:
 		return common.Address{}, false
 	}

@@ -61,54 +61,54 @@ func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) 
 
 func mainnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory: eoa.MainnetCreate3Factory(),
-		Create3Salt:    eoa.ProxyAdminSalt(netconf.Mainnet),
+		Create3Factory: contracts.MainnetCreate3Factory(),
+		Create3Salt:    contracts.ProxyAdminSalt(netconf.Mainnet),
 		Owner:          eoa.MainnetProxyAdminOwner(),
 		Deployer:       eoa.MainnetDeployer(),
-		ExpectedAddr:   eoa.MainnetProxyAdmin(),
+		ExpectedAddr:   contracts.MainnetProxyAdmin(),
 	}
 }
 
 func testnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory: eoa.TestnetCreate3Factory(),
-		Create3Salt:    eoa.ProxyAdminSalt(netconf.Testnet),
+		Create3Factory: contracts.TestnetCreate3Factory(),
+		Create3Salt:    contracts.ProxyAdminSalt(netconf.Testnet),
 		Owner:          eoa.TestnetProxyAdminOwner(),
 		Deployer:       eoa.TestnetDeployer(),
-		ExpectedAddr:   eoa.TestnetProxyAdmin(),
+		ExpectedAddr:   contracts.TestnetProxyAdmin(),
 	}
 }
 
 func stagingCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory: eoa.StagingCreate3Factory(),
-		Create3Salt:    eoa.ProxyAdminSalt(netconf.Staging),
+		Create3Factory: contracts.StagingCreate3Factory(),
+		Create3Salt:    contracts.ProxyAdminSalt(netconf.Staging),
 		Owner:          eoa.StagingProxyAdminOwner(),
 		Deployer:       eoa.StagingDeployer(),
-		ExpectedAddr:   eoa.StagingProxyAdmin(),
+		ExpectedAddr:   contracts.StagingProxyAdmin(),
 	}
 }
 
 func devnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory: eoa.DevnetCreate3Factory(),
-		Create3Salt:    eoa.ProxyAdminSalt(netconf.Devnet),
+		Create3Factory: contracts.DevnetCreate3Factory(),
+		Create3Salt:    contracts.ProxyAdminSalt(netconf.Devnet),
 		Owner:          eoa.DevnetProxyAdminOwner(),
 		Deployer:       eoa.DevnetDeployer(),
-		ExpectedAddr:   eoa.DevnetProxyAdmin(),
+		ExpectedAddr:   contracts.DevnetProxyAdmin(),
 	}
 }
 
 func AddrForNetwork(network netconf.ID) (common.Address, bool) {
 	switch network {
 	case netconf.Mainnet:
-		return eoa.MainnetProxyAdmin(), true
+		return contracts.MainnetProxyAdmin(), true
 	case netconf.Testnet:
-		return eoa.TestnetProxyAdmin(), true
+		return contracts.TestnetProxyAdmin(), true
 	case netconf.Staging:
-		return eoa.StagingProxyAdmin(), true
+		return contracts.StagingProxyAdmin(), true
 	case netconf.Devnet:
-		return eoa.DevnetProxyAdmin(), true
+		return contracts.DevnetProxyAdmin(), true
 	default:
 		return common.Address{}, false
 	}

@@ -24,6 +24,14 @@ const (
 	RoleFbDev           Role = "fb-dev"
 )
 
+func (r Role) Verify() error {
+	if r != RoleRelayer && r != RoleMonitor && r != RoleCreate3Deployer && r != RoleDeployer && r != RoleAdmin && r != RoleFbDev {
+		return errors.New("invalid role", "role", r)
+	}
+
+	return nil
+}
+
 type Type string
 
 const (
@@ -32,29 +40,33 @@ const (
 	TypeWellKnown Type = "well-known" // well-known eoa private keys in the repo
 )
 
-type ChainSelector func(netconf.Network) []netconf.Chain
+type chainSelector func(netconf.Network) []netconf.Chain
 
-var ChainSelectorAll = func(network netconf.Network) []netconf.Chain { return network.Chains }
-var ChainSelectorL1 = func(network netconf.Network) []netconf.Chain { return network.EVMChains() /* todo: impl l1chains*/ }
+var chainSelectorAll = func(network netconf.Network) []netconf.Chain { return network.EVMChains() }
+var chainSelectorL1 = func(network netconf.Network) []netconf.Chain {
+	c, ok := network.EthereumChain()
+	if !ok {
+		return nil
+	}
 
-// Account is a well-known EOA account.
+	return []netconf.Chain{c}
+}
+
+// Account defines a EOA account used within the Omni network.
 type Account struct {
 	Type       Type
 	Role       Role
 	Address    common.Address
-	PrivateKey *ecdsa.PrivateKey // only for devnet (well-known type)
+	privateKey *ecdsa.PrivateKey // only for devnet (well-known type)
 
-	Chains        ChainSelector // all vs specific chains
+	Chains        chainSelector // all vs specific chains
 	MinBalance    *big.Int      // check if below this balance
 	TargetBalance *big.Int      // fund to this balance
 }
 
-func (r Role) Verify() error {
-	if r != RoleRelayer && r != RoleMonitor {
-		return errors.New("invalid role", "role", r)
-	}
-
-	return nil
+// PrivateKey returns the private key for the account.
+func (a Account) PrivateKey() *ecdsa.PrivateKey {
+	return a.privateKey
 }
 
 // MustAddress returns the address for the EOA identified by the network and role.
@@ -85,8 +97,10 @@ func PrivateKey(ctx context.Context, network netconf.ID, role Role) (*ecdsa.Priv
 	if !ok {
 		return nil, errors.New("eoa key not defined", "network", network, "role", role)
 	}
-	if network == netconf.Devnet {
-		return acc.PrivateKey, nil
+	if acc.Type == TypeWellKnown {
+		return acc.PrivateKey(), nil
+	} else if acc.Type == TypeRemote {
+		return nil, errors.New("remote key ", "network", network, "role", role)
 	}
 
 	k, err := key.Download(ctx, network, string(role), key.EOA, acc.Address.Hex())
@@ -124,8 +138,4 @@ func MustAddressesForRoles(network netconf.ID, roles ...Role) []common.Address {
 	}
 
 	return addresses
-}
-
-func addr(hex string) common.Address {
-	return common.HexToAddress(hex)
 }

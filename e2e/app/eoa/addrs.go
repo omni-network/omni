@@ -2,12 +2,10 @@ package eoa
 
 import (
 	"github.com/omni-network/omni/lib/anvil"
-	"github.com/omni-network/omni/lib/create3"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 )
 
 const (
@@ -30,31 +28,31 @@ const (
 //nolint:gochecknoglobals // Static addresses
 var (
 	// Admin used as contract owner.
-	mainnetAdmin = addr("0x0")
-	testnetAdmin = addr(fbTestnetAdmin)
-	stagingAdmin = addr(fbStagingAdmin)
+	mainnetAdmin = common.HexToAddress("0x0")
+	testnetAdmin = common.HexToAddress(fbTestnetAdmin)
+	stagingAdmin = common.HexToAddress(fbStagingAdmin)
 	devnetAdmin  = anvil.DevAccount2()
 
 	// Create3 Deployer address that can deploy the create3 factory.
-	mainnetCreate3Deployer = addr("0x0")
-	testnetCreate3Deployer = addr(fbTestnetCreate3Deployer)
-	stagingCreate3Deployer = addr(fbStagingCreate3Deployer)
+	mainnetCreate3Deployer = common.HexToAddress("0x0")
+	testnetCreate3Deployer = common.HexToAddress(fbTestnetCreate3Deployer)
+	stagingCreate3Deployer = common.HexToAddress(fbStagingCreate3Deployer)
 	devnetCreate3Deployer  = anvil.DevAccount0()
 
 	// Deployer address that can deploy protocol contracts via Create3 factory.
-	mainnetDeployer = addr("0x0")
-	testnetDeployer = addr(fbTestnetDeployer)
-	stagingDeployer = addr(fbStagingDeployer)
+	mainnetDeployer = common.HexToAddress("0x0")
+	testnetDeployer = common.HexToAddress(fbTestnetDeployer)
+	stagingDeployer = common.HexToAddress(fbStagingDeployer)
 	devnetDeployer  = anvil.DevAccount1()
 
-	stagingRelayer = addr("0xfE921e06Ed0a22c035b4aCFF0A5D3a434A330c96")
-	stagingMonitor = addr("0x0De553555Fa19d787Af4273B18bDB77282D618c4")
+	stagingRelayer = common.HexToAddress("0xfE921e06Ed0a22c035b4aCFF0A5D3a434A330c96")
+	stagingMonitor = common.HexToAddress("0x0De553555Fa19d787Af4273B18bDB77282D618c4")
 
-	testnetRelayer = addr("0x01654f55E4F5E2f2ff8080702676F1984CBf7d8a")
-	testnetMonitor = addr("0x12Dc870b3F5b7f810c3d1e489e32a64d4E25AaCA")
+	testnetRelayer = common.HexToAddress("0x01654f55E4F5E2f2ff8080702676F1984CBf7d8a")
+	testnetMonitor = common.HexToAddress("0x12Dc870b3F5b7f810c3d1e489e32a64d4E25AaCA")
 
-	mainnetMonitor = addr("0x07082fcbFA5F5AC9FBc03A48B7f6391441DB8332")
-	mainnetRelayer = addr("0x07804D7B8be635c0C68Cdf3E946114221B12f4F7")
+	mainnetMonitor = common.HexToAddress("0x07082fcbFA5F5AC9FBc03A48B7f6391441DB8332")
+	mainnetRelayer = common.HexToAddress("0x07804D7B8be635c0C68Cdf3E946114221B12f4F7")
 )
 
 // Admin returns the address of the admin for the given network.
@@ -171,112 +169,4 @@ func StagingAVSAdmin() common.Address {
 
 func DevnetAVSAdmin() common.Address {
 	return devnetAdmin
-}
-
-//
-// Create3Factory.
-//
-
-func MainnetCreate3Factory() common.Address {
-	return crypto.CreateAddress(mainnetCreate3Deployer, 0)
-}
-
-func TestnetCreate3Factory() common.Address {
-	return crypto.CreateAddress(testnetCreate3Deployer, 0)
-}
-
-func StagingCreate3Factory() common.Address {
-	return crypto.CreateAddress(stagingCreate3Deployer, 0)
-}
-
-func DevnetCreate3Factory() common.Address {
-	return crypto.CreateAddress(devnetCreate3Deployer, 0)
-}
-
-//
-// ProxyAdmin.
-//
-
-func MainnetProxyAdmin() common.Address {
-	return create3.Address(MainnetCreate3Factory(), ProxyAdminSalt(netconf.Mainnet), mainnetDeployer)
-}
-
-func TestnetProxyAdmin() common.Address {
-	return create3.Address(TestnetCreate3Factory(), ProxyAdminSalt(netconf.Testnet), testnetDeployer)
-}
-
-func StagingProxyAdmin() common.Address {
-	return create3.Address(StagingCreate3Factory(), ProxyAdminSalt(netconf.Staging), stagingDeployer)
-}
-
-func DevnetProxyAdmin() common.Address {
-	return create3.Address(DevnetCreate3Factory(), ProxyAdminSalt(netconf.Devnet), devnetDeployer)
-}
-
-//
-// Portal.
-//
-
-func MainnetPortal() common.Address {
-	return create3.Address(MainnetCreate3Factory(), PortalSalt(netconf.Mainnet), mainnetDeployer)
-}
-
-func TestnetPortal() common.Address {
-	return create3.Address(TestnetCreate3Factory(), PortalSalt(netconf.Testnet), testnetDeployer)
-}
-
-func StagingPortal() common.Address {
-	return create3.Address(StagingCreate3Factory(), PortalSalt(netconf.Staging), stagingDeployer)
-}
-
-func DevnetPortal() common.Address {
-	return create3.Address(DevnetCreate3Factory(), PortalSalt(netconf.Devnet), devnetDeployer)
-}
-
-//
-// AVS.
-//
-
-func MainnetAVS() common.Address {
-	return create3.Address(MainnetCreate3Factory(), AVSSalt(netconf.Mainnet), mainnetDeployer)
-}
-
-func TestnetAVS() common.Address {
-	return create3.Address(TestnetCreate3Factory(), AVSSalt(netconf.Testnet), testnetDeployer)
-}
-
-func StagingAVS() common.Address {
-	return create3.Address(StagingCreate3Factory(), AVSSalt(netconf.Staging), stagingDeployer)
-}
-
-func DevnetAVS() common.Address {
-	return create3.Address(DevnetCreate3Factory(), AVSSalt(netconf.Devnet), devnetDeployer)
-}
-
-//
-// Salts.
-//
-
-func ProxyAdminSalt(network netconf.ID) string {
-	return salt(network, "proxy-admin")
-}
-
-func PortalSalt(network netconf.ID) string {
-	// only portal salts are versioned
-	return salt(network, "portal-"+network.Version())
-}
-
-func AVSSalt(network netconf.ID) string {
-	return salt(network, "avs")
-}
-
-//
-// Utils.
-//
-
-// salt generates a salt for a contract deployment. For ephemeral networks,
-// the salt includes a random per-run suffix. For persistent networks, the
-// sale is static.
-func salt(network netconf.ID, contract string) string {
-	return string(network) + "-" + contract
 }
