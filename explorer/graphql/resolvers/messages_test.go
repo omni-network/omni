@@ -264,20 +264,20 @@ func TestXMsgsNoLimit(t *testing.T) {
 						{
 							"Node":{
 								"Block":{
-									"BlockHeight":"0x2"
+									"BlockHeight":"0x0"
 								},"Receipts":[
 									{
 										"Success":{"Set":true,"Value":true}
 									}
 								],
-								"ID":"8589934595",
-								"StreamOffset":"0x2",
+								"ID":"8589934593",
+								"StreamOffset":"0x0",
 								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
 							}
 						}
 					],
 					"PageInfo":{
-						"StartCursor":"0x200000004"
+						"StartCursor":"0x200000002"
 					},
 					"TotalCount":"0x5"
 				}

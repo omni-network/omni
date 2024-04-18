@@ -96,7 +96,7 @@ func (p Provider) XMsgs(ctx context.Context, limit uint64, cursor *uint64) (*res
 
 	// If cursor is not 0, we want to query the message with the cursor ID.
 	if cursor != nil {
-		query = query.Where(msg.IDGTE(int(*cursor)))
+		query = query.Where(msg.IDLTE(int(*cursor)))
 	}
 
 	// Execute the query.
@@ -158,7 +158,7 @@ func (p Provider) XMsgs(ctx context.Context, limit uint64, cursor *uint64) (*res
 		Edges:      res,
 		PageInfo: resolvers.PageInfo{
 			StartCursor: c,
-			HasNextPage: endCursor+uint64(1) <= uint64(totalCount),
+			HasNextPage: endCursor-uint64(1) > 0,
 			HasPrevPage: startCursor > 0,
 		},
 	}
