@@ -51,25 +51,25 @@ func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) 
 
 func mainnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Deployer: eoa.MainnetCreate3Deployer(),
+		Deployer: eoa.MustAddress(netconf.Mainnet, eoa.RoleCreate3Deployer),
 	}
 }
 
 func testnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Deployer: eoa.TestnetCreate3Deployer(),
+		Deployer: eoa.MustAddress(netconf.Testnet, eoa.RoleCreate3Deployer),
 	}
 }
 
 func stagingCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Deployer: eoa.StagingCreate3Deployer(),
+		Deployer: eoa.MustAddress(netconf.Staging, eoa.RoleCreate3Deployer),
 	}
 }
 
 func devnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Deployer: eoa.DevnetCreate3Deployer(),
+		Deployer: eoa.MustAddress(netconf.Devnet, eoa.RoleCreate3Deployer),
 	}
 }
 

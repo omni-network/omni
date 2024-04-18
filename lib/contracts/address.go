@@ -14,19 +14,19 @@ import (
 //
 
 func MainnetAVS() common.Address {
-	return create3.Address(MainnetCreate3Factory(), AVSSalt(netconf.Mainnet), eoa.MainnetDeployer())
+	return create3.Address(MainnetCreate3Factory(), AVSSalt(netconf.Mainnet), eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer))
 }
 
 func TestnetAVS() common.Address {
-	return create3.Address(TestnetCreate3Factory(), AVSSalt(netconf.Testnet), eoa.TestnetDeployer())
+	return create3.Address(TestnetCreate3Factory(), AVSSalt(netconf.Testnet), eoa.MustAddress(netconf.Testnet, eoa.RoleDeployer))
 }
 
 func StagingAVS() common.Address {
-	return create3.Address(StagingCreate3Factory(), AVSSalt(netconf.Staging), eoa.StagingDeployer())
+	return create3.Address(StagingCreate3Factory(), AVSSalt(netconf.Staging), eoa.MustAddress(netconf.Staging, eoa.RoleDeployer))
 }
 
 func DevnetAVS() common.Address {
-	return create3.Address(DevnetCreate3Factory(), AVSSalt(netconf.Devnet), eoa.DevnetDeployer())
+	return create3.Address(DevnetCreate3Factory(), AVSSalt(netconf.Devnet), eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer))
 }
 
 //
@@ -34,19 +34,19 @@ func DevnetAVS() common.Address {
 //
 
 func MainnetCreate3Factory() common.Address {
-	return crypto.CreateAddress(eoa.MainnetCreate3Deployer(), 0)
+	return crypto.CreateAddress(eoa.MustAddress(netconf.Mainnet, eoa.RoleCreate3Deployer), 0)
 }
 
 func TestnetCreate3Factory() common.Address {
-	return crypto.CreateAddress(eoa.TestnetCreate3Deployer(), 0)
+	return crypto.CreateAddress(eoa.MustAddress(netconf.Testnet, eoa.RoleCreate3Deployer), 0)
 }
 
 func StagingCreate3Factory() common.Address {
-	return crypto.CreateAddress(eoa.StagingCreate3Deployer(), 0)
+	return crypto.CreateAddress(eoa.MustAddress(netconf.Staging, eoa.RoleCreate3Deployer), 0)
 }
 
 func DevnetCreate3Factory() common.Address {
-	return crypto.CreateAddress(eoa.DevnetCreate3Deployer(), 0)
+	return crypto.CreateAddress(eoa.MustAddress(netconf.Devnet, eoa.RoleCreate3Deployer), 0)
 }
 
 //
@@ -54,19 +54,19 @@ func DevnetCreate3Factory() common.Address {
 //
 
 func MainnetPortal() common.Address {
-	return create3.Address(MainnetCreate3Factory(), PortalSalt(netconf.Mainnet), eoa.MainnetDeployer())
+	return create3.Address(MainnetCreate3Factory(), PortalSalt(netconf.Mainnet), eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer))
 }
 
 func TestnetPortal() common.Address {
-	return create3.Address(TestnetCreate3Factory(), PortalSalt(netconf.Testnet), eoa.TestnetDeployer())
+	return create3.Address(TestnetCreate3Factory(), PortalSalt(netconf.Testnet), eoa.MustAddress(netconf.Testnet, eoa.RoleDeployer))
 }
 
 func StagingPortal() common.Address {
-	return create3.Address(StagingCreate3Factory(), PortalSalt(netconf.Staging), eoa.StagingDeployer())
+	return create3.Address(StagingCreate3Factory(), PortalSalt(netconf.Staging), eoa.MustAddress(netconf.Staging, eoa.RoleDeployer))
 }
 
 func DevnetPortal() common.Address {
-	return create3.Address(DevnetCreate3Factory(), PortalSalt(netconf.Devnet), eoa.DevnetDeployer())
+	return create3.Address(DevnetCreate3Factory(), PortalSalt(netconf.Devnet), eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer))
 }
 
 //
@@ -74,19 +74,19 @@ func DevnetPortal() common.Address {
 //
 
 func MainnetProxyAdmin() common.Address {
-	return create3.Address(MainnetCreate3Factory(), ProxyAdminSalt(netconf.Mainnet), eoa.MainnetDeployer())
+	return create3.Address(MainnetCreate3Factory(), ProxyAdminSalt(netconf.Mainnet), eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer))
 }
 
 func TestnetProxyAdmin() common.Address {
-	return create3.Address(TestnetCreate3Factory(), ProxyAdminSalt(netconf.Testnet), eoa.TestnetDeployer())
+	return create3.Address(TestnetCreate3Factory(), ProxyAdminSalt(netconf.Testnet), eoa.MustAddress(netconf.Testnet, eoa.RoleDeployer))
 }
 
 func StagingProxyAdmin() common.Address {
-	return create3.Address(StagingCreate3Factory(), ProxyAdminSalt(netconf.Staging), eoa.StagingDeployer())
+	return create3.Address(StagingCreate3Factory(), ProxyAdminSalt(netconf.Staging), eoa.MustAddress(netconf.Staging, eoa.RoleDeployer))
 }
 
 func DevnetProxyAdmin() common.Address {
-	return create3.Address(DevnetCreate3Factory(), ProxyAdminSalt(netconf.Devnet), eoa.DevnetDeployer())
+	return create3.Address(DevnetCreate3Factory(), ProxyAdminSalt(netconf.Devnet), eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer))
 }
 
 //

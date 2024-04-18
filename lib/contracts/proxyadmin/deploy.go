@@ -63,8 +63,8 @@ func mainnetCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory: contracts.MainnetCreate3Factory(),
 		Create3Salt:    contracts.ProxyAdminSalt(netconf.Mainnet),
-		Owner:          eoa.MainnetProxyAdminOwner(),
-		Deployer:       eoa.MainnetDeployer(),
+		Owner:          eoa.MustAddress(netconf.Mainnet, eoa.RoleProxyAdminOwner),
+		Deployer:       eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer),
 		ExpectedAddr:   contracts.MainnetProxyAdmin(),
 	}
 }
@@ -73,8 +73,8 @@ func testnetCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory: contracts.TestnetCreate3Factory(),
 		Create3Salt:    contracts.ProxyAdminSalt(netconf.Testnet),
-		Owner:          eoa.TestnetProxyAdminOwner(),
-		Deployer:       eoa.TestnetDeployer(),
+		Owner:          eoa.MustAddress(netconf.Testnet, eoa.RoleProxyAdminOwner),
+		Deployer:       eoa.MustAddress(netconf.Testnet, eoa.RoleDeployer),
 		ExpectedAddr:   contracts.TestnetProxyAdmin(),
 	}
 }
@@ -83,8 +83,8 @@ func stagingCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory: contracts.StagingCreate3Factory(),
 		Create3Salt:    contracts.ProxyAdminSalt(netconf.Staging),
-		Owner:          eoa.StagingProxyAdminOwner(),
-		Deployer:       eoa.StagingDeployer(),
+		Owner:          eoa.MustAddress(netconf.Staging, eoa.RoleProxyAdminOwner),
+		Deployer:       eoa.MustAddress(netconf.Staging, eoa.RoleDeployer),
 		ExpectedAddr:   contracts.StagingProxyAdmin(),
 	}
 }
@@ -93,8 +93,8 @@ func devnetCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory: contracts.DevnetCreate3Factory(),
 		Create3Salt:    contracts.ProxyAdminSalt(netconf.Devnet),
-		Owner:          eoa.DevnetProxyAdminOwner(),
-		Deployer:       eoa.DevnetDeployer(),
+		Owner:          eoa.MustAddress(netconf.Devnet, eoa.RoleProxyAdminOwner),
+		Deployer:       eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
 		ExpectedAddr:   contracts.DevnetProxyAdmin(),
 	}
 }

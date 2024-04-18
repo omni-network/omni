@@ -50,5 +50,5 @@ func TestDeployDevnet(t *testing.T) {
 
 	owner, err := proxyAdmin.Owner(nil)
 	require.NoError(t, err)
-	require.Equal(t, eoa.DevnetProxyAdminOwner(), owner)
+	require.Equal(t, eoa.MustAddress(netconf.Devnet, eoa.RoleProxyAdminOwner), owner)
 }

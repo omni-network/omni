@@ -36,23 +36,23 @@ func accountsToFund(network netconf.ID) []common.Address {
 	switch network {
 	case netconf.Staging:
 		return []common.Address{
-			fbDev,
-			eoa.StagingCreate3Deployer(),
-			eoa.StagingDeployer(),
-			eoa.StagingProxyAdminOwner(),
-			eoa.StagingPortalAdmin(),
-			eoa.StagingAVSAdmin(),
+			eoa.MustAddress(netconf.Staging, eoa.RoleFbDev),
+			eoa.MustAddress(netconf.Staging, eoa.RoleCreate3Deployer),
+			eoa.MustAddress(netconf.Staging, eoa.RoleDeployer),
+			eoa.MustAddress(netconf.Staging, eoa.RoleProxyAdminOwner),
+			eoa.MustAddress(netconf.Staging, eoa.RolePortalAdmin),
+			eoa.MustAddress(netconf.Staging, eoa.RoleAVSAdmin),
 			eoa.MustAddress(netconf.Staging, eoa.RoleRelayer),
 			eoa.MustAddress(netconf.Staging, eoa.RoleMonitor),
 		}
 	case netconf.Devnet:
 		return []common.Address{
-			fbDev,
-			eoa.DevnetCreate3Deployer(),
-			eoa.DevnetDeployer(),
-			eoa.DevnetProxyAdminOwner(),
-			eoa.DevnetPortalAdmin(),
-			eoa.DevnetAVSAdmin(),
+			eoa.MustAddress(netconf.Devnet, eoa.RoleFbDev),
+			eoa.MustAddress(netconf.Devnet, eoa.RoleCreate3Deployer),
+			eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
+			eoa.MustAddress(netconf.Devnet, eoa.RoleProxyAdminOwner),
+			eoa.MustAddress(netconf.Devnet, eoa.RolePortalAdmin),
+			eoa.MustAddress(netconf.Devnet, eoa.RoleAVSAdmin),
 			eoa.MustAddress(netconf.Devnet, eoa.RoleRelayer),
 			eoa.MustAddress(netconf.Devnet, eoa.RoleMonitor),
 		}

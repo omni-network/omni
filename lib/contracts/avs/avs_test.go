@@ -191,7 +191,7 @@ func makeEOAS(t *testing.T, backend *ethbackend.Backend) EOAS {
 	require.NoError(t, err)
 
 	return EOAS{
-		AVSOwner:     eoa.DevnetAVSAdmin(),
+		AVSOwner:     eoa.MustAddress(netconf.Devnet, eoa.RoleAVSAdmin),
 		EigenOwner:   anvil.DevAccount9(), // account used to deploy eigen contracts
 		Operator1:    operator1,
 		Operator1Key: operator1Key,

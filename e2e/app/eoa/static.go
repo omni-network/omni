@@ -11,16 +11,16 @@ import (
 )
 
 var (
-	gwei10000 = new(big.Int).Mul(big.NewInt(10000), big.NewInt(params.GWei))
-	gwei50000 = new(big.Int).Mul(big.NewInt(50000), big.NewInt(params.GWei))
+	gwei10k = new(big.Int).Mul(big.NewInt(10000), big.NewInt(params.GWei))
+	gwei50k = new(big.Int).Mul(big.NewInt(50000), big.NewInt(params.GWei))
 
 	ether1   = new(big.Int).Mul(big.NewInt(1), big.NewInt(params.Ether))
 	ether5   = new(big.Int).Mul(big.NewInt(5), big.NewInt(params.Ether))
 	ether10  = new(big.Int).Mul(big.NewInt(10), big.NewInt(params.Ether))
 	ether100 = new(big.Int).Mul(big.NewInt(100), big.NewInt(params.Ether))
 
-	minBalanceSmall    = gwei10000
-	targetBalanceSmall = gwei50000
+	minBalanceSmall    = gwei10k
+	targetBalanceSmall = gwei50k
 
 	minBalanceMedium    = ether1
 	targetBalanceMedium = ether5
@@ -37,8 +37,8 @@ var statics = map[netconf.ID][]Account{
 			Role:          RoleCreate3Deployer,
 			Address:       devnetCreate3Deployer,
 			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceLarge,
-			TargetBalance: targetBalanceLarge,
+			MinBalance:    minBalanceSmall,
+			TargetBalance: targetBalanceSmall,
 		},
 		{
 			Type:          TypeRemote,
@@ -50,7 +50,23 @@ var statics = map[netconf.ID][]Account{
 		},
 		{
 			Type:          TypeRemote,
-			Role:          RoleAdmin,
+			Role:          RoleProxyAdminOwner,
+			Address:       devnetAdmin,
+			Chains:        chainSelectorAll,
+			MinBalance:    minBalanceLarge,
+			TargetBalance: targetBalanceLarge,
+		},
+		{
+			Type:          TypeRemote,
+			Role:          RolePortalAdmin,
+			Address:       devnetAdmin,
+			Chains:        chainSelectorAll,
+			MinBalance:    minBalanceLarge,
+			TargetBalance: targetBalanceLarge,
+		},
+		{
+			Type:          TypeRemote,
+			Role:          RoleAVSAdmin,
 			Address:       devnetAdmin,
 			Chains:        chainSelectorAll,
 			MinBalance:    minBalanceLarge,
@@ -89,8 +105,8 @@ var statics = map[netconf.ID][]Account{
 			Role:          RoleCreate3Deployer,
 			Address:       stagingCreate3Deployer,
 			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceMedium,
-			TargetBalance: targetBalanceMedium,
+			MinBalance:    minBalanceSmall,
+			TargetBalance: targetBalanceSmall,
 		},
 
 		{
@@ -103,7 +119,23 @@ var statics = map[netconf.ID][]Account{
 		},
 		{
 			Type:          TypeRemote,
-			Role:          RoleAdmin,
+			Role:          RoleProxyAdminOwner,
+			Address:       stagingAdmin,
+			Chains:        chainSelectorAll,
+			MinBalance:    minBalanceMedium,
+			TargetBalance: targetBalanceMedium,
+		},
+		{
+			Type:          TypeRemote,
+			Role:          RolePortalAdmin,
+			Address:       stagingAdmin,
+			Chains:        chainSelectorAll,
+			MinBalance:    minBalanceMedium,
+			TargetBalance: targetBalanceMedium,
+		},
+		{
+			Type:          TypeRemote,
+			Role:          RoleAVSAdmin,
 			Address:       stagingAdmin,
 			Chains:        chainSelectorAll,
 			MinBalance:    minBalanceMedium,
@@ -140,8 +172,8 @@ var statics = map[netconf.ID][]Account{
 			Role:          RoleCreate3Deployer,
 			Address:       testnetCreate3Deployer,
 			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceMedium,
-			TargetBalance: targetBalanceMedium,
+			MinBalance:    minBalanceSmall,
+			TargetBalance: targetBalanceSmall,
 		},
 		{
 			Type:          TypeRemote,
@@ -153,7 +185,23 @@ var statics = map[netconf.ID][]Account{
 		},
 		{
 			Type:          TypeRemote,
-			Role:          RoleAdmin,
+			Role:          RoleProxyAdminOwner,
+			Address:       testnetAdmin,
+			Chains:        chainSelectorAll,
+			MinBalance:    minBalanceMedium,
+			TargetBalance: targetBalanceMedium,
+		},
+		{
+			Type:          TypeRemote,
+			Role:          RolePortalAdmin,
+			Address:       testnetAdmin,
+			Chains:        chainSelectorAll,
+			MinBalance:    minBalanceMedium,
+			TargetBalance: targetBalanceMedium,
+		},
+		{
+			Type:          TypeRemote,
+			Role:          RoleAVSAdmin,
 			Address:       testnetAdmin,
 			Chains:        chainSelectorAll,
 			MinBalance:    minBalanceMedium,
@@ -177,6 +225,46 @@ var statics = map[netconf.ID][]Account{
 		},
 	},
 	netconf.Mainnet: {
+		{
+			Type:          TypeRemote,
+			Role:          RoleCreate3Deployer,
+			Address:       mainnetCreate3Deployer,
+			Chains:        chainSelectorAll,
+			MinBalance:    minBalanceSmall,
+			TargetBalance: targetBalanceSmall,
+		},
+		{
+			Type:          TypeRemote,
+			Role:          RoleDeployer,
+			Address:       mainnetDeployer,
+			Chains:        chainSelectorAll,
+			MinBalance:    minBalanceMedium,
+			TargetBalance: targetBalanceMedium,
+		},
+		{
+			Type:          TypeRemote,
+			Role:          RoleProxyAdminOwner,
+			Address:       mainnetAdmin,
+			Chains:        chainSelectorAll,
+			MinBalance:    minBalanceMedium,
+			TargetBalance: targetBalanceMedium,
+		},
+		{
+			Type:          TypeRemote,
+			Role:          RolePortalAdmin,
+			Address:       mainnetAdmin,
+			Chains:        chainSelectorAll,
+			MinBalance:    minBalanceMedium,
+			TargetBalance: targetBalanceMedium,
+		},
+		{
+			Type:          TypeRemote,
+			Role:          RoleAVSAdmin,
+			Address:       mainnetAdmin,
+			Chains:        chainSelectorAll,
+			MinBalance:    minBalanceMedium,
+			TargetBalance: targetBalanceMedium,
+		},
 		{
 			Type:          TypeSecret,
 			Role:          RoleRelayer,

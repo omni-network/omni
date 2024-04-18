@@ -20,12 +20,21 @@ const (
 	RoleMonitor         Role = "monitor"
 	RoleCreate3Deployer Role = "create3-deployer"
 	RoleDeployer        Role = "deployer"
-	RoleAdmin           Role = "admin"
+	RoleProxyAdminOwner Role = "proxy-admin-owner"
+	RolePortalAdmin     Role = "portal-admin"
+	RoleAVSAdmin        Role = "avs-admin"
 	RoleFbDev           Role = "fb-dev"
 )
 
 func (r Role) Verify() error {
-	if r != RoleRelayer && r != RoleMonitor && r != RoleCreate3Deployer && r != RoleDeployer && r != RoleAdmin && r != RoleFbDev {
+	if r != RoleRelayer &&
+		r != RoleMonitor &&
+		r != RoleCreate3Deployer &&
+		r != RoleDeployer &&
+		r != RoleProxyAdminOwner &&
+		r != RoleFbDev &&
+		r != RolePortalAdmin &&
+		r != RoleAVSAdmin {
 		return errors.New("invalid role", "role", r)
 	}
 
@@ -73,7 +82,10 @@ func (a Account) PrivateKey() *ecdsa.PrivateKey {
 
 // MustAddress returns the address for the EOA identified by the network and role.
 func MustAddress(network netconf.ID, role Role) common.Address {
-	resp, _ := Address(network, role)
+	resp, ok := Address(network, role)
+	if !ok {
+		panic(errors.New("eoa address not defined", "network", network, "role", role))
+	}
 	return resp
 }
 
@@ -102,7 +114,7 @@ func PrivateKey(ctx context.Context, network netconf.ID, role Role) (*ecdsa.Priv
 	if acc.Type == TypeWellKnown {
 		return acc.PrivateKey(), nil
 	} else if acc.Type == TypeRemote {
-		return nil, errors.New("remote key ", "network", network, "role", role)
+		return nil, errors.New("private key not available for remote keys", "network", network, "role", role)
 	}
 
 	k, err := key.Download(ctx, network, string(role), key.EOA, acc.Address.Hex())

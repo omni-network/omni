@@ -109,8 +109,8 @@ func testnetCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory:   contracts.TestnetCreate3Factory(),
 		Create3Salt:      contracts.AVSSalt(netconf.Testnet),
-		Deployer:         eoa.TestnetDeployer(),
-		Owner:            eoa.TestnetAVSAdmin(),
+		Deployer:         eoa.MustAddress(netconf.Testnet, eoa.RoleDeployer),
+		Owner:            eoa.MustAddress(netconf.Testnet, eoa.RoleAVSAdmin),
 		ProxyAdmin:       contracts.TestnetProxyAdmin(),
 		Eigen:            holeskyEigenDeployments(),
 		StrategyParams:   holeskyStrategyParams(),
@@ -129,8 +129,8 @@ func stagingCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory:   contracts.StagingCreate3Factory(),
 		Create3Salt:      contracts.AVSSalt(netconf.Staging),
-		Deployer:         eoa.StagingDeployer(),
-		Owner:            eoa.StagingAVSAdmin(),
+		Deployer:         eoa.MustAddress(netconf.Staging, eoa.RoleDeployer),
+		Owner:            eoa.MustAddress(netconf.Staging, eoa.RoleAVSAdmin),
 		ProxyAdmin:       contracts.StagingProxyAdmin(),
 		Eigen:            devnetEigenDeployments,
 		StrategyParams:   devnetStrategyParams(),
@@ -149,8 +149,8 @@ func devnetCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory:   contracts.DevnetCreate3Factory(),
 		Create3Salt:      contracts.AVSSalt(netconf.Devnet),
-		Deployer:         eoa.DevnetDeployer(),
-		Owner:            eoa.DevnetAVSAdmin(),
+		Deployer:         eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
+		Owner:            eoa.MustAddress(netconf.Devnet, eoa.RoleAVSAdmin),
 		ProxyAdmin:       contracts.DevnetProxyAdmin(),
 		Eigen:            devnetEigenDeployments,
 		MetadataURI:      metadataURI,
