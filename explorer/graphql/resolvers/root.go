@@ -18,6 +18,7 @@ type BlocksProvider interface {
 	XReceiptCount(ctx context.Context) (*hexutil.Big, bool, error)
 	XMsgRange(ctx context.Context, Amount uint64, Offset uint64) ([]*XMsg, bool, error)
 	XMsg(ctx context.Context, SourceChainID uint64, DestChainID uint64, StreamOffset uint64) (*XMsg, bool, error)
+	XMsgs(ctx context.Context, Limit uint64, Cursor *uint64) (*XMsgResult, bool, error)
 	XReceipt(ctx context.Context, SourceChainID, DestChainID, StreamOffset uint64) (*XReceipt, bool, error)
 	SupportedChains(ctx context.Context) ([]*Chain, bool, error)
 }
