@@ -86,6 +86,7 @@ func MustAddress(network netconf.ID, role Role) common.Address {
 	if !ok {
 		panic(errors.New("eoa address not defined", "network", network, "role", role))
 	}
+
 	return resp
 }
 

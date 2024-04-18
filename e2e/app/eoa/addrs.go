@@ -21,7 +21,7 @@ const (
 	fbTestnetDeployer = "0x0CdCc644158b7D03f40197f55454dc7a11Bd92c1"
 	// address of the "testnet-owner" fireblocks account.
 	fbTestnetAdmin = "0xEAD625eB2011394cdD739E91Bf9D51A7169C22F5"
-
+	// fbDev is the address of the fireblocks "dev" account.
 	fbDev = "0x7a6cF389082dc698285474976d7C75CAdE08ab7e"
 )
 

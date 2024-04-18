@@ -13,12 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-//nolint:gochecknoglobals // Static addr
-var (
-	// fbDev is the address of the fireblocks "dev" account.
-	fbDev = common.HexToAddress("0x7a6cF389082dc698285474976d7C75CAdE08ab7e")
-)
-
 // noAnvilDev returns a list of accounts that are not dev anvil accounts.
 func noAnvilDev(accounts []common.Address) []common.Address {
 	var nonDevAccounts []common.Address
