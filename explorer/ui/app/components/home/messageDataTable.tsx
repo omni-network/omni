@@ -145,7 +145,7 @@ export default function XMsgDataTable() {
       },
       {
         ...columnConfig,
-        accessorKey: 'fromAddress',
+        accessorKey: 'SourceMessageSender',
         header: () => <span>Address</span>,
         cell: (value: any) => (
           <Link to="/" className="link">
