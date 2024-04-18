@@ -6,18 +6,11 @@ import (
 
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/anvil"
-	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
-)
-
-//nolint:gochecknoglobals // Static addr
-var (
-	// fbDev is the address of the fireblocks "dev" account.
-	fbDev = common.HexToAddress("0x7a6cF389082dc698285474976d7C75CAdE08ab7e")
 )
 
 // noAnvilDev returns a list of accounts that are not dev anvil accounts.
@@ -36,27 +29,9 @@ func noAnvilDev(accounts []common.Address) []common.Address {
 func accountsToFund(network netconf.ID) []common.Address {
 	switch network {
 	case netconf.Staging:
-		return []common.Address{
-			fbDev,
-			contracts.StagingCreate3Deployer(),
-			contracts.StagingDeployer(),
-			contracts.StagingProxyAdminOwner(),
-			contracts.StagingPortalAdmin(),
-			contracts.StagingAVSAdmin(),
-			eoa.MustAddress(netconf.Staging, eoa.TypeRelayer),
-			eoa.MustAddress(netconf.Staging, eoa.TypeMonitor),
-		}
+		return eoa.MustAddresses(netconf.Staging, eoa.AllRoles()...)
 	case netconf.Devnet:
-		return []common.Address{
-			fbDev,
-			contracts.DevnetCreate3Deployer(),
-			contracts.DevnetDeployer(),
-			contracts.DevnetProxyAdminOwner(),
-			contracts.DevnetPortalAdmin(),
-			contracts.DevnetAVSAdmin(),
-			eoa.MustAddress(netconf.Devnet, eoa.TypeRelayer),
-			eoa.MustAddress(netconf.Devnet, eoa.TypeMonitor),
-		}
+		return eoa.MustAddresses(netconf.Devnet, eoa.AllRoles()...)
 	default:
 		return []common.Address{}
 	}

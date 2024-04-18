@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/chainids"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/create3"
@@ -62,8 +63,8 @@ func mainnetCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory: contracts.MainnetCreate3Factory(),
 		Create3Salt:    contracts.ProxyAdminSalt(netconf.Mainnet),
-		Owner:          contracts.MainnetProxyAdminOwner(),
-		Deployer:       contracts.MainnetDeployer(),
+		Owner:          eoa.MustAddress(netconf.Mainnet, eoa.RoleProxyAdminOwner),
+		Deployer:       eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer),
 		ExpectedAddr:   contracts.MainnetProxyAdmin(),
 	}
 }
@@ -72,8 +73,8 @@ func testnetCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory: contracts.TestnetCreate3Factory(),
 		Create3Salt:    contracts.ProxyAdminSalt(netconf.Testnet),
-		Owner:          contracts.TestnetProxyAdminOwner(),
-		Deployer:       contracts.TestnetDeployer(),
+		Owner:          eoa.MustAddress(netconf.Testnet, eoa.RoleProxyAdminOwner),
+		Deployer:       eoa.MustAddress(netconf.Testnet, eoa.RoleDeployer),
 		ExpectedAddr:   contracts.TestnetProxyAdmin(),
 	}
 }
@@ -82,8 +83,8 @@ func stagingCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory: contracts.StagingCreate3Factory(),
 		Create3Salt:    contracts.ProxyAdminSalt(netconf.Staging),
-		Owner:          contracts.StagingProxyAdminOwner(),
-		Deployer:       contracts.StagingDeployer(),
+		Owner:          eoa.MustAddress(netconf.Staging, eoa.RoleProxyAdminOwner),
+		Deployer:       eoa.MustAddress(netconf.Staging, eoa.RoleDeployer),
 		ExpectedAddr:   contracts.StagingProxyAdmin(),
 	}
 }
@@ -92,8 +93,8 @@ func devnetCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory: contracts.DevnetCreate3Factory(),
 		Create3Salt:    contracts.ProxyAdminSalt(netconf.Devnet),
-		Owner:          contracts.DevnetProxyAdminOwner(),
-		Deployer:       contracts.DevnetDeployer(),
+		Owner:          eoa.MustAddress(netconf.Devnet, eoa.RoleProxyAdminOwner),
+		Deployer:       eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
 		ExpectedAddr:   contracts.DevnetProxyAdmin(),
 	}
 }

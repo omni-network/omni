@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/chainids"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/create3"
@@ -88,8 +89,8 @@ func mainnetCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory: contracts.MainnetCreate3Factory(),
 		Create3Salt:    contracts.PortalSalt(netconf.Mainnet),
-		Owner:          contracts.MainnetPortalAdmin(),
-		Deployer:       contracts.MainnetDeployer(),
+		Owner:          eoa.MustAddress(netconf.Mainnet, eoa.RolePortalAdmin),
+		Deployer:       eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer),
 		// TODO: fill in the rest
 	}
 }
@@ -98,8 +99,8 @@ func testnetCfg(valSetID uint64, vals []bindings.Validator) DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory: contracts.TestnetCreate3Factory(),
 		Create3Salt:    contracts.PortalSalt(netconf.Testnet),
-		Owner:          contracts.TestnetPortalAdmin(),
-		Deployer:       contracts.TestnetDeployer(),
+		Owner:          eoa.MustAddress(netconf.Testnet, eoa.RolePortalAdmin),
+		Deployer:       eoa.MustAddress(netconf.Testnet, eoa.RoleDeployer),
 		ProxyAdmin:     contracts.TestnetProxyAdmin(),
 		OmniEChainID:   netconf.Testnet.Static().OmniExecutionChainID,
 		OmniCChainID:   netconf.Testnet.Static().OmniConsensusChainIDUint64(),
@@ -113,8 +114,8 @@ func stagingCfg(valSetID uint64, vals []bindings.Validator) DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory: contracts.StagingCreate3Factory(),
 		Create3Salt:    contracts.PortalSalt(netconf.Staging),
-		Owner:          contracts.StagingPortalAdmin(),
-		Deployer:       contracts.StagingDeployer(),
+		Owner:          eoa.MustAddress(netconf.Staging, eoa.RolePortalAdmin),
+		Deployer:       eoa.MustAddress(netconf.Staging, eoa.RoleDeployer),
 		ProxyAdmin:     contracts.StagingProxyAdmin(),
 		OmniEChainID:   netconf.Staging.Static().OmniExecutionChainID,
 		OmniCChainID:   netconf.Staging.Static().OmniConsensusChainIDUint64(),
@@ -128,8 +129,8 @@ func devnetCfg(valSetID uint64, vals []bindings.Validator) DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory: contracts.DevnetCreate3Factory(),
 		Create3Salt:    contracts.PortalSalt(netconf.Devnet),
-		Owner:          contracts.DevnetPortalAdmin(),
-		Deployer:       contracts.DevnetDeployer(),
+		Owner:          eoa.MustAddress(netconf.Devnet, eoa.RolePortalAdmin),
+		Deployer:       eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
 		ProxyAdmin:     contracts.DevnetProxyAdmin(),
 		OmniEChainID:   netconf.Devnet.Static().OmniExecutionChainID,
 		OmniCChainID:   netconf.Devnet.Static().OmniConsensusChainIDUint64(),
