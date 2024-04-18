@@ -26,6 +26,19 @@ const (
 	RoleFbDev           Role = "fb-dev"
 )
 
+func AllRoles() []Role {
+	return []Role{
+		RoleRelayer,
+		RoleMonitor,
+		RoleCreate3Deployer,
+		RoleDeployer,
+		RoleProxyAdminOwner,
+		RolePortalAdmin,
+		RoleAVSAdmin,
+		RoleFbDev,
+	}
+}
+
 func (r Role) Verify() error {
 	if r != RoleRelayer &&
 		r != RoleMonitor &&
@@ -141,7 +154,7 @@ func AccountForRole(network netconf.ID, role Role) (Account, bool) {
 	return Account{}, false
 }
 
-func MustAddressesForRoles(network netconf.ID, roles ...Role) []common.Address {
+func MustAddresses(network netconf.ID, roles ...Role) []common.Address {
 	accounts := statics[network]
 	var addresses []common.Address
 	for _, role := range roles {

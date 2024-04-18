@@ -29,27 +29,9 @@ func noAnvilDev(accounts []common.Address) []common.Address {
 func accountsToFund(network netconf.ID) []common.Address {
 	switch network {
 	case netconf.Staging:
-		return []common.Address{
-			eoa.MustAddress(netconf.Staging, eoa.RoleFbDev),
-			eoa.MustAddress(netconf.Staging, eoa.RoleCreate3Deployer),
-			eoa.MustAddress(netconf.Staging, eoa.RoleDeployer),
-			eoa.MustAddress(netconf.Staging, eoa.RoleProxyAdminOwner),
-			eoa.MustAddress(netconf.Staging, eoa.RolePortalAdmin),
-			eoa.MustAddress(netconf.Staging, eoa.RoleAVSAdmin),
-			eoa.MustAddress(netconf.Staging, eoa.RoleRelayer),
-			eoa.MustAddress(netconf.Staging, eoa.RoleMonitor),
-		}
+		return eoa.MustAddresses(netconf.Staging, eoa.AllRoles()...)
 	case netconf.Devnet:
-		return []common.Address{
-			eoa.MustAddress(netconf.Devnet, eoa.RoleFbDev),
-			eoa.MustAddress(netconf.Devnet, eoa.RoleCreate3Deployer),
-			eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
-			eoa.MustAddress(netconf.Devnet, eoa.RoleProxyAdminOwner),
-			eoa.MustAddress(netconf.Devnet, eoa.RolePortalAdmin),
-			eoa.MustAddress(netconf.Devnet, eoa.RoleAVSAdmin),
-			eoa.MustAddress(netconf.Devnet, eoa.RoleRelayer),
-			eoa.MustAddress(netconf.Devnet, eoa.RoleMonitor),
-		}
+		return eoa.MustAddresses(netconf.Devnet, eoa.AllRoles()...)
 	default:
 		return []common.Address{}
 	}
