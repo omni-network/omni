@@ -43,6 +43,8 @@ const (
 type chainSelector func(netconf.Network) []netconf.Chain
 
 var chainSelectorAll = func(network netconf.Network) []netconf.Chain { return network.EVMChains() }
+
+//nolint:unused // will be used.
 var chainSelectorL1 = func(network netconf.Network) []netconf.Chain {
 	c, ok := network.EthereumChain()
 	if !ok {
