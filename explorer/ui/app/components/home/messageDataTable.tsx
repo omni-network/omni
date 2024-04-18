@@ -91,10 +91,7 @@ export default function XMsgDataTable() {
   }, [filterParams])
 
   // here we set the filter params by clearing the old ones, and setting the current one and its value
-  // TODO: implement
   const searchBarInputCB = e => {
-    console.log("Search bar input changed", e.target.value)
-
     setFilterParams(prev => {
       const params = {
         ...prev,
