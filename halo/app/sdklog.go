@@ -10,11 +10,11 @@ import (
 
 var _ sdklog.Logger = (*sdkLogger)(nil)
 
-// dropDebugs is a map of debug messages that should be dropped.
+// dropCosmosDebugs is a map of cosmosSDK debug messages that should be dropped.
 // These are super noisy and not useful.
 //
 //nolint:gochecknoglobals // Static mapping
-var dropDebugs = map[string]bool{
+var dropCosmosDebugs = map[string]bool{
 	"recursiveRemove": true,
 	"BATCH SAVE":      true,
 	"SAVE TREE":       true,
@@ -33,7 +33,7 @@ func newSDKLogger(ctx context.Context) sdkLogger {
 }
 
 func (c sdkLogger) Debug(msg string, keyvals ...any) {
-	if dropDebugs[msg] {
+	if dropCosmosDebugs[msg] {
 		return
 	}
 	log.Debug(c.ctx, msg, keyvals...)
