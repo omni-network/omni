@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/chainids"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/create3"
@@ -108,8 +109,8 @@ func testnetCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory:   contracts.TestnetCreate3Factory(),
 		Create3Salt:      contracts.AVSSalt(netconf.Testnet),
-		Deployer:         contracts.TestnetDeployer(),
-		Owner:            contracts.TestnetAVSAdmin(),
+		Deployer:         eoa.MustAddress(netconf.Testnet, eoa.RoleDeployer),
+		Owner:            eoa.MustAddress(netconf.Testnet, eoa.RoleAVSAdmin),
 		ProxyAdmin:       contracts.TestnetProxyAdmin(),
 		Eigen:            holeskyEigenDeployments(),
 		StrategyParams:   holeskyStrategyParams(),
@@ -128,8 +129,8 @@ func stagingCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory:   contracts.StagingCreate3Factory(),
 		Create3Salt:      contracts.AVSSalt(netconf.Staging),
-		Deployer:         contracts.StagingDeployer(),
-		Owner:            contracts.StagingAVSAdmin(),
+		Deployer:         eoa.MustAddress(netconf.Staging, eoa.RoleDeployer),
+		Owner:            eoa.MustAddress(netconf.Staging, eoa.RoleAVSAdmin),
 		ProxyAdmin:       contracts.StagingProxyAdmin(),
 		Eigen:            devnetEigenDeployments,
 		StrategyParams:   devnetStrategyParams(),
@@ -148,8 +149,8 @@ func devnetCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory:   contracts.DevnetCreate3Factory(),
 		Create3Salt:      contracts.AVSSalt(netconf.Devnet),
-		Deployer:         contracts.DevnetDeployer(),
-		Owner:            contracts.DevnetAVSAdmin(),
+		Deployer:         eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
+		Owner:            eoa.MustAddress(netconf.Devnet, eoa.RoleAVSAdmin),
 		ProxyAdmin:       contracts.DevnetProxyAdmin(),
 		Eigen:            devnetEigenDeployments,
 		MetadataURI:      metadataURI,
