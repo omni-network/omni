@@ -14,7 +14,7 @@ import SearchBar from '../shared/search'
 import Dropdown from '../shared/dropdown'
 import ChainDropdown from './chainDropdown'
 import FilterOptions from '../shared/filterOptions'
-import { getAddressUrl, getBlockUrl, getTxUrl } from '~/lib/sourceChains'
+import { getAddressUrl, getBaseUrl, getBlockUrl, getTxUrl } from '~/lib/sourceChains'
 import debounce from 'lodash.debounce'
 
 export default function XMsgDataTable() {
@@ -115,7 +115,7 @@ export default function XMsgDataTable() {
         ...columnConfig,
         accessorKey: 'StreamOffset',
         header: () => <span>Nounce</span>,
-        cell: (value: any) => <span className=" font-bold text-b-sm">{value.getValue()}</span>,
+        cell: (value: any) => <span className=" font-bold text-b-sm">{Number(value.getValue())}</span>,
       },
       {
         ...columnConfig,
@@ -145,7 +145,10 @@ export default function XMsgDataTable() {
         accessorKey: 'SourceMessageSender',
         header: () => <span>Address</span>,
         cell: (value: any) => (
-          <Link to="/" className="link">
+          <Link
+            to={`${getBaseUrl(value.row.original.SourceChainID, 'senderAddress')}/${value.getValue()}`}
+            className="link"
+          >
             {value.getValue() && (
               <>
                 <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
@@ -162,11 +165,7 @@ export default function XMsgDataTable() {
         cell: (value: any) => (
           <Link
             target="_blank"
-            to={getBlockUrl(
-              value.row.original.SourceChainID,
-              value.row.original.BlockHash,
-              data.supportedChains,
-            )}
+            to={`${getBaseUrl(value.row.original.SourceChainID, 'blockHash')}/${value.getValue()}`}
             className="link"
           >
             <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
@@ -193,11 +192,7 @@ export default function XMsgDataTable() {
         cell: (value: any) => (
           <Link
             target="_blank"
-            to={getAddressUrl(
-              value.row.original.SourceChainID,
-              value.row.original.DestAddress,
-              data.supportedChains,
-            )}
+            to={`${getBaseUrl(value.row.original.SourceChainID, 'destHash')}/${value.getValue()}`}
             className="link"
           >
             <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
@@ -212,11 +207,7 @@ export default function XMsgDataTable() {
         cell: (value: any) => (
           <Link
             target="_blank"
-            to={getTxUrl(
-              value.row.original.SourceChainID,
-              value.row.original.TxHash,
-              data.supportedChains,
-            )}
+            to={`${getBaseUrl(value.row.original.SourceChainID, 'tx')}/${value.getValue()}`}
             className="link"
           >
             <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
@@ -232,7 +223,7 @@ export default function XMsgDataTable() {
     <div className="flex-none">
       <div className="flex flex-col">
         <h5 className="text-default mb-4">XMsgs</h5>
-        <div className={'flex mb-4 gap-2 flex-col md:flex-row'}>
+        {/* <div className={'flex mb-4 gap-2 flex-col md:flex-row'}>
           <div className="flex w-full">
             <Dropdown
               position="left"
@@ -252,26 +243,26 @@ export default function XMsgDataTable() {
           </div>
           <ChainDropdown placeholder="Select source" label="From" options={sourceChainList} />
           <ChainDropdown placeholder="Select destination" label="To" options={sourceChainList} />
-        </div>
+        </div> */}
       </div>
       <div>
         <SimpleTable
-          headChildren={
-            <div className={`flex justify-between `}>
-              <div className="table-highlight  w-[21.856%] min-w-[221px]"></div>
-              <div className={`px-6 py-3`}>
-                <FilterOptions
-                  onSelection={status => {
-                    setFilterParams(prev => ({
-                      ...prev,
-                      status: status === 'all' ? null : status,
-                    }))
-                  }}
-                  options={['All', 'Success', 'Pending', 'Failed']}
-                />
-              </div>
-            </div>
-          }
+          // headChildren={
+          //   <div className={`flex justify-between `}>
+          //     <div className="table-highlight  w-[21.856%] min-w-[221px]"></div>
+          //     <div className={`px-6 py-3`}>
+          //       <FilterOptions
+          //         onSelection={status => {
+          //           setFilterParams(prev => ({
+          //             ...prev,
+          //             status: status === 'all' ? null : status,
+          //           }))
+          //         }}
+          //         options={['All', 'Success', 'Pending', 'Failed']}
+          //       />
+          //     </div>
+          //   </div>
+          // }
           columns={columns}
           data={rows}
         />

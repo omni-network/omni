@@ -47,6 +47,17 @@ export type Chain = {
   Name: Scalars['String']['output'];
 };
 
+/** PageInfo represents pagination information */
+export type PageInfo = {
+  __typename?: 'PageInfo';
+  /** Next Page Cursor */
+  HasNextPage: Scalars['Boolean']['output'];
+  /** Previous Page Cursor */
+  HasPrevPage: Scalars['Boolean']['output'];
+  /** Start Cursor */
+  StartCursor: Scalars['BigInt']['output'];
+};
+
 export type Query = {
   __typename?: 'Query';
   supportedchains: Array<Maybe<Chain>>;
@@ -56,6 +67,8 @@ export type Query = {
   xmsg?: Maybe<XMsg>;
   xmsgcount?: Maybe<Scalars['BigInt']['output']>;
   xmsgrange: Array<Maybe<XMsg>>;
+  /** Get XMsgs with pagination, sorted by latest (cursor goes to zero as the last page) */
+  xmsgs?: Maybe<XMsgResult>;
   xreceipt?: Maybe<XReceipt>;
   xreceiptcount?: Maybe<Scalars['BigInt']['output']>;
 };
@@ -83,6 +96,12 @@ export type QueryXmsgArgs = {
 export type QueryXmsgrangeArgs = {
   from: Scalars['BigInt']['input'];
   to: Scalars['BigInt']['input'];
+};
+
+
+export type QueryXmsgsArgs = {
+  cursor?: InputMaybe<Scalars['BigInt']['input']>;
+  limit?: InputMaybe<Scalars['BigInt']['input']>;
 };
 
 
@@ -126,6 +145,8 @@ export type XMsg = {
   DestChainID: Scalars['BigInt']['output'];
   /** Gas limit to use for 'call' on destination chain */
   DestGasLimit: Scalars['BigInt']['output'];
+  /** ID of the XMsg */
+  ID: Scalars['ID']['output'];
   /** Receipts of the message */
   Receipts: Array<XReceipt>;
   /** Source chain ID as per https://chainlist.org/ */
@@ -136,6 +157,26 @@ export type XMsg = {
   StreamOffset: Scalars['BigInt']['output'];
   /** Hash of the source chain transaction that emitted the message */
   TxHash: Scalars['Bytes32']['output'];
+};
+
+/** XMessageEdge represents a single XMsg in a paginated list */
+export type XMsgEdge = {
+  __typename?: 'XMsgEdge';
+  /** Cursor */
+  Cursor: Scalars['BigInt']['output'];
+  /** XMsg */
+  Node: XMsg;
+};
+
+/** XMsgResult represents a paginated list of XMsgs */
+export type XMsgResult = {
+  __typename?: 'XMsgResult';
+  /** XMsgs */
+  Edges: Array<XMsgEdge>;
+  /** Page Info */
+  PageInfo: PageInfo;
+  /** Total number of XMsgs */
+  TotalCount: Scalars['BigInt']['output'];
 };
 
 /** XReceipt represents a cross-chain receipt. */
