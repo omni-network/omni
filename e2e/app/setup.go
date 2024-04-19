@@ -159,6 +159,13 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 		}
 	}
 
+	// Write an external network.json in base testnet dir.
+	// This allows for easy connecting or querying of the network
+	extNetwork := externalNetwork(def)
+	if err := netconf.Save(ctx, extNetwork, filepath.Join(def.Testnet.Dir, "network.json")); err != nil {
+		return errors.Wrap(err, "write network config")
+	}
+
 	if def.Testnet.Prometheus {
 		if err := agent.WriteConfig(ctx, def.Testnet, def.Cfg.AgentSecrets); err != nil {
 			return errors.Wrap(err, "write prom config")
@@ -372,7 +379,7 @@ func writeRelayerConfig(ctx context.Context, def Definition, logCfg log.Config) 
 	}
 
 	// Save private key
-	privKey, err := eoa.PrivateKey(ctx, def.Testnet.Network, eoa.TypeRelayer)
+	privKey, err := eoa.PrivateKey(ctx, def.Testnet.Network, eoa.RoleRelayer)
 	if err != nil {
 		return errors.Wrap(err, "get relayer key")
 	}
@@ -416,7 +423,7 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 	}
 
 	// Save private key
-	privKey, err := eoa.PrivateKey(ctx, def.Testnet.Network, eoa.TypeMonitor)
+	privKey, err := eoa.PrivateKey(ctx, def.Testnet.Network, eoa.RoleMonitor)
 	if err != nil {
 		return errors.Wrap(err, "get relayer key")
 	}

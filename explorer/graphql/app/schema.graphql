@@ -30,10 +30,15 @@ scalar Long
 
 scalar Time
 
+scalar ID
+
 """
 XMsg is a cross-chain message.
 """
 type XMsg {
+  "ID of the XMsg"
+  ID: ID!
+
   "Monotonically incremented offset of Msg in the Steam"
   StreamOffset: BigInt!
 
@@ -167,6 +172,45 @@ enum SearchResultType {
   ADDRESS
 }
 
+"""
+XMsgResult represents a paginated list of XMsgs
+"""
+type XMsgResult {
+  "Total number of XMsgs"
+  TotalCount: BigInt!
+
+  "XMsgs"
+  Edges: [XMsgEdge!]!
+
+  "Page Info"
+  PageInfo: PageInfo!
+}
+
+"""
+XMessageEdge represents a single XMsg in a paginated list
+"""
+type XMsgEdge {
+  "Cursor"
+  Cursor: BigInt!
+
+  "XMsg"
+  Node: XMsg!
+}
+
+"""
+PageInfo represents pagination information
+"""
+type PageInfo {
+  "Start Cursor"
+  StartCursor: BigInt!
+
+  "Next Page Cursor"
+  HasNextPage: Boolean!
+
+  "Previous Page Cursor"
+  HasPrevPage: Boolean!
+}
+
 type Query {
   xblock(sourceChainID: BigInt!, height: BigInt!): XBlock
   xblockrange(from: BigInt!, to: BigInt!): [XBlock]!
@@ -178,4 +222,5 @@ type Query {
   xmsg(sourceChainID: BigInt!, destChainID: BigInt! streamOffset: BigInt!): XMsg
   supportedchains: [Chain]!
   search(query: String!): SearchResult
+  xmsgs(limit: BigInt, cursor: BigInt): XMsgResult
 }

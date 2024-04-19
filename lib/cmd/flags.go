@@ -44,6 +44,22 @@ func LogFlags(ctx context.Context, flags *pflag.FlagSet) error {
 // redact returns a redacted version of the given flag value. It currently supports redacting
 // passwords in valid URLs as well as flags that contains words like "token", "password", "secret", "db" or "key".
 func redact(flag, val string) string {
+	// Don't redact empty flags ; i.e. show that they are empty.
+	if val == "" {
+		return ""
+	}
+
+	u, err := url.Parse(val)
+	if err == nil {
+		return u.Redacted()
+	}
+
+	// Don't redact --.*path or --.*file flags.
+	if strings.Contains(flag, "file") ||
+		strings.Contains(flag, "path") {
+		return val
+	}
+
 	if strings.Contains(flag, "token") ||
 		strings.Contains(flag, "password") ||
 		strings.Contains(flag, "secret") ||
@@ -53,10 +69,5 @@ func redact(flag, val string) string {
 		return "xxxxx"
 	}
 
-	u, err := url.Parse(val)
-	if err != nil {
-		return val
-	}
-
-	return u.Redacted()
+	return val
 }

@@ -14,17 +14,17 @@ require (
 	cosmossdk.io/x/tx v0.13.2
 	entgo.io/ent v0.13.1
 	github.com/BurntSushi/toml v1.3.2
-	github.com/Layr-Labs/eigenlayer-cli v0.7.2
-	github.com/Layr-Labs/eigensdk-go v0.1.5
+	github.com/Layr-Labs/eigenlayer-cli v0.7.3
+	github.com/Layr-Labs/eigensdk-go v0.1.6
 	github.com/bufbuild/buf v1.30.1
 	github.com/charmbracelet/log v0.4.0
 	github.com/cometbft/cometbft v0.38.6
 	github.com/cosmos/cosmos-db v1.0.2
-	github.com/cosmos/cosmos-proto v1.0.0-beta.4
+	github.com/cosmos/cosmos-proto v1.0.0-beta.5
 	github.com/cosmos/cosmos-sdk v0.50.5
 	github.com/cosmos/gogoproto v1.4.12
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0
-	github.com/ethereum/go-ethereum v1.13.14
+	github.com/ethereum/go-ethereum v1.13.15
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/go-cmp v0.6.0
 	github.com/google/gofuzz v1.2.0
@@ -114,7 +114,7 @@ require (
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/cli v26.0.0+incompatible // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
-	github.com/docker/docker v26.0.0+incompatible // indirect
+	github.com/docker/docker v26.0.2+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.8.1 // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect

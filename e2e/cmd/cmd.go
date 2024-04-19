@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"log/slog"
 	"regexp"
 
@@ -15,6 +16,8 @@ import (
 
 	cmtdocker "github.com/cometbft/cometbft/test/e2e/pkg/infra/docker"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/spf13/cobra"
 )
 
@@ -24,7 +27,7 @@ func New() *cobra.Command {
 	logCfg.Level = slog.LevelDebug.String()
 	logCfg.Color = log.ColorForce
 
-	defCfg := app.DefaultDefinitionConfig()
+	defCfg := app.DefaultDefinitionConfig(context.Background())
 
 	var def app.Definition
 
@@ -75,6 +78,7 @@ func New() *cobra.Command {
 		newTestCmd(&def),
 		newUpgradeCmd(&def),
 		newKeyCreate(&def),
+		fundAccounts(&def),
 	)
 
 	return cmd
@@ -216,6 +220,25 @@ func newKeyCreate(def *app.Definition) *cobra.Command {
 	return cmd
 }
 
+func fundAccounts(def *app.Definition) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "fund",
+		Short: "Funds accounts to their target balance, network based on the manifest",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if def.Testnet.Network == netconf.Simnet || def.Testnet.Network == netconf.Devnet {
+				return errors.New("cannot fund accounts on simnet or devnet")
+			}
+			if err := def.InitLazyNetwork(); err != nil {
+				return errors.Wrap(err, "init network")
+			}
+
+			return app.FundEOAAccounts(cmd.Context(), *def)
+		},
+	}
+
+	return cmd
+}
+
 // verifyKeyNodeType checks if the node exists in the manifest and if the key type is allowed for the node.
 func verifyKeyNodeType(def app.Definition, cfg key.UploadConfig) error {
 	if err := cfg.Type.Verify(); err != nil {
@@ -223,13 +246,22 @@ func verifyKeyNodeType(def app.Definition, cfg key.UploadConfig) error {
 	}
 
 	if cfg.Type == key.EOA {
-		eoaType := eoa.Type(cfg.Name)
-		if err := eoaType.Verify(); err != nil {
+		eoaRole := eoa.Role(cfg.Name)
+		if err := eoaRole.Verify(); err != nil {
 			return errors.Wrap(err, "verifying name as eoa type")
 		}
 
-		if addr, ok := eoa.Address(def.Testnet.Network, eoaType); ok {
-			return errors.New("cannot create eoa key already defined", "addr", addr)
+		account, ok := eoa.AccountForRole(def.Testnet.Network, eoaRole)
+		if !ok {
+			return errors.New("eoa account not found", "role", eoaRole)
+		}
+
+		if account.Type != eoa.TypeSecret {
+			return errors.New("cannot create eoa key for non secret account")
+		}
+
+		if account.Address != (common.Address{}) {
+			return errors.New("cannot create eoa key already defined", "addr", account.Address.Hex())
 		}
 
 		return nil

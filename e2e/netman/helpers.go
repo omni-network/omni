@@ -9,23 +9,19 @@ import (
 	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 func logBalance(ctx context.Context, backend *ethbackend.Backend, chain string, addr common.Address, name string,
 ) error {
-	b, err := backend.BalanceAt(ctx, addr, nil)
+	balance, err := backend.EtherBalanceAt(ctx, addr)
 	if err != nil {
 		return errors.Wrap(err, "get balance")
 	}
 
-	bf, _ := b.Float64()
-	bf /= params.Ether
-
 	log.Info(ctx, "Provided public chain key balance",
 		"chain", chain,
 		"address", addr.Hex(),
-		"balance", fmt.Sprintf("%.2f", bf),
+		"balance", fmt.Sprintf("%.2f", balance),
 		"key_name", name,
 	)
 

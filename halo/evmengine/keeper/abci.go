@@ -95,6 +95,8 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 
 		payloadID = forkchoiceResp.PayloadID
 		triggeredAt = time.Now()
+	} else {
+		log.Debug(ctx, "Using optimistic payload", "height", height, "payload", payloadID.String())
 	}
 
 	// Wait the minimum build_delay for the payload to be available.

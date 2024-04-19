@@ -4,85 +4,168 @@ package eoa
 import (
 	"context"
 	"crypto/ecdsa"
+	"math/big"
 
 	"github.com/omni-network/omni/e2e/app/key"
-	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 )
+
+type Role string
+
+const (
+	RoleRelayer         Role = "relayer"
+	RoleMonitor         Role = "monitor"
+	RoleCreate3Deployer Role = "create3-deployer"
+	RoleDeployer        Role = "deployer"
+	RoleProxyAdminOwner Role = "proxy-admin-owner"
+	RolePortalAdmin     Role = "portal-admin"
+	RoleAVSAdmin        Role = "avs-admin"
+	RoleFbDev           Role = "fb-dev"
+)
+
+func AllRoles() []Role {
+	return []Role{
+		RoleRelayer,
+		RoleMonitor,
+		RoleCreate3Deployer,
+		RoleDeployer,
+		RoleProxyAdminOwner,
+		RolePortalAdmin,
+		RoleAVSAdmin,
+		RoleFbDev,
+	}
+}
+
+func (r Role) Verify() error {
+	for _, role := range AllRoles() {
+		if r == role {
+			return nil
+		}
+	}
+
+	return errors.New("invalid role", "role", r)
+}
 
 type Type string
 
 const (
-	TypeRelayer Type = "relayer"
-	TypeMonitor Type = "monitor"
+	TypeRemote    Type = "remote"     // stored in (fireblocks) accessible via API to sign
+	TypeSecret    Type = "secret"     // stored in GCP can be downloaded to disk
+	TypeWellKnown Type = "well-known" // well-known eoa private keys in the repo
 )
 
-func (t Type) Verify() error {
-	if t != TypeRelayer && t != TypeMonitor {
-		return errors.New("invalid type", "type", t)
+type chainSelector func(netconf.Network) []netconf.Chain
+
+var chainSelectorAll = func(network netconf.Network) []netconf.Chain { return network.EVMChains() }
+
+//nolint:unused // will be used.
+var chainSelectorL1 = func(network netconf.Network) []netconf.Chain {
+	c, ok := network.EthereumChain()
+	if !ok {
+		return nil
 	}
 
-	return nil
+	return []netconf.Chain{c}
 }
 
-var (
-	devnetKeys = map[Type]*ecdsa.PrivateKey{
-		TypeRelayer: anvil.DevPrivateKey5(),
-		TypeMonitor: anvil.DevPrivateKey6(),
+// Account defines a EOA account used within the Omni network.
+type Account struct {
+	Type       Type
+	Role       Role
+	Address    common.Address
+	privateKey *ecdsa.PrivateKey // only for devnet (well-known type)
+
+	Chains        chainSelector // all vs specific chains
+	MinBalance    *big.Int      // check if below this balance
+	TargetBalance *big.Int      // fund to this balance
+}
+
+// privKey returns the private key for the account.
+func (a Account) privKey() *ecdsa.PrivateKey {
+	return a.privateKey
+}
+
+// MustAddress returns the address for the EOA identified by the network and role.
+func MustAddress(network netconf.ID, role Role) common.Address {
+	resp, ok := Address(network, role)
+	if !ok {
+		panic(errors.New("eoa address not defined", "network", network, "role", role))
 	}
-)
 
-var secureAddrs = map[netconf.ID]map[Type]common.Address{
-	netconf.Staging: {
-		TypeRelayer: common.HexToAddress("0xfE921e06Ed0a22c035b4aCFF0A5D3a434A330c96"),
-		TypeMonitor: common.HexToAddress("0x0De553555Fa19d787Af4273B18bDB77282D618c4"),
-	},
-	netconf.Testnet: {
-		TypeRelayer: common.HexToAddress("0x01654f55E4F5E2f2ff8080702676F1984CBf7d8a"),
-		TypeMonitor: common.HexToAddress("0x12Dc870b3F5b7f810c3d1e489e32a64d4E25AaCA"),
-	},
-	netconf.Mainnet: {
-		TypeMonitor: common.HexToAddress("0x07082fcbFA5F5AC9FBc03A48B7f6391441DB8332"),
-		TypeRelayer: common.HexToAddress("0x07804D7B8be635c0C68Cdf3E946114221B12f4F7"),
-	},
-}
-
-// MustAddress returns the address for the EOA identified by the network and type.
-func MustAddress(network netconf.ID, typ Type) common.Address {
-	resp, _ := Address(network, typ)
 	return resp
 }
 
-// Address returns the address for the EOA identified by the network and type.
-func Address(network netconf.ID, typ Type) (common.Address, bool) {
-	if network == netconf.Devnet {
-		return crypto.PubkeyToAddress(devnetKeys[typ].PublicKey), true
+// Address returns the address for the EOA identified by the network and role.
+func Address(network netconf.ID, role Role) (common.Address, bool) {
+	accounts, ok := statics[network]
+	if !ok {
+		return common.Address{}, false
 	}
 
-	resp, ok := secureAddrs[network][typ]
+	for _, account := range accounts {
+		if account.Role == role {
+			return account.Address, true
+		}
+	}
 
-	return resp, ok
+	return common.Address{}, false
 }
 
-// PrivateKey returns the private key for the EOA identified by the network and type.
-func PrivateKey(ctx context.Context, network netconf.ID, typ Type) (*ecdsa.PrivateKey, error) {
-	if network == netconf.Devnet {
-		return devnetKeys[typ], nil
-	}
-
-	addr, ok := secureAddrs[network][typ]
+// PrivateKey returns the private key for the EOA identified by the network and role.
+func PrivateKey(ctx context.Context, network netconf.ID, role Role) (*ecdsa.PrivateKey, error) {
+	acc, ok := AccountForRole(network, role)
 	if !ok {
-		return nil, errors.New("eoa key not defined", "network", network, "type", typ)
+		return nil, errors.New("eoa key not defined", "network", network, "role", role)
+	}
+	if acc.Type == TypeWellKnown {
+		return acc.privKey(), nil
+	} else if acc.Type == TypeRemote {
+		return nil, errors.New("private key not available for remote keys", "network", network, "role", role)
 	}
 
-	k, err := key.Download(ctx, network, string(typ), key.EOA, addr.Hex())
+	k, err := key.Download(ctx, network, string(role), key.EOA, acc.Address.Hex())
 	if err != nil {
 		return nil, errors.Wrap(err, "download key")
 	}
 
 	return k.ECDSA()
+}
+
+// AccountForRole returns the account for the network and role.
+func AccountForRole(network netconf.ID, role Role) (Account, bool) {
+	accounts, ok := statics[network]
+	if !ok {
+		return Account{}, false
+	}
+	for _, account := range accounts {
+		if account.Role == role {
+			return account, true
+		}
+	}
+
+	return Account{}, false
+}
+
+// MustAddresses returns the addresses for the network and roles.
+func MustAddresses(network netconf.ID, roles ...Role) []common.Address {
+	accounts := statics[network]
+	var addresses []common.Address
+	for _, role := range roles {
+		for _, account := range accounts {
+			if account.Role == role {
+				addresses = append(addresses, account.Address)
+			}
+		}
+	}
+
+	return addresses
+}
+
+// AllAccounts returns all accounts for the network.
+func AllAccounts(network netconf.ID) ([]Account, bool) {
+	acc, ok := statics[network]
+	return acc, ok
 }

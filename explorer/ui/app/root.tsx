@@ -12,6 +12,9 @@ import {
 } from '@remix-run/react'
 import { Client, Provider, cacheExchange, fetchExchange } from 'urql'
 import { useEnv } from './lib/use-env'
+import Navbar from './components/shared/navbar'
+import {Footer} from './components/shared/footer'
+import { gqlClient } from './entry.server'
 
 export const links: LinksFunction = () => [{ rel: 'stylesheet', href: stylesheet }]
 export type LoaderData = SerializeFrom<typeof loader>
@@ -25,15 +28,18 @@ export function loader() {
 
 function App() {
   return (
-    <html lang="en" data-theme="light">
+    <html lang="en" data-theme="dark" className="h-full bg-surface">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
       </head>
-      <body>
+      <body className="bg-surface flex flex-col justify-start content-start  h-full">
+        <Navbar />
         <Outlet />
+        <div className="grow"></div>
+        <Footer />
         <ScrollRestoration />
         <Scripts />
         <LiveReload />
@@ -46,12 +52,9 @@ export default function AppWithProviders() {
   useLoaderData<typeof loader>()
 
   const ENV = useEnv()
-  let client = new Client({
-    url: ENV.GRAPHQL_URL ?? '',
-    exchanges: [fetchExchange, cacheExchange],
-  })
+
   return (
-    <Provider value={client}>
+    <Provider value={gqlClient}>
       <App />
     </Provider>
   )

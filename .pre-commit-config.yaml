@@ -5,7 +5,7 @@ repos:
     hooks:
     -   id: detect-secrets
         args: ['--baseline', '.secrets.baseline']
-        exclude: "(pnpm-lock.yaml|testdata|static)"
+        exclude: "(pnpm-lock.yaml|testdata|static|config.json)"
 
   # Then run code formatters
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -16,7 +16,7 @@ repos:
         exclude: "testdata"
       - id: end-of-file-fixer # ensures that a file is either empty, or ends with one newline
         exclude_types: ["proto"]
-        exclude: "(testdata|.gas-snapshot|buf.gen.yaml)"
+        exclude: "(testdata|.gas-snapshot|buf.gen.yaml|explorer/ui/app/graphql/.*)"
       - id: mixed-line-ending # ensures that a file doesn't contain a mix of LF and CRLF
       - id: no-commit-to-branch # Protect specific branches (default: main/master) from direct checkins
 
@@ -76,7 +76,7 @@ repos:
         language: script
         entry: .pre-commit/run_regexp.sh
         types: [ file, go ]
-        exclude: "(_test.go|contracts/bindings/.*|explorer/db/ent/mutation.go)"
+        exclude: "(_test.go|contracts/bindings/.*|explorer/db/ent|scripts/)"
 
       - id: run-goversion
         name: run-goversion
