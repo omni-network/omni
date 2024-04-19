@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"log/slog"
 	"regexp"
 
@@ -26,7 +27,7 @@ func New() *cobra.Command {
 	logCfg.Level = slog.LevelDebug.String()
 	logCfg.Color = log.ColorForce
 
-	defCfg := app.DefaultDefinitionConfig()
+	defCfg := app.DefaultDefinitionConfig(context.Background())
 
 	var def app.Definition
 
