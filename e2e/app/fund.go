@@ -74,7 +74,20 @@ func FundEOAAccounts(ctx context.Context, def Definition) error {
 				continue
 			}
 
-			if account.MinBalance.Cmp(balance) > 0 {
+			bf, _ := balance.Float64()
+			bf /= params.Ether
+
+			fund := account.MinBalance.Cmp(balance) > 0
+
+			log.Info(ctx,
+				"Account",
+				"address", account.Address,
+				"type", account.Type,
+				"balance", fmt.Sprintf("%.2f ETH", bf),
+				"funding", fund,
+			)
+
+			if fund {
 				continue
 			}
 
@@ -100,11 +113,16 @@ func FundEOAAccounts(ctx context.Context, def Definition) error {
 				return errors.Wrap(err, "get balance")
 			}
 
-			bf, _ := b.Float64()
+			bf, _ = b.Float64()
 			bf /= params.Ether
 
-			log.Info(ctx, "Account funded", "address", account.Address, "type", account.Type, "balance", fmt.Sprintf("%.2f ETH", bf))
+			log.Info(ctx, "Account funded",
+				"address", account.Address,
+				"type", account.Type,
+				"balance", fmt.Sprintf("%.2f ETH", bf),
+			)
 		}
 	}
+
 	return nil
 }
