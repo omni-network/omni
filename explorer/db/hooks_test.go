@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/explorer/db/ent"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/require"
 )
 
 type results struct {
@@ -23,9 +24,6 @@ func TestMsgAndReceiptHooks(t *testing.T) {
 	ctx := context.Background()
 
 	type want struct {
-		BlockCount        int
-		MsgCount          int
-		ReceiptCount      int
 		StrayReceiptCount int
 		StrayMessageCount int
 	}
@@ -55,9 +53,6 @@ func TestMsgAndReceiptHooks(t *testing.T) {
 				}
 			},
 			want: want{
-				BlockCount:        2,
-				MsgCount:          2,
-				ReceiptCount:      1,
 				StrayReceiptCount: 0,
 				StrayMessageCount: 1,
 			},
@@ -84,9 +79,6 @@ func TestMsgAndReceiptHooks(t *testing.T) {
 				}
 			},
 			want: want{
-				BlockCount:        2,
-				MsgCount:          1,
-				ReceiptCount:      1,
 				StrayReceiptCount: 0,
 				StrayMessageCount: 0,
 			},
@@ -98,11 +90,23 @@ func TestMsgAndReceiptHooks(t *testing.T) {
 			client := setupDB(t)
 			results := tt.prerequisites(t, ctx, client)
 			actual := want{
-				len(results.blocks),
-				len(results.messages),
-				len(results.receipts),
 				calcStrayReceipts(ctx, results.receipts),
 				calcStrayMessages(ctx, results.messages),
+			}
+
+			for _, m := range results.messages {
+				block, err := m.QueryBlock().Only(ctx)
+				require.NoError(t, err)
+
+				require.Equal(t, block.BlockHash, m.BlockHash)
+				require.Equal(t, block.BlockHeight, m.BlockHeight)
+
+				if len(m.Edges.Receipts) == 0 {
+					continue
+				}
+
+				require.Equal(t, "SUCCESS", m.Status)
+				require.NotEmpty(t, m.ReceiptHash)
 			}
 
 			if !cmp.Equal(tt.want, actual) {

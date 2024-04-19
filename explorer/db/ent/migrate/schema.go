@@ -56,6 +56,11 @@ var (
 		{Name: "dest_chain_id", Type: field.TypeUint64},
 		{Name: "stream_offset", Type: field.TypeUint64},
 		{Name: "tx_hash", Type: field.TypeBytes, Size: 32},
+		{Name: "block_hash", Type: field.TypeBytes, Size: 32},
+		{Name: "block_height", Type: field.TypeUint64},
+		{Name: "receipt_hash", Type: field.TypeBytes, Nullable: true, Size: 32},
+		{Name: "status", Type: field.TypeString, Nullable: true, Default: "PENDING"},
+		{Name: "block_time", Type: field.TypeTime, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "block_id", Type: field.TypeInt, Nullable: true},
 	}
@@ -67,7 +72,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "msgs_blocks_Msgs",
-				Columns:    []*schema.Column{MsgsColumns[11]},
+				Columns:    []*schema.Column{MsgsColumns[16]},
 				RefColumns: []*schema.Column{BlocksColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -76,7 +81,7 @@ var (
 			{
 				Name:    "msg_source_chain_id_dest_chain_id_stream_offset_block_id",
 				Unique:  false,
-				Columns: []*schema.Column{MsgsColumns[6], MsgsColumns[7], MsgsColumns[8], MsgsColumns[11]},
+				Columns: []*schema.Column{MsgsColumns[6], MsgsColumns[7], MsgsColumns[8], MsgsColumns[16]},
 			},
 		},
 	}

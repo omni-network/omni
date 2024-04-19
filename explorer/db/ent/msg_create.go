@@ -99,6 +99,52 @@ func (mc *MsgCreate) SetTxHash(b []byte) *MsgCreate {
 	return mc
 }
 
+// SetBlockHash sets the "BlockHash" field.
+func (mc *MsgCreate) SetBlockHash(b []byte) *MsgCreate {
+	mc.mutation.SetBlockHash(b)
+	return mc
+}
+
+// SetBlockHeight sets the "BlockHeight" field.
+func (mc *MsgCreate) SetBlockHeight(u uint64) *MsgCreate {
+	mc.mutation.SetBlockHeight(u)
+	return mc
+}
+
+// SetReceiptHash sets the "ReceiptHash" field.
+func (mc *MsgCreate) SetReceiptHash(b []byte) *MsgCreate {
+	mc.mutation.SetReceiptHash(b)
+	return mc
+}
+
+// SetStatus sets the "Status" field.
+func (mc *MsgCreate) SetStatus(s string) *MsgCreate {
+	mc.mutation.SetStatus(s)
+	return mc
+}
+
+// SetNillableStatus sets the "Status" field if the given value is not nil.
+func (mc *MsgCreate) SetNillableStatus(s *string) *MsgCreate {
+	if s != nil {
+		mc.SetStatus(*s)
+	}
+	return mc
+}
+
+// SetBlockTime sets the "BlockTime" field.
+func (mc *MsgCreate) SetBlockTime(t time.Time) *MsgCreate {
+	mc.mutation.SetBlockTime(t)
+	return mc
+}
+
+// SetNillableBlockTime sets the "BlockTime" field if the given value is not nil.
+func (mc *MsgCreate) SetNillableBlockTime(t *time.Time) *MsgCreate {
+	if t != nil {
+		mc.SetBlockTime(*t)
+	}
+	return mc
+}
+
 // SetCreatedAt sets the "CreatedAt" field.
 func (mc *MsgCreate) SetCreatedAt(t time.Time) *MsgCreate {
 	mc.mutation.SetCreatedAt(t)
@@ -177,6 +223,10 @@ func (mc *MsgCreate) defaults() error {
 		v := msg.DefaultUUID()
 		mc.mutation.SetUUID(v)
 	}
+	if _, ok := mc.mutation.Status(); !ok {
+		v := msg.DefaultStatus
+		mc.mutation.SetStatus(v)
+	}
 	if _, ok := mc.mutation.CreatedAt(); !ok {
 		v := msg.DefaultCreatedAt
 		mc.mutation.SetCreatedAt(v)
@@ -226,6 +276,22 @@ func (mc *MsgCreate) check() error {
 	if v, ok := mc.mutation.TxHash(); ok {
 		if err := msg.TxHashValidator(v); err != nil {
 			return &ValidationError{Name: "TxHash", err: fmt.Errorf(`ent: validator failed for field "Msg.TxHash": %w`, err)}
+		}
+	}
+	if _, ok := mc.mutation.BlockHash(); !ok {
+		return &ValidationError{Name: "BlockHash", err: errors.New(`ent: missing required field "Msg.BlockHash"`)}
+	}
+	if v, ok := mc.mutation.BlockHash(); ok {
+		if err := msg.BlockHashValidator(v); err != nil {
+			return &ValidationError{Name: "BlockHash", err: fmt.Errorf(`ent: validator failed for field "Msg.BlockHash": %w`, err)}
+		}
+	}
+	if _, ok := mc.mutation.BlockHeight(); !ok {
+		return &ValidationError{Name: "BlockHeight", err: errors.New(`ent: missing required field "Msg.BlockHeight"`)}
+	}
+	if v, ok := mc.mutation.ReceiptHash(); ok {
+		if err := msg.ReceiptHashValidator(v); err != nil {
+			return &ValidationError{Name: "ReceiptHash", err: fmt.Errorf(`ent: validator failed for field "Msg.ReceiptHash": %w`, err)}
 		}
 	}
 	if _, ok := mc.mutation.CreatedAt(); !ok {
@@ -292,6 +358,26 @@ func (mc *MsgCreate) createSpec() (*Msg, *sqlgraph.CreateSpec) {
 	if value, ok := mc.mutation.TxHash(); ok {
 		_spec.SetField(msg.FieldTxHash, field.TypeBytes, value)
 		_node.TxHash = value
+	}
+	if value, ok := mc.mutation.BlockHash(); ok {
+		_spec.SetField(msg.FieldBlockHash, field.TypeBytes, value)
+		_node.BlockHash = value
+	}
+	if value, ok := mc.mutation.BlockHeight(); ok {
+		_spec.SetField(msg.FieldBlockHeight, field.TypeUint64, value)
+		_node.BlockHeight = value
+	}
+	if value, ok := mc.mutation.ReceiptHash(); ok {
+		_spec.SetField(msg.FieldReceiptHash, field.TypeBytes, value)
+		_node.ReceiptHash = value
+	}
+	if value, ok := mc.mutation.Status(); ok {
+		_spec.SetField(msg.FieldStatus, field.TypeString, value)
+		_node.Status = value
+	}
+	if value, ok := mc.mutation.BlockTime(); ok {
+		_spec.SetField(msg.FieldBlockTime, field.TypeTime, value)
+		_node.BlockTime = value
 	}
 	if value, ok := mc.mutation.CreatedAt(); ok {
 		_spec.SetField(msg.FieldCreatedAt, field.TypeTime, value)
