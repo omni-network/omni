@@ -7,7 +7,9 @@ import (
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/txmgr"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
@@ -47,5 +49,46 @@ func fundAccounts(ctx context.Context, def Definition) error {
 		}
 	}
 
+	return nil
+}
+
+// FundEOAAccounts funds the EOAs that need funding to their target balance.
+func FundEOAAccounts(ctx context.Context, def Definition, network netconf.Network) error {
+	accounts, ok := eoa.AllAccounts(network.ID)
+	if !ok {
+		return errors.New("no accounts found", "network", network.ID)
+	}
+
+	for _, account := range accounts {
+		for _, chain := range account.Chains(network) {
+			backend, err := def.Backends().Backend(chain.ID)
+			if err != nil {
+				return errors.Wrap(err, "backend")
+			}
+
+			balance, err := backend.BalanceAt(ctx, account.Address, nil)
+			if err != nil {
+				return errors.Wrap(err, "balance")
+			}
+
+			if account.MinBalance.Cmp(balance) > 0 {
+				continue
+			}
+
+			tx, _, err := backend.Send(ctx, eoa.Funder(), txmgr.TxCandidate{
+				To:       &account.Address,
+				GasLimit: 100_000,
+				Value:    new(big.Int).Sub(account.TargetBalance, balance),
+			})
+
+			if err != nil {
+				return errors.Wrap(err, "send tx")
+			} else if _, err := backend.WaitMined(ctx, tx); err != nil {
+				return errors.Wrap(err, "wait mined")
+			}
+
+			log.Info(ctx, "Account funded", "address", account.Address)
+		}
+	}
 	return nil
 }
