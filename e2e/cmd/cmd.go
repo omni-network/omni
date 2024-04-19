@@ -220,6 +220,7 @@ func newKeyCreate(def *app.Definition) *cobra.Command {
 }
 
 func fundAccounts(def *app.Definition) *cobra.Command {
+	networkFile := ""
 	cmd := &cobra.Command{
 		Use:   "fund",
 		Short: "Funds accounts to their target balance, network based on the supplied manifest",
@@ -228,9 +229,18 @@ func fundAccounts(def *app.Definition) *cobra.Command {
 				return errors.New("cannot fund accounts on simnet or devnet")
 			}
 
+			network, err := netconf.Load(networkFile)
+			if err != nil {
+				return errors.Wrap(err, "load network")
+			} else if err := network.Validate(); err != nil {
+				return errors.Wrap(err, "validate network configuration")
+			}
+
 			return nil
 		},
 	}
+
+	bindFundFlags(cmd.Flags(), &networkFile)
 
 	return cmd
 }

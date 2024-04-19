@@ -56,3 +56,7 @@ func bindKeyCreateFlags(cmd *cobra.Command, cfg *key.UploadConfig) {
 	_ = cmd.MarkFlagRequired("name")
 	_ = cmd.MarkFlagRequired("type")
 }
+
+func bindFundFlags(flags *pflag.FlagSet, netconf *string) {
+	flags.StringVar(netconf, "network", *netconf, "path to network json file")
+}
