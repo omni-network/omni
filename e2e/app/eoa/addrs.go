@@ -23,6 +23,8 @@ const (
 	fbTestnetAdmin = "0xEAD625eB2011394cdD739E91Bf9D51A7169C22F5"
 	// fbDev is the address of the fireblocks "dev" account.
 	fbDev = "0x7a6cF389082dc698285474976d7C75CAdE08ab7e"
+	// fbFunder is the address of the fireblocks "funder" account.
+	fbFunder = "0xf63316AA39fEc9D2109AB0D9c7B1eE3a6F60AEA4"
 )
 
 //nolint:gochecknoglobals // Static addresses
@@ -53,6 +55,8 @@ var (
 
 	mainnetMonitor = common.HexToAddress("0x07082fcbFA5F5AC9FBc03A48B7f6391441DB8332")
 	mainnetRelayer = common.HexToAddress("0x07804D7B8be635c0C68Cdf3E946114221B12f4F7")
+
+	fbFunderAddr = common.HexToAddress(fbFunder)
 )
 
 // Admin returns the address of the admin for the given network.
@@ -69,4 +73,9 @@ func Admin(network netconf.ID) (common.Address, error) {
 	default:
 		return common.Address{}, errors.New("unknown network", "network", network)
 	}
+}
+
+// Funder returns the address of the funder account.
+func Funder() common.Address {
+	return fbFunderAddr
 }
