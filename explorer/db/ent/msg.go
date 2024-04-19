@@ -47,6 +47,8 @@ type Msg struct {
 	ReceiptHash []byte `json:"ReceiptHash,omitempty"`
 	// Status holds the value of the "Status" field.
 	Status string `json:"Status,omitempty"`
+	// BlockTime holds the value of the "BlockTime" field.
+	BlockTime time.Time `json:"BlockTime,omitempty"`
 	// CreatedAt holds the value of the "CreatedAt" field.
 	CreatedAt time.Time `json:"CreatedAt,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -97,7 +99,7 @@ func (*Msg) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case msg.FieldStatus:
 			values[i] = new(sql.NullString)
-		case msg.FieldCreatedAt:
+		case msg.FieldBlockTime, msg.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
 		case msg.FieldUUID:
 			values[i] = new(uuid.UUID)
@@ -206,6 +208,12 @@ func (m *Msg) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				m.Status = value.String
 			}
+		case msg.FieldBlockTime:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field BlockTime", values[i])
+			} else if value.Valid {
+				m.BlockTime = value.Time
+			}
 		case msg.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field CreatedAt", values[i])
@@ -299,6 +307,9 @@ func (m *Msg) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("Status=")
 	builder.WriteString(m.Status)
+	builder.WriteString(", ")
+	builder.WriteString("BlockTime=")
+	builder.WriteString(m.BlockTime.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("CreatedAt=")
 	builder.WriteString(m.CreatedAt.Format(time.ANSIC))

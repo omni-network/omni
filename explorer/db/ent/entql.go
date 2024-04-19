@@ -79,6 +79,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 			msg.FieldBlockHeight:     {Type: field.TypeUint64, Column: msg.FieldBlockHeight},
 			msg.FieldReceiptHash:     {Type: field.TypeBytes, Column: msg.FieldReceiptHash},
 			msg.FieldStatus:          {Type: field.TypeString, Column: msg.FieldStatus},
+			msg.FieldBlockTime:       {Type: field.TypeTime, Column: msg.FieldBlockTime},
 			msg.FieldCreatedAt:       {Type: field.TypeTime, Column: msg.FieldCreatedAt},
 		},
 	}
@@ -465,6 +466,11 @@ func (f *MsgFilter) WhereReceiptHash(p entql.BytesP) {
 // WhereStatus applies the entql string predicate on the Status field.
 func (f *MsgFilter) WhereStatus(p entql.StringP) {
 	f.Where(p.Field(msg.FieldStatus))
+}
+
+// WhereBlockTime applies the entql time.Time predicate on the BlockTime field.
+func (f *MsgFilter) WhereBlockTime(p entql.TimeP) {
+	f.Where(p.Field(msg.FieldBlockTime))
 }
 
 // WhereCreatedAt applies the entql time.Time predicate on the CreatedAt field.

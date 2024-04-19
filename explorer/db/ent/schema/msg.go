@@ -48,6 +48,8 @@ func (Msg) Fields() []ent.Field {
 		field.String("Status").
 			Optional().
 			Default("PENDING"),
+		field.Time("BlockTime").
+			Optional(),
 		field.Time("CreatedAt").
 			Default(time.Now()),
 	}

@@ -1371,6 +1371,7 @@ type MsgMutation struct {
 	add_BlockHeight   *int64
 	_ReceiptHash      *[]byte
 	_Status           *string
+	_BlockTime        *time.Time
 	_CreatedAt        *time.Time
 	clearedFields     map[string]struct{}
 	_Block            *int
@@ -2124,6 +2125,55 @@ func (m *MsgMutation) ResetStatus() {
 	delete(m.clearedFields, msg.FieldStatus)
 }
 
+// SetBlockTime sets the "BlockTime" field.
+func (m *MsgMutation) SetBlockTime(t time.Time) {
+	m._BlockTime = &t
+}
+
+// BlockTime returns the value of the "BlockTime" field in the mutation.
+func (m *MsgMutation) BlockTime() (r time.Time, exists bool) {
+	v := m._BlockTime
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBlockTime returns the old "BlockTime" field's value of the Msg entity.
+// If the Msg object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MsgMutation) OldBlockTime(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBlockTime is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBlockTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBlockTime: %w", err)
+	}
+	return oldValue.BlockTime, nil
+}
+
+// ClearBlockTime clears the value of the "BlockTime" field.
+func (m *MsgMutation) ClearBlockTime() {
+	m._BlockTime = nil
+	m.clearedFields[msg.FieldBlockTime] = struct{}{}
+}
+
+// BlockTimeCleared returns if the "BlockTime" field was cleared in this mutation.
+func (m *MsgMutation) BlockTimeCleared() bool {
+	_, ok := m.clearedFields[msg.FieldBlockTime]
+	return ok
+}
+
+// ResetBlockTime resets all changes to the "BlockTime" field.
+func (m *MsgMutation) ResetBlockTime() {
+	m._BlockTime = nil
+	delete(m.clearedFields, msg.FieldBlockTime)
+}
+
 // SetCreatedAt sets the "CreatedAt" field.
 func (m *MsgMutation) SetCreatedAt(t time.Time) {
 	m._CreatedAt = &t
@@ -2275,7 +2325,7 @@ func (m *MsgMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *MsgMutation) Fields() []string {
-	fields := make([]string, 0, 15)
+	fields := make([]string, 0, 16)
 	if m._UUID != nil {
 		fields = append(fields, msg.FieldUUID)
 	}
@@ -2318,6 +2368,9 @@ func (m *MsgMutation) Fields() []string {
 	if m._Status != nil {
 		fields = append(fields, msg.FieldStatus)
 	}
+	if m._BlockTime != nil {
+		fields = append(fields, msg.FieldBlockTime)
+	}
 	if m._CreatedAt != nil {
 		fields = append(fields, msg.FieldCreatedAt)
 	}
@@ -2357,6 +2410,8 @@ func (m *MsgMutation) Field(name string) (ent.Value, bool) {
 		return m.ReceiptHash()
 	case msg.FieldStatus:
 		return m.Status()
+	case msg.FieldBlockTime:
+		return m.BlockTime()
 	case msg.FieldCreatedAt:
 		return m.CreatedAt()
 	}
@@ -2396,6 +2451,8 @@ func (m *MsgMutation) OldField(ctx context.Context, name string) (ent.Value, err
 		return m.OldReceiptHash(ctx)
 	case msg.FieldStatus:
 		return m.OldStatus(ctx)
+	case msg.FieldBlockTime:
+		return m.OldBlockTime(ctx)
 	case msg.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
 	}
@@ -2504,6 +2561,13 @@ func (m *MsgMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetStatus(v)
+		return nil
+	case msg.FieldBlockTime:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBlockTime(v)
 		return nil
 	case msg.FieldCreatedAt:
 		v, ok := value.(time.Time)
@@ -2614,6 +2678,9 @@ func (m *MsgMutation) ClearedFields() []string {
 	if m.FieldCleared(msg.FieldStatus) {
 		fields = append(fields, msg.FieldStatus)
 	}
+	if m.FieldCleared(msg.FieldBlockTime) {
+		fields = append(fields, msg.FieldBlockTime)
+	}
 	return fields
 }
 
@@ -2636,6 +2703,9 @@ func (m *MsgMutation) ClearField(name string) error {
 		return nil
 	case msg.FieldStatus:
 		m.ClearStatus()
+		return nil
+	case msg.FieldBlockTime:
+		m.ClearBlockTime()
 		return nil
 	}
 	return fmt.Errorf("unknown Msg nullable field %s", name)
@@ -2686,6 +2756,9 @@ func (m *MsgMutation) ResetField(name string) error {
 		return nil
 	case msg.FieldStatus:
 		m.ResetStatus()
+		return nil
+	case msg.FieldBlockTime:
+		m.ResetBlockTime()
 		return nil
 	case msg.FieldCreatedAt:
 		m.ResetCreatedAt()

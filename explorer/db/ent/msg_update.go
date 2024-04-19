@@ -232,6 +232,26 @@ func (mu *MsgUpdate) ClearStatus() *MsgUpdate {
 	return mu
 }
 
+// SetBlockTime sets the "BlockTime" field.
+func (mu *MsgUpdate) SetBlockTime(t time.Time) *MsgUpdate {
+	mu.mutation.SetBlockTime(t)
+	return mu
+}
+
+// SetNillableBlockTime sets the "BlockTime" field if the given value is not nil.
+func (mu *MsgUpdate) SetNillableBlockTime(t *time.Time) *MsgUpdate {
+	if t != nil {
+		mu.SetBlockTime(*t)
+	}
+	return mu
+}
+
+// ClearBlockTime clears the value of the "BlockTime" field.
+func (mu *MsgUpdate) ClearBlockTime() *MsgUpdate {
+	mu.mutation.ClearBlockTime()
+	return mu
+}
+
 // SetCreatedAt sets the "CreatedAt" field.
 func (mu *MsgUpdate) SetCreatedAt(t time.Time) *MsgUpdate {
 	mu.mutation.SetCreatedAt(t)
@@ -426,6 +446,12 @@ func (mu *MsgUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if mu.mutation.StatusCleared() {
 		_spec.ClearField(msg.FieldStatus, field.TypeString)
+	}
+	if value, ok := mu.mutation.BlockTime(); ok {
+		_spec.SetField(msg.FieldBlockTime, field.TypeTime, value)
+	}
+	if mu.mutation.BlockTimeCleared() {
+		_spec.ClearField(msg.FieldBlockTime, field.TypeTime)
 	}
 	if value, ok := mu.mutation.CreatedAt(); ok {
 		_spec.SetField(msg.FieldCreatedAt, field.TypeTime, value)
@@ -725,6 +751,26 @@ func (muo *MsgUpdateOne) ClearStatus() *MsgUpdateOne {
 	return muo
 }
 
+// SetBlockTime sets the "BlockTime" field.
+func (muo *MsgUpdateOne) SetBlockTime(t time.Time) *MsgUpdateOne {
+	muo.mutation.SetBlockTime(t)
+	return muo
+}
+
+// SetNillableBlockTime sets the "BlockTime" field if the given value is not nil.
+func (muo *MsgUpdateOne) SetNillableBlockTime(t *time.Time) *MsgUpdateOne {
+	if t != nil {
+		muo.SetBlockTime(*t)
+	}
+	return muo
+}
+
+// ClearBlockTime clears the value of the "BlockTime" field.
+func (muo *MsgUpdateOne) ClearBlockTime() *MsgUpdateOne {
+	muo.mutation.ClearBlockTime()
+	return muo
+}
+
 // SetCreatedAt sets the "CreatedAt" field.
 func (muo *MsgUpdateOne) SetCreatedAt(t time.Time) *MsgUpdateOne {
 	muo.mutation.SetCreatedAt(t)
@@ -949,6 +995,12 @@ func (muo *MsgUpdateOne) sqlSave(ctx context.Context) (_node *Msg, err error) {
 	}
 	if muo.mutation.StatusCleared() {
 		_spec.ClearField(msg.FieldStatus, field.TypeString)
+	}
+	if value, ok := muo.mutation.BlockTime(); ok {
+		_spec.SetField(msg.FieldBlockTime, field.TypeTime, value)
+	}
+	if muo.mutation.BlockTimeCleared() {
+		_spec.ClearField(msg.FieldBlockTime, field.TypeTime)
 	}
 	if value, ok := muo.mutation.CreatedAt(); ok {
 		_spec.SetField(msg.FieldCreatedAt, field.TypeTime, value)

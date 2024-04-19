@@ -131,6 +131,20 @@ func (mc *MsgCreate) SetNillableStatus(s *string) *MsgCreate {
 	return mc
 }
 
+// SetBlockTime sets the "BlockTime" field.
+func (mc *MsgCreate) SetBlockTime(t time.Time) *MsgCreate {
+	mc.mutation.SetBlockTime(t)
+	return mc
+}
+
+// SetNillableBlockTime sets the "BlockTime" field if the given value is not nil.
+func (mc *MsgCreate) SetNillableBlockTime(t *time.Time) *MsgCreate {
+	if t != nil {
+		mc.SetBlockTime(*t)
+	}
+	return mc
+}
+
 // SetCreatedAt sets the "CreatedAt" field.
 func (mc *MsgCreate) SetCreatedAt(t time.Time) *MsgCreate {
 	mc.mutation.SetCreatedAt(t)
@@ -360,6 +374,10 @@ func (mc *MsgCreate) createSpec() (*Msg, *sqlgraph.CreateSpec) {
 	if value, ok := mc.mutation.Status(); ok {
 		_spec.SetField(msg.FieldStatus, field.TypeString, value)
 		_node.Status = value
+	}
+	if value, ok := mc.mutation.BlockTime(); ok {
+		_spec.SetField(msg.FieldBlockTime, field.TypeTime, value)
+		_node.BlockTime = value
 	}
 	if value, ok := mc.mutation.CreatedAt(); ok {
 		_spec.SetField(msg.FieldCreatedAt, field.TypeTime, value)

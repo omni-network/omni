@@ -75,7 +75,7 @@ func init() {
 	// msg.DefaultStatus holds the default value on creation for the Status field.
 	msg.DefaultStatus = msgDescStatus.Default.(string)
 	// msgDescCreatedAt is the schema descriptor for CreatedAt field.
-	msgDescCreatedAt := msgFields[14].Descriptor()
+	msgDescCreatedAt := msgFields[15].Descriptor()
 	// msg.DefaultCreatedAt holds the default value on creation for the CreatedAt field.
 	msg.DefaultCreatedAt = msgDescCreatedAt.Default.(time.Time)
 	receiptHooks := schema.Receipt{}.Hooks()

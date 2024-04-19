@@ -44,6 +44,8 @@ const (
 	FieldReceiptHash = "receipt_hash"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
+	// FieldBlockTime holds the string denoting the blocktime field in the database.
+	FieldBlockTime = "block_time"
 	// FieldCreatedAt holds the string denoting the createdat field in the database.
 	FieldCreatedAt = "created_at"
 	// EdgeBlock holds the string denoting the block edge name in mutations.
@@ -83,6 +85,7 @@ var Columns = []string{
 	FieldBlockHeight,
 	FieldReceiptHash,
 	FieldStatus,
+	FieldBlockTime,
 	FieldCreatedAt,
 }
 
@@ -173,6 +176,11 @@ func ByBlockHeight(opts ...sql.OrderTermOption) OrderOption {
 // ByStatus orders the results by the Status field.
 func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
+// ByBlockTime orders the results by the BlockTime field.
+func ByBlockTime(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBlockTime, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the CreatedAt field.

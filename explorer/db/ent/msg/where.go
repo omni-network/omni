@@ -126,6 +126,11 @@ func Status(v string) predicate.Msg {
 	return predicate.Msg(sql.FieldEQ(FieldStatus, v))
 }
 
+// BlockTime applies equality check predicate on the "BlockTime" field. It's identical to BlockTimeEQ.
+func BlockTime(v time.Time) predicate.Msg {
+	return predicate.Msg(sql.FieldEQ(FieldBlockTime, v))
+}
+
 // CreatedAt applies equality check predicate on the "CreatedAt" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.Msg {
 	return predicate.Msg(sql.FieldEQ(FieldCreatedAt, v))
@@ -724,6 +729,56 @@ func StatusEqualFold(v string) predicate.Msg {
 // StatusContainsFold applies the ContainsFold predicate on the "Status" field.
 func StatusContainsFold(v string) predicate.Msg {
 	return predicate.Msg(sql.FieldContainsFold(FieldStatus, v))
+}
+
+// BlockTimeEQ applies the EQ predicate on the "BlockTime" field.
+func BlockTimeEQ(v time.Time) predicate.Msg {
+	return predicate.Msg(sql.FieldEQ(FieldBlockTime, v))
+}
+
+// BlockTimeNEQ applies the NEQ predicate on the "BlockTime" field.
+func BlockTimeNEQ(v time.Time) predicate.Msg {
+	return predicate.Msg(sql.FieldNEQ(FieldBlockTime, v))
+}
+
+// BlockTimeIn applies the In predicate on the "BlockTime" field.
+func BlockTimeIn(vs ...time.Time) predicate.Msg {
+	return predicate.Msg(sql.FieldIn(FieldBlockTime, vs...))
+}
+
+// BlockTimeNotIn applies the NotIn predicate on the "BlockTime" field.
+func BlockTimeNotIn(vs ...time.Time) predicate.Msg {
+	return predicate.Msg(sql.FieldNotIn(FieldBlockTime, vs...))
+}
+
+// BlockTimeGT applies the GT predicate on the "BlockTime" field.
+func BlockTimeGT(v time.Time) predicate.Msg {
+	return predicate.Msg(sql.FieldGT(FieldBlockTime, v))
+}
+
+// BlockTimeGTE applies the GTE predicate on the "BlockTime" field.
+func BlockTimeGTE(v time.Time) predicate.Msg {
+	return predicate.Msg(sql.FieldGTE(FieldBlockTime, v))
+}
+
+// BlockTimeLT applies the LT predicate on the "BlockTime" field.
+func BlockTimeLT(v time.Time) predicate.Msg {
+	return predicate.Msg(sql.FieldLT(FieldBlockTime, v))
+}
+
+// BlockTimeLTE applies the LTE predicate on the "BlockTime" field.
+func BlockTimeLTE(v time.Time) predicate.Msg {
+	return predicate.Msg(sql.FieldLTE(FieldBlockTime, v))
+}
+
+// BlockTimeIsNil applies the IsNil predicate on the "BlockTime" field.
+func BlockTimeIsNil() predicate.Msg {
+	return predicate.Msg(sql.FieldIsNull(FieldBlockTime))
+}
+
+// BlockTimeNotNil applies the NotNil predicate on the "BlockTime" field.
+func BlockTimeNotNil() predicate.Msg {
+	return predicate.Msg(sql.FieldNotNull(FieldBlockTime))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "CreatedAt" field.
