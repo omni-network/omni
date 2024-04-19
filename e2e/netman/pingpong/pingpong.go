@@ -111,15 +111,12 @@ func (d *XDapp) LogBalances(ctx context.Context) error {
 			return err
 		}
 
-		b, err := backend.BalanceAt(ctx, contract.Address, nil)
+		balance, err := backend.EtherBalanceAt(ctx, contract.Address)
 		if err != nil {
 			return errors.Wrap(err, "balance at", "chain", contract.Chain.Name)
 		}
 
-		bf, _ := b.Float64()
-		bf /= params.Ether
-
-		log.Debug(ctx, "Ping pong balance", "chain", contract.Chain.Name, "balance", bf)
+		log.Debug(ctx, "Ping pong balance", "chain", contract.Chain.Name, "balance", balance)
 	}
 
 	return nil

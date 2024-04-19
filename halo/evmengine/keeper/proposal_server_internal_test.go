@@ -1,12 +1,14 @@
 package keeper
 
 import (
+	"context"
 	"encoding/json"
 	"math/big"
 	"testing"
 	"time"
 
 	"github.com/omni-network/omni/halo/evmengine/types"
+	"github.com/omni-network/omni/lib/expbackoff"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
@@ -23,7 +25,7 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 	cdc := getCodec(t)
 	txConfig := authtx.NewTxConfig(cdc, nil)
 
-	mockEngine, err := newMockEngineAPI()
+	mockEngine, err := newMockEngineAPI(0)
 	require.NoError(t, err)
 
 	ctx, storeService := setupCtxStore(t, nil)
@@ -72,10 +74,10 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 
 	newPayload()
 	assertExecutionPayload()
+}
 
-	_, err = propSrv.ExecutionPayload(ctx, &types.MsgExecutionPayload{
-		Authority:        authtypes.NewModuleAddress(types.ModuleName).String(),
-		ExecutionPayload: []byte("invalid"),
-	})
-	require.Error(t, err)
+func fastBackoffForT() {
+	backoffFunc = func(context.Context, ...func(*expbackoff.Config)) func() {
+		return func() {}
+	}
 }

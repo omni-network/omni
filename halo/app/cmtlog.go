@@ -27,6 +27,16 @@ var levels = map[string]int{
 	"debug": levelDebug,
 }
 
+// dropCometDebugs is a map of cometBFT debug messages that should be dropped.
+// These are super noisy and not useful.
+//
+//nolint:gochecknoglobals // Static mapping
+var dropCometDebugs = map[string]bool{
+	"Read PacketMsg": true,
+	"Received bytes": true,
+	"Send":           true,
+}
+
 // cmtLogger implements cmtlog.Logger by using the omni logging pattern.
 // Comet log level is controlled separately in config.toml, since comet logs are very noisy.
 type cmtLogger struct {
@@ -49,7 +59,10 @@ func newCmtLogger(ctx context.Context, levelStr string) (cmtlog.Logger, error) {
 func (c cmtLogger) Debug(msg string, keyvals ...any) {
 	if c.level < levelDebug {
 		return
+	} else if dropCometDebugs[msg] {
+		return
 	}
+
 	log.Debug(c.ctx, msg, keyvals...)
 }
 

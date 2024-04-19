@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"crypto/ecdsa"
+	"fmt"
 	"sort"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -139,6 +140,14 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 					return
 				}
 
+				balance, err := valBackend.EtherBalanceAt(ctx, addr)
+				if err != nil {
+					returnErr(errors.Wrap(err, "balance att"))
+					return
+				}
+
+				attrs := []any{"node", node.Name, "balance", balance}
+
 				txOpts, err := valBackend.BindOpts(ctx, addr)
 				if err != nil {
 					returnErr(errors.Wrap(err, "bind opts"))
@@ -154,12 +163,12 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 
 				tx, err := omniStake.Deposit(txOpts, k1util.PubKeyToBytes64(pubkey))
 				if err != nil {
-					returnErr(errors.Wrap(err, "deposit"))
+					returnErr(errors.Wrap(err, "deposit", attrs...))
 					return
 				}
 				rec, err := valBackend.WaitMined(ctx, tx)
 				if err != nil {
-					returnErr(errors.Wrap(err, "wait minded"))
+					returnErr(errors.Wrap(err, "wait minded", attrs...))
 					return
 				}
 
@@ -167,6 +176,7 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 					"validator", node.Name,
 					"power", power,
 					"height", rec.BlockNumber.Uint64(),
+					"balance", fmt.Sprintf("%.2f", balance),
 				)
 			}
 		}

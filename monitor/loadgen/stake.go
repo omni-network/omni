@@ -12,7 +12,6 @@ import (
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 
@@ -50,7 +49,7 @@ func selfDelegateForever(ctx context.Context, contract *bindings.OmniStake, back
 func selfDelegateOnce(ctx context.Context, contract *bindings.OmniStake, backend *ethbackend.Backend, validator *ecdsa.PublicKey) error {
 	addr := crypto.PubkeyToAddress(*validator)
 
-	ethBalance, err := ethBalance(ctx, backend, addr)
+	ethBalance, err := backend.EtherBalanceAt(ctx, addr)
 	if err != nil {
 		return err
 	} else if ethBalance < 1 {
@@ -82,16 +81,4 @@ func selfDelegateOnce(ctx context.Context, contract *bindings.OmniStake, backend
 	)
 
 	return nil
-}
-
-// ethBalance returns the balance of an address in ether (1e18 wei).
-func ethBalance(ctx context.Context, backend *ethbackend.Backend, addr common.Address) (float64, error) {
-	bal, err := backend.BalanceAt(ctx, addr, nil)
-	if err != nil {
-		return 0, err
-	}
-
-	balF64, _ := bal.Float64()
-
-	return balF64 / params.Ether, nil
 }

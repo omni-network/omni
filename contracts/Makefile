@@ -47,7 +47,7 @@ avs-fork-test: ## Run AVS tests againts a local fork.
 
 .PHONY: fork-holesky
 fork-holesky: ## Run an anvil holesky fork.
-	anvil --fork-url https://ethereum-holesky-rpc.publicnode.com
+	anvil --fork-url https://holesky.infura.io/v3/$(INFURA_KEY)
 
 .PHONY: fork-mainnet
 fork-mainnet: ## Run an anvil mainnet fork.

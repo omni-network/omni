@@ -1,0 +1,8 @@
+# Devnet0 is a tiny devnet. Only a single validator and two anvils.
+# This is aimed at local dev environments.
+
+network = "devnet"
+anvil_chains = ["mock_l1", "mock_rollup"]
+avs_target = "mock_l1"
+
+[node.validator01]
