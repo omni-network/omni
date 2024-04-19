@@ -40,18 +40,13 @@ func AllRoles() []Role {
 }
 
 func (r Role) Verify() error {
-	if r != RoleRelayer &&
-		r != RoleMonitor &&
-		r != RoleCreate3Deployer &&
-		r != RoleDeployer &&
-		r != RoleProxyAdminOwner &&
-		r != RoleFbDev &&
-		r != RolePortalAdmin &&
-		r != RoleAVSAdmin {
-		return errors.New("invalid role", "role", r)
+	for _, role := range AllRoles() {
+		if r == role {
+			return nil
+		}
 	}
 
-	return nil
+	return errors.New("invalid role", "role", r)
 }
 
 type Type string

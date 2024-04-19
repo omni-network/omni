@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -38,6 +39,10 @@ func DefaultCometConfig(homeDir string) cfg.Config {
 	conf.SetRoot(conf.RootDir)
 	conf.LogLevel = "error"                            // Decrease default comet log level, it is super noisy.
 	conf.TxIndex = &cfg.TxIndexConfig{Indexer: "null"} // Disable tx indexing.
+
+	// Decrease statesync fetches and discovery
+	conf.StateSync.ChunkFetchers = 1
+	conf.StateSync.DiscoveryTime = time.Second * 10
 
 	return *conf
 }
