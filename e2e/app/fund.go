@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 
 	"github.com/omni-network/omni/e2e/app/eoa"
@@ -69,17 +70,23 @@ func FundEOAAccounts(ctx context.Context, def Definition) error {
 
 			balance, err := backend.BalanceAt(ctx, account.Address, nil)
 			if err != nil {
-				return errors.Wrap(err, "balance")
+				// skip if we have rpc errors
+				continue
 			}
 
 			if account.MinBalance.Cmp(balance) > 0 {
 				continue
 			}
 
+			target := new(big.Int).Sub(account.TargetBalance, balance)
+			if target.Cmp(big.NewInt(0)) <= 0 {
+				continue
+			}
+
 			tx, _, err := backend.Send(ctx, eoa.Funder(), txmgr.TxCandidate{
 				To:       &account.Address,
 				GasLimit: 100_000,
-				Value:    new(big.Int).Sub(account.TargetBalance, balance),
+				Value:    target,
 			})
 
 			if err != nil {
@@ -88,7 +95,15 @@ func FundEOAAccounts(ctx context.Context, def Definition) error {
 				return errors.Wrap(err, "wait mined")
 			}
 
-			log.Info(ctx, "Account funded", "address", account.Address)
+			b, err := backend.BalanceAt(ctx, account.Address, nil)
+			if err != nil {
+				return errors.Wrap(err, "get balance")
+			}
+
+			bf, _ := b.Float64()
+			bf /= params.Ether
+
+			log.Info(ctx, "Account funded", "address", account.Address, "type", account.Type, "balance", fmt.Sprintf("%.2f ETH", bf))
 		}
 	}
 	return nil

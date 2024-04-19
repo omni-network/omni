@@ -227,6 +227,9 @@ func fundAccounts(def *app.Definition) *cobra.Command {
 			if def.Testnet.Network == netconf.Simnet || def.Testnet.Network == netconf.Devnet {
 				return errors.New("cannot fund accounts on simnet or devnet")
 			}
+			if err := def.InitLazyNetwork(); err != nil {
+				return errors.Wrap(err, "init network")
+			}
 
 			return app.FundEOAAccounts(cmd.Context(), *def)
 		},
