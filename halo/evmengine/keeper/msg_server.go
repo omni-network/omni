@@ -30,7 +30,28 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 		return nil, errors.New("only allowed in finalize mode")
 	}
 
-	payload, err := pushPayload(ctx, s.engineCl, msg)
+	var payload engine.ExecutableData
+	err := retryForever(ctx, func(ctx context.Context) (bool, error) {
+		pload, status, err := pushPayload(ctx, s.engineCl, msg)
+		if err != nil || isUnknown(status) {
+			// We need to retry forever on networking errors, but can't easily identify them, so retry all errors.
+			log.Warn(ctx, "Processing finalized payload failed: push new payload to evm (will retry)", err,
+				"status", status.Status)
+
+			return false, nil // Retry
+		} else if invalid, err := isInvalid(status); invalid {
+			// This should never happen. This node will stall now.
+			log.Error(ctx, "Processing finalized payload failed; payload invalid [BUG]", err)
+
+			return false, err // Don't retry, error out.
+		} else if isSyncing(status) {
+			log.Warn(ctx, "Processing finalized payload; evm syncing", nil)
+		}
+
+		payload = pload
+
+		return true, nil // We are done, don't retry
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -66,11 +87,33 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 		}
 	}
 
-	fcr, err := s.engineCl.ForkchoiceUpdatedV3(ctx, fcs, attrs)
+	var payloadID *engine.PayloadID
+	err = retryForever(ctx, func(ctx context.Context) (bool, error) {
+		fcr, err := s.engineCl.ForkchoiceUpdatedV3(ctx, fcs, attrs)
+		if err != nil || isUnknown(fcr.PayloadStatus) {
+			// We need to retry forever on networking errors, but can't easily identify them, so retry all errors.
+			log.Warn(ctx, "Processing finalized payload failed: evm fork choice update (will retry)", err,
+				"status", fcr.PayloadStatus.Status)
+
+			return false, nil // Retry
+		} else if isSyncing(fcr.PayloadStatus) {
+			log.Warn(ctx, "Processing finalized payload; evm syncing (will retry)", nil, "payload_height", payload.Number)
+
+			return false, nil // Retry
+		} else if invalid, err := isInvalid(fcr.PayloadStatus); invalid {
+			// This should never happen. This node will stall now.
+			log.Error(ctx, "Processing finalized payload failed; forkchoice update invalid [BUG]", err,
+				"payload_height", payload.Number)
+
+			return false, err // Don't retry
+		}
+
+		payloadID = fcr.PayloadID
+
+		return true, nil
+	})
 	if err != nil {
 		return nil, err
-	} else if fcr.PayloadStatus.Status != engine.VALID {
-		return nil, errors.New("status not valid")
 	}
 
 	if err := s.deliverEvents(ctx, payload.Number-1, payload.ParentHash, msg.PrevPayloadEvents); err != nil {
@@ -78,7 +121,7 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 	}
 
 	if isNext {
-		s.setOptimisticPayload(fcr.PayloadID, nextHeight)
+		s.setOptimisticPayload(payloadID, nextHeight)
 	}
 
 	return &types.ExecutionPayloadResponse{}, nil
@@ -114,12 +157,12 @@ func (s msgServer) deliverEvents(ctx context.Context, height uint64, blockHash c
 }
 
 // pushPayload creates a new payload from the given message and pushes it to the execution client.
-// It returns the new forkchoice state.
+// It returns the new forkchoice state and engine payload status or an error.
 func pushPayload(ctx context.Context, engineCl ethclient.EngineClient, msg *types.MsgExecutionPayload,
-) (engine.ExecutableData, error) {
+) (engine.ExecutableData, engine.PayloadStatusV1, error) {
 	var payload engine.ExecutableData
 	if err := json.Unmarshal(msg.ExecutionPayload, &payload); err != nil {
-		return engine.ExecutableData{}, errors.Wrap(err, "unmarshal payload")
+		return engine.ExecutableData{}, engine.PayloadStatusV1{}, errors.Wrap(err, "unmarshal payload")
 	}
 
 	// TODO(corver): Figure out what to use for BeaconBlockRoot.
@@ -129,17 +172,10 @@ func pushPayload(ctx context.Context, engineCl ethclient.EngineClient, msg *type
 	// Push it back to the execution client (mark it as possible new head).
 	status, err := engineCl.NewPayloadV3(ctx, payload, emptyVersionHashes, &zeroBeaconBlockRoot)
 	if err != nil {
-		return engine.ExecutableData{}, errors.Wrap(err, "new payload")
-	} else if status.Status != engine.VALID {
-		validationErr := "unknown"
-		if status.ValidationError != nil {
-			validationErr = *status.ValidationError
-		}
-
-		return engine.ExecutableData{}, errors.New("new payload invalid", "validation_err", validationErr)
+		return engine.ExecutableData{}, engine.PayloadStatusV1{}, errors.Wrap(err, "new payload")
 	}
 
-	return payload, nil
+	return payload, status, nil
 }
 
 // NewMsgServerImpl returns an implementation of the MsgServer interface
@@ -149,3 +185,36 @@ func NewMsgServerImpl(keeper *Keeper) types.MsgServiceServer {
 }
 
 var _ types.MsgServiceServer = msgServer{}
+
+func isUnknown(status engine.PayloadStatusV1) bool {
+	if status.Status == engine.VALID ||
+		status.Status == engine.INVALID ||
+		status.Status == engine.SYNCING ||
+		status.Status == engine.ACCEPTED {
+		return false
+	}
+
+	return true
+}
+
+func isSyncing(status engine.PayloadStatusV1) bool {
+	return status.Status == engine.SYNCING || status.Status == engine.ACCEPTED
+}
+
+func isInvalid(status engine.PayloadStatusV1) (bool, error) {
+	if status.Status != engine.INVALID {
+		return false, nil
+	}
+
+	valErr := "nil"
+	if status.ValidationError != nil {
+		valErr = *status.ValidationError
+	}
+
+	hash := "nil"
+	if status.LatestValidHash != nil {
+		hash = status.LatestValidHash.Hex()
+	}
+
+	return true, errors.New("payload invalid", "validation_err", valErr, "last_valid_hash", hash)
+}
