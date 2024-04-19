@@ -13,7 +13,7 @@ export default function Navbar() {
 
         <div className="grow"></div>
 
-        <Link target="_blank" to="/" className="group">
+        <Link target="_blank" to="https://forms.gle/EptLH4aFmH5btDWDA" className="group">
           <span className="icon-question text-default text-[20px] group-hover:text-subtle" />{' '}
           <span className="text-default text-b-md group-hover:text-subtle">
             Share your feedback

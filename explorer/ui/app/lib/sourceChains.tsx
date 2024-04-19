@@ -6,6 +6,7 @@ import Linea from '~/assets/images/Linea.svg'
 import Optimism from '~/assets/images/Optimism.svg'
 import Polygon from '~/assets/images/Polygon.svg'
 import Scroll from '~/assets/images/Scroll.svg'
+import Generic from '~/assets/images/Generic.svg'
 
 export const mappedSourceChains = (
   sourceChains: Array<{ ChainID: string; Name: string } | null>,
@@ -18,25 +19,118 @@ export const mappedSourceChains = (
     ...chain,
     Icon: getIcon(chain?.ChainID || ''),
     DisplayName: chain?.Name.replaceAll('_', ' '),
-    BaseExplorerUrl: getBaseUrl(chain?.ChainID || ''),
+    Urls: {
+      txHash: getBaseUrl(chain?.ChainID || '', 'tx'),
+      senderAddress: getBaseUrl(chain?.ChainID || '', 'senderAddress'),
+      blockHash: getBaseUrl(chain?.ChainID || '', 'blockHash'),
+      destHash: getBaseUrl(chain?.ChainID || '', 'destHash'),
+    },
   }))
 }
 
-const getBaseUrl = (chainId: string) => {
-    return 'https://optimism-sepolia.blockscout.com'
+// this is hard coded on front-end until this data can come with the source chains from back-end
+export const getBaseUrl = (chainId: string, type: 'tx' | 'senderAddress' | 'blockHash' | 'destHash') => {
+  switch (chainId) {
+    case '0x40b1': // mock
+      switch (type) {
+        case 'blockHash':
+          return 'https://sepolia.arbiscan.io/block'
+        case 'destHash':
+          return 'https://sepolia.arbiscan.io/address'
+        case 'senderAddress':
+          return 'https://sepolia.arbiscan.io/address'
+        case 'tx':
+          return 'https://sepolia.arbiscan.io/tx'
+        default:
+          return '/'
+      }
+    case '0x64': // mock
+      switch (type) {
+        case 'blockHash':
+          return 'https://sepolia.arbiscan.io/block'
+        case 'destHash':
+          return 'https://sepolia.arbiscan.io/address'
+        case 'senderAddress':
+          return 'https://sepolia.arbiscan.io/address'
+        case 'tx':
+          return 'https://sepolia.arbiscan.io/tx'
+        default:
+          return '/'
+      }
+    case '0xc8': // mock
+      switch (type) {
+        case 'blockHash':
+          return 'https://sepolia.arbiscan.io/block'
+        case 'destHash':
+          return 'https://sepolia.arbiscan.io/address'
+        case 'senderAddress':
+          return 'https://sepolia.arbiscan.io/address'
+        case 'tx':
+          return 'https://sepolia.arbiscan.io/tx'
+        default:
+          return '/'
+      }
+    case '0x66eee': // Arbitrum Sepolia test net
+      switch (type) {
+        case 'blockHash':
+          return 'https://sepolia.arbiscan.io/block'
+        case 'destHash':
+          return 'https://sepolia.arbiscan.io/address'
+        case 'senderAddress':
+          return 'https://sepolia.arbiscan.io/address'
+        case 'tx':
+          return 'https://sepolia.arbiscan.io/tx'
+        default:
+          return '/'
+      }
+    case '0xa5': // omni test net
+      switch (type) {
+        case 'blockHash':
+          return 'https://omni-testnet.blockscout.com/block'
+        case 'destHash':
+          return 'https://sepolia.arbiscan.io/address'
+        case 'senderAddress':
+          return 'https://omni-testnet.blockscout.com/address'
+        case 'tx':
+          return 'https://omni-testnet.blockscout.com/tx'
+        default:
+          return '/'
+      }
+    case '0xaa37dc': // OP Sepolia Test net (Optimism)
+      switch (type) {
+        case 'blockHash':
+          return 'https://sepolia-optimism.etherscan.io/block'
+        case 'destHash':
+          return 'https://sepolia.arbiscan.io/address'
+        case 'senderAddress':
+          return 'https://sepolia-optimism.etherscan.io/address'
+        case 'tx':
+          return 'https://sepolia-optimism.etherscan.io/tx'
+        default:
+          return '/'
+      }
+  }
+
+  return '/'
 }
 
 export const getIcon = (ChainID: string) => {
-  let icon = Optimism
+  let icon = Generic
   switch (ChainID) {
     case '0x40b1':
-      icon = Polygon
+      icon = Generic
       break
     case '0x64':
-      icon = Linea
+      icon = Generic
       break
     case '0xc8':
-      icon = Scroll
+      icon = Generic
+      break
+    case '0x66eee': // Arbitrum Sepolia test net
+      icon = Generic
+      break
+    case '0xa5': // omni test net
+      icon = Generic
       break
   }
   return icon
