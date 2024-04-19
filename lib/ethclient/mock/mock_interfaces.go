@@ -190,6 +190,21 @@ func (mr *MockClientMockRecorder) EstimateGas(ctx, call any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EstimateGas", reflect.TypeOf((*MockClient)(nil).EstimateGas), ctx, call)
 }
 
+// EtherBalanceAt mocks base method.
+func (m *MockClient) EtherBalanceAt(ctx context.Context, addr common.Address) (float64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EtherBalanceAt", ctx, addr)
+	ret0, _ := ret[0].(float64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// EtherBalanceAt indicates an expected call of EtherBalanceAt.
+func (mr *MockClientMockRecorder) EtherBalanceAt(ctx, addr any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EtherBalanceAt", reflect.TypeOf((*MockClient)(nil).EtherBalanceAt), ctx, addr)
+}
+
 // FilterLogs mocks base method.
 func (m *MockClient) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]types.Log, error) {
 	m.ctrl.T.Helper()

@@ -2,6 +2,8 @@ network = "devnet"
 anvil_chains = ["mock_rollup", "mock_l1"]
 avs_target = "mock_l1"
 
+multi_omni_evms = true
+
 pingpong_n = 5 # Increased ping pong to span validator updates
 
 [node.validator01]

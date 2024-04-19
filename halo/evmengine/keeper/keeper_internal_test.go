@@ -116,7 +116,7 @@ func TestKeeper_isNextProposer(t *testing.T) {
 
 			cdc := getCodec(t)
 			txConfig := authtx.NewTxConfig(cdc, nil)
-			mockEngine, err := newMockEngineAPI()
+			mockEngine, err := newMockEngineAPI(0)
 			require.NoError(t, err)
 
 			cmtAPI := newMockCometAPI(t, tt.args.validatorsFunc)
