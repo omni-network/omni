@@ -108,18 +108,15 @@ func FundEOAAccounts(ctx context.Context, def Definition) error {
 				return errors.Wrap(err, "wait mined")
 			}
 
-			b, err := backend.BalanceAt(ctx, account.Address, nil)
+			b, err := backend.EtherBalanceAt(ctx, account.Address)
 			if err != nil {
 				return errors.Wrap(err, "get balance")
 			}
 
-			bf, _ = b.Float64()
-			bf /= params.Ether
-
 			log.Info(ctx, "Account funded",
 				"address", account.Address,
 				"type", account.Type,
-				"balance", fmt.Sprintf("%.2f ETH", bf),
+				"balance", fmt.Sprintf("%.2f ETH", b),
 			)
 		}
 	}
