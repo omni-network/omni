@@ -171,14 +171,14 @@
     color: var(--color-text-subtle);
   }
 
-  .bg-secondary {
-    @apply bg-bg-secondary !important;
+  .bg-moderate {
+    @apply bg-bg-moderate !important;
   }
 
 
 
-  .text-secondary {
-    color: var(--color-text-secondary);
+  .text-moderate {
+    color: var(--color-text-moderate);
   }
 
   .text-btn-lg {

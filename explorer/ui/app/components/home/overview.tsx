@@ -17,10 +17,10 @@ const Card: React.FC<{
 
 const Overview: React.FC<Props> = ({}) => {
   const cards = [
-    { title: 'Total XMsgs sent', value: 79489200 },
-    { title: 'Total XMsgs sent', value: 79489200 },
-    { title: 'Total XMsgs sent', value: 79489200 },
-    { title: 'Total XMsgs sent', value: 79489200 },
+    { title: 'Total XMsgs', value: 79489200 },
+    { title: 'Xblock Count', value: 15489200 },
+    { title: 'Total Receipts', value: 4289200 },
+    { title: 'Total Pending', value: 539200 },
   ]
   return (
     <div className="mb-12 mt-8">
