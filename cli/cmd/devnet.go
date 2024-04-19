@@ -184,7 +184,7 @@ func deployDevnet(ctx context.Context) error {
 
 	_, err = app.Deploy(ctx, def, app.DefaultDeployConfig())
 
-	return errors.Wrap(err, "deploy devnet")
+	return err
 }
 
 func writeTempFile(content []byte) (string, error) {
