@@ -24,7 +24,11 @@ const reqsCount: Counter<string> = new Counter({
 })
 
 // Collect metrics in production env
-if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
+if (
+  process.env.NODE_ENV === 'production' ||
+  process.env.NODE_ENV === 'test' ||
+  process.env.NODE_ENV === 'development'
+) {
   collectDefaultMetrics()
 }
 
@@ -38,7 +42,6 @@ export default function handleRequest(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   loadContext: AppLoadContext,
 ) {
-
   reqsCount.inc()
   return isbot(request.headers.get('user-agent') || '')
     ? handleBotRequest(request, responseStatusCode, responseHeaders, remixContext)

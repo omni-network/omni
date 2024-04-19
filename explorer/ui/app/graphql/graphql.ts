@@ -60,6 +60,7 @@ export type PageInfo = {
 
 export type Query = {
   __typename?: 'Query';
+  search?: Maybe<SearchResult>;
   supportedchains: Array<Maybe<Chain>>;
   xblock?: Maybe<XBlock>;
   xblockcount?: Maybe<Scalars['BigInt']['output']>;
@@ -71,6 +72,11 @@ export type Query = {
   xmsgs?: Maybe<XMsgResult>;
   xreceipt?: Maybe<XReceipt>;
   xreceiptcount?: Maybe<Scalars['BigInt']['output']>;
+};
+
+
+export type QuerySearchArgs = {
+  query: Scalars['Bytes32']['input'];
 };
 
 
@@ -110,6 +116,26 @@ export type QueryXreceiptArgs = {
   sourceChainID: Scalars['BigInt']['input'];
   streamOffset: Scalars['BigInt']['input'];
 };
+
+/** Search for cross-chain messages and receipts. */
+export type SearchResult = {
+  __typename?: 'SearchResult';
+  /** Block Height */
+  BlockHeight: Scalars['BigInt']['output'];
+  /** Source chain ID */
+  SourceChainID: Scalars['BigInt']['output'];
+  /** Hash */
+  TxHash: Scalars['Bytes32']['output'];
+  /** Type */
+  Type: SearchResultType;
+};
+
+export enum SearchResultType {
+  Address = 'ADDRESS',
+  Block = 'BLOCK',
+  Message = 'MESSAGE',
+  Receipt = 'RECEIPT'
+}
 
 /** XBlock represents a cross-chain block. */
 export type XBlock = {

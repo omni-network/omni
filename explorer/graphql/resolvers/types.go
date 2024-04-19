@@ -60,6 +60,22 @@ type Chain struct {
 	ChainID hexutil.Big
 }
 
+type SearchResult struct {
+	BlockHeight   hexutil.Big
+	TxHash        common.Hash
+	SourceChainID hexutil.Big
+	Type          SearchResultType
+}
+
+type SearchResultType string
+
+const (
+	BLOCK   SearchResultType = "BLOCK"
+	MESSAGE SearchResultType = "MESSAGE"
+	RECEIPT SearchResultType = "RECEIPT"
+	ADDRESS SearchResultType = "ADDRESS"
+)
+
 type PageInfo struct {
 	StartCursor hexutil.Big
 	HasNextPage bool
