@@ -115,9 +115,9 @@
    "TrustPeriod": 604800000000000,
    "TrustHeight": 0,
    "TrustHash": "",
-   "DiscoveryTime": 15000000000,
+   "DiscoveryTime": 10000000000,
    "ChunkRequestTimeout": 10000000000,
-   "ChunkFetchers": 4
+   "ChunkFetchers": 1
   },
   "BlockSync": {
    "Version": "v0"
