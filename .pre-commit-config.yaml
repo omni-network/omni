@@ -76,7 +76,7 @@ repos:
         language: script
         entry: .pre-commit/run_regexp.sh
         types: [ file, go ]
-        exclude: "(_test.go|contracts/bindings/.*|explorer/db/ent/mutation.go)"
+        exclude: "(_test.go|contracts/bindings/.*|explorer/db/ent|scripts/)"
 
       - id: run-goversion
         name: run-goversion
