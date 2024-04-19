@@ -5,8 +5,10 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
@@ -122,4 +124,18 @@ func (w Wrapper) PeerCount(ctx context.Context) (uint64, error) {
 	}
 
 	return resp, nil
+}
+
+// EtherBalanceAt returns the current balance in ether of the provided account.
+// Note this converts big.Int to float64 so IS NOT accurate.
+// Only use if accuracy is not required, i.e., for display/metrics purposes.
+func (w Wrapper) EtherBalanceAt(ctx context.Context, addr common.Address) (float64, error) {
+	b, err := w.BalanceAt(ctx, addr, nil)
+	if err != nil {
+		return 0, err
+	}
+
+	bf, _ := b.Float64()
+
+	return bf / params.Ether, nil
 }

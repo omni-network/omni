@@ -278,15 +278,12 @@ func devnetFund(ctx context.Context, cfg devnetFundConfig) error {
 		return errors.Wrap(err, "wait mined")
 	}
 
-	b, err := backend.BalanceAt(ctx, addr, nil)
+	balance, err := backend.EtherBalanceAt(ctx, addr)
 	if err != nil {
 		return errors.Wrap(err, "get balance")
 	}
 
-	bf, _ := b.Float64()
-	bf /= params.Ether
-
-	log.Info(ctx, "Account funded", "address", cfg.Address, "balance", fmt.Sprintf("%.2f ETH", bf))
+	log.Info(ctx, "Account funded", "address", cfg.Address, "balance", fmt.Sprintf("%.2f ETH", balance))
 
 	return nil
 }
