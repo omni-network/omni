@@ -56,29 +56,93 @@ func TestCursor(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		test := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			entClient := setupDB(t)
 
 			// Get our initial deploy height
-			deployHeight, err := app.InitChainCursor(ctx, entClient, tt.chain)
+			deployHeight, err := app.InitChainCursor(ctx, entClient, test.chain)
 			require.NoError(t, err)
 
 			// Insert TestBlocks
-			for i := uint64(0); i < tt.blocks; i++ {
-				insertBlock(t, ctx, entClient, tt.chain.ID, deployHeight+i)
+			for i := uint64(0); i < test.blocks; i++ {
+				insertBlock(t, ctx, entClient, test.chain.ID, deployHeight+i)
 			}
 
 			// Gets our final cursor location
-			cursor, err := entClient.XProviderCursor.Query().Where(xprovidercursor.ChainID(tt.chain.ID)).Only(ctx)
+			cursor, err := entClient.XProviderCursor.Query().Where(xprovidercursor.ChainID(test.chain.ID)).Only(ctx)
 			require.NoError(t, err)
 
 			// Check our results
-			require.Equal(t, tt.chain.DeployHeight, deployHeight)
+			require.Equal(t, test.chain.DeployHeight, deployHeight)
 
 			// our cursoe should equal the height of the last block we inserted
 			// we subtract one because our cursor starts at deployHeight - 1
-			require.Equal(t, tt.chain.DeployHeight+tt.blocks-1, cursor.Height)
+			require.Equal(t, test.chain.DeployHeight+test.blocks-1, cursor.Height)
+		})
+	}
+}
+
+func TestCursorRedeploy(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	tests := []struct {
+		name   string
+		chain  netconf.Chain
+		blocks uint64
+	}{
+		{
+			name: "public_chain_redploy",
+			chain: netconf.Chain{
+				ID:                1016561,
+				Name:              "omni_consensus",
+				RPCURL:            "http://mock_arb:8545",
+				PortalAddress:     common.Address([]byte("0x268bb5F3d4301b591288390E76b97BE8E8B1Ca82")),
+				DeployHeight:      10687126,
+				IsOmniConsensus:   true,
+				BlockPeriod:       time.Duration(2) * time.Second,
+				FinalizationStrat: "latest",
+			},
+			blocks: 10,
+		},
+	}
+	for _, tt := range tests {
+		test := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			entClient := setupDB(t)
+
+			// Get our initial deploy height
+			deployHeight, err := app.InitChainCursor(ctx, entClient, test.chain)
+			require.NoError(t, err)
+
+			// Insert TestBlocks
+			for i := uint64(0); i < test.blocks; i++ {
+				insertBlock(t, ctx, entClient, test.chain.ID, deployHeight+i)
+			}
+
+			// Redeploy the chain
+			test.chain.DeployHeight += tt.blocks + 10
+			deployHeight, err = app.InitChainCursor(ctx, entClient, test.chain)
+			require.NoError(t, err)
+
+			// Insert TestBlocks
+			for i := uint64(0); i < test.blocks; i++ {
+				insertBlock(t, ctx, entClient, test.chain.ID, deployHeight+i)
+			}
+
+			// Gets our final cursor location
+			cursor, err := entClient.XProviderCursor.Query().Where(xprovidercursor.ChainID(test.chain.ID)).Only(ctx)
+			require.NoError(t, err)
+
+			// Check our results
+			require.Equal(t, test.chain.DeployHeight, deployHeight)
+
+			// our cursoe should equal the height of the last block we inserted
+			// we subtract one because our cursor starts at deployHeight - 1
+			require.Equal(t, test.chain.DeployHeight+test.blocks-1, cursor.Height)
 		})
 	}
 }

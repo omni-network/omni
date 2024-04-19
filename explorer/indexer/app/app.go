@@ -104,21 +104,45 @@ func initializeRPCClients(chains []netconf.Chain) (map[uint64]ethclient.Client, 
 // If a cursor exists, it returns the cursor height + 1.
 // Else a new cursor is created with chain deploy height.
 func InitChainCursor(ctx context.Context, entCl *ent.Client, chain netconf.Chain) (uint64, error) {
-	cursor, ok, err := getCursor(ctx, entCl.XProviderCursor, chain.ID)
-	if err != nil {
-		return 0, errors.Wrap(err, "get cursor")
-	} else if ok {
-		return cursor.Height + 1, nil
-	}
-
 	// Store the cursor at deploy height - 1, so first cursor update will be at deploy height.
 	deployHeight := chain.DeployHeight - 1
 	if chain.DeployHeight == 0 { // Except for 0, we handle this explicitly.
 		deployHeight = 0
 	}
 
+	cursor, found, err := getCursor(ctx, entCl.XProviderCursor, chain.ID)
+	if err != nil {
+		return 0, errors.Wrap(err, "get cursor")
+	}
+
+	if found {
+		return updateCursor(ctx, entCl, chain, cursor, deployHeight)
+	}
+
+	return createCursor(ctx, entCl, chain, deployHeight)
+}
+
+func updateCursor(ctx context.Context, entCl *ent.Client, chain netconf.Chain, cursor *ent.XProviderCursor, deployHeight uint64) (uint64, error) {
+	// cursor exists, check if we need to update the height
+	if cursor.Height > deployHeight {
+		return cursor.Height + 1, nil
+	}
+
+	log.Info(ctx, "Cursor height mismatch", "chain_id", chain.ID, "cursor_height", cursor.Height, "deploy_height", deployHeight)
+	// update the cursor height
+	_, err := entCl.XProviderCursor.UpdateOneID(cursor.ID).SetHeight(deployHeight).Save(ctx)
+	if err != nil {
+		return 0, errors.Wrap(err, "update cursor")
+	}
+
+	log.Info(ctx, "Updated cursor", "chain_id", chain.ID, "height", deployHeight)
+	// return the chain height as if it was a reset
+	return chain.DeployHeight, nil
+}
+
+func createCursor(ctx context.Context, entCl *ent.Client, chain netconf.Chain, deployHeight uint64) (uint64, error) {
 	// cursor doesn't exist yet, create it
-	_, err = entCl.XProviderCursor.Create().
+	_, err := entCl.XProviderCursor.Create().
 		SetChainID(chain.ID).
 		SetHeight(deployHeight).
 		Save(ctx)
