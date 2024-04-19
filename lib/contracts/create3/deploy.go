@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/chainids"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
@@ -50,25 +51,25 @@ func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) 
 
 func mainnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Deployer: contracts.MainnetCreate3Deployer(),
+		Deployer: eoa.MustAddress(netconf.Mainnet, eoa.RoleCreate3Deployer),
 	}
 }
 
 func testnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Deployer: contracts.TestnetCreate3Deployer(),
+		Deployer: eoa.MustAddress(netconf.Testnet, eoa.RoleCreate3Deployer),
 	}
 }
 
 func stagingCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Deployer: contracts.StagingCreate3Deployer(),
+		Deployer: eoa.MustAddress(netconf.Staging, eoa.RoleCreate3Deployer),
 	}
 }
 
 func devnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Deployer: contracts.DevnetCreate3Deployer(),
+		Deployer: eoa.MustAddress(netconf.Devnet, eoa.RoleCreate3Deployer),
 	}
 }
 

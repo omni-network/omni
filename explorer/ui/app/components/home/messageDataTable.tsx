@@ -1,60 +1,186 @@
 import { json } from '@remix-run/node'
-import React from 'react'
+import React, { useEffect } from 'react'
 import { XMsg } from '~/graphql/graphql'
 import { ColumnDef } from '@tanstack/react-table'
 import SimpleTable from '../shared/simpleTable'
 import { useLoaderData } from '@remix-run/react'
-
-export async function loader() {
-  return json<XMsg[]>(new Array())
-}
+import { dateFormatter, hashShortener } from '~/lib/formatting'
+import Tag from '../shared/tag'
+import RollupIcon from '../shared/rollupIcon'
+import { Link } from '@remix-run/react'
+import LongArrow from '~/assets/images/LongArrow.svg'
+import { loader } from '~/routes/_index'
+import SearchBar from '../shared/search'
+import Dropdown from '../shared/dropdown'
+import ChainDropdown from './chainDropdown'
 
 export default function XMsgDataTable() {
-  const d = useLoaderData<typeof loader>()
+  const data = useLoaderData<typeof loader>()
 
-  let rows = []
+  const filterOptions = [
+    { display: 'Source address', value: 'sourceAddress' },
+    {
+      display: 'Source tx hash',
+      value: 'sourceTxHash',
+    },
+    {
+      display: 'Destination address',
+      value: 'destAddress',
+    },
+    {
+      display: 'Destination tx hash',
+      value: 'destTxHash',
+    },
+  ]
 
-  const columns = React.useMemo<ColumnDef<XMsg>[]>(
+  const sourceChainList = [
+    {
+      value: 'arbiscanId',
+      icon: <RollupIcon chainId="arbiscan" />,
+      display: 'Arbiscan',
+    },
+    {
+      value: 'polygonId',
+      icon: <RollupIcon chainId="polygon" />,
+      display: 'Polygon',
+    },
+    {
+      value: 'calderaId',
+      icon: <RollupIcon chainId="caldera" />,
+      display: 'Caldera',
+    },
+  ]
+
+  const [searchValue, setSearchValue] = React.useState<string>('')
+  const [searchPlaceholder, setSearchPlaceholder] = React.useState<string>()
+
+  const rows = data.xmsgs
+
+  const columnConfig = {
+    canFilter: false,
+    enableColumnFilter: false,
+  }
+
+  const columns = React.useMemo<ColumnDef<any>[]>(
     () => [
       {
-        accessorKey: 'tx_hash',
-        accessorFn: row => row.TxHash,
-        header: () => <span>TxHash</span>,
-        canFilter: false,
-        enableColumnFilter: false,
+        ...columnConfig,
+        accessorKey: 'StreamOffset',
+        header: () => <span>Nounce</span>,
+        cell: (value: any) => (
+          <Link to="/" className="link font-bold text-b-sm">
+            {value.getValue()}
+          </Link>
+        ),
       },
       {
-        accessorKey: 'source_chain',
-        accessorFn: row => row.SourceChainID,
-        header: () => <span>Source Chain</span>,
-        canFilter: false,
-        enableColumnFilter: false,
+        ...columnConfig,
+        accessorKey: 'timeStamp',
+        header: () => <span>Age</span>,
+        cell: (value: any) => (
+          <span className="text-subtlest font-bold text-b-xs">
+            {' '}
+            {dateFormatter(value.getValue())}
+          </span>
+        ),
       },
       {
-        accessorKey: 'dest_chain',
-        accessorFn: row => row.DestChainID,
-        header: () => <span>Dest Chain</span>,
-        canFilter: false,
-        enableColumnFilter: false,
+        ...columnConfig,
+        accessorKey: 'status',
+        header: () => <span>Status</span>,
+        cell: (value: any) => <Tag status={value.getValue()} />,
       },
       {
-        accessorKey: 'time',
-        accessorFn: row => '',
-        header: () => <span>Updated At</span>,
-        canFilter: false,
-        enableColumnFilter: false,
+        ...columnConfig,
+        accessorKey: 'SourceChainID',
+        header: () => <span></span>,
+        cell: (value: any) => <RollupIcon chainId={value.getValue()} />,
+      },
+      {
+        ...columnConfig,
+        accessorKey: 'fromAddress',
+        header: () => <span>Address</span>,
+        cell: (value: any) => (
+          <Link to="/" className="link">
+            <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
+            <span className="icon-external-link" />
+          </Link>
+        ),
+      },
+      {
+        ...columnConfig,
+        accessorKey: 'BlockHash',
+        header: () => <span>Block Hash</span>,
+        cell: (value: any) => (
+          <Link to="/" className="link">
+            <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
+            <span className="icon-external-link" />
+          </Link>
+        ),
+      },
+      {
+        ...columnConfig,
+        accessorKey: 'Empty',
+        header: () => <span></span>,
+        cell: (value: any) => <img src={LongArrow} alt="" />,
+      },
+      {
+        ...columnConfig,
+        accessorKey: 'DestChainID',
+        header: () => <span></span>,
+        cell: (value: any) => <RollupIcon chainId={value.getValue()} />,
+      },
+      {
+        ...columnConfig,
+        accessorKey: 'DestAddress',
+        header: () => <span>Address</span>,
+        cell: (value: any) => (
+          <Link to="/" className="link">
+            <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
+            <span className="icon-external-link" />
+          </Link>
+        ),
+      },
+      {
+        ...columnConfig,
+        accessorKey: 'TxHash',
+        header: () => <span>Tx Hash</span>,
+        cell: (value: any) => (
+          <Link to="/" className="link">
+            <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
+            <span className="icon-external-link" />
+          </Link>
+        ),
       },
     ],
     [],
   )
 
   return (
-    <div className="m-3">
-      <div className="">
-        <h1 className="prose text-xl font-semibold mb-3">XMsgs</h1>
+    <div className="flex-none">
+      <div className="flex flex-col">
+        <h5 className="text-default mb-4">XMsgs</h5>
+        <div className={'flex mb-4 gap-2'}>
+          <div className="flex w-full">
+            <Dropdown
+              position="left"
+              options={filterOptions}
+              onChange={value => {
+                setSearchPlaceholder(
+                  `Search by ${(filterOptions.find(option => option.value === value)?.display || filterOptions[0].display).toLowerCase()}`,
+                )
+              }}
+              defaultValue={filterOptions[0].value}
+            />
+            <SearchBar placeholder={searchPlaceholder} />
+          </div>
+          <ChainDropdown placeholder="Select source" label="From" options={sourceChainList} />
+          <ChainDropdown placeholder="Select destination" label="To" options={sourceChainList} />
+        </div>
       </div>
       <div>
         <SimpleTable columns={columns} data={rows} />
+        count: {data.count}
       </div>
     </div>
   )

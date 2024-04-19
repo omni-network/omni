@@ -189,8 +189,6 @@ func chainNameFromID(id big.Int) string {
 	switch id.Int64() {
 	case eigenutils.MainnetChainId:
 		return "mainnet"
-	case eigenutils.GoerliChainId:
-		return "goerli"
 	case eigenutils.HoleskyChainId:
 		return "holesky"
 	default:

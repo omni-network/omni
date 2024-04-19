@@ -6,6 +6,7 @@ import (
 	"github.com/omni-network/omni/explorer/db/ent"
 	"github.com/omni-network/omni/explorer/db/ent/block"
 	"github.com/omni-network/omni/explorer/graphql/resolvers"
+	"github.com/omni-network/omni/explorer/graphql/utils"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
@@ -79,7 +80,7 @@ func (p Provider) XBlockCount(ctx context.Context) (*hexutil.Big, bool, error) {
 
 	res := query
 
-	big, err := Uint2Hex(uint64(res))
+	big, err := utils.Uint2Hex(uint64(res))
 	if err != nil {
 		return nil, false, errors.Wrap(err, "decoding block count")
 	}
