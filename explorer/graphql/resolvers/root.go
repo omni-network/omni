@@ -10,7 +10,7 @@ type Query struct {
 	BlocksResolver
 }
 
-type BlocksProvider interface { //nolint: interfacebloat // This is a graphql interface
+type BlocksProvider interface { //nolint: interfacebloat // We need this interface to define all of our methods for the library we are using
 	XBlock(ctx context.Context, SourceChainID uint64, Height uint64) (*XBlock, bool, error)
 	XBlockRange(ctx context.Context, Amount uint64, Offset uint64) ([]*XBlock, bool, error)
 	XBlockCount(ctx context.Context) (*hexutil.Big, bool, error)
