@@ -39,6 +39,7 @@ func newDevnetCmds() *cobra.Command {
 		newDevnetAVSAllow(),
 		newDevnetStartCmd(),
 		newDevnetInfoCmd(),
+		newDevnetCleanCmd(),
 	)
 
 	return cmd
@@ -96,6 +97,25 @@ func newDevnetInfoCmd() *cobra.Command {
 			return printDevnetInfo()
 		},
 	}
+}
+
+func newDevnetCleanCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "clean",
+		Short: "Cleans (deletes) previously preserved devnet files and directories",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cleanupDevnet(cmd.Context())
+		},
+	}
+}
+
+func cleanupDevnet(ctx context.Context) error {
+	def, err := devnetDefinition(ctx)
+	if err != nil {
+		return err
+	}
+
+	return app.Cleanup(ctx, def)
 }
 
 func printDevnetInfo() error {
