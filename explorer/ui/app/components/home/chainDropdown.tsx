@@ -44,18 +44,18 @@ const ChainDropdown: React.FC<Props> = ({
         onClick={e => {
           setIsOpen(!isOpen)
         }}
-        className={`min-w-[126px] text-nowrap relative text-left px-5 h-[58px] text-cb-md text-subtlest appearance-none rounded-[1000px] bg-[#fcfcfb] bg-opacity-[0.05] border-[1px] border-subtle overflow-hidden ${position === 'left' && leftStyle} ${position === 'right' && rightStyle} ${isOpen && 'bg-overlay bg-opacity-100'} ${value !== '' && 'pl-[70px]'}`}
+        className={`min-w-[126px] w-full text-nowrap relative text-left px-5 h-[58px] text-cb-md text-subtlest appearance-none rounded-[1000px] bg-[#fcfcfb] bg-opacity-[0.05] border-[1px] border-subtle overflow-hidden ${position === 'left' && leftStyle} ${position === 'right' && rightStyle} ${isOpen && 'bg-overlay bg-opacity-100'} ${value !== '' && 'pl-[70px]'}`}
       >
         {value === '' && (
-          <span className={`${isOpen && 'text-default'} relative top-1.5 block pr-4`}>
+          <span className={`${isOpen && 'text-default'}  relative top-1.5 block pr-4`}>
             {placeholder}
           </span>
         )}
 
         {value !== '' && (
-          <div className={'flex items-center justify-center gap-2 px-5 pt-3 ml-[-50px]'}>
-            {options.find(option => option.value === value).icon}
-            <span className={'text-cb text-default pr-2'}>
+          <div className={'flex items-center justify-start gap-2 px-5 pt-3 ml-[-64px]'}>
+            {<img src={options.find(option => option.value === value).icon} alt={''} />}
+            <span className={'text-cb capitalize text-default pr-5'}>
               {options.find(option => option.value === value).display}
             </span>
           </div>
@@ -90,8 +90,8 @@ const ChainDropdown: React.FC<Props> = ({
               className={`p-2 text-b-md text-default font-bold text-nowrap cursor-pointer rounded-lg flex items-center justify-between ${option.value === value && 'bg-active'} hover:bg-hover`}
             >
               <div className={`flex gap-2`}>
-                {option.icon}
-                {option.display}
+                <img src={option.icon} alt={`${option.display} icon`} />
+                <span className='capitalize'>{option.display}</span>
               </div>
 
               {option.value === value && <span className="icon-tick-med text-[20px]" />}

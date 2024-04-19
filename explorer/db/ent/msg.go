@@ -39,6 +39,16 @@ type Msg struct {
 	StreamOffset uint64 `json:"StreamOffset,omitempty"`
 	// TxHash holds the value of the "TxHash" field.
 	TxHash []byte `json:"TxHash,omitempty"`
+	// BlockHash holds the value of the "BlockHash" field.
+	BlockHash []byte `json:"BlockHash,omitempty"`
+	// BlockHeight holds the value of the "BlockHeight" field.
+	BlockHeight uint64 `json:"BlockHeight,omitempty"`
+	// ReceiptHash holds the value of the "ReceiptHash" field.
+	ReceiptHash []byte `json:"ReceiptHash,omitempty"`
+	// Status holds the value of the "Status" field.
+	Status string `json:"Status,omitempty"`
+	// BlockTime holds the value of the "BlockTime" field.
+	BlockTime time.Time `json:"BlockTime,omitempty"`
 	// CreatedAt holds the value of the "CreatedAt" field.
 	CreatedAt time.Time `json:"CreatedAt,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -83,11 +93,13 @@ func (*Msg) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case msg.FieldSourceMsgSender, msg.FieldDestAddress, msg.FieldData, msg.FieldTxHash:
+		case msg.FieldSourceMsgSender, msg.FieldDestAddress, msg.FieldData, msg.FieldTxHash, msg.FieldBlockHash, msg.FieldReceiptHash:
 			values[i] = new([]byte)
-		case msg.FieldID, msg.FieldBlockID, msg.FieldDestGasLimit, msg.FieldSourceChainID, msg.FieldDestChainID, msg.FieldStreamOffset:
+		case msg.FieldID, msg.FieldBlockID, msg.FieldDestGasLimit, msg.FieldSourceChainID, msg.FieldDestChainID, msg.FieldStreamOffset, msg.FieldBlockHeight:
 			values[i] = new(sql.NullInt64)
-		case msg.FieldCreatedAt:
+		case msg.FieldStatus:
+			values[i] = new(sql.NullString)
+		case msg.FieldBlockTime, msg.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
 		case msg.FieldUUID:
 			values[i] = new(uuid.UUID)
@@ -172,6 +184,36 @@ func (m *Msg) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				m.TxHash = *value
 			}
+		case msg.FieldBlockHash:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field BlockHash", values[i])
+			} else if value != nil {
+				m.BlockHash = *value
+			}
+		case msg.FieldBlockHeight:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field BlockHeight", values[i])
+			} else if value.Valid {
+				m.BlockHeight = uint64(value.Int64)
+			}
+		case msg.FieldReceiptHash:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field ReceiptHash", values[i])
+			} else if value != nil {
+				m.ReceiptHash = *value
+			}
+		case msg.FieldStatus:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field Status", values[i])
+			} else if value.Valid {
+				m.Status = value.String
+			}
+		case msg.FieldBlockTime:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field BlockTime", values[i])
+			} else if value.Valid {
+				m.BlockTime = value.Time
+			}
 		case msg.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field CreatedAt", values[i])
@@ -253,6 +295,21 @@ func (m *Msg) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("TxHash=")
 	builder.WriteString(fmt.Sprintf("%v", m.TxHash))
+	builder.WriteString(", ")
+	builder.WriteString("BlockHash=")
+	builder.WriteString(fmt.Sprintf("%v", m.BlockHash))
+	builder.WriteString(", ")
+	builder.WriteString("BlockHeight=")
+	builder.WriteString(fmt.Sprintf("%v", m.BlockHeight))
+	builder.WriteString(", ")
+	builder.WriteString("ReceiptHash=")
+	builder.WriteString(fmt.Sprintf("%v", m.ReceiptHash))
+	builder.WriteString(", ")
+	builder.WriteString("Status=")
+	builder.WriteString(m.Status)
+	builder.WriteString(", ")
+	builder.WriteString("BlockTime=")
+	builder.WriteString(m.BlockTime.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("CreatedAt=")
 	builder.WriteString(m.CreatedAt.Format(time.ANSIC))

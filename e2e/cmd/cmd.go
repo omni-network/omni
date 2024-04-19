@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"log/slog"
 	"regexp"
 
@@ -26,7 +27,7 @@ func New() *cobra.Command {
 	logCfg.Level = slog.LevelDebug.String()
 	logCfg.Color = log.ColorForce
 
-	defCfg := app.DefaultDefinitionConfig()
+	defCfg := app.DefaultDefinitionConfig(context.Background())
 
 	var def app.Definition
 
@@ -77,6 +78,7 @@ func New() *cobra.Command {
 		newTestCmd(&def),
 		newUpgradeCmd(&def),
 		newKeyCreate(&def),
+		fundAccounts(&def),
 	)
 
 	return cmd
@@ -214,6 +216,25 @@ func newKeyCreate(def *app.Definition) *cobra.Command {
 	}
 
 	bindKeyCreateFlags(cmd, &cfg)
+
+	return cmd
+}
+
+func fundAccounts(def *app.Definition) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "fund",
+		Short: "Funds accounts to their target balance, network based on the manifest",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if def.Testnet.Network == netconf.Simnet || def.Testnet.Network == netconf.Devnet {
+				return errors.New("cannot fund accounts on simnet or devnet")
+			}
+			if err := def.InitLazyNetwork(); err != nil {
+				return errors.Wrap(err, "init network")
+			}
+
+			return app.FundEOAAccounts(cmd.Context(), *def)
+		},
+	}
 
 	return cmd
 }

@@ -8,8 +8,6 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-
-	"github.com/ethereum/go-ethereum/params"
 )
 
 // startMonitoring starts the monitoring goroutines.
@@ -59,7 +57,7 @@ func monitorAccountForever(ctx context.Context, account account, chainName strin
 
 // monitorAccountOnce monitors account for the given chain.
 func monitorAccountOnce(ctx context.Context, account account, chainName string, client ethclient.Client) error {
-	balance, err := client.BalanceAt(ctx, account.addr, nil)
+	balance, err := client.EtherBalanceAt(ctx, account.addr)
 	if err != nil {
 		return errors.Wrap(err, "balance account")
 	}
@@ -69,10 +67,7 @@ func monitorAccountOnce(ctx context.Context, account account, chainName string, 
 		return errors.Wrap(err, "nonce account")
 	}
 
-	bf, _ := balance.Float64()
-	bf /= params.Ether
-
-	accountBalance.WithLabelValues(chainName, string(account.addressType)).Set(bf)
+	accountBalance.WithLabelValues(chainName, string(account.addressType)).Set(balance)
 	accountNonce.WithLabelValues(chainName, string(account.addressType)).Set(float64(nonce))
 
 	return nil

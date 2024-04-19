@@ -54,9 +54,9 @@ type DefinitionConfig struct {
 }
 
 // DefaultDefinitionConfig returns a default configuration for a Definition.
-func DefaultDefinitionConfig() DefinitionConfig {
+func DefaultDefinitionConfig(ctx context.Context) DefinitionConfig {
 	defaultTag := "main"
-	if out, err := exec.CommandOutput(context.Background(), "git", "rev-parse", "--short=7", "HEAD"); err == nil {
+	if out, err := exec.CommandOutput(ctx, "git", "rev-parse", "--short=7", "HEAD"); err == nil {
 		defaultTag = strings.TrimSpace(string(out))
 	}
 
@@ -302,7 +302,7 @@ func noNodesTestnet(manifest e2e.Manifest, file string, ifd e2e.InfrastructureDa
 
 	_, ipNet, err := net.ParseCIDR(ifd.Network)
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("invalid IP network address %q", ifd.Network))
+		return nil, errors.Wrap(err, "parse network ip", "network", ifd.Network)
 	}
 
 	testnet := &e2e.Testnet{

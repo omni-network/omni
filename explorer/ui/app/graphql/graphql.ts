@@ -47,8 +47,20 @@ export type Chain = {
   Name: Scalars['String']['output'];
 };
 
+/** PageInfo represents pagination information */
+export type PageInfo = {
+  __typename?: 'PageInfo';
+  /** Next Page Cursor */
+  HasNextPage: Scalars['Boolean']['output'];
+  /** Previous Page Cursor */
+  HasPrevPage: Scalars['Boolean']['output'];
+  /** Start Cursor */
+  StartCursor: Scalars['BigInt']['output'];
+};
+
 export type Query = {
   __typename?: 'Query';
+  search?: Maybe<SearchResult>;
   supportedchains: Array<Maybe<Chain>>;
   xblock?: Maybe<XBlock>;
   xblockcount?: Maybe<Scalars['BigInt']['output']>;
@@ -56,8 +68,15 @@ export type Query = {
   xmsg?: Maybe<XMsg>;
   xmsgcount?: Maybe<Scalars['BigInt']['output']>;
   xmsgrange: Array<Maybe<XMsg>>;
+  /** Get XMsgs with pagination, sorted by latest (cursor goes to zero as the last page) */
+  xmsgs?: Maybe<XMsgResult>;
   xreceipt?: Maybe<XReceipt>;
   xreceiptcount?: Maybe<Scalars['BigInt']['output']>;
+};
+
+
+export type QuerySearchArgs = {
+  query: Scalars['Bytes32']['input'];
 };
 
 
@@ -86,11 +105,37 @@ export type QueryXmsgrangeArgs = {
 };
 
 
+export type QueryXmsgsArgs = {
+  cursor?: InputMaybe<Scalars['BigInt']['input']>;
+  limit?: InputMaybe<Scalars['BigInt']['input']>;
+};
+
+
 export type QueryXreceiptArgs = {
   destChainID: Scalars['BigInt']['input'];
   sourceChainID: Scalars['BigInt']['input'];
   streamOffset: Scalars['BigInt']['input'];
 };
+
+/** Search for cross-chain messages and receipts. */
+export type SearchResult = {
+  __typename?: 'SearchResult';
+  /** Block Height */
+  BlockHeight: Scalars['BigInt']['output'];
+  /** Source chain ID */
+  SourceChainID: Scalars['BigInt']['output'];
+  /** Hash */
+  TxHash: Scalars['Bytes32']['output'];
+  /** Type */
+  Type: SearchResultType;
+};
+
+export enum SearchResultType {
+  Address = 'ADDRESS',
+  Block = 'BLOCK',
+  Message = 'MESSAGE',
+  Receipt = 'RECEIPT'
+}
 
 /** XBlock represents a cross-chain block. */
 export type XBlock = {
@@ -126,6 +171,8 @@ export type XMsg = {
   DestChainID: Scalars['BigInt']['output'];
   /** Gas limit to use for 'call' on destination chain */
   DestGasLimit: Scalars['BigInt']['output'];
+  /** ID of the XMsg */
+  ID: Scalars['ID']['output'];
   /** Receipts of the message */
   Receipts: Array<XReceipt>;
   /** Source chain ID as per https://chainlist.org/ */
@@ -136,6 +183,26 @@ export type XMsg = {
   StreamOffset: Scalars['BigInt']['output'];
   /** Hash of the source chain transaction that emitted the message */
   TxHash: Scalars['Bytes32']['output'];
+};
+
+/** XMessageEdge represents a single XMsg in a paginated list */
+export type XMsgEdge = {
+  __typename?: 'XMsgEdge';
+  /** Cursor */
+  Cursor: Scalars['BigInt']['output'];
+  /** XMsg */
+  Node: XMsg;
+};
+
+/** XMsgResult represents a paginated list of XMsgs */
+export type XMsgResult = {
+  __typename?: 'XMsgResult';
+  /** XMsgs */
+  Edges: Array<XMsgEdge>;
+  /** Page Info */
+  PageInfo: PageInfo;
+  /** Total number of XMsgs */
+  TotalCount: Scalars['BigInt']['output'];
 };
 
 /** XReceipt represents a cross-chain receipt. */
@@ -221,6 +288,7 @@ export type XReceiptQueryVariables = Exact<{
 
 
 export type XReceiptQuery = { __typename?: 'Query', xreceipt?: { __typename?: 'XReceipt', GasUsed: any, Success: boolean, RelayerAddress: any, SourceChainID: any, DestChainID: any, StreamOffset: any, TxHash: any, Timestamp: any, Block: { __typename?: 'XBlock', SourceChainID: any, BlockHeight: any, BlockHash: any, Timestamp: any }, Messages: Array<{ __typename?: 'XMsg', StreamOffset: any, SourceMessageSender: any, DestAddress: any, DestGasLimit: any, SourceChainID: any, DestChainID: any, TxHash: any }> } | null };
+
 
 export const XblockDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Xblock"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"sourceChainID"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"BigInt"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"height"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"BigInt"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"xblock"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"sourceChainID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"sourceChainID"}}},{"kind":"Argument","name":{"kind":"Name","value":"height"},"value":{"kind":"Variable","name":{"kind":"Name","value":"height"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"SourceChainID"}},{"kind":"Field","name":{"kind":"Name","value":"BlockHeight"}},{"kind":"Field","name":{"kind":"Name","value":"BlockHash"}},{"kind":"Field","name":{"kind":"Name","value":"Timestamp"}},{"kind":"Field","name":{"kind":"Name","value":"Messages"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"StreamOffset"}},{"kind":"Field","name":{"kind":"Name","value":"SourceMessageSender"}},{"kind":"Field","name":{"kind":"Name","value":"DestAddress"}},{"kind":"Field","name":{"kind":"Name","value":"DestGasLimit"}},{"kind":"Field","name":{"kind":"Name","value":"SourceChainID"}},{"kind":"Field","name":{"kind":"Name","value":"DestChainID"}},{"kind":"Field","name":{"kind":"Name","value":"TxHash"}}]}},{"kind":"Field","name":{"kind":"Name","value":"Receipts"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"GasUsed"}},{"kind":"Field","name":{"kind":"Name","value":"Success"}},{"kind":"Field","name":{"kind":"Name","value":"RelayerAddress"}},{"kind":"Field","name":{"kind":"Name","value":"SourceChainID"}},{"kind":"Field","name":{"kind":"Name","value":"DestChainID"}},{"kind":"Field","name":{"kind":"Name","value":"StreamOffset"}},{"kind":"Field","name":{"kind":"Name","value":"TxHash"}},{"kind":"Field","name":{"kind":"Name","value":"Timestamp"}}]}}]}}]}}]} as unknown as DocumentNode<XblockQuery, XblockQueryVariables>;
 export const XBlockRangeDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"XBlockRange"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"from"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"BigInt"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"to"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"BigInt"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"xblockrange"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"from"},"value":{"kind":"Variable","name":{"kind":"Name","value":"from"}}},{"kind":"Argument","name":{"kind":"Name","value":"to"},"value":{"kind":"Variable","name":{"kind":"Name","value":"to"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"SourceChainID"}},{"kind":"Field","name":{"kind":"Name","value":"BlockHash"}},{"kind":"Field","name":{"kind":"Name","value":"BlockHeight"}},{"kind":"Field","name":{"kind":"Name","value":"Timestamp"}}]}}]}}]} as unknown as DocumentNode<XBlockRangeQuery, XBlockRangeQueryVariables>;

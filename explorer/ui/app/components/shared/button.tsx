@@ -18,7 +18,7 @@ export function Button({ children, className, ...rest }) {
 
 export function PageButton({ children, className, ...rest }) {
   return (
-    <button type="button" className={classNames('btn btn-sm font-medium', className)} {...rest}>
+    <button type="button" className={classNames('cursor-pointer disabled:cursor-default bg-bg-input-active disabled:bg-bg-input-default rounded-full text-cb-md px-4 py-3 min-w-[60px]', className)} {...rest}>
       {children}
     </button>
   )

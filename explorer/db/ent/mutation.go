@@ -1366,6 +1366,12 @@ type MsgMutation struct {
 	_StreamOffset     *uint64
 	add_StreamOffset  *int64
 	_TxHash           *[]byte
+	_BlockHash        *[]byte
+	_BlockHeight      *uint64
+	add_BlockHeight   *int64
+	_ReceiptHash      *[]byte
+	_Status           *string
+	_BlockTime        *time.Time
 	_CreatedAt        *time.Time
 	clearedFields     map[string]struct{}
 	_Block            *int
@@ -1929,6 +1935,245 @@ func (m *MsgMutation) ResetTxHash() {
 	m._TxHash = nil
 }
 
+// SetBlockHash sets the "BlockHash" field.
+func (m *MsgMutation) SetBlockHash(b []byte) {
+	m._BlockHash = &b
+}
+
+// BlockHash returns the value of the "BlockHash" field in the mutation.
+func (m *MsgMutation) BlockHash() (r []byte, exists bool) {
+	v := m._BlockHash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBlockHash returns the old "BlockHash" field's value of the Msg entity.
+// If the Msg object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MsgMutation) OldBlockHash(ctx context.Context) (v []byte, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBlockHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBlockHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBlockHash: %w", err)
+	}
+	return oldValue.BlockHash, nil
+}
+
+// ResetBlockHash resets all changes to the "BlockHash" field.
+func (m *MsgMutation) ResetBlockHash() {
+	m._BlockHash = nil
+}
+
+// SetBlockHeight sets the "BlockHeight" field.
+func (m *MsgMutation) SetBlockHeight(u uint64) {
+	m._BlockHeight = &u
+	m.add_BlockHeight = nil
+}
+
+// BlockHeight returns the value of the "BlockHeight" field in the mutation.
+func (m *MsgMutation) BlockHeight() (r uint64, exists bool) {
+	v := m._BlockHeight
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBlockHeight returns the old "BlockHeight" field's value of the Msg entity.
+// If the Msg object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MsgMutation) OldBlockHeight(ctx context.Context) (v uint64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBlockHeight is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBlockHeight requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBlockHeight: %w", err)
+	}
+	return oldValue.BlockHeight, nil
+}
+
+// AddBlockHeight adds u to the "BlockHeight" field.
+func (m *MsgMutation) AddBlockHeight(u int64) {
+	if m.add_BlockHeight != nil {
+		*m.add_BlockHeight += u
+	} else {
+		m.add_BlockHeight = &u
+	}
+}
+
+// AddedBlockHeight returns the value that was added to the "BlockHeight" field in this mutation.
+func (m *MsgMutation) AddedBlockHeight() (r int64, exists bool) {
+	v := m.add_BlockHeight
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetBlockHeight resets all changes to the "BlockHeight" field.
+func (m *MsgMutation) ResetBlockHeight() {
+	m._BlockHeight = nil
+	m.add_BlockHeight = nil
+}
+
+// SetReceiptHash sets the "ReceiptHash" field.
+func (m *MsgMutation) SetReceiptHash(b []byte) {
+	m._ReceiptHash = &b
+}
+
+// ReceiptHash returns the value of the "ReceiptHash" field in the mutation.
+func (m *MsgMutation) ReceiptHash() (r []byte, exists bool) {
+	v := m._ReceiptHash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReceiptHash returns the old "ReceiptHash" field's value of the Msg entity.
+// If the Msg object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MsgMutation) OldReceiptHash(ctx context.Context) (v []byte, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReceiptHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReceiptHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReceiptHash: %w", err)
+	}
+	return oldValue.ReceiptHash, nil
+}
+
+// ClearReceiptHash clears the value of the "ReceiptHash" field.
+func (m *MsgMutation) ClearReceiptHash() {
+	m._ReceiptHash = nil
+	m.clearedFields[msg.FieldReceiptHash] = struct{}{}
+}
+
+// ReceiptHashCleared returns if the "ReceiptHash" field was cleared in this mutation.
+func (m *MsgMutation) ReceiptHashCleared() bool {
+	_, ok := m.clearedFields[msg.FieldReceiptHash]
+	return ok
+}
+
+// ResetReceiptHash resets all changes to the "ReceiptHash" field.
+func (m *MsgMutation) ResetReceiptHash() {
+	m._ReceiptHash = nil
+	delete(m.clearedFields, msg.FieldReceiptHash)
+}
+
+// SetStatus sets the "Status" field.
+func (m *MsgMutation) SetStatus(s string) {
+	m._Status = &s
+}
+
+// Status returns the value of the "Status" field in the mutation.
+func (m *MsgMutation) Status() (r string, exists bool) {
+	v := m._Status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "Status" field's value of the Msg entity.
+// If the Msg object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MsgMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ClearStatus clears the value of the "Status" field.
+func (m *MsgMutation) ClearStatus() {
+	m._Status = nil
+	m.clearedFields[msg.FieldStatus] = struct{}{}
+}
+
+// StatusCleared returns if the "Status" field was cleared in this mutation.
+func (m *MsgMutation) StatusCleared() bool {
+	_, ok := m.clearedFields[msg.FieldStatus]
+	return ok
+}
+
+// ResetStatus resets all changes to the "Status" field.
+func (m *MsgMutation) ResetStatus() {
+	m._Status = nil
+	delete(m.clearedFields, msg.FieldStatus)
+}
+
+// SetBlockTime sets the "BlockTime" field.
+func (m *MsgMutation) SetBlockTime(t time.Time) {
+	m._BlockTime = &t
+}
+
+// BlockTime returns the value of the "BlockTime" field in the mutation.
+func (m *MsgMutation) BlockTime() (r time.Time, exists bool) {
+	v := m._BlockTime
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBlockTime returns the old "BlockTime" field's value of the Msg entity.
+// If the Msg object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MsgMutation) OldBlockTime(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBlockTime is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBlockTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBlockTime: %w", err)
+	}
+	return oldValue.BlockTime, nil
+}
+
+// ClearBlockTime clears the value of the "BlockTime" field.
+func (m *MsgMutation) ClearBlockTime() {
+	m._BlockTime = nil
+	m.clearedFields[msg.FieldBlockTime] = struct{}{}
+}
+
+// BlockTimeCleared returns if the "BlockTime" field was cleared in this mutation.
+func (m *MsgMutation) BlockTimeCleared() bool {
+	_, ok := m.clearedFields[msg.FieldBlockTime]
+	return ok
+}
+
+// ResetBlockTime resets all changes to the "BlockTime" field.
+func (m *MsgMutation) ResetBlockTime() {
+	m._BlockTime = nil
+	delete(m.clearedFields, msg.FieldBlockTime)
+}
+
 // SetCreatedAt sets the "CreatedAt" field.
 func (m *MsgMutation) SetCreatedAt(t time.Time) {
 	m._CreatedAt = &t
@@ -2080,7 +2325,7 @@ func (m *MsgMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *MsgMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 16)
 	if m._UUID != nil {
 		fields = append(fields, msg.FieldUUID)
 	}
@@ -2110,6 +2355,21 @@ func (m *MsgMutation) Fields() []string {
 	}
 	if m._TxHash != nil {
 		fields = append(fields, msg.FieldTxHash)
+	}
+	if m._BlockHash != nil {
+		fields = append(fields, msg.FieldBlockHash)
+	}
+	if m._BlockHeight != nil {
+		fields = append(fields, msg.FieldBlockHeight)
+	}
+	if m._ReceiptHash != nil {
+		fields = append(fields, msg.FieldReceiptHash)
+	}
+	if m._Status != nil {
+		fields = append(fields, msg.FieldStatus)
+	}
+	if m._BlockTime != nil {
+		fields = append(fields, msg.FieldBlockTime)
 	}
 	if m._CreatedAt != nil {
 		fields = append(fields, msg.FieldCreatedAt)
@@ -2142,6 +2402,16 @@ func (m *MsgMutation) Field(name string) (ent.Value, bool) {
 		return m.StreamOffset()
 	case msg.FieldTxHash:
 		return m.TxHash()
+	case msg.FieldBlockHash:
+		return m.BlockHash()
+	case msg.FieldBlockHeight:
+		return m.BlockHeight()
+	case msg.FieldReceiptHash:
+		return m.ReceiptHash()
+	case msg.FieldStatus:
+		return m.Status()
+	case msg.FieldBlockTime:
+		return m.BlockTime()
 	case msg.FieldCreatedAt:
 		return m.CreatedAt()
 	}
@@ -2173,6 +2443,16 @@ func (m *MsgMutation) OldField(ctx context.Context, name string) (ent.Value, err
 		return m.OldStreamOffset(ctx)
 	case msg.FieldTxHash:
 		return m.OldTxHash(ctx)
+	case msg.FieldBlockHash:
+		return m.OldBlockHash(ctx)
+	case msg.FieldBlockHeight:
+		return m.OldBlockHeight(ctx)
+	case msg.FieldReceiptHash:
+		return m.OldReceiptHash(ctx)
+	case msg.FieldStatus:
+		return m.OldStatus(ctx)
+	case msg.FieldBlockTime:
+		return m.OldBlockTime(ctx)
 	case msg.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
 	}
@@ -2254,6 +2534,41 @@ func (m *MsgMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetTxHash(v)
 		return nil
+	case msg.FieldBlockHash:
+		v, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBlockHash(v)
+		return nil
+	case msg.FieldBlockHeight:
+		v, ok := value.(uint64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBlockHeight(v)
+		return nil
+	case msg.FieldReceiptHash:
+		v, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReceiptHash(v)
+		return nil
+	case msg.FieldStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case msg.FieldBlockTime:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBlockTime(v)
+		return nil
 	case msg.FieldCreatedAt:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -2281,6 +2596,9 @@ func (m *MsgMutation) AddedFields() []string {
 	if m.add_StreamOffset != nil {
 		fields = append(fields, msg.FieldStreamOffset)
 	}
+	if m.add_BlockHeight != nil {
+		fields = append(fields, msg.FieldBlockHeight)
+	}
 	return fields
 }
 
@@ -2297,6 +2615,8 @@ func (m *MsgMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedDestChainID()
 	case msg.FieldStreamOffset:
 		return m.AddedStreamOffset()
+	case msg.FieldBlockHeight:
+		return m.AddedBlockHeight()
 	}
 	return nil, false
 }
@@ -2334,6 +2654,13 @@ func (m *MsgMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddStreamOffset(v)
 		return nil
+	case msg.FieldBlockHeight:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddBlockHeight(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Msg numeric field %s", name)
 }
@@ -2344,6 +2671,15 @@ func (m *MsgMutation) ClearedFields() []string {
 	var fields []string
 	if m.FieldCleared(msg.FieldBlockID) {
 		fields = append(fields, msg.FieldBlockID)
+	}
+	if m.FieldCleared(msg.FieldReceiptHash) {
+		fields = append(fields, msg.FieldReceiptHash)
+	}
+	if m.FieldCleared(msg.FieldStatus) {
+		fields = append(fields, msg.FieldStatus)
+	}
+	if m.FieldCleared(msg.FieldBlockTime) {
+		fields = append(fields, msg.FieldBlockTime)
 	}
 	return fields
 }
@@ -2361,6 +2697,15 @@ func (m *MsgMutation) ClearField(name string) error {
 	switch name {
 	case msg.FieldBlockID:
 		m.ClearBlockID()
+		return nil
+	case msg.FieldReceiptHash:
+		m.ClearReceiptHash()
+		return nil
+	case msg.FieldStatus:
+		m.ClearStatus()
+		return nil
+	case msg.FieldBlockTime:
+		m.ClearBlockTime()
 		return nil
 	}
 	return fmt.Errorf("unknown Msg nullable field %s", name)
@@ -2399,6 +2744,21 @@ func (m *MsgMutation) ResetField(name string) error {
 		return nil
 	case msg.FieldTxHash:
 		m.ResetTxHash()
+		return nil
+	case msg.FieldBlockHash:
+		m.ResetBlockHash()
+		return nil
+	case msg.FieldBlockHeight:
+		m.ResetBlockHeight()
+		return nil
+	case msg.FieldReceiptHash:
+		m.ResetReceiptHash()
+		return nil
+	case msg.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case msg.FieldBlockTime:
+		m.ResetBlockTime()
 		return nil
 	case msg.FieldCreatedAt:
 		m.ResetCreatedAt()

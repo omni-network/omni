@@ -27,7 +27,7 @@ export function ThemeButton() {
 
   if (isHydrated) {
     return (
-      <label className="swap swap-rotate items-start display-flex">
+      <label className="swap swap-rotate items-center ">
         {/* this hidden checkbox controls the state */}
         <input
           type="checkbox"

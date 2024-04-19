@@ -36,6 +36,16 @@ const (
 	FieldStreamOffset = "stream_offset"
 	// FieldTxHash holds the string denoting the txhash field in the database.
 	FieldTxHash = "tx_hash"
+	// FieldBlockHash holds the string denoting the blockhash field in the database.
+	FieldBlockHash = "block_hash"
+	// FieldBlockHeight holds the string denoting the blockheight field in the database.
+	FieldBlockHeight = "block_height"
+	// FieldReceiptHash holds the string denoting the receipthash field in the database.
+	FieldReceiptHash = "receipt_hash"
+	// FieldStatus holds the string denoting the status field in the database.
+	FieldStatus = "status"
+	// FieldBlockTime holds the string denoting the blocktime field in the database.
+	FieldBlockTime = "block_time"
 	// FieldCreatedAt holds the string denoting the createdat field in the database.
 	FieldCreatedAt = "created_at"
 	// EdgeBlock holds the string denoting the block edge name in mutations.
@@ -71,6 +81,11 @@ var Columns = []string{
 	FieldDestChainID,
 	FieldStreamOffset,
 	FieldTxHash,
+	FieldBlockHash,
+	FieldBlockHeight,
+	FieldReceiptHash,
+	FieldStatus,
+	FieldBlockTime,
 	FieldCreatedAt,
 }
 
@@ -105,6 +120,12 @@ var (
 	DestAddressValidator func([]byte) error
 	// TxHashValidator is a validator for the "TxHash" field. It is called by the builders before save.
 	TxHashValidator func([]byte) error
+	// BlockHashValidator is a validator for the "BlockHash" field. It is called by the builders before save.
+	BlockHashValidator func([]byte) error
+	// ReceiptHashValidator is a validator for the "ReceiptHash" field. It is called by the builders before save.
+	ReceiptHashValidator func([]byte) error
+	// DefaultStatus holds the default value on creation for the "Status" field.
+	DefaultStatus string
 	// DefaultCreatedAt holds the default value on creation for the "CreatedAt" field.
 	DefaultCreatedAt time.Time
 )
@@ -145,6 +166,21 @@ func ByDestChainID(opts ...sql.OrderTermOption) OrderOption {
 // ByStreamOffset orders the results by the StreamOffset field.
 func ByStreamOffset(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStreamOffset, opts...).ToFunc()
+}
+
+// ByBlockHeight orders the results by the BlockHeight field.
+func ByBlockHeight(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBlockHeight, opts...).ToFunc()
+}
+
+// ByStatus orders the results by the Status field.
+func ByStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
+// ByBlockTime orders the results by the BlockTime field.
+func ByBlockTime(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBlockTime, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the CreatedAt field.

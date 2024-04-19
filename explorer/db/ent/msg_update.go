@@ -173,6 +173,85 @@ func (mu *MsgUpdate) SetTxHash(b []byte) *MsgUpdate {
 	return mu
 }
 
+// SetBlockHash sets the "BlockHash" field.
+func (mu *MsgUpdate) SetBlockHash(b []byte) *MsgUpdate {
+	mu.mutation.SetBlockHash(b)
+	return mu
+}
+
+// SetBlockHeight sets the "BlockHeight" field.
+func (mu *MsgUpdate) SetBlockHeight(u uint64) *MsgUpdate {
+	mu.mutation.ResetBlockHeight()
+	mu.mutation.SetBlockHeight(u)
+	return mu
+}
+
+// SetNillableBlockHeight sets the "BlockHeight" field if the given value is not nil.
+func (mu *MsgUpdate) SetNillableBlockHeight(u *uint64) *MsgUpdate {
+	if u != nil {
+		mu.SetBlockHeight(*u)
+	}
+	return mu
+}
+
+// AddBlockHeight adds u to the "BlockHeight" field.
+func (mu *MsgUpdate) AddBlockHeight(u int64) *MsgUpdate {
+	mu.mutation.AddBlockHeight(u)
+	return mu
+}
+
+// SetReceiptHash sets the "ReceiptHash" field.
+func (mu *MsgUpdate) SetReceiptHash(b []byte) *MsgUpdate {
+	mu.mutation.SetReceiptHash(b)
+	return mu
+}
+
+// ClearReceiptHash clears the value of the "ReceiptHash" field.
+func (mu *MsgUpdate) ClearReceiptHash() *MsgUpdate {
+	mu.mutation.ClearReceiptHash()
+	return mu
+}
+
+// SetStatus sets the "Status" field.
+func (mu *MsgUpdate) SetStatus(s string) *MsgUpdate {
+	mu.mutation.SetStatus(s)
+	return mu
+}
+
+// SetNillableStatus sets the "Status" field if the given value is not nil.
+func (mu *MsgUpdate) SetNillableStatus(s *string) *MsgUpdate {
+	if s != nil {
+		mu.SetStatus(*s)
+	}
+	return mu
+}
+
+// ClearStatus clears the value of the "Status" field.
+func (mu *MsgUpdate) ClearStatus() *MsgUpdate {
+	mu.mutation.ClearStatus()
+	return mu
+}
+
+// SetBlockTime sets the "BlockTime" field.
+func (mu *MsgUpdate) SetBlockTime(t time.Time) *MsgUpdate {
+	mu.mutation.SetBlockTime(t)
+	return mu
+}
+
+// SetNillableBlockTime sets the "BlockTime" field if the given value is not nil.
+func (mu *MsgUpdate) SetNillableBlockTime(t *time.Time) *MsgUpdate {
+	if t != nil {
+		mu.SetBlockTime(*t)
+	}
+	return mu
+}
+
+// ClearBlockTime clears the value of the "BlockTime" field.
+func (mu *MsgUpdate) ClearBlockTime() *MsgUpdate {
+	mu.mutation.ClearBlockTime()
+	return mu
+}
+
 // SetCreatedAt sets the "CreatedAt" field.
 func (mu *MsgUpdate) SetCreatedAt(t time.Time) *MsgUpdate {
 	mu.mutation.SetCreatedAt(t)
@@ -283,6 +362,16 @@ func (mu *MsgUpdate) check() error {
 			return &ValidationError{Name: "TxHash", err: fmt.Errorf(`ent: validator failed for field "Msg.TxHash": %w`, err)}
 		}
 	}
+	if v, ok := mu.mutation.BlockHash(); ok {
+		if err := msg.BlockHashValidator(v); err != nil {
+			return &ValidationError{Name: "BlockHash", err: fmt.Errorf(`ent: validator failed for field "Msg.BlockHash": %w`, err)}
+		}
+	}
+	if v, ok := mu.mutation.ReceiptHash(); ok {
+		if err := msg.ReceiptHashValidator(v); err != nil {
+			return &ValidationError{Name: "ReceiptHash", err: fmt.Errorf(`ent: validator failed for field "Msg.ReceiptHash": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -336,6 +425,33 @@ func (mu *MsgUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := mu.mutation.TxHash(); ok {
 		_spec.SetField(msg.FieldTxHash, field.TypeBytes, value)
+	}
+	if value, ok := mu.mutation.BlockHash(); ok {
+		_spec.SetField(msg.FieldBlockHash, field.TypeBytes, value)
+	}
+	if value, ok := mu.mutation.BlockHeight(); ok {
+		_spec.SetField(msg.FieldBlockHeight, field.TypeUint64, value)
+	}
+	if value, ok := mu.mutation.AddedBlockHeight(); ok {
+		_spec.AddField(msg.FieldBlockHeight, field.TypeUint64, value)
+	}
+	if value, ok := mu.mutation.ReceiptHash(); ok {
+		_spec.SetField(msg.FieldReceiptHash, field.TypeBytes, value)
+	}
+	if mu.mutation.ReceiptHashCleared() {
+		_spec.ClearField(msg.FieldReceiptHash, field.TypeBytes)
+	}
+	if value, ok := mu.mutation.Status(); ok {
+		_spec.SetField(msg.FieldStatus, field.TypeString, value)
+	}
+	if mu.mutation.StatusCleared() {
+		_spec.ClearField(msg.FieldStatus, field.TypeString)
+	}
+	if value, ok := mu.mutation.BlockTime(); ok {
+		_spec.SetField(msg.FieldBlockTime, field.TypeTime, value)
+	}
+	if mu.mutation.BlockTimeCleared() {
+		_spec.ClearField(msg.FieldBlockTime, field.TypeTime)
 	}
 	if value, ok := mu.mutation.CreatedAt(); ok {
 		_spec.SetField(msg.FieldCreatedAt, field.TypeTime, value)
@@ -576,6 +692,85 @@ func (muo *MsgUpdateOne) SetTxHash(b []byte) *MsgUpdateOne {
 	return muo
 }
 
+// SetBlockHash sets the "BlockHash" field.
+func (muo *MsgUpdateOne) SetBlockHash(b []byte) *MsgUpdateOne {
+	muo.mutation.SetBlockHash(b)
+	return muo
+}
+
+// SetBlockHeight sets the "BlockHeight" field.
+func (muo *MsgUpdateOne) SetBlockHeight(u uint64) *MsgUpdateOne {
+	muo.mutation.ResetBlockHeight()
+	muo.mutation.SetBlockHeight(u)
+	return muo
+}
+
+// SetNillableBlockHeight sets the "BlockHeight" field if the given value is not nil.
+func (muo *MsgUpdateOne) SetNillableBlockHeight(u *uint64) *MsgUpdateOne {
+	if u != nil {
+		muo.SetBlockHeight(*u)
+	}
+	return muo
+}
+
+// AddBlockHeight adds u to the "BlockHeight" field.
+func (muo *MsgUpdateOne) AddBlockHeight(u int64) *MsgUpdateOne {
+	muo.mutation.AddBlockHeight(u)
+	return muo
+}
+
+// SetReceiptHash sets the "ReceiptHash" field.
+func (muo *MsgUpdateOne) SetReceiptHash(b []byte) *MsgUpdateOne {
+	muo.mutation.SetReceiptHash(b)
+	return muo
+}
+
+// ClearReceiptHash clears the value of the "ReceiptHash" field.
+func (muo *MsgUpdateOne) ClearReceiptHash() *MsgUpdateOne {
+	muo.mutation.ClearReceiptHash()
+	return muo
+}
+
+// SetStatus sets the "Status" field.
+func (muo *MsgUpdateOne) SetStatus(s string) *MsgUpdateOne {
+	muo.mutation.SetStatus(s)
+	return muo
+}
+
+// SetNillableStatus sets the "Status" field if the given value is not nil.
+func (muo *MsgUpdateOne) SetNillableStatus(s *string) *MsgUpdateOne {
+	if s != nil {
+		muo.SetStatus(*s)
+	}
+	return muo
+}
+
+// ClearStatus clears the value of the "Status" field.
+func (muo *MsgUpdateOne) ClearStatus() *MsgUpdateOne {
+	muo.mutation.ClearStatus()
+	return muo
+}
+
+// SetBlockTime sets the "BlockTime" field.
+func (muo *MsgUpdateOne) SetBlockTime(t time.Time) *MsgUpdateOne {
+	muo.mutation.SetBlockTime(t)
+	return muo
+}
+
+// SetNillableBlockTime sets the "BlockTime" field if the given value is not nil.
+func (muo *MsgUpdateOne) SetNillableBlockTime(t *time.Time) *MsgUpdateOne {
+	if t != nil {
+		muo.SetBlockTime(*t)
+	}
+	return muo
+}
+
+// ClearBlockTime clears the value of the "BlockTime" field.
+func (muo *MsgUpdateOne) ClearBlockTime() *MsgUpdateOne {
+	muo.mutation.ClearBlockTime()
+	return muo
+}
+
 // SetCreatedAt sets the "CreatedAt" field.
 func (muo *MsgUpdateOne) SetCreatedAt(t time.Time) *MsgUpdateOne {
 	muo.mutation.SetCreatedAt(t)
@@ -699,6 +894,16 @@ func (muo *MsgUpdateOne) check() error {
 			return &ValidationError{Name: "TxHash", err: fmt.Errorf(`ent: validator failed for field "Msg.TxHash": %w`, err)}
 		}
 	}
+	if v, ok := muo.mutation.BlockHash(); ok {
+		if err := msg.BlockHashValidator(v); err != nil {
+			return &ValidationError{Name: "BlockHash", err: fmt.Errorf(`ent: validator failed for field "Msg.BlockHash": %w`, err)}
+		}
+	}
+	if v, ok := muo.mutation.ReceiptHash(); ok {
+		if err := msg.ReceiptHashValidator(v); err != nil {
+			return &ValidationError{Name: "ReceiptHash", err: fmt.Errorf(`ent: validator failed for field "Msg.ReceiptHash": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -769,6 +974,33 @@ func (muo *MsgUpdateOne) sqlSave(ctx context.Context) (_node *Msg, err error) {
 	}
 	if value, ok := muo.mutation.TxHash(); ok {
 		_spec.SetField(msg.FieldTxHash, field.TypeBytes, value)
+	}
+	if value, ok := muo.mutation.BlockHash(); ok {
+		_spec.SetField(msg.FieldBlockHash, field.TypeBytes, value)
+	}
+	if value, ok := muo.mutation.BlockHeight(); ok {
+		_spec.SetField(msg.FieldBlockHeight, field.TypeUint64, value)
+	}
+	if value, ok := muo.mutation.AddedBlockHeight(); ok {
+		_spec.AddField(msg.FieldBlockHeight, field.TypeUint64, value)
+	}
+	if value, ok := muo.mutation.ReceiptHash(); ok {
+		_spec.SetField(msg.FieldReceiptHash, field.TypeBytes, value)
+	}
+	if muo.mutation.ReceiptHashCleared() {
+		_spec.ClearField(msg.FieldReceiptHash, field.TypeBytes)
+	}
+	if value, ok := muo.mutation.Status(); ok {
+		_spec.SetField(msg.FieldStatus, field.TypeString, value)
+	}
+	if muo.mutation.StatusCleared() {
+		_spec.ClearField(msg.FieldStatus, field.TypeString)
+	}
+	if value, ok := muo.mutation.BlockTime(); ok {
+		_spec.SetField(msg.FieldBlockTime, field.TypeTime, value)
+	}
+	if muo.mutation.BlockTimeCleared() {
+		_spec.ClearField(msg.FieldBlockTime, field.TypeTime)
 	}
 	if value, ok := muo.mutation.CreatedAt(); ok {
 		_spec.SetField(msg.FieldCreatedAt, field.TypeTime, value)

@@ -42,7 +42,7 @@ func waitingTime(nodes int, height int64) time.Duration {
 
 func WaitAllSubmissions(ctx context.Context, portals map[uint64]netman.Portal, minimum uint64) error {
 	log.Info(ctx, "Waiting for submissions on all destination chains")
-	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
 
 	for _, dest := range portals {
