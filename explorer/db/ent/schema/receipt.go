@@ -91,8 +91,20 @@ func (Receipt) Hooks() []ent.Hook {
 						return nil, err
 					}
 
+					status := "SUCCESS"
+					success, ok := r.Success()
+					if !ok {
+						return nil, errors.New("success missing")
+					}
+
+					if !success {
+						status = "FAILURE"
+					}
+
 					for _, match := range matches {
 						r.AddMsgIDs(match.ID)
+						// Setting the status of the message
+						r.Client().Msg.UpdateOne(match).SetStatus(status).SaveX(ctx)
 					}
 
 					return next.Mutate(ctx, r)

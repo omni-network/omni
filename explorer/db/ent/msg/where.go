@@ -106,6 +106,26 @@ func TxHash(v []byte) predicate.Msg {
 	return predicate.Msg(sql.FieldEQ(FieldTxHash, v))
 }
 
+// BlockHash applies equality check predicate on the "BlockHash" field. It's identical to BlockHashEQ.
+func BlockHash(v []byte) predicate.Msg {
+	return predicate.Msg(sql.FieldEQ(FieldBlockHash, v))
+}
+
+// BlockHeight applies equality check predicate on the "BlockHeight" field. It's identical to BlockHeightEQ.
+func BlockHeight(v uint64) predicate.Msg {
+	return predicate.Msg(sql.FieldEQ(FieldBlockHeight, v))
+}
+
+// ReceiptHash applies equality check predicate on the "ReceiptHash" field. It's identical to ReceiptHashEQ.
+func ReceiptHash(v []byte) predicate.Msg {
+	return predicate.Msg(sql.FieldEQ(FieldReceiptHash, v))
+}
+
+// Status applies equality check predicate on the "Status" field. It's identical to StatusEQ.
+func Status(v string) predicate.Msg {
+	return predicate.Msg(sql.FieldEQ(FieldStatus, v))
+}
+
 // CreatedAt applies equality check predicate on the "CreatedAt" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.Msg {
 	return predicate.Msg(sql.FieldEQ(FieldCreatedAt, v))
@@ -499,6 +519,211 @@ func TxHashLT(v []byte) predicate.Msg {
 // TxHashLTE applies the LTE predicate on the "TxHash" field.
 func TxHashLTE(v []byte) predicate.Msg {
 	return predicate.Msg(sql.FieldLTE(FieldTxHash, v))
+}
+
+// BlockHashEQ applies the EQ predicate on the "BlockHash" field.
+func BlockHashEQ(v []byte) predicate.Msg {
+	return predicate.Msg(sql.FieldEQ(FieldBlockHash, v))
+}
+
+// BlockHashNEQ applies the NEQ predicate on the "BlockHash" field.
+func BlockHashNEQ(v []byte) predicate.Msg {
+	return predicate.Msg(sql.FieldNEQ(FieldBlockHash, v))
+}
+
+// BlockHashIn applies the In predicate on the "BlockHash" field.
+func BlockHashIn(vs ...[]byte) predicate.Msg {
+	return predicate.Msg(sql.FieldIn(FieldBlockHash, vs...))
+}
+
+// BlockHashNotIn applies the NotIn predicate on the "BlockHash" field.
+func BlockHashNotIn(vs ...[]byte) predicate.Msg {
+	return predicate.Msg(sql.FieldNotIn(FieldBlockHash, vs...))
+}
+
+// BlockHashGT applies the GT predicate on the "BlockHash" field.
+func BlockHashGT(v []byte) predicate.Msg {
+	return predicate.Msg(sql.FieldGT(FieldBlockHash, v))
+}
+
+// BlockHashGTE applies the GTE predicate on the "BlockHash" field.
+func BlockHashGTE(v []byte) predicate.Msg {
+	return predicate.Msg(sql.FieldGTE(FieldBlockHash, v))
+}
+
+// BlockHashLT applies the LT predicate on the "BlockHash" field.
+func BlockHashLT(v []byte) predicate.Msg {
+	return predicate.Msg(sql.FieldLT(FieldBlockHash, v))
+}
+
+// BlockHashLTE applies the LTE predicate on the "BlockHash" field.
+func BlockHashLTE(v []byte) predicate.Msg {
+	return predicate.Msg(sql.FieldLTE(FieldBlockHash, v))
+}
+
+// BlockHeightEQ applies the EQ predicate on the "BlockHeight" field.
+func BlockHeightEQ(v uint64) predicate.Msg {
+	return predicate.Msg(sql.FieldEQ(FieldBlockHeight, v))
+}
+
+// BlockHeightNEQ applies the NEQ predicate on the "BlockHeight" field.
+func BlockHeightNEQ(v uint64) predicate.Msg {
+	return predicate.Msg(sql.FieldNEQ(FieldBlockHeight, v))
+}
+
+// BlockHeightIn applies the In predicate on the "BlockHeight" field.
+func BlockHeightIn(vs ...uint64) predicate.Msg {
+	return predicate.Msg(sql.FieldIn(FieldBlockHeight, vs...))
+}
+
+// BlockHeightNotIn applies the NotIn predicate on the "BlockHeight" field.
+func BlockHeightNotIn(vs ...uint64) predicate.Msg {
+	return predicate.Msg(sql.FieldNotIn(FieldBlockHeight, vs...))
+}
+
+// BlockHeightGT applies the GT predicate on the "BlockHeight" field.
+func BlockHeightGT(v uint64) predicate.Msg {
+	return predicate.Msg(sql.FieldGT(FieldBlockHeight, v))
+}
+
+// BlockHeightGTE applies the GTE predicate on the "BlockHeight" field.
+func BlockHeightGTE(v uint64) predicate.Msg {
+	return predicate.Msg(sql.FieldGTE(FieldBlockHeight, v))
+}
+
+// BlockHeightLT applies the LT predicate on the "BlockHeight" field.
+func BlockHeightLT(v uint64) predicate.Msg {
+	return predicate.Msg(sql.FieldLT(FieldBlockHeight, v))
+}
+
+// BlockHeightLTE applies the LTE predicate on the "BlockHeight" field.
+func BlockHeightLTE(v uint64) predicate.Msg {
+	return predicate.Msg(sql.FieldLTE(FieldBlockHeight, v))
+}
+
+// ReceiptHashEQ applies the EQ predicate on the "ReceiptHash" field.
+func ReceiptHashEQ(v []byte) predicate.Msg {
+	return predicate.Msg(sql.FieldEQ(FieldReceiptHash, v))
+}
+
+// ReceiptHashNEQ applies the NEQ predicate on the "ReceiptHash" field.
+func ReceiptHashNEQ(v []byte) predicate.Msg {
+	return predicate.Msg(sql.FieldNEQ(FieldReceiptHash, v))
+}
+
+// ReceiptHashIn applies the In predicate on the "ReceiptHash" field.
+func ReceiptHashIn(vs ...[]byte) predicate.Msg {
+	return predicate.Msg(sql.FieldIn(FieldReceiptHash, vs...))
+}
+
+// ReceiptHashNotIn applies the NotIn predicate on the "ReceiptHash" field.
+func ReceiptHashNotIn(vs ...[]byte) predicate.Msg {
+	return predicate.Msg(sql.FieldNotIn(FieldReceiptHash, vs...))
+}
+
+// ReceiptHashGT applies the GT predicate on the "ReceiptHash" field.
+func ReceiptHashGT(v []byte) predicate.Msg {
+	return predicate.Msg(sql.FieldGT(FieldReceiptHash, v))
+}
+
+// ReceiptHashGTE applies the GTE predicate on the "ReceiptHash" field.
+func ReceiptHashGTE(v []byte) predicate.Msg {
+	return predicate.Msg(sql.FieldGTE(FieldReceiptHash, v))
+}
+
+// ReceiptHashLT applies the LT predicate on the "ReceiptHash" field.
+func ReceiptHashLT(v []byte) predicate.Msg {
+	return predicate.Msg(sql.FieldLT(FieldReceiptHash, v))
+}
+
+// ReceiptHashLTE applies the LTE predicate on the "ReceiptHash" field.
+func ReceiptHashLTE(v []byte) predicate.Msg {
+	return predicate.Msg(sql.FieldLTE(FieldReceiptHash, v))
+}
+
+// ReceiptHashIsNil applies the IsNil predicate on the "ReceiptHash" field.
+func ReceiptHashIsNil() predicate.Msg {
+	return predicate.Msg(sql.FieldIsNull(FieldReceiptHash))
+}
+
+// ReceiptHashNotNil applies the NotNil predicate on the "ReceiptHash" field.
+func ReceiptHashNotNil() predicate.Msg {
+	return predicate.Msg(sql.FieldNotNull(FieldReceiptHash))
+}
+
+// StatusEQ applies the EQ predicate on the "Status" field.
+func StatusEQ(v string) predicate.Msg {
+	return predicate.Msg(sql.FieldEQ(FieldStatus, v))
+}
+
+// StatusNEQ applies the NEQ predicate on the "Status" field.
+func StatusNEQ(v string) predicate.Msg {
+	return predicate.Msg(sql.FieldNEQ(FieldStatus, v))
+}
+
+// StatusIn applies the In predicate on the "Status" field.
+func StatusIn(vs ...string) predicate.Msg {
+	return predicate.Msg(sql.FieldIn(FieldStatus, vs...))
+}
+
+// StatusNotIn applies the NotIn predicate on the "Status" field.
+func StatusNotIn(vs ...string) predicate.Msg {
+	return predicate.Msg(sql.FieldNotIn(FieldStatus, vs...))
+}
+
+// StatusGT applies the GT predicate on the "Status" field.
+func StatusGT(v string) predicate.Msg {
+	return predicate.Msg(sql.FieldGT(FieldStatus, v))
+}
+
+// StatusGTE applies the GTE predicate on the "Status" field.
+func StatusGTE(v string) predicate.Msg {
+	return predicate.Msg(sql.FieldGTE(FieldStatus, v))
+}
+
+// StatusLT applies the LT predicate on the "Status" field.
+func StatusLT(v string) predicate.Msg {
+	return predicate.Msg(sql.FieldLT(FieldStatus, v))
+}
+
+// StatusLTE applies the LTE predicate on the "Status" field.
+func StatusLTE(v string) predicate.Msg {
+	return predicate.Msg(sql.FieldLTE(FieldStatus, v))
+}
+
+// StatusContains applies the Contains predicate on the "Status" field.
+func StatusContains(v string) predicate.Msg {
+	return predicate.Msg(sql.FieldContains(FieldStatus, v))
+}
+
+// StatusHasPrefix applies the HasPrefix predicate on the "Status" field.
+func StatusHasPrefix(v string) predicate.Msg {
+	return predicate.Msg(sql.FieldHasPrefix(FieldStatus, v))
+}
+
+// StatusHasSuffix applies the HasSuffix predicate on the "Status" field.
+func StatusHasSuffix(v string) predicate.Msg {
+	return predicate.Msg(sql.FieldHasSuffix(FieldStatus, v))
+}
+
+// StatusIsNil applies the IsNil predicate on the "Status" field.
+func StatusIsNil() predicate.Msg {
+	return predicate.Msg(sql.FieldIsNull(FieldStatus))
+}
+
+// StatusNotNil applies the NotNil predicate on the "Status" field.
+func StatusNotNil() predicate.Msg {
+	return predicate.Msg(sql.FieldNotNull(FieldStatus))
+}
+
+// StatusEqualFold applies the EqualFold predicate on the "Status" field.
+func StatusEqualFold(v string) predicate.Msg {
+	return predicate.Msg(sql.FieldEqualFold(FieldStatus, v))
+}
+
+// StatusContainsFold applies the ContainsFold predicate on the "Status" field.
+func StatusContainsFold(v string) predicate.Msg {
+	return predicate.Msg(sql.FieldContainsFold(FieldStatus, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "CreatedAt" field.

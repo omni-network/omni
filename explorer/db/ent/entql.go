@@ -75,6 +75,10 @@ var schemaGraph = func() *sqlgraph.Schema {
 			msg.FieldDestChainID:     {Type: field.TypeUint64, Column: msg.FieldDestChainID},
 			msg.FieldStreamOffset:    {Type: field.TypeUint64, Column: msg.FieldStreamOffset},
 			msg.FieldTxHash:          {Type: field.TypeBytes, Column: msg.FieldTxHash},
+			msg.FieldBlockHash:       {Type: field.TypeBytes, Column: msg.FieldBlockHash},
+			msg.FieldBlockHeight:     {Type: field.TypeUint64, Column: msg.FieldBlockHeight},
+			msg.FieldReceiptHash:     {Type: field.TypeBytes, Column: msg.FieldReceiptHash},
+			msg.FieldStatus:          {Type: field.TypeString, Column: msg.FieldStatus},
 			msg.FieldCreatedAt:       {Type: field.TypeTime, Column: msg.FieldCreatedAt},
 		},
 	}
@@ -441,6 +445,26 @@ func (f *MsgFilter) WhereStreamOffset(p entql.Uint64P) {
 // WhereTxHash applies the entql []byte predicate on the TxHash field.
 func (f *MsgFilter) WhereTxHash(p entql.BytesP) {
 	f.Where(p.Field(msg.FieldTxHash))
+}
+
+// WhereBlockHash applies the entql []byte predicate on the BlockHash field.
+func (f *MsgFilter) WhereBlockHash(p entql.BytesP) {
+	f.Where(p.Field(msg.FieldBlockHash))
+}
+
+// WhereBlockHeight applies the entql uint64 predicate on the BlockHeight field.
+func (f *MsgFilter) WhereBlockHeight(p entql.Uint64P) {
+	f.Where(p.Field(msg.FieldBlockHeight))
+}
+
+// WhereReceiptHash applies the entql []byte predicate on the ReceiptHash field.
+func (f *MsgFilter) WhereReceiptHash(p entql.BytesP) {
+	f.Where(p.Field(msg.FieldReceiptHash))
+}
+
+// WhereStatus applies the entql string predicate on the Status field.
+func (f *MsgFilter) WhereStatus(p entql.StringP) {
+	f.Where(p.Field(msg.FieldStatus))
 }
 
 // WhereCreatedAt applies the entql time.Time predicate on the CreatedAt field.
