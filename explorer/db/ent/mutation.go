@@ -1966,9 +1966,22 @@ func (m *MsgMutation) OldBlockHash(ctx context.Context) (v []byte, err error) {
 	return oldValue.BlockHash, nil
 }
 
+// ClearBlockHash clears the value of the "BlockHash" field.
+func (m *MsgMutation) ClearBlockHash() {
+	m._BlockHash = nil
+	m.clearedFields[msg.FieldBlockHash] = struct{}{}
+}
+
+// BlockHashCleared returns if the "BlockHash" field was cleared in this mutation.
+func (m *MsgMutation) BlockHashCleared() bool {
+	_, ok := m.clearedFields[msg.FieldBlockHash]
+	return ok
+}
+
 // ResetBlockHash resets all changes to the "BlockHash" field.
 func (m *MsgMutation) ResetBlockHash() {
 	m._BlockHash = nil
+	delete(m.clearedFields, msg.FieldBlockHash)
 }
 
 // SetBlockHeight sets the "BlockHeight" field.
@@ -2672,6 +2685,9 @@ func (m *MsgMutation) ClearedFields() []string {
 	if m.FieldCleared(msg.FieldBlockID) {
 		fields = append(fields, msg.FieldBlockID)
 	}
+	if m.FieldCleared(msg.FieldBlockHash) {
+		fields = append(fields, msg.FieldBlockHash)
+	}
 	if m.FieldCleared(msg.FieldReceiptHash) {
 		fields = append(fields, msg.FieldReceiptHash)
 	}
@@ -2697,6 +2713,9 @@ func (m *MsgMutation) ClearField(name string) error {
 	switch name {
 	case msg.FieldBlockID:
 		m.ClearBlockID()
+		return nil
+	case msg.FieldBlockHash:
+		m.ClearBlockHash()
 		return nil
 	case msg.FieldReceiptHash:
 		m.ClearReceiptHash()
