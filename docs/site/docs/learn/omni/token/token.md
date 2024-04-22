@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Token Supply & Distribution
 
-**\$OMNI** is an ERC-20 token launched on Ethereum L1 with a maximum supply of **100,000,000**.
+**\$OMNI** is an ERC-20 token launched on Ethereum L1 (deployed to [`0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4`](https://etherscan.io/token/0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4)) with a maximum supply of **100,000,000**. This section covers the supply & distribution of **\$OMNI**'s tokenomics.
 
 At genesis, **\$OMNI** had a circulating supply of 10,391,492 (10.39% of total supply). **\$OMNI** is distributed across the following categories:
 
