@@ -40,18 +40,13 @@ func AllRoles() []Role {
 }
 
 func (r Role) Verify() error {
-	if r != RoleRelayer &&
-		r != RoleMonitor &&
-		r != RoleCreate3Deployer &&
-		r != RoleDeployer &&
-		r != RoleProxyAdminOwner &&
-		r != RoleFbDev &&
-		r != RolePortalAdmin &&
-		r != RoleAVSAdmin {
-		return errors.New("invalid role", "role", r)
+	for _, role := range AllRoles() {
+		if r == role {
+			return nil
+		}
 	}
 
-	return nil
+	return errors.New("invalid role", "role", r)
 }
 
 type Type string
@@ -154,6 +149,7 @@ func AccountForRole(network netconf.ID, role Role) (Account, bool) {
 	return Account{}, false
 }
 
+// MustAddresses returns the addresses for the network and roles.
 func MustAddresses(network netconf.ID, roles ...Role) []common.Address {
 	accounts := statics[network]
 	var addresses []common.Address
@@ -166,4 +162,10 @@ func MustAddresses(network netconf.ID, roles ...Role) []common.Address {
 	}
 
 	return addresses
+}
+
+// AllAccounts returns all accounts for the network.
+func AllAccounts(network netconf.ID) ([]Account, bool) {
+	acc, ok := statics[network]
+	return acc, ok
 }

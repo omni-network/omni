@@ -76,6 +76,8 @@ func CreateXMsg(t *testing.T, ctx context.Context, client *ent.Client, b ent.Blo
 		SetDestGasLimit(100).
 		SetSourceChainID(b.SourceChainID).
 		SetTxHash(txHash).
+		SetBlockHash(b.BlockHash).
+		SetBlockHeight(b.BlockHeight).
 		SaveX(ctx)
 
 	client.Block.UpdateOne(&b).AddMsgs(msg).SaveX(ctx)
@@ -86,7 +88,7 @@ func CreateXMsg(t *testing.T, ctx context.Context, client *ent.Client, b ent.Blo
 func CreateReceipt(t *testing.T, ctx context.Context, client *ent.Client, b ent.Block, destChainID uint64, streamOffset uint64) *ent.Receipt {
 	t.Helper()
 	relayerAddress := [20]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 22}
-	txHash := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32}
+	txHash := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 33}
 
 	receipt := client.Receipt.Create().
 		SetGasUsed(100).

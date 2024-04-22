@@ -39,6 +39,18 @@ func (Msg) Fields() []ent.Field {
 		field.Uint64("StreamOffset"),
 		field.Bytes("TxHash").
 			MaxLen(32),
+		field.Bytes("BlockHash").
+			MaxLen(32).
+			Optional(),
+		field.Uint64("BlockHeight"),
+		field.Bytes("ReceiptHash").
+			MaxLen(32).
+			Optional(),
+		field.String("Status").
+			Optional().
+			Default("PENDING"),
+		field.Time("BlockTime").
+			Optional(),
 		field.Time("CreatedAt").
 			Default(time.Now()),
 	}
@@ -84,14 +96,26 @@ func (Msg) Hooks() []ent.Hook {
 					if !ok {
 						return nil, errors.New("stream offset missing")
 					}
-					receipts, err := m.Client().Receipt.Query().Where(
-						receipt.SourceChainID(sourceChainID),
-						receipt.DestChainID(destChainID),
-						receipt.StreamOffset(streamOffset),
-					).All(ctx)
+					receipts, err := m.Client().Receipt.Query().
+						Where(
+							receipt.SourceChainID(sourceChainID),
+							receipt.DestChainID(destChainID),
+							receipt.StreamOffset(streamOffset),
+						).
+						Order(gen.Desc(receipt.FieldCreatedAt)).
+						All(ctx)
 					if err != nil {
 						return nil, err
 					}
+
+					if len(receipts) == 0 {
+						return next.Mutate(ctx, m)
+					}
+					status := "SUCCESS"
+					if !receipts[0].Success {
+						status = "FAILED"
+					}
+					m.SetStatus(status)
 
 					for _, r := range receipts {
 						m.AddReceiptIDs(r.ID)

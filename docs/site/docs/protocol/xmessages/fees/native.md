@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Native Token Roles & Utility
 
-**\$OMNI** is the native token powering the Omni protocol. It serves the following functions within the network:
+**\$OMNI** is the native token powering the Omni protocol. This section covers the roles and utility aspects of the **\$OMNI** tokenomics. The token serves the following functions within the network:
 
 ## Cross-Rollup Gas Fees
 
