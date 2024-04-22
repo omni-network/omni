@@ -2,8 +2,17 @@ import { ThemeButton } from './themebutton'
 import logo from '../../../public/Horizontal_Word Black_Symbol Black.png'
 import Logo from './logo'
 import { Link } from '@remix-run/react'
+import ExplorerDropdown from './explorerDropdown'
 
 export default function Navbar() {
+  const evmExplorerLinks = [
+    {
+      value: 'blockScout',
+      display: 'on BlockScout',
+      icon: 'icon-arrow',
+    },
+  ]
+
   return (
     <header className="static border-none py-3 px-8">
       <div className="w-full flex items-center gap-8">
@@ -19,7 +28,7 @@ export default function Navbar() {
             Share your feedback
           </span>
         </Link>
-        <span className="m-auto text-default text-b font-normal">EVM Explorer</span>
+        <ExplorerDropdown />
         <div className="flex">
           <ThemeButton />
         </div>

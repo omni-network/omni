@@ -21,6 +21,7 @@ const documents = {
     "\n  query XMsgRange($from: BigInt!, $to: BigInt!) {\n    xmsgrange(from: $from, to: $to) {\n      StreamOffset\n      SourceMessageSender\n      DestAddress\n      DestGasLimit\n      SourceChainID\n      DestChainID\n      TxHash\n      BlockHeight\n      BlockHash\n    }\n  }\n": types.XMsgRangeDocument,
     "\n  query XMsgCount {\n    xmsgcount\n  }\n": types.XMsgCountDocument,
     "\n  query XReceipt($sourceChainID: BigInt!, $destChainID: BigInt!, $streamOffset: BigInt!) {\n    xreceipt(\n      sourceChainID: $sourceChainID\n      destChainID: $destChainID\n      streamOffset: $streamOffset\n    ) {\n      GasUsed\n      Success\n      RelayerAddress\n      SourceChainID\n      DestChainID\n      StreamOffset\n      TxHash\n      Timestamp\n      Block {\n        SourceChainID\n        BlockHeight\n        BlockHash\n        Timestamp\n      }\n      Messages {\n        StreamOffset\n        SourceMessageSender\n        DestAddress\n        DestGasLimit\n        SourceChainID\n        DestChainID\n        TxHash\n      }\n    }\n  }\n": types.XReceiptDocument,
+    "\n  query Search($query: String!) {\n    search(query: $query) {\n      Type\n      BlockHeight\n      TxHash\n      SourceChainID\n    }\n  }\n": types.SearchDocument,
 };
 
 /**
@@ -69,6 +70,10 @@ export function graphql(source: "\n  query XMsgCount {\n    xmsgcount\n  }\n"): 
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query XReceipt($sourceChainID: BigInt!, $destChainID: BigInt!, $streamOffset: BigInt!) {\n    xreceipt(\n      sourceChainID: $sourceChainID\n      destChainID: $destChainID\n      streamOffset: $streamOffset\n    ) {\n      GasUsed\n      Success\n      RelayerAddress\n      SourceChainID\n      DestChainID\n      StreamOffset\n      TxHash\n      Timestamp\n      Block {\n        SourceChainID\n        BlockHeight\n        BlockHash\n        Timestamp\n      }\n      Messages {\n        StreamOffset\n        SourceMessageSender\n        DestAddress\n        DestGasLimit\n        SourceChainID\n        DestChainID\n        TxHash\n      }\n    }\n  }\n"): (typeof documents)["\n  query XReceipt($sourceChainID: BigInt!, $destChainID: BigInt!, $streamOffset: BigInt!) {\n    xreceipt(\n      sourceChainID: $sourceChainID\n      destChainID: $destChainID\n      streamOffset: $streamOffset\n    ) {\n      GasUsed\n      Success\n      RelayerAddress\n      SourceChainID\n      DestChainID\n      StreamOffset\n      TxHash\n      Timestamp\n      Block {\n        SourceChainID\n        BlockHeight\n        BlockHash\n        Timestamp\n      }\n      Messages {\n        StreamOffset\n        SourceMessageSender\n        DestAddress\n        DestGasLimit\n        SourceChainID\n        DestChainID\n        TxHash\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query Search($query: String!) {\n    search(query: $query) {\n      Type\n      BlockHeight\n      TxHash\n      SourceChainID\n    }\n  }\n"): (typeof documents)["\n  query Search($query: String!) {\n    search(query: $query) {\n      Type\n      BlockHeight\n      TxHash\n      SourceChainID\n    }\n  }\n"];
 
 export function graphql(source: string) {
   return (documents as any)[source] ?? {};

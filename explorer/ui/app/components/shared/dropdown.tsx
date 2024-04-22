@@ -4,11 +4,13 @@ interface Props {
   onChange?: Function
   position?: 'left' | 'right' | 'center'
   label?: string
+  keepShowingLabel?: boolean
   defaultValue?: string
 }
 
 const Dropdown: React.FC<Props> = ({
   options,
+  keepShowingLabel = false,
   onChange = () => {},
   position = 'center',
   label = '',
@@ -39,9 +41,10 @@ const Dropdown: React.FC<Props> = ({
         onClick={e => {
           setIsOpen(!isOpen)
         }}
-        className={`min-w-[126px] text-left pl-5 h-[58px] text-cb-md text-subtlest appearance-none rounded-[1000px] bg-[#fcfcfb] bg-opacity-[0.05] border-[1px] border-border-subtle overflow-hidden ${position === 'left' && leftStyle} ${position === 'right' && rightStyle} ${isOpen && 'bg-overlay bg-opacity-100 !border-border-default'} `}
+        className={`min-w-[126px] text-left px-5 pr-10 h-[58px] text-cb-md text-subtlest appearance-none rounded-[1000px] bg-[#fcfcfb] bg-opacity-[0.05] border-[1px] border-border-subtle overflow-hidden ${position === 'left' && leftStyle} ${position === 'right' && rightStyle} ${isOpen && 'bg-overlay bg-opacity-100 !border-border-default'} `}
       >
-        <span className={`${isOpen && 'text-default'}`}>Filter by</span>
+        <span className={`absolute z-10 pointer-events-none text-sm text-[12px] font-normal text-subtle left-5 top-1.5 false false`}>Filter by</span> <br/>
+        <span className='text-nowrap'>{options.find(option => option.value === value).display}</span>
       </button>
 
       {/* chevron */}

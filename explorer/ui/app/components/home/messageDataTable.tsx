@@ -16,6 +16,7 @@ import ChainDropdown from './chainDropdown'
 import FilterOptions from '../shared/filterOptions'
 import { getAddressUrl, getBaseUrl, getBlockUrl, getTxUrl } from '~/lib/sourceChains'
 import debounce from 'lodash.debounce'
+import { Tooltip } from 'react-tooltip'
 
 export default function XMsgDataTable() {
   const data = useLoaderData<typeof loader>()
@@ -115,7 +116,12 @@ export default function XMsgDataTable() {
         ...columnConfig,
         accessorKey: 'StreamOffset',
         header: () => <span>Nounce</span>,
-        cell: (value: any) => <span className=" font-bold text-b-sm">{Number(value.getValue())}</span>,
+        cell: (value: any) => (
+          <>
+            <Tooltip className='bg-black' delayHide={201000} id="my-tooltip"> This is the content of the tooltip </Tooltip>
+            <span data-tooltip-id="my-tooltip" className=" font-bold text-b-sm">{Number(value.getValue())}</span>
+          </>
+        ),
       },
       {
         ...columnConfig,
@@ -222,8 +228,14 @@ export default function XMsgDataTable() {
   return (
     <div className="flex-none">
       <div className="flex flex-col">
-        <h5 className="text-default mb-4">XMsgs</h5>
-        {/* <div className={'flex mb-4 gap-2 flex-col md:flex-row'}>
+        <h5 className="text-default mb-4">
+          XMsgs{' '}
+          <Link to="/">
+            <span className="icon-tooltip-info"></span>
+          </Link>
+        </h5>
+
+        <div className={'flex mb-4 gap-2 flex-col md:flex-row'}>
           <div className="flex w-full">
             <Dropdown
               position="left"
@@ -234,35 +246,40 @@ export default function XMsgDataTable() {
                   searchFieldRef.current.value = ''
                 }
                 setSearchPlaceholder(
-                  `Search by ${(filterOptions.find(option => option.value === value)?.display || filterOptions[0].display).toLowerCase()}`,
+                  `Paste or start typing`,
+                  // ${(filterOptions.find(option => option.value === value)?.display || filterOptions[0].display).toLowerCase()} // keeping this here incase we put it back
                 )
               }}
               defaultValue={filterOptions[0].value}
             />
-            <SearchBar ref={searchFieldRef} onInput={searchBarInput} placeholder={searchPlaceholder} />
+            <SearchBar
+              ref={searchFieldRef}
+              onInput={searchBarInput}
+              placeholder={searchPlaceholder}
+            />
           </div>
           <ChainDropdown placeholder="Select source" label="From" options={sourceChainList} />
           <ChainDropdown placeholder="Select destination" label="To" options={sourceChainList} />
-        </div> */}
+        </div>
       </div>
       <div>
         <SimpleTable
-          // headChildren={
-          //   <div className={`flex justify-between `}>
-          //     <div className="table-highlight  w-[21.856%] min-w-[221px]"></div>
-          //     <div className={`px-6 py-3`}>
-          //       <FilterOptions
-          //         onSelection={status => {
-          //           setFilterParams(prev => ({
-          //             ...prev,
-          //             status: status === 'all' ? null : status,
-          //           }))
-          //         }}
-          //         options={['All', 'Success', 'Pending', 'Failed']}
-          //       />
-          //     </div>
-          //   </div>
-          // }
+          headChildren={
+            <div className={`flex justify-between `}>
+              <div className="table-highlight  w-[21.856%] min-w-[221px]"></div>
+              <div className={`px-6 py-3`}>
+                <FilterOptions
+                  onSelection={status => {
+                    setFilterParams(prev => ({
+                      ...prev,
+                      status: status === 'all' ? null : status,
+                    }))
+                  }}
+                  options={['All', 'Success', 'Pending', 'Failed']}
+                />
+              </div>
+            </div>
+          }
           columns={columns}
           data={rows}
         />

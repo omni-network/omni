@@ -31,6 +31,7 @@
     "react-daisyui": "5.0.0",
     "react-dom": "^18.2.0",
     "react-social-icons": "6.10.0",
+    "react-tooltip": "5.26.3",
     "save": "2.9.0"
   },
   "devDependencies": {
