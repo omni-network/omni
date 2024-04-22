@@ -53,3 +53,30 @@ export const xmsgcount = graphql(`
     xmsgcount
   }
 `)
+
+export const xmsgs = graphql(`
+  query XMsgs($cursor: BigInt!, $limit: BigInt!) {
+    xmsgs(cursor: $cursor, limit: $limit){
+      TotalCount
+      Edges{
+        Cursor
+        Node{
+          ID
+          StreamOffset
+          SourceMessageSender
+          DestAddress
+          DestGasLimit
+          SourceChainID
+          DestChainID
+          TxHash
+          BlockHeight
+          BlockHash
+        }
+      }
+      PageInfo{
+        StartCursor
+        HasNextPage
+      }
+    }
+}
+`)
