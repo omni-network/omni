@@ -285,6 +285,7 @@ func TestXMsgsCursorOffset(t *testing.T) {
 						TotalCount
 						Edges{
 							Node {
+								MsgID
 								StreamOffset
 								TxHash
 								BlockHeight
@@ -303,6 +304,7 @@ func TestXMsgsCursorOffset(t *testing.T) {
 					"Edges":[
 						{
 							"Node":{
+								"MsgID": "1-2-0",
 								"StreamOffset":"0x0",
 								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20",
 								"Status": "SUCCESS",

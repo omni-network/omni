@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/omni-network/omni/explorer/db/ent"
@@ -84,6 +85,7 @@ func EntMsgToGraphQLXMsg(msg *ent.Msg) (*resolvers.XMsg, error) {
 
 	xmsg := &resolvers.XMsg{
 		ID:                  graphql.ID(strconv.Itoa(msg.ID)),
+		MsgID:               idStringBuilder(msg.SourceChainID, msg.DestChainID, msg.StreamOffset),
 		SourceMessageSender: common.Address(msg.SourceMsgSender),
 		SourceChainID:       hexutil.Big(sourceChainIDBig),
 		DestAddress:         common.Address(msg.DestAddress),
@@ -142,7 +144,8 @@ func EntReceiptToGraphQLXReceipt(ctx context.Context, receipt *ent.Receipt, bloc
 	}
 
 	return &resolvers.XReceipt{
-		UUID:           graphql.ID(receipt.UUID.String()),
+		ID:             graphql.ID(receipt.UUID.String()),
+		ReceiptID:      idStringBuilder(receipt.SourceChainID, receipt.DestChainID, receipt.StreamOffset),
 		Success:        graphql.NullBool{Value: &receipt.Success, Set: receipt.Success},
 		GasUsed:        hexutil.Big(gasUsed),
 		RelayerAddress: common.Address(receipt.RelayerAddress),
@@ -223,6 +226,7 @@ func EntMsgToGraphQLXMsgWithEdges(ctx context.Context, msg *ent.Msg) (*resolvers
 	}
 	xmsg := &resolvers.XMsg{
 		ID:                  graphql.ID(strconv.Itoa(msg.ID)),
+		MsgID:               idStringBuilder(msg.SourceChainID, msg.DestChainID, msg.StreamOffset),
 		SourceMessageSender: common.Address(msg.SourceMsgSender),
 		SourceChainID:       hexutil.Big(sourceChainIDBig),
 		DestAddress:         common.Address(msg.DestAddress),
@@ -245,4 +249,8 @@ func EntMsgToGraphQLXMsgWithEdges(ctx context.Context, msg *ent.Msg) (*resolvers
 	}
 
 	return xmsg, nil
+}
+
+func idStringBuilder(sourceChainID, destChainID, streamOffset uint64) string {
+	return fmt.Sprintf("%s-%s-%s", strconv.Itoa(int(sourceChainID)), strconv.Itoa(int(destChainID)), strconv.Itoa(int(streamOffset)))
 }

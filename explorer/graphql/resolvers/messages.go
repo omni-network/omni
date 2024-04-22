@@ -27,7 +27,7 @@ type XMsgsArgs struct {
 func (b *BlocksResolver) XMsgCount(ctx context.Context) (*hexutil.Big, error) {
 	res, found, err := b.BlocksProvider.XMsgCount(ctx)
 	if err != nil {
-		return nil, errors.New("failed to fetch message count")
+		return nil, errors.Wrap(err, "fetch message count")
 	}
 	if !found {
 		return nil, errors.New("message count not found")
@@ -43,7 +43,7 @@ func (b *BlocksResolver) XMsgRange(ctx context.Context, args XMsgRangeArgs) ([]*
 
 	res, found, err := b.BlocksProvider.XMsgRange(ctx, args.From.ToInt().Uint64(), args.To.ToInt().Uint64())
 	if err != nil {
-		return nil, errors.New("failed to fetch messages")
+		return nil, errors.Wrap(err, "fetch message range")
 	}
 	if !found {
 		return nil, errors.New("messages not found")
@@ -55,7 +55,7 @@ func (b *BlocksResolver) XMsgRange(ctx context.Context, args XMsgRangeArgs) ([]*
 func (b *BlocksResolver) XMsg(ctx context.Context, args XMsgArgs) (*XMsg, error) {
 	res, found, err := b.BlocksProvider.XMsg(ctx, args.SourceChainID.ToInt().Uint64(), args.DestChainID.ToInt().Uint64(), args.StreamOffset.ToInt().Uint64())
 	if err != nil {
-		return nil, errors.New("failed to fetch message")
+		return nil, errors.Wrap(err, "fetch message")
 	}
 	if !found {
 		return nil, errors.New("message not found")
@@ -79,7 +79,7 @@ func (b *BlocksResolver) XMsgs(ctx context.Context, args XMsgsArgs) (*XMsgResult
 
 	res, found, err := b.BlocksProvider.XMsgs(ctx, limit, cursor)
 	if err != nil {
-		return nil, errors.New("failed to fetch messages")
+		return nil, errors.Wrap(err, "fetch messages")
 	}
 	if !found {
 		return nil, errors.New("messages not found")

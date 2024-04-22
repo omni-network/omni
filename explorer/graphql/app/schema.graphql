@@ -39,6 +39,9 @@ type XMsg {
   "ID of the XMsg"
   ID: ID!
 
+  "Computed field for msg id from source chain, dest chain, stream offset"
+  MsgID: String!
+
   "Monotonically incremented offset of Msg in the Steam"
   StreamOffset: BigInt!
 
@@ -112,6 +115,9 @@ type XBlock {
 XReceipt represents a cross-chain receipt.
 """
 type XReceipt {
+  "Computed field for receipt id from source chain, dest chain, stream offset"
+  ReceiptID: String!
+
   "UUID of our block"
   UUID: ID!
 

@@ -67,7 +67,7 @@ func CreateXMsg(t *testing.T, ctx context.Context, client *ent.Client, b ent.Blo
 	data := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	txHash := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32}
 
-	msg := client.Msg.Create().
+	msg, err := client.Msg.Create().
 		SetSourceMsgSender(sourceMessageSender[:]).
 		SetDestAddress(destAddress[:]).
 		SetDestChainID(destChainID).
@@ -78,7 +78,11 @@ func CreateXMsg(t *testing.T, ctx context.Context, client *ent.Client, b ent.Blo
 		SetTxHash(txHash).
 		SetBlockHash(b.BlockHash).
 		SetBlockHeight(b.BlockHeight).
-		SaveX(ctx)
+		Save(ctx)
+
+	if err != nil {
+		t.Fatalf("failed to create message: %v", err)
+	}
 
 	client.Block.UpdateOne(&b).AddMsgs(msg).SaveX(ctx)
 
