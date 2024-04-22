@@ -12,4 +12,8 @@ contract PortalHarness is OmniPortal {
     function exec(XTypes.Msg calldata xmsg) external {
         _exec(xmsg);
     }
+
+    function execSys(bytes calldata data) external {
+        _execSys(data);
+    }
 }

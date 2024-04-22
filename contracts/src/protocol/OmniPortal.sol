@@ -268,28 +268,15 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
 
         gasUsed = gasUsed - gasleft();
 
-        // if not success, revert with the error message
-        if (!success) revert(_revertReason(result));
-
-        return (success, gasUsed);
-    }
-
-    /**
-     * @notice Returns the revert reason from an address.call result.
-     * @dev Only works for address.call() that were unsuccessful, and reverted with a reason.
-     * @custom:attriubtion  https://github.com/Uniswap/v3-periphery/blob/v1.0.0/contracts/base/Multicall.sol#L17
-     * @custom:attriubtion  https://ethereum.stackexchange.com/a/83577
-     * @param result    The result of an address.call
-     */
-    function _revertReason(bytes memory result) internal pure returns (string memory) {
-        if (result.length < 68) return "no revert reason";
-
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            result := add(result, 0x04)
+        // if not success, revert with same reason
+        if (!success) {
+            // solhint-disable-next-line no-inline-assembly
+            assembly {
+                revert(add(result, 32), mload(result))
+            }
         }
 
-        return abi.decode(result, (string));
+        return (success, gasUsed);
     }
 
     //////////////////////////////////////////////////////////////////////////////
