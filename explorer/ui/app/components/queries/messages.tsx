@@ -62,6 +62,7 @@ export const xmsgs = graphql(`
         Cursor
         Node{
           ID
+          MsgID
           StreamOffset
           SourceMessageSender
           DestAddress
