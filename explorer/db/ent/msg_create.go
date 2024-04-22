@@ -278,9 +278,6 @@ func (mc *MsgCreate) check() error {
 			return &ValidationError{Name: "TxHash", err: fmt.Errorf(`ent: validator failed for field "Msg.TxHash": %w`, err)}
 		}
 	}
-	if _, ok := mc.mutation.BlockHash(); !ok {
-		return &ValidationError{Name: "BlockHash", err: errors.New(`ent: missing required field "Msg.BlockHash"`)}
-	}
 	if v, ok := mc.mutation.BlockHash(); ok {
 		if err := msg.BlockHashValidator(v); err != nil {
 			return &ValidationError{Name: "BlockHash", err: fmt.Errorf(`ent: validator failed for field "Msg.BlockHash": %w`, err)}

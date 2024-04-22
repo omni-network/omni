@@ -179,6 +179,12 @@ func (mu *MsgUpdate) SetBlockHash(b []byte) *MsgUpdate {
 	return mu
 }
 
+// ClearBlockHash clears the value of the "BlockHash" field.
+func (mu *MsgUpdate) ClearBlockHash() *MsgUpdate {
+	mu.mutation.ClearBlockHash()
+	return mu
+}
+
 // SetBlockHeight sets the "BlockHeight" field.
 func (mu *MsgUpdate) SetBlockHeight(u uint64) *MsgUpdate {
 	mu.mutation.ResetBlockHeight()
@@ -428,6 +434,9 @@ func (mu *MsgUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := mu.mutation.BlockHash(); ok {
 		_spec.SetField(msg.FieldBlockHash, field.TypeBytes, value)
+	}
+	if mu.mutation.BlockHashCleared() {
+		_spec.ClearField(msg.FieldBlockHash, field.TypeBytes)
 	}
 	if value, ok := mu.mutation.BlockHeight(); ok {
 		_spec.SetField(msg.FieldBlockHeight, field.TypeUint64, value)
@@ -695,6 +704,12 @@ func (muo *MsgUpdateOne) SetTxHash(b []byte) *MsgUpdateOne {
 // SetBlockHash sets the "BlockHash" field.
 func (muo *MsgUpdateOne) SetBlockHash(b []byte) *MsgUpdateOne {
 	muo.mutation.SetBlockHash(b)
+	return muo
+}
+
+// ClearBlockHash clears the value of the "BlockHash" field.
+func (muo *MsgUpdateOne) ClearBlockHash() *MsgUpdateOne {
+	muo.mutation.ClearBlockHash()
 	return muo
 }
 
@@ -977,6 +992,9 @@ func (muo *MsgUpdateOne) sqlSave(ctx context.Context) (_node *Msg, err error) {
 	}
 	if value, ok := muo.mutation.BlockHash(); ok {
 		_spec.SetField(msg.FieldBlockHash, field.TypeBytes, value)
+	}
+	if muo.mutation.BlockHashCleared() {
+		_spec.ClearField(msg.FieldBlockHash, field.TypeBytes)
 	}
 	if value, ok := muo.mutation.BlockHeight(); ok {
 		_spec.SetField(msg.FieldBlockHeight, field.TypeUint64, value)

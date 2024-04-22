@@ -186,6 +186,9 @@ func eval(t *testing.T, r results) {
 		var expectedMessageIDs []int
 		for _, m := range expectedMessages {
 			expectedMessageIDs = append(expectedMessageIDs, m.ID)
+			require.NotNil(t, m.BlockHash)
+			require.NotNil(t, m.BlockHeight)
+			require.NotNil(t, m.BlockTime)
 		}
 		actualMessageIDs := b.QueryMsgs().IDsX(context.Background())
 
