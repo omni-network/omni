@@ -292,9 +292,18 @@ contract Fixtures is CommonBase, StdCheats {
             gasLimit: portal.XMSG_DEFAULT_GAS_LIMIT()
         });
     }
-    /// @dev Create a Reverter.forceRevert() XMsg
 
+    /// @dev Create a Reverter.forceRevert() XMsg
     function _revert(uint64 sourceChainId, uint64 destChainId, uint64 offset)
+        internal
+        view
+        returns (XTypes.Msg memory)
+    {
+        return _reverter_xmsg(sourceChainId, destChainId, offset, abi.encodeWithSignature("forceRevert()"));
+    }
+
+    /// @dev Helper to create an xmsg to the Reverter contract
+    function _reverter_xmsg(uint64 sourceChainId, uint64 destChainId, uint64 offset, bytes memory data)
         internal
         view
         returns (XTypes.Msg memory)
@@ -305,7 +314,7 @@ contract Fixtures is CommonBase, StdCheats {
             streamOffset: offset,
             sender: _reverters[sourceChainId],
             to: _reverters[destChainId],
-            data: abi.encodeWithSignature("forceRevert()"),
+            data: data,
             gasLimit: portal.XMSG_DEFAULT_GAS_LIMIT()
         });
     }

@@ -2,7 +2,11 @@
 pragma solidity =0.8.24;
 
 import { XTypes } from "src/libraries/XTypes.sol";
+import { OmniPortal } from "src/protocol/OmniPortal.sol";
 import { Base } from "./common/Base.sol";
+import { TestXTypes } from "./common/TestXTypes.sol";
+import { Reverter } from "./common/Reverter.sol";
+import { Vm } from "forge-std/Vm.sol";
 
 /**
  * @title OmniPortal_exec_Test
@@ -68,5 +72,118 @@ contract OmniPortal_exec_Test is Base {
 
         vm.expectRevert("OmniPortal: wrong streamOffset");
         portal.exec(xmsg);
+    }
+
+    /// @dev Test that when an XMsg execution reverts, the correct error bytes are included in the receipt
+    function test_exec_errorBytes() public {
+        //
+        // Reverter.forceRevert() - empty error
+        //
+        XTypes.Msg memory xmsg = _reverter_xmsg({
+            sourceChainId: chainAId,
+            destChainId: thisChainId,
+            offset: 1,
+            data: abi.encodeWithSelector(Reverter.forceRevert.selector)
+        });
+
+        vm.recordLogs();
+        portal.exec(xmsg);
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        assertEq(logs.length, 1);
+        TestXTypes.Receipt memory receipt = parseReceipt(logs[0]);
+        assertEq(receipt.error.length, 0);
+
+        //
+        // Reverter.forceRevertWithReason("my reason")
+        //
+        xmsg = _reverter_xmsg({
+            sourceChainId: chainAId,
+            destChainId: thisChainId,
+            offset: 2,
+            data: abi.encodeWithSelector(Reverter.forceRevertWithReason.selector, "my reason")
+        });
+
+        vm.recordLogs();
+        portal.exec(xmsg);
+        logs = vm.getRecordedLogs();
+        assertEq(logs.length, 1);
+        receipt = parseReceipt(logs[0]);
+        assertEq(receipt.error, abi.encodeWithSignature("Error(string)", "my reason"));
+
+        //
+        // Reverter.panicUnderflow() - Panic(0x11)
+        //
+        xmsg = _reverter_xmsg({
+            sourceChainId: chainAId,
+            destChainId: thisChainId,
+            offset: 3,
+            data: abi.encodeWithSelector(Reverter.panicUnderflow.selector)
+        });
+
+        vm.recordLogs();
+        portal.exec(xmsg);
+        logs = vm.getRecordedLogs();
+        assertEq(logs.length, 1);
+        receipt = parseReceipt(logs[0]);
+        assertEq(receipt.error, abi.encodeWithSignature("Panic(uint256)", 0x11));
+
+        //
+        // Reverter.panicDivisionByZero() - Panic(0x12)
+        //
+        xmsg = _reverter_xmsg({
+            sourceChainId: chainAId,
+            destChainId: thisChainId,
+            offset: 4,
+            data: abi.encodeWithSelector(Reverter.panicDivisionByZero.selector)
+        });
+
+        vm.recordLogs();
+        portal.exec(xmsg);
+        logs = vm.getRecordedLogs();
+        assertEq(logs.length, 1);
+        receipt = parseReceipt(logs[0]);
+        assertEq(receipt.error, abi.encodeWithSignature("Panic(uint256)", 0x12));
+
+        //
+        // Reverter.revertWithReason(<really long error>)
+        //
+        xmsg = _reverter_xmsg({
+            sourceChainId: chainAId,
+            destChainId: thisChainId,
+            offset: 5,
+            data: abi.encodeWithSelector(Reverter.forceRevertWithReason.selector, _repeat("really long", 1000))
+        });
+
+        vm.recordLogs();
+        portal.exec(xmsg);
+        logs = vm.getRecordedLogs();
+        assertEq(logs.length, 1);
+        receipt = parseReceipt(logs[0]);
+        assertEq(receipt.error, portal.XRECEIPT_ERROR_EXCEEDS_MAX_BYTES());
+
+        // assert constant is encoded as expected
+        assertEq(receipt.error, abi.encodeWithSignature("OmniError(uint256)", 0x1));
+    }
+
+    /// @dev Test that sys exec that reverts forwards the revert
+    function test_execSys_forwardsRevert() public {
+        // We use OmniPortal.addValidatorSet, as that is a valid system call
+
+        XTypes.Validator[] memory emptyValSet; // doesn't matter
+        uint64 valSetId = 3; // doesn't matter
+        bytes memory data = abi.encodeWithSelector(OmniPortal.addValidatorSet.selector, valSetId, emptyValSet);
+
+        // this will revert with "only cchain" because _xmsg.sourceChainId won't be set
+        vm.expectRevert("OmniPortal: only cchain");
+        portal.execSys(data);
+    }
+
+    /// @dev Helper to repeat a string a number of times
+    function _repeat(string memory s, uint256 n) internal pure returns (string memory) {
+        string memory result = "";
+        for (uint256 i = 0; i < n; i++) {
+            result = string.concat(result, s);
+        }
+        return result;
     }
 }

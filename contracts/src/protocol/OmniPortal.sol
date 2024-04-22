@@ -222,19 +222,26 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
         // xcalls to _VIRTUAL_PORTAL_ADDRESS are system calls
         bool isSysCall = xmsg_.to == _VIRTUAL_PORTAL_ADDRESS;
 
-        (bool success, uint256 gasUsed) = isSysCall ? _execSys(xmsg_.data) : _exec(xmsg_.to, xmsg_.gasLimit, xmsg_.data);
+        (bool success, bytes memory result, uint256 gasUsed) =
+            isSysCall ? _execSys(xmsg_.data) : _exec(xmsg_.to, xmsg_.gasLimit, xmsg_.data);
 
         // reset xmsg to zero
         delete _xmsg;
 
-        emit XReceipt(xmsg_.sourceChainId, xmsg_.streamOffset, gasUsed, msg.sender, success);
+        // empty error if success is true
+        bytes memory error = success ? bytes("") : result;
+
+        // if error is too long, return corresponding error code
+        if (error.length > XRECEIPT_MAX_ERROR_BYTES) error = XRECEIPT_ERROR_EXCEEDS_MAX_BYTES;
+
+        emit XReceipt(xmsg_.sourceChainId, xmsg_.streamOffset, gasUsed, msg.sender, success, error);
     }
 
     /**
      * @notice Execute a call at `to` with `data`, enfocring `gasLimit`. Returns success (true/false) and gasUsed.
      *         Requires that enough gas is left to execute the call.
      */
-    function _exec(address to, uint64 gasLimit, bytes calldata data) internal returns (bool, uint256) {
+    function _exec(address to, uint64 gasLimit, bytes calldata data) internal returns (bool, bytes memory, uint256) {
         // trim gasLimit to max. this requirement is checked in xcall(...), but we trim here to be safe
         if (gasLimit > XMSG_MAX_GAS_LIMIT) gasLimit = XMSG_MAX_GAS_LIMIT;
 
@@ -249,18 +256,18 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
         uint256 gasUsed = gasleft();
 
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success,) = to.call{ gas: gasLimit }(data);
+        (bool success, bytes memory result) = to.call{ gas: gasLimit }(data);
 
         gasUsed = gasUsed - gasleft();
 
-        return (success, gasUsed);
+        return (success, result, gasUsed);
     }
 
     /**
      * @notice Execute a system call with `data` at this contract, returning success and gasUsed.
      *         System calls must succeed.
      */
-    function _execSys(bytes calldata data) internal returns (bool, uint256) {
+    function _execSys(bytes calldata data) internal returns (bool, bytes memory, uint256) {
         uint256 gasUsed = gasleft();
 
         // solhint-disable-next-line avoid-low-level-calls
@@ -276,7 +283,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
             }
         }
 
-        return (success, gasUsed);
+        return (success, result, gasUsed);
     }
 
     //////////////////////////////////////////////////////////////////////////////
