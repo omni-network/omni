@@ -1,6 +1,8 @@
 package resolvers
 
 import (
+	"strings"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
@@ -18,8 +20,11 @@ type XMsg struct {
 	DestChainID         hexutil.Big
 	StreamOffset        hexutil.Big
 	TxHash              common.Hash
+	Status              string
 	BlockHeight         hexutil.Big
 	BlockHash           common.Hash
+	BlockTime           graphql.Time
+	ReceiptHash         *common.Hash
 	Block               XBlock
 	Receipts            []XReceipt
 }
@@ -33,7 +38,6 @@ type XBlock struct {
 	CreatedAt     graphql.Time
 	BlockHash     common.Hash
 
-	// TODO: add paging for the messages.
 	Messages []XMsg
 	Receipts []XReceipt
 }
@@ -76,6 +80,14 @@ const (
 	ADDRESS SearchResultType = "ADDRESS"
 )
 
+type XMsgStatus string
+
+const (
+	PENDING XMsgStatus = "PENDING"
+	SUCCESS XMsgStatus = "SUCCESS"
+	FAILED  XMsgStatus = "FAILED"
+)
+
 type PageInfo struct {
 	StartCursor hexutil.Big
 	HasNextPage bool
@@ -91,4 +103,17 @@ type XMsgResult struct {
 type XMsgEdge struct {
 	Cursor hexutil.Big
 	Node   XMsg
+}
+
+var (
+	XMsgStatusMap = map[string]XMsgStatus{
+		"success": SUCCESS,
+		"pending": PENDING,
+		"failed":  FAILED,
+	}
+)
+
+func ParseString(str string) (XMsgStatus, bool) {
+	c, ok := XMsgStatusMap[strings.ToLower(str)]
+	return c, ok
 }

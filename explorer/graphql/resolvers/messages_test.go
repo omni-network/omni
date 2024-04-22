@@ -163,12 +163,8 @@ func TestXMsgsNoCursor(t *testing.T) {
 								ID
 								StreamOffset
 								TxHash
-								Block {
-									BlockHeight
-								}
-								Receipts {
-									Success
-								}
+								BlockHeight
+								Status
 							}
 						}
 						PageInfo {
@@ -183,27 +179,15 @@ func TestXMsgsNoCursor(t *testing.T) {
 					"Edges":[
 						{
 							"Node":{
-								"Block":{
-									"BlockHeight":"0x0"
-								},
-								"Receipts":[
-									{
-										"Success":{"Set":true,"Value":true}
-									}
-								],
+								"BlockHeight":"0x0",
+								"Status": "SUCCESS",
 								"ID": "8589934593",
 								"StreamOffset":"0x0",
 								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"}
 							},{
 							"Node":{
-								"Block":{
-									"BlockHeight":"0x1"
-								},
-								"Receipts":[
-									{
-										"Success":{"Set":true,"Value":true}
-									}
-								],
+								"BlockHeight":"0x1",
+								"Status": "SUCCESS",
 								"ID": "8589934594",
 								"StreamOffset":"0x1",
 								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
@@ -245,12 +229,8 @@ func TestXMsgsNoLimit(t *testing.T) {
 								StreamOffset
 								TxHash
 								ID
-								Block {
-									BlockHeight
-								}
-								Receipts {
-									Success
-								}
+								BlockHeight
+								Status
 							}
 						}
 						PageInfo {
@@ -265,13 +245,8 @@ func TestXMsgsNoLimit(t *testing.T) {
 					"Edges":[
 						{
 							"Node":{
-								"Block":{
-									"BlockHeight":"0x0"
-								},"Receipts":[
-									{
-										"Success":{"Set":true,"Value":true}
-									}
-								],
+								"BlockHeight":"0x0",
+								"Status": "SUCCESS",
 								"ID":"8589934593",
 								"StreamOffset":"0x0",
 								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
@@ -312,12 +287,8 @@ func TestXMsgsCursorOffset(t *testing.T) {
 							Node {
 								StreamOffset
 								TxHash
-								Block {
-									BlockHeight
-								}
-								Receipts {
-									Success
-								}
+								BlockHeight
+								Status
 							}
 						}
 						PageInfo {
@@ -332,15 +303,10 @@ func TestXMsgsCursorOffset(t *testing.T) {
 					"Edges":[
 						{
 							"Node":{
-								"Block":{
-									"BlockHeight":"0x0"
-								},"Receipts":[
-									{
-										"Success":{"Set":true,"Value":true}
-									}
-								],
 								"StreamOffset":"0x0",
-								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
+								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20",
+								"Status": "SUCCESS",
+								"BlockHeight":"0x0"
 							}
 						}
 					],

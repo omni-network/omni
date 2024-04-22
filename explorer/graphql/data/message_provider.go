@@ -43,7 +43,7 @@ func (p Provider) XMsgRange(ctx context.Context, from uint64, to uint64) ([]*res
 
 	var res []*resolvers.XMsg
 	for _, m := range query {
-		graphQL, err := EntMsgToGraphQLXMsg(ctx, m, nil)
+		graphQL, err := EntMsgToGraphQLXMsg(m)
 		if err != nil {
 			return nil, false, errors.Wrap(err, "decode message")
 		}
@@ -53,7 +53,6 @@ func (p Provider) XMsgRange(ctx context.Context, from uint64, to uint64) ([]*res
 	return res, true, nil
 }
 
-//nolint:dupl // graphql library looks for the function name to match the resolver
 func (p Provider) XMsg(ctx context.Context, sourceChainID, destChainID, streamOffset uint64) (*resolvers.XMsg, bool, error) {
 	query, err := p.EntClient.Msg.Query().
 		Where(
@@ -70,7 +69,7 @@ func (p Provider) XMsg(ctx context.Context, sourceChainID, destChainID, streamOf
 	block := query.QueryBlock().OnlyX(ctx)
 	receipts := query.QueryReceipts().AllX(ctx)
 
-	res, err := EntMsgToGraphQLXMsg(ctx, query, block)
+	res, err := EntMsgToGraphQLXMsgWithEdges(ctx, query)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "decoding message")
 	}
@@ -109,7 +108,7 @@ func (p Provider) XMsgs(ctx context.Context, limit uint64, cursor *uint64) (*res
 	// Create the xmsg array
 	var res []resolvers.XMsgEdge
 	for _, m := range msgs {
-		graphQL, err := EntMsgToGraphQLXMsgWithEdges(ctx, m)
+		graphQL, err := EntMsgToGraphQLXMsg(m)
 		if err != nil {
 			return nil, false, errors.Wrap(err, "decoding message")
 		}
