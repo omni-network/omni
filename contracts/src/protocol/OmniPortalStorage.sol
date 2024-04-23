@@ -33,7 +33,7 @@ abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
     /**
      * @notice  Chain ID of Omni's EVM execution chain
      */
-    uint64 public omniEChainId;
+    uint64 public omniChainId;
 
     /**
      * @notice Virtual chain ID used in xmsgs from Omni's consensus chain
@@ -44,6 +44,11 @@ abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
      * @notice The address of the fee oracle contract
      */
     address public feeOracle;
+
+    /**
+     * @notice The address of the XRegistry replica contract on this chain
+     */
+    address public xregistry;
 
     /**
      * @notice Offset of the last outbound XMsg that was sent to destChainId

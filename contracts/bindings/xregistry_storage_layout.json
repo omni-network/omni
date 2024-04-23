@@ -1,0 +1,93 @@
+{
+  "storage": [
+    {
+      "astId": 818,
+      "contract": "src/protocol/XRegistry.sol:XRegistry",
+      "label": "_owner",
+      "offset": 0,
+      "slot": "0",
+      "type": "t_address"
+    },
+    {
+      "astId": 52079,
+      "contract": "src/protocol/XRegistry.sol:XRegistry",
+      "label": "_addrs",
+      "offset": 0,
+      "slot": "1",
+      "type": "t_mapping(t_uint64,t_mapping(t_bytes32,t_address))"
+    },
+    {
+      "astId": 51629,
+      "contract": "src/protocol/XRegistry.sol:XRegistry",
+      "label": "omni",
+      "offset": 0,
+      "slot": "2",
+      "type": "t_contract(OmniPortal)51239"
+    },
+    {
+      "astId": 51634,
+      "contract": "src/protocol/XRegistry.sol:XRegistry",
+      "label": "replicas",
+      "offset": 0,
+      "slot": "3",
+      "type": "t_mapping(t_uint64,t_address)"
+    },
+    {
+      "astId": 51638,
+      "contract": "src/protocol/XRegistry.sol:XRegistry",
+      "label": "_chainIds",
+      "offset": 0,
+      "slot": "4",
+      "type": "t_array(t_uint64)dyn_storage"
+    }
+  ],
+  "types": {
+    "t_address": {
+      "encoding": "inplace",
+      "label": "address",
+      "numberOfBytes": "20"
+    },
+    "t_array(t_uint64)dyn_storage": {
+      "encoding": "dynamic_array",
+      "label": "uint64[]",
+      "numberOfBytes": "32",
+      "base": "t_uint64"
+    },
+    "t_bytes32": {
+      "encoding": "inplace",
+      "label": "bytes32",
+      "numberOfBytes": "32"
+    },
+    "t_contract(OmniPortal)51239": {
+      "encoding": "inplace",
+      "label": "contract OmniPortal",
+      "numberOfBytes": "20"
+    },
+    "t_mapping(t_bytes32,t_address)": {
+      "encoding": "mapping",
+      "key": "t_bytes32",
+      "label": "mapping(bytes32 => address)",
+      "numberOfBytes": "32",
+      "value": "t_address"
+    },
+    "t_mapping(t_uint64,t_address)": {
+      "encoding": "mapping",
+      "key": "t_uint64",
+      "label": "mapping(uint64 => address)",
+      "numberOfBytes": "32",
+      "value": "t_address"
+    },
+    "t_mapping(t_uint64,t_mapping(t_bytes32,t_address))": {
+      "encoding": "mapping",
+      "key": "t_uint64",
+      "label": "mapping(uint64 => mapping(bytes32 => address))",
+      "numberOfBytes": "32",
+      "value": "t_mapping(t_bytes32,t_address)"
+    },
+    "t_uint64": {
+      "encoding": "inplace",
+      "label": "uint64",
+      "numberOfBytes": "8"
+    }
+  }
+}

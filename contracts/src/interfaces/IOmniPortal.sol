@@ -68,9 +68,14 @@ interface IOmniPortal {
     function xreceiptMaxErrorBytes() external view returns (uint64);
 
     /**
-     * @notice Returns Chain ID of the chain to which this portal is deployed
+     * @notice Returns the chain ID of the chain to which this portal is deployed
      */
     function chainId() external view returns (uint64);
+
+    /**
+     * @notice Returns the chain ID of Omni's EVM execution chain
+     */
+    function omniChainId() external view returns (uint64);
 
     /**
      * @notice Returns the offset of the last outbound XMsg that was sent to destChainId
