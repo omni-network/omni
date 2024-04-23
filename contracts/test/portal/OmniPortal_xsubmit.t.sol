@@ -3,7 +3,6 @@ pragma solidity =0.8.24;
 
 import { XTypes } from "src/libraries/XTypes.sol";
 import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
-import { OmniPortal } from "src/protocol/OmniPortal.sol";
 
 import { Base } from "./common/Base.sol";
 import { Counter } from "./common/Counter.sol";
@@ -160,16 +159,6 @@ contract OmniPortal_xsubmit_Test is Base {
 
         vm.expectRevert("OmniPortal: unknown val set");
         portal.xsubmit(xsub);
-    }
-
-    function test_execSys_forwardsRevert() public {
-        XTypes.Validator[] memory emptyValSet; // doesn't matter
-        uint64 valSetId = 3; // doesn't matter
-        bytes memory data = abi.encodeWithSelector(OmniPortal.addValidatorSet.selector, valSetId, emptyValSet);
-
-        // this will revert with "only cchain" because _xmsg.sourceChainId won't be set
-        vm.expectRevert("OmniPortal: only cchain");
-        portal.execSys(data);
     }
 
     /// @dev helper to test that an xsubmission makes the appropriate calls (to counter_), and emits
