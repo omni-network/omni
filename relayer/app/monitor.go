@@ -13,7 +13,6 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -200,7 +199,7 @@ func monitorAccountForever(ctx context.Context, addr common.Address, chainName s
 
 // monitorAccountOnce monitors the relayer account for the given chain.
 func monitorAccountOnce(ctx context.Context, addr common.Address, chainName string, client ethclient.Client) error {
-	balance, err := client.BalanceAt(ctx, addr, nil)
+	balance, err := client.EtherBalanceAt(ctx, addr)
 	if err != nil {
 		return errors.Wrap(err, "balance at")
 	}
@@ -210,9 +209,7 @@ func monitorAccountOnce(ctx context.Context, addr common.Address, chainName stri
 		return errors.Wrap(err, "nonce at")
 	}
 
-	bf, _ := balance.Float64()
-	bf /= params.Ether
-	accountBalance.WithLabelValues(chainName).Set(bf)
+	accountBalance.WithLabelValues(chainName).Set(balance)
 	accountNonce.WithLabelValues(chainName).Set(float64(nonce))
 
 	return nil

@@ -195,7 +195,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		ctx, storeService := setupCtxStore(t, nil)
 		cdc := getCodec(t)
 		txConfig := authtx.NewTxConfig(cdc, nil)
-		mockEngine, err := newMockEngineAPI()
+		mockEngine, err := newMockEngineAPI(0)
 		require.NoError(t, err)
 
 		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig)
@@ -253,7 +253,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		cdc := getCodec(t)
 		txConfig := authtx.NewTxConfig(cdc, nil)
 
-		mockEngine, err := newMockEngineAPI()
+		mockEngine, err := newMockEngineAPI(0)
 		require.NoError(t, err)
 
 		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig)
@@ -375,6 +375,7 @@ var _ etypes.VoteExtensionProvider = (*mockVEProvider)(nil)
 
 type mockEngineAPI struct {
 	ethclient.EngineClient
+	syncings                <-chan struct{}
 	fuzzer                  *fuzz.Fuzzer
 	mock                    ethclient.EngineClient // avoid repeating the implementation but also allow for custom implementations of mocks
 	blockNumberFunc         func(context.Context) (uint64, error)
@@ -384,15 +385,21 @@ type mockEngineAPI struct {
 }
 
 // newMockEngineAPI returns a new mock engine API with a fuzzer and a mock engine client.
-func newMockEngineAPI() (mockEngineAPI, error) {
+func newMockEngineAPI(syncings int) (mockEngineAPI, error) {
 	me, err := ethclient.NewEngineMock()
 	if err != nil {
 		return mockEngineAPI{}, err
 	}
 
+	syncs := make(chan struct{}, syncings)
+	for i := 0; i < syncings; i++ {
+		syncs <- struct{}{}
+	}
+
 	return mockEngineAPI{
-		mock:   me,
-		fuzzer: ethclient.NewFuzzer(time.Now().Truncate(time.Hour * 24).Unix()),
+		mock:     me,
+		syncings: syncs,
+		fuzzer:   ethclient.NewFuzzer(time.Now().Truncate(time.Hour * 24).Unix()),
 	}, nil
 }
 
@@ -439,6 +446,17 @@ func (m mockAddressProvider) LocalAddress() common.Address {
 	return m.address
 }
 
+func (m mockEngineAPI) maybeSync() (eengine.PayloadStatusV1, bool) {
+	select {
+	case <-m.syncings:
+		return eengine.PayloadStatusV1{
+			Status: eengine.SYNCING,
+		}, true
+	default:
+		return eengine.PayloadStatusV1{}, false
+	}
+}
+
 func (mockEngineAPI) FilterLogs(context.Context, ethereum.FilterQuery) ([]types.Log, error) {
 	return nil, nil
 }
@@ -463,7 +481,14 @@ func (m *mockEngineAPI) NewPayloadV2(ctx context.Context, params eengine.Executa
 	return m.mock.NewPayloadV2(ctx, params)
 }
 
-func (m *mockEngineAPI) NewPayloadV3(ctx context.Context, params eengine.ExecutableData, versionedHashes []common.Hash, beaconRoot *common.Hash) (eengine.PayloadStatusV1, error) {
+//nolint:nonamedreturns // Required for defer
+func (m *mockEngineAPI) NewPayloadV3(ctx context.Context, params eengine.ExecutableData, versionedHashes []common.Hash, beaconRoot *common.Hash) (resp eengine.PayloadStatusV1, err error) {
+	if status, ok := m.maybeSync(); ok {
+		defer func() {
+			resp.Status = status.Status
+		}()
+	}
+
 	if m.newPayloadV3Func != nil {
 		return m.newPayloadV3Func(ctx, params, versionedHashes, beaconRoot)
 	}
@@ -471,7 +496,14 @@ func (m *mockEngineAPI) NewPayloadV3(ctx context.Context, params eengine.Executa
 	return m.mock.NewPayloadV3(ctx, params, versionedHashes, beaconRoot)
 }
 
-func (m *mockEngineAPI) ForkchoiceUpdatedV3(ctx context.Context, update eengine.ForkchoiceStateV1, payloadAttributes *eengine.PayloadAttributes) (eengine.ForkChoiceResponse, error) {
+//nolint:nonamedreturns // Required for defer
+func (m *mockEngineAPI) ForkchoiceUpdatedV3(ctx context.Context, update eengine.ForkchoiceStateV1, payloadAttributes *eengine.PayloadAttributes) (resp eengine.ForkChoiceResponse, err error) {
+	if status, ok := m.maybeSync(); ok {
+		defer func() {
+			resp.PayloadStatus.Status = status.Status
+		}()
+	}
+
 	if m.forkchoiceUpdatedV3Func != nil {
 		return m.forkchoiceUpdatedV3Func(ctx, update, payloadAttributes)
 	}

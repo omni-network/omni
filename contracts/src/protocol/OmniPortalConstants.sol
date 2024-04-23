@@ -21,6 +21,14 @@ contract OmniPortalConstants {
     /// @notice Minimum allowed xmsg gas limit
     uint64 public constant XMSG_MIN_GAS_LIMIT = 21_000;
 
+    /// @notice Maxium number of bytes allowed in xreceipt result
+    uint64 public constant XRECEIPT_MAX_ERROR_BYTES = 256;
+
+    /// @notice Error code that indicates xmsg error result exceeds XRECEIPT_MAX_ERROR_BYTES
+    /// @dev Error code is abi.encodeWithSignature("OmniError(uint256)", 1)
+    bytes public constant XRECEIPT_ERROR_EXCEEDS_MAX_BYTES =
+        hex"0ea804990000000000000000000000000000000000000000000000000000000000000001";
+
     // TODO: make gas limits admin-configurable
     // TODO: make quorum admin-configurable
 

@@ -1,14 +1,12 @@
 ---
-sidebar_position: 2
+sidebar_position: 1
 ---
 
-# Fees
+# Fee Model
 
-## Fee Model
+Omni implements a Solidity-based fee payment interface that accepts **\$ETH** as the payment currency. In the future, Omni will add support for fees payable in **\$OMNI** and other tokens to streamline the developer experience.
 
-Omni fees start with a basic, Solidity-based fee payment interface and an uncomplicated pricing mechanism, with room for future enhancements. The network only supports **\$ETH** for fee payments presently. In the future, developers will also be able to pay with **\$OMNI** and potentially other tokens if they desire, but **\$ETH** will always be supported.
-
-Fees are paid in **\$ETH** and calculated in real-time during transactions via the payable `xcall` function on the portal contracts, ensuring simplicity for developers and compatibility with existing Ethereum tooling. This setup allows for easy off-chain fee estimations and the possibility for developers to pass the cost on to users, with a straightforward upgrade path to a more dynamic fee structure that can adapt to the network's evolving needs without necessitating changes to developer contracts.
+Fees are paid in **\$ETH** and calculated during transactions via the payable `xcall` function on the portal contracts, ensuring simplicity for developers and compatibility with existing Ethereum tooling. This setup allows for easy off-chain fee estimations and the possibility for developers to pass the cost on to users, with a straightforward upgrade path to a more dynamic fee structure that can adapt to the network's evolving needs without necessitating changes to developer contracts.
 
 ### Collection
 

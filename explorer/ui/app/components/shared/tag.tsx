@@ -13,28 +13,42 @@ const Tag: React.FC<Props> = ({ status }) => {
         return {
           text: 'text-positive',
           icon: 'text-icon-positive',
+          iconClass: 'icon-check-1',
           bg: 'bg-positive',
         }
       case 'Pending':
         return {
-          text: 'text-secondary',
-          icon: 'text-icon-secondary',
-          bg: 'bg-secondary',
+          text: 'text-moderate',
+          icon: 'text-icon-moderate',
+          bg: 'bg-moderate',
+          iconClass: 'icon-clock',
         }
       case 'Failure':
         return {
           text: 'text-critical',
           icon: 'text-icon-critical',
           bg: 'bg-critical',
+          iconClass: 'icon-error---filled',
+        }
+      default:
+        return {
+          text: 'text-positive',
+          icon: 'text-icon-positive',
+          iconClass: 'icon-check-1',
+          bg: 'bg-positive',
         }
     }
+  }
+
+  if (!status) {
+    return null
   }
 
   return (
     <div
       className={`py-[3.5px] px-[5.5px] text-btn-xs rounded-[4px] inline-block ${getColor()?.text} ${getColor()?.bg}`}
     >
-      {status}
+      <span className={`${getColor().iconClass} text-[15px] ${getColor().icon}`} /> {status}
     </div>
   )
 }

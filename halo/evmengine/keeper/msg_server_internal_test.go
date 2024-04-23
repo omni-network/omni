@@ -27,10 +27,12 @@ import (
 
 func Test_msgServer_ExecutionPayload(t *testing.T) {
 	t.Parallel()
+	fastBackoffForT()
+
 	cdc := getCodec(t)
 	txConfig := authtx.NewTxConfig(cdc, nil)
 
-	mockEngine, err := newMockEngineAPI()
+	mockEngine, err := newMockEngineAPI(2)
 	require.NoError(t, err)
 	cmtAPI := newMockCometAPI(t, nil)
 	// set the header and proposer so we have the correct next proposer
@@ -134,16 +136,18 @@ func Test_pushPayload(t *testing.T) {
 		newPayloadV3Func func(context.Context, engine.ExecutableData, []common.Hash, *common.Hash) (engine.PayloadStatusV1, error)
 	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name       string
+		args       args
+		wantErr    bool
+		wantStatus string
 	}{
 		{
 			name: "fail to unmarshal",
 			args: args{
 				msg: &types.MsgExecutionPayload{ExecutionPayload: []byte("invalid")},
 			},
-			wantErr: true,
+			wantErr:    true,
+			wantStatus: "",
 		},
 		{
 			name: "new payload error",
@@ -152,7 +156,8 @@ func Test_pushPayload(t *testing.T) {
 					return engine.PayloadStatusV1{}, errors.New("error")
 				},
 			},
-			wantErr: true,
+			wantErr:    true,
+			wantStatus: "",
 		},
 		{
 			name: "new payload invalid",
@@ -165,7 +170,8 @@ func Test_pushPayload(t *testing.T) {
 					}, nil
 				},
 			},
-			wantErr: true,
+			wantErr:    false,
+			wantStatus: engine.INVALID,
 		},
 		{
 			name: "new payload invalid val err",
@@ -178,35 +184,67 @@ func Test_pushPayload(t *testing.T) {
 					}, nil
 				},
 			},
-			wantErr: true,
+			wantErr:    false,
+			wantStatus: engine.INVALID,
 		},
 		{
-			name:    "valid payload",
-			args:    args{},
-			wantErr: false,
+			name: "new payload syncing",
+			args: args{
+				newPayloadV3Func: func(context.Context, engine.ExecutableData, []common.Hash, *common.Hash) (engine.PayloadStatusV1, error) {
+					return engine.PayloadStatusV1{
+						Status:          engine.SYNCING,
+						LatestValidHash: nil,
+						ValidationError: nil,
+					}, nil
+				},
+			},
+			wantErr:    false,
+			wantStatus: engine.SYNCING,
+		},
+		{
+			name: "new payload accepted",
+			args: args{
+				newPayloadV3Func: func(context.Context, engine.ExecutableData, []common.Hash, *common.Hash) (engine.PayloadStatusV1, error) {
+					return engine.PayloadStatusV1{
+						Status:          engine.ACCEPTED,
+						LatestValidHash: nil,
+						ValidationError: nil,
+					}, nil
+				},
+			},
+			wantErr:    false,
+			wantStatus: engine.ACCEPTED,
+		},
+		{
+			name:       "valid payload",
+			args:       args{},
+			wantErr:    false,
+			wantStatus: engine.VALID,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			mockEngine, err := newMockEngineAPI()
+			ctx := context.Background()
+			mockEngine, err := newMockEngineAPI(0)
 			require.NoError(t, err)
 			mockEngine.newPayloadV3Func = tt.args.newPayloadV3Func
-			payload, payloadID := newPayload(context.Background(), mockEngine, common.Address{})
+			payload, payloadID := newPayload(ctx, mockEngine, common.Address{})
 			if tt.args.msg == nil {
 				tt.args.msg = &types.MsgExecutionPayload{
 					ExecutionPayload: payload,
 				}
 			}
 
-			got, err := pushPayload(context.Background(), &mockEngine, tt.args.msg)
+			got, status, err := pushPayload(ctx, &mockEngine, tt.args.msg)
+			require.Equal(t, tt.wantStatus, status.Status)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("pushPayload() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
-			if !tt.wantErr {
-				want, err := mockEngine.GetPayloadV3(context.Background(), payloadID)
+			if status.Status == engine.VALID {
+				want, err := mockEngine.GetPayloadV3(ctx, payloadID)
 				require.NoError(t, err)
 				if !reflect.DeepEqual(got, *want.ExecutionPayload) {
 					t.Errorf("pushPayload() got = %v, want %v", got, want)

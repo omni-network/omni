@@ -111,15 +111,12 @@ func (d *XDapp) LogBalances(ctx context.Context) error {
 			return err
 		}
 
-		b, err := backend.BalanceAt(ctx, contract.Address, nil)
+		balance, err := backend.EtherBalanceAt(ctx, contract.Address)
 		if err != nil {
 			return errors.Wrap(err, "balance at", "chain", contract.Chain.Name)
 		}
 
-		bf, _ := b.Float64()
-		bf /= params.Ether
-
-		log.Debug(ctx, "Ping pong balance", "chain", contract.Chain.Name, "balance", bf)
+		log.Debug(ctx, "Ping pong balance", "chain", contract.Chain.Name, "balance", balance)
 	}
 
 	return nil
@@ -197,7 +194,7 @@ func (d *XDapp) StartAllEdges(ctx context.Context, parallel, count uint64) error
 // Note this doesn't wait for all parallel ping pongs to complete, it only waits for one of P.
 func (d *XDapp) WaitDone(ctx context.Context) error {
 	log.Info(ctx, "Waiting for ping pongs to complete")
-	ctx, cancel := context.WithTimeout(ctx, time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
 	for _, edge := range d.edges {
 		// Retry fetching done log until found or context is done

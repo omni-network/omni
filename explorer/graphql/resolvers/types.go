@@ -8,6 +8,7 @@ import (
 )
 
 type XMsg struct {
+	ID                  graphql.ID
 	UUID                graphql.ID
 	SourceMessageSender common.Address
 	DestAddress         common.Address
@@ -24,6 +25,7 @@ type XMsg struct {
 }
 
 type XBlock struct {
+	ID            graphql.ID
 	UUID          graphql.ID
 	SourceChainID hexutil.Big
 	BlockHeight   hexutil.Big
@@ -37,6 +39,7 @@ type XBlock struct {
 }
 
 type XReceipt struct {
+	ID             graphql.ID
 	UUID           graphql.ID
 	Success        graphql.NullBool
 	GasUsed        hexutil.Big
@@ -55,4 +58,37 @@ type XReceipt struct {
 type Chain struct {
 	Name    string
 	ChainID hexutil.Big
+}
+
+type SearchResult struct {
+	BlockHeight   hexutil.Big
+	TxHash        common.Hash
+	SourceChainID hexutil.Big
+	Type          SearchResultType
+}
+
+type SearchResultType string
+
+const (
+	BLOCK   SearchResultType = "BLOCK"
+	MESSAGE SearchResultType = "MESSAGE"
+	RECEIPT SearchResultType = "RECEIPT"
+	ADDRESS SearchResultType = "ADDRESS"
+)
+
+type PageInfo struct {
+	StartCursor hexutil.Big
+	HasNextPage bool
+	HasPrevPage bool
+}
+
+type XMsgResult struct {
+	TotalCount hexutil.Big
+	Edges      []XMsgEdge
+	PageInfo   PageInfo
+}
+
+type XMsgEdge struct {
+	Cursor hexutil.Big
+	Node   XMsg
 }

@@ -2,10 +2,12 @@ package data
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/omni-network/omni/explorer/db/ent"
 	"github.com/omni-network/omni/explorer/db/ent/msg"
 	"github.com/omni-network/omni/explorer/graphql/resolvers"
+	"github.com/omni-network/omni/explorer/graphql/utils"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
@@ -19,7 +21,7 @@ func (p Provider) XMsgCount(ctx context.Context) (*hexutil.Big, bool, error) {
 		return nil, false, err
 	}
 
-	hex, err := Uint2Hex(uint64(query))
+	hex, err := utils.Uint2Hex(uint64(query))
 	if err != nil {
 		return nil, false, errors.Wrap(err, "decoding block count")
 	}
@@ -85,4 +87,81 @@ func (p Provider) XMsg(ctx context.Context, sourceChainID, destChainID, streamOf
 	res.Receipts = receiptsRes
 
 	return res, true, nil
+}
+
+func (p Provider) XMsgs(ctx context.Context, limit uint64, cursor *uint64) (*resolvers.XMsgResult, bool, error) {
+	query := p.EntClient.Msg.Query().
+		Order(ent.Desc(msg.FieldCreatedAt)).
+		Limit(int(limit)) // limit will always set, defaulting to 1
+
+	// If cursor is not 0, we want to query the message with the cursor ID.
+	if cursor != nil {
+		query = query.Where(msg.IDLTE(int(*cursor)))
+	}
+
+	// Execute the query.
+	msgs, err := query.All(ctx)
+	if err != nil {
+		log.Error(ctx, "Msgs query", err)
+		return nil, false, err
+	}
+
+	// Create the xmsg array
+	var res []resolvers.XMsgEdge
+	for _, m := range msgs {
+		graphQL, err := EntMsgToGraphQLXMsgWithEdges(ctx, m)
+		if err != nil {
+			return nil, false, errors.Wrap(err, "decoding message")
+		}
+		cursor, err := utils.Uint2Hex(uint64(m.ID))
+		if err != nil {
+			return nil, false, errors.Wrap(err, "decoding message cursor")
+		}
+		res = append(res, resolvers.XMsgEdge{
+			Cursor: cursor,
+			Node:   *graphQL,
+		})
+	}
+
+	// Get the total count of messages
+	totalCount, err := p.EntClient.Msg.Query().Count(ctx)
+	if err != nil {
+		return nil, false, errors.New("failed to fetch message count")
+	}
+
+	// Get the total count in hex
+	totalCountHex, err := utils.Uint2Hex(uint64(totalCount))
+	if err != nil {
+		return nil, false, errors.Wrap(err, "decoding message count")
+	}
+
+	// Get the start cursor
+	startCursor, err := strconv.ParseUint(string(res[0].Node.ID), 10, 64)
+	if err != nil {
+		return nil, false, errors.New("failed to parse start cursor")
+	}
+
+	endCursor, err := strconv.ParseUint(string(res[len(res)-1].Node.ID), 10, 64)
+	if err != nil {
+		return nil, false, errors.New("failed to parse end cursor")
+	}
+
+	// Get the start cursor in hex
+	c, err := utils.Uint2Hex(endCursor + 1)
+	if err != nil {
+		return nil, false, errors.Wrap(err, "decoding message cursor")
+	}
+
+	// Create the result
+	result := resolvers.XMsgResult{
+		TotalCount: totalCountHex,
+		Edges:      res,
+		PageInfo: resolvers.PageInfo{
+			StartCursor: c,
+			HasNextPage: endCursor-uint64(1) > 0,
+			HasPrevPage: startCursor > 0,
+		},
+	}
+
+	return &result, true, nil
 }

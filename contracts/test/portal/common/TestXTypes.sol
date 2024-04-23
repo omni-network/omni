@@ -15,6 +15,7 @@ library TestXTypes {
         uint256 gasUsed;
         address relayer;
         bool success;
+        bytes error;
     }
 
     /// @dev receipts omitted, as they are not needed to construct XSubmissions

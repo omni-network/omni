@@ -68,9 +68,20 @@ func (t Testnet) AVSChain() (EVMChain, error) {
 // BroadcastOmniEVM returns a Omni EVM to use for e2e app tx broadcasts.
 // It prefers a validator nodes since we have an issue with mempool+p2p+startup where
 // txs get stuck in non-validator mempool immediately after startup if not connected to peers yet.
+// Also avoid validators that are not started immediately.
 func (t Testnet) BroadcastOmniEVM() OmniEVM {
+	isDelayed := func(evm string) bool {
+		for _, node := range t.Nodes {
+			if node.StartAt > 0 && strings.Contains(evm, node.Name) {
+				return true
+			}
+		}
+
+		return false
+	}
+
 	for _, evm := range t.OmniEVMs {
-		if strings.Contains(evm.InstanceName, "validator") {
+		if strings.Contains(evm.InstanceName, "validator") && !isDelayed(evm.InstanceName) {
 			return evm
 		}
 	}

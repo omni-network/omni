@@ -91,8 +91,28 @@ func (Receipt) Hooks() []ent.Hook {
 						return nil, err
 					}
 
+					status := "SUCCESS"
+					success, ok := r.Success()
+					if !ok {
+						return nil, errors.New("success missing")
+					}
+
+					if !success {
+						status = "FAILURE"
+					}
+
+					txHash, ok := r.TxHash()
+					if !ok {
+						return nil, errors.New("tx hash missing")
+					}
+
 					for _, match := range matches {
 						r.AddMsgIDs(match.ID)
+						// Setting the status of the message and the receipt hash (always going to be most recent)
+						r.Client().Msg.UpdateOne(match).
+							SetStatus(status).
+							SetReceiptHash(txHash).
+							SaveX(ctx)
 					}
 
 					return next.Mutate(ctx, r)
