@@ -49,6 +49,11 @@ contract Fixtures is CommonBase, StdCheats {
     address relayer;
     address owner;
 
+    uint64 xmsgDefaultGasLimit = 200_000;
+    uint64 xmsgMaxGasLimit = 5_000_000;
+    uint64 xmsgMinGasLimit = 21_000;
+    uint64 xreceiptMaxErrorBytes = 256;
+
     string constant valMnemonic = "test test test test test test test test test test test junk";
 
     address val1;
@@ -289,7 +294,7 @@ contract Fixtures is CommonBase, StdCheats {
             sender: _counters[sourceChainId],
             to: _counters[destChainId],
             data: abi.encodeWithSignature("increment()"),
-            gasLimit: portal.XMSG_DEFAULT_GAS_LIMIT()
+            gasLimit: portal.xmsgDefaultGasLimit()
         });
     }
 
@@ -315,7 +320,7 @@ contract Fixtures is CommonBase, StdCheats {
             sender: _reverters[sourceChainId],
             to: _reverters[destChainId],
             data: data,
-            gasLimit: portal.XMSG_DEFAULT_GAS_LIMIT()
+            gasLimit: portal.xmsgDefaultGasLimit()
         });
     }
 
@@ -404,6 +409,10 @@ contract Fixtures is CommonBase, StdCheats {
                         address(feeOracle),
                         omniEChainID,
                         omniCChainID,
+                        xmsgDefaultGasLimit,
+                        xmsgMaxGasLimit,
+                        xmsgMinGasLimit,
+                        xreceiptMaxErrorBytes,
                         genesisValSetId,
                         validatorSet[genesisValSetId]
                     )
@@ -439,6 +448,10 @@ contract Fixtures is CommonBase, StdCheats {
                         address(feeOracle),
                         omniEChainID,
                         omniCChainID,
+                        xmsgDefaultGasLimit,
+                        xmsgMaxGasLimit,
+                        xmsgMinGasLimit,
+                        xreceiptMaxErrorBytes,
                         genesisValSetId,
                         validatorSet[genesisValSetId]
                     )
@@ -474,6 +487,10 @@ contract Fixtures is CommonBase, StdCheats {
                         address(feeOracle),
                         omniEChainID,
                         omniCChainID,
+                        xmsgDefaultGasLimit,
+                        xmsgMaxGasLimit,
+                        xmsgMinGasLimit,
+                        xreceiptMaxErrorBytes,
                         genesisValSetId,
                         validatorSet[genesisValSetId]
                     )

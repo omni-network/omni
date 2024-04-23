@@ -48,6 +48,26 @@ interface IOmniPortal {
     event ValidatorSetAdded(uint64 indexed setId);
 
     /**
+     * @notice Default xmsg execution gas limit, enforced on destination chain
+     */
+    function xmsgDefaultGasLimit() external view returns (uint64);
+
+    /**
+     * @notice Maximum allowed xmsg gas limit
+     */
+    function xmsgMaxGasLimit() external view returns (uint64);
+
+    /**
+     * @notice Minimum allowed xmsg gas limit
+     */
+    function xmsgMinGasLimit() external view returns (uint64);
+
+    /**
+     * @notice Maxium number of bytes allowed in xreceipt result
+     */
+    function xreceiptMaxErrorBytes() external view returns (uint64);
+
+    /**
      * @notice Returns Chain ID of the chain to which this portal is deployed
      */
     function chainId() external view returns (uint64);
@@ -87,8 +107,8 @@ interface IOmniPortal {
     function isXCall() external view returns (bool);
 
     /**
-     * @notice Calculate the fee for calling a contract on another chain. Uses
-     *         OmniPortal.XMSG_DEFAULT_GAS_LIMIT. Fees denominated in wei.
+     * @notice Calculate the fee for calling a contract on another chain. Uses xmsgDefaultGasLimit.
+     *         Fees denominated in wei.
      * @param destChainId   Destination chain ID
      * @param data          Encoded function calldata
      */
@@ -104,7 +124,7 @@ interface IOmniPortal {
     function feeFor(uint64 destChainId, bytes calldata data, uint64 gasLimit) external view returns (uint256);
 
     /**
-     * @notice Call a contract on another chain Uses OmniPortal.XMSG_DEFAULT_GAS_LIMIT as execution
+     * @notice Call a contract on another chain Uses xmsgDefaultGasLimit as execution
      *         gas limit on destination chain
      * @param destChainId   Destination chain ID
      * @param to            Address of contract to call on destination chain
@@ -114,8 +134,7 @@ interface IOmniPortal {
 
     /**
      * @notice Call a contract on another chain Uses provide gasLimit as execution gas limit on
-     *          destination chain. Reverts if gasLimit < XMSG_MAX_GAS_LIMIT or gasLimit >
-     *          XMSG_MAX_GAS_LIMIT
+     *          destination chain. Reverts if gasLimit < xmsgMinGasLimit or gasLimit > xmsgMaxGasLimit.
      * @param destChainId   Destination chain ID
      * @param to            Address of contract to call on destination chain
      * @param data          ABI Encoded function calldata
