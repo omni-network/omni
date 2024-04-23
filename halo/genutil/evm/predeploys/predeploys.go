@@ -25,8 +25,11 @@ const (
 	ImplNamespace = "0x121E241111111111111111111111111111000000"
 
 	// Predeploy addresses.
-	ProxyAdmin = "0x121E240000000000000000000000000000000001"
-	OmniStake  = "0x121E240000000000000000000000000000000002"
+	ProxyAdmin     = "0x121E240000000000000000000000000000000001"
+	OmniStake      = "0x121E240000000000000000000000000000000002"
+	EthStakeInbox  = "0x121E240000000000000000000000000000000003"
+	XRegistry      = "0x121E240000000000000000000000000000000004"
+	PortalRegistry = "0x121E240000000000000000000000000000000005"
 
 	// TransparentUpgradeableProxy storage slots.
 	ProxyImplementationSlot = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
@@ -39,13 +42,17 @@ var (
 	implNamespace = addrToBig(common.HexToAddress(ImplNamespace))
 
 	// Predeploy addresses.
-	proxyAdmin = common.HexToAddress(ProxyAdmin)
-	omniStake  = common.HexToAddress(OmniStake)
+	proxyAdmin     = common.HexToAddress(ProxyAdmin)
+	omniStake      = common.HexToAddress(OmniStake)
+	xRegistry      = common.HexToAddress(XRegistry)
+	portalRegistry = common.HexToAddress(PortalRegistry)
 
 	// Predeploy bytecodes.
-	proxyCode      = mustDecodeHex(bindings.TransparentUpgradeableProxyDeployedBytecode)
-	proxyAdminCode = mustDecodeHex(bindings.ProxyAdminDeployedBytecode)
-	omniStakeCode  = mustDecodeHex(bindings.OmniStakeDeployedBytecode)
+	proxyCode          = mustDecodeHex(bindings.TransparentUpgradeableProxyDeployedBytecode)
+	proxyAdminCode     = mustDecodeHex(bindings.ProxyAdminDeployedBytecode)
+	omniStakeCode      = mustDecodeHex(bindings.OmniStakeDeployedBytecode)
+	xRegistryCode      = mustDecodeHex(bindings.XRegistryDeployedBytecode)
+	portalRegistryCode = mustDecodeHex(bindings.PortalRegistryDeployedBytecode)
 )
 
 // Alloc returns the genesis allocs for the predeployed contracts, initializing code and storage.
@@ -56,12 +63,25 @@ func Alloc(network netconf.ID) (types.GenesisAlloc, error) {
 
 	setProxies(db)
 
-	if err := setProxyAdmin(db, network); err != nil {
+	admin, err := eoa.Admin(network)
+	if err != nil {
+		return nil, errors.Wrap(err, "network admin")
+	}
+
+	if err := setProxyAdmin(db, admin); err != nil {
 		return nil, errors.Wrap(err, "set proxy admin")
 	}
 
 	if err := setOmniStake(db); err != nil {
 		return nil, errors.Wrap(err, "set omni stake")
+	}
+
+	if err := setXRegistry(db, admin); err != nil {
+		return nil, errors.Wrap(err, "set xregistry")
+	}
+
+	if err := setPortalRegistry(db, admin); err != nil {
+		return nil, errors.Wrap(err, "set portal registry")
 	}
 
 	return db.Genesis().Alloc, nil
@@ -85,33 +105,44 @@ func setProxies(db *state.MemDB) {
 
 // setOmniStake sets the omniStake predeploy.
 func setOmniStake(db *state.MemDB) error {
-	// OmniStake storage is empty
 	storage := state.StorageValues{}
 
-	impl := implementation(omniStake)
-	setProxyImplementation(db, omniStake, impl)
-
-	return setPredeploy(db, impl, omniStakeCode, bindings.OmniStakeStorageLayout, storage)
+	return setPredeploy(db, omniStake, omniStakeCode, bindings.OmniStakeStorageLayout, storage)
 }
 
 // setProxyAdmin sets the proxy admin predeploy.
-func setProxyAdmin(db *state.MemDB, network netconf.ID) error {
-	owner, err := eoa.Admin(network)
-	if err != nil {
-		return errors.Wrap(err, "network admin")
-	}
+func setProxyAdmin(db *state.MemDB, owner common.Address) error {
+	storage := state.StorageValues{"_owner": owner}
 
-	storage := state.StorageValues{
-		"_owner": owner,
-	}
+	db.SetCode(proxyAdmin, proxyAdminCode)
 
-	return setPredeploy(db, proxyAdmin, proxyAdminCode, bindings.ProxyAdminStorageLayout, storage)
+	return setStrorage(db, proxyAdmin, bindings.ProxyAdminStorageLayout, storage)
 }
 
-// setPredeploy sets the code and storage for the given predeploy.
-func setPredeploy(db *state.MemDB, addr common.Address, code []byte, layout solc.StorageLayout, storage state.StorageValues) error {
-	db.SetCode(addr, code)
+// setXRegistry sets the XRegistry predeploy.
+func setXRegistry(db *state.MemDB, owner common.Address) error {
+	storage := state.StorageValues{"_owner": owner}
 
+	return setPredeploy(db, xRegistry, xRegistryCode, bindings.XRegistryStorageLayout, storage)
+}
+
+// setPortalRegistry sets the PortalRegistry predeploy.
+func setPortalRegistry(db *state.MemDB, owner common.Address) error {
+	storage := state.StorageValues{"_owner": owner}
+	return setPredeploy(db, portalRegistry, portalRegistryCode, bindings.PortalRegistryStorageLayout, storage)
+}
+
+// setPredeploy sets the implementation code and proxy storage for the given predeploy.
+func setPredeploy(db *state.MemDB, proxy common.Address, code []byte, layout solc.StorageLayout, storage state.StorageValues) error {
+	impl := implementation(proxy)
+	setProxyImplementation(db, proxy, impl)
+	db.SetCode(impl, code)
+
+	return setStrorage(db, proxy, layout, storage)
+}
+
+// setStrorage sets the code and storage for the given predeploy.
+func setStrorage(db *state.MemDB, addr common.Address, layout solc.StorageLayout, storage state.StorageValues) error {
 	slots, err := state.EncodeStorage(layout, storage)
 	if err != nil {
 		return errors.Wrap(err, "encode storage", "addr", addr)

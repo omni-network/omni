@@ -37,6 +37,7 @@ type Receipt struct {
 	MsgID                         // Unique ID of the cross chain message that was applied.
 	GasUsed        uint64         // Gas used during message "call"
 	Success        bool           // Result, true for success, false for revert
+	Error          []byte         // Error message if the message failed
 	RelayerAddress common.Address // Address of relayer that submitted the message
 	TxHash         common.Hash    // Hash of the relayer submission transaction
 }

@@ -1,6 +1,7 @@
 {
   "extends": "solhint:recommended",
   "rules": {
+    "const-name-snakecase": "off",
     "custom-errors": "off",
     "func-visibility": ["error", { "ignoreConstructors": true }],
     "immutable-vars-naming": "off",

@@ -8,6 +8,7 @@ import { ProxyAdmin } from "src/deploy/ProxyAdmin.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
 import { FeeOracleV1 } from "src/protocol/FeeOracleV1.sol";
 import { OmniPortal } from "src/protocol/OmniPortal.sol";
+import { XRegistryReplica } from "src/protocol/XRegistryReplica.sol";
 import { TestXTypes } from "./TestXTypes.sol";
 import { PortalHarness } from "./PortalHarness.sol";
 import { Counter } from "./Counter.sol";
@@ -36,7 +37,7 @@ contract Fixtures is CommonBase, StdCheats {
     uint64 constant chainAId = 102;
     uint64 constant chainBId = 103;
 
-    uint64 constant omniEChainID = 166;
+    uint64 constant omniChainId = 166;
     uint64 constant omniCChainID = 1_000_166;
     uint64 constant broadcastChainId = 0; // PORTAL._BROADCAST_CHAIN_ID
 
@@ -48,6 +49,11 @@ contract Fixtures is CommonBase, StdCheats {
     address xcaller;
     address relayer;
     address owner;
+
+    uint64 xmsgDefaultGasLimit = 200_000;
+    uint64 xmsgMaxGasLimit = 5_000_000;
+    uint64 xmsgMinGasLimit = 21_000;
+    uint64 xreceiptMaxErrorBytes = 256;
 
     string constant valMnemonic = "test test test test test test test test test test test junk";
 
@@ -65,6 +71,9 @@ contract Fixtures is CommonBase, StdCheats {
     uint256 val3PrivKey;
     uint256 val4PrivKey;
     uint256 val5PrivKey;
+
+    // TODO: replace with XRegistryReplica per each portal
+    address stubXRegistry = makeAddr("stubXRegistry");
 
     ProxyAdmin proxyAdmin;
     ProxyAdmin chainAProxyAdmin;
@@ -289,12 +298,21 @@ contract Fixtures is CommonBase, StdCheats {
             sender: _counters[sourceChainId],
             to: _counters[destChainId],
             data: abi.encodeWithSignature("increment()"),
-            gasLimit: portal.XMSG_DEFAULT_GAS_LIMIT()
+            gasLimit: portal.xmsgDefaultGasLimit()
         });
     }
-    /// @dev Create a Reverter.forceRevert() XMsg
 
+    /// @dev Create a Reverter.forceRevert() XMsg
     function _revert(uint64 sourceChainId, uint64 destChainId, uint64 offset)
+        internal
+        view
+        returns (XTypes.Msg memory)
+    {
+        return _reverter_xmsg(sourceChainId, destChainId, offset, abi.encodeWithSignature("forceRevert()"));
+    }
+
+    /// @dev Helper to create an xmsg to the Reverter contract
+    function _reverter_xmsg(uint64 sourceChainId, uint64 destChainId, uint64 offset, bytes memory data)
         internal
         view
         returns (XTypes.Msg memory)
@@ -305,8 +323,8 @@ contract Fixtures is CommonBase, StdCheats {
             streamOffset: offset,
             sender: _reverters[sourceChainId],
             to: _reverters[destChainId],
-            data: abi.encodeWithSignature("forceRevert()"),
-            gasLimit: portal.XMSG_DEFAULT_GAS_LIMIT()
+            data: data,
+            gasLimit: portal.xmsgDefaultGasLimit()
         });
     }
 
@@ -393,8 +411,13 @@ contract Fixtures is CommonBase, StdCheats {
                         OmniPortal.initialize.selector,
                         owner,
                         address(feeOracle),
-                        omniEChainID,
+                        stubXRegistry,
+                        omniChainId,
                         omniCChainID,
+                        xmsgDefaultGasLimit,
+                        xmsgMaxGasLimit,
+                        xmsgMinGasLimit,
+                        xreceiptMaxErrorBytes,
                         genesisValSetId,
                         validatorSet[genesisValSetId]
                     )
@@ -428,8 +451,13 @@ contract Fixtures is CommonBase, StdCheats {
                         OmniPortal.initialize.selector,
                         owner,
                         address(feeOracle),
-                        omniEChainID,
+                        stubXRegistry,
+                        omniChainId,
                         omniCChainID,
+                        xmsgDefaultGasLimit,
+                        xmsgMaxGasLimit,
+                        xmsgMinGasLimit,
+                        xreceiptMaxErrorBytes,
                         genesisValSetId,
                         validatorSet[genesisValSetId]
                     )
@@ -463,8 +491,13 @@ contract Fixtures is CommonBase, StdCheats {
                         OmniPortal.initialize.selector,
                         owner,
                         address(feeOracle),
-                        omniEChainID,
+                        stubXRegistry,
+                        omniChainId,
                         omniCChainID,
+                        xmsgDefaultGasLimit,
+                        xmsgMaxGasLimit,
+                        xmsgMinGasLimit,
+                        xreceiptMaxErrorBytes,
                         genesisValSetId,
                         validatorSet[genesisValSetId]
                     )

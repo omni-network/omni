@@ -16,7 +16,7 @@ contract OmniPortal_xcall_Test is Base {
 
         // check XMsg event is emitted
         vm.expectEmit();
-        emit XMsg(xmsg.destChainId, 1, xcaller, xmsg.to, xmsg.data, portal.XMSG_DEFAULT_GAS_LIMIT());
+        emit XMsg(xmsg.destChainId, 1, xcaller, xmsg.to, xmsg.data, portal.xmsgDefaultGasLimit());
 
         uint256 fee = portal.feeFor(xmsg.destChainId, xmsg.data);
 
@@ -31,7 +31,7 @@ contract OmniPortal_xcall_Test is Base {
     /// @dev Test that xcall with explicit gas limit emits XMsg event and increments outXStreamOffset
     function test_xcall_explicitGasLimit_succeeds() public {
         XTypes.Msg memory xmsg = _outbound_increment();
-        xmsg.gasLimit = portal.XMSG_DEFAULT_GAS_LIMIT() + 1;
+        xmsg.gasLimit = portal.xmsgDefaultGasLimit() + 1;
 
         // check XMsg event is emitted
         vm.expectEmit();
@@ -60,7 +60,7 @@ contract OmniPortal_xcall_Test is Base {
     /// @dev Test that xcall with too-low gas limit reverts
     function test_xcall_gasLimitTooLow_reverts() public {
         XTypes.Msg memory xmsg = _outbound_increment();
-        xmsg.gasLimit = portal.XMSG_MIN_GAS_LIMIT() - 1;
+        xmsg.gasLimit = portal.xmsgMinGasLimit() - 1;
 
         uint256 fee = portal.feeFor(xmsg.destChainId, xmsg.data, xmsg.gasLimit);
 
@@ -71,7 +71,7 @@ contract OmniPortal_xcall_Test is Base {
     /// @dev Test that xcall with too-high gas limit reverts
     function test_xcall_gasLimitTooHigh_reverts() public {
         XTypes.Msg memory xmsg = _outbound_increment();
-        xmsg.gasLimit = portal.XMSG_MAX_GAS_LIMIT() + 1;
+        xmsg.gasLimit = portal.xmsgMaxGasLimit() + 1;
 
         uint256 fee = portal.feeFor(xmsg.destChainId, xmsg.data, xmsg.gasLimit);
 
