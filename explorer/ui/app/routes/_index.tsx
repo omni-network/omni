@@ -7,7 +7,7 @@ import { gqlClient } from '~/entry.server'
 import { useFetcher, useRevalidator, useSearchParams } from '@remix-run/react'
 import { useInterval } from '~/hooks/useInterval'
 import { xblockcount } from '~/components/queries/block'
-import { xmsgs } from '~/components/queries/messages'
+import { xmsgs, xmsgrange } from '~/components/queries/messages'
 import { XMsg } from '~/graphql/graphql'
 import { supportedchains } from '~/components/queries/chains'
 import { mappedSourceChains } from '~/lib/sourceChains'
@@ -24,14 +24,15 @@ export const loader: LoaderFunction = async ({ request }) => {
 
   console.log(request)
   const [xmsgRes, supportedChainsRes] = await Promise.all([
-    gqlClient.query(xmsgs, { limit: '0x' + (10).toString(16), cursor: '0x' + (0).toString(16) }),
+    // gqlClient.query(xmsgs, { limit: '0x' + (10).toString(16), cursor: '0x' + (0).toString(16) }),
+    gqlClient.query(xmsgrange, { from: '0x' + (0).toString(16), to: '0x' + (1000).toString(16) }),
     gqlClient.query(supportedchains, {}),
   ])
 
   console.log('This is the results of xmsgs', xmsgRes)
 
   const supportedChains = mappedSourceChains(supportedChainsRes.data?.supportedchains || [])
-  const xmsgsList = xmsgRes?.data?.xmsgs ?? []
+  const xmsgsList = xmsgRes?.data?.xmsgrange ?? []
 
   // console.log('Supported chains', supportedChains)
   // console.log('xmsgData', xmsgRes?.data?.xmsgrange.length)

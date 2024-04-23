@@ -18,6 +18,8 @@ import { getAddressUrl, getBaseUrl, getBlockUrl, getTxUrl } from '~/lib/sourceCh
 import debounce from 'lodash.debounce'
 import { Tooltip } from 'react-tooltip'
 import Button from '../shared/button'
+import { PageButton } from '../shared/button-legacy'
+import { copyToClipboard } from '~/lib/utils'
 
 export default function XMsgDataTable() {
   const data = useLoaderData<typeof loader>()
@@ -117,8 +119,9 @@ export default function XMsgDataTable() {
         cell: (value: any) => (
           <>
             <Tooltip className="bg-overlay" id="my-tooltip">
-              {' '}
-              Hex value:{value.getValue()}{' '}
+              <span className="text-default text-b-sm font-bold">
+                Hex value:{value.getValue()}{' '}
+              </span>
             </Tooltip>
             <span data-tooltip-id="my-tooltip" className=" font-bold text-b-sm">
               {Number(value.getValue())}
@@ -154,32 +157,44 @@ export default function XMsgDataTable() {
         accessorKey: 'SourceMessageSender',
         header: () => <span>Address</span>,
         cell: (value: any) => (
-          <Link
-            to={`${getBaseUrl(value.row.original.SourceChainID, 'senderAddress')}/${value.getValue()}`}
-            className="link"
-          >
-            {value.getValue() && (
-              <>
-                <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
-                <span className="icon-external-link" />
-              </>
-            )}
-          </Link>
+          <>
+            <Link
+              to={`${getBaseUrl(value.row.original.SourceChainID, 'senderAddress')}/${value.getValue()}`}
+              className="link"
+            >
+              {value.getValue() && (
+                <>
+                  <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
+                  <span className="icon-external-link" />
+                </>
+              )}
+            </Link>
+            <span
+              className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
+              onClick={() => copyToClipboard(value.getValue())}
+            />
+          </>
         ),
       },
       {
         ...columnConfig,
         accessorKey: 'BlockHash',
-        header: () => <span>Block Hash</span>,
+        header: () => <span>Tx Hash</span>,
         cell: (value: any) => (
-          <Link
-            target="_blank"
-            to={`${getBaseUrl(value.row.original.SourceChainID, 'blockHash')}/${value.getValue()}`}
-            className="link"
-          >
-            <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
-            <span className="icon-external-link" />
-          </Link>
+          <>
+            <Link
+              target="_blank"
+              to={`${getBaseUrl(value.row.original.SourceChainID, 'blockHash')}/${value.getValue()}`}
+              className="link"
+            >
+              <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
+              <span className="icon-external-link" />
+            </Link>
+            <span
+              className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
+              onClick={() => copyToClipboard(value.getValue())}
+            />
+          </>
         ),
       },
       {
@@ -199,14 +214,20 @@ export default function XMsgDataTable() {
         accessorKey: 'DestAddress',
         header: () => <span>Address</span>,
         cell: (value: any) => (
-          <Link
-            target="_blank"
-            to={`${getBaseUrl(value.row.original.SourceChainID, 'destHash')}/${value.getValue()}`}
-            className="link"
-          >
-            <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
-            <span className="icon-external-link" />
-          </Link>
+          <>
+            <Link
+              target="_blank"
+              to={`${getBaseUrl(value.row.original.SourceChainID, 'destHash')}/${value.getValue()}`}
+              className="link"
+            >
+              <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
+              <span className="icon-external-link" />
+            </Link>
+            <span
+              className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
+              onClick={() => copyToClipboard(value.getValue())}
+            />
+          </>
         ),
       },
       {
@@ -214,14 +235,20 @@ export default function XMsgDataTable() {
         accessorKey: 'TxHash',
         header: () => <span>Tx Hash</span>,
         cell: (value: any) => (
-          <Link
-            target="_blank"
-            to={`${getBaseUrl(value.row.original.SourceChainID, 'tx')}/${value.getValue()}`}
-            className="link"
-          >
-            <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
-            <span className="icon-external-link" />
-          </Link>
+          <>
+            <Link
+              target="_blank"
+              to={`${getBaseUrl(value.row.original.SourceChainID, 'tx')}/${value.getValue()}`}
+              className="link"
+            >
+              <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
+              <span className="icon-external-link" />
+            </Link>
+            <span
+              className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
+              onClick={() => copyToClipboard(value.getValue())}
+            />
+          </>
         ),
       },
     ],
@@ -233,7 +260,16 @@ export default function XMsgDataTable() {
       <div className="flex flex-col">
         <h5 className="text-default mb-4">
           XMsgs{' '}
-          <Link target="_blank" to="https://docs.omni.network/protocol/xmessages/xmsg">
+          <Tooltip className="bg-overlay" id="xmsg-info">
+            <span className="text-default text-b-sm font-bold">
+              Click to view more info about the xMsg{' '}
+            </span>
+          </Tooltip>
+          <Link
+            data-tooltip-id={'xmsg-info'}
+            target="_blank"
+            to="https://docs.omni.network/protocol/xmessages/xmsg"
+          >
             <span className="icon-tooltip-info"></span>
           </Link>
         </h5>
@@ -299,6 +335,36 @@ export default function XMsgDataTable() {
       </div>
       <div>
         <SimpleTable columns={columns} data={rows} />
+
+        {/* Nav Buttons */}
+        <div className="flex flex-row items-center justify-end mt-4">
+          <PageButton
+            className="rounded-full flex items-center justify-center"
+            onClick={() => {}} // TODO: when clicked it needs to update the search params with the new cursor
+            disabled={false} // TODO: When there is no previous cursor, we need to disable this
+          >
+            <span className="sr-only">Previous</span>
+            <span className={`icon-chevron-med-left text-[20px]`}></span>
+          </PageButton>
+
+          {/* Page N of N */}
+          <div className="flex-none flex m-3">
+            <div className="flex gap-x-2 items-baseline">
+              <span className="text-cb-sm text-default">
+                Page <span className="">{0}</span> of <span className="">{0}</span>
+              </span>
+            </div>
+          </div>
+
+          <PageButton
+            className="rounded-full  flex items-center justify-center"
+            onClick={() => {}} // TODO: when clicked it needs to update the search params with the new cursor
+            disabled={false} // TODO: When there is no next cursor, we need to disable this
+          >
+            <span className="sr-only">Next</span>
+            <span className={`icon-chevron-med-right text-[20px]`}></span>
+          </PageButton>
+        </div>
       </div>
     </div>
   )
