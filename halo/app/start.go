@@ -255,6 +255,7 @@ func makeBaseAppOpts(cfg Config) ([]func(*baseapp.BaseApp), error) {
 	snapshotOptions := snapshottypes.NewSnapshotOptions(cfg.SnapshotInterval, uint32(cfg.SnapshotKeepRecent))
 
 	return []func(*baseapp.BaseApp){
+		// baseapp.SetOptimisticExecution(), // TODO(corver): Enable this.
 		baseapp.SetChainID(chainID),
 		baseapp.SetMinRetainBlocks(cfg.MinRetainBlocks),
 		baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(cfg.PruningOption)),

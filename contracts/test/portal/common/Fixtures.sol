@@ -49,6 +49,11 @@ contract Fixtures is CommonBase, StdCheats {
     address relayer;
     address owner;
 
+    uint64 xmsgDefaultGasLimit = 200_000;
+    uint64 xmsgMaxGasLimit = 5_000_000;
+    uint64 xmsgMinGasLimit = 21_000;
+    uint64 xreceiptMaxErrorBytes = 256;
+
     string constant valMnemonic = "test test test test test test test test test test test junk";
 
     address val1;
@@ -289,12 +294,21 @@ contract Fixtures is CommonBase, StdCheats {
             sender: _counters[sourceChainId],
             to: _counters[destChainId],
             data: abi.encodeWithSignature("increment()"),
-            gasLimit: portal.XMSG_DEFAULT_GAS_LIMIT()
+            gasLimit: portal.xmsgDefaultGasLimit()
         });
     }
-    /// @dev Create a Reverter.forceRevert() XMsg
 
+    /// @dev Create a Reverter.forceRevert() XMsg
     function _revert(uint64 sourceChainId, uint64 destChainId, uint64 offset)
+        internal
+        view
+        returns (XTypes.Msg memory)
+    {
+        return _reverter_xmsg(sourceChainId, destChainId, offset, abi.encodeWithSignature("forceRevert()"));
+    }
+
+    /// @dev Helper to create an xmsg to the Reverter contract
+    function _reverter_xmsg(uint64 sourceChainId, uint64 destChainId, uint64 offset, bytes memory data)
         internal
         view
         returns (XTypes.Msg memory)
@@ -305,8 +319,8 @@ contract Fixtures is CommonBase, StdCheats {
             streamOffset: offset,
             sender: _reverters[sourceChainId],
             to: _reverters[destChainId],
-            data: abi.encodeWithSignature("forceRevert()"),
-            gasLimit: portal.XMSG_DEFAULT_GAS_LIMIT()
+            data: data,
+            gasLimit: portal.xmsgDefaultGasLimit()
         });
     }
 
@@ -395,6 +409,10 @@ contract Fixtures is CommonBase, StdCheats {
                         address(feeOracle),
                         omniEChainID,
                         omniCChainID,
+                        xmsgDefaultGasLimit,
+                        xmsgMaxGasLimit,
+                        xmsgMinGasLimit,
+                        xreceiptMaxErrorBytes,
                         genesisValSetId,
                         validatorSet[genesisValSetId]
                     )
@@ -430,6 +448,10 @@ contract Fixtures is CommonBase, StdCheats {
                         address(feeOracle),
                         omniEChainID,
                         omniCChainID,
+                        xmsgDefaultGasLimit,
+                        xmsgMaxGasLimit,
+                        xmsgMinGasLimit,
+                        xreceiptMaxErrorBytes,
                         genesisValSetId,
                         validatorSet[genesisValSetId]
                     )
@@ -465,6 +487,10 @@ contract Fixtures is CommonBase, StdCheats {
                         address(feeOracle),
                         omniEChainID,
                         omniCChainID,
+                        xmsgDefaultGasLimit,
+                        xmsgMaxGasLimit,
+                        xmsgMinGasLimit,
+                        xreceiptMaxErrorBytes,
                         genesisValSetId,
                         validatorSet[genesisValSetId]
                     )

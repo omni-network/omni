@@ -153,7 +153,6 @@ contract OmniPortal_xsubmit_Test is Base {
         portal.xsubmit(xsub);
     }
 
-    // test that an xsubmission with an unknown valSetId reverts
     function test_xsubmit_uknownValSetId_reverts() public {
         // generate an xsubmission for val set 2, without submitting the val set
         XTypes.Submission memory xsub = readXSubmission("xblock1", portal.chainId(), 2);
