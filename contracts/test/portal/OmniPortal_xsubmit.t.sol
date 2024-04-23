@@ -91,7 +91,7 @@ contract OmniPortal_xsubmit_Test is Base {
         // add duplicate validator
         xsub.signatures[1] = xsub.signatures[0];
 
-        vm.expectRevert("OmniPortal: duplicate validator");
+        vm.expectRevert("Quorum: duplicate validator");
         portal.xsubmit(xsub);
     }
 

@@ -207,7 +207,7 @@ contract Fixtures is CommonBase, StdCheats {
         return abi.encodePacked(r, s, v);
     }
 
-    /// @dev Sort sigs by validator address. XTypes.verifyQuorum expects sigs to be sorted.
+    /// @dev Sort sigs by validator address. OmniPortal.xsubmit expects sigs to be sorted.
     ///      Func is not really 'pure', because it modifies the input array in place. But it does not depend on contract state.
     function _sortSigsByAddr(XTypes.SigTuple[] memory sigs) internal pure {
         uint256 n = sigs.length;

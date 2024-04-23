@@ -34,11 +34,14 @@ library Quorum {
 
             if (i > 0) {
                 XTypes.SigTuple memory prev = sigs[i - 1];
-                require(sig.validatorAddr != prev.validatorAddr, "OmniPortal: duplicate validator");
-                require(sig.validatorAddr > prev.validatorAddr, "OmniPortal: sigs not sorted");
+                require(sig.validatorAddr != prev.validatorAddr, "Quorum: duplicate validator");
+                require(sig.validatorAddr > prev.validatorAddr, "Quorum: sigs not sorted");
             }
 
-            if (_isValidSig(sig, digest)) votedPower += validators[sig.validatorAddr];
+            require(_isValidSig(sig, digest), "Quorum: invalid signature");
+
+            votedPower += validators[sig.validatorAddr];
+
             if (_isQuorum(votedPower, totalPower, qNumerator, qDenominator)) return true;
         }
 
