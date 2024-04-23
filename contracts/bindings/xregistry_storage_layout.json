@@ -9,7 +9,7 @@
       "type": "t_address"
     },
     {
-      "astId": 52079,
+      "astId": 52082,
       "contract": "src/protocol/XRegistry.sol:XRegistry",
       "label": "_addrs",
       "offset": 0,
@@ -17,7 +17,7 @@
       "type": "t_mapping(t_uint64,t_mapping(t_bytes32,t_address))"
     },
     {
-      "astId": 51629,
+      "astId": 51632,
       "contract": "src/protocol/XRegistry.sol:XRegistry",
       "label": "omni",
       "offset": 0,
@@ -25,7 +25,7 @@
       "type": "t_contract(IOmniPortal)49497"
     },
     {
-      "astId": 51634,
+      "astId": 51637,
       "contract": "src/protocol/XRegistry.sol:XRegistry",
       "label": "replicas",
       "offset": 0,
@@ -33,7 +33,7 @@
       "type": "t_mapping(t_uint64,t_address)"
     },
     {
-      "astId": 51638,
+      "astId": 51641,
       "contract": "src/protocol/XRegistry.sol:XRegistry",
       "label": "_chainIds",
       "offset": 0,
