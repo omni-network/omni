@@ -23,51 +23,23 @@ export default function XMsgDataTable() {
   const revalidator = useRevalidator()
   const searchFieldRef = React.useRef<HTMLInputElement>(null)
 
-  const [filterCategory, setFilterCategory] = React.useState<
-    'sourceAddress' | 'sourceTxHash' | 'destinationAddress' | 'destinationTxHash'
-  >('sourceAddress')
-
   const [filterParams, setFilterParams] = React.useState<{
-    sourceAddress: string | null
-    sourceTxHash: string | null
-    destinationAddress: string | null
-    destinationTxHash: string | null
+    address: string | null
+    txHash: string | null
     status: 'Success' | 'Failed' | 'Pending' | null
   }>({
-    sourceAddress: null,
-    sourceTxHash: null,
-    destinationAddress: null,
-    destinationTxHash: null,
+    address: null,
+    txHash: null,
     status: null,
   })
 
   const [searchParams, setSearchParams] = useSearchParams()
-
-  // search filters
-  const filterOptions = [
-    { display: 'Source address', value: 'sourceAddress' },
-    {
-      display: 'Source tx hash',
-      value: 'sourceTxHash',
-    },
-    {
-      display: 'Destination address',
-      value: 'destinationAddress',
-    },
-    {
-      display: 'Destination tx hash',
-      value: 'destinationTxHash',
-    },
-  ]
 
   const sourceChainList = data.supportedChains.map(chain => ({
     value: chain.ChainID,
     display: chain.DisplayName,
     icon: chain.Icon,
   }))
-
-  const [searchValue, setSearchValue] = React.useState<string>('')
-  const [searchPlaceholder, setSearchPlaceholder] = React.useState<string>()
 
   const rows = data.xmsgs
 
@@ -93,22 +65,26 @@ export default function XMsgDataTable() {
 
   // here we set the filter params by clearing the old ones, and setting the current one and its value
   const searchBarInputCB = e => {
+    const isAddress = e.target.value.match(/^0x[0-9a-fA-F]{40}$/)
+    const isTxHash = e.target.value.match(/^0x[0-9a-fA-F]{64}$/)
+
+    if (!isAddress && !isTxHash && e.target.value !== '') {
+      // return user error cause it doesn't match either
+      alert("It doesn't match")
+    }
+
     setFilterParams(prev => {
       const params = {
         ...prev,
-        destinationAddress: null,
-        destinationTxHash: null,
-        sourceAddress: null,
-        sourceTxHash: null,
+        address: isAddress ? e.target.value : null,
+        txHash: isTxHash ? e.target.value : null,
       }
-
-      params[filterCategory] = e.target.value
 
       return params
     })
   }
 
-  const searchBarInput = useCallback(debounce(searchBarInputCB, 600), [filterCategory])
+  const searchBarInput = useCallback(debounce(searchBarInputCB, 600), [])
 
   const columns = React.useMemo<ColumnDef<any>[]>(
     () => [
@@ -118,8 +94,13 @@ export default function XMsgDataTable() {
         header: () => <span>Nounce</span>,
         cell: (value: any) => (
           <>
-            <Tooltip className='bg-black' delayHide={201000} id="my-tooltip"> This is the content of the tooltip </Tooltip>
-            <span data-tooltip-id="my-tooltip" className=" font-bold text-b-sm">{Number(value.getValue())}</span>
+            <Tooltip className="bg-overlay" id="my-tooltip">
+              {' '}
+              Hex value:{value.getValue()}{' '}
+            </Tooltip>
+            <span data-tooltip-id="my-tooltip" className=" font-bold text-b-sm">
+              {Number(value.getValue())}
+            </span>
           </>
         ),
       },
@@ -230,59 +211,39 @@ export default function XMsgDataTable() {
       <div className="flex flex-col">
         <h5 className="text-default mb-4">
           XMsgs{' '}
-          <Link to="/">
+          <Link target="_blank" to="https://docs.omni.network/protocol/xmessages/xmsg">
             <span className="icon-tooltip-info"></span>
           </Link>
         </h5>
 
         <div className={'flex mb-4 gap-2 flex-col md:flex-row'}>
           <div className="flex w-full">
-            <Dropdown
-              position="left"
-              options={filterOptions}
-              onChange={value => {
-                setFilterCategory(value)
-                if (searchFieldRef.current) {
-                  searchFieldRef.current.value = ''
-                }
-                setSearchPlaceholder(
-                  `Paste or start typing`,
-                  // ${(filterOptions.find(option => option.value === value)?.display || filterOptions[0].display).toLowerCase()} // keeping this here incase we put it back
-                )
-              }}
-              defaultValue={filterOptions[0].value}
-            />
             <SearchBar
               ref={searchFieldRef}
               onInput={searchBarInput}
-              placeholder={searchPlaceholder}
+              placeholder={'Search by address/tx hash'}
             />
           </div>
           <ChainDropdown placeholder="Select source" label="From" options={sourceChainList} />
           <ChainDropdown placeholder="Select destination" label="To" options={sourceChainList} />
         </div>
+        <div className={`flex justify-between `}>
+          <div className="">
+            <FilterOptions
+              onSelection={status => {
+                setFilterParams(prev => ({
+                  ...prev,
+                  status: status === 'all' ? null : status,
+                }))
+              }}
+              options={['All', 'Success', 'Pending', 'Failed']}
+            />
+          </div>
+          <div className={``}>reset</div>
+        </div>
       </div>
       <div>
-        <SimpleTable
-          headChildren={
-            <div className={`flex justify-between `}>
-              <div className="table-highlight  w-[21.856%] min-w-[221px]"></div>
-              <div className={`px-6 py-3`}>
-                <FilterOptions
-                  onSelection={status => {
-                    setFilterParams(prev => ({
-                      ...prev,
-                      status: status === 'all' ? null : status,
-                    }))
-                  }}
-                  options={['All', 'Success', 'Pending', 'Failed']}
-                />
-              </div>
-            </div>
-          }
-          columns={columns}
-          data={rows}
-        />
+        <SimpleTable columns={columns} data={rows} />
       </div>
     </div>
   )
