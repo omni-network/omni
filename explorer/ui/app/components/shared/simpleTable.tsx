@@ -16,7 +16,7 @@ import {
   ChevronRightIcon,
   ChevronDoubleRightIcon,
 } from '@heroicons/react/24/solid'
-import { Button, PageButton } from './button'
+import { Button, PageButton } from './button-legacy'
 import { Link } from '@remix-run/react'
 
 export default function SimpleTable({
@@ -95,7 +95,7 @@ export default function SimpleTable({
         {/* Pagination */}
         <div className="flex items-center mt-4">
           {/* Page Size Dropdown */}
-          <div className="flex-none flex items-center ">
+          {/* <div className="flex-none flex items-center ">
             <label className="relative">
               <select
                 className="appearance-none cursor-pointer bg-bg-input-default rounded-full text-cb-md px-4 py-3 pr-8 text-default "
@@ -117,21 +117,21 @@ export default function SimpleTable({
                 }
               ></span>
             </label>
-          </div>
+          </div> */}
 
           {/* middle element */}
           <div className="grow"></div>
 
           {/* Nav Buttons */}
           <div className="flex flex-row items-center jusify-between">
-            <PageButton
+            {/* <PageButton
               className="rounded-full  flex items-center justify-center"
               onClick={() => table.setPageIndex(0)}
               disabled={!table.getCanPreviousPage()}
             >
               <span className="sr-only">First</span>
               <span className={`icon-rewind text-[20px]`}></span>
-            </PageButton>
+            </PageButton> */}
             <PageButton
               className="rounded-full flex items-center justify-center"
               onClick={() => table.previousPage()}
@@ -159,14 +159,14 @@ export default function SimpleTable({
               <span className="sr-only">Next</span>
               <span className={`icon-chevron-med-right text-[20px]`}></span>
             </PageButton>
-            <PageButton
+            {/* <PageButton
               className="rounded-full  flex items-center justify-center"
               onClick={() => table.setPageIndex(table.getPageCount() - 1)}
               disabled={!table.getCanNextPage()}
             >
               <span className="sr-only">Last</span>
               <span className={`icon-fast-forward text-[20px]`}></span>
-            </PageButton>
+            </PageButton> */}
           </div>
         </div>
       </div>

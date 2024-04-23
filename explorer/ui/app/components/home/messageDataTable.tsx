@@ -17,6 +17,7 @@ import FilterOptions from '../shared/filterOptions'
 import { getAddressUrl, getBaseUrl, getBlockUrl, getTxUrl } from '~/lib/sourceChains'
 import debounce from 'lodash.debounce'
 import { Tooltip } from 'react-tooltip'
+import Button from '../shared/button'
 
 export default function XMsgDataTable() {
   const data = useLoaderData<typeof loader>()
@@ -26,11 +27,15 @@ export default function XMsgDataTable() {
   const [filterParams, setFilterParams] = React.useState<{
     address: string | null
     txHash: string | null
-    status: 'Success' | 'Failed' | 'Pending' | null
+    sourceChain: string | null
+    destChain: string | null
+    status: 'Success' | 'Failed' | 'Pending' | 'All'
   }>({
     address: null,
+    sourceChain: null,
+    destChain: null,
     txHash: null,
-    status: null,
+    status: 'All',
   })
 
   const [searchParams, setSearchParams] = useSearchParams()
@@ -47,6 +52,23 @@ export default function XMsgDataTable() {
     canFilter: false,
     enableColumnFilter: false,
   }
+
+  const clearFilters = () => {
+    if (searchFieldRef.current) {
+      searchFieldRef.current.value = ''
+    }
+
+    setFilterParams({
+      address: null,
+      sourceChain: null,
+      destChain: null,
+      txHash: null,
+      status: 'All',
+    })
+  }
+
+  const hasFiltersApplied: boolean =
+    Object.values(filterParams).filter(val => val !== 'All' && val !== null).length > 0
 
   // Listen for filter changes here and append search params
   useEffect(() => {
@@ -91,7 +113,7 @@ export default function XMsgDataTable() {
       {
         ...columnConfig,
         accessorKey: 'StreamOffset',
-        header: () => <span>Nounce</span>,
+        header: () => <span>Offset</span>,
         cell: (value: any) => (
           <>
             <Tooltip className="bg-overlay" id="my-tooltip">
@@ -224,12 +246,35 @@ export default function XMsgDataTable() {
               placeholder={'Search by address/tx hash'}
             />
           </div>
-          <ChainDropdown placeholder="Select source" label="From" options={sourceChainList} />
-          <ChainDropdown placeholder="Select destination" label="To" options={sourceChainList} />
+          <ChainDropdown
+            onChange={e => {
+              setFilterParams(prev => ({
+                ...prev,
+                sourceChain: e,
+              }))
+            }}
+            placeholder="Select source"
+            label="From"
+            options={sourceChainList}
+            value={filterParams.sourceChain}
+          />
+          <ChainDropdown
+            onChange={e => {
+              setFilterParams(prev => ({
+                ...prev,
+                destChain: e,
+              }))
+            }}
+            placeholder="Select destination"
+            label="To"
+            options={sourceChainList}
+            value={filterParams.destChain}
+          />
         </div>
-        <div className={`flex justify-between `}>
+        <div className={`flex justify-between mb-4`}>
           <div className="">
             <FilterOptions
+              value={filterParams.status}
               onSelection={status => {
                 setFilterParams(prev => ({
                   ...prev,
@@ -239,7 +284,17 @@ export default function XMsgDataTable() {
               options={['All', 'Success', 'Pending', 'Failed']}
             />
           </div>
-          <div className={``}>reset</div>
+          {hasFiltersApplied && (
+            <Button
+              onClick={clearFilters}
+              kind="text"
+              className={`flex justify-center items-center`}
+            >
+              {' '}
+              <span className="icon-refresh  text-default text-[20px]" />
+              <span className="text-default">Clear all filters</span>
+            </Button>
+          )}
         </div>
       </div>
       <div>

@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 interface Props {
   options: Array<string>
   onSelection: any
+  value: string
 }
 
 interface OptionProps {
@@ -24,12 +25,12 @@ const Option: React.FC<OptionProps> = ({ option, active, onClick }) => {
   )
 }
 
-const FilterOptions: React.FC<Props> = ({ options, onSelection, ...props }) => {
-  const [selectedOption, setSelectedOption] = React.useState<string>(options[0])
+const FilterOptions: React.FC<Props> = ({ options, onSelection, value, ...props }) => {
+  // const [selectedOption, setSelectedOption] = React.useState<string>(options[0])
 
-  React.useEffect(() => {
-    onSelection && onSelection(selectedOption)
-  }, [selectedOption])
+  // React.useEffect(() => {
+  //   onSelection && onSelection(selectedOption)
+  // }, [selectedOption])
 
   return (
     <div {...props} className={`flex gap-2 items-center`}>
@@ -37,9 +38,9 @@ const FilterOptions: React.FC<Props> = ({ options, onSelection, ...props }) => {
         <Option
           key={option}
           onClick={() => {
-            setSelectedOption(option)
+            onSelection && onSelection(option)
           }}
-          active={selectedOption === option}
+          active={value === option}
           option={option}
         />
       ))}
