@@ -11,12 +11,12 @@ import { XTypes } from "../libraries/XTypes.sol";
 interface IOmniPortal {
     /**
      * @notice Emitted when an xcall is made to a contract on another chain
-     * @param destChainId Destination chain ID
-     * @param streamOffset Offset this XMsg in the source -> dest XStream
-     * @param sender msg.sender of the source xcall
-     * @param to Address of the contract to call on the destination chain
-     * @param gasLimit Gas limit for execution on destination chain
-     * @param data Encoded function calldata
+     * @param destChainId   Destination chain ID
+     * @param streamOffset  Offset this XMsg in the source -> dest XStream
+     * @param sender        msg.sender of the source xcall
+     * @param to            Address of the contract to call on the destination chain
+     * @param gasLimit      Gas limit for execution on destination chain
+     * @param data          Encoded function calldata
      */
     event XMsg(
         uint64 indexed destChainId, uint64 indexed streamOffset, address sender, address to, bytes data, uint64 gasLimit
@@ -25,13 +25,20 @@ interface IOmniPortal {
     /**
      * @notice Emitted when an XMsg is executed on its destination chain
      * @param sourceChainId Source chain ID
-     * @param streamOffset Offset the XMsg in the source -> dest XStream
-     * @param gasUsed Gas used in execution of the XMsg
-     * @param success Whether the execution succeeded
-     * @param relayer Address of the relayer who submitted the XMsg
+     * @param streamOffset  Offset the XMsg in the source -> dest XStream
+     * @param gasUsed       Gas used in execution of the XMsg
+     * @param success       Whether the execution succeeded
+     * @param relayer       Address of the relayer who submitted the XMsg
+     * @param error         Result of XMsg execution, if success == false. Limited to
+     *                      portal.XRECEIPT_MAX_ERROR_BYTES. Empty if success == true.
      */
     event XReceipt(
-        uint64 indexed sourceChainId, uint64 indexed streamOffset, uint256 gasUsed, address relayer, bool success
+        uint64 indexed sourceChainId,
+        uint64 indexed streamOffset,
+        uint256 gasUsed,
+        address relayer,
+        bool success,
+        bytes error
     );
 
     /**
