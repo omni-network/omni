@@ -13,6 +13,7 @@ const SearchBar: React.FC<Props> = forwardRef(({ placeholder = 'Search', onInput
     >
       <span className="icon-search absolute top-3 left-3 text-[22px] text-default" />
       <input
+        autoFocus
         ref={ref}
         onInput={e => {
           onInput && onInput(e)

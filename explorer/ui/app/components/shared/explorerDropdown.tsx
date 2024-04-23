@@ -35,7 +35,7 @@ const ExplorerDropdown: React.FC<Props> = ({ ...props }) => {
         <label
           className={`z-10 pointer-events-none text-sm text-[12px] font-normal text-subtle  ${isOpen && '!text-default'} `}
         >
-          EVM Explorer
+          EVM Explorers
         </label>
         {/* chevron */}
         <div

@@ -27,6 +27,14 @@ const ChainDropdown: React.FC<Props> = ({
   // state
   const [isOpen, setIsOpen] = React.useState<boolean>(false)
 
+  const [searchValue, setSearchValue] = React.useState<string>('')
+
+  React.useEffect(() => {
+    if (isOpen === false) {
+      setSearchValue('')
+    }
+  }, [isOpen])
+
   return (
     <div className={'relative'}>
       {hasLabel && (
@@ -74,25 +82,37 @@ const ChainDropdown: React.FC<Props> = ({
       {/* dropdown container */}
       {isOpen && (
         <div className="flex flex-col gap-2 absolute top-10 right-0 z-10 bg-overlay border-[1px] border-default rounded-[12px] p-3 min-w-[317px]">
-          <input autoFocus className="input h-[40px] rounded-lg bg-search-default" />
+          <input
+            onChange={e => {
+              setSearchValue(e.target.value)
+            }}
+            autoFocus
+            className="input h-[40px] rounded-lg bg-search-default"
+          />
 
-          {options.map((option, i) => (
-            <div
-              key={`option-${i}`}
-              onClick={() => {
-                setIsOpen(false)
-                onChange && onChange(option.value)
-              }}
-              className={`p-2 text-b-md text-default font-bold text-nowrap cursor-pointer rounded-lg flex items-center justify-between ${option.value === value && 'bg-active'} hover:bg-hover`}
-            >
-              <div className={`flex gap-2`}>
-                <img src={option?.icon} alt={`${option?.display} icon`} />
-                <span className="capitalize">{option?.display}</span>
+          {options
+            .filter(
+              option =>
+                option.display.toLowerCase().includes(searchValue.toLowerCase()) ||
+                option.value.toLowerCase().includes(searchValue.toLowerCase()),
+            )
+            .map((option, i) => (
+              <div
+                key={`option-${i}`}
+                onClick={() => {
+                  setIsOpen(false)
+                  onChange && onChange(option.value)
+                }}
+                className={`p-2 text-b-md text-default font-bold text-nowrap cursor-pointer rounded-lg flex items-center justify-between ${option.value === value && 'bg-active'} hover:bg-hover`}
+              >
+                <div className={`flex gap-2`}>
+                  <img src={option?.icon} alt={`${option?.display} icon`} />
+                  <span className="capitalize">{option?.display}</span>
+                </div>
+
+                {option.value === value && <span className="icon-tick-med text-[20px]" />}
               </div>
-
-              {option.value === value && <span className="icon-tick-med text-[20px]" />}
-            </div>
-          ))}
+            ))}
         </div>
       )}
     </div>

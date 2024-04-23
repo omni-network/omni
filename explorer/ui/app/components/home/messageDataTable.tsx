@@ -118,12 +118,11 @@ export default function XMsgDataTable() {
         header: () => <span>Offset</span>,
         cell: (value: any) => (
           <>
-            <Tooltip className="bg-overlay" id="my-tooltip">
-              <span className="text-default text-b-sm font-bold">
-                Hex value:{value.getValue()}{' '}
-              </span>
-            </Tooltip>
-            <span data-tooltip-id="my-tooltip" className=" font-bold text-b-sm">
+            <span
+              data-tooltip-id={'tooltip-offset'}
+              data-tooltip-html={`<span class="text-default text-b-sm font-bold">${value.getValue()}</span>`}
+              className="font-bold text-b-sm"
+            >
               {Number(value.getValue())}
             </span>
           </>
@@ -170,6 +169,7 @@ export default function XMsgDataTable() {
               )}
             </Link>
             <span
+              data-tooltip-id="tooltip-clipboard"
               className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
               onClick={() => copyToClipboard(value.getValue())}
             />
@@ -191,6 +191,7 @@ export default function XMsgDataTable() {
               <span className="icon-external-link" />
             </Link>
             <span
+              data-tooltip-id="tooltip-clipboard"
               className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
               onClick={() => copyToClipboard(value.getValue())}
             />
@@ -224,6 +225,7 @@ export default function XMsgDataTable() {
               <span className="icon-external-link" />
             </Link>
             <span
+              data-tooltip-id="tooltip-clipboard"
               className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
               onClick={() => copyToClipboard(value.getValue())}
             />
@@ -245,6 +247,7 @@ export default function XMsgDataTable() {
               <span className="icon-external-link" />
             </Link>
             <span
+              data-tooltip-id="tooltip-clipboard"
               className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
               onClick={() => copyToClipboard(value.getValue())}
             />
@@ -260,10 +263,10 @@ export default function XMsgDataTable() {
       <div className="flex flex-col">
         <h5 className="text-default mb-4">
           XMsgs{' '}
-          <Tooltip className="bg-overlay" id="xmsg-info">
-            <span className="text-default text-b-sm font-bold">
-              Click to view more info about the xMsg{' '}
-            </span>
+          <Tooltip className="tooltip" id="xmsg-info">
+            <label className="text-default text-b-sm font-bold">
+              XMsgs are cross-rollup messages. <br/> Click to learn more
+            </label>
           </Tooltip>
           <Link
             data-tooltip-id={'xmsg-info'}
@@ -320,20 +323,24 @@ export default function XMsgDataTable() {
               options={['All', 'Success', 'Pending', 'Failed']}
             />
           </div>
-          {hasFiltersApplied && (
-            <Button
-              onClick={clearFilters}
-              kind="text"
-              className={`flex justify-center items-center`}
-            >
-              {' '}
-              <span className="icon-refresh  text-default text-[20px]" />
-              <span className="text-default">Clear all filters</span>
-            </Button>
-          )}
+          <Button
+            disabled={!hasFiltersApplied}
+            onClick={clearFilters}
+            kind="text"
+            className={`flex justify-center items-center ${!hasFiltersApplied && 'opacity-40'}`}
+          >
+            {' '}
+            <span className="icon-refresh text-default text-[20px]" />
+            <span className={`text-default`}>Clear all filters</span>
+          </Button>
         </div>
       </div>
       <div>
+        {/* <div className='rounded-xl bg-raised p-10 min-h-[650px]'>
+          <h4 className='text-default mb-4'>No result found.</h4>
+          <p className='text-default text-b'>Please edit your filter selection and try again.</p>
+        </div> */}
+
         <SimpleTable columns={columns} data={rows} />
 
         {/* Nav Buttons */}
@@ -366,6 +373,12 @@ export default function XMsgDataTable() {
           </PageButton>
         </div>
       </div>
+
+      {/* tooltip for offset */}
+      <Tooltip className="tooltip" id={'tooltip-offset'} />
+      <Tooltip className="tooltip" id="tooltip-clipboard">
+        <span className="text-default text-b-sm font-bold">Copy to clipboard </span>
+      </Tooltip>
     </div>
   )
 }
