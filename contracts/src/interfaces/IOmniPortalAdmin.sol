@@ -83,4 +83,14 @@ interface IOmniPortalAdmin {
      * @notice Set the maximum error bytes for xreceipt
      */
     function setXReceiptMaxErrorBytes(uint64 maxErrorBytes) external;
+
+    /**
+     * @notice Pause xcalls
+     */
+    function pause() external;
+
+    /**
+     * @notice Unpause xcalls
+     */
+    function unpause() external;
 }
