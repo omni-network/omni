@@ -13,7 +13,6 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -22,17 +21,18 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 
 	"cosmossdk.io/math"
+	"golang.org/x/sync/errgroup"
 )
 
 // FundValidatorsForTesting funds validators in ephemeral networks: devnet and staging.
 // This is required by load generation for periodic validator self-delegation.
 func FundValidatorsForTesting(ctx context.Context, def Definition) error {
-	if def.Testnet.Network != netconf.Devnet && def.Testnet.Network != netconf.Staging {
+	if !def.Testnet.Network.IsEphemeral() {
 		// Only fund validators in ephemeral networks, devnet and staging.
 		return nil
 	}
 
-	log.Info(ctx, "Funding validators for testing")
+	log.Info(ctx, "Funding validators for testing", "count", len(def.Testnet.Nodes))
 
 	network := externalNetwork(def)
 	omniEVM, _ := network.OmniEVMChain()
@@ -43,18 +43,35 @@ func FundValidatorsForTesting(ctx context.Context, def Definition) error {
 	}
 
 	// Iterate over all nodes, since all maybe become validators.
+	var eg errgroup.Group
 	for _, node := range def.Testnet.Nodes {
-		addr, _ := k1util.PubKeyToAddress(node.PrivvalKey.PubKey())
-		tx, _, err := fundBackend.Send(ctx, funder, txmgr.TxCandidate{
-			To:       &addr,
-			GasLimit: 100_000,
-			Value:    math.NewInt(1000).MulRaw(params.Ether).BigInt(),
+		eg.Go(func() error {
+			addr, _ := k1util.PubKeyToAddress(node.PrivvalKey.PubKey())
+			tx, _, err := fundBackend.Send(ctx, funder, txmgr.TxCandidate{
+				To:       &addr,
+				GasLimit: 100_000,
+				Value:    math.NewInt(1000).MulRaw(params.Ether).BigInt(),
+			})
+			if err != nil {
+				return errors.Wrap(err, "send")
+			} else if _, err := fundBackend.WaitMined(ctx, tx); err != nil {
+				return errors.Wrap(err, "wait mined")
+			}
+
+			bal, err := fundBackend.EtherBalanceAt(ctx, addr)
+			if err != nil {
+				return err
+			}
+
+			log.Debug(ctx, "Funded validator address",
+				"node", node.Name, "addr", addr, "balance", bal)
+
+			return nil
 		})
-		if err != nil {
-			return errors.Wrap(err, "send")
-		} else if _, err := fundBackend.WaitMined(ctx, tx); err != nil {
-			return errors.Wrap(err, "wait mined")
-		}
+	}
+
+	if err := eg.Wait(); err != nil {
+		return errors.Wrap(err, "wait fund")
 	}
 
 	return nil
@@ -146,7 +163,7 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 					return
 				}
 
-				attrs := []any{"node", node.Name, "balance", balance}
+				attrs := []any{"node", node.Name, "balance", balance, "addr", addr}
 
 				txOpts, err := valBackend.BindOpts(ctx, addr)
 				if err != nil {
