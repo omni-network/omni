@@ -57,7 +57,7 @@ var (
 		{Name: "stream_offset", Type: field.TypeUint64},
 		{Name: "tx_hash", Type: field.TypeBytes, Size: 32},
 		{Name: "block_hash", Type: field.TypeBytes, Nullable: true, Size: 32},
-		{Name: "block_height", Type: field.TypeUint64},
+		{Name: "block_height", Type: field.TypeUint64, Nullable: true},
 		{Name: "receipt_hash", Type: field.TypeBytes, Nullable: true, Size: 32},
 		{Name: "status", Type: field.TypeString, Nullable: true, Default: "PENDING"},
 		{Name: "block_time", Type: field.TypeTime, Nullable: true},
