@@ -15,6 +15,7 @@ import (
 
 const consensusIDPrefix = "omni-"
 const consensusIDOffset = 1_000_000
+const maxValidators = 10
 
 // Static defines static config and data for a network.
 type Static struct {
@@ -22,6 +23,7 @@ type Static struct {
 	OmniExecutionChainID uint64
 	AVSContractAddress   common.Address
 	Portals              []Deployment
+	MaxValidators        uint32
 }
 
 type Deployment struct {
@@ -76,19 +78,23 @@ var statics = map[ID]Static{
 	Simnet: {
 		Version:              runid,
 		OmniExecutionChainID: chainids.OmniDevnet,
+		MaxValidators:        maxValidators,
 	},
 	Devnet: {
 		Version:              runid,
 		OmniExecutionChainID: chainids.OmniDevnet,
+		MaxValidators:        maxValidators,
 	},
 	Staging: {
 		Version:              runid,
 		OmniExecutionChainID: chainids.OmniDevnet,
+		MaxValidators:        maxValidators,
 	},
 	Testnet: {
 		Version:              "v0.0.2",
 		AVSContractAddress:   testnetAVS,
 		OmniExecutionChainID: chainids.OmniTestnet,
+		MaxValidators:        maxValidators,
 		Portals: []Deployment{
 			{
 				ChainID:      chainids.Holesky,
@@ -110,6 +116,7 @@ var statics = map[ID]Static{
 	Mainnet: {
 		Version:            "v0.0.1",
 		AVSContractAddress: mainnetAVS,
+		MaxValidators:      maxValidators,
 	},
 }
 
