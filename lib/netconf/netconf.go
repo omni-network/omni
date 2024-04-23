@@ -132,6 +132,10 @@ func (h FinalizationStrat) Verify() error {
 	return nil
 }
 
+func (h FinalizationStrat) String() string {
+	return string(h)
+}
+
 //nolint:gochecknoglobals // Static mappings
 var allStrats = map[FinalizationStrat]bool{
 	StratFinalized: true,

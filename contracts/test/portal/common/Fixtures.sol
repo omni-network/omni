@@ -8,6 +8,7 @@ import { ProxyAdmin } from "src/deploy/ProxyAdmin.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
 import { FeeOracleV1 } from "src/protocol/FeeOracleV1.sol";
 import { OmniPortal } from "src/protocol/OmniPortal.sol";
+import { XRegistryReplica } from "src/protocol/XRegistryReplica.sol";
 import { TestXTypes } from "./TestXTypes.sol";
 import { PortalHarness } from "./PortalHarness.sol";
 import { Counter } from "./Counter.sol";
@@ -36,7 +37,7 @@ contract Fixtures is CommonBase, StdCheats {
     uint64 constant chainAId = 102;
     uint64 constant chainBId = 103;
 
-    uint64 constant omniEChainID = 166;
+    uint64 constant omniChainId = 166;
     uint64 constant omniCChainID = 1_000_166;
     uint64 constant broadcastChainId = 0; // PORTAL._BROADCAST_CHAIN_ID
 
@@ -70,6 +71,9 @@ contract Fixtures is CommonBase, StdCheats {
     uint256 val3PrivKey;
     uint256 val4PrivKey;
     uint256 val5PrivKey;
+
+    // TODO: replace with XRegistryReplica per each portal
+    address stubXRegistry = makeAddr("stubXRegistry");
 
     ProxyAdmin proxyAdmin;
     ProxyAdmin chainAProxyAdmin;
@@ -407,7 +411,8 @@ contract Fixtures is CommonBase, StdCheats {
                         OmniPortal.initialize.selector,
                         owner,
                         address(feeOracle),
-                        omniEChainID,
+                        stubXRegistry,
+                        omniChainId,
                         omniCChainID,
                         xmsgDefaultGasLimit,
                         xmsgMaxGasLimit,
@@ -446,7 +451,8 @@ contract Fixtures is CommonBase, StdCheats {
                         OmniPortal.initialize.selector,
                         owner,
                         address(feeOracle),
-                        omniEChainID,
+                        stubXRegistry,
+                        omniChainId,
                         omniCChainID,
                         xmsgDefaultGasLimit,
                         xmsgMaxGasLimit,
@@ -485,7 +491,8 @@ contract Fixtures is CommonBase, StdCheats {
                         OmniPortal.initialize.selector,
                         owner,
                         address(feeOracle),
-                        omniEChainID,
+                        stubXRegistry,
+                        omniChainId,
                         omniCChainID,
                         xmsgDefaultGasLimit,
                         xmsgMaxGasLimit,
