@@ -83,6 +83,7 @@ func FundEOAAccounts(ctx context.Context, def Definition) error {
 				"Account",
 				"address", account.Address,
 				"type", account.Type,
+				"role", account.Role,
 				"balance", fmt.Sprintf("%.2f ETH", bf),
 				"funding", fund,
 			)
@@ -116,6 +117,7 @@ func FundEOAAccounts(ctx context.Context, def Definition) error {
 			log.Info(ctx, "Account funded",
 				"address", account.Address,
 				"type", account.Type,
+				"role", account.Role,
 				"balance", fmt.Sprintf("%.2f ETH", b),
 			)
 		}
