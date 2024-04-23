@@ -22,7 +22,7 @@
       "label": "omni",
       "offset": 0,
       "slot": "2",
-      "type": "t_contract(OmniPortal)51239"
+      "type": "t_contract(IOmniPortal)49497"
     },
     {
       "astId": 51634,
@@ -58,9 +58,9 @@
       "label": "bytes32",
       "numberOfBytes": "32"
     },
-    "t_contract(OmniPortal)51239": {
+    "t_contract(IOmniPortal)49497": {
       "encoding": "inplace",
-      "label": "contract OmniPortal",
+      "label": "contract IOmniPortal",
       "numberOfBytes": "20"
     },
     "t_mapping(t_bytes32,t_address)": {
