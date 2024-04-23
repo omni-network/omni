@@ -11,12 +11,12 @@ import { XTypes } from "../libraries/XTypes.sol";
 interface IOmniPortal {
     /**
      * @notice Emitted when an xcall is made to a contract on another chain
-     * @param destChainId Destination chain ID
-     * @param streamOffset Offset this XMsg in the source -> dest XStream
-     * @param sender msg.sender of the source xcall
-     * @param to Address of the contract to call on the destination chain
-     * @param gasLimit Gas limit for execution on destination chain
-     * @param data Encoded function calldata
+     * @param destChainId   Destination chain ID
+     * @param streamOffset  Offset this XMsg in the source -> dest XStream
+     * @param sender        msg.sender of the source xcall
+     * @param to            Address of the contract to call on the destination chain
+     * @param gasLimit      Gas limit for execution on destination chain
+     * @param data          Encoded function calldata
      */
     event XMsg(
         uint64 indexed destChainId, uint64 indexed streamOffset, address sender, address to, bytes data, uint64 gasLimit
@@ -25,13 +25,20 @@ interface IOmniPortal {
     /**
      * @notice Emitted when an XMsg is executed on its destination chain
      * @param sourceChainId Source chain ID
-     * @param streamOffset Offset the XMsg in the source -> dest XStream
-     * @param gasUsed Gas used in execution of the XMsg
-     * @param success Whether the execution succeeded
-     * @param relayer Address of the relayer who submitted the XMsg
+     * @param streamOffset  Offset the XMsg in the source -> dest XStream
+     * @param gasUsed       Gas used in execution of the XMsg
+     * @param success       Whether the execution succeeded
+     * @param relayer       Address of the relayer who submitted the XMsg
+     * @param error         Result of XMsg execution, if success == false. Limited to
+     *                      portal.XRECEIPT_MAX_ERROR_BYTES. Empty if success == true.
      */
     event XReceipt(
-        uint64 indexed sourceChainId, uint64 indexed streamOffset, uint256 gasUsed, address relayer, bool success
+        uint64 indexed sourceChainId,
+        uint64 indexed streamOffset,
+        uint256 gasUsed,
+        address relayer,
+        bool success,
+        bytes error
     );
 
     /**
@@ -39,6 +46,26 @@ interface IOmniPortal {
      * @param setId Validator set ID
      */
     event ValidatorSetAdded(uint64 indexed setId);
+
+    /**
+     * @notice Default xmsg execution gas limit, enforced on destination chain
+     */
+    function xmsgDefaultGasLimit() external view returns (uint64);
+
+    /**
+     * @notice Maximum allowed xmsg gas limit
+     */
+    function xmsgMaxGasLimit() external view returns (uint64);
+
+    /**
+     * @notice Minimum allowed xmsg gas limit
+     */
+    function xmsgMinGasLimit() external view returns (uint64);
+
+    /**
+     * @notice Maxium number of bytes allowed in xreceipt result
+     */
+    function xreceiptMaxErrorBytes() external view returns (uint64);
 
     /**
      * @notice Returns Chain ID of the chain to which this portal is deployed
@@ -80,8 +107,8 @@ interface IOmniPortal {
     function isXCall() external view returns (bool);
 
     /**
-     * @notice Calculate the fee for calling a contract on another chain. Uses
-     *         OmniPortal.XMSG_DEFAULT_GAS_LIMIT. Fees denominated in wei.
+     * @notice Calculate the fee for calling a contract on another chain. Uses xmsgDefaultGasLimit.
+     *         Fees denominated in wei.
      * @param destChainId   Destination chain ID
      * @param data          Encoded function calldata
      */
@@ -97,7 +124,7 @@ interface IOmniPortal {
     function feeFor(uint64 destChainId, bytes calldata data, uint64 gasLimit) external view returns (uint256);
 
     /**
-     * @notice Call a contract on another chain Uses OmniPortal.XMSG_DEFAULT_GAS_LIMIT as execution
+     * @notice Call a contract on another chain Uses xmsgDefaultGasLimit as execution
      *         gas limit on destination chain
      * @param destChainId   Destination chain ID
      * @param to            Address of contract to call on destination chain
@@ -107,8 +134,7 @@ interface IOmniPortal {
 
     /**
      * @notice Call a contract on another chain Uses provide gasLimit as execution gas limit on
-     *          destination chain. Reverts if gasLimit < XMSG_MAX_GAS_LIMIT or gasLimit >
-     *          XMSG_MAX_GAS_LIMIT
+     *          destination chain. Reverts if gasLimit < xmsgMinGasLimit or gasLimit > xmsgMaxGasLimit.
      * @param destChainId   Destination chain ID
      * @param to            Address of contract to call on destination chain
      * @param data          ABI Encoded function calldata

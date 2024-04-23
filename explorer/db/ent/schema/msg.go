@@ -40,7 +40,8 @@ func (Msg) Fields() []ent.Field {
 		field.Bytes("TxHash").
 			MaxLen(32),
 		field.Bytes("BlockHash").
-			MaxLen(32),
+			MaxLen(32).
+			Optional(),
 		field.Uint64("BlockHeight"),
 		field.Bytes("ReceiptHash").
 			MaxLen(32).

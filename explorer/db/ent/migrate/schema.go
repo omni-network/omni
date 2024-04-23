@@ -56,7 +56,7 @@ var (
 		{Name: "dest_chain_id", Type: field.TypeUint64},
 		{Name: "stream_offset", Type: field.TypeUint64},
 		{Name: "tx_hash", Type: field.TypeBytes, Size: 32},
-		{Name: "block_hash", Type: field.TypeBytes, Size: 32},
+		{Name: "block_hash", Type: field.TypeBytes, Nullable: true, Size: 32},
 		{Name: "block_height", Type: field.TypeUint64},
 		{Name: "receipt_hash", Type: field.TypeBytes, Nullable: true, Size: 32},
 		{Name: "status", Type: field.TypeString, Nullable: true, Default: "PENDING"},

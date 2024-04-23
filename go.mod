@@ -10,8 +10,8 @@ require (
 	cosmossdk.io/log v1.3.1
 	cosmossdk.io/math v1.3.0
 	cosmossdk.io/orm v1.0.0-beta.3
-	cosmossdk.io/store v1.0.2
-	cosmossdk.io/x/tx v0.13.2
+	cosmossdk.io/store v1.1.0
+	cosmossdk.io/x/tx v0.13.3
 	entgo.io/ent v0.13.1
 	github.com/BurntSushi/toml v1.3.2
 	github.com/Layr-Labs/eigenlayer-cli v0.7.3
@@ -21,7 +21,7 @@ require (
 	github.com/cometbft/cometbft v0.38.6
 	github.com/cosmos/cosmos-db v1.0.2
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
-	github.com/cosmos/cosmos-sdk v0.50.5
+	github.com/cosmos/cosmos-sdk v0.50.6
 	github.com/cosmos/gogoproto v1.4.12
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0
 	github.com/ethereum/go-ethereum v1.13.15
@@ -83,7 +83,7 @@ require (
 	github.com/bufbuild/protoyaml-go v0.1.8 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
-	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/charmbracelet/lipgloss v0.10.0 // indirect
 	github.com/cockroachdb/errors v1.11.1 // indirect
 	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
@@ -98,7 +98,7 @@ require (
 	github.com/cosmos/btcutil v1.0.5 // indirect
 	github.com/cosmos/go-bip39 v1.0.0 // indirect
 	github.com/cosmos/gogogateway v1.2.0 // indirect
-	github.com/cosmos/iavl v1.0.1 // indirect
+	github.com/cosmos/iavl v1.1.2 // indirect
 	github.com/cosmos/ics23/go v0.10.0 // indirect
 	github.com/cosmos/ledger-cosmos-go v0.13.3 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
@@ -161,7 +161,7 @@ require (
 	github.com/hashicorp/go-bexpr v0.1.10 // indirect
 	github.com/hashicorp/go-hclog v1.5.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
-	github.com/hashicorp/go-metrics v0.5.1 // indirect
+	github.com/hashicorp/go-metrics v0.5.3 // indirect
 	github.com/hashicorp/go-plugin v1.5.2 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
@@ -189,7 +189,7 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lib/pq v1.10.7 // indirect
 	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
-	github.com/linxGnu/grocksdb v1.8.12 // indirect
+	github.com/linxGnu/grocksdb v1.8.14 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
@@ -216,14 +216,14 @@ require (
 	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/opencontainers/runc v1.1.12 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
-	github.com/petermattis/goid v0.0.0-20230904192822-1876fd5063bc // indirect
+	github.com/petermattis/goid v0.0.0-20231207134359-e60b3f734c67 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pkg/profile v1.7.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_golang v1.19.0
-	github.com/prometheus/client_model v0.6.0 // indirect
-	github.com/prometheus/common v0.48.0 // indirect
-	github.com/prometheus/procfs v0.12.0 // indirect
+	github.com/prometheus/client_model v0.6.1 // indirect
+	github.com/prometheus/common v0.52.2 // indirect
+	github.com/prometheus/procfs v0.13.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
@@ -263,7 +263,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/crypto v0.22.0 // indirect
-	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8 // indirect
+	golang.org/x/exp v0.0.0-20240404231335-c0f41cb1a7a0 // indirect
 	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/net v0.24.0 // indirect
 	golang.org/x/sys v0.19.0 // indirect
@@ -285,9 +285,6 @@ require (
 replace (
 	// todo(lazar): remove this when go ethereum release new version
 	github.com/cockroachdb/pebble v1.1.0 => github.com/cockroachdb/pebble v0.0.0-20231101195458-481da04154d6
-	// todo(Lazar): remove once cosmos sdk release new version
-	github.com/prometheus/client_golang v1.19.0 => github.com/prometheus/client_golang v1.18.0
-	github.com/prometheus/common v0.48.0 => github.com/prometheus/common v0.47.0
 	// See https://github.com/cosmos/cosmos-sdk/pull/14952
 	// Also https://github.com/cosmos/cosmos-db/blob/main/go.mod#L11-L12
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7

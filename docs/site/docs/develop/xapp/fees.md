@@ -12,7 +12,7 @@ Fees are determined by an `xcall`'s destination chain, calldata, and gas limit. 
 
 ```solidity
 uint256 fee = feeFor(
-   destChainId,  // desintation chain id
+   destChainId,  // destination chain id
    data,         // abi encoded calldata, ex abi.encodeWithSignature("foo()")
    gasLimit      // gas limit to enforce on execution
 )
@@ -22,7 +22,7 @@ Or, using the default gas limit.
 ```solidity
 
 uint256 fee = feeFor(
-   destChainId,  // desintation chain id
+   destChainId,  // destination chain id
    data,         // abi encoded calldata, ex abi.encodeWithSignature("foo()")
 )
 ```

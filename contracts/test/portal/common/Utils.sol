@@ -18,14 +18,16 @@ contract Utils is Test, Events, Fixtures {
         assertEq(log.topics.length, 3);
         assertEq(log.topics[0], XReceipt.selector);
 
-        (uint256 gasUsed, address relayer, bool success) = abi.decode(log.data, (uint256, address, bool));
+        (uint256 gasUsed, address relayer, bool success, bytes memory errorBytes) =
+            abi.decode(log.data, (uint256, address, bool, bytes));
 
         return TestXTypes.Receipt({
             sourceChainId: uint64(uint256(log.topics[1])),
             streamOffset: uint64(uint256(log.topics[2])),
             gasUsed: gasUsed,
             relayer: relayer,
-            success: success
+            success: success,
+            error: errorBytes
         });
     }
 
@@ -51,6 +53,9 @@ contract Utils is Test, Events, Fixtures {
             // readability and this let's us do that
             xmsg.to == _reverters[xmsg.destChainId] ? false : true
         );
+
+        // error should be empty if success is true
+        if (receipt.success) assertEq(receipt.error, "");
     }
 
     /// @dev vm.expectCall() for multiple XMsgs

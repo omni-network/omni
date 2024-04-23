@@ -27,7 +27,7 @@ contract OmniPortal_feeFor_Test is Base {
         bytes memory data = abi.encodeWithSignature("test()");
 
         assertEq(
-            IFeeOracle(portal.feeOracle()).feeFor(destChainId, data, portal.XMSG_DEFAULT_GAS_LIMIT()),
+            IFeeOracle(portal.feeOracle()).feeFor(destChainId, data, portal.xmsgDefaultGasLimit()),
             portal.feeFor(destChainId, data)
         );
     }

@@ -237,6 +237,7 @@ func (p *Provider) getXReceiptLogs(ctx context.Context, chainID uint64, height u
 			},
 			GasUsed:        e.GasUsed.Uint64(),
 			Success:        e.Success,
+			Error:          e.Error,
 			RelayerAddress: e.Relayer,
 			TxHash:         e.Raw.TxHash,
 		})
