@@ -54,6 +54,7 @@ type testFunc struct {
 	TestNode    func(*testing.T, e2e.Node, []Portal)
 	TestPortal  func(*testing.T, Portal, []Portal)
 	TestOmniEVM func(*testing.T, ethclient.Client)
+	TestNetwork func(*testing.T, netconf.Network)
 }
 
 func testNode(t *testing.T, fn func(*testing.T, e2e.Node, []Portal)) {
@@ -69,6 +70,11 @@ func testPortal(t *testing.T, fn func(*testing.T, Portal, []Portal)) {
 func testOmniEVM(t *testing.T, fn func(*testing.T, ethclient.Client)) {
 	t.Helper()
 	test(t, testFunc{TestOmniEVM: fn})
+}
+
+func testNetwork(t *testing.T, fn func(*testing.T, netconf.Network)) {
+	t.Helper()
+	test(t, testFunc{TestNetwork: fn})
 }
 
 // test runs tests for testnet nodes. The callback functions are respectively given a
@@ -131,6 +137,13 @@ func test(t *testing.T, testFunc testFunc) {
 				})
 			}
 		}
+	}
+
+	if testFunc.TestNetwork != nil {
+		t.Run("network", func(t *testing.T) {
+			t.Parallel()
+			testFunc.TestNetwork(t, network)
+		})
 	}
 }
 
