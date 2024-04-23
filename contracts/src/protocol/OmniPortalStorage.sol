@@ -1,15 +1,35 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
-import { XTypes } from "../libraries/XTypes.sol";
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
 import { IOmniPortalAdmin } from "../interfaces/IOmniPortalAdmin.sol";
+import { XTypes } from "../libraries/XTypes.sol";
 
 /**
  * @title OmniPortalStorage
  * @notice Storage layout for OmniPortal
  */
 abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
+    /**
+     * @notice Default xmsg execution gas limit, enforced on destination chain
+     */
+    uint64 public xmsgDefaultGasLimit;
+
+    /**
+     * @notice Maximum allowed xmsg gas limit
+     */
+    uint64 public xmsgMaxGasLimit;
+
+    /**
+     * @notice Minimum allowed xmsg gas limit
+     */
+    uint64 public xmsgMinGasLimit;
+
+    /**
+     * @notice Maxium number of bytes allowed in xreceipt result
+     */
+    uint64 public xreceiptMaxErrorBytes;
+
     /**
      * @notice  Chain ID of Omni's EVM execution chain
      */
