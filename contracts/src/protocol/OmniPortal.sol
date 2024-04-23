@@ -2,6 +2,7 @@
 pragma solidity =0.8.24;
 
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { PausableUpgradeable } from "@openzeppelin-upgrades/contracts/security/PausableUpgradeable.sol";
 
 import { IFeeOracle } from "../interfaces/IFeeOracle.sol";
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
@@ -13,7 +14,14 @@ import { Quorum } from "../libraries/Quorum.sol";
 import { OmniPortalConstants } from "./OmniPortalConstants.sol";
 import { OmniPortalStorage } from "./OmniPortalStorage.sol";
 
-contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPortalConstants, OmniPortalStorage {
+contract OmniPortal is
+    IOmniPortal,
+    IOmniPortalAdmin,
+    OwnableUpgradeable,
+    PausableUpgradeable,
+    OmniPortalConstants,
+    OmniPortalStorage
+{
     /**
      * @notice Chain ID of the chain to which this portal is deployed
      */
@@ -52,7 +60,6 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
         uint64 valSetId,
         XTypes.Validator[] memory validators
     ) public initializer {
-        __Ownable_init();
         _transferOwnership(owner_);
         _setFeeOracle(feeOracle_);
         _setXMsgDefaultGasLimit(xmsgDefaultGasLimit_);
@@ -80,7 +87,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
      * @param to            Address of contract to call on destination chain
      * @param data          ABI Encoded function calldata
      */
-    function xcall(uint64 destChainId, address to, bytes calldata data) external payable {
+    function xcall(uint64 destChainId, address to, bytes calldata data) external payable whenNotPaused {
         _xcall(destChainId, msg.sender, to, data, xmsgDefaultGasLimit);
     }
 
@@ -92,7 +99,11 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
      * @param data          ABI Encoded function calldata
      * @param gasLimit      Execution gas limit, enforced on destination chain
      */
-    function xcall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit) external payable {
+    function xcall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit)
+        external
+        payable
+        whenNotPaused
+    {
         _xcall(destChainId, msg.sender, to, data, gasLimit);
     }
 
@@ -143,7 +154,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
      * @param xsub  An xchain submisison, including an attestation root w/ validator signatures,
      *              and a block header and message batch, proven against the attestation root.
      */
-    function xsubmit(XTypes.Submission calldata xsub) external {
+    function xsubmit(XTypes.Submission calldata xsub) external whenNotPaused {
         require(xsub.msgs.length > 0, "OmniPortal: no xmsgs");
 
         // validator set id for this submission
@@ -348,6 +359,20 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
      */
     function setXReceiptMaxErrorBytes(uint64 maxErrorBytes) external onlyOwner {
         _setXReceiptMaxErrorBytes(maxErrorBytes);
+    }
+
+    /**
+     * @notice Pause xcalls
+     */
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /**
+     * @notice Unpause xcalls
+     */
+    function unpause() external onlyOwner {
+        _unpause();
     }
 
     /**
