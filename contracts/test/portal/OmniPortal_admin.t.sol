@@ -34,13 +34,16 @@ contract OmniPortal_admin_Test is Base {
         assertFalse(portal.paused());
 
         // xcall with default gas
+        vm.chainId(thisChainId);
         portal.xcall{ value: 1 ether }(chainAId, address(1234), abi.encodeWithSignature("test()"));
 
         // xcall with specified gas
+        vm.chainId(thisChainId);
         portal.xcall{ value: 1 ether }(chainAId, address(1234), abi.encodeWithSignature("test()"), 50_000);
 
         // xsubmit
-        XTypes.Submission memory xsub1 = readXSubmission("xblock1", portal.chainId());
+        XTypes.Submission memory xsub1 = readXSubmission({ name: "xblock1", destChainId: thisChainId });
+        vm.chainId(thisChainId);
         portal.xsubmit(xsub1);
 
         // only owner can pause
@@ -54,12 +57,15 @@ contract OmniPortal_admin_Test is Base {
 
         // when paused, cannot xcall and xsubmit
         vm.expectRevert("Pausable: paused");
+        vm.chainId(thisChainId);
         portal.xcall(chainAId, address(1234), abi.encodeWithSignature("test()"));
 
         vm.expectRevert("Pausable: paused");
+        vm.chainId(thisChainId);
         portal.xcall(chainAId, address(1234), abi.encodeWithSignature("test()"), 50_000);
 
         vm.expectRevert("Pausable: paused");
+        vm.chainId(thisChainId);
         portal.xsubmit(xsub1);
     }
 }

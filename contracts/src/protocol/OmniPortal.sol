@@ -26,16 +26,10 @@ contract OmniPortal is
     OmniPortalStorage
 {
     /**
-     * @notice Chain ID of the chain to which this portal is deployed
-     */
-    uint64 public immutable chainId;
-
-    /**
      * @notice Construct the OmniPortal contract
      */
     constructor() {
         _disableInitializers();
-        chainId = uint64(block.chainid);
     }
 
     /**
@@ -80,6 +74,10 @@ contract OmniPortal is
         // cchain stream offset & block heights are equal to valSetId
         inXStreamOffset[omniCChainID_] = valSetId;
         inXStreamBlockHeight[omniCChainID_] = valSetId;
+    }
+
+    function chainId() public view returns (uint64) {
+        return uint64(block.chainid);
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -142,7 +140,7 @@ contract OmniPortal is
         require(msg.value >= feeFor(destChainId, data, gasLimit), "OmniPortal: insufficient fee");
         require(gasLimit <= xmsgMaxGasLimit, "OmniPortal: gasLimit too high");
         require(gasLimit >= xmsgMinGasLimit, "OmniPortal: gasLimit too low");
-        require(destChainId != chainId, "OmniPortal: no same-chain xcall");
+        require(destChainId != chainId(), "OmniPortal: no same-chain xcall");
         require(destChainId != _BROADCAST_CHAIN_ID, "OmniPortal: no broadcast xcall");
         require(to != _VIRTUAL_PORTAL_ADDRESS, "OmniPortal: no portal xcall");
 
@@ -152,10 +150,10 @@ contract OmniPortal is
     }
 
     /**
-     * @notice Returns true if `chainId` is supported destination chain.
+     * @notice Returns true if `destChainId` is supported destination chain.
      */
     function isSupportedChain(uint64 destChainId) public view returns (bool) {
-        return destChainId != chainId
+        return destChainId != chainId()
             && XRegistryBase(xregistry).has(destChainId, XRegistryNames.OmniPortal, Predeploys.PortalRegistry);
     }
 
@@ -245,7 +243,7 @@ contract OmniPortal is
      */
     function _exec(XTypes.Msg calldata xmsg_) internal {
         require(
-            xmsg_.destChainId == chainId || xmsg_.destChainId == _BROADCAST_CHAIN_ID, "OmniPortal: wrong destChainId"
+            xmsg_.destChainId == chainId() || xmsg_.destChainId == _BROADCAST_CHAIN_ID, "OmniPortal: wrong destChainId"
         );
         require(xmsg_.streamOffset == inXStreamOffset[xmsg_.sourceChainId] + 1, "OmniPortal: wrong streamOffset");
 

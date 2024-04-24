@@ -23,6 +23,7 @@ contract OmniPortal_exec_Test is Base {
         vm.prank(relayer);
         vm.expectCall(xmsg.to, xmsg.data);
         vm.recordLogs();
+        vm.chainId(xmsg.destChainId);
         portal.exec(xmsg);
 
         assertEq(counter.count(), count + 1);
@@ -38,6 +39,7 @@ contract OmniPortal_exec_Test is Base {
         vm.prank(relayer);
         vm.expectCall(xmsg.to, xmsg.data);
         vm.recordLogs();
+        vm.chainId(xmsg.destChainId);
         portal.exec(xmsg);
 
         assertEq(portal.inXStreamOffset(xmsg.sourceChainId), xmsg.streamOffset);
@@ -48,9 +50,11 @@ contract OmniPortal_exec_Test is Base {
     function test_exec_wrongChainId_reverts() public {
         XTypes.Msg memory xmsg = _inbound_increment(1);
 
-        xmsg.destChainId = xmsg.destChainId + 1; // intentionally wrong chainId
+        uint64 destChainId = xmsg.destChainId;
+        xmsg.destChainId = destChainId + 1; // intentionally wrong chainId
 
         vm.expectRevert("OmniPortal: wrong destChainId");
+        vm.chainId(destChainId);
         portal.exec(xmsg);
     }
 
@@ -61,6 +65,7 @@ contract OmniPortal_exec_Test is Base {
         xmsg.streamOffset = xmsg.streamOffset + 1; // intentionally ahead of offset
 
         vm.expectRevert("OmniPortal: wrong streamOffset");
+        vm.chainId(xmsg.destChainId);
         portal.exec(xmsg);
     }
 
@@ -68,9 +73,11 @@ contract OmniPortal_exec_Test is Base {
     function test_exec_behindOffset_reverts() public {
         XTypes.Msg memory xmsg = _inbound_increment(1);
 
+        vm.chainId(xmsg.destChainId);
         portal.exec(xmsg); // execute, to increment offset
 
         vm.expectRevert("OmniPortal: wrong streamOffset");
+        vm.chainId(xmsg.destChainId);
         portal.exec(xmsg);
     }
 
@@ -87,6 +94,7 @@ contract OmniPortal_exec_Test is Base {
         });
 
         vm.recordLogs();
+        vm.chainId(xmsg.destChainId);
         portal.exec(xmsg);
         Vm.Log[] memory logs = vm.getRecordedLogs();
         assertEq(logs.length, 1);
@@ -104,6 +112,7 @@ contract OmniPortal_exec_Test is Base {
         });
 
         vm.recordLogs();
+        vm.chainId(xmsg.destChainId);
         portal.exec(xmsg);
         logs = vm.getRecordedLogs();
         assertEq(logs.length, 1);
@@ -121,6 +130,7 @@ contract OmniPortal_exec_Test is Base {
         });
 
         vm.recordLogs();
+        vm.chainId(xmsg.destChainId);
         portal.exec(xmsg);
         logs = vm.getRecordedLogs();
         assertEq(logs.length, 1);
@@ -138,6 +148,7 @@ contract OmniPortal_exec_Test is Base {
         });
 
         vm.recordLogs();
+        vm.chainId(xmsg.destChainId);
         portal.exec(xmsg);
         logs = vm.getRecordedLogs();
         assertEq(logs.length, 1);
@@ -155,6 +166,7 @@ contract OmniPortal_exec_Test is Base {
         });
 
         vm.recordLogs();
+        vm.chainId(xmsg.destChainId);
         portal.exec(xmsg);
         logs = vm.getRecordedLogs();
         assertEq(logs.length, 1);
