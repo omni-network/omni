@@ -24,7 +24,7 @@ type XMsg struct {
 	BlockHeight         hexutil.Big
 	BlockHash           common.Hash
 	SourceBlockTime     graphql.Time
-	ReceiptHash         *common.Hash
+	ReceiptTxHash       *common.Hash
 	Block               XBlock
 	Receipts            []XReceipt
 }

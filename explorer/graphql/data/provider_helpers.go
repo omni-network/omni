@@ -100,7 +100,7 @@ func EntMsgToGraphQLXMsg(msg *ent.Msg) (*resolvers.XMsg, error) {
 
 	if len(msg.ReceiptHash) == 32 {
 		hash := common.Hash(msg.ReceiptHash)
-		xmsg.ReceiptHash = &hash
+		xmsg.ReceiptTxHash = &hash
 	}
 
 	return xmsg, nil
@@ -241,7 +241,7 @@ func EntMsgToGraphQLXMsgWithEdges(ctx context.Context, msg *ent.Msg) (*resolvers
 
 	if len(msg.ReceiptHash) == 32 {
 		hash := common.Hash(msg.ReceiptHash)
-		xmsg.ReceiptHash = &hash
+		xmsg.ReceiptTxHash = &hash
 	}
 
 	return xmsg, nil

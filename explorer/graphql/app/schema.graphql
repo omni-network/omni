@@ -67,7 +67,7 @@ type XMsg {
   BlockHash: Bytes32!
 
   "Hash of destination chain receipt"
-  ReceiptHash: Bytes32
+  ReceiptTxHash: Bytes32
 
   "Status of the message"
   Status: String!
