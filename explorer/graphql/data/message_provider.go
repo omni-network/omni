@@ -91,7 +91,7 @@ func (p Provider) XMsg(ctx context.Context, sourceChainID, destChainID, streamOf
 func (p Provider) XMsgs(ctx context.Context, limit uint64, cursor *uint64) (*resolvers.XMsgResult, bool, error) {
 	query := p.EntClient.Msg.Query().
 		Order(ent.Desc(msg.FieldCreatedAt)).
-		Limit(int(limit)) // limit will always set, defaulting to 1
+		Limit(int(limit)) // limit will always set, defaulting to 25
 
 	// If cursor is not 0, we want to query the message with the cursor ID.
 	if cursor != nil {

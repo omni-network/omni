@@ -24,7 +24,7 @@ type XMsgsArgs struct {
 	Cursor *hexutil.Big
 }
 
-const MsgLimit = 50
+const MsgsLimit = 25
 
 func (b *BlocksResolver) XMsgCount(ctx context.Context) (*hexutil.Big, error) {
 	res, found, err := b.BlocksProvider.XMsgCount(ctx)
@@ -74,8 +74,8 @@ func (b *BlocksResolver) XMsgs(ctx context.Context, args XMsgsArgs) (*XMsgResult
 		limit = args.Limit.ToInt().Uint64()
 	}
 
-	if limit > MsgLimit {
-		limit = MsgLimit // hard cap people or should we throw an error?
+	if limit > MsgsLimit || args.Limit == nil {
+		limit = MsgsLimit
 	}
 
 	if args.Cursor != nil {
