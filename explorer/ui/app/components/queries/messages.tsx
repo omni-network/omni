@@ -71,6 +71,9 @@ export const xmsgs = graphql(`
           TxHash
           BlockHeight
           BlockHash
+          Status
+          BlockTime
+          ReceiptHash
         }
       }
       PageInfo{
