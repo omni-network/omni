@@ -2034,10 +2034,24 @@ func (m *MsgMutation) AddedBlockHeight() (r int64, exists bool) {
 	return *v, true
 }
 
+// ClearBlockHeight clears the value of the "BlockHeight" field.
+func (m *MsgMutation) ClearBlockHeight() {
+	m._BlockHeight = nil
+	m.add_BlockHeight = nil
+	m.clearedFields[msg.FieldBlockHeight] = struct{}{}
+}
+
+// BlockHeightCleared returns if the "BlockHeight" field was cleared in this mutation.
+func (m *MsgMutation) BlockHeightCleared() bool {
+	_, ok := m.clearedFields[msg.FieldBlockHeight]
+	return ok
+}
+
 // ResetBlockHeight resets all changes to the "BlockHeight" field.
 func (m *MsgMutation) ResetBlockHeight() {
 	m._BlockHeight = nil
 	m.add_BlockHeight = nil
+	delete(m.clearedFields, msg.FieldBlockHeight)
 }
 
 // SetReceiptHash sets the "ReceiptHash" field.
@@ -2688,6 +2702,9 @@ func (m *MsgMutation) ClearedFields() []string {
 	if m.FieldCleared(msg.FieldBlockHash) {
 		fields = append(fields, msg.FieldBlockHash)
 	}
+	if m.FieldCleared(msg.FieldBlockHeight) {
+		fields = append(fields, msg.FieldBlockHeight)
+	}
 	if m.FieldCleared(msg.FieldReceiptHash) {
 		fields = append(fields, msg.FieldReceiptHash)
 	}
@@ -2716,6 +2733,9 @@ func (m *MsgMutation) ClearField(name string) error {
 		return nil
 	case msg.FieldBlockHash:
 		m.ClearBlockHash()
+		return nil
+	case msg.FieldBlockHeight:
+		m.ClearBlockHeight()
 		return nil
 	case msg.FieldReceiptHash:
 		m.ClearReceiptHash()

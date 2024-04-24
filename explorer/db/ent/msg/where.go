@@ -616,6 +616,16 @@ func BlockHeightLTE(v uint64) predicate.Msg {
 	return predicate.Msg(sql.FieldLTE(FieldBlockHeight, v))
 }
 
+// BlockHeightIsNil applies the IsNil predicate on the "BlockHeight" field.
+func BlockHeightIsNil() predicate.Msg {
+	return predicate.Msg(sql.FieldIsNull(FieldBlockHeight))
+}
+
+// BlockHeightNotNil applies the NotNil predicate on the "BlockHeight" field.
+func BlockHeightNotNil() predicate.Msg {
+	return predicate.Msg(sql.FieldNotNull(FieldBlockHeight))
+}
+
 // ReceiptHashEQ applies the EQ predicate on the "ReceiptHash" field.
 func ReceiptHashEQ(v []byte) predicate.Msg {
 	return predicate.Msg(sql.FieldEQ(FieldReceiptHash, v))
