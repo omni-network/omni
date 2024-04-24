@@ -135,12 +135,12 @@ func (p Provider) XMsgs(ctx context.Context, limit uint64, cursor *uint64) (*res
 	}
 
 	// Get the start cursor
-	startCursor, err := strconv.ParseUint(string(res[0].Node.ID), 10, 64)
+	startCursor, err := strconv.ParseUint(string(res[0].Node.ID), 10, 64) // TODO: fix post prev-cursor merge
 	if err != nil {
 		return nil, false, errors.New("failed to parse start cursor")
 	}
 
-	endCursor, err := strconv.ParseUint(string(res[len(res)-1].Node.ID), 10, 64)
+	endCursor, err := strconv.ParseUint(string(res[len(res)-1].Node.ID), 10, 64) // TODO: fix post prev-cursor merge
 	if err != nil {
 		return nil, false, errors.New("failed to parse end cursor")
 	}
