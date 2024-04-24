@@ -40,7 +40,7 @@ const (
 	// TODO(corver): Maybe move these to genesis itself.
 	genesisVoteWindow   = 64
 	genesisVoteExtLimit = 256
-	genesisTrimLag      = 1_000_000 // Delete application state after +-2 weeks (given period of 1.2s).
+	genesisTrimLag      = 72_000 // Delete attestations state after +-1 day (given a period of 1.2s).
 )
 
 // init initializes the Cosmos SDK configuration.
