@@ -19,6 +19,8 @@ import (
 )
 
 const selfDelegateJitter = 0.2 // 20% jitter
+const minRand = 0.5
+const maxRand = 1.0
 
 func selfDelegateForever(ctx context.Context, contract *bindings.OmniStake, backend *ethbackend.Backend, validator *ecdsa.PublicKey, period time.Duration) {
 	addr := crypto.PubkeyToAddress(*validator)
@@ -26,7 +28,9 @@ func selfDelegateForever(ctx context.Context, contract *bindings.OmniStake, back
 	log.Info(ctx, "Starting periodic self-delegation", "validator", addr.Hex(), "period", period)
 
 	nextPeriod := func() time.Duration {
-		jitter := time.Duration(float64(period) * rand.Float64() * selfDelegateJitter)
+		v := float64(rand.Int64N((maxRand-minRand)/0.05))*0.05 + minRand
+		jitter := time.Duration(float64(period) * v * selfDelegateJitter)
+
 		return period + jitter
 	}
 
