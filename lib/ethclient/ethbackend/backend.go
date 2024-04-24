@@ -237,7 +237,7 @@ func (b *Backend) SendTransaction(ctx context.Context, in *ethtypes.Transaction)
 		"height", resp.BlockNumber.Uint64(),
 	)
 
-	*in = *out
+	*in = *out //nolint:govet // Copy lock (caches) isn't a problem since we are overwriting the object.
 
 	return nil
 }
