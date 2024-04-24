@@ -73,7 +73,7 @@ type XMsg {
   Status: String!
 
   "Timestamp of the source chain block"
-  BlockTime: Time!
+  SourceBlockTime: Time!
 
   "XBlock message was emitted in"
   Block: XBlock!

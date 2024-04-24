@@ -23,7 +23,7 @@ type XMsg struct {
 	Status              string
 	BlockHeight         hexutil.Big
 	BlockHash           common.Hash
-	BlockTime           graphql.Time
+	SourceBlockTime     graphql.Time
 	ReceiptHash         *common.Hash
 	Block               XBlock
 	Receipts            []XReceipt

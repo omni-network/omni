@@ -94,7 +94,7 @@ func EntMsgToGraphQLXMsg(msg *ent.Msg) (*resolvers.XMsg, error) {
 		Data:                msg.Data,
 		BlockHeight:         hexutil.Big(blockHeight),
 		BlockHash:           common.Hash(msg.BlockHash),
-		BlockTime:           graphql.Time{Time: msg.BlockTime},
+		SourceBlockTime:     graphql.Time{Time: msg.BlockTime},
 		Status:              msg.Status,
 	}
 
@@ -235,7 +235,7 @@ func EntMsgToGraphQLXMsgWithEdges(ctx context.Context, msg *ent.Msg) (*resolvers
 		BlockHash:           common.Hash(msg.BlockHash),
 		Receipts:            xreceipts,
 		Block:               xblock,
-		BlockTime:           graphql.Time{Time: msg.BlockTime},
+		SourceBlockTime:     graphql.Time{Time: msg.BlockTime},
 		Status:              msg.Status,
 	}
 
