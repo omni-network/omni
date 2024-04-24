@@ -41,6 +41,9 @@ const (
 	genesisVoteWindow   = 64
 	genesisVoteExtLimit = 256
 	genesisTrimLag      = 72_000 // Delete attestations state after +-1 day (given a period of 1.2s).
+
+	defaultPruningKeep     = 72_000 // Keep 1 day's of application state by default (given period of 1.2s).
+	defaultPruningInterval = 300    // Prune every 5 minutes or so.
 )
 
 // init initializes the Cosmos SDK configuration.
