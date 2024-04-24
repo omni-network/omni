@@ -30,34 +30,32 @@ interface IOmniPortal {
 
   /**
    * @notice Call a contract on another chain
-   * @dev Uses OmniPortal.XMSG_DEFAULT_GAS_LIMIT as execution gas limit
-   *      on destination chain
-   * @dev Fees are denomninated in wei, and paid via msg.value. Call reverts
-   * 	   if fees are insufficient. Calculate fees with feeFor(...)
+   * @dev Uses OmniPortal.xmsgDefaultGasLimit as execution gas limit on destination chain
+   *      Fees are denomninated in wei, and paid via msg.value. Call reverts if fees
+   *      are insufficient. Calculate fees with feeFor(...)
    * @param destChainId Destination chain ID
    * @param to Address of contract to call on destination chain
-   * @param data Encoded function calldata (use abi.encodeWithSignature
-   * 	or abi.encodeWithSelector)
+   * @param data Encoded function calldata
    */
   function xcall(uint64 destChainId, address to, bytes calldata data)
-external
-payable;
+    external
+    payable;
 
  /**
    * @notice Call a contract on another chain
    * @dev Uses provide gasLimit as execution gas limit on destination chain.
-   *      Reverts if gasLimit < XMSG_MAX_GAS_LIMIT or gasLimit > XMSG_MAX_GAS_LIMIT
-   * @dev Fees are denomninated in wei, and paid via msg.value. Call reverts
-   * 	   if fees are insufficient. Calculate fees with feeFor(...)
+   *      Reverts if gasLimit < xmsgMinGasLimit or gasLimit > xmsgMaxGasLimit.
+   *      Fees are denomninated in wei, and paid via msg.value. Call reverts
+   * 	  if fees are insufficient. Calculate fees with feeFor(...)
    * @param destChainId Destination chain ID
    * @param to Address of contract to call on destination chain
-   * @param data Encoded function calldata (use abi.encodeWithSignature
-   * 	or abi.encodeWithSelector)
+   * @param data Encoded function calldata
    */
   function xcall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit)
-external
-payable;
+    external
+    payable;
 
+    // ...
 }
 ```
 
@@ -69,29 +67,26 @@ interface IOmniPortal {
 
   /**
    * @notice Calculate the fee for calling a contract on another chain
-   * @dev Uses OmniPortal.XMSG_DEFAULT_GAS_LIMIT
-   * @dev Fees denominated in wei
+   * @dev Uses OmniPortal.xmsgDefaultGasLimit. Fees denominated in wei.
    * @param destChainId Destination chain ID
-   * @param data Encoded function calldata (use abi.encodeWithSignature
-   * 	or abi.encodeWithSelector)
+   * @param data Encoded function calldata
    */
   function feeFor(uint64 destChainId, bytes calldata data)
-external
-view
-returns (uint256);
+    external
+    view
+    returns (uint256);
 
   /**
    * @notice Calculate the fee for calling a contract on another chain
    * @dev Fees denominated in wei
    * @param destChainId Destination chain ID
-   * @param data Encoded function calldata (use abi.encodeWithSignature
-   * 	or abi.encodeWithSelector)
+   * @param data Encoded function calldata
    * @param gasLimit Custom gas limit, enforced on destination chain
    */
   function feeFor(uint64 destChainId, bytes calldata data, uint64 gasLimit)
-external
- view
-returns (uint256);
+    external
+    view
+    returns (uint256);
 
     // ...
 }

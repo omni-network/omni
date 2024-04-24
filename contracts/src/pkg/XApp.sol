@@ -6,16 +6,22 @@ import { XTypes } from "../libraries/XTypes.sol";
 
 /**
  * @title XApp
- * @dev Base contract for Omni cross-chain applications
+ * @notice Base contract for Omni cross-chain applications
  */
 contract XApp {
-    /// @notice The OmniPortal contract
+    /**
+     * @notice The OmniPortal contract
+     */
     IOmniPortal internal immutable omni;
 
-    /// @notice Transient storage for the current xmsg
+    /**
+     * @notice Transient storage for the current xmsg
+     */
     XTypes.MsgShort internal xmsg;
 
-    /// @notice Read current xmsg into storage before execution, delete it afterwards
+    /**
+     * @notice Read current xmsg into storage before execution, delete it afterwards
+     */
     modifier xrecv() {
         xmsg = omni.xmsg();
         _;
@@ -34,7 +40,7 @@ contract XApp {
     }
 
     /**
-     * @notice Returns the fee for calling a contract on another chain. Uses OmniPortal.XMSG_DEFAULT_GAS_LIMIT
+     * @notice Returns the fee for calling a contract on another chain. Uses OmniPortal.xmsgDefaultGasLimit
      */
     function feeFor(uint64 destChainId, bytes memory data) internal view returns (uint256) {
         return omni.feeFor(destChainId, data);
@@ -48,7 +54,7 @@ contract XApp {
     }
 
     /**
-     * @notice Call a contract on another chain. Uses OmniPortal.XMSG_DEFAULT_GAS_LIMIT
+     * @notice Call a contract on another chain. Uses OmniPortal.xmsgDefaultGasLimit
      * @return fee The fee for the xcall
      */
     function xcall(uint64 destChainId, address to, bytes memory data) internal returns (uint256) {

@@ -8,7 +8,7 @@ You can use Omni to call a contract on another chain. We call this an `xcall`.
 
 ```solidity
 omni.xcall(
-   destChainId,  // desintation chain id
+   destChainId,  // destination chain id
    to,           // contract address on the destination chain
    data          // abi encoded calldata, ex abi.encodeWithSignature("foo()")
 )

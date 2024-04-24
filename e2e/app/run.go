@@ -91,6 +91,10 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 	}
 	logRPCs(ctx, def)
 
+	if err := initXRegistries(ctx, def); err != nil {
+		return nil, err
+	}
+
 	if err := deployAVS(ctx, def); err != nil {
 		return nil, err
 	}

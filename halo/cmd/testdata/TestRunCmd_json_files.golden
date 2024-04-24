@@ -94,7 +94,7 @@
    }
   },
   "Mempool": {
-   "Type": "flood",
+   "Type": "nop",
    "RootDir": "testinput/input2",
    "Recheck": true,
    "Broadcast": true,
@@ -116,8 +116,8 @@
    "TrustHeight": 0,
    "TrustHash": "",
    "DiscoveryTime": 10000000000,
-   "ChunkRequestTimeout": 10000000000,
-   "ChunkFetchers": 1
+   "ChunkRequestTimeout": 60000000000,
+   "ChunkFetchers": 4
   },
   "BlockSync": {
    "Version": "v0"
