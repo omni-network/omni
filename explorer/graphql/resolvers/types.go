@@ -11,7 +11,6 @@ import (
 
 type XMsg struct {
 	ID                  graphql.ID
-	MsgID               string
 	SourceMessageSender common.Address
 	DestAddress         common.Address
 	Data                []byte
@@ -31,7 +30,6 @@ type XMsg struct {
 
 type XBlock struct {
 	ID            graphql.ID
-	UUID          graphql.ID
 	SourceChainID hexutil.Big
 	BlockHeight   hexutil.Big
 	Timestamp     graphql.Time
@@ -44,8 +42,6 @@ type XBlock struct {
 
 type XReceipt struct {
 	ID             graphql.ID
-	ReceiptID      string
-	UUID           graphql.ID
 	Success        graphql.NullBool
 	GasUsed        hexutil.Big
 	RelayerAddress common.Address

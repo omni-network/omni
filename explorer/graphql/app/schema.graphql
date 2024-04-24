@@ -36,11 +36,8 @@ scalar ID
 XMsg is a cross-chain message.
 """
 type XMsg {
-  "ID of the XMsg"
-  ID: ID!
-
   "Computed field for msg id from source chain, dest chain, stream offset"
-  MsgID: String!
+  ID: ID!
 
   "Monotonically incremented offset of Msg in the Steam"
   StreamOffset: BigInt!
@@ -89,8 +86,8 @@ type XMsg {
 XBlock represents a cross-chain block.
 """
 type XBlock {
-  "UUID of our block"
-  UUID: ID!
+  "ID of our block"
+  ID: ID!
 
   "Source chain ID as per https://chainlist.org"
   SourceChainID: BigInt!
@@ -116,10 +113,7 @@ XReceipt represents a cross-chain receipt.
 """
 type XReceipt {
   "Computed field for receipt id from source chain, dest chain, stream offset"
-  ReceiptID: String!
-
-  "UUID of our block"
-  UUID: ID!
+  ID: ID!
 
   "Gas used for the cross-chain message"
   GasUsed: BigInt!

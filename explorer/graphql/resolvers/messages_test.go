@@ -160,7 +160,6 @@ func TestXMsgsNoCursor(t *testing.T) {
 						TotalCount
 						Edges{
 							Node {
-								ID
 								StreamOffset
 								TxHash
 								BlockHeight
@@ -181,14 +180,13 @@ func TestXMsgsNoCursor(t *testing.T) {
 							"Node":{
 								"BlockHeight":"0x0",
 								"Status": "SUCCESS",
-								"ID": "8589934593",
 								"StreamOffset":"0x0",
-								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"}
-							},{
+								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
+							}
+						},{
 							"Node":{
 								"BlockHeight":"0x1",
 								"Status": "SUCCESS",
-								"ID": "8589934594",
 								"StreamOffset":"0x1",
 								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
 							}
@@ -228,7 +226,6 @@ func TestXMsgsNoLimit(t *testing.T) {
 							Node {
 								StreamOffset
 								TxHash
-								ID
 								BlockHeight
 								Status
 							}
@@ -247,7 +244,6 @@ func TestXMsgsNoLimit(t *testing.T) {
 							"Node":{
 								"BlockHeight":"0x0",
 								"Status": "SUCCESS",
-								"ID":"8589934593",
 								"StreamOffset":"0x0",
 								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
 							}
@@ -285,7 +281,7 @@ func TestXMsgsCursorOffset(t *testing.T) {
 						TotalCount
 						Edges{
 							Node {
-								MsgID
+								ID
 								StreamOffset
 								TxHash
 								BlockHeight
@@ -304,7 +300,7 @@ func TestXMsgsCursorOffset(t *testing.T) {
 					"Edges":[
 						{
 							"Node":{
-								"MsgID": "1-2-0",
+								"ID": "1-2-0",
 								"StreamOffset":"0x0",
 								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20",
 								"Status": "SUCCESS",

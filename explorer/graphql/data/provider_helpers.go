@@ -29,6 +29,7 @@ func EntBlockToGraphQLBlock(ctx context.Context, block *ent.Block) (*resolvers.X
 	}
 
 	res := resolvers.XBlock{
+		ID:            graphql.ID(fmt.Sprintf("%s-%s", &sourceChainIDBig, strconv.Itoa(int(block.BlockHeight)))),
 		SourceChainID: hexutil.Big(sourceChainIDBig),
 		BlockHeight:   hexutil.Big(blockHeight),
 		BlockHash:     common.Hash(block.BlockHash),
@@ -84,8 +85,7 @@ func EntMsgToGraphQLXMsg(msg *ent.Msg) (*resolvers.XMsg, error) {
 	}
 
 	xmsg := &resolvers.XMsg{
-		ID:                  graphql.ID(strconv.Itoa(msg.ID)),
-		MsgID:               idStringBuilder(msg.SourceChainID, msg.DestChainID, msg.StreamOffset),
+		ID:                  graphql.ID(idStringBuilder(msg.SourceChainID, msg.DestChainID, msg.StreamOffset)),
 		SourceMessageSender: common.Address(msg.SourceMsgSender),
 		SourceChainID:       hexutil.Big(sourceChainIDBig),
 		DestAddress:         common.Address(msg.DestAddress),
@@ -144,8 +144,7 @@ func EntReceiptToGraphQLXReceipt(ctx context.Context, receipt *ent.Receipt, bloc
 	}
 
 	return &resolvers.XReceipt{
-		ID:             graphql.ID(receipt.UUID.String()),
-		ReceiptID:      idStringBuilder(receipt.SourceChainID, receipt.DestChainID, receipt.StreamOffset),
+		ID:             graphql.ID(idStringBuilder(receipt.SourceChainID, receipt.DestChainID, receipt.StreamOffset)),
 		Success:        graphql.NullBool{Value: &receipt.Success, Set: receipt.Success},
 		GasUsed:        hexutil.Big(gasUsed),
 		RelayerAddress: common.Address(receipt.RelayerAddress),
@@ -225,8 +224,7 @@ func EntMsgToGraphQLXMsgWithEdges(ctx context.Context, msg *ent.Msg) (*resolvers
 		Timestamp:     graphql.Time{Time: block.CreatedAt},
 	}
 	xmsg := &resolvers.XMsg{
-		ID:                  graphql.ID(strconv.Itoa(msg.ID)),
-		MsgID:               idStringBuilder(msg.SourceChainID, msg.DestChainID, msg.StreamOffset),
+		ID:                  graphql.ID(idStringBuilder(msg.SourceChainID, msg.DestChainID, msg.StreamOffset)),
 		SourceMessageSender: common.Address(msg.SourceMsgSender),
 		SourceChainID:       hexutil.Big(sourceChainIDBig),
 		DestAddress:         common.Address(msg.DestAddress),
