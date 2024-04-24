@@ -38,11 +38,11 @@ type DeployConfig struct {
 // Deploy a new e2e network. It also starts all services in order to deploy private portals.
 // It also returns an optional deployed ping pong contract is enabled.
 func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XDapp, error) {
-	if err := Cleanup(ctx, def); err != nil {
-		return nil, err
-	}
-
 	if def.Testnet.OnlyMonitor {
+		if err := Cleanup(ctx, def); err != nil {
+			return nil, err
+		}
+
 		return nil, deployMonitorOnly(ctx, def, cfg)
 	}
 
@@ -63,6 +63,10 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 
 	// Deploy public portals first so their addresses are available for setup.
 	if err := def.Netman().DeployPublicPortals(ctx, genesisValSetID, genesisVals); err != nil {
+		return nil, err
+	}
+
+	if err := Cleanup(ctx, def); err != nil {
 		return nil, err
 	}
 
