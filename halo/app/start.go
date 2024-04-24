@@ -254,11 +254,18 @@ func makeBaseAppOpts(cfg Config) ([]func(*baseapp.BaseApp), error) {
 
 	snapshotOptions := snapshottypes.NewSnapshotOptions(cfg.SnapshotInterval, uint32(cfg.SnapshotKeepRecent))
 
+	pruneOpts := pruningtypes.NewPruningOptionsFromString(cfg.PruningOption)
+	if cfg.PruningOption == pruningtypes.PruningOptionDefault {
+		// Override the default cosmosSDK pruning values with much more aggressive defaults
+		// since historical state isn't very important for most use-cases.
+		pruneOpts = pruningtypes.NewCustomPruningOptions(defaultPruningKeep, defaultPruningInterval)
+	}
+
 	return []func(*baseapp.BaseApp){
 		// baseapp.SetOptimisticExecution(), // TODO(corver): Enable this.
 		baseapp.SetChainID(chainID),
 		baseapp.SetMinRetainBlocks(cfg.MinRetainBlocks),
-		baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(cfg.PruningOption)),
+		baseapp.SetPruning(pruneOpts),
 		baseapp.SetInterBlockCache(store.NewCommitKVStoreCacheManager()),
 		baseapp.SetSnapshot(snapshotStore, snapshotOptions),
 		baseapp.SetMempool(mempool.NoOpMempool{}),

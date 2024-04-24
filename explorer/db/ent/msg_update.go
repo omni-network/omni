@@ -206,6 +206,12 @@ func (mu *MsgUpdate) AddBlockHeight(u int64) *MsgUpdate {
 	return mu
 }
 
+// ClearBlockHeight clears the value of the "BlockHeight" field.
+func (mu *MsgUpdate) ClearBlockHeight() *MsgUpdate {
+	mu.mutation.ClearBlockHeight()
+	return mu
+}
+
 // SetReceiptHash sets the "ReceiptHash" field.
 func (mu *MsgUpdate) SetReceiptHash(b []byte) *MsgUpdate {
 	mu.mutation.SetReceiptHash(b)
@@ -443,6 +449,9 @@ func (mu *MsgUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := mu.mutation.AddedBlockHeight(); ok {
 		_spec.AddField(msg.FieldBlockHeight, field.TypeUint64, value)
+	}
+	if mu.mutation.BlockHeightCleared() {
+		_spec.ClearField(msg.FieldBlockHeight, field.TypeUint64)
 	}
 	if value, ok := mu.mutation.ReceiptHash(); ok {
 		_spec.SetField(msg.FieldReceiptHash, field.TypeBytes, value)
@@ -734,6 +743,12 @@ func (muo *MsgUpdateOne) AddBlockHeight(u int64) *MsgUpdateOne {
 	return muo
 }
 
+// ClearBlockHeight clears the value of the "BlockHeight" field.
+func (muo *MsgUpdateOne) ClearBlockHeight() *MsgUpdateOne {
+	muo.mutation.ClearBlockHeight()
+	return muo
+}
+
 // SetReceiptHash sets the "ReceiptHash" field.
 func (muo *MsgUpdateOne) SetReceiptHash(b []byte) *MsgUpdateOne {
 	muo.mutation.SetReceiptHash(b)
@@ -1001,6 +1016,9 @@ func (muo *MsgUpdateOne) sqlSave(ctx context.Context) (_node *Msg, err error) {
 	}
 	if value, ok := muo.mutation.AddedBlockHeight(); ok {
 		_spec.AddField(msg.FieldBlockHeight, field.TypeUint64, value)
+	}
+	if muo.mutation.BlockHeightCleared() {
+		_spec.ClearField(msg.FieldBlockHeight, field.TypeUint64)
 	}
 	if value, ok := muo.mutation.ReceiptHash(); ok {
 		_spec.SetField(msg.FieldReceiptHash, field.TypeBytes, value)
