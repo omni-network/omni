@@ -2,6 +2,7 @@
 pragma solidity =0.8.24;
 
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { PausableUpgradeable } from "@openzeppelin-upgrades/contracts/security/PausableUpgradeable.sol";
 
 import { IFeeOracle } from "../interfaces/IFeeOracle.sol";
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
@@ -9,29 +10,34 @@ import { IOmniPortalAdmin } from "../interfaces/IOmniPortalAdmin.sol";
 import { XBlockMerkleProof } from "../libraries/XBlockMerkleProof.sol";
 import { XTypes } from "../libraries/XTypes.sol";
 import { Quorum } from "../libraries/Quorum.sol";
+import { XRegistryNames } from "../libraries/XRegistryNames.sol";
+import { XRegistryBase } from "./XRegistryBase.sol";
+import { Predeploys } from "../libraries/Predeploys.sol";
 
 import { OmniPortalConstants } from "./OmniPortalConstants.sol";
 import { OmniPortalStorage } from "./OmniPortalStorage.sol";
 
-contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPortalConstants, OmniPortalStorage {
-    /**
-     * @notice Chain ID of the chain to which this portal is deployed
-     */
-    uint64 public immutable chainId;
-
+contract OmniPortal is
+    IOmniPortal,
+    IOmniPortalAdmin,
+    OwnableUpgradeable,
+    PausableUpgradeable,
+    OmniPortalConstants,
+    OmniPortalStorage
+{
     /**
      * @notice Construct the OmniPortal contract
      */
     constructor() {
         _disableInitializers();
-        chainId = uint64(block.chainid);
     }
 
     /**
      * @notice Initialize the OmniPortal contract
      * @param owner_                    The owner of the contract
      * @param feeOracle_                Address of the fee oracle contract
-     * @param omniEChainId_             Chain ID of Omni's EVM execution chain
+     * @param xregistry_                Address of the xregistry replica contract
+     * @param omniChainId_              Chain ID of Omni's EVM execution chain
      * @param omniCChainID_             Virtual chain ID used in xmsgs from Omni's consensus chain
      * @param xmsgDefaultGasLimit_      Default gas limit for xmsg
      * @param xmsgMaxGasLimit_          Maximum gas limit for xmsg
@@ -43,7 +49,8 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
     function initialize(
         address owner_,
         address feeOracle_,
-        uint64 omniEChainId_,
+        address xregistry_,
+        uint64 omniChainId_,
         uint64 omniCChainID_,
         uint64 xmsgDefaultGasLimit_,
         uint64 xmsgMaxGasLimit_,
@@ -52,21 +59,25 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
         uint64 valSetId,
         XTypes.Validator[] memory validators
     ) public initializer {
-        __Ownable_init();
         _transferOwnership(owner_);
         _setFeeOracle(feeOracle_);
+        _setXRegistry(xregistry_);
         _setXMsgDefaultGasLimit(xmsgDefaultGasLimit_);
         _setXMsgMaxGasLimit(xmsgMaxGasLimit_);
         _setXMsgMinGasLimit(xmsgMinGasLimit_);
         _setXReceiptMaxErrorBytes(xreceiptMaxErrorBytes_);
         _addValidatorSet(valSetId, validators);
 
-        omniEChainId = omniEChainId_;
+        omniChainId = omniChainId_;
         omniCChainID = omniCChainID_;
 
         // cchain stream offset & block heights are equal to valSetId
         inXStreamOffset[omniCChainID_] = valSetId;
         inXStreamBlockHeight[omniCChainID_] = valSetId;
+    }
+
+    function chainId() public view returns (uint64) {
+        return uint64(block.chainid);
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -80,7 +91,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
      * @param to            Address of contract to call on destination chain
      * @param data          ABI Encoded function calldata
      */
-    function xcall(uint64 destChainId, address to, bytes calldata data) external payable {
+    function xcall(uint64 destChainId, address to, bytes calldata data) external payable whenNotPaused {
         _xcall(destChainId, msg.sender, to, data, xmsgDefaultGasLimit);
     }
 
@@ -92,7 +103,11 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
      * @param data          ABI Encoded function calldata
      * @param gasLimit      Execution gas limit, enforced on destination chain
      */
-    function xcall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit) external payable {
+    function xcall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit)
+        external
+        payable
+        whenNotPaused
+    {
         _xcall(destChainId, msg.sender, to, data, gasLimit);
     }
 
@@ -125,13 +140,21 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
         require(msg.value >= feeFor(destChainId, data, gasLimit), "OmniPortal: insufficient fee");
         require(gasLimit <= xmsgMaxGasLimit, "OmniPortal: gasLimit too high");
         require(gasLimit >= xmsgMinGasLimit, "OmniPortal: gasLimit too low");
-        require(destChainId != chainId, "OmniPortal: no same-chain xcall");
+        require(destChainId != chainId(), "OmniPortal: no same-chain xcall");
         require(destChainId != _BROADCAST_CHAIN_ID, "OmniPortal: no broadcast xcall");
         require(to != _VIRTUAL_PORTAL_ADDRESS, "OmniPortal: no portal xcall");
 
         outXStreamOffset[destChainId] += 1;
 
         emit XMsg(destChainId, outXStreamOffset[destChainId], sender, to, data, gasLimit);
+    }
+
+    /**
+     * @notice Returns true if `destChainId` is supported destination chain.
+     */
+    function isSupportedChain(uint64 destChainId) public view returns (bool) {
+        return destChainId != chainId()
+            && XRegistryBase(xregistry).has(destChainId, XRegistryNames.OmniPortal, Predeploys.PortalRegistry);
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -143,7 +166,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
      * @param xsub  An xchain submisison, including an attestation root w/ validator signatures,
      *              and a block header and message batch, proven against the attestation root.
      */
-    function xsubmit(XTypes.Submission calldata xsub) external {
+    function xsubmit(XTypes.Submission calldata xsub) external whenNotPaused {
         require(xsub.msgs.length > 0, "OmniPortal: no xmsgs");
 
         // validator set id for this submission
@@ -220,7 +243,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
      */
     function _exec(XTypes.Msg calldata xmsg_) internal {
         require(
-            xmsg_.destChainId == chainId || xmsg_.destChainId == _BROADCAST_CHAIN_ID, "OmniPortal: wrong destChainId"
+            xmsg_.destChainId == chainId() || xmsg_.destChainId == _BROADCAST_CHAIN_ID, "OmniPortal: wrong destChainId"
         );
         require(xmsg_.streamOffset == inXStreamOffset[xmsg_.sourceChainId] + 1, "OmniPortal: wrong streamOffset");
 
@@ -309,6 +332,13 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
     }
 
     /**
+     * @notice Set the XRegistry replica contract
+     */
+    function setXRegistry(address xregistry_) external onlyOwner {
+        _setXRegistry(xregistry_);
+    }
+
+    /**
      * @notice Transfer all collected fees to the give address
      * @param to    The address to transfer the fees to
      */
@@ -348,6 +378,20 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
      */
     function setXReceiptMaxErrorBytes(uint64 maxErrorBytes) external onlyOwner {
         _setXReceiptMaxErrorBytes(maxErrorBytes);
+    }
+
+    /**
+     * @notice Pause xcalls
+     */
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /**
+     * @notice Unpause xcalls
+     */
+    function unpause() external onlyOwner {
+        _unpause();
     }
 
     /**
@@ -408,6 +452,14 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
         feeOracle = feeOracle_;
 
         emit FeeOracleChanged(oldFeeOracle, feeOracle);
+    }
+
+    /**
+     * @notice Set the xregistry replica contract address.
+     */
+    function _setXRegistry(address xregistry_) private {
+        require(xregistry_ != address(0), "OmniPortal: no zero xregistry");
+        xregistry = xregistry_;
     }
 
     /**

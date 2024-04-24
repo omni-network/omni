@@ -124,7 +124,7 @@ var (
 	XproviderCursorsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "uuid", Type: field.TypeUUID},
-		{Name: "chain_id", Type: field.TypeUint64},
+		{Name: "chain_id", Type: field.TypeUint64, Unique: true},
 		{Name: "height", Type: field.TypeUint64},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
