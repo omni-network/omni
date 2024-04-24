@@ -39,13 +39,14 @@ contract OmniPortal_xsubmit_gas_Test is Base {
     }
 
     function test_singleExec() public {
-        XTypes.Submission memory xsub = readXSubmission("guzzle5", portal.chainId(), genesisValSetId);
+        XTypes.Submission memory xsub = readXSubmission({ name: "guzzle5", destChainId: thisChainId });
         XTypes.Msg memory xmsg;
 
         for (uint256 i = 0; i < xsub.msgs.length; i++) {
             xmsg = xsub.msgs[i];
 
             uint256 gasStart = gasleft();
+            vm.chainId(xmsg.destChainId);
             portal.exec(xmsg);
             uint256 gasUsed = gasStart - gasleft();
 
@@ -56,7 +57,7 @@ contract OmniPortal_xsubmit_gas_Test is Base {
     }
 
     function _testGasSubmitXBlock(string memory name) internal {
-        _testGasSubmitXBlock(name, portal.chainId());
+        _testGasSubmitXBlock(name, thisChainId);
     }
 
     function _testGasSubmitXBlock(string memory name, uint64 destChainId) internal {
@@ -71,6 +72,7 @@ contract OmniPortal_xsubmit_gas_Test is Base {
         }
 
         uint256 gasStart = gasleft();
+        vm.chainId(destChainId);
         portal.xsubmit(xsub);
         uint256 gasUsed = gasStart - gasleft();
 
