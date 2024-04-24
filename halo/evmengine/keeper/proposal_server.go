@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"sync"
 
 	"github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/lib/errors"
@@ -84,10 +85,15 @@ func evmEventsEqual(a, b []*types.EVMEvent) error {
 }
 
 // backoffFunc aliased for testing.
-var backoffFunc = expbackoff.New
+var (
+	backoffFuncMu sync.RWMutex
+	backoffFunc   = expbackoff.New
+)
 
 func retryForever(ctx context.Context, fn func(ctx context.Context) (bool, error)) error {
+	backoffFuncMu.RLock()
 	backoff := backoffFunc(ctx)
+	backoffFuncMu.RUnlock()
 	for {
 		ok, err := fn(ctx)
 		if ctx.Err() != nil {
