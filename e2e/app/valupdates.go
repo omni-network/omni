@@ -3,8 +3,8 @@ package app
 import (
 	"context"
 	"crypto/ecdsa"
-	"fmt"
 	"sort"
+	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
@@ -54,7 +54,9 @@ func FundValidatorsForTesting(ctx context.Context, def Definition) error {
 			})
 			if err != nil {
 				return errors.Wrap(err, "send")
-			} else if _, err := fundBackend.WaitMined(ctx, tx); err != nil {
+			}
+			recp, err := fundBackend.WaitMined(ctx, tx)
+			if err != nil {
 				return errors.Wrap(err, "wait mined")
 			}
 
@@ -64,7 +66,8 @@ func FundValidatorsForTesting(ctx context.Context, def Definition) error {
 			}
 
 			log.Debug(ctx, "Funded validator address",
-				"node", node.Name, "addr", addr, "balance", bal)
+				"node", node.Name, "addr", addr,
+				"balance", bal, "height", recp.BlockNumber.Uint64())
 
 			return nil
 		})
@@ -157,13 +160,30 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 					return
 				}
 
-				balance, err := valBackend.EtherBalanceAt(ctx, addr)
-				if err != nil {
-					returnErr(errors.Wrap(err, "balance att"))
-					return
-				}
+				// Wait until we have enough balance.
+				// FundValidatorsForTesting should ensure this, but this sometimes fails...?
+				for i := 0; i < 10; i++ {
+					height, err := valBackend.BlockNumber(ctx)
+					if err != nil {
+						returnErr(errors.Wrap(err, "block height"))
+						return
+					}
 
-				attrs := []any{"node", node.Name, "balance", balance, "addr", addr}
+					balance, err := valBackend.EtherBalanceAt(ctx, addr)
+					if err != nil {
+						returnErr(errors.Wrap(err, "balance at"))
+						return
+					}
+
+					if balance > float64(power) {
+						break // We have enough balance
+					}
+
+					log.Warn(ctx, "Cannot self-delegate, balance to low (will retry)", nil,
+						"height", height, "balance", balance, "require", power,
+						"node", node.Name, "addr", addr.Hex())
+					time.Sleep(time.Second)
+				}
 
 				txOpts, err := valBackend.BindOpts(ctx, addr)
 				if err != nil {
@@ -180,12 +200,12 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 
 				tx, err := omniStake.Deposit(txOpts, k1util.PubKeyToBytes64(pubkey))
 				if err != nil {
-					returnErr(errors.Wrap(err, "deposit", attrs...))
+					returnErr(errors.Wrap(err, "deposit", "node", node.Name, "addr", addr.Hex()))
 					return
 				}
 				rec, err := valBackend.WaitMined(ctx, tx)
 				if err != nil {
-					returnErr(errors.Wrap(err, "wait minded", attrs...))
+					returnErr(errors.Wrap(err, "wait minded", "node", node.Name, "addr", addr.Hex()))
 					return
 				}
 
@@ -193,7 +213,6 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 					"validator", node.Name,
 					"power", power,
 					"height", rec.BlockNumber.Uint64(),
-					"balance", fmt.Sprintf("%.2f", balance),
 				)
 			}
 		}
