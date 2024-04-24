@@ -137,6 +137,7 @@ contract OmniPortal is
      * @dev Validate the xcall, emit an XMsg, increment dest chain outXStreamOffset
      */
     function _xcall(uint64 destChainId, address sender, address to, bytes calldata data, uint64 gasLimit) private {
+        require(msg.sender != address(this), "OmniPortal: portal cannot xcall");
         require(msg.value >= feeFor(destChainId, data, gasLimit), "OmniPortal: insufficient fee");
         require(gasLimit <= xmsgMaxGasLimit, "OmniPortal: gasLimit too high");
         require(gasLimit >= xmsgMinGasLimit, "OmniPortal: gasLimit too low");
