@@ -159,6 +159,7 @@ func TestXMsgsNoCursor(t *testing.T) {
 					xmsgs(limit: 2){
 						TotalCount
 						Edges{
+							Cursor
 							Node {
 								ID
 								StreamOffset
@@ -168,7 +169,7 @@ func TestXMsgsNoCursor(t *testing.T) {
 							}
 						}
 						PageInfo {
-							StartCursor
+							NextCursor
 						}
 					}
 				}
@@ -178,83 +179,26 @@ func TestXMsgsNoCursor(t *testing.T) {
 				"xmsgs":{
 					"Edges":[
 						{
+							"Cursor":"0x200000005",
 							"Node":{
-								"BlockHeight":"0x0",
-								"Status": "SUCCESS",
-								"ID": "8589934593",
-								"StreamOffset":"0x0",
+								"BlockHeight":"0x4",
+								"Status": "PENDING",
+								"ID": "8589934597",
+								"StreamOffset":"0x4",
 								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"}
 							},{
+							"Cursor":"0x200000004",
 							"Node":{
-								"BlockHeight":"0x1",
+								"BlockHeight":"0x3",
 								"Status": "SUCCESS",
-								"ID": "8589934594",
-								"StreamOffset":"0x1",
+								"ID": "8589934596",
+								"StreamOffset":"0x3",
 								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
 							}
 						}
 					],
 					"PageInfo":{
-						"StartCursor":"0x200000003"
-					},
-					"TotalCount":"0x5"
-				}
-			}
-			`,
-		},
-	})
-}
-
-func TestXMsgsNoLimit(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-	test := createGqlTest(t)
-	t.Cleanup(func() {
-		if err := test.Client.Close(); err != nil {
-			t.Error(err)
-		}
-	})
-	db.CreateTestBlocks(t, ctx, test.Client, 5)
-
-	gqltesting.RunTests(t, []*gqltesting.Test{
-		{
-			Context: ctx,
-			Schema:  graphql.MustParseSchema(app.Schema, &resolvers.Query{BlocksResolver: test.Resolver}, test.Opts...),
-			Query: `
-				{
-					xmsgs(cursor: "0x200000003"){
-						TotalCount
-						Edges{
-							Node {
-								StreamOffset
-								TxHash
-								ID
-								BlockHeight
-								Status
-							}
-						}
-						PageInfo {
-							StartCursor
-						}
-					}
-				}
-			`,
-			ExpectedResult: `
-			{
-				"xmsgs":{
-					"Edges":[
-						{
-							"Node":{
-								"BlockHeight":"0x0",
-								"Status": "SUCCESS",
-								"ID":"8589934593",
-								"StreamOffset":"0x0",
-								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
-							}
-						}
-					],
-					"PageInfo":{
-						"StartCursor":"0x200000002"
+						"NextCursor":"0x200000003"
 					},
 					"TotalCount":"0x5"
 				}
@@ -281,18 +225,21 @@ func TestXMsgsCursorOffset(t *testing.T) {
 			Schema:  graphql.MustParseSchema(app.Schema, &resolvers.Query{BlocksResolver: test.Resolver}, test.Opts...),
 			Query: `
 				{
-					xmsgs(){
+					xmsgs(cursor: "0x200000003", limit: 2){
 						TotalCount
 						Edges{
+							Cursor
 							Node {
 								StreamOffset
 								TxHash
+								ID
 								BlockHeight
 								Status
 							}
 						}
 						PageInfo {
-							StartCursor
+							PrevCursor
+							NextCursor
 						}
 					}
 				}
@@ -302,16 +249,87 @@ func TestXMsgsCursorOffset(t *testing.T) {
 				"xmsgs":{
 					"Edges":[
 						{
+							"Cursor":"0x200000003",
 							"Node":{
-								"StreamOffset":"0x0",
-								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20",
+								"BlockHeight":"0x2",
 								"Status": "SUCCESS",
-								"BlockHeight":"0x0"
+								"ID":"8589934595",
+								"StreamOffset":"0x2",
+								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
+							}
+						},{
+							"Cursor":"0x200000002",
+							"Node":{
+								"BlockHeight":"0x1",
+								"Status": "SUCCESS",
+								"ID":"8589934594",
+								"StreamOffset":"0x1",
+								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
 							}
 						}
 					],
 					"PageInfo":{
-						"StartCursor":"0x200000002"
+						"PrevCursor":"0x200000005",
+						"NextCursor":"0x200000001"
+					},
+					"TotalCount":"0x5"
+				}
+			}
+			`,
+		},
+	})
+}
+
+func TestXMsgsNoParams(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	test := createGqlTest(t)
+	t.Cleanup(func() {
+		if err := test.Client.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+	db.CreateTestBlocks(t, ctx, test.Client, 5)
+
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Context: ctx,
+			Schema:  graphql.MustParseSchema(app.Schema, &resolvers.Query{BlocksResolver: test.Resolver}, test.Opts...),
+			Query: `
+				{
+					xmsgs(){
+						TotalCount
+						Edges{
+							Cursor
+							Node {
+								StreamOffset
+								TxHash
+								BlockHeight
+								Status
+							}
+						}
+						PageInfo {
+							NextCursor
+						}
+					}
+				}
+			`,
+			ExpectedResult: `
+			{
+				"xmsgs":{
+					"Edges":[
+						{
+							"Cursor":"0x200000005",
+							"Node":{
+								"StreamOffset":"0x4",
+								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20",
+								"Status": "PENDING",
+								"BlockHeight":"0x4"
+							}
+						}
+					],
+					"PageInfo":{
+						"NextCursor":"0x200000004"
 					},
 					"TotalCount":"0x5"
 				}

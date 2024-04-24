@@ -89,7 +89,8 @@ const (
 )
 
 type PageInfo struct {
-	StartCursor hexutil.Big
+	PrevCursor  hexutil.Big
+	NextCursor  hexutil.Big
 	HasNextPage bool
 	HasPrevPage bool
 }

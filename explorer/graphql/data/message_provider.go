@@ -90,12 +90,16 @@ func (p Provider) XMsg(ctx context.Context, sourceChainID, destChainID, streamOf
 
 func (p Provider) XMsgs(ctx context.Context, limit uint64, cursor *uint64) (*resolvers.XMsgResult, bool, error) {
 	query := p.EntClient.Msg.Query().
-		Order(ent.Desc(msg.FieldCreatedAt)).
-		Limit(int(limit)) // limit will always set, defaulting to 1
+		// Most recent messages first
+		Order(ent.Desc(msg.FieldBlockTime)).
+		// limit will always set, defaulting to 1
+		Limit(int(limit))
 
 	// If cursor is not 0, we want to query the message with the cursor ID.
 	if cursor != nil {
-		query = query.Where(msg.IDLTE(int(*cursor)))
+		val := int(*cursor)
+		// We query by less than or equal to ensure that we are going down the stream of messages
+		query = query.Where(msg.IDLTE(val))
 	}
 
 	// Execute the query.
@@ -140,13 +144,19 @@ func (p Provider) XMsgs(ctx context.Context, limit uint64, cursor *uint64) (*res
 		return nil, false, errors.New("failed to parse start cursor")
 	}
 
-	endCursor, err := strconv.ParseUint(string(res[len(res)-1].Node.ID), 10, 64)
+	// Calculate the next and previous cursors
+	// The next cursor is the start cursor - the limit meaning we are moving down the stream of messages, towards the first/oldest
+	// The previous cursor is the start cursor + the limit meaning we are moving up the stream of messages, towards the most recent
+	prevCursor := startCursor + limit
+	nextCursor := startCursor - limit
+
+	// convert the cursors to hex
+	prevCursorHex, err := utils.Uint2Hex(prevCursor)
 	if err != nil {
-		return nil, false, errors.New("failed to parse end cursor")
+		return nil, false, errors.Wrap(err, "decoding message cursor")
 	}
 
-	// Get the start cursor in hex
-	c, err := utils.Uint2Hex(endCursor + 1)
+	nextCursorHex, err := utils.Uint2Hex(nextCursor)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "decoding message cursor")
 	}
@@ -156,9 +166,10 @@ func (p Provider) XMsgs(ctx context.Context, limit uint64, cursor *uint64) (*res
 		TotalCount: totalCountHex,
 		Edges:      res,
 		PageInfo: resolvers.PageInfo{
-			StartCursor: c,
-			HasNextPage: endCursor-uint64(1) > 0,
-			HasPrevPage: startCursor > 0,
+			NextCursor:  nextCursorHex,
+			PrevCursor:  prevCursorHex,
+			HasNextPage: nextCursor > 0,
+			HasPrevPage: prevCursor <= uint64(totalCount),
 		},
 	}
 

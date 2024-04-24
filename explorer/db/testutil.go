@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/omni-network/omni/explorer/db/ent"
 	"github.com/omni-network/omni/explorer/db/ent/enttest"
@@ -36,6 +37,7 @@ func CreateTestBlock(t *testing.T, ctx context.Context, client *ent.Client, heig
 		SetSourceChainID(sourceChainID).
 		SetBlockHeight(uint64(height)).
 		SetBlockHash(blockHashValue.Bytes()).
+		SetCreatedAt(time.Now()).
 		SaveX(ctx)
 
 	return *b
@@ -48,6 +50,7 @@ func CreateTestBlocks(t *testing.T, ctx context.Context, client *ent.Client, cou
 	var msg *ent.Msg
 	var blocks []ent.Block
 	for i := 0; i < count; i++ {
+		time.Sleep(10 * time.Millisecond)
 		b := CreateTestBlock(t, ctx, client, i)
 		if msg != nil {
 			CreateReceipt(t, ctx, client, b, msg.DestChainID, msg.StreamOffset)
@@ -78,6 +81,7 @@ func CreateXMsg(t *testing.T, ctx context.Context, client *ent.Client, b ent.Blo
 		SetTxHash(txHash).
 		SetBlockHash(b.BlockHash).
 		SetBlockHeight(b.BlockHeight).
+		SetBlockTime(b.CreatedAt).
 		SaveX(ctx)
 
 	client.Block.UpdateOne(&b).AddMsgs(msg).SaveX(ctx)
