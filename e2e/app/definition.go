@@ -566,8 +566,8 @@ func externalNetwork(def Definition) netconf.Network {
 		}
 	}
 
-	// Connect to a random omni evm
-	omniEVM := random(def.Testnet.OmniEVMs)
+	// Connect to a proper omni_evm that isn't unavailable
+	omniEVM := def.Testnet.BroadcastOmniEVM()
 	omniEVMDepInfo := def.DeployInfos()[omniEVM.Chain.ID]
 	chains = append(chains, netconf.Chain{
 		ID:                omniEVM.Chain.ID,
