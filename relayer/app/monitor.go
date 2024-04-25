@@ -20,13 +20,22 @@ import (
 // startMonitoring starts the monitoring goroutines.
 func startMonitoring(ctx context.Context, network netconf.Network, xprovider xchain.Provider,
 	cprovider cchain.Provider, addr common.Address, rpcClients map[uint64]ethclient.Client) {
+	// Monitor the head of all chains, including consensus.
 	for _, srcChain := range network.Chains {
-		go monitorHeightsForever(ctx, srcChain, cprovider, rpcClients[srcChain.ID])
-		if srcChain.IsOmniConsensus {
-			// Below monitors only apply to EVM chains.
-			continue
+		headsFunc := func(ctx context.Context) map[ethclient.HeadType]uint64 {
+			return getEVMHeads(ctx, rpcClients[srcChain.ID])
+		}
+		if netconf.IsOmniConsensus(network.ID, srcChain.ID) {
+			headsFunc = func(ctx context.Context) map[ethclient.HeadType]uint64 {
+				return getConsXHead(ctx, cprovider)
+			}
 		}
 
+		go monitorHeightsForever(ctx, srcChain, cprovider, headsFunc)
+	}
+
+	// Monitors below only apply to EVM chains.
+	for _, srcChain := range network.EVMChains() {
 		go monitorAccountForever(ctx, addr, srcChain.Name, rpcClients[srcChain.ID])
 		for _, dstChain := range network.EVMChains() {
 			if srcChain.ID == dstChain.ID {
@@ -87,8 +96,11 @@ func monitorConsOffsetOnce(ctx context.Context, network netconf.Network, xprovid
 
 // monitorHeightsForever blocks and periodically monitors the latest/safe/final heads
 // and halo attested height of the given chain.
-func monitorHeightsForever(ctx context.Context, chain netconf.Chain,
-	cprovider cchain.Provider, client ethclient.Client,
+func monitorHeightsForever(
+	ctx context.Context,
+	chain netconf.Chain,
+	cprovider cchain.Provider,
+	headsFunc func(context.Context) map[ethclient.HeadType]uint64,
 ) {
 	ticker := time.NewTicker(time.Second * 10)
 	defer ticker.Stop()
@@ -102,12 +114,7 @@ func monitorHeightsForever(ctx context.Context, chain netconf.Chain,
 			attested, err := getAttested(ctx, chain.ID, chain.DeployHeight, cprovider)
 
 			// then get chain heads (so it is always higher than attested).
-			var heads map[ethclient.HeadType]uint64
-			if chain.IsOmniConsensus {
-				heads = getConsXHead(ctx, cprovider)
-			} else {
-				heads = getEVMHeads(ctx, client)
-			}
+			heads := headsFunc(ctx)
 
 			// Then populate gauges "at the same time" so they update "atomically".
 			if err != nil {

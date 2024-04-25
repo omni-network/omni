@@ -499,7 +499,6 @@ func internalNetwork(def Definition, evmPrefix string) netconf.Network {
 		RPCURL:            omniEVM.InternalRPC,
 		BlockPeriod:       omniEVM.Chain.BlockPeriod,
 		FinalizationStrat: omniEVM.Chain.FinalizationStrat,
-		IsOmniEVM:         true,
 		PortalAddress:     omniEVMDepInfo[types.ContractPortal].Address,
 		DeployHeight:      omniEVMDepInfo[types.ContractPortal].Height,
 		AVSContractAddr:   omniEVMDepInfo[types.ContractOmniAVS].Address,
@@ -509,9 +508,8 @@ func internalNetwork(def Definition, evmPrefix string) netconf.Network {
 		ID:   def.Testnet.Network.Static().OmniConsensusChainIDUint64(),
 		Name: "omni_consensus",
 		// No RPC URLs, since we are going to remove it from netconf in any case.
-		DeployHeight:    1,                         // Validator sets start at height 1, not 0.
-		BlockPeriod:     omniEVM.Chain.BlockPeriod, // Same block period as omniEVM
-		IsOmniConsensus: true,
+		DeployHeight: 1,                         // Validator sets start at height 1, not 0.
+		BlockPeriod:  omniEVM.Chain.BlockPeriod, // Same block period as omniEVM
 	})
 
 	// Add all anvil chains
@@ -573,7 +571,6 @@ func externalNetwork(def Definition) netconf.Network {
 		RPCURL:            omniEVM.ExternalRPC,
 		BlockPeriod:       omniEVM.Chain.BlockPeriod,
 		FinalizationStrat: omniEVM.Chain.FinalizationStrat,
-		IsOmniEVM:         true,
 		PortalAddress:     omniEVMDepInfo[types.ContractPortal].Address,
 		DeployHeight:      omniEVMDepInfo[types.ContractPortal].Height,
 		AVSContractAddr:   omniEVMDepInfo[types.ContractOmniAVS].Address,
@@ -584,9 +581,8 @@ func externalNetwork(def Definition) netconf.Network {
 		ID:   def.Testnet.Network.Static().OmniConsensusChainIDUint64(),
 		Name: "omni_consensus",
 		// No RPC URLs, since we are going to remove it from netconf in any case.
-		DeployHeight:    1,                         // Validator sets start at height 1, not 0.
-		BlockPeriod:     omniEVM.Chain.BlockPeriod, // Same block period as omniEVM
-		IsOmniConsensus: true,
+		DeployHeight: 1,                         // Validator sets start at height 1, not 0.
+		BlockPeriod:  omniEVM.Chain.BlockPeriod, // Same block period as omniEVM
 	})
 
 	// Add all anvil chains
@@ -606,7 +602,7 @@ func externalNetwork(def Definition) netconf.Network {
 	}
 
 	for _, chain := range chains {
-		if chain.IsOmniConsensus {
+		if netconf.IsOmniConsensus(def.Testnet.Network, chain.ID) {
 			continue
 		}
 		if err := chain.FinalizationStrat.Verify(); err != nil {

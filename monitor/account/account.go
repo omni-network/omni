@@ -27,10 +27,7 @@ type account struct {
 // Monitor starts monitoring account balances.
 func Monitor(ctx context.Context, network netconf.Network) error {
 	rpcClientPerChain := make(map[uint64]ethclient.Client)
-	for _, chain := range network.Chains {
-		if chain.IsOmniConsensus {
-			continue // skip non-EVM chains
-		}
+	for _, chain := range network.EVMChains() {
 		c, err := ethclient.Dial(chain.Name, chain.RPCURL)
 		if err != nil {
 			return errors.Wrap(err, "dial rpc", "chain_id", chain.ID, "rpc_url", chain.RPCURL)

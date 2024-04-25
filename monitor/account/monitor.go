@@ -15,11 +15,7 @@ func startMonitoring(ctx context.Context, network netconf.Network,
 	accounts []account, rpcClients map[uint64]ethclient.Client) {
 	log.Info(ctx, "Monitoring accounts", "count", len(accounts))
 
-	for _, chain := range network.Chains {
-		if chain.IsOmniConsensus {
-			continue // skip non-EVM chains.
-		}
-
+	for _, chain := range network.EVMChains() {
 		for _, at := range accounts {
 			go monitorAccountForever(ctx, at, chain.Name, rpcClients[chain.ID])
 		}

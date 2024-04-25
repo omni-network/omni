@@ -7,36 +7,32 @@
    "rpcurl": "飖Ǒp!ǪŰM旰綷罨袢捺悲ȅ-@",
    "portal_address": "0x78968D1662E46D908944a92A4B5AeFcD2c841eC7",
    "deploy_height": 1900800649570732577,
-   "is_omni_evm": true,
    "is_ethereum": true,
-   "block_period": "-935053h4m54.403288883s",
-   "finalization_start": "IeYF墄[C_",
-   "avs_contract_address": "0x33a2818d7F2c5644D428EDbd78130cB999EdD378"
+   "block_period": "-1455003h26m2.384355226s",
+   "finalization_start": "讻IeYF墄[C",
+   "avs_contract_address": "0x5D33a2818D7F2C5644d428eDBd78130cb999edd3"
   },
   {
-   "id": 4303487026632006283,
-   "name": "ɥmeCʊ 炄闌剾",
-   "rpcurl": "ʅȀʙĄĥ腲ʤaǇ趴",
-   "portal_address": "0x8cFD558406d45816570dA345A258a4F475f17fE5",
-   "deploy_height": 2939510796997021459,
-   "is_omni_consensus": true,
+   "id": 8800248523004128376,
+   "name": "ȖɥmeCʊ ",
+   "rpcurl": "暮斚嬆ʅȀʙĄĥ腲ʤaǇ",
+   "portal_address": "0x1D8Cfd558406d45816570dA345a258A4F475F17F",
+   "deploy_height": 14549873146773073637,
    "is_ethereum": true,
-   "block_period": "-530658h29m31.733917296s",
-   "finalization_start": "",
-   "avs_contract_address": "0xd713BDeDf81e7675242619af19b8C358B31dAa3e"
+   "block_period": "-551784h5m2.213503634s",
+   "finalization_start": "飦tD6ɀk諮Ȃ遃ɸ",
+   "avs_contract_address": "0x242619aF19B8c358b31daA3E51Fa4C421666e082"
   },
   {
-   "id": 12220965479361160785,
-   "name": "ɀÄf渂硹譯匬襧*|机Ȱ晸ʈ劉j",
-   "rpcurl": "ŻHĦɈ好ǎ+扰_",
-   "portal_address": "0x53aD16b7e98AA9375e2e4bC9922b44f63e11e13f",
-   "deploy_height": 5470582473102924320,
-   "is_omni_evm": true,
-   "is_omni_consensus": true,
+   "id": 2430368660124652522,
+   "name": "*|机Ȱ晸ʈ劉j蕓ư銩6ĳ憏",
+   "rpcurl": "+",
+   "portal_address": "0xD17a53Ad16B7E98aA9375E2e4BC9922B44F63E11",
+   "deploy_height": 4256679219153142497,
    "is_ethereum": true,
-   "block_period": "193055h10m18.745504662s",
-   "finalization_start": "殪\"g踮螧喘夓麑Y·L继Ɂɯz剩Ʉ",
-   "avs_contract_address": "0xa42E21C06dB26dA0ea24B0B3FDf951a5a40C0754"
+   "block_period": "90415h39m55.608582598s",
+   "finalization_start": "鷸ȳ琍殪\"g踮螧喘夓麑Y·L继Ɂ",
+   "avs_contract_address": "0x8363F8B4a42e21c06dB26dA0eA24B0b3FDf951A5"
   }
  ]
 }
