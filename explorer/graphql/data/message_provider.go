@@ -91,7 +91,7 @@ func (p Provider) XMsg(ctx context.Context, sourceChainID, destChainID, streamOf
 func (p Provider) XMsgs(ctx context.Context, limit uint64, cursor *uint64) (*resolvers.XMsgResult, bool, error) {
 	query := p.EntClient.Msg.Query().
 		// Most recent messages first
-		Order(ent.Desc(msg.FieldBlockTime)).
+		Order(ent.Desc(msg.FieldBlockTime), ent.Desc(msg.FieldStreamOffset)).
 		// limit will always set, defaulting to 1
 		Limit(int(limit))
 
@@ -148,7 +148,11 @@ func (p Provider) XMsgs(ctx context.Context, limit uint64, cursor *uint64) (*res
 	// The next cursor is the start cursor - the limit meaning we are moving down the stream of messages, towards the first/oldest
 	// The previous cursor is the start cursor + the limit meaning we are moving up the stream of messages, towards the most recent
 	prevCursor := startCursor + limit
+
 	nextCursor := startCursor - limit
+	if int64(startCursor)-int64(limit) < 0 {
+		nextCursor = uint64(0)
+	}
 
 	// convert the cursors to hex
 	prevCursorHex, err := utils.Uint2Hex(prevCursor)
@@ -169,7 +173,7 @@ func (p Provider) XMsgs(ctx context.Context, limit uint64, cursor *uint64) (*res
 			NextCursor:  nextCursorHex,
 			PrevCursor:  prevCursorHex,
 			HasNextPage: nextCursor > 0,
-			HasPrevPage: prevCursor <= uint64(totalCount),
+			HasPrevPage: startCursor < uint64(totalCount),
 		},
 	}
 
