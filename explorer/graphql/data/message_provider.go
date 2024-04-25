@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -87,21 +88,11 @@ func (p Provider) XMsg(ctx context.Context, sourceChainID, destChainID, streamOf
 	return res, true, nil
 }
 
-func (p Provider) XMsgs(ctx context.Context, limit uint64, cursor *uint64) (*resolvers.XMsgResult, bool, error) {
-	query := p.EntClient.Msg.Query().
-		// Most recent messages first
-		Order(ent.Desc(msg.FieldBlockTime), ent.Desc(msg.FieldStreamOffset)).
-		// limit will always set, defaulting to 25
-		Limit(int(limit))
+func (p Provider) XMsgs(ctx context.Context, limit uint64, cursor, sourceChainID, destChainID *uint64, address *common.Address) (*resolvers.XMsgResult, bool, error) {
+	// Build the query optional fields
+	query := buildMsgsQuery(p.EntClient, limit, cursor, sourceChainID, destChainID, address)
 
-	// If cursor is not 0, we want to query the message with the cursor ID.
-	if cursor != nil {
-		val := int(*cursor)
-		// We query by less than or equal to ensure that we are going down the stream of messages
-		query = query.Where(msg.IDLTE(val))
-	}
-
-	// Execute the query.
+	// Execute the query
 	msgs, err := query.All(ctx)
 	if err != nil {
 		log.Error(ctx, "Msgs query", err)
@@ -184,4 +175,59 @@ func calculatePageInfo(startCursor, limit uint64, totalCount int) (resolvers.Pag
 		HasNextPage: nextCursor > 0,
 		HasPrevPage: startCursor < uint64(totalCount),
 	}, nil
+}
+
+func buildMsgsQuery(entClient *ent.Client, limit uint64, cursor, sourceChainID, destChainID *uint64, address *common.Address) *ent.MsgQuery {
+	// Build the query with the initial fields
+	query := entClient.Msg.Query().
+		// Most recent messages first
+		Order(ent.Desc(msg.FieldBlockTime), ent.Desc(msg.FieldStreamOffset)).
+		// limit will always set, defaulting to 25
+		Limit(int(limit))
+
+	// If cursor is not 0, we want to query the message with the cursor ID.
+	if cursor != nil {
+		val := int(*cursor)
+		// We query by less than or equal to ensure that we are going down the stream of messages
+
+		query = query.Where(msg.IDLTE(val)) // this is essentially the cursor right now (the auto increment id value)
+	}
+
+	// If sourceChainID is not nil, we want to query the message with the sourceChainID.
+	if sourceChainID != nil {
+		query = query.Where(msg.SourceChainID(*sourceChainID))
+	}
+
+	// If destChainID is not nil, we want to query the message with the destChainID.
+	if destChainID != nil {
+		query = query.Where(msg.DestChainID(*destChainID))
+	}
+
+	// If address is not nil, we want to query the message with the address in any of the fields.
+	if address != nil {
+		query = query.Where(
+			msg.Or(
+				msg.TxHashEQ(address.Bytes()),
+				msg.ReceiptHash(address.Bytes()),
+				msg.SourceMsgSenderEQ(address.Bytes()),
+				msg.DestAddressEQ(address.Bytes()),
+			),
+		)
+	}
+
+	// url?prevCursor?=0 destChainID=1 cursor=10 limit=10
+
+	// next page -> we have the cursor to look for
+	// we return next cursor DONE
+	// we return has next DONE
+
+	// If we are searching, I need to do an additional query to generate the next and previous cursors
+	// previousCursor
+	// we return has previous
+
+	// store previous cursor
+
+	// how do we get the previous cursor
+
+	return query
 }

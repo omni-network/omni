@@ -367,3 +367,71 @@ func TestXMsgsNoParams(t *testing.T) {
 		},
 	})
 }
+
+func TestXMsgsSearchDestChain(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	test := createGqlTest(t)
+	t.Cleanup(func() {
+		if err := test.Client.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+	db.CreateTestBlocks(t, ctx, test.Client, 5)
+
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Context: ctx,
+			Schema:  graphql.MustParseSchema(app.Schema, &resolvers.Query{BlocksResolver: test.Resolver}, test.Opts...),
+			Query: `
+				{
+					xmsgs(destChainID: 2, limit: 2){
+						TotalCount
+						Edges{
+							Node {
+								StreamOffset
+								TxHash
+								BlockHeight
+								Status
+								DestChainID
+							}
+						}
+						PageInfo {
+							PrevCursor
+						}
+					}
+				}
+			`,
+			ExpectedResult: `
+			{
+				"xmsgs":{
+					"Edges":[
+						{
+							"Node":{
+								"BlockHeight":"0x4",
+								"Status":"PENDING",
+								"StreamOffset":"0x4",
+								"DestChainID":"0x2",
+								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
+							}
+						},{
+								"Node":{
+									"BlockHeight":"0x3",
+									"Status":"SUCCESS",
+									"StreamOffset":"0x3",
+									"DestChainID":"0x2",
+									"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
+								}
+							}
+						}
+					],
+					"PageInfo":{
+						"PrevCursor":"0x20000001e"
+					},
+					"TotalCount":"0x5"
+				}
+			}
+			`,
+		},
+	})
+}

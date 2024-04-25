@@ -249,5 +249,5 @@ type Query {
   ): XMsg
   supportedchains: [Chain]!
   search(query: String!): SearchResult
-  xmsgs(limit: BigInt, cursor: BigInt): XMsgResult
+  xmsgs(limit: BigInt, cursor: BigInt, address: String, sourceChainID: BigInt, destChainID: BigInt): XMsgResult
 }

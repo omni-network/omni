@@ -3,8 +3,10 @@ package resolvers
 import (
 	"context"
 
+	"github.com/omni-network/omni/explorer/graphql/utils"
 	"github.com/omni-network/omni/lib/errors"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -20,11 +22,14 @@ type XMsgArgs struct {
 }
 
 type XMsgsArgs struct {
-	Limit  *hexutil.Big
-	Cursor *hexutil.Big
+	Limit         *hexutil.Big
+	Cursor        *hexutil.Big
+	SourceChainID *hexutil.Big
+	DestChainID   *hexutil.Big
+	Address       *common.Address
 }
 
-const MsgsLimit = 25
+const MsgsLimit uint64 = 25
 
 func (b *BlocksResolver) XMsgCount(ctx context.Context) (*hexutil.Big, error) {
 	res, found, err := b.BlocksProvider.XMsgCount(ctx)
@@ -68,7 +73,7 @@ func (b *BlocksResolver) XMsg(ctx context.Context, args XMsgArgs) (*XMsg, error)
 
 func (b *BlocksResolver) XMsgs(ctx context.Context, args XMsgsArgs) (*XMsgResult, error) {
 	limit := uint64(1)
-	var cursor *uint64
+	var cursor, sourceChainID, destChainID *uint64
 
 	if args.Limit != nil {
 		limit = args.Limit.ToInt().Uint64()
@@ -78,12 +83,11 @@ func (b *BlocksResolver) XMsgs(ctx context.Context, args XMsgsArgs) (*XMsgResult
 		limit = MsgsLimit
 	}
 
-	if args.Cursor != nil {
-		c := args.Cursor.ToInt().Uint64()
-		cursor = &c
-	}
+	cursor = utils.TryParseHexUtilBigToUint64(args.Cursor)
+	sourceChainID = utils.TryParseHexUtilBigToUint64(args.SourceChainID)
+	destChainID = utils.TryParseHexUtilBigToUint64(args.DestChainID)
 
-	res, found, err := b.BlocksProvider.XMsgs(ctx, limit, cursor)
+	res, found, err := b.BlocksProvider.XMsgs(ctx, limit, cursor, sourceChainID, destChainID, args.Address)
 	if err != nil {
 		return nil, errors.New("failed to fetch messages")
 	}
