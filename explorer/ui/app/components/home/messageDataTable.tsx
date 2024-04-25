@@ -1,6 +1,4 @@
-import { json } from '@remix-run/node'
 import React, { RefObject, useCallback, useEffect, useMemo } from 'react'
-import { XMsg } from '~/graphql/graphql'
 import { ColumnDef } from '@tanstack/react-table'
 import SimpleTable from '../shared/simpleTable'
 import { useLoaderData, useRevalidator, useSearchParams } from '@remix-run/react'
@@ -9,38 +7,43 @@ import Tag from '../shared/tag'
 import RollupIcon from '../shared/rollupIcon'
 import { Link } from '@remix-run/react'
 import LongArrow from '~/assets/images/LongArrow.svg'
-import { loader } from '~/routes/_index'
+import { XmsgResponse } from '~/routes/_index'
 import SearchBar from '../shared/search'
-import Dropdown from '../shared/dropdown'
 import ChainDropdown from './chainDropdown'
 import FilterOptions from '../shared/filterOptions'
-import { getAddressUrl, getBaseUrl, getBlockUrl, getTxUrl } from '~/lib/sourceChains'
+import { getBaseUrl } from '~/lib/sourceChains'
 import debounce from 'lodash.debounce'
 import { Tooltip } from 'react-tooltip'
 import Button from '../shared/button'
 import { PageButton } from '../shared/button-legacy'
 import { copyToClipboard } from '~/lib/utils'
 
+type Status = 'Success' | 'Failed' | 'Pending' | 'All'
+
 export default function XMsgDataTable() {
-  const data = useLoaderData<typeof loader>()
+  const data = useLoaderData<XmsgResponse>()
   const revalidator = useRevalidator()
   const searchFieldRef = React.useRef<HTMLInputElement>(null)
+
+  const pageLoaded = React.useRef<boolean>(false)
+
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const [filterParams, setFilterParams] = React.useState<{
     address: string | null
     txHash: string | null
     sourceChain: string | null
     destChain: string | null
-    status: 'Success' | 'Failed' | 'Pending' | 'All'
+    status: Status
+    cursor: string | null
   }>({
-    address: null,
-    sourceChain: null,
-    destChain: null,
-    txHash: null,
-    status: 'All',
+    address: searchParams.get('address') ?? null,
+    sourceChain: searchParams.get('sourceChain') ?? null,
+    destChain: searchParams.get('destChain') ?? null,
+    txHash: searchParams.get('txHash') ?? null,
+    status: (searchParams.get('status') as Status) ?? 'All',
+    cursor: searchParams.get('cursor') ?? null,
   })
-
-  const [searchParams, setSearchParams] = useSearchParams()
 
   const sourceChainList = data.supportedChains.map(chain => ({
     value: chain.ChainID,
@@ -49,6 +52,9 @@ export default function XMsgDataTable() {
   }))
 
   const rows = data.xmsgs
+  const totalEntries = Number(data.startCursor)
+  const currentPage = data.xmsgs
+
 
   const columnConfig = {
     canFilter: false,
@@ -65,6 +71,7 @@ export default function XMsgDataTable() {
       sourceChain: null,
       destChain: null,
       txHash: null,
+      cursor: null,
       status: 'All',
     })
   }
@@ -84,7 +91,13 @@ export default function XMsgDataTable() {
     }
 
     setSearchParams(newParams)
-    revalidator.revalidate()
+
+    if (pageLoaded.current) {
+      revalidator.revalidate()
+      // console.log('Revalidating', JSON.stringify(filterParams))
+    } else {
+      pageLoaded.current = true
+    }
   }, [filterParams])
 
   // here we set the filter params by clearing the old ones, and setting the current one and its value
@@ -114,22 +127,6 @@ export default function XMsgDataTable() {
     () => [
       {
         ...columnConfig,
-        accessorKey: 'StreamOffset',
-        header: () => <span>Offset</span>,
-        cell: (value: any) => (
-          <>
-            <span
-              data-tooltip-id={'tooltip-offset'}
-              data-tooltip-html={`<span class="text-default text-b-sm font-bold">${value.getValue()}</span>`}
-              className="font-bold text-b-sm"
-            >
-              {Number(value.getValue())}
-            </span>
-          </>
-        ),
-      },
-      {
-        ...columnConfig,
         accessorKey: 'timeStamp',
         header: () => <span>Age</span>,
         cell: (value: any) => (
@@ -147,18 +144,34 @@ export default function XMsgDataTable() {
       },
       {
         ...columnConfig,
-        accessorKey: 'SourceChainID',
+        accessorKey: 'Node.StreamOffset',
+        header: () => <span>Offset</span>,
+        cell: (value: any) => (
+          <>
+            <span
+              data-tooltip-id={'tooltip-offset'}
+              data-tooltip-html={`<span class="text-default text-b-sm font-bold">${value.getValue()}</span>`}
+              className="font-bold text-b-sm"
+            >
+              {Number(value.getValue())}
+            </span>
+          </>
+        ),
+      },
+      {
+        ...columnConfig,
+        accessorKey: 'Node.SourceChainID',
         header: () => <span></span>,
         cell: (value: any) => <RollupIcon chainId={value.getValue()} />,
       },
       {
         ...columnConfig,
-        accessorKey: 'SourceMessageSender',
+        accessorKey: 'Node.SourceMessageSender',
         header: () => <span>Address</span>,
         cell: (value: any) => (
           <>
             <Link
-              to={`${getBaseUrl(value.row.original.SourceChainID, 'senderAddress')}/${value.getValue()}`}
+              to={`${getBaseUrl(value.row.original.Node.SourceChainID, 'senderAddress')}/${value.getValue()}`}
               className="link"
             >
               {value.getValue() && (
@@ -178,13 +191,13 @@ export default function XMsgDataTable() {
       },
       {
         ...columnConfig,
-        accessorKey: 'BlockHash',
+        accessorKey: 'Node.BlockHash',
         header: () => <span>Tx Hash</span>,
         cell: (value: any) => (
           <>
             <Link
               target="_blank"
-              to={`${getBaseUrl(value.row.original.SourceChainID, 'blockHash')}/${value.getValue()}`}
+              to={`${getBaseUrl(value.row.original.Node.SourceChainID, 'blockHash')}/${value.getValue()}`}
               className="link"
             >
               <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
@@ -206,19 +219,19 @@ export default function XMsgDataTable() {
       },
       {
         ...columnConfig,
-        accessorKey: 'DestChainID',
+        accessorKey: 'Node.DestChainID',
         header: () => <span></span>,
         cell: (value: any) => <RollupIcon chainId={value.getValue()} />,
       },
       {
         ...columnConfig,
-        accessorKey: 'DestAddress',
+        accessorKey: 'Node.DestAddress',
         header: () => <span>Address</span>,
         cell: (value: any) => (
           <>
             <Link
               target="_blank"
-              to={`${getBaseUrl(value.row.original.SourceChainID, 'destHash')}/${value.getValue()}`}
+              to={`${getBaseUrl(value.row.original.Node.SourceChainID, 'destHash')}/${value.getValue()}`}
               className="link"
             >
               <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
@@ -234,13 +247,13 @@ export default function XMsgDataTable() {
       },
       {
         ...columnConfig,
-        accessorKey: 'TxHash',
+        accessorKey: 'Node.TxHash',
         header: () => <span>Tx Hash</span>,
         cell: (value: any) => (
           <>
             <Link
               target="_blank"
-              to={`${getBaseUrl(value.row.original.SourceChainID, 'tx')}/${value.getValue()}`}
+              to={`${getBaseUrl(value.row.original.Node.SourceChainID, 'tx')}/${value.getValue()}`}
               className="link"
             >
               <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
@@ -265,7 +278,7 @@ export default function XMsgDataTable() {
           XMsgs{' '}
           <Tooltip className="tooltip" id="xmsg-info">
             <label className="text-default text-b-sm font-bold">
-              XMsgs are cross-rollup messages. <br/> Click to learn more
+              XMsgs are cross-rollup messages. <br /> Click to learn more
             </label>
           </Tooltip>
           <Link
@@ -358,14 +371,17 @@ export default function XMsgDataTable() {
           <div className="flex-none flex m-3">
             <div className="flex gap-x-2 items-baseline">
               <span className="text-cb-sm text-default">
-                Page <span className="">{0}</span> of <span className="">{0}</span>
+                Page <span className="">{Number(data.xmsgs[0].Cursor)}</span> of{' '}
+                <span className="">{Math.round(Number(data.xmsgCount) / 10)}</span>
               </span>
             </div>
           </div>
 
           <PageButton
             className="rounded-full  flex items-center justify-center"
-            onClick={() => {}} // TODO: when clicked it needs to update the search params with the new cursor
+            onClick={() => {
+              setFilterParams(prev => ({ ...prev, cursor: data.startCursor }))
+            }} // TODO: when clicked it needs to update the search params with the new cursor
             disabled={false} // TODO: When there is no next cursor, we need to disable this
           >
             <span className="sr-only">Next</span>

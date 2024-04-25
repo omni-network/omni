@@ -21,8 +21,6 @@ export default function Navbar() {
   const [currentNet, setCurrentNet] = useState<'testnet' | 'mainnet'>('testnet')
 
   useEffect(() => {
-    console.log(window.location)
-
     if (window.location.host.includes('test')) {
       setCurrentNet('testnet')
     } else if (window.location.host.includes('main')) {
