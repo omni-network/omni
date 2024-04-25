@@ -114,7 +114,6 @@ func StartMonitoringReceipts(ctx context.Context, def Definition) func() error {
 }
 
 func MonitorCursors(ctx context.Context, portals map[uint64]netman.Portal, network netconf.Network) error {
-	network.EthereumChain()
 	for _, dest := range network.EVMChains() {
 		for _, src := range network.EVMChains() {
 			if src.ID == dest.ID {

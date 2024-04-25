@@ -34,7 +34,6 @@ func TestCursor(t *testing.T) {
 				RPCURL:            "http://mock_l1:8545",
 				PortalAddress:     common.Address([]byte("0x268bb5F3d4301b591288390E76b97BE8E8B1Ca82")),
 				DeployHeight:      0,
-				IsEthereum:        true,
 				BlockPeriod:       time.Duration(1) * time.Second,
 				FinalizationStrat: "latest",
 			},

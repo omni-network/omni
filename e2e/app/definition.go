@@ -15,7 +15,6 @@ import (
 	"github.com/omni-network/omni/e2e/netman"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/e2e/vmcompose"
-	"github.com/omni-network/omni/lib/contracts/avs"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/fireblocks"
@@ -100,18 +99,6 @@ func (d Definition) DeployInfos() types.DeployInfos {
 	for chain, info := range d.Netman().DeployInfo() {
 		resp.Set(chain.ID, types.ContractPortal, info.PortalAddress, info.DeployHeight)
 	}
-
-	ethL1, err := d.Testnet.AVSChain()
-	if err != nil {
-		return resp
-	}
-
-	addr, ok := avs.AddrForNetwork(d.Testnet.Network)
-	if !ok {
-		return resp
-	}
-
-	resp.Set(ethL1.ID, types.ContractOmniAVS, addr, 0) // Note that deploy height of omni avs isn't set or used.
 
 	return resp
 }
@@ -393,8 +380,6 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 			return types.Testnet{}, errors.New("anvil chain instance not found in infrastructure data")
 		}
 
-		chain.IsAVSTarget = chain.Name == manifest.AVSTarget
-
 		internalIP := inst.IPAddress.String()
 		if infd.Provider == docker.ProviderName {
 			internalIP = chain.Name // For docker, we use container names
@@ -448,8 +433,6 @@ func publicChains(manifest types.Manifest, cfg DefinitionConfig) ([]types.Public
 			return nil, errors.Wrap(err, "get public chain")
 		}
 
-		chain.IsAVSTarget = chain.Name == manifest.AVSTarget
-
 		addr, ok := cfg.RPCOverrides[name]
 		if !ok {
 			addr = types.PublicRPCByName(name)
@@ -474,10 +457,8 @@ func internalNetwork(def Definition, evmPrefix string) netconf.Network {
 			RPCURL:            public.NextRPCAddress(),
 			BlockPeriod:       public.Chain().BlockPeriod,
 			FinalizationStrat: public.Chain().FinalizationStrat,
-			IsEthereum:        public.Chain().IsAVSTarget,
 			PortalAddress:     depInfo[types.ContractPortal].Address,
 			DeployHeight:      depInfo[types.ContractPortal].Height,
-			AVSContractAddr:   depInfo[types.ContractOmniAVS].Address,
 		}
 
 		chains = append(chains, pc)
@@ -501,7 +482,6 @@ func internalNetwork(def Definition, evmPrefix string) netconf.Network {
 		FinalizationStrat: omniEVM.Chain.FinalizationStrat,
 		PortalAddress:     omniEVMDepInfo[types.ContractPortal].Address,
 		DeployHeight:      omniEVMDepInfo[types.ContractPortal].Height,
-		AVSContractAddr:   omniEVMDepInfo[types.ContractOmniAVS].Address,
 	})
 
 	chains = append(chains, netconf.Chain{
@@ -521,10 +501,8 @@ func internalNetwork(def Definition, evmPrefix string) netconf.Network {
 			RPCURL:            anvil.InternalRPC,
 			BlockPeriod:       anvil.Chain.BlockPeriod,
 			FinalizationStrat: anvil.Chain.FinalizationStrat,
-			IsEthereum:        anvil.Chain.IsAVSTarget,
 			PortalAddress:     depInfo[types.ContractPortal].Address,
 			DeployHeight:      depInfo[types.ContractPortal].Height,
-			AVSContractAddr:   depInfo[types.ContractOmniAVS].Address,
 		})
 	}
 
@@ -547,10 +525,8 @@ func externalNetwork(def Definition) netconf.Network {
 			RPCURL:            public.NextRPCAddress(),
 			BlockPeriod:       public.Chain().BlockPeriod,
 			FinalizationStrat: public.Chain().FinalizationStrat,
-			IsEthereum:        public.Chain().IsAVSTarget,
 			PortalAddress:     depInfo[types.ContractPortal].Address,
 			DeployHeight:      depInfo[types.ContractPortal].Height,
-			AVSContractAddr:   depInfo[types.ContractOmniAVS].Address,
 		})
 	}
 
@@ -573,7 +549,6 @@ func externalNetwork(def Definition) netconf.Network {
 		FinalizationStrat: omniEVM.Chain.FinalizationStrat,
 		PortalAddress:     omniEVMDepInfo[types.ContractPortal].Address,
 		DeployHeight:      omniEVMDepInfo[types.ContractPortal].Height,
-		AVSContractAddr:   omniEVMDepInfo[types.ContractOmniAVS].Address,
 	})
 
 	// Add omni consensus chain
@@ -594,10 +569,8 @@ func externalNetwork(def Definition) netconf.Network {
 			RPCURL:            anvil.ExternalRPC,
 			BlockPeriod:       anvil.Chain.BlockPeriod,
 			FinalizationStrat: anvil.Chain.FinalizationStrat,
-			IsEthereum:        anvil.Chain.IsAVSTarget,
 			PortalAddress:     depInfo[types.ContractPortal].Address,
 			DeployHeight:      depInfo[types.ContractPortal].Height,
-			AVSContractAddr:   depInfo[types.ContractOmniAVS].Address,
 		})
 	}
 

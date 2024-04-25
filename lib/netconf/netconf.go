@@ -6,8 +6,10 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/omni-network/omni/lib/chainids"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
@@ -91,11 +93,22 @@ func (n Network) OmniConsensusChain() (Chain, bool) {
 	return Chain{}, false
 }
 
-// EthereumChain returns the Eth Layer1 chain config or false if it does not exist.
+// EthereumChain returns the ethereum Layer1 chain config or false if it does not exist.
 func (n Network) EthereumChain() (Chain, bool) {
 	for _, chain := range n.Chains {
-		if chain.IsEthereum {
-			return chain, true
+		switch n.ID {
+		case Mainnet:
+			if chain.ID == chainids.Ethereum {
+				return chain, true
+			}
+		case Testnet:
+			if chain.ID == chainids.Holesky {
+				return chain, true
+			}
+		default:
+			if strings.Contains(chain.Name, "l1") {
+				return chain, true
+			}
 		}
 	}
 
@@ -158,10 +171,8 @@ type Chain struct {
 	RPCURL            string            // RPC URL of the chain
 	PortalAddress     common.Address    // Address of the omni portal contract on the chain
 	DeployHeight      uint64            // Height that the portal contracts were deployed
-	IsEthereum        bool              // Whether this is the ethereum layer1 chain
 	BlockPeriod       time.Duration     // Block period of the chain
 	FinalizationStrat FinalizationStrat // Finalization strategy of the chain
-	AVSContractAddr   common.Address    // Address of Omni AVS contracts for the chain
 }
 
 // Load loads the network configuration from the given path.
@@ -208,10 +219,8 @@ type chainJSON struct {
 	RPCURL            string            `json:"rpcurl"`
 	PortalAddress     string            `json:"portal_address"`
 	DeployHeight      uint64            `json:"deploy_height"`
-	IsEthereum        bool              `json:"is_ethereum,omitempty"`
 	BlockPeriod       string            `json:"block_period"`
 	FinalizationStrat FinalizationStrat `json:"finalization_start"`
-	AVSContractAddr   string            `json:"avs_contract_address,omitempty"`
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
@@ -226,11 +235,6 @@ func (c *Chain) UnmarshalJSON(bz []byte) error {
 		return errors.Wrap(err, "parse block period")
 	}
 
-	var avsAddr common.Address
-	if cj.AVSContractAddr != "" {
-		avsAddr = common.HexToAddress(cj.AVSContractAddr)
-	}
-
 	var portalAddr common.Address
 	if cj.PortalAddress != "" {
 		portalAddr = common.HexToAddress(cj.PortalAddress)
@@ -242,10 +246,8 @@ func (c *Chain) UnmarshalJSON(bz []byte) error {
 		RPCURL:            cj.RPCURL,
 		PortalAddress:     portalAddr,
 		DeployHeight:      cj.DeployHeight,
-		IsEthereum:        cj.IsEthereum,
 		BlockPeriod:       blockPeriod,
 		FinalizationStrat: cj.FinalizationStrat,
-		AVSContractAddr:   avsAddr,
 	}
 
 	return nil
@@ -257,10 +259,6 @@ func (c Chain) MarshalJSON() ([]byte, error) {
 	if c.PortalAddress == (common.Address{}) {
 		portalAddr = ""
 	}
-	avsAddr := c.AVSContractAddr.Hex()
-	if c.AVSContractAddr == (common.Address{}) {
-		avsAddr = ""
-	}
 
 	cj := chainJSON{
 		ID:                c.ID,
@@ -268,10 +266,8 @@ func (c Chain) MarshalJSON() ([]byte, error) {
 		RPCURL:            c.RPCURL,
 		PortalAddress:     portalAddr,
 		DeployHeight:      c.DeployHeight,
-		IsEthereum:        c.IsEthereum,
 		BlockPeriod:       c.BlockPeriod.String(),
 		FinalizationStrat: c.FinalizationStrat,
-		AVSContractAddr:   avsAddr,
 	}
 
 	bz, err := json.Marshal(cj)

@@ -7,32 +7,26 @@
    "rpcurl": "飖Ǒp!ǪŰM旰綷罨袢捺悲ȅ-@",
    "portal_address": "0x78968D1662E46D908944a92A4B5AeFcD2c841eC7",
    "deploy_height": 1900800649570732577,
-   "is_ethereum": true,
-   "block_period": "-1455003h26m2.384355226s",
-   "finalization_start": "讻IeYF墄[C",
-   "avs_contract_address": "0x5D33a2818D7F2C5644d428eDBd78130cb999edd3"
+   "block_period": "1076167h14m26.189473666s",
+   "finalization_start": "~轱:ŽƔA苩"
   },
   {
-   "id": 8800248523004128376,
-   "name": "ȖɥmeCʊ ",
-   "rpcurl": "暮斚嬆ʅȀʙĄĥ腲ʤaǇ",
-   "portal_address": "0x1D8Cfd558406d45816570dA345a258A4F475F17F",
-   "deploy_height": 14549873146773073637,
-   "is_ethereum": true,
-   "block_period": "-551784h5m2.213503634s",
-   "finalization_start": "飦tD6ɀk諮Ȃ遃ɸ",
-   "avs_contract_address": "0x242619aF19B8c358b31daA3E51Fa4C421666e082"
+   "id": 5259823216098853135,
+   "name": "_睿ȉǫ蹟",
+   "rpcurl": "Ę鄏þƿ髈儱Ŀ蒫÷K鬣壈gƢ",
+   "portal_address": "0x67a66a13087A9889Ef3f0C9437545Df513a27c88",
+   "deploy_height": 15899325485858621180,
+   "block_period": "-876125h54m39.968728898s",
+   "finalization_start": "x瑻霳鸻ȉĔȹ$Ievɥʈ"
   },
   {
-   "id": 2430368660124652522,
-   "name": "*|机Ȱ晸ʈ劉j蕓ư銩6ĳ憏",
-   "rpcurl": "+",
-   "portal_address": "0xD17a53Ad16B7E98aA9375E2e4BC9922B44F63E11",
-   "deploy_height": 4256679219153142497,
-   "is_ethereum": true,
-   "block_period": "90415h39m55.608582598s",
-   "finalization_start": "鷸ȳ琍殪\"g踮螧喘夓麑Y·L继Ɂ",
-   "avs_contract_address": "0x8363F8B4a42e21c06dB26dA0eA24B0b3FDf951A5"
+   "id": 10620786042408765326,
+   "name": "霡豐Ȭ-ƀh婉Ţ飦tD6ɀk諮Ȃ",
+   "rpcurl": "Ǭ顼溹*x唎蕍",
+   "portal_address": "0xac134759D71e5af9669Ba97e342c6B656b846810",
+   "deploy_height": 16039643194165739319,
+   "block_period": "-1311148h58m37.614876206s",
+   "finalization_start": "kÐŻHĦɈ好"
   }
  ]
 }

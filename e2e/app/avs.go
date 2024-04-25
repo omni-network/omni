@@ -10,9 +10,9 @@ import (
 
 // DeployAVSAndCreate3 deploys a create3 contract and the Omni AVS contract.
 func DeployAVSAndCreate3(ctx context.Context, def Definition) error {
-	chain, err := def.Testnet.AVSChain()
-	if err != nil {
-		return errors.Wrap(err, "avs chain")
+	chain, ok := externalNetwork(def).EthereumChain()
+	if !ok {
+		return errors.New("no ethereum l1 chain")
 	}
 
 	factory, receipt, err := deployCreate3(ctx, def, chain.ID)
@@ -28,9 +28,9 @@ func DeployAVSAndCreate3(ctx context.Context, def Definition) error {
 }
 
 func deployAVS(ctx context.Context, def Definition) error {
-	chain, err := def.Testnet.AVSChain()
-	if err != nil {
-		return errors.Wrap(err, "avs chain")
+	chain, ok := externalNetwork(def).EthereumChain()
+	if !ok {
+		return errors.New("no ethereum l1 chain")
 	}
 
 	backend, err := def.Backends().Backend(chain.ID)

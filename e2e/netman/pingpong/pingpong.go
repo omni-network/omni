@@ -98,12 +98,6 @@ func Deploy(ctx context.Context, netMgr netman.Manager, backends ethbackend.Back
 	return dapp, nil
 }
 
-func (d *XDapp) ExportDeployInfo(resp types.DeployInfos) {
-	for chainID, contract := range d.contracts {
-		resp.Set(chainID, types.ContractPingPong, contract.Address, contract.DeployHeight)
-	}
-}
-
 func (d *XDapp) LogBalances(ctx context.Context) error {
 	for _, contract := range d.contracts {
 		backend, err := d.backends.Backend(contract.Chain.ID)

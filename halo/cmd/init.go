@@ -212,13 +212,11 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 				{
 					ID:            100, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
 					Name:          "chain_a",
-					IsEthereum:    false,
 					PortalAddress: dummyAddr,
 				},
 				{
 					ID:            200, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
 					Name:          "chain_b",
-					IsEthereum:    false,
 					PortalAddress: dummyAddr,
 				},
 			},
