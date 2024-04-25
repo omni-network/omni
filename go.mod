@@ -43,7 +43,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/syndtr/goleveldb v1.0.1 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.26.0
-	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.25.0
+	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.26.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/mock v0.4.0
 	golang.org/x/sync v0.7.0
