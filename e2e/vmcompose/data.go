@@ -12,7 +12,7 @@ import (
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
-var evmRegx = regexp.MustCompile("(.*_evm|chain_.*)")
+var evmRegx = regexp.MustCompile("(.*_evm|chain_.*|mock_.*)")
 
 const (
 	evmPort  = 8545
