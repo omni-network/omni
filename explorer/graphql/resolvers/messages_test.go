@@ -240,25 +240,43 @@ func TestXMsgsNoLimit(t *testing.T) {
 				}
 			`,
 			ExpectedResult: `
-			{
-				"xmsgs":{
-					"Edges":[
-						{
-							"Node":{
-								"BlockHeight":"0x0",
-								"Status": "SUCCESS",
-								"ID":"8589934593",
-								"StreamOffset":"0x0",
-								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
+				{
+					"xmsgs":
+					{
+						"Edges":
+						[
+							{
+								"Node":{
+									"BlockHeight":"0x0",
+									"ID":"8589934593",
+									"Status":"SUCCESS",
+									"StreamOffset":"0x0",
+									"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
+								}
+							},{
+								"Node":{
+									"BlockHeight":"0x1",
+									"ID":"8589934594",
+									"Status":"SUCCESS",
+									"StreamOffset":"0x1",
+									"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
+								}
+							},{
+								"Node":{
+									"BlockHeight":"0x2",
+									"ID":"8589934595",
+									"Status":"SUCCESS",
+									"StreamOffset":"0x2",
+									"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
+								}
 							}
-						}
-					],
-					"PageInfo":{
-						"StartCursor":"0x200000002"
-					},
-					"TotalCount":"0x5"
+						],
+						"PageInfo":{
+							"StartCursor":"0x200000004"
+						},
+						"TotalCount":"0x5"
+					}
 				}
-			}
 			`,
 		},
 	})
@@ -303,15 +321,43 @@ func TestXMsgsCursorOffset(t *testing.T) {
 					"Edges":[
 						{
 							"Node":{
+								"BlockHeight":"0x0",
+								"Status":"SUCCESS",
 								"StreamOffset":"0x0",
-								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20",
-								"Status": "SUCCESS",
-								"BlockHeight":"0x0"
+								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
+							}
+						},{
+							"Node":{
+								"BlockHeight":"0x1",
+								"Status":"SUCCESS",
+								"StreamOffset":"0x1",
+								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
+							}
+						},{
+							"Node":{
+								"BlockHeight":"0x2",
+								"Status":"SUCCESS",
+								"StreamOffset":"0x2",
+								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
+							}
+						},{
+							"Node":{
+								"BlockHeight":"0x3",
+								"Status":"SUCCESS",
+								"StreamOffset":"0x3",
+								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
+							}
+						},{
+							"Node":{
+								"BlockHeight":"0x4",
+								"Status":"PENDING",
+								"StreamOffset":"0x4",
+								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
 							}
 						}
 					],
 					"PageInfo":{
-						"StartCursor":"0x200000002"
+						"StartCursor":"0x200000006"
 					},
 					"TotalCount":"0x5"
 				}
