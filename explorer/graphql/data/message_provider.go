@@ -2,7 +2,6 @@ package data
 
 import (
 	"context"
-	"strconv"
 
 	"github.com/omni-network/omni/explorer/db/ent"
 	"github.com/omni-network/omni/explorer/db/ent/msg"
@@ -129,7 +128,7 @@ func (p Provider) XMsgs(ctx context.Context, limit uint64, cursor *uint64) (*res
 	// Get the total count of messages
 	totalCount, err := p.EntClient.Msg.Query().Count(ctx)
 	if err != nil {
-		return nil, false, errors.New("failed to fetch message count")
+		return nil, false, errors.Wrap(err, "fetch message count")
 	}
 
 	// Get the total count in hex
@@ -139,14 +138,28 @@ func (p Provider) XMsgs(ctx context.Context, limit uint64, cursor *uint64) (*res
 	}
 
 	// Get the start cursor
-	startCursor, err := strconv.ParseUint(string(res[0].Node.ID), 10, 64)
+	startCursor := res[0].Cursor.ToInt().Uint64()
+
+	// Calculate the page info
+	pageInfo, err := calculatePageInfo(startCursor, limit, totalCount)
 	if err != nil {
-		return nil, false, errors.New("failed to parse start cursor")
+		return nil, false, errors.Wrap(err, "calculating page info")
 	}
 
-	// Calculate the next and previous cursors
-	// The next cursor is the start cursor - the limit meaning we are moving down the stream of messages, towards the first/oldest
-	// The previous cursor is the start cursor + the limit meaning we are moving up the stream of messages, towards the most recent
+	// Create the result
+	result := resolvers.XMsgResult{
+		TotalCount: totalCountHex,
+		Edges:      res,
+		PageInfo:   pageInfo,
+	}
+
+	return &result, true, nil
+}
+
+// calculatePageInfo calculates the next and previous cursors for a given start cursor and limit
+// The next cursor is the start cursor - the limit meaning we are moving down the stream of messages, towards the first/oldest
+// The previous cursor is the start cursor + the limit meaning we are moving up the stream of messages, towards the most recent.
+func calculatePageInfo(startCursor, limit uint64, totalCount int) (resolvers.PageInfo, error) {
 	prevCursor := startCursor + limit
 
 	nextCursor := startCursor - limit
@@ -157,25 +170,18 @@ func (p Provider) XMsgs(ctx context.Context, limit uint64, cursor *uint64) (*res
 	// convert the cursors to hex
 	prevCursorHex, err := utils.Uint2Hex(prevCursor)
 	if err != nil {
-		return nil, false, errors.Wrap(err, "decoding message cursor")
+		return resolvers.PageInfo{}, errors.Wrap(err, "decoding message cursor")
 	}
 
 	nextCursorHex, err := utils.Uint2Hex(nextCursor)
 	if err != nil {
-		return nil, false, errors.Wrap(err, "decoding message cursor")
+		return resolvers.PageInfo{}, errors.Wrap(err, "decoding message cursor")
 	}
 
-	// Create the result
-	result := resolvers.XMsgResult{
-		TotalCount: totalCountHex,
-		Edges:      res,
-		PageInfo: resolvers.PageInfo{
-			NextCursor:  nextCursorHex,
-			PrevCursor:  prevCursorHex,
-			HasNextPage: nextCursor > 0,
-			HasPrevPage: startCursor < uint64(totalCount),
-		},
-	}
-
-	return &result, true, nil
+	return resolvers.PageInfo{
+		NextCursor:  nextCursorHex,
+		PrevCursor:  prevCursorHex,
+		HasNextPage: nextCursor > 0,
+		HasPrevPage: startCursor < uint64(totalCount),
+	}, nil
 }
