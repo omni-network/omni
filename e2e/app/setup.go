@@ -122,11 +122,12 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 		}
 		config.WriteConfigFile(filepath.Join(nodeDir, "config", "config.toml"), cfg) // panics
 
-		if err := writeHaloConfig(nodeDir, def.Cfg, logCfg, depCfg.testConfig, node.Mode); err != nil {
+		omniEVM := omniEVMByPrefix(def.Testnet, node.Name)
+
+		if err := writeHaloConfig(nodeDir, def.Cfg, logCfg, depCfg.testConfig, node.Mode, omniEVM.InstanceName); err != nil {
 			return err
 		}
 
-		omniEVM := omniEVMByPrefix(def.Testnet, node.Name)
 		if err := os.WriteFile(filepath.Join(nodeDir, "config", "jwtsecret"), []byte(omniEVM.JWTSecret), 0o600); err != nil {
 			return errors.Wrap(err, "write jwtsecret")
 		}
@@ -298,7 +299,7 @@ func MakeConfig(node *e2e.Node, nodeDir string) (*config.Config, error) {
 }
 
 // writeHaloConfig generates an halo application config for a node and writes it to disk.
-func writeHaloConfig(nodeDir string, defCfg DefinitionConfig, logCfg log.Config, testCfg bool, mode e2e.Mode) error {
+func writeHaloConfig(nodeDir string, defCfg DefinitionConfig, logCfg log.Config, testCfg bool, mode e2e.Mode, evmInstance string) error {
 	cfg := halocfg.DefaultConfig()
 
 	switch mode {
@@ -314,7 +315,8 @@ func writeHaloConfig(nodeDir string, defCfg DefinitionConfig, logCfg log.Config,
 	}
 
 	cfg.HomeDir = nodeDir
-	cfg.EngineJWTFile = "/halo/config/jwtsecret" // Absolute path inside docker container
+	cfg.EngineEndpoint = fmt.Sprintf("http://%s:8551", evmInstance) //nolint:nosprintfhostport // net.JoinHostPort doesn't prefix http.
+	cfg.EngineJWTFile = "/halo/config/jwtsecret"                    // Absolute path inside docker container
 	cfg.Tracer.Endpoint = defCfg.TracingEndpoint
 	cfg.Tracer.Headers = defCfg.TracingHeaders
 

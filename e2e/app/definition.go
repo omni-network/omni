@@ -361,17 +361,16 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 		}
 
 		omniEVMS = append(omniEVMS, types.OmniEVM{
-			Chain:           types.OmniEVMByNetwork(manifest.Network),
-			InstanceName:    name,
-			AdvertisedIP:    advertisedIP,
-			ProxyPort:       inst.Port,
-			InternalRPC:     fmt.Sprintf("http://%s:8545", internalIP),
-			InternalAuthRPC: fmt.Sprintf("http://%s:8551", internalIP),
-			ExternalRPC:     fmt.Sprintf("http://%s:%d", inst.ExtIPAddress.String(), inst.Port),
-			NodeKey:         nodeKey,
-			Enode:           en,
-			IsArchive:       isArchive,
-			JWTSecret:       tutil.RandomHash().Hex(),
+			Chain:        types.OmniEVMByNetwork(manifest.Network),
+			InstanceName: name,
+			AdvertisedIP: advertisedIP,
+			ProxyPort:    inst.Port,
+			InternalRPC:  fmt.Sprintf("http://%s:8545", internalIP),
+			ExternalRPC:  fmt.Sprintf("http://%s:%d", inst.ExtIPAddress.String(), inst.Port),
+			NodeKey:      nodeKey,
+			Enode:        en,
+			IsArchive:    isArchive,
+			JWTSecret:    tutil.RandomHash().Hex(),
 		})
 	}
 
@@ -498,7 +497,6 @@ func internalNetwork(def Definition, evmPrefix string) netconf.Network {
 		ID:                omniEVM.Chain.ID,
 		Name:              omniEVM.Chain.Name,
 		RPCURL:            omniEVM.InternalRPC,
-		AuthRPCURL:        omniEVM.InternalAuthRPC,
 		BlockPeriod:       omniEVM.Chain.BlockPeriod,
 		FinalizationStrat: omniEVM.Chain.FinalizationStrat,
 		IsOmniEVM:         true,

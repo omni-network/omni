@@ -2,6 +2,7 @@
  "HomeDir": "foo",
  "EigenKeyPassword": "",
  "EngineJWTFile": "bar",
+ "EngineEndpoint": "",
  "SnapshotInterval": 1000,
  "SnapshotKeepRecent": 2,
  "BackendType": "goleveldb",

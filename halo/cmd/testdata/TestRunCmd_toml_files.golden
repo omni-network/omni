@@ -2,6 +2,7 @@
  "HomeDir": "testinput/input1",
  "EigenKeyPassword": "",
  "EngineJWTFile": "jwt.toml",
+ "EngineEndpoint": "",
  "SnapshotInterval": 999,
  "SnapshotKeepRecent": 2,
  "BackendType": "goleveldb",
