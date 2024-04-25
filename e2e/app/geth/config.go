@@ -95,9 +95,8 @@ func MakeGethConfig(conf Config) FullConfig {
 	cfg.Eth.Preimages = conf.IsArchive // Geth auto-enables this when NoPruning is set.
 
 	// Ethereum has slow block building times (2~4s), but we need fast times (<1s).
-	// Decrease recommit to minimum (1s) and newPayloadTimeout to 500ms so blocks are built in less than 1s.
-	cfg.Eth.Miner.Recommit = time.Second
-	cfg.Eth.Miner.NewPayloadTimeout = 500 * time.Millisecond
+	// Use 500ms so blocks are built in less than 1s.
+	cfg.Eth.Miner.Recommit = 500 * time.Millisecond
 
 	// Set the bootnodes and trusted nodes.
 	cfg.Node.P2P.Name = conf.Moniker
