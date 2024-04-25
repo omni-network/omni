@@ -3,6 +3,5 @@
 
 network = "devnet"
 anvil_chains = ["mock_l1", "mock_rollup"]
-avs_target = "mock_l1"
 
 [node.validator01]

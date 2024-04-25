@@ -59,10 +59,6 @@ type Manifest struct {
 	// PublicChains defines the public chains to connect to; arb_sepolia, etc.
 	PublicChains []string `toml:"public_chains"`
 
-	// AVSTarget identifies the chain to deploy the AVS contracts to.
-	// It must be one of the anvil or public chains.
-	AVSTarget string `toml:"avs_target"`
-
 	// MultiOmniEVMs defines whether to deploy one or multiple Omni EVMs.
 	MultiOmniEVMs bool `toml:"multi_omni_evms"`
 

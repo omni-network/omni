@@ -12,9 +12,7 @@ import (
 type ContractName string
 
 const (
-	ContractPortal   ContractName = "portal"
-	ContractOmniAVS  ContractName = "omni_avs"
-	ContractPingPong ContractName = "ping_pong"
+	ContractPortal ContractName = "portal"
 )
 
 // DeployInfos contains the addresses of deployed xdapps and contracts by chainID.
