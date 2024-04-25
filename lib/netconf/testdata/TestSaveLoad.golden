@@ -5,38 +5,38 @@
    "id": 5828590068104375683,
    "name": "鎢屃裂À",
    "rpcurl": "飖Ǒp!ǪŰM旰綷罨袢捺悲ȅ-@",
-   "auth_rpcurl": "ʛ,^籿Ź濓\u003c鈡鶭ŁPyÌ",
-   "portal_address": "0x2ceFB439380e1E4066cDEFfEe9ec171d0F345D33",
-   "deploy_height": 5437755693941739170,
-   "is_omni_consensus": true,
-   "block_period": "2354805h17m7.671536598s",
-   "finalization_start": "鄏þƿ髈儱Ŀ蒫÷K鬣壈",
-   "avs_contract_address": "0xac7367A66A13087A9889EF3f0C9437545dF513a2"
-  },
-  {
-   "id": 13459205444906724476,
-   "name": "aǇ趴x瑻霳鸻ȉ",
-   "rpcurl": "+ËQLuVǭz瘯霡豐Ȭ-ƀh婉Ţ飦t",
-   "auth_rpcurl": "R涞!Ä\u003e漌Ǭ顼溹*",
-   "portal_address": "0x87F059AC134759D71E5AF9669ba97e342c6B656b",
-   "deploy_height": 10254432012947362948,
+   "portal_address": "0x78968D1662E46D908944a92A4B5AeFcD2c841eC7",
+   "deploy_height": 1900800649570732577,
    "is_omni_evm": true,
    "is_ethereum": true,
-   "block_period": "1392685h44m1.507918464s",
-   "finalization_start": "ʈ劉j蕓ư銩6ĳ憏歅%ɜ¤0Ȼ",
-   "avs_contract_address": "0x9365C528Deb1d9De9E7Fc8B0126586329CC669Cf"
+   "block_period": "-935053h4m54.403288883s",
+   "finalization_start": "IeYF墄[C_",
+   "avs_contract_address": "0x33a2818d7F2c5644D428EDbd78130cB999EdD378"
   },
   {
-   "id": 694998618745504662,
-   "name": "殪\"g踮螧喘夓麑Y·L继Ɂɯz剩Ʉ",
-   "rpcurl": "Ƒ»",
-   "auth_rpcurl": "3瓯洼籏Ħ*噷·oũ答Bc黰¢ơđ?ȵ",
-   "portal_address": "0x30D6c076C7d6A929AaAf991153a5915Eb2909435",
-   "deploy_height": 17022257212851920996,
+   "id": 4303487026632006283,
+   "name": "ɥmeCʊ 炄闌剾",
+   "rpcurl": "ʅȀʙĄĥ腲ʤaǇ趴",
+   "portal_address": "0x8cFD558406d45816570dA345A258a4F475f17fE5",
+   "deploy_height": 2939510796997021459,
+   "is_omni_consensus": true,
+   "is_ethereum": true,
+   "block_period": "-530658h29m31.733917296s",
+   "finalization_start": "",
+   "avs_contract_address": "0xd713BDeDf81e7675242619af19b8C358B31dAa3e"
+  },
+  {
+   "id": 12220965479361160785,
+   "name": "ɀÄf渂硹譯匬襧*|机Ȱ晸ʈ劉j",
+   "rpcurl": "ŻHĦɈ好ǎ+扰_",
+   "portal_address": "0x53aD16b7e98AA9375e2e4bC9922b44f63e11e13f",
+   "deploy_height": 5470582473102924320,
    "is_omni_evm": true,
-   "block_period": "-1600609h58m29.865376476s",
-   "finalization_start": "ą韥Üfǅ噊",
-   "avs_contract_address": "0xDcD190a024C9Fe6b853D4af6838F022787D34C00"
+   "is_omni_consensus": true,
+   "is_ethereum": true,
+   "block_period": "193055h10m18.745504662s",
+   "finalization_start": "殪\"g踮螧喘夓麑Y·L继Ɂɯz剩Ʉ",
+   "avs_contract_address": "0xa42E21C06dB26dA0ea24B0B3FDf951a5a40C0754"
   }
  ]
 }

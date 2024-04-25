@@ -118,6 +118,8 @@ func setupSimnet(t *testing.T) haloapp.Config {
 	haloCfg.HomeDir = homeDir
 	haloCfg.BackendType = string(db.MemDBBackend)
 	haloCfg.EVMBuildDelay = time.Millisecond
+	haloCfg.EngineEndpoint = "dummy"
+	haloCfg.EngineJWTFile = "dummy"
 
 	cfg := haloapp.Config{
 		Config: haloCfg,

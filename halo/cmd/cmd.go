@@ -53,7 +53,7 @@ func newRunCmd(name string, runFunc func(context.Context, app.Config) error) *co
 		},
 	}
 
-	bindRunFlags(cmd.Flags(), &haloCfg)
+	bindRunFlags(cmd, &haloCfg)
 	log.BindFlags(cmd.Flags(), &logCfg)
 
 	return cmd

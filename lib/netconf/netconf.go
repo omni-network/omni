@@ -156,7 +156,6 @@ type Chain struct {
 	ID                uint64            // Chain ID asa per https://chainlist.org
 	Name              string            // Chain name as per https://chainlist.org
 	RPCURL            string            // RPC URL of the chain
-	AuthRPCURL        string            // RPC URL of the chain with JWT authentication enabled
 	PortalAddress     common.Address    // Address of the omni portal contract on the chain
 	DeployHeight      uint64            // Height that the portal contracts were deployed
 	IsOmniEVM         bool              // Whether this is the Omni EVM chain
@@ -209,7 +208,6 @@ type chainJSON struct {
 	ID                uint64            `json:"id"`
 	Name              string            `json:"name"`
 	RPCURL            string            `json:"rpcurl"`
-	AuthRPCURL        string            `json:"auth_rpcurl,omitempty"`
 	PortalAddress     string            `json:"portal_address"`
 	DeployHeight      uint64            `json:"deploy_height"`
 	IsOmniEVM         bool              `json:"is_omni_evm,omitempty"`
@@ -246,7 +244,6 @@ func (c *Chain) UnmarshalJSON(bz []byte) error {
 		ID:                cj.ID,
 		Name:              cj.Name,
 		RPCURL:            cj.RPCURL,
-		AuthRPCURL:        cj.AuthRPCURL,
 		PortalAddress:     portalAddr,
 		DeployHeight:      cj.DeployHeight,
 		IsOmniEVM:         cj.IsOmniEVM,
@@ -275,7 +272,6 @@ func (c Chain) MarshalJSON() ([]byte, error) {
 		ID:                c.ID,
 		Name:              c.Name,
 		RPCURL:            c.RPCURL,
-		AuthRPCURL:        c.AuthRPCURL,
 		PortalAddress:     portalAddr,
 		DeployHeight:      c.DeployHeight,
 		IsOmniEVM:         c.IsOmniEVM,

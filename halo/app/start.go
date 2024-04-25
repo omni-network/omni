@@ -81,6 +81,10 @@ func Run(ctx context.Context, cfg Config) error {
 func Start(ctx context.Context, cfg Config) (func(context.Context) error, error) {
 	log.Info(ctx, "Starting halo consensus client")
 
+	if err := cfg.Verify(); err != nil {
+		return nil, errors.Wrap(err, "verify halo config")
+	}
+
 	buildinfo.Instrument(ctx)
 
 	network, err := netconf.Load(cfg.NetworkFile())
@@ -306,12 +310,7 @@ func newEngineClient(ctx context.Context, cfg Config, network netconf.Network, p
 		return nil, errors.Wrap(err, "load engine JWT file")
 	}
 
-	omniChain, ok := network.OmniEVMChain()
-	if !ok {
-		return nil, errors.New("omni chain not found in network")
-	}
-
-	engineCl, err := ethclient.NewAuthClient(ctx, omniChain.AuthRPCURL, jwtBytes)
+	engineCl, err := ethclient.NewAuthClient(ctx, cfg.EngineEndpoint, jwtBytes)
 	if err != nil {
 		return nil, errors.Wrap(err, "create engine client")
 	}

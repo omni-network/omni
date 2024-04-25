@@ -9,6 +9,9 @@ version = "v0.1.3"
 ###                          Halo Options                           ###
 #######################################################################
 
+# Omni chain execution client Engine API http endpoint.
+engine-endpoint = ""
+
 # Omni chain execution client JWT file used for authentication.
 engine-jwt-file = ""
 

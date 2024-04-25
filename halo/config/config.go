@@ -43,8 +43,9 @@ const (
 func DefaultConfig() Config {
 	return Config{
 		HomeDir:            DefaultHomeDir,
-		EigenKeyPassword:   "", // No default
+		EngineEndpoint:     "", // No default
 		EngineJWTFile:      "", // No default
+		EigenKeyPassword:   "", // No default
 		SnapshotInterval:   defaultSnapshotInterval,
 		SnapshotKeepRecent: defaultSnapshotKeepRecent,
 		BackendType:        string(defaultDBBackend),
@@ -61,6 +62,7 @@ type Config struct {
 	HomeDir            string
 	EigenKeyPassword   string
 	EngineJWTFile      string
+	EngineEndpoint     string
 	SnapshotInterval   uint64 // See cosmossdk.io/store/snapshots/types/options.go
 	SnapshotKeepRecent uint64 // See cosmossdk.io/store/snapshots/types/options.go
 	BackendType        string // See cosmos-db/db.go
@@ -106,6 +108,16 @@ func (c Config) KeystoreGlob() string {
 // It returns an error if multiple files are found.
 func (c Config) KeystoreFile() (string, bool, error) {
 	return statGlobSingle(c.KeystoreGlob())
+}
+
+func (c Config) Verify() error {
+	if c.EngineEndpoint == "" {
+		return errors.New("flag --engine-endpoint is empty")
+	} else if c.EngineJWTFile == "" {
+		return errors.New("flag --engine-jwt-file is empty")
+	}
+
+	return nil
 }
 
 //go:embed config.toml.tmpl

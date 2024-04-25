@@ -105,15 +105,14 @@ type EVMChain struct {
 
 // OmniEVM represents a omni evm instance in a omni network. Similar to e2e.Node for halo instances.
 type OmniEVM struct {
-	Chain           EVMChain // For netconf (all instances must have the same chain)
-	InstanceName    string   // For docker container name
-	AdvertisedIP    net.IP   // For setting up NAT on geth bootnode
-	ProxyPort       uint32   // For binding
-	InternalRPC     string   // For JSON-RPC queries from halo/relayer
-	InternalAuthRPC string   // For engine API queries from halo
-	ExternalRPC     string   // For JSON-RPC queries from e2e app.
-	IsArchive       bool     // Whether this instance is in archive mode
-	JWTSecret       string   // JWT secret for authentication
+	Chain        EVMChain // For netconf (all instances must have the same chain)
+	InstanceName string   // For docker container name
+	AdvertisedIP net.IP   // For setting up NAT on geth bootnode
+	ProxyPort    uint32   // For binding
+	InternalRPC  string   // For JSON-RPC queries from halo/relayer
+	ExternalRPC  string   // For JSON-RPC queries from e2e app.
+	IsArchive    bool     // Whether this instance is in archive mode
+	JWTSecret    string   // JWT secret for authentication
 
 	// P2P networking
 	NodeKey *ecdsa.PrivateKey // Private key

@@ -2,6 +2,7 @@
  "HomeDir": "./halo",
  "EigenKeyPassword": "",
  "EngineJWTFile": "",
+ "EngineEndpoint": "",
  "SnapshotInterval": 1000,
  "SnapshotKeepRecent": 2,
  "BackendType": "goleveldb",
