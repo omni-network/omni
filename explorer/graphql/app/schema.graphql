@@ -216,11 +216,15 @@ type XMsgEdge {
 PageInfo represents pagination information
 """
 type PageInfo {
-  "Start Cursor"
-  StartCursor: BigInt!
 
-  "Next Page Cursor"
+  "Next Cursor"
+  NextCursor: BigInt!
+
+  "Has Next Page"
   HasNextPage: Boolean!
+
+  "Previous Cursor"
+  PrevCursor: BigInt!
 
   "Previous Page Cursor"
   HasPrevPage: Boolean!

@@ -159,6 +159,7 @@ func TestXMsgsNoCursor(t *testing.T) {
 					xmsgs(limit: 2){
 						TotalCount
 						Edges{
+							Cursor
 							Node {
 								ID
 								StreamOffset
@@ -168,7 +169,7 @@ func TestXMsgsNoCursor(t *testing.T) {
 							}
 						}
 						PageInfo {
-							StartCursor
+							NextCursor
 						}
 					}
 				}
@@ -178,24 +179,26 @@ func TestXMsgsNoCursor(t *testing.T) {
 				"xmsgs":{
 					"Edges":[
 						{
+							"Cursor":"0x200000005",
 							"Node":{
-								"BlockHeight":"0x0",
-								"Status": "SUCCESS",
-								"ID": "8589934593",
-								"StreamOffset":"0x0",
+								"BlockHeight":"0x4",
+								"Status": "PENDING",
+								"ID": "8589934597",
+								"StreamOffset":"0x4",
 								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"}
 							},{
+							"Cursor":"0x200000004",
 							"Node":{
-								"BlockHeight":"0x1",
+								"BlockHeight":"0x3",
 								"Status": "SUCCESS",
-								"ID": "8589934594",
-								"StreamOffset":"0x1",
+								"ID": "8589934596",
+								"StreamOffset":"0x3",
 								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
 							}
 						}
 					],
 					"PageInfo":{
-						"StartCursor":"0x200000003"
+						"NextCursor":"0x200000003"
 					},
 					"TotalCount":"0x5"
 				}
@@ -225,6 +228,7 @@ func TestXMsgsNoLimit(t *testing.T) {
 					xmsgs(cursor: "0x200000003"){
 						TotalCount
 						Edges{
+							Cursor
 							Node {
 								StreamOffset
 								TxHash
@@ -232,9 +236,6 @@ func TestXMsgsNoLimit(t *testing.T) {
 								BlockHeight
 								Status
 							}
-						}
-						PageInfo {
-							StartCursor
 						}
 					}
 				}
@@ -246,14 +247,16 @@ func TestXMsgsNoLimit(t *testing.T) {
 						"Edges":
 						[
 							{
+								"Cursor":"0x200000003",
 								"Node":{
-									"BlockHeight":"0x0",
-									"ID":"8589934593",
+									"ID":"8589934595",
+									"BlockHeight":"0x2",
 									"Status":"SUCCESS",
-									"StreamOffset":"0x0",
+									"StreamOffset":"0x2",
 									"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
 								}
 							},{
+								"Cursor":"0x200000002",
 								"Node":{
 									"BlockHeight":"0x1",
 									"ID":"8589934594",
@@ -262,18 +265,16 @@ func TestXMsgsNoLimit(t *testing.T) {
 									"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
 								}
 							},{
+								"Cursor":"0x200000001",
 								"Node":{
-									"BlockHeight":"0x2",
-									"ID":"8589934595",
+									"BlockHeight":"0x0",
+									"ID":"8589934593",
 									"Status":"SUCCESS",
-									"StreamOffset":"0x2",
+									"StreamOffset":"0x0",
 									"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
 								}
 							}
 						],
-						"PageInfo":{
-							"StartCursor":"0x200000004"
-						},
 						"TotalCount":"0x5"
 					}
 				}
@@ -282,7 +283,7 @@ func TestXMsgsNoLimit(t *testing.T) {
 	})
 }
 
-func TestXMsgsCursorOffset(t *testing.T) {
+func TestXMsgsNoParams(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	test := createGqlTest(t)
@@ -310,7 +311,7 @@ func TestXMsgsCursorOffset(t *testing.T) {
 							}
 						}
 						PageInfo {
-							StartCursor
+							PrevCursor
 						}
 					}
 				}
@@ -321,43 +322,43 @@ func TestXMsgsCursorOffset(t *testing.T) {
 					"Edges":[
 						{
 							"Node":{
-								"BlockHeight":"0x0",
-								"Status":"SUCCESS",
-								"StreamOffset":"0x0",
-								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
-							}
-						},{
-							"Node":{
-								"BlockHeight":"0x1",
-								"Status":"SUCCESS",
-								"StreamOffset":"0x1",
-								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
-							}
-						},{
-							"Node":{
-								"BlockHeight":"0x2",
-								"Status":"SUCCESS",
-								"StreamOffset":"0x2",
-								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
-							}
-						},{
-							"Node":{
-								"BlockHeight":"0x3",
-								"Status":"SUCCESS",
-								"StreamOffset":"0x3",
-								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
-							}
-						},{
-							"Node":{
 								"BlockHeight":"0x4",
 								"Status":"PENDING",
 								"StreamOffset":"0x4",
 								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
 							}
+						},{
+								"Node":{
+									"BlockHeight":"0x3",
+									"Status":"SUCCESS",
+									"StreamOffset":"0x3",
+									"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
+								}
+							},{
+								"Node":{
+									"BlockHeight":"0x2",
+									"Status":"SUCCESS",
+									"StreamOffset":"0x2",
+									"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
+								}
+							},{
+								"Node":{
+									"BlockHeight":"0x1",
+									"Status":"SUCCESS",
+									"StreamOffset":"0x1",
+									"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
+								}
+							},{
+							"Node":{
+								"BlockHeight":"0x0",
+								"Status":"SUCCESS",
+								"StreamOffset":"0x0",
+								"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
+							}
 						}
 					],
 					"PageInfo":{
-						"StartCursor":"0x200000006"
+						"PrevCursor":"0x20000001e"
 					},
 					"TotalCount":"0x5"
 				}
