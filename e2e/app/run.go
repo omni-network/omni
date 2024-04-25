@@ -38,6 +38,11 @@ type DeployConfig struct {
 // Deploy a new e2e network. It also starts all services in order to deploy private portals.
 // It also returns an optional deployed ping pong contract is enabled.
 func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XDapp, error) {
+	if def.Testnet.Network.IsProtected() {
+		// If a protected network needs to be deployed temporarily comment out this check.
+		return nil, errors.New("cannot deploy protected network", "network", def.Testnet.Network)
+	}
+
 	if err := Cleanup(ctx, def); err != nil {
 		return nil, err
 	}
