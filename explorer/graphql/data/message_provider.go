@@ -91,7 +91,7 @@ func (p Provider) XMsgs(ctx context.Context, limit uint64, cursor *uint64) (*res
 	query := p.EntClient.Msg.Query().
 		// Most recent messages first
 		Order(ent.Desc(msg.FieldBlockTime), ent.Desc(msg.FieldStreamOffset)).
-		// limit will always set, defaulting to 1
+		// limit will always set, defaulting to 25
 		Limit(int(limit))
 
 	// If cursor is not 0, we want to query the message with the cursor ID.
