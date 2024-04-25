@@ -127,15 +127,17 @@ func test(t *testing.T, testFunc testFunc) {
 
 	if testFunc.TestOmniEVM != nil {
 		for _, chain := range network.Chains {
-			if chain.IsOmniEVM {
-				client, err := ethclient.Dial(chain.Name, chain.RPCURL)
-				require.NoError(t, err)
-
-				t.Run(chain.Name, func(t *testing.T) {
-					t.Parallel()
-					testFunc.TestOmniEVM(t, client)
-				})
+			if chain.ID != network.ID.Static().OmniExecutionChainID {
+				continue
 			}
+
+			client, err := ethclient.Dial(chain.Name, chain.RPCURL)
+			require.NoError(t, err)
+
+			t.Run(chain.Name, func(t *testing.T) {
+				t.Parallel()
+				testFunc.TestOmniEVM(t, client)
+			})
 		}
 	}
 

@@ -48,7 +48,6 @@ func TestCursor(t *testing.T) {
 				RPCURL:            "http://mock_arb:8545",
 				PortalAddress:     common.Address([]byte("0x268bb5F3d4301b591288390E76b97BE8E8B1Ca82")),
 				DeployHeight:      10687126,
-				IsOmniConsensus:   true,
 				BlockPeriod:       time.Duration(2) * time.Second,
 				FinalizationStrat: "latest",
 			},

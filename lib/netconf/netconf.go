@@ -37,7 +37,7 @@ func (n Network) Validate() error {
 func (n Network) EVMChains() []Chain {
 	resp := make([]Chain, 0, len(n.Chains))
 	for _, chain := range n.Chains {
-		if chain.IsOmniConsensus {
+		if IsOmniConsensus(n.ID, chain.ID) {
 			continue
 		}
 
@@ -72,7 +72,7 @@ func (n Network) ChainNamesByIDs() map[uint64]string {
 // OmniEVMChain returns the Omni execution chain config or false if it does not exist.
 func (n Network) OmniEVMChain() (Chain, bool) {
 	for _, chain := range n.Chains {
-		if chain.IsOmniEVM {
+		if chain.ID == n.ID.Static().OmniExecutionChainID {
 			return chain, true
 		}
 	}
@@ -83,7 +83,7 @@ func (n Network) OmniEVMChain() (Chain, bool) {
 // OmniConsensusChain returns the Omni consensus chain config or false if it does not exist.
 func (n Network) OmniConsensusChain() (Chain, bool) {
 	for _, chain := range n.Chains {
-		if chain.IsOmniConsensus {
+		if IsOmniConsensus(n.ID, chain.ID) {
 			return chain, true
 		}
 	}
@@ -158,8 +158,6 @@ type Chain struct {
 	RPCURL            string            // RPC URL of the chain
 	PortalAddress     common.Address    // Address of the omni portal contract on the chain
 	DeployHeight      uint64            // Height that the portal contracts were deployed
-	IsOmniEVM         bool              // Whether this is the Omni EVM chain
-	IsOmniConsensus   bool              // Whether this is the Omni consensus chain
 	IsEthereum        bool              // Whether this is the ethereum layer1 chain
 	BlockPeriod       time.Duration     // Block period of the chain
 	FinalizationStrat FinalizationStrat // Finalization strategy of the chain
@@ -184,7 +182,7 @@ func Load(path string) (Network, error) {
 // Save saves the network configuration to the given path.
 func Save(ctx context.Context, network Network, path string) error {
 	for _, chain := range network.Chains {
-		if chain.IsOmniConsensus {
+		if IsOmniConsensus(network.ID, chain.ID) {
 			continue
 		}
 		if chain.PortalAddress == (common.Address{}) {
@@ -210,8 +208,6 @@ type chainJSON struct {
 	RPCURL            string            `json:"rpcurl"`
 	PortalAddress     string            `json:"portal_address"`
 	DeployHeight      uint64            `json:"deploy_height"`
-	IsOmniEVM         bool              `json:"is_omni_evm,omitempty"`
-	IsOmniConsensus   bool              `json:"is_omni_consensus,omitempty"`
 	IsEthereum        bool              `json:"is_ethereum,omitempty"`
 	BlockPeriod       string            `json:"block_period"`
 	FinalizationStrat FinalizationStrat `json:"finalization_start"`
@@ -246,8 +242,6 @@ func (c *Chain) UnmarshalJSON(bz []byte) error {
 		RPCURL:            cj.RPCURL,
 		PortalAddress:     portalAddr,
 		DeployHeight:      cj.DeployHeight,
-		IsOmniEVM:         cj.IsOmniEVM,
-		IsOmniConsensus:   cj.IsOmniConsensus,
 		IsEthereum:        cj.IsEthereum,
 		BlockPeriod:       blockPeriod,
 		FinalizationStrat: cj.FinalizationStrat,
@@ -274,8 +268,6 @@ func (c Chain) MarshalJSON() ([]byte, error) {
 		RPCURL:            c.RPCURL,
 		PortalAddress:     portalAddr,
 		DeployHeight:      c.DeployHeight,
-		IsOmniEVM:         c.IsOmniEVM,
-		IsOmniConsensus:   c.IsOmniConsensus,
 		IsEthereum:        c.IsEthereum,
 		BlockPeriod:       c.BlockPeriod.String(),
 		FinalizationStrat: c.FinalizationStrat,
