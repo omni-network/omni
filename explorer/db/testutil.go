@@ -50,7 +50,7 @@ func CreateTestBlocks(t *testing.T, ctx context.Context, client *ent.Client, cou
 	var msg *ent.Msg
 	var blocks []ent.Block
 	for i := 0; i < count; i++ {
-		// add some small delay to ensure different timestamps
+		// add some small delay to ensure different timestamps for tests
 		time.Sleep(10 * time.Millisecond)
 		b := CreateTestBlock(t, ctx, client, i)
 		if msg != nil {
