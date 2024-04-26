@@ -180,25 +180,18 @@ func newMsgStreamMapper(network netconf.Network) msgStreamMapper {
 func newCallback(xProvider xchain.Provider, initialOffsets map[xchain.StreamID]uint64, creator CreateFunc,
 	sender SendFunc, destChainID uint64, msgStreamMapper msgStreamMapper, awaitValSet awaitValSet) cchain.ProviderCallback {
 	return func(ctx context.Context, att xchain.Attestation) error {
-		// Get the xblock from the source chain.
-		block, ok, err := xProvider.GetBlock(ctx, att.SourceChainID, att.BlockHeight)
+		block, ok, err := fetchXBlock(ctx, xProvider, att)
 		if err != nil {
 			return err
-		} else if !ok { // Sanity check, should never happen.
-			return errors.New("attestation block not finalized [BUG!]")
-		} else if block.BlockHash != att.BlockHash { // Sanity check, should never happen.
-			return errors.New("attestation block hash mismatch [BUG!]",
-				log.Hex7("attestation_hash", att.BlockHash[:]),
-				log.Hex7("block_hash", block.BlockHash[:]),
-			)
-		} else if len(block.Msgs) == 0 {
-			return nil
+		} else if !ok {
+			return nil // Nothing to do, just return.
 		}
 
 		tree, err := xchain.NewBlockTree(block)
 		if err != nil {
 			return err
 		}
+
 		// Split into streams
 		for streamID, msgs := range msgStreamMapper(block.Msgs) {
 			if streamID.DestChainID != destChainID {
@@ -248,5 +241,39 @@ func wrapStatePersist(cb cchain.ProviderCallback, state *State, destChainID uint
 		}
 
 		return nil
+	}
+}
+
+// fetchXBlock gets the xblock from the source chain (retry up to 10s if block-not-finalized).
+func fetchXBlock(rootCtx context.Context, xProvider xchain.Provider, att xchain.Attestation) (xchain.Block, bool, error) {
+	ctx, cancel := context.WithTimeout(rootCtx, 10*time.Second)
+	defer cancel()
+
+	backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second))
+	for {
+		block, ok, err := xProvider.GetBlock(ctx, att.SourceChainID, att.BlockHeight)
+		if rootCtx.Err() != nil { //nolint:nestif // Just a series of if-elses
+			return xchain.Block{}, false, errors.Wrap(rootCtx.Err(), "canceled") // Root context closed, shutting down
+		} else if ctx.Err() != nil {
+			return xchain.Block{}, false, errors.New("attestation block still not finalized (node lagging?)")
+		} else if err != nil {
+			return xchain.Block{}, false, err
+		} else if !ok {
+			// This happens sometimes if the evm node relayer is querying is lagging behind
+			// the chain itself. Especially for omni_evm with instant finality, this does happen sometimes.
+			// Just backoff and retry a few times.
+			backoff()
+			continue
+		} else if block.BlockHash != att.BlockHash { // Sanity check, should never happen.
+			return xchain.Block{}, false, errors.New("attestation block hash mismatch [BUG]",
+				log.Hex7("attestation_hash", att.BlockHash[:]),
+				log.Hex7("block_hash", block.BlockHash[:]),
+			)
+		} else if len(block.Msgs) == 0 {
+			return xchain.Block{}, false, nil
+		}
+
+		// We got the xblock, it is finalized and its hash matches the attestation block hash.
+		return block, true, nil
 	}
 }

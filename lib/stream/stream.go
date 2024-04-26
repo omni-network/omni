@@ -87,7 +87,7 @@ func Stream[E any](ctx context.Context, deps Deps[E], srcChainID uint64, startHe
 			heightsOK := true
 			for i, elem := range elems {
 				if h := deps.Height(elem); h != height+uint64(i) {
-					log.Error(ctx, "Invalid "+deps.ElemLabel+" height [BUG!]", nil,
+					log.Error(ctx, "Invalid "+deps.ElemLabel+" height [BUG]", nil,
 						"expect", height,
 						"actual", h,
 					)
