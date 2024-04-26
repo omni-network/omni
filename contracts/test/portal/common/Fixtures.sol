@@ -7,6 +7,7 @@ import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/trans
 import { ProxyAdmin } from "src/deploy/ProxyAdmin.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
 import { FeeOracleV1 } from "src/protocol/FeeOracleV1.sol";
+import { IFeeOracleV1 } from "src/interfaces/IFeeOracleV1.sol";
 import { OmniPortal } from "src/protocol/OmniPortal.sol";
 import { XRegistryReplica } from "src/protocol/XRegistryReplica.sol";
 import { TestXTypes } from "./TestXTypes.sol";
@@ -43,7 +44,10 @@ contract Fixtures is CommonBase, StdCheats {
 
     uint64 constant baseValPower = 100;
     uint64 constant genesisValSetId = 1;
-    uint256 constant baseFee = 1 gwei;
+
+    address feeOracleOwner = makeAddr("feeOracleOwner");
+    uint256 constant feeOracleBaseGasLimit = 50_000;
+    uint256 constant feeOracleProtocolFee = 1 gwei;
 
     address deployer;
     address xcaller;
@@ -387,6 +391,26 @@ contract Fixtures is CommonBase, StdCheats {
     function _initContracts() private {
         vm.startPrank(deployer);
 
+        IFeeOracleV1.ChainFeeParams[] memory feeParams = new IFeeOracleV1.ChainFeeParams[](3);
+
+        feeParams[0] = IFeeOracleV1.ChainFeeParams({
+            chainId: thisChainId,
+            gasPrice: 0.1 gwei, // 1 gwei
+            toNativeRate: 1e6 // feeOracle.CONVERSION_RATE_DENOM , so 1:1
+         });
+
+        feeParams[1] = IFeeOracleV1.ChainFeeParams({
+            chainId: chainAId,
+            gasPrice: 0.1 gwei, // 1 gwei
+            toNativeRate: 1e6 // feeOracle.CONVERSION_RATE_DENOM , so 1:1
+         });
+
+        feeParams[2] = IFeeOracleV1.ChainFeeParams({
+            chainId: chainBId,
+            gasPrice: 0.1 gwei, // 1 gwei
+            toNativeRate: 1e6 // feeOracle.CONVERSION_RATE_DENOM , so 1:1
+         });
+
         proxyAdmin = new ProxyAdmin(owner);
 
         feeOracleImpl = new FeeOracleV1();
@@ -395,7 +419,13 @@ contract Fixtures is CommonBase, StdCheats {
                 new TransparentUpgradeableProxy(
                     address(feeOracleImpl),
                     address(proxyAdmin),
-                    abi.encodeWithSelector(FeeOracleV1.initialize.selector, owner, baseFee)
+                    abi.encodeWithSelector(
+                        FeeOracleV1.initialize.selector,
+                        feeOracleOwner,
+                        feeOracleBaseGasLimit,
+                        feeOracleProtocolFee,
+                        feeParams
+                    )
                 )
             )
         );
@@ -433,7 +463,13 @@ contract Fixtures is CommonBase, StdCheats {
                 new TransparentUpgradeableProxy(
                     address(chainAfeeOracleImpl),
                     address(chainAProxyAdmin),
-                    abi.encodeWithSelector(FeeOracleV1.initialize.selector, owner, baseFee)
+                    abi.encodeWithSelector(
+                        FeeOracleV1.initialize.selector,
+                        feeOracleOwner,
+                        feeOracleBaseGasLimit,
+                        feeOracleProtocolFee,
+                        feeParams
+                    )
                 )
             )
         );
@@ -471,7 +507,13 @@ contract Fixtures is CommonBase, StdCheats {
                 new TransparentUpgradeableProxy(
                     address(chainBfeeOracleImpl),
                     address(chainBProxyAdmin),
-                    abi.encodeWithSelector(FeeOracleV1.initialize.selector, owner, baseFee)
+                    abi.encodeWithSelector(
+                        FeeOracleV1.initialize.selector,
+                        feeOracleOwner,
+                        feeOracleBaseGasLimit,
+                        feeOracleProtocolFee,
+                        feeParams
+                    )
                 )
             )
         );
