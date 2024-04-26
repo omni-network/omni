@@ -72,6 +72,25 @@ func (t Testnet) BroadcastOmniEVM() OmniEVM {
 	return t.OmniEVMs[0]
 }
 
+// BroadcastNode returns a halo node to use for RPC queries broadcasts.
+// It prefers a validator nodes since we have an issue with mempool+p2p+startup where
+// txs get stuck in non-validator mempool immediately after startup if not connected to peers yet.
+// Also avoid validators that are not started immediately.
+func (t Testnet) BroadcastNode() *e2e.Node {
+	for _, node := range t.Nodes {
+		if !strings.Contains(node.Name, "validator") {
+			continue
+		}
+		if node.StartAt > 0 {
+			continue
+		}
+
+		return node
+	}
+
+	return t.Nodes[0]
+}
+
 func (t Testnet) HasOmniEVM() bool {
 	return len(t.OmniEVMs) > 0
 }

@@ -20,6 +20,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
@@ -121,7 +122,7 @@ func cleanupDevnet(ctx context.Context) error {
 func printDevnetInfo() error {
 	// Read the actual devnet external network.json.
 	// It contains correct portal addrs and external (localhost) RPCs.
-	network, err := loadDevnetNetwork()
+	network, endpoints, err := loadDevnetNetwork()
 	if err != nil {
 		return errors.Wrap(err, "load internal network")
 	}
@@ -135,11 +136,16 @@ func printDevnetInfo() error {
 
 	var infos []info
 	for _, chain := range network.EVMChains() {
+		rpc, err := endpoints.GetByNameOrID(chain.Name, chain.ID)
+		if err != nil {
+			return err
+		}
+
 		infos = append(infos, info{
 			ChainID:       chain.ID,
 			ChainName:     chain.Name,
 			PortalAddress: chain.PortalAddress,
-			RPCURL:        chain.RPCURL,
+			RPCURL:        rpc,
 		})
 	}
 
@@ -177,22 +183,41 @@ func devnetDefinition(ctx context.Context) (app.Definition, error) {
 	return def, nil
 }
 
-func loadDevnetNetwork() (netconf.Network, error) {
+func loadDevnetNetwork() (netconf.Network, xchain.RPCEndpoints, error) {
 	devnetPath, err := devnetDir()
 	if err != nil {
-		return netconf.Network{}, err
+		return netconf.Network{}, nil, err
 	}
 
 	networkFile := filepath.Join(devnetPath, "network.json")
-
 	if _, err := os.Stat(networkFile); os.IsNotExist(err) {
-		return netconf.Network{}, &cliError{
+		return netconf.Network{}, nil, &cliError{
 			Msg:     "failed to load ~/.omni/devnet/network.json",
 			Suggest: "Have you run `omni devnet start` yet?",
 		}
 	}
 
-	return netconf.Load(networkFile)
+	endpointsFile := filepath.Join(devnetPath, "endpoints.json")
+	if _, err := os.Stat(endpointsFile); os.IsNotExist(err) {
+		return netconf.Network{}, nil, &cliError{
+			Msg:     "failed to load ~/.omni/devnet/endpoints.json",
+			Suggest: "Have you run `omni devnet start` yet?",
+		}
+	}
+
+	var endpoints xchain.RPCEndpoints
+	if bz, err := os.ReadFile(endpointsFile); err != nil {
+		return netconf.Network{}, nil, errors.Wrap(err, "read endpoints file")
+	} else if err := json.Unmarshal(bz, &endpoints); err != nil {
+		return netconf.Network{}, nil, errors.Wrap(err, "unmarshal endpoints file")
+	}
+
+	network, err := netconf.Load(networkFile)
+	if err != nil {
+		return netconf.Network{}, nil, errors.Wrap(err, "load network file")
+	}
+
+	return network, endpoints, nil
 }
 
 // deployDevnet initializes and deploys the devnet network using the e2e app.

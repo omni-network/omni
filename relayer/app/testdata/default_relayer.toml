@@ -22,6 +22,18 @@ network-file = "network.json"
 state-file = "relayer-state.json"
 
 #######################################################################
+###                             X-Chain                             ###
+#######################################################################
+
+[xchain]
+
+# Cross-chain EVM RPC endpoints to use for relaying. One per supported EVM is required.
+[xchain.evm-rpc-endpoints]
+# ethereum = "http://my-ethreum-node:8545"
+# optimism = "https://my-op-node.com"
+
+
+#######################################################################
 ###                         Logging Options                         ###
 #######################################################################
 

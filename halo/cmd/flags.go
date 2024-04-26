@@ -4,6 +4,7 @@ import (
 	halocfg "github.com/omni-network/omni/halo/config"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/tracer"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -14,6 +15,7 @@ func bindRunFlags(cmd *cobra.Command, cfg *halocfg.Config) {
 
 	libcmd.BindHomeFlag(flags, &cfg.HomeDir)
 	tracer.BindFlags(flags, &cfg.Tracer)
+	xchain.BindFlags(flags, &cfg.RPCEndpoints)
 	flags.StringVar(&cfg.EngineEndpoint, "engine-endpoint", cfg.EngineEndpoint, "An EVM execution client Engine API http endpoint")
 	flags.StringVar(&cfg.EngineJWTFile, "engine-jwt-file", cfg.EngineJWTFile, "The path to the Engine API JWT file")
 	flags.Uint64Var(&cfg.SnapshotInterval, "snapshot-interval", cfg.SnapshotInterval, "State sync snapshot interval")

@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 
@@ -12,10 +13,20 @@ import (
 	"github.com/cometbft/cometbft/test/e2e/pkg/exec"
 )
 
+const (
+	EnvInfraType       = "INFRASTRUCTURE_TYPE"
+	EnvInfraFile       = "INFRASTRUCTURE_FILE"
+	EnvE2EManifest     = "E2E_MANIFEST"
+	EnvE2ENode         = "E2E_NODE"
+	EnvE2ENetwork      = "E2E_NETWORK"
+	EnvE2ERPCEndpoints = "E2E_RPC_ENDPOINTS"
+	EnvE2EDeployInfo   = "E2E_DEPLOY_INFO"
+)
+
 // Test runs test cases under tests/.
 func Test(ctx context.Context, def Definition, verbose bool) error {
 	log.Info(ctx, "Running tests in ./test/...")
-	extNetwork := externalNetwork(def)
+	extNetwork, endpoints := externalNetwork(def)
 
 	networkDir, err := os.MkdirTemp("", "omni-e2e")
 	if err != nil {
@@ -26,8 +37,17 @@ func Test(ctx context.Context, def Definition, verbose bool) error {
 		return errors.Wrap(err, "saving network")
 	}
 
-	if err = os.Setenv("E2E_NETWORK", networkFile); err != nil {
-		return errors.Wrap(err, "setting E2E_MANIFEST")
+	if err = os.Setenv(EnvE2ENetwork, networkFile); err != nil {
+		return errors.Wrap(err, "setting env var")
+	}
+
+	endpointsFile := filepath.Join(networkDir, "endpoints.json")
+	if endopintsBytes, err := json.Marshal(endpoints); err != nil {
+		return errors.Wrap(err, "marshaling endpoints")
+	} else if err := os.WriteFile(endpointsFile, endopintsBytes, 0644); err != nil {
+		return errors.Wrap(err, "writing endpoints")
+	} else if err = os.Setenv(EnvE2ERPCEndpoints, endpointsFile); err != nil {
+		return errors.Wrap(err, "setting env ar")
 	}
 
 	manifestFile, err := filepath.Abs(def.Testnet.File)
@@ -35,8 +55,8 @@ func Test(ctx context.Context, def Definition, verbose bool) error {
 		return errors.Wrap(err, "absolute manifest path")
 	}
 
-	if err = os.Setenv("E2E_MANIFEST", manifestFile); err != nil {
-		return errors.Wrap(err, "setting E2E_MANIFEST")
+	if err = os.Setenv(EnvE2EManifest, manifestFile); err != nil {
+		return errors.Wrap(err, "setting env var")
 	}
 
 	infd := def.Infra.GetInfrastructureData()
@@ -45,30 +65,32 @@ func Test(ctx context.Context, def Definition, verbose bool) error {
 		if err != nil {
 			return errors.Wrap(err, "absolute infrastructure path")
 		}
-		err = os.Setenv("INFRASTRUCTURE_FILE", infdPath)
+		err = os.Setenv(EnvInfraFile, infdPath)
 		if err != nil {
-			return errors.Wrap(err, "setting INFRASTRUCTURE_FILE")
+			return errors.Wrap(err, "setting env var")
 		}
 	}
 
-	if err = os.Setenv("INFRASTRUCTURE_TYPE", infd.Provider); err != nil {
-		return errors.Wrap(err, "setting INFRASTRUCTURE_TYPE")
+	if err = os.Setenv(EnvInfraType, infd.Provider); err != nil {
+		return errors.Wrap(err, "setting env var")
 	}
 
 	deployInfoFile := filepath.Join(networkDir, "deployinfo.json")
 	if err := def.DeployInfos().Save(deployInfoFile); err != nil {
 		return errors.Wrap(err, "saving deployinfo")
 	}
-	if err = os.Setenv("E2E_DEPLOY_INFO", deployInfoFile); err != nil {
+	if err = os.Setenv(EnvE2EDeployInfo, deployInfoFile); err != nil {
 		return errors.Wrap(err, "setting E2E_DEPLOY_INFO")
 	}
 
 	log.Debug(ctx, "Env files",
-		"E2E_NETWORK", networkFile,
-		"E2E_MANIFEST", manifestFile,
-		"INFRASTRUCTURE_TYPE", infd.Provider,
-		"INFRASTRUCTURE_FILE", infd.Path,
-		"E2E_DEPLOY_INFO", deployInfoFile)
+		EnvE2ENetwork, networkFile,
+		EnvE2EManifest, manifestFile,
+		EnvInfraType, infd.Provider,
+		EnvInfraFile, infd.Path,
+		EnvE2EDeployInfo, deployInfoFile,
+		EnvE2ERPCEndpoints, endpointsFile,
+	)
 
 	args := []string{"go", "test", "-timeout", "60s", "-count", "1"}
 	if verbose {

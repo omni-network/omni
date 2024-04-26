@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/xchain"
 	"github.com/omni-network/omni/lib/xchain/provider"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -43,7 +44,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "create schema")
 	}
 
-	err = startXProvider(ctx, network, entCl)
+	err = startXProvider(ctx, network, entCl, cfg.RPCEndpoints)
 	if err != nil {
 		return errors.Wrap(err, "provider")
 	}
@@ -58,8 +59,8 @@ func Run(ctx context.Context, cfg Config) error {
 }
 
 // startXProvider all of our providers and subscribes to the chains in the network config.
-func startXProvider(ctx context.Context, network netconf.Network, entCl *ent.Client) error {
-	rpcClientPerChain, err := initializeRPCClients(network.EVMChains())
+func startXProvider(ctx context.Context, network netconf.Network, entCl *ent.Client, endpoints xchain.RPCEndpoints) error {
+	rpcClientPerChain, err := initializeRPCClients(network.EVMChains(), endpoints)
 	if err != nil {
 		return err
 	}
@@ -87,12 +88,17 @@ func startXProvider(ctx context.Context, network netconf.Network, entCl *ent.Cli
 }
 
 // initializeRPCClients initializes the rpc clients for all evm chains in the network.
-func initializeRPCClients(chains []netconf.Chain) (map[uint64]ethclient.Client, error) {
+func initializeRPCClients(chains []netconf.Chain, endpoints xchain.RPCEndpoints) (map[uint64]ethclient.Client, error) {
 	rpcClientPerChain := make(map[uint64]ethclient.Client)
 	for _, chain := range chains {
-		client, err := ethclient.Dial(chain.Name, chain.RPCURL)
+		rpc, err := endpoints.GetByNameOrID(chain.Name, chain.ID)
 		if err != nil {
-			return nil, errors.Wrap(err, "dial rpc", "chain_id", chain.ID, "rpc_url", chain.RPCURL)
+			return nil, err
+		}
+
+		client, err := ethclient.Dial(chain.Name, rpc)
+		if err != nil {
+			return nil, errors.Wrap(err, "dial rpc", "chain_name", chain.Name, "chain_id", chain.ID, "rpc_url", rpc)
 		}
 		rpcClientPerChain[chain.ID] = client
 	}

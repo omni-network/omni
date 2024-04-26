@@ -19,6 +19,23 @@ network-file = "{{ .NetworkFile }}"
 monitoring-addr = "{{ .MonitoringAddr }}"
 
 #######################################################################
+###                             X-Chain                             ###
+#######################################################################
+
+[xchain]
+
+# Cross-chain EVM RPC endpoints to use for voting; only required for validators. One per supported EVM is required.
+# It is strongly advised to operate fullnodes for each chain and NOT to use free public RPCs.
+[xchain.evm-rpc-endpoints]
+{{- if not .RPCEndpoints }}
+# ethereum = "http://my-ethreum-node:8545"
+# optimism = "https://my-op-node.com"
+{{ end -}}
+{{- range $key, $value := .RPCEndpoints }}
+{{ $key }} = "{{ $value }}"
+{{ end }}
+
+#######################################################################
 ###                         Logging Options                         ###
 #######################################################################
 

@@ -150,7 +150,8 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 
 	cProvider := cprovider.NewABCIProvider(rpcClient, network.ID, network.ChainNamesByIDs())
 
-	xProvider, err := newXProvider(network, cProvider)
+	// Add EngineAPI RPC as xchain omni_evm RPC endpoint
+	xProvider, err := newXProvider(network, cProvider, engineCl, cfg.RPCEndpoints)
 	if err != nil {
 		return nil, errors.Wrap(err, "create xchain provider")
 	}
@@ -191,7 +192,12 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 }
 
 // newXProvider returns a new xchain provider.
-func newXProvider(network netconf.Network, cProvider cchain.Provider) (xchain.Provider, error) {
+func newXProvider(
+	network netconf.Network,
+	cProvider cchain.Provider,
+	engineCl ethclient.EngineClient,
+	endpoints xchain.RPCEndpoints,
+) (xchain.Provider, error) {
 	if network.ID == netconf.Simnet {
 		omni, ok := network.OmniConsensusChain()
 		if !ok {
@@ -203,12 +209,23 @@ func newXProvider(network netconf.Network, cProvider cchain.Provider) (xchain.Pr
 
 	clients := make(map[uint64]ethclient.Client)
 	for _, chain := range network.EVMChains() {
-		ethCl, err := ethclient.Dial(chain.Name, chain.RPCURL)
+		if netconf.IsOmniExecution(network.ID, chain.ID) { // Use engine API for omni_evm
+			clients[chain.ID] = engineCl
+			continue
+		}
+
+		// For other evm, use cfg.RPCEndpoints
+		rpc, err := endpoints.GetByNameOrID(chain.Name, chain.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		ethCl, err := ethclient.Dial(chain.Name, rpc)
 		if err != nil {
 			return nil, errors.Wrap(err, "dial chain",
 				"name", chain.Name,
 				"id", chain.ID,
-				"rpc_url", chain.RPCURL,
+				"rpc_url", rpc,
 			)
 		}
 		clients[chain.ID] = ethCl

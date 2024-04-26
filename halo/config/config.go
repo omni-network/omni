@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/tracer"
+	"github.com/omni-network/omni/lib/xchain"
 
 	cmtos "github.com/cometbft/cometbft/libs/os"
 
@@ -63,6 +64,7 @@ type Config struct {
 	EigenKeyPassword   string
 	EngineJWTFile      string
 	EngineEndpoint     string
+	RPCEndpoints       xchain.RPCEndpoints
 	SnapshotInterval   uint64 // See cosmossdk.io/store/snapshots/types/options.go
 	SnapshotKeepRecent uint64 // See cosmossdk.io/store/snapshots/types/options.go
 	BackendType        string // See cosmos-db/db.go
