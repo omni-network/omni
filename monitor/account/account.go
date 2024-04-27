@@ -29,7 +29,7 @@ type account struct {
 func Monitor(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints) error {
 	rpcClientPerChain := make(map[uint64]ethclient.Client)
 	for _, chain := range network.EVMChains() {
-		rpc, err := endpoints.GetByNameOrID(chain.Name, chain.ID)
+		rpc, err := endpoints.ByNameOrID(chain.Name, chain.ID)
 		if err != nil {
 			return err
 		}

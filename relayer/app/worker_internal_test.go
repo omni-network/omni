@@ -119,8 +119,8 @@ func TestWorker_Run(t *testing.T) {
 
 	network := netconf.Network{Chains: []netconf.Chain{
 		{ID: srcChain, Name: "source"},
-		{ID: destChainA, Name: "chain_a"},
-		{ID: destChainB, Name: "chain_b"},
+		{ID: destChainA, Name: "mock_l1"},
+		{ID: destChainB, Name: "mock_l2"},
 	}}
 
 	state := NewEmptyState("/tmp/relayer-state.json")

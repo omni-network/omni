@@ -30,7 +30,7 @@ type ABCIClient interface {
 	rpcclient.SignClient
 }
 
-func NewABCIProvider(abci ABCIClient, network netconf.ID, chains map[uint64]string) Provider {
+func NewABCIProvider(abci ABCIClient, network netconf.ID, chainNamer func(uint64) string) Provider {
 	backoffFunc := func(ctx context.Context) func() {
 		return expbackoff.New(ctx)
 	}
@@ -46,7 +46,7 @@ func NewABCIProvider(abci ABCIClient, network netconf.ID, chains map[uint64]stri
 		chainID:     newChainIDFunc(abci),
 		header:      abci.Header,
 		backoffFunc: backoffFunc,
-		chainNames:  chains,
+		chainNamer:  chainNamer,
 		network:     network,
 	}
 }

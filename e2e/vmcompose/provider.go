@@ -14,6 +14,7 @@ import (
 	"github.com/omni-network/omni/e2e/docker"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -393,15 +394,24 @@ func containsEVM(services map[string]bool) bool {
 }
 
 // containsAnvil returns true if the services map contains an anvil chain.
-// TODO(corver): This isn't very robust.
 func containsAnvil(services map[string]bool) bool {
+	anvils := map[uint64]bool{
+		evmchain.IDMockL1Fast: true,
+		evmchain.IDMockL1Slow: true,
+		evmchain.IDMockL2:     true,
+	}
 	for service, ok := range services {
 		if !ok {
 			continue
 		}
-		if strings.Contains(service, "mock") || strings.Contains(service, "chain") {
-			return true
+		meta, ok := evmchain.MetadataByName(service)
+		if !ok {
+			continue
+		} else if !anvils[meta.ChainID] {
+			continue
 		}
+
+		return true
 	}
 
 	return false

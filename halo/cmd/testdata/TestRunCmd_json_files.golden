@@ -1,5 +1,6 @@
 {
  "HomeDir": "testinput/input2",
+ "Network": "",
  "EigenKeyPassword": "123456",
  "EngineJWTFile": "jwt.json",
  "EngineEndpoint": "",

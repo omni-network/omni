@@ -16,6 +16,7 @@ Flags:
       --log-format string                         Log format; console, json (default "console")
       --log-level string                          Log level; debug, info, warn, error (default "info")
       --min-retain-blocks uint                    Minimum block height offset during ABCI commit to prune CometBFT blocks
+      --network string                            Omni network to participate in: mainnet, testnet, devnet
       --pruning string                            Pruning strategy (default|nothing|everything) (default "nothing")
       --snapshot-interval uint                    State sync snapshot interval (default 1000)
       --snapshot-keep-recent uint                 State sync snapshot to keep (default 2)

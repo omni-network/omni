@@ -13,6 +13,7 @@ import (
 	halocfg "github.com/omni-network/omni/halo/config"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
 
 	fuzz "github.com/google/gofuzz"
@@ -127,6 +128,9 @@ func TestTomlConfig(t *testing.T) {
 		},
 		func(s *string, c fuzz.Continue) {
 			*s = randomString()
+		},
+		func(s *netconf.ID, c fuzz.Continue) {
+			*s = netconf.ID(randomString())
 		},
 	)
 

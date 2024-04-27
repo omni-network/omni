@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/e2e/manifests"
+	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
@@ -95,7 +96,7 @@ func newDevnetInfoCmd() *cobra.Command {
 		Use:   "info",
 		Short: "Display portal addresses and RPC URLs for the deployed devnet",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return printDevnetInfo()
+			return printDevnetInfo(cmd.Context())
 		},
 	}
 }
@@ -119,10 +120,10 @@ func cleanupDevnet(ctx context.Context) error {
 	return app.Cleanup(ctx, def)
 }
 
-func printDevnetInfo() error {
+func printDevnetInfo(ctx context.Context) error {
 	// Read the actual devnet external network.json.
 	// It contains correct portal addrs and external (localhost) RPCs.
-	network, endpoints, err := loadDevnetNetwork()
+	network, endpoints, err := loadDevnetNetwork(ctx)
 	if err != nil {
 		return errors.Wrap(err, "load internal network")
 	}
@@ -136,7 +137,7 @@ func printDevnetInfo() error {
 
 	var infos []info
 	for _, chain := range network.EVMChains() {
-		rpc, err := endpoints.GetByNameOrID(chain.Name, chain.ID)
+		rpc, err := endpoints.ByNameOrID(chain.Name, chain.ID)
 		if err != nil {
 			return err
 		}
@@ -183,7 +184,7 @@ func devnetDefinition(ctx context.Context) (app.Definition, error) {
 	return def, nil
 }
 
-func loadDevnetNetwork() (netconf.Network, xchain.RPCEndpoints, error) {
+func loadDevnetNetwork(ctx context.Context) (netconf.Network, xchain.RPCEndpoints, error) {
 	devnetPath, err := devnetDir()
 	if err != nil {
 		return netconf.Network{}, nil, err
@@ -212,7 +213,14 @@ func loadDevnetNetwork() (netconf.Network, xchain.RPCEndpoints, error) {
 		return netconf.Network{}, nil, errors.Wrap(err, "unmarshal endpoints file")
 	}
 
-	network, err := netconf.Load(networkFile)
+	netID := netconf.Devnet
+
+	portalReg, err := makePortalRegistry(netID, endpoints)
+	if err != nil {
+		return netconf.Network{}, nil, errors.Wrap(err, "make portal registry")
+	}
+
+	network, err := netconf.AwaitOnChain(ctx, netID, portalReg, endpoints.Keys())
 	if err != nil {
 		return netconf.Network{}, nil, errors.Wrap(err, "load network file")
 	}
@@ -365,4 +373,24 @@ func devnetDir() (string, error) {
 	}
 
 	return filepath.Join(homeDir, ".omni", "devnet"), nil
+}
+
+func makePortalRegistry(network netconf.ID, endpoints xchain.RPCEndpoints) (*bindings.PortalRegistry, error) {
+	meta := netconf.MetadataByID(network, network.Static().OmniExecutionChainID)
+	rpc, err := endpoints.ByNameOrID(meta.Name, meta.ChainID)
+	if err != nil {
+		return nil, err
+	}
+
+	ethCl, err := ethclient.Dial(meta.Name, rpc)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := bindings.NewPortalRegistry(common.HexToAddress(predeploys.PortalRegistry), ethCl)
+	if err != nil {
+		return nil, errors.Wrap(err, "create portal registry")
+	}
+
+	return resp, nil
 }

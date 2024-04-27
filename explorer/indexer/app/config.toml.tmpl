@@ -5,15 +5,15 @@
 # last modified the config file. Do not modify this.
 version = "unknown"
 
+# Omni network to participate in: mainnet, testnet, or devnet.
+network = "{{ .Network }}"
+
 #######################################################################
 ###                     Explorer-Indexer Options                    ###
 #######################################################################
 
 # URL at which the postgres database can be reached.
 explorer-db-conn = "{{ .ExplorerDBConn }}"
-
-# Path to the network configuration file.
-network-file = "{{ .NetworkFile }}"
 
 #######################################################################
 ###                             X-Chain                             ###

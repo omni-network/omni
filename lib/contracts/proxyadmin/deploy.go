@@ -5,7 +5,6 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
-	"github.com/omni-network/omni/lib/chainids"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/create3"
 	"github.com/omni-network/omni/lib/errors"
@@ -40,19 +39,19 @@ func (cfg DeploymentConfig) Validate() error {
 }
 
 func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) {
-	if !chainids.IsMainnetOrTestnet(chainID) && network == netconf.Devnet {
+	if network == netconf.Devnet {
 		return devnetCfg(), nil
 	}
 
-	if chainids.IsMainnet(chainID) && network == netconf.Mainnet {
+	if network == netconf.Mainnet {
 		return mainnetCfg(), nil
 	}
 
-	if chainids.IsTestnet(chainID) && network == netconf.Testnet {
+	if network == netconf.Testnet {
 		return testnetCfg(), nil
 	}
 
-	if !chainids.IsMainnet(chainID) && network == netconf.Staging {
+	if network == netconf.Staging {
 		return stagingCfg(), nil
 	}
 

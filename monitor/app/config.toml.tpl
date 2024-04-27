@@ -5,15 +5,15 @@
 # last modified the config file. Do not modify this.
 version = "{{ .Version}}"
 
+# Omni network to participate in: mainnet, testnet, or devnet.
+network = "{{ .Network }}"
+
 #######################################################################
 ###                         Monitor Options                         ###
 #######################################################################
 
 # Path to the ethereum private key used to sign avs omni sync transactions.
 private-key = "{{ .PrivateKey }}"
-
-# The path to the Omni network configuration file.
-network-file = "{{ .NetworkFile }}"
 
 # The address that the monitor listens for metric scrape requests.
 monitoring-addr = "{{ .MonitoringAddr }}"

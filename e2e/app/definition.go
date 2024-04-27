@@ -376,8 +376,13 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 		omniEVMS[i].Peers = bootnodes
 	}
 
+	anvilEVMs, err := types.AnvilChainsByNames(manifest.AnvilChains)
+	if err != nil {
+		return types.Testnet{}, err
+	}
+
 	var anvils []types.AnvilChain
-	for _, chain := range types.AnvilChainsByNames(manifest.AnvilChains) {
+	for _, chain := range anvilEVMs {
 		inst, ok := infd.Instances[chain.Name]
 		if !ok {
 			return types.Testnet{}, errors.New("anvil chain instance not found in infrastructure data")
@@ -448,6 +453,8 @@ func publicChains(manifest types.Manifest, cfg DefinitionConfig) ([]types.Public
 }
 
 // internalNetwork returns a internal intra-network netconf.Network from the testnet and deployInfo.
+//
+//nolint:unparam // TODO remove it.
 func internalNetwork(def Definition, nodePrefix string) (netconf.Network, xchain.RPCEndpoints) {
 	var chains []netconf.Chain
 	endpoints := make(xchain.RPCEndpoints)

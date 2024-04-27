@@ -35,14 +35,17 @@ func TestSmoke(t *testing.T) {
 	cfg := setupSimnet(t)
 
 	// Start the server async
-	stopfunc, err := haloapp.Start(ctx, cfg)
+	async, stopfunc, err := haloapp.Start(ctx, cfg)
 	require.NoError(t, err)
+	go func() {
+		tutil.RequireNoError(t, <-async)
+	}()
 
 	// Connect to the server.
 	cl, err := rpchttp.New("http://localhost:26657", "/websocket")
 	require.NoError(t, err)
 
-	cprov := cprovider.NewABCIProvider(cl, netconf.Simnet, nil)
+	cprov := cprovider.NewABCIProvider(cl, netconf.Simnet, netconf.ChainNamer(netconf.Simnet))
 
 	// Wait until we get to block 3.
 	const target = uint64(3)
@@ -116,10 +119,12 @@ func setupSimnet(t *testing.T) haloapp.Config {
 
 	haloCfg := halocfg.DefaultConfig()
 	haloCfg.HomeDir = homeDir
+	haloCfg.Network = netconf.Simnet
 	haloCfg.BackendType = string(db.MemDBBackend)
 	haloCfg.EVMBuildDelay = time.Millisecond
 	haloCfg.EngineEndpoint = "dummy"
 	haloCfg.EngineJWTFile = "dummy"
+	haloCfg.RPCEndpoints = map[string]string{"dummy": "dummy"}
 
 	cfg := haloapp.Config{
 		Config: haloCfg,

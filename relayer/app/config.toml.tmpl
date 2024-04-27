@@ -5,6 +5,9 @@
 # last modified the config file. Do not modify this.
 version = "{{ .Version}}"
 
+# Omni network to participate in: mainnet, testnet, or devnet.
+network = "{{ .Network }}"
+
 #######################################################################
 ###                         Relayer Options                         ###
 #######################################################################
@@ -14,9 +17,6 @@ private-key = "{{ .PrivateKey }}"
 
 # The URL of the halo node to connect to.
 halo-url = "{{ .HaloURL }}"
-
-# The path to the Omni network configuration file.
-network-file = "{{ .NetworkFile }}"
 
 # The path to the relayer state file used to track cursors.
 state-file = "{{ .StateFile }}"

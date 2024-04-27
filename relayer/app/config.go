@@ -7,6 +7,7 @@ import (
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
 	cmtos "github.com/cometbft/cometbft/libs/os"
@@ -18,7 +19,7 @@ type Config struct {
 	RPCEndpoints   xchain.RPCEndpoints
 	PrivateKey     string
 	HaloURL        string
-	NetworkFile    string
+	Network        netconf.ID
 	MonitoringAddr string
 	StateFile      string
 }
@@ -27,7 +28,7 @@ func DefaultConfig() Config {
 	return Config{
 		PrivateKey:     "relayer.key",
 		HaloURL:        "localhost:26657",
-		NetworkFile:    "network.json",
+		Network:        "",
 		MonitoringAddr: ":26660",
 		StateFile:      "relayer-state.json",
 	}

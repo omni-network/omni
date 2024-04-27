@@ -13,6 +13,8 @@ import (
 	"github.com/omni-network/omni/e2e/docker"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/e2e/vmcompose"
+	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -23,6 +25,8 @@ import (
 	rpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	cmttypes "github.com/cometbft/cometbft/types"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/stretchr/testify/require"
 )
@@ -126,7 +130,7 @@ func test(t *testing.T, testFunc testFunc) {
 				continue
 			}
 
-			rpc, err := endpoints.GetByNameOrID(chain.Name, chain.ID)
+			rpc, err := endpoints.ByNameOrID(chain.Name, chain.ID)
 			require.NoError(t, err)
 
 			client, err := ethclient.Dial(chain.Name, rpc)
@@ -152,7 +156,7 @@ func makePortals(t *testing.T, network netconf.Network, endpoints xchain.RPCEndp
 	t.Helper()
 	resp := make([]Portal, 0, len(network.EVMChains()))
 	for _, chain := range network.EVMChains() {
-		rpc, err := endpoints.GetByNameOrID(chain.Name, chain.ID)
+		rpc, err := endpoints.ByNameOrID(chain.Name, chain.ID)
 		tutil.RequireNoError(t, err)
 
 		ethClient, err := ethclient.Dial(chain.Name, rpc)
@@ -221,14 +225,6 @@ func loadEnv(t *testing.T) (types.Testnet, netconf.Network, types.DeployInfos, x
 	require.NoError(t, err)
 	testnetCache[manifestFile] = testnet
 
-	networkFile := os.Getenv(app.EnvE2ENetwork)
-	if networkFile == "" {
-		t.Fatalf(app.EnvE2ENetwork + " not set")
-	}
-	network, err := netconf.Load(networkFile)
-	require.NoError(t, err)
-	networkCache[manifestFile] = network
-
 	endpointsFile := os.Getenv(app.EnvE2ERPCEndpoints)
 	if endpointsFile == "" {
 		t.Fatalf(app.EnvE2ERPCEndpoints + " not set")
@@ -246,6 +242,13 @@ func loadEnv(t *testing.T) (types.Testnet, netconf.Network, types.DeployInfos, x
 		require.NoError(t, err)
 		deployInfoCache[manifestFile] = deployInfo
 	}
+
+	portalReg, err := makePortalRegistry(testnet.Network, endpoints)
+	require.NoError(t, err)
+
+	network, err := netconf.AwaitOnChain(context.Background(), testnet.Network, portalReg, endpoints.Keys())
+	require.NoError(t, err)
+	networkCache[manifestFile] = network
 
 	return testnet, network, deployInfo, endpoints
 }
@@ -301,4 +304,24 @@ func fetchBlockChain(ctx context.Context, t *testing.T) []*cmttypes.Block {
 	blocksCache[testnet.Name] = blocks
 
 	return blocks
+}
+
+func makePortalRegistry(network netconf.ID, endpoints xchain.RPCEndpoints) (*bindings.PortalRegistry, error) {
+	meta := netconf.MetadataByID(network, network.Static().OmniExecutionChainID)
+	rpc, err := endpoints.ByNameOrID(meta.Name, meta.ChainID)
+	if err != nil {
+		return nil, err
+	}
+
+	ethCl, err := ethclient.Dial(meta.Name, rpc)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := bindings.NewPortalRegistry(common.HexToAddress(predeploys.PortalRegistry), ethCl)
+	if err != nil {
+		return nil, errors.Wrap(err, "create portal registry")
+	}
+
+	return resp, nil
 }

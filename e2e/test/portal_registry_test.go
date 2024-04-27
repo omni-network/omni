@@ -22,7 +22,7 @@ func TestPortalRegistry(t *testing.T) {
 		omniEVM, ok := network.OmniEVMChain()
 		require.True(t, ok)
 
-		rpc, err := endpoints.GetByNameOrID(omniEVM.Name, omniEVM.ID)
+		rpc, err := endpoints.ByNameOrID(omniEVM.Name, omniEVM.ID)
 		require.NoError(t, err)
 
 		omniClient, err := ethclient.Dial(omniEVM.Name, rpc)

@@ -7,6 +7,7 @@ import (
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
 	cmtos "github.com/cometbft/cometbft/libs/os"
@@ -14,20 +15,15 @@ import (
 	_ "embed"
 )
 
-const (
-	defaultNetworkFile = "network.json"
-)
-
 type Config struct {
 	RPCEndpoints   xchain.RPCEndpoints
-	NetworkFile    string
+	Network        netconf.ID
 	ExplorerDBConn string
 	MonitoringAddr string
 }
 
 func DefaultConfig() Config {
 	return Config{
-		NetworkFile:    defaultNetworkFile,
 		ExplorerDBConn: "postgres://omni:password@explorer_db:5432/omni_db",
 		MonitoringAddr: ":26660",
 	}
