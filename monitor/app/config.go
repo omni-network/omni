@@ -7,6 +7,7 @@ import (
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/xchain"
 	"github.com/omni-network/omni/monitor/loadgen"
 
 	cmtos "github.com/cometbft/cometbft/libs/os"
@@ -15,6 +16,7 @@ import (
 )
 
 type Config struct {
+	RPCEndpoints   xchain.RPCEndpoints
 	NetworkFile    string
 	MonitoringAddr string
 	PrivateKey     string

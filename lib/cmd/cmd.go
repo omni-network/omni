@@ -125,6 +125,25 @@ func bindFlags(cmd *cobra.Command, v *viper.Viper) error {
 			}
 
 			val := v.Get(name)
+
+			// Special case handling of map[string]string flags.
+			if f.Value.Type() == "stringToString" {
+				strMap := v.GetStringMapString(name)
+				if len(strMap) == 0 {
+					// There is no way to set an empty value for Cobra's map[string]string flags.
+					// It must either not be set or be non-empty.
+					// So skip empty viper maps (as if not set) assuming the default value is empty.
+					continue
+				}
+
+				var kvs []string
+				for k, v := range strMap {
+					kvs = append(kvs, fmt.Sprintf("%s=%s", k, v))
+				}
+
+				val = strings.Join(kvs, ",")
+			}
+
 			err := cmd.Flags().Set(f.Name, fmt.Sprintf("%v", val))
 			if err != nil {
 				lastErr = err

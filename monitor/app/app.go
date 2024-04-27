@@ -27,11 +27,11 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	if err := avs.Monitor(ctx, network); err != nil {
+	if err := avs.Monitor(ctx, network, cfg.RPCEndpoints); err != nil {
 		return errors.Wrap(err, "monitor AVS")
 	}
 
-	if err := account.Monitor(ctx, network); err != nil {
+	if err := account.Monitor(ctx, network, cfg.RPCEndpoints); err != nil {
 		return errors.Wrap(err, "monitor account balances")
 	}
 
@@ -74,7 +74,7 @@ func serveMonitoring(address string) <-chan error {
 }
 
 func startLoadGen(ctx context.Context, cfg Config, network netconf.Network) error {
-	if err := loadgen.Start(ctx, network, cfg.LoadGen); err != nil {
+	if err := loadgen.Start(ctx, network, cfg.RPCEndpoints, cfg.LoadGen); err != nil {
 		return errors.Wrap(err, "start load generator")
 	}
 

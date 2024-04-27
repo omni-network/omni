@@ -140,3 +140,8 @@ func ConsensusChainIDStr2Uint64(id string) (uint64, error) {
 func IsOmniConsensus(network ID, chainID uint64) bool {
 	return network.Static().OmniConsensusChainIDUint64() == chainID
 }
+
+// IsOmniExecution returns true if provided chainID is the omni execution chain for the network.
+func IsOmniExecution(network ID, chainID uint64) bool {
+	return network.Static().OmniExecutionChainID == chainID
+}

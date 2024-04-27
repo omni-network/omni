@@ -63,6 +63,17 @@ evm-build-delay = "600ms"
 evm-build-optimistic = true
 
 #######################################################################
+###                             X-Chain                             ###
+#######################################################################
+
+[xchain]
+
+# Cross-chain EVM RPC endpoints to use for voting; only required for validators. One per supported EVM is required.
+# It is strongly advised to operate fullnodes for each chain and NOT to use free public RPCs.
+[xchain.evm-rpc-endpoints]
+ethereum = "http://127.0.0.1:8545"
+
+#######################################################################
 ###                         Logging Options                         ###
 #######################################################################
 

@@ -7,6 +7,7 @@ import (
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/xchain"
 
 	cmtos "github.com/cometbft/cometbft/libs/os"
 
@@ -14,6 +15,7 @@ import (
 )
 
 type Config struct {
+	RPCEndpoints   xchain.RPCEndpoints
 	PrivateKey     string
 	HaloURL        string
 	NetworkFile    string

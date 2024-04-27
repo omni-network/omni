@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 
 	"github.com/cometbft/cometbft/rpc/client"
@@ -29,7 +30,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	rpcClientPerChain, err := initializeRPCClients(network.EVMChains())
+	rpcClientPerChain, err := initializeRPCClients(network.EVMChains(), cfg.RPCEndpoints)
 	if err != nil {
 		return err
 	}
@@ -107,12 +108,16 @@ func newClient(tmNodeAddr string) (client.Client, error) {
 	return c, nil
 }
 
-func initializeRPCClients(chains []netconf.Chain) (map[uint64]ethclient.Client, error) {
+func initializeRPCClients(chains []netconf.Chain, endpoints xchain.RPCEndpoints) (map[uint64]ethclient.Client, error) {
 	rpcClientPerChain := make(map[uint64]ethclient.Client)
 	for _, chain := range chains {
-		c, err := ethclient.Dial(chain.Name, chain.RPCURL)
+		rpc, err := endpoints.GetByNameOrID(chain.Name, chain.ID)
 		if err != nil {
-			return nil, errors.Wrap(err, "dial rpc", "chain_id", chain.ID, "rpc_url", chain.RPCURL)
+			return nil, err
+		}
+		c, err := ethclient.Dial(chain.Name, rpc)
+		if err != nil {
+			return nil, errors.Wrap(err, "dial rpc", "chain_name", chain.Name, "chain_id", chain.ID, "rpc_url", rpc)
 		}
 		rpcClientPerChain[chain.ID] = c
 	}

@@ -3,6 +3,7 @@
  "EigenKeyPassword": "",
  "EngineJWTFile": "bar",
  "EngineEndpoint": "",
+ "RPCEndpoints": null,
  "SnapshotInterval": 1000,
  "SnapshotKeepRecent": 2,
  "BackendType": "goleveldb",

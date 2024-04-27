@@ -22,6 +22,22 @@ network-file = "{{ .NetworkFile }}"
 state-file = "{{ .StateFile }}"
 
 #######################################################################
+###                             X-Chain                             ###
+#######################################################################
+
+[xchain]
+
+# Cross-chain EVM RPC endpoints to use for relaying. One per supported EVM is required.
+[xchain.evm-rpc-endpoints]
+{{- if not .RPCEndpoints }}
+# ethereum = "http://my-ethreum-node:8545"
+# optimism = "https://my-op-node.com"
+{{ end -}}
+{{- range $key, $value := .RPCEndpoints }}
+{{ $key }} = "{{ $value }}"
+{{ end }}
+
+#######################################################################
 ###                         Logging Options                         ###
 #######################################################################
 

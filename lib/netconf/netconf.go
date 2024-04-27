@@ -74,7 +74,7 @@ func (n Network) ChainNamesByIDs() map[uint64]string {
 // OmniEVMChain returns the Omni execution chain config or false if it does not exist.
 func (n Network) OmniEVMChain() (Chain, bool) {
 	for _, chain := range n.Chains {
-		if chain.ID == n.ID.Static().OmniExecutionChainID {
+		if IsOmniExecution(n.ID, chain.ID) {
 			return chain, true
 		}
 	}
@@ -166,9 +166,9 @@ const (
 // the Omni cross chain protocol. This is most supported Rollup EVMs, but
 // also the Omni EVM, and the Omni Consensus chain.
 type Chain struct {
-	ID                uint64            // Chain ID asa per https://chainlist.org
-	Name              string            // Chain name as per https://chainlist.org
-	RPCURL            string            // RPC URL of the chain
+	ID   uint64 // Chain ID asa per https://chainlist.org
+	Name string // Chain name as per https://chainlist.org
+	// RPCURL            string            // RPC URL of the chain
 	PortalAddress     common.Address    // Address of the omni portal contract on the chain
 	DeployHeight      uint64            // Height that the portal contracts were deployed
 	BlockPeriod       time.Duration     // Block period of the chain
@@ -243,7 +243,6 @@ func (c *Chain) UnmarshalJSON(bz []byte) error {
 	*c = Chain{
 		ID:                cj.ID,
 		Name:              cj.Name,
-		RPCURL:            cj.RPCURL,
 		PortalAddress:     portalAddr,
 		DeployHeight:      cj.DeployHeight,
 		BlockPeriod:       blockPeriod,
@@ -263,7 +262,6 @@ func (c Chain) MarshalJSON() ([]byte, error) {
 	cj := chainJSON{
 		ID:                c.ID,
 		Name:              c.Name,
-		RPCURL:            c.RPCURL,
 		PortalAddress:     portalAddr,
 		DeployHeight:      c.DeployHeight,
 		BlockPeriod:       c.BlockPeriod.String(),

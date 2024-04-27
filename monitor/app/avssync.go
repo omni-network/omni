@@ -38,7 +38,12 @@ func startAVSSync(ctx context.Context, cfg Config, network netconf.Network) erro
 		return nil
 	}
 
-	ethCl, err := ethclient.Dial(ethL1.Name, ethL1.RPCURL)
+	rpc, err := cfg.RPCEndpoints.GetByNameOrID(ethL1.Name, ethL1.ID)
+	if err != nil {
+		return err
+	}
+
+	ethCl, err := ethclient.Dial(ethL1.Name, rpc)
 	if err != nil {
 		return errors.Wrap(err, "dial ethereum chain")
 	}

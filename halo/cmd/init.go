@@ -13,6 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/xchain"
 
 	cmtconfig "github.com/cometbft/cometbft/config"
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
@@ -28,11 +29,12 @@ import (
 
 // InitConfig is the config for the init command.
 type InitConfig struct {
-	HomeDir string
-	Network netconf.ID
-	Force   bool
-	Clean   bool
-	Cosmos  bool
+	HomeDir      string
+	Network      netconf.ID
+	RCPEndpoints xchain.RPCEndpoints
+	Force        bool
+	Clean        bool
+	Cosmos       bool
 }
 
 // newInitCmd returns a new cobra command that initializes the files and folders required by halo.
@@ -114,6 +116,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	comet := DefaultCometConfig(homeDir)
 	cfg := halocfg.DefaultConfig()
 	cfg.HomeDir = homeDir
+	cfg.RPCEndpoints = initCfg.RCPEndpoints
 
 	// Folders
 	folders := []struct {
