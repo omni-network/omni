@@ -48,7 +48,7 @@ func WriteAllConfig(testnet types.Testnet) error {
 		conf := Config{
 			Moniker:      evm.InstanceName,
 			IsArchive:    evm.IsArchive,
-			ChainID:      evm.Chain.ID,
+			ChainID:      evm.Chain.ChainID,
 			BootNodes:    evm.Peers, // TODO(corver): Use seed nodes once available.
 			TrustedNodes: evm.Peers,
 		}

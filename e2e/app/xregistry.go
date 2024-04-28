@@ -57,7 +57,7 @@ func newRegistryMngr(ctx context.Context, def Definition) (registryMngr, error) 
 
 	omniEVM := def.Testnet.OmniEVMs[0].Chain
 
-	backend, err := def.Backends().Backend(omniEVM.ID)
+	backend, err := def.Backends().Backend(omniEVM.ChainID)
 	if err != nil {
 		return registryMngr{}, err
 	}
@@ -149,9 +149,9 @@ func (m registryMngr) setXRegisryPortal(ctx context.Context) error {
 
 	omniEVM := m.def.Testnet.OmniEVMs[0].Chain
 
-	portal, ok := m.portals[omniEVM.ID]
+	portal, ok := m.portals[omniEVM.ChainID]
 	if !ok {
-		return errors.New("missing portal", "chain", omniEVM.ID)
+		return errors.New("missing portal", "chain", omniEVM.ChainID)
 	}
 
 	tx, err := m.xreg.SetPortal(m.txOpts, portal.Addr)
@@ -237,13 +237,13 @@ func makePortalDeps(def Definition) (map[uint64]bindings.PortalRegistryDeploymen
 	for _, c := range tnet.PublicChains {
 		chain := c.Chain()
 
-		info, ok := infos[chain.ID][types.ContractPortal]
+		info, ok := infos[chain.ChainID][types.ContractPortal]
 		if !ok {
-			return nil, errors.New("missing info", "chain", chain.ID)
+			return nil, errors.New("missing info", "chain", chain.ChainID)
 		}
 
-		deps[chain.ID] = bindings.PortalRegistryDeployment{
-			ChainId:           chain.ID,
+		deps[chain.ChainID] = bindings.PortalRegistryDeployment{
+			ChainId:           chain.ChainID,
 			Addr:              info.Address,
 			DeployHeight:      info.Height,
 			FinalizationStrat: chain.FinalizationStrat.String(),
@@ -253,13 +253,13 @@ func makePortalDeps(def Definition) (map[uint64]bindings.PortalRegistryDeploymen
 	for _, c := range tnet.AnvilChains {
 		chain := c.Chain
 
-		info, ok := infos[chain.ID][types.ContractPortal]
+		info, ok := infos[chain.ChainID][types.ContractPortal]
 		if !ok {
-			return nil, errors.New("missing info", "chain", chain.ID)
+			return nil, errors.New("missing info", "chain", chain.ChainID)
 		}
 
-		deps[chain.ID] = bindings.PortalRegistryDeployment{
-			ChainId:           chain.ID,
+		deps[chain.ChainID] = bindings.PortalRegistryDeployment{
+			ChainId:           chain.ChainID,
 			Addr:              info.Address,
 			DeployHeight:      info.Height,
 			FinalizationStrat: chain.FinalizationStrat.String(),
@@ -272,13 +272,13 @@ func makePortalDeps(def Definition) (map[uint64]bindings.PortalRegistryDeploymen
 
 	chain := tnet.OmniEVMs[0].Chain
 
-	info, ok := infos[chain.ID][types.ContractPortal]
+	info, ok := infos[chain.ChainID][types.ContractPortal]
 	if !ok {
-		return nil, errors.New("missing info", "chain", chain.ID)
+		return nil, errors.New("missing info", "chain", chain.ChainID)
 	}
 
-	deps[chain.ID] = bindings.PortalRegistryDeployment{
-		ChainId:           chain.ID,
+	deps[chain.ChainID] = bindings.PortalRegistryDeployment{
+		ChainId:           chain.ChainID,
 		Addr:              info.Address,
 		DeployHeight:      info.Height,
 		FinalizationStrat: chain.FinalizationStrat.String(),

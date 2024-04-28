@@ -100,7 +100,7 @@ func (d Definition) DeployInfos() types.DeployInfos {
 	resp := make(types.DeployInfos)
 
 	for chain, info := range d.Netman().DeployInfo() {
-		resp.Set(chain.ID, types.ContractPortal, info.PortalAddress, info.DeployHeight)
+		resp.Set(chain.ChainID, types.ContractPortal, info.PortalAddress, info.DeployHeight)
 	}
 
 	return resp
@@ -452,95 +452,80 @@ func publicChains(manifest types.Manifest, cfg DefinitionConfig) ([]types.Public
 	return publics, nil
 }
 
-// internalNetwork returns a internal intra-network netconf.Network from the testnet and deployInfo.
-//
-//nolint:unparam // TODO remove it.
-func internalNetwork(def Definition, nodePrefix string) (netconf.Network, xchain.RPCEndpoints) {
-	var chains []netconf.Chain
+// externalEndpoints returns the evm rpc endpoints for access from inside the
+// docker network.
+func internalEndpoints(def Definition, nodePrefix string) xchain.RPCEndpoints {
 	endpoints := make(xchain.RPCEndpoints)
 
 	// Add all public chains
 	for _, public := range def.Testnet.PublicChains {
-		depInfo := def.DeployInfos()[public.Chain().ID]
-		pc := netconf.Chain{
-			ID:                public.Chain().ID,
-			Name:              public.Chain().Name,
-			BlockPeriod:       public.Chain().BlockPeriod,
-			FinalizationStrat: public.Chain().FinalizationStrat,
-			PortalAddress:     depInfo[types.ContractPortal].Address,
-			DeployHeight:      depInfo[types.ContractPortal].Height,
-		}
-
 		endpoints[public.Chain().Name] = public.NextRPCAddress()
-		chains = append(chains, pc)
 	}
 
 	// In monitor only mode, there is only public chains, so skip omni and anvil chains.
 	if def.Testnet.OnlyMonitor {
-		return netconf.Network{
-			ID:     def.Testnet.Network,
-			Chains: chains,
-		}, endpoints
+		return endpoints
 	}
 
 	omniEVM := omniEVMByPrefix(def.Testnet, nodePrefix)
-	omniEVMDepInfo := def.DeployInfos()[omniEVM.Chain.ID]
-	chains = append(chains, netconf.Chain{
-		ID:                omniEVM.Chain.ID,
-		Name:              omniEVM.Chain.Name,
-		BlockPeriod:       omniEVM.Chain.BlockPeriod,
-		FinalizationStrat: omniEVM.Chain.FinalizationStrat,
-		PortalAddress:     omniEVMDepInfo[types.ContractPortal].Address,
-		DeployHeight:      omniEVMDepInfo[types.ContractPortal].Height,
-	})
 	endpoints[omniEVM.Chain.Name] = omniEVM.InternalRPC
 
 	node := nodeByPrefix(def.Testnet, nodePrefix)
-	chains = append(chains, netconf.Chain{
-		ID:           def.Testnet.Network.Static().OmniConsensusChainIDUint64(),
-		Name:         omniConsensus,
-		DeployHeight: 1,                         // Validator sets start at height 1, not 0.
-		BlockPeriod:  omniEVM.Chain.BlockPeriod, // Same block period as omniEVM
-	})
 	endpoints[omniConsensus] = node.AddressRPC()
 
 	// Add all anvil chains
 	for _, anvil := range def.Testnet.AnvilChains {
-		depInfo := def.DeployInfos()[anvil.Chain.ID]
-		chains = append(chains, netconf.Chain{
-			ID:                anvil.Chain.ID,
-			Name:              anvil.Chain.Name,
-			BlockPeriod:       anvil.Chain.BlockPeriod,
-			FinalizationStrat: anvil.Chain.FinalizationStrat,
-			PortalAddress:     depInfo[types.ContractPortal].Address,
-			DeployHeight:      depInfo[types.ContractPortal].Height,
-		})
 		endpoints[anvil.Chain.Name] = anvil.InternalRPC
 	}
 
-	return netconf.Network{
-		ID:     def.Testnet.Network,
-		Chains: chains,
-	}, endpoints
+	return endpoints
 }
 
-// externalNetwork returns a external e2e-app netconf.Network from the testnet and deployInfo.
-func externalNetwork(def Definition) (netconf.Network, xchain.RPCEndpoints) {
-	var chains []netconf.Chain
+// externalEndpoints returns the evm rpc endpoints for access from outside the
+// docker network.
+func externalEndpoints(def Definition) xchain.RPCEndpoints {
 	endpoints := make(xchain.RPCEndpoints)
 
 	// Add all public chains
 	for _, public := range def.Testnet.PublicChains {
-		depInfo := def.DeployInfos()[public.Chain().ID]
+		endpoints[public.Chain().Name] = public.NextRPCAddress()
+	}
+
+	// In monitor only mode, there is only public chains, so skip omni and anvil chains.
+	if def.Testnet.OnlyMonitor {
+		return endpoints
+	}
+
+	// Connect to a proper omni_evm that isn't unavailable
+	omniEVM := def.Testnet.BroadcastOmniEVM()
+	endpoints[omniEVM.Chain.Name] = omniEVM.ExternalRPC
+
+	// Add omni consensus chain
+	endpoints[omniConsensus] = def.Testnet.BroadcastNode().AddressRPC()
+
+	// Add all anvil chains
+	for _, anvil := range def.Testnet.AnvilChains {
+		endpoints[anvil.Chain.Name] = anvil.ExternalRPC
+	}
+
+	return endpoints
+}
+
+// networkFromDef returns the network configuration from the definition.
+func networkFromDef(def Definition) netconf.Network {
+	var chains []netconf.Chain
+
+	// Add all public chains
+	for _, public := range def.Testnet.PublicChains {
+		depInfo := def.DeployInfos()[public.Chain().ChainID]
 		chains = append(chains, netconf.Chain{
-			ID:                public.Chain().ID,
+			ID:                public.Chain().ChainID,
 			Name:              public.Chain().Name,
 			BlockPeriod:       public.Chain().BlockPeriod,
 			FinalizationStrat: public.Chain().FinalizationStrat,
 			PortalAddress:     depInfo[types.ContractPortal].Address,
 			DeployHeight:      depInfo[types.ContractPortal].Height,
 		})
-		endpoints[public.Chain().Name] = public.NextRPCAddress()
 	}
 
 	// In monitor only mode, there is only public chains, so skip omni and anvil chains.
@@ -548,21 +533,20 @@ func externalNetwork(def Definition) (netconf.Network, xchain.RPCEndpoints) {
 		return netconf.Network{
 			ID:     def.Testnet.Network,
 			Chains: chains,
-		}, endpoints
+		}
 	}
 
 	// Connect to a proper omni_evm that isn't unavailable
 	omniEVM := def.Testnet.BroadcastOmniEVM()
-	omniEVMDepInfo := def.DeployInfos()[omniEVM.Chain.ID]
+	omniEVMDepInfo := def.DeployInfos()[omniEVM.Chain.ChainID]
 	chains = append(chains, netconf.Chain{
-		ID:                omniEVM.Chain.ID,
+		ID:                omniEVM.Chain.ChainID,
 		Name:              omniEVM.Chain.Name,
 		BlockPeriod:       omniEVM.Chain.BlockPeriod,
 		FinalizationStrat: omniEVM.Chain.FinalizationStrat,
 		PortalAddress:     omniEVMDepInfo[types.ContractPortal].Address,
 		DeployHeight:      omniEVMDepInfo[types.ContractPortal].Height,
 	})
-	endpoints[omniEVM.Chain.Name] = omniEVM.ExternalRPC
 
 	// Add omni consensus chain
 	chains = append(chains, netconf.Chain{
@@ -572,20 +556,18 @@ func externalNetwork(def Definition) (netconf.Network, xchain.RPCEndpoints) {
 		DeployHeight: 1,                         // Validator sets start at height 1, not 0.
 		BlockPeriod:  omniEVM.Chain.BlockPeriod, // Same block period as omniEVM
 	})
-	endpoints[omniConsensus] = def.Testnet.BroadcastNode().AddressRPC()
 
 	// Add all anvil chains
 	for _, anvil := range def.Testnet.AnvilChains {
-		depInfo := def.DeployInfos()[anvil.Chain.ID]
+		depInfo := def.DeployInfos()[anvil.Chain.ChainID]
 		chains = append(chains, netconf.Chain{
-			ID:                anvil.Chain.ID,
+			ID:                anvil.Chain.ChainID,
 			Name:              anvil.Chain.Name,
 			BlockPeriod:       anvil.Chain.BlockPeriod,
 			FinalizationStrat: anvil.Chain.FinalizationStrat,
 			PortalAddress:     depInfo[types.ContractPortal].Address,
 			DeployHeight:      depInfo[types.ContractPortal].Height,
 		})
-		endpoints[anvil.Chain.Name] = anvil.ExternalRPC
 	}
 
 	for _, chain := range chains {
@@ -600,7 +582,7 @@ func externalNetwork(def Definition) (netconf.Network, xchain.RPCEndpoints) {
 	return netconf.Network{
 		ID:     def.Testnet.Network,
 		Chains: chains,
-	}, endpoints
+	}
 }
 
 // omniEVMByPrefix returns a omniEVM from the testnet with the given prefix.
