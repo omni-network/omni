@@ -6,8 +6,8 @@ import (
 	"net"
 	"strings"
 	"sync/atomic"
-	"time"
 
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -97,10 +97,8 @@ func (t Testnet) HasOmniEVM() bool {
 
 // EVMChain represents a EVM chain in a omni network.
 type EVMChain struct {
-	Name              string // Chain Name
-	ID                uint64 // Chain ID
+	evmchain.Metadata
 	IsPublic          bool
-	BlockPeriod       time.Duration
 	FinalizationStrat netconf.FinalizationStrat
 }
 

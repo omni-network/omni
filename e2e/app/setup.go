@@ -121,7 +121,7 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 		}
 		config.WriteConfigFile(filepath.Join(nodeDir, "config", "config.toml"), cfg) // panics
 
-		_, endpoints := internalNetwork(def, node.Name)
+		endpoints := internalEndpoints(def, node.Name)
 		omniEVM := omniEVMByPrefix(def.Testnet, node.Name)
 
 		if err := writeHaloConfig(
@@ -169,7 +169,7 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 
 	// Write an external network.json and endpoints.json in base testnet dir.
 	// This allows for easy connecting or querying of the network
-	_, endpoints := externalNetwork(def)
+	endpoints := externalEndpoints(def)
 	if endpointBytes, err := json.MarshalIndent(endpoints, "", " "); err != nil {
 		return errors.Wrap(err, "marshal endpoints")
 	} else if err := os.WriteFile(filepath.Join(def.Testnet.Dir, "endpoints.json"), endpointBytes, 0o644); err != nil {
@@ -390,9 +390,9 @@ func writeRelayerConfig(ctx context.Context, def Definition, logCfg log.Config) 
 	}
 
 	// Save network config
-	_, endpoints := internalNetwork(def, "")
+	endpoints := internalEndpoints(def, "")
 	if def.Infra.GetInfrastructureData().Provider == vmcompose.ProviderName {
-		_, endpoints = externalNetwork(def)
+		endpoints = externalEndpoints(def)
 	}
 
 	// Save private key
@@ -430,9 +430,9 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 	}
 
 	// Save network config
-	_, endpoints := internalNetwork(def, "")
+	endpoints := internalEndpoints(def, "")
 	if def.Infra.GetInfrastructureData().Provider == vmcompose.ProviderName {
-		_, endpoints = externalNetwork(def)
+		endpoints = externalEndpoints(def)
 	}
 
 	// Save private key
@@ -487,9 +487,9 @@ func writeExplorerIndexerConfig(def Definition, logCfg log.Config) error {
 	}
 
 	// Save network config
-	_, endpoints := internalNetwork(def, "")
+	endpoints := internalEndpoints(def, "")
 	if def.Infra.GetInfrastructureData().Provider == vmcompose.ProviderName {
-		_, endpoints = externalNetwork(def)
+		endpoints = externalEndpoints(def)
 	}
 
 	cfg := indexerapp.DefaultConfig()

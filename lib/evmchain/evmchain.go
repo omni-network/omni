@@ -1,3 +1,4 @@
+// Package evmchain provides static metadata about supported evm chains.
 package evmchain
 
 import (

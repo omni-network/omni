@@ -34,7 +34,7 @@ func FundValidatorsForTesting(ctx context.Context, def Definition) error {
 
 	log.Info(ctx, "Funding validators for testing", "count", len(def.Testnet.Nodes))
 
-	network, _ := externalNetwork(def)
+	network := networkFromDef(def)
 	omniEVM, _ := network.OmniEVMChain()
 	funder := def.Netman().Operator()
 	_, fundBackend, err := def.Backends().BindOpts(ctx, omniEVM.ID, funder)
@@ -124,7 +124,8 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 		})
 
 		// Create a backend to trigger deposits from
-		network, endpoints := externalNetwork(def)
+		network := networkFromDef(def)
+		endpoints := externalEndpoints(def)
 		omniEVM, _ := network.OmniEVMChain()
 		rpc, err := endpoints.ByNameOrID(omniEVM.Name, omniEVM.ID)
 		if err != nil {

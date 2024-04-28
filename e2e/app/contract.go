@@ -47,19 +47,19 @@ func SendXMsgs(ctx context.Context, netman netman.Manager, backends ethbackend.B
 	var eg errgroup.Group
 	for _, from := range netman.Portals() {
 		for _, to := range netman.Portals() {
-			if from.Chain.ID == to.Chain.ID {
+			if from.Chain.ChainID == to.Chain.ChainID {
 				continue
 			}
 
 			for i := 0; i < count; i++ {
 				// Send async so whole batch included in same block. Important for testing.
 				eg.Go(func() error {
-					tx, err := xcall(ctx, backends, netman.Operator(), from, to.Chain.ID)
+					tx, err := xcall(ctx, backends, netman.Operator(), from, to.Chain.ChainID)
 					if err != nil {
 						return errors.Wrap(err, "xcall")
 					}
 
-					waiter.Add(from.Chain.ID, tx)
+					waiter.Add(from.Chain.ChainID, tx)
 
 					return nil
 				})
@@ -95,7 +95,7 @@ func xcall(ctx context.Context, backends ethbackend.Backends, sender common.Addr
 		)
 	}
 
-	txOpts, _, err := backends.BindOpts(ctx, from.Chain.ID, sender)
+	txOpts, _, err := backends.BindOpts(ctx, from.Chain.ChainID, sender)
 	if err != nil {
 		return nil, errors.Wrap(err, "bindOpts")
 	}
