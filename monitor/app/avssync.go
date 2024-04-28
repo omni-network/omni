@@ -38,7 +38,7 @@ func startAVSSync(ctx context.Context, cfg Config, network netconf.Network) erro
 		return nil
 	}
 
-	rpc, err := cfg.RPCEndpoints.GetByNameOrID(ethL1.Name, ethL1.ID)
+	rpc, err := cfg.RPCEndpoints.ByNameOrID(ethL1.Name, ethL1.ID)
 	if err != nil {
 		return err
 	}

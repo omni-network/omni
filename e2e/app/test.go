@@ -8,7 +8,6 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/cometbft/cometbft/test/e2e/pkg/exec"
 )
@@ -18,7 +17,6 @@ const (
 	EnvInfraFile       = "INFRASTRUCTURE_FILE"
 	EnvE2EManifest     = "E2E_MANIFEST"
 	EnvE2ENode         = "E2E_NODE"
-	EnvE2ENetwork      = "E2E_NETWORK"
 	EnvE2ERPCEndpoints = "E2E_RPC_ENDPOINTS"
 	EnvE2EDeployInfo   = "E2E_DEPLOY_INFO"
 )
@@ -26,19 +24,11 @@ const (
 // Test runs test cases under tests/.
 func Test(ctx context.Context, def Definition, verbose bool) error {
 	log.Info(ctx, "Running tests in ./test/...")
-	extNetwork, endpoints := externalNetwork(def)
+	_, endpoints := externalNetwork(def)
 
 	networkDir, err := os.MkdirTemp("", "omni-e2e")
 	if err != nil {
 		return errors.Wrap(err, "creating temp dir")
-	}
-	networkFile := filepath.Join(networkDir, "network.json")
-	if err := netconf.Save(ctx, extNetwork, networkFile); err != nil {
-		return errors.Wrap(err, "saving network")
-	}
-
-	if err = os.Setenv(EnvE2ENetwork, networkFile); err != nil {
-		return errors.Wrap(err, "setting env var")
 	}
 
 	endpointsFile := filepath.Join(networkDir, "endpoints.json")
@@ -84,7 +74,6 @@ func Test(ctx context.Context, def Definition, verbose bool) error {
 	}
 
 	log.Debug(ctx, "Env files",
-		EnvE2ENetwork, networkFile,
 		EnvE2EManifest, manifestFile,
 		EnvInfraType, infd.Provider,
 		EnvInfraFile, infd.Path,

@@ -55,7 +55,7 @@ func Start(ctx context.Context, network netconf.Network, endpoints xchain.RPCEnd
 		return errors.New("omniEVM chain not found")
 	}
 
-	rpc, err := endpoints.GetByNameOrID(omniEVM.Name, omniEVM.ID)
+	rpc, err := endpoints.ByNameOrID(omniEVM.Name, omniEVM.ID)
 	if err != nil {
 		return err
 	}

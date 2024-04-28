@@ -25,7 +25,7 @@ func Monitor(ctx context.Context, network netconf.Network, endpoints xchain.RPCE
 		return errors.New("no avs chain found")
 	}
 
-	rpc, err := endpoints.GetByNameOrID(ch.Name, ch.ID)
+	rpc, err := endpoints.ByNameOrID(ch.Name, ch.ID)
 	if err != nil {
 		return err
 	}

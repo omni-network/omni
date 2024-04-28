@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/omni-network/omni/lib/chainids"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/evmchain"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -77,37 +77,37 @@ var (
 var statics = map[ID]Static{
 	Simnet: {
 		Version:              runid,
-		OmniExecutionChainID: chainids.OmniDevnet,
+		OmniExecutionChainID: evmchain.IDOmniEphemeral,
 		MaxValidators:        maxValidators,
 	},
 	Devnet: {
 		Version:              runid,
-		OmniExecutionChainID: chainids.OmniDevnet,
+		OmniExecutionChainID: evmchain.IDOmniEphemeral,
 		MaxValidators:        maxValidators,
 	},
 	Staging: {
 		Version:              runid,
-		OmniExecutionChainID: chainids.OmniDevnet,
+		OmniExecutionChainID: evmchain.IDOmniEphemeral,
 		MaxValidators:        maxValidators,
 	},
 	Testnet: {
 		Version:              "v0.0.2",
 		AVSContractAddress:   testnetAVS,
-		OmniExecutionChainID: chainids.OmniTestnet,
+		OmniExecutionChainID: evmchain.IDOmniTestnet,
 		MaxValidators:        maxValidators,
 		Portals: []Deployment{
 			{
-				ChainID:      chainids.Holesky,
+				ChainID:      evmchain.IDHolesky,
 				Address:      testnetPortal,
 				DeployHeight: 1357819,
 			},
 			{
-				ChainID:      chainids.OpSepolia,
+				ChainID:      evmchain.IDOpSepolia,
 				Address:      testnetPortal,
 				DeployHeight: 10731455,
 			},
 			{
-				ChainID:      chainids.ArbSepolia,
+				ChainID:      evmchain.IDArbSepolia,
 				Address:      testnetPortal,
 				DeployHeight: 34237972,
 			},

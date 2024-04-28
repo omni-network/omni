@@ -53,7 +53,7 @@ type Manifest struct {
 
 	Network netconf.ID `toml:"network"`
 
-	// AnvilChains defines the anvil chains to deploy; chain_a, chain_b, etc.
+	// AnvilChains defines the anvil chains to deploy; mock_l1, mock_l2, etc.
 	AnvilChains []string `toml:"anvil_chains"`
 
 	// PublicChains defines the public chains to connect to; arb_sepolia, etc.

@@ -46,7 +46,7 @@ type Provider struct {
 	chainID     chainIDFunc
 	header      headerFunc
 	backoffFunc func(context.Context) func()
-	chainNames  map[uint64]string
+	chainNamer  func(uint64) string
 	network     netconf.ID
 }
 
@@ -59,6 +59,7 @@ func NewProviderForT(_ *testing.T, fetch fetchFunc, latest latestFunc, window wi
 		fetch:       fetch,
 		window:      window,
 		backoffFunc: backoffFunc,
+		chainNamer:  func(uint64) string { return "" },
 	}
 }
 
@@ -85,7 +86,7 @@ func (p Provider) ValidatorSet(ctx context.Context, valSetID uint64) ([]cchain.V
 func (p Provider) Subscribe(in context.Context, srcChainID uint64, height uint64, workerName string,
 	callback cchain.ProviderCallback,
 ) {
-	srcChain := p.chainNames[srcChainID]
+	srcChain := p.chainNamer(srcChainID)
 	ctx := log.WithCtx(in, "src_chain", srcChain)
 
 	deps := stream.Deps[xchain.Attestation]{

@@ -6,7 +6,6 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
-	"github.com/omni-network/omni/lib/chainids"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/create3"
 	"github.com/omni-network/omni/lib/errors"
@@ -94,19 +93,19 @@ func (cfg DeploymentConfig) Validate() error {
 }
 
 func getDeployCfg(chainID uint64, network netconf.ID, valSetID uint64, vals []bindings.Validator) (DeploymentConfig, error) {
-	if !chainids.IsMainnetOrTestnet(chainID) && network == netconf.Devnet {
+	if network == netconf.Devnet {
 		return devnetCfg(chainID, valSetID, vals), nil
 	}
 
-	if chainids.IsMainnet(chainID) && network == netconf.Mainnet {
+	if network == netconf.Mainnet {
 		return mainnetCfg(chainID, valSetID, vals), nil
 	}
 
-	if chainids.IsTestnet(chainID) && network == netconf.Testnet {
+	if network == netconf.Testnet {
 		return testnetCfg(chainID, valSetID, vals), nil
 	}
 
-	if !chainids.IsMainnet(chainID) && network == netconf.Staging {
+	if network == netconf.Staging {
 		return stagingCfg(chainID, valSetID, vals), nil
 	}
 

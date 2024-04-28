@@ -7,6 +7,7 @@ import (
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 	"github.com/omni-network/omni/monitor/loadgen"
 
@@ -17,7 +18,7 @@ import (
 
 type Config struct {
 	RPCEndpoints   xchain.RPCEndpoints
-	NetworkFile    string
+	Network        netconf.ID
 	MonitoringAddr string
 	PrivateKey     string
 
@@ -27,7 +28,6 @@ type Config struct {
 func DefaultConfig() Config {
 	return Config{
 		PrivateKey:     "monitor.key",
-		NetworkFile:    "network.json",
 		MonitoringAddr: ":26660",
 	}
 }

@@ -10,7 +10,7 @@ import (
 
 type RPCEndpoints map[string]string
 
-func (e RPCEndpoints) GetByNameOrID(name string, chainID uint64) (string, error) {
+func (e RPCEndpoints) ByNameOrID(name string, chainID uint64) (string, error) {
 	if val, ok := e[name]; ok {
 		return val, nil
 	} else if val, ok := e[strconv.FormatUint(chainID, 10)]; ok {
@@ -18,6 +18,15 @@ func (e RPCEndpoints) GetByNameOrID(name string, chainID uint64) (string, error)
 	}
 
 	return "", errors.New("no rpc endpoint for chain", "chain_name", name, "chain_id", chainID)
+}
+
+func (e RPCEndpoints) Keys() []string {
+	keys := make([]string, 0, len(e))
+	for k := range e {
+		keys = append(keys, k)
+	}
+
+	return keys
 }
 
 // BindFlags binds the xchain evm rpc flag.

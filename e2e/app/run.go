@@ -264,7 +264,7 @@ func toPortalValidators(validators map[*e2e.Node]int64) ([]bindings.Validator, e
 func logRPCs(ctx context.Context, def Definition) {
 	network, endpoints := externalNetwork(def)
 	for _, chain := range network.EVMChains() {
-		rpc, _ := endpoints.GetByNameOrID(chain.Name, chain.ID)
+		rpc, _ := endpoints.ByNameOrID(chain.Name, chain.ID)
 		log.Info(ctx, "EVM Chain RPC available", "chain_id", chain.ID,
 			"chain_name", chain.Name, "url", rpc)
 	}

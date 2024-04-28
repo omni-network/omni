@@ -5,6 +5,9 @@
 # last modified the config file. Do not modify this.
 version = "v0.1.3"
 
+# Omni network to participate in: mainnet, testnet, or devnet.
+network = ""
+
 #######################################################################
 ###                         Relayer Options                         ###
 #######################################################################
@@ -14,9 +17,6 @@ private-key = "relayer.key"
 
 # The URL of the halo node to connect to.
 halo-url = "localhost:26657"
-
-# The path to the Omni network configuration file.
-network-file = "network.json"
 
 # The path to the relayer state file used to track cursors.
 state-file = "relayer-state.json"

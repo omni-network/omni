@@ -126,7 +126,7 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 		// Create a backend to trigger deposits from
 		network, endpoints := externalNetwork(def)
 		omniEVM, _ := network.OmniEVMChain()
-		rpc, err := endpoints.GetByNameOrID(omniEVM.Name, omniEVM.ID)
+		rpc, err := endpoints.ByNameOrID(omniEVM.Name, omniEVM.ID)
 		if err != nil {
 			returnErr(errors.Wrap(err, "get rpc"))
 			return

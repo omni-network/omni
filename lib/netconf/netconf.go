@@ -3,15 +3,10 @@
 package netconf
 
 import (
-	"context"
-	"encoding/json"
-	"os"
-	"strings"
 	"time"
 
-	"github.com/omni-network/omni/lib/chainids"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/evmchain"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -98,15 +93,15 @@ func (n Network) EthereumChain() (Chain, bool) {
 	for _, chain := range n.Chains {
 		switch n.ID {
 		case Mainnet:
-			if chain.ID == chainids.Ethereum {
+			if chain.ID == evmchain.IDEthereum {
 				return chain, true
 			}
 		case Testnet:
-			if chain.ID == chainids.Holesky {
+			if chain.ID == evmchain.IDHolesky {
 				return chain, true
 			}
 		default:
-			if strings.Contains(chain.Name, "l1") {
+			if chain.ID == evmchain.IDMockL1Fast || chain.ID == evmchain.IDMockL1Slow {
 				return chain, true
 			}
 		}
@@ -173,105 +168,4 @@ type Chain struct {
 	DeployHeight      uint64            // Height that the portal contracts were deployed
 	BlockPeriod       time.Duration     // Block period of the chain
 	FinalizationStrat FinalizationStrat // Finalization strategy of the chain
-}
-
-// Load loads the network configuration from the given path.
-func Load(path string) (Network, error) {
-	bz, err := os.ReadFile(path)
-	if err != nil {
-		return Network{}, errors.Wrap(err, "read network config file")
-	}
-
-	var net Network
-	if err := json.Unmarshal(bz, &net); err != nil {
-		return Network{}, errors.Wrap(err, "unmarshal network config file")
-	}
-
-	return net, nil
-}
-
-// Save saves the network configuration to the given path.
-func Save(ctx context.Context, network Network, path string) error {
-	for _, chain := range network.Chains {
-		if IsOmniConsensus(network.ID, chain.ID) {
-			continue
-		}
-		if chain.PortalAddress == (common.Address{}) {
-			log.Warn(ctx, "Netconf network.json portal address empty", nil, "chain", chain.Name, "path", path)
-		}
-	}
-
-	bz, err := json.MarshalIndent(network, "", "  ")
-	if err != nil {
-		return errors.Wrap(err, "marshal network config file")
-	}
-
-	if err := os.WriteFile(path, bz, 0o600); err != nil {
-		return errors.Wrap(err, "write network config file")
-	}
-
-	return nil
-}
-
-type chainJSON struct {
-	ID                uint64            `json:"id"`
-	Name              string            `json:"name"`
-	RPCURL            string            `json:"rpcurl"`
-	PortalAddress     string            `json:"portal_address"`
-	DeployHeight      uint64            `json:"deploy_height"`
-	BlockPeriod       string            `json:"block_period"`
-	FinalizationStrat FinalizationStrat `json:"finalization_start"`
-}
-
-// UnmarshalJSON implements the json.Unmarshaler interface.
-func (c *Chain) UnmarshalJSON(bz []byte) error {
-	var cj chainJSON
-	if err := json.Unmarshal(bz, &cj); err != nil {
-		return errors.Wrap(err, "unmarshal chain")
-	}
-
-	blockPeriod, err := time.ParseDuration(cj.BlockPeriod)
-	if err != nil {
-		return errors.Wrap(err, "parse block period")
-	}
-
-	var portalAddr common.Address
-	if cj.PortalAddress != "" {
-		portalAddr = common.HexToAddress(cj.PortalAddress)
-	}
-
-	*c = Chain{
-		ID:                cj.ID,
-		Name:              cj.Name,
-		PortalAddress:     portalAddr,
-		DeployHeight:      cj.DeployHeight,
-		BlockPeriod:       blockPeriod,
-		FinalizationStrat: cj.FinalizationStrat,
-	}
-
-	return nil
-}
-
-// MarshalJSON implements the json.Marshaler interface.
-func (c Chain) MarshalJSON() ([]byte, error) {
-	portalAddr := c.PortalAddress.Hex()
-	if c.PortalAddress == (common.Address{}) {
-		portalAddr = ""
-	}
-
-	cj := chainJSON{
-		ID:                c.ID,
-		Name:              c.Name,
-		PortalAddress:     portalAddr,
-		DeployHeight:      c.DeployHeight,
-		BlockPeriod:       c.BlockPeriod.String(),
-		FinalizationStrat: c.FinalizationStrat,
-	}
-
-	bz, err := json.Marshal(cj)
-	if err != nil {
-		return nil, errors.Wrap(err, "marshal chain")
-	}
-
-	return bz, nil
 }
