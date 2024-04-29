@@ -5,6 +5,7 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
+	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/cometbft/cometbft/crypto"
 	ed "github.com/cometbft/cometbft/crypto/ed25519"
@@ -91,6 +92,31 @@ func Generate(typ Type) Key {
 	case P2PConsensus:
 		return Key{
 			PrivKey: ed.GenPrivKey(),
+		}
+	default:
+		panic("invalid key type:" + typ)
+	}
+}
+
+// GenerateInsecureDeterministic generates an insecure deterministic key of the specified type
+// from the provided seed.
+// NOTE THIS MUST ONLY BE USED FOR TESTING: It panics if network is not ephemeral.
+func GenerateInsecureDeterministic(network netconf.ID, typ Type, seed string) Key {
+	if !network.IsEphemeral() {
+		panic("only ephemeral keys are supported")
+	}
+
+	secret := []byte(string(typ) + "|" + seed) // Deterministic secret from typ+seed.
+
+	switch typ {
+	case Validator, P2PExecution, EOA:
+		return Key{
+			PrivKey: k1.GenPrivKeySecp256k1(secret),
+		}
+
+	case P2PConsensus:
+		return Key{
+			PrivKey: ed.GenPrivKeyFromSecret(secret),
 		}
 	default:
 		panic("invalid key type:" + typ)

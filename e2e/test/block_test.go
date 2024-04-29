@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/omni-network/omni/lib/netconf"
+
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 
 	"github.com/stretchr/testify/assert"
@@ -16,7 +18,7 @@ func TestBlock_Header(t *testing.T) {
 	ctx := context.Background()
 	blocks := fetchBlockChain(ctx, t)
 
-	testNode(t, func(t *testing.T, node e2e.Node, _ []Portal) {
+	testNode(t, func(t *testing.T, _ netconf.Network, node *e2e.Node, _ []Portal) {
 		t.Helper()
 		if node.Mode == e2e.ModeSeed {
 			return
@@ -57,7 +59,7 @@ func TestBlock_Range(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	testNode(t, func(t *testing.T, node e2e.Node, _ []Portal) {
+	testNode(t, func(t *testing.T, _ netconf.Network, node *e2e.Node, _ []Portal) {
 		t.Helper()
 		if node.Mode == e2e.ModeSeed {
 			return

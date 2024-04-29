@@ -1,6 +1,6 @@
 network = "staging"
 public_chains = ["op_sepolia"]
-anvil_chains = ["mock_l1"]
+anvil_chains = ["slow_l1"]
 multi_omni_evms = true
 prometheus = true
 explorer = true

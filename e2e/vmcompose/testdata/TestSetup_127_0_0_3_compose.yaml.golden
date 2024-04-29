@@ -16,7 +16,7 @@ services:
       - anvil
       - --host=0.0.0.0
       - --chain-id=1652
-      - --block-time=12
+      - --block-time=1
       - --silent
       - --load-state=/anvil/state.json
     ports:
