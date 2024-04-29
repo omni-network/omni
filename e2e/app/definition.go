@@ -392,9 +392,6 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 		if infd.Provider == docker.ProviderName {
 			internalIP = chain.Name // For docker, we use container names
 		}
-		if infd.Provider == vmcompose.ProviderName {
-			chain.BlockPeriod = time.Second * 12 // Slow block times for anvils on long-lived VMs to reduce disk usage.
-		}
 
 		anvils = append(anvils, types.AnvilChain{
 			Chain:       chain,
@@ -424,8 +421,13 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 // getOrGenKey gets (based on manifest) or creates a private key for the given node and type.
 func getOrGenKey(ctx context.Context, manifest types.Manifest, nodeName string, typ key.Type) (key.Key, error) {
 	addr, ok := manifest.Keys[nodeName][typ]
-	if !ok {
-		// No key in manifest, generate a new one.
+	if !ok { // No key in manifest
+		// Generate an insecure deterministic key for devnet
+		if manifest.Network == netconf.Devnet {
+			return key.GenerateInsecureDeterministic(manifest.Network, typ, nodeName), nil
+		}
+
+		// Otherwise generate a proper key
 		return key.Generate(typ), nil
 	}
 

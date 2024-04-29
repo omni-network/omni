@@ -127,6 +127,9 @@ func (p *Provider) stream(
 			break
 		}
 	}
+	if workers == 0 {
+		return errors.New("zero workers [BUG]")
+	}
 
 	deps := stream.Deps[xchain.Block]{
 		FetchWorkers: workers,
