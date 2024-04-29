@@ -1,285 +1,44 @@
 package eoa
 
 import (
-	"math/big"
-
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/netconf"
-
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
 )
 
-var (
-	gwei10k = new(big.Int).Mul(big.NewInt(10000), big.NewInt(params.GWei))
-	gwei50k = new(big.Int).Mul(big.NewInt(50000), big.NewInt(params.GWei))
-
-	ether1   = new(big.Int).Mul(big.NewInt(1), big.NewInt(params.Ether))
-	ether5   = new(big.Int).Mul(big.NewInt(5), big.NewInt(params.Ether))
-	ether10  = new(big.Int).Mul(big.NewInt(10), big.NewInt(params.Ether))
-	ether100 = new(big.Int).Mul(big.NewInt(100), big.NewInt(params.Ether))
-
-	minBalanceSmall    = gwei10k
-	targetBalanceSmall = gwei50k
-
-	minBalanceMedium    = ether1
-	targetBalanceMedium = ether5
-
-	minBalanceLarge    = ether10
-	targetBalanceLarge = ether100
+const (
+	// fbFunder is the address of the fireblocks "funder" account.
+	fbFunder  = "0xf63316AA39fEc9D2109AB0D9c7B1eE3a6F60AEA4"
+	fbDev     = "0x7a6cF389082dc698285474976d7C75CAdE08ab7e"
+	ZeroXDead = "0x000000000000000000000000000000000000dead"
 )
 
 //nolint:gochecknoglobals // Static mappings.
 var statics = map[netconf.ID][]Account{
-	netconf.Devnet: {
-		{
-			Type:          TypeRemote,
-			Role:          RoleCreate3Deployer,
-			Address:       devnetCreate3Deployer,
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceSmall,
-			TargetBalance: targetBalanceSmall,
-		},
-		{
-			Type:          TypeRemote,
-			Role:          RoleDeployer,
-			Address:       devnetDeployer,
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceLarge,
-			TargetBalance: targetBalanceLarge,
-		},
-		{
-			Type:          TypeRemote,
-			Role:          RoleProxyAdminOwner,
-			Address:       devnetAdmin,
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceLarge,
-			TargetBalance: targetBalanceLarge,
-		},
-		{
-			Type:          TypeRemote,
-			Role:          RolePortalAdmin,
-			Address:       devnetAdmin,
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceLarge,
-			TargetBalance: targetBalanceLarge,
-		},
-		{
-			Type:          TypeRemote,
-			Role:          RoleAVSAdmin,
-			Address:       devnetAdmin,
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceLarge,
-			TargetBalance: targetBalanceLarge,
-		},
-		{
-			Type:          TypeWellKnown,
-			Role:          RoleRelayer,
-			Address:       anvil.DevAccount5(),
-			privateKey:    anvil.DevPrivateKey5(),
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceLarge,
-			TargetBalance: targetBalanceLarge,
-		},
-		{
-			Type:          TypeWellKnown,
-			Role:          RoleMonitor,
-			Address:       anvil.DevAccount6(),
-			privateKey:    anvil.DevPrivateKey6(),
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceLarge,
-			TargetBalance: targetBalanceLarge,
-		},
-		{
-			Type:          TypeRemote,
-			Role:          RoleFbDev,
-			Address:       common.HexToAddress(fbDev),
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceLarge,
-			TargetBalance: targetBalanceLarge,
-		},
-	},
-	netconf.Staging: {
-		{
-			Type:          TypeRemote,
-			Role:          RoleCreate3Deployer,
-			Address:       stagingCreate3Deployer,
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceSmall,
-			TargetBalance: targetBalanceSmall,
-		},
-
-		{
-			Type:          TypeRemote,
-			Role:          RoleDeployer,
-			Address:       stagingDeployer,
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceMedium,
-			TargetBalance: targetBalanceMedium,
-		},
-		{
-			Type:          TypeRemote,
-			Role:          RoleProxyAdminOwner,
-			Address:       stagingAdmin,
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceMedium,
-			TargetBalance: targetBalanceMedium,
-		},
-		{
-			Type:          TypeRemote,
-			Role:          RolePortalAdmin,
-			Address:       stagingAdmin,
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceMedium,
-			TargetBalance: targetBalanceMedium,
-		},
-		{
-			Type:          TypeRemote,
-			Role:          RoleAVSAdmin,
-			Address:       stagingAdmin,
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceMedium,
-			TargetBalance: targetBalanceMedium,
-		},
-		{
-			Type:          TypeSecret,
-			Role:          RoleRelayer,
-			Address:       stagingRelayer,
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceMedium,
-			TargetBalance: targetBalanceMedium,
-		},
-		{
-			Type:          TypeSecret,
-			Role:          RoleMonitor,
-			Address:       stagingMonitor,
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceSmall,
-			TargetBalance: targetBalanceSmall,
-		},
-		{
-			Type:          TypeRemote,
-			Role:          RoleFbDev,
-			Address:       common.HexToAddress(fbDev),
-			Chains:        chainSelectorAll,
-			MinBalance:    targetBalanceMedium,
-			TargetBalance: targetBalanceMedium,
-		},
-	},
-	netconf.Testnet: {
-		{
-			Type:          TypeRemote,
-			Role:          RoleCreate3Deployer,
-			Address:       testnetCreate3Deployer,
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceSmall,
-			TargetBalance: targetBalanceSmall,
-		},
-		{
-			Type:          TypeRemote,
-			Role:          RoleDeployer,
-			Address:       testnetDeployer,
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceMedium,
-			TargetBalance: targetBalanceMedium,
-		},
-		{
-			Type:          TypeRemote,
-			Role:          RoleProxyAdminOwner,
-			Address:       testnetAdmin,
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceMedium,
-			TargetBalance: targetBalanceMedium,
-		},
-		{
-			Type:          TypeRemote,
-			Role:          RolePortalAdmin,
-			Address:       testnetAdmin,
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceMedium,
-			TargetBalance: targetBalanceMedium,
-		},
-		{
-			Type:          TypeRemote,
-			Role:          RoleAVSAdmin,
-			Address:       testnetAdmin,
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceMedium,
-			TargetBalance: targetBalanceMedium,
-		},
-		{
-			Type:          TypeSecret,
-			Role:          RoleRelayer,
-			Address:       testnetRelayer,
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceMedium,
-			TargetBalance: targetBalanceMedium,
-		},
-		{
-			Type:          TypeSecret,
-			Role:          RoleMonitor,
-			Address:       testnetMonitor,
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceSmall,
-			TargetBalance: targetBalanceSmall,
-		},
-	},
-	netconf.Mainnet: {
-		{
-			Type:          TypeRemote,
-			Role:          RoleCreate3Deployer,
-			Address:       mainnetCreate3Deployer,
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceSmall,
-			TargetBalance: targetBalanceSmall,
-		},
-		{
-			Type:          TypeRemote,
-			Role:          RoleDeployer,
-			Address:       mainnetDeployer,
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceMedium,
-			TargetBalance: targetBalanceMedium,
-		},
-		{
-			Type:          TypeRemote,
-			Role:          RoleProxyAdminOwner,
-			Address:       mainnetAdmin,
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceMedium,
-			TargetBalance: targetBalanceMedium,
-		},
-		{
-			Type:          TypeRemote,
-			Role:          RolePortalAdmin,
-			Address:       mainnetAdmin,
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceMedium,
-			TargetBalance: targetBalanceMedium,
-		},
-		{
-			Type:          TypeRemote,
-			Role:          RoleAVSAdmin,
-			Address:       mainnetAdmin,
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceMedium,
-			TargetBalance: targetBalanceMedium,
-		},
-		{
-			Type:          TypeSecret,
-			Role:          RoleRelayer,
-			Address:       mainnetRelayer,
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceMedium,
-			TargetBalance: targetBalanceMedium,
-		},
-		{
-			Type:          TypeSecret,
-			Role:          RoleMonitor,
-			Address:       mainnetMonitor,
-			Chains:        chainSelectorAll,
-			MinBalance:    minBalanceSmall,
-			TargetBalance: targetBalanceSmall,
-		},
-	},
+	netconf.Devnet: flatten(
+		wellKnown(anvil.DevPrivateKey0(), RoleCreate3Deployer, RoleDeployer, RoleProxyAdminOwner, RolePortalAdmin, RoleAVSAdmin),
+		wellKnown(anvil.DevPrivateKey5(), RoleRelayer),
+		wellKnown(anvil.DevPrivateKey6(), RoleMonitor),
+		fbDevAcc(),
+	),
+	netconf.Staging: flatten(
+		remote("0x4891925c4f13A34FC26453FD168Db80aF3273014", RoleProxyAdminOwner, RolePortalAdmin, RoleAVSAdmin),
+		remote("0xC8103859Ac7CB547d70307EdeF1A2319FC305fdC", RoleCreate3Deployer),
+		remote("0x274c4B3e5d27A65196d63964532366872F81D261", RoleDeployer),
+		secret("0xfE921e06Ed0a22c035b4aCFF0A5D3a434A330c96", RoleRelayer),
+		secret("0x0De553555Fa19d787Af4273B18bDB77282D618c4", RoleMonitor),
+		fbDevAcc(),
+	),
+	netconf.Testnet: flatten(
+		remote("0xEAD625eB2011394cdD739E91Bf9D51A7169C22F5", RoleProxyAdminOwner, RolePortalAdmin, RoleAVSAdmin),
+		remote("0xeC5134556da0797A5C5cD51DD622b689Cac97Fe9", RoleCreate3Deployer),
+		remote("0x0CdCc644158b7D03f40197f55454dc7a11Bd92c1", RoleDeployer),
+		secret("0x01654f55E4F5E2f2ff8080702676F1984CBf7d8a", RoleRelayer),
+		secret("0x12Dc870b3F5b7f810c3d1e489e32a64d4E25AaCA", RoleMonitor),
+		fbDevAcc(),
+	),
+	netconf.Mainnet: flatten(
+		dummy(RoleProxyAdminOwner, RolePortalAdmin, RoleAVSAdmin, RoleCreate3Deployer, RoleDeployer, RoleFbDev),
+		secret("0x07804D7B8be635c0C68Cdf3E946114221B12f4F7", RoleRelayer),
+		secret("0x07082fcbFA5F5AC9FBc03A48B7f6391441DB8332", RoleMonitor),
+	),
 }

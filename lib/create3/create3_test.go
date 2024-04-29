@@ -31,6 +31,6 @@ func TestAddress(t *testing.T) {
 	// test case is Devent proxy admin deployment
 
 	factory := common.HexToAddress("0x5FbDB2315678afecb367f032d93F642f64180aa3")
-	expected := common.HexToAddress("0x733AA9e7E4025E9F69DBEd9e05155e081D720565")
+	expected := common.HexToAddress("0xd8dc3f2817F4d87200443FBaEdE5ab8D5d742465")
 	require.Equal(t, expected, create3.Address(factory, "devnet-proxy-admin", eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer)))
 }

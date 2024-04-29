@@ -16,6 +16,8 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
+const saneMaxEther = 5 // Maximum amount to fund in ether. // TODO(corver): Increase this.
+
 // noAnvilDev returns a list of accounts that are not dev anvil accounts.
 func noAnvilDev(accounts []common.Address) []common.Address {
 	var nonDevAccounts []common.Address
@@ -62,7 +64,18 @@ func FundEOAAccounts(ctx context.Context, def Definition) error {
 	}
 
 	for _, account := range accounts {
-		for _, chain := range account.Chains(network) {
+		if account.Address == common.HexToAddress(eoa.ZeroXDead) {
+			log.Info(ctx, "Skipping 0xdead account", "role", account.Role)
+			continue
+		}
+
+		for _, chain := range network.EVMChains() {
+			thresholds, ok := eoa.GetFundThresholds(network.ID, account.Role)
+			if !ok {
+				log.Warn(ctx, "Skipping account without fund thresholds", nil, "role", account.Role)
+				continue
+			}
+
 			backend, err := def.Backends().Backend(chain.ID)
 			if err != nil {
 				return errors.Wrap(err, "backend")
@@ -74,54 +87,69 @@ func FundEOAAccounts(ctx context.Context, def Definition) error {
 				continue
 			}
 
-			bf, _ := balance.Float64()
-			bf /= params.Ether
+			if thresholds.MinBalance().Cmp(balance) < 0 {
+				log.Info(ctx,
+					"Not funding account, balance sufficient",
+					"chain", chain.Name,
+					"role", account.Role,
+					"address", account.Address,
+					"type", account.Type,
+					"balance", etherStr(balance),
+					"min_threshold", etherStr(thresholds.MinBalance()),
+				)
 
-			fund := account.MinBalance.Cmp(balance) > 0
-
-			log.Info(ctx,
-				"Account",
-				"address", account.Address,
-				"type", account.Type,
-				"role", account.Role,
-				"balance", fmt.Sprintf("%.2f ETH", bf),
-				"funding", fund,
-			)
-
-			if fund {
 				continue
 			}
 
-			target := new(big.Int).Sub(account.TargetBalance, balance)
-			if target.Cmp(big.NewInt(0)) <= 0 {
+			saneMax := new(big.Int).Mul(big.NewInt(saneMaxEther), big.NewInt(params.Ether))
+
+			amount := new(big.Int).Sub(thresholds.TargetBalance(), balance)
+			if amount.Cmp(big.NewInt(0)) <= 0 {
+				return errors.New("unexpected negative amount")
+			} else if amount.Cmp(saneMax) > 0 {
+				log.Warn(ctx, "Funding amount exceeds sane max, skipping", nil,
+					"chain", chain.Name,
+					"role", account.Role,
+					"amount", etherStr(amount),
+					"max", etherStr(saneMax),
+				)
+
 				continue
 			}
 
 			tx, _, err := backend.Send(ctx, eoa.Funder(), txmgr.TxCandidate{
 				To:       &account.Address,
 				GasLimit: 100_000,
-				Value:    target,
+				Value:    amount,
 			})
 
 			if err != nil {
 				return errors.Wrap(err, "send tx")
-			} else if _, err := backend.WaitMined(ctx, tx); err != nil {
-				return errors.Wrap(err, "wait mined")
 			}
 
-			b, err := backend.EtherBalanceAt(ctx, account.Address)
+			b, err := backend.BalanceAt(ctx, account.Address, nil)
 			if err != nil {
 				return errors.Wrap(err, "get balance")
 			}
 
 			log.Info(ctx, "Account funded",
+				"chain", chain.Name,
+				"role", account.Role,
 				"address", account.Address,
 				"type", account.Type,
-				"role", account.Role,
-				"balance", fmt.Sprintf("%.2f ETH", b),
+				"amount_funded", etherStr(amount),
+				"resulting_balance", etherStr(b),
+				"tx", tx.Hash().Hex(),
 			)
 		}
 	}
 
 	return nil
+}
+
+func etherStr(amount *big.Int) string {
+	b, _ := amount.Float64()
+	b /= params.Ether
+
+	return fmt.Sprintf("%.4f", b)
 }
