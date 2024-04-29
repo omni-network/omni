@@ -127,18 +127,18 @@ export default function XMsgDataTable() {
     () => [
       {
         ...columnConfig,
-        accessorKey: 'timeStamp',
+        accessorKey: 'Node.SourceBlockTime',
         header: () => <span>Age</span>,
         cell: (value: any) => (
           <span className="text-subtlest font-bold text-b-xs">
             {' '}
-            {dateFormatter(value.getValue())}
+            {dateFormatter(new Date(value.getValue()))}
           </span>
         ),
       },
       {
         ...columnConfig,
-        accessorKey: 'status',
+        accessorKey: 'Node.Status',
         header: () => <span>Status</span>,
         cell: (value: any) => <Tag status={value.getValue()} />,
       },
@@ -191,7 +191,7 @@ export default function XMsgDataTable() {
       },
       {
         ...columnConfig,
-        accessorKey: 'Node.BlockHash',
+        accessorKey: 'Node.TxHash',
         header: () => <span>Tx Hash</span>,
         cell: (value: any) => (
           <>
@@ -247,7 +247,7 @@ export default function XMsgDataTable() {
       },
       {
         ...columnConfig,
-        accessorKey: 'Node.TxHash',
+        accessorKey: 'Node.ReceiptTxHash',
         header: () => <span>Tx Hash</span>,
         cell: (value: any) => (
           <>

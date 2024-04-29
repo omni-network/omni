@@ -78,7 +78,8 @@ export const loader: LoaderFunction = async ({ request }) => {
     return json({
       supportedChains,
       xmsgCount: xmsgRes.data?.xmsgs?.TotalCount || '0x0',
-      startCursor: xmsgRes.data?.xmsgs?.PageInfo?.StartCursor || null,
+      nextCursor: xmsgRes.data?.xmsgs?.PageInfo?.NextCursor || null,
+      prevCursor: xmsgRes.data?.xmsgs?.PageInfo?.PrevCursor || null,
       xmsgs: xmsgsList,
     })
   }

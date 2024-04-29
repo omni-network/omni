@@ -76,12 +76,13 @@ export const xmsgs: typeof XMsgsDocument = gql(`
           BlockHeight
           BlockHash
           Status
-          BlockTime
-          ReceiptHash
+          SourceBlockTime
+          ReceiptTxHash
         }
       }
       PageInfo {
-        StartCursor
+        NextCursor
+        PrevCursor
         HasNextPage
       }
     }
