@@ -22,7 +22,8 @@ export const meta: MetaFunction = () => {
 export type XmsgResponse = {
   supportedChains: any[]
   xmsgCount: string
-  startCursor: string
+  nextCursor: string
+  prevCursor: string
   xmsgs: any[]
 }
 
@@ -34,7 +35,6 @@ export const loader: LoaderFunction = async ({ request }) => {
   for (const [key, value] of url.searchParams) {
     params[key] = value
   }
-  
 
   const variables = {
     limit: ('0x' + (10).toString(16)) as never,
