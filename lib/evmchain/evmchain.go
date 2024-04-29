@@ -3,6 +3,8 @@ package evmchain
 
 import (
 	"time"
+
+	"github.com/omni-network/omni/lib/tokens"
 )
 
 const (
@@ -30,6 +32,7 @@ type Metadata struct {
 	ChainID     uint64
 	Name        string
 	BlockPeriod time.Duration
+	NativeToken tokens.Token
 }
 
 func MetadataByID(chainID uint64) (Metadata, bool) {
@@ -52,50 +55,60 @@ var static = map[uint64]Metadata{
 		ChainID:     IDEthereum,
 		Name:        "ethereum",
 		BlockPeriod: 12 * time.Second,
+		NativeToken: tokens.ETH,
 	},
 	IDOmniMainnet: {
 		ChainID:     IDOmniMainnet,
 		Name:        omniEVMName,
 		BlockPeriod: omniEVMBlockPeriod,
+		NativeToken: tokens.OMNI,
 	},
 	IDOmniTestnet: {
 		ChainID:     IDOmniTestnet,
 		Name:        omniEVMName,
 		BlockPeriod: omniEVMBlockPeriod,
+		NativeToken: tokens.OMNI,
 	},
 	IDHolesky: {
 		ChainID:     IDHolesky,
 		Name:        "holesky",
 		BlockPeriod: 12 * time.Second,
+		NativeToken: tokens.ETH,
 	},
 	IDArbSepolia: {
 		ChainID:     IDArbSepolia,
 		Name:        "arb_sepolia",
 		BlockPeriod: 300 * time.Millisecond,
+		NativeToken: tokens.ETH,
 	},
 	IDOpSepolia: {
 		ChainID:     IDOpSepolia,
 		Name:        "op_sepolia",
 		BlockPeriod: 2 * time.Second,
+		NativeToken: tokens.ETH,
 	},
 	IDOmniEphemeral: {
 		ChainID:     IDOmniEphemeral,
 		Name:        omniEVMName,
 		BlockPeriod: omniEVMBlockPeriod,
+		NativeToken: tokens.OMNI,
 	},
 	IDMockL1Fast: {
 		ChainID:     IDMockL1Fast,
 		Name:        "mock_l1",
 		BlockPeriod: time.Second,
+		NativeToken: tokens.ETH,
 	},
 	IDMockL1Slow: {
 		ChainID:     IDMockL1Slow,
 		Name:        "slow_l1",
 		BlockPeriod: time.Second * 12,
+		NativeToken: tokens.ETH,
 	},
 	IDMockL2: {
 		ChainID:     IDMockL2,
 		Name:        "mock_l2",
 		BlockPeriod: time.Second,
+		NativeToken: tokens.ETH,
 	},
 }

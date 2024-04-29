@@ -9,7 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omni-network/omni/lib/coingecko"
+	"github.com/omni-network/omni/lib/price/coingecko"
+	"github.com/omni-network/omni/lib/tokens"
 
 	"github.com/stretchr/testify/require"
 )
@@ -51,10 +52,10 @@ func TestGetPrice(t *testing.T) {
 	defer ts.Close()
 
 	c := coingecko.New(coingecko.WithHost(ts.URL))
-	prices, err := c.GetPrice(context.Background(), coingecko.USD, "omni-network", "ethereum")
+	prices, err := c.Price(context.Background(), tokens.OMNI, tokens.ETH)
 	require.NoError(t, err)
-	require.InEpsilon(t, prices["omni-network"], testPrices["omni-network"]["usd"], 0.01)
-	require.InEpsilon(t, prices["ethereum"], testPrices["ethereum"]["usd"], 0.01)
+	require.InEpsilon(t, prices[tokens.OMNI], testPrices[tokens.OMNI.CoingeckoID()]["usd"], 0.01)
+	require.InEpsilon(t, prices[tokens.ETH], testPrices[tokens.ETH.CoingeckoID()]["usd"], 0.01)
 }
 
 func randPrice() float64 {

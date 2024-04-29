@@ -123,7 +123,7 @@ func (d *XDapp) fund(ctx context.Context) error {
 			return err
 		}
 
-		fund := new(big.Int).Div(big.NewInt(params.Ether), big.NewInt(10)) // Fund it with 0.1 ETH
+		fund := new(big.Int).Div(big.NewInt(params.Ether), big.NewInt(2)) // Fund it with 0.5 ETH
 		txOpts.Value = fund
 
 		tx, err := contract.PingPong.Receive(txOpts)

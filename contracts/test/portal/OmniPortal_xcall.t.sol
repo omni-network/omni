@@ -82,11 +82,12 @@ contract OmniPortal_xcall_Test is Base {
     /// @dev Test that xcall with destChainId == portal.chainId reverts
     function test_xcall_sameChain_reverts() public {
         XTypes.Msg memory xmsg = _outbound_increment();
-        xmsg.destChainId = portal.chainId();
+        xmsg.destChainId = thisChainId;
 
         uint256 fee = portal.feeFor(xmsg.destChainId, xmsg.data, xmsg.gasLimit);
 
         vm.expectRevert("OmniPortal: no same-chain xcall");
+        vm.chainId(thisChainId);
         portal.xcall{ value: fee }(xmsg.destChainId, xmsg.to, xmsg.data, xmsg.gasLimit);
     }
 }
