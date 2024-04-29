@@ -1,7 +1,6 @@
 # Devnet1 is the simple multi-validator devnet. It contains 2 validators.
 network = "devnet"
-anvil_chains = ["mock_l1", "mock_rollup"]
-avs_target = "mock_l1"
+anvil_chains = ["mock_l1", "mock_l2"]
 
 multi_omni_evms = true
 prometheus = true

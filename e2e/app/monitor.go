@@ -17,10 +17,9 @@ import (
 )
 
 func LogMetrics(ctx context.Context, def Definition) error {
-	extNetwork := externalNetwork(def)
+	extNetwork := networkFromDef(def)
 
 	// Pick a random node to monitor.
-
 	if err := MonitorCProvider(ctx, random(def.Testnet.Nodes), extNetwork); err != nil {
 		return errors.Wrap(err, "monitoring cchain provider")
 	}
@@ -40,8 +39,8 @@ func StartMonitoringReceipts(ctx context.Context, def Definition) func() error {
 		return func() error { return errors.Wrap(err, "getting client") }
 	}
 
-	network := externalNetwork(def)
-	cProvider := cprovider.NewABCIProvider(client, def.Testnet.Network, network.ChainNamesByIDs())
+	network := networkFromDef(def)
+	cProvider := cprovider.NewABCIProvider(client, def.Testnet.Network, netconf.ChainNamer(def.Testnet.Network))
 	xProvider := xprovider.New(network, def.Backends().RPCClients(), cProvider)
 	cChainID := def.Testnet.Network.Static().OmniConsensusChainIDUint64()
 
@@ -114,7 +113,6 @@ func StartMonitoringReceipts(ctx context.Context, def Definition) func() error {
 }
 
 func MonitorCursors(ctx context.Context, portals map[uint64]netman.Portal, network netconf.Network) error {
-	network.EthereumChain()
 	for _, dest := range network.EVMChains() {
 		for _, src := range network.EVMChains() {
 			if src.ID == dest.ID {
@@ -149,7 +147,7 @@ func MonitorCProvider(ctx context.Context, node *e2e.Node, network netconf.Netwo
 		return errors.Wrap(err, "getting client")
 	}
 
-	cprov := cprovider.NewABCIProvider(client, network.ID, network.ChainNamesByIDs())
+	cprov := cprovider.NewABCIProvider(client, network.ID, netconf.ChainNamer(network.ID))
 
 	for _, chain := range network.Chains {
 		atts, err := cprov.AttestationsFrom(ctx, chain.ID, chain.DeployHeight)

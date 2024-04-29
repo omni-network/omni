@@ -38,6 +38,11 @@ type DeployConfig struct {
 // Deploy a new e2e network. It also starts all services in order to deploy private portals.
 // It also returns an optional deployed ping pong contract is enabled.
 func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XDapp, error) {
+	if def.Testnet.Network.IsProtected() {
+		// If a protected network needs to be deployed temporarily comment out this check.
+		return nil, errors.New("cannot deploy protected network", "network", def.Testnet.Network)
+	}
+
 	if err := Cleanup(ctx, def); err != nil {
 		return nil, err
 	}
@@ -257,10 +262,12 @@ func toPortalValidators(validators map[*e2e.Node]int64) ([]bindings.Validator, e
 }
 
 func logRPCs(ctx context.Context, def Definition) {
-	network := externalNetwork(def)
+	network := networkFromDef(def)
+	endpoints := externalEndpoints(def)
 	for _, chain := range network.EVMChains() {
+		rpc, _ := endpoints.ByNameOrID(chain.Name, chain.ID)
 		log.Info(ctx, "EVM Chain RPC available", "chain_id", chain.ID,
-			"chain_name", chain.Name, "url", chain.RPCURL)
+			"chain_name", chain.Name, "url", rpc)
 	}
 }
 

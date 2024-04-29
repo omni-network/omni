@@ -41,7 +41,7 @@ func NewFireBackends(ctx context.Context, testnet types.Testnet, fireCl firebloc
 			return Backends{}, errors.Wrap(err, "dial")
 		}
 
-		inner[chain.Chain.ID], err = NewFireBackend(ctx, chain.Chain.Name, chain.Chain.ID, chain.Chain.BlockPeriod, ethCl, fireCl)
+		inner[chain.Chain.ChainID], err = NewFireBackend(ctx, chain.Chain.Name, chain.Chain.ChainID, chain.Chain.BlockPeriod, ethCl, fireCl)
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "new omni Backend")
 		}
@@ -54,7 +54,7 @@ func NewFireBackends(ctx context.Context, testnet types.Testnet, fireCl firebloc
 			return Backends{}, errors.Wrap(err, "dial")
 		}
 
-		inner[chain.Chain.ID], err = NewFireBackend(ctx, chain.Chain.Name, chain.Chain.ID, chain.Chain.BlockPeriod, ethCl, fireCl)
+		inner[chain.Chain.ChainID], err = NewFireBackend(ctx, chain.Chain.Name, chain.Chain.ChainID, chain.Chain.BlockPeriod, ethCl, fireCl)
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "new anvil Backend")
 		}
@@ -67,7 +67,7 @@ func NewFireBackends(ctx context.Context, testnet types.Testnet, fireCl firebloc
 			return Backends{}, errors.Wrap(err, "dial")
 		}
 
-		inner[chain.Chain().ID], err = NewFireBackend(ctx, chain.Chain().Name, chain.Chain().ID, chain.Chain().BlockPeriod, ethCl, fireCl)
+		inner[chain.Chain().ChainID], err = NewFireBackend(ctx, chain.Chain().Name, chain.Chain().ChainID, chain.Chain().BlockPeriod, ethCl, fireCl)
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "new public Backend")
 		}
@@ -108,12 +108,12 @@ func NewBackends(testnet types.Testnet, deployKeyFile string) (Backends, error) 
 
 		// dev omni evm uses same dev accounts as anvil
 		// TODO: do not use dev anvil backend for prod omni evms
-		backend, err := NewAnvilBackend(chain.Chain.Name, chain.Chain.ID, chain.Chain.BlockPeriod, ethCl)
+		backend, err := NewAnvilBackend(chain.Chain.Name, chain.Chain.ChainID, chain.Chain.BlockPeriod, ethCl)
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "new omni Backend")
 		}
 
-		inner[chain.Chain.ID] = backend
+		inner[chain.Chain.ChainID] = backend
 	}
 
 	// Configure anvil EVM Backends
@@ -123,12 +123,12 @@ func NewBackends(testnet types.Testnet, deployKeyFile string) (Backends, error) 
 			return Backends{}, errors.Wrap(err, "dial")
 		}
 
-		backend, err := NewAnvilBackend(chain.Chain.Name, chain.Chain.ID, chain.Chain.BlockPeriod, ethCl)
+		backend, err := NewAnvilBackend(chain.Chain.Name, chain.Chain.ChainID, chain.Chain.BlockPeriod, ethCl)
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "new anvil Backend")
 		}
 
-		inner[chain.Chain.ID] = backend
+		inner[chain.Chain.ChainID] = backend
 	}
 
 	// Configure public EVM Backends
@@ -141,7 +141,7 @@ func NewBackends(testnet types.Testnet, deployKeyFile string) (Backends, error) 
 			return Backends{}, errors.Wrap(err, "dial")
 		}
 
-		inner[chain.Chain().ID], err = NewBackend(chain.Chain().Name, chain.Chain().ID, chain.Chain().BlockPeriod, ethCl, publicDeployKey)
+		inner[chain.Chain().ChainID], err = NewBackend(chain.Chain().Name, chain.Chain().ChainID, chain.Chain().BlockPeriod, ethCl, publicDeployKey)
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "new public Backend")
 		}

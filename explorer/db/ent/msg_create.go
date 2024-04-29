@@ -111,6 +111,14 @@ func (mc *MsgCreate) SetBlockHeight(u uint64) *MsgCreate {
 	return mc
 }
 
+// SetNillableBlockHeight sets the "BlockHeight" field if the given value is not nil.
+func (mc *MsgCreate) SetNillableBlockHeight(u *uint64) *MsgCreate {
+	if u != nil {
+		mc.SetBlockHeight(*u)
+	}
+	return mc
+}
+
 // SetReceiptHash sets the "ReceiptHash" field.
 func (mc *MsgCreate) SetReceiptHash(b []byte) *MsgCreate {
 	mc.mutation.SetReceiptHash(b)
@@ -282,9 +290,6 @@ func (mc *MsgCreate) check() error {
 		if err := msg.BlockHashValidator(v); err != nil {
 			return &ValidationError{Name: "BlockHash", err: fmt.Errorf(`ent: validator failed for field "Msg.BlockHash": %w`, err)}
 		}
-	}
-	if _, ok := mc.mutation.BlockHeight(); !ok {
-		return &ValidationError{Name: "BlockHeight", err: errors.New(`ent: missing required field "Msg.BlockHeight"`)}
 	}
 	if v, ok := mc.mutation.ReceiptHash(); ok {
 		if err := msg.ReceiptHashValidator(v); err != nil {

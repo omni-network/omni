@@ -17,7 +17,7 @@ func SetupDataFixtures(t *testing.T) (string, string) {
 	// Write manifest to disk
 	manifest := `
 network = "devnet"
-anvil_chains = ["chain_a"]
+anvil_chains = ["mock_l1"]
 multi_omni_evms = true
 explorer=true
 
@@ -53,7 +53,7 @@ mode = "full"
 			"validator02":     vm2,
 			"validator02_evm": vm2,
 
-			"chain_a": vm3,
+			"mock_l1": vm3,
 			"relayer": vm3,
 
 			"seed01":     vm4,

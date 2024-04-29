@@ -25,4 +25,4 @@ Flags:
       --force            Force initialization (overwrite existing files)
   -h, --help             help for init
       --home string      The application home directory containing config and data (default "./halo")
-      --network string   The network to initialize (default "simnet")
+      --network string   Omni network to participate in: mainnet, testnet, devnet (default "simnet")

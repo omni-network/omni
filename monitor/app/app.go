@@ -5,13 +5,19 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/xchain"
 	"github.com/omni-network/omni/monitor/account"
 	"github.com/omni-network/omni/monitor/avs"
 	"github.com/omni-network/omni/monitor/loadgen"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -22,16 +28,21 @@ func Run(ctx context.Context, cfg Config) error {
 
 	buildinfo.Instrument(ctx)
 
-	network, err := netconf.Load(cfg.NetworkFile)
+	portalReg, err := makePortalRegistry(cfg.Network, cfg.RPCEndpoints)
 	if err != nil {
 		return err
 	}
 
-	if err := avs.Monitor(ctx, network); err != nil {
+	network, err := netconf.AwaitOnChain(ctx, cfg.Network, portalReg, cfg.RPCEndpoints.Keys())
+	if err != nil {
+		return err
+	}
+
+	if err := avs.Monitor(ctx, network, cfg.RPCEndpoints); err != nil {
 		return errors.Wrap(err, "monitor AVS")
 	}
 
-	if err := account.Monitor(ctx, network); err != nil {
+	if err := account.Monitor(ctx, network, cfg.RPCEndpoints); err != nil {
 		return errors.Wrap(err, "monitor account balances")
 	}
 
@@ -74,9 +85,29 @@ func serveMonitoring(address string) <-chan error {
 }
 
 func startLoadGen(ctx context.Context, cfg Config, network netconf.Network) error {
-	if err := loadgen.Start(ctx, network, cfg.LoadGen); err != nil {
+	if err := loadgen.Start(ctx, network, cfg.RPCEndpoints, cfg.LoadGen); err != nil {
 		return errors.Wrap(err, "start load generator")
 	}
 
 	return nil
+}
+
+func makePortalRegistry(network netconf.ID, endpoints xchain.RPCEndpoints) (*bindings.PortalRegistry, error) {
+	meta := netconf.MetadataByID(network, network.Static().OmniExecutionChainID)
+	rpc, err := endpoints.ByNameOrID(meta.Name, meta.ChainID)
+	if err != nil {
+		return nil, err
+	}
+
+	ethCl, err := ethclient.Dial(meta.Name, rpc)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := bindings.NewPortalRegistry(common.HexToAddress(predeploys.PortalRegistry), ethCl)
+	if err != nil {
+		return nil, errors.Wrap(err, "create portal registry")
+	}
+
+	return resp, nil
 }

@@ -46,7 +46,7 @@ services:
     entrypoint:
       - anvil
       - --host=0.0.0.0
-      - --chain-id={{ .Chain.ID }}
+      - --chain-id={{ .Chain.ChainID }}
       - --block-time={{.Chain.BlockPeriod.Seconds}}
       - --silent
       {{ if .LoadState }}- --load-state=/anvil/state.json{{ end }}

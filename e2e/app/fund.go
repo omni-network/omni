@@ -55,7 +55,7 @@ func fundAccounts(ctx context.Context, def Definition) error {
 
 // FundEOAAccounts funds the EOAs that need funding to their target balance.
 func FundEOAAccounts(ctx context.Context, def Definition) error {
-	network := externalNetwork(def)
+	network := networkFromDef(def)
 	accounts, ok := eoa.AllAccounts(network.ID)
 	if !ok {
 		return errors.New("no accounts found", "network", network.ID)

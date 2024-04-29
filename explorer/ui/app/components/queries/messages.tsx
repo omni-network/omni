@@ -75,6 +75,9 @@ export const xmsgs: typeof XMsgsDocument = gql(`
           TxHash
           BlockHeight
           BlockHash
+          Status
+          BlockTime
+          ReceiptHash
         }
       }
       PageInfo {

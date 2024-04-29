@@ -3,14 +3,22 @@ package cmd
 import (
 	halocfg "github.com/omni-network/omni/halo/config"
 	libcmd "github.com/omni-network/omni/lib/cmd"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tracer"
+	"github.com/omni-network/omni/lib/xchain"
 
+	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
-func bindRunFlags(flags *pflag.FlagSet, cfg *halocfg.Config) {
+func bindRunFlags(cmd *cobra.Command, cfg *halocfg.Config) {
+	flags := cmd.Flags()
+
 	libcmd.BindHomeFlag(flags, &cfg.HomeDir)
 	tracer.BindFlags(flags, &cfg.Tracer)
+	xchain.BindFlags(flags, &cfg.RPCEndpoints)
+	netconf.BindFlag(flags, &cfg.Network)
+	flags.StringVar(&cfg.EngineEndpoint, "engine-endpoint", cfg.EngineEndpoint, "An EVM execution client Engine API http endpoint")
 	flags.StringVar(&cfg.EngineJWTFile, "engine-jwt-file", cfg.EngineJWTFile, "The path to the Engine API JWT file")
 	flags.Uint64Var(&cfg.SnapshotInterval, "snapshot-interval", cfg.SnapshotInterval, "State sync snapshot interval")
 	flags.Uint64Var(&cfg.SnapshotKeepRecent, "snapshot-keep-recent", cfg.SnapshotKeepRecent, "State sync snapshot to keep")
@@ -24,7 +32,7 @@ func bindRunFlags(flags *pflag.FlagSet, cfg *halocfg.Config) {
 
 func bindInitFlags(flags *pflag.FlagSet, cfg *InitConfig) {
 	libcmd.BindHomeFlag(flags, &cfg.HomeDir)
-	flags.StringVar((*string)(&cfg.Network), "network", string(cfg.Network), "The network to initialize")
+	netconf.BindFlag(flags, &cfg.Network)
 	flags.BoolVar(&cfg.Force, "force", cfg.Force, "Force initialization (overwrite existing files)")
 	flags.BoolVar(&cfg.Clean, "clean", cfg.Clean, "Delete home directory before initialization")
 }

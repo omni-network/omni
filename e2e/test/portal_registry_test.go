@@ -7,6 +7,7 @@ import (
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -15,13 +16,16 @@ import (
 
 func TestPortalRegistry(t *testing.T) {
 	t.Parallel()
-	testNetwork(t, func(t *testing.T, network netconf.Network) {
+	testNetwork(t, func(t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
 		t.Helper()
 
 		omniEVM, ok := network.OmniEVMChain()
 		require.True(t, ok)
 
-		omniClient, err := ethclient.Dial(omniEVM.Name, omniEVM.RPCURL)
+		rpc, err := endpoints.ByNameOrID(omniEVM.Name, omniEVM.ID)
+		require.NoError(t, err)
+
+		omniClient, err := ethclient.Dial(omniEVM.Name, rpc)
 		require.NoError(t, err)
 
 		// test that all portals are registered

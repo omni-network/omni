@@ -13,6 +13,7 @@ import (
 	halocfg "github.com/omni-network/omni/halo/config"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
 
 	fuzz "github.com/google/gofuzz"
@@ -104,26 +105,44 @@ func TestCLIReference(t *testing.T) {
 	}
 }
 
+//go:generate go test . -run=TestTomlConfig -count=100
+
 func TestTomlConfig(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	var chars = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
+	randomString := func() string {
+		var resp string
+		for i := 0; i < 1+rand.Intn(64); i++ {
+			resp += string(chars[rand.Intn(len(chars))])
+		}
+
+		return resp
+	}
+
 	// Create a fuzzer with small uint64s and ansi strings (toml struggles with large numbers and UTF8).
-	fuzzer := fuzz.New().Funcs(
+	fuzzer := fuzz.New().NumElements(1, 8).Funcs(
 		func(i *uint64, c fuzz.Continue) {
 			*i = uint64(rand.Intn(1_000_000))
 		},
 		func(s *string, c fuzz.Continue) {
-			for i := 0; i < rand.Intn(64); i++ {
-				*s += string(chars[rand.Intn(len(chars))])
-			}
+			*s = randomString()
+		},
+		func(s *netconf.ID, c fuzz.Continue) {
+			*s = netconf.ID(randomString())
 		},
 	)
 
 	var expect halocfg.Config
 	fuzzer.Fuzz(&expect)
 	expect.HomeDir = dir
+
+	// The Toml library converts map keys to lower case. So do this so expect==actual.
+	for k := range expect.RPCEndpoints {
+		expect.RPCEndpoints[strings.ToLower(randomString())] = randomString()
+		delete(expect.RPCEndpoints, k)
+	}
 
 	// Ensure the <home>/config directory exists.
 	require.NoError(t, os.Mkdir(filepath.Join(dir, "config"), 0o755))
@@ -133,7 +152,7 @@ func TestTomlConfig(t *testing.T) {
 
 	// Create a run command that asserts the config is as expected.
 	cmd := newRunCmd("run", func(_ context.Context, actual app.Config) error {
-		require.Equal(t, expect, actual.Config)
+		require.EqualValues(t, expect, actual.Config)
 
 		return nil
 	})
@@ -141,7 +160,7 @@ func TestTomlConfig(t *testing.T) {
 	// Create and execute a root command that runs the run command.
 	rootCmd := libcmd.NewRootCmd("halo", "", cmd)
 	rootCmd.SetArgs([]string{"run", "--home=" + dir})
-	require.NoError(t, rootCmd.Execute())
+	tutil.RequireNoError(t, rootCmd.Execute())
 }
 
 // slice is a convenience function for creating string slice literals.

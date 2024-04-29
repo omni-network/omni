@@ -39,11 +39,11 @@ func Deploy(ctx context.Context, netMgr netman.Manager, backends ethbackend.Back
 
 	// Define a deploy function that deploys a ping pong contract to a chain.
 	deployFunc := func(ctx context.Context, portal netman.Portal) (contract, error) {
-		log.Debug(ctx, "Deploying ping pong contract", "chain", portal.Chain.Name, "chainID", portal.Chain.ID, "portal", portal.DeployInfo.PortalAddress)
+		log.Debug(ctx, "Deploying ping pong contract", "chain", portal.Chain.Name, "chainID", portal.Chain.ChainID, "portal", portal.DeployInfo.PortalAddress)
 
 		portalAddr := portal.DeployInfo.PortalAddress
 
-		txOpts, backend, err := backends.BindOpts(ctx, portal.Chain.ID, operator)
+		txOpts, backend, err := backends.BindOpts(ctx, portal.Chain.ChainID, operator)
 		if err != nil {
 			return contract{}, errors.Wrap(err, "deploy opts")
 		}
@@ -81,7 +81,7 @@ func Deploy(ctx context.Context, netMgr netman.Manager, backends ethbackend.Back
 			return XDapp{}, errors.Wrap(res.Err, "deploy")
 		}
 
-		contracts[res.Input.Chain.ID] = res.Output
+		contracts[res.Input.Chain.ChainID] = res.Output
 	}
 
 	dapp := XDapp{
@@ -98,15 +98,9 @@ func Deploy(ctx context.Context, netMgr netman.Manager, backends ethbackend.Back
 	return dapp, nil
 }
 
-func (d *XDapp) ExportDeployInfo(resp types.DeployInfos) {
-	for chainID, contract := range d.contracts {
-		resp.Set(chainID, types.ContractPingPong, contract.Address, contract.DeployHeight)
-	}
-}
-
 func (d *XDapp) LogBalances(ctx context.Context) error {
 	for _, contract := range d.contracts {
-		backend, err := d.backends.Backend(contract.Chain.ID)
+		backend, err := d.backends.Backend(contract.Chain.ChainID)
 		if err != nil {
 			return err
 		}
@@ -124,7 +118,7 @@ func (d *XDapp) LogBalances(ctx context.Context) error {
 
 func (d *XDapp) fund(ctx context.Context) error {
 	for _, contract := range d.contracts {
-		txOpts, backend, err := d.backends.BindOpts(ctx, contract.Chain.ID, d.operator)
+		txOpts, backend, err := d.backends.BindOpts(ctx, contract.Chain.ChainID, d.operator)
 		if err != nil {
 			return err
 		}
@@ -164,12 +158,12 @@ func (d *XDapp) StartAllEdges(ctx context.Context, parallel, count uint64) error
 
 		for i := uint64(0); i < parallel; i++ {
 			eg.Go(func() error {
-				txOpts, backend, err := d.backends.BindOpts(ctx, from.Chain.ID, d.operator)
+				txOpts, backend, err := d.backends.BindOpts(ctx, from.Chain.ChainID, d.operator)
 				if err != nil {
 					return err
 				}
 
-				tx, err := from.PingPong.Start(txOpts, to.Chain.ID, to.Address, count)
+				tx, err := from.PingPong.Start(txOpts, to.Chain.ChainID, to.Address, count)
 				if err != nil {
 					return errors.Wrap(err, "start ping pong", "from", from.Chain.Name, "to", to.Chain.Name)
 				}
@@ -258,7 +252,7 @@ func edges(contracts map[uint64]contract) []Edge {
 	// get all unique edges
 	for i := 0; i < len(arr); i++ {
 		for j := i + 1; j < len(arr); j++ {
-			resp = append(resp, Edge{From: arr[i].Chain.ID, To: arr[j].Chain.ID})
+			resp = append(resp, Edge{From: arr[i].Chain.ChainID, To: arr[j].Chain.ChainID})
 		}
 	}
 

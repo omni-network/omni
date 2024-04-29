@@ -9,6 +9,8 @@ import (
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -37,12 +39,13 @@ func initXRegistries(ctx context.Context, def Definition) error {
 }
 
 type registryMngr struct {
-	xreg    *bindings.XRegistry
-	preg    *bindings.PortalRegistry
-	txOpts  *bind.TransactOpts
-	backend *ethbackend.Backend
-	portals map[uint64]bindings.PortalRegistryDeployment
-	def     Definition
+	xreg       *bindings.XRegistry
+	preg       *bindings.PortalRegistry
+	txOpts     *bind.TransactOpts
+	backend    *ethbackend.Backend
+	portals    map[uint64]bindings.PortalRegistryDeployment
+	def        Definition
+	chainNamer func(uint64) string
 }
 
 // newRegistryMngr creates a new registry manager. A registry manager is used to
@@ -54,7 +57,7 @@ func newRegistryMngr(ctx context.Context, def Definition) (registryMngr, error) 
 
 	omniEVM := def.Testnet.OmniEVMs[0].Chain
 
-	backend, err := def.Backends().Backend(omniEVM.ID)
+	backend, err := def.Backends().Backend(omniEVM.ChainID)
 	if err != nil {
 		return registryMngr{}, err
 	}
@@ -85,19 +88,20 @@ func newRegistryMngr(ctx context.Context, def Definition) (registryMngr, error) 
 	}
 
 	return registryMngr{
-		xreg:    xregistry,
-		preg:    portalRegistry,
-		backend: backend,
-		txOpts:  txOpts,
-		portals: portals,
-		def:     def,
+		xreg:       xregistry,
+		preg:       portalRegistry,
+		backend:    backend,
+		txOpts:     txOpts,
+		portals:    portals,
+		def:        def,
+		chainNamer: netconf.ChainNamer(def.Testnet.Network),
 	}, nil
 }
 
 // registerPortals registers each portal with the PortalRegistry.
-func (mngr registryMngr) registerPortals(ctx context.Context) error {
-	for chainID := range mngr.portals {
-		if err := mngr.registerPortal(ctx, chainID); err != nil {
+func (m registryMngr) registerPortals(ctx context.Context) error {
+	for chainID := range m.portals {
+		if err := m.registerPortal(ctx, chainID); err != nil {
 			return errors.Wrap(err, "register portal", "chain", chainID)
 		}
 	}
@@ -106,26 +110,28 @@ func (mngr registryMngr) registerPortals(ctx context.Context) error {
 }
 
 // registerPortal registers a portal with the PortalRegistry.
-func (mngr registryMngr) registerPortal(ctx context.Context, chainID uint64) error {
-	p, ok := mngr.portals[chainID]
+func (m registryMngr) registerPortal(ctx context.Context, chainID uint64) error {
+	p, ok := m.portals[chainID]
 	if !ok {
 		return errors.New("missing portal", "chain", chainID)
 	}
 
-	fee, err := mngr.preg.RegistrationFee(&bind.CallOpts{Context: ctx}, p)
+	fee, err := m.preg.RegistrationFee(&bind.CallOpts{Context: ctx}, p)
 	if err != nil {
 		return errors.Wrap(err, "registration fee")
 	}
 
-	mngr.txOpts.Value = fee
-	tx, err := mngr.preg.Register(mngr.txOpts, p)
-	mngr.txOpts.Value = nil
+	log.Info(ctx, "Registering portal", "chain", m.chainNamer(chainID))
+
+	m.txOpts.Value = fee
+	tx, err := m.preg.Register(m.txOpts, p)
+	m.txOpts.Value = nil
 
 	if err != nil {
 		return errors.Wrap(err, "register portal")
 	}
 
-	receipt, err := mngr.backend.WaitMined(ctx, tx)
+	receipt, err := m.backend.WaitMined(ctx, tx)
 	if err != nil {
 		return errors.Wrap(err, "wait mined")
 	} else if receipt.Status != 1 {
@@ -136,24 +142,24 @@ func (mngr registryMngr) registerPortal(ctx context.Context, chainID uint64) err
 }
 
 // setXRegisryPortal sets the portal address for the XRegistry.
-func (mngr registryMngr) setXRegisryPortal(ctx context.Context) error {
-	if len(mngr.def.Testnet.OmniEVMs) == 0 {
+func (m registryMngr) setXRegisryPortal(ctx context.Context) error {
+	if len(m.def.Testnet.OmniEVMs) == 0 {
 		return errors.New("missing omni evm")
 	}
 
-	omniEVM := mngr.def.Testnet.OmniEVMs[0].Chain
+	omniEVM := m.def.Testnet.OmniEVMs[0].Chain
 
-	portal, ok := mngr.portals[omniEVM.ID]
+	portal, ok := m.portals[omniEVM.ChainID]
 	if !ok {
-		return errors.New("missing portal", "chain", omniEVM.ID)
+		return errors.New("missing portal", "chain", omniEVM.ChainID)
 	}
 
-	tx, err := mngr.xreg.SetPortal(mngr.txOpts, portal.Addr)
+	tx, err := m.xreg.SetPortal(m.txOpts, portal.Addr)
 	if err != nil {
 		return errors.Wrap(err, "set portal")
 	}
 
-	receipt, err := mngr.backend.WaitMined(ctx, tx)
+	receipt, err := m.backend.WaitMined(ctx, tx)
 	if err != nil {
 		return errors.Wrap(err, "wait mined")
 	} else if receipt.Status != 1 {
@@ -164,9 +170,9 @@ func (mngr registryMngr) setXRegisryPortal(ctx context.Context) error {
 }
 
 // setReplicas sets the replica for each chain in the XRegistry.
-func (mngr registryMngr) setReplicas(ctx context.Context) error {
-	for chainID := range mngr.portals {
-		if err := mngr.setReplica(ctx, chainID); err != nil {
+func (m registryMngr) setReplicas(ctx context.Context) error {
+	for chainID := range m.portals {
+		if err := m.setReplica(ctx, chainID); err != nil {
 			return errors.Wrap(err, "set replica", "chain", chainID)
 		}
 	}
@@ -175,18 +181,18 @@ func (mngr registryMngr) setReplicas(ctx context.Context) error {
 }
 
 // setReplica sets the replica for a chain in the XRegistry.
-func (mngr registryMngr) setReplica(ctx context.Context, chainID uint64) error {
-	replica, err := mngr.getReplicaAddr(ctx, chainID)
+func (m registryMngr) setReplica(ctx context.Context, chainID uint64) error {
+	replica, err := m.getReplicaAddr(ctx, chainID)
 	if err != nil {
 		return errors.Wrap(err, "get replica", "chain", chainID)
 	}
 
-	tx, err := mngr.xreg.SetReplica(mngr.txOpts, chainID, replica)
+	tx, err := m.xreg.SetReplica(m.txOpts, chainID, replica)
 	if err != nil {
 		return errors.Wrap(err, "set replica")
 	}
 
-	receipt, err := mngr.backend.WaitMined(ctx, tx)
+	receipt, err := m.backend.WaitMined(ctx, tx)
 	if err != nil {
 		return errors.Wrap(err, "wait mined")
 	} else if receipt.Status != 1 {
@@ -197,13 +203,13 @@ func (mngr registryMngr) setReplica(ctx context.Context, chainID uint64) error {
 }
 
 // getReplicaAddr gets the xregistry replica address for a chain.
-func (mngr registryMngr) getReplicaAddr(ctx context.Context, chainID uint64) (common.Address, error) {
-	backend, err := mngr.def.Backends().Backend(chainID)
+func (m registryMngr) getReplicaAddr(ctx context.Context, chainID uint64) (common.Address, error) {
+	backend, err := m.def.Backends().Backend(chainID)
 	if err != nil {
 		return common.Address{}, err
 	}
 
-	p, ok := mngr.portals[chainID]
+	p, ok := m.portals[chainID]
 	if !ok {
 		return common.Address{}, errors.New("missing portal", "chain", chainID)
 	}
@@ -231,13 +237,13 @@ func makePortalDeps(def Definition) (map[uint64]bindings.PortalRegistryDeploymen
 	for _, c := range tnet.PublicChains {
 		chain := c.Chain()
 
-		info, ok := infos[chain.ID][types.ContractPortal]
+		info, ok := infos[chain.ChainID][types.ContractPortal]
 		if !ok {
-			return nil, errors.New("missing info", "chain", chain.ID)
+			return nil, errors.New("missing info", "chain", chain.ChainID)
 		}
 
-		deps[chain.ID] = bindings.PortalRegistryDeployment{
-			ChainId:           chain.ID,
+		deps[chain.ChainID] = bindings.PortalRegistryDeployment{
+			ChainId:           chain.ChainID,
 			Addr:              info.Address,
 			DeployHeight:      info.Height,
 			FinalizationStrat: chain.FinalizationStrat.String(),
@@ -247,13 +253,13 @@ func makePortalDeps(def Definition) (map[uint64]bindings.PortalRegistryDeploymen
 	for _, c := range tnet.AnvilChains {
 		chain := c.Chain
 
-		info, ok := infos[chain.ID][types.ContractPortal]
+		info, ok := infos[chain.ChainID][types.ContractPortal]
 		if !ok {
-			return nil, errors.New("missing info", "chain", chain.ID)
+			return nil, errors.New("missing info", "chain", chain.ChainID)
 		}
 
-		deps[chain.ID] = bindings.PortalRegistryDeployment{
-			ChainId:           chain.ID,
+		deps[chain.ChainID] = bindings.PortalRegistryDeployment{
+			ChainId:           chain.ChainID,
 			Addr:              info.Address,
 			DeployHeight:      info.Height,
 			FinalizationStrat: chain.FinalizationStrat.String(),
@@ -266,13 +272,13 @@ func makePortalDeps(def Definition) (map[uint64]bindings.PortalRegistryDeploymen
 
 	chain := tnet.OmniEVMs[0].Chain
 
-	info, ok := infos[chain.ID][types.ContractPortal]
+	info, ok := infos[chain.ChainID][types.ContractPortal]
 	if !ok {
-		return nil, errors.New("missing info", "chain", chain.ID)
+		return nil, errors.New("missing info", "chain", chain.ChainID)
 	}
 
-	deps[chain.ID] = bindings.PortalRegistryDeployment{
-		ChainId:           chain.ID,
+	deps[chain.ChainID] = bindings.PortalRegistryDeployment{
+		ChainId:           chain.ChainID,
 		Addr:              info.Address,
 		DeployHeight:      info.Height,
 		FinalizationStrat: chain.FinalizationStrat.String(),

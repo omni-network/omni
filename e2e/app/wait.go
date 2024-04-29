@@ -47,7 +47,7 @@ func WaitAllSubmissions(ctx context.Context, portals map[uint64]netman.Portal, m
 
 	for _, dest := range portals {
 		for _, src := range portals {
-			if src.Chain.ID == dest.Chain.ID {
+			if src.Chain.ChainID == dest.Chain.ChainID {
 				continue
 			}
 
@@ -57,12 +57,12 @@ func WaitAllSubmissions(ctx context.Context, portals map[uint64]netman.Portal, m
 					return errors.Wrap(ctx.Err(), "timeout waiting for submissions")
 				}
 
-				srcOffset, err := src.Contract.OutXStreamOffset(nil, dest.Chain.ID)
+				srcOffset, err := src.Contract.OutXStreamOffset(nil, dest.Chain.ChainID)
 				if err != nil {
 					return errors.Wrap(err, "getting inXStreamOffset")
 				}
 
-				destOffset, err := dest.Contract.InXStreamOffset(nil, src.Chain.ID)
+				destOffset, err := dest.Contract.InXStreamOffset(nil, src.Chain.ChainID)
 				if err != nil {
 					return errors.Wrap(err, "getting inXStreamOffset")
 				}

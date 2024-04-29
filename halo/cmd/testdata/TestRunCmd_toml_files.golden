@@ -1,7 +1,13 @@
 {
  "HomeDir": "testinput/input1",
+ "Network": "",
  "EigenKeyPassword": "",
  "EngineJWTFile": "jwt.toml",
+ "EngineEndpoint": "",
+ "RPCEndpoints": {
+  "ethereum": "http://ethereum.rpc",
+  "optimism": "http://optimism.rpc"
+ },
  "SnapshotInterval": 999,
  "SnapshotKeepRecent": 2,
  "BackendType": "goleveldb",

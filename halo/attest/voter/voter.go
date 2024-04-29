@@ -43,6 +43,7 @@ type Voter struct {
 	privKey     crypto.PrivKey
 	chains      map[uint64]string
 	address     common.Address
+	isValFunc   IsValDetector
 	provider    xchain.Provider
 	deps        types.VoterDeps
 	backoffFunc func(context.Context) func()
@@ -82,12 +83,13 @@ func LoadVoter(privKey crypto.PrivKey, path string, provider xchain.Provider, de
 	}
 
 	return &Voter{
-		privKey:  privKey,
-		address:  addr,
-		path:     path,
-		chains:   chains,
-		provider: provider,
-		deps:     deps,
+		privKey:   privKey,
+		isValFunc: NewIsValDetector(addr),
+		address:   addr,
+		path:      path,
+		chains:    chains,
+		provider:  provider,
+		deps:      deps,
 		backoffFunc: func(ctx context.Context) func() {
 			return expbackoff.New(ctx, expbackoff.WithPeriodicConfig(prodBackoff))
 		},
@@ -233,23 +235,15 @@ func (v *Voter) Vote(block xchain.Block, allowSkip bool) error {
 
 // UpdateValidators caches whether this voter is a validator in the provided set.
 func (v *Voter) UpdateValidators(valset []abci.ValidatorUpdate) {
-	v.mu.Lock()
-	defer v.mu.Unlock()
-
-	for _, val := range valset {
-		addr, err := k1util.PubKeyPBToAddress(val.PubKey)
-		if err != nil {
-			continue
-		}
-		if v.address != addr {
-			continue
-		}
-
-		v.isVal = val.Power > 0
-
+	isVal, ok := v.isValFunc(valset)
+	if !ok {
+		// IsVal didn't detect any change
 		return
 	}
-	// If validator not updated, then isVal didn't change.
+
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	v.isVal = isVal
 }
 
 // TrimBehind trims all available and proposed votes that are behind the vote window thresholds (map[chainID]height)
@@ -368,9 +362,6 @@ func (v *Voter) SetCommitted(headers []*types.BlockHeader) error {
 }
 
 func (v *Voter) LocalAddress() common.Address {
-	v.mu.Lock()
-	defer v.mu.Unlock()
-
 	return v.address
 }
 
@@ -521,4 +512,25 @@ func pruneLatestPerChain(atts []*types.Vote) []*types.Vote {
 	}
 
 	return resp
+}
+
+// IsValDetector is a function that detects if the "IsValidator" status changes for subsequent validator updates.
+type IsValDetector func(valset []abci.ValidatorUpdate) (isValidator bool, statusChanged bool)
+
+func NewIsValDetector(localAddr common.Address) IsValDetector {
+	return func(valset []abci.ValidatorUpdate) (bool, bool) {
+		for _, val := range valset {
+			addr, err := k1util.PubKeyPBToAddress(val.PubKey)
+			if err != nil {
+				continue
+			}
+			if localAddr != addr {
+				continue
+			}
+
+			return val.Power > 0, true
+		}
+
+		return false, false
+	}
 }

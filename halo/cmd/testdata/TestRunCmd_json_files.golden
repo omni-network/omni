@@ -1,7 +1,10 @@
 {
  "HomeDir": "testinput/input2",
+ "Network": "",
  "EigenKeyPassword": "123456",
  "EngineJWTFile": "jwt.json",
+ "EngineEndpoint": "",
+ "RPCEndpoints": null,
  "SnapshotInterval": 123,
  "SnapshotKeepRecent": 2,
  "BackendType": "goleveldb",

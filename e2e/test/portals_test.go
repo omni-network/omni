@@ -36,7 +36,7 @@ func TestPortalOffsets(t *testing.T) {
 	})
 }
 
-// TestSupportedChains TODO.
+// TestSupportedChains ensures that all portals have been relayed supported chains from the PortalRegistry, via the XRegistry.
 func TestSupportedChains(t *testing.T) {
 	t.Parallel()
 	testPortal(t, func(t *testing.T, source Portal, dests []Portal) {

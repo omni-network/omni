@@ -2,7 +2,6 @@ package data
 
 import (
 	"context"
-	"strconv"
 
 	"github.com/omni-network/omni/explorer/db/ent"
 	"github.com/omni-network/omni/explorer/db/ent/msg"
@@ -43,7 +42,7 @@ func (p Provider) XMsgRange(ctx context.Context, from uint64, to uint64) ([]*res
 
 	var res []*resolvers.XMsg
 	for _, m := range query {
-		graphQL, err := EntMsgToGraphQLXMsg(ctx, m, nil)
+		graphQL, err := EntMsgToGraphQLXMsg(m)
 		if err != nil {
 			return nil, false, errors.Wrap(err, "decode message")
 		}
@@ -53,7 +52,6 @@ func (p Provider) XMsgRange(ctx context.Context, from uint64, to uint64) ([]*res
 	return res, true, nil
 }
 
-//nolint:dupl // graphql library looks for the function name to match the resolver
 func (p Provider) XMsg(ctx context.Context, sourceChainID, destChainID, streamOffset uint64) (*resolvers.XMsg, bool, error) {
 	query, err := p.EntClient.Msg.Query().
 		Where(
@@ -70,7 +68,7 @@ func (p Provider) XMsg(ctx context.Context, sourceChainID, destChainID, streamOf
 	block := query.QueryBlock().OnlyX(ctx)
 	receipts := query.QueryReceipts().AllX(ctx)
 
-	res, err := EntMsgToGraphQLXMsg(ctx, query, block)
+	res, err := EntMsgToGraphQLXMsgWithEdges(ctx, query)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "decoding message")
 	}
@@ -91,12 +89,16 @@ func (p Provider) XMsg(ctx context.Context, sourceChainID, destChainID, streamOf
 
 func (p Provider) XMsgs(ctx context.Context, limit uint64, cursor *uint64) (*resolvers.XMsgResult, bool, error) {
 	query := p.EntClient.Msg.Query().
-		Order(ent.Desc(msg.FieldCreatedAt)).
-		Limit(int(limit)) // limit will always set, defaulting to 1
+		// Most recent messages first
+		Order(ent.Desc(msg.FieldBlockTime), ent.Desc(msg.FieldStreamOffset)).
+		// limit will always set, defaulting to 25
+		Limit(int(limit))
 
 	// If cursor is not 0, we want to query the message with the cursor ID.
 	if cursor != nil {
-		query = query.Where(msg.IDLTE(int(*cursor)))
+		val := int(*cursor)
+		// We query by less than or equal to ensure that we are going down the stream of messages
+		query = query.Where(msg.IDLTE(val))
 	}
 
 	// Execute the query.
@@ -109,7 +111,7 @@ func (p Provider) XMsgs(ctx context.Context, limit uint64, cursor *uint64) (*res
 	// Create the xmsg array
 	var res []resolvers.XMsgEdge
 	for _, m := range msgs {
-		graphQL, err := EntMsgToGraphQLXMsgWithEdges(ctx, m)
+		graphQL, err := EntMsgToGraphQLXMsg(m)
 		if err != nil {
 			return nil, false, errors.Wrap(err, "decoding message")
 		}
@@ -126,7 +128,7 @@ func (p Provider) XMsgs(ctx context.Context, limit uint64, cursor *uint64) (*res
 	// Get the total count of messages
 	totalCount, err := p.EntClient.Msg.Query().Count(ctx)
 	if err != nil {
-		return nil, false, errors.New("failed to fetch message count")
+		return nil, false, errors.Wrap(err, "fetch message count")
 	}
 
 	// Get the total count in hex
@@ -136,32 +138,50 @@ func (p Provider) XMsgs(ctx context.Context, limit uint64, cursor *uint64) (*res
 	}
 
 	// Get the start cursor
-	startCursor, err := strconv.ParseUint(string(res[0].Node.ID), 10, 64)
-	if err != nil {
-		return nil, false, errors.New("failed to parse start cursor")
-	}
+	startCursor := res[0].Cursor.ToInt().Uint64()
 
-	endCursor, err := strconv.ParseUint(string(res[len(res)-1].Node.ID), 10, 64)
+	// Calculate the page info
+	pageInfo, err := calculatePageInfo(startCursor, limit, totalCount)
 	if err != nil {
-		return nil, false, errors.New("failed to parse end cursor")
-	}
-
-	// Get the start cursor in hex
-	c, err := utils.Uint2Hex(endCursor + 1)
-	if err != nil {
-		return nil, false, errors.Wrap(err, "decoding message cursor")
+		return nil, false, errors.Wrap(err, "calculating page info")
 	}
 
 	// Create the result
 	result := resolvers.XMsgResult{
 		TotalCount: totalCountHex,
 		Edges:      res,
-		PageInfo: resolvers.PageInfo{
-			StartCursor: c,
-			HasNextPage: endCursor-uint64(1) > 0,
-			HasPrevPage: startCursor > 0,
-		},
+		PageInfo:   pageInfo,
 	}
 
 	return &result, true, nil
+}
+
+// calculatePageInfo calculates the next and previous cursors for a given start cursor and limit
+// The next cursor is the start cursor - the limit meaning we are moving down the stream of messages, towards the first/oldest
+// The previous cursor is the start cursor + the limit meaning we are moving up the stream of messages, towards the most recent.
+func calculatePageInfo(startCursor, limit uint64, totalCount int) (resolvers.PageInfo, error) {
+	prevCursor := startCursor + limit
+
+	nextCursor := startCursor - limit
+	if int64(startCursor)-int64(limit) < 0 {
+		nextCursor = uint64(0)
+	}
+
+	// convert the cursors to hex
+	prevCursorHex, err := utils.Uint2Hex(prevCursor)
+	if err != nil {
+		return resolvers.PageInfo{}, errors.Wrap(err, "decoding message cursor")
+	}
+
+	nextCursorHex, err := utils.Uint2Hex(nextCursor)
+	if err != nil {
+		return resolvers.PageInfo{}, errors.Wrap(err, "decoding message cursor")
+	}
+
+	return resolvers.PageInfo{
+		NextCursor:  nextCursorHex,
+		PrevCursor:  prevCursorHex,
+		HasNextPage: nextCursor > 0,
+		HasPrevPage: startCursor < uint64(totalCount),
+	}, nil
 }

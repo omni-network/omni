@@ -1,78 +1,61 @@
 package types
 
 import (
-	"time"
-
-	"github.com/omni-network/omni/lib/chainids"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 )
 
 //nolint:gochecknoglobals // Static mappings
 var (
-	chainOmniEVM = EVMChain{
-		Name: "omni_evm",
-		// ID:  // Depends on netconf.Static.
-		BlockPeriod:       2 * time.Second, // TODO(corver): Make this more robust.
-		FinalizationStrat: netconf.StratFinalized,
-	}
-
 	chainEthereum = EVMChain{
-		Name:              "ethereum",
-		ID:                chainids.Ethereum,
+		Metadata:          mustMetadata(evmchain.IDEthereum),
 		IsPublic:          true,
-		BlockPeriod:       12 * time.Second,
 		FinalizationStrat: netconf.StratFinalized,
 	}
 
 	chainHolesky = EVMChain{
-		Name:              "holesky",
-		ID:                chainids.Holesky,
+		Metadata:          mustMetadata(evmchain.IDHolesky),
 		IsPublic:          true,
-		BlockPeriod:       12 * time.Second,
 		FinalizationStrat: netconf.StratFinalized,
 	}
 
 	chainArbSepolia = EVMChain{
-		Name:              "arb_sepolia",
-		ID:                chainids.ArbSepolia,
+		Metadata:          mustMetadata(evmchain.IDArbSepolia),
 		IsPublic:          true,
-		BlockPeriod:       300 * time.Millisecond,
 		FinalizationStrat: netconf.StratSafe,
 	}
 
 	chainOpSepolia = EVMChain{
-		Name:              "op_sepolia",
-		ID:                chainids.OpSepolia,
+		Metadata:          mustMetadata(evmchain.IDOpSepolia),
 		IsPublic:          true,
-		BlockPeriod:       2 * time.Second,
 		FinalizationStrat: netconf.StratSafe,
 	}
 )
 
-const anvilChainIDFactor = 100
-
 // OmniEVMByNetwork returns the Omni evm chain definition by netconf network.
 func OmniEVMByNetwork(network netconf.ID) EVMChain {
-	resp := chainOmniEVM
-	resp.ID = network.Static().OmniExecutionChainID
-
-	return resp
+	return EVMChain{
+		Metadata:          mustMetadata(network.Static().OmniExecutionChainID),
+		FinalizationStrat: netconf.StratFinalized,
+	}
 }
 
 // AnvilChainsByNames returns the Anvil evm chain definitions by names.
-func AnvilChainsByNames(names []string) []EVMChain {
+func AnvilChainsByNames(names []string) ([]EVMChain, error) {
 	var chains []EVMChain
-	for i, name := range names {
+	for _, name := range names {
+		meta, ok := evmchain.MetadataByName(name)
+		if !ok {
+			return nil, errors.New("unknown anvil chain", "name", name)
+		}
 		chains = append(chains, EVMChain{
-			Name:              name,
-			ID:                anvilChainIDFactor * uint64(i+1),
-			BlockPeriod:       time.Second,
+			Metadata:          meta,
 			FinalizationStrat: netconf.StratLatest, // anvil doesn't support finalized
 		})
 	}
 
-	return chains
+	return chains, nil
 }
 
 // PublicChainByName returns the public chain definition by name.
@@ -105,4 +88,13 @@ func PublicRPCByName(name string) string {
 	default:
 		return ""
 	}
+}
+
+func mustMetadata(chainID uint64) evmchain.Metadata {
+	meta, ok := evmchain.MetadataByID(chainID)
+	if !ok {
+		panic("unknown chain ID")
+	}
+
+	return meta
 }
