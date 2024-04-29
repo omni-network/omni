@@ -187,6 +187,7 @@ const sidebars: SidebarsConfig = {
   ],
   developSidebar: [
     "develop/introduction",
+    "develop/state",
     {
       type: "html",
       value: "<div class='sidebar-separator'></div>",
