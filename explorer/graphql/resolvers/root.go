@@ -25,5 +25,5 @@ type BlocksProvider interface { //nolint: interfacebloat // We need this interfa
 }
 
 type BlocksResolver struct {
-	BlocksProvider BlocksProvider
+	Provider BlocksProvider
 }

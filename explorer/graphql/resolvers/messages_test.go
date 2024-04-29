@@ -16,11 +16,6 @@ func TestXMsgCount(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	test := createGqlTest(t)
-	t.Cleanup(func() {
-		if err := test.Client.Close(); err != nil {
-			t.Error(err)
-		}
-	})
 	db.CreateTestBlocks(t, ctx, test.Client, 2)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{

@@ -11,7 +11,7 @@ type SearchArgs struct {
 }
 
 func (b *BlocksResolver) Search(ctx context.Context, args SearchArgs) (*SearchResult, error) {
-	res, found, err := b.BlocksProvider.Search(ctx, args.Query)
+	res, found, err := b.Provider.Search(ctx, args.Query)
 	if err != nil {
 		return nil, errors.New("failed to resolve search")
 	}

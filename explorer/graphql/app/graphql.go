@@ -20,10 +20,8 @@ var Schema string
 var graphiql []byte
 
 // GraphQL returns a new graphql handler. We use the relay handler to create the graphql handler.
-func GraphQL(provider data.Provider) http.Handler {
-	br := resolvers.BlocksResolver{
-		BlocksProvider: provider,
-	}
+func GraphQL(p data.Provider) http.Handler {
+	br := resolvers.BlocksResolver{Provider: p}
 
 	opts := []graphql.SchemaOpt{
 		graphql.UseFieldResolvers(),
