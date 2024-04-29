@@ -27,6 +27,9 @@ func Run(ctx context.Context, cfg Config) error {
 
 	buildinfo.Instrument(ctx)
 
+	// Start monitoring first, so app is "up".s
+	monitorChan := serveMonitoring(cfg.MonitoringAddr)
+
 	portalReg, err := makePortalRegistry(cfg.Network, cfg.RPCEndpoints)
 	if err != nil {
 		return err
@@ -62,7 +65,7 @@ func Run(ctx context.Context, cfg Config) error {
 	case <-ctx.Done():
 		log.Info(ctx, "Shutdown detected, stopping...")
 		return nil
-	case err := <-serveMonitoring(cfg.MonitoringAddr):
+	case err := <-monitorChan:
 		return err
 	}
 }
