@@ -89,7 +89,7 @@ var static = map[uint64]Metadata{
 		BlockPeriod: time.Second,
 	},
 	IDMockL1Slow: {
-		ChainID:     IDMockL1Fast,
+		ChainID:     IDMockL1Slow,
 		Name:        "slow_l1",
 		BlockPeriod: time.Second * 12,
 	},
