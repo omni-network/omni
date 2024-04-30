@@ -52,12 +52,12 @@ func (p Provider) XMsgRange(ctx context.Context, from uint64, to uint64) ([]*res
 	return res, true, nil
 }
 
-func (p Provider) XMsg(ctx context.Context, sourceChainID, destChainID, streamOffset uint64) (*resolvers.XMsg, bool, error) {
+func (p Provider) XMsg(ctx context.Context, sourceChainID, destChainID, offset uint64) (*resolvers.XMsg, bool, error) {
 	query, err := p.EntClient.Msg.Query().
 		Where(
 			msg.SourceChainID(sourceChainID),
 			msg.DestChainID(destChainID),
-			msg.StreamOffset(streamOffset),
+			msg.StreamOffset(offset),
 		).
 		First(ctx)
 	if err != nil {

@@ -16,7 +16,7 @@ type XMsgRangeArgs struct {
 type XMsgArgs struct {
 	SourceChainID hexutil.Big
 	DestChainID   hexutil.Big
-	StreamOffset  hexutil.Big
+	Offset        hexutil.Big
 }
 
 type XMsgsArgs struct {
@@ -55,7 +55,7 @@ func (b *BlocksResolver) XMsgRange(ctx context.Context, args XMsgRangeArgs) ([]*
 }
 
 func (b *BlocksResolver) XMsg(ctx context.Context, args XMsgArgs) (*XMsg, error) {
-	res, found, err := b.Provider.XMsg(ctx, args.SourceChainID.ToInt().Uint64(), args.DestChainID.ToInt().Uint64(), args.StreamOffset.ToInt().Uint64())
+	res, found, err := b.Provider.XMsg(ctx, args.SourceChainID.ToInt().Uint64(), args.DestChainID.ToInt().Uint64(), args.Offset.ToInt().Uint64())
 	if err != nil {
 		return nil, errors.New("failed to fetch message")
 	}

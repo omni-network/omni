@@ -98,7 +98,7 @@ func TestXMsg(t *testing.T) {
 			Schema:  graphql.MustParseSchema(app.Schema, &resolvers.Query{BlocksResolver: test.Resolver}, test.Opts...),
 			Query: `
 				{
-					xmsg(sourceChainID: 1, destChainID: 2, streamOffset: 0){
+					xmsg(sourceChainID: 1, destChainID: 2, offset: 0){
 						SourceMessageSender
 						TxHash
 						BlockHash

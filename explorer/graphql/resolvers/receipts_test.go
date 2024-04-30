@@ -48,7 +48,7 @@ func TestReceipt(t *testing.T) {
 			Schema:  graphql.MustParseSchema(app.Schema, &resolvers.Query{BlocksResolver: test.Resolver}, test.Opts...),
 			Query: `
 				{
-					xreceipt(sourceChainID: 1, destChainID: 2, streamOffset: 0){
+					xreceipt(sourceChainID: 1, destChainID: 2, offset: 0){
 						TxHash
 						Block {
 							BlockHeight
