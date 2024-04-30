@@ -28,10 +28,6 @@ const Option: React.FC<OptionProps> = ({ option, active, onClick }) => {
 const FilterOptions: React.FC<Props> = ({ options, onSelection, value, ...props }) => {
   // const [selectedOption, setSelectedOption] = React.useState<string>(options[0])
 
-  // React.useEffect(() => {
-  //   onSelection && onSelection(selectedOption)
-  // }, [selectedOption])
-
   return (
     <div {...props} className={`flex gap-2 items-center`}>
       {options.map(option => (

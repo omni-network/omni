@@ -52,25 +52,6 @@ export const loader: LoaderFunction = async ({ request }) => {
     gqlClient.query(supportedchains, {}),
   ])
 
-  // console.log('This is the results of xmsgs', xmsgRes.data?.xmsgs)
-  // console.log(
-  //   'Total count',
-  //   xmsgRes.data?.xmsgs?.TotalCount,
-  //   Number(xmsgRes.data?.xmsgs?.TotalCount),
-  // )
-
-  // console.log(
-  //   'Start Cursor',
-  //   xmsgRes.data?.xmsgs?.PageInfo.StartCursor,
-  //   Number(xmsgRes.data?.xmsgs?.PageInfo.StartCursor),
-  // )
-
-  // console.log(
-  //   '10 limit cursors',
-  //   xmsgRes.data?.xmsgs?.Edges.map(e => ({ hex: e.Cursor, num: Number(e.Cursor) })),
-  // )
-  // console.log("First Cursor", xmsgRes.data?.xmsgs?.Edges[0].Cursor, Number(xmsgRes.data?.xmsgs?.Edges[0].Cursor))
-  // console.log("Last Cursor", xmsgRes.data?.xmsgs?.Edges[9].Cursor, Number(xmsgRes.data?.xmsgs?.Edges[9].Cursor))
   const supportedChains = mappedSourceChains(supportedChainsRes.data?.supportedchains || [])
   const xmsgsList = xmsgRes.data?.xmsgs?.Edges ?? []
 
