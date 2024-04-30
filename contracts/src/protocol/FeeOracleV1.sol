@@ -14,7 +14,7 @@ contract FeeOracleV1 is IFeeOracle, IFeeOracleV1, OwnableUpgradeable {
     /**
      * @notice Base gas limit for each xmsg.
      */
-    uint256 public baseGasLimit;
+    uint64 public baseGasLimit;
 
     /**
      * @notice Base protocol fee for each xmsg.
@@ -41,7 +41,7 @@ contract FeeOracleV1 is IFeeOracle, IFeeOracleV1, OwnableUpgradeable {
         _disableInitializers();
     }
 
-    function initialize(address owner_, uint256 baseGasLimit_, uint256 protocolFee_, ChainFeeParams[] calldata params)
+    function initialize(address owner_, uint64 baseGasLimit_, uint256 protocolFee_, ChainFeeParams[] calldata params)
         public
         initializer
     {
@@ -53,6 +53,7 @@ contract FeeOracleV1 is IFeeOracle, IFeeOracleV1, OwnableUpgradeable {
 
     /// @inheritdoc IFeeOracle
     function feeFor(uint64 destChainId, bytes calldata, uint64 gasLimit) external view returns (uint256) {
+        require(gasPriceOn[destChainId] > 0 && toNativeRate[destChainId] > 0, "FeeOracleV1: no fee params");
         uint256 gasPrice = gasPriceOn[destChainId] * toNativeRate[destChainId] / CONVERSION_RATE_DENOM;
         return protocolFee + (baseGasLimit * gasPrice) + (gasLimit * gasPrice);
     }
@@ -74,22 +75,22 @@ contract FeeOracleV1 is IFeeOracle, IFeeOracleV1, OwnableUpgradeable {
     /**
      * @notice Set the to native conversion rate for a destination chain.
      */
-    function setToNativeRate(uint64 chainId, uint256 toNativeRate) external onlyOwner {
-        _setToNativeRate(chainId, toNativeRate);
+    function setToNativeRate(uint64 chainId, uint256 rate) external onlyOwner {
+        _setToNativeRate(chainId, rate);
     }
 
     /**
      * @notice Set the base gas limit for each xmsg.
      */
-    function setBaseGasLimit(uint256 baseGasLimit_) external onlyOwner {
-        _setBaseGasLimit(baseGasLimit_);
+    function setBaseGasLimit(uint64 gasLimit) external onlyOwner {
+        _setBaseGasLimit(gasLimit);
     }
 
     /**
      * @notice Set the base protocol fee for each xmsg.
      */
-    function setProtocolFee(uint256 protocolFee_) external onlyOwner {
-        _setProtocolFee(protocolFee_);
+    function setProtocolFee(uint256 fee) external onlyOwner {
+        _setProtocolFee(fee);
     }
 
     /**
@@ -128,16 +129,16 @@ contract FeeOracleV1 is IFeeOracle, IFeeOracleV1, OwnableUpgradeable {
     /**
      * @notice Set the base gas limit for each xmsg.
      */
-    function _setBaseGasLimit(uint256 baseGasLimit_) internal {
-        baseGasLimit = baseGasLimit_;
-        emit BaseGasLimitSet(baseGasLimit);
+    function _setBaseGasLimit(uint64 gasLimit) internal {
+        baseGasLimit = gasLimit;
+        emit BaseGasLimitSet(gasLimit);
     }
 
     /**
      * @notice Set the base protocol fee for each xmsg.
      */
-    function _setProtocolFee(uint256 protocolFee_) internal {
-        protocolFee = protocolFee_;
-        emit ProtocolFeeSet(protocolFee);
+    function _setProtocolFee(uint256 fee) internal {
+        protocolFee = fee;
+        emit ProtocolFeeSet(fee);
     }
 }

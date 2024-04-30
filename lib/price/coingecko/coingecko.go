@@ -8,13 +8,11 @@ import (
 	"strings"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/price"
+	"github.com/omni-network/omni/lib/tokens"
 )
 
-type Currency string
-
 const (
-	USD Currency = "usd"
-
 	endpointSimplePrice = "/api/v3/simple/price"
 	prodHost            = "https://api.coingecko.com"
 )
@@ -22,6 +20,8 @@ const (
 type Client struct {
 	host string
 }
+
+var _ price.Provider = Client{}
 
 // New creates a new goingecko Client with the given options.
 func New(opts ...func(*options)) Client {
@@ -36,8 +36,8 @@ func New(opts ...func(*options)) Client {
 }
 
 // GetPriceUSD returns the price of each coin in USD.
-func (c Client) GetPriceUSD(ctx context.Context, ids ...string) (map[string]float64, error) {
-	return c.GetPrice(ctx, USD, ids...)
+func (c Client) Price(ctx context.Context, tkns ...tokens.Token) (map[tokens.Token]float64, error) {
+	return c.getPrice(ctx, "usd", tkns...)
 }
 
 // simplePriceResponse is the response from the simple/price endpoint.
@@ -45,10 +45,15 @@ func (c Client) GetPriceUSD(ctx context.Context, ids ...string) (map[string]floa
 type simplePriceResponse map[string]map[string]float64
 
 // GetPrice returns the price of each coin in the given currency.
-func (c Client) GetPrice(ctx context.Context, currency Currency, ids ...string) (map[string]float64, error) {
+func (c Client) getPrice(ctx context.Context, currency string, tkns ...tokens.Token) (map[tokens.Token]float64, error) {
+	ids := make([]string, len(tkns))
+	for i, t := range tkns {
+		ids[i] = t.CoingeckoID()
+	}
+
 	params := url.Values{
 		"ids":           {strings.Join(ids, ",")},
-		"vs_currencies": {string(currency)},
+		"vs_currencies": {currency},
 	}
 
 	var resp simplePriceResponse
@@ -56,9 +61,9 @@ func (c Client) GetPrice(ctx context.Context, currency Currency, ids ...string) 
 		return nil, err
 	}
 
-	prices := make(map[string]float64)
+	prices := make(map[tokens.Token]float64)
 	for id, price := range resp {
-		prices[id] = price[string(currency)]
+		prices[tokens.MustFromCoingeckoID(id)] = price[currency]
 	}
 
 	return prices, nil

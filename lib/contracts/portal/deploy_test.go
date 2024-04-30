@@ -50,7 +50,8 @@ func TestDeployDevnet(t *testing.T) {
 		{Addr: common.HexToAddress("0x3333"), Power: 100},
 	}
 
-	addr, _, err = portal.Deploy(ctx, netconf.Devnet, backend, valSetID, vals)
+	feeOracle := common.HexToAddress("0xfffff")
+	addr, _, err = portal.Deploy(ctx, netconf.Devnet, backend, feeOracle, valSetID, vals)
 	require.NoError(t, err)
 	require.Equal(t, contracts.DevnetPortal(), addr)
 

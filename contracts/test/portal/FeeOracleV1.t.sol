@@ -14,12 +14,17 @@ contract FeeOracleV1_Test is Base {
         uint64 gasLimit = 200_000;
         bytes memory data = abi.encodeWithSignature("test()");
 
-        uint256 fee = feeOracle.feeFor(destChainId, data, gasLimit);
+        // test feeFor supported chain is expected
 
+        uint256 fee = feeOracle.feeFor(destChainId, data, gasLimit);
         uint256 gasPrice =
             feeOracle.gasPriceOn(destChainId) * feeOracle.toNativeRate(destChainId) / feeOracle.CONVERSION_RATE_DENOM();
-
         assertEq(fee, feeOracle.protocolFee() + (gasPrice * gasLimit) + (feeOracle.baseGasLimit() * gasPrice));
+
+        // test feeFor unsupported chain reverts
+
+        vm.expectRevert("FeeOracleV1: no fee params");
+        feeOracle.feeFor(123_456, data, gasLimit);
     }
 
     function test_setGasPrice() public {
@@ -60,7 +65,7 @@ contract FeeOracleV1_Test is Base {
     }
 
     function test_setBaseGasLimit() public {
-        uint256 newBaseGasLimit = feeOracle.baseGasLimit() + 10_000;
+        uint64 newBaseGasLimit = feeOracle.baseGasLimit() + 10_000;
 
         // only owner can set base gas limit
         vm.expectRevert("Ownable: caller is not the owner");
