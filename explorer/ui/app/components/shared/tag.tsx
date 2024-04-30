@@ -1,29 +1,28 @@
 import React from 'react'
 
 interface Props {
-  status: 'Success' | 'Failure' | 'Pending'
+  status: 'SUCCESS' | 'FAILURE' | 'PENDING'
 }
 
 const Tag: React.FC<Props> = ({ status }) => {
   const [color, setColor] = React.useState({})
-
   const getColor = () => {
     switch (status) {
-      case 'Success':
+      case 'SUCCESS':
         return {
           text: 'text-positive',
           icon: 'text-icon-positive',
           iconClass: 'icon-check-1',
           bg: 'bg-positive',
         }
-      case 'Pending':
+      case 'PENDING':
         return {
           text: 'text-moderate',
           icon: 'text-icon-moderate',
           bg: 'bg-moderate',
           iconClass: 'icon-clock',
         }
-      case 'Failure':
+      case 'FAILURE':
         return {
           text: 'text-critical',
           icon: 'text-icon-critical',

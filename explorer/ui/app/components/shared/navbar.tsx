@@ -2,14 +2,54 @@ import { ThemeButton } from './themebutton'
 import logo from '../../../public/Horizontal_Word Black_Symbol Black.png'
 import Logo from './logo'
 import { Link } from '@remix-run/react'
+import ExplorerDropdown from './explorerDropdown'
+import Dropdown from './dropdown'
+import { useLocation } from '@remix-run/react'
+import { useEffect, useState } from 'react'
 
 export default function Navbar() {
+  const evmExplorerLinks = [
+    {
+      value: 'blockScout',
+      display: 'on BlockScout',
+      icon: 'icon-arrow',
+    },
+  ]
+
+  const location = useLocation()
+
+  const [currentNet, setCurrentNet] = useState<'testnet' | 'mainnet'>('testnet')
+
+  useEffect(() => {
+    if (window.location.host.includes('test')) {
+      setCurrentNet('testnet')
+    } else if (window.location.host.includes('main')) {
+      setCurrentNet('mainnet')
+    }
+  }, [])
+
   return (
     <header className="static border-none py-3 px-8">
       <div className="w-full flex items-center gap-8">
         <Link to="/" className="m-auto">
           <Logo />
         </Link>
+
+        <Dropdown
+          onChange={value => {
+            if (value === 'testnet') {
+              window.location.replace('https://explorer.testnet.omni.network')
+            }
+            if (value === 'mainnet') {
+              window.location.replace('https://explorer.mainnet.omni.network')
+            }
+          }}
+          defaultValue={currentNet}
+          options={[
+            { display: 'Testnet', value: 'testnet' },
+            { display: 'Mainnet', value: 'mainnet' },
+          ]}
+        />
 
         <div className="grow"></div>
 
@@ -19,16 +59,9 @@ export default function Navbar() {
             Share your feedback
           </span>
         </Link>
-        <span className="m-auto text-default text-b font-normal">EVM Explorer</span>
+        <ExplorerDropdown />
         <div className="flex">
           <ThemeButton />
-        </div>
-
-        <div
-          className={`flex gap-2 items-center justify-center border-[1px] border-border-default px-4 py-[14px] rounded-full`}
-        >
-          <div className="w-3 h-3 rounded-full bg-positive"></div>
-          <span className={`text-default `}>Testnet</span>
         </div>
       </div>
     </header>

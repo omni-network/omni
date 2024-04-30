@@ -1,6 +1,4 @@
-import { json } from '@remix-run/node'
 import React, { RefObject, useCallback, useEffect, useMemo } from 'react'
-import { XMsg } from '~/graphql/graphql'
 import { ColumnDef } from '@tanstack/react-table'
 import SimpleTable from '../shared/simpleTable'
 import { useLoaderData, useRevalidator, useSearchParams } from '@remix-run/react'
@@ -9,55 +7,43 @@ import Tag from '../shared/tag'
 import RollupIcon from '../shared/rollupIcon'
 import { Link } from '@remix-run/react'
 import LongArrow from '~/assets/images/LongArrow.svg'
-import { loader } from '~/routes/_index'
+import { XmsgResponse } from '~/routes/_index'
 import SearchBar from '../shared/search'
-import Dropdown from '../shared/dropdown'
 import ChainDropdown from './chainDropdown'
 import FilterOptions from '../shared/filterOptions'
-import { getAddressUrl, getBaseUrl, getBlockUrl, getTxUrl } from '~/lib/sourceChains'
+import { getBaseUrl } from '~/lib/sourceChains'
 import debounce from 'lodash.debounce'
+import { Tooltip } from 'react-tooltip'
+import Button from '../shared/button'
+import { PageButton } from '../shared/button-legacy'
+import { copyToClipboard } from '~/lib/utils'
+
+type Status = 'Success' | 'Failed' | 'Pending' | 'All'
 
 export default function XMsgDataTable() {
-  const data = useLoaderData<typeof loader>()
+  const data = useLoaderData<XmsgResponse>()
   const revalidator = useRevalidator()
   const searchFieldRef = React.useRef<HTMLInputElement>(null)
 
-  const [filterCategory, setFilterCategory] = React.useState<
-    'sourceAddress' | 'sourceTxHash' | 'destinationAddress' | 'destinationTxHash'
-  >('sourceAddress')
-
-  const [filterParams, setFilterParams] = React.useState<{
-    sourceAddress: string | null
-    sourceTxHash: string | null
-    destinationAddress: string | null
-    destinationTxHash: string | null
-    status: 'Success' | 'Failed' | 'Pending' | null
-  }>({
-    sourceAddress: null,
-    sourceTxHash: null,
-    destinationAddress: null,
-    destinationTxHash: null,
-    status: null,
-  })
+  const pageLoaded = React.useRef<boolean>(false)
 
   const [searchParams, setSearchParams] = useSearchParams()
 
-  // search filters
-  const filterOptions = [
-    { display: 'Source address', value: 'sourceAddress' },
-    {
-      display: 'Source tx hash',
-      value: 'sourceTxHash',
-    },
-    {
-      display: 'Destination address',
-      value: 'destinationAddress',
-    },
-    {
-      display: 'Destination tx hash',
-      value: 'destinationTxHash',
-    },
-  ]
+  const [filterParams, setFilterParams] = React.useState<{
+    address: string | null
+    txHash: string | null
+    sourceChain: string | null
+    destChain: string | null
+    status: Status
+    cursor: string | null
+  }>({
+    address: searchParams.get('address') ?? null,
+    sourceChain: searchParams.get('sourceChain') ?? null,
+    destChain: searchParams.get('destChain') ?? null,
+    txHash: searchParams.get('txHash') ?? null,
+    status: (searchParams.get('status') as Status) ?? 'All',
+    cursor: searchParams.get('cursor') ?? null,
+  })
 
   const sourceChainList = data.supportedChains.map(chain => ({
     value: chain.ChainID,
@@ -65,15 +51,32 @@ export default function XMsgDataTable() {
     icon: chain.Icon,
   }))
 
-  const [searchValue, setSearchValue] = React.useState<string>('')
-  const [searchPlaceholder, setSearchPlaceholder] = React.useState<string>()
-
   const rows = data.xmsgs
+  const totalEntries = Number(data.startCursor)
+  const currentPage = data.xmsgs
 
   const columnConfig = {
     canFilter: false,
     enableColumnFilter: false,
   }
+
+  const clearFilters = () => {
+    if (searchFieldRef.current) {
+      searchFieldRef.current.value = ''
+    }
+
+    setFilterParams({
+      address: null,
+      sourceChain: null,
+      destChain: null,
+      txHash: null,
+      cursor: null,
+      status: 'All',
+    })
+  }
+
+  const hasFiltersApplied: boolean =
+    Object.values(filterParams).filter(val => val !== 'All' && val !== null).length > 0
 
   // Listen for filter changes here and append search params
   useEffect(() => {
@@ -87,91 +90,163 @@ export default function XMsgDataTable() {
     }
 
     setSearchParams(newParams)
-    revalidator.revalidate()
+
+    if (pageLoaded.current) {
+      revalidator.revalidate()
+      // console.log('Revalidating', JSON.stringify(filterParams))
+    } else {
+      pageLoaded.current = true
+    }
   }, [filterParams])
 
   // here we set the filter params by clearing the old ones, and setting the current one and its value
   const searchBarInputCB = e => {
+    const isAddress = e.target.value.match(/^0x[0-9a-fA-F]{40}$/)
+    const isTxHash = e.target.value.match(/^0x[0-9a-fA-F]{64}$/)
+
+    if (!isAddress && !isTxHash && e.target.value !== '') {
+      // return user error cause it doesn't match either
+      alert("It doesn't match")
+    }
+
     setFilterParams(prev => {
       const params = {
         ...prev,
-        destinationAddress: null,
-        destinationTxHash: null,
-        sourceAddress: null,
-        sourceTxHash: null,
+        address: isAddress ? e.target.value : null,
+        txHash: isTxHash ? e.target.value : null,
       }
-
-      params[filterCategory] = e.target.value
 
       return params
     })
   }
 
-  const searchBarInput = useCallback(debounce(searchBarInputCB, 600), [filterCategory])
+  const searchBarInput = useCallback(debounce(searchBarInputCB, 600), [])
 
   const columns = React.useMemo<ColumnDef<any>[]>(
     () => [
       {
         ...columnConfig,
-        accessorKey: 'StreamOffset',
-        header: () => <span>Nounce</span>,
-        cell: (value: any) => <span className=" font-bold text-b-sm">{Number(value.getValue())}</span>,
+        accessorKey: 'Node.ID',
+        header: () => <span>ID</span>,
+        cell: (value: any) => {
+          return (
+            <Link target="_blank" to={`xblock/${value.getValue()}`} className="link">
+              {value.getValue()}
+            </Link>
+          )
+        },
       },
       {
         ...columnConfig,
-        accessorKey: 'timeStamp',
+        accessorKey: 'Node.SourceBlockTime',
         header: () => <span>Age</span>,
         cell: (value: any) => (
           <span className="text-subtlest font-bold text-b-xs">
             {' '}
-            {dateFormatter(value.getValue())}
+            {dateFormatter(new Date(value.getValue()))}
           </span>
         ),
       },
       {
         ...columnConfig,
-        accessorKey: 'status',
+        accessorKey: 'Node.Status',
         header: () => <span>Status</span>,
         cell: (value: any) => <Tag status={value.getValue()} />,
       },
       {
         ...columnConfig,
-        accessorKey: 'SourceChainID',
+        accessorKey: 'Node.StreamOffset',
+        header: () => <span>Offset</span>,
+        cell: (value: any) => (
+          <>
+            <span
+              data-tooltip-id={'tooltip-offset'}
+              data-tooltip-html={`<span class="text-default text-b-sm font-bold">${value.getValue()}</span>`}
+              className="font-bold text-b-sm"
+            >
+              {Number(value.getValue())}
+            </span>
+          </>
+        ),
+      },
+      {
+        ...columnConfig,
+        accessorKey: 'Node.SourceChainID',
         header: () => <span></span>,
         cell: (value: any) => <RollupIcon chainId={value.getValue()} />,
       },
       {
         ...columnConfig,
-        accessorKey: 'SourceMessageSender',
-        header: () => <span>Address</span>,
+        accessorKey: 'Node.SourceMessageSender',
+        header: () =>
+          <div className="flex items-center">
+        <span>Address</span>
+        <Tooltip className="tooltip" id="address-info">
+          <label className="text-default text-b-sm font-bold">
+          Sender on the source chain, <br /> set to msg.Sender
+          </label>
+        </Tooltip>
+        <span data-tooltip-id={'address-info'} className="icon-tooltip-info"></span>
+      </div>,
         cell: (value: any) => (
-          <Link
-            to={`${getBaseUrl(value.row.original.SourceChainID, 'senderAddress')}/${value.getValue()}`}
-            className="link"
-          >
-            {value.getValue() && (
-              <>
-                <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
-                <span className="icon-external-link" />
-              </>
-            )}
-          </Link>
+          <>
+            <Link
+              to={`${getBaseUrl(value.row.original.Node.SourceChainID, 'senderAddress')}/${value.getValue()}`}
+              className="link"
+            >
+              {value.getValue() && (
+                <>
+                  <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
+                  <span className="icon-external-link" />
+                </>
+              )}
+            </Link>
+            <span
+              data-tooltip-id="tooltip-clipboard"
+              className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
+              onClick={() => copyToClipboard(value.getValue())}
+            />
+          </>
         ),
       },
       {
         ...columnConfig,
-        accessorKey: 'BlockHash',
-        header: () => <span>Block Hash</span>,
-        cell: (value: any) => (
-          <Link
-            target="_blank"
-            to={`${getBaseUrl(value.row.original.SourceChainID, 'blockHash')}/${value.getValue()}`}
-            className="link"
-          >
-            <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
-            <span className="icon-external-link" />
-          </Link>
+        accessorKey: 'Node.TxHash',
+        header: () => (
+          <div className="flex items-center">
+            <span>Tx Hash</span>
+            <Tooltip className="tooltip" id="tx-hash-info">
+              <label className="text-default text-b-sm font-bold">
+                Hash of the source chain <br /> transaction that emitted the message
+              </label>
+            </Tooltip>
+            <span data-tooltip-id={'tx-hash-info'} className="icon-tooltip-info"></span>
+          </div>
         ),
+        cell: (value: any) => {
+          return (
+            <>
+              {value.getValue() && (
+                <>
+                  {' '}
+                  <Link
+                    target="_blank"
+                    to={`${getBaseUrl(value.row.original.Node.SourceChainID, 'blockHash')}/${value.getValue()}`}
+                    className="link"
+                  >
+                    <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
+                    <span className="icon-external-link" />
+                  </Link>
+                  <span
+                    data-tooltip-id="tooltip-clipboard"
+                    className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
+                    onClick={() => copyToClipboard(value.getValue())}
+                  />{' '}
+                </>
+              )}
+            </>
+          )
+        },
       },
       {
         ...columnConfig,
@@ -181,92 +256,214 @@ export default function XMsgDataTable() {
       },
       {
         ...columnConfig,
-        accessorKey: 'DestChainID',
+        accessorKey: 'Node.DestChainID',
         header: () => <span></span>,
         cell: (value: any) => <RollupIcon chainId={value.getValue()} />,
       },
       {
         ...columnConfig,
-        accessorKey: 'DestAddress',
-        header: () => <span>Address</span>,
+        accessorKey: 'Node.DestAddress',
+        header: () =>
+        <div className="flex items-center">
+            <span>Address</span>
+            <Tooltip className="tooltip" id="receiver-address-info">
+              <label className="text-default text-b-sm font-bold">
+              Contract address on the destination <br /> chain that receives the call
+              </label>
+            </Tooltip>
+            <span data-tooltip-id={'receiver-address-info'} className="icon-tooltip-info"></span>
+          </div>,
         cell: (value: any) => (
-          <Link
-            target="_blank"
-            to={`${getBaseUrl(value.row.original.SourceChainID, 'destHash')}/${value.getValue()}`}
-            className="link"
-          >
-            <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
-            <span className="icon-external-link" />
-          </Link>
+          <>
+            <Link
+              target="_blank"
+              to={`${getBaseUrl(value.row.original.Node.SourceChainID, 'destHash')}/${value.getValue()}`}
+              className="link"
+            >
+              <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
+              <span className="icon-external-link" />
+            </Link>
+            <span
+              data-tooltip-id="tooltip-clipboard"
+              className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
+              onClick={() => copyToClipboard(value.getValue())}
+            />
+          </>
         ),
       },
       {
         ...columnConfig,
-        accessorKey: 'TxHash',
-        header: () => <span>Tx Hash</span>,
-        cell: (value: any) => (
-          <Link
-            target="_blank"
-            to={`${getBaseUrl(value.row.original.SourceChainID, 'tx')}/${value.getValue()}`}
-            className="link"
-          >
-            <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
-            <span className="icon-external-link" />
-          </Link>
-        ),
+        accessorKey: 'Node.ReceiptTxHash',
+        header: () =>
+        <div className="flex items-center">
+            <span>Tx Hash</span>
+            <Tooltip className="tooltip" id="receiver-tx-hash-info">
+              <label className="text-default text-b-sm font-bold">
+                Hash of the transaction executed <br /> on the destination chain by the relayer
+              </label>
+            </Tooltip>
+            <span data-tooltip-id={'receiver-tx-hash-info'} className="icon-tooltip-info"></span>
+          </div>,
+        cell: (value: any) => {
+          return (
+            <>
+              {value.getValue() && (
+                <>
+                  {' '}
+                  <Link
+                    target="_blank"
+                    to={`${getBaseUrl(value.row.original.Node.SourceChainID, 'blockHash')}/${value.getValue()}`}
+                    className="link"
+                  >
+                    <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
+                    <span className="icon-external-link" />
+                  </Link>
+                  <span
+                    data-tooltip-id="tooltip-clipboard"
+                    className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
+                    onClick={() => copyToClipboard(value.getValue())}
+                  />{' '}
+                </>
+              )}
+              {!value.getValue() && '----'}
+            </>
+          )
+        },
       },
     ],
     [],
   )
-
   return (
     <div className="flex-none">
       <div className="flex flex-col">
-        <h5 className="text-default mb-4">XMsgs</h5>
-        {/* <div className={'flex mb-4 gap-2 flex-col md:flex-row'}>
+        <h5 className="text-default mb-4">
+          XMsgs{' '}
+          <Tooltip className="tooltip" id="xmsg-info">
+            <label className="text-default text-b-sm font-bold">
+              XMsgs are cross-rollup messages. <br /> Click to learn more
+            </label>
+          </Tooltip>
+          <Link
+            data-tooltip-id={'xmsg-info'}
+            target="_blank"
+            to="https://docs.omni.network/protocol/xmessages/xmsg"
+          >
+            <span className="icon-tooltip-info"></span>
+          </Link>
+        </h5>
+
+        <div className={'flex mb-4 gap-2 flex-col md:flex-row'}>
           <div className="flex w-full">
-            <Dropdown
-              position="left"
-              options={filterOptions}
-              onChange={value => {
-                setFilterCategory(value)
-                if (searchFieldRef.current) {
-                  searchFieldRef.current.value = ''
-                }
-                setSearchPlaceholder(
-                  `Search by ${(filterOptions.find(option => option.value === value)?.display || filterOptions[0].display).toLowerCase()}`,
-                )
-              }}
-              defaultValue={filterOptions[0].value}
+            <SearchBar
+              ref={searchFieldRef}
+              onInput={searchBarInput}
+              placeholder={'Search by address/tx hash'}
             />
-            <SearchBar ref={searchFieldRef} onInput={searchBarInput} placeholder={searchPlaceholder} />
           </div>
-          <ChainDropdown placeholder="Select source" label="From" options={sourceChainList} />
-          <ChainDropdown placeholder="Select destination" label="To" options={sourceChainList} />
-        </div> */}
+          <ChainDropdown
+            onChange={e => {
+              setFilterParams(prev => ({
+                ...prev,
+                sourceChain: e,
+              }))
+            }}
+            placeholder="Select source"
+            label="From"
+            options={sourceChainList}
+            value={filterParams.sourceChain}
+          />
+          <ChainDropdown
+            onChange={e => {
+              setFilterParams(prev => ({
+                ...prev,
+                destChain: e,
+              }))
+            }}
+            placeholder="Select destination"
+            label="To"
+            options={sourceChainList}
+            value={filterParams.destChain}
+          />
+        </div>
+        <div className={`flex justify-between mb-4`}>
+          <div className="">
+            <FilterOptions
+              value={filterParams.status}
+              onSelection={status => {
+                setFilterParams(prev => ({
+                  ...prev,
+                  status: status === 'all' ? null : status,
+                }))
+              }}
+              options={['All', 'Success', 'Pending', 'Failed']}
+            />
+          </div>
+          <Button
+            disabled={!hasFiltersApplied}
+            onClick={clearFilters}
+            kind="text"
+            className={`flex justify-center items-center ${!hasFiltersApplied && 'opacity-40'}`}
+          >
+            {' '}
+            <span className="icon-refresh text-default text-[20px]" />
+            <span className={`text-default`}>Clear all filters</span>
+          </Button>
+        </div>
       </div>
       <div>
-        <SimpleTable
-          // headChildren={
-          //   <div className={`flex justify-between `}>
-          //     <div className="table-highlight  w-[21.856%] min-w-[221px]"></div>
-          //     <div className={`px-6 py-3`}>
-          //       <FilterOptions
-          //         onSelection={status => {
-          //           setFilterParams(prev => ({
-          //             ...prev,
-          //             status: status === 'all' ? null : status,
-          //           }))
-          //         }}
-          //         options={['All', 'Success', 'Pending', 'Failed']}
-          //       />
-          //     </div>
-          //   </div>
-          // }
-          columns={columns}
-          data={rows}
-        />
+        {/* <div className='rounded-xl bg-raised p-10 min-h-[650px]'>
+          <h4 className='text-default mb-4'>No result found.</h4>
+          <p className='text-default text-b'>Please edit your filter selection and try again.</p>
+        </div> */}
+
+        <SimpleTable columns={columns} data={rows} />
+
+        {/* Nav Buttons */}
+        <div className="flex flex-row items-center justify-end mt-4">
+          <PageButton
+            className="rounded-full flex items-center justify-center"
+            onClick={() => {
+              setFilterParams(prev => ({ ...prev, cursor: data.prevCursor }))
+            }} // TODO: when clicked it needs to update the search params with the new cursor
+            disabled={false} // TODO: When there is no previous cursor, we need to disable this
+          >
+            <span className="sr-only">Previous</span>
+            <span className={`icon-chevron-med-left text-[20px]`}></span>
+          </PageButton>
+
+          {/* Page N of N */}
+          <div className="flex-none flex m-3">
+            <div className="flex gap-x-2 items-baseline">
+              <span className="text-cb-sm text-default">
+                Page{' '}
+                <span className="">
+                  {Math.ceil(
+                    parseInt(data.xmsgCount.slice(2), 16) - parseInt(data.nextCursor.slice(2), 16),
+                  ) / 10}
+                </span>{' '}
+                of <span className="">{Math.ceil(parseInt(data.xmsgCount.slice(2), 16) / 10)}</span>
+              </span>
+            </div>
+          </div>
+
+          <PageButton
+            className="rounded-full  flex items-center justify-center"
+            onClick={() => {
+              setFilterParams(prev => ({ ...prev, cursor: data.nextCursor }))
+            }} // TODO: when clicked it needs to update the search params with the new cursor
+            disabled={false} // TODO: When there is no next cursor, we need to disable this
+          >
+            <span className="sr-only">Next</span>
+            <span className={`icon-chevron-med-right text-[20px]`}></span>
+          </PageButton>
+        </div>
       </div>
+
+      {/* tooltip for offset */}
+      <Tooltip className="tooltip" id={'tooltip-offset'} />
+      <Tooltip className="tooltip" id="tooltip-clipboard">
+        <span className="text-default text-b-sm font-bold">Copy to clipboard </span>
+      </Tooltip>
     </div>
   )
 }
