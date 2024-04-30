@@ -55,7 +55,6 @@ export default function XMsgDataTable() {
   const totalEntries = Number(data.startCursor)
   const currentPage = data.xmsgs
 
-
   const columnConfig = {
     canFilter: false,
     enableColumnFilter: false,
@@ -127,6 +126,18 @@ export default function XMsgDataTable() {
     () => [
       {
         ...columnConfig,
+        accessorKey: 'Node.ID',
+        header: () => <span>ID</span>,
+        cell: (value: any) => {
+          return (
+            <Link target="_blank" to={`xblock/${value.getValue()}`} className="link">
+              {value.getValue()}
+            </Link>
+          )
+        },
+      },
+      {
+        ...columnConfig,
         accessorKey: 'Node.SourceBlockTime',
         header: () => <span>Age</span>,
         cell: (value: any) => (
@@ -167,7 +178,16 @@ export default function XMsgDataTable() {
       {
         ...columnConfig,
         accessorKey: 'Node.SourceMessageSender',
-        header: () => <span>Address</span>,
+        header: () =>
+          <div className="flex items-center">
+        <span>Address</span>
+        <Tooltip className="tooltip" id="address-info">
+          <label className="text-default text-b-sm font-bold">
+          Sender on the source chain, <br /> set to msg.Sender
+          </label>
+        </Tooltip>
+        <span data-tooltip-id={'address-info'} className="icon-tooltip-info"></span>
+      </div>,
         cell: (value: any) => (
           <>
             <Link
@@ -192,24 +212,41 @@ export default function XMsgDataTable() {
       {
         ...columnConfig,
         accessorKey: 'Node.TxHash',
-        header: () => <span>Tx Hash</span>,
-        cell: (value: any) => (
-          <>
-            <Link
-              target="_blank"
-              to={`${getBaseUrl(value.row.original.Node.SourceChainID, 'blockHash')}/${value.getValue()}`}
-              className="link"
-            >
-              <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
-              <span className="icon-external-link" />
-            </Link>
-            <span
-              data-tooltip-id="tooltip-clipboard"
-              className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
-              onClick={() => copyToClipboard(value.getValue())}
-            />
-          </>
+        header: () => (
+          <div className="flex items-center">
+            <span>Tx Hash</span>
+            <Tooltip className="tooltip" id="tx-hash-info">
+              <label className="text-default text-b-sm font-bold">
+                Hash of the source chain <br /> transaction that emitted the message
+              </label>
+            </Tooltip>
+            <span data-tooltip-id={'tx-hash-info'} className="icon-tooltip-info"></span>
+          </div>
         ),
+        cell: (value: any) => {
+          return (
+            <>
+              {value.getValue() && (
+                <>
+                  {' '}
+                  <Link
+                    target="_blank"
+                    to={`${getBaseUrl(value.row.original.Node.SourceChainID, 'blockHash')}/${value.getValue()}`}
+                    className="link"
+                  >
+                    <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
+                    <span className="icon-external-link" />
+                  </Link>
+                  <span
+                    data-tooltip-id="tooltip-clipboard"
+                    className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
+                    onClick={() => copyToClipboard(value.getValue())}
+                  />{' '}
+                </>
+              )}
+            </>
+          )
+        },
       },
       {
         ...columnConfig,
@@ -226,7 +263,16 @@ export default function XMsgDataTable() {
       {
         ...columnConfig,
         accessorKey: 'Node.DestAddress',
-        header: () => <span>Address</span>,
+        header: () =>
+        <div className="flex items-center">
+            <span>Address</span>
+            <Tooltip className="tooltip" id="receiver-address-info">
+              <label className="text-default text-b-sm font-bold">
+              Contract address on the destination <br /> chain that receives the call
+              </label>
+            </Tooltip>
+            <span data-tooltip-id={'receiver-address-info'} className="icon-tooltip-info"></span>
+          </div>,
         cell: (value: any) => (
           <>
             <Link
@@ -248,29 +294,45 @@ export default function XMsgDataTable() {
       {
         ...columnConfig,
         accessorKey: 'Node.ReceiptTxHash',
-        header: () => <span>Tx Hash</span>,
-        cell: (value: any) => (
-          <>
-            <Link
-              target="_blank"
-              to={`${getBaseUrl(value.row.original.Node.SourceChainID, 'tx')}/${value.getValue()}`}
-              className="link"
-            >
-              <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
-              <span className="icon-external-link" />
-            </Link>
-            <span
-              data-tooltip-id="tooltip-clipboard"
-              className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
-              onClick={() => copyToClipboard(value.getValue())}
-            />
-          </>
-        ),
+        header: () =>
+        <div className="flex items-center">
+            <span>Tx Hash</span>
+            <Tooltip className="tooltip" id="receiver-tx-hash-info">
+              <label className="text-default text-b-sm font-bold">
+                Hash of the transaction executed <br /> on the destination chain by the relayer
+              </label>
+            </Tooltip>
+            <span data-tooltip-id={'receiver-tx-hash-info'} className="icon-tooltip-info"></span>
+          </div>,
+        cell: (value: any) => {
+          return (
+            <>
+              {value.getValue() && (
+                <>
+                  {' '}
+                  <Link
+                    target="_blank"
+                    to={`${getBaseUrl(value.row.original.Node.SourceChainID, 'blockHash')}/${value.getValue()}`}
+                    className="link"
+                  >
+                    <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
+                    <span className="icon-external-link" />
+                  </Link>
+                  <span
+                    data-tooltip-id="tooltip-clipboard"
+                    className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
+                    onClick={() => copyToClipboard(value.getValue())}
+                  />{' '}
+                </>
+              )}
+              {!value.getValue() && '----'}
+            </>
+          )
+        },
       },
     ],
     [],
   )
-
   return (
     <div className="flex-none">
       <div className="flex flex-col">
@@ -360,7 +422,9 @@ export default function XMsgDataTable() {
         <div className="flex flex-row items-center justify-end mt-4">
           <PageButton
             className="rounded-full flex items-center justify-center"
-            onClick={() => {}} // TODO: when clicked it needs to update the search params with the new cursor
+            onClick={() => {
+              setFilterParams(prev => ({ ...prev, cursor: data.prevCursor }))
+            }} // TODO: when clicked it needs to update the search params with the new cursor
             disabled={false} // TODO: When there is no previous cursor, we need to disable this
           >
             <span className="sr-only">Previous</span>
@@ -371,8 +435,13 @@ export default function XMsgDataTable() {
           <div className="flex-none flex m-3">
             <div className="flex gap-x-2 items-baseline">
               <span className="text-cb-sm text-default">
-                Page <span className="">{Number(data.xmsgs[0].Cursor)}</span> of{' '}
-                <span className="">{Math.round(Number(data.xmsgCount) / 10)}</span>
+                Page{' '}
+                <span className="">
+                  {Math.ceil(
+                    parseInt(data.xmsgCount.slice(2), 16) - parseInt(data.nextCursor.slice(2), 16),
+                  ) / 10}
+                </span>{' '}
+                of <span className="">{Math.ceil(parseInt(data.xmsgCount.slice(2), 16) / 10)}</span>
               </span>
             </div>
           </div>
@@ -380,7 +449,7 @@ export default function XMsgDataTable() {
           <PageButton
             className="rounded-full  flex items-center justify-center"
             onClick={() => {
-              setFilterParams(prev => ({ ...prev, cursor: data.startCursor }))
+              setFilterParams(prev => ({ ...prev, cursor: data.nextCursor }))
             }} // TODO: when clicked it needs to update the search params with the new cursor
             disabled={false} // TODO: When there is no next cursor, we need to disable this
           >

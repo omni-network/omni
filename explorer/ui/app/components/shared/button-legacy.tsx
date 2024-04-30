@@ -23,4 +23,3 @@ export function PageButton({ children, className, ...rest }) {
     </button>
   )
 }
-
