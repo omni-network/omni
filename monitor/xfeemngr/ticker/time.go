@@ -27,7 +27,9 @@ func WithInterval(interval time.Duration) func(*Opts) {
 
 func defaultOpts() *Opts {
 	return &Opts{
-		interval: 30 * time.Second,
+		// Default for all xfeemngr/ticker instances
+		// If moved to outside xfeemngr, consider a new default
+		interval: 5 * time.Minute,
 	}
 }
 

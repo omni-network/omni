@@ -4,15 +4,16 @@ import (
 	"context"
 	"sync"
 
-	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/tokens"
 )
 
 type Buffer struct {
 	mu     sync.RWMutex
+	once   sync.Once
 	buffer map[tokens.Token]float64 // map token to price
 	pricer tokens.Pricer
+	tokens []tokens.Token
 	opts   *Opts
 }
 
@@ -21,17 +22,27 @@ type Buffer struct {
 // A token price buffer maintains a buffered view of token prices for multiple
 // tokens. Buffered token prices are not updated unless they are outside the
 // threshold percentage. Start steaming token prices with Buffer.Stream(ctx).
-func NewBuffer(price tokens.Pricer, opts ...func(*Opts)) (*Buffer, error) {
-	o, err := makeOpts(opts)
-	if err != nil {
-		return nil, errors.Wrap(err, "invalid options")
+func NewBuffer(price tokens.Pricer, optOrTokens ...any) *Buffer {
+	opts := defaultOpts()
+	tkns := make([]tokens.Token, 0)
+
+	for _, optOrToken := range optOrTokens {
+		if o, ok := optOrToken.(func(*Opts)); ok {
+			o(opts)
+		}
+
+		if token, ok := optOrToken.(tokens.Token); ok {
+			tkns = append(tkns, token)
+		}
 	}
 
 	return &Buffer{
+		mu:     sync.RWMutex{},
 		buffer: make(map[tokens.Token]float64),
 		pricer: price,
-		opts:   o,
-	}, nil
+		tokens: tkns,
+		opts:   opts,
+	}
 }
 
 // Price returns the buffered price for the given token.
@@ -44,16 +55,20 @@ func (b *Buffer) Price(token tokens.Token) float64 {
 
 // Stream starts streaming prices for all tokens into the buffer.
 func (b *Buffer) Stream(ctx context.Context) {
-	b.stream(ctx)
+	b.once.Do(func() {
+		ctx = log.WithCtx(ctx, "component", "tokenprice.Buffer")
+		log.Info(ctx, "Streaming token prices into buffer")
+
+		b.stream(ctx)
+	})
 }
 
 // stream starts streaming prices for all tokens into the buffer.
 func (b *Buffer) stream(ctx context.Context) {
-	ctx = log.WithCtx(ctx, "tokens", b.opts.tokens)
 	tick := b.opts.ticker
 
 	callback := func(ctx context.Context) {
-		prices, err := b.pricer.Price(ctx, b.opts.tokens...)
+		prices, err := b.pricer.Price(ctx, b.tokens...)
 		if err != nil {
 			log.Error(ctx, "Failed to get prices - will retry", err)
 			return
@@ -68,6 +83,8 @@ func (b *Buffer) stream(ctx context.Context) {
 			}
 
 			b.setPrice(token, price)
+
+			log.Debug(ctx, "Updating token price", "token", token, "old", buffed, "new", price)
 		}
 	}
 
