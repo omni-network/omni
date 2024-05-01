@@ -10,7 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/price/coingecko"
+	"github.com/omni-network/omni/lib/tokens/coingecko"
 	"github.com/omni-network/omni/lib/xfee"
 
 	"github.com/ethereum/go-ethereum/common"

@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/price"
 	"github.com/omni-network/omni/lib/tokens"
 )
 
@@ -21,7 +20,7 @@ type Client struct {
 	host string
 }
 
-var _ price.Provider = Client{}
+var _ tokens.Pricer = Client{}
 
 // New creates a new goingecko Client with the given options.
 func New(opts ...func(*options)) Client {

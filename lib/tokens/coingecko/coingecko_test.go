@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omni-network/omni/lib/price/coingecko"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/tokens/coingecko"
 
 	"github.com/stretchr/testify/require"
 )

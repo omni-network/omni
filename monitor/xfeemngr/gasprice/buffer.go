@@ -10,16 +10,10 @@ import (
 )
 
 type Buffer struct {
-	mu sync.RWMutex
-
-	// map chainID to buffered gas price (not changed if outside threshold)
-	buffer map[uint64]uint64
-
-	// map chainID to provider
-	pricers map[uint64]ethereum.GasPricer
-
-	// options
-	opts *Opts
+	mu      sync.RWMutex
+	buffer  map[uint64]uint64             // map chainID to buffered gas price (not changed if outside threshold)
+	pricers map[uint64]ethereum.GasPricer // map chainID to provider
+	opts    *Opts
 }
 
 // NewBuffer creates a new gas price buffer.
@@ -69,9 +63,9 @@ func (b *Buffer) streamOne(ctx context.Context, chainID uint64) {
 
 		price := gasPrice.Uint64()
 
-		// if price is buffed, and not outside threshold, return
+		// if price is buffed, and within threshold, return
 		buffed, ok := b.price(chainID)
-		if ok && !isOutsideThreshold(price, buffed, b.opts.thresholdPct) {
+		if ok && inThreshold(price, buffed, b.opts.thresholdPct) {
 			return
 		}
 
@@ -100,11 +94,11 @@ func (b *Buffer) price(chainID uint64) (uint64, bool) {
 	return price, ok
 }
 
-// isOutsideThreshold returns true if a greater or less than b by pct.
-func isOutsideThreshold(a, b uint64, pct float64) bool {
+// inThreshold returns true if a greater or less than b by pct.
+func inThreshold(a, b uint64, pct float64) bool {
 	bf := float64(b)
 	gt := a > uint64(bf+(bf*pct))
 	lt := a < uint64(bf-(bf*pct))
 
-	return gt || lt
+	return !gt && !lt
 }
