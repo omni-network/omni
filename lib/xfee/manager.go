@@ -9,7 +9,6 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
-	"github.com/omni-network/omni/lib/price"
 	"github.com/omni-network/omni/lib/tokens"
 )
 
@@ -21,12 +20,12 @@ var conversionRateDenom = big.NewInt(1_000_000)
 
 // Manager is a  fee manager, that managers xchain fee parameters across multiple chains.
 type Manager struct {
-	pricer   price.Provider
+	pricer   tokens.Pricer
 	chainIDs []uint64
 	backends ethbackend.Backends
 }
 
-func NewManager(chainIDs []uint64, pricer price.Provider, backends ethbackend.Backends) *Manager {
+func NewManager(chainIDs []uint64, pricer tokens.Pricer, backends ethbackend.Backends) *Manager {
 	return &Manager{
 		pricer:   pricer,
 		chainIDs: chainIDs,
@@ -103,7 +102,7 @@ func (m Manager) destChainIds(srcChainID uint64) []uint64 {
 }
 
 // conversionRate returns the conversion rate C such that.
-func conversionRate(ctx context.Context, pricer price.Provider, from, to tokens.Token) (*big.Int, error) {
+func conversionRate(ctx context.Context, pricer tokens.Pricer, from, to tokens.Token) (*big.Int, error) {
 	if from == to {
 		return conversionRateDenom, nil
 	}
