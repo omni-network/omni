@@ -13,6 +13,7 @@
 :root {
   --ifm-font-family-base: "Manrope";
   --ifm-heading-font-family: "Inter";
+  --ifm-font-family-monospace: "Geist Mono", monospace;
   --ifm-color-primary: #0564ff;
   --ifm-color-primary-dark: #0056e1;
   --ifm-color-primary-darker: #0049be;
@@ -21,8 +22,9 @@
   --ifm-color-primary-lighter: #6ca5ff;
   --ifm-color-primary-lightest: #93bdff;
   --ifm-color-secondary: #f1f4f9;
+  --ifm-color-secondary-dark: #e6e9ee;
   --ifm-color-gray-200: #93bdff;
-  --ifm-code-font-size: 85%;
+  --ifm-code-font-size: 90%;
   --ifm-heading-color: #003b99;
   --ifm-navbar-background-color: #ffffff;
   --ifm-footer-background-color: #ffffff;
@@ -40,6 +42,7 @@
   --ifm-color-primary-lightest: #e7ebeb;
   --ifm-color-gray-800: #8498b9;
   --ifm-color-secondary: #0d2143;
+  --ifm-color-secondary-dark: #153161;
   --ifm-heading-color: #afbfd8;
   --ifm-navbar-background-color: #00122f;
   --ifm-footer-background-color: #00122f;
@@ -117,7 +120,6 @@ h1:after {
 
 code {
   font-weight: 550;
-  font-family: 'Geist Mono', monospace;
   color: var(--ifm-color-primary-darker);
 }
 
