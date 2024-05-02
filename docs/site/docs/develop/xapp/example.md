@@ -2,41 +2,15 @@
 sidebar_position: 3
 ---
 
+import CodeSnippet from '@site/src/components/CodeSnippet/CodeSnippet';
+
 # Example
 
 Here's an example of a simple cross chain contract, `XGreeter`. This contract lets you send greetings from one chain to another.
 
 ## `XGreeter` Contract
 
-```solidity
-/**
- * @title XGreeter
- * @notice A cross chain greeter
- */
-contract XGreeter is XApp {
-    /// @dev Emitted when someone greets the ether
-    event Greetings(address indexed from, uint64 indexed fromChainId, string greeting);
-
-    constructor(address portal) XApp(portal) { }
-
-    /// @dev Greet on another chain
-    ///      `xcall` is a method inherited from `XApp`
-    function xgreet(uint64 destChainId, address to, string calldata greeting) external {
-        xcall(
-            destChainId,
-            to,
-            abi.encodeWithSignature("greet(string)", greeting)
-        );
-    }
-
-    /// @dev Greet on this chain
-    ///      The `xrecv` modifier reads the current xmsg into `xmsg` storage
-    function greet(string calldata greeting) external xrecv {
-        require(isXCall(), "XGreeter: only xcall");
-        emit Greetings(xmsg.sender, xmsg.sourceChainId, greeting);
-    }
-}
-```
+<CodeSnippet repoUrl="https://github.com/omni-network/omni-forge-template/blob/main/src/XGreeter.sol" />
 
 ## Walkthrough
 
@@ -60,9 +34,7 @@ To call a contract on another chain, use `xcall`.
 ```solidity
 function xgreet(uint64 destChainId, address to, string calldata greeting) external {
     xcall(
-        destChainId
-        to,
-        abi.encodeWithSignature("greet(string)", greeting)
+        // params for xcall
     );
 }
 ```
@@ -72,8 +44,8 @@ function xgreet(uint64 destChainId, address to, string calldata greeting) extern
 When receiving an `xcall`, you can read its context via `omni.xmsg()`.
 
 ```solidity
-omni.xmsg().sourceChainId // where this xcall came from
-omni.xmsg().sender        // who sent it
+xmsg.sourceChainId // where this xcall came from
+xmsg.sender        // who sent it
 ```
 
 With this context, we can have our `XGreeter` emit events detailing the source chain and sender.

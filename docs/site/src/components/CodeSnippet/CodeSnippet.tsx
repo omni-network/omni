@@ -12,15 +12,26 @@ const CodeSnippet = ({ repoUrl }) => {
 
   useEffect(() => {
     async function fetchCode() {
-      const match = repoUrl.match(/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/([^#]+)(#L(\d+)-L(\d+))?/);
+      // Use a single regex that can optionally capture line numbers
+      const regex = /(https:\/\/github\.com\/)([^\/]+)\/([^\/]+)\/blob\/([^\/]+)\/([^#]+)#L(\d+)-(\d+)/;
+      var match = repoUrl.match(regex);
+      if (!match) {
+        const noLinesRegex = /(https:\/\/github\.com\/)([^\/]+)\/([^\/]+)\/blob\/([^\/]+)\/([^#]+)/;
+        match = repoUrl.match(noLinesRegex);
+      }
+
       if (match) {
-        const [, owner, repo, branch, filePath, , startLine, endLine] = match;
-        setSourceUrl(`https://github.com/${owner}/${repo}/blob/${branch}/${filePath}`);
-        const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filePath}`;
+        const [wholeUrl, site, owner, repo, branch, filePath, startLine, endLine] = match;
+        // Build the source URL to view on GitHub, including line numbers if available
+        setSourceUrl(`https://github.com/${owner}/${repo}/blob/${branch}/${filePath}${startLine ? `#L${startLine}-L${endLine}` : ''}`);
+        // Fetch the raw content from GitHub
+        const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filePath}` + (startLine && endLine ? `#L${startLine}-L${endLine}` : '');
+
         try {
           const response = await axios.get(rawUrl);
           const allLines = response.data.split('\n');
-          const lines = startLine && endLine ? allLines.slice(startLine - 1, endLine).join('\n') : allLines.join('\n');
+          // Apply line slicing only if line numbers are provided and valid
+          const lines = (startLine && endLine) ? allLines.slice(parseInt(startLine) - 1, parseInt(endLine)).join('\n') : allLines.join('\n');
           setCode(lines);
           setLanguage(determineLanguage(filePath));
         } catch (error) {
@@ -59,11 +70,10 @@ const CodeSnippet = ({ repoUrl }) => {
       '.xml': 'xml',
       '.sql': 'sql',
     };
-    return languageMap[extension] || 'plaintext'; // Default to plaintext if no match found
+    return languageMap[extension] || 'plaintext';
   }
 
   function getGithubIcon() {
-    // determine which svg string to get based on the theme
     const { colorMode } = useColorMode();
     return colorMode === 'dark' ? "/img/github-icon-light.svg" : "/img/github-icon-dark.svg";
   }
