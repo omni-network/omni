@@ -16,11 +16,6 @@ func TestSupportedChains(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	test := createGqlTest(t)
-	t.Cleanup(func() {
-		if err := test.Client.Close(); err != nil {
-			t.Error(err)
-		}
-	})
 	db.CreateTestChain(t, ctx, test.Client, 1)
 	db.CreateTestChain(t, ctx, test.Client, 2)
 

@@ -72,7 +72,7 @@ func EntMsgToGraphQLXMsg(msg *ent.Msg) (*resolvers.XMsg, error) {
 		return nil, errors.Wrap(err, "decoding dest gas limit")
 	}
 
-	streamOffset, err := utils.Uint2Big(msg.StreamOffset)
+	offset, err := utils.Uint2Big(msg.Offset)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding stream offset")
 	}
@@ -89,7 +89,7 @@ func EntMsgToGraphQLXMsg(msg *ent.Msg) (*resolvers.XMsg, error) {
 		DestAddress:         common.Address(msg.DestAddress),
 		DestGasLimit:        hexutil.Big(destGasLimit),
 		DestChainID:         hexutil.Big(destChainIDBig),
-		StreamOffset:        hexutil.Big(streamOffset),
+		Offset:              hexutil.Big(offset),
 		TxHash:              common.Hash(msg.TxHash),
 		Data:                msg.Data,
 		BlockHeight:         hexutil.Big(blockHeight),

@@ -28,9 +28,14 @@ Output values are all 0x-prefixed hexadecimal.
 """
 scalar Long
 
-scalar Time
-
-scalar ID
+"""
+XMsgStatus represents the status of X messages.
+"""
+enum XMsgStatus {
+  PENDING
+  PROCESSED
+  FAILED
+}
 
 """
 XMsg is a cross-chain message.
@@ -39,8 +44,11 @@ type XMsg {
   "ID of the XMsg"
   ID: ID!
 
+  "Display ID of the XMsg in the form of `<srcChainID>-<destChainID>-<offset>`"
+  DisplayID: String!
+
   "Monotonically incremented offset of Msg in the Stream"
-  StreamOffset: BigInt!
+  Offset: BigInt!
 
   "Sender on source chain, set to msg.Sender"
   SourceMessageSender: Address!
@@ -70,7 +78,7 @@ type XMsg {
   ReceiptTxHash: Bytes32
 
   "Status of the message"
-  Status: String!
+  Status: XMsgStatus!
 
   "Timestamp of the source chain block"
   SourceBlockTime: Time!
@@ -78,8 +86,8 @@ type XMsg {
   "XBlock message was emitted in"
   Block: XBlock!
 
-  "Receipts of the message"
-  Receipts: [XReceipt!]!
+  "Receipts of the message if available"
+  Receipt: XReceipt
 }
 
 """
@@ -98,9 +106,6 @@ type XBlock {
   "All cross-chain messages sent/emittted in the block"
   Messages: [XMsg!]!
 
-  "Receipts of all submitted cross-chain messages applied in the block"
-  Receipts: [XReceipt!]!
-
   "Timestamp of the source chain block"
   Timestamp: Time!
 }
@@ -109,8 +114,8 @@ type XBlock {
 XReceipt represents a cross-chain receipt.
 """
 type XReceipt {
-  "UUID of our block"
-  UUID: ID!
+  "ID of the receipt"
+  ID: ID!
 
   "Gas used for the cross-chain message"
   GasUsed: BigInt!
@@ -128,7 +133,7 @@ type XReceipt {
   DestChainID: BigInt!
 
   "Monotonically incremented offset of Msg in the Stream"
-  StreamOffset: BigInt!
+  Offset: BigInt!
 
   "Hash of the source chain transaction that emitted the message"
   TxHash: Bytes32!
@@ -139,7 +144,7 @@ type XReceipt {
   "XBlock message was emitted in"
   Block: XBlock!
 
-  "Messages associated wit this receipt"
+  "Messages associated with this receipt"
   Messages: [XMsg!]!
 }
 
@@ -152,36 +157,6 @@ type Chain {
 
   "Chain name"
   Name: String!
-}
-
-"""
-Search for cross-chain messages and receipts.
-"""
-type SearchResult {
-  "Type"
-  Type: SearchResultType!
-
-  "Hash"
-  TxHash: Bytes32!
-
-  "Source chain ID"
-  SourceChainID: BigInt!
-
-  "Block Height"
-  BlockHeight: BigInt!
-}
-
-enum SearchResultType {
-  BLOCK
-  MESSAGE
-  RECEIPT
-  ADDRESS
-}
-
-enum XMsgStatus {
-  PENDING
-  PROCESSED
-  FAILED
 }
 
 """
@@ -213,40 +188,37 @@ type XMsgEdge {
 PageInfo represents pagination information
 """
 type PageInfo {
-  "Next Cursor"
-  NextCursor: BigInt!
+  "The cursor to the first page. Null if not available."
+  FirstCursor: ID
 
-  "Has Next Page"
+  "The cursor to the last page. Null if not available."
+  LastCursor: ID
+
+  "Next page cursor. Null if not available."
+  NextCursor: ID
+
+  "Has next page"
   HasNextPage: Boolean!
 
-  "Previous Cursor"
-  PrevCursor: BigInt!
+  "Previous page cursor. Null if not available."
+  PrevCursor: ID
 
-  "Previous Page Cursor"
+  "Previous page cursor"
   HasPrevPage: Boolean!
+
+  "Total number of pages"
+  TotalPages: Int!
+
+  "Current page number"
+  CurrentPage: Int!
 }
 
 """
 The query type represents all of the entry points into our object graph.
 """
 type Query {
-  "Retrieve a specific XBlock by source chain ID and height."
+  "Retrieve a specific XBlock by source chain ID and height on that chain."
   xblock(sourceChainID: BigInt!, height: BigInt!): XBlock
-
-  "Retrieve a range of XBlocks by source chain ID and height."
-  xblockrange(from: BigInt!, to: BigInt!): [XBlock]!
-
-  "Get the total count of XBlocks."
-  xblockcount: BigInt
-
-  "Retrieve a range of XMsgs by source chain ID and height."
-  xmsgrange(from: BigInt!, to: BigInt!): [XMsg]!
-
-  "Get the total count of XMsgs."
-  xmsgcount: BigInt
-
-  "Get the total count of XReceipts."
-  xreceiptcount: BigInt
 
   "Retrieve a specific XReceipt by source chain ID, destination chain ID, and stream offset."
   xreceipt(sourceChainID: BigInt!, destChainID: BigInt!, offset: BigInt!): XReceipt
@@ -254,12 +226,12 @@ type Query {
   "Retrieve a specific XMsg by source chain ID, destination chain ID, and stream offset."
   xmsg(sourceChainID: BigInt!, destChainID: BigInt!, offset: BigInt!): XMsg
 
+  "Returns a paginated list of XMsgs based on the provided arguments. For forwards pagination, provide `first` and `after`. For backwards pagination, provide `last` and `before`. Defaults to the last 50 messages."
+  xmsgs(first: Int, after: ID, last: Int = 50, before: ID): XMsgResult!
+
+  "Search for cross-chain messages using a query string.  For forwards pagination, provide `first` and `after`. For backwards pagination, provide `last` and `before`. Defaults to the last 50 messages."
+  search(query: String!, first: Int, after: ID, last: Int = 50, before: ID): XMsgResult!
+
   "Get the list of supported chains."
   supportedchains: [Chain]!
-
-  "Search for cross-chain messages and receipts using a query string."
-  search(query: String!): SearchResult
-
-  "Retrieve a paginated list of XMsgs."
-  xmsgs(limit: BigInt, cursor: BigInt): XMsgResult
 }

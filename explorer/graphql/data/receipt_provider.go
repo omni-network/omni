@@ -27,12 +27,12 @@ func (p Provider) XReceiptCount(ctx context.Context) (*hexutil.Big, bool, error)
 	return &hex, true, nil
 }
 
-func (p Provider) XReceipt(ctx context.Context, sourceChainID, destChainID, streamOffset uint64) (*resolvers.XReceipt, bool, error) {
+func (p Provider) XReceipt(ctx context.Context, sourceChainID, destChainID, offset uint64) (*resolvers.XReceipt, bool, error) {
 	query, err := p.EntClient.Receipt.Query().
 		Where(
 			receipt.SourceChainID(sourceChainID),
 			receipt.DestChainID(destChainID),
-			receipt.StreamOffset(streamOffset),
+			receipt.Offset(offset),
 		).
 		First(ctx)
 	if err != nil {

@@ -5,9 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/omni-network/omni/explorer/db"
-	"github.com/omni-network/omni/explorer/db/ent"
-	"github.com/omni-network/omni/explorer/graphql/data"
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -24,20 +21,20 @@ func Run(ctx context.Context, cfg Config) error {
 
 	buildinfo.Instrument(ctx)
 
-	// create ent client
-	entCl, err := db.NewPostgressClient(cfg.ExplorerDBConn)
-	if err != nil {
-		return errors.Wrap(err, "create db client")
-	}
+	// // create ent client
+	// entCl, err := db.NewPostgressClient(cfg.ExplorerDBConn)
+	// if err != nil {
+	// 	return errors.Wrap(err, "create db client")
+	// }
+	//
+	// defer func(entCl *ent.Client) {
+	// 	err := entCl.Close()
+	// 	if err != nil {
+	// 		log.Error(ctx, "Failed to close ent client", err)
+	// 	}
+	// }(entCl)
 
-	defer func(entCl *ent.Client) {
-		err := entCl.Close()
-		if err != nil {
-			log.Error(ctx, "Failed to close ent client", err)
-		}
-	}(entCl)
-
-	provider := data.Provider{EntClient: entCl}
+	// provider := data.Provider{EntClient: entCl}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", home)
