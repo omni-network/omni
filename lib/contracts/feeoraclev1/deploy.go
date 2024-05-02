@@ -11,7 +11,6 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens/coingecko"
-	"github.com/omni-network/omni/lib/xfee"
 
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -115,9 +114,7 @@ func Deploy(ctx context.Context, network netconf.ID, chainID uint64, destChainID
 		return common.Address{}, nil, errors.Wrap(err, "bind opts")
 	}
 
-	feemngr := xfee.NewManager(append(destChainIDs, chainID), coingecko.New(), backends)
-
-	feeparams, err := feemngr.FeeParams(ctx, chainID)
+	feeparams, err := feeParams(ctx, chainID, destChainIDs, backends, coingecko.New())
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "fee params")
 	}
