@@ -13,17 +13,17 @@ import (
 	"github.com/cometbft/cometbft/test/e2e/pkg/infra/docker"
 )
 
-// Cleanup removes the infra containers and testnet directory.
-func Cleanup(ctx context.Context, def Definition) error {
+// CleanInfra stops and removes the infra containers.
+func CleanInfra(ctx context.Context, def Definition) error {
 	if err := def.Infra.Clean(ctx); err != nil {
 		return errors.Wrap(err, "cleaning infrastructure")
 	}
 
-	return cleanupDir(ctx, def.Testnet.Dir)
+	return nil
 }
 
-// cleanupDir cleans up a testnet directory.
-func cleanupDir(ctx context.Context, dir string) error {
+// CleanupDir cleans up a testnet directory.
+func CleanupDir(ctx context.Context, dir string) error {
 	if dir == "" {
 		return errors.New("no directory set")
 	}

@@ -6,9 +6,8 @@ import (
 	"net"
 	"strings"
 	"sync/atomic"
-	"time"
 
-	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -49,22 +48,6 @@ func (t Testnet) RandomHaloAddr() string {
 	return eligible[rand.IntN(len(eligible))]
 }
 
-func (t Testnet) AVSChain() (EVMChain, error) {
-	for _, c := range t.AnvilChains {
-		if c.Chain.IsAVSTarget {
-			return c.Chain, nil
-		}
-	}
-
-	for _, c := range t.PublicChains {
-		if c.chain.IsAVSTarget {
-			return c.chain, nil
-		}
-	}
-
-	return EVMChain{}, errors.New("avs target chain found")
-}
-
 // BroadcastOmniEVM returns a Omni EVM to use for e2e app tx broadcasts.
 // It prefers a validator nodes since we have an issue with mempool+p2p+startup where
 // txs get stuck in non-validator mempool immediately after startup if not connected to peers yet.
@@ -89,31 +72,46 @@ func (t Testnet) BroadcastOmniEVM() OmniEVM {
 	return t.OmniEVMs[0]
 }
 
+// BroadcastNode returns a halo node to use for RPC queries broadcasts.
+// It prefers a validator nodes since we have an issue with mempool+p2p+startup where
+// txs get stuck in non-validator mempool immediately after startup if not connected to peers yet.
+// Also avoid validators that are not started immediately.
+func (t Testnet) BroadcastNode() *e2e.Node {
+	for _, node := range t.Nodes {
+		if !strings.Contains(node.Name, "validator") {
+			continue
+		}
+		if node.StartAt > 0 {
+			continue
+		}
+
+		return node
+	}
+
+	return t.Nodes[0]
+}
+
 func (t Testnet) HasOmniEVM() bool {
 	return len(t.OmniEVMs) > 0
 }
 
 // EVMChain represents a EVM chain in a omni network.
 type EVMChain struct {
-	Name              string // Chain Name
-	ID                uint64 // Chain ID
+	evmchain.Metadata
 	IsPublic          bool
-	IsAVSTarget       bool
-	BlockPeriod       time.Duration
 	FinalizationStrat netconf.FinalizationStrat
 }
 
 // OmniEVM represents a omni evm instance in a omni network. Similar to e2e.Node for halo instances.
 type OmniEVM struct {
-	Chain           EVMChain // For netconf (all instances must have the same chain)
-	InstanceName    string   // For docker container name
-	AdvertisedIP    net.IP   // For setting up NAT on geth bootnode
-	ProxyPort       uint32   // For binding
-	InternalRPC     string   // For JSON-RPC queries from halo/relayer
-	InternalAuthRPC string   // For engine API queries from halo
-	ExternalRPC     string   // For JSON-RPC queries from e2e app.
-	IsArchive       bool     // Whether this instance is in archive mode
-	JWTSecret       string   // JWT secret for authentication
+	Chain        EVMChain // For netconf (all instances must have the same chain)
+	InstanceName string   // For docker container name
+	AdvertisedIP net.IP   // For setting up NAT on geth bootnode
+	ProxyPort    uint32   // For binding
+	InternalRPC  string   // For JSON-RPC queries from halo/relayer
+	ExternalRPC  string   // For JSON-RPC queries from e2e app.
+	IsArchive    bool     // Whether this instance is in archive mode
+	JWTSecret    string   // JWT secret for authentication
 
 	// P2P networking
 	NodeKey *ecdsa.PrivateKey // Private key

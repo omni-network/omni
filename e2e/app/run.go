@@ -38,8 +38,9 @@ type DeployConfig struct {
 // Deploy a new e2e network. It also starts all services in order to deploy private portals.
 // It also returns an optional deployed ping pong contract is enabled.
 func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XDapp, error) {
-	if err := Cleanup(ctx, def); err != nil {
-		return nil, err
+	if def.Testnet.Network.IsProtected() {
+		// If a protected network needs to be deployed temporarily comment out this check.
+		return nil, errors.New("cannot deploy protected network", "network", def.Testnet.Network)
 	}
 
 	if def.Testnet.OnlyMonitor {
@@ -70,6 +71,11 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, err
 	}
 
+	// Only stop and delete existing network right before actually starting new ones.
+	if err := CleanInfra(ctx, def); err != nil {
+		return nil, err
+	}
+
 	if err := StartInitial(ctx, def.Testnet.Testnet, def.Infra); err != nil {
 		return nil, err
 	}
@@ -90,6 +96,10 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, err
 	}
 	logRPCs(ctx, def)
+
+	if err := initXRegistries(ctx, def); err != nil {
+		return nil, err
+	}
 
 	if err := deployAVS(ctx, def); err != nil {
 		return nil, err
@@ -217,7 +227,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 
 	if cfg.Preserve {
 		log.Warn(ctx, "Docker containers not stopped, --preserve=true", nil)
-	} else if err := Cleanup(ctx, def); err != nil {
+	} else if err := CleanInfra(ctx, def); err != nil {
 		return err
 	}
 
@@ -253,10 +263,12 @@ func toPortalValidators(validators map[*e2e.Node]int64) ([]bindings.Validator, e
 }
 
 func logRPCs(ctx context.Context, def Definition) {
-	network := externalNetwork(def)
+	network := networkFromDef(def)
+	endpoints := externalEndpoints(def)
 	for _, chain := range network.EVMChains() {
+		rpc, _ := endpoints.ByNameOrID(chain.Name, chain.ID)
 		log.Info(ctx, "EVM Chain RPC available", "chain_id", chain.ID,
-			"chain_name", chain.Name, "url", chain.RPCURL)
+			"chain_name", chain.Name, "url", rpc)
 	}
 }
 
@@ -264,6 +276,10 @@ func logRPCs(ctx context.Context, def Definition) {
 // It merely sets up config files and then starts the monitor service.
 func deployMonitorOnly(ctx context.Context, def Definition, cfg DeployConfig) error {
 	if err := Setup(ctx, def, cfg); err != nil {
+		return err
+	}
+
+	if err := CleanInfra(ctx, def); err != nil {
 		return err
 	}
 

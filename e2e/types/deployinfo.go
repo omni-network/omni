@@ -12,9 +12,7 @@ import (
 type ContractName string
 
 const (
-	ContractPortal   ContractName = "portal"
-	ContractOmniAVS  ContractName = "omni_avs"
-	ContractPingPong ContractName = "ping_pong"
+	ContractPortal ContractName = "portal"
 )
 
 // DeployInfos contains the addresses of deployed xdapps and contracts by chainID.
@@ -24,6 +22,7 @@ const (
 //
 // This DeployInfos is similar to netconf, but it is only used by e2e deployment and tests.
 // As soon as any production app needs to use any of these addresses, they should be moved to netconf.
+// TODO(corver): Remove since this is stored in on-chain PortalRegistry.
 type DeployInfos map[uint64]map[ContractName]DeployInfo
 
 // DeployInfo contains the address and deploy height of a deployed contract.

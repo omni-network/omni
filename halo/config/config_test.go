@@ -20,6 +20,9 @@ func TestDefaultConfigReference(t *testing.T) {
 
 	cfg := halocfg.DefaultConfig()
 	cfg.HomeDir = tempDir
+	cfg.RPCEndpoints = map[string]string{
+		"ethereum": "http://127.0.0.1:8545",
+	}
 
 	require.NoError(t, os.MkdirAll(filepath.Join(tempDir, "config"), 0o755))
 	require.NoError(t, halocfg.WriteConfigTOML(cfg, log.DefaultConfig()))

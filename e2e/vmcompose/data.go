@@ -8,11 +8,12 @@ import (
 
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/evmchain"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
-var evmRegx = regexp.MustCompile("(.*_evm|chain_.*)")
+var omniEvmRegx = regexp.MustCompile(".*_evm")
 
 const (
 	evmPort  = 8545
@@ -64,7 +65,9 @@ func LoadData(path string) (types.InfrastructureData, error) {
 
 		// Default ports, as VMs don't support overlapping ports.
 		port := haloPort
-		if evmRegx.MatchString(serviceName) {
+		if omniEvmRegx.MatchString(serviceName) {
+			port = evmPort
+		} else if _, ok := evmchain.MetadataByName(serviceName); ok {
 			port = evmPort
 		} else if serviceName == relayer {
 			port = 0 // No port for relayer

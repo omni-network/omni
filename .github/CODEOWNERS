@@ -1,10 +1,10 @@
 # Code owners for specific directories
-/halo @corverroos @lazar955
-/relayer @corverroos @lazar955
-/lib @corverroos @lazar955 @kevinhalliday @DanFlannel @pavelnikolov
+/halo @corverroos @idea404
+/relayer @corverroos @idea404
+/lib @corverroos @idea404 @kevinhalliday @pavelnikolov
 /contracts @kevinhalliday @ttarsi
-/explorer @DanFlannel
-/explorer/indexer @lazar955
+/explorer @pavelnikolov
+/explorer/indexer @corverroos
 /explorer/ui @kevinhalliday
 /explorer/graphql @pavelnikolov
 /docs @idea404

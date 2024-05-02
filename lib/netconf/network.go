@@ -22,7 +22,7 @@ func (i ID) Static() Static {
 
 func (i ID) Verify() error {
 	if !supported[i] {
-		return errors.New("unsupported network", "name", i)
+		return errors.New("unsupported network", "network", i)
 	}
 
 	return nil

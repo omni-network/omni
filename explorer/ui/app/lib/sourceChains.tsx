@@ -29,7 +29,10 @@ export const mappedSourceChains = (
 }
 
 // this is hard coded on front-end until this data can come with the source chains from back-end
-export const getBaseUrl = (chainId: string, type: 'tx' | 'senderAddress' | 'blockHash' | 'destHash') => {
+export const getBaseUrl = (
+  chainId: string,
+  type: 'tx' | 'senderAddress' | 'blockHash' | 'destHash',
+) => {
   switch (chainId) {
     case '0x40b1': // mock
       switch (type) {

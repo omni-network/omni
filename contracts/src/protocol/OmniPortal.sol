@@ -2,6 +2,7 @@
 pragma solidity =0.8.24;
 
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { PausableUpgradeable } from "@openzeppelin-upgrades/contracts/security/PausableUpgradeable.sol";
 
 import { IFeeOracle } from "../interfaces/IFeeOracle.sol";
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
@@ -9,47 +10,65 @@ import { IOmniPortalAdmin } from "../interfaces/IOmniPortalAdmin.sol";
 import { XBlockMerkleProof } from "../libraries/XBlockMerkleProof.sol";
 import { XTypes } from "../libraries/XTypes.sol";
 import { Quorum } from "../libraries/Quorum.sol";
+import { XRegistryNames } from "../libraries/XRegistryNames.sol";
+import { XRegistryBase } from "./XRegistryBase.sol";
+import { Predeploys } from "../libraries/Predeploys.sol";
 
 import { OmniPortalConstants } from "./OmniPortalConstants.sol";
 import { OmniPortalStorage } from "./OmniPortalStorage.sol";
 
-contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPortalConstants, OmniPortalStorage {
-    /**
-     * @notice Chain ID of the chain to which this portal is deployed
-     */
-    uint64 public immutable chainId;
-
+contract OmniPortal is
+    IOmniPortal,
+    IOmniPortalAdmin,
+    OwnableUpgradeable,
+    PausableUpgradeable,
+    OmniPortalConstants,
+    OmniPortalStorage
+{
     /**
      * @notice Construct the OmniPortal contract
      */
     constructor() {
         _disableInitializers();
-        chainId = uint64(block.chainid);
     }
 
     /**
      * @notice Initialize the OmniPortal contract
-     * @param owner_        The owner of the contract
-     * @param feeOracle_    Address of the fee oracle contract
-     * @param omniEChainId_ Chain ID of Omni's EVM execution chain
-     * @param omniCChainID_ Virtual chain ID used in xmsgs from Omni's consensus chain
-     * @param valSetId      Initial validator set id
-     * @param validators    Initial validator set
+     * @param owner_                    The owner of the contract
+     * @param feeOracle_                Address of the fee oracle contract
+     * @param xregistry_                Address of the xregistry replica contract
+     * @param omniChainId_              Chain ID of Omni's EVM execution chain
+     * @param omniCChainID_             Virtual chain ID used in xmsgs from Omni's consensus chain
+     * @param xmsgDefaultGasLimit_      Default gas limit for xmsg
+     * @param xmsgMaxGasLimit_          Maximum gas limit for xmsg
+     * @param xmsgMinGasLimit_          Minimum gas limit for xmsg
+     * @param xreceiptMaxErrorBytes_    Maximum error bytes for xreceipt)
+     * @param valSetId                  Initial validator set id
+     * @param validators                Initial validator set
      */
     function initialize(
         address owner_,
         address feeOracle_,
-        uint64 omniEChainId_,
+        address xregistry_,
+        uint64 omniChainId_,
         uint64 omniCChainID_,
+        uint64 xmsgDefaultGasLimit_,
+        uint64 xmsgMaxGasLimit_,
+        uint64 xmsgMinGasLimit_,
+        uint64 xreceiptMaxErrorBytes_,
         uint64 valSetId,
         XTypes.Validator[] memory validators
     ) public initializer {
-        __Ownable_init();
         _transferOwnership(owner_);
         _setFeeOracle(feeOracle_);
+        _setXRegistry(xregistry_);
+        _setXMsgDefaultGasLimit(xmsgDefaultGasLimit_);
+        _setXMsgMaxGasLimit(xmsgMaxGasLimit_);
+        _setXMsgMinGasLimit(xmsgMinGasLimit_);
+        _setXReceiptMaxErrorBytes(xreceiptMaxErrorBytes_);
         _addValidatorSet(valSetId, validators);
 
-        omniEChainId = omniEChainId_;
+        omniChainId = omniChainId_;
         omniCChainID = omniCChainID_;
 
         // cchain stream offset & block heights are equal to valSetId
@@ -57,42 +76,49 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
         inXStreamBlockHeight[omniCChainID_] = valSetId;
     }
 
+    function chainId() public view returns (uint64) {
+        return uint64(block.chainid);
+    }
+
     //////////////////////////////////////////////////////////////////////////////
     //                      Outbound xcall functions                            //
     //////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @notice Call a contract on another chain Uses OmniPortal.XMSG_DEFAULT_GAS_LIMIT as execution
+     * @notice Call a contract on another chain Uses xmsgDefaultGasLimit as execution
      *         gas limit on destination chain
      * @param destChainId   Destination chain ID
      * @param to            Address of contract to call on destination chain
      * @param data          ABI Encoded function calldata
      */
-    function xcall(uint64 destChainId, address to, bytes calldata data) external payable {
-        _xcall(destChainId, msg.sender, to, data, XMSG_DEFAULT_GAS_LIMIT);
+    function xcall(uint64 destChainId, address to, bytes calldata data) external payable whenNotPaused {
+        _xcall(destChainId, msg.sender, to, data, xmsgDefaultGasLimit);
     }
 
     /**
      * @notice Call a contract on another chain Uses provide gasLimit as execution gas limit on
-     *          destination chain. Reverts if gasLimit < XMSG_MAX_GAS_LIMIT or gasLimit >
-     *          XMSG_MAX_GAS_LIMIT
+     *          destination chain. Reverts if gasLimit < xmsgMinGasLimit or gasLimit > xmsgMaxGasLimit
      * @param destChainId   Destination chain ID
      * @param to            Address of contract to call on destination chain
      * @param data          ABI Encoded function calldata
      * @param gasLimit      Execution gas limit, enforced on destination chain
      */
-    function xcall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit) external payable {
+    function xcall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit)
+        external
+        payable
+        whenNotPaused
+    {
         _xcall(destChainId, msg.sender, to, data, gasLimit);
     }
 
     /**
-     * @notice Calculate the fee for calling a contract on another chain. Uses
-     *         OmniPortal.XMSG_DEFAULT_GAS_LIMIT. Fees denominated in wei.
+     * @notice Calculate the fee for calling a contract on another chain. Uses xmsgDefaultGasLimit.
+     *         Fees denominated in wei.
      * @param destChainId   Destination chain ID
      * @param data          Encoded function calldata
      */
     function feeFor(uint64 destChainId, bytes calldata data) public view returns (uint256) {
-        return IFeeOracle(feeOracle).feeFor(destChainId, data, XMSG_DEFAULT_GAS_LIMIT);
+        return IFeeOracle(feeOracle).feeFor(destChainId, data, xmsgDefaultGasLimit);
     }
 
     /**
@@ -111,16 +137,25 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
      * @dev Validate the xcall, emit an XMsg, increment dest chain outXStreamOffset
      */
     function _xcall(uint64 destChainId, address sender, address to, bytes calldata data, uint64 gasLimit) private {
-        require(msg.value >= feeFor(destChainId, data, gasLimit), "OmniPortal: insufficient fee");
-        require(gasLimit <= XMSG_MAX_GAS_LIMIT, "OmniPortal: gasLimit too high");
-        require(gasLimit >= XMSG_MIN_GAS_LIMIT, "OmniPortal: gasLimit too low");
-        require(destChainId != chainId, "OmniPortal: no same-chain xcall");
+        require(destChainId != chainId(), "OmniPortal: no same-chain xcall");
         require(destChainId != _BROADCAST_CHAIN_ID, "OmniPortal: no broadcast xcall");
         require(to != _VIRTUAL_PORTAL_ADDRESS, "OmniPortal: no portal xcall");
+        require(gasLimit <= xmsgMaxGasLimit, "OmniPortal: gasLimit too high");
+        require(gasLimit >= xmsgMinGasLimit, "OmniPortal: gasLimit too low");
+        require(msg.sender != address(this), "OmniPortal: portal cannot xcall");
+        require(msg.value >= feeFor(destChainId, data, gasLimit), "OmniPortal: insufficient fee");
 
         outXStreamOffset[destChainId] += 1;
 
         emit XMsg(destChainId, outXStreamOffset[destChainId], sender, to, data, gasLimit);
+    }
+
+    /**
+     * @notice Returns true if `destChainId` is supported destination chain.
+     */
+    function isSupportedChain(uint64 destChainId) public view returns (bool) {
+        return destChainId != chainId()
+            && XRegistryBase(xregistry).has(destChainId, XRegistryNames.OmniPortal, Predeploys.PortalRegistry);
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -132,7 +167,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
      * @param xsub  An xchain submisison, including an attestation root w/ validator signatures,
      *              and a block header and message batch, proven against the attestation root.
      */
-    function xsubmit(XTypes.Submission calldata xsub) external {
+    function xsubmit(XTypes.Submission calldata xsub) external whenNotPaused {
         require(xsub.msgs.length > 0, "OmniPortal: no xmsgs");
 
         // validator set id for this submission
@@ -209,7 +244,7 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
      */
     function _exec(XTypes.Msg calldata xmsg_) internal {
         require(
-            xmsg_.destChainId == chainId || xmsg_.destChainId == _BROADCAST_CHAIN_ID, "OmniPortal: wrong destChainId"
+            xmsg_.destChainId == chainId() || xmsg_.destChainId == _BROADCAST_CHAIN_ID, "OmniPortal: wrong destChainId"
         );
         require(xmsg_.streamOffset == inXStreamOffset[xmsg_.sourceChainId] + 1, "OmniPortal: wrong streamOffset");
 
@@ -222,21 +257,28 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
         // xcalls to _VIRTUAL_PORTAL_ADDRESS are system calls
         bool isSysCall = xmsg_.to == _VIRTUAL_PORTAL_ADDRESS;
 
-        (bool success, uint256 gasUsed) = isSysCall ? _execSys(xmsg_.data) : _exec(xmsg_.to, xmsg_.gasLimit, xmsg_.data);
+        (bool success, bytes memory result, uint256 gasUsed) =
+            isSysCall ? _execSys(xmsg_.data) : _exec(xmsg_.to, xmsg_.gasLimit, xmsg_.data);
 
         // reset xmsg to zero
         delete _xmsg;
 
-        emit XReceipt(xmsg_.sourceChainId, xmsg_.streamOffset, gasUsed, msg.sender, success);
+        // empty error if success is true
+        bytes memory error = success ? bytes("") : result;
+
+        // if error is too long, return corresponding error code
+        if (error.length > xreceiptMaxErrorBytes) error = XRECEIPT_ERROR_EXCEEDS_MAX_BYTES;
+
+        emit XReceipt(xmsg_.sourceChainId, xmsg_.streamOffset, gasUsed, msg.sender, success, error);
     }
 
     /**
      * @notice Execute a call at `to` with `data`, enfocring `gasLimit`. Returns success (true/false) and gasUsed.
      *         Requires that enough gas is left to execute the call.
      */
-    function _exec(address to, uint64 gasLimit, bytes calldata data) internal returns (bool, uint256) {
+    function _exec(address to, uint64 gasLimit, bytes calldata data) internal returns (bool, bytes memory, uint256) {
         // trim gasLimit to max. this requirement is checked in xcall(...), but we trim here to be safe
-        if (gasLimit > XMSG_MAX_GAS_LIMIT) gasLimit = XMSG_MAX_GAS_LIMIT;
+        if (gasLimit > xmsgMaxGasLimit) gasLimit = xmsgMaxGasLimit;
 
         // require gasLeft is enough to execute the call. this protects against malicious relayers
         // purposefully setting gasLimit just low enough such that the last xmsg in a submission
@@ -249,18 +291,18 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
         uint256 gasUsed = gasleft();
 
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success,) = to.call{ gas: gasLimit }(data);
+        (bool success, bytes memory result) = to.call{ gas: gasLimit }(data);
 
         gasUsed = gasUsed - gasleft();
 
-        return (success, gasUsed);
+        return (success, result, gasUsed);
     }
 
     /**
      * @notice Execute a system call with `data` at this contract, returning success and gasUsed.
      *         System calls must succeed.
      */
-    function _execSys(bytes calldata data) internal returns (bool, uint256) {
+    function _execSys(bytes calldata data) internal returns (bool, bytes memory, uint256) {
         uint256 gasUsed = gasleft();
 
         // solhint-disable-next-line avoid-low-level-calls
@@ -268,28 +310,15 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
 
         gasUsed = gasUsed - gasleft();
 
-        // if not success, revert with the error message
-        if (!success) revert(_revertReason(result));
-
-        return (success, gasUsed);
-    }
-
-    /**
-     * @notice Returns the revert reason from an address.call result.
-     * @dev Only works for address.call() that were unsuccessful, and reverted with a reason.
-     * @custom:attriubtion  https://github.com/Uniswap/v3-periphery/blob/v1.0.0/contracts/base/Multicall.sol#L17
-     * @custom:attriubtion  https://ethereum.stackexchange.com/a/83577
-     * @param result    The result of an address.call
-     */
-    function _revertReason(bytes memory result) internal pure returns (string memory) {
-        if (result.length < 68) return "no revert reason";
-
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            result := add(result, 0x04)
+        // if not success, revert with same reason
+        if (!success) {
+            // solhint-disable-next-line no-inline-assembly
+            assembly {
+                revert(add(result, 32), mload(result))
+            }
         }
 
-        return abi.decode(result, (string));
+        return (success, result, gasUsed);
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -301,6 +330,13 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
      */
     function setFeeOracle(address feeOracle_) external onlyOwner {
         _setFeeOracle(feeOracle_);
+    }
+
+    /**
+     * @notice Set the XRegistry replica contract
+     */
+    function setXRegistry(address xregistry_) external onlyOwner {
+        _setXRegistry(xregistry_);
     }
 
     /**
@@ -318,6 +354,96 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
     }
 
     /**
+     * @notice Set the default gas limit for xmsg
+     */
+    function setXMsgDefaultGasLimit(uint64 gasLimit) external onlyOwner {
+        _setXMsgDefaultGasLimit(gasLimit);
+    }
+
+    /**
+     * @notice Set the minimum gas limit for xmsg
+     */
+    function setXMsgMinGasLimit(uint64 gasLimit) external onlyOwner {
+        _setXMsgMinGasLimit(gasLimit);
+    }
+
+    /**
+     * @notice Set the maximum gas limit for xmsg
+     */
+    function setXMsgMaxGasLimit(uint64 gasLimit) external onlyOwner {
+        _setXMsgMaxGasLimit(gasLimit);
+    }
+
+    /**
+     * @notice Set the maximum error bytes for xreceipt
+     */
+    function setXReceiptMaxErrorBytes(uint64 maxErrorBytes) external onlyOwner {
+        _setXReceiptMaxErrorBytes(maxErrorBytes);
+    }
+
+    /**
+     * @notice Pause xcalls
+     */
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /**
+     * @notice Unpause xcalls
+     */
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
+    /**
+     * @notice Set the default gas limit for xmsg
+     */
+    function _setXMsgDefaultGasLimit(uint64 gasLimit) internal {
+        require(gasLimit > 0, "OmniPortal: no zero default gas");
+
+        uint64 oldDefault = xmsgDefaultGasLimit;
+        xmsgDefaultGasLimit = gasLimit;
+
+        emit XMsgDefaultGasLimitChanged(oldDefault, gasLimit);
+    }
+
+    /**
+     * @notice Set the minimum gas limit for xmsg
+     */
+    function _setXMsgMinGasLimit(uint64 gasLimit) internal {
+        require(gasLimit > 0, "OmniPortal: no zero min gas");
+
+        uint64 oldMin = xmsgMinGasLimit;
+        xmsgMinGasLimit = gasLimit;
+
+        emit XMsgMinGasLimitChanged(oldMin, gasLimit);
+    }
+
+    /**
+     * @notice Set the maximum gas limit for xmsg
+     */
+    function _setXMsgMaxGasLimit(uint64 gasLimit) internal {
+        require(gasLimit > 0, "OmniPortal: no zero max gas");
+
+        uint64 oldMax = xmsgMaxGasLimit;
+        xmsgMaxGasLimit = gasLimit;
+
+        emit XMsgMaxGasLimitChanged(oldMax, gasLimit);
+    }
+
+    /**
+     * @notice Set the maximum error bytes for xreceipt
+     */
+    function _setXReceiptMaxErrorBytes(uint64 maxErrorBytes) internal {
+        require(maxErrorBytes > 0, "OmniPortal: no zero max bytes");
+
+        uint64 oldMax = xreceiptMaxErrorBytes;
+        xreceiptMaxErrorBytes = maxErrorBytes;
+
+        emit XReceiptMaxErrorBytesChanged(oldMax, maxErrorBytes);
+    }
+
+    /**
      * @notice Set the fee oracle
      */
     function _setFeeOracle(address feeOracle_) private {
@@ -327,6 +453,14 @@ contract OmniPortal is IOmniPortal, IOmniPortalAdmin, OwnableUpgradeable, OmniPo
         feeOracle = feeOracle_;
 
         emit FeeOracleChanged(oldFeeOracle, feeOracle);
+    }
+
+    /**
+     * @notice Set the xregistry replica contract address.
+     */
+    function _setXRegistry(address xregistry_) private {
+        require(xregistry_ != address(0), "OmniPortal: no zero xregistry");
+        xregistry = xregistry_;
     }
 
     /**

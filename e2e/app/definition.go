@@ -15,12 +15,12 @@ import (
 	"github.com/omni-network/omni/e2e/netman"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/e2e/vmcompose"
-	"github.com/omni-network/omni/lib/contracts/avs"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/fireblocks"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
+	"github.com/omni-network/omni/lib/xchain"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/test/e2e/pkg/exec"
@@ -29,6 +29,8 @@ import (
 
 	"github.com/BurntSushi/toml"
 )
+
+const omniConsensus = "omni_consensus"
 
 // DefinitionConfig is the configuration required to create a full Definition.
 type DefinitionConfig struct {
@@ -98,20 +100,8 @@ func (d Definition) DeployInfos() types.DeployInfos {
 	resp := make(types.DeployInfos)
 
 	for chain, info := range d.Netman().DeployInfo() {
-		resp.Set(chain.ID, types.ContractPortal, info.PortalAddress, info.DeployHeight)
+		resp.Set(chain.ChainID, types.ContractPortal, info.PortalAddress, info.DeployHeight)
 	}
-
-	ethL1, err := d.Testnet.AVSChain()
-	if err != nil {
-		return resp
-	}
-
-	addr, ok := avs.AddrForNetwork(d.Testnet.Network)
-	if !ok {
-		return resp
-	}
-
-	resp.Set(ethL1.ID, types.ContractOmniAVS, addr, 0) // Note that deploy height of omni avs isn't set or used.
 
 	return resp
 }
@@ -361,17 +351,16 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 		}
 
 		omniEVMS = append(omniEVMS, types.OmniEVM{
-			Chain:           types.OmniEVMByNetwork(manifest.Network),
-			InstanceName:    name,
-			AdvertisedIP:    advertisedIP,
-			ProxyPort:       inst.Port,
-			InternalRPC:     fmt.Sprintf("http://%s:8545", internalIP),
-			InternalAuthRPC: fmt.Sprintf("http://%s:8551", internalIP),
-			ExternalRPC:     fmt.Sprintf("http://%s:%d", inst.ExtIPAddress.String(), inst.Port),
-			NodeKey:         nodeKey,
-			Enode:           en,
-			IsArchive:       isArchive,
-			JWTSecret:       tutil.RandomHash().Hex(),
+			Chain:        types.OmniEVMByNetwork(manifest.Network),
+			InstanceName: name,
+			AdvertisedIP: advertisedIP,
+			ProxyPort:    inst.Port,
+			InternalRPC:  fmt.Sprintf("http://%s:8545", internalIP),
+			ExternalRPC:  fmt.Sprintf("http://%s:%d", inst.ExtIPAddress.String(), inst.Port),
+			NodeKey:      nodeKey,
+			Enode:        en,
+			IsArchive:    isArchive,
+			JWTSecret:    tutil.RandomHash().Hex(),
 		})
 	}
 
@@ -387,21 +376,21 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 		omniEVMS[i].Peers = bootnodes
 	}
 
+	anvilEVMs, err := types.AnvilChainsByNames(manifest.AnvilChains)
+	if err != nil {
+		return types.Testnet{}, err
+	}
+
 	var anvils []types.AnvilChain
-	for _, chain := range types.AnvilChainsByNames(manifest.AnvilChains) {
+	for _, chain := range anvilEVMs {
 		inst, ok := infd.Instances[chain.Name]
 		if !ok {
 			return types.Testnet{}, errors.New("anvil chain instance not found in infrastructure data")
 		}
 
-		chain.IsAVSTarget = chain.Name == manifest.AVSTarget
-
 		internalIP := inst.IPAddress.String()
 		if infd.Provider == docker.ProviderName {
 			internalIP = chain.Name // For docker, we use container names
-		}
-		if infd.Provider == vmcompose.ProviderName {
-			chain.BlockPeriod = time.Second * 12 // Slow block times for anvils on long-lived VMs to reduce disk usage.
 		}
 
 		anvils = append(anvils, types.AnvilChain{
@@ -432,8 +421,13 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 // getOrGenKey gets (based on manifest) or creates a private key for the given node and type.
 func getOrGenKey(ctx context.Context, manifest types.Manifest, nodeName string, typ key.Type) (key.Key, error) {
 	addr, ok := manifest.Keys[nodeName][typ]
-	if !ok {
-		// No key in manifest, generate a new one.
+	if !ok { // No key in manifest
+		// Generate an insecure deterministic key for devnet
+		if manifest.Network == netconf.Devnet {
+			return key.GenerateInsecureDeterministic(manifest.Network, typ, nodeName), nil
+		}
+
+		// Otherwise generate a proper key
 		return key.Generate(typ), nil
 	}
 
@@ -449,8 +443,6 @@ func publicChains(manifest types.Manifest, cfg DefinitionConfig) ([]types.Public
 			return nil, errors.Wrap(err, "get public chain")
 		}
 
-		chain.IsAVSTarget = chain.Name == manifest.AVSTarget
-
 		addr, ok := cfg.RPCOverrides[name]
 		if !ok {
 			addr = types.PublicRPCByName(name)
@@ -462,99 +454,79 @@ func publicChains(manifest types.Manifest, cfg DefinitionConfig) ([]types.Public
 	return publics, nil
 }
 
-// internalNetwork returns a internal intra-network netconf.Network from the testnet and deployInfo.
-func internalNetwork(def Definition, evmPrefix string) netconf.Network {
-	var chains []netconf.Chain
+// externalEndpoints returns the evm rpc endpoints for access from inside the
+// docker network.
+func internalEndpoints(def Definition, nodePrefix string) xchain.RPCEndpoints {
+	endpoints := make(xchain.RPCEndpoints)
 
 	// Add all public chains
 	for _, public := range def.Testnet.PublicChains {
-		depInfo := def.DeployInfos()[public.Chain().ID]
-		pc := netconf.Chain{
-			ID:                public.Chain().ID,
-			Name:              public.Chain().Name,
-			RPCURL:            public.NextRPCAddress(),
-			BlockPeriod:       public.Chain().BlockPeriod,
-			FinalizationStrat: public.Chain().FinalizationStrat,
-			IsEthereum:        public.Chain().IsAVSTarget,
-			PortalAddress:     depInfo[types.ContractPortal].Address,
-			DeployHeight:      depInfo[types.ContractPortal].Height,
-			AVSContractAddr:   depInfo[types.ContractOmniAVS].Address,
-		}
-
-		chains = append(chains, pc)
+		endpoints[public.Chain().Name] = public.NextRPCAddress()
 	}
 
 	// In monitor only mode, there is only public chains, so skip omni and anvil chains.
 	if def.Testnet.OnlyMonitor {
-		return netconf.Network{
-			ID:     def.Testnet.Network,
-			Chains: chains,
-		}
+		return endpoints
 	}
 
-	omniEVM := omniEVMByPrefix(def.Testnet, evmPrefix)
-	omniEVMDepInfo := def.DeployInfos()[omniEVM.Chain.ID]
-	chains = append(chains, netconf.Chain{
-		ID:                omniEVM.Chain.ID,
-		Name:              omniEVM.Chain.Name,
-		RPCURL:            omniEVM.InternalRPC,
-		AuthRPCURL:        omniEVM.InternalAuthRPC,
-		BlockPeriod:       omniEVM.Chain.BlockPeriod,
-		FinalizationStrat: omniEVM.Chain.FinalizationStrat,
-		IsOmniEVM:         true,
-		PortalAddress:     omniEVMDepInfo[types.ContractPortal].Address,
-		DeployHeight:      omniEVMDepInfo[types.ContractPortal].Height,
-		AVSContractAddr:   omniEVMDepInfo[types.ContractOmniAVS].Address,
-	})
+	omniEVM := omniEVMByPrefix(def.Testnet, nodePrefix)
+	endpoints[omniEVM.Chain.Name] = omniEVM.InternalRPC
 
-	chains = append(chains, netconf.Chain{
-		ID:   def.Testnet.Network.Static().OmniConsensusChainIDUint64(),
-		Name: "omni_consensus",
-		// No RPC URLs, since we are going to remove it from netconf in any case.
-		DeployHeight:    1,                         // Validator sets start at height 1, not 0.
-		BlockPeriod:     omniEVM.Chain.BlockPeriod, // Same block period as omniEVM
-		IsOmniConsensus: true,
-	})
+	node := nodeByPrefix(def.Testnet, nodePrefix)
+	endpoints[omniConsensus] = node.AddressRPC()
 
 	// Add all anvil chains
 	for _, anvil := range def.Testnet.AnvilChains {
-		depInfo := def.DeployInfos()[anvil.Chain.ID]
-		chains = append(chains, netconf.Chain{
-			ID:                anvil.Chain.ID,
-			Name:              anvil.Chain.Name,
-			RPCURL:            anvil.InternalRPC,
-			BlockPeriod:       anvil.Chain.BlockPeriod,
-			FinalizationStrat: anvil.Chain.FinalizationStrat,
-			IsEthereum:        anvil.Chain.IsAVSTarget,
-			PortalAddress:     depInfo[types.ContractPortal].Address,
-			DeployHeight:      depInfo[types.ContractPortal].Height,
-			AVSContractAddr:   depInfo[types.ContractOmniAVS].Address,
-		})
+		endpoints[anvil.Chain.Name] = anvil.InternalRPC
 	}
 
-	return netconf.Network{
-		ID:     def.Testnet.Network,
-		Chains: chains,
-	}
+	return endpoints
 }
 
-// externalNetwork returns a external e2e-app netconf.Network from the testnet and deployInfo.
-func externalNetwork(def Definition) netconf.Network {
+// externalEndpoints returns the evm rpc endpoints for access from outside the
+// docker network.
+func externalEndpoints(def Definition) xchain.RPCEndpoints {
+	endpoints := make(xchain.RPCEndpoints)
+
+	// Add all public chains
+	for _, public := range def.Testnet.PublicChains {
+		endpoints[public.Chain().Name] = public.NextRPCAddress()
+	}
+
+	// In monitor only mode, there is only public chains, so skip omni and anvil chains.
+	if def.Testnet.OnlyMonitor {
+		return endpoints
+	}
+
+	// Connect to a proper omni_evm that isn't unavailable
+	omniEVM := def.Testnet.BroadcastOmniEVM()
+	endpoints[omniEVM.Chain.Name] = omniEVM.ExternalRPC
+
+	// Add omni consensus chain
+	endpoints[omniConsensus] = def.Testnet.BroadcastNode().AddressRPC()
+
+	// Add all anvil chains
+	for _, anvil := range def.Testnet.AnvilChains {
+		endpoints[anvil.Chain.Name] = anvil.ExternalRPC
+	}
+
+	return endpoints
+}
+
+// networkFromDef returns the network configuration from the definition.
+func networkFromDef(def Definition) netconf.Network {
 	var chains []netconf.Chain
 
 	// Add all public chains
 	for _, public := range def.Testnet.PublicChains {
-		depInfo := def.DeployInfos()[public.Chain().ID]
+		depInfo := def.DeployInfos()[public.Chain().ChainID]
 		chains = append(chains, netconf.Chain{
-			ID:                public.Chain().ID,
+			ID:                public.Chain().ChainID,
 			Name:              public.Chain().Name,
-			RPCURL:            public.NextRPCAddress(),
 			BlockPeriod:       public.Chain().BlockPeriod,
 			FinalizationStrat: public.Chain().FinalizationStrat,
-			IsEthereum:        public.Chain().IsAVSTarget,
 			PortalAddress:     depInfo[types.ContractPortal].Address,
 			DeployHeight:      depInfo[types.ContractPortal].Height,
-			AVSContractAddr:   depInfo[types.ContractOmniAVS].Address,
 		})
 	}
 
@@ -566,49 +538,42 @@ func externalNetwork(def Definition) netconf.Network {
 		}
 	}
 
-	// Connect to a random omni evm
-	omniEVM := random(def.Testnet.OmniEVMs)
-	omniEVMDepInfo := def.DeployInfos()[omniEVM.Chain.ID]
+	// Connect to a proper omni_evm that isn't unavailable
+	omniEVM := def.Testnet.BroadcastOmniEVM()
+	omniEVMDepInfo := def.DeployInfos()[omniEVM.Chain.ChainID]
 	chains = append(chains, netconf.Chain{
-		ID:                omniEVM.Chain.ID,
+		ID:                omniEVM.Chain.ChainID,
 		Name:              omniEVM.Chain.Name,
-		RPCURL:            omniEVM.ExternalRPC,
 		BlockPeriod:       omniEVM.Chain.BlockPeriod,
 		FinalizationStrat: omniEVM.Chain.FinalizationStrat,
-		IsOmniEVM:         true,
 		PortalAddress:     omniEVMDepInfo[types.ContractPortal].Address,
 		DeployHeight:      omniEVMDepInfo[types.ContractPortal].Height,
-		AVSContractAddr:   omniEVMDepInfo[types.ContractOmniAVS].Address,
 	})
 
 	// Add omni consensus chain
 	chains = append(chains, netconf.Chain{
 		ID:   def.Testnet.Network.Static().OmniConsensusChainIDUint64(),
-		Name: "omni_consensus",
+		Name: omniConsensus,
 		// No RPC URLs, since we are going to remove it from netconf in any case.
-		DeployHeight:    1,                         // Validator sets start at height 1, not 0.
-		BlockPeriod:     omniEVM.Chain.BlockPeriod, // Same block period as omniEVM
-		IsOmniConsensus: true,
+		DeployHeight: 1,                         // Validator sets start at height 1, not 0.
+		BlockPeriod:  omniEVM.Chain.BlockPeriod, // Same block period as omniEVM
 	})
 
 	// Add all anvil chains
 	for _, anvil := range def.Testnet.AnvilChains {
-		depInfo := def.DeployInfos()[anvil.Chain.ID]
+		depInfo := def.DeployInfos()[anvil.Chain.ChainID]
 		chains = append(chains, netconf.Chain{
-			ID:                anvil.Chain.ID,
+			ID:                anvil.Chain.ChainID,
 			Name:              anvil.Chain.Name,
-			RPCURL:            anvil.ExternalRPC,
 			BlockPeriod:       anvil.Chain.BlockPeriod,
 			FinalizationStrat: anvil.Chain.FinalizationStrat,
-			IsEthereum:        anvil.Chain.IsAVSTarget,
 			PortalAddress:     depInfo[types.ContractPortal].Address,
 			DeployHeight:      depInfo[types.ContractPortal].Height,
-			AVSContractAddr:   depInfo[types.ContractOmniAVS].Address,
 		})
 	}
 
 	for _, chain := range chains {
-		if chain.IsOmniConsensus {
+		if netconf.IsOmniConsensus(def.Testnet.Network, chain.ID) {
 			continue
 		}
 		if err := chain.FinalizationStrat.Verify(); err != nil {
@@ -639,6 +604,25 @@ func omniEVMByPrefix(testnet types.Testnet, prefix string) types.OmniEVM {
 	}
 
 	panic("evm not found")
+}
+
+// nodeByPrefix returns a halo node from the testnet with the given prefix.
+// Or a random node if prefix is empty.
+// Or the only node if there is only one.
+func nodeByPrefix(testnet types.Testnet, prefix string) *e2e.Node {
+	if prefix == "" {
+		return random(testnet.Nodes)
+	} else if len(testnet.Nodes) == 1 {
+		return testnet.Nodes[0]
+	}
+
+	for _, node := range testnet.Nodes {
+		if strings.HasPrefix(node.Name, prefix) {
+			return node
+		}
+	}
+
+	panic("node not found")
 }
 
 // random returns a random item from a slice.

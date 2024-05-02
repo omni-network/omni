@@ -16,7 +16,7 @@ import {
   ChevronRightIcon,
   ChevronDoubleRightIcon,
 } from '@heroicons/react/24/solid'
-import { Button, PageButton } from './button'
+import { Button, PageButton } from './button-legacy'
 import { Link } from '@remix-run/react'
 
 export default function SimpleTable({
@@ -90,85 +90,6 @@ export default function SimpleTable({
             })}
           </tbody>
         </table>
-      </div>
-      <div className="m-auto">
-        {/* Pagination */}
-        <div className="flex items-center mt-4">
-          {/* Page Size Dropdown */}
-          <div className="flex-none flex items-center ">
-            <label className="relative">
-              <select
-                className="appearance-none cursor-pointer bg-bg-input-default rounded-full text-cb-md px-4 py-3 pr-8 text-default "
-                value={table.getState().pagination.pageSize}
-                onChange={e => {
-                  table.setPageSize(Number(e.target.value))
-                }}
-              >
-                {[5, 10, 20].map(pageSize => (
-                  <option key={pageSize} value={pageSize}>
-                    Show {pageSize}
-                  </option>
-                ))}
-              </select>
-
-              <span
-                className={
-                  'pointer-events-none icon-chevron-lrg-down absolute right-2 top-[9px] text-default'
-                }
-              ></span>
-            </label>
-          </div>
-
-          {/* middle element */}
-          <div className="grow"></div>
-
-          {/* Nav Buttons */}
-          <div className="flex flex-row items-center jusify-between">
-            <PageButton
-              className="rounded-full  flex items-center justify-center"
-              onClick={() => table.setPageIndex(0)}
-              disabled={!table.getCanPreviousPage()}
-            >
-              <span className="sr-only">First</span>
-              <span className={`icon-rewind text-[20px]`}></span>
-            </PageButton>
-            <PageButton
-              className="rounded-full flex items-center justify-center"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              <span className="sr-only">Previous</span>
-              <span className={`icon-chevron-med-left text-[20px]`}></span>
-            </PageButton>
-
-            {/* Page N of N */}
-            <div className="flex-none flex m-3">
-              <div className="flex gap-x-2 items-baseline">
-                <span className="text-cb-sm text-default">
-                  Page <span className="">{table.getState().pagination.pageIndex + 1}</span> of{' '}
-                  <span className="">{table.getPageCount() == 0 ? 1 : table.getPageCount()}</span>
-                </span>
-              </div>
-            </div>
-
-            <PageButton
-              className="rounded-full  flex items-center justify-center"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              <span className="sr-only">Next</span>
-              <span className={`icon-chevron-med-right text-[20px]`}></span>
-            </PageButton>
-            <PageButton
-              className="rounded-full  flex items-center justify-center"
-              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-              disabled={!table.getCanNextPage()}
-            >
-              <span className="sr-only">Last</span>
-              <span className={`icon-fast-forward text-[20px]`}></span>
-            </PageButton>
-          </div>
-        </div>
       </div>
     </div>
   )

@@ -5,17 +5,20 @@ import (
 	"fmt"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/buildinfo"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 
 	"github.com/cometbft/cometbft/rpc/client"
 	"github.com/cometbft/cometbft/rpc/client/http"
 
+	"github.com/ethereum/go-ethereum/common"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -24,12 +27,20 @@ func Run(ctx context.Context, cfg Config) error {
 
 	buildinfo.Instrument(ctx)
 
-	network, err := netconf.Load(cfg.NetworkFile)
+	// Start metrics first, so app is "up"
+	monitorChan := serveMonitoring(cfg.MonitoringAddr)
+
+	portalReg, err := makePortalRegistry(cfg.Network, cfg.RPCEndpoints)
 	if err != nil {
 		return err
 	}
 
-	rpcClientPerChain, err := initializeRPCClients(network.EVMChains())
+	network, err := netconf.AwaitOnChain(ctx, cfg.Network, portalReg, cfg.RPCEndpoints.Keys())
+	if err != nil {
+		return err
+	}
+
+	rpcClientPerChain, err := initializeRPCClients(network.EVMChains(), cfg.RPCEndpoints)
 	if err != nil {
 		return err
 	}
@@ -44,7 +55,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	cprov := cprovider.NewABCIProvider(tmClient, network.ID, network.ChainNamesByIDs())
+	cprov := cprovider.NewABCIProvider(tmClient, network.ID, netconf.ChainNamer(cfg.Network))
 	xprov := xprovider.New(network, rpcClientPerChain, cprov)
 
 	state, ok, err := LoadCursors(cfg.StateFile)
@@ -93,7 +104,7 @@ func Run(ctx context.Context, cfg Config) error {
 	case <-ctx.Done():
 		log.Info(ctx, "Shutdown detected, stopping...")
 		return nil
-	case err := <-serveMonitoring(cfg.MonitoringAddr):
+	case err := <-monitorChan:
 		return err
 	}
 }
@@ -107,15 +118,39 @@ func newClient(tmNodeAddr string) (client.Client, error) {
 	return c, nil
 }
 
-func initializeRPCClients(chains []netconf.Chain) (map[uint64]ethclient.Client, error) {
+func initializeRPCClients(chains []netconf.Chain, endpoints xchain.RPCEndpoints) (map[uint64]ethclient.Client, error) {
 	rpcClientPerChain := make(map[uint64]ethclient.Client)
 	for _, chain := range chains {
-		c, err := ethclient.Dial(chain.Name, chain.RPCURL)
+		rpc, err := endpoints.ByNameOrID(chain.Name, chain.ID)
 		if err != nil {
-			return nil, errors.Wrap(err, "dial rpc", "chain_id", chain.ID, "rpc_url", chain.RPCURL)
+			return nil, err
+		}
+		c, err := ethclient.Dial(chain.Name, rpc)
+		if err != nil {
+			return nil, errors.Wrap(err, "dial rpc", "chain_name", chain.Name, "chain_id", chain.ID, "rpc_url", rpc)
 		}
 		rpcClientPerChain[chain.ID] = c
 	}
 
 	return rpcClientPerChain, nil
+}
+
+func makePortalRegistry(network netconf.ID, endpoints xchain.RPCEndpoints) (*bindings.PortalRegistry, error) {
+	meta := netconf.MetadataByID(network, network.Static().OmniExecutionChainID)
+	rpc, err := endpoints.ByNameOrID(meta.Name, meta.ChainID)
+	if err != nil {
+		return nil, err
+	}
+
+	ethCl, err := ethclient.Dial(meta.Name, rpc)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := bindings.NewPortalRegistry(common.HexToAddress(predeploys.PortalRegistry), ethCl)
+	if err != nil {
+		return nil, errors.Wrap(err, "create portal registry")
+	}
+
+	return resp, nil
 }

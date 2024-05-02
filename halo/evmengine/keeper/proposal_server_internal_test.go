@@ -77,6 +77,8 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 }
 
 func fastBackoffForT() {
+	backoffFuncMu.Lock()
+	defer backoffFuncMu.Unlock()
 	backoffFunc = func(context.Context, ...func(*expbackoff.Config)) func() {
 		return func() {}
 	}

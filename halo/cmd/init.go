@@ -13,6 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/xchain"
 
 	cmtconfig "github.com/cometbft/cometbft/config"
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
@@ -21,18 +22,17 @@ import (
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/types"
 
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/spf13/cobra"
 )
 
 // InitConfig is the config for the init command.
 type InitConfig struct {
-	HomeDir string
-	Network netconf.ID
-	Force   bool
-	Clean   bool
-	Cosmos  bool
+	HomeDir      string
+	Network      netconf.ID
+	RCPEndpoints xchain.RPCEndpoints
+	Force        bool
+	Clean        bool
+	Cosmos       bool
 }
 
 // newInitCmd returns a new cobra command that initializes the files and folders required by halo.
@@ -114,6 +114,8 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	comet := DefaultCometConfig(homeDir)
 	cfg := halocfg.DefaultConfig()
 	cfg.HomeDir = homeDir
+	cfg.RPCEndpoints = initCfg.RCPEndpoints
+	cfg.Network = initCfg.Network
 
 	// Folders
 	folders := []struct {
@@ -185,56 +187,6 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 		log.Info(ctx, "Generated node key", "path", nodeKeyFile)
 	}
 
-	//  Setup network file
-	networkFile := cfg.NetworkFile()
-	if cmtos.FileExists(networkFile) {
-		log.Info(ctx, "Found network config", "path", networkFile)
-	} else if initCfg.Network == netconf.Simnet {
-		dummyAddr := common.HexToAddress("0x000000000000000000000000000000000000dead")
-
-		// Create a simnet (single binary with mocked clients).
-		network := netconf.Network{
-			ID: initCfg.Network,
-			Chains: []netconf.Chain{
-				{
-					ID:            initCfg.Network.Static().OmniExecutionChainID,
-					Name:          "omni_evm",
-					IsOmniEVM:     true,
-					BlockPeriod:   time.Millisecond * 500, // Speed up block times for testing
-					PortalAddress: dummyAddr,
-				},
-				{
-					ID:              initCfg.Network.Static().OmniConsensusChainIDUint64(),
-					Name:            "omni_consensus",
-					IsOmniConsensus: true,
-					DeployHeight:    1,                      // Validator sets start at height 1, not 0.
-					BlockPeriod:     time.Millisecond * 500, // Speed up block times for testing
-					PortalAddress:   dummyAddr,
-				},
-				{
-					ID:            100, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
-					Name:          "chain_a",
-					IsOmniEVM:     false,
-					IsEthereum:    false,
-					PortalAddress: dummyAddr,
-				},
-				{
-					ID:            200, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
-					Name:          "chain_b",
-					IsOmniEVM:     false,
-					IsEthereum:    false,
-					PortalAddress: dummyAddr,
-				},
-			},
-		}
-		if err := netconf.Save(ctx, network, networkFile); err != nil {
-			return errors.Wrap(err, "save network file")
-		}
-		log.Info(ctx, "Generated simnet network config", "path", networkFile)
-	} else {
-		return errors.New("network config file must be pre-generated", "path", networkFile)
-	}
-
 	// Setup genesis file
 	genFile := comet.GenesisFile()
 	if cmtos.FileExists(genFile) {
@@ -268,7 +220,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 		}
 		log.Info(ctx, "Generated simnet genesis file", "path", genFile)
 	} else {
-		return errors.New("genesis file must be pre-generated", "path", networkFile)
+		return errors.New("genesis file must be pre-generated", "path", genFile)
 	}
 
 	// Vote state

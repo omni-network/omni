@@ -6,6 +6,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/anvil"
+	"github.com/omni-network/omni/lib/contracts/feeoraclev1"
 	"github.com/omni-network/omni/lib/contracts/portal"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -19,10 +20,12 @@ import (
 //nolint:gochecknoglobals // Static mapping.
 var (
 	// fbDev is the address of the fireblocks "dev" account.
+	// TODO(corver): Move this to eoa.
 	fbDev = common.HexToAddress("0x7a6cF389082dc698285474976d7C75CAdE08ab7e")
 )
 
 // Manager abstract logic to deploy and bootstrap a network.
+// TODO(corver): No need to split public vs private portal deploys anymore.
 type Manager interface {
 	// DeployPublicPortals deploys portals to public chains, like arb-goerli.
 	DeployPublicPortals(ctx context.Context, valSetID uint64, validators []bindings.Validator) error
@@ -71,7 +74,7 @@ func NewManager(testnet types.Testnet, backends ethbackend.Backends) (Manager, e
 	if testnet.HasOmniEVM() {
 		// Just use the first omni evm instance for now.
 		omniEVM := testnet.OmniEVMs[0]
-		portals[omniEVM.Chain.ID] = Portal{
+		portals[omniEVM.Chain.ChainID] = Portal{
 			Chain:      omniEVM.Chain,
 			DeployInfo: privateChainDeployInfo,
 		}
@@ -79,7 +82,7 @@ func NewManager(testnet types.Testnet, backends ethbackend.Backends) (Manager, e
 
 	// Add all portals
 	for _, anvil := range testnet.AnvilChains {
-		portals[anvil.Chain.ID] = Portal{
+		portals[anvil.Chain.ChainID] = Portal{
 			Chain:      anvil.Chain,
 			DeployInfo: privateChainDeployInfo,
 		}
@@ -87,8 +90,8 @@ func NewManager(testnet types.Testnet, backends ethbackend.Backends) (Manager, e
 	// Add all public chains
 	for _, public := range testnet.PublicChains {
 		// Public chain deploy height and address may be statically populated.
-		staticDeploy, _ := testnet.Network.Static().PortalDeployment(public.Chain().ID)
-		portals[public.Chain().ID] = Portal{
+		staticDeploy, _ := testnet.Network.Static().PortalDeployment(public.Chain().ChainID)
+		portals[public.Chain().ChainID] = Portal{
 			Chain: public.Chain(),
 			DeployInfo: DeployInfo{
 				PortalAddress: staticDeploy.Address,
@@ -167,7 +170,7 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 			continue // Only log public chain balances.
 		}
 
-		txOpts, backend, err := m.backends.BindOpts(ctx, portal.Chain.ID, m.operator)
+		txOpts, backend, err := m.backends.BindOpts(ctx, portal.Chain.ChainID, m.operator)
 		if err != nil {
 			return errors.Wrap(err, "deploy opts", "chain", portal.Chain.Name)
 		}
@@ -183,7 +186,7 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 	deployFunc := func(ctx context.Context, p Portal) (*deployResult, error) {
 		log.Debug(ctx, "Deploying to", "chain", p.Chain.Name)
 
-		backend, err := m.backends.Backend(p.Chain.ID)
+		backend, err := m.backends.Backend(p.Chain.ChainID)
 		if err != nil {
 			return nil, errors.Wrap(err, "deploy opts", "chain", p.Chain.Name)
 		}
@@ -222,7 +225,7 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 			return errors.Wrap(res.Err, "fork join")
 		}
 
-		portal := m.portals[res.Input.Chain.ID]
+		portal := m.portals[res.Input.Chain.ChainID]
 
 		portal.DeployInfo = DeployInfo{
 			PortalAddress: res.Output.Addr,
@@ -230,7 +233,7 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 		}
 		portal.Contract = res.Output.Contract
 
-		m.portals[res.Input.Chain.ID] = portal
+		m.portals[res.Input.Chain.ChainID] = portal
 		log.Info(ctx, "Deployed public portal contract", "chain", portal.Chain.Name, "address", res.Output.Addr.Hex(), "height", res.Output.Height)
 	}
 
@@ -243,7 +246,7 @@ func (m *manager) DeployPrivatePortals(ctx context.Context, valSetID uint64, val
 
 	// Define a forkjoin work function that will deploy the omni contracts for each chain
 	deployFunc := func(ctx context.Context, p Portal) (*bindings.OmniPortal, error) {
-		backend, err := m.backends.Backend(p.Chain.ID)
+		backend, err := m.backends.Backend(p.Chain.ChainID)
 		if err != nil {
 			return nil, errors.Wrap(err, "deploy opts", "chain", p.Chain.Name)
 		}
@@ -285,9 +288,9 @@ func (m *manager) DeployPrivatePortals(ctx context.Context, valSetID uint64, val
 		}
 
 		// Update the portal with the deployed contract
-		portal := m.portals[res.Input.Chain.ID]
+		portal := m.portals[res.Input.Chain.ChainID]
 		portal.Contract = res.Output
-		m.portals[res.Input.Chain.ID] = portal
+		m.portals[res.Input.Chain.ChainID] = portal
 	}
 
 	return nil
@@ -318,7 +321,7 @@ func (m *manager) deployIfNeeded(ctx context.Context, chain types.EVMChain, back
 		return common.Address{}, 0, errors.Wrap(err, "is deployed", "chain", chain)
 	}
 
-	staticDeploy, hasStatic := m.network.Static().PortalDeployment(chain.ID)
+	staticDeploy, hasStatic := m.network.Static().PortalDeployment(chain.ChainID)
 
 	// for ephemeral networks, require that the portal is not already deployed
 	if isDeployed && m.network.IsEphemeral() {
@@ -340,8 +343,13 @@ func (m *manager) deployIfNeeded(ctx context.Context, chain types.EVMChain, back
 		return staticDeploy.Address, staticDeploy.DeployHeight, nil
 	}
 
+	feeOracle, _, err := feeoraclev1.Deploy(ctx, m.network, chain.ChainID, m.destChainIDs(chain.ChainID), m.backends)
+	if err != nil {
+		return common.Address{}, 0, errors.Wrap(err, "deploy fee oracle", "chain", chain.Name)
+	}
+
 	// at this point, we need to deploy the portal
-	addr, receipt, err := portal.Deploy(ctx, m.network, backend, valSetID, validators)
+	addr, receipt, err := portal.Deploy(ctx, m.network, backend, feeOracle, valSetID, validators)
 	if err != nil {
 		return common.Address{}, 0, errors.Wrap(err, "deploy public omni contracts", "chain", chain.Name)
 	} else if receipt == nil {
@@ -349,6 +357,19 @@ func (m *manager) deployIfNeeded(ctx context.Context, chain types.EVMChain, back
 	}
 
 	return addr, receipt.BlockNumber.Uint64(), nil
+}
+
+// destChainIDs returns all configured destination chain ids for a given source.
+func (m *manager) destChainIDs(srcChainID uint64) []uint64 {
+	var destChainIDs []uint64
+
+	for id := range m.Portals() {
+		if id != srcChainID {
+			destChainIDs = append(destChainIDs, id)
+		}
+	}
+
+	return destChainIDs
 }
 
 type deployResult struct {

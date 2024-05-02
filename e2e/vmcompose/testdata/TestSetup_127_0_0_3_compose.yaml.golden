@@ -7,16 +7,16 @@ networks:
 
 services:
   # Initialises geth files and folder from provided genesis file.
-  chain_a:
+  mock_l1:
     labels:
       e2e: true
-    container_name: chain_a
+    container_name: mock_l1
     image: ghcr.io/foundry-rs/foundry:latest
     entrypoint:
       - anvil
       - --host=0.0.0.0
-      - --chain-id=100
-      - --block-time=12
+      - --chain-id=1652
+      - --block-time=1
       - --silent
       - --load-state=/anvil/state.json
     ports:

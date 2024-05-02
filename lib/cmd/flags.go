@@ -31,9 +31,25 @@ func LogFlags(ctx context.Context, flags *pflag.FlagSet) error {
 			return
 		}
 
-		// TODO(corver): Allow dashes for one-to-one mapping with actual flags?
-		fields = append(fields, strings.ReplaceAll(f.Name, "-", "_"))
-		fields = append(fields, redact(f.Name, f.Value.String()))
+		if mapVal, err := flags.GetStringToString(f.Name); err == nil { // First check if it is a map flag
+			// Redact each map value
+			for k, v := range mapVal {
+				mapVal[k] = redact(f.Name, v)
+			}
+			fields = append(fields, f.Name)
+			fields = append(fields, mapVal)
+		} else if arrayVal, err := flags.GetStringSlice(f.Name); err == nil { // Then check if it is a slice flag
+			// Redact each slice element
+			var vals []string
+			for _, v := range arrayVal {
+				vals = append(vals, redact(f.Name, v))
+			}
+			fields = append(fields, f.Name)
+			fields = append(fields, vals)
+		} else {
+			fields = append(fields, f.Name)
+			fields = append(fields, redact(f.Name, f.Value.String()))
+		}
 	})
 
 	log.Info(ctx, "Parsed config from flags", fields...)

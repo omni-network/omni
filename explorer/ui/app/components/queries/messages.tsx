@@ -1,4 +1,8 @@
+import { DocumentNode } from 'graphql'
+import { gql } from 'urql'
 import { graphql } from '~/graphql'
+import { XMsgsDocument } from '~/graphql/graphql'
+
 
 export const xmsg = graphql(`
   query XMsg($sourceChainID: BigInt!, $destChainID: BigInt!, $streamOffset: BigInt!) {
@@ -51,5 +55,36 @@ export const xmsgrange = graphql(`
 export const xmsgcount = graphql(`
   query XMsgCount {
     xmsgcount
+  }
+`)
+
+export const xmsgs: typeof XMsgsDocument = gql(`
+  query XMsgs($cursor: BigInt, $limit: BigInt) {
+    xmsgs(cursor: $cursor, limit: $limit) {
+      TotalCount
+      Edges {
+        Cursor
+        Node {
+          ID
+          StreamOffset
+          SourceMessageSender
+          DestAddress
+          DestGasLimit
+          SourceChainID
+          DestChainID
+          TxHash
+          BlockHeight
+          BlockHash
+          Status
+          SourceBlockTime
+          ReceiptTxHash
+        }
+      }
+      PageInfo {
+        NextCursor
+        PrevCursor
+        HasNextPage
+      }
+    }
   }
 `)

@@ -97,7 +97,7 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 
 			return false, nil // Retry
 		} else if isSyncing(fcr.PayloadStatus) {
-			log.Warn(ctx, "Processing finalized payload; evm syncing (will retry)", nil, "payload_height", payload.Number)
+			log.Warn(ctx, "Processing finalized payload halted while evm syncing (will retry)", nil, "payload_height", payload.Number)
 
 			return false, nil // Retry
 		} else if invalid, err := isInvalid(fcr.PayloadStatus); invalid {

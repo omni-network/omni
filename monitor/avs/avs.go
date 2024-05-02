@@ -8,12 +8,13 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
 )
 
 // Monitor starts monitoring the AVS contract.
-func Monitor(ctx context.Context, network netconf.Network) error {
+func Monitor(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints) error {
 	if network.ID != netconf.Testnet && network.ID != netconf.Mainnet {
 		// only monitor in Testned and Mainnet
 		return nil
@@ -24,11 +25,16 @@ func Monitor(ctx context.Context, network netconf.Network) error {
 		return errors.New("no avs chain found")
 	}
 
+	rpc, err := endpoints.ByNameOrID(ch.Name, ch.ID)
+	if err != nil {
+		return err
+	}
+
 	log.Info(ctx, "Starting AVS monitor")
 
-	client, err := ethclient.Dial(ch.Name, ch.RPCURL)
+	client, err := ethclient.Dial(ch.Name, rpc)
 	if err != nil {
-		return errors.Wrap(err, "dialing", "chain", ch.Name)
+		return errors.Wrap(err, "dialing", "chain", ch.Name, "rpc", rpc)
 	}
 
 	avs, err := newAVS(client, network.ID.Static().AVSContractAddress)

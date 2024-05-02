@@ -35,3 +35,24 @@ func TestPortalOffsets(t *testing.T) {
 		}
 	})
 }
+
+// TestSupportedChains ensures that all portals have been relayed supported chains from the PortalRegistry, via the XRegistry.
+func TestSupportedChains(t *testing.T) {
+	t.Parallel()
+	testPortal(t, func(t *testing.T, source Portal, dests []Portal) {
+		t.Helper()
+		for _, dest := range dests {
+			supported, err := source.Contract.IsSupportedChain(nil, dest.Chain.ID)
+			require.NoError(t, err)
+
+			if source.Chain.ID == dest.Chain.ID {
+				require.False(t, supported,
+					"source chain %v supports itself", source.Chain.ID)
+			} else {
+				require.True(t, supported,
+					"source chain %v does not support dest chain %v",
+					source.Chain.ID, dest.Chain.ID)
+			}
+		}
+	})
+}

@@ -8,7 +8,7 @@ Contract calls consume gas. Omni enforces a gas limit when executing an `xcall`.
 
 ```solidity
 xcall(
-   destChainId,  // desintation chain id
+   destChainId,  // destination chain id
    to,           // contract address on the destination chain
    data,         // abi encoded calldata, ex abi.encodeWithSignature("foo()")
    gasLimit      // gas limit to enforce on destination execution

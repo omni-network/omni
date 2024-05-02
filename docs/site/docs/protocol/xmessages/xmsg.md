@@ -90,7 +90,7 @@ The following steps provide a comprehensive overview of how an XMsg travels from
 
 - Validators attest to `XBlock` hashes during CometBFT consensus. Each Omni consensus layer validator monitors every finalized block for all source networks in `halo`. By default, validators wait for block finalization, or some other agreed-upon finality mechanism, to ensure consistent and secure `XMsg` processing.
 
-    All validators usehalo to attest to `XBlock`s via CometBFT vote extensions. All validators in the CometBFT validator set should attest to all `XBlock`. An attestation is defined by the following `Attestation` type:
+    All validators use halo to attest to `XBlock`s via CometBFT vote extensions. All validators in the CometBFT validator set should attest to all `XBlock`. An attestation is defined by the following `Attestation` type:
 
     ```go
     // Attestation containing quorum votes by the validator set of a cross-chain Block.

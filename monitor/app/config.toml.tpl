@@ -5,6 +5,9 @@
 # last modified the config file. Do not modify this.
 version = "{{ .Version}}"
 
+# Omni network to participate in: mainnet, testnet, or devnet.
+network = "{{ .Network }}"
+
 #######################################################################
 ###                         Monitor Options                         ###
 #######################################################################
@@ -12,11 +15,25 @@ version = "{{ .Version}}"
 # Path to the ethereum private key used to sign avs omni sync transactions.
 private-key = "{{ .PrivateKey }}"
 
-# The path to the Omni network configuration file.
-network-file = "{{ .NetworkFile }}"
-
 # The address that the monitor listens for metric scrape requests.
 monitoring-addr = "{{ .MonitoringAddr }}"
+
+#######################################################################
+###                             X-Chain                             ###
+#######################################################################
+
+[xchain]
+
+# Cross-chain EVM RPC endpoints to use for voting; only required for validators. One per supported EVM is required.
+# It is strongly advised to operate fullnodes for each chain and NOT to use free public RPCs.
+[xchain.evm-rpc-endpoints]
+{{- if not .RPCEndpoints }}
+# ethereum = "http://my-ethreum-node:8545"
+# optimism = "https://my-op-node.com"
+{{ end -}}
+{{- range $key, $value := .RPCEndpoints }}
+{{ $key }} = "{{ $value }}"
+{{ end }}
 
 #######################################################################
 ###                         Logging Options                         ###

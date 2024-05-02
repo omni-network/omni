@@ -5,6 +5,9 @@
 # last modified the config file. Do not modify this.
 version = "{{ .Version}}"
 
+# Omni network to participate in: mainnet, testnet, or devnet.
+network = "{{ .Network }}"
+
 #######################################################################
 ###                         Relayer Options                         ###
 #######################################################################
@@ -15,11 +18,24 @@ private-key = "{{ .PrivateKey }}"
 # The URL of the halo node to connect to.
 halo-url = "{{ .HaloURL }}"
 
-# The path to the Omni network configuration file.
-network-file = "{{ .NetworkFile }}"
-
 # The path to the relayer state file used to track cursors.
 state-file = "{{ .StateFile }}"
+
+#######################################################################
+###                             X-Chain                             ###
+#######################################################################
+
+[xchain]
+
+# Cross-chain EVM RPC endpoints to use for relaying. One per supported EVM is required.
+[xchain.evm-rpc-endpoints]
+{{- if not .RPCEndpoints }}
+# ethereum = "http://my-ethreum-node:8545"
+# optimism = "https://my-op-node.com"
+{{ end -}}
+{{- range $key, $value := .RPCEndpoints }}
+{{ $key }} = "{{ $value }}"
+{{ end }}
 
 #######################################################################
 ###                         Logging Options                         ###

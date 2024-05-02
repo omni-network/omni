@@ -1,0 +1,156 @@
+package feeoraclev1
+
+import (
+	"context"
+	"math/big"
+
+	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/lib/contracts"
+	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokens/coingecko"
+	"github.com/omni-network/omni/lib/xfee"
+
+	"github.com/ethereum/go-ethereum/common"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
+)
+
+type DeploymentConfig struct {
+	Owner        common.Address
+	Deployer     common.Address
+	ProxyAdmin   common.Address
+	BaseGasLimit uint64
+	ProtocolFee  *big.Int
+}
+
+func (cfg DeploymentConfig) Validate() error {
+	if (cfg.Owner == common.Address{}) {
+		return errors.New("owner is zero")
+	}
+	if (cfg.Deployer == common.Address{}) {
+		return errors.New("deployer is zero")
+	}
+	if (cfg.ProxyAdmin == common.Address{}) {
+		return errors.New("proxy admin is zero")
+	}
+
+	return nil
+}
+
+func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) {
+	if network == netconf.Devnet {
+		return devnetCfg(), nil
+	}
+
+	if network == netconf.Mainnet {
+		return mainnetCfg(), nil
+	}
+
+	if network == netconf.Testnet {
+		return testnetCfg(), nil
+	}
+
+	if network == netconf.Staging {
+		return stagingCfg(), nil
+	}
+
+	return DeploymentConfig{}, errors.New("unsupported chain for network", "chain_id", chainID, "network", network)
+}
+
+func mainnetCfg() DeploymentConfig {
+	return DeploymentConfig{
+		Owner:        eoa.MustAddress(netconf.Mainnet, eoa.RolePortalAdmin),
+		Deployer:     eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer),
+		ProxyAdmin:   contracts.MainnetProxyAdmin(),
+		BaseGasLimit: 50_000,
+		ProtocolFee:  big.NewInt(0),
+	}
+}
+
+func testnetCfg() DeploymentConfig {
+	return DeploymentConfig{
+		Owner:        eoa.MustAddress(netconf.Testnet, eoa.RolePortalAdmin),
+		Deployer:     eoa.MustAddress(netconf.Testnet, eoa.RoleDeployer),
+		ProxyAdmin:   contracts.TestnetProxyAdmin(),
+		BaseGasLimit: 50_000,
+		ProtocolFee:  big.NewInt(0),
+	}
+}
+
+func devnetCfg() DeploymentConfig {
+	return DeploymentConfig{
+		Owner:        eoa.MustAddress(netconf.Devnet, eoa.RolePortalAdmin),
+		Deployer:     eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
+		ProxyAdmin:   contracts.DevnetProxyAdmin(),
+		BaseGasLimit: 50_000,
+		ProtocolFee:  big.NewInt(0),
+	}
+}
+
+func stagingCfg() DeploymentConfig {
+	return DeploymentConfig{
+		Owner:        eoa.MustAddress(netconf.Staging, eoa.RolePortalAdmin),
+		Deployer:     eoa.MustAddress(netconf.Staging, eoa.RoleDeployer),
+		ProxyAdmin:   contracts.StagingProxyAdmin(),
+		BaseGasLimit: 50_000,
+		ProtocolFee:  big.NewInt(0),
+	}
+}
+
+func Deploy(ctx context.Context, network netconf.ID, chainID uint64, destChainIDs []uint64, backends ethbackend.Backends) (common.Address, *ethtypes.Receipt, error) {
+	cfg, err := getDeployCfg(chainID, network)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "get deployment config")
+	}
+
+	backend, err := backends.Backend(chainID)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "get backend")
+	}
+
+	txOpts, err := backend.BindOpts(ctx, cfg.Deployer)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "bind opts")
+	}
+
+	feemngr := xfee.NewManager(append(destChainIDs, chainID), coingecko.New(), backends)
+
+	feeparams, err := feemngr.FeeParams(ctx, chainID)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "fee params")
+	}
+
+	feeOracleAbi, err := bindings.FeeOracleV1MetaData.GetAbi()
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "get fee oracle abi")
+	}
+
+	initializer, err := feeOracleAbi.Pack("initialize", cfg.Owner, cfg.BaseGasLimit, cfg.ProtocolFee, feeparams)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "pack initialize")
+	}
+
+	impl, tx, _, err := bindings.DeployFeeOracleV1(txOpts, backend)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "deploy fee oracle")
+	}
+
+	_, err = backend.WaitMined(ctx, tx)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "wait mined")
+	}
+
+	proxy, tx, _, err := bindings.DeployTransparentUpgradeableProxy(txOpts, backend, impl, cfg.ProxyAdmin, initializer)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "deploy proxy")
+	}
+
+	receipt, err := backend.WaitMined(ctx, tx)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "wait mined")
+	}
+
+	return proxy, receipt, nil
+}

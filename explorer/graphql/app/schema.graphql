@@ -66,6 +66,15 @@ type XMsg {
   "Hash of the source chain block"
   BlockHash: Bytes32!
 
+  "Hash of destination chain receipt"
+  ReceiptTxHash: Bytes32
+
+  "Status of the message"
+  Status: String!
+
+  "Timestamp of the source chain block"
+  SourceBlockTime: Time!
+
   "XBlock message was emitted in"
   Block: XBlock!
 
@@ -93,7 +102,7 @@ type XBlock {
   Messages: [XMsg!]!
 
   "Receipts of all submitted cross-chain messages applied in the block"
-  Receipts:  [XReceipt!]!
+  Receipts: [XReceipt!]!
 
   "Timestamp of the source chain block"
   Timestamp: Time!
@@ -172,6 +181,12 @@ enum SearchResultType {
   ADDRESS
 }
 
+enum XMsgStatus {
+  PENDING
+  PROCESSED
+  FAILED
+}
+
 """
 XMsgResult represents a paginated list of XMsgs
 """
@@ -201,11 +216,15 @@ type XMsgEdge {
 PageInfo represents pagination information
 """
 type PageInfo {
-  "Start Cursor"
-  StartCursor: BigInt!
 
-  "Next Page Cursor"
+  "Next Cursor"
+  NextCursor: BigInt!
+
+  "Has Next Page"
   HasNextPage: Boolean!
+
+  "Previous Cursor"
+  PrevCursor: BigInt!
 
   "Previous Page Cursor"
   HasPrevPage: Boolean!
@@ -218,8 +237,16 @@ type Query {
   xmsgrange(from: BigInt!, to: BigInt!): [XMsg]!
   xmsgcount: BigInt
   xreceiptcount: BigInt
-  xreceipt(sourceChainID: BigInt!, destChainID: BigInt!, streamOffset: BigInt!): XReceipt
-  xmsg(sourceChainID: BigInt!, destChainID: BigInt! streamOffset: BigInt!): XMsg
+  xreceipt(
+    sourceChainID: BigInt!
+    destChainID: BigInt!
+    streamOffset: BigInt!
+  ): XReceipt
+  xmsg(
+    sourceChainID: BigInt!
+    destChainID: BigInt!
+    streamOffset: BigInt!
+  ): XMsg
   supportedchains: [Chain]!
   search(query: String!): SearchResult
   xmsgs(limit: BigInt, cursor: BigInt): XMsgResult

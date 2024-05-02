@@ -1,0 +1,83 @@
+{
+  "storage": [
+    {
+      "astId": 818,
+      "contract": "src/protocol/PortalRegistry.sol:PortalRegistry",
+      "label": "_owner",
+      "offset": 0,
+      "slot": "0",
+      "type": "t_address"
+    },
+    {
+      "astId": 51697,
+      "contract": "src/protocol/PortalRegistry.sol:PortalRegistry",
+      "label": "deployments",
+      "offset": 0,
+      "slot": "1",
+      "type": "t_mapping(t_uint64,t_struct(Deployment)51707_storage)"
+    }
+  ],
+  "types": {
+    "t_address": {
+      "encoding": "inplace",
+      "label": "address",
+      "numberOfBytes": "20"
+    },
+    "t_mapping(t_uint64,t_struct(Deployment)51707_storage)": {
+      "encoding": "mapping",
+      "key": "t_uint64",
+      "label": "mapping(uint64 => struct PortalRegistry.Deployment)",
+      "numberOfBytes": "32",
+      "value": "t_struct(Deployment)51707_storage"
+    },
+    "t_string_storage": {
+      "encoding": "bytes",
+      "label": "string",
+      "numberOfBytes": "32"
+    },
+    "t_struct(Deployment)51707_storage": {
+      "encoding": "inplace",
+      "label": "struct PortalRegistry.Deployment",
+      "numberOfBytes": "96",
+      "members": [
+        {
+          "astId": 51700,
+          "contract": "src/protocol/PortalRegistry.sol:PortalRegistry",
+          "label": "chainId",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_uint64"
+        },
+        {
+          "astId": 51702,
+          "contract": "src/protocol/PortalRegistry.sol:PortalRegistry",
+          "label": "addr",
+          "offset": 8,
+          "slot": "0",
+          "type": "t_address"
+        },
+        {
+          "astId": 51704,
+          "contract": "src/protocol/PortalRegistry.sol:PortalRegistry",
+          "label": "deployHeight",
+          "offset": 0,
+          "slot": "1",
+          "type": "t_uint64"
+        },
+        {
+          "astId": 51706,
+          "contract": "src/protocol/PortalRegistry.sol:PortalRegistry",
+          "label": "finalizationStrat",
+          "offset": 0,
+          "slot": "2",
+          "type": "t_string_storage"
+        }
+      ]
+    },
+    "t_uint64": {
+      "encoding": "inplace",
+      "label": "uint64",
+      "numberOfBytes": "8"
+    }
+  }
+}

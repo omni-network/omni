@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
@@ -24,6 +25,7 @@ import (
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/xchain"
 	monapp "github.com/omni-network/omni/monitor/app"
 	relayapp "github.com/omni-network/omni/relayer/app"
 
@@ -42,16 +44,17 @@ const (
 	AppAddressTCP  = "tcp://127.0.0.1:30000"
 	AppAddressUNIX = "unix:///var/run/app.sock"
 
-	PrivvalAddressTCP  = "tcp://0.0.0.0:27559"
-	PrivvalAddressUNIX = "unix:///var/run/privval.sock"
-	PrivvalKeyFile     = "config/priv_validator_key.json"
-	PrivvalStateFile   = "data/priv_validator_state.json"
-	NetworkConfigFile  = "config/network.json"
+	PrivvalKeyFile   = "config/priv_validator_key.json"
+	PrivvalStateFile = "data/priv_validator_state.json"
 )
 
 // Setup sets up the testnet configuration.
 func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	log.Info(ctx, "Setup testnet", "dir", def.Testnet.Dir)
+
+	if err := CleanupDir(ctx, def.Testnet.Dir); err != nil {
+		return err
+	}
 
 	if err := os.MkdirAll(def.Testnet.Dir, os.ModePerm); err != nil {
 		return errors.Wrap(err, "mkdir")
@@ -94,7 +97,7 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 		return err
 	}
 
-	if err := writeExplorerIndexerConfig(ctx, def, logCfg); err != nil {
+	if err := writeExplorerIndexerConfig(def, logCfg); err != nil {
 		return err
 	}
 
@@ -122,11 +125,22 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 		}
 		config.WriteConfigFile(filepath.Join(nodeDir, "config", "config.toml"), cfg) // panics
 
-		if err := writeHaloConfig(nodeDir, def.Cfg, logCfg, depCfg.testConfig, node.Mode); err != nil {
+		endpoints := internalEndpoints(def, node.Name)
+		omniEVM := omniEVMByPrefix(def.Testnet, node.Name)
+
+		if err := writeHaloConfig(
+			def.Testnet.Network,
+			nodeDir,
+			def.Cfg,
+			logCfg,
+			depCfg.testConfig,
+			node.Mode,
+			omniEVM.InstanceName,
+			endpoints,
+		); err != nil {
 			return err
 		}
 
-		omniEVM := omniEVMByPrefix(def.Testnet, node.Name)
 		if err := os.WriteFile(filepath.Join(nodeDir, "config", "jwtsecret"), []byte(omniEVM.JWTSecret), 0o600); err != nil {
 			return errors.Wrap(err, "write jwtsecret")
 		}
@@ -146,24 +160,24 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 			filepath.Join(nodeDir, PrivvalStateFile),
 		)).Save()
 
-		intNetwork := internalNetwork(def, node.Name)
-
-		if err := netconf.Save(ctx, intNetwork, filepath.Join(nodeDir, NetworkConfigFile)); err != nil {
-			return errors.Wrap(err, "write network config")
-		}
-
 		// Initialize the node's data directory (with noop logger since it is noisy).
-		initCfg := halocmd.InitConfig{HomeDir: nodeDir, Network: def.Testnet.Network}
+		initCfg := halocmd.InitConfig{
+			HomeDir:      nodeDir,
+			Network:      def.Testnet.Network,
+			RCPEndpoints: endpoints,
+		}
 		if err := halocmd.InitFiles(log.WithNoopLogger(ctx), initCfg); err != nil {
 			return errors.Wrap(err, "init files")
 		}
 	}
 
-	// Write an external network.json in base testnet dir.
+	// Write an external network.json and endpoints.json in base testnet dir.
 	// This allows for easy connecting or querying of the network
-	extNetwork := externalNetwork(def)
-	if err := netconf.Save(ctx, extNetwork, filepath.Join(def.Testnet.Dir, "network.json")); err != nil {
-		return errors.Wrap(err, "write network config")
+	endpoints := externalEndpoints(def)
+	if endpointBytes, err := json.MarshalIndent(endpoints, "", " "); err != nil {
+		return errors.Wrap(err, "marshal endpoints")
+	} else if err := os.WriteFile(filepath.Join(def.Testnet.Dir, "endpoints.json"), endpointBytes, 0o644); err != nil {
+		return errors.Wrap(err, "write endpoints")
 	}
 
 	if def.Testnet.Prometheus {
@@ -298,7 +312,16 @@ func MakeConfig(node *e2e.Node, nodeDir string) (*config.Config, error) {
 }
 
 // writeHaloConfig generates an halo application config for a node and writes it to disk.
-func writeHaloConfig(nodeDir string, defCfg DefinitionConfig, logCfg log.Config, testCfg bool, mode e2e.Mode) error {
+func writeHaloConfig(
+	network netconf.ID,
+	nodeDir string,
+	defCfg DefinitionConfig,
+	logCfg log.Config,
+	testCfg bool,
+	mode e2e.Mode,
+	evmInstance string,
+	endpoints xchain.RPCEndpoints,
+) error {
 	cfg := halocfg.DefaultConfig()
 
 	switch mode {
@@ -313,8 +336,11 @@ func writeHaloConfig(nodeDir string, defCfg DefinitionConfig, logCfg log.Config,
 		cfg.MinRetainBlocks = 0
 	}
 
+	cfg.Network = network
 	cfg.HomeDir = nodeDir
-	cfg.EngineJWTFile = "/halo/config/jwtsecret" // Absolute path inside docker container
+	cfg.RPCEndpoints = endpoints
+	cfg.EngineEndpoint = fmt.Sprintf("http://%s:8551", evmInstance) //nolint:nosprintfhostport // net.JoinHostPort doesn't prefix http.
+	cfg.EngineJWTFile = "/halo/config/jwtsecret"                    // Absolute path inside docker container
 	cfg.Tracer.Endpoint = defCfg.TracingEndpoint
 	cfg.Tracer.Headers = defCfg.TracingHeaders
 
@@ -360,7 +386,6 @@ func writeRelayerConfig(ctx context.Context, def Definition, logCfg log.Config) 
 
 	const (
 		privKeyFile = "privatekey"
-		networkFile = "network.json"
 		configFile  = "relayer.toml"
 	)
 
@@ -369,13 +394,9 @@ func writeRelayerConfig(ctx context.Context, def Definition, logCfg log.Config) 
 	}
 
 	// Save network config
-	network := internalNetwork(def, "")
+	endpoints := internalEndpoints(def, "")
 	if def.Infra.GetInfrastructureData().Provider == vmcompose.ProviderName {
-		network = externalNetwork(def)
-	}
-
-	if err := netconf.Save(ctx, network, filepath.Join(confRoot, networkFile)); err != nil {
-		return errors.Wrap(err, "save network config")
+		endpoints = externalEndpoints(def)
 	}
 
 	// Save private key
@@ -387,12 +408,13 @@ func writeRelayerConfig(ctx context.Context, def Definition, logCfg log.Config) 
 		return errors.Wrap(err, "write private key")
 	}
 
-	ralayCfg := relayapp.DefaultConfig()
-	ralayCfg.PrivateKey = privKeyFile
-	ralayCfg.NetworkFile = networkFile
-	ralayCfg.HaloURL = def.Testnet.RandomHaloAddr()
+	relayCfg := relayapp.DefaultConfig()
+	relayCfg.PrivateKey = privKeyFile
+	relayCfg.Network = def.Testnet.Network
+	relayCfg.HaloURL = def.Testnet.RandomHaloAddr()
+	relayCfg.RPCEndpoints = endpoints
 
-	if err := relayapp.WriteConfigTOML(ralayCfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
+	if err := relayapp.WriteConfigTOML(relayCfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write relayer config")
 	}
 
@@ -404,7 +426,6 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 
 	const (
 		privKeyFile = "privatekey"
-		networkFile = "network.json"
 		configFile  = "monitor.toml"
 	)
 
@@ -413,13 +434,9 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 	}
 
 	// Save network config
-	network := internalNetwork(def, "")
+	endpoints := internalEndpoints(def, "")
 	if def.Infra.GetInfrastructureData().Provider == vmcompose.ProviderName {
-		network = externalNetwork(def)
-	}
-
-	if err := netconf.Save(ctx, network, filepath.Join(confRoot, networkFile)); err != nil {
-		return errors.Wrap(err, "save network config")
+		endpoints = externalEndpoints(def)
 	}
 
 	// Save private key
@@ -450,8 +467,9 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 
 	cfg := monapp.DefaultConfig()
 	cfg.PrivateKey = privKeyFile
-	cfg.NetworkFile = networkFile
+	cfg.Network = def.Testnet.Network
 	cfg.LoadGen.ValidatorKeysGlob = validatorKeyGlob
+	cfg.RPCEndpoints = endpoints
 
 	if err := monapp.WriteConfigTOML(cfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write relayer config")
@@ -460,12 +478,11 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 	return nil
 }
 
-func writeExplorerIndexerConfig(ctx context.Context, def Definition, logCfg log.Config) error {
+func writeExplorerIndexerConfig(def Definition, logCfg log.Config) error {
 	confRoot := filepath.Join(def.Testnet.Dir, "explorer_indexer")
 
 	const (
-		networkFile = "network.json"
-		configFile  = "indexer.toml"
+		configFile = "indexer.toml"
 	)
 
 	err := os.MkdirAll(confRoot, 0o755)
@@ -474,18 +491,15 @@ func writeExplorerIndexerConfig(ctx context.Context, def Definition, logCfg log.
 	}
 
 	// Save network config
-	network := internalNetwork(def, "")
+	endpoints := internalEndpoints(def, "")
 	if def.Infra.GetInfrastructureData().Provider == vmcompose.ProviderName {
-		network = externalNetwork(def)
-	}
-
-	if err := netconf.Save(ctx, network, filepath.Join(confRoot, networkFile)); err != nil {
-		return errors.Wrap(err, "save network config")
+		endpoints = externalEndpoints(def)
 	}
 
 	cfg := indexerapp.DefaultConfig()
-	cfg.NetworkFile = networkFile
+	cfg.Network = def.Testnet.Network
 	cfg.ExplorerDBConn = def.Cfg.ExplorerDBConn
+	cfg.RPCEndpoints = endpoints
 
 	if err := indexerapp.WriteConfigTOML(cfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write indexer config")

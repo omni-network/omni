@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"sync"
@@ -12,29 +13,27 @@ import (
 	"github.com/omni-network/omni/e2e/docker"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/e2e/vmcompose"
+	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tutil"
+	"github.com/omni-network/omni/lib/xchain"
 
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	rpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	cmttypes "github.com/cometbft/cometbft/types"
 
-	"github.com/stretchr/testify/require"
-)
+	"github.com/ethereum/go-ethereum/common"
 
-const (
-	EnvInfraType     = "INFRASTRUCTURE_TYPE"
-	EnvInfraFile     = "INFRASTRUCTURE_FILE"
-	EnvE2EManifest   = "E2E_MANIFEST"
-	EnvE2ENode       = "E2E_NODE"
-	EnvE2ENetwork    = "E2E_NETWORK"
-	EnvE2EDeployInfo = "E2E_DEPLOY_INFO"
+	"github.com/stretchr/testify/require"
 )
 
 //nolint:gochecknoglobals // This was copied from cometbft/test/e2e/test/e2e_test.go
 var (
+	endopintsCache  = map[string]xchain.RPCEndpoints{}
 	networkCache    = map[string]netconf.Network{}
 	deployInfoCache = map[string]types.DeployInfos{}
 	testnetCache    = map[string]types.Testnet{}
@@ -51,12 +50,13 @@ type Portal struct {
 }
 
 type testFunc struct {
-	TestNode    func(*testing.T, e2e.Node, []Portal)
+	TestNode    func(*testing.T, netconf.Network, *e2e.Node, []Portal)
 	TestPortal  func(*testing.T, Portal, []Portal)
 	TestOmniEVM func(*testing.T, ethclient.Client)
+	TestNetwork func(*testing.T, netconf.Network, xchain.RPCEndpoints)
 }
 
-func testNode(t *testing.T, fn func(*testing.T, e2e.Node, []Portal)) {
+func testNode(t *testing.T, fn func(*testing.T, netconf.Network, *e2e.Node, []Portal)) {
 	t.Helper()
 	test(t, testFunc{TestNode: fn})
 }
@@ -71,6 +71,11 @@ func testOmniEVM(t *testing.T, fn func(*testing.T, ethclient.Client)) {
 	test(t, testFunc{TestOmniEVM: fn})
 }
 
+func testNetwork(t *testing.T, fn func(*testing.T, netconf.Network, xchain.RPCEndpoints)) {
+	t.Helper()
+	test(t, testFunc{TestNetwork: fn})
+}
+
 // test runs tests for testnet nodes. The callback functions are respectively given a
 // single node to test, and a single portal to test, running as a subtest in parallel with other subtests.
 //
@@ -81,16 +86,16 @@ func testOmniEVM(t *testing.T, fn func(*testing.T, ethclient.Client)) {
 func test(t *testing.T, testFunc testFunc) {
 	t.Helper()
 
-	testnet, network, _ := loadEnv(t)
+	testnet, network, _, endpoints := loadEnv(t)
 	nodes := testnet.Nodes
 
-	if name := os.Getenv(EnvE2ENode); name != "" {
+	if name := os.Getenv(app.EnvE2ENode); name != "" {
 		node := testnet.LookupNode(name)
 		require.NotNil(t, node, "node %q not found in testnet %q", name, testnet.Name)
 		nodes = []*e2e.Node{node}
 	}
 
-	portals := makePortals(t, network)
+	portals := makePortals(t, network, endpoints)
 	log.Info(context.Background(), "Running tests for testnet",
 		"testnet", testnet.Name,
 		"nodes", len(nodes),
@@ -103,10 +108,9 @@ func test(t *testing.T, testFunc testFunc) {
 			continue
 		}
 
-		node := *node
 		t.Run(node.Name, func(t *testing.T) {
 			t.Parallel()
-			testFunc.TestNode(t, node, portals)
+			testFunc.TestNode(t, network, node, portals)
 		})
 	}
 
@@ -121,26 +125,40 @@ func test(t *testing.T, testFunc testFunc) {
 
 	if testFunc.TestOmniEVM != nil {
 		for _, chain := range network.Chains {
-			if chain.IsOmniEVM {
-				client, err := ethclient.Dial(chain.Name, chain.RPCURL)
-				require.NoError(t, err)
-
-				t.Run(chain.Name, func(t *testing.T) {
-					t.Parallel()
-					testFunc.TestOmniEVM(t, client)
-				})
+			if !netconf.IsOmniExecution(network.ID, chain.ID) {
+				continue
 			}
+
+			rpc, err := endpoints.ByNameOrID(chain.Name, chain.ID)
+			require.NoError(t, err)
+
+			client, err := ethclient.Dial(chain.Name, rpc)
+			require.NoError(t, err)
+
+			t.Run(chain.Name, func(t *testing.T) {
+				t.Parallel()
+				testFunc.TestOmniEVM(t, client)
+			})
 		}
+	}
+
+	if testFunc.TestNetwork != nil {
+		t.Run("network", func(t *testing.T) {
+			t.Parallel()
+			testFunc.TestNetwork(t, network, endpoints)
+		})
 	}
 }
 
 // makePortals creates a portal struct for each chain in the network.
-func makePortals(t *testing.T, network netconf.Network) []Portal {
+func makePortals(t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) []Portal {
 	t.Helper()
-
 	resp := make([]Portal, 0, len(network.EVMChains()))
 	for _, chain := range network.EVMChains() {
-		ethClient, err := ethclient.Dial(chain.Name, chain.RPCURL)
+		rpc, err := endpoints.ByNameOrID(chain.Name, chain.ID)
+		tutil.RequireNoError(t, err)
+
+		ethClient, err := ethclient.Dial(chain.Name, rpc)
 		require.NoError(t, err)
 
 		// create our Omni Portal Contract
@@ -161,29 +179,29 @@ func makePortals(t *testing.T, network netconf.Network) []Portal {
 // loadEnv loads the testnet and network based on env vars.
 //
 //nolint:unparam // DeployInfos will be used in future.
-func loadEnv(t *testing.T) (types.Testnet, netconf.Network, types.DeployInfos) {
+func loadEnv(t *testing.T) (types.Testnet, netconf.Network, types.DeployInfos, xchain.RPCEndpoints) {
 	t.Helper()
 
-	manifestFile := os.Getenv(EnvE2EManifest)
+	manifestFile := os.Getenv(app.EnvE2EManifest)
 	if manifestFile == "" {
-		t.Skip(EnvE2EManifest + " not set, not an end-to-end test run")
+		t.Skip(app.EnvE2EManifest + " not set, not an end-to-end test run")
 	}
 	if !filepath.IsAbs(manifestFile) {
-		require.Fail(t, EnvE2EManifest+" must be an absolute path", "got", manifestFile)
+		require.Fail(t, app.EnvE2EManifest+" must be an absolute path", "got", manifestFile)
 	}
 
-	ifdType := os.Getenv(EnvInfraType)
-	ifdFile := os.Getenv(EnvInfraFile)
+	ifdType := os.Getenv(app.EnvInfraType)
+	ifdFile := os.Getenv(app.EnvInfraFile)
 	if ifdType != docker.ProviderName && ifdFile == "" {
-		require.Fail(t, EnvInfraFile+" not set while INFRASTRUCTURE_TYPE="+ifdType)
+		require.Fail(t, app.EnvInfraFile+" not set while INFRASTRUCTURE_TYPE="+ifdType)
 	} else if ifdType != docker.ProviderName && !filepath.IsAbs(ifdFile) {
-		require.Fail(t, EnvInfraFile+" must be an absolute path", "got", ifdFile)
+		require.Fail(t, app.EnvInfraFile+" must be an absolute path", "got", ifdFile)
 	}
 
 	testnetCacheMtx.Lock()
 	defer testnetCacheMtx.Unlock()
 	if testnet, ok := testnetCache[manifestFile]; ok {
-		return testnet, networkCache[manifestFile], deployInfoCache[manifestFile]
+		return testnet, networkCache[manifestFile], deployInfoCache[manifestFile], endopintsCache[manifestFile]
 	}
 	m, err := app.LoadManifest(manifestFile)
 	require.NoError(t, err)
@@ -206,24 +224,32 @@ func loadEnv(t *testing.T) (types.Testnet, netconf.Network, types.DeployInfos) {
 	require.NoError(t, err)
 	testnetCache[manifestFile] = testnet
 
-	networkFile := os.Getenv(EnvE2ENetwork)
-	if networkFile == "" {
-		t.Fatalf(EnvE2ENetwork + " not set")
+	endpointsFile := os.Getenv(app.EnvE2ERPCEndpoints)
+	if endpointsFile == "" {
+		t.Fatalf(app.EnvE2ERPCEndpoints + " not set")
 	}
-
-	network, err := netconf.Load(networkFile)
+	bz, err := os.ReadFile(endpointsFile)
 	require.NoError(t, err)
-	networkCache[manifestFile] = network
+	var endpoints xchain.RPCEndpoints
+	require.NoError(t, json.Unmarshal(bz, &endpoints))
+	endopintsCache[manifestFile] = endpoints
 
 	var deployInfo types.DeployInfos
-	deployInfoFile := os.Getenv(EnvE2EDeployInfo)
+	deployInfoFile := os.Getenv(app.EnvE2EDeployInfo)
 	if deployInfoFile != "" {
 		deployInfo, err = types.LoadDeployInfos(deployInfoFile)
 		require.NoError(t, err)
 		deployInfoCache[manifestFile] = deployInfo
 	}
 
-	return testnet, network, deployInfo
+	portalReg, err := makePortalRegistry(testnet.Network, endpoints)
+	require.NoError(t, err)
+
+	network, err := netconf.AwaitOnChain(context.Background(), testnet.Network, portalReg, endpoints.Keys())
+	require.NoError(t, err)
+	networkCache[manifestFile] = network
+
+	return testnet, network, deployInfo, endpoints
 }
 
 // fetchBlockChain fetches a complete, up-to-date block history from
@@ -231,7 +257,7 @@ func loadEnv(t *testing.T) (types.Testnet, netconf.Network, types.DeployInfos) {
 func fetchBlockChain(ctx context.Context, t *testing.T) []*cmttypes.Block {
 	t.Helper()
 
-	testnet, _, _ := loadEnv(t)
+	testnet, _, _, _ := loadEnv(t) //nolint:dogsled // Fine for testing.
 
 	// Find the freshest archive node
 	var (
@@ -277,4 +303,24 @@ func fetchBlockChain(ctx context.Context, t *testing.T) []*cmttypes.Block {
 	blocksCache[testnet.Name] = blocks
 
 	return blocks
+}
+
+func makePortalRegistry(network netconf.ID, endpoints xchain.RPCEndpoints) (*bindings.PortalRegistry, error) {
+	meta := netconf.MetadataByID(network, network.Static().OmniExecutionChainID)
+	rpc, err := endpoints.ByNameOrID(meta.Name, meta.ChainID)
+	if err != nil {
+		return nil, err
+	}
+
+	ethCl, err := ethclient.Dial(meta.Name, rpc)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := bindings.NewPortalRegistry(common.HexToAddress(predeploys.PortalRegistry), ethCl)
+	if err != nil {
+		return nil, errors.Wrap(err, "create portal registry")
+	}
+
+	return resp, nil
 }

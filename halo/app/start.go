@@ -4,26 +4,20 @@ import (
 	"context"
 	"time"
 
-	atypes "github.com/omni-network/omni/halo/attest/types"
-	"github.com/omni-network/omni/halo/attest/voter"
 	"github.com/omni-network/omni/halo/comet"
 	halocfg "github.com/omni-network/omni/halo/config"
 	"github.com/omni-network/omni/lib/buildinfo"
-	"github.com/omni-network/omni/lib/cchain"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tracer"
-	"github.com/omni-network/omni/lib/xchain"
-	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 
 	cmtcfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/node"
 	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
 	rpclocal "github.com/cometbft/cometbft/rpc/client/local"
 	cmttypes "github.com/cometbft/cometbft/types"
@@ -59,13 +53,17 @@ func (c Config) BackendType() dbm.BackendType {
 //
 //nolint:contextcheck // Explicit new stop context.
 func Run(ctx context.Context, cfg Config) error {
-	stopFunc, err := Start(ctx, cfg)
+	async, stopFunc, err := Start(ctx, cfg)
 	if err != nil {
 		return err
 	}
 
-	<-ctx.Done()
-	log.Info(ctx, "Shutdown detected, stopping...")
+	select {
+	case <-ctx.Done():
+		log.Info(ctx, "Shutdown detected, stopping...")
+	case err := <-async:
+		return err
+	}
 
 	// Use a fresh context for stopping (only allow 5 seconds).
 	stopCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -78,46 +76,43 @@ func Run(ctx context.Context, cfg Config) error {
 //
 // Note that the original context used to start the app must be canceled first
 // before calling the stop function and a fresh context should be passed into the stop function.
-func Start(ctx context.Context, cfg Config) (func(context.Context) error, error) {
+func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context) error, error) {
 	log.Info(ctx, "Starting halo consensus client")
+
+	if err := cfg.Verify(); err != nil {
+		return nil, nil, errors.Wrap(err, "verify halo config")
+	}
 
 	buildinfo.Instrument(ctx)
 
-	network, err := netconf.Load(cfg.NetworkFile())
-	if err != nil {
-		return nil, errors.Wrap(err, "load network")
-	} else if err := network.Validate(); err != nil {
-		return nil, errors.Wrap(err, "validate network configuration")
-	}
-
-	tracerIDs := tracer.Identifiers{Network: network.ID, Service: "halo", Instance: cfg.Comet.Moniker}
+	tracerIDs := tracer.Identifiers{Network: cfg.Network, Service: "halo", Instance: cfg.Comet.Moniker}
 	stopTracer, err := tracer.Init(ctx, tracerIDs, cfg.Tracer)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if err := enableSDKTelemetry(); err != nil {
-		return nil, errors.Wrap(err, "enable cosmos-sdk telemetry")
+		return nil, nil, errors.Wrap(err, "enable cosmos-sdk telemetry")
 	}
 
 	privVal, err := loadPrivVal(cfg)
 	if err != nil {
-		return nil, errors.Wrap(err, "load validator key")
+		return nil, nil, errors.Wrap(err, "load validator key")
 	}
 
 	db, err := dbm.NewDB("application", cfg.BackendType(), cfg.DataDir())
 	if err != nil {
-		return nil, errors.Wrap(err, "create db")
+		return nil, nil, errors.Wrap(err, "create db")
 	}
 
 	baseAppOpts, err := makeBaseAppOpts(cfg)
 	if err != nil {
-		return nil, errors.Wrap(err, "make base app opts")
+		return nil, nil, errors.Wrap(err, "make base app opts")
 	}
 
-	engineCl, err := newEngineClient(ctx, cfg, network, privVal.Key.PubKey)
+	engineCl, err := newEngineClient(ctx, cfg, cfg.Network, privVal.Key.PubKey)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	//nolint:contextcheck // False positive
@@ -125,11 +120,11 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 		newSDKLogger(ctx),
 		db,
 		engineCl,
-		network.ChainName,
+		netconf.ChainNamer(cfg.Network),
 		baseAppOpts...,
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "create app")
+		return nil, nil, errors.Wrap(err, "create app")
 	}
 
 	app.EVMEngKeeper.SetBuildDelay(cfg.EVMBuildDelay)
@@ -137,38 +132,48 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 
 	cmtNode, err := newCometNode(ctx, &cfg.Comet, app, privVal)
 	if err != nil {
-		return nil, errors.Wrap(err, "create comet node")
+		return nil, nil, errors.Wrap(err, "create comet node")
 	}
 
 	rpcClient := rpclocal.New(cmtNode)
 	cmtAPI := comet.NewAPI(rpcClient)
 	app.SetCometAPI(cmtAPI)
 
-	cProvider := cprovider.NewABCIProvider(rpcClient, network.ID, network.ChainNamesByIDs())
+	cProvider := cprovider.NewABCIProvider(rpcClient, cfg.Network, netconf.ChainNamer(cfg.Network))
 
-	xProvider, err := newXProvider(network, cProvider)
+	voter, err := newVoterLoader(privVal.Key.PrivKey)
 	if err != nil {
-		return nil, errors.Wrap(err, "create xchain provider")
+		return nil, nil, err
 	}
+	async := make(chan error, 1)
+	go func() {
+		err := voter.LazyLoad(
+			ctx,
+			cfg.Network,
+			engineCl,
+			cfg.RPCEndpoints,
+			cProvider,
+			privVal.Key.PrivKey,
+			cfg.VoterStateFile(),
+			cmtAPI,
+		)
+		if err != nil {
+			async <- err
+		}
+	}()
 
-	voter, err := newVoter(cmtAPI, network, privVal, xProvider, cProvider, cfg.VoterStateFile())
-	if err != nil {
-		return nil, errors.Wrap(err, "create voter")
-	}
 	app.SetVoter(voter)
-
-	voter.Start(ctx)
 
 	log.Info(ctx, "Starting CometBFT", "listeners", cmtNode.Listeners())
 
 	if err := cmtNode.Start(); err != nil {
-		return nil, errors.Wrap(err, "start comet node")
+		return nil, nil, errors.Wrap(err, "start comet node")
 	}
 
-	// Return stop function.
-	// Note that the original context uesd to start the app must be canceled first.
+	// Return async and stop functions.
+	// Note that the original context used to start the app must be canceled first.
 	// And a fresh context should be passed into the stop function.
-	return func(ctx context.Context) error {
+	return async, func(ctx context.Context) error {
 		voter.WaitDone()
 
 		if err := cmtNode.Stop(); err != nil {
@@ -184,33 +189,6 @@ func Start(ctx context.Context, cfg Config) (func(context.Context) error, error)
 
 		return nil
 	}, nil
-}
-
-// newXProvider returns a new xchain provider.
-func newXProvider(network netconf.Network, cProvider cchain.Provider) (xchain.Provider, error) {
-	if network.ID == netconf.Simnet {
-		omni, ok := network.OmniConsensusChain()
-		if !ok {
-			return nil, errors.New("omni chain not found in network")
-		}
-
-		return xprovider.NewMock(omni.BlockPeriod*8/10, omni.ID, cProvider), nil // Slightly faster than our chain.
-	}
-
-	clients := make(map[uint64]ethclient.Client)
-	for _, chain := range network.EVMChains() {
-		ethCl, err := ethclient.Dial(chain.Name, chain.RPCURL)
-		if err != nil {
-			return nil, errors.Wrap(err, "dial chain",
-				"name", chain.Name,
-				"id", chain.ID,
-				"rpc_url", chain.RPCURL,
-			)
-		}
-		clients[chain.ID] = ethCl
-	}
-
-	return xprovider.New(network, clients, cProvider), nil
 }
 
 func newCometNode(ctx context.Context, cfg *cmtcfg.Config, app *App, privVal cmttypes.PrivValidator,
@@ -254,10 +232,18 @@ func makeBaseAppOpts(cfg Config) ([]func(*baseapp.BaseApp), error) {
 
 	snapshotOptions := snapshottypes.NewSnapshotOptions(cfg.SnapshotInterval, uint32(cfg.SnapshotKeepRecent))
 
+	pruneOpts := pruningtypes.NewPruningOptionsFromString(cfg.PruningOption)
+	if cfg.PruningOption == pruningtypes.PruningOptionDefault {
+		// Override the default cosmosSDK pruning values with much more aggressive defaults
+		// since historical state isn't very important for most use-cases.
+		pruneOpts = pruningtypes.NewCustomPruningOptions(defaultPruningKeep, defaultPruningInterval)
+	}
+
 	return []func(*baseapp.BaseApp){
+		// baseapp.SetOptimisticExecution(), // TODO(corver): Enable this.
 		baseapp.SetChainID(chainID),
 		baseapp.SetMinRetainBlocks(cfg.MinRetainBlocks),
-		baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(cfg.PruningOption)),
+		baseapp.SetPruning(pruneOpts),
 		baseapp.SetInterBlockCache(store.NewCommitKVStoreCacheManager()),
 		baseapp.SetSnapshot(snapshotStore, snapshotOptions),
 		baseapp.SetMempool(mempool.NoOpMempool{}),
@@ -288,8 +274,8 @@ func chainIDFromGenesis(cfg Config) (string, error) {
 }
 
 // newEngineClient returns a new engine API client.
-func newEngineClient(ctx context.Context, cfg Config, network netconf.Network, pubkey crypto.PubKey) (ethclient.EngineClient, error) {
-	if network.ID == netconf.Simnet {
+func newEngineClient(ctx context.Context, cfg Config, network netconf.ID, pubkey crypto.PubKey) (ethclient.EngineClient, error) {
+	if network == netconf.Simnet {
 		return ethclient.NewEngineMock(ethclient.WithMockDeposit(pubkey, 1))
 	}
 
@@ -298,12 +284,7 @@ func newEngineClient(ctx context.Context, cfg Config, network netconf.Network, p
 		return nil, errors.Wrap(err, "load engine JWT file")
 	}
 
-	omniChain, ok := network.OmniEVMChain()
-	if !ok {
-		return nil, errors.New("omni chain not found in network")
-	}
-
-	engineCl, err := ethclient.NewAuthClient(ctx, omniChain.AuthRPCURL, jwtBytes)
+	engineCl, err := ethclient.NewAuthClient(ctx, cfg.EngineEndpoint, jwtBytes)
 	if err != nil {
 		return nil, errors.Wrap(err, "create engine client")
 	}
@@ -325,42 +306,4 @@ func enableSDKTelemetry() error {
 	}
 
 	return nil
-}
-
-func newVoter(
-	cmtAPI comet.API,
-	network netconf.Network,
-	privVal *privval.FilePV,
-	xprovider xchain.Provider,
-	cProvider cchain.Provider,
-	stateFile string,
-) (*voter.Voter, error) {
-	deps := voteDeps{
-		API:      cmtAPI,
-		Provider: cProvider,
-	}
-	voterI, err := voter.LoadVoter(privVal.Key.PrivKey, stateFile, xprovider, deps, network.ChainNamesByIDs())
-	if err != nil {
-		return nil, errors.Wrap(err, "create voter")
-	}
-
-	return voterI, nil
-}
-
-var _ atypes.VoterDeps = voteDeps{}
-
-type voteDeps struct {
-	comet.API
-	cchain.Provider
-}
-
-func (v voteDeps) LatestAttestationHeight(ctx context.Context, chainID uint64) (uint64, bool, error) {
-	att, ok, err := v.LatestAttestation(ctx, chainID)
-	if err != nil {
-		return 0, false, err
-	} else if !ok {
-		return 0, false, nil
-	}
-
-	return att.BlockHeight, true, nil
 }

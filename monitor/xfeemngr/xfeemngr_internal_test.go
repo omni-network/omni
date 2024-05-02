@@ -1,0 +1,282 @@
+package xfeemngr
+
+import (
+	"context"
+	"fmt"
+	"math/rand"
+	"testing"
+	"time"
+
+	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/monitor/xfeemngr/contract"
+	"github.com/omni-network/omni/monitor/xfeemngr/gasprice"
+	"github.com/omni-network/omni/monitor/xfeemngr/ticker"
+	"github.com/omni-network/omni/monitor/xfeemngr/tokenprice"
+
+	"github.com/ethereum/go-ethereum"
+
+	"github.com/stretchr/testify/require"
+)
+
+// TestStart is a length test that tests the xfeemngr.Manager lifecycle.
+//
+// It mocks the following external resources:
+//   - gas pricers
+//   - token pricer
+//   - fee oracle contracts
+//   - tickers
+//
+// The xfeemngr.Manager's job is to stream gas and token prices into their respective buffers,
+// and to sync on chain FeeOracleV1 state with buffer values.
+//
+// The test has the following structure:
+//   - Setup mocks, with initial gas and token pricers.
+//   - Start the manager
+//   - Tick the ticker, to potentially trigger buffer & on chain updates
+//   - Assert on chain values are expected
+func TestStart(t *testing.T) {
+	t.Parallel()
+
+	chainIDs := []uint64{1, 2, 3, 4, 5}
+
+	// mock gas prices / pricers
+	initialGasPrices := makeGasPrices(chainIDs)
+	gasPricers := makeMockGasPricers(initialGasPrices)
+
+	// mock token prices / pricer
+	initialTokenPrices := map[tokens.Token]float64{
+		tokens.OMNI: randTokenPrice(),
+		tokens.ETH:  randTokenPrice(),
+	}
+	tokenPricer := tokens.NewMockPricer(initialTokenPrices)
+
+	// helper to get price of a token from the pricer
+	priceOf := func(token tokens.Token) float64 {
+		t.Helper()
+		prices, err := tokenPricer.Price(context.Background(), token)
+		require.NoError(t, err)
+
+		price, ok := prices[token]
+		require.True(t, ok)
+
+		return price
+	}
+
+	tick := ticker.NewMock()
+
+	gpriceThreshold := 0.1
+	tpriceThreshold := 0.1
+
+	gpriceBuf := gasprice.NewBuffer(toEthGasPricers(gasPricers), gasprice.WithThresholdPct(gpriceThreshold), gasprice.WithTicker(tick))
+	tpriceBuf := tokenprice.NewBuffer(tokenPricer, tokens.OMNI, tokens.ETH, tokenprice.WithThresholdPct(tpriceThreshold), tokenprice.WithTicker(tick))
+
+	chains := makeChains(chainIDs)
+	oracles := makeMockOracles(chains, gpriceBuf, tpriceBuf)
+
+	ctx := context.Background()
+
+	mngr := Manager{
+		gprice:  gpriceBuf,
+		tprice:  tpriceBuf,
+		ticker:  tick,
+		oracles: oracles,
+	}
+
+	// start the manager
+	mngr.start(ctx)
+
+	// single tick should move fill gas price and token buffers
+	// values should be read from buffers, and set on chain
+	tick.Tick()
+
+	// expect initial values to be set on chain
+	expectInitials := func() {
+		for _, oracle := range oracles {
+			src := oracle.chain
+
+			for _, dest := range oracle.dests {
+				// check gas price
+				gasprice, err := oracle.contract.GasPriceOn(ctx, dest.ChainID)
+				require.NoError(t, err)
+				require.Equal(t, initialGasPrices[dest.ChainID], gasprice.Uint64(), "initial gas price")
+
+				// check to native rate
+				expectedRate := rateFromPrices(initialTokenPrices[dest.NativeToken], initialTokenPrices[src.NativeToken])
+
+				if src.NativeToken == dest.NativeToken {
+					//nolint:testifylint // conversionRateDenom is expected
+					require.Equal(t, conversionRateDenom, expectedRate, "expect 1:1 rate for same tokens")
+				}
+
+				rate, err := oracle.contract.ToNativeRate(ctx, dest.ChainID)
+				require.NoError(t, err)
+				require.Equal(t, expectedRate.Uint64(), rate.Uint64(), "initial conversion rate")
+			}
+		}
+	}
+	expectInitials()
+
+	// increase gas prices, but not above threshold
+	for _, mock := range gasPricers {
+		mock.SetPrice(mock.Price() + uint64(float64(mock.Price())*gpriceThreshold) - 1)
+	}
+
+	// increase token prices, but not above threshold
+	for token, price := range initialTokenPrices {
+		tokenPricer.SetPrice(token, price+(price*tpriceThreshold)-1)
+	}
+
+	tick.Tick()
+
+	// expect no change on chain
+	expectInitials()
+
+	// increase gas prices above threshold
+	for _, mock := range gasPricers {
+		mock.SetPrice(mock.Price() + uint64(float64(mock.Price())*gpriceThreshold)*2)
+	}
+
+	// increase token prices above threshold
+	for token, price := range initialTokenPrices {
+		tokenPricer.SetPrice(token, price+(price*tpriceThreshold)*2)
+	}
+
+	tick.Tick()
+
+	// expect on chain gas prices and conversion rates to be updated
+	for _, oracle := range oracles {
+		src := oracle.chain
+
+		for _, dest := range oracle.dests {
+			// check gas price
+			gasprice, err := oracle.contract.GasPriceOn(ctx, dest.ChainID)
+			require.NoError(t, err)
+			require.Equal(t, gasPricers[dest.ChainID].Price(), gasprice.Uint64(), "updated gas price")
+
+			// check to native rate
+			expectedRate := rateFromPrices(priceOf(dest.NativeToken), priceOf(src.NativeToken))
+
+			if src.NativeToken == dest.NativeToken {
+				//nolint:testifylint // conversionRateDenom is expected
+				require.Equal(t, conversionRateDenom, expectedRate, "expect 1:1 rate for same tokens")
+			}
+
+			rate, err := oracle.contract.ToNativeRate(ctx, dest.ChainID)
+			require.NoError(t, err)
+			require.Equal(t, expectedRate.Uint64(), rate.Uint64(), "updated conversion rate")
+		}
+	}
+
+	// set gas prices back to initial
+	for chainID, price := range initialGasPrices {
+		gasPricers[chainID].SetPrice(price)
+	}
+
+	// set token prices back to initial
+	for token, price := range initialTokenPrices {
+		tokenPricer.SetPrice(token, price)
+	}
+
+	tick.Tick()
+
+	// expect on chain values to be back to initials
+	expectInitials()
+}
+
+func makeMockOracles(chains []evmchain.Metadata, gprice *gasprice.Buffer, tprice *tokenprice.Buffer) map[uint64]feeOracle {
+	oracles := make(map[uint64]feeOracle)
+
+	for _, chain := range chains {
+		oracles[chain.ChainID] = feeOracle{
+			chain:    chain,
+			dests:    makeDests(chain.ChainID, chains),
+			gprice:   gprice,
+			tprice:   tprice,
+			contract: contract.NewMockFeeOracleV1(),
+		}
+	}
+
+	return oracles
+}
+
+// makeChains generates a list of mock chains from a list of chainIDs.
+func makeChains(chainIDs []uint64) []evmchain.Metadata {
+	chains := make([]evmchain.Metadata, 0, len(chainIDs)-1)
+
+	for i, chainID := range chainIDs {
+		// use ETH for all chains, except the first
+		token := tokens.ETH
+		if i == 0 {
+			token = tokens.OMNI
+		}
+
+		meta := evmchain.Metadata{
+			ChainID:     chainID,
+			Name:        "test-chain-" + fmt.Sprint(chainID),
+			BlockPeriod: time.Second,
+			NativeToken: token,
+		}
+
+		chains = append(chains, meta)
+	}
+
+	return chains
+}
+
+// makeDests filters out the source chain from a list of chains.
+func makeDests(srcChainID uint64, chains []evmchain.Metadata) []evmchain.Metadata {
+	dests := make([]evmchain.Metadata, 0, len(chains)-1)
+
+	for _, chain := range chains {
+		if chain.ChainID == srcChainID {
+			continue
+		}
+
+		dests = append(dests, chain)
+	}
+
+	return dests
+}
+
+// makeGasPrices generates a map chainID -> gas price for each chainID.
+func makeGasPrices(chainIDs []uint64) map[uint64]uint64 {
+	prices := make(map[uint64]uint64)
+
+	for _, chainID := range chainIDs {
+		prices[chainID] = randGasPrice()
+	}
+
+	return prices
+}
+
+// makeMockGasPricers generates a map of mock gas pricers for n chains.
+func makeMockGasPricers(prices map[uint64]uint64) map[uint64]*gasprice.MockPricer {
+	mocks := make(map[uint64]*gasprice.MockPricer)
+	for chainID, price := range prices {
+		mocks[chainID] = gasprice.NewMockPricer(price)
+	}
+
+	return mocks
+}
+
+// toEthGasPricers  transform map[uint64]*gasprice.MockPricer to map[uint64]ethereum.GasPricer (interface).
+func toEthGasPricers(mocks map[uint64]*gasprice.MockPricer) map[uint64]ethereum.GasPricer {
+	pricers := make(map[uint64]ethereum.GasPricer)
+	for chainID, mock := range mocks {
+		pricers[chainID] = mock
+	}
+
+	return pricers
+}
+
+// randGasPrice generates a random, reasonable gas price.
+func randGasPrice() uint64 {
+	oneGwei := 1_000_000_000 // i gwei
+	return uint64(rand.Float64() * float64(oneGwei))
+}
+
+// randTokenPrice generates a random, reasonable token price.
+func randTokenPrice() float64 {
+	return float64(rand.Intn(5000)) + rand.Float64()
+}

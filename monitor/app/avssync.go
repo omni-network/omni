@@ -27,8 +27,8 @@ func startAVSSync(ctx context.Context, cfg Config, network netconf.Network) erro
 	if !ok {
 		log.Warn(ctx, "Not syncing avs since no ethereum chain defined", nil)
 		return nil
-	} else if ethL1.AVSContractAddr == (common.Address{}) {
-		log.Warn(ctx, "Not syncing avs since AVSContractAddr empty", nil)
+	} else if network.ID.Static().AVSContractAddress == (common.Address{}) {
+		log.Warn(ctx, "Not syncing avs since netconf.AVSContractAddr empty", nil)
 		return nil
 	} else if ethL1.PortalAddress == (common.Address{}) {
 		log.Warn(ctx, "Not syncing avs since no l1 portal defined", nil)
@@ -38,7 +38,12 @@ func startAVSSync(ctx context.Context, cfg Config, network netconf.Network) erro
 		return nil
 	}
 
-	ethCl, err := ethclient.Dial(ethL1.Name, ethL1.RPCURL)
+	rpc, err := cfg.RPCEndpoints.ByNameOrID(ethL1.Name, ethL1.ID)
+	if err != nil {
+		return err
+	}
+
+	ethCl, err := ethclient.Dial(ethL1.Name, rpc)
 	if err != nil {
 		return errors.Wrap(err, "dial ethereum chain")
 	}
@@ -53,7 +58,7 @@ func startAVSSync(ctx context.Context, cfg Config, network netconf.Network) erro
 		return err
 	}
 
-	omniAVS, err := bindings.NewOmniAVS(ethL1.AVSContractAddr, backend)
+	omniAVS, err := bindings.NewOmniAVS(network.ID.Static().AVSContractAddress, backend)
 	if err != nil {
 		return errors.Wrap(err, "new omni portal")
 	}

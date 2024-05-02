@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/omni-network/omni/lib/chainids"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/evmchain"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -15,6 +15,7 @@ import (
 
 const consensusIDPrefix = "omni-"
 const consensusIDOffset = 1_000_000
+const maxValidators = 10
 
 // Static defines static config and data for a network.
 type Static struct {
@@ -22,6 +23,7 @@ type Static struct {
 	OmniExecutionChainID uint64
 	AVSContractAddress   common.Address
 	Portals              []Deployment
+	MaxValidators        uint32
 }
 
 type Deployment struct {
@@ -75,33 +77,37 @@ var (
 var statics = map[ID]Static{
 	Simnet: {
 		Version:              runid,
-		OmniExecutionChainID: chainids.OmniDevnet,
+		OmniExecutionChainID: evmchain.IDOmniEphemeral,
+		MaxValidators:        maxValidators,
 	},
 	Devnet: {
 		Version:              runid,
-		OmniExecutionChainID: chainids.OmniDevnet,
+		OmniExecutionChainID: evmchain.IDOmniEphemeral,
+		MaxValidators:        maxValidators,
 	},
 	Staging: {
 		Version:              runid,
-		OmniExecutionChainID: chainids.OmniDevnet,
+		OmniExecutionChainID: evmchain.IDOmniEphemeral,
+		MaxValidators:        maxValidators,
 	},
 	Testnet: {
 		Version:              "v0.0.2",
 		AVSContractAddress:   testnetAVS,
-		OmniExecutionChainID: chainids.OmniTestnet,
+		OmniExecutionChainID: evmchain.IDOmniTestnet,
+		MaxValidators:        maxValidators,
 		Portals: []Deployment{
 			{
-				ChainID:      chainids.Holesky,
+				ChainID:      evmchain.IDHolesky,
 				Address:      testnetPortal,
 				DeployHeight: 1357819,
 			},
 			{
-				ChainID:      chainids.OpSepolia,
+				ChainID:      evmchain.IDOpSepolia,
 				Address:      testnetPortal,
 				DeployHeight: 10731455,
 			},
 			{
-				ChainID:      chainids.ArbSepolia,
+				ChainID:      evmchain.IDArbSepolia,
 				Address:      testnetPortal,
 				DeployHeight: 34237972,
 			},
@@ -110,6 +116,7 @@ var statics = map[ID]Static{
 	Mainnet: {
 		Version:            "v0.0.1",
 		AVSContractAddress: mainnetAVS,
+		MaxValidators:      maxValidators,
 	},
 }
 
@@ -127,4 +134,14 @@ func ConsensusChainIDStr2Uint64(id string) (uint64, error) {
 	}
 
 	return resp, nil
+}
+
+// IsOmniConsensus returns true if provided chainID is the omni consensus chain for the network.
+func IsOmniConsensus(network ID, chainID uint64) bool {
+	return network.Static().OmniConsensusChainIDUint64() == chainID
+}
+
+// IsOmniExecution returns true if provided chainID is the omni execution chain for the network.
+func IsOmniExecution(network ID, chainID uint64) bool {
+	return network.Static().OmniExecutionChainID == chainID
 }
