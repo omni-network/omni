@@ -2,8 +2,10 @@ package gasprice
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum"
@@ -63,26 +65,36 @@ func (b *Buffer) streamOne(ctx context.Context, chainID uint64) {
 	tick := b.opts.ticker
 
 	callback := func(ctx context.Context) {
-		gasPrice, err := pricer.SuggestGasPrice(ctx)
+		gpriceBig, err := pricer.SuggestGasPrice(ctx)
 		if err != nil {
 			log.Error(ctx, "Failed to get gas price - will retry", err)
 			return
 		}
 
-		price := gasPrice.Uint64()
+		gprice := gpriceBig.Uint64()
+		guageLive(chainID, gprice)
 
 		// if price is buffed, and within threshold, return
 		buffed, ok := b.price(chainID)
-		if ok && inThreshold(price, buffed, b.opts.thresholdPct) {
+		if ok && inThreshold(gprice, buffed, b.opts.thresholdPct) {
 			return
 		}
 
-		log.Debug(ctx, "Updating gas price", "old", buffed, "new", price)
-
-		b.setPrice(chainID, price)
+		b.setPrice(chainID, gprice)
+		guageBuffered(chainID, gprice)
 	}
 
 	tick.Go(ctx, callback)
+}
+
+// guageLive updates "live" guages for chain's gas price.
+func guageLive(chainID uint64, price uint64) {
+	liveGasPrice.WithLabelValues(chainName(chainID)).Set(float64(price))
+}
+
+// guageBuffered updates "buffered" guages for a chain's gas price.
+func guageBuffered(chainID uint64, price uint64) {
+	bufferedGasPrice.WithLabelValues(chainName(chainID)).Set(float64(price))
 }
 
 // setPrice sets the buffered gas price for the given chainID.
@@ -111,4 +123,14 @@ func inThreshold(a, b uint64, pct float64) bool {
 	lt := a < uint64(bf-(bf*pct))
 
 	return !gt && !lt
+}
+
+// chainName returns the name of the chain with the given chainID.
+func chainName(chainID uint64) string {
+	meta, ok := evmchain.MetadataByID(chainID)
+	if !ok {
+		return fmt.Sprintf("chain-%d", chainID)
+	}
+
+	return meta.Name
 }

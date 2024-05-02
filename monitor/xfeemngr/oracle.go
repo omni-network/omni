@@ -85,6 +85,8 @@ func (o feeOracle) syncGasPrice(ctx context.Context, dest evmchain.Metadata) err
 		return errors.Wrap(err, "gas price on")
 	}
 
+	guageGasPrice(o.chain, dest, onChain.Uint64())
+
 	// if on chain matches buffered, return
 	if onChain.Uint64() == buffered {
 		return nil
@@ -95,9 +97,15 @@ func (o feeOracle) syncGasPrice(ctx context.Context, dest evmchain.Metadata) err
 		return errors.Wrap(err, "set gas price on")
 	}
 
-	log.Debug(ctx, "Updated gas price", "destChainID", dest.ChainID, "old", onChain, "new", buffered)
+	// if on chain update successful, update gauge
+	guageGasPrice(o.chain, dest, buffered)
 
 	return nil
+}
+
+// guageGasPrice updates the gas price gauge for the given chain.
+func guageGasPrice(src, dest evmchain.Metadata, price uint64) {
+	onChainGasPrice.WithLabelValues(src.Name, dest.Name).Set(float64(price))
 }
 
 // syncToNativeRate sets the on-chain conversion rate to the buffered conversion rate, if they differ.
@@ -109,42 +117,48 @@ func (o feeOracle) syncToNativeRate(ctx context.Context, dest evmchain.Metadata)
 		return nil
 	}
 
-	buffered := rateFromPrices(destPrice, srcPrice)
+	// bufferedRate "source token per destination token" is "USD per dest" / "USD per src"
+	bufferedRate := destPrice / srcPrice
+	bufferedNumer := rateToNumerator(bufferedRate)
 
-	// if native tokens are the same, we should only ever have a 1:1 conversion rate
-	// TODO: warn if on-chain or buffered rate is not 1:1, when it should be
-	if o.chain.NativeToken == dest.NativeToken {
-		buffered.Set(conversionRateDenom)
-	}
-
-	onChain, err := o.contract.ToNativeRate(ctx, dest.ChainID)
+	onChainNumer, err := o.contract.ToNativeRate(ctx, dest.ChainID)
 	if err != nil {
 		return errors.Wrap(err, "conversion rate on")
 	}
 
+	onChainRate := numeratorToRate(onChainNumer)
+	guageRate(o.chain, dest, onChainRate)
+
 	// compare on chain and buffered rates within epsilon
-	// use epsilon 1000, because the conversion rate is normalized by 1_000_000
-	// this gets use 1000 / 1000_000 = 0.001 precision
-	epsilon := big.NewInt(1000)
-	if inEpsilon(onChain, buffered, epsilon) {
+	if inEpsilon(onChainRate, bufferedRate, 0.001) {
 		return nil
 	}
 
-	err = o.contract.SetToNativeRate(ctx, dest.ChainID, buffered)
+	err = o.contract.SetToNativeRate(ctx, dest.ChainID, bufferedNumer)
 	if err != nil {
 		return errors.Wrap(err, "set to native rate")
 	}
 
-	log.Debug(ctx, "Updated to-native rate", "destChainID", dest.ChainID, "old", onChain, "new", buffered)
+	// if on chain update successful, update gauge
+	guageRate(o.chain, dest, bufferedRate)
 
 	return nil
 }
 
+// guageRate updates the conversion rate gauge for the given source and destination chains.
+func guageRate(src, dest evmchain.Metadata, rate float64) {
+	onChainConversionRate.WithLabelValues(src.Name, dest.Name, src.NativeToken.String(), dest.NativeToken.String()).Set(rate)
+}
+
 // makeDestChains generates a list of destination chains, excluding the source chain.
 func makeDestChains(srcChainID uint64, network netconf.Network) ([]evmchain.Metadata, error) {
-	destChains := make([]evmchain.Metadata, len(network.Chains)-1)
-	for i, chain := range network.Chains {
+	chains := network.EVMChains()
+	destChains := make([]evmchain.Metadata, 0, len(chains)-1)
+
+	var foundSrc bool
+	for _, chain := range chains {
 		if chain.ID == srcChainID {
+			foundSrc = true
 			continue
 		}
 
@@ -153,7 +167,11 @@ func makeDestChains(srcChainID uint64, network netconf.Network) ([]evmchain.Meta
 			return nil, errors.New("chain metadata not found", "chain", chain.ID)
 		}
 
-		destChains[i] = meta
+		destChains = append(destChains, meta)
+	}
+
+	if !foundSrc {
+		return nil, errors.New("source chain not in network", "chain", srcChainID)
 	}
 
 	return destChains, nil
@@ -165,19 +183,29 @@ func makeDestChains(srcChainID uint64, network netconf.Network) ([]evmchain.Meta
 //	ex. (amt A) * (rate R) / CONVERSION_RATE_DENOM = (amt B)
 var conversionRateDenom = big.NewInt(1_000_000)
 
-// rateFromPrices returns the rate R such that Y FROM * R = X TO, such that Y
-// and X have the same dollar value. R is normalized by conversionRateDenom.
-func rateFromPrices(fromPrice, toPrice float64) *big.Int {
-	r := new(big.Float).Quo(big.NewFloat(fromPrice), big.NewFloat(toPrice))
+// rateToNumerator translates a float rate (ex 0.1) to numerator / CONVERSION_RATE_DENOM (ex 100_000).
+// This rate-as-numerator representation is used in FeeOracleV1 contracts.
+func rateToNumerator(r float64) *big.Int {
 	denom := new(big.Float).SetInt64(conversionRateDenom.Int64())
+	numer := new(big.Float).SetFloat64(r)
+	norm, _ := new(big.Float).Mul(numer, denom).Int(nil)
 
-	n, _ := r.Mul(r, denom).Int(nil)
+	return norm
+}
 
-	return n
+// numeratorToRate translates a rate numerator / CONVERSION_RATE_DENOM to a float rate.
+// It is the inverse of rateToNumerator. We use non-numerator rates in metrics and logs.
+func numeratorToRate(n *big.Int) float64 {
+	denom := new(big.Float).SetInt64(conversionRateDenom.Int64())
+	numer := new(big.Float).SetInt(n)
+	rate, _ := new(big.Float).Quo(numer, denom).Float64()
+
+	return rate
 }
 
 // inEpsilon returns true if a and b are within epsilon of each other.
-func inEpsilon(a, b, epsilon *big.Int) bool {
-	// if a - b < epsilon, then a == b
-	return new(big.Int).Sub(a, b).CmpAbs(epsilon) == 0
+func inEpsilon(a, b, epsilon float64) bool {
+	diff := a - b
+
+	return diff < epsilon && diff > -epsilon
 }

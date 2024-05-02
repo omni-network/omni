@@ -16,6 +16,7 @@ import (
 	"github.com/omni-network/omni/monitor/account"
 	"github.com/omni-network/omni/monitor/avs"
 	"github.com/omni-network/omni/monitor/loadgen"
+	"github.com/omni-network/omni/monitor/xfeemngr"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -55,6 +56,10 @@ func Run(ctx context.Context, cfg Config) error {
 
 	if err := startAVSSync(ctx, cfg, network); err != nil {
 		return errors.Wrap(err, "start AVS sync")
+	}
+
+	if err := xfeemngr.Start(ctx, network, cfg.RPCEndpoints, cfg.PrivateKey); err != nil {
+		return errors.Wrap(err, "start xfee manager")
 	}
 
 	select {

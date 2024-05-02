@@ -58,9 +58,12 @@ func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) 
 	return DeploymentConfig{}, errors.New("unsupported chain for network", "chain_id", chainID, "network", network)
 }
 
+// NOTE: monitor is owner of fee oracle contracts, because monitor manages on chain gas prices / conversion rates
+// TODO: separate the `owner` in to an `owner` and `oracle` role, where `oracle` can only update gas prices / conversion rates
+
 func mainnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Owner:        eoa.MustAddress(netconf.Mainnet, eoa.RolePortalAdmin),
+		Owner:        eoa.MustAddress(netconf.Mainnet, eoa.RoleMonitor),
 		Deployer:     eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer),
 		ProxyAdmin:   contracts.MainnetProxyAdmin(),
 		BaseGasLimit: 50_000,
@@ -70,7 +73,7 @@ func mainnetCfg() DeploymentConfig {
 
 func testnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Owner:        eoa.MustAddress(netconf.Testnet, eoa.RolePortalAdmin),
+		Owner:        eoa.MustAddress(netconf.Testnet, eoa.RoleMonitor),
 		Deployer:     eoa.MustAddress(netconf.Testnet, eoa.RoleDeployer),
 		ProxyAdmin:   contracts.TestnetProxyAdmin(),
 		BaseGasLimit: 50_000,
@@ -80,7 +83,7 @@ func testnetCfg() DeploymentConfig {
 
 func devnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Owner:        eoa.MustAddress(netconf.Devnet, eoa.RolePortalAdmin),
+		Owner:        eoa.MustAddress(netconf.Devnet, eoa.RoleMonitor),
 		Deployer:     eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
 		ProxyAdmin:   contracts.DevnetProxyAdmin(),
 		BaseGasLimit: 50_000,
@@ -90,7 +93,7 @@ func devnetCfg() DeploymentConfig {
 
 func stagingCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Owner:        eoa.MustAddress(netconf.Staging, eoa.RolePortalAdmin),
+		Owner:        eoa.MustAddress(netconf.Staging, eoa.RoleMonitor),
 		Deployer:     eoa.MustAddress(netconf.Staging, eoa.RoleDeployer),
 		ProxyAdmin:   contracts.StagingProxyAdmin(),
 		BaseGasLimit: 50_000,

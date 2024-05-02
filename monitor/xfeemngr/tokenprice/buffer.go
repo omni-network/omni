@@ -74,6 +74,9 @@ func (b *Buffer) stream(ctx context.Context) {
 			return
 		}
 
+		guageLive(prices)
+
+		// update buffered prices, if necessary
 		for token, price := range prices {
 			buffed, ok := b.price(token)
 
@@ -83,12 +86,56 @@ func (b *Buffer) stream(ctx context.Context) {
 			}
 
 			b.setPrice(token, price)
-
-			log.Debug(ctx, "Updating token price", "token", token, "old", buffed, "new", price)
 		}
+
+		guageBuffered(b.buffer)
 	}
 
 	tick.Go(ctx, callback)
+}
+
+// guageLive updates "live" guages for token prices and conversion rates.
+func guageLive(prices map[tokens.Token]float64) {
+	for token, price := range prices {
+		if price == 0 {
+			continue
+		}
+
+		liveTokenPrice.WithLabelValues(token.String()).Set(price)
+
+		for otherToken, otherPrice := range prices {
+			if otherToken == token {
+				continue
+			}
+
+			// rate "token / other" is "price other / price token"
+			rate := otherPrice / price
+
+			liveConversionRate.WithLabelValues(token.String(), otherToken.String()).Set(rate)
+		}
+	}
+}
+
+// guageBuffered updates "buffered" guages for token prices and conversion rates.
+func guageBuffered(prices map[tokens.Token]float64) {
+	for token, price := range prices {
+		if price == 0 {
+			continue
+		}
+
+		bufferedTokenPrice.WithLabelValues(token.String()).Set(price)
+
+		for otherToken, otherPrice := range prices {
+			if otherToken == token {
+				continue
+			}
+
+			// rate "token / other" is "price other / price token"
+			rate := otherPrice / price
+
+			bufferedConversionRate.WithLabelValues(token.String(), otherToken.String()).Set(rate)
+		}
+	}
 }
 
 // price returns the buffered price for the given token.

@@ -3,6 +3,7 @@ package xfeemngr
 import (
 	"context"
 	"crypto/ecdsa"
+	"time"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
@@ -25,6 +26,9 @@ type Manager struct {
 	oracles map[uint64]feeOracle
 	ticker  ticker.Ticker
 }
+
+// feeOracleSyncInterval is the interval at which fee oracles syncs buffered gas and token prices with FeeOracle deployments.
+const feeOracleSyncInterval = 5 * time.Minute
 
 func Start(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints, privKeyPath string) error {
 	privKey, err := crypto.LoadECDSA(privKeyPath)
@@ -49,7 +53,7 @@ func Start(ctx context.Context, network netconf.Network, endpoints xchain.RPCEnd
 		gprice:  gprice,
 		tprice:  tprice,
 		oracles: oracles,
-		ticker:  ticker.New(),
+		ticker:  ticker.New(ticker.WithInterval(feeOracleSyncInterval)),
 	}
 
 	go m.start(ctx)
@@ -75,7 +79,7 @@ func (m *Manager) start(ctx context.Context) {
 func makeGasPricers(network netconf.Network, endpoints xchain.RPCEndpoints) (map[uint64]ethereum.GasPricer, error) {
 	pricers := make(map[uint64]ethereum.GasPricer)
 
-	for _, chain := range network.Chains {
+	for _, chain := range network.EVMChains() {
 		rpc, err := endpoints.ByNameOrID(chain.Name, chain.ID)
 		if err != nil {
 			return nil, errors.Wrap(err, "rpc endpoint")
@@ -97,7 +101,7 @@ func makeOracles(ctx context.Context, network netconf.Network, endpoints xchain.
 	pk *ecdsa.PrivateKey, gprice *gasprice.Buffer, tprice *tokenprice.Buffer) (map[uint64]feeOracle, error) {
 	oracles := make(map[uint64]feeOracle)
 
-	for _, chain := range network.Chains {
+	for _, chain := range network.EVMChains() {
 		oracle, err := makeOracle(ctx, chain, network, endpoints, pk, gprice, tprice)
 		if err != nil {
 			return nil, errors.Wrap(err, "make oracle", "chain", chain.Name)
