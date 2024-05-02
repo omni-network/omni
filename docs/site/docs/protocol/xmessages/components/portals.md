@@ -2,6 +2,8 @@
 sidebar_position: 2
 ---
 
+import CodeSnippet from '@site/src/components/CodeSnippet/CodeSnippet';
+
 # Portals
 
 Portal contracts are an integral part of Omni and are deployed to every supported rollup network EVM and the Omni EVM itself. These contracts are responsible for initiating `XMsg` requests and maintaining a record of the Omni validator set to verify inbound `XMsg` deliveries.
@@ -16,19 +18,7 @@ To initiate a cross-chain call, the Portal Contract provides the `xcall` method.
 
 Below is a summarized fragment for the underlying logic beneath `xcall` from the [Portal contract Solidity source](https://github.com/omni-network/omni/blob/1439d8a99f66a3bb3b7d113c63f8f073512c5377/contracts/src/protocol/OmniPortal.sol):
 
-```solidity
-    /**
-     * @notice Initiate an xcall.
-     * @dev Validate the xcall, emit an XMsg, increment dest chain outXStreamOffset
-     */
-    function _xcall(uint64 destChainId, address sender, address to, bytes calldata data, uint64 gasLimit) private {
-        // check sufficient fee, gas limit within defined bounds, destination chain ID validity, and target address restrictions.
-
-        outXStreamOffset[destChainId] += 1; // nonce equivalent for cross-chain messaging
-
-        emit XMsg(destChainId, outXStreamOffset[destChainId], sender, to, data, gasLimit); // event emission for validator processing
-    }
-```
+<CodeSnippet repoUrl="https://github.com/omni-network/omni/blob/059303647e07fc3481e379b710922e2b84b1827f/contracts/src/protocol/OmniPortal.sol#L135-L151" />
 
 For detailed instructions on conducting cross-chain transactions, refer to the [developer section](../../../develop/introduction.md).
 
@@ -79,46 +69,9 @@ To ensure the integrity and authenticity of incoming cross-chain messages, the f
 <details>
 <summary>Submission Validation Code</summary>
 
-Below is a summarized fragment for the validations in `xsubmit` from the [Portal contract Solidity source](https://github.com/omni-network/omni/blob/1439d8a99f66a3bb3b7d113c63f8f073512c5377/contracts/src/protocol/OmniPortal.sol):
+Below is a summarized fragment for the validations in `xsubmit` from the [Portal contract Solidity source](https://github.com/omni-network/omni/blob/main/contracts/src/protocol/OmniPortal.sol):
 
-```solidity
-    function xsubmit(XTypes.Submission calldata xsub) external {
-        require(xsub.msgs.length > 0, "OmniPortal: no xmsgs");
-
-        // validator set id for this submission
-        uint64 valSetId = xsub.validatorSetId;
-
-        // last seen validator set id for this source chain
-        uint64 lastValSetId = inXStreamValidatorSetId[xsub.blockHeader.sourceChainId];
-
-        // check that the validator set is known and has non-zero power
-        require(validatorSetTotalPower[valSetId] > 0, "OmniPortal: unknown val set");
-
-        // check that the submission's validator set is the same as the last, or the next one
-        require(valSetId >= lastValSetId, "OmniPortal: old val set");
-
-        // check that the attestationRoot is signed by a quorum of validators in xsub.validatorsSetId
-        require(
-            Quorum.verify(
-                xsub.attestationRoot,
-                xsub.signatures,
-                validatorSet[valSetId],
-                validatorSetTotalPower[valSetId],
-                XSUB_QUORUM_NUMERATOR,
-                XSUB_QUORUM_DENOMINATOR
-            ),
-            "OmniPortal: no quorum"
-        );
-
-        // check that blockHeader and xmsgs are included in attestationRoot
-        require(
-            XBlockMerkleProof.verify(xsub.attestationRoot, xsub.blockHeader, xsub.msgs, xsub.proof, xsub.proofFlags),
-            "OmniPortal: invalid proof"
-        );
-
-        // execution logic
-    }
-```
+<CodeSnippet repoUrl="https://github.com/omni-network/omni/blob/059303647e07fc3481e379b710922e2b84b1827f/contracts/src/protocol/OmniPortal.sol#L165-L220" />
 
 </details>
 

@@ -13,7 +13,7 @@ const CodeSnippet = ({ repoUrl }) => {
   useEffect(() => {
     async function fetchCode() {
       // Use a single regex that can optionally capture line numbers
-      const regex = /(https:\/\/github\.com\/)([^\/]+)\/([^\/]+)\/blob\/([^\/]+)\/([^#]+)#L(\d+)-(\d+)/;
+      const regex = /(https:\/\/github\.com\/)([^\/]+)\/([^\/]+)\/blob\/([^\/]+)\/([^#]+)#L(\d+)-L(\d+)/;
       var match = repoUrl.match(regex);
       if (!match) {
         const noLinesRegex = /(https:\/\/github\.com\/)([^\/]+)\/([^\/]+)\/blob\/([^\/]+)\/([^#]+)/;
