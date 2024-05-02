@@ -2,6 +2,7 @@ package tokenprice_test
 
 import (
 	"context"
+	"math/rand"
 	"testing"
 
 	"github.com/omni-network/omni/lib/tokens"
@@ -11,99 +12,71 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type mockPricer struct {
-	prices  map[tokens.Token]float64
-	initial map[tokens.Token]float64
-}
-
-func newMock(prices map[tokens.Token]float64) *mockPricer {
-	cloned := make(map[tokens.Token]float64)
-	for k, v := range prices {
-		cloned[k] = v
-	}
-
-	return &mockPricer{
-		prices:  prices,
-		initial: cloned,
-	}
-}
-
-func (m *mockPricer) Price(ctx context.Context, tkns ...tokens.Token) (map[tokens.Token]float64, error) {
-	resp := make(map[tokens.Token]float64)
-	for _, t := range tkns {
-		resp[t] = m.prices[t]
-	}
-
-	return resp, nil
-}
-
-func (m *mockPricer) setPrice(token tokens.Token, price float64) {
-	m.prices[token] = price
-}
-
 func TestBufferStream(t *testing.T) {
 	t.Parallel()
 
-	prices := map[tokens.Token]float64{
-		tokens.OMNI: 20,
-		tokens.ETH:  3000,
+	initial := map[tokens.Token]float64{
+		tokens.OMNI: randPrice(),
+		tokens.ETH:  randPrice(),
 	}
 
-	pricer := newMock(prices)
+	pricer := tokens.NewMockPricer(initial)
 
 	thresh := 0.1
 	tick := ticker.NewMock()
 	ctx := context.Background()
 
-	b, err := tokenprice.NewBuffer(
-		pricer,
-		tokenprice.WithTokens(tokens.OMNI, tokens.ETH),
-		tokenprice.WithThresholdPct(thresh),
-		tokenprice.WithTicker(tick))
-
-	require.NoError(t, err)
+	b := tokenprice.NewBuffer(pricer, tokens.OMNI, tokens.ETH, tokenprice.WithThresholdPct(thresh), tokenprice.WithTicker(tick))
 
 	b.Stream(ctx)
-	tick.Tick(ctx)
+	tick.Tick()
 
 	// buffered price should be initial
-	for token, price := range pricer.initial {
+	for token, price := range initial {
 		require.InEpsilon(t, price, b.Price(token), 0.01, "initial")
 	}
 
 	// just increase a little, but not above threshold
-	for token, price := range pricer.initial {
-		pricer.setPrice(token, price+(price*thresh)-1)
+	for token, price := range initial {
+		pricer.SetPrice(token, price+(price*thresh)-1)
 	}
 
-	tick.Tick(ctx)
+	tick.Tick()
 
 	// buffered price should still be initial
-	for token, price := range pricer.initial {
+	for token, price := range initial {
 		require.InEpsilon(t, price, b.Price(token), 0.01, "within threshold")
 	}
 
 	// increase above threshold
-	for token, price := range pricer.prices {
-		pricer.setPrice(token, price+(price*thresh)+10)
+	for token, price := range initial {
+		pricer.SetPrice(token, price+(price*thresh)*2)
 	}
 
-	tick.Tick(ctx)
+	tick.Tick()
 
 	// buffered price should be updated
-	for token, price := range pricer.prices {
+	for token := range initial {
+		prices, err := pricer.Price(ctx, token)
+		require.NoError(t, err)
+		price := prices[token]
 		require.InEpsilon(t, price, b.Price(token), 0.01, "outside threshold")
 	}
 
 	// reset back to initial
-	for token, price := range pricer.initial {
-		pricer.setPrice(token, price)
+	for token, price := range initial {
+		pricer.SetPrice(token, price)
 	}
 
-	tick.Tick(ctx)
+	tick.Tick()
 
 	// buffered price should be initial
-	for token, price := range pricer.initial {
+	for token, price := range initial {
 		require.InEpsilon(t, price, b.Price(token), 0.01, "reset")
 	}
+}
+
+// randPrice generates a random, reasonable token price.
+func randPrice() float64 {
+	return float64(rand.Intn(5000)) + rand.Float64()
 }

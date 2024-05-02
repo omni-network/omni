@@ -11,6 +11,7 @@ import (
 
 type Buffer struct {
 	mu      sync.RWMutex
+	once    sync.Once
 	buffer  map[uint64]uint64             // map chainID to buffered gas price (not changed if outside threshold)
 	pricers map[uint64]ethereum.GasPricer // map chainID to provider
 	opts    *Opts
@@ -21,8 +22,10 @@ type Buffer struct {
 // A gas price buffer maintains a buffered view of gas prices for multiple
 // chains. Buffered gas prices are not updated unless they are outside the
 // threshold percentage. Start steaming gas prices with Buffer.Stream(ctx).
-func NewBuffer(pricers map[uint64]ethereum.GasPricer, opts ...func(*Opts)) Buffer {
-	return Buffer{
+func NewBuffer(pricers map[uint64]ethereum.GasPricer, opts ...func(*Opts)) *Buffer {
+	return &Buffer{
+		mu:      sync.RWMutex{},
+		once:    sync.Once{},
 		buffer:  make(map[uint64]uint64),
 		pricers: pricers,
 		opts:    makeOpts(opts),
@@ -38,7 +41,12 @@ func (b *Buffer) GasPrice(chainID uint64) uint64 {
 
 // Stream starts streaming gas prices for all providers into the buffer.
 func (b *Buffer) Stream(ctx context.Context) {
-	b.streamAll(ctx)
+	b.once.Do(func() {
+		ctx = log.WithCtx(ctx, "component", "gasprice.Buffer")
+		log.Info(ctx, "Streaming gas prices into buffer")
+
+		b.streamAll(ctx)
+	})
 }
 
 // streamAll starts streaming gas prices for all providers into the buffer.
@@ -50,7 +58,7 @@ func (b *Buffer) streamAll(ctx context.Context) {
 
 // streamOne starts streaming gas prices for the given chainID into the buffer.
 func (b *Buffer) streamOne(ctx context.Context, chainID uint64) {
-	ctx = log.WithCtx(ctx, "chain", chainID)
+	ctx = log.WithCtx(ctx, "chainID", chainID)
 	pricer := b.pricers[chainID]
 	tick := b.opts.ticker
 
@@ -68,6 +76,8 @@ func (b *Buffer) streamOne(ctx context.Context, chainID uint64) {
 		if ok && inThreshold(price, buffed, b.opts.thresholdPct) {
 			return
 		}
+
+		log.Debug(ctx, "Updating gas price", "old", buffed, "new", price)
 
 		b.setPrice(chainID, price)
 	}
