@@ -122,34 +122,28 @@ func initializeRPCClients(chains []netconf.Chain, endpoints xchain.RPCEndpoints)
 // If a cursor exists, it returns the cursor height + 1.
 // Else a new cursor is created with chain deploy height.
 func InitChainCursor(ctx context.Context, entCl *ent.Client, chain netconf.Chain) (uint64, error) {
-	cursor, ok, err := getCursor(ctx, entCl.XProviderCursor, chain.ID)
+	c, ok, err := cursor(ctx, entCl.XProviderCursor, chain.ID)
 	if err != nil {
-		return 0, errors.Wrap(err, "get cursor")
-	} else if ok {
-		return cursor.Height + 1, nil
+		return 0, errors.Wrap(err, "cursor")
+	}
+	if ok {
+		return c.Height + 1, nil
 	}
 
-	// Store the cursor at deploy height - 1, so first cursor update will be at deploy height.
+	// Store the cursor at deploy height - 1, so first cursor update will be at deploy height 0.
 	deployHeight := chain.DeployHeight - 1
 	if chain.DeployHeight == 0 { // Except for 0, we handle this explicitly.
 		deployHeight = 0
 	}
 
 	// cursor doesn't exist yet, create it
-	_, err = entCl.XProviderCursor.Create().
-		SetChainID(chain.ID).
-		SetHeight(deployHeight).
-		Save(ctx)
+	_, err = entCl.XProviderCursor.Create().SetChainID(chain.ID).SetHeight(deployHeight).Save(ctx)
 	if err != nil {
 		return 0, errors.Wrap(err, "create cursor")
 	}
 
 	// if the cursor doesn't exist that means the chain doesn't exist so we have to create it as well
-	_, err = entCl.Chain.
-		Create().
-		SetChainID(chain.ID).
-		SetName(chain.Name).
-		Save(ctx)
+	_, err = entCl.Chain.Create().SetChainID(chain.ID).SetName(chain.Name).Save(ctx)
 	if err != nil {
 		return 0, errors.Wrap(err, "create chain")
 	}

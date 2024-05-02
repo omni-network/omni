@@ -11,11 +11,11 @@ import (
 type XReceiptArgs struct {
 	SourceChainID hexutil.Big
 	DestChainID   hexutil.Big
-	StreamOffset  hexutil.Big
+	Offset        hexutil.Big
 }
 
 func (b *BlocksResolver) XReceiptCount(ctx context.Context) (*hexutil.Big, error) {
-	res, found, err := b.BlocksProvider.XReceiptCount(ctx)
+	res, found, err := b.Provider.XReceiptCount(ctx)
 	if err != nil {
 		return nil, errors.New("failed to fetch receipt count")
 	}
@@ -27,7 +27,7 @@ func (b *BlocksResolver) XReceiptCount(ctx context.Context) (*hexutil.Big, error
 }
 
 func (b *BlocksResolver) XReceipt(ctx context.Context, args XReceiptArgs) (*XReceipt, error) {
-	res, found, err := b.BlocksProvider.XReceipt(ctx, args.SourceChainID.ToInt().Uint64(), args.DestChainID.ToInt().Uint64(), args.StreamOffset.ToInt().Uint64())
+	res, found, err := b.Provider.XReceipt(ctx, args.SourceChainID.ToInt().Uint64(), args.DestChainID.ToInt().Uint64(), args.Offset.ToInt().Uint64())
 	if err != nil {
 		return nil, errors.New("failed to fetch receipt")
 	}

@@ -16,11 +16,6 @@ func TestSearchQueryBlock(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	test := createGqlTest(t)
-	t.Cleanup(func() {
-		if err := test.Client.Close(); err != nil {
-			t.Error(err)
-		}
-	})
 	block := db.CreateTestBlock(t, ctx, test.Client, 0)
 	db.CreateXMsg(t, ctx, test.Client, block, 2, 0)
 	db.CreateReceipt(t, ctx, test.Client, block, 2, 0)
