@@ -2,6 +2,8 @@
 sidebar_position: 4
 ---
 
+import CodeSnippet from '@site/src/components/CodeSnippet/CodeSnippet';
+
 # Contracts
 
 A reference for Omni's user facing solidity contracts and libraries.
@@ -16,93 +18,7 @@ A reference for Omni's user facing solidity contracts and libraries.
 <details>
 <summary>`IOmniPortal.sol` Reference Solidity Interface</summary>
 
-```solidity
-// SPDX-License-Identifier: GPL-3.0-only
-pragma solidity ^0.8.12;
-
-/// @dev OmniPortal interface (only user facing functions)
-interface IOmniPortal {
-    /**
-     * @notice Default xmsg execution gas limit, enforced on destination chain
-     * @return Gas limit
-     */
-    function XMSG_DEFAULT_GAS_LIMIT() external view returns (uint64);
-
-    /**
-     * @notice Maximum allowed xmsg gas limit
-     * @return Maximum gas limit
-     */
-    function XMSG_MAX_GAS_LIMIT() external view returns (uint64);
-
-    /**
-     * @notice Minimum allowed xmsg gas limit
-     * @return Minimum gas limit
-     */
-    function XMSG_MIN_GAS_LIMIT() external view returns (uint64);
-
-    /**
-     * @notice Chain ID of the chain to which this portal is deployed
-     * @dev Used as sourceChainId for all outbound XMsgs
-     * @return Chain ID
-     */
-    function chainId() external view returns (uint64);
-
-    /**
-     * @notice Returns the current XMsg being executed via this portal.
-     *          - xmsg().sourceChainId  Chain ID of the source xcall
-     *          - xmsg().sender         msg.sender of the source xcall
-     *         If no XMsg is being executed, all fields will be zero.
-     *          - xmsg().sourceChainId  == 0
-     *          - xmsg().sender         == address(0)
-     */
-    function xmsg() external view returns (XTypes.MsgShort memory);
-
-    /**
-     * @notice Whether the current transaction is an xcall
-     * @return True if current transaction is an xcall, false otherwise
-     */
-    function isXCall() external view returns (bool);
-
-    /**
-     * @notice Calculate the fee for calling a contract on another chain
-     * @dev Uses OmniPortal.XMSG_DEFAULT_GAS_LIMIT
-     * @dev Fees denominated in wei
-     * @param destChainId Destination chain ID
-     * @param data Encoded function calldata
-     */
-    function feeFor(uint64 destChainId, bytes calldata data) external view returns (uint256);
-
-    /**
-     * @notice Calculate the fee for calling a contract on another chain
-     * @dev Fees denominated in wei
-     * @param destChainId Destination chain ID
-     * @param data Encoded function calldata
-     * @param gasLimit Execution gas limit, enforced on destination chain
-     */
-    function feeFor(uint64 destChainId, bytes calldata data, uint64 gasLimit) external view returns (uint256);
-
-    /**
-     * @notice Call a contract on another chain
-     * @dev Uses OmniPortal.XMSG_DEFAULT_GAS_LIMIT as execution gas limit on destination chain
-     * @param destChainId Destination chain ID
-     * @param to Address of contract to call on destination chain
-     * @param data Encoded function calldata (use abi.encodeWithSignature
-     * 	or abi.encodeWithSelector)
-     */
-    function xcall(uint64 destChainId, address to, bytes calldata data) external payable;
-
-    /**
-     * @notice Call a contract on another chain
-     * @dev Uses provide gasLimit as execution gas limit on destination chain.
-     *      Reverts if gasLimit < XMSG_MAX_GAS_LIMIT or gasLimit > XMSG_MAX_GAS_LIMIT
-     * @param destChainId Destination chain ID
-     * @param to Address of contract to call on destination chain
-     * @param data Encoded function calldata (use abi.encodeWithSignature
-     * 	or abi.encodeWithSelector)
-     */
-    function xcall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit) external payable;
-}
-```
+<CodeSnippet repoUrl="https://github.com/omni-network/omni/blob/main/contracts/src/interfaces/IOmniPortal.sol" />
 </details>
 
 ### [`XApp`](https://github.com/omni-network/omni/blob/main/contracts/src/pkg/XApp.sol)

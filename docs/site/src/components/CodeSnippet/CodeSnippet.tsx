@@ -12,21 +12,24 @@ const CodeSnippet = ({ repoUrl }) => {
 
   useEffect(() => {
     async function fetchCode() {
-      const match = repoUrl.match(/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+?)#L(\d+)-L(\d+)/);
+      const match = repoUrl.match(/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/([^#]+)(#L(\d+)-L(\d+))?/);
       if (match) {
-        const [, owner, repo, branch, filePath, startLine, endLine] = match;
-        // Set the source URL to link back to the repository
-        setSourceUrl(`https://github.com/${owner}/${repo}/blob/${branch}/${filePath}#L${startLine}-L${endLine}`);
+        const [, owner, repo, branch, filePath, , startLine, endLine] = match;
+        setSourceUrl(`https://github.com/${owner}/${repo}/blob/${branch}/${filePath}`);
         const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filePath}`;
         try {
           const response = await axios.get(rawUrl);
-          const lines = response.data.split('\n').slice(startLine - 1, endLine).join('\n');
+          const allLines = response.data.split('\n');
+          const lines = startLine && endLine ? allLines.slice(startLine - 1, endLine).join('\n') : allLines.join('\n');
           setCode(lines);
           setLanguage(determineLanguage(filePath));
         } catch (error) {
-          console.error('Error fetching code:', error);
-          setCode(`Error: ${error.response?.data || error.message}`);
+          console.error('Error fetching code:', error.response ? error.response.data : error.message);
+          setCode(`Error: ${error.response ? error.response.data : "Could not fetch file"}`);
         }
+      } else {
+        console.error("Regex match failed. Check the URL format.");
+        setCode("Error: Invalid GitHub URL format.");
       }
     }
 
