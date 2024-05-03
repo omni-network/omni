@@ -45,7 +45,7 @@ contract Fixtures is CommonBase, StdCheats {
     uint64 constant baseValPower = 100;
     uint64 constant genesisValSetId = 1;
 
-    address feeOracleOwner = makeAddr("feeOracleOwner");
+    address feeOracleManager = makeAddr("feeOracleManager");
     uint256 constant feeOracleBaseGasLimit = 50_000;
     uint256 constant feeOracleProtocolFee = 1 gwei;
 
@@ -421,7 +421,8 @@ contract Fixtures is CommonBase, StdCheats {
                     address(proxyAdmin),
                     abi.encodeWithSelector(
                         FeeOracleV1.initialize.selector,
-                        feeOracleOwner,
+                        owner,
+                        feeOracleManager,
                         feeOracleBaseGasLimit,
                         feeOracleProtocolFee,
                         feeParams
@@ -465,7 +466,8 @@ contract Fixtures is CommonBase, StdCheats {
                     address(chainAProxyAdmin),
                     abi.encodeWithSelector(
                         FeeOracleV1.initialize.selector,
-                        feeOracleOwner,
+                        owner,
+                        feeOracleManager,
                         feeOracleBaseGasLimit,
                         feeOracleProtocolFee,
                         feeParams
@@ -509,7 +511,8 @@ contract Fixtures is CommonBase, StdCheats {
                     address(chainBProxyAdmin),
                     abi.encodeWithSelector(
                         FeeOracleV1.initialize.selector,
-                        feeOracleOwner,
+                        owner,
+                        feeOracleManager,
                         feeOracleBaseGasLimit,
                         feeOracleProtocolFee,
                         feeParams

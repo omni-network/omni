@@ -18,6 +18,7 @@ import (
 
 type DeploymentConfig struct {
 	Owner        common.Address
+	Manager      common.Address // manager is the address that can set fee parameters (gas price, conversion rates)
 	Deployer     common.Address
 	ProxyAdmin   common.Address
 	BaseGasLimit uint64
@@ -27,6 +28,9 @@ type DeploymentConfig struct {
 func (cfg DeploymentConfig) Validate() error {
 	if (cfg.Owner == common.Address{}) {
 		return errors.New("owner is zero")
+	}
+	if (cfg.Manager == common.Address{}) {
+		return errors.New("manager is zero")
 	}
 	if (cfg.Deployer == common.Address{}) {
 		return errors.New("deployer is zero")
@@ -59,11 +63,11 @@ func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) 
 }
 
 // NOTE: monitor is owner of fee oracle contracts, because monitor manages on chain gas prices / conversion rates
-// TODO: separate the `owner` in to an `owner` and `oracle` role, where `oracle` can only update gas prices / conversion rates
 
 func mainnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Owner:        eoa.MustAddress(netconf.Mainnet, eoa.RoleMonitor),
+		Owner:        eoa.MustAddress(netconf.Mainnet, eoa.RolePortalAdmin),
+		Manager:      eoa.MustAddress(netconf.Mainnet, eoa.RoleMonitor),
 		Deployer:     eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer),
 		ProxyAdmin:   contracts.MainnetProxyAdmin(),
 		BaseGasLimit: 50_000,
@@ -73,7 +77,8 @@ func mainnetCfg() DeploymentConfig {
 
 func testnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Owner:        eoa.MustAddress(netconf.Testnet, eoa.RoleMonitor),
+		Owner:        eoa.MustAddress(netconf.Testnet, eoa.RolePortalAdmin),
+		Manager:      eoa.MustAddress(netconf.Testnet, eoa.RoleMonitor),
 		Deployer:     eoa.MustAddress(netconf.Testnet, eoa.RoleDeployer),
 		ProxyAdmin:   contracts.TestnetProxyAdmin(),
 		BaseGasLimit: 50_000,
@@ -83,7 +88,8 @@ func testnetCfg() DeploymentConfig {
 
 func devnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Owner:        eoa.MustAddress(netconf.Devnet, eoa.RoleMonitor),
+		Owner:        eoa.MustAddress(netconf.Devnet, eoa.RolePortalAdmin),
+		Manager:      eoa.MustAddress(netconf.Devnet, eoa.RoleMonitor),
 		Deployer:     eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
 		ProxyAdmin:   contracts.DevnetProxyAdmin(),
 		BaseGasLimit: 50_000,
@@ -93,7 +99,8 @@ func devnetCfg() DeploymentConfig {
 
 func stagingCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Owner:        eoa.MustAddress(netconf.Staging, eoa.RoleMonitor),
+		Owner:        eoa.MustAddress(netconf.Staging, eoa.RolePortalAdmin),
+		Manager:      eoa.MustAddress(netconf.Staging, eoa.RoleMonitor),
 		Deployer:     eoa.MustAddress(netconf.Staging, eoa.RoleDeployer),
 		ProxyAdmin:   contracts.StagingProxyAdmin(),
 		BaseGasLimit: 50_000,
@@ -127,7 +134,7 @@ func Deploy(ctx context.Context, network netconf.ID, chainID uint64, destChainID
 		return common.Address{}, nil, errors.Wrap(err, "get fee oracle abi")
 	}
 
-	initializer, err := feeOracleAbi.Pack("initialize", cfg.Owner, cfg.BaseGasLimit, cfg.ProtocolFee, feeparams)
+	initializer, err := feeOracleAbi.Pack("initialize", cfg.Owner, cfg.Manager, cfg.BaseGasLimit, cfg.ProtocolFee, feeparams)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "pack initialize")
 	}

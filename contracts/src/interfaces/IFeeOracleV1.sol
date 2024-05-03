@@ -29,6 +29,11 @@ interface IFeeOracleV1 is IFeeOracle {
     event ToNativeRateSet(uint64 chainId, uint256 toNativeRate);
 
     /**
+     * @notice Emitted when the manager is changed.
+     */
+    event ManagerChanged(address oldManager, address newManager);
+
+    /**
      * @notice Fee parameters for a specific chain.
      * @custom:field chainId        The chain ID.
      * @custom:field gasPrice       The gas price on that chain (denominated in chains native token).
@@ -65,6 +70,11 @@ interface IFeeOracleV1 is IFeeOracle {
      * @notice Set the base protocol fee for each xmsg.
      */
     function setProtocolFee(uint256 fee) external;
+
+    /**
+     * @notice Set the manager admin account.
+     */
+    function setManager(address manager_) external;
 
     /**
      * @notice returns the conversion rate denominator, used in to
