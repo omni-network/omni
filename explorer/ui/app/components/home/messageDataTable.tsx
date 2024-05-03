@@ -149,6 +149,12 @@ export default function XMsgDataTable() {
       },
       {
         ...columnConfig,
+        accessorKey: 'Node.Status',
+        header: () => <span>Status</span>,
+        cell: (value: any) => <Tag status={value.getValue()} />,
+      },
+      {
+        ...columnConfig,
         accessorKey: 'Node.SourceChainID',
         header: () => <span></span>,
         cell: (value: any) => <RollupIcon chainId={value.getValue()} />,
