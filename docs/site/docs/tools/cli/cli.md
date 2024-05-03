@@ -2,6 +2,9 @@
 sidebar_position: 1
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Installation
 
 The Omni CLI is a command-line interface for managing your Omni projects as a developer and interacting with the network as an operator. This guide will walk you through the installation process.
@@ -19,9 +22,6 @@ curl -sSfL https://raw.githubusercontent.com/omni-network/omni/main/scripts/inst
 ```
 
 ## Install from Source
-
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 <Tabs>
   <TabItem value="source" label="src with make">
