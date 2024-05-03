@@ -29,6 +29,11 @@ Output values are all 0x-prefixed hexadecimal.
 scalar Long
 
 """
+Time is an time.RFC3339 encoded UTC date string or a string containing a Unix timestamp.
+"""
+scalar Time
+
+"""
 Status represents the status of X messages/receipts.
 """
 enum Status {
@@ -47,7 +52,7 @@ type XMsg {
   "Display ID of the XMsg in the form of `<srcChainID>-<destChainID>-<offset>`"
   displayID: String!
 
-  "Monotonically incremented offset of Msg in the Stream"
+  "Monotonically incremented offset of XMsg on the source > dest stream"
   offset: BigInt!
 
   "Sender on source chain, set to msg.Sender"
@@ -68,11 +73,11 @@ type XMsg {
   "Hash of the source chain transaction that emitted the message"
   txHash: Bytes32!
 
-  "Height of the source chain block"
-  blockHeight: BigInt!
+  # "Height of the source chain block"
+  # blockHeight: BigInt!
 
-  "Hash of the source chain block"
-  blockHash: Bytes32!
+  # "Hash of the source chain block"
+  # blockHash: Bytes32!
 
   "Hash of destination chain receipt"
   receiptTxHash: Bytes32
@@ -221,9 +226,9 @@ type Query {
   xmsg(sourceChainID: BigInt!, destChainID: BigInt!, offset: BigInt!): XMsg
 
   "Returns a paginated list of XMsgs based on the provided arguments. For forwards pagination, provide `first` and `after`. For backwards pagination, provide `last` and `before`. Defaults to the last 10 messages. `after` and `before` are the cursors of the last and first messages from the current page respectively."
-  xmsgs(first: Int, after: ID, last: Int = 10, before: ID): XMsgConnection!
+  xmsgs(first: Int, after: ID, last: Int, before: ID): XMsgConnection!
 
-  # "Search for cross-chain messages using a query string.  For forwards pagination, provide `first` and `after`. For backwards pagination, provide `last` and `before`. Defaults to the last 10 messages. `after` and `before` are the cursors of the last and first messages from the current page respectively."
+  # "Search for cross-chain messages using a query string. For forwards pagination, provide `first` and `after`. For backwards pagination, provide `last` and `before`. Defaults to the last 10 messages. `after` and `before` are the cursors of the last and first messages from the current page respectively."
   # search(query: String!, first: Int, after: ID, last: Int = 10, before: ID): XMsgConnection!
 
   "Get the list of supported chains."

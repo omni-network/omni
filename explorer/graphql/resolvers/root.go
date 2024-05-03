@@ -10,7 +10,6 @@ type Query struct {
 
 type BlocksProvider interface { //nolint: interfacebloat // We need this interface to define all of our methods for the library we are using
 	XBlock(ctx context.Context, sourceChainID uint64, height uint64) (*XBlock, bool, error)
-	XMsgRange(ctx context.Context, amount uint64, offset uint64) ([]*XMsg, bool, error)
 	XMsg(ctx context.Context, sourceChainID uint64, destChainID uint64, offset uint64) (*XMsg, bool, error)
 	XMsgs(ctx context.Context, Limit uint64, cursor *uint64) (*XMsgResult, bool, error)
 	XReceipt(ctx context.Context, sourceChainID, destChainID, offset uint64) (*XReceipt, bool, error)
