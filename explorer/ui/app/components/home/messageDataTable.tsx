@@ -21,6 +21,7 @@ import { copyToClipboard } from '~/lib/utils'
 type Status = 'Success' | 'Failed' | 'Pending' | 'All'
 
 export default function XMsgDataTable() {
+
   const data = useLoaderData<XmsgResponse>()
   const revalidator = useRevalidator()
   const searchFieldRef = React.useRef<HTMLInputElement>(null)
@@ -93,7 +94,6 @@ export default function XMsgDataTable() {
 
     if (pageLoaded.current) {
       revalidator.revalidate()
-      // console.log('Revalidating', JSON.stringify(filterParams))
     } else {
       pageLoaded.current = true
     }
@@ -149,28 +149,6 @@ export default function XMsgDataTable() {
       },
       {
         ...columnConfig,
-        accessorKey: 'Node.Status',
-        header: () => <span>Status</span>,
-        cell: (value: any) => <Tag status={value.getValue()} />,
-      },
-      {
-        ...columnConfig,
-        accessorKey: 'Node.StreamOffset',
-        header: () => <span>Offset</span>,
-        cell: (value: any) => (
-          <>
-            <span
-              data-tooltip-id={'tooltip-offset'}
-              data-tooltip-html={`<span class="text-default text-b-sm font-bold">${value.getValue()}</span>`}
-              className="font-bold text-b-sm"
-            >
-              {Number(value.getValue())}
-            </span>
-          </>
-        ),
-      },
-      {
-        ...columnConfig,
         accessorKey: 'Node.SourceChainID',
         header: () => <span></span>,
         cell: (value: any) => <RollupIcon chainId={value.getValue()} />,
@@ -178,36 +156,39 @@ export default function XMsgDataTable() {
       {
         ...columnConfig,
         accessorKey: 'Node.SourceMessageSender',
-        header: () =>
+        header: () => (
           <div className="flex items-center">
-        <span>Address</span>
-        <Tooltip className="tooltip" id="address-info">
-          <label className="text-default text-b-sm font-bold">
-          Sender on the source chain, <br /> set to msg.Sender
-          </label>
-        </Tooltip>
-        <span data-tooltip-id={'address-info'} className="icon-tooltip-info"></span>
-      </div>,
-        cell: (value: any) => (
-          <>
-            <Link
-              to={`${getBaseUrl(value.row.original.Node.SourceChainID, 'senderAddress')}/${value.getValue()}`}
-              className="link"
-            >
-              {value.getValue() && (
-                <>
-                  <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
-                  <span className="icon-external-link" />
-                </>
-              )}
-            </Link>
-            <span
-              data-tooltip-id="tooltip-clipboard"
-              className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
-              onClick={() => copyToClipboard(value.getValue())}
-            />
-          </>
+            <span>Source Address</span>
+            <Tooltip className="tooltip" id="address-info">
+              <label className="text-default text-b-sm font-bold">
+                Sender on the source chain, <br /> set to msg.Sender
+              </label>
+            </Tooltip>
+            <span data-tooltip-id={'address-info'} className="icon-tooltip-info"></span>
+          </div>
         ),
+        cell: (value: any) => {
+          return (
+            <>
+              <Link
+                to={`${getBaseUrl(value.row.original.Node.SourceChainID, 'senderAddress')}/${value.getValue()}`}
+                className="link"
+              >
+                {value.getValue() && (
+                  <>
+                    <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
+                    <span className="icon-external-link" />
+                  </>
+                )}
+              </Link>
+              <span
+                data-tooltip-id="tooltip-clipboard"
+                className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
+                onClick={() => copyToClipboard(value.getValue())}
+              />
+            </>
+          )
+        },
       },
       {
         ...columnConfig,
@@ -263,16 +244,17 @@ export default function XMsgDataTable() {
       {
         ...columnConfig,
         accessorKey: 'Node.DestAddress',
-        header: () =>
-        <div className="flex items-center">
-            <span>Address</span>
+        header: () => (
+          <div className="flex items-center">
+            <span>Destination Address</span>
             <Tooltip className="tooltip" id="receiver-address-info">
               <label className="text-default text-b-sm font-bold">
-              Contract address on the destination <br /> chain that receives the call
+                Contract address on the destination <br /> chain that receives the call
               </label>
             </Tooltip>
             <span data-tooltip-id={'receiver-address-info'} className="icon-tooltip-info"></span>
-          </div>,
+          </div>
+        ),
         cell: (value: any) => (
           <>
             <Link
@@ -294,8 +276,8 @@ export default function XMsgDataTable() {
       {
         ...columnConfig,
         accessorKey: 'Node.ReceiptTxHash',
-        header: () =>
-        <div className="flex items-center">
+        header: () => (
+          <div className="flex items-center">
             <span>Tx Hash</span>
             <Tooltip className="tooltip" id="receiver-tx-hash-info">
               <label className="text-default text-b-sm font-bold">
@@ -303,7 +285,8 @@ export default function XMsgDataTable() {
               </label>
             </Tooltip>
             <span data-tooltip-id={'receiver-tx-hash-info'} className="icon-tooltip-info"></span>
-          </div>,
+          </div>
+        ),
         cell: (value: any) => {
           return (
             <>
@@ -311,13 +294,13 @@ export default function XMsgDataTable() {
                 <>
                   {' '}
                   <Link
-                    target="_blank"
-                    to={`${getBaseUrl(value.row.original.Node.SourceChainID, 'blockHash')}/${value.getValue()}`}
-                    className="link"
-                  >
-                    <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
-                    <span className="icon-external-link" />
-                  </Link>
+                      target="_blank"
+                      to={`${getBaseUrl(value.row.original.Node.SourceChainID, 'blockHash')}/${value.getValue()}`}
+                      className="link"
+                    >
+                      <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
+                      <span className="icon-external-link" />
+                    </Link>
                   <span
                     data-tooltip-id="tooltip-clipboard"
                     className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
@@ -416,7 +399,23 @@ export default function XMsgDataTable() {
           <p className='text-default text-b'>Please edit your filter selection and try again.</p>
         </div> */}
 
-        <SimpleTable columns={columns} data={rows} />
+        {!data && (
+          <div role="status" className="animate-pulse overflow-x-auto">
+            <div className="w-full bg-raised rounded-lg min-w-[919px] h-96"></div>
+          </div>
+        )}
+
+        {data && (
+          <>
+            {rows.length === 0 && (
+              <div className="bg-raised p-5">
+                <h3>No results found.</h3>
+                <p>Please edit your filter selection and try again.</p>
+              </div>
+            )}
+            {rows.length > 0 && <SimpleTable columns={columns} data={rows} />}
+          </>
+        )}
 
         {/* Nav Buttons */}
         <div className="flex flex-row items-center justify-end mt-4">
@@ -435,13 +434,8 @@ export default function XMsgDataTable() {
           <div className="flex-none flex m-3">
             <div className="flex gap-x-2 items-baseline">
               <span className="text-cb-sm text-default">
-                Page{' '}
-                <span className="">
-                  {Math.ceil(
-                    parseInt(data.xmsgCount.slice(2), 16) - parseInt(data.nextCursor.slice(2), 16),
-                  ) / 10}
-                </span>{' '}
-                of <span className="">{Math.ceil(parseInt(data.xmsgCount.slice(2), 16) / 10)}</span>
+                Page <span className="">{data.xmsgCount}</span> of{' '}
+                <span className="">{data.xmsgCount}</span>
               </span>
             </div>
           </div>
