@@ -7,7 +7,7 @@ import (
 	"github.com/omni-network/omni/explorer/db"
 	"github.com/omni-network/omni/explorer/db/ent"
 	"github.com/omni-network/omni/explorer/graphql/app"
-	d "github.com/omni-network/omni/explorer/graphql/data"
+	"github.com/omni-network/omni/explorer/graphql/data"
 	"github.com/omni-network/omni/explorer/graphql/resolvers"
 
 	"github.com/graph-gophers/graphql-go"
@@ -17,28 +17,30 @@ import (
 type gqlTest struct {
 	Client   *ent.Client
 	Opts     []graphql.SchemaOpt
-	Provider *d.Provider
+	Provider *data.Provider
 	Resolver resolvers.BlocksResolver
 }
 
 func createGqlTest(t *testing.T) *gqlTest {
 	t.Helper()
 	client := db.CreateTestEntClient(t)
-	provider := &d.Provider{
-		EntClient: client,
-	}
-	br := resolvers.BlocksResolver{
-		BlocksProvider: provider,
-	}
+	p := &data.Provider{EntClient: client}
+	br := resolvers.BlocksResolver{Provider: p}
 
 	opts := []graphql.SchemaOpt{
 		graphql.UseFieldResolvers(),
 		graphql.UseStringDescriptions(),
 	}
 
+	t.Cleanup(func() {
+		if err := client.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+
 	return &gqlTest{
 		Client:   client,
-		Provider: provider,
+		Provider: p,
 		Resolver: br,
 		Opts:     opts,
 	}
@@ -48,11 +50,6 @@ func TestXBlockQuery(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	test := createGqlTest(t)
-	t.Cleanup(func() {
-		if err := test.Client.Close(); err != nil {
-			t.Error(err)
-		}
-	})
 	block := db.CreateTestBlock(t, ctx, test.Client, 0)
 	db.CreateXMsg(t, ctx, test.Client, block, 2, 0)
 	db.CreateReceipt(t, ctx, test.Client, block, 2, 0)
@@ -104,11 +101,6 @@ func TestXBlocksQuery(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	test := createGqlTest(t)
-	t.Cleanup(func() {
-		if err := test.Client.Close(); err != nil {
-			t.Error(err)
-		}
-	})
 	db.CreateTestBlocks(t, ctx, test.Client, 2)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
@@ -149,11 +141,6 @@ func TestXBlocksCount(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	test := createGqlTest(t)
-	t.Cleanup(func() {
-		if err := test.Client.Close(); err != nil {
-			t.Error(err)
-		}
-	})
 	db.CreateTestBlocks(t, ctx, test.Client, 2)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{

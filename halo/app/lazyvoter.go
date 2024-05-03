@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	atypes "github.com/omni-network/omni/halo/attest/types"
@@ -90,7 +91,7 @@ func (l *voterLoader) LazyLoad(
 		// Note that this negatively affects chain liveness, but xchain liveness already negatively affected so rather
 		// highlight the issue to the operator by crashing. #allornothing
 
-		backoff := expbackoff.New(ctx)
+		backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second))
 		for !l.isValidator() {
 			backoff()
 			if ctx.Err() != nil {

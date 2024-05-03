@@ -13,8 +13,7 @@ import (
 )
 
 func (p Provider) XReceiptCount(ctx context.Context) (*hexutil.Big, bool, error) {
-	query, err := p.EntClient.Receipt.Query().
-		Count(ctx)
+	query, err := p.EntClient.Receipt.Query().Count(ctx)
 	if err != nil {
 		log.Error(ctx, "Graphql provider err", err)
 		return nil, false, err

@@ -4,7 +4,6 @@ package eoa
 import (
 	"context"
 	"crypto/ecdsa"
-	"math/big"
 
 	"github.com/omni-network/omni/e2e/app/key"
 	"github.com/omni-network/omni/lib/errors"
@@ -23,7 +22,7 @@ const (
 	RoleProxyAdminOwner Role = "proxy-admin-owner"
 	RolePortalAdmin     Role = "portal-admin"
 	RoleAVSAdmin        Role = "avs-admin"
-	RoleFbDev           Role = "fb-dev"
+	RoleFbDev           Role = "fb-dev" // TODO(corver): fb-dev isn't a role...
 )
 
 func AllRoles() []Role {
@@ -57,30 +56,12 @@ const (
 	TypeWellKnown Type = "well-known" // well-known eoa private keys in the repo
 )
 
-type chainSelector func(netconf.Network) []netconf.Chain
-
-var chainSelectorAll = func(network netconf.Network) []netconf.Chain { return network.EVMChains() }
-
-//nolint:unused // will be used.
-var chainSelectorL1 = func(network netconf.Network) []netconf.Chain {
-	c, ok := network.EthereumChain()
-	if !ok {
-		return nil
-	}
-
-	return []netconf.Chain{c}
-}
-
 // Account defines a EOA account used within the Omni network.
 type Account struct {
 	Type       Type
 	Role       Role
 	Address    common.Address
 	privateKey *ecdsa.PrivateKey // only for devnet (well-known type)
-
-	Chains        chainSelector // all vs specific chains
-	MinBalance    *big.Int      // check if below this balance
-	TargetBalance *big.Int      // fund to this balance
 }
 
 // privKey returns the private key for the account.

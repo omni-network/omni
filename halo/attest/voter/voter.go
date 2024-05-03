@@ -174,6 +174,8 @@ func (v *Voter) runOnce(ctx context.Context, chainID uint64) error {
 		fromHeight = latest + 1
 	}
 
+	log.Info(ctx, "Voting started for chain", "from_height", fromHeight)
+
 	first := true // Allow skipping on first attestation.
 
 	return v.provider.StreamBlocks(ctx, chainID, fromHeight,

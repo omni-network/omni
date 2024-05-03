@@ -12,13 +12,11 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 type DeploymentConfig struct {
-	ChainID               uint64
 	Create3Factory        common.Address
 	Create3Salt           string
 	ProxyAdmin            common.Address
@@ -30,8 +28,6 @@ type DeploymentConfig struct {
 	XMsgMinGasLimit       uint64
 	XMsgMaxGasLimit       uint64
 	XReceiptMaxErrorBytes uint64
-	ValSetID              uint64
-	Validators            []bindings.Validator
 	ExpectedAddr          common.Address
 }
 
@@ -43,9 +39,6 @@ const (
 )
 
 func (cfg DeploymentConfig) Validate() error {
-	if cfg.ChainID == 0 {
-		return errors.New("chain ID is zero")
-	}
 	if (cfg.Create3Factory == common.Address{}) {
 		return errors.New("create3 factory is zero")
 	}
@@ -73,12 +66,6 @@ func (cfg DeploymentConfig) Validate() error {
 	if cfg.XReceiptMaxErrorBytes == 0 {
 		return errors.New("xreceipt max error bytes is zero")
 	}
-	if cfg.ValSetID == 0 {
-		return errors.New("validator set ID is zero")
-	}
-	if len(cfg.Validators) == 0 {
-		return errors.New("validators is empty")
-	}
 	if cfg.OmniChainID == 0 {
 		return errors.New("omni EVM chain ID is zero")
 	}
@@ -92,42 +79,38 @@ func (cfg DeploymentConfig) Validate() error {
 	return nil
 }
 
-func getDeployCfg(chainID uint64, network netconf.ID, valSetID uint64, vals []bindings.Validator) (DeploymentConfig, error) {
+func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) {
 	if network == netconf.Devnet {
-		return devnetCfg(chainID, valSetID, vals), nil
+		return devnetCfg(), nil
 	}
 
 	if network == netconf.Mainnet {
-		return mainnetCfg(chainID, valSetID, vals), nil
+		return mainnetCfg(), nil
 	}
 
 	if network == netconf.Testnet {
-		return testnetCfg(chainID, valSetID, vals), nil
+		return testnetCfg(), nil
 	}
 
 	if network == netconf.Staging {
-		return stagingCfg(chainID, valSetID, vals), nil
+		return stagingCfg(), nil
 	}
 
 	return DeploymentConfig{}, errors.New("unsupported chain for network", "chain_id", chainID, "network", network)
 }
 
-func mainnetCfg(chainID uint64, valSetID uint64, vals []bindings.Validator) DeploymentConfig {
+func mainnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		ChainID:        chainID,
 		Create3Factory: contracts.MainnetCreate3Factory(),
 		Create3Salt:    contracts.PortalSalt(netconf.Mainnet),
 		Owner:          eoa.MustAddress(netconf.Mainnet, eoa.RolePortalAdmin),
 		Deployer:       eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer),
-		ValSetID:       valSetID,
-		Validators:     vals,
 		// TODO: fill in the rest
 	}
 }
 
-func testnetCfg(chainID uint64, valSetID uint64, vals []bindings.Validator) DeploymentConfig {
+func testnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		ChainID:               chainID,
 		Create3Factory:        contracts.TestnetCreate3Factory(),
 		Create3Salt:           contracts.PortalSalt(netconf.Testnet),
 		Owner:                 eoa.MustAddress(netconf.Testnet, eoa.RolePortalAdmin),
@@ -139,15 +122,12 @@ func testnetCfg(chainID uint64, valSetID uint64, vals []bindings.Validator) Depl
 		XMsgMinGasLimit:       XMsgMinGasLimit,
 		XMsgMaxGasLimit:       XMsgMaxGasLimit,
 		XReceiptMaxErrorBytes: XReceiptMaxErrorBytes,
-		ValSetID:              valSetID,
-		Validators:            vals,
 		ExpectedAddr:          contracts.TestnetPortal(),
 	}
 }
 
-func stagingCfg(chainID uint64, valSetID uint64, vals []bindings.Validator) DeploymentConfig {
+func stagingCfg() DeploymentConfig {
 	return DeploymentConfig{
-		ChainID:               chainID,
 		Create3Factory:        contracts.StagingCreate3Factory(),
 		Create3Salt:           contracts.PortalSalt(netconf.Staging),
 		Owner:                 eoa.MustAddress(netconf.Staging, eoa.RolePortalAdmin),
@@ -159,15 +139,12 @@ func stagingCfg(chainID uint64, valSetID uint64, vals []bindings.Validator) Depl
 		XMsgMinGasLimit:       XMsgMinGasLimit,
 		XMsgMaxGasLimit:       XMsgMaxGasLimit,
 		XReceiptMaxErrorBytes: XReceiptMaxErrorBytes,
-		ValSetID:              valSetID,
-		Validators:            vals,
 		ExpectedAddr:          contracts.StagingPortal(),
 	}
 }
 
-func devnetCfg(chainID uint64, valSetID uint64, vals []bindings.Validator) DeploymentConfig {
+func devnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		ChainID:               chainID,
 		Create3Factory:        contracts.DevnetCreate3Factory(),
 		Create3Salt:           contracts.PortalSalt(netconf.Devnet),
 		Owner:                 eoa.MustAddress(netconf.Devnet, eoa.RolePortalAdmin),
@@ -179,8 +156,6 @@ func devnetCfg(chainID uint64, valSetID uint64, vals []bindings.Validator) Deplo
 		XMsgMinGasLimit:       XMsgMinGasLimit,
 		XMsgMaxGasLimit:       XMsgMaxGasLimit,
 		XReceiptMaxErrorBytes: XReceiptMaxErrorBytes,
-		ValSetID:              valSetID,
-		Validators:            vals,
 		ExpectedAddr:          contracts.DevnetPortal(),
 	}
 }
@@ -222,22 +197,23 @@ func IsDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Bac
 
 // Deploy deploys a new Portal contract and returns the address and receipt.
 // It only allows deployments to explicitly supported chains.
-func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, valSetID uint64, validators []bindings.Validator,
+func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, feeOracle common.Address, valSetID uint64, validators []bindings.Validator,
 ) (common.Address, *ethtypes.Receipt, error) {
 	chainID, err := backend.ChainID(ctx)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "chain id")
 	}
 
-	cfg, err := getDeployCfg(chainID.Uint64(), network, valSetID, validators)
+	cfg, err := getDeployCfg(chainID.Uint64(), network)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "get deployment config")
 	}
 
-	return deploy(ctx, cfg, backend)
+	return deploy(ctx, cfg, chainID.Uint64(), backend, feeOracle, valSetID, validators)
 }
 
-func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func deploy(ctx context.Context, cfg DeploymentConfig, chainID uint64, backend *ethbackend.Backend, feeOracle common.Address, valSetID uint64, validators []bindings.Validator,
+) (common.Address, *ethtypes.Receipt, error) {
 	if err := cfg.Validate(); err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "validate")
 	}
@@ -261,34 +237,21 @@ func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backe
 		return common.Address{}, nil, errors.New("unexpected address", "expected", cfg.ExpectedAddr, "actual", addr)
 	}
 
-	feeOracle, tx, _, err := bindings.DeployFeeOracleV1(txOpts, backend)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "deploy fee oracle")
-	}
-
-	receipt, err := bind.WaitMined(ctx, backend, tx)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "wait mined fee oracle")
-	} else if receipt.Status != ethtypes.ReceiptStatusSuccessful {
-		return common.Address{}, nil, errors.New("deploy fee oracle failed")
-	}
-
 	var xregistry common.Address
-	if cfg.ChainID == cfg.OmniChainID {
+	if chainID == cfg.OmniChainID {
 		// On Omni, the main XRegistry is the "replica"
 		xregistry = common.HexToAddress(predeploys.XRegistry)
 	} else {
 		// On other chains, deploy a new XRegistry replica
-		xregistry, tx, _, err = bindings.DeployXRegistryReplica(txOpts, backend, addr)
+		addr, tx, _, err := bindings.DeployXRegistryReplica(txOpts, backend, addr)
 		if err != nil {
 			return common.Address{}, nil, errors.Wrap(err, "new xregistry replica")
 		}
+		xregistry = addr
 
-		receipt, err = bind.WaitMined(ctx, backend, tx)
+		_, err = backend.WaitMined(ctx, tx)
 		if err != nil {
 			return common.Address{}, nil, errors.Wrap(err, "wait mined xregistry replica")
-		} else if receipt.Status != ethtypes.ReceiptStatusSuccessful {
-			return common.Address{}, nil, errors.New("deploy xregistry replica failed")
 		}
 	}
 
@@ -297,14 +260,12 @@ func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backe
 		return common.Address{}, nil, errors.Wrap(err, "deploy impl")
 	}
 
-	receipt, err = bind.WaitMined(ctx, backend, tx)
+	_, err = backend.WaitMined(ctx, tx)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "wait mined portal")
-	} else if receipt.Status != ethtypes.ReceiptStatusSuccessful {
-		return common.Address{}, nil, errors.New("deploy impl failed")
 	}
 
-	initCode, err := packInitCode(cfg, feeOracle, xregistry, impl)
+	initCode, err := packInitCode(cfg, feeOracle, xregistry, impl, valSetID, validators)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "pack init code")
 	}
@@ -314,17 +275,16 @@ func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backe
 		return common.Address{}, nil, errors.Wrap(err, "deploy proxy")
 	}
 
-	receipt, err = bind.WaitMined(ctx, backend, tx)
+	receipt, err := backend.WaitMined(ctx, tx)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "wait mined proxy")
-	} else if receipt.Status != ethtypes.ReceiptStatusSuccessful {
-		return common.Address{}, nil, errors.New("deploy proxy failed")
 	}
 
 	return addr, receipt, nil
 }
 
-func packInitCode(cfg DeploymentConfig, feeOracle common.Address, xregistry common.Address, impl common.Address) ([]byte, error) {
+func packInitCode(cfg DeploymentConfig, feeOracle common.Address, xregistry common.Address, impl common.Address, valSetID uint64, validators []bindings.Validator,
+) ([]byte, error) {
 	portalAbi, err := bindings.OmniPortalMetaData.GetAbi()
 	if err != nil {
 		return nil, errors.Wrap(err, "get portal abi")
@@ -337,7 +297,7 @@ func packInitCode(cfg DeploymentConfig, feeOracle common.Address, xregistry comm
 
 	initializer, err := portalAbi.Pack("initialize", cfg.Owner, feeOracle, xregistry,
 		cfg.OmniChainID, cfg.OmniCChainID, cfg.XMsgDefaultGasLimit, cfg.XMsgMaxGasLimit,
-		cfg.XMsgMinGasLimit, cfg.XReceiptMaxErrorBytes, cfg.ValSetID, cfg.Validators)
+		cfg.XMsgMinGasLimit, cfg.XReceiptMaxErrorBytes, valSetID, validators)
 	if err != nil {
 		return nil, errors.Wrap(err, "encode portal initializer")
 	}

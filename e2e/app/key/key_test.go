@@ -3,6 +3,7 @@ package key_test
 import (
 	"context"
 	"flag"
+	"fmt"
 	"testing"
 
 	"github.com/omni-network/omni/e2e/app/key"
@@ -83,4 +84,18 @@ func TestIntegration(t *testing.T) {
 			key.DeleteSecretForT(ctx, t, network, name, typ, addr)
 		})
 	}
+}
+
+func TestGenInsecure(t *testing.T) {
+	t.Parallel()
+
+	require.Panics(t, func() {
+		key.GenerateInsecureDeterministic(netconf.Testnet, key.EOA, "")
+	})
+
+	k1 := key.GenerateInsecureDeterministic(netconf.Devnet, key.EOA, "test1")
+	require.Equal(t, "d4c14667192a5966002361dd08cdd30619ac553928c423593d744dbb50ff232a", fmt.Sprintf("%x", k1.Bytes()))
+
+	k2 := key.GenerateInsecureDeterministic(netconf.Devnet, key.P2PConsensus, "test2")
+	require.Equal(t, "4cf65aca4b199f5084b217b0728355b5ee93355c3f18324436b856337d60c07300e8fb91b5af3bc124e1b0f382a88377cb126b0989c5282959631596e4f8bc0b", fmt.Sprintf("%x", k2.Bytes()))
 }

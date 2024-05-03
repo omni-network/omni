@@ -43,10 +43,6 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, errors.New("cannot deploy protected network", "network", def.Testnet.Network)
 	}
 
-	if err := Cleanup(ctx, def); err != nil {
-		return nil, err
-	}
-
 	if def.Testnet.OnlyMonitor {
 		return nil, deployMonitorOnly(ctx, def, cfg)
 	}
@@ -72,6 +68,11 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 	}
 
 	if err := Setup(ctx, def, cfg); err != nil {
+		return nil, err
+	}
+
+	// Only stop and delete existing network right before actually starting new ones.
+	if err := CleanInfra(ctx, def); err != nil {
 		return nil, err
 	}
 
@@ -226,7 +227,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 
 	if cfg.Preserve {
 		log.Warn(ctx, "Docker containers not stopped, --preserve=true", nil)
-	} else if err := Cleanup(ctx, def); err != nil {
+	} else if err := CleanInfra(ctx, def); err != nil {
 		return err
 	}
 
@@ -275,6 +276,10 @@ func logRPCs(ctx context.Context, def Definition) {
 // It merely sets up config files and then starts the monitor service.
 func deployMonitorOnly(ctx context.Context, def Definition, cfg DeployConfig) error {
 	if err := Setup(ctx, def, cfg); err != nil {
+		return err
+	}
+
+	if err := CleanInfra(ctx, def); err != nil {
 		return err
 	}
 

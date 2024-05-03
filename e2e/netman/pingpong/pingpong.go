@@ -13,6 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/forkjoin"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/tokens"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -123,7 +124,14 @@ func (d *XDapp) fund(ctx context.Context) error {
 			return err
 		}
 
-		fund := new(big.Int).Div(big.NewInt(params.Ether), big.NewInt(10)) // Fund it with 0.1 ETH
+		// For ETH chains, fund it with 0.2 ETH
+		fund := new(big.Int).Div(big.NewInt(params.Ether), big.NewInt(5))
+
+		// for OMNI chains, fund it with 20 OMNI
+		if contract.Chain.Metadata.NativeToken == tokens.OMNI {
+			fund = new(big.Int).Mul(big.NewInt(params.Ether), big.NewInt(20))
+		}
+
 		txOpts.Value = fund
 
 		tx, err := contract.PingPong.Receive(txOpts)

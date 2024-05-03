@@ -16,11 +16,6 @@ func TestXMsgCount(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	test := createGqlTest(t)
-	t.Cleanup(func() {
-		if err := test.Client.Close(); err != nil {
-			t.Error(err)
-		}
-	})
 	db.CreateTestBlocks(t, ctx, test.Client, 2)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
@@ -103,7 +98,7 @@ func TestXMsg(t *testing.T) {
 			Schema:  graphql.MustParseSchema(app.Schema, &resolvers.Query{BlocksResolver: test.Resolver}, test.Opts...),
 			Query: `
 				{
-					xmsg(sourceChainID: 1, destChainID: 2, streamOffset: 0){
+					xmsg(sourceChainID: 1, destChainID: 2, offset: 0){
 						SourceMessageSender
 						TxHash
 						BlockHash

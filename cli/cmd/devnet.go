@@ -117,7 +117,11 @@ func cleanupDevnet(ctx context.Context) error {
 		return err
 	}
 
-	return app.Cleanup(ctx, def)
+	if err := app.CleanInfra(ctx, def); err != nil {
+		return err
+	}
+
+	return app.CleanupDir(ctx, def.Testnet.Dir)
 }
 
 func printDevnetInfo(ctx context.Context) error {
