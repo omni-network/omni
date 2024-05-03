@@ -3,9 +3,9 @@ import axios from 'axios';
 import CodeBlock from "@theme/CodeBlock";
 import { useColorMode } from '@docusaurus/theme-common';
 
-import './CodeSnippet.css';
+import './GitHubCodeBlock.css';
 
-const CodeSnippet = ({ repoUrl }) => {
+const GitHubCodeBlock = ({ repoUrl }) => {
   const [code, setCode] = useState('');
   const [language, setLanguage] = useState('plaintext');
   const [sourceUrl, setSourceUrl] = useState('');
@@ -73,7 +73,7 @@ const CodeSnippet = ({ repoUrl }) => {
     return languageMap[extension] || 'plaintext';
   }
 
-  function getGithubIcon() {
+  function getGitHubIcon() {
     const { colorMode } = useColorMode();
     return colorMode === 'dark' ? "/img/github-icon-light.svg" : "/img/github-icon-dark.svg";
   }
@@ -83,11 +83,11 @@ const CodeSnippet = ({ repoUrl }) => {
       <CodeBlock language={language} className="code-snippet-block">{code}</CodeBlock>
       <div className="code-snippet-footer">
         <a href={sourceUrl} target="_blank" rel="noopener noreferrer">
-          See source on GitHub <img src={getGithubIcon()} alt="GitHub" />
+          See source on GitHub <img src={getGitHubIcon()} alt="GitHub" />
         </a>
       </div>
     </div>
   );
 };
 
-export default CodeSnippet;
+export default GitHubCodeBlock;

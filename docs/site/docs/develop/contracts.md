@@ -2,7 +2,7 @@
 sidebar_position: 4
 ---
 
-import CodeSnippet from '@site/src/components/CodeSnippet/CodeSnippet';
+import GitHubCodeBlock from '@site/src/components/GitHubCodeBlock/GitHubCodeBlock';
 
 # Contracts
 
@@ -18,7 +18,7 @@ A reference for Omni's user facing solidity contracts and libraries.
 <details>
 <summary>`IOmniPortal.sol` Reference Solidity Interface</summary>
 
-<CodeSnippet repoUrl="https://github.com/omni-network/omni/blob/main/contracts/src/interfaces/IOmniPortal.sol" />
+<GitHubCodeBlock repoUrl="https://github.com/omni-network/omni/blob/main/contracts/src/interfaces/IOmniPortal.sol" />
 </details>
 
 ### [`XApp`](https://github.com/omni-network/omni/blob/main/contracts/src/pkg/XApp.sol)
@@ -29,7 +29,7 @@ A reference for Omni's user facing solidity contracts and libraries.
 <details>
 <summary>`XApp.sol` Reference Solidity Interface</summary>
 
-<CodeSnippet repoUrl="https://github.com/omni-network/omni/blob/main/contracts/src/pkg/XApp.sol" />
+<GitHubCodeBlock repoUrl="https://github.com/omni-network/omni/blob/main/contracts/src/pkg/XApp.sol" />
 </details>
 
 ### [`XTypes`](https://github.com/omni-network/omni/blob/main/contracts/src/libraries/XTypes.sol)
@@ -40,5 +40,5 @@ A reference for Omni's user facing solidity contracts and libraries.
 <details>
 <summary>`XTypes.sol` Reference Solidity Code</summary>
 
-<CodeSnippet repoUrl="https://github.com/omni-network/omni/blob/main/contracts/src/libraries/XTypes.sol" />
+<GitHubCodeBlock repoUrl="https://github.com/omni-network/omni/blob/main/contracts/src/libraries/XTypes.sol" />
 </details>

@@ -2,7 +2,7 @@
 sidebar_position: 5
 ---
 
-import CodeSnippet from '@site/src/components/CodeSnippet/CodeSnippet';
+import GitHubCodeBlock from '@site/src/components/GitHubCodeBlock/GitHubCodeBlock';
 
 # Fees
 
@@ -33,7 +33,7 @@ uint256 fee = feeFor(
 
 `XApp` handles calculating and charging fees when making an `xcall`
 
-<CodeSnippet repoUrl="https://github.com/omni-network/omni/blob/059303647e07fc3481e379b710922e2b84b1827f/contracts/src/pkg/XApp.sol#L56-65" />
+<GitHubCodeBlock repoUrl="https://github.com/omni-network/omni/blob/059303647e07fc3481e379b710922e2b84b1827f/contracts/src/pkg/XApp.sol#L56-65" />
 
 `xcall(...)` charges fees to your contract by default. To charge users for fees, calculate the fee with `feeFor(...)`, and verify `msg.value` is sufficient.
 

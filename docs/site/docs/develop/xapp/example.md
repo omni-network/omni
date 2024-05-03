@@ -2,7 +2,7 @@
 sidebar_position: 3
 ---
 
-import CodeSnippet from '@site/src/components/CodeSnippet/CodeSnippet';
+import GitHubCodeBlock from '@site/src/components/GitHubCodeBlock/GitHubCodeBlock';
 
 # Example
 
@@ -10,7 +10,7 @@ Here's an example of a simple cross chain contract, `XGreeter`. This contract le
 
 ## `XGreeter` Contract
 
-<CodeSnippet repoUrl="https://github.com/omni-network/omni-forge-template/blob/main/src/XGreeter.sol" />
+<GitHubCodeBlock repoUrl="https://github.com/omni-network/omni-forge-template/blob/main/src/XGreeter.sol" />
 
 ## Walkthrough
 
