@@ -2,7 +2,10 @@
 
 ## Introduction
 
-Octane is a next-generation consensus framework for the EVM.
+Octane is a next-generation modular framework for the EVM. Developers can use octane to run:
+
+- any EVM execution client that implements the EngineAPI, coupled with
+- any consensus client that implements ABCI++.
 
 It is designed for modularity, scalability, and performance, and is built to simplify the integration of the EVM into any blockchain application.
 
@@ -111,6 +114,6 @@ Visit [our monorepo](https://github.com/omni-network/omni/) or reach out to the 
 
 :::info
 
-Octane is currently licensed under BSL 1.1. We are working with teams that would like to use this implementation, and if you would like to integrate it into your own application, please reach out to the Omni team to acquire a license.
+Octane is currently licensed under GPLv3 with an open interoperability requirement. We are working with teams that would like to use this implementation, and if you would like to integrate it into your own application, you can reach out to the Omni team to discuss further.
 
 :::
