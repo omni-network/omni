@@ -27,9 +27,10 @@ The following steps provide a comprehensive overview of how an XMsg travels from
 
     ```solidity
     omni.xcall(
-      uint64 destChainId,  // destination chain id
-      address to,           // contract address on the dest rollup to execute the call on
-      bytes memory data     // calldata for the transaction, abi encoded
+      destChainId,  // desintation chain id, e.g. 1 for Ethereum mainnet
+      to,           // contract address on the destination chain
+      data,         // abi encoded calldata, ex abi.encodeWithSignature("foo()")
+      gasLimit      // (optional) gas limit for the call on the destination chain
     )
     ```
 
@@ -38,14 +39,14 @@ The following steps provide a comprehensive overview of how an XMsg travels from
 - The Portal contract converts the `xcall` into an `XMsg` and emits the corresponding `XMsg` event. `XMsg` events are defined in Solidity as:
 
     ```solidity
-    event XMsg (
-      address SourceMsgSender     // Sender on source chain, set to msg.Sender
-      uint256 XStreamOffset       // Monotonically incremented offset of XMsg in the XStream
-      uint256 DestChainID         // Target chain ID as per https://chainlist.org/
-      address DestAddress         // Target/To address to "call" on destination chain
-      bytes   Data                // Data to provide to "call" on destination chain
-      uint256 DestGasLimit        // Gas limit to use for "call" on destination chain
-    )
+    event XMsg(
+      uint64 indexed destChainId,   // Destination chain ID
+      uint64 indexed streamOffset,  // Offset of XMsg in the XStream
+      address sender,               // Address of the sender
+      address to,                   // Address of the recipient
+      bytes data,                   // ABI encoded calldata
+      uint64 gasLimit               // Gas limit for the call on the destination chain
+    );
     ```
 
 ### 4. Validator `XMsg` Packaging
@@ -53,14 +54,13 @@ The following steps provide a comprehensive overview of how an XMsg travels from
 - For each rollup VM block, validators package all `XMsg`s into a corresponding `XBlock`  using a deterministic 1:1 mapping. In `halo`, `XBlock` are typed as:
 
     ```go
-    // XBlock represents the cross-chain properties of a source chain finalised block.
-    type XBlock (
-      uint         SourceChainID  // Source chain ID as per https://chainlist.org
-      uint         BlockHeight    // Height of the source chain block
-      bytes32      BlockHash      // Hash of the source chain block
-      XMsg[]       Msgs           // XMsg events included in the source block.
-      XReceipt[]   Receipts       // XReceipt events included in the source block.
-    )
+    // Block is a deterministic representation of the omni cross-chain properties of a source chain EVM block.
+    type Block struct {
+      BlockHeader
+      Msgs      []Msg     // All cross-chain messages sent/emittted in the block
+      Receipts  []Receipt // Receipts of all submitted cross-chain messages applied in the block
+      Timestamp time.Time // Timestamp of the source chain block
+    }
     ```
 
     `XBlock` structure provides the following properties to the Omni Network:
@@ -93,17 +93,13 @@ The following steps provide a comprehensive overview of how an XMsg travels from
     All validators use halo to attest to `XBlock`s via CometBFT vote extensions. All validators in the CometBFT validator set should attest to all `XBlock`. An attestation is defined by the following `Attestation` type:
 
     ```go
-    type Attestation (
-      // Composite primary key of XBlock + ValSet
-      uint    SourceChainID    // SourceChainID of the XBlock
-      uint    BlockHeight      // Source chain block height
-      bytes32 BlockHash        // Source chain block hash
-      uint    ValidatorSetID   // Unique identifier of current validator set
-
-      bytes32 XBlockRoot       // Merkle root of the XBlock
-      bytes32 ValidatorPubkey  // Validator identifier
-      bytes32 Signature        // Validator signature of XBlockHash
-    )
+    // Attestation containing quorum votes by the validator set of a cross-chain Block.
+    type Attestation struct {
+      BlockHeader                 // BlockHeader identifies the cross-chain Block
+      ValidatorSetID  uint64      // Validator set that approved this attestation.
+      AttestationRoot common.Hash // Attestation merkle root of the cross-chain Block
+      Signatures      []SigTuple  // Validator signatures and public keys
+    }
     ```
 
     Validators return an array of `Attestations` during the ABCI++ `ExtendVote` method.
@@ -116,14 +112,16 @@ The following steps provide a comprehensive overview of how an XMsg travels from
 
     A merkle-multi-proof is generated for the set of identified `XMsg` that match the quorum `XBlock` attestations root.
 
-    <!-- TODO: rename after refactoring of Attestation and AggregateAttestation -->
-
     ```go
-    type Submission (
-      AggregateAttestation att    // Aggregate attestation containing quorum signatures for a specific validator set.
-      XMsg[]               msgs   // Subset of XMsgs in a XBlock (could also be all)
-      bytes                Proofs // Merkle-multi-proof for XMsgBatch
-    )
+    // Msg is a cross-chain message.
+    type Msg struct {
+      MsgID                          // Unique ID of the message
+      SourceMsgSender common.Address // Sender on source chain, set to msg.Sender
+      DestAddress     common.Address // Target/To address to "call" on destination chain
+      Data            []byte         // Data to provide to "call" on destination chain
+      DestGasLimit    uint64         // Gas limit to use for "call" on destination chain
+      TxHash          common.Hash    // Hash of the source chain transaction that emitted the message
+    }
     ```
 
 ### 7. Relayer Submits `XBlocks`
@@ -137,8 +135,8 @@ The following steps provide a comprehensive overview of how an XMsg travels from
     ```go
     // Submission is a cross-chain submission of a set of messages and their proofs.
     type Submission struct {
-      AttestationRoot common.Hash // Merkle root of the attestations
-      ValidatorSetID  uint64      // Unique identified of the validator set included in this aggregate.
+      AttestationRoot common.Hash // Attestation merkle root of the cross-chain Block
+      ValidatorSetID  uint64      // Validator set that approved the attestation.
       BlockHeader     BlockHeader // BlockHeader identifies the cross-chain Block
       Msgs            []Msg       // Messages to be submitted
       Proof           [][32]byte  // Merkle multi proofs of the messages
@@ -153,13 +151,14 @@ The following steps provide a comprehensive overview of how an XMsg travels from
 - The receiving network’s Portal contract verifies the `XBlock`’s validator signatures and `XMsg` merkle proofs before passing all verified `XMsg`s to their destination smart contracts. After verifying each submitted `XMsg`, the portal contract emits an `XReceipt` event. This marks the `XMsg` as “successful” or “reverted” by `halo`. `XMsg`s can revert if the gas limit was exceeded or if target address smart contract logic reverted for other reasons. `XReceipt`s are included in `XBlock`s (same as `XMsg`).
 
     ```go
-    type XReceipt (
-      uint    SourceChainID         // The cross-chain message's source chain
-      uint    XStreamOffset         // Offset of XMsg in the XStream
-      uint    GasUsed               // Gas used dueing message "call"
-      uint    Result                // 0 for success, 1 for revert
-      address RelayerAddress        // Address of relayer that submitted the message
-    )
+    // Receipt is a cross-chain message receipt, the result of applying the Msg on the destination chain.
+    type Receipt struct {
+      MsgID                         // Unique ID of the cross chain message that was applied.
+      GasUsed        uint64         // Gas used during message "call"
+      Success        bool           // Result, true for success, false for revert
+      RelayerAddress common.Address // Address of relayer that submitted the message
+      TxHash         common.Hash    // Hash of the relayer submission transaction
+    }
     ```
 
 ### 10. Smart Contract Execution
