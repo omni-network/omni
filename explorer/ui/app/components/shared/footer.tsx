@@ -36,7 +36,7 @@ export function Footer() {
         <div className={`flex flex-col gap-4`}>
           <Link to="https://omni.network/">Omni Network</Link>
           <Link to="https://docs.omni.network/">Docs</Link>
-          <Link to="https://explorer.omni.network">EVM Explorer</Link>
+          <Link to="https://status.omni.network/">Status page</Link>
           <Link to="https://news.omni.network/">Blog</Link>
         </div>
       </div>
