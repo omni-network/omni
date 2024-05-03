@@ -102,16 +102,20 @@ func TestStart(t *testing.T) {
 				require.Equal(t, initialGasPrices[dest.ChainID], gasprice.Uint64(), "initial gas price")
 
 				// check to native rate
-				expectedRate := rateFromPrices(initialTokenPrices[dest.NativeToken], initialTokenPrices[src.NativeToken])
+				// expect rate is float dest token per src token
+				expectedRate := initialTokenPrices[dest.NativeToken] / initialTokenPrices[src.NativeToken]
+
+				// numerator is the rate * conversionRateDenom, this is expected value on chain
+				expectedNumer := rateToNumerator(expectedRate)
 
 				if src.NativeToken == dest.NativeToken {
-					//nolint:testifylint // conversionRateDenom is expected
-					require.Equal(t, conversionRateDenom, expectedRate, "expect 1:1 rate for same tokens")
+					//nolint:testifylint // 1:1 rate is expected
+					require.Equal(t, float64(1), expectedRate, "expect 1:1 rate for same tokens")
 				}
 
-				rate, err := oracle.contract.ToNativeRate(ctx, dest.ChainID)
+				onChainNumer, err := oracle.contract.ToNativeRate(ctx, dest.ChainID)
 				require.NoError(t, err)
-				require.Equal(t, expectedRate.Uint64(), rate.Uint64(), "initial conversion rate")
+				require.Equal(t, expectedNumer.Uint64(), onChainNumer.Uint64(), "initial conversion rate")
 			}
 		}
 	}
@@ -155,16 +159,20 @@ func TestStart(t *testing.T) {
 			require.Equal(t, gasPricers[dest.ChainID].Price(), gasprice.Uint64(), "updated gas price")
 
 			// check to native rate
-			expectedRate := rateFromPrices(priceOf(dest.NativeToken), priceOf(src.NativeToken))
+			// expect rate is float dest token per src token
+			expectedRate := priceOf(dest.NativeToken) / priceOf(src.NativeToken)
+
+			// numerator is the rate * conversionRateDenom, this is expected value on chain
+			expectedNumer := rateToNumerator(expectedRate)
 
 			if src.NativeToken == dest.NativeToken {
-				//nolint:testifylint // conversionRateDenom is expected
-				require.Equal(t, conversionRateDenom, expectedRate, "expect 1:1 rate for same tokens")
+				//nolint:testifylint // 1:1 rate is expected
+				require.Equal(t, float64(1), expectedRate, "expect 1:1 rate for same tokens")
 			}
 
-			rate, err := oracle.contract.ToNativeRate(ctx, dest.ChainID)
+			onChainNumer, err := oracle.contract.ToNativeRate(ctx, dest.ChainID)
 			require.NoError(t, err)
-			require.Equal(t, expectedRate.Uint64(), rate.Uint64(), "updated conversion rate")
+			require.Equal(t, expectedNumer.Uint64(), onChainNumer.Uint64(), "updated conversion rate")
 		}
 	}
 
