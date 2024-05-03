@@ -21,6 +21,7 @@ import { copyToClipboard } from '~/lib/utils'
 type Status = 'Success' | 'Failed' | 'Pending' | 'All'
 
 export default function XMsgDataTable() {
+
   const data = useLoaderData<XmsgResponse>()
   const revalidator = useRevalidator()
   const searchFieldRef = React.useRef<HTMLInputElement>(null)
@@ -52,7 +53,6 @@ export default function XMsgDataTable() {
   }))
 
   const rows = data.xmsgs
-  // const rows = []
   const totalEntries = Number(data.startCursor)
   const currentPage = data.xmsgs
 
@@ -167,26 +167,28 @@ export default function XMsgDataTable() {
             <span data-tooltip-id={'address-info'} className="icon-tooltip-info"></span>
           </div>
         ),
-        cell: (value: any) => (
-          <>
-            <Link
-              to={`${getBaseUrl(value.row.original.Node.SourceChainID, 'senderAddress')}/${value.getValue()}`}
-              className="link"
-            >
-              {value.getValue() && (
-                <>
-                  <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
-                  <span className="icon-external-link" />
-                </>
-              )}
-            </Link>
-            <span
-              data-tooltip-id="tooltip-clipboard"
-              className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
-              onClick={() => copyToClipboard(value.getValue())}
-            />
-          </>
-        ),
+        cell: (value: any) => {
+          return (
+            <>
+              <Link
+                to={`${getBaseUrl(value.row.original.Node.SourceChainID, 'senderAddress')}/${value.getValue()}`}
+                className="link"
+              >
+                {value.getValue() && (
+                  <>
+                    <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
+                    <span className="icon-external-link" />
+                  </>
+                )}
+              </Link>
+              <span
+                data-tooltip-id="tooltip-clipboard"
+                className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
+                onClick={() => copyToClipboard(value.getValue())}
+              />
+            </>
+          )
+        },
       },
       {
         ...columnConfig,
