@@ -14,7 +14,6 @@ import (
 	"github.com/omni-network/omni/e2e/manifests"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/anvil"
-	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -125,7 +124,6 @@ func cleanupDevnet(ctx context.Context) error {
 }
 
 func printDevnetInfo(ctx context.Context) error {
-	// Read the actual devnet external network.json.
 	// It contains correct portal addrs and external (localhost) RPCs.
 	network, endpoints, err := loadDevnetNetwork(ctx)
 	if err != nil {
@@ -172,7 +170,6 @@ func devnetDefinition(ctx context.Context) (app.Definition, error) {
 
 	defCfg := app.DefaultDefinitionConfig(ctx)
 	defCfg.ManifestFile = manifestFile
-	defCfg.OmniImgTag = buildinfo.Version()
 
 	def, err := app.MakeDefinition(ctx, defCfg, "devnet")
 	if err != nil {
@@ -192,14 +189,6 @@ func loadDevnetNetwork(ctx context.Context) (netconf.Network, xchain.RPCEndpoint
 	devnetPath, err := devnetDir()
 	if err != nil {
 		return netconf.Network{}, nil, err
-	}
-
-	networkFile := filepath.Join(devnetPath, "network.json")
-	if _, err := os.Stat(networkFile); os.IsNotExist(err) {
-		return netconf.Network{}, nil, &cliError{
-			Msg:     "failed to load ~/.omni/devnet/network.json",
-			Suggest: "Have you run `omni devnet start` yet?",
-		}
 	}
 
 	endpointsFile := filepath.Join(devnetPath, "endpoints.json")
@@ -224,9 +213,12 @@ func loadDevnetNetwork(ctx context.Context) (netconf.Network, xchain.RPCEndpoint
 		return netconf.Network{}, nil, errors.Wrap(err, "make portal registry")
 	}
 
-	network, err := netconf.AwaitOnChain(ctx, netID, portalReg, endpoints.Keys())
+	network, err := netconf.CheckOnChain(ctx, netID, portalReg, endpoints.Keys())
 	if err != nil {
-		return netconf.Network{}, nil, errors.Wrap(err, "load network file")
+		return netconf.Network{}, nil, &cliError{
+			Msg:     "failed to check on-chain registry",
+			Suggest: "Have you run `omni devnet start` yet?",
+		}
 	}
 
 	return network, endpoints, nil

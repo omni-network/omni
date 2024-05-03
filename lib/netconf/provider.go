@@ -81,6 +81,57 @@ func AwaitOnChain(ctx context.Context, netID ID, portalRegistry *bindings.Portal
 	}
 }
 
+// CheckOnChain returns the network configuration if all expected chains are registered in the on-chain registry.
+// It returns an error if the context is canceled or if any of the expected chains are missing.
+func CheckOnChain(ctx context.Context, netID ID, portalRegistry *bindings.PortalRegistry, expected []string) (Network, error) {
+	if netID == Simnet {
+		// Create a simnet netID (single binary with mocked clients).
+		dummyAddr := common.HexToAddress("0x000000000000000000000000000000000000dead")
+		return Network{
+			ID: netID,
+			Chains: []Chain{
+				{
+					ID:            netID.Static().OmniExecutionChainID,
+					Name:          "omni_evm",
+					BlockPeriod:   time.Millisecond * 500, // Speed up block times for testing
+					PortalAddress: dummyAddr,
+				},
+				{
+					ID:            netID.Static().OmniConsensusChainIDUint64(),
+					Name:          "omni_consensus",
+					DeployHeight:  1,                      // Validator sets start at height 1, not 0.
+					BlockPeriod:   time.Millisecond * 500, // Speed up block times for testing
+					PortalAddress: dummyAddr,
+				},
+				{
+					ID:            100, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
+					Name:          "mock_l1",
+					PortalAddress: dummyAddr,
+				},
+				{
+					ID:            200, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
+					Name:          "mock_l2",
+					PortalAddress: dummyAddr,
+				},
+			},
+		}, nil
+	}
+
+	portals, err := portalRegistry.List(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		return Network{}, errors.Wrap(err, "failed fetching xchain registry from omni_evm")
+	}
+
+	network := networkFromPortals(netID, portals)
+	if !containsAll(network, expected) {
+		return Network{}, errors.New("xchain registry doesn't contain all expected chains")
+	}
+
+	log.Info(ctx, "XChain network configuration initialized from on-chain registry", "chains", network.ChainNamesByIDs())
+
+	return network, nil
+}
+
 // containsAll returns true if the network contains the all expected chains (by name or ID).
 func containsAll(network Network, expected []string) bool {
 	want := make(map[string]struct{}, len(expected))

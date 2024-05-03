@@ -1,8 +1,14 @@
 ---
-sidebar_position: 3
+sidebar_position: 2
 ---
 
 # Omni AVS Contract Registration
+
+:::warning Omni CLI Required
+
+If you haven't installed the Omni CLI yet, you can follow the instructions [here](../../tools/cli/cli.md).
+
+:::
 
 This tells EigenLayer that you'd like to be an operator specifically for the Omni AVS. Thus, the **\$ETH** that you, and your delegators restaked, will be used to secure Omni.
 

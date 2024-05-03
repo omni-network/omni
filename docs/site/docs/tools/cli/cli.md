@@ -1,14 +1,14 @@
 ---
-sidebar_position: 2
+sidebar_position: 1
 ---
 
-# Installing the Omni CLI
+# Installation
 
-The Omni CLI will allow you to interact with the Omni network and simplifies the process of performing actions.
+The Omni CLI is a command-line interface for managing your Omni projects as a developer and interacting with the network as an operator. This guide will walk you through the installation process.
 
 ## Install from Binary
 
-The easiest way to install the Omni CLI is to download the latest release from the [GitHub releases page](https://github.com/omni-network/omni/releases). Once downloaded, you can extract the binary and move it to a location in your $PATH.
+The easiest way to install the Omni CLI is to download the latest release from the [GitHub releases page](https://github.com/omni-network/omni/releases). Once downloaded, you can extract the binary and move it to a location in your `$PATH`.
 
 ## Install from Script
 
