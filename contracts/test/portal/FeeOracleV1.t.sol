@@ -27,26 +27,44 @@ contract FeeOracleV1_Test is Base {
         feeOracle.feeFor(123_456, data, gasLimit);
     }
 
+    function test_setManager() public {
+        address newManager = makeAddr("newManager");
+
+        // only owner can set manager
+        vm.expectRevert("Ownable: caller is not the owner");
+        feeOracle.setManager(newManager);
+
+        // cannot set zero manager
+        vm.expectRevert("FeeOracleV1: no zero manager");
+        vm.prank(owner);
+        feeOracle.setManager(address(0));
+
+        // set manager
+        vm.prank(owner);
+        feeOracle.setManager(newManager);
+        assertEq(feeOracle.manager(), newManager);
+    }
+
     function test_setGasPrice() public {
         uint64 destChainId = chainAId;
         uint256 newGasPrice = feeOracle.gasPriceOn(destChainId) + 1 gwei;
 
-        // only owner can set gas price
-        vm.expectRevert("Ownable: caller is not the owner");
+        // only manager can set gas price
+        vm.expectRevert("FeeOracleV1: not manager");
         feeOracle.setGasPrice(destChainId, newGasPrice);
 
         // no zero gas price
         vm.expectRevert("FeeOracleV1: no zero gas price");
-        vm.prank(feeOracleOwner);
+        vm.prank(feeOracleManager);
         feeOracle.setGasPrice(destChainId, 0);
 
         // no zero chain id
         vm.expectRevert("FeeOracleV1: no zero chain id");
-        vm.prank(feeOracleOwner);
+        vm.prank(feeOracleManager);
         feeOracle.setGasPrice(0, newGasPrice);
 
         // set gas price
-        vm.prank(feeOracleOwner);
+        vm.prank(feeOracleManager);
         feeOracle.setGasPrice(destChainId, newGasPrice);
         assertEq(feeOracle.gasPriceOn(destChainId), newGasPrice);
     }
@@ -59,7 +77,7 @@ contract FeeOracleV1_Test is Base {
         feeOracle.setProtocolFee(newProtocolFee);
 
         // set protocol fee
-        vm.prank(feeOracleOwner);
+        vm.prank(owner);
         feeOracle.setProtocolFee(newProtocolFee);
         assertEq(feeOracle.protocolFee(), newProtocolFee);
     }
@@ -72,7 +90,7 @@ contract FeeOracleV1_Test is Base {
         feeOracle.setBaseGasLimit(newBaseGasLimit);
 
         // set base gas limit
-        vm.prank(feeOracleOwner);
+        vm.prank(owner);
         feeOracle.setBaseGasLimit(newBaseGasLimit);
         assertEq(feeOracle.baseGasLimit(), newBaseGasLimit);
     }
@@ -81,22 +99,22 @@ contract FeeOracleV1_Test is Base {
         uint64 destChainId = chainAId;
         uint256 newToNativeRate = feeOracle.toNativeRate(destChainId) + 1;
 
-        // only owner can set to native rate
-        vm.expectRevert("Ownable: caller is not the owner");
+        // only manager can set to native rate
+        vm.expectRevert("FeeOracleV1: not manager");
         feeOracle.setToNativeRate(destChainId, newToNativeRate);
 
         // no zero rate
         vm.expectRevert("FeeOracleV1: no zero rate");
-        vm.prank(feeOracleOwner);
+        vm.prank(feeOracleManager);
         feeOracle.setToNativeRate(destChainId, 0);
 
         // no zero chain id
         vm.expectRevert("FeeOracleV1: no zero chain id");
-        vm.prank(feeOracleOwner);
+        vm.prank(feeOracleManager);
         feeOracle.setToNativeRate(0, newToNativeRate);
 
         // set to native rate
-        vm.prank(feeOracleOwner);
+        vm.prank(feeOracleManager);
         feeOracle.setToNativeRate(destChainId, newToNativeRate);
         assertEq(feeOracle.toNativeRate(destChainId), newToNativeRate);
     }
@@ -128,12 +146,12 @@ contract FeeOracleV1_Test is Base {
             toNativeRate: 2e18
         });
 
-        // only owner can bulk set fee params
-        vm.expectRevert("Ownable: caller is not the owner");
+        // only manager can set bulk fee params
+        vm.expectRevert("FeeOracleV1: not manager");
         feeOracle.bulkSetFeeParams(feeParams);
 
         // set bulk fee params
-        vm.prank(feeOracleOwner);
+        vm.prank(feeOracleManager);
         feeOracle.bulkSetFeeParams(feeParams);
 
         for (uint256 i = 0; i < feeParams.length; i++) {

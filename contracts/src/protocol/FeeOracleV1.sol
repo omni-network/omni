@@ -22,6 +22,11 @@ contract FeeOracleV1 is IFeeOracle, IFeeOracleV1, OwnableUpgradeable {
     uint256 public protocolFee;
 
     /**
+     * @notice Address allowed to set gas prices and to-native conversion rates.
+     */
+    address public manager;
+
+    /**
      * @notice Gas price per destination chain, in wei, of the chains native token.
      */
     mapping(uint64 => uint256) public gasPriceOn;
@@ -37,15 +42,24 @@ contract FeeOracleV1 is IFeeOracle, IFeeOracleV1, OwnableUpgradeable {
      */
     uint256 public constant CONVERSION_RATE_DENOM = 1e6;
 
+    modifier onlyManager() {
+        require(msg.sender == manager, "FeeOracleV1: not manager");
+        _;
+    }
+
     constructor() {
         _disableInitializers();
     }
 
-    function initialize(address owner_, uint64 baseGasLimit_, uint256 protocolFee_, ChainFeeParams[] calldata params)
-        public
-        initializer
-    {
+    function initialize(
+        address owner_,
+        address manager_,
+        uint64 baseGasLimit_,
+        uint256 protocolFee_,
+        ChainFeeParams[] calldata params
+    ) public initializer {
         _transferOwnership(owner_);
+        _setManager(manager_);
         _setBaseGasLimit(baseGasLimit_);
         _setProtocolFee(protocolFee_);
         _bulkSetFeeParams(params);
@@ -61,21 +75,21 @@ contract FeeOracleV1 is IFeeOracle, IFeeOracleV1, OwnableUpgradeable {
     /**
      * @notice Set the fee parameters for a list of destination chains.
      */
-    function bulkSetFeeParams(ChainFeeParams[] calldata params) external onlyOwner {
+    function bulkSetFeeParams(ChainFeeParams[] calldata params) external onlyManager {
         _bulkSetFeeParams(params);
     }
 
     /**
      * @notice Set the gas price for a destination chain.
      */
-    function setGasPrice(uint64 chainId, uint256 gasPrice) external onlyOwner {
+    function setGasPrice(uint64 chainId, uint256 gasPrice) external onlyManager {
         _setGasPrice(chainId, gasPrice);
     }
 
     /**
      * @notice Set the to native conversion rate for a destination chain.
      */
-    function setToNativeRate(uint64 chainId, uint256 rate) external onlyOwner {
+    function setToNativeRate(uint64 chainId, uint256 rate) external onlyManager {
         _setToNativeRate(chainId, rate);
     }
 
@@ -91,6 +105,14 @@ contract FeeOracleV1 is IFeeOracle, IFeeOracleV1, OwnableUpgradeable {
      */
     function setProtocolFee(uint256 fee) external onlyOwner {
         _setProtocolFee(fee);
+    }
+
+    /**
+     * @notice Set the manager admin account.
+     */
+    function setManager(address manager_) external onlyOwner {
+        require(manager_ != address(0), "FeeOracleV1: no zero manager");
+        _setManager(manager_);
     }
 
     /**
@@ -140,5 +162,13 @@ contract FeeOracleV1 is IFeeOracle, IFeeOracleV1, OwnableUpgradeable {
     function _setProtocolFee(uint256 fee) internal {
         protocolFee = fee;
         emit ProtocolFeeSet(fee);
+    }
+
+    /**
+     * @notice Set the manager admin account.
+     */
+    function _setManager(address manager_) internal {
+        emit ManagerChanged(manager, manager_);
+        manager = manager_;
     }
 }
