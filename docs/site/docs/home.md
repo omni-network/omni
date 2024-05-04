@@ -7,7 +7,6 @@ slug: /
 
 import TestnetCTA from '@site/src/components/TestnetCTA/TestnetCTA';
 import ThemedBanner from '@site/src/components/ThemedBanner/ThemedBanner';
-import GitHubCodeBlock from '@site/src/components/GitHubCodeBlock/GitHubCodeBlock';
 
 #
 
@@ -21,7 +20,6 @@ import GitHubCodeBlock from '@site/src/components/GitHubCodeBlock/GitHubCodeBloc
 
 ### _Welcome to the documentation portal for all things Omni!_
 
-<GitHubCodeBlock repoUrl="https://github.com/omni-network/omni/blob/97df20bfb1411f30b01d79411cb8b3d0f9213573/contracts/src/pkg/XApp.sol#L60-L68" />
 
 Omni is an Ethereum-native interoperability protocol that establishes low latency communications between all Ethereum rollups. Omni offers a secure, performant, and globally compatible architecture that presents Ethereum as a single, unified operating system to both users and developers.
 
