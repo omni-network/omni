@@ -20,7 +20,6 @@ import ThemedBanner from '@site/src/components/ThemedBanner/ThemedBanner';
 
 ### _Welcome to the documentation portal for all things Omni!_
 
-
 Omni is an Ethereum-native interoperability protocol that establishes low latency communications between all Ethereum rollups. Omni offers a secure, performant, and globally compatible architecture that presents Ethereum as a single, unified operating system to both users and developers.
 
 [**Learn**](./learn/introduction/introduction.md): New to Omni or Ethereum interoperability? Start here to understand the basics of how Omni connects all Ethereum rollups.
