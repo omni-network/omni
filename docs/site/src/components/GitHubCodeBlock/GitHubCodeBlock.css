@@ -33,3 +33,25 @@
 .code-snippet-footer:hover {
     background: var(--ifm-color-secondary-dark); /* Hover background color */
 }
+
+.code-snippet-warning {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    margin: 0;
+    padding: 5px 10px;
+    background: rgba(182, 161, 25, 0.445);
+    color: var(--ifm-color-white);
+    border-top-right-radius: 4px;
+    font-size: 0.85em;
+    opacity: 0.9; /* Adjust the opacity value to make it slightly transparent */
+}
+
+.code-snippet-warning:hover {
+    background: rgba(182, 161, 25, 0.797);
+}
+
+.code-snippet-warning a {
+    text-decoration: none;
+    color: inherit;
+}
