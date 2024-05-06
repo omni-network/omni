@@ -26,34 +26,6 @@ type XMsgsArgs struct {
 
 const MsgsLimit = 25
 
-func (b *BlocksResolver) XMsgCount(ctx context.Context) (*hexutil.Big, error) {
-	res, found, err := b.Provider.XMsgCount(ctx)
-	if err != nil {
-		return nil, errors.New("failed to fetch message count")
-	}
-	if !found {
-		return nil, errors.New("message count not found")
-	}
-
-	return res, nil
-}
-
-func (b *BlocksResolver) XMsgRange(ctx context.Context, args XMsgRangeArgs) ([]*XMsg, error) {
-	if args.From.ToInt().Cmp(args.To.ToInt()) >= 0 {
-		return nil, errors.New("invalid range")
-	}
-
-	res, found, err := b.Provider.XMsgRange(ctx, args.From.ToInt().Uint64(), args.To.ToInt().Uint64())
-	if err != nil {
-		return nil, errors.New("failed to fetch messages")
-	}
-	if !found {
-		return nil, errors.New("messages not found")
-	}
-
-	return res, nil
-}
-
 func (b *BlocksResolver) XMsg(ctx context.Context, args XMsgArgs) (*XMsg, error) {
 	res, found, err := b.Provider.XMsg(ctx, args.SourceChainID.ToInt().Uint64(), args.DestChainID.ToInt().Uint64(), args.Offset.ToInt().Uint64())
 	if err != nil {

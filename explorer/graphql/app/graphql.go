@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/omni-network/omni/explorer/graphql/data"
+	"github.com/omni-network/omni/explorer/graphql/mockresolver"
 	"github.com/omni-network/omni/explorer/graphql/resolvers"
 	"github.com/omni-network/omni/lib/log"
 
@@ -21,13 +22,15 @@ var graphiql []byte
 
 // GraphQL returns a new graphql handler. We use the relay handler to create the graphql handler.
 func GraphQL(p data.Provider) http.Handler {
-	br := resolvers.BlocksResolver{Provider: p}
+	_ = resolvers.BlocksResolver{Provider: p}
+
+	res := mockresolver.New()
 
 	opts := []graphql.SchemaOpt{
 		graphql.UseFieldResolvers(),
 		graphql.UseStringDescriptions(),
 	}
-	s := graphql.MustParseSchema(Schema, &resolvers.Query{BlocksResolver: br}, opts...)
+	s := graphql.MustParseSchema(Schema, res, opts...)
 
 	return &relay.Handler{Schema: s}
 }
