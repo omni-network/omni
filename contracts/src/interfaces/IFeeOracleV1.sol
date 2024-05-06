@@ -11,7 +11,7 @@ interface IFeeOracleV1 is IFeeOracle {
     /**
      * @notice Emitted when the base gas limit is set.
      */
-    event BaseGasLimitSet(uint256 baseGasLimit);
+    event BaseGasLimitSet(uint64 baseGasLimit);
 
     /**
      * @notice Emitted when the base protocol fee is set.
@@ -27,6 +27,11 @@ interface IFeeOracleV1 is IFeeOracle {
      * @notice Emitted when the to-native conversion rate for a destination chain is set.
      */
     event ToNativeRateSet(uint64 chainId, uint256 toNativeRate);
+
+    /**
+     * @notice Emitted when the manager is changed.
+     */
+    event ManagerChanged(address oldManager, address newManager);
 
     /**
      * @notice Fee parameters for a specific chain.
@@ -59,12 +64,17 @@ interface IFeeOracleV1 is IFeeOracle {
     /**
      * @notice Set the base gas limit for each xmsg.
      */
-    function setBaseGasLimit(uint256 baseGasLimit_) external;
+    function setBaseGasLimit(uint64 gasLimit) external;
 
     /**
      * @notice Set the base protocol fee for each xmsg.
      */
-    function setProtocolFee(uint256 protocolFee_) external;
+    function setProtocolFee(uint256 fee) external;
+
+    /**
+     * @notice Set the manager admin account.
+     */
+    function setManager(address manager_) external;
 
     /**
      * @notice returns the conversion rate denominator, used in to

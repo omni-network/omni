@@ -131,7 +131,11 @@ func newCleanCmd(def *app.Definition) *cobra.Command {
 		Use:   "clean",
 		Short: "Cleans (deletes) previously preserved network infrastructure",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return app.Cleanup(cmd.Context(), *def)
+			if err := app.CleanInfra(cmd.Context(), *def); err != nil {
+				return err
+			}
+
+			return app.CleanupDir(cmd.Context(), def.Testnet.Dir)
 		},
 	}
 }

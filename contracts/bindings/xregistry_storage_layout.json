@@ -9,7 +9,7 @@
       "type": "t_address"
     },
     {
-      "astId": 52082,
+      "astId": 52391,
       "contract": "src/protocol/XRegistry.sol:XRegistry",
       "label": "_addrs",
       "offset": 0,
@@ -17,15 +17,15 @@
       "type": "t_mapping(t_uint64,t_mapping(t_bytes32,t_address))"
     },
     {
-      "astId": 51632,
+      "astId": 51941,
       "contract": "src/protocol/XRegistry.sol:XRegistry",
       "label": "omni",
       "offset": 0,
       "slot": "2",
-      "type": "t_contract(IOmniPortal)49497"
+      "type": "t_contract(IOmniPortal)49552"
     },
     {
-      "astId": 51637,
+      "astId": 51946,
       "contract": "src/protocol/XRegistry.sol:XRegistry",
       "label": "replicas",
       "offset": 0,
@@ -33,7 +33,7 @@
       "type": "t_mapping(t_uint64,t_address)"
     },
     {
-      "astId": 51641,
+      "astId": 51950,
       "contract": "src/protocol/XRegistry.sol:XRegistry",
       "label": "_chainIds",
       "offset": 0,
@@ -58,7 +58,7 @@
       "label": "bytes32",
       "numberOfBytes": "32"
     },
-    "t_contract(IOmniPortal)49497": {
+    "t_contract(IOmniPortal)49552": {
       "encoding": "inplace",
       "label": "contract IOmniPortal",
       "numberOfBytes": "20"

@@ -325,7 +325,6 @@ export default function XMsgDataTable() {
   return (
     <div className="flex-none">
       <div className="flex flex-col">
-
         <h5 className="text-default mb-4">
           XMsgs{' '}
           <Tooltip className="tooltip" id="xmsg-info">

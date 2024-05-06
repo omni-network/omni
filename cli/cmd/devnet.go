@@ -117,11 +117,14 @@ func cleanupDevnet(ctx context.Context) error {
 		return err
 	}
 
-	return app.Cleanup(ctx, def)
+	if err := app.CleanInfra(ctx, def); err != nil {
+		return err
+	}
+
+	return app.CleanupDir(ctx, def.Testnet.Dir)
 }
 
 func printDevnetInfo(ctx context.Context) error {
-	// Read the actual devnet external network.json.
 	// It contains correct portal addrs and external (localhost) RPCs.
 	network, endpoints, err := loadDevnetNetwork(ctx)
 	if err != nil {
@@ -190,14 +193,6 @@ func loadDevnetNetwork(ctx context.Context) (netconf.Network, xchain.RPCEndpoint
 		return netconf.Network{}, nil, err
 	}
 
-	networkFile := filepath.Join(devnetPath, "network.json")
-	if _, err := os.Stat(networkFile); os.IsNotExist(err) {
-		return netconf.Network{}, nil, &cliError{
-			Msg:     "failed to load ~/.omni/devnet/network.json",
-			Suggest: "Have you run `omni devnet start` yet?",
-		}
-	}
-
 	endpointsFile := filepath.Join(devnetPath, "endpoints.json")
 	if _, err := os.Stat(endpointsFile); os.IsNotExist(err) {
 		return netconf.Network{}, nil, &cliError{
@@ -220,9 +215,12 @@ func loadDevnetNetwork(ctx context.Context) (netconf.Network, xchain.RPCEndpoint
 		return netconf.Network{}, nil, errors.Wrap(err, "make portal registry")
 	}
 
-	network, err := netconf.AwaitOnChain(ctx, netID, portalReg, endpoints.Keys())
+	network, err := netconf.CheckOnChain(ctx, netID, portalReg, endpoints.Keys())
 	if err != nil {
-		return netconf.Network{}, nil, errors.Wrap(err, "load network file")
+		return netconf.Network{}, nil, &cliError{
+			Msg:     "failed to check on-chain registry",
+			Suggest: "Have you run `omni devnet start` yet?",
+		}
 	}
 
 	return network, endpoints, nil

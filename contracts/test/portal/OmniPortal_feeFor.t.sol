@@ -11,7 +11,7 @@ import { Base } from "./common/Base.sol";
 contract OmniPortal_feeFor_Test is Base {
     /// @dev Test feeFor matches oracle
     function test_feeFor_succeeds() public {
-        uint64 destChainId = 1;
+        uint64 destChainId = chainBId;
         uint64 gasLimit;
         bytes memory data = abi.encodeWithSignature("test()");
 
@@ -23,7 +23,7 @@ contract OmniPortal_feeFor_Test is Base {
 
     /// @dev Test feeFor with default gasLimit matches oracle
     function test_feeFor_defaultGasLimit_succeeds() public {
-        uint64 destChainId = 1;
+        uint64 destChainId = chainBId;
         bytes memory data = abi.encodeWithSignature("test()");
 
         assertEq(

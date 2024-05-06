@@ -81,6 +81,24 @@ func AwaitOnChain(ctx context.Context, netID ID, portalRegistry *bindings.Portal
 	}
 }
 
+// CheckOnChain returns the network configuration if all expected chains are registered in the on-chain registry.
+// It returns an error if the context is canceled or if any of the expected chains are missing.
+func CheckOnChain(ctx context.Context, netID ID, portalRegistry *bindings.PortalRegistry, expected []string) (Network, error) {
+	portals, err := portalRegistry.List(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		return Network{}, errors.Wrap(err, "failed fetching xchain registry from omni_evm")
+	}
+
+	network := networkFromPortals(netID, portals)
+	if !containsAll(network, expected) {
+		return Network{}, errors.New("xchain registry doesn't contain all expected chains")
+	}
+
+	log.Info(ctx, "XChain network configuration initialized from on-chain registry", "chains", network.ChainNamesByIDs())
+
+	return network, nil
+}
+
 // containsAll returns true if the network contains the all expected chains (by name or ID).
 func containsAll(network Network, expected []string) bool {
 	want := make(map[string]struct{}, len(expected))
@@ -113,9 +131,10 @@ func networkFromPortals(network ID, portals []bindings.PortalRegistryDeployment)
 	// Add omni consensus chain
 	consensusMeta := MetadataByID(network, network.Static().OmniConsensusChainIDUint64())
 	chains = append(chains, Chain{
-		ID:          consensusMeta.ChainID,
-		Name:        consensusMeta.Name,
-		BlockPeriod: consensusMeta.BlockPeriod,
+		ID:           consensusMeta.ChainID,
+		Name:         consensusMeta.Name,
+		BlockPeriod:  consensusMeta.BlockPeriod,
+		DeployHeight: 1, // ValidatorSets start at 1, not 0.
 	})
 
 	return Network{

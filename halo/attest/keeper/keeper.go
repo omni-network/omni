@@ -219,7 +219,8 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 		// Ensure we approve sequentially, not skipping any heights.
 		{
 			// Populate the cache if not already.
-			if _, ok := approvedByChain[att.GetChainId()]; ok {
+			// TODO(corver): Add tests for this
+			if _, ok := approvedByChain[att.GetChainId()]; !ok {
 				latest, found, err := k.latestAttestation(ctx, att.GetChainId())
 				if err != nil {
 					return errors.Wrap(err, "latest approved")
@@ -618,6 +619,27 @@ func (k *Keeper) verifyAggVotes(ctx context.Context, valset ValSet, aggs []*type
 func (k *Keeper) deleteBefore(ctx context.Context, height uint64) error {
 	defer latency("delete_before")()
 
+	// Cache latest by chain so we don't delete it.
+	// TODO(corver): Add tests for this.
+	latestByChain := make(map[uint64]uint64)
+	getLatest := func(chainID uint64) (uint64, bool, error) {
+		if latest, ok := latestByChain[chainID]; ok {
+			return latest, false, nil
+		}
+
+		latest, ok, err := k.latestAttestation(ctx, chainID)
+		if err != nil {
+			return 0, false, err
+		} else if !ok {
+			return 0, false, nil
+		}
+
+		height := latest.BlockHeader.Height
+		latestByChain[chainID] = height
+
+		return height, true, nil
+	}
+
 	start := AttestationCreatedHeightIndexKey{}
 	end := AttestationCreatedHeightIndexKey{}.WithCreatedHeight(height)
 	iter, err := k.attTable.ListRange(ctx, start, end)
@@ -632,6 +654,15 @@ func (k *Keeper) deleteBefore(ctx context.Context, height uint64) error {
 			return errors.Wrap(err, "value att")
 		} else if att.GetCreatedHeight() > height {
 			return errors.New("query sanity check [BUG]")
+		}
+
+		// Never delete anything after the last approved attestation per chain,
+		// even if it is very old. Otherwise, we could introduce a gap
+		// once we start catching up.
+		if latest, ok, err := getLatest(att.GetChainId()); err != nil {
+			return err
+		} else if ok && att.GetHeight() >= latest {
+			continue
 		}
 
 		// Delete signatures

@@ -1,0 +1,35 @@
+.code-snippet-container {
+    position: relative;
+    display: block;
+}
+
+.code-snippet-footer {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    margin: 0;
+    padding: 5px 10px; /* Slightly more padding on the right for visual comfort */
+    background: var(--ifm-color-secondary); /* Background color */
+    color: var(--ifm-font-color-base); /* Text color */
+    border-top-left-radius: 4px; /* adds rounded corners to the left side */
+    font-size: 0.85em; /* Adjusts the font size */
+}
+
+.code-snippet-footer a {
+    text-decoration: none;
+    color: inherit;
+}
+
+.code-snippet-footer img {
+    height: 1.4em; /* Ensure consistent size for the icon */
+    vertical-align: text-top; /* Aligns icon with the text */
+    margin-left: 5px; /* Space between text and icon */
+}
+
+.code-snippet-block {
+    width: 100%;
+}
+
+.code-snippet-footer:hover {
+    background: var(--ifm-color-secondary-dark); /* Hover background color */
+}

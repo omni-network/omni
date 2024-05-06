@@ -16,11 +16,6 @@ func TestXReceiptCount(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	test := createGqlTest(t)
-	t.Cleanup(func() {
-		if err := test.Client.Close(); err != nil {
-			t.Error(err)
-		}
-	})
 	db.CreateTestBlocks(t, ctx, test.Client, 3)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
@@ -45,11 +40,6 @@ func TestReceipt(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	test := createGqlTest(t)
-	t.Cleanup(func() {
-		if err := test.Client.Close(); err != nil {
-			t.Error(err)
-		}
-	})
 	db.CreateTestBlocks(t, ctx, test.Client, 2)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
@@ -58,7 +48,7 @@ func TestReceipt(t *testing.T) {
 			Schema:  graphql.MustParseSchema(app.Schema, &resolvers.Query{BlocksResolver: test.Resolver}, test.Opts...),
 			Query: `
 				{
-					xreceipt(sourceChainID: 1, destChainID: 2, streamOffset: 0){
+					xreceipt(sourceChainID: 1, destChainID: 2, offset: 0){
 						TxHash
 						Block {
 							BlockHeight

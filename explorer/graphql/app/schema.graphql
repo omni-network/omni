@@ -39,7 +39,7 @@ type XMsg {
   "ID of the XMsg"
   ID: ID!
 
-  "Monotonically incremented offset of Msg in the Steam"
+  "Monotonically incremented offset of Msg in the Stream"
   StreamOffset: BigInt!
 
   "Sender on source chain, set to msg.Sender"
@@ -86,9 +86,6 @@ type XMsg {
 XBlock represents a cross-chain block.
 """
 type XBlock {
-  "UUID of our block"
-  UUID: ID!
-
   "Source chain ID as per https://chainlist.org"
   SourceChainID: BigInt!
 
@@ -130,7 +127,7 @@ type XReceipt {
   "Destination chain ID as per https://chainlist.org"
   DestChainID: BigInt!
 
-  "Monotonically incremented offset of Msg in the Steam"
+  "Monotonically incremented offset of Msg in the Stream"
   StreamOffset: BigInt!
 
   "Hash of the source chain transaction that emitted the message"
@@ -216,7 +213,6 @@ type XMsgEdge {
 PageInfo represents pagination information
 """
 type PageInfo {
-
   "Next Cursor"
   NextCursor: BigInt!
 
@@ -230,24 +226,40 @@ type PageInfo {
   HasPrevPage: Boolean!
 }
 
+"""
+The query type represents all of the entry points into our object graph.
+"""
 type Query {
+  "Retrieve a specific XBlock by source chain ID and height."
   xblock(sourceChainID: BigInt!, height: BigInt!): XBlock
+
+  "Retrieve a range of XBlocks by source chain ID and height."
   xblockrange(from: BigInt!, to: BigInt!): [XBlock]!
+
+  "Get the total count of XBlocks."
   xblockcount: BigInt
+
+  "Retrieve a range of XMsgs by source chain ID and height."
   xmsgrange(from: BigInt!, to: BigInt!): [XMsg]!
+
+  "Get the total count of XMsgs."
   xmsgcount: BigInt
+
+  "Get the total count of XReceipts."
   xreceiptcount: BigInt
-  xreceipt(
-    sourceChainID: BigInt!
-    destChainID: BigInt!
-    streamOffset: BigInt!
-  ): XReceipt
-  xmsg(
-    sourceChainID: BigInt!
-    destChainID: BigInt!
-    streamOffset: BigInt!
-  ): XMsg
+
+  "Retrieve a specific XReceipt by source chain ID, destination chain ID, and stream offset."
+  xreceipt(sourceChainID: BigInt!, destChainID: BigInt!, offset: BigInt!): XReceipt
+
+  "Retrieve a specific XMsg by source chain ID, destination chain ID, and stream offset."
+  xmsg(sourceChainID: BigInt!, destChainID: BigInt!, offset: BigInt!): XMsg
+
+  "Get the list of supported chains."
   supportedchains: [Chain]!
+
+  "Search for cross-chain messages and receipts using a query string."
   search(query: String!): SearchResult
+
+  "Retrieve a paginated list of XMsgs."
   xmsgs(limit: BigInt, cursor: BigInt): XMsgResult
 }

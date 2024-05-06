@@ -37,9 +37,7 @@ func Run(ctx context.Context, cfg Config) error {
 		}
 	}(entCl)
 
-	provider := data.Provider{
-		EntClient: entCl,
-	}
+	provider := data.Provider{EntClient: entCl}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", home)

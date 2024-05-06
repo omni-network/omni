@@ -69,7 +69,7 @@ func InsertBlockTX(ctx context.Context, tx *ent.Tx, block xchain.Block) error {
 
 // incrementCursor increments the cursor for the given chainID (it ensures it matches height).
 func incrementCursor(ctx context.Context, tx *ent.Tx, chainID, height uint64) error {
-	cursor, ok, err := getCursor(ctx, tx.XProviderCursor, chainID)
+	cursor, ok, err := cursor(ctx, tx.XProviderCursor, chainID)
 	if err != nil {
 		return errors.Wrap(err, "query cursor")
 	} else if !ok {
@@ -86,9 +86,8 @@ func incrementCursor(ctx context.Context, tx *ent.Tx, chainID, height uint64) er
 	return nil
 }
 
-// getCursor returns the current cursor for the given chainID, or false if it doesn't exist.
-func getCursor(ctx context.Context, client *ent.XProviderCursorClient, chainID uint64,
-) (*ent.XProviderCursor, bool, error) {
+// cursor returns the current cursor for the given chainID, or false if it doesn't exist.
+func cursor(ctx context.Context, client *ent.XProviderCursorClient, chainID uint64) (*ent.XProviderCursor, bool, error) {
 	cursor, err := client.Query().Where(xprovidercursor.ChainID(chainID)).Only(ctx)
 	if ent.IsNotFound(err) {
 		return nil, false, nil

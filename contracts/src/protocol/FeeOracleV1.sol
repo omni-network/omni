@@ -14,12 +14,17 @@ contract FeeOracleV1 is IFeeOracle, IFeeOracleV1, OwnableUpgradeable {
     /**
      * @notice Base gas limit for each xmsg.
      */
-    uint256 public baseGasLimit;
+    uint64 public baseGasLimit;
 
     /**
      * @notice Base protocol fee for each xmsg.
      */
     uint256 public protocolFee;
+
+    /**
+     * @notice Address allowed to set gas prices and to-native conversion rates.
+     */
+    address public manager;
 
     /**
      * @notice Gas price per destination chain, in wei, of the chains native token.
@@ -37,15 +42,24 @@ contract FeeOracleV1 is IFeeOracle, IFeeOracleV1, OwnableUpgradeable {
      */
     uint256 public constant CONVERSION_RATE_DENOM = 1e6;
 
+    modifier onlyManager() {
+        require(msg.sender == manager, "FeeOracleV1: not manager");
+        _;
+    }
+
     constructor() {
         _disableInitializers();
     }
 
-    function initialize(address owner_, uint256 baseGasLimit_, uint256 protocolFee_, ChainFeeParams[] calldata params)
-        public
-        initializer
-    {
+    function initialize(
+        address owner_,
+        address manager_,
+        uint64 baseGasLimit_,
+        uint256 protocolFee_,
+        ChainFeeParams[] calldata params
+    ) public initializer {
         _transferOwnership(owner_);
+        _setManager(manager_);
         _setBaseGasLimit(baseGasLimit_);
         _setProtocolFee(protocolFee_);
         _bulkSetFeeParams(params);
@@ -53,6 +67,7 @@ contract FeeOracleV1 is IFeeOracle, IFeeOracleV1, OwnableUpgradeable {
 
     /// @inheritdoc IFeeOracle
     function feeFor(uint64 destChainId, bytes calldata, uint64 gasLimit) external view returns (uint256) {
+        require(gasPriceOn[destChainId] > 0 && toNativeRate[destChainId] > 0, "FeeOracleV1: no fee params");
         uint256 gasPrice = gasPriceOn[destChainId] * toNativeRate[destChainId] / CONVERSION_RATE_DENOM;
         return protocolFee + (baseGasLimit * gasPrice) + (gasLimit * gasPrice);
     }
@@ -60,36 +75,44 @@ contract FeeOracleV1 is IFeeOracle, IFeeOracleV1, OwnableUpgradeable {
     /**
      * @notice Set the fee parameters for a list of destination chains.
      */
-    function bulkSetFeeParams(ChainFeeParams[] calldata params) external onlyOwner {
+    function bulkSetFeeParams(ChainFeeParams[] calldata params) external onlyManager {
         _bulkSetFeeParams(params);
     }
 
     /**
      * @notice Set the gas price for a destination chain.
      */
-    function setGasPrice(uint64 chainId, uint256 gasPrice) external onlyOwner {
+    function setGasPrice(uint64 chainId, uint256 gasPrice) external onlyManager {
         _setGasPrice(chainId, gasPrice);
     }
 
     /**
      * @notice Set the to native conversion rate for a destination chain.
      */
-    function setToNativeRate(uint64 chainId, uint256 toNativeRate) external onlyOwner {
-        _setToNativeRate(chainId, toNativeRate);
+    function setToNativeRate(uint64 chainId, uint256 rate) external onlyManager {
+        _setToNativeRate(chainId, rate);
     }
 
     /**
      * @notice Set the base gas limit for each xmsg.
      */
-    function setBaseGasLimit(uint256 baseGasLimit_) external onlyOwner {
-        _setBaseGasLimit(baseGasLimit_);
+    function setBaseGasLimit(uint64 gasLimit) external onlyOwner {
+        _setBaseGasLimit(gasLimit);
     }
 
     /**
      * @notice Set the base protocol fee for each xmsg.
      */
-    function setProtocolFee(uint256 protocolFee_) external onlyOwner {
-        _setProtocolFee(protocolFee_);
+    function setProtocolFee(uint256 fee) external onlyOwner {
+        _setProtocolFee(fee);
+    }
+
+    /**
+     * @notice Set the manager admin account.
+     */
+    function setManager(address manager_) external onlyOwner {
+        require(manager_ != address(0), "FeeOracleV1: no zero manager");
+        _setManager(manager_);
     }
 
     /**
@@ -128,16 +151,24 @@ contract FeeOracleV1 is IFeeOracle, IFeeOracleV1, OwnableUpgradeable {
     /**
      * @notice Set the base gas limit for each xmsg.
      */
-    function _setBaseGasLimit(uint256 baseGasLimit_) internal {
-        baseGasLimit = baseGasLimit_;
-        emit BaseGasLimitSet(baseGasLimit);
+    function _setBaseGasLimit(uint64 gasLimit) internal {
+        baseGasLimit = gasLimit;
+        emit BaseGasLimitSet(gasLimit);
     }
 
     /**
      * @notice Set the base protocol fee for each xmsg.
      */
-    function _setProtocolFee(uint256 protocolFee_) internal {
-        protocolFee = protocolFee_;
-        emit ProtocolFeeSet(protocolFee);
+    function _setProtocolFee(uint256 fee) internal {
+        protocolFee = fee;
+        emit ProtocolFeeSet(fee);
+    }
+
+    /**
+     * @notice Set the manager admin account.
+     */
+    function _setManager(address manager_) internal {
+        emit ManagerChanged(manager, manager_);
+        manager = manager_;
     }
 }

@@ -217,6 +217,7 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 
 				log.Info(ctx, "Deposited stake",
 					"validator", node.Name,
+					"address", addr.Hex(),
 					"power", power,
 					"height", rec.BlockNumber.Uint64(),
 				)

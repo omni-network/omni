@@ -16,6 +16,7 @@ import (
 	"github.com/omni-network/omni/monitor/account"
 	"github.com/omni-network/omni/monitor/avs"
 	"github.com/omni-network/omni/monitor/loadgen"
+	"github.com/omni-network/omni/monitor/xfeemngr"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -27,6 +28,9 @@ func Run(ctx context.Context, cfg Config) error {
 	log.Info(ctx, "Starting monitor service")
 
 	buildinfo.Instrument(ctx)
+
+	// Start monitoring first, so app is "up"
+	monitorChan := serveMonitoring(cfg.MonitoringAddr)
 
 	portalReg, err := makePortalRegistry(cfg.Network, cfg.RPCEndpoints)
 	if err != nil {
@@ -54,11 +58,15 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "start AVS sync")
 	}
 
+	if err := xfeemngr.Start(ctx, network, cfg.RPCEndpoints, cfg.PrivateKey); err != nil {
+		return errors.Wrap(err, "start xfee manager")
+	}
+
 	select {
 	case <-ctx.Done():
 		log.Info(ctx, "Shutdown detected, stopping...")
 		return nil
-	case err := <-serveMonitoring(cfg.MonitoringAddr):
+	case err := <-monitorChan:
 		return err
 	}
 }

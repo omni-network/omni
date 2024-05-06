@@ -52,6 +52,10 @@ const (
 func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	log.Info(ctx, "Setup testnet", "dir", def.Testnet.Dir)
 
+	if err := CleanupDir(ctx, def.Testnet.Dir); err != nil {
+		return err
+	}
+
 	if err := os.MkdirAll(def.Testnet.Dir, os.ModePerm); err != nil {
 		return errors.Wrap(err, "mkdir")
 	}

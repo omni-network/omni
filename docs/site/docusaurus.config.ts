@@ -88,6 +88,11 @@ const config: Config = {
           to: "/operate/introduction",
         },
         {
+          position: "right",
+          label: "Tools",
+          to: "/tools",
+        },
+        {
           href: "https://github.com/omni-network/omni",
           label: "GitHub",
           position: "right",

@@ -7,7 +7,7 @@ import (
 )
 
 func (b *BlocksResolver) SupportedChains(ctx context.Context) ([]*Chain, error) {
-	res, found, err := b.BlocksProvider.SupportedChains(ctx)
+	res, found, err := b.Provider.SupportedChains(ctx)
 	if err != nil {
 		return nil, errors.New("failed to fetch message count")
 	}

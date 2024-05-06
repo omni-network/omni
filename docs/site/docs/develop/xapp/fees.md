@@ -2,6 +2,8 @@
 sidebar_position: 5
 ---
 
+import GitHubCodeBlock from '@site/src/components/GitHubCodeBlock/GitHubCodeBlock';
+
 # Fees
 
 Omni charges fees for each `xcall`. These fees are paid synchronously on the soruce chain, in the chain's native token. For most rollups, this is ETH.
@@ -31,13 +33,7 @@ uint256 fee = feeFor(
 
 `XApp` handles calculating and charging fees when making an `xcall`
 
-```solidity
-function xcall(uint64 destChainId, address to, bytes memory data, uint64 gasLimit) internal returns (uint256) {
-    uint256 fee = omni.feeFor(destChainId, data, gasLimit);
-    omni.xcall{ value: fee }(destChainId, to, data, gasLimit);
-    return fee;
-}
-```
+<GitHubCodeBlock repoUrl="https://github.com/omni-network/omni/blob/059303647e07fc3481e379b710922e2b84b1827f/contracts/src/pkg/XApp.sol#L56-65" />
 
 `xcall(...)` charges fees to your contract by default. To charge users for fees, calculate the fee with `feeFor(...)`, and verify `msg.value` is sufficient.
 

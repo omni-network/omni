@@ -11,7 +11,7 @@ xcall(
    destChainId,  // destination chain id
    to,           // contract address on the destination chain
    data,         // abi encoded calldata, ex abi.encodeWithSignature("foo()")
-   gasLimit      // gas limit to enforce on execution
+   gasLimit      // gas limit to enforce on destination execution
 )
 ```
 

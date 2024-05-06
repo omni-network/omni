@@ -16,6 +16,7 @@ func TestProvider(t *testing.T) {
 	t.Parallel()
 
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel() // Ensure all paths cancel the context to avoid context leak
 
 	const (
 		errs  = 2
@@ -31,16 +32,22 @@ func TestProvider(t *testing.T) {
 	p := provider.NewProviderForT(t, fetcher.Fetch, nil, nil, backoff.BackOff)
 
 	var actual []xchain.Attestation
+	var wg sync.WaitGroup
+	wg.Add(1)
+
 	p.Subscribe(ctx, chainID, fromHeight, "test", func(ctx context.Context, approved xchain.Attestation) error {
 		actual = append(actual, approved)
 		if len(actual) == total {
-			cancel()
+			cancel()  // Cancel the context to stop further fetch operations
+			wg.Done() // Signal that we have fetched enough attestations
+
+			return nil
 		}
 
 		return nil
 	})
 
-	<-ctx.Done()
+	wg.Wait() // Wait for all fetching to complete before proceeding with assertions
 
 	// Test fetcher returns <errs> errors, then 0,1,2,3,4,... attestations per fetch.
 	var expectFetched, expectCount int
