@@ -20,7 +20,7 @@
   "Headers": "Authorization=Basic 123456"
  },
  "Comet": {
-  "Version": "0.38.6",
+  "Version": "0.38.7",
   "RootDir": "testinput/input1",
   "ProxyApp": "tcp://127.0.0.1:26658",
   "Moniker": "config.toml",
