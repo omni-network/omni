@@ -17,7 +17,7 @@ const Option: React.FC<OptionProps> = ({ option, active, onClick }) => {
       onClick={() => {
         onClick && onClick()
       }}
-      className={`flex gap-1 cursor-pointer px-[18px] py-[7px] text-default font-bold text-center rounded-full border-border-subtle border-[1px] content-center min-w-[70px] bg-bg-input-default hover:border-border-default hover:bg-bg-input-hover ${active && 'bg-bg-input-active border-border-default'}`}
+      className={`flex gap-1 cursor-pointer px-[9px] py-[4px]  sm:px-[18px] sm:py-[7px] text-default sm:font-bold text-center rounded-full border-border-subtle border-[1px] content-center bg-bg-input-default hover:border-border-default hover:bg-bg-input-hover ${active && 'bg-bg-input-active border-border-default'}`}
     >
       {active && <span className="icon-tick-med" />}
       {option}
@@ -29,7 +29,7 @@ const FilterOptions: React.FC<Props> = ({ options, onSelection, value, ...props 
   // const [selectedOption, setSelectedOption] = React.useState<string>(options[0])
 
   return (
-    <div {...props} className={`flex gap-2 items-center`}>
+    <div {...props} className={`flex gap-2 md:gap-2 items-center w-full`}>
       {options.map(option => (
         <Option
           key={option}

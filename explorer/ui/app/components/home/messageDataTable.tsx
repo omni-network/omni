@@ -130,7 +130,7 @@ export default function XMsgDataTable() {
         header: () => <span>ID</span>,
         cell: (value: any) => {
           return (
-            <Link target="_blank" to={`xblock/${value.getValue()}`} className="link">
+            <Link to={`xmsg/${value.getValue()}`} className="link">
               {value.getValue()}
             </Link>
           )
@@ -146,6 +146,12 @@ export default function XMsgDataTable() {
             {dateFormatter(new Date(value.getValue()))}
           </span>
         ),
+      },
+      {
+        ...columnConfig,
+        accessorKey: 'Node.Status',
+        header: () => <span>Status</span>,
+        cell: (value: any) => <Tag status={value.getValue()} />,
       },
       {
         ...columnConfig,
@@ -368,8 +374,8 @@ export default function XMsgDataTable() {
             value={filterParams.destChain}
           />
         </div>
-        <div className={`flex justify-between mb-4`}>
-          <div className="">
+        <div className={`flex justify-between mb-4 flex-col md:flex-row`}>
+          <div className={`flex justify-between mb-4 flex-col md:flex-row`}>
             <FilterOptions
               value={filterParams.status}
               onSelection={status => {
@@ -385,7 +391,7 @@ export default function XMsgDataTable() {
             disabled={!hasFiltersApplied}
             onClick={clearFilters}
             kind="text"
-            className={`flex justify-center items-center ${!hasFiltersApplied && 'opacity-40'}`}
+            className={`flex items-center ${!hasFiltersApplied && 'opacity-40'}`}
           >
             {' '}
             <span className="icon-refresh text-default text-[20px]" />

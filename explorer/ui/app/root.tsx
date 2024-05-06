@@ -13,8 +13,9 @@ import {
 import { Client, Provider, cacheExchange, fetchExchange } from 'urql'
 import { useEnv } from './lib/use-env'
 import Navbar from './components/shared/navbar'
-import {Footer} from './components/shared/footer'
+import { Footer } from './components/shared/footer'
 import { gqlClient } from './entry.server'
+import { useState } from 'react'
 
 export const links: LinksFunction = () => [{ rel: 'stylesheet', href: stylesheet }]
 export type LoaderData = SerializeFrom<typeof loader>
@@ -27,6 +28,11 @@ export function loader() {
 }
 
 function App() {
+  const [openNav, setShowSideDrawer] = useState(false)
+
+  const menuClickHandler = () => {
+    setShowSideDrawer(prevState => !prevState)
+  }
   return (
     <html lang="en" data-theme="dark" className="h-full bg-surface">
       <head>
@@ -36,13 +42,15 @@ function App() {
         <Links />
       </head>
       <body className="bg-surface flex flex-col justify-start content-start  h-full">
-        <Navbar />
-        <Outlet />
-        <div className="grow"></div>
-        <Footer />
-        <ScrollRestoration />
-        <Scripts />
-        <LiveReload />
+        <Navbar openNavHandler={menuClickHandler} openNav={openNav} />
+        <div className={`${openNav && 'hidden'}`}>
+          <Outlet />
+          <div className="grow"></div>
+          <Footer />
+          <ScrollRestoration />
+          <Scripts />
+          <LiveReload />
+        </div>
       </body>
     </html>
   )

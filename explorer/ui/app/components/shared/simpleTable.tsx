@@ -40,7 +40,6 @@ export default function SimpleTable({
     <div className="overflow-x-auto ">
       <div className="w-full bg-raised rounded-lg min-w-[919px]">
         {headChildren}
-
         <table className="min-w-full">
           <thead className="">
             {table.getHeaderGroups().map(headerGroup => (

@@ -30,7 +30,7 @@ const ExplorerDropdown: React.FC<Props> = ({ ...props }) => {
         onClick={e => {
           setIsOpen(!isOpen)
         }}
-        className={`flex gap-2 flex-row items-center text-nowrap relative text-left px-3 pl-5 h-[48px] text-cb-md text-subtlest appearance-none rounded-[1000px]  border-subtle overflow-hidden ${isOpen && 'bg-overlay bg-opacity-100'} `}
+        className={`flex gap-2 px-3 flex-row items-center text-nowrap relative text-left h-[48px] text-cb-md text-subtlest appearance-none rounded-[1000px]  border-subtle overflow-hidden ${isOpen && 'bg-overlay bg-opacity-100'} `}
       >
         <label
           className={`z-10 pointer-events-none text-sm text-[12px] font-normal text-subtle  ${isOpen && '!text-default'} `}
@@ -49,12 +49,12 @@ const ExplorerDropdown: React.FC<Props> = ({ ...props }) => {
           onClick={() => {
             setIsOpen(false)
           }}
-          className={`fixed w-screen h-screen bg-transparent top-0 left-0 right-0 bottom-0 z-10`}
+          className={`fixed w-screen h-screen bg-transparent top-0 left-0 min-[820px]:right-0 bottom-0 z-10`}
         />
       )}
       {/* dropdown container */}
       {isOpen && (
-        <div className="flex flex-col gap-2 absolute top-10 right-0 z-10 bg-overlay border-[1px] border-default rounded-[12px] p-3 ">
+        <div className="flex flex-col gap-2 absolute top-10 min-[820px]:right-0 z-10 bg-overlay border-[1px] border-default rounded-[12px] p-3 ">
           {items.map((option, i) => (
             <a
               href={option.url}
