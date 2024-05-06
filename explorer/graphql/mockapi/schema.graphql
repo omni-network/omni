@@ -43,59 +43,6 @@ enum Status {
 }
 
 """
-XMsg is a cross-chain message.
-"""
-type XMsg {
-  "ID of the XMsg"
-  id: ID!
-
-  "Display ID of the XMsg in the form of `<srcChainID>-<destChainID>-<offset>`"
-  displayID: String!
-
-  "Monotonically incremented offset of XMsg on the source > dest stream"
-  offset: BigInt!
-
-  "Sender on source chain, set to msg.Sender"
-  sourceMessageSender: Address!
-
-  "Target/To address to 'call' on destination chain"
-  destAddress: Address!
-
-  "Gas limit to use for 'call' on destination chain"
-  destGasLimit: BigInt!
-
-  "Source chain ID as per https://chainlist.org/"
-  sourceChainID: BigInt!
-
-  "Destination chain ID as per https://chainlist.org/"
-  destChainID: BigInt!
-
-  "Hash of the source chain transaction that emitted the message"
-  txHash: Bytes32!
-
-  # "Height of the source chain block"
-  # blockHeight: BigInt!
-
-  # "Hash of the source chain block"
-  # blockHash: Bytes32!
-
-  "Hash of destination chain receipt"
-  receiptTxHash: Bytes32
-
-  "Status of the X message"
-  status: Status!
-
-  "Timestamp of the source chain block"
-  sourceBlockTime: Time!
-
-  "XBlock message was emitted in"
-  block: XBlock!
-
-  "Receipts of the message if available"
-  receipt: XReceipt
-}
-
-"""
 XBlock represents a cross-chain block.
 """
 type XBlock {
@@ -116,6 +63,59 @@ type XBlock {
 
   "Timestamp of the source chain block"
   timestamp: Time!
+}
+
+"""
+XMsg is a cross-chain message.
+"""
+type XMsg {
+  "ID of the XMsg"
+  id: ID!
+
+  "Display ID of the XMsg in the form of `<srcChainID>-<destChainID>-<offset>`"
+  displayID: String!
+
+  "Monotonically incremented offset of XMsg on the source > dest stream"
+  offset: BigInt!
+
+  "The address of the sender on the source chain."
+  sourceAddress: Address!
+  
+  "The URL of the address of the sender on the source chain."
+  sourceAddressUrl: String!
+
+  "Target/To address to 'call' on destination chain"
+  destAddress: Address!
+
+  "The URL of address to which the message is sent on the destination chain."
+  destAddressUrl: String!
+
+  "Gas limit to use for 'call' on destination chain"
+  destGasLimit: BigInt!
+
+  "Source chain ID as per https://chainlist.org/"
+  sourceChainID: BigInt!
+
+  "Destination chain ID as per https://chainlist.org/"
+  destChainID: BigInt!
+
+  "Hash of the source chain transaction that emitted the message"
+  txHash: Bytes32!
+
+  "The URL of the source chain transaction that emitted the message."
+  txHashUrl: String!
+
+  "Status of the X message"
+  status: Status!
+
+  "Timestamp of the source chain block"
+  sourceBlockTime: Time!
+
+  "XBlock message was emitted in"
+  block: XBlock!
+
+  "Receipts of the message if available"
+  receipt: XReceipt
 }
 
 """
@@ -143,17 +143,14 @@ type XReceipt {
   "Monotonically incremented offset of Msg in the Stream"
   offset: BigInt!
 
-  "Hash of the source chain transaction that emitted the message"
+  "Hash of the dest chain transaction"
   txHash: Bytes32!
+
+  "The URL of the destination chain receipt."
+  txHashUrl: String!
 
   "Timestamp of the receipt"
   timestamp: Time!
-
-  "XBlock message was emitted in"
-  block: XBlock!
-
-  "Message associated with this receipt"
-  message: XMsg!
 }
 
 """
@@ -175,9 +172,9 @@ XMsgConnection represents a paginated list of XMsgs
 """
 type XMsgConnection {
   "Total number of XMsgs"
-  totalCount: BigInt!
+  totalCount: Long!
 
-  "XMsgs"
+  "edges is a list of XMsgs with cursor information"
   edges: [XMsgEdge!]!
 
   "Page Info"
@@ -206,10 +203,10 @@ type PageInfo {
   hasPrevPage: Boolean!
 
   "Total number of pages"
-  totalPages: Int!
+  totalPages: Long!
 
   "Current page number"
-  currentPage: Int!
+  currentPage: Long!
 }
 
 """

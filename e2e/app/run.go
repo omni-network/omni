@@ -47,7 +47,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, deployMonitorOnly(ctx, def, cfg)
 	}
 
-	const genesisValSetID = uint64(1) // validator set IDs start at 1
+	const genesisValSetID = 1 // validator set IDs start at 1
 
 	genesisVals, err := toPortalValidators(def.Testnet.Validators)
 	if err != nil {

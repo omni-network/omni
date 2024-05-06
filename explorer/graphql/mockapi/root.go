@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	_ "embed"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log"
 	"math"
-	"math/big"
 	rand "math/rand/v2"
 	"net/http"
 
@@ -34,22 +35,22 @@ const (
 
 // Define the Go struct for the XMsg type
 type XMsg struct {
-	ID                  graphql.ID
-	DisplayID           string
-	Offset              hexutil.Big
-	SourceMessageSender common.Address
-	DestAddress         common.Address
-	DestGasLimit        hexutil.Big
-	SourceChainID       hexutil.Big
-	DestChainID         hexutil.Big
-	TxHash              common.Hash
-	BlockHeight         hexutil.Big
-	BlockHash           common.Hash
-	ReceiptTxHash       *common.Hash
-	Status              Status
-	SourceBlockTime     graphql.Time
-	Block               XBlock
-	Receipt             *XReceipt
+	ID               graphql.ID
+	Block            XBlock
+	DestAddress      common.Address
+	DestAddressURL   string
+	DestChainID      hexutil.Big
+	DestGasLimit     hexutil.Big
+	DisplayID        string
+	Offset           hexutil.Big
+	Receipt          *XReceipt
+	SourceAddress    common.Address
+	SourceAddressURL string
+	SourceBlockTime  graphql.Time
+	SourceChainID    hexutil.Big
+	Status           Status
+	TxHash           common.Hash
+	TxHashURL        string
 }
 
 // Define the Go struct for the XBlock type
@@ -72,9 +73,8 @@ type XReceipt struct {
 	DestChainID    hexutil.Big
 	Offset         hexutil.Big
 	TxHash         common.Hash
+	TxHashURL      string
 	Timestamp      graphql.Time
-	Block          XBlock
-	Message        XMsg
 }
 
 // Define the Go struct for the Chain type
@@ -86,7 +86,7 @@ type Chain struct {
 
 // Define the Go struct for the XMsgConnection type
 type XMsgConnection struct {
-	TotalCount hexutil.Big
+	TotalCount hexutil.Uint64
 	Edges      []XMsgEdge
 	PageInfo   PageInfo
 }
@@ -101,32 +101,13 @@ type XMsgEdge struct {
 type PageInfo struct {
 	HasNextPage bool
 	HasPrevPage bool
-	TotalPages  int32
-	CurrentPage int32
+	TotalPages  hexutil.Uint64
+	CurrentPage hexutil.Uint64
 }
 
 // Define the Go struct for the Query type
 type QueryResolver struct {
-	XBlockResolver
-	XReceiptResolver
-	XMsgResolver
-
 	XBlocks []XBlock
-}
-
-// Define the Go struct for the XBlockResolver type
-type XBlockResolver struct {
-	XBlocks []XBlock
-}
-
-// Define the Go struct for the XReceiptResolver type
-type XReceiptResolver struct {
-	XReceipts []XReceipt
-}
-
-// Define the Go struct for the XMsgResolver type
-type XMsgResolver struct {
-	XMsgs []XMsg
 }
 
 // Define the root resolver
@@ -186,49 +167,64 @@ func (r *QueryResolver) Xmsgs(ctx context.Context, args XMsgsArgs) (XMsgConnecti
 	var numItems int32 = 10
 
 	// Apply pagination
-	var start, end int
+	var start, end, pageNum int
 	if args.First != nil && args.Last != nil {
 		log.Println("Both first and last arguments are provided. Ignoring last argument.")
 	}
 	if args.Before != nil && args.After != nil {
 		return XMsgConnection{}, fmt.Errorf("cannot provide both before and after arguments")
 	}
+
+	cur := &cursor{}
+
 	if args.First != nil {
-		start = 0
 		numItems = *args.First
+		if args.After != nil {
+			if err := cur.Decode(*args.After); err != nil {
+				return XMsgConnection{}, err
+			}
+			start = int(cur.ID) + 1
+		} else {
+			start = 0
+		}
+		pageNum = int(cur.PageNum) + 1
+		end = start + int(numItems)
+		if end > len(messages) {
+			end = len(messages)
+		}
 	} else if args.Last != nil {
-		start = len(messages) - int(*args.Last)
+		numItems = *args.Last
+		if args.Before != nil {
+			if err := cur.Decode(*args.Before); err != nil {
+				return XMsgConnection{}, err
+			}
+			end = int(cur.ID) - 1
+		} else {
+			end = len(messages)
+		}
+		pageNum = int(cur.PageNum) - 1
+		start = end - int(numItems)
 		if start < 0 {
 			start = 0
 		}
-	} else {
-		return XMsgConnection{}, fmt.Errorf("either first or last argument must be provided")
 	}
-	if args.After != nil {
-		var cursor int
-		err := relay.UnmarshalSpec(*args.After, &cursor)
-		if err != nil {
-			return XMsgConnection{}, err
-		}
-		start = cursor + 1
-	}
-	if args.Before != nil {
-		var cursor int
-		err := relay.UnmarshalSpec(*args.After, &cursor)
-		if err != nil {
-			return XMsgConnection{}, err
-		}
-		end = cursor
-	}
-	if args.Before == nil && args.After == nil {
-		end = start + int(numItems)
-	}
+
+	fmt.Println("Messages length: ", len(messages))
+	fmt.Printf("start: %d, end: %d, pageNum: %d\n", start, end, pageNum)
 
 	// Create the edges
 	var edges []XMsgEdge
 	for i := start; i < end; i++ {
+		cur := &cursor{
+			ID:      uint(i),
+			PageNum: uint(pageNum),
+		}
+		cursorID, err := cur.Encode()
+		if err != nil {
+			return XMsgConnection{}, err
+		}
 		edges = append(edges, XMsgEdge{
-			Cursor: relay.MarshalID("XMsg", i),
+			Cursor: cursorID,
 			Node:   messages[i],
 		})
 	}
@@ -237,12 +233,12 @@ func (r *QueryResolver) Xmsgs(ctx context.Context, args XMsgsArgs) (XMsgConnecti
 	pageInfo := PageInfo{
 		HasNextPage: end < len(messages),
 		HasPrevPage: start > 0,
-		TotalPages:  int32(math.Ceil(float64(len(messages)) / float64(numItems))),
-		CurrentPage: int32(math.Ceil(float64(start)/float64(numItems))) + 1,
+		TotalPages:  hexutil.Uint64(uint64(math.Ceil(float64(len(messages)) / float64(numItems)))),
+		CurrentPage: hexutil.Uint64(uint64(pageNum)),
 	}
 
 	return XMsgConnection{
-		TotalCount: hexutil.Big(*big.NewInt(int64(len(messages)))),
+		TotalCount: hexutil.Uint64(uint64(len(messages))),
 		Edges:      edges,
 		PageInfo:   pageInfo,
 	}, nil
@@ -254,20 +250,39 @@ func (r *Resolver) SupportedChains(ctx context.Context) []*Chain {
 	return nil
 }
 
+type cursor struct {
+	ID      uint
+	PageNum uint
+}
+
+func (c *cursor) Encode() (graphql.ID, error) {
+	b, err := json.Marshal(c)
+	if err != nil {
+		return "", err
+	}
+
+	res := base64.StdEncoding.EncodeToString(b)
+
+	return graphql.ID(res), nil
+}
+
+func (c *cursor) Decode(id graphql.ID) error {
+	if len(id) == 0 {
+		return nil
+	}
+	b, err := base64.StdEncoding.DecodeString(string(id))
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(b, c)
+}
+
 func main() {
 	// Create the root resolver
 	resolver := &Resolver{
 		QueryResolver: QueryResolver{
 			XBlocks: make([]XBlock, 0),
-			XBlockResolver: XBlockResolver{
-				XBlocks: make([]XBlock, 0),
-			},
-			XReceiptResolver: XReceiptResolver{
-				XReceipts: make([]XReceipt, 0),
-			},
-			XMsgResolver: XMsgResolver{
-				XMsgs: make([]XMsg, 0),
-			},
 		},
 	}
 
@@ -277,7 +292,7 @@ func main() {
 	fuzzer.Fuzz(&relayerAddress)
 
 	// Populate XBlocks with random data
-	for i := 0; i < 30; i++ {
+	for i := 0; i < 31; i++ {
 		log.Printf("Generating random XBlock data for block %d of 30\n", i+1)
 		var xblock XBlock
 
@@ -295,19 +310,19 @@ func main() {
 			// Fuzz XMsg properties
 			xmsg.ID = relay.MarshalID("XMsg", fmt.Sprintf("%d-%d", i+1, j+1))
 			fuzzer.Fuzz(&xmsg.Offset)
-			fuzzer.Fuzz(&xmsg.SourceMessageSender)
+			fuzzer.Fuzz(&xmsg.SourceAddress)
 			fuzzer.Fuzz(&xmsg.DestAddress)
 			fuzzer.Fuzz(&xmsg.DestGasLimit)
 			fuzzer.Fuzz(&xmsg.SourceChainID)
 			fuzzer.Fuzz(&xmsg.DestChainID)
 			fuzzer.Fuzz(&xmsg.TxHash)
-			fuzzer.Fuzz(&xmsg.BlockHeight)
-			fuzzer.Fuzz(&xmsg.BlockHash)
-			fuzzer.Fuzz(&xmsg.ReceiptTxHash)
 			fuzzer.Fuzz(&xmsg.SourceBlockTime)
 			xmsg.Block = xblock
+			xmsg.SourceAddressURL = fmt.Sprintf("https://sepolia.arbiscan.io/address/%s", xmsg.SourceAddress.Hex())
+			xmsg.DestAddressURL = fmt.Sprintf("https://sepolia.arbiscan.io/address/%s", xmsg.DestAddress.Hex())
 			xmsg.DisplayID = fmt.Sprintf("%s-%s-%s", &xmsg.SourceChainID, &xmsg.DestChainID, &xmsg.Offset)
 			xmsg.Status = statuses[rand.IntN(len(statuses))]
+			xmsg.TxHashURL = fmt.Sprintf("https://sepolia.arbiscan.io/tx/%s", xmsg.TxHash.Hex())
 
 			var xreceipt XReceipt
 
@@ -320,15 +335,15 @@ func main() {
 			fuzzer.Fuzz(&xreceipt.Offset)
 			fuzzer.Fuzz(&xreceipt.TxHash)
 			fuzzer.Fuzz(&xreceipt.Timestamp)
-
 			xreceipt.Status = statuses[rand.IntN(len(statuses))]
+			xreceipt.TxHashURL = fmt.Sprintf("https://sepolia.arbiscan.io/tx/%s", xreceipt.TxHash.Hex())
 
 			xmsg.Receipt = &xreceipt
+
 			xblock.Messages = append(xblock.Messages, xmsg)
 		}
 
 		resolver.XBlocks = append(resolver.XBlocks, xblock)
-		resolver.XBlockResolver.XBlocks = append(resolver.XBlockResolver.XBlocks, xblock)
 	}
 
 	opsts := []graphql.SchemaOpt{
@@ -337,7 +352,7 @@ func main() {
 	}
 
 	// Create the GraphQL schema
-	gqlSchema := graphql.MustParseSchema(schema, &Resolver{}, opsts...)
+	gqlSchema := graphql.MustParseSchema(schema, resolver, opsts...)
 
 	log.Println("Server started at http://localhost:8888")
 	http.HandleFunc("/", home)
