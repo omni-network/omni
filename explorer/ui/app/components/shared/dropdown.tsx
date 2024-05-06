@@ -4,6 +4,7 @@ interface Props {
   onChange?: Function
   position?: 'left' | 'right' | 'center'
   defaultValue?: string
+  isFullWidth?: boolean
 }
 
 const Dropdown: React.FC<Props> = ({
@@ -11,6 +12,7 @@ const Dropdown: React.FC<Props> = ({
   onChange = () => {},
   position = 'center',
   defaultValue = '',
+  isFullWidth = false,
   ...props
 }) => {
   // conditional styles
@@ -27,11 +29,12 @@ const Dropdown: React.FC<Props> = ({
         onClick={e => {
           setIsOpen(!isOpen)
         }}
-        className={`flex items-center gap-4 text-left px-3 pl-5 py-2 h-[48px] text-cb-md text-subtlest appearance-none rounded-[1000px]  border-[1px] border-border-subtle overflow-hidden ${position === 'left' && leftStyle} ${position === 'right' && rightStyle} ${isOpen && 'bg-overlay bg-opacity-100 !border-border-default'} `}
+        className={`flex items-center gap-4 text-left px-3 pl-5 py-2 h-[48px] text-cb-md text-subtlest appearance-none rounded-[1000px]  border-[1px] border-border-subtle overflow-hidden ${position === 'left' && leftStyle} ${position === 'right' && rightStyle} ${isOpen && 'bg-overlay bg-opacity-100 !border-border-default'} ${isFullWidth && 'w-full'}`}
       >
         <span className="text-nowrap text-default">
           {options.find(option => option.value === value)?.display}
         </span>
+        <div className='grow'></div>
         <div className="icon-dropdown-down text-default pointer-events-none  text-[20px] " />
       </button>
 
@@ -47,7 +50,7 @@ const Dropdown: React.FC<Props> = ({
 
       {/* dropdown container */}
       {isOpen && (
-        <div className="flex flex-col gap-2 absolute top-10 z-10 bg-overlay border-[1px] border-default rounded-[12px] p-3 min-w-[217px]">
+        <div className="flex flex-col gap-2 absolute top-10 w-full z-30 bg-overlay border-[1px] border-default rounded-[12px] p-3 min-w-[217px]">
           {options.map((option, i) => (
             <div
               key={`option-${i}`}

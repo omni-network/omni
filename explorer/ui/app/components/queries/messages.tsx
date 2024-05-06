@@ -1,7 +1,25 @@
 import { DocumentNode } from 'graphql'
-import { gql } from 'urql'
+import { gql, useQuery } from 'urql'
 import { graphql } from '~/graphql'
-import { XMsgsDocument } from '~/graphql/graphql'
+import { XMsg, XMsgsDocument } from '~/graphql/graphql'
+
+export const GetXMsg = (sourceChainID: string, destChainID: string, streamOffset: string): XMsg | null => {
+  const [result] = useQuery({
+    query: xmsg,
+    variables: {
+      sourceChainID,
+      destChainID,
+      streamOffset,
+    },
+  })
+  const { data, fetching, error } = result
+  // TODO handle error properly here
+  if (!error) {
+    return data as XMsg
+  } else {
+    return null
+  }
+}
 
 
 export const xmsg = graphql(`

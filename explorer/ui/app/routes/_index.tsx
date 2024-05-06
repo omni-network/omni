@@ -74,11 +74,10 @@ export default function Index() {
   // }, 10000)
 
   return (
-    <div className="px-8 md:px-20">
+    <div className="px-4 sm:px-4 md:px-20  ">
       <div className="flex h-full w-full flex-col">
         {/* <Overview /> */}
         <div className={'h-20'}></div>
-
         <div className="w-full">
           <XMsgDataTable />
         </div>
