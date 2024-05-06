@@ -14,6 +14,7 @@ import (
 	"github.com/omni-network/omni/e2e/manifests"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/anvil"
+	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -170,6 +171,7 @@ func devnetDefinition(ctx context.Context) (app.Definition, error) {
 
 	defCfg := app.DefaultDefinitionConfig(ctx)
 	defCfg.ManifestFile = manifestFile
+	defCfg.OmniImgTag = buildinfo.Version()
 
 	def, err := app.MakeDefinition(ctx, defCfg, "devnet")
 	if err != nil {
