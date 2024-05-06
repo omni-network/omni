@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -21,6 +22,7 @@ import (
 	cmtos "github.com/cometbft/cometbft/libs/os"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
+	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cometbft/cometbft/types"
 
 	"github.com/spf13/cobra"
@@ -30,6 +32,7 @@ import (
 type InitConfig struct {
 	HomeDir      string
 	Network      netconf.ID
+	TrustedSync  bool
 	RCPEndpoints xchain.RPCEndpoints
 	Force        bool
 	Clean        bool
@@ -41,7 +44,6 @@ func newInitCmd() *cobra.Command {
 	// Default config flags
 	cfg := InitConfig{
 		HomeDir: halocfg.DefaultHomeDir,
-		Network: netconf.Simnet,
 		Force:   false,
 	}
 
@@ -84,8 +86,12 @@ The home directory should only contain subdirectories, no files, use --force to 
 // InitFiles initializes the files and folders required by halo.
 // It ensures a network and genesis file is generated/downloaded for the provided network.
 //
-//nolint:gocognit,nestif // This is just many sequential steps.
+//nolint:gocognit,gocyclo,nestif // This is just many sequential steps.
 func InitFiles(ctx context.Context, initCfg InitConfig) error {
+	if initCfg.Network == "" {
+		return errors.New("required flag --network empty")
+	}
+
 	log.Info(ctx, "Initializing halo files and directories")
 	homeDir := initCfg.HomeDir
 	network := initCfg.Network
@@ -143,6 +149,25 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	// Add P2P seeds to comet config
 	if seeds := network.Static().Seeds(); len(seeds) > 0 {
 		comet.P2P.Seeds = strings.Join(seeds, ",")
+	}
+
+	if initCfg.TrustedSync && network.IsProtected() {
+		rpcServer := fmt.Sprintf("https://rpc.consensus.%s.omni.network", network)
+
+		// Trusted state sync only supported for protected networks.
+		height, hash, err := getTrustHeightAndHash(ctx, rpcServer)
+		if err != nil {
+			return errors.Wrap(err, "get trusted height")
+		}
+
+		comet.StateSync.Enable = true
+		comet.StateSync.RPCServers = []string{rpcServer, rpcServer} // CometBFT requires two RPC servers. Duplicate our RPC for now.
+		comet.StateSync.TrustHeight = height
+		comet.StateSync.TrustHash = hash
+
+		log.Info(ctx, "Trusted state-sync enabled", "height", height, "hash", hash, "rpc_endpoint", rpcServer)
+	} else {
+		log.Info(ctx, "Not initializing trusted state sync")
 	}
 
 	// Setup comet config
@@ -246,4 +271,27 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	}
 
 	return nil
+}
+
+func getTrustHeightAndHash(ctx context.Context, baseURL string) (int64, string, error) {
+	cl, err := rpchttp.New(baseURL, "/websocket")
+	if err != nil {
+		return 0, "", errors.Wrap(err, "create rpc client")
+	}
+
+	latest, err := cl.Block(ctx, nil)
+	if err != nil {
+		return 0, "", errors.Wrap(err, "get latest block")
+	}
+
+	// Truncate height to last defaultSnapshotPeriod
+	const defaultSnapshotPeriod int64 = 1000
+	snapshotHeight := defaultSnapshotPeriod * (latest.Block.Height / defaultSnapshotPeriod)
+
+	b, err := cl.Block(ctx, &snapshotHeight)
+	if err != nil {
+		return 0, "", errors.Wrap(err, "get snapshot block")
+	}
+
+	return b.Block.Height, b.BlockID.Hash.String(), nil
 }

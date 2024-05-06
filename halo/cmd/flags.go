@@ -33,6 +33,7 @@ func bindRunFlags(cmd *cobra.Command, cfg *halocfg.Config) {
 func bindInitFlags(flags *pflag.FlagSet, cfg *InitConfig) {
 	libcmd.BindHomeFlag(flags, &cfg.HomeDir)
 	netconf.BindFlag(flags, &cfg.Network)
+	flags.BoolVar(&cfg.TrustedSync, "trusted-sync", cfg.TrustedSync, "Initialize trusted state-sync height and hash by querying the Omni RPC")
 	flags.BoolVar(&cfg.Force, "force", cfg.Force, "Force initialization (overwrite existing files)")
 	flags.BoolVar(&cfg.Clean, "clean", cfg.Clean, "Delete home directory before initialization")
 }
