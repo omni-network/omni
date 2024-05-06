@@ -30,30 +30,3 @@ func (b *BlocksResolver) XBlock(ctx context.Context, args XBlockArgs) (*XBlock, 
 
 	return res, nil
 }
-
-func (b *BlocksResolver) XBlockRange(ctx context.Context, args XBlockRangeArgs) ([]*XBlock, error) {
-	if args.From.ToInt().Cmp(args.To.ToInt()) >= 0 {
-		return nil, errors.New("invalid range")
-	}
-	res, found, err := b.Provider.XBlockRange(ctx, args.From.ToInt().Uint64(), args.To.ToInt().Uint64())
-	if err != nil {
-		return nil, errors.New("failed to fetch block range")
-	}
-	if !found {
-		return nil, errors.New("block range not found")
-	}
-
-	return res, nil
-}
-
-func (b *BlocksResolver) XBlockCount(ctx context.Context) (*hexutil.Big, error) {
-	res, found, err := b.Provider.XBlockCount(ctx)
-	if err != nil {
-		return nil, errors.New("failed to fetch block count")
-	}
-	if !found {
-		return nil, errors.New("block count not found")
-	}
-
-	return res, nil
-}

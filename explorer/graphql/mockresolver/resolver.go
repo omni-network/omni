@@ -1,30 +1,49 @@
-package main
+package mockresolver
 
 import (
 	"context"
-	_ "embed"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
 	"math"
-	rand "math/rand/v2"
-	"net/http"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+
 	fuzz "github.com/google/gofuzz"
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/relay"
+	rand "math/rand/v2"
 )
 
-//go:embed index.html
-var indexPage []byte
+// Implements the graphql.Marshaler interface for the Long type.
+type Long uint64
 
-//go:embed schema.graphql
-var schema string
+func (l Long) ImplementsGraphQLType(name string) bool {
+	return name == "Long"
+}
 
-// Define the Go struct for the Status enum type
+func (l *Long) UnmarshalGraphQL(input interface{}) error {
+	switch input := input.(type) {
+	case string:
+		value, err := strconv.ParseUint(input, 10, 64)
+		if err != nil {
+			return err
+		}
+		*l = Long(value)
+		return nil
+	default:
+		return fmt.Errorf("cannot unmarshal Long scalar type from %T", input)
+	}
+}
+
+func (l Long) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf(`"%d"`, l)), nil
+}
+
+// Define the Go struct for the Status enum type.
 type Status string
 
 const (
@@ -33,7 +52,7 @@ const (
 	StatusSuccess Status = "SUCCESS"
 )
 
-// Define the Go struct for the XMsg type
+// Define the Go struct for the XMsg type.
 type XMsg struct {
 	ID               graphql.ID
 	Block            XBlock
@@ -53,7 +72,7 @@ type XMsg struct {
 	TxHashURL        string
 }
 
-// Define the Go struct for the XBlock type
+// Define the Go struct for the XBlock type.
 type XBlock struct {
 	ID            graphql.ID
 	SourceChainID hexutil.Big
@@ -63,7 +82,7 @@ type XBlock struct {
 	Timestamp     graphql.Time
 }
 
-// Define the Go struct for the XReceipt type
+// Define the Go struct for the XReceipt type.
 type XReceipt struct {
 	ID             graphql.ID
 	GasUsed        hexutil.Big
@@ -77,45 +96,116 @@ type XReceipt struct {
 	Timestamp      graphql.Time
 }
 
-// Define the Go struct for the Chain type
+// Define the Go struct for the Chain type.
 type Chain struct {
 	ID      graphql.ID
 	ChainID hexutil.Big
 	Name    string
 }
 
-// Define the Go struct for the XMsgConnection type
+// Define the Go struct for the XMsgConnection type.
 type XMsgConnection struct {
-	TotalCount hexutil.Uint64
+	TotalCount Long
 	Edges      []XMsgEdge
 	PageInfo   PageInfo
 }
 
-// Define the Go struct for the XMsgEdge type
+// Define the Go struct for the XMsgEdge type.
 type XMsgEdge struct {
 	Cursor graphql.ID
 	Node   XMsg
 }
 
-// Define the Go struct for the PageInfo type
+// Define the Go struct for the PageInfo type.
 type PageInfo struct {
 	HasNextPage bool
 	HasPrevPage bool
-	TotalPages  hexutil.Uint64
-	CurrentPage hexutil.Uint64
+	TotalPages  Long
+	CurrentPage Long
 }
 
-// Define the Go struct for the Query type
+// Define the Go struct for the Query type.
 type QueryResolver struct {
 	XBlocks []XBlock
 }
 
-// Define the root resolver
+func New() *Resolver {
+	// Create the root resolver
+	resolver := &Resolver{
+		QueryResolver: QueryResolver{
+			XBlocks: make([]XBlock, 0),
+		},
+	}
+
+	statuses := []Status{StatusFailed, StatusPending, StatusSuccess}
+	fuzzer := fuzz.New().NilChance(0).NumElements(1, 1)
+	var relayerAddress common.Address
+	fuzzer.Fuzz(&relayerAddress)
+
+	// Populate XBlocks with random data
+	for i := 0; i < 31; i++ {
+		log.Printf("Generating random XBlock data for block %d of 30\n", i+1)
+		var xblock XBlock
+
+		// Fuzz XBlock properties
+		xblock.ID = graphql.ID(relay.MarshalID("XBlock", fmt.Sprintf("%d", i+1)))
+		fuzzer.Fuzz(&xblock.SourceChainID)
+		fuzzer.Fuzz(&xblock.BlockHeight)
+		fuzzer.Fuzz(&xblock.BlockHash)
+		fuzzer.Fuzz(&xblock.Timestamp)
+
+		numMsgs := rand.IntN(6) // Generate random number of messages between 0 and 5
+		for j := 0; j < numMsgs; j++ {
+			var xmsg XMsg
+
+			// Fuzz XMsg properties
+			xmsg.ID = relay.MarshalID("XMsg", fmt.Sprintf("%d-%d", i+1, j+1))
+			fuzzer.Fuzz(&xmsg.Offset)
+			fuzzer.Fuzz(&xmsg.SourceAddress)
+			fuzzer.Fuzz(&xmsg.DestAddress)
+			fuzzer.Fuzz(&xmsg.DestGasLimit)
+			fuzzer.Fuzz(&xmsg.SourceChainID)
+			fuzzer.Fuzz(&xmsg.DestChainID)
+			fuzzer.Fuzz(&xmsg.TxHash)
+			fuzzer.Fuzz(&xmsg.SourceBlockTime)
+			xmsg.Block = xblock
+			xmsg.SourceAddressURL = fmt.Sprintf("https://sepolia.arbiscan.io/address/%s", xmsg.SourceAddress.Hex())
+			xmsg.DestAddressURL = fmt.Sprintf("https://sepolia.arbiscan.io/address/%s", xmsg.DestAddress.Hex())
+			xmsg.DisplayID = fmt.Sprintf("%s-%s-%s", &xmsg.SourceChainID, &xmsg.DestChainID, &xmsg.Offset)
+			xmsg.Status = statuses[rand.IntN(len(statuses))]
+			xmsg.TxHashURL = fmt.Sprintf("https://sepolia.arbiscan.io/tx/%s", xmsg.TxHash.Hex())
+
+			var xreceipt XReceipt
+
+			// Fuzz XReceipt properties
+			xreceipt.ID = graphql.ID(relay.MarshalID("XReceipt", fmt.Sprintf("%d-%d", i+1, j+1)))
+			fuzzer.Fuzz(&xreceipt.GasUsed)
+			xreceipt.RelayerAddress = relayerAddress
+			fuzzer.Fuzz(&xreceipt.SourceChainID)
+			fuzzer.Fuzz(&xreceipt.DestChainID)
+			fuzzer.Fuzz(&xreceipt.Offset)
+			fuzzer.Fuzz(&xreceipt.TxHash)
+			fuzzer.Fuzz(&xreceipt.Timestamp)
+			xreceipt.Status = statuses[rand.IntN(len(statuses))]
+			xreceipt.TxHashURL = fmt.Sprintf("https://sepolia.arbiscan.io/tx/%s", xreceipt.TxHash.Hex())
+
+			xmsg.Receipt = &xreceipt
+
+			xblock.Messages = append(xblock.Messages, xmsg)
+		}
+
+		resolver.XBlocks = append(resolver.XBlocks, xblock)
+	}
+
+	return resolver
+}
+
+// Define the root resolver.
 type Resolver struct {
 	QueryResolver
 }
 
-// Implement the xblock query resolver
+// Implement the xblock query resolver.
 func (r *QueryResolver) XBlock(ctx context.Context, args struct{ SourceChainID, Height hexutil.Big }) *XBlock {
 	for _, xblock := range r.XBlocks {
 		if xblock.SourceChainID.String() == args.SourceChainID.String() && xblock.BlockHeight.String() == args.Height.String() {
@@ -125,7 +215,7 @@ func (r *QueryResolver) XBlock(ctx context.Context, args struct{ SourceChainID, 
 	return nil
 }
 
-// Implement the xreceipt query resolver
+// Implement the xreceipt query resolver.
 func (r *QueryResolver) Xreceipt(ctx context.Context, args struct{ SourceChainID, DestChainID, Offset hexutil.Big }) *XReceipt {
 	for _, xblock := range r.XBlocks {
 		for _, xmsg := range xblock.Messages {
@@ -137,7 +227,7 @@ func (r *QueryResolver) Xreceipt(ctx context.Context, args struct{ SourceChainID
 	return nil
 }
 
-// Implement the xmsg query resolver
+// Implement the xmsg query resolver.
 func (r *Resolver) Xmsg(ctx context.Context, args struct{ SourceChainID, DestChainID, Offset hexutil.Big }) *XMsg {
 	for _, xblock := range r.XBlocks {
 		for _, xmsg := range xblock.Messages {
@@ -156,7 +246,7 @@ type XMsgsArgs struct {
 	Before *graphql.ID
 }
 
-// Implement the xmsg query resolver
+// Implement the xmsg query resolver.
 func (r *QueryResolver) Xmsgs(ctx context.Context, args XMsgsArgs) (XMsgConnection, error) {
 	var messages []XMsg
 	for _, xblock := range r.XBlocks {
@@ -233,18 +323,18 @@ func (r *QueryResolver) Xmsgs(ctx context.Context, args XMsgsArgs) (XMsgConnecti
 	pageInfo := PageInfo{
 		HasNextPage: end < len(messages),
 		HasPrevPage: start > 0,
-		TotalPages:  hexutil.Uint64(uint64(math.Ceil(float64(len(messages)) / float64(numItems)))),
-		CurrentPage: hexutil.Uint64(uint64(pageNum)),
+		TotalPages:  Long(uint64(math.Ceil(float64(len(messages)) / float64(numItems)))),
+		CurrentPage: Long(uint64(pageNum)),
 	}
 
 	return XMsgConnection{
-		TotalCount: hexutil.Uint64(uint64(len(messages))),
+		TotalCount: Long(uint64(len(messages))),
 		Edges:      edges,
 		PageInfo:   pageInfo,
 	}, nil
 }
 
-// Implement the supportedChains query resolver
+// Implement the supportedChains query resolver.
 func (r *Resolver) SupportedChains(ctx context.Context) []*Chain {
 	// TODO: Implement logic to fetch supported chains
 	return nil
@@ -276,90 +366,4 @@ func (c *cursor) Decode(id graphql.ID) error {
 	}
 
 	return json.Unmarshal(b, c)
-}
-
-func main() {
-	// Create the root resolver
-	resolver := &Resolver{
-		QueryResolver: QueryResolver{
-			XBlocks: make([]XBlock, 0),
-		},
-	}
-
-	statuses := []Status{StatusFailed, StatusPending, StatusSuccess}
-	fuzzer := fuzz.New().NilChance(0).NumElements(1, 1)
-	var relayerAddress common.Address
-	fuzzer.Fuzz(&relayerAddress)
-
-	// Populate XBlocks with random data
-	for i := 0; i < 31; i++ {
-		log.Printf("Generating random XBlock data for block %d of 30\n", i+1)
-		var xblock XBlock
-
-		// Fuzz XBlock properties
-		xblock.ID = graphql.ID(relay.MarshalID("XBlock", fmt.Sprintf("%d", i+1)))
-		fuzzer.Fuzz(&xblock.SourceChainID)
-		fuzzer.Fuzz(&xblock.BlockHeight)
-		fuzzer.Fuzz(&xblock.BlockHash)
-		fuzzer.Fuzz(&xblock.Timestamp)
-
-		numMsgs := rand.IntN(6) // Generate random number of messages between 0 and 5
-		for j := 0; j < numMsgs; j++ {
-			var xmsg XMsg
-
-			// Fuzz XMsg properties
-			xmsg.ID = relay.MarshalID("XMsg", fmt.Sprintf("%d-%d", i+1, j+1))
-			fuzzer.Fuzz(&xmsg.Offset)
-			fuzzer.Fuzz(&xmsg.SourceAddress)
-			fuzzer.Fuzz(&xmsg.DestAddress)
-			fuzzer.Fuzz(&xmsg.DestGasLimit)
-			fuzzer.Fuzz(&xmsg.SourceChainID)
-			fuzzer.Fuzz(&xmsg.DestChainID)
-			fuzzer.Fuzz(&xmsg.TxHash)
-			fuzzer.Fuzz(&xmsg.SourceBlockTime)
-			xmsg.Block = xblock
-			xmsg.SourceAddressURL = fmt.Sprintf("https://sepolia.arbiscan.io/address/%s", xmsg.SourceAddress.Hex())
-			xmsg.DestAddressURL = fmt.Sprintf("https://sepolia.arbiscan.io/address/%s", xmsg.DestAddress.Hex())
-			xmsg.DisplayID = fmt.Sprintf("%s-%s-%s", &xmsg.SourceChainID, &xmsg.DestChainID, &xmsg.Offset)
-			xmsg.Status = statuses[rand.IntN(len(statuses))]
-			xmsg.TxHashURL = fmt.Sprintf("https://sepolia.arbiscan.io/tx/%s", xmsg.TxHash.Hex())
-
-			var xreceipt XReceipt
-
-			// Fuzz XReceipt properties
-			xreceipt.ID = graphql.ID(relay.MarshalID("XReceipt", fmt.Sprintf("%d-%d", i+1, j+1)))
-			fuzzer.Fuzz(&xreceipt.GasUsed)
-			xreceipt.RelayerAddress = relayerAddress
-			fuzzer.Fuzz(&xreceipt.SourceChainID)
-			fuzzer.Fuzz(&xreceipt.DestChainID)
-			fuzzer.Fuzz(&xreceipt.Offset)
-			fuzzer.Fuzz(&xreceipt.TxHash)
-			fuzzer.Fuzz(&xreceipt.Timestamp)
-			xreceipt.Status = statuses[rand.IntN(len(statuses))]
-			xreceipt.TxHashURL = fmt.Sprintf("https://sepolia.arbiscan.io/tx/%s", xreceipt.TxHash.Hex())
-
-			xmsg.Receipt = &xreceipt
-
-			xblock.Messages = append(xblock.Messages, xmsg)
-		}
-
-		resolver.XBlocks = append(resolver.XBlocks, xblock)
-	}
-
-	opsts := []graphql.SchemaOpt{
-		graphql.UseFieldResolvers(),
-		graphql.UseStringDescriptions(),
-	}
-
-	// Create the GraphQL schema
-	gqlSchema := graphql.MustParseSchema(schema, resolver, opsts...)
-
-	log.Println("Server started at http://localhost:8888")
-	http.HandleFunc("/", home)
-	http.Handle("/query", &relay.Handler{Schema: gqlSchema})
-	log.Fatal(http.ListenAndServe(":8888", nil))
-}
-
-func home(w http.ResponseWriter, r *http.Request) {
-	w.Write(indexPage)
 }

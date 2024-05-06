@@ -32,7 +32,7 @@ func (p Provider) XReceipt(ctx context.Context, sourceChainID, destChainID, offs
 		Where(
 			receipt.SourceChainID(sourceChainID),
 			receipt.DestChainID(destChainID),
-			receipt.Offset(offset),
+			receipt.StreamOffset(offset),
 		).
 		First(ctx)
 	if err != nil {

@@ -6,10 +6,13 @@ run:
   skip-dirs:
     - explorer/db/ent
     - explorer/ui/graphql
+    - explorer/graphql/mockresolver  # this is temporary code which will be removed after the backend implementation is complete
 linters-settings:
   exhaustive:
     default-signifies-exhaustive: true
   forbidigo:
+    exclude-dirs:
+      - explorer/graphql/mockresolver
     forbid:
       - 'fmt\.Print.*(# Avoid debug logging)?'
       - 'fmt\.Errorf.*(# Prefer lib/errors.Wrap)?'

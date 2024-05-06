@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/omni-network/omni/explorer/graphql/data"
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -26,7 +27,7 @@ func Run(ctx context.Context, cfg Config) error {
 	// if err != nil {
 	// 	return errors.Wrap(err, "create db client")
 	// }
-	//
+
 	// defer func(entCl *ent.Client) {
 	// 	err := entCl.Close()
 	// 	if err != nil {
@@ -38,7 +39,7 @@ func Run(ctx context.Context, cfg Config) error {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", home)
-	mux.Handle("/query", GraphQL(provider))
+	mux.Handle("/query", GraphQL(data.Provider{}))
 	handler := cors.Default().Handler(mux)
 
 	httpServer := &http.Server{
