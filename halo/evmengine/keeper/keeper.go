@@ -48,12 +48,14 @@ func NewKeeper(
 	storeService store.KVStoreService,
 	engineCl ethclient.EngineClient,
 	txConfig client.TxConfig,
+	addrProvider types.AddressProvider,
 ) *Keeper {
 	return &Keeper{
 		cdc:          cdc,
 		storeService: storeService,
 		engineCl:     engineCl,
 		txConfig:     txConfig,
+		addrProvider: addrProvider,
 	}
 }
 
@@ -69,10 +71,6 @@ func (k *Keeper) SetVoteProvider(p types.VoteExtensionProvider) {
 // SetCometAPI sets the comet API client.
 func (k *Keeper) SetCometAPI(c comet.API) {
 	k.cmtAPI = c
-}
-
-func (k *Keeper) SetAddressProvider(p types.AddressProvider) {
-	k.addrProvider = p
 }
 
 // SetBuildDelay sets the build delay parameter.

@@ -127,11 +127,11 @@ func TestKeeper_isNextProposer(t *testing.T) {
 
 			ctx, storeService := setupCtxStore(t, &header)
 
-			keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig)
-			keeper.SetCometAPI(&cmtAPI)
-			keeper.SetAddressProvider(mockAddressProvider{
+			ap := mockAddressProvider{
 				address: nxtAddr,
-			})
+			}
+			keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap)
+			keeper.SetCometAPI(&cmtAPI)
 
 			got, gotHeight, err := keeper.isNextProposer(ctx)
 			if (err != nil) != tt.wantErr {

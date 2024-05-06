@@ -106,6 +106,7 @@ type ModuleInputs struct {
 	Config       *Module
 	TXConfig     client.TxConfig
 	EngineCl     ethclient.EngineClient
+	AddrProvider types.AddressProvider
 }
 
 type ModuleOutputs struct {
@@ -122,6 +123,7 @@ func ProvideModule(in ModuleInputs) ModuleOutputs {
 		in.StoreService,
 		in.EngineCl,
 		in.TXConfig,
+		in.AddrProvider,
 	)
 	m := NewAppModule(
 		in.Cdc,

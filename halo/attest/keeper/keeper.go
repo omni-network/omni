@@ -37,10 +37,10 @@ type Keeper struct {
 	sigTable     SignatureTable
 	cdc          codec.BinaryCodec
 	storeService store.KVStoreService
-	voter        types.Voter
 	skeeper      baseapp.ValidatorStore
 	valProvider  vtypes.ValidatorProvider
 	namer        types.ChainNameFunc
+	voter        types.Voter
 	voteWindow   uint64
 	voteExtLimit uint64
 	trimLag      uint64
@@ -52,6 +52,7 @@ func New(
 	storeSvc store.KVStoreService,
 	skeeper baseapp.ValidatorStore,
 	namer types.ChainNameFunc,
+	voter types.Voter,
 	voteWindow uint64,
 	voteExtLimit uint64,
 	trimLag uint64,
@@ -77,6 +78,7 @@ func New(
 		storeService: storeSvc,
 		skeeper:      skeeper,
 		namer:        namer,
+		voter:        voter,
 		voteWindow:   voteWindow,
 		voteExtLimit: voteExtLimit,
 		trimLag:      trimLag,
@@ -88,11 +90,6 @@ func New(
 // SetValidatorProvider sets the validator provider.
 func (k *Keeper) SetValidatorProvider(valProvider vtypes.ValidatorProvider) {
 	k.valProvider = valProvider
-}
-
-// SetVoter sets the voter.
-func (k *Keeper) SetVoter(voter types.Voter) {
-	k.voter = voter
 }
 
 // RegisterProposalService registers the proposal service on the provided router.
