@@ -17,7 +17,7 @@
   "Headers": ""
  },
  "Comet": {
-  "Version": "0.38.6",
+  "Version": "0.38.7",
   "RootDir": "./halo",
   "ProxyApp": "tcp://127.0.0.1:26658",
   "Moniker": "testmoniker",
