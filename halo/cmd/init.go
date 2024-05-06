@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/omni-network/omni/halo/attest/voter"
@@ -55,13 +56,12 @@ Ensures all the following files and directories exist:
   │   ├── config.toml                # CometBFT configuration
   │   ├── genesis.json               # Omni chain genesis file
   │   ├── halo.toml                  # Halo configuration
-  │   ├── network.json               # Omni network configuration
   │   ├── node_key.json              # Node P2P identity key
   │   └── priv_validator_key.json    # CometBFT private validator key (back this up and keep it safe)
   ├── data                           # Data directory
-  │   ├── priv_validator_state.json  # CometBFT private validator state (slashing protection)
   │   ├── snapshots                  # Snapshot directory
-  │   └── xattestations_state.json   # Cross chain attestation state (slashing protection)
+  │   ├── priv_validator_state.json  # CometBFT private validator state (slashing protection)
+  │   └── voter_state.json           # Cross chain voter state (slashing protection)
 
 Existing files are not overwritten, unless --clean is specified.
 The home directory should only contain subdirectories, no files, use --force to ignore this check.
@@ -88,6 +88,7 @@ The home directory should only contain subdirectories, no files, use --force to 
 func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	log.Info(ctx, "Initializing halo files and directories")
 	homeDir := initCfg.HomeDir
+	network := initCfg.Network
 
 	// Quick sanity check if --home contains files (it should only contain dirs).
 	// This prevents accidental initialization in wrong current dir.
@@ -115,7 +116,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	cfg := halocfg.DefaultConfig()
 	cfg.HomeDir = homeDir
 	cfg.RPCEndpoints = initCfg.RCPEndpoints
-	cfg.Network = initCfg.Network
+	cfg.Network = network
 
 	// Folders
 	folders := []struct {
@@ -137,6 +138,11 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 			return errors.Wrap(err, "create folder")
 		}
 		log.Info(ctx, "Generated folder", "reason", folder.Name, "path", folder.Path)
+	}
+
+	// Add P2P seeds to comet config
+	if seeds := network.Static().Seeds(); len(seeds) > 0 {
+		comet.P2P.Seeds = strings.Join(seeds, ",")
 	}
 
 	// Setup comet config
@@ -191,7 +197,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	genFile := comet.GenesisFile()
 	if cmtos.FileExists(genFile) {
 		log.Info(ctx, "Found genesis file", "path", genFile)
-	} else if initCfg.Network == netconf.Simnet {
+	} else if network == netconf.Simnet {
 		pubKey, err := pv.GetPubKey()
 		if err != nil {
 			return errors.Wrap(err, "get public key")
@@ -199,7 +205,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 
 		var genDoc *types.GenesisDoc
 		if initCfg.Cosmos {
-			cosmosGen, err := genutil.MakeGenesis(initCfg.Network, time.Now(), pubKey)
+			cosmosGen, err := genutil.MakeGenesis(network, time.Now(), pubKey)
 			if err != nil {
 				return err
 			}
@@ -209,7 +215,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 				return errors.Wrap(err, "convert to genesis doc")
 			}
 		} else {
-			genDoc, err = MakeGenesis(initCfg.Network, pubKey)
+			genDoc, err = MakeGenesis(network, pubKey)
 			if err != nil {
 				return err
 			}
@@ -219,8 +225,14 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 			return errors.Wrap(err, "save genesis file")
 		}
 		log.Info(ctx, "Generated simnet genesis file", "path", genFile)
+	} else if len(network.Static().GenesisJSON) > 0 {
+		err := os.WriteFile(genFile, network.Static().GenesisJSON, 0o644)
+		if err != nil {
+			return errors.Wrap(err, "save genesis file")
+		}
+		log.Info(ctx, "Generated well-known network genesis file", "path", genFile)
 	} else {
-		return errors.New("genesis file must be pre-generated", "path", genFile)
+		return errors.New("network genesis file not supported yet", "network", network)
 	}
 
 	// Vote state
