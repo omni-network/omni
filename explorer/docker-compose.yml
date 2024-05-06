@@ -40,8 +40,6 @@ services:
     image: omniops/explorer-indexer:main
     environment:
       - INDEXER_LOG_COLOR=force
-    volumes:
-      - ./network.json:/network.json
     depends_on:
       db:
         condition: service_healthy

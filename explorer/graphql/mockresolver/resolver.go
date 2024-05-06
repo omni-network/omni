@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"math/rand/v2"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -15,7 +16,6 @@ import (
 	fuzz "github.com/google/gofuzz"
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/relay"
-	rand "math/rand/v2"
 )
 
 // Implements the graphql.Marshaler interface for the Long type.
@@ -54,46 +54,41 @@ const (
 
 // Define the Go struct for the XMsg type.
 type XMsg struct {
-	ID               graphql.ID
-	Block            XBlock
-	DestAddress      common.Address
-	DestAddressURL   string
-	DestChainID      hexutil.Big
-	DestGasLimit     hexutil.Big
-	DisplayID        string
-	Offset           hexutil.Big
-	Receipt          *XReceipt
-	SourceAddress    common.Address
-	SourceAddressURL string
-	SourceBlockTime  graphql.Time
-	SourceChainID    hexutil.Big
-	Status           Status
-	TxHash           common.Hash
-	TxHashURL        string
+	ID            graphql.ID
+	Block         XBlock
+	To            common.Address
+	DestChainID   hexutil.Big
+	GasLimit      hexutil.Big
+	DisplayID     string
+	Offset        hexutil.Big
+	Receipt       *XReceipt
+	Sender        common.Address
+	SourceChainID hexutil.Big
+	Status        Status
+	TxHash        common.Hash
 }
 
 // Define the Go struct for the XBlock type.
 type XBlock struct {
 	ID            graphql.ID
 	SourceChainID hexutil.Big
-	BlockHeight   hexutil.Big
-	BlockHash     common.Hash
+	Height        hexutil.Big
+	Hash          common.Hash
 	Messages      []XMsg
 	Timestamp     graphql.Time
 }
 
 // Define the Go struct for the XReceipt type.
 type XReceipt struct {
-	ID             graphql.ID
-	GasUsed        hexutil.Big
-	Status         Status
-	RelayerAddress common.Address
-	SourceChainID  hexutil.Big
-	DestChainID    hexutil.Big
-	Offset         hexutil.Big
-	TxHash         common.Hash
-	TxHashURL      string
-	Timestamp      graphql.Time
+	ID            graphql.ID
+	GasUsed       hexutil.Big
+	Success       bool
+	Relayer       common.Address
+	SourceChainID hexutil.Big
+	DestChainID   hexutil.Big
+	Offset        hexutil.Big
+	TxHash        common.Hash
+	Timestamp     graphql.Time
 }
 
 // Define the Go struct for the Chain type.
@@ -150,8 +145,8 @@ func New() *Resolver {
 		// Fuzz XBlock properties
 		xblock.ID = graphql.ID(relay.MarshalID("XBlock", fmt.Sprintf("%d", i+1)))
 		fuzzer.Fuzz(&xblock.SourceChainID)
-		fuzzer.Fuzz(&xblock.BlockHeight)
-		fuzzer.Fuzz(&xblock.BlockHash)
+		fuzzer.Fuzz(&xblock.Height)
+		fuzzer.Fuzz(&xblock.Hash)
 		fuzzer.Fuzz(&xblock.Timestamp)
 
 		numMsgs := rand.IntN(6) // Generate random number of messages between 0 and 5
@@ -161,33 +156,28 @@ func New() *Resolver {
 			// Fuzz XMsg properties
 			xmsg.ID = relay.MarshalID("XMsg", fmt.Sprintf("%d-%d", i+1, j+1))
 			fuzzer.Fuzz(&xmsg.Offset)
-			fuzzer.Fuzz(&xmsg.SourceAddress)
-			fuzzer.Fuzz(&xmsg.DestAddress)
-			fuzzer.Fuzz(&xmsg.DestGasLimit)
+			fuzzer.Fuzz(&xmsg.Sender)
+			fuzzer.Fuzz(&xmsg.To)
+			fuzzer.Fuzz(&xmsg.GasLimit)
 			fuzzer.Fuzz(&xmsg.SourceChainID)
 			fuzzer.Fuzz(&xmsg.DestChainID)
 			fuzzer.Fuzz(&xmsg.TxHash)
-			fuzzer.Fuzz(&xmsg.SourceBlockTime)
 			xmsg.Block = xblock
-			xmsg.SourceAddressURL = fmt.Sprintf("https://sepolia.arbiscan.io/address/%s", xmsg.SourceAddress.Hex())
-			xmsg.DestAddressURL = fmt.Sprintf("https://sepolia.arbiscan.io/address/%s", xmsg.DestAddress.Hex())
 			xmsg.DisplayID = fmt.Sprintf("%s-%s-%s", &xmsg.SourceChainID, &xmsg.DestChainID, &xmsg.Offset)
 			xmsg.Status = statuses[rand.IntN(len(statuses))]
-			xmsg.TxHashURL = fmt.Sprintf("https://sepolia.arbiscan.io/tx/%s", xmsg.TxHash.Hex())
 
 			var xreceipt XReceipt
 
 			// Fuzz XReceipt properties
 			xreceipt.ID = graphql.ID(relay.MarshalID("XReceipt", fmt.Sprintf("%d-%d", i+1, j+1)))
 			fuzzer.Fuzz(&xreceipt.GasUsed)
-			xreceipt.RelayerAddress = relayerAddress
+			xreceipt.Relayer = relayerAddress
 			fuzzer.Fuzz(&xreceipt.SourceChainID)
 			fuzzer.Fuzz(&xreceipt.DestChainID)
 			fuzzer.Fuzz(&xreceipt.Offset)
 			fuzzer.Fuzz(&xreceipt.TxHash)
 			fuzzer.Fuzz(&xreceipt.Timestamp)
-			xreceipt.Status = statuses[rand.IntN(len(statuses))]
-			xreceipt.TxHashURL = fmt.Sprintf("https://sepolia.arbiscan.io/tx/%s", xreceipt.TxHash.Hex())
+			fuzzer.Fuzz(&xreceipt.Success)
 
 			xmsg.Receipt = &xreceipt
 
@@ -208,7 +198,7 @@ type Resolver struct {
 // Implement the xblock query resolver.
 func (r *QueryResolver) XBlock(ctx context.Context, args struct{ SourceChainID, Height hexutil.Big }) *XBlock {
 	for _, xblock := range r.XBlocks {
-		if xblock.SourceChainID.String() == args.SourceChainID.String() && xblock.BlockHeight.String() == args.Height.String() {
+		if xblock.SourceChainID.String() == args.SourceChainID.String() && xblock.Height.String() == args.Height.String() {
 			return &xblock
 		}
 	}
