@@ -6,13 +6,12 @@ Ensures all the following files and directories exist:
   │   ├── config.toml                # CometBFT configuration
   │   ├── genesis.json               # Omni chain genesis file
   │   ├── halo.toml                  # Halo configuration
-  │   ├── network.json               # Omni network configuration
   │   ├── node_key.json              # Node P2P identity key
   │   └── priv_validator_key.json    # CometBFT private validator key (back this up and keep it safe)
   ├── data                           # Data directory
-  │   ├── priv_validator_state.json  # CometBFT private validator state (slashing protection)
   │   ├── snapshots                  # Snapshot directory
-  │   └── xattestations_state.json   # Cross chain attestation state (slashing protection)
+  │   ├── priv_validator_state.json  # CometBFT private validator state (slashing protection)
+  │   └── voter_state.json           # Cross chain voter state (slashing protection)
 
 Existing files are not overwritten, unless --clean is specified.
 The home directory should only contain subdirectories, no files, use --force to ignore this check.

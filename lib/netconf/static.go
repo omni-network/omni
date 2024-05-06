@@ -11,6 +11,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/google/uuid"
+
+	_ "embed"
 )
 
 const consensusIDPrefix = "omni-"
@@ -24,6 +26,8 @@ type Static struct {
 	AVSContractAddress   common.Address
 	Portals              []Deployment
 	MaxValidators        uint32
+	GenesisJSON          []byte
+	SeedTXT              []byte
 }
 
 type Deployment struct {
@@ -56,6 +60,17 @@ func (s Static) PortalDeployment(chainID uint64) (Deployment, bool) {
 	return Deployment{}, false
 }
 
+func (s Static) Seeds() []string {
+	var resp []string
+	for _, seed := range strings.Split(string(s.SeedTXT), "\n") {
+		if seed = strings.TrimSpace(seed); seed != "" {
+			resp = append(resp, seed)
+		}
+	}
+
+	return resp
+}
+
 // Use random runid for version in ephemeral networks.
 //
 //nolint:gochecknoglobals // Static ID
@@ -71,6 +86,12 @@ var (
 	// This address DOES NOT match lib/contracts.MainnetAVS().
 	// This mainnet AVS was deployed outside of the e2e deployment flow, without Create3.
 	mainnetAVS = common.HexToAddress("0xed2f4d90b073128ae6769a9A8D51547B1Df766C8")
+
+	//go:embed testnet/genesis.json
+	testnetGenesisJSON []byte
+
+	//go:embed testnet/seeds.txt
+	testnetSeedsTXT []byte
 )
 
 //nolint:gochecknoglobals // Static mappings.
@@ -112,6 +133,8 @@ var statics = map[ID]Static{
 				DeployHeight: 34237972,
 			},
 		},
+		GenesisJSON: testnetGenesisJSON,
+		SeedTXT:     testnetSeedsTXT,
 	},
 	Mainnet: {
 		Version:            "v0.0.1",
