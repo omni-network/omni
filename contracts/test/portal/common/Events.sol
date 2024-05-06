@@ -8,7 +8,13 @@ pragma solidity =0.8.24;
  */
 contract Events {
     event XMsg(
-        uint64 indexed destChainId, uint64 indexed streamOffset, address sender, address to, bytes data, uint64 gasLimit
+        uint64 indexed destChainId,
+        uint64 indexed streamOffset,
+        address sender,
+        address to,
+        bytes data,
+        uint64 gasLimit,
+        uint256 fees
     );
 
     event XReceipt(
