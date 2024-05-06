@@ -19,4 +19,11 @@ var (
 		Name:      "on_chain_conversion_rate",
 		Help:      "Dest-to-source conversion rate, set on the source chain",
 	}, []string{"src_chain", "dest_chain", "src_token", "dest_token"})
+
+	portalBalance = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "monitor",
+		Subsystem: "xfeemngr",
+		Name:      "portal_balance",
+		Help:      "Balance of the portal contract",
+	}, []string{"chain", "address"})
 )
