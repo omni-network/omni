@@ -24,4 +24,5 @@ Flags:
       --force            Force initialization (overwrite existing files)
   -h, --help             help for init
       --home string      The application home directory containing config and data (default "./halo")
-      --network string   Omni network to participate in: mainnet, testnet, devnet (default "simnet")
+      --network string   Omni network to participate in: mainnet, testnet, devnet
+      --trusted-sync     Initialize trusted state-sync height and hash by querying the Omni RPC
