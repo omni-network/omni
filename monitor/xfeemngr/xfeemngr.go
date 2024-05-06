@@ -56,7 +56,11 @@ func Start(ctx context.Context, network netconf.Network, endpoints xchain.RPCEnd
 		ticker:  ticker.New(ticker.WithInterval(feeOracleSyncInterval)),
 	}
 
-	go m.start(ctx)
+	if err := startMonitoring(ctx, network, endpoints); err != nil {
+		return errors.Wrap(err, "start monitoring")
+	}
+
+	m.start(ctx)
 
 	return nil
 }
