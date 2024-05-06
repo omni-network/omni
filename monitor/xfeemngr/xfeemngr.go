@@ -27,8 +27,20 @@ type Manager struct {
 	ticker  ticker.Ticker
 }
 
-// feeOracleSyncInterval is the interval at which fee oracles syncs buffered gas and token prices with FeeOracle deployments.
-const feeOracleSyncInterval = 5 * time.Minute
+const (
+	// feeOracleSyncInterval is the interval at which fee oracles syncs buffered gas and token prices with FeeOracle deployments.
+	feeOracleSyncInterval = 5 * time.Minute
+
+	// tokenPriceBufferThreshold is the pct threshold at which a new token price is buffered.
+	tokenPriceBufferThreshold = 0.1
+
+	// gasPriceBufferThreshold is the pct threshold at which a new gas price is buffered.
+	gasPriceBufferThreshold = 0.1
+
+	// GasPriceShield is the pct offset above the buffered gas price the oracle sets on chain
+	// Setting shield == buffer threshold ensures that on chain gas price is always at least as high as the live gas price.
+	GasPriceShield = 0.1
+)
 
 func Start(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints, privKeyPath string) error {
 	privKey, err := crypto.LoadECDSA(privKeyPath)
@@ -41,8 +53,8 @@ func Start(ctx context.Context, network netconf.Network, endpoints xchain.RPCEnd
 		return err
 	}
 
-	gprice := gasprice.NewBuffer(gasPricers)
-	tprice := tokenprice.NewBuffer(coingecko.New(), tokens.OMNI, tokens.ETH)
+	gprice := gasprice.NewBuffer(gasPricers, gasprice.WithThresholdPct(gasPriceBufferThreshold))
+	tprice := tokenprice.NewBuffer(coingecko.New(), tokens.OMNI, tokens.ETH, tokenprice.WithThresholdPct(tokenPriceBufferThreshold))
 
 	oracles, err := makeOracles(ctx, network, endpoints, privKey, gprice, tprice)
 	if err != nil {

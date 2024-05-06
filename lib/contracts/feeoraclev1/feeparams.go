@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/monitor/xfeemngr"
 )
 
 func feeParams(ctx context.Context, srcChainID uint64, destChainIDs []uint64, backends ethbackend.Backends, pricer tokens.Pricer,
@@ -63,7 +64,7 @@ func destFeeParams(ctx context.Context, srcChain evmchain.Metadata, destChainID 
 	return bindings.IFeeOracleV1ChainFeeParams{
 		ChainId:      destChainID,
 		ToNativeRate: rateToNumerator(toNativeRate),
-		GasPrice:     gasPrice,
+		GasPrice:     withGasPriceShield(gasPrice),
 	}, nil
 }
 
@@ -97,4 +98,10 @@ func rateToNumerator(r float64) *big.Int {
 	norm, _ := new(big.Float).Mul(numer, denom).Int(nil)
 
 	return norm
+}
+
+// withGasPriceShield returns the gas price with an added xfeemngr.GasPriceShield pct offset.
+func withGasPriceShield(gasPrice *big.Int) *big.Int {
+	gasPriceF := float64(gasPrice.Uint64())
+	return new(big.Int).SetUint64(uint64(gasPriceF + (xfeemngr.GasPriceShield * gasPriceF)))
 }

@@ -99,7 +99,7 @@ func TestStart(t *testing.T) {
 				// check gas price
 				gasprice, err := oracle.contract.GasPriceOn(ctx, dest.ChainID)
 				require.NoError(t, err)
-				require.Equal(t, initialGasPrices[dest.ChainID], gasprice.Uint64(), "initial gas price")
+				require.Equal(t, withGasPriceShield(initialGasPrices[dest.ChainID]), gasprice.Uint64(), "initial gas price")
 
 				// check to native rate
 				// expect rate is float dest token per src token
@@ -156,7 +156,7 @@ func TestStart(t *testing.T) {
 			// check gas price
 			gasprice, err := oracle.contract.GasPriceOn(ctx, dest.ChainID)
 			require.NoError(t, err)
-			require.Equal(t, gasPricers[dest.ChainID].Price(), gasprice.Uint64(), "updated gas price")
+			require.Equal(t, withGasPriceShield(gasPricers[dest.ChainID].Price()), gasprice.Uint64(), "updated gas price")
 
 			// check to native rate
 			// expect rate is float dest token per src token
