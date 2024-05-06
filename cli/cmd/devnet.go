@@ -215,7 +215,7 @@ func loadDevnetNetwork(ctx context.Context) (netconf.Network, xchain.RPCEndpoint
 		return netconf.Network{}, nil, errors.Wrap(err, "make portal registry")
 	}
 
-	network, err := netconf.CheckOnChain(ctx, netID, portalReg, endpoints.Keys())
+	network, err := netconf.AwaitOnChain(log.WithNoopLogger(ctx), netID, portalReg, endpoints.Keys())
 	if err != nil {
 		return netconf.Network{}, nil, &cliError{
 			Msg:     "failed to check on-chain registry",
