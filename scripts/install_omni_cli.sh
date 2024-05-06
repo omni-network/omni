@@ -21,8 +21,6 @@ esac
 
 URL="https://github.com/omni-network/omni/releases/latest/download/omni_${OS}_${ARCH}.tar.gz"
 TARGET="$HOME/bin/omni"
-SHELL_PROFILE=""
-FILE=""
 
 echo "ℹ️ Downloading omni from $URL"
 
@@ -31,13 +29,14 @@ echo "ℹ️ Installing omni to $TARGET"
 mkdir -p "$(dirname "${TARGET}")"
 
 # Download and extract omni
-curl -L -s -v "$URL" -o omni.tar.gz
-tar -xzv -C "$(dirname "${TARGET}")" -f omni.tar.gz
+curl -L -s "$URL" -o omni.tar.gz
+tar -xz -C "$(dirname "${TARGET}")" -f omni.tar.gz
 rm omni.tar.gz
 chmod +x "$TARGET"
 
 # Add to PATH if not already there
 if ! echo $PATH | grep -q "$HOME/bin"; then
+    SHELL_PROFILE=""
     if [[ $SHELL == *"zsh"* ]]; then
         FILE=".zshrc"
         SHELL_PROFILE="$HOME/$FILE"
@@ -56,7 +55,7 @@ fi
 
 # Check if omni is correctly installed
 if command -v omni &> /dev/null; then
-    echo "✅ omni is now installed. Run first 'source ~/$FILE' and then 'omni --help' to get started."
+    echo "✅ omni is now installed. Run 'omni' to get started."
 else
     echo "❌ Error: omni executable not found in PATH. You may need to add '\$HOME/bin' to your PATH manually."
 fi
