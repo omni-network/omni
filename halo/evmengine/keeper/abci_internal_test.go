@@ -176,10 +176,10 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 				cdc := getCodec(t)
 				txConfig := authtx.NewTxConfig(cdc, nil)
 
-				k := NewKeeper(cdc, storeService, &tt.mockEngine, txConfig)
-				k.SetAddressProvider(mockAddressProvider{
+				ap := mockAddressProvider{
 					address: common.BytesToAddress([]byte("test")),
-				})
+				}
+				k := NewKeeper(cdc, storeService, &tt.mockEngine, txConfig, ap)
 				_, err := k.PrepareProposal(ctx, tt.req)
 				if (err != nil) != tt.wantErr {
 					t.Errorf("PrepareProposal() error = %v, wantErr %v", err, tt.wantErr)
@@ -198,11 +198,10 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		mockEngine, err := newMockEngineAPI(0)
 		require.NoError(t, err)
 
-		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig)
 		ap := mockAddressProvider{
 			address: common.BytesToAddress([]byte("test")),
 		}
-		keeper.SetAddressProvider(ap)
+		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap)
 		keeper.SetVoteProvider(mockVEProvider{})
 		keeper.AddEventProcessor(mockLogProvider{})
 
@@ -256,12 +255,10 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		mockEngine, err := newMockEngineAPI(0)
 		require.NoError(t, err)
 
-		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig)
 		ap := mockAddressProvider{
 			address: common.BytesToAddress([]byte("test")),
 		}
-		keeper.SetAddressProvider(ap)
-
+		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap)
 		keeper.AddEventProcessor(mockLogProvider{})
 		keeper.SetVoteProvider(mockVEProvider{})
 

@@ -65,13 +65,14 @@ func newApp(
 	logger log.Logger,
 	db dbm.DB,
 	engineCl ethclient.EngineClient,
+	voter atypes.Voter,
 	namer atypes.ChainNameFunc,
 	baseAppOpts ...func(*baseapp.BaseApp),
 ) (*App, error) {
 	depCfg := depinject.Configs(
 		DepConfig(),
 		depinject.Supply(
-			logger, engineCl, namer,
+			logger, engineCl, namer, voter,
 		),
 	)
 
@@ -158,8 +159,6 @@ func (a App) SetCometAPI(api comet.API) {
 // SetVoter sets the voter.
 // TODO(corver): Figure out how to use depinject to set this.
 func (a App) SetVoter(voter atypes.Voter) {
-	a.AttestKeeper.SetVoter(voter)
-	a.EVMEngKeeper.SetAddressProvider(voter)
 	a.ValSyncKeeper.SetSubscriber(voter)
 }
 

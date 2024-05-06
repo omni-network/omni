@@ -44,11 +44,10 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 	ctx, storeService := setupCtxStore(t, &header)
 	ctx = ctx.WithExecMode(sdk.ExecModeFinalize)
 
-	keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig)
 	ap := mockAddressProvider{
 		address: nxtAddr,
 	}
-	keeper.SetAddressProvider(ap)
+	keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap)
 	keeper.SetCometAPI(&cmtAPI)
 	msgSrv := NewMsgServerImpl(keeper)
 

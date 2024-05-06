@@ -121,6 +121,7 @@ type ModuleInputs struct {
 	TXConfig     client.TxConfig
 	SKeeper      *skeeper.Keeper
 	Namer        types.ChainNameFunc
+	Voter        types.Voter
 }
 
 type ModuleOutputs struct {
@@ -136,6 +137,7 @@ func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
 		in.StoreService,
 		in.SKeeper,
 		in.Namer,
+		in.Voter,
 		in.Config.GetVoteWindow(),
 		in.Config.GetVoteExtensionLimit(),
 		in.Config.GetTrimLag(),

@@ -115,11 +115,17 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 		return nil, nil, err
 	}
 
+	voter, err := newVoterLoader(privVal.Key.PrivKey) // Construct a lazy voter loader
+	if err != nil {
+		return nil, nil, err
+	}
+
 	//nolint:contextcheck // False positive
 	app, err := newApp(
 		newSDKLogger(ctx),
 		db,
 		engineCl,
+		voter,
 		netconf.ChainNamer(cfg.Network),
 		baseAppOpts...,
 	)
@@ -141,10 +147,6 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 
 	cProvider := cprovider.NewABCIProvider(rpcClient, cfg.Network, netconf.ChainNamer(cfg.Network))
 
-	voter, err := newVoterLoader(privVal.Key.PrivKey)
-	if err != nil {
-		return nil, nil, err
-	}
 	async := make(chan error, 1)
 	go func() {
 		err := voter.LazyLoad(

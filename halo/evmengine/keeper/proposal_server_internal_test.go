@@ -31,7 +31,7 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 	ctx, storeService := setupCtxStore(t, nil)
 	ctx = ctx.WithExecMode(sdk.ExecModeFinalize)
 
-	keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig)
+	keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, nil)
 	propSrv := NewProposalServer(keeper)
 
 	var payloadData []byte
