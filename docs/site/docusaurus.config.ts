@@ -26,6 +26,8 @@ const config: Config = {
     locales: ["en"],
   },
 
+  clientModules: ["src/client-modules/index.ts"],
+
   presets: [
     [
       "classic",

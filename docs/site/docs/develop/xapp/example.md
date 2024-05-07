@@ -10,7 +10,7 @@ Here's an example of a simple cross chain contract, `XGreeter`. This contract le
 
 ## `XGreeter` Contract
 
-<GitHubCodeBlock repoUrl="https://github.com/omni-network/omni-forge-template/blob/main/src/XGreeter.sol" />
+<GitHubCodeBlock url="https://github.com/omni-network/omni-forge-template/blob/main/src/XGreeter.sol" />
 
 ## Walkthrough
 
