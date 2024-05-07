@@ -14,11 +14,12 @@ contract OmniPortal_xcall_Test is Base {
     function test_xcall_defaultGasLimit_succeeds() public {
         XTypes.Msg memory xmsg = _outbound_increment();
 
+        uint256 fee = portal.feeFor(xmsg.destChainId, xmsg.data);
+        uint64 offset = 1;
+
         // check XMsg event is emitted
         vm.expectEmit();
-        emit XMsg(xmsg.destChainId, 1, xcaller, xmsg.to, xmsg.data, portal.xmsgDefaultGasLimit());
-
-        uint256 fee = portal.feeFor(xmsg.destChainId, xmsg.data);
+        emit XMsg(xmsg.destChainId, offset, xcaller, xmsg.to, xmsg.data, portal.xmsgDefaultGasLimit(), fee);
 
         // make xcall
         vm.prank(xcaller);
@@ -33,11 +34,12 @@ contract OmniPortal_xcall_Test is Base {
         XTypes.Msg memory xmsg = _outbound_increment();
         xmsg.gasLimit = portal.xmsgDefaultGasLimit() + 1;
 
+        uint256 fee = portal.feeFor(xmsg.destChainId, xmsg.data, xmsg.gasLimit);
+        uint64 offset = 1;
+
         // check XMsg event is emitted
         vm.expectEmit();
-        emit XMsg(xmsg.destChainId, 1, xcaller, xmsg.to, xmsg.data, xmsg.gasLimit);
-
-        uint256 fee = portal.feeFor(xmsg.destChainId, xmsg.data, xmsg.gasLimit);
+        emit XMsg(xmsg.destChainId, offset, xcaller, xmsg.to, xmsg.data, xmsg.gasLimit, fee);
 
         // make xcall
         vm.prank(xcaller);

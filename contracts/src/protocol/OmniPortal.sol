@@ -147,7 +147,7 @@ contract OmniPortal is
 
         outXStreamOffset[destChainId] += 1;
 
-        emit XMsg(destChainId, outXStreamOffset[destChainId], sender, to, data, gasLimit);
+        emit XMsg(destChainId, outXStreamOffset[destChainId], sender, to, data, gasLimit, msg.value);
     }
 
     /**

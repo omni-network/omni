@@ -15,11 +15,18 @@ interface IOmniPortal {
      * @param streamOffset  Offset this XMsg in the source -> dest XStream
      * @param sender        msg.sender of the source xcall
      * @param to            Address of the contract to call on the destination chain
-     * @param gasLimit      Gas limit for execution on destination chain
      * @param data          Encoded function calldata
+     * @param gasLimit      Gas limit for execution on destination chain
+     * @param fees          Fees paid for the xcall
      */
     event XMsg(
-        uint64 indexed destChainId, uint64 indexed streamOffset, address sender, address to, bytes data, uint64 gasLimit
+        uint64 indexed destChainId,
+        uint64 indexed streamOffset,
+        address sender,
+        address to,
+        bytes data,
+        uint64 gasLimit,
+        uint256 fees
     );
 
     /**
