@@ -87,12 +87,15 @@ func (o feeOracle) syncGasPrice(ctx context.Context, dest evmchain.Metadata) err
 
 	guageGasPrice(o.chain, dest, onChain.Uint64())
 
-	// if on chain matches buffered, return
-	if onChain.Uint64() == buffered {
+	shielded := withGasPriceShield(buffered)
+
+	// if on chain gas price is within epsilon of buffered + GasPriceShield, do nothing
+	// The shield helps keep on-chain gas prices higher than live gas prices
+	if inEpsilon(float64(onChain.Uint64()), float64(shielded), 0.001) {
 		return nil
 	}
 
-	err = o.contract.SetGasPriceOn(ctx, dest.ChainID, new(big.Int).SetUint64(buffered))
+	err = o.contract.SetGasPriceOn(ctx, dest.ChainID, new(big.Int).SetUint64(shielded))
 	if err != nil {
 		return errors.Wrap(err, "set gas price on")
 	}
@@ -208,4 +211,10 @@ func inEpsilon(a, b, epsilon float64) bool {
 	diff := a - b
 
 	return diff < epsilon && diff > -epsilon
+}
+
+// withGasPriceShield returns the gas price with an added GasPriceShield pct offset.
+func withGasPriceShield(gasPrice uint64) uint64 {
+	gasPriceF := float64(gasPrice)
+	return uint64(gasPriceF + gasPriceF*GasPriceShield)
 }
