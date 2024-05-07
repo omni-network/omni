@@ -124,12 +124,12 @@ func (d *XDapp) fund(ctx context.Context) error {
 			return err
 		}
 
-		// For ETH chains, fund it with 0.2 ETH
-		fund := new(big.Int).Div(big.NewInt(params.Ether), big.NewInt(5))
+		// For ETH chains, fund it with 0.5 ETH
+		fund := new(big.Int).Div(big.NewInt(params.Ether), big.NewInt(2))
 
-		// for OMNI chains, fund it with 20 OMNI
+		// for OMNI chains, fund it with 100 OMNI
 		if contract.Chain.Metadata.NativeToken == tokens.OMNI {
-			fund = new(big.Int).Mul(big.NewInt(params.Ether), big.NewInt(20))
+			fund = new(big.Int).Mul(big.NewInt(params.Ether), big.NewInt(100))
 		}
 
 		txOpts.Value = fund

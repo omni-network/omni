@@ -17,8 +17,6 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
 
-	"github.com/ethereum/go-ethereum/p2p/enode"
-
 	"github.com/BurntSushi/toml"
 	"github.com/stretchr/testify/require"
 )
@@ -149,18 +147,20 @@ func TestConsensusSeeds(t *testing.T) {
 	require.Len(t, netconf.Testnet.Static().ConsensusSeeds(), 2)
 }
 
-func TestExecutionSeeds(t *testing.T) {
-	t.Parallel()
-
-	seeds := netconf.Testnet.Static().ExecutionSeeds()
-	require.Len(t, seeds, 2)
-	for _, seed := range seeds {
-		node, err := enode.ParseV4(seed)
-		require.NoError(t, err)
-
-		require.EqualValues(t, 30303, node.TCP())
-		require.EqualValues(t, 30303, node.UDP())
-		t.Logf("Seed IP: %s: %s", node.IP(), seed)
-		require.NotEmpty(t, node.IP())
-	}
-}
+// Testnet longer active - so we comment out this test.
+//
+// func TestExecutionSeeds(t *testing.T) {
+// 	t.Parallel()
+//
+// 	seeds := netconf.Testnet.Static().ExecutionSeeds()
+// 	require.Len(t, seeds, 2)
+// 	for _, seed := range seeds {
+// 		node, err := enode.ParseV4(seed)
+// 		require.NoError(t, err)
+//
+// 		require.EqualValues(t, 30303, node.TCP())
+// 		require.EqualValues(t, 30303, node.UDP())
+// 		t.Logf("Seed IP: %s: %s", node.IP(), seed)
+// 		require.NotEmpty(t, node.IP())
+// 	}
+// }
