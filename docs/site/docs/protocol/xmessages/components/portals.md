@@ -18,7 +18,7 @@ To initiate a cross-chain call, the Portal Contract provides the `xcall` method.
 
 Below is a summarized fragment for the underlying logic beneath `xcall` from the [Portal contract Solidity source](https://github.com/omni-network/omni/blob/1439d8a99f66a3bb3b7d113c63f8f073512c5377/contracts/src/protocol/OmniPortal.sol):
 
-<GitHubCodeBlock repoUrl="https://github.com/omni-network/omni/blob/059303647e07fc3481e379b710922e2b84b1827f/contracts/src/protocol/OmniPortal.sol#L135-L151" />
+<GitHubCodeBlock url="https://github.com/omni-network/omni/blob/059303647e07fc3481e379b710922e2b84b1827f/contracts/src/protocol/OmniPortal.sol#L135-L151" />
 
 For detailed instructions on conducting cross-chain transactions, refer to the [developer section](../../../develop/introduction.md).
 
@@ -71,7 +71,7 @@ To ensure the integrity and authenticity of incoming cross-chain messages, the f
 
 Below is a summarized fragment for the validations in `xsubmit` from the [Portal contract Solidity source](https://github.com/omni-network/omni/blob/main/contracts/src/protocol/OmniPortal.sol):
 
-<GitHubCodeBlock repoUrl="https://github.com/omni-network/omni/blob/059303647e07fc3481e379b710922e2b84b1827f/contracts/src/protocol/OmniPortal.sol#L165-L220" />
+<GitHubCodeBlock url="https://github.com/omni-network/omni/blob/059303647e07fc3481e379b710922e2b84b1827f/contracts/src/protocol/OmniPortal.sol#L165-L220" />
 
 </details>
 
