@@ -144,7 +144,6 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.UpgradeConfig) error {
 	for _, node := range p.Testnet.Nodes {
 		addFile(node.Name, "config", "halo.toml")
 		addFile(node.Name, "config", "config.toml")
-		addFile(node.Name, "config", "network.json")
 		addFile(node.Name, "config", "jwtsecret")
 		addFile(node.Name, "config", "priv_validator_key.json")
 		addFile(node.Name, "config", "node_key.json")
@@ -159,10 +158,8 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.UpgradeConfig) error {
 
 	// Also relayer and monitor
 	addFile("relayer", "relayer.toml")
-	addFile("relayer", "network.json")
 	addFile("relayer", "privatekey")
 	addFile("monitor", "monitor.toml")
-	addFile("monitor", "network.json")
 	addFile("monitor", "privatekey")
 
 	// TODO(corver): Add explorer stuff
