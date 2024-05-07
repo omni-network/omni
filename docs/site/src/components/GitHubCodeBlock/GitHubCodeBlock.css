@@ -8,11 +8,11 @@
     bottom: 0;
     right: 0;
     margin: 0;
-    padding: 5px 10px; /* Slightly more padding on the right for visual comfort */
-    background: var(--ifm-color-secondary); /* Background color */
-    color: var(--ifm-font-color-base); /* Text color */
-    border-top-left-radius: 4px; /* adds rounded corners to the left side */
-    font-size: 0.85em; /* Adjusts the font size */
+    padding: 5px 10px;
+    background: var(--ifm-color-secondary);
+    color: var(--ifm-font-color-base);
+    border-top-left-radius: 4px;
+    font-size: 0.85em;
 }
 
 .code-snippet-footer a {
@@ -21,9 +21,9 @@
 }
 
 .code-snippet-footer img {
-    height: 1.4em; /* Ensure consistent size for the icon */
-    vertical-align: text-top; /* Aligns icon with the text */
-    margin-left: 5px; /* Space between text and icon */
+    height: 1.4em;
+    vertical-align: text-top;
+    margin-left: 5px;
 }
 
 .code-snippet-block {
@@ -31,7 +31,7 @@
 }
 
 .code-snippet-footer:hover {
-    background: var(--ifm-color-secondary-dark); /* Hover background color */
+    background: var(--ifm-color-secondary-dark);
 }
 
 .code-snippet-warning {
@@ -44,7 +44,7 @@
     color: var(--ifm-color-white);
     border-top-right-radius: 4px;
     font-size: 0.85em;
-    opacity: 0.9; /* Adjust the opacity value to make it slightly transparent */
+    opacity: 0.9;
 }
 
 .code-snippet-warning:hover {
