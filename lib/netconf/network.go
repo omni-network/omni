@@ -80,3 +80,15 @@ func IsAny(id ID, targets ...ID) bool {
 
 	return false
 }
+
+// All returns all the supported network IDs.
+func All() []ID {
+	var resp []ID
+	for id, ok := range supported {
+		if ok {
+			resp = append(resp, id)
+		}
+	}
+
+	return resp
+}
