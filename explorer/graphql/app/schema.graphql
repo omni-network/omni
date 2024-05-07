@@ -148,6 +148,9 @@ type XReceipt {
 
   "Timestamp of the receipt"
   timestamp: Time!
+
+  "Revert reason if the message failed"
+  revertReason: String
 }
 
 """

@@ -93,6 +93,7 @@ type XReceipt struct {
 	TxHash        common.Hash
 	TxHashURL     string
 	Timestamp     graphql.Time
+	RevertReason  *string
 }
 
 // Define the Go struct for the Chain type.
@@ -184,7 +185,11 @@ func New() *Resolver {
 			fuzzer.Fuzz(&xreceipt.Offset)
 			fuzzer.Fuzz(&xreceipt.TxHash)
 			fuzzer.Fuzz(&xreceipt.Timestamp)
-			fuzzer.Fuzz(&xreceipt.Success)
+			if xmsg.Status == StatusFailed {
+				xreceipt.Success = false
+				reason := "Insufficient funds"
+				xreceipt.RevertReason = &reason
+			}
 
 			xreceipt.TxHashURL = fmt.Sprintf("https://etherscan.io/tx/%s", xreceipt.TxHash.String())
 
