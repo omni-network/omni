@@ -147,7 +147,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	}
 
 	// Add P2P seeds to comet config
-	if seeds := network.Static().Seeds(); len(seeds) > 0 {
+	if seeds := network.Static().ConsensusSeeds(); len(seeds) > 0 {
 		comet.P2P.Seeds = strings.Join(seeds, ",")
 	}
 
@@ -250,8 +250,8 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 			return errors.Wrap(err, "save genesis file")
 		}
 		log.Info(ctx, "Generated simnet genesis file", "path", genFile)
-	} else if len(network.Static().GenesisJSON) > 0 {
-		err := os.WriteFile(genFile, network.Static().GenesisJSON, 0o644)
+	} else if len(network.Static().ConsensusGenesisJSON) > 0 {
+		err := os.WriteFile(genFile, network.Static().ConsensusGenesisJSON, 0o644)
 		if err != nil {
 			return errors.Wrap(err, "save genesis file")
 		}
