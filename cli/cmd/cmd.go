@@ -29,6 +29,7 @@ func newOperatorCmds() *cobra.Command {
 
 	cmd.AddCommand(
 		newRegisterCmd(),
+		newInitCmd(),
 	)
 
 	return cmd
