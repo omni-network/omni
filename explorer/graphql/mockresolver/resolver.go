@@ -57,15 +57,18 @@ type XMsg struct {
 	ID            graphql.ID
 	Block         XBlock
 	To            common.Address
+	ToURL         string
 	DestChainID   hexutil.Big
 	GasLimit      hexutil.Big
 	DisplayID     string
 	Offset        hexutil.Big
 	Receipt       *XReceipt
 	Sender        common.Address
+	SenderURL     string
 	SourceChainID hexutil.Big
 	Status        Status
 	TxHash        common.Hash
+	TxHashURL     string
 }
 
 // Define the Go struct for the XBlock type.
@@ -88,6 +91,7 @@ type XReceipt struct {
 	DestChainID   hexutil.Big
 	Offset        hexutil.Big
 	TxHash        common.Hash
+	TxHashURL     string
 	Timestamp     graphql.Time
 }
 
@@ -165,6 +169,9 @@ func New() *Resolver {
 			xmsg.Block = xblock
 			xmsg.DisplayID = fmt.Sprintf("%s-%s-%s", &xmsg.SourceChainID, &xmsg.DestChainID, &xmsg.Offset)
 			xmsg.Status = statuses[rand.IntN(len(statuses))]
+			xmsg.SenderURL = fmt.Sprintf("https://etherscan.io/address/%s", xmsg.Sender.String())
+			xmsg.ToURL = fmt.Sprintf("https://etherscan.io/address/%s", xmsg.To.String())
+			xmsg.TxHashURL = fmt.Sprintf("https://etherscan.io/tx/%s", xmsg.TxHash.String())
 
 			var xreceipt XReceipt
 
@@ -178,6 +185,8 @@ func New() *Resolver {
 			fuzzer.Fuzz(&xreceipt.TxHash)
 			fuzzer.Fuzz(&xreceipt.Timestamp)
 			fuzzer.Fuzz(&xreceipt.Success)
+
+			xreceipt.TxHashURL = fmt.Sprintf("https://etherscan.io/tx/%s", xreceipt.TxHash.String())
 
 			xmsg.Receipt = &xreceipt
 

@@ -81,8 +81,14 @@ type XMsg {
   "The address of the sender on the source chain."
   sender: Address!
 
+  "URL to view the address of the sender on the source chain."
+  senderUrl: String!
+
   "Target/To address to 'call' on the destination chain"
   to: Address!
+
+  "URL to view the address of the target on the destination chain."
+  toUrl: String!
 
   "Gas limit to use for 'call' on destination chain"
   gasLimit: BigInt!
@@ -95,6 +101,9 @@ type XMsg {
 
   "Hash of the source chain transaction that emitted the message"
   txHash: Bytes32!
+
+  "URL to view the transaction on the source chain"
+  txHashUrl: String!
 
   "Status of the X message"
   status: Status!
@@ -133,6 +142,9 @@ type XReceipt {
 
   "Hash of the dest chain transaction"
   txHash: Bytes32!
+
+  "URL to view the transaction on the destination chain"
+  txHashUrl: String!
 
   "Timestamp of the receipt"
   timestamp: Time!
