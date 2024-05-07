@@ -1,6 +1,10 @@
 package cmd
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/omni-network/omni/lib/netconf"
+
+	"github.com/spf13/cobra"
+)
 
 func bindRegConfig(cmd *cobra.Command, cfg *RegConfig) {
 	bindAVSAddress(cmd, &cfg.AVSAddr)
@@ -8,6 +12,12 @@ func bindRegConfig(cmd *cobra.Command, cfg *RegConfig) {
 	const flagConfig = "config-file"
 	cmd.Flags().StringVar(&cfg.ConfigFile, flagConfig, cfg.ConfigFile, "Path to the Eigen-Layer yaml configuration file")
 	_ = cmd.MarkFlagRequired(flagConfig)
+}
+
+func bindInitConfig(cmd *cobra.Command, cfg *initConfig) {
+	netconf.BindFlag(cmd.Flags(), &cfg.Network)
+	cmd.Flags().StringVar(&cfg.Moniker, "moniker", "", "Human-readable node name used in p2p networking")
+	cmd.Flags().StringVar(&cfg.Home, "home", "", "Home directory. If empty, defaults to: $HOME/.omni/<network>/")
 }
 
 func bindAVSAddress(cmd *cobra.Command, addr *string) {

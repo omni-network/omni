@@ -47,7 +47,7 @@ func TestWriteConfigTOML(t *testing.T) {
 
 			tempFile := filepath.Join(t.TempDir(), name+".toml")
 
-			err := writeConfigTOML(data, tempFile)
+			err := WriteConfigTOML(data, tempFile)
 			require.NoError(t, err)
 
 			bz, err := os.ReadFile(tempFile)

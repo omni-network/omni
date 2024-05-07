@@ -179,7 +179,7 @@ func devnetDefinition(ctx context.Context) (app.Definition, error) {
 	}
 
 	def.Testnet.Name = "devnet0"
-	def.Testnet.Dir, err = devnetDir()
+	def.Testnet.Dir, err = homeDir(netconf.Devnet)
 	if err != nil {
 		return app.Definition{}, err
 	}
@@ -188,7 +188,7 @@ func devnetDefinition(ctx context.Context) (app.Definition, error) {
 }
 
 func loadDevnetNetwork(ctx context.Context) (netconf.Network, xchain.RPCEndpoints, error) {
-	devnetPath, err := devnetDir()
+	devnetPath, err := homeDir(netconf.Devnet)
 	if err != nil {
 		return netconf.Network{}, nil, err
 	}
@@ -364,13 +364,13 @@ func devnetBackend(ctx context.Context, rpcURL string) (common.Address, *ethback
 	return funderAddr, backend, nil
 }
 
-func devnetDir() (string, error) {
+func homeDir(network netconf.ID) (string, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return "", errors.Wrap(err, "user home dir")
 	}
 
-	return filepath.Join(homeDir, ".omni", "devnet"), nil
+	return filepath.Join(homeDir, ".omni", network.String()), nil
 }
 
 func makePortalRegistry(network netconf.ID, endpoints xchain.RPCEndpoints) (*bindings.PortalRegistry, error) {

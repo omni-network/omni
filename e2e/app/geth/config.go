@@ -52,7 +52,7 @@ func WriteAllConfig(testnet types.Testnet) error {
 			BootNodes:    evm.Peers, // TODO(corver): Use seed nodes once available.
 			TrustedNodes: evm.Peers,
 		}
-		if err := writeConfigTOML(conf, filepath.Join(testnet.Dir, evm.InstanceName, "config.toml")); err != nil {
+		if err := WriteConfigTOML(conf, filepath.Join(testnet.Dir, evm.InstanceName, "config.toml")); err != nil {
 			return errors.Wrap(err, "write geth config")
 		}
 	}
@@ -60,8 +60,8 @@ func WriteAllConfig(testnet types.Testnet) error {
 	return nil
 }
 
-// writeConfigTOML writes the geth config to a toml file.
-func writeConfigTOML(conf Config, path string) error {
+// WriteConfigTOML writes the geth config to a toml file.
+func WriteConfigTOML(conf Config, path string) error {
 	bz, err := tomlSettings.Marshal(MakeGethConfig(conf))
 	if err != nil {
 		return errors.Wrap(err, "marshal toml")
