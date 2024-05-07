@@ -50,14 +50,11 @@ export const loader: LoaderFunction = async ({ request }) => {
   ])
 
   const supportedChains = mappedSourceChains(supportedChainsRes.data?.supportedchains || [])
-  const xmsgsList = xmsgRes.data?.xmsgs?.Edges ?? []
-
+  const xmsgsList = xmsgRes.data?.xmsgs?.edges ?? []
   const pollData = async () => {
     return json({
       supportedChains,
-      xmsgCount: xmsgRes.data?.xmsgs?.TotalCount || '0x0',
-      nextCursor: xmsgRes.data?.xmsgs?.PageInfo?.NextCursor || null,
-      prevCursor: xmsgRes.data?.xmsgs?.PageInfo?.PrevCursor || null,
+      xmsgCount: xmsgRes.data?.xmsgs?.totalCount || '0x0',
       xmsgs: xmsgsList,
     })
   }
@@ -67,11 +64,6 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 export default function Index() {
   const revalidator = useRevalidator()
-
-  // poll server every 5 seconds
-  // useInterval(() => {
-  //   revalidator.revalidate()
-  // }, 10000)
 
   return (
     <div className="px-4 sm:px-4 md:px-20  ">

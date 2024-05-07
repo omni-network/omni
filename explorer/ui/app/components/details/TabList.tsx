@@ -1,6 +1,7 @@
 import { Link } from '@remix-run/react'
 import React, { useEffect } from 'react'
 import Tag from '../shared/tag'
+import { hashShortener } from '~/lib/formatting'
 
 export const TabList = () => {
   const ReceiptList = [1, 2, 3]
@@ -27,15 +28,21 @@ export const TabList = () => {
       {/* Offset */}
       <div className="flex mt-5 pb-2 border-b-2 border-gray-500 border-solid">
         <p className="w-48">Source Address</p>
-        <Link to="/" className="underline text-indigo-400">
+        <Link to="/" className="underline text-indigo-400 hidden lg:block">
           0x109f40f806567158aaad05e43afe240cf394608cacd0016466dfb24dce2927d4
+        </Link>
+        <Link to="/" className="underline text-indigo-400 block lg:hidden">
+          {hashShortener('0x109f40f806567158aaad05e43afe240cf394608cacd0016466dfb24dce2927d4')}
         </Link>
       </div>
       {/* Offset */}
       <div className="flex mt-5 pb-2 border-b-2 border-gray-500 border-solid">
         <p className="w-48">Relayer Address</p>
-        <Link to="/" className="underline text-indigo-400">
+        <Link to="/" className="underline text-indigo-400 hidden lg:block">
           0x109f40f806567158aaad05e43afe240cf394608cacd0016466dfb24dce2927d4
+        </Link>
+        <Link to="/" className="underline text-indigo-400 block lg:hidden">
+          {hashShortener('0x109f40f806567158aaad05e43afe240cf394608cacd0016466dfb24dce2927d4')}
         </Link>
       </div>
       {/* Offset */}
@@ -65,14 +72,17 @@ export const TabList = () => {
       {/* Offset */}
       <div className="flex mt-5 pb-2 border-b-2 border-gray-500 border-solid">
         <p className="w-48">Tx Hash</p>
-        <Link to="/" className="underline text-indigo-400">
+        <Link to="/" className="underline text-indigo-400 hidden lg:block">
           0x109f40f806567158aaad05e43afe240cf394608cacd0016466dfb24dce2927d4
+        </Link>
+        <Link to="/" className="underline text-indigo-400 block lg:hidden">
+          {hashShortener('0x109f40f806567158aaad05e43afe240cf394608cacd0016466dfb24dce2927d4')}
         </Link>
       </div>
       {/* Status */}
       <div className="flex mt-5 pb-2 border-b-2 border-gray-500 border-solid">
         <p className="w-48">Status</p>
-        <Tag status="FAILURE" />
+        <Tag status="FAILED" />
         <p className="ml-5">"Reason for status"</p>
       </div>
     </>
