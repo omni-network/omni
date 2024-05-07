@@ -34,7 +34,7 @@ Time is an time.RFC3339 encoded UTC date string or a string containing a Unix ti
 scalar Time
 
 """
-Status represents the status of X messages/receipts.
+Status represents the status of an XMsg.
 """
 enum Status {
   FAILED
@@ -53,10 +53,10 @@ type XBlock {
   sourceChainID: BigInt!
 
   "Height of the source chain block"
-  blockHeight: BigInt!
+  height: BigInt!
 
   "Hash of the source chain block"
-  blockHash: Bytes32!
+  hash: Bytes32!
 
   "All cross-chain messages sent/emittted in the block"
   messages: [XMsg!]!
@@ -79,19 +79,19 @@ type XMsg {
   offset: BigInt!
 
   "The address of the sender on the source chain."
-  sourceAddress: Address!
+  sender: Address!
 
-  "The URL of the address of the sender on the source chain."
-  sourceAddressUrl: String!
+  "URL to view the address of the sender on the source chain."
+  senderUrl: String!
 
-  "Target/To address to 'call' on destination chain"
-  destAddress: Address!
+  "Target/To address to 'call' on the destination chain"
+  to: Address!
 
-  "The URL of address to which the message is sent on the destination chain."
-  destAddressUrl: String!
+  "URL to view the address of the target on the destination chain."
+  toUrl: String!
 
   "Gas limit to use for 'call' on destination chain"
-  destGasLimit: BigInt!
+  gasLimit: BigInt!
 
   "Source chain ID as per https://chainlist.org/"
   sourceChainID: BigInt!
@@ -102,14 +102,11 @@ type XMsg {
   "Hash of the source chain transaction that emitted the message"
   txHash: Bytes32!
 
-  "The URL of the source chain transaction that emitted the message."
+  "URL to view the transaction on the source chain"
   txHashUrl: String!
 
   "Status of the X message"
   status: Status!
-
-  "Timestamp of the source chain block"
-  sourceBlockTime: Time!
 
   "XBlock message was emitted in"
   block: XBlock!
@@ -128,11 +125,11 @@ type XReceipt {
   "Gas used for the cross-chain message"
   gasUsed: BigInt!
 
-  "Status of the cross-chain message"
-  status: Status!
+  "Success indicates whether the message was successfully executed on the destination chain."
+  success: Boolean!
 
   "Address of the relayer"
-  relayerAddress: Address!
+  relayer: Address!
 
   "Source chain ID as per https://chainlist.org"
   sourceChainID: BigInt!
@@ -146,7 +143,7 @@ type XReceipt {
   "Hash of the dest chain transaction"
   txHash: Bytes32!
 
-  "The URL of the destination chain receipt."
+  "URL to view the transaction on the destination chain"
   txHashUrl: String!
 
   "Timestamp of the receipt"
@@ -177,7 +174,7 @@ type XMsgConnection {
   "edges is a list of XMsgs with cursor information"
   edges: [XMsgEdge!]!
 
-  "Page Info"
+  "Page Info contains pagination information necessary for UI pagination"
   pageInfo: PageInfo!
 }
 
@@ -196,10 +193,10 @@ type XMsgEdge {
 PageInfo represents pagination information
 """
 type PageInfo {
-  "Has next page"
+  "hasNextPage is true if there is a next page"
   hasNextPage: Boolean!
 
-  "Previous page cursor"
+  "hasPrevPage is true if there is a previous page"
   hasPrevPage: Boolean!
 
   "Total number of pages"
@@ -228,6 +225,6 @@ type Query {
   # "Search for cross-chain messages using a query string. For forwards pagination, provide `first` and `after`. For backwards pagination, provide `last` and `before`. Defaults to the last 10 messages. `after` and `before` are the cursors of the last and first messages from the current page respectively."
   # search(query: String!, first: Int, after: ID, last: Int = 10, before: ID): XMsgConnection!
 
-  "Get the list of supported chains."
+  "Returns the list of supported chains."
   supportedChains: [Chain!]!
 }
