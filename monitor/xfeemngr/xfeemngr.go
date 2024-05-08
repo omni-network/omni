@@ -40,6 +40,15 @@ const (
 	// GasPriceShield is the pct offset above the buffered gas price the oracle sets on chain
 	// Setting shield == buffer threshold ensures that on chain gas price is always at least as high as the live gas price.
 	GasPriceShield = 0.1
+
+	// maxSaneGasPrice is the maximum sane gas price in gwei to post for any destination chain. Set to 500 gwei.
+	maxSaneGasPrice = uint64(500_000_000_000)
+
+	// maxSaneOmniPerEth is the maximum sane conversion rate of omni to eth.
+	maxSaneOmniPerEth = float64(1_000_000)
+
+	// maxSaneEthPerOmni is the maximum sane conversion rate of eth to omni.
+	maxSaneEthPerOmni = float64(1)
 )
 
 func Start(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints, privKeyPath string) error {
