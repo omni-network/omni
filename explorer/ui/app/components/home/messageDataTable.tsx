@@ -21,12 +21,13 @@ import { copyToClipboard } from '~/lib/utils'
 type Status = 'Success' | 'Failed' | 'Pending' | 'All'
 
 export default function XMsgDataTable() {
-
   const data = useLoaderData<XmsgResponse>()
   const revalidator = useRevalidator()
   const searchFieldRef = React.useRef<HTMLInputElement>(null)
 
   const pageLoaded = React.useRef<boolean>(false)
+
+  console.log(data)
 
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -46,11 +47,13 @@ export default function XMsgDataTable() {
     cursor: searchParams.get('cursor') ?? null,
   })
 
-  const sourceChainList = data.supportedChains.map(chain => ({
-    value: chain.ChainID,
-    display: chain.DisplayName,
-    icon: chain.Icon,
-  }))
+  // const sourceChainList = data?.supportedChains.map(chain => ({
+  //   value: chain.ChainID,
+  //   display: chain.DisplayName,
+  //   icon: chain.Icon,
+  // }))
+
+  const sourceChainList = []
   const rows = data.xmsgs
 
   const columnConfig = {
@@ -127,30 +130,41 @@ export default function XMsgDataTable() {
         header: () => <span>ID</span>,
         cell: (value: any) => {
           return (
-            <Link to={`xmsg/${value.getValue()}`} className="link">
-              {value.getValue()}
-            </Link>
+            <>
+              <Link
+                data-tooltip-id={`${value.getValue()}-full-id-tooltip`}
+                to={`xmsg/${value.getValue()}`}
+                className="link"
+              >
+                {hashShortener(value.getValue())}
+              </Link>
+              <Tooltip className="tooltip" id={`${value.getValue()}-full-id-tooltip`}>
+                <label className="text-default text-b-sm font-bold">
+                  {value.getValue()}
+                </label>
+              </Tooltip>
+              {/* <span  className="icon-tooltip-info"></span> */}
+            </>
           )
         },
       },
       // cant see the data
-      // {
-      //   ...columnConfig,
-      //   accessorKey: 'node.sourceBlockTime',
-      //   header: () => <span>Age</span>,
-      //   cell: (value: any) => (
-      //     <span className="text-subtlest font-bold text-b-xs">
-      //       {' '}
-      //       {dateFormatter(new Date(value.getValue()))}
-      //     </span>
-      //   ),
-      // },
+      {
+        ...columnConfig,
+        accessorKey: 'node.receipt.timestamp',
+        header: () => <span>Age</span>,
+        cell: (value: any) => (
+          <span className="text-subtlest font-bold text-b-xs">
+            {' '}
+            {dateFormatter(new Date(value.getValue()))}
+          </span>
+        ),
+      },
       {
         ...columnConfig,
         accessorKey: 'node.status',
         header: () => <span>Status</span>,
-        cell: (value: any) =>
-        <Tag status={value.getValue()} />,
+        cell: (value: any) => <Tag status={value.getValue()} />,
       },
       {
         ...columnConfig,
@@ -175,11 +189,7 @@ export default function XMsgDataTable() {
         cell: (value: any) => {
           return (
             <>
-              <Link
-                to={`${value.row.original.node.senderUrl
-                }`}
-                className="link"
-              >
+              <Link to={`${value.row.original.node.senderUrl}`} className="link">
                 {value.getValue() && (
                   <>
                     <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
@@ -243,7 +253,7 @@ export default function XMsgDataTable() {
       },
       {
         ...columnConfig,
-        accessorKey: 'node.DestChainID',
+        accessorKey: 'node.destChainID',
         header: () => <span></span>,
         cell: (value: any) => <RollupIcon chainId={value.getValue()} />,
       },
@@ -263,11 +273,7 @@ export default function XMsgDataTable() {
         ),
         cell: (value: any) => (
           <>
-            <Link
-              target="_blank"
-              to={`${value.row.original.node.toUrl}`}
-              className="link"
-            >
+            <Link target="_blank" to={`${value.row.original.node.toUrl}`} className="link">
               <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
               <span className="icon-external-link" />
             </Link>
@@ -300,13 +306,13 @@ export default function XMsgDataTable() {
                 <>
                   {' '}
                   <Link
-                      target="_blank"
-                      to={`${value.row.original.node.receipt.txHashUrl}`}
-                      className="link"
-                    >
-                      <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
-                      <span className="icon-external-link" />
-                    </Link>
+                    target="_blank"
+                    to={`${value.row.original.node.receipt.txHashUrl}`}
+                    className="link"
+                  >
+                    <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
+                    <span className="icon-external-link" />
+                  </Link>
                   <span
                     data-tooltip-id="tooltip-clipboard"
                     className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
@@ -440,8 +446,8 @@ export default function XMsgDataTable() {
           <div className="flex-none flex m-3">
             <div className="flex gap-x-2 items-baseline">
               <span className="text-cb-sm text-default">
-                Page <span className="">{data.xmsgCount}</span> of{' '}
-                <span className="">{data.xmsgCount}</span>
+                Page <span className="">{data?.pageInfo?.currentPage}</span> of{' '}
+                <span className="">{data?.pageInfo?.totalPages}</span>
               </span>
             </div>
           </div>

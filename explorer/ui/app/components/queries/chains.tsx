@@ -1,10 +1,9 @@
-import { graphql } from '~/graphql'
+import { gql } from 'urql'
 
-export const supportedchains = graphql(`
-  query SupportedChains {
-    supportedchains {
-      ChainID
-      Name
+export const supportedChains = gql(`
+  query supportedChains {
+      id
+      chainID
+      name
     }
-  }
 `)

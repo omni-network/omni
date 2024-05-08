@@ -1,38 +1,35 @@
-import { DocumentNode } from 'graphql'
-import { gql, useQuery } from 'urql'
-import { gqlClient } from '~/entry.server'
+import { gql } from 'urql'
 import { graphql } from '~/graphql'
-import { XMsg, XMsgsDocument } from '~/graphql/graphql'
-
-export const GetXMsg = async (sourceChainID: string, destChainID: string, streamOffset: string) => {
-  console.log("======");
-  return await gqlClient.query(xmsg, {sourceChainID, destChainID , streamOffset})
-  // const x = useQuery({query: xmsg, variables: {sourceChainID, destChainID , streamOffset}})
-  // console.log(x);
-  // return null
-  // const [result] = useQuery({
-  //   query: xmsg,
-  //   variables: {
-  //     sourceChainID,
-  //     destChainID,
-  //     streamOffset,
-  //   },
-  // })
-  // const { data, fetching, error } = result
-  // // TODO handle error properly here
-  // if (!error) {
-  //   return data as XMsg
-  // } else {
-  //   return null
-  // }
-}
-
-
 
 export const xmsg = gql(`
   query xmsg($sourceChainID: BigInt!, $destChainID: BigInt!, $offset: BigInt!) {
     xmsg(sourceChainID: $sourceChainID, destChainID: $destChainID, offset: $offset) {
-      streamOffset
+      id
+      displayID
+      offset
+      sender
+      senderUrl
+      to
+      toUrl
+      gasLimit
+      sourceChainID
+      destChainID
+      txHash
+      txHashUrl
+      status
+      block {
+        height
+        hash
+        timestamp
+      }
+      receipt {
+        revertReason
+        txHash
+        txHashUrl
+        relayer
+        timestamp
+        gasUsed
+      }
     }
   }
 `)
@@ -59,45 +56,48 @@ export const xmsgcount = graphql(`
   }
 `)
 
+// query xmsgs($first: Int, $last: Int, $after: Id, $before: Id) {
+//   xmsgs(first: $first, last: $last, after: $after, before: $before) {
+
 export const xmsgs = gql(`
-query {
-  xmsgs(first: 10, after: "eyJJRCI6MTksIlBhZ2VOdW0iOjJ9") {
+query xmsgs($first: Int) {
+  xmsgs(first: $first) {
     totalCount
     edges {
       cursor
       node {
         id
-  txHash
-  offset
-  displayID
-  sourceChainID
-  sender
-  senderUrl
-  to
-  toUrl
-  destChainID
-  gasLimit
-  status
-  txHash
-  txHashUrl
-  block {
-    id
-    sourceChainID
-    hash
-    height
-    timestamp
-  }
-  receipt {
-    txHash
-    txHashUrl
-    timestamp
-    success
-    offset
-    sourceChainID
-    destChainID
-    relayer
-    revertReason
-  }
+        txHash
+        offset
+        displayID
+        sourceChainID
+        sender
+        senderUrl
+        to
+        toUrl
+        destChainID
+        gasLimit
+        status
+        txHash
+        txHashUrl
+        block {
+          id
+          sourceChainID
+          hash
+          height
+          timestamp
+        }
+        receipt {
+          txHash
+          txHashUrl
+          timestamp
+          success
+          offset
+          sourceChainID
+          destChainID
+          relayer
+          revertReason
+        }
       }
     }
     pageInfo {
