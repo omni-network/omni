@@ -81,6 +81,11 @@ const config: Config = {
         },
         {
           position: "left",
+          label: "Octane",
+          to: "/octane/background/introduction",
+        },
+        {
+          position: "left",
           label: "Develop",
           to: "/develop/introduction",
         },
