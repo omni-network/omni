@@ -9,6 +9,7 @@ import (
 	"math"
 	"math/rand/v2"
 	"strconv"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -244,10 +245,16 @@ func (r *Resolver) Xmsg(ctx context.Context, args struct{ SourceChainID, DestCha
 }
 
 type XMsgsArgs struct {
-	First  *int32
-	After  *graphql.ID
-	Last   *int32
-	Before *graphql.ID
+	Filters *[]FilterInput
+	First   *int32
+	After   *graphql.ID
+	Last    *int32
+	Before  *graphql.ID
+}
+
+type FilterInput struct {
+	Key   string
+	Value string
 }
 
 // Implement the xmsg query resolver.
@@ -255,6 +262,62 @@ func (r *QueryResolver) Xmsgs(ctx context.Context, args XMsgsArgs) (XMsgConnecti
 	var messages []XMsg
 	for _, xblock := range r.XBlocks {
 		messages = append(messages, xblock.Messages...)
+	}
+
+	// Apply filters
+	if args.Filters != nil {
+		for _, f := range *args.Filters {
+			switch f.Key {
+			case "status":
+				var filteredMessages []XMsg
+				for _, msg := range messages {
+					if msg.Status == Status(f.Value) {
+						filteredMessages = append(filteredMessages, msg)
+					}
+				}
+				messages = filteredMessages
+
+			case "address":
+				var filteredMessages []XMsg
+				for _, msg := range messages {
+					sender, to := strings.ToLower(msg.Sender.Hex()), strings.ToLower(msg.To.Hex())
+					if sender == f.Value || to == f.Value {
+						filteredMessages = append(filteredMessages, msg)
+					}
+				}
+				messages = filteredMessages
+
+			case "srcChainID":
+				var filteredMessages []XMsg
+				for _, msg := range messages {
+					if msg.SourceChainID.String() == f.Value {
+						filteredMessages = append(filteredMessages, msg)
+					}
+				}
+				messages = filteredMessages
+
+			case "destChainID":
+				var filteredMessages []XMsg
+				for _, msg := range messages {
+					if msg.DestChainID.String() == f.Value {
+						filteredMessages = append(filteredMessages, msg)
+					}
+				}
+				messages = filteredMessages
+
+			case "txHash":
+				var filteredMessages []XMsg
+				for _, msg := range messages {
+					if strings.ToLower(msg.TxHash.String()) == f.Value || (msg.Receipt != nil && strings.ToLower(msg.Receipt.TxHash.String()) == f.Value) {
+						filteredMessages = append(filteredMessages, msg)
+					}
+				}
+				messages = filteredMessages
+
+			default:
+				return XMsgConnection{}, fmt.Errorf("unsupported filter key: %s", f.Key)
+			}
+		}
 	}
 
 	// default length of items to return
@@ -339,7 +402,7 @@ func (r *QueryResolver) Xmsgs(ctx context.Context, args XMsgsArgs) (XMsgConnecti
 }
 
 // Implement the supportedChains query resolver.
-func (r *Resolver) SupportedChains(ctx context.Context) []*Chain {
+func (r *Resolver) SupportedChains(ctx context.Context) []Chain {
 	// TODO: Implement logic to fetch supported chains
 	return nil
 }

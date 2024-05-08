@@ -51,7 +51,7 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 
 	log.Info(ctx, "Starting server", "address", httpServer.Addr)
-
+	stopMonitor := make(chan struct{}, 1)
 	var eg errgroup.Group
 	eg.Go(func() error {
 		defer cancel() // Cancel the app context if serving fails.
@@ -62,6 +62,7 @@ func Run(ctx context.Context, cfg Config) error {
 	eg.Go(func() error {
 		<-ctx.Done()
 		log.Info(ctx, "Shutdown detected, stopping server")
+		stopMonitor <- struct{}{} // send signal to stop monitoring server
 
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
@@ -74,7 +75,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return nil
 	})
 	eg.Go(func() error {
-		return serveMonitoring(cfg.MonitoringAddr)
+		return serveMonitoring(stopMonitor, cfg.MonitoringAddr)
 	})
 
 	if err := eg.Wait(); errors.Is(err, http.ErrServerClosed) {
@@ -87,7 +88,7 @@ func Run(ctx context.Context, cfg Config) error {
 }
 
 // serveMonitoring serves the monitoring API.
-func serveMonitoring(address string) error {
+func serveMonitoring(done <-chan struct{}, address string) error {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
 
@@ -98,6 +99,17 @@ func serveMonitoring(address string) error {
 		WriteTimeout:      5 * time.Second,
 		Handler:           mux,
 	}
+
+	go func() {
+		<-done
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		log.Info(ctx, "Shutdown detected, stopping monitoring server")
+		err := srv.Shutdown(ctx)
+		if err != nil {
+			log.Error(ctx, "Failed to shutdown monitoring server", err)
+		}
+	}()
 
 	return errors.Wrap(srv.ListenAndServe(), "serve monitoring")
 }
