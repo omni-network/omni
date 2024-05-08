@@ -1,13 +1,13 @@
 import { useColorMode } from '@docusaurus/theme-common'
 import CodeBlock from '@theme/CodeBlock'
-import { useCodeBlock } from './useCodeBlock'
+import { getNumberOfLines, useCodeBlock } from './useCodeBlock'
 
 import './GitHubCodeBlock.css'
 
 const GitHubCodeBlock = ({ url }: { url: string }) => {
   const { data, error, isLoading, isError } = useCodeBlock({ url })
 
-  if (isLoading) return <CodeBlockLoading />
+  if (isLoading) return <CodeBlockLoading numLines={getNumberOfLines(url)}/>
   if (isError) return <CodeBlockError url={url} error={error} />
 
   const { code, matchesMain, mainURL, sourceURL, language } = data
@@ -49,13 +49,20 @@ const GithubIcon = () => {
   )
 }
 
-const CodeBlockLoading = () => (
-  <div className="code-snippet-container">
-    <CodeBlock language="plaintext" className="code-snippet-block">
-      Fetching code from GitHub...
-    </CodeBlock>
-  </div>
-)
+const CodeBlockLoading = ({ numLines }: { numLines: number }) => {
+  const blankLines = Array.from({ length: numLines }, (_, index) => (
+    <div key={index} className="loading-line" />
+  ));
+
+  return (
+    <div className="code-snippet-container">
+      <CodeBlock language="plaintext" className="code-snippet-block">
+        Fetching code from GitHub...
+        {blankLines}
+      </CodeBlock>
+    </div>
+  );
+};
 
 const CodeBlockError = ({ url, error }: { url: string; error: Error }) => {
   console.error('CodeBlockError:', error)

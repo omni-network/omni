@@ -136,3 +136,8 @@ function determineLanguage(filePath: string) {
   }
   return languageMap[extension] || 'plaintext'
 }
+
+export function getNumberOfLines(url: string) : number {
+  const file = parseURL(url)
+  return file.isSnippet ? file.endLine - file.startLine : 0
+}
