@@ -97,6 +97,12 @@ interface IOmniPortal {
     function inXStreamOffset(uint64 sourceChainId) external view returns (uint64);
 
     /**
+     * @notice Returns latest xblock offset. Xblock offset incremenets once per each
+     *         source block that contains at least one XMsg.
+     */
+    function xblockOffset() external view returns (uint64);
+
+    /**
      * @notice Returns the source block height of the last inbound XMsg that was received from
      *         sourceChainId
      * @param sourceChainId Source chain ID

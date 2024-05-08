@@ -25,8 +25,9 @@ contract OmniPortal_xcall_Test is Base {
         vm.prank(xcaller);
         portal.xcall{ value: fee }(xmsg.destChainId, xmsg.to, xmsg.data);
 
-        // check outXStreamOffset is incremented
+        // check offsets are incremented
         assertEq(portal.outXStreamOffset(xmsg.destChainId), 1);
+        assertEq(portal.xblockOffset(), 1);
     }
 
     /// @dev Test that xcall with explicit gas limit emits XMsg event and increments outXStreamOffset
@@ -45,8 +46,54 @@ contract OmniPortal_xcall_Test is Base {
         vm.prank(xcaller);
         portal.xcall{ value: fee }(xmsg.destChainId, xmsg.to, xmsg.data, xmsg.gasLimit);
 
-        // check outXStreamOffset is incremented
+        // check offsets are incremented
         assertEq(portal.outXStreamOffset(xmsg.destChainId), 1);
+        assertEq(portal.xblockOffset(), 1);
+    }
+
+    function test_xblockOffset_incremented() public {
+        address to = makeAddr("to");
+        uint256 blockNum = block.number;
+
+        // make multiple xcalls
+        portal.xcall{ value: 1 ether }(chainAId, to, abi.encodeWithSignature("test()"));
+        portal.xcall{ value: 1 ether }(chainAId, to, abi.encodeWithSignature("test()"));
+
+        // check xblockOffset is incremented once
+        assertEq(portal.xblockOffset(), 1);
+
+        // move to later block
+        vm.roll(blockNum + 10);
+        blockNum = block.number;
+
+        // make multiple xcalls
+        portal.xcall{ value: 1 ether }(chainAId, to, abi.encodeWithSignature("test()"));
+        portal.xcall{ value: 1 ether }(chainAId, to, abi.encodeWithSignature("test()"));
+
+        // check xblockOffset is incremented once
+        assertEq(portal.xblockOffset(), 2);
+
+        // move to later block
+        vm.roll(blockNum + 100);
+        blockNum = block.number;
+
+        // make single xcalls
+        portal.xcall{ value: 1 ether }(chainAId, to, abi.encodeWithSignature("test()"));
+
+        // check xblockOffset is incremented once
+        assertEq(portal.xblockOffset(), 3);
+
+        // move to one later block
+        vm.roll(blockNum + 1);
+        blockNum = block.number;
+
+        // make multiple xcalls
+        portal.xcall{ value: 1 ether }(chainAId, to, abi.encodeWithSignature("test()"));
+        portal.xcall{ value: 1 ether }(chainAId, to, abi.encodeWithSignature("test()"));
+        portal.xcall{ value: 1 ether }(chainAId, to, abi.encodeWithSignature("test()"));
+
+        // check xblockOffset is incremented once
+        assertEq(portal.xblockOffset(), 4);
     }
 
     /// @dev Test that xcall with insufficient fee revert

@@ -6,6 +6,7 @@
     "func-visibility": ["error", { "ignoreConstructors": true }],
     "func-name-mixedcase": "off",
     "immutable-vars-naming": "off",
+    "max-states-count": "off",
     "no-unused-import": "error",
     "no-unused-vars": "error"
   }

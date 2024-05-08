@@ -145,6 +145,12 @@ contract OmniPortal is
         require(msg.sender != address(this), "OmniPortal: portal cannot xcall");
         require(msg.value >= feeFor(destChainId, data, gasLimit), "OmniPortal: insufficient fee");
 
+        // increment xblockOffset if this is the first xcall in a new block
+        if (block.number > _lastBlockWithXCall) {
+            xblockOffset += 1;
+            _lastBlockWithXCall = block.number;
+        }
+
         outXStreamOffset[destChainId] += 1;
 
         emit XMsg(destChainId, outXStreamOffset[destChainId], sender, to, data, gasLimit, msg.value);
