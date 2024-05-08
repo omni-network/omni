@@ -32,7 +32,7 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 	cdc := getCodec(t)
 	txConfig := authtx.NewTxConfig(cdc, nil)
 
-	mockEngine, err := newMockEngineAPI(2)
+	mockEngine, err := newMockEngineAPI(2, false)
 	require.NoError(t, err)
 	cmtAPI := newMockCometAPI(t, nil)
 	// set the header and proposer so we have the correct next proposer
@@ -225,7 +225,7 @@ func Test_pushPayload(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
-			mockEngine, err := newMockEngineAPI(0)
+			mockEngine, err := newMockEngineAPI(0, false)
 			require.NoError(t, err)
 			mockEngine.newPayloadV3Func = tt.args.newPayloadV3Func
 			payload, payloadID := newPayload(ctx, mockEngine, common.Address{})

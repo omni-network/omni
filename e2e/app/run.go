@@ -171,7 +171,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 	}
 
 	if def.Testnet.HasPerturbations() {
-		if err := perturb(ctx, def.Testnet.Testnet); err != nil {
+		if err := perturb(ctx, def.Testnet); err != nil {
 			return err
 		}
 	}

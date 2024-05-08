@@ -25,7 +25,7 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 	cdc := getCodec(t)
 	txConfig := authtx.NewTxConfig(cdc, nil)
 
-	mockEngine, err := newMockEngineAPI(0)
+	mockEngine, err := newMockEngineAPI(0, false)
 	require.NoError(t, err)
 
 	ctx, storeService := setupCtxStore(t, nil)

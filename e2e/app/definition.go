@@ -415,6 +415,7 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 		AnvilChains:  anvils,
 		PublicChains: publics,
 		Explorer:     manifest.Explorer,
+		Perturb:      manifest.Perturb,
 	}, nil
 }
 
