@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -69,21 +67,18 @@ func TestWriteConfigTOML(t *testing.T) {
 func TestGethVersion(t *testing.T) {
 	t.Parallel()
 
-	resp, err := http.Get("https://api.github.com/repos/ethereum/go-ethereum/releases/latest") //nolint:noctx // Test is ok
-	require.NoError(t, err)
-	defer resp.Body.Close()
-
-	bz, err := io.ReadAll(resp.Body)
+	out, err := exec.Command("go", "list", "-json", "github.com/ethereum/go-ethereum").CombinedOutput()
 	require.NoError(t, err)
 
-	var v version
-	require.NoError(t, json.Unmarshal(bz, &v))
+	resp := struct {
+		Module struct {
+			Version string `json:"version"`
+		} `json:"module"`
+	}{}
+	err = json.Unmarshal(out, &resp)
+	require.NoError(t, err)
 
-	require.Equal(t, Version, v.TagName, "A new version of geth has been released, update `geth.Version`")
-}
-
-type version struct {
-	TagName string `json:"tag_name"`
+	require.Equal(t, Version, resp.Module.Version, "A different geth has been released, update `geth.Version`")
 }
 
 // gethDumpConfigToml executes `geth dumpconfig` using the provided base config and
