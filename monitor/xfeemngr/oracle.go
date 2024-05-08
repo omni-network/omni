@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/xchain"
 	"github.com/omni-network/omni/monitor/xfeemngr/contract"
 	"github.com/omni-network/omni/monitor/xfeemngr/gasprice"
@@ -59,6 +60,8 @@ func (o feeOracle) syncForever(ctx context.Context, tick ticker.Ticker) {
 
 // syncOnce syncs the on-chain gas price and token conversion rates with their respective buffers, once.
 func (o feeOracle) syncOnce(ctx context.Context) {
+	ctx = log.WithCtx(ctx, "srcChainID")
+
 	for _, dest := range o.dests {
 		err := o.syncGasPrice(ctx, dest)
 		if err != nil {
@@ -74,10 +77,17 @@ func (o feeOracle) syncOnce(ctx context.Context) {
 
 // syncGasPrice sets the on-chain gas price to the buffered gas price, if they differ.
 func (o feeOracle) syncGasPrice(ctx context.Context, dest evmchain.Metadata) error {
+	ctx = log.WithCtx(ctx, "destChainID", dest.ChainID)
+
 	buffered := o.gprice.GasPrice(dest.ChainID)
 
 	if buffered == 0 {
 		return nil
+	}
+
+	if buffered > maxSaneGasPrice {
+		log.Warn(ctx, "Buffered gas price exceeds sane max", errors.New("unexpected gas price"), "buffered", buffered, "maxSane", maxSaneGasPrice)
+		buffered = maxSaneGasPrice
 	}
 
 	onChain, err := o.contract.GasPriceOn(ctx, dest.ChainID)
@@ -113,6 +123,8 @@ func guageGasPrice(src, dest evmchain.Metadata, price uint64) {
 
 // syncToNativeRate sets the on-chain conversion rate to the buffered conversion rate, if they differ.
 func (o feeOracle) syncToNativeRate(ctx context.Context, dest evmchain.Metadata) error {
+	ctx = log.WithCtx(ctx, "destChainID", dest.ChainID)
+
 	srcPrice := o.tprice.Price(o.chain.NativeToken)
 	destPrice := o.tprice.Price(dest.NativeToken)
 
@@ -122,6 +134,17 @@ func (o feeOracle) syncToNativeRate(ctx context.Context, dest evmchain.Metadata)
 
 	// bufferedRate "source token per destination token" is "USD per dest" / "USD per src"
 	bufferedRate := destPrice / srcPrice
+
+	if o.chain.NativeToken == tokens.OMNI && dest.NativeToken == tokens.ETH && bufferedRate > maxSaneOmniPerEth {
+		log.Warn(ctx, "Buffered omni-per-eth exceeds sane max", errors.New("unexpected conversion rate"), "buffered", bufferedRate, "maxSane", maxSaneOmniPerEth)
+		bufferedRate = maxSaneOmniPerEth
+	}
+
+	if o.chain.NativeToken == tokens.ETH && dest.NativeToken == tokens.OMNI && bufferedRate > maxSaneEthPerOmni {
+		log.Warn(ctx, "Buffered eth-per-omni exceeds sane max", errors.New("unexpected conversion rate"), "buffered", bufferedRate, "maxSane", maxSaneEthPerOmni)
+		bufferedRate = maxSaneEthPerOmni
+	}
+
 	bufferedNumer := rateToNumerator(bufferedRate)
 
 	onChainNumer, err := o.contract.ToNativeRate(ctx, dest.ChainID)
