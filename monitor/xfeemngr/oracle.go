@@ -60,7 +60,7 @@ func (o feeOracle) syncForever(ctx context.Context, tick ticker.Ticker) {
 
 // syncOnce syncs the on-chain gas price and token conversion rates with their respective buffers, once.
 func (o feeOracle) syncOnce(ctx context.Context) {
-	ctx = log.WithCtx(ctx, "srcChainID")
+	ctx = log.WithCtx(ctx, "srcChainID", o.chain.ChainID, "srcToken", o.chain.NativeToken)
 
 	for _, dest := range o.dests {
 		err := o.syncGasPrice(ctx, dest)
@@ -123,7 +123,7 @@ func guageGasPrice(src, dest evmchain.Metadata, price uint64) {
 
 // syncToNativeRate sets the on-chain conversion rate to the buffered conversion rate, if they differ.
 func (o feeOracle) syncToNativeRate(ctx context.Context, dest evmchain.Metadata) error {
-	ctx = log.WithCtx(ctx, "destChainID", dest.ChainID)
+	ctx = log.WithCtx(ctx, "destChainID", dest.ChainID, "destToken", dest.NativeToken)
 
 	srcPrice := o.tprice.Price(o.chain.NativeToken)
 	destPrice := o.tprice.Price(dest.NativeToken)
@@ -155,9 +155,16 @@ func (o feeOracle) syncToNativeRate(ctx context.Context, dest evmchain.Metadata)
 	onChainRate := numeratorToRate(onChainNumer)
 	guageRate(o.chain, dest, onChainRate)
 
-	// compare on chain and buffered rates within epsilon
-	if inEpsilon(onChainRate, bufferedRate, 0.001) {
+	// compare on chain and buffered rates within epsilon, with epsilon < 1 / rateDenom
+	// such that epsilon is more precise than on chain rates
+	if inEpsilon(onChainRate, bufferedRate, 1.0/float64(rateDenom*10)) {
 		return nil
+	}
+
+	// if bufferred rate is less than we can represent on chain, use smallest representable rate - 1/CONVERSION_RATE_DENOM
+	if bufferedRate < 1.0/float64(rateDenom) {
+		log.Warn(ctx, "Buffered rate too small, setting minimum on chain", errors.New("conversion rate < min repr"), "buffered", bufferedRate)
+		bufferedNumer = big.NewInt(1)
 	}
 
 	err = o.contract.SetToNativeRate(ctx, dest.ChainID, bufferedNumer)
@@ -203,16 +210,16 @@ func makeDestChains(srcChainID uint64, network netconf.Network) ([]evmchain.Meta
 	return destChains, nil
 }
 
-// conversionRateDenom matches the CONVERSION_RATE_DENOM on the FeeOracleV1 contract.
+// rateDenom matches FeeOracleV1.CONVERSION_RATE_DENOM
 // This denominator helps convert between token amounts in solidity, in which there are no floating point numbers.
 //
 //	ex. (amt A) * (rate R) / CONVERSION_RATE_DENOM = (amt B)
-var conversionRateDenom = big.NewInt(1_000_000)
+const rateDenom = 1_000_000
 
 // rateToNumerator translates a float rate (ex 0.1) to numerator / CONVERSION_RATE_DENOM (ex 100_000).
 // This rate-as-numerator representation is used in FeeOracleV1 contracts.
 func rateToNumerator(r float64) *big.Int {
-	denom := new(big.Float).SetInt64(conversionRateDenom.Int64())
+	denom := new(big.Float).SetUint64(rateDenom)
 	numer := new(big.Float).SetFloat64(r)
 	norm, _ := new(big.Float).Mul(numer, denom).Int(nil)
 
@@ -222,7 +229,7 @@ func rateToNumerator(r float64) *big.Int {
 // numeratorToRate translates a rate numerator / CONVERSION_RATE_DENOM to a float rate.
 // It is the inverse of rateToNumerator. We use non-numerator rates in metrics and logs.
 func numeratorToRate(n *big.Int) float64 {
-	denom := new(big.Float).SetInt64(conversionRateDenom.Int64())
+	denom := new(big.Float).SetUint64(rateDenom)
 	numer := new(big.Float).SetInt(n)
 	rate, _ := new(big.Float).Quo(numer, denom).Float64()
 
