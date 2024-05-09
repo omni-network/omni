@@ -2,11 +2,12 @@ import { Link } from '@remix-run/react'
 import React from 'react'
 import { dateFormatter, hashShortener } from '~/lib/formatting'
 import { dateFormatterXMsgPage } from './date.service';
+import { copyToClipboard } from '~/lib/utils';
 
 export const To = ({ xMsgDetails }) => {
   return (
     <>
-      <h6 className="text-default my-5 mt-20 text-lg">To</h6>
+      <h6 className="text-default my-5 text-lg">To</h6>
     {/* Destination Chain */}
     <div className="flex mt-5 pb-2 border-b-2 border-gray-500 border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Destination Chain</p>
@@ -26,20 +27,34 @@ export const To = ({ xMsgDetails }) => {
         <p className="w-[150px] sm:w-48 text-sm">Destination Address</p>
         <Link target='_blank' to={xMsgDetails.toUrl} className="underline text-indigo-400 hidden lg:block">
           {xMsgDetails.to}
+          <span className="icon-external-link" />
         </Link>
         <Link target='_blank' to={xMsgDetails.toUrl} className="underline text-indigo-400 block lg:hidden">
-          {hashShortener(xMsgDetails.to)}
+          <span className="font-bold text-b-sm">{hashShortener(xMsgDetails.to)}</span>
+          <span className="icon-external-link" />
         </Link>
+        <span
+          data-tooltip-id="tooltip-clipboard"
+          className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
+          onClick={() => copyToClipboard(xMsgDetails.to)}
+        />
       </div>
-      {/* Offset */}
+      {/* Tx Hash */}
       <div className="flex mt-5 pb-2 border-b-2 border-gray-500 border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Tx Hash</p>
-        <Link target='_blank' to={xMsgDetails.txHashUrl} className="underline text-indigo-400 hidden lg:block">
+        <Link target='_blank' to={xMsgDetails.txUrl} className="underline text-indigo-400 hidden lg:block">
           {xMsgDetails.receipt.txHash}
+          <span className="icon-external-link" />
         </Link>
-        <Link target='_blank' to={xMsgDetails.txHashUrl} className="underline text-indigo-400 block lg:hidden">
-          {hashShortener(xMsgDetails.receipt.txHash)}
+        <Link target='_blank' to={xMsgDetails.txUrl} className="underline text-indigo-400 block lg:hidden">
+          <span className="font-bold text-b-sm">{hashShortener(xMsgDetails.receipt.txHash)}</span>
+          <span className="icon-external-link" />
         </Link>
+        <span
+          data-tooltip-id="tooltip-clipboard"
+          className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
+          onClick={() => copyToClipboard(xMsgDetails.receipt.txHash)}
+        />
       </div>
       {/* Gas Limit */}
       <div className="flex mt-5 pb-2 border-b-2 border-gray-500 border-solid">

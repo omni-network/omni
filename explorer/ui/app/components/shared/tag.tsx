@@ -4,7 +4,7 @@ interface Props {
   status: 'SUCCESS' | 'FAILED' | 'PENDING'
 }
 
-const Tag: React.FC<Props> = ({ status }) => {
+const Tag: React.FC<Props> = ({ status, id }) => {
   const [color, setColor] = React.useState({})
   const getColor = () => {
     switch (status) {

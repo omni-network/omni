@@ -27,7 +27,6 @@ export const loader: LoaderFunction = async ({ request }) => {
   }
 
   const [xmsgRes] = await Promise.all([gqlClient.query(xmsg, variables)])
-
   const pollData = async () => {
     return json({
       xMsg: xmsgRes,
@@ -67,21 +66,21 @@ export default function Index() {
           <BackBtn onBackClickHandler={onBackClickHandler} />
           <h4 className="mt-5">
             XMsg <span className="p-2">/</span>{' '}
-            <span className="text-default">{xMsgDetails.displayID}</span>
+            <span className="text-default">{xMsgDetails?.displayID}</span>
           </h4>
 
           <div className="mt-5 p-4 w-full bg-raised rounded-lg">
             {/* Offset */}
             <div className="flex mt-5 pb-2 border-b-2 border-gray-500 border-solid">
               <p className="w-[150px] sm:w-48 text-sm">Offset</p>
-              <p className="text-default">{xMsgDetails.offset}</p>
+              <p className="text-default">{xMsgDetails?.offset}</p>
             </div>
             {/* Status */}
             <div className="flex mt-5 pb-2 border-b-2 border-gray-500 border-solid">
               <p className="w-[150px] sm:w-48 text-sm">Status</p>
               <div className="flex flex-col sm:flex-row items-start">
-                <Tag status={xMsgDetails.status} />
-                <p className="sm:ml-5">{xMsgDetails.receipt.revertReason}</p>
+                <Tag status={xMsgDetails?.status} />
+                <p className="sm:ml-5">{xMsgDetails?.receipt.revertReason}</p>
               </div>
             </div>
             {/* Data */}

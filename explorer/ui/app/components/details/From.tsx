@@ -1,11 +1,12 @@
 import { Link } from '@remix-run/react'
 import React from 'react'
 import { hashShortener } from '~/lib/formatting'
+import { copyToClipboard } from '~/lib/utils'
 
 export const From = ({ xMsgDetails }) => {
   return (
     <>
-      <h6 className="text-default my-5 mt-20 text-lg">From</h6>
+      <h6 className="text-default my-5 text-lg">From</h6>
       {/* Source Chain */}
       <div className="flex mt-5 pb-2 border-b-2 border-gray-500 border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Source Chain</p>
@@ -16,22 +17,52 @@ export const From = ({ xMsgDetails }) => {
       {/* Source Address */}
       <div className="flex mt-5 pb-2 border-b-2 border-gray-500 border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Source Address</p>
-        <Link target='_blank' to={xMsgDetails.senderUrl} className="underline text-indigo-400 hidden lg:block">
+        <Link
+          target="_blank"
+          to={xMsgDetails.senderUrl}
+          className="underline text-indigo-400 hidden lg:block"
+        >
           {xMsgDetails.sender}
+          <span className="icon-external-link" />
         </Link>
-        <Link target='_blank' to={xMsgDetails.senderUrl} className="underline text-indigo-400 block lg:hidden">
-          {hashShortener(xMsgDetails.sender)}
+        <Link
+          target="_blank"
+          to={xMsgDetails.senderUrl}
+          className="underline text-indigo-400 block lg:hidden"
+        >
+          <span className="font-bold text-b-sm">{hashShortener(xMsgDetails.sender)}</span>
+          <span className="icon-external-link" />
         </Link>
+        <span
+          data-tooltip-id="tooltip-clipboard"
+          className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
+          onClick={() => copyToClipboard(xMsgDetails.sender)}
+        />
       </div>
       {/* Tx Hash */}
       <div className="flex mt-5 pb-2 border-b-2 border-gray-500 border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Tx Hash</p>
-        <Link target='_blank' to={xMsgDetails.txHashUrl} className="underline text-indigo-400 hidden lg:block">
+        <Link
+          target="_blank"
+          to={xMsgDetails.txUrl}
+          className="underline text-indigo-400 hidden lg:block"
+        >
           {xMsgDetails.txHash}
+          <span className="icon-external-link" />
         </Link>
-        <Link target='_blank' to={xMsgDetails.txHashUrl} className="underline text-indigo-400 block lg:hidden">
-          {hashShortener(xMsgDetails.txHash)}
+        <Link
+          target="_blank"
+          to={xMsgDetails.txUrl}
+          className="underline text-indigo-400 block lg:hidden"
+        >
+          <span className="font-bold text-b-sm">{hashShortener(xMsgDetails.txHash)}</span>
+          <span className="icon-external-link" />
         </Link>
+        <span
+          data-tooltip-id="tooltip-clipboard"
+          className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
+          onClick={() => copyToClipboard(xMsgDetails.txHash)}
+        />
       </div>
       {/* Offset */}
       <div className="flex mt-5 pb-2 border-b-2 border-gray-500 border-solid">
@@ -41,13 +72,15 @@ export const From = ({ xMsgDetails }) => {
       {/* Block Hash */}
       <div className="flex mt-5 pb-2 border-b-2 border-gray-500 border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Block Hash</p>
-        <p className="text-default hidden lg:block">
-          {xMsgDetails.block.hash}
-        </p>
-        <p className="text-default block lg:hidden">
-          {hashShortener(xMsgDetails.block.hash)}
-        </p>
+        <p className="text-default hidden lg:block">{xMsgDetails.block.hash}</p>
+        <p className="text-default block lg:hidden">{hashShortener(xMsgDetails.block.hash)}</p>
+        <span
+          data-tooltip-id="tooltip-clipboard"
+          className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
+          onClick={() => copyToClipboard(xMsgDetails.block.hash)}
+        />
       </div>
+
     </>
   )
 }

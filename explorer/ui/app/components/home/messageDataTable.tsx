@@ -35,14 +35,16 @@ export default function XMsgDataTable() {
     sourceChain: string | null
     destChain: string | null
     status: Status
-    cursor: string | null
+    before: string | null
+    after: string | null
   }>({
     address: searchParams.get('address') ?? null,
     sourceChain: searchParams.get('sourceChain') ?? null,
     destChain: searchParams.get('destChain') ?? null,
     txHash: searchParams.get('txHash') ?? null,
     status: (searchParams.get('status') as Status) ?? 'All',
-    cursor: searchParams.get('cursor') ?? null,
+    before: searchParams.get('before') ?? null,
+    after: searchParams.get('after') ?? null,
   })
 
   const sourceChainList = []
@@ -52,7 +54,6 @@ export default function XMsgDataTable() {
     canFilter: false,
     enableColumnFilter: false,
   }
-
   const clearFilters = () => {
     if (searchFieldRef.current) {
       searchFieldRef.current.value = ''
@@ -63,7 +64,8 @@ export default function XMsgDataTable() {
       sourceChain: null,
       destChain: null,
       txHash: null,
-      cursor: null,
+      after: null,
+      before: null,
       status: 'All',
     })
   }
@@ -125,7 +127,7 @@ export default function XMsgDataTable() {
             <>
               <Link
                 data-tooltip-id={`${value.getValue()}-full-id-tooltip`}
-                to={`xmsg/${value.getValue()}`}
+                to={`xmsg/${value.row.original.node.sourceChainID}-${value.row.original.node.destChainID}-${value.row.original.node.offset}`}
                 className="link"
               >
                 {hashShortener(value.getValue())}
@@ -133,7 +135,6 @@ export default function XMsgDataTable() {
               <Tooltip className="tooltip" id={`${value.getValue()}-full-id-tooltip`}>
                 <label className="text-default text-b-sm font-bold">{value.getValue()}</label>
               </Tooltip>
-              {/* <span  className="icon-tooltip-info"></span> */}
             </>
           )
         },
@@ -154,7 +155,25 @@ export default function XMsgDataTable() {
         ...columnConfig,
         accessorKey: 'node.status',
         header: () => <span>Status</span>,
-        cell: (value: any) => <Tag status={value.getValue()} />,
+        cell: (value: any) => {
+          return (
+            <>
+              <span data-tooltip-id={`${value.row.original.node.displayID}-status-id-tooltip`}>
+                <Tag status={value.getValue()} />
+              </span>
+              {value.row.original.node.receipt.revertReason && (
+                <Tooltip
+                  className="tooltip"
+                  id={`${value.row.original.node.displayID}-status-id-tooltip`}
+                >
+                  <label className="text-default text-b-sm font-bold">
+                    {value.row.original.node.receipt.revertReason}
+                  </label>
+                </Tooltip>
+              )}
+            </>
+          )
+        },
       },
       {
         ...columnConfig,
@@ -178,10 +197,10 @@ export default function XMsgDataTable() {
         ),
         cell: (value: any) => {
           return (
-            <div className='flex'>
-              <Link to={`${value.row.original.node.senderUrl}`} className="link">
+            <div className="flex">
+              <Link target="_blank" to={`${value.row.original.node.senderUrl}`} className="link">
                 {value.getValue() && (
-                  <div className='flex flex-start'>
+                  <div className="flex flex-start">
                     <span className="font-bold text-b-sm w-[125px]">
                       {hashShortener(value.getValue())}
                     </span>
@@ -216,21 +235,19 @@ export default function XMsgDataTable() {
           return (
             <>
               {value.getValue() && (
-                <div className='flex'>
+                <div className="flex">
                   {' '}
-
                   <Link
                     target="_blank"
-                    to={`${value.row.original.node.txHashUrl}`}
+                    to={`${value.row.original.node.txUrl}`}
                     className="link"
                   >
-                    <div className='flex'>
-                    <p className="font-bold text-b-sm w-[125px]">
-                      {hashShortener(value.getValue())}
-                    </p>
-                    <span className="icon-external-link" />
+                    <div className="flex">
+                      <p className="font-bold text-b-sm w-[125px]">
+                        {hashShortener(value.getValue())}
+                      </p>
+                      <span className="icon-external-link" />
                     </div>
-
                   </Link>
                   <span
                     data-tooltip-id="tooltip-clipboard"
@@ -247,7 +264,7 @@ export default function XMsgDataTable() {
         ...columnConfig,
         accessorKey: 'Empty',
         header: () => <span></span>,
-        cell: (value: any) => <img className='max-w-none' src={LongArrow} alt="" />,
+        cell: (value: any) => <img className="max-w-none" src={LongArrow} alt="" />,
       },
       {
         ...columnConfig,
@@ -270,15 +287,12 @@ export default function XMsgDataTable() {
           </div>
         ),
         cell: (value: any) => (
-          <div className='flex'>
+          <div className="flex">
             <Link target="_blank" to={`${value.row.original.node.toUrl}`} className="link">
-              <div className='flex'>
-              <p className="font-bold text-b-sm w-[120px]">
-                {hashShortener(value.getValue())}
-              </p>
-              <span className="icon-external-link" />
+              <div className="flex">
+                <p className="font-bold text-b-sm w-[120px]">{hashShortener(value.getValue())}</p>
+                <span className="icon-external-link" />
               </div>
-
             </Link>
             <span
               data-tooltip-id="tooltip-clipboard"
@@ -306,18 +320,18 @@ export default function XMsgDataTable() {
           return (
             <>
               {value.getValue() && (
-                <div className='flex'>
+                <div className="flex">
                   {' '}
                   <Link
                     target="_blank"
-                    to={`${value.row.original.node.receipt.txHashUrl}`}
+                    to={`${value.row.original.node.receipt.txUrl}`}
                     className="link"
                   >
-                    <div className='flex'>
-                    <p className="font-bold text-b-sm w-[120px]">
-                      {hashShortener(value.getValue())}
-                    </p>
-                    <span className="icon-external-link" />
+                    <div className="flex">
+                      <p className="font-bold text-b-sm w-[120px]">
+                        {hashShortener(value.getValue())}
+                      </p>
+                      <span className="icon-external-link" />
                     </div>
                   </Link>
                   <span
@@ -441,9 +455,13 @@ export default function XMsgDataTable() {
           <PageButton
             className="rounded-full flex items-center justify-center"
             onClick={() => {
-              setFilterParams(prev => ({ ...prev, cursor: data.prevCursor }))
+              if (data.pageInfo.currentPage === '2') {
+                setFilterParams(prev => ({ ...prev, before: null, after: null }))
+              } else {
+                setFilterParams(prev => ({ ...prev, before: data.xmsgs[0].cursor, after: null }))
+              }
             }} // TODO: when clicked it needs to update the search params with the new cursor
-            disabled={false} // TODO: When there is no previous cursor, we need to disable this
+            disabled={!data.pageInfo.hasPrevPage} // TODO: When there is no previous cursor, we need to disable this
           >
             <span className="sr-only">Previous</span>
             <span className={`icon-chevron-med-left text-[20px]`}></span>
@@ -462,9 +480,9 @@ export default function XMsgDataTable() {
           <PageButton
             className="rounded-full  flex items-center justify-center"
             onClick={() => {
-              setFilterParams(prev => ({ ...prev, cursor: data.nextCursor }))
+              setFilterParams(prev => ({ ...prev, after: data.xmsgs[9].cursor, before: null }))
             }} // TODO: when clicked it needs to update the search params with the new cursor
-            disabled={false} // TODO: When there is no next cursor, we need to disable this
+            disabled={!data.pageInfo.hasNextPage} // TODO: When there is no next cursor, we need to disable this
           >
             <span className="sr-only">Next</span>
             <span className={`icon-chevron-med-right text-[20px]`}></span>
