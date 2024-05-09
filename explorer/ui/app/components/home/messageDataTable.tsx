@@ -47,12 +47,6 @@ export default function XMsgDataTable() {
     cursor: searchParams.get('cursor') ?? null,
   })
 
-  // const sourceChainList = data?.supportedChains.map(chain => ({
-  //   value: chain.ChainID,
-  //   display: chain.DisplayName,
-  //   icon: chain.Icon,
-  // }))
-
   const sourceChainList = []
   const rows = data.xmsgs
 

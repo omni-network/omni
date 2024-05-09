@@ -61,7 +61,7 @@ export const xmsgcount = graphql(`
 
 export const xmsgs = gql(`
 query xmsgs($first: Int) {
-  xmsgs(first: $first, last: ) {
+  xmsgs(first: $first) {
     totalCount
     edges {
       cursor
