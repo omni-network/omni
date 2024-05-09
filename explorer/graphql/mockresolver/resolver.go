@@ -69,17 +69,18 @@ type XMsg struct {
 	SourceChainID hexutil.Big
 	Status        Status
 	TxHash        common.Hash
-	TxHashURL     string
+	TxURL         string
 }
 
 // Define the Go struct for the XBlock type.
 type XBlock struct {
-	ID            graphql.ID
-	SourceChainID hexutil.Big
-	Height        hexutil.Big
-	Hash          common.Hash
-	Messages      []XMsg
-	Timestamp     graphql.Time
+	ID        graphql.ID
+	ChainID   hexutil.Big
+	Height    hexutil.Big
+	Hash      common.Hash
+	Messages  []XMsg
+	Timestamp graphql.Time
+	URL       string
 }
 
 // Define the Go struct for the XReceipt type.
@@ -92,7 +93,7 @@ type XReceipt struct {
 	DestChainID   hexutil.Big
 	Offset        hexutil.Big
 	TxHash        common.Hash
-	TxHashURL     string
+	TxURL         string
 	Timestamp     graphql.Time
 	RevertReason  *string
 }
@@ -138,6 +139,30 @@ func New() *Resolver {
 		},
 	}
 
+	chains := []Chain{
+		{ID: graphql.ID(relay.MarshalID("Chain", "1")), ChainID: hexutil.Big(*hexutil.MustDecodeBig("0x1")), Name: "Ethereum"},
+		{ID: graphql.ID(relay.MarshalID("Chain", "2")), ChainID: hexutil.Big(*hexutil.MustDecodeBig("0x2")), Name: "Binance Smart Chain"},
+		{ID: graphql.ID(relay.MarshalID("Chain", "3")), ChainID: hexutil.Big(*hexutil.MustDecodeBig("0x3")), Name: "Polygon"},
+		{ID: graphql.ID(relay.MarshalID("Chain", "4")), ChainID: hexutil.Big(*hexutil.MustDecodeBig("0x4")), Name: "Avalanche"},
+		{ID: graphql.ID(relay.MarshalID("Chain", "5")), ChainID: hexutil.Big(*hexutil.MustDecodeBig("0x5")), Name: "Fantom"},
+		{ID: graphql.ID(relay.MarshalID("Chain", "6")), ChainID: hexutil.Big(*hexutil.MustDecodeBig("0x6")), Name: "Arbitrum"},
+		{ID: graphql.ID(relay.MarshalID("Chain", "7")), ChainID: hexutil.Big(*hexutil.MustDecodeBig("0x7")), Name: "Optimism"},
+	}
+
+	// Helper function to get a random destination chain ID different from the source chain ID
+	destChainID := func(srcID hexutil.Big) hexutil.Big {
+		var id hexutil.Big
+		var found bool
+		for !found {
+			id = chains[rand.IntN(len(chains))].ChainID
+			if id.String() != srcID.String() {
+				found = true
+			}
+		}
+
+		return id
+	}
+
 	statuses := []Status{StatusFailed, StatusPending, StatusSuccess}
 	fuzzer := fuzz.New().NilChance(0).NumElements(1, 1)
 	var relayerAddress common.Address
@@ -150,10 +175,12 @@ func New() *Resolver {
 
 		// Fuzz XBlock properties
 		xblock.ID = graphql.ID(relay.MarshalID("XBlock", fmt.Sprintf("%d", i+1)))
-		fuzzer.Fuzz(&xblock.SourceChainID)
+		fuzzer.Fuzz(&xblock.ChainID)
 		fuzzer.Fuzz(&xblock.Height)
 		fuzzer.Fuzz(&xblock.Hash)
 		fuzzer.Fuzz(&xblock.Timestamp)
+		xblock.ChainID = chains[rand.IntN(len(chains))].ChainID
+		xblock.URL = fmt.Sprintf("https://etherscan.io/block/%s", fmt.Sprintf("%d", xblock.Height.ToInt().Int64()))
 
 		numMsgs := rand.IntN(6) // Generate random number of messages between 0 and 5
 		for j := 0; j < numMsgs; j++ {
@@ -161,19 +188,19 @@ func New() *Resolver {
 
 			// Fuzz XMsg properties
 			xmsg.ID = relay.MarshalID("XMsg", fmt.Sprintf("%d-%d", i+1, j+1))
-			fuzzer.Fuzz(&xmsg.Offset)
 			fuzzer.Fuzz(&xmsg.Sender)
 			fuzzer.Fuzz(&xmsg.To)
 			fuzzer.Fuzz(&xmsg.GasLimit)
-			fuzzer.Fuzz(&xmsg.SourceChainID)
-			fuzzer.Fuzz(&xmsg.DestChainID)
 			fuzzer.Fuzz(&xmsg.TxHash)
+			xmsg.Offset = hexutil.Big(*hexutil.MustDecodeBig(fmt.Sprintf("0x%x", j+1)))
+			xmsg.SourceChainID = xblock.ChainID
+			xmsg.DestChainID = destChainID(xmsg.SourceChainID)
 			xmsg.Block = xblock
-			xmsg.DisplayID = fmt.Sprintf("%s-%s-%s", &xmsg.SourceChainID, &xmsg.DestChainID, &xmsg.Offset)
+			xmsg.DisplayID = fmt.Sprintf("%d-%d-%d", xmsg.SourceChainID.ToInt().Int64(), xmsg.DestChainID.ToInt().Int64(), xmsg.Offset.ToInt().Int64())
 			xmsg.Status = statuses[rand.IntN(len(statuses))]
 			xmsg.SenderURL = fmt.Sprintf("https://etherscan.io/address/%s", xmsg.Sender.String())
 			xmsg.ToURL = fmt.Sprintf("https://etherscan.io/address/%s", xmsg.To.String())
-			xmsg.TxHashURL = fmt.Sprintf("https://etherscan.io/tx/%s", xmsg.TxHash.String())
+			xmsg.TxURL = fmt.Sprintf("https://etherscan.io/tx/%s", xmsg.TxHash.String())
 
 			var xreceipt XReceipt
 
@@ -181,18 +208,18 @@ func New() *Resolver {
 			xreceipt.ID = graphql.ID(relay.MarshalID("XReceipt", fmt.Sprintf("%d-%d", i+1, j+1)))
 			fuzzer.Fuzz(&xreceipt.GasUsed)
 			xreceipt.Relayer = relayerAddress
-			fuzzer.Fuzz(&xreceipt.SourceChainID)
-			fuzzer.Fuzz(&xreceipt.DestChainID)
 			fuzzer.Fuzz(&xreceipt.Offset)
 			fuzzer.Fuzz(&xreceipt.TxHash)
 			fuzzer.Fuzz(&xreceipt.Timestamp)
+			xreceipt.SourceChainID = xmsg.SourceChainID
+			xreceipt.DestChainID = xmsg.DestChainID
 			if xmsg.Status == StatusFailed {
 				xreceipt.Success = false
 				reason := "Insufficient funds"
 				xreceipt.RevertReason = &reason
 			}
 
-			xreceipt.TxHashURL = fmt.Sprintf("https://etherscan.io/tx/%s", xreceipt.TxHash.String())
+			xreceipt.TxURL = fmt.Sprintf("https://etherscan.io/tx/%s", xreceipt.TxHash.String())
 
 			xmsg.Receipt = &xreceipt
 
@@ -211,9 +238,9 @@ type Resolver struct {
 }
 
 // Implement the xblock query resolver.
-func (r *QueryResolver) XBlock(ctx context.Context, args struct{ SourceChainID, Height hexutil.Big }) *XBlock {
+func (r *QueryResolver) XBlock(ctx context.Context, args struct{ ChainID, Height hexutil.Big }) *XBlock {
 	for _, xblock := range r.XBlocks {
-		if xblock.SourceChainID.String() == args.SourceChainID.String() && xblock.Height.String() == args.Height.String() {
+		if xblock.ChainID.String() == args.ChainID.String() && xblock.Height.String() == args.Height.String() {
 			return &xblock
 		}
 	}
