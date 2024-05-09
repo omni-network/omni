@@ -49,8 +49,11 @@ type XBlock {
   "ID of the block"
   id: ID!
 
+  "URL to view the block on the source chain"
+  url: String!
+
   "Source chain ID as per https://chainlist.org"
-  sourceChainID: BigInt!
+  chainID: BigInt!
 
   "Height of the source chain block"
   height: BigInt!
@@ -103,7 +106,7 @@ type XMsg {
   txHash: Bytes32!
 
   "URL to view the transaction on the source chain"
-  txHashUrl: String!
+  txUrl: String!
 
   "Status of the X message"
   status: Status!
@@ -144,7 +147,7 @@ type XReceipt {
   txHash: Bytes32!
 
   "URL to view the transaction on the destination chain"
-  txHashUrl: String!
+  txUrl: String!
 
   "Timestamp of the receipt"
   timestamp: Time!
@@ -222,7 +225,7 @@ The query type represents all of the read-only entry points into our object grap
 """
 type Query {
   "Retrieve a specific XBlock by source chain ID and height on that chain."
-  xblock(sourceChainID: BigInt!, height: BigInt!): XBlock
+  xblock(chainID: BigInt!, height: BigInt!): XBlock
 
   "Retrieve a specific XReceipt by source chain ID, destination chain ID and offset."
   xreceipt(sourceChainID: BigInt!, destChainID: BigInt!, offset: BigInt!): XReceipt
