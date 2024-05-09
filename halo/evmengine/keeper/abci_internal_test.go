@@ -551,7 +551,7 @@ func (m *mockEngineAPI) nextBlock(t *testing.T, height uint64, timestamp uint64,
 	header.MixDigest = parentHash
 
 	// Convert header to block
-	block := types.NewBlock(&header, nil, nil, nil, trie.NewStackTrie(nil))
+	block := types.NewBlock(&header, nil, nil, trie.NewStackTrie(nil))
 
 	// Convert block to payload
 	env := eengine.BlockToExecutableData(block, big.NewInt(0), nil)

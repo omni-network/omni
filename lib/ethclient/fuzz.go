@@ -33,7 +33,7 @@ func NewFuzzer(seed int64) *fuzz.Fuzzer {
 			var header types.Header
 			c.Fuzz(&header)
 
-			block := types.NewBlock(&header, nil, nil, nil, trie.NewStackTrie(nil))
+			block := types.NewBlock(&header, nil, nil, trie.NewStackTrie(nil))
 
 			*b = *block //nolint:govet // Copy lock isn't a problem since we are creating a new object.
 		},
