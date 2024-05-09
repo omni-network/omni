@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"math/big"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -35,7 +36,8 @@ var _ EngineClient = (*engineMock)(nil)
 // engineMock mocks the Engine API for testing purposes.
 type engineMock struct {
 	Client
-	fuzzer *fuzz.Fuzzer
+	fuzzer     *fuzz.Fuzzer
+	randomErrs float64
 
 	mu          sync.Mutex
 	head        *types.Block
@@ -64,6 +66,24 @@ func WithMockDeposit(pubkey crypto.PubKey, ether int64) func(*engineMock) {
 			Data:   data,
 		})
 	}
+}
+
+func WithRandomErrs() func(*engineMock) {
+	return func(m *engineMock) {
+		m.randomErrs = 0.5
+	}
+}
+
+type randomErrKey struct{}
+
+func WithoutRandomErr(ctx context.Context) context.Context {
+	return context.WithValue(ctx, randomErrKey{}, true)
+}
+
+func hasWithoutRandomErr(ctx context.Context) bool {
+	v, ok := ctx.Value(randomErrKey{}).(bool)
+
+	return ok && v
 }
 
 // NewEngineMock returns a new mock engine API client.
@@ -103,6 +123,18 @@ func NewEngineMock(opts ...func(mock *engineMock)) (EngineClient, error) {
 	return m, nil
 }
 
+func (m *engineMock) maybeErr(ctx context.Context) error {
+	if hasWithoutRandomErr(ctx) {
+		return nil
+	}
+	//nolint:gosec // Test code is fine.
+	if rand.Float64() < m.randomErrs {
+		return errors.New("test error")
+	}
+
+	return nil
+}
+
 func (m *engineMock) FilterLogs(_ context.Context, q ethereum.FilterQuery) ([]types.Log, error) {
 	// Assume all filter queries with addresses are for deposit events... :/
 	if len(q.Addresses) > 0 && q.BlockHash != nil {
@@ -135,14 +167,22 @@ func (m *engineMock) FilterLogs(_ context.Context, q ethereum.FilterQuery) ([]ty
 	return []types.Log{resp1, resp2}, nil
 }
 
-func (m *engineMock) BlockNumber(_ context.Context) (uint64, error) {
+func (m *engineMock) BlockNumber(ctx context.Context) (uint64, error) {
+	if err := m.maybeErr(ctx); err != nil {
+		return 0, err
+	}
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	return m.head.NumberU64(), nil
 }
 
-func (m *engineMock) BlockByNumber(_ context.Context, number *big.Int) (*types.Block, error) {
+func (m *engineMock) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
+	if err := m.maybeErr(ctx); err != nil {
+		return nil, err
+	}
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -154,6 +194,10 @@ func (m *engineMock) BlockByNumber(_ context.Context, number *big.Int) (*types.B
 }
 
 func (m *engineMock) NewPayloadV3(ctx context.Context, params engine.ExecutableData, _ []common.Hash, _ *common.Hash) (engine.PayloadStatusV1, error) {
+	if err := m.maybeErr(ctx); err != nil {
+		return engine.PayloadStatusV1{}, err
+	}
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -177,6 +221,10 @@ func (m *engineMock) NewPayloadV3(ctx context.Context, params engine.ExecutableD
 func (m *engineMock) ForkchoiceUpdatedV3(ctx context.Context, update engine.ForkchoiceStateV1,
 	attrs *engine.PayloadAttributes,
 ) (engine.ForkChoiceResponse, error) {
+	if err := m.maybeErr(ctx); err != nil {
+		return engine.ForkChoiceResponse{}, err
+	}
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -247,7 +295,11 @@ func (m *engineMock) ForkchoiceUpdatedV3(ctx context.Context, update engine.Fork
 	return resp, nil
 }
 
-func (m *engineMock) GetPayloadV3(_ context.Context, payloadID engine.PayloadID) (*engine.ExecutionPayloadEnvelope, error) {
+func (m *engineMock) GetPayloadV3(ctx context.Context, payloadID engine.PayloadID) (*engine.ExecutionPayloadEnvelope, error) {
+	if err := m.maybeErr(ctx); err != nil {
+		return nil, err
+	}
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 

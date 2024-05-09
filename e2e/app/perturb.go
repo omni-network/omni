@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
@@ -13,7 +14,7 @@ import (
 )
 
 // perturb the running testnet.
-func perturb(ctx context.Context, testnet *e2e.Testnet) error {
+func perturb(ctx context.Context, testnet types.Testnet) error {
 	for _, node := range testnet.Nodes {
 		for _, perturbation := range node.Perturbations {
 			_, err := perturbNode(ctx, node, perturbation)
@@ -23,6 +24,39 @@ func perturb(ctx context.Context, testnet *e2e.Testnet) error {
 			time.Sleep(3 * time.Second) // Give network some time to recover between each
 		}
 	}
+
+	for service, purturbs := range testnet.Perturb {
+		for _, p := range purturbs {
+			if err := perturbService(ctx, service, testnet.Dir, p); err != nil {
+				return errors.Wrap(err, "purturb service", "service", service)
+			}
+			time.Sleep(3 * time.Second) // Give network some time to recover between each
+		}
+	}
+
+	return nil
+}
+
+// perturbService perturbs a docker service with a given perturbation.
+func perturbService(ctx context.Context, service string, testnetDir string, perturb types.Perturb) error {
+	ctx = log.WithCtx(ctx, "service", service)
+
+	log.Info(ctx, "Perturbing service", "perturb", perturb)
+	switch perturb {
+	case types.PerturbStopStart:
+
+		if err := docker.ExecCompose(ctx, testnetDir, "stop", service); err != nil {
+			return errors.Wrap(err, "pause service")
+		}
+		time.Sleep(5 * time.Second)
+		if err := docker.ExecCompose(ctx, testnetDir, "start", service); err != nil {
+			return errors.Wrap(err, "unpause service")
+		}
+	default:
+		return errors.New("unknown service perturbation")
+	}
+
+	log.Info(ctx, "Perturbed service", "perturb", perturb)
 
 	return nil
 }

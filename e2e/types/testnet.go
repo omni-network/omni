@@ -27,6 +27,7 @@ type Testnet struct {
 	PublicChains []PublicChain
 	OnlyMonitor  bool
 	Explorer     bool
+	Perturb      map[string][]Perturb
 }
 
 // RandomHaloAddr returns a random halo address for cprovider and cometBFT rpc clients.
@@ -89,6 +90,15 @@ func (t Testnet) BroadcastNode() *e2e.Node {
 	}
 
 	return t.Nodes[0]
+}
+
+// HasPerturbations returns whether the network has any perturbations.
+func (t Testnet) HasPerturbations() bool {
+	if len(t.Perturb) > 0 {
+		return true
+	}
+
+	return t.Testnet.HasPerturbations()
 }
 
 func (t Testnet) HasOmniEVM() bool {

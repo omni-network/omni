@@ -47,7 +47,17 @@ const (
 	ModeLight = e2e.ModeLight
 )
 
+// Perturb defines non-cometBFT perturbations of components like omni_evm.
+type Perturb string
+
+const (
+	// PerturbStopStart defines a perturbation that stops and then starts a docker container.
+	PerturbStopStart = "stopstart"
+)
+
 // Manifest wraps e2e.Manifest with additional omni-specific fields.
+//
+//nolint:musttag // False positive
 type Manifest struct {
 	e2e.Manifest
 
@@ -70,6 +80,9 @@ type Manifest struct {
 
 	// Keys contains long-lived private keys (address by type) by node name.
 	Keys map[string]map[key.Type]string `toml:"keys"`
+
+	// Perturb defines additional (non-cometBFT) perturbations by service name.
+	Perturb map[string][]Perturb `json:"perturb"`
 
 	// Explorer defines whether to deploy the explorer.
 	Explorer bool `toml:"explorer"`

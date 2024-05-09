@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -49,51 +51,24 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 
 	// Either use the optimistic payload or create a new one.
 	payloadID, height, triggeredAt := k.getOptimisticPayload()
-	if uint64(req.Height) != height { //nolint:nestif // We need to extract this to a function probably.
-		latestEHeight, err := k.engineCl.BlockNumber(ctx)
+	if uint64(req.Height) != height {
+		// Create a new payload (retrying on network errors).
+		err := retryForever(ctx, func(ctx context.Context) (bool, error) {
+			response, err := submitPayload(ctx, k.engineCl, req.Time, k.addrProvider.LocalAddress())
+			if err != nil {
+				log.Warn(ctx, "Preparing proposal failed: build new evm payload (will retry)", err)
+				return false, nil
+			} else if response.PayloadStatus.Status != engine.VALID {
+				return false, errors.New("status not valid")
+			}
+
+			payloadID = response.PayloadID
+
+			return true, nil
+		})
 		if err != nil {
-			return nil, errors.Wrap(err, "latest execution block number")
+			return nil, err
 		}
-
-		latestEBlock, err := k.engineCl.BlockByNumber(ctx, big.NewInt(int64(latestEHeight)))
-		if err != nil {
-			return nil, errors.Wrap(err, "latest execution block")
-		}
-
-		// CometBFT has instant finality, so head/safe/finalized is latest height.
-		forkchoiceState := engine.ForkchoiceStateV1{
-			HeadBlockHash:      latestEBlock.Hash(),
-			SafeBlockHash:      latestEBlock.Hash(),
-			FinalizedBlockHash: latestEBlock.Hash(),
-		}
-
-		// Use req time as timestamp for the next block.
-		// Or use latest execution block timestamp + 1 if is not greater.
-		// Since execution blocks must have unique second-granularity timestamps.
-		// TODO(corver): Maybe error if timestamp is not greater than latest execution block.
-		timestamp := uint64(req.Time.Unix())
-		if timestamp <= latestEBlock.Time() {
-			timestamp = latestEBlock.Time() + 1
-		}
-
-		var zeroHash common.Hash
-
-		payloadAttrs := engine.PayloadAttributes{
-			Timestamp:             timestamp,
-			Random:                latestEBlock.Hash(), // TODO(corver): implement proper randao.
-			SuggestedFeeRecipient: k.addrProvider.LocalAddress(),
-			Withdrawals:           []*etypes.Withdrawal{}, // Withdrawals not supported yet.
-			BeaconRoot:            &zeroHash,              // TODO(corver): Figure out what to use here.
-		}
-
-		forkchoiceResp, err := k.engineCl.ForkchoiceUpdatedV3(ctx, forkchoiceState, &payloadAttrs)
-		if err != nil {
-			return nil, errors.Wrap(err, "forkchoice updated")
-		} else if forkchoiceResp.PayloadStatus.Status != engine.VALID {
-			return nil, errors.New("status not valid")
-		}
-
-		payloadID = forkchoiceResp.PayloadID
 		triggeredAt = time.Now()
 	} else {
 		log.Debug(ctx, "Using optimistic payload", "height", height, "payload", payloadID.String())
@@ -107,9 +82,20 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 	case <-time.After(time.Until(waitTo)):
 	}
 
-	payloadResp, err := k.engineCl.GetPayloadV3(ctx, *payloadID)
+	// Fetch the payload (retrying on network errors).
+	var payloadResp *engine.ExecutionPayloadEnvelope
+	err := retryForever(ctx, func(ctx context.Context) (bool, error) {
+		var err error
+		payloadResp, err = k.engineCl.GetPayloadV3(ctx, *payloadID)
+		if err != nil {
+			log.Warn(ctx, "Preparing proposal failed: get evm payload (will retry)", err)
+			return false, nil
+		}
+
+		return true, nil
+	})
 	if err != nil {
-		return nil, errors.Wrap(err, "get payload")
+		return nil, err
 	}
 
 	// Create execution payload message
@@ -157,4 +143,49 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 	)
 
 	return &abci.ResponsePrepareProposal{Txs: [][]byte{tx}}, nil
+}
+
+func submitPayload(ctx context.Context, engineCl ethclient.EngineClient, ts time.Time, proposer common.Address) (engine.ForkChoiceResponse, error) {
+	latestEHeight, err := engineCl.BlockNumber(ctx)
+	if err != nil {
+		return engine.ForkChoiceResponse{}, errors.Wrap(err, "latest execution block number")
+	}
+
+	latestEBlock, err := engineCl.BlockByNumber(ctx, big.NewInt(int64(latestEHeight)))
+	if err != nil {
+		return engine.ForkChoiceResponse{}, errors.Wrap(err, "latest execution block")
+	}
+
+	// CometBFT has instant finality, so head/safe/finalized is latest height.
+	forkchoiceState := engine.ForkchoiceStateV1{
+		HeadBlockHash:      latestEBlock.Hash(),
+		SafeBlockHash:      latestEBlock.Hash(),
+		FinalizedBlockHash: latestEBlock.Hash(),
+	}
+
+	// Use req time as timestamp for the next block.
+	// Or use latest execution block timestamp + 1 if is not greater.
+	// Since execution blocks must have unique second-granularity timestamps.
+	// TODO(corver): Maybe error if timestamp is not greater than latest execution block.
+	timestamp := uint64(ts.Unix())
+	if timestamp <= latestEBlock.Time() {
+		timestamp = latestEBlock.Time() + 1
+	}
+
+	var zeroHash common.Hash
+
+	payloadAttrs := engine.PayloadAttributes{
+		Timestamp:             timestamp,
+		Random:                latestEBlock.Hash(), // TODO(corver): implement proper randao.
+		SuggestedFeeRecipient: proposer,
+		Withdrawals:           []*etypes.Withdrawal{}, // Withdrawals not supported yet.
+		BeaconRoot:            &zeroHash,              // TODO(corver): Figure out what to use here.
+	}
+
+	forkchoiceResp, err := engineCl.ForkchoiceUpdatedV3(ctx, forkchoiceState, &payloadAttrs)
+	if err != nil {
+		return engine.ForkChoiceResponse{}, errors.Wrap(err, "forkchoice updated")
+	}
+
+	return forkchoiceResp, nil
 }
