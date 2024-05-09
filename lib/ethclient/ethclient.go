@@ -5,7 +5,9 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
@@ -138,4 +140,51 @@ func (w Wrapper) EtherBalanceAt(ctx context.Context, addr common.Address) (float
 	bf, _ := b.Float64()
 
 	return bf / params.Ether, nil
+}
+
+// EstimateGasAt estimates the required gas for `msg` at `blockTag` (pending, latest, etc).
+func (w Wrapper) EstimateGasAt(ctx context.Context, msg ethereum.CallMsg, blockTag string) (uint64, error) {
+	var hex hexutil.Uint64
+	err := w.cl.Client().CallContext(ctx, &hex, "eth_estimateGas", toCallArg(msg), blockTag)
+	if err != nil {
+		return 0, err
+	}
+
+	return uint64(hex), nil
+}
+
+func toCallArg(msg ethereum.CallMsg) any {
+	arg := map[string]any{
+		"from": msg.From,
+		"to":   msg.To,
+	}
+	if len(msg.Data) > 0 {
+		arg["input"] = hexutil.Bytes(msg.Data)
+	}
+	if msg.Value != nil {
+		arg["value"] = (*hexutil.Big)(msg.Value)
+	}
+	if msg.Gas != 0 {
+		arg["gas"] = hexutil.Uint64(msg.Gas)
+	}
+	if msg.GasPrice != nil {
+		arg["gasPrice"] = (*hexutil.Big)(msg.GasPrice)
+	}
+	if msg.GasFeeCap != nil {
+		arg["maxFeePerGas"] = (*hexutil.Big)(msg.GasFeeCap)
+	}
+	if msg.GasTipCap != nil {
+		arg["maxPriorityFeePerGas"] = (*hexutil.Big)(msg.GasTipCap)
+	}
+	if msg.AccessList != nil {
+		arg["accessList"] = msg.AccessList
+	}
+	if msg.BlobGasFeeCap != nil {
+		arg["maxFeePerBlobGas"] = (*hexutil.Big)(msg.BlobGasFeeCap)
+	}
+	if msg.BlobHashes != nil {
+		arg["blobVersionedHashes"] = msg.BlobHashes
+	}
+
+	return arg
 }

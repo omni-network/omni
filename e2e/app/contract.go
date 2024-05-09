@@ -4,11 +4,13 @@ import (
 	"context"
 	"time"
 
+	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/netman"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -80,6 +82,8 @@ func SendXMsgs(ctx context.Context, netman netman.Manager, backends ethbackend.B
 	return nil
 }
 
+var portalABI = mustGetABI(bindings.OmniPortalMetaData)
+
 // xcall sends a ethereum transaction to the portal contract, triggering a xcall.
 func xcall(ctx context.Context, backends ethbackend.Backends, sender common.Address, from netman.Portal, destChainID uint64,
 ) (*ethtypes.Transaction, error) {
@@ -95,12 +99,31 @@ func xcall(ctx context.Context, backends ethbackend.Backends, sender common.Addr
 		)
 	}
 
-	txOpts, _, err := backends.BindOpts(ctx, from.Chain.ChainID, sender)
+	txOpts, backend, err := backends.BindOpts(ctx, from.Chain.ChainID, sender)
 	if err != nil {
 		return nil, errors.Wrap(err, "bindOpts")
 	}
 
 	txOpts.Value = fee
+
+	input, err := portalABI.Pack("xcall", destChainID, to, data)
+	if err != nil {
+		return nil, errors.Wrap(err, "pack xcall input")
+	}
+
+	msg := ethereum.CallMsg{
+		From:  sender,
+		To:    &from.DeployInfo.PortalAddress,
+		Data:  input,
+		Value: fee,
+	}
+
+	gasLimit, err := backend.EstimateGasAt(ctx, msg, "pending")
+	if err != nil {
+		return nil, errors.Wrap(err, "estimate gas")
+	}
+
+	txOpts.GasLimit = gasLimit
 
 	tx, err := from.Contract.Xcall(txOpts, destChainID, to, data)
 	if err != nil {

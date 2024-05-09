@@ -12,18 +12,20 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 // initXRegistries initializes the XRegistry and PortalRegistr Omni EVM predeploys.
 func initXRegistries(ctx context.Context, def Definition) error {
-	mngr, err := newRegistryMngr(ctx, def)
+	mngr, err := newRegistryMngr(def)
 	if err != nil {
 		return errors.Wrap(err, "new registry mngr")
 	}
 
-	if err := mngr.setXRegisryPortal(ctx); err != nil {
+	if err := mngr.setXRegistryPortal(ctx); err != nil {
 		return errors.Wrap(err, "set xregistry portal")
 	}
 
@@ -41,7 +43,7 @@ func initXRegistries(ctx context.Context, def Definition) error {
 type registryMngr struct {
 	xreg       *bindings.XRegistry
 	preg       *bindings.PortalRegistry
-	txOpts     *bind.TransactOpts
+	admin      common.Address
 	backend    *ethbackend.Backend
 	portals    map[uint64]bindings.PortalRegistryDeployment
 	def        Definition
@@ -50,7 +52,7 @@ type registryMngr struct {
 
 // newRegistryMngr creates a new registry manager. A registry manager is used to
 // initialize the XRegistry and PortalRegistry predeploys.
-func newRegistryMngr(ctx context.Context, def Definition) (registryMngr, error) {
+func newRegistryMngr(def Definition) (registryMngr, error) {
 	if !def.Testnet.HasOmniEVM() {
 		return registryMngr{}, errors.New("missing omni evm")
 	}
@@ -77,21 +79,16 @@ func newRegistryMngr(ctx context.Context, def Definition) (registryMngr, error) 
 		return registryMngr{}, err
 	}
 
-	txOpts, err := backend.BindOpts(ctx, admin)
-	if err != nil {
-		return registryMngr{}, err
-	}
-
 	portals, err := makePortalDeps(def)
 	if err != nil {
 		return registryMngr{}, err
 	}
 
 	return registryMngr{
+		admin:      admin,
 		xreg:       xregistry,
 		preg:       portalRegistry,
 		backend:    backend,
-		txOpts:     txOpts,
 		portals:    portals,
 		def:        def,
 		chainNamer: netconf.ChainNamer(def.Testnet.Network),
@@ -109,6 +106,17 @@ func (m registryMngr) registerPortals(ctx context.Context) error {
 	return nil
 }
 
+var pregsitryABI = mustGetABI(bindings.PortalRegistryMetaData)
+
+func mustGetABI(m *bind.MetaData) *abi.ABI {
+	abi, err := m.GetAbi()
+	if err != nil {
+		panic(err)
+	}
+
+	return abi
+}
+
 // registerPortal registers a portal with the PortalRegistry.
 func (m registryMngr) registerPortal(ctx context.Context, chainID uint64) error {
 	p, ok := m.portals[chainID]
@@ -123,26 +131,68 @@ func (m registryMngr) registerPortal(ctx context.Context, chainID uint64) error 
 
 	log.Info(ctx, "Registering portal", "chain", m.chainNamer(chainID))
 
-	m.txOpts.Value = fee
-	tx, err := m.preg.Register(m.txOpts, p)
-	m.txOpts.Value = nil
+	txOpts, err := m.backend.BindOpts(ctx, m.admin)
+	if err != nil {
+		return errors.Wrap(err, "bind opts")
+	}
+	txOpts.Value = fee
 
+	input, err := pregsitryABI.Pack("register", p)
+	if err != nil {
+		return err
+	}
+
+	addr := common.HexToAddress(predeploys.PortalRegistry)
+
+	msg := ethereum.CallMsg{
+		From:  txOpts.From,
+		To:    &addr,
+		Data:  input,
+		Value: fee,
+	}
+
+	gasLimit, err := m.backend.EstimateGasAt(ctx, msg, "pending")
+	if err != nil {
+		return errors.Wrap(err, "estimate gas")
+	}
+
+	gasLimitLatest, err := m.backend.EstimateGasAt(ctx, msg, "latest")
+	if err != nil {
+		return errors.Wrap(err, "estimate gas")
+	}
+
+	current, err := m.preg.List(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		return errors.Wrap(err, "list portals")
+	}
+
+	for _, p := range current {
+		log.Debug(ctx, "Existing portal", "chain", p.ChainId, "addr", p.Addr.Hex())
+	}
+
+	txOpts.GasLimit = gasLimit
+
+	tx, err := m.preg.Register(txOpts, p)
 	if err != nil {
 		return errors.Wrap(err, "register portal")
 	}
 
-	receipt, err := m.backend.WaitMined(ctx, tx)
+	rec, err := m.backend.WaitMined(ctx, tx)
 	if err != nil {
+		if rec != nil {
+			log.Debug(ctx, "Register portal failed", "block", rec.BlockNumber, "estimated_gas", gasLimit, "estimated_gas_latest", gasLimitLatest, "gas_used", rec.GasUsed)
+		}
+
 		return errors.Wrap(err, "wait mined")
-	} else if receipt.Status != 1 {
-		return errors.New("tx failed", "tx", tx.Hash().Hex())
 	}
+
+	log.Debug(ctx, "Register portal succeeded", "block", rec.BlockNumber, "estimated_gas", gasLimit, "estimated_gas_latest", gasLimitLatest, "gas_used", rec.GasUsed)
 
 	return nil
 }
 
-// setXRegisryPortal sets the portal address for the XRegistry.
-func (m registryMngr) setXRegisryPortal(ctx context.Context) error {
+// setXRegistryPortal sets the portal address for the XRegistry.
+func (m registryMngr) setXRegistryPortal(ctx context.Context) error {
 	if len(m.def.Testnet.OmniEVMs) == 0 {
 		return errors.New("missing omni evm")
 	}
@@ -154,16 +204,19 @@ func (m registryMngr) setXRegisryPortal(ctx context.Context) error {
 		return errors.New("missing portal", "chain", omniEVM.ChainID)
 	}
 
-	tx, err := m.xreg.SetPortal(m.txOpts, portal.Addr)
+	txOpts, err := m.backend.BindOpts(ctx, m.admin)
+	if err != nil {
+		return errors.Wrap(err, "bind opts")
+	}
+
+	tx, err := m.xreg.SetPortal(txOpts, portal.Addr)
 	if err != nil {
 		return errors.Wrap(err, "set portal")
 	}
 
-	receipt, err := m.backend.WaitMined(ctx, tx)
+	_, err = m.backend.WaitMined(ctx, tx)
 	if err != nil {
 		return errors.Wrap(err, "wait mined")
-	} else if receipt.Status != 1 {
-		return errors.New("tx failed", "tx", tx.Hash().Hex())
 	}
 
 	return nil
@@ -187,16 +240,19 @@ func (m registryMngr) setReplica(ctx context.Context, chainID uint64) error {
 		return errors.Wrap(err, "get replica", "chain", chainID)
 	}
 
-	tx, err := m.xreg.SetReplica(m.txOpts, chainID, replica)
+	txOpts, err := m.backend.BindOpts(ctx, m.admin)
+	if err != nil {
+		return errors.Wrap(err, "bind opts")
+	}
+
+	tx, err := m.xreg.SetReplica(txOpts, chainID, replica)
 	if err != nil {
 		return errors.Wrap(err, "set replica")
 	}
 
-	receipt, err := m.backend.WaitMined(ctx, tx)
+	_, err = m.backend.WaitMined(ctx, tx)
 	if err != nil {
 		return errors.Wrap(err, "wait mined")
-	} else if receipt.Status != 1 {
-		return errors.New("tx failed", "tx", tx.Hash().Hex())
 	}
 
 	return nil

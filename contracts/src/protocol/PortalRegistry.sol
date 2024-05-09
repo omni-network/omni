@@ -54,9 +54,20 @@ contract PortalRegistry is Ownable {
     function list() external view returns (Deployment[] memory) {
         uint64[] memory chainIds = xregistry.chainIds();
 
-        Deployment[] memory deps = new Deployment[](chainIds.length);
+        uint64 numDeployments = 0;
         for (uint64 i = 0; i < chainIds.length; i++) {
-            deps[i] = deployments[chainIds[i]];
+            if (isRegistered(chainIds[i])) {
+                numDeployments++;
+            }
+        }
+
+        Deployment[] memory deps = new Deployment[](numDeployments);
+        uint64 index = 0;
+        for (uint64 i = 0; i < chainIds.length; i++) {
+            if (isRegistered(chainIds[i])) {
+                deps[index] = deployments[chainIds[i]];
+                index++;
+            }
         }
 
         return deps;

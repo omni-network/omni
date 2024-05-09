@@ -28,6 +28,7 @@ type Client interface {
 	ethereum.PendingStateReader
 	ethereum.TransactionReader
 	ethereum.TransactionSender
+	EstimateGasAt(ctx context.Context, call ethereum.CallMsg, blockTag string) (uint64, error)
 	HeaderByType(ctx context.Context, typ HeadType) (*types.Header, error)
 	EtherBalanceAt(ctx context.Context, addr common.Address) (float64, error)
 	PeerCount(ctx context.Context) (uint64, error)
