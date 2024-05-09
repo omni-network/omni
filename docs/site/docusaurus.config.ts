@@ -26,6 +26,8 @@ const config: Config = {
     locales: ["en"],
   },
 
+  clientModules: ["src/client-modules/index.ts"],
+
   presets: [
     [
       "classic",
@@ -76,6 +78,11 @@ const config: Config = {
           position: "left",
           label: "Protocol",
           to: "/protocol/introduction",
+        },
+        {
+          position: "left",
+          label: "Octane",
+          to: "/octane/background/introduction",
         },
         {
           position: "left",

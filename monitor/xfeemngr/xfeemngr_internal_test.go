@@ -46,8 +46,8 @@ func TestStart(t *testing.T) {
 
 	// mock token prices / pricer
 	initialTokenPrices := map[tokens.Token]float64{
-		tokens.OMNI: randTokenPrice(),
-		tokens.ETH:  randTokenPrice(),
+		tokens.OMNI: randTokenPrice(tokens.OMNI),
+		tokens.ETH:  randTokenPrice(tokens.ETH),
 	}
 	tokenPricer := tokens.NewMockPricer(initialTokenPrices)
 
@@ -285,6 +285,13 @@ func randGasPrice() uint64 {
 }
 
 // randTokenPrice generates a random, reasonable token price.
-func randTokenPrice() float64 {
-	return float64(rand.Intn(5000)) + rand.Float64()
+func randTokenPrice(token tokens.Token) float64 {
+	// discriminate between ETH and other tokens (OMNI)
+	// so that test omni-per-eth conversion rates do not exceed maxOmniPerEth
+
+	if token == tokens.ETH {
+		return float64(rand.Intn(500)) + rand.Float64() + 3000
+	}
+
+	return float64(rand.Intn(50)) + rand.Float64()
 }

@@ -1,93 +1,82 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import CodeBlock from "@theme/CodeBlock";
-import { useColorMode } from '@docusaurus/theme-common';
+import { useColorMode } from '@docusaurus/theme-common'
+import CodeBlock from '@theme/CodeBlock'
+import { getNumberOfLines, useCodeBlock } from './useCodeBlock'
 
-import './GitHubCodeBlock.css';
+import './GitHubCodeBlock.css'
 
-const GitHubCodeBlock = ({ repoUrl }) => {
-  const [code, setCode] = useState('');
-  const [language, setLanguage] = useState('plaintext');
-  const [sourceUrl, setSourceUrl] = useState('');
+const GitHubCodeBlock = ({ url }: { url: string }) => {
+  const { data, error, isLoading, isError } = useCodeBlock({ url })
 
-  useEffect(() => {
-    async function fetchCode() {
-      // Use a single regex that can optionally capture line numbers
-      const regex = /(https:\/\/github\.com\/)([^\/]+)\/([^\/]+)\/blob\/([^\/]+)\/([^#]+)#L(\d+)-L(\d+)/;
-      var match = repoUrl.match(regex);
-      if (!match) {
-        const noLinesRegex = /(https:\/\/github\.com\/)([^\/]+)\/([^\/]+)\/blob\/([^\/]+)\/([^#]+)/;
-        match = repoUrl.match(noLinesRegex);
-      }
+  if (isLoading) return <CodeBlockLoading numLines={getNumberOfLines(url)}/>
+  if (isError) return <CodeBlockError url={url} error={error} />
 
-      if (match) {
-        const [wholeUrl, site, owner, repo, branch, filePath, startLine, endLine] = match;
-        // Build the source URL to view on GitHub, including line numbers if available
-        setSourceUrl(`https://github.com/${owner}/${repo}/blob/${branch}/${filePath}${startLine ? `#L${startLine}-L${endLine}` : ''}`);
-        // Fetch the raw content from GitHub
-        const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filePath}` + (startLine && endLine ? `#L${startLine}-L${endLine}` : '');
-
-        try {
-          const response = await axios.get(rawUrl);
-          const allLines = response.data.split('\n');
-          // Apply line slicing only if line numbers are provided and valid
-          const lines = (startLine && endLine) ? allLines.slice(parseInt(startLine) - 1, parseInt(endLine)).join('\n') : allLines.join('\n');
-          setCode(lines);
-          setLanguage(determineLanguage(filePath));
-        } catch (error) {
-          console.error('Error fetching code:', error.response ? error.response.data : error.message);
-          setCode(`Error: ${error.response ? error.response.data : "Could not fetch file"}`);
-        }
-      } else {
-        console.error("Regex match failed. Check the URL format.");
-        setCode("Error: Invalid GitHub URL format.");
-      }
-    }
-
-    fetchCode();
-  }, [repoUrl]);
-
-  function determineLanguage(filePath) {
-    const extension = filePath.slice(filePath.lastIndexOf('.'));
-    const languageMap = {
-      '.js': 'javascript',
-      '.ts': 'typescript',
-      '.py': 'python',
-      '.cpp': 'cpp',
-      '.c': 'c',
-      '.java': 'java',
-      '.rs': 'rust',
-      '.html': 'html',
-      '.css': 'css',
-      '.md': 'markdown',
-      '.sh': 'bash',
-      '.sol': 'solidity',
-      '.go': 'go',
-      '.json': 'json',
-      '.yml': 'yaml',
-      '.yaml': 'yaml',
-      '.toml': 'toml',
-      '.xml': 'xml',
-      '.sql': 'sql',
-    };
-    return languageMap[extension] || 'plaintext';
-  }
-
-  function getGitHubIcon() {
-    const { colorMode } = useColorMode();
-    return colorMode === 'dark' ? "/img/github-icon-light.svg" : "/img/github-icon-dark.svg";
-  }
+  const { code, matchesMain, mainURL, sourceURL, language } = data
 
   return (
     <div className="code-snippet-container">
-      <CodeBlock language={language} className="code-snippet-block">{code}</CodeBlock>
+      <CodeBlock language={language} className="code-snippet-block">
+        {code}
+      </CodeBlock>
+
+      {!matchesMain && (
+        <div className="code-snippet-warning">
+          <a href={mainURL}>
+            <strong>Warning: </strong>Code shown does not match the main branch.
+            Please visit the repository URL for actual code.
+          </a>
+        </div>
+      )}
+
       <div className="code-snippet-footer">
-        <a href={sourceUrl} target="_blank" rel="noopener noreferrer">
-          See source on GitHub <img src={getGitHubIcon()} alt="GitHub" />
-        </a>
+        <a href={sourceURL}>See source on GitHub </a>
+        <GithubIcon />
       </div>
+    </div>
+  )
+}
+
+const GithubIcon = () => {
+  const { colorMode } = useColorMode()
+  return (
+    <img
+      src={
+        colorMode === 'dark'
+          ? '/img/github-icon-light.svg'
+          : '/img/github-icon-dark.svg'
+      }
+      alt="GitHub"
+    />
+  )
+}
+
+const CodeBlockLoading = ({ numLines }: { numLines: number }) => {
+  const blankLines = Array.from({ length: numLines }, (_, index) => (
+    <div key={index} className="loading-line" />
+  ));
+
+  return (
+    <div className="code-snippet-container">
+      <CodeBlock language="plaintext" className="code-snippet-block">
+        Fetching code from GitHub...
+        {blankLines}
+      </CodeBlock>
     </div>
   );
 };
 
-export default GitHubCodeBlock;
+const CodeBlockError = ({ url, error }: { url: string; error: Error }) => {
+  console.error('CodeBlockError:', error)
+  return (
+    <div className="code-snippet-container">
+      <CodeBlock language="plaintext" className="code-snippet-block">
+        Oops :( Something went wrong.
+      </CodeBlock>
+      <div className="code-snippet-footer">
+        <a href={url}>Check source on GitHub </a>
+        <GithubIcon />
+      </div>
+    </div>
+  )
+}
+
+export default GitHubCodeBlock
