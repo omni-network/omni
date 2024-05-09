@@ -38,9 +38,9 @@ export default function SimpleTable({
 
   return (
     <div className="overflow-x-auto ">
-      <div className="w-full bg-raised rounded-lg min-w-[919px]">
+      <div className="w-full rounded-lg min-w-[919px]">
         {headChildren}
-        <table className="min-w-full">
+        <table className="min-w-full bg-raised">
           <thead className="">
             {table.getHeaderGroups().map(headerGroup => (
               <tr key={headerGroup.id}>

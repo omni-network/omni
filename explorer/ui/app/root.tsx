@@ -43,7 +43,7 @@ function App() {
       </head>
       <body className="bg-surface flex flex-col justify-start content-start  h-full">
         <Navbar openNavHandler={menuClickHandler} openNav={openNav} />
-        <div className={`${openNav && 'hidden'}`}>
+        <div className={`${openNav && 'hidden md:block'}`}>
           <Outlet />
           <div className="grow"></div>
           <Footer />

@@ -1,7 +1,7 @@
 import React from 'react'
 
 interface Props {
-  status: 'SUCCESS' | 'FAILURE' | 'PENDING'
+  status: 'SUCCESS' | 'FAILED' | 'PENDING'
 }
 
 const Tag: React.FC<Props> = ({ status }) => {
@@ -22,7 +22,7 @@ const Tag: React.FC<Props> = ({ status }) => {
           bg: 'bg-moderate',
           iconClass: 'icon-clock',
         }
-      case 'FAILURE':
+      case 'FAILED':
         return {
           text: 'text-critical',
           icon: 'text-icon-critical',
@@ -45,7 +45,7 @@ const Tag: React.FC<Props> = ({ status }) => {
 
   return (
     <div
-      className={`py-[3.5px] px-[5.5px] text-btn-xs rounded-[4px] inline-block ${getColor()?.text} ${getColor()?.bg}`}
+      className={`py-[3.5px] px-[5.5px] text-btn-xs rounded-[4px] min-w-[90px] inline-block ${getColor()?.text} ${getColor()?.bg}`}
     >
       <span className={`${getColor().iconClass} text-[15px] ${getColor().icon}`} /> {status}
     </div>
