@@ -36,7 +36,6 @@ import (
 //   - Tick the ticker, to potentially trigger buffer & on chain updates
 //   - Assert on chain values are expected
 func TestStart(t *testing.T) {
-	t.Skip("flapping")
 	t.Parallel()
 
 	chainIDs := []uint64{1, 2, 3, 4, 5}
@@ -50,6 +49,7 @@ func TestStart(t *testing.T) {
 		tokens.OMNI: randTokenPrice(tokens.OMNI),
 		tokens.ETH:  randTokenPrice(tokens.ETH),
 	}
+
 	tokenPricer := tokens.NewMockPricer(initialTokenPrices)
 
 	// helper to get price of a token from the pricer
@@ -120,16 +120,17 @@ func TestStart(t *testing.T) {
 			}
 		}
 	}
+
 	expectInitials()
 
 	// increase gas prices, but not above threshold
 	for _, mock := range gasPricers {
-		mock.SetPrice(mock.Price() + uint64(float64(mock.Price())*gpriceThreshold) - 1)
+		mock.SetPrice(mock.Price() + uint64(float64(mock.Price())*gpriceThreshold/2))
 	}
 
 	// increase token prices, but not above threshold
 	for token, price := range initialTokenPrices {
-		tokenPricer.SetPrice(token, price+(price*tpriceThreshold)-1)
+		tokenPricer.SetPrice(token, price+(price*tpriceThreshold/2))
 	}
 
 	tick.Tick()
@@ -172,6 +173,7 @@ func TestStart(t *testing.T) {
 			}
 
 			onChainNumer, err := oracle.contract.ToNativeRate(ctx, dest.ChainID)
+
 			require.NoError(t, err)
 			require.Equal(t, expectedNumer.Uint64(), onChainNumer.Uint64(), "updated conversion rate")
 		}
