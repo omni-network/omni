@@ -168,6 +168,9 @@ type Chain {
 
   "Chain name"
   name: String!
+
+  "Chain logo URL"
+  logoUrl: String!
 }
 
 """
