@@ -77,7 +77,7 @@ services:
     labels:
       e2e: true
     container_name: omni_evm_0-init
-    image: "ethereum/client-go:v1.14.0"
+    image: "ethereum/client-go:v1.14.2"
     command: --state.scheme=path --datadir=/geth init /geth/genesis.json
     volumes:
       - ./omni_evm_0:/geth
@@ -88,7 +88,7 @@ services:
     labels:
       e2e: true
     container_name: omni_evm_0
-    image: "ethereum/client-go:v1.14.0"
+    image: "ethereum/client-go:v1.14.2"
     command:
       - --config=/geth/config.toml
       # Flags not available via config.toml
