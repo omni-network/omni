@@ -65,20 +65,20 @@ export default function Index() {
         <div className={'h-5'}></div>
         <div className="w-full">
           <BackBtn onBackClickHandler={onBackClickHandler} />
-          <h3 className="mt-5">
+          <h4 className="mt-5">
             XMsg <span className="p-2">/</span>{' '}
             <span className="text-default">{xMsgDetails.displayID}</span>
-          </h3>
+          </h4>
 
           <div className="mt-5 p-4 w-full bg-raised rounded-lg">
             {/* Offset */}
             <div className="flex mt-5 pb-2 border-b-2 border-gray-500 border-solid">
-              <p className="w-[150px] sm:w-48">Offset</p>
+              <p className="w-[150px] sm:w-48 text-sm">Offset</p>
               <p className="text-default">{xMsgDetails.offset}</p>
             </div>
             {/* Status */}
             <div className="flex mt-5 pb-2 border-b-2 border-gray-500 border-solid">
-              <p className="w-[150px] sm:w-48">Status</p>
+              <p className="w-[150px] sm:w-48 text-sm">Status</p>
               <div className="flex flex-col sm:flex-row items-start">
                 <Tag status={xMsgDetails.status} />
                 <p className="sm:ml-5">{xMsgDetails.receipt.revertReason}</p>
@@ -86,7 +86,7 @@ export default function Index() {
             </div>
             {/* Data */}
             <div className="flex mt-5 pb-2 border-b-2 border-gray-500 border-solid">
-              <p className="w-[150px] sm:w-48">Data</p>
+              <p className="w-[150px] sm:w-48 text-sm">Data</p>
             </div>
             <From xMsgDetails={xMsgDetails} />
             <To xMsgDetails={xMsgDetails} />

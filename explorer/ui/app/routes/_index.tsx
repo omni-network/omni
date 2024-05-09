@@ -38,7 +38,6 @@ export const loader: LoaderFunction = async ({ request }) => {
 
   const variables = {
     first: 10,
-    after: null,
   }
 
   const [xmsgRes, supportedChainsRes] = await Promise.all([
