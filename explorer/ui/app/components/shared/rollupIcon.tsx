@@ -7,7 +7,7 @@ interface Props {
 }
 
 const RollupIcon: React.FC<Props> = ({ chainId, name }) => {
-  return <img src={getIcon(chainId || '') || ''} alt="" />
+  return <img className='max-w-none' src={getIcon(chainId || '') || ''} alt="" />
 }
 
 export default RollupIcon

@@ -5,8 +5,6 @@ import { hashShortener } from '~/lib/formatting'
 import { dateFormatterXMsgPage } from './date.service'
 
 export const TabList = ({ xMsgDetails }) => {
-  console.log(xMsgDetails)
-
   return (
     <>
       <h6 className="text-default my-5 mt-20 text-lg">XReceipt</h6>

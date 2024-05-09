@@ -27,8 +27,6 @@ export default function XMsgDataTable() {
 
   const pageLoaded = React.useRef<boolean>(false)
 
-  console.log(data)
-
   const [searchParams, setSearchParams] = useSearchParams()
 
   const [filterParams, setFilterParams] = React.useState<{
@@ -46,12 +44,6 @@ export default function XMsgDataTable() {
     status: (searchParams.get('status') as Status) ?? 'All',
     cursor: searchParams.get('cursor') ?? null,
   })
-
-  // const sourceChainList = data?.supportedChains.map(chain => ({
-  //   value: chain.ChainID,
-  //   display: chain.DisplayName,
-  //   icon: chain.Icon,
-  // }))
 
   const sourceChainList = []
   const rows = data.xmsgs
@@ -139,9 +131,7 @@ export default function XMsgDataTable() {
                 {hashShortener(value.getValue())}
               </Link>
               <Tooltip className="tooltip" id={`${value.getValue()}-full-id-tooltip`}>
-                <label className="text-default text-b-sm font-bold">
-                  {value.getValue()}
-                </label>
+                <label className="text-default text-b-sm font-bold">{value.getValue()}</label>
               </Tooltip>
               {/* <span  className="icon-tooltip-info"></span> */}
             </>
@@ -188,13 +178,15 @@ export default function XMsgDataTable() {
         ),
         cell: (value: any) => {
           return (
-            <>
+            <div className='flex'>
               <Link to={`${value.row.original.node.senderUrl}`} className="link">
                 {value.getValue() && (
-                  <>
-                    <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
+                  <div className='flex flex-start'>
+                    <span className="font-bold text-b-sm w-[125px]">
+                      {hashShortener(value.getValue())}
+                    </span>
                     <span className="icon-external-link" />
-                  </>
+                  </div>
                 )}
               </Link>
               <span
@@ -202,7 +194,7 @@ export default function XMsgDataTable() {
                 className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
                 onClick={() => copyToClipboard(value.getValue())}
               />
-            </>
+            </div>
           )
         },
       },
@@ -224,22 +216,28 @@ export default function XMsgDataTable() {
           return (
             <>
               {value.getValue() && (
-                <>
+                <div className='flex'>
                   {' '}
+
                   <Link
                     target="_blank"
                     to={`${value.row.original.node.txHashUrl}`}
                     className="link"
                   >
-                    <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
+                    <div className='flex'>
+                    <p className="font-bold text-b-sm w-[125px]">
+                      {hashShortener(value.getValue())}
+                    </p>
                     <span className="icon-external-link" />
+                    </div>
+
                   </Link>
                   <span
                     data-tooltip-id="tooltip-clipboard"
                     className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
                     onClick={() => copyToClipboard(value.getValue())}
                   />{' '}
-                </>
+                </div>
               )}
             </>
           )
@@ -249,7 +247,7 @@ export default function XMsgDataTable() {
         ...columnConfig,
         accessorKey: 'Empty',
         header: () => <span></span>,
-        cell: (value: any) => <img src={LongArrow} alt="" />,
+        cell: (value: any) => <img className='max-w-none' src={LongArrow} alt="" />,
       },
       {
         ...columnConfig,
@@ -272,17 +270,22 @@ export default function XMsgDataTable() {
           </div>
         ),
         cell: (value: any) => (
-          <>
+          <div className='flex'>
             <Link target="_blank" to={`${value.row.original.node.toUrl}`} className="link">
-              <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
+              <div className='flex'>
+              <p className="font-bold text-b-sm w-[120px]">
+                {hashShortener(value.getValue())}
+              </p>
               <span className="icon-external-link" />
+              </div>
+
             </Link>
             <span
               data-tooltip-id="tooltip-clipboard"
               className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
               onClick={() => copyToClipboard(value.getValue())}
             />
-          </>
+          </div>
         ),
       },
       {
@@ -303,22 +306,26 @@ export default function XMsgDataTable() {
           return (
             <>
               {value.getValue() && (
-                <>
+                <div className='flex'>
                   {' '}
                   <Link
                     target="_blank"
                     to={`${value.row.original.node.receipt.txHashUrl}`}
                     className="link"
                   >
-                    <span className="font-bold text-b-sm">{hashShortener(value.getValue())}</span>
+                    <div className='flex'>
+                    <p className="font-bold text-b-sm w-[120px]">
+                      {hashShortener(value.getValue())}
+                    </p>
                     <span className="icon-external-link" />
+                    </div>
                   </Link>
                   <span
                     data-tooltip-id="tooltip-clipboard"
                     className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
                     onClick={() => copyToClipboard(value.getValue())}
                   />{' '}
-                </>
+                </div>
               )}
               {!value.getValue() && '----'}
             </>
