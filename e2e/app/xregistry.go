@@ -151,12 +151,7 @@ func (m registryMngr) registerPortal(ctx context.Context, chainID uint64) error 
 		Value: fee,
 	}
 
-	gasLimit, err := m.backend.EstimateGasAt(ctx, msg, "pending")
-	if err != nil {
-		return errors.Wrap(err, "estimate gas")
-	}
-
-	gasLimitLatest, err := m.backend.EstimateGasAt(ctx, msg, "latest")
+	gasLimit, err := m.backend.EstimateGasAt(ctx, msg, "latest")
 	if err != nil {
 		return errors.Wrap(err, "estimate gas")
 	}
@@ -180,13 +175,13 @@ func (m registryMngr) registerPortal(ctx context.Context, chainID uint64) error 
 	rec, err := m.backend.WaitMined(ctx, tx)
 	if err != nil {
 		if rec != nil {
-			log.Debug(ctx, "Register portal failed", "block", rec.BlockNumber, "estimated_gas", gasLimit, "estimated_gas_latest", gasLimitLatest, "gas_used", rec.GasUsed)
+			log.Debug(ctx, "Register portal failed", "block", rec.BlockNumber, "estimated_gas", gasLimit, "gas_used", rec.GasUsed)
 		}
 
 		return errors.Wrap(err, "wait mined")
 	}
 
-	log.Debug(ctx, "Register portal succeeded", "block", rec.BlockNumber, "estimated_gas", gasLimit, "estimated_gas_latest", gasLimitLatest, "gas_used", rec.GasUsed)
+	log.Debug(ctx, "Register portal succeeded", "block", rec.BlockNumber, "estimated_gas", gasLimit, "gas_used", rec.GasUsed)
 
 	return nil
 }

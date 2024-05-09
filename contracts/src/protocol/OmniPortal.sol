@@ -145,15 +145,52 @@ contract OmniPortal is
         require(msg.sender != address(this), "OmniPortal: portal cannot xcall");
         require(msg.value >= feeFor(destChainId, data, gasLimit), "OmniPortal: insufficient fee");
 
-        // increment xblockOffset if this is the first xcall in a new block
-        if (block.number > _lastBlockWithXCall) {
-            xblockOffset += 1;
-            _lastBlockWithXCall = block.number;
+        (uint32 _xcallOffset, uint64 _xblockOffset, uint128 _sourceBlockNumber) = _parseLastXCallID();
+
+        if (uint128(block.number) > _sourceBlockNumber) {
+            _sourceBlockNumber = uint128(block.number);
+            _xblockOffset = uint64(_xblockOffset + 1);
+            _xcallOffset = 0;
+        } else {
+            _xcallOffset += 1;
+            _xblockOffset = _xblockOffset;
+            _sourceBlockNumber = uint128(block.number);
         }
+
+        _lastXCallID = _packLastCallID(_xcallOffset, _xblockOffset, _sourceBlockNumber);
 
         outXStreamOffset[destChainId] += 1;
 
         emit XMsg(destChainId, outXStreamOffset[destChainId], sender, to, data, gasLimit, msg.value);
+    }
+
+    function xblockOffset() external view returns (uint64 offset) {
+        (, offset,) = _parseLastXCallID();
+    }
+
+    function _parseLastXCallID()
+        public
+        view
+        returns (uint32 xcallOffset_, uint64 xblockOffset_, uint128 sourceBlock_)
+    {
+        bytes memory packed = new bytes(32);
+        assembly {
+            mstore(add(packed, 32), sload(_lastXCallID.slot))
+        }
+
+        assembly {
+            xcallOffset_ := mload(add(packed, 4))
+            xblockOffset_ := mload(add(packed, 12))
+            sourceBlock_ := mload(add(packed, 28))
+        }
+    }
+
+    function _packLastCallID(uint32 _xcallOffset, uint64 _xblockOffset, uint128 _sourceBlockNumber)
+        public
+        pure
+        returns (bytes32)
+    {
+        return bytes32(abi.encodePacked(_xcallOffset, _xblockOffset, _sourceBlockNumber));
     }
 
     /**

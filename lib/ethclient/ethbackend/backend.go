@@ -232,6 +232,7 @@ func (b *Backend) SendTransaction(ctx context.Context, in *ethtypes.Transaction)
 	// TODO(corver): Maybe remove this as it is very noisy.
 	log.Debug(ctx, "Backend sent tx",
 		"nonce", out.Nonce(),
+		"gas_limit", out.Gas(),
 		"gas_used", resp.GasUsed,
 		"status", resp.Status,
 		"height", resp.BlockNumber.Uint64(),

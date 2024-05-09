@@ -36,12 +36,6 @@ abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
     uint64 public omniChainId;
 
     /**
-     * @notice Latest xblock offset. Xblock offset incremenets once per each
-     *         source block that contains at least one XMsg. Starts at 1.
-     */
-    uint64 public xblockOffset;
-
-    /**
      * @notice Virtual chain ID used in xmsgs from Omni's consensus chain
      */
     uint64 public omniCChainID;
@@ -93,8 +87,5 @@ abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
      */
     XTypes.MsgShort internal _xmsg;
 
-    /**
-     * @notice Tracks the last block number that had an xcall
-     */
-    uint256 internal _lastBlockWithXCall;
+    bytes32 internal _lastXCallID;
 }

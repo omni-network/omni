@@ -35,6 +35,7 @@ services:
       e2e: true
     container_name: mock_rollup
     image: ghcr.io/foundry-rs/foundry:latest
+    platform: linux/amd64
     entrypoint:
       - anvil
       - --host=0.0.0.0
@@ -54,6 +55,7 @@ services:
       e2e: true
     container_name: mock_l1
     image: ghcr.io/foundry-rs/foundry:latest
+    platform: linux/amd64
     entrypoint:
       - anvil
       - --host=0.0.0.0

@@ -118,7 +118,7 @@ func xcall(ctx context.Context, backends ethbackend.Backends, sender common.Addr
 		Value: fee,
 	}
 
-	gasLimit, err := backend.EstimateGasAt(ctx, msg, "pending")
+	gasLimit, err := backend.EstimateGasAt(ctx, msg, "latest")
 	if err != nil {
 		return nil, errors.Wrap(err, "estimate gas")
 	}
