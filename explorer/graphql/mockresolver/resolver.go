@@ -103,6 +103,7 @@ type Chain struct {
 	ID      graphql.ID
 	ChainID hexutil.Big
 	Name    string
+	LogoURL string
 }
 
 // Define the Go struct for the XMsgConnection type.
@@ -128,6 +129,7 @@ type PageInfo struct {
 
 // Define the Go struct for the Query type.
 type QueryResolver struct {
+	Chains  []Chain
 	XBlocks []XBlock
 }
 
@@ -140,14 +142,26 @@ func New() *Resolver {
 	}
 
 	chains := []Chain{
-		{ID: graphql.ID(relay.MarshalID("Chain", "1")), ChainID: hexutil.Big(*hexutil.MustDecodeBig("0x1")), Name: "Ethereum"},
-		{ID: graphql.ID(relay.MarshalID("Chain", "2")), ChainID: hexutil.Big(*hexutil.MustDecodeBig("0x2")), Name: "Binance Smart Chain"},
-		{ID: graphql.ID(relay.MarshalID("Chain", "3")), ChainID: hexutil.Big(*hexutil.MustDecodeBig("0x3")), Name: "Polygon"},
-		{ID: graphql.ID(relay.MarshalID("Chain", "4")), ChainID: hexutil.Big(*hexutil.MustDecodeBig("0x4")), Name: "Avalanche"},
-		{ID: graphql.ID(relay.MarshalID("Chain", "5")), ChainID: hexutil.Big(*hexutil.MustDecodeBig("0x5")), Name: "Fantom"},
-		{ID: graphql.ID(relay.MarshalID("Chain", "6")), ChainID: hexutil.Big(*hexutil.MustDecodeBig("0x6")), Name: "Arbitrum"},
-		{ID: graphql.ID(relay.MarshalID("Chain", "7")), ChainID: hexutil.Big(*hexutil.MustDecodeBig("0x7")), Name: "Optimism"},
+		{
+			ID:      graphql.ID(relay.MarshalID("Chain", "17000")),
+			ChainID: hexutil.Big(*hexutil.MustDecodeBig(fmt.Sprintf("0x%x", 165))),
+			Name:    "Holesky",
+			LogoURL: "https://chainlist.org/unknown-logo.png",
+		},
+		{
+			ID:      graphql.ID(relay.MarshalID("Chain", "421614")),
+			ChainID: hexutil.Big(*hexutil.MustDecodeBig(fmt.Sprintf("0x%x", 421614))),
+			Name:    "ArbSepolia",
+			LogoURL: "https://icons.llamao.fi/icons/chains/rsz_arbitrum.jpg",
+		},
+		{
+			ID:      graphql.ID(relay.MarshalID("Chain", "11155420")),
+			ChainID: hexutil.Big(*hexutil.MustDecodeBig(fmt.Sprintf("0x%x", 11155420))),
+			Name:    "OpSepolia",
+			LogoURL: "",
+		},
 	}
+	resolver.QueryResolver.Chains = chains
 
 	// Helper function to get a random destination chain ID different from the source chain ID
 	destChainID := func(srcID hexutil.Big) hexutil.Big {
@@ -430,8 +444,7 @@ func (r *QueryResolver) Xmsgs(ctx context.Context, args XMsgsArgs) (XMsgConnecti
 
 // Implement the supportedChains query resolver.
 func (r *Resolver) SupportedChains(ctx context.Context) []Chain {
-	// TODO: Implement logic to fetch supported chains
-	return nil
+	return r.QueryResolver.Chains
 }
 
 type cursor struct {
