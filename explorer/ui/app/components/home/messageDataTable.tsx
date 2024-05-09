@@ -35,14 +35,16 @@ export default function XMsgDataTable() {
     sourceChain: string | null
     destChain: string | null
     status: Status
-    cursor: string | null
+    before: string | null
+    after: string | null
   }>({
     address: searchParams.get('address') ?? null,
     sourceChain: searchParams.get('sourceChain') ?? null,
     destChain: searchParams.get('destChain') ?? null,
     txHash: searchParams.get('txHash') ?? null,
     status: (searchParams.get('status') as Status) ?? 'All',
-    cursor: searchParams.get('cursor') ?? null,
+    before: searchParams.get('before') ?? null,
+    after: searchParams.get('after') ?? null,
   })
 
   const sourceChainList = []
@@ -63,7 +65,8 @@ export default function XMsgDataTable() {
       sourceChain: null,
       destChain: null,
       txHash: null,
-      cursor: null,
+      after: null,
+      before: null,
       status: 'All',
     })
   }
@@ -426,9 +429,9 @@ export default function XMsgDataTable() {
           <PageButton
             className="rounded-full flex items-center justify-center"
             onClick={() => {
-              setFilterParams(prev => ({ ...prev, cursor: data.prevCursor }))
+              setFilterParams(prev => ({ ...prev, after: null, before: data.xmsgs[0].cursor}))
             }} // TODO: when clicked it needs to update the search params with the new cursor
-            disabled={false} // TODO: When there is no previous cursor, we need to disable this
+            disabled={!data.pageInfo.hasPrevPage} // TODO: When there is no previous cursor, we need to disable this
           >
             <span className="sr-only">Previous</span>
             <span className={`icon-chevron-med-left text-[20px]`}></span>
@@ -447,9 +450,9 @@ export default function XMsgDataTable() {
           <PageButton
             className="rounded-full  flex items-center justify-center"
             onClick={() => {
-              setFilterParams(prev => ({ ...prev, cursor: data.nextCursor }))
+              setFilterParams(prev => ({ ...prev, after: data.xmsgs[9].cursor, before: null}))
             }} // TODO: when clicked it needs to update the search params with the new cursor
-            disabled={false} // TODO: When there is no next cursor, we need to disable this
+            disabled={!data.pageInfo.hasNextPage} // TODO: When there is no next cursor, we need to disable this
           >
             <span className="sr-only">Next</span>
             <span className={`icon-chevron-med-right text-[20px]`}></span>
