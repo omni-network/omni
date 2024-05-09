@@ -45,7 +45,7 @@ func MakeGenesis(network netconf.ID) (core.Genesis, error) {
 		Config:     defaultChainConfig(network),
 		GasLimit:   miner.DefaultConfig.GasCeil,
 		BaseFee:    big.NewInt(params.InitialBaseFee),
-		Difficulty: big.NewInt(1),
+		Difficulty: big.NewInt(0),
 		Alloc:      allocs,
 	}, nil
 }

@@ -289,7 +289,7 @@ func makePayload(fuzzer *fuzz.Fuzzer, height uint64, timestamp uint64, parentHas
 	header.Coinbase = feeRecipient // this corresponds to SuggestedFeeRecipient field in PayloadAttributes
 
 	// Convert header to block
-	block := types.NewBlock(&header, nil, nil, nil, trie.NewStackTrie(nil))
+	block := types.NewBlock(&header, nil, nil, trie.NewStackTrie(nil))
 
 	// Convert block to payload
 	env := engine.BlockToExecutableData(block, big.NewInt(0), nil)
