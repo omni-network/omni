@@ -27,8 +27,6 @@ export default function XMsgDataTable() {
 
   const pageLoaded = React.useRef<boolean>(false)
 
-  console.log(data)
-
   const [searchParams, setSearchParams] = useSearchParams()
 
   const [filterParams, setFilterParams] = React.useState<{
