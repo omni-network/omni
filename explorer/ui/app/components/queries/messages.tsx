@@ -1,54 +1,34 @@
-import { DocumentNode } from 'graphql'
-import { gql, useQuery } from 'urql'
+import { gql } from 'urql'
 import { graphql } from '~/graphql'
-import { XMsg, XMsgsDocument } from '~/graphql/graphql'
 
-export const GetXMsg = (sourceChainID: string, destChainID: string, streamOffset: string): XMsg | null => {
-  const [result] = useQuery({
-    query: xmsg,
-    variables: {
-      sourceChainID,
-      destChainID,
-      streamOffset,
-    },
-  })
-  const { data, fetching, error } = result
-  // TODO handle error properly here
-  if (!error) {
-    return data as XMsg
-  } else {
-    return null
-  }
-}
-
-
-export const xmsg = graphql(`
-  query XMsg($sourceChainID: BigInt!, $destChainID: BigInt!, $streamOffset: BigInt!) {
-    xmsg(sourceChainID: $sourceChainID, destChainID: $destChainID, streamOffset: $streamOffset) {
-      StreamOffset
-      SourceMessageSender
-      DestAddress
-      DestGasLimit
-      SourceChainID
-      DestChainID
-      TxHash
-      BlockHeight
-      BlockHash
-      Block {
-        SourceChainID
-        BlockHeight
-        BlockHash
-        Timestamp
+export const xmsg = gql(`
+  query xmsg($sourceChainID: BigInt!, $destChainID: BigInt!, $offset: BigInt!) {
+    xmsg(sourceChainID: $sourceChainID, destChainID: $destChainID, offset: $offset) {
+      id
+      displayID
+      offset
+      sender
+      senderUrl
+      to
+      toUrl
+      gasLimit
+      sourceChainID
+      destChainID
+      txHash
+      txHashUrl
+      status
+      block {
+        height
+        hash
+        timestamp
       }
-      Receipts {
-        GasUsed
-        Success
-        RelayerAddress
-        SourceChainID
-        DestChainID
-        StreamOffset
-        TxHash
-        Timestamp
+      receipt {
+        revertReason
+        txHash
+        txHashUrl
+        relayer
+        timestamp
+        gasUsed
       }
     }
   }
@@ -76,33 +56,56 @@ export const xmsgcount = graphql(`
   }
 `)
 
-export const xmsgs: typeof XMsgsDocument = gql(`
-  query XMsgs($cursor: BigInt, $limit: BigInt) {
-    xmsgs(cursor: $cursor, limit: $limit) {
-      TotalCount
-      Edges {
-        Cursor
-        Node {
-          ID
-          StreamOffset
-          SourceMessageSender
-          DestAddress
-          DestGasLimit
-          SourceChainID
-          DestChainID
-          TxHash
-          BlockHeight
-          BlockHash
-          Status
-          SourceBlockTime
-          ReceiptTxHash
+// query xmsgs($first: Int, $last: Int, $after: Id, $before: Id) {
+//   xmsgs(first: $first, last: $last, after: $after, before: $before) {
+
+export const xmsgs = gql(`
+query xmsgs($first: Int) {
+  xmsgs(first: $first) {
+    totalCount
+    edges {
+      cursor
+      node {
+        id
+        txHash
+        offset
+        displayID
+        sourceChainID
+        sender
+        senderUrl
+        to
+        toUrl
+        destChainID
+        gasLimit
+        status
+        txHash
+        txHashUrl
+        block {
+          id
+          sourceChainID
+          hash
+          height
+          timestamp
+        }
+        receipt {
+          txHash
+          txHashUrl
+          timestamp
+          success
+          offset
+          sourceChainID
+          destChainID
+          relayer
+          revertReason
         }
       }
-      PageInfo {
-        NextCursor
-        PrevCursor
-        HasNextPage
-      }
+    }
+    pageInfo {
+      currentPage
+      totalPages
+      hasNextPage
+      hasPrevPage
     }
   }
+}
 `)
