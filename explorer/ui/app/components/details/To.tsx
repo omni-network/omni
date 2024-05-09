@@ -6,7 +6,7 @@ import { dateFormatterXMsgPage } from './date.service';
 export const To = ({ xMsgDetails }) => {
   return (
     <>
-      <h6 className="text-default my-5 mt-20 text-lg">To</h6>
+      <h6 className="text-default my-5 text-lg">To</h6>
     {/* Destination Chain */}
     <div className="flex mt-5 pb-2 border-b-2 border-gray-500 border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Destination Chain</p>

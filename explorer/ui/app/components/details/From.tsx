@@ -5,7 +5,7 @@ import { hashShortener } from '~/lib/formatting'
 export const From = ({ xMsgDetails }) => {
   return (
     <>
-      <h6 className="text-default my-5 mt-20 text-lg">From</h6>
+      <h6 className="text-default my-5 text-lg">From</h6>
       {/* Source Chain */}
       <div className="flex mt-5 pb-2 border-b-2 border-gray-500 border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Source Chain</p>
