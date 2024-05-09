@@ -7,9 +7,8 @@ const Card: React.FC<{
 }> = ({ data }) => {
   const { title, value } = data
   return (
-    <div className="w-15 h-[140px] min-w-[310px] rounded-lg bg-raised px-6 py-3">
-      <span className="text-subtlest mb-[17px] block"> {title}</span>
-
+    <div className="h-[140px] bg-raised rounded-lg px-6 py-3">
+      <span className="text-subtlest mb-[5px] block"> {title}</span>
       <h4 className="text-default">{value}</h4>
     </div>
   )
@@ -25,7 +24,7 @@ const Overview: React.FC<Props> = ({}) => {
   return (
     <div className="mb-12 mt-8">
       <h5 className="text-default">Omni X-Explorer</h5>
-      <div className="flex flex-row flex-wrap gap-3 mt-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
         {cards.map((card, i) => (
           <Card key={`card-${i}`} data={card} />
         ))}

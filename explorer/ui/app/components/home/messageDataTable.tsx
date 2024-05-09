@@ -54,7 +54,6 @@ export default function XMsgDataTable() {
     canFilter: false,
     enableColumnFilter: false,
   }
-
   const clearFilters = () => {
     if (searchFieldRef.current) {
       searchFieldRef.current.value = ''
@@ -128,7 +127,7 @@ export default function XMsgDataTable() {
             <>
               <Link
                 data-tooltip-id={`${value.getValue()}-full-id-tooltip`}
-                to={`xmsg/${value.getValue()}`}
+                to={`xmsg/${value.row.original.node.sourceChainID}-${value.row.original.node.destChainID}-${value.row.original.node.offset}`}
                 className="link"
               >
                 {hashShortener(value.getValue())}
@@ -240,7 +239,7 @@ export default function XMsgDataTable() {
                   {' '}
                   <Link
                     target="_blank"
-                    to={`${value.row.original.node.txHashUrl}`}
+                    to={`${value.row.original.node.txUrl}`}
                     className="link"
                   >
                     <div className="flex">
@@ -325,7 +324,7 @@ export default function XMsgDataTable() {
                   {' '}
                   <Link
                     target="_blank"
-                    to={`${value.row.original.node.receipt.txHashUrl}`}
+                    to={`${value.row.original.node.receipt.txUrl}`}
                     className="link"
                   >
                     <div className="flex">
