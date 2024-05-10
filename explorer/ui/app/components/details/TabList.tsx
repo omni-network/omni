@@ -12,8 +12,13 @@ export const TabList = ({ xMsgDetails }) => {
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Timestamp</p>
         <p className="flex-1">
-        <span className="text-default">{dateFormatter(new Date(xMsgDetails?.block.timestamp))}</span>
-          {/* {xMsgDetails?.receipt.timestamp && dateFormatterXMsgPage(new Date(xMsgDetails?.receipt.timestamp))} */}
+          <span className="text-default">
+            {dateFormatter(new Date(xMsgDetails?.block.timestamp))}{' '}
+          </span>
+          (
+          {xMsgDetails?.receipt.timestamp &&
+            dateFormatterXMsgPage(new Date(xMsgDetails?.receipt.timestamp))}
+          )
         </p>
       </div>
       {/* Source Address */}
