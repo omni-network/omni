@@ -47,7 +47,11 @@ function App() {
           <Outlet />
           <div className="grow"></div>
           <Footer />
-          <ScrollRestoration />
+          <ScrollRestoration
+             getKey={(location, matches) => {
+              return location.pathname;
+            }}
+          />
           <Scripts />
           <LiveReload />
         </div>
