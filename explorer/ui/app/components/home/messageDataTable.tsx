@@ -238,7 +238,11 @@ export default function XMsgDataTable() {
               {value.getValue() && (
                 <div className="flex">
                   {' '}
-                  <Link target="_blank" to={`${value.row.original.node.txUrl}`} className="link">
+                  <Link
+                    target="_blank"
+                    to={`${value.row.original.node.txUrl}`}
+                    className="link"
+                  >
                     <div className="flex">
                       <p className="font-bold text-b-sm w-[125px]">
                         {hashShortener(value.getValue())}

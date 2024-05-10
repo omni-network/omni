@@ -160,11 +160,14 @@ type XReceipt {
 Chain represents a blockchain on the https://chainlist.org.
 """
 type Chain {
-  "ID of the chain"
+  "ID is a unique identifier of the chain. Not intended for display."
   id: ID!
 
-  "Chain ID as per https://chainlist.org"
+  "Chain ID is a 0x prefixed hexadecimal number as per https://chainlist.org."
   chainID: BigInt!
+
+  "Display ID of the chain is a human readable base-10 number"
+  displayID: Long!
 
   "Chain name"
   name: String!
@@ -216,6 +219,31 @@ type PageInfo {
 }
 
 """
+StatsResult represents the result of the stats query.
+"""
+type StatsResult {
+  "Total number of XMsgs"
+  totalMsgs: Long!
+
+  "The top streams by total messages sent."
+  topStreams: [StreamStats!]!
+}
+
+"""
+StreamStats represents the metrics of a stream.
+"""
+type StreamStats {
+  "Source chain ID"
+  sourceChain: Chain!
+
+  "Destination chain ID"
+  destChain: Chain!
+
+  "Number of messages sent in the stream"
+  msgCount: Long!
+}
+
+"""
 FilterInput represents a filter to apply to underlying entities.
 """
 input FilterInput {
@@ -238,7 +266,7 @@ type Query {
 
   "Returns a paginated list of XMsgs based on the provided arguments. For forwards pagination, provide `first` and `after`. For backwards pagination, provide `last` and `before`. Defaults to the last 10 messages. `after` and `before` are the cursors of the last and first messages from the current page respectively."
   xmsgs(
-    "Filters to apply to the XMsgs. Accepted filters are: `address` (checks for both `sender` or `to` addresses), `status`, `sourceChainID`, `destChainID`, `txHash` (checks for transactions on both the source and the destination chains)."
+    "Filters to apply to the XMsgs. Accepted filters are: `address` (checks for both `sender` or `to` addresses), `status`, `srcChainID`, `destChainID`, `txHash` (checks for transactions on both the source and the destination chains)."
     filters: [FilterInput!],
 
     "Number of XMsgs to return for forwards pagination."
@@ -256,4 +284,7 @@ type Query {
 
   "Returns the list of supported chains."
   supportedChains: [Chain!]!
+
+  "Stats returns key Omni metrics."
+  stats: StatsResult!
 }

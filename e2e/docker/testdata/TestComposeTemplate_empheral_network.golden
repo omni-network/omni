@@ -34,6 +34,7 @@ services:
     labels:
       e2e: true
     container_name: mock_rollup
+    platform: linux/amd64
     image: ghcr.io/foundry-rs/foundry:latest
     entrypoint:
       - anvil
@@ -53,6 +54,7 @@ services:
     labels:
       e2e: true
     container_name: mock_l1
+    platform: linux/amd64
     image: ghcr.io/foundry-rs/foundry:latest
     entrypoint:
       - anvil
@@ -205,6 +207,7 @@ services:
       e2e: true
     image: postgres:14-alpine
     container_name: explorer_db
+    platform: linux/amd64
     environment:
       POSTGRES_DB: omni_db
       POSTGRES_USER: omni

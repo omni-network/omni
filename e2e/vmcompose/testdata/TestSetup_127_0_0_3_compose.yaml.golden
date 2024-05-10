@@ -11,6 +11,7 @@ services:
     labels:
       e2e: true
     container_name: mock_l1
+    platform: linux/amd64
     image: ghcr.io/foundry-rs/foundry:latest
     entrypoint:
       - anvil

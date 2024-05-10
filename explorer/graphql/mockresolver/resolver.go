@@ -10,6 +10,7 @@ import (
 	"math/rand/v2"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -100,10 +101,11 @@ type XReceipt struct {
 
 // Define the Go struct for the Chain type.
 type Chain struct {
-	ID      graphql.ID
-	ChainID hexutil.Big
-	Name    string
-	LogoURL string
+	ID        graphql.ID
+	ChainID   hexutil.Big
+	DisplayID Long
+	Name      string
+	LogoURL   string
 }
 
 // Define the Go struct for the XMsgConnection type.
@@ -127,10 +129,24 @@ type PageInfo struct {
 	CurrentPage Long
 }
 
+// Define the Go struct for the StatsResult type.
+type StatsResult struct {
+	TotalMsgs  Long
+	TopStreams []StreamStats
+}
+
+// Define the Go struct for the StreamStats type.
+type StreamStats struct {
+	SourceChain Chain
+	DestChain   Chain
+	MsgCount    Long
+}
+
 // Define the Go struct for the Query type.
 type QueryResolver struct {
-	Chains  []Chain
-	XBlocks []XBlock
+	Chains      []Chain
+	StatsResult StatsResult
+	XBlocks     []XBlock
 }
 
 func New() *Resolver {
@@ -143,22 +159,25 @@ func New() *Resolver {
 
 	chains := []Chain{
 		{
-			ID:      graphql.ID(relay.MarshalID("Chain", "17000")),
-			ChainID: hexutil.Big(*hexutil.MustDecodeBig(fmt.Sprintf("0x%x", 165))),
-			Name:    "Holesky",
-			LogoURL: "https://chainlist.org/unknown-logo.png",
+			ID:        graphql.ID(relay.MarshalID("Chain", "17000")),
+			ChainID:   hexutil.Big(*hexutil.MustDecodeBig(fmt.Sprintf("0x%x", 165))),
+			DisplayID: Long(165),
+			Name:      "Holesky",
+			LogoURL:   "https://chainlist.org/unknown-logo.png",
 		},
 		{
-			ID:      graphql.ID(relay.MarshalID("Chain", "421614")),
-			ChainID: hexutil.Big(*hexutil.MustDecodeBig(fmt.Sprintf("0x%x", 421614))),
-			Name:    "ArbSepolia",
-			LogoURL: "https://icons.llamao.fi/icons/chains/rsz_arbitrum.jpg",
+			ID:        graphql.ID(relay.MarshalID("Chain", "421614")),
+			ChainID:   hexutil.Big(*hexutil.MustDecodeBig(fmt.Sprintf("0x%x", 421614))),
+			DisplayID: Long(421614),
+			Name:      "ArbSepolia",
+			LogoURL:   "https://icons.llamao.fi/icons/chains/rsz_arbitrum.jpg",
 		},
 		{
-			ID:      graphql.ID(relay.MarshalID("Chain", "11155420")),
-			ChainID: hexutil.Big(*hexutil.MustDecodeBig(fmt.Sprintf("0x%x", 11155420))),
-			Name:    "OpSepolia",
-			LogoURL: "",
+			ID:        graphql.ID(relay.MarshalID("Chain", "11155420")),
+			ChainID:   hexutil.Big(*hexutil.MustDecodeBig(fmt.Sprintf("0x%x", 11155420))),
+			DisplayID: Long(11155420),
+			Name:      "OpSepolia",
+			LogoURL:   "https://chainlist.org/unknown-logo.png",
 		},
 	}
 	resolver.QueryResolver.Chains = chains
@@ -182,9 +201,11 @@ func New() *Resolver {
 	var relayerAddress common.Address
 	fuzzer.Fuzz(&relayerAddress)
 
+	var totalMsgs uint64
 	// Populate XBlocks with random data
-	for i := 0; i < 31; i++ {
-		log.Printf("Generating random XBlock data for block %d of 30\n", i+1)
+	numBlocks := 31
+	for i := 0; i < numBlocks; i++ {
+		log.Printf("Generating random XBlock data for block %d of %d\n", i+1, numBlocks)
 		var xblock XBlock
 
 		// Fuzz XBlock properties
@@ -192,13 +213,15 @@ func New() *Resolver {
 		fuzzer.Fuzz(&xblock.ChainID)
 		fuzzer.Fuzz(&xblock.Height)
 		fuzzer.Fuzz(&xblock.Hash)
-		fuzzer.Fuzz(&xblock.Timestamp)
 		xblock.ChainID = chains[rand.IntN(len(chains))].ChainID
+		// generate a random timestamp between now and 24 hours ago
+		xblock.Timestamp = graphql.Time{Time: time.Now().Add(-time.Duration(rand.Int64N(int64(24 * time.Hour))))}
 		xblock.URL = fmt.Sprintf("https://etherscan.io/block/%s", fmt.Sprintf("%d", xblock.Height.ToInt().Int64()))
 
 		numMsgs := rand.IntN(6) // Generate random number of messages between 0 and 5
 		for j := 0; j < numMsgs; j++ {
 			var xmsg XMsg
+			totalMsgs++
 
 			// Fuzz XMsg properties
 			xmsg.ID = relay.MarshalID("XMsg", fmt.Sprintf("%d-%d", i+1, j+1))
@@ -206,7 +229,7 @@ func New() *Resolver {
 			fuzzer.Fuzz(&xmsg.To)
 			fuzzer.Fuzz(&xmsg.GasLimit)
 			fuzzer.Fuzz(&xmsg.TxHash)
-			xmsg.Offset = hexutil.Big(*hexutil.MustDecodeBig(fmt.Sprintf("0x%x", j+1)))
+			xmsg.Offset = hexutil.Big(*hexutil.MustDecodeBig(fmt.Sprintf("0x%x", i+j+1)))
 			xmsg.SourceChainID = xblock.ChainID
 			xmsg.DestChainID = destChainID(xmsg.SourceChainID)
 			xmsg.Block = xblock
@@ -224,7 +247,6 @@ func New() *Resolver {
 			xreceipt.Relayer = relayerAddress
 			fuzzer.Fuzz(&xreceipt.Offset)
 			fuzzer.Fuzz(&xreceipt.TxHash)
-			fuzzer.Fuzz(&xreceipt.Timestamp)
 			xreceipt.SourceChainID = xmsg.SourceChainID
 			xreceipt.DestChainID = xmsg.DestChainID
 			if xmsg.Status == StatusFailed {
@@ -232,6 +254,9 @@ func New() *Resolver {
 				reason := "Insufficient funds"
 				xreceipt.RevertReason = &reason
 			}
+			// generate a random timestamp between the block timestamp and now
+			delta := time.Since(xblock.Timestamp.Time)
+			xreceipt.Timestamp = graphql.Time{Time: time.Now().Add(time.Duration(rand.Int64N(int64(delta))))}
 
 			xreceipt.TxURL = fmt.Sprintf("https://etherscan.io/tx/%s", xreceipt.TxHash.String())
 
@@ -241,6 +266,29 @@ func New() *Resolver {
 		}
 
 		resolver.XBlocks = append(resolver.XBlocks, xblock)
+	}
+
+	// Populate StatsResult with random data
+	resolver.QueryResolver.StatsResult.TotalMsgs = Long(totalMsgs)
+	a := uint64(rand.Int64N(int64(totalMsgs)))
+	b := uint64(rand.Int64N(int64(totalMsgs - a)))
+	c := totalMsgs - a - b
+	resolver.QueryResolver.StatsResult.TopStreams = []StreamStats{
+		{
+			SourceChain: chains[0],
+			DestChain:   chains[1],
+			MsgCount:    Long(rand.Int64N(int64(a))),
+		},
+		{
+			SourceChain: chains[0],
+			DestChain:   chains[2],
+			MsgCount:    Long(rand.Int64N(int64(b))),
+		},
+		{
+			SourceChain: chains[2],
+			DestChain:   chains[1],
+			MsgCount:    Long(rand.Int64N(int64(c))),
+		},
 	}
 
 	return resolver
@@ -308,56 +356,49 @@ func (r *QueryResolver) Xmsgs(ctx context.Context, args XMsgsArgs) (XMsgConnecti
 	// Apply filters
 	if args.Filters != nil {
 		for _, f := range *args.Filters {
+			var filteredMessages []XMsg
 			switch f.Key {
 			case "status":
-				var filteredMessages []XMsg
 				for _, msg := range messages {
 					if msg.Status == Status(f.Value) {
 						filteredMessages = append(filteredMessages, msg)
 					}
 				}
-				messages = filteredMessages
 
 			case "address":
-				var filteredMessages []XMsg
 				for _, msg := range messages {
 					sender, to := strings.ToLower(msg.Sender.Hex()), strings.ToLower(msg.To.Hex())
 					if sender == f.Value || to == f.Value {
 						filteredMessages = append(filteredMessages, msg)
 					}
 				}
-				messages = filteredMessages
 
 			case "srcChainID":
-				var filteredMessages []XMsg
 				for _, msg := range messages {
 					if msg.SourceChainID.String() == f.Value {
 						filteredMessages = append(filteredMessages, msg)
 					}
 				}
-				messages = filteredMessages
 
 			case "destChainID":
-				var filteredMessages []XMsg
 				for _, msg := range messages {
 					if msg.DestChainID.String() == f.Value {
 						filteredMessages = append(filteredMessages, msg)
 					}
 				}
-				messages = filteredMessages
 
 			case "txHash":
-				var filteredMessages []XMsg
 				for _, msg := range messages {
 					if strings.ToLower(msg.TxHash.String()) == f.Value || (msg.Receipt != nil && strings.ToLower(msg.Receipt.TxHash.String()) == f.Value) {
 						filteredMessages = append(filteredMessages, msg)
 					}
 				}
-				messages = filteredMessages
 
 			default:
 				return XMsgConnection{}, fmt.Errorf("unsupported filter key: %s", f.Key)
 			}
+
+			messages = filteredMessages
 		}
 	}
 
@@ -375,6 +416,9 @@ func (r *QueryResolver) Xmsgs(ctx context.Context, args XMsgsArgs) (XMsgConnecti
 
 	cur := &cursor{}
 
+	totalPages := int(math.Ceil(float64(len(messages)) / float64(numItems)))
+
+	// our data is backwards (oldest data is first), so we need to reverse the order
 	if args.First != nil {
 		numItems = *args.First
 		if args.After != nil {
@@ -382,10 +426,11 @@ func (r *QueryResolver) Xmsgs(ctx context.Context, args XMsgsArgs) (XMsgConnecti
 				return XMsgConnection{}, err
 			}
 			start = int(cur.ID) + 1
+			pageNum = int(cur.PageNum) - 1
 		} else {
 			start = 0
+			pageNum = totalPages
 		}
-		pageNum = int(cur.PageNum) + 1
 		end = start + int(numItems)
 		if end > len(messages) {
 			end = len(messages)
@@ -396,11 +441,12 @@ func (r *QueryResolver) Xmsgs(ctx context.Context, args XMsgsArgs) (XMsgConnecti
 			if err := cur.Decode(*args.Before); err != nil {
 				return XMsgConnection{}, err
 			}
-			end = int(cur.ID) - 1
+			end = int(cur.ID) // exclusive
+			pageNum = int(cur.PageNum) + 1
 		} else {
 			end = len(messages)
+			pageNum = 1
 		}
-		pageNum = int(cur.PageNum) - 1
 		start = end - int(numItems)
 		if start < 0 {
 			start = 0
@@ -412,7 +458,7 @@ func (r *QueryResolver) Xmsgs(ctx context.Context, args XMsgsArgs) (XMsgConnecti
 
 	// Create the edges
 	var edges []XMsgEdge
-	for i := start; i < end; i++ {
+	for i := start; i < end; i++ { // end is exclusive
 		cur := &cursor{
 			ID:      uint(i),
 			PageNum: uint(pageNum),
@@ -421,17 +467,20 @@ func (r *QueryResolver) Xmsgs(ctx context.Context, args XMsgsArgs) (XMsgConnecti
 		if err != nil {
 			return XMsgConnection{}, err
 		}
-		edges = append(edges, XMsgEdge{
-			Cursor: cursorID,
-			Node:   messages[i],
-		})
+		// prepend the new edge to reverse the order
+		edges = append([]XMsgEdge{
+			{
+				Cursor: cursorID,
+				Node:   messages[i],
+			},
+		}, edges...)
 	}
 
 	// Create the page info
 	pageInfo := PageInfo{
-		HasNextPage: end < len(messages),
-		HasPrevPage: start > 0,
-		TotalPages:  Long(uint64(math.Ceil(float64(len(messages)) / float64(numItems)))),
+		HasNextPage: pageNum < totalPages,
+		HasPrevPage: pageNum > 1,
+		TotalPages:  Long(uint64(totalPages)),
 		CurrentPage: Long(uint64(pageNum)),
 	}
 
@@ -443,8 +492,12 @@ func (r *QueryResolver) Xmsgs(ctx context.Context, args XMsgsArgs) (XMsgConnecti
 }
 
 // Implement the supportedChains query resolver.
-func (r *Resolver) SupportedChains(ctx context.Context) []Chain {
-	return r.QueryResolver.Chains
+func (r *QueryResolver) SupportedChains(ctx context.Context) []Chain {
+	return r.Chains
+}
+
+func (r *QueryResolver) Stats(ctx context.Context) StatsResult {
+	return r.StatsResult
 }
 
 type cursor struct {
