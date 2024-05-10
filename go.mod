@@ -14,8 +14,8 @@ require (
 	cosmossdk.io/x/tx v0.13.3
 	entgo.io/ent v0.13.1
 	github.com/BurntSushi/toml v1.3.2
-	github.com/Layr-Labs/eigenlayer-cli v0.7.3
-	github.com/Layr-Labs/eigensdk-go v0.1.6
+	github.com/Layr-Labs/eigenlayer-cli v0.8.0
+	github.com/Layr-Labs/eigensdk-go v0.1.7-0.20240506234104-06805a99d717
 	github.com/bufbuild/buf v1.31.0
 	github.com/charmbracelet/log v0.4.0
 	github.com/cometbft/cometbft v0.38.7
@@ -245,9 +245,9 @@ require (
 	github.com/tidwall/btree v1.7.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
-	github.com/urfave/cli/v2 v2.27.1 // indirect
+	github.com/urfave/cli/v2 v2.27.2 // indirect
 	github.com/vbatts/tar-split v0.11.5 // indirect
-	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
+	github.com/xrash/smetrics v0.0.0-20240312152122-5f08fbb34913 // indirect
 	github.com/zclconf/go-cty v1.8.0 // indirect
 	github.com/zondax/hid v0.9.2 // indirect
 	github.com/zondax/ledger-go v0.14.3 // indirect
