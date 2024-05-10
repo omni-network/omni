@@ -10,11 +10,21 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 )
 
-type loggingABCIApp struct {
+type finaliseCallback func(context.Context, *abci.RequestFinalizeBlock, *abci.ResponseFinalizeBlock) error
+
+type abciWrapper struct {
 	abci.Application
+	finaliseCallback finaliseCallback
 }
 
-func (l loggingABCIApp) Info(ctx context.Context, info *abci.RequestInfo) (*abci.ResponseInfo, error) {
+func newABCIWrapper(app abci.Application, finaliseCallback finaliseCallback) *abciWrapper {
+	return &abciWrapper{
+		Application:      app,
+		finaliseCallback: finaliseCallback,
+	}
+}
+
+func (l abciWrapper) Info(ctx context.Context, info *abci.RequestInfo) (*abci.ResponseInfo, error) {
 	log.Debug(ctx, "👾 ABCI call: Info")
 	resp, err := l.Application.Info(ctx, info)
 	if err != nil {
@@ -24,16 +34,16 @@ func (l loggingABCIApp) Info(ctx context.Context, info *abci.RequestInfo) (*abci
 	return resp, err
 }
 
-func (l loggingABCIApp) Query(ctx context.Context, query *abci.RequestQuery) (*abci.ResponseQuery, error) {
+func (l abciWrapper) Query(ctx context.Context, query *abci.RequestQuery) (*abci.ResponseQuery, error) {
 	return l.Application.Query(ctx, query) // No log here since this can be very noisy
 }
 
-func (l loggingABCIApp) CheckTx(ctx context.Context, tx *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
+func (l abciWrapper) CheckTx(ctx context.Context, tx *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
 	log.Debug(ctx, "👾 ABCI call: CheckTx")
 	return l.Application.CheckTx(ctx, tx)
 }
 
-func (l loggingABCIApp) InitChain(ctx context.Context, chain *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
+func (l abciWrapper) InitChain(ctx context.Context, chain *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
 	log.Debug(ctx, "👾 ABCI call: InitChain")
 	resp, err := l.Application.InitChain(ctx, chain)
 	if err != nil {
@@ -43,7 +53,7 @@ func (l loggingABCIApp) InitChain(ctx context.Context, chain *abci.RequestInitCh
 	return resp, err
 }
 
-func (l loggingABCIApp) PrepareProposal(ctx context.Context, proposal *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
+func (l abciWrapper) PrepareProposal(ctx context.Context, proposal *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
 	log.Debug(ctx, "👾 ABCI call: PrepareProposal",
 		"height", proposal.Height,
 		log.Hex7("proposer", proposal.ProposerAddress),
@@ -56,7 +66,7 @@ func (l loggingABCIApp) PrepareProposal(ctx context.Context, proposal *abci.Requ
 	return resp, err
 }
 
-func (l loggingABCIApp) ProcessProposal(ctx context.Context, proposal *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
+func (l abciWrapper) ProcessProposal(ctx context.Context, proposal *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
 	log.Debug(ctx, "👾 ABCI call: ProcessProposal",
 		"height", proposal.Height,
 		log.Hex7("proposer", proposal.ProposerAddress),
@@ -69,16 +79,21 @@ func (l loggingABCIApp) ProcessProposal(ctx context.Context, proposal *abci.Requ
 	return resp, err
 }
 
-func (l loggingABCIApp) FinalizeBlock(ctx context.Context, block *abci.RequestFinalizeBlock) (*abci.ResponseFinalizeBlock, error) {
-	resp, err := l.Application.FinalizeBlock(ctx, block)
+func (l abciWrapper) FinalizeBlock(ctx context.Context, req *abci.RequestFinalizeBlock) (*abci.ResponseFinalizeBlock, error) {
+	resp, err := l.Application.FinalizeBlock(ctx, req)
 	if err != nil {
-		log.Error(ctx, "Finalize block failed [BUG]", err, "height", block.Height)
+		log.Error(ctx, "Finalize req failed [BUG]", err, "height", req.Height)
+		return resp, err
+	}
+
+	if err := l.finaliseCallback(ctx, req, resp); err != nil {
+		log.Error(ctx, "Finalize callback failed [BUG]", err, "height", req.Height)
 		return resp, err
 	}
 
 	attrs := []any{
 		"val_updates", len(resp.ValidatorUpdates),
-		"height", block.Height,
+		"height", req.Height,
 	}
 	for i, update := range resp.ValidatorUpdates {
 		attrs = append(attrs, log.Hex7(fmt.Sprintf("pubkey_%d", i), update.PubKey.GetSecp256K1()))
@@ -92,13 +107,13 @@ func (l loggingABCIApp) FinalizeBlock(ctx context.Context, block *abci.RequestFi
 		}
 		log.Error(ctx, "FinalizeBlock contains unexpected failed transaction [BUG]", nil,
 			"info", res.Info, "code", res.Code, "log", res.Log,
-			"code_space", res.Codespace, "index", i, "height", block.Height)
+			"code_space", res.Codespace, "index", i, "height", req.Height)
 	}
 
 	return resp, err
 }
 
-func (l loggingABCIApp) ExtendVote(ctx context.Context, vote *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
+func (l abciWrapper) ExtendVote(ctx context.Context, vote *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
 	log.Debug(ctx, "👾 ABCI call: ExtendVote",
 		"height", vote.Height,
 	)
@@ -110,7 +125,7 @@ func (l loggingABCIApp) ExtendVote(ctx context.Context, vote *abci.RequestExtend
 	return resp, err
 }
 
-func (l loggingABCIApp) VerifyVoteExtension(ctx context.Context, extension *abci.RequestVerifyVoteExtension) (*abci.ResponseVerifyVoteExtension, error) {
+func (l abciWrapper) VerifyVoteExtension(ctx context.Context, extension *abci.RequestVerifyVoteExtension) (*abci.ResponseVerifyVoteExtension, error) {
 	log.Debug(ctx, "👾 ABCI call: VerifyVoteExtension",
 		"height", extension.Height,
 	)
@@ -122,27 +137,27 @@ func (l loggingABCIApp) VerifyVoteExtension(ctx context.Context, extension *abci
 	return resp, err
 }
 
-func (l loggingABCIApp) Commit(ctx context.Context, commit *abci.RequestCommit) (*abci.ResponseCommit, error) {
+func (l abciWrapper) Commit(ctx context.Context, commit *abci.RequestCommit) (*abci.ResponseCommit, error) {
 	log.Debug(ctx, "👾 ABCI call: Commit")
 	return l.Application.Commit(ctx, commit)
 }
 
-func (l loggingABCIApp) ListSnapshots(ctx context.Context, listSnapshots *abci.RequestListSnapshots) (*abci.ResponseListSnapshots, error) {
+func (l abciWrapper) ListSnapshots(ctx context.Context, listSnapshots *abci.RequestListSnapshots) (*abci.ResponseListSnapshots, error) {
 	log.Debug(ctx, "👾 ABCI call: ListSnapshots")
 	return l.Application.ListSnapshots(ctx, listSnapshots)
 }
 
-func (l loggingABCIApp) OfferSnapshot(ctx context.Context, snapshot *abci.RequestOfferSnapshot) (*abci.ResponseOfferSnapshot, error) {
+func (l abciWrapper) OfferSnapshot(ctx context.Context, snapshot *abci.RequestOfferSnapshot) (*abci.ResponseOfferSnapshot, error) {
 	log.Debug(ctx, "👾 ABCI call: OfferSnapshot")
 	return l.Application.OfferSnapshot(ctx, snapshot)
 }
 
-func (l loggingABCIApp) LoadSnapshotChunk(ctx context.Context, chunk *abci.RequestLoadSnapshotChunk) (*abci.ResponseLoadSnapshotChunk, error) {
+func (l abciWrapper) LoadSnapshotChunk(ctx context.Context, chunk *abci.RequestLoadSnapshotChunk) (*abci.ResponseLoadSnapshotChunk, error) {
 	log.Debug(ctx, "👾 ABCI call: LoadSnapshotChunk")
 	return l.Application.LoadSnapshotChunk(ctx, chunk)
 }
 
-func (l loggingABCIApp) ApplySnapshotChunk(ctx context.Context, chunk *abci.RequestApplySnapshotChunk) (*abci.ResponseApplySnapshotChunk, error) {
+func (l abciWrapper) ApplySnapshotChunk(ctx context.Context, chunk *abci.RequestApplySnapshotChunk) (*abci.ResponseApplySnapshotChunk, error) {
 	log.Debug(ctx, "👾 ABCI call: ApplySnapshotChunk")
 	return l.Application.ApplySnapshotChunk(ctx, chunk)
 }

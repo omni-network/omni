@@ -11,6 +11,7 @@ import (
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
 	etypes "github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/tutil"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
@@ -120,7 +121,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 				txConfig := authtx.NewTxConfig(cdc, nil)
 
 				var err error
-				tt.mockEngine.EngineClient, err = ethclient.NewEngineMock(ethclient.WithRandomErrs())
+				tt.mockEngine.EngineClient, err = ethclient.NewEngineMock()
 				require.NoError(t, err)
 
 				ap := mockAddressProvider{
@@ -128,7 +129,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 				}
 				k := NewKeeper(cdc, storeService, &tt.mockEngine, txConfig, ap)
 
-				_, err = k.PrepareProposal(ctx, tt.req)
+				_, err = k.PrepareProposal(withRandomErrs(t, ctx), tt.req)
 				if (err != nil) != tt.wantErr {
 					t.Errorf("PrepareProposal() error = %v, wantErr %v", err, tt.wantErr)
 					return
@@ -141,10 +142,9 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		t.Parallel()
 		// setup dependencies
 		ctx, storeService := setupCtxStore(t, nil)
-		noErrCtx := ethclient.WithoutRandomErr(ctx)
 		cdc := getCodec(t)
 		txConfig := authtx.NewTxConfig(cdc, nil)
-		mockEngine, err := newMockEngineAPI(0, true)
+		mockEngine, err := newMockEngineAPI(0)
 		require.NoError(t, err)
 
 		ap := mockAddressProvider{
@@ -156,17 +156,21 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 
 		// get the genesis block to build on top of
 		ts := time.Now()
-		latestHeight, err := mockEngine.BlockNumber(noErrCtx)
+		latestHeight, err := mockEngine.BlockNumber(ctx)
 		require.NoError(t, err)
-		latestBlock, err := mockEngine.BlockByNumber(noErrCtx, big.NewInt(int64(latestHeight)))
+		latestBlock, err := mockEngine.BlockByNumber(ctx, big.NewInt(int64(latestHeight)))
 		require.NoError(t, err)
 
+		appHash1 := tutil.RandomHash()
+		appHash2 := tutil.RandomHash()
+
 		// build next two blocks and get the PayloadID of the second
-		mockEngine.pushPayload(t, noErrCtx, ap.LocalAddress(), latestBlock.Hash(), ts)
-		nextBlock, blockPayload := mockEngine.nextBlock(t, latestHeight+1, uint64(ts.Unix()), latestBlock.Hash(), ap.LocalAddress())
-		_, err = mockEngine.mock.NewPayloadV3(noErrCtx, blockPayload, nil, nil)
+		mockEngine.pushPayload(t, ctx, ap.LocalAddress(), latestBlock.Hash(), ts, appHash1)
+
+		nextBlock, blockPayload := mockEngine.nextBlock(t, latestHeight+1, uint64(ts.Unix()), latestBlock.Hash(), ap.LocalAddress(), &appHash2)
+		_, err = mockEngine.mock.NewPayloadV3(ctx, blockPayload, nil, &appHash2)
 		require.NoError(t, err)
-		payloadID := mockEngine.pushPayload(t, noErrCtx, ap.LocalAddress(), nextBlock.Hash(), ts)
+		payloadID := mockEngine.pushPayload(t, ctx, ap.LocalAddress(), nextBlock.Hash(), ts, appHash2)
 
 		req := &abci.RequestPrepareProposal{
 			Txs:    nil,
@@ -179,7 +183,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		keeper.mutablePayload.UpdatedAt = time.Now()
 		keeper.mutablePayload.ID = payloadID
 
-		resp, err := keeper.PrepareProposal(ctx, req)
+		resp, err := keeper.PrepareProposal(withRandomErrs(t, ctx), req)
 		require.NoError(t, err)
 		require.NotNil(t, resp)
 
@@ -198,11 +202,10 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		t.Parallel()
 		// setup dependencies
 		ctx, storeService := setupCtxStore(t, nil)
-		noErrCtx := ethclient.WithoutRandomErr(ctx)
 		cdc := getCodec(t)
 		txConfig := authtx.NewTxConfig(cdc, nil)
 
-		mockEngine, err := newMockEngineAPI(0, true)
+		mockEngine, err := newMockEngineAPI(0)
 		require.NoError(t, err)
 
 		ap := mockAddressProvider{
@@ -214,17 +217,21 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 
 		// get the genesis block to build on top of
 		ts := time.Now()
-		latestHeight, err := mockEngine.BlockNumber(noErrCtx)
+		latestHeight, err := mockEngine.BlockNumber(ctx)
 		require.NoError(t, err)
-		latestBlock, err := mockEngine.BlockByNumber(noErrCtx, big.NewInt(int64(latestHeight)))
+		latestBlock, err := mockEngine.BlockByNumber(ctx, big.NewInt(int64(latestHeight)))
 		require.NoError(t, err)
 
+		appHash1 := tutil.RandomHash()
+		appHash2 := tutil.RandomHash()
+
 		// build next two blocks and get the PayloadID of the second
-		mockEngine.pushPayload(t, noErrCtx, ap.LocalAddress(), latestBlock.Hash(), ts)
-		nextBlock, blockPayload := mockEngine.nextBlock(t, latestHeight+1, uint64(ts.Unix()), latestBlock.Hash(), ap.LocalAddress())
-		_, err = mockEngine.NewPayloadV3(noErrCtx, blockPayload, nil, nil)
+		mockEngine.pushPayload(t, ctx, ap.LocalAddress(), latestBlock.Hash(), ts, appHash1)
+
+		nextBlock, blockPayload := mockEngine.nextBlock(t, latestHeight+1, uint64(ts.Unix()), latestBlock.Hash(), ap.LocalAddress(), &appHash2)
+		_, err = mockEngine.NewPayloadV3(ctx, blockPayload, nil, &appHash2)
 		require.NoError(t, err)
-		mockEngine.pushPayload(t, noErrCtx, ap.LocalAddress(), nextBlock.Hash(), ts)
+		mockEngine.pushPayload(t, ctx, ap.LocalAddress(), nextBlock.Hash(), ts, appHash2)
 
 		keeper.mutablePayload.UpdatedAt = time.Now()
 
@@ -234,7 +241,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 			Time:   time.Now(),
 		}
 
-		resp, err := keeper.PrepareProposal(ctx, req)
+		resp, err := keeper.PrepareProposal(withRandomErrs(t, ctx), req)
 		require.NoError(t, err)
 		require.NotNil(t, resp)
 
@@ -277,6 +284,13 @@ func assertExecutablePayload(t *testing.T, msg sdk.Msg, ts int64, blockHash comm
 	require.Len(t, executionPayload.PrevPayloadEvents, 1)
 	evmLog := executionPayload.PrevPayloadEvents[0]
 	require.Equal(t, evmLog.Address, zeroAddr.Bytes())
+}
+
+func ctxWithAppHash(t *testing.T, appHash common.Hash) context.Context {
+	t.Helper()
+	ctx, _ := setupCtxStore(t, &cmtproto.Header{AppHash: appHash.Bytes()})
+
+	return ctx
 }
 
 func setupCtxStore(t *testing.T, header *cmtproto.Header) (sdk.Context, store.KVStoreService) {
@@ -332,16 +346,10 @@ type mockEngineAPI struct {
 }
 
 // newMockEngineAPI returns a new mock engine API with a fuzzer and a mock engine client.
-func newMockEngineAPI(syncings int, randomErrs bool) (mockEngineAPI, error) {
+func newMockEngineAPI(syncings int) (mockEngineAPI, error) {
 	me, err := ethclient.NewEngineMock()
 	if err != nil {
 		return mockEngineAPI{}, err
-	}
-	if randomErrs {
-		me, err = ethclient.NewEngineMock(ethclient.WithRandomErrs())
-		if err != nil {
-			return mockEngineAPI{}, err
-		}
 	}
 
 	syncs := make(chan struct{}, syncings)
@@ -469,7 +477,7 @@ func (m *mockEngineAPI) GetPayloadV3(ctx context.Context, payloadID eengine.Payl
 }
 
 // pushPayload - invokes the ForkchoiceUpdatedV2 method on the mock engine and returns the payload ID.
-func (m *mockEngineAPI) pushPayload(t *testing.T, ctx context.Context, feeRecipient common.Address, blockHash common.Hash, ts time.Time) *eengine.PayloadID {
+func (m *mockEngineAPI) pushPayload(t *testing.T, ctx context.Context, feeRecipient common.Address, blockHash common.Hash, ts time.Time, appHash common.Hash) *eengine.PayloadID {
 	t.Helper()
 	state := eengine.ForkchoiceStateV1{
 		HeadBlockHash:      blockHash,
@@ -477,18 +485,16 @@ func (m *mockEngineAPI) pushPayload(t *testing.T, ctx context.Context, feeRecipi
 		FinalizedBlockHash: blockHash,
 	}
 
-	var zero common.Hash
-
 	payloadAttrs := eengine.PayloadAttributes{
 		Timestamp:             uint64(ts.Unix()),
 		Random:                blockHash,
 		SuggestedFeeRecipient: feeRecipient,
 		Withdrawals:           []*types.Withdrawal{},
-		BeaconRoot:            &zero,
+		BeaconRoot:            &appHash,
 	}
 
 	resp, err := m.ForkchoiceUpdatedV3(ctx, state, &payloadAttrs)
-	require.NoError(t, err)
+	tutil.RequireNoError(t, err)
 
 	return resp.PayloadID
 }
@@ -496,7 +502,7 @@ func (m *mockEngineAPI) pushPayload(t *testing.T, ctx context.Context, feeRecipi
 // nextBlock creates a new block with the given height, timestamp, parentHash, and feeRecipient. It also returns the
 // payload for the block. It's a utility function for testing.
 func (m *mockEngineAPI) nextBlock(t *testing.T, height uint64, timestamp uint64, parentHash common.Hash,
-	feeRecipient common.Address) (*types.Block, eengine.ExecutableData) {
+	feeRecipient common.Address, beaconRoot *common.Hash) (*types.Block, eengine.ExecutableData) {
 	t.Helper()
 	var header types.Header
 	m.fuzzer.Fuzz(&header)
@@ -505,6 +511,7 @@ func (m *mockEngineAPI) nextBlock(t *testing.T, height uint64, timestamp uint64,
 	header.ParentHash = parentHash
 	header.Coinbase = feeRecipient
 	header.MixDigest = parentHash
+	header.ParentBeaconRoot = beaconRoot
 
 	// Convert header to block
 	block := types.NewBlock(&header, nil, nil, trie.NewStackTrie(nil))
@@ -514,8 +521,13 @@ func (m *mockEngineAPI) nextBlock(t *testing.T, height uint64, timestamp uint64,
 	payload := *env.ExecutionPayload
 
 	// Ensure the block is valid
-	_, err := eengine.ExecutableDataToBlock(payload, nil, nil)
+	_, err := eengine.ExecutableDataToBlock(payload, nil, beaconRoot)
 	require.NoError(t, err)
 
 	return block, payload
+}
+
+func withRandomErrs(t *testing.T, ctx sdk.Context) sdk.Context {
+	t.Helper()
+	return ctx.WithContext(ethclient.WithRandomErr(ctx, t))
 }

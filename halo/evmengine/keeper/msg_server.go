@@ -3,7 +3,6 @@ package keeper
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/lib/errors"
@@ -12,7 +11,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
-	etypes "github.com/ethereum/go-ethereum/core/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -63,33 +61,8 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 		FinalizedBlockHash: payload.BlockHash,
 	}
 
-	// Maybe also start building the next block if we are the next proposer.
-	isNext, nextHeight, err := s.isNextProposer(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "next proposer")
-	}
-
-	var attrs *engine.PayloadAttributes
-	if s.buildOptimistic && isNext {
-		log.Debug(ctx, "Triggering optimistic EVM payload build", "next_height", nextHeight)
-		ts := uint64(time.Now().Unix())
-		if ts <= payload.Timestamp {
-			ts = payload.Timestamp + 1 // Subsequent blocks must have a higher timestamp.
-		}
-		var zero common.Hash
-
-		attrs = &engine.PayloadAttributes{
-			Timestamp:             ts,
-			Random:                fcs.HeadBlockHash, // We use head block hash as randao.
-			SuggestedFeeRecipient: s.addrProvider.LocalAddress(),
-			Withdrawals:           []*etypes.Withdrawal{}, // Withdrawals not supported yet.
-			BeaconRoot:            &zero,
-		}
-	}
-
-	var payloadID *engine.PayloadID
 	err = retryForever(ctx, func(ctx context.Context) (bool, error) {
-		fcr, err := s.engineCl.ForkchoiceUpdatedV3(ctx, fcs, attrs)
+		fcr, err := s.engineCl.ForkchoiceUpdatedV3(ctx, fcs, nil)
 		if err != nil || isUnknown(fcr.PayloadStatus) {
 			// We need to retry forever on networking errors, but can't easily identify them, so retry all errors.
 			log.Warn(ctx, "Processing finalized payload failed: evm fork choice update (will retry)", err,
@@ -108,20 +81,15 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 			return false, err // Don't retry
 		}
 
-		payloadID = fcr.PayloadID
-
 		return true, nil
 	})
 	if err != nil {
 		return nil, err
 	}
 
+	// Deliver all the previous payload log events
 	if err := s.deliverEvents(ctx, payload.Number-1, payload.ParentHash, msg.PrevPayloadEvents); err != nil {
 		return nil, errors.Wrap(err, "deliver event logs")
-	}
-
-	if isNext {
-		s.setOptimisticPayload(payloadID, nextHeight)
 	}
 
 	return &types.ExecutionPayloadResponse{}, nil
@@ -165,12 +133,16 @@ func pushPayload(ctx context.Context, engineCl ethclient.EngineClient, msg *type
 		return engine.ExecutableData{}, engine.PayloadStatusV1{}, errors.Wrap(err, "unmarshal payload")
 	}
 
-	// TODO(corver): Figure out what to use for BeaconBlockRoot.
-	var zeroBeaconBlockRoot common.Hash
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	appHash := common.BytesToHash(sdkCtx.BlockHeader().AppHash)
+	if appHash == (common.Hash{}) {
+		return engine.ExecutableData{}, engine.PayloadStatusV1{}, errors.New("app hash is empty")
+	}
+
 	emptyVersionHashes := make([]common.Hash, 0) // Cannot use nil.
 
 	// Push it back to the execution client (mark it as possible new head).
-	status, err := engineCl.NewPayloadV3(ctx, payload, emptyVersionHashes, &zeroBeaconBlockRoot)
+	status, err := engineCl.NewPayloadV3(ctx, payload, emptyVersionHashes, &appHash)
 	if err != nil {
 		return engine.ExecutableData{}, engine.PayloadStatusV1{}, errors.Wrap(err, "new payload")
 	}

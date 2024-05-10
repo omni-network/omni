@@ -384,6 +384,20 @@ func (mr *MockClientMockRecorder) SendTransaction(ctx, tx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendTransaction", reflect.TypeOf((*MockClient)(nil).SendTransaction), ctx, tx)
 }
 
+// SetHead mocks base method.
+func (m *MockClient) SetHead(ctx context.Context, height uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetHead", ctx, height)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetHead indicates an expected call of SetHead.
+func (mr *MockClientMockRecorder) SetHead(ctx, height any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetHead", reflect.TypeOf((*MockClient)(nil).SetHead), ctx, height)
+}
+
 // StorageAt mocks base method.
 func (m *MockClient) StorageAt(ctx context.Context, account common.Address, key common.Hash, blockNumber *big.Int) ([]byte, error) {
 	m.ctrl.T.Helper()

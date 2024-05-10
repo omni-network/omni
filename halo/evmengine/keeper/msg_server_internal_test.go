@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"math/big"
 	"reflect"
@@ -11,7 +10,9 @@ import (
 
 	"github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/k1util"
+	"github.com/omni-network/omni/lib/tutil"
 
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
@@ -32,11 +33,11 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 	cdc := getCodec(t)
 	txConfig := authtx.NewTxConfig(cdc, nil)
 
-	mockEngine, err := newMockEngineAPI(2, false)
+	mockEngine, err := newMockEngineAPI(2)
 	require.NoError(t, err)
 	cmtAPI := newMockCometAPI(t, nil)
 	// set the header and proposer so we have the correct next proposer
-	header := cmtproto.Header{Height: 1}
+	header := cmtproto.Header{Height: 1, AppHash: tutil.RandomHash().Bytes()}
 	header.ProposerAddress = cmtAPI.validatorSet.Validators[0].Address
 	nxtAddr, err := k1util.PubKeyToAddress(cmtAPI.validatorSet.Validators[1].PubKey)
 	require.NoError(t, err)
@@ -55,17 +56,20 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 	var payloadID engine.PayloadID
 	var latestHeight uint64
 	var block *etypes.Block
-	newPayload := func() {
+	newPayload := func(ctx context.Context) {
 		// get latest block to build on top
 		latestHeight, err = mockEngine.BlockNumber(ctx)
 		require.NoError(t, err)
 		latestBlock, err := mockEngine.BlockByNumber(ctx, big.NewInt(int64(latestHeight)))
 		require.NoError(t, err)
 
-		b, execPayload := mockEngine.nextBlock(t, latestHeight+1, uint64(time.Now().Unix()), latestBlock.Hash(), ap.LocalAddress())
+		sdkCtx := sdk.UnwrapSDKContext(ctx)
+		appHash := common.BytesToHash(sdkCtx.BlockHeader().AppHash)
+
+		b, execPayload := mockEngine.nextBlock(t, latestHeight+1, uint64(time.Now().Unix()), latestBlock.Hash(), ap.LocalAddress(), &appHash)
 		block = b
 
-		payloadID, err = toPayloadID(execPayload)
+		payloadID, err = ethclient.MockPayloadID(execPayload, &appHash)
 		require.NoError(t, err)
 
 		// Create execution payload message
@@ -73,7 +77,7 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	assertExecutionPayload := func() {
+	assertExecutionPayload := func(ctx context.Context) {
 		resp, err := msgSrv.ExecutionPayload(ctx, &types.MsgExecutionPayload{
 			Authority:        authtypes.NewModuleAddress(types.ModuleName).String(),
 			ExecutionPayload: payloadData,
@@ -90,25 +94,13 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 		require.Empty(t, gotPayload.ExecutionPayload.Withdrawals)
 	}
 
-	newPayload()
-	assertExecutionPayload()
+	newPayload(ctx)
+	assertExecutionPayload(ctx)
 
-	// not lets run optimistic flow
-	newPayload()
+	// now lets run optimistic flow
+	newPayload(ctx)
 	keeper.SetBuildOptimistic(true)
-	assertExecutionPayload()
-}
-
-// toPayloadID returns a deterministic payload id for the given payload.
-func toPayloadID(payload engine.ExecutableData) (engine.PayloadID, error) {
-	bz, err := payload.MarshalJSON()
-	if err != nil {
-		return engine.PayloadID{}, errors.Wrap(err, "marshal payload")
-	}
-
-	hash := sha256.Sum256(bz)
-
-	return engine.PayloadID(hash[:8]), nil
+	assertExecutionPayload(ctx)
 }
 
 func Test_pushPayload(t *testing.T) {
@@ -121,8 +113,11 @@ func Test_pushPayload(t *testing.T) {
 		latestBlock, err := mockEngine.BlockByNumber(ctx, big.NewInt(int64(latestHeight)))
 		require.NoError(t, err)
 
-		_, execPayload := mockEngine.nextBlock(t, latestHeight+1, uint64(time.Now().Unix()), latestBlock.Hash(), address)
-		payloadID, err := toPayloadID(execPayload)
+		sdkCtx := sdk.UnwrapSDKContext(ctx)
+		appHash := common.BytesToHash(sdkCtx.BlockHeader().AppHash)
+
+		_, execPayload := mockEngine.nextBlock(t, latestHeight+1, uint64(time.Now().Unix()), latestBlock.Hash(), address, &appHash)
+		payloadID, err := ethclient.MockPayloadID(execPayload, &appHash)
 		require.NoError(t, err)
 		// Create execution payload message
 		payloadData, err := json.Marshal(execPayload)
@@ -224,8 +219,10 @@ func Test_pushPayload(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			ctx := context.Background()
-			mockEngine, err := newMockEngineAPI(0, false)
+
+			appHash := tutil.RandomHash()
+			ctx := ctxWithAppHash(t, appHash)
+			mockEngine, err := newMockEngineAPI(0)
 			require.NoError(t, err)
 			mockEngine.newPayloadV3Func = tt.args.newPayloadV3Func
 			payload, payloadID := newPayload(ctx, mockEngine, common.Address{})
@@ -236,11 +233,11 @@ func Test_pushPayload(t *testing.T) {
 			}
 
 			got, status, err := pushPayload(ctx, &mockEngine, tt.args.msg)
-			require.Equal(t, tt.wantStatus, status.Status)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("pushPayload() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+			require.Equal(t, tt.wantStatus, status.Status)
 
 			if status.Status == engine.VALID {
 				want, err := mockEngine.GetPayloadV3(ctx, payloadID)

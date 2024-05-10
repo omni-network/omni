@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"math/rand"
 	"sync"
+	"testing"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -28,6 +29,11 @@ import (
 	fuzz "github.com/google/gofuzz"
 )
 
+type payloadArgs struct {
+	params     engine.ExecutableData
+	beaconRoot *common.Hash
+}
+
 //nolint:gochecknoglobals // This is a static mapping.
 var depositEvent = mustGetABI(bindings.OmniStakeMetaData).Events["Deposit"]
 
@@ -43,7 +49,7 @@ type engineMock struct {
 	head        *types.Block
 	pendingLogs []types.Log
 	logs        map[common.Hash][]types.Log
-	payloads    map[engine.PayloadID]engine.ExecutableData
+	payloads    map[engine.PayloadID]payloadArgs
 }
 
 // WithMockDeposit returns an option to add a deposit event to the mock.
@@ -68,21 +74,16 @@ func WithMockDeposit(pubkey crypto.PubKey, ether int64) func(*engineMock) {
 	}
 }
 
-func WithRandomErrs() func(*engineMock) {
-	return func(m *engineMock) {
-		m.randomErrs = 0.5
-	}
-}
-
 type randomErrKey struct{}
 
-func WithoutRandomErr(ctx context.Context) context.Context {
+// WithRandomErr returns a context that results in random engineMock errors.
+// This must only be used for testing.
+func WithRandomErr(ctx context.Context, _ *testing.T) context.Context {
 	return context.WithValue(ctx, randomErrKey{}, true)
 }
 
-func hasWithoutRandomErr(ctx context.Context) bool {
+func hasRandomErr(ctx context.Context) bool {
 	v, ok := ctx.Value(randomErrKey{}).(bool)
-
 	return ok && v
 }
 
@@ -92,19 +93,20 @@ func hasWithoutRandomErr(ctx context.Context) bool {
 func NewEngineMock(opts ...func(mock *engineMock)) (EngineClient, error) {
 	var (
 		// Deterministic genesis block
-		height     uint64 // 0
-		parentHash common.Hash
-		timestamp  = time.Now().Truncate(time.Hour * 24).Unix() // TODO(corver): Improve this.
+		height           uint64 // 0
+		parentHash       common.Hash
+		parentBeaconRoot common.Hash
+		timestamp        = time.Now().Truncate(time.Hour * 24).Unix() // TODO(corver): Improve this.
 
 		// Deterministic fuzzer
 		fuzzer = NewFuzzer(timestamp)
 	)
 
-	genesisPayload, err := makePayload(fuzzer, height, uint64(timestamp), parentHash, common.Address{}, parentHash)
+	genesisPayload, err := makePayload(fuzzer, height, uint64(timestamp), parentHash, common.Address{}, parentHash, &parentBeaconRoot)
 	if err != nil {
 		return nil, errors.Wrap(err, "make next payload")
 	}
-	genesisBlock, err := engine.ExecutableDataToBlock(genesisPayload, nil, nil)
+	genesisBlock, err := engine.ExecutableDataToBlock(genesisPayload, nil, &parentBeaconRoot)
 	if err != nil {
 		return nil, errors.Wrap(err, "executable data to block")
 	}
@@ -112,7 +114,7 @@ func NewEngineMock(opts ...func(mock *engineMock)) (EngineClient, error) {
 	m := &engineMock{
 		fuzzer:   fuzzer,
 		head:     genesisBlock,
-		payloads: make(map[engine.PayloadID]engine.ExecutableData),
+		payloads: make(map[engine.PayloadID]payloadArgs),
 		logs:     make(map[common.Hash][]types.Log),
 	}
 
@@ -124,7 +126,7 @@ func NewEngineMock(opts ...func(mock *engineMock)) (EngineClient, error) {
 }
 
 func (m *engineMock) maybeErr(ctx context.Context) error {
-	if hasWithoutRandomErr(ctx) {
+	if !hasRandomErr(ctx) {
 		return nil
 	}
 	//nolint:gosec // Test code is fine.
@@ -178,6 +180,21 @@ func (m *engineMock) BlockNumber(ctx context.Context) (uint64, error) {
 	return m.head.NumberU64(), nil
 }
 
+func (m *engineMock) HeaderByNumber(ctx context.Context, height *big.Int) (*types.Header, error) {
+	if height != nil {
+		return nil, errors.New("non-nil/non-latest height not supported")
+	}
+
+	if err := m.maybeErr(ctx); err != nil {
+		return nil, err
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	return m.head.Header(), nil
+}
+
 func (m *engineMock) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
 	if err := m.maybeErr(ctx); err != nil {
 		return nil, err
@@ -193,7 +210,7 @@ func (m *engineMock) BlockByNumber(ctx context.Context, number *big.Int) (*types
 	return m.head, nil
 }
 
-func (m *engineMock) NewPayloadV3(ctx context.Context, params engine.ExecutableData, _ []common.Hash, _ *common.Hash) (engine.PayloadStatusV1, error) {
+func (m *engineMock) NewPayloadV3(ctx context.Context, params engine.ExecutableData, _ []common.Hash, beaconRoot *common.Hash) (engine.PayloadStatusV1, error) {
 	if err := m.maybeErr(ctx); err != nil {
 		return engine.PayloadStatusV1{}, err
 	}
@@ -201,12 +218,17 @@ func (m *engineMock) NewPayloadV3(ctx context.Context, params engine.ExecutableD
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	id, err := payloadID(params)
+	args := payloadArgs{
+		params:     params,
+		beaconRoot: beaconRoot,
+	}
+
+	id, err := MockPayloadID(args.params, args.beaconRoot)
 	if err != nil {
 		return engine.PayloadStatusV1{}, err
 	}
 
-	m.payloads[id] = params
+	m.payloads[id] = args
 
 	log.Debug(ctx, "Engine mock received new payload from proposer",
 		"height", params.Number,
@@ -238,8 +260,8 @@ func (m *engineMock) ForkchoiceUpdatedV3(ctx context.Context, update engine.Fork
 	//nolint: nestif // this is a mock it's fine
 	if m.head.Hash() != update.HeadBlockHash {
 		var found bool
-		for _, payload := range m.payloads {
-			block, err := engine.ExecutableDataToBlock(payload, nil, nil)
+		for _, args := range m.payloads {
+			block, err := engine.ExecutableDataToBlock(args.params, nil, args.beaconRoot)
 			if err != nil {
 				return engine.ForkChoiceResponse{}, errors.Wrap(err, "executable data to block")
 			}
@@ -255,7 +277,7 @@ func (m *engineMock) ForkchoiceUpdatedV3(ctx context.Context, update engine.Fork
 			m.head = block
 			found = true
 
-			id, err := payloadID(payload)
+			id, err := MockPayloadID(args.params, args.beaconRoot)
 			if err != nil {
 				return engine.ForkChoiceResponse{}, err
 			}
@@ -272,17 +294,19 @@ func (m *engineMock) ForkchoiceUpdatedV3(ctx context.Context, update engine.Fork
 	// If we have payload attributes, make a new payload
 	if attrs != nil {
 		payload, err := makePayload(m.fuzzer, m.head.NumberU64()+1,
-			attrs.Timestamp, update.HeadBlockHash, attrs.SuggestedFeeRecipient, attrs.Random)
+			attrs.Timestamp, update.HeadBlockHash, attrs.SuggestedFeeRecipient, attrs.Random, attrs.BeaconRoot)
 		if err != nil {
 			return engine.ForkChoiceResponse{}, err
 		}
 
-		id, err := payloadID(payload)
+		args := payloadArgs{params: payload, beaconRoot: attrs.BeaconRoot}
+
+		id, err := MockPayloadID(args.params, args.beaconRoot)
 		if err != nil {
 			return engine.ForkChoiceResponse{}, err
 		}
 
-		m.payloads[id] = payload
+		m.payloads[id] = args
 
 		resp.PayloadID = &id
 	}
@@ -303,13 +327,13 @@ func (m *engineMock) GetPayloadV3(ctx context.Context, payloadID engine.PayloadI
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	payload, ok := m.payloads[payloadID]
+	args, ok := m.payloads[payloadID]
 	if !ok {
 		return nil, errors.New("payload not found")
 	}
 
 	return &engine.ExecutionPayloadEnvelope{
-		ExecutionPayload: &payload,
+		ExecutionPayload: &args.params,
 	}, nil
 }
 
@@ -330,7 +354,7 @@ func (*engineMock) GetPayloadV2(context.Context, engine.PayloadID) (*engine.Exec
 
 // makePayload returns a new fuzzed payload using head as parent if provided.
 func makePayload(fuzzer *fuzz.Fuzzer, height uint64, timestamp uint64, parentHash common.Hash,
-	feeRecipient common.Address, randao common.Hash) (engine.ExecutableData, error) {
+	feeRecipient common.Address, randao common.Hash, beaconRoot *common.Hash) (engine.ExecutableData, error) {
 	// Build a new header
 	var header types.Header
 	fuzzer.Fuzz(&header)
@@ -339,6 +363,7 @@ func makePayload(fuzzer *fuzz.Fuzzer, height uint64, timestamp uint64, parentHas
 	header.ParentHash = parentHash
 	header.MixDigest = randao      // this corresponds to Random field in PayloadAttributes
 	header.Coinbase = feeRecipient // this corresponds to SuggestedFeeRecipient field in PayloadAttributes
+	header.ParentBeaconRoot = beaconRoot
 
 	// Convert header to block
 	block := types.NewBlock(&header, nil, nil, trie.NewStackTrie(nil))
@@ -348,7 +373,7 @@ func makePayload(fuzzer *fuzz.Fuzzer, height uint64, timestamp uint64, parentHas
 	payload := *env.ExecutionPayload
 
 	// Ensure the block is valid
-	_, err := engine.ExecutableDataToBlock(payload, nil, nil)
+	_, err := engine.ExecutableDataToBlock(payload, nil, beaconRoot)
 	if err != nil {
 		return engine.ExecutableData{}, errors.Wrap(err, "executable data to block")
 	}
@@ -356,14 +381,17 @@ func makePayload(fuzzer *fuzz.Fuzzer, height uint64, timestamp uint64, parentHas
 	return payload, nil
 }
 
-// payloadID returns a deterministic payload id for the given payload.
-func payloadID(payload engine.ExecutableData) (engine.PayloadID, error) {
-	bz, err := payload.MarshalJSON()
+// MockPayloadID returns a deterministic payload id for the given payload.
+func MockPayloadID(params engine.ExecutableData, beaconRoot *common.Hash) (engine.PayloadID, error) {
+	bz, err := params.MarshalJSON()
 	if err != nil {
 		return engine.PayloadID{}, errors.Wrap(err, "marshal payload")
 	}
 
-	hash := sha256.Sum256(bz)
+	h := sha256.New()
+	_, _ = h.Write(bz)
+	_, _ = h.Write(beaconRoot.Bytes())
+	hash := h.Sum(nil)
 
 	return engine.PayloadID(hash[:8]), nil
 }

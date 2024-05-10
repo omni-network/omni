@@ -16,7 +16,6 @@ import (
 	"cosmossdk.io/core/store"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
 )
 
@@ -93,34 +92,29 @@ func (k *Keeper) RegisterProposalService(server grpc1.Server) {
 // for the next block. It also returns the next block height.
 //
 // Note that the validator set can change, so this is an optimistic check.
-func (k *Keeper) isNextProposer(ctx context.Context) (bool, uint64, error) {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-
-	header := sdkCtx.BlockHeader()
-	nextHeight := header.Height + 1
-
-	valset, ok, err := k.cmtAPI.Validators(ctx, header.Height)
+func (k *Keeper) isNextProposer(ctx context.Context, currentProposer []byte, currentHeight int64) (bool, error) {
+	valset, ok, err := k.cmtAPI.Validators(ctx, currentHeight)
 	if err != nil {
-		return false, 0, err
+		return false, err
 	} else if !ok {
-		return false, 0, errors.New("validators not available")
+		return false, errors.New("validators not available")
 	}
 
-	idx, _ := valset.GetByAddress(header.ProposerAddress)
+	idx, _ := valset.GetByAddress(currentProposer)
 	if idx < 0 {
-		return false, 0, errors.New("proposer not in validator set")
+		return false, errors.New("proposer not in validator set")
 	}
 
 	nextIdx := int(idx+1) % len(valset.Validators)
 	nextProposer := valset.Validators[nextIdx]
 	nextAddr, err := k1util.PubKeyToAddress(nextProposer.PubKey)
 	if err != nil {
-		return false, 0, err
+		return false, err
 	}
 
 	isNextProposer := nextAddr == k.addrProvider.LocalAddress()
 
-	return isNextProposer, uint64(nextHeight), nil
+	return isNextProposer, nil
 }
 
 func (k *Keeper) setOptimisticPayload(id *eengine.PayloadID, height uint64) {

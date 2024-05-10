@@ -114,7 +114,7 @@ func newApp(
 		// postpone them to the next block. Nit: we could drop some vote extensions though...?
 		bapp.SetPrepareProposal(app.EVMEngKeeper.PrepareProposal)
 
-		// Route proposed messaged to keepers for verification and external state updates.
+		// Route proposed messages to keepers for verification and external state updates.
 		bapp.SetProcessProposal(makeProcessProposalHandler(app))
 
 		// Use attest keeper to extend votes.

@@ -112,6 +112,27 @@ func (w Wrapper) HeaderByType(ctx context.Context, typ HeadType) (*types.Header,
 	return header, nil
 }
 
+// SetHead sets the current head of the local chain by block number.
+// Note, this is a destructive action and may severely damage your chain.
+// Use with extreme caution.
+func (w Wrapper) SetHead(ctx context.Context, height uint64) error {
+	const endpoint = "set_head"
+	defer latency(w.chain, endpoint)()
+
+	err := w.cl.Client().CallContext(
+		ctx,
+		nil,
+		"debug_setHead",
+		height,
+	)
+	if err != nil {
+		incError(w.chain, endpoint)
+		return errors.Wrap(err, "set head")
+	}
+
+	return nil
+}
+
 // PeerCount returns the number of p2p peers as reported by the net_peerCount method.
 func (w Wrapper) PeerCount(ctx context.Context) (uint64, error) {
 	const endpoint = "peer_count"

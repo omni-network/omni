@@ -8,7 +8,7 @@ import (
 	sdklog "cosmossdk.io/log"
 )
 
-var _ sdklog.Logger = (*sdkLogger)(nil)
+var _ sdklog.Logger = sdkLogger{}
 
 // dropCosmosDebugs is a map of cosmosSDK debug messages that should be dropped.
 // These are super noisy and not useful.
