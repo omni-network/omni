@@ -461,7 +461,7 @@ export default function XMsgDataTable() {
                 setFilterParams(prev => ({ ...prev, before: data.xmsgs[0].cursor, after: null }))
               }
             }} // TODO: when clicked it needs to update the search params with the new cursor
-            disabled={!data.pageInfo.hasPrevPage} // TODO: When there is no previous cursor, we need to disable this
+            disabled={!data.pageInfo?.hasPrevPage} // TODO: When there is no previous cursor, we need to disable this
           >
             <span className="sr-only">Previous</span>
             <span className={`icon-chevron-med-left text-[20px]`}></span>
@@ -482,7 +482,7 @@ export default function XMsgDataTable() {
             onClick={() => {
               setFilterParams(prev => ({ ...prev, after: data.xmsgs[9].cursor, before: null }))
             }} // TODO: when clicked it needs to update the search params with the new cursor
-            disabled={!data.pageInfo.hasNextPage} // TODO: When there is no next cursor, we need to disable this
+            disabled={!data.pageInfo?.hasNextPage} // TODO: When there is no next cursor, we need to disable this
           >
             <span className="sr-only">Next</span>
             <span className={`icon-chevron-med-right text-[20px]`}></span>
