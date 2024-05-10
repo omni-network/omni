@@ -32,9 +32,6 @@ export const loader: LoaderFunction = async ({ request }) => {
       xMsg: xmsgRes,
     })
   }
-  // if (xmsgRes.data) {
-  //   useRouteError()
-  // }
 
   return await pollData()
 }
@@ -59,6 +56,7 @@ export default function Index() {
   const onBackClickHandler = () => {
     navigate('/')
   }
+
 
   return (
     <div className="px-8 md:px-20">

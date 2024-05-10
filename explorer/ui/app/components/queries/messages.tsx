@@ -12,8 +12,16 @@ export const xmsg = gql(`
       to
       toUrl
       gasLimit
-      sourceChainID
-      destChainID
+      sourceChain{
+        chainID
+        logoUrl
+        name
+      }
+      destChain{
+        chainID
+        logoUrl
+        name
+      }
       txHash
       txUrl
       status
@@ -70,19 +78,29 @@ query xmsgs($first: Int, $last: Int, $after: ID, $before: ID, $filters: [FilterI
         txHash
         offset
         displayID
-        sourceChainID
         sender
         senderUrl
         to
         toUrl
-        destChainID
+        sourceChain{
+          chainID
+          logoUrl
+          name
+        }
+        destChain{
+          chainID
+          logoUrl
+          name
+        }
         gasLimit
         status
         txHash
         txUrl
         block {
           id
-          chainID
+          chain {
+            chainID
+          }
           hash
           height
           timestamp
@@ -93,8 +111,12 @@ query xmsgs($first: Int, $last: Int, $after: ID, $before: ID, $filters: [FilterI
           timestamp
           success
           offset
-          sourceChainID
-          destChainID
+          sourceChain{
+            chainID
+          }
+          destChain{
+            chainID
+          }
           relayer
           revertReason
         }

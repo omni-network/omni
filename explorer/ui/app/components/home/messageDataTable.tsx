@@ -1,17 +1,14 @@
-import React, { RefObject, useCallback, useEffect, useMemo } from 'react'
+import React, { useCallback, useEffect } from 'react'
 import { ColumnDef } from '@tanstack/react-table'
 import SimpleTable from '../shared/simpleTable'
 import { useLoaderData, useRevalidator, useSearchParams } from '@remix-run/react'
 import { dateFormatter, hashShortener } from '~/lib/formatting'
 import Tag from '../shared/tag'
-import RollupIcon from '../shared/rollupIcon'
 import { Link } from '@remix-run/react'
-import LongArrow from '~/assets/images/LongArrow.svg'
 import { XmsgResponse } from '~/routes/_index'
 import SearchBar from '../shared/search'
 import ChainDropdown from './chainDropdown'
 import FilterOptions from '../shared/filterOptions'
-import { getBaseUrl } from '~/lib/sourceChains'
 import debounce from 'lodash.debounce'
 import { Tooltip } from 'react-tooltip'
 import Button from '../shared/button'
@@ -128,7 +125,7 @@ export default function XMsgDataTable() {
             <>
               <Link
                 data-tooltip-id={`${value.getValue()}-full-id-tooltip`}
-                to={`xmsg/${value.row.original.node.sourceChainID}-${value.row.original.node.destChainID}-${value.row.original.node.offset}`}
+                to={`xmsg/${value.row.original.node.sourceChain.chainID}-${value.row.original.node.destChain.chainID}-${value.row.original.node.offset}`}
                 className="link"
               >
                 {hashShortener(value.getValue())}
@@ -178,9 +175,11 @@ export default function XMsgDataTable() {
       },
       {
         ...columnConfig,
-        accessorKey: 'node.sourceChainID',
+        accessorKey: 'node.sourceChain.logoUrl',
         header: () => <span></span>,
-        cell: (value: any) => <RollupIcon chainId={value.getValue()} />,
+        cell: (value: any) => {
+          return <img className='max-w-none w-5 h-5' src={value.getValue()} />
+        },
       },
       {
         ...columnConfig,
@@ -238,11 +237,7 @@ export default function XMsgDataTable() {
               {value.getValue() && (
                 <div className="flex">
                   {' '}
-                  <Link
-                    target="_blank"
-                    to={`${value.row.original.node.txUrl}`}
-                    className="link"
-                  >
+                  <Link target="_blank" to={`${value.row.original.node.txUrl}`} className="link">
                     <div className="flex">
                       <p className="font-bold text-b-sm w-[125px]">
                         {hashShortener(value.getValue())}
@@ -269,10 +264,10 @@ export default function XMsgDataTable() {
       },
       {
         ...columnConfig,
-        accessorKey: 'node.destChainID',
+        accessorKey: 'node.destChain.logoUrl',
         header: () => <span></span>,
         cell: (value: any) => {
-          return <RollupIcon chainId={value.getValue()} />
+          return <img className='max-w-none w-5 h-5' src={value.getValue()} />
         },
       },
       {

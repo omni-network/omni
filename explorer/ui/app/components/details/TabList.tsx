@@ -68,11 +68,11 @@ export const TabList = ({ xMsgDetails }) => {
       {/* Offset */}
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Source Chain ID</p>
-        <p className="text-default">{xMsgDetails?.sourceChainID}</p>
+        <p className="text-default">{xMsgDetails?.sourceChain.chainID}</p>
       </div>
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Destination Chain ID</p>
-        <p className="text-default">{xMsgDetails?.destChainID}</p>
+        <p className="text-default">{xMsgDetails?.destChain.chainID}</p>
       </div>
       {/* Offset */}
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
