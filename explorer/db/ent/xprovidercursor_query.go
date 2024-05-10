@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/omni-network/omni/explorer/db/ent/predicate"
 	"github.com/omni-network/omni/explorer/db/ent/xprovidercursor"
 )
@@ -81,8 +82,8 @@ func (xcq *XProviderCursorQuery) FirstX(ctx context.Context) *XProviderCursor {
 
 // FirstID returns the first XProviderCursor ID from the query.
 // Returns a *NotFoundError when no XProviderCursor ID was found.
-func (xcq *XProviderCursorQuery) FirstID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (xcq *XProviderCursorQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+	var ids []uuid.UUID
 	if ids, err = xcq.Limit(1).IDs(setContextOp(ctx, xcq.ctx, "FirstID")); err != nil {
 		return
 	}
@@ -94,7 +95,7 @@ func (xcq *XProviderCursorQuery) FirstID(ctx context.Context) (id int, err error
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (xcq *XProviderCursorQuery) FirstIDX(ctx context.Context) int {
+func (xcq *XProviderCursorQuery) FirstIDX(ctx context.Context) uuid.UUID {
 	id, err := xcq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -132,8 +133,8 @@ func (xcq *XProviderCursorQuery) OnlyX(ctx context.Context) *XProviderCursor {
 // OnlyID is like Only, but returns the only XProviderCursor ID in the query.
 // Returns a *NotSingularError when more than one XProviderCursor ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (xcq *XProviderCursorQuery) OnlyID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (xcq *XProviderCursorQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+	var ids []uuid.UUID
 	if ids, err = xcq.Limit(2).IDs(setContextOp(ctx, xcq.ctx, "OnlyID")); err != nil {
 		return
 	}
@@ -149,7 +150,7 @@ func (xcq *XProviderCursorQuery) OnlyID(ctx context.Context) (id int, err error)
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (xcq *XProviderCursorQuery) OnlyIDX(ctx context.Context) int {
+func (xcq *XProviderCursorQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 	id, err := xcq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -177,7 +178,7 @@ func (xcq *XProviderCursorQuery) AllX(ctx context.Context) []*XProviderCursor {
 }
 
 // IDs executes the query and returns a list of XProviderCursor IDs.
-func (xcq *XProviderCursorQuery) IDs(ctx context.Context) (ids []int, err error) {
+func (xcq *XProviderCursorQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 	if xcq.ctx.Unique == nil && xcq.path != nil {
 		xcq.Unique(true)
 	}
@@ -189,7 +190,7 @@ func (xcq *XProviderCursorQuery) IDs(ctx context.Context) (ids []int, err error)
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (xcq *XProviderCursorQuery) IDsX(ctx context.Context) []int {
+func (xcq *XProviderCursorQuery) IDsX(ctx context.Context) []uuid.UUID {
 	ids, err := xcq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -261,12 +262,12 @@ func (xcq *XProviderCursorQuery) Clone() *XProviderCursorQuery {
 // Example:
 //
 //	var v []struct {
-//		UUID uuid.UUID `json:"UUID,omitempty"`
+//		ChainID uint64 `json:"chain_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.XProviderCursor.Query().
-//		GroupBy(xprovidercursor.FieldUUID).
+//		GroupBy(xprovidercursor.FieldChainID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (xcq *XProviderCursorQuery) GroupBy(field string, fields ...string) *XProviderCursorGroupBy {
@@ -284,11 +285,11 @@ func (xcq *XProviderCursorQuery) GroupBy(field string, fields ...string) *XProvi
 // Example:
 //
 //	var v []struct {
-//		UUID uuid.UUID `json:"UUID,omitempty"`
+//		ChainID uint64 `json:"chain_id,omitempty"`
 //	}
 //
 //	client.XProviderCursor.Query().
-//		Select(xprovidercursor.FieldUUID).
+//		Select(xprovidercursor.FieldChainID).
 //		Scan(ctx, &v)
 func (xcq *XProviderCursorQuery) Select(fields ...string) *XProviderCursorSelect {
 	xcq.ctx.Fields = append(xcq.ctx.Fields, fields...)
@@ -364,7 +365,7 @@ func (xcq *XProviderCursorQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (xcq *XProviderCursorQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(xprovidercursor.Table, xprovidercursor.Columns, sqlgraph.NewFieldSpec(xprovidercursor.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewQuerySpec(xprovidercursor.Table, xprovidercursor.Columns, sqlgraph.NewFieldSpec(xprovidercursor.FieldID, field.TypeUUID))
 	_spec.From = xcq.sql
 	if unique := xcq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

@@ -6,7 +6,7 @@ import (
 	"github.com/omni-network/omni/explorer/db/ent"
 	"github.com/omni-network/omni/explorer/db/ent/block"
 	"github.com/omni-network/omni/explorer/graphql/resolvers"
-	"github.com/omni-network/omni/explorer/graphql/utils"
+	"github.com/omni-network/omni/explorer/graphql/uintconv"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
@@ -15,8 +15,8 @@ import (
 
 func (p Provider) XBlock(ctx context.Context, sourceChainID uint64, height uint64) (*resolvers.XBlock, bool, error) {
 	query, err := p.EntClient.Block.Query().
-		Where(block.SourceChainID(sourceChainID)).
-		Where(block.BlockHeight(height)).
+		Where(block.ChainID(sourceChainID)).
+		Where(block.Height(height)).
 		First(ctx)
 	if err != nil {
 		log.Error(ctx, "Graphql provider err", err)
@@ -80,7 +80,7 @@ func (p Provider) XBlockCount(ctx context.Context) (*hexutil.Big, bool, error) {
 
 	res := query
 
-	big, err := utils.Uint2Hex(uint64(res))
+	big, err := uintconv.ToHex(uint64(res))
 	if err != nil {
 		return nil, false, errors.Wrap(err, "decoding block count")
 	}

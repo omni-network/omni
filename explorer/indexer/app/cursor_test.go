@@ -15,6 +15,7 @@ import (
 
 	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"
+	"math/rand/v2"
 )
 
 func TestCursor(t *testing.T) {
@@ -88,19 +89,19 @@ func insertBlock(t *testing.T, ctx context.Context, client *ent.Client, sourceCh
 	var blockHash common.Hash
 	fuzz.New().NilChance(0).Fuzz(&blockHash)
 
-	var sourceMessageSender, destAddress, relayerAddress [20]byte
-	fuzz.New().NilChance(0).Fuzz(&sourceMessageSender)
-	fuzz.New().NilChance(0).Fuzz(&destAddress)
-	fuzz.New().NilChance(0).Fuzz(&relayerAddress)
+	var sender, to, relayer common.Address
+	fuzz.New().NilChance(0).Fuzz(&sender)
+	fuzz.New().NilChance(0).Fuzz(&to)
+	fuzz.New().NilChance(0).Fuzz(&relayer)
 
 	var msgData []byte
 	fuzz.New().NilChance(0).Fuzz(&msgData)
 
-	destChainID := uint64(2)
+	destChainID := uint64(rand.Int())
+	const gasLimit = 1010
+	const gasUsed = 100
 
-	gasLimit := uint64(1000)
-	streamOffset := uint64(0)
-	gasUsed := uint64(100)
+	offset := uint64(rand.Int())
 
 	tx, err := client.BeginTx(ctx, nil)
 	require.NoError(t, err)
@@ -118,10 +119,10 @@ func insertBlock(t *testing.T, ctx context.Context, client *ent.Client, sourceCh
 						SourceChainID: sourceChainID,
 						DestChainID:   destChainID,
 					},
-					StreamOffset: streamOffset,
+					StreamOffset: offset,
 				},
-				SourceMsgSender: sourceMessageSender,
-				DestAddress:     destAddress,
+				SourceMsgSender: sender,
+				DestAddress:     to,
 				Data:            msgData,
 				DestGasLimit:    gasLimit,
 				TxHash:          msgTxHash,
@@ -134,11 +135,11 @@ func insertBlock(t *testing.T, ctx context.Context, client *ent.Client, sourceCh
 						SourceChainID: sourceChainID,
 						DestChainID:   destChainID,
 					},
-					StreamOffset: streamOffset,
+					StreamOffset: offset,
 				},
 				GasUsed:        gasUsed,
 				Success:        true,
-				RelayerAddress: common.Address(relayerAddress[:]),
+				RelayerAddress: common.Address(relayer[:]),
 				TxHash:         receiptTxHash,
 			},
 		},

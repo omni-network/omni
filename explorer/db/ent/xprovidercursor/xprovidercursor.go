@@ -14,15 +14,13 @@ const (
 	Label = "xprovider_cursor"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldUUID holds the string denoting the uuid field in the database.
-	FieldUUID = "uuid"
-	// FieldChainID holds the string denoting the chainid field in the database.
+	// FieldChainID holds the string denoting the chain_id field in the database.
 	FieldChainID = "chain_id"
 	// FieldHeight holds the string denoting the height field in the database.
 	FieldHeight = "height"
-	// FieldCreatedAt holds the string denoting the createdat field in the database.
+	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
-	// FieldUpdatedAt holds the string denoting the updatedat field in the database.
+	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
 	// Table holds the table name of the xprovidercursor in the database.
 	Table = "xprovider_cursors"
@@ -31,7 +29,6 @@ const (
 // Columns holds all SQL columns for xprovidercursor fields.
 var Columns = []string{
 	FieldID,
-	FieldUUID,
 	FieldChainID,
 	FieldHeight,
 	FieldCreatedAt,
@@ -49,12 +46,12 @@ func ValidColumn(column string) bool {
 }
 
 var (
-	// DefaultUUID holds the default value on creation for the "UUID" field.
-	DefaultUUID func() uuid.UUID
-	// DefaultCreatedAt holds the default value on creation for the "CreatedAt" field.
+	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt time.Time
-	// DefaultUpdatedAt holds the default value on creation for the "UpdatedAt" field.
+	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
 	DefaultUpdatedAt time.Time
+	// DefaultID holds the default value on creation for the "id" field.
+	DefaultID func() uuid.UUID
 )
 
 // OrderOption defines the ordering options for the XProviderCursor queries.
@@ -65,27 +62,22 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
-// ByUUID orders the results by the UUID field.
-func ByUUID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldUUID, opts...).ToFunc()
-}
-
-// ByChainID orders the results by the ChainID field.
+// ByChainID orders the results by the chain_id field.
 func ByChainID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldChainID, opts...).ToFunc()
 }
 
-// ByHeight orders the results by the Height field.
+// ByHeight orders the results by the height field.
 func ByHeight(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldHeight, opts...).ToFunc()
 }
 
-// ByCreatedAt orders the results by the CreatedAt field.
+// ByCreatedAt orders the results by the created_at field.
 func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
 }
 
-// ByUpdatedAt orders the results by the UpdatedAt field.
+// ByUpdatedAt orders the results by the updated_at field.
 func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }

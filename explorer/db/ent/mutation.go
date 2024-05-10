@@ -39,26 +39,26 @@ const (
 // BlockMutation represents an operation that mutates the Block nodes in the graph.
 type BlockMutation struct {
 	config
-	op                Op
-	typ               string
-	id                *int
-	_SourceChainID    *uint64
-	add_SourceChainID *int64
-	_BlockHeight      *uint64
-	add_BlockHeight   *int64
-	_BlockHash        *[]byte
-	_Timestamp        *time.Time
-	_CreatedAt        *time.Time
-	clearedFields     map[string]struct{}
-	_Msgs             map[int]struct{}
-	removed_Msgs      map[int]struct{}
-	cleared_Msgs      bool
-	_Receipts         map[int]struct{}
-	removed_Receipts  map[int]struct{}
-	cleared_Receipts  bool
-	done              bool
-	oldValue          func(context.Context) (*Block, error)
-	predicates        []predicate.Block
+	op               Op
+	typ              string
+	id               *int
+	hash             *[]byte
+	chain_id         *uint64
+	addchain_id      *int64
+	height           *uint64
+	addheight        *int64
+	timestamp        *time.Time
+	created_at       *time.Time
+	clearedFields    map[string]struct{}
+	_Msgs            map[int]struct{}
+	removed_Msgs     map[int]struct{}
+	cleared_Msgs     bool
+	_Receipts        map[int]struct{}
+	removed_Receipts map[int]struct{}
+	cleared_Receipts bool
+	done             bool
+	oldValue         func(context.Context) (*Block, error)
+	predicates       []predicate.Block
 }
 
 var _ ent.Mutation = (*BlockMutation)(nil)
@@ -159,169 +159,169 @@ func (m *BlockMutation) IDs(ctx context.Context) ([]int, error) {
 	}
 }
 
-// SetSourceChainID sets the "SourceChainID" field.
-func (m *BlockMutation) SetSourceChainID(u uint64) {
-	m._SourceChainID = &u
-	m.add_SourceChainID = nil
+// SetHash sets the "hash" field.
+func (m *BlockMutation) SetHash(b []byte) {
+	m.hash = &b
 }
 
-// SourceChainID returns the value of the "SourceChainID" field in the mutation.
-func (m *BlockMutation) SourceChainID() (r uint64, exists bool) {
-	v := m._SourceChainID
+// Hash returns the value of the "hash" field in the mutation.
+func (m *BlockMutation) Hash() (r []byte, exists bool) {
+	v := m.hash
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldSourceChainID returns the old "SourceChainID" field's value of the Block entity.
+// OldHash returns the old "hash" field's value of the Block entity.
 // If the Block object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BlockMutation) OldSourceChainID(ctx context.Context) (v uint64, err error) {
+func (m *BlockMutation) OldHash(ctx context.Context) (v []byte, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldSourceChainID is only allowed on UpdateOne operations")
+		return v, errors.New("OldHash is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldSourceChainID requires an ID field in the mutation")
+		return v, errors.New("OldHash requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSourceChainID: %w", err)
+		return v, fmt.Errorf("querying old value for OldHash: %w", err)
 	}
-	return oldValue.SourceChainID, nil
+	return oldValue.Hash, nil
 }
 
-// AddSourceChainID adds u to the "SourceChainID" field.
-func (m *BlockMutation) AddSourceChainID(u int64) {
-	if m.add_SourceChainID != nil {
-		*m.add_SourceChainID += u
+// ResetHash resets all changes to the "hash" field.
+func (m *BlockMutation) ResetHash() {
+	m.hash = nil
+}
+
+// SetChainID sets the "chain_id" field.
+func (m *BlockMutation) SetChainID(u uint64) {
+	m.chain_id = &u
+	m.addchain_id = nil
+}
+
+// ChainID returns the value of the "chain_id" field in the mutation.
+func (m *BlockMutation) ChainID() (r uint64, exists bool) {
+	v := m.chain_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldChainID returns the old "chain_id" field's value of the Block entity.
+// If the Block object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BlockMutation) OldChainID(ctx context.Context) (v uint64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldChainID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldChainID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldChainID: %w", err)
+	}
+	return oldValue.ChainID, nil
+}
+
+// AddChainID adds u to the "chain_id" field.
+func (m *BlockMutation) AddChainID(u int64) {
+	if m.addchain_id != nil {
+		*m.addchain_id += u
 	} else {
-		m.add_SourceChainID = &u
+		m.addchain_id = &u
 	}
 }
 
-// AddedSourceChainID returns the value that was added to the "SourceChainID" field in this mutation.
-func (m *BlockMutation) AddedSourceChainID() (r int64, exists bool) {
-	v := m.add_SourceChainID
+// AddedChainID returns the value that was added to the "chain_id" field in this mutation.
+func (m *BlockMutation) AddedChainID() (r int64, exists bool) {
+	v := m.addchain_id
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// ResetSourceChainID resets all changes to the "SourceChainID" field.
-func (m *BlockMutation) ResetSourceChainID() {
-	m._SourceChainID = nil
-	m.add_SourceChainID = nil
+// ResetChainID resets all changes to the "chain_id" field.
+func (m *BlockMutation) ResetChainID() {
+	m.chain_id = nil
+	m.addchain_id = nil
 }
 
-// SetBlockHeight sets the "BlockHeight" field.
-func (m *BlockMutation) SetBlockHeight(u uint64) {
-	m._BlockHeight = &u
-	m.add_BlockHeight = nil
+// SetHeight sets the "height" field.
+func (m *BlockMutation) SetHeight(u uint64) {
+	m.height = &u
+	m.addheight = nil
 }
 
-// BlockHeight returns the value of the "BlockHeight" field in the mutation.
-func (m *BlockMutation) BlockHeight() (r uint64, exists bool) {
-	v := m._BlockHeight
+// Height returns the value of the "height" field in the mutation.
+func (m *BlockMutation) Height() (r uint64, exists bool) {
+	v := m.height
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldBlockHeight returns the old "BlockHeight" field's value of the Block entity.
+// OldHeight returns the old "height" field's value of the Block entity.
 // If the Block object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BlockMutation) OldBlockHeight(ctx context.Context) (v uint64, err error) {
+func (m *BlockMutation) OldHeight(ctx context.Context) (v uint64, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldBlockHeight is only allowed on UpdateOne operations")
+		return v, errors.New("OldHeight is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldBlockHeight requires an ID field in the mutation")
+		return v, errors.New("OldHeight requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldBlockHeight: %w", err)
+		return v, fmt.Errorf("querying old value for OldHeight: %w", err)
 	}
-	return oldValue.BlockHeight, nil
+	return oldValue.Height, nil
 }
 
-// AddBlockHeight adds u to the "BlockHeight" field.
-func (m *BlockMutation) AddBlockHeight(u int64) {
-	if m.add_BlockHeight != nil {
-		*m.add_BlockHeight += u
+// AddHeight adds u to the "height" field.
+func (m *BlockMutation) AddHeight(u int64) {
+	if m.addheight != nil {
+		*m.addheight += u
 	} else {
-		m.add_BlockHeight = &u
+		m.addheight = &u
 	}
 }
 
-// AddedBlockHeight returns the value that was added to the "BlockHeight" field in this mutation.
-func (m *BlockMutation) AddedBlockHeight() (r int64, exists bool) {
-	v := m.add_BlockHeight
+// AddedHeight returns the value that was added to the "height" field in this mutation.
+func (m *BlockMutation) AddedHeight() (r int64, exists bool) {
+	v := m.addheight
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// ResetBlockHeight resets all changes to the "BlockHeight" field.
-func (m *BlockMutation) ResetBlockHeight() {
-	m._BlockHeight = nil
-	m.add_BlockHeight = nil
+// ResetHeight resets all changes to the "height" field.
+func (m *BlockMutation) ResetHeight() {
+	m.height = nil
+	m.addheight = nil
 }
 
-// SetBlockHash sets the "BlockHash" field.
-func (m *BlockMutation) SetBlockHash(b []byte) {
-	m._BlockHash = &b
-}
-
-// BlockHash returns the value of the "BlockHash" field in the mutation.
-func (m *BlockMutation) BlockHash() (r []byte, exists bool) {
-	v := m._BlockHash
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldBlockHash returns the old "BlockHash" field's value of the Block entity.
-// If the Block object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BlockMutation) OldBlockHash(ctx context.Context) (v []byte, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldBlockHash is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldBlockHash requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldBlockHash: %w", err)
-	}
-	return oldValue.BlockHash, nil
-}
-
-// ResetBlockHash resets all changes to the "BlockHash" field.
-func (m *BlockMutation) ResetBlockHash() {
-	m._BlockHash = nil
-}
-
-// SetTimestamp sets the "Timestamp" field.
+// SetTimestamp sets the "timestamp" field.
 func (m *BlockMutation) SetTimestamp(t time.Time) {
-	m._Timestamp = &t
+	m.timestamp = &t
 }
 
-// Timestamp returns the value of the "Timestamp" field in the mutation.
+// Timestamp returns the value of the "timestamp" field in the mutation.
 func (m *BlockMutation) Timestamp() (r time.Time, exists bool) {
-	v := m._Timestamp
+	v := m.timestamp
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldTimestamp returns the old "Timestamp" field's value of the Block entity.
+// OldTimestamp returns the old "timestamp" field's value of the Block entity.
 // If the Block object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
 func (m *BlockMutation) OldTimestamp(ctx context.Context) (v time.Time, err error) {
@@ -338,26 +338,26 @@ func (m *BlockMutation) OldTimestamp(ctx context.Context) (v time.Time, err erro
 	return oldValue.Timestamp, nil
 }
 
-// ResetTimestamp resets all changes to the "Timestamp" field.
+// ResetTimestamp resets all changes to the "timestamp" field.
 func (m *BlockMutation) ResetTimestamp() {
-	m._Timestamp = nil
+	m.timestamp = nil
 }
 
-// SetCreatedAt sets the "CreatedAt" field.
+// SetCreatedAt sets the "created_at" field.
 func (m *BlockMutation) SetCreatedAt(t time.Time) {
-	m._CreatedAt = &t
+	m.created_at = &t
 }
 
-// CreatedAt returns the value of the "CreatedAt" field in the mutation.
+// CreatedAt returns the value of the "created_at" field in the mutation.
 func (m *BlockMutation) CreatedAt() (r time.Time, exists bool) {
-	v := m._CreatedAt
+	v := m.created_at
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldCreatedAt returns the old "CreatedAt" field's value of the Block entity.
+// OldCreatedAt returns the old "created_at" field's value of the Block entity.
 // If the Block object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
 func (m *BlockMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
@@ -374,9 +374,9 @@ func (m *BlockMutation) OldCreatedAt(ctx context.Context) (v time.Time, err erro
 	return oldValue.CreatedAt, nil
 }
 
-// ResetCreatedAt resets all changes to the "CreatedAt" field.
+// ResetCreatedAt resets all changes to the "created_at" field.
 func (m *BlockMutation) ResetCreatedAt() {
-	m._CreatedAt = nil
+	m.created_at = nil
 }
 
 // AddMsgIDs adds the "Msgs" edge to the Msg entity by ids.
@@ -522,19 +522,19 @@ func (m *BlockMutation) Type() string {
 // AddedFields().
 func (m *BlockMutation) Fields() []string {
 	fields := make([]string, 0, 5)
-	if m._SourceChainID != nil {
-		fields = append(fields, block.FieldSourceChainID)
+	if m.hash != nil {
+		fields = append(fields, block.FieldHash)
 	}
-	if m._BlockHeight != nil {
-		fields = append(fields, block.FieldBlockHeight)
+	if m.chain_id != nil {
+		fields = append(fields, block.FieldChainID)
 	}
-	if m._BlockHash != nil {
-		fields = append(fields, block.FieldBlockHash)
+	if m.height != nil {
+		fields = append(fields, block.FieldHeight)
 	}
-	if m._Timestamp != nil {
+	if m.timestamp != nil {
 		fields = append(fields, block.FieldTimestamp)
 	}
-	if m._CreatedAt != nil {
+	if m.created_at != nil {
 		fields = append(fields, block.FieldCreatedAt)
 	}
 	return fields
@@ -545,12 +545,12 @@ func (m *BlockMutation) Fields() []string {
 // schema.
 func (m *BlockMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case block.FieldSourceChainID:
-		return m.SourceChainID()
-	case block.FieldBlockHeight:
-		return m.BlockHeight()
-	case block.FieldBlockHash:
-		return m.BlockHash()
+	case block.FieldHash:
+		return m.Hash()
+	case block.FieldChainID:
+		return m.ChainID()
+	case block.FieldHeight:
+		return m.Height()
 	case block.FieldTimestamp:
 		return m.Timestamp()
 	case block.FieldCreatedAt:
@@ -564,12 +564,12 @@ func (m *BlockMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *BlockMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case block.FieldSourceChainID:
-		return m.OldSourceChainID(ctx)
-	case block.FieldBlockHeight:
-		return m.OldBlockHeight(ctx)
-	case block.FieldBlockHash:
-		return m.OldBlockHash(ctx)
+	case block.FieldHash:
+		return m.OldHash(ctx)
+	case block.FieldChainID:
+		return m.OldChainID(ctx)
+	case block.FieldHeight:
+		return m.OldHeight(ctx)
 	case block.FieldTimestamp:
 		return m.OldTimestamp(ctx)
 	case block.FieldCreatedAt:
@@ -583,26 +583,26 @@ func (m *BlockMutation) OldField(ctx context.Context, name string) (ent.Value, e
 // type.
 func (m *BlockMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case block.FieldSourceChainID:
-		v, ok := value.(uint64)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetSourceChainID(v)
-		return nil
-	case block.FieldBlockHeight:
-		v, ok := value.(uint64)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetBlockHeight(v)
-		return nil
-	case block.FieldBlockHash:
+	case block.FieldHash:
 		v, ok := value.([]byte)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetBlockHash(v)
+		m.SetHash(v)
+		return nil
+	case block.FieldChainID:
+		v, ok := value.(uint64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetChainID(v)
+		return nil
+	case block.FieldHeight:
+		v, ok := value.(uint64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetHeight(v)
 		return nil
 	case block.FieldTimestamp:
 		v, ok := value.(time.Time)
@@ -626,11 +626,11 @@ func (m *BlockMutation) SetField(name string, value ent.Value) error {
 // this mutation.
 func (m *BlockMutation) AddedFields() []string {
 	var fields []string
-	if m.add_SourceChainID != nil {
-		fields = append(fields, block.FieldSourceChainID)
+	if m.addchain_id != nil {
+		fields = append(fields, block.FieldChainID)
 	}
-	if m.add_BlockHeight != nil {
-		fields = append(fields, block.FieldBlockHeight)
+	if m.addheight != nil {
+		fields = append(fields, block.FieldHeight)
 	}
 	return fields
 }
@@ -640,10 +640,10 @@ func (m *BlockMutation) AddedFields() []string {
 // was not set, or was not defined in the schema.
 func (m *BlockMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
-	case block.FieldSourceChainID:
-		return m.AddedSourceChainID()
-	case block.FieldBlockHeight:
-		return m.AddedBlockHeight()
+	case block.FieldChainID:
+		return m.AddedChainID()
+	case block.FieldHeight:
+		return m.AddedHeight()
 	}
 	return nil, false
 }
@@ -653,19 +653,19 @@ func (m *BlockMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *BlockMutation) AddField(name string, value ent.Value) error {
 	switch name {
-	case block.FieldSourceChainID:
+	case block.FieldChainID:
 		v, ok := value.(int64)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.AddSourceChainID(v)
+		m.AddChainID(v)
 		return nil
-	case block.FieldBlockHeight:
+	case block.FieldHeight:
 		v, ok := value.(int64)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.AddBlockHeight(v)
+		m.AddHeight(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Block numeric field %s", name)
@@ -694,14 +694,14 @@ func (m *BlockMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *BlockMutation) ResetField(name string) error {
 	switch name {
-	case block.FieldSourceChainID:
-		m.ResetSourceChainID()
+	case block.FieldHash:
+		m.ResetHash()
 		return nil
-	case block.FieldBlockHeight:
-		m.ResetBlockHeight()
+	case block.FieldChainID:
+		m.ResetChainID()
 		return nil
-	case block.FieldBlockHash:
-		m.ResetBlockHash()
+	case block.FieldHeight:
+		m.ResetHeight()
 		return nil
 	case block.FieldTimestamp:
 		m.ResetTimestamp()
@@ -829,11 +829,10 @@ type ChainMutation struct {
 	op            Op
 	typ           string
 	id            *int
-	_UUID         *uuid.UUID
-	_CreatedAt    *time.Time
-	_ChainID      *uint64
-	add_ChainID   *int64
-	_Name         *string
+	chain_id      *uint64
+	addchain_id   *int64
+	created_at    *time.Time
+	name          *string
 	clearedFields map[string]struct{}
 	done          bool
 	oldValue      func(context.Context) (*Chain, error)
@@ -938,94 +937,22 @@ func (m *ChainMutation) IDs(ctx context.Context) ([]int, error) {
 	}
 }
 
-// SetUUID sets the "UUID" field.
-func (m *ChainMutation) SetUUID(u uuid.UUID) {
-	m._UUID = &u
-}
-
-// UUID returns the value of the "UUID" field in the mutation.
-func (m *ChainMutation) UUID() (r uuid.UUID, exists bool) {
-	v := m._UUID
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldUUID returns the old "UUID" field's value of the Chain entity.
-// If the Chain object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ChainMutation) OldUUID(ctx context.Context) (v uuid.UUID, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldUUID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldUUID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldUUID: %w", err)
-	}
-	return oldValue.UUID, nil
-}
-
-// ResetUUID resets all changes to the "UUID" field.
-func (m *ChainMutation) ResetUUID() {
-	m._UUID = nil
-}
-
-// SetCreatedAt sets the "CreatedAt" field.
-func (m *ChainMutation) SetCreatedAt(t time.Time) {
-	m._CreatedAt = &t
-}
-
-// CreatedAt returns the value of the "CreatedAt" field in the mutation.
-func (m *ChainMutation) CreatedAt() (r time.Time, exists bool) {
-	v := m._CreatedAt
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldCreatedAt returns the old "CreatedAt" field's value of the Chain entity.
-// If the Chain object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ChainMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
-	}
-	return oldValue.CreatedAt, nil
-}
-
-// ResetCreatedAt resets all changes to the "CreatedAt" field.
-func (m *ChainMutation) ResetCreatedAt() {
-	m._CreatedAt = nil
-}
-
-// SetChainID sets the "ChainID" field.
+// SetChainID sets the "chain_id" field.
 func (m *ChainMutation) SetChainID(u uint64) {
-	m._ChainID = &u
-	m.add_ChainID = nil
+	m.chain_id = &u
+	m.addchain_id = nil
 }
 
-// ChainID returns the value of the "ChainID" field in the mutation.
+// ChainID returns the value of the "chain_id" field in the mutation.
 func (m *ChainMutation) ChainID() (r uint64, exists bool) {
-	v := m._ChainID
+	v := m.chain_id
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldChainID returns the old "ChainID" field's value of the Chain entity.
+// OldChainID returns the old "chain_id" field's value of the Chain entity.
 // If the Chain object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
 func (m *ChainMutation) OldChainID(ctx context.Context) (v uint64, err error) {
@@ -1042,45 +969,81 @@ func (m *ChainMutation) OldChainID(ctx context.Context) (v uint64, err error) {
 	return oldValue.ChainID, nil
 }
 
-// AddChainID adds u to the "ChainID" field.
+// AddChainID adds u to the "chain_id" field.
 func (m *ChainMutation) AddChainID(u int64) {
-	if m.add_ChainID != nil {
-		*m.add_ChainID += u
+	if m.addchain_id != nil {
+		*m.addchain_id += u
 	} else {
-		m.add_ChainID = &u
+		m.addchain_id = &u
 	}
 }
 
-// AddedChainID returns the value that was added to the "ChainID" field in this mutation.
+// AddedChainID returns the value that was added to the "chain_id" field in this mutation.
 func (m *ChainMutation) AddedChainID() (r int64, exists bool) {
-	v := m.add_ChainID
+	v := m.addchain_id
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// ResetChainID resets all changes to the "ChainID" field.
+// ResetChainID resets all changes to the "chain_id" field.
 func (m *ChainMutation) ResetChainID() {
-	m._ChainID = nil
-	m.add_ChainID = nil
+	m.chain_id = nil
+	m.addchain_id = nil
 }
 
-// SetName sets the "Name" field.
-func (m *ChainMutation) SetName(s string) {
-	m._Name = &s
+// SetCreatedAt sets the "created_at" field.
+func (m *ChainMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
 }
 
-// Name returns the value of the "Name" field in the mutation.
-func (m *ChainMutation) Name() (r string, exists bool) {
-	v := m._Name
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *ChainMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldName returns the old "Name" field's value of the Chain entity.
+// OldCreatedAt returns the old "created_at" field's value of the Chain entity.
+// If the Chain object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChainMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *ChainMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetName sets the "name" field.
+func (m *ChainMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *ChainMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the Chain entity.
 // If the Chain object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
 func (m *ChainMutation) OldName(ctx context.Context) (v string, err error) {
@@ -1097,9 +1060,9 @@ func (m *ChainMutation) OldName(ctx context.Context) (v string, err error) {
 	return oldValue.Name, nil
 }
 
-// ResetName resets all changes to the "Name" field.
+// ResetName resets all changes to the "name" field.
 func (m *ChainMutation) ResetName() {
-	m._Name = nil
+	m.name = nil
 }
 
 // Where appends a list predicates to the ChainMutation builder.
@@ -1136,17 +1099,14 @@ func (m *ChainMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ChainMutation) Fields() []string {
-	fields := make([]string, 0, 4)
-	if m._UUID != nil {
-		fields = append(fields, chain.FieldUUID)
-	}
-	if m._CreatedAt != nil {
-		fields = append(fields, chain.FieldCreatedAt)
-	}
-	if m._ChainID != nil {
+	fields := make([]string, 0, 3)
+	if m.chain_id != nil {
 		fields = append(fields, chain.FieldChainID)
 	}
-	if m._Name != nil {
+	if m.created_at != nil {
+		fields = append(fields, chain.FieldCreatedAt)
+	}
+	if m.name != nil {
 		fields = append(fields, chain.FieldName)
 	}
 	return fields
@@ -1157,12 +1117,10 @@ func (m *ChainMutation) Fields() []string {
 // schema.
 func (m *ChainMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case chain.FieldUUID:
-		return m.UUID()
-	case chain.FieldCreatedAt:
-		return m.CreatedAt()
 	case chain.FieldChainID:
 		return m.ChainID()
+	case chain.FieldCreatedAt:
+		return m.CreatedAt()
 	case chain.FieldName:
 		return m.Name()
 	}
@@ -1174,12 +1132,10 @@ func (m *ChainMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *ChainMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case chain.FieldUUID:
-		return m.OldUUID(ctx)
-	case chain.FieldCreatedAt:
-		return m.OldCreatedAt(ctx)
 	case chain.FieldChainID:
 		return m.OldChainID(ctx)
+	case chain.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
 	case chain.FieldName:
 		return m.OldName(ctx)
 	}
@@ -1191,12 +1147,12 @@ func (m *ChainMutation) OldField(ctx context.Context, name string) (ent.Value, e
 // type.
 func (m *ChainMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case chain.FieldUUID:
-		v, ok := value.(uuid.UUID)
+	case chain.FieldChainID:
+		v, ok := value.(uint64)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetUUID(v)
+		m.SetChainID(v)
 		return nil
 	case chain.FieldCreatedAt:
 		v, ok := value.(time.Time)
@@ -1204,13 +1160,6 @@ func (m *ChainMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCreatedAt(v)
-		return nil
-	case chain.FieldChainID:
-		v, ok := value.(uint64)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetChainID(v)
 		return nil
 	case chain.FieldName:
 		v, ok := value.(string)
@@ -1227,7 +1176,7 @@ func (m *ChainMutation) SetField(name string, value ent.Value) error {
 // this mutation.
 func (m *ChainMutation) AddedFields() []string {
 	var fields []string
-	if m.add_ChainID != nil {
+	if m.addchain_id != nil {
 		fields = append(fields, chain.FieldChainID)
 	}
 	return fields
@@ -1283,14 +1232,11 @@ func (m *ChainMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *ChainMutation) ResetField(name string) error {
 	switch name {
-	case chain.FieldUUID:
-		m.ResetUUID()
+	case chain.FieldChainID:
+		m.ResetChainID()
 		return nil
 	case chain.FieldCreatedAt:
 		m.ResetCreatedAt()
-		return nil
-	case chain.FieldChainID:
-		m.ResetChainID()
 		return nil
 	case chain.FieldName:
 		m.ResetName()
@@ -1350,38 +1296,38 @@ func (m *ChainMutation) ResetEdge(name string) error {
 // MsgMutation represents an operation that mutates the Msg nodes in the graph.
 type MsgMutation struct {
 	config
-	op                Op
-	typ               string
-	id                *int
-	_UUID             *uuid.UUID
-	_SourceMsgSender  *[]byte
-	_DestAddress      *[]byte
-	_Data             *[]byte
-	_DestGasLimit     *uint64
-	add_DestGasLimit  *int64
-	_SourceChainID    *uint64
-	add_SourceChainID *int64
-	_DestChainID      *uint64
-	add_DestChainID   *int64
-	_StreamOffset     *uint64
-	add_StreamOffset  *int64
-	_TxHash           *[]byte
-	_BlockHash        *[]byte
-	_BlockHeight      *uint64
-	add_BlockHeight   *int64
-	_ReceiptHash      *[]byte
-	_Status           *string
-	_BlockTime        *time.Time
-	_CreatedAt        *time.Time
-	clearedFields     map[string]struct{}
-	_Block            *int
-	cleared_Block     bool
-	_Receipts         map[int]struct{}
-	removed_Receipts  map[int]struct{}
-	cleared_Receipts  bool
-	done              bool
-	oldValue          func(context.Context) (*Msg, error)
-	predicates        []predicate.Msg
+	op                 Op
+	typ                string
+	id                 *int
+	block_hash         *[]byte
+	block_height       *uint64
+	addblock_height    *int64
+	block_time         *time.Time
+	sender             *[]byte
+	to                 *[]byte
+	data               *[]byte
+	gas_limit          *uint64
+	addgas_limit       *int64
+	source_chain_id    *uint64
+	addsource_chain_id *int64
+	dest_chain_id      *uint64
+	adddest_chain_id   *int64
+	_offset            *uint64
+	add_offset         *int64
+	tx_hash            *[]byte
+	receipt_hash       *[]byte
+	status             *string
+	created_at         *time.Time
+	clearedFields      map[string]struct{}
+	_Block             map[int]struct{}
+	removed_Block      map[int]struct{}
+	cleared_Block      bool
+	_Receipts          map[int]struct{}
+	removed_Receipts   map[int]struct{}
+	cleared_Receipts   bool
+	done               bool
+	oldValue           func(context.Context) (*Msg, error)
+	predicates         []predicate.Msg
 }
 
 var _ ent.Mutation = (*MsgMutation)(nil)
@@ -1482,474 +1428,21 @@ func (m *MsgMutation) IDs(ctx context.Context) ([]int, error) {
 	}
 }
 
-// SetUUID sets the "UUID" field.
-func (m *MsgMutation) SetUUID(u uuid.UUID) {
-	m._UUID = &u
-}
-
-// UUID returns the value of the "UUID" field in the mutation.
-func (m *MsgMutation) UUID() (r uuid.UUID, exists bool) {
-	v := m._UUID
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldUUID returns the old "UUID" field's value of the Msg entity.
-// If the Msg object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *MsgMutation) OldUUID(ctx context.Context) (v uuid.UUID, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldUUID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldUUID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldUUID: %w", err)
-	}
-	return oldValue.UUID, nil
-}
-
-// ResetUUID resets all changes to the "UUID" field.
-func (m *MsgMutation) ResetUUID() {
-	m._UUID = nil
-}
-
-// SetBlockID sets the "Block_ID" field.
-func (m *MsgMutation) SetBlockID(i int) {
-	m._Block = &i
-}
-
-// BlockID returns the value of the "Block_ID" field in the mutation.
-func (m *MsgMutation) BlockID() (r int, exists bool) {
-	v := m._Block
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldBlockID returns the old "Block_ID" field's value of the Msg entity.
-// If the Msg object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *MsgMutation) OldBlockID(ctx context.Context) (v int, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldBlockID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldBlockID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldBlockID: %w", err)
-	}
-	return oldValue.BlockID, nil
-}
-
-// ClearBlockID clears the value of the "Block_ID" field.
-func (m *MsgMutation) ClearBlockID() {
-	m._Block = nil
-	m.clearedFields[msg.FieldBlockID] = struct{}{}
-}
-
-// BlockIDCleared returns if the "Block_ID" field was cleared in this mutation.
-func (m *MsgMutation) BlockIDCleared() bool {
-	_, ok := m.clearedFields[msg.FieldBlockID]
-	return ok
-}
-
-// ResetBlockID resets all changes to the "Block_ID" field.
-func (m *MsgMutation) ResetBlockID() {
-	m._Block = nil
-	delete(m.clearedFields, msg.FieldBlockID)
-}
-
-// SetSourceMsgSender sets the "SourceMsgSender" field.
-func (m *MsgMutation) SetSourceMsgSender(b []byte) {
-	m._SourceMsgSender = &b
-}
-
-// SourceMsgSender returns the value of the "SourceMsgSender" field in the mutation.
-func (m *MsgMutation) SourceMsgSender() (r []byte, exists bool) {
-	v := m._SourceMsgSender
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldSourceMsgSender returns the old "SourceMsgSender" field's value of the Msg entity.
-// If the Msg object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *MsgMutation) OldSourceMsgSender(ctx context.Context) (v []byte, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldSourceMsgSender is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldSourceMsgSender requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSourceMsgSender: %w", err)
-	}
-	return oldValue.SourceMsgSender, nil
-}
-
-// ResetSourceMsgSender resets all changes to the "SourceMsgSender" field.
-func (m *MsgMutation) ResetSourceMsgSender() {
-	m._SourceMsgSender = nil
-}
-
-// SetDestAddress sets the "DestAddress" field.
-func (m *MsgMutation) SetDestAddress(b []byte) {
-	m._DestAddress = &b
-}
-
-// DestAddress returns the value of the "DestAddress" field in the mutation.
-func (m *MsgMutation) DestAddress() (r []byte, exists bool) {
-	v := m._DestAddress
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldDestAddress returns the old "DestAddress" field's value of the Msg entity.
-// If the Msg object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *MsgMutation) OldDestAddress(ctx context.Context) (v []byte, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDestAddress is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDestAddress requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDestAddress: %w", err)
-	}
-	return oldValue.DestAddress, nil
-}
-
-// ResetDestAddress resets all changes to the "DestAddress" field.
-func (m *MsgMutation) ResetDestAddress() {
-	m._DestAddress = nil
-}
-
-// SetData sets the "Data" field.
-func (m *MsgMutation) SetData(b []byte) {
-	m._Data = &b
-}
-
-// Data returns the value of the "Data" field in the mutation.
-func (m *MsgMutation) Data() (r []byte, exists bool) {
-	v := m._Data
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldData returns the old "Data" field's value of the Msg entity.
-// If the Msg object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *MsgMutation) OldData(ctx context.Context) (v []byte, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldData is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldData requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldData: %w", err)
-	}
-	return oldValue.Data, nil
-}
-
-// ResetData resets all changes to the "Data" field.
-func (m *MsgMutation) ResetData() {
-	m._Data = nil
-}
-
-// SetDestGasLimit sets the "DestGasLimit" field.
-func (m *MsgMutation) SetDestGasLimit(u uint64) {
-	m._DestGasLimit = &u
-	m.add_DestGasLimit = nil
-}
-
-// DestGasLimit returns the value of the "DestGasLimit" field in the mutation.
-func (m *MsgMutation) DestGasLimit() (r uint64, exists bool) {
-	v := m._DestGasLimit
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldDestGasLimit returns the old "DestGasLimit" field's value of the Msg entity.
-// If the Msg object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *MsgMutation) OldDestGasLimit(ctx context.Context) (v uint64, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDestGasLimit is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDestGasLimit requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDestGasLimit: %w", err)
-	}
-	return oldValue.DestGasLimit, nil
-}
-
-// AddDestGasLimit adds u to the "DestGasLimit" field.
-func (m *MsgMutation) AddDestGasLimit(u int64) {
-	if m.add_DestGasLimit != nil {
-		*m.add_DestGasLimit += u
-	} else {
-		m.add_DestGasLimit = &u
-	}
-}
-
-// AddedDestGasLimit returns the value that was added to the "DestGasLimit" field in this mutation.
-func (m *MsgMutation) AddedDestGasLimit() (r int64, exists bool) {
-	v := m.add_DestGasLimit
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ResetDestGasLimit resets all changes to the "DestGasLimit" field.
-func (m *MsgMutation) ResetDestGasLimit() {
-	m._DestGasLimit = nil
-	m.add_DestGasLimit = nil
-}
-
-// SetSourceChainID sets the "SourceChainID" field.
-func (m *MsgMutation) SetSourceChainID(u uint64) {
-	m._SourceChainID = &u
-	m.add_SourceChainID = nil
-}
-
-// SourceChainID returns the value of the "SourceChainID" field in the mutation.
-func (m *MsgMutation) SourceChainID() (r uint64, exists bool) {
-	v := m._SourceChainID
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldSourceChainID returns the old "SourceChainID" field's value of the Msg entity.
-// If the Msg object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *MsgMutation) OldSourceChainID(ctx context.Context) (v uint64, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldSourceChainID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldSourceChainID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSourceChainID: %w", err)
-	}
-	return oldValue.SourceChainID, nil
-}
-
-// AddSourceChainID adds u to the "SourceChainID" field.
-func (m *MsgMutation) AddSourceChainID(u int64) {
-	if m.add_SourceChainID != nil {
-		*m.add_SourceChainID += u
-	} else {
-		m.add_SourceChainID = &u
-	}
-}
-
-// AddedSourceChainID returns the value that was added to the "SourceChainID" field in this mutation.
-func (m *MsgMutation) AddedSourceChainID() (r int64, exists bool) {
-	v := m.add_SourceChainID
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ResetSourceChainID resets all changes to the "SourceChainID" field.
-func (m *MsgMutation) ResetSourceChainID() {
-	m._SourceChainID = nil
-	m.add_SourceChainID = nil
-}
-
-// SetDestChainID sets the "DestChainID" field.
-func (m *MsgMutation) SetDestChainID(u uint64) {
-	m._DestChainID = &u
-	m.add_DestChainID = nil
-}
-
-// DestChainID returns the value of the "DestChainID" field in the mutation.
-func (m *MsgMutation) DestChainID() (r uint64, exists bool) {
-	v := m._DestChainID
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldDestChainID returns the old "DestChainID" field's value of the Msg entity.
-// If the Msg object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *MsgMutation) OldDestChainID(ctx context.Context) (v uint64, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDestChainID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDestChainID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDestChainID: %w", err)
-	}
-	return oldValue.DestChainID, nil
-}
-
-// AddDestChainID adds u to the "DestChainID" field.
-func (m *MsgMutation) AddDestChainID(u int64) {
-	if m.add_DestChainID != nil {
-		*m.add_DestChainID += u
-	} else {
-		m.add_DestChainID = &u
-	}
-}
-
-// AddedDestChainID returns the value that was added to the "DestChainID" field in this mutation.
-func (m *MsgMutation) AddedDestChainID() (r int64, exists bool) {
-	v := m.add_DestChainID
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ResetDestChainID resets all changes to the "DestChainID" field.
-func (m *MsgMutation) ResetDestChainID() {
-	m._DestChainID = nil
-	m.add_DestChainID = nil
-}
-
-// SetStreamOffset sets the "StreamOffset" field.
-func (m *MsgMutation) SetStreamOffset(u uint64) {
-	m._StreamOffset = &u
-	m.add_StreamOffset = nil
-}
-
-// StreamOffset returns the value of the "StreamOffset" field in the mutation.
-func (m *MsgMutation) StreamOffset() (r uint64, exists bool) {
-	v := m._StreamOffset
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldStreamOffset returns the old "StreamOffset" field's value of the Msg entity.
-// If the Msg object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *MsgMutation) OldStreamOffset(ctx context.Context) (v uint64, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStreamOffset is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStreamOffset requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStreamOffset: %w", err)
-	}
-	return oldValue.StreamOffset, nil
-}
-
-// AddStreamOffset adds u to the "StreamOffset" field.
-func (m *MsgMutation) AddStreamOffset(u int64) {
-	if m.add_StreamOffset != nil {
-		*m.add_StreamOffset += u
-	} else {
-		m.add_StreamOffset = &u
-	}
-}
-
-// AddedStreamOffset returns the value that was added to the "StreamOffset" field in this mutation.
-func (m *MsgMutation) AddedStreamOffset() (r int64, exists bool) {
-	v := m.add_StreamOffset
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ResetStreamOffset resets all changes to the "StreamOffset" field.
-func (m *MsgMutation) ResetStreamOffset() {
-	m._StreamOffset = nil
-	m.add_StreamOffset = nil
-}
-
-// SetTxHash sets the "TxHash" field.
-func (m *MsgMutation) SetTxHash(b []byte) {
-	m._TxHash = &b
-}
-
-// TxHash returns the value of the "TxHash" field in the mutation.
-func (m *MsgMutation) TxHash() (r []byte, exists bool) {
-	v := m._TxHash
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldTxHash returns the old "TxHash" field's value of the Msg entity.
-// If the Msg object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *MsgMutation) OldTxHash(ctx context.Context) (v []byte, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldTxHash is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldTxHash requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldTxHash: %w", err)
-	}
-	return oldValue.TxHash, nil
-}
-
-// ResetTxHash resets all changes to the "TxHash" field.
-func (m *MsgMutation) ResetTxHash() {
-	m._TxHash = nil
-}
-
-// SetBlockHash sets the "BlockHash" field.
+// SetBlockHash sets the "block_hash" field.
 func (m *MsgMutation) SetBlockHash(b []byte) {
-	m._BlockHash = &b
+	m.block_hash = &b
 }
 
-// BlockHash returns the value of the "BlockHash" field in the mutation.
+// BlockHash returns the value of the "block_hash" field in the mutation.
 func (m *MsgMutation) BlockHash() (r []byte, exists bool) {
-	v := m._BlockHash
+	v := m.block_hash
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldBlockHash returns the old "BlockHash" field's value of the Msg entity.
+// OldBlockHash returns the old "block_hash" field's value of the Msg entity.
 // If the Msg object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
 func (m *MsgMutation) OldBlockHash(ctx context.Context) (v []byte, err error) {
@@ -1966,40 +1459,27 @@ func (m *MsgMutation) OldBlockHash(ctx context.Context) (v []byte, err error) {
 	return oldValue.BlockHash, nil
 }
 
-// ClearBlockHash clears the value of the "BlockHash" field.
-func (m *MsgMutation) ClearBlockHash() {
-	m._BlockHash = nil
-	m.clearedFields[msg.FieldBlockHash] = struct{}{}
-}
-
-// BlockHashCleared returns if the "BlockHash" field was cleared in this mutation.
-func (m *MsgMutation) BlockHashCleared() bool {
-	_, ok := m.clearedFields[msg.FieldBlockHash]
-	return ok
-}
-
-// ResetBlockHash resets all changes to the "BlockHash" field.
+// ResetBlockHash resets all changes to the "block_hash" field.
 func (m *MsgMutation) ResetBlockHash() {
-	m._BlockHash = nil
-	delete(m.clearedFields, msg.FieldBlockHash)
+	m.block_hash = nil
 }
 
-// SetBlockHeight sets the "BlockHeight" field.
+// SetBlockHeight sets the "block_height" field.
 func (m *MsgMutation) SetBlockHeight(u uint64) {
-	m._BlockHeight = &u
-	m.add_BlockHeight = nil
+	m.block_height = &u
+	m.addblock_height = nil
 }
 
-// BlockHeight returns the value of the "BlockHeight" field in the mutation.
+// BlockHeight returns the value of the "block_height" field in the mutation.
 func (m *MsgMutation) BlockHeight() (r uint64, exists bool) {
-	v := m._BlockHeight
+	v := m.block_height
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldBlockHeight returns the old "BlockHeight" field's value of the Msg entity.
+// OldBlockHeight returns the old "block_height" field's value of the Msg entity.
 // If the Msg object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
 func (m *MsgMutation) OldBlockHeight(ctx context.Context) (v uint64, err error) {
@@ -2016,157 +1496,45 @@ func (m *MsgMutation) OldBlockHeight(ctx context.Context) (v uint64, err error) 
 	return oldValue.BlockHeight, nil
 }
 
-// AddBlockHeight adds u to the "BlockHeight" field.
+// AddBlockHeight adds u to the "block_height" field.
 func (m *MsgMutation) AddBlockHeight(u int64) {
-	if m.add_BlockHeight != nil {
-		*m.add_BlockHeight += u
+	if m.addblock_height != nil {
+		*m.addblock_height += u
 	} else {
-		m.add_BlockHeight = &u
+		m.addblock_height = &u
 	}
 }
 
-// AddedBlockHeight returns the value that was added to the "BlockHeight" field in this mutation.
+// AddedBlockHeight returns the value that was added to the "block_height" field in this mutation.
 func (m *MsgMutation) AddedBlockHeight() (r int64, exists bool) {
-	v := m.add_BlockHeight
+	v := m.addblock_height
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// ClearBlockHeight clears the value of the "BlockHeight" field.
-func (m *MsgMutation) ClearBlockHeight() {
-	m._BlockHeight = nil
-	m.add_BlockHeight = nil
-	m.clearedFields[msg.FieldBlockHeight] = struct{}{}
-}
-
-// BlockHeightCleared returns if the "BlockHeight" field was cleared in this mutation.
-func (m *MsgMutation) BlockHeightCleared() bool {
-	_, ok := m.clearedFields[msg.FieldBlockHeight]
-	return ok
-}
-
-// ResetBlockHeight resets all changes to the "BlockHeight" field.
+// ResetBlockHeight resets all changes to the "block_height" field.
 func (m *MsgMutation) ResetBlockHeight() {
-	m._BlockHeight = nil
-	m.add_BlockHeight = nil
-	delete(m.clearedFields, msg.FieldBlockHeight)
+	m.block_height = nil
+	m.addblock_height = nil
 }
 
-// SetReceiptHash sets the "ReceiptHash" field.
-func (m *MsgMutation) SetReceiptHash(b []byte) {
-	m._ReceiptHash = &b
-}
-
-// ReceiptHash returns the value of the "ReceiptHash" field in the mutation.
-func (m *MsgMutation) ReceiptHash() (r []byte, exists bool) {
-	v := m._ReceiptHash
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldReceiptHash returns the old "ReceiptHash" field's value of the Msg entity.
-// If the Msg object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *MsgMutation) OldReceiptHash(ctx context.Context) (v []byte, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldReceiptHash is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldReceiptHash requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldReceiptHash: %w", err)
-	}
-	return oldValue.ReceiptHash, nil
-}
-
-// ClearReceiptHash clears the value of the "ReceiptHash" field.
-func (m *MsgMutation) ClearReceiptHash() {
-	m._ReceiptHash = nil
-	m.clearedFields[msg.FieldReceiptHash] = struct{}{}
-}
-
-// ReceiptHashCleared returns if the "ReceiptHash" field was cleared in this mutation.
-func (m *MsgMutation) ReceiptHashCleared() bool {
-	_, ok := m.clearedFields[msg.FieldReceiptHash]
-	return ok
-}
-
-// ResetReceiptHash resets all changes to the "ReceiptHash" field.
-func (m *MsgMutation) ResetReceiptHash() {
-	m._ReceiptHash = nil
-	delete(m.clearedFields, msg.FieldReceiptHash)
-}
-
-// SetStatus sets the "Status" field.
-func (m *MsgMutation) SetStatus(s string) {
-	m._Status = &s
-}
-
-// Status returns the value of the "Status" field in the mutation.
-func (m *MsgMutation) Status() (r string, exists bool) {
-	v := m._Status
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldStatus returns the old "Status" field's value of the Msg entity.
-// If the Msg object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *MsgMutation) OldStatus(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatus requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
-	}
-	return oldValue.Status, nil
-}
-
-// ClearStatus clears the value of the "Status" field.
-func (m *MsgMutation) ClearStatus() {
-	m._Status = nil
-	m.clearedFields[msg.FieldStatus] = struct{}{}
-}
-
-// StatusCleared returns if the "Status" field was cleared in this mutation.
-func (m *MsgMutation) StatusCleared() bool {
-	_, ok := m.clearedFields[msg.FieldStatus]
-	return ok
-}
-
-// ResetStatus resets all changes to the "Status" field.
-func (m *MsgMutation) ResetStatus() {
-	m._Status = nil
-	delete(m.clearedFields, msg.FieldStatus)
-}
-
-// SetBlockTime sets the "BlockTime" field.
+// SetBlockTime sets the "block_time" field.
 func (m *MsgMutation) SetBlockTime(t time.Time) {
-	m._BlockTime = &t
+	m.block_time = &t
 }
 
-// BlockTime returns the value of the "BlockTime" field in the mutation.
+// BlockTime returns the value of the "block_time" field in the mutation.
 func (m *MsgMutation) BlockTime() (r time.Time, exists bool) {
-	v := m._BlockTime
+	v := m.block_time
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldBlockTime returns the old "BlockTime" field's value of the Msg entity.
+// OldBlockTime returns the old "block_time" field's value of the Msg entity.
 // If the Msg object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
 func (m *MsgMutation) OldBlockTime(ctx context.Context) (v time.Time, err error) {
@@ -2183,39 +1551,492 @@ func (m *MsgMutation) OldBlockTime(ctx context.Context) (v time.Time, err error)
 	return oldValue.BlockTime, nil
 }
 
-// ClearBlockTime clears the value of the "BlockTime" field.
-func (m *MsgMutation) ClearBlockTime() {
-	m._BlockTime = nil
-	m.clearedFields[msg.FieldBlockTime] = struct{}{}
-}
-
-// BlockTimeCleared returns if the "BlockTime" field was cleared in this mutation.
-func (m *MsgMutation) BlockTimeCleared() bool {
-	_, ok := m.clearedFields[msg.FieldBlockTime]
-	return ok
-}
-
-// ResetBlockTime resets all changes to the "BlockTime" field.
+// ResetBlockTime resets all changes to the "block_time" field.
 func (m *MsgMutation) ResetBlockTime() {
-	m._BlockTime = nil
-	delete(m.clearedFields, msg.FieldBlockTime)
+	m.block_time = nil
 }
 
-// SetCreatedAt sets the "CreatedAt" field.
-func (m *MsgMutation) SetCreatedAt(t time.Time) {
-	m._CreatedAt = &t
+// SetSender sets the "sender" field.
+func (m *MsgMutation) SetSender(b []byte) {
+	m.sender = &b
 }
 
-// CreatedAt returns the value of the "CreatedAt" field in the mutation.
-func (m *MsgMutation) CreatedAt() (r time.Time, exists bool) {
-	v := m._CreatedAt
+// Sender returns the value of the "sender" field in the mutation.
+func (m *MsgMutation) Sender() (r []byte, exists bool) {
+	v := m.sender
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldCreatedAt returns the old "CreatedAt" field's value of the Msg entity.
+// OldSender returns the old "sender" field's value of the Msg entity.
+// If the Msg object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MsgMutation) OldSender(ctx context.Context) (v []byte, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSender is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSender requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSender: %w", err)
+	}
+	return oldValue.Sender, nil
+}
+
+// ResetSender resets all changes to the "sender" field.
+func (m *MsgMutation) ResetSender() {
+	m.sender = nil
+}
+
+// SetTo sets the "to" field.
+func (m *MsgMutation) SetTo(b []byte) {
+	m.to = &b
+}
+
+// To returns the value of the "to" field in the mutation.
+func (m *MsgMutation) To() (r []byte, exists bool) {
+	v := m.to
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTo returns the old "to" field's value of the Msg entity.
+// If the Msg object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MsgMutation) OldTo(ctx context.Context) (v []byte, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTo is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTo requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTo: %w", err)
+	}
+	return oldValue.To, nil
+}
+
+// ResetTo resets all changes to the "to" field.
+func (m *MsgMutation) ResetTo() {
+	m.to = nil
+}
+
+// SetData sets the "data" field.
+func (m *MsgMutation) SetData(b []byte) {
+	m.data = &b
+}
+
+// Data returns the value of the "data" field in the mutation.
+func (m *MsgMutation) Data() (r []byte, exists bool) {
+	v := m.data
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldData returns the old "data" field's value of the Msg entity.
+// If the Msg object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MsgMutation) OldData(ctx context.Context) (v []byte, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldData is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldData requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldData: %w", err)
+	}
+	return oldValue.Data, nil
+}
+
+// ResetData resets all changes to the "data" field.
+func (m *MsgMutation) ResetData() {
+	m.data = nil
+}
+
+// SetGasLimit sets the "gas_limit" field.
+func (m *MsgMutation) SetGasLimit(u uint64) {
+	m.gas_limit = &u
+	m.addgas_limit = nil
+}
+
+// GasLimit returns the value of the "gas_limit" field in the mutation.
+func (m *MsgMutation) GasLimit() (r uint64, exists bool) {
+	v := m.gas_limit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGasLimit returns the old "gas_limit" field's value of the Msg entity.
+// If the Msg object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MsgMutation) OldGasLimit(ctx context.Context) (v uint64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGasLimit is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGasLimit requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGasLimit: %w", err)
+	}
+	return oldValue.GasLimit, nil
+}
+
+// AddGasLimit adds u to the "gas_limit" field.
+func (m *MsgMutation) AddGasLimit(u int64) {
+	if m.addgas_limit != nil {
+		*m.addgas_limit += u
+	} else {
+		m.addgas_limit = &u
+	}
+}
+
+// AddedGasLimit returns the value that was added to the "gas_limit" field in this mutation.
+func (m *MsgMutation) AddedGasLimit() (r int64, exists bool) {
+	v := m.addgas_limit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetGasLimit resets all changes to the "gas_limit" field.
+func (m *MsgMutation) ResetGasLimit() {
+	m.gas_limit = nil
+	m.addgas_limit = nil
+}
+
+// SetSourceChainID sets the "source_chain_id" field.
+func (m *MsgMutation) SetSourceChainID(u uint64) {
+	m.source_chain_id = &u
+	m.addsource_chain_id = nil
+}
+
+// SourceChainID returns the value of the "source_chain_id" field in the mutation.
+func (m *MsgMutation) SourceChainID() (r uint64, exists bool) {
+	v := m.source_chain_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSourceChainID returns the old "source_chain_id" field's value of the Msg entity.
+// If the Msg object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MsgMutation) OldSourceChainID(ctx context.Context) (v uint64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSourceChainID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSourceChainID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSourceChainID: %w", err)
+	}
+	return oldValue.SourceChainID, nil
+}
+
+// AddSourceChainID adds u to the "source_chain_id" field.
+func (m *MsgMutation) AddSourceChainID(u int64) {
+	if m.addsource_chain_id != nil {
+		*m.addsource_chain_id += u
+	} else {
+		m.addsource_chain_id = &u
+	}
+}
+
+// AddedSourceChainID returns the value that was added to the "source_chain_id" field in this mutation.
+func (m *MsgMutation) AddedSourceChainID() (r int64, exists bool) {
+	v := m.addsource_chain_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSourceChainID resets all changes to the "source_chain_id" field.
+func (m *MsgMutation) ResetSourceChainID() {
+	m.source_chain_id = nil
+	m.addsource_chain_id = nil
+}
+
+// SetDestChainID sets the "dest_chain_id" field.
+func (m *MsgMutation) SetDestChainID(u uint64) {
+	m.dest_chain_id = &u
+	m.adddest_chain_id = nil
+}
+
+// DestChainID returns the value of the "dest_chain_id" field in the mutation.
+func (m *MsgMutation) DestChainID() (r uint64, exists bool) {
+	v := m.dest_chain_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDestChainID returns the old "dest_chain_id" field's value of the Msg entity.
+// If the Msg object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MsgMutation) OldDestChainID(ctx context.Context) (v uint64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDestChainID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDestChainID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDestChainID: %w", err)
+	}
+	return oldValue.DestChainID, nil
+}
+
+// AddDestChainID adds u to the "dest_chain_id" field.
+func (m *MsgMutation) AddDestChainID(u int64) {
+	if m.adddest_chain_id != nil {
+		*m.adddest_chain_id += u
+	} else {
+		m.adddest_chain_id = &u
+	}
+}
+
+// AddedDestChainID returns the value that was added to the "dest_chain_id" field in this mutation.
+func (m *MsgMutation) AddedDestChainID() (r int64, exists bool) {
+	v := m.adddest_chain_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetDestChainID resets all changes to the "dest_chain_id" field.
+func (m *MsgMutation) ResetDestChainID() {
+	m.dest_chain_id = nil
+	m.adddest_chain_id = nil
+}
+
+// SetOffset sets the "offset" field.
+func (m *MsgMutation) SetOffset(u uint64) {
+	m._offset = &u
+	m.add_offset = nil
+}
+
+// Offset returns the value of the "offset" field in the mutation.
+func (m *MsgMutation) Offset() (r uint64, exists bool) {
+	v := m._offset
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOffset returns the old "offset" field's value of the Msg entity.
+// If the Msg object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MsgMutation) OldOffset(ctx context.Context) (v uint64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOffset is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOffset requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOffset: %w", err)
+	}
+	return oldValue.Offset, nil
+}
+
+// AddOffset adds u to the "offset" field.
+func (m *MsgMutation) AddOffset(u int64) {
+	if m.add_offset != nil {
+		*m.add_offset += u
+	} else {
+		m.add_offset = &u
+	}
+}
+
+// AddedOffset returns the value that was added to the "offset" field in this mutation.
+func (m *MsgMutation) AddedOffset() (r int64, exists bool) {
+	v := m.add_offset
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetOffset resets all changes to the "offset" field.
+func (m *MsgMutation) ResetOffset() {
+	m._offset = nil
+	m.add_offset = nil
+}
+
+// SetTxHash sets the "tx_hash" field.
+func (m *MsgMutation) SetTxHash(b []byte) {
+	m.tx_hash = &b
+}
+
+// TxHash returns the value of the "tx_hash" field in the mutation.
+func (m *MsgMutation) TxHash() (r []byte, exists bool) {
+	v := m.tx_hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTxHash returns the old "tx_hash" field's value of the Msg entity.
+// If the Msg object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MsgMutation) OldTxHash(ctx context.Context) (v []byte, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTxHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTxHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTxHash: %w", err)
+	}
+	return oldValue.TxHash, nil
+}
+
+// ResetTxHash resets all changes to the "tx_hash" field.
+func (m *MsgMutation) ResetTxHash() {
+	m.tx_hash = nil
+}
+
+// SetReceiptHash sets the "receipt_hash" field.
+func (m *MsgMutation) SetReceiptHash(b []byte) {
+	m.receipt_hash = &b
+}
+
+// ReceiptHash returns the value of the "receipt_hash" field in the mutation.
+func (m *MsgMutation) ReceiptHash() (r []byte, exists bool) {
+	v := m.receipt_hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReceiptHash returns the old "receipt_hash" field's value of the Msg entity.
+// If the Msg object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MsgMutation) OldReceiptHash(ctx context.Context) (v []byte, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReceiptHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReceiptHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReceiptHash: %w", err)
+	}
+	return oldValue.ReceiptHash, nil
+}
+
+// ClearReceiptHash clears the value of the "receipt_hash" field.
+func (m *MsgMutation) ClearReceiptHash() {
+	m.receipt_hash = nil
+	m.clearedFields[msg.FieldReceiptHash] = struct{}{}
+}
+
+// ReceiptHashCleared returns if the "receipt_hash" field was cleared in this mutation.
+func (m *MsgMutation) ReceiptHashCleared() bool {
+	_, ok := m.clearedFields[msg.FieldReceiptHash]
+	return ok
+}
+
+// ResetReceiptHash resets all changes to the "receipt_hash" field.
+func (m *MsgMutation) ResetReceiptHash() {
+	m.receipt_hash = nil
+	delete(m.clearedFields, msg.FieldReceiptHash)
+}
+
+// SetStatus sets the "status" field.
+func (m *MsgMutation) SetStatus(s string) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *MsgMutation) Status() (r string, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the Msg entity.
+// If the Msg object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MsgMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ClearStatus clears the value of the "status" field.
+func (m *MsgMutation) ClearStatus() {
+	m.status = nil
+	m.clearedFields[msg.FieldStatus] = struct{}{}
+}
+
+// StatusCleared returns if the "status" field was cleared in this mutation.
+func (m *MsgMutation) StatusCleared() bool {
+	_, ok := m.clearedFields[msg.FieldStatus]
+	return ok
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *MsgMutation) ResetStatus() {
+	m.status = nil
+	delete(m.clearedFields, msg.FieldStatus)
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *MsgMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *MsgMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the Msg entity.
 // If the Msg object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
 func (m *MsgMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
@@ -2232,28 +2053,54 @@ func (m *MsgMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error)
 	return oldValue.CreatedAt, nil
 }
 
-// ResetCreatedAt resets all changes to the "CreatedAt" field.
+// ResetCreatedAt resets all changes to the "created_at" field.
 func (m *MsgMutation) ResetCreatedAt() {
-	m._CreatedAt = nil
+	m.created_at = nil
+}
+
+// AddBlockIDs adds the "Block" edge to the Block entity by ids.
+func (m *MsgMutation) AddBlockIDs(ids ...int) {
+	if m._Block == nil {
+		m._Block = make(map[int]struct{})
+	}
+	for i := range ids {
+		m._Block[ids[i]] = struct{}{}
+	}
 }
 
 // ClearBlock clears the "Block" edge to the Block entity.
 func (m *MsgMutation) ClearBlock() {
 	m.cleared_Block = true
-	m.clearedFields[msg.FieldBlockID] = struct{}{}
 }
 
 // BlockCleared reports if the "Block" edge to the Block entity was cleared.
 func (m *MsgMutation) BlockCleared() bool {
-	return m.BlockIDCleared() || m.cleared_Block
+	return m.cleared_Block
+}
+
+// RemoveBlockIDs removes the "Block" edge to the Block entity by IDs.
+func (m *MsgMutation) RemoveBlockIDs(ids ...int) {
+	if m.removed_Block == nil {
+		m.removed_Block = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m._Block, ids[i])
+		m.removed_Block[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedBlock returns the removed IDs of the "Block" edge to the Block entity.
+func (m *MsgMutation) RemovedBlockIDs() (ids []int) {
+	for id := range m.removed_Block {
+		ids = append(ids, id)
+	}
+	return
 }
 
 // BlockIDs returns the "Block" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// BlockID instead. It exists only for internal usage by the builders.
 func (m *MsgMutation) BlockIDs() (ids []int) {
-	if id := m._Block; id != nil {
-		ids = append(ids, *id)
+	for id := range m._Block {
+		ids = append(ids, id)
 	}
 	return
 }
@@ -2262,6 +2109,7 @@ func (m *MsgMutation) BlockIDs() (ids []int) {
 func (m *MsgMutation) ResetBlock() {
 	m._Block = nil
 	m.cleared_Block = false
+	m.removed_Block = nil
 }
 
 // AddReceiptIDs adds the "Receipts" edge to the Receipt entity by ids.
@@ -2352,53 +2200,47 @@ func (m *MsgMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *MsgMutation) Fields() []string {
-	fields := make([]string, 0, 16)
-	if m._UUID != nil {
-		fields = append(fields, msg.FieldUUID)
-	}
-	if m._Block != nil {
-		fields = append(fields, msg.FieldBlockID)
-	}
-	if m._SourceMsgSender != nil {
-		fields = append(fields, msg.FieldSourceMsgSender)
-	}
-	if m._DestAddress != nil {
-		fields = append(fields, msg.FieldDestAddress)
-	}
-	if m._Data != nil {
-		fields = append(fields, msg.FieldData)
-	}
-	if m._DestGasLimit != nil {
-		fields = append(fields, msg.FieldDestGasLimit)
-	}
-	if m._SourceChainID != nil {
-		fields = append(fields, msg.FieldSourceChainID)
-	}
-	if m._DestChainID != nil {
-		fields = append(fields, msg.FieldDestChainID)
-	}
-	if m._StreamOffset != nil {
-		fields = append(fields, msg.FieldStreamOffset)
-	}
-	if m._TxHash != nil {
-		fields = append(fields, msg.FieldTxHash)
-	}
-	if m._BlockHash != nil {
+	fields := make([]string, 0, 14)
+	if m.block_hash != nil {
 		fields = append(fields, msg.FieldBlockHash)
 	}
-	if m._BlockHeight != nil {
+	if m.block_height != nil {
 		fields = append(fields, msg.FieldBlockHeight)
 	}
-	if m._ReceiptHash != nil {
-		fields = append(fields, msg.FieldReceiptHash)
-	}
-	if m._Status != nil {
-		fields = append(fields, msg.FieldStatus)
-	}
-	if m._BlockTime != nil {
+	if m.block_time != nil {
 		fields = append(fields, msg.FieldBlockTime)
 	}
-	if m._CreatedAt != nil {
+	if m.sender != nil {
+		fields = append(fields, msg.FieldSender)
+	}
+	if m.to != nil {
+		fields = append(fields, msg.FieldTo)
+	}
+	if m.data != nil {
+		fields = append(fields, msg.FieldData)
+	}
+	if m.gas_limit != nil {
+		fields = append(fields, msg.FieldGasLimit)
+	}
+	if m.source_chain_id != nil {
+		fields = append(fields, msg.FieldSourceChainID)
+	}
+	if m.dest_chain_id != nil {
+		fields = append(fields, msg.FieldDestChainID)
+	}
+	if m._offset != nil {
+		fields = append(fields, msg.FieldOffset)
+	}
+	if m.tx_hash != nil {
+		fields = append(fields, msg.FieldTxHash)
+	}
+	if m.receipt_hash != nil {
+		fields = append(fields, msg.FieldReceiptHash)
+	}
+	if m.status != nil {
+		fields = append(fields, msg.FieldStatus)
+	}
+	if m.created_at != nil {
 		fields = append(fields, msg.FieldCreatedAt)
 	}
 	return fields
@@ -2409,36 +2251,32 @@ func (m *MsgMutation) Fields() []string {
 // schema.
 func (m *MsgMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case msg.FieldUUID:
-		return m.UUID()
-	case msg.FieldBlockID:
-		return m.BlockID()
-	case msg.FieldSourceMsgSender:
-		return m.SourceMsgSender()
-	case msg.FieldDestAddress:
-		return m.DestAddress()
-	case msg.FieldData:
-		return m.Data()
-	case msg.FieldDestGasLimit:
-		return m.DestGasLimit()
-	case msg.FieldSourceChainID:
-		return m.SourceChainID()
-	case msg.FieldDestChainID:
-		return m.DestChainID()
-	case msg.FieldStreamOffset:
-		return m.StreamOffset()
-	case msg.FieldTxHash:
-		return m.TxHash()
 	case msg.FieldBlockHash:
 		return m.BlockHash()
 	case msg.FieldBlockHeight:
 		return m.BlockHeight()
+	case msg.FieldBlockTime:
+		return m.BlockTime()
+	case msg.FieldSender:
+		return m.Sender()
+	case msg.FieldTo:
+		return m.To()
+	case msg.FieldData:
+		return m.Data()
+	case msg.FieldGasLimit:
+		return m.GasLimit()
+	case msg.FieldSourceChainID:
+		return m.SourceChainID()
+	case msg.FieldDestChainID:
+		return m.DestChainID()
+	case msg.FieldOffset:
+		return m.Offset()
+	case msg.FieldTxHash:
+		return m.TxHash()
 	case msg.FieldReceiptHash:
 		return m.ReceiptHash()
 	case msg.FieldStatus:
 		return m.Status()
-	case msg.FieldBlockTime:
-		return m.BlockTime()
 	case msg.FieldCreatedAt:
 		return m.CreatedAt()
 	}
@@ -2450,36 +2288,32 @@ func (m *MsgMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *MsgMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case msg.FieldUUID:
-		return m.OldUUID(ctx)
-	case msg.FieldBlockID:
-		return m.OldBlockID(ctx)
-	case msg.FieldSourceMsgSender:
-		return m.OldSourceMsgSender(ctx)
-	case msg.FieldDestAddress:
-		return m.OldDestAddress(ctx)
-	case msg.FieldData:
-		return m.OldData(ctx)
-	case msg.FieldDestGasLimit:
-		return m.OldDestGasLimit(ctx)
-	case msg.FieldSourceChainID:
-		return m.OldSourceChainID(ctx)
-	case msg.FieldDestChainID:
-		return m.OldDestChainID(ctx)
-	case msg.FieldStreamOffset:
-		return m.OldStreamOffset(ctx)
-	case msg.FieldTxHash:
-		return m.OldTxHash(ctx)
 	case msg.FieldBlockHash:
 		return m.OldBlockHash(ctx)
 	case msg.FieldBlockHeight:
 		return m.OldBlockHeight(ctx)
+	case msg.FieldBlockTime:
+		return m.OldBlockTime(ctx)
+	case msg.FieldSender:
+		return m.OldSender(ctx)
+	case msg.FieldTo:
+		return m.OldTo(ctx)
+	case msg.FieldData:
+		return m.OldData(ctx)
+	case msg.FieldGasLimit:
+		return m.OldGasLimit(ctx)
+	case msg.FieldSourceChainID:
+		return m.OldSourceChainID(ctx)
+	case msg.FieldDestChainID:
+		return m.OldDestChainID(ctx)
+	case msg.FieldOffset:
+		return m.OldOffset(ctx)
+	case msg.FieldTxHash:
+		return m.OldTxHash(ctx)
 	case msg.FieldReceiptHash:
 		return m.OldReceiptHash(ctx)
 	case msg.FieldStatus:
 		return m.OldStatus(ctx)
-	case msg.FieldBlockTime:
-		return m.OldBlockTime(ctx)
 	case msg.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
 	}
@@ -2491,33 +2325,40 @@ func (m *MsgMutation) OldField(ctx context.Context, name string) (ent.Value, err
 // type.
 func (m *MsgMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case msg.FieldUUID:
-		v, ok := value.(uuid.UUID)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetUUID(v)
-		return nil
-	case msg.FieldBlockID:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetBlockID(v)
-		return nil
-	case msg.FieldSourceMsgSender:
+	case msg.FieldBlockHash:
 		v, ok := value.([]byte)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetSourceMsgSender(v)
+		m.SetBlockHash(v)
 		return nil
-	case msg.FieldDestAddress:
+	case msg.FieldBlockHeight:
+		v, ok := value.(uint64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBlockHeight(v)
+		return nil
+	case msg.FieldBlockTime:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBlockTime(v)
+		return nil
+	case msg.FieldSender:
 		v, ok := value.([]byte)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetDestAddress(v)
+		m.SetSender(v)
+		return nil
+	case msg.FieldTo:
+		v, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTo(v)
 		return nil
 	case msg.FieldData:
 		v, ok := value.([]byte)
@@ -2526,12 +2367,12 @@ func (m *MsgMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetData(v)
 		return nil
-	case msg.FieldDestGasLimit:
+	case msg.FieldGasLimit:
 		v, ok := value.(uint64)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetDestGasLimit(v)
+		m.SetGasLimit(v)
 		return nil
 	case msg.FieldSourceChainID:
 		v, ok := value.(uint64)
@@ -2547,12 +2388,12 @@ func (m *MsgMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDestChainID(v)
 		return nil
-	case msg.FieldStreamOffset:
+	case msg.FieldOffset:
 		v, ok := value.(uint64)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetStreamOffset(v)
+		m.SetOffset(v)
 		return nil
 	case msg.FieldTxHash:
 		v, ok := value.([]byte)
@@ -2560,20 +2401,6 @@ func (m *MsgMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetTxHash(v)
-		return nil
-	case msg.FieldBlockHash:
-		v, ok := value.([]byte)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetBlockHash(v)
-		return nil
-	case msg.FieldBlockHeight:
-		v, ok := value.(uint64)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetBlockHeight(v)
 		return nil
 	case msg.FieldReceiptHash:
 		v, ok := value.([]byte)
@@ -2588,13 +2415,6 @@ func (m *MsgMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetStatus(v)
-		return nil
-	case msg.FieldBlockTime:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetBlockTime(v)
 		return nil
 	case msg.FieldCreatedAt:
 		v, ok := value.(time.Time)
@@ -2611,20 +2431,20 @@ func (m *MsgMutation) SetField(name string, value ent.Value) error {
 // this mutation.
 func (m *MsgMutation) AddedFields() []string {
 	var fields []string
-	if m.add_DestGasLimit != nil {
-		fields = append(fields, msg.FieldDestGasLimit)
+	if m.addblock_height != nil {
+		fields = append(fields, msg.FieldBlockHeight)
 	}
-	if m.add_SourceChainID != nil {
+	if m.addgas_limit != nil {
+		fields = append(fields, msg.FieldGasLimit)
+	}
+	if m.addsource_chain_id != nil {
 		fields = append(fields, msg.FieldSourceChainID)
 	}
-	if m.add_DestChainID != nil {
+	if m.adddest_chain_id != nil {
 		fields = append(fields, msg.FieldDestChainID)
 	}
-	if m.add_StreamOffset != nil {
-		fields = append(fields, msg.FieldStreamOffset)
-	}
-	if m.add_BlockHeight != nil {
-		fields = append(fields, msg.FieldBlockHeight)
+	if m.add_offset != nil {
+		fields = append(fields, msg.FieldOffset)
 	}
 	return fields
 }
@@ -2634,16 +2454,16 @@ func (m *MsgMutation) AddedFields() []string {
 // was not set, or was not defined in the schema.
 func (m *MsgMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
-	case msg.FieldDestGasLimit:
-		return m.AddedDestGasLimit()
+	case msg.FieldBlockHeight:
+		return m.AddedBlockHeight()
+	case msg.FieldGasLimit:
+		return m.AddedGasLimit()
 	case msg.FieldSourceChainID:
 		return m.AddedSourceChainID()
 	case msg.FieldDestChainID:
 		return m.AddedDestChainID()
-	case msg.FieldStreamOffset:
-		return m.AddedStreamOffset()
-	case msg.FieldBlockHeight:
-		return m.AddedBlockHeight()
+	case msg.FieldOffset:
+		return m.AddedOffset()
 	}
 	return nil, false
 }
@@ -2653,12 +2473,19 @@ func (m *MsgMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *MsgMutation) AddField(name string, value ent.Value) error {
 	switch name {
-	case msg.FieldDestGasLimit:
+	case msg.FieldBlockHeight:
 		v, ok := value.(int64)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.AddDestGasLimit(v)
+		m.AddBlockHeight(v)
+		return nil
+	case msg.FieldGasLimit:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddGasLimit(v)
 		return nil
 	case msg.FieldSourceChainID:
 		v, ok := value.(int64)
@@ -2674,19 +2501,12 @@ func (m *MsgMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddDestChainID(v)
 		return nil
-	case msg.FieldStreamOffset:
+	case msg.FieldOffset:
 		v, ok := value.(int64)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.AddStreamOffset(v)
-		return nil
-	case msg.FieldBlockHeight:
-		v, ok := value.(int64)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.AddBlockHeight(v)
+		m.AddOffset(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Msg numeric field %s", name)
@@ -2696,23 +2516,11 @@ func (m *MsgMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *MsgMutation) ClearedFields() []string {
 	var fields []string
-	if m.FieldCleared(msg.FieldBlockID) {
-		fields = append(fields, msg.FieldBlockID)
-	}
-	if m.FieldCleared(msg.FieldBlockHash) {
-		fields = append(fields, msg.FieldBlockHash)
-	}
-	if m.FieldCleared(msg.FieldBlockHeight) {
-		fields = append(fields, msg.FieldBlockHeight)
-	}
 	if m.FieldCleared(msg.FieldReceiptHash) {
 		fields = append(fields, msg.FieldReceiptHash)
 	}
 	if m.FieldCleared(msg.FieldStatus) {
 		fields = append(fields, msg.FieldStatus)
-	}
-	if m.FieldCleared(msg.FieldBlockTime) {
-		fields = append(fields, msg.FieldBlockTime)
 	}
 	return fields
 }
@@ -2728,23 +2536,11 @@ func (m *MsgMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *MsgMutation) ClearField(name string) error {
 	switch name {
-	case msg.FieldBlockID:
-		m.ClearBlockID()
-		return nil
-	case msg.FieldBlockHash:
-		m.ClearBlockHash()
-		return nil
-	case msg.FieldBlockHeight:
-		m.ClearBlockHeight()
-		return nil
 	case msg.FieldReceiptHash:
 		m.ClearReceiptHash()
 		return nil
 	case msg.FieldStatus:
 		m.ClearStatus()
-		return nil
-	case msg.FieldBlockTime:
-		m.ClearBlockTime()
 		return nil
 	}
 	return fmt.Errorf("unknown Msg nullable field %s", name)
@@ -2754,23 +2550,26 @@ func (m *MsgMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *MsgMutation) ResetField(name string) error {
 	switch name {
-	case msg.FieldUUID:
-		m.ResetUUID()
+	case msg.FieldBlockHash:
+		m.ResetBlockHash()
 		return nil
-	case msg.FieldBlockID:
-		m.ResetBlockID()
+	case msg.FieldBlockHeight:
+		m.ResetBlockHeight()
 		return nil
-	case msg.FieldSourceMsgSender:
-		m.ResetSourceMsgSender()
+	case msg.FieldBlockTime:
+		m.ResetBlockTime()
 		return nil
-	case msg.FieldDestAddress:
-		m.ResetDestAddress()
+	case msg.FieldSender:
+		m.ResetSender()
+		return nil
+	case msg.FieldTo:
+		m.ResetTo()
 		return nil
 	case msg.FieldData:
 		m.ResetData()
 		return nil
-	case msg.FieldDestGasLimit:
-		m.ResetDestGasLimit()
+	case msg.FieldGasLimit:
+		m.ResetGasLimit()
 		return nil
 	case msg.FieldSourceChainID:
 		m.ResetSourceChainID()
@@ -2778,26 +2577,17 @@ func (m *MsgMutation) ResetField(name string) error {
 	case msg.FieldDestChainID:
 		m.ResetDestChainID()
 		return nil
-	case msg.FieldStreamOffset:
-		m.ResetStreamOffset()
+	case msg.FieldOffset:
+		m.ResetOffset()
 		return nil
 	case msg.FieldTxHash:
 		m.ResetTxHash()
-		return nil
-	case msg.FieldBlockHash:
-		m.ResetBlockHash()
-		return nil
-	case msg.FieldBlockHeight:
-		m.ResetBlockHeight()
 		return nil
 	case msg.FieldReceiptHash:
 		m.ResetReceiptHash()
 		return nil
 	case msg.FieldStatus:
 		m.ResetStatus()
-		return nil
-	case msg.FieldBlockTime:
-		m.ResetBlockTime()
 		return nil
 	case msg.FieldCreatedAt:
 		m.ResetCreatedAt()
@@ -2823,9 +2613,11 @@ func (m *MsgMutation) AddedEdges() []string {
 func (m *MsgMutation) AddedIDs(name string) []ent.Value {
 	switch name {
 	case msg.EdgeBlock:
-		if id := m._Block; id != nil {
-			return []ent.Value{*id}
+		ids := make([]ent.Value, 0, len(m._Block))
+		for id := range m._Block {
+			ids = append(ids, id)
 		}
+		return ids
 	case msg.EdgeReceipts:
 		ids := make([]ent.Value, 0, len(m._Receipts))
 		for id := range m._Receipts {
@@ -2839,6 +2631,9 @@ func (m *MsgMutation) AddedIDs(name string) []ent.Value {
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *MsgMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 2)
+	if m.removed_Block != nil {
+		edges = append(edges, msg.EdgeBlock)
+	}
 	if m.removed_Receipts != nil {
 		edges = append(edges, msg.EdgeReceipts)
 	}
@@ -2849,6 +2644,12 @@ func (m *MsgMutation) RemovedEdges() []string {
 // the given name in this mutation.
 func (m *MsgMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
+	case msg.EdgeBlock:
+		ids := make([]ent.Value, 0, len(m.removed_Block))
+		for id := range m.removed_Block {
+			ids = append(ids, id)
+		}
+		return ids
 	case msg.EdgeReceipts:
 		ids := make([]ent.Value, 0, len(m.removed_Receipts))
 		for id := range m.removed_Receipts {
@@ -2887,9 +2688,6 @@ func (m *MsgMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *MsgMutation) ClearEdge(name string) error {
 	switch name {
-	case msg.EdgeBlock:
-		m.ClearBlock()
-		return nil
 	}
 	return fmt.Errorf("unknown Msg unique edge %s", name)
 }
@@ -2911,31 +2709,32 @@ func (m *MsgMutation) ResetEdge(name string) error {
 // ReceiptMutation represents an operation that mutates the Receipt nodes in the graph.
 type ReceiptMutation struct {
 	config
-	op                Op
-	typ               string
-	id                *int
-	_UUID             *uuid.UUID
-	_GasUsed          *uint64
-	add_GasUsed       *int64
-	_Success          *bool
-	_RelayerAddress   *[]byte
-	_SourceChainID    *uint64
-	add_SourceChainID *int64
-	_DestChainID      *uint64
-	add_DestChainID   *int64
-	_StreamOffset     *uint64
-	add_StreamOffset  *int64
-	_TxHash           *[]byte
-	_CreatedAt        *time.Time
-	clearedFields     map[string]struct{}
-	_Block            *int
-	cleared_Block     bool
-	_Msgs             map[int]struct{}
-	removed_Msgs      map[int]struct{}
-	cleared_Msgs      bool
-	done              bool
-	oldValue          func(context.Context) (*Receipt, error)
-	predicates        []predicate.Receipt
+	op                 Op
+	typ                string
+	id                 *int
+	block_hash         *[]byte
+	gas_used           *uint64
+	addgas_used        *int64
+	success            *bool
+	relayer_address    *[]byte
+	source_chain_id    *uint64
+	addsource_chain_id *int64
+	dest_chain_id      *uint64
+	adddest_chain_id   *int64
+	_offset            *uint64
+	add_offset         *int64
+	tx_hash            *[]byte
+	created_at         *time.Time
+	clearedFields      map[string]struct{}
+	_Block             map[int]struct{}
+	removed_Block      map[int]struct{}
+	cleared_Block      bool
+	_Msgs              map[int]struct{}
+	removed_Msgs       map[int]struct{}
+	cleared_Msgs       bool
+	done               bool
+	oldValue           func(context.Context) (*Receipt, error)
+	predicates         []predicate.Receipt
 }
 
 var _ ent.Mutation = (*ReceiptMutation)(nil)
@@ -3036,107 +2835,58 @@ func (m *ReceiptMutation) IDs(ctx context.Context) ([]int, error) {
 	}
 }
 
-// SetUUID sets the "UUID" field.
-func (m *ReceiptMutation) SetUUID(u uuid.UUID) {
-	m._UUID = &u
+// SetBlockHash sets the "block_hash" field.
+func (m *ReceiptMutation) SetBlockHash(b []byte) {
+	m.block_hash = &b
 }
 
-// UUID returns the value of the "UUID" field in the mutation.
-func (m *ReceiptMutation) UUID() (r uuid.UUID, exists bool) {
-	v := m._UUID
+// BlockHash returns the value of the "block_hash" field in the mutation.
+func (m *ReceiptMutation) BlockHash() (r []byte, exists bool) {
+	v := m.block_hash
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldUUID returns the old "UUID" field's value of the Receipt entity.
+// OldBlockHash returns the old "block_hash" field's value of the Receipt entity.
 // If the Receipt object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ReceiptMutation) OldUUID(ctx context.Context) (v uuid.UUID, err error) {
+func (m *ReceiptMutation) OldBlockHash(ctx context.Context) (v []byte, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldUUID is only allowed on UpdateOne operations")
+		return v, errors.New("OldBlockHash is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldUUID requires an ID field in the mutation")
+		return v, errors.New("OldBlockHash requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldUUID: %w", err)
+		return v, fmt.Errorf("querying old value for OldBlockHash: %w", err)
 	}
-	return oldValue.UUID, nil
+	return oldValue.BlockHash, nil
 }
 
-// ResetUUID resets all changes to the "UUID" field.
-func (m *ReceiptMutation) ResetUUID() {
-	m._UUID = nil
+// ResetBlockHash resets all changes to the "block_hash" field.
+func (m *ReceiptMutation) ResetBlockHash() {
+	m.block_hash = nil
 }
 
-// SetBlockID sets the "Block_ID" field.
-func (m *ReceiptMutation) SetBlockID(i int) {
-	m._Block = &i
-}
-
-// BlockID returns the value of the "Block_ID" field in the mutation.
-func (m *ReceiptMutation) BlockID() (r int, exists bool) {
-	v := m._Block
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldBlockID returns the old "Block_ID" field's value of the Receipt entity.
-// If the Receipt object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ReceiptMutation) OldBlockID(ctx context.Context) (v int, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldBlockID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldBlockID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldBlockID: %w", err)
-	}
-	return oldValue.BlockID, nil
-}
-
-// ClearBlockID clears the value of the "Block_ID" field.
-func (m *ReceiptMutation) ClearBlockID() {
-	m._Block = nil
-	m.clearedFields[receipt.FieldBlockID] = struct{}{}
-}
-
-// BlockIDCleared returns if the "Block_ID" field was cleared in this mutation.
-func (m *ReceiptMutation) BlockIDCleared() bool {
-	_, ok := m.clearedFields[receipt.FieldBlockID]
-	return ok
-}
-
-// ResetBlockID resets all changes to the "Block_ID" field.
-func (m *ReceiptMutation) ResetBlockID() {
-	m._Block = nil
-	delete(m.clearedFields, receipt.FieldBlockID)
-}
-
-// SetGasUsed sets the "GasUsed" field.
+// SetGasUsed sets the "gas_used" field.
 func (m *ReceiptMutation) SetGasUsed(u uint64) {
-	m._GasUsed = &u
-	m.add_GasUsed = nil
+	m.gas_used = &u
+	m.addgas_used = nil
 }
 
-// GasUsed returns the value of the "GasUsed" field in the mutation.
+// GasUsed returns the value of the "gas_used" field in the mutation.
 func (m *ReceiptMutation) GasUsed() (r uint64, exists bool) {
-	v := m._GasUsed
+	v := m.gas_used
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldGasUsed returns the old "GasUsed" field's value of the Receipt entity.
+// OldGasUsed returns the old "gas_used" field's value of the Receipt entity.
 // If the Receipt object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
 func (m *ReceiptMutation) OldGasUsed(ctx context.Context) (v uint64, err error) {
@@ -3153,45 +2903,45 @@ func (m *ReceiptMutation) OldGasUsed(ctx context.Context) (v uint64, err error) 
 	return oldValue.GasUsed, nil
 }
 
-// AddGasUsed adds u to the "GasUsed" field.
+// AddGasUsed adds u to the "gas_used" field.
 func (m *ReceiptMutation) AddGasUsed(u int64) {
-	if m.add_GasUsed != nil {
-		*m.add_GasUsed += u
+	if m.addgas_used != nil {
+		*m.addgas_used += u
 	} else {
-		m.add_GasUsed = &u
+		m.addgas_used = &u
 	}
 }
 
-// AddedGasUsed returns the value that was added to the "GasUsed" field in this mutation.
+// AddedGasUsed returns the value that was added to the "gas_used" field in this mutation.
 func (m *ReceiptMutation) AddedGasUsed() (r int64, exists bool) {
-	v := m.add_GasUsed
+	v := m.addgas_used
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// ResetGasUsed resets all changes to the "GasUsed" field.
+// ResetGasUsed resets all changes to the "gas_used" field.
 func (m *ReceiptMutation) ResetGasUsed() {
-	m._GasUsed = nil
-	m.add_GasUsed = nil
+	m.gas_used = nil
+	m.addgas_used = nil
 }
 
-// SetSuccess sets the "Success" field.
+// SetSuccess sets the "success" field.
 func (m *ReceiptMutation) SetSuccess(b bool) {
-	m._Success = &b
+	m.success = &b
 }
 
-// Success returns the value of the "Success" field in the mutation.
+// Success returns the value of the "success" field in the mutation.
 func (m *ReceiptMutation) Success() (r bool, exists bool) {
-	v := m._Success
+	v := m.success
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldSuccess returns the old "Success" field's value of the Receipt entity.
+// OldSuccess returns the old "success" field's value of the Receipt entity.
 // If the Receipt object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
 func (m *ReceiptMutation) OldSuccess(ctx context.Context) (v bool, err error) {
@@ -3208,26 +2958,26 @@ func (m *ReceiptMutation) OldSuccess(ctx context.Context) (v bool, err error) {
 	return oldValue.Success, nil
 }
 
-// ResetSuccess resets all changes to the "Success" field.
+// ResetSuccess resets all changes to the "success" field.
 func (m *ReceiptMutation) ResetSuccess() {
-	m._Success = nil
+	m.success = nil
 }
 
-// SetRelayerAddress sets the "RelayerAddress" field.
+// SetRelayerAddress sets the "relayer_address" field.
 func (m *ReceiptMutation) SetRelayerAddress(b []byte) {
-	m._RelayerAddress = &b
+	m.relayer_address = &b
 }
 
-// RelayerAddress returns the value of the "RelayerAddress" field in the mutation.
+// RelayerAddress returns the value of the "relayer_address" field in the mutation.
 func (m *ReceiptMutation) RelayerAddress() (r []byte, exists bool) {
-	v := m._RelayerAddress
+	v := m.relayer_address
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldRelayerAddress returns the old "RelayerAddress" field's value of the Receipt entity.
+// OldRelayerAddress returns the old "relayer_address" field's value of the Receipt entity.
 // If the Receipt object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
 func (m *ReceiptMutation) OldRelayerAddress(ctx context.Context) (v []byte, err error) {
@@ -3244,27 +2994,27 @@ func (m *ReceiptMutation) OldRelayerAddress(ctx context.Context) (v []byte, err 
 	return oldValue.RelayerAddress, nil
 }
 
-// ResetRelayerAddress resets all changes to the "RelayerAddress" field.
+// ResetRelayerAddress resets all changes to the "relayer_address" field.
 func (m *ReceiptMutation) ResetRelayerAddress() {
-	m._RelayerAddress = nil
+	m.relayer_address = nil
 }
 
-// SetSourceChainID sets the "SourceChainID" field.
+// SetSourceChainID sets the "source_chain_id" field.
 func (m *ReceiptMutation) SetSourceChainID(u uint64) {
-	m._SourceChainID = &u
-	m.add_SourceChainID = nil
+	m.source_chain_id = &u
+	m.addsource_chain_id = nil
 }
 
-// SourceChainID returns the value of the "SourceChainID" field in the mutation.
+// SourceChainID returns the value of the "source_chain_id" field in the mutation.
 func (m *ReceiptMutation) SourceChainID() (r uint64, exists bool) {
-	v := m._SourceChainID
+	v := m.source_chain_id
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldSourceChainID returns the old "SourceChainID" field's value of the Receipt entity.
+// OldSourceChainID returns the old "source_chain_id" field's value of the Receipt entity.
 // If the Receipt object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
 func (m *ReceiptMutation) OldSourceChainID(ctx context.Context) (v uint64, err error) {
@@ -3281,46 +3031,46 @@ func (m *ReceiptMutation) OldSourceChainID(ctx context.Context) (v uint64, err e
 	return oldValue.SourceChainID, nil
 }
 
-// AddSourceChainID adds u to the "SourceChainID" field.
+// AddSourceChainID adds u to the "source_chain_id" field.
 func (m *ReceiptMutation) AddSourceChainID(u int64) {
-	if m.add_SourceChainID != nil {
-		*m.add_SourceChainID += u
+	if m.addsource_chain_id != nil {
+		*m.addsource_chain_id += u
 	} else {
-		m.add_SourceChainID = &u
+		m.addsource_chain_id = &u
 	}
 }
 
-// AddedSourceChainID returns the value that was added to the "SourceChainID" field in this mutation.
+// AddedSourceChainID returns the value that was added to the "source_chain_id" field in this mutation.
 func (m *ReceiptMutation) AddedSourceChainID() (r int64, exists bool) {
-	v := m.add_SourceChainID
+	v := m.addsource_chain_id
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// ResetSourceChainID resets all changes to the "SourceChainID" field.
+// ResetSourceChainID resets all changes to the "source_chain_id" field.
 func (m *ReceiptMutation) ResetSourceChainID() {
-	m._SourceChainID = nil
-	m.add_SourceChainID = nil
+	m.source_chain_id = nil
+	m.addsource_chain_id = nil
 }
 
-// SetDestChainID sets the "DestChainID" field.
+// SetDestChainID sets the "dest_chain_id" field.
 func (m *ReceiptMutation) SetDestChainID(u uint64) {
-	m._DestChainID = &u
-	m.add_DestChainID = nil
+	m.dest_chain_id = &u
+	m.adddest_chain_id = nil
 }
 
-// DestChainID returns the value of the "DestChainID" field in the mutation.
+// DestChainID returns the value of the "dest_chain_id" field in the mutation.
 func (m *ReceiptMutation) DestChainID() (r uint64, exists bool) {
-	v := m._DestChainID
+	v := m.dest_chain_id
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldDestChainID returns the old "DestChainID" field's value of the Receipt entity.
+// OldDestChainID returns the old "dest_chain_id" field's value of the Receipt entity.
 // If the Receipt object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
 func (m *ReceiptMutation) OldDestChainID(ctx context.Context) (v uint64, err error) {
@@ -3337,101 +3087,101 @@ func (m *ReceiptMutation) OldDestChainID(ctx context.Context) (v uint64, err err
 	return oldValue.DestChainID, nil
 }
 
-// AddDestChainID adds u to the "DestChainID" field.
+// AddDestChainID adds u to the "dest_chain_id" field.
 func (m *ReceiptMutation) AddDestChainID(u int64) {
-	if m.add_DestChainID != nil {
-		*m.add_DestChainID += u
+	if m.adddest_chain_id != nil {
+		*m.adddest_chain_id += u
 	} else {
-		m.add_DestChainID = &u
+		m.adddest_chain_id = &u
 	}
 }
 
-// AddedDestChainID returns the value that was added to the "DestChainID" field in this mutation.
+// AddedDestChainID returns the value that was added to the "dest_chain_id" field in this mutation.
 func (m *ReceiptMutation) AddedDestChainID() (r int64, exists bool) {
-	v := m.add_DestChainID
+	v := m.adddest_chain_id
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// ResetDestChainID resets all changes to the "DestChainID" field.
+// ResetDestChainID resets all changes to the "dest_chain_id" field.
 func (m *ReceiptMutation) ResetDestChainID() {
-	m._DestChainID = nil
-	m.add_DestChainID = nil
+	m.dest_chain_id = nil
+	m.adddest_chain_id = nil
 }
 
-// SetStreamOffset sets the "StreamOffset" field.
-func (m *ReceiptMutation) SetStreamOffset(u uint64) {
-	m._StreamOffset = &u
-	m.add_StreamOffset = nil
+// SetOffset sets the "offset" field.
+func (m *ReceiptMutation) SetOffset(u uint64) {
+	m._offset = &u
+	m.add_offset = nil
 }
 
-// StreamOffset returns the value of the "StreamOffset" field in the mutation.
-func (m *ReceiptMutation) StreamOffset() (r uint64, exists bool) {
-	v := m._StreamOffset
+// Offset returns the value of the "offset" field in the mutation.
+func (m *ReceiptMutation) Offset() (r uint64, exists bool) {
+	v := m._offset
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldStreamOffset returns the old "StreamOffset" field's value of the Receipt entity.
+// OldOffset returns the old "offset" field's value of the Receipt entity.
 // If the Receipt object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ReceiptMutation) OldStreamOffset(ctx context.Context) (v uint64, err error) {
+func (m *ReceiptMutation) OldOffset(ctx context.Context) (v uint64, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStreamOffset is only allowed on UpdateOne operations")
+		return v, errors.New("OldOffset is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStreamOffset requires an ID field in the mutation")
+		return v, errors.New("OldOffset requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStreamOffset: %w", err)
+		return v, fmt.Errorf("querying old value for OldOffset: %w", err)
 	}
-	return oldValue.StreamOffset, nil
+	return oldValue.Offset, nil
 }
 
-// AddStreamOffset adds u to the "StreamOffset" field.
-func (m *ReceiptMutation) AddStreamOffset(u int64) {
-	if m.add_StreamOffset != nil {
-		*m.add_StreamOffset += u
+// AddOffset adds u to the "offset" field.
+func (m *ReceiptMutation) AddOffset(u int64) {
+	if m.add_offset != nil {
+		*m.add_offset += u
 	} else {
-		m.add_StreamOffset = &u
+		m.add_offset = &u
 	}
 }
 
-// AddedStreamOffset returns the value that was added to the "StreamOffset" field in this mutation.
-func (m *ReceiptMutation) AddedStreamOffset() (r int64, exists bool) {
-	v := m.add_StreamOffset
+// AddedOffset returns the value that was added to the "offset" field in this mutation.
+func (m *ReceiptMutation) AddedOffset() (r int64, exists bool) {
+	v := m.add_offset
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// ResetStreamOffset resets all changes to the "StreamOffset" field.
-func (m *ReceiptMutation) ResetStreamOffset() {
-	m._StreamOffset = nil
-	m.add_StreamOffset = nil
+// ResetOffset resets all changes to the "offset" field.
+func (m *ReceiptMutation) ResetOffset() {
+	m._offset = nil
+	m.add_offset = nil
 }
 
-// SetTxHash sets the "TxHash" field.
+// SetTxHash sets the "tx_hash" field.
 func (m *ReceiptMutation) SetTxHash(b []byte) {
-	m._TxHash = &b
+	m.tx_hash = &b
 }
 
-// TxHash returns the value of the "TxHash" field in the mutation.
+// TxHash returns the value of the "tx_hash" field in the mutation.
 func (m *ReceiptMutation) TxHash() (r []byte, exists bool) {
-	v := m._TxHash
+	v := m.tx_hash
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldTxHash returns the old "TxHash" field's value of the Receipt entity.
+// OldTxHash returns the old "tx_hash" field's value of the Receipt entity.
 // If the Receipt object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
 func (m *ReceiptMutation) OldTxHash(ctx context.Context) (v []byte, err error) {
@@ -3448,26 +3198,26 @@ func (m *ReceiptMutation) OldTxHash(ctx context.Context) (v []byte, err error) {
 	return oldValue.TxHash, nil
 }
 
-// ResetTxHash resets all changes to the "TxHash" field.
+// ResetTxHash resets all changes to the "tx_hash" field.
 func (m *ReceiptMutation) ResetTxHash() {
-	m._TxHash = nil
+	m.tx_hash = nil
 }
 
-// SetCreatedAt sets the "CreatedAt" field.
+// SetCreatedAt sets the "created_at" field.
 func (m *ReceiptMutation) SetCreatedAt(t time.Time) {
-	m._CreatedAt = &t
+	m.created_at = &t
 }
 
-// CreatedAt returns the value of the "CreatedAt" field in the mutation.
+// CreatedAt returns the value of the "created_at" field in the mutation.
 func (m *ReceiptMutation) CreatedAt() (r time.Time, exists bool) {
-	v := m._CreatedAt
+	v := m.created_at
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldCreatedAt returns the old "CreatedAt" field's value of the Receipt entity.
+// OldCreatedAt returns the old "created_at" field's value of the Receipt entity.
 // If the Receipt object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
 func (m *ReceiptMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
@@ -3484,28 +3234,54 @@ func (m *ReceiptMutation) OldCreatedAt(ctx context.Context) (v time.Time, err er
 	return oldValue.CreatedAt, nil
 }
 
-// ResetCreatedAt resets all changes to the "CreatedAt" field.
+// ResetCreatedAt resets all changes to the "created_at" field.
 func (m *ReceiptMutation) ResetCreatedAt() {
-	m._CreatedAt = nil
+	m.created_at = nil
+}
+
+// AddBlockIDs adds the "Block" edge to the Block entity by ids.
+func (m *ReceiptMutation) AddBlockIDs(ids ...int) {
+	if m._Block == nil {
+		m._Block = make(map[int]struct{})
+	}
+	for i := range ids {
+		m._Block[ids[i]] = struct{}{}
+	}
 }
 
 // ClearBlock clears the "Block" edge to the Block entity.
 func (m *ReceiptMutation) ClearBlock() {
 	m.cleared_Block = true
-	m.clearedFields[receipt.FieldBlockID] = struct{}{}
 }
 
 // BlockCleared reports if the "Block" edge to the Block entity was cleared.
 func (m *ReceiptMutation) BlockCleared() bool {
-	return m.BlockIDCleared() || m.cleared_Block
+	return m.cleared_Block
+}
+
+// RemoveBlockIDs removes the "Block" edge to the Block entity by IDs.
+func (m *ReceiptMutation) RemoveBlockIDs(ids ...int) {
+	if m.removed_Block == nil {
+		m.removed_Block = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m._Block, ids[i])
+		m.removed_Block[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedBlock returns the removed IDs of the "Block" edge to the Block entity.
+func (m *ReceiptMutation) RemovedBlockIDs() (ids []int) {
+	for id := range m.removed_Block {
+		ids = append(ids, id)
+	}
+	return
 }
 
 // BlockIDs returns the "Block" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// BlockID instead. It exists only for internal usage by the builders.
 func (m *ReceiptMutation) BlockIDs() (ids []int) {
-	if id := m._Block; id != nil {
-		ids = append(ids, *id)
+	for id := range m._Block {
+		ids = append(ids, id)
 	}
 	return
 }
@@ -3514,6 +3290,7 @@ func (m *ReceiptMutation) BlockIDs() (ids []int) {
 func (m *ReceiptMutation) ResetBlock() {
 	m._Block = nil
 	m.cleared_Block = false
+	m.removed_Block = nil
 }
 
 // AddMsgIDs adds the "Msgs" edge to the Msg entity by ids.
@@ -3604,35 +3381,32 @@ func (m *ReceiptMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ReceiptMutation) Fields() []string {
-	fields := make([]string, 0, 10)
-	if m._UUID != nil {
-		fields = append(fields, receipt.FieldUUID)
+	fields := make([]string, 0, 9)
+	if m.block_hash != nil {
+		fields = append(fields, receipt.FieldBlockHash)
 	}
-	if m._Block != nil {
-		fields = append(fields, receipt.FieldBlockID)
-	}
-	if m._GasUsed != nil {
+	if m.gas_used != nil {
 		fields = append(fields, receipt.FieldGasUsed)
 	}
-	if m._Success != nil {
+	if m.success != nil {
 		fields = append(fields, receipt.FieldSuccess)
 	}
-	if m._RelayerAddress != nil {
+	if m.relayer_address != nil {
 		fields = append(fields, receipt.FieldRelayerAddress)
 	}
-	if m._SourceChainID != nil {
+	if m.source_chain_id != nil {
 		fields = append(fields, receipt.FieldSourceChainID)
 	}
-	if m._DestChainID != nil {
+	if m.dest_chain_id != nil {
 		fields = append(fields, receipt.FieldDestChainID)
 	}
-	if m._StreamOffset != nil {
-		fields = append(fields, receipt.FieldStreamOffset)
+	if m._offset != nil {
+		fields = append(fields, receipt.FieldOffset)
 	}
-	if m._TxHash != nil {
+	if m.tx_hash != nil {
 		fields = append(fields, receipt.FieldTxHash)
 	}
-	if m._CreatedAt != nil {
+	if m.created_at != nil {
 		fields = append(fields, receipt.FieldCreatedAt)
 	}
 	return fields
@@ -3643,10 +3417,8 @@ func (m *ReceiptMutation) Fields() []string {
 // schema.
 func (m *ReceiptMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case receipt.FieldUUID:
-		return m.UUID()
-	case receipt.FieldBlockID:
-		return m.BlockID()
+	case receipt.FieldBlockHash:
+		return m.BlockHash()
 	case receipt.FieldGasUsed:
 		return m.GasUsed()
 	case receipt.FieldSuccess:
@@ -3657,8 +3429,8 @@ func (m *ReceiptMutation) Field(name string) (ent.Value, bool) {
 		return m.SourceChainID()
 	case receipt.FieldDestChainID:
 		return m.DestChainID()
-	case receipt.FieldStreamOffset:
-		return m.StreamOffset()
+	case receipt.FieldOffset:
+		return m.Offset()
 	case receipt.FieldTxHash:
 		return m.TxHash()
 	case receipt.FieldCreatedAt:
@@ -3672,10 +3444,8 @@ func (m *ReceiptMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *ReceiptMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case receipt.FieldUUID:
-		return m.OldUUID(ctx)
-	case receipt.FieldBlockID:
-		return m.OldBlockID(ctx)
+	case receipt.FieldBlockHash:
+		return m.OldBlockHash(ctx)
 	case receipt.FieldGasUsed:
 		return m.OldGasUsed(ctx)
 	case receipt.FieldSuccess:
@@ -3686,8 +3456,8 @@ func (m *ReceiptMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldSourceChainID(ctx)
 	case receipt.FieldDestChainID:
 		return m.OldDestChainID(ctx)
-	case receipt.FieldStreamOffset:
-		return m.OldStreamOffset(ctx)
+	case receipt.FieldOffset:
+		return m.OldOffset(ctx)
 	case receipt.FieldTxHash:
 		return m.OldTxHash(ctx)
 	case receipt.FieldCreatedAt:
@@ -3701,19 +3471,12 @@ func (m *ReceiptMutation) OldField(ctx context.Context, name string) (ent.Value,
 // type.
 func (m *ReceiptMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case receipt.FieldUUID:
-		v, ok := value.(uuid.UUID)
+	case receipt.FieldBlockHash:
+		v, ok := value.([]byte)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetUUID(v)
-		return nil
-	case receipt.FieldBlockID:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetBlockID(v)
+		m.SetBlockHash(v)
 		return nil
 	case receipt.FieldGasUsed:
 		v, ok := value.(uint64)
@@ -3750,12 +3513,12 @@ func (m *ReceiptMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDestChainID(v)
 		return nil
-	case receipt.FieldStreamOffset:
+	case receipt.FieldOffset:
 		v, ok := value.(uint64)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetStreamOffset(v)
+		m.SetOffset(v)
 		return nil
 	case receipt.FieldTxHash:
 		v, ok := value.([]byte)
@@ -3779,17 +3542,17 @@ func (m *ReceiptMutation) SetField(name string, value ent.Value) error {
 // this mutation.
 func (m *ReceiptMutation) AddedFields() []string {
 	var fields []string
-	if m.add_GasUsed != nil {
+	if m.addgas_used != nil {
 		fields = append(fields, receipt.FieldGasUsed)
 	}
-	if m.add_SourceChainID != nil {
+	if m.addsource_chain_id != nil {
 		fields = append(fields, receipt.FieldSourceChainID)
 	}
-	if m.add_DestChainID != nil {
+	if m.adddest_chain_id != nil {
 		fields = append(fields, receipt.FieldDestChainID)
 	}
-	if m.add_StreamOffset != nil {
-		fields = append(fields, receipt.FieldStreamOffset)
+	if m.add_offset != nil {
+		fields = append(fields, receipt.FieldOffset)
 	}
 	return fields
 }
@@ -3805,8 +3568,8 @@ func (m *ReceiptMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedSourceChainID()
 	case receipt.FieldDestChainID:
 		return m.AddedDestChainID()
-	case receipt.FieldStreamOffset:
-		return m.AddedStreamOffset()
+	case receipt.FieldOffset:
+		return m.AddedOffset()
 	}
 	return nil, false
 }
@@ -3837,12 +3600,12 @@ func (m *ReceiptMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddDestChainID(v)
 		return nil
-	case receipt.FieldStreamOffset:
+	case receipt.FieldOffset:
 		v, ok := value.(int64)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.AddStreamOffset(v)
+		m.AddOffset(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Receipt numeric field %s", name)
@@ -3851,11 +3614,7 @@ func (m *ReceiptMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *ReceiptMutation) ClearedFields() []string {
-	var fields []string
-	if m.FieldCleared(receipt.FieldBlockID) {
-		fields = append(fields, receipt.FieldBlockID)
-	}
-	return fields
+	return nil
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -3868,11 +3627,6 @@ func (m *ReceiptMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *ReceiptMutation) ClearField(name string) error {
-	switch name {
-	case receipt.FieldBlockID:
-		m.ClearBlockID()
-		return nil
-	}
 	return fmt.Errorf("unknown Receipt nullable field %s", name)
 }
 
@@ -3880,11 +3634,8 @@ func (m *ReceiptMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *ReceiptMutation) ResetField(name string) error {
 	switch name {
-	case receipt.FieldUUID:
-		m.ResetUUID()
-		return nil
-	case receipt.FieldBlockID:
-		m.ResetBlockID()
+	case receipt.FieldBlockHash:
+		m.ResetBlockHash()
 		return nil
 	case receipt.FieldGasUsed:
 		m.ResetGasUsed()
@@ -3901,8 +3652,8 @@ func (m *ReceiptMutation) ResetField(name string) error {
 	case receipt.FieldDestChainID:
 		m.ResetDestChainID()
 		return nil
-	case receipt.FieldStreamOffset:
-		m.ResetStreamOffset()
+	case receipt.FieldOffset:
+		m.ResetOffset()
 		return nil
 	case receipt.FieldTxHash:
 		m.ResetTxHash()
@@ -3931,9 +3682,11 @@ func (m *ReceiptMutation) AddedEdges() []string {
 func (m *ReceiptMutation) AddedIDs(name string) []ent.Value {
 	switch name {
 	case receipt.EdgeBlock:
-		if id := m._Block; id != nil {
-			return []ent.Value{*id}
+		ids := make([]ent.Value, 0, len(m._Block))
+		for id := range m._Block {
+			ids = append(ids, id)
 		}
+		return ids
 	case receipt.EdgeMsgs:
 		ids := make([]ent.Value, 0, len(m._Msgs))
 		for id := range m._Msgs {
@@ -3947,6 +3700,9 @@ func (m *ReceiptMutation) AddedIDs(name string) []ent.Value {
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ReceiptMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 2)
+	if m.removed_Block != nil {
+		edges = append(edges, receipt.EdgeBlock)
+	}
 	if m.removed_Msgs != nil {
 		edges = append(edges, receipt.EdgeMsgs)
 	}
@@ -3957,6 +3713,12 @@ func (m *ReceiptMutation) RemovedEdges() []string {
 // the given name in this mutation.
 func (m *ReceiptMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
+	case receipt.EdgeBlock:
+		ids := make([]ent.Value, 0, len(m.removed_Block))
+		for id := range m.removed_Block {
+			ids = append(ids, id)
+		}
+		return ids
 	case receipt.EdgeMsgs:
 		ids := make([]ent.Value, 0, len(m.removed_Msgs))
 		for id := range m.removed_Msgs {
@@ -3995,9 +3757,6 @@ func (m *ReceiptMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *ReceiptMutation) ClearEdge(name string) error {
 	switch name {
-	case receipt.EdgeBlock:
-		m.ClearBlock()
-		return nil
 	}
 	return fmt.Errorf("unknown Receipt unique edge %s", name)
 }
@@ -4021,14 +3780,13 @@ type XProviderCursorMutation struct {
 	config
 	op            Op
 	typ           string
-	id            *int
-	_UUID         *uuid.UUID
-	_ChainID      *uint64
-	add_ChainID   *int64
-	_Height       *uint64
-	add_Height    *int64
-	_CreatedAt    *time.Time
-	_UpdatedAt    *time.Time
+	id            *uuid.UUID
+	chain_id      *uint64
+	addchain_id   *int64
+	height        *uint64
+	addheight     *int64
+	created_at    *time.Time
+	updated_at    *time.Time
 	clearedFields map[string]struct{}
 	done          bool
 	oldValue      func(context.Context) (*XProviderCursor, error)
@@ -4055,7 +3813,7 @@ func newXProviderCursorMutation(c config, op Op, opts ...xprovidercursorOption) 
 }
 
 // withXProviderCursorID sets the ID field of the mutation.
-func withXProviderCursorID(id int) xprovidercursorOption {
+func withXProviderCursorID(id uuid.UUID) xprovidercursorOption {
 	return func(m *XProviderCursorMutation) {
 		var (
 			err   error
@@ -4105,9 +3863,15 @@ func (m XProviderCursorMutation) Tx() (*Tx, error) {
 	return tx, nil
 }
 
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of XProviderCursor entities.
+func (m *XProviderCursorMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *XProviderCursorMutation) ID() (id int, exists bool) {
+func (m *XProviderCursorMutation) ID() (id uuid.UUID, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -4118,12 +3882,12 @@ func (m *XProviderCursorMutation) ID() (id int, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *XProviderCursorMutation) IDs(ctx context.Context) ([]int, error) {
+func (m *XProviderCursorMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
 		if exists {
-			return []int{id}, nil
+			return []uuid.UUID{id}, nil
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
@@ -4133,58 +3897,22 @@ func (m *XProviderCursorMutation) IDs(ctx context.Context) ([]int, error) {
 	}
 }
 
-// SetUUID sets the "UUID" field.
-func (m *XProviderCursorMutation) SetUUID(u uuid.UUID) {
-	m._UUID = &u
-}
-
-// UUID returns the value of the "UUID" field in the mutation.
-func (m *XProviderCursorMutation) UUID() (r uuid.UUID, exists bool) {
-	v := m._UUID
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldUUID returns the old "UUID" field's value of the XProviderCursor entity.
-// If the XProviderCursor object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *XProviderCursorMutation) OldUUID(ctx context.Context) (v uuid.UUID, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldUUID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldUUID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldUUID: %w", err)
-	}
-	return oldValue.UUID, nil
-}
-
-// ResetUUID resets all changes to the "UUID" field.
-func (m *XProviderCursorMutation) ResetUUID() {
-	m._UUID = nil
-}
-
-// SetChainID sets the "ChainID" field.
+// SetChainID sets the "chain_id" field.
 func (m *XProviderCursorMutation) SetChainID(u uint64) {
-	m._ChainID = &u
-	m.add_ChainID = nil
+	m.chain_id = &u
+	m.addchain_id = nil
 }
 
-// ChainID returns the value of the "ChainID" field in the mutation.
+// ChainID returns the value of the "chain_id" field in the mutation.
 func (m *XProviderCursorMutation) ChainID() (r uint64, exists bool) {
-	v := m._ChainID
+	v := m.chain_id
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldChainID returns the old "ChainID" field's value of the XProviderCursor entity.
+// OldChainID returns the old "chain_id" field's value of the XProviderCursor entity.
 // If the XProviderCursor object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
 func (m *XProviderCursorMutation) OldChainID(ctx context.Context) (v uint64, err error) {
@@ -4201,46 +3929,46 @@ func (m *XProviderCursorMutation) OldChainID(ctx context.Context) (v uint64, err
 	return oldValue.ChainID, nil
 }
 
-// AddChainID adds u to the "ChainID" field.
+// AddChainID adds u to the "chain_id" field.
 func (m *XProviderCursorMutation) AddChainID(u int64) {
-	if m.add_ChainID != nil {
-		*m.add_ChainID += u
+	if m.addchain_id != nil {
+		*m.addchain_id += u
 	} else {
-		m.add_ChainID = &u
+		m.addchain_id = &u
 	}
 }
 
-// AddedChainID returns the value that was added to the "ChainID" field in this mutation.
+// AddedChainID returns the value that was added to the "chain_id" field in this mutation.
 func (m *XProviderCursorMutation) AddedChainID() (r int64, exists bool) {
-	v := m.add_ChainID
+	v := m.addchain_id
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// ResetChainID resets all changes to the "ChainID" field.
+// ResetChainID resets all changes to the "chain_id" field.
 func (m *XProviderCursorMutation) ResetChainID() {
-	m._ChainID = nil
-	m.add_ChainID = nil
+	m.chain_id = nil
+	m.addchain_id = nil
 }
 
-// SetHeight sets the "Height" field.
+// SetHeight sets the "height" field.
 func (m *XProviderCursorMutation) SetHeight(u uint64) {
-	m._Height = &u
-	m.add_Height = nil
+	m.height = &u
+	m.addheight = nil
 }
 
-// Height returns the value of the "Height" field in the mutation.
+// Height returns the value of the "height" field in the mutation.
 func (m *XProviderCursorMutation) Height() (r uint64, exists bool) {
-	v := m._Height
+	v := m.height
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldHeight returns the old "Height" field's value of the XProviderCursor entity.
+// OldHeight returns the old "height" field's value of the XProviderCursor entity.
 // If the XProviderCursor object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
 func (m *XProviderCursorMutation) OldHeight(ctx context.Context) (v uint64, err error) {
@@ -4257,45 +3985,45 @@ func (m *XProviderCursorMutation) OldHeight(ctx context.Context) (v uint64, err 
 	return oldValue.Height, nil
 }
 
-// AddHeight adds u to the "Height" field.
+// AddHeight adds u to the "height" field.
 func (m *XProviderCursorMutation) AddHeight(u int64) {
-	if m.add_Height != nil {
-		*m.add_Height += u
+	if m.addheight != nil {
+		*m.addheight += u
 	} else {
-		m.add_Height = &u
+		m.addheight = &u
 	}
 }
 
-// AddedHeight returns the value that was added to the "Height" field in this mutation.
+// AddedHeight returns the value that was added to the "height" field in this mutation.
 func (m *XProviderCursorMutation) AddedHeight() (r int64, exists bool) {
-	v := m.add_Height
+	v := m.addheight
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// ResetHeight resets all changes to the "Height" field.
+// ResetHeight resets all changes to the "height" field.
 func (m *XProviderCursorMutation) ResetHeight() {
-	m._Height = nil
-	m.add_Height = nil
+	m.height = nil
+	m.addheight = nil
 }
 
-// SetCreatedAt sets the "CreatedAt" field.
+// SetCreatedAt sets the "created_at" field.
 func (m *XProviderCursorMutation) SetCreatedAt(t time.Time) {
-	m._CreatedAt = &t
+	m.created_at = &t
 }
 
-// CreatedAt returns the value of the "CreatedAt" field in the mutation.
+// CreatedAt returns the value of the "created_at" field in the mutation.
 func (m *XProviderCursorMutation) CreatedAt() (r time.Time, exists bool) {
-	v := m._CreatedAt
+	v := m.created_at
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldCreatedAt returns the old "CreatedAt" field's value of the XProviderCursor entity.
+// OldCreatedAt returns the old "created_at" field's value of the XProviderCursor entity.
 // If the XProviderCursor object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
 func (m *XProviderCursorMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
@@ -4312,26 +4040,26 @@ func (m *XProviderCursorMutation) OldCreatedAt(ctx context.Context) (v time.Time
 	return oldValue.CreatedAt, nil
 }
 
-// ResetCreatedAt resets all changes to the "CreatedAt" field.
+// ResetCreatedAt resets all changes to the "created_at" field.
 func (m *XProviderCursorMutation) ResetCreatedAt() {
-	m._CreatedAt = nil
+	m.created_at = nil
 }
 
-// SetUpdatedAt sets the "UpdatedAt" field.
+// SetUpdatedAt sets the "updated_at" field.
 func (m *XProviderCursorMutation) SetUpdatedAt(t time.Time) {
-	m._UpdatedAt = &t
+	m.updated_at = &t
 }
 
-// UpdatedAt returns the value of the "UpdatedAt" field in the mutation.
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
 func (m *XProviderCursorMutation) UpdatedAt() (r time.Time, exists bool) {
-	v := m._UpdatedAt
+	v := m.updated_at
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldUpdatedAt returns the old "UpdatedAt" field's value of the XProviderCursor entity.
+// OldUpdatedAt returns the old "updated_at" field's value of the XProviderCursor entity.
 // If the XProviderCursor object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
 func (m *XProviderCursorMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
@@ -4348,9 +4076,9 @@ func (m *XProviderCursorMutation) OldUpdatedAt(ctx context.Context) (v time.Time
 	return oldValue.UpdatedAt, nil
 }
 
-// ResetUpdatedAt resets all changes to the "UpdatedAt" field.
+// ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *XProviderCursorMutation) ResetUpdatedAt() {
-	m._UpdatedAt = nil
+	m.updated_at = nil
 }
 
 // Where appends a list predicates to the XProviderCursorMutation builder.
@@ -4387,20 +4115,17 @@ func (m *XProviderCursorMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *XProviderCursorMutation) Fields() []string {
-	fields := make([]string, 0, 5)
-	if m._UUID != nil {
-		fields = append(fields, xprovidercursor.FieldUUID)
-	}
-	if m._ChainID != nil {
+	fields := make([]string, 0, 4)
+	if m.chain_id != nil {
 		fields = append(fields, xprovidercursor.FieldChainID)
 	}
-	if m._Height != nil {
+	if m.height != nil {
 		fields = append(fields, xprovidercursor.FieldHeight)
 	}
-	if m._CreatedAt != nil {
+	if m.created_at != nil {
 		fields = append(fields, xprovidercursor.FieldCreatedAt)
 	}
-	if m._UpdatedAt != nil {
+	if m.updated_at != nil {
 		fields = append(fields, xprovidercursor.FieldUpdatedAt)
 	}
 	return fields
@@ -4411,8 +4136,6 @@ func (m *XProviderCursorMutation) Fields() []string {
 // schema.
 func (m *XProviderCursorMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case xprovidercursor.FieldUUID:
-		return m.UUID()
 	case xprovidercursor.FieldChainID:
 		return m.ChainID()
 	case xprovidercursor.FieldHeight:
@@ -4430,8 +4153,6 @@ func (m *XProviderCursorMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *XProviderCursorMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case xprovidercursor.FieldUUID:
-		return m.OldUUID(ctx)
 	case xprovidercursor.FieldChainID:
 		return m.OldChainID(ctx)
 	case xprovidercursor.FieldHeight:
@@ -4449,13 +4170,6 @@ func (m *XProviderCursorMutation) OldField(ctx context.Context, name string) (en
 // type.
 func (m *XProviderCursorMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case xprovidercursor.FieldUUID:
-		v, ok := value.(uuid.UUID)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetUUID(v)
-		return nil
 	case xprovidercursor.FieldChainID:
 		v, ok := value.(uint64)
 		if !ok {
@@ -4492,10 +4206,10 @@ func (m *XProviderCursorMutation) SetField(name string, value ent.Value) error {
 // this mutation.
 func (m *XProviderCursorMutation) AddedFields() []string {
 	var fields []string
-	if m.add_ChainID != nil {
+	if m.addchain_id != nil {
 		fields = append(fields, xprovidercursor.FieldChainID)
 	}
-	if m.add_Height != nil {
+	if m.addheight != nil {
 		fields = append(fields, xprovidercursor.FieldHeight)
 	}
 	return fields
@@ -4560,9 +4274,6 @@ func (m *XProviderCursorMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *XProviderCursorMutation) ResetField(name string) error {
 	switch name {
-	case xprovidercursor.FieldUUID:
-		m.ResetUUID()
-		return nil
 	case xprovidercursor.FieldChainID:
 		m.ResetChainID()
 		return nil

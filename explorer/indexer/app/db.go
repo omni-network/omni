@@ -100,11 +100,10 @@ func cursor(ctx context.Context, client *ent.XProviderCursorClient, chainID uint
 
 func insertBlock(ctx context.Context, tx *ent.Tx, block xchain.Block) (*ent.Block, error) {
 	b, err := tx.Block.Create().
-		SetBlockHeight(block.BlockHeight).
-		SetBlockHash(block.BlockHash[:]).
-		SetSourceChainID(block.SourceChainID).
+		SetHeight(block.BlockHeight).
+		SetHash(block.BlockHash[:]).
+		SetChainID(block.SourceChainID).
 		SetTimestamp(block.Timestamp).
-		SetCreatedAt(time.Now()).
 		Save(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "inserting block to db")
@@ -117,13 +116,13 @@ func insertMessages(ctx context.Context, tx *ent.Tx, block xchain.Block, dbBlock
 	for _, m := range block.Msgs {
 		msg, err := tx.Msg.Create().
 			SetData(m.Data).
-			SetDestAddress(m.DestAddress[:]).
+			SetTo(m.DestAddress[:]).
 			SetDestChainID(m.DestChainID).
 			SetCreatedAt(time.Now()).
 			SetSourceChainID(m.SourceChainID).
-			SetDestGasLimit(m.DestGasLimit).
-			SetSourceMsgSender(m.SourceMsgSender[:]).
-			SetStreamOffset(m.StreamOffset).
+			SetGasLimit(m.DestGasLimit).
+			SetSender(m.SourceMsgSender[:]).
+			SetOffset(m.StreamOffset).
 			SetTxHash(m.TxHash[:]).
 			SetCreatedAt(time.Now()).
 			SetBlockHash(block.BlockHash[:]).
@@ -147,9 +146,10 @@ func insertReceipts(ctx context.Context, tx *ent.Tx, block xchain.Block, dbBlock
 	for _, r := range block.Receipts {
 		receipt, err := tx.Receipt.Create().
 			SetGasUsed(r.GasUsed).
+			SetBlockHash(block.BlockHash[:]).
 			SetDestChainID(r.DestChainID).
 			SetSourceChainID(r.SourceChainID).
-			SetStreamOffset(r.StreamOffset).
+			SetOffset(r.StreamOffset).
 			SetSuccess(r.Success).
 			SetRelayerAddress(r.RelayerAddress.Bytes()).
 			SetTxHash(r.TxHash.Bytes()).

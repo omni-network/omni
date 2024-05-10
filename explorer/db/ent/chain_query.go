@@ -261,12 +261,12 @@ func (cq *ChainQuery) Clone() *ChainQuery {
 // Example:
 //
 //	var v []struct {
-//		UUID uuid.UUID `json:"UUID,omitempty"`
+//		ChainID uint64 `json:"chain_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Chain.Query().
-//		GroupBy(chain.FieldUUID).
+//		GroupBy(chain.FieldChainID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (cq *ChainQuery) GroupBy(field string, fields ...string) *ChainGroupBy {
@@ -284,11 +284,11 @@ func (cq *ChainQuery) GroupBy(field string, fields ...string) *ChainGroupBy {
 // Example:
 //
 //	var v []struct {
-//		UUID uuid.UUID `json:"UUID,omitempty"`
+//		ChainID uint64 `json:"chain_id,omitempty"`
 //	}
 //
 //	client.Chain.Query().
-//		Select(chain.FieldUUID).
+//		Select(chain.FieldChainID).
 //		Scan(ctx, &v)
 func (cq *ChainQuery) Select(fields ...string) *ChainSelect {
 	cq.ctx.Fields = append(cq.ctx.Fields, fields...)

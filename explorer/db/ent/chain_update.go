@@ -11,7 +11,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/omni-network/omni/explorer/db/ent/chain"
 	"github.com/omni-network/omni/explorer/db/ent/predicate"
 )
@@ -29,42 +28,14 @@ func (cu *ChainUpdate) Where(ps ...predicate.Chain) *ChainUpdate {
 	return cu
 }
 
-// SetUUID sets the "UUID" field.
-func (cu *ChainUpdate) SetUUID(u uuid.UUID) *ChainUpdate {
-	cu.mutation.SetUUID(u)
-	return cu
-}
-
-// SetNillableUUID sets the "UUID" field if the given value is not nil.
-func (cu *ChainUpdate) SetNillableUUID(u *uuid.UUID) *ChainUpdate {
-	if u != nil {
-		cu.SetUUID(*u)
-	}
-	return cu
-}
-
-// SetCreatedAt sets the "CreatedAt" field.
-func (cu *ChainUpdate) SetCreatedAt(t time.Time) *ChainUpdate {
-	cu.mutation.SetCreatedAt(t)
-	return cu
-}
-
-// SetNillableCreatedAt sets the "CreatedAt" field if the given value is not nil.
-func (cu *ChainUpdate) SetNillableCreatedAt(t *time.Time) *ChainUpdate {
-	if t != nil {
-		cu.SetCreatedAt(*t)
-	}
-	return cu
-}
-
-// SetChainID sets the "ChainID" field.
+// SetChainID sets the "chain_id" field.
 func (cu *ChainUpdate) SetChainID(u uint64) *ChainUpdate {
 	cu.mutation.ResetChainID()
 	cu.mutation.SetChainID(u)
 	return cu
 }
 
-// SetNillableChainID sets the "ChainID" field if the given value is not nil.
+// SetNillableChainID sets the "chain_id" field if the given value is not nil.
 func (cu *ChainUpdate) SetNillableChainID(u *uint64) *ChainUpdate {
 	if u != nil {
 		cu.SetChainID(*u)
@@ -72,19 +43,33 @@ func (cu *ChainUpdate) SetNillableChainID(u *uint64) *ChainUpdate {
 	return cu
 }
 
-// AddChainID adds u to the "ChainID" field.
+// AddChainID adds u to the "chain_id" field.
 func (cu *ChainUpdate) AddChainID(u int64) *ChainUpdate {
 	cu.mutation.AddChainID(u)
 	return cu
 }
 
-// SetName sets the "Name" field.
+// SetCreatedAt sets the "created_at" field.
+func (cu *ChainUpdate) SetCreatedAt(t time.Time) *ChainUpdate {
+	cu.mutation.SetCreatedAt(t)
+	return cu
+}
+
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
+func (cu *ChainUpdate) SetNillableCreatedAt(t *time.Time) *ChainUpdate {
+	if t != nil {
+		cu.SetCreatedAt(*t)
+	}
+	return cu
+}
+
+// SetName sets the "name" field.
 func (cu *ChainUpdate) SetName(s string) *ChainUpdate {
 	cu.mutation.SetName(s)
 	return cu
 }
 
-// SetNillableName sets the "Name" field if the given value is not nil.
+// SetNillableName sets the "name" field if the given value is not nil.
 func (cu *ChainUpdate) SetNillableName(s *string) *ChainUpdate {
 	if s != nil {
 		cu.SetName(*s)
@@ -133,17 +118,14 @@ func (cu *ChainUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := cu.mutation.UUID(); ok {
-		_spec.SetField(chain.FieldUUID, field.TypeUUID, value)
-	}
-	if value, ok := cu.mutation.CreatedAt(); ok {
-		_spec.SetField(chain.FieldCreatedAt, field.TypeTime, value)
-	}
 	if value, ok := cu.mutation.ChainID(); ok {
 		_spec.SetField(chain.FieldChainID, field.TypeUint64, value)
 	}
 	if value, ok := cu.mutation.AddedChainID(); ok {
 		_spec.AddField(chain.FieldChainID, field.TypeUint64, value)
+	}
+	if value, ok := cu.mutation.CreatedAt(); ok {
+		_spec.SetField(chain.FieldCreatedAt, field.TypeTime, value)
 	}
 	if value, ok := cu.mutation.Name(); ok {
 		_spec.SetField(chain.FieldName, field.TypeString, value)
@@ -168,42 +150,14 @@ type ChainUpdateOne struct {
 	mutation *ChainMutation
 }
 
-// SetUUID sets the "UUID" field.
-func (cuo *ChainUpdateOne) SetUUID(u uuid.UUID) *ChainUpdateOne {
-	cuo.mutation.SetUUID(u)
-	return cuo
-}
-
-// SetNillableUUID sets the "UUID" field if the given value is not nil.
-func (cuo *ChainUpdateOne) SetNillableUUID(u *uuid.UUID) *ChainUpdateOne {
-	if u != nil {
-		cuo.SetUUID(*u)
-	}
-	return cuo
-}
-
-// SetCreatedAt sets the "CreatedAt" field.
-func (cuo *ChainUpdateOne) SetCreatedAt(t time.Time) *ChainUpdateOne {
-	cuo.mutation.SetCreatedAt(t)
-	return cuo
-}
-
-// SetNillableCreatedAt sets the "CreatedAt" field if the given value is not nil.
-func (cuo *ChainUpdateOne) SetNillableCreatedAt(t *time.Time) *ChainUpdateOne {
-	if t != nil {
-		cuo.SetCreatedAt(*t)
-	}
-	return cuo
-}
-
-// SetChainID sets the "ChainID" field.
+// SetChainID sets the "chain_id" field.
 func (cuo *ChainUpdateOne) SetChainID(u uint64) *ChainUpdateOne {
 	cuo.mutation.ResetChainID()
 	cuo.mutation.SetChainID(u)
 	return cuo
 }
 
-// SetNillableChainID sets the "ChainID" field if the given value is not nil.
+// SetNillableChainID sets the "chain_id" field if the given value is not nil.
 func (cuo *ChainUpdateOne) SetNillableChainID(u *uint64) *ChainUpdateOne {
 	if u != nil {
 		cuo.SetChainID(*u)
@@ -211,19 +165,33 @@ func (cuo *ChainUpdateOne) SetNillableChainID(u *uint64) *ChainUpdateOne {
 	return cuo
 }
 
-// AddChainID adds u to the "ChainID" field.
+// AddChainID adds u to the "chain_id" field.
 func (cuo *ChainUpdateOne) AddChainID(u int64) *ChainUpdateOne {
 	cuo.mutation.AddChainID(u)
 	return cuo
 }
 
-// SetName sets the "Name" field.
+// SetCreatedAt sets the "created_at" field.
+func (cuo *ChainUpdateOne) SetCreatedAt(t time.Time) *ChainUpdateOne {
+	cuo.mutation.SetCreatedAt(t)
+	return cuo
+}
+
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
+func (cuo *ChainUpdateOne) SetNillableCreatedAt(t *time.Time) *ChainUpdateOne {
+	if t != nil {
+		cuo.SetCreatedAt(*t)
+	}
+	return cuo
+}
+
+// SetName sets the "name" field.
 func (cuo *ChainUpdateOne) SetName(s string) *ChainUpdateOne {
 	cuo.mutation.SetName(s)
 	return cuo
 }
 
-// SetNillableName sets the "Name" field if the given value is not nil.
+// SetNillableName sets the "name" field if the given value is not nil.
 func (cuo *ChainUpdateOne) SetNillableName(s *string) *ChainUpdateOne {
 	if s != nil {
 		cuo.SetName(*s)
@@ -302,17 +270,14 @@ func (cuo *ChainUpdateOne) sqlSave(ctx context.Context) (_node *Chain, err error
 			}
 		}
 	}
-	if value, ok := cuo.mutation.UUID(); ok {
-		_spec.SetField(chain.FieldUUID, field.TypeUUID, value)
-	}
-	if value, ok := cuo.mutation.CreatedAt(); ok {
-		_spec.SetField(chain.FieldCreatedAt, field.TypeTime, value)
-	}
 	if value, ok := cuo.mutation.ChainID(); ok {
 		_spec.SetField(chain.FieldChainID, field.TypeUint64, value)
 	}
 	if value, ok := cuo.mutation.AddedChainID(); ok {
 		_spec.AddField(chain.FieldChainID, field.TypeUint64, value)
+	}
+	if value, ok := cuo.mutation.CreatedAt(); ok {
+		_spec.SetField(chain.FieldCreatedAt, field.TypeTime, value)
 	}
 	if value, ok := cuo.mutation.Name(); ok {
 		_spec.SetField(chain.FieldName, field.TypeString, value)

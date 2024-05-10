@@ -40,7 +40,7 @@ func (xcd *XProviderCursorDelete) ExecX(ctx context.Context) int {
 }
 
 func (xcd *XProviderCursorDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(xprovidercursor.Table, sqlgraph.NewFieldSpec(xprovidercursor.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewDeleteSpec(xprovidercursor.Table, sqlgraph.NewFieldSpec(xprovidercursor.FieldID, field.TypeUUID))
 	if ps := xcd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

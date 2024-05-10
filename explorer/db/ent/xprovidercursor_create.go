@@ -21,39 +21,25 @@ type XProviderCursorCreate struct {
 	hooks    []Hook
 }
 
-// SetUUID sets the "UUID" field.
-func (xcc *XProviderCursorCreate) SetUUID(u uuid.UUID) *XProviderCursorCreate {
-	xcc.mutation.SetUUID(u)
-	return xcc
-}
-
-// SetNillableUUID sets the "UUID" field if the given value is not nil.
-func (xcc *XProviderCursorCreate) SetNillableUUID(u *uuid.UUID) *XProviderCursorCreate {
-	if u != nil {
-		xcc.SetUUID(*u)
-	}
-	return xcc
-}
-
-// SetChainID sets the "ChainID" field.
+// SetChainID sets the "chain_id" field.
 func (xcc *XProviderCursorCreate) SetChainID(u uint64) *XProviderCursorCreate {
 	xcc.mutation.SetChainID(u)
 	return xcc
 }
 
-// SetHeight sets the "Height" field.
+// SetHeight sets the "height" field.
 func (xcc *XProviderCursorCreate) SetHeight(u uint64) *XProviderCursorCreate {
 	xcc.mutation.SetHeight(u)
 	return xcc
 }
 
-// SetCreatedAt sets the "CreatedAt" field.
+// SetCreatedAt sets the "created_at" field.
 func (xcc *XProviderCursorCreate) SetCreatedAt(t time.Time) *XProviderCursorCreate {
 	xcc.mutation.SetCreatedAt(t)
 	return xcc
 }
 
-// SetNillableCreatedAt sets the "CreatedAt" field if the given value is not nil.
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
 func (xcc *XProviderCursorCreate) SetNillableCreatedAt(t *time.Time) *XProviderCursorCreate {
 	if t != nil {
 		xcc.SetCreatedAt(*t)
@@ -61,16 +47,30 @@ func (xcc *XProviderCursorCreate) SetNillableCreatedAt(t *time.Time) *XProviderC
 	return xcc
 }
 
-// SetUpdatedAt sets the "UpdatedAt" field.
+// SetUpdatedAt sets the "updated_at" field.
 func (xcc *XProviderCursorCreate) SetUpdatedAt(t time.Time) *XProviderCursorCreate {
 	xcc.mutation.SetUpdatedAt(t)
 	return xcc
 }
 
-// SetNillableUpdatedAt sets the "UpdatedAt" field if the given value is not nil.
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
 func (xcc *XProviderCursorCreate) SetNillableUpdatedAt(t *time.Time) *XProviderCursorCreate {
 	if t != nil {
 		xcc.SetUpdatedAt(*t)
+	}
+	return xcc
+}
+
+// SetID sets the "id" field.
+func (xcc *XProviderCursorCreate) SetID(u uuid.UUID) *XProviderCursorCreate {
+	xcc.mutation.SetID(u)
+	return xcc
+}
+
+// SetNillableID sets the "id" field if the given value is not nil.
+func (xcc *XProviderCursorCreate) SetNillableID(u *uuid.UUID) *XProviderCursorCreate {
+	if u != nil {
+		xcc.SetID(*u)
 	}
 	return xcc
 }
@@ -110,10 +110,6 @@ func (xcc *XProviderCursorCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (xcc *XProviderCursorCreate) defaults() {
-	if _, ok := xcc.mutation.UUID(); !ok {
-		v := xprovidercursor.DefaultUUID()
-		xcc.mutation.SetUUID(v)
-	}
 	if _, ok := xcc.mutation.CreatedAt(); !ok {
 		v := xprovidercursor.DefaultCreatedAt
 		xcc.mutation.SetCreatedAt(v)
@@ -122,24 +118,25 @@ func (xcc *XProviderCursorCreate) defaults() {
 		v := xprovidercursor.DefaultUpdatedAt
 		xcc.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := xcc.mutation.ID(); !ok {
+		v := xprovidercursor.DefaultID()
+		xcc.mutation.SetID(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (xcc *XProviderCursorCreate) check() error {
-	if _, ok := xcc.mutation.UUID(); !ok {
-		return &ValidationError{Name: "UUID", err: errors.New(`ent: missing required field "XProviderCursor.UUID"`)}
-	}
 	if _, ok := xcc.mutation.ChainID(); !ok {
-		return &ValidationError{Name: "ChainID", err: errors.New(`ent: missing required field "XProviderCursor.ChainID"`)}
+		return &ValidationError{Name: "chain_id", err: errors.New(`ent: missing required field "XProviderCursor.chain_id"`)}
 	}
 	if _, ok := xcc.mutation.Height(); !ok {
-		return &ValidationError{Name: "Height", err: errors.New(`ent: missing required field "XProviderCursor.Height"`)}
+		return &ValidationError{Name: "height", err: errors.New(`ent: missing required field "XProviderCursor.height"`)}
 	}
 	if _, ok := xcc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "CreatedAt", err: errors.New(`ent: missing required field "XProviderCursor.CreatedAt"`)}
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "XProviderCursor.created_at"`)}
 	}
 	if _, ok := xcc.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "UpdatedAt", err: errors.New(`ent: missing required field "XProviderCursor.UpdatedAt"`)}
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "XProviderCursor.updated_at"`)}
 	}
 	return nil
 }
@@ -155,8 +152,13 @@ func (xcc *XProviderCursorCreate) sqlSave(ctx context.Context) (*XProviderCursor
 		}
 		return nil, err
 	}
-	id := _spec.ID.Value.(int64)
-	_node.ID = int(id)
+	if _spec.ID.Value != nil {
+		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
+			_node.ID = *id
+		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+			return nil, err
+		}
+	}
 	xcc.mutation.id = &_node.ID
 	xcc.mutation.done = true
 	return _node, nil
@@ -165,11 +167,11 @@ func (xcc *XProviderCursorCreate) sqlSave(ctx context.Context) (*XProviderCursor
 func (xcc *XProviderCursorCreate) createSpec() (*XProviderCursor, *sqlgraph.CreateSpec) {
 	var (
 		_node = &XProviderCursor{config: xcc.config}
-		_spec = sqlgraph.NewCreateSpec(xprovidercursor.Table, sqlgraph.NewFieldSpec(xprovidercursor.FieldID, field.TypeInt))
+		_spec = sqlgraph.NewCreateSpec(xprovidercursor.Table, sqlgraph.NewFieldSpec(xprovidercursor.FieldID, field.TypeUUID))
 	)
-	if value, ok := xcc.mutation.UUID(); ok {
-		_spec.SetField(xprovidercursor.FieldUUID, field.TypeUUID, value)
-		_node.UUID = value
+	if id, ok := xcc.mutation.ID(); ok {
+		_node.ID = id
+		_spec.ID.Value = &id
 	}
 	if value, ok := xcc.mutation.ChainID(); ok {
 		_spec.SetField(xprovidercursor.FieldChainID, field.TypeUint64, value)
@@ -235,10 +237,6 @@ func (xccb *XProviderCursorCreateBulk) Save(ctx context.Context) ([]*XProviderCu
 					return nil, err
 				}
 				mutation.id = &nodes[i].ID
-				if specs[i].ID.Value != nil {
-					id := specs[i].ID.Value.(int64)
-					nodes[i].ID = int(id)
-				}
 				mutation.done = true
 				return nodes[i], nil
 			})

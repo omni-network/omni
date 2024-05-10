@@ -10,7 +10,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/omni-network/omni/explorer/db/ent/block"
 	"github.com/omni-network/omni/explorer/db/ent/msg"
 	"github.com/omni-network/omni/explorer/db/ent/receipt"
@@ -23,115 +22,85 @@ type MsgCreate struct {
 	hooks    []Hook
 }
 
-// SetUUID sets the "UUID" field.
-func (mc *MsgCreate) SetUUID(u uuid.UUID) *MsgCreate {
-	mc.mutation.SetUUID(u)
-	return mc
-}
-
-// SetNillableUUID sets the "UUID" field if the given value is not nil.
-func (mc *MsgCreate) SetNillableUUID(u *uuid.UUID) *MsgCreate {
-	if u != nil {
-		mc.SetUUID(*u)
-	}
-	return mc
-}
-
-// SetBlockID sets the "Block_ID" field.
-func (mc *MsgCreate) SetBlockID(i int) *MsgCreate {
-	mc.mutation.SetBlockID(i)
-	return mc
-}
-
-// SetNillableBlockID sets the "Block_ID" field if the given value is not nil.
-func (mc *MsgCreate) SetNillableBlockID(i *int) *MsgCreate {
-	if i != nil {
-		mc.SetBlockID(*i)
-	}
-	return mc
-}
-
-// SetSourceMsgSender sets the "SourceMsgSender" field.
-func (mc *MsgCreate) SetSourceMsgSender(b []byte) *MsgCreate {
-	mc.mutation.SetSourceMsgSender(b)
-	return mc
-}
-
-// SetDestAddress sets the "DestAddress" field.
-func (mc *MsgCreate) SetDestAddress(b []byte) *MsgCreate {
-	mc.mutation.SetDestAddress(b)
-	return mc
-}
-
-// SetData sets the "Data" field.
-func (mc *MsgCreate) SetData(b []byte) *MsgCreate {
-	mc.mutation.SetData(b)
-	return mc
-}
-
-// SetDestGasLimit sets the "DestGasLimit" field.
-func (mc *MsgCreate) SetDestGasLimit(u uint64) *MsgCreate {
-	mc.mutation.SetDestGasLimit(u)
-	return mc
-}
-
-// SetSourceChainID sets the "SourceChainID" field.
-func (mc *MsgCreate) SetSourceChainID(u uint64) *MsgCreate {
-	mc.mutation.SetSourceChainID(u)
-	return mc
-}
-
-// SetDestChainID sets the "DestChainID" field.
-func (mc *MsgCreate) SetDestChainID(u uint64) *MsgCreate {
-	mc.mutation.SetDestChainID(u)
-	return mc
-}
-
-// SetStreamOffset sets the "StreamOffset" field.
-func (mc *MsgCreate) SetStreamOffset(u uint64) *MsgCreate {
-	mc.mutation.SetStreamOffset(u)
-	return mc
-}
-
-// SetTxHash sets the "TxHash" field.
-func (mc *MsgCreate) SetTxHash(b []byte) *MsgCreate {
-	mc.mutation.SetTxHash(b)
-	return mc
-}
-
-// SetBlockHash sets the "BlockHash" field.
+// SetBlockHash sets the "block_hash" field.
 func (mc *MsgCreate) SetBlockHash(b []byte) *MsgCreate {
 	mc.mutation.SetBlockHash(b)
 	return mc
 }
 
-// SetBlockHeight sets the "BlockHeight" field.
+// SetBlockHeight sets the "block_height" field.
 func (mc *MsgCreate) SetBlockHeight(u uint64) *MsgCreate {
 	mc.mutation.SetBlockHeight(u)
 	return mc
 }
 
-// SetNillableBlockHeight sets the "BlockHeight" field if the given value is not nil.
-func (mc *MsgCreate) SetNillableBlockHeight(u *uint64) *MsgCreate {
-	if u != nil {
-		mc.SetBlockHeight(*u)
-	}
+// SetBlockTime sets the "block_time" field.
+func (mc *MsgCreate) SetBlockTime(t time.Time) *MsgCreate {
+	mc.mutation.SetBlockTime(t)
 	return mc
 }
 
-// SetReceiptHash sets the "ReceiptHash" field.
+// SetSender sets the "sender" field.
+func (mc *MsgCreate) SetSender(b []byte) *MsgCreate {
+	mc.mutation.SetSender(b)
+	return mc
+}
+
+// SetTo sets the "to" field.
+func (mc *MsgCreate) SetTo(b []byte) *MsgCreate {
+	mc.mutation.SetTo(b)
+	return mc
+}
+
+// SetData sets the "data" field.
+func (mc *MsgCreate) SetData(b []byte) *MsgCreate {
+	mc.mutation.SetData(b)
+	return mc
+}
+
+// SetGasLimit sets the "gas_limit" field.
+func (mc *MsgCreate) SetGasLimit(u uint64) *MsgCreate {
+	mc.mutation.SetGasLimit(u)
+	return mc
+}
+
+// SetSourceChainID sets the "source_chain_id" field.
+func (mc *MsgCreate) SetSourceChainID(u uint64) *MsgCreate {
+	mc.mutation.SetSourceChainID(u)
+	return mc
+}
+
+// SetDestChainID sets the "dest_chain_id" field.
+func (mc *MsgCreate) SetDestChainID(u uint64) *MsgCreate {
+	mc.mutation.SetDestChainID(u)
+	return mc
+}
+
+// SetOffset sets the "offset" field.
+func (mc *MsgCreate) SetOffset(u uint64) *MsgCreate {
+	mc.mutation.SetOffset(u)
+	return mc
+}
+
+// SetTxHash sets the "tx_hash" field.
+func (mc *MsgCreate) SetTxHash(b []byte) *MsgCreate {
+	mc.mutation.SetTxHash(b)
+	return mc
+}
+
+// SetReceiptHash sets the "receipt_hash" field.
 func (mc *MsgCreate) SetReceiptHash(b []byte) *MsgCreate {
 	mc.mutation.SetReceiptHash(b)
 	return mc
 }
 
-// SetStatus sets the "Status" field.
+// SetStatus sets the "status" field.
 func (mc *MsgCreate) SetStatus(s string) *MsgCreate {
 	mc.mutation.SetStatus(s)
 	return mc
 }
 
-// SetNillableStatus sets the "Status" field if the given value is not nil.
+// SetNillableStatus sets the "status" field if the given value is not nil.
 func (mc *MsgCreate) SetNillableStatus(s *string) *MsgCreate {
 	if s != nil {
 		mc.SetStatus(*s)
@@ -139,27 +108,13 @@ func (mc *MsgCreate) SetNillableStatus(s *string) *MsgCreate {
 	return mc
 }
 
-// SetBlockTime sets the "BlockTime" field.
-func (mc *MsgCreate) SetBlockTime(t time.Time) *MsgCreate {
-	mc.mutation.SetBlockTime(t)
-	return mc
-}
-
-// SetNillableBlockTime sets the "BlockTime" field if the given value is not nil.
-func (mc *MsgCreate) SetNillableBlockTime(t *time.Time) *MsgCreate {
-	if t != nil {
-		mc.SetBlockTime(*t)
-	}
-	return mc
-}
-
-// SetCreatedAt sets the "CreatedAt" field.
+// SetCreatedAt sets the "created_at" field.
 func (mc *MsgCreate) SetCreatedAt(t time.Time) *MsgCreate {
 	mc.mutation.SetCreatedAt(t)
 	return mc
 }
 
-// SetNillableCreatedAt sets the "CreatedAt" field if the given value is not nil.
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
 func (mc *MsgCreate) SetNillableCreatedAt(t *time.Time) *MsgCreate {
 	if t != nil {
 		mc.SetCreatedAt(*t)
@@ -167,9 +122,19 @@ func (mc *MsgCreate) SetNillableCreatedAt(t *time.Time) *MsgCreate {
 	return mc
 }
 
-// SetBlock sets the "Block" edge to the Block entity.
-func (mc *MsgCreate) SetBlock(b *Block) *MsgCreate {
-	return mc.SetBlockID(b.ID)
+// AddBlockIDs adds the "Block" edge to the Block entity by IDs.
+func (mc *MsgCreate) AddBlockIDs(ids ...int) *MsgCreate {
+	mc.mutation.AddBlockIDs(ids...)
+	return mc
+}
+
+// AddBlock adds the "Block" edges to the Block entity.
+func (mc *MsgCreate) AddBlock(b ...*Block) *MsgCreate {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return mc.AddBlockIDs(ids...)
 }
 
 // AddReceiptIDs adds the "Receipts" edge to the Receipt entity by IDs.
@@ -224,13 +189,6 @@ func (mc *MsgCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (mc *MsgCreate) defaults() error {
-	if _, ok := mc.mutation.UUID(); !ok {
-		if msg.DefaultUUID == nil {
-			return fmt.Errorf("ent: uninitialized msg.DefaultUUID (forgotten import ent/runtime?)")
-		}
-		v := msg.DefaultUUID()
-		mc.mutation.SetUUID(v)
-	}
 	if _, ok := mc.mutation.Status(); !ok {
 		v := msg.DefaultStatus
 		mc.mutation.SetStatus(v)
@@ -244,60 +202,66 @@ func (mc *MsgCreate) defaults() error {
 
 // check runs all checks and user-defined validators on the builder.
 func (mc *MsgCreate) check() error {
-	if _, ok := mc.mutation.UUID(); !ok {
-		return &ValidationError{Name: "UUID", err: errors.New(`ent: missing required field "Msg.UUID"`)}
-	}
-	if _, ok := mc.mutation.SourceMsgSender(); !ok {
-		return &ValidationError{Name: "SourceMsgSender", err: errors.New(`ent: missing required field "Msg.SourceMsgSender"`)}
-	}
-	if v, ok := mc.mutation.SourceMsgSender(); ok {
-		if err := msg.SourceMsgSenderValidator(v); err != nil {
-			return &ValidationError{Name: "SourceMsgSender", err: fmt.Errorf(`ent: validator failed for field "Msg.SourceMsgSender": %w`, err)}
-		}
-	}
-	if _, ok := mc.mutation.DestAddress(); !ok {
-		return &ValidationError{Name: "DestAddress", err: errors.New(`ent: missing required field "Msg.DestAddress"`)}
-	}
-	if v, ok := mc.mutation.DestAddress(); ok {
-		if err := msg.DestAddressValidator(v); err != nil {
-			return &ValidationError{Name: "DestAddress", err: fmt.Errorf(`ent: validator failed for field "Msg.DestAddress": %w`, err)}
-		}
-	}
-	if _, ok := mc.mutation.Data(); !ok {
-		return &ValidationError{Name: "Data", err: errors.New(`ent: missing required field "Msg.Data"`)}
-	}
-	if _, ok := mc.mutation.DestGasLimit(); !ok {
-		return &ValidationError{Name: "DestGasLimit", err: errors.New(`ent: missing required field "Msg.DestGasLimit"`)}
-	}
-	if _, ok := mc.mutation.SourceChainID(); !ok {
-		return &ValidationError{Name: "SourceChainID", err: errors.New(`ent: missing required field "Msg.SourceChainID"`)}
-	}
-	if _, ok := mc.mutation.DestChainID(); !ok {
-		return &ValidationError{Name: "DestChainID", err: errors.New(`ent: missing required field "Msg.DestChainID"`)}
-	}
-	if _, ok := mc.mutation.StreamOffset(); !ok {
-		return &ValidationError{Name: "StreamOffset", err: errors.New(`ent: missing required field "Msg.StreamOffset"`)}
-	}
-	if _, ok := mc.mutation.TxHash(); !ok {
-		return &ValidationError{Name: "TxHash", err: errors.New(`ent: missing required field "Msg.TxHash"`)}
-	}
-	if v, ok := mc.mutation.TxHash(); ok {
-		if err := msg.TxHashValidator(v); err != nil {
-			return &ValidationError{Name: "TxHash", err: fmt.Errorf(`ent: validator failed for field "Msg.TxHash": %w`, err)}
-		}
+	if _, ok := mc.mutation.BlockHash(); !ok {
+		return &ValidationError{Name: "block_hash", err: errors.New(`ent: missing required field "Msg.block_hash"`)}
 	}
 	if v, ok := mc.mutation.BlockHash(); ok {
 		if err := msg.BlockHashValidator(v); err != nil {
-			return &ValidationError{Name: "BlockHash", err: fmt.Errorf(`ent: validator failed for field "Msg.BlockHash": %w`, err)}
+			return &ValidationError{Name: "block_hash", err: fmt.Errorf(`ent: validator failed for field "Msg.block_hash": %w`, err)}
+		}
+	}
+	if _, ok := mc.mutation.BlockHeight(); !ok {
+		return &ValidationError{Name: "block_height", err: errors.New(`ent: missing required field "Msg.block_height"`)}
+	}
+	if _, ok := mc.mutation.BlockTime(); !ok {
+		return &ValidationError{Name: "block_time", err: errors.New(`ent: missing required field "Msg.block_time"`)}
+	}
+	if _, ok := mc.mutation.Sender(); !ok {
+		return &ValidationError{Name: "sender", err: errors.New(`ent: missing required field "Msg.sender"`)}
+	}
+	if v, ok := mc.mutation.Sender(); ok {
+		if err := msg.SenderValidator(v); err != nil {
+			return &ValidationError{Name: "sender", err: fmt.Errorf(`ent: validator failed for field "Msg.sender": %w`, err)}
+		}
+	}
+	if _, ok := mc.mutation.To(); !ok {
+		return &ValidationError{Name: "to", err: errors.New(`ent: missing required field "Msg.to"`)}
+	}
+	if v, ok := mc.mutation.To(); ok {
+		if err := msg.ToValidator(v); err != nil {
+			return &ValidationError{Name: "to", err: fmt.Errorf(`ent: validator failed for field "Msg.to": %w`, err)}
+		}
+	}
+	if _, ok := mc.mutation.Data(); !ok {
+		return &ValidationError{Name: "data", err: errors.New(`ent: missing required field "Msg.data"`)}
+	}
+	if _, ok := mc.mutation.GasLimit(); !ok {
+		return &ValidationError{Name: "gas_limit", err: errors.New(`ent: missing required field "Msg.gas_limit"`)}
+	}
+	if _, ok := mc.mutation.SourceChainID(); !ok {
+		return &ValidationError{Name: "source_chain_id", err: errors.New(`ent: missing required field "Msg.source_chain_id"`)}
+	}
+	if _, ok := mc.mutation.DestChainID(); !ok {
+		return &ValidationError{Name: "dest_chain_id", err: errors.New(`ent: missing required field "Msg.dest_chain_id"`)}
+	}
+	if _, ok := mc.mutation.Offset(); !ok {
+		return &ValidationError{Name: "offset", err: errors.New(`ent: missing required field "Msg.offset"`)}
+	}
+	if _, ok := mc.mutation.TxHash(); !ok {
+		return &ValidationError{Name: "tx_hash", err: errors.New(`ent: missing required field "Msg.tx_hash"`)}
+	}
+	if v, ok := mc.mutation.TxHash(); ok {
+		if err := msg.TxHashValidator(v); err != nil {
+			return &ValidationError{Name: "tx_hash", err: fmt.Errorf(`ent: validator failed for field "Msg.tx_hash": %w`, err)}
 		}
 	}
 	if v, ok := mc.mutation.ReceiptHash(); ok {
 		if err := msg.ReceiptHashValidator(v); err != nil {
-			return &ValidationError{Name: "ReceiptHash", err: fmt.Errorf(`ent: validator failed for field "Msg.ReceiptHash": %w`, err)}
+			return &ValidationError{Name: "receipt_hash", err: fmt.Errorf(`ent: validator failed for field "Msg.receipt_hash": %w`, err)}
 		}
 	}
 	if _, ok := mc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "CreatedAt", err: errors.New(`ent: missing required field "Msg.CreatedAt"`)}
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Msg.created_at"`)}
 	}
 	return nil
 }
@@ -325,25 +289,33 @@ func (mc *MsgCreate) createSpec() (*Msg, *sqlgraph.CreateSpec) {
 		_node = &Msg{config: mc.config}
 		_spec = sqlgraph.NewCreateSpec(msg.Table, sqlgraph.NewFieldSpec(msg.FieldID, field.TypeInt))
 	)
-	if value, ok := mc.mutation.UUID(); ok {
-		_spec.SetField(msg.FieldUUID, field.TypeUUID, value)
-		_node.UUID = value
+	if value, ok := mc.mutation.BlockHash(); ok {
+		_spec.SetField(msg.FieldBlockHash, field.TypeBytes, value)
+		_node.BlockHash = value
 	}
-	if value, ok := mc.mutation.SourceMsgSender(); ok {
-		_spec.SetField(msg.FieldSourceMsgSender, field.TypeBytes, value)
-		_node.SourceMsgSender = value
+	if value, ok := mc.mutation.BlockHeight(); ok {
+		_spec.SetField(msg.FieldBlockHeight, field.TypeUint64, value)
+		_node.BlockHeight = value
 	}
-	if value, ok := mc.mutation.DestAddress(); ok {
-		_spec.SetField(msg.FieldDestAddress, field.TypeBytes, value)
-		_node.DestAddress = value
+	if value, ok := mc.mutation.BlockTime(); ok {
+		_spec.SetField(msg.FieldBlockTime, field.TypeTime, value)
+		_node.BlockTime = value
+	}
+	if value, ok := mc.mutation.Sender(); ok {
+		_spec.SetField(msg.FieldSender, field.TypeBytes, value)
+		_node.Sender = value
+	}
+	if value, ok := mc.mutation.To(); ok {
+		_spec.SetField(msg.FieldTo, field.TypeBytes, value)
+		_node.To = value
 	}
 	if value, ok := mc.mutation.Data(); ok {
 		_spec.SetField(msg.FieldData, field.TypeBytes, value)
 		_node.Data = value
 	}
-	if value, ok := mc.mutation.DestGasLimit(); ok {
-		_spec.SetField(msg.FieldDestGasLimit, field.TypeUint64, value)
-		_node.DestGasLimit = value
+	if value, ok := mc.mutation.GasLimit(); ok {
+		_spec.SetField(msg.FieldGasLimit, field.TypeUint64, value)
+		_node.GasLimit = value
 	}
 	if value, ok := mc.mutation.SourceChainID(); ok {
 		_spec.SetField(msg.FieldSourceChainID, field.TypeUint64, value)
@@ -353,21 +325,13 @@ func (mc *MsgCreate) createSpec() (*Msg, *sqlgraph.CreateSpec) {
 		_spec.SetField(msg.FieldDestChainID, field.TypeUint64, value)
 		_node.DestChainID = value
 	}
-	if value, ok := mc.mutation.StreamOffset(); ok {
-		_spec.SetField(msg.FieldStreamOffset, field.TypeUint64, value)
-		_node.StreamOffset = value
+	if value, ok := mc.mutation.Offset(); ok {
+		_spec.SetField(msg.FieldOffset, field.TypeUint64, value)
+		_node.Offset = value
 	}
 	if value, ok := mc.mutation.TxHash(); ok {
 		_spec.SetField(msg.FieldTxHash, field.TypeBytes, value)
 		_node.TxHash = value
-	}
-	if value, ok := mc.mutation.BlockHash(); ok {
-		_spec.SetField(msg.FieldBlockHash, field.TypeBytes, value)
-		_node.BlockHash = value
-	}
-	if value, ok := mc.mutation.BlockHeight(); ok {
-		_spec.SetField(msg.FieldBlockHeight, field.TypeUint64, value)
-		_node.BlockHeight = value
 	}
 	if value, ok := mc.mutation.ReceiptHash(); ok {
 		_spec.SetField(msg.FieldReceiptHash, field.TypeBytes, value)
@@ -377,20 +341,16 @@ func (mc *MsgCreate) createSpec() (*Msg, *sqlgraph.CreateSpec) {
 		_spec.SetField(msg.FieldStatus, field.TypeString, value)
 		_node.Status = value
 	}
-	if value, ok := mc.mutation.BlockTime(); ok {
-		_spec.SetField(msg.FieldBlockTime, field.TypeTime, value)
-		_node.BlockTime = value
-	}
 	if value, ok := mc.mutation.CreatedAt(); ok {
 		_spec.SetField(msg.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
 	if nodes := mc.mutation.BlockIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   msg.BlockTable,
-			Columns: []string{msg.BlockColumn},
+			Columns: msg.BlockPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(block.FieldID, field.TypeInt),
@@ -399,7 +359,6 @@ func (mc *MsgCreate) createSpec() (*Msg, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.BlockID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := mc.mutation.ReceiptsIDs(); len(nodes) > 0 {

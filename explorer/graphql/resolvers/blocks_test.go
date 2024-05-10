@@ -3,9 +3,10 @@ package resolvers_test
 import (
 	"context"
 	"testing"
+	"time"
 
-	"github.com/omni-network/omni/explorer/db"
 	"github.com/omni-network/omni/explorer/db/ent"
+	"github.com/omni-network/omni/explorer/db/testutil"
 	"github.com/omni-network/omni/explorer/graphql/app"
 	"github.com/omni-network/omni/explorer/graphql/data"
 	"github.com/omni-network/omni/explorer/graphql/resolvers"
@@ -23,7 +24,7 @@ type gqlTest struct {
 
 func createGqlTest(t *testing.T) *gqlTest {
 	t.Helper()
-	client := db.CreateTestEntClient(t)
+	client := testutil.CreateTestEntClient(t)
 	p := &data.Provider{EntClient: client}
 	br := resolvers.BlocksResolver{Provider: p}
 
@@ -51,9 +52,9 @@ func TestXBlockQuery(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	test := createGqlTest(t)
-	block := db.CreateTestBlock(t, ctx, test.Client, 0)
-	db.CreateXMsg(t, ctx, test.Client, block, 2, 0)
-	db.CreateReceipt(t, ctx, test.Client, block, 2, 0)
+	block := testutil.CreateTestBlock(t, ctx, test.Client, 0, time.Now())
+	testutil.CreateXMsg(t, ctx, test.Client, block, 2, 0)
+	testutil.CreateReceipt(t, ctx, test.Client, block, 2, 0)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
@@ -103,7 +104,7 @@ func TestXBlocksQuery(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	test := createGqlTest(t)
-	db.CreateTestBlocks(t, ctx, test.Client, 2)
+	testutil.CreateTestBlocks(t, ctx, test.Client, 2)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{

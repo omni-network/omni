@@ -76,7 +76,7 @@ func (mq *MsgQuery) QueryBlock() *BlockQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(msg.Table, msg.FieldID, selector),
 			sqlgraph.To(block.Table, block.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, msg.BlockTable, msg.BlockColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, msg.BlockTable, msg.BlockPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(mq.driver.Dialect(), step)
 		return fromU, nil
@@ -334,12 +334,12 @@ func (mq *MsgQuery) WithReceipts(opts ...func(*ReceiptQuery)) *MsgQuery {
 // Example:
 //
 //	var v []struct {
-//		UUID uuid.UUID `json:"UUID,omitempty"`
+//		BlockHash []byte `json:"block_hash,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Msg.Query().
-//		GroupBy(msg.FieldUUID).
+//		GroupBy(msg.FieldBlockHash).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (mq *MsgQuery) GroupBy(field string, fields ...string) *MsgGroupBy {
@@ -357,11 +357,11 @@ func (mq *MsgQuery) GroupBy(field string, fields ...string) *MsgGroupBy {
 // Example:
 //
 //	var v []struct {
-//		UUID uuid.UUID `json:"UUID,omitempty"`
+//		BlockHash []byte `json:"block_hash,omitempty"`
 //	}
 //
 //	client.Msg.Query().
-//		Select(msg.FieldUUID).
+//		Select(msg.FieldBlockHash).
 //		Scan(ctx, &v)
 func (mq *MsgQuery) Select(fields ...string) *MsgSelect {
 	mq.ctx.Fields = append(mq.ctx.Fields, fields...)
@@ -430,8 +430,9 @@ func (mq *MsgQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Msg, err
 		return nodes, nil
 	}
 	if query := mq.withBlock; query != nil {
-		if err := mq.loadBlock(ctx, query, nodes, nil,
-			func(n *Msg, e *Block) { n.Edges.Block = e }); err != nil {
+		if err := mq.loadBlock(ctx, query, nodes,
+			func(n *Msg) { n.Edges.Block = []*Block{} },
+			func(n *Msg, e *Block) { n.Edges.Block = append(n.Edges.Block, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -446,30 +447,62 @@ func (mq *MsgQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Msg, err
 }
 
 func (mq *MsgQuery) loadBlock(ctx context.Context, query *BlockQuery, nodes []*Msg, init func(*Msg), assign func(*Msg, *Block)) error {
-	ids := make([]int, 0, len(nodes))
-	nodeids := make(map[int][]*Msg)
-	for i := range nodes {
-		fk := nodes[i].BlockID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[int]*Msg)
+	nids := make(map[int]map[*Msg]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
 		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	if len(ids) == 0 {
-		return nil
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(msg.BlockTable)
+		s.Join(joinT).On(s.C(block.FieldID), joinT.C(msg.BlockPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(msg.BlockPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(msg.BlockPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
 	}
-	query.Where(block.IDIn(ids...))
-	neighbors, err := query.All(ctx)
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(sql.NullInt64)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := int(values[0].(*sql.NullInt64).Int64)
+				inValue := int(values[1].(*sql.NullInt64).Int64)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Msg]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Block](ctx, query, qr, query.inters)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		nodes, ok := nids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "Block_ID" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected "Block" node returned %v`, n.ID)
 		}
-		for i := range nodes {
-			assign(nodes[i], n)
+		for kn := range nodes {
+			assign(kn, n)
 		}
 	}
 	return nil
@@ -560,9 +593,6 @@ func (mq *MsgQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != msg.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
-		}
-		if mq.withBlock != nil {
-			_spec.Node.AddColumnOnce(msg.FieldBlockID)
 		}
 	}
 	if ps := mq.predicates; len(ps) > 0 {

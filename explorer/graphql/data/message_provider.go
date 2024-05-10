@@ -6,7 +6,7 @@ import (
 	"github.com/omni-network/omni/explorer/db/ent"
 	"github.com/omni-network/omni/explorer/db/ent/msg"
 	"github.com/omni-network/omni/explorer/graphql/resolvers"
-	"github.com/omni-network/omni/explorer/graphql/utils"
+	"github.com/omni-network/omni/explorer/graphql/uintconv"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
@@ -20,7 +20,7 @@ func (p Provider) XMsgCount(ctx context.Context) (*hexutil.Big, bool, error) {
 		return nil, false, err
 	}
 
-	hex, err := utils.Uint2Hex(uint64(query))
+	hex, err := uintconv.ToHex(uint64(query))
 	if err != nil {
 		return nil, false, errors.Wrap(err, "decoding block count")
 	}
@@ -57,7 +57,7 @@ func (p Provider) XMsg(ctx context.Context, sourceChainID, destChainID, offset u
 		Where(
 			msg.SourceChainID(sourceChainID),
 			msg.DestChainID(destChainID),
-			msg.StreamOffset(offset),
+			msg.Offset(offset),
 		).
 		First(ctx)
 	if err != nil {
@@ -90,7 +90,7 @@ func (p Provider) XMsg(ctx context.Context, sourceChainID, destChainID, offset u
 func (p Provider) XMsgs(ctx context.Context, limit uint64, cursor *uint64) (*resolvers.XMsgResult, bool, error) {
 	query := p.EntClient.Msg.Query().
 		// Most recent messages first
-		Order(ent.Desc(msg.FieldBlockTime), ent.Desc(msg.FieldStreamOffset)).
+		Order(ent.Desc(msg.FieldBlockTime), ent.Desc(msg.FieldOffset)).
 		// limit will always set, defaulting to 25
 		Limit(int(limit))
 
@@ -115,7 +115,7 @@ func (p Provider) XMsgs(ctx context.Context, limit uint64, cursor *uint64) (*res
 		if err != nil {
 			return nil, false, errors.Wrap(err, "decoding message")
 		}
-		cursor, err := utils.Uint2Hex(uint64(m.ID))
+		cursor, err := uintconv.ToHex(uint64(m.ID))
 		if err != nil {
 			return nil, false, errors.Wrap(err, "decoding message cursor")
 		}
@@ -132,7 +132,7 @@ func (p Provider) XMsgs(ctx context.Context, limit uint64, cursor *uint64) (*res
 	}
 
 	// Get the total count in hex
-	totalCountHex, err := utils.Uint2Hex(uint64(totalCount))
+	totalCountHex, err := uintconv.ToHex(uint64(totalCount))
 	if err != nil {
 		return nil, false, errors.Wrap(err, "decoding message count")
 	}
@@ -168,12 +168,12 @@ func calculatePageInfo(startCursor, limit uint64, totalCount int) (resolvers.Pag
 	}
 
 	// convert the cursors to hex
-	prevCursorHex, err := utils.Uint2Hex(prevCursor)
+	prevCursorHex, err := uintconv.ToHex(prevCursor)
 	if err != nil {
 		return resolvers.PageInfo{}, errors.Wrap(err, "decoding message cursor")
 	}
 
-	nextCursorHex, err := utils.Uint2Hex(nextCursor)
+	nextCursorHex, err := uintconv.ToHex(nextCursor)
 	if err != nil {
 		return resolvers.PageInfo{}, errors.Wrap(err, "decoding message cursor")
 	}

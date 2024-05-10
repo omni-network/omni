@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/omni-network/omni/explorer/db"
+	"github.com/omni-network/omni/explorer/db/testutil"
 	"github.com/omni-network/omni/explorer/graphql/app"
 	"github.com/omni-network/omni/explorer/graphql/resolvers"
 
@@ -17,7 +17,7 @@ func TestReceipt(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	test := createGqlTest(t)
-	db.CreateTestBlocks(t, ctx, test.Client, 2)
+	testutil.CreateTestBlocks(t, ctx, test.Client, 2)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{

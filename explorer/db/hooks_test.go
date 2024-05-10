@@ -3,9 +3,10 @@ package db_test
 import (
 	"context"
 	"testing"
+	"time"
 
-	"github.com/omni-network/omni/explorer/db"
 	"github.com/omni-network/omni/explorer/db/ent"
+	"github.com/omni-network/omni/explorer/db/testutil"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
@@ -37,7 +38,7 @@ func TestMsgAndReceiptHooks(t *testing.T) {
 			name: "create_initial_block_with_msg_then_following_contain_receipts",
 			prerequisites: func(t *testing.T, ctx context.Context, client *ent.Client) results {
 				t.Helper()
-				blocks := db.CreateTestBlocks(t, ctx, client, 2)
+				blocks := testutil.CreateTestBlocks(t, ctx, client, 2)
 
 				var messages []*ent.Msg
 				var receipts []*ent.Receipt
@@ -62,11 +63,12 @@ func TestMsgAndReceiptHooks(t *testing.T) {
 			prerequisites: func(t *testing.T, ctx context.Context, client *ent.Client) results {
 				t.Helper()
 				destChainID := uint64(2)
-				streamOffset := uint64(0)
-				block1 := db.CreateTestBlock(t, ctx, client, 0)
-				block2 := db.CreateTestBlock(t, ctx, client, 1)
-				receipt := db.CreateReceipt(t, ctx, client, block1, destChainID, streamOffset)
-				msg := db.CreateXMsg(t, ctx, client, block2, destChainID, streamOffset)
+				offset := uint64(0)
+				ts := time.Now()
+				block1 := testutil.CreateTestBlock(t, ctx, client, 0, ts)
+				block2 := testutil.CreateTestBlock(t, ctx, client, 1, ts.Add(500*time.Millisecond))
+				receipt := testutil.CreateReceipt(t, ctx, client, block1, destChainID, offset)
+				msg := testutil.CreateXMsg(t, ctx, client, block2, destChainID, offset)
 
 				messages := []*ent.Msg{msg}
 				receipts := []*ent.Receipt{receipt}
@@ -98,8 +100,8 @@ func TestMsgAndReceiptHooks(t *testing.T) {
 				block, err := m.QueryBlock().Only(ctx)
 				require.NoError(t, err)
 
-				require.Equal(t, block.BlockHash, m.BlockHash)
-				require.Equal(t, block.BlockHeight, m.BlockHeight)
+				require.Equal(t, block.Hash, m.BlockHash)
+				require.Equal(t, block.Height, m.BlockHeight)
 
 				if len(m.Edges.Receipts) == 0 {
 					continue
@@ -131,7 +133,7 @@ func calcStrayMessages(ctx context.Context, messages []*ent.Msg) int {
 
 func setupDB(t *testing.T) *ent.Client {
 	t.Helper()
-	client := db.CreateTestEntClient(t)
+	client := testutil.CreateTestEntClient(t)
 	t.Cleanup(func() {
 		if err := client.Close(); err != nil {
 			t.Error(err)

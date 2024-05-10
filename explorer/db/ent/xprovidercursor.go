@@ -17,17 +17,15 @@ import (
 type XProviderCursor struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID int `json:"id,omitempty"`
-	// UUID holds the value of the "UUID" field.
-	UUID uuid.UUID `json:"UUID,omitempty"`
-	// ChainID holds the value of the "ChainID" field.
-	ChainID uint64 `json:"ChainID,omitempty"`
-	// Height holds the value of the "Height" field.
-	Height uint64 `json:"Height,omitempty"`
-	// CreatedAt holds the value of the "CreatedAt" field.
-	CreatedAt time.Time `json:"CreatedAt,omitempty"`
-	// UpdatedAt holds the value of the "UpdatedAt" field.
-	UpdatedAt    time.Time `json:"UpdatedAt,omitempty"`
+	ID uuid.UUID `json:"id,omitempty"`
+	// ChainID holds the value of the "chain_id" field.
+	ChainID uint64 `json:"chain_id,omitempty"`
+	// Height holds the value of the "height" field.
+	Height uint64 `json:"height,omitempty"`
+	// CreatedAt holds the value of the "created_at" field.
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt    time.Time `json:"updated_at,omitempty"`
 	selectValues sql.SelectValues
 }
 
@@ -36,11 +34,11 @@ func (*XProviderCursor) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case xprovidercursor.FieldID, xprovidercursor.FieldChainID, xprovidercursor.FieldHeight:
+		case xprovidercursor.FieldChainID, xprovidercursor.FieldHeight:
 			values[i] = new(sql.NullInt64)
 		case xprovidercursor.FieldCreatedAt, xprovidercursor.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case xprovidercursor.FieldUUID:
+		case xprovidercursor.FieldID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -58,38 +56,32 @@ func (xc *XProviderCursor) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case xprovidercursor.FieldID:
-			value, ok := values[i].(*sql.NullInt64)
-			if !ok {
-				return fmt.Errorf("unexpected type %T for field id", value)
-			}
-			xc.ID = int(value.Int64)
-		case xprovidercursor.FieldUUID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field UUID", values[i])
+				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				xc.UUID = *value
+				xc.ID = *value
 			}
 		case xprovidercursor.FieldChainID:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field ChainID", values[i])
+				return fmt.Errorf("unexpected type %T for field chain_id", values[i])
 			} else if value.Valid {
 				xc.ChainID = uint64(value.Int64)
 			}
 		case xprovidercursor.FieldHeight:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field Height", values[i])
+				return fmt.Errorf("unexpected type %T for field height", values[i])
 			} else if value.Valid {
 				xc.Height = uint64(value.Int64)
 			}
 		case xprovidercursor.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field CreatedAt", values[i])
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
 				xc.CreatedAt = value.Time
 			}
 		case xprovidercursor.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field UpdatedAt", values[i])
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
 				xc.UpdatedAt = value.Time
 			}
@@ -129,19 +121,16 @@ func (xc *XProviderCursor) String() string {
 	var builder strings.Builder
 	builder.WriteString("XProviderCursor(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", xc.ID))
-	builder.WriteString("UUID=")
-	builder.WriteString(fmt.Sprintf("%v", xc.UUID))
-	builder.WriteString(", ")
-	builder.WriteString("ChainID=")
+	builder.WriteString("chain_id=")
 	builder.WriteString(fmt.Sprintf("%v", xc.ChainID))
 	builder.WriteString(", ")
-	builder.WriteString("Height=")
+	builder.WriteString("height=")
 	builder.WriteString(fmt.Sprintf("%v", xc.Height))
 	builder.WriteString(", ")
-	builder.WriteString("CreatedAt=")
+	builder.WriteString("created_at=")
 	builder.WriteString(xc.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
-	builder.WriteString("UpdatedAt=")
+	builder.WriteString("updated_at=")
 	builder.WriteString(xc.UpdatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()

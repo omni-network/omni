@@ -6,23 +6,24 @@ import (
 
 	"github.com/omni-network/omni/explorer/db/ent"
 	"github.com/omni-network/omni/explorer/graphql/resolvers"
-	"github.com/omni-network/omni/explorer/graphql/utils"
+	"github.com/omni-network/omni/explorer/graphql/uintconv"
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/graph-gophers/graphql-go"
+	"github.com/graph-gophers/graphql-go/relay"
 )
 
 // EntBlockToGraphQLBlock converts an ent.Block to a resolvers.XBlock.
 func EntBlockToGraphQLBlock(ctx context.Context, block *ent.Block) (*resolvers.XBlock, error) {
-	sourceChainIDBig, err := utils.Uint2Big(block.SourceChainID)
+	sourceChainIDBig, err := uintconv.ToBig(block.ChainID)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding source chain id")
 	}
 
-	blockHeight, err := utils.Uint2Big(block.BlockHeight)
+	blockHeight, err := uintconv.ToBig(block.Height)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding block height")
 	}
@@ -30,8 +31,8 @@ func EntBlockToGraphQLBlock(ctx context.Context, block *ent.Block) (*resolvers.X
 	res := resolvers.XBlock{
 		SourceChainID: hexutil.Big(sourceChainIDBig),
 		BlockHeight:   hexutil.Big(blockHeight),
-		BlockHash:     common.Hash(block.BlockHash),
-		Timestamp:     graphql.Time{Time: block.CreatedAt},
+		BlockHash:     common.Hash(block.Hash),
+		Timestamp:     graphql.Time{Time: block.Timestamp},
 	}
 
 	// Decode messages
@@ -57,36 +58,36 @@ func EntBlockToGraphQLBlock(ctx context.Context, block *ent.Block) (*resolvers.X
 
 // EntMsgToGraphQLXMsg converts an ent.Msg to a resolvers.XMsg.
 func EntMsgToGraphQLXMsg(msg *ent.Msg) (*resolvers.XMsg, error) {
-	sourceChainIDBig, err := utils.Uint2Big(msg.SourceChainID)
+	sourceChainIDBig, err := uintconv.ToBig(msg.SourceChainID)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding source chain id")
 	}
 
-	destChainIDBig, err := utils.Uint2Big(msg.DestChainID)
+	destChainIDBig, err := uintconv.ToBig(msg.DestChainID)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding source chain id")
 	}
 
-	destGasLimit, err := utils.Uint2Big(msg.DestGasLimit)
+	destGasLimit, err := uintconv.ToBig(msg.GasLimit)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding dest gas limit")
 	}
 
-	offset, err := utils.Uint2Big(msg.StreamOffset)
+	offset, err := uintconv.ToBig(msg.Offset)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding stream offset")
 	}
 
-	blockHeight, err := utils.Uint2Big(msg.BlockHeight)
+	blockHeight, err := uintconv.ToBig(msg.BlockHeight)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding block height")
 	}
 
 	xmsg := &resolvers.XMsg{
 		ID:                  graphql.ID(strconv.Itoa(msg.ID)),
-		SourceMessageSender: common.Address(msg.SourceMsgSender),
+		SourceMessageSender: common.Address(msg.Sender),
 		SourceChainID:       hexutil.Big(sourceChainIDBig),
-		DestAddress:         common.Address(msg.DestAddress),
+		DestAddress:         common.Address(msg.To),
 		DestGasLimit:        hexutil.Big(destGasLimit),
 		DestChainID:         hexutil.Big(destChainIDBig),
 		StreamOffset:        hexutil.Big(offset),
@@ -116,33 +117,33 @@ func EntReceiptToGraphQLXReceipt(ctx context.Context, receipt *ent.Receipt, bloc
 		block = b
 	}
 
-	gasUsed, err := utils.Uint2Big(receipt.GasUsed)
+	gasUsed, err := uintconv.ToBig(receipt.GasUsed)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding gas used")
 	}
 
-	sourceChainIDBig, err := utils.Uint2Big(receipt.SourceChainID)
+	sourceChainIDBig, err := uintconv.ToBig(receipt.SourceChainID)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding source chain id")
 	}
 
-	destChainIDBig, err := utils.Uint2Big(receipt.DestChainID)
+	destChainIDBig, err := uintconv.ToBig(receipt.DestChainID)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding source chain id")
 	}
 
-	streamOffset, err := utils.Uint2Big(receipt.StreamOffset)
+	streamOffset, err := uintconv.ToBig(receipt.Offset)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding stream offset")
 	}
 
-	blockHeight, err := utils.Uint2Big(block.BlockHeight)
+	blockHeight, err := uintconv.ToBig(block.Height)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding block height")
 	}
 
 	return &resolvers.XReceipt{
-		UUID:           graphql.ID(receipt.UUID.String()),
+		UUID:           relay.MarshalID("Receipt", receipt.ID),
 		Success:        graphql.NullBool{Value: &receipt.Success, Set: receipt.Success},
 		GasUsed:        hexutil.Big(gasUsed),
 		RelayerAddress: common.Address(receipt.RelayerAddress),
@@ -152,12 +153,12 @@ func EntReceiptToGraphQLXReceipt(ctx context.Context, receipt *ent.Receipt, bloc
 		TxHash:         common.Hash(receipt.TxHash),
 		Timestamp:      graphql.Time{Time: receipt.CreatedAt},
 		BlockHeight:    hexutil.Big(blockHeight),
-		BlockHash:      common.Hash(block.BlockHash),
+		BlockHash:      common.Hash(block.Hash),
 	}, nil
 }
 
 func EntChainToGraphQLChain(chain *ent.Chain) resolvers.Chain {
-	chainID, err := utils.Uint2Big(chain.ChainID)
+	chainID, err := uintconv.ToBig(chain.ChainID)
 	if err != nil {
 		panic(errors.Wrap(err, "decoding chain id"))
 	}
@@ -175,27 +176,27 @@ func EntMsgToGraphQLXMsgWithEdges(ctx context.Context, msg *ent.Msg) (*resolvers
 		return nil, errors.Wrap(err, "querying block for message")
 	}
 
-	sourceChainIDBig, err := utils.Uint2Big(msg.SourceChainID)
+	sourceChainIDBig, err := uintconv.ToBig(msg.SourceChainID)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding source chain id")
 	}
 
-	destChainIDBig, err := utils.Uint2Big(msg.DestChainID)
+	destChainIDBig, err := uintconv.ToBig(msg.DestChainID)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding source chain id")
 	}
 
-	destGasLimit, err := utils.Uint2Big(msg.DestGasLimit)
+	destGasLimit, err := uintconv.ToBig(msg.GasLimit)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding dest gas limit")
 	}
 
-	streamOffset, err := utils.Uint2Big(msg.StreamOffset)
+	streamOffset, err := uintconv.ToBig(msg.Offset)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding stream offset")
 	}
 
-	blockHeight, err := utils.Uint2Big(msg.BlockHeight)
+	blockHeight, err := uintconv.ToBig(msg.BlockHeight)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding block height")
 	}
@@ -218,14 +219,14 @@ func EntMsgToGraphQLXMsgWithEdges(ctx context.Context, msg *ent.Msg) (*resolvers
 	xblock := resolvers.XBlock{
 		SourceChainID: hexutil.Big(sourceChainIDBig),
 		BlockHeight:   hexutil.Big(blockHeight),
-		BlockHash:     common.Hash(b.BlockHash),
-		Timestamp:     graphql.Time{Time: block.CreatedAt},
+		BlockHash:     common.Hash(b.Hash),
+		Timestamp:     graphql.Time{Time: block.Timestamp},
 	}
 	xmsg := &resolvers.XMsg{
 		ID:                  graphql.ID(strconv.Itoa(msg.ID)),
-		SourceMessageSender: common.Address(msg.SourceMsgSender),
+		SourceMessageSender: common.Address(msg.Sender),
 		SourceChainID:       hexutil.Big(sourceChainIDBig),
-		DestAddress:         common.Address(msg.DestAddress),
+		DestAddress:         common.Address(msg.To),
 		DestGasLimit:        hexutil.Big(destGasLimit),
 		DestChainID:         hexutil.Big(destChainIDBig),
 		StreamOffset:        hexutil.Big(streamOffset),

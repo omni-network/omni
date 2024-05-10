@@ -11,7 +11,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/omni-network/omni/explorer/db/ent/block"
 	"github.com/omni-network/omni/explorer/db/ent/msg"
 	"github.com/omni-network/omni/explorer/db/ent/predicate"
@@ -31,168 +30,20 @@ func (mu *MsgUpdate) Where(ps ...predicate.Msg) *MsgUpdate {
 	return mu
 }
 
-// SetUUID sets the "UUID" field.
-func (mu *MsgUpdate) SetUUID(u uuid.UUID) *MsgUpdate {
-	mu.mutation.SetUUID(u)
-	return mu
-}
-
-// SetNillableUUID sets the "UUID" field if the given value is not nil.
-func (mu *MsgUpdate) SetNillableUUID(u *uuid.UUID) *MsgUpdate {
-	if u != nil {
-		mu.SetUUID(*u)
-	}
-	return mu
-}
-
-// SetBlockID sets the "Block_ID" field.
-func (mu *MsgUpdate) SetBlockID(i int) *MsgUpdate {
-	mu.mutation.SetBlockID(i)
-	return mu
-}
-
-// SetNillableBlockID sets the "Block_ID" field if the given value is not nil.
-func (mu *MsgUpdate) SetNillableBlockID(i *int) *MsgUpdate {
-	if i != nil {
-		mu.SetBlockID(*i)
-	}
-	return mu
-}
-
-// ClearBlockID clears the value of the "Block_ID" field.
-func (mu *MsgUpdate) ClearBlockID() *MsgUpdate {
-	mu.mutation.ClearBlockID()
-	return mu
-}
-
-// SetSourceMsgSender sets the "SourceMsgSender" field.
-func (mu *MsgUpdate) SetSourceMsgSender(b []byte) *MsgUpdate {
-	mu.mutation.SetSourceMsgSender(b)
-	return mu
-}
-
-// SetDestAddress sets the "DestAddress" field.
-func (mu *MsgUpdate) SetDestAddress(b []byte) *MsgUpdate {
-	mu.mutation.SetDestAddress(b)
-	return mu
-}
-
-// SetData sets the "Data" field.
-func (mu *MsgUpdate) SetData(b []byte) *MsgUpdate {
-	mu.mutation.SetData(b)
-	return mu
-}
-
-// SetDestGasLimit sets the "DestGasLimit" field.
-func (mu *MsgUpdate) SetDestGasLimit(u uint64) *MsgUpdate {
-	mu.mutation.ResetDestGasLimit()
-	mu.mutation.SetDestGasLimit(u)
-	return mu
-}
-
-// SetNillableDestGasLimit sets the "DestGasLimit" field if the given value is not nil.
-func (mu *MsgUpdate) SetNillableDestGasLimit(u *uint64) *MsgUpdate {
-	if u != nil {
-		mu.SetDestGasLimit(*u)
-	}
-	return mu
-}
-
-// AddDestGasLimit adds u to the "DestGasLimit" field.
-func (mu *MsgUpdate) AddDestGasLimit(u int64) *MsgUpdate {
-	mu.mutation.AddDestGasLimit(u)
-	return mu
-}
-
-// SetSourceChainID sets the "SourceChainID" field.
-func (mu *MsgUpdate) SetSourceChainID(u uint64) *MsgUpdate {
-	mu.mutation.ResetSourceChainID()
-	mu.mutation.SetSourceChainID(u)
-	return mu
-}
-
-// SetNillableSourceChainID sets the "SourceChainID" field if the given value is not nil.
-func (mu *MsgUpdate) SetNillableSourceChainID(u *uint64) *MsgUpdate {
-	if u != nil {
-		mu.SetSourceChainID(*u)
-	}
-	return mu
-}
-
-// AddSourceChainID adds u to the "SourceChainID" field.
-func (mu *MsgUpdate) AddSourceChainID(u int64) *MsgUpdate {
-	mu.mutation.AddSourceChainID(u)
-	return mu
-}
-
-// SetDestChainID sets the "DestChainID" field.
-func (mu *MsgUpdate) SetDestChainID(u uint64) *MsgUpdate {
-	mu.mutation.ResetDestChainID()
-	mu.mutation.SetDestChainID(u)
-	return mu
-}
-
-// SetNillableDestChainID sets the "DestChainID" field if the given value is not nil.
-func (mu *MsgUpdate) SetNillableDestChainID(u *uint64) *MsgUpdate {
-	if u != nil {
-		mu.SetDestChainID(*u)
-	}
-	return mu
-}
-
-// AddDestChainID adds u to the "DestChainID" field.
-func (mu *MsgUpdate) AddDestChainID(u int64) *MsgUpdate {
-	mu.mutation.AddDestChainID(u)
-	return mu
-}
-
-// SetStreamOffset sets the "StreamOffset" field.
-func (mu *MsgUpdate) SetStreamOffset(u uint64) *MsgUpdate {
-	mu.mutation.ResetStreamOffset()
-	mu.mutation.SetStreamOffset(u)
-	return mu
-}
-
-// SetNillableStreamOffset sets the "StreamOffset" field if the given value is not nil.
-func (mu *MsgUpdate) SetNillableStreamOffset(u *uint64) *MsgUpdate {
-	if u != nil {
-		mu.SetStreamOffset(*u)
-	}
-	return mu
-}
-
-// AddStreamOffset adds u to the "StreamOffset" field.
-func (mu *MsgUpdate) AddStreamOffset(u int64) *MsgUpdate {
-	mu.mutation.AddStreamOffset(u)
-	return mu
-}
-
-// SetTxHash sets the "TxHash" field.
-func (mu *MsgUpdate) SetTxHash(b []byte) *MsgUpdate {
-	mu.mutation.SetTxHash(b)
-	return mu
-}
-
-// SetBlockHash sets the "BlockHash" field.
+// SetBlockHash sets the "block_hash" field.
 func (mu *MsgUpdate) SetBlockHash(b []byte) *MsgUpdate {
 	mu.mutation.SetBlockHash(b)
 	return mu
 }
 
-// ClearBlockHash clears the value of the "BlockHash" field.
-func (mu *MsgUpdate) ClearBlockHash() *MsgUpdate {
-	mu.mutation.ClearBlockHash()
-	return mu
-}
-
-// SetBlockHeight sets the "BlockHeight" field.
+// SetBlockHeight sets the "block_height" field.
 func (mu *MsgUpdate) SetBlockHeight(u uint64) *MsgUpdate {
 	mu.mutation.ResetBlockHeight()
 	mu.mutation.SetBlockHeight(u)
 	return mu
 }
 
-// SetNillableBlockHeight sets the "BlockHeight" field if the given value is not nil.
+// SetNillableBlockHeight sets the "block_height" field if the given value is not nil.
 func (mu *MsgUpdate) SetNillableBlockHeight(u *uint64) *MsgUpdate {
 	if u != nil {
 		mu.SetBlockHeight(*u)
@@ -200,57 +51,19 @@ func (mu *MsgUpdate) SetNillableBlockHeight(u *uint64) *MsgUpdate {
 	return mu
 }
 
-// AddBlockHeight adds u to the "BlockHeight" field.
+// AddBlockHeight adds u to the "block_height" field.
 func (mu *MsgUpdate) AddBlockHeight(u int64) *MsgUpdate {
 	mu.mutation.AddBlockHeight(u)
 	return mu
 }
 
-// ClearBlockHeight clears the value of the "BlockHeight" field.
-func (mu *MsgUpdate) ClearBlockHeight() *MsgUpdate {
-	mu.mutation.ClearBlockHeight()
-	return mu
-}
-
-// SetReceiptHash sets the "ReceiptHash" field.
-func (mu *MsgUpdate) SetReceiptHash(b []byte) *MsgUpdate {
-	mu.mutation.SetReceiptHash(b)
-	return mu
-}
-
-// ClearReceiptHash clears the value of the "ReceiptHash" field.
-func (mu *MsgUpdate) ClearReceiptHash() *MsgUpdate {
-	mu.mutation.ClearReceiptHash()
-	return mu
-}
-
-// SetStatus sets the "Status" field.
-func (mu *MsgUpdate) SetStatus(s string) *MsgUpdate {
-	mu.mutation.SetStatus(s)
-	return mu
-}
-
-// SetNillableStatus sets the "Status" field if the given value is not nil.
-func (mu *MsgUpdate) SetNillableStatus(s *string) *MsgUpdate {
-	if s != nil {
-		mu.SetStatus(*s)
-	}
-	return mu
-}
-
-// ClearStatus clears the value of the "Status" field.
-func (mu *MsgUpdate) ClearStatus() *MsgUpdate {
-	mu.mutation.ClearStatus()
-	return mu
-}
-
-// SetBlockTime sets the "BlockTime" field.
+// SetBlockTime sets the "block_time" field.
 func (mu *MsgUpdate) SetBlockTime(t time.Time) *MsgUpdate {
 	mu.mutation.SetBlockTime(t)
 	return mu
 }
 
-// SetNillableBlockTime sets the "BlockTime" field if the given value is not nil.
+// SetNillableBlockTime sets the "block_time" field if the given value is not nil.
 func (mu *MsgUpdate) SetNillableBlockTime(t *time.Time) *MsgUpdate {
 	if t != nil {
 		mu.SetBlockTime(*t)
@@ -258,19 +71,153 @@ func (mu *MsgUpdate) SetNillableBlockTime(t *time.Time) *MsgUpdate {
 	return mu
 }
 
-// ClearBlockTime clears the value of the "BlockTime" field.
-func (mu *MsgUpdate) ClearBlockTime() *MsgUpdate {
-	mu.mutation.ClearBlockTime()
+// SetSender sets the "sender" field.
+func (mu *MsgUpdate) SetSender(b []byte) *MsgUpdate {
+	mu.mutation.SetSender(b)
 	return mu
 }
 
-// SetCreatedAt sets the "CreatedAt" field.
+// SetTo sets the "to" field.
+func (mu *MsgUpdate) SetTo(b []byte) *MsgUpdate {
+	mu.mutation.SetTo(b)
+	return mu
+}
+
+// SetData sets the "data" field.
+func (mu *MsgUpdate) SetData(b []byte) *MsgUpdate {
+	mu.mutation.SetData(b)
+	return mu
+}
+
+// SetGasLimit sets the "gas_limit" field.
+func (mu *MsgUpdate) SetGasLimit(u uint64) *MsgUpdate {
+	mu.mutation.ResetGasLimit()
+	mu.mutation.SetGasLimit(u)
+	return mu
+}
+
+// SetNillableGasLimit sets the "gas_limit" field if the given value is not nil.
+func (mu *MsgUpdate) SetNillableGasLimit(u *uint64) *MsgUpdate {
+	if u != nil {
+		mu.SetGasLimit(*u)
+	}
+	return mu
+}
+
+// AddGasLimit adds u to the "gas_limit" field.
+func (mu *MsgUpdate) AddGasLimit(u int64) *MsgUpdate {
+	mu.mutation.AddGasLimit(u)
+	return mu
+}
+
+// SetSourceChainID sets the "source_chain_id" field.
+func (mu *MsgUpdate) SetSourceChainID(u uint64) *MsgUpdate {
+	mu.mutation.ResetSourceChainID()
+	mu.mutation.SetSourceChainID(u)
+	return mu
+}
+
+// SetNillableSourceChainID sets the "source_chain_id" field if the given value is not nil.
+func (mu *MsgUpdate) SetNillableSourceChainID(u *uint64) *MsgUpdate {
+	if u != nil {
+		mu.SetSourceChainID(*u)
+	}
+	return mu
+}
+
+// AddSourceChainID adds u to the "source_chain_id" field.
+func (mu *MsgUpdate) AddSourceChainID(u int64) *MsgUpdate {
+	mu.mutation.AddSourceChainID(u)
+	return mu
+}
+
+// SetDestChainID sets the "dest_chain_id" field.
+func (mu *MsgUpdate) SetDestChainID(u uint64) *MsgUpdate {
+	mu.mutation.ResetDestChainID()
+	mu.mutation.SetDestChainID(u)
+	return mu
+}
+
+// SetNillableDestChainID sets the "dest_chain_id" field if the given value is not nil.
+func (mu *MsgUpdate) SetNillableDestChainID(u *uint64) *MsgUpdate {
+	if u != nil {
+		mu.SetDestChainID(*u)
+	}
+	return mu
+}
+
+// AddDestChainID adds u to the "dest_chain_id" field.
+func (mu *MsgUpdate) AddDestChainID(u int64) *MsgUpdate {
+	mu.mutation.AddDestChainID(u)
+	return mu
+}
+
+// SetOffset sets the "offset" field.
+func (mu *MsgUpdate) SetOffset(u uint64) *MsgUpdate {
+	mu.mutation.ResetOffset()
+	mu.mutation.SetOffset(u)
+	return mu
+}
+
+// SetNillableOffset sets the "offset" field if the given value is not nil.
+func (mu *MsgUpdate) SetNillableOffset(u *uint64) *MsgUpdate {
+	if u != nil {
+		mu.SetOffset(*u)
+	}
+	return mu
+}
+
+// AddOffset adds u to the "offset" field.
+func (mu *MsgUpdate) AddOffset(u int64) *MsgUpdate {
+	mu.mutation.AddOffset(u)
+	return mu
+}
+
+// SetTxHash sets the "tx_hash" field.
+func (mu *MsgUpdate) SetTxHash(b []byte) *MsgUpdate {
+	mu.mutation.SetTxHash(b)
+	return mu
+}
+
+// SetReceiptHash sets the "receipt_hash" field.
+func (mu *MsgUpdate) SetReceiptHash(b []byte) *MsgUpdate {
+	mu.mutation.SetReceiptHash(b)
+	return mu
+}
+
+// ClearReceiptHash clears the value of the "receipt_hash" field.
+func (mu *MsgUpdate) ClearReceiptHash() *MsgUpdate {
+	mu.mutation.ClearReceiptHash()
+	return mu
+}
+
+// SetStatus sets the "status" field.
+func (mu *MsgUpdate) SetStatus(s string) *MsgUpdate {
+	mu.mutation.SetStatus(s)
+	return mu
+}
+
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (mu *MsgUpdate) SetNillableStatus(s *string) *MsgUpdate {
+	if s != nil {
+		mu.SetStatus(*s)
+	}
+	return mu
+}
+
+// ClearStatus clears the value of the "status" field.
+func (mu *MsgUpdate) ClearStatus() *MsgUpdate {
+	mu.mutation.ClearStatus()
+	return mu
+}
+
+// SetCreatedAt sets the "created_at" field.
 func (mu *MsgUpdate) SetCreatedAt(t time.Time) *MsgUpdate {
 	mu.mutation.SetCreatedAt(t)
 	return mu
 }
 
-// SetNillableCreatedAt sets the "CreatedAt" field if the given value is not nil.
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
 func (mu *MsgUpdate) SetNillableCreatedAt(t *time.Time) *MsgUpdate {
 	if t != nil {
 		mu.SetCreatedAt(*t)
@@ -278,9 +225,19 @@ func (mu *MsgUpdate) SetNillableCreatedAt(t *time.Time) *MsgUpdate {
 	return mu
 }
 
-// SetBlock sets the "Block" edge to the Block entity.
-func (mu *MsgUpdate) SetBlock(b *Block) *MsgUpdate {
-	return mu.SetBlockID(b.ID)
+// AddBlockIDs adds the "Block" edge to the Block entity by IDs.
+func (mu *MsgUpdate) AddBlockIDs(ids ...int) *MsgUpdate {
+	mu.mutation.AddBlockIDs(ids...)
+	return mu
+}
+
+// AddBlock adds the "Block" edges to the Block entity.
+func (mu *MsgUpdate) AddBlock(b ...*Block) *MsgUpdate {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return mu.AddBlockIDs(ids...)
 }
 
 // AddReceiptIDs adds the "Receipts" edge to the Receipt entity by IDs.
@@ -303,10 +260,25 @@ func (mu *MsgUpdate) Mutation() *MsgMutation {
 	return mu.mutation
 }
 
-// ClearBlock clears the "Block" edge to the Block entity.
+// ClearBlock clears all "Block" edges to the Block entity.
 func (mu *MsgUpdate) ClearBlock() *MsgUpdate {
 	mu.mutation.ClearBlock()
 	return mu
+}
+
+// RemoveBlockIDs removes the "Block" edge to Block entities by IDs.
+func (mu *MsgUpdate) RemoveBlockIDs(ids ...int) *MsgUpdate {
+	mu.mutation.RemoveBlockIDs(ids...)
+	return mu
+}
+
+// RemoveBlock removes "Block" edges to Block entities.
+func (mu *MsgUpdate) RemoveBlock(b ...*Block) *MsgUpdate {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return mu.RemoveBlockIDs(ids...)
 }
 
 // ClearReceipts clears all "Receipts" edges to the Receipt entity.
@@ -359,29 +331,29 @@ func (mu *MsgUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (mu *MsgUpdate) check() error {
-	if v, ok := mu.mutation.SourceMsgSender(); ok {
-		if err := msg.SourceMsgSenderValidator(v); err != nil {
-			return &ValidationError{Name: "SourceMsgSender", err: fmt.Errorf(`ent: validator failed for field "Msg.SourceMsgSender": %w`, err)}
+	if v, ok := mu.mutation.BlockHash(); ok {
+		if err := msg.BlockHashValidator(v); err != nil {
+			return &ValidationError{Name: "block_hash", err: fmt.Errorf(`ent: validator failed for field "Msg.block_hash": %w`, err)}
 		}
 	}
-	if v, ok := mu.mutation.DestAddress(); ok {
-		if err := msg.DestAddressValidator(v); err != nil {
-			return &ValidationError{Name: "DestAddress", err: fmt.Errorf(`ent: validator failed for field "Msg.DestAddress": %w`, err)}
+	if v, ok := mu.mutation.Sender(); ok {
+		if err := msg.SenderValidator(v); err != nil {
+			return &ValidationError{Name: "sender", err: fmt.Errorf(`ent: validator failed for field "Msg.sender": %w`, err)}
+		}
+	}
+	if v, ok := mu.mutation.To(); ok {
+		if err := msg.ToValidator(v); err != nil {
+			return &ValidationError{Name: "to", err: fmt.Errorf(`ent: validator failed for field "Msg.to": %w`, err)}
 		}
 	}
 	if v, ok := mu.mutation.TxHash(); ok {
 		if err := msg.TxHashValidator(v); err != nil {
-			return &ValidationError{Name: "TxHash", err: fmt.Errorf(`ent: validator failed for field "Msg.TxHash": %w`, err)}
-		}
-	}
-	if v, ok := mu.mutation.BlockHash(); ok {
-		if err := msg.BlockHashValidator(v); err != nil {
-			return &ValidationError{Name: "BlockHash", err: fmt.Errorf(`ent: validator failed for field "Msg.BlockHash": %w`, err)}
+			return &ValidationError{Name: "tx_hash", err: fmt.Errorf(`ent: validator failed for field "Msg.tx_hash": %w`, err)}
 		}
 	}
 	if v, ok := mu.mutation.ReceiptHash(); ok {
 		if err := msg.ReceiptHashValidator(v); err != nil {
-			return &ValidationError{Name: "ReceiptHash", err: fmt.Errorf(`ent: validator failed for field "Msg.ReceiptHash": %w`, err)}
+			return &ValidationError{Name: "receipt_hash", err: fmt.Errorf(`ent: validator failed for field "Msg.receipt_hash": %w`, err)}
 		}
 	}
 	return nil
@@ -399,23 +371,32 @@ func (mu *MsgUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := mu.mutation.UUID(); ok {
-		_spec.SetField(msg.FieldUUID, field.TypeUUID, value)
+	if value, ok := mu.mutation.BlockHash(); ok {
+		_spec.SetField(msg.FieldBlockHash, field.TypeBytes, value)
 	}
-	if value, ok := mu.mutation.SourceMsgSender(); ok {
-		_spec.SetField(msg.FieldSourceMsgSender, field.TypeBytes, value)
+	if value, ok := mu.mutation.BlockHeight(); ok {
+		_spec.SetField(msg.FieldBlockHeight, field.TypeUint64, value)
 	}
-	if value, ok := mu.mutation.DestAddress(); ok {
-		_spec.SetField(msg.FieldDestAddress, field.TypeBytes, value)
+	if value, ok := mu.mutation.AddedBlockHeight(); ok {
+		_spec.AddField(msg.FieldBlockHeight, field.TypeUint64, value)
+	}
+	if value, ok := mu.mutation.BlockTime(); ok {
+		_spec.SetField(msg.FieldBlockTime, field.TypeTime, value)
+	}
+	if value, ok := mu.mutation.Sender(); ok {
+		_spec.SetField(msg.FieldSender, field.TypeBytes, value)
+	}
+	if value, ok := mu.mutation.To(); ok {
+		_spec.SetField(msg.FieldTo, field.TypeBytes, value)
 	}
 	if value, ok := mu.mutation.Data(); ok {
 		_spec.SetField(msg.FieldData, field.TypeBytes, value)
 	}
-	if value, ok := mu.mutation.DestGasLimit(); ok {
-		_spec.SetField(msg.FieldDestGasLimit, field.TypeUint64, value)
+	if value, ok := mu.mutation.GasLimit(); ok {
+		_spec.SetField(msg.FieldGasLimit, field.TypeUint64, value)
 	}
-	if value, ok := mu.mutation.AddedDestGasLimit(); ok {
-		_spec.AddField(msg.FieldDestGasLimit, field.TypeUint64, value)
+	if value, ok := mu.mutation.AddedGasLimit(); ok {
+		_spec.AddField(msg.FieldGasLimit, field.TypeUint64, value)
 	}
 	if value, ok := mu.mutation.SourceChainID(); ok {
 		_spec.SetField(msg.FieldSourceChainID, field.TypeUint64, value)
@@ -429,29 +410,14 @@ func (mu *MsgUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := mu.mutation.AddedDestChainID(); ok {
 		_spec.AddField(msg.FieldDestChainID, field.TypeUint64, value)
 	}
-	if value, ok := mu.mutation.StreamOffset(); ok {
-		_spec.SetField(msg.FieldStreamOffset, field.TypeUint64, value)
+	if value, ok := mu.mutation.Offset(); ok {
+		_spec.SetField(msg.FieldOffset, field.TypeUint64, value)
 	}
-	if value, ok := mu.mutation.AddedStreamOffset(); ok {
-		_spec.AddField(msg.FieldStreamOffset, field.TypeUint64, value)
+	if value, ok := mu.mutation.AddedOffset(); ok {
+		_spec.AddField(msg.FieldOffset, field.TypeUint64, value)
 	}
 	if value, ok := mu.mutation.TxHash(); ok {
 		_spec.SetField(msg.FieldTxHash, field.TypeBytes, value)
-	}
-	if value, ok := mu.mutation.BlockHash(); ok {
-		_spec.SetField(msg.FieldBlockHash, field.TypeBytes, value)
-	}
-	if mu.mutation.BlockHashCleared() {
-		_spec.ClearField(msg.FieldBlockHash, field.TypeBytes)
-	}
-	if value, ok := mu.mutation.BlockHeight(); ok {
-		_spec.SetField(msg.FieldBlockHeight, field.TypeUint64, value)
-	}
-	if value, ok := mu.mutation.AddedBlockHeight(); ok {
-		_spec.AddField(msg.FieldBlockHeight, field.TypeUint64, value)
-	}
-	if mu.mutation.BlockHeightCleared() {
-		_spec.ClearField(msg.FieldBlockHeight, field.TypeUint64)
 	}
 	if value, ok := mu.mutation.ReceiptHash(); ok {
 		_spec.SetField(msg.FieldReceiptHash, field.TypeBytes, value)
@@ -465,21 +431,15 @@ func (mu *MsgUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if mu.mutation.StatusCleared() {
 		_spec.ClearField(msg.FieldStatus, field.TypeString)
 	}
-	if value, ok := mu.mutation.BlockTime(); ok {
-		_spec.SetField(msg.FieldBlockTime, field.TypeTime, value)
-	}
-	if mu.mutation.BlockTimeCleared() {
-		_spec.ClearField(msg.FieldBlockTime, field.TypeTime)
-	}
 	if value, ok := mu.mutation.CreatedAt(); ok {
 		_spec.SetField(msg.FieldCreatedAt, field.TypeTime, value)
 	}
 	if mu.mutation.BlockCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   msg.BlockTable,
-			Columns: []string{msg.BlockColumn},
+			Columns: msg.BlockPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(block.FieldID, field.TypeInt),
@@ -487,12 +447,28 @@ func (mu *MsgUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := mu.mutation.BlockIDs(); len(nodes) > 0 {
+	if nodes := mu.mutation.RemovedBlockIDs(); len(nodes) > 0 && !mu.mutation.BlockCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   msg.BlockTable,
-			Columns: []string{msg.BlockColumn},
+			Columns: msg.BlockPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(block.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := mu.mutation.BlockIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   msg.BlockTable,
+			Columns: msg.BlockPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(block.FieldID, field.TypeInt),
@@ -568,168 +544,20 @@ type MsgUpdateOne struct {
 	mutation *MsgMutation
 }
 
-// SetUUID sets the "UUID" field.
-func (muo *MsgUpdateOne) SetUUID(u uuid.UUID) *MsgUpdateOne {
-	muo.mutation.SetUUID(u)
-	return muo
-}
-
-// SetNillableUUID sets the "UUID" field if the given value is not nil.
-func (muo *MsgUpdateOne) SetNillableUUID(u *uuid.UUID) *MsgUpdateOne {
-	if u != nil {
-		muo.SetUUID(*u)
-	}
-	return muo
-}
-
-// SetBlockID sets the "Block_ID" field.
-func (muo *MsgUpdateOne) SetBlockID(i int) *MsgUpdateOne {
-	muo.mutation.SetBlockID(i)
-	return muo
-}
-
-// SetNillableBlockID sets the "Block_ID" field if the given value is not nil.
-func (muo *MsgUpdateOne) SetNillableBlockID(i *int) *MsgUpdateOne {
-	if i != nil {
-		muo.SetBlockID(*i)
-	}
-	return muo
-}
-
-// ClearBlockID clears the value of the "Block_ID" field.
-func (muo *MsgUpdateOne) ClearBlockID() *MsgUpdateOne {
-	muo.mutation.ClearBlockID()
-	return muo
-}
-
-// SetSourceMsgSender sets the "SourceMsgSender" field.
-func (muo *MsgUpdateOne) SetSourceMsgSender(b []byte) *MsgUpdateOne {
-	muo.mutation.SetSourceMsgSender(b)
-	return muo
-}
-
-// SetDestAddress sets the "DestAddress" field.
-func (muo *MsgUpdateOne) SetDestAddress(b []byte) *MsgUpdateOne {
-	muo.mutation.SetDestAddress(b)
-	return muo
-}
-
-// SetData sets the "Data" field.
-func (muo *MsgUpdateOne) SetData(b []byte) *MsgUpdateOne {
-	muo.mutation.SetData(b)
-	return muo
-}
-
-// SetDestGasLimit sets the "DestGasLimit" field.
-func (muo *MsgUpdateOne) SetDestGasLimit(u uint64) *MsgUpdateOne {
-	muo.mutation.ResetDestGasLimit()
-	muo.mutation.SetDestGasLimit(u)
-	return muo
-}
-
-// SetNillableDestGasLimit sets the "DestGasLimit" field if the given value is not nil.
-func (muo *MsgUpdateOne) SetNillableDestGasLimit(u *uint64) *MsgUpdateOne {
-	if u != nil {
-		muo.SetDestGasLimit(*u)
-	}
-	return muo
-}
-
-// AddDestGasLimit adds u to the "DestGasLimit" field.
-func (muo *MsgUpdateOne) AddDestGasLimit(u int64) *MsgUpdateOne {
-	muo.mutation.AddDestGasLimit(u)
-	return muo
-}
-
-// SetSourceChainID sets the "SourceChainID" field.
-func (muo *MsgUpdateOne) SetSourceChainID(u uint64) *MsgUpdateOne {
-	muo.mutation.ResetSourceChainID()
-	muo.mutation.SetSourceChainID(u)
-	return muo
-}
-
-// SetNillableSourceChainID sets the "SourceChainID" field if the given value is not nil.
-func (muo *MsgUpdateOne) SetNillableSourceChainID(u *uint64) *MsgUpdateOne {
-	if u != nil {
-		muo.SetSourceChainID(*u)
-	}
-	return muo
-}
-
-// AddSourceChainID adds u to the "SourceChainID" field.
-func (muo *MsgUpdateOne) AddSourceChainID(u int64) *MsgUpdateOne {
-	muo.mutation.AddSourceChainID(u)
-	return muo
-}
-
-// SetDestChainID sets the "DestChainID" field.
-func (muo *MsgUpdateOne) SetDestChainID(u uint64) *MsgUpdateOne {
-	muo.mutation.ResetDestChainID()
-	muo.mutation.SetDestChainID(u)
-	return muo
-}
-
-// SetNillableDestChainID sets the "DestChainID" field if the given value is not nil.
-func (muo *MsgUpdateOne) SetNillableDestChainID(u *uint64) *MsgUpdateOne {
-	if u != nil {
-		muo.SetDestChainID(*u)
-	}
-	return muo
-}
-
-// AddDestChainID adds u to the "DestChainID" field.
-func (muo *MsgUpdateOne) AddDestChainID(u int64) *MsgUpdateOne {
-	muo.mutation.AddDestChainID(u)
-	return muo
-}
-
-// SetStreamOffset sets the "StreamOffset" field.
-func (muo *MsgUpdateOne) SetStreamOffset(u uint64) *MsgUpdateOne {
-	muo.mutation.ResetStreamOffset()
-	muo.mutation.SetStreamOffset(u)
-	return muo
-}
-
-// SetNillableStreamOffset sets the "StreamOffset" field if the given value is not nil.
-func (muo *MsgUpdateOne) SetNillableStreamOffset(u *uint64) *MsgUpdateOne {
-	if u != nil {
-		muo.SetStreamOffset(*u)
-	}
-	return muo
-}
-
-// AddStreamOffset adds u to the "StreamOffset" field.
-func (muo *MsgUpdateOne) AddStreamOffset(u int64) *MsgUpdateOne {
-	muo.mutation.AddStreamOffset(u)
-	return muo
-}
-
-// SetTxHash sets the "TxHash" field.
-func (muo *MsgUpdateOne) SetTxHash(b []byte) *MsgUpdateOne {
-	muo.mutation.SetTxHash(b)
-	return muo
-}
-
-// SetBlockHash sets the "BlockHash" field.
+// SetBlockHash sets the "block_hash" field.
 func (muo *MsgUpdateOne) SetBlockHash(b []byte) *MsgUpdateOne {
 	muo.mutation.SetBlockHash(b)
 	return muo
 }
 
-// ClearBlockHash clears the value of the "BlockHash" field.
-func (muo *MsgUpdateOne) ClearBlockHash() *MsgUpdateOne {
-	muo.mutation.ClearBlockHash()
-	return muo
-}
-
-// SetBlockHeight sets the "BlockHeight" field.
+// SetBlockHeight sets the "block_height" field.
 func (muo *MsgUpdateOne) SetBlockHeight(u uint64) *MsgUpdateOne {
 	muo.mutation.ResetBlockHeight()
 	muo.mutation.SetBlockHeight(u)
 	return muo
 }
 
-// SetNillableBlockHeight sets the "BlockHeight" field if the given value is not nil.
+// SetNillableBlockHeight sets the "block_height" field if the given value is not nil.
 func (muo *MsgUpdateOne) SetNillableBlockHeight(u *uint64) *MsgUpdateOne {
 	if u != nil {
 		muo.SetBlockHeight(*u)
@@ -737,57 +565,19 @@ func (muo *MsgUpdateOne) SetNillableBlockHeight(u *uint64) *MsgUpdateOne {
 	return muo
 }
 
-// AddBlockHeight adds u to the "BlockHeight" field.
+// AddBlockHeight adds u to the "block_height" field.
 func (muo *MsgUpdateOne) AddBlockHeight(u int64) *MsgUpdateOne {
 	muo.mutation.AddBlockHeight(u)
 	return muo
 }
 
-// ClearBlockHeight clears the value of the "BlockHeight" field.
-func (muo *MsgUpdateOne) ClearBlockHeight() *MsgUpdateOne {
-	muo.mutation.ClearBlockHeight()
-	return muo
-}
-
-// SetReceiptHash sets the "ReceiptHash" field.
-func (muo *MsgUpdateOne) SetReceiptHash(b []byte) *MsgUpdateOne {
-	muo.mutation.SetReceiptHash(b)
-	return muo
-}
-
-// ClearReceiptHash clears the value of the "ReceiptHash" field.
-func (muo *MsgUpdateOne) ClearReceiptHash() *MsgUpdateOne {
-	muo.mutation.ClearReceiptHash()
-	return muo
-}
-
-// SetStatus sets the "Status" field.
-func (muo *MsgUpdateOne) SetStatus(s string) *MsgUpdateOne {
-	muo.mutation.SetStatus(s)
-	return muo
-}
-
-// SetNillableStatus sets the "Status" field if the given value is not nil.
-func (muo *MsgUpdateOne) SetNillableStatus(s *string) *MsgUpdateOne {
-	if s != nil {
-		muo.SetStatus(*s)
-	}
-	return muo
-}
-
-// ClearStatus clears the value of the "Status" field.
-func (muo *MsgUpdateOne) ClearStatus() *MsgUpdateOne {
-	muo.mutation.ClearStatus()
-	return muo
-}
-
-// SetBlockTime sets the "BlockTime" field.
+// SetBlockTime sets the "block_time" field.
 func (muo *MsgUpdateOne) SetBlockTime(t time.Time) *MsgUpdateOne {
 	muo.mutation.SetBlockTime(t)
 	return muo
 }
 
-// SetNillableBlockTime sets the "BlockTime" field if the given value is not nil.
+// SetNillableBlockTime sets the "block_time" field if the given value is not nil.
 func (muo *MsgUpdateOne) SetNillableBlockTime(t *time.Time) *MsgUpdateOne {
 	if t != nil {
 		muo.SetBlockTime(*t)
@@ -795,19 +585,153 @@ func (muo *MsgUpdateOne) SetNillableBlockTime(t *time.Time) *MsgUpdateOne {
 	return muo
 }
 
-// ClearBlockTime clears the value of the "BlockTime" field.
-func (muo *MsgUpdateOne) ClearBlockTime() *MsgUpdateOne {
-	muo.mutation.ClearBlockTime()
+// SetSender sets the "sender" field.
+func (muo *MsgUpdateOne) SetSender(b []byte) *MsgUpdateOne {
+	muo.mutation.SetSender(b)
 	return muo
 }
 
-// SetCreatedAt sets the "CreatedAt" field.
+// SetTo sets the "to" field.
+func (muo *MsgUpdateOne) SetTo(b []byte) *MsgUpdateOne {
+	muo.mutation.SetTo(b)
+	return muo
+}
+
+// SetData sets the "data" field.
+func (muo *MsgUpdateOne) SetData(b []byte) *MsgUpdateOne {
+	muo.mutation.SetData(b)
+	return muo
+}
+
+// SetGasLimit sets the "gas_limit" field.
+func (muo *MsgUpdateOne) SetGasLimit(u uint64) *MsgUpdateOne {
+	muo.mutation.ResetGasLimit()
+	muo.mutation.SetGasLimit(u)
+	return muo
+}
+
+// SetNillableGasLimit sets the "gas_limit" field if the given value is not nil.
+func (muo *MsgUpdateOne) SetNillableGasLimit(u *uint64) *MsgUpdateOne {
+	if u != nil {
+		muo.SetGasLimit(*u)
+	}
+	return muo
+}
+
+// AddGasLimit adds u to the "gas_limit" field.
+func (muo *MsgUpdateOne) AddGasLimit(u int64) *MsgUpdateOne {
+	muo.mutation.AddGasLimit(u)
+	return muo
+}
+
+// SetSourceChainID sets the "source_chain_id" field.
+func (muo *MsgUpdateOne) SetSourceChainID(u uint64) *MsgUpdateOne {
+	muo.mutation.ResetSourceChainID()
+	muo.mutation.SetSourceChainID(u)
+	return muo
+}
+
+// SetNillableSourceChainID sets the "source_chain_id" field if the given value is not nil.
+func (muo *MsgUpdateOne) SetNillableSourceChainID(u *uint64) *MsgUpdateOne {
+	if u != nil {
+		muo.SetSourceChainID(*u)
+	}
+	return muo
+}
+
+// AddSourceChainID adds u to the "source_chain_id" field.
+func (muo *MsgUpdateOne) AddSourceChainID(u int64) *MsgUpdateOne {
+	muo.mutation.AddSourceChainID(u)
+	return muo
+}
+
+// SetDestChainID sets the "dest_chain_id" field.
+func (muo *MsgUpdateOne) SetDestChainID(u uint64) *MsgUpdateOne {
+	muo.mutation.ResetDestChainID()
+	muo.mutation.SetDestChainID(u)
+	return muo
+}
+
+// SetNillableDestChainID sets the "dest_chain_id" field if the given value is not nil.
+func (muo *MsgUpdateOne) SetNillableDestChainID(u *uint64) *MsgUpdateOne {
+	if u != nil {
+		muo.SetDestChainID(*u)
+	}
+	return muo
+}
+
+// AddDestChainID adds u to the "dest_chain_id" field.
+func (muo *MsgUpdateOne) AddDestChainID(u int64) *MsgUpdateOne {
+	muo.mutation.AddDestChainID(u)
+	return muo
+}
+
+// SetOffset sets the "offset" field.
+func (muo *MsgUpdateOne) SetOffset(u uint64) *MsgUpdateOne {
+	muo.mutation.ResetOffset()
+	muo.mutation.SetOffset(u)
+	return muo
+}
+
+// SetNillableOffset sets the "offset" field if the given value is not nil.
+func (muo *MsgUpdateOne) SetNillableOffset(u *uint64) *MsgUpdateOne {
+	if u != nil {
+		muo.SetOffset(*u)
+	}
+	return muo
+}
+
+// AddOffset adds u to the "offset" field.
+func (muo *MsgUpdateOne) AddOffset(u int64) *MsgUpdateOne {
+	muo.mutation.AddOffset(u)
+	return muo
+}
+
+// SetTxHash sets the "tx_hash" field.
+func (muo *MsgUpdateOne) SetTxHash(b []byte) *MsgUpdateOne {
+	muo.mutation.SetTxHash(b)
+	return muo
+}
+
+// SetReceiptHash sets the "receipt_hash" field.
+func (muo *MsgUpdateOne) SetReceiptHash(b []byte) *MsgUpdateOne {
+	muo.mutation.SetReceiptHash(b)
+	return muo
+}
+
+// ClearReceiptHash clears the value of the "receipt_hash" field.
+func (muo *MsgUpdateOne) ClearReceiptHash() *MsgUpdateOne {
+	muo.mutation.ClearReceiptHash()
+	return muo
+}
+
+// SetStatus sets the "status" field.
+func (muo *MsgUpdateOne) SetStatus(s string) *MsgUpdateOne {
+	muo.mutation.SetStatus(s)
+	return muo
+}
+
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (muo *MsgUpdateOne) SetNillableStatus(s *string) *MsgUpdateOne {
+	if s != nil {
+		muo.SetStatus(*s)
+	}
+	return muo
+}
+
+// ClearStatus clears the value of the "status" field.
+func (muo *MsgUpdateOne) ClearStatus() *MsgUpdateOne {
+	muo.mutation.ClearStatus()
+	return muo
+}
+
+// SetCreatedAt sets the "created_at" field.
 func (muo *MsgUpdateOne) SetCreatedAt(t time.Time) *MsgUpdateOne {
 	muo.mutation.SetCreatedAt(t)
 	return muo
 }
 
-// SetNillableCreatedAt sets the "CreatedAt" field if the given value is not nil.
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
 func (muo *MsgUpdateOne) SetNillableCreatedAt(t *time.Time) *MsgUpdateOne {
 	if t != nil {
 		muo.SetCreatedAt(*t)
@@ -815,9 +739,19 @@ func (muo *MsgUpdateOne) SetNillableCreatedAt(t *time.Time) *MsgUpdateOne {
 	return muo
 }
 
-// SetBlock sets the "Block" edge to the Block entity.
-func (muo *MsgUpdateOne) SetBlock(b *Block) *MsgUpdateOne {
-	return muo.SetBlockID(b.ID)
+// AddBlockIDs adds the "Block" edge to the Block entity by IDs.
+func (muo *MsgUpdateOne) AddBlockIDs(ids ...int) *MsgUpdateOne {
+	muo.mutation.AddBlockIDs(ids...)
+	return muo
+}
+
+// AddBlock adds the "Block" edges to the Block entity.
+func (muo *MsgUpdateOne) AddBlock(b ...*Block) *MsgUpdateOne {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return muo.AddBlockIDs(ids...)
 }
 
 // AddReceiptIDs adds the "Receipts" edge to the Receipt entity by IDs.
@@ -840,10 +774,25 @@ func (muo *MsgUpdateOne) Mutation() *MsgMutation {
 	return muo.mutation
 }
 
-// ClearBlock clears the "Block" edge to the Block entity.
+// ClearBlock clears all "Block" edges to the Block entity.
 func (muo *MsgUpdateOne) ClearBlock() *MsgUpdateOne {
 	muo.mutation.ClearBlock()
 	return muo
+}
+
+// RemoveBlockIDs removes the "Block" edge to Block entities by IDs.
+func (muo *MsgUpdateOne) RemoveBlockIDs(ids ...int) *MsgUpdateOne {
+	muo.mutation.RemoveBlockIDs(ids...)
+	return muo
+}
+
+// RemoveBlock removes "Block" edges to Block entities.
+func (muo *MsgUpdateOne) RemoveBlock(b ...*Block) *MsgUpdateOne {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return muo.RemoveBlockIDs(ids...)
 }
 
 // ClearReceipts clears all "Receipts" edges to the Receipt entity.
@@ -909,29 +858,29 @@ func (muo *MsgUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (muo *MsgUpdateOne) check() error {
-	if v, ok := muo.mutation.SourceMsgSender(); ok {
-		if err := msg.SourceMsgSenderValidator(v); err != nil {
-			return &ValidationError{Name: "SourceMsgSender", err: fmt.Errorf(`ent: validator failed for field "Msg.SourceMsgSender": %w`, err)}
+	if v, ok := muo.mutation.BlockHash(); ok {
+		if err := msg.BlockHashValidator(v); err != nil {
+			return &ValidationError{Name: "block_hash", err: fmt.Errorf(`ent: validator failed for field "Msg.block_hash": %w`, err)}
 		}
 	}
-	if v, ok := muo.mutation.DestAddress(); ok {
-		if err := msg.DestAddressValidator(v); err != nil {
-			return &ValidationError{Name: "DestAddress", err: fmt.Errorf(`ent: validator failed for field "Msg.DestAddress": %w`, err)}
+	if v, ok := muo.mutation.Sender(); ok {
+		if err := msg.SenderValidator(v); err != nil {
+			return &ValidationError{Name: "sender", err: fmt.Errorf(`ent: validator failed for field "Msg.sender": %w`, err)}
+		}
+	}
+	if v, ok := muo.mutation.To(); ok {
+		if err := msg.ToValidator(v); err != nil {
+			return &ValidationError{Name: "to", err: fmt.Errorf(`ent: validator failed for field "Msg.to": %w`, err)}
 		}
 	}
 	if v, ok := muo.mutation.TxHash(); ok {
 		if err := msg.TxHashValidator(v); err != nil {
-			return &ValidationError{Name: "TxHash", err: fmt.Errorf(`ent: validator failed for field "Msg.TxHash": %w`, err)}
-		}
-	}
-	if v, ok := muo.mutation.BlockHash(); ok {
-		if err := msg.BlockHashValidator(v); err != nil {
-			return &ValidationError{Name: "BlockHash", err: fmt.Errorf(`ent: validator failed for field "Msg.BlockHash": %w`, err)}
+			return &ValidationError{Name: "tx_hash", err: fmt.Errorf(`ent: validator failed for field "Msg.tx_hash": %w`, err)}
 		}
 	}
 	if v, ok := muo.mutation.ReceiptHash(); ok {
 		if err := msg.ReceiptHashValidator(v); err != nil {
-			return &ValidationError{Name: "ReceiptHash", err: fmt.Errorf(`ent: validator failed for field "Msg.ReceiptHash": %w`, err)}
+			return &ValidationError{Name: "receipt_hash", err: fmt.Errorf(`ent: validator failed for field "Msg.receipt_hash": %w`, err)}
 		}
 	}
 	return nil
@@ -966,23 +915,32 @@ func (muo *MsgUpdateOne) sqlSave(ctx context.Context) (_node *Msg, err error) {
 			}
 		}
 	}
-	if value, ok := muo.mutation.UUID(); ok {
-		_spec.SetField(msg.FieldUUID, field.TypeUUID, value)
+	if value, ok := muo.mutation.BlockHash(); ok {
+		_spec.SetField(msg.FieldBlockHash, field.TypeBytes, value)
 	}
-	if value, ok := muo.mutation.SourceMsgSender(); ok {
-		_spec.SetField(msg.FieldSourceMsgSender, field.TypeBytes, value)
+	if value, ok := muo.mutation.BlockHeight(); ok {
+		_spec.SetField(msg.FieldBlockHeight, field.TypeUint64, value)
 	}
-	if value, ok := muo.mutation.DestAddress(); ok {
-		_spec.SetField(msg.FieldDestAddress, field.TypeBytes, value)
+	if value, ok := muo.mutation.AddedBlockHeight(); ok {
+		_spec.AddField(msg.FieldBlockHeight, field.TypeUint64, value)
+	}
+	if value, ok := muo.mutation.BlockTime(); ok {
+		_spec.SetField(msg.FieldBlockTime, field.TypeTime, value)
+	}
+	if value, ok := muo.mutation.Sender(); ok {
+		_spec.SetField(msg.FieldSender, field.TypeBytes, value)
+	}
+	if value, ok := muo.mutation.To(); ok {
+		_spec.SetField(msg.FieldTo, field.TypeBytes, value)
 	}
 	if value, ok := muo.mutation.Data(); ok {
 		_spec.SetField(msg.FieldData, field.TypeBytes, value)
 	}
-	if value, ok := muo.mutation.DestGasLimit(); ok {
-		_spec.SetField(msg.FieldDestGasLimit, field.TypeUint64, value)
+	if value, ok := muo.mutation.GasLimit(); ok {
+		_spec.SetField(msg.FieldGasLimit, field.TypeUint64, value)
 	}
-	if value, ok := muo.mutation.AddedDestGasLimit(); ok {
-		_spec.AddField(msg.FieldDestGasLimit, field.TypeUint64, value)
+	if value, ok := muo.mutation.AddedGasLimit(); ok {
+		_spec.AddField(msg.FieldGasLimit, field.TypeUint64, value)
 	}
 	if value, ok := muo.mutation.SourceChainID(); ok {
 		_spec.SetField(msg.FieldSourceChainID, field.TypeUint64, value)
@@ -996,29 +954,14 @@ func (muo *MsgUpdateOne) sqlSave(ctx context.Context) (_node *Msg, err error) {
 	if value, ok := muo.mutation.AddedDestChainID(); ok {
 		_spec.AddField(msg.FieldDestChainID, field.TypeUint64, value)
 	}
-	if value, ok := muo.mutation.StreamOffset(); ok {
-		_spec.SetField(msg.FieldStreamOffset, field.TypeUint64, value)
+	if value, ok := muo.mutation.Offset(); ok {
+		_spec.SetField(msg.FieldOffset, field.TypeUint64, value)
 	}
-	if value, ok := muo.mutation.AddedStreamOffset(); ok {
-		_spec.AddField(msg.FieldStreamOffset, field.TypeUint64, value)
+	if value, ok := muo.mutation.AddedOffset(); ok {
+		_spec.AddField(msg.FieldOffset, field.TypeUint64, value)
 	}
 	if value, ok := muo.mutation.TxHash(); ok {
 		_spec.SetField(msg.FieldTxHash, field.TypeBytes, value)
-	}
-	if value, ok := muo.mutation.BlockHash(); ok {
-		_spec.SetField(msg.FieldBlockHash, field.TypeBytes, value)
-	}
-	if muo.mutation.BlockHashCleared() {
-		_spec.ClearField(msg.FieldBlockHash, field.TypeBytes)
-	}
-	if value, ok := muo.mutation.BlockHeight(); ok {
-		_spec.SetField(msg.FieldBlockHeight, field.TypeUint64, value)
-	}
-	if value, ok := muo.mutation.AddedBlockHeight(); ok {
-		_spec.AddField(msg.FieldBlockHeight, field.TypeUint64, value)
-	}
-	if muo.mutation.BlockHeightCleared() {
-		_spec.ClearField(msg.FieldBlockHeight, field.TypeUint64)
 	}
 	if value, ok := muo.mutation.ReceiptHash(); ok {
 		_spec.SetField(msg.FieldReceiptHash, field.TypeBytes, value)
@@ -1032,21 +975,15 @@ func (muo *MsgUpdateOne) sqlSave(ctx context.Context) (_node *Msg, err error) {
 	if muo.mutation.StatusCleared() {
 		_spec.ClearField(msg.FieldStatus, field.TypeString)
 	}
-	if value, ok := muo.mutation.BlockTime(); ok {
-		_spec.SetField(msg.FieldBlockTime, field.TypeTime, value)
-	}
-	if muo.mutation.BlockTimeCleared() {
-		_spec.ClearField(msg.FieldBlockTime, field.TypeTime)
-	}
 	if value, ok := muo.mutation.CreatedAt(); ok {
 		_spec.SetField(msg.FieldCreatedAt, field.TypeTime, value)
 	}
 	if muo.mutation.BlockCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   msg.BlockTable,
-			Columns: []string{msg.BlockColumn},
+			Columns: msg.BlockPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(block.FieldID, field.TypeInt),
@@ -1054,12 +991,28 @@ func (muo *MsgUpdateOne) sqlSave(ctx context.Context) (_node *Msg, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := muo.mutation.BlockIDs(); len(nodes) > 0 {
+	if nodes := muo.mutation.RemovedBlockIDs(); len(nodes) > 0 && !muo.mutation.BlockCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   msg.BlockTable,
-			Columns: []string{msg.BlockColumn},
+			Columns: msg.BlockPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(block.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := muo.mutation.BlockIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   msg.BlockTable,
+			Columns: msg.BlockPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(block.FieldID, field.TypeInt),

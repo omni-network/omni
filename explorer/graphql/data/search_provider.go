@@ -8,7 +8,7 @@ import (
 	"github.com/omni-network/omni/explorer/db/ent/msg"
 	"github.com/omni-network/omni/explorer/db/ent/receipt"
 	"github.com/omni-network/omni/explorer/graphql/resolvers"
-	"github.com/omni-network/omni/explorer/graphql/utils"
+	"github.com/omni-network/omni/explorer/graphql/uintconv"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
@@ -28,20 +28,20 @@ func (p Provider) Search(ctx context.Context, query string) (*resolvers.SearchRe
 		return nil, false, errors.Wrap(err, "search hexutil.Decode")
 	}
 
-	blockQuery, err := p.EntClient.Block.Query().Where(block.BlockHash(hash)).First(ctx)
+	blockQuery, err := p.EntClient.Block.Query().Where(block.Hash(hash)).First(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, false, errors.Wrap(err, "search block graphql provider")
 	}
 
 	if blockQuery != nil {
-		searchResult.BlockHeight, err = utils.Uint2Hex(blockQuery.BlockHeight)
+		searchResult.BlockHeight, err = uintconv.ToHex(blockQuery.Height)
 		if err != nil {
 			log.Error(ctx, "Uint2Hex err", err)
 
 			return nil, false, err
 		}
 
-		chainID, err := utils.Uint2Hex(blockQuery.SourceChainID)
+		chainID, err := uintconv.ToHex(blockQuery.ChainID)
 		if err != nil {
 			log.Error(ctx, "Uint2Hex err", err)
 

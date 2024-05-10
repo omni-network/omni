@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/omni-network/omni/explorer/db"
+	"github.com/omni-network/omni/explorer/db/testutil"
 	"github.com/omni-network/omni/explorer/graphql/app"
 	"github.com/omni-network/omni/explorer/graphql/resolvers"
 
@@ -22,7 +22,7 @@ func TestXMsg(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	db.CreateTestBlocks(t, ctx, test.Client, 2)
+	testutil.CreateTestBlocks(t, ctx, test.Client, 2)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
@@ -76,7 +76,7 @@ func TestXMsgsNoCursor(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	db.CreateTestBlocks(t, ctx, test.Client, 5)
+	testutil.CreateTestBlocks(t, ctx, test.Client, 5)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
@@ -148,7 +148,7 @@ func TestXMsgsNoLimit(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	db.CreateTestBlocks(t, ctx, test.Client, 5)
+	testutil.CreateTestBlocks(t, ctx, test.Client, 5)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
@@ -224,7 +224,7 @@ func TestXMsgsNoParams(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	db.CreateTestBlocks(t, ctx, test.Client, 5)
+	testutil.CreateTestBlocks(t, ctx, test.Client, 5)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
