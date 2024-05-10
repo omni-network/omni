@@ -55,6 +55,7 @@ services:
       e2e: true
     image: postgres:14-alpine
     container_name: explorer_db
+    platform: linux/amd64
     environment:
       POSTGRES_DB: omni_db
       POSTGRES_USER: omni
