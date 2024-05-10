@@ -40,5 +40,5 @@ export const hashShortener = (hash: string) => {
   if (!hash) {
     return hash
   }
-  return `${hash.substring(0, 8)}...${hash.substring(hash.length - 5)}`
+  return `${hash.substring(0, 6)}...${hash.substring(hash.length - 6)}`
 }
