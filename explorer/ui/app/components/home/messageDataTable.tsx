@@ -94,6 +94,7 @@ export default function XMsgDataTable() {
 
   // here we set the filter params by clearing the old ones, and setting the current one and its value
   const searchBarInputCB = e => {
+
     const isAddress = e.target.value.match(/^0x[0-9a-fA-F]{40}$/)
     const isTxHash = e.target.value.match(/^0x[0-9a-fA-F]{64}$/)
 
@@ -105,6 +106,8 @@ export default function XMsgDataTable() {
     setFilterParams(prev => {
       const params = {
         ...prev,
+        after: null,
+        before: null,
         address: isAddress ? e.target.value : null,
         txHash: isTxHash ? e.target.value : null,
       }
@@ -130,7 +133,11 @@ export default function XMsgDataTable() {
               >
                 {hashShortener(value.getValue())}
               </Link>
-              <Tooltip className="tooltip" id={`${value.getValue()}-full-id-tooltip`}>
+              <Tooltip
+                delayShow={300}
+                className="tooltip"
+                id={`${value.getValue()}-full-id-tooltip`}
+              >
                 <label className="text-default text-b-sm font-bold">{value.getValue()}</label>
               </Tooltip>
             </>
@@ -161,6 +168,7 @@ export default function XMsgDataTable() {
               </span>
               {value.row.original.node.receipt.revertReason && (
                 <Tooltip
+                  delayShow={300}
                   className="tooltip"
                   id={`${value.row.original.node.displayID}-status-id-tooltip`}
                 >
@@ -178,7 +186,7 @@ export default function XMsgDataTable() {
         accessorKey: 'node.sourceChain.logoUrl',
         header: () => <span></span>,
         cell: (value: any) => {
-          return <img className='max-w-none w-5 h-5' src={value.getValue()} />
+          return <img className="max-w-none w-5 h-5" src={value.getValue()} />
         },
       },
       {
@@ -187,7 +195,7 @@ export default function XMsgDataTable() {
         header: () => (
           <div className="flex items-center">
             <span>Source Address</span>
-            <Tooltip className="tooltip" id="address-info">
+            <Tooltip delayShow={300} className="tooltip" id="address-info">
               <label className="text-default text-b-sm font-bold">
                 Sender on the source chain, <br /> set to msg.Sender
               </label>
@@ -223,7 +231,7 @@ export default function XMsgDataTable() {
         header: () => (
           <div className="flex items-center">
             <span>Tx Hash</span>
-            <Tooltip className="tooltip" id="tx-hash-info">
+            <Tooltip delayShow={300} className="tooltip" id="tx-hash-info">
               <label className="text-default text-b-sm font-bold">
                 Hash of the source chain <br /> transaction that emitted the message
               </label>
@@ -267,7 +275,7 @@ export default function XMsgDataTable() {
         accessorKey: 'node.destChain.logoUrl',
         header: () => <span></span>,
         cell: (value: any) => {
-          return <img className='max-w-none w-5 h-5' src={value.getValue()} />
+          return <img className="max-w-none w-5 h-5" src={value.getValue()} />
         },
       },
       {
@@ -276,7 +284,7 @@ export default function XMsgDataTable() {
         header: () => (
           <div className="flex items-center">
             <span>Destination Address</span>
-            <Tooltip className="tooltip" id="receiver-address-info">
+            <Tooltip delayShow={300} className="tooltip" id="receiver-address-info">
               <label className="text-default text-b-sm font-bold">
                 Contract address on the destination <br /> chain that receives the call
               </label>
@@ -306,7 +314,7 @@ export default function XMsgDataTable() {
         header: () => (
           <div className="flex items-center">
             <span>Tx Hash</span>
-            <Tooltip className="tooltip" id="receiver-tx-hash-info">
+            <Tooltip delayShow={300} className="tooltip" id="receiver-tx-hash-info">
               <label className="text-default text-b-sm font-bold">
                 Hash of the transaction executed <br /> on the destination chain by the relayer
               </label>
@@ -352,7 +360,7 @@ export default function XMsgDataTable() {
       <div className="flex flex-col">
         <h5 className="text-default mb-4">
           XMsgs{' '}
-          <Tooltip className="tooltip" id="xmsg-info">
+          <Tooltip delayShow={300} className="tooltip" id="xmsg-info">
             <label className="text-default text-b-sm font-bold">
               XMsgs are cross-rollup messages. <br /> Click to learn more
             </label>
@@ -378,6 +386,8 @@ export default function XMsgDataTable() {
             onChange={e => {
               setFilterParams(prev => ({
                 ...prev,
+                after: null,
+                before: null,
                 sourceChain: e,
               }))
             }}
@@ -390,6 +400,8 @@ export default function XMsgDataTable() {
             onChange={e => {
               setFilterParams(prev => ({
                 ...prev,
+                after: null,
+                before: null,
                 destChain: e,
               }))
             }}
@@ -489,8 +501,8 @@ export default function XMsgDataTable() {
       </div>
 
       {/* tooltip for offset */}
-      <Tooltip className="tooltip" id={'tooltip-offset'} />
-      <Tooltip className="tooltip" id="tooltip-clipboard">
+      <Tooltip delayShow={300} className="tooltip" id={'tooltip-offset'} />
+      <Tooltip delayShow={300} className="tooltip" id="tooltip-clipboard">
         <span className="text-default text-b-sm font-bold">Copy to clipboard </span>
       </Tooltip>
     </div>
