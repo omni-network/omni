@@ -17,6 +17,7 @@ import { Tooltip } from 'react-tooltip'
 import Button from '../shared/button'
 import { PageButton } from '../shared/button-legacy'
 import { copyToClipboard } from '~/lib/utils'
+import { ArrowIconLong } from '../svg/arrowIconLong'
 
 type Status = 'Success' | 'Failed' | 'Pending' | 'All'
 
@@ -47,7 +48,7 @@ export default function XMsgDataTable() {
     after: searchParams.get('after') ?? null,
   })
 
-  const sourceChainList = []
+  const sourceChainList = data?.supportedChainsList || []
   const rows = data.xmsgs
 
   const columnConfig = {
@@ -76,6 +77,7 @@ export default function XMsgDataTable() {
   // Listen for filter changes here and append search params
   useEffect(() => {
     const newParams = new URLSearchParams()
+
     for (var key in filterParams) {
       if (filterParams[key] !== null) {
         newParams.set(key, filterParams[key])
@@ -109,7 +111,6 @@ export default function XMsgDataTable() {
         address: isAddress ? e.target.value : null,
         txHash: isTxHash ? e.target.value : null,
       }
-
       return params
     })
   }
@@ -237,11 +238,7 @@ export default function XMsgDataTable() {
               {value.getValue() && (
                 <div className="flex">
                   {' '}
-                  <Link
-                    target="_blank"
-                    to={`${value.row.original.node.txUrl}`}
-                    className="link"
-                  >
+                  <Link target="_blank" to={`${value.row.original.node.txUrl}`} className="link">
                     <div className="flex">
                       <p className="font-bold text-b-sm w-[125px]">
                         {hashShortener(value.getValue())}
@@ -264,13 +261,15 @@ export default function XMsgDataTable() {
         ...columnConfig,
         accessorKey: 'Empty',
         header: () => <span></span>,
-        cell: (value: any) => <img className="max-w-none" src={LongArrow} alt="" />,
+        cell: (value: any) => <ArrowIconLong />,
       },
       {
         ...columnConfig,
         accessorKey: 'node.destChainID',
         header: () => <span></span>,
-        cell: (value: any) => <RollupIcon chainId={value.getValue()} />,
+        cell: (value: any) => {
+          return <RollupIcon chainId={value.getValue()} />
+        },
       },
       {
         ...columnConfig,
@@ -290,7 +289,7 @@ export default function XMsgDataTable() {
           <div className="flex">
             <Link target="_blank" to={`${value.row.original.node.toUrl}`} className="link">
               <div className="flex">
-                <p className="font-bold text-b-sm w-[120px]">{hashShortener(value.getValue())}</p>
+                <p className="font-bold text-b-sm w-[125px]">{hashShortener(value.getValue())}</p>
                 <span className="icon-external-link" />
               </div>
             </Link>
@@ -328,7 +327,7 @@ export default function XMsgDataTable() {
                     className="link"
                   >
                     <div className="flex">
-                      <p className="font-bold text-b-sm w-[120px]">
+                      <p className="font-bold text-b-sm w-[125px]">
                         {hashShortener(value.getValue())}
                       </p>
                       <span className="icon-external-link" />
@@ -456,9 +455,9 @@ export default function XMsgDataTable() {
             className="rounded-full flex items-center justify-center"
             onClick={() => {
               if (data.pageInfo.currentPage === '2') {
-                setFilterParams(prev => ({ ...prev, before: null, after: null }))
+                setFilterParams(prev => ({ ...prev, after: null, before: null }))
               } else {
-                setFilterParams(prev => ({ ...prev, before: data.xmsgs[0].cursor, after: null }))
+                setFilterParams(prev => ({ ...prev, after: data.xmsgs[0].cursor, before: null }))
               }
             }} // TODO: when clicked it needs to update the search params with the new cursor
             disabled={!data.pageInfo?.hasPrevPage} // TODO: When there is no previous cursor, we need to disable this
@@ -480,7 +479,7 @@ export default function XMsgDataTable() {
           <PageButton
             className="rounded-full  flex items-center justify-center"
             onClick={() => {
-              setFilterParams(prev => ({ ...prev, after: data.xmsgs[9].cursor, before: null }))
+              setFilterParams(prev => ({ ...prev, before: data.xmsgs[9].cursor, after: null }))
             }} // TODO: when clicked it needs to update the search params with the new cursor
             disabled={!data.pageInfo?.hasNextPage} // TODO: When there is no next cursor, we need to disable this
           >

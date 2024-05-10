@@ -9,23 +9,25 @@ import Scroll from '~/assets/images/Scroll.svg'
 import Generic from '~/assets/images/Generic.svg'
 
 export const mappedSourceChains = (
-  sourceChains: Array<{ ChainID: string; Name: string } | null>,
+  sourceChains: Array<{ chainID: string; name: string; logoUrl: string; urls: object[] } | null>,
 ) => {
   if (sourceChains === null) {
     return []
   }
 
-  return sourceChains.map(chain => ({
-    ...chain,
-    Icon: getIcon(chain?.ChainID || ''),
-    DisplayName: chain?.Name.replaceAll('_', ' '),
-    Urls: {
-      txHash: getBaseUrl(chain?.ChainID || '', 'tx'),
-      senderAddress: getBaseUrl(chain?.ChainID || '', 'senderAddress'),
-      blockHash: getBaseUrl(chain?.ChainID || '', 'blockHash'),
-      destHash: getBaseUrl(chain?.ChainID || '', 'destHash'),
-    },
-  }))
+  return sourceChains.map(chain => {
+    return {
+      ...chain,
+      Icon: chain?.logoUrl,
+      DisplayName: chain?.name,
+      urls: {
+        txHash: getBaseUrl(chain?.chainID || '', 'tx'),
+        senderAddress: getBaseUrl(chain?.chainID || '', 'senderAddress'),
+        blockHash: getBaseUrl(chain?.chainID || '', 'blockHash'),
+        destHash: getBaseUrl(chain?.chainID || '', 'destHash'),
+      },
+    }
+  })
 }
 
 // this is hard coded on front-end until this data can come with the source chains from back-end

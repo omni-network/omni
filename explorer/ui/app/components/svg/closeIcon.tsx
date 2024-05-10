@@ -2,7 +2,7 @@ import React from 'react'
 
 export const CloseIcon = ({onClick}) => {
   return (
-    <svg onClick={onClick} className='fill-current' width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg onClick={onClick} className='fill-current stroke-current' width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <g id="Icons / Utility / Close-Med">
         <path
           id="Path"
