@@ -52,8 +52,8 @@ type XBlock {
   "URL to view the block on the source chain"
   url: String!
 
-  "Source chain ID as per https://chainlist.org"
-  chainID: BigInt!
+  "The chain where the block was created."
+  chain: Chain!
 
   "Height of the source chain block"
   height: BigInt!
@@ -96,11 +96,11 @@ type XMsg {
   "Gas limit to use for 'call' on destination chain"
   gasLimit: BigInt!
 
-  "Source chain ID as per https://chainlist.org/"
-  sourceChainID: BigInt!
+  "Source chain where the message was emitted"
+  sourceChain: Chain!
 
-  "Destination chain ID as per https://chainlist.org/"
-  destChainID: BigInt!
+  "Destination chain where the message was sent to"
+  destChain: Chain!
 
   "Hash of the source chain transaction that emitted the message"
   txHash: Bytes32!
@@ -134,11 +134,11 @@ type XReceipt {
   "Address of the relayer"
   relayer: Address!
 
-  "Source chain ID as per https://chainlist.org"
-  sourceChainID: BigInt!
+  "Source chain where the message was emitted"
+  sourceChain: Chain!
 
-  "Destination chain ID as per https://chainlist.org"
-  destChainID: BigInt!
+  "Destination chain where the message was sent to"
+  destChain: Chain!
 
   "Monotonically incremented offset of Msg in the Stream"
   offset: BigInt!
@@ -166,7 +166,7 @@ type Chain {
   "Chain ID is a 0x prefixed hexadecimal number as per https://chainlist.org."
   chainID: BigInt!
 
-  "Display ID of the chain is a human readable base-10 number"
+  "Display ID of the chain is a human readable base-10 number as per https://chainlist.org."
   displayID: Long!
 
   "Chain name"

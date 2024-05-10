@@ -54,8 +54,14 @@ const (
 	StatusSuccess Status = "SUCCESS"
 )
 
+type chainResolver interface {
+	chainByID(id hexutil.Big) *Chain
+}
+
 // Define the Go struct for the XMsg type.
 type XMsg struct {
+	chainResolver
+
 	ID            graphql.ID
 	Block         XBlock
 	To            common.Address
@@ -73,8 +79,27 @@ type XMsg struct {
 	TxURL         string
 }
 
+func (m XMsg) SourceChain() (Chain, error) {
+	c := m.chainByID(m.SourceChainID)
+	if c == nil {
+		return Chain{}, fmt.Errorf("chain not found: %s", m.SourceChainID.String())
+	}
+
+	return *c, nil
+}
+
+func (m XMsg) DestChain() (Chain, error) {
+	c := m.chainByID(m.DestChainID)
+	if c == nil {
+		return Chain{}, fmt.Errorf("chain not found: %s", m.DestChainID.String())
+	}
+
+	return *c, nil
+}
+
 // Define the Go struct for the XBlock type.
 type XBlock struct {
+	chainResolver
 	ID        graphql.ID
 	ChainID   hexutil.Big
 	Height    hexutil.Big
@@ -84,8 +109,18 @@ type XBlock struct {
 	URL       string
 }
 
+func (b XBlock) Chain() (Chain, error) {
+	c := b.chainByID(b.ChainID)
+	if c == nil {
+		return Chain{}, fmt.Errorf("chain not found: %s", b.ChainID.String())
+	}
+
+	return *c, nil
+}
+
 // Define the Go struct for the XReceipt type.
 type XReceipt struct {
+	chainResolver
 	ID            graphql.ID
 	GasUsed       hexutil.Big
 	Success       bool
@@ -97,6 +132,24 @@ type XReceipt struct {
 	TxURL         string
 	Timestamp     graphql.Time
 	RevertReason  *string
+}
+
+func (r *XReceipt) SourceChain() (Chain, error) {
+	c := r.chainByID(r.SourceChainID)
+	if c == nil {
+		return Chain{}, fmt.Errorf("chain not found: %s", r.SourceChainID.String())
+	}
+
+	return *c, nil
+}
+
+func (r *XReceipt) DestChain() (Chain, error) {
+	c := r.chainByID(r.DestChainID)
+	if c == nil {
+		return Chain{}, fmt.Errorf("chain not found: %s", r.DestChainID.String())
+	}
+
+	return *c, nil
 }
 
 // Define the Go struct for the Chain type.
@@ -217,6 +270,7 @@ func New() *Resolver {
 		// generate a random timestamp between now and 24 hours ago
 		xblock.Timestamp = graphql.Time{Time: time.Now().Add(-time.Duration(rand.Int64N(int64(24 * time.Hour))))}
 		xblock.URL = fmt.Sprintf("https://etherscan.io/block/%s", fmt.Sprintf("%d", xblock.Height.ToInt().Int64()))
+		xblock.chainResolver = &resolver.QueryResolver
 
 		numMsgs := rand.IntN(6) // Generate random number of messages between 0 and 5
 		for j := 0; j < numMsgs; j++ {
@@ -238,6 +292,7 @@ func New() *Resolver {
 			xmsg.SenderURL = fmt.Sprintf("https://etherscan.io/address/%s", xmsg.Sender.String())
 			xmsg.ToURL = fmt.Sprintf("https://etherscan.io/address/%s", xmsg.To.String())
 			xmsg.TxURL = fmt.Sprintf("https://etherscan.io/tx/%s", xmsg.TxHash.String())
+			xmsg.chainResolver = &resolver.QueryResolver
 
 			var xreceipt XReceipt
 
@@ -257,8 +312,8 @@ func New() *Resolver {
 			// generate a random timestamp between the block timestamp and now
 			delta := time.Since(xblock.Timestamp.Time)
 			xreceipt.Timestamp = graphql.Time{Time: time.Now().Add(time.Duration(rand.Int64N(int64(delta))))}
-
 			xreceipt.TxURL = fmt.Sprintf("https://etherscan.io/tx/%s", xreceipt.TxHash.String())
+			xreceipt.chainResolver = &resolver.QueryResolver
 
 			xmsg.Receipt = &xreceipt
 
@@ -270,24 +325,24 @@ func New() *Resolver {
 
 	// Populate StatsResult with random data
 	resolver.QueryResolver.StatsResult.TotalMsgs = Long(totalMsgs)
-	a := uint64(rand.Int64N(int64(totalMsgs)))
-	b := uint64(rand.Int64N(int64(totalMsgs - a)))
-	c := totalMsgs - a - b
+	a := rand.Int64N(int64(totalMsgs))
+	b := rand.Int64N(int64(totalMsgs) - a)
+	c := int64(totalMsgs) - a - b
 	resolver.QueryResolver.StatsResult.TopStreams = []StreamStats{
 		{
 			SourceChain: chains[0],
 			DestChain:   chains[1],
-			MsgCount:    Long(rand.Int64N(int64(a))),
+			MsgCount:    Long(rand.Int64N(a)),
 		},
 		{
 			SourceChain: chains[0],
 			DestChain:   chains[2],
-			MsgCount:    Long(rand.Int64N(int64(b))),
+			MsgCount:    Long(rand.Int64N(b)),
 		},
 		{
 			SourceChain: chains[2],
 			DestChain:   chains[1],
-			MsgCount:    Long(rand.Int64N(int64(c))),
+			MsgCount:    Long(rand.Int64N(c)),
 		},
 	}
 
@@ -297,6 +352,15 @@ func New() *Resolver {
 // Define the root resolver.
 type Resolver struct {
 	QueryResolver
+}
+
+func (r *QueryResolver) chainByID(id hexutil.Big) *Chain {
+	for _, chain := range r.Chains {
+		if chain.ChainID.String() == id.String() {
+			return &chain
+		}
+	}
+	return nil
 }
 
 // Implement the xblock query resolver.
