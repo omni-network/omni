@@ -147,17 +147,24 @@ contract OmniPortal is
 
         (uint32 _xcallOffset, uint64 _xblockOffset, uint128 _sourceBlockNumber) = _parseLastXCallID();
 
+        uint32 _nextXCallOffset;
+        uint64 _nextXBlockOffset;
+        uint128 _nextSourceBlockNumber;
+
+        _xcallOffset = _xcallOffset + 2;
+        _xblockOffset = _xblockOffset + 2;
+
         if (uint128(block.number) > _sourceBlockNumber) {
-            _sourceBlockNumber = uint128(block.number);
-            _xblockOffset = uint64(_xblockOffset + 1);
-            _xcallOffset = 0;
+            _nextXCallOffset = 0;
+            _nextXBlockOffset = _xblockOffset - 1;
+            _nextSourceBlockNumber = uint128(block.number);
         } else {
-            _xcallOffset += 1;
-            _xblockOffset = _xblockOffset;
-            _sourceBlockNumber = uint128(block.number);
+            _nextXCallOffset = _xcallOffset - 1;
+            _nextXBlockOffset = _xblockOffset - 2;
+            _nextSourceBlockNumber = uint128(block.number);
         }
 
-        _lastXCallID = _packLastCallID(_xcallOffset, _xblockOffset, _sourceBlockNumber);
+        _lastXCallID = _packLastCallID(_nextXCallOffset, _nextXBlockOffset, _nextSourceBlockNumber);
 
         outXStreamOffset[destChainId] += 1;
 
