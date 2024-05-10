@@ -94,6 +94,8 @@ func newCLILogger(opts ...func(*options)) *slog.Logger {
 		opt(&o)
 	}
 
+	o.Level = slog.LevelInfo // Only show info and above
+
 	charmLevel, _ := charm.ParseLevel(o.Level.String()) // Ignore error as all slog levels are valid charm levels.
 
 	logger := charm.NewWithOptions(o.Writer, charm.Options{

@@ -355,6 +355,7 @@ func (m *manager) deployIfNeeded(ctx context.Context, chain types.EVMChain, back
 	} else if receipt == nil {
 		return common.Address{}, 0, errors.New("no receipt", "chain", chain.Name)
 	}
+	log.Info(ctx, "Deployed portal", "chain", chain.Name, "address", addr.Hex(), "height", receipt.BlockNumber.Uint64())
 
 	return addr, receipt.BlockNumber.Uint64(), nil
 }
