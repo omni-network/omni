@@ -266,7 +266,7 @@ type Query {
 
   "Returns a paginated list of XMsgs based on the provided arguments. For forwards pagination, provide `first` and `after`. For backwards pagination, provide `last` and `before`. Defaults to the last 10 messages. `after` and `before` are the cursors of the last and first messages from the current page respectively."
   xmsgs(
-    "Filters to apply to the XMsgs. Accepted filters are: `address` (checks for both `sender` or `to` addresses), `status`, `sourceChainID`, `destChainID`, `txHash` (checks for transactions on both the source and the destination chains)."
+    "Filters to apply to the XMsgs. Accepted filters are: `address` (checks for both `sender` or `to` addresses), `status`, `srcChainID`, `destChainID`, `txHash` (checks for transactions on both the source and the destination chains)."
     filters: [FilterInput!],
 
     "Number of XMsgs to return for forwards pagination."

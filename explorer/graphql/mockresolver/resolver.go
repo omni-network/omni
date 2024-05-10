@@ -10,6 +10,7 @@ import (
 	"math/rand/v2"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -212,8 +213,9 @@ func New() *Resolver {
 		fuzzer.Fuzz(&xblock.ChainID)
 		fuzzer.Fuzz(&xblock.Height)
 		fuzzer.Fuzz(&xblock.Hash)
-		fuzzer.Fuzz(&xblock.Timestamp)
 		xblock.ChainID = chains[rand.IntN(len(chains))].ChainID
+		// generate a random timestamp between now and 24 hours ago
+		xblock.Timestamp = graphql.Time{Time: time.Now().Add(-time.Duration(rand.Int64N(int64(24 * time.Hour))))}
 		xblock.URL = fmt.Sprintf("https://etherscan.io/block/%s", fmt.Sprintf("%d", xblock.Height.ToInt().Int64()))
 
 		numMsgs := rand.IntN(6) // Generate random number of messages between 0 and 5
@@ -245,7 +247,6 @@ func New() *Resolver {
 			xreceipt.Relayer = relayerAddress
 			fuzzer.Fuzz(&xreceipt.Offset)
 			fuzzer.Fuzz(&xreceipt.TxHash)
-			fuzzer.Fuzz(&xreceipt.Timestamp)
 			xreceipt.SourceChainID = xmsg.SourceChainID
 			xreceipt.DestChainID = xmsg.DestChainID
 			if xmsg.Status == StatusFailed {
@@ -253,6 +254,9 @@ func New() *Resolver {
 				reason := "Insufficient funds"
 				xreceipt.RevertReason = &reason
 			}
+			// generate a random timestamp between the block timestamp and now
+			delta := time.Since(xblock.Timestamp.Time)
+			xreceipt.Timestamp = graphql.Time{Time: time.Now().Add(time.Duration(rand.Int64N(int64(delta))))}
 
 			xreceipt.TxURL = fmt.Sprintf("https://etherscan.io/tx/%s", xreceipt.TxHash.String())
 
@@ -352,56 +356,49 @@ func (r *QueryResolver) Xmsgs(ctx context.Context, args XMsgsArgs) (XMsgConnecti
 	// Apply filters
 	if args.Filters != nil {
 		for _, f := range *args.Filters {
+			var filteredMessages []XMsg
 			switch f.Key {
 			case "status":
-				var filteredMessages []XMsg
 				for _, msg := range messages {
 					if msg.Status == Status(f.Value) {
 						filteredMessages = append(filteredMessages, msg)
 					}
 				}
-				messages = filteredMessages
 
 			case "address":
-				var filteredMessages []XMsg
 				for _, msg := range messages {
 					sender, to := strings.ToLower(msg.Sender.Hex()), strings.ToLower(msg.To.Hex())
 					if sender == f.Value || to == f.Value {
 						filteredMessages = append(filteredMessages, msg)
 					}
 				}
-				messages = filteredMessages
 
 			case "srcChainID":
-				var filteredMessages []XMsg
 				for _, msg := range messages {
 					if msg.SourceChainID.String() == f.Value {
 						filteredMessages = append(filteredMessages, msg)
 					}
 				}
-				messages = filteredMessages
 
 			case "destChainID":
-				var filteredMessages []XMsg
 				for _, msg := range messages {
 					if msg.DestChainID.String() == f.Value {
 						filteredMessages = append(filteredMessages, msg)
 					}
 				}
-				messages = filteredMessages
 
 			case "txHash":
-				var filteredMessages []XMsg
 				for _, msg := range messages {
 					if strings.ToLower(msg.TxHash.String()) == f.Value || (msg.Receipt != nil && strings.ToLower(msg.Receipt.TxHash.String()) == f.Value) {
 						filteredMessages = append(filteredMessages, msg)
 					}
 				}
-				messages = filteredMessages
 
 			default:
 				return XMsgConnection{}, fmt.Errorf("unsupported filter key: %s", f.Key)
 			}
+
+			messages = filteredMessages
 		}
 	}
 
