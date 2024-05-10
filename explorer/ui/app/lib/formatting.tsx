@@ -30,7 +30,7 @@ export const dateFormatter = (date: Date) => {
 
   // less than an hour, but show minutes
   if (hours === 0 && minutes !== 0) {
-    return `${minutes} min`
+    return `${minutes} mins ago`
   }
 
   return txsTimestamp.toLocaleString()

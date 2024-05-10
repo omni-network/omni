@@ -1,4 +1,4 @@
-import { useLoaderData, useNavigate, useParams, useSearchParams } from '@remix-run/react'
+import { useLoaderData, useNavigate, useParams, useRouteError, useSearchParams } from '@remix-run/react'
 import { BackBtn } from '~/components/details/BackBtn'
 import Tag from '~/components/shared/tag'
 import { From } from '~/components/details/From'
@@ -32,6 +32,9 @@ export const loader: LoaderFunction = async ({ request }) => {
       xMsg: xmsgRes,
     })
   }
+  // if (xmsgRes.data) {
+  //   useRouteError()
+  // }
 
   return await pollData()
 }
@@ -71,12 +74,12 @@ export default function Index() {
 
           <div className="mt-5 p-4 w-full bg-raised rounded-lg">
             {/* Offset */}
-            <div className="flex mt-5 pb-2 border-b-2 border-gray-500 border-solid">
+            <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
               <p className="w-[150px] sm:w-48 text-sm">Offset</p>
               <p className="text-default">{xMsgDetails?.offset}</p>
             </div>
             {/* Status */}
-            <div className="flex mt-5 pb-2 border-b-2 border-gray-500 border-solid">
+            <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
               <p className="w-[150px] sm:w-48 text-sm">Status</p>
               <div className="flex flex-col sm:flex-row items-start">
                 <Tag status={xMsgDetails?.status} />
@@ -84,7 +87,7 @@ export default function Index() {
               </div>
             </div>
             {/* Data */}
-            <div className="flex mt-5 pb-2 border-b-2 border-gray-500 border-solid">
+            <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
               <p className="w-[150px] sm:w-48 text-sm">Data</p>
             </div>
             <From xMsgDetails={xMsgDetails} />
