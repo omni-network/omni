@@ -8,7 +8,11 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/halo/evmengine/types"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/expbackoff"
+	"github.com/omni-network/omni/lib/tutil"
+
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
@@ -25,10 +29,10 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 	cdc := getCodec(t)
 	txConfig := authtx.NewTxConfig(cdc, nil)
 
-	mockEngine, err := newMockEngineAPI(0, false)
+	mockEngine, err := newMockEngineAPI(0)
 	require.NoError(t, err)
 
-	ctx, storeService := setupCtxStore(t, nil)
+	ctx, storeService := setupCtxStore(t, &cmtproto.Header{AppHash: tutil.RandomHash().Bytes()})
 	ctx = ctx.WithExecMode(sdk.ExecModeFinalize)
 
 	keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, nil)
@@ -38,17 +42,20 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 	var payloadID engine.PayloadID
 	var latestHeight uint64
 	var block *etypes.Block
-	newPayload := func() {
+	newPayload := func(ctx context.Context) {
 		// get latest block to build on top
 		latestHeight, err = mockEngine.BlockNumber(ctx)
 		require.NoError(t, err)
 		latestBlock, err := mockEngine.BlockByNumber(ctx, big.NewInt(int64(latestHeight)))
 		require.NoError(t, err)
 
-		b, execPayload := mockEngine.nextBlock(t, latestHeight+1, uint64(time.Now().Unix()), latestBlock.Hash(), common.Address{})
+		sdkCtx := sdk.UnwrapSDKContext(ctx)
+		appHash := common.BytesToHash(sdkCtx.BlockHeader().AppHash)
+
+		b, execPayload := mockEngine.nextBlock(t, latestHeight+1, uint64(time.Now().Unix()), latestBlock.Hash(), common.Address{}, &appHash)
 		block = b
 
-		payloadID, err = toPayloadID(execPayload)
+		payloadID, err = ethclient.MockPayloadID(execPayload, &appHash)
 		require.NoError(t, err)
 
 		// Create execution payload message
@@ -56,7 +63,7 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	assertExecutionPayload := func() {
+	assertExecutionPayload := func(ctx context.Context) {
 		resp, err := propSrv.ExecutionPayload(ctx, &types.MsgExecutionPayload{
 			Authority:        authtypes.NewModuleAddress(types.ModuleName).String(),
 			ExecutionPayload: payloadData,
@@ -72,8 +79,8 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 		require.Empty(t, gotPayload.ExecutionPayload.Withdrawals)
 	}
 
-	newPayload()
-	assertExecutionPayload()
+	newPayload(ctx)
+	assertExecutionPayload(ctx)
 }
 
 func fastBackoffForT() {

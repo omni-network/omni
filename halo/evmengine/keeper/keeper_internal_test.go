@@ -116,7 +116,7 @@ func TestKeeper_isNextProposer(t *testing.T) {
 
 			cdc := getCodec(t)
 			txConfig := authtx.NewTxConfig(cdc, nil)
-			mockEngine, err := newMockEngineAPI(0, true)
+			mockEngine, err := newMockEngineAPI(0)
 			require.NoError(t, err)
 
 			cmtAPI := newMockCometAPI(t, tt.args.validatorsFunc)
@@ -133,16 +133,13 @@ func TestKeeper_isNextProposer(t *testing.T) {
 			keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap)
 			keeper.SetCometAPI(&cmtAPI)
 
-			got, gotHeight, err := keeper.isNextProposer(ctx)
+			got, err := keeper.isNextProposer(ctx, ctx.BlockHeader().ProposerAddress, ctx.BlockHeader().Height)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("isNextProposer() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
 				t.Errorf("isNextProposer() got = %v, want %v", got, tt.want)
-			}
-			if gotHeight != tt.wantHeight {
-				t.Errorf("isNextProposer() gotHeight = %v, want %v", gotHeight, tt.wantHeight)
 			}
 			// make sure that height passed into Validators is correct
 			require.Equal(t, tt.args.height, cmtAPI.height)

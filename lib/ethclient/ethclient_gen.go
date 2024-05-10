@@ -31,6 +31,7 @@ type Client interface {
 	HeaderByType(ctx context.Context, typ HeadType) (*types.Header, error)
 	EtherBalanceAt(ctx context.Context, addr common.Address) (float64, error)
 	PeerCount(ctx context.Context) (uint64, error)
+	SetHead(ctx context.Context, height uint64) error
 	Address() string
 	Close()
 }
