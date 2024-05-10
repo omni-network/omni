@@ -138,12 +138,16 @@ export const loader: LoaderFunction = async ({ request }) => {
       chainStats: chainStatsRes.data
     })
   }
-
   return await pollData()
 }
 
 export default function Index() {
   const revalidator = useRevalidator()
+
+  // poll server every 5 seconds
+  useInterval(() => {
+    revalidator.revalidate()
+  }, 5000)
 
   return (
     <div className="px-4 sm:px-4 md:px-20  ">

@@ -4,16 +4,16 @@ import { hashShortener } from '~/lib/formatting'
 import { copyToClipboard } from '~/lib/utils'
 
 export const From = ({ xMsgDetails }) => {
-
   return (
     <>
       <h6 className="text-default my-5 text-lg">From</h6>
       {/* Source Chain */}
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Source Chain</p>
-        <p>
-          <span className="text-default">not linked </span>
-        </p>
+        <div className='flex gap-2 items-center'>
+          <img className='w-5 h-5 ' src={xMsgDetails.sourceChain.logoUrl} />
+          <p className="text-default">{xMsgDetails.sourceChain.name}</p>
+        </div>
       </div>
       {/* Source Address */}
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
