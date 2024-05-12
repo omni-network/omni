@@ -32,6 +32,11 @@ func deployAVS(ctx context.Context, def Definition) error {
 	network := networkFromDef(def)
 	chain, ok := network.EthereumChain()
 	if !ok {
+		if def.Manifest.Network == "devnet" {
+			log.Debug(ctx, "Skipping avs deployment for missing devnet L1")
+			return nil
+		}
+
 		return errors.New("no ethereum l1 chain")
 	}
 
