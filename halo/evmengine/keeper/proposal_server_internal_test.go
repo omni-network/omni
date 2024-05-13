@@ -46,7 +46,7 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 		// get latest block to build on top
 		latestHeight, err = mockEngine.BlockNumber(ctx)
 		require.NoError(t, err)
-		latestBlock, err := mockEngine.BlockByNumber(ctx, big.NewInt(int64(latestHeight)))
+		latestBlock, err := mockEngine.HeaderByNumber(ctx, big.NewInt(int64(latestHeight)))
 		require.NoError(t, err)
 
 		sdkCtx := sdk.UnwrapSDKContext(ctx)

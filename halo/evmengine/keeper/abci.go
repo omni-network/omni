@@ -171,7 +171,7 @@ func (k *Keeper) Finalize(ctx context.Context, req *abci.RequestFinalizeBlock, r
 
 	log.Debug(ctx, "Starting optimistic EVM payload build")
 
-	fcr, err := k.startOptimisticBuild(ctx, common.BytesToHash(resp.AppHash))
+	fcr, err := k.startOptimisticBuild(ctx, common.BytesToHash(resp.AppHash), req.Time)
 	if err != nil || isUnknown(fcr.PayloadStatus) {
 		log.Warn(ctx, "Starting optimistic build failed", err)
 		return nil
@@ -188,13 +188,13 @@ func (k *Keeper) Finalize(ctx context.Context, req *abci.RequestFinalizeBlock, r
 	return nil
 }
 
-func (k *Keeper) startOptimisticBuild(ctx context.Context, appHash common.Hash) (engine.ForkChoiceResponse, error) {
+func (k *Keeper) startOptimisticBuild(ctx context.Context, appHash common.Hash, timestamp time.Time) (engine.ForkChoiceResponse, error) {
 	latestEBlock, err := k.engineCl.HeaderByNumber(ctx, nil)
 	if err != nil {
 		return engine.ForkChoiceResponse{}, errors.Wrap(err, "get head")
 	}
 
-	ts := uint64(time.Now().Unix())
+	ts := uint64(timestamp.Unix())
 	if ts <= latestEBlock.Time {
 		ts = latestEBlock.Time + 1 // Subsequent blocks must have a higher timestamp.
 	}
@@ -234,7 +234,7 @@ func submitPayload(
 		return engine.ForkChoiceResponse{}, errors.Wrap(err, "latest execution block number")
 	}
 
-	latestEBlock, err := engineCl.BlockByNumber(ctx, big.NewInt(int64(latestEHeight)))
+	latestEBlock, err := engineCl.HeaderByNumber(ctx, big.NewInt(int64(latestEHeight)))
 	if err != nil {
 		return engine.ForkChoiceResponse{}, errors.Wrap(err, "latest execution block")
 	}
@@ -251,8 +251,8 @@ func submitPayload(
 	// Since execution blocks must have unique second-granularity timestamps.
 	// TODO(corver): Maybe error if timestamp is not greater than latest execution block.
 	timestamp := uint64(ts.Unix())
-	if timestamp <= latestEBlock.Time() {
-		timestamp = latestEBlock.Time() + 1
+	if timestamp <= latestEBlock.Time {
+		timestamp = latestEBlock.Time + 1
 	}
 
 	payloadAttrs := engine.PayloadAttributes{

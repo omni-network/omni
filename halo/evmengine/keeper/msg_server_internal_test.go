@@ -49,7 +49,7 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 		address: nxtAddr,
 	}
 	keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap)
-	keeper.SetCometAPI(&cmtAPI)
+	keeper.SetCometAPI(cmtAPI)
 	msgSrv := NewMsgServerImpl(keeper)
 
 	var payloadData []byte
@@ -60,7 +60,7 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 		// get latest block to build on top
 		latestHeight, err = mockEngine.BlockNumber(ctx)
 		require.NoError(t, err)
-		latestBlock, err := mockEngine.BlockByNumber(ctx, big.NewInt(int64(latestHeight)))
+		latestBlock, err := mockEngine.HeaderByNumber(ctx, big.NewInt(int64(latestHeight)))
 		require.NoError(t, err)
 
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -110,7 +110,7 @@ func Test_pushPayload(t *testing.T) {
 		// get latest block to build on top
 		latestHeight, err := mockEngine.BlockNumber(ctx)
 		require.NoError(t, err)
-		latestBlock, err := mockEngine.BlockByNumber(ctx, big.NewInt(int64(latestHeight)))
+		latestBlock, err := mockEngine.HeaderByNumber(ctx, big.NewInt(int64(latestHeight)))
 		require.NoError(t, err)
 
 		sdkCtx := sdk.UnwrapSDKContext(ctx)

@@ -131,7 +131,7 @@ func TestKeeper_isNextProposer(t *testing.T) {
 				address: nxtAddr,
 			}
 			keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap)
-			keeper.SetCometAPI(&cmtAPI)
+			keeper.SetCometAPI(cmtAPI)
 
 			got, err := keeper.isNextProposer(ctx, ctx.BlockHeader().ProposerAddress, ctx.BlockHeader().Height)
 			if (err != nil) != tt.wantErr {
@@ -147,6 +147,8 @@ func TestKeeper_isNextProposer(t *testing.T) {
 	}
 }
 
+var _ comet.API = (*mockCometAPI)(nil)
+
 type mockCometAPI struct {
 	comet.API
 	fuzzer         *fuzz.Fuzzer
@@ -155,12 +157,12 @@ type mockCometAPI struct {
 	height         int64
 }
 
-func newMockCometAPI(t *testing.T, valFun func(context.Context, int64) (*cmttypes.ValidatorSet, bool, error)) mockCometAPI {
+func newMockCometAPI(t *testing.T, valFun func(context.Context, int64) (*cmttypes.ValidatorSet, bool, error)) *mockCometAPI {
 	t.Helper()
 	fuzzer := newFuzzer(0)
 	valSet := fuzzValidators(t, fuzzer)
 
-	return mockCometAPI{
+	return &mockCometAPI{
 		fuzzer:         fuzzer,
 		validatorSet:   valSet,
 		validatorsFunc: valFun,
