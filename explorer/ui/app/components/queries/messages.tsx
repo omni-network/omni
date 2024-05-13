@@ -42,31 +42,6 @@ export const xmsg = gql(`
   }
 `)
 
-export const xmsgrange = graphql(`
-  query XMsgRange($from: BigInt!, $to: BigInt!) {
-    xmsgrange(from: $from, to: $to) {
-      StreamOffset
-      SourceMessageSender
-      DestAddress
-      DestGasLimit
-      SourceChainID
-      DestChainID
-      TxHash
-      BlockHeight
-      BlockHash
-    }
-  }
-`)
-
-export const xmsgcount = graphql(`
-  query XMsgCount {
-    xmsgcount
-  }
-`)
-
-// query xmsgs($first: Int, $last: Int, $after: Id, $before: Id) {
-//   xmsgs(first: $first, last: $last, after: $after, before: $before) {
-
 export const xmsgs = gql(`
 query xmsgs($first: Int, $last: Int, $after: ID, $before: ID, $filters: [FilterInput!]) {
   xmsgs(first: $first, last: $last, after: $after, before: $before, filters: $filters) {
