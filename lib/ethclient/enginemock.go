@@ -181,18 +181,12 @@ func (m *engineMock) BlockNumber(ctx context.Context) (uint64, error) {
 }
 
 func (m *engineMock) HeaderByNumber(ctx context.Context, height *big.Int) (*types.Header, error) {
-	if height != nil {
-		return nil, errors.New("non-nil/non-latest height not supported")
-	}
-
-	if err := m.maybeErr(ctx); err != nil {
+	b, err := m.BlockByNumber(ctx, height)
+	if err != nil {
 		return nil, err
 	}
 
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	return m.head.Header(), nil
+	return b.Header(), nil
 }
 
 func (m *engineMock) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
@@ -202,6 +196,10 @@ func (m *engineMock) BlockByNumber(ctx context.Context, number *big.Int) (*types
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
+
+	if number == nil {
+		return m.head, nil
+	}
 
 	if number.Cmp(m.head.Number()) != 0 {
 		return nil, errors.New("block not found") // Only support latest block

@@ -11,6 +11,7 @@ import (
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
 	etypes "github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/tutil"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -86,12 +87,12 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 					blockNumberFunc: func(ctx context.Context) (uint64, error) {
 						return 0, nil
 					},
-					blockByNumberFunc: func(ctx context.Context, number *big.Int) (*types.Block, error) {
+					HeaderByNumberFunc: func(ctx context.Context, number *big.Int) (*types.Header, error) {
 						fuzzer := ethclient.NewFuzzer(0)
-						var block *types.Block
-						fuzzer.Fuzz(&block)
+						var header *types.Header
+						fuzzer.Fuzz(&header)
 
-						return block, nil
+						return header, nil
 					},
 					forkchoiceUpdatedV3Func: func(ctx context.Context, update eengine.ForkchoiceStateV1,
 						payloadAttributes *eengine.PayloadAttributes) (eengine.ForkChoiceResponse, error) {
@@ -158,7 +159,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		ts := time.Now()
 		latestHeight, err := mockEngine.BlockNumber(ctx)
 		require.NoError(t, err)
-		latestBlock, err := mockEngine.BlockByNumber(ctx, big.NewInt(int64(latestHeight)))
+		latestBlock, err := mockEngine.HeaderByNumber(ctx, big.NewInt(int64(latestHeight)))
 		require.NoError(t, err)
 
 		appHash1 := tutil.RandomHash()
@@ -219,7 +220,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		ts := time.Now()
 		latestHeight, err := mockEngine.BlockNumber(ctx)
 		require.NoError(t, err)
-		latestBlock, err := mockEngine.BlockByNumber(ctx, big.NewInt(int64(latestHeight)))
+		latestBlock, err := mockEngine.HeaderByNumber(ctx, big.NewInt(int64(latestHeight)))
 		require.NoError(t, err)
 
 		appHash1 := tutil.RandomHash()
@@ -263,6 +264,67 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		// make sure all msg.Delegate are present
 		require.Equal(t, 1, actualDelCount)
 	})
+}
+
+func TestOptimistic(t *testing.T) {
+	t.Parallel()
+
+	const height int64 = 99
+
+	// setup dependencies
+	ctx, storeService := setupCtxStore(t, nil)
+	cdc := getCodec(t)
+	txConfig := authtx.NewTxConfig(cdc, nil)
+	cmtAPI := newMockCometAPI(t, nil)
+	mockEngine, err := newMockEngineAPI(0)
+	require.NoError(t, err)
+
+	vals, ok, err := cmtAPI.Validators(ctx, height)
+	require.NoError(t, err)
+	require.True(t, ok)
+
+	// Proposer is val0
+	val0 := vals.Validators[0].Address
+	// Optimistic build will trigger if we are next proposer; ie. val1
+	val1, err := k1util.PubKeyToAddress(vals.Validators[1].PubKey)
+	require.NoError(t, err)
+
+	ap := mockAddressProvider{
+		address: val1,
+	}
+	keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap)
+	keeper.SetVoteProvider(mockVEProvider{})
+	keeper.AddEventProcessor(mockLogProvider{})
+	keeper.SetCometAPI(cmtAPI)
+	keeper.SetBuildOptimistic(true)
+
+	req := abci.RequestFinalizeBlock{
+		Height:          height,
+		ProposerAddress: val0,
+		Time:            time.Now(),
+	}
+	res := abci.ResponseFinalizeBlock{
+		AppHash: tutil.RandomHash().Bytes(),
+	}
+	err = keeper.Finalize(ctx, &req, &res)
+	require.NoError(t, err)
+
+	payloadID, h, ts := keeper.getOptimisticPayload()
+	require.EqualValues(t, h, height+1)
+	require.NotEmpty(t, ts)
+
+	b, err := mockEngine.HeaderByNumber(ctx, nil)
+	require.NoError(t, err)
+
+	env, err := mockEngine.GetPayloadV3(ctx, *payloadID)
+	require.NoError(t, err)
+
+	payload := env.ExecutionPayload
+	require.EqualValues(t, 1, payload.Number)
+	require.EqualValues(t, req.Time.Unix(), payload.Timestamp)
+	require.EqualValues(t, b.Hash(), payload.ParentHash)
+	require.EqualValues(t, ap.LocalAddress(), payload.FeeRecipient)
+	require.Empty(t, payload.Withdrawals)
 }
 
 // assertExecutablePayload asserts that the given message is an executable payload with the expected values.
@@ -340,7 +402,7 @@ type mockEngineAPI struct {
 	fuzzer                  *fuzz.Fuzzer
 	mock                    ethclient.EngineClient // avoid repeating the implementation but also allow for custom implementations of mocks
 	blockNumberFunc         func(context.Context) (uint64, error)
-	blockByNumberFunc       func(context.Context, *big.Int) (*types.Block, error)
+	HeaderByNumberFunc      func(context.Context, *big.Int) (*types.Header, error)
 	forkchoiceUpdatedV3Func func(context.Context, eengine.ForkchoiceStateV1, *eengine.PayloadAttributes) (eengine.ForkChoiceResponse, error)
 	newPayloadV3Func        func(context.Context, eengine.ExecutableData, []common.Hash, *common.Hash) (eengine.PayloadStatusV1, error)
 }
@@ -430,12 +492,12 @@ func (m *mockEngineAPI) BlockNumber(ctx context.Context) (uint64, error) {
 	return m.mock.BlockNumber(ctx)
 }
 
-func (m *mockEngineAPI) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
-	if m.blockByNumberFunc != nil {
-		return m.blockByNumberFunc(ctx, number)
+func (m *mockEngineAPI) HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error) {
+	if m.HeaderByNumberFunc != nil {
+		return m.HeaderByNumberFunc(ctx, number)
 	}
 
-	return m.mock.BlockByNumber(ctx, number)
+	return m.mock.HeaderByNumber(ctx, number)
 }
 
 func (m *mockEngineAPI) NewPayloadV2(ctx context.Context, params eengine.ExecutableData) (eengine.PayloadStatusV1, error) {
