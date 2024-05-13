@@ -25,6 +25,9 @@ func Test_translateSubmission(t *testing.T) {
 		sub.Msgs[i].TxHash = common.Hash{}
 	}
 
+	// Zero BlockHeight as we only submit BlockOffset
+	sub.BlockHeader.BlockHeight = 0
+
 	require.Equal(t, sub, reversedSub)
 }
 
@@ -59,7 +62,7 @@ func submissionFromBinding(sub bindings.XTypesSubmission, destChainID uint64) xc
 		ValidatorSetID:  sub.ValidatorSetId,
 		BlockHeader: xchain.BlockHeader{
 			SourceChainID: sub.BlockHeader.SourceChainId,
-			BlockHeight:   sub.BlockHeader.BlockHeight,
+			BlockOffset:   sub.BlockHeader.BlockHeight, // TODO(corver): Rename submission blockHeaader.BlockHeight to BlockOffset.
 			BlockHash:     sub.BlockHeader.BlockHash,
 		},
 		Proof:       sub.Proof,

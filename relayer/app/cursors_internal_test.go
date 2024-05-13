@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_fromHeights(t *testing.T) {
+func Test_fromOffsets(t *testing.T) {
 	t.Parallel()
 
 	state := NewEmptyState(filepath.Join(t.TempDir(), "state.json"))
@@ -36,63 +36,63 @@ func Test_fromHeights(t *testing.T) {
 		{
 			name: "1", args: args{
 				cursors: []xchain.StreamCursor{
-					{StreamID: xchain.StreamID{SourceChainID: 1, DestChainID: 2}, SourceBlockHeight: 200},
-					{StreamID: xchain.StreamID{SourceChainID: 2, DestChainID: 3}, SourceBlockHeight: 250},
+					{StreamID: xchain.StreamID{SourceChainID: 1, DestChainID: 2}, BlockOffset: 200},
+					{StreamID: xchain.StreamID{SourceChainID: 2, DestChainID: 3}, BlockOffset: 250},
 				},
 				chains: []netconf.Chain{{ID: 1}, {ID: 2}, {ID: 3}},
 				state:  NewEmptyState(filepath.Join(t.TempDir(), "state.json")),
 			}, want: map[uint64]uint64{
 				1: 200,
 				2: 250,
-				3: 0,
+				3: 1, // No cursor, so start at initialXBlockOffset
 			},
 		},
 		{
 			name: "2", args: args{
 				cursors: []xchain.StreamCursor{
-					{StreamID: xchain.StreamID{SourceChainID: 1, DestChainID: 3}, SourceBlockHeight: 200},
-					{StreamID: xchain.StreamID{SourceChainID: 2, DestChainID: 3}, SourceBlockHeight: 100},
+					{StreamID: xchain.StreamID{SourceChainID: 1, DestChainID: 3}, BlockOffset: 200},
+					{StreamID: xchain.StreamID{SourceChainID: 2, DestChainID: 3}, BlockOffset: 100},
 				},
 				chains: []netconf.Chain{{ID: 1}, {ID: 2, DeployHeight: 55}, {ID: 3}},
 				state:  NewEmptyState(filepath.Join(t.TempDir(), "state.json")),
 			}, want: map[uint64]uint64{
 				1: 200,
 				2: 100,
-				3: 0,
+				3: 1, // No cursor, so start at initialXBlockOffset
 			},
 		},
 		{
 			name: "3", args: args{
 				cursors: []xchain.StreamCursor{
-					{StreamID: xchain.StreamID{SourceChainID: 1, DestChainID: 2}, SourceBlockHeight: 200},
+					{StreamID: xchain.StreamID{SourceChainID: 1, DestChainID: 2}, BlockOffset: 200},
 				},
 				chains: []netconf.Chain{{ID: 1}, {ID: 2, DeployHeight: 55}, {ID: 3}},
 				state:  NewEmptyState(filepath.Join(t.TempDir(), "state.json")),
 			}, want: map[uint64]uint64{
 				1: 200,
-				2: 55,
-				3: 0,
+				2: 1, // No cursor, so start at initialXBlockOffset (ignoring DeployHeight)
+				3: 1, // No cursor, so start at initialXBlockOffset
 			},
 		},
 		{
 			name: "4",
 			args: args{
 				cursors: []xchain.StreamCursor{
-					{StreamID: xchain.StreamID{SourceChainID: 1, DestChainID: 2}, SourceBlockHeight: 200},
+					{StreamID: xchain.StreamID{SourceChainID: 1, DestChainID: 2}, BlockOffset: 200},
 				},
 				chains: []netconf.Chain{{ID: 1}, {ID: 2, DeployHeight: 55}, {ID: 3}},
 				state:  state,
 			}, want: map[uint64]uint64{
 				1: 300,
-				2: 55,
-				3: 0,
+				2: 1, // No cursor, so start at initialXBlockOffset (ignoring DeployHeight)
+				3: 1, // No cursor, so start at initialXBlockOffset
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got := fromHeights(tt.args.cursors, netconf.Chain{ID: 4}, tt.args.chains, tt.args.state)
+			got := fromOffsets(tt.args.cursors, netconf.Chain{ID: 4}, tt.args.chains, tt.args.state)
 			require.Equal(t, tt.want, got)
 		})
 	}
@@ -104,21 +104,29 @@ var (
 )
 
 type mockXChainClient struct {
-	GetBlockFn           func(context.Context, uint64, uint64) (xchain.Block, bool, error)
+	GetBlockFn           func(context.Context, uint64, uint64, uint64) (xchain.Block, bool, error)
 	GetSubmittedCursorFn func(context.Context, uint64, uint64) (xchain.StreamCursor, bool, error)
 	GetEmittedCursorFn   func(context.Context, uint64, uint64) (xchain.StreamCursor, bool, error)
 }
 
-func (m *mockXChainClient) StreamAsync(context.Context, uint64, uint64, xchain.ProviderCallback) error {
+func (m *mockXChainClient) StreamAsync(context.Context, uint64, uint64, uint64, xchain.ProviderCallback) error {
 	panic("unexpected")
 }
 
-func (m *mockXChainClient) StreamBlocks(context.Context, uint64, uint64, xchain.ProviderCallback) error {
+func (m *mockXChainClient) StreamAsyncNoOffset(context.Context, uint64, uint64, xchain.ProviderCallback) error {
 	panic("unexpected")
 }
 
-func (m *mockXChainClient) GetBlock(ctx context.Context, chainID uint64, height uint64) (xchain.Block, bool, error) {
-	return m.GetBlockFn(ctx, chainID, height)
+func (m *mockXChainClient) StreamBlocks(context.Context, uint64, uint64, uint64, xchain.ProviderCallback) error {
+	panic("unexpected")
+}
+
+func (m *mockXChainClient) StreamBlocksNoOffset(context.Context, uint64, uint64, xchain.ProviderCallback) error {
+	panic("unexpected")
+}
+
+func (m *mockXChainClient) GetBlock(ctx context.Context, chainID uint64, height uint64, xOffset uint64) (xchain.Block, bool, error) {
+	return m.GetBlockFn(ctx, chainID, height, xOffset)
 }
 
 func (m *mockXChainClient) GetSubmittedCursor(ctx context.Context, chainID uint64, sourceChain uint64,
@@ -141,11 +149,11 @@ func (m *mockSender) SendTransaction(ctx context.Context, submission xchain.Subm
 
 type mockProvider struct {
 	cchain.Provider
-	SubscribeFn func(ctx context.Context, sourceChainID uint64, sourceHeight uint64, callback cchain.ProviderCallback)
+	SubscribeFn func(ctx context.Context, sourceChainID uint64, xBlockOffset uint64, callback cchain.ProviderCallback)
 }
 
-func (m *mockProvider) Subscribe(ctx context.Context, sourceChainID uint64, sourceHeight uint64,
+func (m *mockProvider) Subscribe(ctx context.Context, sourceChainID uint64, xBlockOffset uint64,
 	_ string, callback cchain.ProviderCallback,
 ) {
-	m.SubscribeFn(ctx, sourceChainID, sourceHeight, callback)
+	m.SubscribeFn(ctx, sourceChainID, xBlockOffset, callback)
 }

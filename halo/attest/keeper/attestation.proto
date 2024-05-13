@@ -16,20 +16,21 @@ message Attestation {
   option (cosmos.orm.v1.table) = {
     id: 1;
     primary_key: { fields: "id", auto_increment: true }
-    index: {id: 1, fields: "chain_id,height,hash,attestation_root", unique: true}
-    index: {id: 2, fields: "status,chain_id,height" } // Allows querying by status and approved ranges.
+    index: {id: 1, fields: "chain_id,offset,height,hash,attestation_root", unique: true} // Unique attestation.
+    index: {id: 2, fields: "status,chain_id,offset" } // Allows querying by status and approved ranges.
     index: {id: 3, fields: "created_height"} // Allows querying/deleting by created height.
   };
 
   uint64 id = 1; // Auto-incremented ID
 
   uint64 chain_id         = 2; // Chain ID as per https://chainlist.org
-  uint64 height           = 3; // Height of the block
-  bytes  hash             = 4; // Hash of the block
-  bytes  attestation_root = 5; // Attestation merkle root of the cross-chain Block
-  int32  status           = 6; // Status of the block; pending, approved.
-  uint64 validator_set_id = 7; // Validator set that approved this attestation.
-  uint64 created_height   = 8; // Consensus height at which this attestation was created.
+  uint64 offset           = 3; // Offset of the cross chain block
+  uint64 height           = 4; // Height of the source chain block
+  bytes  hash             = 5; // Hash of the source chain block
+  bytes  attestation_root = 6; // Attestation merkle root of the cross-chain Block
+  int32  status           = 7; // Status of the block; pending, approved.
+  uint64 validator_set_id = 8; // Validator set that approved this attestation.
+  uint64 created_height   = 9; // Consensus height at which this attestation was created.
 }
 
 // Signature is the attestation signature of the validator over the block root.

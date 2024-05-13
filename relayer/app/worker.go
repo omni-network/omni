@@ -88,7 +88,7 @@ func (w *Worker) runOnce(ctx context.Context) error {
 	buf := newActiveBuffer(w.destChain.Name, mempoolLimit, sender)
 
 	var logAttrs []any //nolint:prealloc // Not worth it
-	for srcChainID, fromHeight := range fromHeights(cursors, w.destChain, w.network.Chains, w.state) {
+	for srcChainID, fromOffset := range fromOffsets(cursors, w.destChain, w.network.Chains, w.state) {
 		if srcChainID == w.destChain.ID { // Sanity check
 			return errors.New("unexpected cursor [BUG]")
 		}
@@ -96,13 +96,13 @@ func (w *Worker) runOnce(ctx context.Context) error {
 		callback := newCallback(w.xProvider, initialOffsets, w.creator, buf.AddInput, w.destChain.ID, newMsgStreamMapper(w.network), w.awaitValSet)
 		wrapCb := wrapStatePersist(callback, w.state, w.destChain.ID)
 
-		w.cProvider.Subscribe(ctx, srcChainID, fromHeight, w.destChain.Name, wrapCb)
+		w.cProvider.Subscribe(ctx, srcChainID, fromOffset, w.destChain.Name, wrapCb)
 
 		srcChain, f := w.network.Chain(srcChainID)
 		if !f {
 			continue
 		}
-		logAttrs = append(logAttrs, srcChain.Name, fromHeight)
+		logAttrs = append(logAttrs, srcChain.Name, fromOffset)
 	}
 
 	log.Info(ctx, "Worker subscribed to chains", logAttrs...)
@@ -180,11 +180,9 @@ func newMsgStreamMapper(network netconf.Network) msgStreamMapper {
 func newCallback(xProvider xchain.Provider, initialOffsets map[xchain.StreamID]uint64, creator CreateFunc,
 	sender SendFunc, destChainID uint64, msgStreamMapper msgStreamMapper, awaitValSet awaitValSet) cchain.ProviderCallback {
 	return func(ctx context.Context, att xchain.Attestation) error {
-		block, ok, err := fetchXBlock(ctx, xProvider, att)
+		block, err := fetchXBlock(ctx, xProvider, att)
 		if err != nil {
 			return err
-		} else if !ok {
-			return nil // Nothing to do, just return.
 		}
 
 		tree, err := xchain.NewBlockTree(block)
@@ -236,7 +234,7 @@ func wrapStatePersist(cb cchain.ProviderCallback, state *State, destChainID uint
 			return err
 		}
 
-		if err := state.Persist(destChainID, att.SourceChainID, att.BlockHeight); err != nil {
+		if err := state.Persist(destChainID, att.SourceChainID, att.BlockOffset); err != nil {
 			return errors.Wrap(err, "persist state")
 		}
 
@@ -245,19 +243,19 @@ func wrapStatePersist(cb cchain.ProviderCallback, state *State, destChainID uint
 }
 
 // fetchXBlock gets the xblock from the source chain (retry up to 10s if block-not-finalized).
-func fetchXBlock(rootCtx context.Context, xProvider xchain.Provider, att xchain.Attestation) (xchain.Block, bool, error) {
+func fetchXBlock(rootCtx context.Context, xProvider xchain.Provider, att xchain.Attestation) (xchain.Block, error) {
 	ctx, cancel := context.WithTimeout(rootCtx, 10*time.Second)
 	defer cancel()
 
 	backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second))
 	for {
-		block, ok, err := xProvider.GetBlock(ctx, att.SourceChainID, att.BlockHeight)
+		block, ok, err := xProvider.GetBlock(ctx, att.SourceChainID, att.BlockHeight, att.BlockOffset)
 		if rootCtx.Err() != nil { //nolint:nestif // Just a series of if-elses
-			return xchain.Block{}, false, errors.Wrap(rootCtx.Err(), "canceled") // Root context closed, shutting down
+			return xchain.Block{}, errors.Wrap(rootCtx.Err(), "canceled") // Root context closed, shutting down
 		} else if ctx.Err() != nil {
-			return xchain.Block{}, false, errors.New("attestation block still not finalized (node lagging?)")
+			return xchain.Block{}, errors.New("attestation block still not finalized (node lagging?)")
 		} else if err != nil {
-			return xchain.Block{}, false, err
+			return xchain.Block{}, err
 		} else if !ok {
 			// This happens sometimes if the evm node relayer is querying is lagging behind
 			// the chain itself. Especially for omni_evm with instant finality, this does happen sometimes.
@@ -265,15 +263,18 @@ func fetchXBlock(rootCtx context.Context, xProvider xchain.Provider, att xchain.
 			backoff()
 			continue
 		} else if block.BlockHash != att.BlockHash { // Sanity check, should never happen.
-			return xchain.Block{}, false, errors.New("attestation block hash mismatch [BUG]",
+			return xchain.Block{}, errors.New("attestation block hash mismatch [BUG]",
 				log.Hex7("attestation_hash", att.BlockHash[:]),
 				log.Hex7("block_hash", block.BlockHash[:]),
 			)
+		} else if block.BlockOffset != att.BlockOffset {
+			// All attestations must map to non-empty xblocks with XBlockOffset populated.
+			return xchain.Block{}, errors.New("unexpected XBlockOffset [BUG]")
 		} else if len(block.Msgs) == 0 {
-			return xchain.Block{}, false, nil
+			return xchain.Block{}, errors.New("unexpected empty xblock [BUG]")
 		}
 
 		// We got the xblock, it is finalized and its hash matches the attestation block hash.
-		return block, true, nil
+		return block, nil
 	}
 }

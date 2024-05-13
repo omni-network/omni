@@ -3,6 +3,8 @@ package types
 import (
 	"context"
 
+	"github.com/omni-network/omni/lib/xchain"
+
 	abci "github.com/cometbft/cometbft/abci/types"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -47,8 +49,8 @@ type Voter interface {
 // VoterDeps abstracts the Voter's internal cosmosSDK dependencies; basically the attest keeper.
 // They have a circular dependency.
 type VoterDeps interface {
-	// LatestAttestationHeight returns the latest approved attestation height for the given chain.
-	LatestAttestationHeight(ctx context.Context, chainID uint64) (uint64, bool, error)
+	// LatestAttestation returns the latest approved attestation for the given chain.
+	LatestAttestation(ctx context.Context, chainID uint64) (xchain.Attestation, bool, error)
 }
 
 // ChainNameFunc is a function that returns the name of a chain given its ID.

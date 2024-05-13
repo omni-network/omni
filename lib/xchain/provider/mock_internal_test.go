@@ -17,13 +17,14 @@ func TestMock(t *testing.T) {
 	const (
 		chainID    = 123
 		fromHeight = 0
+		fromOffset = 1
 		total      = 5
 	)
 
 	mock := NewMock(time.Millisecond, 0, nil)
 
 	var blocks []xchain.Block
-	err := mock.StreamAsync(ctx, chainID, fromHeight, func(ctx context.Context, block xchain.Block) error {
+	err := mock.StreamAsync(ctx, chainID, fromHeight, fromOffset, func(ctx context.Context, block xchain.Block) error {
 		blocks = append(blocks, block)
 		if len(blocks) == total {
 			cancel()
@@ -48,12 +49,20 @@ func TestMock(t *testing.T) {
 
 func assertOffsets(t *testing.T, blocks []xchain.Block) {
 	t.Helper()
-	offsets := make(map[xchain.StreamID]uint64)
+	sOffsets := make(map[xchain.StreamID]uint64)
+	bOffset := 1
 
 	for _, block := range blocks {
+		if block.ShouldAttest() {
+			require.EqualValues(t, bOffset, block.BlockOffset)
+			bOffset++
+		} else {
+			require.Empty(t, block.BlockOffset)
+		}
+
 		for _, msg := range block.Msgs {
-			require.Equal(t, offsets[msg.StreamID], msg.StreamOffset)
-			offsets[msg.StreamID]++
+			require.Equal(t, sOffsets[msg.StreamID], msg.StreamOffset)
+			sOffsets[msg.StreamID]++
 		}
 	}
 }

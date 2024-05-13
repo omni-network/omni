@@ -36,17 +36,6 @@ type voteDeps struct {
 	cchain.Provider
 }
 
-func (v voteDeps) LatestAttestationHeight(ctx context.Context, chainID uint64) (uint64, bool, error) {
-	att, ok, err := v.LatestAttestation(ctx, chainID)
-	if err != nil {
-		return 0, false, err
-	} else if !ok {
-		return 0, false, nil
-	}
-
-	return att.BlockHeight, true, nil
-}
-
 // voterLoader wraps a voter instances that is lazy loaded from the on-chain registry.
 // It is basically a noop while not loaded.
 type voterLoader struct {

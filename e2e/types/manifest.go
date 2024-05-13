@@ -51,8 +51,10 @@ const (
 type Perturb string
 
 const (
+	// PerturbRestart defines a perturbation that restarts a docker container.
+	PerturbRestart Perturb = "restart"
 	// PerturbStopStart defines a perturbation that stops and then starts a docker container.
-	PerturbStopStart = "stopstart"
+	PerturbStopStart Perturb = "stopstart"
 )
 
 // Manifest wraps e2e.Manifest with additional omni-specific fields.

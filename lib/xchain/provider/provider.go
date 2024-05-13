@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+const initialXOffset uint64 = 1
+
 // fetchWorkerThresholds defines the number of concurrent workers
 // to fetch xblocks by chain block period.
 var fetchWorkerThresholds = []struct {
@@ -80,6 +82,7 @@ func (p *Provider) StreamAsync(
 	ctx context.Context,
 	chainID uint64,
 	fromHeight uint64,
+	fromOffset uint64,
 	callback xchain.ProviderCallback,
 ) error {
 	if _, ok := p.network.Chain(chainID); !ok {
@@ -87,7 +90,28 @@ func (p *Provider) StreamAsync(
 	}
 
 	go func() {
-		err := p.stream(ctx, chainID, fromHeight, callback, true)
+		err := p.stream(ctx, chainID, fromHeight, &fromOffset, callback, true)
+		if err != nil { // RetryCallback==true so this should only ever return nil on ctx cancel.
+			log.Error(ctx, "Streaming xprovider blocks failed unexpectedly [BUG]", err)
+		}
+	}()
+
+	return nil
+}
+
+// StreamAsyncNoOffset is the same as StreamAsync except that XBlockOffset is not populated in the returned XBlocks.
+func (p *Provider) StreamAsyncNoOffset(
+	ctx context.Context,
+	chainID uint64,
+	fromHeight uint64,
+	callback xchain.ProviderCallback,
+) error {
+	if _, ok := p.network.Chain(chainID); !ok {
+		return errors.New("unknown chain ID")
+	}
+
+	go func() {
+		err := p.stream(ctx, chainID, fromHeight, nil, callback, true)
 		if err != nil { // RetryCallback==true so this should only ever return nil on ctx cancel.
 			log.Error(ctx, "Streaming xprovider blocks failed unexpectedly [BUG]", err)
 		}
@@ -103,15 +127,27 @@ func (p *Provider) StreamBlocks(
 	ctx context.Context,
 	chainID uint64,
 	fromHeight uint64,
+	fromOffset uint64,
 	callback xchain.ProviderCallback,
 ) error {
-	return p.stream(ctx, chainID, fromHeight, callback, false)
+	return p.stream(ctx, chainID, fromHeight, &fromOffset, callback, false)
+}
+
+// StreamBlocksNoOffset is the same as StreamBlocks except that XBlockOffset is not populated in the returned XBlocks.
+func (p *Provider) StreamBlocksNoOffset(
+	ctx context.Context,
+	chainID uint64,
+	fromHeight uint64,
+	callback xchain.ProviderCallback,
+) error {
+	return p.stream(ctx, chainID, fromHeight, nil, callback, false)
 }
 
 func (p *Provider) stream(
 	ctx context.Context,
 	chainID uint64,
 	fromHeight uint64,
+	fromOffset *uint64,
 	callback xchain.ProviderCallback,
 	retryCallback bool,
 ) error {
@@ -131,20 +167,42 @@ func (p *Provider) stream(
 		return errors.New("zero workers [BUG]")
 	}
 
+	// Start streaming from chain's deploy height as per config.
+	if fromHeight < chain.DeployHeight {
+		fromHeight = chain.DeployHeight
+	}
+	// XBlockOffset is 1-indexed (starts at 1)
+	if fromOffset != nil && *fromOffset == 0 {
+		fromOffset = ptr(initialXOffset)
+	}
+
+	tracker := newOffsetTracker(fromOffset)
+
 	deps := stream.Deps[xchain.Block]{
 		FetchWorkers: workers,
 		FetchBatch: func(ctx context.Context, chainID uint64, height uint64) ([]xchain.Block, error) {
-			xBlock, exists, err := p.GetBlock(ctx, chainID, height)
+			offset, err := tracker.getOffset(height)
+			if err != nil {
+				return nil, err
+			}
+
+			xBlock, exists, err := p.GetBlock(ctx, chainID, height, offset)
 			if err != nil {
 				return nil, err
 			} else if !exists {
 				return nil, nil
 			}
 
+			if xBlock.ShouldAttest() {
+				if err := tracker.assignOffset(height); err != nil {
+					return nil, err
+				}
+			}
+
 			return []xchain.Block{xBlock}, nil
 		},
 		Backoff:       p.backoffFunc,
-		ElemLabel:     "attestation",
+		ElemLabel:     "block",
 		RetryCallback: retryCallback,
 		Height: func(block xchain.Block) uint64 {
 			return block.BlockHeight
@@ -154,6 +212,8 @@ func (p *Provider) stream(
 				return errors.New("invalid block source chain id")
 			} else if block.BlockHeight != h {
 				return errors.New("invalid block height")
+			} else if block.ShouldAttest() && block.BlockOffset == 0 {
+				return errors.New("invalid block offset")
 			}
 
 			return nil
@@ -179,11 +239,6 @@ func (p *Provider) stream(
 
 	cb := (stream.Callback[xchain.Block])(callback)
 
-	// Start streaming from chain's deploy height as per config.
-	if fromHeight < chain.DeployHeight {
-		fromHeight = chain.DeployHeight
-	}
-
 	ctx = log.WithCtx(ctx, "chain", chain.Name)
 	log.Info(ctx, "Streaming xprovider blocks", "from_height", fromHeight)
 
@@ -207,4 +262,79 @@ func (p *Provider) getEVMChain(chainID uint64) (netconf.Chain, ethclient.Client,
 	}
 
 	return chain, client, nil
+}
+
+// offsetTracker tracks the XBlockOffset for non-empty blocks.
+//
+// It supports at-least-once semantics `assignOffset` and `getOffset`
+// for monotonically incrementing heights; i.e., get and assign may
+// be called for the same or later (higher) heights multiple times,
+// but it may not be called for a previous (lower) height.
+type offsetTracker struct {
+	mu            sync.RWMutex
+	enabled       bool
+	currentOffset uint64
+	prevHeight    *uint64
+}
+
+func newOffsetTracker(from *uint64) *offsetTracker {
+	if from == nil {
+		// Return a disabled tracker that is basically noop, resulting in always populating 0 XBlockOffsets.
+		return &offsetTracker{}
+	}
+
+	return &offsetTracker{
+		enabled:       true,
+		currentOffset: *from,
+	}
+}
+
+// assignOffset assigns the current offset to the provided height
+// incrementing the current offset by one.
+func (c *offsetTracker) assignOffset(height uint64) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if !c.enabled {
+		return nil
+	}
+
+	if c.prevHeight != nil && *c.prevHeight > height {
+		return errors.New("assign unexpected old height [BUG]")
+	} else if c.prevHeight != nil && *c.prevHeight == height {
+		return nil
+	}
+
+	c.prevHeight = &height
+	c.currentOffset++
+
+	return nil
+}
+
+// getOffset returns the XBlockOffset for the provided height,
+// only the previous offset (current-1) or the current offset is supported.
+func (c *offsetTracker) getOffset(height uint64) (uint64, error) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	if !c.enabled {
+		return 0, nil
+	}
+
+	if c.prevHeight == nil {
+		return c.currentOffset, nil
+	}
+
+	if *c.prevHeight > height {
+		return 0, errors.New("get unexpected old height [BUG]")
+	}
+	if *c.prevHeight == height {
+		return c.currentOffset - 1, nil
+	}
+
+	return c.currentOffset, nil
+}
+
+func ptr[T any](t T) *T {
+	return &t
 }

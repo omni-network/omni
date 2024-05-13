@@ -42,7 +42,8 @@ func TestEncodeHeader(t *testing.T) {
 
 	header := BlockHeader{
 		SourceChainID: 1,
-		BlockHeight:   100,
+		BlockOffset:   100,
+		BlockHeight:   99, // Ignored
 		BlockHash:     common.HexToHash("0x412d62a6a3115ab5a0e0cae9d63082ff8dfb002a98cc889d06dc986a9461586b"),
 	}
 

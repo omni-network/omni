@@ -53,8 +53,10 @@ func TestRunner(t *testing.T) {
 		err := sub.callback(ctx, xchain.Block{
 			BlockHeader: xchain.BlockHeader{
 				SourceChainID: chain1,
+				BlockOffset:   height,
 				BlockHeight:   height,
 			},
+			Msgs: []xchain.Msg{{}}, // Non-empty XBlock should always be attested to
 		})
 
 		if ok {
@@ -78,6 +80,7 @@ func TestRunner(t *testing.T) {
 
 	sub := <-prov // Get the subscription
 	require.EqualValues(t, chain1, sub.chainID)
+	require.EqualValues(t, 0, sub.offset)
 	require.EqualValues(t, 0, sub.height)
 
 	callback(t, sub, 0, isVal, returnsOk) // Callback block 0 (in window)
@@ -89,6 +92,7 @@ func TestRunner(t *testing.T) {
 	// Assert it reset
 	sub = <-prov // Get the new subscription
 	require.EqualValues(t, chain1, sub.chainID)
+	require.EqualValues(t, 2, sub.offset) // Assert it starts from 2 this time
 	require.EqualValues(t, 2, sub.height) // Assert it starts from 2 this time
 
 	v.TrimBehind(map[uint64]uint64{chain1: 2}) // Set window to 2
@@ -96,14 +100,17 @@ func TestRunner(t *testing.T) {
 
 	callback(t, sub, 3, isNotVal, returnsErr) // Callback block 3, but not validator anymore (triggers reset of worker)
 
+	const newHeight = 55
+	const newOffset = 77
+	deps.SetHeightAndOffset(newHeight, newOffset) // Set a new latest attestation height
+
 	// Enable IsValidator again
 	setIsVal(t, v, pk, true)
 
 	// Assert it reset
-	const newHeight = 99
-	deps.SetHeight(newHeight) // Set a new latest attestation height
-	sub = <-prov              // Get the new subscription
+	sub = <-prov // Get the new subscription
 	require.EqualValues(t, chain1, sub.chainID)
+	require.EqualValues(t, newOffset+1, sub.offset) // Assert it starts from newOffset+1 this time
 	require.EqualValues(t, newHeight+1, sub.height) // Assert it starts from newHeight+1 this time
 
 	cancel()
@@ -166,7 +173,7 @@ func TestVoteWindow(t *testing.T) {
 	// Ensure latest by chain not trimmed.
 	latest, ok := w.v.LatestByChain(chain1)
 	require.True(t, ok)
-	require.EqualValues(t, 3, latest.BlockHeader.Height)
+	require.EqualValues(t, 3, latest.BlockHeader.Offset)
 }
 
 func TestVoter(t *testing.T) {
@@ -282,14 +289,14 @@ func TestVoter(t *testing.T) {
 	v.AddErr(t, 1, 5)
 }
 
-func expectSubscriptions(t *testing.T, prov stubProvider, chainHeights ...uint64) {
+func expectSubscriptions(t *testing.T, prov stubProvider, chainOffsets ...uint64) {
 	t.Helper()
 
 	expected := make(map[uint64]uint64)
-	for i := 0; i < len(chainHeights); i += 2 {
-		chainID := chainHeights[i]
-		height := chainHeights[i+1]
-		expected[chainID] = height
+	for i := 0; i < len(chainOffsets); i += 2 {
+		chainID := chainOffsets[i]
+		offset := chainOffsets[i+1]
+		expected[chainID] = offset
 	}
 
 	l := len(expected)
@@ -301,7 +308,7 @@ func expectSubscriptions(t *testing.T, prov stubProvider, chainHeights ...uint64
 		case next := <-prov:
 			h, ok := expected[next.chainID]
 			require.True(t, ok)
-			require.EqualValues(t, h, next.height)
+			require.EqualValues(t, h, next.offset)
 			delete(expected, next.chainID)
 		}
 		cancel()
@@ -318,37 +325,37 @@ type wrappedVoter struct {
 	f *fuzz.Fuzzer
 }
 
-func (w *wrappedVoter) Add(t *testing.T, chainID, height uint64) {
+func (w *wrappedVoter) Add(t *testing.T, chainID, offset uint64) {
 	t.Helper()
 	var block xchain.Block
 	w.f.Fuzz(&block)
 	block.BlockHeader = xchain.BlockHeader{
 		SourceChainID: chainID,
-		BlockHeight:   height,
+		BlockOffset:   offset,
 	}
 
 	err := w.v.Vote(block, false)
 	require.NoError(t, err)
 }
 
-func (w *wrappedVoter) Propose(t *testing.T, chainID, height uint64) {
+func (w *wrappedVoter) Propose(t *testing.T, chainID, offset uint64) {
 	t.Helper()
 
 	header := &types.BlockHeader{
 		ChainId: chainID,
-		Height:  height,
+		Offset:  offset,
 	}
 
 	err := w.v.SetProposed([]*types.BlockHeader{header})
 	require.NoError(t, err)
 }
 
-func (w *wrappedVoter) Commit(t *testing.T, chainID, height uint64) {
+func (w *wrappedVoter) Commit(t *testing.T, chainID, offset uint64) {
 	t.Helper()
 
 	header := &types.BlockHeader{
 		ChainId: chainID,
-		Height:  height,
+		Offset:  offset,
 	}
 
 	err := w.v.SetCommitted([]*types.BlockHeader{header})
@@ -356,12 +363,12 @@ func (w *wrappedVoter) Commit(t *testing.T, chainID, height uint64) {
 }
 
 // Available asserts the given block is available.
-func (w *wrappedVoter) Available(t *testing.T, chainID, height uint64, ok bool) {
+func (w *wrappedVoter) Available(t *testing.T, chainID, offset uint64, ok bool) {
 	t.Helper()
 
 	var found bool
 	for _, att := range w.v.GetAvailable() {
-		if att.BlockHeader.ChainId == chainID && att.BlockHeader.Height == height {
+		if att.BlockHeader.ChainId == chainID && att.BlockHeader.Offset == offset {
 			found = true
 			break
 		}
@@ -371,13 +378,13 @@ func (w *wrappedVoter) Available(t *testing.T, chainID, height uint64, ok bool) 
 }
 
 // AddErr adds a fuzzed block to the voter and asserts an error is returned.
-func (w *wrappedVoter) AddErr(t *testing.T, chainID, height uint64) {
+func (w *wrappedVoter) AddErr(t *testing.T, chainID, offset uint64) {
 	t.Helper()
 	var block xchain.Block
 	w.f.Fuzz(&block)
 	block.BlockHeader = xchain.BlockHeader{
 		SourceChainID: chainID,
-		BlockHeight:   height,
+		BlockOffset:   offset,
 	}
 
 	err := w.v.Vote(block, false)
@@ -387,30 +394,36 @@ func (w *wrappedVoter) AddErr(t *testing.T, chainID, height uint64) {
 type mockDeps struct {
 	mu     sync.Mutex
 	height uint64
+	offset uint64
 }
 
-func (m *mockDeps) SetHeight(h uint64) {
+func (m *mockDeps) SetHeightAndOffset(height, offset uint64) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.height = h
+	m.height = height
+	m.offset = offset
 }
 
-func (m *mockDeps) LatestAttestationHeight(context.Context, uint64) (uint64, bool, error) {
+func (m *mockDeps) LatestAttestation(context.Context, uint64) (xchain.Attestation, bool, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	return m.height, m.height > 0, nil
+	return xchain.Attestation{BlockHeader: xchain.BlockHeader{
+		BlockOffset: m.offset,
+		BlockHeight: m.height,
+	}}, m.height > 0, nil
 }
 
 type stubDeps struct{}
 
-func (stubDeps) LatestAttestationHeight(context.Context, uint64) (uint64, bool, error) {
-	return 0, false, nil
+func (stubDeps) LatestAttestation(context.Context, uint64) (xchain.Attestation, bool, error) {
+	return xchain.Attestation{}, false, nil
 }
 
 type sub struct {
 	chainID  uint64
 	height   uint64
+	offset   uint64
 	callback xchain.ProviderCallback
 	result   chan error
 }
@@ -419,9 +432,10 @@ var _ xchain.Provider = make(stubProvider)
 
 type stubProvider chan sub
 
-func (p stubProvider) StreamBlocks(ctx context.Context, chainID uint64, fromHeight uint64, callback xchain.ProviderCallback) error {
+func (p stubProvider) StreamBlocks(ctx context.Context, chainID uint64, fromHeight uint64, fromOffset uint64, callback xchain.ProviderCallback) error {
 	result := make(chan error)
-	p <- sub{chainID, fromHeight, callback, result}
+
+	p <- sub{chainID, fromHeight, fromOffset, callback, result}
 
 	select {
 	case <-ctx.Done():
@@ -431,11 +445,11 @@ func (p stubProvider) StreamBlocks(ctx context.Context, chainID uint64, fromHeig
 	}
 }
 
-func (stubProvider) StreamAsync(context.Context, uint64, uint64, xchain.ProviderCallback) error {
+func (stubProvider) StreamAsync(context.Context, uint64, uint64, uint64, xchain.ProviderCallback) error {
 	panic("unexpected")
 }
 
-func (stubProvider) GetBlock(context.Context, uint64, uint64) (xchain.Block, bool, error) {
+func (stubProvider) GetBlock(context.Context, uint64, uint64, uint64) (xchain.Block, bool, error) {
 	panic("unexpected")
 }
 
@@ -444,6 +458,14 @@ func (stubProvider) GetSubmittedCursor(context.Context, uint64, uint64) (xchain.
 }
 
 func (stubProvider) GetEmittedCursor(context.Context, uint64, uint64) (xchain.StreamCursor, bool, error) {
+	panic("unexpected")
+}
+
+func (stubProvider) StreamAsyncNoOffset(context.Context, uint64, uint64, xchain.ProviderCallback) error {
+	panic("unexpected")
+}
+
+func (stubProvider) StreamBlocksNoOffset(context.Context, uint64, uint64, xchain.ProviderCallback) error {
 	panic("unexpected")
 }
 

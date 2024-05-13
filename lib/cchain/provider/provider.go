@@ -23,9 +23,9 @@ import (
 
 var _ cchain.Provider = Provider{}
 
-type fetchFunc func(ctx context.Context, chainID uint64, fromHeight uint64) ([]xchain.Attestation, error)
+type fetchFunc func(ctx context.Context, chainID uint64, fromOffset uint64) ([]xchain.Attestation, error)
 type latestFunc func(ctx context.Context, chainID uint64) (xchain.Attestation, bool, error)
-type windowFunc func(ctx context.Context, chainID uint64, height uint64) (int, error)
+type windowFunc func(ctx context.Context, chainID uint64, xBlockOffset uint64) (int, error)
 type valsetFunc func(ctx context.Context, valSetID uint64, latest bool) (valSetResponse, bool, error)
 type headerFunc func(ctx context.Context, height *int64) (*ctypes.ResultHeader, error)
 type chainIDFunc func(ctx context.Context) (uint64, error)
@@ -63,9 +63,9 @@ func NewProviderForT(_ *testing.T, fetch fetchFunc, latest latestFunc, window wi
 	}
 }
 
-func (p Provider) AttestationsFrom(ctx context.Context, sourceChainID uint64, sourceHeight uint64,
+func (p Provider) AttestationsFrom(ctx context.Context, sourceChainID uint64, xBlockOffset uint64,
 ) ([]xchain.Attestation, error) {
-	return p.fetch(ctx, sourceChainID, sourceHeight)
+	return p.fetch(ctx, sourceChainID, xBlockOffset)
 }
 
 func (p Provider) LatestAttestation(ctx context.Context, sourceChainID uint64,
@@ -73,8 +73,8 @@ func (p Provider) LatestAttestation(ctx context.Context, sourceChainID uint64,
 	return p.latest(ctx, sourceChainID)
 }
 
-func (p Provider) WindowCompare(ctx context.Context, sourceChainID uint64, height uint64) (int, error) {
-	return p.window(ctx, sourceChainID, height)
+func (p Provider) WindowCompare(ctx context.Context, sourceChainID uint64, xBlockOffset uint64) (int, error) {
+	return p.window(ctx, sourceChainID, xBlockOffset)
 }
 
 func (p Provider) ValidatorSet(ctx context.Context, valSetID uint64) ([]cchain.Validator, bool, error) {
@@ -83,7 +83,7 @@ func (p Provider) ValidatorSet(ctx context.Context, valSetID uint64) ([]cchain.V
 }
 
 // Subscribe implements cchain.Provider.
-func (p Provider) Subscribe(in context.Context, srcChainID uint64, height uint64, workerName string,
+func (p Provider) Subscribe(in context.Context, srcChainID uint64, xBlockOffset uint64, workerName string,
 	callback cchain.ProviderCallback,
 ) {
 	srcChain := p.chainNamer(srcChainID)
@@ -96,14 +96,14 @@ func (p Provider) Subscribe(in context.Context, srcChainID uint64, height uint64
 		RetryCallback: true,
 		FetchWorkers:  1, // Only single worker supported since we fetch batches of unknown lengths so can't shard.
 		Height: func(att xchain.Attestation) uint64 {
-			return att.BlockHeight
+			return att.BlockOffset
 		},
 		Verify: func(ctx context.Context, att xchain.Attestation, h uint64) error {
 			if att.SourceChainID != srcChainID {
 				return errors.New("invalid attestation source chain ID")
-			} else if att.BlockHeight != h {
+			} else if att.BlockOffset != h {
 				return errors.New("invalid attestation height",
-					"actual", att.BlockHeight,
+					"actual", att.BlockOffset,
 					"expected", h,
 				)
 			}
@@ -133,7 +133,7 @@ func (p Provider) Subscribe(in context.Context, srcChainID uint64, height uint64
 	cb := (stream.Callback[xchain.Attestation])(callback)
 
 	go func() {
-		err := stream.Stream(ctx, deps, srcChainID, height, cb)
+		err := stream.Stream(ctx, deps, srcChainID, xBlockOffset, cb)
 		if err != nil { // RetryCallback==true, so this never return an error.
 			log.Error(ctx, "Unexpected stream error [BUG]", err)
 		}

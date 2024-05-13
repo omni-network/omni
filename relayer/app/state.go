@@ -14,7 +14,7 @@ import (
 type State struct {
 	mu       sync.Mutex
 	filePath string
-	cursors  map[uint64]map[uint64]uint64 // destChainID -> srcChainID -> height
+	cursors  map[uint64]map[uint64]uint64 // destChainID -> srcChainID -> offset
 }
 
 // NewEmptyState creates a new empty state with the given file path.
@@ -25,8 +25,8 @@ func NewEmptyState(filePath string) *State {
 	}
 }
 
-// GetHeight returns the last submitted height for the given destChainID and srcChainID.
-func (s *State) GetHeight(dstID, srcID uint64) uint64 {
+// GetOffset returns the last submitted offset for the given destChainID and srcChainID.
+func (s *State) GetOffset(dstID, srcID uint64) uint64 {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -43,8 +43,8 @@ func (s *State) Clear(dstID uint64) error {
 	return s.saveUnsafe()
 }
 
-// Persist saves the given height for the given chainID.
-func (s *State) Persist(dstID, srcID, height uint64) error {
+// Persist saves the given offset for the given src and dest chain pair..
+func (s *State) Persist(dstID, srcID, offset uint64) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -52,7 +52,7 @@ func (s *State) Persist(dstID, srcID, height uint64) error {
 	if !ok {
 		srcMap = make(map[uint64]uint64)
 	}
-	srcMap[srcID] = height
+	srcMap[srcID] = offset
 
 	s.cursors[dstID] = srcMap
 

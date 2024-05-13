@@ -88,7 +88,7 @@ func monitorConsOffsetOnce(ctx context.Context, network netconf.Network, xprovid
 			return nil
 		}
 
-		emitCursor.WithLabelValues(cChain.Name, destChain.Name).Set(float64(emitted.Offset))
+		emitCursor.WithLabelValues(cChain.Name, destChain.Name).Set(float64(emitted.MsgOffset))
 	}
 
 	return nil
@@ -111,7 +111,7 @@ func monitorHeightsForever(
 			return
 		case <-ticker.C:
 			// First get attested head (so it can't be lower than heads).
-			attested, err := getAttested(ctx, chain.ID, chain.DeployHeight, cprovider)
+			attested, err := getAttested(ctx, chain.ID, cprovider)
 
 			// then get chain heads (so it is always higher than attested).
 			heads := headsFunc(ctx)
@@ -144,7 +144,7 @@ func getConsXHead(ctx context.Context, cprovider cchain.Provider) map[ethclient.
 	}
 
 	return map[ethclient.HeadType]uint64{
-		"xfinal": xblock.BlockHeight,
+		"xfinal": xblock.BlockOffset,
 	}
 }
 
@@ -169,15 +169,15 @@ func getEVMHeads(ctx context.Context, client ethclient.Client) map[ethclient.Hea
 }
 
 // monitorAttestedOnce monitors of the latest attested height by chain.
-func getAttested(ctx context.Context, chainID uint64, deployHeight uint64, cprovider cchain.Provider) (uint64, error) {
+func getAttested(ctx context.Context, chainID uint64, cprovider cchain.Provider) (uint64, error) {
 	att, ok, err := cprovider.LatestAttestation(ctx, chainID)
 	if err != nil {
 		return 0, errors.Wrap(err, "latest attestation")
 	} else if !ok {
-		return deployHeight - 1, nil
+		return 0, nil
 	}
 
-	return att.BlockHeader.BlockHeight, nil
+	return att.BlockHeader.BlockOffset, nil
 }
 
 // monitorAccountsForever blocks and periodically monitors the relayer accounts
@@ -263,8 +263,8 @@ func monitorOffsetsOnce(ctx context.Context, src, dst uint64, srcChain, dstChain
 		return err
 	}
 
-	emitCursor.WithLabelValues(srcChain, dstChain).Set(float64(emitted.Offset))
-	submitCursor.WithLabelValues(srcChain, dstChain).Set(float64(submitted.Offset))
+	emitCursor.WithLabelValues(srcChain, dstChain).Set(float64(emitted.MsgOffset))
+	submitCursor.WithLabelValues(srcChain, dstChain).Set(float64(submitted.MsgOffset))
 
 	return nil
 }

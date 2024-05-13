@@ -55,8 +55,9 @@ message Vote {
 // BlockHeader uniquely identifies a cross chain block.
 message BlockHeader {
   uint64 chain_id    = 1; // Chain ID as per https://chainlist.org
-  uint64 height      = 2; // Height of the block
-  bytes  hash        = 3; // Hash of the block
+  uint64 offset      = 2; // Offset of the cross chain block
+  uint64 height      = 3; // Height of the source chain block
+  bytes  hash        = 4; // Hash of the source chain block
 }
 
 // SigTuple is a validator public key and signature (over the attestation root).

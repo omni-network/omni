@@ -3,8 +3,6 @@ package keeper
 import (
 	"fmt"
 	"testing"
-
-	"github.com/omni-network/omni/halo/attest/types"
 )
 
 // AttestTable returns the attestations ORM table.
@@ -46,7 +44,7 @@ func TestWindowCompose(t *testing.T) {
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("mid_%d_target_%d", tt.Mid, tt.Target), func(t *testing.T) {
 			t.Parallel()
-			got := windowCompare(window, &types.BlockHeader{Height: tt.Mid}, tt.Target)
+			got := windowCompare(window, tt.Mid, tt.Target)
 			if got != tt.Expected {
 				t.Errorf("Test %d: Expected %d, got %d", i, tt.Expected, got)
 			}

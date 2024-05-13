@@ -32,7 +32,8 @@ func TestProvider(t *testing.T) {
 		workers = 2
 
 		chainID    = uint64(999)
-		fromHeight = uint64(100)
+		fromOffset = uint64(50)
+		fromHeight = uint64(200)
 	)
 
 	// Setup test input and mocks.
@@ -78,7 +79,7 @@ func TestProvider(t *testing.T) {
 	xprov := provider.NewForT(t, network, map[uint64]ethclient.Client{chainID: mockEthCl}, backoff.BackOff, workers)
 
 	var actual []xchain.Block
-	err := xprov.StreamBlocks(ctx, chainID, fromHeight, func(ctx context.Context, block xchain.Block) error {
+	err := xprov.StreamBlocks(ctx, chainID, fromHeight, fromOffset, func(ctx context.Context, block xchain.Block) error {
 		actual = append(actual, block)
 		if len(actual) == total {
 			cancel()
@@ -93,9 +94,17 @@ func TestProvider(t *testing.T) {
 	require.Equal(t, errs, backoff.Count()) // 2 errors
 
 	require.Len(t, actual, total)
-	for i, attestation := range actual {
-		require.Equal(t, chainID, attestation.SourceChainID)
-		require.Equal(t, fromHeight+uint64(i), attestation.BlockHeight)
+
+	nextXBlockOffset := uint64(1)
+	for i, block := range actual {
+		require.Equal(t, chainID, block.SourceChainID)
+		require.Equal(t, fromHeight+uint64(i), block.BlockHeight)
+		if block.ShouldAttest() {
+			require.Equal(t, nextXBlockOffset, block.BlockOffset)
+			nextXBlockOffset++
+		} else {
+			require.Empty(t, block.BlockOffset)
+		}
 	}
 }
 

@@ -64,9 +64,9 @@ func TestSmoke(t *testing.T) {
 	require.False(t, ok)
 
 	xblock, ok, err := cprov.XBlock(ctx, 0, true) // Ensure getting latest xblock.
-	require.NoError(t, err)
+	tutil.RequireNoError(t, err)
 	require.True(t, ok)
-	require.GreaterOrEqual(t, xblock.BlockHeight, uint64(1))
+	require.GreaterOrEqual(t, xblock.BlockOffset, uint64(1))
 	require.Len(t, xblock.Msgs, 1)
 
 	_, ok, err = cprov.ValidatorSet(ctx, 33) // Ensure it doesn't error for unknown validator sets.
@@ -88,7 +88,7 @@ func TestSmoke(t *testing.T) {
 
 	srcChain := netconf.Simnet.Static().OmniExecutionChainID
 	// Ensure all blocks are attested and approved.
-	cprov.Subscribe(ctx, srcChain, 0, "test", func(ctx context.Context, approved xchain.Attestation) error {
+	cprov.Subscribe(ctx, srcChain, 1, "test", func(ctx context.Context, approved xchain.Attestation) error {
 		// Sanity check we can fetch latest directly as well.
 		att, ok, err := cprov.LatestAttestation(ctx, srcChain)
 		require.NoError(t, err)
@@ -96,7 +96,7 @@ func TestSmoke(t *testing.T) {
 		require.Equal(t, srcChain, att.SourceChainID)
 
 		require.Equal(t, srcChain, approved.SourceChainID)
-		t.Logf("cprovider streamed approved block: %d", approved.BlockHeight)
+		t.Logf("cprovider streamed approved block: %d", approved.BlockOffset)
 		if approved.BlockHeight >= target {
 			cancel()
 		}

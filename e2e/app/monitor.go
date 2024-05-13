@@ -48,7 +48,7 @@ func StartMonitoringReceipts(ctx context.Context, def Definition) func() error {
 	var msgCache sync.Map
 
 	streamReceipts := func(ctx context.Context, chain netconf.Chain) (void, error) {
-		return nil, xProvider.StreamBlocks(ctx, chain.ID, chain.DeployHeight,
+		return nil, xProvider.StreamBlocksNoOffset(ctx, chain.ID, chain.DeployHeight,
 			func(ctx context.Context, block xchain.Block) error {
 				for _, msg := range block.Msgs {
 					msgCache.Store(msg.MsgID, msg)
@@ -150,7 +150,7 @@ func MonitorCProvider(ctx context.Context, node *e2e.Node, network netconf.Netwo
 	cprov := cprovider.NewABCIProvider(client, network.ID, netconf.ChainNamer(network.ID))
 
 	for _, chain := range network.Chains {
-		atts, err := cprov.AttestationsFrom(ctx, chain.ID, chain.DeployHeight)
+		atts, err := cprov.AttestationsFrom(ctx, chain.ID, 1)
 		if err != nil {
 			return errors.Wrap(err, "getting approved attestations")
 		}

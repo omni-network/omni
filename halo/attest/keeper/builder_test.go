@@ -21,12 +21,14 @@ func init() {
 
 //nolint:gochecknoglobals // Hard-coded test data.
 var (
-	blockHashes []common.Hash
-	vals        = []k1.PrivKey{k1.GenPrivKey(), k1.GenPrivKey(), k1.GenPrivKey()}
-	val1        = newValidator(vals[0].PubKey(), 10)
-	val2        = newValidator(vals[1].PubKey(), 15)
-	val3        = newValidator(vals[2].PubKey(), 15)
-	attRoot     = []byte("test attestation root")
+	blockHashes   []common.Hash
+	vals          = []k1.PrivKey{k1.GenPrivKey(), k1.GenPrivKey(), k1.GenPrivKey()}
+	val1          = newValidator(vals[0].PubKey(), 10)
+	val2          = newValidator(vals[1].PubKey(), 15)
+	val3          = newValidator(vals[2].PubKey(), 15)
+	attRoot       = []byte("test attestation root")
+	defaultOffset = uint64(1)
+	defaultHeight = uint64(700)
 )
 
 func newValSet(id uint64, vals ...*vtypes.Validator) *vtypes.ValidatorSetResponse {
@@ -101,7 +103,8 @@ func (b *AggVoteBuilder) Default() *AggVoteBuilder {
 	b.vote = &types.AggVote{
 		BlockHeader: &types.BlockHeader{
 			ChainId: 1,
-			Height:  500,
+			Offset:  defaultOffset,
+			Height:  defaultHeight,
 			Hash:    blockHashes[0].Bytes(),
 		},
 		AttestationRoot: attRoot,
@@ -118,6 +121,17 @@ func (b *AggVoteBuilder) WithChainID(id uint64) *AggVoteBuilder {
 		b.vote.BlockHeader = &types.BlockHeader{}
 	}
 	b.vote.BlockHeader.ChainId = id
+
+	return b
+}
+
+func (b *AggVoteBuilder) WithBlockOffset(o uint64) *AggVoteBuilder {
+	if b.vote == nil {
+		b.vote = &types.AggVote{BlockHeader: &types.BlockHeader{}}
+	} else if b.vote.BlockHeader == nil {
+		b.vote.BlockHeader = &types.BlockHeader{}
+	}
+	b.vote.BlockHeader.Offset = o
 
 	return b
 }
@@ -144,13 +158,14 @@ func (b *AggVoteBuilder) WithBlockHash(h common.Hash) *AggVoteBuilder {
 	return b
 }
 
-func (b *AggVoteBuilder) WithBlockHeader(chainID uint64, height uint64, hash common.Hash) *AggVoteBuilder {
+func (b *AggVoteBuilder) WithBlockHeader(chainID uint64, offset uint64, height uint64, hash common.Hash) *AggVoteBuilder {
 	if b.vote == nil {
 		b.vote = &types.AggVote{BlockHeader: &types.BlockHeader{}}
 	} else if b.vote.BlockHeader == nil {
 		b.vote.BlockHeader = &types.BlockHeader{}
 	}
 	b.vote.BlockHeader.ChainId = chainID
+	b.vote.BlockHeader.Offset = offset
 	b.vote.BlockHeader.Height = height
 	b.vote.BlockHeader.Hash = hash.Bytes()
 

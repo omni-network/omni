@@ -81,6 +81,7 @@ func (h *BlockHeader) Verify() error {
 func (h *BlockHeader) ToXChain() xchain.BlockHeader {
 	return xchain.BlockHeader{
 		SourceChainID: h.ChainId,
+		BlockOffset:   h.Offset,
 		BlockHeight:   h.Height,
 		BlockHash:     common.BytesToHash(h.Hash),
 	}

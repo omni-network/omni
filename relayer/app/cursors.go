@@ -9,6 +9,9 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 )
 
+// initialXBlockOffset defines the first xBlockOffset for all chains, it starts at 1, not 0.
+const initialXBlockOffset = 1
+
 // getSubmittedCursors returns the last submitted cursor for each source chain on the destination chain.
 // It also returns the offsets indexed by streamID for each stream.
 func getSubmittedCursors(ctx context.Context, network netconf.Network, dstChainID uint64, xClient xchain.Provider,
@@ -27,7 +30,7 @@ func getSubmittedCursors(ctx context.Context, network netconf.Network, dstChainI
 			continue
 		}
 
-		initialOffsets[cursor.StreamID] = cursor.Offset
+		initialOffsets[cursor.StreamID] = cursor.MsgOffset
 		cursors = append(cursors, cursor)
 	}
 
@@ -55,10 +58,10 @@ func filterMsgs(msgs []xchain.Msg, offsets map[xchain.StreamID]uint64, streamID 
 	return res
 }
 
-// fromHeights calculates the starting heights for streaming from source chains to a destination chain.
+// fromOffsets calculates the starting offsets for streaming from source chains to a destination chain.
 // It takes stream cursors, destination and source chains, and the current state, and returns
-// a map where keys are source chain IDs and values are the starting heights for streaming.
-func fromHeights(cursors []xchain.StreamCursor, destChain netconf.Chain, chains []netconf.Chain,
+// a map where keys are source chain IDs and values are the starting offsets for streaming.
+func fromOffsets(cursors []xchain.StreamCursor, destChain netconf.Chain, chains []netconf.Chain,
 	state *State) map[uint64]uint64 {
 	res := make(map[uint64]uint64)
 
@@ -66,12 +69,12 @@ func fromHeights(cursors []xchain.StreamCursor, destChain netconf.Chain, chains 
 		if chain.ID == destChain.ID {
 			continue
 		}
-		res[chain.ID] = chain.DeployHeight
+		res[chain.ID] = initialXBlockOffset
 	}
 
-	// sort cursors by decreasing SourceBlockHeight, so we start streaming from minimum height per source chain
+	// sort cursors by decreasing offset, so we start streaming from minimum offset per source chain
 	sort.Slice(cursors, func(i, j int) bool {
-		return cursors[i].SourceBlockHeight > cursors[j].SourceBlockHeight
+		return cursors[i].BlockOffset > cursors[j].BlockOffset
 	})
 
 	for _, cursor := range cursors {
@@ -79,11 +82,11 @@ func fromHeights(cursors []xchain.StreamCursor, destChain netconf.Chain, chains 
 			continue // Sanity check
 		}
 
-		res[cursor.SourceChainID] = cursor.SourceBlockHeight
+		res[cursor.SourceChainID] = cursor.BlockOffset
 
 		// If local persisted state is higher, use that instead, skipping a bunch of empty blocks on startup.
-		if height := state.GetHeight(destChain.ID, cursor.SourceChainID); height > cursor.SourceBlockHeight {
-			res[cursor.SourceChainID] = height
+		if offset := state.GetOffset(destChain.ID, cursor.SourceChainID); offset > cursor.BlockOffset {
+			res[cursor.SourceChainID] = offset
 		}
 	}
 

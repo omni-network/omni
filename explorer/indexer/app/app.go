@@ -90,7 +90,9 @@ func startXProvider(ctx context.Context, network netconf.Network, entCl *ent.Cli
 		}
 		log.Info(ctx, "Subscribing to chain", "chain_id", chain.ID, "from_height", fromHeight)
 
-		err = xprovider.StreamAsync(ctx, chain.ID, fromHeight, callback)
+		// TODO(corver): Store MsgOffset along with heights in cursor table
+		//  Currently XBlockOffset isn't supported in x-explorer.
+		err = xprovider.StreamAsyncNoOffset(ctx, chain.ID, fromHeight, callback)
 		if err != nil {
 			return errors.Wrap(err, "subscribe", "chain_id", chain.ID)
 		}
