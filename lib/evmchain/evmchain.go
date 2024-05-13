@@ -23,6 +23,8 @@ const (
 	IDMockL1Fast    uint64 = 1652
 	IDMockL1Slow    uint64 = 1653
 	IDMockL2        uint64 = 1654
+	IDMockOp        uint64 = 1655
+	IDMockArb       uint64 = 1656
 
 	omniEVMName        = "omni_evm"
 	omniEVMBlockPeriod = time.Second * 2
@@ -109,6 +111,18 @@ var static = map[uint64]Metadata{
 		ChainID:     IDMockL2,
 		Name:        "mock_l2",
 		BlockPeriod: time.Second,
+		NativeToken: tokens.ETH,
+	},
+	IDMockOp: {
+		ChainID:     IDMockOp,
+		Name:        "mock_op",
+		BlockPeriod: time.Second * 2,
+		NativeToken: tokens.ETH,
+	},
+	IDMockArb: {
+		ChainID:     IDMockArb,
+		Name:        "mock_arb",
+		BlockPeriod: time.Second / 4,
 		NativeToken: tokens.ETH,
 	},
 }

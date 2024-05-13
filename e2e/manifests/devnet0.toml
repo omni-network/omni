@@ -2,6 +2,6 @@
 # This is aimed at local dev environments.
 
 network = "devnet"
-anvil_chains = ["mock_l1", "mock_l2"]
+anvil_chains = ["mock_op", "mock_arb"]
 
 [node.validator01]
