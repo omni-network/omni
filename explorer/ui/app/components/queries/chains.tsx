@@ -1,7 +1,8 @@
 import { gql } from 'urql'
 
 export const supportedChains = gql(`
-  query {supportedChains {
+  query {
+    supportedChains {
     id
     chainID
     name

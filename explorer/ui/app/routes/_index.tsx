@@ -8,6 +8,7 @@ import { useInterval } from '~/hooks/useInterval'
 import { xmsgs } from '~/components/queries/messages'
 import { mappedSourceChains } from '~/lib/sourceChains'
 import { chainStats, supportedChains } from '~/components/queries/chains'
+import { XMsg, XmsgsQueryVariables } from '~/graphql/graphql'
 
 export const meta: MetaFunction = () => {
   return [
@@ -21,33 +22,24 @@ export type XmsgResponse = {
   xmsgCount: string
   nextCursor: string
   prevCursor: string
-  xmsgs: any[]
+  xmsgs: XMsg[]
   pageInfo: {
     currentPage: string
     totalPages: string
     hasNextPage: boolean
     hasPrevPage: boolean
-  },
+  }
   chainStats: any[]
 }
 
-type variablesPagination = {
-  first?: number | null | undefined
-  last?: number | null | undefined
-  after?: string | null | undefined
-  before?: string | null | undefined
-  filters?: object[] | null
-}
-
 export const loader: LoaderFunction = async ({ request }) => {
-  // const res = await gqlClient.query(xblockcount, {})
   const url = new URL(request.url)
   const params: any = {}
 
   for (const [key, value] of url.searchParams) {
     params[key] = value
   }
-  const variables: variablesPagination = {
+  const variables: XmsgsQueryVariables = {
     last: 10,
     filters: [],
   }
@@ -64,56 +56,59 @@ export const loader: LoaderFunction = async ({ request }) => {
     variables['after'] = null
     variables['first'] = null
   }
-  if (params?.status) {
-    if (params?.status === 'All') {
-      variables['filters'] = []
+
+  if (Array.isArray(variables['filters'])) {
+    if (params?.status) {
+      if (params?.status === 'All') {
+        variables['filters'] = []
+      }
+
+      if (params?.status === 'Success') {
+        variables['filters']?.push({
+          key: 'status',
+          value: 'SUCCESS',
+        })
+      }
+      if (params?.status === 'Pending') {
+        variables['filters']?.push({
+          key: 'status',
+          value: 'PENDING',
+        })
+      }
+      if (params?.status === 'Failed') {
+        variables['filters']?.push({
+          key: 'status',
+          value: 'FAILED',
+        })
+      }
     }
 
-    if (params?.status === 'Success') {
+    if (params?.address) {
       variables['filters']?.push({
-        key: 'status',
-        value: 'SUCCESS',
+        key: 'address',
+        value: params?.address,
       })
     }
-    if (params?.status === 'Pending') {
+    if (params?.txHash) {
       variables['filters']?.push({
-        key: 'status',
-        value: 'PENDING',
+        key: 'txHash',
+        value: params?.txHash,
       })
     }
-    if (params?.status === 'Failed') {
+
+    if (params.sourceChain) {
       variables['filters']?.push({
-        key: 'status',
-        value: 'FAILED',
+        key: 'srcChainID',
+        value: params.sourceChain,
       })
     }
-  }
 
-  if (params?.address) {
-    variables['filters']?.push({
-      key: 'address',
-      value: params?.address,
-    })
-  }
-  if (params?.txHash) {
-    variables['filters']?.push({
-      key: 'txHash',
-      value: params?.txHash,
-    })
-  }
-
-  if (params.sourceChain) {
-    variables['filters']?.push({
-      key: 'srcChainID',
-      value: params.sourceChain,
-    })
-  }
-
-  if (params.destChain) {
-    variables['filters']?.push({
-      key: 'destChainID',
-      value: params.destChain,
-    })
+    if (params.destChain) {
+      variables['filters']?.push({
+        key: 'destChainID',
+        value: params.destChain,
+      })
+    }
   }
 
   const [xmsgRes, supportedChainsRes, chainStatsRes] = await Promise.all([
@@ -132,7 +127,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       xmsgCount: xmsgRes.data?.xmsgs?.totalCount || 0,
       xmsgs: xmsgsList,
       pageInfo: xmsgRes.data?.xmsgs?.pageInfo,
-      chainStats: chainStatsRes.data
+      chainStats: chainStatsRes.data,
     })
   }
   return await pollData()

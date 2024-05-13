@@ -1,7 +1,7 @@
 import { gql } from 'urql'
-import { graphql } from '~/graphql'
+import { XmsgDocument, XmsgsDocument } from '~/graphql/graphql'
 
-export const xmsg = gql(`
+export const xmsg: typeof XmsgDocument = gql(`
   query xmsg($sourceChainID: BigInt!, $destChainID: BigInt!, $offset: BigInt!) {
     xmsg(sourceChainID: $sourceChainID, destChainID: $destChainID, offset: $offset) {
       id
@@ -42,7 +42,7 @@ export const xmsg = gql(`
   }
 `)
 
-export const xmsgs = gql(`
+export const xmsgs: typeof XmsgsDocument = gql(`
 query xmsgs($first: Int, $last: Int, $after: ID, $before: ID, $filters: [FilterInput!]) {
   xmsgs(first: $first, last: $last, after: $after, before: $before, filters: $filters) {
     totalCount
