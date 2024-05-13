@@ -36,19 +36,34 @@ export const dateFormatter = (date: Date) => {
   }
   // less than an hour, but show minutes
   if (years === 0 && months === 0 && days === 0 && hours === 0) {
+    if (minutes === 1) {
+      return `${minutes} min ago`
+    }
     return `${minutes} mins ago`
   }
   if (years === 0 && months === 0 && days === 0) {
+    if (hours === 0) {
+      return `${hours} hour ago`
+    }
     return `${hours} hours ago`
   }
   if (years === 0 && months === 0) {
+    if (days === 1) {
+      return `${days} day ago`
+    }
     return `${days} days ago`
   }
   if (years === 0) {
-    return `${months} days ago`
+    if (months === 1) {
+      return `${months} month ago`
+    }
+    return `${months} months ago`
   }
   if (years < 5) {
-    return `${years} days ago`
+    if (years === 1) {
+      return `${years} year ago`
+    }
+    return `${years} years ago`
   }
   return txsTimestamp.toLocaleString()
 }

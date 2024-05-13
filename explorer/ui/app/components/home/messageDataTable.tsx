@@ -360,9 +360,9 @@ export default function XMsgDataTable() {
       <div className="flex flex-col">
         <h5 className="text-default mb-4">
           XMsgs{' '}
-          <Tooltip delayShow={300} className="tooltip" id="xmsg-info">
+          <Tooltip clickable delayShow={300} className="tooltip" id="xmsg-info">
             <label className="text-default text-b-sm font-bold">
-              XMsgs are cross-rollup messages. <br /> Click to learn more
+              XMsgs are cross-rollup messages. <br /> <a className='link' href='https://docs.omni.network/protocol/xmessages/xmsg'>Click</a> to learn more
             </label>
           </Tooltip>
           <Link
