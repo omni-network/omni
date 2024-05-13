@@ -418,6 +418,8 @@ export default function XMsgDataTable() {
               onSelection={status => {
                 setFilterParams(prev => ({
                   ...prev,
+                  after: null,
+                  before: null,
                   status: status === 'all' ? null : status,
                 }))
               }}
