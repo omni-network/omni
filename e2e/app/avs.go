@@ -6,6 +6,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts/avs"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 )
 
 // DeployAVSAndCreate3 deploys a create3 contract and the Omni AVS contract.
@@ -32,6 +33,11 @@ func deployAVS(ctx context.Context, def Definition) error {
 	network := networkFromDef(def)
 	chain, ok := network.EthereumChain()
 	if !ok {
+		if def.Manifest.Network == netconf.Devnet {
+			log.Debug(ctx, "Skipping avs deployment for not configured devnet L1")
+			return nil
+		}
+
 		return errors.New("no ethereum l1 chain")
 	}
 

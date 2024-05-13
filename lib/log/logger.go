@@ -90,6 +90,7 @@ func newJSONLogger(opts ...func(*options)) *slog.Logger {
 // newCLILogger returns a new cli logger which doesn't print timestamps, level, source or stacktraces.
 func newCLILogger(opts ...func(*options)) *slog.Logger {
 	o := defaultOptions()
+	o.Level = slog.LevelInfo // Only show info and above
 	for _, opt := range opts {
 		opt(&o)
 	}
