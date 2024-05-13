@@ -37,7 +37,7 @@ contract OmniAVS_admin_Test is Base {
 
         vm.expectRevert("Pausable: paused");
         vm.prank(operator);
-        omniAVS.registerOperator(_pubkey(operator), emptySig);
+        omniAVS.registerOperator(_valPubKey(operator), emptySig, emptySig);
     }
 
     /// @dev Test that when paused, you cannot syncWithOmni
