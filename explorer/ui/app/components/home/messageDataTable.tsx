@@ -5,7 +5,6 @@ import { useLoaderData, useRevalidator, useSearchParams } from '@remix-run/react
 import { dateFormatter, hashShortener } from '~/lib/formatting'
 import Tag from '../shared/tag'
 import { Link } from '@remix-run/react'
-import { XmsgResponse } from '~/routes/_index'
 import SearchBar from '../shared/search'
 import ChainDropdown from './chainDropdown'
 import FilterOptions from '../shared/filterOptions'

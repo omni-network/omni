@@ -8,7 +8,7 @@ import { useInterval } from '~/hooks/useInterval'
 import { xmsgs } from '~/components/queries/messages'
 import { mappedSourceChains } from '~/lib/sourceChains'
 import { chainStats, supportedChains } from '~/components/queries/chains'
-import { XmsgsQueryVariables } from '~/graphql/graphql'
+import { XMsg, XmsgsQueryVariables } from '~/graphql/graphql'
 
 export const meta: MetaFunction = () => {
   return [
@@ -22,7 +22,7 @@ export type XmsgResponse = {
   xmsgCount: string
   nextCursor: string
   prevCursor: string
-  xmsgs: any[]
+  xmsgs: XMsg[]
   pageInfo: {
     currentPage: string
     totalPages: string
@@ -32,16 +32,7 @@ export type XmsgResponse = {
   chainStats: any[]
 }
 
-type variablesPagination = {
-  first?: number | null | undefined
-  last?: number | null | undefined
-  after?: string | null | undefined
-  before?: string | null | undefined
-  filters?: object[] | null
-}
-
 export const loader: LoaderFunction = async ({ request }) => {
-  // const res = await gqlClient.query(xblockcount, {})
   const url = new URL(request.url)
   const params: any = {}
 

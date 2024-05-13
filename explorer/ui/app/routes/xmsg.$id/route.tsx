@@ -7,6 +7,7 @@ import { TabList } from '~/components/details/TabList'
 import { xmsg } from '~/components/queries/messages'
 import { gqlClient } from '~/entry.server'
 import { LoaderFunction, MetaFunction, json } from '@remix-run/node'
+import { XMsg } from '~/graphql/graphql'
 
 export const loader: LoaderFunction = async ({ request }) => {
   const pageUrl = request.url
@@ -44,19 +45,15 @@ export const meta: MetaFunction = () => {
 }
 
 export default function Index() {
-  const params = useParams()
-  const [searchParams] = useSearchParams()
-
   const loaderData = useLoaderData<any>()
 
-  const xMsgDetails = loaderData.xMsg.data.xmsg
+  const xMsgDetails:XMsg = loaderData.xMsg.data.xmsg
 
   const navigate = useNavigate()
 
   const onBackClickHandler = () => {
     navigate('/')
   }
-
 
   return (
     <div className="px-8 md:px-20">
@@ -81,7 +78,7 @@ export default function Index() {
               <p className="w-[150px] sm:w-48 text-sm">Status</p>
               <div className="flex flex-col sm:flex-row items-start">
                 <Tag status={xMsgDetails?.status} />
-                <p className="sm:ml-5">{xMsgDetails?.receipt.revertReason}</p>
+                <p className="sm:ml-5">{xMsgDetails?.receipt?.revertReason}</p>
               </div>
             </div>
             {/* Data */}
