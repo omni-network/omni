@@ -85,24 +85,7 @@ We currently have 3 chains in the devnet currently, those chainids are:
 - 200
 - 16561
 
-So if you were to go and query an xblock, you would need to set one of those as the `sourceChainID` field.
-
-ex:
-
-```graphql
-query{
-  xblock(sourceChainID: 200, height: 35){
-    SourceChainID
-    BlockHeight
-    Messages{
-      StreamOffset
-    }
-    Receipts{
-      TxHash
-    }
-  }
-}
-```
+The documentation for the graphql interfact is intuative and self explanitory following the local url the documentation for all queries can be found in the top left icon.
 
 ### Explorer UI
 
@@ -117,3 +100,27 @@ For local development in the `explorer/ui` folder:
 ```bash
 pnpm run dev
 ```
+
+## Understanding the explorer UI
+
+Here is some quick infomation on what has been developed for the explorer UI to familurize other devs who wish to expand on the UI's functionality.
+
+### Pages
+
+This project currently consists of two main pages:
+
+1. **xmsgs Page**: Located under `_index.tsx`, this serves as the landing page where users can view all xmsgs.
+
+2. **xmsg Page**: Located under `route.tsx`, this is the view for a single xmsg. Users can navigate to this page by clicking on a relevant ID within the xmsgs table, such as "123-456-7890".
+
+Feel free to explore these pages to get a better understanding of the project.
+
+### Query Handling in the Project
+
+In this project, GraphQL queries are managed in the `ui/queries` directory. If there are any changes to the schema, updates must be made in both the `ui/queries` file and in the relevant page to remap the data.
+
+To ensure that queries remain up-to-date and strongly typed, we utilize code generation. Simply run `pnpm run codegen` to update the data types.
+
+Queries are invoked in the loader function and accessed using the `useRevalidator` hook. For search functionality, we extract the query from the URL and apply the search parameters within the loader function.
+
+This setup ensures efficient handling of queries and facilitates maintenance and updates as needed.
