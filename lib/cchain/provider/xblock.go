@@ -23,6 +23,8 @@ func (p Provider) XBlock(ctx context.Context, height uint64, latest bool) (xchai
 		return xchain.Block{}, false, err
 	} else if !ok {
 		return xchain.Block{}, false, nil
+	} else if !latest && resp.ValSetID != height {
+		return xchain.Block{}, false, errors.New("unexpected validator set id [BUG]")
 	}
 
 	chainID, err := p.chainID(ctx)
@@ -41,9 +43,10 @@ func (p Provider) XBlock(ctx context.Context, height uint64, latest bool) (xchai
 	}
 
 	// Return a mostly stubbed xchain.Block with the encoded validators.
-	return xchain.Block{
+	b := xchain.Block{
 		BlockHeader: xchain.BlockHeader{
 			SourceChainID: chainID,
+			BlockOffset:   resp.ValSetID,
 			BlockHeight:   resp.ValSetID,
 		},
 		Msgs: []xchain.Msg{{
@@ -55,7 +58,9 @@ func (p Provider) XBlock(ctx context.Context, height uint64, latest bool) (xchai
 			},
 			Data: data,
 		}},
-	}, true, nil
+	}
+
+	return b, true, nil
 }
 
 // mustGetABI returns the metadata's ABI as an abi.ABI type.

@@ -48,7 +48,7 @@ func TestKeeper_Add(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					expectPendingAtt(1, 500),
+					expectPendingAtt(1, defaultOffset),
 				},
 				sigs: []*keeper.Signature{
 					expectValSig(1, 1, val1),
@@ -57,21 +57,48 @@ func TestKeeper_Add(t *testing.T) {
 			},
 		},
 		{
-			name: "two_votes_diff_blocks",
+			name: "two_votes_diff_block_hashes",
 			args: args{
 				msg: defaultMsg().
 					WithAppendVotes(
-						defaultAggVote().WithBlockHeader(1, 501, blockHashes[1]).WithSignatures(sigsTuples(val1, val3)...).Vote(),
+						defaultAggVote().WithBlockHeader(1, defaultOffset+1, defaultHeight, blockHashes[1]).WithSignatures(sigsTuples(val1, val3)...).Vote(),
 					).
 					Msg(),
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					expectPendingAtt(1, 500),
+					expectPendingAtt(1, defaultOffset),
 					update(
-						expectPendingAtt(2, 501),
+						expectPendingAtt(2, defaultOffset+1),
 						func(att *keeper.Attestation) {
 							att.Hash = blockHashes[1].Bytes()
+						},
+					),
+				},
+				sigs: []*keeper.Signature{
+					expectValSig(1, 1, val1),
+					expectValSig(2, 1, val2),
+					expectValSig(3, 2, val1),
+					expectValSig(4, 2, val3),
+				},
+			},
+		},
+		{
+			name: "two_votes_diff_block_numbers",
+			args: args{
+				msg: defaultMsg().
+					WithAppendVotes(
+						defaultAggVote().WithBlockHeader(1, defaultOffset+1, defaultHeight, blockHashes[0]).WithSignatures(sigsTuples(val1, val3)...).Vote(),
+					).
+					Msg(),
+			},
+			want: want{
+				atts: []*keeper.Attestation{
+					expectPendingAtt(1, defaultOffset),
+					update(
+						expectPendingAtt(2, defaultOffset+1),
+						func(att *keeper.Attestation) {
+							att.Height = defaultHeight
 						},
 					),
 				},
@@ -95,7 +122,7 @@ func TestKeeper_Add(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					expectPendingAtt(1, 500),
+					expectPendingAtt(1, defaultOffset),
 				},
 				sigs: []*keeper.Signature{
 					expectValSig(1, 1, val1),
@@ -120,7 +147,7 @@ func TestKeeper_Add(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					expectPendingAtt(1, 500),
+					expectPendingAtt(1, defaultOffset),
 				},
 				sigs: []*keeper.Signature{
 					expectValSig(1, 1, val1),
@@ -149,9 +176,9 @@ func TestKeeper_Add(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					expectPendingAtt(1, 500),
+					expectPendingAtt(1, defaultOffset),
 					update(
-						expectPendingAtt(2, 500),
+						expectPendingAtt(2, defaultOffset),
 						func(att *keeper.Attestation) {
 							att.AttestationRoot = []byte("different root")
 						},
@@ -184,12 +211,12 @@ func TestKeeper_Add(t *testing.T) {
 
 			gotAtts, gotSigs := dumpTables(t, ctx, k)
 
-			if !cmp.Equal(gotAtts, tt.want.atts, atteCmpOpts) {
-				t.Error(cmp.Diff(gotAtts, tt.want.atts, atteCmpOpts))
+			if !cmp.Equal(tt.want.atts, gotAtts, atteCmpOpts) {
+				t.Error(cmp.Diff(tt.want.atts, gotAtts, atteCmpOpts))
 			}
 
-			if !cmp.Equal(gotSigs, tt.want.sigs, sigsCmpOpts) {
-				t.Error(cmp.Diff(gotSigs, tt.want.sigs, sigsCmpOpts))
+			if !cmp.Equal(tt.want.sigs, gotSigs, sigsCmpOpts) {
+				t.Error(cmp.Diff(tt.want.sigs, gotSigs, sigsCmpOpts))
 			}
 		})
 	}
@@ -262,7 +289,7 @@ func TestKeeper_Approve(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					expectApprovedAtt(1, 500, valset1_2),
+					expectApprovedAtt(1, defaultOffset, valset1_2),
 				},
 				sigs: []*keeper.Signature{
 					expectValSig(1, 1, val1),
@@ -288,7 +315,7 @@ func TestKeeper_Approve(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					expectPendingAtt(1, 500),
+					expectPendingAtt(1, defaultOffset),
 				},
 				sigs: []*keeper.Signature{
 					expectValSig(1, 1, val1),
@@ -320,7 +347,7 @@ func TestKeeper_Approve(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					expectApprovedAtt(1, 500, valset2_3),
+					expectApprovedAtt(1, defaultOffset, valset2_3),
 				},
 				sigs: []*keeper.Signature{
 					expectValSig(2, 1, val2),
@@ -337,14 +364,14 @@ func TestKeeper_Approve(t *testing.T) {
 			prerequisites: []prerequisite{
 				func(t *testing.T, k *keeper.Keeper, ctx sdk.Context) {
 					t.Helper()
-					vote500 := defaultAggVote().WithBlockHeight(500).Vote()
-					vote501 := defaultAggVote().WithBlockHeight(501).Vote()
+					vote1 := defaultAggVote().WithBlockOffset(defaultOffset).Vote()
+					vote2 := defaultAggVote().WithBlockOffset(defaultOffset + 1).Vote()
 
-					msg500 := defaultMsg().Default().WithVotes(vote500).Msg()
-					err := k.Add(ctx, msg500)
+					msg1 := defaultMsg().Default().WithVotes(vote1).Msg()
+					err := k.Add(ctx, msg1)
 					require.NoError(t, err)
-					msg501 := defaultMsg().Default().WithVotes(vote501).Msg()
-					err = k.Add(ctx, msg501)
+					msg := defaultMsg().Default().WithVotes(vote2).Msg()
+					err = k.Add(ctx, msg)
 					require.NoError(t, err)
 				},
 			},
@@ -353,8 +380,8 @@ func TestKeeper_Approve(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					expectApprovedAtt(1, 500, valset1_2),
-					expectApprovedAtt(2, 501, valset1_2),
+					expectApprovedAtt(1, defaultOffset, valset1_2),
+					expectApprovedAtt(2, defaultOffset+1, valset1_2),
 				},
 				sigs: []*keeper.Signature{
 					expectValSig(1, 1, val1),
@@ -373,14 +400,14 @@ func TestKeeper_Approve(t *testing.T) {
 			prerequisites: []prerequisite{
 				func(t *testing.T, k *keeper.Keeper, ctx sdk.Context) {
 					t.Helper()
-					vote500 := defaultAggVote().WithBlockHeight(500).Vote()
-					vote502 := defaultAggVote().WithBlockHeight(502).Vote()
+					vote1 := defaultAggVote().WithBlockOffset(defaultOffset).Vote()
+					vote3 := defaultAggVote().WithBlockOffset(defaultOffset + 2).Vote()
 
-					msg500 := defaultMsg().Default().WithVotes(vote500).Msg()
-					err := k.Add(ctx, msg500)
+					msg1 := defaultMsg().Default().WithVotes(vote1).Msg()
+					err := k.Add(ctx, msg1)
 					require.NoError(t, err)
-					msg502 := defaultMsg().Default().WithVotes(vote502).Msg()
-					err = k.Add(ctx, msg502)
+					msg3 := defaultMsg().Default().WithVotes(vote3).Msg()
+					err = k.Add(ctx, msg3)
 					require.NoError(t, err)
 				},
 			},
@@ -389,8 +416,8 @@ func TestKeeper_Approve(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					expectApprovedAtt(1, 500, valset1_2),
-					expectPendingAtt(2, 502),
+					expectApprovedAtt(1, defaultOffset, valset1_2),
+					expectPendingAtt(2, defaultOffset+2),
 				},
 				sigs: []*keeper.Signature{
 					expectValSig(1, 1, val1),
@@ -419,12 +446,12 @@ func TestKeeper_Approve(t *testing.T) {
 
 			gotAtts, gotSigs := dumpTables(t, ctx, k)
 
-			if !cmp.Equal(gotAtts, tt.want.atts, atteCmpOpts) {
-				t.Error(cmp.Diff(gotAtts, tt.want.atts, atteCmpOpts))
+			if !cmp.Equal(tt.want.atts, gotAtts, atteCmpOpts) {
+				t.Error(cmp.Diff(tt.want.atts, gotAtts, atteCmpOpts))
 			}
 
-			if !cmp.Equal(gotSigs, tt.want.sigs, sigsCmpOpts) {
-				t.Error(cmp.Diff(gotSigs, tt.want.sigs, sigsCmpOpts))
+			if !cmp.Equal(tt.want.sigs, gotSigs, sigsCmpOpts) {
+				t.Error(cmp.Diff(tt.want.sigs, gotSigs, sigsCmpOpts))
 			}
 		})
 	}
@@ -450,12 +477,12 @@ func expectValSig(id uint64, attID uint64, val *vtypes.Validator) *keeper.Signat
 	return &keeper.Signature{Id: id, AttId: attID, Signature: val.Address, ValidatorAddress: val.Address}
 }
 
-func expectPendingAtt(id uint64, height uint64) *keeper.Attestation {
-	return &keeper.Attestation{Id: id, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: height, CreatedHeight: 1, Status: int32(keeper.Status_Pending)}
+func expectPendingAtt(id uint64, offset uint64) *keeper.Attestation {
+	return &keeper.Attestation{Id: id, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Offset: offset, Height: defaultHeight, CreatedHeight: 1, Status: int32(keeper.Status_Pending)}
 }
 
-func expectApprovedAtt(id uint64, height uint64, valset *vtypes.ValidatorSetResponse) *keeper.Attestation {
-	return &keeper.Attestation{Id: id, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Height: height, CreatedHeight: 1, Status: int32(keeper.Status_Approved), ValidatorSetId: valset.Id}
+func expectApprovedAtt(id uint64, offset uint64, valset *vtypes.ValidatorSetResponse) *keeper.Attestation {
+	return &keeper.Attestation{Id: id, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Offset: offset, Height: defaultHeight, CreatedHeight: 1, Status: int32(keeper.Status_Approved), ValidatorSetId: valset.Id}
 }
 
 func update[T any](t T, fn func(T)) T {

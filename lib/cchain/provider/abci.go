@@ -113,9 +113,8 @@ func newABCIValsetFunc(cl vtypes.QueryClient) valsetFunc {
 	}
 }
 
-func newABCIFetchFunc(cl atypes.QueryClient) func(ctx context.Context, chainID uint64, fromHeight uint64,
-) ([]xchain.Attestation, error) {
-	return func(ctx context.Context, chainID uint64, fromHeight uint64) ([]xchain.Attestation, error) {
+func newABCIFetchFunc(cl atypes.QueryClient) fetchFunc {
+	return func(ctx context.Context, chainID uint64, fromOffset uint64) ([]xchain.Attestation, error) {
 		const endpoint = "attestations_from"
 		defer latency(endpoint)()
 
@@ -124,7 +123,7 @@ func newABCIFetchFunc(cl atypes.QueryClient) func(ctx context.Context, chainID u
 
 		resp, err := cl.AttestationsFrom(ctx, &atypes.AttestationsFromRequest{
 			ChainId:    chainID,
-			FromHeight: fromHeight,
+			FromOffset: fromOffset,
 		})
 		if err != nil {
 			incQueryErr(endpoint)
@@ -140,9 +139,8 @@ func newABCIFetchFunc(cl atypes.QueryClient) func(ctx context.Context, chainID u
 	}
 }
 
-func newABCIWindowFunc(cl atypes.QueryClient) func(ctx context.Context, chainID uint64, height uint64,
-) (int, error) {
-	return func(ctx context.Context, chainID uint64, height uint64) (int, error) {
+func newABCIWindowFunc(cl atypes.QueryClient) windowFunc {
+	return func(ctx context.Context, chainID uint64, xBlockOffset uint64) (int, error) {
 		const endpoint = "window_compare"
 		defer latency(endpoint)()
 
@@ -150,8 +148,8 @@ func newABCIWindowFunc(cl atypes.QueryClient) func(ctx context.Context, chainID 
 		defer span.End()
 
 		resp, err := cl.WindowCompare(ctx, &atypes.WindowCompareRequest{
-			ChainId: chainID,
-			Height:  height,
+			ChainId:     chainID,
+			BlockOffset: xBlockOffset,
 		})
 		if err != nil {
 			incQueryErr(endpoint)
@@ -162,8 +160,7 @@ func newABCIWindowFunc(cl atypes.QueryClient) func(ctx context.Context, chainID 
 	}
 }
 
-func newABCILatestFunc(cl atypes.QueryClient) func(ctx context.Context, chainID uint64,
-) (xchain.Attestation, bool, error) {
+func newABCILatestFunc(cl atypes.QueryClient) latestFunc {
 	return func(ctx context.Context, chainID uint64) (xchain.Attestation, bool, error) {
 		const endpoint = "latest_attestation"
 		defer latency(endpoint)()

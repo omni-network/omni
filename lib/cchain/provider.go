@@ -21,15 +21,15 @@ type ProviderCallback func(ctx context.Context, approved xchain.Attestation) err
 type Provider interface {
 	// Subscribe registers a callback function that will be called with all approved
 	// attestations (as they become available per source chain block) on the consensus chain from
-	// the provided source chain ID and height (inclusive).
+	// the provided source chain ID and XBlockOffset (inclusive).
 	//
 	// Worker name is only used for metrics.
-	Subscribe(ctx context.Context, sourceChainID uint64, sourceHeight uint64,
+	Subscribe(ctx context.Context, sourceChainID uint64, xBlockOffset uint64,
 		workerName string, callback ProviderCallback)
 
 	// AttestationsFrom returns the subsequent approved attestations for the provided source chain
-	// and height (inclusive). It will return max 100 attestations per call.
-	AttestationsFrom(ctx context.Context, sourceChainID uint64, sourceHeight uint64) ([]xchain.Attestation, error)
+	// and XBlockOffset (inclusive). It will return max 100 attestations per call.
+	AttestationsFrom(ctx context.Context, sourceChainID uint64, xBlockOffset uint64) ([]xchain.Attestation, error)
 
 	// LatestAttestation returns the latest approved attestation for the provided source chain or false
 	// if none exist.
@@ -38,14 +38,14 @@ type Provider interface {
 	// WindowCompare returns whether the given attestation block header is behind (-1), or in (0), or ahead (1)
 	// of the current vote window. The vote window is a configured number of blocks around the latest approved
 	// attestation for the provided chain.
-	WindowCompare(ctx context.Context, sourceChainID uint64, height uint64) (int, error)
+	WindowCompare(ctx context.Context, sourceChainID uint64, xBlockOffset uint64) (int, error)
 
 	// ValidatorSet returns the validators for the given validator set ID or false if none exist or an error.
 	// Note the genesis validator set has ID 1.
 	ValidatorSet(ctx context.Context, valSetID uint64) ([]Validator, bool, error)
 
-	// XBlock returns the validator sync xblock for the given height (or latest) or false if none exist or an error.
-	XBlock(ctx context.Context, height uint64, latest bool) (xchain.Block, bool, error)
+	// XBlock returns the validator sync xblock for the given height/offset (or latest) or false if none exist or an error.
+	XBlock(ctx context.Context, heightAndOffset uint64, latest bool) (xchain.Block, bool, error)
 }
 
 // Validator is a consensus chain validator in a validator set.

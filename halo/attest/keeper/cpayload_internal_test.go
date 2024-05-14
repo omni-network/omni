@@ -24,7 +24,8 @@ func TestVotesFromCommitNonUnique(t *testing.T) {
 	t.Parallel()
 
 	const chainID = 100
-	const height = 200
+	const offset = 200
+	const height = 300
 	var valAddr common.Address
 	var valSig [65]byte
 
@@ -32,6 +33,7 @@ func TestVotesFromCommitNonUnique(t *testing.T) {
 		return &types.Vote{
 			BlockHeader: &types.BlockHeader{
 				ChainId: chainID,
+				Offset:  offset,
 				Height:  height,
 				Hash:    hash[:],
 			},
@@ -66,7 +68,7 @@ func TestVotesFromCommit(t *testing.T) {
 	var blockHash common.Hash
 	fuzzer.Fuzz(&blockHash)
 
-	// Generate attestations for following matrix: chains, vals, height batches
+	// Generate attestations for following matrix: chains, vals, offset batches
 	const skipVal = 2     // Skip this validator
 	const skipChain = 300 // Skip this chain (out of window)
 	chains := []uint64{100, 200, 300}
@@ -86,7 +88,7 @@ func TestVotesFromCommit(t *testing.T) {
 
 			for _, batch := range batches {
 				var votes []*types.Vote
-				for _, height := range batch {
+				for _, offset := range batch {
 					addr, err := k1util.PubKeyToAddress(val.PubKey())
 					require.NoError(t, err)
 
@@ -96,7 +98,8 @@ func TestVotesFromCommit(t *testing.T) {
 					vote := &types.Vote{
 						BlockHeader: &types.BlockHeader{
 							ChainId: chain,
-							Height:  height,
+							Offset:  offset,
+							Height:  offset * 2,
 							Hash:    blockHash[:],
 						},
 						AttestationRoot: blockHash[:],

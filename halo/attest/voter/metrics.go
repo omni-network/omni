@@ -21,6 +21,13 @@ var (
 		Help:      "Latest created vote height per source chain. Alert if not growing.",
 	}, []string{"chain"})
 
+	createOffset = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "halo",
+		Subsystem: "voter",
+		Name:      "create_offset",
+		Help:      "Latest created vote height per source chain. Alert if not growing.",
+	}, []string{"chain"})
+
 	commitHeight = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "halo",
 		Subsystem: "voter",

@@ -43,14 +43,17 @@ func perturbService(ctx context.Context, service string, testnetDir string, pert
 
 	log.Info(ctx, "Perturbing service", "perturb", perturb)
 	switch perturb {
+	case types.PerturbRestart:
+		if err := docker.ExecCompose(ctx, testnetDir, "restart", service); err != nil {
+			return errors.Wrap(err, "restart service")
+		}
 	case types.PerturbStopStart:
-
 		if err := docker.ExecCompose(ctx, testnetDir, "stop", service); err != nil {
-			return errors.Wrap(err, "pause service")
+			return errors.Wrap(err, "stop service")
 		}
 		time.Sleep(5 * time.Second)
 		if err := docker.ExecCompose(ctx, testnetDir, "start", service); err != nil {
-			return errors.Wrap(err, "unpause service")
+			return errors.Wrap(err, "start service")
 		}
 	default:
 		return errors.New("unknown service perturbation")

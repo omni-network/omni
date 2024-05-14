@@ -37,21 +37,21 @@ func TestWorker_Run(t *testing.T) {
 		DestChainID:   destChainB,
 	}
 	cursors := map[uint64]xchain.StreamCursor{
-		destChainA: {StreamID: streamA, Offset: destChainACursor, SourceBlockHeight: destChainACursor},
-		destChainB: {StreamID: streamB, Offset: destChainBCursor, SourceBlockHeight: destChainBCursor},
+		destChainA: {StreamID: streamA, MsgOffset: destChainACursor, BlockOffset: destChainACursor},
+		destChainB: {StreamID: streamB, MsgOffset: destChainBCursor, BlockOffset: destChainBCursor},
 	}
 
 	// Return mock blocks (with a single msg per dest chain).
 	mockXClient := &mockXChainClient{
-		GetBlockFn: func(ctx context.Context, chainID uint64, height uint64) (xchain.Block, bool, error) {
+		GetBlockFn: func(ctx context.Context, chainID uint64, height uint64, xOffset uint64) (xchain.Block, bool, error) {
 			require.EqualValues(t, srcChain, chainID) // Only fetch blocks for source chains.
 
 			// Each block has two messages, one for each stream.
 			return xchain.Block{
-				BlockHeader: xchain.BlockHeader{SourceChainID: chainID, BlockHeight: height},
+				BlockHeader: xchain.BlockHeader{SourceChainID: chainID, BlockOffset: xOffset, BlockHeight: height},
 				Msgs: []xchain.Msg{
-					{MsgID: xchain.MsgID{StreamID: streamA, StreamOffset: height}},
-					{MsgID: xchain.MsgID{StreamID: streamB, StreamOffset: height}},
+					{MsgID: xchain.MsgID{StreamID: streamA, StreamOffset: xOffset}},
+					{MsgID: xchain.MsgID{StreamID: streamB, StreamOffset: xOffset}},
 				},
 			}, true, nil
 		},
@@ -93,20 +93,20 @@ func TestWorker_Run(t *testing.T) {
 
 	// Provider mock attestations as requested until context canceled.
 	mockProvider := &mockProvider{
-		SubscribeFn: func(ctx context.Context, chainID uint64, fromHeight uint64, callback cchain.ProviderCallback) {
+		SubscribeFn: func(ctx context.Context, chainID uint64, xBlockOffset uint64, callback cchain.ProviderCallback) {
 			if chainID != srcChain {
 				return // Only subscribe to source chain.
 			}
-			// require.EqualValues(t, destChainACursor, fromHeight)
-			if fromHeight != destChainACursor && fromHeight != destChainBCursor {
+			// require.EqualValues(t, destChainACursor, xBlockOffset)
+			if xBlockOffset != destChainACursor && xBlockOffset != destChainBCursor {
 				return
 			}
 
-			height := fromHeight
+			offset := xBlockOffset
 			nextAtt := func() xchain.Attestation {
-				defer func() { height++ }()
+				defer func() { offset++ }()
 				return xchain.Attestation{
-					BlockHeader: xchain.BlockHeader{SourceChainID: chainID, BlockHeight: height},
+					BlockHeader: xchain.BlockHeader{SourceChainID: chainID, BlockOffset: offset},
 				}
 			}
 

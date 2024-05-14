@@ -54,7 +54,7 @@ type Voter struct {
 	available   []*types.Vote
 	proposed    []*types.Vote
 	committed   []*types.Vote
-	minsByChain map[uint64]uint64
+	minsByChain map[uint64]uint64 // map[chainID]offset
 	isVal       bool
 }
 
@@ -113,7 +113,7 @@ func (v *Voter) WaitDone() {
 	v.wg.Wait()
 }
 
-// minWindow returns the minimum.
+// minWindow returns the minimum vote window (attestation offset).
 func (v *Voter) minWindow(chainID uint64) (uint64, bool) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
@@ -160,38 +160,51 @@ func (v *Voter) runForever(ctx context.Context, chainID uint64) {
 func (v *Voter) runOnce(ctx context.Context, chainID uint64) error {
 	// Determine what height to stream from.
 	var fromHeight uint64
+	var fromOffset uint64
 
 	// Get latest state from disk.
 	if latest, ok := v.latestByChain(chainID); ok {
 		fromHeight = latest.BlockHeader.Height + 1
+		fromOffset = latest.BlockHeader.Offset + 1
 	}
 
 	// Get latest approved attestation from the chain.
-	if latest, ok, err := v.deps.LatestAttestationHeight(ctx, chainID); err != nil {
+	if latest, ok, err := v.deps.LatestAttestation(ctx, chainID); err != nil {
 		return errors.Wrap(err, "latest attestation")
-	} else if ok && fromHeight < latest+1 {
+	} else if ok && fromHeight < latest.BlockHeight+1 {
 		// Allows skipping ahead of we were behind for some reason.
-		fromHeight = latest + 1
+		fromHeight = latest.BlockHeight + 1
+		fromOffset = latest.BlockOffset + 1
 	}
 
-	log.Info(ctx, "Voting started for chain", "from_height", fromHeight)
+	maybeLog := newFilterer(time.Minute) // Log empty blocks once per minute.
+
+	log.Info(ctx, "Voting started for chain", "from_height", fromHeight, "from_offset", fromOffset)
 
 	first := true // Allow skipping on first attestation.
 
-	return v.provider.StreamBlocks(ctx, chainID, fromHeight,
+	return v.provider.StreamBlocks(ctx, chainID, fromHeight, fromOffset,
 		func(ctx context.Context, block xchain.Block) error {
 			if !v.isValidator() {
 				return errors.New("not a validator anymore")
 			}
 
+			if !block.ShouldAttest() {
+				maybeLog(func() {
+					log.Debug(ctx, "Not creating vote for empty cross chain block")
+				})
+
+				return nil // Do not vote for empty blocks.
+			}
+
 			minimum, ok := v.minWindow(block.SourceChainID)
-			if ok && block.BlockHeight < minimum {
-				return errors.New("behind vote window (too slow)", "vote_height", block.BlockHeight, "window_minimum", minimum)
+			if ok && block.BlockOffset < minimum {
+				return errors.New("behind vote window (too slow)", "vote_height", block.BlockOffset, "window_minimum", minimum)
 			}
 
 			backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second*5))
 			for v.AvailableCount() > maxAvailable {
-				log.Warn(ctx, "Voting paused, latest approved attestation is too far behind (stuck?)", nil, "vote_height", block.BlockHeight)
+				log.Warn(ctx, "Voting paused, latest approved attestation is too far behind (stuck?)", nil, "vote_height", block.BlockOffset)
 				backoff()
 			}
 
@@ -199,6 +212,13 @@ func (v *Voter) runOnce(ctx context.Context, chainID uint64) error {
 				return errors.Wrap(err, "vote")
 			}
 			first = false
+
+			// TODO(corver): Remove if this becomes too noisy.
+			log.Debug(ctx, "📬 Created vote for rollup block",
+				"offset", block.BlockOffset,
+				"msgs", len(block.Msgs),
+				"start_msg_offset", block.Msgs[0].StreamOffset,
+			)
 
 			return nil
 		},
@@ -217,12 +237,12 @@ func (v *Voter) Vote(block xchain.Block, allowSkip bool) error {
 
 	// Ensure attestation is sequential and not a duplicate.
 	latest, ok := v.latest[vote.BlockHeader.ChainId]
-	if ok && latest.BlockHeader.Height >= vote.BlockHeader.Height {
+	if ok && latest.BlockHeader.Offset >= vote.BlockHeader.Offset {
 		return errors.New("attestation height already exists",
-			"latest", latest.BlockHeader.Height, "new", vote.BlockHeader.Height)
-	} else if ok && !allowSkip && latest.BlockHeader.Height+1 != vote.BlockHeader.Height {
+			"latest", latest.BlockHeader.Offset, "new", vote.BlockHeader.Offset)
+	} else if ok && !allowSkip && latest.BlockHeader.Offset+1 != vote.BlockHeader.Offset {
 		return errors.New("attestation is not sequential",
-			"existing", latest.BlockHeader.Height, "new", vote.BlockHeader.Height)
+			"existing", latest.BlockHeader.Offset, "new", vote.BlockHeader.Offset)
 	}
 
 	v.latest[vote.BlockHeader.ChainId] = vote
@@ -231,6 +251,7 @@ func (v *Voter) Vote(block xchain.Block, allowSkip bool) error {
 	lag := time.Since(block.Timestamp).Seconds()
 	createLag.WithLabelValues(v.chains[vote.BlockHeader.ChainId]).Set(lag)
 	createHeight.WithLabelValues(v.chains[vote.BlockHeader.ChainId]).Set(float64(vote.BlockHeader.Height))
+	createOffset.WithLabelValues(v.chains[vote.BlockHeader.ChainId]).Set(float64(vote.BlockHeader.Offset))
 
 	return v.saveUnsafe()
 }
@@ -248,7 +269,7 @@ func (v *Voter) UpdateValidators(valset []abci.ValidatorUpdate) {
 	v.isVal = isVal
 }
 
-// TrimBehind trims all available and proposed votes that are behind the vote window thresholds (map[chainID]height)
+// TrimBehind trims all available and proposed votes that are behind the vote window thresholds (map[chainID]offset)
 // and returns the number that was deleted.
 func (v *Voter) TrimBehind(minsByChain map[uint64]uint64) int {
 	v.mu.Lock()
@@ -258,7 +279,7 @@ func (v *Voter) TrimBehind(minsByChain map[uint64]uint64) int {
 		var remaining []*types.Vote
 		for _, vote := range votes {
 			minimum, ok := minsByChain[vote.BlockHeader.ChainId]
-			if ok && vote.BlockHeader.Height < minimum {
+			if ok && vote.BlockHeader.Offset < minimum {
 				trimTotal.WithLabelValues(v.chains[vote.BlockHeader.ChainId]).Inc()
 				continue // Skip/Trim
 			}
@@ -394,7 +415,7 @@ func (v *Voter) saveUnsafe() error {
 				return atts[i].BlockHeader.ChainId < atts[j].BlockHeader.ChainId
 			}
 
-			return atts[i].BlockHeader.Height < atts[j].BlockHeader.Height
+			return atts[i].BlockHeader.Offset < atts[j].BlockHeader.Offset
 		})
 	}
 	sortVotes(v.available)
@@ -471,7 +492,7 @@ func bootstrapLatest(s stateJSON) map[uint64]*types.Vote {
 	iter := func(votes []*types.Vote) {
 		for _, vote := range votes {
 			existing, ok := resp[vote.BlockHeader.ChainId]
-			if ok && vote.BlockHeader.Height <= existing.BlockHeader.Height {
+			if ok && vote.BlockHeader.Offset <= existing.BlockHeader.Offset {
 				continue
 			}
 			resp[vote.BlockHeader.ChainId] = vote
@@ -500,7 +521,7 @@ func pruneLatestPerChain(atts []*types.Vote) []*types.Vote {
 	latest := make(map[uint64]*types.Vote)
 	for _, vote := range atts {
 		latestAtt, ok := latest[vote.BlockHeader.ChainId]
-		if ok && latestAtt.BlockHeader.Height >= vote.BlockHeader.Height {
+		if ok && latestAtt.BlockHeader.Offset >= vote.BlockHeader.Offset {
 			continue
 		}
 
@@ -534,5 +555,19 @@ func NewIsValDetector(localAddr common.Address) IsValDetector {
 		}
 
 		return false, false
+	}
+}
+
+// newFilterer returns a function that only calls the inner function once per period.
+func newFilterer(period time.Duration) func(func()) {
+	last := time.Now().Add(-period)
+	return func(fn func()) {
+		if time.Since(last) < period {
+			return
+		}
+
+		fn()
+
+		last = time.Now()
 	}
 }

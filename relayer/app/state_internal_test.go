@@ -22,8 +22,8 @@ func TestPersistState(t *testing.T) {
 	fuzzer.Fuzz(&expected)
 
 	for dstChainID, sourceMap := range expected {
-		for srcChainID, height := range sourceMap {
-			err := ps.Persist(dstChainID, srcChainID, height)
+		for srcChainID, offset := range sourceMap {
+			err := ps.Persist(dstChainID, srcChainID, offset)
 			require.NoError(t, err)
 		}
 	}

@@ -233,7 +233,7 @@ func (k *Keeper) processAttested(ctx context.Context) ([]abci.ValidatorUpdate, e
 		return nil, errors.Wrap(err, "parse chain id")
 	}
 
-	// Check if this unattested set was attested to (valSet.Id == attestation.BlockHeight)
+	// Check if this unattested set was attested to (valSet.Id == attestation.BlockOffset)
 	if atts, err := k.aKeeper.ListAttestationsFrom(ctx, chainID, valset.GetId(), 1); err != nil {
 		return nil, errors.Wrap(err, "list attestations")
 	} else if len(atts) == 0 {

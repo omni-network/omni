@@ -106,7 +106,7 @@ func (mr *MockClientMockRecorder) BlockByNumber(ctx, number any) *gomock.Call {
 // BlockNumber mocks base method.
 func (m *MockClient) BlockNumber(ctx context.Context) (uint64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BlockNumber", ctx)
+	ret := m.ctrl.Call(m, "BlockHeight", ctx)
 	ret0, _ := ret[0].(uint64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -115,7 +115,7 @@ func (m *MockClient) BlockNumber(ctx context.Context) (uint64, error) {
 // BlockNumber indicates an expected call of BlockNumber.
 func (mr *MockClientMockRecorder) BlockNumber(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BlockNumber", reflect.TypeOf((*MockClient)(nil).BlockNumber), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BlockHeight", reflect.TypeOf((*MockClient)(nil).BlockNumber), ctx)
 }
 
 // CallContract mocks base method.

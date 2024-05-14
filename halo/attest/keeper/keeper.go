@@ -27,6 +27,8 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 )
 
+const initialXOffset uint64 = 1
+
 var _ sdk.ExtendVoteHandler = (*Keeper)(nil).ExtendVote
 var _ sdk.VerifyVoteExtensionHandler = (*Keeper)(nil).VerifyVoteExtension
 
@@ -139,12 +141,13 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 
 	// Get existing attestation (by unique key) or insert new one.
 	var attID uint64
-	existing, err := k.attTable.GetByChainIdHeightHashAttestationRoot(ctx,
-		header.ChainId, header.Height, header.Hash, agg.AttestationRoot)
+	existing, err := k.attTable.GetByChainIdOffsetHeightHashAttestationRoot(ctx,
+		header.ChainId, header.Offset, header.Height, header.Hash, agg.AttestationRoot)
 	if ormerrors.IsNotFound(err) {
 		// Insert new attestation
 		attID, err = k.attTable.InsertReturningId(ctx, &Attestation{
 			ChainId:         agg.BlockHeader.ChainId,
+			Offset:          agg.BlockHeader.Offset,
 			Height:          agg.BlockHeader.Height,
 			Hash:            agg.BlockHeader.Hash,
 			AttestationRoot: agg.AttestationRoot,
@@ -161,7 +164,7 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 		log.Debug(ctx, "Ignoring vote for attestation approved by different validator set",
 			"agg_id", attID,
 			"chain", k.namer(header.ChainId),
-			"height", header.Height,
+			"offset", header.Offset,
 		)
 		// Technically these new votes could be from validators also in that previous set, but
 		// we don't have consistent access to historical validator sets.
@@ -184,7 +187,7 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 			log.Warn(ctx, "Ignoring duplicate vote", nil,
 				"agg_id", attID,
 				"chain", k.namer(header.ChainId),
-				"height", header.Height,
+				"offset", header.Offset,
 				log.Hex7("validator", sig.ValidatorAddress),
 			)
 		} else if err != nil {
@@ -199,14 +202,14 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 	defer latency("approve")()
 
-	pendingIdx := AttestationStatusChainIdHeightIndexKey{}.WithStatus(int32(Status_Pending))
+	pendingIdx := AttestationStatusChainIdOffsetIndexKey{}.WithStatus(int32(Status_Pending))
 	iter, err := k.attTable.List(ctx, pendingIdx)
 	if err != nil {
 		return errors.Wrap(err, "list pending")
 	}
 	defer iter.Close()
 
-	approvedByChain := make(map[uint64]uint64) // Cache the latest approved attestation by chain.
+	approvedByChain := make(map[uint64]uint64) // Cache the latest approved attestation offset by chain.
 	for iter.Next() {
 		att, err := iter.Value()
 		if err != nil {
@@ -222,15 +225,17 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 				if err != nil {
 					return errors.Wrap(err, "latest approved")
 				} else if found {
-					approvedByChain[att.GetChainId()] = latest.BlockHeader.Height
+					approvedByChain[att.GetChainId()] = latest.GetOffset()
 				}
 			}
 			head, ok := approvedByChain[att.GetChainId()]
-			if ok && head+1 != att.GetHeight() {
+			if !ok && att.GetOffset() != 1 {
+				// Only start attesting from offset==1
+				continue
+			} else if ok && head+1 != att.GetOffset() {
 				// This isn't the next attestation to approve, so we can't approve it yet.
 				continue
 			}
-			// TODO(corver): We should ensure we start approving from portal deploy height.
 		}
 
 		sigs, err := k.getSigs(ctx, att.GetId())
@@ -259,7 +264,14 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 		}
 
 		approvedHeight.WithLabelValues(k.namer(att.GetChainId())).Set(float64(att.GetHeight()))
-		approvedByChain[att.GetChainId()] = att.GetHeight()
+		approvedOffset.WithLabelValues(k.namer(att.GetChainId())).Set(float64(att.GetOffset()))
+		approvedByChain[att.GetChainId()] = att.GetOffset()
+
+		log.Debug(ctx, "📬 Approved attestation",
+			"chain", k.namer(att.GetChainId()),
+			"offset", att.GetOffset(),
+			"height", att.GetHeight(),
+		)
 	}
 
 	// Trim votes behind minimum vote-window
@@ -276,12 +288,12 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 	return nil
 }
 
-// ListAttestationsFrom returns the subsequent approved attestations from the provided height (inclusive).
-func (k *Keeper) ListAttestationsFrom(ctx context.Context, chainID uint64, height uint64, max uint64) ([]*types.Attestation, error) {
+// ListAttestationsFrom returns the subsequent approved attestations from the provided offset (inclusive).
+func (k *Keeper) ListAttestationsFrom(ctx context.Context, chainID uint64, offset uint64, max uint64) ([]*types.Attestation, error) {
 	defer latency("attestations_from")()
 
-	from := AttestationStatusChainIdHeightIndexKey{}.WithStatusChainIdHeight(int32(Status_Approved), chainID, height)
-	to := AttestationStatusChainIdHeightIndexKey{}.WithStatusChainIdHeight(int32(Status_Approved), chainID, height+max)
+	from := AttestationStatusChainIdOffsetIndexKey{}.WithStatusChainIdOffset(int32(Status_Approved), chainID, offset)
+	to := AttestationStatusChainIdOffsetIndexKey{}.WithStatusChainIdOffset(int32(Status_Approved), chainID, offset+max)
 
 	iter, err := k.attTable.ListRange(ctx, from, to)
 	if err != nil {
@@ -290,14 +302,14 @@ func (k *Keeper) ListAttestationsFrom(ctx context.Context, chainID uint64, heigh
 	defer iter.Close()
 
 	var resp []*types.Attestation
-	next := height
+	next := offset
 	for iter.Next() {
 		att, err := iter.Value()
 		if err != nil {
 			return nil, errors.Wrap(err, "value")
 		}
 
-		if att.GetHeight() != next {
+		if att.GetOffset() != next {
 			break
 		}
 		next++
@@ -318,6 +330,7 @@ func (k *Keeper) ListAttestationsFrom(ctx context.Context, chainID uint64, heigh
 		resp = append(resp, &types.Attestation{
 			BlockHeader: &types.BlockHeader{
 				ChainId: att.GetChainId(),
+				Offset:  att.GetOffset(),
 				Height:  att.GetHeight(),
 				Hash:    att.GetHash(),
 			},
@@ -332,10 +345,10 @@ func (k *Keeper) ListAttestationsFrom(ctx context.Context, chainID uint64, heigh
 
 // latestAttestation returns the latest approved attestation for the given chain or
 // false if none is found.
-func (k *Keeper) latestAttestation(ctx context.Context, chainID uint64) (*types.Attestation, bool, error) {
+func (k *Keeper) latestAttestation(ctx context.Context, chainID uint64) (*Attestation, bool, error) {
 	defer latency("latest_attestation")()
 
-	idx := AttestationStatusChainIdHeightIndexKey{}.WithStatusChainId(int32(Status_Approved), chainID)
+	idx := AttestationStatusChainIdOffsetIndexKey{}.WithStatusChainId(int32(Status_Approved), chainID)
 	iter, err := k.attTable.List(ctx, idx, ormlist.Reverse(), ormlist.DefaultLimit(1))
 	if err != nil {
 		return nil, false, errors.Wrap(err, "list")
@@ -355,29 +368,7 @@ func (k *Keeper) latestAttestation(ctx context.Context, chainID uint64) (*types.
 		return nil, false, errors.New("multiple attestation found")
 	}
 
-	pbsigs, err := k.getSigs(ctx, att.GetId())
-	if err != nil {
-		return nil, false, errors.Wrap(err, "get att sigs")
-	}
-
-	var sigs []*types.SigTuple
-	for _, pbsig := range pbsigs {
-		sigs = append(sigs, &types.SigTuple{
-			ValidatorAddress: pbsig.GetValidatorAddress(),
-			Signature:        pbsig.GetSignature(),
-		})
-	}
-
-	return &types.Attestation{
-		BlockHeader: &types.BlockHeader{
-			ChainId: att.GetChainId(),
-			Height:  att.GetHeight(),
-			Hash:    att.GetHash(),
-		},
-		ValidatorSetId:  att.GetValidatorSetId(),
-		AttestationRoot: att.GetAttestationRoot(),
-		Signatures:      sigs,
-	}, true, nil
+	return att, true, nil
 }
 
 // getSigs returns the signatures for the given attestation ID.
@@ -430,7 +421,7 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 	countsByChain := make(map[uint64]int)
 	var filtered []*types.Vote
 	for _, vote := range votes {
-		if cmp, err := k.windowCompare(ctx, vote.BlockHeader.ChainId, vote.BlockHeader.Height); err != nil {
+		if cmp, err := k.windowCompare(ctx, vote.BlockHeader.ChainId, vote.BlockHeader.Offset); err != nil {
 			return nil, errors.Wrap(err, "windower")
 		} else if cmp != 0 {
 			// Skip votes no in the window
@@ -457,23 +448,23 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 
 	// Make nice logs
 	const limit = 5
-	heights := make(map[uint64][]string)
+	offsets := make(map[uint64][]string)
 	for _, vote := range votes {
-		hs := heights[vote.BlockHeader.ChainId]
-		if len(hs) < limit {
-			hs = append(hs, strconv.FormatUint(vote.BlockHeader.Height, 10))
-		} else if len(hs) == limit {
-			hs = append(hs, "...")
+		offset := offsets[vote.BlockHeader.ChainId]
+		if len(offset) < limit {
+			offset = append(offset, strconv.FormatUint(vote.BlockHeader.Offset, 10))
+		} else if len(offset) == limit {
+			offset = append(offset, "...")
 		} else {
 			continue
 		}
-		heights[vote.BlockHeader.ChainId] = hs
+		offsets[vote.BlockHeader.ChainId] = offset
 	}
 	attrs := []any{slog.Int("votes", len(votes))}
-	for cid, hs := range heights {
+	for cid, offset := range offsets {
 		attrs = append(attrs, slog.String(
 			strconv.FormatUint(cid, 10),
-			fmt.Sprint(hs),
+			fmt.Sprint(offset),
 		))
 	}
 
@@ -515,7 +506,7 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 			log.Warn(ctx, "Rejecting invalid vote", err)
 			return respReject, nil
 		}
-		if cmp, err := k.windowCompare(ctx, vote.BlockHeader.ChainId, vote.BlockHeader.Height); err != nil {
+		if cmp, err := k.windowCompare(ctx, vote.BlockHeader.ChainId, vote.BlockHeader.Offset); err != nil {
 			return nil, errors.Wrap(err, "windower")
 		} else if cmp != 0 {
 			log.Warn(ctx, "Rejecting out-of-window vote", nil, "cmp", cmp)
@@ -565,16 +556,18 @@ func (k *Keeper) prevBlockValSet(ctx context.Context) (ValSet, error) {
 	}, nil
 }
 
-func (k *Keeper) windowCompare(ctx context.Context, chainID uint64, height uint64) (int, error) {
+func (k *Keeper) windowCompare(ctx context.Context, chainID uint64, offset uint64) (int, error) {
 	latest, exists, err := k.latestAttestation(ctx, chainID)
 	if err != nil {
 		return 0, err
-	} else if !exists {
-		// TODO(corver): Use netconf deploy height to use as initial window.
-		return 0, nil // Allow any height while no approved attestation exists.
 	}
 
-	return windowCompare(k.voteWindow, latest.BlockHeader, height), nil
+	latestOffset := initialXOffset // Use initial offset if attestation doesn't exist.
+	if exists {
+		latestOffset = latest.GetOffset()
+	}
+
+	return windowCompare(k.voteWindow, latestOffset, offset), nil
 }
 
 // verifyAggVotes verifies the given aggregates votes:
@@ -586,7 +579,7 @@ func (k *Keeper) verifyAggVotes(ctx context.Context, valset ValSet, aggs []*type
 		if err := agg.Verify(); err != nil {
 			return errors.Wrap(err, "verify aggregate vote")
 		}
-		errAttrs := []any{"chain_id", agg.BlockHeader.ChainId, "height", agg.BlockHeader.Height, log.Hex7("val0", agg.Signatures[0].ValidatorAddress)}
+		errAttrs := []any{"chain_id", agg.BlockHeader.ChainId, "offset", agg.BlockHeader.Offset, log.Hex7("val0", agg.Signatures[0].ValidatorAddress)}
 
 		// Ensure all votes are from validators in the set
 		for _, sig := range agg.Signatures {
@@ -599,7 +592,7 @@ func (k *Keeper) verifyAggVotes(ctx context.Context, valset ValSet, aggs []*type
 		}
 
 		// Ensure the block header is in the vote window.
-		if resp, err := k.windowCompare(ctx, agg.BlockHeader.ChainId, agg.BlockHeader.Height); err != nil {
+		if resp, err := k.windowCompare(ctx, agg.BlockHeader.ChainId, agg.BlockHeader.Offset); err != nil {
 			return errors.Wrap(err, "windower")
 		} else if resp != 0 {
 			errAttrs = append(errAttrs, "resp", resp)
@@ -616,7 +609,7 @@ func (k *Keeper) verifyAggVotes(ctx context.Context, valset ValSet, aggs []*type
 func (k *Keeper) deleteBefore(ctx context.Context, height uint64) error {
 	defer latency("delete_before")()
 
-	// Cache latest by chain so we don't delete it.
+	// Cache latest offset by chain so we don't delete it.
 	// TODO(corver): Add tests for this.
 	latestByChain := make(map[uint64]uint64)
 	getLatest := func(chainID uint64) (uint64, bool, error) {
@@ -631,10 +624,10 @@ func (k *Keeper) deleteBefore(ctx context.Context, height uint64) error {
 			return 0, false, nil
 		}
 
-		height := latest.BlockHeader.Height
-		latestByChain[chainID] = height
+		offset := latest.GetOffset()
+		latestByChain[chainID] = offset
 
-		return height, true, nil
+		return offset, true, nil
 	}
 
 	start := AttestationCreatedHeightIndexKey{}
@@ -653,12 +646,12 @@ func (k *Keeper) deleteBefore(ctx context.Context, height uint64) error {
 			return errors.New("query sanity check [BUG]")
 		}
 
-		// Never delete anything after the last approved attestation per chain,
+		// Never delete anything after the last approved attestation offset per chain,
 		// even if it is very old. Otherwise, we could introduce a gap
 		// once we start catching up.
 		if latest, ok, err := getLatest(att.GetChainId()); err != nil {
 			return err
-		} else if ok && att.GetHeight() >= latest {
+		} else if ok && att.GetOffset() >= latest {
 			continue
 		}
 
@@ -696,9 +689,7 @@ func isApproved(sigs []*Signature, valset ValSet) ([]*Signature, bool) {
 }
 
 // windowCompare returns -1 if x < mid-voteWindow, 1 if x > mid+voteWindow, else 0.
-func windowCompare(voteWindow uint64, midHeader *types.BlockHeader, x uint64) int {
-	mid := midHeader.Height
-
+func windowCompare(voteWindow uint64, mid uint64, x uint64) int {
 	if x < uintSub(mid, voteWindow) {
 		return -1
 	} else if x > mid+voteWindow {

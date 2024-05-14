@@ -45,6 +45,7 @@ type Receipt struct {
 // BlockHeader uniquely identifies a cross chain block.
 type BlockHeader struct {
 	SourceChainID uint64      // Source chain ID as per https://chainlist.org
+	BlockOffset   uint64      // MsgOffset of the cross chain block
 	BlockHeight   uint64      // Height of the source chain block
 	BlockHash     common.Hash // Hash of the source chain block
 }
@@ -55,6 +56,12 @@ type Block struct {
 	Msgs      []Msg     // All cross-chain messages sent/emittted in the block
 	Receipts  []Receipt // Receipts of all submitted cross-chain messages applied in the block
 	Timestamp time.Time // Timestamp of the source chain block
+}
+
+// ShouldAttest returns true if the xblock should be attested by the omni consensus chain validators.
+// All "non-empty" xblocks should be attested to and are assigned an incremented XBlockOffset.
+func (b Block) ShouldAttest() bool {
+	return len(b.Msgs) > 0
 }
 
 // Vote by a validator of a cross-chain Block.
@@ -92,7 +99,7 @@ type Submission struct {
 
 // StreamCursor is a cursor that tracks the progress of a cross-chain stream on destination portal contracts.
 type StreamCursor struct {
-	StreamID                 // Stream ID of the Stream this cursor belongs to
-	Offset            uint64 // Latest applied Msg offset of the Stream
-	SourceBlockHeight uint64 // Height of the source chain block
+	StreamID           // Stream ID of the Stream this cursor belongs to
+	MsgOffset   uint64 // Latest applied Msg offset of the Stream
+	BlockOffset uint64 // Latest applied cross chain block offset
 }

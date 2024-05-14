@@ -97,6 +97,7 @@ func SigToProto(sig xchain.SigTuple) *SigTuple {
 func BlockHeaderToProto(header xchain.BlockHeader) *BlockHeader {
 	return &BlockHeader{
 		ChainId: header.SourceChainID,
+		Offset:  header.BlockOffset,
 		Height:  header.BlockHeight,
 		Hash:    header.BlockHash[:],
 	}
@@ -110,6 +111,7 @@ func BlockHeaderFromProto(header *BlockHeader) (xchain.BlockHeader, error) {
 
 	return xchain.BlockHeader{
 		SourceChainID: header.GetChainId(),
+		BlockOffset:   header.GetOffset(),
 		BlockHeight:   header.GetHeight(),
 		BlockHash:     common.Hash(header.GetHash()),
 	}, nil

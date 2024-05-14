@@ -19,8 +19,12 @@ import (
 
 // GetEmittedCursor returns the emitted cursor for the destination chain on the source chain,
 // or false if not available, or an error. Calls the source chain portal OutXStreamOffset method.
+//
+// Note that the BlockOffset field is not populated for emit cursors, since it isn't stored on-chain
+// but tracked off-chain.
 func (p *Provider) GetEmittedCursor(ctx context.Context, sourceChainID uint64, destinationChainID uint64,
 ) (xchain.StreamCursor, bool, error) {
+	const unknownBlockOffset uint64 = 0
 	if sourceChainID == p.cChainID {
 		// For consensus chain, we can query the latest consensus xblock.
 		// And since consensus xmsgs are broadcast, we use the provided destination chain ID.
@@ -40,7 +44,8 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, sourceChainID uint64, d
 				SourceChainID: sourceChainID,
 				DestChainID:   destinationChainID,
 			},
-			Offset: xblock.Msgs[0].StreamOffset,
+			MsgOffset:   xblock.Msgs[0].StreamOffset,
+			BlockOffset: unknownBlockOffset,
 		}, true, nil
 	}
 
@@ -49,17 +54,12 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, sourceChainID uint64, d
 		return xchain.StreamCursor{}, false, err
 	}
 
-	height, err := rpcClient.BlockNumber(ctx)
-	if err != nil {
-		return xchain.StreamCursor{}, false, errors.Wrap(err, "get block number")
-	}
-
 	caller, err := bindings.NewOmniPortalCaller(chain.PortalAddress, rpcClient)
 	if err != nil {
 		return xchain.StreamCursor{}, false, errors.Wrap(err, "new caller")
 	}
 
-	opts := &bind.CallOpts{Context: ctx, BlockNumber: big.NewInt(int64(height))}
+	opts := &bind.CallOpts{Context: ctx}
 	offset, err := caller.OutXStreamOffset(opts, destinationChainID)
 	if err != nil {
 		return xchain.StreamCursor{}, false, errors.Wrap(err, "call inXStreamOffset")
@@ -74,8 +74,8 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, sourceChainID uint64, d
 			SourceChainID: sourceChainID,
 			DestChainID:   destinationChainID,
 		},
-		Offset:            offset,
-		SourceBlockHeight: height,
+		MsgOffset:   offset,
+		BlockOffset: unknownBlockOffset,
 	}, true, nil
 }
 
@@ -93,16 +93,25 @@ func (p *Provider) GetSubmittedCursor(ctx context.Context, destChainID uint64, s
 		return xchain.StreamCursor{}, false, errors.Wrap(err, "new caller")
 	}
 
-	offset, err := caller.InXStreamOffset(&bind.CallOpts{Context: ctx}, sourceChainID)
+	height, err := rpcClient.BlockNumber(ctx)
+	if err != nil {
+		return xchain.StreamCursor{}, false, err
+	}
+
+	callOpts := &bind.CallOpts{Context: ctx, BlockNumber: big.NewInt(int64(height))}
+
+	// TODO(corver): Rename portal variable to InXStreamMsgOffset
+	msgOffset, err := caller.InXStreamOffset(callOpts, sourceChainID)
 	if err != nil {
 		return xchain.StreamCursor{}, false, errors.Wrap(err, "call inXStreamOffset")
 	}
 
-	if offset == 0 {
+	if msgOffset == 0 {
 		return xchain.StreamCursor{}, false, nil
 	}
 
-	blockHeight, err := caller.InXStreamBlockHeight(&bind.CallOpts{Context: ctx}, sourceChainID)
+	// TODO(corver): Rename portal variable to InXStreamBlockOffset
+	blockOffset, err := caller.InXStreamBlockHeight(callOpts, sourceChainID)
 	if err != nil {
 		return xchain.StreamCursor{}, false, errors.Wrap(err, "call inXStreamBlockHeight")
 	}
@@ -112,19 +121,28 @@ func (p *Provider) GetSubmittedCursor(ctx context.Context, destChainID uint64, s
 			SourceChainID: sourceChainID,
 			DestChainID:   destChainID,
 		},
-		Offset:            offset,
-		SourceBlockHeight: blockHeight,
+		MsgOffset:   msgOffset,
+		BlockOffset: blockOffset,
 	}, true, nil
 }
 
 // GetBlock returns the XBlock for the provided chain and height, or false if not available yet (not finalized),
 // or an error.
-func (p *Provider) GetBlock(ctx context.Context, chainID uint64, height uint64) (xchain.Block, bool, error) {
+func (p *Provider) GetBlock(ctx context.Context, chainID uint64, height uint64, xOffset uint64) (xchain.Block, bool, error) {
 	ctx, span := tracer.Start(ctx, spanName("get_block"))
 	defer span.End()
 
 	if chainID == p.cChainID {
-		return p.cProvider.XBlock(ctx, height, false)
+		b, ok, err := p.cProvider.XBlock(ctx, height, false)
+		if err != nil {
+			return xchain.Block{}, false, errors.Wrap(err, "fetch consensus xblock")
+		} else if !ok {
+			return xchain.Block{}, false, nil
+		} else if b.BlockHeight != height && b.BlockOffset != xOffset {
+			return xchain.Block{}, false, errors.New("unexpected block height and offset [BUG]")
+		}
+
+		return b, true, nil
 	}
 
 	_, ethCl, err := p.getEVMChain(chainID)
@@ -187,7 +205,7 @@ func (p *Provider) GetBlock(ctx context.Context, chainID uint64, height uint64) 
 		return xchain.Block{}, false, errors.Wrap(err, "wait")
 	}
 
-	return xchain.Block{
+	resp := xchain.Block{
 		BlockHeader: xchain.BlockHeader{
 			SourceChainID: chainID,
 			BlockHeight:   height,
@@ -196,7 +214,12 @@ func (p *Provider) GetBlock(ctx context.Context, chainID uint64, height uint64) 
 		Msgs:      msgs,
 		Receipts:  receipts,
 		Timestamp: time.Unix(int64(header.Time), 0),
-	}, true, nil
+	}
+	if resp.ShouldAttest() {
+		resp.BlockOffset = xOffset
+	}
+
+	return resp, true, nil
 }
 
 func (p *Provider) getXReceiptLogs(ctx context.Context, chainID uint64, height uint64) ([]xchain.Receipt, error) {

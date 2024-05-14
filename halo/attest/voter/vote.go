@@ -35,6 +35,7 @@ func CreateVote(privKey crypto.PrivKey, block xchain.Block) (*types.Vote, error)
 	return &types.Vote{
 		BlockHeader: &types.BlockHeader{
 			ChainId: block.SourceChainID,
+			Offset:  block.BlockOffset,
 			Height:  block.BlockHeight,
 			Hash:    block.BlockHash[:],
 		},

@@ -15,6 +15,13 @@ var (
 		Help:      "The height of latest approved attestation per source chain",
 	}, []string{"chain"})
 
+	approvedOffset = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "halo",
+		Subsystem: "attest",
+		Name:      "approved_offset",
+		Help:      "The offset of latest approved attestation per source chain",
+	}, []string{"chain"})
+
 	votesProposed = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "halo",
 		Subsystem: "attest",

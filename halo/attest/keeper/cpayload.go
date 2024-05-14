@@ -55,7 +55,7 @@ func votesFromLastCommit(ctx context.Context, windowCompare windowCompareFunc, i
 
 		var selected []*types.Vote
 		for _, v := range votes.Votes {
-			cmp, err := windowCompare(ctx, v.BlockHeader.ChainId, v.BlockHeader.Height)
+			cmp, err := windowCompare(ctx, v.BlockHeader.ChainId, v.BlockHeader.Offset)
 			if err != nil {
 				return nil, err
 			} else if cmp != 0 {
@@ -109,8 +109,8 @@ func flattenAggs(aggsByHeader map[types.UniqueKey]*types.AggVote) []*types.AggVo
 // Note the provided slice is also sorted in-place.
 func sortAggregates(aggs []*types.AggVote) []*types.AggVote {
 	sort.Slice(aggs, func(i, j int) bool {
-		if aggs[i].BlockHeader.Height != aggs[j].BlockHeader.Height {
-			return aggs[i].BlockHeader.Height < aggs[j].BlockHeader.Height
+		if aggs[i].BlockHeader.Offset != aggs[j].BlockHeader.Offset {
+			return aggs[i].BlockHeader.Offset < aggs[j].BlockHeader.Offset
 		}
 		if aggs[i].BlockHeader.ChainId != aggs[j].BlockHeader.ChainId {
 			return aggs[i].BlockHeader.ChainId < aggs[j].BlockHeader.ChainId
