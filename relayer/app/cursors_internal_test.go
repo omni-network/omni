@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/lib/cchain"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -106,7 +107,7 @@ var (
 type mockXChainClient struct {
 	GetBlockFn           func(context.Context, uint64, uint64, uint64) (xchain.Block, bool, error)
 	GetSubmittedCursorFn func(context.Context, uint64, uint64) (xchain.StreamCursor, bool, error)
-	GetEmittedCursorFn   func(context.Context, uint64, uint64) (xchain.StreamCursor, bool, error)
+	GetEmittedCursorFn   func(context.Context, ethclient.HeadType, uint64, uint64) (xchain.StreamCursor, bool, error)
 }
 
 func (m *mockXChainClient) StreamAsync(context.Context, uint64, uint64, uint64, xchain.ProviderCallback) error {
@@ -134,9 +135,9 @@ func (m *mockXChainClient) GetSubmittedCursor(ctx context.Context, chainID uint6
 	return m.GetSubmittedCursorFn(ctx, chainID, sourceChain)
 }
 
-func (m *mockXChainClient) GetEmittedCursor(ctx context.Context, srcChainID uint64, destChainID uint64,
+func (m *mockXChainClient) GetEmittedCursor(ctx context.Context, head ethclient.HeadType, srcChainID uint64, destChainID uint64,
 ) (xchain.StreamCursor, bool, error) {
-	return m.GetEmittedCursorFn(ctx, srcChainID, destChainID)
+	return m.GetEmittedCursorFn(ctx, head, srcChainID, destChainID)
 }
 
 type mockSender struct {

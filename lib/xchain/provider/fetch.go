@@ -22,11 +22,11 @@ import (
 //
 // Note that the BlockOffset field is not populated for emit cursors, since it isn't stored on-chain
 // but tracked off-chain.
-func (p *Provider) GetEmittedCursor(ctx context.Context, sourceChainID uint64, destinationChainID uint64,
+func (p *Provider) GetEmittedCursor(ctx context.Context, headType ethclient.HeadType, sourceChainID uint64, destinationChainID uint64,
 ) (xchain.StreamCursor, bool, error) {
 	const unknownBlockOffset uint64 = 0
 	if sourceChainID == p.cChainID {
-		// For consensus chain, we can query the latest consensus xblock.
+		// For consensus chain (instant finality), we can query the latest consensus xblock.
 		// And since consensus xmsgs are broadcast, we use the provided destination chain ID.
 		xblock, ok, err := p.cProvider.XBlock(ctx, 0, true)
 		if err != nil {
@@ -60,6 +60,16 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, sourceChainID uint64, d
 	}
 
 	opts := &bind.CallOpts{Context: ctx}
+	if headType != ethclient.HeadLatest {
+		// Populate an explicit block number if not querying latest head.
+		header, err := rpcClient.HeaderByType(ctx, headType)
+		if err != nil {
+			return xchain.StreamCursor{}, false, err
+		}
+
+		opts.BlockNumber = header.Number
+	}
+
 	offset, err := caller.OutXStreamOffset(opts, destinationChainID)
 	if err != nil {
 		return xchain.StreamCursor{}, false, errors.Wrap(err, "call inXStreamOffset")
