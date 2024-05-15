@@ -8,6 +8,8 @@ import (
 	"github.com/omni-network/omni/e2e/app/geth"
 	"github.com/omni-network/omni/lib/ethclient"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -25,5 +27,8 @@ func TestGethConfig(t *testing.T) {
 
 		require.EqualValues(t, int(cfg.Eth.Miner.GasCeil), int(block.GasLimit()))
 		require.Equal(t, big.NewInt(0), block.Difficulty())
+
+		require.NotNil(t, block.BeaconRoot())
+		require.NotEqual(t, common.Hash{}, *block.BeaconRoot())
 	})
 }
