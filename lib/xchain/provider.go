@@ -2,6 +2,8 @@ package xchain
 
 import (
 	"context"
+
+	"github.com/omni-network/omni/lib/ethclient"
 )
 
 // ProviderCallback is the callback function signature that will be called with every finalized.
@@ -41,5 +43,5 @@ type Provider interface {
 	//
 	// Note that the BlockOffset field is not populated for emit cursors, since it isn't stored on-chain
 	// but tracked off-chain.
-	GetEmittedCursor(ctx context.Context, srcChainID uint64, destChainID uint64) (StreamCursor, bool, error)
+	GetEmittedCursor(ctx context.Context, headType ethclient.HeadType, srcChainID uint64, destChainID uint64) (StreamCursor, bool, error)
 }

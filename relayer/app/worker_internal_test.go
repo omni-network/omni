@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/lib/cchain"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -58,7 +59,7 @@ func TestWorker_Run(t *testing.T) {
 		GetSubmittedCursorFn: func(_ context.Context, srcChainID uint64, _ uint64) (xchain.StreamCursor, bool, error) {
 			return cursors[srcChainID], true, nil
 		},
-		GetEmittedCursorFn: func(_ context.Context, _ uint64, destChainID uint64) (xchain.StreamCursor, bool, error) {
+		GetEmittedCursorFn: func(_ context.Context, _ ethclient.HeadType, _ uint64, destChainID uint64) (xchain.StreamCursor, bool, error) {
 			return cursors[destChainID], true, nil
 		},
 	}

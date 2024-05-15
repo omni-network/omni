@@ -43,7 +43,7 @@ func startMonitoring(ctx context.Context, network netconf.Network, xprovider xch
 				continue
 			}
 
-			go monitorOffsetsForever(ctx, srcChain.ID, dstChain.ID, srcChain.Name, dstChain.Name, xprovider)
+			go monitorOffsetsForever(ctx, srcChain, dstChain, xprovider)
 		}
 	}
 
@@ -82,7 +82,8 @@ func monitorConsOffsetOnce(ctx context.Context, network netconf.Network, xprovid
 
 	// Consensus chain messages are broadacst, so query for each EVM chain.
 	for _, destChain := range network.EVMChains() {
-		emitted, ok, err := xprovider.GetEmittedCursor(ctx, cChain.ID, destChain.ID)
+		headType := ethclient.HeadType(destChain.FinalizationStrat)
+		emitted, ok, err := xprovider.GetEmittedCursor(ctx, headType, cChain.ID, destChain.ID)
 		if err != nil {
 			return err
 		} else if !ok {
@@ -264,7 +265,7 @@ func monitorAccountOnce(ctx context.Context, addr common.Address, chainName stri
 
 // monitorOffsetsForever blocks and periodically monitors the emitted and submitted
 // offsets for a given source and destination chain.
-func monitorOffsetsForever(ctx context.Context, src, dst uint64, srcChain, dstChain string,
+func monitorOffsetsForever(ctx context.Context, src, dst netconf.Chain,
 	xprovider xchain.Provider) {
 	ticker := time.NewTicker(time.Second * 30)
 	defer ticker.Stop()
@@ -274,12 +275,12 @@ func monitorOffsetsForever(ctx context.Context, src, dst uint64, srcChain, dstCh
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			err := monitorOffsetsOnce(ctx, src, dst, srcChain, dstChain, xprovider)
+			err := monitorOffsetsOnce(ctx, src, dst, xprovider)
 			if ctx.Err() != nil {
 				return
 			} else if err != nil {
 				log.Error(ctx, "Monitoring stream offsets failed (will retry)", err,
-					"src_chain", srcChain, "dst_chain", dstChain)
+					"src_chain", src.Name, "dst_chain", dst.Name)
 
 				continue
 			}
@@ -289,24 +290,24 @@ func monitorOffsetsForever(ctx context.Context, src, dst uint64, srcChain, dstCh
 
 // monitorOffsetsOnce monitors the emitted and submitted offsets for a given source and
 // destination chain.
-func monitorOffsetsOnce(ctx context.Context, src, dst uint64, srcChain, dstChain string,
+func monitorOffsetsOnce(ctx context.Context, src, dst netconf.Chain,
 	xprovider xchain.Provider) error {
-	emitted, ok, err := xprovider.GetEmittedCursor(ctx, src, dst)
+	emitted, ok, err := xprovider.GetEmittedCursor(ctx, ethclient.HeadType(src.FinalizationStrat), src.ID, dst.ID)
 	if err != nil {
 		return err
 	} else if !ok {
 		return nil
 	}
 
-	submitted, _, err := xprovider.GetSubmittedCursor(ctx, dst, src)
+	submitted, _, err := xprovider.GetSubmittedCursor(ctx, dst.ID, src.ID)
 	if err != nil {
 		return err
 	}
 
-	emitMsgOffset.WithLabelValues(srcChain, dstChain).Set(float64(emitted.MsgOffset))
+	emitMsgOffset.WithLabelValues(src.Name, dst.Name).Set(float64(emitted.MsgOffset))
 	// emitBlockOffset isn't statelessly fetched from the source chain, it is calculated and tracked by XProvider...
-	submitMsgOffset.WithLabelValues(srcChain, dstChain).Set(float64(submitted.MsgOffset))
-	submitBlockOffset.WithLabelValues(srcChain, dstChain).Set(float64(submitted.BlockOffset))
+	submitMsgOffset.WithLabelValues(src.Name, dst.Name).Set(float64(submitted.MsgOffset))
+	submitBlockOffset.WithLabelValues(src.Name, dst.Name).Set(float64(submitted.BlockOffset))
 
 	return nil
 }
