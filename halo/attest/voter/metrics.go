@@ -21,12 +21,19 @@ var (
 		Help:      "Latest created vote height per source chain. Alert if not growing.",
 	}, []string{"chain"})
 
-	createOffset = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	createBlockOffset = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "halo",
 		Subsystem: "voter",
-		Name:      "create_offset",
-		Help:      "Latest created vote height per source chain. Alert if not growing.",
+		Name:      "create_block_offset",
+		Help:      "Latest created vote block offset per source chain. Alert if not growing.",
 	}, []string{"chain"})
+
+	createMsgOffset = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "halo",
+		Subsystem: "voter",
+		Name:      "create_stream_offset",
+		Help:      "Latest created vote xmsg offset per stream",
+	}, []string{"src_chain", "dst_chain"})
 
 	commitHeight = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "halo",

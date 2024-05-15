@@ -112,6 +112,9 @@ func TestWorker_Run(t *testing.T) {
 
 			for ctx.Err() == nil {
 				err := callback(ctx, nextAtt())
+				if ctx.Err() != nil {
+					return
+				}
 				require.NoError(t, err)
 			}
 		},
