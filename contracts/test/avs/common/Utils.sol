@@ -18,8 +18,11 @@ import { Vm } from "forge-std/Vm.sol";
  * @dev Common utilities for AVS tests
  */
 contract Utils is Fixtures {
-    // map addr to private key
-    mapping(address => Vm.Wallet) _wallets;
+    // map operator addr to operator key wallet
+    mapping(address => Vm.Wallet) _operatorWallets;
+
+    // map operator addr to validator key wallet
+    mapping(address => Vm.Wallet) _validatorWallets;
 
     /// @dev register an operator with eigenlayer core
     function _registerAsOperator(address operator) internal {
@@ -34,10 +37,70 @@ contract Utils is Fixtures {
 
     /// @dev register an operator with OmniAVS
     function _registerOperatorWithAVS(address operator) internal {
-        // don't matter
+        bytes memory valPubKey = _valPubKey(operator);
+
+        ISignatureUtils.SignatureWithSaltAndExpiry memory valsig = _validatorSig(operator);
+        ISignatureUtils.SignatureWithSaltAndExpiry memory opsig = _operatorSig(operator);
+
+        vm.prank(operator);
+        omniAVS.registerOperator(valPubKey, valsig, opsig);
+
+        assertEq(omniAVS.validatorPubKey(operator), valPubKey, "_registerOperatorWithAVS: validatorPubKey not set");
+    }
+
+    /// @dev return's the operator's validator registration signature, required by OmniAVS
+    ///      uses static salt
+    function _validatorSig(address operator)
+        internal
+        view
+        returns (ISignatureUtils.SignatureWithSaltAndExpiry memory)
+    {
+        bytes32 salt = keccak256(abi.encodePacked(operator));
+        return _validatorSig(operator, salt);
+    }
+
+    /// @dev return's the operator's validator registration signature, required by OmniAVS
+    ///      uses given salt
+    function _validatorSig(address operator, bytes32 salt)
+        internal
+        view
+        returns (ISignatureUtils.SignatureWithSaltAndExpiry memory)
+    {
         ISignatureUtils.SignatureWithSaltAndExpiry memory sig = ISignatureUtils.SignatureWithSaltAndExpiry({
             signature: new bytes(0),
-            salt: keccak256(abi.encodePacked(operator)),
+            salt: salt,
+            expiry: block.timestamp + 1 days
+        });
+
+        bytes32 validatorRegistrationDigestHash = omniAVS.validatorRegistrationDigestHash({
+            operator: operator,
+            valPubKey: _valPubKey(operator),
+            salt: sig.salt,
+            expiry: sig.expiry
+        });
+
+        sig.signature = _sign(_valPrivKey(operator), validatorRegistrationDigestHash);
+
+        return sig;
+    }
+
+    /// @dev return's the operators registration signature, required by AVSDirectory
+    ///      uses static salt.
+    function _operatorSig(address operator) internal view returns (ISignatureUtils.SignatureWithSaltAndExpiry memory) {
+        bytes32 salt = keccak256(abi.encodePacked(operator));
+        return _operatorSig(operator, salt);
+    }
+
+    /// @dev return's the operators registration signature, required by AVSDirectory
+    ///      uses given salt
+    function _operatorSig(address operator, bytes32 salt)
+        internal
+        view
+        returns (ISignatureUtils.SignatureWithSaltAndExpiry memory)
+    {
+        ISignatureUtils.SignatureWithSaltAndExpiry memory sig = ISignatureUtils.SignatureWithSaltAndExpiry({
+            signature: new bytes(0),
+            salt: salt,
             expiry: block.timestamp + 1 days
         });
 
@@ -48,10 +111,9 @@ contract Utils is Fixtures {
             expiry: sig.expiry
         });
 
-        sig.signature = _sign(operator, operatorRegistrationDigestHash);
+        sig.signature = _sign(_operatorPrivKey(operator), operatorRegistrationDigestHash);
 
-        vm.prank(operator);
-        omniAVS.registerOperator(_pubkey(operator), sig);
+        return sig;
     }
 
     /// @dev add an operator to the allowlist
@@ -86,30 +148,46 @@ contract Utils is Fixtures {
 
     /// @dev create an operator address
     function _operator(uint256 index) internal returns (address) {
-        return _addr("operator", index);
+        uint256 pk = uint256(keccak256(abi.encode("operator", index)));
+        address addr = vm.addr(pk);
+
+        // create operator wallet if it doesn't exist
+        if (_operatorWallets[addr].privateKey == 0) {
+            _operatorWallets[addr] = vm.createWallet(pk);
+        }
+
+        // create a validator walelt if one does not exist (using separate private key)
+        if (_validatorWallets[addr].privateKey == 0) {
+            _validatorWallets[addr] = vm.createWallet(uint256(keccak256(abi.encode("val", addr))));
+        }
+
+        return addr;
     }
 
     /// @dev create a delegator address
-    function _delegator(uint256 index) internal returns (address) {
-        return _addr("delegator", index);
+    function _delegator(uint256 index) internal pure returns (address) {
+        return address(uint160(uint256(keccak256(abi.encode("delegator", index)))));
     }
 
-    /// @dev create a namespaced address, save the addresses wallet
-    function _addr(string memory namespace, uint256 index) internal returns (address) {
-        Vm.Wallet memory w = vm.createWallet(uint256(keccak256(abi.encode(namespace, index))));
-        _wallets[w.addr] = w;
-        return w.addr;
-    }
-
-    /// @dev return the public key of an operator
-    function _pubkey(address operator) internal view returns (bytes memory) {
-        Vm.Wallet memory w = _wallets[operator];
+    /// @dev return the operator's validator public key, bytes encoded
+    function _valPubKey(address operator) internal view returns (bytes memory) {
+        Vm.Wallet storage w = _validatorWallets[operator];
         return abi.encodePacked(w.publicKeyX, w.publicKeyY);
     }
 
+    /// @dev return the operator's validator private key
+    function _valPrivKey(address operator) internal view returns (uint256) {
+        return _validatorWallets[operator].privateKey;
+    }
+
+    /// @dev return the operator's private key
+    function _operatorPrivKey(address operator) internal view returns (uint256) {
+        return _operatorWallets[operator].privateKey;
+    }
+
     /// @dev sign a digest
-    function _sign(address signer, bytes32 digest) internal view returns (bytes memory) {
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(_wallets[signer].privateKey, digest);
+    function _sign(uint256 privateKey, bytes32 digest) internal pure returns (bytes memory) {
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
         return abi.encodePacked(r, s, v);
     }
 

@@ -3,6 +3,7 @@ pragma solidity =0.8.12;
 
 import { OwnableUpgradeable } from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import { PausableUpgradeable } from "@openzeppelin-upgrades/contracts/security/PausableUpgradeable.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
@@ -23,13 +24,31 @@ import { OmniAVSStorage } from "./OmniAVSStorage.sol";
  *         EigenLayer opators, and for syncing operator delegations with the Omni chain.
  */
 contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable, PausableUpgradeable, OmniAVSStorage {
-    /// @notice Constant used as a divisor in calculating weights
+    /**
+     * @notice The EIP-712 typehash for the contract's domain
+     */
+    bytes32 public constant DOMAIN_TYPEHASH =
+        keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
+
+    /**
+     * @notice The EIP-712 typehash for the validator registration struct
+     */
+    bytes32 public constant VALIDATOR_REGISTRATION_TYPEHASH =
+        keccak256("ValidatorRegistration(address operator,bytes validatorPubKey,bytes32 salt,uint256 expiry)");
+
+    /**
+     * @notice Constant used as a divisor in calculating weights
+     */
     uint256 internal constant STRATEGY_WEIGHTING_DIVISOR = 1e18;
 
-    /// @notice EigenLayer core DelegationManager
+    /**
+     * @notice EigenLayer core DelegationManager
+     */
     IDelegationManager internal immutable _delegationManager;
 
-    /// @notice EigenLayer core AVSDirectory
+    /**
+     * @notice EigenLayer core AVSDirectory
+     */
     IAVSDirectory internal immutable _avsDirectory;
 
     constructor(IDelegationManager delegationManager_, IAVSDirectory avsDirectory_) {
@@ -88,26 +107,43 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable, PausableUpgrade
 
     /**
      * @notice Register an operator with the AVS. Forwards call to EigenLayer' AVSDirectory.
-     * @param pubkey            64 byte uncompressed secp256k1 public key (no 0x04 prefix)
-     *                          Pubkey must match operator's address (msg.sender)
-     * @param operatorSignature The signature, salt, and expiry of the operator's signature.
+     * @param valPubKey     The operator's 64 byte uncompressed secp256k1 validator public key.
+     * @param valSig        The operator's validator pubkey registration signature, with salt and expiry.
+     *                      Signature must match `validatorPubKey`. This signature is verified by then OmniAVS.
+     * @param operatorSig   The operator's AVS registration signature, with salt and expiry.
+     *                      Signed must match `msg.sender`. This signature is verified by the AVSDirectory.
      */
     function registerOperator(
-        bytes calldata pubkey,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+        bytes calldata valPubKey,
+        ISignatureUtils.SignatureWithSaltAndExpiry calldata valSig,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSig
     ) external whenNotPaused {
         address operator = msg.sender;
 
-        require(operator == Secp256k1.pubkeyToAddress(pubkey), "OmniAVS: pubkey != sender");
+        // verify the operator can register
         require(!allowlistEnabled || _allowlist[operator], "OmniAVS: not allowed");
         require(!_isOperator(operator), "OmniAVS: already an operator");
         require(_operators.length < maxOperatorCount, "OmniAVS: max operators reached");
         require(_getTotalDelegations(operator) >= minOperatorStake, "OmniAVS: min stake not met");
 
-        _addOperator(operator, pubkey);
-        _avsDirectory.registerOperatorToAVS(operator, operatorSignature);
+        // verify the the validator signature is not expired or spent
+        require(valSig.expiry >= block.timestamp, "OmniAVS: signature expired");
+        require(!_isValActive[valPubKey], "OmniAVS: pubkey already active");
+        require(!_isValSaltSpent[valPubKey][valSig.salt], "OmniAVS: spent salt");
 
-        emit OperatorAdded(operator);
+        // verify the the validator signature is a valid digest hash signature for the provided pubkey
+        require(
+            ECDSA.recover(
+                validatorRegistrationDigestHash(operator, valPubKey, valSig.salt, valSig.expiry), valSig.signature
+            ) == Secp256k1.pubkeyToAddress(valPubKey),
+            "OmniAVS: invalid val signature"
+        );
+
+        _isValSaltSpent[valPubKey][valSig.salt] = true;
+        _addOperator(operator, valPubKey);
+        _avsDirectory.registerOperatorToAVS(operator, operatorSig);
+
+        emit OperatorAdded(operator, valPubKey);
     }
 
     /**
@@ -125,6 +161,29 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable, PausableUpgrade
      */
     function avsDirectory() external view returns (address) {
         return address(_avsDirectory);
+    }
+
+    /**
+     * @notice Returns the digest hash to be signed by an opeator's validator key on registration.
+     * @param operator      The operator's ethereum address
+     * @param valPubKey     The operator's 64 byte uncompressed secp256k1 validator public key
+     * @param salt          A salt unique to this registration
+     * @param expiry        The timestamp at which this registration expires
+     */
+    function validatorRegistrationDigestHash(address operator, bytes calldata valPubKey, bytes32 salt, uint256 expiry)
+        public
+        view
+        returns (bytes32)
+    {
+        bytes32 structHash = keccak256(abi.encode(VALIDATOR_REGISTRATION_TYPEHASH, operator, valPubKey, salt, expiry));
+        return keccak256(abi.encodePacked("\x19\x01", domainSeparator(), structHash));
+    }
+
+    /**
+     * @notice Domain separator for EIP-712 signatures.
+     */
+    function domainSeparator() public view returns (bytes32) {
+        return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("OmniAVS")), block.chainid, address(this)));
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -160,10 +219,10 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable, PausableUpgrade
 
     /**
      * @notice Returns the currrent list of operator registered as OmniAVS.
-     *         Operator.addr        = The operator's ethereum address
-     *         Operator.pubkey      = The operator's 64 byte uncompressed secp256k1 public key
-     *         Operator.staked      = The total amount staked by the operator, not including delegations
-     *         Operator.delegated   = The total amount delegated, not including operator stake
+     *         Operator.operator            = The operator's ethereum address
+     *         Operator.validatorPubKey     = The operator's 64 byte uncompressed validator secp256k1 public key
+     *         Operator.staked              = The total amount staked by the operator, not including delegations
+     *         Operator.delegated           = The total amount delegated, not including operator stake
      */
     function operators() external view returns (Operator[] memory) {
         return _getOperators();
@@ -364,12 +423,13 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable, PausableUpgrade
     }
 
     /**
-     * @notice Add an operator to internal AVS state (_operators, _operatorPubkeys)
+     * @notice Add an operator to internal AVS state
      * @dev Does not check if operator already exists
      */
-    function _addOperator(address operator, bytes calldata pubkey) private {
+    function _addOperator(address operator, bytes calldata valPubKey) private {
         _operators.push(operator);
-        _operatorPubkeys[operator] = pubkey;
+        validatorPubKey[operator] = valPubKey;
+        _isValActive[valPubKey] = true;
     }
 
     /**
@@ -387,7 +447,9 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable, PausableUpgrade
                 i++;
             }
         }
-        delete _operatorPubkeys[operator];
+
+        _isValActive[validatorPubKey[operator]] = false;
+        delete validatorPubKey[operator];
     }
 
     /**
@@ -509,7 +571,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable, PausableUpgrade
      * @notice Returns true if the operator is in the list of operators
      */
     function _isOperator(address operator) private view returns (bool) {
-        return _operatorPubkeys[operator].length > 0;
+        return validatorPubKey[operator].length > 0;
     }
 
     /**
@@ -526,9 +588,9 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable, PausableUpgrade
 
             // this should never happen, but just in case
             uint96 delegated = total > staked ? total - staked : 0;
-            bytes memory pubkey = _operatorPubkeys[operator];
+            bytes memory valPubKey = validatorPubKey[operator];
 
-            ops[i] = Operator(operator, pubkey, delegated, staked);
+            ops[i] = Operator(operator, valPubKey, delegated, staked);
             unchecked {
                 i++;
             }
