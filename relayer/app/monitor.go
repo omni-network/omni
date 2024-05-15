@@ -31,7 +31,8 @@ func startMonitoring(ctx context.Context, network netconf.Network, xprovider xch
 			}
 		}
 
-		go monitorHeightsForever(ctx, srcChain, cprovider, headsFunc)
+		go monitorHeadsForever(ctx, srcChain, headsFunc)
+		go monitorAttestedForever(ctx, srcChain, cprovider, xprovider, newChainNamer(network))
 	}
 
 	// Monitors below only apply to EVM chains.
@@ -88,18 +89,16 @@ func monitorConsOffsetOnce(ctx context.Context, network netconf.Network, xprovid
 			return nil
 		}
 
-		emitCursor.WithLabelValues(cChain.Name, destChain.Name).Set(float64(emitted.MsgOffset))
+		emitMsgOffset.WithLabelValues(cChain.Name, destChain.Name).Set(float64(emitted.MsgOffset))
 	}
 
 	return nil
 }
 
-// monitorHeightsForever blocks and periodically monitors the latest/safe/final heads
-// and halo attested height of the given chain.
-func monitorHeightsForever(
+// monitorHeadsForever blocks and periodically monitors the latest/safe/final heads of the given chain.
+func monitorHeadsForever(
 	ctx context.Context,
 	chain netconf.Chain,
-	cprovider cchain.Provider,
 	headsFunc func(context.Context) map[ethclient.HeadType]uint64,
 ) {
 	ticker := time.NewTicker(time.Second * 10)
@@ -110,20 +109,7 @@ func monitorHeightsForever(
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			// First get attested head (so it can't be lower than heads).
-			attested, err := getAttested(ctx, chain.ID, cprovider)
-
-			// then get chain heads (so it is always higher than attested).
 			heads := headsFunc(ctx)
-
-			// Then populate gauges "at the same time" so they update "atomically".
-			if err != nil {
-				log.Error(ctx, "Monitoring attested failed (will retry)", err,
-					"chain", chain.Name)
-			} else {
-				attestedHeight.WithLabelValues(chain.Name).Set(float64(attested))
-			}
-
 			for typ, head := range heads {
 				headHeight.WithLabelValues(chain.Name, typ.String()).Set(float64(head))
 			}
@@ -133,6 +119,60 @@ func monitorHeightsForever(
 			}
 		}
 	}
+}
+
+// monitorAttestedForever blocks and periodically monitors the halo attested height and offsets of the given chain.
+func monitorAttestedForever(
+	ctx context.Context,
+	chain netconf.Chain,
+	cprovider cchain.Provider,
+	xprovider xchain.Provider,
+	namer func(uint64) string,
+) {
+	ticker := time.NewTicker(time.Second * 10)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			// First get attested head (so it can't be lower than heads).
+			att, err := getAttested(ctx, chain.ID, cprovider)
+			// Then populate gauges "at the same time" so they update "atomically".
+			if err != nil {
+				log.Error(ctx, "Monitoring attested failed (will retry)", err, "chain", chain.Name)
+				continue
+			}
+
+			attestedHeight.WithLabelValues(chain.Name).Set(float64(att.BlockHeight))
+			attestedBlockOffset.WithLabelValues(chain.Name).Set(float64(att.BlockOffset))
+
+			block, ok, err := xprovider.GetBlock(ctx, chain.ID, att.BlockHeight, att.BlockOffset)
+			if err != nil {
+				log.Error(ctx, "Monitoring attested block failed (will retry)", err, "chain", chain.Name)
+				continue
+			} else if !ok {
+				// This sometimes happens due to races and lag differences, ignore here.
+				continue
+			}
+
+			for stream, msgOffset := range latestMsgOffsets(block.Msgs) {
+				attestedMsgBlockOffset.WithLabelValues(chain.Name, namer(stream.DestChainID)).Set(float64(msgOffset))
+			}
+		}
+	}
+}
+
+func latestMsgOffsets(msgs []xchain.Msg) map[xchain.StreamID]uint64 {
+	resp := make(map[xchain.StreamID]uint64)
+	for _, msg := range msgs {
+		if resp[msg.StreamID] < msg.StreamOffset {
+			resp[msg.StreamID] = msg.StreamOffset
+		}
+	}
+
+	return resp
 }
 
 // getConsXHead returns the latest XBlock height for the consensus chain.
@@ -169,15 +209,15 @@ func getEVMHeads(ctx context.Context, client ethclient.Client) map[ethclient.Hea
 }
 
 // monitorAttestedOnce monitors of the latest attested height by chain.
-func getAttested(ctx context.Context, chainID uint64, cprovider cchain.Provider) (uint64, error) {
+func getAttested(ctx context.Context, chainID uint64, cprovider cchain.Provider) (xchain.Attestation, error) {
 	att, ok, err := cprovider.LatestAttestation(ctx, chainID)
 	if err != nil {
-		return 0, errors.Wrap(err, "latest attestation")
+		return xchain.Attestation{}, errors.Wrap(err, "latest attestation")
 	} else if !ok {
-		return 0, nil
+		return xchain.Attestation{}, nil
 	}
 
-	return att.BlockHeader.BlockOffset, nil
+	return att, nil
 }
 
 // monitorAccountsForever blocks and periodically monitors the relayer accounts
@@ -263,8 +303,10 @@ func monitorOffsetsOnce(ctx context.Context, src, dst uint64, srcChain, dstChain
 		return err
 	}
 
-	emitCursor.WithLabelValues(srcChain, dstChain).Set(float64(emitted.MsgOffset))
-	submitCursor.WithLabelValues(srcChain, dstChain).Set(float64(submitted.MsgOffset))
+	emitMsgOffset.WithLabelValues(srcChain, dstChain).Set(float64(emitted.MsgOffset))
+	// emitBlockOffset isn't statelessly fetched from the source chain, it is calculated and tracked by XProvider...
+	submitMsgOffset.WithLabelValues(srcChain, dstChain).Set(float64(submitted.MsgOffset))
+	submitBlockOffset.WithLabelValues(srcChain, dstChain).Set(float64(submitted.BlockOffset))
 
 	return nil
 }
@@ -288,4 +330,14 @@ func serveMonitoring(address string) <-chan error {
 	}()
 
 	return errChan
+}
+
+func newChainNamer(network netconf.Network) func(uint64) string {
+	return func(chainID uint64) string {
+		if chainID == 0 {
+			return "broadcast"
+		}
+
+		return network.ChainName(chainID)
+	}
 }

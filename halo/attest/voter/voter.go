@@ -251,7 +251,10 @@ func (v *Voter) Vote(block xchain.Block, allowSkip bool) error {
 	lag := time.Since(block.Timestamp).Seconds()
 	createLag.WithLabelValues(v.chains[vote.BlockHeader.ChainId]).Set(lag)
 	createHeight.WithLabelValues(v.chains[vote.BlockHeader.ChainId]).Set(float64(vote.BlockHeader.Height))
-	createOffset.WithLabelValues(v.chains[vote.BlockHeader.ChainId]).Set(float64(vote.BlockHeader.Offset))
+	createBlockOffset.WithLabelValues(v.chains[vote.BlockHeader.ChainId]).Set(float64(vote.BlockHeader.Offset))
+	for stream, msgOffset := range latestMsgOffsets(block.Msgs) {
+		createMsgOffset.WithLabelValues(v.chains[stream.SourceChainID], v.chains[stream.DestChainID]).Set(float64(msgOffset))
+	}
 
 	return v.saveUnsafe()
 }
@@ -570,4 +573,15 @@ func newFilterer(period time.Duration) func(func()) {
 
 		last = time.Now()
 	}
+}
+
+func latestMsgOffsets(msgs []xchain.Msg) map[xchain.StreamID]uint64 {
+	resp := make(map[xchain.StreamID]uint64)
+	for _, msg := range msgs {
+		if resp[msg.StreamID] < msg.StreamOffset {
+			resp[msg.StreamID] = msg.StreamOffset
+		}
+	}
+
+	return resp
 }

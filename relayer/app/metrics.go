@@ -56,18 +56,25 @@ var (
 		Buckets:   prometheus.ExponentialBucketsRange(21_000, 10_000_000, 8),
 	}, []string{"dst_chain"})
 
-	emitCursor = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	emitMsgOffset = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "relayer",
 		Subsystem: "monitor",
-		Name:      "emit_cursor",
-		Help:      "The latest emitted cursor on a source chain for a specific destination chain",
+		Name:      "emit_stream_offset",
+		Help:      "The latest emitted xmsg offset on a source chain for a specific destination chain",
 	}, []string{"src_chain", "dst_chain"})
 
-	submitCursor = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	submitMsgOffset = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "relayer",
 		Subsystem: "monitor",
-		Name:      "submit_cursor",
-		Help:      "The latest submitted cursor on a destination chain for a specific source chain",
+		Name:      "submit_stream_offset",
+		Help:      "The latest submitted xmsg stream offset on a destination chain for a specific source chain",
+	}, []string{"src_chain", "dst_chain"})
+
+	submitBlockOffset = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "relayer",
+		Subsystem: "monitor",
+		Name:      "submit_block_offset",
+		Help:      "The latest submitted xblock offset on a destination chain for a specific source chain",
 	}, []string{"src_chain", "dst_chain"})
 
 	accountBalance = promauto.NewGaugeVec(prometheus.GaugeOpts{
@@ -97,4 +104,18 @@ var (
 		Name:      "halo_attested_height",
 		Help:      "The latest halo attested height of a specific chain",
 	}, []string{"chain"})
+
+	attestedBlockOffset = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "relayer",
+		Subsystem: "monitor",
+		Name:      "halo_attested_block_offset",
+		Help:      "The latest halo attested block offset of a specific chain",
+	}, []string{"chain"})
+
+	attestedMsgBlockOffset = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "relayer",
+		Subsystem: "monitor",
+		Name:      "halo_attested_stream_offset",
+		Help:      "The latest halo attested msg offset of a specific stream",
+	}, []string{"src_chain", "dst_chain"})
 )
