@@ -3,6 +3,7 @@ package voter
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"slices"
 	"sort"
@@ -253,7 +254,7 @@ func (v *Voter) Vote(block xchain.Block, allowSkip bool) error {
 	createHeight.WithLabelValues(v.chains[vote.BlockHeader.ChainId]).Set(float64(vote.BlockHeader.Height))
 	createBlockOffset.WithLabelValues(v.chains[vote.BlockHeader.ChainId]).Set(float64(vote.BlockHeader.Offset))
 	for stream, msgOffset := range latestMsgOffsets(block.Msgs) {
-		createMsgOffset.WithLabelValues(v.chains[stream.SourceChainID], v.chains[stream.DestChainID]).Set(float64(msgOffset))
+		createMsgOffset.WithLabelValues(v.streamName(stream)).Set(float64(msgOffset))
 	}
 
 	return v.saveUnsafe()
@@ -443,6 +444,10 @@ func (v *Voter) saveUnsafe() error {
 	v.instrumentUnsafe()
 
 	return nil
+}
+
+func (v *Voter) streamName(streamID xchain.StreamID) string {
+	return fmt.Sprintf("%s|%s", v.chains[streamID.SourceChainID], v.chains[streamID.DestChainID])
 }
 
 // instrumentUnsafe updates metrics. It is unsafe since it assumes the lock is held.

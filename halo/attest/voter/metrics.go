@@ -33,7 +33,7 @@ var (
 		Subsystem: "voter",
 		Name:      "create_stream_offset",
 		Help:      "Latest created vote xmsg offset per stream",
-	}, []string{"src_chain", "dst_chain"})
+	}, []string{"stream"})
 
 	commitHeight = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "halo",

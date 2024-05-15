@@ -61,14 +61,14 @@ var (
 		Subsystem: "monitor",
 		Name:      "emit_stream_offset",
 		Help:      "The latest emitted xmsg offset on a source chain for a specific destination chain",
-	}, []string{"src_chain", "dst_chain"})
+	}, []string{"stream"})
 
 	submitMsgOffset = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "relayer",
 		Subsystem: "monitor",
 		Name:      "submit_stream_offset",
 		Help:      "The latest submitted xmsg stream offset on a destination chain for a specific source chain",
-	}, []string{"src_chain", "dst_chain"})
+	}, []string{"stream"})
 
 	submitBlockOffset = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "relayer",
@@ -112,10 +112,10 @@ var (
 		Help:      "The latest halo attested block offset of a specific chain",
 	}, []string{"chain"})
 
-	attestedMsgBlockOffset = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	attestedMsgOffset = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "relayer",
 		Subsystem: "monitor",
 		Name:      "halo_attested_stream_offset",
 		Help:      "The latest halo attested msg offset of a specific stream",
-	}, []string{"src_chain", "dst_chain"})
+	}, []string{"stream"})
 )
