@@ -89,7 +89,8 @@ func monitorConsOffsetOnce(ctx context.Context, network netconf.Network, xprovid
 	// Consensus chain messages are broadacst, so query for each EVM chain.
 	for _, destChain := range network.EVMChains() {
 		headType := ethclient.HeadType(destChain.FinalizationStrat)
-		emitted, ok, err := xprovider.GetEmittedCursor(ctx, headType, cChain.ID, destChain.ID)
+		ref := xchain.EmitRef{HeadType: &headType}
+		emitted, ok, err := xprovider.GetEmittedCursor(ctx, ref, cChain.ID, destChain.ID)
 		if err != nil {
 			return err
 		} else if !ok {
@@ -141,7 +142,7 @@ func monitorAttestedForever(
 	xprovider xchain.Provider,
 	network netconf.Network,
 ) {
-	ticker := time.NewTicker(time.Second * 10)
+	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 
 	for {
@@ -160,46 +161,28 @@ func monitorAttestedForever(
 			attestedHeight.WithLabelValues(chain.Name).Set(float64(att.BlockHeight))
 			attestedBlockOffset.WithLabelValues(chain.Name).Set(float64(att.BlockOffset))
 
-			block, ok, err := xprovider.GetBlock(ctx, chain.ID, att.BlockHeight, att.BlockOffset)
-			if err != nil {
-				log.Error(ctx, "Monitoring attested block failed (will retry)", err, "chain", chain.Name)
-				continue
-			} else if !ok {
-				// This sometimes happens due to races and lag differences, ignore here.
-				continue
-			}
+			// Query stream offsets for the original xblock from the chain itself.
+			for _, dstChain := range network.Chains {
+				if chain.ID == dstChain.ID {
+					continue
+				}
 
-			for stream, msgOffset := range latestMsgOffsets(block.Msgs, network) {
-				attestedMsgOffset.WithLabelValues(streamName(network.ChainName, stream)).Set(float64(msgOffset))
+				ref := xchain.EmitRef{
+					Height: &att.BlockHeight,
+				}
+
+				cursor, ok, err := xprovider.GetEmittedCursor(ctx, ref, chain.ID, dstChain.ID)
+				if err != nil {
+					log.Error(ctx, "Monitoring attested stream offset failed (will retry)", err, "chain", chain.Name)
+					break
+				} else if !ok {
+					continue
+				}
+
+				attestedMsgOffset.WithLabelValues(streamName(network.ChainName, cursor.StreamID)).Set(float64(cursor.MsgOffset))
 			}
 		}
 	}
-}
-
-func latestMsgOffsets(msgs []xchain.Msg, network netconf.Network) map[xchain.StreamID]uint64 {
-	resp := make(map[xchain.StreamID]uint64)
-	for _, msg := range msgs {
-		if msg.DestChainID == 0 {
-			// Artificially split broadcast msgs into known chains for metrics.
-			for _, dstChain := range network.EVMChains() {
-				streamID := xchain.StreamID{
-					SourceChainID: msg.SourceChainID,
-					DestChainID:   dstChain.ID,
-				}
-				if resp[streamID] < msg.StreamOffset {
-					resp[streamID] = msg.StreamOffset
-				}
-			}
-
-			continue
-		}
-
-		if resp[msg.StreamID] < msg.StreamOffset {
-			resp[msg.StreamID] = msg.StreamOffset
-		}
-	}
-
-	return resp
 }
 
 // getConsXHead returns the latest XBlock height for the consensus chain.
@@ -318,7 +301,9 @@ func monitorOffsetsForever(ctx context.Context, streamName string, src, dst netc
 // destination chain.
 func monitorOffsetsOnce(ctx context.Context, streamName string, src, dst netconf.Chain,
 	xprovider xchain.Provider) error {
-	emitted, ok, err := xprovider.GetEmittedCursor(ctx, ethclient.HeadType(src.FinalizationStrat), src.ID, dst.ID)
+	headType := ethclient.HeadType(src.FinalizationStrat)
+	ref := xchain.EmitRef{HeadType: &headType}
+	emitted, ok, err := xprovider.GetEmittedCursor(ctx, ref, src.ID, dst.ID)
 	if err != nil {
 		return err
 	} else if !ok {

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/cchain"
-	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
 )
@@ -143,7 +142,7 @@ func (*Mock) GetSubmittedCursor(_ context.Context, destChain uint64, srcChain ui
 	}}, true, nil
 }
 
-func (*Mock) GetEmittedCursor(_ context.Context, _ ethclient.HeadType, srcChainID uint64, destChainID uint64,
+func (*Mock) GetEmittedCursor(_ context.Context, _ xchain.EmitRef, srcChainID uint64, destChainID uint64,
 ) (xchain.StreamCursor, bool, error) {
 	return xchain.StreamCursor{StreamID: xchain.StreamID{
 		SourceChainID: srcChainID,

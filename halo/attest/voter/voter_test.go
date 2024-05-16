@@ -11,7 +11,6 @@ import (
 
 	"github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/halo/attest/voter"
-	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -458,7 +457,7 @@ func (stubProvider) GetSubmittedCursor(context.Context, uint64, uint64) (xchain.
 	panic("unexpected")
 }
 
-func (stubProvider) GetEmittedCursor(context.Context, ethclient.HeadType, uint64, uint64) (xchain.StreamCursor, bool, error) {
+func (stubProvider) GetEmittedCursor(context.Context, xchain.EmitRef, uint64, uint64) (xchain.StreamCursor, bool, error) {
 	panic("unexpected")
 }
 
