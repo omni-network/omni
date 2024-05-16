@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/tracer"
@@ -22,29 +23,21 @@ import (
 //
 // Note that the BlockOffset field is not populated for emit cursors, since it isn't stored on-chain
 // but tracked off-chain.
-func (p *Provider) GetEmittedCursor(ctx context.Context, headType ethclient.HeadType, sourceChainID uint64, destinationChainID uint64,
+func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, sourceChainID uint64, destinationChainID uint64,
 ) (xchain.StreamCursor, bool, error) {
 	const unknownBlockOffset uint64 = 0
 	if sourceChainID == p.cChainID {
-		// For consensus chain (instant finality), we can query the latest consensus xblock.
-		// And since consensus xmsgs are broadcast, we use the provided destination chain ID.
-		xblock, ok, err := p.cProvider.XBlock(ctx, 0, true)
+		block, err := getConsXBlock(ctx, ref, p.cProvider)
 		if err != nil {
-			return xchain.StreamCursor{}, false, errors.Wrap(err, "fetch consensus xblock")
-		} else if !ok {
-			return xchain.StreamCursor{}, false, errors.New("no consensus xblocks [BUG]")
-		} else if len(xblock.Msgs) != 1 {
-			return xchain.StreamCursor{}, false, errors.New("unexpected xblock msg conut [BUG]")
-		} else if xblock.Msgs[0].DestChainID != 0 {
-			return xchain.StreamCursor{}, false, errors.New("non-broadcast consensus chain xmsg [BUG]")
+			return xchain.StreamCursor{}, false, err
 		}
 
 		return xchain.StreamCursor{
 			StreamID: xchain.StreamID{
 				SourceChainID: sourceChainID,
-				DestChainID:   destinationChainID,
+				DestChainID:   destinationChainID, // Consensus xmsgs are broadcast, so use the provided destination chain ID.
 			},
-			MsgOffset:   xblock.Msgs[0].StreamOffset,
+			MsgOffset:   block.Msgs[0].StreamOffset, // Consensus xblocks only have a single xmsg.
 			BlockOffset: unknownBlockOffset,
 		}, true, nil
 	}
@@ -60,14 +53,16 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, headType ethclient.Head
 	}
 
 	opts := &bind.CallOpts{Context: ctx}
-	if headType != ethclient.HeadLatest {
+	if ref.HeadType != nil && *ref.HeadType != ethclient.HeadLatest {
 		// Populate an explicit block number if not querying latest head.
-		header, err := rpcClient.HeaderByType(ctx, headType)
+		header, err := rpcClient.HeaderByType(ctx, *ref.HeadType)
 		if err != nil {
 			return xchain.StreamCursor{}, false, err
 		}
 
 		opts.BlockNumber = header.Number
+	} else if ref.Height != nil {
+		opts.BlockNumber = big.NewInt(int64(*ref.Height))
 	}
 
 	offset, err := caller.OutXStreamOffset(opts, destinationChainID)
@@ -361,6 +356,30 @@ func (p *Provider) headerByStrategy(ctx context.Context, chainID uint64) (*types
 	p.stratHeads[chainID] = header.Number.Uint64()
 
 	return header, nil
+}
+
+func getConsXBlock(ctx context.Context, ref xchain.EmitRef, cprov cchain.Provider) (xchain.Block, error) {
+	var height uint64
+	var latest bool
+	if ref.Height != nil {
+		height = *ref.Height
+	} else if ref.HeadType != nil {
+		// For consensus chain (instant finality), we can query the latest consensus xblock.
+		latest = true
+	}
+
+	xblock, ok, err := cprov.XBlock(ctx, height, latest)
+	if err != nil {
+		return xchain.Block{}, errors.Wrap(err, "fetch consensus xblock")
+	} else if !ok {
+		return xchain.Block{}, errors.New("no consensus xblocks [BUG]")
+	} else if len(xblock.Msgs) != 1 {
+		return xchain.Block{}, errors.New("unexpected xblock msg conut [BUG]")
+	} else if xblock.Msgs[0].DestChainID != 0 {
+		return xchain.Block{}, errors.New("non-broadcast consensus chain xmsg [BUG]")
+	}
+
+	return xblock, nil
 }
 
 func spanName(method string) string {
