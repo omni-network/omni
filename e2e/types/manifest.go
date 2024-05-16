@@ -55,6 +55,8 @@ const (
 	PerturbRestart Perturb = "restart"
 	// PerturbStopStart defines a perturbation that stops and then starts a docker container.
 	PerturbStopStart Perturb = "stopstart"
+	// PerturbRollback defines a perturbation that stops a halo node, performs a rollback, then starts it again.
+	PerturbRollback Perturb = "rollback"
 )
 
 // Manifest wraps e2e.Manifest with additional omni-specific fields.

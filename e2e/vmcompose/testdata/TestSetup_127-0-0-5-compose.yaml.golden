@@ -6,10 +6,10 @@ networks:
     driver: bridge
 
 services:
-  validator02:
+  fullnode01:
     labels:
       e2e: true
-    container_name: validator02
+    container_name: fullnode01
     image: omniops/halo:7d1ae53
     init: true
     ports:
@@ -17,32 +17,17 @@ services:
     - 26657:26657
     - 6060
     volumes:
-    - ./validator02:/halo
-    depends_on:
-      validator02_evm:
-        condition: service_healthy
+    - ./fullnode01:/halo
     networks:
       test:
         
 
 
   # Use geth as the omni EVMs.
-  # Initialises geth files and folder from provided genesis file.
-  validator02_evm-init:
+  fullnode01_evm:
     labels:
       e2e: true
-    container_name: validator02_evm-init
-    image: "ethereum/client-go:v1.14.2"
-    command: --state.scheme=path --datadir=/geth init /geth/genesis.json
-    volumes:
-      - ./validator02_evm:/geth
-    networks:
-      test:
-
-  validator02_evm:
-    labels:
-      e2e: true
-    container_name: validator02_evm
+    container_name: fullnode01_evm
     image: "ethereum/client-go:v1.14.2"
     command:
       - --config=/geth/config.toml
@@ -58,15 +43,12 @@ services:
       - 30303:30303
       - 8546
       - 6060
-    depends_on:
-      validator02_evm-init:
-        condition: service_completed_successfully
     healthcheck:
       test: "nc -z localhost 8545"
       interval: 1s
       retries: 30
     volumes:
-      - ./validator02_evm:/geth
+      - ./fullnode01_evm:/geth
     networks:
       test:
         

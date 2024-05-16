@@ -14,7 +14,6 @@ import (
 	"github.com/omni-network/omni/e2e/docker"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -105,6 +104,16 @@ func (p *Provider) Setup() error {
 		}
 
 		err = os.WriteFile(filepath.Join(p.Testnet.Dir, vmComposeFile(vmIP)), compose, 0o644)
+		if err != nil {
+			return errors.Wrap(err, "write compose file")
+		}
+
+		evmInit, err := docker.GenerateOmniEVMInitFile(def)
+		if err != nil {
+			return errors.Wrap(err, "generate evm init file")
+		}
+
+		err = os.WriteFile(filepath.Join(p.Testnet.Dir, vmInitFile(vmIP)), evmInit, 0o755)
 		if err != nil {
 			return errors.Wrap(err, "write compose file")
 		}
@@ -210,18 +219,18 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.UpgradeConfig) error {
 				return errors.Wrap(err, "copy docker compose", "vm", vmName)
 			}
 
-			// Figure out whether we need to call "docker compose down" before "docker compose up"
-			var maybeDown string
-			if services := p.Data.ServicesByInstance(instance); containsEVM(services) {
-				if containsAnvil(services) {
-					return errors.New("cannot upgrade VM with both omni_evm and anvil containers since omni_evm needs downing and anvil cannot be restarted", "vm", vmName)
-				}
-				maybeDown = "sudo docker compose down && "
+			log.Debug(ctx, "Copying evm-init.sh", "vm", vmName)
+			initFile := vmInitFile(instance.IPAddress.String())
+			localInitPath := filepath.Join(p.Testnet.Dir, initFile)
+			remoteInitPath := filepath.Join("/omni", p.Testnet.Name, initFile)
+			if err := copyFileToVM(ctx, vmName, localInitPath, remoteInitPath); err != nil {
+				return errors.Wrap(err, "copy evm init", "vm", vmName)
 			}
+
+			// TODO(corver): Once evm-init.sh is idempotent, call it here.
 
 			startCmd := fmt.Sprintf("cd /omni/%s && "+
 				"sudo mv %s docker-compose.yaml && "+
-				maybeDown+
 				"sudo docker compose up -d",
 				p.Testnet.Name, composeFile)
 
@@ -274,12 +283,15 @@ func (p *Provider) StartNodes(ctx context.Context, _ ...*e2e.Node) error {
 		// TODO(corver): Only start additional services and then start halo as per above StartNodes.
 		for vmName, instance := range p.Data.VMs {
 			composeFile := vmComposeFile(instance.IPAddress.String())
+			initFile := vmInitFile(instance.IPAddress.String())
 			agentFile := vmAgentFile(instance.IPAddress.String())
 			startCmd := fmt.Sprintf("cd /omni/%s && "+
 				"sudo mv %s docker-compose.yaml && "+
+				"sudo mv %s evm-init.sh && "+
 				"sudo mv %s prometheus/prometheus.yml && "+
+				"sudo ./evm-init.sh && "+
 				"sudo docker compose up -d",
-				p.Testnet.Name, composeFile, agentFile)
+				p.Testnet.Name, composeFile, initFile, agentFile)
 
 			err := execOnVM(ctx, vmName, startCmd)
 			if err != nil {
@@ -368,48 +380,13 @@ func copyFileToVM(ctx context.Context, vmName string, localPath string, remotePa
 }
 
 func vmAgentFile(internalIP string) string {
-	return "prometheus/" + strings.ReplaceAll(internalIP, ".", "_") + "_prometheus.yml"
+	return "prometheus/" + strings.ReplaceAll(internalIP, ".", "-") + "-prometheus.yml"
 }
 
 func vmComposeFile(internalIP string) string {
-	return strings.ReplaceAll(internalIP, ".", "_") + "_compose.yaml"
+	return strings.ReplaceAll(internalIP, ".", "-") + "-compose.yaml"
 }
 
-// containsEVM returns true if the services map contains an omni evm.
-// TODO(corver): This isn't very robust.
-func containsEVM(services map[string]bool) bool {
-	for service, ok := range services {
-		if !ok {
-			continue
-		}
-		if strings.Contains(service, "evm") {
-			return true
-		}
-	}
-
-	return false
-}
-
-// containsAnvil returns true if the services map contains an anvil chain.
-func containsAnvil(services map[string]bool) bool {
-	anvils := map[uint64]bool{
-		evmchain.IDMockL1Fast: true,
-		evmchain.IDMockL1Slow: true,
-		evmchain.IDMockL2:     true,
-	}
-	for service, ok := range services {
-		if !ok {
-			continue
-		}
-		meta, ok := evmchain.MetadataByName(service)
-		if !ok {
-			continue
-		} else if !anvils[meta.ChainID] {
-			continue
-		}
-
-		return true
-	}
-
-	return false
+func vmInitFile(internalIP string) string {
+	return strings.ReplaceAll(internalIP, ".", "-") + "-evm-init.sh"
 }

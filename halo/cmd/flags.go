@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/omni-network/omni/halo/app"
 	halocfg "github.com/omni-network/omni/halo/config"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/netconf"
@@ -28,6 +29,11 @@ func bindRunFlags(cmd *cobra.Command, cfg *halocfg.Config) {
 	flags.DurationVar(&cfg.EVMBuildDelay, "evm-build-delay", cfg.EVMBuildDelay, "Minimum delay between triggering and fetching a EVM payload build")
 	flags.BoolVar(&cfg.EVMBuildOptimistic, "evm-build-optimistic", cfg.EVMBuildOptimistic, "Enables optimistic building of EVM payloads on previous block finalize")
 	flags.StringVar(&cfg.EigenKeyPassword, "eigenlayer-key-password", cfg.EigenKeyPassword, "Eigenlayer generated operator key password. Not required if CombetBFT priv_validator_key.json is used")
+}
+
+func bindRollbackFlags(flags *pflag.FlagSet, cfg *app.RollbackConfig) {
+	flags.BoolVar(&cfg.RollbackEVM, "rollback-evm", false, "Attempt to rollback the Omni EVM to previous height via Engine API")
+	flags.BoolVar(&cfg.RemoveCometBlock, "hard", false, "Remove last block as well as state")
 }
 
 func bindInitFlags(flags *pflag.FlagSet, cfg *InitConfig) {

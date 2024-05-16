@@ -28,9 +28,6 @@ services:
     - 6060
     volumes:
     - ./{{ .Name }}:/halo
-    depends_on:
-      {{ index $.NodeOmniEVMs .Name }}:
-        condition: service_healthy
     networks:
       {{ $.NetworkName }}:
         {{ if $.Network }}ipv4_address: {{ .InternalIP }}{{ end }}
@@ -64,18 +61,6 @@ services:
 
   # Use geth as the omni EVMs.
 {{- range .OmniEVMs }}
-  # Initialises geth files and folder from provided genesis file.
-  {{ .InstanceName }}-init:
-    labels:
-      e2e: true
-    container_name: {{ .InstanceName }}-init
-    image: "ethereum/client-go:{{ $.GethTag }}"
-    command: --state.scheme={{ if .IsArchive }}hash{{ else }}path{{ end }} --datadir=/geth init /geth/genesis.json
-    volumes:
-      - ./{{ .InstanceName }}:/geth
-    networks:
-      {{ $.NetworkName }}:
-
   {{ .InstanceName }}:
     labels:
       e2e: true
@@ -95,9 +80,6 @@ services:
       - {{ if $.BindAll }}30303:{{end}}30303
       - 8546
       - 6060
-    depends_on:
-      {{ .InstanceName }}-init:
-        condition: service_completed_successfully
     healthcheck:
       test: "nc -z localhost 8545"
       interval: 1s

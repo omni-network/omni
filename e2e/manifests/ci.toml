@@ -24,3 +24,4 @@ full01 = 2 # Add full01 as validator by depositing 2 ether $OMNI
 [perturb]
 validator02_evm = ["stopstart"]
 relayer = ["restart"]
+validator03 = ["rollback"]

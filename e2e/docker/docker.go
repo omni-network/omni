@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	osexec "os/exec"
 	"path/filepath"
 	"runtime"
 	"sync"
@@ -29,6 +30,11 @@ const ProviderName = "docker"
 //
 //go:embed compose.yaml.tmpl
 var composeTmpl []byte
+
+// evmInitTmpl is a bash script that initializes all omni-evm geth nodes.
+//
+//go:embed init-omni-evms.sh.tmpl
+var evmInitTmpl []byte
 
 var _ types.InfraProvider = (*Provider)(nil)
 
@@ -99,6 +105,16 @@ func (p *Provider) Setup() error {
 		return errors.Wrap(err, "write compose file")
 	}
 
+	bz, err = GenerateOmniEVMInitFile(def)
+	if err != nil {
+		return errors.Wrap(err, "generate evm init file")
+	}
+
+	err = os.WriteFile(filepath.Join(p.Testnet.Dir, "evm-init.sh"), bz, 0o755)
+	if err != nil {
+		return errors.Wrap(err, "write init file")
+	}
+
 	return nil
 }
 
@@ -115,6 +131,10 @@ func (p *Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 		err = cmtdocker.ExecCompose(ctx, p.Testnet.Dir, "create") // This fails if containers not available.
 		if err != nil {
 			err = errors.Wrap(err, "create containers")
+			return
+		}
+
+		if err = ExecEVMInit(ctx, p.Testnet.Dir, "evm-init.sh"); err != nil {
 			return
 		}
 
@@ -198,6 +218,32 @@ func GenerateComposeFile(def ComposeDef) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+func GenerateOmniEVMInitFile(def ComposeDef) ([]byte, error) {
+	tmpl, err := template.New("init").Parse(string(evmInitTmpl))
+	if err != nil {
+		return nil, errors.Wrap(err, "parse template")
+	}
+
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, def)
+	if err != nil {
+		return nil, errors.Wrap(err, "execute template")
+	}
+
+	return buf.Bytes(), nil
+}
+
+func ExecEVMInit(ctx context.Context, dir string, evmInitFilename string) error {
+	cmd := osexec.CommandContext(ctx, "bash", evmInitFilename)
+	cmd.Dir = dir
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return errors.Wrap(err, "exec init command", "output", string(out))
+	}
+
+	return nil
 }
 
 // CleanCmds returns generic docker commands to clean up docker containers and networks.

@@ -55,6 +55,16 @@ func perturbService(ctx context.Context, service string, testnetDir string, pert
 		if err := docker.ExecCompose(ctx, testnetDir, "start", service); err != nil {
 			return errors.Wrap(err, "start service")
 		}
+	case types.PerturbRollback:
+		if err := docker.ExecCompose(ctx, testnetDir, "stop", service); err != nil {
+			return errors.Wrap(err, "stop service")
+		}
+		if err := docker.ExecCompose(ctx, testnetDir, "run", service, "rollback"); err != nil {
+			return errors.Wrap(err, "rollback service")
+		}
+		if err := docker.ExecCompose(ctx, testnetDir, "start", service); err != nil {
+			return errors.Wrap(err, "start service")
+		}
 	default:
 		return errors.New("unknown service perturbation")
 	}

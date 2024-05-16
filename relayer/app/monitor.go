@@ -33,7 +33,7 @@ func startMonitoring(ctx context.Context, network netconf.Network, xprovider xch
 		}
 
 		go monitorHeadsForever(ctx, srcChain, headsFunc)
-		go monitorAttestedForever(ctx, srcChain, cprovider, xprovider, newChainNamer(network))
+		go monitorAttestedForever(ctx, srcChain, cprovider, xprovider, network)
 	}
 
 	// Monitors below only apply to EVM chains.
@@ -139,7 +139,7 @@ func monitorAttestedForever(
 	chain netconf.Chain,
 	cprovider cchain.Provider,
 	xprovider xchain.Provider,
-	namer func(uint64) string,
+	network netconf.Network,
 ) {
 	ticker := time.NewTicker(time.Second * 10)
 	defer ticker.Stop()
@@ -169,16 +169,31 @@ func monitorAttestedForever(
 				continue
 			}
 
-			for stream, msgOffset := range latestMsgOffsets(block.Msgs) {
-				attestedMsgOffset.WithLabelValues(streamName(namer, stream)).Set(float64(msgOffset))
+			for stream, msgOffset := range latestMsgOffsets(block.Msgs, network) {
+				attestedMsgOffset.WithLabelValues(streamName(network.ChainName, stream)).Set(float64(msgOffset))
 			}
 		}
 	}
 }
 
-func latestMsgOffsets(msgs []xchain.Msg) map[xchain.StreamID]uint64 {
+func latestMsgOffsets(msgs []xchain.Msg, network netconf.Network) map[xchain.StreamID]uint64 {
 	resp := make(map[xchain.StreamID]uint64)
 	for _, msg := range msgs {
+		if msg.DestChainID == 0 {
+			// Artificially split broadcast msgs into known chains for metrics.
+			for _, dstChain := range network.EVMChains() {
+				streamID := xchain.StreamID{
+					SourceChainID: msg.SourceChainID,
+					DestChainID:   dstChain.ID,
+				}
+				if resp[streamID] < msg.StreamOffset {
+					resp[streamID] = msg.StreamOffset
+				}
+			}
+
+			continue
+		}
+
 		if resp[msg.StreamID] < msg.StreamOffset {
 			resp[msg.StreamID] = msg.StreamOffset
 		}
@@ -342,16 +357,6 @@ func serveMonitoring(address string) <-chan error {
 	}()
 
 	return errChan
-}
-
-func newChainNamer(network netconf.Network) func(uint64) string {
-	return func(chainID uint64) string {
-		if chainID == 0 {
-			return "broadcast"
-		}
-
-		return network.ChainName(chainID)
-	}
 }
 
 func streamName(namer func(uint64) string, streamID xchain.StreamID) string {
