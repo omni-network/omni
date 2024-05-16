@@ -84,7 +84,7 @@ func (s Static) ExecutionSeeds() []string {
 	return resp
 }
 
-// Use random runid for version in ephemeral networks.
+// Use random runid for staging version.
 //
 //nolint:gochecknoglobals // Static ID
 var runid = uuid.New().String()
@@ -116,12 +116,12 @@ var (
 //nolint:gochecknoglobals // Static mappings.
 var statics = map[ID]Static{
 	Simnet: {
-		Version:              runid,
+		Version:              "simnet",
 		OmniExecutionChainID: evmchain.IDOmniEphemeral,
 		MaxValidators:        maxValidators,
 	},
 	Devnet: {
-		Version:              runid,
+		Version:              "devnet",
 		OmniExecutionChainID: evmchain.IDOmniEphemeral,
 		MaxValidators:        maxValidators,
 	},
