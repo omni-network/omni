@@ -160,13 +160,13 @@ func (ru *ReceiptUpdate) SetNillableCreatedAt(t *time.Time) *ReceiptUpdate {
 	return ru
 }
 
-// AddBlockIDs adds the "Block" edge to the Block entity by IDs.
+// AddBlockIDs adds the "block" edge to the Block entity by IDs.
 func (ru *ReceiptUpdate) AddBlockIDs(ids ...int) *ReceiptUpdate {
 	ru.mutation.AddBlockIDs(ids...)
 	return ru
 }
 
-// AddBlock adds the "Block" edges to the Block entity.
+// AddBlock adds the "block" edges to the Block entity.
 func (ru *ReceiptUpdate) AddBlock(b ...*Block) *ReceiptUpdate {
 	ids := make([]int, len(b))
 	for i := range b {
@@ -175,13 +175,13 @@ func (ru *ReceiptUpdate) AddBlock(b ...*Block) *ReceiptUpdate {
 	return ru.AddBlockIDs(ids...)
 }
 
-// AddMsgIDs adds the "Msgs" edge to the Msg entity by IDs.
+// AddMsgIDs adds the "msgs" edge to the Msg entity by IDs.
 func (ru *ReceiptUpdate) AddMsgIDs(ids ...int) *ReceiptUpdate {
 	ru.mutation.AddMsgIDs(ids...)
 	return ru
 }
 
-// AddMsgs adds the "Msgs" edges to the Msg entity.
+// AddMsgs adds the "msgs" edges to the Msg entity.
 func (ru *ReceiptUpdate) AddMsgs(m ...*Msg) *ReceiptUpdate {
 	ids := make([]int, len(m))
 	for i := range m {
@@ -195,19 +195,19 @@ func (ru *ReceiptUpdate) Mutation() *ReceiptMutation {
 	return ru.mutation
 }
 
-// ClearBlock clears all "Block" edges to the Block entity.
+// ClearBlock clears all "block" edges to the Block entity.
 func (ru *ReceiptUpdate) ClearBlock() *ReceiptUpdate {
 	ru.mutation.ClearBlock()
 	return ru
 }
 
-// RemoveBlockIDs removes the "Block" edge to Block entities by IDs.
+// RemoveBlockIDs removes the "block" edge to Block entities by IDs.
 func (ru *ReceiptUpdate) RemoveBlockIDs(ids ...int) *ReceiptUpdate {
 	ru.mutation.RemoveBlockIDs(ids...)
 	return ru
 }
 
-// RemoveBlock removes "Block" edges to Block entities.
+// RemoveBlock removes "block" edges to Block entities.
 func (ru *ReceiptUpdate) RemoveBlock(b ...*Block) *ReceiptUpdate {
 	ids := make([]int, len(b))
 	for i := range b {
@@ -216,19 +216,19 @@ func (ru *ReceiptUpdate) RemoveBlock(b ...*Block) *ReceiptUpdate {
 	return ru.RemoveBlockIDs(ids...)
 }
 
-// ClearMsgs clears all "Msgs" edges to the Msg entity.
+// ClearMsgs clears all "msgs" edges to the Msg entity.
 func (ru *ReceiptUpdate) ClearMsgs() *ReceiptUpdate {
 	ru.mutation.ClearMsgs()
 	return ru
 }
 
-// RemoveMsgIDs removes the "Msgs" edge to Msg entities by IDs.
+// RemoveMsgIDs removes the "msgs" edge to Msg entities by IDs.
 func (ru *ReceiptUpdate) RemoveMsgIDs(ids ...int) *ReceiptUpdate {
 	ru.mutation.RemoveMsgIDs(ids...)
 	return ru
 }
 
-// RemoveMsgs removes "Msgs" edges to Msg entities.
+// RemoveMsgs removes "msgs" edges to Msg entities.
 func (ru *ReceiptUpdate) RemoveMsgs(m ...*Msg) *ReceiptUpdate {
 	ids := make([]int, len(m))
 	for i := range m {
@@ -575,13 +575,13 @@ func (ruo *ReceiptUpdateOne) SetNillableCreatedAt(t *time.Time) *ReceiptUpdateOn
 	return ruo
 }
 
-// AddBlockIDs adds the "Block" edge to the Block entity by IDs.
+// AddBlockIDs adds the "block" edge to the Block entity by IDs.
 func (ruo *ReceiptUpdateOne) AddBlockIDs(ids ...int) *ReceiptUpdateOne {
 	ruo.mutation.AddBlockIDs(ids...)
 	return ruo
 }
 
-// AddBlock adds the "Block" edges to the Block entity.
+// AddBlock adds the "block" edges to the Block entity.
 func (ruo *ReceiptUpdateOne) AddBlock(b ...*Block) *ReceiptUpdateOne {
 	ids := make([]int, len(b))
 	for i := range b {
@@ -590,13 +590,13 @@ func (ruo *ReceiptUpdateOne) AddBlock(b ...*Block) *ReceiptUpdateOne {
 	return ruo.AddBlockIDs(ids...)
 }
 
-// AddMsgIDs adds the "Msgs" edge to the Msg entity by IDs.
+// AddMsgIDs adds the "msgs" edge to the Msg entity by IDs.
 func (ruo *ReceiptUpdateOne) AddMsgIDs(ids ...int) *ReceiptUpdateOne {
 	ruo.mutation.AddMsgIDs(ids...)
 	return ruo
 }
 
-// AddMsgs adds the "Msgs" edges to the Msg entity.
+// AddMsgs adds the "msgs" edges to the Msg entity.
 func (ruo *ReceiptUpdateOne) AddMsgs(m ...*Msg) *ReceiptUpdateOne {
 	ids := make([]int, len(m))
 	for i := range m {
@@ -610,19 +610,19 @@ func (ruo *ReceiptUpdateOne) Mutation() *ReceiptMutation {
 	return ruo.mutation
 }
 
-// ClearBlock clears all "Block" edges to the Block entity.
+// ClearBlock clears all "block" edges to the Block entity.
 func (ruo *ReceiptUpdateOne) ClearBlock() *ReceiptUpdateOne {
 	ruo.mutation.ClearBlock()
 	return ruo
 }
 
-// RemoveBlockIDs removes the "Block" edge to Block entities by IDs.
+// RemoveBlockIDs removes the "block" edge to Block entities by IDs.
 func (ruo *ReceiptUpdateOne) RemoveBlockIDs(ids ...int) *ReceiptUpdateOne {
 	ruo.mutation.RemoveBlockIDs(ids...)
 	return ruo
 }
 
-// RemoveBlock removes "Block" edges to Block entities.
+// RemoveBlock removes "block" edges to Block entities.
 func (ruo *ReceiptUpdateOne) RemoveBlock(b ...*Block) *ReceiptUpdateOne {
 	ids := make([]int, len(b))
 	for i := range b {
@@ -631,19 +631,19 @@ func (ruo *ReceiptUpdateOne) RemoveBlock(b ...*Block) *ReceiptUpdateOne {
 	return ruo.RemoveBlockIDs(ids...)
 }
 
-// ClearMsgs clears all "Msgs" edges to the Msg entity.
+// ClearMsgs clears all "msgs" edges to the Msg entity.
 func (ruo *ReceiptUpdateOne) ClearMsgs() *ReceiptUpdateOne {
 	ruo.mutation.ClearMsgs()
 	return ruo
 }
 
-// RemoveMsgIDs removes the "Msgs" edge to Msg entities by IDs.
+// RemoveMsgIDs removes the "msgs" edge to Msg entities by IDs.
 func (ruo *ReceiptUpdateOne) RemoveMsgIDs(ids ...int) *ReceiptUpdateOne {
 	ruo.mutation.RemoveMsgIDs(ids...)
 	return ruo
 }
 
-// RemoveMsgs removes "Msgs" edges to Msg entities.
+// RemoveMsgs removes "msgs" edges to Msg entities.
 func (ruo *ReceiptUpdateOne) RemoveMsgs(m ...*Msg) *ReceiptUpdateOne {
 	ids := make([]int, len(m))
 	for i := range m {

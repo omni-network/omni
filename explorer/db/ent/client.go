@@ -346,7 +346,7 @@ func (c *BlockClient) GetX(ctx context.Context, id int) *Block {
 	return obj
 }
 
-// QueryMsgs queries the Msgs edge of a Block.
+// QueryMsgs queries the msgs edge of a Block.
 func (c *BlockClient) QueryMsgs(b *Block) *MsgQuery {
 	query := (&MsgClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
@@ -362,7 +362,7 @@ func (c *BlockClient) QueryMsgs(b *Block) *MsgQuery {
 	return query
 }
 
-// QueryReceipts queries the Receipts edge of a Block.
+// QueryReceipts queries the receipts edge of a Block.
 func (c *BlockClient) QueryReceipts(b *Block) *ReceiptQuery {
 	query := (&ReceiptClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
@@ -644,7 +644,7 @@ func (c *MsgClient) GetX(ctx context.Context, id int) *Msg {
 	return obj
 }
 
-// QueryBlock queries the Block edge of a Msg.
+// QueryBlock queries the block edge of a Msg.
 func (c *MsgClient) QueryBlock(m *Msg) *BlockQuery {
 	query := (&BlockClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
@@ -660,7 +660,7 @@ func (c *MsgClient) QueryBlock(m *Msg) *BlockQuery {
 	return query
 }
 
-// QueryReceipts queries the Receipts edge of a Msg.
+// QueryReceipts queries the receipts edge of a Msg.
 func (c *MsgClient) QueryReceipts(m *Msg) *ReceiptQuery {
 	query := (&ReceiptClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
@@ -810,7 +810,7 @@ func (c *ReceiptClient) GetX(ctx context.Context, id int) *Receipt {
 	return obj
 }
 
-// QueryBlock queries the Block edge of a Receipt.
+// QueryBlock queries the block edge of a Receipt.
 func (c *ReceiptClient) QueryBlock(r *Receipt) *BlockQuery {
 	query := (&BlockClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
@@ -826,7 +826,7 @@ func (c *ReceiptClient) QueryBlock(r *Receipt) *BlockQuery {
 	return query
 }
 
-// QueryMsgs queries the Msgs edge of a Receipt.
+// QueryMsgs queries the msgs edge of a Receipt.
 func (c *ReceiptClient) QueryMsgs(r *Receipt) *MsgQuery {
 	query := (&MsgClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {

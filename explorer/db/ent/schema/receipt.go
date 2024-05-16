@@ -38,15 +38,15 @@ func (Receipt) Fields() []ent.Field {
 // Edges of the Receipt.
 func (Receipt) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("Block", Block.Type).Ref("Receipts"),
-		edge.From("Msgs", Msg.Type).Ref("Receipts"),
+		edge.From("block", Block.Type).Ref("receipts"),
+		edge.From("msgs", Msg.Type).Ref("receipts"),
 	}
 }
 
 // Indexes of the Receipt.
 func (Receipt) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("block_hash"),
+		index.Fields("tx_hash"),
 		index.Fields("source_chain_id", "dest_chain_id", "offset"),
 	}
 }
@@ -69,14 +69,14 @@ func (Receipt) Hooks() []ent.Hook {
 						return nil, errors.New("dest chain id missing")
 					}
 
-					streamOffset, ok := r.Offset()
+					offset, ok := r.Offset()
 					if !ok {
 						return nil, errors.New("stream offset missing")
 					}
 					matches, err := r.Client().Msg.Query().Where(
 						msg.SourceChainID(sourceChainID),
 						msg.DestChainID(destChainID),
-						msg.Offset(streamOffset),
+						msg.Offset(offset),
 					).All(ctx)
 					if err != nil {
 						return nil, err

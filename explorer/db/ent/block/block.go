@@ -25,18 +25,18 @@ const (
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// EdgeMsgs holds the string denoting the msgs edge name in mutations.
-	EdgeMsgs = "Msgs"
+	EdgeMsgs = "msgs"
 	// EdgeReceipts holds the string denoting the receipts edge name in mutations.
-	EdgeReceipts = "Receipts"
+	EdgeReceipts = "receipts"
 	// Table holds the table name of the block in the database.
 	Table = "blocks"
-	// MsgsTable is the table that holds the Msgs relation/edge. The primary key declared below.
-	MsgsTable = "block_Msgs"
+	// MsgsTable is the table that holds the msgs relation/edge. The primary key declared below.
+	MsgsTable = "block_msgs"
 	// MsgsInverseTable is the table name for the Msg entity.
 	// It exists in this package in order to avoid circular dependency with the "msg" package.
 	MsgsInverseTable = "msgs"
-	// ReceiptsTable is the table that holds the Receipts relation/edge. The primary key declared below.
-	ReceiptsTable = "block_Receipts"
+	// ReceiptsTable is the table that holds the receipts relation/edge. The primary key declared below.
+	ReceiptsTable = "block_receipts"
 	// ReceiptsInverseTable is the table name for the Receipt entity.
 	// It exists in this package in order to avoid circular dependency with the "receipt" package.
 	ReceiptsInverseTable = "receipts"
@@ -54,10 +54,10 @@ var Columns = []string{
 
 var (
 	// MsgsPrimaryKey and MsgsColumn2 are the table columns denoting the
-	// primary key for the Msgs relation (M2M).
+	// primary key for the msgs relation (M2M).
 	MsgsPrimaryKey = []string{"block_id", "msg_id"}
 	// ReceiptsPrimaryKey and ReceiptsColumn2 are the table columns denoting the
-	// primary key for the Receipts relation (M2M).
+	// primary key for the receipts relation (M2M).
 	ReceiptsPrimaryKey = []string{"block_id", "receipt_id"}
 )
 
@@ -108,28 +108,28 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
 }
 
-// ByMsgsCount orders the results by Msgs count.
+// ByMsgsCount orders the results by msgs count.
 func ByMsgsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborsCount(s, newMsgsStep(), opts...)
 	}
 }
 
-// ByMsgs orders the results by Msgs terms.
+// ByMsgs orders the results by msgs terms.
 func ByMsgs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newMsgsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
-// ByReceiptsCount orders the results by Receipts count.
+// ByReceiptsCount orders the results by receipts count.
 func ByReceiptsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborsCount(s, newReceiptsStep(), opts...)
 	}
 }
 
-// ByReceipts orders the results by Receipts terms.
+// ByReceipts orders the results by receipts terms.
 func ByReceipts(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newReceiptsStep(), append([]sql.OrderTerm{term}, terms...)...)

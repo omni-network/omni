@@ -81,9 +81,6 @@ func CreateXMsg(t *testing.T, ctx context.Context, client *ent.Client, b ent.Blo
 		SetGasLimit(100).
 		SetSourceChainID(b.ChainID).
 		SetTxHash(txHash).
-		SetBlockHash(b.Hash).
-		SetBlockHeight(b.Height).
-		SetBlockTime(b.Timestamp).
 		SaveX(ctx)
 
 	client.Block.UpdateOne(&b).AddMsgs(msg).SaveX(ctx)

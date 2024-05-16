@@ -280,7 +280,7 @@ func CreatedAtLTE(v time.Time) predicate.Block {
 	return predicate.Block(sql.FieldLTE(FieldCreatedAt, v))
 }
 
-// HasMsgs applies the HasEdge predicate on the "Msgs" edge.
+// HasMsgs applies the HasEdge predicate on the "msgs" edge.
 func HasMsgs() predicate.Block {
 	return predicate.Block(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
@@ -291,7 +291,7 @@ func HasMsgs() predicate.Block {
 	})
 }
 
-// HasMsgsWith applies the HasEdge predicate on the "Msgs" edge with a given conditions (other predicates).
+// HasMsgsWith applies the HasEdge predicate on the "msgs" edge with a given conditions (other predicates).
 func HasMsgsWith(preds ...predicate.Msg) predicate.Block {
 	return predicate.Block(func(s *sql.Selector) {
 		step := newMsgsStep()
@@ -303,7 +303,7 @@ func HasMsgsWith(preds ...predicate.Msg) predicate.Block {
 	})
 }
 
-// HasReceipts applies the HasEdge predicate on the "Receipts" edge.
+// HasReceipts applies the HasEdge predicate on the "receipts" edge.
 func HasReceipts() predicate.Block {
 	return predicate.Block(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
@@ -314,7 +314,7 @@ func HasReceipts() predicate.Block {
 	})
 }
 
-// HasReceiptsWith applies the HasEdge predicate on the "Receipts" edge with a given conditions (other predicates).
+// HasReceiptsWith applies the HasEdge predicate on the "receipts" edge with a given conditions (other predicates).
 func HasReceiptsWith(preds ...predicate.Receipt) predicate.Block {
 	return predicate.Block(func(s *sql.Selector) {
 		step := newReceiptsStep()

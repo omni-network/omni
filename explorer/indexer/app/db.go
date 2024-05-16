@@ -125,9 +125,6 @@ func insertMessages(ctx context.Context, tx *ent.Tx, block xchain.Block, dbBlock
 			SetOffset(m.StreamOffset).
 			SetTxHash(m.TxHash[:]).
 			SetCreatedAt(time.Now()).
-			SetBlockHash(block.BlockHash[:]).
-			SetBlockHeight(block.BlockHeight).
-			SetBlockTime(block.Timestamp).
 			Save(ctx)
 		if err != nil {
 			return errors.Wrap(err, "inserting message")

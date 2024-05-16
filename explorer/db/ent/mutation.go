@@ -39,26 +39,26 @@ const (
 // BlockMutation represents an operation that mutates the Block nodes in the graph.
 type BlockMutation struct {
 	config
-	op               Op
-	typ              string
-	id               *int
-	hash             *[]byte
-	chain_id         *uint64
-	addchain_id      *int64
-	height           *uint64
-	addheight        *int64
-	timestamp        *time.Time
-	created_at       *time.Time
-	clearedFields    map[string]struct{}
-	_Msgs            map[int]struct{}
-	removed_Msgs     map[int]struct{}
-	cleared_Msgs     bool
-	_Receipts        map[int]struct{}
-	removed_Receipts map[int]struct{}
-	cleared_Receipts bool
-	done             bool
-	oldValue         func(context.Context) (*Block, error)
-	predicates       []predicate.Block
+	op              Op
+	typ             string
+	id              *int
+	hash            *[]byte
+	chain_id        *uint64
+	addchain_id     *int64
+	height          *uint64
+	addheight       *int64
+	timestamp       *time.Time
+	created_at      *time.Time
+	clearedFields   map[string]struct{}
+	msgs            map[int]struct{}
+	removedmsgs     map[int]struct{}
+	clearedmsgs     bool
+	receipts        map[int]struct{}
+	removedreceipts map[int]struct{}
+	clearedreceipts bool
+	done            bool
+	oldValue        func(context.Context) (*Block, error)
+	predicates      []predicate.Block
 }
 
 var _ ent.Mutation = (*BlockMutation)(nil)
@@ -379,112 +379,112 @@ func (m *BlockMutation) ResetCreatedAt() {
 	m.created_at = nil
 }
 
-// AddMsgIDs adds the "Msgs" edge to the Msg entity by ids.
+// AddMsgIDs adds the "msgs" edge to the Msg entity by ids.
 func (m *BlockMutation) AddMsgIDs(ids ...int) {
-	if m._Msgs == nil {
-		m._Msgs = make(map[int]struct{})
+	if m.msgs == nil {
+		m.msgs = make(map[int]struct{})
 	}
 	for i := range ids {
-		m._Msgs[ids[i]] = struct{}{}
+		m.msgs[ids[i]] = struct{}{}
 	}
 }
 
-// ClearMsgs clears the "Msgs" edge to the Msg entity.
+// ClearMsgs clears the "msgs" edge to the Msg entity.
 func (m *BlockMutation) ClearMsgs() {
-	m.cleared_Msgs = true
+	m.clearedmsgs = true
 }
 
-// MsgsCleared reports if the "Msgs" edge to the Msg entity was cleared.
+// MsgsCleared reports if the "msgs" edge to the Msg entity was cleared.
 func (m *BlockMutation) MsgsCleared() bool {
-	return m.cleared_Msgs
+	return m.clearedmsgs
 }
 
-// RemoveMsgIDs removes the "Msgs" edge to the Msg entity by IDs.
+// RemoveMsgIDs removes the "msgs" edge to the Msg entity by IDs.
 func (m *BlockMutation) RemoveMsgIDs(ids ...int) {
-	if m.removed_Msgs == nil {
-		m.removed_Msgs = make(map[int]struct{})
+	if m.removedmsgs == nil {
+		m.removedmsgs = make(map[int]struct{})
 	}
 	for i := range ids {
-		delete(m._Msgs, ids[i])
-		m.removed_Msgs[ids[i]] = struct{}{}
+		delete(m.msgs, ids[i])
+		m.removedmsgs[ids[i]] = struct{}{}
 	}
 }
 
-// RemovedMsgs returns the removed IDs of the "Msgs" edge to the Msg entity.
+// RemovedMsgs returns the removed IDs of the "msgs" edge to the Msg entity.
 func (m *BlockMutation) RemovedMsgsIDs() (ids []int) {
-	for id := range m.removed_Msgs {
+	for id := range m.removedmsgs {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// MsgsIDs returns the "Msgs" edge IDs in the mutation.
+// MsgsIDs returns the "msgs" edge IDs in the mutation.
 func (m *BlockMutation) MsgsIDs() (ids []int) {
-	for id := range m._Msgs {
+	for id := range m.msgs {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ResetMsgs resets all changes to the "Msgs" edge.
+// ResetMsgs resets all changes to the "msgs" edge.
 func (m *BlockMutation) ResetMsgs() {
-	m._Msgs = nil
-	m.cleared_Msgs = false
-	m.removed_Msgs = nil
+	m.msgs = nil
+	m.clearedmsgs = false
+	m.removedmsgs = nil
 }
 
-// AddReceiptIDs adds the "Receipts" edge to the Receipt entity by ids.
+// AddReceiptIDs adds the "receipts" edge to the Receipt entity by ids.
 func (m *BlockMutation) AddReceiptIDs(ids ...int) {
-	if m._Receipts == nil {
-		m._Receipts = make(map[int]struct{})
+	if m.receipts == nil {
+		m.receipts = make(map[int]struct{})
 	}
 	for i := range ids {
-		m._Receipts[ids[i]] = struct{}{}
+		m.receipts[ids[i]] = struct{}{}
 	}
 }
 
-// ClearReceipts clears the "Receipts" edge to the Receipt entity.
+// ClearReceipts clears the "receipts" edge to the Receipt entity.
 func (m *BlockMutation) ClearReceipts() {
-	m.cleared_Receipts = true
+	m.clearedreceipts = true
 }
 
-// ReceiptsCleared reports if the "Receipts" edge to the Receipt entity was cleared.
+// ReceiptsCleared reports if the "receipts" edge to the Receipt entity was cleared.
 func (m *BlockMutation) ReceiptsCleared() bool {
-	return m.cleared_Receipts
+	return m.clearedreceipts
 }
 
-// RemoveReceiptIDs removes the "Receipts" edge to the Receipt entity by IDs.
+// RemoveReceiptIDs removes the "receipts" edge to the Receipt entity by IDs.
 func (m *BlockMutation) RemoveReceiptIDs(ids ...int) {
-	if m.removed_Receipts == nil {
-		m.removed_Receipts = make(map[int]struct{})
+	if m.removedreceipts == nil {
+		m.removedreceipts = make(map[int]struct{})
 	}
 	for i := range ids {
-		delete(m._Receipts, ids[i])
-		m.removed_Receipts[ids[i]] = struct{}{}
+		delete(m.receipts, ids[i])
+		m.removedreceipts[ids[i]] = struct{}{}
 	}
 }
 
-// RemovedReceipts returns the removed IDs of the "Receipts" edge to the Receipt entity.
+// RemovedReceipts returns the removed IDs of the "receipts" edge to the Receipt entity.
 func (m *BlockMutation) RemovedReceiptsIDs() (ids []int) {
-	for id := range m.removed_Receipts {
+	for id := range m.removedreceipts {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ReceiptsIDs returns the "Receipts" edge IDs in the mutation.
+// ReceiptsIDs returns the "receipts" edge IDs in the mutation.
 func (m *BlockMutation) ReceiptsIDs() (ids []int) {
-	for id := range m._Receipts {
+	for id := range m.receipts {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ResetReceipts resets all changes to the "Receipts" edge.
+// ResetReceipts resets all changes to the "receipts" edge.
 func (m *BlockMutation) ResetReceipts() {
-	m._Receipts = nil
-	m.cleared_Receipts = false
-	m.removed_Receipts = nil
+	m.receipts = nil
+	m.clearedreceipts = false
+	m.removedreceipts = nil
 }
 
 // Where appends a list predicates to the BlockMutation builder.
@@ -716,10 +716,10 @@ func (m *BlockMutation) ResetField(name string) error {
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *BlockMutation) AddedEdges() []string {
 	edges := make([]string, 0, 2)
-	if m._Msgs != nil {
+	if m.msgs != nil {
 		edges = append(edges, block.EdgeMsgs)
 	}
-	if m._Receipts != nil {
+	if m.receipts != nil {
 		edges = append(edges, block.EdgeReceipts)
 	}
 	return edges
@@ -730,14 +730,14 @@ func (m *BlockMutation) AddedEdges() []string {
 func (m *BlockMutation) AddedIDs(name string) []ent.Value {
 	switch name {
 	case block.EdgeMsgs:
-		ids := make([]ent.Value, 0, len(m._Msgs))
-		for id := range m._Msgs {
+		ids := make([]ent.Value, 0, len(m.msgs))
+		for id := range m.msgs {
 			ids = append(ids, id)
 		}
 		return ids
 	case block.EdgeReceipts:
-		ids := make([]ent.Value, 0, len(m._Receipts))
-		for id := range m._Receipts {
+		ids := make([]ent.Value, 0, len(m.receipts))
+		for id := range m.receipts {
 			ids = append(ids, id)
 		}
 		return ids
@@ -748,10 +748,10 @@ func (m *BlockMutation) AddedIDs(name string) []ent.Value {
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *BlockMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 2)
-	if m.removed_Msgs != nil {
+	if m.removedmsgs != nil {
 		edges = append(edges, block.EdgeMsgs)
 	}
-	if m.removed_Receipts != nil {
+	if m.removedreceipts != nil {
 		edges = append(edges, block.EdgeReceipts)
 	}
 	return edges
@@ -762,14 +762,14 @@ func (m *BlockMutation) RemovedEdges() []string {
 func (m *BlockMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
 	case block.EdgeMsgs:
-		ids := make([]ent.Value, 0, len(m.removed_Msgs))
-		for id := range m.removed_Msgs {
+		ids := make([]ent.Value, 0, len(m.removedmsgs))
+		for id := range m.removedmsgs {
 			ids = append(ids, id)
 		}
 		return ids
 	case block.EdgeReceipts:
-		ids := make([]ent.Value, 0, len(m.removed_Receipts))
-		for id := range m.removed_Receipts {
+		ids := make([]ent.Value, 0, len(m.removedreceipts))
+		for id := range m.removedreceipts {
 			ids = append(ids, id)
 		}
 		return ids
@@ -780,10 +780,10 @@ func (m *BlockMutation) RemovedIDs(name string) []ent.Value {
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *BlockMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 2)
-	if m.cleared_Msgs {
+	if m.clearedmsgs {
 		edges = append(edges, block.EdgeMsgs)
 	}
-	if m.cleared_Receipts {
+	if m.clearedreceipts {
 		edges = append(edges, block.EdgeReceipts)
 	}
 	return edges
@@ -794,9 +794,9 @@ func (m *BlockMutation) ClearedEdges() []string {
 func (m *BlockMutation) EdgeCleared(name string) bool {
 	switch name {
 	case block.EdgeMsgs:
-		return m.cleared_Msgs
+		return m.clearedmsgs
 	case block.EdgeReceipts:
-		return m.cleared_Receipts
+		return m.clearedreceipts
 	}
 	return false
 }
@@ -1299,10 +1299,6 @@ type MsgMutation struct {
 	op                 Op
 	typ                string
 	id                 *int
-	block_hash         *[]byte
-	block_height       *uint64
-	addblock_height    *int64
-	block_time         *time.Time
 	sender             *[]byte
 	to                 *[]byte
 	data               *[]byte
@@ -1319,12 +1315,12 @@ type MsgMutation struct {
 	status             *string
 	created_at         *time.Time
 	clearedFields      map[string]struct{}
-	_Block             map[int]struct{}
-	removed_Block      map[int]struct{}
-	cleared_Block      bool
-	_Receipts          map[int]struct{}
-	removed_Receipts   map[int]struct{}
-	cleared_Receipts   bool
+	block              map[int]struct{}
+	removedblock       map[int]struct{}
+	clearedblock       bool
+	receipts           map[int]struct{}
+	removedreceipts    map[int]struct{}
+	clearedreceipts    bool
 	done               bool
 	oldValue           func(context.Context) (*Msg, error)
 	predicates         []predicate.Msg
@@ -1426,134 +1422,6 @@ func (m *MsgMutation) IDs(ctx context.Context) ([]int, error) {
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
-}
-
-// SetBlockHash sets the "block_hash" field.
-func (m *MsgMutation) SetBlockHash(b []byte) {
-	m.block_hash = &b
-}
-
-// BlockHash returns the value of the "block_hash" field in the mutation.
-func (m *MsgMutation) BlockHash() (r []byte, exists bool) {
-	v := m.block_hash
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldBlockHash returns the old "block_hash" field's value of the Msg entity.
-// If the Msg object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *MsgMutation) OldBlockHash(ctx context.Context) (v []byte, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldBlockHash is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldBlockHash requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldBlockHash: %w", err)
-	}
-	return oldValue.BlockHash, nil
-}
-
-// ResetBlockHash resets all changes to the "block_hash" field.
-func (m *MsgMutation) ResetBlockHash() {
-	m.block_hash = nil
-}
-
-// SetBlockHeight sets the "block_height" field.
-func (m *MsgMutation) SetBlockHeight(u uint64) {
-	m.block_height = &u
-	m.addblock_height = nil
-}
-
-// BlockHeight returns the value of the "block_height" field in the mutation.
-func (m *MsgMutation) BlockHeight() (r uint64, exists bool) {
-	v := m.block_height
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldBlockHeight returns the old "block_height" field's value of the Msg entity.
-// If the Msg object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *MsgMutation) OldBlockHeight(ctx context.Context) (v uint64, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldBlockHeight is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldBlockHeight requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldBlockHeight: %w", err)
-	}
-	return oldValue.BlockHeight, nil
-}
-
-// AddBlockHeight adds u to the "block_height" field.
-func (m *MsgMutation) AddBlockHeight(u int64) {
-	if m.addblock_height != nil {
-		*m.addblock_height += u
-	} else {
-		m.addblock_height = &u
-	}
-}
-
-// AddedBlockHeight returns the value that was added to the "block_height" field in this mutation.
-func (m *MsgMutation) AddedBlockHeight() (r int64, exists bool) {
-	v := m.addblock_height
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ResetBlockHeight resets all changes to the "block_height" field.
-func (m *MsgMutation) ResetBlockHeight() {
-	m.block_height = nil
-	m.addblock_height = nil
-}
-
-// SetBlockTime sets the "block_time" field.
-func (m *MsgMutation) SetBlockTime(t time.Time) {
-	m.block_time = &t
-}
-
-// BlockTime returns the value of the "block_time" field in the mutation.
-func (m *MsgMutation) BlockTime() (r time.Time, exists bool) {
-	v := m.block_time
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldBlockTime returns the old "block_time" field's value of the Msg entity.
-// If the Msg object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *MsgMutation) OldBlockTime(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldBlockTime is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldBlockTime requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldBlockTime: %w", err)
-	}
-	return oldValue.BlockTime, nil
-}
-
-// ResetBlockTime resets all changes to the "block_time" field.
-func (m *MsgMutation) ResetBlockTime() {
-	m.block_time = nil
 }
 
 // SetSender sets the "sender" field.
@@ -2058,112 +1926,112 @@ func (m *MsgMutation) ResetCreatedAt() {
 	m.created_at = nil
 }
 
-// AddBlockIDs adds the "Block" edge to the Block entity by ids.
+// AddBlockIDs adds the "block" edge to the Block entity by ids.
 func (m *MsgMutation) AddBlockIDs(ids ...int) {
-	if m._Block == nil {
-		m._Block = make(map[int]struct{})
+	if m.block == nil {
+		m.block = make(map[int]struct{})
 	}
 	for i := range ids {
-		m._Block[ids[i]] = struct{}{}
+		m.block[ids[i]] = struct{}{}
 	}
 }
 
-// ClearBlock clears the "Block" edge to the Block entity.
+// ClearBlock clears the "block" edge to the Block entity.
 func (m *MsgMutation) ClearBlock() {
-	m.cleared_Block = true
+	m.clearedblock = true
 }
 
-// BlockCleared reports if the "Block" edge to the Block entity was cleared.
+// BlockCleared reports if the "block" edge to the Block entity was cleared.
 func (m *MsgMutation) BlockCleared() bool {
-	return m.cleared_Block
+	return m.clearedblock
 }
 
-// RemoveBlockIDs removes the "Block" edge to the Block entity by IDs.
+// RemoveBlockIDs removes the "block" edge to the Block entity by IDs.
 func (m *MsgMutation) RemoveBlockIDs(ids ...int) {
-	if m.removed_Block == nil {
-		m.removed_Block = make(map[int]struct{})
+	if m.removedblock == nil {
+		m.removedblock = make(map[int]struct{})
 	}
 	for i := range ids {
-		delete(m._Block, ids[i])
-		m.removed_Block[ids[i]] = struct{}{}
+		delete(m.block, ids[i])
+		m.removedblock[ids[i]] = struct{}{}
 	}
 }
 
-// RemovedBlock returns the removed IDs of the "Block" edge to the Block entity.
+// RemovedBlock returns the removed IDs of the "block" edge to the Block entity.
 func (m *MsgMutation) RemovedBlockIDs() (ids []int) {
-	for id := range m.removed_Block {
+	for id := range m.removedblock {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// BlockIDs returns the "Block" edge IDs in the mutation.
+// BlockIDs returns the "block" edge IDs in the mutation.
 func (m *MsgMutation) BlockIDs() (ids []int) {
-	for id := range m._Block {
+	for id := range m.block {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ResetBlock resets all changes to the "Block" edge.
+// ResetBlock resets all changes to the "block" edge.
 func (m *MsgMutation) ResetBlock() {
-	m._Block = nil
-	m.cleared_Block = false
-	m.removed_Block = nil
+	m.block = nil
+	m.clearedblock = false
+	m.removedblock = nil
 }
 
-// AddReceiptIDs adds the "Receipts" edge to the Receipt entity by ids.
+// AddReceiptIDs adds the "receipts" edge to the Receipt entity by ids.
 func (m *MsgMutation) AddReceiptIDs(ids ...int) {
-	if m._Receipts == nil {
-		m._Receipts = make(map[int]struct{})
+	if m.receipts == nil {
+		m.receipts = make(map[int]struct{})
 	}
 	for i := range ids {
-		m._Receipts[ids[i]] = struct{}{}
+		m.receipts[ids[i]] = struct{}{}
 	}
 }
 
-// ClearReceipts clears the "Receipts" edge to the Receipt entity.
+// ClearReceipts clears the "receipts" edge to the Receipt entity.
 func (m *MsgMutation) ClearReceipts() {
-	m.cleared_Receipts = true
+	m.clearedreceipts = true
 }
 
-// ReceiptsCleared reports if the "Receipts" edge to the Receipt entity was cleared.
+// ReceiptsCleared reports if the "receipts" edge to the Receipt entity was cleared.
 func (m *MsgMutation) ReceiptsCleared() bool {
-	return m.cleared_Receipts
+	return m.clearedreceipts
 }
 
-// RemoveReceiptIDs removes the "Receipts" edge to the Receipt entity by IDs.
+// RemoveReceiptIDs removes the "receipts" edge to the Receipt entity by IDs.
 func (m *MsgMutation) RemoveReceiptIDs(ids ...int) {
-	if m.removed_Receipts == nil {
-		m.removed_Receipts = make(map[int]struct{})
+	if m.removedreceipts == nil {
+		m.removedreceipts = make(map[int]struct{})
 	}
 	for i := range ids {
-		delete(m._Receipts, ids[i])
-		m.removed_Receipts[ids[i]] = struct{}{}
+		delete(m.receipts, ids[i])
+		m.removedreceipts[ids[i]] = struct{}{}
 	}
 }
 
-// RemovedReceipts returns the removed IDs of the "Receipts" edge to the Receipt entity.
+// RemovedReceipts returns the removed IDs of the "receipts" edge to the Receipt entity.
 func (m *MsgMutation) RemovedReceiptsIDs() (ids []int) {
-	for id := range m.removed_Receipts {
+	for id := range m.removedreceipts {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ReceiptsIDs returns the "Receipts" edge IDs in the mutation.
+// ReceiptsIDs returns the "receipts" edge IDs in the mutation.
 func (m *MsgMutation) ReceiptsIDs() (ids []int) {
-	for id := range m._Receipts {
+	for id := range m.receipts {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ResetReceipts resets all changes to the "Receipts" edge.
+// ResetReceipts resets all changes to the "receipts" edge.
 func (m *MsgMutation) ResetReceipts() {
-	m._Receipts = nil
-	m.cleared_Receipts = false
-	m.removed_Receipts = nil
+	m.receipts = nil
+	m.clearedreceipts = false
+	m.removedreceipts = nil
 }
 
 // Where appends a list predicates to the MsgMutation builder.
@@ -2200,16 +2068,7 @@ func (m *MsgMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *MsgMutation) Fields() []string {
-	fields := make([]string, 0, 14)
-	if m.block_hash != nil {
-		fields = append(fields, msg.FieldBlockHash)
-	}
-	if m.block_height != nil {
-		fields = append(fields, msg.FieldBlockHeight)
-	}
-	if m.block_time != nil {
-		fields = append(fields, msg.FieldBlockTime)
-	}
+	fields := make([]string, 0, 11)
 	if m.sender != nil {
 		fields = append(fields, msg.FieldSender)
 	}
@@ -2251,12 +2110,6 @@ func (m *MsgMutation) Fields() []string {
 // schema.
 func (m *MsgMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case msg.FieldBlockHash:
-		return m.BlockHash()
-	case msg.FieldBlockHeight:
-		return m.BlockHeight()
-	case msg.FieldBlockTime:
-		return m.BlockTime()
 	case msg.FieldSender:
 		return m.Sender()
 	case msg.FieldTo:
@@ -2288,12 +2141,6 @@ func (m *MsgMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *MsgMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case msg.FieldBlockHash:
-		return m.OldBlockHash(ctx)
-	case msg.FieldBlockHeight:
-		return m.OldBlockHeight(ctx)
-	case msg.FieldBlockTime:
-		return m.OldBlockTime(ctx)
 	case msg.FieldSender:
 		return m.OldSender(ctx)
 	case msg.FieldTo:
@@ -2325,27 +2172,6 @@ func (m *MsgMutation) OldField(ctx context.Context, name string) (ent.Value, err
 // type.
 func (m *MsgMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case msg.FieldBlockHash:
-		v, ok := value.([]byte)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetBlockHash(v)
-		return nil
-	case msg.FieldBlockHeight:
-		v, ok := value.(uint64)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetBlockHeight(v)
-		return nil
-	case msg.FieldBlockTime:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetBlockTime(v)
-		return nil
 	case msg.FieldSender:
 		v, ok := value.([]byte)
 		if !ok {
@@ -2431,9 +2257,6 @@ func (m *MsgMutation) SetField(name string, value ent.Value) error {
 // this mutation.
 func (m *MsgMutation) AddedFields() []string {
 	var fields []string
-	if m.addblock_height != nil {
-		fields = append(fields, msg.FieldBlockHeight)
-	}
 	if m.addgas_limit != nil {
 		fields = append(fields, msg.FieldGasLimit)
 	}
@@ -2454,8 +2277,6 @@ func (m *MsgMutation) AddedFields() []string {
 // was not set, or was not defined in the schema.
 func (m *MsgMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
-	case msg.FieldBlockHeight:
-		return m.AddedBlockHeight()
 	case msg.FieldGasLimit:
 		return m.AddedGasLimit()
 	case msg.FieldSourceChainID:
@@ -2473,13 +2294,6 @@ func (m *MsgMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *MsgMutation) AddField(name string, value ent.Value) error {
 	switch name {
-	case msg.FieldBlockHeight:
-		v, ok := value.(int64)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.AddBlockHeight(v)
-		return nil
 	case msg.FieldGasLimit:
 		v, ok := value.(int64)
 		if !ok {
@@ -2550,15 +2364,6 @@ func (m *MsgMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *MsgMutation) ResetField(name string) error {
 	switch name {
-	case msg.FieldBlockHash:
-		m.ResetBlockHash()
-		return nil
-	case msg.FieldBlockHeight:
-		m.ResetBlockHeight()
-		return nil
-	case msg.FieldBlockTime:
-		m.ResetBlockTime()
-		return nil
 	case msg.FieldSender:
 		m.ResetSender()
 		return nil
@@ -2599,10 +2404,10 @@ func (m *MsgMutation) ResetField(name string) error {
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *MsgMutation) AddedEdges() []string {
 	edges := make([]string, 0, 2)
-	if m._Block != nil {
+	if m.block != nil {
 		edges = append(edges, msg.EdgeBlock)
 	}
-	if m._Receipts != nil {
+	if m.receipts != nil {
 		edges = append(edges, msg.EdgeReceipts)
 	}
 	return edges
@@ -2613,14 +2418,14 @@ func (m *MsgMutation) AddedEdges() []string {
 func (m *MsgMutation) AddedIDs(name string) []ent.Value {
 	switch name {
 	case msg.EdgeBlock:
-		ids := make([]ent.Value, 0, len(m._Block))
-		for id := range m._Block {
+		ids := make([]ent.Value, 0, len(m.block))
+		for id := range m.block {
 			ids = append(ids, id)
 		}
 		return ids
 	case msg.EdgeReceipts:
-		ids := make([]ent.Value, 0, len(m._Receipts))
-		for id := range m._Receipts {
+		ids := make([]ent.Value, 0, len(m.receipts))
+		for id := range m.receipts {
 			ids = append(ids, id)
 		}
 		return ids
@@ -2631,10 +2436,10 @@ func (m *MsgMutation) AddedIDs(name string) []ent.Value {
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *MsgMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 2)
-	if m.removed_Block != nil {
+	if m.removedblock != nil {
 		edges = append(edges, msg.EdgeBlock)
 	}
-	if m.removed_Receipts != nil {
+	if m.removedreceipts != nil {
 		edges = append(edges, msg.EdgeReceipts)
 	}
 	return edges
@@ -2645,14 +2450,14 @@ func (m *MsgMutation) RemovedEdges() []string {
 func (m *MsgMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
 	case msg.EdgeBlock:
-		ids := make([]ent.Value, 0, len(m.removed_Block))
-		for id := range m.removed_Block {
+		ids := make([]ent.Value, 0, len(m.removedblock))
+		for id := range m.removedblock {
 			ids = append(ids, id)
 		}
 		return ids
 	case msg.EdgeReceipts:
-		ids := make([]ent.Value, 0, len(m.removed_Receipts))
-		for id := range m.removed_Receipts {
+		ids := make([]ent.Value, 0, len(m.removedreceipts))
+		for id := range m.removedreceipts {
 			ids = append(ids, id)
 		}
 		return ids
@@ -2663,10 +2468,10 @@ func (m *MsgMutation) RemovedIDs(name string) []ent.Value {
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *MsgMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 2)
-	if m.cleared_Block {
+	if m.clearedblock {
 		edges = append(edges, msg.EdgeBlock)
 	}
-	if m.cleared_Receipts {
+	if m.clearedreceipts {
 		edges = append(edges, msg.EdgeReceipts)
 	}
 	return edges
@@ -2677,9 +2482,9 @@ func (m *MsgMutation) ClearedEdges() []string {
 func (m *MsgMutation) EdgeCleared(name string) bool {
 	switch name {
 	case msg.EdgeBlock:
-		return m.cleared_Block
+		return m.clearedblock
 	case msg.EdgeReceipts:
-		return m.cleared_Receipts
+		return m.clearedreceipts
 	}
 	return false
 }
@@ -2726,12 +2531,12 @@ type ReceiptMutation struct {
 	tx_hash            *[]byte
 	created_at         *time.Time
 	clearedFields      map[string]struct{}
-	_Block             map[int]struct{}
-	removed_Block      map[int]struct{}
-	cleared_Block      bool
-	_Msgs              map[int]struct{}
-	removed_Msgs       map[int]struct{}
-	cleared_Msgs       bool
+	block              map[int]struct{}
+	removedblock       map[int]struct{}
+	clearedblock       bool
+	msgs               map[int]struct{}
+	removedmsgs        map[int]struct{}
+	clearedmsgs        bool
 	done               bool
 	oldValue           func(context.Context) (*Receipt, error)
 	predicates         []predicate.Receipt
@@ -3239,112 +3044,112 @@ func (m *ReceiptMutation) ResetCreatedAt() {
 	m.created_at = nil
 }
 
-// AddBlockIDs adds the "Block" edge to the Block entity by ids.
+// AddBlockIDs adds the "block" edge to the Block entity by ids.
 func (m *ReceiptMutation) AddBlockIDs(ids ...int) {
-	if m._Block == nil {
-		m._Block = make(map[int]struct{})
+	if m.block == nil {
+		m.block = make(map[int]struct{})
 	}
 	for i := range ids {
-		m._Block[ids[i]] = struct{}{}
+		m.block[ids[i]] = struct{}{}
 	}
 }
 
-// ClearBlock clears the "Block" edge to the Block entity.
+// ClearBlock clears the "block" edge to the Block entity.
 func (m *ReceiptMutation) ClearBlock() {
-	m.cleared_Block = true
+	m.clearedblock = true
 }
 
-// BlockCleared reports if the "Block" edge to the Block entity was cleared.
+// BlockCleared reports if the "block" edge to the Block entity was cleared.
 func (m *ReceiptMutation) BlockCleared() bool {
-	return m.cleared_Block
+	return m.clearedblock
 }
 
-// RemoveBlockIDs removes the "Block" edge to the Block entity by IDs.
+// RemoveBlockIDs removes the "block" edge to the Block entity by IDs.
 func (m *ReceiptMutation) RemoveBlockIDs(ids ...int) {
-	if m.removed_Block == nil {
-		m.removed_Block = make(map[int]struct{})
+	if m.removedblock == nil {
+		m.removedblock = make(map[int]struct{})
 	}
 	for i := range ids {
-		delete(m._Block, ids[i])
-		m.removed_Block[ids[i]] = struct{}{}
+		delete(m.block, ids[i])
+		m.removedblock[ids[i]] = struct{}{}
 	}
 }
 
-// RemovedBlock returns the removed IDs of the "Block" edge to the Block entity.
+// RemovedBlock returns the removed IDs of the "block" edge to the Block entity.
 func (m *ReceiptMutation) RemovedBlockIDs() (ids []int) {
-	for id := range m.removed_Block {
+	for id := range m.removedblock {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// BlockIDs returns the "Block" edge IDs in the mutation.
+// BlockIDs returns the "block" edge IDs in the mutation.
 func (m *ReceiptMutation) BlockIDs() (ids []int) {
-	for id := range m._Block {
+	for id := range m.block {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ResetBlock resets all changes to the "Block" edge.
+// ResetBlock resets all changes to the "block" edge.
 func (m *ReceiptMutation) ResetBlock() {
-	m._Block = nil
-	m.cleared_Block = false
-	m.removed_Block = nil
+	m.block = nil
+	m.clearedblock = false
+	m.removedblock = nil
 }
 
-// AddMsgIDs adds the "Msgs" edge to the Msg entity by ids.
+// AddMsgIDs adds the "msgs" edge to the Msg entity by ids.
 func (m *ReceiptMutation) AddMsgIDs(ids ...int) {
-	if m._Msgs == nil {
-		m._Msgs = make(map[int]struct{})
+	if m.msgs == nil {
+		m.msgs = make(map[int]struct{})
 	}
 	for i := range ids {
-		m._Msgs[ids[i]] = struct{}{}
+		m.msgs[ids[i]] = struct{}{}
 	}
 }
 
-// ClearMsgs clears the "Msgs" edge to the Msg entity.
+// ClearMsgs clears the "msgs" edge to the Msg entity.
 func (m *ReceiptMutation) ClearMsgs() {
-	m.cleared_Msgs = true
+	m.clearedmsgs = true
 }
 
-// MsgsCleared reports if the "Msgs" edge to the Msg entity was cleared.
+// MsgsCleared reports if the "msgs" edge to the Msg entity was cleared.
 func (m *ReceiptMutation) MsgsCleared() bool {
-	return m.cleared_Msgs
+	return m.clearedmsgs
 }
 
-// RemoveMsgIDs removes the "Msgs" edge to the Msg entity by IDs.
+// RemoveMsgIDs removes the "msgs" edge to the Msg entity by IDs.
 func (m *ReceiptMutation) RemoveMsgIDs(ids ...int) {
-	if m.removed_Msgs == nil {
-		m.removed_Msgs = make(map[int]struct{})
+	if m.removedmsgs == nil {
+		m.removedmsgs = make(map[int]struct{})
 	}
 	for i := range ids {
-		delete(m._Msgs, ids[i])
-		m.removed_Msgs[ids[i]] = struct{}{}
+		delete(m.msgs, ids[i])
+		m.removedmsgs[ids[i]] = struct{}{}
 	}
 }
 
-// RemovedMsgs returns the removed IDs of the "Msgs" edge to the Msg entity.
+// RemovedMsgs returns the removed IDs of the "msgs" edge to the Msg entity.
 func (m *ReceiptMutation) RemovedMsgsIDs() (ids []int) {
-	for id := range m.removed_Msgs {
+	for id := range m.removedmsgs {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// MsgsIDs returns the "Msgs" edge IDs in the mutation.
+// MsgsIDs returns the "msgs" edge IDs in the mutation.
 func (m *ReceiptMutation) MsgsIDs() (ids []int) {
-	for id := range m._Msgs {
+	for id := range m.msgs {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ResetMsgs resets all changes to the "Msgs" edge.
+// ResetMsgs resets all changes to the "msgs" edge.
 func (m *ReceiptMutation) ResetMsgs() {
-	m._Msgs = nil
-	m.cleared_Msgs = false
-	m.removed_Msgs = nil
+	m.msgs = nil
+	m.clearedmsgs = false
+	m.removedmsgs = nil
 }
 
 // Where appends a list predicates to the ReceiptMutation builder.
@@ -3668,10 +3473,10 @@ func (m *ReceiptMutation) ResetField(name string) error {
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ReceiptMutation) AddedEdges() []string {
 	edges := make([]string, 0, 2)
-	if m._Block != nil {
+	if m.block != nil {
 		edges = append(edges, receipt.EdgeBlock)
 	}
-	if m._Msgs != nil {
+	if m.msgs != nil {
 		edges = append(edges, receipt.EdgeMsgs)
 	}
 	return edges
@@ -3682,14 +3487,14 @@ func (m *ReceiptMutation) AddedEdges() []string {
 func (m *ReceiptMutation) AddedIDs(name string) []ent.Value {
 	switch name {
 	case receipt.EdgeBlock:
-		ids := make([]ent.Value, 0, len(m._Block))
-		for id := range m._Block {
+		ids := make([]ent.Value, 0, len(m.block))
+		for id := range m.block {
 			ids = append(ids, id)
 		}
 		return ids
 	case receipt.EdgeMsgs:
-		ids := make([]ent.Value, 0, len(m._Msgs))
-		for id := range m._Msgs {
+		ids := make([]ent.Value, 0, len(m.msgs))
+		for id := range m.msgs {
 			ids = append(ids, id)
 		}
 		return ids
@@ -3700,10 +3505,10 @@ func (m *ReceiptMutation) AddedIDs(name string) []ent.Value {
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ReceiptMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 2)
-	if m.removed_Block != nil {
+	if m.removedblock != nil {
 		edges = append(edges, receipt.EdgeBlock)
 	}
-	if m.removed_Msgs != nil {
+	if m.removedmsgs != nil {
 		edges = append(edges, receipt.EdgeMsgs)
 	}
 	return edges
@@ -3714,14 +3519,14 @@ func (m *ReceiptMutation) RemovedEdges() []string {
 func (m *ReceiptMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
 	case receipt.EdgeBlock:
-		ids := make([]ent.Value, 0, len(m.removed_Block))
-		for id := range m.removed_Block {
+		ids := make([]ent.Value, 0, len(m.removedblock))
+		for id := range m.removedblock {
 			ids = append(ids, id)
 		}
 		return ids
 	case receipt.EdgeMsgs:
-		ids := make([]ent.Value, 0, len(m.removed_Msgs))
-		for id := range m.removed_Msgs {
+		ids := make([]ent.Value, 0, len(m.removedmsgs))
+		for id := range m.removedmsgs {
 			ids = append(ids, id)
 		}
 		return ids
@@ -3732,10 +3537,10 @@ func (m *ReceiptMutation) RemovedIDs(name string) []ent.Value {
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ReceiptMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 2)
-	if m.cleared_Block {
+	if m.clearedblock {
 		edges = append(edges, receipt.EdgeBlock)
 	}
-	if m.cleared_Msgs {
+	if m.clearedmsgs {
 		edges = append(edges, receipt.EdgeMsgs)
 	}
 	return edges
@@ -3746,9 +3551,9 @@ func (m *ReceiptMutation) ClearedEdges() []string {
 func (m *ReceiptMutation) EdgeCleared(name string) bool {
 	switch name {
 	case receipt.EdgeBlock:
-		return m.cleared_Block
+		return m.clearedblock
 	case receipt.EdgeMsgs:
-		return m.cleared_Msgs
+		return m.clearedmsgs
 	}
 	return false
 }

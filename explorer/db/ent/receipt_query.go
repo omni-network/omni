@@ -62,7 +62,7 @@ func (rq *ReceiptQuery) Order(o ...receipt.OrderOption) *ReceiptQuery {
 	return rq
 }
 
-// QueryBlock chains the current query on the "Block" edge.
+// QueryBlock chains the current query on the "block" edge.
 func (rq *ReceiptQuery) QueryBlock() *BlockQuery {
 	query := (&BlockClient{config: rq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
@@ -84,7 +84,7 @@ func (rq *ReceiptQuery) QueryBlock() *BlockQuery {
 	return query
 }
 
-// QueryMsgs chains the current query on the "Msgs" edge.
+// QueryMsgs chains the current query on the "msgs" edge.
 func (rq *ReceiptQuery) QueryMsgs() *MsgQuery {
 	query := (&MsgClient{config: rq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
@@ -307,7 +307,7 @@ func (rq *ReceiptQuery) Clone() *ReceiptQuery {
 }
 
 // WithBlock tells the query-builder to eager-load the nodes that are connected to
-// the "Block" edge. The optional arguments are used to configure the query builder of the edge.
+// the "block" edge. The optional arguments are used to configure the query builder of the edge.
 func (rq *ReceiptQuery) WithBlock(opts ...func(*BlockQuery)) *ReceiptQuery {
 	query := (&BlockClient{config: rq.config}).Query()
 	for _, opt := range opts {
@@ -318,7 +318,7 @@ func (rq *ReceiptQuery) WithBlock(opts ...func(*BlockQuery)) *ReceiptQuery {
 }
 
 // WithMsgs tells the query-builder to eager-load the nodes that are connected to
-// the "Msgs" edge. The optional arguments are used to configure the query builder of the edge.
+// the "msgs" edge. The optional arguments are used to configure the query builder of the edge.
 func (rq *ReceiptQuery) WithMsgs(opts ...func(*MsgQuery)) *ReceiptQuery {
 	query := (&MsgClient{config: rq.config}).Query()
 	for _, opt := range opts {
@@ -499,7 +499,7 @@ func (rq *ReceiptQuery) loadBlock(ctx context.Context, query *BlockQuery, nodes 
 	for _, n := range neighbors {
 		nodes, ok := nids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected "Block" node returned %v`, n.ID)
+			return fmt.Errorf(`unexpected "block" node returned %v`, n.ID)
 		}
 		for kn := range nodes {
 			assign(kn, n)
@@ -560,7 +560,7 @@ func (rq *ReceiptQuery) loadMsgs(ctx context.Context, query *MsgQuery, nodes []*
 	for _, n := range neighbors {
 		nodes, ok := nids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected "Msgs" node returned %v`, n.ID)
+			return fmt.Errorf(`unexpected "msgs" node returned %v`, n.ID)
 		}
 		for kn := range nodes {
 			assign(kn, n)

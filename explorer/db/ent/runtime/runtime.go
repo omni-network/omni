@@ -42,32 +42,28 @@ func init() {
 	msg.Hooks[0] = msgHooks[0]
 	msgFields := schema.Msg{}.Fields()
 	_ = msgFields
-	// msgDescBlockHash is the schema descriptor for block_hash field.
-	msgDescBlockHash := msgFields[0].Descriptor()
-	// msg.BlockHashValidator is a validator for the "block_hash" field. It is called by the builders before save.
-	msg.BlockHashValidator = msgDescBlockHash.Validators[0].(func([]byte) error)
 	// msgDescSender is the schema descriptor for sender field.
-	msgDescSender := msgFields[3].Descriptor()
+	msgDescSender := msgFields[0].Descriptor()
 	// msg.SenderValidator is a validator for the "sender" field. It is called by the builders before save.
 	msg.SenderValidator = msgDescSender.Validators[0].(func([]byte) error)
 	// msgDescTo is the schema descriptor for to field.
-	msgDescTo := msgFields[4].Descriptor()
+	msgDescTo := msgFields[1].Descriptor()
 	// msg.ToValidator is a validator for the "to" field. It is called by the builders before save.
 	msg.ToValidator = msgDescTo.Validators[0].(func([]byte) error)
 	// msgDescTxHash is the schema descriptor for tx_hash field.
-	msgDescTxHash := msgFields[10].Descriptor()
+	msgDescTxHash := msgFields[7].Descriptor()
 	// msg.TxHashValidator is a validator for the "tx_hash" field. It is called by the builders before save.
 	msg.TxHashValidator = msgDescTxHash.Validators[0].(func([]byte) error)
 	// msgDescReceiptHash is the schema descriptor for receipt_hash field.
-	msgDescReceiptHash := msgFields[11].Descriptor()
+	msgDescReceiptHash := msgFields[8].Descriptor()
 	// msg.ReceiptHashValidator is a validator for the "receipt_hash" field. It is called by the builders before save.
 	msg.ReceiptHashValidator = msgDescReceiptHash.Validators[0].(func([]byte) error)
 	// msgDescStatus is the schema descriptor for status field.
-	msgDescStatus := msgFields[12].Descriptor()
+	msgDescStatus := msgFields[9].Descriptor()
 	// msg.DefaultStatus holds the default value on creation for the status field.
 	msg.DefaultStatus = msgDescStatus.Default.(string)
 	// msgDescCreatedAt is the schema descriptor for created_at field.
-	msgDescCreatedAt := msgFields[13].Descriptor()
+	msgDescCreatedAt := msgFields[10].Descriptor()
 	// msg.DefaultCreatedAt holds the default value on creation for the created_at field.
 	msg.DefaultCreatedAt = msgDescCreatedAt.Default.(time.Time)
 	receiptHooks := schema.Receipt{}.Hooks()

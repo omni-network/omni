@@ -64,9 +64,6 @@ var schemaGraph = func() *sqlgraph.Schema {
 		},
 		Type: "Msg",
 		Fields: map[string]*sqlgraph.FieldSpec{
-			msg.FieldBlockHash:     {Type: field.TypeBytes, Column: msg.FieldBlockHash},
-			msg.FieldBlockHeight:   {Type: field.TypeUint64, Column: msg.FieldBlockHeight},
-			msg.FieldBlockTime:     {Type: field.TypeTime, Column: msg.FieldBlockTime},
 			msg.FieldSender:        {Type: field.TypeBytes, Column: msg.FieldSender},
 			msg.FieldTo:            {Type: field.TypeBytes, Column: msg.FieldTo},
 			msg.FieldData:          {Type: field.TypeBytes, Column: msg.FieldData},
@@ -120,7 +117,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 		},
 	}
 	graph.MustAddE(
-		"Msgs",
+		"msgs",
 		&sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -132,7 +129,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 		"Msg",
 	)
 	graph.MustAddE(
-		"Receipts",
+		"receipts",
 		&sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -144,7 +141,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 		"Receipt",
 	)
 	graph.MustAddE(
-		"Block",
+		"block",
 		&sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -156,7 +153,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 		"Block",
 	)
 	graph.MustAddE(
-		"Receipts",
+		"receipts",
 		&sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
@@ -168,7 +165,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 		"Receipt",
 	)
 	graph.MustAddE(
-		"Block",
+		"block",
 		&sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -180,7 +177,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 		"Block",
 	)
 	graph.MustAddE(
-		"Msgs",
+		"msgs",
 		&sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
@@ -265,28 +262,28 @@ func (f *BlockFilter) WhereCreatedAt(p entql.TimeP) {
 	f.Where(p.Field(block.FieldCreatedAt))
 }
 
-// WhereHasMsgs applies a predicate to check if query has an edge Msgs.
+// WhereHasMsgs applies a predicate to check if query has an edge msgs.
 func (f *BlockFilter) WhereHasMsgs() {
-	f.Where(entql.HasEdge("Msgs"))
+	f.Where(entql.HasEdge("msgs"))
 }
 
-// WhereHasMsgsWith applies a predicate to check if query has an edge Msgs with a given conditions (other predicates).
+// WhereHasMsgsWith applies a predicate to check if query has an edge msgs with a given conditions (other predicates).
 func (f *BlockFilter) WhereHasMsgsWith(preds ...predicate.Msg) {
-	f.Where(entql.HasEdgeWith("Msgs", sqlgraph.WrapFunc(func(s *sql.Selector) {
+	f.Where(entql.HasEdgeWith("msgs", sqlgraph.WrapFunc(func(s *sql.Selector) {
 		for _, p := range preds {
 			p(s)
 		}
 	})))
 }
 
-// WhereHasReceipts applies a predicate to check if query has an edge Receipts.
+// WhereHasReceipts applies a predicate to check if query has an edge receipts.
 func (f *BlockFilter) WhereHasReceipts() {
-	f.Where(entql.HasEdge("Receipts"))
+	f.Where(entql.HasEdge("receipts"))
 }
 
-// WhereHasReceiptsWith applies a predicate to check if query has an edge Receipts with a given conditions (other predicates).
+// WhereHasReceiptsWith applies a predicate to check if query has an edge receipts with a given conditions (other predicates).
 func (f *BlockFilter) WhereHasReceiptsWith(preds ...predicate.Receipt) {
-	f.Where(entql.HasEdgeWith("Receipts", sqlgraph.WrapFunc(func(s *sql.Selector) {
+	f.Where(entql.HasEdgeWith("receipts", sqlgraph.WrapFunc(func(s *sql.Selector) {
 		for _, p := range preds {
 			p(s)
 		}
@@ -388,21 +385,6 @@ func (f *MsgFilter) WhereID(p entql.IntP) {
 	f.Where(p.Field(msg.FieldID))
 }
 
-// WhereBlockHash applies the entql []byte predicate on the block_hash field.
-func (f *MsgFilter) WhereBlockHash(p entql.BytesP) {
-	f.Where(p.Field(msg.FieldBlockHash))
-}
-
-// WhereBlockHeight applies the entql uint64 predicate on the block_height field.
-func (f *MsgFilter) WhereBlockHeight(p entql.Uint64P) {
-	f.Where(p.Field(msg.FieldBlockHeight))
-}
-
-// WhereBlockTime applies the entql time.Time predicate on the block_time field.
-func (f *MsgFilter) WhereBlockTime(p entql.TimeP) {
-	f.Where(p.Field(msg.FieldBlockTime))
-}
-
 // WhereSender applies the entql []byte predicate on the sender field.
 func (f *MsgFilter) WhereSender(p entql.BytesP) {
 	f.Where(p.Field(msg.FieldSender))
@@ -458,28 +440,28 @@ func (f *MsgFilter) WhereCreatedAt(p entql.TimeP) {
 	f.Where(p.Field(msg.FieldCreatedAt))
 }
 
-// WhereHasBlock applies a predicate to check if query has an edge Block.
+// WhereHasBlock applies a predicate to check if query has an edge block.
 func (f *MsgFilter) WhereHasBlock() {
-	f.Where(entql.HasEdge("Block"))
+	f.Where(entql.HasEdge("block"))
 }
 
-// WhereHasBlockWith applies a predicate to check if query has an edge Block with a given conditions (other predicates).
+// WhereHasBlockWith applies a predicate to check if query has an edge block with a given conditions (other predicates).
 func (f *MsgFilter) WhereHasBlockWith(preds ...predicate.Block) {
-	f.Where(entql.HasEdgeWith("Block", sqlgraph.WrapFunc(func(s *sql.Selector) {
+	f.Where(entql.HasEdgeWith("block", sqlgraph.WrapFunc(func(s *sql.Selector) {
 		for _, p := range preds {
 			p(s)
 		}
 	})))
 }
 
-// WhereHasReceipts applies a predicate to check if query has an edge Receipts.
+// WhereHasReceipts applies a predicate to check if query has an edge receipts.
 func (f *MsgFilter) WhereHasReceipts() {
-	f.Where(entql.HasEdge("Receipts"))
+	f.Where(entql.HasEdge("receipts"))
 }
 
-// WhereHasReceiptsWith applies a predicate to check if query has an edge Receipts with a given conditions (other predicates).
+// WhereHasReceiptsWith applies a predicate to check if query has an edge receipts with a given conditions (other predicates).
 func (f *MsgFilter) WhereHasReceiptsWith(preds ...predicate.Receipt) {
-	f.Where(entql.HasEdgeWith("Receipts", sqlgraph.WrapFunc(func(s *sql.Selector) {
+	f.Where(entql.HasEdgeWith("receipts", sqlgraph.WrapFunc(func(s *sql.Selector) {
 		for _, p := range preds {
 			p(s)
 		}
@@ -571,28 +553,28 @@ func (f *ReceiptFilter) WhereCreatedAt(p entql.TimeP) {
 	f.Where(p.Field(receipt.FieldCreatedAt))
 }
 
-// WhereHasBlock applies a predicate to check if query has an edge Block.
+// WhereHasBlock applies a predicate to check if query has an edge block.
 func (f *ReceiptFilter) WhereHasBlock() {
-	f.Where(entql.HasEdge("Block"))
+	f.Where(entql.HasEdge("block"))
 }
 
-// WhereHasBlockWith applies a predicate to check if query has an edge Block with a given conditions (other predicates).
+// WhereHasBlockWith applies a predicate to check if query has an edge block with a given conditions (other predicates).
 func (f *ReceiptFilter) WhereHasBlockWith(preds ...predicate.Block) {
-	f.Where(entql.HasEdgeWith("Block", sqlgraph.WrapFunc(func(s *sql.Selector) {
+	f.Where(entql.HasEdgeWith("block", sqlgraph.WrapFunc(func(s *sql.Selector) {
 		for _, p := range preds {
 			p(s)
 		}
 	})))
 }
 
-// WhereHasMsgs applies a predicate to check if query has an edge Msgs.
+// WhereHasMsgs applies a predicate to check if query has an edge msgs.
 func (f *ReceiptFilter) WhereHasMsgs() {
-	f.Where(entql.HasEdge("Msgs"))
+	f.Where(entql.HasEdge("msgs"))
 }
 
-// WhereHasMsgsWith applies a predicate to check if query has an edge Msgs with a given conditions (other predicates).
+// WhereHasMsgsWith applies a predicate to check if query has an edge msgs with a given conditions (other predicates).
 func (f *ReceiptFilter) WhereHasMsgsWith(preds ...predicate.Msg) {
-	f.Where(entql.HasEdgeWith("Msgs", sqlgraph.WrapFunc(func(s *sql.Selector) {
+	f.Where(entql.HasEdgeWith("msgs", sqlgraph.WrapFunc(func(s *sql.Selector) {
 		for _, p := range preds {
 			p(s)
 		}

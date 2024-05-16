@@ -62,7 +62,7 @@ func (mq *MsgQuery) Order(o ...msg.OrderOption) *MsgQuery {
 	return mq
 }
 
-// QueryBlock chains the current query on the "Block" edge.
+// QueryBlock chains the current query on the "block" edge.
 func (mq *MsgQuery) QueryBlock() *BlockQuery {
 	query := (&BlockClient{config: mq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
@@ -84,7 +84,7 @@ func (mq *MsgQuery) QueryBlock() *BlockQuery {
 	return query
 }
 
-// QueryReceipts chains the current query on the "Receipts" edge.
+// QueryReceipts chains the current query on the "receipts" edge.
 func (mq *MsgQuery) QueryReceipts() *ReceiptQuery {
 	query := (&ReceiptClient{config: mq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
@@ -307,7 +307,7 @@ func (mq *MsgQuery) Clone() *MsgQuery {
 }
 
 // WithBlock tells the query-builder to eager-load the nodes that are connected to
-// the "Block" edge. The optional arguments are used to configure the query builder of the edge.
+// the "block" edge. The optional arguments are used to configure the query builder of the edge.
 func (mq *MsgQuery) WithBlock(opts ...func(*BlockQuery)) *MsgQuery {
 	query := (&BlockClient{config: mq.config}).Query()
 	for _, opt := range opts {
@@ -318,7 +318,7 @@ func (mq *MsgQuery) WithBlock(opts ...func(*BlockQuery)) *MsgQuery {
 }
 
 // WithReceipts tells the query-builder to eager-load the nodes that are connected to
-// the "Receipts" edge. The optional arguments are used to configure the query builder of the edge.
+// the "receipts" edge. The optional arguments are used to configure the query builder of the edge.
 func (mq *MsgQuery) WithReceipts(opts ...func(*ReceiptQuery)) *MsgQuery {
 	query := (&ReceiptClient{config: mq.config}).Query()
 	for _, opt := range opts {
@@ -334,12 +334,12 @@ func (mq *MsgQuery) WithReceipts(opts ...func(*ReceiptQuery)) *MsgQuery {
 // Example:
 //
 //	var v []struct {
-//		BlockHash []byte `json:"block_hash,omitempty"`
+//		Sender []byte `json:"sender,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Msg.Query().
-//		GroupBy(msg.FieldBlockHash).
+//		GroupBy(msg.FieldSender).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (mq *MsgQuery) GroupBy(field string, fields ...string) *MsgGroupBy {
@@ -357,11 +357,11 @@ func (mq *MsgQuery) GroupBy(field string, fields ...string) *MsgGroupBy {
 // Example:
 //
 //	var v []struct {
-//		BlockHash []byte `json:"block_hash,omitempty"`
+//		Sender []byte `json:"sender,omitempty"`
 //	}
 //
 //	client.Msg.Query().
-//		Select(msg.FieldBlockHash).
+//		Select(msg.FieldSender).
 //		Scan(ctx, &v)
 func (mq *MsgQuery) Select(fields ...string) *MsgSelect {
 	mq.ctx.Fields = append(mq.ctx.Fields, fields...)
@@ -499,7 +499,7 @@ func (mq *MsgQuery) loadBlock(ctx context.Context, query *BlockQuery, nodes []*M
 	for _, n := range neighbors {
 		nodes, ok := nids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected "Block" node returned %v`, n.ID)
+			return fmt.Errorf(`unexpected "block" node returned %v`, n.ID)
 		}
 		for kn := range nodes {
 			assign(kn, n)
@@ -560,7 +560,7 @@ func (mq *MsgQuery) loadReceipts(ctx context.Context, query *ReceiptQuery, nodes
 	for _, n := range neighbors {
 		nodes, ok := nids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected "Receipts" node returned %v`, n.ID)
+			return fmt.Errorf(`unexpected "receipts" node returned %v`, n.ID)
 		}
 		for kn := range nodes {
 			assign(kn, n)

@@ -17,12 +17,6 @@ type Msg struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
-	// BlockHash holds the value of the "block_hash" field.
-	BlockHash []byte `json:"block_hash,omitempty"`
-	// BlockHeight holds the value of the "block_height" field.
-	BlockHeight uint64 `json:"block_height,omitempty"`
-	// BlockTime holds the value of the "block_time" field.
-	BlockTime time.Time `json:"block_time,omitempty"`
 	// Sender holds the value of the "sender" field.
 	Sender []byte `json:"sender,omitempty"`
 	// To holds the value of the "to" field.
@@ -53,10 +47,10 @@ type Msg struct {
 
 // MsgEdges holds the relations/edges for other nodes in the graph.
 type MsgEdges struct {
-	// Block holds the value of the Block edge.
-	Block []*Block `json:"Block,omitempty"`
-	// Receipts holds the value of the Receipts edge.
-	Receipts []*Receipt `json:"Receipts,omitempty"`
+	// Block holds the value of the block edge.
+	Block []*Block `json:"block,omitempty"`
+	// Receipts holds the value of the receipts edge.
+	Receipts []*Receipt `json:"receipts,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
@@ -68,7 +62,7 @@ func (e MsgEdges) BlockOrErr() ([]*Block, error) {
 	if e.loadedTypes[0] {
 		return e.Block, nil
 	}
-	return nil, &NotLoadedError{edge: "Block"}
+	return nil, &NotLoadedError{edge: "block"}
 }
 
 // ReceiptsOrErr returns the Receipts value or an error if the edge
@@ -77,7 +71,7 @@ func (e MsgEdges) ReceiptsOrErr() ([]*Receipt, error) {
 	if e.loadedTypes[1] {
 		return e.Receipts, nil
 	}
-	return nil, &NotLoadedError{edge: "Receipts"}
+	return nil, &NotLoadedError{edge: "receipts"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -85,13 +79,13 @@ func (*Msg) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case msg.FieldBlockHash, msg.FieldSender, msg.FieldTo, msg.FieldData, msg.FieldTxHash, msg.FieldReceiptHash:
+		case msg.FieldSender, msg.FieldTo, msg.FieldData, msg.FieldTxHash, msg.FieldReceiptHash:
 			values[i] = new([]byte)
-		case msg.FieldID, msg.FieldBlockHeight, msg.FieldGasLimit, msg.FieldSourceChainID, msg.FieldDestChainID, msg.FieldOffset:
+		case msg.FieldID, msg.FieldGasLimit, msg.FieldSourceChainID, msg.FieldDestChainID, msg.FieldOffset:
 			values[i] = new(sql.NullInt64)
 		case msg.FieldStatus:
 			values[i] = new(sql.NullString)
-		case msg.FieldBlockTime, msg.FieldCreatedAt:
+		case msg.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -114,24 +108,6 @@ func (m *Msg) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			m.ID = int(value.Int64)
-		case msg.FieldBlockHash:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field block_hash", values[i])
-			} else if value != nil {
-				m.BlockHash = *value
-			}
-		case msg.FieldBlockHeight:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field block_height", values[i])
-			} else if value.Valid {
-				m.BlockHeight = uint64(value.Int64)
-			}
-		case msg.FieldBlockTime:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field block_time", values[i])
-			} else if value.Valid {
-				m.BlockTime = value.Time
-			}
 		case msg.FieldSender:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field sender", values[i])
@@ -211,12 +187,12 @@ func (m *Msg) Value(name string) (ent.Value, error) {
 	return m.selectValues.Get(name)
 }
 
-// QueryBlock queries the "Block" edge of the Msg entity.
+// QueryBlock queries the "block" edge of the Msg entity.
 func (m *Msg) QueryBlock() *BlockQuery {
 	return NewMsgClient(m.config).QueryBlock(m)
 }
 
-// QueryReceipts queries the "Receipts" edge of the Msg entity.
+// QueryReceipts queries the "receipts" edge of the Msg entity.
 func (m *Msg) QueryReceipts() *ReceiptQuery {
 	return NewMsgClient(m.config).QueryReceipts(m)
 }
@@ -244,15 +220,6 @@ func (m *Msg) String() string {
 	var builder strings.Builder
 	builder.WriteString("Msg(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", m.ID))
-	builder.WriteString("block_hash=")
-	builder.WriteString(fmt.Sprintf("%v", m.BlockHash))
-	builder.WriteString(", ")
-	builder.WriteString("block_height=")
-	builder.WriteString(fmt.Sprintf("%v", m.BlockHeight))
-	builder.WriteString(", ")
-	builder.WriteString("block_time=")
-	builder.WriteString(m.BlockTime.Format(time.ANSIC))
-	builder.WriteString(", ")
 	builder.WriteString("sender=")
 	builder.WriteString(fmt.Sprintf("%v", m.Sender))
 	builder.WriteString(", ")

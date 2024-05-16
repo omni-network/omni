@@ -30,47 +30,6 @@ func (mu *MsgUpdate) Where(ps ...predicate.Msg) *MsgUpdate {
 	return mu
 }
 
-// SetBlockHash sets the "block_hash" field.
-func (mu *MsgUpdate) SetBlockHash(b []byte) *MsgUpdate {
-	mu.mutation.SetBlockHash(b)
-	return mu
-}
-
-// SetBlockHeight sets the "block_height" field.
-func (mu *MsgUpdate) SetBlockHeight(u uint64) *MsgUpdate {
-	mu.mutation.ResetBlockHeight()
-	mu.mutation.SetBlockHeight(u)
-	return mu
-}
-
-// SetNillableBlockHeight sets the "block_height" field if the given value is not nil.
-func (mu *MsgUpdate) SetNillableBlockHeight(u *uint64) *MsgUpdate {
-	if u != nil {
-		mu.SetBlockHeight(*u)
-	}
-	return mu
-}
-
-// AddBlockHeight adds u to the "block_height" field.
-func (mu *MsgUpdate) AddBlockHeight(u int64) *MsgUpdate {
-	mu.mutation.AddBlockHeight(u)
-	return mu
-}
-
-// SetBlockTime sets the "block_time" field.
-func (mu *MsgUpdate) SetBlockTime(t time.Time) *MsgUpdate {
-	mu.mutation.SetBlockTime(t)
-	return mu
-}
-
-// SetNillableBlockTime sets the "block_time" field if the given value is not nil.
-func (mu *MsgUpdate) SetNillableBlockTime(t *time.Time) *MsgUpdate {
-	if t != nil {
-		mu.SetBlockTime(*t)
-	}
-	return mu
-}
-
 // SetSender sets the "sender" field.
 func (mu *MsgUpdate) SetSender(b []byte) *MsgUpdate {
 	mu.mutation.SetSender(b)
@@ -225,13 +184,13 @@ func (mu *MsgUpdate) SetNillableCreatedAt(t *time.Time) *MsgUpdate {
 	return mu
 }
 
-// AddBlockIDs adds the "Block" edge to the Block entity by IDs.
+// AddBlockIDs adds the "block" edge to the Block entity by IDs.
 func (mu *MsgUpdate) AddBlockIDs(ids ...int) *MsgUpdate {
 	mu.mutation.AddBlockIDs(ids...)
 	return mu
 }
 
-// AddBlock adds the "Block" edges to the Block entity.
+// AddBlock adds the "block" edges to the Block entity.
 func (mu *MsgUpdate) AddBlock(b ...*Block) *MsgUpdate {
 	ids := make([]int, len(b))
 	for i := range b {
@@ -240,13 +199,13 @@ func (mu *MsgUpdate) AddBlock(b ...*Block) *MsgUpdate {
 	return mu.AddBlockIDs(ids...)
 }
 
-// AddReceiptIDs adds the "Receipts" edge to the Receipt entity by IDs.
+// AddReceiptIDs adds the "receipts" edge to the Receipt entity by IDs.
 func (mu *MsgUpdate) AddReceiptIDs(ids ...int) *MsgUpdate {
 	mu.mutation.AddReceiptIDs(ids...)
 	return mu
 }
 
-// AddReceipts adds the "Receipts" edges to the Receipt entity.
+// AddReceipts adds the "receipts" edges to the Receipt entity.
 func (mu *MsgUpdate) AddReceipts(r ...*Receipt) *MsgUpdate {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -260,19 +219,19 @@ func (mu *MsgUpdate) Mutation() *MsgMutation {
 	return mu.mutation
 }
 
-// ClearBlock clears all "Block" edges to the Block entity.
+// ClearBlock clears all "block" edges to the Block entity.
 func (mu *MsgUpdate) ClearBlock() *MsgUpdate {
 	mu.mutation.ClearBlock()
 	return mu
 }
 
-// RemoveBlockIDs removes the "Block" edge to Block entities by IDs.
+// RemoveBlockIDs removes the "block" edge to Block entities by IDs.
 func (mu *MsgUpdate) RemoveBlockIDs(ids ...int) *MsgUpdate {
 	mu.mutation.RemoveBlockIDs(ids...)
 	return mu
 }
 
-// RemoveBlock removes "Block" edges to Block entities.
+// RemoveBlock removes "block" edges to Block entities.
 func (mu *MsgUpdate) RemoveBlock(b ...*Block) *MsgUpdate {
 	ids := make([]int, len(b))
 	for i := range b {
@@ -281,19 +240,19 @@ func (mu *MsgUpdate) RemoveBlock(b ...*Block) *MsgUpdate {
 	return mu.RemoveBlockIDs(ids...)
 }
 
-// ClearReceipts clears all "Receipts" edges to the Receipt entity.
+// ClearReceipts clears all "receipts" edges to the Receipt entity.
 func (mu *MsgUpdate) ClearReceipts() *MsgUpdate {
 	mu.mutation.ClearReceipts()
 	return mu
 }
 
-// RemoveReceiptIDs removes the "Receipts" edge to Receipt entities by IDs.
+// RemoveReceiptIDs removes the "receipts" edge to Receipt entities by IDs.
 func (mu *MsgUpdate) RemoveReceiptIDs(ids ...int) *MsgUpdate {
 	mu.mutation.RemoveReceiptIDs(ids...)
 	return mu
 }
 
-// RemoveReceipts removes "Receipts" edges to Receipt entities.
+// RemoveReceipts removes "receipts" edges to Receipt entities.
 func (mu *MsgUpdate) RemoveReceipts(r ...*Receipt) *MsgUpdate {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -331,11 +290,6 @@ func (mu *MsgUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (mu *MsgUpdate) check() error {
-	if v, ok := mu.mutation.BlockHash(); ok {
-		if err := msg.BlockHashValidator(v); err != nil {
-			return &ValidationError{Name: "block_hash", err: fmt.Errorf(`ent: validator failed for field "Msg.block_hash": %w`, err)}
-		}
-	}
 	if v, ok := mu.mutation.Sender(); ok {
 		if err := msg.SenderValidator(v); err != nil {
 			return &ValidationError{Name: "sender", err: fmt.Errorf(`ent: validator failed for field "Msg.sender": %w`, err)}
@@ -370,18 +324,6 @@ func (mu *MsgUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := mu.mutation.BlockHash(); ok {
-		_spec.SetField(msg.FieldBlockHash, field.TypeBytes, value)
-	}
-	if value, ok := mu.mutation.BlockHeight(); ok {
-		_spec.SetField(msg.FieldBlockHeight, field.TypeUint64, value)
-	}
-	if value, ok := mu.mutation.AddedBlockHeight(); ok {
-		_spec.AddField(msg.FieldBlockHeight, field.TypeUint64, value)
-	}
-	if value, ok := mu.mutation.BlockTime(); ok {
-		_spec.SetField(msg.FieldBlockTime, field.TypeTime, value)
 	}
 	if value, ok := mu.mutation.Sender(); ok {
 		_spec.SetField(msg.FieldSender, field.TypeBytes, value)
@@ -544,47 +486,6 @@ type MsgUpdateOne struct {
 	mutation *MsgMutation
 }
 
-// SetBlockHash sets the "block_hash" field.
-func (muo *MsgUpdateOne) SetBlockHash(b []byte) *MsgUpdateOne {
-	muo.mutation.SetBlockHash(b)
-	return muo
-}
-
-// SetBlockHeight sets the "block_height" field.
-func (muo *MsgUpdateOne) SetBlockHeight(u uint64) *MsgUpdateOne {
-	muo.mutation.ResetBlockHeight()
-	muo.mutation.SetBlockHeight(u)
-	return muo
-}
-
-// SetNillableBlockHeight sets the "block_height" field if the given value is not nil.
-func (muo *MsgUpdateOne) SetNillableBlockHeight(u *uint64) *MsgUpdateOne {
-	if u != nil {
-		muo.SetBlockHeight(*u)
-	}
-	return muo
-}
-
-// AddBlockHeight adds u to the "block_height" field.
-func (muo *MsgUpdateOne) AddBlockHeight(u int64) *MsgUpdateOne {
-	muo.mutation.AddBlockHeight(u)
-	return muo
-}
-
-// SetBlockTime sets the "block_time" field.
-func (muo *MsgUpdateOne) SetBlockTime(t time.Time) *MsgUpdateOne {
-	muo.mutation.SetBlockTime(t)
-	return muo
-}
-
-// SetNillableBlockTime sets the "block_time" field if the given value is not nil.
-func (muo *MsgUpdateOne) SetNillableBlockTime(t *time.Time) *MsgUpdateOne {
-	if t != nil {
-		muo.SetBlockTime(*t)
-	}
-	return muo
-}
-
 // SetSender sets the "sender" field.
 func (muo *MsgUpdateOne) SetSender(b []byte) *MsgUpdateOne {
 	muo.mutation.SetSender(b)
@@ -739,13 +640,13 @@ func (muo *MsgUpdateOne) SetNillableCreatedAt(t *time.Time) *MsgUpdateOne {
 	return muo
 }
 
-// AddBlockIDs adds the "Block" edge to the Block entity by IDs.
+// AddBlockIDs adds the "block" edge to the Block entity by IDs.
 func (muo *MsgUpdateOne) AddBlockIDs(ids ...int) *MsgUpdateOne {
 	muo.mutation.AddBlockIDs(ids...)
 	return muo
 }
 
-// AddBlock adds the "Block" edges to the Block entity.
+// AddBlock adds the "block" edges to the Block entity.
 func (muo *MsgUpdateOne) AddBlock(b ...*Block) *MsgUpdateOne {
 	ids := make([]int, len(b))
 	for i := range b {
@@ -754,13 +655,13 @@ func (muo *MsgUpdateOne) AddBlock(b ...*Block) *MsgUpdateOne {
 	return muo.AddBlockIDs(ids...)
 }
 
-// AddReceiptIDs adds the "Receipts" edge to the Receipt entity by IDs.
+// AddReceiptIDs adds the "receipts" edge to the Receipt entity by IDs.
 func (muo *MsgUpdateOne) AddReceiptIDs(ids ...int) *MsgUpdateOne {
 	muo.mutation.AddReceiptIDs(ids...)
 	return muo
 }
 
-// AddReceipts adds the "Receipts" edges to the Receipt entity.
+// AddReceipts adds the "receipts" edges to the Receipt entity.
 func (muo *MsgUpdateOne) AddReceipts(r ...*Receipt) *MsgUpdateOne {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -774,19 +675,19 @@ func (muo *MsgUpdateOne) Mutation() *MsgMutation {
 	return muo.mutation
 }
 
-// ClearBlock clears all "Block" edges to the Block entity.
+// ClearBlock clears all "block" edges to the Block entity.
 func (muo *MsgUpdateOne) ClearBlock() *MsgUpdateOne {
 	muo.mutation.ClearBlock()
 	return muo
 }
 
-// RemoveBlockIDs removes the "Block" edge to Block entities by IDs.
+// RemoveBlockIDs removes the "block" edge to Block entities by IDs.
 func (muo *MsgUpdateOne) RemoveBlockIDs(ids ...int) *MsgUpdateOne {
 	muo.mutation.RemoveBlockIDs(ids...)
 	return muo
 }
 
-// RemoveBlock removes "Block" edges to Block entities.
+// RemoveBlock removes "block" edges to Block entities.
 func (muo *MsgUpdateOne) RemoveBlock(b ...*Block) *MsgUpdateOne {
 	ids := make([]int, len(b))
 	for i := range b {
@@ -795,19 +696,19 @@ func (muo *MsgUpdateOne) RemoveBlock(b ...*Block) *MsgUpdateOne {
 	return muo.RemoveBlockIDs(ids...)
 }
 
-// ClearReceipts clears all "Receipts" edges to the Receipt entity.
+// ClearReceipts clears all "receipts" edges to the Receipt entity.
 func (muo *MsgUpdateOne) ClearReceipts() *MsgUpdateOne {
 	muo.mutation.ClearReceipts()
 	return muo
 }
 
-// RemoveReceiptIDs removes the "Receipts" edge to Receipt entities by IDs.
+// RemoveReceiptIDs removes the "receipts" edge to Receipt entities by IDs.
 func (muo *MsgUpdateOne) RemoveReceiptIDs(ids ...int) *MsgUpdateOne {
 	muo.mutation.RemoveReceiptIDs(ids...)
 	return muo
 }
 
-// RemoveReceipts removes "Receipts" edges to Receipt entities.
+// RemoveReceipts removes "receipts" edges to Receipt entities.
 func (muo *MsgUpdateOne) RemoveReceipts(r ...*Receipt) *MsgUpdateOne {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -858,11 +759,6 @@ func (muo *MsgUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (muo *MsgUpdateOne) check() error {
-	if v, ok := muo.mutation.BlockHash(); ok {
-		if err := msg.BlockHashValidator(v); err != nil {
-			return &ValidationError{Name: "block_hash", err: fmt.Errorf(`ent: validator failed for field "Msg.block_hash": %w`, err)}
-		}
-	}
 	if v, ok := muo.mutation.Sender(); ok {
 		if err := msg.SenderValidator(v); err != nil {
 			return &ValidationError{Name: "sender", err: fmt.Errorf(`ent: validator failed for field "Msg.sender": %w`, err)}
@@ -914,18 +810,6 @@ func (muo *MsgUpdateOne) sqlSave(ctx context.Context) (_node *Msg, err error) {
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := muo.mutation.BlockHash(); ok {
-		_spec.SetField(msg.FieldBlockHash, field.TypeBytes, value)
-	}
-	if value, ok := muo.mutation.BlockHeight(); ok {
-		_spec.SetField(msg.FieldBlockHeight, field.TypeUint64, value)
-	}
-	if value, ok := muo.mutation.AddedBlockHeight(); ok {
-		_spec.AddField(msg.FieldBlockHeight, field.TypeUint64, value)
-	}
-	if value, ok := muo.mutation.BlockTime(); ok {
-		_spec.SetField(msg.FieldBlockTime, field.TypeTime, value)
 	}
 	if value, ok := muo.mutation.Sender(); ok {
 		_spec.SetField(msg.FieldSender, field.TypeBytes, value)

@@ -68,13 +68,13 @@ func (bc *BlockCreate) SetNillableCreatedAt(t *time.Time) *BlockCreate {
 	return bc
 }
 
-// AddMsgIDs adds the "Msgs" edge to the Msg entity by IDs.
+// AddMsgIDs adds the "msgs" edge to the Msg entity by IDs.
 func (bc *BlockCreate) AddMsgIDs(ids ...int) *BlockCreate {
 	bc.mutation.AddMsgIDs(ids...)
 	return bc
 }
 
-// AddMsgs adds the "Msgs" edges to the Msg entity.
+// AddMsgs adds the "msgs" edges to the Msg entity.
 func (bc *BlockCreate) AddMsgs(m ...*Msg) *BlockCreate {
 	ids := make([]int, len(m))
 	for i := range m {
@@ -83,13 +83,13 @@ func (bc *BlockCreate) AddMsgs(m ...*Msg) *BlockCreate {
 	return bc.AddMsgIDs(ids...)
 }
 
-// AddReceiptIDs adds the "Receipts" edge to the Receipt entity by IDs.
+// AddReceiptIDs adds the "receipts" edge to the Receipt entity by IDs.
 func (bc *BlockCreate) AddReceiptIDs(ids ...int) *BlockCreate {
 	bc.mutation.AddReceiptIDs(ids...)
 	return bc
 }
 
-// AddReceipts adds the "Receipts" edges to the Receipt entity.
+// AddReceipts adds the "receipts" edges to the Receipt entity.
 func (bc *BlockCreate) AddReceipts(r ...*Receipt) *BlockCreate {
 	ids := make([]int, len(r))
 	for i := range r {

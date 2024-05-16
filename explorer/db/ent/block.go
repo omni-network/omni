@@ -35,10 +35,10 @@ type Block struct {
 
 // BlockEdges holds the relations/edges for other nodes in the graph.
 type BlockEdges struct {
-	// Msgs holds the value of the Msgs edge.
-	Msgs []*Msg `json:"Msgs,omitempty"`
-	// Receipts holds the value of the Receipts edge.
-	Receipts []*Receipt `json:"Receipts,omitempty"`
+	// Msgs holds the value of the msgs edge.
+	Msgs []*Msg `json:"msgs,omitempty"`
+	// Receipts holds the value of the receipts edge.
+	Receipts []*Receipt `json:"receipts,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
@@ -50,7 +50,7 @@ func (e BlockEdges) MsgsOrErr() ([]*Msg, error) {
 	if e.loadedTypes[0] {
 		return e.Msgs, nil
 	}
-	return nil, &NotLoadedError{edge: "Msgs"}
+	return nil, &NotLoadedError{edge: "msgs"}
 }
 
 // ReceiptsOrErr returns the Receipts value or an error if the edge
@@ -59,7 +59,7 @@ func (e BlockEdges) ReceiptsOrErr() ([]*Receipt, error) {
 	if e.loadedTypes[1] {
 		return e.Receipts, nil
 	}
-	return nil, &NotLoadedError{edge: "Receipts"}
+	return nil, &NotLoadedError{edge: "receipts"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -137,12 +137,12 @@ func (b *Block) Value(name string) (ent.Value, error) {
 	return b.selectValues.Get(name)
 }
 
-// QueryMsgs queries the "Msgs" edge of the Block entity.
+// QueryMsgs queries the "msgs" edge of the Block entity.
 func (b *Block) QueryMsgs() *MsgQuery {
 	return NewBlockClient(b.config).QueryMsgs(b)
 }
 
-// QueryReceipts queries the "Receipts" edge of the Block entity.
+// QueryReceipts queries the "receipts" edge of the Block entity.
 func (b *Block) QueryReceipts() *ReceiptQuery {
 	return NewBlockClient(b.config).QueryReceipts(b)
 }

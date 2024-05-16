@@ -23,9 +23,6 @@ type Msg struct {
 // Fields of the XMsg.
 func (Msg) Fields() []ent.Field {
 	return []ent.Field{
-		field.Bytes("block_hash").MaxLen(32),
-		field.Uint64("block_height"),
-		field.Time("block_time"),
 		field.Bytes("sender").MaxLen(20),
 		field.Bytes("to").MaxLen(20),
 		field.Bytes("data"),
@@ -43,8 +40,10 @@ func (Msg) Fields() []ent.Field {
 // Indexes of the Msg.
 func (Msg) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("id").Unique(),
-		index.Fields("block_hash"),
+		index.Fields("sender"),
+		index.Fields("to"),
+		index.Fields("status"),
+		index.Fields("tx_hash"),
 		index.Fields("source_chain_id", "dest_chain_id", "offset").Unique(),
 	}
 }
@@ -52,8 +51,8 @@ func (Msg) Indexes() []ent.Index {
 // Edges of the XMsg.
 func (Msg) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("Block", Block.Type).Ref("Msgs"),
-		edge.To("Receipts", Receipt.Type),
+		edge.From("block", Block.Type).Ref("msgs"),
+		edge.To("receipts", Receipt.Type),
 	}
 }
 
@@ -75,7 +74,7 @@ func (Msg) Hooks() []ent.Hook {
 						return nil, errors.New("dest chain id missing")
 					}
 
-					streamOffset, ok := m.Offset()
+					offset, ok := m.Offset()
 					if !ok {
 						return nil, errors.New("stream offset missing")
 					}
@@ -83,7 +82,7 @@ func (Msg) Hooks() []ent.Hook {
 						Where(
 							receipt.SourceChainID(sourceChainID),
 							receipt.DestChainID(destChainID),
-							receipt.Offset(streamOffset),
+							receipt.Offset(offset),
 						).
 						Order(gen.Desc(receipt.FieldCreatedAt)).
 						All(ctx)

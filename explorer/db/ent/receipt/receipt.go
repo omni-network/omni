@@ -34,18 +34,18 @@ const (
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// EdgeBlock holds the string denoting the block edge name in mutations.
-	EdgeBlock = "Block"
+	EdgeBlock = "block"
 	// EdgeMsgs holds the string denoting the msgs edge name in mutations.
-	EdgeMsgs = "Msgs"
+	EdgeMsgs = "msgs"
 	// Table holds the table name of the receipt in the database.
 	Table = "receipts"
-	// BlockTable is the table that holds the Block relation/edge. The primary key declared below.
-	BlockTable = "block_Receipts"
+	// BlockTable is the table that holds the block relation/edge. The primary key declared below.
+	BlockTable = "block_receipts"
 	// BlockInverseTable is the table name for the Block entity.
 	// It exists in this package in order to avoid circular dependency with the "block" package.
 	BlockInverseTable = "blocks"
-	// MsgsTable is the table that holds the Msgs relation/edge. The primary key declared below.
-	MsgsTable = "msg_Receipts"
+	// MsgsTable is the table that holds the msgs relation/edge. The primary key declared below.
+	MsgsTable = "msg_receipts"
 	// MsgsInverseTable is the table name for the Msg entity.
 	// It exists in this package in order to avoid circular dependency with the "msg" package.
 	MsgsInverseTable = "msgs"
@@ -67,10 +67,10 @@ var Columns = []string{
 
 var (
 	// BlockPrimaryKey and BlockColumn2 are the table columns denoting the
-	// primary key for the Block relation (M2M).
+	// primary key for the block relation (M2M).
 	BlockPrimaryKey = []string{"block_id", "receipt_id"}
 	// MsgsPrimaryKey and MsgsColumn2 are the table columns denoting the
-	// primary key for the Msgs relation (M2M).
+	// primary key for the msgs relation (M2M).
 	MsgsPrimaryKey = []string{"msg_id", "receipt_id"}
 )
 
@@ -139,28 +139,28 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
 }
 
-// ByBlockCount orders the results by Block count.
+// ByBlockCount orders the results by block count.
 func ByBlockCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborsCount(s, newBlockStep(), opts...)
 	}
 }
 
-// ByBlock orders the results by Block terms.
+// ByBlock orders the results by block terms.
 func ByBlock(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newBlockStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
-// ByMsgsCount orders the results by Msgs count.
+// ByMsgsCount orders the results by msgs count.
 func ByMsgsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborsCount(s, newMsgsStep(), opts...)
 	}
 }
 
-// ByMsgs orders the results by Msgs terms.
+// ByMsgs orders the results by msgs terms.
 func ByMsgs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newMsgsStep(), append([]sql.OrderTerm{term}, terms...)...)

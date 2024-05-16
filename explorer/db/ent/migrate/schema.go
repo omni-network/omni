@@ -11,7 +11,7 @@ var (
 	// BlocksColumns holds the columns for the "blocks" table.
 	BlocksColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "hash", Type: field.TypeBytes, Unique: true, Size: 32},
+		{Name: "hash", Type: field.TypeBytes, Size: 32},
 		{Name: "chain_id", Type: field.TypeUint64},
 		{Name: "height", Type: field.TypeUint64},
 		{Name: "timestamp", Type: field.TypeTime},
@@ -24,9 +24,9 @@ var (
 		PrimaryKey: []*schema.Column{BlocksColumns[0]},
 		Indexes: []*schema.Index{
 			{
-				Name:    "block_hash",
+				Name:    "block_chain_id_hash",
 				Unique:  true,
-				Columns: []*schema.Column{BlocksColumns[1]},
+				Columns: []*schema.Column{BlocksColumns[2], BlocksColumns[1]},
 			},
 			{
 				Name:    "block_chain_id_height",
@@ -51,9 +51,6 @@ var (
 	// MsgsColumns holds the columns for the "msgs" table.
 	MsgsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "block_hash", Type: field.TypeBytes, Size: 32},
-		{Name: "block_height", Type: field.TypeUint64},
-		{Name: "block_time", Type: field.TypeTime},
 		{Name: "sender", Type: field.TypeBytes, Size: 20},
 		{Name: "to", Type: field.TypeBytes, Size: 20},
 		{Name: "data", Type: field.TypeBytes},
@@ -73,19 +70,29 @@ var (
 		PrimaryKey: []*schema.Column{MsgsColumns[0]},
 		Indexes: []*schema.Index{
 			{
-				Name:    "msg_id",
-				Unique:  true,
-				Columns: []*schema.Column{MsgsColumns[0]},
-			},
-			{
-				Name:    "msg_block_hash",
+				Name:    "msg_sender",
 				Unique:  false,
 				Columns: []*schema.Column{MsgsColumns[1]},
 			},
 			{
+				Name:    "msg_to",
+				Unique:  false,
+				Columns: []*schema.Column{MsgsColumns[2]},
+			},
+			{
+				Name:    "msg_status",
+				Unique:  false,
+				Columns: []*schema.Column{MsgsColumns[10]},
+			},
+			{
+				Name:    "msg_tx_hash",
+				Unique:  false,
+				Columns: []*schema.Column{MsgsColumns[8]},
+			},
+			{
 				Name:    "msg_source_chain_id_dest_chain_id_offset",
 				Unique:  true,
-				Columns: []*schema.Column{MsgsColumns[8], MsgsColumns[9], MsgsColumns[10]},
+				Columns: []*schema.Column{MsgsColumns[5], MsgsColumns[6], MsgsColumns[7]},
 			},
 		},
 	}
@@ -109,9 +116,9 @@ var (
 		PrimaryKey: []*schema.Column{ReceiptsColumns[0]},
 		Indexes: []*schema.Index{
 			{
-				Name:    "receipt_block_hash",
+				Name:    "receipt_tx_hash",
 				Unique:  false,
-				Columns: []*schema.Column{ReceiptsColumns[1]},
+				Columns: []*schema.Column{ReceiptsColumns[8]},
 			},
 			{
 				Name:    "receipt_source_chain_id_dest_chain_id_offset",
@@ -141,75 +148,75 @@ var (
 			},
 		},
 	}
-	// BlockMsgsColumns holds the columns for the "block_Msgs" table.
+	// BlockMsgsColumns holds the columns for the "block_msgs" table.
 	BlockMsgsColumns = []*schema.Column{
 		{Name: "block_id", Type: field.TypeInt},
 		{Name: "msg_id", Type: field.TypeInt},
 	}
-	// BlockMsgsTable holds the schema information for the "block_Msgs" table.
+	// BlockMsgsTable holds the schema information for the "block_msgs" table.
 	BlockMsgsTable = &schema.Table{
-		Name:       "block_Msgs",
+		Name:       "block_msgs",
 		Columns:    BlockMsgsColumns,
 		PrimaryKey: []*schema.Column{BlockMsgsColumns[0], BlockMsgsColumns[1]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "block_Msgs_block_id",
+				Symbol:     "block_msgs_block_id",
 				Columns:    []*schema.Column{BlockMsgsColumns[0]},
 				RefColumns: []*schema.Column{BlocksColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
-				Symbol:     "block_Msgs_msg_id",
+				Symbol:     "block_msgs_msg_id",
 				Columns:    []*schema.Column{BlockMsgsColumns[1]},
 				RefColumns: []*schema.Column{MsgsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 		},
 	}
-	// BlockReceiptsColumns holds the columns for the "block_Receipts" table.
+	// BlockReceiptsColumns holds the columns for the "block_receipts" table.
 	BlockReceiptsColumns = []*schema.Column{
 		{Name: "block_id", Type: field.TypeInt},
 		{Name: "receipt_id", Type: field.TypeInt},
 	}
-	// BlockReceiptsTable holds the schema information for the "block_Receipts" table.
+	// BlockReceiptsTable holds the schema information for the "block_receipts" table.
 	BlockReceiptsTable = &schema.Table{
-		Name:       "block_Receipts",
+		Name:       "block_receipts",
 		Columns:    BlockReceiptsColumns,
 		PrimaryKey: []*schema.Column{BlockReceiptsColumns[0], BlockReceiptsColumns[1]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "block_Receipts_block_id",
+				Symbol:     "block_receipts_block_id",
 				Columns:    []*schema.Column{BlockReceiptsColumns[0]},
 				RefColumns: []*schema.Column{BlocksColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
-				Symbol:     "block_Receipts_receipt_id",
+				Symbol:     "block_receipts_receipt_id",
 				Columns:    []*schema.Column{BlockReceiptsColumns[1]},
 				RefColumns: []*schema.Column{ReceiptsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 		},
 	}
-	// MsgReceiptsColumns holds the columns for the "msg_Receipts" table.
+	// MsgReceiptsColumns holds the columns for the "msg_receipts" table.
 	MsgReceiptsColumns = []*schema.Column{
 		{Name: "msg_id", Type: field.TypeInt},
 		{Name: "receipt_id", Type: field.TypeInt},
 	}
-	// MsgReceiptsTable holds the schema information for the "msg_Receipts" table.
+	// MsgReceiptsTable holds the schema information for the "msg_receipts" table.
 	MsgReceiptsTable = &schema.Table{
-		Name:       "msg_Receipts",
+		Name:       "msg_receipts",
 		Columns:    MsgReceiptsColumns,
 		PrimaryKey: []*schema.Column{MsgReceiptsColumns[0], MsgReceiptsColumns[1]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "msg_Receipts_msg_id",
+				Symbol:     "msg_receipts_msg_id",
 				Columns:    []*schema.Column{MsgReceiptsColumns[0]},
 				RefColumns: []*schema.Column{MsgsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
-				Symbol:     "msg_Receipts_receipt_id",
+				Symbol:     "msg_receipts_receipt_id",
 				Columns:    []*schema.Column{MsgReceiptsColumns[1]},
 				RefColumns: []*schema.Column{ReceiptsColumns[0]},
 				OnDelete:   schema.Cascade,

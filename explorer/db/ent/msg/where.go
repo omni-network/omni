@@ -55,21 +55,6 @@ func IDLTE(id int) predicate.Msg {
 	return predicate.Msg(sql.FieldLTE(FieldID, id))
 }
 
-// BlockHash applies equality check predicate on the "block_hash" field. It's identical to BlockHashEQ.
-func BlockHash(v []byte) predicate.Msg {
-	return predicate.Msg(sql.FieldEQ(FieldBlockHash, v))
-}
-
-// BlockHeight applies equality check predicate on the "block_height" field. It's identical to BlockHeightEQ.
-func BlockHeight(v uint64) predicate.Msg {
-	return predicate.Msg(sql.FieldEQ(FieldBlockHeight, v))
-}
-
-// BlockTime applies equality check predicate on the "block_time" field. It's identical to BlockTimeEQ.
-func BlockTime(v time.Time) predicate.Msg {
-	return predicate.Msg(sql.FieldEQ(FieldBlockTime, v))
-}
-
 // Sender applies equality check predicate on the "sender" field. It's identical to SenderEQ.
 func Sender(v []byte) predicate.Msg {
 	return predicate.Msg(sql.FieldEQ(FieldSender, v))
@@ -123,126 +108,6 @@ func Status(v string) predicate.Msg {
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.Msg {
 	return predicate.Msg(sql.FieldEQ(FieldCreatedAt, v))
-}
-
-// BlockHashEQ applies the EQ predicate on the "block_hash" field.
-func BlockHashEQ(v []byte) predicate.Msg {
-	return predicate.Msg(sql.FieldEQ(FieldBlockHash, v))
-}
-
-// BlockHashNEQ applies the NEQ predicate on the "block_hash" field.
-func BlockHashNEQ(v []byte) predicate.Msg {
-	return predicate.Msg(sql.FieldNEQ(FieldBlockHash, v))
-}
-
-// BlockHashIn applies the In predicate on the "block_hash" field.
-func BlockHashIn(vs ...[]byte) predicate.Msg {
-	return predicate.Msg(sql.FieldIn(FieldBlockHash, vs...))
-}
-
-// BlockHashNotIn applies the NotIn predicate on the "block_hash" field.
-func BlockHashNotIn(vs ...[]byte) predicate.Msg {
-	return predicate.Msg(sql.FieldNotIn(FieldBlockHash, vs...))
-}
-
-// BlockHashGT applies the GT predicate on the "block_hash" field.
-func BlockHashGT(v []byte) predicate.Msg {
-	return predicate.Msg(sql.FieldGT(FieldBlockHash, v))
-}
-
-// BlockHashGTE applies the GTE predicate on the "block_hash" field.
-func BlockHashGTE(v []byte) predicate.Msg {
-	return predicate.Msg(sql.FieldGTE(FieldBlockHash, v))
-}
-
-// BlockHashLT applies the LT predicate on the "block_hash" field.
-func BlockHashLT(v []byte) predicate.Msg {
-	return predicate.Msg(sql.FieldLT(FieldBlockHash, v))
-}
-
-// BlockHashLTE applies the LTE predicate on the "block_hash" field.
-func BlockHashLTE(v []byte) predicate.Msg {
-	return predicate.Msg(sql.FieldLTE(FieldBlockHash, v))
-}
-
-// BlockHeightEQ applies the EQ predicate on the "block_height" field.
-func BlockHeightEQ(v uint64) predicate.Msg {
-	return predicate.Msg(sql.FieldEQ(FieldBlockHeight, v))
-}
-
-// BlockHeightNEQ applies the NEQ predicate on the "block_height" field.
-func BlockHeightNEQ(v uint64) predicate.Msg {
-	return predicate.Msg(sql.FieldNEQ(FieldBlockHeight, v))
-}
-
-// BlockHeightIn applies the In predicate on the "block_height" field.
-func BlockHeightIn(vs ...uint64) predicate.Msg {
-	return predicate.Msg(sql.FieldIn(FieldBlockHeight, vs...))
-}
-
-// BlockHeightNotIn applies the NotIn predicate on the "block_height" field.
-func BlockHeightNotIn(vs ...uint64) predicate.Msg {
-	return predicate.Msg(sql.FieldNotIn(FieldBlockHeight, vs...))
-}
-
-// BlockHeightGT applies the GT predicate on the "block_height" field.
-func BlockHeightGT(v uint64) predicate.Msg {
-	return predicate.Msg(sql.FieldGT(FieldBlockHeight, v))
-}
-
-// BlockHeightGTE applies the GTE predicate on the "block_height" field.
-func BlockHeightGTE(v uint64) predicate.Msg {
-	return predicate.Msg(sql.FieldGTE(FieldBlockHeight, v))
-}
-
-// BlockHeightLT applies the LT predicate on the "block_height" field.
-func BlockHeightLT(v uint64) predicate.Msg {
-	return predicate.Msg(sql.FieldLT(FieldBlockHeight, v))
-}
-
-// BlockHeightLTE applies the LTE predicate on the "block_height" field.
-func BlockHeightLTE(v uint64) predicate.Msg {
-	return predicate.Msg(sql.FieldLTE(FieldBlockHeight, v))
-}
-
-// BlockTimeEQ applies the EQ predicate on the "block_time" field.
-func BlockTimeEQ(v time.Time) predicate.Msg {
-	return predicate.Msg(sql.FieldEQ(FieldBlockTime, v))
-}
-
-// BlockTimeNEQ applies the NEQ predicate on the "block_time" field.
-func BlockTimeNEQ(v time.Time) predicate.Msg {
-	return predicate.Msg(sql.FieldNEQ(FieldBlockTime, v))
-}
-
-// BlockTimeIn applies the In predicate on the "block_time" field.
-func BlockTimeIn(vs ...time.Time) predicate.Msg {
-	return predicate.Msg(sql.FieldIn(FieldBlockTime, vs...))
-}
-
-// BlockTimeNotIn applies the NotIn predicate on the "block_time" field.
-func BlockTimeNotIn(vs ...time.Time) predicate.Msg {
-	return predicate.Msg(sql.FieldNotIn(FieldBlockTime, vs...))
-}
-
-// BlockTimeGT applies the GT predicate on the "block_time" field.
-func BlockTimeGT(v time.Time) predicate.Msg {
-	return predicate.Msg(sql.FieldGT(FieldBlockTime, v))
-}
-
-// BlockTimeGTE applies the GTE predicate on the "block_time" field.
-func BlockTimeGTE(v time.Time) predicate.Msg {
-	return predicate.Msg(sql.FieldGTE(FieldBlockTime, v))
-}
-
-// BlockTimeLT applies the LT predicate on the "block_time" field.
-func BlockTimeLT(v time.Time) predicate.Msg {
-	return predicate.Msg(sql.FieldLT(FieldBlockTime, v))
-}
-
-// BlockTimeLTE applies the LTE predicate on the "block_time" field.
-func BlockTimeLTE(v time.Time) predicate.Msg {
-	return predicate.Msg(sql.FieldLTE(FieldBlockTime, v))
 }
 
 // SenderEQ applies the EQ predicate on the "sender" field.
@@ -730,7 +595,7 @@ func CreatedAtLTE(v time.Time) predicate.Msg {
 	return predicate.Msg(sql.FieldLTE(FieldCreatedAt, v))
 }
 
-// HasBlock applies the HasEdge predicate on the "Block" edge.
+// HasBlock applies the HasEdge predicate on the "block" edge.
 func HasBlock() predicate.Msg {
 	return predicate.Msg(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
@@ -741,7 +606,7 @@ func HasBlock() predicate.Msg {
 	})
 }
 
-// HasBlockWith applies the HasEdge predicate on the "Block" edge with a given conditions (other predicates).
+// HasBlockWith applies the HasEdge predicate on the "block" edge with a given conditions (other predicates).
 func HasBlockWith(preds ...predicate.Block) predicate.Msg {
 	return predicate.Msg(func(s *sql.Selector) {
 		step := newBlockStep()
@@ -753,7 +618,7 @@ func HasBlockWith(preds ...predicate.Block) predicate.Msg {
 	})
 }
 
-// HasReceipts applies the HasEdge predicate on the "Receipts" edge.
+// HasReceipts applies the HasEdge predicate on the "receipts" edge.
 func HasReceipts() predicate.Msg {
 	return predicate.Msg(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
@@ -764,7 +629,7 @@ func HasReceipts() predicate.Msg {
 	})
 }
 
-// HasReceiptsWith applies the HasEdge predicate on the "Receipts" edge with a given conditions (other predicates).
+// HasReceiptsWith applies the HasEdge predicate on the "receipts" edge with a given conditions (other predicates).
 func HasReceiptsWith(preds ...predicate.Receipt) predicate.Msg {
 	return predicate.Msg(func(s *sql.Selector) {
 		step := newReceiptsStep()

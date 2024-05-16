@@ -22,24 +22,6 @@ type MsgCreate struct {
 	hooks    []Hook
 }
 
-// SetBlockHash sets the "block_hash" field.
-func (mc *MsgCreate) SetBlockHash(b []byte) *MsgCreate {
-	mc.mutation.SetBlockHash(b)
-	return mc
-}
-
-// SetBlockHeight sets the "block_height" field.
-func (mc *MsgCreate) SetBlockHeight(u uint64) *MsgCreate {
-	mc.mutation.SetBlockHeight(u)
-	return mc
-}
-
-// SetBlockTime sets the "block_time" field.
-func (mc *MsgCreate) SetBlockTime(t time.Time) *MsgCreate {
-	mc.mutation.SetBlockTime(t)
-	return mc
-}
-
 // SetSender sets the "sender" field.
 func (mc *MsgCreate) SetSender(b []byte) *MsgCreate {
 	mc.mutation.SetSender(b)
@@ -122,13 +104,13 @@ func (mc *MsgCreate) SetNillableCreatedAt(t *time.Time) *MsgCreate {
 	return mc
 }
 
-// AddBlockIDs adds the "Block" edge to the Block entity by IDs.
+// AddBlockIDs adds the "block" edge to the Block entity by IDs.
 func (mc *MsgCreate) AddBlockIDs(ids ...int) *MsgCreate {
 	mc.mutation.AddBlockIDs(ids...)
 	return mc
 }
 
-// AddBlock adds the "Block" edges to the Block entity.
+// AddBlock adds the "block" edges to the Block entity.
 func (mc *MsgCreate) AddBlock(b ...*Block) *MsgCreate {
 	ids := make([]int, len(b))
 	for i := range b {
@@ -137,13 +119,13 @@ func (mc *MsgCreate) AddBlock(b ...*Block) *MsgCreate {
 	return mc.AddBlockIDs(ids...)
 }
 
-// AddReceiptIDs adds the "Receipts" edge to the Receipt entity by IDs.
+// AddReceiptIDs adds the "receipts" edge to the Receipt entity by IDs.
 func (mc *MsgCreate) AddReceiptIDs(ids ...int) *MsgCreate {
 	mc.mutation.AddReceiptIDs(ids...)
 	return mc
 }
 
-// AddReceipts adds the "Receipts" edges to the Receipt entity.
+// AddReceipts adds the "receipts" edges to the Receipt entity.
 func (mc *MsgCreate) AddReceipts(r ...*Receipt) *MsgCreate {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -202,20 +184,6 @@ func (mc *MsgCreate) defaults() error {
 
 // check runs all checks and user-defined validators on the builder.
 func (mc *MsgCreate) check() error {
-	if _, ok := mc.mutation.BlockHash(); !ok {
-		return &ValidationError{Name: "block_hash", err: errors.New(`ent: missing required field "Msg.block_hash"`)}
-	}
-	if v, ok := mc.mutation.BlockHash(); ok {
-		if err := msg.BlockHashValidator(v); err != nil {
-			return &ValidationError{Name: "block_hash", err: fmt.Errorf(`ent: validator failed for field "Msg.block_hash": %w`, err)}
-		}
-	}
-	if _, ok := mc.mutation.BlockHeight(); !ok {
-		return &ValidationError{Name: "block_height", err: errors.New(`ent: missing required field "Msg.block_height"`)}
-	}
-	if _, ok := mc.mutation.BlockTime(); !ok {
-		return &ValidationError{Name: "block_time", err: errors.New(`ent: missing required field "Msg.block_time"`)}
-	}
 	if _, ok := mc.mutation.Sender(); !ok {
 		return &ValidationError{Name: "sender", err: errors.New(`ent: missing required field "Msg.sender"`)}
 	}
@@ -289,18 +257,6 @@ func (mc *MsgCreate) createSpec() (*Msg, *sqlgraph.CreateSpec) {
 		_node = &Msg{config: mc.config}
 		_spec = sqlgraph.NewCreateSpec(msg.Table, sqlgraph.NewFieldSpec(msg.FieldID, field.TypeInt))
 	)
-	if value, ok := mc.mutation.BlockHash(); ok {
-		_spec.SetField(msg.FieldBlockHash, field.TypeBytes, value)
-		_node.BlockHash = value
-	}
-	if value, ok := mc.mutation.BlockHeight(); ok {
-		_spec.SetField(msg.FieldBlockHeight, field.TypeUint64, value)
-		_node.BlockHeight = value
-	}
-	if value, ok := mc.mutation.BlockTime(); ok {
-		_spec.SetField(msg.FieldBlockTime, field.TypeTime, value)
-		_node.BlockTime = value
-	}
 	if value, ok := mc.mutation.Sender(); ok {
 		_spec.SetField(msg.FieldSender, field.TypeBytes, value)
 		_node.Sender = value
