@@ -22,9 +22,6 @@ services:
     - 6060
     volumes:
     - ./node0:/halo
-    depends_on:
-      omni_evm_0:
-        condition: service_healthy
     networks:
       test:
         ipv4_address: 10.186.73.0
@@ -74,18 +71,6 @@ services:
     
 
   # Use geth as the omni EVMs.
-  # Initialises geth files and folder from provided genesis file.
-  omni_evm_0-init:
-    labels:
-      e2e: true
-    container_name: omni_evm_0-init
-    image: "ethereum/client-go:v1.14.2"
-    command: --state.scheme=path --datadir=/geth init /geth/genesis.json
-    volumes:
-      - ./omni_evm_0:/geth
-    networks:
-      test:
-
   omni_evm_0:
     labels:
       e2e: true
@@ -105,9 +90,6 @@ services:
       - 30303
       - 8546
       - 6060
-    depends_on:
-      omni_evm_0-init:
-        condition: service_completed_successfully
     healthcheck:
       test: "nc -z localhost 8545"
       interval: 1s

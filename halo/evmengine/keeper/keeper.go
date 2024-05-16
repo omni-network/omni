@@ -93,6 +93,11 @@ func (k *Keeper) RegisterProposalService(server grpc1.Server) {
 //
 // Note that the validator set can change, so this is an optimistic check.
 func (k *Keeper) isNextProposer(ctx context.Context, currentProposer []byte, currentHeight int64) (bool, error) {
+	// cometAPI is lazily set and may be nil on startup (e.g. rollbacks).
+	if k.cmtAPI == nil {
+		return false, nil
+	}
+
 	valset, ok, err := k.cmtAPI.Validators(ctx, currentHeight)
 	if err != nil {
 		return false, err

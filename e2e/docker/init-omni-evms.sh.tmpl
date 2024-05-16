@@ -1,0 +1,8 @@
+#!/bin.bash
+
+# TODO(corver): This script fails if called multiple times, make it idempotent, so it can always be called on upgrade.
+
+{{- if not .OmniEVMs }}# No omni-evms to initialise{{end}}
+{{- range .OmniEVMs }}
+docker compose run {{ .InstanceName }} --state.scheme={{ if .IsArchive }}hash{{ else }}path{{ end }} --datadir=/geth init /geth/genesis.json
+{{end}}
