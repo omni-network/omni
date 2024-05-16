@@ -2,6 +2,7 @@ package relayer
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -43,7 +44,12 @@ func startMonitoring(ctx context.Context, network netconf.Network, xprovider xch
 				continue
 			}
 
-			go monitorOffsetsForever(ctx, srcChain, dstChain, xprovider)
+			name := streamName(network.ChainName, xchain.StreamID{
+				SourceChainID: srcChain.ID,
+				DestChainID:   dstChain.ID,
+			})
+
+			go monitorOffsetsForever(ctx, name, srcChain, dstChain, xprovider)
 		}
 	}
 
@@ -90,7 +96,12 @@ func monitorConsOffsetOnce(ctx context.Context, network netconf.Network, xprovid
 			return nil
 		}
 
-		emitMsgOffset.WithLabelValues(cChain.Name, destChain.Name).Set(float64(emitted.MsgOffset))
+		name := streamName(network.ChainName, xchain.StreamID{
+			SourceChainID: cChain.ID,
+			DestChainID:   destChain.ID,
+		})
+
+		emitMsgOffset.WithLabelValues(name).Set(float64(emitted.MsgOffset))
 	}
 
 	return nil
@@ -159,7 +170,7 @@ func monitorAttestedForever(
 			}
 
 			for stream, msgOffset := range latestMsgOffsets(block.Msgs) {
-				attestedMsgBlockOffset.WithLabelValues(chain.Name, namer(stream.DestChainID)).Set(float64(msgOffset))
+				attestedMsgOffset.WithLabelValues(streamName(namer, stream)).Set(float64(msgOffset))
 			}
 		}
 	}
@@ -265,7 +276,7 @@ func monitorAccountOnce(ctx context.Context, addr common.Address, chainName stri
 
 // monitorOffsetsForever blocks and periodically monitors the emitted and submitted
 // offsets for a given source and destination chain.
-func monitorOffsetsForever(ctx context.Context, src, dst netconf.Chain,
+func monitorOffsetsForever(ctx context.Context, streamName string, src, dst netconf.Chain,
 	xprovider xchain.Provider) {
 	ticker := time.NewTicker(time.Second * 30)
 	defer ticker.Stop()
@@ -275,7 +286,7 @@ func monitorOffsetsForever(ctx context.Context, src, dst netconf.Chain,
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			err := monitorOffsetsOnce(ctx, src, dst, xprovider)
+			err := monitorOffsetsOnce(ctx, streamName, src, dst, xprovider)
 			if ctx.Err() != nil {
 				return
 			} else if err != nil {
@@ -290,7 +301,7 @@ func monitorOffsetsForever(ctx context.Context, src, dst netconf.Chain,
 
 // monitorOffsetsOnce monitors the emitted and submitted offsets for a given source and
 // destination chain.
-func monitorOffsetsOnce(ctx context.Context, src, dst netconf.Chain,
+func monitorOffsetsOnce(ctx context.Context, streamName string, src, dst netconf.Chain,
 	xprovider xchain.Provider) error {
 	emitted, ok, err := xprovider.GetEmittedCursor(ctx, ethclient.HeadType(src.FinalizationStrat), src.ID, dst.ID)
 	if err != nil {
@@ -304,9 +315,9 @@ func monitorOffsetsOnce(ctx context.Context, src, dst netconf.Chain,
 		return err
 	}
 
-	emitMsgOffset.WithLabelValues(src.Name, dst.Name).Set(float64(emitted.MsgOffset))
+	emitMsgOffset.WithLabelValues(streamName).Set(float64(emitted.MsgOffset))
 	// emitBlockOffset isn't statelessly fetched from the source chain, it is calculated and tracked by XProvider...
-	submitMsgOffset.WithLabelValues(src.Name, dst.Name).Set(float64(submitted.MsgOffset))
+	submitMsgOffset.WithLabelValues(streamName).Set(float64(submitted.MsgOffset))
 	submitBlockOffset.WithLabelValues(src.Name, dst.Name).Set(float64(submitted.BlockOffset))
 
 	return nil
@@ -341,4 +352,8 @@ func newChainNamer(network netconf.Network) func(uint64) string {
 
 		return network.ChainName(chainID)
 	}
+}
+
+func streamName(namer func(uint64) string, streamID xchain.StreamID) string {
+	return fmt.Sprintf("%s|%s", namer(streamID.SourceChainID), namer(streamID.DestChainID))
 }
