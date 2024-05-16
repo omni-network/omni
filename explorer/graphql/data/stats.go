@@ -47,12 +47,12 @@ func NewStatsProvider(ctx context.Context, cl *ent.Client, ch Chainer) *StatsPro
 	return res
 }
 
-func (p *StatsProvider) Stats(ctx context.Context) StatsResult {
-	return p.stats
+func (s *StatsProvider) Stats(ctx context.Context) StatsResult {
+	return s.stats
 }
 
-func (p *StatsProvider) TotalMsgs() uint64 {
-	return uint64(p.stats.TotalMsgs)
+func (s *StatsProvider) TotalMsgs() uint64 {
+	return uint64(s.stats.TotalMsgs)
 }
 
 func (s *StatsProvider) updateStats(ctx context.Context) {
@@ -62,7 +62,7 @@ func (s *StatsProvider) updateStats(ctx context.Context) {
 
 	total, err := s.cl.Msg.Query().Count(ctx)
 	if err != nil {
-		log.Warn(ctx, "updateStats(): Msg count query", err)
+		log.Warn(ctx, "Calling updateStats(): Msg count query", err)
 	}
 	stats.TotalMsgs = Long(total)
 
@@ -83,7 +83,7 @@ func (s *StatsProvider) updateStats(ctx context.Context) {
 		).
 		Scan(ctx, &v)
 	if err != nil {
-		log.Warn(ctx, "updateStats(): top streams query", err)
+		log.Warn(ctx, "Calling updateStats(): top streams query", err)
 	}
 
 	sort.Slice(v, func(i, j int) bool {

@@ -9,8 +9,6 @@ import (
 	"math"
 	"time"
 
-	"github.com/graph-gophers/graphql-go"
-	"github.com/graph-gophers/graphql-go/relay"
 	"github.com/omni-network/omni/explorer/db/ent/msg"
 	"github.com/omni-network/omni/explorer/graphql/uintconv"
 	"github.com/omni-network/omni/lib/errors"
@@ -18,6 +16,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+
+	"github.com/graph-gophers/graphql-go"
+	"github.com/graph-gophers/graphql-go/relay"
 )
 
 func (p Provider) XMsgCount(ctx context.Context) (*hexutil.Big, bool, error) {
@@ -184,6 +185,8 @@ func (p Provider) XMsgs(ctx context.Context, first, last *int32, before *graphql
 		totalPages int
 		start      uint64
 		end        uint64
+		beforeID   *uint64
+		afterID    *uint64
 	)
 	if first != nil {
 		numItems = *first
@@ -201,6 +204,7 @@ func (p Provider) XMsgs(ctx context.Context, first, last *int32, before *graphql
 			if err := cur.Decode(*after); err != nil {
 				return XMsgConnection{}, err
 			}
+			afterID = &cur.ID
 			start = cur.ID + 1
 			pageNum = int(cur.PageNum) - 1
 		} else {
@@ -216,6 +220,7 @@ func (p Provider) XMsgs(ctx context.Context, first, last *int32, before *graphql
 			if err := cur.Decode(*before); err != nil {
 				return XMsgConnection{}, err
 			}
+			beforeID = &cur.ID
 			end = cur.ID // exclusive
 			pageNum = int(cur.PageNum) + 1
 		} else {
@@ -233,7 +238,7 @@ func (p Provider) XMsgs(ctx context.Context, first, last *int32, before *graphql
 	log.Info(ctx, "XMsgs", "start", start, "end", end, "total", total, "numItems", numItems, "pageNum", pageNum, "totalPages", totalPages)
 
 	query := `
-	SELECT
+	SELECT DISTINCT ON (m.id)
 		m.id,
 		m.sender,
 		m.to,
@@ -264,33 +269,21 @@ func (p Provider) XMsgs(ctx context.Context, first, last *int32, before *graphql
 			LEFT JOIN block_msgs bm ON bm.msg_id = m.id
 			LEFT JOIN blocks b ON bm.block_id = b.id
 			LEFT JOIN msg_receipts mr ON mr.msg_id = m.id
-			LEFT JOIN (
-				-- use only the last receipt row per tx_hash
-				SELECT
-					*
-				FROM
-					receipts
-				WHERE id IN
-					(
-						SELECT
-							MAX(r1.id) AS id
-						FROM
-							receipts r1
-						GROUP BY
-							r1.tx_hash
-					)
-			) r ON mr.receipt_id = r.id
+			LEFT JOIN receipts r ON mr.receipt_id = r.id
 	WHERE
-		m.id <= $2
-		AND m.status = 'SUCCESS'
-		--AND m.source_chain_id = 1651
-		AND m.dest_chain_id = 1654
-		-- AND m.tx_hash = decode('22f3133cdc633e1eaa163e28c383f94267d5c26a5cfb7b86946ba696a3bc0ab6', 'hex')
+		($2 IS NULL OR m.id < $2)                      -- before cursor
+		AND ($3 IS NULL OR m.id > $3)                  -- after cursor
+		AND ($4 IS NULL OR m.status = $4)              -- status filter
+		AND ($5 IS NULL OR m.source_chain_id = $5)     -- source_chain_id filter
+		AND ($6 IS NULL OR m.dest_chain_id = $6)       -- dest_chain_id filter
+		AND ($7 IS NULL OR m.tx_hash = $7)             -- tx_hash filter
+		AND ($8 IS NULL OR m.to = $8 or m.sender = $8) -- address filter
 	ORDER BY
-		m.id DESC -- the id column is auto-increment and therefore chronological
+		m.id DESC, -- the id column is auto-increment and desc returns latest data first
+		r.id DESC  -- the id column is auto-increment - together with distinct ensures that only the latest receipt is returned
 	LIMIT $1;
 	`
-	rows, err := p.cl.DB().QueryContext(ctx, query, numItems, end)
+	rows, err := p.cl.DB().QueryContext(ctx, query, numItems, beforeID, afterID, filters.Status, filters.SourceChainID, filters.DestChainID, filters.Addr, filters.TxHash)
 	if err != nil {
 		return XMsgConnection{}, errors.Wrap(err, "preparing query")
 	}
@@ -300,6 +293,9 @@ func (p Provider) XMsgs(ctx context.Context, first, last *int32, before *graphql
 	res.TotalCount = Long(total)
 
 	for rows.Next() {
+		if rows.Err() != nil {
+			return XMsgConnection{}, errors.Wrap(rows.Err(), "executing query")
+		}
 		var v dbXMsgRow
 
 		err := rows.Scan(
@@ -365,7 +361,7 @@ type cursor struct {
 func (c *cursor) Encode() (graphql.ID, error) {
 	b, err := json.Marshal(c)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "encoding cursor")
 	}
 
 	res := base64.StdEncoding.EncodeToString(b)
@@ -380,8 +376,12 @@ func (c *cursor) Decode(id graphql.ID) error {
 	}
 	b, err := base64.StdEncoding.DecodeString(string(id))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "decoding cursor")
+	}
+	err = json.Unmarshal(b, c)
+	if err != nil {
+		return errors.Wrap(err, "invalid cursor")
 	}
 
-	return json.Unmarshal(b, c)
+	return nil
 }

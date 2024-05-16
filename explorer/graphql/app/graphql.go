@@ -28,8 +28,6 @@ type Provider interface {
 func GraphQL(p Provider) http.Handler {
 	res := resolvers.NewRoot(p)
 
-	//res := mockresolver.New()
-
 	opts := []graphql.SchemaOpt{
 		graphql.UseFieldResolvers(),
 		graphql.UseStringDescriptions(),

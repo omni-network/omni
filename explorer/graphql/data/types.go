@@ -3,6 +3,8 @@ package data
 import (
 	"fmt"
 
+	"github.com/omni-network/omni/lib/errors"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
@@ -77,7 +79,7 @@ type XMsg struct {
 func (m XMsg) SourceChain() (Chain, error) {
 	c, ok := m.Chain(m.SourceChainID.String())
 	if !ok {
-		return Chain{}, fmt.Errorf("chain not found: %s", m.SourceChainID.String())
+		return Chain{}, errors.New("chain not found", "chain_id", m.SourceChainID.String())
 	}
 
 	return c, nil
@@ -86,7 +88,7 @@ func (m XMsg) SourceChain() (Chain, error) {
 func (m XMsg) DestChain() (Chain, error) {
 	c, ok := m.Chain(m.DestChainID.String())
 	if !ok {
-		return Chain{}, fmt.Errorf("chain not found: %s", m.DestChainID.String())
+		return Chain{}, errors.New("chain not found", "chain_id", m.DestChainID.String())
 	}
 
 	return c, nil

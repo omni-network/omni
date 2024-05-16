@@ -15,7 +15,7 @@ import (
 
 const (
 	defaultListenAddr     = ":8080"
-	defaultExplorerDBConn = "postgres://omni:password@localhost:5432/omni_db"
+	defaultExplorerDBConn = "postgres://omni:password@explorer_db:5432/omni_db"
 	defaultMonitoringAddr = ":26660"
 	defaultNetwork        = "devnet"
 )

@@ -3,12 +3,13 @@ package resolvers
 import (
 	"context"
 
-	"github.com/graph-gophers/graphql-go"
 	"github.com/omni-network/omni/explorer/graphql/data"
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+
+	"github.com/graph-gophers/graphql-go"
 )
 
 const MsgsLimit = 25

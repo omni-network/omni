@@ -18,7 +18,7 @@ import (
 )
 
 // EntBlockToGraphQLBlock converts an ent.Block to a XBlock.
-func EntBlockToGraphQLBlock(ctx context.Context, block *ent.Block) (*XBlock, error) {
+func EntBlockToGraphQLBlock(_ context.Context, block *ent.Block) (*XBlock, error) {
 	sourceChainIDBig, err := uintconv.ToBig(block.ChainID)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding source chain id")
@@ -44,15 +44,6 @@ func EntBlockToGraphQLBlock(ctx context.Context, block *ent.Block) (*XBlock, err
 		}
 		res.Messages = append(res.Messages, *msg)
 	}
-
-	// // Decode receipts
-	// for _, receipt := range block.Edges.Receipts {
-	// 	receipt, err := EntReceiptToGraphQLXReceipt(ctx, receipt, block)
-	// 	if err != nil {
-	// 		return nil, errors.Wrap(err, "decoding receipt for block")
-	// 	}
-	// 	res.Receipts = append(res.Receipts, *receipt)
-	// }
 
 	return &res, nil
 }
@@ -107,14 +98,6 @@ func EntMsgToGraphQLXMsg(msg *ent.Msg) (*XMsg, error) {
 
 // EntReceiptToGraphQLXReceipt converts an ent.Receipt to a XReceipt.
 func EntReceiptToGraphQLXReceipt(ctx context.Context, receipt *ent.Receipt, block *ent.Block) (*XReceipt, error) {
-	if block == nil {
-		b, err := receipt.QueryBlock().Only(ctx)
-		if err != nil {
-			return nil, errors.Wrap(err, "querying block for message")
-		}
-		block = b
-	}
-
 	gasUsed, err := uintconv.ToBig(receipt.GasUsed)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding gas used")
