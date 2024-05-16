@@ -6,14 +6,12 @@ import (
 
 	"github.com/omni-network/omni/explorer/db/testutil"
 	"github.com/omni-network/omni/explorer/graphql/app"
-	"github.com/omni-network/omni/explorer/graphql/resolvers"
 
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/gqltesting"
 )
 
 func TestSupportedChains(t *testing.T) {
-	t.Skip("This test is failing because the schema was changed")
 	t.Parallel()
 	ctx := context.Background()
 	test := createGqlTest(t)
@@ -23,28 +21,50 @@ func TestSupportedChains(t *testing.T) {
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
 			Context: ctx,
-			Schema:  graphql.MustParseSchema(app.Schema, &resolvers.Query{BlocksResolver: test.Resolver}, test.Opts...),
+			Schema:  graphql.MustParseSchema(app.Schema, test.Resolver, test.Opts...),
 			Query: `
 				{
-					supportedchains{
-						ChainID
-						Name
+					supportedChains{
+						id
+						chainID
+						displayID
+						name
+						logoUrl
 					}
 				}
 			`,
-			ExpectedResult: `
-				{
-					"supportedchains":[
-						{
-							"ChainID":"0x1",
-							"Name":"test-chain1"
-						},
-						{
-							"ChainID":"0x2",
-							"Name":"test-chain2"
-						}
-					]
-				}
+			ExpectedResult: `{
+				"supportedChains": [
+					{
+						"chainID": "0x673",
+						"displayID": "1651",
+						"id": "Y2hhaW46MTY1MQ==",
+						"logoUrl": "https://chainlist.org/unknown-logo.png",
+						"name": "Omni Ephemeral"
+					},
+					{
+						"chainID": "0x674",
+						"displayID": "1652",
+						"id": "Y2hhaW46MTY1Mg==",
+						"logoUrl": "https://chainlist.org/unknown-logo.png",
+						"name": "Mock L1 Fast"
+					},
+					{
+						"chainID": "0x675",
+						"displayID": "1653",
+						"id": "Y2hhaW46MTY1Mw==",
+						"logoUrl": "https://chainlist.org/unknown-logo.png",
+						"name": "Mock L1 Slow"
+					},
+					{
+						"chainID": "0x676",
+						"displayID": "1654",
+						"id": "Y2hhaW46MTY1NA==",
+						"logoUrl": "https://chainlist.org/unknown-logo.png",
+						"name": "Mock L2"
+					}
+				]
+			}
 			`,
 		},
 	})
