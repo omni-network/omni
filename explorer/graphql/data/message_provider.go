@@ -12,7 +12,6 @@ import (
 	"github.com/omni-network/omni/explorer/db/ent/msg"
 	"github.com/omni-network/omni/explorer/graphql/uintconv"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -20,6 +19,10 @@ import (
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/relay"
 )
+
+type RowQuerier interface {
+	QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row
+}
 
 func (p Provider) XMsgCount(ctx context.Context) (*hexutil.Big, bool, error) {
 	query, err := p.cl.Msg.Query().Count(ctx)
@@ -82,9 +85,10 @@ func (p Provider) XMsg(ctx context.Context, srcChainID, destChainID, offset uint
 }
 
 type dbXMsgRow struct {
+	RowNum                uint64
 	ID                    uint64
-	Sender                []byte
-	To                    []byte
+	Sender                common.Address
+	To                    common.Address
 	Data                  []byte
 	GasLimit              int
 	SourceChainID         uint64
@@ -96,7 +100,7 @@ type dbXMsgRow struct {
 	ReceiptID             sql.NullInt64
 	ReceiptTxHash         *common.Hash
 	ReceiptSuccess        sql.NullBool
-	ReceiptRelayerAddress *[]byte
+	ReceiptRelayerAddress common.Address
 	ReceiptGasUsed        sql.NullInt64
 	ReceiptSourceChainID  sql.NullInt64
 	ReceiptDestChainID    sql.NullInt64
@@ -125,6 +129,8 @@ func (r *dbXMsgRow) ToGraphQLXMsg(ch Chainer) (*XMsg, error) {
 
 		ID:            relay.MarshalID("xmsg", r.ID),
 		Data:          hexutil.Bytes(r.Data),
+		Sender:        r.Sender,
+		To:            r.To,
 		GasLimit:      hexutil.Big(*hexutil.MustDecodeBig(fmt.Sprintf("0x%x", r.GasLimit))),
 		SourceChainID: hexutil.Big(*hexutil.MustDecodeBig(fmt.Sprintf("0x%x", r.SourceChainID))),
 		DestChainID:   hexutil.Big(*hexutil.MustDecodeBig(fmt.Sprintf("0x%x", r.DestChainID))),
@@ -142,7 +148,7 @@ func (r *dbXMsgRow) ToGraphQLXMsg(ch Chainer) (*XMsg, error) {
 			ID:      relay.MarshalID("xreceipt", r.ReceiptID),
 			TxHash:  *r.ReceiptTxHash,
 			Success: r.ReceiptSuccess.Bool,
-			Relayer: common.Address(*r.ReceiptRelayerAddress),
+			Relayer: r.ReceiptRelayerAddress,
 		}
 	}
 	if r.ReceiptGasUsed.Valid {
@@ -179,14 +185,10 @@ func (p Provider) XMsgs(ctx context.Context, first, last *int32, before *graphql
 
 	total := p.StatsProvider.TotalMsgs() // cached value of the total messages
 	var (
-		numItems   int32
-		cur        cursor
-		pageNum    int
-		totalPages int
-		start      uint64
-		end        uint64
-		beforeID   uint64
-		afterID    uint64
+		numItems int32
+		cur      cursor
+		beforeID uint64
+		afterID  uint64
 	)
 	if first != nil {
 		numItems = *first
@@ -196,8 +198,6 @@ func (p Provider) XMsgs(ctx context.Context, first, last *int32, before *graphql
 		return XMsgConnection{}, errors.New("either first or last must be provided")
 	}
 
-	totalPages = int(math.Ceil(float64(total) / float64(numItems)))
-
 	// our data is backwards (oldest data is first), so we need to reverse the order
 	if first != nil {
 		if after != nil {
@@ -205,15 +205,6 @@ func (p Provider) XMsgs(ctx context.Context, first, last *int32, before *graphql
 				return XMsgConnection{}, err
 			}
 			afterID = cur.ID
-			start = cur.ID + 1
-			pageNum = int(cur.PageNum) - 1
-		} else {
-			start = 0
-			pageNum = totalPages
-		}
-		end = start + uint64(numItems)
-		if end > total {
-			end = total
 		}
 	} else if last != nil {
 		if before != nil {
@@ -221,21 +212,9 @@ func (p Provider) XMsgs(ctx context.Context, first, last *int32, before *graphql
 				return XMsgConnection{}, err
 			}
 			beforeID = cur.ID
-			end = cur.ID // exclusive
-			pageNum = int(cur.PageNum) + 1
-		} else {
-			end = total
-			pageNum = 1
-		}
-
-		if end < uint64(numItems) { // end - numItems < 0
-			start = 0
-		} else {
-			start = end - uint64(numItems)
 		}
 	}
 
-	log.Info(ctx, "XMsgs", "start", start, "end", end, "total", total, "numItems", numItems, "pageNum", pageNum, "totalPages", totalPages)
 	var status string
 	if filters.Status != nil {
 		status = string(*filters.Status)
@@ -249,52 +228,69 @@ func (p Provider) XMsgs(ctx context.Context, first, last *int32, before *graphql
 	}
 
 	query := `
-	SELECT DISTINCT ON (m.id)
-		m.id,
-		m.sender,
-		m.to,
-		m.data,
-		m.gas_limit,
-		m.source_chain_id,
-		m.dest_chain_id,
-		m.offset,
-		m.tx_hash,
-		m.status,
-		m.created_at,
-		r.id AS receipt_id,
-		r.tx_hash AS receipt_tx_hash,
-		r.success AS receipt_success,
-		r.relayer_address AS receipt_relayer_address,
-		r.gas_used AS receipt_gas_used,
-		r.source_chain_id AS receipt_source_chain_id,
-		r.dest_chain_id AS receipt_dest_chain_id,
-		r.offset AS receipt_offset,
-		r.created_at AS receipt_created_at,
-		b.id AS block_id,
-		b.chain_id AS block_chain_id,
-		b.hash AS block_hash,
-		b.height AS block_height,
-		b.timestamp AS block_timestamp
+	SELECT
+		*
 	FROM
-		msgs m
-			LEFT JOIN block_msgs bm ON bm.msg_id = m.id
-			LEFT JOIN blocks b ON bm.block_id = b.id
-			LEFT JOIN msg_receipts mr ON mr.msg_id = m.id
-			LEFT JOIN receipts r ON mr.receipt_id = r.id
+		(
+			SELECT DISTINCT ON (m.id)
+				ROW_NUMBER() OVER (ORDER BY m.id DESC) AS row_num, -- increasing row number for pagination purposes of data in reverse order (highest id first)
+				m.id,
+				m.sender,
+				m.to,
+				m.data,
+				m.gas_limit,
+				m.source_chain_id,
+				m.dest_chain_id,
+				m.offset,
+				m.tx_hash,
+				m.status,
+				m.created_at,
+				r.id AS receipt_id,
+				r.tx_hash AS receipt_tx_hash,
+				r.success AS receipt_success,
+				r.relayer_address::bytea AS receipt_relayer_address,
+				r.gas_used AS receipt_gas_used,
+				r.source_chain_id AS receipt_source_chain_id,
+				r.dest_chain_id AS receipt_dest_chain_id,
+				r.offset AS receipt_offset,
+				r.created_at AS receipt_created_at,
+				b.id AS block_id,
+				b.chain_id AS block_chain_id,
+				b.hash AS block_hash,
+				b.height AS block_height,
+				b.timestamp AS block_timestamp
+			FROM
+				msgs m
+					LEFT JOIN block_msgs bm ON bm.msg_id = m.id
+					LEFT JOIN blocks b ON bm.block_id = b.id
+					LEFT JOIN msg_receipts mr ON mr.msg_id = m.id
+					LEFT JOIN receipts r ON mr.receipt_id = r.id
+			WHERE
+				($4 = '' OR m.status = $4)                                  -- status filter
+				AND ($5 = 0 OR m.source_chain_id = $5)                      -- source_chain_id filter
+				AND ($6 = 0 OR m.dest_chain_id = $6)                        -- dest_chain_id filter
+				AND ($7::bytea IS NULL OR m.tx_hash = $7 OR r.tx_hash = $7) -- tx_hash filter
+				AND ($8::bytea IS NULL OR m.sender = $8 OR m.to = $8)       -- address filter
+			ORDER BY
+				m.id DESC, -- the id column is auto-increment and desc returns latest data first
+				r.id DESC  -- the id column is auto-increment - together with distinct ensures that only the latest receipt is returned
+		) AS x
 	WHERE
-		($2 = 0 OR m.id < $2)                                 -- before cursor
-		AND ($3 = 0 OR m.id > $3)                             -- after cursor
-		AND ($4 = '' OR m.status = $4)                        -- status filter
-		AND ($5 = 0 OR m.source_chain_id = $5)                -- source_chain_id filter
-		AND ($6 = 0 OR m.dest_chain_id = $6)                  -- dest_chain_id filter
-		-- AND ($7::bytea IS NULL OR m.tx_hash = $7 OR r.tx_hash = $7) -- tx_hash filter
-		-- AND ($8::bytea IS NULL OR m.sender = $8 or m.to = $8)       -- address filter
-	ORDER BY
-		m.id DESC, -- the id column is auto-increment and desc returns latest data first
-		r.id DESC  -- the id column is auto-increment - together with distinct ensures that only the latest receipt is returned
-	LIMIT $1;
+		($2 = 0 OR x.row_num > $2)     -- before cursor
+	    AND ($3 = 0 OR x.row_num < $3) -- after cursor
+	LIMIT $1
+	OFFSET $9
 	`
-	rows, err := p.cl.DB().QueryContext(ctx, query, numItems, beforeID, afterID, status, srcChainID, destChainID) //, filters.TxHash, filters.Addr)
+	var queryOffset uint64
+	if first != nil {
+		// since the data is ordered by id in descending order, we need to adjust the offset for forwards pagination (e.g. going to the previous page)
+		if afterID > uint64(numItems) {
+			queryOffset = afterID - uint64(numItems)
+		} else {
+			queryOffset = 0
+		}
+	}
+	rows, err := p.cl.DB().QueryContext(ctx, query, numItems, beforeID, afterID, status, srcChainID, destChainID, filters.TxHash, filters.Addr, queryOffset)
 	if err != nil {
 		return XMsgConnection{}, errors.Wrap(err, "preparing query")
 	}
@@ -303,6 +299,8 @@ func (p Provider) XMsgs(ctx context.Context, first, last *int32, before *graphql
 	var res XMsgConnection
 	res.TotalCount = Long(total)
 
+	var firstRowNum uint64
+	var firstPopulated bool
 	for rows.Next() {
 		if rows.Err() != nil {
 			return XMsgConnection{}, errors.Wrap(rows.Err(), "executing query")
@@ -310,6 +308,7 @@ func (p Provider) XMsgs(ctx context.Context, first, last *int32, before *graphql
 		var v dbXMsgRow
 
 		err := rows.Scan(
+			&v.RowNum,
 			&v.ID,
 			&v.Sender,
 			&v.To,
@@ -339,12 +338,16 @@ func (p Provider) XMsgs(ctx context.Context, first, last *int32, before *graphql
 		if err != nil {
 			return XMsgConnection{}, errors.Wrap(err, "scanning row")
 		}
+		if !firstPopulated {
+			firstRowNum = v.RowNum
+			firstPopulated = true
+		}
 
 		m, err := v.ToGraphQLXMsg(p.ch)
 		if err != nil {
 			return XMsgConnection{}, errors.Wrap(err, "decoding message")
 		}
-		cur := cursor{ID: v.ID}
+		cur := cursor{ID: v.RowNum}
 		cv, err := cur.Encode()
 		if err != nil {
 			return XMsgConnection{}, errors.Wrap(err, "encoding cursor")
@@ -355,22 +358,53 @@ func (p Provider) XMsgs(ctx context.Context, first, last *int32, before *graphql
 		}
 		res.Edges = append(res.Edges, edge)
 	}
+	totalCount, err := msgsCount(ctx, p.cl.DB(), srcChainID, destChainID, status, filters.Addr, filters.TxHash)
+	if err != nil {
+		return XMsgConnection{}, errors.Wrap(err, "query total messages count")
+	}
 
+	res.TotalCount = Long(totalCount)
+	totalPages := uint64(math.Ceil(float64(totalCount) / float64(numItems)))
+	pageNum := uint64(math.Ceil(float64(firstRowNum) / float64(numItems)))
 	res.PageInfo = PageInfo{
 		HasNextPage: pageNum < totalPages,
 		HasPrevPage: pageNum > 1,
-		TotalPages:  Long(uint64(totalPages)),
-		CurrentPage: Long(uint64(pageNum)),
+		TotalPages:  Long(totalPages),
+		CurrentPage: Long(pageNum),
 	}
 
 	return res, nil
 }
 
+func msgsCount(ctx context.Context, q RowQuerier, srcChainID, destChainID uint64, status string, addr *common.Address, txHash *common.Hash) (uint64, error) {
+	query := `
+	SELECT
+		COUNT(DISTINCT m.id)
+	FROM
+		msgs m
+			LEFT JOIN msg_receipts mr ON mr.msg_id = m.id
+			LEFT JOIN receipts r ON mr.receipt_id = r.id
+	WHERE
+		($1 = '' OR m.status = $1)                                  -- status filter
+		AND ($2 = 0 OR m.source_chain_id = $2)                      -- source_chain_id filter
+		AND ($3 = 0 OR m.dest_chain_id = $3)                        -- dest_chain_id filter
+		AND ($4::bytea IS NULL OR m.tx_hash = $4 OR r.tx_hash = $4) -- tx_hash filter
+		AND ($5::bytea IS NULL OR m.sender = $5 OR m.to = $5)       -- address filter
+	`
+
+	var count uint64
+	err := q.QueryRowContext(ctx, query, status, srcChainID, destChainID, txHash, addr).Scan(&count)
+	if err != nil {
+		return 0, errors.Wrap(err, "query row")
+	}
+
+	return count, nil
+}
+
 // cursor is used for data pagination and is supposed to be represented as a base64 encoded json object which would allow for
 // future refactoring of the pagination without breaking the API or require frontend changes.
 type cursor struct {
-	ID      uint64 `json:"id"`
-	PageNum uint64 `json:"page_num"`
+	ID uint64 `json:"id"`
 }
 
 // Encode encodes the cursor to a base64 string.
