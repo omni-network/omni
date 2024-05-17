@@ -90,7 +90,10 @@ func (s *StatsProvider) updateStats(ctx context.Context) {
 		return v[i].Count > v[j].Count
 	})
 
-	for _, stream := range v {
+	for i, stream := range v {
+		if i == 3 {
+			break
+		}
 		sc, _ := s.ch.Chain(fmt.Sprintf("0x%x", stream.SourceChainID))
 		dc, _ := s.ch.Chain(fmt.Sprintf("0x%x", stream.DestChainID))
 		stats.TopStreams = append(stats.TopStreams, StreamStats{

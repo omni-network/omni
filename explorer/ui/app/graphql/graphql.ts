@@ -80,21 +80,10 @@ export type Query = {
   stats: StatsResult;
   /** Returns the list of supported chains. */
   supportedChains: Array<Chain>;
-  /** Retrieve a specific XBlock by source chain ID and height on that chain. */
-  xblock?: Maybe<XBlock>;
   /** Retrieve a specific XMsg by source chain ID, destination chain ID and offset. */
   xmsg?: Maybe<XMsg>;
   /** Returns a paginated list of XMsgs based on the provided arguments. For forwards pagination, provide `first` and `after`. For backwards pagination, provide `last` and `before`. Defaults to the last 10 messages. `after` and `before` are the cursors of the last and first messages from the current page respectively. */
   xmsgs: XMsgConnection;
-  /** Retrieve a specific XReceipt by source chain ID, destination chain ID and offset. */
-  xreceipt?: Maybe<XReceipt>;
-};
-
-
-/** The query type represents all of the read-only entry points into our object graph. */
-export type QueryXblockArgs = {
-  chainID: Scalars['BigInt']['input'];
-  height: Scalars['BigInt']['input'];
 };
 
 
@@ -113,14 +102,6 @@ export type QueryXmsgsArgs = {
   filters?: InputMaybe<Array<FilterInput>>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
-};
-
-
-/** The query type represents all of the read-only entry points into our object graph. */
-export type QueryXreceiptArgs = {
-  destChainID: Scalars['BigInt']['input'];
-  offset: Scalars['BigInt']['input'];
-  sourceChainID: Scalars['BigInt']['input'];
 };
 
 /** StatsResult represents the result of the stats query. */

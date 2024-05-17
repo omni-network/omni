@@ -8,6 +8,7 @@ import { useInterval } from '~/hooks/useInterval'
 import { xmsgs } from '~/components/queries/messages'
 import { mappedSourceChains } from '~/lib/sourceChains'
 import { chainStats, supportedChains } from '~/components/queries/chains'
+import { ChainStatsQuery, SupportedChainsQuery } from '~/graphql/graphql'
 import { XMsg, XmsgsQueryVariables } from '~/graphql/graphql'
 
 export const meta: MetaFunction = () => {
@@ -18,7 +19,7 @@ export const meta: MetaFunction = () => {
 }
 
 export type XmsgResponse = {
-  supportedChainsList: any[]
+  supportedChainsList: SupportedChainsQuery
   xmsgCount: string
   nextCursor: string
   prevCursor: string
@@ -29,7 +30,7 @@ export type XmsgResponse = {
     hasNextPage: boolean
     hasPrevPage: boolean
   }
-  chainStats: any[]
+  chainStats: ChainStatsQuery
 }
 
 export const loader: LoaderFunction = async ({ request }) => {
