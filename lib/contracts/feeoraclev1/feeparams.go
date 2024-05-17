@@ -44,24 +44,25 @@ func destFeeParams(ctx context.Context, srcChain evmchain.Metadata, destChainID 
 ) (bindings.IFeeOracleV1ChainFeeParams, error) {
 	destChain, ok := evmchain.MetadataByID(destChainID)
 	if !ok {
-		return bindings.IFeeOracleV1ChainFeeParams{}, errors.New("meta by chain id", "chain_id", destChainID)
+		return bindings.IFeeOracleV1ChainFeeParams{}, errors.New("meta by chain id", "dest_chain", destChain.Name)
 	}
 
 	backend, err := backends.Backend(destChainID)
 	if err != nil {
-		return bindings.IFeeOracleV1ChainFeeParams{}, errors.Wrap(err, "get backend", "chain_id", destChainID)
+		return bindings.IFeeOracleV1ChainFeeParams{}, errors.Wrap(err, "get backend", "dest_chain", destChain.Name)
 	}
 
 	// conversion rate from "dest token" to "src token"
 	// ex if dest chain is ETH, and src chain is OMNI, we need to know the rate of ETH to OMNI.
 	toNativeRate, err := conversionRate(ctx, pricer, destChain.NativeToken, srcChain.NativeToken)
 	if err != nil {
-		return bindings.IFeeOracleV1ChainFeeParams{}, err
+		log.Warn(ctx, "Failed fetching conversion rate, using default 1", err, "dest_chain", destChain.Name, "src_chain", srcChain.Name)
+		toNativeRate = 1
 	}
 
 	gasPrice, err := backend.SuggestGasPrice(ctx)
 	if err != nil {
-		log.Warn(ctx, "Failed fetching gas price, using default 1 Gwei", err, "chain_id", destChainID)
+		log.Warn(ctx, "Failed fetching gas price, using default 1 Gwei", err, "dest_chain", destChain.Name)
 		gasPrice = big.NewInt(params.GWei)
 	}
 
@@ -83,6 +84,16 @@ func conversionRate(ctx context.Context, pricer tokens.Pricer, from, to tokens.T
 	prices, err := pricer.Price(ctx, from, to)
 	if err != nil {
 		return 0, errors.Wrap(err, "get price", "ids", "from", from, "to", to)
+	}
+
+	has := func(t tokens.Token) bool {
+		_, ok := prices[t]
+		return ok
+	}
+	if !has(to) {
+		return 0, errors.New("missing to token price", "to", to)
+	} else if !has(from) {
+		return 0, errors.New("missing from token price", "from", from)
 	}
 
 	return prices[from] / prices[to], nil
