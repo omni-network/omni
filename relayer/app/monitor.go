@@ -88,21 +88,31 @@ func monitorConsOffsetOnce(ctx context.Context, network netconf.Network, xprovid
 
 	// Consensus chain messages are broadacst, so query for each EVM chain.
 	for _, destChain := range network.EVMChains() {
+		name := streamName(network.ChainName, xchain.StreamID{
+			SourceChainID: cChain.ID,
+			DestChainID:   destChain.ID,
+		})
+
 		headType := ethclient.HeadType(destChain.FinalizationStrat)
 		ref := xchain.EmitRef{HeadType: &headType}
 		emitted, ok, err := xprovider.GetEmittedCursor(ctx, ref, cChain.ID, destChain.ID)
 		if err != nil {
 			return err
 		} else if !ok {
-			return nil
+			continue
 		}
 
-		name := streamName(network.ChainName, xchain.StreamID{
-			SourceChainID: cChain.ID,
-			DestChainID:   destChain.ID,
-		})
-
 		emitMsgOffset.WithLabelValues(name).Set(float64(emitted.MsgOffset))
+
+		submitted, ok, err := xprovider.GetSubmittedCursor(ctx, destChain.ID, cChain.ID)
+		if err != nil {
+			return err
+		} else if !ok {
+			continue
+		}
+
+		submitMsgOffset.WithLabelValues(name).Set(float64(submitted.MsgOffset))
+		submitBlockOffset.WithLabelValues(name).Set(float64(submitted.BlockOffset))
 	}
 
 	return nil
