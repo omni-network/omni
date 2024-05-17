@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens/coingecko"
 
@@ -126,7 +127,12 @@ func Deploy(ctx context.Context, network netconf.ID, chainID uint64, destChainID
 
 	feeparams, err := feeParams(ctx, chainID, destChainIDs, backends, coingecko.New())
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "fee params")
+		if network != netconf.Devnet {
+			return common.Address{}, nil, errors.Wrap(err, "fee params")
+		}
+		// use simulated values for devnet when coingecko is not available
+		log.Debug(ctx, "Using simulated fee params for devnet")
+		feeparams = simulatedFeeParams(destChainIDs)
 	}
 
 	feeOracleAbi, err := bindings.FeeOracleV1MetaData.GetAbi()

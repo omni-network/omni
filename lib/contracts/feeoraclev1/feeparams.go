@@ -109,3 +109,47 @@ func withGasPriceShield(gasPrice *big.Int) *big.Int {
 	gasPriceF := float64(gasPrice.Uint64())
 	return new(big.Int).SetUint64(uint64(gasPriceF + (xfeemngr.GasPriceShield * gasPriceF)))
 }
+
+// Simulate devnet feeParams for testing purposes.
+func simulatedFeeParams(destChainIDs []uint64) []bindings.IFeeOracleV1ChainFeeParams {
+	var feeParamsList []bindings.IFeeOracleV1ChainFeeParams
+
+	for _, destChainID := range destChainIDs {
+		feeParam := bindings.IFeeOracleV1ChainFeeParams{
+			ChainId:      destChainID,
+			ToNativeRate: getToNativeRate(destChainID),
+			GasPrice:     getGasPrice(destChainID),
+		}
+		feeParamsList = append(feeParamsList, feeParam)
+	}
+
+	return feeParamsList
+}
+
+// Simulate realistic ToNativeRate based on observed patterns.
+func getToNativeRate(destChainID uint64) *big.Int {
+	switch destChainID {
+	case 1651:
+		return big.NewInt(5032)
+	case 1655:
+		return big.NewInt(198412371)
+	case 1656:
+		return big.NewInt(1000000)
+	default:
+		return big.NewInt(1e18) // Default fallback
+	}
+}
+
+// Simulate realistic GasPrice based on observed patterns.
+func getGasPrice(destChainID uint64) *big.Int {
+	switch destChainID {
+	case 1651:
+		return big.NewInt(1665895282)
+	case 1655:
+		return big.NewInt(1668524179)
+	case 1656:
+		return big.NewInt(1104645571)
+	default:
+		return big.NewInt(1e9) // Default fallback
+	}
+}
