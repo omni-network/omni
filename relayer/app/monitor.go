@@ -112,7 +112,7 @@ func monitorConsOffsetOnce(ctx context.Context, network netconf.Network, xprovid
 		}
 
 		submitMsgOffset.WithLabelValues(name).Set(float64(submitted.MsgOffset))
-		submitBlockOffset.WithLabelValues(name).Set(float64(submitted.BlockOffset))
+		submitBlockOffset.WithLabelValues(cChain.Name, destChain.Name).Set(float64(submitted.BlockOffset))
 	}
 
 	return nil
