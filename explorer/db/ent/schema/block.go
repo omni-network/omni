@@ -20,6 +20,7 @@ func (Block) Fields() []ent.Field {
 		field.Bytes("hash").MaxLen(32),
 		field.Uint64("chain_id"),
 		field.Uint64("height"),
+		field.Uint64("offset"),
 		field.Time("timestamp").Default(time.Now()),
 		field.Time("created_at").Default(time.Now()),
 	}

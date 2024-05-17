@@ -47,6 +47,8 @@ type BlockMutation struct {
 	addchain_id     *int64
 	height          *uint64
 	addheight       *int64
+	_offset         *uint64
+	add_offset      *int64
 	timestamp       *time.Time
 	created_at      *time.Time
 	clearedFields   map[string]struct{}
@@ -307,6 +309,62 @@ func (m *BlockMutation) ResetHeight() {
 	m.addheight = nil
 }
 
+// SetOffset sets the "offset" field.
+func (m *BlockMutation) SetOffset(u uint64) {
+	m._offset = &u
+	m.add_offset = nil
+}
+
+// Offset returns the value of the "offset" field in the mutation.
+func (m *BlockMutation) Offset() (r uint64, exists bool) {
+	v := m._offset
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOffset returns the old "offset" field's value of the Block entity.
+// If the Block object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BlockMutation) OldOffset(ctx context.Context) (v uint64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOffset is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOffset requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOffset: %w", err)
+	}
+	return oldValue.Offset, nil
+}
+
+// AddOffset adds u to the "offset" field.
+func (m *BlockMutation) AddOffset(u int64) {
+	if m.add_offset != nil {
+		*m.add_offset += u
+	} else {
+		m.add_offset = &u
+	}
+}
+
+// AddedOffset returns the value that was added to the "offset" field in this mutation.
+func (m *BlockMutation) AddedOffset() (r int64, exists bool) {
+	v := m.add_offset
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetOffset resets all changes to the "offset" field.
+func (m *BlockMutation) ResetOffset() {
+	m._offset = nil
+	m.add_offset = nil
+}
+
 // SetTimestamp sets the "timestamp" field.
 func (m *BlockMutation) SetTimestamp(t time.Time) {
 	m.timestamp = &t
@@ -521,7 +579,7 @@ func (m *BlockMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BlockMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.hash != nil {
 		fields = append(fields, block.FieldHash)
 	}
@@ -530,6 +588,9 @@ func (m *BlockMutation) Fields() []string {
 	}
 	if m.height != nil {
 		fields = append(fields, block.FieldHeight)
+	}
+	if m._offset != nil {
+		fields = append(fields, block.FieldOffset)
 	}
 	if m.timestamp != nil {
 		fields = append(fields, block.FieldTimestamp)
@@ -551,6 +612,8 @@ func (m *BlockMutation) Field(name string) (ent.Value, bool) {
 		return m.ChainID()
 	case block.FieldHeight:
 		return m.Height()
+	case block.FieldOffset:
+		return m.Offset()
 	case block.FieldTimestamp:
 		return m.Timestamp()
 	case block.FieldCreatedAt:
@@ -570,6 +633,8 @@ func (m *BlockMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldChainID(ctx)
 	case block.FieldHeight:
 		return m.OldHeight(ctx)
+	case block.FieldOffset:
+		return m.OldOffset(ctx)
 	case block.FieldTimestamp:
 		return m.OldTimestamp(ctx)
 	case block.FieldCreatedAt:
@@ -604,6 +669,13 @@ func (m *BlockMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetHeight(v)
 		return nil
+	case block.FieldOffset:
+		v, ok := value.(uint64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOffset(v)
+		return nil
 	case block.FieldTimestamp:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -632,6 +704,9 @@ func (m *BlockMutation) AddedFields() []string {
 	if m.addheight != nil {
 		fields = append(fields, block.FieldHeight)
 	}
+	if m.add_offset != nil {
+		fields = append(fields, block.FieldOffset)
+	}
 	return fields
 }
 
@@ -644,6 +719,8 @@ func (m *BlockMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedChainID()
 	case block.FieldHeight:
 		return m.AddedHeight()
+	case block.FieldOffset:
+		return m.AddedOffset()
 	}
 	return nil, false
 }
@@ -666,6 +743,13 @@ func (m *BlockMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddHeight(v)
+		return nil
+	case block.FieldOffset:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddOffset(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Block numeric field %s", name)
@@ -702,6 +786,9 @@ func (m *BlockMutation) ResetField(name string) error {
 		return nil
 	case block.FieldHeight:
 		m.ResetHeight()
+		return nil
+	case block.FieldOffset:
+		m.ResetOffset()
 		return nil
 	case block.FieldTimestamp:
 		m.ResetTimestamp()
@@ -3590,6 +3677,8 @@ type XProviderCursorMutation struct {
 	addchain_id   *int64
 	height        *uint64
 	addheight     *int64
+	_offset       *uint64
+	add_offset    *int64
 	created_at    *time.Time
 	updated_at    *time.Time
 	clearedFields map[string]struct{}
@@ -3814,6 +3903,62 @@ func (m *XProviderCursorMutation) ResetHeight() {
 	m.addheight = nil
 }
 
+// SetOffset sets the "offset" field.
+func (m *XProviderCursorMutation) SetOffset(u uint64) {
+	m._offset = &u
+	m.add_offset = nil
+}
+
+// Offset returns the value of the "offset" field in the mutation.
+func (m *XProviderCursorMutation) Offset() (r uint64, exists bool) {
+	v := m._offset
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOffset returns the old "offset" field's value of the XProviderCursor entity.
+// If the XProviderCursor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *XProviderCursorMutation) OldOffset(ctx context.Context) (v uint64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOffset is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOffset requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOffset: %w", err)
+	}
+	return oldValue.Offset, nil
+}
+
+// AddOffset adds u to the "offset" field.
+func (m *XProviderCursorMutation) AddOffset(u int64) {
+	if m.add_offset != nil {
+		*m.add_offset += u
+	} else {
+		m.add_offset = &u
+	}
+}
+
+// AddedOffset returns the value that was added to the "offset" field in this mutation.
+func (m *XProviderCursorMutation) AddedOffset() (r int64, exists bool) {
+	v := m.add_offset
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetOffset resets all changes to the "offset" field.
+func (m *XProviderCursorMutation) ResetOffset() {
+	m._offset = nil
+	m.add_offset = nil
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (m *XProviderCursorMutation) SetCreatedAt(t time.Time) {
 	m.created_at = &t
@@ -3920,12 +4065,15 @@ func (m *XProviderCursorMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *XProviderCursorMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 5)
 	if m.chain_id != nil {
 		fields = append(fields, xprovidercursor.FieldChainID)
 	}
 	if m.height != nil {
 		fields = append(fields, xprovidercursor.FieldHeight)
+	}
+	if m._offset != nil {
+		fields = append(fields, xprovidercursor.FieldOffset)
 	}
 	if m.created_at != nil {
 		fields = append(fields, xprovidercursor.FieldCreatedAt)
@@ -3945,6 +4093,8 @@ func (m *XProviderCursorMutation) Field(name string) (ent.Value, bool) {
 		return m.ChainID()
 	case xprovidercursor.FieldHeight:
 		return m.Height()
+	case xprovidercursor.FieldOffset:
+		return m.Offset()
 	case xprovidercursor.FieldCreatedAt:
 		return m.CreatedAt()
 	case xprovidercursor.FieldUpdatedAt:
@@ -3962,6 +4112,8 @@ func (m *XProviderCursorMutation) OldField(ctx context.Context, name string) (en
 		return m.OldChainID(ctx)
 	case xprovidercursor.FieldHeight:
 		return m.OldHeight(ctx)
+	case xprovidercursor.FieldOffset:
+		return m.OldOffset(ctx)
 	case xprovidercursor.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
 	case xprovidercursor.FieldUpdatedAt:
@@ -3988,6 +4140,13 @@ func (m *XProviderCursorMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetHeight(v)
+		return nil
+	case xprovidercursor.FieldOffset:
+		v, ok := value.(uint64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOffset(v)
 		return nil
 	case xprovidercursor.FieldCreatedAt:
 		v, ok := value.(time.Time)
@@ -4017,6 +4176,9 @@ func (m *XProviderCursorMutation) AddedFields() []string {
 	if m.addheight != nil {
 		fields = append(fields, xprovidercursor.FieldHeight)
 	}
+	if m.add_offset != nil {
+		fields = append(fields, xprovidercursor.FieldOffset)
+	}
 	return fields
 }
 
@@ -4029,6 +4191,8 @@ func (m *XProviderCursorMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedChainID()
 	case xprovidercursor.FieldHeight:
 		return m.AddedHeight()
+	case xprovidercursor.FieldOffset:
+		return m.AddedOffset()
 	}
 	return nil, false
 }
@@ -4051,6 +4215,13 @@ func (m *XProviderCursorMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddHeight(v)
+		return nil
+	case xprovidercursor.FieldOffset:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddOffset(v)
 		return nil
 	}
 	return fmt.Errorf("unknown XProviderCursor numeric field %s", name)
@@ -4084,6 +4255,9 @@ func (m *XProviderCursorMutation) ResetField(name string) error {
 		return nil
 	case xprovidercursor.FieldHeight:
 		m.ResetHeight()
+		return nil
+	case xprovidercursor.FieldOffset:
+		m.ResetOffset()
 		return nil
 	case xprovidercursor.FieldCreatedAt:
 		m.ResetCreatedAt()

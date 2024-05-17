@@ -27,7 +27,7 @@ func CreateTestChain(t *testing.T, ctx context.Context, client *ent.Client, chai
 	return *chain
 }
 
-func CreateTestBlock(t *testing.T, ctx context.Context, client *ent.Client, height int, ts time.Time) ent.Block {
+func CreateTestBlock(t *testing.T, ctx context.Context, client *ent.Client, height, offset uint64, ts time.Time) ent.Block {
 	t.Helper()
 
 	const chainID = 1
@@ -36,7 +36,8 @@ func CreateTestBlock(t *testing.T, ctx context.Context, client *ent.Client, heig
 
 	b := client.Block.Create().
 		SetChainID(chainID).
-		SetHeight(uint64(height)).
+		SetHeight(height).
+		SetOffset(offset).
 		SetHash(blockHash.Bytes()).
 		SetTimestamp(ts).
 		SaveX(ctx)
@@ -45,19 +46,19 @@ func CreateTestBlock(t *testing.T, ctx context.Context, client *ent.Client, heig
 }
 
 // CreateTestBlocks creates n test blocks with n messages and n-1 receipts.
-func CreateTestBlocks(t *testing.T, ctx context.Context, client *ent.Client, count int) []ent.Block {
+func CreateTestBlocks(t *testing.T, ctx context.Context, client *ent.Client, count uint64) []ent.Block {
 	t.Helper()
 	destChainID := uint64(2)
 	var msg *ent.Msg
 	var blocks []ent.Block
 	ts := time.Now()
-	for i := 0; i < count; i++ {
+	for i := uint64(0); i < count; i++ {
 		ts = ts.Add(10 * time.Millisecond) // add some small "delay" to ensure different timestamps in tests
-		b := CreateTestBlock(t, ctx, client, i, ts)
+		b := CreateTestBlock(t, ctx, client, i*2, i, ts)
 		if msg != nil {
 			CreateReceipt(t, ctx, client, b, msg.DestChainID, msg.Offset)
 		}
-		msg = CreateXMsg(t, ctx, client, b, destChainID, uint64(i))
+		msg = CreateXMsg(t, ctx, client, b, destChainID, i)
 		blocks = append(blocks, b)
 	}
 

@@ -78,6 +78,27 @@ func (bu *BlockUpdate) AddHeight(u int64) *BlockUpdate {
 	return bu
 }
 
+// SetOffset sets the "offset" field.
+func (bu *BlockUpdate) SetOffset(u uint64) *BlockUpdate {
+	bu.mutation.ResetOffset()
+	bu.mutation.SetOffset(u)
+	return bu
+}
+
+// SetNillableOffset sets the "offset" field if the given value is not nil.
+func (bu *BlockUpdate) SetNillableOffset(u *uint64) *BlockUpdate {
+	if u != nil {
+		bu.SetOffset(*u)
+	}
+	return bu
+}
+
+// AddOffset adds u to the "offset" field.
+func (bu *BlockUpdate) AddOffset(u int64) *BlockUpdate {
+	bu.mutation.AddOffset(u)
+	return bu
+}
+
 // SetTimestamp sets the "timestamp" field.
 func (bu *BlockUpdate) SetTimestamp(t time.Time) *BlockUpdate {
 	bu.mutation.SetTimestamp(t)
@@ -247,6 +268,12 @@ func (bu *BlockUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := bu.mutation.AddedHeight(); ok {
 		_spec.AddField(block.FieldHeight, field.TypeUint64, value)
 	}
+	if value, ok := bu.mutation.Offset(); ok {
+		_spec.SetField(block.FieldOffset, field.TypeUint64, value)
+	}
+	if value, ok := bu.mutation.AddedOffset(); ok {
+		_spec.AddField(block.FieldOffset, field.TypeUint64, value)
+	}
 	if value, ok := bu.mutation.Timestamp(); ok {
 		_spec.SetField(block.FieldTimestamp, field.TypeTime, value)
 	}
@@ -408,6 +435,27 @@ func (buo *BlockUpdateOne) SetNillableHeight(u *uint64) *BlockUpdateOne {
 // AddHeight adds u to the "height" field.
 func (buo *BlockUpdateOne) AddHeight(u int64) *BlockUpdateOne {
 	buo.mutation.AddHeight(u)
+	return buo
+}
+
+// SetOffset sets the "offset" field.
+func (buo *BlockUpdateOne) SetOffset(u uint64) *BlockUpdateOne {
+	buo.mutation.ResetOffset()
+	buo.mutation.SetOffset(u)
+	return buo
+}
+
+// SetNillableOffset sets the "offset" field if the given value is not nil.
+func (buo *BlockUpdateOne) SetNillableOffset(u *uint64) *BlockUpdateOne {
+	if u != nil {
+		buo.SetOffset(*u)
+	}
+	return buo
+}
+
+// AddOffset adds u to the "offset" field.
+func (buo *BlockUpdateOne) AddOffset(u int64) *BlockUpdateOne {
+	buo.mutation.AddOffset(u)
 	return buo
 }
 
@@ -609,6 +657,12 @@ func (buo *BlockUpdateOne) sqlSave(ctx context.Context) (_node *Block, err error
 	}
 	if value, ok := buo.mutation.AddedHeight(); ok {
 		_spec.AddField(block.FieldHeight, field.TypeUint64, value)
+	}
+	if value, ok := buo.mutation.Offset(); ok {
+		_spec.SetField(block.FieldOffset, field.TypeUint64, value)
+	}
+	if value, ok := buo.mutation.AddedOffset(); ok {
+		_spec.AddField(block.FieldOffset, field.TypeUint64, value)
 	}
 	if value, ok := buo.mutation.Timestamp(); ok {
 		_spec.SetField(block.FieldTimestamp, field.TypeTime, value)

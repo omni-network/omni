@@ -65,8 +65,8 @@ func TestMsgAndReceiptHooks(t *testing.T) {
 				destChainID := uint64(2)
 				offset := uint64(0)
 				ts := time.Now()
-				block1 := testutil.CreateTestBlock(t, ctx, client, 0, ts)
-				block2 := testutil.CreateTestBlock(t, ctx, client, 1, ts.Add(500*time.Millisecond))
+				block1 := testutil.CreateTestBlock(t, ctx, client, 0, 1, ts)
+				block2 := testutil.CreateTestBlock(t, ctx, client, 3, 2, ts.Add(500*time.Millisecond))
 				receipt := testutil.CreateReceipt(t, ctx, client, block1, destChainID, offset)
 				msg := testutil.CreateXMsg(t, ctx, client, block2, destChainID, offset)
 

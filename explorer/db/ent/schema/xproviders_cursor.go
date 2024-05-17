@@ -21,6 +21,7 @@ func (XProviderCursor) Fields() []ent.Field {
 		field.UUID("id", uuid.UUID{}).Default(uuid.New),
 		field.Uint64("chain_id").Unique(),
 		field.Uint64("height"),
+		field.Uint64("offset"),
 		field.Time("created_at").Default(time.Now()),
 		field.Time("updated_at").Default(time.Now()),
 	}

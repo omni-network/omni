@@ -58,7 +58,7 @@ func TestCursor(t *testing.T) {
 			entClient := setupDB(t)
 
 			// Get our initial deploy height
-			deployHeight, err := app.InitChainCursor(ctx, entClient, tt.chain)
+			deployHeight, _, err := app.InitChainCursor(ctx, entClient, tt.chain)
 			require.NoError(t, err)
 
 			// Insert TestBlocks

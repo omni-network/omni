@@ -70,6 +70,27 @@ func (xcu *XProviderCursorUpdate) AddHeight(u int64) *XProviderCursorUpdate {
 	return xcu
 }
 
+// SetOffset sets the "offset" field.
+func (xcu *XProviderCursorUpdate) SetOffset(u uint64) *XProviderCursorUpdate {
+	xcu.mutation.ResetOffset()
+	xcu.mutation.SetOffset(u)
+	return xcu
+}
+
+// SetNillableOffset sets the "offset" field if the given value is not nil.
+func (xcu *XProviderCursorUpdate) SetNillableOffset(u *uint64) *XProviderCursorUpdate {
+	if u != nil {
+		xcu.SetOffset(*u)
+	}
+	return xcu
+}
+
+// AddOffset adds u to the "offset" field.
+func (xcu *XProviderCursorUpdate) AddOffset(u int64) *XProviderCursorUpdate {
+	xcu.mutation.AddOffset(u)
+	return xcu
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (xcu *XProviderCursorUpdate) SetCreatedAt(t time.Time) *XProviderCursorUpdate {
 	xcu.mutation.SetCreatedAt(t)
@@ -151,6 +172,12 @@ func (xcu *XProviderCursorUpdate) sqlSave(ctx context.Context) (n int, err error
 	if value, ok := xcu.mutation.AddedHeight(); ok {
 		_spec.AddField(xprovidercursor.FieldHeight, field.TypeUint64, value)
 	}
+	if value, ok := xcu.mutation.Offset(); ok {
+		_spec.SetField(xprovidercursor.FieldOffset, field.TypeUint64, value)
+	}
+	if value, ok := xcu.mutation.AddedOffset(); ok {
+		_spec.AddField(xprovidercursor.FieldOffset, field.TypeUint64, value)
+	}
 	if value, ok := xcu.mutation.CreatedAt(); ok {
 		_spec.SetField(xprovidercursor.FieldCreatedAt, field.TypeTime, value)
 	}
@@ -216,6 +243,27 @@ func (xcuo *XProviderCursorUpdateOne) SetNillableHeight(u *uint64) *XProviderCur
 // AddHeight adds u to the "height" field.
 func (xcuo *XProviderCursorUpdateOne) AddHeight(u int64) *XProviderCursorUpdateOne {
 	xcuo.mutation.AddHeight(u)
+	return xcuo
+}
+
+// SetOffset sets the "offset" field.
+func (xcuo *XProviderCursorUpdateOne) SetOffset(u uint64) *XProviderCursorUpdateOne {
+	xcuo.mutation.ResetOffset()
+	xcuo.mutation.SetOffset(u)
+	return xcuo
+}
+
+// SetNillableOffset sets the "offset" field if the given value is not nil.
+func (xcuo *XProviderCursorUpdateOne) SetNillableOffset(u *uint64) *XProviderCursorUpdateOne {
+	if u != nil {
+		xcuo.SetOffset(*u)
+	}
+	return xcuo
+}
+
+// AddOffset adds u to the "offset" field.
+func (xcuo *XProviderCursorUpdateOne) AddOffset(u int64) *XProviderCursorUpdateOne {
+	xcuo.mutation.AddOffset(u)
 	return xcuo
 }
 
@@ -329,6 +377,12 @@ func (xcuo *XProviderCursorUpdateOne) sqlSave(ctx context.Context) (_node *XProv
 	}
 	if value, ok := xcuo.mutation.AddedHeight(); ok {
 		_spec.AddField(xprovidercursor.FieldHeight, field.TypeUint64, value)
+	}
+	if value, ok := xcuo.mutation.Offset(); ok {
+		_spec.SetField(xprovidercursor.FieldOffset, field.TypeUint64, value)
+	}
+	if value, ok := xcuo.mutation.AddedOffset(); ok {
+		_spec.AddField(xprovidercursor.FieldOffset, field.TypeUint64, value)
 	}
 	if value, ok := xcuo.mutation.CreatedAt(); ok {
 		_spec.SetField(xprovidercursor.FieldCreatedAt, field.TypeTime, value)

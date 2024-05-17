@@ -84,15 +84,15 @@ func startXProvider(ctx context.Context, network netconf.Network, entCl *ent.Cli
 	callback := newCallback(entCl)
 
 	for _, chain := range network.EVMChains() {
-		fromHeight, err := InitChainCursor(ctx, entCl, chain)
+		height, offset, err := InitChainCursor(ctx, entCl, chain)
 		if err != nil {
 			return errors.Wrap(err, "initialize chain cursor", "chain_id", chain.ID)
 		}
-		log.Info(ctx, "Subscribing to chain", "chain_id", chain.ID, "from_height", fromHeight)
+		log.Info(ctx, "Subscribing to chain", "chain_id", chain.ID, "from_height", height)
 
 		// TODO(corver): Store MsgOffset along with heights in cursor table
 		//  Currently XBlockOffset isn't supported in x-explorer.
-		err = xprovider.StreamAsyncNoOffset(ctx, chain.ID, fromHeight, callback)
+		err = xprovider.StreamAsync(ctx, chain.ID, height, offset+1, callback)
 		if err != nil {
 			return errors.Wrap(err, "subscribe", "chain_id", chain.ID)
 		}
@@ -123,13 +123,13 @@ func initializeRPCClients(chains []netconf.Chain, endpoints xchain.RPCEndpoints)
 // InitChainCursor return the initial cursor height to start streaming from (inclusive).
 // If a cursor exists, it returns the cursor height + 1.
 // Else a new cursor is created with chain deploy height.
-func InitChainCursor(ctx context.Context, entCl *ent.Client, chain netconf.Chain) (uint64, error) {
+func InitChainCursor(ctx context.Context, entCl *ent.Client, chain netconf.Chain) (uint64, uint64, error) { //nolint:revive // false positive
 	c, ok, err := cursor(ctx, entCl.XProviderCursor, chain.ID)
 	if err != nil {
-		return 0, errors.Wrap(err, "cursor")
+		return 0, 0, errors.Wrap(err, "cursor")
 	}
 	if ok {
-		return c.Height + 1, nil
+		return c.Height + 1, c.Offset + 1, nil
 	}
 
 	// Store the cursor at deploy height - 1, so first cursor update will be at deploy height 0.
@@ -138,21 +138,23 @@ func InitChainCursor(ctx context.Context, entCl *ent.Client, chain netconf.Chain
 		deployHeight = 0
 	}
 
+	offset := uint64(1)
+
 	// cursor doesn't exist yet, create it
-	_, err = entCl.XProviderCursor.Create().SetChainID(chain.ID).SetHeight(deployHeight).Save(ctx)
+	_, err = entCl.XProviderCursor.Create().SetChainID(chain.ID).SetHeight(deployHeight).SetOffset(offset).Save(ctx)
 	if err != nil {
-		return 0, errors.Wrap(err, "create cursor")
+		return 0, 0, errors.Wrap(err, "create cursor")
 	}
 
 	// if the cursor doesn't exist that means the chain doesn't exist so we have to create it as well
 	_, err = entCl.Chain.Create().SetChainID(chain.ID).SetName(chain.Name).Save(ctx)
 	if err != nil {
-		return 0, errors.Wrap(err, "create chain")
+		return 0, 0, errors.Wrap(err, "create chain")
 	}
 
-	log.Info(ctx, "Created cursor", "chain_id", chain.ID, "height", deployHeight)
+	log.Debug(ctx, "Created cursor", "chain_id", chain.ID, "height", deployHeight, "offset", offset)
 
-	return chain.DeployHeight, nil
+	return chain.DeployHeight, offset, nil
 }
 
 // serveMonitoring starts a goroutine that serves the monitoring API. It

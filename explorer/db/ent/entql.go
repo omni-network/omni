@@ -33,6 +33,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 			block.FieldHash:      {Type: field.TypeBytes, Column: block.FieldHash},
 			block.FieldChainID:   {Type: field.TypeUint64, Column: block.FieldChainID},
 			block.FieldHeight:    {Type: field.TypeUint64, Column: block.FieldHeight},
+			block.FieldOffset:    {Type: field.TypeUint64, Column: block.FieldOffset},
 			block.FieldTimestamp: {Type: field.TypeTime, Column: block.FieldTimestamp},
 			block.FieldCreatedAt: {Type: field.TypeTime, Column: block.FieldCreatedAt},
 		},
@@ -112,6 +113,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 		Fields: map[string]*sqlgraph.FieldSpec{
 			xprovidercursor.FieldChainID:   {Type: field.TypeUint64, Column: xprovidercursor.FieldChainID},
 			xprovidercursor.FieldHeight:    {Type: field.TypeUint64, Column: xprovidercursor.FieldHeight},
+			xprovidercursor.FieldOffset:    {Type: field.TypeUint64, Column: xprovidercursor.FieldOffset},
 			xprovidercursor.FieldCreatedAt: {Type: field.TypeTime, Column: xprovidercursor.FieldCreatedAt},
 			xprovidercursor.FieldUpdatedAt: {Type: field.TypeTime, Column: xprovidercursor.FieldUpdatedAt},
 		},
@@ -250,6 +252,11 @@ func (f *BlockFilter) WhereChainID(p entql.Uint64P) {
 // WhereHeight applies the entql uint64 predicate on the height field.
 func (f *BlockFilter) WhereHeight(p entql.Uint64P) {
 	f.Where(p.Field(block.FieldHeight))
+}
+
+// WhereOffset applies the entql uint64 predicate on the offset field.
+func (f *BlockFilter) WhereOffset(p entql.Uint64P) {
+	f.Where(p.Field(block.FieldOffset))
 }
 
 // WhereTimestamp applies the entql time.Time predicate on the timestamp field.
@@ -629,6 +636,11 @@ func (f *XProviderCursorFilter) WhereChainID(p entql.Uint64P) {
 // WhereHeight applies the entql uint64 predicate on the height field.
 func (f *XProviderCursorFilter) WhereHeight(p entql.Uint64P) {
 	f.Where(p.Field(xprovidercursor.FieldHeight))
+}
+
+// WhereOffset applies the entql uint64 predicate on the offset field.
+func (f *XProviderCursorFilter) WhereOffset(p entql.Uint64P) {
+	f.Where(p.Field(xprovidercursor.FieldOffset))
 }
 
 // WhereCreatedAt applies the entql time.Time predicate on the created_at field.

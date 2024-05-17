@@ -20,6 +20,8 @@ const (
 	FieldChainID = "chain_id"
 	// FieldHeight holds the string denoting the height field in the database.
 	FieldHeight = "height"
+	// FieldOffset holds the string denoting the offset field in the database.
+	FieldOffset = "offset"
 	// FieldTimestamp holds the string denoting the timestamp field in the database.
 	FieldTimestamp = "timestamp"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -48,6 +50,7 @@ var Columns = []string{
 	FieldHash,
 	FieldChainID,
 	FieldHeight,
+	FieldOffset,
 	FieldTimestamp,
 	FieldCreatedAt,
 }
@@ -96,6 +99,11 @@ func ByChainID(opts ...sql.OrderTermOption) OrderOption {
 // ByHeight orders the results by the height field.
 func ByHeight(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldHeight, opts...).ToFunc()
+}
+
+// ByOffset orders the results by the offset field.
+func ByOffset(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOffset, opts...).ToFunc()
 }
 
 // ByTimestamp orders the results by the timestamp field.

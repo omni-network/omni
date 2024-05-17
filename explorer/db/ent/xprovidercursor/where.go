@@ -65,6 +65,11 @@ func Height(v uint64) predicate.XProviderCursor {
 	return predicate.XProviderCursor(sql.FieldEQ(FieldHeight, v))
 }
 
+// Offset applies equality check predicate on the "offset" field. It's identical to OffsetEQ.
+func Offset(v uint64) predicate.XProviderCursor {
+	return predicate.XProviderCursor(sql.FieldEQ(FieldOffset, v))
+}
+
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.XProviderCursor {
 	return predicate.XProviderCursor(sql.FieldEQ(FieldCreatedAt, v))
@@ -153,6 +158,46 @@ func HeightLT(v uint64) predicate.XProviderCursor {
 // HeightLTE applies the LTE predicate on the "height" field.
 func HeightLTE(v uint64) predicate.XProviderCursor {
 	return predicate.XProviderCursor(sql.FieldLTE(FieldHeight, v))
+}
+
+// OffsetEQ applies the EQ predicate on the "offset" field.
+func OffsetEQ(v uint64) predicate.XProviderCursor {
+	return predicate.XProviderCursor(sql.FieldEQ(FieldOffset, v))
+}
+
+// OffsetNEQ applies the NEQ predicate on the "offset" field.
+func OffsetNEQ(v uint64) predicate.XProviderCursor {
+	return predicate.XProviderCursor(sql.FieldNEQ(FieldOffset, v))
+}
+
+// OffsetIn applies the In predicate on the "offset" field.
+func OffsetIn(vs ...uint64) predicate.XProviderCursor {
+	return predicate.XProviderCursor(sql.FieldIn(FieldOffset, vs...))
+}
+
+// OffsetNotIn applies the NotIn predicate on the "offset" field.
+func OffsetNotIn(vs ...uint64) predicate.XProviderCursor {
+	return predicate.XProviderCursor(sql.FieldNotIn(FieldOffset, vs...))
+}
+
+// OffsetGT applies the GT predicate on the "offset" field.
+func OffsetGT(v uint64) predicate.XProviderCursor {
+	return predicate.XProviderCursor(sql.FieldGT(FieldOffset, v))
+}
+
+// OffsetGTE applies the GTE predicate on the "offset" field.
+func OffsetGTE(v uint64) predicate.XProviderCursor {
+	return predicate.XProviderCursor(sql.FieldGTE(FieldOffset, v))
+}
+
+// OffsetLT applies the LT predicate on the "offset" field.
+func OffsetLT(v uint64) predicate.XProviderCursor {
+	return predicate.XProviderCursor(sql.FieldLT(FieldOffset, v))
+}
+
+// OffsetLTE applies the LTE predicate on the "offset" field.
+func OffsetLTE(v uint64) predicate.XProviderCursor {
+	return predicate.XProviderCursor(sql.FieldLTE(FieldOffset, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.

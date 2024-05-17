@@ -23,6 +23,8 @@ type Block struct {
 	ChainID uint64 `json:"chain_id,omitempty"`
 	// Height holds the value of the "height" field.
 	Height uint64 `json:"height,omitempty"`
+	// Offset holds the value of the "offset" field.
+	Offset uint64 `json:"offset,omitempty"`
 	// Timestamp holds the value of the "timestamp" field.
 	Timestamp time.Time `json:"timestamp,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -69,7 +71,7 @@ func (*Block) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case block.FieldHash:
 			values[i] = new([]byte)
-		case block.FieldID, block.FieldChainID, block.FieldHeight:
+		case block.FieldID, block.FieldChainID, block.FieldHeight, block.FieldOffset:
 			values[i] = new(sql.NullInt64)
 		case block.FieldTimestamp, block.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -111,6 +113,12 @@ func (b *Block) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field height", values[i])
 			} else if value.Valid {
 				b.Height = uint64(value.Int64)
+			}
+		case block.FieldOffset:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field offset", values[i])
+			} else if value.Valid {
+				b.Offset = uint64(value.Int64)
 			}
 		case block.FieldTimestamp:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -178,6 +186,9 @@ func (b *Block) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("height=")
 	builder.WriteString(fmt.Sprintf("%v", b.Height))
+	builder.WriteString(", ")
+	builder.WriteString("offset=")
+	builder.WriteString(fmt.Sprintf("%v", b.Offset))
 	builder.WriteString(", ")
 	builder.WriteString("timestamp=")
 	builder.WriteString(b.Timestamp.Format(time.ANSIC))

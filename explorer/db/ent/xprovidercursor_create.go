@@ -33,6 +33,12 @@ func (xcc *XProviderCursorCreate) SetHeight(u uint64) *XProviderCursorCreate {
 	return xcc
 }
 
+// SetOffset sets the "offset" field.
+func (xcc *XProviderCursorCreate) SetOffset(u uint64) *XProviderCursorCreate {
+	xcc.mutation.SetOffset(u)
+	return xcc
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (xcc *XProviderCursorCreate) SetCreatedAt(t time.Time) *XProviderCursorCreate {
 	xcc.mutation.SetCreatedAt(t)
@@ -132,6 +138,9 @@ func (xcc *XProviderCursorCreate) check() error {
 	if _, ok := xcc.mutation.Height(); !ok {
 		return &ValidationError{Name: "height", err: errors.New(`ent: missing required field "XProviderCursor.height"`)}
 	}
+	if _, ok := xcc.mutation.Offset(); !ok {
+		return &ValidationError{Name: "offset", err: errors.New(`ent: missing required field "XProviderCursor.offset"`)}
+	}
 	if _, ok := xcc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "XProviderCursor.created_at"`)}
 	}
@@ -180,6 +189,10 @@ func (xcc *XProviderCursorCreate) createSpec() (*XProviderCursor, *sqlgraph.Crea
 	if value, ok := xcc.mutation.Height(); ok {
 		_spec.SetField(xprovidercursor.FieldHeight, field.TypeUint64, value)
 		_node.Height = value
+	}
+	if value, ok := xcc.mutation.Offset(); ok {
+		_spec.SetField(xprovidercursor.FieldOffset, field.TypeUint64, value)
+		_node.Offset = value
 	}
 	if value, ok := xcc.mutation.CreatedAt(); ok {
 		_spec.SetField(xprovidercursor.FieldCreatedAt, field.TypeTime, value)

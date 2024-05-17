@@ -14,6 +14,7 @@ var (
 		{Name: "hash", Type: field.TypeBytes, Size: 32},
 		{Name: "chain_id", Type: field.TypeUint64},
 		{Name: "height", Type: field.TypeUint64},
+		{Name: "offset", Type: field.TypeUint64},
 		{Name: "timestamp", Type: field.TypeTime},
 		{Name: "created_at", Type: field.TypeTime},
 	}
@@ -132,6 +133,7 @@ var (
 		{Name: "id", Type: field.TypeUUID},
 		{Name: "chain_id", Type: field.TypeUint64, Unique: true},
 		{Name: "height", Type: field.TypeUint64},
+		{Name: "offset", Type: field.TypeUint64},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 	}

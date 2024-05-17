@@ -70,13 +70,14 @@ func TestDbTransaction(t *testing.T) {
 				sourceChainID := uint64(1)
 				destChainID := uint64(2)
 
-				_, err := client.XProviderCursor.Create().SetChainID(sourceChainID).SetHeight(0).Save(ctx)
+				_, err := client.XProviderCursor.Create().SetChainID(sourceChainID).SetHeight(0).SetOffset(0).Save(ctx)
 				require.NoError(t, err, "creating source chain cursor")
 
-				_, err = client.XProviderCursor.Create().SetChainID(destChainID).SetHeight(0).Save(ctx)
+				_, err = client.XProviderCursor.Create().SetChainID(destChainID).SetHeight(0).SetOffset(0).Save(ctx)
 				require.NoError(t, err, "creating dest chain cursor")
 
 				blockHeight := uint64(1)
+				blockOffset := uint64(1)
 				gasLimit := uint64(1000)
 				streamOffset := uint64(0)
 				gasUsed := uint64(100)
@@ -88,6 +89,7 @@ func TestDbTransaction(t *testing.T) {
 					BlockHeader: xchain.BlockHeader{
 						SourceChainID: sourceChainID,
 						BlockHeight:   blockHeight,
+						BlockOffset:   blockOffset,
 						BlockHash:     blockHash,
 					},
 					Msgs: []xchain.Msg{
@@ -125,7 +127,7 @@ func TestDbTransaction(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				b := client.Block.Query().Where(block.Height(blockHeight)).OnlyX(ctx)
+				b := client.Block.Query().Where(block.Height(blockHeight), block.Offset(blockOffset)).OnlyX(ctx)
 				m := client.Msg.Query().Where(msg.SourceChainID(sourceChainID), msg.DestChainID(destChainID), msg.Offset(streamOffset)).OnlyX(ctx)
 				r := client.Receipt.Query().Where(receipt.SourceChainID(sourceChainID), receipt.DestChainID(destChainID), receipt.Offset(streamOffset)).OnlyX(ctx)
 

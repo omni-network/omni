@@ -40,6 +40,12 @@ func (bc *BlockCreate) SetHeight(u uint64) *BlockCreate {
 	return bc
 }
 
+// SetOffset sets the "offset" field.
+func (bc *BlockCreate) SetOffset(u uint64) *BlockCreate {
+	bc.mutation.SetOffset(u)
+	return bc
+}
+
 // SetTimestamp sets the "timestamp" field.
 func (bc *BlockCreate) SetTimestamp(t time.Time) *BlockCreate {
 	bc.mutation.SetTimestamp(t)
@@ -159,6 +165,9 @@ func (bc *BlockCreate) check() error {
 	if _, ok := bc.mutation.Height(); !ok {
 		return &ValidationError{Name: "height", err: errors.New(`ent: missing required field "Block.height"`)}
 	}
+	if _, ok := bc.mutation.Offset(); !ok {
+		return &ValidationError{Name: "offset", err: errors.New(`ent: missing required field "Block.offset"`)}
+	}
 	if _, ok := bc.mutation.Timestamp(); !ok {
 		return &ValidationError{Name: "timestamp", err: errors.New(`ent: missing required field "Block.timestamp"`)}
 	}
@@ -202,6 +211,10 @@ func (bc *BlockCreate) createSpec() (*Block, *sqlgraph.CreateSpec) {
 	if value, ok := bc.mutation.Height(); ok {
 		_spec.SetField(block.FieldHeight, field.TypeUint64, value)
 		_node.Height = value
+	}
+	if value, ok := bc.mutation.Offset(); ok {
+		_spec.SetField(block.FieldOffset, field.TypeUint64, value)
+		_node.Offset = value
 	}
 	if value, ok := bc.mutation.Timestamp(); ok {
 		_spec.SetField(block.FieldTimestamp, field.TypeTime, value)

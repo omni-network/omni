@@ -185,8 +185,8 @@ func (p Provider) XMsgs(ctx context.Context, first, last *int32, before *graphql
 		totalPages int
 		start      uint64
 		end        uint64
-		beforeID   *uint64
-		afterID    *uint64
+		beforeID   uint64
+		afterID    uint64
 	)
 	if first != nil {
 		numItems = *first
@@ -204,7 +204,7 @@ func (p Provider) XMsgs(ctx context.Context, first, last *int32, before *graphql
 			if err := cur.Decode(*after); err != nil {
 				return XMsgConnection{}, err
 			}
-			afterID = &cur.ID
+			afterID = cur.ID
 			start = cur.ID + 1
 			pageNum = int(cur.PageNum) - 1
 		} else {
@@ -220,7 +220,7 @@ func (p Provider) XMsgs(ctx context.Context, first, last *int32, before *graphql
 			if err := cur.Decode(*before); err != nil {
 				return XMsgConnection{}, err
 			}
-			beforeID = &cur.ID
+			beforeID = cur.ID
 			end = cur.ID // exclusive
 			pageNum = int(cur.PageNum) + 1
 		} else {
@@ -236,6 +236,17 @@ func (p Provider) XMsgs(ctx context.Context, first, last *int32, before *graphql
 	}
 
 	log.Info(ctx, "XMsgs", "start", start, "end", end, "total", total, "numItems", numItems, "pageNum", pageNum, "totalPages", totalPages)
+	var status string
+	if filters.Status != nil {
+		status = string(*filters.Status)
+	}
+	var srcChainID, destChainID uint64
+	if filters.SourceChainID != nil {
+		srcChainID = *filters.SourceChainID
+	}
+	if filters.DestChainID != nil {
+		destChainID = *filters.DestChainID
+	}
 
 	query := `
 	SELECT DISTINCT ON (m.id)
@@ -271,19 +282,19 @@ func (p Provider) XMsgs(ctx context.Context, first, last *int32, before *graphql
 			LEFT JOIN msg_receipts mr ON mr.msg_id = m.id
 			LEFT JOIN receipts r ON mr.receipt_id = r.id
 	WHERE
-		($2 IS NULL OR m.id < $2)                      -- before cursor
-		AND ($3 IS NULL OR m.id > $3)                  -- after cursor
-		AND ($4 IS NULL OR m.status = $4)              -- status filter
-		AND ($5 IS NULL OR m.source_chain_id = $5)     -- source_chain_id filter
-		AND ($6 IS NULL OR m.dest_chain_id = $6)       -- dest_chain_id filter
-		AND ($7 IS NULL OR m.tx_hash = $7)             -- tx_hash filter
-		AND ($8 IS NULL OR m.to = $8 or m.sender = $8) -- address filter
+		($2 = 0 OR m.id < $2)                                 -- before cursor
+		AND ($3 = 0 OR m.id > $3)                             -- after cursor
+		AND ($4 = '' OR m.status = $4)                        -- status filter
+		AND ($5 = 0 OR m.source_chain_id = $5)                -- source_chain_id filter
+		AND ($6 = 0 OR m.dest_chain_id = $6)                  -- dest_chain_id filter
+		-- AND ($7::bytea IS NULL OR m.tx_hash = $7 OR r.tx_hash = $7) -- tx_hash filter
+		-- AND ($8::bytea IS NULL OR m.sender = $8 or m.to = $8)       -- address filter
 	ORDER BY
 		m.id DESC, -- the id column is auto-increment and desc returns latest data first
 		r.id DESC  -- the id column is auto-increment - together with distinct ensures that only the latest receipt is returned
 	LIMIT $1;
 	`
-	rows, err := p.cl.DB().QueryContext(ctx, query, numItems, beforeID, afterID, filters.Status, filters.SourceChainID, filters.DestChainID, filters.Addr, filters.TxHash)
+	rows, err := p.cl.DB().QueryContext(ctx, query, numItems, beforeID, afterID, status, srcChainID, destChainID) //, filters.TxHash, filters.Addr)
 	if err != nil {
 		return XMsgConnection{}, errors.Wrap(err, "preparing query")
 	}
@@ -333,8 +344,13 @@ func (p Provider) XMsgs(ctx context.Context, first, last *int32, before *graphql
 		if err != nil {
 			return XMsgConnection{}, errors.Wrap(err, "decoding message")
 		}
+		cur := cursor{ID: v.ID}
+		cv, err := cur.Encode()
+		if err != nil {
+			return XMsgConnection{}, errors.Wrap(err, "encoding cursor")
+		}
 		edge := XMsgEdge{
-			Cursor: relay.MarshalID("cursor", m.ID),
+			Cursor: cv,
 			Node:   *m,
 		}
 		res.Edges = append(res.Edges, edge)

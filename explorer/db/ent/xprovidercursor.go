@@ -22,6 +22,8 @@ type XProviderCursor struct {
 	ChainID uint64 `json:"chain_id,omitempty"`
 	// Height holds the value of the "height" field.
 	Height uint64 `json:"height,omitempty"`
+	// Offset holds the value of the "offset" field.
+	Offset uint64 `json:"offset,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
@@ -34,7 +36,7 @@ func (*XProviderCursor) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case xprovidercursor.FieldChainID, xprovidercursor.FieldHeight:
+		case xprovidercursor.FieldChainID, xprovidercursor.FieldHeight, xprovidercursor.FieldOffset:
 			values[i] = new(sql.NullInt64)
 		case xprovidercursor.FieldCreatedAt, xprovidercursor.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -72,6 +74,12 @@ func (xc *XProviderCursor) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field height", values[i])
 			} else if value.Valid {
 				xc.Height = uint64(value.Int64)
+			}
+		case xprovidercursor.FieldOffset:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field offset", values[i])
+			} else if value.Valid {
+				xc.Offset = uint64(value.Int64)
 			}
 		case xprovidercursor.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -126,6 +134,9 @@ func (xc *XProviderCursor) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("height=")
 	builder.WriteString(fmt.Sprintf("%v", xc.Height))
+	builder.WriteString(", ")
+	builder.WriteString("offset=")
+	builder.WriteString(fmt.Sprintf("%v", xc.Offset))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(xc.CreatedAt.Format(time.ANSIC))

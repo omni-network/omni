@@ -25,11 +25,11 @@ func init() {
 	// block.HashValidator is a validator for the "hash" field. It is called by the builders before save.
 	block.HashValidator = blockDescHash.Validators[0].(func([]byte) error)
 	// blockDescTimestamp is the schema descriptor for timestamp field.
-	blockDescTimestamp := blockFields[3].Descriptor()
+	blockDescTimestamp := blockFields[4].Descriptor()
 	// block.DefaultTimestamp holds the default value on creation for the timestamp field.
 	block.DefaultTimestamp = blockDescTimestamp.Default.(time.Time)
 	// blockDescCreatedAt is the schema descriptor for created_at field.
-	blockDescCreatedAt := blockFields[4].Descriptor()
+	blockDescCreatedAt := blockFields[5].Descriptor()
 	// block.DefaultCreatedAt holds the default value on creation for the created_at field.
 	block.DefaultCreatedAt = blockDescCreatedAt.Default.(time.Time)
 	chainFields := schema.Chain{}.Fields()
@@ -89,11 +89,11 @@ func init() {
 	xprovidercursorFields := schema.XProviderCursor{}.Fields()
 	_ = xprovidercursorFields
 	// xprovidercursorDescCreatedAt is the schema descriptor for created_at field.
-	xprovidercursorDescCreatedAt := xprovidercursorFields[3].Descriptor()
+	xprovidercursorDescCreatedAt := xprovidercursorFields[4].Descriptor()
 	// xprovidercursor.DefaultCreatedAt holds the default value on creation for the created_at field.
 	xprovidercursor.DefaultCreatedAt = xprovidercursorDescCreatedAt.Default.(time.Time)
 	// xprovidercursorDescUpdatedAt is the schema descriptor for updated_at field.
-	xprovidercursorDescUpdatedAt := xprovidercursorFields[4].Descriptor()
+	xprovidercursorDescUpdatedAt := xprovidercursorFields[5].Descriptor()
 	// xprovidercursor.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	xprovidercursor.DefaultUpdatedAt = xprovidercursorDescUpdatedAt.Default.(time.Time)
 	// xprovidercursorDescID is the schema descriptor for id field.

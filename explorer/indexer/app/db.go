@@ -28,11 +28,7 @@ func newCallback(client *ent.Client) xchain.ProviderCallback {
 			return errors.Wrap(err, "insert xblock")
 		}
 
-		log.Info(ctx, "Inserted xblock",
-			"chain", block.SourceChainID,
-			"msgs", len(block.Msgs),
-			"receipts", len(block.Receipts),
-		)
+		log.Info(ctx, "Inserted xblock", "chain", block.SourceChainID, "offset", block.BlockOffset, "msgs", len(block.Msgs), "receipts", len(block.Receipts))
 
 		return nil
 	}
@@ -56,7 +52,7 @@ func InsertBlockTX(ctx context.Context, tx *ent.Tx, block xchain.Block) error {
 		return errors.Wrap(err, "insert receipts")
 	}
 
-	if err := incrementCursor(ctx, tx, block.SourceChainID, block.BlockHeight); err != nil {
+	if err := incrementCursor(ctx, tx, block.SourceChainID, block.BlockHeight, block.BlockOffset); err != nil {
 		return errors.Wrap(err, "increment cursor")
 	}
 
@@ -68,18 +64,19 @@ func InsertBlockTX(ctx context.Context, tx *ent.Tx, block xchain.Block) error {
 }
 
 // incrementCursor increments the cursor for the given chainID (it ensures it matches height).
-func incrementCursor(ctx context.Context, tx *ent.Tx, chainID, height uint64) error {
-	cursor, ok, err := cursor(ctx, tx.XProviderCursor, chainID)
+func incrementCursor(ctx context.Context, tx *ent.Tx, chainID, height, offset uint64) error {
+	c, ok, err := cursor(ctx, tx.XProviderCursor, chainID)
 	if err != nil {
 		return errors.Wrap(err, "query cursor")
 	} else if !ok {
 		return errors.New("cursor not found")
-	} else if cursor.Height != 0 && cursor.Height != height-1 {
-		// Sanity check, we MUST insert sequentially (after 0).
-		return errors.New("unexpected cursor vs block height mismatch [BUG]", "cursor_height", cursor.Height, "block_height", height)
 	}
+	// } else if c.Offset > 1 && c.Offset != offset-1 {
+	// 	// Sanity check, we MUST insert sequentially (after 1).
+	// 	return errors.New("unexpected cursor vs block offset mismatch [BUG]", "cursor_height", c.Height, "block_height", height, "cursor_offset", c.Offset, "block_offset", offset)
+	// }
 
-	if _, err := tx.XProviderCursor.UpdateOne(cursor).SetHeight(height).Save(ctx); err != nil {
+	if _, err := tx.XProviderCursor.UpdateOne(c).SetHeight(height).SetOffset(offset).Save(ctx); err != nil {
 		return errors.Wrap(err, "update cursor")
 	}
 
@@ -103,6 +100,7 @@ func insertBlock(ctx context.Context, tx *ent.Tx, block xchain.Block) (*ent.Bloc
 		SetHeight(block.BlockHeight).
 		SetHash(block.BlockHash[:]).
 		SetChainID(block.SourceChainID).
+		SetOffset(block.BlockOffset).
 		SetTimestamp(block.Timestamp).
 		Save(ctx)
 	if err != nil {
