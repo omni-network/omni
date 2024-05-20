@@ -100,7 +100,7 @@ type dbXMsgRow struct {
 	ReceiptID             sql.NullInt64
 	ReceiptTxHash         *common.Hash
 	ReceiptSuccess        sql.NullBool
-	ReceiptRelayerAddress common.Address
+	ReceiptRelayerAddress *common.Address
 	ReceiptGasUsed        sql.NullInt64
 	ReceiptSourceChainID  sql.NullInt64
 	ReceiptDestChainID    sql.NullInt64
@@ -148,7 +148,7 @@ func (r *dbXMsgRow) ToGraphQLXMsg(ch Chainer) (*XMsg, error) {
 			ID:      relay.MarshalID("xreceipt", r.ReceiptID),
 			TxHash:  *r.ReceiptTxHash,
 			Success: r.ReceiptSuccess.Bool,
-			Relayer: r.ReceiptRelayerAddress,
+			Relayer: *r.ReceiptRelayerAddress,
 		}
 	}
 	if r.ReceiptGasUsed.Valid {
