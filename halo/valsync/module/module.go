@@ -141,6 +141,7 @@ type ModuleInputs struct {
 	Config       *Module
 	SKeeper      types.StakingKeeper
 	AKeeper      types.AttestKeeper
+	Subscriber   types.ValSetSubscriber
 }
 
 type ModuleOutputs struct {
@@ -156,6 +157,7 @@ func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
 		in.StoreService,
 		in.SKeeper,
 		in.AKeeper,
+		in.Subscriber,
 	)
 	if err != nil {
 		return ModuleOutputs{}, err

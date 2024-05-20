@@ -75,6 +75,7 @@ func TestCLIReference(t *testing.T) {
 		{root},
 		{"run"},
 		{"init"},
+		{"rollback"},
 	}
 
 	for _, test := range tests {

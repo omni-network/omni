@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"fmt"
-	"math/big"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -11,34 +10,38 @@ import (
 
 	cmtcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
 
-	"github.com/ethereum/go-ethereum/common"
-
 	dbm "github.com/cosmos/cosmos-db"
 )
 
+func DefaultRollbackConfig() RollbackConfig {
+	return RollbackConfig{
+		// RemoveCometBlock (--hard=true) rollback doesn't add value in most use-cases.
+		// Blocks cannot be re-proposed/re-consensused since that would result in validator slashing.
+		RemoveCometBlock: false,
+	}
+}
+
 type RollbackConfig struct {
-	Config
-	RollbackEVM      bool
 	RemoveCometBlock bool
 }
 
-func Rollback(ctx context.Context, cfg RollbackConfig) error {
+func Rollback(ctx context.Context, cfg Config, rCfg RollbackConfig) error {
 	db, err := dbm.NewDB("application", cfg.BackendType(), cfg.DataDir())
 	if err != nil {
 		return errors.Wrap(err, "create db")
 	}
 
-	baseAppOpts, err := makeBaseAppOpts(cfg.Config)
+	baseAppOpts, err := makeBaseAppOpts(cfg)
 	if err != nil {
 		return errors.Wrap(err, "make base app opts")
 	}
 
-	engineCl, err := newEngineClient(ctx, cfg.Config, cfg.Network, nil)
+	engineCl, err := newEngineClient(ctx, cfg, cfg.Network, nil)
 	if err != nil {
 		return err
 	}
 
-	privVal, err := loadPrivVal(cfg.Config)
+	privVal, err := loadPrivVal(cfg)
 	if err != nil {
 		return errors.Wrap(err, "load validator key")
 	}
@@ -62,7 +65,7 @@ func Rollback(ctx context.Context, cfg RollbackConfig) error {
 	}
 
 	// Rollback CometBFT state
-	height, hash, err := cmtcmd.RollbackState(&cfg.Comet, cfg.RemoveCometBlock)
+	height, hash, err := cmtcmd.RollbackState(&cfg.Comet, rCfg.RemoveCometBlock)
 	if err != nil {
 		return errors.Wrap(err, "rollback comet state")
 	}
@@ -73,47 +76,6 @@ func Rollback(ctx context.Context, cfg RollbackConfig) error {
 	}
 
 	log.Info(ctx, "Rolled back consensus state", "height", height, "hash", fmt.Sprintf("%X", hash))
-
-	if !cfg.RollbackEVM {
-		log.Debug(ctx, "Not rolling back Omni EVM since --rollback-evm=false")
-
-		return nil
-	}
-
-	// TODO(corver): Rolling back the EVM fails with `debug_setHead` not active/enabled.
-	// Rolling back the EVM might not be required, since EngineAPI hard-sets the head in any-case.
-	// If it is required, figure out how to enable debug_setHead.
-
-	latestHeigth, err := engineCl.BlockNumber(ctx)
-	if err != nil {
-		return err
-	}
-
-	latestBlock, err := engineCl.BlockByNumber(ctx, big.NewInt(int64(latestHeigth)))
-	if err != nil {
-		return err
-	} else if latestBlock.BeaconRoot() == nil {
-		return errors.New("cannot rollback EVM with nil beacon root", "height", latestHeigth)
-	}
-
-	// Rollback EVM if latest EVM block built on-top of new rolled-back consensus head.
-	if *latestBlock.BeaconRoot() != common.BytesToHash(hash) {
-		return errors.New("cannot rollback EVM, latest EVM block not built on new rolled-back state",
-			"evm_height", latestHeigth,
-			"evm_beacon_root", *latestBlock.BeaconRoot(),
-		)
-	}
-
-	if err := engineCl.SetHead(ctx, latestHeigth-1); err != nil {
-		return errors.Wrap(err, "set head")
-	}
-
-	rolledBackBlock, err := engineCl.BlockByNumber(ctx, big.NewInt(int64(latestHeigth-1)))
-	if err != nil {
-		return err
-	}
-
-	log.Info(ctx, "Rolled back execution state", "height", rolledBackBlock.Number(), "hash", rolledBackBlock.Hash())
 
 	return nil
 }

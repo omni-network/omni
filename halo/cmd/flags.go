@@ -32,8 +32,7 @@ func bindRunFlags(cmd *cobra.Command, cfg *halocfg.Config) {
 }
 
 func bindRollbackFlags(flags *pflag.FlagSet, cfg *app.RollbackConfig) {
-	flags.BoolVar(&cfg.RollbackEVM, "rollback-evm", false, "Attempt to rollback the Omni EVM to previous height via Engine API")
-	flags.BoolVar(&cfg.RemoveCometBlock, "hard", false, "Remove last block as well as state")
+	flags.BoolVar(&cfg.RemoveCometBlock, "hard", cfg.RemoveCometBlock, "Remove last block as well as state")
 }
 
 func bindInitFlags(flags *pflag.FlagSet, cfg *InitConfig) {

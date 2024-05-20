@@ -156,12 +156,6 @@ func (a App) SetCometAPI(api comet.API) {
 	a.EVMEngKeeper.SetCometAPI(api)
 }
 
-// SetVoter sets the voter.
-// TODO(corver): Figure out how to use depinject to set this.
-func (a App) SetVoter(voter atypes.Voter) {
-	a.ValSyncKeeper.SetSubscriber(voter)
-}
-
 var (
 	_ runtime.AppI            = (*App)(nil)
 	_ servertypes.Application = (*App)(nil)
