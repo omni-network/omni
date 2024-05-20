@@ -2,6 +2,7 @@ package data
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
@@ -81,5 +82,16 @@ func (p *ChainsProvider) ChainList() []Chain {
 	for _, c := range p.chains {
 		chains = append(chains, c)
 	}
+
+	slices.SortFunc(chains, func(a, b Chain) int {
+		if a.DisplayID < b.DisplayID {
+			return -1
+		} else if a.DisplayID > b.DisplayID {
+			return 1
+		}
+
+		return 0
+	})
+
 	return chains
 }
