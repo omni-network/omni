@@ -17,27 +17,27 @@ type Block struct {
 // Fields of the XBlock.
 func (Block) Fields() []ent.Field {
 	return []ent.Field{
-		field.Uint64("SourceChainID"),
-		field.Uint64("BlockHeight"),
-		field.Bytes("BlockHash").MaxLen(32),
-		field.Time("Timestamp").
-			Default(time.Now()),
-		field.Time("CreatedAt").
-			Default(time.Now()),
+		field.Bytes("hash").MaxLen(32),
+		field.Uint64("chain_id"),
+		field.Uint64("height"),
+		field.Uint64("offset"),
+		field.Time("timestamp").Default(time.Now()),
+		field.Time("created_at").Default(time.Now()),
 	}
 }
 
 // Indexes of the Block.
 func (Block) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("SourceChainID", "BlockHeight"),
+		index.Fields("chain_id", "hash").Unique(),
+		index.Fields("chain_id", "height").Unique(),
 	}
 }
 
 // Edges of the Block.
 func (Block) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("Msgs", Msg.Type),
-		edge.To("Receipts", Receipt.Type),
+		edge.To("msgs", Msg.Type),
+		edge.To("receipts", Receipt.Type),
 	}
 }

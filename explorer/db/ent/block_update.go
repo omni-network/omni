@@ -30,61 +30,82 @@ func (bu *BlockUpdate) Where(ps ...predicate.Block) *BlockUpdate {
 	return bu
 }
 
-// SetSourceChainID sets the "SourceChainID" field.
-func (bu *BlockUpdate) SetSourceChainID(u uint64) *BlockUpdate {
-	bu.mutation.ResetSourceChainID()
-	bu.mutation.SetSourceChainID(u)
+// SetHash sets the "hash" field.
+func (bu *BlockUpdate) SetHash(b []byte) *BlockUpdate {
+	bu.mutation.SetHash(b)
 	return bu
 }
 
-// SetNillableSourceChainID sets the "SourceChainID" field if the given value is not nil.
-func (bu *BlockUpdate) SetNillableSourceChainID(u *uint64) *BlockUpdate {
+// SetChainID sets the "chain_id" field.
+func (bu *BlockUpdate) SetChainID(u uint64) *BlockUpdate {
+	bu.mutation.ResetChainID()
+	bu.mutation.SetChainID(u)
+	return bu
+}
+
+// SetNillableChainID sets the "chain_id" field if the given value is not nil.
+func (bu *BlockUpdate) SetNillableChainID(u *uint64) *BlockUpdate {
 	if u != nil {
-		bu.SetSourceChainID(*u)
+		bu.SetChainID(*u)
 	}
 	return bu
 }
 
-// AddSourceChainID adds u to the "SourceChainID" field.
-func (bu *BlockUpdate) AddSourceChainID(u int64) *BlockUpdate {
-	bu.mutation.AddSourceChainID(u)
+// AddChainID adds u to the "chain_id" field.
+func (bu *BlockUpdate) AddChainID(u int64) *BlockUpdate {
+	bu.mutation.AddChainID(u)
 	return bu
 }
 
-// SetBlockHeight sets the "BlockHeight" field.
-func (bu *BlockUpdate) SetBlockHeight(u uint64) *BlockUpdate {
-	bu.mutation.ResetBlockHeight()
-	bu.mutation.SetBlockHeight(u)
+// SetHeight sets the "height" field.
+func (bu *BlockUpdate) SetHeight(u uint64) *BlockUpdate {
+	bu.mutation.ResetHeight()
+	bu.mutation.SetHeight(u)
 	return bu
 }
 
-// SetNillableBlockHeight sets the "BlockHeight" field if the given value is not nil.
-func (bu *BlockUpdate) SetNillableBlockHeight(u *uint64) *BlockUpdate {
+// SetNillableHeight sets the "height" field if the given value is not nil.
+func (bu *BlockUpdate) SetNillableHeight(u *uint64) *BlockUpdate {
 	if u != nil {
-		bu.SetBlockHeight(*u)
+		bu.SetHeight(*u)
 	}
 	return bu
 }
 
-// AddBlockHeight adds u to the "BlockHeight" field.
-func (bu *BlockUpdate) AddBlockHeight(u int64) *BlockUpdate {
-	bu.mutation.AddBlockHeight(u)
+// AddHeight adds u to the "height" field.
+func (bu *BlockUpdate) AddHeight(u int64) *BlockUpdate {
+	bu.mutation.AddHeight(u)
 	return bu
 }
 
-// SetBlockHash sets the "BlockHash" field.
-func (bu *BlockUpdate) SetBlockHash(b []byte) *BlockUpdate {
-	bu.mutation.SetBlockHash(b)
+// SetOffset sets the "offset" field.
+func (bu *BlockUpdate) SetOffset(u uint64) *BlockUpdate {
+	bu.mutation.ResetOffset()
+	bu.mutation.SetOffset(u)
 	return bu
 }
 
-// SetTimestamp sets the "Timestamp" field.
+// SetNillableOffset sets the "offset" field if the given value is not nil.
+func (bu *BlockUpdate) SetNillableOffset(u *uint64) *BlockUpdate {
+	if u != nil {
+		bu.SetOffset(*u)
+	}
+	return bu
+}
+
+// AddOffset adds u to the "offset" field.
+func (bu *BlockUpdate) AddOffset(u int64) *BlockUpdate {
+	bu.mutation.AddOffset(u)
+	return bu
+}
+
+// SetTimestamp sets the "timestamp" field.
 func (bu *BlockUpdate) SetTimestamp(t time.Time) *BlockUpdate {
 	bu.mutation.SetTimestamp(t)
 	return bu
 }
 
-// SetNillableTimestamp sets the "Timestamp" field if the given value is not nil.
+// SetNillableTimestamp sets the "timestamp" field if the given value is not nil.
 func (bu *BlockUpdate) SetNillableTimestamp(t *time.Time) *BlockUpdate {
 	if t != nil {
 		bu.SetTimestamp(*t)
@@ -92,13 +113,13 @@ func (bu *BlockUpdate) SetNillableTimestamp(t *time.Time) *BlockUpdate {
 	return bu
 }
 
-// SetCreatedAt sets the "CreatedAt" field.
+// SetCreatedAt sets the "created_at" field.
 func (bu *BlockUpdate) SetCreatedAt(t time.Time) *BlockUpdate {
 	bu.mutation.SetCreatedAt(t)
 	return bu
 }
 
-// SetNillableCreatedAt sets the "CreatedAt" field if the given value is not nil.
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
 func (bu *BlockUpdate) SetNillableCreatedAt(t *time.Time) *BlockUpdate {
 	if t != nil {
 		bu.SetCreatedAt(*t)
@@ -106,13 +127,13 @@ func (bu *BlockUpdate) SetNillableCreatedAt(t *time.Time) *BlockUpdate {
 	return bu
 }
 
-// AddMsgIDs adds the "Msgs" edge to the Msg entity by IDs.
+// AddMsgIDs adds the "msgs" edge to the Msg entity by IDs.
 func (bu *BlockUpdate) AddMsgIDs(ids ...int) *BlockUpdate {
 	bu.mutation.AddMsgIDs(ids...)
 	return bu
 }
 
-// AddMsgs adds the "Msgs" edges to the Msg entity.
+// AddMsgs adds the "msgs" edges to the Msg entity.
 func (bu *BlockUpdate) AddMsgs(m ...*Msg) *BlockUpdate {
 	ids := make([]int, len(m))
 	for i := range m {
@@ -121,13 +142,13 @@ func (bu *BlockUpdate) AddMsgs(m ...*Msg) *BlockUpdate {
 	return bu.AddMsgIDs(ids...)
 }
 
-// AddReceiptIDs adds the "Receipts" edge to the Receipt entity by IDs.
+// AddReceiptIDs adds the "receipts" edge to the Receipt entity by IDs.
 func (bu *BlockUpdate) AddReceiptIDs(ids ...int) *BlockUpdate {
 	bu.mutation.AddReceiptIDs(ids...)
 	return bu
 }
 
-// AddReceipts adds the "Receipts" edges to the Receipt entity.
+// AddReceipts adds the "receipts" edges to the Receipt entity.
 func (bu *BlockUpdate) AddReceipts(r ...*Receipt) *BlockUpdate {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -141,19 +162,19 @@ func (bu *BlockUpdate) Mutation() *BlockMutation {
 	return bu.mutation
 }
 
-// ClearMsgs clears all "Msgs" edges to the Msg entity.
+// ClearMsgs clears all "msgs" edges to the Msg entity.
 func (bu *BlockUpdate) ClearMsgs() *BlockUpdate {
 	bu.mutation.ClearMsgs()
 	return bu
 }
 
-// RemoveMsgIDs removes the "Msgs" edge to Msg entities by IDs.
+// RemoveMsgIDs removes the "msgs" edge to Msg entities by IDs.
 func (bu *BlockUpdate) RemoveMsgIDs(ids ...int) *BlockUpdate {
 	bu.mutation.RemoveMsgIDs(ids...)
 	return bu
 }
 
-// RemoveMsgs removes "Msgs" edges to Msg entities.
+// RemoveMsgs removes "msgs" edges to Msg entities.
 func (bu *BlockUpdate) RemoveMsgs(m ...*Msg) *BlockUpdate {
 	ids := make([]int, len(m))
 	for i := range m {
@@ -162,19 +183,19 @@ func (bu *BlockUpdate) RemoveMsgs(m ...*Msg) *BlockUpdate {
 	return bu.RemoveMsgIDs(ids...)
 }
 
-// ClearReceipts clears all "Receipts" edges to the Receipt entity.
+// ClearReceipts clears all "receipts" edges to the Receipt entity.
 func (bu *BlockUpdate) ClearReceipts() *BlockUpdate {
 	bu.mutation.ClearReceipts()
 	return bu
 }
 
-// RemoveReceiptIDs removes the "Receipts" edge to Receipt entities by IDs.
+// RemoveReceiptIDs removes the "receipts" edge to Receipt entities by IDs.
 func (bu *BlockUpdate) RemoveReceiptIDs(ids ...int) *BlockUpdate {
 	bu.mutation.RemoveReceiptIDs(ids...)
 	return bu
 }
 
-// RemoveReceipts removes "Receipts" edges to Receipt entities.
+// RemoveReceipts removes "receipts" edges to Receipt entities.
 func (bu *BlockUpdate) RemoveReceipts(r ...*Receipt) *BlockUpdate {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -212,9 +233,9 @@ func (bu *BlockUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (bu *BlockUpdate) check() error {
-	if v, ok := bu.mutation.BlockHash(); ok {
-		if err := block.BlockHashValidator(v); err != nil {
-			return &ValidationError{Name: "BlockHash", err: fmt.Errorf(`ent: validator failed for field "Block.BlockHash": %w`, err)}
+	if v, ok := bu.mutation.Hash(); ok {
+		if err := block.HashValidator(v); err != nil {
+			return &ValidationError{Name: "hash", err: fmt.Errorf(`ent: validator failed for field "Block.hash": %w`, err)}
 		}
 	}
 	return nil
@@ -232,20 +253,26 @@ func (bu *BlockUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := bu.mutation.SourceChainID(); ok {
-		_spec.SetField(block.FieldSourceChainID, field.TypeUint64, value)
+	if value, ok := bu.mutation.Hash(); ok {
+		_spec.SetField(block.FieldHash, field.TypeBytes, value)
 	}
-	if value, ok := bu.mutation.AddedSourceChainID(); ok {
-		_spec.AddField(block.FieldSourceChainID, field.TypeUint64, value)
+	if value, ok := bu.mutation.ChainID(); ok {
+		_spec.SetField(block.FieldChainID, field.TypeUint64, value)
 	}
-	if value, ok := bu.mutation.BlockHeight(); ok {
-		_spec.SetField(block.FieldBlockHeight, field.TypeUint64, value)
+	if value, ok := bu.mutation.AddedChainID(); ok {
+		_spec.AddField(block.FieldChainID, field.TypeUint64, value)
 	}
-	if value, ok := bu.mutation.AddedBlockHeight(); ok {
-		_spec.AddField(block.FieldBlockHeight, field.TypeUint64, value)
+	if value, ok := bu.mutation.Height(); ok {
+		_spec.SetField(block.FieldHeight, field.TypeUint64, value)
 	}
-	if value, ok := bu.mutation.BlockHash(); ok {
-		_spec.SetField(block.FieldBlockHash, field.TypeBytes, value)
+	if value, ok := bu.mutation.AddedHeight(); ok {
+		_spec.AddField(block.FieldHeight, field.TypeUint64, value)
+	}
+	if value, ok := bu.mutation.Offset(); ok {
+		_spec.SetField(block.FieldOffset, field.TypeUint64, value)
+	}
+	if value, ok := bu.mutation.AddedOffset(); ok {
+		_spec.AddField(block.FieldOffset, field.TypeUint64, value)
 	}
 	if value, ok := bu.mutation.Timestamp(); ok {
 		_spec.SetField(block.FieldTimestamp, field.TypeTime, value)
@@ -255,10 +282,10 @@ func (bu *BlockUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if bu.mutation.MsgsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   block.MsgsTable,
-			Columns: []string{block.MsgsColumn},
+			Columns: block.MsgsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(msg.FieldID, field.TypeInt),
@@ -268,10 +295,10 @@ func (bu *BlockUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := bu.mutation.RemovedMsgsIDs(); len(nodes) > 0 && !bu.mutation.MsgsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   block.MsgsTable,
-			Columns: []string{block.MsgsColumn},
+			Columns: block.MsgsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(msg.FieldID, field.TypeInt),
@@ -284,10 +311,10 @@ func (bu *BlockUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := bu.mutation.MsgsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   block.MsgsTable,
-			Columns: []string{block.MsgsColumn},
+			Columns: block.MsgsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(msg.FieldID, field.TypeInt),
@@ -300,10 +327,10 @@ func (bu *BlockUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if bu.mutation.ReceiptsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   block.ReceiptsTable,
-			Columns: []string{block.ReceiptsColumn},
+			Columns: block.ReceiptsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(receipt.FieldID, field.TypeInt),
@@ -313,10 +340,10 @@ func (bu *BlockUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := bu.mutation.RemovedReceiptsIDs(); len(nodes) > 0 && !bu.mutation.ReceiptsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   block.ReceiptsTable,
-			Columns: []string{block.ReceiptsColumn},
+			Columns: block.ReceiptsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(receipt.FieldID, field.TypeInt),
@@ -329,10 +356,10 @@ func (bu *BlockUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := bu.mutation.ReceiptsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   block.ReceiptsTable,
-			Columns: []string{block.ReceiptsColumn},
+			Columns: block.ReceiptsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(receipt.FieldID, field.TypeInt),
@@ -363,61 +390,82 @@ type BlockUpdateOne struct {
 	mutation *BlockMutation
 }
 
-// SetSourceChainID sets the "SourceChainID" field.
-func (buo *BlockUpdateOne) SetSourceChainID(u uint64) *BlockUpdateOne {
-	buo.mutation.ResetSourceChainID()
-	buo.mutation.SetSourceChainID(u)
+// SetHash sets the "hash" field.
+func (buo *BlockUpdateOne) SetHash(b []byte) *BlockUpdateOne {
+	buo.mutation.SetHash(b)
 	return buo
 }
 
-// SetNillableSourceChainID sets the "SourceChainID" field if the given value is not nil.
-func (buo *BlockUpdateOne) SetNillableSourceChainID(u *uint64) *BlockUpdateOne {
+// SetChainID sets the "chain_id" field.
+func (buo *BlockUpdateOne) SetChainID(u uint64) *BlockUpdateOne {
+	buo.mutation.ResetChainID()
+	buo.mutation.SetChainID(u)
+	return buo
+}
+
+// SetNillableChainID sets the "chain_id" field if the given value is not nil.
+func (buo *BlockUpdateOne) SetNillableChainID(u *uint64) *BlockUpdateOne {
 	if u != nil {
-		buo.SetSourceChainID(*u)
+		buo.SetChainID(*u)
 	}
 	return buo
 }
 
-// AddSourceChainID adds u to the "SourceChainID" field.
-func (buo *BlockUpdateOne) AddSourceChainID(u int64) *BlockUpdateOne {
-	buo.mutation.AddSourceChainID(u)
+// AddChainID adds u to the "chain_id" field.
+func (buo *BlockUpdateOne) AddChainID(u int64) *BlockUpdateOne {
+	buo.mutation.AddChainID(u)
 	return buo
 }
 
-// SetBlockHeight sets the "BlockHeight" field.
-func (buo *BlockUpdateOne) SetBlockHeight(u uint64) *BlockUpdateOne {
-	buo.mutation.ResetBlockHeight()
-	buo.mutation.SetBlockHeight(u)
+// SetHeight sets the "height" field.
+func (buo *BlockUpdateOne) SetHeight(u uint64) *BlockUpdateOne {
+	buo.mutation.ResetHeight()
+	buo.mutation.SetHeight(u)
 	return buo
 }
 
-// SetNillableBlockHeight sets the "BlockHeight" field if the given value is not nil.
-func (buo *BlockUpdateOne) SetNillableBlockHeight(u *uint64) *BlockUpdateOne {
+// SetNillableHeight sets the "height" field if the given value is not nil.
+func (buo *BlockUpdateOne) SetNillableHeight(u *uint64) *BlockUpdateOne {
 	if u != nil {
-		buo.SetBlockHeight(*u)
+		buo.SetHeight(*u)
 	}
 	return buo
 }
 
-// AddBlockHeight adds u to the "BlockHeight" field.
-func (buo *BlockUpdateOne) AddBlockHeight(u int64) *BlockUpdateOne {
-	buo.mutation.AddBlockHeight(u)
+// AddHeight adds u to the "height" field.
+func (buo *BlockUpdateOne) AddHeight(u int64) *BlockUpdateOne {
+	buo.mutation.AddHeight(u)
 	return buo
 }
 
-// SetBlockHash sets the "BlockHash" field.
-func (buo *BlockUpdateOne) SetBlockHash(b []byte) *BlockUpdateOne {
-	buo.mutation.SetBlockHash(b)
+// SetOffset sets the "offset" field.
+func (buo *BlockUpdateOne) SetOffset(u uint64) *BlockUpdateOne {
+	buo.mutation.ResetOffset()
+	buo.mutation.SetOffset(u)
 	return buo
 }
 
-// SetTimestamp sets the "Timestamp" field.
+// SetNillableOffset sets the "offset" field if the given value is not nil.
+func (buo *BlockUpdateOne) SetNillableOffset(u *uint64) *BlockUpdateOne {
+	if u != nil {
+		buo.SetOffset(*u)
+	}
+	return buo
+}
+
+// AddOffset adds u to the "offset" field.
+func (buo *BlockUpdateOne) AddOffset(u int64) *BlockUpdateOne {
+	buo.mutation.AddOffset(u)
+	return buo
+}
+
+// SetTimestamp sets the "timestamp" field.
 func (buo *BlockUpdateOne) SetTimestamp(t time.Time) *BlockUpdateOne {
 	buo.mutation.SetTimestamp(t)
 	return buo
 }
 
-// SetNillableTimestamp sets the "Timestamp" field if the given value is not nil.
+// SetNillableTimestamp sets the "timestamp" field if the given value is not nil.
 func (buo *BlockUpdateOne) SetNillableTimestamp(t *time.Time) *BlockUpdateOne {
 	if t != nil {
 		buo.SetTimestamp(*t)
@@ -425,13 +473,13 @@ func (buo *BlockUpdateOne) SetNillableTimestamp(t *time.Time) *BlockUpdateOne {
 	return buo
 }
 
-// SetCreatedAt sets the "CreatedAt" field.
+// SetCreatedAt sets the "created_at" field.
 func (buo *BlockUpdateOne) SetCreatedAt(t time.Time) *BlockUpdateOne {
 	buo.mutation.SetCreatedAt(t)
 	return buo
 }
 
-// SetNillableCreatedAt sets the "CreatedAt" field if the given value is not nil.
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
 func (buo *BlockUpdateOne) SetNillableCreatedAt(t *time.Time) *BlockUpdateOne {
 	if t != nil {
 		buo.SetCreatedAt(*t)
@@ -439,13 +487,13 @@ func (buo *BlockUpdateOne) SetNillableCreatedAt(t *time.Time) *BlockUpdateOne {
 	return buo
 }
 
-// AddMsgIDs adds the "Msgs" edge to the Msg entity by IDs.
+// AddMsgIDs adds the "msgs" edge to the Msg entity by IDs.
 func (buo *BlockUpdateOne) AddMsgIDs(ids ...int) *BlockUpdateOne {
 	buo.mutation.AddMsgIDs(ids...)
 	return buo
 }
 
-// AddMsgs adds the "Msgs" edges to the Msg entity.
+// AddMsgs adds the "msgs" edges to the Msg entity.
 func (buo *BlockUpdateOne) AddMsgs(m ...*Msg) *BlockUpdateOne {
 	ids := make([]int, len(m))
 	for i := range m {
@@ -454,13 +502,13 @@ func (buo *BlockUpdateOne) AddMsgs(m ...*Msg) *BlockUpdateOne {
 	return buo.AddMsgIDs(ids...)
 }
 
-// AddReceiptIDs adds the "Receipts" edge to the Receipt entity by IDs.
+// AddReceiptIDs adds the "receipts" edge to the Receipt entity by IDs.
 func (buo *BlockUpdateOne) AddReceiptIDs(ids ...int) *BlockUpdateOne {
 	buo.mutation.AddReceiptIDs(ids...)
 	return buo
 }
 
-// AddReceipts adds the "Receipts" edges to the Receipt entity.
+// AddReceipts adds the "receipts" edges to the Receipt entity.
 func (buo *BlockUpdateOne) AddReceipts(r ...*Receipt) *BlockUpdateOne {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -474,19 +522,19 @@ func (buo *BlockUpdateOne) Mutation() *BlockMutation {
 	return buo.mutation
 }
 
-// ClearMsgs clears all "Msgs" edges to the Msg entity.
+// ClearMsgs clears all "msgs" edges to the Msg entity.
 func (buo *BlockUpdateOne) ClearMsgs() *BlockUpdateOne {
 	buo.mutation.ClearMsgs()
 	return buo
 }
 
-// RemoveMsgIDs removes the "Msgs" edge to Msg entities by IDs.
+// RemoveMsgIDs removes the "msgs" edge to Msg entities by IDs.
 func (buo *BlockUpdateOne) RemoveMsgIDs(ids ...int) *BlockUpdateOne {
 	buo.mutation.RemoveMsgIDs(ids...)
 	return buo
 }
 
-// RemoveMsgs removes "Msgs" edges to Msg entities.
+// RemoveMsgs removes "msgs" edges to Msg entities.
 func (buo *BlockUpdateOne) RemoveMsgs(m ...*Msg) *BlockUpdateOne {
 	ids := make([]int, len(m))
 	for i := range m {
@@ -495,19 +543,19 @@ func (buo *BlockUpdateOne) RemoveMsgs(m ...*Msg) *BlockUpdateOne {
 	return buo.RemoveMsgIDs(ids...)
 }
 
-// ClearReceipts clears all "Receipts" edges to the Receipt entity.
+// ClearReceipts clears all "receipts" edges to the Receipt entity.
 func (buo *BlockUpdateOne) ClearReceipts() *BlockUpdateOne {
 	buo.mutation.ClearReceipts()
 	return buo
 }
 
-// RemoveReceiptIDs removes the "Receipts" edge to Receipt entities by IDs.
+// RemoveReceiptIDs removes the "receipts" edge to Receipt entities by IDs.
 func (buo *BlockUpdateOne) RemoveReceiptIDs(ids ...int) *BlockUpdateOne {
 	buo.mutation.RemoveReceiptIDs(ids...)
 	return buo
 }
 
-// RemoveReceipts removes "Receipts" edges to Receipt entities.
+// RemoveReceipts removes "receipts" edges to Receipt entities.
 func (buo *BlockUpdateOne) RemoveReceipts(r ...*Receipt) *BlockUpdateOne {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -558,9 +606,9 @@ func (buo *BlockUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (buo *BlockUpdateOne) check() error {
-	if v, ok := buo.mutation.BlockHash(); ok {
-		if err := block.BlockHashValidator(v); err != nil {
-			return &ValidationError{Name: "BlockHash", err: fmt.Errorf(`ent: validator failed for field "Block.BlockHash": %w`, err)}
+	if v, ok := buo.mutation.Hash(); ok {
+		if err := block.HashValidator(v); err != nil {
+			return &ValidationError{Name: "hash", err: fmt.Errorf(`ent: validator failed for field "Block.hash": %w`, err)}
 		}
 	}
 	return nil
@@ -595,20 +643,26 @@ func (buo *BlockUpdateOne) sqlSave(ctx context.Context) (_node *Block, err error
 			}
 		}
 	}
-	if value, ok := buo.mutation.SourceChainID(); ok {
-		_spec.SetField(block.FieldSourceChainID, field.TypeUint64, value)
+	if value, ok := buo.mutation.Hash(); ok {
+		_spec.SetField(block.FieldHash, field.TypeBytes, value)
 	}
-	if value, ok := buo.mutation.AddedSourceChainID(); ok {
-		_spec.AddField(block.FieldSourceChainID, field.TypeUint64, value)
+	if value, ok := buo.mutation.ChainID(); ok {
+		_spec.SetField(block.FieldChainID, field.TypeUint64, value)
 	}
-	if value, ok := buo.mutation.BlockHeight(); ok {
-		_spec.SetField(block.FieldBlockHeight, field.TypeUint64, value)
+	if value, ok := buo.mutation.AddedChainID(); ok {
+		_spec.AddField(block.FieldChainID, field.TypeUint64, value)
 	}
-	if value, ok := buo.mutation.AddedBlockHeight(); ok {
-		_spec.AddField(block.FieldBlockHeight, field.TypeUint64, value)
+	if value, ok := buo.mutation.Height(); ok {
+		_spec.SetField(block.FieldHeight, field.TypeUint64, value)
 	}
-	if value, ok := buo.mutation.BlockHash(); ok {
-		_spec.SetField(block.FieldBlockHash, field.TypeBytes, value)
+	if value, ok := buo.mutation.AddedHeight(); ok {
+		_spec.AddField(block.FieldHeight, field.TypeUint64, value)
+	}
+	if value, ok := buo.mutation.Offset(); ok {
+		_spec.SetField(block.FieldOffset, field.TypeUint64, value)
+	}
+	if value, ok := buo.mutation.AddedOffset(); ok {
+		_spec.AddField(block.FieldOffset, field.TypeUint64, value)
 	}
 	if value, ok := buo.mutation.Timestamp(); ok {
 		_spec.SetField(block.FieldTimestamp, field.TypeTime, value)
@@ -618,10 +672,10 @@ func (buo *BlockUpdateOne) sqlSave(ctx context.Context) (_node *Block, err error
 	}
 	if buo.mutation.MsgsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   block.MsgsTable,
-			Columns: []string{block.MsgsColumn},
+			Columns: block.MsgsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(msg.FieldID, field.TypeInt),
@@ -631,10 +685,10 @@ func (buo *BlockUpdateOne) sqlSave(ctx context.Context) (_node *Block, err error
 	}
 	if nodes := buo.mutation.RemovedMsgsIDs(); len(nodes) > 0 && !buo.mutation.MsgsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   block.MsgsTable,
-			Columns: []string{block.MsgsColumn},
+			Columns: block.MsgsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(msg.FieldID, field.TypeInt),
@@ -647,10 +701,10 @@ func (buo *BlockUpdateOne) sqlSave(ctx context.Context) (_node *Block, err error
 	}
 	if nodes := buo.mutation.MsgsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   block.MsgsTable,
-			Columns: []string{block.MsgsColumn},
+			Columns: block.MsgsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(msg.FieldID, field.TypeInt),
@@ -663,10 +717,10 @@ func (buo *BlockUpdateOne) sqlSave(ctx context.Context) (_node *Block, err error
 	}
 	if buo.mutation.ReceiptsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   block.ReceiptsTable,
-			Columns: []string{block.ReceiptsColumn},
+			Columns: block.ReceiptsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(receipt.FieldID, field.TypeInt),
@@ -676,10 +730,10 @@ func (buo *BlockUpdateOne) sqlSave(ctx context.Context) (_node *Block, err error
 	}
 	if nodes := buo.mutation.RemovedReceiptsIDs(); len(nodes) > 0 && !buo.mutation.ReceiptsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   block.ReceiptsTable,
-			Columns: []string{block.ReceiptsColumn},
+			Columns: block.ReceiptsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(receipt.FieldID, field.TypeInt),
@@ -692,10 +746,10 @@ func (buo *BlockUpdateOne) sqlSave(ctx context.Context) (_node *Block, err error
 	}
 	if nodes := buo.mutation.ReceiptsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   block.ReceiptsTable,
-			Columns: []string{block.ReceiptsColumn},
+			Columns: block.ReceiptsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(receipt.FieldID, field.TypeInt),

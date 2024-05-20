@@ -10,7 +10,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/omni-network/omni/explorer/db/ent/block"
 	"github.com/omni-network/omni/explorer/db/ent/msg"
 	"github.com/omni-network/omni/explorer/db/ent/receipt"
@@ -23,83 +22,61 @@ type ReceiptCreate struct {
 	hooks    []Hook
 }
 
-// SetUUID sets the "UUID" field.
-func (rc *ReceiptCreate) SetUUID(u uuid.UUID) *ReceiptCreate {
-	rc.mutation.SetUUID(u)
+// SetBlockHash sets the "block_hash" field.
+func (rc *ReceiptCreate) SetBlockHash(b []byte) *ReceiptCreate {
+	rc.mutation.SetBlockHash(b)
 	return rc
 }
 
-// SetNillableUUID sets the "UUID" field if the given value is not nil.
-func (rc *ReceiptCreate) SetNillableUUID(u *uuid.UUID) *ReceiptCreate {
-	if u != nil {
-		rc.SetUUID(*u)
-	}
-	return rc
-}
-
-// SetBlockID sets the "Block_ID" field.
-func (rc *ReceiptCreate) SetBlockID(i int) *ReceiptCreate {
-	rc.mutation.SetBlockID(i)
-	return rc
-}
-
-// SetNillableBlockID sets the "Block_ID" field if the given value is not nil.
-func (rc *ReceiptCreate) SetNillableBlockID(i *int) *ReceiptCreate {
-	if i != nil {
-		rc.SetBlockID(*i)
-	}
-	return rc
-}
-
-// SetGasUsed sets the "GasUsed" field.
+// SetGasUsed sets the "gas_used" field.
 func (rc *ReceiptCreate) SetGasUsed(u uint64) *ReceiptCreate {
 	rc.mutation.SetGasUsed(u)
 	return rc
 }
 
-// SetSuccess sets the "Success" field.
+// SetSuccess sets the "success" field.
 func (rc *ReceiptCreate) SetSuccess(b bool) *ReceiptCreate {
 	rc.mutation.SetSuccess(b)
 	return rc
 }
 
-// SetRelayerAddress sets the "RelayerAddress" field.
+// SetRelayerAddress sets the "relayer_address" field.
 func (rc *ReceiptCreate) SetRelayerAddress(b []byte) *ReceiptCreate {
 	rc.mutation.SetRelayerAddress(b)
 	return rc
 }
 
-// SetSourceChainID sets the "SourceChainID" field.
+// SetSourceChainID sets the "source_chain_id" field.
 func (rc *ReceiptCreate) SetSourceChainID(u uint64) *ReceiptCreate {
 	rc.mutation.SetSourceChainID(u)
 	return rc
 }
 
-// SetDestChainID sets the "DestChainID" field.
+// SetDestChainID sets the "dest_chain_id" field.
 func (rc *ReceiptCreate) SetDestChainID(u uint64) *ReceiptCreate {
 	rc.mutation.SetDestChainID(u)
 	return rc
 }
 
-// SetStreamOffset sets the "StreamOffset" field.
-func (rc *ReceiptCreate) SetStreamOffset(u uint64) *ReceiptCreate {
-	rc.mutation.SetStreamOffset(u)
+// SetOffset sets the "offset" field.
+func (rc *ReceiptCreate) SetOffset(u uint64) *ReceiptCreate {
+	rc.mutation.SetOffset(u)
 	return rc
 }
 
-// SetTxHash sets the "TxHash" field.
+// SetTxHash sets the "tx_hash" field.
 func (rc *ReceiptCreate) SetTxHash(b []byte) *ReceiptCreate {
 	rc.mutation.SetTxHash(b)
 	return rc
 }
 
-// SetCreatedAt sets the "CreatedAt" field.
+// SetCreatedAt sets the "created_at" field.
 func (rc *ReceiptCreate) SetCreatedAt(t time.Time) *ReceiptCreate {
 	rc.mutation.SetCreatedAt(t)
 	return rc
 }
 
-// SetNillableCreatedAt sets the "CreatedAt" field if the given value is not nil.
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
 func (rc *ReceiptCreate) SetNillableCreatedAt(t *time.Time) *ReceiptCreate {
 	if t != nil {
 		rc.SetCreatedAt(*t)
@@ -107,18 +84,28 @@ func (rc *ReceiptCreate) SetNillableCreatedAt(t *time.Time) *ReceiptCreate {
 	return rc
 }
 
-// SetBlock sets the "Block" edge to the Block entity.
-func (rc *ReceiptCreate) SetBlock(b *Block) *ReceiptCreate {
-	return rc.SetBlockID(b.ID)
+// AddBlockIDs adds the "block" edge to the Block entity by IDs.
+func (rc *ReceiptCreate) AddBlockIDs(ids ...int) *ReceiptCreate {
+	rc.mutation.AddBlockIDs(ids...)
+	return rc
 }
 
-// AddMsgIDs adds the "Msgs" edge to the Msg entity by IDs.
+// AddBlock adds the "block" edges to the Block entity.
+func (rc *ReceiptCreate) AddBlock(b ...*Block) *ReceiptCreate {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return rc.AddBlockIDs(ids...)
+}
+
+// AddMsgIDs adds the "msgs" edge to the Msg entity by IDs.
 func (rc *ReceiptCreate) AddMsgIDs(ids ...int) *ReceiptCreate {
 	rc.mutation.AddMsgIDs(ids...)
 	return rc
 }
 
-// AddMsgs adds the "Msgs" edges to the Msg entity.
+// AddMsgs adds the "msgs" edges to the Msg entity.
 func (rc *ReceiptCreate) AddMsgs(m ...*Msg) *ReceiptCreate {
 	ids := make([]int, len(m))
 	for i := range m {
@@ -164,13 +151,6 @@ func (rc *ReceiptCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (rc *ReceiptCreate) defaults() error {
-	if _, ok := rc.mutation.UUID(); !ok {
-		if receipt.DefaultUUID == nil {
-			return fmt.Errorf("ent: uninitialized receipt.DefaultUUID (forgotten import ent/runtime?)")
-		}
-		v := receipt.DefaultUUID()
-		rc.mutation.SetUUID(v)
-	}
 	if _, ok := rc.mutation.CreatedAt(); !ok {
 		v := receipt.DefaultCreatedAt
 		rc.mutation.SetCreatedAt(v)
@@ -180,42 +160,47 @@ func (rc *ReceiptCreate) defaults() error {
 
 // check runs all checks and user-defined validators on the builder.
 func (rc *ReceiptCreate) check() error {
-	if _, ok := rc.mutation.UUID(); !ok {
-		return &ValidationError{Name: "UUID", err: errors.New(`ent: missing required field "Receipt.UUID"`)}
+	if _, ok := rc.mutation.BlockHash(); !ok {
+		return &ValidationError{Name: "block_hash", err: errors.New(`ent: missing required field "Receipt.block_hash"`)}
+	}
+	if v, ok := rc.mutation.BlockHash(); ok {
+		if err := receipt.BlockHashValidator(v); err != nil {
+			return &ValidationError{Name: "block_hash", err: fmt.Errorf(`ent: validator failed for field "Receipt.block_hash": %w`, err)}
+		}
 	}
 	if _, ok := rc.mutation.GasUsed(); !ok {
-		return &ValidationError{Name: "GasUsed", err: errors.New(`ent: missing required field "Receipt.GasUsed"`)}
+		return &ValidationError{Name: "gas_used", err: errors.New(`ent: missing required field "Receipt.gas_used"`)}
 	}
 	if _, ok := rc.mutation.Success(); !ok {
-		return &ValidationError{Name: "Success", err: errors.New(`ent: missing required field "Receipt.Success"`)}
+		return &ValidationError{Name: "success", err: errors.New(`ent: missing required field "Receipt.success"`)}
 	}
 	if _, ok := rc.mutation.RelayerAddress(); !ok {
-		return &ValidationError{Name: "RelayerAddress", err: errors.New(`ent: missing required field "Receipt.RelayerAddress"`)}
+		return &ValidationError{Name: "relayer_address", err: errors.New(`ent: missing required field "Receipt.relayer_address"`)}
 	}
 	if v, ok := rc.mutation.RelayerAddress(); ok {
 		if err := receipt.RelayerAddressValidator(v); err != nil {
-			return &ValidationError{Name: "RelayerAddress", err: fmt.Errorf(`ent: validator failed for field "Receipt.RelayerAddress": %w`, err)}
+			return &ValidationError{Name: "relayer_address", err: fmt.Errorf(`ent: validator failed for field "Receipt.relayer_address": %w`, err)}
 		}
 	}
 	if _, ok := rc.mutation.SourceChainID(); !ok {
-		return &ValidationError{Name: "SourceChainID", err: errors.New(`ent: missing required field "Receipt.SourceChainID"`)}
+		return &ValidationError{Name: "source_chain_id", err: errors.New(`ent: missing required field "Receipt.source_chain_id"`)}
 	}
 	if _, ok := rc.mutation.DestChainID(); !ok {
-		return &ValidationError{Name: "DestChainID", err: errors.New(`ent: missing required field "Receipt.DestChainID"`)}
+		return &ValidationError{Name: "dest_chain_id", err: errors.New(`ent: missing required field "Receipt.dest_chain_id"`)}
 	}
-	if _, ok := rc.mutation.StreamOffset(); !ok {
-		return &ValidationError{Name: "StreamOffset", err: errors.New(`ent: missing required field "Receipt.StreamOffset"`)}
+	if _, ok := rc.mutation.Offset(); !ok {
+		return &ValidationError{Name: "offset", err: errors.New(`ent: missing required field "Receipt.offset"`)}
 	}
 	if _, ok := rc.mutation.TxHash(); !ok {
-		return &ValidationError{Name: "TxHash", err: errors.New(`ent: missing required field "Receipt.TxHash"`)}
+		return &ValidationError{Name: "tx_hash", err: errors.New(`ent: missing required field "Receipt.tx_hash"`)}
 	}
 	if v, ok := rc.mutation.TxHash(); ok {
 		if err := receipt.TxHashValidator(v); err != nil {
-			return &ValidationError{Name: "TxHash", err: fmt.Errorf(`ent: validator failed for field "Receipt.TxHash": %w`, err)}
+			return &ValidationError{Name: "tx_hash", err: fmt.Errorf(`ent: validator failed for field "Receipt.tx_hash": %w`, err)}
 		}
 	}
 	if _, ok := rc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "CreatedAt", err: errors.New(`ent: missing required field "Receipt.CreatedAt"`)}
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Receipt.created_at"`)}
 	}
 	return nil
 }
@@ -243,9 +228,9 @@ func (rc *ReceiptCreate) createSpec() (*Receipt, *sqlgraph.CreateSpec) {
 		_node = &Receipt{config: rc.config}
 		_spec = sqlgraph.NewCreateSpec(receipt.Table, sqlgraph.NewFieldSpec(receipt.FieldID, field.TypeInt))
 	)
-	if value, ok := rc.mutation.UUID(); ok {
-		_spec.SetField(receipt.FieldUUID, field.TypeUUID, value)
-		_node.UUID = value
+	if value, ok := rc.mutation.BlockHash(); ok {
+		_spec.SetField(receipt.FieldBlockHash, field.TypeBytes, value)
+		_node.BlockHash = value
 	}
 	if value, ok := rc.mutation.GasUsed(); ok {
 		_spec.SetField(receipt.FieldGasUsed, field.TypeUint64, value)
@@ -267,9 +252,9 @@ func (rc *ReceiptCreate) createSpec() (*Receipt, *sqlgraph.CreateSpec) {
 		_spec.SetField(receipt.FieldDestChainID, field.TypeUint64, value)
 		_node.DestChainID = value
 	}
-	if value, ok := rc.mutation.StreamOffset(); ok {
-		_spec.SetField(receipt.FieldStreamOffset, field.TypeUint64, value)
-		_node.StreamOffset = value
+	if value, ok := rc.mutation.Offset(); ok {
+		_spec.SetField(receipt.FieldOffset, field.TypeUint64, value)
+		_node.Offset = value
 	}
 	if value, ok := rc.mutation.TxHash(); ok {
 		_spec.SetField(receipt.FieldTxHash, field.TypeBytes, value)
@@ -281,10 +266,10 @@ func (rc *ReceiptCreate) createSpec() (*Receipt, *sqlgraph.CreateSpec) {
 	}
 	if nodes := rc.mutation.BlockIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   receipt.BlockTable,
-			Columns: []string{receipt.BlockColumn},
+			Columns: receipt.BlockPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(block.FieldID, field.TypeInt),
@@ -293,7 +278,6 @@ func (rc *ReceiptCreate) createSpec() (*Receipt, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.BlockID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := rc.mutation.MsgsIDs(); len(nodes) > 0 {

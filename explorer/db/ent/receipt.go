@@ -9,8 +9,6 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
-	"github.com/omni-network/omni/explorer/db/ent/block"
 	"github.com/omni-network/omni/explorer/db/ent/receipt"
 )
 
@@ -19,26 +17,24 @@ type Receipt struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
-	// UUID holds the value of the "UUID" field.
-	UUID uuid.UUID `json:"UUID,omitempty"`
-	// BlockID holds the value of the "Block_ID" field.
-	BlockID int `json:"Block_ID,omitempty"`
-	// GasUsed holds the value of the "GasUsed" field.
-	GasUsed uint64 `json:"GasUsed,omitempty"`
-	// Success holds the value of the "Success" field.
-	Success bool `json:"Success,omitempty"`
-	// RelayerAddress holds the value of the "RelayerAddress" field.
-	RelayerAddress []byte `json:"RelayerAddress,omitempty"`
-	// SourceChainID holds the value of the "SourceChainID" field.
-	SourceChainID uint64 `json:"SourceChainID,omitempty"`
-	// DestChainID holds the value of the "DestChainID" field.
-	DestChainID uint64 `json:"DestChainID,omitempty"`
-	// StreamOffset holds the value of the "StreamOffset" field.
-	StreamOffset uint64 `json:"StreamOffset,omitempty"`
-	// TxHash holds the value of the "TxHash" field.
-	TxHash []byte `json:"TxHash,omitempty"`
-	// CreatedAt holds the value of the "CreatedAt" field.
-	CreatedAt time.Time `json:"CreatedAt,omitempty"`
+	// BlockHash holds the value of the "block_hash" field.
+	BlockHash []byte `json:"block_hash,omitempty"`
+	// GasUsed holds the value of the "gas_used" field.
+	GasUsed uint64 `json:"gas_used,omitempty"`
+	// Success holds the value of the "success" field.
+	Success bool `json:"success,omitempty"`
+	// RelayerAddress holds the value of the "relayer_address" field.
+	RelayerAddress []byte `json:"relayer_address,omitempty"`
+	// SourceChainID holds the value of the "source_chain_id" field.
+	SourceChainID uint64 `json:"source_chain_id,omitempty"`
+	// DestChainID holds the value of the "dest_chain_id" field.
+	DestChainID uint64 `json:"dest_chain_id,omitempty"`
+	// Offset holds the value of the "offset" field.
+	Offset uint64 `json:"offset,omitempty"`
+	// TxHash holds the value of the "tx_hash" field.
+	TxHash []byte `json:"tx_hash,omitempty"`
+	// CreatedAt holds the value of the "created_at" field.
+	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ReceiptQuery when eager-loading is set.
 	Edges        ReceiptEdges `json:"edges"`
@@ -47,24 +43,22 @@ type Receipt struct {
 
 // ReceiptEdges holds the relations/edges for other nodes in the graph.
 type ReceiptEdges struct {
-	// Block holds the value of the Block edge.
-	Block *Block `json:"Block,omitempty"`
-	// Msgs holds the value of the Msgs edge.
-	Msgs []*Msg `json:"Msgs,omitempty"`
+	// Block holds the value of the block edge.
+	Block []*Block `json:"block,omitempty"`
+	// Msgs holds the value of the msgs edge.
+	Msgs []*Msg `json:"msgs,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
 }
 
 // BlockOrErr returns the Block value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e ReceiptEdges) BlockOrErr() (*Block, error) {
-	if e.Block != nil {
+// was not loaded in eager-loading.
+func (e ReceiptEdges) BlockOrErr() ([]*Block, error) {
+	if e.loadedTypes[0] {
 		return e.Block, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: block.Label}
 	}
-	return nil, &NotLoadedError{edge: "Block"}
+	return nil, &NotLoadedError{edge: "block"}
 }
 
 // MsgsOrErr returns the Msgs value or an error if the edge
@@ -73,7 +67,7 @@ func (e ReceiptEdges) MsgsOrErr() ([]*Msg, error) {
 	if e.loadedTypes[1] {
 		return e.Msgs, nil
 	}
-	return nil, &NotLoadedError{edge: "Msgs"}
+	return nil, &NotLoadedError{edge: "msgs"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -81,16 +75,14 @@ func (*Receipt) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case receipt.FieldRelayerAddress, receipt.FieldTxHash:
+		case receipt.FieldBlockHash, receipt.FieldRelayerAddress, receipt.FieldTxHash:
 			values[i] = new([]byte)
 		case receipt.FieldSuccess:
 			values[i] = new(sql.NullBool)
-		case receipt.FieldID, receipt.FieldBlockID, receipt.FieldGasUsed, receipt.FieldSourceChainID, receipt.FieldDestChainID, receipt.FieldStreamOffset:
+		case receipt.FieldID, receipt.FieldGasUsed, receipt.FieldSourceChainID, receipt.FieldDestChainID, receipt.FieldOffset:
 			values[i] = new(sql.NullInt64)
 		case receipt.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case receipt.FieldUUID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -112,63 +104,57 @@ func (r *Receipt) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			r.ID = int(value.Int64)
-		case receipt.FieldUUID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field UUID", values[i])
+		case receipt.FieldBlockHash:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field block_hash", values[i])
 			} else if value != nil {
-				r.UUID = *value
-			}
-		case receipt.FieldBlockID:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field Block_ID", values[i])
-			} else if value.Valid {
-				r.BlockID = int(value.Int64)
+				r.BlockHash = *value
 			}
 		case receipt.FieldGasUsed:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field GasUsed", values[i])
+				return fmt.Errorf("unexpected type %T for field gas_used", values[i])
 			} else if value.Valid {
 				r.GasUsed = uint64(value.Int64)
 			}
 		case receipt.FieldSuccess:
 			if value, ok := values[i].(*sql.NullBool); !ok {
-				return fmt.Errorf("unexpected type %T for field Success", values[i])
+				return fmt.Errorf("unexpected type %T for field success", values[i])
 			} else if value.Valid {
 				r.Success = value.Bool
 			}
 		case receipt.FieldRelayerAddress:
 			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field RelayerAddress", values[i])
+				return fmt.Errorf("unexpected type %T for field relayer_address", values[i])
 			} else if value != nil {
 				r.RelayerAddress = *value
 			}
 		case receipt.FieldSourceChainID:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field SourceChainID", values[i])
+				return fmt.Errorf("unexpected type %T for field source_chain_id", values[i])
 			} else if value.Valid {
 				r.SourceChainID = uint64(value.Int64)
 			}
 		case receipt.FieldDestChainID:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field DestChainID", values[i])
+				return fmt.Errorf("unexpected type %T for field dest_chain_id", values[i])
 			} else if value.Valid {
 				r.DestChainID = uint64(value.Int64)
 			}
-		case receipt.FieldStreamOffset:
+		case receipt.FieldOffset:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field StreamOffset", values[i])
+				return fmt.Errorf("unexpected type %T for field offset", values[i])
 			} else if value.Valid {
-				r.StreamOffset = uint64(value.Int64)
+				r.Offset = uint64(value.Int64)
 			}
 		case receipt.FieldTxHash:
 			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field TxHash", values[i])
+				return fmt.Errorf("unexpected type %T for field tx_hash", values[i])
 			} else if value != nil {
 				r.TxHash = *value
 			}
 		case receipt.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field CreatedAt", values[i])
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
 				r.CreatedAt = value.Time
 			}
@@ -185,12 +171,12 @@ func (r *Receipt) Value(name string) (ent.Value, error) {
 	return r.selectValues.Get(name)
 }
 
-// QueryBlock queries the "Block" edge of the Receipt entity.
+// QueryBlock queries the "block" edge of the Receipt entity.
 func (r *Receipt) QueryBlock() *BlockQuery {
 	return NewReceiptClient(r.config).QueryBlock(r)
 }
 
-// QueryMsgs queries the "Msgs" edge of the Receipt entity.
+// QueryMsgs queries the "msgs" edge of the Receipt entity.
 func (r *Receipt) QueryMsgs() *MsgQuery {
 	return NewReceiptClient(r.config).QueryMsgs(r)
 }
@@ -218,34 +204,31 @@ func (r *Receipt) String() string {
 	var builder strings.Builder
 	builder.WriteString("Receipt(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", r.ID))
-	builder.WriteString("UUID=")
-	builder.WriteString(fmt.Sprintf("%v", r.UUID))
+	builder.WriteString("block_hash=")
+	builder.WriteString(fmt.Sprintf("%v", r.BlockHash))
 	builder.WriteString(", ")
-	builder.WriteString("Block_ID=")
-	builder.WriteString(fmt.Sprintf("%v", r.BlockID))
-	builder.WriteString(", ")
-	builder.WriteString("GasUsed=")
+	builder.WriteString("gas_used=")
 	builder.WriteString(fmt.Sprintf("%v", r.GasUsed))
 	builder.WriteString(", ")
-	builder.WriteString("Success=")
+	builder.WriteString("success=")
 	builder.WriteString(fmt.Sprintf("%v", r.Success))
 	builder.WriteString(", ")
-	builder.WriteString("RelayerAddress=")
+	builder.WriteString("relayer_address=")
 	builder.WriteString(fmt.Sprintf("%v", r.RelayerAddress))
 	builder.WriteString(", ")
-	builder.WriteString("SourceChainID=")
+	builder.WriteString("source_chain_id=")
 	builder.WriteString(fmt.Sprintf("%v", r.SourceChainID))
 	builder.WriteString(", ")
-	builder.WriteString("DestChainID=")
+	builder.WriteString("dest_chain_id=")
 	builder.WriteString(fmt.Sprintf("%v", r.DestChainID))
 	builder.WriteString(", ")
-	builder.WriteString("StreamOffset=")
-	builder.WriteString(fmt.Sprintf("%v", r.StreamOffset))
+	builder.WriteString("offset=")
+	builder.WriteString(fmt.Sprintf("%v", r.Offset))
 	builder.WriteString(", ")
-	builder.WriteString("TxHash=")
+	builder.WriteString("tx_hash=")
 	builder.WriteString(fmt.Sprintf("%v", r.TxHash))
 	builder.WriteString(", ")
-	builder.WriteString("CreatedAt=")
+	builder.WriteString("created_at=")
 	builder.WriteString(r.CreatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()

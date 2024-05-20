@@ -10,7 +10,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/omni-network/omni/explorer/db/ent/chain"
 )
 
@@ -21,27 +20,19 @@ type ChainCreate struct {
 	hooks    []Hook
 }
 
-// SetUUID sets the "UUID" field.
-func (cc *ChainCreate) SetUUID(u uuid.UUID) *ChainCreate {
-	cc.mutation.SetUUID(u)
+// SetChainID sets the "chain_id" field.
+func (cc *ChainCreate) SetChainID(u uint64) *ChainCreate {
+	cc.mutation.SetChainID(u)
 	return cc
 }
 
-// SetNillableUUID sets the "UUID" field if the given value is not nil.
-func (cc *ChainCreate) SetNillableUUID(u *uuid.UUID) *ChainCreate {
-	if u != nil {
-		cc.SetUUID(*u)
-	}
-	return cc
-}
-
-// SetCreatedAt sets the "CreatedAt" field.
+// SetCreatedAt sets the "created_at" field.
 func (cc *ChainCreate) SetCreatedAt(t time.Time) *ChainCreate {
 	cc.mutation.SetCreatedAt(t)
 	return cc
 }
 
-// SetNillableCreatedAt sets the "CreatedAt" field if the given value is not nil.
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
 func (cc *ChainCreate) SetNillableCreatedAt(t *time.Time) *ChainCreate {
 	if t != nil {
 		cc.SetCreatedAt(*t)
@@ -49,13 +40,7 @@ func (cc *ChainCreate) SetNillableCreatedAt(t *time.Time) *ChainCreate {
 	return cc
 }
 
-// SetChainID sets the "ChainID" field.
-func (cc *ChainCreate) SetChainID(u uint64) *ChainCreate {
-	cc.mutation.SetChainID(u)
-	return cc
-}
-
-// SetName sets the "Name" field.
+// SetName sets the "name" field.
 func (cc *ChainCreate) SetName(s string) *ChainCreate {
 	cc.mutation.SetName(s)
 	return cc
@@ -96,10 +81,6 @@ func (cc *ChainCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (cc *ChainCreate) defaults() {
-	if _, ok := cc.mutation.UUID(); !ok {
-		v := chain.DefaultUUID()
-		cc.mutation.SetUUID(v)
-	}
 	if _, ok := cc.mutation.CreatedAt(); !ok {
 		v := chain.DefaultCreatedAt
 		cc.mutation.SetCreatedAt(v)
@@ -108,17 +89,14 @@ func (cc *ChainCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (cc *ChainCreate) check() error {
-	if _, ok := cc.mutation.UUID(); !ok {
-		return &ValidationError{Name: "UUID", err: errors.New(`ent: missing required field "Chain.UUID"`)}
+	if _, ok := cc.mutation.ChainID(); !ok {
+		return &ValidationError{Name: "chain_id", err: errors.New(`ent: missing required field "Chain.chain_id"`)}
 	}
 	if _, ok := cc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "CreatedAt", err: errors.New(`ent: missing required field "Chain.CreatedAt"`)}
-	}
-	if _, ok := cc.mutation.ChainID(); !ok {
-		return &ValidationError{Name: "ChainID", err: errors.New(`ent: missing required field "Chain.ChainID"`)}
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Chain.created_at"`)}
 	}
 	if _, ok := cc.mutation.Name(); !ok {
-		return &ValidationError{Name: "Name", err: errors.New(`ent: missing required field "Chain.Name"`)}
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Chain.name"`)}
 	}
 	return nil
 }
@@ -146,17 +124,13 @@ func (cc *ChainCreate) createSpec() (*Chain, *sqlgraph.CreateSpec) {
 		_node = &Chain{config: cc.config}
 		_spec = sqlgraph.NewCreateSpec(chain.Table, sqlgraph.NewFieldSpec(chain.FieldID, field.TypeInt))
 	)
-	if value, ok := cc.mutation.UUID(); ok {
-		_spec.SetField(chain.FieldUUID, field.TypeUUID, value)
-		_node.UUID = value
+	if value, ok := cc.mutation.ChainID(); ok {
+		_spec.SetField(chain.FieldChainID, field.TypeUint64, value)
+		_node.ChainID = value
 	}
 	if value, ok := cc.mutation.CreatedAt(); ok {
 		_spec.SetField(chain.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
-	}
-	if value, ok := cc.mutation.ChainID(); ok {
-		_spec.SetField(chain.FieldChainID, field.TypeUint64, value)
-		_node.ChainID = value
 	}
 	if value, ok := cc.mutation.Name(); ok {
 		_spec.SetField(chain.FieldName, field.TypeString, value)

@@ -13,7 +13,6 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
-	"github.com/google/uuid"
 )
 
 // Msg holds the schema definition for the Msg entity.
@@ -24,54 +23,36 @@ type Msg struct {
 // Fields of the XMsg.
 func (Msg) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("UUID", uuid.UUID{}).
-			Default(uuid.New),
-		field.Int("Block_ID").
-			Optional(),
-		field.Bytes("SourceMsgSender").
-			MaxLen(20),
-		field.Bytes("DestAddress").
-			MaxLen(20),
-		field.Bytes("Data"),
-		field.Uint64("DestGasLimit"),
-		field.Uint64("SourceChainID"),
-		field.Uint64("DestChainID"),
-		field.Uint64("StreamOffset"),
-		field.Bytes("TxHash").
-			MaxLen(32),
-		field.Bytes("BlockHash").
-			MaxLen(32).
-			Optional(),
-		field.Uint64("BlockHeight").
-			Optional(),
-		field.Bytes("ReceiptHash").
-			MaxLen(32).
-			Optional(),
-		field.String("Status").
-			Optional().
-			Default("PENDING"),
-		field.Time("BlockTime").
-			Optional(),
-		field.Time("CreatedAt").
-			Default(time.Now()),
+		field.Bytes("sender").MaxLen(20),
+		field.Bytes("to").MaxLen(20),
+		field.Bytes("data"),
+		field.Uint64("gas_limit"),
+		field.Uint64("source_chain_id"),
+		field.Uint64("dest_chain_id"),
+		field.Uint64("offset"),
+		field.Bytes("tx_hash").MaxLen(32),
+		field.Bytes("receipt_hash").MaxLen(32).Optional(),
+		field.String("status").Optional().Default("PENDING"),
+		field.Time("created_at").Default(time.Now()),
 	}
 }
 
 // Indexes of the Msg.
 func (Msg) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("SourceChainID", "DestChainID", "StreamOffset", "Block_ID"),
+		index.Fields("sender"),
+		index.Fields("to"),
+		index.Fields("status"),
+		index.Fields("tx_hash"),
+		index.Fields("source_chain_id", "dest_chain_id", "offset").Unique(),
 	}
 }
 
 // Edges of the XMsg.
 func (Msg) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("Block", Block.Type).
-			Ref("Msgs").
-			Field("Block_ID").
-			Unique(),
-		edge.To("Receipts", Receipt.Type),
+		edge.From("block", Block.Type).Ref("msgs"),
+		edge.To("receipts", Receipt.Type),
 	}
 }
 
@@ -82,7 +63,7 @@ func (Msg) Hooks() []ent.Hook {
 		hook.On(
 			func(next ent.Mutator) ent.Mutator {
 				return hook.MsgFunc(func(ctx context.Context, m *gen.MsgMutation) (ent.Value, error) {
-					// go and find the associated receipt using source chain id, dest chain id and txhash
+					// find the associated receipt using source chain id, dest chain id and txhash
 					sourceChainID, ok := m.SourceChainID()
 					if !ok {
 						return nil, errors.New("source chain id missing")
@@ -93,7 +74,7 @@ func (Msg) Hooks() []ent.Hook {
 						return nil, errors.New("dest chain id missing")
 					}
 
-					streamOffset, ok := m.StreamOffset()
+					offset, ok := m.Offset()
 					if !ok {
 						return nil, errors.New("stream offset missing")
 					}
@@ -101,7 +82,7 @@ func (Msg) Hooks() []ent.Hook {
 						Where(
 							receipt.SourceChainID(sourceChainID),
 							receipt.DestChainID(destChainID),
-							receipt.StreamOffset(streamOffset),
+							receipt.Offset(offset),
 						).
 						Order(gen.Desc(receipt.FieldCreatedAt)).
 						All(ctx)

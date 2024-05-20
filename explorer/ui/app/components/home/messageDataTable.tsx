@@ -14,6 +14,7 @@ import Button from '../shared/button'
 import { PageButton } from '../shared/button-legacy'
 import { copyToClipboard } from '~/lib/utils'
 import { ArrowIconLong } from '../svg/arrowIconLong'
+import { XmsgResponse } from '~/routes/_index';
 
 type Status = 'Success' | 'Failed' | 'Pending' | 'All'
 
@@ -146,7 +147,7 @@ export default function XMsgDataTable() {
       // cant see the data
       {
         ...columnConfig,
-        accessorKey: 'node.receipt.timestamp',
+        accessorKey: 'node.block.timestamp',
         header: () => <span>Age</span>,
         cell: (value: any) => (
           <span className="text-subtlest font-bold text-b-xs">
@@ -165,14 +166,14 @@ export default function XMsgDataTable() {
               <span data-tooltip-id={`${value.row.original.node.displayID}-status-id-tooltip`}>
                 <Tag status={value.getValue()} />
               </span>
-              {value.row.original.node.receipt.revertReason && (
+              {value.row.original.node.receipt?.revertReason && (
                 <Tooltip
                   delayShow={300}
                   className="tooltip"
                   id={`${value.row.original.node.displayID}-status-id-tooltip`}
                 >
                   <label className="text-default text-b-sm font-bold">
-                    {value.row.original.node.receipt.revertReason}
+                    {value.row.original.node.receipt?.revertReason}
                   </label>
                 </Tooltip>
               )}

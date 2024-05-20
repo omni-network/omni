@@ -1,4 +1,4 @@
-package db
+package testutil
 
 import (
 	"context"
@@ -11,6 +11,8 @@ import (
 	"github.com/omni-network/omni/explorer/db/ent/migrate"
 
 	"github.com/ethereum/go-ethereum/common"
+
+	gofuzz "github.com/google/gofuzz"
 )
 
 func CreateTestChain(t *testing.T, ctx context.Context, client *ent.Client, chainID uint64) ent.Chain {
@@ -25,38 +27,38 @@ func CreateTestChain(t *testing.T, ctx context.Context, client *ent.Client, chai
 	return *chain
 }
 
-func CreateTestBlock(t *testing.T, ctx context.Context, client *ent.Client, height int) ent.Block {
+func CreateTestBlock(t *testing.T, ctx context.Context, client *ent.Client, height, offset uint64, ts time.Time) ent.Block {
 	t.Helper()
 
-	sourceChainID := uint64(1)
-	blockHashBytes := []byte{1, 3, 23, 111, 27, 45, 98, 103, 94, 55, 1, 3, 23, 111, 27, 45, 98, 103, 94, 55}
-	blockHashValue := common.Hash{}
-	blockHashValue.SetBytes(blockHashBytes)
+	const chainID = 1
+	var blockHash common.Hash
+	gofuzz.New().NilChance(0).Fuzz(&blockHash)
 
 	b := client.Block.Create().
-		SetSourceChainID(sourceChainID).
-		SetBlockHeight(uint64(height)).
-		SetBlockHash(blockHashValue.Bytes()).
-		SetCreatedAt(time.Now()).
+		SetChainID(chainID).
+		SetHeight(height).
+		SetOffset(offset).
+		SetHash(blockHash.Bytes()).
+		SetTimestamp(ts).
 		SaveX(ctx)
 
 	return *b
 }
 
 // CreateTestBlocks creates n test blocks with n messages and n-1 receipts.
-func CreateTestBlocks(t *testing.T, ctx context.Context, client *ent.Client, count int) []ent.Block {
+func CreateTestBlocks(t *testing.T, ctx context.Context, client *ent.Client, count uint64) []ent.Block {
 	t.Helper()
 	destChainID := uint64(2)
 	var msg *ent.Msg
 	var blocks []ent.Block
-	for i := 0; i < count; i++ {
-		// add some small delay to ensure different timestamps for tests
-		time.Sleep(10 * time.Millisecond)
-		b := CreateTestBlock(t, ctx, client, i)
+	ts := time.Now()
+	for i := uint64(0); i < count; i++ {
+		ts = ts.Add(10 * time.Millisecond) // add some small "delay" to ensure different timestamps in tests
+		b := CreateTestBlock(t, ctx, client, i*2, i, ts)
 		if msg != nil {
-			CreateReceipt(t, ctx, client, b, msg.DestChainID, msg.StreamOffset)
+			CreateReceipt(t, ctx, client, b, msg.DestChainID, msg.Offset)
 		}
-		msg = CreateXMsg(t, ctx, client, b, destChainID, uint64(i))
+		msg = CreateXMsg(t, ctx, client, b, destChainID, i)
 		blocks = append(blocks, b)
 	}
 
@@ -66,23 +68,20 @@ func CreateTestBlocks(t *testing.T, ctx context.Context, client *ent.Client, cou
 func CreateXMsg(t *testing.T, ctx context.Context, client *ent.Client, b ent.Block, destChainID uint64, streamOffset uint64) *ent.Msg {
 	t.Helper()
 
-	sourceMessageSender := [20]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
-	destAddress := [20]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21}
+	sender := [20]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
+	to := [20]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21}
 	data := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	txHash := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32}
 
 	msg := client.Msg.Create().
-		SetSourceMsgSender(sourceMessageSender[:]).
-		SetDestAddress(destAddress[:]).
+		SetSender(sender[:]).
+		SetTo(to[:]).
 		SetDestChainID(destChainID).
-		SetStreamOffset(streamOffset).
+		SetOffset(streamOffset).
 		SetData(data).
-		SetDestGasLimit(100).
-		SetSourceChainID(b.SourceChainID).
+		SetGasLimit(100).
+		SetSourceChainID(b.ChainID).
 		SetTxHash(txHash).
-		SetBlockHash(b.BlockHash).
-		SetBlockHeight(b.BlockHeight).
-		SetBlockTime(b.CreatedAt).
 		SaveX(ctx)
 
 	client.Block.UpdateOne(&b).AddMsgs(msg).SaveX(ctx)
@@ -90,7 +89,7 @@ func CreateXMsg(t *testing.T, ctx context.Context, client *ent.Client, b ent.Blo
 	return msg
 }
 
-func CreateReceipt(t *testing.T, ctx context.Context, client *ent.Client, b ent.Block, destChainID uint64, streamOffset uint64) *ent.Receipt {
+func CreateReceipt(t *testing.T, ctx context.Context, client *ent.Client, b ent.Block, destChainID uint64, offset uint64) *ent.Receipt {
 	t.Helper()
 	relayerAddress := [20]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 22}
 	txHash := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 33}
@@ -98,10 +97,11 @@ func CreateReceipt(t *testing.T, ctx context.Context, client *ent.Client, b ent.
 	receipt := client.Receipt.Create().
 		SetGasUsed(100).
 		SetSuccess(true).
+		SetBlockHash(b.Hash).
 		SetRelayerAddress(relayerAddress[:]).
-		SetSourceChainID(b.SourceChainID).
+		SetSourceChainID(b.ChainID).
 		SetDestChainID(destChainID).
-		SetStreamOffset(streamOffset).
+		SetOffset(offset).
 		SetTxHash(txHash).
 		SaveX(ctx)
 
@@ -113,12 +113,12 @@ func CreateReceipt(t *testing.T, ctx context.Context, client *ent.Client, b ent.
 func CreateTestEntClient(t *testing.T) *ent.Client {
 	t.Helper()
 
-	entOpts := []enttest.Option{
+	opts := []enttest.Option{
 		enttest.WithOptions(ent.Log(t.Log)),
 		enttest.WithMigrateOptions(migrate.WithGlobalUniqueID(true)),
 	}
 
-	client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1", entOpts...)
+	client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&_fk=1", opts...)
 
 	return client
 }

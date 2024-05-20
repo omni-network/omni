@@ -6,12 +6,14 @@ run:
   skip-dirs:
     - explorer/db/ent
     - explorer/ui/graphql
+    - explorer/graphql  # graphql resolvers are fine with std lib errors (those are not logged)
     - explorer/graphql/mockresolver  # this is temporary code which will be removed after the backend implementation is complete
 linters-settings:
   exhaustive:
     default-signifies-exhaustive: true
   forbidigo:
     exclude-dirs:
+      - explorer/graphql
       - explorer/graphql/mockresolver
     forbid:
       - 'fmt\.Print.*(# Avoid debug logging)?'

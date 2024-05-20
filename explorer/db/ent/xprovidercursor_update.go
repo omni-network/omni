@@ -11,7 +11,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/omni-network/omni/explorer/db/ent/predicate"
 	"github.com/omni-network/omni/explorer/db/ent/xprovidercursor"
 )
@@ -29,28 +28,14 @@ func (xcu *XProviderCursorUpdate) Where(ps ...predicate.XProviderCursor) *XProvi
 	return xcu
 }
 
-// SetUUID sets the "UUID" field.
-func (xcu *XProviderCursorUpdate) SetUUID(u uuid.UUID) *XProviderCursorUpdate {
-	xcu.mutation.SetUUID(u)
-	return xcu
-}
-
-// SetNillableUUID sets the "UUID" field if the given value is not nil.
-func (xcu *XProviderCursorUpdate) SetNillableUUID(u *uuid.UUID) *XProviderCursorUpdate {
-	if u != nil {
-		xcu.SetUUID(*u)
-	}
-	return xcu
-}
-
-// SetChainID sets the "ChainID" field.
+// SetChainID sets the "chain_id" field.
 func (xcu *XProviderCursorUpdate) SetChainID(u uint64) *XProviderCursorUpdate {
 	xcu.mutation.ResetChainID()
 	xcu.mutation.SetChainID(u)
 	return xcu
 }
 
-// SetNillableChainID sets the "ChainID" field if the given value is not nil.
+// SetNillableChainID sets the "chain_id" field if the given value is not nil.
 func (xcu *XProviderCursorUpdate) SetNillableChainID(u *uint64) *XProviderCursorUpdate {
 	if u != nil {
 		xcu.SetChainID(*u)
@@ -58,20 +43,20 @@ func (xcu *XProviderCursorUpdate) SetNillableChainID(u *uint64) *XProviderCursor
 	return xcu
 }
 
-// AddChainID adds u to the "ChainID" field.
+// AddChainID adds u to the "chain_id" field.
 func (xcu *XProviderCursorUpdate) AddChainID(u int64) *XProviderCursorUpdate {
 	xcu.mutation.AddChainID(u)
 	return xcu
 }
 
-// SetHeight sets the "Height" field.
+// SetHeight sets the "height" field.
 func (xcu *XProviderCursorUpdate) SetHeight(u uint64) *XProviderCursorUpdate {
 	xcu.mutation.ResetHeight()
 	xcu.mutation.SetHeight(u)
 	return xcu
 }
 
-// SetNillableHeight sets the "Height" field if the given value is not nil.
+// SetNillableHeight sets the "height" field if the given value is not nil.
 func (xcu *XProviderCursorUpdate) SetNillableHeight(u *uint64) *XProviderCursorUpdate {
 	if u != nil {
 		xcu.SetHeight(*u)
@@ -79,19 +64,40 @@ func (xcu *XProviderCursorUpdate) SetNillableHeight(u *uint64) *XProviderCursorU
 	return xcu
 }
 
-// AddHeight adds u to the "Height" field.
+// AddHeight adds u to the "height" field.
 func (xcu *XProviderCursorUpdate) AddHeight(u int64) *XProviderCursorUpdate {
 	xcu.mutation.AddHeight(u)
 	return xcu
 }
 
-// SetCreatedAt sets the "CreatedAt" field.
+// SetOffset sets the "offset" field.
+func (xcu *XProviderCursorUpdate) SetOffset(u uint64) *XProviderCursorUpdate {
+	xcu.mutation.ResetOffset()
+	xcu.mutation.SetOffset(u)
+	return xcu
+}
+
+// SetNillableOffset sets the "offset" field if the given value is not nil.
+func (xcu *XProviderCursorUpdate) SetNillableOffset(u *uint64) *XProviderCursorUpdate {
+	if u != nil {
+		xcu.SetOffset(*u)
+	}
+	return xcu
+}
+
+// AddOffset adds u to the "offset" field.
+func (xcu *XProviderCursorUpdate) AddOffset(u int64) *XProviderCursorUpdate {
+	xcu.mutation.AddOffset(u)
+	return xcu
+}
+
+// SetCreatedAt sets the "created_at" field.
 func (xcu *XProviderCursorUpdate) SetCreatedAt(t time.Time) *XProviderCursorUpdate {
 	xcu.mutation.SetCreatedAt(t)
 	return xcu
 }
 
-// SetNillableCreatedAt sets the "CreatedAt" field if the given value is not nil.
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
 func (xcu *XProviderCursorUpdate) SetNillableCreatedAt(t *time.Time) *XProviderCursorUpdate {
 	if t != nil {
 		xcu.SetCreatedAt(*t)
@@ -99,13 +105,13 @@ func (xcu *XProviderCursorUpdate) SetNillableCreatedAt(t *time.Time) *XProviderC
 	return xcu
 }
 
-// SetUpdatedAt sets the "UpdatedAt" field.
+// SetUpdatedAt sets the "updated_at" field.
 func (xcu *XProviderCursorUpdate) SetUpdatedAt(t time.Time) *XProviderCursorUpdate {
 	xcu.mutation.SetUpdatedAt(t)
 	return xcu
 }
 
-// SetNillableUpdatedAt sets the "UpdatedAt" field if the given value is not nil.
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
 func (xcu *XProviderCursorUpdate) SetNillableUpdatedAt(t *time.Time) *XProviderCursorUpdate {
 	if t != nil {
 		xcu.SetUpdatedAt(*t)
@@ -146,16 +152,13 @@ func (xcu *XProviderCursorUpdate) ExecX(ctx context.Context) {
 }
 
 func (xcu *XProviderCursorUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	_spec := sqlgraph.NewUpdateSpec(xprovidercursor.Table, xprovidercursor.Columns, sqlgraph.NewFieldSpec(xprovidercursor.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewUpdateSpec(xprovidercursor.Table, xprovidercursor.Columns, sqlgraph.NewFieldSpec(xprovidercursor.FieldID, field.TypeUUID))
 	if ps := xcu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := xcu.mutation.UUID(); ok {
-		_spec.SetField(xprovidercursor.FieldUUID, field.TypeUUID, value)
 	}
 	if value, ok := xcu.mutation.ChainID(); ok {
 		_spec.SetField(xprovidercursor.FieldChainID, field.TypeUint64, value)
@@ -168,6 +171,12 @@ func (xcu *XProviderCursorUpdate) sqlSave(ctx context.Context) (n int, err error
 	}
 	if value, ok := xcu.mutation.AddedHeight(); ok {
 		_spec.AddField(xprovidercursor.FieldHeight, field.TypeUint64, value)
+	}
+	if value, ok := xcu.mutation.Offset(); ok {
+		_spec.SetField(xprovidercursor.FieldOffset, field.TypeUint64, value)
+	}
+	if value, ok := xcu.mutation.AddedOffset(); ok {
+		_spec.AddField(xprovidercursor.FieldOffset, field.TypeUint64, value)
 	}
 	if value, ok := xcu.mutation.CreatedAt(); ok {
 		_spec.SetField(xprovidercursor.FieldCreatedAt, field.TypeTime, value)
@@ -195,28 +204,14 @@ type XProviderCursorUpdateOne struct {
 	mutation *XProviderCursorMutation
 }
 
-// SetUUID sets the "UUID" field.
-func (xcuo *XProviderCursorUpdateOne) SetUUID(u uuid.UUID) *XProviderCursorUpdateOne {
-	xcuo.mutation.SetUUID(u)
-	return xcuo
-}
-
-// SetNillableUUID sets the "UUID" field if the given value is not nil.
-func (xcuo *XProviderCursorUpdateOne) SetNillableUUID(u *uuid.UUID) *XProviderCursorUpdateOne {
-	if u != nil {
-		xcuo.SetUUID(*u)
-	}
-	return xcuo
-}
-
-// SetChainID sets the "ChainID" field.
+// SetChainID sets the "chain_id" field.
 func (xcuo *XProviderCursorUpdateOne) SetChainID(u uint64) *XProviderCursorUpdateOne {
 	xcuo.mutation.ResetChainID()
 	xcuo.mutation.SetChainID(u)
 	return xcuo
 }
 
-// SetNillableChainID sets the "ChainID" field if the given value is not nil.
+// SetNillableChainID sets the "chain_id" field if the given value is not nil.
 func (xcuo *XProviderCursorUpdateOne) SetNillableChainID(u *uint64) *XProviderCursorUpdateOne {
 	if u != nil {
 		xcuo.SetChainID(*u)
@@ -224,20 +219,20 @@ func (xcuo *XProviderCursorUpdateOne) SetNillableChainID(u *uint64) *XProviderCu
 	return xcuo
 }
 
-// AddChainID adds u to the "ChainID" field.
+// AddChainID adds u to the "chain_id" field.
 func (xcuo *XProviderCursorUpdateOne) AddChainID(u int64) *XProviderCursorUpdateOne {
 	xcuo.mutation.AddChainID(u)
 	return xcuo
 }
 
-// SetHeight sets the "Height" field.
+// SetHeight sets the "height" field.
 func (xcuo *XProviderCursorUpdateOne) SetHeight(u uint64) *XProviderCursorUpdateOne {
 	xcuo.mutation.ResetHeight()
 	xcuo.mutation.SetHeight(u)
 	return xcuo
 }
 
-// SetNillableHeight sets the "Height" field if the given value is not nil.
+// SetNillableHeight sets the "height" field if the given value is not nil.
 func (xcuo *XProviderCursorUpdateOne) SetNillableHeight(u *uint64) *XProviderCursorUpdateOne {
 	if u != nil {
 		xcuo.SetHeight(*u)
@@ -245,19 +240,40 @@ func (xcuo *XProviderCursorUpdateOne) SetNillableHeight(u *uint64) *XProviderCur
 	return xcuo
 }
 
-// AddHeight adds u to the "Height" field.
+// AddHeight adds u to the "height" field.
 func (xcuo *XProviderCursorUpdateOne) AddHeight(u int64) *XProviderCursorUpdateOne {
 	xcuo.mutation.AddHeight(u)
 	return xcuo
 }
 
-// SetCreatedAt sets the "CreatedAt" field.
+// SetOffset sets the "offset" field.
+func (xcuo *XProviderCursorUpdateOne) SetOffset(u uint64) *XProviderCursorUpdateOne {
+	xcuo.mutation.ResetOffset()
+	xcuo.mutation.SetOffset(u)
+	return xcuo
+}
+
+// SetNillableOffset sets the "offset" field if the given value is not nil.
+func (xcuo *XProviderCursorUpdateOne) SetNillableOffset(u *uint64) *XProviderCursorUpdateOne {
+	if u != nil {
+		xcuo.SetOffset(*u)
+	}
+	return xcuo
+}
+
+// AddOffset adds u to the "offset" field.
+func (xcuo *XProviderCursorUpdateOne) AddOffset(u int64) *XProviderCursorUpdateOne {
+	xcuo.mutation.AddOffset(u)
+	return xcuo
+}
+
+// SetCreatedAt sets the "created_at" field.
 func (xcuo *XProviderCursorUpdateOne) SetCreatedAt(t time.Time) *XProviderCursorUpdateOne {
 	xcuo.mutation.SetCreatedAt(t)
 	return xcuo
 }
 
-// SetNillableCreatedAt sets the "CreatedAt" field if the given value is not nil.
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
 func (xcuo *XProviderCursorUpdateOne) SetNillableCreatedAt(t *time.Time) *XProviderCursorUpdateOne {
 	if t != nil {
 		xcuo.SetCreatedAt(*t)
@@ -265,13 +281,13 @@ func (xcuo *XProviderCursorUpdateOne) SetNillableCreatedAt(t *time.Time) *XProvi
 	return xcuo
 }
 
-// SetUpdatedAt sets the "UpdatedAt" field.
+// SetUpdatedAt sets the "updated_at" field.
 func (xcuo *XProviderCursorUpdateOne) SetUpdatedAt(t time.Time) *XProviderCursorUpdateOne {
 	xcuo.mutation.SetUpdatedAt(t)
 	return xcuo
 }
 
-// SetNillableUpdatedAt sets the "UpdatedAt" field if the given value is not nil.
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
 func (xcuo *XProviderCursorUpdateOne) SetNillableUpdatedAt(t *time.Time) *XProviderCursorUpdateOne {
 	if t != nil {
 		xcuo.SetUpdatedAt(*t)
@@ -325,7 +341,7 @@ func (xcuo *XProviderCursorUpdateOne) ExecX(ctx context.Context) {
 }
 
 func (xcuo *XProviderCursorUpdateOne) sqlSave(ctx context.Context) (_node *XProviderCursor, err error) {
-	_spec := sqlgraph.NewUpdateSpec(xprovidercursor.Table, xprovidercursor.Columns, sqlgraph.NewFieldSpec(xprovidercursor.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewUpdateSpec(xprovidercursor.Table, xprovidercursor.Columns, sqlgraph.NewFieldSpec(xprovidercursor.FieldID, field.TypeUUID))
 	id, ok := xcuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "XProviderCursor.id" for update`)}
@@ -350,9 +366,6 @@ func (xcuo *XProviderCursorUpdateOne) sqlSave(ctx context.Context) (_node *XProv
 			}
 		}
 	}
-	if value, ok := xcuo.mutation.UUID(); ok {
-		_spec.SetField(xprovidercursor.FieldUUID, field.TypeUUID, value)
-	}
 	if value, ok := xcuo.mutation.ChainID(); ok {
 		_spec.SetField(xprovidercursor.FieldChainID, field.TypeUint64, value)
 	}
@@ -364,6 +377,12 @@ func (xcuo *XProviderCursorUpdateOne) sqlSave(ctx context.Context) (_node *XProv
 	}
 	if value, ok := xcuo.mutation.AddedHeight(); ok {
 		_spec.AddField(xprovidercursor.FieldHeight, field.TypeUint64, value)
+	}
+	if value, ok := xcuo.mutation.Offset(); ok {
+		_spec.SetField(xprovidercursor.FieldOffset, field.TypeUint64, value)
+	}
+	if value, ok := xcuo.mutation.AddedOffset(); ok {
+		_spec.AddField(xprovidercursor.FieldOffset, field.TypeUint64, value)
 	}
 	if value, ok := xcuo.mutation.CreatedAt(); ok {
 		_spec.SetField(xprovidercursor.FieldCreatedAt, field.TypeTime, value)

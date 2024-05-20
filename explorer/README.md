@@ -11,7 +11,7 @@ The explorer has four components broken down into their own respective directory
 
 ## DB
 
-The db is driven by the [ent framework](entgo.io). It is an ORM where we generate our schemas as code and automatically create migrations and update our DB.
+The db is driven by the [ent framework](entgo.io) - an ORM which generates the schemas as code and automatically create migrations and update the DB.
 
 ## GraphQL
 

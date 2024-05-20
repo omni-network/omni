@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/omni-network/omni/explorer/db"
+	"github.com/omni-network/omni/explorer/db/testutil"
 	"github.com/omni-network/omni/explorer/graphql/app"
 	"github.com/omni-network/omni/explorer/graphql/resolvers"
 
@@ -22,12 +22,12 @@ func TestXMsg(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	db.CreateTestBlocks(t, ctx, test.Client, 2)
+	testutil.CreateTestBlocks(t, ctx, test.Client, 2)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
 			Context: ctx,
-			Schema:  graphql.MustParseSchema(app.Schema, &resolvers.Query{BlocksResolver: test.Resolver}, test.Opts...),
+			Schema:  graphql.MustParseSchema(app.Schema, resolvers.NewRoot(test.Provider), test.Opts...),
 			Query: `
 				{
 					xmsg(sourceChainID: 1, destChainID: 2, offset: 0){
@@ -76,12 +76,12 @@ func TestXMsgsNoCursor(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	db.CreateTestBlocks(t, ctx, test.Client, 5)
+	testutil.CreateTestBlocks(t, ctx, test.Client, 5)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
 			Context: ctx,
-			Schema:  graphql.MustParseSchema(app.Schema, &resolvers.Query{BlocksResolver: test.Resolver}, test.Opts...),
+			Schema:  graphql.MustParseSchema(app.Schema, resolvers.NewRoot(test.Provider), test.Opts...),
 			Query: `
 				{
 					xmsgs(limit: 2){
@@ -148,12 +148,12 @@ func TestXMsgsNoLimit(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	db.CreateTestBlocks(t, ctx, test.Client, 5)
+	testutil.CreateTestBlocks(t, ctx, test.Client, 5)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
 			Context: ctx,
-			Schema:  graphql.MustParseSchema(app.Schema, &resolvers.Query{BlocksResolver: test.Resolver}, test.Opts...),
+			Schema:  graphql.MustParseSchema(app.Schema, resolvers.NewRoot(test.Provider), test.Opts...),
 			Query: `
 				{
 					xmsgs(cursor: "0x200000003"){
@@ -224,12 +224,12 @@ func TestXMsgsNoParams(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	db.CreateTestBlocks(t, ctx, test.Client, 5)
+	testutil.CreateTestBlocks(t, ctx, test.Client, 5)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
 			Context: ctx,
-			Schema:  graphql.MustParseSchema(app.Schema, &resolvers.Query{BlocksResolver: test.Resolver}, test.Opts...),
+			Schema:  graphql.MustParseSchema(app.Schema, resolvers.NewRoot(test.Provider), test.Opts...),
 			Query: `
 				{
 					xmsgs(){

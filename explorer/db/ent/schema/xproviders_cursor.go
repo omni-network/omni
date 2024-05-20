@@ -18,21 +18,18 @@ type XProviderCursor struct {
 // Fields of the XProviderCursor.
 func (XProviderCursor) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("UUID", uuid.UUID{}).
-			Default(uuid.New),
-		field.Uint64("ChainID").
-			Unique(),
-		field.Uint64("Height"),
-		field.Time("CreatedAt").
-			Default(time.Now()),
-		field.Time("UpdatedAt").
-			Default(time.Now()),
+		field.UUID("id", uuid.UUID{}).Default(uuid.New),
+		field.Uint64("chain_id").Unique(),
+		field.Uint64("height"),
+		field.Uint64("offset"),
+		field.Time("created_at").Default(time.Now()),
+		field.Time("updated_at").Default(time.Now()),
 	}
 }
 
 func (XProviderCursor) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("ChainID").Unique(), // Unique cursor per ChainID.
+		index.Fields("chain_id").Unique(), // Unique cursor per ChainID.
 	}
 }
 

@@ -3,8 +3,6 @@ package app
 import (
 	"net/http"
 
-	"github.com/omni-network/omni/explorer/graphql/data"
-	"github.com/omni-network/omni/explorer/graphql/mockresolver"
 	"github.com/omni-network/omni/explorer/graphql/resolvers"
 	"github.com/omni-network/omni/lib/log"
 
@@ -20,11 +18,15 @@ var Schema string
 //go:embed index.html
 var graphiql []byte
 
-// GraphQL returns a new graphql handler. We use the relay handler to create the graphql handler.
-func GraphQL(p data.Provider) http.Handler {
-	_ = resolvers.BlocksResolver{Provider: p}
+type Provider interface {
+	resolvers.ChainsProvider
+	resolvers.MessagesProvider
+	resolvers.StatsProvider
+}
 
-	res := mockresolver.New()
+// GraphQL returns a new graphql handler. We use the relay handler to create the graphql handler.
+func GraphQL(p Provider) http.Handler {
+	res := resolvers.NewRoot(p)
 
 	opts := []graphql.SchemaOpt{
 		graphql.UseFieldResolvers(),

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 const (
@@ -14,12 +13,10 @@ const (
 	Label = "chain"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldUUID holds the string denoting the uuid field in the database.
-	FieldUUID = "uuid"
-	// FieldCreatedAt holds the string denoting the createdat field in the database.
-	FieldCreatedAt = "created_at"
-	// FieldChainID holds the string denoting the chainid field in the database.
+	// FieldChainID holds the string denoting the chain_id field in the database.
 	FieldChainID = "chain_id"
+	// FieldCreatedAt holds the string denoting the created_at field in the database.
+	FieldCreatedAt = "created_at"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
 	// Table holds the table name of the chain in the database.
@@ -29,9 +26,8 @@ const (
 // Columns holds all SQL columns for chain fields.
 var Columns = []string{
 	FieldID,
-	FieldUUID,
-	FieldCreatedAt,
 	FieldChainID,
+	FieldCreatedAt,
 	FieldName,
 }
 
@@ -46,9 +42,7 @@ func ValidColumn(column string) bool {
 }
 
 var (
-	// DefaultUUID holds the default value on creation for the "UUID" field.
-	DefaultUUID func() uuid.UUID
-	// DefaultCreatedAt holds the default value on creation for the "CreatedAt" field.
+	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt time.Time
 )
 
@@ -60,22 +54,17 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
-// ByUUID orders the results by the UUID field.
-func ByUUID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldUUID, opts...).ToFunc()
-}
-
-// ByCreatedAt orders the results by the CreatedAt field.
-func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
-}
-
-// ByChainID orders the results by the ChainID field.
+// ByChainID orders the results by the chain_id field.
 func ByChainID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldChainID, opts...).ToFunc()
 }
 
-// ByName orders the results by the Name field.
+// ByCreatedAt orders the results by the created_at field.
+func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
+}
+
+// ByName orders the results by the name field.
 func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
 }

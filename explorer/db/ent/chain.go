@@ -9,7 +9,6 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 	"github.com/omni-network/omni/explorer/db/ent/chain"
 )
 
@@ -18,14 +17,12 @@ type Chain struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
-	// UUID holds the value of the "UUID" field.
-	UUID uuid.UUID `json:"UUID,omitempty"`
-	// CreatedAt holds the value of the "CreatedAt" field.
-	CreatedAt time.Time `json:"CreatedAt,omitempty"`
-	// ChainID holds the value of the "ChainID" field.
-	ChainID uint64 `json:"ChainID,omitempty"`
-	// Name holds the value of the "Name" field.
-	Name         string `json:"Name,omitempty"`
+	// ChainID holds the value of the "chain_id" field.
+	ChainID uint64 `json:"chain_id,omitempty"`
+	// CreatedAt holds the value of the "created_at" field.
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	// Name holds the value of the "name" field.
+	Name         string `json:"name,omitempty"`
 	selectValues sql.SelectValues
 }
 
@@ -40,8 +37,6 @@ func (*Chain) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case chain.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case chain.FieldUUID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -63,27 +58,21 @@ func (c *Chain) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			c.ID = int(value.Int64)
-		case chain.FieldUUID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field UUID", values[i])
-			} else if value != nil {
-				c.UUID = *value
-			}
-		case chain.FieldCreatedAt:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field CreatedAt", values[i])
-			} else if value.Valid {
-				c.CreatedAt = value.Time
-			}
 		case chain.FieldChainID:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field ChainID", values[i])
+				return fmt.Errorf("unexpected type %T for field chain_id", values[i])
 			} else if value.Valid {
 				c.ChainID = uint64(value.Int64)
 			}
+		case chain.FieldCreatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
+			} else if value.Valid {
+				c.CreatedAt = value.Time
+			}
 		case chain.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field Name", values[i])
+				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
 				c.Name = value.String
 			}
@@ -123,16 +112,13 @@ func (c *Chain) String() string {
 	var builder strings.Builder
 	builder.WriteString("Chain(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", c.ID))
-	builder.WriteString("UUID=")
-	builder.WriteString(fmt.Sprintf("%v", c.UUID))
-	builder.WriteString(", ")
-	builder.WriteString("CreatedAt=")
-	builder.WriteString(c.CreatedAt.Format(time.ANSIC))
-	builder.WriteString(", ")
-	builder.WriteString("ChainID=")
+	builder.WriteString("chain_id=")
 	builder.WriteString(fmt.Sprintf("%v", c.ChainID))
 	builder.WriteString(", ")
-	builder.WriteString("Name=")
+	builder.WriteString("created_at=")
+	builder.WriteString(c.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("name=")
 	builder.WriteString(c.Name)
 	builder.WriteByte(')')
 	return builder.String()

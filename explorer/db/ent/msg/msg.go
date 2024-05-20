@@ -8,7 +8,6 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 const (
@@ -16,53 +15,41 @@ const (
 	Label = "msg"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldUUID holds the string denoting the uuid field in the database.
-	FieldUUID = "uuid"
-	// FieldBlockID holds the string denoting the block_id field in the database.
-	FieldBlockID = "block_id"
-	// FieldSourceMsgSender holds the string denoting the sourcemsgsender field in the database.
-	FieldSourceMsgSender = "source_msg_sender"
-	// FieldDestAddress holds the string denoting the destaddress field in the database.
-	FieldDestAddress = "dest_address"
+	// FieldSender holds the string denoting the sender field in the database.
+	FieldSender = "sender"
+	// FieldTo holds the string denoting the to field in the database.
+	FieldTo = "to"
 	// FieldData holds the string denoting the data field in the database.
 	FieldData = "data"
-	// FieldDestGasLimit holds the string denoting the destgaslimit field in the database.
-	FieldDestGasLimit = "dest_gas_limit"
-	// FieldSourceChainID holds the string denoting the sourcechainid field in the database.
+	// FieldGasLimit holds the string denoting the gas_limit field in the database.
+	FieldGasLimit = "gas_limit"
+	// FieldSourceChainID holds the string denoting the source_chain_id field in the database.
 	FieldSourceChainID = "source_chain_id"
-	// FieldDestChainID holds the string denoting the destchainid field in the database.
+	// FieldDestChainID holds the string denoting the dest_chain_id field in the database.
 	FieldDestChainID = "dest_chain_id"
-	// FieldStreamOffset holds the string denoting the streamoffset field in the database.
-	FieldStreamOffset = "stream_offset"
-	// FieldTxHash holds the string denoting the txhash field in the database.
+	// FieldOffset holds the string denoting the offset field in the database.
+	FieldOffset = "offset"
+	// FieldTxHash holds the string denoting the tx_hash field in the database.
 	FieldTxHash = "tx_hash"
-	// FieldBlockHash holds the string denoting the blockhash field in the database.
-	FieldBlockHash = "block_hash"
-	// FieldBlockHeight holds the string denoting the blockheight field in the database.
-	FieldBlockHeight = "block_height"
-	// FieldReceiptHash holds the string denoting the receipthash field in the database.
+	// FieldReceiptHash holds the string denoting the receipt_hash field in the database.
 	FieldReceiptHash = "receipt_hash"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
-	// FieldBlockTime holds the string denoting the blocktime field in the database.
-	FieldBlockTime = "block_time"
-	// FieldCreatedAt holds the string denoting the createdat field in the database.
+	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// EdgeBlock holds the string denoting the block edge name in mutations.
-	EdgeBlock = "Block"
+	EdgeBlock = "block"
 	// EdgeReceipts holds the string denoting the receipts edge name in mutations.
-	EdgeReceipts = "Receipts"
+	EdgeReceipts = "receipts"
 	// Table holds the table name of the msg in the database.
 	Table = "msgs"
-	// BlockTable is the table that holds the Block relation/edge.
-	BlockTable = "msgs"
+	// BlockTable is the table that holds the block relation/edge. The primary key declared below.
+	BlockTable = "block_msgs"
 	// BlockInverseTable is the table name for the Block entity.
 	// It exists in this package in order to avoid circular dependency with the "block" package.
 	BlockInverseTable = "blocks"
-	// BlockColumn is the table column denoting the Block relation/edge.
-	BlockColumn = "block_id"
-	// ReceiptsTable is the table that holds the Receipts relation/edge. The primary key declared below.
-	ReceiptsTable = "msg_Receipts"
+	// ReceiptsTable is the table that holds the receipts relation/edge. The primary key declared below.
+	ReceiptsTable = "msg_receipts"
 	// ReceiptsInverseTable is the table name for the Receipt entity.
 	// It exists in this package in order to avoid circular dependency with the "receipt" package.
 	ReceiptsInverseTable = "receipts"
@@ -71,27 +58,25 @@ const (
 // Columns holds all SQL columns for msg fields.
 var Columns = []string{
 	FieldID,
-	FieldUUID,
-	FieldBlockID,
-	FieldSourceMsgSender,
-	FieldDestAddress,
+	FieldSender,
+	FieldTo,
 	FieldData,
-	FieldDestGasLimit,
+	FieldGasLimit,
 	FieldSourceChainID,
 	FieldDestChainID,
-	FieldStreamOffset,
+	FieldOffset,
 	FieldTxHash,
-	FieldBlockHash,
-	FieldBlockHeight,
 	FieldReceiptHash,
 	FieldStatus,
-	FieldBlockTime,
 	FieldCreatedAt,
 }
 
 var (
+	// BlockPrimaryKey and BlockColumn2 are the table columns denoting the
+	// primary key for the block relation (M2M).
+	BlockPrimaryKey = []string{"block_id", "msg_id"}
 	// ReceiptsPrimaryKey and ReceiptsColumn2 are the table columns denoting the
-	// primary key for the Receipts relation (M2M).
+	// primary key for the receipts relation (M2M).
 	ReceiptsPrimaryKey = []string{"msg_id", "receipt_id"}
 )
 
@@ -112,21 +97,17 @@ func ValidColumn(column string) bool {
 //	import _ "github.com/omni-network/omni/explorer/db/ent/runtime"
 var (
 	Hooks [1]ent.Hook
-	// DefaultUUID holds the default value on creation for the "UUID" field.
-	DefaultUUID func() uuid.UUID
-	// SourceMsgSenderValidator is a validator for the "SourceMsgSender" field. It is called by the builders before save.
-	SourceMsgSenderValidator func([]byte) error
-	// DestAddressValidator is a validator for the "DestAddress" field. It is called by the builders before save.
-	DestAddressValidator func([]byte) error
-	// TxHashValidator is a validator for the "TxHash" field. It is called by the builders before save.
+	// SenderValidator is a validator for the "sender" field. It is called by the builders before save.
+	SenderValidator func([]byte) error
+	// ToValidator is a validator for the "to" field. It is called by the builders before save.
+	ToValidator func([]byte) error
+	// TxHashValidator is a validator for the "tx_hash" field. It is called by the builders before save.
 	TxHashValidator func([]byte) error
-	// BlockHashValidator is a validator for the "BlockHash" field. It is called by the builders before save.
-	BlockHashValidator func([]byte) error
-	// ReceiptHashValidator is a validator for the "ReceiptHash" field. It is called by the builders before save.
+	// ReceiptHashValidator is a validator for the "receipt_hash" field. It is called by the builders before save.
 	ReceiptHashValidator func([]byte) error
-	// DefaultStatus holds the default value on creation for the "Status" field.
+	// DefaultStatus holds the default value on creation for the "status" field.
 	DefaultStatus string
-	// DefaultCreatedAt holds the default value on creation for the "CreatedAt" field.
+	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt time.Time
 )
 
@@ -138,71 +119,58 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
-// ByUUID orders the results by the UUID field.
-func ByUUID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldUUID, opts...).ToFunc()
+// ByGasLimit orders the results by the gas_limit field.
+func ByGasLimit(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldGasLimit, opts...).ToFunc()
 }
 
-// ByBlockID orders the results by the Block_ID field.
-func ByBlockID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldBlockID, opts...).ToFunc()
-}
-
-// ByDestGasLimit orders the results by the DestGasLimit field.
-func ByDestGasLimit(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDestGasLimit, opts...).ToFunc()
-}
-
-// BySourceChainID orders the results by the SourceChainID field.
+// BySourceChainID orders the results by the source_chain_id field.
 func BySourceChainID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSourceChainID, opts...).ToFunc()
 }
 
-// ByDestChainID orders the results by the DestChainID field.
+// ByDestChainID orders the results by the dest_chain_id field.
 func ByDestChainID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDestChainID, opts...).ToFunc()
 }
 
-// ByStreamOffset orders the results by the StreamOffset field.
-func ByStreamOffset(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldStreamOffset, opts...).ToFunc()
+// ByOffset orders the results by the offset field.
+func ByOffset(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOffset, opts...).ToFunc()
 }
 
-// ByBlockHeight orders the results by the BlockHeight field.
-func ByBlockHeight(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldBlockHeight, opts...).ToFunc()
-}
-
-// ByStatus orders the results by the Status field.
+// ByStatus orders the results by the status field.
 func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
 }
 
-// ByBlockTime orders the results by the BlockTime field.
-func ByBlockTime(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldBlockTime, opts...).ToFunc()
-}
-
-// ByCreatedAt orders the results by the CreatedAt field.
+// ByCreatedAt orders the results by the created_at field.
 func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
 }
 
-// ByBlockField orders the results by Block field.
-func ByBlockField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByBlockCount orders the results by block count.
+func ByBlockCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newBlockStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborsCount(s, newBlockStep(), opts...)
 	}
 }
 
-// ByReceiptsCount orders the results by Receipts count.
+// ByBlock orders the results by block terms.
+func ByBlock(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newBlockStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByReceiptsCount orders the results by receipts count.
 func ByReceiptsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborsCount(s, newReceiptsStep(), opts...)
 	}
 }
 
-// ByReceipts orders the results by Receipts terms.
+// ByReceipts orders the results by receipts terms.
 func ByReceipts(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newReceiptsStep(), append([]sql.OrderTerm{term}, terms...)...)
@@ -212,7 +180,7 @@ func newBlockStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(BlockInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, true, BlockTable, BlockColumn),
+		sqlgraph.Edge(sqlgraph.M2M, true, BlockTable, BlockPrimaryKey...),
 	)
 }
 func newReceiptsStep() *sqlgraph.Step {

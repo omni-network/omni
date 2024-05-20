@@ -1,4 +1,4 @@
-package utils
+package uintconv
 
 import (
 	"math/big"
@@ -6,7 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-func Uint2Big(u uint64) (big.Int, error) {
+func ToBig(u uint64) (big.Int, error) {
 	b, err := hexutil.DecodeBig(hexutil.EncodeUint64(u))
 	if err != nil {
 		return big.Int{}, err
@@ -15,7 +15,7 @@ func Uint2Big(u uint64) (big.Int, error) {
 	return *b, nil
 }
 
-func Uint2Hex(u uint64) (hexutil.Big, error) {
+func ToHex(u uint64) (hexutil.Big, error) {
 	b, err := hexutil.DecodeBig(hexutil.EncodeUint64(u))
 	if err != nil {
 		return hexutil.Big{}, err

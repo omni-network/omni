@@ -37,7 +37,7 @@ func TestChain(t *testing.T) {
 				Name:              "mock_l1",
 				PortalAddress:     common.Address([]byte("0x268bb5F3d4301b591288390E76b97BE8E8B1Ca82")),
 				DeployHeight:      0,
-				BlockPeriod:       time.Duration(1) * time.Second,
+				BlockPeriod:       1 * time.Second,
 				FinalizationStrat: "latest",
 			},
 			want: want{
@@ -52,7 +52,7 @@ func TestChain(t *testing.T) {
 				Name:              "omni_consensus",
 				PortalAddress:     common.Address([]byte("0x268bb5F3d4301b591288390E76b97BE8E8B1Ca82")),
 				DeployHeight:      10687126,
-				BlockPeriod:       time.Duration(2) * time.Second,
+				BlockPeriod:       2 * time.Second,
 				FinalizationStrat: "latest",
 			},
 			want: want{
@@ -65,7 +65,8 @@ func TestChain(t *testing.T) {
 	for _, tt := range tests {
 		// this returns the deploy height
 		entClient := setupDB(t)
-		height, err := app.InitChainCursor(ctx, entClient, tt.chain)
+		// TODO (pavel): verify correct offset
+		height, _, err := app.InitChainCursor(ctx, entClient, tt.chain)
 		require.NoError(t, err)
 		require.Equal(t, tt.want.deployHeight, height)
 

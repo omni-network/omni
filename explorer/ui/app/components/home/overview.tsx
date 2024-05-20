@@ -26,7 +26,7 @@ const Card: React.FC<{
 
 const Overview: React.FC<Props> = ({}) => {
 
-  const data = useLoaderData<XmsgResponse>().chainStats.stats
+  const data = useLoaderData<XmsgResponse>().chainStats?.stats
 
 
   const cards = [

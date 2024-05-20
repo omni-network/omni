@@ -1,19 +1,21 @@
 package resolvers
 
-import (
-	"context"
+import "github.com/omni-network/omni/explorer/graphql/data"
 
-	"github.com/omni-network/omni/lib/errors"
-)
+type ChainsProvider interface {
+	ChainList() []data.Chain
+}
 
-func (b *BlocksResolver) SupportedChains(ctx context.Context) ([]*Chain, error) {
-	res, found, err := b.Provider.SupportedChains(ctx)
-	if err != nil {
-		return nil, errors.New("failed to fetch message count")
+type Chains struct {
+	list []data.Chain
+}
+
+func NewChainsProvider(p ChainsProvider) *Chains {
+	return &Chains{
+		list: p.ChainList(), // with the current implementation chains are not added dynamically, so load the chains only once
 	}
-	if !found {
-		return nil, errors.New("message count not found")
-	}
+}
 
-	return res, nil
+func (c *Chains) SupportedChains() []data.Chain {
+	return c.list
 }

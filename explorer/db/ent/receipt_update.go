@@ -11,7 +11,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 	"github.com/omni-network/omni/explorer/db/ent/block"
 	"github.com/omni-network/omni/explorer/db/ent/msg"
 	"github.com/omni-network/omni/explorer/db/ent/predicate"
@@ -31,48 +30,20 @@ func (ru *ReceiptUpdate) Where(ps ...predicate.Receipt) *ReceiptUpdate {
 	return ru
 }
 
-// SetUUID sets the "UUID" field.
-func (ru *ReceiptUpdate) SetUUID(u uuid.UUID) *ReceiptUpdate {
-	ru.mutation.SetUUID(u)
+// SetBlockHash sets the "block_hash" field.
+func (ru *ReceiptUpdate) SetBlockHash(b []byte) *ReceiptUpdate {
+	ru.mutation.SetBlockHash(b)
 	return ru
 }
 
-// SetNillableUUID sets the "UUID" field if the given value is not nil.
-func (ru *ReceiptUpdate) SetNillableUUID(u *uuid.UUID) *ReceiptUpdate {
-	if u != nil {
-		ru.SetUUID(*u)
-	}
-	return ru
-}
-
-// SetBlockID sets the "Block_ID" field.
-func (ru *ReceiptUpdate) SetBlockID(i int) *ReceiptUpdate {
-	ru.mutation.SetBlockID(i)
-	return ru
-}
-
-// SetNillableBlockID sets the "Block_ID" field if the given value is not nil.
-func (ru *ReceiptUpdate) SetNillableBlockID(i *int) *ReceiptUpdate {
-	if i != nil {
-		ru.SetBlockID(*i)
-	}
-	return ru
-}
-
-// ClearBlockID clears the value of the "Block_ID" field.
-func (ru *ReceiptUpdate) ClearBlockID() *ReceiptUpdate {
-	ru.mutation.ClearBlockID()
-	return ru
-}
-
-// SetGasUsed sets the "GasUsed" field.
+// SetGasUsed sets the "gas_used" field.
 func (ru *ReceiptUpdate) SetGasUsed(u uint64) *ReceiptUpdate {
 	ru.mutation.ResetGasUsed()
 	ru.mutation.SetGasUsed(u)
 	return ru
 }
 
-// SetNillableGasUsed sets the "GasUsed" field if the given value is not nil.
+// SetNillableGasUsed sets the "gas_used" field if the given value is not nil.
 func (ru *ReceiptUpdate) SetNillableGasUsed(u *uint64) *ReceiptUpdate {
 	if u != nil {
 		ru.SetGasUsed(*u)
@@ -80,19 +51,19 @@ func (ru *ReceiptUpdate) SetNillableGasUsed(u *uint64) *ReceiptUpdate {
 	return ru
 }
 
-// AddGasUsed adds u to the "GasUsed" field.
+// AddGasUsed adds u to the "gas_used" field.
 func (ru *ReceiptUpdate) AddGasUsed(u int64) *ReceiptUpdate {
 	ru.mutation.AddGasUsed(u)
 	return ru
 }
 
-// SetSuccess sets the "Success" field.
+// SetSuccess sets the "success" field.
 func (ru *ReceiptUpdate) SetSuccess(b bool) *ReceiptUpdate {
 	ru.mutation.SetSuccess(b)
 	return ru
 }
 
-// SetNillableSuccess sets the "Success" field if the given value is not nil.
+// SetNillableSuccess sets the "success" field if the given value is not nil.
 func (ru *ReceiptUpdate) SetNillableSuccess(b *bool) *ReceiptUpdate {
 	if b != nil {
 		ru.SetSuccess(*b)
@@ -100,20 +71,20 @@ func (ru *ReceiptUpdate) SetNillableSuccess(b *bool) *ReceiptUpdate {
 	return ru
 }
 
-// SetRelayerAddress sets the "RelayerAddress" field.
+// SetRelayerAddress sets the "relayer_address" field.
 func (ru *ReceiptUpdate) SetRelayerAddress(b []byte) *ReceiptUpdate {
 	ru.mutation.SetRelayerAddress(b)
 	return ru
 }
 
-// SetSourceChainID sets the "SourceChainID" field.
+// SetSourceChainID sets the "source_chain_id" field.
 func (ru *ReceiptUpdate) SetSourceChainID(u uint64) *ReceiptUpdate {
 	ru.mutation.ResetSourceChainID()
 	ru.mutation.SetSourceChainID(u)
 	return ru
 }
 
-// SetNillableSourceChainID sets the "SourceChainID" field if the given value is not nil.
+// SetNillableSourceChainID sets the "source_chain_id" field if the given value is not nil.
 func (ru *ReceiptUpdate) SetNillableSourceChainID(u *uint64) *ReceiptUpdate {
 	if u != nil {
 		ru.SetSourceChainID(*u)
@@ -121,20 +92,20 @@ func (ru *ReceiptUpdate) SetNillableSourceChainID(u *uint64) *ReceiptUpdate {
 	return ru
 }
 
-// AddSourceChainID adds u to the "SourceChainID" field.
+// AddSourceChainID adds u to the "source_chain_id" field.
 func (ru *ReceiptUpdate) AddSourceChainID(u int64) *ReceiptUpdate {
 	ru.mutation.AddSourceChainID(u)
 	return ru
 }
 
-// SetDestChainID sets the "DestChainID" field.
+// SetDestChainID sets the "dest_chain_id" field.
 func (ru *ReceiptUpdate) SetDestChainID(u uint64) *ReceiptUpdate {
 	ru.mutation.ResetDestChainID()
 	ru.mutation.SetDestChainID(u)
 	return ru
 }
 
-// SetNillableDestChainID sets the "DestChainID" field if the given value is not nil.
+// SetNillableDestChainID sets the "dest_chain_id" field if the given value is not nil.
 func (ru *ReceiptUpdate) SetNillableDestChainID(u *uint64) *ReceiptUpdate {
 	if u != nil {
 		ru.SetDestChainID(*u)
@@ -142,46 +113,46 @@ func (ru *ReceiptUpdate) SetNillableDestChainID(u *uint64) *ReceiptUpdate {
 	return ru
 }
 
-// AddDestChainID adds u to the "DestChainID" field.
+// AddDestChainID adds u to the "dest_chain_id" field.
 func (ru *ReceiptUpdate) AddDestChainID(u int64) *ReceiptUpdate {
 	ru.mutation.AddDestChainID(u)
 	return ru
 }
 
-// SetStreamOffset sets the "StreamOffset" field.
-func (ru *ReceiptUpdate) SetStreamOffset(u uint64) *ReceiptUpdate {
-	ru.mutation.ResetStreamOffset()
-	ru.mutation.SetStreamOffset(u)
+// SetOffset sets the "offset" field.
+func (ru *ReceiptUpdate) SetOffset(u uint64) *ReceiptUpdate {
+	ru.mutation.ResetOffset()
+	ru.mutation.SetOffset(u)
 	return ru
 }
 
-// SetNillableStreamOffset sets the "StreamOffset" field if the given value is not nil.
-func (ru *ReceiptUpdate) SetNillableStreamOffset(u *uint64) *ReceiptUpdate {
+// SetNillableOffset sets the "offset" field if the given value is not nil.
+func (ru *ReceiptUpdate) SetNillableOffset(u *uint64) *ReceiptUpdate {
 	if u != nil {
-		ru.SetStreamOffset(*u)
+		ru.SetOffset(*u)
 	}
 	return ru
 }
 
-// AddStreamOffset adds u to the "StreamOffset" field.
-func (ru *ReceiptUpdate) AddStreamOffset(u int64) *ReceiptUpdate {
-	ru.mutation.AddStreamOffset(u)
+// AddOffset adds u to the "offset" field.
+func (ru *ReceiptUpdate) AddOffset(u int64) *ReceiptUpdate {
+	ru.mutation.AddOffset(u)
 	return ru
 }
 
-// SetTxHash sets the "TxHash" field.
+// SetTxHash sets the "tx_hash" field.
 func (ru *ReceiptUpdate) SetTxHash(b []byte) *ReceiptUpdate {
 	ru.mutation.SetTxHash(b)
 	return ru
 }
 
-// SetCreatedAt sets the "CreatedAt" field.
+// SetCreatedAt sets the "created_at" field.
 func (ru *ReceiptUpdate) SetCreatedAt(t time.Time) *ReceiptUpdate {
 	ru.mutation.SetCreatedAt(t)
 	return ru
 }
 
-// SetNillableCreatedAt sets the "CreatedAt" field if the given value is not nil.
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
 func (ru *ReceiptUpdate) SetNillableCreatedAt(t *time.Time) *ReceiptUpdate {
 	if t != nil {
 		ru.SetCreatedAt(*t)
@@ -189,18 +160,28 @@ func (ru *ReceiptUpdate) SetNillableCreatedAt(t *time.Time) *ReceiptUpdate {
 	return ru
 }
 
-// SetBlock sets the "Block" edge to the Block entity.
-func (ru *ReceiptUpdate) SetBlock(b *Block) *ReceiptUpdate {
-	return ru.SetBlockID(b.ID)
+// AddBlockIDs adds the "block" edge to the Block entity by IDs.
+func (ru *ReceiptUpdate) AddBlockIDs(ids ...int) *ReceiptUpdate {
+	ru.mutation.AddBlockIDs(ids...)
+	return ru
 }
 
-// AddMsgIDs adds the "Msgs" edge to the Msg entity by IDs.
+// AddBlock adds the "block" edges to the Block entity.
+func (ru *ReceiptUpdate) AddBlock(b ...*Block) *ReceiptUpdate {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return ru.AddBlockIDs(ids...)
+}
+
+// AddMsgIDs adds the "msgs" edge to the Msg entity by IDs.
 func (ru *ReceiptUpdate) AddMsgIDs(ids ...int) *ReceiptUpdate {
 	ru.mutation.AddMsgIDs(ids...)
 	return ru
 }
 
-// AddMsgs adds the "Msgs" edges to the Msg entity.
+// AddMsgs adds the "msgs" edges to the Msg entity.
 func (ru *ReceiptUpdate) AddMsgs(m ...*Msg) *ReceiptUpdate {
 	ids := make([]int, len(m))
 	for i := range m {
@@ -214,25 +195,40 @@ func (ru *ReceiptUpdate) Mutation() *ReceiptMutation {
 	return ru.mutation
 }
 
-// ClearBlock clears the "Block" edge to the Block entity.
+// ClearBlock clears all "block" edges to the Block entity.
 func (ru *ReceiptUpdate) ClearBlock() *ReceiptUpdate {
 	ru.mutation.ClearBlock()
 	return ru
 }
 
-// ClearMsgs clears all "Msgs" edges to the Msg entity.
+// RemoveBlockIDs removes the "block" edge to Block entities by IDs.
+func (ru *ReceiptUpdate) RemoveBlockIDs(ids ...int) *ReceiptUpdate {
+	ru.mutation.RemoveBlockIDs(ids...)
+	return ru
+}
+
+// RemoveBlock removes "block" edges to Block entities.
+func (ru *ReceiptUpdate) RemoveBlock(b ...*Block) *ReceiptUpdate {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return ru.RemoveBlockIDs(ids...)
+}
+
+// ClearMsgs clears all "msgs" edges to the Msg entity.
 func (ru *ReceiptUpdate) ClearMsgs() *ReceiptUpdate {
 	ru.mutation.ClearMsgs()
 	return ru
 }
 
-// RemoveMsgIDs removes the "Msgs" edge to Msg entities by IDs.
+// RemoveMsgIDs removes the "msgs" edge to Msg entities by IDs.
 func (ru *ReceiptUpdate) RemoveMsgIDs(ids ...int) *ReceiptUpdate {
 	ru.mutation.RemoveMsgIDs(ids...)
 	return ru
 }
 
-// RemoveMsgs removes "Msgs" edges to Msg entities.
+// RemoveMsgs removes "msgs" edges to Msg entities.
 func (ru *ReceiptUpdate) RemoveMsgs(m ...*Msg) *ReceiptUpdate {
 	ids := make([]int, len(m))
 	for i := range m {
@@ -270,14 +266,19 @@ func (ru *ReceiptUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (ru *ReceiptUpdate) check() error {
+	if v, ok := ru.mutation.BlockHash(); ok {
+		if err := receipt.BlockHashValidator(v); err != nil {
+			return &ValidationError{Name: "block_hash", err: fmt.Errorf(`ent: validator failed for field "Receipt.block_hash": %w`, err)}
+		}
+	}
 	if v, ok := ru.mutation.RelayerAddress(); ok {
 		if err := receipt.RelayerAddressValidator(v); err != nil {
-			return &ValidationError{Name: "RelayerAddress", err: fmt.Errorf(`ent: validator failed for field "Receipt.RelayerAddress": %w`, err)}
+			return &ValidationError{Name: "relayer_address", err: fmt.Errorf(`ent: validator failed for field "Receipt.relayer_address": %w`, err)}
 		}
 	}
 	if v, ok := ru.mutation.TxHash(); ok {
 		if err := receipt.TxHashValidator(v); err != nil {
-			return &ValidationError{Name: "TxHash", err: fmt.Errorf(`ent: validator failed for field "Receipt.TxHash": %w`, err)}
+			return &ValidationError{Name: "tx_hash", err: fmt.Errorf(`ent: validator failed for field "Receipt.tx_hash": %w`, err)}
 		}
 	}
 	return nil
@@ -295,8 +296,8 @@ func (ru *ReceiptUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := ru.mutation.UUID(); ok {
-		_spec.SetField(receipt.FieldUUID, field.TypeUUID, value)
+	if value, ok := ru.mutation.BlockHash(); ok {
+		_spec.SetField(receipt.FieldBlockHash, field.TypeBytes, value)
 	}
 	if value, ok := ru.mutation.GasUsed(); ok {
 		_spec.SetField(receipt.FieldGasUsed, field.TypeUint64, value)
@@ -322,11 +323,11 @@ func (ru *ReceiptUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := ru.mutation.AddedDestChainID(); ok {
 		_spec.AddField(receipt.FieldDestChainID, field.TypeUint64, value)
 	}
-	if value, ok := ru.mutation.StreamOffset(); ok {
-		_spec.SetField(receipt.FieldStreamOffset, field.TypeUint64, value)
+	if value, ok := ru.mutation.Offset(); ok {
+		_spec.SetField(receipt.FieldOffset, field.TypeUint64, value)
 	}
-	if value, ok := ru.mutation.AddedStreamOffset(); ok {
-		_spec.AddField(receipt.FieldStreamOffset, field.TypeUint64, value)
+	if value, ok := ru.mutation.AddedOffset(); ok {
+		_spec.AddField(receipt.FieldOffset, field.TypeUint64, value)
 	}
 	if value, ok := ru.mutation.TxHash(); ok {
 		_spec.SetField(receipt.FieldTxHash, field.TypeBytes, value)
@@ -336,10 +337,10 @@ func (ru *ReceiptUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if ru.mutation.BlockCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   receipt.BlockTable,
-			Columns: []string{receipt.BlockColumn},
+			Columns: receipt.BlockPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(block.FieldID, field.TypeInt),
@@ -347,12 +348,28 @@ func (ru *ReceiptUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ru.mutation.BlockIDs(); len(nodes) > 0 {
+	if nodes := ru.mutation.RemovedBlockIDs(); len(nodes) > 0 && !ru.mutation.BlockCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   receipt.BlockTable,
-			Columns: []string{receipt.BlockColumn},
+			Columns: receipt.BlockPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(block.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.BlockIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   receipt.BlockTable,
+			Columns: receipt.BlockPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(block.FieldID, field.TypeInt),
@@ -428,48 +445,20 @@ type ReceiptUpdateOne struct {
 	mutation *ReceiptMutation
 }
 
-// SetUUID sets the "UUID" field.
-func (ruo *ReceiptUpdateOne) SetUUID(u uuid.UUID) *ReceiptUpdateOne {
-	ruo.mutation.SetUUID(u)
+// SetBlockHash sets the "block_hash" field.
+func (ruo *ReceiptUpdateOne) SetBlockHash(b []byte) *ReceiptUpdateOne {
+	ruo.mutation.SetBlockHash(b)
 	return ruo
 }
 
-// SetNillableUUID sets the "UUID" field if the given value is not nil.
-func (ruo *ReceiptUpdateOne) SetNillableUUID(u *uuid.UUID) *ReceiptUpdateOne {
-	if u != nil {
-		ruo.SetUUID(*u)
-	}
-	return ruo
-}
-
-// SetBlockID sets the "Block_ID" field.
-func (ruo *ReceiptUpdateOne) SetBlockID(i int) *ReceiptUpdateOne {
-	ruo.mutation.SetBlockID(i)
-	return ruo
-}
-
-// SetNillableBlockID sets the "Block_ID" field if the given value is not nil.
-func (ruo *ReceiptUpdateOne) SetNillableBlockID(i *int) *ReceiptUpdateOne {
-	if i != nil {
-		ruo.SetBlockID(*i)
-	}
-	return ruo
-}
-
-// ClearBlockID clears the value of the "Block_ID" field.
-func (ruo *ReceiptUpdateOne) ClearBlockID() *ReceiptUpdateOne {
-	ruo.mutation.ClearBlockID()
-	return ruo
-}
-
-// SetGasUsed sets the "GasUsed" field.
+// SetGasUsed sets the "gas_used" field.
 func (ruo *ReceiptUpdateOne) SetGasUsed(u uint64) *ReceiptUpdateOne {
 	ruo.mutation.ResetGasUsed()
 	ruo.mutation.SetGasUsed(u)
 	return ruo
 }
 
-// SetNillableGasUsed sets the "GasUsed" field if the given value is not nil.
+// SetNillableGasUsed sets the "gas_used" field if the given value is not nil.
 func (ruo *ReceiptUpdateOne) SetNillableGasUsed(u *uint64) *ReceiptUpdateOne {
 	if u != nil {
 		ruo.SetGasUsed(*u)
@@ -477,19 +466,19 @@ func (ruo *ReceiptUpdateOne) SetNillableGasUsed(u *uint64) *ReceiptUpdateOne {
 	return ruo
 }
 
-// AddGasUsed adds u to the "GasUsed" field.
+// AddGasUsed adds u to the "gas_used" field.
 func (ruo *ReceiptUpdateOne) AddGasUsed(u int64) *ReceiptUpdateOne {
 	ruo.mutation.AddGasUsed(u)
 	return ruo
 }
 
-// SetSuccess sets the "Success" field.
+// SetSuccess sets the "success" field.
 func (ruo *ReceiptUpdateOne) SetSuccess(b bool) *ReceiptUpdateOne {
 	ruo.mutation.SetSuccess(b)
 	return ruo
 }
 
-// SetNillableSuccess sets the "Success" field if the given value is not nil.
+// SetNillableSuccess sets the "success" field if the given value is not nil.
 func (ruo *ReceiptUpdateOne) SetNillableSuccess(b *bool) *ReceiptUpdateOne {
 	if b != nil {
 		ruo.SetSuccess(*b)
@@ -497,20 +486,20 @@ func (ruo *ReceiptUpdateOne) SetNillableSuccess(b *bool) *ReceiptUpdateOne {
 	return ruo
 }
 
-// SetRelayerAddress sets the "RelayerAddress" field.
+// SetRelayerAddress sets the "relayer_address" field.
 func (ruo *ReceiptUpdateOne) SetRelayerAddress(b []byte) *ReceiptUpdateOne {
 	ruo.mutation.SetRelayerAddress(b)
 	return ruo
 }
 
-// SetSourceChainID sets the "SourceChainID" field.
+// SetSourceChainID sets the "source_chain_id" field.
 func (ruo *ReceiptUpdateOne) SetSourceChainID(u uint64) *ReceiptUpdateOne {
 	ruo.mutation.ResetSourceChainID()
 	ruo.mutation.SetSourceChainID(u)
 	return ruo
 }
 
-// SetNillableSourceChainID sets the "SourceChainID" field if the given value is not nil.
+// SetNillableSourceChainID sets the "source_chain_id" field if the given value is not nil.
 func (ruo *ReceiptUpdateOne) SetNillableSourceChainID(u *uint64) *ReceiptUpdateOne {
 	if u != nil {
 		ruo.SetSourceChainID(*u)
@@ -518,20 +507,20 @@ func (ruo *ReceiptUpdateOne) SetNillableSourceChainID(u *uint64) *ReceiptUpdateO
 	return ruo
 }
 
-// AddSourceChainID adds u to the "SourceChainID" field.
+// AddSourceChainID adds u to the "source_chain_id" field.
 func (ruo *ReceiptUpdateOne) AddSourceChainID(u int64) *ReceiptUpdateOne {
 	ruo.mutation.AddSourceChainID(u)
 	return ruo
 }
 
-// SetDestChainID sets the "DestChainID" field.
+// SetDestChainID sets the "dest_chain_id" field.
 func (ruo *ReceiptUpdateOne) SetDestChainID(u uint64) *ReceiptUpdateOne {
 	ruo.mutation.ResetDestChainID()
 	ruo.mutation.SetDestChainID(u)
 	return ruo
 }
 
-// SetNillableDestChainID sets the "DestChainID" field if the given value is not nil.
+// SetNillableDestChainID sets the "dest_chain_id" field if the given value is not nil.
 func (ruo *ReceiptUpdateOne) SetNillableDestChainID(u *uint64) *ReceiptUpdateOne {
 	if u != nil {
 		ruo.SetDestChainID(*u)
@@ -539,46 +528,46 @@ func (ruo *ReceiptUpdateOne) SetNillableDestChainID(u *uint64) *ReceiptUpdateOne
 	return ruo
 }
 
-// AddDestChainID adds u to the "DestChainID" field.
+// AddDestChainID adds u to the "dest_chain_id" field.
 func (ruo *ReceiptUpdateOne) AddDestChainID(u int64) *ReceiptUpdateOne {
 	ruo.mutation.AddDestChainID(u)
 	return ruo
 }
 
-// SetStreamOffset sets the "StreamOffset" field.
-func (ruo *ReceiptUpdateOne) SetStreamOffset(u uint64) *ReceiptUpdateOne {
-	ruo.mutation.ResetStreamOffset()
-	ruo.mutation.SetStreamOffset(u)
+// SetOffset sets the "offset" field.
+func (ruo *ReceiptUpdateOne) SetOffset(u uint64) *ReceiptUpdateOne {
+	ruo.mutation.ResetOffset()
+	ruo.mutation.SetOffset(u)
 	return ruo
 }
 
-// SetNillableStreamOffset sets the "StreamOffset" field if the given value is not nil.
-func (ruo *ReceiptUpdateOne) SetNillableStreamOffset(u *uint64) *ReceiptUpdateOne {
+// SetNillableOffset sets the "offset" field if the given value is not nil.
+func (ruo *ReceiptUpdateOne) SetNillableOffset(u *uint64) *ReceiptUpdateOne {
 	if u != nil {
-		ruo.SetStreamOffset(*u)
+		ruo.SetOffset(*u)
 	}
 	return ruo
 }
 
-// AddStreamOffset adds u to the "StreamOffset" field.
-func (ruo *ReceiptUpdateOne) AddStreamOffset(u int64) *ReceiptUpdateOne {
-	ruo.mutation.AddStreamOffset(u)
+// AddOffset adds u to the "offset" field.
+func (ruo *ReceiptUpdateOne) AddOffset(u int64) *ReceiptUpdateOne {
+	ruo.mutation.AddOffset(u)
 	return ruo
 }
 
-// SetTxHash sets the "TxHash" field.
+// SetTxHash sets the "tx_hash" field.
 func (ruo *ReceiptUpdateOne) SetTxHash(b []byte) *ReceiptUpdateOne {
 	ruo.mutation.SetTxHash(b)
 	return ruo
 }
 
-// SetCreatedAt sets the "CreatedAt" field.
+// SetCreatedAt sets the "created_at" field.
 func (ruo *ReceiptUpdateOne) SetCreatedAt(t time.Time) *ReceiptUpdateOne {
 	ruo.mutation.SetCreatedAt(t)
 	return ruo
 }
 
-// SetNillableCreatedAt sets the "CreatedAt" field if the given value is not nil.
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
 func (ruo *ReceiptUpdateOne) SetNillableCreatedAt(t *time.Time) *ReceiptUpdateOne {
 	if t != nil {
 		ruo.SetCreatedAt(*t)
@@ -586,18 +575,28 @@ func (ruo *ReceiptUpdateOne) SetNillableCreatedAt(t *time.Time) *ReceiptUpdateOn
 	return ruo
 }
 
-// SetBlock sets the "Block" edge to the Block entity.
-func (ruo *ReceiptUpdateOne) SetBlock(b *Block) *ReceiptUpdateOne {
-	return ruo.SetBlockID(b.ID)
+// AddBlockIDs adds the "block" edge to the Block entity by IDs.
+func (ruo *ReceiptUpdateOne) AddBlockIDs(ids ...int) *ReceiptUpdateOne {
+	ruo.mutation.AddBlockIDs(ids...)
+	return ruo
 }
 
-// AddMsgIDs adds the "Msgs" edge to the Msg entity by IDs.
+// AddBlock adds the "block" edges to the Block entity.
+func (ruo *ReceiptUpdateOne) AddBlock(b ...*Block) *ReceiptUpdateOne {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return ruo.AddBlockIDs(ids...)
+}
+
+// AddMsgIDs adds the "msgs" edge to the Msg entity by IDs.
 func (ruo *ReceiptUpdateOne) AddMsgIDs(ids ...int) *ReceiptUpdateOne {
 	ruo.mutation.AddMsgIDs(ids...)
 	return ruo
 }
 
-// AddMsgs adds the "Msgs" edges to the Msg entity.
+// AddMsgs adds the "msgs" edges to the Msg entity.
 func (ruo *ReceiptUpdateOne) AddMsgs(m ...*Msg) *ReceiptUpdateOne {
 	ids := make([]int, len(m))
 	for i := range m {
@@ -611,25 +610,40 @@ func (ruo *ReceiptUpdateOne) Mutation() *ReceiptMutation {
 	return ruo.mutation
 }
 
-// ClearBlock clears the "Block" edge to the Block entity.
+// ClearBlock clears all "block" edges to the Block entity.
 func (ruo *ReceiptUpdateOne) ClearBlock() *ReceiptUpdateOne {
 	ruo.mutation.ClearBlock()
 	return ruo
 }
 
-// ClearMsgs clears all "Msgs" edges to the Msg entity.
+// RemoveBlockIDs removes the "block" edge to Block entities by IDs.
+func (ruo *ReceiptUpdateOne) RemoveBlockIDs(ids ...int) *ReceiptUpdateOne {
+	ruo.mutation.RemoveBlockIDs(ids...)
+	return ruo
+}
+
+// RemoveBlock removes "block" edges to Block entities.
+func (ruo *ReceiptUpdateOne) RemoveBlock(b ...*Block) *ReceiptUpdateOne {
+	ids := make([]int, len(b))
+	for i := range b {
+		ids[i] = b[i].ID
+	}
+	return ruo.RemoveBlockIDs(ids...)
+}
+
+// ClearMsgs clears all "msgs" edges to the Msg entity.
 func (ruo *ReceiptUpdateOne) ClearMsgs() *ReceiptUpdateOne {
 	ruo.mutation.ClearMsgs()
 	return ruo
 }
 
-// RemoveMsgIDs removes the "Msgs" edge to Msg entities by IDs.
+// RemoveMsgIDs removes the "msgs" edge to Msg entities by IDs.
 func (ruo *ReceiptUpdateOne) RemoveMsgIDs(ids ...int) *ReceiptUpdateOne {
 	ruo.mutation.RemoveMsgIDs(ids...)
 	return ruo
 }
 
-// RemoveMsgs removes "Msgs" edges to Msg entities.
+// RemoveMsgs removes "msgs" edges to Msg entities.
 func (ruo *ReceiptUpdateOne) RemoveMsgs(m ...*Msg) *ReceiptUpdateOne {
 	ids := make([]int, len(m))
 	for i := range m {
@@ -680,14 +694,19 @@ func (ruo *ReceiptUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (ruo *ReceiptUpdateOne) check() error {
+	if v, ok := ruo.mutation.BlockHash(); ok {
+		if err := receipt.BlockHashValidator(v); err != nil {
+			return &ValidationError{Name: "block_hash", err: fmt.Errorf(`ent: validator failed for field "Receipt.block_hash": %w`, err)}
+		}
+	}
 	if v, ok := ruo.mutation.RelayerAddress(); ok {
 		if err := receipt.RelayerAddressValidator(v); err != nil {
-			return &ValidationError{Name: "RelayerAddress", err: fmt.Errorf(`ent: validator failed for field "Receipt.RelayerAddress": %w`, err)}
+			return &ValidationError{Name: "relayer_address", err: fmt.Errorf(`ent: validator failed for field "Receipt.relayer_address": %w`, err)}
 		}
 	}
 	if v, ok := ruo.mutation.TxHash(); ok {
 		if err := receipt.TxHashValidator(v); err != nil {
-			return &ValidationError{Name: "TxHash", err: fmt.Errorf(`ent: validator failed for field "Receipt.TxHash": %w`, err)}
+			return &ValidationError{Name: "tx_hash", err: fmt.Errorf(`ent: validator failed for field "Receipt.tx_hash": %w`, err)}
 		}
 	}
 	return nil
@@ -722,8 +741,8 @@ func (ruo *ReceiptUpdateOne) sqlSave(ctx context.Context) (_node *Receipt, err e
 			}
 		}
 	}
-	if value, ok := ruo.mutation.UUID(); ok {
-		_spec.SetField(receipt.FieldUUID, field.TypeUUID, value)
+	if value, ok := ruo.mutation.BlockHash(); ok {
+		_spec.SetField(receipt.FieldBlockHash, field.TypeBytes, value)
 	}
 	if value, ok := ruo.mutation.GasUsed(); ok {
 		_spec.SetField(receipt.FieldGasUsed, field.TypeUint64, value)
@@ -749,11 +768,11 @@ func (ruo *ReceiptUpdateOne) sqlSave(ctx context.Context) (_node *Receipt, err e
 	if value, ok := ruo.mutation.AddedDestChainID(); ok {
 		_spec.AddField(receipt.FieldDestChainID, field.TypeUint64, value)
 	}
-	if value, ok := ruo.mutation.StreamOffset(); ok {
-		_spec.SetField(receipt.FieldStreamOffset, field.TypeUint64, value)
+	if value, ok := ruo.mutation.Offset(); ok {
+		_spec.SetField(receipt.FieldOffset, field.TypeUint64, value)
 	}
-	if value, ok := ruo.mutation.AddedStreamOffset(); ok {
-		_spec.AddField(receipt.FieldStreamOffset, field.TypeUint64, value)
+	if value, ok := ruo.mutation.AddedOffset(); ok {
+		_spec.AddField(receipt.FieldOffset, field.TypeUint64, value)
 	}
 	if value, ok := ruo.mutation.TxHash(); ok {
 		_spec.SetField(receipt.FieldTxHash, field.TypeBytes, value)
@@ -763,10 +782,10 @@ func (ruo *ReceiptUpdateOne) sqlSave(ctx context.Context) (_node *Receipt, err e
 	}
 	if ruo.mutation.BlockCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   receipt.BlockTable,
-			Columns: []string{receipt.BlockColumn},
+			Columns: receipt.BlockPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(block.FieldID, field.TypeInt),
@@ -774,12 +793,28 @@ func (ruo *ReceiptUpdateOne) sqlSave(ctx context.Context) (_node *Receipt, err e
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ruo.mutation.BlockIDs(); len(nodes) > 0 {
+	if nodes := ruo.mutation.RemovedBlockIDs(); len(nodes) > 0 && !ruo.mutation.BlockCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   receipt.BlockTable,
-			Columns: []string{receipt.BlockColumn},
+			Columns: receipt.BlockPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(block.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.BlockIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   receipt.BlockTable,
+			Columns: receipt.BlockPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(block.FieldID, field.TypeInt),

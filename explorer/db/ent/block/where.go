@@ -55,243 +55,288 @@ func IDLTE(id int) predicate.Block {
 	return predicate.Block(sql.FieldLTE(FieldID, id))
 }
 
-// SourceChainID applies equality check predicate on the "SourceChainID" field. It's identical to SourceChainIDEQ.
-func SourceChainID(v uint64) predicate.Block {
-	return predicate.Block(sql.FieldEQ(FieldSourceChainID, v))
+// Hash applies equality check predicate on the "hash" field. It's identical to HashEQ.
+func Hash(v []byte) predicate.Block {
+	return predicate.Block(sql.FieldEQ(FieldHash, v))
 }
 
-// BlockHeight applies equality check predicate on the "BlockHeight" field. It's identical to BlockHeightEQ.
-func BlockHeight(v uint64) predicate.Block {
-	return predicate.Block(sql.FieldEQ(FieldBlockHeight, v))
+// ChainID applies equality check predicate on the "chain_id" field. It's identical to ChainIDEQ.
+func ChainID(v uint64) predicate.Block {
+	return predicate.Block(sql.FieldEQ(FieldChainID, v))
 }
 
-// BlockHash applies equality check predicate on the "BlockHash" field. It's identical to BlockHashEQ.
-func BlockHash(v []byte) predicate.Block {
-	return predicate.Block(sql.FieldEQ(FieldBlockHash, v))
+// Height applies equality check predicate on the "height" field. It's identical to HeightEQ.
+func Height(v uint64) predicate.Block {
+	return predicate.Block(sql.FieldEQ(FieldHeight, v))
 }
 
-// Timestamp applies equality check predicate on the "Timestamp" field. It's identical to TimestampEQ.
+// Offset applies equality check predicate on the "offset" field. It's identical to OffsetEQ.
+func Offset(v uint64) predicate.Block {
+	return predicate.Block(sql.FieldEQ(FieldOffset, v))
+}
+
+// Timestamp applies equality check predicate on the "timestamp" field. It's identical to TimestampEQ.
 func Timestamp(v time.Time) predicate.Block {
 	return predicate.Block(sql.FieldEQ(FieldTimestamp, v))
 }
 
-// CreatedAt applies equality check predicate on the "CreatedAt" field. It's identical to CreatedAtEQ.
+// CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.Block {
 	return predicate.Block(sql.FieldEQ(FieldCreatedAt, v))
 }
 
-// SourceChainIDEQ applies the EQ predicate on the "SourceChainID" field.
-func SourceChainIDEQ(v uint64) predicate.Block {
-	return predicate.Block(sql.FieldEQ(FieldSourceChainID, v))
+// HashEQ applies the EQ predicate on the "hash" field.
+func HashEQ(v []byte) predicate.Block {
+	return predicate.Block(sql.FieldEQ(FieldHash, v))
 }
 
-// SourceChainIDNEQ applies the NEQ predicate on the "SourceChainID" field.
-func SourceChainIDNEQ(v uint64) predicate.Block {
-	return predicate.Block(sql.FieldNEQ(FieldSourceChainID, v))
+// HashNEQ applies the NEQ predicate on the "hash" field.
+func HashNEQ(v []byte) predicate.Block {
+	return predicate.Block(sql.FieldNEQ(FieldHash, v))
 }
 
-// SourceChainIDIn applies the In predicate on the "SourceChainID" field.
-func SourceChainIDIn(vs ...uint64) predicate.Block {
-	return predicate.Block(sql.FieldIn(FieldSourceChainID, vs...))
+// HashIn applies the In predicate on the "hash" field.
+func HashIn(vs ...[]byte) predicate.Block {
+	return predicate.Block(sql.FieldIn(FieldHash, vs...))
 }
 
-// SourceChainIDNotIn applies the NotIn predicate on the "SourceChainID" field.
-func SourceChainIDNotIn(vs ...uint64) predicate.Block {
-	return predicate.Block(sql.FieldNotIn(FieldSourceChainID, vs...))
+// HashNotIn applies the NotIn predicate on the "hash" field.
+func HashNotIn(vs ...[]byte) predicate.Block {
+	return predicate.Block(sql.FieldNotIn(FieldHash, vs...))
 }
 
-// SourceChainIDGT applies the GT predicate on the "SourceChainID" field.
-func SourceChainIDGT(v uint64) predicate.Block {
-	return predicate.Block(sql.FieldGT(FieldSourceChainID, v))
+// HashGT applies the GT predicate on the "hash" field.
+func HashGT(v []byte) predicate.Block {
+	return predicate.Block(sql.FieldGT(FieldHash, v))
 }
 
-// SourceChainIDGTE applies the GTE predicate on the "SourceChainID" field.
-func SourceChainIDGTE(v uint64) predicate.Block {
-	return predicate.Block(sql.FieldGTE(FieldSourceChainID, v))
+// HashGTE applies the GTE predicate on the "hash" field.
+func HashGTE(v []byte) predicate.Block {
+	return predicate.Block(sql.FieldGTE(FieldHash, v))
 }
 
-// SourceChainIDLT applies the LT predicate on the "SourceChainID" field.
-func SourceChainIDLT(v uint64) predicate.Block {
-	return predicate.Block(sql.FieldLT(FieldSourceChainID, v))
+// HashLT applies the LT predicate on the "hash" field.
+func HashLT(v []byte) predicate.Block {
+	return predicate.Block(sql.FieldLT(FieldHash, v))
 }
 
-// SourceChainIDLTE applies the LTE predicate on the "SourceChainID" field.
-func SourceChainIDLTE(v uint64) predicate.Block {
-	return predicate.Block(sql.FieldLTE(FieldSourceChainID, v))
+// HashLTE applies the LTE predicate on the "hash" field.
+func HashLTE(v []byte) predicate.Block {
+	return predicate.Block(sql.FieldLTE(FieldHash, v))
 }
 
-// BlockHeightEQ applies the EQ predicate on the "BlockHeight" field.
-func BlockHeightEQ(v uint64) predicate.Block {
-	return predicate.Block(sql.FieldEQ(FieldBlockHeight, v))
+// ChainIDEQ applies the EQ predicate on the "chain_id" field.
+func ChainIDEQ(v uint64) predicate.Block {
+	return predicate.Block(sql.FieldEQ(FieldChainID, v))
 }
 
-// BlockHeightNEQ applies the NEQ predicate on the "BlockHeight" field.
-func BlockHeightNEQ(v uint64) predicate.Block {
-	return predicate.Block(sql.FieldNEQ(FieldBlockHeight, v))
+// ChainIDNEQ applies the NEQ predicate on the "chain_id" field.
+func ChainIDNEQ(v uint64) predicate.Block {
+	return predicate.Block(sql.FieldNEQ(FieldChainID, v))
 }
 
-// BlockHeightIn applies the In predicate on the "BlockHeight" field.
-func BlockHeightIn(vs ...uint64) predicate.Block {
-	return predicate.Block(sql.FieldIn(FieldBlockHeight, vs...))
+// ChainIDIn applies the In predicate on the "chain_id" field.
+func ChainIDIn(vs ...uint64) predicate.Block {
+	return predicate.Block(sql.FieldIn(FieldChainID, vs...))
 }
 
-// BlockHeightNotIn applies the NotIn predicate on the "BlockHeight" field.
-func BlockHeightNotIn(vs ...uint64) predicate.Block {
-	return predicate.Block(sql.FieldNotIn(FieldBlockHeight, vs...))
+// ChainIDNotIn applies the NotIn predicate on the "chain_id" field.
+func ChainIDNotIn(vs ...uint64) predicate.Block {
+	return predicate.Block(sql.FieldNotIn(FieldChainID, vs...))
 }
 
-// BlockHeightGT applies the GT predicate on the "BlockHeight" field.
-func BlockHeightGT(v uint64) predicate.Block {
-	return predicate.Block(sql.FieldGT(FieldBlockHeight, v))
+// ChainIDGT applies the GT predicate on the "chain_id" field.
+func ChainIDGT(v uint64) predicate.Block {
+	return predicate.Block(sql.FieldGT(FieldChainID, v))
 }
 
-// BlockHeightGTE applies the GTE predicate on the "BlockHeight" field.
-func BlockHeightGTE(v uint64) predicate.Block {
-	return predicate.Block(sql.FieldGTE(FieldBlockHeight, v))
+// ChainIDGTE applies the GTE predicate on the "chain_id" field.
+func ChainIDGTE(v uint64) predicate.Block {
+	return predicate.Block(sql.FieldGTE(FieldChainID, v))
 }
 
-// BlockHeightLT applies the LT predicate on the "BlockHeight" field.
-func BlockHeightLT(v uint64) predicate.Block {
-	return predicate.Block(sql.FieldLT(FieldBlockHeight, v))
+// ChainIDLT applies the LT predicate on the "chain_id" field.
+func ChainIDLT(v uint64) predicate.Block {
+	return predicate.Block(sql.FieldLT(FieldChainID, v))
 }
 
-// BlockHeightLTE applies the LTE predicate on the "BlockHeight" field.
-func BlockHeightLTE(v uint64) predicate.Block {
-	return predicate.Block(sql.FieldLTE(FieldBlockHeight, v))
+// ChainIDLTE applies the LTE predicate on the "chain_id" field.
+func ChainIDLTE(v uint64) predicate.Block {
+	return predicate.Block(sql.FieldLTE(FieldChainID, v))
 }
 
-// BlockHashEQ applies the EQ predicate on the "BlockHash" field.
-func BlockHashEQ(v []byte) predicate.Block {
-	return predicate.Block(sql.FieldEQ(FieldBlockHash, v))
+// HeightEQ applies the EQ predicate on the "height" field.
+func HeightEQ(v uint64) predicate.Block {
+	return predicate.Block(sql.FieldEQ(FieldHeight, v))
 }
 
-// BlockHashNEQ applies the NEQ predicate on the "BlockHash" field.
-func BlockHashNEQ(v []byte) predicate.Block {
-	return predicate.Block(sql.FieldNEQ(FieldBlockHash, v))
+// HeightNEQ applies the NEQ predicate on the "height" field.
+func HeightNEQ(v uint64) predicate.Block {
+	return predicate.Block(sql.FieldNEQ(FieldHeight, v))
 }
 
-// BlockHashIn applies the In predicate on the "BlockHash" field.
-func BlockHashIn(vs ...[]byte) predicate.Block {
-	return predicate.Block(sql.FieldIn(FieldBlockHash, vs...))
+// HeightIn applies the In predicate on the "height" field.
+func HeightIn(vs ...uint64) predicate.Block {
+	return predicate.Block(sql.FieldIn(FieldHeight, vs...))
 }
 
-// BlockHashNotIn applies the NotIn predicate on the "BlockHash" field.
-func BlockHashNotIn(vs ...[]byte) predicate.Block {
-	return predicate.Block(sql.FieldNotIn(FieldBlockHash, vs...))
+// HeightNotIn applies the NotIn predicate on the "height" field.
+func HeightNotIn(vs ...uint64) predicate.Block {
+	return predicate.Block(sql.FieldNotIn(FieldHeight, vs...))
 }
 
-// BlockHashGT applies the GT predicate on the "BlockHash" field.
-func BlockHashGT(v []byte) predicate.Block {
-	return predicate.Block(sql.FieldGT(FieldBlockHash, v))
+// HeightGT applies the GT predicate on the "height" field.
+func HeightGT(v uint64) predicate.Block {
+	return predicate.Block(sql.FieldGT(FieldHeight, v))
 }
 
-// BlockHashGTE applies the GTE predicate on the "BlockHash" field.
-func BlockHashGTE(v []byte) predicate.Block {
-	return predicate.Block(sql.FieldGTE(FieldBlockHash, v))
+// HeightGTE applies the GTE predicate on the "height" field.
+func HeightGTE(v uint64) predicate.Block {
+	return predicate.Block(sql.FieldGTE(FieldHeight, v))
 }
 
-// BlockHashLT applies the LT predicate on the "BlockHash" field.
-func BlockHashLT(v []byte) predicate.Block {
-	return predicate.Block(sql.FieldLT(FieldBlockHash, v))
+// HeightLT applies the LT predicate on the "height" field.
+func HeightLT(v uint64) predicate.Block {
+	return predicate.Block(sql.FieldLT(FieldHeight, v))
 }
 
-// BlockHashLTE applies the LTE predicate on the "BlockHash" field.
-func BlockHashLTE(v []byte) predicate.Block {
-	return predicate.Block(sql.FieldLTE(FieldBlockHash, v))
+// HeightLTE applies the LTE predicate on the "height" field.
+func HeightLTE(v uint64) predicate.Block {
+	return predicate.Block(sql.FieldLTE(FieldHeight, v))
 }
 
-// TimestampEQ applies the EQ predicate on the "Timestamp" field.
+// OffsetEQ applies the EQ predicate on the "offset" field.
+func OffsetEQ(v uint64) predicate.Block {
+	return predicate.Block(sql.FieldEQ(FieldOffset, v))
+}
+
+// OffsetNEQ applies the NEQ predicate on the "offset" field.
+func OffsetNEQ(v uint64) predicate.Block {
+	return predicate.Block(sql.FieldNEQ(FieldOffset, v))
+}
+
+// OffsetIn applies the In predicate on the "offset" field.
+func OffsetIn(vs ...uint64) predicate.Block {
+	return predicate.Block(sql.FieldIn(FieldOffset, vs...))
+}
+
+// OffsetNotIn applies the NotIn predicate on the "offset" field.
+func OffsetNotIn(vs ...uint64) predicate.Block {
+	return predicate.Block(sql.FieldNotIn(FieldOffset, vs...))
+}
+
+// OffsetGT applies the GT predicate on the "offset" field.
+func OffsetGT(v uint64) predicate.Block {
+	return predicate.Block(sql.FieldGT(FieldOffset, v))
+}
+
+// OffsetGTE applies the GTE predicate on the "offset" field.
+func OffsetGTE(v uint64) predicate.Block {
+	return predicate.Block(sql.FieldGTE(FieldOffset, v))
+}
+
+// OffsetLT applies the LT predicate on the "offset" field.
+func OffsetLT(v uint64) predicate.Block {
+	return predicate.Block(sql.FieldLT(FieldOffset, v))
+}
+
+// OffsetLTE applies the LTE predicate on the "offset" field.
+func OffsetLTE(v uint64) predicate.Block {
+	return predicate.Block(sql.FieldLTE(FieldOffset, v))
+}
+
+// TimestampEQ applies the EQ predicate on the "timestamp" field.
 func TimestampEQ(v time.Time) predicate.Block {
 	return predicate.Block(sql.FieldEQ(FieldTimestamp, v))
 }
 
-// TimestampNEQ applies the NEQ predicate on the "Timestamp" field.
+// TimestampNEQ applies the NEQ predicate on the "timestamp" field.
 func TimestampNEQ(v time.Time) predicate.Block {
 	return predicate.Block(sql.FieldNEQ(FieldTimestamp, v))
 }
 
-// TimestampIn applies the In predicate on the "Timestamp" field.
+// TimestampIn applies the In predicate on the "timestamp" field.
 func TimestampIn(vs ...time.Time) predicate.Block {
 	return predicate.Block(sql.FieldIn(FieldTimestamp, vs...))
 }
 
-// TimestampNotIn applies the NotIn predicate on the "Timestamp" field.
+// TimestampNotIn applies the NotIn predicate on the "timestamp" field.
 func TimestampNotIn(vs ...time.Time) predicate.Block {
 	return predicate.Block(sql.FieldNotIn(FieldTimestamp, vs...))
 }
 
-// TimestampGT applies the GT predicate on the "Timestamp" field.
+// TimestampGT applies the GT predicate on the "timestamp" field.
 func TimestampGT(v time.Time) predicate.Block {
 	return predicate.Block(sql.FieldGT(FieldTimestamp, v))
 }
 
-// TimestampGTE applies the GTE predicate on the "Timestamp" field.
+// TimestampGTE applies the GTE predicate on the "timestamp" field.
 func TimestampGTE(v time.Time) predicate.Block {
 	return predicate.Block(sql.FieldGTE(FieldTimestamp, v))
 }
 
-// TimestampLT applies the LT predicate on the "Timestamp" field.
+// TimestampLT applies the LT predicate on the "timestamp" field.
 func TimestampLT(v time.Time) predicate.Block {
 	return predicate.Block(sql.FieldLT(FieldTimestamp, v))
 }
 
-// TimestampLTE applies the LTE predicate on the "Timestamp" field.
+// TimestampLTE applies the LTE predicate on the "timestamp" field.
 func TimestampLTE(v time.Time) predicate.Block {
 	return predicate.Block(sql.FieldLTE(FieldTimestamp, v))
 }
 
-// CreatedAtEQ applies the EQ predicate on the "CreatedAt" field.
+// CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Block {
 	return predicate.Block(sql.FieldEQ(FieldCreatedAt, v))
 }
 
-// CreatedAtNEQ applies the NEQ predicate on the "CreatedAt" field.
+// CreatedAtNEQ applies the NEQ predicate on the "created_at" field.
 func CreatedAtNEQ(v time.Time) predicate.Block {
 	return predicate.Block(sql.FieldNEQ(FieldCreatedAt, v))
 }
 
-// CreatedAtIn applies the In predicate on the "CreatedAt" field.
+// CreatedAtIn applies the In predicate on the "created_at" field.
 func CreatedAtIn(vs ...time.Time) predicate.Block {
 	return predicate.Block(sql.FieldIn(FieldCreatedAt, vs...))
 }
 
-// CreatedAtNotIn applies the NotIn predicate on the "CreatedAt" field.
+// CreatedAtNotIn applies the NotIn predicate on the "created_at" field.
 func CreatedAtNotIn(vs ...time.Time) predicate.Block {
 	return predicate.Block(sql.FieldNotIn(FieldCreatedAt, vs...))
 }
 
-// CreatedAtGT applies the GT predicate on the "CreatedAt" field.
+// CreatedAtGT applies the GT predicate on the "created_at" field.
 func CreatedAtGT(v time.Time) predicate.Block {
 	return predicate.Block(sql.FieldGT(FieldCreatedAt, v))
 }
 
-// CreatedAtGTE applies the GTE predicate on the "CreatedAt" field.
+// CreatedAtGTE applies the GTE predicate on the "created_at" field.
 func CreatedAtGTE(v time.Time) predicate.Block {
 	return predicate.Block(sql.FieldGTE(FieldCreatedAt, v))
 }
 
-// CreatedAtLT applies the LT predicate on the "CreatedAt" field.
+// CreatedAtLT applies the LT predicate on the "created_at" field.
 func CreatedAtLT(v time.Time) predicate.Block {
 	return predicate.Block(sql.FieldLT(FieldCreatedAt, v))
 }
 
-// CreatedAtLTE applies the LTE predicate on the "CreatedAt" field.
+// CreatedAtLTE applies the LTE predicate on the "created_at" field.
 func CreatedAtLTE(v time.Time) predicate.Block {
 	return predicate.Block(sql.FieldLTE(FieldCreatedAt, v))
 }
 
-// HasMsgs applies the HasEdge predicate on the "Msgs" edge.
+// HasMsgs applies the HasEdge predicate on the "msgs" edge.
 func HasMsgs() predicate.Block {
 	return predicate.Block(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, MsgsTable, MsgsColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, MsgsTable, MsgsPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasMsgsWith applies the HasEdge predicate on the "Msgs" edge with a given conditions (other predicates).
+// HasMsgsWith applies the HasEdge predicate on the "msgs" edge with a given conditions (other predicates).
 func HasMsgsWith(preds ...predicate.Msg) predicate.Block {
 	return predicate.Block(func(s *sql.Selector) {
 		step := newMsgsStep()
@@ -303,18 +348,18 @@ func HasMsgsWith(preds ...predicate.Msg) predicate.Block {
 	})
 }
 
-// HasReceipts applies the HasEdge predicate on the "Receipts" edge.
+// HasReceipts applies the HasEdge predicate on the "receipts" edge.
 func HasReceipts() predicate.Block {
 	return predicate.Block(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, ReceiptsTable, ReceiptsColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, ReceiptsTable, ReceiptsPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasReceiptsWith applies the HasEdge predicate on the "Receipts" edge with a given conditions (other predicates).
+// HasReceiptsWith applies the HasEdge predicate on the "receipts" edge with a given conditions (other predicates).
 func HasReceiptsWith(preds ...predicate.Receipt) predicate.Block {
 	return predicate.Block(func(s *sql.Selector) {
 		step := newReceiptsStep()

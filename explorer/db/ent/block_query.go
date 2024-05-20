@@ -62,7 +62,7 @@ func (bq *BlockQuery) Order(o ...block.OrderOption) *BlockQuery {
 	return bq
 }
 
-// QueryMsgs chains the current query on the "Msgs" edge.
+// QueryMsgs chains the current query on the "msgs" edge.
 func (bq *BlockQuery) QueryMsgs() *MsgQuery {
 	query := (&MsgClient{config: bq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
@@ -76,7 +76,7 @@ func (bq *BlockQuery) QueryMsgs() *MsgQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(block.Table, block.FieldID, selector),
 			sqlgraph.To(msg.Table, msg.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, block.MsgsTable, block.MsgsColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, block.MsgsTable, block.MsgsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(bq.driver.Dialect(), step)
 		return fromU, nil
@@ -84,7 +84,7 @@ func (bq *BlockQuery) QueryMsgs() *MsgQuery {
 	return query
 }
 
-// QueryReceipts chains the current query on the "Receipts" edge.
+// QueryReceipts chains the current query on the "receipts" edge.
 func (bq *BlockQuery) QueryReceipts() *ReceiptQuery {
 	query := (&ReceiptClient{config: bq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
@@ -98,7 +98,7 @@ func (bq *BlockQuery) QueryReceipts() *ReceiptQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(block.Table, block.FieldID, selector),
 			sqlgraph.To(receipt.Table, receipt.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, block.ReceiptsTable, block.ReceiptsColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, block.ReceiptsTable, block.ReceiptsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(bq.driver.Dialect(), step)
 		return fromU, nil
@@ -307,7 +307,7 @@ func (bq *BlockQuery) Clone() *BlockQuery {
 }
 
 // WithMsgs tells the query-builder to eager-load the nodes that are connected to
-// the "Msgs" edge. The optional arguments are used to configure the query builder of the edge.
+// the "msgs" edge. The optional arguments are used to configure the query builder of the edge.
 func (bq *BlockQuery) WithMsgs(opts ...func(*MsgQuery)) *BlockQuery {
 	query := (&MsgClient{config: bq.config}).Query()
 	for _, opt := range opts {
@@ -318,7 +318,7 @@ func (bq *BlockQuery) WithMsgs(opts ...func(*MsgQuery)) *BlockQuery {
 }
 
 // WithReceipts tells the query-builder to eager-load the nodes that are connected to
-// the "Receipts" edge. The optional arguments are used to configure the query builder of the edge.
+// the "receipts" edge. The optional arguments are used to configure the query builder of the edge.
 func (bq *BlockQuery) WithReceipts(opts ...func(*ReceiptQuery)) *BlockQuery {
 	query := (&ReceiptClient{config: bq.config}).Query()
 	for _, opt := range opts {
@@ -334,12 +334,12 @@ func (bq *BlockQuery) WithReceipts(opts ...func(*ReceiptQuery)) *BlockQuery {
 // Example:
 //
 //	var v []struct {
-//		SourceChainID uint64 `json:"SourceChainID,omitempty"`
+//		Hash []byte `json:"hash,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Block.Query().
-//		GroupBy(block.FieldSourceChainID).
+//		GroupBy(block.FieldHash).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (bq *BlockQuery) GroupBy(field string, fields ...string) *BlockGroupBy {
@@ -357,11 +357,11 @@ func (bq *BlockQuery) GroupBy(field string, fields ...string) *BlockGroupBy {
 // Example:
 //
 //	var v []struct {
-//		SourceChainID uint64 `json:"SourceChainID,omitempty"`
+//		Hash []byte `json:"hash,omitempty"`
 //	}
 //
 //	client.Block.Query().
-//		Select(block.FieldSourceChainID).
+//		Select(block.FieldHash).
 //		Scan(ctx, &v)
 func (bq *BlockQuery) Select(fields ...string) *BlockSelect {
 	bq.ctx.Fields = append(bq.ctx.Fields, fields...)
@@ -447,62 +447,124 @@ func (bq *BlockQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Block,
 }
 
 func (bq *BlockQuery) loadMsgs(ctx context.Context, query *MsgQuery, nodes []*Block, init func(*Block), assign func(*Block, *Msg)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[int]*Block)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[int]*Block)
+	nids := make(map[int]map[*Block]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
 		if init != nil {
-			init(nodes[i])
+			init(node)
 		}
 	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(msg.FieldBlockID)
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(block.MsgsTable)
+		s.Join(joinT).On(s.C(msg.FieldID), joinT.C(block.MsgsPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(block.MsgsPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(block.MsgsPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
 	}
-	query.Where(predicate.Msg(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(block.MsgsColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(sql.NullInt64)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := int(values[0].(*sql.NullInt64).Int64)
+				inValue := int(values[1].(*sql.NullInt64).Int64)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Block]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Msg](ctx, query, qr, query.inters)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.BlockID
-		node, ok := nodeids[fk]
+		nodes, ok := nids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "Block_ID" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected "msgs" node returned %v`, n.ID)
 		}
-		assign(node, n)
+		for kn := range nodes {
+			assign(kn, n)
+		}
 	}
 	return nil
 }
 func (bq *BlockQuery) loadReceipts(ctx context.Context, query *ReceiptQuery, nodes []*Block, init func(*Block), assign func(*Block, *Receipt)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[int]*Block)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[int]*Block)
+	nids := make(map[int]map[*Block]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
 		if init != nil {
-			init(nodes[i])
+			init(node)
 		}
 	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(receipt.FieldBlockID)
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(block.ReceiptsTable)
+		s.Join(joinT).On(s.C(receipt.FieldID), joinT.C(block.ReceiptsPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(block.ReceiptsPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(block.ReceiptsPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
 	}
-	query.Where(predicate.Receipt(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(block.ReceiptsColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(sql.NullInt64)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := int(values[0].(*sql.NullInt64).Int64)
+				inValue := int(values[1].(*sql.NullInt64).Int64)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Block]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Receipt](ctx, query, qr, query.inters)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.BlockID
-		node, ok := nodeids[fk]
+		nodes, ok := nids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "Block_ID" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected "receipts" node returned %v`, n.ID)
 		}
-		assign(node, n)
+		for kn := range nodes {
+			assign(kn, n)
+		}
 	}
 	return nil
 }

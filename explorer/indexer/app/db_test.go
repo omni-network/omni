@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omni-network/omni/explorer/db"
 	"github.com/omni-network/omni/explorer/db/ent"
 	"github.com/omni-network/omni/explorer/db/ent/block"
 	"github.com/omni-network/omni/explorer/db/ent/msg"
 	"github.com/omni-network/omni/explorer/db/ent/receipt"
+	"github.com/omni-network/omni/explorer/db/testutil"
 	"github.com/omni-network/omni/explorer/indexer/app"
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -59,10 +59,10 @@ func TestDbTransaction(t *testing.T) {
 				var blockHash common.Hash
 				fuzz.New().NilChance(0).Fuzz(&blockHash)
 
-				var sourceMessageSender, destAddress, relayerAddress [20]byte
-				fuzz.New().NilChance(0).Fuzz(&sourceMessageSender)
-				fuzz.New().NilChance(0).Fuzz(&destAddress)
-				fuzz.New().NilChance(0).Fuzz(&relayerAddress)
+				var sender, to, relayer common.Address
+				fuzz.New().NilChance(0).Fuzz(&sender)
+				fuzz.New().NilChance(0).Fuzz(&to)
+				fuzz.New().NilChance(0).Fuzz(&relayer)
 
 				var msgData []byte
 				fuzz.New().NilChance(0).Fuzz(&msgData)
@@ -70,13 +70,14 @@ func TestDbTransaction(t *testing.T) {
 				sourceChainID := uint64(1)
 				destChainID := uint64(2)
 
-				_, err := client.XProviderCursor.Create().SetChainID(sourceChainID).SetHeight(0).Save(ctx)
+				_, err := client.XProviderCursor.Create().SetChainID(sourceChainID).SetHeight(0).SetOffset(0).Save(ctx)
 				require.NoError(t, err, "creating source chain cursor")
 
-				_, err = client.XProviderCursor.Create().SetChainID(destChainID).SetHeight(0).Save(ctx)
+				_, err = client.XProviderCursor.Create().SetChainID(destChainID).SetHeight(0).SetOffset(0).Save(ctx)
 				require.NoError(t, err, "creating dest chain cursor")
 
 				blockHeight := uint64(1)
+				blockOffset := uint64(1)
 				gasLimit := uint64(1000)
 				streamOffset := uint64(0)
 				gasUsed := uint64(100)
@@ -88,6 +89,7 @@ func TestDbTransaction(t *testing.T) {
 					BlockHeader: xchain.BlockHeader{
 						SourceChainID: sourceChainID,
 						BlockHeight:   blockHeight,
+						BlockOffset:   blockOffset,
 						BlockHash:     blockHash,
 					},
 					Msgs: []xchain.Msg{
@@ -99,8 +101,8 @@ func TestDbTransaction(t *testing.T) {
 								},
 								StreamOffset: streamOffset,
 							},
-							SourceMsgSender: sourceMessageSender,
-							DestAddress:     destAddress,
+							SourceMsgSender: sender,
+							DestAddress:     to,
 							Data:            msgData,
 							DestGasLimit:    gasLimit,
 							TxHash:          msgTxHash,
@@ -117,7 +119,7 @@ func TestDbTransaction(t *testing.T) {
 							},
 							GasUsed:        gasUsed,
 							Success:        true,
-							RelayerAddress: common.Address(relayerAddress[:]),
+							RelayerAddress: common.Address(relayer[:]),
 							TxHash:         receiptTxHash,
 						},
 					},
@@ -125,19 +127,19 @@ func TestDbTransaction(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				b := client.Block.Query().Where(block.BlockHeight(blockHeight)).OnlyX(ctx)
-				m := client.Msg.Query().Where(msg.SourceChainID(sourceChainID), msg.DestChainID(destChainID), msg.StreamOffset(streamOffset)).OnlyX(ctx)
-				r := client.Receipt.Query().Where(receipt.SourceChainID(sourceChainID), receipt.DestChainID(destChainID), receipt.StreamOffset(streamOffset)).OnlyX(ctx)
+				b := client.Block.Query().Where(block.Height(blockHeight), block.Offset(blockOffset)).OnlyX(ctx)
+				m := client.Msg.Query().Where(msg.SourceChainID(sourceChainID), msg.DestChainID(destChainID), msg.Offset(streamOffset)).OnlyX(ctx)
+				r := client.Receipt.Query().Where(receipt.SourceChainID(sourceChainID), receipt.DestChainID(destChainID), receipt.Offset(streamOffset)).OnlyX(ctx)
 
 				require.NotNil(t, b)
 				require.NotNil(t, m)
 				require.NotNil(t, r)
 
 				blockReceipts := make(map[uint64][]*ent.Receipt)
-				blockReceipts[b.BlockHeight] = []*ent.Receipt{r}
+				blockReceipts[b.Height] = []*ent.Receipt{r}
 
 				blockMessages := make(map[uint64][]*ent.Msg)
-				blockMessages[b.BlockHeight] = []*ent.Msg{m}
+				blockMessages[b.Height] = []*ent.Msg{m}
 
 				return results{
 					blocks:        []ent.Block{*b},
@@ -168,7 +170,7 @@ func TestDbTransaction(t *testing.T) {
 
 func setupDB(t *testing.T) *ent.Client {
 	t.Helper()
-	client := db.CreateTestEntClient(t)
+	client := testutil.CreateTestEntClient(t)
 	t.Cleanup(func() {
 		if err := client.Close(); err != nil {
 			t.Error(err)
@@ -182,13 +184,10 @@ func eval(t *testing.T, r results) {
 	t.Helper()
 
 	for _, b := range r.blocks {
-		expectedMessages := r.blockMessages[b.BlockHeight]
+		expectedMessages := r.blockMessages[b.Height]
 		var expectedMessageIDs []int
 		for _, m := range expectedMessages {
 			expectedMessageIDs = append(expectedMessageIDs, m.ID)
-			require.NotNil(t, m.BlockHash)
-			require.NotNil(t, m.BlockHeight)
-			require.NotNil(t, m.BlockTime)
 		}
 		actualMessageIDs := b.QueryMsgs().IDsX(context.Background())
 
@@ -196,7 +195,7 @@ func eval(t *testing.T, r results) {
 			t.Errorf("got %v want %v", actualMessageIDs, expectedMessageIDs)
 		}
 
-		expectedReceipts := r.blockReceipts[b.BlockHeight]
+		expectedReceipts := r.blockReceipts[b.Height]
 		var expectedReceiptIDs []int
 		for _, r := range expectedReceipts {
 			expectedReceiptIDs = append(expectedReceiptIDs, r.ID)

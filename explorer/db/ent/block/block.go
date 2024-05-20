@@ -14,47 +14,55 @@ const (
 	Label = "block"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldSourceChainID holds the string denoting the sourcechainid field in the database.
-	FieldSourceChainID = "source_chain_id"
-	// FieldBlockHeight holds the string denoting the blockheight field in the database.
-	FieldBlockHeight = "block_height"
-	// FieldBlockHash holds the string denoting the blockhash field in the database.
-	FieldBlockHash = "block_hash"
+	// FieldHash holds the string denoting the hash field in the database.
+	FieldHash = "hash"
+	// FieldChainID holds the string denoting the chain_id field in the database.
+	FieldChainID = "chain_id"
+	// FieldHeight holds the string denoting the height field in the database.
+	FieldHeight = "height"
+	// FieldOffset holds the string denoting the offset field in the database.
+	FieldOffset = "offset"
 	// FieldTimestamp holds the string denoting the timestamp field in the database.
 	FieldTimestamp = "timestamp"
-	// FieldCreatedAt holds the string denoting the createdat field in the database.
+	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// EdgeMsgs holds the string denoting the msgs edge name in mutations.
-	EdgeMsgs = "Msgs"
+	EdgeMsgs = "msgs"
 	// EdgeReceipts holds the string denoting the receipts edge name in mutations.
-	EdgeReceipts = "Receipts"
+	EdgeReceipts = "receipts"
 	// Table holds the table name of the block in the database.
 	Table = "blocks"
-	// MsgsTable is the table that holds the Msgs relation/edge.
-	MsgsTable = "msgs"
+	// MsgsTable is the table that holds the msgs relation/edge. The primary key declared below.
+	MsgsTable = "block_msgs"
 	// MsgsInverseTable is the table name for the Msg entity.
 	// It exists in this package in order to avoid circular dependency with the "msg" package.
 	MsgsInverseTable = "msgs"
-	// MsgsColumn is the table column denoting the Msgs relation/edge.
-	MsgsColumn = "block_id"
-	// ReceiptsTable is the table that holds the Receipts relation/edge.
-	ReceiptsTable = "receipts"
+	// ReceiptsTable is the table that holds the receipts relation/edge. The primary key declared below.
+	ReceiptsTable = "block_receipts"
 	// ReceiptsInverseTable is the table name for the Receipt entity.
 	// It exists in this package in order to avoid circular dependency with the "receipt" package.
 	ReceiptsInverseTable = "receipts"
-	// ReceiptsColumn is the table column denoting the Receipts relation/edge.
-	ReceiptsColumn = "block_id"
 )
 
 // Columns holds all SQL columns for block fields.
 var Columns = []string{
 	FieldID,
-	FieldSourceChainID,
-	FieldBlockHeight,
-	FieldBlockHash,
+	FieldHash,
+	FieldChainID,
+	FieldHeight,
+	FieldOffset,
 	FieldTimestamp,
 	FieldCreatedAt,
 }
+
+var (
+	// MsgsPrimaryKey and MsgsColumn2 are the table columns denoting the
+	// primary key for the msgs relation (M2M).
+	MsgsPrimaryKey = []string{"block_id", "msg_id"}
+	// ReceiptsPrimaryKey and ReceiptsColumn2 are the table columns denoting the
+	// primary key for the receipts relation (M2M).
+	ReceiptsPrimaryKey = []string{"block_id", "receipt_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
@@ -67,11 +75,11 @@ func ValidColumn(column string) bool {
 }
 
 var (
-	// BlockHashValidator is a validator for the "BlockHash" field. It is called by the builders before save.
-	BlockHashValidator func([]byte) error
-	// DefaultTimestamp holds the default value on creation for the "Timestamp" field.
+	// HashValidator is a validator for the "hash" field. It is called by the builders before save.
+	HashValidator func([]byte) error
+	// DefaultTimestamp holds the default value on creation for the "timestamp" field.
 	DefaultTimestamp time.Time
-	// DefaultCreatedAt holds the default value on creation for the "CreatedAt" field.
+	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt time.Time
 )
 
@@ -83,48 +91,53 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
-// BySourceChainID orders the results by the SourceChainID field.
-func BySourceChainID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldSourceChainID, opts...).ToFunc()
+// ByChainID orders the results by the chain_id field.
+func ByChainID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldChainID, opts...).ToFunc()
 }
 
-// ByBlockHeight orders the results by the BlockHeight field.
-func ByBlockHeight(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldBlockHeight, opts...).ToFunc()
+// ByHeight orders the results by the height field.
+func ByHeight(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldHeight, opts...).ToFunc()
 }
 
-// ByTimestamp orders the results by the Timestamp field.
+// ByOffset orders the results by the offset field.
+func ByOffset(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOffset, opts...).ToFunc()
+}
+
+// ByTimestamp orders the results by the timestamp field.
 func ByTimestamp(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTimestamp, opts...).ToFunc()
 }
 
-// ByCreatedAt orders the results by the CreatedAt field.
+// ByCreatedAt orders the results by the created_at field.
 func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
 }
 
-// ByMsgsCount orders the results by Msgs count.
+// ByMsgsCount orders the results by msgs count.
 func ByMsgsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborsCount(s, newMsgsStep(), opts...)
 	}
 }
 
-// ByMsgs orders the results by Msgs terms.
+// ByMsgs orders the results by msgs terms.
 func ByMsgs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newMsgsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
-// ByReceiptsCount orders the results by Receipts count.
+// ByReceiptsCount orders the results by receipts count.
 func ByReceiptsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborsCount(s, newReceiptsStep(), opts...)
 	}
 }
 
-// ByReceipts orders the results by Receipts terms.
+// ByReceipts orders the results by receipts terms.
 func ByReceipts(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newReceiptsStep(), append([]sql.OrderTerm{term}, terms...)...)
@@ -134,13 +147,13 @@ func newMsgsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(MsgsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, MsgsTable, MsgsColumn),
+		sqlgraph.Edge(sqlgraph.M2M, false, MsgsTable, MsgsPrimaryKey...),
 	)
 }
 func newReceiptsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ReceiptsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, ReceiptsTable, ReceiptsColumn),
+		sqlgraph.Edge(sqlgraph.M2M, false, ReceiptsTable, ReceiptsPrimaryKey...),
 	)
 }

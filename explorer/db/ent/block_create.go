@@ -22,31 +22,37 @@ type BlockCreate struct {
 	hooks    []Hook
 }
 
-// SetSourceChainID sets the "SourceChainID" field.
-func (bc *BlockCreate) SetSourceChainID(u uint64) *BlockCreate {
-	bc.mutation.SetSourceChainID(u)
+// SetHash sets the "hash" field.
+func (bc *BlockCreate) SetHash(b []byte) *BlockCreate {
+	bc.mutation.SetHash(b)
 	return bc
 }
 
-// SetBlockHeight sets the "BlockHeight" field.
-func (bc *BlockCreate) SetBlockHeight(u uint64) *BlockCreate {
-	bc.mutation.SetBlockHeight(u)
+// SetChainID sets the "chain_id" field.
+func (bc *BlockCreate) SetChainID(u uint64) *BlockCreate {
+	bc.mutation.SetChainID(u)
 	return bc
 }
 
-// SetBlockHash sets the "BlockHash" field.
-func (bc *BlockCreate) SetBlockHash(b []byte) *BlockCreate {
-	bc.mutation.SetBlockHash(b)
+// SetHeight sets the "height" field.
+func (bc *BlockCreate) SetHeight(u uint64) *BlockCreate {
+	bc.mutation.SetHeight(u)
 	return bc
 }
 
-// SetTimestamp sets the "Timestamp" field.
+// SetOffset sets the "offset" field.
+func (bc *BlockCreate) SetOffset(u uint64) *BlockCreate {
+	bc.mutation.SetOffset(u)
+	return bc
+}
+
+// SetTimestamp sets the "timestamp" field.
 func (bc *BlockCreate) SetTimestamp(t time.Time) *BlockCreate {
 	bc.mutation.SetTimestamp(t)
 	return bc
 }
 
-// SetNillableTimestamp sets the "Timestamp" field if the given value is not nil.
+// SetNillableTimestamp sets the "timestamp" field if the given value is not nil.
 func (bc *BlockCreate) SetNillableTimestamp(t *time.Time) *BlockCreate {
 	if t != nil {
 		bc.SetTimestamp(*t)
@@ -54,13 +60,13 @@ func (bc *BlockCreate) SetNillableTimestamp(t *time.Time) *BlockCreate {
 	return bc
 }
 
-// SetCreatedAt sets the "CreatedAt" field.
+// SetCreatedAt sets the "created_at" field.
 func (bc *BlockCreate) SetCreatedAt(t time.Time) *BlockCreate {
 	bc.mutation.SetCreatedAt(t)
 	return bc
 }
 
-// SetNillableCreatedAt sets the "CreatedAt" field if the given value is not nil.
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
 func (bc *BlockCreate) SetNillableCreatedAt(t *time.Time) *BlockCreate {
 	if t != nil {
 		bc.SetCreatedAt(*t)
@@ -68,13 +74,13 @@ func (bc *BlockCreate) SetNillableCreatedAt(t *time.Time) *BlockCreate {
 	return bc
 }
 
-// AddMsgIDs adds the "Msgs" edge to the Msg entity by IDs.
+// AddMsgIDs adds the "msgs" edge to the Msg entity by IDs.
 func (bc *BlockCreate) AddMsgIDs(ids ...int) *BlockCreate {
 	bc.mutation.AddMsgIDs(ids...)
 	return bc
 }
 
-// AddMsgs adds the "Msgs" edges to the Msg entity.
+// AddMsgs adds the "msgs" edges to the Msg entity.
 func (bc *BlockCreate) AddMsgs(m ...*Msg) *BlockCreate {
 	ids := make([]int, len(m))
 	for i := range m {
@@ -83,13 +89,13 @@ func (bc *BlockCreate) AddMsgs(m ...*Msg) *BlockCreate {
 	return bc.AddMsgIDs(ids...)
 }
 
-// AddReceiptIDs adds the "Receipts" edge to the Receipt entity by IDs.
+// AddReceiptIDs adds the "receipts" edge to the Receipt entity by IDs.
 func (bc *BlockCreate) AddReceiptIDs(ids ...int) *BlockCreate {
 	bc.mutation.AddReceiptIDs(ids...)
 	return bc
 }
 
-// AddReceipts adds the "Receipts" edges to the Receipt entity.
+// AddReceipts adds the "receipts" edges to the Receipt entity.
 func (bc *BlockCreate) AddReceipts(r ...*Receipt) *BlockCreate {
 	ids := make([]int, len(r))
 	for i := range r {
@@ -145,25 +151,28 @@ func (bc *BlockCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (bc *BlockCreate) check() error {
-	if _, ok := bc.mutation.SourceChainID(); !ok {
-		return &ValidationError{Name: "SourceChainID", err: errors.New(`ent: missing required field "Block.SourceChainID"`)}
+	if _, ok := bc.mutation.Hash(); !ok {
+		return &ValidationError{Name: "hash", err: errors.New(`ent: missing required field "Block.hash"`)}
 	}
-	if _, ok := bc.mutation.BlockHeight(); !ok {
-		return &ValidationError{Name: "BlockHeight", err: errors.New(`ent: missing required field "Block.BlockHeight"`)}
-	}
-	if _, ok := bc.mutation.BlockHash(); !ok {
-		return &ValidationError{Name: "BlockHash", err: errors.New(`ent: missing required field "Block.BlockHash"`)}
-	}
-	if v, ok := bc.mutation.BlockHash(); ok {
-		if err := block.BlockHashValidator(v); err != nil {
-			return &ValidationError{Name: "BlockHash", err: fmt.Errorf(`ent: validator failed for field "Block.BlockHash": %w`, err)}
+	if v, ok := bc.mutation.Hash(); ok {
+		if err := block.HashValidator(v); err != nil {
+			return &ValidationError{Name: "hash", err: fmt.Errorf(`ent: validator failed for field "Block.hash": %w`, err)}
 		}
 	}
+	if _, ok := bc.mutation.ChainID(); !ok {
+		return &ValidationError{Name: "chain_id", err: errors.New(`ent: missing required field "Block.chain_id"`)}
+	}
+	if _, ok := bc.mutation.Height(); !ok {
+		return &ValidationError{Name: "height", err: errors.New(`ent: missing required field "Block.height"`)}
+	}
+	if _, ok := bc.mutation.Offset(); !ok {
+		return &ValidationError{Name: "offset", err: errors.New(`ent: missing required field "Block.offset"`)}
+	}
 	if _, ok := bc.mutation.Timestamp(); !ok {
-		return &ValidationError{Name: "Timestamp", err: errors.New(`ent: missing required field "Block.Timestamp"`)}
+		return &ValidationError{Name: "timestamp", err: errors.New(`ent: missing required field "Block.timestamp"`)}
 	}
 	if _, ok := bc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "CreatedAt", err: errors.New(`ent: missing required field "Block.CreatedAt"`)}
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Block.created_at"`)}
 	}
 	return nil
 }
@@ -191,17 +200,21 @@ func (bc *BlockCreate) createSpec() (*Block, *sqlgraph.CreateSpec) {
 		_node = &Block{config: bc.config}
 		_spec = sqlgraph.NewCreateSpec(block.Table, sqlgraph.NewFieldSpec(block.FieldID, field.TypeInt))
 	)
-	if value, ok := bc.mutation.SourceChainID(); ok {
-		_spec.SetField(block.FieldSourceChainID, field.TypeUint64, value)
-		_node.SourceChainID = value
+	if value, ok := bc.mutation.Hash(); ok {
+		_spec.SetField(block.FieldHash, field.TypeBytes, value)
+		_node.Hash = value
 	}
-	if value, ok := bc.mutation.BlockHeight(); ok {
-		_spec.SetField(block.FieldBlockHeight, field.TypeUint64, value)
-		_node.BlockHeight = value
+	if value, ok := bc.mutation.ChainID(); ok {
+		_spec.SetField(block.FieldChainID, field.TypeUint64, value)
+		_node.ChainID = value
 	}
-	if value, ok := bc.mutation.BlockHash(); ok {
-		_spec.SetField(block.FieldBlockHash, field.TypeBytes, value)
-		_node.BlockHash = value
+	if value, ok := bc.mutation.Height(); ok {
+		_spec.SetField(block.FieldHeight, field.TypeUint64, value)
+		_node.Height = value
+	}
+	if value, ok := bc.mutation.Offset(); ok {
+		_spec.SetField(block.FieldOffset, field.TypeUint64, value)
+		_node.Offset = value
 	}
 	if value, ok := bc.mutation.Timestamp(); ok {
 		_spec.SetField(block.FieldTimestamp, field.TypeTime, value)
@@ -213,10 +226,10 @@ func (bc *BlockCreate) createSpec() (*Block, *sqlgraph.CreateSpec) {
 	}
 	if nodes := bc.mutation.MsgsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   block.MsgsTable,
-			Columns: []string{block.MsgsColumn},
+			Columns: block.MsgsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(msg.FieldID, field.TypeInt),
@@ -229,10 +242,10 @@ func (bc *BlockCreate) createSpec() (*Block, *sqlgraph.CreateSpec) {
 	}
 	if nodes := bc.mutation.ReceiptsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   block.ReceiptsTable,
-			Columns: []string{block.ReceiptsColumn},
+			Columns: block.ReceiptsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(receipt.FieldID, field.TypeInt),

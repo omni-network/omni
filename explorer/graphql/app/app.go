@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/omni-network/omni/explorer/db"
+	"github.com/omni-network/omni/explorer/db/ent"
 	"github.com/omni-network/omni/explorer/graphql/data"
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
@@ -22,24 +24,24 @@ func Run(ctx context.Context, cfg Config) error {
 
 	buildinfo.Instrument(ctx)
 
-	// // create ent client
-	// entCl, err := db.NewPostgressClient(cfg.ExplorerDBConn)
-	// if err != nil {
-	// 	return errors.Wrap(err, "create db client")
-	// }
+	// create ent client
+	entCl, err := db.NewPostgressClient(cfg.ExplorerDBConn)
+	if err != nil {
+		return errors.Wrap(err, "create db client")
+	}
 
-	// defer func(entCl *ent.Client) {
-	// 	err := entCl.Close()
-	// 	if err != nil {
-	// 		log.Error(ctx, "Failed to close ent client", err)
-	// 	}
-	// }(entCl)
+	defer func(entCl *ent.Client) {
+		err := entCl.Close()
+		if err != nil {
+			log.Error(ctx, "Failed to close ent client", err)
+		}
+	}(entCl)
 
-	// provider := data.Provider{EntClient: entCl}
+	p := data.NewProvider(ctx, entCl, cfg.Network)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", home)
-	mux.Handle("/query", GraphQL(data.Provider{}))
+	mux.Handle("/query", GraphQL(p))
 	handler := cors.Default().Handler(mux)
 
 	httpServer := &http.Server{
@@ -67,7 +69,7 @@ func Run(ctx context.Context, cfg Config) error {
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		err := httpServer.Shutdown(shutdownCtx) //nolint:contextcheck // Fresh context is used for shutdown.
+		err := httpServer.Shutdown(shutdownCtx)
 		if err != nil {
 			return errors.Wrap(err, "server shutdown")
 		}

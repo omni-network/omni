@@ -9,6 +9,7 @@ import (
 	"log"
 	"reflect"
 
+	"github.com/google/uuid"
 	"github.com/omni-network/omni/explorer/db/ent/migrate"
 
 	"entgo.io/ent"
@@ -345,7 +346,7 @@ func (c *BlockClient) GetX(ctx context.Context, id int) *Block {
 	return obj
 }
 
-// QueryMsgs queries the Msgs edge of a Block.
+// QueryMsgs queries the msgs edge of a Block.
 func (c *BlockClient) QueryMsgs(b *Block) *MsgQuery {
 	query := (&MsgClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
@@ -353,7 +354,7 @@ func (c *BlockClient) QueryMsgs(b *Block) *MsgQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(block.Table, block.FieldID, id),
 			sqlgraph.To(msg.Table, msg.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, block.MsgsTable, block.MsgsColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, block.MsgsTable, block.MsgsPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(b.driver.Dialect(), step)
 		return fromV, nil
@@ -361,7 +362,7 @@ func (c *BlockClient) QueryMsgs(b *Block) *MsgQuery {
 	return query
 }
 
-// QueryReceipts queries the Receipts edge of a Block.
+// QueryReceipts queries the receipts edge of a Block.
 func (c *BlockClient) QueryReceipts(b *Block) *ReceiptQuery {
 	query := (&ReceiptClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
@@ -369,7 +370,7 @@ func (c *BlockClient) QueryReceipts(b *Block) *ReceiptQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(block.Table, block.FieldID, id),
 			sqlgraph.To(receipt.Table, receipt.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, block.ReceiptsTable, block.ReceiptsColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, block.ReceiptsTable, block.ReceiptsPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(b.driver.Dialect(), step)
 		return fromV, nil
@@ -643,7 +644,7 @@ func (c *MsgClient) GetX(ctx context.Context, id int) *Msg {
 	return obj
 }
 
-// QueryBlock queries the Block edge of a Msg.
+// QueryBlock queries the block edge of a Msg.
 func (c *MsgClient) QueryBlock(m *Msg) *BlockQuery {
 	query := (&BlockClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
@@ -651,7 +652,7 @@ func (c *MsgClient) QueryBlock(m *Msg) *BlockQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(msg.Table, msg.FieldID, id),
 			sqlgraph.To(block.Table, block.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, msg.BlockTable, msg.BlockColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, msg.BlockTable, msg.BlockPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
 		return fromV, nil
@@ -659,7 +660,7 @@ func (c *MsgClient) QueryBlock(m *Msg) *BlockQuery {
 	return query
 }
 
-// QueryReceipts queries the Receipts edge of a Msg.
+// QueryReceipts queries the receipts edge of a Msg.
 func (c *MsgClient) QueryReceipts(m *Msg) *ReceiptQuery {
 	query := (&ReceiptClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
@@ -809,7 +810,7 @@ func (c *ReceiptClient) GetX(ctx context.Context, id int) *Receipt {
 	return obj
 }
 
-// QueryBlock queries the Block edge of a Receipt.
+// QueryBlock queries the block edge of a Receipt.
 func (c *ReceiptClient) QueryBlock(r *Receipt) *BlockQuery {
 	query := (&BlockClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
@@ -817,7 +818,7 @@ func (c *ReceiptClient) QueryBlock(r *Receipt) *BlockQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(receipt.Table, receipt.FieldID, id),
 			sqlgraph.To(block.Table, block.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, receipt.BlockTable, receipt.BlockColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, receipt.BlockTable, receipt.BlockPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
 		return fromV, nil
@@ -825,7 +826,7 @@ func (c *ReceiptClient) QueryBlock(r *Receipt) *BlockQuery {
 	return query
 }
 
-// QueryMsgs queries the Msgs edge of a Receipt.
+// QueryMsgs queries the msgs edge of a Receipt.
 func (c *ReceiptClient) QueryMsgs(r *Receipt) *MsgQuery {
 	query := (&MsgClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
@@ -928,7 +929,7 @@ func (c *XProviderCursorClient) UpdateOne(xc *XProviderCursor) *XProviderCursorU
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *XProviderCursorClient) UpdateOneID(id int) *XProviderCursorUpdateOne {
+func (c *XProviderCursorClient) UpdateOneID(id uuid.UUID) *XProviderCursorUpdateOne {
 	mutation := newXProviderCursorMutation(c.config, OpUpdateOne, withXProviderCursorID(id))
 	return &XProviderCursorUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -945,7 +946,7 @@ func (c *XProviderCursorClient) DeleteOne(xc *XProviderCursor) *XProviderCursorD
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *XProviderCursorClient) DeleteOneID(id int) *XProviderCursorDeleteOne {
+func (c *XProviderCursorClient) DeleteOneID(id uuid.UUID) *XProviderCursorDeleteOne {
 	builder := c.Delete().Where(xprovidercursor.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -962,12 +963,12 @@ func (c *XProviderCursorClient) Query() *XProviderCursorQuery {
 }
 
 // Get returns a XProviderCursor entity by its id.
-func (c *XProviderCursorClient) Get(ctx context.Context, id int) (*XProviderCursor, error) {
+func (c *XProviderCursorClient) Get(ctx context.Context, id uuid.UUID) (*XProviderCursor, error) {
 	return c.Query().Where(xprovidercursor.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *XProviderCursorClient) GetX(ctx context.Context, id int) *XProviderCursor {
+func (c *XProviderCursorClient) GetX(ctx context.Context, id uuid.UUID) *XProviderCursor {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)

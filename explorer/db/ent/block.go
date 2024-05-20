@@ -17,16 +17,18 @@ type Block struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
-	// SourceChainID holds the value of the "SourceChainID" field.
-	SourceChainID uint64 `json:"SourceChainID,omitempty"`
-	// BlockHeight holds the value of the "BlockHeight" field.
-	BlockHeight uint64 `json:"BlockHeight,omitempty"`
-	// BlockHash holds the value of the "BlockHash" field.
-	BlockHash []byte `json:"BlockHash,omitempty"`
-	// Timestamp holds the value of the "Timestamp" field.
-	Timestamp time.Time `json:"Timestamp,omitempty"`
-	// CreatedAt holds the value of the "CreatedAt" field.
-	CreatedAt time.Time `json:"CreatedAt,omitempty"`
+	// Hash holds the value of the "hash" field.
+	Hash []byte `json:"hash,omitempty"`
+	// ChainID holds the value of the "chain_id" field.
+	ChainID uint64 `json:"chain_id,omitempty"`
+	// Height holds the value of the "height" field.
+	Height uint64 `json:"height,omitempty"`
+	// Offset holds the value of the "offset" field.
+	Offset uint64 `json:"offset,omitempty"`
+	// Timestamp holds the value of the "timestamp" field.
+	Timestamp time.Time `json:"timestamp,omitempty"`
+	// CreatedAt holds the value of the "created_at" field.
+	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the BlockQuery when eager-loading is set.
 	Edges        BlockEdges `json:"edges"`
@@ -35,10 +37,10 @@ type Block struct {
 
 // BlockEdges holds the relations/edges for other nodes in the graph.
 type BlockEdges struct {
-	// Msgs holds the value of the Msgs edge.
-	Msgs []*Msg `json:"Msgs,omitempty"`
-	// Receipts holds the value of the Receipts edge.
-	Receipts []*Receipt `json:"Receipts,omitempty"`
+	// Msgs holds the value of the msgs edge.
+	Msgs []*Msg `json:"msgs,omitempty"`
+	// Receipts holds the value of the receipts edge.
+	Receipts []*Receipt `json:"receipts,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
@@ -50,7 +52,7 @@ func (e BlockEdges) MsgsOrErr() ([]*Msg, error) {
 	if e.loadedTypes[0] {
 		return e.Msgs, nil
 	}
-	return nil, &NotLoadedError{edge: "Msgs"}
+	return nil, &NotLoadedError{edge: "msgs"}
 }
 
 // ReceiptsOrErr returns the Receipts value or an error if the edge
@@ -59,7 +61,7 @@ func (e BlockEdges) ReceiptsOrErr() ([]*Receipt, error) {
 	if e.loadedTypes[1] {
 		return e.Receipts, nil
 	}
-	return nil, &NotLoadedError{edge: "Receipts"}
+	return nil, &NotLoadedError{edge: "receipts"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -67,9 +69,9 @@ func (*Block) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case block.FieldBlockHash:
+		case block.FieldHash:
 			values[i] = new([]byte)
-		case block.FieldID, block.FieldSourceChainID, block.FieldBlockHeight:
+		case block.FieldID, block.FieldChainID, block.FieldHeight, block.FieldOffset:
 			values[i] = new(sql.NullInt64)
 		case block.FieldTimestamp, block.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -94,33 +96,39 @@ func (b *Block) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			b.ID = int(value.Int64)
-		case block.FieldSourceChainID:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field SourceChainID", values[i])
-			} else if value.Valid {
-				b.SourceChainID = uint64(value.Int64)
-			}
-		case block.FieldBlockHeight:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field BlockHeight", values[i])
-			} else if value.Valid {
-				b.BlockHeight = uint64(value.Int64)
-			}
-		case block.FieldBlockHash:
+		case block.FieldHash:
 			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field BlockHash", values[i])
+				return fmt.Errorf("unexpected type %T for field hash", values[i])
 			} else if value != nil {
-				b.BlockHash = *value
+				b.Hash = *value
+			}
+		case block.FieldChainID:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field chain_id", values[i])
+			} else if value.Valid {
+				b.ChainID = uint64(value.Int64)
+			}
+		case block.FieldHeight:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field height", values[i])
+			} else if value.Valid {
+				b.Height = uint64(value.Int64)
+			}
+		case block.FieldOffset:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field offset", values[i])
+			} else if value.Valid {
+				b.Offset = uint64(value.Int64)
 			}
 		case block.FieldTimestamp:
 			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field Timestamp", values[i])
+				return fmt.Errorf("unexpected type %T for field timestamp", values[i])
 			} else if value.Valid {
 				b.Timestamp = value.Time
 			}
 		case block.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field CreatedAt", values[i])
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
 				b.CreatedAt = value.Time
 			}
@@ -137,12 +145,12 @@ func (b *Block) Value(name string) (ent.Value, error) {
 	return b.selectValues.Get(name)
 }
 
-// QueryMsgs queries the "Msgs" edge of the Block entity.
+// QueryMsgs queries the "msgs" edge of the Block entity.
 func (b *Block) QueryMsgs() *MsgQuery {
 	return NewBlockClient(b.config).QueryMsgs(b)
 }
 
-// QueryReceipts queries the "Receipts" edge of the Block entity.
+// QueryReceipts queries the "receipts" edge of the Block entity.
 func (b *Block) QueryReceipts() *ReceiptQuery {
 	return NewBlockClient(b.config).QueryReceipts(b)
 }
@@ -170,19 +178,22 @@ func (b *Block) String() string {
 	var builder strings.Builder
 	builder.WriteString("Block(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", b.ID))
-	builder.WriteString("SourceChainID=")
-	builder.WriteString(fmt.Sprintf("%v", b.SourceChainID))
+	builder.WriteString("hash=")
+	builder.WriteString(fmt.Sprintf("%v", b.Hash))
 	builder.WriteString(", ")
-	builder.WriteString("BlockHeight=")
-	builder.WriteString(fmt.Sprintf("%v", b.BlockHeight))
+	builder.WriteString("chain_id=")
+	builder.WriteString(fmt.Sprintf("%v", b.ChainID))
 	builder.WriteString(", ")
-	builder.WriteString("BlockHash=")
-	builder.WriteString(fmt.Sprintf("%v", b.BlockHash))
+	builder.WriteString("height=")
+	builder.WriteString(fmt.Sprintf("%v", b.Height))
 	builder.WriteString(", ")
-	builder.WriteString("Timestamp=")
+	builder.WriteString("offset=")
+	builder.WriteString(fmt.Sprintf("%v", b.Offset))
+	builder.WriteString(", ")
+	builder.WriteString("timestamp=")
 	builder.WriteString(b.Timestamp.Format(time.ANSIC))
 	builder.WriteString(", ")
-	builder.WriteString("CreatedAt=")
+	builder.WriteString("created_at=")
 	builder.WriteString(b.CreatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()

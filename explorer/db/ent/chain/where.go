@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 	"github.com/omni-network/omni/explorer/db/ent/predicate"
 )
 
@@ -55,207 +54,162 @@ func IDLTE(id int) predicate.Chain {
 	return predicate.Chain(sql.FieldLTE(FieldID, id))
 }
 
-// UUID applies equality check predicate on the "UUID" field. It's identical to UUIDEQ.
-func UUID(v uuid.UUID) predicate.Chain {
-	return predicate.Chain(sql.FieldEQ(FieldUUID, v))
-}
-
-// CreatedAt applies equality check predicate on the "CreatedAt" field. It's identical to CreatedAtEQ.
-func CreatedAt(v time.Time) predicate.Chain {
-	return predicate.Chain(sql.FieldEQ(FieldCreatedAt, v))
-}
-
-// ChainID applies equality check predicate on the "ChainID" field. It's identical to ChainIDEQ.
+// ChainID applies equality check predicate on the "chain_id" field. It's identical to ChainIDEQ.
 func ChainID(v uint64) predicate.Chain {
 	return predicate.Chain(sql.FieldEQ(FieldChainID, v))
 }
 
-// Name applies equality check predicate on the "Name" field. It's identical to NameEQ.
+// CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
+func CreatedAt(v time.Time) predicate.Chain {
+	return predicate.Chain(sql.FieldEQ(FieldCreatedAt, v))
+}
+
+// Name applies equality check predicate on the "name" field. It's identical to NameEQ.
 func Name(v string) predicate.Chain {
 	return predicate.Chain(sql.FieldEQ(FieldName, v))
 }
 
-// UUIDEQ applies the EQ predicate on the "UUID" field.
-func UUIDEQ(v uuid.UUID) predicate.Chain {
-	return predicate.Chain(sql.FieldEQ(FieldUUID, v))
-}
-
-// UUIDNEQ applies the NEQ predicate on the "UUID" field.
-func UUIDNEQ(v uuid.UUID) predicate.Chain {
-	return predicate.Chain(sql.FieldNEQ(FieldUUID, v))
-}
-
-// UUIDIn applies the In predicate on the "UUID" field.
-func UUIDIn(vs ...uuid.UUID) predicate.Chain {
-	return predicate.Chain(sql.FieldIn(FieldUUID, vs...))
-}
-
-// UUIDNotIn applies the NotIn predicate on the "UUID" field.
-func UUIDNotIn(vs ...uuid.UUID) predicate.Chain {
-	return predicate.Chain(sql.FieldNotIn(FieldUUID, vs...))
-}
-
-// UUIDGT applies the GT predicate on the "UUID" field.
-func UUIDGT(v uuid.UUID) predicate.Chain {
-	return predicate.Chain(sql.FieldGT(FieldUUID, v))
-}
-
-// UUIDGTE applies the GTE predicate on the "UUID" field.
-func UUIDGTE(v uuid.UUID) predicate.Chain {
-	return predicate.Chain(sql.FieldGTE(FieldUUID, v))
-}
-
-// UUIDLT applies the LT predicate on the "UUID" field.
-func UUIDLT(v uuid.UUID) predicate.Chain {
-	return predicate.Chain(sql.FieldLT(FieldUUID, v))
-}
-
-// UUIDLTE applies the LTE predicate on the "UUID" field.
-func UUIDLTE(v uuid.UUID) predicate.Chain {
-	return predicate.Chain(sql.FieldLTE(FieldUUID, v))
-}
-
-// CreatedAtEQ applies the EQ predicate on the "CreatedAt" field.
-func CreatedAtEQ(v time.Time) predicate.Chain {
-	return predicate.Chain(sql.FieldEQ(FieldCreatedAt, v))
-}
-
-// CreatedAtNEQ applies the NEQ predicate on the "CreatedAt" field.
-func CreatedAtNEQ(v time.Time) predicate.Chain {
-	return predicate.Chain(sql.FieldNEQ(FieldCreatedAt, v))
-}
-
-// CreatedAtIn applies the In predicate on the "CreatedAt" field.
-func CreatedAtIn(vs ...time.Time) predicate.Chain {
-	return predicate.Chain(sql.FieldIn(FieldCreatedAt, vs...))
-}
-
-// CreatedAtNotIn applies the NotIn predicate on the "CreatedAt" field.
-func CreatedAtNotIn(vs ...time.Time) predicate.Chain {
-	return predicate.Chain(sql.FieldNotIn(FieldCreatedAt, vs...))
-}
-
-// CreatedAtGT applies the GT predicate on the "CreatedAt" field.
-func CreatedAtGT(v time.Time) predicate.Chain {
-	return predicate.Chain(sql.FieldGT(FieldCreatedAt, v))
-}
-
-// CreatedAtGTE applies the GTE predicate on the "CreatedAt" field.
-func CreatedAtGTE(v time.Time) predicate.Chain {
-	return predicate.Chain(sql.FieldGTE(FieldCreatedAt, v))
-}
-
-// CreatedAtLT applies the LT predicate on the "CreatedAt" field.
-func CreatedAtLT(v time.Time) predicate.Chain {
-	return predicate.Chain(sql.FieldLT(FieldCreatedAt, v))
-}
-
-// CreatedAtLTE applies the LTE predicate on the "CreatedAt" field.
-func CreatedAtLTE(v time.Time) predicate.Chain {
-	return predicate.Chain(sql.FieldLTE(FieldCreatedAt, v))
-}
-
-// ChainIDEQ applies the EQ predicate on the "ChainID" field.
+// ChainIDEQ applies the EQ predicate on the "chain_id" field.
 func ChainIDEQ(v uint64) predicate.Chain {
 	return predicate.Chain(sql.FieldEQ(FieldChainID, v))
 }
 
-// ChainIDNEQ applies the NEQ predicate on the "ChainID" field.
+// ChainIDNEQ applies the NEQ predicate on the "chain_id" field.
 func ChainIDNEQ(v uint64) predicate.Chain {
 	return predicate.Chain(sql.FieldNEQ(FieldChainID, v))
 }
 
-// ChainIDIn applies the In predicate on the "ChainID" field.
+// ChainIDIn applies the In predicate on the "chain_id" field.
 func ChainIDIn(vs ...uint64) predicate.Chain {
 	return predicate.Chain(sql.FieldIn(FieldChainID, vs...))
 }
 
-// ChainIDNotIn applies the NotIn predicate on the "ChainID" field.
+// ChainIDNotIn applies the NotIn predicate on the "chain_id" field.
 func ChainIDNotIn(vs ...uint64) predicate.Chain {
 	return predicate.Chain(sql.FieldNotIn(FieldChainID, vs...))
 }
 
-// ChainIDGT applies the GT predicate on the "ChainID" field.
+// ChainIDGT applies the GT predicate on the "chain_id" field.
 func ChainIDGT(v uint64) predicate.Chain {
 	return predicate.Chain(sql.FieldGT(FieldChainID, v))
 }
 
-// ChainIDGTE applies the GTE predicate on the "ChainID" field.
+// ChainIDGTE applies the GTE predicate on the "chain_id" field.
 func ChainIDGTE(v uint64) predicate.Chain {
 	return predicate.Chain(sql.FieldGTE(FieldChainID, v))
 }
 
-// ChainIDLT applies the LT predicate on the "ChainID" field.
+// ChainIDLT applies the LT predicate on the "chain_id" field.
 func ChainIDLT(v uint64) predicate.Chain {
 	return predicate.Chain(sql.FieldLT(FieldChainID, v))
 }
 
-// ChainIDLTE applies the LTE predicate on the "ChainID" field.
+// ChainIDLTE applies the LTE predicate on the "chain_id" field.
 func ChainIDLTE(v uint64) predicate.Chain {
 	return predicate.Chain(sql.FieldLTE(FieldChainID, v))
 }
 
-// NameEQ applies the EQ predicate on the "Name" field.
+// CreatedAtEQ applies the EQ predicate on the "created_at" field.
+func CreatedAtEQ(v time.Time) predicate.Chain {
+	return predicate.Chain(sql.FieldEQ(FieldCreatedAt, v))
+}
+
+// CreatedAtNEQ applies the NEQ predicate on the "created_at" field.
+func CreatedAtNEQ(v time.Time) predicate.Chain {
+	return predicate.Chain(sql.FieldNEQ(FieldCreatedAt, v))
+}
+
+// CreatedAtIn applies the In predicate on the "created_at" field.
+func CreatedAtIn(vs ...time.Time) predicate.Chain {
+	return predicate.Chain(sql.FieldIn(FieldCreatedAt, vs...))
+}
+
+// CreatedAtNotIn applies the NotIn predicate on the "created_at" field.
+func CreatedAtNotIn(vs ...time.Time) predicate.Chain {
+	return predicate.Chain(sql.FieldNotIn(FieldCreatedAt, vs...))
+}
+
+// CreatedAtGT applies the GT predicate on the "created_at" field.
+func CreatedAtGT(v time.Time) predicate.Chain {
+	return predicate.Chain(sql.FieldGT(FieldCreatedAt, v))
+}
+
+// CreatedAtGTE applies the GTE predicate on the "created_at" field.
+func CreatedAtGTE(v time.Time) predicate.Chain {
+	return predicate.Chain(sql.FieldGTE(FieldCreatedAt, v))
+}
+
+// CreatedAtLT applies the LT predicate on the "created_at" field.
+func CreatedAtLT(v time.Time) predicate.Chain {
+	return predicate.Chain(sql.FieldLT(FieldCreatedAt, v))
+}
+
+// CreatedAtLTE applies the LTE predicate on the "created_at" field.
+func CreatedAtLTE(v time.Time) predicate.Chain {
+	return predicate.Chain(sql.FieldLTE(FieldCreatedAt, v))
+}
+
+// NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.Chain {
 	return predicate.Chain(sql.FieldEQ(FieldName, v))
 }
 
-// NameNEQ applies the NEQ predicate on the "Name" field.
+// NameNEQ applies the NEQ predicate on the "name" field.
 func NameNEQ(v string) predicate.Chain {
 	return predicate.Chain(sql.FieldNEQ(FieldName, v))
 }
 
-// NameIn applies the In predicate on the "Name" field.
+// NameIn applies the In predicate on the "name" field.
 func NameIn(vs ...string) predicate.Chain {
 	return predicate.Chain(sql.FieldIn(FieldName, vs...))
 }
 
-// NameNotIn applies the NotIn predicate on the "Name" field.
+// NameNotIn applies the NotIn predicate on the "name" field.
 func NameNotIn(vs ...string) predicate.Chain {
 	return predicate.Chain(sql.FieldNotIn(FieldName, vs...))
 }
 
-// NameGT applies the GT predicate on the "Name" field.
+// NameGT applies the GT predicate on the "name" field.
 func NameGT(v string) predicate.Chain {
 	return predicate.Chain(sql.FieldGT(FieldName, v))
 }
 
-// NameGTE applies the GTE predicate on the "Name" field.
+// NameGTE applies the GTE predicate on the "name" field.
 func NameGTE(v string) predicate.Chain {
 	return predicate.Chain(sql.FieldGTE(FieldName, v))
 }
 
-// NameLT applies the LT predicate on the "Name" field.
+// NameLT applies the LT predicate on the "name" field.
 func NameLT(v string) predicate.Chain {
 	return predicate.Chain(sql.FieldLT(FieldName, v))
 }
 
-// NameLTE applies the LTE predicate on the "Name" field.
+// NameLTE applies the LTE predicate on the "name" field.
 func NameLTE(v string) predicate.Chain {
 	return predicate.Chain(sql.FieldLTE(FieldName, v))
 }
 
-// NameContains applies the Contains predicate on the "Name" field.
+// NameContains applies the Contains predicate on the "name" field.
 func NameContains(v string) predicate.Chain {
 	return predicate.Chain(sql.FieldContains(FieldName, v))
 }
 
-// NameHasPrefix applies the HasPrefix predicate on the "Name" field.
+// NameHasPrefix applies the HasPrefix predicate on the "name" field.
 func NameHasPrefix(v string) predicate.Chain {
 	return predicate.Chain(sql.FieldHasPrefix(FieldName, v))
 }
 
-// NameHasSuffix applies the HasSuffix predicate on the "Name" field.
+// NameHasSuffix applies the HasSuffix predicate on the "name" field.
 func NameHasSuffix(v string) predicate.Chain {
 	return predicate.Chain(sql.FieldHasSuffix(FieldName, v))
 }
 
-// NameEqualFold applies the EqualFold predicate on the "Name" field.
+// NameEqualFold applies the EqualFold predicate on the "name" field.
 func NameEqualFold(v string) predicate.Chain {
 	return predicate.Chain(sql.FieldEqualFold(FieldName, v))
 }
 
-// NameContainsFold applies the ContainsFold predicate on the "Name" field.
+// NameContainsFold applies the ContainsFold predicate on the "name" field.
 func NameContainsFold(v string) predicate.Chain {
 	return predicate.Chain(sql.FieldContainsFold(FieldName, v))
 }

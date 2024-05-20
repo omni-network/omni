@@ -13,7 +13,6 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
-	"github.com/google/uuid"
 )
 
 // Receipt holds the schema definition for the Receipt entity.
@@ -24,39 +23,31 @@ type Receipt struct {
 // Fields of the Receipt.
 func (Receipt) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("UUID", uuid.UUID{}).
-			Default(uuid.New),
-		field.Int("Block_ID").Optional(),
-		field.Uint64("GasUsed"),
-		field.Bool("Success"),
-		field.Bytes("RelayerAddress").
-			MaxLen(20),
-		field.Uint64("SourceChainID"),
-		field.Uint64("DestChainID"),
-		field.Uint64("StreamOffset"),
-		field.Bytes("TxHash").
-			MaxLen(32),
-		field.Time("CreatedAt").
-			Default(time.Now()),
+		field.Bytes("block_hash").MaxLen(32),
+		field.Uint64("gas_used"),
+		field.Bool("success"),
+		field.Bytes("relayer_address").MaxLen(20),
+		field.Uint64("source_chain_id"),
+		field.Uint64("dest_chain_id"),
+		field.Uint64("offset"),
+		field.Bytes("tx_hash").MaxLen(32),
+		field.Time("created_at").Default(time.Now()),
 	}
 }
 
 // Edges of the Receipt.
 func (Receipt) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("Block", Block.Type).
-			Ref("Receipts").
-			Field("Block_ID").
-			Unique(),
-		edge.From("Msgs", Msg.Type).
-			Ref("Receipts"),
+		edge.From("block", Block.Type).Ref("receipts"),
+		edge.From("msgs", Msg.Type).Ref("receipts"),
 	}
 }
 
 // Indexes of the Receipt.
 func (Receipt) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("SourceChainID", "DestChainID", "StreamOffset", "Block_ID"),
+		index.Fields("tx_hash"),
+		index.Fields("source_chain_id", "dest_chain_id", "offset"),
 	}
 }
 
@@ -78,14 +69,14 @@ func (Receipt) Hooks() []ent.Hook {
 						return nil, errors.New("dest chain id missing")
 					}
 
-					streamOffset, ok := r.StreamOffset()
+					offset, ok := r.Offset()
 					if !ok {
 						return nil, errors.New("stream offset missing")
 					}
 					matches, err := r.Client().Msg.Query().Where(
 						msg.SourceChainID(sourceChainID),
 						msg.DestChainID(destChainID),
-						msg.StreamOffset(streamOffset),
+						msg.Offset(offset),
 					).All(ctx)
 					if err != nil {
 						return nil, err
@@ -98,7 +89,7 @@ func (Receipt) Hooks() []ent.Hook {
 					}
 
 					if !success {
-						status = "FAILURE"
+						status = "FAILED"
 					}
 
 					txHash, ok := r.TxHash()
