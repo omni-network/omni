@@ -164,8 +164,6 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 		}
 	}()
 
-	app.SetVoter(voter)
-
 	log.Info(ctx, "Starting CometBFT", "listeners", cmtNode.Listeners())
 
 	if err := cmtNode.Start(); err != nil {

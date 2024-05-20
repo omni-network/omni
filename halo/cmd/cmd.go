@@ -62,22 +62,20 @@ func newRunCmd(name string, runFunc func(context.Context, app.Config) error) *co
 
 func newRollbackCmd() *cobra.Command {
 	logCfg := log.DefaultConfig()
-	cfg := app.RollbackConfig{
-		Config: app.Config{
-			Config: halocfg.DefaultConfig(),
-		},
-	}
+	haloCfg := halocfg.DefaultConfig()
+	rollCfg := app.DefaultRollbackConfig()
 
 	cmd := &cobra.Command{
 		Use:   "rollback",
-		Short: "rollback Cosmos SDK, and CometBFT, and optionally the Omni EVM, state by one height",
+		Short: "Rollback Cosmos SDK and CometBFT state by one height",
 		Long: `
 A state rollback is performed to recover from an incorrect application state transition,
 when CometBFT has persisted an incorrect app hash and is thus unable to make
 progress. Rollback overwrites a state at height n with the state at height n - 1.
-The application also rolls back to height n - 1. If no blocks are removed, so upon
-restarting CometBFT the transactions in block n will be re-executed against the
-application.
+The application also rolls back to height n - 1. Upon restarting the transactions
+in block n will be re-executed against the application. If --hard=true, the block
+itself will also be deleted and re-downloaded from the p2p network. Note that a
+different block N cannot be re-built/re-proposed since that would result in validator slashing.
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, err := log.Init(cmd.Context(), logCfg)
@@ -88,17 +86,22 @@ application.
 				return err
 			}
 
-			cfg.Comet, err = parseCometConfig(ctx, cfg.HomeDir)
+			cmtCfg, err := parseCometConfig(ctx, haloCfg.HomeDir)
 			if err != nil {
 				return err
 			}
 
-			return app.Rollback(ctx, cfg)
+			appCfg := app.Config{
+				Config: haloCfg,
+				Comet:  cmtCfg,
+			}
+
+			return app.Rollback(ctx, appCfg, rollCfg)
 		},
 	}
 
-	bindRunFlags(cmd, &cfg.Config.Config)
-	bindRollbackFlags(cmd.Flags(), &cfg)
+	bindRunFlags(cmd, &haloCfg)
+	bindRollbackFlags(cmd.Flags(), &rollCfg)
 	log.BindFlags(cmd.Flags(), &logCfg)
 
 	return cmd

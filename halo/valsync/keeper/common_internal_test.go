@@ -46,9 +46,8 @@ func setupKeeper(t *testing.T, expectations ...expectation) (*Keeper, sdk.Contex
 		exp(ctx, m)
 	}
 
-	k, err := NewKeeper(codec, storeSvc, m.sKeeper, m.aKeeper)
+	k, err := NewKeeper(codec, storeSvc, m.sKeeper, m.aKeeper, m.subscriber)
 	require.NoError(t, err, "new keeper")
-	k.SetSubscriber(m.subscriber)
 
 	return k, ctx
 }

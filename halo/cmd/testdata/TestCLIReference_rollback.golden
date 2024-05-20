@@ -1,0 +1,33 @@
+
+A state rollback is performed to recover from an incorrect application state transition,
+when CometBFT has persisted an incorrect app hash and is thus unable to make
+progress. Rollback overwrites a state at height n with the state at height n - 1.
+The application also rolls back to height n - 1. Upon restarting the transactions
+in block n will be re-executed against the application. If --hard=true, the block
+itself will also be deleted and re-downloaded from the p2p network. Note that a
+different block N cannot be re-built/re-proposed since that would result in validator slashing.
+
+Usage:
+  halo rollback [flags]
+
+Flags:
+      --app-db-backend string                     The type of database for application and snapshots databases (default "goleveldb")
+      --eigenlayer-key-password string            Eigenlayer generated operator key password. Not required if CombetBFT priv_validator_key.json is used
+      --engine-endpoint string                    An EVM execution client Engine API http endpoint
+      --engine-jwt-file string                    The path to the Engine API JWT file
+      --evm-build-delay duration                  Minimum delay between triggering and fetching a EVM payload build (default 600ms)
+      --evm-build-optimistic                      Enables optimistic building of EVM payloads on previous block finalize (default true)
+      --hard                                      Remove last block as well as state
+  -h, --help                                      help for rollback
+      --home string                               The application home directory containing config and data (default "./halo")
+      --log-color string                          Log color (only applicable to console format); auto, force, disable (default "auto")
+      --log-format string                         Log format; console, json (default "console")
+      --log-level string                          Log level; debug, info, warn, error (default "info")
+      --min-retain-blocks uint                    Minimum block height offset during ABCI commit to prune CometBFT blocks
+      --network string                            Omni network to participate in: mainnet, testnet, devnet
+      --pruning string                            Pruning strategy (default|nothing|everything) (default "nothing")
+      --snapshot-interval uint                    State sync snapshot interval (default 1000)
+      --snapshot-keep-recent uint                 State sync snapshot to keep (default 2)
+      --tracing-endpoint string                   Tracing OTLP endpoint
+      --tracing-headers string                    Tracing OTLP headers
+      --xchain-evm-rpc-endpoints stringToString   Cross-chain EVM RPC endpoints. e.g. "ethereum=http://geth:8545,optimism=https://optimism.io" (default [])

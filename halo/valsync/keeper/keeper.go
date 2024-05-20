@@ -40,6 +40,7 @@ func NewKeeper(
 	storeService store.KVStoreService,
 	sKeeper types.StakingKeeper,
 	aKeeper types.AttestKeeper,
+	subscriber types.ValSetSubscriber,
 ) (*Keeper, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
 		{Id: 1, ProtoFileName: File_halo_valsync_keeper_valset_proto.Path()},
@@ -62,11 +63,8 @@ func NewKeeper(
 		valTable:     valsetStore.ValidatorTable(),
 		sKeeper:      sKeeper,
 		aKeeper:      aKeeper,
+		subscriber:   subscriber,
 	}, nil
-}
-
-func (k *Keeper) SetSubscriber(subscriber types.ValSetSubscriber) {
-	k.subscriber = subscriber
 }
 
 // EndBlock has two responsibilities:
@@ -195,7 +193,7 @@ func (k *Keeper) insertValidatorSet(ctx context.Context, vals []*Validator, isGe
 }
 
 func (k *Keeper) maybeInitSubscriber(ctx context.Context) error {
-	if k.subscriber == nil || k.subscriberInitted {
+	if k.subscriberInitted {
 		return nil
 	}
 
@@ -266,7 +264,9 @@ func (k *Keeper) processAttested(ctx context.Context) ([]abci.ValidatorUpdate, e
 		updates = append(updates, val.ValidatorUpdate())
 	}
 
-	k.subscriber.UpdateValidators(updates)
+	if k.subscriberInitted {
+		k.subscriber.UpdateValidators(updates)
+	}
 
 	log.Info(ctx, "💫 Activating attested validator set",
 		"valset_id", valset.GetId(),
