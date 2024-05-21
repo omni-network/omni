@@ -25,7 +25,7 @@ func bindAVSAddress(cmd *cobra.Command, addr *string) {
 }
 
 func bindDeveloperForgeProjectConfig(cmd *cobra.Command, cfg *developerForgeProjectConfig) {
-	cmd.Flags().StringVar(&cfg.templateName, "template", "hello-world", "Name of the forge template to use")
+	cmd.Flags().StringVar(&cfg.templateURL, "template", "https://github.com/omni-network/hello-world-template.git", "URL of the forge template to use")
 }
 
 func bindDevnetAVSAllowConfig(cmd *cobra.Command, cfg *devnetAllowConfig) {
