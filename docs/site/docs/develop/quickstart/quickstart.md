@@ -95,15 +95,15 @@ You can obtain the XGreeter deployment addresses from the output of the previous
 Because the devnet has just been started, the addresses will be the same as the ones shown below:
 
 ```bash
-omni_evm: 0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82
-mock_op: 0xa513E6E4b8f2a923D98304ec87F64353C4D5C853
-mock_arb: 0xa513E6E4b8f2a923D98304ec87F64353C4D5C853
+omni_evm: 0x8464135c8F25Da09e49BC8782676a84730C318bC
+mock_op: 0x8464135c8F25Da09e49BC8782676a84730C318bC
+mock_arb: 0x8464135c8F25Da09e49BC8782676a84730C318bC
 ```
 
 </details>
 
 ```bash
-cast send 0xa513E6E4b8f2a923D98304ec87F64353C4D5C853 'greet(string)' 'Yay in 5 minutes!' --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --rpc-url http://localhost:8001 --value 1ether
+cast send 0xa513E6E4b8f2a923D98304ec87F64353C4D5C853 'greet(string)' 'Yay in 3 minutes!' --private-key 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d --rpc-url http://localhost:8001 --value 1ether
 ```
 
 ### Step 6: Check the Greet
