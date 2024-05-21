@@ -103,7 +103,7 @@ mock_arb: 0x8464135c8F25Da09e49BC8782676a84730C318bC
 </details>
 
 ```bash
-cast send 0xa513E6E4b8f2a923D98304ec87F64353C4D5C853 'greet(string)' 'Yay in 3 minutes!' --private-key 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d --rpc-url http://localhost:8001 --value 1ether
+cast send 0x8464135c8F25Da09e49BC8782676a84730C318bC 'greet(string)' 'Yay in 3 minutes!' --private-key 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d --rpc-url http://localhost:8001 --value 1ether
 ```
 
 ### Step 6: Check the Greet
@@ -111,7 +111,7 @@ cast send 0xa513E6E4b8f2a923D98304ec87F64353C4D5C853 'greet(string)' 'Yay in 3 m
 You can check the greet has been saved on the Omni EVM global state by running the following command:
 
 ```bash
-cast call 0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82 "lastGreet():(uint64,uint256,uint256,address,address,string)" --rpc-url http://localhost:8000
+cast call 0x8464135c8F25Da09e49BC8782676a84730C318bC "lastGreet():(uint64,uint256,uint256,address,address,string)" --rpc-url http://localhost:8000
 ```
 
 ### 🎉 Done 🎉
