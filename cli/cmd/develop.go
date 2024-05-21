@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"os/exec"
 
@@ -25,6 +26,8 @@ func newDeveloperCmds() *cobra.Command {
 }
 
 func newForgeProjectCmd() *cobra.Command {
+	var cfg developerForgeProjectConfig
+
 	cmd := &cobra.Command{
 		Use:   "new",
 		Short: "Scaffold a Forge project",
@@ -32,15 +35,21 @@ func newForgeProjectCmd() *cobra.Command {
 accompanied by simple mocked testing and a multi-chain deployment script.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return newForgeProjectTemplate()
+			return newForgeProjectTemplate(cmd.Context(), cfg)
 		},
 	}
+
+	bindDeveloperForgeProjectConfig(cmd, &cfg)
 
 	return cmd
 }
 
+type developerForgeProjectConfig struct {
+	templateName string
+}
+
 // newForgeProjectTemplate creates a new project using the forge template.
-func newForgeProjectTemplate() error {
+func newForgeProjectTemplate(_ context.Context, cfg developerForgeProjectConfig) error {
 	// Check if forge is installed
 	if !checkForgeInstalled() {
 		// Forge is not installed, return an error with a suggestion.
@@ -50,8 +59,24 @@ func newForgeProjectTemplate() error {
 		}
 	}
 
+	// Map the template name to the forge template URL.
+	templateURLs := map[string]string{
+		"hello-world": "https://github.com/omni-network/hello-world-template.git",
+		"xgreeter":    "https://github.com/omni-network/omni-forge-template.git",
+	}
+
+	// Check if the template name is valid.
+	templateURL, ok := templateURLs[cfg.templateName]
+	if !ok {
+		// The template name is invalid, return an error with a suggestion.
+		return &cliError{
+			Msg:     "invalid template name.",
+			Suggest: "Valid template names are: hello-world, xgreeter",
+		}
+	}
+
 	// Execute the `forge init` command.
-	cmd := exec.Command("forge", "init", "--template", "https://github.com/omni-network/omni-forge-template.git")
+	cmd := exec.Command("forge", "init", "--template", templateURL)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
