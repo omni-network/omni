@@ -881,6 +881,24 @@
       }
     ]
   },
+  "reentrancy": {
+    "blockHeader": {
+      "sourceChainId": "102",
+      "blockHeight": "1",
+      "blockHash": "0xd60ee5d9b1a312631632d0ab8816ca64259093d8ab0b4d29f35db6a6151b0f8d"
+    },
+    "msgs": [
+      {
+        "sourceChainId": "102",
+        "destChainId": "100",
+        "streamOffset": "1",
+        "sender": "0xa5030691118038caFfc12151580c82D2C581Ef92",
+        "to": "0xa5030691118038caFfc12151580c82D2C581Ef92",
+        "data": "0xe4d2df47",
+        "gasLimit": "100000"
+      }
+    ]
+  },
   "xblock1": {
     "blockHeader": {
       "sourceChainId": "102",
