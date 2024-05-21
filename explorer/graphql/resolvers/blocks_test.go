@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/explorer/graphql/app"
 	"github.com/omni-network/omni/explorer/graphql/data"
 	"github.com/omni-network/omni/explorer/graphql/resolvers"
+	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/gqltesting"
@@ -21,10 +22,10 @@ type gqlTest struct {
 	Resolver *resolvers.Root
 }
 
-func createGqlTest(t *testing.T) *gqlTest {
+func createGqlTest(t *testing.T, network netconf.ID) *gqlTest {
 	t.Helper()
 	client := testutil.CreateTestEntClient(t)
-	p := data.NewProvider(context.Background(), client, "devnet")
+	p := data.NewProvider(context.Background(), client, network)
 	r := resolvers.NewRoot(p)
 
 	opts := []graphql.SchemaOpt{
@@ -50,7 +51,7 @@ func TestXBlocksQuery(t *testing.T) {
 	t.Skip("This test is failing because the schema was changed")
 	t.Parallel()
 	ctx := context.Background()
-	test := createGqlTest(t)
+	test := createGqlTest(t, netconf.Devnet)
 	testutil.CreateTestBlocks(t, ctx, test.Client, 2)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{

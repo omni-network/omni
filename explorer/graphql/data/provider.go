@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/explorer/db/ent"
+	"github.com/omni-network/omni/lib/netconf"
 )
 
 type Provider struct {
@@ -12,7 +13,7 @@ type Provider struct {
 	*StatsProvider
 }
 
-func NewProvider(ctx context.Context, cl *ent.Client, network string) *Provider {
+func NewProvider(ctx context.Context, cl *ent.Client, network netconf.ID) *Provider {
 	cp := NewChainsProvider(network)
 	return &Provider{
 		ChainsProvider: cp,

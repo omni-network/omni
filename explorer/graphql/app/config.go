@@ -7,6 +7,7 @@ import (
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 
 	cmtos "github.com/cometbft/cometbft/libs/os"
 
@@ -17,14 +18,14 @@ const (
 	defaultListenAddr     = ":8080"
 	defaultExplorerDBConn = "postgres://omni:password@explorer_db:5432/omni_db"
 	defaultMonitoringAddr = ":26660"
-	defaultNetwork        = "devnet"
+	defaultNetwork        = netconf.Devnet
 )
 
 type Config struct {
 	ListenAddr     string
 	ExplorerDBConn string
 	MonitoringAddr string
-	Network        string
+	Network        netconf.ID
 }
 
 func DefaultConfig() Config {
