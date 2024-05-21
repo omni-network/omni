@@ -95,7 +95,7 @@ contract OmniAVS_admin_Test is Base {
     }
 
     /// @dev Test that getOperatorRestakedStrategies() returns an empty list when the operator is not registered
-    function test_getOperatorRestakedStrategies_notOperator_succeeds() public {
+    function test_getOPeratorRestakedStrategies_notOperator_succeeds() public {
         address operator = _operator(0);
         address[] memory operatorRestakedStrategies = omniAVS.getOperatorRestakedStrategies(operator);
 
