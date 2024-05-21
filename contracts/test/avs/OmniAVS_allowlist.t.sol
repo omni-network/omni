@@ -60,7 +60,7 @@ contract OmniAVS_allowlist_Test is Base {
         IOmniAVS.Operator[] memory operators = omniAVS.operators();
 
         assertEq(operators.length, 1);
-        assertEq(operators[0].operator, operator);
+        assertEq(operators[0].addr, operator);
     }
 
     /// @dev Test that an operator can't register if not in allowlist
@@ -72,7 +72,7 @@ contract OmniAVS_allowlist_Test is Base {
 
         vm.expectRevert("OmniAVS: not allowed");
         vm.prank(operator);
-        omniAVS.registerOperator(_valPubKey(operator), emptySig, emptySig);
+        omniAVS.registerOperator(_pubkey(operator), emptySig);
     }
 
     /// @dev Test that the owner can disable the allowlist
@@ -138,6 +138,6 @@ contract OmniAVS_allowlist_Test is Base {
         IOmniAVS.Operator[] memory operators = omniAVS.operators();
 
         assertEq(operators.length, 1);
-        assertEq(operators[0].operator, operator);
+        assertEq(operators[0].addr, operator);
     }
 }

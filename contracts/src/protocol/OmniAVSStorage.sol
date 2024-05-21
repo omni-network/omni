@@ -11,8 +11,8 @@ abstract contract OmniAVSStorage {
     /// @notice Ethereum addresses of currently register operators
     address[] internal _operators;
 
-    /// @notice Map operator address to their validator's secp256k1 public key
-    mapping(address => bytes) public validatorPubKey;
+    /// @notice Map operator address to secp256k1 public key
+    mapping(address => bytes) internal _operatorPubkeys;
 
     /// @notice Set of operators that are allowed to register
     mapping(address => bool) internal _allowlist;
@@ -40,10 +40,4 @@ abstract contract OmniAVSStorage {
 
     /// @notice Omni portal contract, used to make xcalls to Omni
     IOmniPortal public omni;
-
-    /// @notice Tracks salts spent per validator pub key
-    mapping(bytes => mapping(bytes32 => bool)) internal _isValSaltSpent;
-
-    // @notice Maps validator pubkey to true, if the key is in use by some operator
-    mapping(bytes => bool) internal _isValActive;
 }

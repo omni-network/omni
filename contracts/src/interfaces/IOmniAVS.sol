@@ -13,9 +13,8 @@ interface IOmniAVS {
     /**
      * @notice Emitted when an operator is added to the OmniAVS.
      * @param operator The address of the operator
-     * @param valPubKey The operator's 64 byte uncompressed secp256k1 validator public key
      */
-    event OperatorAdded(address indexed operator, bytes valPubKey);
+    event OperatorAdded(address indexed operator);
 
     /**
      * @notice Emitted when an operator is removed from the OmniAVS.
@@ -25,14 +24,14 @@ interface IOmniAVS {
 
     /**
      * @notice Struct representing an OmniAVS operator
-     * @custom:field operator           The operator's ethereum address
-     * @custom:field validatorPubKey    The operator's 64 byte uncompressed secp256k1 validator public key
-     * @custom:field delegated          The total amount delegated, not including operator stake
-     * @custom:field staked             The total amount staked by the operator, not including delegations
+     * @custom:field addr       The operator's ethereum address
+     * @custom:field pubkey     The operator's 64 byte uncompressed secp256k1 public key
+     * @custom:field delegated  The total amount delegated, not including operator stake
+     * @custom:field staked     The total amount staked by the operator, not including delegations
      */
     struct Operator {
-        address operator;
-        bytes validatorPubKey;
+        address addr;
+        bytes pubkey;
         uint96 delegated;
         uint96 staked;
     }
@@ -69,29 +68,14 @@ interface IOmniAVS {
 
     /**
      * @notice Register an operator with the AVS. Forwards call to EigenLayer' AVSDirectory.
-     * @param validatorPubKey       The operator's 64 byte uncompressed secp256k1 validator public key.
-     * @param validatorSignature    The operator's validator pubkey registration signature, with salt and expiry.
-     *                              Signature must match `validatorPubKey`
-     * @param operatorSignature     The operator's AVS registration signature, with salt and expiry.
-     *                              Signed must match `msg.sender`
+     * @param pubkey            64 byte uncompressed secp256k1 public key (no 0x04 prefix)
+     *                          Pubkey must match operator's address (msg.sender)
+     * @param operatorSignature The signature, salt, and expiry of the operator's signature.
      */
     function registerOperator(
-        bytes calldata validatorPubKey,
-        ISignatureUtils.SignatureWithSaltAndExpiry calldata validatorSignature,
+        bytes calldata pubkey,
         ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external;
-
-    /**
-     * @notice Returns the digest hash to be signed by an opeator's validator key on registration.
-     * @param operator      The operator's ethereum address
-     * @param valPubKey     The operator's 64 byte uncompressed secp256k1 validator public key
-     * @param salt          A salt unique to this registration
-     * @param expiry        The timestamp at which this registration expires
-     */
-    function validatorRegistrationDigestHash(address operator, bytes calldata valPubKey, bytes32 salt, uint256 expiry)
-        external
-        view
-        returns (bytes32);
 
     /**
      * @notice Check if an operator can register to the AVS.

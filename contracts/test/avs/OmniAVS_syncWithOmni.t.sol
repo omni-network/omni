@@ -314,7 +314,7 @@ contract OmniAVS_syncWithOmni_Test is Base {
 
             // assert that none of the operators left is the operator that was just deregistered
             for (uint32 j = 0; j < numOperatorsLeft; j++) {
-                assertNotEq(ops[j].operator, operator, "_testEjectOperators: operator should not be in validators list");
+                assertNotEq(ops[j].addr, operator, "_testEjectOperators: operator should not be in validators list");
             }
         }
     }
@@ -356,8 +356,7 @@ contract OmniAVS_syncWithOmni_Test is Base {
         IOmniAVS.Operator[] memory ops = omniAVS.operators();
 
         assertEq(ops.length, 1);
-        assertEq(ops[0].operator, operator);
-        assertEq(ops[0].validatorPubKey, _valPubKey(operator));
+        assertEq(ops[0].addr, operator);
         assertEq(ops[0].staked, amount);
         assertEq(ops[0].delegated, 0);
 
@@ -390,8 +389,7 @@ contract OmniAVS_syncWithOmni_Test is Base {
 
         // assert unsupported strategy deposit does not affect operator stake
         assertEq(ops.length, 1);
-        assertEq(ops[0].operator, operator);
-        assertEq(ops[0].validatorPubKey, _valPubKey(operator));
+        assertEq(ops[0].addr, operator);
         assertEq(ops[0].staked, stakeAmt);
         assertEq(ops[0].delegated, delegateAmt);
     }
