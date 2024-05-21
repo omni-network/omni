@@ -282,22 +282,24 @@ contract OmniPortal is
         // trim gasLimit to max. this requirement is checked in xcall(...), but we trim here to be safe
         if (gasLimit > xmsgMaxGasLimit) gasLimit = xmsgMaxGasLimit;
 
-        // require gasLeft is enough to execute the call. this protects against malicious relayers
-        // purposefully setting gasLimit just low enough such that the last xmsg in a submission
-        // fails, despite it's sufficient gasLimit
-        //
-        // We add a small buffer to account for the gas usage from here up until the call.
-        // TODO: is buffer of 100 correct? Better more than less
-        require(gasLimit + 100 < gasleft(), "OmniPortal: gasLimit too low");
-
-        uint256 gasUsed = gasleft();
+        uint256 gasLeftBefore = gasleft();
 
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, bytes memory result) = to.call{ gas: gasLimit }(data);
 
-        gasUsed = gasUsed - gasleft();
+        uint256 gasLeftAfter = gasleft();
 
-        return (success, result, gasUsed);
+        // Esnure relayer sent enough gas for the call
+        // See https://github.com/OpenZeppelin/openzeppelin-contracts/blob/bd325d56b4c62c9c5c1aff048c37c6bb18ac0290/contracts/metatx/MinimalForwarder.sol#L58-L68
+        if (gasLeftAfter <= gasLimit / 63) {
+            // We could use invalid opcode to consume all gas and bubble-up the effects, since
+            // and emulate an "OutOfGas" exception
+            assembly {
+                invalid()
+            }
+        }
+
+        return (success, result, gasLeftBefore - gasLeftAfter);
     }
 
     /**

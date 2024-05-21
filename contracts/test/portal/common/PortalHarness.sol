@@ -13,6 +13,10 @@ contract PortalHarness is OmniPortal {
         _exec(xmsg);
     }
 
+    function exec(address to, uint64 gasLimit, bytes calldata data) external {
+        _exec(to, gasLimit, data);
+    }
+
     function execSys(bytes calldata data) external {
         _execSys(data);
     }
