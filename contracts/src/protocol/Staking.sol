@@ -1,0 +1,35 @@
+// SPDX-License-Identifier: GPL-3.0-only
+pragma solidity =0.8.24;
+
+/**
+ * @title Staking
+ * @notice The EVM interface to the consensus chain's x/staking module.
+ *         Calls are proxied, and not executed syncronously. Their execution is left to
+ *         the consensus chain, and they may fail.
+ */
+contract Staking {
+    /**
+     * @notice Emitted when a validator is created
+     * @param validator     (MsgCreateValidator.validator_addr) The address of the validator to create
+     * @param pubkey        (MsgCreateValidator.pubkey) The validators consensus public key. 33 bytes compressed secp256k1 public key
+     * @param deposit       (MsgCreateValidator.selfDelegation) The validators initial stake
+     */
+    event CreateValidator(address indexed validator, bytes pubkey, uint256 deposit);
+
+    /**
+     * @notice The minimum deposit required to create a validator
+     */
+    uint256 public constant MIN_DEPOSIT = 100 ether;
+
+    /**
+     * @notice Create a new validator
+     * @param pubkey The validators consensus public key. 33 bytes compressed secp256k1 public key
+     * @dev Proxies x/staking.MsgCreateValidator
+     */
+    function createValidator(bytes calldata pubkey) external payable {
+        require(pubkey.length == 33, "Staking: invalid pubkey length");
+        require(msg.value >= MIN_DEPOSIT, "Staking: insufficient deposit");
+
+        emit CreateValidator(msg.sender, pubkey, msg.value);
+    }
+}

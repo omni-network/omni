@@ -6,6 +6,7 @@ import { Secp256k1 } from "../libraries/Secp256k1.sol";
 /**
  * @title OmniStake
  * @notice The deposit contract for OMNI-staked validators.
+ * @custom:deprecated This contract is deprecated and will be removed in a future release, replaced by Staking.sol
  */
 contract OmniStake {
     /**
