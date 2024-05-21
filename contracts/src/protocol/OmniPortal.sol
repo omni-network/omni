@@ -3,6 +3,7 @@ pragma solidity =0.8.24;
 
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { PausableUpgradeable } from "@openzeppelin-upgrades/contracts/security/PausableUpgradeable.sol";
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 import { IFeeOracle } from "../interfaces/IFeeOracle.sol";
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
@@ -22,6 +23,7 @@ contract OmniPortal is
     IOmniPortalAdmin,
     OwnableUpgradeable,
     PausableUpgradeable,
+    ReentrancyGuardUpgradeable,
     OmniPortalConstants,
     OmniPortalStorage
 {
@@ -167,7 +169,7 @@ contract OmniPortal is
      * @param xsub  An xchain submisison, including an attestation root w/ validator signatures,
      *              and a block header and message batch, proven against the attestation root.
      */
-    function xsubmit(XTypes.Submission calldata xsub) external whenNotPaused {
+    function xsubmit(XTypes.Submission calldata xsub) external whenNotPaused nonReentrant {
         require(xsub.msgs.length > 0, "OmniPortal: no xmsgs");
 
         // validator set id for this submission

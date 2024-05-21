@@ -15,6 +15,7 @@ import { PortalHarness } from "./PortalHarness.sol";
 import { Counter } from "./Counter.sol";
 import { Reverter } from "./Reverter.sol";
 import { GasGuzzler } from "./GasGuzzler.sol";
+import { XSubmitter } from "./XSubmitter.sol";
 
 import { CommonBase } from "forge-std/Base.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
@@ -105,6 +106,7 @@ contract Fixtures is CommonBase, StdCheats {
     Reverter chainAReverter;
     Reverter chainBReverter;
 
+    XSubmitter xsubmitter;
     GasGuzzler gasGuzzler;
 
     // helper mappings to generate XMsg.to and XMsg.sender for some sourceChainId & destChainId
@@ -143,6 +145,7 @@ contract Fixtures is CommonBase, StdCheats {
         TestXTypes.Block memory guzzle10 = _guzzle_xblock({ numGuzzles: 10 });
         TestXTypes.Block memory guzzle25 = _guzzle_xblock({ numGuzzles: 25 });
         TestXTypes.Block memory guzzle50 = _guzzle_xblock({ numGuzzles: 50 });
+        TestXTypes.Block memory reentrancy = _reentrancy_xblock();
 
         TestXTypes.Block memory addValSet2 = _addValidatorSet_xblock({ valSetId: 2 });
 
@@ -158,6 +161,7 @@ contract Fixtures is CommonBase, StdCheats {
         vm.serializeBytes(id, "guzzle10", abi.encode(guzzle10));
         vm.serializeBytes(id, "guzzle25", abi.encode(guzzle25));
         vm.serializeBytes(id, "guzzle50", abi.encode(guzzle50));
+        vm.serializeBytes(id, "reentrancy", abi.encode(reentrancy));
 
         string memory json = vm.serializeBytes(id, "addValSet2", abi.encode(addValSet2));
 
@@ -270,6 +274,21 @@ contract Fixtures is CommonBase, StdCheats {
             xmsgs[i] = _guzzle(chainAId, thisChainId, offset, 100_000);
             offset += 1;
         }
+
+        return TestXTypes.Block(XTypes.BlockHeader(chainAId, 1, keccak256("blockhash")), xmsgs);
+    }
+
+    function _reentrancy_xblock() internal view returns (TestXTypes.Block memory) {
+        XTypes.Msg[] memory xmsgs = new XTypes.Msg[](1);
+        xmsgs[0] = XTypes.Msg({
+            sourceChainId: chainAId,
+            destChainId: thisChainId,
+            streamOffset: 1,
+            sender: address(xsubmitter),
+            to: address(xsubmitter),
+            data: abi.encodeWithSelector(XSubmitter.tryXSubmit.selector),
+            gasLimit: 100_000
+        });
 
         return TestXTypes.Block(XTypes.BlockHeader(chainAId, 1, keccak256("blockhash")), xmsgs);
     }
@@ -547,6 +566,7 @@ contract Fixtures is CommonBase, StdCheats {
         chainBReverter = new Reverter();
 
         gasGuzzler = new GasGuzzler();
+        xsubmitter = new XSubmitter(portal);
 
         vm.stopPrank();
 

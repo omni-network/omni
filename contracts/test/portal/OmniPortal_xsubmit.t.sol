@@ -4,6 +4,7 @@ pragma solidity =0.8.24;
 import { XTypes } from "src/libraries/XTypes.sol";
 import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 
+import { TestXTypes } from "./common/TestXTypes.sol";
 import { Base } from "./common/Base.sol";
 import { Counter } from "./common/Counter.sol";
 import { Vm } from "forge-std/Vm.sol";
@@ -61,6 +62,21 @@ contract OmniPortal_xsubmit_Test is Base {
             portal_: chainBPortal,
             counter_: chainBCounter
         });
+    }
+
+    function test_xsubmit_reentrancy_reverts() public {
+        XTypes.Submission memory xsub = readXSubmission({ name: "reentrancy", destChainId: thisChainId });
+
+        vm.recordLogs();
+        vm.chainId(thisChainId);
+        portal.xsubmit(xsub);
+
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        assertEq(logs.length, 1);
+
+        TestXTypes.Receipt memory receipt = parseReceipt(logs[0]);
+        assertEq(receipt.success, false);
+        assertEq(receipt.error, abi.encodeWithSignature("Error(string)", "ReentrancyGuard: reentrant call"));
     }
 
     function test_xsubmit_noXmsgs_reverts() public {
