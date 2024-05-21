@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/graph-gophers/graphql-go/relay"
@@ -24,21 +25,20 @@ func NewChainsProvider(network netconf.ID) *ChainsProvider {
 		logoURL string
 	}{
 		netconf.Devnet: {
-			{id: 1651, name: "Omni Ephemeral", logoURL: "https://chainlist.org/unknown-logo.png"},
-			{id: 1652, name: "Mock L1 Fast", logoURL: "https://chainlist.org/unknown-logo.png"},
-			{id: 1653, name: "Mock L1 Slow", logoURL: "https://chainlist.org/unknown-logo.png"},
-			{id: 1654, name: "Mock L2", logoURL: "https://chainlist.org/unknown-logo.png"},
+			{id: uint64(evmchain.IDOmniEphemeral), name: "Omni Ephemeral", logoURL: "https://chainlist.org/unknown-logo.png"},
+			{id: uint64(evmchain.IDMockOp), name: "Mock Op", logoURL: "https://icons.llamao.fi/icons/chains/rsz_optimism.jpg"},
+			{id: uint64(evmchain.IDMockArb), name: "Mock Arb", logoURL: "https://icons.llamao.fi/icons/chains/rsz_arbitrum.jpg"},
 		},
 		netconf.Staging: {
-			{id: 1651, name: "Omni Ephemeral", logoURL: "https://chainlist.org/unknown-logo.png"},
-			{id: 11155420, name: "Op Sepolia", logoURL: "https://icons.llamao.fi/icons/chains/rsz_optimism.jpg"},
-			{id: 1653, name: "Mock L1 Slow", logoURL: "https://chainlist.org/unknown-logo.png"},
+			{id: uint64(evmchain.IDOmniEphemeral), name: "Omni Ephemeral", logoURL: "https://chainlist.org/unknown-logo.png"},
+			{id: uint64(evmchain.IDMockL1Slow), name: "Mock L1 Slow", logoURL: "https://chainlist.org/unknown-logo.png"},
+			{id: uint64(evmchain.IDOpSepolia), name: "Op Sepolia", logoURL: "https://icons.llamao.fi/icons/chains/rsz_optimism.jpg"},
 		},
 		netconf.Testnet: {
-			{id: 165, name: "Omni Testnet", logoURL: "https://chainlist.org/unknown-logo.png"},
-			{id: 17000, name: "Holesky", logoURL: "https://icons.llamao.fi/icons/chains/rsz_ethereum.jpg"},
-			{id: 421614, name: "Arb Sepolia", logoURL: "https://icons.llamao.fi/icons/chains/rsz_arbitrum.jpg"},
-			{id: 11155420, name: "Op Sepolia", logoURL: "https://icons.llamao.fi/icons/chains/rsz_optimism.jpg"},
+			{id: uint64(evmchain.IDOmniTestnet), name: "Omni Testnet", logoURL: "https://chainlist.org/unknown-logo.png"},
+			{id: uint64(evmchain.IDHolesky), name: "Holesky", logoURL: "https://icons.llamao.fi/icons/chains/rsz_ethereum.jpg"},
+			{id: uint64(evmchain.IDArbSepolia), name: "Arb Sepolia", logoURL: "https://icons.llamao.fi/icons/chains/rsz_arbitrum.jpg"},
+			{id: uint64(evmchain.IDOpSepolia), name: "Op Sepolia", logoURL: "https://icons.llamao.fi/icons/chains/rsz_optimism.jpg"},
 		},
 		netconf.Mainnet: {
 			{id: 1, name: "Ethereum", logoURL: "https://icons.llamao.fi/icons/chains/rsz_ethereum.jpg"},

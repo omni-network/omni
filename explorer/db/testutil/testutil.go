@@ -30,7 +30,7 @@ func CreateTestChain(t *testing.T, ctx context.Context, client *ent.Client, chai
 func CreateTestBlock(t *testing.T, ctx context.Context, client *ent.Client, height, offset uint64, ts time.Time) ent.Block {
 	t.Helper()
 
-	const chainID = 1
+	const chainID = 1655
 	var blockHash common.Hash
 	gofuzz.New().NilChance(0).Fuzz(&blockHash)
 
@@ -48,7 +48,7 @@ func CreateTestBlock(t *testing.T, ctx context.Context, client *ent.Client, heig
 // CreateTestBlocks creates n test blocks with n messages and n-1 receipts.
 func CreateTestBlocks(t *testing.T, ctx context.Context, client *ent.Client, count uint64) []ent.Block {
 	t.Helper()
-	destChainID := uint64(2)
+	destChainID := uint64(1656)
 	var msg *ent.Msg
 	var blocks []ent.Block
 	ts := time.Now()

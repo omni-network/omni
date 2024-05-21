@@ -46,25 +46,18 @@ func TestSupportedChains(t *testing.T) {
 						"name": "Omni Ephemeral"
 					},
 					{
-						"chainID": "0x674",
-						"displayID": "1652",
-						"id": "Y2hhaW46MTY1Mg==",
-						"logoUrl": "https://chainlist.org/unknown-logo.png",
-						"name": "Mock L1 Fast"
+						"chainID": "0x677",
+						"displayID": "1655",
+						"id": "Y2hhaW46MTY1NQ==",
+						"logoUrl": "https://icons.llamao.fi/icons/chains/rsz_optimism.jpg",
+						"name": "Mock Op"
 					},
 					{
-						"chainID": "0x675",
-						"displayID": "1653",
-						"id": "Y2hhaW46MTY1Mw==",
-						"logoUrl": "https://chainlist.org/unknown-logo.png",
-						"name": "Mock L1 Slow"
-					},
-					{
-						"chainID": "0x676",
-						"displayID": "1654",
-						"id": "Y2hhaW46MTY1NA==",
-						"logoUrl": "https://chainlist.org/unknown-logo.png",
-						"name": "Mock L2"
+						"chainID": "0x678",
+						"displayID": "1656",
+						"id": "Y2hhaW46MTY1Ng==",
+						"logoUrl": "https://icons.llamao.fi/icons/chains/rsz_arbitrum.jpg",
+						"name": "Mock Arb"
 					}
 				]
 			}
