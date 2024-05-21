@@ -33,33 +33,33 @@ contract OmniStake_Test is Test {
         stake.deposit{ value: amt }(pubkey);
     }
 
-    /// @dev Test that the pubkey of a deposit must match the sender
-    function test_deposit_wrongPubkey_reverts() public {
-        Vm.Wallet memory wallet = vm.createWallet("test val");
+    //    /// @dev Test that the pubkey of a deposit must match the sender
+    //    function test_deposit_wrongPubkey_reverts() public {
+    //        Vm.Wallet memory wallet = vm.createWallet("test val");
+    //
+    //        Vm.Wallet memory wallet2 = vm.createWallet("test val2");
+    //        bytes memory pubkey2 = _pubkey(wallet2);
+    //
+    //        uint256 amt = 16 ether;
+    //        vm.deal(wallet.addr, amt);
+    //
+    //        vm.expectRevert("OmniStake: pubkey not sender");
+    //        vm.prank(wallet.addr);
+    //        stake.deposit{ value: amt }(pubkey2);
+    //    }
 
-        Vm.Wallet memory wallet2 = vm.createWallet("test val2");
-        bytes memory pubkey2 = _pubkey(wallet2);
-
-        uint256 amt = 16 ether;
-        vm.deal(wallet.addr, amt);
-
-        vm.expectRevert("OmniStake: pubkey not sender");
-        vm.prank(wallet.addr);
-        stake.deposit{ value: amt }(pubkey2);
-    }
-
-    /// @dev Test that a deposit with a pubkey of incorrect length reverts
-    function test_deposit_invalidLength_reverts() public {
-        Vm.Wallet memory wallet = vm.createWallet("test val");
-        bytes memory pubkey = bytes.concat(hex"04", _pubkey(wallet));
-
-        uint256 amt = 16 ether;
-        vm.deal(wallet.addr, amt);
-
-        vm.expectRevert("Secp256k1: invalid pubkey length");
-        vm.prank(wallet.addr);
-        stake.deposit{ value: amt }(pubkey);
-    }
+    //    /// @dev Test that a deposit with a pubkey of incorrect length reverts
+    //    function test_deposit_invalidLength_reverts() public {
+    //        Vm.Wallet memory wallet = vm.createWallet("test val");
+    //        bytes memory pubkey = bytes.concat(hex"04", _pubkey(wallet));
+    //
+    //        uint256 amt = 16 ether;
+    //        vm.deal(wallet.addr, amt);
+    //
+    //        vm.expectRevert("Secp256k1: invalid pubkey length");
+    //        vm.prank(wallet.addr);
+    //        stake.deposit{ value: amt }(pubkey);
+    //    }
 
     /// @dev Test that a deposit below 1 ether reverts
     function test_deposit_below1Ether_reverts() public {

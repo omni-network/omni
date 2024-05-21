@@ -90,6 +90,10 @@ func (p EventProcessor) Prepare(ctx context.Context, blockHash common.Hash) ([]*
 	return resp, nil
 }
 
+func (EventProcessor) Name() string {
+	return AccountName
+}
+
 func (p EventProcessor) Addresses() []common.Address {
 	return []common.Address{p.address}
 }

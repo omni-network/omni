@@ -96,6 +96,7 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 }
 
 // deliverEvents delivers the given logs to the registered log providers.
+// TODO(corver): Return log event results to properly manage failures.
 func (s msgServer) deliverEvents(ctx context.Context, height uint64, blockHash common.Hash, logs []*types.EVMEvent) error {
 	procs := make(map[common.Address]types.EvmEventProcessor)
 	for _, proc := range s.eventProcs {
@@ -114,9 +115,21 @@ func (s msgServer) deliverEvents(ctx context.Context, height uint64, blockHash c
 			return errors.New("unknown log address [BUG]", log.Hex7("address", evmLog.Address))
 		}
 
-		if err := proc.Deliver(ctx, blockHash, evmLog); err != nil {
-			return errors.Wrap(err, "deliver log")
+		// Branch the store in case processing fails.
+		sdkCtx := sdk.UnwrapSDKContext(ctx)
+		branchMS := sdkCtx.MultiStore().CacheMultiStore()
+		branchCtx := sdkCtx.WithMultiStore(branchMS)
+
+		if err := catch(func() error { return proc.Deliver(branchCtx, blockHash, evmLog) }); err != nil {
+			log.Warn(ctx, "Delivering EVM log event failed", err,
+				"name", proc.Name(),
+				"height", height,
+			)
+
+			continue // Don't write state on error.
 		}
+
+		branchMS.Write()
 	}
 
 	log.Debug(ctx, "Delivered evm logs", "height", height, "count", len(logs))
@@ -189,4 +202,16 @@ func isInvalid(status engine.PayloadStatusV1) (bool, error) {
 	}
 
 	return true, errors.New("payload invalid", "validation_err", valErr, "last_valid_hash", hash)
+}
+
+// catch executes the function, returning an error if it panics.
+// TODO(corver): Rather fix panics.
+func catch(fn func() error) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.New("recovered", "panic", r)
+		}
+	}()
+
+	return fn()
 }
