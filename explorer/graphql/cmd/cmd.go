@@ -41,11 +41,8 @@ func New() *cobra.Command {
 }
 
 func bindGraphQLFlags(flags *pflag.FlagSet, cfg *app.Config) {
-	var network string
 	flags.StringVar(&cfg.ExplorerDBConn, "explorer-db-conn", cfg.ExplorerDBConn, "URL to the database")
 	flags.StringVar(&cfg.ListenAddr, "graphql-port", cfg.ListenAddr, "Address for GraphQL to listen on")
 	flags.StringVar(&cfg.MonitoringAddr, "monitoring-addr", cfg.MonitoringAddr, "The address to bind the monitoring server")
-	flags.StringVar(&network, "network", "devnet", "The network environment that the API is running on")
-
-	cfg.Network = netconf.ID(network)
+	netconf.BindFlag(flags, &cfg.Network)
 }
