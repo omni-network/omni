@@ -7,6 +7,7 @@ import (
 	"github.com/omni-network/omni/explorer/db/testutil"
 	"github.com/omni-network/omni/explorer/graphql/app"
 	"github.com/omni-network/omni/explorer/graphql/resolvers"
+	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/gqltesting"
@@ -16,7 +17,7 @@ func TestXMsg(t *testing.T) {
 	t.Skip("This test is failing because the schema was changed")
 	t.Parallel()
 	ctx := context.Background()
-	test := createGqlTest(t)
+	test := createGqlTest(t, netconf.Devnet)
 	t.Cleanup(func() {
 		if err := test.Client.Close(); err != nil {
 			t.Error(err)
@@ -70,7 +71,7 @@ func TestXMsgsNoCursor(t *testing.T) {
 	t.Skip("This test is failing because the schema was changed")
 	t.Parallel()
 	ctx := context.Background()
-	test := createGqlTest(t)
+	test := createGqlTest(t, netconf.Devnet)
 	t.Cleanup(func() {
 		if err := test.Client.Close(); err != nil {
 			t.Error(err)
@@ -142,7 +143,7 @@ func TestXMsgsNoLimit(t *testing.T) {
 	t.Skip("This test is failing because the schema was changed")
 	t.Parallel()
 	ctx := context.Background()
-	test := createGqlTest(t)
+	test := createGqlTest(t, netconf.Devnet)
 	t.Cleanup(func() {
 		if err := test.Client.Close(); err != nil {
 			t.Error(err)
@@ -218,7 +219,7 @@ func TestXMsgsNoParams(t *testing.T) {
 	t.Skip("This test is failing because the schema was changed")
 	t.Parallel()
 	ctx := context.Background()
-	test := createGqlTest(t)
+	test := createGqlTest(t, netconf.Devnet)
 	t.Cleanup(func() {
 		if err := test.Client.Close(); err != nil {
 			t.Error(err)

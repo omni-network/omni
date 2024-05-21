@@ -522,6 +522,7 @@ func writeExplorerGraphqlConfig(def Definition, logCfg log.Config) error {
 
 	cfg := graphqlapp.DefaultConfig()
 	cfg.ExplorerDBConn = def.Cfg.ExplorerDBConn
+	cfg.Network = def.Testnet.Network
 
 	if err := graphqlapp.WriteConfigTOML(cfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write graphql config")

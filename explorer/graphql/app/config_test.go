@@ -7,6 +7,7 @@ import (
 
 	graphql "github.com/omni-network/omni/explorer/graphql/app"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/stretchr/testify/require"
@@ -18,15 +19,35 @@ func TestDefaultConfigReference(t *testing.T) {
 	t.Parallel()
 	tempDir := t.TempDir()
 
-	cfg := graphql.DefaultConfig()
+	tests := []struct {
+		name string
+		cfg  graphql.Config
+	}{
+		{
+			"default",
+			graphql.DefaultConfig(),
+		},
+		{
+			"testnet",
+			func() graphql.Config {
+				cfg := graphql.DefaultConfig()
+				cfg.Network = netconf.Testnet
+				return cfg
+			}(),
+		},
+	}
 
-	path := filepath.Join(tempDir, "explorer_graphql.toml")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join(tempDir, "explorer_graphql.toml")
 
-	require.NoError(t, os.MkdirAll(tempDir, 0o755))
-	require.NoError(t, graphql.WriteConfigTOML(cfg, log.DefaultConfig(), path))
+			require.NoError(t, os.MkdirAll(tempDir, 0o755))
+			require.NoError(t, graphql.WriteConfigTOML(tt.cfg, log.DefaultConfig(), path))
 
-	b, err := os.ReadFile(path)
-	require.NoError(t, err)
+			b, err := os.ReadFile(path)
+			require.NoError(t, err)
 
-	tutil.RequireGoldenBytes(t, b, tutil.WithFilename("default_explorer_graphql.toml"))
+			tutil.RequireGoldenBytes(t, b, tutil.WithFilename(tt.name+"_explorer_graphql.toml"))
+		})
+	}
 }
