@@ -32,9 +32,8 @@ func newForgeProjectCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "new",
 		Short: "Scaffold a Forge project",
-		Long: `Scaffold a new Forge project with a XGreeter contract
-accompanied by simple mocked testing and a multi-chain deployment script.`,
-		Args: cobra.NoArgs,
+		Long:  `Scaffold a new Forge project accompanied by simple mocked testing and a multi-chain deployment script.`,
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return newForgeProjectTemplate(cmd.Context(), cfg)
 		},
