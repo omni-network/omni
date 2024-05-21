@@ -5,7 +5,6 @@ import (
 	"context"
 	"os"
 	"os/exec"
-	"strings"
 
 	"github.com/omni-network/omni/lib/errors"
 
@@ -45,7 +44,7 @@ func newForgeProjectCmd() *cobra.Command {
 }
 
 type developerForgeProjectConfig struct {
-	templateURL string
+	templateName string
 }
 
 // newForgeProjectTemplate creates a new project using the forge template.
@@ -59,16 +58,9 @@ func newForgeProjectTemplate(_ context.Context, cfg developerForgeProjectConfig)
 		}
 	}
 
-	sanitizedInput, err := sanitizeInput(cfg.templateURL)
-	if err != nil {
-		return &cliError{
-			Msg:     "failed to sanitize input",
-			Suggest: "Please provide a valid URL",
-		}
-	}
-
 	// Execute the `forge init` command.
-	cmd := exec.Command("forge", "init", "--template", sanitizedInput)
+	// #nosec G204
+	cmd := exec.Command("forge", "init", "--template", "https://github.com/omni-network/"+cfg.templateName+".git")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
@@ -86,22 +78,4 @@ func checkForgeInstalled() bool {
 	err := cmd.Run()
 
 	return err == nil // If there is no error, forge is installed.
-}
-
-// sanitizeInput validates and sanitizes the input to prevent command injection.
-func sanitizeInput(input string) (string, error) {
-	// Replace any characters that are not alphanumeric or allowed special characters.
-	// You might need to adjust this based on what characters are allowed in your URLs.
-	// This example allows alphanumeric characters, slashes, dots, and hyphens.
-	var allowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-./"
-	var sanitized strings.Builder
-	for _, char := range input {
-		if strings.ContainsAny(string(char), allowedChars) {
-			if _, err := sanitized.WriteRune(char); err != nil {
-				return "", errors.Wrap(err, "failed to write sanitized input")
-			}
-		}
-	}
-
-	return sanitized.String(), nil
 }
