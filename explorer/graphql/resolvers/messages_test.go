@@ -14,15 +14,9 @@ import (
 )
 
 func TestXMsg(t *testing.T) {
-	t.Skip("This test is failing because the schema was changed")
 	t.Parallel()
 	ctx := context.Background()
 	test := createGqlTest(t, netconf.Devnet)
-	t.Cleanup(func() {
-		if err := test.Client.Close(); err != nil {
-			t.Error(err)
-		}
-	})
 	testutil.CreateTestBlocks(t, ctx, test.Client, 2)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
@@ -30,42 +24,124 @@ func TestXMsg(t *testing.T) {
 			Context: ctx,
 			Schema:  graphql.MustParseSchema(app.Schema, resolvers.NewRoot(test.Provider), test.Opts...),
 			Query: `
-				{
-					xmsg(sourceChainID: 1, destChainID: 2, offset: 0){
-						SourceMessageSender
-						TxHash
-						BlockHash
-						Block {
-							BlockHeight
-						}
-						Receipts {
-							SourceChainID
-						}
+				query {
+					xmsg(sourceChainID: 1655, destChainID: 1656, offset: 0){
+						...xmsg
 					}
+				}
+
+				fragment chain on Chain {
+					id
+					chainID
+					displayID
+					logoUrl
+				}
+
+				# fields like block hash and timestamps are intentionally omitted for predictability
+				fragment xmsg on XMsg {
+				  id
+				  txHash
+				  offset
+				  displayID
+				  sourceChain {
+					...chain
+				  }
+				  sender
+				  senderUrl
+				  to
+				  toUrl
+				  destChain {
+					...chain
+				  }
+				  gasLimit
+				  status
+				  txHash
+				  txUrl
+				  block {
+					id
+					chain {
+					  ...chain
+					}
+					height
+				  }
+				  receipt {
+					txHash
+					txUrl
+					success
+					offset
+					sourceChain {
+					  ...chain
+					}
+					destChain {
+					  ...chain
+					}
+					relayer
+					revertReason
+				  }
 				}
 			`,
 			ExpectedResult: `
 			{
-				"xmsg":{
-					"BlockHash":"0x0000000000000000000000000103176f1b2d62675e370103176f1b2d62675e37",
-					"Block":{
-						"BlockHeight":"0x0"
+				"xmsg": {
+					"block": {
+						"chain": {
+							"chainID": "0x677",
+							"displayID": "1655",
+							"id": "Y2hhaW46MTY1NQ==",
+							"logoUrl": "https://icons.llamao.fi/icons/chains/rsz_optimism.jpg"
+						},
+						"height": "0x0",
+						"id": ""
 					},
-					"SourceMessageSender":"0x0102030405060708090a0b0c0d0e0f1011121314",
-					"TxHash":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20",
-					"Receipts":[
-						{
-							"SourceChainID":"0x1"
-						}
-					]
+					"destChain": {
+						"chainID": "0x678",
+						"displayID": "1656",
+						"id": "Y2hhaW46MTY1Ng==",
+						"logoUrl": "https://icons.llamao.fi/icons/chains/rsz_arbitrum.jpg"
+					},
+					"displayID": "",
+					"gasLimit": "0x64",
+					"id": "8589934593",
+					"offset": "0x0",
+					"receipt": {
+						"destChain": {
+							"chainID": "0x678",
+							"displayID": "1656",
+							"id": "Y2hhaW46MTY1Ng==",
+							"logoUrl": "https://icons.llamao.fi/icons/chains/rsz_arbitrum.jpg"
+						},
+						"offset": "0x0",
+						"relayer": "0x0102030405060708090a0b0c0d0e0f1011121316",
+						"revertReason": null,
+						"sourceChain": {
+							"chainID": "0x677",
+							"displayID": "1655",
+							"id": "Y2hhaW46MTY1NQ==",
+							"logoUrl": "https://icons.llamao.fi/icons/chains/rsz_optimism.jpg"
+						},
+						"success": true,
+						"txHash": "0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f21",
+						"txUrl": ""
+					},
+					"sender": "0x0102030405060708090a0b0c0d0e0f1011121314",
+					"senderUrl": "",
+					"sourceChain": {
+						"chainID": "0x677",
+						"displayID": "1655",
+						"id": "Y2hhaW46MTY1NQ==",
+						"logoUrl": "https://icons.llamao.fi/icons/chains/rsz_optimism.jpg"
+					},
+					"status": "SUCCESS",
+					"to": "0x0102030405060708090a0b0c0d0e0f1011121315",
+					"toUrl": "",
+					"txHash": "0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20",
+					"txUrl": ""
 				}
 			}
 			`,
 		},
 	})
 }
-
-// TODO (DAN): Fix tests (why does our auto increment id start super high? Add test for cursor out of range, negative cursor, negative limit
 
 func TestXMsgsNoCursor(t *testing.T) {
 	t.Skip("This test is failing because the schema was changed")

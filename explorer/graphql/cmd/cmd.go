@@ -5,6 +5,7 @@ import (
 	"github.com/omni-network/omni/explorer/graphql/app"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -40,7 +41,11 @@ func New() *cobra.Command {
 }
 
 func bindGraphQLFlags(flags *pflag.FlagSet, cfg *app.Config) {
+	var network string
 	flags.StringVar(&cfg.ExplorerDBConn, "explorer-db-conn", cfg.ExplorerDBConn, "URL to the database")
 	flags.StringVar(&cfg.ListenAddr, "graphql-port", cfg.ListenAddr, "Address for GraphQL to listen on")
 	flags.StringVar(&cfg.MonitoringAddr, "monitoring-addr", cfg.MonitoringAddr, "The address to bind the monitoring server")
+	flags.StringVar(&network, "network", "devnet", "The network environment that the API is running on")
+
+	cfg.Network = netconf.ID(network)
 }
