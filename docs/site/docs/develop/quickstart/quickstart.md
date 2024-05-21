@@ -75,7 +75,7 @@ And you the private key value is the first anvil private key, found by running:
 anvil
 ```
 
-These values are kept in `./script/bash/env.sh` and are used to deploy the contracts.
+These values are kept in `./script/bash/.env.example` and are used to deploy the contracts. You can rename the file to `.env` and fill in the values for other networks.
 
 </details>
 
