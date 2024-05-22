@@ -3,10 +3,12 @@
 package netconf
 
 import (
+	"sort"
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -127,6 +129,81 @@ func (n Network) Chain(id uint64) (Chain, bool) {
 	return Chain{}, false
 }
 
+// StreamsTo returns the all streams to the provided destination chain.
+func (n Network) StreamsTo(dstChainID uint64) []xchain.StreamID {
+	if dstChainID == n.ID.Static().OmniConsensusChainIDUint64() {
+		return nil // Consensus chain is never a destination chain.
+	}
+
+	var resp []xchain.StreamID
+	for _, srcChain := range n.Chains {
+		if srcChain.ID == dstChainID {
+			continue // Skip self
+		}
+
+		for _, shardID := range srcChain.Shards() {
+			resp = append(resp, xchain.StreamID{
+				SourceChainID: srcChain.ID,
+				DestChainID:   dstChainID,
+				ShardID:       shardID,
+			})
+		}
+	}
+
+	return resp
+}
+
+// StreamsFrom returns the all streams from the provided source chain.
+func (n Network) StreamsFrom(srcChainID uint64) []xchain.StreamID {
+	srcChain, ok := n.Chain(srcChainID)
+	if !ok {
+		return nil
+	}
+
+	var resp []xchain.StreamID
+	for _, dstChain := range n.EVMChains() { // Only EVM chain can be destinations.
+		if srcChainID == dstChain.ID {
+			continue // Skip self
+		}
+
+		for _, shardID := range srcChain.Shards() {
+			resp = append(resp, xchain.StreamID{
+				SourceChainID: srcChain.ID,
+				DestChainID:   dstChain.ID,
+				ShardID:       shardID,
+			})
+		}
+	}
+
+	return resp
+}
+
+// StreamsBetween returns the all streams between the provided source and destination chain.
+func (n Network) StreamsBetween(srcChainID uint64, dstChainID uint64) []xchain.StreamID {
+	if srcChainID == dstChainID {
+		return nil
+	} else if dstChainID == n.ID.Static().OmniConsensusChainIDUint64() {
+		return nil // Consensus chain is never a destination chain.
+	}
+
+	srcChain, ok := n.Chain(srcChainID)
+	if !ok {
+		return nil
+	}
+
+	var resp []xchain.StreamID
+
+	for _, shardID := range srcChain.Shards() {
+		resp = append(resp, xchain.StreamID{
+			SourceChainID: srcChain.ID,
+			DestChainID:   dstChainID,
+			ShardID:       shardID,
+		})
+	}
+
+	return resp
+}
+
 // FinalizationStrat defines the finalization strategy of a chain.
 // This is mostly ethclient.HeadFinalized, but some chains may not support
 // it, like zkEVM chains which would need a much more involved strategy.
@@ -138,6 +215,16 @@ func (h FinalizationStrat) Verify() error {
 	}
 
 	return nil
+}
+
+// ConfLevel returns the confirmation level of the finalization strategy.
+// TODO(corver): Replace FinalizationStrat with ConfLevel completely.
+func (h FinalizationStrat) ConfLevel() xchain.ConfLevel {
+	return map[FinalizationStrat]xchain.ConfLevel{
+		StratLatest:    xchain.ConfLatest,
+		StratSafe:      xchain.ConfSafe,
+		StratFinalized: xchain.ConfFinalized,
+	}[h]
 }
 
 func (h FinalizationStrat) String() string {
@@ -168,4 +255,37 @@ type Chain struct {
 	DeployHeight      uint64            // Height that the portal contracts were deployed
 	BlockPeriod       time.Duration     // Block period of the chain
 	FinalizationStrat FinalizationStrat // Finalization strategy of the chain
+}
+
+// Shards returns the supported shards for the chain.
+// TODO(corver): Store these in XRegistry, currently it is inferred from the FinalizationStrat.
+func (c Chain) Shards() []uint64 {
+	return []uint64{
+		uint64(c.FinalizationStrat.ConfLevel()),
+	}
+}
+
+// ConfLevels returns the uniq set of confirmation levels
+// supported by the chain. This is inferred from the supported shards.
+func (c Chain) ConfLevels() []xchain.ConfLevel {
+	dedup := make(map[xchain.ConfLevel]struct{})
+	for _, shard := range c.Shards() {
+		conf := xchain.ConfFromShard(shard)
+		if _, ok := dedup[conf]; ok {
+			continue
+		}
+		dedup[conf] = struct{}{}
+	}
+
+	confs := make([]xchain.ConfLevel, 0, len(dedup))
+	for conf := range dedup {
+		confs = append(confs, conf)
+	}
+
+	// Sort for deterministic ordering.
+	sort.Slice(confs, func(i, j int) bool {
+		return confs[i] < confs[j]
+	})
+
+	return confs
 }

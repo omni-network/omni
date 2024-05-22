@@ -27,7 +27,7 @@ func TestApprovedAttestations(t *testing.T) {
 
 		ctx := context.Background()
 		for _, portal := range portals {
-			atts, err := fetchAllAtts(ctx, cprov, portal.Chain.ID)
+			atts, err := fetchAllAtts(ctx, cprov, portal.Chain)
 			require.NoError(t, err)
 
 			// Only non-empty blocks are attested to, and we don't know how many that should be, so just ensure it isn't 0.
@@ -37,7 +37,7 @@ func TestApprovedAttestations(t *testing.T) {
 		// Ensure at least one (genesis) consensus chain approved attestation
 		consChain, ok := network.OmniConsensusChain()
 		require.True(t, ok)
-		atts, err := fetchAllAtts(ctx, cprov, consChain.ID)
+		atts, err := fetchAllAtts(ctx, cprov, consChain)
 		require.NoError(t, err)
 		require.NotEmpty(t, len(atts))
 	})
@@ -98,11 +98,11 @@ func TestApprovedValUpdates(t *testing.T) {
 	})
 }
 
-func fetchAllAtts(ctx context.Context, cprov cchain.Provider, chainID uint64) ([]xchain.Attestation, error) {
+func fetchAllAtts(ctx context.Context, cprov cchain.Provider, chain netconf.Chain) ([]xchain.Attestation, error) {
 	fromOffset := uint64(1) // Start at initialXBlockOffset
 	var resp []xchain.Attestation
 	for {
-		atts, err := cprov.AttestationsFrom(ctx, chainID, fromOffset)
+		atts, err := cprov.AttestationsFrom(ctx, chain.ID, chain.FinalizationStrat.ConfLevel(), fromOffset)
 		if err != nil {
 			return nil, err
 		}

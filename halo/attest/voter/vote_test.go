@@ -24,6 +24,7 @@ func TestCreateVerifyVotes(t *testing.T) {
 
 	var block xchain.Block
 	fuzz.New().NilChance(0).NumElements(1, 64).Fuzz(&block)
+	block.ConfLevel = xchain.ConfLatest // Pick valid conf level
 
 	att, err := voter.CreateVote(privKey, block)
 	require.NoError(t, err)

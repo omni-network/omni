@@ -97,10 +97,11 @@ func TestVotesFromCommit(t *testing.T) {
 
 					vote := &types.Vote{
 						BlockHeader: &types.BlockHeader{
-							ChainId: chain,
-							Offset:  offset,
-							Height:  offset * 2,
-							Hash:    blockHash[:],
+							ChainId:   chain,
+							ConfLevel: uint32(xchain.ConfFinalized),
+							Offset:    offset,
+							Height:    offset * 2,
+							Hash:      blockHash[:],
 						},
 						AttestationRoot: blockHash[:],
 						Signature: &types.SigTuple{
@@ -133,7 +134,7 @@ func TestVotesFromCommit(t *testing.T) {
 		Votes: evotes,
 	}
 
-	comparer := func(ctx context.Context, chainID uint64, height uint64) (int, error) {
+	comparer := func(ctx context.Context, chainID uint64, _ uint32, height uint64) (int, error) {
 		if chainID == skipChain {
 			return 1, nil
 		}

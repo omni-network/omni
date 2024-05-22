@@ -23,26 +23,23 @@ import (
 //
 // Note that the BlockOffset field is not populated for emit cursors, since it isn't stored on-chain
 // but tracked off-chain.
-func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, sourceChainID uint64, destinationChainID uint64,
+func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, stream xchain.StreamID,
 ) (xchain.StreamCursor, bool, error) {
 	const unknownBlockOffset uint64 = 0
-	if sourceChainID == p.cChainID {
+	if stream.SourceChainID == p.cChainID {
 		block, err := getConsXBlock(ctx, ref, p.cProvider)
 		if err != nil {
 			return xchain.StreamCursor{}, false, err
 		}
 
 		return xchain.StreamCursor{
-			StreamID: xchain.StreamID{
-				SourceChainID: sourceChainID,
-				DestChainID:   destinationChainID, // Consensus xmsgs are broadcast, so use the provided destination chain ID.
-			},
+			StreamID:    stream,
 			MsgOffset:   block.Msgs[0].StreamOffset, // Consensus xblocks only have a single xmsg.
 			BlockOffset: unknownBlockOffset,
 		}, true, nil
 	}
 
-	chain, rpcClient, err := p.getEVMChain(sourceChainID)
+	chain, rpcClient, err := p.getEVMChain(stream.SourceChainID)
 	if err != nil {
 		return xchain.StreamCursor{}, false, err
 	}
@@ -53,9 +50,9 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, sou
 	}
 
 	opts := &bind.CallOpts{Context: ctx}
-	if ref.HeadType != nil && *ref.HeadType != ethclient.HeadLatest {
+	if head, ok := headTypeFromConfLevel(ref.ConfLevel); ok {
 		// Populate an explicit block number if not querying latest head.
-		header, err := rpcClient.HeaderByType(ctx, *ref.HeadType)
+		header, err := rpcClient.HeaderByType(ctx, head)
 		if err != nil {
 			return xchain.StreamCursor{}, false, err
 		}
@@ -65,7 +62,7 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, sou
 		opts.BlockNumber = big.NewInt(int64(*ref.Height))
 	}
 
-	offset, err := caller.OutXStreamOffset(opts, destinationChainID)
+	offset, err := caller.OutXStreamOffset(opts, stream.DestChainID)
 	if err != nil {
 		return xchain.StreamCursor{}, false, errors.Wrap(err, "call inXStreamOffset")
 	}
@@ -75,10 +72,7 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, sou
 	}
 
 	return xchain.StreamCursor{
-		StreamID: xchain.StreamID{
-			SourceChainID: sourceChainID,
-			DestChainID:   destinationChainID,
-		},
+		StreamID:    stream,
 		MsgOffset:   offset,
 		BlockOffset: unknownBlockOffset,
 	}, true, nil
@@ -86,9 +80,9 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, sou
 
 // GetSubmittedCursor returns the submitted cursor for the source chain on the destination chain,
 // or false if not available, or an error. Calls the destination chain portal InXStreamOffset method.
-func (p *Provider) GetSubmittedCursor(ctx context.Context, destChainID uint64, sourceChainID uint64,
+func (p *Provider) GetSubmittedCursor(ctx context.Context, stream xchain.StreamID,
 ) (xchain.StreamCursor, bool, error) {
-	chain, rpcClient, err := p.getEVMChain(destChainID)
+	chain, rpcClient, err := p.getEVMChain(stream.DestChainID)
 	if err != nil {
 		return xchain.StreamCursor{}, false, err
 	}
@@ -106,7 +100,7 @@ func (p *Provider) GetSubmittedCursor(ctx context.Context, destChainID uint64, s
 	callOpts := &bind.CallOpts{Context: ctx, BlockNumber: big.NewInt(int64(height))}
 
 	// TODO(corver): Rename portal variable to InXStreamMsgOffset
-	msgOffset, err := caller.InXStreamOffset(callOpts, sourceChainID)
+	msgOffset, err := caller.InXStreamOffset(callOpts, stream.SourceChainID)
 	if err != nil {
 		return xchain.StreamCursor{}, false, errors.Wrap(err, "call inXStreamOffset")
 	}
@@ -116,16 +110,13 @@ func (p *Provider) GetSubmittedCursor(ctx context.Context, destChainID uint64, s
 	}
 
 	// TODO(corver): Rename portal variable to InXStreamBlockOffset
-	blockOffset, err := caller.InXStreamBlockHeight(callOpts, sourceChainID)
+	blockOffset, err := caller.InXStreamBlockHeight(callOpts, stream.SourceChainID)
 	if err != nil {
 		return xchain.StreamCursor{}, false, errors.Wrap(err, "call inXStreamBlockHeight")
 	}
 
 	return xchain.StreamCursor{
-		StreamID: xchain.StreamID{
-			SourceChainID: sourceChainID,
-			DestChainID:   destChainID,
-		},
+		StreamID:    stream,
 		MsgOffset:   msgOffset,
 		BlockOffset: blockOffset,
 	}, true, nil
@@ -150,7 +141,7 @@ func (p *Provider) GetBlock(ctx context.Context, chainID uint64, height uint64, 
 		return b, true, nil
 	}
 
-	_, ethCl, err := p.getEVMChain(chainID)
+	chain, ethCl, err := p.getEVMChain(chainID)
 	if err != nil {
 		return xchain.Block{}, false, err
 	}
@@ -213,6 +204,7 @@ func (p *Provider) GetBlock(ctx context.Context, chainID uint64, height uint64, 
 	resp := xchain.Block{
 		BlockHeader: xchain.BlockHeader{
 			SourceChainID: chainID,
+			ConfLevel:     chain.FinalizationStrat.ConfLevel(), // Hardcode ConfLevel for now.
 			BlockHeight:   height,
 			BlockHash:     header.Hash(),
 		},
@@ -310,6 +302,7 @@ func (p *Provider) getXMsgLogs(ctx context.Context, chainID uint64, height uint6
 				StreamID: xchain.StreamID{
 					SourceChainID: chain.ID,
 					DestChainID:   e.DestChainId,
+					ShardID:       uint64(chain.FinalizationStrat.ConfLevel()), // Hardcode ShardID for now.
 				},
 				StreamOffset: e.StreamOffset,
 			},
@@ -363,7 +356,7 @@ func getConsXBlock(ctx context.Context, ref xchain.EmitRef, cprov cchain.Provide
 	var latest bool
 	if ref.Height != nil {
 		height = *ref.Height
-	} else if ref.HeadType != nil {
+	} else if ref.ConfLevel != nil {
 		// For consensus chain (instant finality), we can query the latest consensus xblock.
 		latest = true
 	}
@@ -384,4 +377,21 @@ func getConsXBlock(ctx context.Context, ref xchain.EmitRef, cprov cchain.Provide
 
 func spanName(method string) string {
 	return "xprovider/" + method
+}
+
+func headTypeFromConfLevel(conf *xchain.ConfLevel) (ethclient.HeadType, bool) {
+	if conf == nil {
+		return "", false
+	}
+
+	switch *conf {
+	case xchain.ConfLatest:
+		return ethclient.HeadLatest, true
+	case xchain.ConfSafe:
+		return ethclient.HeadSafe, true
+	case xchain.ConfFinalized:
+		return ethclient.HeadFinalized, true
+	default:
+		return "", false
+	}
 }

@@ -153,7 +153,7 @@ func (l *voterLoader) LazyLoad(
 		Provider: cprov,
 	}
 
-	v, err := voter.LoadVoter(privKey, voterStateFile, xprov, deps, network.ChainNamesByIDs())
+	v, err := voter.LoadVoter(privKey, voterStateFile, xprov, deps, network)
 	if err != nil {
 		return errors.Wrap(err, "create voter")
 	}
@@ -242,7 +242,7 @@ func (l *voterLoader) LocalAddress() common.Address {
 	return common.Address{}
 }
 
-func (l *voterLoader) TrimBehind(minsByChain map[uint64]uint64) int {
+func (l *voterLoader) TrimBehind(minsByChain map[atypes.ChainVersion]uint64) int {
 	if v, ok := l.getVoter(); ok {
 		return v.TrimBehind(minsByChain)
 	}

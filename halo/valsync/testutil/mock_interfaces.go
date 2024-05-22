@@ -96,18 +96,18 @@ func (m *MockAttestKeeper) EXPECT() *MockAttestKeeperMockRecorder {
 }
 
 // ListAttestationsFrom mocks base method.
-func (m *MockAttestKeeper) ListAttestationsFrom(ctx context.Context, chainID, height, max uint64) ([]*types1.Attestation, error) {
+func (m *MockAttestKeeper) ListAttestationsFrom(ctx context.Context, chainID uint64, confLevel uint32, offset, max uint64) ([]*types1.Attestation, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListAttestationsFrom", ctx, chainID, height, max)
+	ret := m.ctrl.Call(m, "ListAttestationsFrom", ctx, chainID, confLevel, offset, max)
 	ret0, _ := ret[0].([]*types1.Attestation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListAttestationsFrom indicates an expected call of ListAttestationsFrom.
-func (mr *MockAttestKeeperMockRecorder) ListAttestationsFrom(ctx, chainID, height, max any) *gomock.Call {
+func (mr *MockAttestKeeperMockRecorder) ListAttestationsFrom(ctx, chainID, confLevel, offset, max any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAttestationsFrom", reflect.TypeOf((*MockAttestKeeper)(nil).ListAttestationsFrom), ctx, chainID, height, max)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAttestationsFrom", reflect.TypeOf((*MockAttestKeeper)(nil).ListAttestationsFrom), ctx, chainID, confLevel, offset, max)
 }
 
 // MockSubscriber is a mock of Subscriber interface.
@@ -134,13 +134,13 @@ func (m *MockSubscriber) EXPECT() *MockSubscriberMockRecorder {
 }
 
 // UpdateValidators mocks base method.
-func (m *MockSubscriber) UpdateValidators(arg0 []types.ValidatorUpdate) {
+func (m *MockSubscriber) UpdateValidators(valset []types.ValidatorUpdate) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "UpdateValidators", arg0)
+	m.ctrl.Call(m, "UpdateValidators", valset)
 }
 
 // UpdateValidators indicates an expected call of UpdateValidators.
-func (mr *MockSubscriberMockRecorder) UpdateValidators(arg0 any) *gomock.Call {
+func (mr *MockSubscriberMockRecorder) UpdateValidators(valset any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateValidators", reflect.TypeOf((*MockSubscriber)(nil).UpdateValidators), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateValidators", reflect.TypeOf((*MockSubscriber)(nil).UpdateValidators), valset)
 }

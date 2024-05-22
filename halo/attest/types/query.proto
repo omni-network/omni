@@ -27,7 +27,8 @@ service Query {
 // following from_height.
 message AttestationsFromRequest {
   uint64 chain_id    = 1; // Chain ID as per https://chainlist.org
-  uint64 from_offset = 2; // XBlock offset to start from (inclusive)
+  uint32 conf_level  = 2; // Confirmation level of the attestation
+  uint64 from_offset = 3; // XBlock offset to start from (inclusive)
 }
 
 message AttestationsFromResponse{
@@ -35,7 +36,8 @@ message AttestationsFromResponse{
 }
 
 message LatestAttestationRequest {
-  uint64 chain_id = 1; // Chain ID as per https://chainlist.org
+  uint64 chain_id   = 1; // Chain ID as per https://chainlist.org
+  uint32 conf_level = 2; // Confirmation level of the attestation
 }
 
 message LatestAttestationResponse {
@@ -43,8 +45,9 @@ message LatestAttestationResponse {
 }
 
 message WindowCompareRequest {
-  uint64 chain_id = 1; // Chain ID as per https://chainlist.org
-  uint64 block_offset = 2; // Attestation block offset to compare
+  uint64 chain_id     = 1; // Chain ID as per https://chainlist.org
+  uint32 conf_level   = 2; // Confirmation level of the attestation
+  uint64 block_offset = 3; // Attestation block offset to compare
 }
 
 message WindowCompareResponse {

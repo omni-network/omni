@@ -23,15 +23,23 @@ func getSubmittedCursors(ctx context.Context, network netconf.Network, dstChainI
 			continue
 		}
 
-		cursor, ok, err := xClient.GetSubmittedCursor(ctx, dstChainID, srcChain.ID)
-		if err != nil {
-			return nil, nil, errors.Wrap(err, "failed to get submitted cursors", "src_chain", srcChain.Name)
-		} else if !ok {
-			continue
-		}
+		for _, shardID := range srcChain.Shards() {
+			stream := xchain.StreamID{
+				SourceChainID: srcChain.ID,
+				DestChainID:   dstChainID,
+				ShardID:       shardID,
+			}
 
-		initialOffsets[cursor.StreamID] = cursor.MsgOffset
-		cursors = append(cursors, cursor)
+			cursor, ok, err := xClient.GetSubmittedCursor(ctx, stream)
+			if err != nil {
+				return nil, nil, errors.Wrap(err, "failed to get submitted cursors", "src_chain", srcChain.Name)
+			} else if !ok {
+				continue
+			}
+
+			initialOffsets[cursor.StreamID] = cursor.MsgOffset
+			cursors = append(cursors, cursor)
+		}
 	}
 
 	return cursors, initialOffsets, nil
@@ -58,18 +66,24 @@ func filterMsgs(msgs []xchain.Msg, offsets map[xchain.StreamID]uint64, streamID 
 	return res
 }
 
-// fromOffsets calculates the starting offsets for streaming from source chains to a destination chain.
-// It takes stream cursors, destination and source chains, and the current state, and returns
+// fromOffsets calculates the starting offsets for all streams (to the destination chain).
+// It takes submitted stream cursors, destination and source chains, and the current state, and returns
 // a map where keys are source chain IDs and values are the starting offsets for streaming.
-func fromOffsets(cursors []xchain.StreamCursor, destChain netconf.Chain, chains []netconf.Chain,
-	state *State) map[uint64]uint64 {
-	res := make(map[uint64]uint64)
+func fromOffsets(
+	cursors []xchain.StreamCursor, // All actual on-chain submit cursors
+	streams []xchain.StreamID, // All expected streams
+	state *State, // On-disk local state
+) (map[xchain.StreamID]uint64, error) {
+	res := make(map[xchain.StreamID]uint64)
 
-	for _, chain := range chains {
-		if chain.ID == destChain.ID {
-			continue
+	// Initialize all streams to start at 1 by default or if local state is present
+	for _, stream := range streams {
+		res[stream] = initialXBlockOffset
+
+		// If local persisted state is higher, use that instead, skipping a bunch of empty blocks on startup.
+		if offset := state.GetOffset(stream.DestChainID, stream.SourceChainID); offset > initialXBlockOffset {
+			res[stream] = offset
 		}
-		res[chain.ID] = initialXBlockOffset
 	}
 
 	// sort cursors by decreasing offset, so we start streaming from minimum offset per source chain
@@ -78,17 +92,17 @@ func fromOffsets(cursors []xchain.StreamCursor, destChain netconf.Chain, chains 
 	})
 
 	for _, cursor := range cursors {
-		if cursor.SourceChainID == destChain.ID {
-			continue // Sanity check
+		offset, ok := res[cursor.StreamID]
+		if !ok {
+			return nil, errors.New("unexpected cursor [BUG]")
 		}
 
-		res[cursor.SourceChainID] = cursor.BlockOffset
-
-		// If local persisted state is higher, use that instead, skipping a bunch of empty blocks on startup.
-		if offset := state.GetOffset(destChain.ID, cursor.SourceChainID); offset > cursor.BlockOffset {
-			res[cursor.SourceChainID] = offset
+		if offset >= cursor.BlockOffset {
+			continue // Skip if local state is higher than cursor
 		}
+
+		res[cursor.StreamID] = cursor.BlockOffset
 	}
 
-	return res
+	return res, nil
 }

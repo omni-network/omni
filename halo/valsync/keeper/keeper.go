@@ -7,6 +7,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/xchain"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
@@ -230,9 +231,10 @@ func (k *Keeper) processAttested(ctx context.Context) ([]abci.ValidatorUpdate, e
 	if err != nil {
 		return nil, errors.Wrap(err, "parse chain id")
 	}
+	conf := xchain.ConfFinalized // TODO(corver): Move this to static netconf.
 
 	// Check if this unattested set was attested to (valSet.Id == attestation.BlockOffset)
-	if atts, err := k.aKeeper.ListAttestationsFrom(ctx, chainID, valset.GetId(), 1); err != nil {
+	if atts, err := k.aKeeper.ListAttestationsFrom(ctx, chainID, uint32(conf), valset.GetId(), 1); err != nil {
 		return nil, errors.Wrap(err, "list attestations")
 	} else if len(atts) == 0 {
 		return nil, nil // No attested set, so no updates.

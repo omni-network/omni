@@ -15,6 +15,7 @@ import (
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -42,7 +43,7 @@ var _ types.Voter = (*Voter)(nil)
 type Voter struct {
 	path        string
 	privKey     crypto.PrivKey
-	chains      map[uint64]string
+	network     netconf.Network
 	address     common.Address
 	isValFunc   IsValDetector
 	provider    xchain.Provider
@@ -51,11 +52,11 @@ type Voter struct {
 	wg          sync.WaitGroup
 
 	mu          sync.Mutex
-	latest      map[uint64]*types.Vote // Latest vote per chain
+	latest      map[types.ChainVersion]*types.Vote // Latest vote per chain
 	available   []*types.Vote
 	proposed    []*types.Vote
 	committed   []*types.Vote
-	minsByChain map[uint64]uint64 // map[chainID]offset
+	minsByChain map[types.ChainVersion]uint64 // map[chainID]offset
 	isVal       bool
 }
 
@@ -67,7 +68,7 @@ func GenEmptyStateFile(path string) error {
 
 // LoadVoter returns a new attester with state loaded from disk.
 func LoadVoter(privKey crypto.PrivKey, path string, provider xchain.Provider, deps types.VoterDeps,
-	chains map[uint64]string,
+	network netconf.Network,
 ) (*Voter, error) {
 	if len(privKey.PubKey().Bytes()) != 33 {
 		return nil, errors.New("invalid private key")
@@ -88,7 +89,7 @@ func LoadVoter(privKey crypto.PrivKey, path string, provider xchain.Provider, de
 		isValFunc: NewIsValDetector(addr),
 		address:   addr,
 		path:      path,
-		chains:    chains,
+		network:   network,
 		provider:  provider,
 		deps:      deps,
 		backoffFunc: func(ctx context.Context) func() {
@@ -98,14 +99,15 @@ func LoadVoter(privKey crypto.PrivKey, path string, provider xchain.Provider, de
 		available: s.Available,
 		proposed:  s.Proposed,
 		committed: s.Committed,
-		latest:    s.Latest,
+		latest:    latestFromJSON(s.Latest),
 	}, nil
 }
 
 // Start starts runners that attest to each source chain. It does not block, it returns immediately.
 func (v *Voter) Start(ctx context.Context) {
-	for chainID := range v.chains {
-		go v.runForever(ctx, chainID)
+	for _, chain := range v.network.Chains {
+		chainVer := types.ChainVersion{ChainID: chain.ID, ConfLevel: uint32(chain.FinalizationStrat.ConfLevel())}
+		go v.runForever(ctx, chainVer)
 	}
 }
 
@@ -115,11 +117,15 @@ func (v *Voter) WaitDone() {
 }
 
 // minWindow returns the minimum vote window (attestation offset).
-func (v *Voter) minWindow(chainID uint64) (uint64, bool) {
+func (v *Voter) minWindow(chainID uint64, conf xchain.ConfLevel) (uint64, bool) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 
-	resp, ok := v.minsByChain[chainID]
+	chainVer := types.ChainVersion{
+		ChainID:   chainID,
+		ConfLevel: uint32(conf),
+	}
+	resp, ok := v.minsByChain[chainVer]
 
 	return resp, ok
 }
@@ -133,11 +139,11 @@ func (v *Voter) isValidator() bool {
 }
 
 // runForever blocks, repeatedly calling runOnce (with backoff) for the provided chain until the context is canceled.
-func (v *Voter) runForever(ctx context.Context, chainID uint64) {
+func (v *Voter) runForever(ctx context.Context, chainVer types.ChainVersion) {
 	v.wg.Add(1)
 	defer v.wg.Done()
 
-	ctx = log.WithCtx(ctx, "chain", v.chains[chainID])
+	ctx = log.WithCtx(ctx, "chain", v.network.ChainName(chainVer.ChainID))
 
 	backoff := v.backoffFunc(ctx)
 	for ctx.Err() == nil {
@@ -146,7 +152,7 @@ func (v *Voter) runForever(ctx context.Context, chainID uint64) {
 			continue
 		}
 
-		err := v.runOnce(ctx, chainID)
+		err := v.runOnce(ctx, chainVer)
 		if ctx.Err() != nil {
 			return // Don't log or sleep on context cancel.
 		}
@@ -158,19 +164,19 @@ func (v *Voter) runForever(ctx context.Context, chainID uint64) {
 
 // runOnce blocks, streaming xblocks from the provided chain until an error is encountered.
 // It always returns a non-nil error.
-func (v *Voter) runOnce(ctx context.Context, chainID uint64) error {
+func (v *Voter) runOnce(ctx context.Context, chainVer types.ChainVersion) error {
 	// Determine what height to stream from.
 	var fromHeight uint64
 	var fromOffset uint64
 
 	// Get latest state from disk.
-	if latest, ok := v.latestByChain(chainID); ok {
+	if latest, ok := v.latestByChain(chainVer); ok {
 		fromHeight = latest.BlockHeader.Height + 1
 		fromOffset = latest.BlockHeader.Offset + 1
 	}
 
 	// Get latest approved attestation from the chain.
-	if latest, ok, err := v.deps.LatestAttestation(ctx, chainID); err != nil {
+	if latest, ok, err := v.deps.LatestAttestation(ctx, chainVer.ChainID, xchain.ConfLevel(chainVer.ConfLevel)); err != nil {
 		return errors.Wrap(err, "latest attestation")
 	} else if ok && fromHeight < latest.BlockHeight+1 {
 		// Allows skipping ahead of we were behind for some reason.
@@ -184,7 +190,7 @@ func (v *Voter) runOnce(ctx context.Context, chainID uint64) error {
 
 	first := true // Allow skipping on first attestation.
 
-	return v.provider.StreamBlocks(ctx, chainID, fromHeight, fromOffset,
+	return v.provider.StreamBlocks(ctx, chainVer.ChainID, fromHeight, fromOffset,
 		func(ctx context.Context, block xchain.Block) error {
 			if !v.isValidator() {
 				return errors.New("not a validator anymore")
@@ -198,7 +204,7 @@ func (v *Voter) runOnce(ctx context.Context, chainID uint64) error {
 				return nil // Do not vote for empty blocks.
 			}
 
-			minimum, ok := v.minWindow(block.SourceChainID)
+			minimum, ok := v.minWindow(block.SourceChainID, block.ConfLevel)
 			if ok && block.BlockOffset < minimum {
 				return errors.New("behind vote window (too slow)", "vote_height", block.BlockOffset, "window_minimum", minimum)
 			}
@@ -234,10 +240,14 @@ func (v *Voter) Vote(block xchain.Block, allowSkip bool) error {
 	vote, err := CreateVote(v.privKey, block)
 	if err != nil {
 		return err
+	} else if err := vote.Verify(); err != nil {
+		return errors.Wrap(err, "verify vote")
 	}
 
+	chainVer := vote.BlockHeader.ChainVersion()
+
 	// Ensure attestation is sequential and not a duplicate.
-	latest, ok := v.latest[vote.BlockHeader.ChainId]
+	latest, ok := v.latest[chainVer]
 	if ok && latest.BlockHeader.Offset >= vote.BlockHeader.Offset {
 		return errors.New("attestation height already exists",
 			"latest", latest.BlockHeader.Offset, "new", vote.BlockHeader.Offset)
@@ -246,13 +256,14 @@ func (v *Voter) Vote(block xchain.Block, allowSkip bool) error {
 			"existing", latest.BlockHeader.Offset, "new", vote.BlockHeader.Offset)
 	}
 
-	v.latest[vote.BlockHeader.ChainId] = vote
+	v.latest[chainVer] = vote
 	v.available = append(v.available, vote)
 
 	lag := time.Since(block.Timestamp).Seconds()
-	createLag.WithLabelValues(v.chains[vote.BlockHeader.ChainId]).Set(lag)
-	createHeight.WithLabelValues(v.chains[vote.BlockHeader.ChainId]).Set(float64(vote.BlockHeader.Height))
-	createBlockOffset.WithLabelValues(v.chains[vote.BlockHeader.ChainId]).Set(float64(vote.BlockHeader.Offset))
+	name := v.network.ChainName(chainVer.ChainID)
+	createLag.WithLabelValues(name).Set(lag)
+	createHeight.WithLabelValues(name).Set(float64(vote.BlockHeader.Height))
+	createBlockOffset.WithLabelValues(name).Set(float64(vote.BlockHeader.Offset))
 	for stream, msgOffset := range latestMsgOffsets(block.Msgs) {
 		createMsgOffset.WithLabelValues(v.streamName(stream)).Set(float64(msgOffset))
 	}
@@ -275,16 +286,17 @@ func (v *Voter) UpdateValidators(valset []abci.ValidatorUpdate) {
 
 // TrimBehind trims all available and proposed votes that are behind the vote window thresholds (map[chainID]offset)
 // and returns the number that was deleted.
-func (v *Voter) TrimBehind(minsByChain map[uint64]uint64) int {
+func (v *Voter) TrimBehind(minsByChain map[types.ChainVersion]uint64) int {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 
 	trim := func(votes []*types.Vote) []*types.Vote {
 		var remaining []*types.Vote
 		for _, vote := range votes {
-			minimum, ok := minsByChain[vote.BlockHeader.ChainId]
+			chainVer := vote.BlockHeader.ChainVersion()
+			minimum, ok := minsByChain[chainVer]
 			if ok && vote.BlockHeader.Offset < minimum {
-				trimTotal.WithLabelValues(v.chains[vote.BlockHeader.ChainId]).Inc()
+				trimTotal.WithLabelValues(v.network.ChainName(chainVer.ChainID)).Inc()
 				continue // Skip/Trim
 			}
 			remaining = append(remaining, vote) // Retain all others
@@ -382,7 +394,7 @@ func (v *Voter) SetCommitted(headers []*types.BlockHeader) error {
 
 	// Update committed height metrics.
 	for _, vote := range v.committed {
-		commitHeight.WithLabelValues(v.chains[vote.BlockHeader.ChainId]).Set(float64(vote.BlockHeader.Height))
+		commitHeight.WithLabelValues(v.network.ChainName(vote.BlockHeader.ChainId)).Set(float64(vote.BlockHeader.Height))
 	}
 
 	return v.saveUnsafe()
@@ -402,11 +414,11 @@ func (v *Voter) availableAndProposedUnsafe() []*types.Vote {
 	return resp
 }
 
-func (v *Voter) latestByChain(chainID uint64) (*types.Vote, bool) {
+func (v *Voter) latestByChain(chainVer types.ChainVersion) (*types.Vote, bool) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 
-	vote, ok := v.latest[chainID]
+	vote, ok := v.latest[chainVer]
 
 	return vote, ok
 }
@@ -430,7 +442,7 @@ func (v *Voter) saveUnsafe() error {
 		Available: v.available,
 		Proposed:  v.proposed,
 		Committed: v.committed,
-		Latest:    v.latest,
+		Latest:    latestToJSON(v.latest),
 	}
 	bz, err := json.Marshal(s)
 	if err != nil {
@@ -447,7 +459,7 @@ func (v *Voter) saveUnsafe() error {
 }
 
 func (v *Voter) streamName(streamID xchain.StreamID) string {
-	return fmt.Sprintf("%s|%s", v.chains[streamID.SourceChainID], v.chains[streamID.DestChainID])
+	return fmt.Sprintf("%s|%s", v.network.ChainName(streamID.SourceChainID), v.network.ChainName(streamID.DestChainID))
 }
 
 // instrumentUnsafe updates metrics. It is unsafe since it assumes the lock is held.
@@ -459,7 +471,7 @@ func (v *Voter) instrumentUnsafe() {
 		}
 
 		for chain, count := range counts {
-			gaugeVec.WithLabelValues(v.chains[chain]).Set(float64(count))
+			gaugeVec.WithLabelValues(v.network.ChainName(chain)).Set(float64(count))
 		}
 	}
 
@@ -469,10 +481,10 @@ func (v *Voter) instrumentUnsafe() {
 
 // stateJSON is the JSON representation of the attester state.
 type stateJSON struct {
-	Available []*types.Vote          `json:"available"`
-	Proposed  []*types.Vote          `json:"proposed"`
-	Committed []*types.Vote          `json:"committed"`
-	Latest    map[uint64]*types.Vote `json:"latest"`
+	Available []*types.Vote `json:"available"`
+	Proposed  []*types.Vote `json:"proposed"`
+	Committed []*types.Vote `json:"committed"`
+	Latest    []*types.Vote `json:"latest"`
 }
 
 // loadState loads a path state from the given path.
@@ -486,32 +498,8 @@ func loadState(path string) (stateJSON, error) {
 	if err := json.Unmarshal(bz, &s); err != nil {
 		return stateJSON{}, errors.Wrap(err, "unmarshal state path")
 	}
-	if s.Latest == nil {
-		s.Latest = bootstrapLatest(s)
-	}
 
 	return s, nil
-}
-
-// bootstrapLatest returns the latest attestations for the given state.
-// It can be used to bootstrap the new field if not present on disk.
-func bootstrapLatest(s stateJSON) map[uint64]*types.Vote {
-	resp := make(map[uint64]*types.Vote)
-	iter := func(votes []*types.Vote) {
-		for _, vote := range votes {
-			existing, ok := resp[vote.BlockHeader.ChainId]
-			if ok && vote.BlockHeader.Offset <= existing.BlockHeader.Offset {
-				continue
-			}
-			resp[vote.BlockHeader.ChainId] = vote
-		}
-	}
-
-	iter(s.Available)
-	iter(s.Proposed)
-	iter(s.Committed)
-
-	return resp
 }
 
 // headerMap converts a list of headers to a bool map (set).
@@ -586,6 +574,24 @@ func latestMsgOffsets(msgs []xchain.Msg) map[xchain.StreamID]uint64 {
 		if resp[msg.StreamID] < msg.StreamOffset {
 			resp[msg.StreamID] = msg.StreamOffset
 		}
+	}
+
+	return resp
+}
+
+func latestToJSON(latest map[types.ChainVersion]*types.Vote) []*types.Vote {
+	resp := make([]*types.Vote, 0, len(latest))
+	for _, v := range latest {
+		resp = append(resp, v)
+	}
+
+	return resp
+}
+
+func latestFromJSON(latest []*types.Vote) map[types.ChainVersion]*types.Vote {
+	resp := make(map[types.ChainVersion]*types.Vote, len(latest))
+	for _, v := range latest {
+		resp[v.BlockHeader.ChainVersion()] = v
 	}
 
 	return resp

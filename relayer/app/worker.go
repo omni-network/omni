@@ -87,21 +87,27 @@ func (w *Worker) runOnce(ctx context.Context) error {
 
 	buf := newActiveBuffer(w.destChain.Name, mempoolLimit, sender)
 
+	blockOffsets, err := fromOffsets(cursors, w.network.StreamsTo(w.destChain.ID), w.state)
+	if err != nil {
+		return err
+	}
+
 	var logAttrs []any //nolint:prealloc // Not worth it
-	for srcChainID, fromOffset := range fromOffsets(cursors, w.destChain, w.network.Chains, w.state) {
-		if srcChainID == w.destChain.ID { // Sanity check
+	for stream, fromOffset := range blockOffsets {
+		if stream.SourceChainID == w.destChain.ID { // Sanity check
 			return errors.New("unexpected cursor [BUG]")
+		}
+
+		srcChain, ok := w.network.Chain(stream.SourceChainID)
+		if !ok {
+			return errors.New("chain not found [BUG]")
 		}
 
 		callback := newCallback(w.xProvider, initialOffsets, w.creator, buf.AddInput, w.destChain.ID, newMsgStreamMapper(w.network), w.awaitValSet)
 		wrapCb := wrapStatePersist(callback, w.state, w.destChain.ID)
 
-		w.cProvider.Subscribe(ctx, srcChainID, fromOffset, w.destChain.Name, wrapCb)
+		w.cProvider.Subscribe(ctx, stream.SourceChainID, stream.ConfLevel(), fromOffset, w.destChain.Name, wrapCb)
 
-		srcChain, f := w.network.Chain(srcChainID)
-		if !f {
-			continue
-		}
 		logAttrs = append(logAttrs, srcChain.Name, fromOffset)
 	}
 
@@ -168,6 +174,7 @@ func newMsgStreamMapper(network netconf.Network) msgStreamMapper {
 				streamID := xchain.StreamID{
 					SourceChainID: consensusChain.ID,
 					DestChainID:   evmChain.ID,
+					ShardID:       msg.ShardID,
 				}
 				resp[streamID] = append(resp[streamID], msg)
 			}

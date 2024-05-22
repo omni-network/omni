@@ -3,6 +3,7 @@ package voter_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -12,6 +13,7 @@ import (
 	"github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/halo/attest/voter"
 	"github.com/omni-network/omni/lib/k1util"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -35,16 +37,18 @@ func TestRunner(t *testing.T) {
 
 	const (
 		chain1     = 1
+		conf       = xchain.ConfFinalized
 		isVal      = true
 		isNotVal   = false
 		returnsOk  = true
 		returnsErr = false
 	)
 
+	network := testNetwork(chain1)
 	prov := make(stubProvider)
 	backoff := new(testBackOff)
 	deps := &mockDeps{}
-	v := voter.LoadVoterForT(t, pk, path, prov, deps, map[uint64]string{chain1: ""}, backoff.BackOff)
+	v := voter.LoadVoterForT(t, pk, path, prov, deps, network, backoff.BackOff)
 
 	// callback is a helper function that calls the callback and asserts the error.
 	callback := func(t *testing.T, sub sub, height uint64, isVal, ok bool) {
@@ -53,6 +57,7 @@ func TestRunner(t *testing.T) {
 		err := sub.callback(ctx, xchain.Block{
 			BlockHeader: xchain.BlockHeader{
 				SourceChainID: chain1,
+				ConfLevel:     conf,
 				BlockOffset:   height,
 				BlockHeight:   height,
 			},
@@ -86,8 +91,8 @@ func TestRunner(t *testing.T) {
 	callback(t, sub, 0, isVal, returnsOk) // Callback block 0 (in window)
 	callback(t, sub, 1, isVal, returnsOk) // Callback block 1 (after window)
 
-	v.TrimBehind(map[uint64]uint64{chain1: 3}) // Set window to 3
-	callback(t, sub, 2, isVal, returnsErr)     // Callback block 2 (before window) (triggers reset of worker)
+	v.TrimBehind(minByChain(network, chain1, 3)) // Set window to 3
+	callback(t, sub, 2, isVal, returnsErr)       // Callback block 2 (before window) (triggers reset of worker)
 
 	// Assert it reset
 	sub = <-prov // Get the new subscription
@@ -95,8 +100,8 @@ func TestRunner(t *testing.T) {
 	require.EqualValues(t, 2, sub.offset) // Assert it starts from 2 this time
 	require.EqualValues(t, 2, sub.height) // Assert it starts from 2 this time
 
-	v.TrimBehind(map[uint64]uint64{chain1: 2}) // Set window to 2
-	callback(t, sub, 2, isVal, returnsOk)      // Callback block 2
+	v.TrimBehind(minByChain(network, chain1, 2)) // Set window to 2
+	callback(t, sub, 2, isVal, returnsOk)        // Callback block 2
 
 	callback(t, sub, 3, isNotVal, returnsErr) // Callback block 3, but not validator anymore (triggers reset of worker)
 
@@ -129,10 +134,11 @@ func TestVoteWindow(t *testing.T) {
 	pk := k1.GenPrivKey()
 	const chain1 = 1
 
+	network := testNetwork(chain1)
 	backoff := new(testBackOff)
 	prov := make(stubProvider)
 	deps := &mockDeps{}
-	v := voter.LoadVoterForT(t, pk, path, prov, deps, map[uint64]string{chain1: ""}, backoff.BackOff)
+	v := voter.LoadVoterForT(t, pk, path, prov, deps, network, backoff.BackOff)
 	require.NoError(t, err)
 	setIsVal(t, v, pk, true)
 
@@ -155,7 +161,7 @@ func TestVoteWindow(t *testing.T) {
 	w.Propose(t, chain1, 1)
 
 	// Trim behind 3 (deletes 1 and 2)
-	l := w.v.TrimBehind(map[uint64]uint64{chain1: 3})
+	l := w.v.TrimBehind(minByChain(network, chain1, 3))
 	require.EqualValues(t, 2, l)
 
 	w.Available(t, chain1, 1, false)
@@ -163,7 +169,7 @@ func TestVoteWindow(t *testing.T) {
 	w.Available(t, chain1, 3, true)
 
 	// Trim behind 4 (deletes 3)
-	l = w.v.TrimBehind(map[uint64]uint64{chain1: 4})
+	l = w.v.TrimBehind(minByChain(network, chain1, 4))
 	require.EqualValues(t, 1, l)
 
 	w.Available(t, chain1, 1, false)
@@ -171,7 +177,7 @@ func TestVoteWindow(t *testing.T) {
 	w.Available(t, chain1, 3, false)
 
 	// Ensure latest by chain not trimmed.
-	latest, ok := w.v.LatestByChain(chain1)
+	latest, ok := w.v.LatestByChain(chain1, uint32(xchain.ConfFinalized))
 	require.True(t, ok)
 	require.EqualValues(t, 3, latest.BlockHeader.Offset)
 }
@@ -192,13 +198,16 @@ func TestVoter(t *testing.T) {
 		chain3 = 3
 	)
 
+	network := testNetwork(chain1, chain2, chain3)
+
 	// reloadVoter reloads the voter from disk. Asserting it starts streaming from the given heights.
 	cancel := context.CancelFunc(func() {})
 	reloadVoter := func(t *testing.T, from1, from2 uint64) *wrappedVoter {
 		t.Helper()
+
 		p := make(stubProvider)
 		backoff := new(testBackOff)
-		v := voter.LoadVoterForT(t, pk, path, p, stubDeps{}, map[uint64]string{chain1: "", chain2: "", chain3: ""}, backoff.BackOff)
+		v := voter.LoadVoterForT(t, pk, path, p, stubDeps{}, network, backoff.BackOff)
 		require.NoError(t, err)
 		setIsVal(t, v, pk, true)
 
@@ -331,6 +340,7 @@ func (w *wrappedVoter) Add(t *testing.T, chainID, offset uint64) {
 	w.f.Fuzz(&block)
 	block.BlockHeader = xchain.BlockHeader{
 		SourceChainID: chainID,
+		ConfLevel:     xchain.ConfFinalized,
 		BlockOffset:   offset,
 	}
 
@@ -342,8 +352,9 @@ func (w *wrappedVoter) Propose(t *testing.T, chainID, offset uint64) {
 	t.Helper()
 
 	header := &types.BlockHeader{
-		ChainId: chainID,
-		Offset:  offset,
+		ChainId:   chainID,
+		ConfLevel: uint32(xchain.ConfFinalized),
+		Offset:    offset,
 	}
 
 	err := w.v.SetProposed([]*types.BlockHeader{header})
@@ -354,8 +365,9 @@ func (w *wrappedVoter) Commit(t *testing.T, chainID, offset uint64) {
 	t.Helper()
 
 	header := &types.BlockHeader{
-		ChainId: chainID,
-		Offset:  offset,
+		ChainId:   chainID,
+		ConfLevel: uint32(xchain.ConfFinalized),
+		Offset:    offset,
 	}
 
 	err := w.v.SetCommitted([]*types.BlockHeader{header})
@@ -368,7 +380,7 @@ func (w *wrappedVoter) Available(t *testing.T, chainID, offset uint64, ok bool) 
 
 	var found bool
 	for _, att := range w.v.GetAvailable() {
-		if att.BlockHeader.ChainId == chainID && att.BlockHeader.Offset == offset {
+		if att.BlockHeader.ChainId == chainID && att.BlockHeader.Offset == offset && att.BlockHeader.ConfLevel == uint32(xchain.ConfFinalized) {
 			found = true
 			break
 		}
@@ -384,6 +396,7 @@ func (w *wrappedVoter) AddErr(t *testing.T, chainID, offset uint64) {
 	w.f.Fuzz(&block)
 	block.BlockHeader = xchain.BlockHeader{
 		SourceChainID: chainID,
+		ConfLevel:     xchain.ConfFinalized,
 		BlockOffset:   offset,
 	}
 
@@ -404,19 +417,20 @@ func (m *mockDeps) SetHeightAndOffset(height, offset uint64) {
 	m.offset = offset
 }
 
-func (m *mockDeps) LatestAttestation(context.Context, uint64) (xchain.Attestation, bool, error) {
+func (m *mockDeps) LatestAttestation(context.Context, uint64, xchain.ConfLevel) (xchain.Attestation, bool, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	return xchain.Attestation{BlockHeader: xchain.BlockHeader{
 		BlockOffset: m.offset,
 		BlockHeight: m.height,
+		ConfLevel:   xchain.ConfFinalized,
 	}}, m.height > 0, nil
 }
 
 type stubDeps struct{}
 
-func (stubDeps) LatestAttestation(context.Context, uint64) (xchain.Attestation, bool, error) {
+func (stubDeps) LatestAttestation(context.Context, uint64, xchain.ConfLevel) (xchain.Attestation, bool, error) {
 	return xchain.Attestation{}, false, nil
 }
 
@@ -453,11 +467,11 @@ func (stubProvider) GetBlock(context.Context, uint64, uint64, uint64) (xchain.Bl
 	panic("unexpected")
 }
 
-func (stubProvider) GetSubmittedCursor(context.Context, uint64, uint64) (xchain.StreamCursor, bool, error) {
+func (stubProvider) GetSubmittedCursor(context.Context, xchain.StreamID) (xchain.StreamCursor, bool, error) {
 	panic("unexpected")
 }
 
-func (stubProvider) GetEmittedCursor(context.Context, xchain.EmitRef, uint64, uint64) (xchain.StreamCursor, bool, error) {
+func (stubProvider) GetEmittedCursor(context.Context, xchain.EmitRef, xchain.StreamID) (xchain.StreamCursor, bool, error) {
 	panic("unexpected")
 }
 
@@ -499,4 +513,30 @@ func setIsVal(t *testing.T, v *voter.Voter, pk k1.PrivKey, isVal bool) {
 	}
 
 	v.UpdateValidators([]abci.ValidatorUpdate{{PubKey: cmtPubkey, Power: power}})
+}
+
+func testNetwork(chainIDs ...uint64) netconf.Network {
+	var chains []netconf.Chain
+	for _, id := range chainIDs {
+		chains = append(chains, netconf.Chain{
+			ID:                id,
+			Name:              fmt.Sprintf("chain_%d", id),
+			FinalizationStrat: netconf.StratFinalized,
+		})
+	}
+
+	return netconf.Network{
+		ID:     netconf.Simnet,
+		Chains: chains,
+	}
+}
+
+//nolint:unparam // ChainID will change in future
+func minByChain(network netconf.Network, chainID uint64, min uint64) map[types.ChainVersion]uint64 {
+	chain, _ := network.Chain(chainID)
+	chainVer := types.ChainVersion{ChainID: chain.ID, ConfLevel: uint32(chain.FinalizationStrat.ConfLevel())}
+
+	return map[types.ChainVersion]uint64{
+		chainVer: min,
+	}
 }

@@ -134,20 +134,14 @@ func (m *Mock) GetBlock(_ context.Context, chainID uint64, height uint64, offset
 	return xchain.Block{}, false, nil
 }
 
-func (*Mock) GetSubmittedCursor(_ context.Context, destChain uint64, srcChain uint64,
+func (*Mock) GetSubmittedCursor(_ context.Context, stream xchain.StreamID,
 ) (xchain.StreamCursor, bool, error) {
-	return xchain.StreamCursor{StreamID: xchain.StreamID{
-		SourceChainID: srcChain,
-		DestChainID:   destChain,
-	}}, true, nil
+	return xchain.StreamCursor{StreamID: stream}, true, nil
 }
 
-func (*Mock) GetEmittedCursor(_ context.Context, _ xchain.EmitRef, srcChainID uint64, destChainID uint64,
+func (*Mock) GetEmittedCursor(_ context.Context, _ xchain.EmitRef, stream xchain.StreamID,
 ) (xchain.StreamCursor, bool, error) {
-	return xchain.StreamCursor{StreamID: xchain.StreamID{
-		SourceChainID: srcChainID,
-		DestChainID:   destChainID,
-	}}, true, nil
+	return xchain.StreamCursor{StreamID: stream}, true, nil
 }
 
 func (m *Mock) addBlock(block xchain.Block) {
@@ -211,6 +205,7 @@ func (m *Mock) nextBlock(
 	b := xchain.Block{
 		BlockHeader: xchain.BlockHeader{
 			SourceChainID: chainID,
+			ConfLevel:     xchain.ConfFinalized,
 			BlockHeight:   height,
 			BlockHash:     random32(r),
 		},
@@ -238,6 +233,7 @@ func newMsg(r *rand.Rand, srcChain, destChain uint64, offsetFunc func(xchain.Str
 	streamID := xchain.StreamID{
 		SourceChainID: srcChain,
 		DestChainID:   destChain,
+		ShardID:       uint64(xchain.ConfFinalized),
 	}
 
 	return xchain.Msg{

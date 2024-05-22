@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/omni-network/omni/explorer/db/ent/chain"
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
@@ -44,12 +45,7 @@ func startMonitoring(ctx context.Context, network netconf.Network, xprovider xch
 				continue
 			}
 
-			name := streamName(network.ChainName, xchain.StreamID{
-				SourceChainID: srcChain.ID,
-				DestChainID:   dstChain.ID,
-			})
-
-			go monitorOffsetsForever(ctx, name, srcChain, dstChain, xprovider)
+			go monitorOffsetsForever(ctx, xprovider, network, srcChain, dstChain)
 		}
 	}
 
@@ -87,32 +83,29 @@ func monitorConsOffsetOnce(ctx context.Context, network netconf.Network, xprovid
 	}
 
 	// Consensus chain messages are broadacst, so query for each EVM chain.
-	for _, destChain := range network.EVMChains() {
-		name := streamName(network.ChainName, xchain.StreamID{
-			SourceChainID: cChain.ID,
-			DestChainID:   destChain.ID,
-		})
-
-		headType := ethclient.HeadType(destChain.FinalizationStrat)
-		ref := xchain.EmitRef{HeadType: &headType}
-		emitted, ok, err := xprovider.GetEmittedCursor(ctx, ref, cChain.ID, destChain.ID)
+	for _, stream := range network.StreamsFrom(cChain.ID) {
+		ref := xchain.EmitRef{ConfLevel: ptr(stream.ConfLevel())}
+		emitted, ok, err := xprovider.GetEmittedCursor(ctx, ref, stream)
 		if err != nil {
 			return err
 		} else if !ok {
 			continue
 		}
 
-		emitMsgOffset.WithLabelValues(name).Set(float64(emitted.MsgOffset))
+		streamName := streamName(network.ChainName, stream)
+		emitMsgOffset.WithLabelValues(streamName).Set(float64(emitted.MsgOffset))
 
-		submitted, ok, err := xprovider.GetSubmittedCursor(ctx, destChain.ID, cChain.ID)
+		destChain := network.ChainName(stream.DestChainID)
+
+		submitted, ok, err := xprovider.GetSubmittedCursor(ctx, stream)
 		if err != nil {
 			return err
 		} else if !ok {
 			continue
 		}
 
-		submitMsgOffset.WithLabelValues(name).Set(float64(submitted.MsgOffset))
-		submitBlockOffset.WithLabelValues(cChain.Name, destChain.Name).Set(float64(submitted.BlockOffset))
+		submitMsgOffset.WithLabelValues(streamName).Set(float64(submitted.MsgOffset))
+		submitBlockOffset.WithLabelValues(cChain.Name, destChain).Set(float64(submitted.BlockOffset))
 	}
 
 	return nil
@@ -147,7 +140,7 @@ func monitorHeadsForever(
 // monitorAttestedForever blocks and periodically monitors the halo attested height and offsets of the given chain.
 func monitorAttestedForever(
 	ctx context.Context,
-	chain netconf.Chain,
+	srcChain netconf.Chain,
 	cprovider cchain.Provider,
 	xprovider xchain.Provider,
 	network netconf.Network,
@@ -161,27 +154,23 @@ func monitorAttestedForever(
 			return
 		case <-ticker.C:
 			// First get attested head (so it can't be lower than heads).
-			att, err := getAttested(ctx, chain.ID, cprovider)
+			att, err := getAttested(ctx, srcChain.ID, srcChain.FinalizationStrat.ConfLevel(), cprovider)
 			// Then populate gauges "at the same time" so they update "atomically".
 			if err != nil {
-				log.Error(ctx, "Monitoring attested failed (will retry)", err, "chain", chain.Name)
+				log.Error(ctx, "Monitoring attested failed (will retry)", err, "chain", srcChain.Name)
 				continue
 			}
 
-			attestedHeight.WithLabelValues(chain.Name).Set(float64(att.BlockHeight))
-			attestedBlockOffset.WithLabelValues(chain.Name).Set(float64(att.BlockOffset))
+			attestedHeight.WithLabelValues(srcChain.Name).Set(float64(att.BlockHeight))
+			attestedBlockOffset.WithLabelValues(srcChain.Name).Set(float64(att.BlockOffset))
 
-			// Query stream offsets for the original xblock from the chain itself.
-			for _, dstChain := range network.Chains {
-				if chain.ID == dstChain.ID {
-					continue
-				}
-
+			// Query stream emit offsets for the original xblock from the chain itself.
+			for _, stream := range network.StreamsFrom(srcChain.ID) {
 				ref := xchain.EmitRef{
 					Height: &att.BlockHeight,
 				}
 
-				cursor, ok, err := xprovider.GetEmittedCursor(ctx, ref, chain.ID, dstChain.ID)
+				cursor, ok, err := xprovider.GetEmittedCursor(ctx, ref, stream)
 				if err != nil {
 					log.Error(ctx, "Monitoring attested stream offset failed (will retry)", err, "chain", chain.Name)
 					break
@@ -189,7 +178,7 @@ func monitorAttestedForever(
 					continue
 				}
 
-				attestedMsgOffset.WithLabelValues(streamName(network.ChainName, cursor.StreamID)).Set(float64(cursor.MsgOffset))
+				attestedMsgOffset.WithLabelValues(streamName(network.ChainName, stream)).Set(float64(cursor.MsgOffset))
 			}
 		}
 	}
@@ -229,8 +218,8 @@ func getEVMHeads(ctx context.Context, client ethclient.Client) map[ethclient.Hea
 }
 
 // monitorAttestedOnce monitors of the latest attested height by chain.
-func getAttested(ctx context.Context, chainID uint64, cprovider cchain.Provider) (xchain.Attestation, error) {
-	att, ok, err := cprovider.LatestAttestation(ctx, chainID)
+func getAttested(ctx context.Context, chainID uint64, conf xchain.ConfLevel, cprovider cchain.Provider) (xchain.Attestation, error) {
+	att, ok, err := cprovider.LatestAttestation(ctx, chainID, conf)
 	if err != nil {
 		return xchain.Attestation{}, errors.Wrap(err, "latest attestation")
 	} else if !ok {
@@ -284,8 +273,8 @@ func monitorAccountOnce(ctx context.Context, addr common.Address, chainName stri
 
 // monitorOffsetsForever blocks and periodically monitors the emitted and submitted
 // offsets for a given source and destination chain.
-func monitorOffsetsForever(ctx context.Context, streamName string, src, dst netconf.Chain,
-	xprovider xchain.Provider) {
+func monitorOffsetsForever(ctx context.Context, xprovider xchain.Provider, network netconf.Network, src, dst netconf.Chain,
+) {
 	ticker := time.NewTicker(time.Second * 30)
 	defer ticker.Stop()
 
@@ -294,7 +283,7 @@ func monitorOffsetsForever(ctx context.Context, streamName string, src, dst netc
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			err := monitorOffsetsOnce(ctx, streamName, src, dst, xprovider)
+			err := monitorOffsetsOnce(ctx, xprovider, network, src, dst)
 			if ctx.Err() != nil {
 				return
 			} else if err != nil {
@@ -309,26 +298,28 @@ func monitorOffsetsForever(ctx context.Context, streamName string, src, dst netc
 
 // monitorOffsetsOnce monitors the emitted and submitted offsets for a given source and
 // destination chain.
-func monitorOffsetsOnce(ctx context.Context, streamName string, src, dst netconf.Chain,
-	xprovider xchain.Provider) error {
-	headType := ethclient.HeadType(src.FinalizationStrat)
-	ref := xchain.EmitRef{HeadType: &headType}
-	emitted, ok, err := xprovider.GetEmittedCursor(ctx, ref, src.ID, dst.ID)
-	if err != nil {
-		return err
-	} else if !ok {
-		return nil
-	}
+func monitorOffsetsOnce(ctx context.Context, xprovider xchain.Provider, network netconf.Network, src, dst netconf.Chain,
+) error {
+	for _, stream := range network.StreamsBetween(src.ID, dst.ID) {
+		ref := xchain.EmitRef{ConfLevel: ptr(stream.ConfLevel())}
+		emitted, ok, err := xprovider.GetEmittedCursor(ctx, ref, stream)
+		if err != nil {
+			return err
+		} else if !ok {
+			return nil
+		}
 
-	submitted, _, err := xprovider.GetSubmittedCursor(ctx, dst.ID, src.ID)
-	if err != nil {
-		return err
-	}
+		submitted, _, err := xprovider.GetSubmittedCursor(ctx, stream)
+		if err != nil {
+			return err
+		}
 
-	emitMsgOffset.WithLabelValues(streamName).Set(float64(emitted.MsgOffset))
-	// emitBlockOffset isn't statelessly fetched from the source chain, it is calculated and tracked by XProvider...
-	submitMsgOffset.WithLabelValues(streamName).Set(float64(submitted.MsgOffset))
-	submitBlockOffset.WithLabelValues(src.Name, dst.Name).Set(float64(submitted.BlockOffset))
+		name := streamName(network.ChainName, stream)
+		emitMsgOffset.WithLabelValues(name).Set(float64(emitted.MsgOffset))
+		// emitBlockOffset isn't statelessly fetched from the source chain, it is calculated and tracked by XProvider...
+		submitMsgOffset.WithLabelValues(name).Set(float64(submitted.MsgOffset))
+		submitBlockOffset.WithLabelValues(src.Name, dst.Name).Set(float64(submitted.BlockOffset))
+	}
 
 	return nil
 }
@@ -356,4 +347,8 @@ func serveMonitoring(address string) <-chan error {
 
 func streamName(namer func(uint64) string, streamID xchain.StreamID) string {
 	return fmt.Sprintf("%s|%s", namer(streamID.SourceChainID), namer(streamID.DestChainID))
+}
+
+func ptr[T any](t T) *T {
+	return &t
 }

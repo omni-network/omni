@@ -36,9 +36,9 @@ func TestWorker_Run(t *testing.T) {
 		SourceChainID: srcChain,
 		DestChainID:   destChainB,
 	}
-	cursors := map[uint64]xchain.StreamCursor{
-		destChainA: {StreamID: streamA, MsgOffset: destChainACursor, BlockOffset: destChainACursor},
-		destChainB: {StreamID: streamB, MsgOffset: destChainBCursor, BlockOffset: destChainBCursor},
+	cursors := map[xchain.StreamID]xchain.StreamCursor{
+		streamA: {StreamID: streamA, MsgOffset: destChainACursor, BlockOffset: destChainACursor},
+		streamB: {StreamID: streamB, MsgOffset: destChainBCursor, BlockOffset: destChainBCursor},
 	}
 
 	// Return mock blocks (with a single msg per dest chain).
@@ -55,11 +55,13 @@ func TestWorker_Run(t *testing.T) {
 				},
 			}, true, nil
 		},
-		GetSubmittedCursorFn: func(_ context.Context, srcChainID uint64, _ uint64) (xchain.StreamCursor, bool, error) {
-			return cursors[srcChainID], true, nil
+		GetSubmittedCursorFn: func(_ context.Context, stream xchain.StreamID) (xchain.StreamCursor, bool, error) {
+			resp, ok := cursors[stream]
+			return resp, ok, nil
 		},
-		GetEmittedCursorFn: func(_ context.Context, _ xchain.EmitRef, _ uint64, destChainID uint64) (xchain.StreamCursor, bool, error) {
-			return cursors[destChainID], true, nil
+		GetEmittedCursorFn: func(_ context.Context, _ xchain.EmitRef, stream xchain.StreamID) (xchain.StreamCursor, bool, error) {
+			resp, ok := cursors[stream]
+			return resp, ok, nil
 		},
 	}
 	done := make(chan struct{})
@@ -93,7 +95,7 @@ func TestWorker_Run(t *testing.T) {
 
 	// Provider mock attestations as requested until context canceled.
 	mockProvider := &mockProvider{
-		SubscribeFn: func(ctx context.Context, chainID uint64, xBlockOffset uint64, callback cchain.ProviderCallback) {
+		SubscribeFn: func(ctx context.Context, chainID uint64, conf xchain.ConfLevel, xBlockOffset uint64, callback cchain.ProviderCallback) {
 			if chainID != srcChain {
 				return // Only subscribe to source chain.
 			}
@@ -106,7 +108,10 @@ func TestWorker_Run(t *testing.T) {
 			nextAtt := func() xchain.Attestation {
 				defer func() { offset++ }()
 				return xchain.Attestation{
-					BlockHeader: xchain.BlockHeader{SourceChainID: chainID, BlockOffset: offset},
+					BlockHeader: xchain.BlockHeader{
+						SourceChainID: chainID,
+						ConfLevel:     conf,
+						BlockOffset:   offset},
 				}
 			}
 

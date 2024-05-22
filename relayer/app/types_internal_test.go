@@ -28,6 +28,12 @@ func Test_translateSubmission(t *testing.T) {
 	// Zero BlockHeight as we only submit BlockOffset
 	sub.BlockHeader.BlockHeight = 0
 
+	// TODO(corver): Add support for conf level to contracts and bindings
+	sub.BlockHeader.ConfLevel = 0
+	for i := range sub.Msgs {
+		sub.Msgs[i].StreamID.ShardID = 0
+	}
+
 	require.Equal(t, sub, reversedSub)
 }
 

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/halo/attest/types"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/cometbft/cometbft/crypto"
@@ -15,10 +16,10 @@ import (
 // LoadVoterForT is a helper function to load a voter for testing.
 // It sets the backoff period to 1ms.
 func LoadVoterForT(t *testing.T, privKey crypto.PrivKey, path string, provider xchain.Provider,
-	deps types.VoterDeps, chains map[uint64]string, backoff func(),
+	deps types.VoterDeps, network netconf.Network, backoff func(),
 ) *Voter {
 	t.Helper()
-	v, err := LoadVoter(privKey, path, provider, deps, chains)
+	v, err := LoadVoter(privKey, path, provider, deps, network)
 	require.NoError(t, err)
 
 	v.backoffFunc = func(ctx context.Context) func() { return backoff }
@@ -27,6 +28,6 @@ func LoadVoterForT(t *testing.T, privKey crypto.PrivKey, path string, provider x
 }
 
 // LatestByChain returns the latest vote by chain for testing purposes only.
-func (v *Voter) LatestByChain(chainID uint64) (*types.Vote, bool) {
-	return v.latestByChain(chainID)
+func (v *Voter) LatestByChain(chainID uint64, conf uint32) (*types.Vote, bool) {
+	return v.latestByChain(types.ChainVersion{ChainID: chainID, ConfLevel: conf})
 }
