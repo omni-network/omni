@@ -19,6 +19,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 // Sender uses txmgr to send transactions to the destination chain.
@@ -138,19 +139,7 @@ func (o Sender) SendTransaction(ctx context.Context, sub xchain.Submission) erro
 
 	if rec.Status == 0 {
 		// Try and get debug information of the reverted transaction
-		resp, err := o.rpcClient.CallContract(ctx, ethereum.CallMsg{
-			From:          o.txMgr.From(),
-			To:            tx.To(),
-			Gas:           tx.Gas(),
-			GasPrice:      positiveOrNil(tx.GasPrice()),
-			GasFeeCap:     positiveOrNil(tx.GasFeeCap()),
-			GasTipCap:     positiveOrNil(tx.GasTipCap()),
-			Value:         tx.Value(),
-			Data:          tx.Data(),
-			AccessList:    tx.AccessList(),
-			BlobGasFeeCap: tx.BlobGasFeeCap(),
-			BlobHashes:    tx.BlobHashes(),
-		}, rec.BlockNumber)
+		resp, err := o.rpcClient.CallContract(ctx, callFromTx(o.txMgr.From(), tx), rec.BlockNumber)
 
 		errAttrs := slices.Concat(receiptAttrs, reqAttrs, []any{
 			"call_resp", hexutil.Encode(resp),
@@ -177,10 +166,25 @@ func (o Sender) getXSubmitBytes(sub bindings.XSubmission) ([]byte, error) {
 	return bytes, nil
 }
 
-func positiveOrNil(i *big.Int) *big.Int {
-	if i == nil || i.Sign() == 0 {
-		return nil
+func callFromTx(from common.Address, tx *ethtypes.Transaction) ethereum.CallMsg {
+	resp := ethereum.CallMsg{
+		From:          from,
+		To:            tx.To(),
+		Gas:           tx.Gas(),
+		Value:         tx.Value(),
+		Data:          tx.Data(),
+		AccessList:    tx.AccessList(),
+		BlobGasFeeCap: tx.BlobGasFeeCap(),
+		BlobHashes:    tx.BlobHashes(),
 	}
 
-	return i
+	// Either populate gas price or gas caps (not both).
+	if tx.GasPrice() != nil && tx.GasPrice().Sign() != 0 {
+		resp.GasPrice = tx.GasPrice()
+	} else {
+		resp.GasFeeCap = tx.GasFeeCap()
+		resp.GasTipCap = tx.GasTipCap()
+	}
+
+	return resp
 }

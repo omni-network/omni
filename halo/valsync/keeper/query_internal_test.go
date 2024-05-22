@@ -6,6 +6,7 @@ import (
 	types1 "github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/crypto"
 
@@ -100,6 +101,7 @@ func approvedExpectation() expectation {
 		m.aKeeper.EXPECT().ListAttestationsFrom(
 			gomock.Any(),
 			netconf.Simnet.Static().OmniConsensusChainIDUint64(),
+			uint32(xchain.ConfFinalized),
 			uint64(2), // Setup 1 is genesis, so auto approved, so it always queries from 2.
 			uint64(1), // Only query for 1 attestation.
 		).AnyTimes().
@@ -114,6 +116,7 @@ func defaultExpectation() expectation {
 		m.aKeeper.EXPECT().ListAttestationsFrom(
 			gomock.Any(),
 			netconf.Simnet.Static().OmniConsensusChainIDUint64(),
+			uint32(xchain.ConfFinalized),
 			uint64(2), // Setup 1 is genesis, so auto approved, so it always queries from 2.
 			uint64(1), // Only query for 1 attestation.
 		).AnyTimes().

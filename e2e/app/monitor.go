@@ -150,12 +150,14 @@ func MonitorCProvider(ctx context.Context, node *e2e.Node, network netconf.Netwo
 	cprov := cprovider.NewABCIProvider(client, network.ID, netconf.ChainNamer(network.ID))
 
 	for _, chain := range network.Chains {
-		atts, err := cprov.AttestationsFrom(ctx, chain.ID, 1)
-		if err != nil {
-			return errors.Wrap(err, "getting approved attestations")
-		}
+		for _, conf := range chain.ConfLevels() {
+			atts, err := cprov.AttestationsFrom(ctx, chain.ID, conf, 1)
+			if err != nil {
+				return errors.Wrap(err, "getting approved attestations")
+			}
 
-		log.Debug(ctx, "Halo approved attestations", "chain", chain.Name, "count", len(atts))
+			log.Debug(ctx, "Halo approved attestations", "chain", chain.Name, "conf", conf, "count", len(atts))
+		}
 	}
 
 	return nil

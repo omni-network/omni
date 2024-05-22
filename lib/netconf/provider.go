@@ -113,10 +113,11 @@ func networkFromPortals(network ID, portals []bindings.PortalRegistryDeployment)
 	// Add omni consensus chain
 	consensusMeta := MetadataByID(network, network.Static().OmniConsensusChainIDUint64())
 	chains = append(chains, Chain{
-		ID:           consensusMeta.ChainID,
-		Name:         consensusMeta.Name,
-		BlockPeriod:  consensusMeta.BlockPeriod,
-		DeployHeight: 1, // ValidatorSets start at 1, not 0.
+		ID:                consensusMeta.ChainID,
+		Name:              consensusMeta.Name,
+		BlockPeriod:       consensusMeta.BlockPeriod,
+		FinalizationStrat: StratFinalized,
+		DeployHeight:      1, // ValidatorSets start at 1, not 0.
 	})
 
 	return Network{

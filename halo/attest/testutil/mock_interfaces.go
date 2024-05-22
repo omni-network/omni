@@ -140,7 +140,7 @@ func (mr *MockVoterMockRecorder) SetProposed(headers any) *gomock.Call {
 }
 
 // TrimBehind mocks base method.
-func (m *MockVoter) TrimBehind(minsByChain map[uint64]uint64) int {
+func (m *MockVoter) TrimBehind(minsByChain map[types1.ChainVersion]uint64) int {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TrimBehind", minsByChain)
 	ret0, _ := ret[0].(int)

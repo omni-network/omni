@@ -23,9 +23,9 @@ import (
 
 var _ cchain.Provider = Provider{}
 
-type fetchFunc func(ctx context.Context, chainID uint64, fromOffset uint64) ([]xchain.Attestation, error)
-type latestFunc func(ctx context.Context, chainID uint64) (xchain.Attestation, bool, error)
-type windowFunc func(ctx context.Context, chainID uint64, xBlockOffset uint64) (int, error)
+type fetchFunc func(ctx context.Context, chainID uint64, conf xchain.ConfLevel, fromOffset uint64) ([]xchain.Attestation, error)
+type latestFunc func(ctx context.Context, chainID uint64, conf xchain.ConfLevel) (xchain.Attestation, bool, error)
+type windowFunc func(ctx context.Context, chainID uint64, conf xchain.ConfLevel, xBlockOffset uint64) (int, error)
 type valsetFunc func(ctx context.Context, valSetID uint64, latest bool) (valSetResponse, bool, error)
 type headerFunc func(ctx context.Context, height *int64) (*ctypes.ResultHeader, error)
 type chainIDFunc func(ctx context.Context) (uint64, error)
@@ -63,18 +63,18 @@ func NewProviderForT(_ *testing.T, fetch fetchFunc, latest latestFunc, window wi
 	}
 }
 
-func (p Provider) AttestationsFrom(ctx context.Context, sourceChainID uint64, xBlockOffset uint64,
+func (p Provider) AttestationsFrom(ctx context.Context, sourceChainID uint64, conf xchain.ConfLevel, xBlockOffset uint64,
 ) ([]xchain.Attestation, error) {
-	return p.fetch(ctx, sourceChainID, xBlockOffset)
+	return p.fetch(ctx, sourceChainID, conf, xBlockOffset)
 }
 
-func (p Provider) LatestAttestation(ctx context.Context, sourceChainID uint64,
+func (p Provider) LatestAttestation(ctx context.Context, sourceChainID uint64, conf xchain.ConfLevel,
 ) (xchain.Attestation, bool, error) {
-	return p.latest(ctx, sourceChainID)
+	return p.latest(ctx, sourceChainID, conf)
 }
 
-func (p Provider) WindowCompare(ctx context.Context, sourceChainID uint64, xBlockOffset uint64) (int, error) {
-	return p.window(ctx, sourceChainID, xBlockOffset)
+func (p Provider) WindowCompare(ctx context.Context, sourceChainID uint64, conf xchain.ConfLevel, xBlockOffset uint64) (int, error) {
+	return p.window(ctx, sourceChainID, conf, xBlockOffset)
 }
 
 func (p Provider) ValidatorSet(ctx context.Context, valSetID uint64) ([]cchain.Validator, bool, error) {
@@ -83,14 +83,16 @@ func (p Provider) ValidatorSet(ctx context.Context, valSetID uint64) ([]cchain.V
 }
 
 // Subscribe implements cchain.Provider.
-func (p Provider) Subscribe(in context.Context, srcChainID uint64, xBlockOffset uint64, workerName string,
+func (p Provider) Subscribe(in context.Context, srcChainID uint64, conf xchain.ConfLevel, xBlockOffset uint64, workerName string,
 	callback cchain.ProviderCallback,
 ) {
 	srcChain := p.chainNamer(srcChainID)
 	ctx := log.WithCtx(in, "src_chain", srcChain)
 
 	deps := stream.Deps[xchain.Attestation]{
-		FetchBatch:    p.fetch,
+		FetchBatch: func(ctx context.Context, chainID uint64, offset uint64) ([]xchain.Attestation, error) {
+			return p.fetch(ctx, chainID, conf, offset)
+		},
 		Backoff:       p.backoffFunc,
 		ElemLabel:     "attestation",
 		RetryCallback: true,
@@ -106,6 +108,8 @@ func (p Provider) Subscribe(in context.Context, srcChainID uint64, xBlockOffset 
 					"actual", att.BlockOffset,
 					"expected", h,
 				)
+			} else if att.ConfLevel != conf {
+				return errors.New("invalid attestation conf level")
 			}
 
 			return nil

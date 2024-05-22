@@ -6,6 +6,37 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+//go:generate stringer -type=ConfLevel -trimprefix=Conf
+
+// ConfLevel defines a xblock confirmation level.
+// This is similar to a "version"; with ConfFinalized being the final version and fuzzy conf levels being drafts.
+type ConfLevel byte
+
+// Valid returns true if this confirmation level is valid.
+func (c ConfLevel) Valid() bool {
+	return c > ConfUnknown && c < confSentinel
+}
+
+// IsFuzzy returns true if this confirmation level is not ConfFinalized.
+func (c ConfLevel) IsFuzzy() bool {
+	return c != ConfFinalized
+}
+
+const (
+	ConfUnknown   ConfLevel = 0
+	ConfLatest    ConfLevel = 1
+	ConfFast      ConfLevel = 2
+	ConfSafe      ConfLevel = 3
+	ConfFinalized ConfLevel = 4
+	confSentinel  ConfLevel = 5 // Sentinel must always be last.
+)
+
+// ConfFromShard returns confirmation level encoded in the
+// last 8 bits of the shardID.
+func ConfFromShard(shardID uint64) ConfLevel {
+	return ConfLevel(byte(shardID & 0xFF))
+}
+
 // Signature65 is a 65 byte Ethereum signature [R || S || V] format.
 type Signature65 [65]byte
 
@@ -14,6 +45,11 @@ type Signature65 [65]byte
 type StreamID struct {
 	SourceChainID uint64 // Source chain ID as per https://chainlist.org/
 	DestChainID   uint64 // Destination chain ID as per https://chainlist.org/
+	ShardID       uint64 // ShardID identifies a sequence of xmsgs (and maps to ConfLevel).
+}
+
+func (s StreamID) ConfLevel() ConfLevel {
+	return ConfLevel(s.ShardID)
 }
 
 // MsgID uniquely identifies a cross-chain message.
@@ -35,6 +71,7 @@ type Msg struct {
 // Receipt is a cross-chain message receipt, the result of applying the Msg on the destination chain.
 type Receipt struct {
 	MsgID                         // Unique ID of the cross chain message that was applied.
+	ConfLevel      ConfLevel      // Confirmation level of submitted attestation
 	GasUsed        uint64         // Gas used during message "call"
 	Success        bool           // Result, true for success, false for revert
 	Error          []byte         // Error message if the message failed
@@ -45,9 +82,10 @@ type Receipt struct {
 // BlockHeader uniquely identifies a cross chain block.
 type BlockHeader struct {
 	SourceChainID uint64      // Source chain ID as per https://chainlist.org
-	BlockOffset   uint64      // MsgOffset of the cross chain block
-	BlockHeight   uint64      // Height of the source chain block
-	BlockHash     common.Hash // Hash of the source chain block
+	ConfLevel     ConfLevel   // ConfLevel defines the cross-chain block "version"; either some fuzzy version or finalized.
+	BlockOffset   uint64      // MsgOffset of the cross-chain block
+	BlockHeight   uint64      // Height of the source-chain block
+	BlockHash     common.Hash // Hash of the source-chain block
 }
 
 // Block is a deterministic representation of the omni cross-chain properties of a source chain EVM block.

@@ -2,8 +2,6 @@ package xchain
 
 import (
 	"context"
-
-	"github.com/omni-network/omni/lib/ethclient"
 )
 
 // ProviderCallback is the callback function signature that will be called with every finalized.
@@ -33,20 +31,22 @@ type Provider interface {
 	// or an error. The XBlockOffset field is populated with the provided offset (if required).
 	GetBlock(ctx context.Context, chainID uint64, height uint64, xOffset uint64) (Block, bool, error)
 
-	// GetSubmittedCursor returns the submitted cursor for the source chain on the destination chain,
-	// or false if not available, or an error. Calls the destination chain portal InXStreamOffset method.
+	// GetSubmittedCursor returns the submitted cursor for the provided stream,
+	// or false if not available, or an error.
+	// Calls the destination chain portal InXStreamOffset method.
 	// Note this is only supported for EVM chains, no the consensus chain.
-	GetSubmittedCursor(ctx context.Context, destChainID uint64, sourceChainID uint64) (StreamCursor, bool, error)
+	GetSubmittedCursor(ctx context.Context, stream StreamID) (StreamCursor, bool, error)
 
-	// GetEmittedCursor returns the emitted cursor for the destination chain on the source chain,
-	// or false if not available, or an error. Calls the source chain portal OutXStreamOffset method.
+	// GetEmittedCursor returns the emitted cursor for the provided stream,
+	// or false if not available, or an error.
+	// Calls the source chain portal OutXStreamOffset method.
 	//
 	// Note that the BlockOffset field is not populated for emit cursors, since it isn't stored on-chain
 	// but tracked off-chain.
-	GetEmittedCursor(ctx context.Context, ref EmitRef, srcChainID uint64, destChainID uint64) (StreamCursor, bool, error)
+	GetEmittedCursor(ctx context.Context, ref EmitRef, stream StreamID) (StreamCursor, bool, error)
 }
 
 type EmitRef struct {
-	Height   *uint64
-	HeadType *ethclient.HeadType
+	Height    *uint64
+	ConfLevel *ConfLevel
 }

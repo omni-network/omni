@@ -59,7 +59,7 @@ func TestSmoke(t *testing.T) {
 		return s.SyncInfo.LatestBlockHeight >= int64(target)
 	}, time.Second*time.Duration(target*2), time.Millisecond*100)
 
-	_, ok, err := cprov.LatestAttestation(ctx, 0) // Ensure it doesn't error for unknown chains.
+	_, ok, err := cprov.LatestAttestation(ctx, 0, 0) // Ensure it doesn't error for unknown chains.
 	require.NoError(t, err)
 	require.False(t, ok)
 
@@ -88,10 +88,10 @@ func TestSmoke(t *testing.T) {
 
 	srcChain := netconf.Simnet.Static().OmniExecutionChainID
 	// Ensure all blocks are attested and approved.
-	cprov.Subscribe(ctx, srcChain, 1, "test", func(ctx context.Context, approved xchain.Attestation) error {
+	cprov.Subscribe(ctx, srcChain, xchain.ConfFinalized, 1, "test", func(ctx context.Context, approved xchain.Attestation) error {
 		// Sanity check we can fetch latest directly as well.
-		att, ok, err := cprov.LatestAttestation(ctx, srcChain)
-		require.NoError(t, err)
+		att, ok, err := cprov.LatestAttestation(ctx, srcChain, xchain.ConfFinalized)
+		tutil.RequireNoError(t, err)
 		require.True(t, ok)
 		require.Equal(t, srcChain, att.SourceChainID)
 

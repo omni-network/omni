@@ -46,6 +46,7 @@ func (p Provider) XBlock(ctx context.Context, height uint64, latest bool) (xchai
 	b := xchain.Block{
 		BlockHeader: xchain.BlockHeader{
 			SourceChainID: chainID,
+			ConfLevel:     xchain.ConfFinalized, // Hardcode ConfLevel for now.
 			BlockOffset:   resp.ValSetID,
 			BlockHeight:   resp.ValSetID,
 		},
@@ -53,6 +54,7 @@ func (p Provider) XBlock(ctx context.Context, height uint64, latest bool) (xchai
 			MsgID: xchain.MsgID{
 				StreamID: xchain.StreamID{
 					SourceChainID: chainID,
+					ShardID:       uint64(xchain.ConfFinalized), // Hardcode Shard for now.
 				},
 				StreamOffset: resp.ValSetID,
 			},

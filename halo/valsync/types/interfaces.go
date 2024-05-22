@@ -11,7 +11,7 @@ import (
 )
 
 type AttestKeeper interface {
-	ListAttestationsFrom(ctx context.Context, chainID uint64, height uint64, max uint64) ([]*atypes.Attestation, error)
+	ListAttestationsFrom(ctx context.Context, chainID uint64, confLevel uint32, offset uint64, max uint64) ([]*atypes.Attestation, error)
 }
 
 type StakingKeeper interface {

@@ -23,6 +23,7 @@ func TestProvider(t *testing.T) {
 		total = 10
 
 		chainID    = uint64(999)
+		conf       = xchain.ConfFinalized
 		fromHeight = uint64(100)
 	)
 
@@ -35,7 +36,7 @@ func TestProvider(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	p.Subscribe(ctx, chainID, fromHeight, "test", func(ctx context.Context, approved xchain.Attestation) error {
+	p.Subscribe(ctx, chainID, conf, fromHeight, "test", func(ctx context.Context, approved xchain.Attestation) error {
 		actual = append(actual, approved)
 		if len(actual) == total {
 			cancel()  // Cancel the context to stop further fetch operations
@@ -64,6 +65,7 @@ func TestProvider(t *testing.T) {
 	require.Len(t, actual, total)
 	for i, attestation := range actual {
 		require.Equal(t, chainID, attestation.SourceChainID)
+		require.Equal(t, conf, attestation.ConfLevel)
 		require.Equal(t, fromHeight+uint64(i), attestation.BlockOffset)
 	}
 }
@@ -99,7 +101,7 @@ func (f *testFetcher) Errs() int {
 	return f.errs
 }
 
-func (f *testFetcher) Fetch(_ context.Context, chainID uint64, fromHeight uint64,
+func (f *testFetcher) Fetch(_ context.Context, chainID uint64, conf xchain.ConfLevel, fromHeight uint64,
 ) ([]xchain.Attestation, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -117,6 +119,7 @@ func (f *testFetcher) Fetch(_ context.Context, chainID uint64, fromHeight uint64
 		resp = append(resp, xchain.Attestation{
 			BlockHeader: xchain.BlockHeader{
 				SourceChainID: chainID,
+				ConfLevel:     conf,
 				BlockOffset:   fromHeight + uint64(i),
 			},
 		})

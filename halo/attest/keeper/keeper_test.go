@@ -478,11 +478,11 @@ func expectValSig(id uint64, attID uint64, val *vtypes.Validator) *keeper.Signat
 }
 
 func expectPendingAtt(id uint64, offset uint64) *keeper.Attestation {
-	return &keeper.Attestation{Id: id, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Offset: offset, Height: defaultHeight, CreatedHeight: 1, Status: int32(keeper.Status_Pending)}
+	return &keeper.Attestation{Id: id, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Offset: offset, Height: defaultHeight, CreatedHeight: 1, Status: uint32(keeper.Status_Pending)}
 }
 
 func expectApprovedAtt(id uint64, offset uint64, valset *vtypes.ValidatorSetResponse) *keeper.Attestation {
-	return &keeper.Attestation{Id: id, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Offset: offset, Height: defaultHeight, CreatedHeight: 1, Status: int32(keeper.Status_Approved), ValidatorSetId: valset.Id}
+	return &keeper.Attestation{Id: id, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Offset: offset, Height: defaultHeight, CreatedHeight: 1, Status: uint32(keeper.Status_Approved), ValidatorSetId: valset.Id}
 }
 
 func update[T any](t T, fn func(T)) T {

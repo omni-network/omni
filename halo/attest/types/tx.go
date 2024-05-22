@@ -28,8 +28,8 @@ func (v *Vote) Verify() error {
 		return errors.New("nil attestation")
 	}
 
-	if v.BlockHeader == nil {
-		return errors.New("nil block header")
+	if err := v.BlockHeader.Verify(); err != nil {
+		return err
 	}
 
 	if v.Signature == nil {
@@ -75,12 +75,17 @@ func (h *BlockHeader) Verify() error {
 		return errors.New("invalid block header hash length")
 	}
 
+	if conf := xchain.ConfLevel(byte(h.GetConfLevel())); !conf.Valid() {
+		return errors.New("invalid conf level", "conf_level", conf.String())
+	}
+
 	return nil
 }
 
 func (h *BlockHeader) ToXChain() xchain.BlockHeader {
 	return xchain.BlockHeader{
 		SourceChainID: h.ChainId,
+		ConfLevel:     xchain.ConfLevel(byte(h.ConfLevel)),
 		BlockOffset:   h.Offset,
 		BlockHeight:   h.Height,
 		BlockHash:     common.BytesToHash(h.Hash),

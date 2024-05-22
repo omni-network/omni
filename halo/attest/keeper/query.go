@@ -18,7 +18,7 @@ func (k *Keeper) AttestationsFrom(ctx context.Context, req *types.AttestationsFr
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
-	atts, err := k.ListAttestationsFrom(ctx, req.ChainId, req.FromOffset, approvedFromLimit)
+	atts, err := k.ListAttestationsFrom(ctx, req.ChainId, req.ConfLevel, req.FromOffset, approvedFromLimit)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -31,7 +31,7 @@ func (k *Keeper) LatestAttestation(ctx context.Context, req *types.LatestAttesta
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
-	att, ok, err := k.latestAttestation(ctx, req.ChainId)
+	att, ok, err := k.latestAttestation(ctx, req.ChainId, req.ConfLevel)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	} else if !ok {
@@ -53,10 +53,11 @@ func (k *Keeper) LatestAttestation(ctx context.Context, req *types.LatestAttesta
 
 	return &types.LatestAttestationResponse{Attestation: &types.Attestation{
 		BlockHeader: &types.BlockHeader{
-			ChainId: att.GetChainId(),
-			Offset:  att.GetOffset(),
-			Height:  att.GetHeight(),
-			Hash:    att.GetHash(),
+			ChainId:   att.GetChainId(),
+			ConfLevel: att.GetConfLevel(),
+			Offset:    att.GetOffset(),
+			Height:    att.GetHeight(),
+			Hash:      att.GetHash(),
 		},
 		AttestationRoot: att.GetAttestationRoot(),
 		ValidatorSetId:  att.GetValidatorSetId(),
@@ -69,7 +70,7 @@ func (k *Keeper) WindowCompare(ctx context.Context, req *types.WindowCompareRequ
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
-	cmp, err := k.windowCompare(ctx, req.ChainId, req.GetBlockOffset())
+	cmp, err := k.windowCompare(ctx, req.GetChainId(), req.GetConfLevel(), req.GetBlockOffset())
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

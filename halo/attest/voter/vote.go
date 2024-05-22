@@ -9,7 +9,7 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 )
 
-// CreateVote creates an vote for the given block.
+// CreateVote creates a vote for the given block.
 func CreateVote(privKey crypto.PrivKey, block xchain.Block) (*types.Vote, error) {
 	pubkey := privKey.PubKey().Bytes()
 	if len(pubkey) != 33 {
@@ -34,10 +34,11 @@ func CreateVote(privKey crypto.PrivKey, block xchain.Block) (*types.Vote, error)
 
 	return &types.Vote{
 		BlockHeader: &types.BlockHeader{
-			ChainId: block.SourceChainID,
-			Offset:  block.BlockOffset,
-			Height:  block.BlockHeight,
-			Hash:    block.BlockHash[:],
+			ChainId:   block.SourceChainID,
+			ConfLevel: uint32(block.ConfLevel),
+			Offset:    block.BlockOffset,
+			Height:    block.BlockHeight,
+			Hash:      block.BlockHash[:],
 		},
 		AttestationRoot: attRoot[:],
 		Signature: &types.SigTuple{
