@@ -6,7 +6,9 @@ import { OmniPortal } from "src/protocol/OmniPortal.sol";
 import { Base } from "./common/Base.sol";
 import { TestXTypes } from "./common/TestXTypes.sol";
 import { Reverter } from "./common/Reverter.sol";
+import { GasGuzzler } from "./common/GasGuzzler.sol";
 import { Vm } from "forge-std/Vm.sol";
+import { console } from "forge-std/console.sol";
 
 /**
  * @title OmniPortal_exec_Test
@@ -188,6 +190,23 @@ contract OmniPortal_exec_Test is Base {
         // this will revert with "only cchain" because _xmsg.sourceChainId won't be set
         vm.expectRevert("OmniPortal: only cchain");
         portal.execSys(data);
+    }
+
+    /// @dev Test that a call to exec that has not been given enough gas to execute
+    ///      the xmsg message reverts, rather than suceeding with XReceipt(success=false)
+    function test_exec_notEnoughGas_reverts() public {
+        GasGuzzler gasGuzzler = new GasGuzzler();
+
+        address to = address(gasGuzzler);
+        // we use a high enough gas limit, such that 1/64th of it is enough to cover the "non-xmsg" gas usage of the
+        // exec function
+        uint64 gasLimit = 5_000_000;
+        bytes memory data = abi.encodeWithSelector(GasGuzzler.guzzle.selector);
+
+        // just xmsg gasLimit is insufficient
+        uint256 insufficientGas = gasLimit;
+        vm.expectRevert(); // reverts with invalid()
+        portal.exec{ gas: insufficientGas }(to, gasLimit, data);
     }
 
     /// @dev Helper to repeat a string a number of times
