@@ -59,7 +59,6 @@ type XMsg struct {
 	ID            graphql.ID
 	Block         XBlock
 	To            common.Address
-	ToURL         string
 	Data          hexutil.Bytes
 	DestChainID   hexutil.Big
 	GasLimit      hexutil.Big
@@ -67,11 +66,36 @@ type XMsg struct {
 	Offset        hexutil.Big
 	Receipt       *XReceipt
 	Sender        common.Address
-	SenderURL     string
 	SourceChainID hexutil.Big
 	Status        Status
 	TxHash        common.Hash
-	TxURL         string
+}
+
+func (m XMsg) ToURL() string {
+	c, ok := m.Chain(m.DestChainID.String())
+	if !ok {
+		return ""
+	}
+
+	return c.AddrUrl(m.To)
+}
+
+func (m XMsg) SenderURL() string {
+	c, ok := m.Chain(m.SourceChainID.String())
+	if !ok {
+		return ""
+	}
+
+	return c.AddrUrl(m.Sender)
+}
+
+func (m XMsg) TxURL() string {
+	c, ok := m.Chain(m.SourceChainID.String())
+	if !ok {
+		return ""
+	}
+
+	return c.TxUrl(m.TxHash)
 }
 
 func (m XMsg) SourceChain() (Chain, error) {
@@ -132,9 +156,17 @@ type XReceipt struct {
 	DestChainID   hexutil.Big
 	Offset        hexutil.Big
 	TxHash        common.Hash
-	TxURL         string
 	Timestamp     graphql.Time
 	RevertReason  *string
+}
+
+func (r *XReceipt) TxURL() string {
+	c, ok := r.Chain(r.SourceChainID.String())
+	if !ok {
+		return ""
+	}
+
+	return c.TxUrl(r.TxHash)
 }
 
 func (r *XReceipt) SourceChain() (Chain, error) {
