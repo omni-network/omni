@@ -19,6 +19,10 @@ build-halo-relayer: ensure-go-releaser ## Builds the halo and relayer docker ima
 build-explorer-ui:
 	@make -C ./explorer build-ui
 
+.PHONY: build-forkproxy
+build-forkproxy: ensure-go-releaser ## Builds the forkproxy:main docker image.
+	@scripts/build_docker.sh forkproxy 'e2e' 'main' 'amd64'
+
 ###############################################################################
 ###                                Contracts                                 ###
 ###############################################################################

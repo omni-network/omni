@@ -6,20 +6,16 @@ networks:
     driver: bridge
 
 services:
-  # Initialises geth files and folder from provided genesis file.
   mock_l1:
     labels:
       e2e: true
     container_name: mock_l1
     platform: linux/amd64
-    image: ghcr.io/foundry-rs/foundry:latest
-    entrypoint:
-      - anvil
-      - --host=0.0.0.0
-      - --chain-id=1652
-      - --block-time=1
-      - --silent
-      - --load-state=/anvil/state.json
+    image: omniops/forkproxy:main
+    environment:
+      - FORKPROXY_CHAIN_ID=1652
+      - FORKPROXY_BLOCK_TIME=1
+      - FORKPROXY_LOAD_STATE=/anvil/state.json
     ports:
       - 8545:8545
     networks:
