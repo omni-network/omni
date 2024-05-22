@@ -6,6 +6,7 @@ pragma solidity =0.8.24;
 /**
  * @title OmniStake
  * @notice The deposit contract for OMNI-staked validators.
+ * @custom:deprecated This contract is deprecated and will be removed in a future release, replaced by Staking.sol
  */
 contract OmniStake {
     /**
