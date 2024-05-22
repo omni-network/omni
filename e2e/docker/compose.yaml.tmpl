@@ -34,20 +34,16 @@ services:
 {{end}}
 
 {{- range .Anvils }}
-  # Initialises geth files and folder from provided genesis file.
   {{ .Chain.Name }}:
     labels:
       e2e: true
     container_name: {{ .Chain.Name }}
     platform: linux/amd64
-    image: ghcr.io/foundry-rs/foundry:latest
-    entrypoint:
-      - anvil
-      - --host=0.0.0.0
-      - --chain-id={{ .Chain.ChainID }}
-      - --block-time={{.Chain.BlockPeriod.Seconds}}
-      - --silent
-      {{ if .LoadState }}- --load-state=/anvil/state.json{{ end }}
+    image: omniops/forkproxy:main
+    environment:
+      - FORKPROXY_CHAIN_ID={{ .Chain.ChainID }}
+      - FORKPROXY_BLOCK_TIME={{.Chain.BlockPeriod.Seconds}}
+      {{ if .LoadState }}- FORKPROXY_LOAD_STATE=/anvil/state.json{{ end }}
     ports:
       - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}8545
     networks:

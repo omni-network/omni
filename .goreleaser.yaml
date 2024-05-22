@@ -51,6 +51,13 @@ builds:
     ldflags:
       - -s -w -X github.com/omni-network/omni/lib/buildinfo.version={{.Version}}
 
+  - id: forkproxy
+    main: ./e2e/forkproxy
+    binary: forkproxy
+    env: [ CGO_ENABLED=0 ]
+    goos: [ linux, darwin ]
+    goarch: [ amd64, arm64 ]
+
 dockers:
   - ids: [halo]
     dockerfile: ./halo/Dockerfile

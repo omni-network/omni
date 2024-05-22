@@ -26,19 +26,15 @@ services:
       test:
         ipv4_address: 10.186.73.0
 
-  # Initialises geth files and folder from provided genesis file.
   mock_rollup:
     labels:
       e2e: true
     container_name: mock_rollup
     platform: linux/amd64
-    image: ghcr.io/foundry-rs/foundry:latest
-    entrypoint:
-      - anvil
-      - --host=0.0.0.0
-      - --chain-id=99
-      - --block-time=1
-      - --silent
+    image: omniops/forkproxy:main
+    environment:
+      - FORKPROXY_CHAIN_ID=99
+      - FORKPROXY_BLOCK_TIME=1
       
     ports:
       - 9000:8545
@@ -46,20 +42,16 @@ services:
       test:
         ipv4_address: 10.186.73.0
     
-  # Initialises geth files and folder from provided genesis file.
   mock_l1:
     labels:
       e2e: true
     container_name: mock_l1
     platform: linux/amd64
-    image: ghcr.io/foundry-rs/foundry:latest
-    entrypoint:
-      - anvil
-      - --host=0.0.0.0
-      - --chain-id=1
-      - --block-time=3600
-      - --silent
-      - --load-state=/anvil/state.json
+    image: omniops/forkproxy:main
+    environment:
+      - FORKPROXY_CHAIN_ID=1
+      - FORKPROXY_BLOCK_TIME=3600
+      - FORKPROXY_LOAD_STATE=/anvil/state.json
     ports:
       - 9000:8545
     networks:
