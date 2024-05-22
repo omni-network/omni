@@ -48,8 +48,10 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 	ap := mockAddressProvider{
 		address: nxtAddr,
 	}
+	evmLogProc := mockLogProvider{deliverErr: errors.New("test error")}
 	keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap)
 	keeper.SetCometAPI(cmtAPI)
+	keeper.AddEventProcessor(evmLogProc)
 	msgSrv := NewMsgServerImpl(keeper)
 
 	var payloadData []byte
@@ -78,9 +80,13 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 	}
 
 	assertExecutionPayload := func(ctx context.Context) {
+		events, err := evmLogProc.Prepare(ctx, block.Hash())
+		require.NoError(t, err)
+
 		resp, err := msgSrv.ExecutionPayload(ctx, &types.MsgExecutionPayload{
-			Authority:        authtypes.NewModuleAddress(types.ModuleName).String(),
-			ExecutionPayload: payloadData,
+			Authority:         authtypes.NewModuleAddress(types.ModuleName).String(),
+			ExecutionPayload:  payloadData,
+			PrevPayloadEvents: events,
 		})
 		require.NoError(t, err)
 		require.NotNil(t, resp)

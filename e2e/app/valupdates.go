@@ -221,6 +221,13 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 					"power", power,
 					"height", rec.BlockNumber.Uint64(),
 				)
+
+				// Do an invalid deposit for testing.
+				_, err = omniStake.Deposit(txOpts, []byte("invalid"))
+				if err != nil {
+					returnErr(errors.Wrap(err, "invalid deposit", "node", node.Name, "addr", addr.Hex()))
+					return
+				}
 			}
 		}
 

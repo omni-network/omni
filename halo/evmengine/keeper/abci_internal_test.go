@@ -439,7 +439,13 @@ func (m mockVEProvider) PrepareVotes(_ context.Context, _ abci.ExtendedCommitInf
 	return []sdk.Msg{msg}, nil
 }
 
-type mockLogProvider struct{}
+type mockLogProvider struct {
+	deliverErr error
+}
+
+func (m mockLogProvider) Name() string {
+	return "mock"
+}
 
 func (m mockLogProvider) Prepare(_ context.Context, blockHash common.Hash) ([]*etypes.EVMEvent, error) {
 	f := fuzz.NewWithSeed(int64(blockHash[0]))
@@ -458,11 +464,11 @@ func (m mockLogProvider) Addresses() []common.Address {
 }
 
 func (m mockLogProvider) Deliver(_ context.Context, _ common.Hash, log *etypes.EVMEvent) error {
-	if bytes.Equal(log.Address, zeroAddr.Bytes()) {
+	if !bytes.Equal(log.Address, zeroAddr.Bytes()) {
 		panic("unexpected evm log address")
 	}
 
-	return nil
+	return m.deliverErr
 }
 
 func (m mockAddressProvider) LocalAddress() common.Address {

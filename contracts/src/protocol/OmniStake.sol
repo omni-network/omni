@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
-import { Secp256k1 } from "../libraries/Secp256k1.sol";
+// import { Secp256k1 } from "../libraries/Secp256k1.sol";
 
 /**
  * @title OmniStake
@@ -23,7 +23,8 @@ contract OmniStake {
     function deposit(bytes memory pubkey) external payable {
         require(msg.value >= 1 ether, "OmniStake: deposit amt too low");
         require(msg.value < type(uint64).max, "OmniStake: deposit amt too high");
-        require(msg.sender == Secp256k1.pubkeyToAddress(pubkey), "OmniStake: pubkey not sender");
+        // TODO(corver): Figure out another way to test failed evm log in cosmos.
+        // require(msg.sender == Secp256k1.pubkeyToAddress(pubkey), "OmniStake: pubkey not sender");
         emit Deposit(pubkey, msg.value);
     }
 }
