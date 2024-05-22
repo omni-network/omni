@@ -4,6 +4,7 @@ pragma solidity =0.8.24;
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { PausableUpgradeable } from "@openzeppelin-upgrades/contracts/security/PausableUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import { ExcessivelySafeCall } from "@nomad-xyz/excessively-safe-call/src/ExcessivelySafeCall.sol";
 
 import { IFeeOracle } from "../interfaces/IFeeOracle.sol";
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
@@ -27,6 +28,8 @@ contract OmniPortal is
     OmniPortalConstants,
     OmniPortalStorage
 {
+    using ExcessivelySafeCall for address;
+
     /**
      * @notice Construct the OmniPortal contract
      */
@@ -57,7 +60,7 @@ contract OmniPortal is
         uint64 xmsgDefaultGasLimit_,
         uint64 xmsgMaxGasLimit_,
         uint64 xmsgMinGasLimit_,
-        uint64 xreceiptMaxErrorBytes_,
+        uint16 xreceiptMaxErrorBytes_,
         uint64 valSetId,
         XTypes.Validator[] memory validators
     ) public initializer {
@@ -266,12 +269,9 @@ contract OmniPortal is
         delete _xmsg;
 
         // empty error if success is true
-        bytes memory error = success ? bytes("") : result;
+        bytes memory errorMsg = success ? bytes("") : result;
 
-        // if error is too long, return corresponding error code
-        if (error.length > xreceiptMaxErrorBytes) error = XRECEIPT_ERROR_EXCEEDS_MAX_BYTES;
-
-        emit XReceipt(xmsg_.sourceChainId, xmsg_.streamOffset, gasUsed, msg.sender, success, error);
+        emit XReceipt(xmsg_.sourceChainId, xmsg_.streamOffset, gasUsed, msg.sender, success, errorMsg);
     }
 
     /**
@@ -285,7 +285,8 @@ contract OmniPortal is
         uint256 gasLeftBefore = gasleft();
 
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success, bytes memory result) = to.call{ gas: gasLimit }(data);
+        (bool success, bytes memory result) =
+            to.excessivelySafeCall({ _gas: gasLimit, _value: 0, _maxCopy: xreceiptMaxErrorBytes, _calldata: data });
 
         uint256 gasLeftAfter = gasleft();
 
@@ -381,7 +382,7 @@ contract OmniPortal is
     /**
      * @notice Set the maximum error bytes for xreceipt
      */
-    function setXReceiptMaxErrorBytes(uint64 maxErrorBytes) external onlyOwner {
+    function setXReceiptMaxErrorBytes(uint16 maxErrorBytes) external onlyOwner {
         _setXReceiptMaxErrorBytes(maxErrorBytes);
     }
 
@@ -438,10 +439,10 @@ contract OmniPortal is
     /**
      * @notice Set the maximum error bytes for xreceipt
      */
-    function _setXReceiptMaxErrorBytes(uint64 maxErrorBytes) internal {
+    function _setXReceiptMaxErrorBytes(uint16 maxErrorBytes) internal {
         require(maxErrorBytes > 0, "OmniPortal: no zero max bytes");
 
-        uint64 oldMax = xreceiptMaxErrorBytes;
+        uint16 oldMax = xreceiptMaxErrorBytes;
         xreceiptMaxErrorBytes = maxErrorBytes;
 
         emit XReceiptMaxErrorBytesChanged(oldMax, maxErrorBytes);

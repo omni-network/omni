@@ -17,13 +17,6 @@ contract OmniPortalConstants {
     uint8 public constant XSUB_QUORUM_DENOMINATOR = 3;
 
     /**
-     * @notice Error code that indicates xmsg error result exceeds XRECEIPT_MAX_ERROR_BYTES
-     * @dev Error code is abi.encodeWithSignature("OmniError(uint256)", 1)
-     */
-    bytes public constant XRECEIPT_ERROR_EXCEEDS_MAX_BYTES =
-        hex"0ea804990000000000000000000000000000000000000000000000000000000000000001";
-
-    /**
      * @dev xmsg.destChainId for "broadcast" xcalls, intended for all portals
      */
     uint64 internal constant _BROADCAST_CHAIN_ID = 0;

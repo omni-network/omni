@@ -27,7 +27,7 @@ type DeploymentConfig struct {
 	XMsgDefaultGasLimit   uint64
 	XMsgMinGasLimit       uint64
 	XMsgMaxGasLimit       uint64
-	XReceiptMaxErrorBytes uint64
+	XReceiptMaxErrorBytes uint16
 	ExpectedAddr          common.Address
 }
 
@@ -35,7 +35,7 @@ const (
 	XMsgDefaultGasLimit   = 200_000
 	XMsgMinGasLimit       = 21_000
 	XMsgMaxGasLimit       = 5_000_000
-	XReceiptMaxErrorBytes = 256
+	XReceiptMaxErrorBytes = uint16(256)
 )
 
 func (cfg DeploymentConfig) Validate() error {

@@ -173,10 +173,9 @@ contract OmniPortal_exec_Test is Base {
         logs = vm.getRecordedLogs();
         assertEq(logs.length, 1);
         receipt = parseReceipt(logs[0]);
-        assertEq(receipt.error, portal.XRECEIPT_ERROR_EXCEEDS_MAX_BYTES());
 
-        // assert constant is encoded as expected
-        assertEq(receipt.error, abi.encodeWithSignature("OmniError(uint256)", 0x1));
+        // assert error is truncated to max length
+        assertEq(receipt.error.length, portal.xreceiptMaxErrorBytes());
     }
 
     /// @dev Test that sys exec that reverts forwards the revert

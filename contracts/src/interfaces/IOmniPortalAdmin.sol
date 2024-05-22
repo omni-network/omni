@@ -46,7 +46,7 @@ interface IOmniPortalAdmin {
      * @param oldMax The old xreceiptMaxErrorBytes
      * @param newMax The new xreceiptMaxErrorBytes
      */
-    event XReceiptMaxErrorBytesChanged(uint64 indexed oldMax, uint64 indexed newMax);
+    event XReceiptMaxErrorBytesChanged(uint16 indexed oldMax, uint16 indexed newMax);
 
     /**
      * @notice Returns the current fee oracle address
@@ -82,7 +82,7 @@ interface IOmniPortalAdmin {
     /**
      * @notice Set the maximum error bytes for xreceipt
      */
-    function setXReceiptMaxErrorBytes(uint64 maxErrorBytes) external;
+    function setXReceiptMaxErrorBytes(uint16 maxErrorBytes) external;
 
     /**
      * @notice Pause xcalls
