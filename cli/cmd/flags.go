@@ -24,6 +24,10 @@ func bindAVSAddress(cmd *cobra.Command, addr *string) {
 	cmd.Flags().StringVar(addr, "avs-address", *addr, "Optional address of the Omni AVS contract")
 }
 
+func bindDeveloperForgeProjectConfig(cmd *cobra.Command, cfg *developerForgeProjectConfig) {
+	cmd.Flags().StringVar(&cfg.templateName, "template", "hello-world-template", "Name of the forge template repo to use found in the omni-network github organization")
+}
+
 func bindDevnetAVSAllowConfig(cmd *cobra.Command, cfg *devnetAllowConfig) {
 	bindRPCURL(cmd, &cfg.RPCURL)
 	bindAVSAddress(cmd, &cfg.AVSAddr)
