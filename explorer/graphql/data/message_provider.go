@@ -261,8 +261,8 @@ func (p Provider) XMsgs(ctx context.Context, first, last *int32, before *graphql
 				b.timestamp AS block_timestamp
 			FROM
 				msgs m
-					LEFT JOIN block_msgs bm ON bm.msg_id = m.id
-					LEFT JOIN blocks b ON bm.block_id = b.id
+					INNER JOIN block_msgs bm ON bm.msg_id = m.id
+					INNER JOIN blocks b ON bm.block_id = b.id
 					LEFT JOIN msg_receipts mr ON mr.msg_id = m.id
 					LEFT JOIN receipts r ON mr.receipt_id = r.id
 			WHERE

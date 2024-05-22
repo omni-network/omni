@@ -3,8 +3,6 @@ package data
 import (
 	"fmt"
 
-	"github.com/omni-network/omni/lib/errors"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
@@ -79,7 +77,7 @@ type XMsg struct {
 func (m XMsg) SourceChain() (Chain, error) {
 	c, ok := m.Chain(m.SourceChainID.String())
 	if !ok {
-		return Chain{}, errors.New("chain not found", "chain_id", m.SourceChainID.String())
+		return Chain{}, fmt.Errorf("chain not found: %s", m.SourceChainID.String())
 	}
 
 	return c, nil
@@ -88,7 +86,7 @@ func (m XMsg) SourceChain() (Chain, error) {
 func (m XMsg) DestChain() (Chain, error) {
 	c, ok := m.Chain(m.DestChainID.String())
 	if !ok {
-		return Chain{}, errors.New("chain not found", "chain_id", m.DestChainID.String())
+		return Chain{}, fmt.Errorf("chain not found: %s", m.DestChainID.String())
 	}
 
 	return c, nil
@@ -103,7 +101,6 @@ type XBlock struct {
 	Hash      common.Hash
 	Messages  []XMsg
 	Timestamp graphql.Time
-	URL       string
 }
 
 func (b XBlock) Chain() (Chain, error) {
@@ -113,6 +110,15 @@ func (b XBlock) Chain() (Chain, error) {
 	}
 
 	return c, nil
+}
+
+func (b XBlock) URL() (string, error) {
+	c, ok := b.Chainer.Chain(b.ChainID.String())
+	if !ok {
+		return "", fmt.Errorf("chain not found: %s", b.ChainID.String())
+	}
+
+	return c.BlockURL(b.Height.ToInt().Uint64()), nil
 }
 
 // Define the Go struct for the XReceipt type.
@@ -151,11 +157,36 @@ func (r *XReceipt) DestChain() (Chain, error) {
 
 // Define the Go struct for the Chain type.
 type Chain struct {
+	AddrURLFmt  string
+	BlockURLFmt string
+	TxURLFmt    string
+
 	ID        graphql.ID
 	ChainID   hexutil.Big
 	DisplayID Long
 	Name      string
 	LogoURL   string
+}
+
+func (c *Chain) AddrUrl(addr common.Address) string {
+	if c.AddrURLFmt == "" {
+		return ""
+	}
+	return fmt.Sprintf(c.AddrURLFmt, addr)
+}
+
+func (c *Chain) BlockURL(height uint64) string {
+	if c.BlockURLFmt == "" {
+		return ""
+	}
+	return fmt.Sprintf(c.BlockURLFmt, height)
+}
+
+func (c *Chain) TxUrl(tx common.Hash) string {
+	if c.TxURLFmt == "" {
+		return ""
+	}
+	return fmt.Sprintf(c.TxURLFmt, tx.String())
 }
 
 // Define the Go struct for the XMsgConnection type.
