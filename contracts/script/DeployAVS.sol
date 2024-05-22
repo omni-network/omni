@@ -10,7 +10,7 @@ import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/trans
 import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import { IDelegationManager } from "src/interfaces/IDelegationManager.sol";
 
-import { OmniAVS } from "src/protocol/OmniAVS.sol";
+import { OmniAVS } from "src/avs/OmniAVS.sol";
 import { EigenM2Deployments } from "./EigenM2Deployments.sol";
 import { StrategyParams } from "./StrategyParams.sol";
 

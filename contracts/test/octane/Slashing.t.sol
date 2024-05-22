@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
-import { Slashing } from "src/protocol/Slashing.sol";
+import { Slashing } from "src/octane/Slashing.sol";
 import { Test, Vm } from "forge-std/Test.sol";
 
 /**

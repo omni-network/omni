@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
-import { Staking } from "src/protocol/Staking.sol";
+import { Staking } from "src/octane/Staking.sol";
 import { Test, Vm } from "forge-std/Test.sol";
 
 /**

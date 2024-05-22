@@ -2,7 +2,7 @@
 pragma solidity =0.8.24;
 
 import { Script } from "forge-std/Script.sol";
-import { Fixtures } from "test/portal/common/Fixtures.sol";
+import { Fixtures } from "test/xchain/common/Fixtures.sol";
 
 /**
  * @title WriteTestXBlocks

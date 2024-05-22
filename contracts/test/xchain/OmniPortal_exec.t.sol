@@ -2,7 +2,7 @@
 pragma solidity =0.8.24;
 
 import { XTypes } from "src/libraries/XTypes.sol";
-import { OmniPortal } from "src/protocol/OmniPortal.sol";
+import { OmniPortal } from "src/xchain/OmniPortal.sol";
 import { Base } from "./common/Base.sol";
 import { TestXTypes } from "./common/TestXTypes.sol";
 import { Reverter } from "./common/Reverter.sol";

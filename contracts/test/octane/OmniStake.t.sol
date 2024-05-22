@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
-import { OmniStake } from "src/protocol/OmniStake.sol";
+import { OmniStake } from "src/octane/OmniStake.sol";
 import { Test, Vm } from "forge-std/Test.sol";
 
 /**

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.12;
 
 import { XTypes } from "../../src/libraries/XTypes.sol";
-import { OmniPortalConstants } from "../../src/protocol/OmniPortalConstants.sol";
+import { OmniPortalConstants } from "../../src/xchain/OmniPortalConstants.sol";
 import { IFeeOracle } from "../../src/interfaces/IFeeOracle.sol";
 import { MockFeeOracle } from "./MockFeeOracle.sol";
 

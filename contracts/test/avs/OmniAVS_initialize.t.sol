@@ -11,7 +11,7 @@ import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrate
 import { IDelegationManager } from "src/interfaces/IDelegationManager.sol";
 import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
-import { OmniAVS } from "src/protocol/OmniAVS.sol";
+import { OmniAVS } from "src/avs/OmniAVS.sol";
 
 import { MockOmniPredeploys } from "test/utils/MockOmniPredeploys.sol";
 import { Empty } from "./common/Empty.sol";
