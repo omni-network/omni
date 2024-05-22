@@ -5,7 +5,7 @@ import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAV
 import { IDelegationManager } from "src/interfaces/IDelegationManager.sol";
 
 import { Create3 } from "src/deploy/Create3.sol";
-import { OmniAVS } from "src/protocol/OmniAVS.sol";
+import { OmniAVS } from "src/avs/OmniAVS.sol";
 import { EigenM2HoleskyDeployments } from "test/avs/common/eigen/EigenM2HoleskyDeployments.sol";
 import { StrategyParams } from "./StrategyParams.sol";
 

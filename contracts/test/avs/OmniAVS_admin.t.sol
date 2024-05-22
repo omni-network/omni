@@ -3,7 +3,6 @@ pragma solidity =0.8.12;
 
 import { IStrategy } from "eigenlayer-contracts/src/contracts/interfaces/IStrategy.sol";
 
-import { OmniPortalConstants } from "src/protocol/OmniPortalConstants.sol";
 import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
 import { Base } from "./common/Base.sol";

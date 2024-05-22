@@ -6,10 +6,10 @@ import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/trans
 
 import { ProxyAdmin } from "src/deploy/ProxyAdmin.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
-import { FeeOracleV1 } from "src/protocol/FeeOracleV1.sol";
+import { FeeOracleV1 } from "src/xchain/FeeOracleV1.sol";
 import { IFeeOracleV1 } from "src/interfaces/IFeeOracleV1.sol";
-import { OmniPortal } from "src/protocol/OmniPortal.sol";
-import { XRegistryReplica } from "src/protocol/XRegistryReplica.sol";
+import { OmniPortal } from "src/xchain/OmniPortal.sol";
+import { XRegistryReplica } from "src/xchain/XRegistryReplica.sol";
 import { TestXTypes } from "./TestXTypes.sol";
 import { PortalHarness } from "./PortalHarness.sol";
 import { Counter } from "./Counter.sol";
@@ -115,11 +115,11 @@ contract Fixtures is CommonBase, StdCheats {
 
     // @dev Path to which test XBlocks are written relative to project root. Read by ts utilites
     //      to generate XSubmissions for each test XBlock (see ts/script/genxsubs/io.ts)
-    string constant XBLOCKS_PATH = "test/portal/data/xblocks.json";
+    string constant XBLOCKS_PATH = "test/xchain/data/xblocks.json";
 
     // @dev Path to which test XSubmissions are written relative to project root. XSubmissions
     //      are generated for each test XBlock, per destination chain, by ts/script/genxsubs/main.ts.
-    string constant XSUBS_PATH = "test/portal/data/xsubs.json";
+    string constant XSUBS_PATH = "test/xchain/data/xsubs.json";
 
     /// @dev XSubs json read from XSUBS_PATH, stored to avoid re-reading from disk
     string private _xsubsJson;

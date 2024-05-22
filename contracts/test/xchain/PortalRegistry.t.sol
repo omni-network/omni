@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
-import { XRegistry } from "src/protocol/XRegistry.sol";
-import { PortalRegistry } from "src/protocol/PortalRegistry.sol";
+import { XRegistry } from "src/xchain/XRegistry.sol";
+import { PortalRegistry } from "src/xchain/PortalRegistry.sol";
 import { MockPortal } from "test/utils/MockPortal.sol";
 import { Predeploys } from "src/libraries/Predeploys.sol";
-import { OmniPortal } from "src/protocol/OmniPortal.sol";
-import { XRegistryReplica } from "src/protocol/XRegistryReplica.sol";
+import { OmniPortal } from "src/xchain/OmniPortal.sol";
+import { XRegistryReplica } from "src/xchain/XRegistryReplica.sol";
 import { XRegistryNames } from "src/libraries/XRegistryNames.sol";
 
 import { Test } from "forge-std/Test.sol";
