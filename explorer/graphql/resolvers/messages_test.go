@@ -121,10 +121,10 @@ func TestXMsg(t *testing.T) {
 						},
 						"success": true,
 						"txHash": "0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f21",
-						"txUrl": ""
+						"txUrl": "https://sepolia.arbiscan.io/tx/0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f21"
 					},
 					"sender": "0x0102030405060708090a0b0c0d0e0f1011121314",
-					"senderUrl": "",
+					"senderUrl": "https://sepolia.arbiscan.io/address/0x0102030405060708090a0B0c0d0e0f1011121314",
 					"sourceChain": {
 						"chainID": "0x677",
 						"displayID": "1655",
@@ -133,9 +133,9 @@ func TestXMsg(t *testing.T) {
 					},
 					"status": "SUCCESS",
 					"to": "0x0102030405060708090a0b0c0d0e0f1011121315",
-					"toUrl": "",
+					"toUrl": "https://sepolia-optimism.etherscan.io/address/0x0102030405060708090A0b0c0d0E0F1011121315",
 					"txHash": "0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20",
-					"txUrl": ""
+					"txUrl": "https://sepolia.arbiscan.io/tx/0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
 				}
 			}
 			`,

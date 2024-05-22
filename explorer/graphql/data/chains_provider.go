@@ -20,31 +20,36 @@ type ChainsProvider struct {
 func NewChainsProvider(network netconf.ID) *ChainsProvider {
 	// Define the chains supported by each network
 	networks := map[netconf.ID][]struct {
-		id      uint64
-		name    string
-		logoURL string
+		id          uint64
+		name        string
+		logoURL     string
+		addrUrlFmt  string
+		blockURLFmt string
+		txURLFmt    string
 	}{
 		netconf.Devnet: {
-			{id: uint64(evmchain.IDOmniEphemeral), name: "Omni Ephemeral", logoURL: "https://chainlist.org/unknown-logo.png"},
-			{id: uint64(evmchain.IDMockOp), name: "Mock Op", logoURL: "https://icons.llamao.fi/icons/chains/rsz_optimism.jpg"},
-			{id: uint64(evmchain.IDMockArb), name: "Mock Arb", logoURL: "https://icons.llamao.fi/icons/chains/rsz_arbitrum.jpg"},
+			{id: uint64(evmchain.IDOmniEphemeral), name: "Omni Ephemeral", logoURL: "https://chainlist.org/unknown-logo.png", addrUrlFmt: "", blockURLFmt: "", txURLFmt: ""},
+			{id: uint64(evmchain.IDMockL1Fast), name: "Mock L1 Fast", logoURL: "https://icons.llamao.fi/icons/chains/rsz_optimism.jpg", addrUrlFmt: "https://sepolia.arbiscan.io/address/%s", blockURLFmt: "https://sepolia.arbiscan.io/block/%d", txURLFmt: "https://sepolia.arbiscan.io/tx/%s"},
+			{id: uint64(evmchain.IDMockL2), name: "Mock L2", logoURL: "https://icons.llamao.fi/icons/chains/rsz_arbitrum.jpg", addrUrlFmt: "https://sepolia-optimism.etherscan.io/address/%s", blockURLFmt: "https://sepolia-optimism.etherscan.io/block/%d", txURLFmt: "https://sepolia-optimism.etherscan.io/tx/%s"},
+			{id: uint64(evmchain.IDMockArb), name: "Mock Arb", logoURL: "https://icons.llamao.fi/icons/chains/rsz_arbitrum.jpg", addrUrlFmt: "https://sepolia-optimism.etherscan.io/address/%s", blockURLFmt: "https://sepolia-optimism.etherscan.io/block/%d", txURLFmt: "https://sepolia-optimism.etherscan.io/tx/%s"},
+			{id: uint64(evmchain.IDMockOp), name: "Mock Op", logoURL: "https://icons.llamao.fi/icons/chains/rsz_optimism.jpg", addrUrlFmt: "https://sepolia.arbiscan.io/address/%s", blockURLFmt: "https://sepolia.arbiscan.io/block/%d", txURLFmt: "https://sepolia.arbiscan.io/tx/%s"},
 		},
 		netconf.Staging: {
-			{id: uint64(evmchain.IDOmniEphemeral), name: "Omni Ephemeral", logoURL: "https://chainlist.org/unknown-logo.png"},
-			{id: uint64(evmchain.IDMockL1Slow), name: "Mock L1 Slow", logoURL: "https://chainlist.org/unknown-logo.png"},
-			{id: uint64(evmchain.IDOpSepolia), name: "Op Sepolia", logoURL: "https://icons.llamao.fi/icons/chains/rsz_optimism.jpg"},
+			{id: uint64(evmchain.IDOmniEphemeral), name: "Omni Ephemeral", logoURL: "https://chainlist.org/unknown-logo.png", addrUrlFmt: "", blockURLFmt: "", txURLFmt: ""},
+			{id: uint64(evmchain.IDMockL1Slow), name: "Mock L1 Slow", logoURL: "https://chainlist.org/unknown-logo.png", addrUrlFmt: "", blockURLFmt: "", txURLFmt: ""},
+			{id: uint64(evmchain.IDOpSepolia), name: "Op Sepolia", logoURL: "https://icons.llamao.fi/icons/chains/rsz_optimism.jpg", addrUrlFmt: "https://sepolia-optimism.etherscan.io/address/%s", blockURLFmt: "https://sepolia-optimism.etherscan.io/block/%d", txURLFmt: "https://sepolia-optimism.etherscan.io/tx/%s"},
 		},
 		netconf.Testnet: {
-			{id: uint64(evmchain.IDOmniTestnet), name: "Omni Testnet", logoURL: "https://chainlist.org/unknown-logo.png"},
-			{id: uint64(evmchain.IDHolesky), name: "Holesky", logoURL: "https://icons.llamao.fi/icons/chains/rsz_ethereum.jpg"},
-			{id: uint64(evmchain.IDArbSepolia), name: "Arb Sepolia", logoURL: "https://icons.llamao.fi/icons/chains/rsz_arbitrum.jpg"},
-			{id: uint64(evmchain.IDOpSepolia), name: "Op Sepolia", logoURL: "https://icons.llamao.fi/icons/chains/rsz_optimism.jpg"},
+			{id: uint64(evmchain.IDOmniTestnet), name: "Omni Testnet", logoURL: "https://chainlist.org/unknown-logo.png", addrUrlFmt: "", blockURLFmt: "", txURLFmt: ""},
+			{id: uint64(evmchain.IDHolesky), name: "Holesky", logoURL: "https://icons.llamao.fi/icons/chains/rsz_ethereum.jpg", addrUrlFmt: "https://holesky.etherscan.io/address/%s", blockURLFmt: "https://holesky.etherscan.io/block/%d", txURLFmt: "https://holesky.etherscan.io/tx/%s"},
+			{id: uint64(evmchain.IDArbSepolia), name: "Arb Sepolia", logoURL: "https://icons.llamao.fi/icons/chains/rsz_arbitrum.jpg", addrUrlFmt: "https://sepolia.arbiscan.io/address/%s", blockURLFmt: "https://sepolia.arbiscan.io/block/%d", txURLFmt: "https://sepolia.arbiscan.io/tx/%s"},
+			{id: uint64(evmchain.IDOpSepolia), name: "Op Sepolia", logoURL: "https://icons.llamao.fi/icons/chains/rsz_optimism.jpg", addrUrlFmt: "https://sepolia-optimism.etherscan.io/address/%s", blockURLFmt: "https://sepolia-optimism.etherscan.io/block/%d", txURLFmt: "https://sepolia-optimism.etherscan.io/tx/%s"},
 		},
 		netconf.Mainnet: {
-			{id: 1, name: "Ethereum", logoURL: "https://icons.llamao.fi/icons/chains/rsz_ethereum.jpg"},
-			{id: 166, name: "Omni", logoURL: "https://chainlist.org/unknown-logo.png"},
-			{id: 42161, name: "Arbitrum", logoURL: "https://icons.llamao.fi/icons/chains/rsz_arbitrum.jpg"},
-			{id: 10, name: "Optimism", logoURL: "https://icons.llamao.fi/icons/chains/rsz_optimism.jpg"},
+			{id: 1, name: "Ethereum", logoURL: "https://icons.llamao.fi/icons/chains/rsz_ethereum.jpg", addrUrlFmt: "https://etherscan.io/address/%s", blockURLFmt: "https://etherscan.io/block/%d", txURLFmt: "https://etherscan.io/tx/%s"},
+			{id: 166, name: "Omni", logoURL: "https://chainlist.org/unknown-logo.png", addrUrlFmt: "", blockURLFmt: "", txURLFmt: ""},
+			{id: 42161, name: "Arbitrum", logoURL: "https://icons.llamao.fi/icons/chains/rsz_arbitrum.jpg", addrUrlFmt: "https://arbiscan.io/address/%s", blockURLFmt: "https://arbiscan.io/block/%d", txURLFmt: "https://arbiscan.io/tx/%s"},
+			{id: 10, name: "Optimism", logoURL: "https://icons.llamao.fi/icons/chains/rsz_optimism.jpg", addrUrlFmt: "https://optimistic.etherscan.io/address/%s", blockURLFmt: "https://optimistic.etherscan.io/block/%d", txURLFmt: "https://optimistic.etherscan.io/tx/%s"},
 		},
 	}
 
@@ -57,11 +62,14 @@ func NewChainsProvider(network netconf.ID) *ChainsProvider {
 	for _, c := range list {
 		key := fmt.Sprintf("0x%x", c.id)
 		chains[key] = Chain{
-			ID:        relay.MarshalID("chain", c.id),
-			ChainID:   hexutil.Big(*hexutil.MustDecodeBig(key)),
-			DisplayID: Long(c.id),
-			Name:      c.name,
-			LogoURL:   c.logoURL,
+			AddrURLFmt:  c.addrUrlFmt,
+			BlockURLFmt: c.blockURLFmt,
+			TxURLFmt:    c.txURLFmt,
+			ID:          relay.MarshalID("chain", c.id),
+			ChainID:     hexutil.Big(*hexutil.MustDecodeBig(key)),
+			DisplayID:   Long(c.id),
+			Name:        c.name,
+			LogoURL:     c.logoURL,
 		}
 	}
 

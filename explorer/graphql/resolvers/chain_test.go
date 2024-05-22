@@ -46,6 +46,20 @@ func TestSupportedChains(t *testing.T) {
 						"name": "Omni Ephemeral"
 					},
 					{
+						"chainID": "0x674",
+						"displayID": "1652",
+						"id": "Y2hhaW46MTY1Mg==",
+						"logoUrl": "https://icons.llamao.fi/icons/chains/rsz_optimism.jpg",
+						"name": "Mock L1 Fast"
+					},
+					{
+						"chainID": "0x676",
+						"displayID": "1654",
+						"id": "Y2hhaW46MTY1NA==",
+						"logoUrl": "https://icons.llamao.fi/icons/chains/rsz_arbitrum.jpg",
+						"name": "Mock L2"
+					},
+					{
 						"chainID": "0x677",
 						"displayID": "1655",
 						"id": "Y2hhaW46MTY1NQ==",
