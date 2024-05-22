@@ -10,7 +10,7 @@ builds:
     goos: [linux, darwin]
     goarch: [amd64, arm64]
     ldflags:
-      - -s -w -X github.com/omni-network/omni/lib/buildinfo.version={{.Version}}
+      - -s -w -X github.com/omni-network/omni/lib/buildinfo.version={{.Tag}}
 
   - id: relayer
     main: ./relayer
@@ -19,7 +19,7 @@ builds:
     goos: [linux, darwin]
     goarch: [amd64, arm64]
     ldflags:
-      - -s -w -X github.com/omni-network/omni/lib/buildinfo.version={{.Version}}
+      - -s -w -X github.com/omni-network/omni/lib/buildinfo.version={{.Tag}}
 
   - id: monitor
     main: ./monitor
@@ -49,7 +49,7 @@ builds:
     goos: [ linux, darwin ]
     goarch: [ amd64, arm64 ]
     ldflags:
-      - -s -w -X github.com/omni-network/omni/lib/buildinfo.version={{.Version}}
+      - -s -w -X github.com/omni-network/omni/lib/buildinfo.version={{.Tag}}
 
 dockers:
   - ids: [halo]
