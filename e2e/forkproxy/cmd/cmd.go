@@ -45,4 +45,5 @@ func bindFlags(flags *pflag.FlagSet, cfg *app.Config) {
 	flags.StringVar(&cfg.LoadState, "load-state", cfg.LoadState, "Initialize the chain from a previously saved state snapshot")
 	flags.Uint64Var(&cfg.BlockTimeSecs, "block-time", cfg.BlockTimeSecs, "Block time in seconds for interval mining")
 	flags.BoolVar(&cfg.Silent, "silent", cfg.Silent, "Don't print anything on startup and don't print logs")
+	flags.BoolVar(&cfg.EnableForking, "fork", cfg.EnableForking, "Enable constant forking")
 }

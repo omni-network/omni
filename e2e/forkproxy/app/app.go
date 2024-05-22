@@ -6,9 +6,11 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -18,7 +20,14 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
+	"github.com/ethereum/go-ethereum/ethclient"
+
 	"golang.org/x/sync/errgroup"
+)
+
+const (
+	FinalizeDepth = 20
+	MaxForkDepth  = FinalizeDepth / 2
 )
 
 type Config struct {
@@ -27,6 +36,7 @@ type Config struct {
 	LoadState     string
 	BlockTimeSecs uint64
 	Silent        bool
+	EnableForking bool
 }
 
 func DefaultConfig() Config {
@@ -51,6 +61,8 @@ func Run(ctx context.Context, cfg Config) error {
 	root, err := startAnvil(ctx, rootCfg)
 	if err != nil {
 		return errors.Wrap(err, "start root anvil")
+	} else if err := root.AwaitHeight(ctx, 1, time.Second*5); err != nil {
+		return errors.Wrap(err, "start anvil")
 	}
 
 	proxy, err := newProxy(root)
@@ -69,7 +81,9 @@ func Run(ctx context.Context, cfg Config) error {
 	log.Info(ctx, "Starting forkproxy server", "address", cfg.ListenAddr)
 
 	var eg errgroup.Group
-	// TODO(corver): Start a goroutines that forks the instance every few seconds.
+	eg.Go(func() error {
+		return forkForever(ctx, cfg, portProvider, proxy)
+	})
 	eg.Go(func() error {
 		defer cancel() // Cancel the app context if serving fails.
 
@@ -87,7 +101,7 @@ func Run(ctx context.Context, cfg Config) error {
 			return errors.Wrap(err, "server shutdown")
 		}
 
-		proxy.stopInstance()
+		proxy.getInstance().stop()
 
 		return nil
 	})
@@ -95,7 +109,60 @@ func Run(ctx context.Context, cfg Config) error {
 	if err := eg.Wait(); errors.Is(err, http.ErrServerClosed) {
 		return nil // No error on shutdown.
 	} else if err != nil {
-		return errors.Wrap(err, "server")
+		return errors.Wrap(err, "run server")
+	}
+
+	return nil
+}
+
+func forkForever(ctx context.Context, cfg Config, newPort func() int, proxy *proxy) error {
+	if !cfg.EnableForking {
+		<-ctx.Done()
+		return nil
+	}
+
+	for ctx.Err() == nil {
+		nextForkDepth := 1 + rand.Intn(MaxForkDepth-1)                  //nolint:gosec // Not a problem
+		sleepSecs := (nextForkDepth * int(cfg.BlockTimeSecs)) * 12 / 10 // Wait 20% longer
+
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-time.After(time.Duration(sleepSecs) * time.Second):
+		}
+
+		current := proxy.getInstance()
+		height, err := current.Height(ctx)
+		if err != nil {
+			return errors.Wrap(err, "get height")
+		} else if int(height) <= nextForkDepth {
+			log.Warn(ctx, "Fork depth too deep", nil, "height", height, "fork_depth", nextForkDepth)
+			continue
+		}
+
+		forkHeight := height - uint64(nextForkDepth)
+
+		log.Info(ctx, "Forking chain", "fork_depth", nextForkDepth, "current_height", height, "forked_height", forkHeight)
+
+		// Configure and start fork
+		nextCfg := anvilConfig{
+			Config:       cfg,
+			Port:         newPort(),
+			ForkInstance: current,
+			ForkHeight:   forkHeight,
+		}
+		next, err := startAnvil(ctx, nextCfg)
+		if err != nil {
+			return errors.Wrap(err, "start anvil")
+		}
+		// Wait for it come up
+		if err := next.AwaitHeight(ctx, forkHeight+1, time.Second*5); err != nil {
+			return errors.Wrap(err, "await up")
+		}
+		// Replace proxy target
+		if err := proxy.setTarget(next); err != nil {
+			return errors.Wrap(err, "set target")
+		}
 	}
 
 	return nil
@@ -112,7 +179,7 @@ func newProxy(instance anvilInstance) (*proxy, error) {
 
 type proxy struct {
 	mu       sync.RWMutex
-	instance anvilInstance
+	instance *anvilInstance
 	target   *url.URL
 }
 
@@ -127,11 +194,11 @@ func (p *proxy) getTarget() *url.URL {
 	return p.target
 }
 
-func (p *proxy) stopInstance() {
+func (p *proxy) getInstance() *anvilInstance {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	p.instance.stop()
+	return p.instance
 }
 
 func (p *proxy) setTarget(target anvilInstance) error {
@@ -143,7 +210,11 @@ func (p *proxy) setTarget(target anvilInstance) error {
 		return errors.Wrap(err, "parse target url")
 	}
 
-	p.instance = target
+	if p.instance != nil {
+		p.instance.stop()
+	}
+
+	p.instance = &target
 	p.target = u
 
 	return nil
@@ -165,6 +236,43 @@ type anvilInstance struct {
 
 func (i anvilInstance) URL() string {
 	return fmt.Sprintf("http://127.0.0.1:%d", i.Cfg.Port)
+}
+
+func (i anvilInstance) Height(ctx context.Context) (uint64, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	ethCl, err := ethclient.DialContext(ctx, i.URL())
+	if err != nil {
+		return 0, errors.Wrap(err, "dial ethclient")
+	}
+
+	h, err := ethCl.BlockNumber(ctx)
+	if err != nil {
+		return 0, errors.Wrap(err, "get block number")
+	}
+
+	return h, nil
+}
+
+func (i anvilInstance) AwaitHeight(ctx context.Context, min uint64, timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	for ctx.Err() == nil {
+		if i.Cmd.ProcessState != nil && i.Cmd.ProcessState.Exited() {
+			return errors.New("process exited", "state", i.Cmd.ProcessState.String())
+		}
+
+		h, err := i.Height(ctx)
+		if err == nil && h >= min {
+			return nil
+		}
+
+		time.Sleep(time.Second / 3)
+	}
+
+	return errors.Wrap(ctx.Err(), "await up")
 }
 
 //nolint:govet // Context is canceled when instance stopped.
@@ -189,18 +297,24 @@ func startAnvil(ctx context.Context, cfg anvilConfig) (anvilInstance, error) {
 		)
 	}
 
+	dir, err := os.MkdirTemp("", "")
+	if err != nil {
+		return anvilInstance{}, errors.Wrap(err, "create temp dir")
+	}
+
 	log.Info(ctx, "Starting anvil", "command", strings.Join(args, " "))
 
 	var out bytes.Buffer
 	cmd := exec.CommandContext(ctx, "anvil", args...)
 	cmd.Stdout = &out
 	cmd.Stderr = &out
+	cmd.Dir = dir
 	if err := cmd.Start(); err != nil {
 		return anvilInstance{}, errors.Wrap(err, "start anvil", "out", out.String())
 	}
 
 	go func() {
-		err := logLines(ctx, &out)
+		err := logLines(ctx, &out, fmt.Sprint(cfg.Port))
 		if err != nil {
 			log.Error(ctx, "Failed logging lines", err)
 		}
@@ -208,7 +322,9 @@ func startAnvil(ctx context.Context, cfg anvilConfig) (anvilInstance, error) {
 
 	return anvilInstance{
 		stop: func() {
+			log.Debug(ctx, "Stopping anvil", "port", cfg.Port)
 			cancel()
+			_ = cmd.Process.Kill()
 			_ = cmd.Wait()
 		},
 		Cfg: cfg,
@@ -227,7 +343,7 @@ func newPortProvider() func() int {
 
 // logLines blocks, reading lines from the reader and logging them.
 // It returns when the reader is closed; io.EOF.
-func logLines(ctx context.Context, r io.Reader) error {
+func logLines(ctx context.Context, r io.Reader, prefix string) error {
 	scanner := bufio.NewReader(r)
 	for ctx.Err() == nil {
 		line, err := scanner.ReadString('\n')
@@ -237,7 +353,7 @@ func logLines(ctx context.Context, r io.Reader) error {
 		} else if err != nil {
 			return errors.Wrap(err, "read line")
 		} else {
-			fmt.Println(line) //nolint:forbidigo // Logging this doesn't make sense.
+			fmt.Println(prefix + ": " + line) //nolint:forbidigo // Logging this doesn't make sense.
 		}
 	}
 
