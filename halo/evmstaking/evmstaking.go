@@ -15,8 +15,9 @@ import (
 	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -26,13 +27,19 @@ import (
 	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-const AccountName = "evmstaking"
+const ModuleName = "evmstaking"
 
 var _ evmenginetypes.EvmEventProcessor = EventProcessor{}
 
+var (
+	stakingABI           = mustGetABI(bindings.StakingMetaData)
+	createValidatorEvent = mustGetEvent(stakingABI, "CreateValidator")
+	delegateEvent        = mustGetEvent(stakingABI, "Delegate")
+)
+
 // EventProcessor implements the evmenginetypes.EvmEventProcessor interface.
 type EventProcessor struct {
-	contract *bindings.OmniStake
+	contract *bindings.Staking
 	ethCl    ethclient.Client
 	address  common.Address
 	sKeeper  *skeeper.Keeper
@@ -47,10 +54,10 @@ func New(
 	bKeeper bkeeper.Keeper,
 	aKeeper akeeper.AccountKeeper,
 ) (EventProcessor, error) {
-	address := common.HexToAddress(predeploys.OmniStake)
-	contract, err := bindings.NewOmniStake(address, ethCl)
+	address := common.HexToAddress(predeploys.Staking)
+	contract, err := bindings.NewStaking(address, ethCl)
 	if err != nil {
-		return EventProcessor{}, errors.Wrap(err, "new omni stake")
+		return EventProcessor{}, errors.Wrap(err, "new staking")
 	}
 
 	return EventProcessor{
@@ -91,73 +98,79 @@ func (p EventProcessor) Prepare(ctx context.Context, blockHash common.Hash) ([]*
 }
 
 func (EventProcessor) Name() string {
-	return AccountName
+	return ModuleName
 }
 
 func (p EventProcessor) Addresses() []common.Address {
 	return []common.Address{p.address}
 }
 
-// Deliver processes a omni deposit log event:
+// Deliver processes a omni deposit log event, which must be one of:
+// - CreateValidator
+// - Delegate.
+func (p EventProcessor) Deliver(ctx context.Context, _ common.Hash, elog *evmenginetypes.EVMEvent) error {
+	ethlog := elog.ToEthLog()
+
+	switch ethlog.Topics[0] {
+	case createValidatorEvent.ID:
+		ev, err := p.contract.ParseCreateValidator(ethlog)
+		if err != nil {
+			return errors.Wrap(err, "parse create validator")
+		}
+
+		return p.deliverCreateValidator(ctx, ev)
+	case delegateEvent.ID:
+		ev, err := p.contract.ParseDelegate(ethlog)
+		if err != nil {
+			return errors.Wrap(err, "parse delegate")
+		}
+
+		return p.delivereDelegate(ctx, ev)
+	default:
+		return errors.New("unknown event")
+	}
+}
+
+// deliverCreateValidator processes a CreateValidator event, and creates a new validator.
 // - Mint the corresponding amount of $STAKE coins.
 // - Send the minted coins to the depositor's account.
-// - Create a new validator with the depositor's account.ccbelunhfhcrcegtfvbgfibjjllhjurctgfrfjhhh.
-func (p EventProcessor) Deliver(ctx context.Context, _ common.Hash, elog *evmenginetypes.EVMEvent) error {
-	deposit, err := p.contract.ParseDeposit(elog.ToEthLog())
-	if err != nil {
-		return errors.Wrap(err, "parse deposit")
-	}
-
-	stdPubkey, err := k1util.PubKeyFromBytes64(deposit.Pubkey)
-	if err != nil {
-		return errors.Wrap(err, "deposit pubkey")
-	}
-
-	pubkey, err := k1util.StdPubKeyToCosmos(stdPubkey)
+// - Create a new validator with the depositor's account.
+//
+// NOTE: if we error, the deposit is lost (on EVM). consider recovery methods.
+func (p EventProcessor) deliverCreateValidator(ctx context.Context, ev *bindings.StakingCreateValidator) error {
+	pubkey, err := k1util.PubKeyBytesToCosmos(ev.Pubkey)
 	if err != nil {
 		return errors.Wrap(err, "pubkey to cosmos")
 	}
 
-	ethAddr := crypto.PubkeyToAddress(*stdPubkey)
-	accAddr := sdk.AccAddress(ethAddr.Bytes())
-	valAddr := sdk.ValAddress(ethAddr.Bytes())
+	accAddr := sdk.AccAddress(ev.Validator.Bytes())
+	valAddr := sdk.ValAddress(ev.Validator.Bytes())
 
-	amountCoin, amountCoins := omniToBondCoin(deposit.Amount)
+	amountCoin, amountCoins := omniToBondCoin(ev.Deposit)
 
-	_ = p.getOrCreateAccount(ctx, accAddr)
+	if _, err := p.sKeeper.GetValidator(ctx, valAddr); err == nil {
+		return errors.New("validator already exists")
+	}
 
-	if err := p.bKeeper.MintCoins(ctx, AccountName, amountCoins); err != nil {
+	p.createAccIfNone(ctx, accAddr)
+
+	if err := p.bKeeper.MintCoins(ctx, ModuleName, amountCoins); err != nil {
 		return errors.Wrap(err, "mint coins")
 	}
 
-	if err := p.bKeeper.SendCoinsFromModuleToAccount(ctx, AccountName, accAddr, amountCoins); err != nil {
+	if err := p.bKeeper.SendCoinsFromModuleToAccount(ctx, ModuleName, accAddr, amountCoins); err != nil {
 		return errors.Wrap(err, "send coins")
 	}
 
-	if _, err := p.sKeeper.GetValidator(ctx, valAddr); err == nil {
-		log.Info(ctx, "EVM staking deposit detected, adding self-delegation",
-			"depositor", ethAddr.Hex(),
-			"amount", deposit.Amount.String())
-
-		// Validator already exists, add deposit to self delegation
-		msg := stypes.NewMsgDelegate(accAddr.String(), valAddr.String(), amountCoin)
-		_, err = skeeper.NewMsgServerImpl(p.sKeeper).Delegate(ctx, msg)
-		if err != nil {
-			return errors.Wrap(err, "delegate")
-		}
-
-		return nil
-	}
-
 	log.Info(ctx, "EVM staking deposit detected, adding new validator",
-		"depositor", ethAddr.Hex(),
-		"amount", deposit.Amount.String())
+		"depositor", ev.Validator.Hex(),
+		"amount", ev.Deposit.String())
 
 	msg, err := stypes.NewMsgCreateValidator(
 		valAddr.String(),
 		pubkey,
 		amountCoin,
-		stypes.Description{Moniker: ethAddr.Hex()},
+		stypes.Description{Moniker: ev.Validator.Hex()},
 		stypes.NewCommissionRates(math.LegacyZeroDec(), math.LegacyZeroDec(), math.LegacyZeroDec()),
 		math.NewInt(1)) // Stub out minimum self delegation for now, just use 1.
 	if err != nil {
@@ -172,16 +185,56 @@ func (p EventProcessor) Deliver(ctx context.Context, _ common.Hash, elog *evmeng
 	return nil
 }
 
-func (p EventProcessor) getOrCreateAccount(ctx context.Context, addr sdk.AccAddress) sdk.AccountI {
-	if p.aKeeper.HasAccount(ctx, addr) {
-		return p.aKeeper.GetAccount(ctx, addr)
+// delivereDelegate processes a Delegate event, and delegates to an existing validator.
+// - Mint the corresponding amount of $STAKE coins.
+// - Send the minted coins to the delegator's account.
+// - Delegate the minted coins to the validator.
+//
+// NOTE: if we error, the deposit is lost (on EVM). consider recovery methods.
+func (p EventProcessor) delivereDelegate(ctx context.Context, ev *bindings.StakingDelegate) error {
+	if ev.Delegator != ev.Validator {
+		return errors.New("only self delegation")
 	}
 
-	acc := p.aKeeper.NewAccountWithAddress(ctx, addr)
+	delAddr := sdk.AccAddress(ev.Delegator.Bytes())
+	valAddr := sdk.ValAddress(ev.Validator.Bytes())
 
-	p.aKeeper.SetAccount(ctx, acc)
+	if _, err := p.sKeeper.GetValidator(ctx, valAddr); err != nil {
+		return errors.New("validator does not exist")
+	}
 
-	return acc
+	amountCoin, amountCoins := omniToBondCoin(ev.Amount)
+
+	p.createAccIfNone(ctx, delAddr)
+
+	if err := p.bKeeper.MintCoins(ctx, ModuleName, amountCoins); err != nil {
+		return errors.Wrap(err, "mint coins")
+	}
+
+	if err := p.bKeeper.SendCoinsFromModuleToAccount(ctx, ModuleName, delAddr, amountCoins); err != nil {
+		return errors.Wrap(err, "send coins")
+	}
+
+	log.Info(ctx, "EVM staking delegation detected, delegating",
+		"delegator", ev.Delegator.Hex(),
+		"validator", ev.Validator.Hex(),
+		"amount", ev.Amount.String())
+
+	// Validator already exists, add deposit to self delegation
+	msg := stypes.NewMsgDelegate(delAddr.String(), valAddr.String(), amountCoin)
+	_, err := skeeper.NewMsgServerImpl(p.sKeeper).Delegate(ctx, msg)
+	if err != nil {
+		return errors.Wrap(err, "delegate")
+	}
+
+	return nil
+}
+
+func (p EventProcessor) createAccIfNone(ctx context.Context, addr sdk.AccAddress) {
+	if !p.aKeeper.HasAccount(ctx, addr) {
+		acc := p.aKeeper.NewAccountWithAddress(ctx, addr)
+		p.aKeeper.SetAccount(ctx, acc)
+	}
 }
 
 // omniToBondCoin converts the $OMNI amount into a $STAKE coin.
@@ -189,4 +242,26 @@ func (p EventProcessor) getOrCreateAccount(ctx context.Context, addr sdk.AccAddr
 func omniToBondCoin(amount *big.Int) (sdk.Coin, sdk.Coins) {
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, math.NewIntFromBigInt(amount))
 	return coin, sdk.NewCoins(coin)
+}
+
+// mustGetABI returns the metadata's ABI as an abi.ABI type.
+// It panics on error.
+func mustGetABI(metadata *bind.MetaData) *abi.ABI {
+	abi, err := metadata.GetAbi()
+	if err != nil {
+		panic(err)
+	}
+
+	return abi
+}
+
+// mustGetEvent returns the event with the given name from the ABI.
+// It panics if the event is not found.
+func mustGetEvent(abi *abi.ABI, name string) abi.Event {
+	event, ok := abi.Events[name]
+	if !ok {
+		panic("event not found")
+	}
+
+	return event
 }

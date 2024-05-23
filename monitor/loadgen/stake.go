@@ -2,17 +2,15 @@ package loadgen
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"math/big"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
-	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
 
 	"math/rand/v2"
@@ -20,10 +18,8 @@ import (
 
 const selfDelegateJitter = 0.2 // 20% jitter
 
-func selfDelegateForever(ctx context.Context, contract *bindings.OmniStake, backend *ethbackend.Backend, validator *ecdsa.PublicKey, period time.Duration) {
-	addr := crypto.PubkeyToAddress(*validator)
-
-	log.Info(ctx, "Starting periodic self-delegation", "validator", addr.Hex(), "period", period)
+func selfDelegateForever(ctx context.Context, contract *bindings.Staking, backend *ethbackend.Backend, validator common.Address, period time.Duration) {
+	log.Info(ctx, "Starting periodic self-delegation", "validator", validator.Hex(), "period", period)
 
 	nextPeriod := func() time.Duration {
 		jitter := time.Duration(float64(period) * rand.Float64() * selfDelegateJitter)
@@ -46,26 +42,24 @@ func selfDelegateForever(ctx context.Context, contract *bindings.OmniStake, back
 	}
 }
 
-func selfDelegateOnce(ctx context.Context, contract *bindings.OmniStake, backend *ethbackend.Backend, validator *ecdsa.PublicKey) error {
-	addr := crypto.PubkeyToAddress(*validator)
-
-	ethBalance, err := backend.EtherBalanceAt(ctx, addr)
+func selfDelegateOnce(ctx context.Context, contract *bindings.Staking, backend *ethbackend.Backend, validator common.Address) error {
+	ethBalance, err := backend.EtherBalanceAt(ctx, validator)
 	if err != nil {
 		return err
 	} else if ethBalance < 1 {
 		return errors.New("insufficient balance to self-delegate",
 			"balance", ethBalance,
-			"validator", addr.Hex(),
+			"validator", validator.Hex(),
 		)
 	}
 
-	txOpts, err := backend.BindOpts(ctx, addr)
+	txOpts, err := backend.BindOpts(ctx, validator)
 	if err != nil {
 		return err
 	}
 	txOpts.Value = big.NewInt(params.Ether) // 1 ETH (in wei)
 
-	tx, err := contract.Deposit(txOpts, k1util.PubKeyToBytes64(validator))
+	tx, err := contract.Delegate(txOpts, validator)
 	if err != nil {
 		return errors.Wrap(err, "deposit")
 	}
@@ -77,7 +71,7 @@ func selfDelegateOnce(ctx context.Context, contract *bindings.OmniStake, backend
 
 	log.Info(ctx, "Deposited validator self-delegation",
 		"height", rec.BlockNumber,
-		"validator", addr.Hex(),
+		"validator", validator,
 	)
 
 	return nil

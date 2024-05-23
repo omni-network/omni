@@ -17,6 +17,14 @@ contract Staking {
     event CreateValidator(address indexed validator, bytes pubkey, uint256 deposit);
 
     /**
+     * @notice Emitted when a delegation is made to a validator
+     * @param delegator     (MsgDelegate.delegator_addr) The address of the delegator
+     * @param validator     (MsgDelegate.validator_addr) The address of the validator to delegate to
+     * @param amount        (MsgDelegate.amount) The amount of tokens to delegate
+     */
+    event Delegate(address indexed delegator, address indexed validator, uint256 amount);
+
+    /**
      * @notice The minimum deposit required to create a validator
      */
     uint256 public constant MIN_DEPOSIT = 100 ether;
@@ -31,5 +39,20 @@ contract Staking {
         require(msg.value >= MIN_DEPOSIT, "Staking: insufficient deposit");
 
         emit CreateValidator(msg.sender, pubkey, msg.value);
+    }
+
+    /**
+     * @notice Increase your validators self delegation.
+     *         NOTE: Only self delegations to existing validators are currently supported.
+     *         If msg.sender is not a validator, the delegation will be lost.
+     * @dev Proxies x/staking.MsgDelegate
+     */
+    function delegate(address validator) external payable {
+        require(msg.value > 0, "Staking: insufficient deposit");
+
+        // only support self delegation for now
+        require(msg.sender == validator, "Staking: only self delegation");
+
+        emit Delegate(msg.sender, validator, msg.value);
     }
 }

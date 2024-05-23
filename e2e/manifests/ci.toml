@@ -18,7 +18,7 @@ perturb = ["restart"]
 
 # Trigger validator updates at height 10
 [validator_update.10]
-full01 = 2 # Add full01 as validator by depositing 2 ether $OMNI
+full01 = 100 # Add full01 as validator by depositing 100 ether $OMNI (the minimum deposit)
 
 # Additional perturbations.
 [perturb]

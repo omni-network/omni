@@ -21,7 +21,6 @@ var (
 
 	// Predeploy addresses.
 	proxyAdmin     = common.HexToAddress(predeploys.ProxyAdmin)
-	omniStake      = common.HexToAddress(predeploys.OmniStake)
 	xRegistry      = common.HexToAddress(predeploys.XRegistry)
 	portalRegistry = common.HexToAddress(predeploys.PortalRegistry)
 	staking        = common.HexToAddress(predeploys.Staking)
@@ -30,7 +29,6 @@ var (
 	// Predeploy bytecodes.
 	proxyCode          = hexutil.MustDecode(bindings.TransparentUpgradeableProxyDeployedBytecode)
 	proxyAdminCode     = hexutil.MustDecode(bindings.ProxyAdminDeployedBytecode)
-	omniStakeCode      = hexutil.MustDecode(bindings.OmniStakeDeployedBytecode)
 	xRegistryCode      = hexutil.MustDecode(bindings.XRegistryDeployedBytecode)
 	portalRegistryCode = hexutil.MustDecode(bindings.PortalRegistryDeployedBytecode)
 	stakingCode        = hexutil.MustDecode(bindings.StakingDeployedBytecode)
@@ -67,7 +65,6 @@ func TestAlloc(t *testing.T) {
 		predeploy common.Address
 		code      []byte
 	}{
-		{"OmniStake", omniStake, omniStakeCode},
 		{"XRegistry", xRegistry, xRegistryCode},
 		{"PortalRegistry", portalRegistry, portalRegistryCode},
 		{"Staking", staking, stakingCode},
@@ -77,6 +74,7 @@ func TestAlloc(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+
 			alloc, ok := predeps[tt.predeploy]
 			require.True(t, ok, "proxy alloc")
 			require.Equal(t, proxyCode, alloc.Code, "proxy code mismatch")

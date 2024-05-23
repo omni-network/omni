@@ -22,7 +22,6 @@ import (
 	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/trie"
 
@@ -35,7 +34,7 @@ type payloadArgs struct {
 }
 
 //nolint:gochecknoglobals // This is a static mapping.
-var depositEvent = mustGetABI(bindings.OmniStakeMetaData).Events["Deposit"]
+var delegateEvent = mustGetABI(bindings.StakingMetaData).Events["Delegate"]
 
 var _ EngineClient = (*engineMock)(nil)
 
@@ -52,24 +51,33 @@ type engineMock struct {
 	payloads    map[engine.PayloadID]payloadArgs
 }
 
-// WithMockDeposit returns an option to add a deposit event to the mock.
-func WithMockDeposit(pubkey crypto.PubKey, ether int64) func(*engineMock) {
+// WithMockSelfDelegation returns an option to add a self-delegation Delegate event to the mock.
+func WithMockSelfDelegation(pubkey crypto.PubKey, ether int64) func(*engineMock) {
 	return func(mock *engineMock) {
 		mock.mu.Lock()
 		defer mock.mu.Unlock()
 
-		pk, _ := ethcrypto.DecompressPubkey(pubkey.Bytes())
-
 		wei := new(big.Int).Mul(big.NewInt(ether), big.NewInt(params.Ether))
 
-		data, err := depositEvent.Inputs.Pack(k1util.PubKeyToBytes64(pk), wei)
+		addr, err := k1util.PubKeyToAddress(pubkey)
 		if err != nil {
-			panic(err)
+			panic(errors.Wrap(err, "pubkey to address"))
+		}
+
+		data, err := delegateEvent.Inputs.NonIndexed().Pack(wei)
+		if err != nil {
+			panic(errors.Wrap(err, "pack delegate"))
 		}
 
 		mock.pendingLogs = append(mock.pendingLogs, types.Log{
-			Topics: []common.Hash{depositEvent.ID},
-			Data:   data,
+			// Staking predeploy addr, copied here to avoid import cycle.
+			Address: common.HexToAddress("0xcccccc0000000000000000000000000000000001"),
+			Topics: []common.Hash{
+				delegateEvent.ID,
+				common.HexToHash(addr.Hex()), // delegator
+				common.HexToHash(addr.Hex()), // validator
+			},
+			Data: data,
 		})
 	}
 }
