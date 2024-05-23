@@ -57,27 +57,27 @@ export const TabList = ({ xMsgDetails }) => {
       </div>
       {/* Offset */}
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
-        <p className="w-[150px] sm:w-48 text-sm">Stream Offset Address</p>
-        <p className="text-default">{xMsgDetails?.offset}</p>
+        <p className="w-[150px] sm:w-48 text-sm">Stream Offset</p>
+        <p className="text-default">{parseInt(xMsgDetails?.offset)}</p>
       </div>
       {/* Offset */}
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Gas Used</p>
-        <p className="text-default">{xMsgDetails?.receipt?.gasUsed}</p>
+        <p className="text-default">{parseInt(xMsgDetails?.receipt?.gasUsed)}</p>
       </div>
       {/* Offset */}
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Destination Gas Limit</p>
-        <p className="text-default">{xMsgDetails?.gasLimit}</p>
+        <p className="text-default">{parseInt(xMsgDetails?.gasLimit)}</p>
       </div>
       {/* Offset */}
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Source Chain ID</p>
-        <p className="text-default">{xMsgDetails?.sourceChain.chainID}</p>
+        <p className="text-default">{parseInt(xMsgDetails?.sourceChain.chainID, 16)} ({xMsgDetails?.sourceChain.chainID})</p>
       </div>
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Destination Chain ID</p>
-        <p className="text-default">{xMsgDetails?.destChain.chainID}</p>
+        <p className="text-default">{parseInt(xMsgDetails?.destChain.chainID, 16)} ({xMsgDetails?.destChain.chainID})</p>
       </div>
       {/* Offset */}
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">

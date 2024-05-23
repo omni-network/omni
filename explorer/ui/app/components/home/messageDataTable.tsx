@@ -100,7 +100,7 @@ export default function XMsgDataTable() {
 
     if (!isAddress && !isTxHash && e.target.value !== '') {
       // return user error cause it doesn't match either
-      alert("It doesn't match")
+      alert("input doesn't match address or tx hash format")
     }
 
     setFilterParams(prev => {
@@ -330,7 +330,7 @@ export default function XMsgDataTable() {
                   {' '}
                   <Link
                     target="_blank"
-                    to={`${value.row.original.node.receipt.txUrl}`}
+                    to={`${value.row.original.node.receipt?.txUrl}`}
                     className="link"
                   >
                     <div className="flex">

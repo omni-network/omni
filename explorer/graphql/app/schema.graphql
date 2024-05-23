@@ -75,6 +75,9 @@ type XMsg {
   "ID of the XMsg"
   id: ID!
 
+  "Data of the XMsg"
+  data: Bytes!
+
   "Display ID of the XMsg in the form of `<srcChainID>-<destChainID>-<offset>`"
   displayID: String!
 
