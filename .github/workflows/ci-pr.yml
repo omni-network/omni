@@ -17,8 +17,10 @@ jobs:
     uses: ./.github/workflows/gotest.yml
   go-lint:
     uses: ./.github/workflows/golangci-lint.yml
-  cli-tests:
-    uses: ./.github/workflows/clitest.yml
+  cli-install:
+    uses: ./.github/workflows/cliinstall.yml
+  cli-command:
+    uses: ./.github/workflows/clicommand.yml
   sol-tests:
     uses: ./.github/workflows/soltest.yml
   e2e-tests:
