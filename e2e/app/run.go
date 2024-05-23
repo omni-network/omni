@@ -2,8 +2,10 @@ package app
 
 import (
 	"context"
+	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/netman"
 	"github.com/omni-network/omni/e2e/netman/pingpong"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/errors"
@@ -11,6 +13,8 @@ import (
 	"github.com/omni-network/omni/lib/log"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 )
 
 const (
@@ -112,6 +116,11 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 	pp, err := pingpong.Deploy(ctx, def.Netman(), def.Backends())
 	if err != nil {
 		return nil, errors.Wrap(err, "deploy pingpong")
+	}
+
+	err = waitForSupportedChains(ctx, def)
+	if err != nil {
+		return nil, err
 	}
 
 	err = pp.StartAllEdges(ctx, cfg.PingPongP, cfg.PingPongN)
@@ -288,4 +297,57 @@ func deployMonitorOnly(ctx context.Context, def Definition, cfg DeployConfig) er
 	}
 
 	return nil
+}
+
+// waitForSupportedChains waits for all dest chains to be supported by all src chains.
+func waitForSupportedChains(ctx context.Context, def Definition) error {
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+	attempt := 1
+
+	for {
+		select {
+		case <-ctx.Done():
+			return errors.Wrap(ctx.Err(), "cancel")
+		case <-ticker.C:
+			ok, err := checkSupportedChains(ctx, def.Netman())
+
+			if err != nil {
+				return err
+			}
+
+			if ok {
+				return nil
+			}
+
+			if attempt > 5 {
+				return errors.New(" wait for supported chains")
+			}
+
+			log.Debug(ctx, "Waiting for supported chains", "attempt", attempt)
+			attempt++
+		}
+	}
+}
+
+func checkSupportedChains(ctx context.Context, n netman.Manager) (bool, error) {
+	for _, src := range n.Portals() {
+		for _, dest := range n.Portals() {
+			if src.Chain.ChainID == dest.Chain.ChainID {
+				continue
+			}
+
+			supported, err := src.Contract.IsSupportedChain(&bind.CallOpts{Context: ctx}, dest.Chain.ChainID)
+
+			if err != nil {
+				return false, errors.Wrap(err, "check supported chain")
+			}
+
+			if !supported {
+				return false, nil
+			}
+		}
+	}
+
+	return true, nil
 }

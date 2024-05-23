@@ -92,4 +92,13 @@ contract OmniPortal_xcall_Test is Base {
         vm.chainId(thisChainId);
         portal.xcall{ value: fee }(xmsg.destChainId, xmsg.to, xmsg.data, xmsg.gasLimit);
     }
+
+    /// @dev Test that xcall with unsupported destChainId reverts
+    function test_xcall_unsupportedChain_reverts() public {
+        XTypes.Msg memory xmsg = _outbound_increment();
+        xmsg.destChainId = chainAId + chainBId + thisChainId;
+
+        vm.expectRevert("OmniPortal: unsupported chain");
+        portal.xcall{ value: 10 ether }(xmsg.destChainId, xmsg.to, xmsg.data, xmsg.gasLimit);
+    }
 }

@@ -16,6 +16,7 @@ import { Counter } from "./Counter.sol";
 import { Reverter } from "./Reverter.sol";
 import { GasGuzzler } from "./GasGuzzler.sol";
 import { XSubmitter } from "./XSubmitter.sol";
+import { MockXRegistryReplica } from "./MockXRegistryReplica.sol";
 
 import { CommonBase } from "forge-std/Base.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
@@ -77,8 +78,9 @@ contract Fixtures is CommonBase, StdCheats {
     uint256 val4PrivKey;
     uint256 val5PrivKey;
 
-    // TODO: replace with XRegistryReplica per each portal
-    address stubXRegistry = makeAddr("stubXRegistry");
+    MockXRegistryReplica xregistry;
+    MockXRegistryReplica chainAXRegistry;
+    MockXRegistryReplica chainBXRegistry;
 
     ProxyAdmin proxyAdmin;
     ProxyAdmin chainAProxyAdmin;
@@ -449,6 +451,7 @@ contract Fixtures is CommonBase, StdCheats {
                 )
             )
         );
+        xregistry = new MockXRegistryReplica();
         portalImpl = new PortalHarness();
         portal = PortalHarness(
             address(
@@ -459,7 +462,7 @@ contract Fixtures is CommonBase, StdCheats {
                         OmniPortal.initialize.selector,
                         owner,
                         address(feeOracle),
-                        stubXRegistry,
+                        address(xregistry),
                         omniChainId,
                         omniCChainID,
                         xmsgDefaultGasLimit,
@@ -494,6 +497,7 @@ contract Fixtures is CommonBase, StdCheats {
                 )
             )
         );
+        chainAXRegistry = new MockXRegistryReplica();
         chainAPortalImpl = new PortalHarness();
         chainAPortal = PortalHarness(
             address(
@@ -504,7 +508,7 @@ contract Fixtures is CommonBase, StdCheats {
                         OmniPortal.initialize.selector,
                         owner,
                         address(feeOracle),
-                        stubXRegistry,
+                        chainAXRegistry,
                         omniChainId,
                         omniCChainID,
                         xmsgDefaultGasLimit,
@@ -539,6 +543,7 @@ contract Fixtures is CommonBase, StdCheats {
                 )
             )
         );
+        chainBXRegistry = new MockXRegistryReplica();
         chainBPortalImpl = new PortalHarness();
         chainBPortal = PortalHarness(
             address(
@@ -549,7 +554,7 @@ contract Fixtures is CommonBase, StdCheats {
                         OmniPortal.initialize.selector,
                         owner,
                         address(feeOracle),
-                        stubXRegistry,
+                        address(chainBXRegistry),
                         omniChainId,
                         omniCChainID,
                         xmsgDefaultGasLimit,
@@ -577,5 +582,16 @@ contract Fixtures is CommonBase, StdCheats {
         _reverters[thisChainId] = address(reverter);
         _reverters[chainAId] = address(chainAReverter);
         _reverters[chainBId] = address(chainBReverter);
+
+        // set portals in xregistry
+
+        xregistry.setPortal(chainAId, address(chainAPortal));
+        xregistry.setPortal(chainBId, address(chainBPortal));
+
+        chainAXRegistry.setPortal(thisChainId, address(portal));
+        chainAXRegistry.setPortal(chainBId, address(chainBPortal));
+
+        chainBXRegistry.setPortal(thisChainId, address(portal));
+        chainBXRegistry.setPortal(chainAId, address(chainAPortal));
     }
 }
