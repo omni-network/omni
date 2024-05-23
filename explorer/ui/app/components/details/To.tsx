@@ -4,7 +4,7 @@ import { dateFormatter, hashShortener } from '~/lib/formatting'
 import { dateFormatterXMsgPage } from './date.service'
 import { copyToClipboard } from '~/lib/utils'
 
-export const To = ({ xMsgDetails }) => {
+export const To = ({ xmsg }) => {
   return (
     <>
       <h6 className="text-default my-5 text-lg">To</h6>
@@ -12,8 +12,8 @@ export const To = ({ xMsgDetails }) => {
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Destination Chain</p>
         <div className="flex gap-2 items-center">
-          <img className="w-5 h-5 " src={xMsgDetails.destChain.logoUrl} />
-          <p className="text-default">{xMsgDetails.destChain.name}</p>
+          <img className="w-5 h-5 " src={xmsg.destChain.logoUrl} />
+          <p className="text-default">{xmsg.destChain.name}</p>
         </div>
       </div>
       {/* Destination Address */}
@@ -21,51 +21,51 @@ export const To = ({ xMsgDetails }) => {
         <p className="w-[150px] sm:w-48 text-sm">Destination Address</p>
         <Link
           target="_blank"
-          to={xMsgDetails?.toUrl}
+          to={xmsg?.toUrl}
           className="underline text-indigo-400 hidden lg:block"
         >
-          {xMsgDetails?.to}
+          {xmsg?.to}
           <span className="icon-external-link" />
         </Link>
         <Link
           target="_blank"
-          to={xMsgDetails?.toUrl}
+          to={xmsg?.toUrl}
           className="underline text-indigo-400 block lg:hidden"
         >
-          <span className="font-bold text-b-sm">{hashShortener(xMsgDetails?.to)}</span>
+          <span className="font-bold text-b-sm">{hashShortener(xmsg?.to)}</span>
           <span className="icon-external-link" />
         </Link>
         <span
           data-tooltip-id="tooltip-clipboard"
           className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
-          onClick={() => copyToClipboard(xMsgDetails?.to)}
+          onClick={() => copyToClipboard(xmsg?.to)}
         />
       </div>
       {/* Tx Hash */}
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Tx Hash</p>
-        {xMsgDetails?.receipt ? (
+        {xmsg?.receipt ? (
           <>
           <Link
             target="_blank"
-            to={xMsgDetails?.txUrl}
+            to={xmsg.receipt.txUrl}
             className="underline text-indigo-400 hidden lg:block"
           >
-            {xMsgDetails?.receipt?.txHash}
+            {xmsg.receipt.txHash}
             <span className="icon-external-link" />
           </Link>
           <Link
             target="_blank"
-            to={xMsgDetails?.txUrl}
+            to={xmsg.receipt.txUrl}
             className="underline text-indigo-400 block lg:hidden"
           >
-            <span className="font-bold text-b-sm">{hashShortener(xMsgDetails?.receipt?.txHash)}</span>
+            <span className="font-bold text-b-sm">{hashShortener(xmsg.receipt.txHash)}</span>
             <span className="icon-external-link" />
           </Link>
           <span
             data-tooltip-id="tooltip-clipboard"
             className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
-            onClick={() => copyToClipboard(xMsgDetails?.receipt?.txHash)}
+            onClick={() => copyToClipboard(xmsg.receipt.txHash)}
           />
         </>
       ) : '--'}
@@ -73,7 +73,7 @@ export const To = ({ xMsgDetails }) => {
       {/* Gas Limit */}
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Gas Limit</p>
-        <p className="text-default">{parseInt(xMsgDetails?.gasLimit, 16)}</p>
+        <p className="text-default">{parseInt(xmsg?.gasLimit, 16)}</p>
       </div>
     </>
   )
