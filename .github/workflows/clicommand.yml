@@ -62,7 +62,7 @@ jobs:
       run: ~/go/bin/omni devnet clean
       shell: bash
 
-  test-macos:
+  test-macos: # Docker unsupported on macos https://github.com/actions/runner-images/issues/17
     name: ${{ matrix.os }} ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
     strategy:
