@@ -21,6 +21,8 @@ jobs:
       uses: ./.github/workflows/soltest.yml
   cli-tests:
     uses: ./.github/workflows/clitest.yml
+  cli-command:
+    uses: ./.github/workflows/clicommand.yml
   release-snapshot:
     uses: ./.github/workflows/release-snapshot.yml
     needs: [pre-commit, go-tests, go-lint, sol-tests]
