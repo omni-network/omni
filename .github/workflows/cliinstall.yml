@@ -1,4 +1,4 @@
-name: cli install test
+name: cli install tests
 
 on:
   workflow_call:
