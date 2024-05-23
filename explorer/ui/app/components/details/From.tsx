@@ -1,6 +1,7 @@
 import { Link } from '@remix-run/react'
 import React from 'react'
-import { hashShortener } from '~/lib/formatting'
+import { dateFormatter, hashShortener } from '~/lib/formatting'
+import { dateFormatterXMsgPage } from './date.service'
 import { copyToClipboard } from '~/lib/utils'
 
 export const From = ({ xMsgDetails }) => {
@@ -65,7 +66,18 @@ export const From = ({ xMsgDetails }) => {
           onClick={() => copyToClipboard(xMsgDetails?.txHash)}
         />
       </div>
-      {/* Offset */}
+      {/* Block Timestamp */}
+      <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
+        <p className="w-[150px] sm:w-48 text-sm">Block Timestamp</p>
+        <p className="flex-1">
+          <span className="text-default">
+            {dateFormatter(new Date(xMsgDetails?.block.timestamp))}{' '}
+          </span>
+         ( {xMsgDetails?.block.timestamp &&
+            dateFormatterXMsgPage(new Date(xMsgDetails?.block.timestamp))})
+        </p>
+      </div>
+      {/* Block height */}
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Block Height</p>
         <p className="text-default">{parseInt(xMsgDetails?.block.height)}</p>

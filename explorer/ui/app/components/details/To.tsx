@@ -16,17 +16,6 @@ export const To = ({ xMsgDetails }) => {
           <p className="text-default">{xMsgDetails.destChain.name}</p>
         </div>
       </div>
-      {/* Block Timestamp */}
-      <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
-        <p className="w-[150px] sm:w-48 text-sm">Block Timestamp</p>
-        <p className="flex-1">
-          <span className="text-default">
-            {dateFormatter(new Date(xMsgDetails?.block.timestamp))}{' '}
-          </span>
-         ( {xMsgDetails?.block.timestamp &&
-            dateFormatterXMsgPage(new Date(xMsgDetails?.block.timestamp))})
-        </p>
-      </div>
       {/* Destination Address */}
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Destination Address</p>
@@ -55,27 +44,31 @@ export const To = ({ xMsgDetails }) => {
       {/* Tx Hash */}
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Tx Hash</p>
-        <Link
-          target="_blank"
-          to={xMsgDetails?.txUrl}
-          className="underline text-indigo-400 hidden lg:block"
-        >
-          {xMsgDetails?.receipt?.txHash}
-          <span className="icon-external-link" />
-        </Link>
-        <Link
-          target="_blank"
-          to={xMsgDetails?.txUrl}
-          className="underline text-indigo-400 block lg:hidden"
-        >
-          <span className="font-bold text-b-sm">{hashShortener(xMsgDetails?.receipt?.txHash)}</span>
-          <span className="icon-external-link" />
-        </Link>
-        <span
-          data-tooltip-id="tooltip-clipboard"
-          className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
-          onClick={() => copyToClipboard(xMsgDetails?.receipt?.txHash)}
-        />
+        {xMsgDetails?.receipt ? (
+          <>
+          <Link
+            target="_blank"
+            to={xMsgDetails?.txUrl}
+            className="underline text-indigo-400 hidden lg:block"
+          >
+            {xMsgDetails?.receipt?.txHash}
+            <span className="icon-external-link" />
+          </Link>
+          <Link
+            target="_blank"
+            to={xMsgDetails?.txUrl}
+            className="underline text-indigo-400 block lg:hidden"
+          >
+            <span className="font-bold text-b-sm">{hashShortener(xMsgDetails?.receipt?.txHash)}</span>
+            <span className="icon-external-link" />
+          </Link>
+          <span
+            data-tooltip-id="tooltip-clipboard"
+            className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
+            onClick={() => copyToClipboard(xMsgDetails?.receipt?.txHash)}
+          />
+        </>
+      ) : '--'}
       </div>
       {/* Gas Limit */}
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">

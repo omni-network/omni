@@ -12,13 +12,17 @@ export const TabList = ({ xMsgDetails }) => {
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Timestamp</p>
         <p className="flex-1">
-          <span className="text-default">
-            {dateFormatter(new Date(xMsgDetails?.block.timestamp))}{' '}
-          </span>
-          (
-          {xMsgDetails?.receipt?.timestamp &&
-            dateFormatterXMsgPage(new Date(xMsgDetails?.receipt?.timestamp))}
-          )
+          {xMsgDetails?.receipt ? (
+          <>
+            <span className="text-default">
+              {dateFormatter(new Date(xMsgDetails?.receipt?.timestamp))}{' '}
+            </span>
+            (
+            {xMsgDetails?.receipt?.timestamp &&
+              dateFormatterXMsgPage(new Date(xMsgDetails?.receipt?.timestamp))}
+            )
+          </>
+          ) : '--'}
         </p>
       </div>
       {/* Source Address */}
@@ -55,22 +59,18 @@ export const TabList = ({ xMsgDetails }) => {
           onClick={() => copyToClipboard(xMsgDetails?.to)}
         />
       </div>
-      {/* Offset */}
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Stream Offset</p>
         <p className="text-default">{parseInt(xMsgDetails?.offset)}</p>
       </div>
-      {/* Offset */}
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Gas Used</p>
-        <p className="text-default">{parseInt(xMsgDetails?.receipt?.gasUsed)}</p>
+        <p className="text-default">{xMsgDetails?.receipt ? parseInt(xMsgDetails?.receipt?.gasUsed) : '--'}</p>
       </div>
-      {/* Offset */}
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Destination Gas Limit</p>
         <p className="text-default">{parseInt(xMsgDetails?.gasLimit)}</p>
       </div>
-      {/* Offset */}
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Source Chain ID</p>
         <p className="text-default">{parseInt(xMsgDetails?.sourceChain.chainID, 16)} ({xMsgDetails?.sourceChain.chainID})</p>
@@ -79,32 +79,33 @@ export const TabList = ({ xMsgDetails }) => {
         <p className="w-[150px] sm:w-48 text-sm">Destination Chain ID</p>
         <p className="text-default">{parseInt(xMsgDetails?.destChain.chainID, 16)} ({xMsgDetails?.destChain.chainID})</p>
       </div>
-      {/* Offset */}
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Tx Hash</p>
-        <Link
-          target="_blank"
-          to={xMsgDetails?.receipt?.txUrl}
-          className="underline text-indigo-400 hidden lg:block"
-        >
-          {xMsgDetails?.receipt?.txHash}
-          <span className="icon-external-link" />
-        </Link>
-        <Link
-          target="_blank"
-          to={xMsgDetails?.receipt?.txUrl}
-          className="underline text-indigo-400 block lg:hidden"
-        >
-          <span className="font-bold text-b-sm">{hashShortener(xMsgDetails?.receipt?.txHash)}</span>
-          <span className="icon-external-link" />
-        </Link>
-        <span
-          data-tooltip-id="tooltip-clipboard"
-          className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
-          onClick={() => copyToClipboard(xMsgDetails?.receipt?.txHash)}
-        />
+        {xMsgDetails?.receipt ?
+          <>
+          <Link
+            target="_blank"
+            to={xMsgDetails?.receipt?.txUrl}
+            className="underline text-indigo-400 hidden lg:block"
+          >
+            {xMsgDetails?.receipt?.txHash}
+            <span className="icon-external-link" />
+          </Link>
+          <Link
+            target="_blank"
+            to={xMsgDetails?.receipt?.txUrl}
+            className="underline text-indigo-400 block lg:hidden"
+          >
+            <span className="font-bold text-b-sm">{hashShortener(xMsgDetails?.receipt?.txHash)}</span>
+            <span className="icon-external-link" />
+          </Link>
+          <span
+            data-tooltip-id="tooltip-clipboard"
+            className="icon-copy cursor-pointer text-default hover:text-subtlest text-[16px] active:text-success transition-color ease-out duration-150"
+            onClick={() => copyToClipboard(xMsgDetails?.receipt?.txHash)}
+          />
+        </> : '--'}
       </div>
-      {/* Status */}
       <div className="flex mt-5 pb-2 border-b-[1px] mb-3 border-subtle border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Status</p>
         <div className="flex flex-col sm:flex-row items-start">
