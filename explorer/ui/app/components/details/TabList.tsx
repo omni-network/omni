@@ -61,7 +61,7 @@ export const TabList = ({ xMsgDetails }) => {
       </div>
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Stream Offset</p>
-        <p className="text-default">{parseInt(xMsgDetails?.offset)}</p>
+        <p className="text-default">{parseInt(xMsgDetails?.offset, 16)}</p>
       </div>
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Gas Used</p>
