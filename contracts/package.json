@@ -27,6 +27,7 @@
     "viem": "^2.5.0"
   },
   "dependencies": {
+    "@nomad-xyz/excessively-safe-call": "github:nomad-xyz/ExcessivelySafeCall",
     "@openzeppelin/contracts": "4.9.6",
     "@openzeppelin/contracts-upgradeable": "4.9.6",
     "eigenlayer-contracts": "github:Layr-Labs/eigenlayer-contracts",

@@ -5,6 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
+  '@nomad-xyz/excessively-safe-call':
+    specifier: github:nomad-xyz/ExcessivelySafeCall
+    version: github.com/nomad-xyz/ExcessivelySafeCall/81cd99ce3e69117d665d7601c330ea03b97acce0
   '@openzeppelin/contracts':
     specifier: 4.9.6
     version: 4.9.6
@@ -3210,3 +3213,9 @@ packages:
     name: forge-std
     version: 1.7.4
     dev: true
+
+  github.com/nomad-xyz/ExcessivelySafeCall/81cd99ce3e69117d665d7601c330ea03b97acce0:
+    resolution: {tarball: https://codeload.github.com/nomad-xyz/ExcessivelySafeCall/tar.gz/81cd99ce3e69117d665d7601c330ea03b97acce0}
+    name: '@nomad-xyz/excessively-safe-call'
+    version: 0.0.1-rc.1
+    dev: false

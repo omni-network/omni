@@ -72,7 +72,7 @@ interface IOmniPortal {
     /**
      * @notice Maxium number of bytes allowed in xreceipt result
      */
-    function xreceiptMaxErrorBytes() external view returns (uint64);
+    function xreceiptMaxErrorBytes() external view returns (uint16);
 
     /**
      * @notice Returns the chain ID of the chain to which this portal is deployed
