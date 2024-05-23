@@ -27,11 +27,11 @@ export const TabList = ({ xmsg }) => {
       {/* Source Address */}
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Source Address</p>
-        <Link target="_blank" to="/" className="underline text-indigo-400 hidden lg:block">
+        <Link target="_blank" to={xmsg?.senderUrl} className="underline text-indigo-400 hidden lg:block">
           {xmsg?.sender}
           <span className="icon-external-link" />
         </Link>
-        <Link target="_blank" to="/" className="underline text-indigo-400 block lg:hidden">
+        <Link target="_blank" to={xmsg?.senderUrl} className="underline text-indigo-400 block lg:hidden">
           <span className="font-bold text-b-sm">{hashShortener(xmsg?.sender)}</span>
           <span className="icon-external-link" />
         </Link>
@@ -44,11 +44,11 @@ export const TabList = ({ xmsg }) => {
       {/* Dest Address */}
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Dest Address</p>
-        <Link target="_blank" to="/" className="underline text-indigo-400 hidden lg:block">
+        <Link target="_blank" to={xmsg?.toUrl} className="underline text-indigo-400 hidden lg:block">
           {xmsg?.to}
           <span className="icon-external-link" />
         </Link>
-        <Link target="_blank" to="/" className="underline text-indigo-400 block lg:hidden">
+        <Link target="_blank" to={xmsg?.toUrl} className="underline text-indigo-400 block lg:hidden">
           <span className="font-bold text-b-sm">{hashShortener(xmsg?.to)}</span>
           <span className="icon-external-link" />
         </Link>
