@@ -1,7 +1,7 @@
 {
   "storage": [
     {
-      "astId": 818,
+      "astId": 903,
       "contract": "src/protocol/XRegistry.sol:XRegistry",
       "label": "_owner",
       "offset": 0,
@@ -9,7 +9,7 @@
       "type": "t_address"
     },
     {
-      "astId": 52850,
+      "astId": 53057,
       "contract": "src/protocol/XRegistry.sol:XRegistry",
       "label": "_addrs",
       "offset": 0,
@@ -17,15 +17,15 @@
       "type": "t_mapping(t_uint64,t_mapping(t_bytes32,t_address))"
     },
     {
-      "astId": 52400,
+      "astId": 52607,
       "contract": "src/protocol/XRegistry.sol:XRegistry",
       "label": "omni",
       "offset": 0,
       "slot": "2",
-      "type": "t_contract(IOmniPortal)49749"
+      "type": "t_contract(IOmniPortal)49834"
     },
     {
-      "astId": 52405,
+      "astId": 52612,
       "contract": "src/protocol/XRegistry.sol:XRegistry",
       "label": "replicas",
       "offset": 0,
@@ -33,7 +33,7 @@
       "type": "t_mapping(t_uint64,t_address)"
     },
     {
-      "astId": 52409,
+      "astId": 52616,
       "contract": "src/protocol/XRegistry.sol:XRegistry",
       "label": "_chainIds",
       "offset": 0,
@@ -58,7 +58,7 @@
       "label": "bytes32",
       "numberOfBytes": "32"
     },
-    "t_contract(IOmniPortal)49749": {
+    "t_contract(IOmniPortal)49834": {
       "encoding": "inplace",
       "label": "contract IOmniPortal",
       "numberOfBytes": "20"
