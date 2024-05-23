@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"strconv"
 	"time"
@@ -30,6 +31,7 @@ func EntBlockToGraphQLBlock(_ context.Context, block *ent.Block) (*XBlock, error
 	}
 
 	res := XBlock{
+		ID:        relay.MarshalID("xblock", block.ID),
 		ChainID:   hexutil.Big(sourceChainIDBig),
 		Height:    hexutil.Big(blockHeight),
 		Hash:      common.Hash(block.Hash),
@@ -70,13 +72,8 @@ func EntMsgToGraphQLXMsg(msg *ent.Msg) (*XMsg, error) {
 		return nil, errors.Wrap(err, "decoding stream offset")
 	}
 
-	// blockHeight, err := uintconv.ToBig(msg.BlockHeight)
-	// if err != nil {
-	// 	return nil, errors.Wrap(err, "decoding block height")
-	// }
-
 	xmsg := &XMsg{
-		ID:            graphql.ID(strconv.Itoa(msg.ID)),
+		ID:            relay.MarshalID("xmsg", msg.ID),
 		Sender:        common.Address(msg.Sender),
 		SourceChainID: hexutil.Big(sourceChainIDBig),
 		To:            common.Address(msg.To),
@@ -87,11 +84,6 @@ func EntMsgToGraphQLXMsg(msg *ent.Msg) (*XMsg, error) {
 		Data:          msg.Data,
 		Status:        Status(msg.Status),
 	}
-
-	// if len(msg.ReceiptHash) == 32 {
-	// 	hash := common.Hash(msg.ReceiptHash)
-	// 	xmsg.ReceiptTxHash = &hash
-	// }
 
 	return xmsg, nil
 }
@@ -218,6 +210,8 @@ func EntMsgToGraphQLXMsgWithEdges(ctx context.Context, msg *ent.Msg) (*XMsg, err
 		Block:         xblock,
 		Status:        MustParseStatus(msg.Status),
 	}
+
+	xmsg.DisplayID = fmt.Sprintf("%d-%d-%d", xmsg.SourceChainID.ToInt().Int64(), xmsg.DestChainID.ToInt().Int64(), xmsg.Offset.ToInt().Int64())
 
 	return xmsg, nil
 }

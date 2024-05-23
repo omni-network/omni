@@ -99,7 +99,7 @@ func TestXMsg(t *testing.T) {
 						"id": "Y2hhaW46MTY1Ng==",
 						"logoUrl": "https://icons.llamao.fi/icons/chains/rsz_arbitrum.jpg"
 					},
-					"displayID": "",
+					"displayID": "1655-1656-0",
 					"gasLimit": "0x64",
 					"id": "8589934593",
 					"offset": "0x0",

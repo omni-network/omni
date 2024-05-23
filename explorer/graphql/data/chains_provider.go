@@ -28,15 +28,15 @@ func NewChainsProvider(network netconf.ID) *ChainsProvider {
 		txURLFmt    string
 	}{
 		netconf.Devnet: {
-			{id: uint64(evmchain.IDOmniEphemeral), name: "Omni Ephemeral", logoURL: "https://chainlist.org/unknown-logo.png", addrUrlFmt: "", blockURLFmt: "", txURLFmt: ""},
-			{id: uint64(evmchain.IDMockL1Fast), name: "Mock L1 Fast", logoURL: "https://icons.llamao.fi/icons/chains/rsz_optimism.jpg", addrUrlFmt: "https://sepolia.arbiscan.io/address/%s", blockURLFmt: "https://sepolia.arbiscan.io/block/%d", txURLFmt: "https://sepolia.arbiscan.io/tx/%s"},
-			{id: uint64(evmchain.IDMockL2), name: "Mock L2", logoURL: "https://icons.llamao.fi/icons/chains/rsz_arbitrum.jpg", addrUrlFmt: "https://sepolia-optimism.etherscan.io/address/%s", blockURLFmt: "https://sepolia-optimism.etherscan.io/block/%d", txURLFmt: "https://sepolia-optimism.etherscan.io/tx/%s"},
+			{id: uint64(evmchain.IDOmniEphemeral), name: "Omni Ephemeral", logoURL: "https://chainlist.org/unknown-logo.png", addrUrlFmt: "https://omni-ephemeral.dev/address/%s", blockURLFmt: "https://omni-ephemeral.dev/block/%d", txURLFmt: "https://omni-ephemeral.dev/tx/%s"},
+			{id: uint64(evmchain.IDMockL1Fast), name: "Mock L1 Fast", logoURL: "https://icons.llamao.fi/icons/chains/rsz_optimism.jpg", addrUrlFmt: "https://mock-l1-fast.dev/address/%s", blockURLFmt: "https://mock-l1-fast.dev/block/%d", txURLFmt: "https://mock-l1-fast.dev/tx/%s"},
+			{id: uint64(evmchain.IDMockL2), name: "Mock L2", logoURL: "https://icons.llamao.fi/icons/chains/rsz_arbitrum.jpg", addrUrlFmt: "https://mock-l2.dev/address/%s", blockURLFmt: "https://mock-l2.dev/block/%d", txURLFmt: "https://mock-l2.dev/tx/%s"},
 			{id: uint64(evmchain.IDMockArb), name: "Mock Arb", logoURL: "https://icons.llamao.fi/icons/chains/rsz_arbitrum.jpg", addrUrlFmt: "https://sepolia-optimism.etherscan.io/address/%s", blockURLFmt: "https://sepolia-optimism.etherscan.io/block/%d", txURLFmt: "https://sepolia-optimism.etherscan.io/tx/%s"},
 			{id: uint64(evmchain.IDMockOp), name: "Mock Op", logoURL: "https://icons.llamao.fi/icons/chains/rsz_optimism.jpg", addrUrlFmt: "https://sepolia.arbiscan.io/address/%s", blockURLFmt: "https://sepolia.arbiscan.io/block/%d", txURLFmt: "https://sepolia.arbiscan.io/tx/%s"},
 		},
 		netconf.Staging: {
-			{id: uint64(evmchain.IDOmniEphemeral), name: "Omni Ephemeral", logoURL: "https://chainlist.org/unknown-logo.png", addrUrlFmt: "", blockURLFmt: "", txURLFmt: ""},
-			{id: uint64(evmchain.IDMockL1Slow), name: "Mock L1 Slow", logoURL: "https://chainlist.org/unknown-logo.png", addrUrlFmt: "", blockURLFmt: "", txURLFmt: ""},
+			{id: uint64(evmchain.IDOmniEphemeral), name: "Omni Ephemeral", logoURL: "https://chainlist.org/unknown-logo.png", addrUrlFmt: "https://omni-ephemeral.dev/address/%s", blockURLFmt: "https://omni-ephemeral.dev/block/%d", txURLFmt: "https://omni-ephemeral.dev/tx/%s"},
+			{id: uint64(evmchain.IDMockL1Slow), name: "Mock L1 Slow", logoURL: "https://chainlist.org/unknown-logo.png", addrUrlFmt: "https://mock-l1-slow.dev/address/%s", blockURLFmt: "https://mock-l1-slow.dev/block/%d", txURLFmt: "https://mock-l1-slow.dev/tx/%s"},
 			{id: uint64(evmchain.IDOpSepolia), name: "Op Sepolia", logoURL: "https://icons.llamao.fi/icons/chains/rsz_optimism.jpg", addrUrlFmt: "https://sepolia-optimism.etherscan.io/address/%s", blockURLFmt: "https://sepolia-optimism.etherscan.io/block/%d", txURLFmt: "https://sepolia-optimism.etherscan.io/tx/%s"},
 		},
 		netconf.Testnet: {

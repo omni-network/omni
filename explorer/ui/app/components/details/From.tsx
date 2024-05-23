@@ -68,7 +68,7 @@ export const From = ({ xMsgDetails }) => {
       {/* Offset */}
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Block Height</p>
-        <p className="text-default">{xMsgDetails?.block.height}</p>
+        <p className="text-default">{parseInt(xMsgDetails?.block.height)}</p>
       </div>
       {/* Block Hash */}
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">

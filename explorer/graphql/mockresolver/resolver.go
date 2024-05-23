@@ -20,7 +20,7 @@ import (
 	"github.com/graph-gophers/graphql-go/relay"
 )
 
-// Implements the graphql.Marshaler interface for the Long type.
+// Implements the graphql.Marshaler interface for the Long type and serializes it as a decimal string.
 type Long uint64
 
 func (l Long) ImplementsGraphQLType(name string) bool {
