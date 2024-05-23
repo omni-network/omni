@@ -1,0 +1,106 @@
+name: cli command tests
+
+on:
+  workflow_call:
+
+jobs:
+  test-linux:
+    name: ${{ matrix.os }} ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: x86_64
+          - os: ubuntu-latest
+            arch: arm64
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Verify Docker Installation
+      run: docker --version
+
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: 'stable'
+
+    - name: Configure Git
+      run: |
+        git config --global user.email "you@example.com"
+        git config --global user.name "Your Name"
+
+    - name: Install CLI from Source
+      run: go install ./cli/cmd/omni
+      shell: bash
+
+    - name: Confirm Installation Location
+      run: ls -la ~/go/bin
+
+    - name: Check Installation and Version
+      run: ~/go/bin/omni version
+      shell: bash
+
+    - name: Test Scaffolding Command
+      run: mkdir test && cd test && ~/go/bin/omni developer new
+      shell: bash
+
+    - name: Test Devnet Start Command
+      run: ~/go/bin/omni devnet start
+      shell: bash
+
+    - name: Test Devnet Info Command
+      run: ~/go/bin/omni devnet info
+      shell: bash
+
+    - name: Test Devnet Clean Command
+      run: ~/go/bin/omni devnet clean
+      shell: bash
+
+  test-macos:
+    name: ${{ matrix.os }} ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            arch: x86_64
+          - os: macos-latest
+            arch: arm64
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "you@example.com"
+          git config --global user.name "Your Name"
+
+      - name: Install CLI from Source
+        run: go install ./cli/cmd/omni
+        shell: bash
+
+      - name: Confirm Installation Location
+        run: ls -la ~/go/bin
+
+      - name: Check Installation and Version
+        run: ~/go/bin/omni version
+        shell: bash
+
+      - name: Test Scaffolding Command
+        run: mkdir test && cd test && ~/go/bin/omni developer new
+        shell: bash
