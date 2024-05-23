@@ -19,8 +19,8 @@ jobs:
     uses: ./.github/workflows/golangci-lint.yml
   sol-tests:
       uses: ./.github/workflows/soltest.yml
-  cli-tests:
-    uses: ./.github/workflows/clitest.yml
+  cli-install:
+    uses: ./.github/workflows/cliinstall.yml
   cli-command:
     uses: ./.github/workflows/clicommand.yml
   release-snapshot:
