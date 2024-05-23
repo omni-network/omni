@@ -18,6 +18,7 @@ import (
 	consensusmodulev1 "cosmossdk.io/api/cosmos/consensus/module/v1"
 	distrmodulev1 "cosmossdk.io/api/cosmos/distribution/module/v1"
 	genutilmodulev1 "cosmossdk.io/api/cosmos/genutil/module/v1"
+	slashingmodulev1 "cosmossdk.io/api/cosmos/slashing/module/v1"
 	stakingmodulev1 "cosmossdk.io/api/cosmos/staking/module/v1"
 	txconfigv1 "cosmossdk.io/api/cosmos/tx/config/v1"
 	"cosmossdk.io/core/appconfig"
@@ -30,6 +31,7 @@ import (
 	consensustypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
@@ -83,12 +85,14 @@ var (
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
 		stakingtypes.ModuleName,
+		slashingtypes.ModuleName,
 		genutiltypes.ModuleName,
 		valsynctypes.ModuleName,
 	}
 
 	beginBlockers = []string{
-		distrtypes.ModuleName,   // Note: slashing happens after distr.BeginBlocker
+		distrtypes.ModuleName, // Note: slashing happens after distr.BeginBlocker
+		slashingtypes.ModuleName,
 		stakingtypes.ModuleName, // Note: staking module is required if HistoricalEntries param > 0
 		attesttypes.ModuleName,
 	}
@@ -168,6 +172,10 @@ var (
 			{
 				Name:   stakingtypes.ModuleName,
 				Config: appconfig.WrapAny(&stakingmodulev1.Module{}),
+			},
+			{
+				Name:   slashingtypes.ModuleName,
+				Config: appconfig.WrapAny(&slashingmodulev1.Module{}),
 			},
 			{
 				Name:   engevmtypes.ModuleName,

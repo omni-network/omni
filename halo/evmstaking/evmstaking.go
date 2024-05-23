@@ -1,5 +1,5 @@
-// Package evmstaking monitors the omni stake pre-deploy contract and converts
-// its log events to cosmosSDK logic.
+// Package evmstaking monitors the Staking pre-deploy contract and converts
+// its log events to cosmosSDK x/staking logic.
 package evmstaking
 
 import (
@@ -72,10 +72,10 @@ func New(
 
 // Prepare returns all omni stake contract EVM event logs from the provided block hash.
 func (p EventProcessor) Prepare(ctx context.Context, blockHash common.Hash) ([]*evmenginetypes.EVMEvent, error) {
-	// TODO(corver): Maybe we should filter by expected topic only.
 	logs, err := p.ethCl.FilterLogs(ctx, ethereum.FilterQuery{
 		BlockHash: &blockHash,
 		Addresses: p.Addresses(),
+		Topics:    [][]common.Hash{{createValidatorEvent.ID}, {delegateEvent.ID}},
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "filter logs")
