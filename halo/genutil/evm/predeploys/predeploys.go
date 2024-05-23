@@ -33,7 +33,6 @@ const (
 	XRegistry      = "0x121E240000000000000000000000000000000001"
 	PortalRegistry = "0x121E240000000000000000000000000000000002"
 	EthStakeInbox  = "0x121E240000000000000000000000000000000003"
-	OmniStake      = "0x121E240000000000000000000000000000000004" // to be deprecated
 
 	// Octane Predeploys.
 	Staking  = "0xcccccc0000000000000000000000000000000001"
@@ -51,7 +50,6 @@ var (
 
 	// Predeploy addresses.
 	proxyAdmin     = common.HexToAddress(ProxyAdmin)
-	omniStake      = common.HexToAddress(OmniStake)
 	xRegistry      = common.HexToAddress(XRegistry)
 	portalRegistry = common.HexToAddress(PortalRegistry)
 	staking        = common.HexToAddress(Staking)
@@ -60,7 +58,6 @@ var (
 	// Predeploy bytecodes.
 	proxyCode          = hexutil.MustDecode(bindings.TransparentUpgradeableProxyDeployedBytecode)
 	proxyAdminCode     = hexutil.MustDecode(bindings.ProxyAdminDeployedBytecode)
-	omniStakeCode      = hexutil.MustDecode(bindings.OmniStakeDeployedBytecode)
 	xRegistryCode      = hexutil.MustDecode(bindings.XRegistryDeployedBytecode)
 	portalRegistryCode = hexutil.MustDecode(bindings.PortalRegistryDeployedBytecode)
 	stakingCode        = hexutil.MustDecode(bindings.StakingDeployedBytecode)
@@ -82,10 +79,6 @@ func Alloc(network netconf.ID) (types.GenesisAlloc, error) {
 
 	if err := setProxyAdmin(db, admin); err != nil {
 		return nil, errors.Wrap(err, "set proxy admin")
-	}
-
-	if err := setOmniStake(db); err != nil {
-		return nil, errors.Wrap(err, "set omni stake")
 	}
 
 	if err := setXRegistry(db, admin); err != nil {
@@ -118,13 +111,6 @@ func setProxies(db *state.MemDB) {
 			db.SetState(addr, common.HexToHash(ProxyAdminSlot), common.HexToHash(proxyAdmin.Hex()))
 		}
 	}
-}
-
-// setOmniStake sets the omniStake predeploy.
-func setOmniStake(db *state.MemDB) error {
-	storage := state.StorageValues{}
-
-	return setPredeploy(db, omniStake, omniStakeCode, bindings.OmniStakeStorageLayout, storage)
 }
 
 // setProxyAdmin sets the proxy admin predeploy.

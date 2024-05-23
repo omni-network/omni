@@ -104,7 +104,7 @@ var (
 		distrtypes.ModuleName,
 		stakingtypes.BondedPoolName,
 		stakingtypes.NotBondedPoolName,
-		evmstaking.AccountName,
+		evmstaking.ModuleName,
 	}
 
 	moduleAccPerms = []*authmodulev1.ModuleAccountPermission{
@@ -112,7 +112,7 @@ var (
 		{Account: distrtypes.ModuleName},
 		{Account: stakingtypes.BondedPoolName, Permissions: []string{authtypes.Burner, stakingtypes.ModuleName}},
 		{Account: stakingtypes.NotBondedPoolName, Permissions: []string{authtypes.Burner, stakingtypes.ModuleName}},
-		{Account: evmstaking.AccountName, Permissions: []string{authtypes.Burner, authtypes.Minter}},
+		{Account: evmstaking.ModuleName, Permissions: []string{authtypes.Burner, authtypes.Minter}},
 	}
 
 	// appConfig application configuration (used by depinject).

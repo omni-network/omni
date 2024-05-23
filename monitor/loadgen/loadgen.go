@@ -70,7 +70,7 @@ func Start(ctx context.Context, network netconf.Network, endpoints xchain.RPCEnd
 		return err
 	}
 
-	contract, err := bindings.NewOmniStake(common.HexToAddress(predeploys.OmniStake), backend)
+	contract, err := bindings.NewStaking(common.HexToAddress(predeploys.Staking), backend)
 	if err != nil {
 		return errors.Wrap(err, "new omni stake")
 	}
@@ -81,7 +81,8 @@ func Start(ctx context.Context, network netconf.Network, endpoints xchain.RPCEnd
 	}
 
 	for _, key := range keys {
-		go selfDelegateForever(ctx, contract, backend, &key.PublicKey, period)
+		val := ethcrypto.PubkeyToAddress(key.PublicKey)
+		go selfDelegateForever(ctx, contract, backend, val, period)
 	}
 
 	return nil

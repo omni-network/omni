@@ -143,14 +143,14 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 			return
 		}
 
-		// Create the OmniStake contract
-		omniStake, err := bindings.NewOmniStake(common.HexToAddress(predeploys.OmniStake), valBackend)
+		// Create the Staking contract
+		staking, err := bindings.NewStaking(common.HexToAddress(predeploys.Staking), valBackend)
 		if err != nil {
-			returnErr(errors.Wrap(err, "new omni stake"))
+			returnErr(errors.Wrap(err, "new staking"))
 			return
 		}
 
-		// Wait for each update, then submit deposit txns.
+		// Wait for each update, then submit self-delegations
 		for _, update := range updates {
 			log.Debug(ctx, "Waiting for next validator update", "wait_for_height", update.Height)
 			_, _, err := waitForHeight(ctx, def.Testnet.Testnet, update.Height)
@@ -160,7 +160,8 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 			}
 
 			for node, power := range update.Powers {
-				addr, err := k1util.PubKeyToAddress(node.PrivvalKey.PubKey())
+				pubkey := node.PrivvalKey.PubKey()
+				addr, err := k1util.PubKeyToAddress(pubkey)
 				if err != nil {
 					returnErr(errors.Wrap(err, "pubkey to addr"))
 					return
@@ -198,13 +199,10 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 				}
 				txOpts.Value = math.NewInt(power).MulRaw(params.Ether).BigInt()
 
-				pubkey, err := valBackend.PublicKey(addr)
-				if err != nil {
-					returnErr(errors.Wrap(err, "public key"))
-					return
-				}
-
-				tx, err := omniStake.Deposit(txOpts, k1util.PubKeyToBytes64(pubkey))
+				// NOTE: We can use CreateValidator here, rather than Delegate (self-delegation)
+				// because current e2e manifest validator_udpates are only used to create a new validator,
+				// and not to self-delegate an existing one.
+				tx, err := staking.CreateValidator(txOpts, pubkey.Bytes())
 				if err != nil {
 					returnErr(errors.Wrap(err, "deposit", "node", node.Name, "addr", addr.Hex()))
 					return
@@ -221,13 +219,6 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 					"power", power,
 					"height", rec.BlockNumber.Uint64(),
 				)
-
-				// Do an invalid deposit for testing.
-				_, err = omniStake.Deposit(txOpts, []byte("invalid"))
-				if err != nil {
-					returnErr(errors.Wrap(err, "invalid deposit", "node", node.Name, "addr", addr.Hex()))
-					return
-				}
 			}
 		}
 

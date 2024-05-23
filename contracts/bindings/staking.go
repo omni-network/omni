@@ -31,8 +31,8 @@ var (
 
 // StakingMetaData contains all meta data concerning the Staking contract.
 var StakingMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"MIN_DEPOSIT\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"createValidator\",\"inputs\":[{\"name\":\"pubkey\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"event\",\"name\":\"CreateValidator\",\"inputs\":[{\"name\":\"validator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"pubkey\",\"type\":\"bytes\",\"indexed\":false,\"internalType\":\"bytes\"},{\"name\":\"deposit\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false}]",
-	Bin: "0x608060405234801561001057600080fd5b5061024a806100206000396000f3fe6080604052600436106100295760003560e01c8063a5a470ad1461002e578063e1e158a514610043575b600080fd5b61004161003c366004610169565b610072565b005b34801561004f57600080fd5b5061006068056bc75e2d6310000081565b60405190815260200160405180910390f35b602181146100c75760405162461bcd60e51b815260206004820152601e60248201527f5374616b696e673a20696e76616c6964207075626b6579206c656e677468000060448201526064015b60405180910390fd5b68056bc75e2d631000003410156101205760405162461bcd60e51b815260206004820152601d60248201527f5374616b696e673a20696e73756666696369656e74206465706f73697400000060448201526064016100be565b336001600160a01b03167fc7abef7b73f049da6a9bc2349ba5066a39e316eabc9f671b6f9406aa9490a45383833460405161015d939291906101db565b60405180910390a25050565b6000806020838503121561017c57600080fd5b823567ffffffffffffffff8082111561019457600080fd5b818501915085601f8301126101a857600080fd5b8135818111156101b757600080fd5b8660208285010111156101c957600080fd5b60209290920196919550909350505050565b604081528260408201528284606083013760006060848301015260006060601f19601f860116830101905082602083015294935050505056fea2646970667358221220da60cd42492ce5087904fea54085c3f9444e49ba717eed727bd6d2b93a28f32b64736f6c63430008180033",
+	ABI: "[{\"type\":\"function\",\"name\":\"MIN_DEPOSIT\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"createValidator\",\"inputs\":[{\"name\":\"pubkey\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"delegate\",\"inputs\":[{\"name\":\"validator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"event\",\"name\":\"CreateValidator\",\"inputs\":[{\"name\":\"validator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"pubkey\",\"type\":\"bytes\",\"indexed\":false,\"internalType\":\"bytes\"},{\"name\":\"deposit\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Delegate\",\"inputs\":[{\"name\":\"delegator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"validator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false}]",
+	Bin: "0x608060405234801561001057600080fd5b50610383806100206000396000f3fe6080604052600436106100345760003560e01c80635c19a95c14610039578063a5a470ad1461004e578063e1e158a514610061575b600080fd5b61004c610047366004610272565b610090565b005b61004c61005c3660046102a2565b610180565b34801561006d57600080fd5b5061007e68056bc75e2d6310000081565b60405190815260200160405180910390f35b600034116100e55760405162461bcd60e51b815260206004820152601d60248201527f5374616b696e673a20696e73756666696369656e74206465706f73697400000060448201526064015b60405180910390fd5b336001600160a01b0382161461013d5760405162461bcd60e51b815260206004820152601d60248201527f5374616b696e673a206f6e6c792073656c662064656c65676174696f6e00000060448201526064016100dc565b6040513481526001600160a01b0382169033907f510b11bb3f3c799b11307c01ab7db0d335683ef5b2da98f7697de744f465eacc9060200160405180910390a350565b602181146101d05760405162461bcd60e51b815260206004820152601e60248201527f5374616b696e673a20696e76616c6964207075626b6579206c656e677468000060448201526064016100dc565b68056bc75e2d631000003410156102295760405162461bcd60e51b815260206004820152601d60248201527f5374616b696e673a20696e73756666696369656e74206465706f73697400000060448201526064016100dc565b336001600160a01b03167fc7abef7b73f049da6a9bc2349ba5066a39e316eabc9f671b6f9406aa9490a45383833460405161026693929190610314565b60405180910390a25050565b60006020828403121561028457600080fd5b81356001600160a01b038116811461029b57600080fd5b9392505050565b600080602083850312156102b557600080fd5b823567ffffffffffffffff808211156102cd57600080fd5b818501915085601f8301126102e157600080fd5b8135818111156102f057600080fd5b86602082850101111561030257600080fd5b60209290920196919550909350505050565b604081528260408201528284606083013760006060848301015260006060601f19601f860116830101905082602083015294935050505056fea26469706673582212209e42a613e2b43c0c3cace889e784f24b0709198a43fcf64b7e1ce2169241b5d464736f6c63430008180033",
 }
 
 // StakingABI is the input ABI used to generate the binding from.
@@ -254,6 +254,27 @@ func (_Staking *StakingTransactorSession) CreateValidator(pubkey []byte) (*types
 	return _Staking.Contract.CreateValidator(&_Staking.TransactOpts, pubkey)
 }
 
+// Delegate is a paid mutator transaction binding the contract method 0x5c19a95c.
+//
+// Solidity: function delegate(address validator) payable returns()
+func (_Staking *StakingTransactor) Delegate(opts *bind.TransactOpts, validator common.Address) (*types.Transaction, error) {
+	return _Staking.contract.Transact(opts, "delegate", validator)
+}
+
+// Delegate is a paid mutator transaction binding the contract method 0x5c19a95c.
+//
+// Solidity: function delegate(address validator) payable returns()
+func (_Staking *StakingSession) Delegate(validator common.Address) (*types.Transaction, error) {
+	return _Staking.Contract.Delegate(&_Staking.TransactOpts, validator)
+}
+
+// Delegate is a paid mutator transaction binding the contract method 0x5c19a95c.
+//
+// Solidity: function delegate(address validator) payable returns()
+func (_Staking *StakingTransactorSession) Delegate(validator common.Address) (*types.Transaction, error) {
+	return _Staking.Contract.Delegate(&_Staking.TransactOpts, validator)
+}
+
 // StakingCreateValidatorIterator is returned from FilterCreateValidator and is used to iterate over the raw logs and unpacked data for CreateValidator events raised by the Staking contract.
 type StakingCreateValidatorIterator struct {
 	Event *StakingCreateValidator // Event containing the contract specifics and raw log
@@ -394,6 +415,160 @@ func (_Staking *StakingFilterer) WatchCreateValidator(opts *bind.WatchOpts, sink
 func (_Staking *StakingFilterer) ParseCreateValidator(log types.Log) (*StakingCreateValidator, error) {
 	event := new(StakingCreateValidator)
 	if err := _Staking.contract.UnpackLog(event, "CreateValidator", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// StakingDelegateIterator is returned from FilterDelegate and is used to iterate over the raw logs and unpacked data for Delegate events raised by the Staking contract.
+type StakingDelegateIterator struct {
+	Event *StakingDelegate // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *StakingDelegateIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(StakingDelegate)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(StakingDelegate)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *StakingDelegateIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *StakingDelegateIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// StakingDelegate represents a Delegate event raised by the Staking contract.
+type StakingDelegate struct {
+	Delegator common.Address
+	Validator common.Address
+	Amount    *big.Int
+	Raw       types.Log // Blockchain specific contextual infos
+}
+
+// FilterDelegate is a free log retrieval operation binding the contract event 0x510b11bb3f3c799b11307c01ab7db0d335683ef5b2da98f7697de744f465eacc.
+//
+// Solidity: event Delegate(address indexed delegator, address indexed validator, uint256 amount)
+func (_Staking *StakingFilterer) FilterDelegate(opts *bind.FilterOpts, delegator []common.Address, validator []common.Address) (*StakingDelegateIterator, error) {
+
+	var delegatorRule []interface{}
+	for _, delegatorItem := range delegator {
+		delegatorRule = append(delegatorRule, delegatorItem)
+	}
+	var validatorRule []interface{}
+	for _, validatorItem := range validator {
+		validatorRule = append(validatorRule, validatorItem)
+	}
+
+	logs, sub, err := _Staking.contract.FilterLogs(opts, "Delegate", delegatorRule, validatorRule)
+	if err != nil {
+		return nil, err
+	}
+	return &StakingDelegateIterator{contract: _Staking.contract, event: "Delegate", logs: logs, sub: sub}, nil
+}
+
+// WatchDelegate is a free log subscription operation binding the contract event 0x510b11bb3f3c799b11307c01ab7db0d335683ef5b2da98f7697de744f465eacc.
+//
+// Solidity: event Delegate(address indexed delegator, address indexed validator, uint256 amount)
+func (_Staking *StakingFilterer) WatchDelegate(opts *bind.WatchOpts, sink chan<- *StakingDelegate, delegator []common.Address, validator []common.Address) (event.Subscription, error) {
+
+	var delegatorRule []interface{}
+	for _, delegatorItem := range delegator {
+		delegatorRule = append(delegatorRule, delegatorItem)
+	}
+	var validatorRule []interface{}
+	for _, validatorItem := range validator {
+		validatorRule = append(validatorRule, validatorItem)
+	}
+
+	logs, sub, err := _Staking.contract.WatchLogs(opts, "Delegate", delegatorRule, validatorRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(StakingDelegate)
+				if err := _Staking.contract.UnpackLog(event, "Delegate", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseDelegate is a log parse operation binding the contract event 0x510b11bb3f3c799b11307c01ab7db0d335683ef5b2da98f7697de744f465eacc.
+//
+// Solidity: event Delegate(address indexed delegator, address indexed validator, uint256 amount)
+func (_Staking *StakingFilterer) ParseDelegate(log types.Log) (*StakingDelegate, error) {
+	event := new(StakingDelegate)
+	if err := _Staking.contract.UnpackLog(event, "Delegate", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

@@ -104,24 +104,20 @@ func StdPrivKeyFromComet(privkey crypto.PrivKey) (*stdecdsa.PrivateKey, error) {
 }
 
 func StdPubKeyToCosmos(pubkey *stdecdsa.PublicKey) (cosmoscrypto.PubKey, error) {
-	pubkeyBytes := ethcrypto.CompressPubkey(pubkey)
-	if len(pubkeyBytes) != pubkeyCompressedLen {
-		return nil, errors.New("invalid pubkey length", "length", len(pubkeyBytes))
-	}
-
-	return &cosmosk1.PubKey{
-		Key: pubkeyBytes,
-	}, nil
+	return PubKeyBytesToCosmos(ethcrypto.CompressPubkey(pubkey))
 }
 
 func PubKeyToCosmos(pubkey crypto.PubKey) (cosmoscrypto.PubKey, error) {
-	pubkeyBytes := pubkey.Bytes()
-	if len(pubkeyBytes) != pubkeyCompressedLen {
-		return nil, errors.New("invalid pubkey length", "length", len(pubkeyBytes))
+	return PubKeyBytesToCosmos(pubkey.Bytes())
+}
+
+func PubKeyBytesToCosmos(pubkey []byte) (cosmoscrypto.PubKey, error) {
+	if len(pubkey) != pubkeyCompressedLen {
+		return nil, errors.New("invalid pubkey length", "length", len(pubkey))
 	}
 
 	return &cosmosk1.PubKey{
-		Key: pubkey.Bytes(),
+		Key: pubkey,
 	}, nil
 }
 
