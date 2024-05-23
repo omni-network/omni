@@ -61,7 +61,7 @@ func Run(ctx context.Context, cfg Config) error {
 	root, err := startAnvil(ctx, rootCfg)
 	if err != nil {
 		return errors.Wrap(err, "start root anvil")
-	} else if err := root.AwaitHeight(ctx, 1, time.Second*5); err != nil {
+	} else if err := root.AwaitHeight(ctx, 0, time.Second*5); err != nil {
 		return errors.Wrap(err, "start anvil")
 	}
 
@@ -119,6 +119,9 @@ func forkForever(ctx context.Context, cfg Config, newPort func() int, proxy *pro
 	if !cfg.EnableForking {
 		<-ctx.Done()
 		return nil
+	}
+	if cfg.BlockTimeSecs != 1 {
+		return errors.New("forking only supported for 1s block times")
 	}
 
 	for ctx.Err() == nil {

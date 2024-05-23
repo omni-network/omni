@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/omni-network/omni/explorer/db/ent/chain"
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
@@ -170,15 +169,17 @@ func monitorAttestedForever(
 					Height: &att.BlockHeight,
 				}
 
+				name := streamName(network.ChainName, stream)
+
 				cursor, ok, err := xprovider.GetEmittedCursor(ctx, ref, stream)
 				if err != nil {
-					log.Error(ctx, "Monitoring attested stream offset failed (will retry)", err, "chain", chain.Name)
-					break
+					log.Error(ctx, "Fetching stream offsets for attestation failed (will retry)", err, "stream", name)
+					continue
 				} else if !ok {
 					continue
 				}
 
-				attestedMsgOffset.WithLabelValues(streamName(network.ChainName, stream)).Set(float64(cursor.MsgOffset))
+				attestedMsgOffset.WithLabelValues(name).Set(float64(cursor.MsgOffset))
 			}
 		}
 	}
