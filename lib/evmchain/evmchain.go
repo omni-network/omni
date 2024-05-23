@@ -122,7 +122,7 @@ var static = map[uint64]Metadata{
 	IDMockArb: {
 		ChainID:     IDMockArb,
 		Name:        "mock_arb",
-		BlockPeriod: time.Second / 4,
+		BlockPeriod: time.Second,
 		NativeToken: tokens.ETH,
 	},
 }
