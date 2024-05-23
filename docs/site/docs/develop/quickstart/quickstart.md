@@ -117,3 +117,8 @@ cast call 0x8464135c8F25Da09e49BC8782676a84730C318bC "lastGreet():(uint64,uint25
 ### 🎉 Done 🎉
 
 You have successfully deployed and interacted with an Omni cross-chain dApp in less than three minutes!
+
+<figure align="center">
+    <img src="/img/cat.png" alt="gg wp" width="350" height="350" />
+    <figcaption></figcaption>
+</figure>
