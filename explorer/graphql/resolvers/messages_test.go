@@ -121,7 +121,7 @@ func TestXMsg(t *testing.T) {
 						},
 						"success": true,
 						"txHash": "0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f21",
-						"txUrl": "https://sepolia.arbiscan.io/tx/0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f21"
+						"txUrl": "https://sepolia-optimism.etherscan.io/tx/0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f21"
 					},
 					"sender": "0x0102030405060708090a0b0c0d0e0f1011121314",
 					"senderUrl": "https://sepolia.arbiscan.io/address/0x0102030405060708090a0B0c0d0e0f1011121314",

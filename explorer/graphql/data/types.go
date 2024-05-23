@@ -161,7 +161,7 @@ type XReceipt struct {
 }
 
 func (r *XReceipt) TxURL() string {
-	c, ok := r.Chain(r.SourceChainID.String())
+	c, ok := r.Chain(r.DestChainID.String())
 	if !ok {
 		return ""
 	}
