@@ -5,6 +5,7 @@ import (
 	atypes "github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/halo/comet"
 	evmengkeeper "github.com/omni-network/omni/halo/evmengine/keeper"
+	"github.com/omni-network/omni/halo/evmslashing"
 	"github.com/omni-network/omni/halo/evmstaking"
 	valsynckeeper "github.com/omni-network/omni/halo/valsync/keeper"
 	"github.com/omni-network/omni/lib/errors"
@@ -24,6 +25,7 @@ import (
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	consensuskeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
+	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 
 	_ "cosmossdk.io/api/cosmos/tx/config/v1"          // import for side-effects
@@ -34,6 +36,7 @@ import (
 	_ "github.com/cosmos/cosmos-sdk/x/distribution"   // import for side-effects
 	_ "github.com/cosmos/cosmos-sdk/x/genutil"        // import for side-effects
 	_ "github.com/cosmos/cosmos-sdk/x/mint"           // import for side-effects
+	_ "github.com/cosmos/cosmos-sdk/x/slashing"       // import for side-effects
 	_ "github.com/cosmos/cosmos-sdk/x/staking"        // import for side-effects
 )
 
@@ -53,6 +56,7 @@ type App struct {
 	AccountKeeper         authkeeper.AccountKeeper
 	BankKeeper            bankkeeper.Keeper
 	StakingKeeper         *stakingkeeper.Keeper
+	SlashingKeeper        slashingkeeper.Keeper
 	DistrKeeper           distrkeeper.Keeper
 	ConsensusParamsKeeper consensuskeeper.Keeper
 	EVMEngKeeper          *evmengkeeper.Keeper
@@ -88,6 +92,7 @@ func newApp(
 		&app.AccountKeeper,
 		&app.BankKeeper,
 		&app.StakingKeeper,
+		&app.SlashingKeeper,
 		&app.DistrKeeper,
 		&app.ConsensusParamsKeeper,
 		&app.EVMEngKeeper,
@@ -103,9 +108,15 @@ func newApp(
 		return nil, errors.Wrap(err, "create evm staking")
 	}
 
+	evmSlashing, err := evmslashing.New(engineCl, app.SlashingKeeper)
+	if err != nil {
+		return nil, errors.Wrap(err, "create evm slashing")
+	}
+
 	// Set evmengine vote and evm msg providers.
 	app.EVMEngKeeper.SetVoteProvider(app.AttestKeeper)
 	app.EVMEngKeeper.AddEventProcessor(evmStaking)
+	app.EVMEngKeeper.AddEventProcessor(evmSlashing)
 	app.AttestKeeper.SetValidatorProvider(app.ValSyncKeeper)
 
 	baseAppOpts = append(baseAppOpts, func(bapp *baseapp.BaseApp) {
