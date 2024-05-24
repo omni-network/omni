@@ -320,7 +320,7 @@ func waitForSupportedChains(ctx context.Context, def Definition) error {
 				return nil
 			}
 
-			if attempt > 5 {
+			if attempt > 10 {
 				return errors.New(" wait for supported chains")
 			}
 
