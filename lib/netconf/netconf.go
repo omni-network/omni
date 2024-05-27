@@ -248,9 +248,8 @@ const (
 // the Omni cross chain protocol. This is most supported Rollup EVMs, but
 // also the Omni EVM, and the Omni Consensus chain.
 type Chain struct {
-	ID   uint64 // Chain ID asa per https://chainlist.org
-	Name string // Chain name as per https://chainlist.org
-	// RPCURL            string            // RPC URL of the chain
+	ID                uint64            // Chain ID asa per https://chainlist.org
+	Name              string            // Chain name as per https://chainlist.org
 	PortalAddress     common.Address    // Address of the omni portal contract on the chain
 	DeployHeight      uint64            // Height that the portal contracts were deployed
 	BlockPeriod       time.Duration     // Block period of the chain

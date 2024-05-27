@@ -43,15 +43,15 @@ func TestWorker_Run(t *testing.T) {
 
 	// Return mock blocks (with a single msg per dest chain).
 	mockXClient := &mockXChainClient{
-		GetBlockFn: func(ctx context.Context, chainID uint64, height uint64, xOffset uint64) (xchain.Block, bool, error) {
-			require.EqualValues(t, srcChain, chainID) // Only fetch blocks for source chains.
+		GetBlockFn: func(ctx context.Context, req xchain.ProviderRequest) (xchain.Block, bool, error) {
+			require.EqualValues(t, srcChain, req.ChainID) // Only fetch blocks for source chains.
 
 			// Each block has two messages, one for each stream.
 			return xchain.Block{
-				BlockHeader: xchain.BlockHeader{SourceChainID: chainID, BlockOffset: xOffset, BlockHeight: height},
+				BlockHeader: xchain.BlockHeader{SourceChainID: req.ChainID, BlockOffset: req.Offset, BlockHeight: req.Height},
 				Msgs: []xchain.Msg{
-					{MsgID: xchain.MsgID{StreamID: streamA, StreamOffset: xOffset}},
-					{MsgID: xchain.MsgID{StreamID: streamB, StreamOffset: xOffset}},
+					{MsgID: xchain.MsgID{StreamID: streamA, StreamOffset: req.Offset}},
+					{MsgID: xchain.MsgID{StreamID: streamB, StreamOffset: req.Offset}},
 				},
 			}, true, nil
 		},

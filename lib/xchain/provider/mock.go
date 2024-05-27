@@ -44,9 +44,9 @@ func NewMock(period time.Duration, cChainID uint64, cProvider cchain.Provider) *
 	}
 }
 
-func (m *Mock) StreamAsync(ctx context.Context, chainID uint64, fromHeight uint64, fromOffset uint64, callback xchain.ProviderCallback) error {
+func (m *Mock) StreamAsync(ctx context.Context, req xchain.ProviderRequest, callback xchain.ProviderCallback) error {
 	go func() {
-		err := m.stream(ctx, chainID, fromHeight, fromOffset, callback, true)
+		err := m.stream(ctx, req, callback, true)
 		if err != nil {
 			log.Error(ctx, "Unexpected stream error [BUG]", err)
 		}
@@ -55,36 +55,36 @@ func (m *Mock) StreamAsync(ctx context.Context, chainID uint64, fromHeight uint6
 	return nil
 }
 
-func (m *Mock) StreamBlocks(ctx context.Context, chainID uint64, fromHeight uint64, fromOffset uint64, callback xchain.ProviderCallback) error {
-	return m.stream(ctx, chainID, fromHeight, fromOffset, callback, false)
+func (m *Mock) StreamBlocks(ctx context.Context, req xchain.ProviderRequest, callback xchain.ProviderCallback) error {
+	return m.stream(ctx, req, callback, false)
 }
 
 //nolint:nilerr // Stream function contract states it returns nil on context error.
 func (m *Mock) stream(
 	ctx context.Context,
-	chainID uint64,
-	fromHeight uint64,
-	fromOffset uint64,
+	req xchain.ProviderRequest,
 	callback xchain.ProviderCallback,
 	retryCallback bool,
 ) error {
 	sOffset := make(streamOffseter).offset
 
+	fromOffset := req.Offset
 	if fromOffset == 0 {
 		fromOffset = initialXOffset
 	}
 	bOffset := newBlockOffseter(fromOffset)
 
-	// Similarly to real xprovider, we bump fromHeight to netconf.DeployHeight if below,
+	// Similarly as the real xprovider, we bump fromHeight to netconf.DeployHeight if below,
 	// this is only required for consensus chain in the mock.
-	if chainID == m.cChainID {
+	fromHeight := req.Height
+	if req.ChainID == m.cChainID {
 		if fromHeight < 1 {
 			fromHeight = 1
 		}
 	} else {
 		// Populate historical blocks for mocked chains so offsets are consistent for heights.
 		for i := uint64(0); i < fromHeight; i++ {
-			m.addBlock(m.nextBlock(ctx, chainID, i, sOffset, bOffset.getAndInc))
+			m.addBlock(m.nextBlock(ctx, req.ChainID, i, sOffset, bOffset.getAndInc))
 		}
 	}
 
@@ -94,7 +94,7 @@ func (m *Mock) stream(
 	height := fromHeight
 
 	for ctx.Err() == nil {
-		block := m.nextBlock(ctx, chainID, height, sOffset, bOffset.getAndInc)
+		block := m.nextBlock(ctx, req.ChainID, height, sOffset, bOffset.getAndInc)
 		m.addBlock(block)
 
 		err := callback(ctx, block)
@@ -121,12 +121,12 @@ func (m *Mock) stream(
 	return nil
 }
 
-func (m *Mock) GetBlock(_ context.Context, chainID uint64, height uint64, offset uint64) (xchain.Block, bool, error) {
+func (m *Mock) GetBlock(_ context.Context, req xchain.ProviderRequest) (xchain.Block, bool, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	for _, block := range m.blocks {
-		if block.BlockOffset == offset && block.BlockHeight == height && block.SourceChainID == chainID {
+		if block.BlockOffset == req.Offset && block.BlockHeight == req.Height && block.SourceChainID == req.ChainID {
 			return block, true, nil
 		}
 	}
@@ -219,14 +219,6 @@ func (m *Mock) nextBlock(
 	}
 
 	return b
-}
-
-func (*Mock) StreamAsyncNoOffset(context.Context, uint64, uint64, xchain.ProviderCallback) error {
-	panic("unexpected")
-}
-
-func (*Mock) StreamBlocksNoOffset(context.Context, uint64, uint64, xchain.ProviderCallback) error {
-	panic("unexpected")
 }
 
 func newMsg(r *rand.Rand, srcChain, destChain uint64, offsetFunc func(xchain.StreamID) uint64) xchain.Msg {

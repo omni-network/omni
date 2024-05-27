@@ -51,7 +51,7 @@ func TestProvider(t *testing.T) {
 
 	// Return a few errors from HeaderByType, then return a very high number so it is cached and not queried again.
 	var remainErrs = errs
-	mockEthCl.EXPECT().HeaderByType(gomock.Any(), ethclient.HeadFinalized).AnyTimes().DoAndReturn(func(ctx context.Context, typ ethclient.HeadType) (*ethtypes.Header, error) {
+	mockEthCl.EXPECT().HeaderByType(gomock.Any(), ethclient.HeadLatest).AnyTimes().DoAndReturn(func(ctx context.Context, typ ethclient.HeadType) (*ethtypes.Header, error) {
 		mu.Lock()
 		defer mu.Unlock()
 		if remainErrs > 0 {
@@ -78,8 +78,14 @@ func TestProvider(t *testing.T) {
 
 	xprov := provider.NewForT(t, network, map[uint64]ethclient.Client{chainID: mockEthCl}, backoff.BackOff, workers)
 
+	req := xchain.ProviderRequest{
+		ChainID:   chainID,
+		Height:    fromHeight,
+		Offset:    fromOffset,
+		ConfLevel: xchain.ConfLatest,
+	}
 	var actual []xchain.Block
-	err := xprov.StreamBlocks(ctx, chainID, fromHeight, fromOffset, func(ctx context.Context, block xchain.Block) error {
+	err := xprov.StreamBlocks(ctx, req, func(ctx context.Context, block xchain.Block) error {
 		actual = append(actual, block)
 		if len(actual) == total {
 			cancel()

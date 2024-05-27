@@ -127,29 +127,21 @@ var (
 )
 
 type mockXChainClient struct {
-	GetBlockFn           func(context.Context, uint64, uint64, uint64) (xchain.Block, bool, error)
+	GetBlockFn           func(context.Context, xchain.ProviderRequest) (xchain.Block, bool, error)
 	GetSubmittedCursorFn func(context.Context, xchain.StreamID) (xchain.StreamCursor, bool, error)
 	GetEmittedCursorFn   func(context.Context, xchain.EmitRef, xchain.StreamID) (xchain.StreamCursor, bool, error)
 }
 
-func (m *mockXChainClient) StreamAsync(context.Context, uint64, uint64, uint64, xchain.ProviderCallback) error {
+func (m *mockXChainClient) StreamAsync(context.Context, xchain.ProviderRequest, xchain.ProviderCallback) error {
 	panic("unexpected")
 }
 
-func (m *mockXChainClient) StreamAsyncNoOffset(context.Context, uint64, uint64, xchain.ProviderCallback) error {
+func (m *mockXChainClient) StreamBlocks(context.Context, xchain.ProviderRequest, xchain.ProviderCallback) error {
 	panic("unexpected")
 }
 
-func (m *mockXChainClient) StreamBlocks(context.Context, uint64, uint64, uint64, xchain.ProviderCallback) error {
-	panic("unexpected")
-}
-
-func (m *mockXChainClient) StreamBlocksNoOffset(context.Context, uint64, uint64, xchain.ProviderCallback) error {
-	panic("unexpected")
-}
-
-func (m *mockXChainClient) GetBlock(ctx context.Context, chainID uint64, height uint64, xOffset uint64) (xchain.Block, bool, error) {
-	return m.GetBlockFn(ctx, chainID, height, xOffset)
+func (m *mockXChainClient) GetBlock(ctx context.Context, req xchain.ProviderRequest) (xchain.Block, bool, error) {
+	return m.GetBlockFn(ctx, req)
 }
 
 func (m *mockXChainClient) GetSubmittedCursor(ctx context.Context, stream xchain.StreamID,

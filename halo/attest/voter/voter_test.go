@@ -84,9 +84,9 @@ func TestRunner(t *testing.T) {
 	setIsVal(t, v, pk, true)
 
 	sub := <-prov // Get the subscription
-	require.EqualValues(t, chain1, sub.chainID)
-	require.EqualValues(t, 0, sub.offset)
-	require.EqualValues(t, 0, sub.height)
+	require.EqualValues(t, chain1, sub.req.ChainID)
+	require.EqualValues(t, 0, sub.req.Offset)
+	require.EqualValues(t, 0, sub.req.Height)
 
 	callback(t, sub, 0, isVal, returnsOk) // Callback block 0 (in window)
 	callback(t, sub, 1, isVal, returnsOk) // Callback block 1 (after window)
@@ -96,9 +96,9 @@ func TestRunner(t *testing.T) {
 
 	// Assert it reset
 	sub = <-prov // Get the new subscription
-	require.EqualValues(t, chain1, sub.chainID)
-	require.EqualValues(t, 2, sub.offset) // Assert it starts from 2 this time
-	require.EqualValues(t, 2, sub.height) // Assert it starts from 2 this time
+	require.EqualValues(t, chain1, sub.req.ChainID)
+	require.EqualValues(t, 2, sub.req.Offset) // Assert it starts from 2 this time
+	require.EqualValues(t, 2, sub.req.Height) // Assert it starts from 2 this time
 
 	v.TrimBehind(minByChain(network, chain1, 2)) // Set window to 2
 	callback(t, sub, 2, isVal, returnsOk)        // Callback block 2
@@ -114,9 +114,9 @@ func TestRunner(t *testing.T) {
 
 	// Assert it reset
 	sub = <-prov // Get the new subscription
-	require.EqualValues(t, chain1, sub.chainID)
-	require.EqualValues(t, newOffset+1, sub.offset) // Assert it starts from newOffset+1 this time
-	require.EqualValues(t, newHeight+1, sub.height) // Assert it starts from newHeight+1 this time
+	require.EqualValues(t, chain1, sub.req.ChainID)
+	require.EqualValues(t, newOffset+1, sub.req.Offset) // Assert it starts from newOffset+1 this time
+	require.EqualValues(t, newHeight+1, sub.req.Height) // Assert it starts from newHeight+1 this time
 
 	cancel()
 	v.WaitDone()
@@ -315,10 +315,10 @@ func expectSubscriptions(t *testing.T, prov stubProvider, chainOffsets ...uint64
 		case <-ctx.Done():
 			require.Fail(t, "timed out waiting for subscription")
 		case next := <-prov:
-			h, ok := expected[next.chainID]
+			h, ok := expected[next.req.ChainID]
 			require.True(t, ok)
-			require.EqualValues(t, h, next.offset)
-			delete(expected, next.chainID)
+			require.EqualValues(t, h, next.req.Offset)
+			delete(expected, next.req.ChainID)
 		}
 		cancel()
 	}
@@ -435,9 +435,7 @@ func (stubDeps) LatestAttestation(context.Context, uint64, xchain.ConfLevel) (xc
 }
 
 type sub struct {
-	chainID  uint64
-	height   uint64
-	offset   uint64
+	req      xchain.ProviderRequest
 	callback xchain.ProviderCallback
 	result   chan error
 }
@@ -446,10 +444,10 @@ var _ xchain.Provider = make(stubProvider)
 
 type stubProvider chan sub
 
-func (p stubProvider) StreamBlocks(ctx context.Context, chainID uint64, fromHeight uint64, fromOffset uint64, callback xchain.ProviderCallback) error {
+func (p stubProvider) StreamBlocks(ctx context.Context, req xchain.ProviderRequest, callback xchain.ProviderCallback) error {
 	result := make(chan error)
 
-	p <- sub{chainID, fromHeight, fromOffset, callback, result}
+	p <- sub{req, callback, result}
 
 	select {
 	case <-ctx.Done():
@@ -459,11 +457,11 @@ func (p stubProvider) StreamBlocks(ctx context.Context, chainID uint64, fromHeig
 	}
 }
 
-func (stubProvider) StreamAsync(context.Context, uint64, uint64, uint64, xchain.ProviderCallback) error {
+func (stubProvider) StreamAsync(context.Context, xchain.ProviderRequest, xchain.ProviderCallback) error {
 	panic("unexpected")
 }
 
-func (stubProvider) GetBlock(context.Context, uint64, uint64, uint64) (xchain.Block, bool, error) {
+func (stubProvider) GetBlock(context.Context, xchain.ProviderRequest) (xchain.Block, bool, error) {
 	panic("unexpected")
 }
 
@@ -472,14 +470,6 @@ func (stubProvider) GetSubmittedCursor(context.Context, xchain.StreamID) (xchain
 }
 
 func (stubProvider) GetEmittedCursor(context.Context, xchain.EmitRef, xchain.StreamID) (xchain.StreamCursor, bool, error) {
-	panic("unexpected")
-}
-
-func (stubProvider) StreamAsyncNoOffset(context.Context, uint64, uint64, xchain.ProviderCallback) error {
-	panic("unexpected")
-}
-
-func (stubProvider) StreamBlocksNoOffset(context.Context, uint64, uint64, xchain.ProviderCallback) error {
 	panic("unexpected")
 }
 

@@ -190,7 +190,14 @@ func (v *Voter) runOnce(ctx context.Context, chainVer types.ChainVersion) error 
 
 	first := true // Allow skipping on first attestation.
 
-	return v.provider.StreamBlocks(ctx, chainVer.ChainID, fromHeight, fromOffset,
+	req := xchain.ProviderRequest{
+		ChainID:   chainVer.ChainID,
+		Height:    fromHeight,
+		ConfLevel: xchain.ConfLevel(chainVer.ConfLevel),
+		Offset:    fromOffset,
+	}
+
+	return v.provider.StreamBlocks(ctx, req,
 		func(ctx context.Context, block xchain.Block) error {
 			if !v.isValidator() {
 				return errors.New("not a validator anymore")
