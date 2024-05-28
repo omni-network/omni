@@ -25,11 +25,6 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const (
-	FinalizeDepth = 20
-	MaxForkDepth  = FinalizeDepth / 2
-)
-
 type Config struct {
 	ListenAddr    string
 	ChainID       uint64
@@ -37,6 +32,15 @@ type Config struct {
 	BlockTimeSecs uint64
 	Silent        bool
 	EnableForking bool
+	SlotsInEpoch  uint64
+}
+
+func (c Config) FinalizeDepth() uint64 {
+	return c.SlotsInEpoch * 2
+}
+
+func (c Config) MaxForkDepth() uint64 {
+	return c.FinalizeDepth() / 2
 }
 
 func DefaultConfig() Config {
@@ -46,6 +50,7 @@ func DefaultConfig() Config {
 		LoadState:     "",
 		Silent:        true,
 		BlockTimeSecs: 1,
+		SlotsInEpoch:  32,
 	}
 }
 
@@ -61,8 +66,6 @@ func Run(ctx context.Context, cfg Config) error {
 	root, err := startAnvil(ctx, rootCfg)
 	if err != nil {
 		return errors.Wrap(err, "start root anvil")
-	} else if err := root.AwaitHeight(ctx, 0, time.Second*5); err != nil {
-		return errors.Wrap(err, "await anvil start")
 	}
 
 	proxy, err := newProxy(root)
@@ -125,7 +128,7 @@ func forkForever(ctx context.Context, cfg Config, newPort func() int, proxy *pro
 	}
 
 	for ctx.Err() == nil {
-		nextForkDepth := 1 + rand.Intn(MaxForkDepth-1)                  //nolint:gosec // Not a problem
+		nextForkDepth := 1 + rand.Intn(int(cfg.MaxForkDepth()-1))       //nolint:gosec // Not a problem
 		sleepSecs := (nextForkDepth * int(cfg.BlockTimeSecs)) * 12 / 10 // Wait 20% longer
 
 		select {
@@ -290,6 +293,7 @@ func startAnvil(ctx context.Context, cfg anvilConfig) (anvilInstance, error) {
 		"--port", strconv.Itoa(cfg.Port),
 		"--chain-id", strconv.FormatUint(cfg.ChainID, 10),
 		"--block-time", strconv.FormatUint(cfg.BlockTimeSecs, 10),
+		"--slots-in-an-epoch", strconv.FormatUint(cfg.SlotsInEpoch, 10),
 	}
 	if cfg.LoadState != "" {
 		args = append(args, "--load-state", cfg.LoadState)
@@ -320,14 +324,7 @@ func startAnvil(ctx context.Context, cfg anvilConfig) (anvilInstance, error) {
 		return anvilInstance{}, errors.Wrap(err, "start anvil", "out", out.String())
 	}
 
-	go func() {
-		err := logLines(ctx, &out, fmt.Sprint(cfg.Port))
-		if err != nil {
-			log.Error(ctx, "Failed logging lines", err)
-		}
-	}()
-
-	return anvilInstance{
+	resp := anvilInstance{
 		stop: func() {
 			log.Debug(ctx, "Stopping anvil", "port", cfg.Port)
 			cancel()
@@ -337,7 +334,20 @@ func startAnvil(ctx context.Context, cfg anvilConfig) (anvilInstance, error) {
 		Cfg: cfg,
 		Out: out,
 		Cmd: cmd,
-	}, nil
+	}
+
+	if err := resp.AwaitHeight(ctx, 0, time.Second*5); err != nil {
+		return resp, errors.Wrap(err, "await anvil startup", "out", out.String())
+	}
+
+	go func() {
+		err := logLines(ctx, &out, fmt.Sprint(cfg.Port))
+		if err != nil {
+			log.Error(ctx, "Failed logging lines", err)
+		}
+	}()
+
+	return resp, nil
 }
 
 func newPortProvider() func() int {

@@ -267,7 +267,10 @@ func (c Chain) Shards() []uint64 {
 // ConfLevels returns the uniq set of confirmation levels
 // supported by the chain. This is inferred from the supported shards.
 func (c Chain) ConfLevels() []xchain.ConfLevel {
-	dedup := make(map[xchain.ConfLevel]struct{})
+	dedup := map[xchain.ConfLevel]struct{}{
+		xchain.ConfFinalized: {}, // All chains require ConfFinalized.
+	}
+
 	for _, shard := range c.Shards() {
 		conf := xchain.ConfFromShard(shard)
 		if _, ok := dedup[conf]; ok {
