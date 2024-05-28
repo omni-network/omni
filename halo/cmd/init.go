@@ -13,6 +13,7 @@ import (
 	"github.com/omni-network/omni/halo/genutil"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
@@ -228,9 +229,19 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 			return errors.Wrap(err, "get public key")
 		}
 
+		addr, err := k1util.PubKeyToAddress(pubKey)
+		if err != nil {
+			return errors.Wrap(err, "val pubkey to address")
+		}
+
+		val := genutil.Validator{
+			ConsPubKey: pubKey,
+			Addr:       addr,
+		}
+
 		var genDoc *types.GenesisDoc
 		if initCfg.Cosmos {
-			cosmosGen, err := genutil.MakeGenesis(network, time.Now(), pubKey)
+			cosmosGen, err := genutil.MakeGenesis(network, time.Now(), val)
 			if err != nil {
 				return err
 			}

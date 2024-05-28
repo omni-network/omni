@@ -15,6 +15,8 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"cosmossdk.io/math"
 	"cosmossdk.io/x/tx/signing"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -39,7 +41,12 @@ import (
 // since Omni block period (+-1s) is very fast, roughly 10x normal period of 10s.
 const slashingBlocksWindow = 1000
 
-func MakeGenesis(network netconf.ID, genesisTime time.Time, valPubkeys ...crypto.PubKey) (*gtypes.AppGenesis, error) {
+type Validator struct {
+	ConsPubKey crypto.PubKey
+	Addr       common.Address
+}
+
+func MakeGenesis(network netconf.ID, genesisTime time.Time, vals ...Validator) (*gtypes.AppGenesis, error) {
 	cdc := getCodec()
 	txConfig := authtx.NewTxConfig(cdc, nil)
 
@@ -71,9 +78,9 @@ func MakeGenesis(network netconf.ID, genesisTime time.Time, valPubkeys ...crypto
 	}
 
 	// Step 3: Create the genesis validators; genesis account and a MsgCreateValidator.
-	valTxs := make([]sdk.Tx, 0, len(valPubkeys))
-	for _, pubkey := range valPubkeys {
-		tx, err := addValidator(txConfig, pubkey, cdc, tempFile.Name())
+	valTxs := make([]sdk.Tx, 0, len(vals))
+	for _, val := range vals {
+		tx, err := addValidator(txConfig, val, cdc, tempFile.Name())
 		if err != nil {
 			return nil, errors.Wrap(err, "add validator")
 		}
@@ -162,22 +169,16 @@ func collectGenTxs(cdc codec.Codec, txConfig client.TxConfig, genFile string, ge
 	return appState, nil
 }
 
-func addValidator(txConfig client.TxConfig, pubkey crypto.PubKey, cdc codec.Codec, genFile string) (sdk.Tx, error) {
-	// We use the validator pubkey as the account address
-	addr, err := k1util.PubKeyToAddress(pubkey)
-	if err != nil {
-		return nil, err
-	}
-
+func addValidator(txConfig client.TxConfig, val Validator, cdc codec.Codec, genFile string) (sdk.Tx, error) {
 	// Add validator with 1 power (1e18 $STAKE ~= 1 ether $STAKE)
 	amount := sdk.NewCoin(sdk.DefaultBondDenom, sdk.DefaultPowerReduction)
 
-	err = genutil.AddGenesisAccount(cdc, addr.Bytes(), false, genFile, amount.String(), "", 0, 0, "")
+	err := genutil.AddGenesisAccount(cdc, val.Addr.Bytes(), false, genFile, amount.String(), "", 0, 0, "")
 	if err != nil {
 		return nil, errors.Wrap(err, "add genesis account")
 	}
 
-	pub, err := k1util.PubKeyToCosmos(pubkey)
+	pub, err := k1util.PubKeyToCosmos(val.ConsPubKey)
 	if err != nil {
 		return nil, err
 	}
@@ -185,10 +186,10 @@ func addValidator(txConfig client.TxConfig, pubkey crypto.PubKey, cdc codec.Code
 	var zero = math.LegacyZeroDec()
 
 	msg, err := sttypes.NewMsgCreateValidator(
-		sdk.ValAddress(addr.Bytes()).String(),
+		sdk.ValAddress(val.Addr.Bytes()).String(),
 		pub,
 		amount,
-		sttypes.Description{Moniker: addr.Hex()},
+		sttypes.Description{Moniker: val.Addr.Hex()},
 		sttypes.NewCommissionRates(zero, zero, zero),
 		sdk.DefaultPowerReduction)
 	if err != nil {

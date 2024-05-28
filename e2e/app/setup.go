@@ -31,6 +31,7 @@ import (
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
+	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -48,6 +49,15 @@ const (
 	PrivvalStateFile = "data/priv_validator_state.json"
 )
 
+// insecurePrivKeyFromConsKey is an insecure 1:1 mapping from validator consensus private key
+// to validator application private key.
+func insecureValKeyFromConsKey(consKey crypto.PrivKey) crypto.PrivKey {
+	// reorg some bytes
+	bz := consKey.Bytes()
+	bz[0], bz[1] = bz[1], bz[0]
+	return k1.PrivKey(bz)
+}
+
 // Setup sets up the testnet configuration.
 func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	log.Info(ctx, "Setup testnet", "dir", def.Testnet.Dir)
@@ -64,10 +74,22 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 		return SetupOnlyMonitor(ctx, def)
 	}
 
-	var vals []crypto.PubKey
+	var vals []genutil.Validator
 	var valPrivKeys []crypto.PrivKey
+
 	for val := range def.Testnet.Validators {
-		vals = append(vals, val.PrivvalKey.PubKey())
+		consPubKey := val.PrivvalKey.PubKey()
+		valPubKey := insecureValKeyFromConsKey(val.PrivvalKey).PubKey()
+		valAddr, err := k1util.PubKeyToAddress(valPubKey)
+		if err != nil {
+			return errors.Wrap(err, "val pubkey to address")
+		}
+
+		vals = append(vals, genutil.Validator{
+			ConsPubKey: consPubKey,
+			Addr:       valAddr,
+		})
+
 		valPrivKeys = append(valPrivKeys, val.PrivvalKey)
 	}
 
