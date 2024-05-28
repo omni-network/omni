@@ -8,6 +8,12 @@ import (
 
 //go:generate stringer -type=ConfLevel -trimprefix=Conf
 
+// ChainVersion defines a version of a source chain; either some draft (fuzzy) version or finalized.
+type ChainVersion struct {
+	ID        uint64    // Source chain ID as per https://chainlist.org/
+	ConfLevel ConfLevel // ConfLevel defines the block "version"; either some fuzzy version or finalized.
+}
+
 // ConfLevel defines a xblock confirmation level.
 // This is similar to a "version"; with ConfFinalized being the final version and fuzzy conf levels being drafts.
 type ConfLevel byte

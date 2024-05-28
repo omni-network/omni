@@ -25,6 +25,6 @@ func NewForT(
 		network:     network,
 		ethClients:  rpcClients,
 		backoffFunc: backoffFunc,
-		stratHeads:  make(map[uint64]uint64),
+		confHeads:   make(map[chainVersion]uint64),
 	}
 }

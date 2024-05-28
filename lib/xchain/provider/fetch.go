@@ -25,6 +25,10 @@ import (
 // but tracked off-chain.
 func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, stream xchain.StreamID,
 ) (xchain.StreamCursor, bool, error) {
+	if !ref.Valid() {
+		return xchain.StreamCursor{}, false, errors.New("invalid emit ref")
+	}
+
 	const unknownBlockOffset uint64 = 0
 	if stream.SourceChainID == p.cChainID {
 		block, err := getConsXBlock(ctx, ref, p.cProvider)
@@ -50,7 +54,11 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, str
 	}
 
 	opts := &bind.CallOpts{Context: ctx}
-	if head, ok := headTypeFromConfLevel(ref.ConfLevel); ok {
+	if ref.Height != nil {
+		opts.BlockNumber = big.NewInt(int64(*ref.Height))
+	} else if head, ok := headTypeFromConfLevel(*ref.ConfLevel); !ok {
+		return xchain.StreamCursor{}, false, errors.New("invalid conf level")
+	} else {
 		// Populate an explicit block number if not querying latest head.
 		header, err := rpcClient.HeaderByType(ctx, head)
 		if err != nil {
@@ -58,8 +66,6 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, str
 		}
 
 		opts.BlockNumber = header.Number
-	} else if ref.Height != nil {
-		opts.BlockNumber = big.NewInt(int64(*ref.Height))
 	}
 
 	offset, err := caller.OutXStreamOffset(opts, stream.DestChainID)
@@ -124,27 +130,29 @@ func (p *Provider) GetSubmittedCursor(ctx context.Context, stream xchain.StreamI
 
 // GetBlock returns the XBlock for the provided chain and height, or false if not available yet (not finalized),
 // or an error.
-func (p *Provider) GetBlock(ctx context.Context, chainID uint64, height uint64, xOffset uint64) (xchain.Block, bool, error) {
+func (p *Provider) GetBlock(ctx context.Context, req xchain.ProviderRequest) (xchain.Block, bool, error) {
 	ctx, span := tracer.Start(ctx, spanName("get_block"))
 	defer span.End()
 
-	if chainID == p.cChainID {
-		b, ok, err := p.cProvider.XBlock(ctx, height, false)
+	if req.ChainID == p.cChainID {
+		b, ok, err := p.cProvider.XBlock(ctx, req.Height, false)
 		if err != nil {
 			return xchain.Block{}, false, errors.Wrap(err, "fetch consensus xblock")
 		} else if !ok {
 			return xchain.Block{}, false, nil
-		} else if b.BlockHeight != height && b.BlockOffset != xOffset {
+		} else if b.BlockHeight != req.Height && b.BlockOffset != req.Offset {
 			return xchain.Block{}, false, errors.New("unexpected block height and offset [BUG]")
 		}
 
 		return b, true, nil
 	}
 
-	chain, ethCl, err := p.getEVMChain(chainID)
+	_, ethCl, err := p.getEVMChain(req.ChainID)
 	if err != nil {
 		return xchain.Block{}, false, err
 	}
+
+	chainVer := reqToChainVersion(req)
 
 	// An xblock is constructed from an eth header, and xmsg logs, and xreceipt logs.
 	var (
@@ -153,21 +161,21 @@ func (p *Provider) GetBlock(ctx context.Context, chainID uint64, height uint64, 
 		receipts []xchain.Receipt
 	)
 
-	// First check if height is finalized by the chain's finalization strategy.
-	if !p.finalisedInCache(chainID, height) {
+	// First check if height is confirmed.
+	if !p.confirmedCache(chainVer, req.Height) {
 		// No higher cached header available, so fetch the latest head
-		latest, err := p.headerByStrategy(ctx, chainID)
+		latest, err := p.headerByChainVersion(ctx, chainVer)
 		if err != nil {
 			return xchain.Block{}, false, errors.Wrap(err, "header by strategy")
 		}
 
 		// If still lower, we reached the head of the chain, return false
-		if latest.Number.Uint64() < height {
+		if latest.Number.Uint64() < req.Height {
 			return xchain.Block{}, false, nil
 		}
 
 		// Use this header if it matches height
-		if latest.Number.Uint64() == height {
+		if latest.Number.Uint64() == req.Height {
 			header = latest
 		}
 	}
@@ -180,19 +188,19 @@ func (p *Provider) GetBlock(ctx context.Context, chainID uint64, height uint64, 
 		}
 
 		var err error
-		header, err = ethCl.HeaderByNumber(ctx, big.NewInt(int64(height)))
+		header, err = ethCl.HeaderByNumber(ctx, big.NewInt(int64(req.Height)))
 
 		return err
 	})
 	eg.Go(func() error {
 		var err error
-		msgs, err = p.getXMsgLogs(ctx, chainID, height)
+		msgs, err = p.getXMsgLogs(ctx, req.ChainID, req.Height)
 
 		return err
 	})
 	eg.Go(func() error {
 		var err error
-		receipts, err = p.getXReceiptLogs(ctx, chainID, height)
+		receipts, err = p.getXReceiptLogs(ctx, req.ChainID, req.Height)
 
 		return err
 	})
@@ -203,9 +211,9 @@ func (p *Provider) GetBlock(ctx context.Context, chainID uint64, height uint64, 
 
 	resp := xchain.Block{
 		BlockHeader: xchain.BlockHeader{
-			SourceChainID: chainID,
-			ConfLevel:     chain.FinalizationStrat.ConfLevel(), // Hardcode ConfLevel for now.
-			BlockHeight:   height,
+			SourceChainID: req.ChainID,
+			ConfLevel:     req.ConfLevel,
+			BlockHeight:   req.Height,
 			BlockHash:     header.Hash(),
 		},
 		Msgs:      msgs,
@@ -213,7 +221,7 @@ func (p *Provider) GetBlock(ctx context.Context, chainID uint64, height uint64, 
 		Timestamp: time.Unix(int64(header.Time), 0),
 	}
 	if resp.ShouldAttest() {
-		resp.BlockOffset = xOffset
+		resp.BlockOffset = req.Offset
 	}
 
 	return resp, true, nil
@@ -320,25 +328,30 @@ func (p *Provider) getXMsgLogs(ctx context.Context, chainID uint64, height uint6
 	return xmsgs, nil
 }
 
-// finalisedInCache returns true if the chain height is finalized based
+// confirmedCache returns true if the height is confirmedCache based on the chain version
 // on the cached strategy head.
-func (p *Provider) finalisedInCache(chainID uint64, height uint64) bool {
+func (p *Provider) confirmedCache(chain chainVersion, height uint64) bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	return p.stratHeads[chainID] >= height
+	return p.confHeads[chain] >= height
 }
 
-// headerByStrategy returns the chain's header by strategy (finalization/latest)
+// headerByChainVersion returns the chain's header by confirmation level (finalization/latest)
 // by querying via ethclient. It caches the result.
-func (p *Provider) headerByStrategy(ctx context.Context, chainID uint64) (*types.Header, error) {
-	chain, rpcClient, err := p.getEVMChain(chainID)
+func (p *Provider) headerByChainVersion(ctx context.Context, chainVer chainVersion) (*types.Header, error) {
+	_, rpcClient, err := p.getEVMChain(chainVer.ID)
 	if err != nil {
 		return nil, err
 	}
 
+	headType, ok := headTypeFromConfLevel(chainVer.ConfLevel)
+	if !ok {
+		return nil, errors.New("unsupported conf level")
+	}
+
 	// Fetch the header from the ethclient
-	header, err := rpcClient.HeaderByType(ctx, ethclient.HeadType(chain.FinalizationStrat))
+	header, err := rpcClient.HeaderByType(ctx, headType)
 	if err != nil {
 		return nil, err
 	}
@@ -346,7 +359,7 @@ func (p *Provider) headerByStrategy(ctx context.Context, chainID uint64) (*types
 	// Update the strategy cache
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.stratHeads[chainID] = header.Number.Uint64()
+	p.confHeads[chainVer] = header.Number.Uint64()
 
 	return header, nil
 }
@@ -379,12 +392,8 @@ func spanName(method string) string {
 	return "xprovider/" + method
 }
 
-func headTypeFromConfLevel(conf *xchain.ConfLevel) (ethclient.HeadType, bool) {
-	if conf == nil {
-		return "", false
-	}
-
-	switch *conf {
+func headTypeFromConfLevel(conf xchain.ConfLevel) (ethclient.HeadType, bool) {
+	switch conf {
 	case xchain.ConfLatest:
 		return ethclient.HeadLatest, true
 	case xchain.ConfSafe:
@@ -394,4 +403,8 @@ func headTypeFromConfLevel(conf *xchain.ConfLevel) (ethclient.HeadType, bool) {
 	default:
 		return "", false
 	}
+}
+
+func reqToChainVersion(req xchain.ProviderRequest) chainVersion {
+	return chainVersion{ID: req.ChainID, ConfLevel: req.ConfLevel}
 }

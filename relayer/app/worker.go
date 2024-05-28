@@ -256,7 +256,13 @@ func fetchXBlock(rootCtx context.Context, xProvider xchain.Provider, att xchain.
 
 	backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second))
 	for {
-		block, ok, err := xProvider.GetBlock(ctx, att.SourceChainID, att.BlockHeight, att.BlockOffset)
+		req := xchain.ProviderRequest{
+			ChainID:   att.SourceChainID,
+			Height:    att.BlockHeight,
+			Offset:    att.BlockOffset,
+			ConfLevel: att.ConfLevel,
+		}
+		block, ok, err := xProvider.GetBlock(ctx, req)
 		if rootCtx.Err() != nil { //nolint:nestif // Just a series of if-elses
 			return xchain.Block{}, errors.Wrap(rootCtx.Err(), "canceled") // Root context closed, shutting down
 		} else if ctx.Err() != nil {

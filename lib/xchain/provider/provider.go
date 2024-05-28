@@ -38,6 +38,11 @@ var fetchWorkerThresholds = []struct {
 
 var _ xchain.Provider = (*Provider)(nil)
 
+type chainVersion struct {
+	ID        uint64
+	ConfLevel xchain.ConfLevel
+}
+
 // Provider stores the source chain configuration and the global quit channel.
 type Provider struct {
 	network     netconf.Network
@@ -47,12 +52,12 @@ type Provider struct {
 	backoffFunc func(context.Context) func()
 
 	mu sync.Mutex
-	// stratHeads caches highest finalized height by chain.
+	// confHeads caches the latest height by chain version.
 	// It reduces HeaderByType queries if the stream is lagging
-	// behind finalized head.
+	// behind the chain version head.
 	// Also, since many L2s finalize in batches, the stream
-	// lags behind finalized head every time a new batch is finalized.
-	stratHeads map[uint64]uint64
+	// lags behind the chain version head every time a new batch is finalized.
+	confHeads map[chainVersion]uint64
 }
 
 // New instantiates the provider instance which will be ready to accept
@@ -70,7 +75,7 @@ func New(network netconf.Network, rpcClients map[uint64]ethclient.Client, cProvi
 		cChainID:    cChain.ID,
 		cProvider:   cProvider,
 		backoffFunc: backoffFunc,
-		stratHeads:  make(map[uint64]uint64),
+		confHeads:   make(map[chainVersion]uint64),
 	}
 }
 
@@ -80,38 +85,15 @@ func New(network netconf.Network, rpcClients map[uint64]ethclient.Client, cProvi
 // It retries forever (with backoff) on all fetch and callback errors.
 func (p *Provider) StreamAsync(
 	ctx context.Context,
-	chainID uint64,
-	fromHeight uint64,
-	fromOffset uint64,
+	req xchain.ProviderRequest,
 	callback xchain.ProviderCallback,
 ) error {
-	if _, ok := p.network.Chain(chainID); !ok {
+	if _, ok := p.network.Chain(req.ChainID); !ok {
 		return errors.New("unknown chain ID")
 	}
 
 	go func() {
-		err := p.stream(ctx, chainID, fromHeight, &fromOffset, callback, true)
-		if err != nil { // RetryCallback==true so this should only ever return nil on ctx cancel.
-			log.Error(ctx, "Streaming xprovider blocks failed unexpectedly [BUG]", err)
-		}
-	}()
-
-	return nil
-}
-
-// StreamAsyncNoOffset is the same as StreamAsync except that XBlockOffset is not populated in the returned XBlocks.
-func (p *Provider) StreamAsyncNoOffset(
-	ctx context.Context,
-	chainID uint64,
-	fromHeight uint64,
-	callback xchain.ProviderCallback,
-) error {
-	if _, ok := p.network.Chain(chainID); !ok {
-		return errors.New("unknown chain ID")
-	}
-
-	go func() {
-		err := p.stream(ctx, chainID, fromHeight, nil, callback, true)
+		err := p.stream(ctx, req, callback, true)
 		if err != nil { // RetryCallback==true so this should only ever return nil on ctx cancel.
 			log.Error(ctx, "Streaming xprovider blocks failed unexpectedly [BUG]", err)
 		}
@@ -125,33 +107,19 @@ func (p *Provider) StreamAsyncNoOffset(
 // It returns nil when the context is canceled.
 func (p *Provider) StreamBlocks(
 	ctx context.Context,
-	chainID uint64,
-	fromHeight uint64,
-	fromOffset uint64,
+	req xchain.ProviderRequest,
 	callback xchain.ProviderCallback,
 ) error {
-	return p.stream(ctx, chainID, fromHeight, &fromOffset, callback, false)
-}
-
-// StreamBlocksNoOffset is the same as StreamBlocks except that XBlockOffset is not populated in the returned XBlocks.
-func (p *Provider) StreamBlocksNoOffset(
-	ctx context.Context,
-	chainID uint64,
-	fromHeight uint64,
-	callback xchain.ProviderCallback,
-) error {
-	return p.stream(ctx, chainID, fromHeight, nil, callback, false)
+	return p.stream(ctx, req, callback, false)
 }
 
 func (p *Provider) stream(
 	ctx context.Context,
-	chainID uint64,
-	fromHeight uint64,
-	fromOffset *uint64,
+	req xchain.ProviderRequest,
 	callback xchain.ProviderCallback,
 	retryCallback bool,
 ) error {
-	chain, ok := p.network.Chain(chainID)
+	chain, ok := p.network.Chain(req.ChainID)
 	if !ok {
 		return errors.New("unknown chain ID")
 	}
@@ -168,12 +136,15 @@ func (p *Provider) stream(
 	}
 
 	// Start streaming from chain's deploy height as per config.
+	fromHeight := req.Height
 	if fromHeight < chain.DeployHeight {
 		fromHeight = chain.DeployHeight
 	}
+
 	// XBlockOffset is 1-indexed (starts at 1)
-	if fromOffset != nil && *fromOffset == 0 {
-		fromOffset = ptr(initialXOffset)
+	fromOffset := req.Offset
+	if fromOffset == 0 {
+		fromOffset = initialXOffset
 	}
 
 	tracker := newOffsetTracker(fromOffset)
@@ -186,7 +157,14 @@ func (p *Provider) stream(
 				return nil, err
 			}
 
-			xBlock, exists, err := p.GetBlock(ctx, chainID, height, offset)
+			fetchReq := xchain.ProviderRequest{
+				ChainID:   chainID,
+				Height:    height,
+				ConfLevel: req.ConfLevel,
+				Offset:    offset,
+			}
+
+			xBlock, exists, err := p.GetBlock(ctx, fetchReq)
 			if err != nil {
 				return nil, err
 			} else if !exists {
@@ -208,7 +186,7 @@ func (p *Provider) stream(
 			return block.BlockHeight
 		},
 		Verify: func(ctx context.Context, block xchain.Block, h uint64) error {
-			if block.SourceChainID != chainID {
+			if block.SourceChainID != req.ChainID {
 				return errors.New("invalid block source chain id")
 			} else if block.BlockHeight != h {
 				return errors.New("invalid block height")
@@ -242,7 +220,7 @@ func (p *Provider) stream(
 	ctx = log.WithCtx(ctx, "chain", chain.Name)
 	log.Info(ctx, "Streaming xprovider blocks", "from_height", fromHeight)
 
-	return stream.Stream(ctx, deps, chainID, fromHeight, cb)
+	return stream.Stream(ctx, deps, req.ChainID, fromHeight, cb)
 }
 
 // getEVMChain provides the configuration of the given chainID.
@@ -277,15 +255,10 @@ type offsetTracker struct {
 	prevHeight    *uint64
 }
 
-func newOffsetTracker(from *uint64) *offsetTracker {
-	if from == nil {
-		// Return a disabled tracker that is basically noop, resulting in always populating 0 XBlockOffsets.
-		return &offsetTracker{}
-	}
-
+func newOffsetTracker(from uint64) *offsetTracker {
 	return &offsetTracker{
 		enabled:       true,
-		currentOffset: *from,
+		currentOffset: from,
 	}
 }
 
@@ -333,8 +306,4 @@ func (c *offsetTracker) getOffset(height uint64) (uint64, error) {
 	}
 
 	return c.currentOffset, nil
-}
-
-func ptr[T any](t T) *T {
-	return &t
 }

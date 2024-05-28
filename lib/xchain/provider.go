@@ -7,29 +7,33 @@ import (
 // ProviderCallback is the callback function signature that will be called with every finalized.
 type ProviderCallback func(context.Context, Block) error
 
+// ProviderRequest is the request struct for fetching cross-chain blocks.
+// When used in streaming context, the Height and Offset fields define the starting point (inclusive).
+type ProviderRequest struct {
+	ChainID   uint64    // Source chain ID to query for xblocks.
+	Height    uint64    // Height to query (from inclusive).
+	ConfLevel ConfLevel // Confirmation level to ensure (and populate in returned BlockHeader)
+	Offset    uint64    // Cross-chain block offset to populate (from inclusive) in BlockHeader (if required).
+}
+
 // Provider abstracts fetching cross chain data from any supported chain.
 // This is basically a cross-chain data client for all supported chains.
 type Provider interface {
 	// StreamAsync starts a goroutine that streams xblocks forever from the provided source chain and height (inclusive).
+	//
 	// It returns immediately. It only returns an error if the chainID in invalid.
 	// This is the async version of StreamBlocks.
 	// It retries forever (with backoff) on all fetch and callback errors.
-	StreamAsync(ctx context.Context, chainID uint64, fromHeight uint64, fromOffset uint64, callback ProviderCallback) error
-
-	// StreamAsyncNoOffset is the same as StreamAsync except that XBlockOffset is not populated in the returned XBlocks.
-	StreamAsyncNoOffset(ctx context.Context, chainID uint64, fromHeight uint64, callback ProviderCallback) error
+	StreamAsync(ctx context.Context, req ProviderRequest, callback ProviderCallback) error
 
 	// StreamBlocks is the synchronous fail-fast version of Subscribe. It streams
 	// xblocks as they become available but returns on the first callback error.
 	// This is useful for workers that need to reset on application errors.
-	StreamBlocks(ctx context.Context, chainID uint64, fromHeight uint64, fromOffset uint64, callback ProviderCallback) error
-
-	// StreamBlocksNoOffset is the same as StreamBlocks except that XBlockOffset is not populated in the returned XBlocks.
-	StreamBlocksNoOffset(ctx context.Context, chainID uint64, fromHeight uint64, callback ProviderCallback) error
+	StreamBlocks(ctx context.Context, req ProviderRequest, callback ProviderCallback) error
 
 	// GetBlock returns the block for the given chain and height, or false if not available (not finalized yet),
 	// or an error. The XBlockOffset field is populated with the provided offset (if required).
-	GetBlock(ctx context.Context, chainID uint64, height uint64, xOffset uint64) (Block, bool, error)
+	GetBlock(ctx context.Context, req ProviderRequest) (Block, bool, error)
 
 	// GetSubmittedCursor returns the submitted cursor for the provided stream,
 	// or false if not available, or an error.
@@ -49,4 +53,8 @@ type Provider interface {
 type EmitRef struct {
 	Height    *uint64
 	ConfLevel *ConfLevel
+}
+
+func (r EmitRef) Valid() bool {
+	return r.Height != nil || r.ConfLevel != nil
 }

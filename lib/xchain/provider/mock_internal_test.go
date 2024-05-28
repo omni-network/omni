@@ -23,8 +23,14 @@ func TestMock(t *testing.T) {
 
 	mock := NewMock(time.Millisecond, 0, nil)
 
+	req := xchain.ProviderRequest{
+		ChainID:   chainID,
+		Height:    fromHeight,
+		Offset:    fromOffset,
+		ConfLevel: xchain.ConfLatest,
+	}
 	var blocks []xchain.Block
-	err := mock.StreamAsync(ctx, chainID, fromHeight, fromOffset, func(ctx context.Context, block xchain.Block) error {
+	err := mock.StreamAsync(ctx, req, func(ctx context.Context, block xchain.Block) error {
 		blocks = append(blocks, block)
 		if len(blocks) == total {
 			cancel()

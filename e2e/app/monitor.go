@@ -48,7 +48,12 @@ func StartMonitoringReceipts(ctx context.Context, def Definition) func() error {
 	var msgCache sync.Map
 
 	streamReceipts := func(ctx context.Context, chain netconf.Chain) (void, error) {
-		return nil, xProvider.StreamBlocksNoOffset(ctx, chain.ID, chain.DeployHeight,
+		req := xchain.ProviderRequest{
+			ChainID:   chain.ID,
+			ConfLevel: xchain.ConfLatest,
+		}
+
+		return nil, xProvider.StreamBlocks(ctx, req,
 			func(ctx context.Context, block xchain.Block) error {
 				for _, msg := range block.Msgs {
 					msgCache.Store(msg.MsgID, msg)

@@ -90,9 +90,13 @@ func startXProvider(ctx context.Context, network netconf.Network, entCl *ent.Cli
 		}
 		log.Info(ctx, "Subscribing to chain", "chain_id", chain.ID, "from_height", height)
 
-		// TODO(corver): Store MsgOffset along with heights in cursor table
-		//  Currently XBlockOffset isn't supported in x-explorer.
-		err = xprovider.StreamAsync(ctx, chain.ID, height, offset+1, callback)
+		req := xchain.ProviderRequest{
+			ChainID:   chain.ID,
+			Height:    height,
+			ConfLevel: chain.ConfLevels()[0], // TODO(corver): Add support for multiple confirmation levels.
+			Offset:    offset,
+		}
+		err = xprovider.StreamAsync(ctx, req, callback)
 		if err != nil {
 			return errors.Wrap(err, "subscribe", "chain_id", chain.ID)
 		}
