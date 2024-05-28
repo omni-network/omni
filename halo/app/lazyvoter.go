@@ -242,7 +242,7 @@ func (l *voterLoader) LocalAddress() common.Address {
 	return common.Address{}
 }
 
-func (l *voterLoader) TrimBehind(minsByChain map[atypes.ChainVersion]uint64) int {
+func (l *voterLoader) TrimBehind(minsByChain map[xchain.ChainVersion]uint64) int {
 	if v, ok := l.getVoter(); ok {
 		return v.TrimBehind(minsByChain)
 	}

@@ -95,8 +95,8 @@ func TestWorker_Run(t *testing.T) {
 
 	// Provider mock attestations as requested until context canceled.
 	mockProvider := &mockProvider{
-		SubscribeFn: func(ctx context.Context, chainID uint64, conf xchain.ConfLevel, xBlockOffset uint64, callback cchain.ProviderCallback) {
-			if chainID != srcChain {
+		SubscribeFn: func(ctx context.Context, chainVer xchain.ChainVersion, xBlockOffset uint64, callback cchain.ProviderCallback) {
+			if chainVer.ID != srcChain {
 				return // Only subscribe to source chain.
 			}
 			// require.EqualValues(t, destChainACursor, xBlockOffset)
@@ -109,8 +109,8 @@ func TestWorker_Run(t *testing.T) {
 				defer func() { offset++ }()
 				return xchain.Attestation{
 					BlockHeader: xchain.BlockHeader{
-						SourceChainID: chainID,
-						ConfLevel:     conf,
+						SourceChainID: chainVer.ID,
+						ConfLevel:     chainVer.ConfLevel,
 						BlockOffset:   offset},
 				}
 			}

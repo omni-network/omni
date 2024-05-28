@@ -177,7 +177,7 @@ func TestVoteWindow(t *testing.T) {
 	w.Available(t, chain1, 3, false)
 
 	// Ensure latest by chain not trimmed.
-	latest, ok := w.v.LatestByChain(chain1, uint32(xchain.ConfFinalized))
+	latest, ok := w.v.LatestByChain(xchain.ChainVersion{ID: chain1, ConfLevel: xchain.ConfFinalized})
 	require.True(t, ok)
 	require.EqualValues(t, 3, latest.BlockHeader.Offset)
 }
@@ -417,7 +417,7 @@ func (m *mockDeps) SetHeightAndOffset(height, offset uint64) {
 	m.offset = offset
 }
 
-func (m *mockDeps) LatestAttestation(context.Context, uint64, xchain.ConfLevel) (xchain.Attestation, bool, error) {
+func (m *mockDeps) LatestAttestation(context.Context, xchain.ChainVersion) (xchain.Attestation, bool, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -430,7 +430,7 @@ func (m *mockDeps) LatestAttestation(context.Context, uint64, xchain.ConfLevel) 
 
 type stubDeps struct{}
 
-func (stubDeps) LatestAttestation(context.Context, uint64, xchain.ConfLevel) (xchain.Attestation, bool, error) {
+func (stubDeps) LatestAttestation(context.Context, xchain.ChainVersion) (xchain.Attestation, bool, error) {
 	return xchain.Attestation{}, false, nil
 }
 
@@ -522,11 +522,10 @@ func testNetwork(chainIDs ...uint64) netconf.Network {
 }
 
 //nolint:unparam // ChainID will change in future
-func minByChain(network netconf.Network, chainID uint64, min uint64) map[types.ChainVersion]uint64 {
+func minByChain(network netconf.Network, chainID uint64, min uint64) map[xchain.ChainVersion]uint64 {
 	chain, _ := network.Chain(chainID)
-	chainVer := types.ChainVersion{ChainID: chain.ID, ConfLevel: uint32(chain.FinalizationStrat.ConfLevel())}
 
-	return map[types.ChainVersion]uint64{
-		chainVer: min,
+	return map[xchain.ChainVersion]uint64{
+		chain.ChainVersions()[0]: min,
 	}
 }

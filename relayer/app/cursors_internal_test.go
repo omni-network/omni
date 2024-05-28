@@ -164,11 +164,11 @@ func (m *mockSender) SendTransaction(ctx context.Context, submission xchain.Subm
 
 type mockProvider struct {
 	cchain.Provider
-	SubscribeFn func(ctx context.Context, sourceChainID uint64, conf xchain.ConfLevel, xBlockOffset uint64, callback cchain.ProviderCallback)
+	SubscribeFn func(ctx context.Context, chainVer xchain.ChainVersion, xBlockOffset uint64, callback cchain.ProviderCallback)
 }
 
-func (m *mockProvider) Subscribe(ctx context.Context, sourceChainID uint64, conf xchain.ConfLevel, xBlockOffset uint64,
+func (m *mockProvider) Subscribe(ctx context.Context, chainVer xchain.ChainVersion, xBlockOffset uint64,
 	_ string, callback cchain.ProviderCallback,
 ) {
-	m.SubscribeFn(ctx, sourceChainID, conf, xBlockOffset, callback)
+	m.SubscribeFn(ctx, chainVer, xBlockOffset, callback)
 }

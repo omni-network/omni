@@ -19,6 +19,7 @@ import (
 	common "github.com/ethereum/go-ethereum/common"
 	types1 "github.com/omni-network/omni/halo/attest/types"
 	types2 "github.com/omni-network/omni/halo/valsync/types"
+	xchain "github.com/omni-network/omni/lib/xchain"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -140,7 +141,7 @@ func (mr *MockVoterMockRecorder) SetProposed(headers any) *gomock.Call {
 }
 
 // TrimBehind mocks base method.
-func (m *MockVoter) TrimBehind(minsByChain map[types1.ChainVersion]uint64) int {
+func (m *MockVoter) TrimBehind(minsByChain map[xchain.ChainVersion]uint64) int {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TrimBehind", minsByChain)
 	ret0, _ := ret[0].(int)

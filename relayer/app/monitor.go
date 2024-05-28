@@ -144,6 +144,8 @@ func monitorAttestedForever(
 	xprovider xchain.Provider,
 	network netconf.Network,
 ) {
+	chainVer := srcChain.ChainVersions()[0]
+
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 
@@ -153,7 +155,7 @@ func monitorAttestedForever(
 			return
 		case <-ticker.C:
 			// First get attested head (so it can't be lower than heads).
-			att, err := getAttested(ctx, srcChain.ID, srcChain.FinalizationStrat.ConfLevel(), cprovider)
+			att, err := getAttested(ctx, chainVer, cprovider)
 			// Then populate gauges "at the same time" so they update "atomically".
 			if err != nil {
 				log.Error(ctx, "Monitoring attested failed (will retry)", err, "chain", srcChain.Name)
@@ -219,8 +221,8 @@ func getEVMHeads(ctx context.Context, client ethclient.Client) map[ethclient.Hea
 }
 
 // monitorAttestedOnce monitors of the latest attested height by chain.
-func getAttested(ctx context.Context, chainID uint64, conf xchain.ConfLevel, cprovider cchain.Provider) (xchain.Attestation, error) {
-	att, ok, err := cprovider.LatestAttestation(ctx, chainID, conf)
+func getAttested(ctx context.Context, chainVer xchain.ChainVersion, cprovider cchain.Provider) (xchain.Attestation, error) {
+	att, ok, err := cprovider.LatestAttestation(ctx, chainVer)
 	if err != nil {
 		return xchain.Attestation{}, errors.Wrap(err, "latest attestation")
 	} else if !ok {

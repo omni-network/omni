@@ -52,11 +52,11 @@ type Voter struct {
 	wg          sync.WaitGroup
 
 	mu          sync.Mutex
-	latest      map[types.ChainVersion]*types.Vote // Latest vote per chain
+	latest      map[xchain.ChainVersion]*types.Vote // Latest vote per chain
 	available   []*types.Vote
 	proposed    []*types.Vote
 	committed   []*types.Vote
-	minsByChain map[types.ChainVersion]uint64 // map[chainID]offset
+	minsByChain map[xchain.ChainVersion]uint64 // map[chainID]offset
 	isVal       bool
 }
 
@@ -106,8 +106,9 @@ func LoadVoter(privKey crypto.PrivKey, path string, provider xchain.Provider, de
 // Start starts runners that attest to each source chain. It does not block, it returns immediately.
 func (v *Voter) Start(ctx context.Context) {
 	for _, chain := range v.network.Chains {
-		chainVer := types.ChainVersion{ChainID: chain.ID, ConfLevel: uint32(chain.FinalizationStrat.ConfLevel())}
-		go v.runForever(ctx, chainVer)
+		for _, chainVer := range chain.ChainVersions() {
+			go v.runForever(ctx, chainVer)
+		}
 	}
 }
 
@@ -117,14 +118,10 @@ func (v *Voter) WaitDone() {
 }
 
 // minWindow returns the minimum vote window (attestation offset).
-func (v *Voter) minWindow(chainID uint64, conf xchain.ConfLevel) (uint64, bool) {
+func (v *Voter) minWindow(chainVer xchain.ChainVersion) (uint64, bool) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 
-	chainVer := types.ChainVersion{
-		ChainID:   chainID,
-		ConfLevel: uint32(conf),
-	}
 	resp, ok := v.minsByChain[chainVer]
 
 	return resp, ok
@@ -139,11 +136,11 @@ func (v *Voter) isValidator() bool {
 }
 
 // runForever blocks, repeatedly calling runOnce (with backoff) for the provided chain until the context is canceled.
-func (v *Voter) runForever(ctx context.Context, chainVer types.ChainVersion) {
+func (v *Voter) runForever(ctx context.Context, chainVer xchain.ChainVersion) {
 	v.wg.Add(1)
 	defer v.wg.Done()
 
-	ctx = log.WithCtx(ctx, "chain", v.network.ChainName(chainVer.ChainID))
+	ctx = log.WithCtx(ctx, "chain", v.network.ChainName(chainVer.ID))
 
 	backoff := v.backoffFunc(ctx)
 	for ctx.Err() == nil {
@@ -164,7 +161,7 @@ func (v *Voter) runForever(ctx context.Context, chainVer types.ChainVersion) {
 
 // runOnce blocks, streaming xblocks from the provided chain until an error is encountered.
 // It always returns a non-nil error.
-func (v *Voter) runOnce(ctx context.Context, chainVer types.ChainVersion) error {
+func (v *Voter) runOnce(ctx context.Context, chainVer xchain.ChainVersion) error {
 	// Determine what height to stream from.
 	var fromHeight uint64
 	var fromOffset uint64
@@ -176,7 +173,7 @@ func (v *Voter) runOnce(ctx context.Context, chainVer types.ChainVersion) error 
 	}
 
 	// Get latest approved attestation from the chain.
-	if latest, ok, err := v.deps.LatestAttestation(ctx, chainVer.ChainID, xchain.ConfLevel(chainVer.ConfLevel)); err != nil {
+	if latest, ok, err := v.deps.LatestAttestation(ctx, chainVer); err != nil {
 		return errors.Wrap(err, "latest attestation")
 	} else if ok && fromHeight < latest.BlockHeight+1 {
 		// Allows skipping ahead of we were behind for some reason.
@@ -191,9 +188,9 @@ func (v *Voter) runOnce(ctx context.Context, chainVer types.ChainVersion) error 
 	first := true // Allow skipping on first attestation.
 
 	req := xchain.ProviderRequest{
-		ChainID:   chainVer.ChainID,
+		ChainID:   chainVer.ID,
 		Height:    fromHeight,
-		ConfLevel: xchain.ConfLevel(chainVer.ConfLevel),
+		ConfLevel: chainVer.ConfLevel,
 		Offset:    fromOffset,
 	}
 
@@ -211,7 +208,7 @@ func (v *Voter) runOnce(ctx context.Context, chainVer types.ChainVersion) error 
 				return nil // Do not vote for empty blocks.
 			}
 
-			minimum, ok := v.minWindow(block.SourceChainID, block.ConfLevel)
+			minimum, ok := v.minWindow(block.ChainVersion())
 			if ok && block.BlockOffset < minimum {
 				return errors.New("behind vote window (too slow)", "vote_height", block.BlockOffset, "window_minimum", minimum)
 			}
@@ -251,7 +248,7 @@ func (v *Voter) Vote(block xchain.Block, allowSkip bool) error {
 		return errors.Wrap(err, "verify vote")
 	}
 
-	chainVer := vote.BlockHeader.ChainVersion()
+	chainVer := vote.BlockHeader.XChainVersion()
 
 	// Ensure attestation is sequential and not a duplicate.
 	latest, ok := v.latest[chainVer]
@@ -267,7 +264,7 @@ func (v *Voter) Vote(block xchain.Block, allowSkip bool) error {
 	v.available = append(v.available, vote)
 
 	lag := time.Since(block.Timestamp).Seconds()
-	name := v.network.ChainName(chainVer.ChainID)
+	name := v.network.ChainName(chainVer.ID)
 	createLag.WithLabelValues(name).Set(lag)
 	createHeight.WithLabelValues(name).Set(float64(vote.BlockHeader.Height))
 	createBlockOffset.WithLabelValues(name).Set(float64(vote.BlockHeader.Offset))
@@ -293,17 +290,17 @@ func (v *Voter) UpdateValidators(valset []abci.ValidatorUpdate) {
 
 // TrimBehind trims all available and proposed votes that are behind the vote window thresholds (map[chainID]offset)
 // and returns the number that was deleted.
-func (v *Voter) TrimBehind(minsByChain map[types.ChainVersion]uint64) int {
+func (v *Voter) TrimBehind(minsByChain map[xchain.ChainVersion]uint64) int {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 
 	trim := func(votes []*types.Vote) []*types.Vote {
 		var remaining []*types.Vote
 		for _, vote := range votes {
-			chainVer := vote.BlockHeader.ChainVersion()
+			chainVer := vote.BlockHeader.XChainVersion()
 			minimum, ok := minsByChain[chainVer]
 			if ok && vote.BlockHeader.Offset < minimum {
-				trimTotal.WithLabelValues(v.network.ChainName(chainVer.ChainID)).Inc()
+				trimTotal.WithLabelValues(v.network.ChainName(chainVer.ID)).Inc()
 				continue // Skip/Trim
 			}
 			remaining = append(remaining, vote) // Retain all others
@@ -421,7 +418,7 @@ func (v *Voter) availableAndProposedUnsafe() []*types.Vote {
 	return resp
 }
 
-func (v *Voter) latestByChain(chainVer types.ChainVersion) (*types.Vote, bool) {
+func (v *Voter) latestByChain(chainVer xchain.ChainVersion) (*types.Vote, bool) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 
@@ -586,7 +583,7 @@ func latestMsgOffsets(msgs []xchain.Msg) map[xchain.StreamID]uint64 {
 	return resp
 }
 
-func latestToJSON(latest map[types.ChainVersion]*types.Vote) []*types.Vote {
+func latestToJSON(latest map[xchain.ChainVersion]*types.Vote) []*types.Vote {
 	resp := make([]*types.Vote, 0, len(latest))
 	for _, v := range latest {
 		resp = append(resp, v)
@@ -595,10 +592,10 @@ func latestToJSON(latest map[types.ChainVersion]*types.Vote) []*types.Vote {
 	return resp
 }
 
-func latestFromJSON(latest []*types.Vote) map[types.ChainVersion]*types.Vote {
-	resp := make(map[types.ChainVersion]*types.Vote, len(latest))
+func latestFromJSON(latest []*types.Vote) map[xchain.ChainVersion]*types.Vote {
+	resp := make(map[xchain.ChainVersion]*types.Vote, len(latest))
 	for _, v := range latest {
-		resp[v.BlockHeader.ChainVersion()] = v
+		resp[v.BlockHeader.XChainVersion()] = v
 	}
 
 	return resp

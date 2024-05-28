@@ -288,3 +288,17 @@ func (c Chain) ConfLevels() []xchain.ConfLevel {
 
 	return confs
 }
+
+// ChainVersions returns the uniq set of chain versions
+// supported by the chain. This is inferred from the supported shards.
+func (c Chain) ChainVersions() []xchain.ChainVersion {
+	var resp []xchain.ChainVersion
+	for _, conf := range c.ConfLevels() {
+		resp = append(resp, xchain.ChainVersion{
+			ID:        c.ID,
+			ConfLevel: conf,
+		})
+	}
+
+	return resp
+}

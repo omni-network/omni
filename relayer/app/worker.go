@@ -106,7 +106,7 @@ func (w *Worker) runOnce(ctx context.Context) error {
 		callback := newCallback(w.xProvider, initialOffsets, w.creator, buf.AddInput, w.destChain.ID, newMsgStreamMapper(w.network), w.awaitValSet)
 		wrapCb := wrapStatePersist(callback, w.state, w.destChain.ID)
 
-		w.cProvider.Subscribe(ctx, stream.SourceChainID, stream.ConfLevel(), fromOffset, w.destChain.Name, wrapCb)
+		w.cProvider.Subscribe(ctx, stream.ChainVersion(), fromOffset, w.destChain.Name, wrapCb)
 
 		logAttrs = append(logAttrs, srcChain.Name, fromOffset)
 	}
