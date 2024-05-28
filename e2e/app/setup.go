@@ -79,7 +79,10 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 
 	for val := range def.Testnet.Validators {
 		consPubKey := val.PrivvalKey.PubKey()
-		valPubKey := insecureValKeyFromConsKey(val.PrivvalKey).PubKey()
+		// valPubKey := insecureValKeyFromConsKey(val.PrivvalKey).PubKey()
+		// random val key
+		valKey := k1.GenPrivKey()
+		valPubKey := valKey.PubKey()
 		valAddr, err := k1util.PubKeyToAddress(valPubKey)
 		if err != nil {
 			return errors.Wrap(err, "val pubkey to address")
