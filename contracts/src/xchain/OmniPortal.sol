@@ -280,9 +280,6 @@ contract OmniPortal is
      *         Requires that enough gas is left to execute the call.
      */
     function _exec(address to, uint64 gasLimit, bytes calldata data) internal returns (bool, bytes memory, uint256) {
-        // trim gasLimit to max. this requirement is checked in xcall(...), but we trim here to be safe
-        if (gasLimit > xmsgMaxGasLimit) gasLimit = xmsgMaxGasLimit;
-
         uint256 gasLeftBefore = gasleft();
 
         // solhint-disable-next-line avoid-low-level-calls
