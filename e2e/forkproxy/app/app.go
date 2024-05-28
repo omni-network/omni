@@ -62,7 +62,7 @@ func Run(ctx context.Context, cfg Config) error {
 	if err != nil {
 		return errors.Wrap(err, "start root anvil")
 	} else if err := root.AwaitHeight(ctx, 0, time.Second*5); err != nil {
-		return errors.Wrap(err, "start anvil")
+		return errors.Wrap(err, "await anvil start")
 	}
 
 	proxy, err := newProxy(root)
@@ -258,8 +258,8 @@ func (i anvilInstance) Height(ctx context.Context) (uint64, error) {
 	return h, nil
 }
 
-func (i anvilInstance) AwaitHeight(ctx context.Context, min uint64, timeout time.Duration) error {
-	ctx, cancel := context.WithTimeout(ctx, timeout)
+func (i anvilInstance) AwaitHeight(in context.Context, min uint64, timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(in, timeout)
 	defer cancel()
 
 	for ctx.Err() == nil {
@@ -275,7 +275,11 @@ func (i anvilInstance) AwaitHeight(ctx context.Context, min uint64, timeout time
 		time.Sleep(time.Second / 3)
 	}
 
-	return errors.Wrap(ctx.Err(), "await up")
+	if in.Err() != nil {
+		return errors.Wrap(ctx.Err(), "parent context canceled awaiting up")
+	}
+
+	return errors.Wrap(ctx.Err(), "timeout awaiting up")
 }
 
 //nolint:govet // Context is canceled when instance stopped.
