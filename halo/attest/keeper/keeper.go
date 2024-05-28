@@ -10,6 +10,7 @@ import (
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/xchain"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
@@ -210,20 +211,20 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 	}
 	defer iter.Close()
 
-	approvedByChain := make(map[types.ChainVersion]uint64) // Cache the latest approved attestation offset by chain version.
+	approvedByChain := make(map[xchain.ChainVersion]uint64) // Cache the latest approved attestation offset by chain version.
 	for iter.Next() {
 		att, err := iter.Value()
 		if err != nil {
 			return errors.Wrap(err, "value")
 		}
-		chainVer := types.ChainVersion{ChainID: att.GetChainId(), ConfLevel: att.GetConfLevel()}
+		chainVer := att.XChainVersion()
 
 		// Ensure we approve sequentially, not skipping any heights.
 		{
 			// Populate the cache if not already.
 			// TODO(corver): Add tests for this
 			if _, ok := approvedByChain[chainVer]; !ok {
-				latest, found, err := k.latestAttestation(ctx, att.GetChainId(), att.GetConfLevel())
+				latest, found, err := k.latestAttestation(ctx, att.XChainVersion())
 				if err != nil {
 					return errors.Wrap(err, "latest approved")
 				} else if found {
@@ -278,7 +279,7 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 	}
 
 	// Trim votes behind minimum vote-window
-	minVoteWindows := make(map[types.ChainVersion]uint64)
+	minVoteWindows := make(map[xchain.ChainVersion]uint64)
 	for chainVer, head := range approvedByChain {
 		minVoteWindows[chainVer] = uintSub(head, k.voteWindow)
 	}
@@ -349,10 +350,10 @@ func (k *Keeper) ListAttestationsFrom(ctx context.Context, chainID uint64, confL
 
 // latestAttestation returns the latest approved attestation for the given chain or
 // false if none is found.
-func (k *Keeper) latestAttestation(ctx context.Context, chainID uint64, confLevel uint32) (*Attestation, bool, error) {
+func (k *Keeper) latestAttestation(ctx context.Context, version xchain.ChainVersion) (*Attestation, bool, error) {
 	defer latency("latest_attestation")()
 
-	idx := AttestationStatusChainIdConfLevelOffsetIndexKey{}.WithStatusChainIdConfLevel(uint32(Status_Approved), chainID, confLevel)
+	idx := AttestationStatusChainIdConfLevelOffsetIndexKey{}.WithStatusChainIdConfLevel(uint32(Status_Approved), version.ID, uint32(version.ConfLevel))
 	iter, err := k.attTable.List(ctx, idx, ormlist.Reverse(), ormlist.DefaultLimit(1))
 	if err != nil {
 		return nil, false, errors.Wrap(err, "list")
@@ -561,7 +562,9 @@ func (k *Keeper) prevBlockValSet(ctx context.Context) (ValSet, error) {
 }
 
 func (k *Keeper) windowCompare(ctx context.Context, chainID uint64, confLevel uint32, offset uint64) (int, error) {
-	latest, exists, err := k.latestAttestation(ctx, chainID, confLevel)
+	chainVer := xchain.ChainVersion{ID: chainID, ConfLevel: xchain.ConfLevel(confLevel)}
+
+	latest, exists, err := k.latestAttestation(ctx, chainVer)
 	if err != nil {
 		return 0, err
 	}
@@ -615,14 +618,13 @@ func (k *Keeper) deleteBefore(ctx context.Context, height uint64) error {
 
 	// Cache latest offset by chain version so we don't delete it.
 	// TODO(corver): Add tests for this.
-	latestByChain := make(map[types.ChainVersion]uint64)
-	getLatest := func(chainID uint64, confLevel uint32) (uint64, bool, error) {
-		chainVer := types.ChainVersion{ChainID: chainID, ConfLevel: confLevel}
+	latestByChain := make(map[xchain.ChainVersion]uint64)
+	getLatest := func(chainVer xchain.ChainVersion) (uint64, bool, error) {
 		if latest, ok := latestByChain[chainVer]; ok {
 			return latest, false, nil
 		}
 
-		latest, ok, err := k.latestAttestation(ctx, chainID, confLevel)
+		latest, ok, err := k.latestAttestation(ctx, chainVer)
 		if err != nil {
 			return 0, false, err
 		} else if !ok {
@@ -654,7 +656,7 @@ func (k *Keeper) deleteBefore(ctx context.Context, height uint64) error {
 		// Never delete anything after the last approved attestation offset per chain,
 		// even if it is very old. Otherwise, we could introduce a gap
 		// once we start catching up.
-		if latest, ok, err := getLatest(att.GetChainId(), att.GetConfLevel()); err != nil {
+		if latest, ok, err := getLatest(att.XChainVersion()); err != nil {
 			return err
 		} else if ok && att.GetOffset() >= latest {
 			continue

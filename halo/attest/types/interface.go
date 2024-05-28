@@ -10,12 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// ChainVersion represents a version of the chain wrt Attestations; either fuzzy (draft) or finalized (final).
-type ChainVersion struct {
-	ChainID   uint64
-	ConfLevel uint32
-}
-
 // Voter abstracts the validator duty of v∂oting for all
 // XBlocks for all source chains.
 //
@@ -45,7 +39,7 @@ type Voter interface {
 
 	// TrimBehind deletes all available votes that are behind the vote window minimums (map[chainID]minimum) since
 	// they will never be committed. It returns the number that was deleted.
-	TrimBehind(minsByChain map[ChainVersion]uint64) int
+	TrimBehind(minsByChain map[xchain.ChainVersion]uint64) int
 
 	// UpdateValidators sets the latest validator set when passed to cometBFT.
 	// This is used to calculate whether the voter is in-or-out of the validator set.
@@ -55,8 +49,8 @@ type Voter interface {
 // VoterDeps abstracts the Voter's internal cosmosSDK dependencies; basically the attest keeper.
 // They have a circular dependency.
 type VoterDeps interface {
-	// LatestAttestation returns the latest approved attestation for the given chain.
-	LatestAttestation(ctx context.Context, chainID uint64, conf xchain.ConfLevel) (xchain.Attestation, bool, error)
+	// LatestAttestation returns the latest approved attestation for the given chain version.
+	LatestAttestation(ctx context.Context, chainVer xchain.ChainVersion) (xchain.Attestation, bool, error)
 }
 
 // ChainNameFunc is a function that returns the name of a chain given its ID.

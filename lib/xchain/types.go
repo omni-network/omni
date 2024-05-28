@@ -58,6 +58,10 @@ func (s StreamID) ConfLevel() ConfLevel {
 	return ConfLevel(s.ShardID)
 }
 
+func (s StreamID) ChainVersion() ChainVersion {
+	return ChainVersion{ID: s.SourceChainID, ConfLevel: s.ConfLevel()}
+}
+
 // MsgID uniquely identifies a cross-chain message.
 type MsgID struct {
 	StreamID            // Unique ID of the Stream this message belongs to
@@ -92,6 +96,10 @@ type BlockHeader struct {
 	BlockOffset   uint64      // MsgOffset of the cross-chain block
 	BlockHeight   uint64      // Height of the source-chain block
 	BlockHash     common.Hash // Hash of the source-chain block
+}
+
+func (b BlockHeader) ChainVersion() ChainVersion {
+	return ChainVersion{ID: b.SourceChainID, ConfLevel: b.ConfLevel}
 }
 
 // Block is a deterministic representation of the omni cross-chain properties of a source chain EVM block.

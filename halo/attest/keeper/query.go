@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/halo/attest/types"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -31,7 +32,9 @@ func (k *Keeper) LatestAttestation(ctx context.Context, req *types.LatestAttesta
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
-	att, ok, err := k.latestAttestation(ctx, req.ChainId, req.ConfLevel)
+	chainVer := xchain.ChainVersion{ID: req.ChainId, ConfLevel: xchain.ConfLevel(req.ConfLevel)}
+
+	att, ok, err := k.latestAttestation(ctx, chainVer)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	} else if !ok {

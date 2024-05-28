@@ -24,21 +24,21 @@ type Provider interface {
 	// the provided source chain ID, confLevel and XBlockOffset (inclusive).
 	//
 	// Worker name is only used for metrics.
-	Subscribe(ctx context.Context, sourceChainID uint64, conf xchain.ConfLevel, xBlockOffset uint64,
+	Subscribe(ctx context.Context, chainVer xchain.ChainVersion, xBlockOffset uint64,
 		workerName string, callback ProviderCallback)
 
 	// AttestationsFrom returns the subsequent approved attestations for the provided source chain
 	// and XBlockOffset (inclusive). It will return max 100 attestations per call.
-	AttestationsFrom(ctx context.Context, sourceChainID uint64, conf xchain.ConfLevel, xBlockOffset uint64) ([]xchain.Attestation, error)
+	AttestationsFrom(ctx context.Context, chainVer xchain.ChainVersion, xBlockOffset uint64) ([]xchain.Attestation, error)
 
 	// LatestAttestation returns the latest approved attestation for the provided source chain or false
 	// if none exist.
-	LatestAttestation(ctx context.Context, sourceChainID uint64, conf xchain.ConfLevel) (xchain.Attestation, bool, error)
+	LatestAttestation(ctx context.Context, chainVer xchain.ChainVersion) (xchain.Attestation, bool, error)
 
 	// WindowCompare returns whether the given attestation block header is behind (-1), or in (0), or ahead (1)
 	// of the current vote window. The vote window is a configured number of blocks around the latest approved
 	// attestation for the provided chain.
-	WindowCompare(ctx context.Context, sourceChainID uint64, conf xchain.ConfLevel, xBlockOffset uint64) (int, error)
+	WindowCompare(ctx context.Context, chainVer xchain.ChainVersion, xBlockOffset uint64) (int, error)
 
 	// ValidatorSet returns the validators for the given validator set ID or false if none exist or an error.
 	// Note the genesis validator set has ID 1.

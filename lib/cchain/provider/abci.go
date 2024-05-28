@@ -114,7 +114,7 @@ func newABCIValsetFunc(cl vtypes.QueryClient) valsetFunc {
 }
 
 func newABCIFetchFunc(cl atypes.QueryClient) fetchFunc {
-	return func(ctx context.Context, chainID uint64, conf xchain.ConfLevel, fromOffset uint64) ([]xchain.Attestation, error) {
+	return func(ctx context.Context, chainVer xchain.ChainVersion, fromOffset uint64) ([]xchain.Attestation, error) {
 		const endpoint = "attestations_from"
 		defer latency(endpoint)()
 
@@ -122,8 +122,8 @@ func newABCIFetchFunc(cl atypes.QueryClient) fetchFunc {
 		defer span.End()
 
 		resp, err := cl.AttestationsFrom(ctx, &atypes.AttestationsFromRequest{
-			ChainId:    chainID,
-			ConfLevel:  uint32(conf),
+			ChainId:    chainVer.ID,
+			ConfLevel:  uint32(chainVer.ConfLevel),
 			FromOffset: fromOffset,
 		})
 		if err != nil {
@@ -141,7 +141,7 @@ func newABCIFetchFunc(cl atypes.QueryClient) fetchFunc {
 }
 
 func newABCIWindowFunc(cl atypes.QueryClient) windowFunc {
-	return func(ctx context.Context, chainID uint64, conf xchain.ConfLevel, xBlockOffset uint64) (int, error) {
+	return func(ctx context.Context, chainVer xchain.ChainVersion, xBlockOffset uint64) (int, error) {
 		const endpoint = "window_compare"
 		defer latency(endpoint)()
 
@@ -149,8 +149,8 @@ func newABCIWindowFunc(cl atypes.QueryClient) windowFunc {
 		defer span.End()
 
 		resp, err := cl.WindowCompare(ctx, &atypes.WindowCompareRequest{
-			ChainId:     chainID,
-			ConfLevel:   uint32(conf),
+			ChainId:     chainVer.ID,
+			ConfLevel:   uint32(chainVer.ConfLevel),
 			BlockOffset: xBlockOffset,
 		})
 		if err != nil {
@@ -163,7 +163,7 @@ func newABCIWindowFunc(cl atypes.QueryClient) windowFunc {
 }
 
 func newABCILatestFunc(cl atypes.QueryClient) latestFunc {
-	return func(ctx context.Context, chainID uint64, conf xchain.ConfLevel) (xchain.Attestation, bool, error) {
+	return func(ctx context.Context, chainVer xchain.ChainVersion) (xchain.Attestation, bool, error) {
 		const endpoint = "latest_attestation"
 		defer latency(endpoint)()
 
@@ -171,8 +171,8 @@ func newABCILatestFunc(cl atypes.QueryClient) latestFunc {
 		defer span.End()
 
 		resp, err := cl.LatestAttestation(ctx, &atypes.LatestAttestationRequest{
-			ChainId:   chainID,
-			ConfLevel: uint32(conf),
+			ChainId:   chainVer.ID,
+			ConfLevel: uint32(chainVer.ConfLevel),
 		})
 		if errors.Is(err, sdkerrors.ErrKeyNotFound) {
 			return xchain.Attestation{}, false, nil

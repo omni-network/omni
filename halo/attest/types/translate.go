@@ -6,10 +6,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func (h *BlockHeader) ChainVersion() ChainVersion {
-	return ChainVersion{
-		ChainID:   h.ChainId,
-		ConfLevel: h.ConfLevel,
+func (h *BlockHeader) XChainVersion() xchain.ChainVersion {
+	return xchain.ChainVersion{
+		ID:        h.ChainId,
+		ConfLevel: xchain.ConfLevel(h.ConfLevel),
 	}
 }
 
