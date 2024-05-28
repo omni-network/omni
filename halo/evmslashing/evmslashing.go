@@ -1,4 +1,4 @@
-// Package evmstaking monitors the Slashing pre-deploy contract and converts
+// Package evmslashing monitors the Slashing pre-deploy contract and converts
 // its log events to cosmosSDK x/slashing logic.
 package evmslashing
 
