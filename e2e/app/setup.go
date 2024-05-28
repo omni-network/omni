@@ -49,15 +49,6 @@ const (
 	PrivvalStateFile = "data/priv_validator_state.json"
 )
 
-// insecurePrivKeyFromConsKey is an insecure 1:1 mapping from validator consensus private key
-// to validator application private key.
-func insecureValKeyFromConsKey(consKey crypto.PrivKey) crypto.PrivKey {
-	// reorg some bytes
-	bz := consKey.Bytes()
-	bz[0], bz[1] = bz[1], bz[0]
-	return k1.PrivKey(bz)
-}
-
 // Setup sets up the testnet configuration.
 func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	log.Info(ctx, "Setup testnet", "dir", def.Testnet.Dir)
@@ -79,9 +70,7 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 
 	for val := range def.Testnet.Validators {
 		consPubKey := val.PrivvalKey.PubKey()
-		// valPubKey := insecureValKeyFromConsKey(val.PrivvalKey).PubKey()
-		// random val key
-		valKey := k1.GenPrivKey()
+		valKey := k1.GenPrivKeySecp256k1(consPubKey.Bytes())
 		valPubKey := valKey.PubKey()
 		valAddr, err := k1util.PubKeyToAddress(valPubKey)
 		if err != nil {
