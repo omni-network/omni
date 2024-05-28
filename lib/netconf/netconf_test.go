@@ -16,6 +16,7 @@ import (
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/p2p/enode"
 
@@ -164,4 +165,17 @@ func TestExecutionSeeds(t *testing.T) {
 		t.Logf("Seed IP: %s: %s", node.IP(), seed)
 		require.NotEmpty(t, node.IP())
 	}
+}
+
+func TestConfLevels(t *testing.T) {
+	t.Parallel()
+
+	// Latest finalization start results in 1 shard and 2 conf levels.
+	chain := netconf.Chain{
+		FinalizationStrat: netconf.StratLatest,
+	}
+	require.Len(t, chain.Shards(), 1)
+	require.Len(t, chain.ConfLevels(), 2)
+	require.Equal(t, chain.Shards()[0], uint64(xchain.ConfLatest))
+	require.EqualValues(t, chain.ConfLevels(), []xchain.ConfLevel{xchain.ConfLatest, xchain.ConfFinalized})
 }

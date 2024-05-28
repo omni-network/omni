@@ -140,7 +140,8 @@ func (v *Voter) runForever(ctx context.Context, chainVer xchain.ChainVersion) {
 	v.wg.Add(1)
 	defer v.wg.Done()
 
-	ctx = log.WithCtx(ctx, "chain", v.network.ChainName(chainVer.ID))
+	label := fmt.Sprintf("%s-%s", v.network.ChainName(chainVer.ID), chainVer.ConfLevel)
+	ctx = log.WithCtx(ctx, "chain_ver", label)
 
 	backoff := v.backoffFunc(ctx)
 	for ctx.Err() == nil {

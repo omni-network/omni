@@ -6,7 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-//go:generate stringer -type=ConfLevel -trimprefix=Conf
+//go:generate stringer -type=ConfLevel -linecomment
 
 // ChainVersion defines a version of a source chain; either some draft (fuzzy) version or finalized.
 type ChainVersion struct {
@@ -28,13 +28,14 @@ func (c ConfLevel) IsFuzzy() bool {
 	return c != ConfFinalized
 }
 
+// ConfLevel values MUST never change as they are persisted on-chain.
 const (
-	ConfUnknown   ConfLevel = 0
-	ConfLatest    ConfLevel = 1
-	ConfFast      ConfLevel = 2
-	ConfSafe      ConfLevel = 3
-	ConfFinalized ConfLevel = 4
-	confSentinel  ConfLevel = 5 // Sentinel must always be last.
+	ConfUnknown   ConfLevel = 0 // unknown
+	ConfLatest    ConfLevel = 1 // latest
+	ConfFast      ConfLevel = 2 // fast
+	ConfSafe      ConfLevel = 3 // safe
+	ConfFinalized ConfLevel = 4 // final
+	confSentinel  ConfLevel = 5 // sentinel must always be last
 )
 
 // ConfFromShard returns confirmation level encoded in the

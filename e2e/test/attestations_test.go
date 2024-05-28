@@ -32,7 +32,7 @@ func TestApprovedAttestations(t *testing.T) {
 				require.NoError(t, err)
 
 				// Only non-empty blocks are attested to, and we don't know how many that should be, so just ensure it isn't 0.
-				require.NotEmpty(t, atts)
+				require.NotEmpty(t, atts, "No attestations for chain version: %v", chainVer)
 			}
 		}
 

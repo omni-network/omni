@@ -18,28 +18,16 @@ func getSubmittedCursors(ctx context.Context, network netconf.Network, dstChainI
 ) ([]xchain.StreamCursor, map[xchain.StreamID]uint64, error) {
 	var cursors []xchain.StreamCursor                  //nolint:prealloc // Not worth it.
 	initialOffsets := make(map[xchain.StreamID]uint64) // Initial submitted offsets for each stream.
-	for _, srcChain := range network.Chains {
-		if srcChain.ID == dstChainID {
+	for _, stream := range network.StreamsTo(dstChainID) {
+		cursor, ok, err := xClient.GetSubmittedCursor(ctx, stream)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "failed to get submitted cursors", "src_chain", stream.SourceChainID)
+		} else if !ok {
 			continue
 		}
 
-		for _, shardID := range srcChain.Shards() {
-			stream := xchain.StreamID{
-				SourceChainID: srcChain.ID,
-				DestChainID:   dstChainID,
-				ShardID:       shardID,
-			}
-
-			cursor, ok, err := xClient.GetSubmittedCursor(ctx, stream)
-			if err != nil {
-				return nil, nil, errors.Wrap(err, "failed to get submitted cursors", "src_chain", srcChain.Name)
-			} else if !ok {
-				continue
-			}
-
-			initialOffsets[cursor.StreamID] = cursor.MsgOffset
-			cursors = append(cursors, cursor)
-		}
+		initialOffsets[cursor.StreamID] = cursor.MsgOffset
+		cursors = append(cursors, cursor)
 	}
 
 	return cursors, initialOffsets, nil
