@@ -1,10 +1,10 @@
 ---
-sidebar_position: 1
+sidebar_position: 3
 ---
 
-# Token Supply & Distribution
+# Token Distribution
 
-**\$OMNI** is an ERC-20 token launched on Ethereum L1 (deployed to [`0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4`](https://etherscan.io/token/0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4)) with a maximum supply of **100,000,000**. This section covers the supply & distribution of **\$OMNI**'s tokenomics.
+## Genesis
 
 At genesis, **\$OMNI** had a circulating supply of 10,391,492 (10.39% of total supply). **\$OMNI** is distributed across the following categories:
 
@@ -23,7 +23,7 @@ The Omni Foundation retroactively rewarded the Omni community and its partners a
 
 **29.5% – 29,500,000 **\$OMNI****
 
-Developers building with Omni are the key to ushering in a new generation of globally accessible applications across all Ethereum rollups. Omni is committed to fostering a thriving developer community building on the Omni EVM and across Ethereum’s rollup ecosystem. **\$OMNI** tokens reserved for the Ecosystem Development category will be initially used at the discretion of the Omni Foundation. In the future, this responsibility will be transitioned to token holder governance. At genesis, 496,492 **\$OMNI** entered the circulating supply for early validator rewards and network bootstrapping.
+Developers building with Omni are the key to ushering in a new generation of globally accessible applications across all Ethereum rollups. Omni is committed to fostering a thriving developer community building on the Omni EVM and across Ethereum’s rollup ecosystem. **\$OMNI** tokens reserved for the Ecosystem Development category will be initially used at the discretion of the Omni Foundation. In the future, this responsibility will be transitioned to token holder governance.
 
 ## Community Growth
 
@@ -64,7 +64,7 @@ Since its founding, Omni Network has enjoyed the backing of influential investor
 
 The final portion of **\$OMNI** is allocated to advisors for expertise and guidance on network development. 625,000 **\$OMNI** will be unlocked at genesis while the remaining tokens will be subject to a 3 year unlock schedule that includes a 1 year cliff. 875,000 **\$OMNI** will be unlocked after the 1 year cliff, followed by 437,500 **\$OMNI** unlocked every 6 months for the remaining 2 years.
 
-# Total Supply
+## Total Supply
 
 <figure>
   <img src="/img/circulating-supply.png" alt="Circulating Supply" />
