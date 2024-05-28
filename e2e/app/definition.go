@@ -589,11 +589,11 @@ func networkFromDef(def Definition) netconf.Network {
 }
 
 // omniEVMByPrefix returns a omniEVM from the testnet with the given prefix.
-// Or a random omniEVM if prefix is empty.
+// Or broadcast omniEVM if prefix is empty.
 // Or the only omniEVM if there is only one.
 func omniEVMByPrefix(testnet types.Testnet, prefix string) types.OmniEVM {
 	if prefix == "" {
-		return random(testnet.OmniEVMs)
+		return testnet.BroadcastOmniEVM()
 	} else if len(testnet.OmniEVMs) == 1 {
 		return testnet.OmniEVMs[0]
 	}
