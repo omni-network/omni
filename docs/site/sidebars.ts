@@ -36,14 +36,14 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: "category",
-      label: "Omni",
+      label: "The Network",
       className: "sidebar-title",
       collapsible: false,
       items: [
         "learn/omni/restaking",
         {
           type: "category",
-          label: "Token",
+          label: "$OMNI",
           className: "sidebar-title",
           collapsible: false,
           items: [
