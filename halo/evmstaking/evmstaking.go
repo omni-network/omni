@@ -75,7 +75,7 @@ func (p EventProcessor) Prepare(ctx context.Context, blockHash common.Hash) ([]*
 	logs, err := p.ethCl.FilterLogs(ctx, ethereum.FilterQuery{
 		BlockHash: &blockHash,
 		Addresses: p.Addresses(),
-		Topics:    [][]common.Hash{{createValidatorEvent.ID}, {delegateEvent.ID}},
+		Topics:    [][]common.Hash{{createValidatorEvent.ID, delegateEvent.ID}},
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "filter logs")
