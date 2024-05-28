@@ -64,7 +64,12 @@ type Provider struct {
 // subscriptions for respective destination XBlocks.
 func New(network netconf.Network, rpcClients map[uint64]ethclient.Client, cProvider cchain.Provider) *Provider {
 	backoffFunc := func(ctx context.Context) func() {
-		return expbackoff.New(ctx)
+		// Limit backoff to 10s for all EVM chains.
+		const maxDelay = time.Second * 10
+		cfg := expbackoff.DefaultConfig
+		cfg.MaxDelay = maxDelay
+
+		return expbackoff.New(ctx, expbackoff.With(cfg))
 	}
 
 	cChain, _ := network.OmniConsensusChain()

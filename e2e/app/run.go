@@ -301,7 +301,7 @@ func deployMonitorOnly(ctx context.Context, def Definition, cfg DeployConfig) er
 
 // waitForSupportedChains waits for all dest chains to be supported by all src chains.
 func waitForSupportedChains(ctx context.Context, def Definition) error {
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	attempt := 1
 
@@ -320,8 +320,8 @@ func waitForSupportedChains(ctx context.Context, def Definition) error {
 				return nil
 			}
 
-			if attempt > 10 {
-				return errors.New(" wait for supported chains")
+			if attempt > 60 {
+				return errors.New("timeout waiting for supported chains")
 			}
 
 			log.Debug(ctx, "Waiting for supported chains", "attempt", attempt)

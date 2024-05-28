@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"sync"
+	"time"
 
 	atypes "github.com/omni-network/omni/halo/attest/types"
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
@@ -31,8 +32,9 @@ type ABCIClient interface {
 }
 
 func NewABCIProvider(abci ABCIClient, network netconf.ID, chainNamer func(uint64) string) Provider {
+	// Stream backoff for 1s, querying new attestations after 1 consensus block
 	backoffFunc := func(ctx context.Context) func() {
-		return expbackoff.New(ctx)
+		return expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second))
 	}
 
 	acl := atypes.NewQueryClient(rpcAdaptor{abci: abci})
