@@ -12,7 +12,7 @@ import { XRegistryNames } from "src/libraries/XRegistryNames.sol";
 import { Test } from "forge-std/Test.sol";
 
 contract PortalRegistry_Test is Test {
-    MockPortal portal;
+    MockPortalHarness portal;
     XRegistry xreg;
     PortalRegistry preg;
 
@@ -53,7 +53,7 @@ contract PortalRegistry_Test is Test {
         require(xreg.owner() == owner, "XRegistry owner not set");
         require(preg.owner() == owner, "PortalRegistry owner not set");
 
-        portal = new MockPortal();
+        portal = new MockPortalHarness();
 
         vm.startPrank(owner);
         xreg.setPortal(address(portal));
@@ -83,6 +83,9 @@ contract PortalRegistry_Test is Test {
         //
         uint256 fee = preg.registrationFee(dep1);
 
+        // this chains portal is initialized with the new source chain
+        vm.expectCall(address(portal), abi.encodeWithSelector(portal.initSourceChain.selector, dep1.chainId));
+
         vm.startPrank(owner);
         preg.register{ value: fee }(dep1);
 
@@ -100,6 +103,9 @@ contract PortalRegistry_Test is Test {
 
         // chain 2 gets existing chain 1 portal
         _expectXCall({ destChainId: 2, depChainId: 1, addr: portal1 });
+
+        // this chains portal is initialized with the new source chain
+        vm.expectCall(address(portal), abi.encodeWithSelector(portal.initSourceChain.selector, dep2.chainId));
 
         preg.register{ value: fee }(dep2);
 
@@ -121,6 +127,9 @@ contract PortalRegistry_Test is Test {
 
         // chain 3 gets existing chain 2 portal
         _expectXCall({ destChainId: 3, depChainId: 2, addr: portal2 });
+
+        // this chains portal is initialized with the new source chain
+        vm.expectCall(address(portal), abi.encodeWithSelector(portal.initSourceChain.selector, dep3.chainId));
 
         preg.register{ value: fee }(dep3);
     }
@@ -145,5 +154,14 @@ contract PortalRegistry_Test is Test {
                 "xcall(uint64,address,bytes,uint64)", destChainId, replicas[destChainId], data, xreg.XSET_GAS_LIMIT()
             )
         );
+    }
+}
+
+/**
+ * @dev Wrapper around MockPortal (a user facing test utility) that adds initSourceChain, required by XRegistry.
+ */
+contract MockPortalHarness is MockPortal {
+    function initSourceChain(uint64 _sourceChainId) public {
+        // do nothing
     }
 }

@@ -79,6 +79,12 @@ contract OmniPortal is
         // cchain stream offset & block heights are equal to valSetId
         inXStreamOffset[omniCChainID_] = valSetId;
         inXStreamBlockHeight[omniCChainID_] = valSetId;
+
+        // initialize omniChainId valSetId - xmsgs from omni are required to initSourceChain
+        inXStreamValidatorSetId[omniChainId_] = valSetId;
+
+        // initialize omniCChainID valSetId - it is not initialized via initSourceChain
+        inXStreamValidatorSetId[omniCChainID_] = valSetId;
     }
 
     function chainId() public view returns (uint64) {
@@ -164,6 +170,14 @@ contract OmniPortal is
             && XRegistryBase(xregistry).has(destChainId, XRegistryNames.OmniPortal, Predeploys.PortalRegistry);
     }
 
+    /**
+     * @notice Initialize a source chain's in stream validator set
+     */
+    function initSourceChain(uint64 srcChainId) external {
+        require(msg.sender == xregistry, "OmniPortal: only xregistry");
+        inXStreamValidatorSetId[srcChainId] = inXStreamValidatorSetId[omniChainId];
+    }
+
     //////////////////////////////////////////////////////////////////////////////
     //                      Inbound xcall functions                             //
     //////////////////////////////////////////////////////////////////////////////
@@ -179,11 +193,14 @@ contract OmniPortal is
         // validator set id for this submission
         uint64 valSetId = xsub.validatorSetId;
 
+        // check that the validator set is known and has non-zero power
+        require(validatorSetTotalPower[valSetId] > 0, "OmniPortal: unknown val set");
+
         // last seen validator set id for this source chain
         uint64 lastValSetId = inXStreamValidatorSetId[xsub.blockHeader.sourceChainId];
 
-        // check that the validator set is known and has non-zero power
-        require(validatorSetTotalPower[valSetId] > 0, "OmniPortal: unknown val set");
+        // require the validator set id is initialized (initSourceChain has beed called)
+        require(lastValSetId > 0, "OmniPortal: no val set");
 
         // check that the submission's validator set is the same as the last, or the next one
         require(valSetId >= lastValSetId, "OmniPortal: old val set");
@@ -221,6 +238,8 @@ contract OmniPortal is
 
         // execute xmsgs
         for (uint256 i = 0; i < xsub.msgs.length; i++) {
+            // TODO: we can remove xmsg sourceChainId, and instead set _xmsg.sourceChainId to xsub.blockHeader.sourceChainId
+            require(xsub.msgs[i].sourceChainId == xsub.blockHeader.sourceChainId, "OmniPortal: wrong sourceChainId");
             _exec(xsub.msgs[i]);
         }
     }

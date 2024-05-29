@@ -2,7 +2,7 @@
 pragma solidity =0.8.24;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
+import { OmniPortal } from "../xchain/OmniPortal.sol";
 import { XRegistryBase } from "./XRegistryBase.sol";
 import { XRegistryReplica } from "./XRegistryReplica.sol";
 
@@ -25,7 +25,7 @@ contract XRegistry is Ownable, XRegistryBase {
     /**
      * @notice OmniPortal contract.
      */
-    IOmniPortal public omni;
+    OmniPortal public omni;
 
     /**
      * @notice Mapping of chain IDs to the XRegistryReplica address on that chain.
@@ -46,6 +46,8 @@ contract XRegistry is Ownable, XRegistryBase {
 
         _set(chainId, name, msg.sender, addr);
         _sync(chainId, name, msg.sender, addr);
+
+        if (_isPortal(name, msg.sender)) omni.initSourceChain(chainId);
 
         emit ContractRegistered(chainId, name, msg.sender, addr);
     }
@@ -186,6 +188,6 @@ contract XRegistry is Ownable, XRegistryBase {
      * @notice Set the address of the OmniPortal contract.
      */
     function setPortal(address _omni) public onlyOwner {
-        omni = IOmniPortal(_omni);
+        omni = OmniPortal(_omni);
     }
 }
