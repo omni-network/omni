@@ -2,6 +2,8 @@ package pingpong
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"math/big"
 	"time"
 
@@ -171,9 +173,10 @@ func (d *XDapp) StartAllEdges(ctx context.Context, parallel, count uint64) error
 					return err
 				}
 
-				tx, err := from.PingPong.Start(txOpts, to.Chain.ChainID, to.Address, count)
+				id := randomHex7()
+				tx, err := from.PingPong.Start(txOpts, id, to.Chain.ChainID, to.Address, count)
 				if err != nil {
-					return errors.Wrap(err, "start ping pong", "from", from.Chain.Name, "to", to.Chain.Name)
+					return errors.Wrap(err, "start ping pong", "id", id, "from", from.Chain.Name, "to", to.Chain.Name)
 				}
 
 				if _, err := bind.WaitMined(ctx, backend, tx); err != nil {
@@ -192,12 +195,72 @@ func (d *XDapp) StartAllEdges(ctx context.Context, parallel, count uint64) error
 	return nil
 }
 
+// / Watch watches all PingPong contracts for Ping events and logs them.
+func (d *XDapp) Watch(ctx context.Context) error {
+	// watch an individual pingpong contract
+	watch := func(ctx context.Context, contract contract, backend *ethbackend.Backend) {
+		lastBlockHeight := contract.DeployHeight
+		ticker := time.NewTicker(5 * time.Second)
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				blockNumber, err := backend.BlockNumber(ctx)
+				if err != nil {
+					log.Error(ctx, "Error getting block number", err, "chain", contract.Chain.Name)
+					continue
+				}
+
+				if blockNumber <= lastBlockHeight {
+					continue
+				}
+
+				iter, err := contract.PingPong.FilterPing(&bind.FilterOpts{
+					Start:   lastBlockHeight,
+					End:     &blockNumber,
+					Context: ctx,
+				})
+				if err != nil {
+					log.Error(ctx, "Error filtering Ping events", err, "chain", contract.Chain.Name)
+					continue
+				}
+
+				for iter.Next() {
+					log.Debug(ctx, "Ping", "id", iter.Event.Id, "n", iter.Event.N,
+						"on", contract.Chain.Name, "from", d.contracts[iter.Event.SrcChainID].Chain.Name)
+				}
+
+				lastBlockHeight = blockNumber
+			}
+		}
+	}
+
+	for _, contract := range d.contracts {
+		backend, err := d.backends.Backend(contract.Chain.ChainID)
+		if err != nil {
+			return err
+		}
+
+		go watch(ctx, contract, backend)
+	}
+
+	return nil
+}
+
 // WaitDone waits for all edges to complete the hops of a single ping pong.
 // Note this doesn't wait for all parallel ping pongs to complete, it only waits for one of P.
 func (d *XDapp) WaitDone(ctx context.Context) error {
 	log.Info(ctx, "Waiting for ping pongs to complete")
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
+
+	err := d.Watch(ctx)
+	if err != nil {
+		return errors.Wrap(err, "watch")
+	}
+
 	for _, edge := range d.edges {
 		// Retry fetching done log until found or context is done
 		backoff := expbackoff.New(ctx)
@@ -218,8 +281,8 @@ func (d *XDapp) WaitDone(ctx context.Context) error {
 			var found bool
 			for iter.Next() {
 				if iter.Event.DestChainID == edge.To {
-					log.Debug(ctx, "Ping pong done", "from", from.Chain.Name,
-						"to", d.contracts[edge.To].Chain.Name, "times", iter.Event.Times)
+					log.Debug(ctx, "Ping pong done", "id", iter.Event.Id,
+						"from", from.Chain.Name, "to", d.contracts[edge.To].Chain.Name, "times", iter.Event.Times)
 					found = true
 
 					break
@@ -282,4 +345,18 @@ func flatten[K comparable, V any](m map[K]V) []V {
 	}
 
 	return resp
+}
+
+// randomHex7 returns a random 7-character hex string.
+func randomHex7() string {
+	bytes := make([]byte, 4)
+	_, _ = rand.Read(bytes)
+	hexString := hex.EncodeToString(bytes)
+
+	// Trim the string to 7 characters
+	if len(hexString) > 7 {
+		hexString = hexString[:7]
+	}
+
+	return hexString
 }
