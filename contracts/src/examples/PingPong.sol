@@ -9,7 +9,7 @@ import { XApp } from "src/pkg/XApp.sol";
  */
 contract PingPong is XApp {
     /// @notice Gas limit used for a single pingpong xcall
-    uint64 public constant GAS_LIMIT = 100_000;
+    uint64 public constant GAS_LIMIT = 200_000;
 
     /**
      * @notice Emitted when the pingpong loop is done
