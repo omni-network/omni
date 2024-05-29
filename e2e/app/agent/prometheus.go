@@ -24,8 +24,11 @@ type Secrets struct {
 	Pass string
 }
 
-const promPort = 26660 // Default metrics port for all omni apps (from cometBFT)
-const gethPromPort = 6060
+const (
+	explorerMetricsPort = 57017
+	promPort            = 26660 // Default metrics port for all omni apps (from cometBFT)
+	gethPromPort        = 6060
+)
 
 //go:embed prometheus.yml.tmpl
 var promConfigTmpl []byte
@@ -113,6 +116,11 @@ func genPromConfig(ctx context.Context, testnet types.Testnet, secrets Secrets, 
 				MetricsPath: "/metrics",
 				targets:     []string{fmt.Sprintf("explorer_graphql:%d", promPort)},
 			},
+			{
+				JobName:     "explorer_ui",
+				MetricsPath: "/metrics",
+				targets:     []string{fmt.Sprintf("explorer_ui:%d", explorerMetricsPort)},
+			},
 		},
 	}
 
@@ -155,7 +163,7 @@ func (c promScrapConfig) Targets() string {
 //	It replaces the geth targets with provided.
 //	It replaces the host label.
 func ConfigForHost(bz []byte, newHost string, halos []string, geths []string, services map[string]bool) []byte {
-	for _, service := range []string{"relayer", "monitor", "explorer_indexer", "explorer_graphql"} {
+	for _, service := range []string{"relayer", "monitor", "explorer_indexer", "explorer_graphql", "explorer_ui"} {
 		if services[service] {
 			continue
 		}

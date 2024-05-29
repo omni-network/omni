@@ -63,3 +63,11 @@ scrape_configs:
           network: 'staging'
           host: 'vm-2'
 
+  - job_name: "explorer_ui"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: [] # explorer_ui targets
+        labels:
+          network: 'staging'
+          host: 'vm-2'
+
