@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/hex"
 	"sync"
 
 	"github.com/omni-network/omni/e2e/netman"
@@ -69,6 +70,8 @@ func StartMonitoringReceipts(ctx context.Context, def Definition) func() error {
 						"dest_chain", network.ChainName(receipt.DestChainID),
 						"src_chain", network.ChainName(receipt.SourceChainID),
 						"gas_used", receipt.GasUsed,
+						"error_msg", string(receipt.Error),
+						"error_hex", hex.EncodeToString(receipt.Error),
 					}
 
 					// Adapt consensus chain msg destination to 0 for lookup, since it does "broadcast".

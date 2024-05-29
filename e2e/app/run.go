@@ -338,12 +338,9 @@ func checkSupportedChains(ctx context.Context, n netman.Manager) (bool, error) {
 			}
 
 			supported, err := src.Contract.IsSupportedChain(&bind.CallOpts{Context: ctx}, dest.Chain.ChainID)
-
 			if err != nil {
 				return false, errors.Wrap(err, "check supported chain")
-			}
-
-			if !supported {
+			} else if !supported {
 				return false, nil
 			}
 		}
