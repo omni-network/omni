@@ -26,27 +26,31 @@ func AwaitOnChain(ctx context.Context, netID ID, portalRegistry *bindings.Portal
 			ID: netID,
 			Chains: []Chain{
 				{
-					ID:            netID.Static().OmniExecutionChainID,
-					Name:          "omni_evm",
-					BlockPeriod:   time.Millisecond * 500, // Speed up block times for testing
-					PortalAddress: dummyAddr,
+					ID:                netID.Static().OmniExecutionChainID,
+					Name:              "omni_evm",
+					BlockPeriod:       time.Millisecond * 500, // Speed up block times for testing
+					PortalAddress:     dummyAddr,
+					FinalizationStrat: StratFinalized,
 				},
 				{
-					ID:            netID.Static().OmniConsensusChainIDUint64(),
-					Name:          "omni_consensus",
-					DeployHeight:  1,                      // Validator sets start at height 1, not 0.
-					BlockPeriod:   time.Millisecond * 500, // Speed up block times for testing
-					PortalAddress: dummyAddr,
+					ID:                netID.Static().OmniConsensusChainIDUint64(),
+					Name:              "omni_consensus",
+					DeployHeight:      1,                      // Validator sets start at height 1, not 0.
+					BlockPeriod:       time.Millisecond * 500, // Speed up block times for testing
+					PortalAddress:     dummyAddr,
+					FinalizationStrat: StratFinalized,
 				},
 				{
-					ID:            100, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
-					Name:          "mock_l1",
-					PortalAddress: dummyAddr,
+					ID:                100, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
+					Name:              "mock_l1",
+					PortalAddress:     dummyAddr,
+					FinalizationStrat: StratLatest,
 				},
 				{
-					ID:            200, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
-					Name:          "mock_l2",
-					PortalAddress: dummyAddr,
+					ID:                200, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
+					Name:              "mock_l2",
+					PortalAddress:     dummyAddr,
+					FinalizationStrat: StratLatest,
 				},
 			},
 		}, nil

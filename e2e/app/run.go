@@ -311,20 +311,17 @@ func waitForSupportedChains(ctx context.Context, def Definition) error {
 			return errors.Wrap(ctx.Err(), "cancel")
 		case <-ticker.C:
 			ok, err := checkSupportedChains(ctx, def.Netman())
-
 			if err != nil {
 				return err
-			}
-
-			if ok {
+			} else if ok {
 				return nil
 			}
 
 			if attempt > 60 {
 				return errors.New("timeout waiting for supported chains")
+			} else if attempt%10 == 0 {
+				log.Debug(ctx, "Waiting for supported chains", "attempt", attempt)
 			}
-
-			log.Debug(ctx, "Waiting for supported chains", "attempt", attempt)
 			attempt++
 		}
 	}

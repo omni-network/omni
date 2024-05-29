@@ -216,9 +216,10 @@ func (p *Provider) GetBlock(ctx context.Context, req xchain.ProviderRequest) (xc
 			BlockHeight:   req.Height,
 			BlockHash:     header.Hash(),
 		},
-		Msgs:      msgs,
-		Receipts:  receipts,
-		Timestamp: time.Unix(int64(header.Time), 0),
+		Msgs:       msgs,
+		Receipts:   receipts,
+		ParentHash: header.ParentHash,
+		Timestamp:  time.Unix(int64(header.Time), 0),
 	}
 	if resp.ShouldAttest() {
 		resp.BlockOffset = req.Offset

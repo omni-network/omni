@@ -163,30 +163,23 @@ func (v *Voter) runForever(ctx context.Context, chainVer xchain.ChainVersion) {
 // runOnce blocks, streaming xblocks from the provided chain until an error is encountered.
 // It always returns a non-nil error.
 func (v *Voter) runOnce(ctx context.Context, chainVer xchain.ChainVersion) error {
-	// Determine what height to stream from.
-	var fromHeight uint64
-	var fromOffset uint64
+	maybeDebugLog := newDebugLogFilterer(time.Minute) // Log empty blocks once per minute.
+	first := true                                     // Allow skipping on first attestation.
 
-	// Get latest state from disk.
-	if latest, ok := v.latestByChain(chainVer); ok {
-		fromHeight = latest.BlockHeader.Height + 1
-		fromOffset = latest.BlockHeader.Offset + 1
+	// Use actual chain version to calculate offset to start voting from (to prevent double signing).
+	_, skipBeforeOffset, err := v.getFromHeightAndOffset(ctx, chainVer)
+	if err != nil {
+		return errors.Wrap(err, "get from height and offset")
 	}
 
-	// Get latest approved attestation from the chain.
-	if latest, ok, err := v.deps.LatestAttestation(ctx, chainVer); err != nil {
-		return errors.Wrap(err, "latest attestation")
-	} else if ok && fromHeight < latest.BlockHeight+1 {
-		// Allows skipping ahead of we were behind for some reason.
-		fromHeight = latest.BlockHeight + 1
-		fromOffset = latest.BlockOffset + 1
+	// Use finalized chain version to calculate height and offset to start streaming from (for correct offset calcs).
+	finalVer := xchain.ChainVersion{ID: chainVer.ID, ConfLevel: xchain.ConfFinalized}
+	fromHeight, fromOffset, err := v.getFromHeightAndOffset(ctx, finalVer)
+	if err != nil {
+		return errors.Wrap(err, "get from height and offset")
 	}
 
-	maybeLog := newFilterer(time.Minute) // Log empty blocks once per minute.
-
-	log.Info(ctx, "Voting started for chain", "from_height", fromHeight, "from_offset", fromOffset)
-
-	first := true // Allow skipping on first attestation.
+	log.Info(ctx, "Voting started for chain", "from_height", fromHeight, "from_offset", fromOffset, "skip_before_offset", skipBeforeOffset)
 
 	req := xchain.ProviderRequest{
 		ChainID:   chainVer.ID,
@@ -195,23 +188,34 @@ func (v *Voter) runOnce(ctx context.Context, chainVer xchain.ChainVersion) error
 		Offset:    fromOffset,
 	}
 
+	var prevBlock xchain.Block
+
 	return v.provider.StreamBlocks(ctx, req,
 		func(ctx context.Context, block xchain.Block) error {
 			if !v.isValidator() {
 				return errors.New("not a validator anymore")
 			}
 
+			if err := detectReorg(chainVer, v.network.ChainName(chainVer.ID), prevBlock, block); err != nil {
+				// Restart stream, recalculating block offset from finalized version.
+				return err
+			}
+			prevBlock = block
+
 			if !block.ShouldAttest() {
-				maybeLog(func() {
-					log.Debug(ctx, "Not creating vote for empty cross chain block")
-				})
+				maybeDebugLog(ctx, "Not creating vote for empty cross chain block")
 
 				return nil // Do not vote for empty blocks.
+			} else if block.BlockOffset < skipBeforeOffset {
+				maybeDebugLog(ctx, "Skipping previously voted block on startup", "offset", block.BlockOffset, "skip_before_offset", skipBeforeOffset)
+
+				return nil // Do not vote for offsets already approved or that we voted for previously
 			}
 
 			minimum, ok := v.minWindow(block.ChainVersion())
 			if ok && block.BlockOffset < minimum {
-				return errors.New("behind vote window (too slow)", "vote_height", block.BlockOffset, "window_minimum", minimum)
+				// Restart stream, jumping ahead to middle of vote window.
+				return errors.New("behind vote window (too slow)", "vote_offset", block.BlockOffset, "window_minimum", minimum)
 			}
 
 			backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second*5))
@@ -235,6 +239,28 @@ func (v *Voter) runOnce(ctx context.Context, chainVer xchain.ChainVersion) error
 			return nil
 		},
 	)
+}
+
+// getFromHeightAndOffset returns the height and offset to start streaming from for the given chain version.
+//
+//nolint:nonamedreturns // Ambiguous return values.
+func (v *Voter) getFromHeightAndOffset(ctx context.Context, chainVer xchain.ChainVersion) (fromHeight uint64, fromOffset uint64, err error) {
+	// Get latest state from disk.
+	if latest, ok := v.latestByChain(chainVer); ok {
+		fromHeight = latest.BlockHeader.Height + 1
+		fromOffset = latest.BlockHeader.Offset + 1
+	}
+
+	// Get latest approved attestation from the chain.
+	if latest, ok, err := v.deps.LatestAttestation(ctx, chainVer); err != nil {
+		return 0, 0, errors.Wrap(err, "latest attestation")
+	} else if ok && fromHeight < latest.BlockHeight+1 {
+		// Allows skipping ahead of we were behind for some reason.
+		fromHeight = latest.BlockHeight + 1
+		fromOffset = latest.BlockOffset + 1
+	}
+
+	return fromHeight, fromOffset, nil
 }
 
 // Vote creates a vote for the given block and adds it to the internal state.
@@ -484,6 +510,30 @@ func (v *Voter) instrumentUnsafe() {
 	count(v.proposed, proposedCount)
 }
 
+// detectReorg returns an error if the previous block doesn't match the new block's parent hash.
+// This indicates that a reorg occurred.
+func detectReorg(chainVer xchain.ChainVersion, chainName string, prevBlock xchain.Block, block xchain.Block) error {
+	if prevBlock.BlockHash == (common.Hash{}) {
+		return nil // Skip previous blocks without parent hash (init or consensus chain without block hashes).
+	}
+
+	if prevBlock.BlockHeight+1 != block.BlockHeight {
+		return errors.New("consecutive block height mismatch [BUG]", "prev_height", prevBlock.BlockHeight, "new_height", block.BlockHeight)
+	}
+
+	if prevBlock.BlockHash == block.ParentHash {
+		return nil // No reorg detected.
+	}
+
+	reorgTotal.WithLabelValues(chainName).Inc()
+
+	if chainVer.ConfLevel.IsFuzzy() {
+		return errors.New("fuzzy chain reorg detected", "height", block.BlockHeight, "offset", block.BlockOffset, "parent_hash", prevBlock.BlockHash, "new_parent_hash", block.ParentHash)
+	}
+
+	return errors.New("finalized chain reorg detected [BUG]", "height", block.BlockHeight, "offset", block.BlockOffset, "parent_hash", prevBlock.BlockHash, "new_parent_hash", block.ParentHash)
+}
+
 // stateJSON is the JSON representation of the attester state.
 type stateJSON struct {
 	Available []*types.Vote `json:"available"`
@@ -559,17 +609,16 @@ func NewIsValDetector(localAddr common.Address) IsValDetector {
 	}
 }
 
-// newFilterer returns a function that only calls the inner function once per period.
-func newFilterer(period time.Duration) func(func()) {
-	last := time.Now().Add(-period)
-	return func(fn func()) {
-		if time.Since(last) < period {
+// newDebugLogFilterer returns a debug log function that only logs once per period per message.
+func newDebugLogFilterer(period time.Duration) func(context.Context, string, ...any) {
+	lastByMsg := make(map[string]time.Time)
+	return func(ctx context.Context, msg string, args ...any) {
+		if last, ok := lastByMsg[msg]; ok && time.Since(last) < period {
 			return
 		}
+		lastByMsg[msg] = time.Now()
 
-		fn()
-
-		last = time.Now()
+		log.Debug(ctx, msg, args...)
 	}
 }
 

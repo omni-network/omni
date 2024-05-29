@@ -11,6 +11,8 @@ import (
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 var (
@@ -29,8 +31,7 @@ const (
 type Mock struct {
 	period    time.Duration
 	mu        sync.Mutex
-	blocks    []xchain.Block
-	uniq      map[uint64]bool
+	blocks    map[blockKey]xchain.Block
 	cChainID  uint64
 	cProvider cchain.Provider
 }
@@ -38,7 +39,7 @@ type Mock struct {
 func NewMock(period time.Duration, cChainID uint64, cProvider cchain.Provider) *Mock {
 	return &Mock{
 		period:    period,
-		uniq:      make(map[uint64]bool),
+		blocks:    make(map[blockKey]xchain.Block),
 		cChainID:  cChainID,
 		cProvider: cProvider,
 	}
@@ -66,6 +67,8 @@ func (m *Mock) stream(
 	callback xchain.ProviderCallback,
 	retryCallback bool,
 ) error {
+	chainVer := xchain.ChainVersion{ID: req.ChainID, ConfLevel: req.ConfLevel}
+
 	sOffset := make(streamOffseter).offset
 
 	fromOffset := req.Offset
@@ -84,7 +87,7 @@ func (m *Mock) stream(
 	} else {
 		// Populate historical blocks for mocked chains so offsets are consistent for heights.
 		for i := uint64(0); i < fromHeight; i++ {
-			m.addBlock(m.nextBlock(ctx, req.ChainID, i, sOffset, bOffset.getAndInc))
+			m.addBlock(m.nextBlock(ctx, chainVer, i, sOffset, bOffset.getAndInc))
 		}
 	}
 
@@ -94,7 +97,7 @@ func (m *Mock) stream(
 	height := fromHeight
 
 	for ctx.Err() == nil {
-		block := m.nextBlock(ctx, req.ChainID, height, sOffset, bOffset.getAndInc)
+		block := m.nextBlock(ctx, chainVer, height, sOffset, bOffset.getAndInc)
 		m.addBlock(block)
 
 		err := callback(ctx, block)
@@ -125,13 +128,13 @@ func (m *Mock) GetBlock(_ context.Context, req xchain.ProviderRequest) (xchain.B
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	for _, block := range m.blocks {
-		if block.BlockOffset == req.Offset && block.BlockHeight == req.Height && block.SourceChainID == req.ChainID {
-			return block, true, nil
-		}
-	}
+	block, ok := m.blocks[blockKey{
+		ChainID:   req.ChainID,
+		Height:    req.Height,
+		ConfLevel: req.ConfLevel,
+	}]
 
-	return xchain.Block{}, false, nil
+	return block, ok, nil
 }
 
 func (*Mock) GetSubmittedCursor(_ context.Context, stream xchain.StreamID,
@@ -144,24 +147,39 @@ func (*Mock) GetEmittedCursor(_ context.Context, _ xchain.EmitRef, stream xchain
 	return xchain.StreamCursor{StreamID: stream}, true, nil
 }
 
+func (m *Mock) parentBlockHash(chainVer xchain.ChainVersion, height uint64) common.Hash {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	key := blockKey{
+		ChainID:   chainVer.ID,
+		Height:    height - 1,
+		ConfLevel: chainVer.ConfLevel,
+	}
+
+	return m.blocks[key].BlockHash
+}
+
 func (m *Mock) addBlock(block xchain.Block) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if m.uniq[block.BlockOffset] {
-		return
+
+	key := blockKey{
+		ChainID:   block.SourceChainID,
+		Height:    block.BlockHeight,
+		ConfLevel: block.ConfLevel,
 	}
-	m.blocks = append(m.blocks, block)
-	m.uniq[block.BlockOffset] = true
+	m.blocks[key] = block
 }
 
 func (m *Mock) nextBlock(
 	ctx context.Context,
-	chainID uint64,
+	chainVer xchain.ChainVersion,
 	height uint64,
 	sOffsetFunc func(xchain.StreamID) uint64,
 	bOffsetFunc func() uint64,
 ) xchain.Block {
-	if m.cChainID == chainID {
+	if m.cChainID == chainVer.ID {
 		// For omni consensus chain, we query the real cprovider for blocks.
 		for {
 			b, ok, err := m.cProvider.XBlock(ctx, height, false)
@@ -179,16 +197,16 @@ func (m *Mock) nextBlock(
 	}
 
 	// Use deterministic randomness based on the chainID and height.
-	r := rand.New(rand.NewSource(int64(chainID ^ height)))
+	r := rand.New(rand.NewSource(int64(chainVer.ID ^ height)))
 
 	// TODO(corver): add xreceipts
 	var msgs []xchain.Msg
 
 	newMsgA := func() xchain.Msg {
-		return newMsg(r, chainID, destChainA, sOffsetFunc)
+		return newMsg(r, chainVer.ID, destChainA, sOffsetFunc)
 	}
 	newMsgB := func() xchain.Msg {
-		return newMsg(r, chainID, destChainB, sOffsetFunc)
+		return newMsg(r, chainVer.ID, destChainB, sOffsetFunc)
 	}
 
 	switch height % 4 {
@@ -204,14 +222,15 @@ func (m *Mock) nextBlock(
 
 	b := xchain.Block{
 		BlockHeader: xchain.BlockHeader{
-			SourceChainID: chainID,
-			ConfLevel:     xchain.ConfFinalized,
+			SourceChainID: chainVer.ID,
+			ConfLevel:     chainVer.ConfLevel,
 			BlockHeight:   height,
 			BlockHash:     random32(r),
 		},
-		Msgs:      msgs,
-		Receipts:  nil,        // TODO(corver): Add receipts
-		Timestamp: time.Now(), // Should this also be deterministic?
+		Msgs:       msgs,
+		Receipts:   nil,        // TODO(corver): Add receipts
+		Timestamp:  time.Now(), // Should this also be deterministic?
+		ParentHash: m.parentBlockHash(chainVer, height),
 	}
 
 	if b.ShouldAttest() {
@@ -271,4 +290,10 @@ func newBlockOffseter(from uint64) *blockOffseter {
 func (o *blockOffseter) getAndInc() uint64 {
 	defer func() { *o++ }()
 	return uint64(*o)
+}
+
+type blockKey struct {
+	ChainID   uint64
+	Height    uint64
+	ConfLevel xchain.ConfLevel
 }
