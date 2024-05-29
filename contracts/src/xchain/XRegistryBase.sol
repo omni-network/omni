@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
+import { XRegistryNames } from "../libraries/XRegistryNames.sol";
+import { Predeploys } from "../libraries/Predeploys.sol";
+
 /**
  * @title XRegistryBase
  * @notice Base contract for XRegistry and XRegistryReplica. Contains common storage, setters, and views.
@@ -41,5 +44,13 @@ contract XRegistryBase {
 
     function _pack(string memory name, address registrant) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(name, registrant));
+    }
+
+    /**
+     * @dev Return true if `name` and `registrant` are "OmniPortal" and PortalRegistry predpeloy, respectively.
+     *      This marks a portal registration internal to Omni's protocol.
+     */
+    function _isPortal(string memory name, address registrant) internal pure returns (bool) {
+        return _pack(name, registrant) == _pack(XRegistryNames.OmniPortal, Predeploys.PortalRegistry);
     }
 }

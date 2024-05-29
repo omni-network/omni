@@ -34,7 +34,7 @@ contract OmniPortal_xsubmit_gas_Test is Base {
         _testGasSubmitXBlock("guzzle50");
     }
 
-    function test_xsubmi_addValidator_succeeds() public {
+    function test_xsubmit_addValidator_succeeds() public {
         _testGasSubmitXBlock("addValSet2", broadcastChainId);
     }
 
