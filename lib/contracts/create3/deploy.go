@@ -12,7 +12,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
@@ -102,11 +101,6 @@ func IsDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Bac
 
 	if len(code) == 0 {
 		return false, addr, nil
-	}
-
-	if hexutil.Encode(code) != bindings.Create3DeployedBytecode {
-		chain, chainID := backend.Chain()
-		return false, addr, errors.New("unexpected code at factory", "address", addr, "chain", chain, "chain_id", chainID)
 	}
 
 	return true, addr, nil
