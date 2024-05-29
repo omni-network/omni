@@ -25,7 +25,7 @@ type Secrets struct {
 }
 
 const (
-	explorerMetricsPort = 57017
+	explorerMetricsPort = 3000
 	promPort            = 26660 // Default metrics port for all omni apps (from cometBFT)
 	gethPromPort        = 6060
 )
