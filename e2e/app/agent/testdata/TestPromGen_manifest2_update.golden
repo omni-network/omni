@@ -58,7 +58,15 @@ scrape_configs:
   - job_name: "explorer_graphql"
     metrics_path: "/metrics"
     static_configs:
-      - targets: [] # explorer_graphql targets
+      - targets: [explorer_graphql:26660] # explorer_graphql targets
+        labels:
+          network: 'staging'
+          host: 'vm-2'
+
+  - job_name: "explorer_ui"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: [explorer_ui:57017] # explorer_ui targets
         labels:
           network: 'staging'
           host: 'vm-2'

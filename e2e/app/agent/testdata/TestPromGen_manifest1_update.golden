@@ -51,3 +51,11 @@ scrape_configs:
           network: 'manifest1-localhost'
           host: 'localhost-2'
 
+  - job_name: "explorer_ui"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: [] # explorer_ui targets
+        labels:
+          network: 'manifest1-localhost'
+          host: 'localhost-2'
+
