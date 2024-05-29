@@ -12,7 +12,6 @@ import (
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
-	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/forkjoin"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/tokens"
@@ -195,7 +194,7 @@ func (d *XDapp) StartAllEdges(ctx context.Context, parallel, count uint64) error
 	return nil
 }
 
-// / Watch watches all PingPong contracts for Ping events and logs them.
+// Watch watches all PingPong contracts for Ping events and logs them.
 func (d *XDapp) Watch(ctx context.Context) error {
 	// watch an individual pingpong contract
 	watch := func(ctx context.Context, contract contract, backend *ethbackend.Backend) {
@@ -263,7 +262,6 @@ func (d *XDapp) WaitDone(ctx context.Context) error {
 
 	for _, edge := range d.edges {
 		// Retry fetching done log until found or context is done
-		backoff := expbackoff.New(ctx)
 		for {
 			if ctx.Err() != nil {
 				return errors.Wrap(ctx.Err(), "timeout")
@@ -298,7 +296,7 @@ func (d *XDapp) WaitDone(ctx context.Context) error {
 				break
 			}
 
-			backoff()
+			time.Sleep(time.Second)
 		}
 	}
 

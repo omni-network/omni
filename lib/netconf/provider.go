@@ -52,7 +52,10 @@ func AwaitOnChain(ctx context.Context, netID ID, portalRegistry *bindings.Portal
 		}, nil
 	}
 
-	backoff := expbackoff.New(ctx)
+	cfg := expbackoff.DefaultConfig
+	cfg.MaxDelay = 5 * time.Second
+	backoff := expbackoff.New(ctx, expbackoff.With(cfg))
+
 	for {
 		if ctx.Err() != nil {
 			return Network{}, errors.Wrap(ctx.Err(), "provider timeout")
