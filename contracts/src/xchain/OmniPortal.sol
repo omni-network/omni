@@ -154,7 +154,6 @@ contract OmniPortal is
         require(to != _VIRTUAL_PORTAL_ADDRESS, "OmniPortal: no portal xcall");
         require(gasLimit <= xmsgMaxGasLimit, "OmniPortal: gasLimit too high");
         require(gasLimit >= xmsgMinGasLimit, "OmniPortal: gasLimit too low");
-        require(msg.sender != address(this), "OmniPortal: portal cannot xcall");
         require(msg.value >= feeFor(destChainId, data, gasLimit), "OmniPortal: insufficient fee");
 
         outXStreamOffset[destChainId] += 1;
@@ -274,11 +273,24 @@ contract OmniPortal is
         );
         require(xmsg_.streamOffset == inXStreamOffset[xmsg_.sourceChainId] + 1, "OmniPortal: wrong streamOffset");
 
+        inXStreamOffset[xmsg_.sourceChainId] += 1;
+
+        // do not allow user xcalls to the portal
+        // only sys xcalls (to _VIRTUAL_PORTAL_ADDRESS) are allowed to be executed on the portal
+        if (xmsg_.to == address(this)) {
+            emit XReceipt(
+                xmsg_.sourceChainId,
+                xmsg_.streamOffset,
+                0,
+                msg.sender,
+                false,
+                abi.encodeWithSignature("Error(string)", "OmniPortal: no xcall to portal")
+            );
+            return;
+        }
+
         // set _xmsg to the one we're executing
         _xmsg = XTypes.MsgShort(xmsg_.sourceChainId, xmsg_.sender);
-
-        // increment offset before executing xcall, to avoid reentrancy loop
-        inXStreamOffset[xmsg_.sourceChainId] += 1;
 
         // xcalls to _VIRTUAL_PORTAL_ADDRESS are system calls
         bool isSysCall = xmsg_.to == _VIRTUAL_PORTAL_ADDRESS;
