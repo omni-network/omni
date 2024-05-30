@@ -17,28 +17,38 @@ func Test_fromOffsets(t *testing.T) {
 	const dstChain = uint64(4)
 	const srcChain1 = uint64(1)
 	const srcChain2 = uint64(2)
-	const srcChain3 = uint64(3)
-	stream1 := xchain.StreamID{SourceChainID: srcChain1, DestChainID: dstChain}
-	stream2 := xchain.StreamID{SourceChainID: srcChain2, DestChainID: dstChain}
-	stream3 := xchain.StreamID{SourceChainID: srcChain3, DestChainID: dstChain}
-	allStreams := []xchain.StreamID{stream1, stream2, stream3}
+	chainVer1 := xchain.ChainVersion{ID: srcChain1, ConfLevel: xchain.ConfFinalized}
+	chainVer2 := xchain.ChainVersion{ID: srcChain2, ConfLevel: xchain.ConfFinalized}
+	chainVer3 := xchain.ChainVersion{ID: srcChain2, ConfLevel: xchain.ConfLatest}
+	allChainVers := []xchain.ChainVersion{chainVer1, chainVer2, chainVer3}
+
+	streamID := func(chainVer xchain.ChainVersion) xchain.StreamID {
+		return xchain.StreamID{
+			SourceChainID: chainVer.ID,
+			DestChainID:   dstChain,
+			ShardID:       uint64(chainVer.ConfLevel),
+		}
+	}
+	stream1 := streamID(chainVer1)
+	stream2 := streamID(chainVer2)
+	stream3 := streamID(chainVer3)
 
 	makeState := func(t *testing.T, offset1, offset2, offset3 uint64) *State {
 		t.Helper()
 		state := NewEmptyState(filepath.Join(t.TempDir(), "state.json"))
 
 		if offset1 != 0 {
-			err := state.Persist(dstChain, srcChain1, offset1)
+			err := state.Persist(dstChain, chainVer1, offset1)
 			require.NoError(t, err)
 		}
 
 		if offset2 != 0 {
-			err := state.Persist(dstChain, srcChain2, offset2)
+			err := state.Persist(dstChain, chainVer2, offset2)
 			require.NoError(t, err)
 		}
 
 		if offset3 != 0 {
-			err := state.Persist(dstChain, srcChain3, offset3)
+			err := state.Persist(dstChain, chainVer3, offset3)
 			require.NoError(t, err)
 		}
 
@@ -60,11 +70,11 @@ func Test_fromOffsets(t *testing.T) {
 		return resp
 	}
 
-	makeResult := func(offset1, offset2, offset3 uint64) map[xchain.StreamID]uint64 {
-		return map[xchain.StreamID]uint64{
-			stream1: offset1,
-			stream2: offset2,
-			stream3: offset3,
+	makeResult := func(offset1, offset2, offset3 uint64) map[xchain.ChainVersion]uint64 {
+		return map[xchain.ChainVersion]uint64{
+			chainVer1: offset1,
+			chainVer2: offset2,
+			chainVer3: offset3,
 		}
 	}
 
@@ -72,7 +82,7 @@ func Test_fromOffsets(t *testing.T) {
 		name    string
 		onChain []xchain.StreamCursor
 		onDisk  *State
-		want    map[xchain.StreamID]uint64
+		want    map[xchain.ChainVersion]uint64
 	}{
 		{
 			name:    "on-disk empty, on-chain empty",
@@ -114,7 +124,7 @@ func Test_fromOffsets(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := fromOffsets(tt.onChain, allStreams, tt.onDisk)
+			got, err := fromChainVersionOffsets(dstChain, tt.onChain, allChainVers, tt.onDisk)
 			require.NoError(t, err)
 			require.Equal(t, tt.want, got)
 		})

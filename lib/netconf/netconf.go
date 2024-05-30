@@ -3,6 +3,7 @@
 package netconf
 
 import (
+	"fmt"
 	"sort"
 	"time"
 
@@ -118,6 +119,13 @@ func (n Network) ChainName(id uint64) string {
 	return chain.Name
 }
 
+// ChainVersionName returns the chain version name for the given ID or an empty string if it does not exist.
+func (n Network) ChainVersionName(chainVer xchain.ChainVersion) string {
+	chain, _ := n.Chain(chainVer.ID)
+
+	return fmt.Sprintf("%s-%s", chain.Name, chainVer.ConfLevel)
+}
+
 // Chain returns the chain config for the given ID or false if it does not exist.
 func (n Network) Chain(id uint64) (Chain, bool) {
 	for _, chain := range n.Chains {
@@ -127,6 +135,20 @@ func (n Network) Chain(id uint64) (Chain, bool) {
 	}
 
 	return Chain{}, false
+}
+
+// ChainVersionsTo returns the all chain versions submitted to the provided destination chain.
+func (n Network) ChainVersionsTo(dstChainID uint64) []xchain.ChainVersion {
+	var resp []xchain.ChainVersion
+	for _, chain := range n.Chains {
+		if chain.ID == dstChainID {
+			continue // Skip self
+		}
+
+		resp = append(resp, chain.ChainVersions()...)
+	}
+
+	return resp
 }
 
 // StreamsTo returns the all streams to the provided destination chain.
