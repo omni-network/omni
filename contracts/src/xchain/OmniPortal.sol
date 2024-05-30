@@ -188,7 +188,8 @@ contract OmniPortal is
      *              and a block header and message batch, proven against the attestation root.
      */
     function xsubmit(XTypes.Submission calldata xsub) external whenNotPaused nonReentrant {
-        require(xsub.msgs.length > 0, "OmniPortal: no xmsgs");
+        uint256 numMsgs = xsub.msgs.length;
+        require(numMsgs > 0, "OmniPortal: no xmsgs");
 
         // validator set id for this submission
         uint64 valSetId = xsub.validatorSetId;
@@ -237,7 +238,7 @@ contract OmniPortal is
         if (valSetId > lastValSetId) inXStreamValidatorSetId[xsub.blockHeader.sourceChainId] = valSetId;
 
         // execute xmsgs
-        for (uint256 i = 0; i < xsub.msgs.length; i++) {
+        for (uint256 i = 0; i < numMsgs; i++) {
             // TODO: we can remove xmsg sourceChainId, and instead set _xmsg.sourceChainId to xsub.blockHeader.sourceChainId
             require(xsub.msgs[i].sourceChainId == xsub.blockHeader.sourceChainId, "OmniPortal: wrong sourceChainId");
             _exec(xsub.msgs[i]);
@@ -504,13 +505,14 @@ contract OmniPortal is
      * @param validators    Validator set
      */
     function _addValidatorSet(uint64 valSetId, XTypes.Validator[] memory validators) private {
-        require(validators.length > 0, "OmniPortal: no validators");
+        uint256 numVals = validators.length;
+        require(numVals > 0, "OmniPortal: no validators");
 
         uint64 totalPower;
         XTypes.Validator memory val;
         mapping(address => uint64) storage valSet = validatorSet[valSetId];
 
-        for (uint256 i = 0; i < validators.length; i++) {
+        for (uint256 i = 0; i < numVals; i++) {
             val = validators[i];
 
             require(val.addr != address(0), "OmniPortal: no zero validator");
