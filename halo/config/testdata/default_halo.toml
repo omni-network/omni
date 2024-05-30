@@ -18,9 +18,6 @@ engine-endpoint = ""
 # Omni execution client JWT file used for authentication.
 engine-jwt-file = ""
 
-# Eigenlayer generated operator private key password. The key itself should be stored in: <home_dir>/config/*.ecdsa.key.json.
-eigenlayer-key-password = ""
-
 # SnapshotInterval specifies the height interval at which halo
 # will take state sync snapshots. Defaults to 1000 (roughly once an hour), setting this to
 # 0 disables state snapshots.

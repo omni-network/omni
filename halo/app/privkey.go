@@ -4,36 +4,22 @@ import (
 	"os"
 
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/k1util"
 
 	"github.com/cometbft/cometbft/crypto"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/privval"
-
-	"github.com/ethereum/go-ethereum/accounts/keystore"
 )
 
 // loadPrivVal returns a privval.FilePV by loading either a CometBFT priv validator key or an Ethereum keystore file.
 func loadPrivVal(cfg Config) (*privval.FilePV, error) {
 	cmtFile := cfg.Comet.PrivValidatorKeyFile()
 	cmtExists := exists(cmtFile)
-	keystoreFile, keystoreExists, err := cfg.KeystoreFile()
-	if err != nil {
-		return nil, err
+
+	if !cmtExists {
+		return nil, errors.New("cometBFT priv validator key file is required", "comet_file", cmtFile)
 	}
 
-	if !cmtExists && !keystoreExists {
-		return nil, errors.New("neither a cometBFT priv validator key nor an eigenlayer operator key file exists", "comet_file", cmtFile, "eigen_file", cfg.KeystoreGlob())
-	} else if cmtExists && keystoreExists {
-		return nil, errors.New("both a cometBFT priv validator key and an eigenlayer operator key file exist", "comet_file", cmtFile, "eigen_file", keystoreFile)
-	}
-
-	var key crypto.PrivKey
-	if keystoreExists {
-		key, err = loadEthKeystore(keystoreFile, cfg.EigenKeyPassword)
-	} else {
-		key, err = loadCometFilePV(cmtFile)
-	}
+	key, err := loadCometFilePV(cmtFile)
 	if err != nil {
 		return nil, err
 	}
@@ -54,21 +40,6 @@ func loadPrivVal(cfg Config) (*privval.FilePV, error) {
 	resp.LastSignState.SignBytes = state.SignBytes
 
 	return resp, nil
-}
-
-// loadEthKeystore loads an Ethereum keystore file and returns the private key.
-func loadEthKeystore(keystoreFile string, password string) (crypto.PrivKey, error) {
-	bz, err := os.ReadFile(keystoreFile)
-	if err != nil {
-		return nil, errors.Wrap(err, "read keystore file", "path", keystoreFile)
-	}
-
-	key, err := keystore.DecryptKey(bz, password)
-	if err != nil {
-		return nil, errors.Wrap(err, "decrypt keystore file", "path", keystoreFile)
-	}
-
-	return k1util.StdPrivKeyToComet(key.PrivateKey)
 }
 
 // loadCometFilePV loads a CometBFT privval file and returns the private key.
