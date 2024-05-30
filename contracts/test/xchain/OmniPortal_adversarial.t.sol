@@ -19,7 +19,7 @@ contract OmniPortal_adversarial is Base {
         XTypes.Msg memory xmsg = XTypes.Msg({
             sourceChainId: chainAId,
             destChainId: thisChainId,
-            streamOffset: 1,
+            offset: 1,
             sender: address(1234),
             to: address(portal),
             data: "", // doesn't matter, should fail before execution

@@ -171,7 +171,13 @@ func devnetDefinition(ctx context.Context) (app.Definition, error) {
 
 	defCfg := app.DefaultDefinitionConfig(ctx)
 	defCfg.ManifestFile = manifestFile
-	defCfg.OmniImgTag = buildinfo.Version()
+
+	imgTag, ok := buildinfo.GitCommit()
+	if !ok {
+		imgTag = "main"
+	}
+
+	defCfg.OmniImgTag = imgTag
 
 	def, err := app.MakeDefinition(ctx, defCfg, "devnet")
 	if err != nil {

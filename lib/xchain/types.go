@@ -94,7 +94,7 @@ type Receipt struct {
 type BlockHeader struct {
 	SourceChainID uint64      // Source chain ID as per https://chainlist.org
 	ConfLevel     ConfLevel   // ConfLevel defines the cross-chain block "version"; either some fuzzy version or finalized.
-	BlockOffset   uint64      // MsgOffset of the cross-chain block
+	BlockOffset   uint64      // Offset of the cross-chain block
 	BlockHeight   uint64      // Height of the source-chain block
 	BlockHash     common.Hash // Hash of the source-chain block
 }

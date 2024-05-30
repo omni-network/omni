@@ -25,7 +25,7 @@ contract OmniPortal_xsubmit_Test is Base {
     }
 
     function test_xsubmit_xblock2_succeeds() public {
-        // need to submit xblock1 first, to set the streamOffset
+        // need to submit xblock1 first, to set the offset
         XTypes.Submission memory xsub1 = readXSubmission({ name: "xblock1", destChainId: thisChainId });
         vm.chainId(thisChainId);
         portal.xsubmit(xsub1);
@@ -50,7 +50,7 @@ contract OmniPortal_xsubmit_Test is Base {
     }
 
     function test_xsubmit_xblock2_chainB_succeeds() public {
-        // need to submit xblock1 first, to set the streamOffset
+        // need to submit xblock1 first, to set the offset
         XTypes.Submission memory xsub1 = readXSubmission({ name: "xblock1", destChainId: chainBId });
         vm.chainId(chainBId);
         chainBPortal.xsubmit(xsub1);
@@ -99,7 +99,7 @@ contract OmniPortal_xsubmit_Test is Base {
     function test_xsubmit_wrongStreamOffset_reverts() public {
         XTypes.Submission memory xsub = readXSubmission({ name: "xblock2", destChainId: thisChainId });
 
-        vm.expectRevert("OmniPortal: wrong streamOffset");
+        vm.expectRevert("OmniPortal: wrong offset");
         vm.chainId(thisChainId);
         portal.xsubmit(xsub);
     }
@@ -239,7 +239,7 @@ contract OmniPortal_xsubmit_Test is Base {
         XTypes.Submission memory xsub = readXSubmission(name, destChainId, valSetId);
 
         uint64 sourceChainId = xsub.blockHeader.sourceChainId;
-        uint64 expectedOffset = xsub.msgs[xsub.msgs.length - 1].streamOffset;
+        uint64 expectedOffset = xsub.msgs[xsub.msgs.length - 1].offset;
         uint256 expectedCount = numIncrements(xsub.msgs) + counter_.count();
 
         vm.recordLogs();
@@ -249,8 +249,8 @@ contract OmniPortal_xsubmit_Test is Base {
         vm.chainId(destChainId);
         portal_.xsubmit{ gas: _xsubGasLimit(xsub) }(xsub);
 
-        assertEq(portal_.inXStreamOffset(sourceChainId), expectedOffset);
-        assertEq(portal_.inXStreamBlockHeight(sourceChainId), xsub.blockHeader.blockHeight);
+        assertEq(portal_.inXMsgOffset(sourceChainId), expectedOffset);
+        assertEq(portal_.inXBlockOffset(sourceChainId), xsub.blockHeader.offset);
         assertEq(counter_.count(), expectedCount);
         assertEq(counter_.countByChainId(sourceChainId), expectedCount);
         assertReceipts(vm.getRecordedLogs(), xsub.msgs);

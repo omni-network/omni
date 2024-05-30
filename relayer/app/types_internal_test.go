@@ -54,7 +54,7 @@ func submissionFromBinding(sub bindings.XTypesSubmission, destChainID uint64) xc
 					SourceChainID: msg.SourceChainId,
 					DestChainID:   msg.DestChainId,
 				},
-				StreamOffset: msg.StreamOffset,
+				StreamOffset: msg.Offset,
 			},
 			SourceMsgSender: msg.Sender,
 			DestAddress:     msg.To,
@@ -68,8 +68,8 @@ func submissionFromBinding(sub bindings.XTypesSubmission, destChainID uint64) xc
 		ValidatorSetID:  sub.ValidatorSetId,
 		BlockHeader: xchain.BlockHeader{
 			SourceChainID: sub.BlockHeader.SourceChainId,
-			BlockOffset:   sub.BlockHeader.BlockHeight, // TODO(corver): Rename submission blockHeaader.BlockHeight to BlockOffset.
-			BlockHash:     sub.BlockHeader.BlockHash,
+			BlockOffset:   sub.BlockHeader.Offset,
+			BlockHash:     sub.BlockHeader.SourceBlockHash,
 		},
 		Proof:       sub.Proof,
 		ProofFlags:  sub.ProofFlags,

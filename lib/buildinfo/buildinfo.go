@@ -15,6 +15,9 @@ import (
 // This value is set by goreleaser at build-time and should be the git tag for official releases.
 var version = "v0.1.8"
 
+// unknown is the default value for the git commit hash and timestamp.
+const unknown = "unknown"
+
 // Version returns the version of the whole omni-monorepo and all binaries built from this git commit.
 func Version() string {
 	return version
@@ -59,9 +62,20 @@ func NewVersionCmd() *cobra.Command {
 	}
 }
 
+// GitCommit returns the git commit hash from the runtime build info.
+func GitCommit() (string, bool) {
+	commit, _ := get()
+
+	if commit == unknown {
+		return "", false
+	}
+
+	return commit, true
+}
+
 // get returns the git commit hash and timestamp from the runtime build info.
 func get() (hash string, timestamp string) { //nolint:nonamedreturns // Disambiguate identical return types.
-	hash, timestamp = "unknown", "unknown"
+	hash, timestamp = unknown, unknown
 	hashLen := 7
 
 	info, ok := debug.ReadBuildInfo()

@@ -12,7 +12,7 @@ interface IOmniPortal {
     /**
      * @notice Emitted when an xcall is made to a contract on another chain
      * @param destChainId   Destination chain ID
-     * @param streamOffset  Offset this XMsg in the source -> dest XStream
+     * @param offset        Offset this XMsg in the source -> dest XStream
      * @param sender        msg.sender of the source xcall
      * @param to            Address of the contract to call on the destination chain
      * @param data          Encoded function calldata
@@ -21,7 +21,7 @@ interface IOmniPortal {
      */
     event XMsg(
         uint64 indexed destChainId,
-        uint64 indexed streamOffset,
+        uint64 indexed offset,
         address sender,
         address to,
         bytes data,
@@ -32,7 +32,7 @@ interface IOmniPortal {
     /**
      * @notice Emitted when an XMsg is executed on its destination chain
      * @param sourceChainId Source chain ID
-     * @param streamOffset  Offset the XMsg in the source -> dest XStream
+     * @param offset        Offset the XMsg in the source -> dest XStream
      * @param gasUsed       Gas used in execution of the XMsg
      * @param success       Whether the execution succeeded
      * @param relayer       Address of the relayer who submitted the XMsg
@@ -40,12 +40,7 @@ interface IOmniPortal {
      *                      portal.XRECEIPT_MAX_ERROR_BYTES. Empty if success == true.
      */
     event XReceipt(
-        uint64 indexed sourceChainId,
-        uint64 indexed streamOffset,
-        uint256 gasUsed,
-        address relayer,
-        bool success,
-        bytes error
+        uint64 indexed sourceChainId, uint64 indexed offset, uint256 gasUsed, address relayer, bool success, bytes error
     );
 
     /**
@@ -88,20 +83,19 @@ interface IOmniPortal {
      * @notice Returns the offset of the last outbound XMsg that was sent to destChainId
      * @param destChainId Destination chain ID
      */
-    function outXStreamOffset(uint64 destChainId) external view returns (uint64);
+    function outXMsgOffset(uint64 destChainId) external view returns (uint64);
 
     /**
      * @notice Returns the offset of the last inbound XMsg that was received from sourceChainId
      * @param sourceChainId Source chain ID
      */
-    function inXStreamOffset(uint64 sourceChainId) external view returns (uint64);
+    function inXMsgOffset(uint64 sourceChainId) external view returns (uint64);
 
     /**
-     * @notice Returns the source block height of the last inbound XMsg that was received from
-     *         sourceChainId
+     * @notice Returns the xblock offset of the last inbound XMsg that was received from sourceChainId
      * @param sourceChainId Source chain ID
      */
-    function inXStreamBlockHeight(uint64 sourceChainId) external view returns (uint64);
+    function inXBlockOffset(uint64 sourceChainId) external view returns (uint64);
 
     /**
      * @notice Returns the current XMsg being executed via this portal.
