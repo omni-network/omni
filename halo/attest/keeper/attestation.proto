@@ -32,6 +32,7 @@ message Attestation {
   uint32 status           = 8; // Status of the block; pending, approved.
   uint64 validator_set_id = 9; // Validator set that approved this attestation.
   uint64 created_height   = 10; // Consensus height at which this attestation was created.
+  uint64 finalized_att_id = 11; // Approved finalized attestation for same chain_id and offset.
 }
 
 // Signature is the attestation signature of the validator over the block root.

@@ -134,8 +134,8 @@ func TestVotesFromCommit(t *testing.T) {
 		Votes: evotes,
 	}
 
-	comparer := func(ctx context.Context, chainID uint64, _ uint32, height uint64) (int, error) {
-		if chainID == skipChain {
+	comparer := func(ctx context.Context, chainVer xchain.ChainVersion, height uint64) (int, error) {
+		if chainVer.ID == skipChain {
 			return 1, nil
 		}
 

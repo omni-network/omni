@@ -227,8 +227,13 @@ func (d *XDapp) Watch(ctx context.Context) error {
 				}
 
 				for iter.Next() {
-					log.Debug(ctx, "Ping", "id", iter.Event.Id, "n", iter.Event.N,
-						"on", contract.Chain.Name, "from", d.contracts[iter.Event.SrcChainID].Chain.Name)
+					log.Debug(ctx, "Ping",
+						"id", iter.Event.Id,
+						"n", iter.Event.N,
+						"on", contract.Chain.Name,
+						"from", d.contracts[iter.Event.SrcChainID].Chain.Name,
+						"height", iter.Event.Raw.BlockNumber,
+					)
 				}
 
 				lastBlockHeight = blockNumber

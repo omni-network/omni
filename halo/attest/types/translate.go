@@ -13,6 +13,13 @@ func (h *BlockHeader) XChainVersion() xchain.ChainVersion {
 	}
 }
 
+func (h *WindowCompareRequest) XChainVersion() xchain.ChainVersion {
+	return xchain.ChainVersion{
+		ID:        h.ChainId,
+		ConfLevel: xchain.ConfLevel(h.ConfLevel),
+	}
+}
+
 // AttestationsFromProto converts a slice of protobuf Attestations to a slice of xchain.Attestations.
 func AttestationsFromProto(atts []*Attestation) ([]xchain.Attestation, error) {
 	resp := make([]xchain.Attestation, 0, len(atts))
