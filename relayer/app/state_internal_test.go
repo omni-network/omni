@@ -4,6 +4,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/omni-network/omni/lib/xchain"
+
 	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"
 )
@@ -14,17 +16,19 @@ func TestPersistState(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state.json")
 
 	ps := &State{
-		cursors:  make(map[uint64]map[uint64]uint64),
+		cursors:  make(map[uint64]map[uint64]map[xchain.ConfLevel]uint64),
 		filePath: path,
 	}
 
-	expected := make(map[uint64]map[uint64]uint64)
+	expected := make(map[uint64]map[uint64]map[xchain.ConfLevel]uint64)
 	fuzzer.Fuzz(&expected)
 
-	for dstChainID, sourceMap := range expected {
-		for srcChainID, offset := range sourceMap {
-			err := ps.Persist(dstChainID, srcChainID, offset)
-			require.NoError(t, err)
+	for dstChainID, inner1 := range expected {
+		for srcChainID, inner2 := range inner1 {
+			for confLevel, offset := range inner2 {
+				err := ps.Persist(dstChainID, xchain.ChainVersion{ID: srcChainID, ConfLevel: confLevel}, offset)
+				require.NoError(t, err)
+			}
 		}
 	}
 
@@ -38,7 +42,7 @@ func TestPersistState(t *testing.T) {
 		return loadedState
 	}
 
-	require.True(t, mapsEqual(expected, load(t).cursors))
+	require.EqualValues(t, expected, load(t).cursors)
 
 	// Clear each destination
 	for dstChainID := range expected {
@@ -53,32 +57,4 @@ func TestPersistState(t *testing.T) {
 
 	require.Empty(t, ps.cursors)
 	require.Empty(t, load(t).cursors)
-}
-
-func mapsEqual(map1, map2 map[uint64]map[uint64]uint64) bool {
-	if len(map1) != len(map2) {
-		return false
-	}
-
-	for key, value := range map1 {
-		if val2, ok := map2[key]; !ok || !subMapsEqual(value, val2) {
-			return false
-		}
-	}
-
-	return true
-}
-
-func subMapsEqual(subMap1, subMap2 map[uint64]uint64) bool {
-	if len(subMap1) != len(subMap2) {
-		return false
-	}
-
-	for k, v := range subMap1 {
-		if v2, ok := subMap2[k]; !ok || v != v2 {
-			return false
-		}
-	}
-
-	return true
 }

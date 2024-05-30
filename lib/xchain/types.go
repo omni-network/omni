@@ -66,7 +66,7 @@ func (s StreamID) ChainVersion() ChainVersion {
 // MsgID uniquely identifies a cross-chain message.
 type MsgID struct {
 	StreamID            // Unique ID of the Stream this message belongs to
-	StreamOffset uint64 // Monotonically incremented offset of Msg in the Steam
+	StreamOffset uint64 // Monotonically incremented offset of Msg in the Steam (1-indexed)
 }
 
 // Msg is a cross-chain message.
