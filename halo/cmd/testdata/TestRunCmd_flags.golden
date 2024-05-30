@@ -1,7 +1,6 @@
 {
  "HomeDir": "foo",
  "Network": "",
- "EigenKeyPassword": "",
  "EngineJWTFile": "bar",
  "EngineEndpoint": "",
  "RPCEndpoints": null,

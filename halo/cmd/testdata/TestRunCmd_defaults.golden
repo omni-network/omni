@@ -1,7 +1,6 @@
 {
  "HomeDir": "./halo",
  "Network": "",
- "EigenKeyPassword": "",
  "EngineJWTFile": "",
  "EngineEndpoint": "",
  "RPCEndpoints": null,

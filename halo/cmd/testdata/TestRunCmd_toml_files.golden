@@ -1,7 +1,6 @@
 {
  "HomeDir": "testinput/input1",
  "Network": "",
- "EigenKeyPassword": "",
  "EngineJWTFile": "jwt.toml",
  "EngineEndpoint": "",
  "RPCEndpoints": {

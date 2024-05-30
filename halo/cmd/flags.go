@@ -28,7 +28,6 @@ func bindRunFlags(cmd *cobra.Command, cfg *halocfg.Config) {
 	flags.StringVar(&cfg.PruningOption, "pruning", cfg.PruningOption, "Pruning strategy (default|nothing|everything)")
 	flags.DurationVar(&cfg.EVMBuildDelay, "evm-build-delay", cfg.EVMBuildDelay, "Minimum delay between triggering and fetching a EVM payload build")
 	flags.BoolVar(&cfg.EVMBuildOptimistic, "evm-build-optimistic", cfg.EVMBuildOptimistic, "Enables optimistic building of EVM payloads on previous block finalize")
-	flags.StringVar(&cfg.EigenKeyPassword, "eigenlayer-key-password", cfg.EigenKeyPassword, "Eigenlayer generated operator key password. Not required if CombetBFT priv_validator_key.json is used")
 }
 
 func bindRollbackFlags(flags *pflag.FlagSet, cfg *app.RollbackConfig) {
