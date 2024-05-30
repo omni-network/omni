@@ -78,4 +78,11 @@ var (
 		Name:      "trim_total",
 		Help:      "Total number of votes trimmed per source chain.",
 	}, []string{"chain"})
+
+	reorgTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "halo",
+		Subsystem: "voter",
+		Name:      "reorg_total",
+		Help:      "Total number of reorgs detected per source chain.",
+	}, []string{"chain"})
 )

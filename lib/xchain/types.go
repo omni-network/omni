@@ -106,9 +106,10 @@ func (b BlockHeader) ChainVersion() ChainVersion {
 // Block is a deterministic representation of the omni cross-chain properties of a source chain EVM block.
 type Block struct {
 	BlockHeader
-	Msgs      []Msg     // All cross-chain messages sent/emittted in the block
-	Receipts  []Receipt // Receipts of all submitted cross-chain messages applied in the block
-	Timestamp time.Time // Timestamp of the source chain block
+	Msgs       []Msg       // All cross-chain messages sent/emittted in the block
+	Receipts   []Receipt   // Receipts of all submitted cross-chain messages applied in the block
+	ParentHash common.Hash // ParentHash is the hash of the parent block.
+	Timestamp  time.Time   // Timestamp of the source chain block
 }
 
 // ShouldAttest returns true if the xblock should be attested by the omni consensus chain validators.
