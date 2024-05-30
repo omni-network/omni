@@ -41,7 +41,7 @@ func Run(ctx context.Context, cfg Config) error {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", home)
-	mux.Handle("/query", GraphQL(p))
+	mux.Handle("/query", instrumentHandler("graphql")(GraphQL(p)))
 	handler := cors.Default().Handler(mux)
 
 	httpServer := &http.Server{
