@@ -135,6 +135,8 @@ func (k *Keeper) Add(ctx context.Context, msg *types.MsgAddVotes) error {
 
 // addOne adds the given aggregate vote to the store.
 // It merges it if the attestation already exists.
+//
+//nolint:nestif // Ignore for now.
 func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64) error {
 	defer latency("add_one")()
 
@@ -162,6 +164,14 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 		}
 	} else if err != nil {
 		return errors.Wrap(err, "by att unique key")
+	} else if existing.GetFinalizedAttId() != 0 {
+		log.Debug(ctx, "Ignoring vote for attestation with finalized override", nil,
+			"agg_id", attID,
+			"chain", k.namer(header.ChainId),
+			"offset", header.Offset,
+		)
+
+		return nil
 	} else if isApprovedByDifferentSet(existing, valSetID) {
 		log.Debug(ctx, "Ignoring vote for attestation approved by different validator set",
 			"agg_id", attID,
@@ -248,6 +258,13 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 
 		toDelete, ok := isApproved(sigs, valset)
 		if !ok {
+			// Check if there is a finalized attestation that overrides this one.
+			if ok, err := k.maybeOverrideFinalized(ctx, att); err != nil {
+				return err
+			} else if ok {
+				approvedByChain[chainVer] = att.GetOffset()
+			}
+
 			continue
 		}
 
@@ -318,6 +335,14 @@ func (k *Keeper) ListAttestationsFrom(ctx context.Context, chainID uint64, confL
 		}
 		next++
 
+		// If this attestation is overridden by a finalized attestation, use that instead.
+		if att.GetFinalizedAttId() != 0 {
+			att, err = k.attTable.Get(ctx, att.GetFinalizedAttId())
+			if err != nil {
+				return nil, errors.Wrap(err, "get finalized attestation")
+			}
+		}
+
 		pbsigs, err := k.getSigs(ctx, att.GetId())
 		if err != nil {
 			return nil, errors.Wrap(err, "get att sigs")
@@ -348,6 +373,55 @@ func (k *Keeper) ListAttestationsFrom(ctx context.Context, chainID uint64, confL
 	return resp, nil
 }
 
+// maybeOverrideFinalized returns the approved finalized attestation and true for the provided fuzzy attestation if it exists.
+func (k *Keeper) maybeOverrideFinalized(ctx context.Context, att *Attestation) (bool, error) {
+	if att.GetStatus() != uint32(Status_Pending) {
+		return false, errors.New("attestation not pending [BUG]")
+	}
+
+	if att.GetConfLevel() == uint32(xchain.ConfFinalized) {
+		return false, nil // Only fuzzy attestations are overwritten with finalized attestations.
+	}
+
+	finalizedIdx := AttestationStatusChainIdConfLevelOffsetIndexKey{}.WithStatusChainIdConfLevelOffset(uint32(Status_Approved), att.GetChainId(), uint32(xchain.ConfFinalized), att.GetOffset())
+	iter, err := k.attTable.List(ctx, finalizedIdx)
+	if err != nil {
+		return false, errors.Wrap(err, "list finalized")
+	}
+	defer iter.Close()
+
+	if !iter.Next() {
+		// No finalized attestation found.
+		return false, nil
+	}
+
+	finalized, err := iter.Value()
+	if err != nil {
+		return false, errors.Wrap(err, "value finalized")
+	}
+
+	if iter.Next() {
+		return false, errors.New("multiple finalized attestation found [BUG]")
+	} else if finalized.GetFinalizedAttId() != 0 {
+		return false, errors.New("finalized attestation has finalized attestation [BUG]")
+	}
+
+	att.FinalizedAttId = finalized.GetId()
+	att.Status = uint32(Status_Approved)
+	if err = k.attTable.Update(ctx, att); err != nil {
+		return false, errors.Wrap(err, "update attestation")
+	}
+
+	log.Debug(ctx, "📬 Fuzzy attestation overridden by finalized",
+		"chain", k.namer(att.GetChainId()),
+		"conf_level", att.XChainConfLevelStr(),
+		"offset", att.GetOffset(),
+		"height", att.GetHeight(),
+	)
+
+	return true, nil
+}
+
 // latestAttestation returns the latest approved attestation for the given chain or
 // false if none is found.
 func (k *Keeper) latestAttestation(ctx context.Context, version xchain.ChainVersion) (*Attestation, bool, error) {
@@ -371,6 +445,16 @@ func (k *Keeper) latestAttestation(ctx context.Context, version xchain.ChainVers
 
 	if iter.Next() {
 		return nil, false, errors.New("multiple attestation found")
+	}
+
+	// If this attestation is overridden by a finalized attestation, return that instead.
+	if att.GetFinalizedAttId() != 0 {
+		att, err := k.attTable.Get(ctx, att.GetFinalizedAttId())
+		if err != nil {
+			return nil, false, errors.Wrap(err, "get finalized attestation")
+		}
+
+		return att, true, nil
 	}
 
 	return att, true, nil
@@ -423,16 +507,16 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 	votes := k.voter.GetAvailable()
 
 	// Filter by vote window and if limited exceeded.
-	countsByChain := make(map[uint64]int)
+	countsByChainVer := make(map[xchain.ChainVersion]int)
 	var filtered []*types.Vote
 	for _, vote := range votes {
-		if cmp, err := k.windowCompare(ctx, vote.BlockHeader.ChainId, vote.BlockHeader.ConfLevel, vote.BlockHeader.Offset); err != nil {
+		if cmp, err := k.windowCompare(ctx, vote.BlockHeader.XChainVersion(), vote.BlockHeader.Offset); err != nil {
 			return nil, errors.Wrap(err, "windower")
 		} else if cmp != 0 {
 			// Skip votes no in the window
 			continue
 		}
-		countsByChain[vote.BlockHeader.ChainId]++
+		countsByChainVer[vote.BlockHeader.XChainVersion()]++
 		filtered = append(filtered, vote)
 
 		if len(filtered) >= int(k.voteExtLimit) {
@@ -447,15 +531,15 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 		return nil, errors.Wrap(err, "marshal atts")
 	}
 
-	for chainID, count := range countsByChain {
-		votesExtended.WithLabelValues(k.namer(chainID)).Observe(float64(count))
+	for chainVer, count := range countsByChainVer {
+		votesExtended.WithLabelValues(k.namer(chainVer.ID)).Observe(float64(count))
 	}
 
 	// Make nice logs
 	const limit = 5
-	offsets := make(map[uint64][]string)
+	offsets := make(map[xchain.ChainVersion][]string)
 	for _, vote := range votes {
-		offset := offsets[vote.BlockHeader.ChainId]
+		offset := offsets[vote.BlockHeader.XChainVersion()]
 		if len(offset) < limit {
 			offset = append(offset, strconv.FormatUint(vote.BlockHeader.Offset, 10))
 		} else if len(offset) == limit {
@@ -463,12 +547,12 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 		} else {
 			continue
 		}
-		offsets[vote.BlockHeader.ChainId] = offset
+		offsets[vote.BlockHeader.XChainVersion()] = offset
 	}
 	attrs := []any{slog.Int("votes", len(votes))}
-	for cid, offset := range offsets {
+	for chainVer, offset := range offsets {
 		attrs = append(attrs, slog.String(
-			strconv.FormatUint(cid, 10),
+			fmt.Sprintf("%d-%d", chainVer.ID, chainVer.ConfLevel),
 			fmt.Sprint(offset),
 		))
 	}
@@ -511,7 +595,7 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 			log.Warn(ctx, "Rejecting invalid vote", err)
 			return respReject, nil
 		}
-		if cmp, err := k.windowCompare(ctx, vote.BlockHeader.ChainId, vote.BlockHeader.ConfLevel, vote.BlockHeader.Offset); err != nil {
+		if cmp, err := k.windowCompare(ctx, vote.BlockHeader.XChainVersion(), vote.BlockHeader.Offset); err != nil {
 			return nil, errors.Wrap(err, "windower")
 		} else if cmp != 0 {
 			log.Warn(ctx, "Rejecting out-of-window vote", nil, "cmp", cmp)
@@ -561,9 +645,7 @@ func (k *Keeper) prevBlockValSet(ctx context.Context) (ValSet, error) {
 	}, nil
 }
 
-func (k *Keeper) windowCompare(ctx context.Context, chainID uint64, confLevel uint32, offset uint64) (int, error) {
-	chainVer := xchain.ChainVersion{ID: chainID, ConfLevel: xchain.ConfLevel(confLevel)}
-
+func (k *Keeper) windowCompare(ctx context.Context, chainVer xchain.ChainVersion, offset uint64) (int, error) {
 	latest, exists, err := k.latestAttestation(ctx, chainVer)
 	if err != nil {
 		return 0, err
@@ -599,7 +681,7 @@ func (k *Keeper) verifyAggVotes(ctx context.Context, valset ValSet, aggs []*type
 		}
 
 		// Ensure the block header is in the vote window.
-		if resp, err := k.windowCompare(ctx, agg.BlockHeader.ChainId, agg.BlockHeader.ConfLevel, agg.BlockHeader.Offset); err != nil {
+		if resp, err := k.windowCompare(ctx, agg.BlockHeader.XChainVersion(), agg.BlockHeader.Offset); err != nil {
 			return errors.Wrap(err, "windower")
 		} else if resp != 0 {
 			errAttrs = append(errAttrs, "resp", resp)

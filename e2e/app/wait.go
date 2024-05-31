@@ -73,8 +73,12 @@ func WaitAllSubmissions(ctx context.Context, portals map[uint64]netman.Portal, m
 
 				if i%5 == 0 { // Only log every 5th iteration (5s)
 					log.Debug(ctx, "Waiting for submissions on destination chain",
-						"src", src.Chain.Name, "dest", dest.Chain.Name,
-						"src_offset", srcOffset, "dest_offset", destOffset, "minimum", minimum)
+						"src", src.Chain.Name,
+						"dest", dest.Chain.Name,
+						"src_offset", srcOffset,
+						"dest_offset", destOffset,
+						"minimum", minimum,
+					)
 				}
 
 				backoff()

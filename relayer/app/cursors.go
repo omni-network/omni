@@ -42,7 +42,7 @@ func filterMsgs(ctx context.Context, streamID xchain.StreamID, msgs []xchain.Msg
 	for i := 0; i < len(msgs); {
 		msg := msgs[i]
 
-		check := msgFilter.Check(streamID, msg.StreamOffset)
+		check, expected := msgFilter.Check(streamID, msg.StreamOffset)
 		if check == checkProcess {
 			res = append(res, msg)
 		}
@@ -53,11 +53,19 @@ func filterMsgs(ctx context.Context, streamID xchain.StreamID, msgs []xchain.Msg
 		// else checkGap
 
 		if !streamID.ConfLevel().IsFuzzy() {
-			return nil, errors.New("unexpected gap in finalized msg offsets [BUG]", "offset", msg.StreamOffset)
+			return nil, errors.New("unexpected gap in finalized msg offsets [BUG]",
+				"stream", streamID,
+				"offset", msg.StreamOffset,
+				"expected", expected,
+			)
 		}
 
 		// Re-orgs of fuzzy conf levels are expected and can create gaps, block until ConfFinalized fills the gap.
-		log.Warn(ctx, "Gap in fuzzy msg offsets, waiting for ConfFinalized", nil, "stream", streamID, "offset", msg.StreamOffset)
+		log.Warn(ctx, "Gap in fuzzy msg offsets, waiting for ConfFinalized", nil,
+			"stream", streamID,
+			"offset", msg.StreamOffset,
+			"expected", expected,
+		)
 		backoff()
 		// Retry the same message again
 	}
@@ -143,19 +151,20 @@ const (
 // Check updates the stream state and returns checkProcess if the provided offset is sequential.
 // Otherwise it does not update the state and returns checkGap if the next message is too far ahead,
 // or checkIgnore if the next message was already processed.
-func (f *msgOffsetFilter) Check(stream xchain.StreamID, msgOffset uint64) checkResult {
+// It also returns the expected offset for the next message.
+func (f *msgOffsetFilter) Check(stream xchain.StreamID, msgOffset uint64) (checkResult, uint64) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
 	expect := f.offsets[stream] + 1
 	if msgOffset > expect {
-		return checkGap
+		return checkGap, expect
 	} else if msgOffset < expect {
-		return checkIgnore
+		return checkIgnore, expect
 	}
 
 	// Update the offset
 	f.offsets[stream] = msgOffset
 
-	return checkProcess
+	return checkProcess, expect
 }

@@ -73,7 +73,7 @@ func (k *Keeper) WindowCompare(ctx context.Context, req *types.WindowCompareRequ
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
-	cmp, err := k.windowCompare(ctx, req.GetChainId(), req.GetConfLevel(), req.GetBlockOffset())
+	cmp, err := k.windowCompare(ctx, req.XChainVersion(), req.GetBlockOffset())
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

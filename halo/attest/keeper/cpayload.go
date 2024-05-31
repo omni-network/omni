@@ -9,6 +9,7 @@ import (
 	evmenginetypes "github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/xchain"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
@@ -36,7 +37,7 @@ func (k *Keeper) PrepareVotes(ctx context.Context, commit abci.ExtendedCommitInf
 	return []sdk.Msg{msg}, nil
 }
 
-type windowCompareFunc func(context.Context, uint64, uint32, uint64) (int, error)
+type windowCompareFunc func(context.Context, xchain.ChainVersion, uint64) (int, error)
 
 // votesFromLastCommit returns the aggregated votes contained in vote extensions
 // of the last local commit.
@@ -55,7 +56,7 @@ func votesFromLastCommit(ctx context.Context, windowCompare windowCompareFunc, i
 
 		var selected []*types.Vote
 		for _, v := range votes.Votes {
-			cmp, err := windowCompare(ctx, v.BlockHeader.ChainId, v.BlockHeader.ConfLevel, v.BlockHeader.Offset)
+			cmp, err := windowCompare(ctx, v.BlockHeader.XChainVersion(), v.BlockHeader.Offset)
 			if err != nil {
 				return nil, err
 			} else if cmp != 0 {
