@@ -2,6 +2,7 @@ package app
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -46,14 +47,17 @@ func newProxy(instance anvilInstance) (*proxy, error) {
 }
 
 func (p *proxy) Proxy(w http.ResponseWriter, r *http.Request) {
-	err := p.proxy(w, r)
+	ctx := r.Context()
+	ctx = log.WithCtx(ctx, "remote_addr", r.RemoteAddr)
+
+	err := p.proxy(ctx, w, r)
 	if err != nil {
-		log.Error(r.Context(), "Proxy error", err)
+		log.Error(ctx, "Proxy error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-func (p *proxy) proxy(w http.ResponseWriter, r *http.Request) error {
+func (p *proxy) proxy(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	reqBody, err := io.ReadAll(r.Body)
 	if err != nil {
 		return errors.Wrap(err, "read body")
@@ -65,7 +69,7 @@ func (p *proxy) proxy(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	nextReq, err := http.NewRequestWithContext(
-		r.Context(),
+		ctx,
 		r.Method,
 		p.GetTarget().String(),
 		closeReader{bytes.NewReader(reqBody)},
@@ -88,7 +92,7 @@ func (p *proxy) proxy(w http.ResponseWriter, r *http.Request) error {
 		return nil
 	}
 
-	shouldFuzz, height, err := isFuzzyXMsgLogFilter(r.Context(), p.GetTarget().String(), reqMsg)
+	shouldFuzz, height, err := isFuzzyXMsgLogFilter(ctx, p.GetTarget().String(), reqMsg)
 	if err != nil {
 		return errors.Wrap(err, "check for fuzzy log filter")
 	}
@@ -105,7 +109,7 @@ func (p *proxy) proxy(w http.ResponseWriter, r *http.Request) error {
 		return errors.Wrap(err, "read response")
 	}
 
-	respBytes, _, err = parseAndFuzzXMsgs(r.Context(), height, respBytes)
+	respBytes, _, err = parseAndFuzzXMsgs(ctx, height, respBytes)
 	if err != nil {
 		return errors.Wrap(err, "fuzz xmsgs")
 	}

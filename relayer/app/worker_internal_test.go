@@ -107,7 +107,17 @@ func TestWorker_Run(t *testing.T) {
 			offset := xBlockOffset
 			nextAtt := func() xchain.Attestation {
 				defer func() { offset++ }()
+
+				// Calculate the attestation root
+				block, _, _ := mockXClient.GetBlock(ctx, xchain.ProviderRequest{
+					ChainID:   chainVer.ID,
+					Offset:    offset,
+					ConfLevel: chainVer.ConfLevel,
+				})
+				tree, _ := xchain.NewBlockTree(block)
+
 				return xchain.Attestation{
+					AttestationRoot: tree.Root(),
 					BlockHeader: xchain.BlockHeader{
 						SourceChainID: chainVer.ID,
 						ConfLevel:     chainVer.ConfLevel,

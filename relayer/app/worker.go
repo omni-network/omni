@@ -191,9 +191,11 @@ func newCallback(
 	awaitValSet awaitValSet,
 ) cchain.ProviderCallback {
 	return func(ctx context.Context, att xchain.Attestation) error {
-		block, err := fetchXBlock(ctx, xProvider, att)
+		block, ok, err := fetchXBlock(ctx, xProvider, att)
 		if err != nil {
 			return err
+		} else if !ok {
+			return nil // Mismatching fuzzy attestation, skip.
 		}
 
 		tree, err := xchain.NewBlockTree(block)
@@ -260,7 +262,7 @@ func wrapStatePersist(cb cchain.ProviderCallback, state *State, destChainID uint
 }
 
 // fetchXBlock gets the xblock from the source chain (retry up to 10s if block-not-finalized).
-func fetchXBlock(rootCtx context.Context, xProvider xchain.Provider, att xchain.Attestation) (xchain.Block, error) {
+func fetchXBlock(rootCtx context.Context, xProvider xchain.Provider, att xchain.Attestation) (xchain.Block, bool, error) {
 	ctx, cancel := context.WithTimeout(rootCtx, 10*time.Second)
 	defer cancel()
 
@@ -273,33 +275,58 @@ func fetchXBlock(rootCtx context.Context, xProvider xchain.Provider, att xchain.
 			ConfLevel: att.ConfLevel,
 		}
 		block, ok, err := xProvider.GetBlock(ctx, req)
-		if rootCtx.Err() != nil { //nolint:nestif // Just a series of if-elses
-			return xchain.Block{}, errors.Wrap(rootCtx.Err(), "canceled") // Root context closed, shutting down
+		if rootCtx.Err() != nil {
+			return xchain.Block{}, false, errors.Wrap(rootCtx.Err(), "canceled") // Root context closed, shutting down
 		} else if ctx.Err() != nil {
-			return xchain.Block{}, errors.New("attestation block still not finalized (node lagging?)")
+			return xchain.Block{}, false, errors.New("attestation block still not finalized (node lagging?)")
 		} else if err != nil {
-			return xchain.Block{}, err
+			return xchain.Block{}, false, err
 		} else if !ok {
 			// This happens sometimes if the evm node relayer is querying is lagging behind
 			// the chain itself. Especially for omni_evm with instant finality, this does happen sometimes.
 			// Just backoff and retry a few times.
 			backoff()
 			continue
-		} else if block.BlockHash != att.BlockHash { // Sanity check, should never happen.
-			return xchain.Block{}, errors.New("attestation block hash mismatch [BUG]",
-				log.Hex7("attestation_hash", att.BlockHash[:]),
-				log.Hex7("block_hash", block.BlockHash[:]),
-			)
-		} else if block.BlockOffset != att.BlockOffset {
-			// All attestations must map to non-empty xblocks with XBlockOffset populated.
-			return xchain.Block{}, errors.New("unexpected XBlockOffset [BUG]")
-		} else if len(block.Msgs) == 0 {
-			return xchain.Block{}, errors.New("unexpected empty xblock [BUG]")
+		}
+
+		if err := verifyAttBlock(att, block); err != nil {
+			if att.ConfLevel.IsFuzzy() {
+				log.Warn(ctx, "Skipping fuzzy attestation mismatching block", err)
+				return block, false, nil
+			}
+
+			return xchain.Block{}, false, errors.Wrap(err, "mismatching block vs finalized attestation [BUG]")
 		}
 
 		// We got the xblock, it is finalized and its hash matches the attestation block hash.
-		return block, nil
+		return block, true, nil
 	}
+}
+
+// verifyAttBlock verifies the attestation matches the xblock.
+func verifyAttBlock(att xchain.Attestation, block xchain.Block) error {
+	if block.BlockHash != att.BlockHash {
+		return errors.New("attestation block hash mismatch",
+			log.Hex7("attestation_hash", att.BlockHash[:]),
+			log.Hex7("block_hash", block.BlockHash[:]),
+		)
+	} else if len(block.Msgs) == 0 {
+		// All attestations must map to non-empty xblocks
+		return errors.New("unexpected empty xblock")
+	} else if block.BlockOffset != att.BlockOffset {
+		// All attestations must map to non-empty xblocks with XBlockOffset populated.
+		return errors.New("unexpected XBlockOffset")
+	}
+
+	tree, _ := xchain.NewBlockTree(block)
+	if root := tree.Root(); att.AttestationRoot != root {
+		return errors.New("attestation root mismatch",
+			log.Hex7("attestation_root", att.AttestationRoot[:]),
+			log.Hex7("block_root", root[:]),
+		)
+	}
+
+	return nil
 }
 
 // attestationForShard returns true if the attestation proof contains messages for the shard.

@@ -55,7 +55,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	cprov := cprovider.NewABCIProvider(tmClient, network.ID, netconf.ChainNamer(cfg.Network))
+	cprov := cprovider.NewABCIProvider(tmClient, network.ID, netconf.ChainVersionNamer(cfg.Network))
 	xprov := xprovider.New(network, rpcClientPerChain, cprov)
 
 	state, ok, err := LoadCursors(cfg.StateFile)
