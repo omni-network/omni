@@ -61,3 +61,8 @@ jobs:
         run: |
           docker push omniops/monitor:${GITHUB_SHA::7}
           docker push omniops/monitor:main
+
+      - name: Push Monitor to Dockerhub
+        run: |
+          docker push omniops/anvilproxy:${GITHUB_SHA::7}
+          docker push omniops/anvilproxy:main

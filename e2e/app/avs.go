@@ -48,7 +48,12 @@ func deployAVS(ctx context.Context, def Definition) error {
 
 	addr, receipt, err := avs.DeployIfNeeded(ctx, def.Testnet.Network, backend)
 	if err != nil {
-		return errors.Wrap(err, "deploy")
+		if def.Manifest.Network.IsEphemeral() {
+			log.Warn(ctx, "Skipping failed AVS devnet deployment for ephemeral network", err)
+			return nil
+		}
+
+		return errors.Wrap(err, "deploy avs")
 	}
 
 	if receipt == nil {

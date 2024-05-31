@@ -51,12 +51,12 @@ builds:
     ldflags:
       - -s -w -X github.com/omni-network/omni/lib/buildinfo.version={{.Tag}}
 
-  - id: forkproxy
-    main: ./e2e/forkproxy
-    binary: forkproxy
+  - id: anvilproxy
+    main: ./e2e/anvilproxy
+    binary: anvilproxy
     env: [ CGO_ENABLED=0 ]
-    goos: [ linux, darwin ]
-    goarch: [ amd64, arm64 ]
+    goos: [ linux ]
+    goarch: [ amd64 ]
 
 dockers:
   - ids: [halo]
@@ -79,6 +79,13 @@ dockers:
      - omniops/monitor:{{ .ShortCommit }}
      - omniops/monitor:{{ if .IsSnapshot }}main{{ else }}latest{{ end }}
      - omniops/monitor:{{ if .IsSnapshot }}main{{ else }}{{.Tag}}{{ end }}
+
+  - ids: [anvilproxy]
+    dockerfile: ./e2e/anvilproxy/Dockerfile
+    image_templates:
+     - omniops/anvilproxy:{{ .ShortCommit }}
+     - omniops/anvilproxy:{{ if .IsSnapshot }}main{{ else }}latest{{ end }}
+     - omniops/anvilproxy:{{ if .IsSnapshot }}main{{ else }}{{.Tag}}{{ end }}
 
   - ids: [explorer-graphql]
     dockerfile: ./explorer/graphql/Dockerfile

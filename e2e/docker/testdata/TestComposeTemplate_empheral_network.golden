@@ -31,12 +31,11 @@ services:
       e2e: true
     container_name: mock_rollup
     platform: linux/amd64
-    image: omniops/forkproxy:main
-    pull_policy: always
+    image: omniops/anvilproxy:main
     environment:
-      - FORKPROXY_CHAIN_ID=99
-      - FORKPROXY_BLOCK_TIME=1
-      - FORKPROXY_SLOTS_IN_AN_EPOCH=6 # Finality in 6*2*BlockPeriod
+      - ANVILPROXY_CHAIN_ID=99
+      - ANVILPROXY_BLOCK_TIME=1
+      - ANVILPROXY_SLOTS_IN_AN_EPOCH=4 # Finality in 4*2*BlockPeriod
       
     ports:
       - 9000:8545
@@ -49,12 +48,11 @@ services:
       e2e: true
     container_name: mock_l1
     platform: linux/amd64
-    image: omniops/forkproxy:main
-    pull_policy: always
+    image: omniops/anvilproxy:main
     environment:
-      - FORKPROXY_CHAIN_ID=1
-      - FORKPROXY_BLOCK_TIME=3600
-      - FORKPROXY_SLOTS_IN_AN_EPOCH=6 # Finality in 6*2*BlockPeriod
+      - ANVILPROXY_CHAIN_ID=1
+      - ANVILPROXY_BLOCK_TIME=3600
+      - ANVILPROXY_SLOTS_IN_AN_EPOCH=4 # Finality in 4*2*BlockPeriod
       - FORKPROXY_LOAD_STATE=/anvil/state.json
     ports:
       - 9000:8545
