@@ -57,6 +57,8 @@ const (
 	PerturbStopStart Perturb = "stopstart"
 	// PerturbRollback defines a perturbation that stops a halo node, performs a rollback, then starts it again.
 	PerturbRollback Perturb = "rollback"
+	// PerturbFuzzyHead defines a perturbation that enables fuzzyhead xmsgs on the anvilproxy for a while.
+	PerturbFuzzyHead Perturb = "fuzzyhead"
 )
 
 // Manifest wraps e2e.Manifest with additional omni-specific fields.

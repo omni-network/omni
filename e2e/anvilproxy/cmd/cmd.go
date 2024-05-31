@@ -2,7 +2,7 @@
 package cmd
 
 import (
-	"github.com/omni-network/omni/e2e/forkproxy/app"
+	"github.com/omni-network/omni/e2e/anvilproxy/app"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/log"
 
@@ -10,11 +10,11 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// New returns a new root cobra command that runs the forkproxy server.
+// New returns a new root cobra command that runs the anvilproxy server.
 func New() *cobra.Command {
 	cmd := libcmd.NewRootCmd(
-		"forkproxy",
-		"Forkproxy Server",
+		"anvilproxy",
+		"Anvil proxy server supporting fuzzy head",
 	)
 
 	cfg := app.DefaultConfig()
@@ -45,6 +45,5 @@ func bindFlags(flags *pflag.FlagSet, cfg *app.Config) {
 	flags.StringVar(&cfg.LoadState, "load-state", cfg.LoadState, "Initialize the chain from a previously saved state snapshot")
 	flags.Uint64Var(&cfg.BlockTimeSecs, "block-time", cfg.BlockTimeSecs, "Block time in seconds for interval mining")
 	flags.BoolVar(&cfg.Silent, "silent", cfg.Silent, "Don't print anything on startup and don't print logs")
-	flags.BoolVar(&cfg.EnableForking, "fork", cfg.EnableForking, "Enable constant forking")
 	flags.Uint64Var(&cfg.SlotsInEpoch, "slots-in-an-epoch", cfg.SlotsInEpoch, "Slots in an epoch")
 }
