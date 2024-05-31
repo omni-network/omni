@@ -171,7 +171,7 @@ func devnetDefinition(ctx context.Context) (app.Definition, error) {
 
 	defCfg := app.DefaultDefinitionConfig(ctx)
 	defCfg.ManifestFile = manifestFile
-	defCfg.GraphQLURL = "http://localhost:8080/query"
+	defCfg.GraphQLURL = "http://explorer_graphql:8080/query"
 	defCfg.OmniImgTag = buildinfo.Version()
 
 	def, err := app.MakeDefinition(ctx, defCfg, "devnet")
