@@ -42,13 +42,6 @@ builds:
     goos: [ linux, darwin ]
     goarch: [ amd64, arm64 ]
 
-  - id: explorer-ui
-    main: ./explorer/ui
-    binary: ui
-    env: [ CGO_ENABLED=0 ]
-    goos: [ linux, darwin ]
-    goarch: [ amd64, arm64 ]
-
   - id: omni
     main: ./cli/cmd/omni
     binary: omni
@@ -100,13 +93,6 @@ dockers:
       - omniops/explorer-indexer:{{ .ShortCommit }}
       - omniops/explorer-indexer:{{ if .IsSnapshot }}main{{ else }}latest{{ end }}
       - omniops/explorer-indexer:{{ if .IsSnapshot }}main{{ else }}{{.Tag}}{{ end }}
-
-  - ids: [explorer-ui]
-    dockerfile: ./explorer/ui/Dockerfile
-    image_templates:
-      - omniops/explorer-ui:{{ .ShortCommit }}
-      - omniops/explorer-ui:{{ if .IsSnapshot }}main{{ else }}latest{{ end }}
-      - omniops/explorer-ui:{{ if .IsSnapshot }}main{{ else }}{{.Tag}}{{ end }}
 
 archives:
   - format: tar.gz
