@@ -68,7 +68,7 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, str
 		opts.BlockNumber = header.Number
 	}
 
-	offset, err := caller.OutXStreamOffset(opts, stream.DestChainID)
+	offset, err := caller.OutXMsgOffset(opts, stream.DestChainID)
 	if err != nil {
 		return xchain.StreamCursor{}, false, errors.Wrap(err, "call inXStreamOffset")
 	}
@@ -105,8 +105,7 @@ func (p *Provider) GetSubmittedCursor(ctx context.Context, stream xchain.StreamI
 
 	callOpts := &bind.CallOpts{Context: ctx, BlockNumber: big.NewInt(int64(height))}
 
-	// TODO(corver): Rename portal variable to InXStreamMsgOffset
-	msgOffset, err := caller.InXStreamOffset(callOpts, stream.SourceChainID)
+	msgOffset, err := caller.InXMsgOffset(callOpts, stream.SourceChainID)
 	if err != nil {
 		return xchain.StreamCursor{}, false, errors.Wrap(err, "call inXStreamOffset")
 	}
@@ -115,8 +114,7 @@ func (p *Provider) GetSubmittedCursor(ctx context.Context, stream xchain.StreamI
 		return xchain.StreamCursor{}, false, nil
 	}
 
-	// TODO(corver): Rename portal variable to InXStreamBlockOffset
-	blockOffset, err := caller.InXStreamBlockHeight(callOpts, stream.SourceChainID)
+	blockOffset, err := caller.InXBlockOffset(callOpts, stream.SourceChainID)
 	if err != nil {
 		return xchain.StreamCursor{}, false, errors.Wrap(err, "call inXStreamBlockHeight")
 	}
@@ -269,7 +267,7 @@ func (p *Provider) getXReceiptLogs(ctx context.Context, chainID uint64, height u
 					DestChainID:   chain.ID,
 					ShardID:       shardID,
 				},
-				StreamOffset: e.StreamOffset,
+				StreamOffset: e.Offset,
 			},
 			GasUsed:        e.GasUsed.Uint64(),
 			Success:        e.Success,
@@ -320,7 +318,7 @@ func (p *Provider) getXMsgLogs(ctx context.Context, chainID uint64, height uint6
 					DestChainID:   e.DestChainId,
 					ShardID:       uint64(chain.FinalizationStrat.ConfLevel()), // Hardcode ShardID for now.
 				},
-				StreamOffset: e.StreamOffset,
+				StreamOffset: e.Offset,
 			},
 			SourceMsgSender: e.Sender,
 			DestAddress:     e.To,

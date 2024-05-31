@@ -30,7 +30,7 @@ contract OmniPortal_exec_Test is Base {
 
         assertEq(counter.count(), count + 1);
         assertEq(counter.countByChainId(xmsg.sourceChainId), countForChain + 1);
-        assertEq(portal.inXStreamOffset(xmsg.sourceChainId), xmsg.streamOffset);
+        assertEq(portal.inXMsgOffset(xmsg.sourceChainId), xmsg.offset);
         assertReceipt(vm.getRecordedLogs()[0], xmsg);
     }
 
@@ -44,7 +44,7 @@ contract OmniPortal_exec_Test is Base {
         vm.chainId(xmsg.destChainId);
         portal.exec(xmsg);
 
-        assertEq(portal.inXStreamOffset(xmsg.sourceChainId), xmsg.streamOffset);
+        assertEq(portal.inXMsgOffset(xmsg.sourceChainId), xmsg.offset);
         assertReceipt(vm.getRecordedLogs()[0], xmsg);
     }
 
@@ -64,9 +64,9 @@ contract OmniPortal_exec_Test is Base {
     function test_exec_aheadOffset_reverts() public {
         XTypes.Msg memory xmsg = _inbound_increment(1);
 
-        xmsg.streamOffset = xmsg.streamOffset + 1; // intentionally ahead of offset
+        xmsg.offset = xmsg.offset + 1; // intentionally ahead of offset
 
-        vm.expectRevert("OmniPortal: wrong streamOffset");
+        vm.expectRevert("OmniPortal: wrong offset");
         vm.chainId(xmsg.destChainId);
         portal.exec(xmsg);
     }
@@ -78,7 +78,7 @@ contract OmniPortal_exec_Test is Base {
         vm.chainId(xmsg.destChainId);
         portal.exec(xmsg); // execute, to increment offset
 
-        vm.expectRevert("OmniPortal: wrong streamOffset");
+        vm.expectRevert("OmniPortal: wrong offset");
         vm.chainId(xmsg.destChainId);
         portal.exec(xmsg);
     }

@@ -11,7 +11,7 @@ import { XTypes } from "src/libraries/XTypes.sol";
 library TestXTypes {
     struct Receipt {
         uint64 sourceChainId;
-        uint64 streamOffset;
+        uint64 offset;
         uint256 gasUsed;
         address relayer;
         bool success;

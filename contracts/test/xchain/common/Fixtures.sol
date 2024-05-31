@@ -257,7 +257,7 @@ contract Fixtures is CommonBase, StdCheats {
         xmsgs[0] = XTypes.Msg({
             sourceChainId: omniCChainID,
             destChainId: broadcastChainId,
-            streamOffset: valSetId,
+            offset: valSetId,
             sender: address(0), // Portal._CCHAIN_SENDER
             to: address(0), // Portal._VIRTUAL_PORTAL_ADDRRESS
             data: abi.encodeWithSelector(OmniPortal.addValidatorSet.selector, valSetId, validatorSet[valSetId]),
@@ -285,7 +285,7 @@ contract Fixtures is CommonBase, StdCheats {
         xmsgs[0] = XTypes.Msg({
             sourceChainId: chainAId,
             destChainId: thisChainId,
-            streamOffset: 1,
+            offset: 1,
             sender: address(xsubmitter),
             to: address(xsubmitter),
             data: abi.encodeWithSelector(XSubmitter.tryXSubmit.selector),
@@ -301,17 +301,17 @@ contract Fixtures is CommonBase, StdCheats {
     }
 
     /// @dev Create a Counter.increment() XMsg from chainAId to thisChainId
-    function _inbound_increment(uint64 streamOffset) internal view returns (XTypes.Msg memory) {
-        return _increment(chainAId, thisChainId, streamOffset);
+    function _inbound_increment(uint64 offset) internal view returns (XTypes.Msg memory) {
+        return _increment(chainAId, thisChainId, offset);
     }
 
     /// @dev Create a Reverter.forceRevert() XMsg from chainAId to thisChainId
-    function _inbound_revert(uint64 streamOffset) internal view returns (XTypes.Msg memory) {
-        return _revert(chainAId, thisChainId, streamOffset);
+    function _inbound_revert(uint64 offset) internal view returns (XTypes.Msg memory) {
+        return _revert(chainAId, thisChainId, offset);
     }
 
     /// @dev Create a Counter.increment() XMsg
-    function _increment(uint64 sourceChainId, uint64 destChainId, uint64 streamOffset)
+    function _increment(uint64 sourceChainId, uint64 destChainId, uint64 offset)
         internal
         view
         returns (XTypes.Msg memory)
@@ -319,7 +319,7 @@ contract Fixtures is CommonBase, StdCheats {
         return XTypes.Msg({
             sourceChainId: sourceChainId,
             destChainId: destChainId,
-            streamOffset: streamOffset,
+            offset: offset,
             sender: _counters[sourceChainId],
             to: _counters[destChainId],
             data: abi.encodeWithSignature("increment()"),
@@ -345,7 +345,7 @@ contract Fixtures is CommonBase, StdCheats {
         return XTypes.Msg({
             sourceChainId: sourceChainId,
             destChainId: destChainId,
-            streamOffset: offset,
+            offset: offset,
             sender: _reverters[sourceChainId],
             to: _reverters[destChainId],
             data: data,
@@ -362,7 +362,7 @@ contract Fixtures is CommonBase, StdCheats {
         return XTypes.Msg({
             sourceChainId: sourceChainId,
             destChainId: destChainId,
-            streamOffset: offset,
+            offset: offset,
             sender: address(gasGuzzler),
             to: address(gasGuzzler),
             data: abi.encodeWithSignature("guzzle()"),

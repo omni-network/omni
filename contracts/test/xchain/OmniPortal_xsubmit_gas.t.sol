@@ -51,7 +51,7 @@ contract OmniPortal_xsubmit_gas_Test is Base {
             uint256 gasUsed = gasStart - gasleft();
 
             console.log("exec single");
-            console.log("offset: ", xmsg.streamOffset);
+            console.log("offset: ", xmsg.offset);
             console.log("non-xmsg gas used: ", gasUsed - xmsg.gasLimit);
         }
     }
@@ -64,7 +64,7 @@ contract OmniPortal_xsubmit_gas_Test is Base {
         XTypes.Submission memory xsub = readXSubmission(name, destChainId, genesisValSetId);
 
         uint64 sourceChainId = xsub.blockHeader.sourceChainId;
-        uint64 expectedOffset = xsub.msgs[xsub.msgs.length - 1].streamOffset;
+        uint64 expectedOffset = xsub.msgs[xsub.msgs.length - 1].offset;
 
         uint256 totalXMsgGasLimit;
         for (uint256 i = 0; i < xsub.msgs.length; i++) {
@@ -82,7 +82,7 @@ contract OmniPortal_xsubmit_gas_Test is Base {
         console.log("non-xmsg gas used: ", gasUsed - totalXMsgGasLimit);
         console.log("non-xmsg gas per xmsg: ", (gasUsed - totalXMsgGasLimit) / xsub.msgs.length);
 
-        assertEq(portal.inXStreamOffset(sourceChainId), expectedOffset);
-        assertEq(portal.inXStreamBlockHeight(sourceChainId), xsub.blockHeader.blockHeight);
+        assertEq(portal.inXMsgOffset(sourceChainId), expectedOffset);
+        assertEq(portal.inXBlockOffset(sourceChainId), xsub.blockHeader.offset);
     }
 }

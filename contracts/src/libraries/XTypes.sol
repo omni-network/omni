@@ -13,7 +13,7 @@ library XTypes {
      *        XSubmission merkle trees / proofs.
      * @custom:field sourceChainId  Chain ID of the source chain
      * @custom:field destChainId    Chain ID of the destination chain
-     * @custom:field streamOffset   Monotonically incremented offset of Msg in source -> dest Stream
+     * @custom:field offset         Monotonically incremented offset of Msg in source -> dest Stream
      * @custom:field sender         msg.sender of xcall on source chain
      * @custom:field to             Target address to call on destination chain
      * @custom:field data           Data to provide to call on destination chain
@@ -22,7 +22,7 @@ library XTypes {
     struct Msg {
         uint64 sourceChainId;
         uint64 destChainId;
-        uint64 streamOffset;
+        uint64 offset;
         address sender;
         address to;
         bytes data;
@@ -41,14 +41,14 @@ library XTypes {
 
     /**
      * @notice BlockHeader of an XBlock.
-     * @custom:field sourceChainId  Chain ID of the source chain
-     * @custom:field blockHeight    Height of the source chain block
-     * @custom:field blockHash      Hash of the source chain block
+     * @custom:field sourceChainId      Chain ID of the source chain
+     * @custom:field offset             Offset of the cross chain block
+     * @custom:field sourceBlockHash    Hash of the source chain block
      */
     struct BlockHeader {
         uint64 sourceChainId;
-        uint64 blockHeight;
-        bytes32 blockHash;
+        uint64 offset;
+        bytes32 sourceBlockHash;
     }
 
     /**

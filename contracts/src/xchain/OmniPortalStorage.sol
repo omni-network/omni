@@ -53,17 +53,17 @@ abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
     /**
      * @notice Offset of the last outbound XMsg that was sent to destChainId
      */
-    mapping(uint64 => uint64) public outXStreamOffset;
+    mapping(uint64 => uint64) public outXMsgOffset;
 
     /**
      * @notice Offset of the last outbound XMsg that was sent to destChainId
      */
-    mapping(uint64 => uint64) public inXStreamOffset;
+    mapping(uint64 => uint64) public inXMsgOffset;
 
     /**
-     * @notice Soure block height of the last XSubmission that was received from sourceChainId
+     * @notice the xblock offset of the last inbound XMsg that was received from sourceChainId
      */
-    mapping(uint64 => uint64) public inXStreamBlockHeight;
+    mapping(uint64 => uint64) public inXBlockOffset;
 
     /**
      * @notice Validator set id of the last XSubmission that was received from sourceChainId

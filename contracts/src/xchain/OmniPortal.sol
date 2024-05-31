@@ -76,9 +76,9 @@ contract OmniPortal is
         omniChainId = omniChainId_;
         omniCChainID = omniCChainID_;
 
-        // cchain stream offset & block heights are equal to valSetId
-        inXStreamOffset[omniCChainID_] = valSetId;
-        inXStreamBlockHeight[omniCChainID_] = valSetId;
+        // cchain xmsg & xblock offsets are equal to valSetId
+        inXMsgOffset[omniCChainID_] = valSetId;
+        inXBlockOffset[omniCChainID_] = valSetId;
 
         // initialize omniChainId valSetId - xmsgs from omni are required to initSourceChain
         inXStreamValidatorSetId[omniChainId_] = valSetId;
@@ -156,9 +156,9 @@ contract OmniPortal is
         require(gasLimit >= xmsgMinGasLimit, "OmniPortal: gasLimit too low");
         require(msg.value >= feeFor(destChainId, data, gasLimit), "OmniPortal: insufficient fee");
 
-        outXStreamOffset[destChainId] += 1;
+        outXMsgOffset[destChainId] += 1;
 
-        emit XMsg(destChainId, outXStreamOffset[destChainId], sender, to, data, gasLimit, msg.value);
+        emit XMsg(destChainId, outXMsgOffset[destChainId], sender, to, data, gasLimit, msg.value);
     }
 
     /**
@@ -225,13 +225,13 @@ contract OmniPortal is
         );
 
         // source chain block height of this submission
-        uint64 blockHeight = xsub.blockHeader.blockHeight;
+        uint64 xblockOffset = xsub.blockHeader.offset;
 
-        // last seen block height for this source chain
-        uint64 lastBlockHeight = inXStreamBlockHeight[xsub.blockHeader.sourceChainId];
+        // last seen xblock offset for this source chain
+        uint64 lastXBlockOffset = inXBlockOffset[xsub.blockHeader.sourceChainId];
 
         // update in stream block height, if it's new
-        if (blockHeight > lastBlockHeight) inXStreamBlockHeight[xsub.blockHeader.sourceChainId] = blockHeight;
+        if (xblockOffset > lastXBlockOffset) inXBlockOffset[xsub.blockHeader.sourceChainId] = xblockOffset;
 
         // update in stream validator set id, if it's new
         if (valSetId > lastValSetId) inXStreamValidatorSetId[xsub.blockHeader.sourceChainId] = valSetId;
@@ -271,16 +271,16 @@ contract OmniPortal is
         require(
             xmsg_.destChainId == chainId() || xmsg_.destChainId == _BROADCAST_CHAIN_ID, "OmniPortal: wrong destChainId"
         );
-        require(xmsg_.streamOffset == inXStreamOffset[xmsg_.sourceChainId] + 1, "OmniPortal: wrong streamOffset");
+        require(xmsg_.offset == inXMsgOffset[xmsg_.sourceChainId] + 1, "OmniPortal: wrong offset");
 
-        inXStreamOffset[xmsg_.sourceChainId] += 1;
+        inXMsgOffset[xmsg_.sourceChainId] += 1;
 
         // do not allow user xcalls to the portal
         // only sys xcalls (to _VIRTUAL_PORTAL_ADDRESS) are allowed to be executed on the portal
         if (xmsg_.to == address(this)) {
             emit XReceipt(
                 xmsg_.sourceChainId,
-                xmsg_.streamOffset,
+                xmsg_.offset,
                 0,
                 msg.sender,
                 false,
@@ -304,7 +304,7 @@ contract OmniPortal is
         // empty error if success is true
         bytes memory errorMsg = success ? bytes("") : result;
 
-        emit XReceipt(xmsg_.sourceChainId, xmsg_.streamOffset, gasUsed, msg.sender, success, errorMsg);
+        emit XReceipt(xmsg_.sourceChainId, xmsg_.offset, gasUsed, msg.sender, success, errorMsg);
     }
 
     /**

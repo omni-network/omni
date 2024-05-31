@@ -127,14 +127,14 @@ func MonitorCursors(ctx context.Context, portals map[uint64]netman.Portal, netwo
 				continue
 			}
 
-			srcOffset, err := portals[src.ID].Contract.OutXStreamOffset(nil, dest.ID)
+			srcOffset, err := portals[src.ID].Contract.OutXMsgOffset(nil, dest.ID)
 			if err != nil {
-				return errors.Wrap(err, "getting inXStreamOffset")
+				return errors.Wrap(err, "get outXMsgOffset")
 			}
 
-			destOffset, err := portals[dest.ID].Contract.InXStreamOffset(nil, src.ID)
+			destOffset, err := portals[dest.ID].Contract.InXMsgOffset(nil, src.ID)
 			if err != nil {
-				return errors.Wrap(err, "getting inXStreamOffset")
+				return errors.Wrap(err, "getting inXMsgOffset")
 			}
 
 			log.Debug(ctx, "Submitted cross chain messages",
