@@ -32,7 +32,4 @@ jobs:
         with:
           context: "{{defaultContext}}:explorer/ui"
           push: true
-          tags: |
-            omniops/explorer-ui:main
-            omniops/explorer-ui:${{ steps.git_ref.outputs.short_sha }}
-            omniops/explorer-ui:${GITHUB_REF##*/}  # This adds the tag (e.g., v0.1.8)
+          tags: omniops/explorer-ui:main,omniops/explorer-ui:${{ steps.git_ref.outputs.short_sha }},omniops/explorer-ui:${GITHUB_REF##*/}
