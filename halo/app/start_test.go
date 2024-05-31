@@ -45,7 +45,7 @@ func TestSmoke(t *testing.T) {
 	cl, err := rpchttp.New("http://localhost:26657", "/websocket")
 	require.NoError(t, err)
 
-	cprov := cprovider.NewABCIProvider(cl, netconf.Simnet, netconf.ChainNamer(netconf.Simnet))
+	cprov := cprovider.NewABCIProvider(cl, netconf.Simnet, netconf.ChainVersionNamer(netconf.Simnet))
 
 	// Wait until we get to block 3.
 	const target = uint64(3)

@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -156,5 +157,11 @@ func MetadataByID(network ID, chainID uint64) evmchain.Metadata {
 func ChainNamer(network ID) func(uint64) string {
 	return func(chainID uint64) string {
 		return MetadataByID(network, chainID).Name
+	}
+}
+
+func ChainVersionNamer(network ID) func(version xchain.ChainVersion) string {
+	return func(chainVer xchain.ChainVersion) string {
+		return fmt.Sprintf("%s-%s", MetadataByID(network, chainVer.ID).Name, chainVer.ConfLevel)
 	}
 }
