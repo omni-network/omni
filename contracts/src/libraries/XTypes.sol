@@ -9,7 +9,7 @@ pragma solidity ^0.8.12;
 library XTypes {
     /**
      * @notice A cross chain message - the product of an xcall. This matches the XMsg type used
-     *        throughout Omni's cross-chain messaging protocol. Msg is used to contrsuct and verify
+     *        throughout Omni's cross-chain messaging protocol. Msg is used to construct and verify
      *        XSubmission merkle trees / proofs.
      * @custom:field sourceChainId  Chain ID of the source chain
      * @custom:field destChainId    Chain ID of the destination chain
@@ -52,7 +52,7 @@ library XTypes {
     }
 
     /**
-     * @notice The required parameters to submit xmsgs to an OmniPortal. Contsructed by the relayer
+     * @notice The required parameters to submit xmsgs to an OmniPortal. Constructed by the relayer
      *         by watching Omni's consensus chain, and source chain blocks.
      * @custom:field attestationRoot  Merkle root of xchain block (XBlockRoot), attested to and signed by validators
      * @custom:field validatorSetId   Unique identifier of the validator set that attested to this root
