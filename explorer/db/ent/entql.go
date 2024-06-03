@@ -98,6 +98,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 			receipt.FieldOffset:         {Type: field.TypeUint64, Column: receipt.FieldOffset},
 			receipt.FieldTxHash:         {Type: field.TypeBytes, Column: receipt.FieldTxHash},
 			receipt.FieldCreatedAt:      {Type: field.TypeTime, Column: receipt.FieldCreatedAt},
+			receipt.FieldRevertReason:   {Type: field.TypeString, Column: receipt.FieldRevertReason},
 		},
 	}
 	graph.Nodes[4] = &sqlgraph.Node{
@@ -558,6 +559,11 @@ func (f *ReceiptFilter) WhereTxHash(p entql.BytesP) {
 // WhereCreatedAt applies the entql time.Time predicate on the created_at field.
 func (f *ReceiptFilter) WhereCreatedAt(p entql.TimeP) {
 	f.Where(p.Field(receipt.FieldCreatedAt))
+}
+
+// WhereRevertReason applies the entql string predicate on the revert_reason field.
+func (f *ReceiptFilter) WhereRevertReason(p entql.StringP) {
+	f.Where(p.Field(receipt.FieldRevertReason))
 }
 
 // WhereHasBlock applies a predicate to check if query has an edge block.

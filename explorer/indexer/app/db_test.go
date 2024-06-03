@@ -56,6 +56,10 @@ func TestDbTransaction(t *testing.T) {
 				fuzz.New().NilChance(0).Fuzz(&msgTxHash)
 				fuzz.New().NilChance(0).Fuzz(&receiptTxHash)
 
+				var msgTxHash2, receiptTxHash2 common.Hash
+				fuzz.New().NilChance(0).Fuzz(&msgTxHash2)
+				fuzz.New().NilChance(0).Fuzz(&receiptTxHash2)
+
 				var blockHash common.Hash
 				fuzz.New().NilChance(0).Fuzz(&blockHash)
 
@@ -107,6 +111,20 @@ func TestDbTransaction(t *testing.T) {
 							DestGasLimit:    gasLimit,
 							TxHash:          msgTxHash,
 						},
+						{
+							MsgID: xchain.MsgID{
+								StreamID: xchain.StreamID{
+									SourceChainID: sourceChainID,
+									DestChainID:   destChainID,
+								},
+								StreamOffset: streamOffset + 1,
+							},
+							SourceMsgSender: sender,
+							DestAddress:     to,
+							Data:            msgData,
+							DestGasLimit:    gasLimit,
+							TxHash:          msgTxHash2,
+						},
 					},
 					Receipts: []xchain.Receipt{
 						{
@@ -122,37 +140,53 @@ func TestDbTransaction(t *testing.T) {
 							RelayerAddress: common.Address(relayer[:]),
 							TxHash:         receiptTxHash,
 						},
+						{
+							MsgID: xchain.MsgID{
+								StreamID: xchain.StreamID{
+									SourceChainID: sourceChainID,
+									DestChainID:   destChainID,
+								},
+								StreamOffset: streamOffset + 1,
+							},
+							GasUsed:        gasUsed,
+							Success:        false,
+							RelayerAddress: common.Address(relayer[:]),
+							TxHash:         receiptTxHash2,
+							Error:          []byte("something bad happened"),
+						},
 					},
 					Timestamp: time.Now(),
 				})
 				require.NoError(t, err)
 
 				b := client.Block.Query().Where(block.Height(blockHeight), block.Offset(blockOffset)).OnlyX(ctx)
-				m := client.Msg.Query().Where(msg.SourceChainID(sourceChainID), msg.DestChainID(destChainID), msg.Offset(streamOffset)).OnlyX(ctx)
-				r := client.Receipt.Query().Where(receipt.SourceChainID(sourceChainID), receipt.DestChainID(destChainID), receipt.Offset(streamOffset)).OnlyX(ctx)
+				msgs, err := client.Msg.Query().Where(msg.SourceChainID(sourceChainID), msg.DestChainID(destChainID)).All(ctx)
+				require.NoError(t, err)
+				receipts, err := client.Receipt.Query().Where(receipt.SourceChainID(sourceChainID), receipt.DestChainID(destChainID)).All(ctx)
+				require.NoError(t, err)
 
 				require.NotNil(t, b)
-				require.NotNil(t, m)
-				require.NotNil(t, r)
+				require.Len(t, msgs, 2)
+				require.Len(t, receipts, 2)
 
 				blockReceipts := make(map[uint64][]*ent.Receipt)
-				blockReceipts[b.Height] = []*ent.Receipt{r}
+				blockReceipts[b.Height] = receipts
 
 				blockMessages := make(map[uint64][]*ent.Msg)
-				blockMessages[b.Height] = []*ent.Msg{m}
+				blockMessages[b.Height] = msgs
 
 				return results{
 					blocks:        []ent.Block{*b},
-					messages:      []*ent.Msg{m},
-					receipts:      []*ent.Receipt{r},
+					messages:      msgs,
+					receipts:      receipts,
 					blockMessages: blockMessages,
 					blockReceipts: blockReceipts,
 				}
 			},
 			want: want{
 				BlockCount:        1,
-				MsgCount:          1,
-				ReceiptCount:      1,
+				MsgCount:          2,
+				ReceiptCount:      2,
 				StrayReceiptCount: 0,
 				StrayMessageCount: 0,
 			},
@@ -164,6 +198,9 @@ func TestDbTransaction(t *testing.T) {
 			client := setupDB(t)
 			results := tt.prerequisites(t, ctx, client)
 			eval(t, results)
+			require.Len(t, results.blocks, tt.want.BlockCount)
+			require.Len(t, results.messages, tt.want.MsgCount)
+			require.Len(t, results.receipts, tt.want.ReceiptCount)
 		})
 	}
 }

@@ -31,10 +31,12 @@ func TestWorker_Run(t *testing.T) {
 	streamA := xchain.StreamID{
 		SourceChainID: srcChain,
 		DestChainID:   destChainA,
+		ShardID:       netconf.ShardFinalized0,
 	}
 	streamB := xchain.StreamID{
 		SourceChainID: srcChain,
 		DestChainID:   destChainB,
+		ShardID:       netconf.ShardLatest0,
 	}
 	cursors := map[xchain.StreamID]xchain.StreamCursor{
 		streamA: {StreamID: streamA, MsgOffset: destChainACursor, BlockOffset: destChainACursor},
@@ -67,7 +69,7 @@ func TestWorker_Run(t *testing.T) {
 	done := make(chan struct{})
 	// Collect all stream updates via the creator, stop as soon as we get one msg from for streamB.
 	var submissions []xchain.Submission
-	var mutex = &sync.Mutex{}
+	var mutex sync.Mutex
 	submissionsChan := make(chan xchain.Submission)
 
 	mockCreateFunc := func(streamUpdate StreamUpdate) ([]xchain.Submission, error) {
@@ -99,7 +101,6 @@ func TestWorker_Run(t *testing.T) {
 			if chainVer.ID != srcChain {
 				return // Only subscribe to source chain.
 			}
-			// require.EqualValues(t, destChainACursor, xBlockOffset)
 			if xBlockOffset != destChainACursor && xBlockOffset != destChainBCursor {
 				return
 			}
@@ -107,7 +108,17 @@ func TestWorker_Run(t *testing.T) {
 			offset := xBlockOffset
 			nextAtt := func() xchain.Attestation {
 				defer func() { offset++ }()
+
+				// Calculate the attestation root
+				block, _, _ := mockXClient.GetBlock(ctx, xchain.ProviderRequest{
+					ChainID:   chainVer.ID,
+					Offset:    offset,
+					ConfLevel: chainVer.ConfLevel,
+				})
+				tree, _ := xchain.NewBlockTree(block)
+
 				return xchain.Attestation{
+					AttestationRoot: tree.Root(),
 					BlockHeader: xchain.BlockHeader{
 						SourceChainID: chainVer.ID,
 						ConfLevel:     chainVer.ConfLevel,
@@ -126,7 +137,7 @@ func TestWorker_Run(t *testing.T) {
 	}
 
 	network := netconf.Network{Chains: []netconf.Chain{
-		{ID: srcChain, Name: "source"},
+		{ID: srcChain, Name: "source", Shards: []uint64{netconf.ShardFinalized0, netconf.ShardLatest0}},
 		{ID: destChainA, Name: "mock_l1"},
 		{ID: destChainB, Name: "mock_l2"},
 	}}

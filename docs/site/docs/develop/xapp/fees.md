@@ -6,7 +6,7 @@ import GitHubCodeBlock from '@site/src/components/GitHubCodeBlock/GitHubCodeBloc
 
 # Fees
 
-Omni charges fees for each `xcall`. These fees are paid synchronously on the soruce chain, in the chain's native token. For most rollups, this is ETH.
+Omni charges fees for each `xcall`. These fees are paid synchronously on the source chain, in the chain's native token. For most rollups, this is ETH.
 
 ## Fee Calculation
 

@@ -9,11 +9,11 @@ pragma solidity ^0.8.12;
 library XTypes {
     /**
      * @notice A cross chain message - the product of an xcall. This matches the XMsg type used
-     *        throughout Omni's cross-chain messaging protocol. Msg is used to contrsuct and verify
+     *        throughout Omni's cross-chain messaging protocol. Msg is used to construct and verify
      *        XSubmission merkle trees / proofs.
      * @custom:field sourceChainId  Chain ID of the source chain
      * @custom:field destChainId    Chain ID of the destination chain
-     * @custom:field streamOffset   Monotonically incremented offset of Msg in source -> dest Stream
+     * @custom:field offset         Monotonically incremented offset of Msg in source -> dest Stream
      * @custom:field sender         msg.sender of xcall on source chain
      * @custom:field to             Target address to call on destination chain
      * @custom:field data           Data to provide to call on destination chain
@@ -22,7 +22,7 @@ library XTypes {
     struct Msg {
         uint64 sourceChainId;
         uint64 destChainId;
-        uint64 streamOffset;
+        uint64 offset;
         address sender;
         address to;
         bytes data;
@@ -41,18 +41,18 @@ library XTypes {
 
     /**
      * @notice BlockHeader of an XBlock.
-     * @custom:field sourceChainId  Chain ID of the source chain
-     * @custom:field blockHeight    Height of the source chain block
-     * @custom:field blockHash      Hash of the source chain block
+     * @custom:field sourceChainId      Chain ID of the source chain
+     * @custom:field offset             Offset of the cross chain block
+     * @custom:field sourceBlockHash    Hash of the source chain block
      */
     struct BlockHeader {
         uint64 sourceChainId;
-        uint64 blockHeight;
-        bytes32 blockHash;
+        uint64 offset;
+        bytes32 sourceBlockHash;
     }
 
     /**
-     * @notice The required parameters to submit xmsgs to an OmniPortal. Contsructed by the relayer
+     * @notice The required parameters to submit xmsgs to an OmniPortal. Constructed by the relayer
      *         by watching Omni's consensus chain, and source chain blocks.
      * @custom:field attestationRoot  Merkle root of xchain block (XBlockRoot), attested to and signed by validators
      * @custom:field validatorSetId   Unique identifier of the validator set that attested to this root

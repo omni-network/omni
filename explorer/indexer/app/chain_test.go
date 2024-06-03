@@ -33,12 +33,12 @@ func TestChain(t *testing.T) {
 		{
 			name: "insert_chain_height_zero",
 			chain: netconf.Chain{
-				ID:                100,
-				Name:              "mock_l1",
-				PortalAddress:     common.Address([]byte("0x268bb5F3d4301b591288390E76b97BE8E8B1Ca82")),
-				DeployHeight:      0,
-				BlockPeriod:       1 * time.Second,
-				FinalizationStrat: "latest",
+				ID:            100,
+				Name:          "mock_l1",
+				PortalAddress: common.Address([]byte("0x268bb5F3d4301b591288390E76b97BE8E8B1Ca82")),
+				DeployHeight:  0,
+				BlockPeriod:   1 * time.Second,
+				Shards:        []uint64{netconf.ShardLatest0},
 			},
 			want: want{
 				cursorHeight: 0,
@@ -48,12 +48,12 @@ func TestChain(t *testing.T) {
 		{
 			name: "insert_chain_height_non_zero",
 			chain: netconf.Chain{
-				ID:                1016561,
-				Name:              "omni_consensus",
-				PortalAddress:     common.Address([]byte("0x268bb5F3d4301b591288390E76b97BE8E8B1Ca82")),
-				DeployHeight:      10687126,
-				BlockPeriod:       2 * time.Second,
-				FinalizationStrat: "latest",
+				ID:            1016561,
+				Name:          "omni_consensus",
+				PortalAddress: common.Address([]byte("0x268bb5F3d4301b591288390E76b97BE8E8B1Ca82")),
+				DeployHeight:  10687126,
+				BlockPeriod:   2 * time.Second,
+				Shards:        []uint64{netconf.ShardLatest0},
 			},
 			want: want{
 				cursorHeight: 10687125,

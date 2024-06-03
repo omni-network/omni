@@ -23,7 +23,7 @@ contract Utils is Test, Events, Fixtures {
 
         return TestXTypes.Receipt({
             sourceChainId: uint64(uint256(log.topics[1])),
-            streamOffset: uint64(uint256(log.topics[2])),
+            offset: uint64(uint256(log.topics[2])),
             gasUsed: gasUsed,
             relayer: relayer,
             success: success,
@@ -45,7 +45,7 @@ contract Utils is Test, Events, Fixtures {
         TestXTypes.Receipt memory receipt = parseReceipt(log);
 
         assertEq(receipt.sourceChainId, xmsg.sourceChainId);
-        assertEq(receipt.streamOffset, xmsg.streamOffset);
+        assertEq(receipt.offset, xmsg.offset);
         assertEq(receipt.relayer, relayer);
         assertEq(
             receipt.success,

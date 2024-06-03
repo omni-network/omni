@@ -246,7 +246,7 @@ func makePortalDeps(def Definition) (map[uint64]bindings.PortalRegistryDeploymen
 			ChainId:           chain.ChainID,
 			Addr:              info.Address,
 			DeployHeight:      info.Height,
-			FinalizationStrat: chain.FinalizationStrat.String(),
+			FinalizationStrat: netconf.MustShardToStrat(chain.Shards[0]),
 		}
 	}
 
@@ -262,7 +262,7 @@ func makePortalDeps(def Definition) (map[uint64]bindings.PortalRegistryDeploymen
 			ChainId:           chain.ChainID,
 			Addr:              info.Address,
 			DeployHeight:      info.Height,
-			FinalizationStrat: chain.FinalizationStrat.String(),
+			FinalizationStrat: netconf.MustShardToStrat(chain.Shards[0]),
 		}
 	}
 
@@ -281,7 +281,7 @@ func makePortalDeps(def Definition) (map[uint64]bindings.PortalRegistryDeploymen
 		ChainId:           chain.ChainID,
 		Addr:              info.Address,
 		DeployHeight:      info.Height,
-		FinalizationStrat: chain.FinalizationStrat.String(),
+		FinalizationStrat: netconf.MustShardToStrat(chain.Shards[0]),
 	}
 
 	return deps, nil

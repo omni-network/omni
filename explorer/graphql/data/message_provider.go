@@ -106,6 +106,7 @@ type dbXMsgRow struct {
 	ReceiptDestChainID    sql.NullInt64
 	ReceiptOffset         sql.NullInt64
 	ReceiptCreatedAt      sql.NullTime
+	ReceiptRevertReason   sql.NullString
 	BlockID               uint64
 	BlockChainID          uint64
 	BlockHash             []byte
@@ -162,6 +163,12 @@ func (r *dbXMsgRow) ToGraphQLXMsg(ch Chainer) (*XMsg, error) {
 	}
 	if r.ReceiptOffset.Valid {
 		m.Receipt.Offset = hexutil.Big(*hexutil.MustDecodeBig(fmt.Sprintf("0x%x", r.ReceiptOffset.Int64)))
+	}
+	if r.ReceiptCreatedAt.Valid {
+		m.Receipt.Timestamp = graphql.Time{Time: r.ReceiptCreatedAt.Time}
+	}
+	if r.ReceiptRevertReason.Valid {
+		m.Receipt.RevertReason = &r.ReceiptRevertReason.String
 	}
 
 	return &m, nil
@@ -254,6 +261,7 @@ func (p Provider) XMsgs(ctx context.Context, first, last *int32, before *graphql
 				r.dest_chain_id AS receipt_dest_chain_id,
 				r.offset AS receipt_offset,
 				r.created_at AS receipt_created_at,
+				r.revert_reason AS receipt_revert_reason,
 				b.id AS block_id,
 				b.chain_id AS block_chain_id,
 				b.hash AS block_hash,
@@ -285,7 +293,7 @@ func (p Provider) XMsgs(ctx context.Context, first, last *int32, before *graphql
 	if first != nil {
 		// since the data is ordered by id in descending order, we need to adjust the offset for forwards pagination (e.g. going to the previous page)
 		if afterID > uint64(numItems) {
-			queryOffset = afterID - uint64(numItems)
+			queryOffset = afterID - uint64(numItems) - 1
 		} else {
 			queryOffset = 0
 		}
@@ -329,6 +337,7 @@ func (p Provider) XMsgs(ctx context.Context, first, last *int32, before *graphql
 			&v.ReceiptDestChainID,
 			&v.ReceiptOffset,
 			&v.ReceiptCreatedAt,
+			&v.ReceiptRevertReason,
 			&v.BlockID,
 			&v.BlockChainID,
 			&v.BlockHash,

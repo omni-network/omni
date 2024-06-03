@@ -1,7 +1,12 @@
 network = "devnet"
 anvil_chains = ["mock_l2", "mock_l1"]
 
+pingpong_n = 6 # Increased ping pong to span forks
+
 [node.validator01]
 [node.validator02]
 [node.validator03]
 [node.validator04]
+
+[perturb]
+mock_l1 = ["fuzzyhead","fuzzyhead","fuzzyhead"]

@@ -46,7 +46,7 @@ type Provider struct {
 	chainID     chainIDFunc
 	header      headerFunc
 	backoffFunc func(context.Context) func()
-	chainNamer  func(uint64) string
+	chainNamer  func(xchain.ChainVersion) string
 	network     netconf.ID
 }
 
@@ -59,7 +59,7 @@ func NewProviderForT(_ *testing.T, fetch fetchFunc, latest latestFunc, window wi
 		fetch:       fetch,
 		window:      window,
 		backoffFunc: backoffFunc,
-		chainNamer:  func(uint64) string { return "" },
+		chainNamer:  func(xchain.ChainVersion) string { return "" },
 	}
 }
 
@@ -86,7 +86,7 @@ func (p Provider) ValidatorSet(ctx context.Context, valSetID uint64) ([]cchain.V
 func (p Provider) Subscribe(in context.Context, chainVer xchain.ChainVersion, xBlockOffset uint64, workerName string,
 	callback cchain.ProviderCallback,
 ) {
-	srcChain := p.chainNamer(chainVer.ID)
+	srcChain := p.chainNamer(chainVer)
 	ctx := log.WithCtx(in, "src_chain", srcChain)
 
 	deps := stream.Deps[xchain.Attestation]{
@@ -101,8 +101,8 @@ func (p Provider) Subscribe(in context.Context, chainVer xchain.ChainVersion, xB
 			return att.BlockOffset
 		},
 		Verify: func(ctx context.Context, att xchain.Attestation, h uint64) error {
-			if att.ChainVersion() != chainVer {
-				return errors.New("invalid attestation chain version")
+			if !chainVer.ConfLevel.IsFuzzy() && att.ConfLevel.IsFuzzy() {
+				return errors.New("fuzzy attestation while streaming finalized [BUG]")
 			} else if att.BlockOffset != h {
 				return errors.New("invalid attestation height",
 					"actual", att.BlockOffset,

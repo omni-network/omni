@@ -10,7 +10,7 @@ import { Vm } from "forge-std/Vm.sol";
  * @dev Tests of OmniPortal.xcall
  */
 contract OmniPortal_xcall_Test is Base {
-    /// @dev Test that xcall with default gas limit emits XMsg event and increments outXStreamOffset
+    /// @dev Test that xcall with default gas limit emits XMsg event and increments outXMsgOffset
     function test_xcall_defaultGasLimit_succeeds() public {
         XTypes.Msg memory xmsg = _outbound_increment();
 
@@ -25,11 +25,11 @@ contract OmniPortal_xcall_Test is Base {
         vm.prank(xcaller);
         portal.xcall{ value: fee }(xmsg.destChainId, xmsg.to, xmsg.data);
 
-        // check outXStreamOffset is incremented
-        assertEq(portal.outXStreamOffset(xmsg.destChainId), 1);
+        // check outXMsgOffset is incremented
+        assertEq(portal.outXMsgOffset(xmsg.destChainId), 1);
     }
 
-    /// @dev Test that xcall with explicit gas limit emits XMsg event and increments outXStreamOffset
+    /// @dev Test that xcall with explicit gas limit emits XMsg event and increments outXMsgOffset
     function test_xcall_explicitGasLimit_succeeds() public {
         XTypes.Msg memory xmsg = _outbound_increment();
         xmsg.gasLimit = portal.xmsgDefaultGasLimit() + 1;
@@ -45,8 +45,8 @@ contract OmniPortal_xcall_Test is Base {
         vm.prank(xcaller);
         portal.xcall{ value: fee }(xmsg.destChainId, xmsg.to, xmsg.data, xmsg.gasLimit);
 
-        // check outXStreamOffset is incremented
-        assertEq(portal.outXStreamOffset(xmsg.destChainId), 1);
+        // check outXMsgOffset is incremented
+        assertEq(portal.outXMsgOffset(xmsg.destChainId), 1);
     }
 
     /// @dev Test that xcall with insufficient fee revert

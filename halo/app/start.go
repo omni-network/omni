@@ -145,7 +145,7 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 	cmtAPI := comet.NewAPI(rpcClient)
 	app.SetCometAPI(cmtAPI)
 
-	cProvider := cprovider.NewABCIProvider(rpcClient, cfg.Network, netconf.ChainNamer(cfg.Network))
+	cProvider := cprovider.NewABCIProvider(rpcClient, cfg.Network, netconf.ChainVersionNamer(cfg.Network))
 
 	async := make(chan error, 1)
 	go func() {

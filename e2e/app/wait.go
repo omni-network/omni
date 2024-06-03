@@ -57,14 +57,14 @@ func WaitAllSubmissions(ctx context.Context, portals map[uint64]netman.Portal, m
 					return errors.Wrap(ctx.Err(), "timeout waiting for submissions")
 				}
 
-				srcOffset, err := src.Contract.OutXStreamOffset(nil, dest.Chain.ChainID)
+				srcOffset, err := src.Contract.OutXMsgOffset(nil, dest.Chain.ChainID)
 				if err != nil {
-					return errors.Wrap(err, "getting inXStreamOffset")
+					return errors.Wrap(err, "get outXMsgOffset")
 				}
 
-				destOffset, err := dest.Contract.InXStreamOffset(nil, src.Chain.ChainID)
+				destOffset, err := dest.Contract.InXMsgOffset(nil, src.Chain.ChainID)
 				if err != nil {
-					return errors.Wrap(err, "getting inXStreamOffset")
+					return errors.Wrap(err, "get inXmsgOffset")
 				}
 
 				if srcOffset >= minimum && destOffset == srcOffset {
@@ -73,8 +73,12 @@ func WaitAllSubmissions(ctx context.Context, portals map[uint64]netman.Portal, m
 
 				if i%5 == 0 { // Only log every 5th iteration (5s)
 					log.Debug(ctx, "Waiting for submissions on destination chain",
-						"src", src.Chain.Name, "dest", dest.Chain.Name,
-						"src_offset", srcOffset, "dest_offset", destOffset, "minimum", minimum)
+						"src", src.Chain.Name,
+						"dest", dest.Chain.Name,
+						"src_offset", srcOffset,
+						"dest_offset", destOffset,
+						"minimum", minimum,
+					)
 				}
 
 				backoff()

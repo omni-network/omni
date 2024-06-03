@@ -39,12 +39,11 @@ services:
       e2e: true
     container_name: {{ .Chain.Name }}
     platform: linux/amd64
-    image: omniops/forkproxy:main
-    pull_policy: always
+    image: omniops/anvilproxy:{{or $.OmniTag "main"}}
     environment:
-      - FORKPROXY_CHAIN_ID={{ .Chain.ChainID }}
-      - FORKPROXY_BLOCK_TIME={{.Chain.BlockPeriod.Seconds}}
-      - FORKPROXY_SLOTS_IN_AN_EPOCH=6 # Finality in 6*2*BlockPeriod
+      - ANVILPROXY_CHAIN_ID={{ .Chain.ChainID }}
+      - ANVILPROXY_BLOCK_TIME={{.Chain.BlockPeriod.Seconds}}
+      - ANVILPROXY_SLOTS_IN_AN_EPOCH=4 # Finality in 4*2*BlockPeriod
       {{ if .LoadState }}- FORKPROXY_LOAD_STATE=/anvil/state.json{{ end }}
     ports:
       - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}8545

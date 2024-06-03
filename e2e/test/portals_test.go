@@ -17,10 +17,10 @@ func TestPortalOffsets(t *testing.T) {
 				continue
 			}
 
-			sourceOffset, err := source.Contract.OutXStreamOffset(nil, dest.Chain.ID)
+			sourceOffset, err := source.Contract.OutXMsgOffset(nil, dest.Chain.ID)
 			require.NoError(t, err)
 
-			destOffset, err := dest.Contract.InXStreamOffset(nil, source.Chain.ID)
+			destOffset, err := dest.Contract.InXMsgOffset(nil, source.Chain.ID)
 			require.NoError(t, err)
 
 			// require at least some xmsgs were sent

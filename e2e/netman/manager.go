@@ -30,9 +30,9 @@ type Manager interface {
 	// DeployPublicPortals deploys portals to public chains, like arb-goerli.
 	DeployPublicPortals(ctx context.Context, valSetID uint64, validators []bindings.Validator) error
 
-	// DeployInfo returns the deployed network information.
+	// DeployInfo returns the deployed network information by chain ID.
 	// Note that the private chains has to be deterministic, since this is called before deploying private portals.
-	DeployInfo() map[types.EVMChain]DeployInfo
+	DeployInfo() map[uint64]DeployInfo
 
 	// DeployPrivatePortals deploys portals to private (docker) chains.
 	DeployPrivatePortals(ctx context.Context, valSetID uint64, validators []bindings.Validator) error
@@ -153,10 +153,10 @@ type manager struct {
 	operator    common.Address
 }
 
-func (m *manager) DeployInfo() map[types.EVMChain]DeployInfo {
-	resp := make(map[types.EVMChain]DeployInfo)
+func (m *manager) DeployInfo() map[uint64]DeployInfo {
+	resp := make(map[uint64]DeployInfo)
 	for _, portal := range m.portals {
-		resp[portal.Chain] = portal.DeployInfo
+		resp[portal.Chain.ChainID] = portal.DeployInfo
 	}
 
 	return resp

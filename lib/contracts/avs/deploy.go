@@ -271,14 +271,14 @@ func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backe
 
 	tx, err = factory.Deploy(txOpts, salt, initCode)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "deploy proxy")
+		return common.Address{}, nil, errors.Wrap(err, "deploy avs")
 	}
 
 	receipt, err = backend.WaitMined(ctx, tx)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "wait mined proxy")
+		return common.Address{}, nil, errors.Wrap(err, "wait mined avs")
 	} else if receipt.Status != ethtypes.ReceiptStatusSuccessful {
-		return common.Address{}, nil, errors.New("deploy proxy failed")
+		return common.Address{}, nil, errors.New("deploy avs failed")
 	}
 
 	return addr, receipt, nil

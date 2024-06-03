@@ -14,6 +14,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+const (
+	// ShardFinalized0 is the default finalized confirmation level shard.
+	ShardFinalized0 = uint64(xchain.ConfFinalized)
+	// ShardLatest0 is the default latest confirmation level shard.
+	ShardLatest0 = uint64(xchain.ConfLatest)
+)
+
 // Network defines a deployment of the Omni cross chain protocol.
 // It spans an omni chain (both execution and consensus) and a set of
 // supported rollup EVMs.
@@ -163,7 +170,7 @@ func (n Network) StreamsTo(dstChainID uint64) []xchain.StreamID {
 			continue // Skip self
 		}
 
-		for _, shardID := range srcChain.Shards() {
+		for _, shardID := range srcChain.Shards {
 			resp = append(resp, xchain.StreamID{
 				SourceChainID: srcChain.ID,
 				DestChainID:   dstChainID,
@@ -188,7 +195,7 @@ func (n Network) StreamsFrom(srcChainID uint64) []xchain.StreamID {
 			continue // Skip self
 		}
 
-		for _, shardID := range srcChain.Shards() {
+		for _, shardID := range srcChain.Shards {
 			resp = append(resp, xchain.StreamID{
 				SourceChainID: srcChain.ID,
 				DestChainID:   dstChain.ID,
@@ -215,7 +222,7 @@ func (n Network) StreamsBetween(srcChainID uint64, dstChainID uint64) []xchain.S
 
 	var resp []xchain.StreamID
 
-	for _, shardID := range srcChain.Shards() {
+	for _, shardID := range srcChain.Shards {
 		resp = append(resp, xchain.StreamID{
 			SourceChainID: srcChain.ID,
 			DestChainID:   dstChainID,
@@ -226,64 +233,16 @@ func (n Network) StreamsBetween(srcChainID uint64, dstChainID uint64) []xchain.S
 	return resp
 }
 
-// FinalizationStrat defines the finalization strategy of a chain.
-// This is mostly ethclient.HeadFinalized, but some chains may not support
-// it, like zkEVM chains which would need a much more involved strategy.
-type FinalizationStrat string
-
-func (h FinalizationStrat) Verify() error {
-	if !allStrats[h] {
-		return errors.New("invalid finalization strategy", "start", h)
-	}
-
-	return nil
-}
-
-// ConfLevel returns the confirmation level of the finalization strategy.
-// TODO(corver): Replace FinalizationStrat with ConfLevel completely.
-func (h FinalizationStrat) ConfLevel() xchain.ConfLevel {
-	return map[FinalizationStrat]xchain.ConfLevel{
-		StratLatest:    xchain.ConfLatest,
-		StratSafe:      xchain.ConfSafe,
-		StratFinalized: xchain.ConfFinalized,
-	}[h]
-}
-
-func (h FinalizationStrat) String() string {
-	return string(h)
-}
-
-//nolint:gochecknoglobals // Static mappings
-var allStrats = map[FinalizationStrat]bool{
-	StratFinalized: true,
-	StratLatest:    true,
-	StratSafe:      true,
-}
-
-const (
-	StratFinalized = FinalizationStrat("finalized")
-	StratLatest    = FinalizationStrat("latest")
-	StratSafe      = FinalizationStrat("safe")
-)
-
 // Chain defines the configuration of an execution chain that supports
 // the Omni cross chain protocol. This is most supported Rollup EVMs, but
 // also the Omni EVM, and the Omni Consensus chain.
 type Chain struct {
-	ID                uint64            // Chain ID asa per https://chainlist.org
-	Name              string            // Chain name as per https://chainlist.org
-	PortalAddress     common.Address    // Address of the omni portal contract on the chain
-	DeployHeight      uint64            // Height that the portal contracts were deployed
-	BlockPeriod       time.Duration     // Block period of the chain
-	FinalizationStrat FinalizationStrat // Finalization strategy of the chain
-}
-
-// Shards returns the supported shards for the chain.
-// TODO(corver): Store these in XRegistry, currently it is inferred from the FinalizationStrat.
-func (c Chain) Shards() []uint64 {
-	return []uint64{
-		uint64(c.FinalizationStrat.ConfLevel()),
-	}
+	ID            uint64         // Chain ID asa per https://chainlist.org
+	Name          string         // Chain name as per https://chainlist.org
+	PortalAddress common.Address // Address of the omni portal contract on the chain
+	DeployHeight  uint64         // Height that the portal contracts were deployed
+	BlockPeriod   time.Duration  // Block period of the chain
+	Shards        []uint64       // Supported xmsg shards
 }
 
 // ConfLevels returns the uniq set of confirmation levels
@@ -293,7 +252,7 @@ func (c Chain) ConfLevels() []xchain.ConfLevel {
 		xchain.ConfFinalized: {}, // All chains require ConfFinalized.
 	}
 
-	for _, shard := range c.Shards() {
+	for _, shard := range c.Shards {
 		conf := xchain.ConfFromShard(shard)
 		if _, ok := dedup[conf]; ok {
 			continue
@@ -326,4 +285,28 @@ func (c Chain) ChainVersions() []xchain.ChainVersion {
 	}
 
 	return resp
+}
+
+// TODO(kevin): Remove this when XRegistry support shards.
+func mustStratToShard(start string) (uint64, error) {
+	switch start {
+	case "finalized":
+		return ShardFinalized0, nil
+	case "latest":
+		return ShardLatest0, nil
+	default:
+		return 0, errors.New("invalid finalization strategy", "start", start)
+	}
+}
+
+// TODO(kevin): Remove this when XRegistry support shards.
+func MustShardToStrat(shard uint64) string {
+	switch shard {
+	case ShardFinalized0:
+		return "finalized"
+	case ShardLatest0:
+		return "latest"
+	default:
+		panic("unsupported shard")
+	}
 }

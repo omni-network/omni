@@ -19,8 +19,8 @@ import { OmniAVSStorage } from "./OmniAVSStorage.sol";
 
 /**
  * @title OmniAVS
- * @notice Omni's AVS contract. It is responsible for faciiltating registration / deregistration of
- *         EigenLayer opators, and for syncing operator delegations with the Omni chain.
+ * @notice Omni's AVS contract. It is responsible for facilitating registration / deregistration of
+ *         EigenLayer operators, and for syncing operator delegations with the Omni chain.
  */
 contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable, PausableUpgradeable, OmniAVSStorage {
     /// @notice Constant used as a divisor in calculating weights
@@ -40,9 +40,9 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable, PausableUpgrade
 
     /**
      * @notice Initialize the Omni AVS admin contract.
-     * @param owner_            Intiial contract owner
+     * @param owner_            Initial contract owner
      * @param omni_             Omni portal contract
-     * @param omniChainId_      Omni chain id
+     * @param omniChainId_      Omni chain ID
      * @param ethStakeInbox_    EthStakeInbox contract address
      * @param minOperatorStake_ Minimum operator stake
      * @param maxOperatorCount_ Maximum operator count
@@ -242,8 +242,8 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable, PausableUpgrade
     }
 
     /**
-     * @notice Set the Omni chain id.
-     * @param chainId The Omni chain id
+     * @notice Set the Omni chain ID.
+     * @param chainId The Omni chain ID
      */
     function setOmniChainId(uint64 chainId) external onlyOwner {
         _setOmniChainId(chainId);
@@ -401,8 +401,8 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable, PausableUpgrade
     }
 
     /**
-     * @notice Set the Omni chain id.
-     * @param chainId The Omni chain id
+     * @notice Set the Omni chain ID.
+     * @param chainId The Omni chain ID
      */
     function _setOmniChainId(uint64 chainId) private {
         omniChainId = chainId;
