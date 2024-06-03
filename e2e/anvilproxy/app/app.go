@@ -32,8 +32,8 @@ func Run(ctx context.Context, cfg Config) error {
 
 	mux := http.NewServeMux()
 	mux.Handle("/", http.HandlerFunc(proxy.Proxy))
-	mux.Handle("/fuzzy_head_enable", http.HandlerFunc(proxy.EnableFuzzyHead))
-	mux.Handle("/fuzzy_head_disable", http.HandlerFunc(proxy.DisableFuzzyHead))
+	mux.Handle("/fuzzy_enable", http.HandlerFunc(proxy.EnableFuzzyHead))
+	mux.Handle("/fuzzy_disable", http.HandlerFunc(proxy.DisableFuzzyHead))
 
 	httpServer := &http.Server{
 		Addr:              cfg.ListenAddr,
