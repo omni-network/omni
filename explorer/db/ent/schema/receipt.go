@@ -32,6 +32,7 @@ func (Receipt) Fields() []ent.Field {
 		field.Uint64("offset"),
 		field.Bytes("tx_hash").MaxLen(32),
 		field.Time("created_at").Default(time.Now()),
+		field.String("revert_reason").Optional().MaxLen(255),
 	}
 }
 

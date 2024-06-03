@@ -112,14 +112,14 @@ func TestXMsg(t *testing.T) {
 						},
 						"offset": "0x0",
 						"relayer": "0x0102030405060708090a0b0c0d0e0f1011121316",
-						"revertReason": null,
+						"revertReason": "not enough funds",
 						"sourceChain": {
 							"chainID": "0x677",
 							"displayID": "1655",
 							"id": "Y2hhaW46MTY1NQ==",
 							"logoUrl": "https://icons.llamao.fi/icons/chains/rsz_optimism.jpg"
 						},
-						"success": true,
+						"success": false,
 						"txHash": "0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f21",
 						"txUrl": "https://sepolia-optimism.etherscan.io/tx/0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f21"
 					},
@@ -131,7 +131,7 @@ func TestXMsg(t *testing.T) {
 						"id": "Y2hhaW46MTY1NQ==",
 						"logoUrl": "https://icons.llamao.fi/icons/chains/rsz_optimism.jpg"
 					},
-					"status": "SUCCESS",
+					"status": "FAILED",
 					"to": "0x0102030405060708090a0b0c0d0e0f1011121315",
 					"toUrl": "https://sepolia-optimism.etherscan.io/address/0x0102030405060708090A0b0c0d0E0F1011121315",
 					"txHash": "0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20",

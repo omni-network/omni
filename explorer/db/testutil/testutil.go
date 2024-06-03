@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/explorer/db/ent"
 	"github.com/omni-network/omni/explorer/db/ent/enttest"
 	"github.com/omni-network/omni/explorer/db/ent/migrate"
+	"github.com/omni-network/omni/explorer/graphql/data"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -70,7 +71,7 @@ func CreateXMsg(t *testing.T, ctx context.Context, client *ent.Client, b ent.Blo
 
 	sender := [20]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
 	to := [20]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21}
-	data := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+	d := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	txHash := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32}
 
 	msg := client.Msg.Create().
@@ -78,10 +79,11 @@ func CreateXMsg(t *testing.T, ctx context.Context, client *ent.Client, b ent.Blo
 		SetTo(to[:]).
 		SetDestChainID(destChainID).
 		SetOffset(streamOffset).
-		SetData(data).
+		SetData(d).
 		SetGasLimit(100).
 		SetSourceChainID(b.ChainID).
 		SetTxHash(txHash).
+		SetStatus(string(data.StatusFailed)).
 		SaveX(ctx)
 
 	client.Block.UpdateOne(&b).AddMsgs(msg).SaveX(ctx)
@@ -96,13 +98,14 @@ func CreateReceipt(t *testing.T, ctx context.Context, client *ent.Client, b ent.
 
 	receipt := client.Receipt.Create().
 		SetGasUsed(100).
-		SetSuccess(true).
+		SetSuccess(false).
 		SetBlockHash(b.Hash).
 		SetRelayerAddress(relayerAddress[:]).
 		SetSourceChainID(b.ChainID).
 		SetDestChainID(destChainID).
 		SetOffset(offset).
 		SetTxHash(txHash).
+		SetRevertReason("not enough funds").
 		SaveX(ctx)
 
 	client.Block.UpdateOne(&b).AddReceipts(receipt).SaveX(ctx)

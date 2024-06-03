@@ -100,6 +100,11 @@ func CreatedAt(v time.Time) predicate.Receipt {
 	return predicate.Receipt(sql.FieldEQ(FieldCreatedAt, v))
 }
 
+// RevertReason applies equality check predicate on the "revert_reason" field. It's identical to RevertReasonEQ.
+func RevertReason(v string) predicate.Receipt {
+	return predicate.Receipt(sql.FieldEQ(FieldRevertReason, v))
+}
+
 // BlockHashEQ applies the EQ predicate on the "block_hash" field.
 func BlockHashEQ(v []byte) predicate.Receipt {
 	return predicate.Receipt(sql.FieldEQ(FieldBlockHash, v))
@@ -428,6 +433,81 @@ func CreatedAtLT(v time.Time) predicate.Receipt {
 // CreatedAtLTE applies the LTE predicate on the "created_at" field.
 func CreatedAtLTE(v time.Time) predicate.Receipt {
 	return predicate.Receipt(sql.FieldLTE(FieldCreatedAt, v))
+}
+
+// RevertReasonEQ applies the EQ predicate on the "revert_reason" field.
+func RevertReasonEQ(v string) predicate.Receipt {
+	return predicate.Receipt(sql.FieldEQ(FieldRevertReason, v))
+}
+
+// RevertReasonNEQ applies the NEQ predicate on the "revert_reason" field.
+func RevertReasonNEQ(v string) predicate.Receipt {
+	return predicate.Receipt(sql.FieldNEQ(FieldRevertReason, v))
+}
+
+// RevertReasonIn applies the In predicate on the "revert_reason" field.
+func RevertReasonIn(vs ...string) predicate.Receipt {
+	return predicate.Receipt(sql.FieldIn(FieldRevertReason, vs...))
+}
+
+// RevertReasonNotIn applies the NotIn predicate on the "revert_reason" field.
+func RevertReasonNotIn(vs ...string) predicate.Receipt {
+	return predicate.Receipt(sql.FieldNotIn(FieldRevertReason, vs...))
+}
+
+// RevertReasonGT applies the GT predicate on the "revert_reason" field.
+func RevertReasonGT(v string) predicate.Receipt {
+	return predicate.Receipt(sql.FieldGT(FieldRevertReason, v))
+}
+
+// RevertReasonGTE applies the GTE predicate on the "revert_reason" field.
+func RevertReasonGTE(v string) predicate.Receipt {
+	return predicate.Receipt(sql.FieldGTE(FieldRevertReason, v))
+}
+
+// RevertReasonLT applies the LT predicate on the "revert_reason" field.
+func RevertReasonLT(v string) predicate.Receipt {
+	return predicate.Receipt(sql.FieldLT(FieldRevertReason, v))
+}
+
+// RevertReasonLTE applies the LTE predicate on the "revert_reason" field.
+func RevertReasonLTE(v string) predicate.Receipt {
+	return predicate.Receipt(sql.FieldLTE(FieldRevertReason, v))
+}
+
+// RevertReasonContains applies the Contains predicate on the "revert_reason" field.
+func RevertReasonContains(v string) predicate.Receipt {
+	return predicate.Receipt(sql.FieldContains(FieldRevertReason, v))
+}
+
+// RevertReasonHasPrefix applies the HasPrefix predicate on the "revert_reason" field.
+func RevertReasonHasPrefix(v string) predicate.Receipt {
+	return predicate.Receipt(sql.FieldHasPrefix(FieldRevertReason, v))
+}
+
+// RevertReasonHasSuffix applies the HasSuffix predicate on the "revert_reason" field.
+func RevertReasonHasSuffix(v string) predicate.Receipt {
+	return predicate.Receipt(sql.FieldHasSuffix(FieldRevertReason, v))
+}
+
+// RevertReasonIsNil applies the IsNil predicate on the "revert_reason" field.
+func RevertReasonIsNil() predicate.Receipt {
+	return predicate.Receipt(sql.FieldIsNull(FieldRevertReason))
+}
+
+// RevertReasonNotNil applies the NotNil predicate on the "revert_reason" field.
+func RevertReasonNotNil() predicate.Receipt {
+	return predicate.Receipt(sql.FieldNotNull(FieldRevertReason))
+}
+
+// RevertReasonEqualFold applies the EqualFold predicate on the "revert_reason" field.
+func RevertReasonEqualFold(v string) predicate.Receipt {
+	return predicate.Receipt(sql.FieldEqualFold(FieldRevertReason, v))
+}
+
+// RevertReasonContainsFold applies the ContainsFold predicate on the "revert_reason" field.
+func RevertReasonContainsFold(v string) predicate.Receipt {
+	return predicate.Receipt(sql.FieldContainsFold(FieldRevertReason, v))
 }
 
 // HasBlock applies the HasEdge predicate on the "block" edge.

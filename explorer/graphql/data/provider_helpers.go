@@ -110,11 +110,6 @@ func EntReceiptToGraphQLXReceipt(ctx context.Context, receipt *ent.Receipt, bloc
 		return nil, errors.Wrap(err, "decoding stream offset")
 	}
 
-	// blockHeight, err := uintconv.ToBig(block.Height)
-	// if err != nil {
-	// 	return nil, errors.Wrap(err, "decoding block height")
-	// }
-
 	res := &XReceipt{
 		ID:            relay.MarshalID("Receipt", receipt.ID),
 		Success:       receipt.Success,
@@ -125,6 +120,7 @@ func EntReceiptToGraphQLXReceipt(ctx context.Context, receipt *ent.Receipt, bloc
 		Offset:        hexutil.Big(streamOffset),
 		TxHash:        common.Hash(receipt.TxHash),
 		Timestamp:     graphql.Time{Time: receipt.CreatedAt},
+		RevertReason:  &receipt.RevertReason,
 	}
 
 	return res, nil

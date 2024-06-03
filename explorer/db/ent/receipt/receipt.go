@@ -33,6 +33,8 @@ const (
 	FieldTxHash = "tx_hash"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
+	// FieldRevertReason holds the string denoting the revert_reason field in the database.
+	FieldRevertReason = "revert_reason"
 	// EdgeBlock holds the string denoting the block edge name in mutations.
 	EdgeBlock = "block"
 	// EdgeMsgs holds the string denoting the msgs edge name in mutations.
@@ -63,6 +65,7 @@ var Columns = []string{
 	FieldOffset,
 	FieldTxHash,
 	FieldCreatedAt,
+	FieldRevertReason,
 }
 
 var (
@@ -99,6 +102,8 @@ var (
 	TxHashValidator func([]byte) error
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt time.Time
+	// RevertReasonValidator is a validator for the "revert_reason" field. It is called by the builders before save.
+	RevertReasonValidator func(string) error
 )
 
 // OrderOption defines the ordering options for the Receipt queries.
@@ -137,6 +142,11 @@ func ByOffset(opts ...sql.OrderTermOption) OrderOption {
 // ByCreatedAt orders the results by the created_at field.
 func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
+}
+
+// ByRevertReason orders the results by the revert_reason field.
+func ByRevertReason(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRevertReason, opts...).ToFunc()
 }
 
 // ByBlockCount orders the results by block count.

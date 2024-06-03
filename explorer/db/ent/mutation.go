@@ -2617,6 +2617,7 @@ type ReceiptMutation struct {
 	add_offset         *int64
 	tx_hash            *[]byte
 	created_at         *time.Time
+	revert_reason      *string
 	clearedFields      map[string]struct{}
 	block              map[int]struct{}
 	removedblock       map[int]struct{}
@@ -3131,6 +3132,55 @@ func (m *ReceiptMutation) ResetCreatedAt() {
 	m.created_at = nil
 }
 
+// SetRevertReason sets the "revert_reason" field.
+func (m *ReceiptMutation) SetRevertReason(s string) {
+	m.revert_reason = &s
+}
+
+// RevertReason returns the value of the "revert_reason" field in the mutation.
+func (m *ReceiptMutation) RevertReason() (r string, exists bool) {
+	v := m.revert_reason
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRevertReason returns the old "revert_reason" field's value of the Receipt entity.
+// If the Receipt object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ReceiptMutation) OldRevertReason(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRevertReason is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRevertReason requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRevertReason: %w", err)
+	}
+	return oldValue.RevertReason, nil
+}
+
+// ClearRevertReason clears the value of the "revert_reason" field.
+func (m *ReceiptMutation) ClearRevertReason() {
+	m.revert_reason = nil
+	m.clearedFields[receipt.FieldRevertReason] = struct{}{}
+}
+
+// RevertReasonCleared returns if the "revert_reason" field was cleared in this mutation.
+func (m *ReceiptMutation) RevertReasonCleared() bool {
+	_, ok := m.clearedFields[receipt.FieldRevertReason]
+	return ok
+}
+
+// ResetRevertReason resets all changes to the "revert_reason" field.
+func (m *ReceiptMutation) ResetRevertReason() {
+	m.revert_reason = nil
+	delete(m.clearedFields, receipt.FieldRevertReason)
+}
+
 // AddBlockIDs adds the "block" edge to the Block entity by ids.
 func (m *ReceiptMutation) AddBlockIDs(ids ...int) {
 	if m.block == nil {
@@ -3273,7 +3323,7 @@ func (m *ReceiptMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ReceiptMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 10)
 	if m.block_hash != nil {
 		fields = append(fields, receipt.FieldBlockHash)
 	}
@@ -3301,6 +3351,9 @@ func (m *ReceiptMutation) Fields() []string {
 	if m.created_at != nil {
 		fields = append(fields, receipt.FieldCreatedAt)
 	}
+	if m.revert_reason != nil {
+		fields = append(fields, receipt.FieldRevertReason)
+	}
 	return fields
 }
 
@@ -3327,6 +3380,8 @@ func (m *ReceiptMutation) Field(name string) (ent.Value, bool) {
 		return m.TxHash()
 	case receipt.FieldCreatedAt:
 		return m.CreatedAt()
+	case receipt.FieldRevertReason:
+		return m.RevertReason()
 	}
 	return nil, false
 }
@@ -3354,6 +3409,8 @@ func (m *ReceiptMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldTxHash(ctx)
 	case receipt.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
+	case receipt.FieldRevertReason:
+		return m.OldRevertReason(ctx)
 	}
 	return nil, fmt.Errorf("unknown Receipt field %s", name)
 }
@@ -3425,6 +3482,13 @@ func (m *ReceiptMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCreatedAt(v)
+		return nil
+	case receipt.FieldRevertReason:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRevertReason(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Receipt field %s", name)
@@ -3506,7 +3570,11 @@ func (m *ReceiptMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *ReceiptMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(receipt.FieldRevertReason) {
+		fields = append(fields, receipt.FieldRevertReason)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -3519,6 +3587,11 @@ func (m *ReceiptMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *ReceiptMutation) ClearField(name string) error {
+	switch name {
+	case receipt.FieldRevertReason:
+		m.ClearRevertReason()
+		return nil
+	}
 	return fmt.Errorf("unknown Receipt nullable field %s", name)
 }
 
@@ -3552,6 +3625,9 @@ func (m *ReceiptMutation) ResetField(name string) error {
 		return nil
 	case receipt.FieldCreatedAt:
 		m.ResetCreatedAt()
+		return nil
+	case receipt.FieldRevertReason:
+		m.ResetRevertReason()
 		return nil
 	}
 	return fmt.Errorf("unknown Receipt field %s", name)
