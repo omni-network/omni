@@ -54,8 +54,11 @@ contract XApp {
     }
 
     /**
-     * @notice Call a contract on another chain. Uses OmniPortal.xmsgDefaultGasLimit
-     * @return fee The fee for the xcall
+     * @notice Call a contract on another.
+     *           (Default gas limit, Default ConfLevel)
+     * @param destChainId   Destination chain ID
+     * @param to            Address of contract to call on destination chain
+     * @param data          ABI Encoded function calldata
      */
     function xcall(uint64 destChainId, address to, bytes memory data) internal returns (uint256) {
         uint256 fee = omni.feeFor(destChainId, data);
@@ -65,13 +68,51 @@ contract XApp {
     }
 
     /**
-     * @notice Call a contract on another chain, with the specified gas limit
-     * @return fee The fee, denominated in wei
+     * @notice Call a contract on another.
+     *           (Default gas limit, explicit ConfLevel)
+     * @param destChainId   Destination chain ID
+     * @param conf          Confirmation level
+     * @param to            Address of contract to call on destination chain
+     * @param data          ABI Encoded function calldata
+     */
+    function xcall(uint64 destChainId, uint8 conf, address to, bytes memory data) internal returns (uint256) {
+        uint256 fee = omni.feeFor(destChainId, data);
+        require(address(this).balance >= fee || msg.value >= fee, "XApp: insufficient funds");
+        omni.xcall{ value: fee }(destChainId, conf, to, data);
+        return fee;
+    }
+
+    /**
+     * @notice Call a contract on another.
+     *           (Explcit gas limit, Default ConfLevel)
+     * @param destChainId   Destination chain ID
+     * @param to            Address of contract to call on destination chain
+     * @param data          ABI Encoded function calldata
+     * @param gasLimit      Execution gas limit, enforced on destination chain
      */
     function xcall(uint64 destChainId, address to, bytes memory data, uint64 gasLimit) internal returns (uint256) {
         uint256 fee = omni.feeFor(destChainId, data, gasLimit);
         require(address(this).balance >= fee || msg.value >= fee, "XApp: insufficient funds");
         omni.xcall{ value: fee }(destChainId, to, data, gasLimit);
+        return fee;
+    }
+
+    /**
+     * @notice Call a contract on another chain.
+     *          (Explicit gas limit, explicit ConfLevel)
+     * @param destChainId   Destination chain ID
+     * @param conf          Confirmation level
+     * @param to            Address of contract to call on destination chain
+     * @param data          ABI Encoded function calldata
+     * @param gasLimit      Execution gas limit, enforced on destination chain
+     */
+    function xcall(uint64 destChainId, uint8 conf, address to, bytes memory data, uint64 gasLimit)
+        internal
+        returns (uint256)
+    {
+        uint256 fee = omni.feeFor(destChainId, data, gasLimit);
+        require(address(this).balance >= fee || msg.value >= fee, "XApp: insufficient funds");
+        omni.xcall{ value: fee }(destChainId, conf, to, data, gasLimit);
         return fee;
     }
 }

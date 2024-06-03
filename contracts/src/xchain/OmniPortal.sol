@@ -100,30 +100,30 @@ contract OmniPortal is
 
     /**
      * @notice Call a contract on another chain.
-     *          (Default xmsg gas limit, ConfLevel.Finalized)
+     *          (Default gas limit, default ConfLevel)
      * @param destChainId   Destination chain ID
      * @param to            Address of contract to call on destination chain
      * @param data          ABI Encoded function calldata
      */
     function xcall(uint64 destChainId, address to, bytes calldata data) external payable whenNotPaused {
-        _xcall(destChainId, msg.sender, to, data, xmsgDefaultGasLimit, ConfLevel.Finalized);
+        _xcall(destChainId, ConfLevel.Finalized, msg.sender, to, data, xmsgDefaultGasLimit);
     }
 
     /**
      * @notice Call a contract on another chain,
-     *          (Default xmsg gas limit, explicit ConfLevel)
+     *          (Default gas limit, explicit ConfLevel)
      * @param destChainId   Destination chain ID
+     * @param conf          Confirmation level
      * @param to            Address of contract to call on destination chain
      * @param data          ABI Encoded function calldata
-     * @param conf          Confirmation level
      */
-    function xcall(uint64 destChainId, address to, bytes calldata data, uint8 conf) external payable whenNotPaused {
-        _xcall(destChainId, msg.sender, to, data, xmsgDefaultGasLimit, conf);
+    function xcall(uint64 destChainId, uint8 conf, address to, bytes calldata data) external payable whenNotPaused {
+        _xcall(destChainId, conf, msg.sender, to, data, xmsgDefaultGasLimit);
     }
 
     /**
      * @notice Call a contract on another.
-     *           (Explcit gas limit , ConfLevel.Finalized)
+     *           (Explcit gas limit , default ConfLevel)
      * @param destChainId   Destination chain ID
      * @param to            Address of contract to call on destination chain
      * @param data          ABI Encoded function calldata
@@ -134,24 +134,24 @@ contract OmniPortal is
         payable
         whenNotPaused
     {
-        _xcall(destChainId, msg.sender, to, data, gasLimit, ConfLevel.Finalized);
+        _xcall(destChainId, ConfLevel.Finalized, msg.sender, to, data, gasLimit);
     }
 
     /**
      * @notice Call a contract on another chain.
      *          (Explicit gas limit, explicit ConfLevel)
      * @param destChainId   Destination chain ID
+     * @param conf          Confirmation level
      * @param to            Address of contract to call on destination chain
      * @param data          ABI Encoded function calldata
      * @param gasLimit      Execution gas limit, enforced on destination chain
-     * @param conf          Confirmation level
      */
-    function xcall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit, uint8 conf)
+    function xcall(uint64 destChainId, uint8 conf, address to, bytes calldata data, uint64 gasLimit)
         external
         payable
         whenNotPaused
     {
-        _xcall(destChainId, msg.sender, to, data, gasLimit, conf);
+        _xcall(destChainId, conf, msg.sender, to, data, gasLimit);
     }
 
     /**
@@ -179,11 +179,11 @@ contract OmniPortal is
      * @notice Initiate an xcall.
      * @dev Validate the xcall, emit an XMsg, increment dest chain outXStreamOffset
      */
-    function _xcall(uint64 destChainId, address sender, address to, bytes calldata data, uint64 gasLimit, uint8 conf)
+    function _xcall(uint64 destChainId, uint8 conf, address sender, address to, bytes calldata data, uint64 gasLimit)
         private
     {
-        // Only support ConfLevel.Finalized and ConfLevel.Fast for now
-        require(conf == ConfLevel.Finalized || conf == ConfLevel.Fast, "OmniPortal: invalid conf level");
+        // Only support ConfLevel.Finalized and ConfLevel.Latest for now
+        require(conf == ConfLevel.Finalized || conf == ConfLevel.Latest, "OmniPortal: invalid conf level");
         require(destChainId != chainId(), "OmniPortal: no same-chain xcall");
         require(destChainId != _BROADCAST_CHAIN_ID, "OmniPortal: no broadcast xcall");
         require(isSupportedChain(destChainId), "OmniPortal: unsupported chain");
@@ -277,7 +277,9 @@ contract OmniPortal is
         // last seen xblock offset for this source chain
         uint64 lastXBlockOffset = inXBlockOffset[xheader.sourceChainId][xheader.confLevel];
 
-        // update in stream block height, if it's new
+        // update in stream block offset, if it's new
+        // TODO: block header conf level may not match conf level for each xmsg shard in the block
+        //       we should update inXBlockOffset for each shard in the block
         if (xblockOffset > lastXBlockOffset) inXBlockOffset[xheader.sourceChainId][xheader.confLevel] = xblockOffset;
 
         // update in stream validator set id, if it's new
@@ -292,8 +294,18 @@ contract OmniPortal is
             // TODO: we can remove xmsg sourceChainId, and instead set _xmsg.sourceChainId to xsub.blockHeader.sourceChainId
             require(xmsg_.sourceChainId == xsub.blockHeader.sourceChainId, "OmniPortal: wrong sourceChainId");
 
-            // require xmsg conf level matches block header conf level
-            require(uint8(xmsg_.shardId) == xsub.blockHeader.confLevel, "OmniPortal: wrong confLevel");
+            if (uint8(xmsg_.shardId) == ConfLevel.Finalized) {
+                // if xmsg is Finalized, block header must be Finalized
+                require(ConfLevel.Finalized == xsub.blockHeader.confLevel, "OmniPortal: wrong conf level");
+            } else {
+                // else, require block header either matches xmsg conf level, or is finalized
+                // this allows "fuzzy" conf levels to be corrected by finalized blocks
+                require(
+                    xsub.blockHeader.confLevel == uint8(xmsg_.shardId)
+                        || xsub.blockHeader.confLevel == ConfLevel.Finalized,
+                    "OmniPortal: wrong conf level"
+                );
+            }
 
             _exec(xmsg_);
         }

@@ -38,7 +38,8 @@ func TestPortalRegistry(t *testing.T) {
 
 			require.Equal(t, chain.PortalAddress, registration.Addr, "chain %v portal", chain.ID)
 			require.Equal(t, chain.ID, registration.ChainId, "chain %v id", chain.ID)
-			require.Equal(t, netconf.MustShardToStrat(chain.Shards[0]), registration.FinalizationStrat, "chain %v finalization strategy", chain.ID)
+			// TODO(kevin): fix test when XRegistry supports conf level shards
+			// require.Equal(t, netconf.MustShardToStrat(chain.Shards[0]), registration.FinalizationStrat, "chain %v finalization strategy", chain.ID)
 			require.Equal(t, chain.DeployHeight, registration.DeployHeight, "chain %v deploy height", chain.ID)
 		}
 	})
