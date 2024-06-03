@@ -235,6 +235,11 @@ func (p *Provider) getXReceiptLogs(ctx context.Context, chainID uint64, height u
 		return nil, err
 	}
 
+	expectedShards := make(map[uint64]bool)
+	for _, shard := range chain.Shards {
+		expectedShards[shard] = true
+	}
+
 	filterer, err := bindings.NewOmniPortalFilterer(chain.PortalAddress, rpcClient)
 	if err != nil {
 		return nil, errors.Wrap(err, "new filterer")
@@ -255,10 +260,8 @@ func (p *Provider) getXReceiptLogs(ctx context.Context, chainID uint64, height u
 	for iter.Next() {
 		e := iter.Event
 
-		// TODO(kevin): Replace this with shardID in the event log.
-		shardID := chain.Shards[0]
-		if srcChain, _, err := p.getEVMChain(e.SourceChainId); err == nil {
-			shardID = srcChain.Shards[0]
+		if !expectedShards[e.ShardId] {
+			return nil, errors.New("unexpected receipt shard", "shard", e.ShardId)
 		}
 
 		receipts = append(receipts, xchain.Receipt{
@@ -266,7 +269,7 @@ func (p *Provider) getXReceiptLogs(ctx context.Context, chainID uint64, height u
 				StreamID: xchain.StreamID{
 					SourceChainID: e.SourceChainId,
 					DestChainID:   chain.ID,
-					ShardID:       shardID,
+					ShardID:       e.ShardId,
 				},
 				StreamOffset: e.Offset,
 			},
@@ -293,6 +296,11 @@ func (p *Provider) getXMsgLogs(ctx context.Context, chainID uint64, height uint6
 		return nil, err
 	}
 
+	expectedShards := make(map[uint64]bool)
+	for _, shard := range chain.Shards {
+		expectedShards[shard] = true
+	}
+
 	filterer, err := bindings.NewOmniPortalFilterer(chain.PortalAddress, rpcClient)
 	if err != nil {
 		return nil, err
@@ -312,6 +320,11 @@ func (p *Provider) getXMsgLogs(ctx context.Context, chainID uint64, height uint6
 	var xmsgs []xchain.Msg
 	for iter.Next() {
 		e := iter.Event
+
+		if !expectedShards[e.ShardId] {
+			return nil, errors.New("unexpected xmsg shard", "shard", e.ShardId)
+		}
+
 		xmsgs = append(xmsgs, xchain.Msg{
 			MsgID: xchain.MsgID{
 				StreamID: xchain.StreamID{

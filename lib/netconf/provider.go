@@ -114,8 +114,8 @@ func networkFromPortals(network ID, portals []bindings.PortalRegistryDeployment)
 		ID:           consensusMeta.ChainID,
 		Name:         consensusMeta.Name,
 		BlockPeriod:  consensusMeta.BlockPeriod,
-		Shards:       []uint64{ShardFinalized0},
-		DeployHeight: 1, // ValidatorSets start at 1, not 0.
+		Shards:       []uint64{ShardFinalized0}, // Consensus chain only supports finalized shard.
+		DeployHeight: 1,                         // ValidatorSets start at 1, not 0.
 	})
 
 	return Network{
