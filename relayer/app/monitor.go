@@ -128,10 +128,6 @@ func monitorHeadsForever(
 			for typ, head := range heads {
 				headHeight.WithLabelValues(chain.Name, typ.String()).Set(float64(head))
 			}
-			stratHeight, ok := heads[ethclient.HeadType(chain.FinalizationStrat)]
-			if ok {
-				headHeight.WithLabelValues(chain.Name, "xfinal").Set(float64(stratHeight))
-			}
 		}
 	}
 }

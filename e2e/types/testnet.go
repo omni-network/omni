@@ -108,8 +108,8 @@ func (t Testnet) HasOmniEVM() bool {
 // EVMChain represents a EVM chain in a omni network.
 type EVMChain struct {
 	evmchain.Metadata
-	IsPublic          bool
-	FinalizationStrat netconf.FinalizationStrat
+	Shards   []uint64
+	IsPublic bool
 }
 
 // OmniEVM represents a omni evm instance in a omni network. Similar to e2e.Node for halo instances.

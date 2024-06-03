@@ -509,9 +509,9 @@ func testNetwork(chainIDs ...uint64) netconf.Network {
 	var chains []netconf.Chain
 	for _, id := range chainIDs {
 		chains = append(chains, netconf.Chain{
-			ID:                id,
-			Name:              fmt.Sprintf("chain_%d", id),
-			FinalizationStrat: netconf.StratFinalized,
+			ID:     id,
+			Name:   fmt.Sprintf("chain_%d", id),
+			Shards: []uint64{netconf.ShardFinalized0},
 		})
 	}
 

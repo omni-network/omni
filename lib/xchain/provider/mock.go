@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/cchain"
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -19,30 +21,37 @@ var (
 	_ xchain.Provider = (*Mock)(nil)
 )
 
-// todo(Lazar): delete this and pass it to ctor so it's not hard coded and hidden here.
-const (
-	destChainA = 100
-	destChainB = 200
-)
-
 // Mock is a mock implementation of the xchain.Provider interface.
 // It generates deterministic blocks and messages for any chain that is queried.
 // Except for omni consensus chain, we use the real cprovider to fetch blocks.
 type Mock struct {
-	period    time.Duration
-	mu        sync.Mutex
-	blocks    map[blockKey]xchain.Block
-	cChainID  uint64
-	cProvider cchain.Provider
+	period     time.Duration
+	mu         sync.Mutex
+	blocks     map[blockKey]xchain.Block
+	cChainID   uint64
+	cProvider  cchain.Provider
+	destChains [2]uint64
 }
 
-func NewMock(period time.Duration, cChainID uint64, cProvider cchain.Provider) *Mock {
-	return &Mock{
-		period:    period,
-		blocks:    make(map[blockKey]xchain.Block),
-		cChainID:  cChainID,
-		cProvider: cProvider,
+func NewMock(period time.Duration, cChainID uint64, cProvider cchain.Provider) (*Mock, error) {
+	// Mock provider produces xmsgs to simnet non-omni evm chains.
+	var destChains []uint64
+	for _, chain := range netconf.SimnetNetwork().EVMChains() {
+		if chain.ID != netconf.Simnet.Static().OmniExecutionChainID {
+			destChains = append(destChains, chain.ID)
+		}
 	}
+	if len(destChains) != 2 {
+		return nil, errors.New("mock provider requires exactly 2 destination chains")
+	}
+
+	return &Mock{
+		period:     period,
+		blocks:     make(map[blockKey]xchain.Block),
+		cChainID:   cChainID,
+		cProvider:  cProvider,
+		destChains: [2]uint64(destChains),
+	}, nil
 }
 
 func (m *Mock) StreamAsync(ctx context.Context, req xchain.ProviderRequest, callback xchain.ProviderCallback) error {
@@ -203,10 +212,10 @@ func (m *Mock) nextBlock(
 	var msgs []xchain.Msg
 
 	newMsgA := func() xchain.Msg {
-		return newMsg(r, chainVer.ID, destChainA, sOffsetFunc)
+		return newMsg(r, chainVer.ID, m.destChains[0], sOffsetFunc)
 	}
 	newMsgB := func() xchain.Msg {
-		return newMsg(r, chainVer.ID, destChainB, sOffsetFunc)
+		return newMsg(r, chainVer.ID, m.destChains[1], sOffsetFunc)
 	}
 
 	switch height % 4 {

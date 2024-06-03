@@ -12,7 +12,6 @@ import (
 	"github.com/omni-network/omni/e2e/app/key"
 	"github.com/omni-network/omni/e2e/manifests"
 	"github.com/omni-network/omni/e2e/types"
-	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
@@ -135,15 +134,6 @@ func sortedKeys[T any](m map[string]T) []string {
 	return keys
 }
 
-// TestStrats ensures the netconf.StratX matches ethclient.HeadX.
-// Netconf shouldn't import ethclient, so using this test to keep in-sync.
-func TestStrats(t *testing.T) {
-	t.Parallel()
-
-	require.EqualValues(t, ethclient.HeadLatest, netconf.StratLatest)
-	require.EqualValues(t, ethclient.HeadFinalized, netconf.StratFinalized)
-}
-
 func TestConsensusSeeds(t *testing.T) {
 	t.Parallel()
 
@@ -172,10 +162,8 @@ func TestConfLevels(t *testing.T) {
 
 	// Latest finalization start results in 1 shard and 2 conf levels.
 	chain := netconf.Chain{
-		FinalizationStrat: netconf.StratLatest,
+		Shards: []uint64{netconf.ShardLatest0},
 	}
-	require.Len(t, chain.Shards(), 1)
 	require.Len(t, chain.ConfLevels(), 2)
-	require.Equal(t, chain.Shards()[0], uint64(xchain.ConfLatest))
 	require.EqualValues(t, chain.ConfLevels(), []xchain.ConfLevel{xchain.ConfLatest, xchain.ConfFinalized})
 }

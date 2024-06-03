@@ -99,8 +99,8 @@ func (d Definition) Netman() netman.Manager {
 func (d Definition) DeployInfos() types.DeployInfos {
 	resp := make(types.DeployInfos)
 
-	for chain, info := range d.Netman().DeployInfo() {
-		resp.Set(chain.ChainID, types.ContractPortal, info.PortalAddress, info.DeployHeight)
+	for chainID, info := range d.Netman().DeployInfo() {
+		resp.Set(chainID, types.ContractPortal, info.PortalAddress, info.DeployHeight)
 	}
 
 	return resp
@@ -522,12 +522,12 @@ func networkFromDef(def Definition) netconf.Network {
 	for _, public := range def.Testnet.PublicChains {
 		depInfo := def.DeployInfos()[public.Chain().ChainID]
 		chains = append(chains, netconf.Chain{
-			ID:                public.Chain().ChainID,
-			Name:              public.Chain().Name,
-			BlockPeriod:       public.Chain().BlockPeriod,
-			FinalizationStrat: public.Chain().FinalizationStrat,
-			PortalAddress:     depInfo[types.ContractPortal].Address,
-			DeployHeight:      depInfo[types.ContractPortal].Height,
+			ID:            public.Chain().ChainID,
+			Name:          public.Chain().Name,
+			BlockPeriod:   public.Chain().BlockPeriod,
+			Shards:        public.Chain().Shards,
+			PortalAddress: depInfo[types.ContractPortal].Address,
+			DeployHeight:  depInfo[types.ContractPortal].Height,
 		})
 	}
 
@@ -543,12 +543,12 @@ func networkFromDef(def Definition) netconf.Network {
 	omniEVM := def.Testnet.BroadcastOmniEVM()
 	omniEVMDepInfo := def.DeployInfos()[omniEVM.Chain.ChainID]
 	chains = append(chains, netconf.Chain{
-		ID:                omniEVM.Chain.ChainID,
-		Name:              omniEVM.Chain.Name,
-		BlockPeriod:       omniEVM.Chain.BlockPeriod,
-		FinalizationStrat: omniEVM.Chain.FinalizationStrat,
-		PortalAddress:     omniEVMDepInfo[types.ContractPortal].Address,
-		DeployHeight:      omniEVMDepInfo[types.ContractPortal].Height,
+		ID:            omniEVM.Chain.ChainID,
+		Name:          omniEVM.Chain.Name,
+		BlockPeriod:   omniEVM.Chain.BlockPeriod,
+		Shards:        omniEVM.Chain.Shards,
+		PortalAddress: omniEVMDepInfo[types.ContractPortal].Address,
+		DeployHeight:  omniEVMDepInfo[types.ContractPortal].Height,
 	})
 
 	// Add omni consensus chain
@@ -564,21 +564,18 @@ func networkFromDef(def Definition) netconf.Network {
 	for _, anvil := range def.Testnet.AnvilChains {
 		depInfo := def.DeployInfos()[anvil.Chain.ChainID]
 		chains = append(chains, netconf.Chain{
-			ID:                anvil.Chain.ChainID,
-			Name:              anvil.Chain.Name,
-			BlockPeriod:       anvil.Chain.BlockPeriod,
-			FinalizationStrat: anvil.Chain.FinalizationStrat,
-			PortalAddress:     depInfo[types.ContractPortal].Address,
-			DeployHeight:      depInfo[types.ContractPortal].Height,
+			ID:            anvil.Chain.ChainID,
+			Name:          anvil.Chain.Name,
+			BlockPeriod:   anvil.Chain.BlockPeriod,
+			Shards:        anvil.Chain.Shards,
+			PortalAddress: depInfo[types.ContractPortal].Address,
+			DeployHeight:  depInfo[types.ContractPortal].Height,
 		})
 	}
 
 	for _, chain := range chains {
 		if netconf.IsOmniConsensus(def.Testnet.Network, chain.ID) {
 			continue
-		}
-		if err := chain.FinalizationStrat.Verify(); err != nil {
-			panic(err) // Ok to panic since this e2e and is build-time issue.
 		}
 	}
 

@@ -14,47 +14,13 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 // AwaitOnChain blocks and returns network configuration as soon as it can be loaded from the on-chain registry.
 // It only returns an error if the context is canceled.
 func AwaitOnChain(ctx context.Context, netID ID, portalRegistry *bindings.PortalRegistry, expected []string) (Network, error) {
 	if netID == Simnet {
-		// Create a simnet netID (single binary with mocked clients).
-		dummyAddr := common.HexToAddress("0x000000000000000000000000000000000000dead")
-		return Network{
-			ID: netID,
-			Chains: []Chain{
-				{
-					ID:                netID.Static().OmniExecutionChainID,
-					Name:              "omni_evm",
-					BlockPeriod:       time.Millisecond * 500, // Speed up block times for testing
-					PortalAddress:     dummyAddr,
-					FinalizationStrat: StratFinalized,
-				},
-				{
-					ID:                netID.Static().OmniConsensusChainIDUint64(),
-					Name:              "omni_consensus",
-					DeployHeight:      1,                      // Validator sets start at height 1, not 0.
-					BlockPeriod:       time.Millisecond * 500, // Speed up block times for testing
-					PortalAddress:     dummyAddr,
-					FinalizationStrat: StratFinalized,
-				},
-				{
-					ID:                100, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
-					Name:              "mock_l1",
-					PortalAddress:     dummyAddr,
-					FinalizationStrat: StratLatest,
-				},
-				{
-					ID:                200, // todo(Lazar): make it dynamic. this is coming from lib/xchain/provider/mock.go
-					Name:              "mock_l2",
-					PortalAddress:     dummyAddr,
-					FinalizationStrat: StratLatest,
-				},
-			},
-		}, nil
+		return SimnetNetwork(), nil
 	}
 
 	cfg := expbackoff.DefaultConfig
@@ -74,7 +40,26 @@ func AwaitOnChain(ctx context.Context, netID ID, portalRegistry *bindings.Portal
 			continue
 		}
 
-		network := networkFromPortals(netID, portals)
+		var retry bool
+		for _, portal := range portals {
+			// TODO(kevin): Remove this once the registry is fixed.
+			if portal.ChainId == 0 {
+				retry = true
+				log.Info(ctx, "XChain registry contains zero chain (will retry)")
+
+				break
+			}
+		}
+		if retry {
+			backoff()
+			continue
+		}
+
+		network, err := networkFromPortals(netID, portals)
+		if err != nil {
+			return Network{}, err
+		}
+
 		if !containsAll(network, expected) {
 			log.Info(ctx, "XChain registry doesn't contain all expected chains (will retry)", ""+
 				"expected", expected, "actual", network.ChainNamesByIDs())
@@ -104,34 +89,39 @@ func containsAll(network Network, expected []string) bool {
 	return len(want) == 0
 }
 
-func networkFromPortals(network ID, portals []bindings.PortalRegistryDeployment) Network {
+func networkFromPortals(network ID, portals []bindings.PortalRegistryDeployment) (Network, error) {
 	var chains []Chain
 	for _, portal := range portals {
+		shard, err := mustStratToShard(portal.FinalizationStrat)
+		if err != nil {
+			return Network{}, errors.Wrap(err, "invalid finalization strategy", "chain", portal.ChainId)
+		}
+
 		metadata := MetadataByID(network, portal.ChainId)
 		chains = append(chains, Chain{
-			ID:                portal.ChainId,
-			Name:              metadata.Name,
-			PortalAddress:     portal.Addr,
-			DeployHeight:      portal.DeployHeight,
-			BlockPeriod:       metadata.BlockPeriod,
-			FinalizationStrat: FinalizationStrat(portal.FinalizationStrat),
+			ID:            portal.ChainId,
+			Name:          metadata.Name,
+			PortalAddress: portal.Addr,
+			DeployHeight:  portal.DeployHeight,
+			BlockPeriod:   metadata.BlockPeriod,
+			Shards:        []uint64{shard},
 		})
 	}
 
 	// Add omni consensus chain
 	consensusMeta := MetadataByID(network, network.Static().OmniConsensusChainIDUint64())
 	chains = append(chains, Chain{
-		ID:                consensusMeta.ChainID,
-		Name:              consensusMeta.Name,
-		BlockPeriod:       consensusMeta.BlockPeriod,
-		FinalizationStrat: StratFinalized,
-		DeployHeight:      1, // ValidatorSets start at 1, not 0.
+		ID:           consensusMeta.ChainID,
+		Name:         consensusMeta.Name,
+		BlockPeriod:  consensusMeta.BlockPeriod,
+		Shards:       []uint64{ShardFinalized0},
+		DeployHeight: 1, // ValidatorSets start at 1, not 0.
 	})
 
 	return Network{
 		ID:     network,
 		Chains: chains,
-	}
+	}, nil
 }
 
 func MetadataByID(network ID, chainID uint64) evmchain.Metadata {
