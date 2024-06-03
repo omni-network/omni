@@ -148,6 +148,7 @@ func insertReceipts(ctx context.Context, tx *ent.Tx, block xchain.Block, dbBlock
 			SetSuccess(r.Success).
 			SetRelayerAddress(r.RelayerAddress.Bytes()).
 			SetTxHash(r.TxHash.Bytes()).
+			SetRevertReason(string(r.Error)).
 			SetCreatedAt(time.Now()).
 			Save(ctx)
 		if err != nil {

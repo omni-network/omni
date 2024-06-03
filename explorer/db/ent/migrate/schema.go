@@ -109,6 +109,7 @@ var (
 		{Name: "offset", Type: field.TypeUint64},
 		{Name: "tx_hash", Type: field.TypeBytes, Size: 32},
 		{Name: "created_at", Type: field.TypeTime},
+		{Name: "revert_reason", Type: field.TypeString, Nullable: true, Size: 255},
 	}
 	// ReceiptsTable holds the schema information for the "receipts" table.
 	ReceiptsTable = &schema.Table{

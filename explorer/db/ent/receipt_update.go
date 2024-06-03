@@ -160,6 +160,26 @@ func (ru *ReceiptUpdate) SetNillableCreatedAt(t *time.Time) *ReceiptUpdate {
 	return ru
 }
 
+// SetRevertReason sets the "revert_reason" field.
+func (ru *ReceiptUpdate) SetRevertReason(s string) *ReceiptUpdate {
+	ru.mutation.SetRevertReason(s)
+	return ru
+}
+
+// SetNillableRevertReason sets the "revert_reason" field if the given value is not nil.
+func (ru *ReceiptUpdate) SetNillableRevertReason(s *string) *ReceiptUpdate {
+	if s != nil {
+		ru.SetRevertReason(*s)
+	}
+	return ru
+}
+
+// ClearRevertReason clears the value of the "revert_reason" field.
+func (ru *ReceiptUpdate) ClearRevertReason() *ReceiptUpdate {
+	ru.mutation.ClearRevertReason()
+	return ru
+}
+
 // AddBlockIDs adds the "block" edge to the Block entity by IDs.
 func (ru *ReceiptUpdate) AddBlockIDs(ids ...int) *ReceiptUpdate {
 	ru.mutation.AddBlockIDs(ids...)
@@ -281,6 +301,11 @@ func (ru *ReceiptUpdate) check() error {
 			return &ValidationError{Name: "tx_hash", err: fmt.Errorf(`ent: validator failed for field "Receipt.tx_hash": %w`, err)}
 		}
 	}
+	if v, ok := ru.mutation.RevertReason(); ok {
+		if err := receipt.RevertReasonValidator(v); err != nil {
+			return &ValidationError{Name: "revert_reason", err: fmt.Errorf(`ent: validator failed for field "Receipt.revert_reason": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -334,6 +359,12 @@ func (ru *ReceiptUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := ru.mutation.CreatedAt(); ok {
 		_spec.SetField(receipt.FieldCreatedAt, field.TypeTime, value)
+	}
+	if value, ok := ru.mutation.RevertReason(); ok {
+		_spec.SetField(receipt.FieldRevertReason, field.TypeString, value)
+	}
+	if ru.mutation.RevertReasonCleared() {
+		_spec.ClearField(receipt.FieldRevertReason, field.TypeString)
 	}
 	if ru.mutation.BlockCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -575,6 +606,26 @@ func (ruo *ReceiptUpdateOne) SetNillableCreatedAt(t *time.Time) *ReceiptUpdateOn
 	return ruo
 }
 
+// SetRevertReason sets the "revert_reason" field.
+func (ruo *ReceiptUpdateOne) SetRevertReason(s string) *ReceiptUpdateOne {
+	ruo.mutation.SetRevertReason(s)
+	return ruo
+}
+
+// SetNillableRevertReason sets the "revert_reason" field if the given value is not nil.
+func (ruo *ReceiptUpdateOne) SetNillableRevertReason(s *string) *ReceiptUpdateOne {
+	if s != nil {
+		ruo.SetRevertReason(*s)
+	}
+	return ruo
+}
+
+// ClearRevertReason clears the value of the "revert_reason" field.
+func (ruo *ReceiptUpdateOne) ClearRevertReason() *ReceiptUpdateOne {
+	ruo.mutation.ClearRevertReason()
+	return ruo
+}
+
 // AddBlockIDs adds the "block" edge to the Block entity by IDs.
 func (ruo *ReceiptUpdateOne) AddBlockIDs(ids ...int) *ReceiptUpdateOne {
 	ruo.mutation.AddBlockIDs(ids...)
@@ -709,6 +760,11 @@ func (ruo *ReceiptUpdateOne) check() error {
 			return &ValidationError{Name: "tx_hash", err: fmt.Errorf(`ent: validator failed for field "Receipt.tx_hash": %w`, err)}
 		}
 	}
+	if v, ok := ruo.mutation.RevertReason(); ok {
+		if err := receipt.RevertReasonValidator(v); err != nil {
+			return &ValidationError{Name: "revert_reason", err: fmt.Errorf(`ent: validator failed for field "Receipt.revert_reason": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -779,6 +835,12 @@ func (ruo *ReceiptUpdateOne) sqlSave(ctx context.Context) (_node *Receipt, err e
 	}
 	if value, ok := ruo.mutation.CreatedAt(); ok {
 		_spec.SetField(receipt.FieldCreatedAt, field.TypeTime, value)
+	}
+	if value, ok := ruo.mutation.RevertReason(); ok {
+		_spec.SetField(receipt.FieldRevertReason, field.TypeString, value)
+	}
+	if ruo.mutation.RevertReasonCleared() {
+		_spec.ClearField(receipt.FieldRevertReason, field.TypeString)
 	}
 	if ruo.mutation.BlockCleared() {
 		edge := &sqlgraph.EdgeSpec{

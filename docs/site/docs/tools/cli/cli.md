@@ -28,6 +28,8 @@ curl -sSfL https://raw.githubusercontent.com/omni-network/omni/main/scripts/inst
     ```bash
     git clone https://github.com/omni-network/omni.git
     cd omni
+    latest_tag=$(curl -s https://api.github.com/repos/omni-network/omni/releases/latest | jq -r .tag_name)
+    git checkout $latest_tag
     make install-cli
     ```
   </TabItem>
@@ -35,6 +37,8 @@ curl -sSfL https://raw.githubusercontent.com/omni-network/omni/main/scripts/inst
     ```bash
     git clone https://github.com/omni-network/omni.git
     cd omni
+    latest_tag=$(curl -s https://api.github.com/repos/omni-network/omni/releases/latest | jq -r .tag_name)
+    git checkout $latest_tag
     go install ./cli/cmd/omni
     ```
   </TabItem>

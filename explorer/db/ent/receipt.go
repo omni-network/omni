@@ -35,6 +35,8 @@ type Receipt struct {
 	TxHash []byte `json:"tx_hash,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
+	// RevertReason holds the value of the "revert_reason" field.
+	RevertReason string `json:"revert_reason,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ReceiptQuery when eager-loading is set.
 	Edges        ReceiptEdges `json:"edges"`
@@ -81,6 +83,8 @@ func (*Receipt) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case receipt.FieldID, receipt.FieldGasUsed, receipt.FieldSourceChainID, receipt.FieldDestChainID, receipt.FieldOffset:
 			values[i] = new(sql.NullInt64)
+		case receipt.FieldRevertReason:
+			values[i] = new(sql.NullString)
 		case receipt.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
 		default:
@@ -158,6 +162,12 @@ func (r *Receipt) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				r.CreatedAt = value.Time
 			}
+		case receipt.FieldRevertReason:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field revert_reason", values[i])
+			} else if value.Valid {
+				r.RevertReason = value.String
+			}
 		default:
 			r.selectValues.Set(columns[i], values[i])
 		}
@@ -230,6 +240,9 @@ func (r *Receipt) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(r.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("revert_reason=")
+	builder.WriteString(r.RevertReason)
 	builder.WriteByte(')')
 	return builder.String()
 }
