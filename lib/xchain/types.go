@@ -151,9 +151,16 @@ type Submission struct {
 	DestChainID     uint64      // Destination chain ID, for internal use only
 }
 
-// StreamCursor is a cursor that tracks the progress of a cross-chain stream on destination portal contracts.
-type StreamCursor struct {
-	StreamID           // Stream ID of the Stream this cursor belongs to
-	MsgOffset   uint64 // Latest applied Msg offset of the Stream
-	BlockOffset uint64 // Latest applied cross chain block offset
+// SubmitCursor is a cursor that tracks the progress of a cross-chain stream on destination portal contracts.
+type SubmitCursor struct {
+	StreamID              // Stream ID of the Stream this cursor belongs to
+	MsgOffset      uint64 // Latest submitted Msg offset of the Stream
+	BlockOffset    uint64 // Latest submitted cross chain block offset
+	ValidatorSetID uint64 // Validator set that submitted the message.
+}
+
+// EmitCursor is a cursor that tracks the progress of a cross-chain stream on source portal contracts.
+type EmitCursor struct {
+	StreamID         // Stream ID of the Stream this cursor belongs to
+	MsgOffset uint64 // Latest emitted Msg offset of the Stream
 }

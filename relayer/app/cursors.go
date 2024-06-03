@@ -17,8 +17,8 @@ const initialXBlockOffset = 1
 
 // getSubmittedCursors returns the last submitted cursor for each source chain on the destination chain.
 func getSubmittedCursors(ctx context.Context, network netconf.Network, dstChainID uint64, xClient xchain.Provider,
-) ([]xchain.StreamCursor, error) {
-	var cursors []xchain.StreamCursor //nolint:prealloc // Not worth it.
+) ([]xchain.SubmitCursor, error) {
+	var cursors []xchain.SubmitCursor //nolint:prealloc // Not worth it.
 	for _, stream := range network.StreamsTo(dstChainID) {
 		cursor, ok, err := xClient.GetSubmittedCursor(ctx, stream)
 		if err != nil {
@@ -36,17 +36,24 @@ func getSubmittedCursors(ctx context.Context, network netconf.Network, dstChainI
 // filterMsgs filters messages based on offsets for a specific stream.
 // It takes a slice of messages, offsets indexed by stream ID, and the target stream ID,
 // and returns a filtered slice containing only messages with offsets greater than the specified offset.
-func filterMsgs(ctx context.Context, streamID xchain.StreamID, msgs []xchain.Msg, msgFilter *msgOffsetFilter) ([]xchain.Msg, error) {
+func filterMsgs(ctx context.Context, streamID xchain.StreamID, valSetID uint64, msgs []xchain.Msg, msgFilter *msgCursorFilter) ([]xchain.Msg, error) {
 	backoff := expbackoff.New(ctx)
 	res := make([]xchain.Msg, 0, len(msgs)) // Res might have over-capacity, but that's fine, we only filter on startup.
 	for i := 0; i < len(msgs); {
 		msg := msgs[i]
 
-		check, expected := msgFilter.Check(streamID, msg.StreamOffset)
+		check, cursor := msgFilter.Check(streamID, valSetID, msg.StreamOffset)
 		if check == checkProcess {
 			res = append(res, msg)
+		} else if check == checkOldVatSet {
+			log.Warn(ctx, "Skipping msg with old valSetID", nil,
+				"stream", streamID,
+				"offset", msg.StreamOffset,
+				"valset", valSetID,
+				"cursor_valset", cursor.ValsSetID,
+			)
 		}
-		if check != checkGap {
+		if check != checkGapOffset {
 			i++
 			continue // Continue to next message
 		}
@@ -56,7 +63,7 @@ func filterMsgs(ctx context.Context, streamID xchain.StreamID, msgs []xchain.Msg
 			return nil, errors.New("unexpected gap in finalized msg offsets [BUG]",
 				"stream", streamID,
 				"offset", msg.StreamOffset,
-				"expected", expected,
+				"cursor_offset", cursor.MsgOffset,
 			)
 		}
 
@@ -64,7 +71,7 @@ func filterMsgs(ctx context.Context, streamID xchain.StreamID, msgs []xchain.Msg
 		log.Warn(ctx, "Gap in fuzzy msg offsets, waiting for ConfFinalized", nil,
 			"stream", streamID,
 			"offset", msg.StreamOffset,
-			"expected", expected,
+			"cursor_offset", cursor.MsgOffset,
 		)
 		backoff()
 		// Retry the same message again
@@ -76,7 +83,7 @@ func filterMsgs(ctx context.Context, streamID xchain.StreamID, msgs []xchain.Msg
 // fromChainVersionOffsets calculates the starting block offsets for all chain versions (to the destination chain).
 func fromChainVersionOffsets(
 	destChainID uint64, // Destination chain ID
-	cursors []xchain.StreamCursor, // All actual on-chain submit cursors
+	cursors []xchain.SubmitCursor, // All actual on-chain submit cursors
 	chainVers []xchain.ChainVersion, // All expected chain versions
 	state *State, // On-disk local state
 ) (map[xchain.ChainVersion]uint64, error) {
@@ -117,54 +124,83 @@ func fromChainVersionOffsets(
 	return res, nil
 }
 
-// msgOffsetFilter is a filter that keeps track of the last processed message offset for each stream.
-// It is used to filter out messages that have already been processed.
+// msgCursorFilter is a filter that keeps track of the last processed message cursor for each stream.
+// It is used to filter out messages that have already been processed or that cannot be submitted otherwise.
 //
 // More specifically, it ensures that fuzzy msgs are submitted either from fuzzy or finalized attestations, whichever comes first.
-type msgOffsetFilter struct {
+// It also ensures that valSetID always increases.
+type msgCursorFilter struct {
 	mu      sync.Mutex
-	offsets map[xchain.StreamID]uint64
+	cursors map[xchain.StreamID]streamCursor
 }
 
-func newMsgOffsetFilter(cursors []xchain.StreamCursor) *msgOffsetFilter {
-	offsets := make(map[xchain.StreamID]uint64, len(cursors))
+type streamCursor struct {
+	MsgOffset uint64
+	ValsSetID uint64
+}
+
+func newMsgOffsetFilter(cursors []xchain.SubmitCursor) (*msgCursorFilter, error) {
+	streamCursors := make(map[xchain.StreamID]streamCursor, len(cursors))
 	for _, cursor := range cursors {
-		offsets[cursor.StreamID] = cursor.MsgOffset
+		streamCursors[cursor.StreamID] = streamCursor{
+			MsgOffset: cursor.MsgOffset,
+			ValsSetID: cursor.ValidatorSetID,
+		}
+	}
+	if len(streamCursors) != len(cursors) {
+		return nil, errors.New("unexpected duplicate cursors [BUG]")
 	}
 
-	return &msgOffsetFilter{
-		offsets: offsets,
-	}
+	return &msgCursorFilter{
+		cursors: streamCursors,
+	}, nil
 }
+
+//go:generate stringer -type=checkResult -trimprefix=check
 
 type checkResult int
 
 const (
 	// checkProcess indicates that the message offset is sequential and should be processed.
 	checkProcess checkResult = iota
-	// checkGap indicates that the message offset is too far ahead and therefore contains a gap.
-	checkGap
-	// checkIgnore indicates that the message offset was already processed and should be ignored.
-	checkIgnore
+	// checkGapOffset indicates that the message offset is too far ahead and therefore contains a gap.
+	checkGapOffset
+	// checkIgnoreOffset indicates that the message offset was already processed and should be ignored.
+	checkIgnoreOffset
+	// checkOldVatSet indicates that the message has a lower validator set ID than the last processed message and must be ignored.
+	checkOldVatSet
 )
 
 // Check updates the stream state and returns checkProcess if the provided offset is sequential.
-// Otherwise it does not update the state and returns checkGap if the next message is too far ahead,
-// or checkIgnore if the next message was already processed.
-// It also returns the expected offset for the next message.
-func (f *msgOffsetFilter) Check(stream xchain.StreamID, msgOffset uint64) (checkResult, uint64) {
+//
+// Otherwise, it does not update the state.
+// It returns checkGap if the next message is too far ahead,
+// or checkIgnore if the next message was already processed,
+// or checkOldVatSet if the next message has a lower validator set ID than the last processed message.
+//
+// It also returns the existing stream cursor.
+func (f *msgCursorFilter) Check(stream xchain.StreamID, valSetID uint64, msgOffset uint64) (checkResult, streamCursor) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
-	expect := f.offsets[stream] + 1
-	if msgOffset > expect {
-		return checkGap, expect
-	} else if msgOffset < expect {
-		return checkIgnore, expect
+	cursor := f.cursors[stream]
+
+	expectOffset := cursor.MsgOffset + 1
+	if msgOffset > expectOffset {
+		return checkGapOffset, cursor
+	} else if msgOffset < expectOffset {
+		return checkIgnoreOffset, cursor
 	}
 
-	// Update the offset
-	f.offsets[stream] = msgOffset
+	if valSetID < cursor.ValsSetID {
+		return checkOldVatSet, cursor
+	}
 
-	return checkProcess, expect
+	// Update the cursor
+	f.cursors[stream] = streamCursor{
+		MsgOffset: msgOffset,
+		ValsSetID: valSetID,
+	}
+
+	return checkProcess, cursor
 }
