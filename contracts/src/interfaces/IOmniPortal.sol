@@ -135,8 +135,8 @@ interface IOmniPortal {
     function feeFor(uint64 destChainId, bytes calldata data, uint64 gasLimit) external view returns (uint256);
 
     /**
-     * @notice Call a contract on another chain Uses xmsgDefaultGasLimit as execution
-     *         gas limit on destination chain
+     * @notice Call a contract on another.
+     *           (Default gas limit, Default ConfLevel)
      * @param destChainId   Destination chain ID
      * @param to            Address of contract to call on destination chain
      * @param data          ABI Encoded function calldata
@@ -144,14 +144,35 @@ interface IOmniPortal {
     function xcall(uint64 destChainId, address to, bytes calldata data) external payable;
 
     /**
-     * @notice Call a contract on another chain Uses provide gasLimit as execution gas limit on
-     *          destination chain. Reverts if gasLimit < xmsgMinGasLimit or gasLimit > xmsgMaxGasLimit.
+     * @notice Call a contract on another.
+     *           (Default gas limit, explicit ConfLevel)
+     * @param destChainId   Destination chain ID
+     * @param conf          Confirmation level
+     * @param to            Address of contract to call on destination chain
+     * @param data          ABI Encoded function calldata
+     */
+    function xcall(uint64 destChainId, uint8 conf, address to, bytes calldata data) external payable;
+
+    /**
+     * @notice Call a contract on another.
+     *           (Explcit gas limit, Default ConfLevel)
      * @param destChainId   Destination chain ID
      * @param to            Address of contract to call on destination chain
      * @param data          ABI Encoded function calldata
      * @param gasLimit      Execution gas limit, enforced on destination chain
      */
     function xcall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit) external payable;
+
+    /**
+     * @notice Call a contract on another chain.
+     *          (Explicit gas limit, explicit ConfLevel)
+     * @param destChainId   Destination chain ID
+     * @param conf          Confirmation level;
+     * @param to            Address of contract to call on destination chain
+     * @param data          ABI Encoded function calldata
+     * @param gasLimit      Execution gas limit, enforced on destination chain
+     */
+    function xcall(uint64 destChainId, uint8 conf, address to, bytes calldata data, uint64 gasLimit) external payable;
 
     /**
      * @notice Submit a batch of XMsgs to be executed on this chain
