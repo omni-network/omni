@@ -147,13 +147,13 @@ func (m *Mock) GetBlock(_ context.Context, req xchain.ProviderRequest) (xchain.B
 }
 
 func (*Mock) GetSubmittedCursor(_ context.Context, stream xchain.StreamID,
-) (xchain.StreamCursor, bool, error) {
-	return xchain.StreamCursor{StreamID: stream}, true, nil
+) (xchain.SubmitCursor, bool, error) {
+	return xchain.SubmitCursor{StreamID: stream}, true, nil
 }
 
 func (*Mock) GetEmittedCursor(_ context.Context, _ xchain.EmitRef, stream xchain.StreamID,
-) (xchain.StreamCursor, bool, error) {
-	return xchain.StreamCursor{StreamID: stream}, true, nil
+) (xchain.EmitCursor, bool, error) {
+	return xchain.EmitCursor{StreamID: stream}, true, nil
 }
 
 func (m *Mock) parentBlockHash(chainVer xchain.ChainVersion, height uint64) common.Hash {

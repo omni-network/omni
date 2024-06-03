@@ -92,7 +92,10 @@ func (w *Worker) runOnce(ctx context.Context) error {
 		return err
 	}
 
-	msgFilter := newMsgOffsetFilter(cursors)
+	msgFilter, err := newMsgOffsetFilter(cursors)
+	if err != nil {
+		return err
+	}
 
 	var logAttrs []any //nolint:prealloc // Not worth it
 	for chainVer, fromOffset := range blockOffsets {
@@ -183,7 +186,7 @@ func newMsgStreamMapper(network netconf.Network) msgStreamMapper {
 
 func newCallback(
 	xProvider xchain.Provider,
-	msgFilter *msgOffsetFilter,
+	msgFilter *msgCursorFilter,
 	creator CreateFunc,
 	sender SendFunc,
 	destChainID uint64,
@@ -216,7 +219,7 @@ func newCallback(
 			}
 
 			// Filter out any previously submitted message offsets
-			msgs, err = filterMsgs(ctx, streamID, msgs, msgFilter)
+			msgs, err = filterMsgs(ctx, streamID, att.ValidatorSetID, msgs, msgFilter)
 			if err != nil {
 				return err
 			} else if len(msgs) == 0 {

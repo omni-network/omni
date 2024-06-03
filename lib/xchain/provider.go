@@ -39,7 +39,7 @@ type Provider interface {
 	// or false if not available, or an error.
 	// Calls the destination chain portal InXStreamOffset method.
 	// Note this is only supported for EVM chains, no the consensus chain.
-	GetSubmittedCursor(ctx context.Context, stream StreamID) (StreamCursor, bool, error)
+	GetSubmittedCursor(ctx context.Context, stream StreamID) (SubmitCursor, bool, error)
 
 	// GetEmittedCursor returns the emitted cursor for the provided stream,
 	// or false if not available, or an error.
@@ -47,7 +47,7 @@ type Provider interface {
 	//
 	// Note that the BlockOffset field is not populated for emit cursors, since it isn't stored on-chain
 	// but tracked off-chain.
-	GetEmittedCursor(ctx context.Context, ref EmitRef, stream StreamID) (StreamCursor, bool, error)
+	GetEmittedCursor(ctx context.Context, ref EmitRef, stream StreamID) (EmitCursor, bool, error)
 }
 
 type EmitRef struct {
