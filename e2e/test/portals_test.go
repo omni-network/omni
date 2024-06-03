@@ -3,6 +3,8 @@ package e2e_test
 import (
 	"testing"
 
+	"github.com/omni-network/omni/lib/netconf"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,10 +19,14 @@ func TestPortalOffsets(t *testing.T) {
 				continue
 			}
 
-			sourceOffset, err := source.Contract.OutXMsgOffset(nil, dest.Chain.ID)
+			// right now, we only emit messages in finalized shard
+			// TODO: support testing multiple shards
+			shard := netconf.ShardFinalized0
+
+			sourceOffset, err := source.Contract.OutXMsgOffset(nil, dest.Chain.ID, shard)
 			require.NoError(t, err)
 
-			destOffset, err := dest.Contract.InXMsgOffset(nil, source.Chain.ID)
+			destOffset, err := dest.Contract.InXMsgOffset(nil, source.Chain.ID, shard)
 			require.NoError(t, err)
 
 			// require at least some xmsgs were sent

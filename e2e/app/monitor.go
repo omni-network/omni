@@ -127,12 +127,16 @@ func MonitorCursors(ctx context.Context, portals map[uint64]netman.Portal, netwo
 				continue
 			}
 
-			srcOffset, err := portals[src.ID].Contract.OutXMsgOffset(nil, dest.ID)
+			// right now, we only emit messages in finalized shard
+			// TODO: support testing multiple shards
+			shard := netconf.ShardFinalized0
+
+			srcOffset, err := portals[src.ID].Contract.OutXMsgOffset(nil, dest.ID, shard)
 			if err != nil {
 				return errors.Wrap(err, "get outXMsgOffset")
 			}
 
-			destOffset, err := portals[dest.ID].Contract.InXMsgOffset(nil, src.ID)
+			destOffset, err := portals[dest.ID].Contract.InXMsgOffset(nil, src.ID, shard)
 			if err != nil {
 				return errors.Wrap(err, "getting inXMsgOffset")
 			}

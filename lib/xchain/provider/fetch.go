@@ -68,7 +68,7 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, str
 		opts.BlockNumber = header.Number
 	}
 
-	offset, err := caller.OutXMsgOffset(opts, stream.DestChainID)
+	offset, err := caller.OutXMsgOffset(opts, stream.DestChainID, stream.ShardID)
 	if err != nil {
 		return xchain.StreamCursor{}, false, errors.Wrap(err, "call inXStreamOffset")
 	}
@@ -105,7 +105,7 @@ func (p *Provider) GetSubmittedCursor(ctx context.Context, stream xchain.StreamI
 
 	callOpts := &bind.CallOpts{Context: ctx, BlockNumber: big.NewInt(int64(height))}
 
-	msgOffset, err := caller.InXMsgOffset(callOpts, stream.SourceChainID)
+	msgOffset, err := caller.InXMsgOffset(callOpts, stream.SourceChainID, stream.ShardID)
 	if err != nil {
 		return xchain.StreamCursor{}, false, errors.Wrap(err, "call inXStreamOffset")
 	}
@@ -114,7 +114,7 @@ func (p *Provider) GetSubmittedCursor(ctx context.Context, stream xchain.StreamI
 		return xchain.StreamCursor{}, false, nil
 	}
 
-	blockOffset, err := caller.InXBlockOffset(callOpts, stream.SourceChainID)
+	blockOffset, err := caller.InXBlockOffset(callOpts, stream.SourceChainID, stream.ShardID)
 	if err != nil {
 		return xchain.StreamCursor{}, false, errors.Wrap(err, "call inXStreamBlockHeight")
 	}
@@ -246,7 +246,7 @@ func (p *Provider) getXReceiptLogs(ctx context.Context, chainID uint64, height u
 		Context: ctx,
 	}
 
-	iter, err := filterer.FilterXReceipt(&filterOpts, nil, nil)
+	iter, err := filterer.FilterXReceipt(&filterOpts, nil, nil, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "filter receipts logs")
 	}
@@ -304,7 +304,7 @@ func (p *Provider) getXMsgLogs(ctx context.Context, chainID uint64, height uint6
 		Context: ctx,
 	}
 
-	iter, err := filterer.FilterXMsg(&filterOpts, nil, nil)
+	iter, err := filterer.FilterXMsg(&filterOpts, nil, nil, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "filter xmsg logs")
 	}
@@ -317,7 +317,7 @@ func (p *Provider) getXMsgLogs(ctx context.Context, chainID uint64, height uint6
 				StreamID: xchain.StreamID{
 					SourceChainID: chain.ID,
 					DestChainID:   e.DestChainId,
-					ShardID:       chain.Shards[0], // TODO(kevin): Replace with shardID in the event log.
+					ShardID:       e.ShardId,
 				},
 				StreamOffset: e.Offset,
 			},

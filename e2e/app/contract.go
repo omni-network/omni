@@ -102,7 +102,7 @@ func xcall(ctx context.Context, backends ethbackend.Backends, sender common.Addr
 
 	txOpts.Value = fee
 
-	tx, err := from.Contract.Xcall(txOpts, destChainID, to, data)
+	tx, err := from.Contract.Xcall1(txOpts, destChainID, to, data)
 	if err != nil {
 		return nil, errors.Wrap(err, "xcall",
 			"src_chain", from.Chain.Name,

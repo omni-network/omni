@@ -29,7 +29,7 @@ export const encodeXBlockHeader = (xblockHeader: XBlockHeader) =>
 export const xMsgJson = (xmsg: XMsg) => ({
   sourceChainId: xmsg.sourceChainId.toString(),
   destChainId: xmsg.destChainId.toString(),
-  streamOffset: xmsg.streamOffset.toString(),
+  offset: xmsg.offset.toString(),
   sender: xmsg.sender,
   to: xmsg.to,
   data: xmsg.data,
@@ -38,8 +38,9 @@ export const xMsgJson = (xmsg: XMsg) => ({
 
 export const xBlockHeaderJson = (xblockHeader: XBlockHeader) => ({
   sourceChainId: xblockHeader.sourceChainId.toString(),
-  blockHeight: xblockHeader.blockHeight.toString(),
-  blockHash: xblockHeader.blockHash,
+  confLevel: xblockHeader.confLevel.toString(),
+  offset: xblockHeader.offset.toString(),
+  sourceBlockHash: xblockHeader.sourceBlockHash,
 })
 
 export const xSubJson = (xsub: XSub) => ({

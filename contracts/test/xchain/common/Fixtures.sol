@@ -6,6 +6,7 @@ import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/trans
 
 import { ProxyAdmin } from "src/deploy/ProxyAdmin.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
+import { ConfLevel } from "src/libraries/ConfLevel.sol";
 import { FeeOracleV1 } from "src/xchain/FeeOracleV1.sol";
 import { IFeeOracleV1 } from "src/interfaces/IFeeOracleV1.sol";
 import { OmniPortal } from "src/xchain/OmniPortal.sol";
@@ -139,8 +140,8 @@ contract Fixtures is CommonBase, StdCheats {
         string memory root = vm.projectRoot();
         string memory fullpath = string.concat(root, "/", XBLOCKS_PATH);
 
-        TestXTypes.Block memory xblock1 = _xblock({ sourceBlockHeight: 1, startOffset: 1 });
-        TestXTypes.Block memory xblock2 = _xblock({ sourceBlockHeight: 2, startOffset: 6 });
+        TestXTypes.Block memory xblock1 = _xblock({ offset: 1, xmsgOffset: 1 });
+        TestXTypes.Block memory xblock2 = _xblock({ offset: 2, xmsgOffset: 6 });
 
         TestXTypes.Block memory guzzle1 = _guzzle_xblock({ numGuzzles: 1 });
         TestXTypes.Block memory guzzle5 = _guzzle_xblock({ numGuzzles: 5 });
@@ -232,24 +233,32 @@ contract Fixtures is CommonBase, StdCheats {
 
     /// @dev Create an xblock from chainA with xmsgs for "this" chain and chain b.
     ///      XBlocks will likely contain XMsgs for multiple chains, so we reflect that here.
-    function _xblock(uint64 sourceBlockHeight, uint64 startOffset) internal view returns (TestXTypes.Block memory) {
+    function _xblock(uint64 offset, uint64 xmsgOffset) internal view returns (TestXTypes.Block memory) {
         XTypes.Msg[] memory xmsgs = new XTypes.Msg[](10);
 
         // intended for this chain
-        xmsgs[0] = _increment(chainAId, thisChainId, startOffset);
-        xmsgs[1] = _increment(chainAId, thisChainId, startOffset + 1);
-        xmsgs[2] = _increment(chainAId, thisChainId, startOffset + 2);
-        xmsgs[3] = _revert(chainAId, thisChainId, startOffset + 3);
-        xmsgs[4] = _increment(chainAId, thisChainId, startOffset + 4);
+        xmsgs[0] = _increment(chainAId, thisChainId, xmsgOffset);
+        xmsgs[1] = _increment(chainAId, thisChainId, xmsgOffset + 1);
+        xmsgs[2] = _increment(chainAId, thisChainId, xmsgOffset + 2);
+        xmsgs[3] = _revert(chainAId, thisChainId, xmsgOffset + 3);
+        xmsgs[4] = _increment(chainAId, thisChainId, xmsgOffset + 4);
 
         // intended for chain b
-        xmsgs[5] = _increment(chainAId, chainBId, startOffset);
-        xmsgs[6] = _increment(chainAId, chainBId, startOffset + 1);
-        xmsgs[7] = _increment(chainAId, chainBId, startOffset + 2);
-        xmsgs[8] = _revert(chainAId, chainBId, startOffset + 3);
-        xmsgs[9] = _increment(chainAId, chainBId, startOffset + 4);
+        xmsgs[5] = _increment(chainAId, chainBId, xmsgOffset);
+        xmsgs[6] = _increment(chainAId, chainBId, xmsgOffset + 1);
+        xmsgs[7] = _increment(chainAId, chainBId, xmsgOffset + 2);
+        xmsgs[8] = _revert(chainAId, chainBId, xmsgOffset + 3);
+        xmsgs[9] = _increment(chainAId, chainBId, xmsgOffset + 4);
 
-        return TestXTypes.Block(XTypes.BlockHeader(chainAId, sourceBlockHeight, keccak256("blockhash")), xmsgs);
+        return TestXTypes.Block(
+            XTypes.BlockHeader({
+                sourceChainId: chainAId,
+                confLevel: ConfLevel.Finalized,
+                offset: offset,
+                sourceBlockHash: keccak256("blockhash")
+            }),
+            xmsgs
+        );
     }
 
     function _addValidatorSet_xblock(uint64 valSetId) internal view returns (TestXTypes.Block memory) {
@@ -257,6 +266,7 @@ contract Fixtures is CommonBase, StdCheats {
         xmsgs[0] = XTypes.Msg({
             sourceChainId: omniCChainID,
             destChainId: broadcastChainId,
+            shardId: uint64(ConfLevel.Finalized),
             offset: valSetId,
             sender: address(0), // Portal._CCHAIN_SENDER
             to: address(0), // Portal._VIRTUAL_PORTAL_ADDRRESS
@@ -264,7 +274,15 @@ contract Fixtures is CommonBase, StdCheats {
             gasLimit: 0
         });
 
-        return TestXTypes.Block(XTypes.BlockHeader(omniCChainID, valSetId, bytes32(0)), xmsgs);
+        return TestXTypes.Block(
+            XTypes.BlockHeader({
+                sourceChainId: omniCChainID,
+                confLevel: ConfLevel.Finalized,
+                offset: valSetId,
+                sourceBlockHash: bytes32(0)
+            }),
+            xmsgs
+        );
     }
 
     function _guzzle_xblock(uint256 numGuzzles) internal view returns (TestXTypes.Block memory) {
@@ -277,7 +295,15 @@ contract Fixtures is CommonBase, StdCheats {
             offset += 1;
         }
 
-        return TestXTypes.Block(XTypes.BlockHeader(chainAId, 1, keccak256("blockhash")), xmsgs);
+        return TestXTypes.Block(
+            XTypes.BlockHeader({
+                sourceChainId: chainAId,
+                offset: 1,
+                confLevel: ConfLevel.Finalized,
+                sourceBlockHash: keccak256("blockhash")
+            }),
+            xmsgs
+        );
     }
 
     function _reentrancy_xblock() internal view returns (TestXTypes.Block memory) {
@@ -285,6 +311,7 @@ contract Fixtures is CommonBase, StdCheats {
         xmsgs[0] = XTypes.Msg({
             sourceChainId: chainAId,
             destChainId: thisChainId,
+            shardId: uint64(ConfLevel.Finalized),
             offset: 1,
             sender: address(xsubmitter),
             to: address(xsubmitter),
@@ -292,7 +319,15 @@ contract Fixtures is CommonBase, StdCheats {
             gasLimit: 100_000
         });
 
-        return TestXTypes.Block(XTypes.BlockHeader(chainAId, 1, keccak256("blockhash")), xmsgs);
+        return TestXTypes.Block(
+            XTypes.BlockHeader({
+                sourceChainId: chainAId,
+                confLevel: ConfLevel.Finalized,
+                offset: 1,
+                sourceBlockHash: keccak256("blockhash")
+            }),
+            xmsgs
+        );
     }
 
     /// @dev Create a Counter.increment() XMsg from thisChainId to chainAId
@@ -319,6 +354,7 @@ contract Fixtures is CommonBase, StdCheats {
         return XTypes.Msg({
             sourceChainId: sourceChainId,
             destChainId: destChainId,
+            shardId: uint64(ConfLevel.Finalized),
             offset: offset,
             sender: _counters[sourceChainId],
             to: _counters[destChainId],
@@ -345,6 +381,7 @@ contract Fixtures is CommonBase, StdCheats {
         return XTypes.Msg({
             sourceChainId: sourceChainId,
             destChainId: destChainId,
+            shardId: uint64(ConfLevel.Finalized),
             offset: offset,
             sender: _reverters[sourceChainId],
             to: _reverters[destChainId],
@@ -362,6 +399,7 @@ contract Fixtures is CommonBase, StdCheats {
         return XTypes.Msg({
             sourceChainId: sourceChainId,
             destChainId: destChainId,
+            shardId: uint64(ConfLevel.Finalized),
             offset: offset,
             sender: address(gasGuzzler),
             to: address(gasGuzzler),
