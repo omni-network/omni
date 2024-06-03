@@ -1,4 +1,8 @@
 // Package evmchain provides static metadata about supported evm chains.
+//
+// This package should only contain public well-known metadata and
+// should not be Omni-network specific, since multiple omni networks
+// can be deployed to the same evm chain.
 package evmchain
 
 import (

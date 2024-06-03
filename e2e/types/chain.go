@@ -9,35 +9,35 @@ import (
 //nolint:gochecknoglobals // Static mappings
 var (
 	chainEthereum = EVMChain{
-		Metadata:          mustMetadata(evmchain.IDEthereum),
-		IsPublic:          true,
-		FinalizationStrat: netconf.StratFinalized,
+		Metadata: mustMetadata(evmchain.IDEthereum),
+		IsPublic: true,
+		Shards:   []uint64{netconf.ShardFinalized0}, // L1s can re-org, so use single finalized shard for now.
 	}
 
 	chainHolesky = EVMChain{
-		Metadata:          mustMetadata(evmchain.IDHolesky),
-		IsPublic:          true,
-		FinalizationStrat: netconf.StratFinalized,
+		Metadata: mustMetadata(evmchain.IDHolesky),
+		IsPublic: true,
+		Shards:   []uint64{netconf.ShardFinalized0}, // L1s can re-org, so use single finalized shard for now.
 	}
 
 	chainArbSepolia = EVMChain{
-		Metadata:          mustMetadata(evmchain.IDArbSepolia),
-		IsPublic:          true,
-		FinalizationStrat: netconf.StratSafe,
+		Metadata: mustMetadata(evmchain.IDArbSepolia),
+		IsPublic: true,
+		Shards:   []uint64{netconf.ShardLatest0}, // L2s don't generally re-org, so use single latest shard for now.
 	}
 
 	chainOpSepolia = EVMChain{
-		Metadata:          mustMetadata(evmchain.IDOpSepolia),
-		IsPublic:          true,
-		FinalizationStrat: netconf.StratSafe,
+		Metadata: mustMetadata(evmchain.IDOpSepolia),
+		IsPublic: true,
+		Shards:   []uint64{netconf.ShardLatest0}, // L2s don't generally re-org, so use single latest shard for now.
 	}
 )
 
 // OmniEVMByNetwork returns the Omni evm chain definition by netconf network.
 func OmniEVMByNetwork(network netconf.ID) EVMChain {
 	return EVMChain{
-		Metadata:          mustMetadata(network.Static().OmniExecutionChainID),
-		FinalizationStrat: netconf.StratFinalized,
+		Metadata: mustMetadata(network.Static().OmniExecutionChainID),
+		Shards:   []uint64{netconf.ShardFinalized0}, // OmniEVM has instant finality, so only a single finalized shard is needed.
 	}
 }
 
@@ -50,8 +50,8 @@ func AnvilChainsByNames(names []string) ([]EVMChain, error) {
 			return nil, errors.New("unknown anvil chain", "name", name)
 		}
 		chains = append(chains, EVMChain{
-			Metadata:          meta,
-			FinalizationStrat: netconf.StratLatest, // anvil doesn't support finalized
+			Metadata: meta,
+			Shards:   []uint64{netconf.ShardLatest0}, // Use latest shard on anvil for testing.
 		})
 	}
 

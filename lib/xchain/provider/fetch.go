@@ -255,9 +255,10 @@ func (p *Provider) getXReceiptLogs(ctx context.Context, chainID uint64, height u
 	for iter.Next() {
 		e := iter.Event
 
-		shardID := uint64(chain.FinalizationStrat.ConfLevel()) // Hardcode ShardID for now; either finalize or chain specific.
+		// TODO(kevin): Replace this with shardID in the event log.
+		shardID := chain.Shards[0]
 		if srcChain, _, err := p.getEVMChain(e.SourceChainId); err == nil {
-			shardID = uint64(srcChain.FinalizationStrat.ConfLevel())
+			shardID = srcChain.Shards[0]
 		}
 
 		receipts = append(receipts, xchain.Receipt{
@@ -316,7 +317,7 @@ func (p *Provider) getXMsgLogs(ctx context.Context, chainID uint64, height uint6
 				StreamID: xchain.StreamID{
 					SourceChainID: chain.ID,
 					DestChainID:   e.DestChainId,
-					ShardID:       uint64(chain.FinalizationStrat.ConfLevel()), // Hardcode ShardID for now.
+					ShardID:       chain.Shards[0], // TODO(kevin): Replace with shardID in the event log.
 				},
 				StreamOffset: e.Offset,
 			},

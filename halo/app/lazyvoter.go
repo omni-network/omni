@@ -122,7 +122,10 @@ func (l *voterLoader) LazyLoad(
 			return errors.New("omni chain not found in network")
 		}
 
-		xprov = xprovider.NewMock(omni.BlockPeriod*8/10, omni.ID, cprov)
+		xprov, err = xprovider.NewMock(omni.BlockPeriod*8/10, omni.ID, cprov)
+		if err != nil {
+			return err
+		}
 	} else {
 		ethClients := make(map[uint64]ethclient.Client)
 		for _, chain := range network.EVMChains() {

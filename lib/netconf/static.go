@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
@@ -188,4 +189,36 @@ func IsOmniConsensus(network ID, chainID uint64) bool {
 // IsOmniExecution returns true if provided chainID is the omni execution chain for the network.
 func IsOmniExecution(network ID, chainID uint64) bool {
 	return network.Static().OmniExecutionChainID == chainID
+}
+
+// SimnetNetwork defines the simnet network configuration.
+// Simnet is the only statically defined network, all others are dynamically defined in manifests.
+func SimnetNetwork() Network {
+	return Network{
+		ID: Simnet,
+		Chains: []Chain{
+			mustSimnetChain(Simnet.Static().OmniExecutionChainID, ShardFinalized0),
+			mustSimnetChain(evmchain.IDMockL1Fast, ShardLatest0),
+			mustSimnetChain(evmchain.IDMockL2, ShardLatest0),
+			{
+				ID:     Simnet.Static().OmniConsensusChainIDUint64(),
+				Name:   "omni_consensus",
+				Shards: []uint64{ShardFinalized0},
+			},
+		},
+	}
+}
+
+func mustSimnetChain(id uint64, shard uint64) Chain {
+	meta, ok := evmchain.MetadataByID(id)
+	if !ok {
+		panic("missing chain metadata")
+	}
+
+	return Chain{
+		ID:          meta.ChainID,
+		Name:        meta.Name,
+		BlockPeriod: time.Millisecond * 500, // Speed up block times for testing
+		Shards:      []uint64{shard},
+	}
 }

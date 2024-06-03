@@ -41,8 +41,8 @@ func TestProvider(t *testing.T) {
 	network := netconf.Network{
 		ID: netconf.Simnet,
 		Chains: []netconf.Chain{{
-			ID:                chainID,
-			FinalizationStrat: netconf.StratFinalized,
+			ID:     chainID,
+			Shards: []uint64{netconf.ShardFinalized0},
 		}},
 	}
 
