@@ -293,7 +293,7 @@ func (p Provider) XMsgs(ctx context.Context, first, last *int32, before *graphql
 	if first != nil {
 		// since the data is ordered by id in descending order, we need to adjust the offset for forwards pagination (e.g. going to the previous page)
 		if afterID > uint64(numItems) {
-			queryOffset = afterID - uint64(numItems)
+			queryOffset = afterID - uint64(numItems) - 1
 		} else {
 			queryOffset = 0
 		}

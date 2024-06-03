@@ -439,10 +439,6 @@ export default function XMsgDataTable() {
         </div>
       </div>
       <div>
-        {/* <div className='rounded-xl bg-raised p-10 min-h-[650px]'>
-          <h4 className='text-default mb-4'>No result found.</h4>
-          <p className='text-default text-b'>Please edit your filter selection and try again.</p>
-        </div> */}
 
         {!data && (
           <div role="status" className="animate-pulse overflow-x-auto">
@@ -472,8 +468,8 @@ export default function XMsgDataTable() {
               } else {
                 setFilterParams(prev => ({ ...prev, after: data.xmsgs[0].cursor, before: null }))
               }
-            }} // TODO: when clicked it needs to update the search params with the new cursor
-            disabled={!data.pageInfo?.hasPrevPage} // TODO: When there is no previous cursor, we need to disable this
+            }}
+            disabled={!data.pageInfo?.hasPrevPage}
           >
             <span className="sr-only">Previous</span>
             <span className={`icon-chevron-med-left text-[20px]`}></span>
@@ -492,9 +488,9 @@ export default function XMsgDataTable() {
           <PageButton
             className="rounded-full  flex items-center justify-center"
             onClick={() => {
-              setFilterParams(prev => ({ ...prev, before: data.xmsgs[9].cursor, after: null }))
-            }} // TODO: when clicked it needs to update the search params with the new cursor
-            disabled={!data.pageInfo?.hasNextPage} // TODO: When there is no next cursor, we need to disable this
+              setFilterParams(prev => ({ ...prev, after: null, before: data.xmsgs[9].cursor  }))
+            }}
+            disabled={!data.pageInfo?.hasNextPage}
           >
             <span className="sr-only">Next</span>
             <span className={`icon-chevron-med-right text-[20px]`}></span>
