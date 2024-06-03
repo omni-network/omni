@@ -30,7 +30,7 @@ contract OmniPortal_exec_Test is Base {
 
         assertEq(counter.count(), count + 1);
         assertEq(counter.countByChainId(xmsg.sourceChainId), countForChain + 1);
-        assertEq(portal.inXMsgOffset(xmsg.sourceChainId), xmsg.offset);
+        assertEq(portal.inXMsgOffset(xmsg.sourceChainId, xmsg.shardId), xmsg.offset);
         assertReceipt(vm.getRecordedLogs()[0], xmsg);
     }
 
@@ -44,7 +44,7 @@ contract OmniPortal_exec_Test is Base {
         vm.chainId(xmsg.destChainId);
         portal.exec(xmsg);
 
-        assertEq(portal.inXMsgOffset(xmsg.sourceChainId), xmsg.offset);
+        assertEq(portal.inXMsgOffset(xmsg.sourceChainId, xmsg.shardId), xmsg.offset);
         assertReceipt(vm.getRecordedLogs()[0], xmsg);
     }
 

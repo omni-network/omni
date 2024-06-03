@@ -19,14 +19,16 @@ contract OmniPortal_xcall_Test is Base {
 
         // check XMsg event is emitted
         vm.expectEmit();
-        emit XMsg(xmsg.destChainId, offset, xcaller, xmsg.to, xmsg.data, portal.xmsgDefaultGasLimit(), fee);
+        emit XMsg(
+            xmsg.destChainId, xmsg.shardId, offset, xcaller, xmsg.to, xmsg.data, portal.xmsgDefaultGasLimit(), fee
+        );
 
         // make xcall
         vm.prank(xcaller);
         portal.xcall{ value: fee }(xmsg.destChainId, xmsg.to, xmsg.data);
 
         // check outXMsgOffset is incremented
-        assertEq(portal.outXMsgOffset(xmsg.destChainId), 1);
+        assertEq(portal.outXMsgOffset(xmsg.destChainId, xmsg.shardId), 1);
     }
 
     /// @dev Test that xcall with explicit gas limit emits XMsg event and increments outXMsgOffset
@@ -39,14 +41,14 @@ contract OmniPortal_xcall_Test is Base {
 
         // check XMsg event is emitted
         vm.expectEmit();
-        emit XMsg(xmsg.destChainId, offset, xcaller, xmsg.to, xmsg.data, xmsg.gasLimit, fee);
+        emit XMsg(xmsg.destChainId, xmsg.shardId, offset, xcaller, xmsg.to, xmsg.data, xmsg.gasLimit, fee);
 
         // make xcall
         vm.prank(xcaller);
         portal.xcall{ value: fee }(xmsg.destChainId, xmsg.to, xmsg.data, xmsg.gasLimit);
 
         // check outXMsgOffset is incremented
-        assertEq(portal.outXMsgOffset(xmsg.destChainId), 1);
+        assertEq(portal.outXMsgOffset(xmsg.destChainId, xmsg.shardId), 1);
     }
 
     /// @dev Test that xcall with insufficient fee revert

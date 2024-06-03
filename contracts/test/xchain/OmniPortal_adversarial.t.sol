@@ -3,6 +3,7 @@ pragma solidity =0.8.24;
 
 import { XTypes } from "src/libraries/XTypes.sol";
 import { OmniPortal } from "src/xchain/OmniPortal.sol";
+import { ConfLevel } from "src/libraries/ConfLevel.sol";
 
 import { TestXTypes } from "./common/TestXTypes.sol";
 import { Base } from "./common/Base.sol";
@@ -19,6 +20,7 @@ contract OmniPortal_adversarial is Base {
         XTypes.Msg memory xmsg = XTypes.Msg({
             sourceChainId: chainAId,
             destChainId: thisChainId,
+            shardId: uint64(ConfLevel.Finalized),
             offset: 1,
             sender: address(1234),
             to: address(portal),

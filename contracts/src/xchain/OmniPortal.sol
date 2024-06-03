@@ -15,6 +15,7 @@ import { Quorum } from "../libraries/Quorum.sol";
 import { XRegistryNames } from "../libraries/XRegistryNames.sol";
 import { XRegistryBase } from "./XRegistryBase.sol";
 import { Predeploys } from "../libraries/Predeploys.sol";
+import { ConfLevel } from "../libraries/ConfLevel.sol";
 
 import { OmniPortalConstants } from "./OmniPortalConstants.sol";
 import { OmniPortalStorage } from "./OmniPortalStorage.sol";
@@ -77,14 +78,16 @@ contract OmniPortal is
         omniCChainID = omniCChainID_;
 
         // cchain xmsg & xblock offsets are equal to valSetId
-        inXMsgOffset[omniCChainID_] = valSetId;
-        inXBlockOffset[omniCChainID_] = valSetId;
+        // omni cchain is Finalized only
+        inXMsgOffset[omniCChainID_][ConfLevel.Finalized] = valSetId;
+        inXBlockOffset[omniCChainID_][ConfLevel.Finalized] = valSetId;
 
         // initialize omniChainId valSetId - xmsgs from omni are required to initSourceChain
-        inXStreamValidatorSetId[omniChainId_] = valSetId;
+        // omni chain is Finalized only
+        inXStreamValidatorSetId[omniChainId_][ConfLevel.Finalized] = valSetId;
 
         // initialize omniCChainID valSetId - it is not initialized via initSourceChain
-        inXStreamValidatorSetId[omniCChainID_] = valSetId;
+        inXStreamValidatorSetId[omniCChainID_][ConfLevel.Finalized] = valSetId;
     }
 
     function chainId() public view returns (uint64) {
@@ -96,19 +99,31 @@ contract OmniPortal is
     //////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @notice Call a contract on another chain Uses xmsgDefaultGasLimit as execution
-     *         gas limit on destination chain
+     * @notice Call a contract on another chain.
+     *          (Default xmsg gas limit, ConfLevel.Finalized)
      * @param destChainId   Destination chain ID
      * @param to            Address of contract to call on destination chain
      * @param data          ABI Encoded function calldata
      */
     function xcall(uint64 destChainId, address to, bytes calldata data) external payable whenNotPaused {
-        _xcall(destChainId, msg.sender, to, data, xmsgDefaultGasLimit);
+        _xcall(destChainId, msg.sender, to, data, xmsgDefaultGasLimit, ConfLevel.Finalized);
     }
 
     /**
-     * @notice Call a contract on another chain Uses provide gasLimit as execution gas limit on
-     *          destination chain. Reverts if gasLimit < xmsgMinGasLimit or gasLimit > xmsgMaxGasLimit
+     * @notice Call a contract on another chain,
+     *          (Default xmsg gas limit, explicit ConfLevel)
+     * @param destChainId   Destination chain ID
+     * @param to            Address of contract to call on destination chain
+     * @param data          ABI Encoded function calldata
+     * @param conf          Confirmation level
+     */
+    function xcall(uint64 destChainId, address to, bytes calldata data, uint8 conf) external payable whenNotPaused {
+        _xcall(destChainId, msg.sender, to, data, xmsgDefaultGasLimit, conf);
+    }
+
+    /**
+     * @notice Call a contract on another.
+     *           (Explcit gas limit , ConfLevel.Finalized)
      * @param destChainId   Destination chain ID
      * @param to            Address of contract to call on destination chain
      * @param data          ABI Encoded function calldata
@@ -119,7 +134,24 @@ contract OmniPortal is
         payable
         whenNotPaused
     {
-        _xcall(destChainId, msg.sender, to, data, gasLimit);
+        _xcall(destChainId, msg.sender, to, data, gasLimit, ConfLevel.Finalized);
+    }
+
+    /**
+     * @notice Call a contract on another chain.
+     *          (Explicit gas limit, explicit ConfLevel)
+     * @param destChainId   Destination chain ID
+     * @param to            Address of contract to call on destination chain
+     * @param data          ABI Encoded function calldata
+     * @param gasLimit      Execution gas limit, enforced on destination chain
+     * @param conf          Confirmation level
+     */
+    function xcall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit, uint8 conf)
+        external
+        payable
+        whenNotPaused
+    {
+        _xcall(destChainId, msg.sender, to, data, gasLimit, conf);
     }
 
     /**
@@ -147,7 +179,11 @@ contract OmniPortal is
      * @notice Initiate an xcall.
      * @dev Validate the xcall, emit an XMsg, increment dest chain outXStreamOffset
      */
-    function _xcall(uint64 destChainId, address sender, address to, bytes calldata data, uint64 gasLimit) private {
+    function _xcall(uint64 destChainId, address sender, address to, bytes calldata data, uint64 gasLimit, uint8 conf)
+        private
+    {
+        // Only support ConfLevel.Finalized and ConfLevel.Fast for now
+        require(conf == ConfLevel.Finalized || conf == ConfLevel.Fast, "OmniPortal: invalid conf level");
         require(destChainId != chainId(), "OmniPortal: no same-chain xcall");
         require(destChainId != _BROADCAST_CHAIN_ID, "OmniPortal: no broadcast xcall");
         require(isSupportedChain(destChainId), "OmniPortal: unsupported chain");
@@ -156,9 +192,12 @@ contract OmniPortal is
         require(gasLimit >= xmsgMinGasLimit, "OmniPortal: gasLimit too low");
         require(msg.value >= feeFor(destChainId, data, gasLimit), "OmniPortal: insufficient fee");
 
-        outXMsgOffset[destChainId] += 1;
+        // conf level will always be first byte of shardId. for now, shardId is just conf level
+        uint64 shardId = uint64(conf);
 
-        emit XMsg(destChainId, outXMsgOffset[destChainId], sender, to, data, gasLimit, msg.value);
+        outXMsgOffset[destChainId][shardId] += 1;
+
+        emit XMsg(destChainId, shardId, outXMsgOffset[destChainId][shardId], sender, to, data, gasLimit, msg.value);
     }
 
     /**
@@ -174,7 +213,13 @@ contract OmniPortal is
      */
     function initSourceChain(uint64 srcChainId) external {
         require(msg.sender == xregistry, "OmniPortal: only xregistry");
-        inXStreamValidatorSetId[srcChainId] = inXStreamValidatorSetId[omniChainId];
+
+        // We initialize for finalized and latset conf level shards.
+        // TODO: update XRegistry & XRegistryReplica apps to include supported shards in the chain's metadata
+
+        uint64 latestOmniValSetId = inXStreamValidatorSetId[omniChainId][ConfLevel.Finalized];
+        inXStreamValidatorSetId[srcChainId][ConfLevel.Finalized] = latestOmniValSetId;
+        inXStreamValidatorSetId[srcChainId][ConfLevel.Latest] = latestOmniValSetId;
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -187,8 +232,10 @@ contract OmniPortal is
      *              and a block header and message batch, proven against the attestation root.
      */
     function xsubmit(XTypes.Submission calldata xsub) external whenNotPaused nonReentrant {
-        uint256 numMsgs = xsub.msgs.length;
-        require(numMsgs > 0, "OmniPortal: no xmsgs");
+        XTypes.Msg[] calldata xmsgs = xsub.msgs;
+        XTypes.BlockHeader calldata xheader = xsub.blockHeader;
+
+        require(xmsgs.length > 0, "OmniPortal: no xmsgs");
 
         // validator set id for this submission
         uint64 valSetId = xsub.validatorSetId;
@@ -197,7 +244,7 @@ contract OmniPortal is
         require(validatorSetTotalPower[valSetId] > 0, "OmniPortal: unknown val set");
 
         // last seen validator set id for this source chain
-        uint64 lastValSetId = inXStreamValidatorSetId[xsub.blockHeader.sourceChainId];
+        uint64 lastValSetId = inXStreamValidatorSetId[xheader.sourceChainId][xheader.confLevel];
 
         // require the validator set id is initialized (initSourceChain has beed called)
         require(lastValSetId > 0, "OmniPortal: no val set");
@@ -228,19 +275,27 @@ contract OmniPortal is
         uint64 xblockOffset = xsub.blockHeader.offset;
 
         // last seen xblock offset for this source chain
-        uint64 lastXBlockOffset = inXBlockOffset[xsub.blockHeader.sourceChainId];
+        uint64 lastXBlockOffset = inXBlockOffset[xheader.sourceChainId][xheader.confLevel];
 
         // update in stream block height, if it's new
-        if (xblockOffset > lastXBlockOffset) inXBlockOffset[xsub.blockHeader.sourceChainId] = xblockOffset;
+        if (xblockOffset > lastXBlockOffset) inXBlockOffset[xheader.sourceChainId][xheader.confLevel] = xblockOffset;
 
         // update in stream validator set id, if it's new
-        if (valSetId > lastValSetId) inXStreamValidatorSetId[xsub.blockHeader.sourceChainId] = valSetId;
+        if (valSetId > lastValSetId) inXStreamValidatorSetId[xheader.sourceChainId][xheader.confLevel] = valSetId;
+
+        XTypes.Msg calldata xmsg_;
 
         // execute xmsgs
-        for (uint256 i = 0; i < numMsgs; i++) {
+        for (uint256 i = 0; i < xmsgs.length; i++) {
+            xmsg_ = xsub.msgs[i];
+
             // TODO: we can remove xmsg sourceChainId, and instead set _xmsg.sourceChainId to xsub.blockHeader.sourceChainId
-            require(xsub.msgs[i].sourceChainId == xsub.blockHeader.sourceChainId, "OmniPortal: wrong sourceChainId");
-            _exec(xsub.msgs[i]);
+            require(xmsg_.sourceChainId == xsub.blockHeader.sourceChainId, "OmniPortal: wrong sourceChainId");
+
+            // require xmsg conf level matches block header conf level
+            require(uint8(xmsg_.shardId) == xsub.blockHeader.confLevel, "OmniPortal: wrong confLevel");
+
+            _exec(xmsg_);
         }
     }
 
@@ -271,15 +326,16 @@ contract OmniPortal is
         require(
             xmsg_.destChainId == chainId() || xmsg_.destChainId == _BROADCAST_CHAIN_ID, "OmniPortal: wrong destChainId"
         );
-        require(xmsg_.offset == inXMsgOffset[xmsg_.sourceChainId] + 1, "OmniPortal: wrong offset");
+        require(xmsg_.offset == inXMsgOffset[xmsg_.sourceChainId][xmsg_.shardId] + 1, "OmniPortal: wrong offset");
 
-        inXMsgOffset[xmsg_.sourceChainId] += 1;
+        inXMsgOffset[xmsg_.sourceChainId][xmsg_.shardId] += 1;
 
         // do not allow user xcalls to the portal
         // only sys xcalls (to _VIRTUAL_PORTAL_ADDRESS) are allowed to be executed on the portal
         if (xmsg_.to == address(this)) {
             emit XReceipt(
                 xmsg_.sourceChainId,
+                xmsg_.shardId,
                 xmsg_.offset,
                 0,
                 msg.sender,
@@ -304,7 +360,7 @@ contract OmniPortal is
         // empty error if success is true
         bytes memory errorMsg = success ? bytes("") : result;
 
-        emit XReceipt(xmsg_.sourceChainId, xmsg_.offset, gasUsed, msg.sender, success, errorMsg);
+        emit XReceipt(xmsg_.sourceChainId, xmsg_.shardId, xmsg_.offset, gasUsed, msg.sender, success, errorMsg);
     }
 
     /**

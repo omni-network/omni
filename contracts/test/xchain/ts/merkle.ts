@@ -50,7 +50,7 @@ export class XBlockMerkleTree {
     // Number(bigint) cast okay, because test chain ids and offsets are small
     return [...msgs].sort((a, b) => {
       if (a.destChainId !== b.destChainId) return Number(a.destChainId - b.destChainId)
-      return Number(a.streamOffset - b.streamOffset)
+      return Number(a.offset - b.offset)
     })
   }
 }
@@ -71,11 +71,11 @@ function checkMsgOrder(msgs: readonly XMsg[]) {
 
   for (const msg of msgs) {
     if (msg.destChainId < lastSeenDestChainId) throwError('Msgs not ordered by dest chain id')
-    if (msg.destChainId === lastSeenDestChainId && msg.streamOffset < lastSeenOffset)
+    if (msg.destChainId === lastSeenDestChainId && msg.offset < lastSeenOffset)
       throwError('Msgs not ordered by stream offset')
 
     lastSeenDestChainId = msg.destChainId
-    lastSeenOffset = msg.streamOffset
+    lastSeenOffset = msg.offset
   }
 }
 

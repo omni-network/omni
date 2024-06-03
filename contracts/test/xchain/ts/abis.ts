@@ -10,8 +10,9 @@ export const xBlockHeaderParams = {
   type: 'tuple',
   components: [
     { name: 'sourceChainId', type: 'uint64' },
-    { name: 'blockHeight', type: 'uint64' },
-    { name: 'blockHash', type: 'bytes32' },
+    { name: 'confLevel', type: 'uint8' },
+    { name: 'offset', type: 'uint64' },
+    { name: 'sourceBlockHash', type: 'bytes32' },
   ],
 } as const
 
@@ -22,7 +23,8 @@ export const xMsgParams = {
   components: [
     { name: 'sourceChainId', type: 'uint64' },
     { name: 'destChainId', type: 'uint64' },
-    { name: 'streamOffset', type: 'uint64' },
+    { name: 'shardId', type: 'uint64' },
+    { name: 'offset', type: 'uint64' },
     { name: 'sender', type: 'address' },
     { name: 'to', type: 'address' },
     { name: 'data', type: 'bytes' },
