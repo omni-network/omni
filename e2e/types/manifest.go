@@ -51,14 +51,22 @@ const (
 type Perturb string
 
 const (
+	PerturbUnknown Perturb = ""
 	// PerturbRestart defines a perturbation that restarts a docker container.
 	PerturbRestart Perturb = "restart"
 	// PerturbStopStart defines a perturbation that stops and then starts a docker container.
 	PerturbStopStart Perturb = "stopstart"
 	// PerturbRollback defines a perturbation that stops a halo node, performs a rollback, then starts it again.
 	PerturbRollback Perturb = "rollback"
-	// PerturbFuzzyHead defines a perturbation that enables fuzzyhead xmsgs on the anvilproxy for a while.
-	PerturbFuzzyHead Perturb = "fuzzyhead"
+
+	// PerturbFuzzyHeadDropBlocks defines a perturbation that enables fuzzyhead dropping xblock for a while.
+	PerturbFuzzyHeadDropBlocks Perturb = "fuzzyhead_dropblocks"
+	// PerturbFuzzyHeadDropMsgs defines a perturbation that enables fuzzyhead drop xmsgs for a while.
+	PerturbFuzzyHeadDropMsgs Perturb = "fuzzyhead_dropmsgs"
+	// PerturbFuzzyHeadAttRoot defines a perturbation that enables fuzzyhead inconsistent attestation root for a while.
+	PerturbFuzzyHeadAttRoot Perturb = "fuzzyhead_attroot"
+	// PerturbFuzzyHeadMoreMsgs defines a perturbation that enables fuzzyhead more/duplicate xmsgs for a while.
+	PerturbFuzzyHeadMoreMsgs Perturb = "fuzzyhead_moremsgs"
 )
 
 // Manifest wraps e2e.Manifest with additional omni-specific fields.

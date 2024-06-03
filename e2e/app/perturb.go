@@ -65,13 +65,13 @@ func perturbService(ctx context.Context, service string, testnetDir string, pert
 		if err := docker.ExecCompose(ctx, testnetDir, "start", service); err != nil {
 			return errors.Wrap(err, "start service")
 		}
-	case types.PerturbFuzzyHead:
-		if err := docker.ExecCompose(ctx, testnetDir, "exec", service, "wget", "-O-", "localhost:8545/fuzzy_head_enable"); err != nil {
-			return errors.Wrap(err, "enable fork")
+	case types.PerturbFuzzyHeadAttRoot, types.PerturbFuzzyHeadDropBlocks, types.PerturbFuzzyHeadDropMsgs, types.PerturbFuzzyHeadMoreMsgs:
+		if err := docker.ExecCompose(ctx, testnetDir, "exec", service, "wget", "-O-", "localhost:8545/fuzzy_enable?perturb="+string(perturb)); err != nil {
+			return errors.Wrap(err, "enable fuzzy head")
 		}
-		time.Sleep(10 * time.Second)
-		if err := docker.ExecCompose(ctx, testnetDir, "exec", service, "wget", "-O-", "localhost:8545/fuzzy_head_disable"); err != nil {
-			return errors.Wrap(err, "disable fork")
+		time.Sleep(6 * time.Second)
+		if err := docker.ExecCompose(ctx, testnetDir, "exec", service, "wget", "-O-", "localhost:8545/fuzzy_disable"); err != nil {
+			return errors.Wrap(err, "disable fuzzy head")
 		}
 	default:
 		return errors.New("unknown service perturbation")
