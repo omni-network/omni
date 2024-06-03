@@ -92,7 +92,7 @@ function isXCall() internal view returns (bool) {
 }
 ```
 
-Note that not only does `isXCall` check with the portal that the current transaction is an `xcall`, it also confirms the sender is the portal itself. This helps avoid mistaking calls later in an `xcall` stacktrace with the original `xcall`. Using this helper, we can ensure that `greet()` can only every be called via an `xcall`.
+Note that not only does `isXCall` check with the portal that the current transaction is an `xcall`, it also confirms the sender is the portal itself. This helps avoid mistaking calls later in an `xcall` stacktrace with the original `xcall`. Using this helper, we can ensure that `greet()` can only ever be called via an `xcall`.
 
 ```solidity
 function greet(string calldata greeting) external xrecv  {

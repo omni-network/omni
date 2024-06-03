@@ -32,7 +32,7 @@ Before you deploy your project to any network, you will need native tokens for t
 
 #### `portalAddress`
 
-The value for `portalAddress` should be updated to the address of the deployed Omni portals. This can be found in the relavant addresses page for the Omni Omega testnet which will be shared soon.
+The value for `portalAddress` should be updated to the address of the deployed Omni portals. This can be found in the relevant addresses page for the Omni Omega testnet which will be shared soon.
 
 ### Deployment
 
