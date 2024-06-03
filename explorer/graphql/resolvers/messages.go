@@ -5,6 +5,7 @@ import (
 
 	"github.com/omni-network/omni/explorer/graphql/data"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -127,14 +128,21 @@ func (a *XMsgsArgs) Validate() error {
 
 func (m *MessagesResolver) XMsgs(ctx context.Context, args XMsgsArgs) (data.XMsgConnection, error) {
 	if err := args.Validate(); err != nil {
-		return data.XMsgConnection{}, err
+		log.Warn(ctx, "Invalid arguments", err)
+		return data.XMsgConnection{}, errors.New("invalid arguments")
 	}
 	filters, err := args.DataFilters()
 	if err != nil {
 		return data.XMsgConnection{}, err
 	}
 
-	return m.p.XMsgs(ctx, args.First, args.Last, args.Before, args.After, &filters)
+	msgs, err := m.p.XMsgs(ctx, args.First, args.Last, args.Before, args.After, &filters)
+	if err != nil {
+		log.Warn(ctx, "Error fetching data", err)
+		return data.XMsgConnection{}, errors.New("error fetching messages")
+	}
+
+	return msgs, nil
 }
 
 func uint64Ptr(v uint64) *uint64 {

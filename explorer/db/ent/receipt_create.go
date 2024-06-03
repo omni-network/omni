@@ -84,6 +84,20 @@ func (rc *ReceiptCreate) SetNillableCreatedAt(t *time.Time) *ReceiptCreate {
 	return rc
 }
 
+// SetRevertReason sets the "revert_reason" field.
+func (rc *ReceiptCreate) SetRevertReason(s string) *ReceiptCreate {
+	rc.mutation.SetRevertReason(s)
+	return rc
+}
+
+// SetNillableRevertReason sets the "revert_reason" field if the given value is not nil.
+func (rc *ReceiptCreate) SetNillableRevertReason(s *string) *ReceiptCreate {
+	if s != nil {
+		rc.SetRevertReason(*s)
+	}
+	return rc
+}
+
 // AddBlockIDs adds the "block" edge to the Block entity by IDs.
 func (rc *ReceiptCreate) AddBlockIDs(ids ...int) *ReceiptCreate {
 	rc.mutation.AddBlockIDs(ids...)
@@ -202,6 +216,11 @@ func (rc *ReceiptCreate) check() error {
 	if _, ok := rc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Receipt.created_at"`)}
 	}
+	if v, ok := rc.mutation.RevertReason(); ok {
+		if err := receipt.RevertReasonValidator(v); err != nil {
+			return &ValidationError{Name: "revert_reason", err: fmt.Errorf(`ent: validator failed for field "Receipt.revert_reason": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -263,6 +282,10 @@ func (rc *ReceiptCreate) createSpec() (*Receipt, *sqlgraph.CreateSpec) {
 	if value, ok := rc.mutation.CreatedAt(); ok {
 		_spec.SetField(receipt.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
+	}
+	if value, ok := rc.mutation.RevertReason(); ok {
+		_spec.SetField(receipt.FieldRevertReason, field.TypeString, value)
+		_node.RevertReason = value
 	}
 	if nodes := rc.mutation.BlockIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

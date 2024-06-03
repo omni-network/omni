@@ -86,6 +86,10 @@ func init() {
 	receiptDescCreatedAt := receiptFields[8].Descriptor()
 	// receipt.DefaultCreatedAt holds the default value on creation for the created_at field.
 	receipt.DefaultCreatedAt = receiptDescCreatedAt.Default.(time.Time)
+	// receiptDescRevertReason is the schema descriptor for revert_reason field.
+	receiptDescRevertReason := receiptFields[9].Descriptor()
+	// receipt.RevertReasonValidator is a validator for the "revert_reason" field. It is called by the builders before save.
+	receipt.RevertReasonValidator = receiptDescRevertReason.Validators[0].(func(string) error)
 	xprovidercursorFields := schema.XProviderCursor{}.Fields()
 	_ = xprovidercursorFields
 	// xprovidercursorDescCreatedAt is the schema descriptor for created_at field.
