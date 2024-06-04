@@ -70,7 +70,7 @@ func newApp(
 	db dbm.DB,
 	engineCl ethclient.EngineClient,
 	voter atypes.Voter,
-	namer atypes.ChainNameFunc,
+	namer atypes.ChainVerNameFunc,
 	baseAppOpts ...func(*baseapp.BaseApp),
 ) (*App, error) {
 	depCfg := depinject.Configs(

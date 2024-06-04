@@ -13,14 +13,14 @@ var (
 		Subsystem: "attest",
 		Name:      "approved_height",
 		Help:      "The height of latest approved attestation per source chain",
-	}, []string{"chain", "conf"})
+	}, []string{"chain_version"})
 
 	approvedOffset = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "halo",
 		Subsystem: "attest",
 		Name:      "approved_offset",
 		Help:      "The offset of latest approved attestation per source chain",
-	}, []string{"chain", "conf"})
+	}, []string{"chain_version"})
 
 	votesProposed = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "halo",
@@ -28,7 +28,7 @@ var (
 		Name:      "proposed_votes",
 		Help:      "The number of votes proposed per block per source chain",
 		Buckets:   []float64{1, 2, 5, 10, 25, 50, 100, 250, 500, 1000},
-	}, []string{"chain"})
+	}, []string{"chain_version"})
 
 	votesExtended = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "halo",
@@ -36,7 +36,7 @@ var (
 		Name:      "extended_votes",
 		Help:      "The number of votes included by a validator per block per source chain",
 		Buckets:   []float64{1, 2, 5, 10, 25, 50, 100, 250, 500, 1000},
-	}, []string{"chain"})
+	}, []string{"chain_version"})
 
 	dbLatency = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "halo",

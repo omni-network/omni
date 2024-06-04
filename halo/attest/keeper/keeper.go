@@ -42,7 +42,7 @@ type Keeper struct {
 	storeService store.KVStoreService
 	skeeper      baseapp.ValidatorStore
 	valProvider  vtypes.ValidatorProvider
-	namer        types.ChainNameFunc
+	namer        types.ChainVerNameFunc
 	voter        types.Voter
 	voteWindow   uint64
 	voteExtLimit uint64
@@ -54,7 +54,7 @@ func New(
 	cdc codec.BinaryCodec,
 	storeSvc store.KVStoreService,
 	skeeper baseapp.ValidatorStore,
-	namer types.ChainNameFunc,
+	namer types.ChainVerNameFunc,
 	voter types.Voter,
 	voteWindow uint64,
 	voteExtLimit uint64,
@@ -109,9 +109,9 @@ func (k *Keeper) Add(ctx context.Context, msg *types.MsgAddVotes) error {
 		return errors.Wrap(err, "fetch validators")
 	}
 
-	countsByChain := make(map[uint64]int)
+	countsByChainVer := make(map[xchain.ChainVersion]int)
 	for _, aggVote := range msg.Votes {
-		countsByChain[aggVote.BlockHeader.ChainId]++
+		countsByChainVer[aggVote.BlockHeader.XChainVersion()]++
 
 		// Sanity check that all votes are from prev block validators.
 		for _, sig := range aggVote.Signatures {
@@ -126,8 +126,8 @@ func (k *Keeper) Add(ctx context.Context, msg *types.MsgAddVotes) error {
 		}
 	}
 
-	for chainID, count := range countsByChain {
-		votesProposed.WithLabelValues(k.namer(chainID)).Observe(float64(count))
+	for chainVer, count := range countsByChainVer {
+		votesProposed.WithLabelValues(k.namer(chainVer)).Observe(float64(count))
 	}
 
 	return nil
@@ -167,7 +167,7 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 	} else if existing.GetFinalizedAttId() != 0 {
 		log.Debug(ctx, "Ignoring vote for attestation with finalized override", nil,
 			"agg_id", attID,
-			"chain", k.namer(header.ChainId),
+			"chain", k.namer(header.XChainVersion()),
 			"offset", header.Offset,
 		)
 
@@ -175,7 +175,7 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 	} else if isApprovedByDifferentSet(existing, valSetID) {
 		log.Debug(ctx, "Ignoring vote for attestation approved by different validator set",
 			"agg_id", attID,
-			"chain", k.namer(header.ChainId),
+			"chain", k.namer(header.XChainVersion()),
 			"offset", header.Offset,
 		)
 		// Technically these new votes could be from validators also in that previous set, but
@@ -198,7 +198,7 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 			// TODO(corver): We should prevent this from happening earlier.
 			log.Warn(ctx, "Ignoring duplicate vote", nil,
 				"agg_id", attID,
-				"chain", k.namer(header.ChainId),
+				"chain", k.namer(header.XChainVersion()),
 				"offset", header.Offset,
 				log.Hex7("validator", sig.ValidatorAddress),
 			)
@@ -228,6 +228,7 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 			return errors.Wrap(err, "value")
 		}
 		chainVer := att.XChainVersion()
+		chainVerName := k.namer(chainVer)
 
 		// Ensure we approve sequentially, not skipping any heights.
 		{
@@ -283,13 +284,12 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 			return errors.Wrap(err, "save")
 		}
 
-		approvedHeight.WithLabelValues(k.namer(att.GetChainId()), att.XChainConfLevelStr()).Set(float64(att.GetHeight()))
-		approvedOffset.WithLabelValues(k.namer(att.GetChainId()), att.XChainConfLevelStr()).Set(float64(att.GetOffset()))
+		approvedHeight.WithLabelValues(chainVerName).Set(float64(att.GetHeight()))
+		approvedOffset.WithLabelValues(chainVerName).Set(float64(att.GetOffset()))
 		approvedByChain[chainVer] = att.GetOffset()
 
 		log.Debug(ctx, "📬 Approved attestation",
-			"chain", k.namer(att.GetChainId()),
-			"conf_level", att.XChainConfLevelStr(),
+			"chain", chainVerName,
 			"offset", att.GetOffset(),
 			"height", att.GetHeight(),
 		)
@@ -413,8 +413,7 @@ func (k *Keeper) maybeOverrideFinalized(ctx context.Context, att *Attestation) (
 	}
 
 	log.Debug(ctx, "📬 Fuzzy attestation overridden by finalized",
-		"chain", k.namer(att.GetChainId()),
-		"conf_level", att.XChainConfLevelStr(),
+		"chain", k.namer(att.XChainVersion()),
 		"offset", att.GetOffset(),
 		"height", att.GetHeight(),
 	)
@@ -532,7 +531,7 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 	}
 
 	for chainVer, count := range countsByChainVer {
-		votesExtended.WithLabelValues(k.namer(chainVer.ID)).Observe(float64(count))
+		votesExtended.WithLabelValues(k.namer(chainVer)).Observe(float64(count))
 	}
 
 	// Make nice logs

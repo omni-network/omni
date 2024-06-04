@@ -126,7 +126,7 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 		db,
 		engineCl,
 		voter,
-		netconf.ChainNamer(cfg.Network),
+		netconf.ChainVersionNamer(cfg.Network),
 		baseAppOpts...,
 	)
 	if err != nil {

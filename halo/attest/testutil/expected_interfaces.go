@@ -4,6 +4,7 @@ package testutil
 import (
 	"github.com/omni-network/omni/halo/attest/types"
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 )
@@ -21,5 +22,5 @@ type ValProvider interface {
 }
 
 type ChainNamer interface {
-	ChainName(chainID uint64) string
+	ChainName(chainVer xchain.ChainVersion) string
 }

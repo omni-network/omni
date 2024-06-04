@@ -168,11 +168,9 @@ func monitorAttestedForever(
 
 				name := network.StreamName(stream)
 
-				cursor, ok, err := xprovider.GetEmittedCursor(ctx, ref, stream)
+				cursor, _, err := xprovider.GetEmittedCursor(ctx, ref, stream)
 				if err != nil {
 					log.Error(ctx, "Fetching stream offsets for attestation failed (will retry)", err, "stream", name)
-					continue
-				} else if !ok {
 					continue
 				}
 
@@ -300,11 +298,9 @@ func monitorOffsetsOnce(ctx context.Context, xprovider xchain.Provider, network 
 ) error {
 	for _, stream := range network.StreamsBetween(src.ID, dst.ID) {
 		ref := xchain.EmitRef{ConfLevel: ptr(stream.ConfLevel())}
-		emitted, ok, err := xprovider.GetEmittedCursor(ctx, ref, stream)
+		emitted, _, err := xprovider.GetEmittedCursor(ctx, ref, stream)
 		if err != nil {
 			return err
-		} else if !ok {
-			return nil
 		}
 
 		submitted, _, err := xprovider.GetSubmittedCursor(ctx, stream)

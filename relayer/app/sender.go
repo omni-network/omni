@@ -28,13 +28,13 @@ type Sender struct {
 	portal     common.Address
 	abi        *abi.ABI
 	chain      netconf.Chain
-	chainNames map[uint64]string
+	chainNames map[xchain.ChainVersion]string
 	rpcClient  ethclient.Client
 }
 
 // NewSender creates a new sender that uses txmgr to send transactions to the destination chain.
 func NewSender(chain netconf.Chain, rpcClient ethclient.Client,
-	privateKey ecdsa.PrivateKey, chainNames map[uint64]string) (Sender, error) {
+	privateKey ecdsa.PrivateKey, chainNames map[xchain.ChainVersion]string) (Sender, error) {
 	// we want to query receipts every 1/3 of the block time
 	cfg, err := txmgr.NewConfig(txmgr.NewCLIConfig(
 		chain.ID,
@@ -85,7 +85,7 @@ func (o Sender) SendTransaction(ctx context.Context, sub xchain.Submission) erro
 	}
 
 	dstChain := o.chain.Name
-	srcChain := o.chainNames[sub.BlockHeader.SourceChainID]
+	srcChain := o.chainNames[sub.BlockHeader.ChainVersion()]
 
 	// Request attributes added to context (for downstream logging) and manually added to errors (for upstream logging).
 	reqAttrs := []any{
@@ -95,7 +95,6 @@ func (o Sender) SendTransaction(ctx context.Context, sub xchain.Submission) erro
 
 	ctx = log.WithCtx(ctx, reqAttrs...)
 	log.Debug(ctx, "Received submission",
-		"conf", sub.BlockHeader.ConfLevel,
 		"block_offset", sub.BlockHeader.BlockOffset,
 		"start_msg_offset", startOffset,
 		"msgs", len(sub.Msgs),

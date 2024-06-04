@@ -120,7 +120,7 @@ type ModuleInputs struct {
 	Logger       log.Logger
 	TXConfig     client.TxConfig
 	SKeeper      *skeeper.Keeper
-	Namer        types.ChainNameFunc
+	Namer        types.ChainVerNameFunc
 	Voter        types.Voter
 }
 
