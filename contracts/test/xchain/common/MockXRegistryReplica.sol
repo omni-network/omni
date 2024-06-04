@@ -5,6 +5,7 @@ import { XRegistryBase } from "src/xchain/XRegistryBase.sol";
 import { XRegistryNames } from "src/libraries/XRegistryNames.sol";
 import { Predeploys } from "src/libraries/Predeploys.sol";
 import { OmniPortal } from "src/xchain/OmniPortal.sol";
+import { ConfLevel } from "src/libraries/ConfLevel.sol";
 
 /**
  * @title MockXRegistryReplica
@@ -16,7 +17,14 @@ contract MockXRegistryReplica is XRegistryBase {
         uint64 chainId,
         address addr
     ) external {
-        _set(chainId, XRegistryNames.OmniPortal, Predeploys.PortalRegistry, addr);
-        OmniPortal(thisChainsPortal).initSourceChain(chainId);
+        uint64[] memory shards = new uint64[](2);
+        shards[0] = ConfLevel.Finalized;
+        shards[1] = ConfLevel.Latest;
+
+        Deployment memory dep = Deployment({ addr: addr, metadata: abi.encode(shards) });
+
+        _set(chainId, XRegistryNames.OmniPortal, Predeploys.PortalRegistry, dep);
+
+        OmniPortal(thisChainsPortal).initSourceChain(chainId, shards);
     }
 }

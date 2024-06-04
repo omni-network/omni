@@ -9,12 +9,12 @@
       "type": "t_address"
     },
     {
-      "astId": 52788,
+      "astId": 52412,
       "contract": "src/xchain/PortalRegistry.sol:PortalRegistry",
       "label": "deployments",
       "offset": 0,
       "slot": "1",
-      "type": "t_mapping(t_uint64,t_struct(Deployment)52798_storage)"
+      "type": "t_mapping(t_uint64,t_struct(Deployment)52423_storage)"
     }
   ],
   "types": {
@@ -23,25 +23,26 @@
       "label": "address",
       "numberOfBytes": "20"
     },
-    "t_mapping(t_uint64,t_struct(Deployment)52798_storage)": {
+    "t_array(t_uint64)dyn_storage": {
+      "encoding": "dynamic_array",
+      "label": "uint64[]",
+      "numberOfBytes": "32",
+      "base": "t_uint64"
+    },
+    "t_mapping(t_uint64,t_struct(Deployment)52423_storage)": {
       "encoding": "mapping",
       "key": "t_uint64",
       "label": "mapping(uint64 => struct PortalRegistry.Deployment)",
       "numberOfBytes": "32",
-      "value": "t_struct(Deployment)52798_storage"
+      "value": "t_struct(Deployment)52423_storage"
     },
-    "t_string_storage": {
-      "encoding": "bytes",
-      "label": "string",
-      "numberOfBytes": "32"
-    },
-    "t_struct(Deployment)52798_storage": {
+    "t_struct(Deployment)52423_storage": {
       "encoding": "inplace",
       "label": "struct PortalRegistry.Deployment",
       "numberOfBytes": "96",
       "members": [
         {
-          "astId": 52791,
+          "astId": 52415,
           "contract": "src/xchain/PortalRegistry.sol:PortalRegistry",
           "label": "chainId",
           "offset": 0,
@@ -49,7 +50,7 @@
           "type": "t_uint64"
         },
         {
-          "astId": 52793,
+          "astId": 52417,
           "contract": "src/xchain/PortalRegistry.sol:PortalRegistry",
           "label": "addr",
           "offset": 8,
@@ -57,7 +58,7 @@
           "type": "t_address"
         },
         {
-          "astId": 52795,
+          "astId": 52419,
           "contract": "src/xchain/PortalRegistry.sol:PortalRegistry",
           "label": "deployHeight",
           "offset": 0,
@@ -65,12 +66,12 @@
           "type": "t_uint64"
         },
         {
-          "astId": 52797,
+          "astId": 52422,
           "contract": "src/xchain/PortalRegistry.sol:PortalRegistry",
-          "label": "finalizationStrat",
+          "label": "shards",
           "offset": 0,
           "slot": "2",
-          "type": "t_string_storage"
+          "type": "t_array(t_uint64)dyn_storage"
         }
       ]
     },

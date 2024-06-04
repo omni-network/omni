@@ -30,6 +30,7 @@ bindings: check-abigen-version build ## Generate golang contract bindings.
 	./bindings/scripts/genmore.sh Create3 TransparentUpgradeableProxy src/deploy/ProxyAdmin.sol:ProxyAdmin XRegistry PortalRegistry Staking Slashing
 	go run ./bindings/scripts/commenttypes.go -- bindings/strategymanager.go IStrategyManagerDeprecatedStructQueuedWithdrawal IStrategyManagerDeprecatedStructWithdrawerAndNonce
 	go run ./bindings/scripts/commenttypes.go -- bindings/avsdirectory.go ISignatureUtilsSignatureWithSaltAndExpiry
+	go run ./bindings/scripts/commenttypes.go -- bindings/xregistry.go XRegistryBaseDeployment
 
 .PHONY: examples-bindings
 examples-bindings: check-abigen-version build ## Generate golang contract bindings for example contracts

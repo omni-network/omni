@@ -51,6 +51,11 @@ abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
     address public xregistry;
 
     /**
+     * @notice Maps shard id to true, if the shard is supported.
+     */
+    mapping(uint64 => bool) public isSupportedShard;
+
+    /**
      * @notice Offset of the last outbound XMsg that was sent to destChainId in shardId
      *         Maps destChainId -> shardId -> offset.
      */
@@ -90,4 +95,9 @@ abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
      *      so that we can use the XMsg struct type in the interface.
      */
     XTypes.MsgShort internal _xmsg;
+
+    /**
+     * @notice List of supported shards.
+     */
+    uint64[] internal _shards;
 }
