@@ -67,6 +67,7 @@ func DefaultDefinitionConfig(ctx context.Context) DefinitionConfig {
 		InfraProvider:  docker.ProviderName,
 		OmniImgTag:     defaultTag,
 		ExplorerDBConn: "postgres://omni:password@explorer_db:5432/omni_db",
+		GraphQLURL:     "http://explorer_graphql:8080/query",
 	}
 }
 
