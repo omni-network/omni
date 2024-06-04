@@ -156,8 +156,6 @@ func newMsgOffsetFilter(cursors []xchain.SubmitCursor) (*msgCursorFilter, error)
 	}, nil
 }
 
-//go:generate stringer -type=checkResult -trimprefix=check
-
 type checkResult int
 
 const (

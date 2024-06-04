@@ -129,7 +129,16 @@ func (n Network) ChainName(id uint64) string {
 func (n Network) ChainVersionName(chainVer xchain.ChainVersion) string {
 	chain, _ := n.Chain(chainVer.ID)
 
-	return fmt.Sprintf("%s-%s", chain.Name, chainVer.ConfLevel)
+	return fmt.Sprintf("%s|%s", chain.Name, chainVer.ConfLevel.Label())
+}
+
+// StreamName returns the stream name for the given stream ID.
+func (n Network) StreamName(stream xchain.StreamID) string {
+	srcChain, _ := n.Chain(stream.SourceChainID)
+	destChain, _ := n.Chain(stream.DestChainID)
+	conf := xchain.ConfFromShard(stream.ShardID)
+
+	return fmt.Sprintf("%s|%s|%s", srcChain.Name, destChain.Name, conf.Label())
 }
 
 // Chain returns the chain config for the given ID or false if it does not exist.

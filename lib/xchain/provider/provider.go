@@ -129,6 +129,8 @@ func (p *Provider) stream(
 		return errors.New("unknown chain ID")
 	}
 
+	chainVersionName := p.network.ChainVersionName(xchain.ChainVersion{ID: req.ChainID, ConfLevel: req.ConfLevel})
+
 	var workers uint64 // Pick the first threshold that matches (or the last one)
 	for _, threshold := range fetchWorkerThresholds {
 		workers = threshold.Workers
@@ -202,27 +204,25 @@ func (p *Provider) stream(
 			return nil
 		},
 		IncFetchErr: func() {
-			fetchErrTotal.WithLabelValues(chain.Name).Inc()
+			fetchErrTotal.WithLabelValues(chainVersionName).Inc()
 		},
 		IncCallbackErr: func() {
-			callbackErrTotal.WithLabelValues(chain.Name).Inc()
+			callbackErrTotal.WithLabelValues(chainVersionName).Inc()
 		},
 		SetStreamHeight: func(h uint64) {
-			streamHeight.WithLabelValues(chain.Name).Set(float64(h))
+			streamHeight.WithLabelValues(chainVersionName).Set(float64(h))
 		},
 		SetCallbackLatency: func(d time.Duration) {
-			callbackLatency.WithLabelValues(chain.Name).Observe(d.Seconds())
+			callbackLatency.WithLabelValues(chainVersionName).Observe(d.Seconds())
 		},
 		StartTrace: func(ctx context.Context, height uint64, spanName string) (context.Context, trace.Span) {
-			return tracer.StartChainHeight(ctx, p.network.ID, chain.Name, height,
-				path.Join("xprovider", spanName),
-			)
+			return tracer.StartChainHeight(ctx, p.network.ID, chain.Name, height, path.Join("xprovider", spanName))
 		},
 	}
 
 	cb := (stream.Callback[xchain.Block])(callback)
 
-	ctx = log.WithCtx(ctx, "chain", chain.Name)
+	ctx = log.WithCtx(ctx, "chain", chainVersionName)
 	log.Info(ctx, "Streaming xprovider blocks", "from_height", fromHeight)
 
 	return stream.Stream(ctx, deps, req.ChainID, fromHeight, cb)
