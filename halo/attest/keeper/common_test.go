@@ -6,6 +6,7 @@ import (
 	"github.com/omni-network/omni/halo/attest/keeper"
 	"github.com/omni-network/omni/halo/attest/testutil"
 	"github.com/omni-network/omni/halo/attest/types"
+	"github.com/omni-network/omni/lib/xchain"
 
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
@@ -27,7 +28,7 @@ type expectation func(sdk.Context, mocks)
 type prerequisite func(t *testing.T, k *keeper.Keeper, ctx sdk.Context)
 
 func mockDefaultExpectations(_ sdk.Context, m mocks) {
-	m.namer.EXPECT().ChainName(uint64(1)).Return("test_chain").AnyTimes()
+	m.namer.EXPECT().ChainName(xchain.ChainVersion{ID: 1}).Return("test_chain").AnyTimes()
 	m.valProvider.EXPECT().ActiveSetByHeight(gomock.Any(), uint64(0)).
 		Return(newValSet(1, val1, val2, val3), nil).
 		AnyTimes()
@@ -35,7 +36,7 @@ func mockDefaultExpectations(_ sdk.Context, m mocks) {
 
 func namerCalled(times int) expectation {
 	return func(_ sdk.Context, m mocks) {
-		m.namer.EXPECT().ChainName(uint64(1)).Times(times).Return("test-chain")
+		m.namer.EXPECT().ChainName(xchain.ChainVersion{ID: 1}).Times(times).Return("test-chain")
 	}
 }
 

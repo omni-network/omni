@@ -53,5 +53,5 @@ type VoterDeps interface {
 	LatestAttestation(ctx context.Context, chainVer xchain.ChainVersion) (xchain.Attestation, bool, error)
 }
 
-// ChainNameFunc is a function that returns the name of a chain given its ID.
-type ChainNameFunc func(chainID uint64) string
+// ChainVerNameFunc is a function that returns the name of a chain version.
+type ChainVerNameFunc func(xchain.ChainVersion) string

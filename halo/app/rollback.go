@@ -57,7 +57,7 @@ func Rollback(ctx context.Context, cfg Config, rCfg RollbackConfig) error {
 		db,
 		engineCl,
 		voter,
-		netconf.ChainNamer(cfg.Network),
+		netconf.ChainVersionNamer(cfg.Network),
 		baseAppOpts...,
 	)
 	if err != nil {

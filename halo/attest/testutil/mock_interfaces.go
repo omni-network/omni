@@ -228,15 +228,15 @@ func (m *MockChainNamer) EXPECT() *MockChainNamerMockRecorder {
 }
 
 // ChainName mocks base method.
-func (m *MockChainNamer) ChainName(chainID uint64) string {
+func (m *MockChainNamer) ChainName(arg0 xchain.ChainVersion) string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ChainName", chainID)
+	ret := m.ctrl.Call(m, "ChainName", arg0)
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
 // ChainName indicates an expected call of ChainName.
-func (mr *MockChainNamerMockRecorder) ChainName(chainID any) *gomock.Call {
+func (mr *MockChainNamerMockRecorder) ChainName(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChainName", reflect.TypeOf((*MockChainNamer)(nil).ChainName), chainID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChainName", reflect.TypeOf((*MockChainNamer)(nil).ChainName), arg0)
 }

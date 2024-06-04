@@ -75,6 +75,19 @@ func (n Network) ChainNamesByIDs() map[uint64]string {
 	return resp
 }
 
+// ChainVersionNames returns the all chain version names in the network.
+// This is a convenience method.
+func (n Network) ChainVersionNames() map[xchain.ChainVersion]string {
+	resp := make(map[xchain.ChainVersion]string)
+	for _, chain := range n.Chains {
+		for _, chainVersion := range chain.ChainVersions() {
+			resp[chainVersion] = n.ChainVersionName(chainVersion)
+		}
+	}
+
+	return resp
+}
+
 // OmniEVMChain returns the Omni execution chain config or false if it does not exist.
 func (n Network) OmniEVMChain() (Chain, bool) {
 	for _, chain := range n.Chains {
