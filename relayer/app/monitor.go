@@ -91,8 +91,6 @@ func monitorConsOffsetOnce(ctx context.Context, network netconf.Network, xprovid
 		}
 
 		streamName := network.StreamName(stream)
-		destChain := network.ChainName(stream.DestChainID)
-
 		emitMsgOffset.WithLabelValues(streamName).Set(float64(emitted.MsgOffset))
 
 		submitted, ok, err := xprovider.GetSubmittedCursor(ctx, stream)
@@ -103,7 +101,7 @@ func monitorConsOffsetOnce(ctx context.Context, network netconf.Network, xprovid
 		}
 
 		submitMsgOffset.WithLabelValues(streamName).Set(float64(submitted.MsgOffset))
-		submitBlockOffset.WithLabelValues(cChain.Name, destChain).Set(float64(submitted.BlockOffset))
+		submitBlockOffset.WithLabelValues(streamName).Set(float64(submitted.BlockOffset))
 	}
 
 	return nil
@@ -285,8 +283,6 @@ func monitorOffsetsForever(ctx context.Context, xprovider xchain.Provider, netwo
 			} else if err != nil {
 				log.Error(ctx, "Monitoring stream offsets failed (will retry)", err,
 					"src_chain", src.Name, "dst_chain", dst.Name)
-
-				continue
 			}
 		}
 	}
@@ -296,26 +292,28 @@ func monitorOffsetsForever(ctx context.Context, xprovider xchain.Provider, netwo
 // destination chain.
 func monitorOffsetsOnce(ctx context.Context, xprovider xchain.Provider, network netconf.Network, src, dst netconf.Chain,
 ) error {
+	var lastErr error
 	for _, stream := range network.StreamsBetween(src.ID, dst.ID) {
 		ref := xchain.EmitRef{ConfLevel: ptr(stream.ConfLevel())}
 		emitted, _, err := xprovider.GetEmittedCursor(ctx, ref, stream)
 		if err != nil {
-			return err
+			lastErr = errors.Wrap(err, "get emitted cursor", "stream", network.StreamName(stream))
+			continue
 		}
 
 		submitted, _, err := xprovider.GetSubmittedCursor(ctx, stream)
 		if err != nil {
-			return err
+			lastErr = errors.Wrap(err, "get submit cursor", "stream", network.StreamName(stream))
+			continue
 		}
 
 		name := network.StreamName(stream)
 		emitMsgOffset.WithLabelValues(name).Set(float64(emitted.MsgOffset))
-		// emitBlockOffset isn't statelessly fetched from the source chain, it is calculated and tracked by XProvider...
 		submitMsgOffset.WithLabelValues(name).Set(float64(submitted.MsgOffset))
-		submitBlockOffset.WithLabelValues(src.Name, dst.Name).Set(float64(submitted.BlockOffset))
+		submitBlockOffset.WithLabelValues(name).Set(float64(submitted.BlockOffset))
 	}
 
-	return nil
+	return lastErr
 }
 
 // serveMonitoring starts a goroutine that serves the monitoring API. It
