@@ -138,7 +138,7 @@ func (n Network) StreamName(stream xchain.StreamID) string {
 	destChain, _ := n.Chain(stream.DestChainID)
 	conf := xchain.ConfFromShard(stream.ShardID)
 
-	return fmt.Sprintf("%s|%s|%s", srcChain.Name, destChain.Name, conf.Label())
+	return fmt.Sprintf("%s|%s|%s", srcChain.Name, conf.Label(), destChain.Name)
 }
 
 // Chain returns the chain config for the given ID or false if it does not exist.
