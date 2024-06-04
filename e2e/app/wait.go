@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
@@ -57,12 +58,16 @@ func WaitAllSubmissions(ctx context.Context, portals map[uint64]netman.Portal, m
 					return errors.Wrap(ctx.Err(), "timeout waiting for submissions")
 				}
 
-				srcOffset, err := src.Contract.OutXMsgOffset(nil, dest.Chain.ChainID)
+				// right now, we only emit messages in finalized shard
+				// TODO: support testing multiple shards
+				shard := netconf.ShardFinalized0
+
+				srcOffset, err := src.Contract.OutXMsgOffset(nil, dest.Chain.ChainID, shard)
 				if err != nil {
 					return errors.Wrap(err, "get outXMsgOffset")
 				}
 
-				destOffset, err := dest.Contract.InXMsgOffset(nil, src.Chain.ChainID)
+				destOffset, err := dest.Contract.InXMsgOffset(nil, src.Chain.ChainID, shard)
 				if err != nil {
 					return errors.Wrap(err, "get inXmsgOffset")
 				}

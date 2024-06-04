@@ -15,7 +15,7 @@ import { Fixtures } from "./Fixtures.sol";
 contract Utils is Test, Events, Fixtures {
     /// @dev Parse an XReceipt log
     function parseReceipt(Vm.Log memory log) internal returns (TestXTypes.Receipt memory) {
-        assertEq(log.topics.length, 3);
+        assertEq(log.topics.length, 4);
         assertEq(log.topics[0], XReceipt.selector);
 
         (uint256 gasUsed, address relayer, bool success, bytes memory errorBytes) =
@@ -23,7 +23,8 @@ contract Utils is Test, Events, Fixtures {
 
         return TestXTypes.Receipt({
             sourceChainId: uint64(uint256(log.topics[1])),
-            offset: uint64(uint256(log.topics[2])),
+            shardId: uint64(uint256(log.topics[2])),
+            offset: uint64(uint256(log.topics[3])),
             gasUsed: gasUsed,
             relayer: relayer,
             success: success,

@@ -9,6 +9,7 @@ pragma solidity =0.8.24;
 contract Events {
     event XMsg(
         uint64 indexed destChainId,
+        uint64 indexed shardId,
         uint64 indexed offset,
         address sender,
         address to,
@@ -18,7 +19,13 @@ contract Events {
     );
 
     event XReceipt(
-        uint64 indexed sourceChainId, uint64 indexed offset, uint256 gasUsed, address relayer, bool success, bytes error
+        uint64 indexed sourceChainId,
+        uint64 indexed shardId,
+        uint64 indexed offset,
+        uint256 gasUsed,
+        address relayer,
+        bool success,
+        bytes error
     );
 
     event FeeOracleChanged(address indexed oldFeeOracle, address indexed newFeeOracle);

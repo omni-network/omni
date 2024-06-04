@@ -239,6 +239,7 @@ contract OmniPortal_xsubmit_Test is Base {
         XTypes.Submission memory xsub = readXSubmission(name, destChainId, valSetId);
 
         uint64 sourceChainId = xsub.blockHeader.sourceChainId;
+        uint64 shardId = xsub.blockHeader.confLevel; // conf level is shard id
         uint64 expectedOffset = xsub.msgs[xsub.msgs.length - 1].offset;
         uint256 expectedCount = numIncrements(xsub.msgs) + counter_.count();
 
@@ -249,8 +250,8 @@ contract OmniPortal_xsubmit_Test is Base {
         vm.chainId(destChainId);
         portal_.xsubmit{ gas: _xsubGasLimit(xsub) }(xsub);
 
-        assertEq(portal_.inXMsgOffset(sourceChainId), expectedOffset);
-        assertEq(portal_.inXBlockOffset(sourceChainId), xsub.blockHeader.offset);
+        assertEq(portal_.inXMsgOffset(sourceChainId, shardId), expectedOffset);
+        assertEq(portal_.inXBlockOffset(sourceChainId, shardId), xsub.blockHeader.offset);
         assertEq(counter_.count(), expectedCount);
         assertEq(counter_.countByChainId(sourceChainId), expectedCount);
         assertReceipts(vm.getRecordedLogs(), xsub.msgs);

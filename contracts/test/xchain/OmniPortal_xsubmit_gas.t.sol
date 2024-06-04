@@ -64,6 +64,7 @@ contract OmniPortal_xsubmit_gas_Test is Base {
         XTypes.Submission memory xsub = readXSubmission(name, destChainId, genesisValSetId);
 
         uint64 sourceChainId = xsub.blockHeader.sourceChainId;
+        uint64 shardId = xsub.blockHeader.confLevel; // conf level is shardId
         uint64 expectedOffset = xsub.msgs[xsub.msgs.length - 1].offset;
 
         uint256 totalXMsgGasLimit;
@@ -82,7 +83,7 @@ contract OmniPortal_xsubmit_gas_Test is Base {
         console.log("non-xmsg gas used: ", gasUsed - totalXMsgGasLimit);
         console.log("non-xmsg gas per xmsg: ", (gasUsed - totalXMsgGasLimit) / xsub.msgs.length);
 
-        assertEq(portal.inXMsgOffset(sourceChainId), expectedOffset);
-        assertEq(portal.inXBlockOffset(sourceChainId), xsub.blockHeader.offset);
+        assertEq(portal.inXMsgOffset(sourceChainId, shardId), expectedOffset);
+        assertEq(portal.inXBlockOffset(sourceChainId, shardId), xsub.blockHeader.offset);
     }
 }

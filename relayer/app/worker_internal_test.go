@@ -38,7 +38,7 @@ func TestWorker_Run(t *testing.T) {
 		DestChainID:   destChainB,
 		ShardID:       netconf.ShardLatest0,
 	}
-	cursors := map[xchain.StreamID]xchain.StreamCursor{
+	cursors := map[xchain.StreamID]xchain.SubmitCursor{
 		streamA: {StreamID: streamA, MsgOffset: destChainACursor, BlockOffset: destChainACursor},
 		streamB: {StreamID: streamB, MsgOffset: destChainBCursor, BlockOffset: destChainBCursor},
 	}
@@ -50,18 +50,14 @@ func TestWorker_Run(t *testing.T) {
 
 			// Each block has two messages, one for each stream.
 			return xchain.Block{
-				BlockHeader: xchain.BlockHeader{SourceChainID: req.ChainID, BlockOffset: req.Offset, BlockHeight: req.Height},
+				BlockHeader: xchain.BlockHeader{SourceChainID: req.ChainID, BlockOffset: req.Offset, BlockHeight: req.Height, ConfLevel: req.ConfLevel},
 				Msgs: []xchain.Msg{
 					{MsgID: xchain.MsgID{StreamID: streamA, StreamOffset: req.Offset}},
 					{MsgID: xchain.MsgID{StreamID: streamB, StreamOffset: req.Offset}},
 				},
 			}, true, nil
 		},
-		GetSubmittedCursorFn: func(_ context.Context, stream xchain.StreamID) (xchain.StreamCursor, bool, error) {
-			resp, ok := cursors[stream]
-			return resp, ok, nil
-		},
-		GetEmittedCursorFn: func(_ context.Context, _ xchain.EmitRef, stream xchain.StreamID) (xchain.StreamCursor, bool, error) {
+		GetSubmittedCursorFn: func(_ context.Context, stream xchain.StreamID) (xchain.SubmitCursor, bool, error) {
 			resp, ok := cursors[stream]
 			return resp, ok, nil
 		},

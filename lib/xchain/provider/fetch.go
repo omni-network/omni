@@ -24,105 +24,108 @@ import (
 // Note that the BlockOffset field is not populated for emit cursors, since it isn't stored on-chain
 // but tracked off-chain.
 func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, stream xchain.StreamID,
-) (xchain.StreamCursor, bool, error) {
+) (xchain.EmitCursor, bool, error) {
 	if !ref.Valid() {
-		return xchain.StreamCursor{}, false, errors.New("invalid emit ref")
+		return xchain.EmitCursor{}, false, errors.New("invalid emit ref")
 	}
 
-	const unknownBlockOffset uint64 = 0
 	if stream.SourceChainID == p.cChainID {
 		block, err := getConsXBlock(ctx, ref, p.cProvider)
 		if err != nil {
-			return xchain.StreamCursor{}, false, err
+			return xchain.EmitCursor{}, false, err
 		}
 
-		return xchain.StreamCursor{
-			StreamID:    stream,
-			MsgOffset:   block.Msgs[0].StreamOffset, // Consensus xblocks only have a single xmsg.
-			BlockOffset: unknownBlockOffset,
+		return xchain.EmitCursor{
+			StreamID:  stream,
+			MsgOffset: block.Msgs[0].StreamOffset, // Consensus xblocks only have a single xmsg.
 		}, true, nil
 	}
 
 	chain, rpcClient, err := p.getEVMChain(stream.SourceChainID)
 	if err != nil {
-		return xchain.StreamCursor{}, false, err
+		return xchain.EmitCursor{}, false, err
 	}
 
 	caller, err := bindings.NewOmniPortalCaller(chain.PortalAddress, rpcClient)
 	if err != nil {
-		return xchain.StreamCursor{}, false, errors.Wrap(err, "new caller")
+		return xchain.EmitCursor{}, false, errors.Wrap(err, "new caller")
 	}
 
 	opts := &bind.CallOpts{Context: ctx}
 	if ref.Height != nil {
 		opts.BlockNumber = big.NewInt(int64(*ref.Height))
 	} else if head, ok := headTypeFromConfLevel(*ref.ConfLevel); !ok {
-		return xchain.StreamCursor{}, false, errors.New("invalid conf level")
+		return xchain.EmitCursor{}, false, errors.New("invalid conf level")
 	} else {
 		// Populate an explicit block number if not querying latest head.
 		header, err := rpcClient.HeaderByType(ctx, head)
 		if err != nil {
-			return xchain.StreamCursor{}, false, err
+			return xchain.EmitCursor{}, false, err
 		}
 
 		opts.BlockNumber = header.Number
 	}
 
-	offset, err := caller.OutXMsgOffset(opts, stream.DestChainID)
+	offset, err := caller.OutXMsgOffset(opts, stream.DestChainID, stream.ShardID)
 	if err != nil {
-		return xchain.StreamCursor{}, false, errors.Wrap(err, "call inXStreamOffset")
+		return xchain.EmitCursor{}, false, errors.Wrap(err, "call inXStreamOffset")
 	}
 
 	if offset == 0 {
-		return xchain.StreamCursor{}, false, nil
+		return xchain.EmitCursor{}, false, nil
 	}
 
-	return xchain.StreamCursor{
-		StreamID:    stream,
-		MsgOffset:   offset,
-		BlockOffset: unknownBlockOffset,
+	return xchain.EmitCursor{
+		StreamID:  stream,
+		MsgOffset: offset,
 	}, true, nil
 }
 
 // GetSubmittedCursor returns the submitted cursor for the source chain on the destination chain,
 // or false if not available, or an error. Calls the destination chain portal InXStreamOffset method.
 func (p *Provider) GetSubmittedCursor(ctx context.Context, stream xchain.StreamID,
-) (xchain.StreamCursor, bool, error) {
+) (xchain.SubmitCursor, bool, error) {
 	chain, rpcClient, err := p.getEVMChain(stream.DestChainID)
 	if err != nil {
-		return xchain.StreamCursor{}, false, err
+		return xchain.SubmitCursor{}, false, err
 	}
 
 	caller, err := bindings.NewOmniPortalCaller(chain.PortalAddress, rpcClient)
 	if err != nil {
-		return xchain.StreamCursor{}, false, errors.Wrap(err, "new caller")
+		return xchain.SubmitCursor{}, false, errors.Wrap(err, "new caller")
 	}
 
 	height, err := rpcClient.BlockNumber(ctx)
 	if err != nil {
-		return xchain.StreamCursor{}, false, err
+		return xchain.SubmitCursor{}, false, err
 	}
 
 	callOpts := &bind.CallOpts{Context: ctx, BlockNumber: big.NewInt(int64(height))}
 
-	msgOffset, err := caller.InXMsgOffset(callOpts, stream.SourceChainID)
+	msgOffset, err := caller.InXMsgOffset(callOpts, stream.SourceChainID, stream.ShardID)
 	if err != nil {
-		return xchain.StreamCursor{}, false, errors.Wrap(err, "call inXStreamOffset")
+		return xchain.SubmitCursor{}, false, errors.Wrap(err, "call inXStreamOffset")
 	}
 
 	if msgOffset == 0 {
-		return xchain.StreamCursor{}, false, nil
+		return xchain.SubmitCursor{}, false, nil
 	}
 
-	blockOffset, err := caller.InXBlockOffset(callOpts, stream.SourceChainID)
+	blockOffset, err := caller.InXBlockOffset(callOpts, stream.SourceChainID, stream.ShardID)
 	if err != nil {
-		return xchain.StreamCursor{}, false, errors.Wrap(err, "call inXStreamBlockHeight")
+		return xchain.SubmitCursor{}, false, errors.Wrap(err, "call inXStreamBlockHeight")
 	}
 
-	return xchain.StreamCursor{
-		StreamID:    stream,
-		MsgOffset:   msgOffset,
-		BlockOffset: blockOffset,
+	valSetID, err := caller.InXStreamValidatorSetId(callOpts, stream.SourceChainID, stream.ShardID)
+	if err != nil {
+		return xchain.SubmitCursor{}, false, errors.Wrap(err, "call inXStreamValidatorSetId")
+	}
+
+	return xchain.SubmitCursor{
+		StreamID:       stream,
+		MsgOffset:      msgOffset,
+		BlockOffset:    blockOffset,
+		ValidatorSetID: valSetID,
 	}, true, nil
 }
 
@@ -235,6 +238,11 @@ func (p *Provider) getXReceiptLogs(ctx context.Context, chainID uint64, height u
 		return nil, err
 	}
 
+	expectedShards := make(map[uint64]bool)
+	for _, shard := range chain.Shards {
+		expectedShards[shard] = true
+	}
+
 	filterer, err := bindings.NewOmniPortalFilterer(chain.PortalAddress, rpcClient)
 	if err != nil {
 		return nil, errors.Wrap(err, "new filterer")
@@ -246,7 +254,7 @@ func (p *Provider) getXReceiptLogs(ctx context.Context, chainID uint64, height u
 		Context: ctx,
 	}
 
-	iter, err := filterer.FilterXReceipt(&filterOpts, nil, nil)
+	iter, err := filterer.FilterXReceipt(&filterOpts, nil, nil, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "filter receipts logs")
 	}
@@ -255,10 +263,8 @@ func (p *Provider) getXReceiptLogs(ctx context.Context, chainID uint64, height u
 	for iter.Next() {
 		e := iter.Event
 
-		// TODO(kevin): Replace this with shardID in the event log.
-		shardID := chain.Shards[0]
-		if srcChain, _, err := p.getEVMChain(e.SourceChainId); err == nil {
-			shardID = srcChain.Shards[0]
+		if !expectedShards[e.ShardId] {
+			return nil, errors.New("unexpected receipt shard", "shard", e.ShardId)
 		}
 
 		receipts = append(receipts, xchain.Receipt{
@@ -266,7 +272,7 @@ func (p *Provider) getXReceiptLogs(ctx context.Context, chainID uint64, height u
 				StreamID: xchain.StreamID{
 					SourceChainID: e.SourceChainId,
 					DestChainID:   chain.ID,
-					ShardID:       shardID,
+					ShardID:       e.ShardId,
 				},
 				StreamOffset: e.Offset,
 			},
@@ -293,6 +299,11 @@ func (p *Provider) getXMsgLogs(ctx context.Context, chainID uint64, height uint6
 		return nil, err
 	}
 
+	expectedShards := make(map[uint64]bool)
+	for _, shard := range chain.Shards {
+		expectedShards[shard] = true
+	}
+
 	filterer, err := bindings.NewOmniPortalFilterer(chain.PortalAddress, rpcClient)
 	if err != nil {
 		return nil, err
@@ -304,7 +315,7 @@ func (p *Provider) getXMsgLogs(ctx context.Context, chainID uint64, height uint6
 		Context: ctx,
 	}
 
-	iter, err := filterer.FilterXMsg(&filterOpts, nil, nil)
+	iter, err := filterer.FilterXMsg(&filterOpts, nil, nil, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "filter xmsg logs")
 	}
@@ -312,12 +323,17 @@ func (p *Provider) getXMsgLogs(ctx context.Context, chainID uint64, height uint6
 	var xmsgs []xchain.Msg
 	for iter.Next() {
 		e := iter.Event
+
+		if !expectedShards[e.ShardId] {
+			return nil, errors.New("unexpected xmsg shard", "shard", e.ShardId)
+		}
+
 		xmsgs = append(xmsgs, xchain.Msg{
 			MsgID: xchain.MsgID{
 				StreamID: xchain.StreamID{
 					SourceChainID: chain.ID,
 					DestChainID:   e.DestChainId,
-					ShardID:       chain.Shards[0], // TODO(kevin): Replace with shardID in the event log.
+					ShardID:       e.ShardId,
 				},
 				StreamOffset: e.Offset,
 			},

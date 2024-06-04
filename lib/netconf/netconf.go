@@ -7,7 +7,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -285,18 +284,6 @@ func (c Chain) ChainVersions() []xchain.ChainVersion {
 	}
 
 	return resp
-}
-
-// TODO(kevin): Remove this when XRegistry support shards.
-func mustStratToShard(start string) (uint64, error) {
-	switch start {
-	case "finalized":
-		return ShardFinalized0, nil
-	case "latest":
-		return ShardLatest0, nil
-	default:
-		return 0, errors.New("invalid finalization strategy", "start", start)
-	}
 }
 
 // TODO(kevin): Remove this when XRegistry support shards.

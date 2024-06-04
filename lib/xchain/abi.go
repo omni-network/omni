@@ -7,6 +7,7 @@ import (
 )
 
 const (
+	typUint8   = "uint8"
 	typUint64  = "uint64"
 	typBytes32 = "bytes32"
 	typBytes   = "bytes"
@@ -19,6 +20,7 @@ var (
 	// Note it only includes BlockOffset, not BlockHeight, as height isn't required by submissions.
 	headerABI = mustABITuple([]abi.ArgumentMarshaling{
 		{Name: "SourceChainID", Type: typUint64},
+		{Name: "ConfLevel", Type: typUint8},
 		{Name: "BlockOffset", Type: typUint64},
 		{Name: "BlockHash", Type: typBytes32},
 	})
@@ -26,6 +28,7 @@ var (
 	msgABI = mustABITuple([]abi.ArgumentMarshaling{
 		{Name: "SourceChainID", Type: typUint64},
 		{Name: "DestChainID", Type: typUint64},
+		{Name: "ShardID", Type: typUint64},
 		{Name: "StreamOffset", Type: typUint64},
 		{Name: "SourceMsgSender", Type: typAddress},
 		{Name: "DestAddress", Type: typAddress},

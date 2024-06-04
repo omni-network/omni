@@ -43,6 +43,7 @@ func submissionToBinding(sub xchain.Submission) bindings.XSubmission {
 		msgs = append(msgs, bindings.XMsg{
 			SourceChainId: msg.SourceChainID,
 			DestChainId:   msg.DestChainID,
+			ShardId:       msg.ShardID,
 			Offset:        msg.StreamOffset,
 			Sender:        msg.SourceMsgSender,
 			To:            msg.DestAddress,
@@ -57,6 +58,7 @@ func submissionToBinding(sub xchain.Submission) bindings.XSubmission {
 		BlockHeader: bindings.XBlockHeader{
 			SourceChainId:   sub.BlockHeader.SourceChainID,
 			SourceBlockHash: sub.BlockHeader.BlockHash,
+			ConfLevel:       uint8(sub.BlockHeader.ConfLevel),
 			Offset:          sub.BlockHeader.BlockOffset,
 		},
 		Proof:      sub.Proof,

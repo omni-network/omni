@@ -2,6 +2,7 @@
 pragma solidity =0.8.24;
 
 import { XApp } from "src/pkg/XApp.sol";
+import { ConfLevel } from "src/libraries/ConfLevel.sol";
 
 /**
  * @title PingPong
@@ -62,7 +63,9 @@ contract PingPong is XApp {
     }
 
     function _xpingpong(string calldata id, uint64 destChainID, address to, uint64 times, uint64 n) internal {
-        xcall(destChainID, to, abi.encodeWithSelector(this.pingpong.selector, id, times, n), GAS_LIMIT);
+        xcall(
+            destChainID, ConfLevel.Latest, to, abi.encodeWithSelector(this.pingpong.selector, id, times, n), GAS_LIMIT
+        );
     }
 
     receive() external payable { }

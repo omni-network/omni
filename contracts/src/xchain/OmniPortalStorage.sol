@@ -31,7 +31,7 @@ abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
     uint64 public xmsgMinGasLimit;
 
     /**
-     * @notice  Chain ID of Omni's EVM execution chain
+     * @notice Chain ID of Omni's EVM execution chain
      */
     uint64 public omniChainId;
 
@@ -51,24 +51,28 @@ abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
     address public xregistry;
 
     /**
-     * @notice Offset of the last outbound XMsg that was sent to destChainId
+     * @notice Offset of the last outbound XMsg that was sent to destChainId in shardId
+     *         Maps destChainId -> shardId -> offset.
      */
-    mapping(uint64 => uint64) public outXMsgOffset;
+    mapping(uint64 => mapping(uint64 => uint64)) public outXMsgOffset;
 
     /**
-     * @notice Offset of the last outbound XMsg that was sent to destChainId
+     * @notice Offset of the last outbound XMsg that was sent to destChainId in shardId
+     *         Maps destChainId -> shardId -> offset.
      */
-    mapping(uint64 => uint64) public inXMsgOffset;
+    mapping(uint64 => mapping(uint64 => uint64)) public inXMsgOffset;
 
     /**
-     * @notice the xblock offset of the last inbound XMsg that was received from sourceChainId
+     * @notice The xblock offset of the last inbound XMsg that was received from sourceChainId in shardIdj
+     *         Maps sourceChainId -> shardId -> xblockOffset.
      */
-    mapping(uint64 => uint64) public inXBlockOffset;
+    mapping(uint64 => mapping(uint64 => uint64)) public inXBlockOffset;
 
     /**
-     * @notice Validator set id of the last XSubmission that was received from sourceChainId
+     * @notice Validator set id of the last XSubmission that was received from sourceChainId in shardId
+     *         Maps sourceChainId -> shardId -> validatorSetId.
      */
-    mapping(uint64 => uint64) public inXStreamValidatorSetId;
+    mapping(uint64 => mapping(uint64 => uint64)) public inXStreamValidatorSetId;
 
     /**
      * @notice Maps validator set id -> total power

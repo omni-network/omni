@@ -8,28 +8,30 @@ import (
 
 //nolint:gochecknoglobals // Static mappings
 var (
+	allShards = []uint64{netconf.ShardFinalized0, netconf.ShardLatest0} // All EVM chains support both finalized and latest shards.
+
 	chainEthereum = EVMChain{
 		Metadata: mustMetadata(evmchain.IDEthereum),
 		IsPublic: true,
-		Shards:   []uint64{netconf.ShardFinalized0}, // L1s can re-org, so use single finalized shard for now.
+		Shards:   allShards,
 	}
 
 	chainHolesky = EVMChain{
 		Metadata: mustMetadata(evmchain.IDHolesky),
 		IsPublic: true,
-		Shards:   []uint64{netconf.ShardFinalized0}, // L1s can re-org, so use single finalized shard for now.
+		Shards:   allShards,
 	}
 
 	chainArbSepolia = EVMChain{
 		Metadata: mustMetadata(evmchain.IDArbSepolia),
 		IsPublic: true,
-		Shards:   []uint64{netconf.ShardLatest0}, // L2s don't generally re-org, so use single latest shard for now.
+		Shards:   allShards,
 	}
 
 	chainOpSepolia = EVMChain{
 		Metadata: mustMetadata(evmchain.IDOpSepolia),
 		IsPublic: true,
-		Shards:   []uint64{netconf.ShardLatest0}, // L2s don't generally re-org, so use single latest shard for now.
+		Shards:   allShards,
 	}
 )
 
@@ -37,7 +39,7 @@ var (
 func OmniEVMByNetwork(network netconf.ID) EVMChain {
 	return EVMChain{
 		Metadata: mustMetadata(network.Static().OmniExecutionChainID),
-		Shards:   []uint64{netconf.ShardFinalized0}, // OmniEVM has instant finality, so only a single finalized shard is needed.
+		Shards:   allShards,
 	}
 }
 
@@ -51,7 +53,7 @@ func AnvilChainsByNames(names []string) ([]EVMChain, error) {
 		}
 		chains = append(chains, EVMChain{
 			Metadata: meta,
-			Shards:   []uint64{netconf.ShardLatest0}, // Use latest shard on anvil for testing.
+			Shards:   allShards,
 		})
 	}
 

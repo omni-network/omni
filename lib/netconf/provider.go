@@ -55,10 +55,7 @@ func AwaitOnChain(ctx context.Context, netID ID, portalRegistry *bindings.Portal
 			continue
 		}
 
-		network, err := networkFromPortals(netID, portals)
-		if err != nil {
-			return Network{}, err
-		}
+		network := networkFromPortals(netID, portals)
 
 		if !containsAll(network, expected) {
 			log.Info(ctx, "XChain registry doesn't contain all expected chains (will retry)", ""+
@@ -89,14 +86,9 @@ func containsAll(network Network, expected []string) bool {
 	return len(want) == 0
 }
 
-func networkFromPortals(network ID, portals []bindings.PortalRegistryDeployment) (Network, error) {
+func networkFromPortals(network ID, portals []bindings.PortalRegistryDeployment) Network {
 	var chains []Chain
 	for _, portal := range portals {
-		shard, err := mustStratToShard(portal.FinalizationStrat)
-		if err != nil {
-			return Network{}, errors.Wrap(err, "invalid finalization strategy", "chain", portal.ChainId)
-		}
-
 		metadata := MetadataByID(network, portal.ChainId)
 		chains = append(chains, Chain{
 			ID:            portal.ChainId,
@@ -104,7 +96,7 @@ func networkFromPortals(network ID, portals []bindings.PortalRegistryDeployment)
 			PortalAddress: portal.Addr,
 			DeployHeight:  portal.DeployHeight,
 			BlockPeriod:   metadata.BlockPeriod,
-			Shards:        []uint64{shard},
+			Shards:        []uint64{ShardLatest0, ShardFinalized0}, // TODO(kevin): replace with onchain shard, when XRegistry supports it
 		})
 	}
 
@@ -114,14 +106,14 @@ func networkFromPortals(network ID, portals []bindings.PortalRegistryDeployment)
 		ID:           consensusMeta.ChainID,
 		Name:         consensusMeta.Name,
 		BlockPeriod:  consensusMeta.BlockPeriod,
-		Shards:       []uint64{ShardFinalized0},
-		DeployHeight: 1, // ValidatorSets start at 1, not 0.
+		Shards:       []uint64{ShardFinalized0}, // Consensus chain only supports finalized shard.
+		DeployHeight: 1,                         // ValidatorSets start at 1, not 0.
 	})
 
 	return Network{
 		ID:     network,
 		Chains: chains,
-	}, nil
+	}
 }
 
 func MetadataByID(network ID, chainID uint64) evmchain.Metadata {

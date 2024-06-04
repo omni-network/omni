@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"sync"
 
+	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 )
@@ -31,10 +32,10 @@ type jsonRPCError struct {
 }
 
 type proxy struct {
-	mu        sync.RWMutex
-	instance  *anvilInstance
-	target    *url.URL
-	fuzzyHead bool
+	mu       sync.RWMutex
+	instance *anvilInstance
+	target   *url.URL
+	perturb  types.Perturb
 }
 
 func newProxy(instance anvilInstance) (*proxy, error) {
@@ -92,7 +93,9 @@ func (p *proxy) proxy(ctx context.Context, w http.ResponseWriter, r *http.Reques
 		return nil
 	}
 
-	shouldFuzz, height, err := isFuzzyXMsgLogFilter(ctx, p.GetTarget().String(), reqMsg)
+	perturb := p.Perturb()
+
+	shouldFuzz, height, err := isFuzzyXMsgLogFilter(ctx, perturb, p.GetTarget().String(), reqMsg)
 	if err != nil {
 		return errors.Wrap(err, "check for fuzzy log filter")
 	}
@@ -109,30 +112,31 @@ func (p *proxy) proxy(ctx context.Context, w http.ResponseWriter, r *http.Reques
 		return errors.Wrap(err, "read response")
 	}
 
-	respBytes, _, err = parseAndFuzzXMsgs(ctx, height, respBytes)
+	respBytes, _, err = parseAndFuzzXMsgs(perturb, respBytes)
 	if err != nil {
 		return errors.Wrap(err, "fuzz xmsgs")
 	}
+
+	log.Info(ctx, "Fuzzed response", "height", height, "perturb", perturb)
 
 	_, _ = w.Write(respBytes)
 
 	return nil
 }
 
-func (p *proxy) EnableFuzzyHead(_ http.ResponseWriter, r *http.Request) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	p.fuzzyHead = true
-
-	log.Info(r.Context(), "Fuzzy head enabled")
+func (p *proxy) EnableFuzzyHead(w http.ResponseWriter, r *http.Request) {
+	perturb := r.URL.Query().Get("perturb")
+	switch types.Perturb(perturb) {
+	case types.PerturbFuzzyHeadAttRoot, types.PerturbFuzzyHeadDropBlocks, types.PerturbFuzzyHeadMoreMsgs, types.PerturbFuzzyHeadDropMsgs:
+		p.setPerturb(types.Perturb(perturb))
+		log.Info(r.Context(), "Fuzzy head enabled", "perturb", perturb)
+	default:
+		http.Error(w, "unknown perturbation", http.StatusBadRequest)
+	}
 }
 
 func (p *proxy) DisableFuzzyHead(_ http.ResponseWriter, r *http.Request) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	p.fuzzyHead = false
+	p.setPerturb(types.PerturbUnknown)
 
 	log.Info(r.Context(), "Fuzzy head disabled")
 }
@@ -141,7 +145,14 @@ func (p *proxy) IsFuzzyEnabled() bool {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
-	return p.fuzzyHead
+	return p.perturb != types.PerturbUnknown
+}
+
+func (p *proxy) Perturb() types.Perturb {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	return p.perturb
 }
 
 func (p *proxy) GetTarget() *url.URL {
@@ -175,6 +186,13 @@ func (p *proxy) setTarget(target anvilInstance) error {
 	p.target = u
 
 	return nil
+}
+
+func (p *proxy) setPerturb(perturb types.Perturb) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	p.perturb = perturb
 }
 
 var _ io.ReadCloser = closeReader{}

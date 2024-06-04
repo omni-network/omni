@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -23,7 +23,7 @@ var (
 	xMsgEvent = mustGetEvent(portalABI, "XMsg")
 )
 
-func parseAndFuzzXMsgs(ctx context.Context, height uint64, respBody []byte) ([]byte, bool, error) {
+func parseAndFuzzXMsgs(perturb types.Perturb, respBody []byte) ([]byte, bool, error) {
 	var respMsg jsonRPCMessage
 	if err := json.Unmarshal(respBody, &respMsg); err != nil {
 		return nil, false, errors.Wrap(err, "unmarshal response")
@@ -53,11 +53,20 @@ func parseAndFuzzXMsgs(ctx context.Context, height uint64, respBody []byte) ([]b
 		msgs = append(msgs, msg)
 	}
 
+	fuzzedMsgs, err := fuzzXMsgs(perturb, msgs)
+	if err != nil {
+		return nil, false, err
+	}
+
 	var fuzzedLogs []ethtypes.Log
-	for i, msg := range fuzzXMsgs(ctx, height, msgs) {
+	for i, msg := range fuzzedMsgs {
 		data, err := portalABI.Events["XMsg"].Inputs.NonIndexed().Pack(msg.Sender, msg.To, msg.Data, msg.GasLimit, msg.Fees)
 		if err != nil {
 			return nil, false, errors.Wrap(err, "pack xmsg")
+		}
+		// Use the original log metadata (or the last one if we're out of bounds).
+		if i >= len(logs) {
+			i = len(logs) - 1
 		}
 		eventLog := logs[i]
 		eventLog.Data = data
@@ -79,27 +88,37 @@ func parseAndFuzzXMsgs(ctx context.Context, height uint64, respBody []byte) ([]b
 	return bz, true, nil
 }
 
-func fuzzXMsgs(ctx context.Context, height uint64, msgs []*bindings.OmniPortalXMsg) []*bindings.OmniPortalXMsg {
-	switch height % 2 {
-	case 0: // Every even block.
+func fuzzXMsgs(perturb types.Perturb, msgs []*bindings.OmniPortalXMsg) ([]*bindings.OmniPortalXMsg, error) {
+	switch perturb {
+	case types.PerturbFuzzyHeadAttRoot:
 		// Change 50% of 1st message gas limits.
 		// Consensus would not be possible.
 		do := rand.Float64() < 0.5
 		if do {
 			msgs[0].GasLimit++
 		}
-		log.Info(ctx, "Fuzzed inconsistent attestation root", "height", height, "did", do)
-	case 1: // Every odd block.
+	case types.PerturbFuzzyHeadDropBlocks: // Every odd block.
 		// Remove all msgs.
 		// Will reach consensus, but results in BlockOffset mismatch of subsequent xblock with Finalized.
 		msgs = nil
-		log.Info(ctx, "Fuzzed empty xblock", "height", height)
+	case types.PerturbFuzzyHeadMoreMsgs:
+		// Duplicate last message, incrementing the offset.
+		last := *msgs[len(msgs)-1]
+		last.Offset++
+		msgs = append(msgs, &last)
+	case types.PerturbFuzzyHeadDropMsgs:
+		if len(msgs) > 1 {
+			// Drop last message.
+			msgs = msgs[:len(msgs)-1]
+		}
+	default:
+		return nil, errors.New("unknown perturbation", "perturb", perturb)
 	}
 
-	return msgs
+	return msgs, nil
 }
 
-func isFuzzyXMsgLogFilter(ctx context.Context, target string, reqMsg jsonRPCMessage) (bool, uint64, error) {
+func isFuzzyXMsgLogFilter(ctx context.Context, perturb types.Perturb, target string, reqMsg jsonRPCMessage) (bool, uint64, error) {
 	if reqMsg.Method != "eth_getLogs" {
 		return false, 0, nil
 	}
@@ -131,6 +150,17 @@ func isFuzzyXMsgLogFilter(ctx context.Context, target string, reqMsg jsonRPCMess
 	block, err := hexutil.DecodeUint64(arg.FromBlock)
 	if err != nil {
 		return false, 0, errors.Wrap(err, "decode block number")
+	}
+
+	switch perturb {
+	case types.PerturbFuzzyHeadDropBlocks:
+		if block%2 != 0 {
+			return false, 0, nil // Only drop even blocks.
+		}
+	case types.PerturbFuzzyHeadAttRoot, types.PerturbFuzzyHeadMoreMsgs, types.PerturbFuzzyHeadDropMsgs:
+	// Always allow.
+	default:
+		return false, 0, errors.New("unexpected perturbation", "perturb", perturb)
 	}
 
 	ethCl, err := ethclient.Dial("proxy", target)

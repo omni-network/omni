@@ -55,16 +55,16 @@ func Test_fromOffsets(t *testing.T) {
 		return state
 	}
 
-	makeCursors := func(offset1, offset2, offset3 uint64) []xchain.StreamCursor {
-		var resp []xchain.StreamCursor
+	makeCursors := func(offset1, offset2, offset3 uint64) []xchain.SubmitCursor {
+		var resp []xchain.SubmitCursor
 		if offset1 != 0 {
-			resp = append(resp, xchain.StreamCursor{StreamID: stream1, BlockOffset: offset1})
+			resp = append(resp, xchain.SubmitCursor{StreamID: stream1, BlockOffset: offset1})
 		}
 		if offset2 != 0 {
-			resp = append(resp, xchain.StreamCursor{StreamID: stream2, BlockOffset: offset2})
+			resp = append(resp, xchain.SubmitCursor{StreamID: stream2, BlockOffset: offset2})
 		}
 		if offset3 != 0 {
-			resp = append(resp, xchain.StreamCursor{StreamID: stream3, BlockOffset: offset3})
+			resp = append(resp, xchain.SubmitCursor{StreamID: stream3, BlockOffset: offset3})
 		}
 
 		return resp
@@ -80,7 +80,7 @@ func Test_fromOffsets(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		onChain []xchain.StreamCursor
+		onChain []xchain.SubmitCursor
 		onDisk  *State
 		want    map[xchain.ChainVersion]uint64
 	}{
@@ -138,8 +138,8 @@ var (
 
 type mockXChainClient struct {
 	GetBlockFn           func(context.Context, xchain.ProviderRequest) (xchain.Block, bool, error)
-	GetSubmittedCursorFn func(context.Context, xchain.StreamID) (xchain.StreamCursor, bool, error)
-	GetEmittedCursorFn   func(context.Context, xchain.EmitRef, xchain.StreamID) (xchain.StreamCursor, bool, error)
+	GetSubmittedCursorFn func(context.Context, xchain.StreamID) (xchain.SubmitCursor, bool, error)
+	GetEmittedCursorFn   func(context.Context, xchain.EmitRef, xchain.StreamID) (xchain.EmitCursor, bool, error)
 }
 
 func (m *mockXChainClient) StreamAsync(context.Context, xchain.ProviderRequest, xchain.ProviderCallback) error {
@@ -155,12 +155,12 @@ func (m *mockXChainClient) GetBlock(ctx context.Context, req xchain.ProviderRequ
 }
 
 func (m *mockXChainClient) GetSubmittedCursor(ctx context.Context, stream xchain.StreamID,
-) (xchain.StreamCursor, bool, error) {
+) (xchain.SubmitCursor, bool, error) {
 	return m.GetSubmittedCursorFn(ctx, stream)
 }
 
 func (m *mockXChainClient) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, stream xchain.StreamID,
-) (xchain.StreamCursor, bool, error) {
+) (xchain.EmitCursor, bool, error) {
 	return m.GetEmittedCursorFn(ctx, ref, stream)
 }
 
