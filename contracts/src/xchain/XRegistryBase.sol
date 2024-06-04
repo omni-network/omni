@@ -10,9 +10,19 @@ import { Predeploys } from "../libraries/Predeploys.sol";
  */
 contract XRegistryBase {
     /**
-     * @dev Mapping of chain ID -> keccak256(name, registrant) -> address.
+     * @notice Deployment information for a contract.
+     * @custom:field addr       The address of the deployment.
+     * @custom:field metadata   Metadata for the deployment.
      */
-    mapping(uint64 => mapping(bytes32 => address)) internal _addrs;
+    struct Deployment {
+        address addr;
+        bytes metadata;
+    }
+
+    /**
+     * @dev Mapping of chain ID -> keccak256(name, registrant) -> Deployment
+     */
+    mapping(uint64 => mapping(bytes32 => Deployment)) internal _deployments;
 
     /**
      * @notice Return true if a contract with `name` has been registered by `registrant` for `chainId`.
@@ -21,25 +31,25 @@ contract XRegistryBase {
      * @param registrant    The address of the registrant.
      */
     function has(uint64 chainId, string memory name, address registrant) external view returns (bool) {
-        return _get(chainId, name, registrant) != address(0);
+        return _get(chainId, name, registrant).addr != address(0);
     }
 
     /**
-     * @notice Return the address of the contract with `name` registered by `registrant` for `chainId`.
+     * @notice Return the Deployment of the contract with `name` registered by `registrant` for `chainId`.
      * @param chainId       The chain ID of the registration.
      * @param name          The name of the contract.
      * @param registrant    The address of the registrant.
      */
-    function get(uint64 chainId, string memory name, address registrant) external view returns (address) {
+    function get(uint64 chainId, string memory name, address registrant) external view returns (Deployment memory) {
         return _get(chainId, name, registrant);
     }
 
-    function _get(uint64 chainId, string memory name, address registrant) internal view returns (address) {
-        return _addrs[chainId][_pack(name, registrant)];
+    function _get(uint64 chainId, string memory name, address registrant) internal view returns (Deployment memory) {
+        return _deployments[chainId][_pack(name, registrant)];
     }
 
-    function _set(uint64 chainId, string memory name, address registrant, address addr) internal {
-        _addrs[chainId][_pack(name, registrant)] = addr;
+    function _set(uint64 chainId, string memory name, address registrant, Deployment memory dep) internal {
+        _deployments[chainId][_pack(name, registrant)] = dep;
     }
 
     function _pack(string memory name, address registrant) internal pure returns (bytes32) {
@@ -50,7 +60,7 @@ contract XRegistryBase {
      * @dev Return true if `name` and `registrant` are "OmniPortal" and PortalRegistry predpeloy, respectively.
      *      This marks a portal registration internal to Omni's protocol.
      */
-    function _isPortal(string memory name, address registrant) internal pure returns (bool) {
+    function _isPortalRegistration(string memory name, address registrant) internal pure returns (bool) {
         return _pack(name, registrant) == _pack(XRegistryNames.OmniPortal, Predeploys.PortalRegistry);
     }
 }

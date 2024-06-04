@@ -31,10 +31,16 @@ contract XRegistryReplica is XRegistryBase {
         _;
     }
 
-    function set(uint64 chainId, string memory name, address registrant, address addr) public onlyXRegistry {
-        _set(chainId, name, registrant, addr);
+    function set(uint64 chainId, string memory name, address registrant, Deployment calldata dep)
+        public
+        onlyXRegistry
+    {
+        _set(chainId, name, registrant, dep);
 
-        // if OmniPortal registration, intialize the new source chain on this chain's portal deployment
-        if (_isPortal(name, registrant)) omni.initSourceChain(chainId);
+        // if OmniPortal registration for, intialize the new source chain on this chain's portal deployment
+        if (_isPortalRegistration(name, registrant)) {
+            uint64[] memory shards = abi.decode(dep.metadata, (uint64[]));
+            omni.initSourceChain(chainId, shards);
+        }
     }
 }

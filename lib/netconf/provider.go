@@ -40,21 +40,6 @@ func AwaitOnChain(ctx context.Context, netID ID, portalRegistry *bindings.Portal
 			continue
 		}
 
-		var retry bool
-		for _, portal := range portals {
-			// TODO(kevin): Remove this once the registry is fixed.
-			if portal.ChainId == 0 {
-				retry = true
-				log.Info(ctx, "XChain registry contains zero chain (will retry)")
-
-				break
-			}
-		}
-		if retry {
-			backoff()
-			continue
-		}
-
 		network := networkFromPortals(netID, portals)
 
 		if !containsAll(network, expected) {
@@ -96,7 +81,7 @@ func networkFromPortals(network ID, portals []bindings.PortalRegistryDeployment)
 			PortalAddress: portal.Addr,
 			DeployHeight:  portal.DeployHeight,
 			BlockPeriod:   metadata.BlockPeriod,
-			Shards:        []uint64{ShardLatest0, ShardFinalized0}, // TODO(kevin): replace with onchain shard, when XRegistry supports it
+			Shards:        portal.Shards,
 		})
 	}
 

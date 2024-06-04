@@ -623,13 +623,19 @@ contract Fixtures is CommonBase, StdCheats {
 
         // set portals in xregistry
 
+        vm.chainId(thisChainId);
+        xregistry.registerPortal(address(portal), thisChainId, address(portal));
         xregistry.registerPortal(address(portal), chainAId, address(chainAPortal));
         xregistry.registerPortal(address(portal), chainBId, address(chainBPortal));
 
+        vm.chainId(chainAId);
         chainAXRegistry.registerPortal(address(chainAPortal), thisChainId, address(portal));
+        chainAXRegistry.registerPortal(address(chainAPortal), chainAId, address(chainAPortal));
         chainAXRegistry.registerPortal(address(chainAPortal), chainBId, address(chainBPortal));
 
+        vm.chainId(chainBId);
         chainBXRegistry.registerPortal(address(chainBPortal), thisChainId, address(portal));
         chainBXRegistry.registerPortal(address(chainBPortal), chainAId, address(chainAPortal));
+        chainBXRegistry.registerPortal(address(chainBPortal), chainBId, address(chainBPortal));
     }
 }

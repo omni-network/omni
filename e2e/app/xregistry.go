@@ -100,9 +100,20 @@ func newRegistryMngr(ctx context.Context, def Definition) (registryMngr, error) 
 
 // registerPortals registers each portal with the PortalRegistry.
 func (m registryMngr) registerPortals(ctx context.Context) error {
+	omniEVM := m.def.Testnet.OmniEVMs[0].Chain
+
+	// register omni portal first, required to initialize omni shards
+	if err := m.registerPortal(ctx, omniEVM.ChainID); err != nil {
+		return errors.Wrap(err, "register omni portal")
+	}
+
 	for chainID := range m.portals {
+		if chainID == omniEVM.ChainID {
+			continue
+		}
+
 		if err := m.registerPortal(ctx, chainID); err != nil {
-			return errors.Wrap(err, "register portal", "chain", chainID)
+			return errors.Wrap(err, "register portal", chainID)
 		}
 	}
 
@@ -128,7 +139,7 @@ func (m registryMngr) registerPortal(ctx context.Context, chainID uint64) error 
 	m.txOpts.Value = nil
 
 	if err != nil {
-		return errors.Wrap(err, "register portal")
+		return errors.Wrap(err, "register tx")
 	}
 
 	receipt, err := m.backend.WaitMined(ctx, tx)
@@ -243,10 +254,10 @@ func makePortalDeps(def Definition) (map[uint64]bindings.PortalRegistryDeploymen
 		}
 
 		deps[chain.ChainID] = bindings.PortalRegistryDeployment{
-			ChainId:           chain.ChainID,
-			Addr:              info.Address,
-			DeployHeight:      info.Height,
-			FinalizationStrat: netconf.MustShardToStrat(chain.Shards[0]),
+			ChainId:      chain.ChainID,
+			Addr:         info.Address,
+			DeployHeight: info.Height,
+			Shards:       chain.Shards,
 		}
 	}
 
@@ -259,10 +270,10 @@ func makePortalDeps(def Definition) (map[uint64]bindings.PortalRegistryDeploymen
 		}
 
 		deps[chain.ChainID] = bindings.PortalRegistryDeployment{
-			ChainId:           chain.ChainID,
-			Addr:              info.Address,
-			DeployHeight:      info.Height,
-			FinalizationStrat: netconf.MustShardToStrat(chain.Shards[0]),
+			ChainId:      chain.ChainID,
+			Addr:         info.Address,
+			DeployHeight: info.Height,
+			Shards:       chain.Shards,
 		}
 	}
 
@@ -278,10 +289,10 @@ func makePortalDeps(def Definition) (map[uint64]bindings.PortalRegistryDeploymen
 	}
 
 	deps[chain.ChainID] = bindings.PortalRegistryDeployment{
-		ChainId:           chain.ChainID,
-		Addr:              info.Address,
-		DeployHeight:      info.Height,
-		FinalizationStrat: netconf.MustShardToStrat(chain.Shards[0]),
+		ChainId:      chain.ChainID,
+		Addr:         info.Address,
+		DeployHeight: info.Height,
+		Shards:       chain.Shards,
 	}
 
 	return deps, nil

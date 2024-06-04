@@ -15,12 +15,19 @@ contract XRegistry is Ownable, XRegistryBase {
     /**
      * @notice Register a contract deployment.
      */
-    event ContractRegistered(uint64 indexed chainId, string indexed name, address indexed registrant, address addr);
+    event ContractRegistered(
+        uint64 indexed chainId, string indexed name, address indexed registrant, address addr, bytes metadata
+    );
 
     /**
      * @notice xcall gas limit for XRegistryReplica.set
      */
-    uint64 public constant XSET_GAS_LIMIT = 100_000;
+    uint64 public constant XSET_GAS_LIMIT = 150_000;
+
+    /**
+     * @notice xcall gas limit for XRegistryReplica.set for portal registrations.
+     */
+    uint64 public constant XSET_PORTAL_GAS_LIMIT = 250_000;
 
     /**
      * @notice OmniPortal contract.
@@ -38,127 +45,134 @@ contract XRegistry is Ownable, XRegistryBase {
     uint64[] internal _chainIds;
 
     /**
+     * @notice Register a contract deployment with metadata.
+     */
+    function register(uint64 chainId, string calldata name, Deployment calldata deployment) external payable {
+        _register(chainId, name, deployment);
+    }
+
+    /**
      * @notice Register a contract deployment.
      */
-    function register(uint64 chainId, string calldata name, address addr) external payable {
+    function _register(uint64 chainId, string calldata name, Deployment calldata dep) internal {
         require(isSupportedChain(chainId), "XRegistry: chain not supported");
-        require(msg.value >= _syncFee(chainId, name, msg.sender, addr), "XRegistry: insufficient fee");
+        require(msg.value >= _syncFee(chainId, name, msg.sender, dep), "XRegistry: insufficient fee");
 
-        _set(chainId, name, msg.sender, addr);
-        _sync(chainId, name, msg.sender, addr);
+        _set(chainId, name, msg.sender, dep);
+        _sync(chainId, name, msg.sender, dep);
 
-        if (_isPortal(name, msg.sender)) omni.initSourceChain(chainId);
+        if (_isPortalRegistration(name, msg.sender)) {
+            uint64[] memory shards = abi.decode(dep.metadata, (uint64[]));
+            omni.initSourceChain(chainId, shards);
+        }
 
-        emit ContractRegistered(chainId, name, msg.sender, addr);
+        emit ContractRegistered(chainId, name, msg.sender, dep.addr, dep.metadata);
     }
 
     /**
      * @notice Calculate the fee to register a contract.
      */
-    function registrationFee(uint64 chainId, string calldata name, address addr) external view returns (uint256) {
-        return _syncFee(chainId, name, msg.sender, addr);
+    function registrationFee(uint64 chainId, string calldata name, Deployment calldata dep)
+        external
+        view
+        returns (uint256)
+    {
+        return _syncFee(chainId, name, msg.sender, dep);
     }
 
     /**
      * @notice Syncs replicas with a new registration for contract `name` by `registrant`.
-     *          - Adds all existing registrations of `name` by `registrant` to the replica on `chainId`
+     *          - Adds all existing registrations of `name` by `registrant` to the replica on `chainId`,
      *          - Adds the new deployment on `chainId` to all replicas with existing registrations
      *            of `name` by `registrant`.
-     *
-     *          Ex. Consider contract with name "MyContract" and registrant "0x1234". It has 2
-     *          deployments.
-     *              - Chain 1, address 0x1111
-     *              - Chain 2, address 0x2222
-     *
-     *          When registering a new deployment on Chain 3, address 0x3333, the sync process is as
-     *          follows.
-     *              - Add (Chain 1 -> 0x1111) and (Chain 2 -> 0x2222) to Chain 3
-     *              - Add (Chain 3 -> 0x3333) to Chain 1 and Chain 2
+     *          - Add registration to its own chain's replica, so that is has access to its own metadata.
      */
-    function _sync(uint64 chainId, string calldata name, address registrant, address addr) internal {
+    function _sync(uint64 chainId, string calldata name, address registrant, Deployment calldata dep) internal {
+        // sync with self, so that this chain has its own metadata
+        _xset(chainId, chainId, name, registrant, dep);
+
         for (uint256 i = 0; i < _chainIds.length; i++) {
             uint64 otherChainId = _chainIds[i];
-
-            // don't sync with self
-            if (otherChainId == chainId) continue;
-
-            address otherAddr = _get(otherChainId, name, registrant);
+            Deployment memory other = _get(otherChainId, name, registrant);
 
             // if this chain does not have a registration for `name` by `registrant`, do nothing
-            if (otherAddr == address(0)) continue;
+            if (other.addr == address(0)) continue;
+
+            // don't sync with self, this is done before the loop
+            if (otherChainId == chainId) continue;
 
             // set "other" registration on chain of new registration
-            _xset(chainId, otherChainId, name, registrant, otherAddr);
+            _xset(chainId, otherChainId, name, registrant, other);
 
             // set new registration on "other" chain
-            _xset(otherChainId, chainId, name, registrant, addr);
+            _xset(otherChainId, chainId, name, registrant, dep);
         }
     }
 
     /**
      * @notice Calculate the fee to sync replicas with a new registration for contract `name` by `registrant`.
      */
-    function _syncFee(uint64 chainId, string calldata name, address registrant, address addr)
+    function _syncFee(uint64 chainId, string calldata name, address registrant, Deployment calldata dep)
         internal
         view
         returns (uint256)
     {
-        uint256 fee;
+        // initial fee for sync with self
+        uint256 fee = _xsetFee(chainId, chainId, name, registrant, dep);
 
         for (uint256 i = 0; i < _chainIds.length; i++) {
             uint64 otherChainId = _chainIds[i];
-
-            // don't sync with self
-            if (otherChainId == chainId) continue;
-
-            address otherAddr = _get(otherChainId, name, registrant);
+            Deployment memory other = _get(otherChainId, name, registrant);
 
             // if this chain does not have a registration for `name` by `registrant`, do nothing
-            if (otherAddr == address(0)) continue;
+            if (other.addr == address(0)) continue;
+
+            // don't sync with self, this is done before the loop
+            if (otherChainId == chainId) continue;
 
             // fee to set set "other" registration on chain of new registration
-            fee += _xsetFee(chainId, otherChainId, name, registrant, otherAddr);
+            fee += _xsetFee(chainId, otherChainId, name, registrant, other);
 
             // fee to set new registration on "other" chain
-            fee += _xsetFee(otherChainId, chainId, name, registrant, addr);
+            fee += _xsetFee(otherChainId, chainId, name, registrant, dep);
         }
 
         return fee;
     }
 
-    function _xset(uint64 destChainId, uint64 chainId, string calldata name, address registrant, address addr)
+    function _xset(uint64 destChainId, uint64 chainId, string calldata name, address registrant, Deployment memory dep)
         internal
     {
-        // don't xset to self
+        // don't xset to self, XRegistry acts as the XRegistryReplica on Omni
         if (destChainId == omni.chainId()) return;
 
         address replica = replicas[destChainId];
         require(replica != address(0), "XRegistry: unknown chain");
 
-        // encode XRegistryReplica.set(chainId, name, registrant, addr)
-        bytes memory xcalldata = abi.encodeWithSelector(XRegistryReplica.set.selector, chainId, name, registrant, addr);
+        bytes memory data = abi.encodeWithSelector(XRegistryReplica.set.selector, chainId, name, registrant, dep);
+        uint64 gasLimit = _isPortalRegistration(name, registrant) ? XSET_PORTAL_GAS_LIMIT : XSET_GAS_LIMIT;
+        uint256 fee = omni.feeFor(destChainId, data, gasLimit);
 
-        // make xcall, paying fee
-        omni.xcall{ value: omni.feeFor(destChainId, xcalldata, XSET_GAS_LIMIT) }(
-            destChainId, replica, xcalldata, XSET_GAS_LIMIT
-        );
+        omni.xcall{ value: fee }(destChainId, replica, data, gasLimit);
     }
 
-    function _xsetFee(uint64 destChainId, uint64 chainId, string calldata name, address registrant, address addr)
-        internal
-        view
-        returns (uint256)
-    {
-        // don't xset to self
+    function _xsetFee(
+        uint64 destChainId,
+        uint64 chainId,
+        string calldata name,
+        address registrant,
+        Deployment memory dep
+    ) internal view returns (uint256) {
+        // don't xset on omni, XRegistry acts as the XRegistryReplica on Omni
         if (destChainId == omni.chainId()) return 0;
 
         address replica = replicas[destChainId];
         require(replica != address(0), "XRegistry: unknown chain");
 
-        // encode XRegistryReplica.set(chainId, name, registrant, addr)
-        bytes memory xcalldata = abi.encodeWithSelector(XRegistryReplica.set.selector, chainId, name, registrant, addr);
+        bytes memory data = abi.encodeWithSelector(XRegistryReplica.set.selector, chainId, name, registrant, dep);
+        uint64 gasLimit = _isPortalRegistration(name, registrant) ? XSET_PORTAL_GAS_LIMIT : XSET_GAS_LIMIT;
 
-        return omni.feeFor(destChainId, xcalldata, XSET_GAS_LIMIT);
+        return omni.feeFor(destChainId, data, gasLimit);
     }
 
     /**

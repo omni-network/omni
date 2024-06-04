@@ -182,22 +182,23 @@ contract OmniPortal is
     function _xcall(uint64 destChainId, uint8 conf, address sender, address to, bytes calldata data, uint64 gasLimit)
         private
     {
-        // Only support ConfLevel.Finalized and ConfLevel.Latest for now
-        require(conf == ConfLevel.Finalized || conf == ConfLevel.Latest, "OmniPortal: invalid conf level");
         require(destChainId != chainId(), "OmniPortal: no same-chain xcall");
         require(destChainId != _BROADCAST_CHAIN_ID, "OmniPortal: no broadcast xcall");
         require(isSupportedChain(destChainId), "OmniPortal: unsupported chain");
         require(to != _VIRTUAL_PORTAL_ADDRESS, "OmniPortal: no portal xcall");
         require(gasLimit <= xmsgMaxGasLimit, "OmniPortal: gasLimit too high");
         require(gasLimit >= xmsgMinGasLimit, "OmniPortal: gasLimit too low");
-        require(msg.value >= feeFor(destChainId, data, gasLimit), "OmniPortal: insufficient fee");
 
         // conf level will always be first byte of shardId. for now, shardId is just conf level
         uint64 shardId = uint64(conf);
+        require(isSupportedShard[shardId], "OmniPortal: unsupported shard");
+
+        uint256 fee = feeFor(destChainId, data, gasLimit);
+        require(msg.value >= fee, "OmniPortal: insufficient fee");
 
         outXMsgOffset[destChainId][shardId] += 1;
 
-        emit XMsg(destChainId, shardId, outXMsgOffset[destChainId][shardId], sender, to, data, gasLimit, msg.value);
+        emit XMsg(destChainId, shardId, outXMsgOffset[destChainId][shardId], sender, to, data, gasLimit, fee);
     }
 
     /**
@@ -211,15 +212,43 @@ contract OmniPortal is
     /**
      * @notice Initialize a source chain's in stream validator set
      */
-    function initSourceChain(uint64 srcChainId) external {
+    function initSourceChain(uint64 srcChainId, uint64[] calldata shards) external {
         require(msg.sender == xregistry, "OmniPortal: only xregistry");
 
-        // We initialize for finalized and latset conf level shards.
-        // TODO: update XRegistry & XRegistryReplica apps to include supported shards in the chain's metadata
+        if (srcChainId == chainId()) {
+            _initShards(shards);
+            return;
+        }
 
+        _initSrcValSet(srcChainId, shards);
+    }
+
+    /**
+     * @notice Initiate / reset supported shards
+     * @dev We track supported shards in storage, rather than querying xregistry, to save gas on each xcall.
+     */
+    function _initShards(uint64[] calldata shards) internal {
+        for (uint256 i = 0; i < shards.length; i++) {
+            isSupportedShard[shards[i]] = false;
+        }
+
+        delete _shards;
+        for (uint256 i = 0; i < shards.length; i++) {
+            _shards.push(shards[i]);
+            isSupportedShard[shards[i]] = true;
+        }
+    }
+
+    /**
+     * @notice Initialize a source chain's in stream validator set
+     * @dev Use the latest omni chain validator set id for each shard, as this validator set
+     *      attested to the initSourceChain xcall. This is an inexact approach, but is sufficient
+     */
+    function _initSrcValSet(uint64 srcChainId, uint64[] calldata shards) internal {
         uint64 latestOmniValSetId = inXStreamValidatorSetId[omniChainId][ConfLevel.Finalized];
-        inXStreamValidatorSetId[srcChainId][ConfLevel.Finalized] = latestOmniValSetId;
-        inXStreamValidatorSetId[srcChainId][ConfLevel.Latest] = latestOmniValSetId;
+        for (uint256 i = 0; i < shards.length; i++) {
+            inXStreamValidatorSetId[srcChainId][shards[i]] = latestOmniValSetId;
+        }
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -267,12 +296,12 @@ contract OmniPortal is
 
         // check that blockHeader and xmsgs are included in attestationRoot
         require(
-            XBlockMerkleProof.verify(xsub.attestationRoot, xsub.blockHeader, xsub.msgs, xsub.proof, xsub.proofFlags),
+            XBlockMerkleProof.verify(xsub.attestationRoot, xheader, xmsgs, xsub.proof, xsub.proofFlags),
             "OmniPortal: invalid proof"
         );
 
         // source chain block height of this submission
-        uint64 xblockOffset = xsub.blockHeader.offset;
+        uint64 xblockOffset = xheader.offset;
 
         // last seen xblock offset for this source chain
         uint64 lastXBlockOffset = inXBlockOffset[xheader.sourceChainId][xheader.confLevel];
@@ -292,17 +321,16 @@ contract OmniPortal is
             xmsg_ = xsub.msgs[i];
 
             // TODO: we can remove xmsg sourceChainId, and instead set _xmsg.sourceChainId to xsub.blockHeader.sourceChainId
-            require(xmsg_.sourceChainId == xsub.blockHeader.sourceChainId, "OmniPortal: wrong sourceChainId");
+            require(xmsg_.sourceChainId == xheader.sourceChainId, "OmniPortal: wrong sourceChainId");
 
             if (uint8(xmsg_.shardId) == ConfLevel.Finalized) {
                 // if xmsg is Finalized, block header must be Finalized
-                require(ConfLevel.Finalized == xsub.blockHeader.confLevel, "OmniPortal: wrong conf level");
+                require(ConfLevel.Finalized == xheader.confLevel, "OmniPortal: wrong conf level");
             } else {
                 // else, require block header either matches xmsg conf level, or is finalized
                 // this allows "fuzzy" conf levels to be corrected by finalized blocks
                 require(
-                    xsub.blockHeader.confLevel == uint8(xmsg_.shardId)
-                        || xsub.blockHeader.confLevel == ConfLevel.Finalized,
+                    xheader.confLevel == uint8(xmsg_.shardId) || xheader.confLevel == ConfLevel.Finalized,
                     "OmniPortal: wrong conf level"
                 );
             }

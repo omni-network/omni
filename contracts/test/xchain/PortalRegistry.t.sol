@@ -6,8 +6,10 @@ import { PortalRegistry } from "src/xchain/PortalRegistry.sol";
 import { MockPortal } from "test/utils/MockPortal.sol";
 import { Predeploys } from "src/libraries/Predeploys.sol";
 import { OmniPortal } from "src/xchain/OmniPortal.sol";
+import { XRegistryBase } from "src/xchain/XRegistryBase.sol";
 import { XRegistryReplica } from "src/xchain/XRegistryReplica.sol";
 import { XRegistryNames } from "src/libraries/XRegistryNames.sol";
+import { ConfLevel } from "src/libraries/ConfLevel.sol";
 
 import { Test } from "forge-std/Test.sol";
 
@@ -28,18 +30,38 @@ contract PortalRegistry_Test is Test {
 
     mapping(uint64 => address) replicas;
 
-    PortalRegistry.Deployment dep1 =
-        PortalRegistry.Deployment({ chainId: 1, addr: portal1, deployHeight: 1234, finalizationStrat: "finalized" });
+    PortalRegistry.Deployment dep1 = PortalRegistry.Deployment({
+        chainId: 1,
+        addr: portal1,
+        deployHeight: 1234,
+        shards: new uint64[](0) // added in setUp
+     });
 
-    PortalRegistry.Deployment dep2 =
-        PortalRegistry.Deployment({ chainId: 2, addr: portal2, deployHeight: 5678, finalizationStrat: "finalized" });
+    PortalRegistry.Deployment dep2 = PortalRegistry.Deployment({
+        chainId: 2,
+        addr: portal2,
+        deployHeight: 5678,
+        shards: new uint64[](0) // added in setUp
+     });
 
-    PortalRegistry.Deployment dep3 =
-        PortalRegistry.Deployment({ chainId: 3, addr: portal3, deployHeight: 91_011, finalizationStrat: "finalized" });
+    PortalRegistry.Deployment dep3 = PortalRegistry.Deployment({
+        chainId: 3,
+        addr: portal3,
+        deployHeight: 91_011,
+        shards: new uint64[](0) // added in setUp
+     });
 
     function setUp() public {
         xreg = XRegistry(Predeploys.XRegistry);
         preg = PortalRegistry(Predeploys.PortalRegistry);
+
+        uint64[] memory shards = new uint64[](2);
+        shards[0] = ConfLevel.Finalized;
+        shards[1] = ConfLevel.Latest;
+
+        dep1.shards = shards;
+        dep2.shards = shards;
+        dep3.shards = shards;
 
         XRegistry tmpXReg = new XRegistry();
         PortalRegistry tmpPReg = new PortalRegistry();
@@ -62,7 +84,7 @@ contract PortalRegistry_Test is Test {
         xreg.setReplica(3, replica3);
         vm.stopPrank();
 
-        vm.deal(owner, 1000 ether);
+        vm.deal(owner, 10_000 ether);
 
         assertTrue(xreg.isSupportedChain(1), "Chain 1 not supported");
         assertTrue(xreg.isSupportedChain(2), "Chain 2 not supported");
@@ -83,13 +105,17 @@ contract PortalRegistry_Test is Test {
         //
         uint256 fee = preg.registrationFee(dep1);
 
+        // chain 1 gets itself
+        _expectXCall({ destChainId: 1, depChainId: 1, dep: XRegistryBase.Deployment(dep1.addr, abi.encode(dep1.shards)) });
+
         // this chains portal is initialized with the new source chain
         vm.expectCall(address(portal), abi.encodeWithSelector(portal.initSourceChain.selector, dep1.chainId));
 
         vm.startPrank(owner);
         preg.register{ value: fee }(dep1);
 
-        assertEq(xreg.get(1, XRegistryNames.OmniPortal, Predeploys.PortalRegistry), portal1);
+        assertEq(xreg.get(1, XRegistryNames.OmniPortal, Predeploys.PortalRegistry).addr, portal1);
+        assertEq(xreg.get(1, XRegistryNames.OmniPortal, Predeploys.PortalRegistry).metadata, abi.encode(dep1.shards));
 
         //
         // register deployment 2
@@ -98,11 +124,14 @@ contract PortalRegistry_Test is Test {
 
         vm.startPrank(owner);
 
+        // chain 2 gets itself
+        _expectXCall({ destChainId: 2, depChainId: 2, dep: XRegistryBase.Deployment(dep2.addr, abi.encode(dep2.shards)) });
+
         // chain 1 gets new chain 2 portal
-        _expectXCall({ destChainId: 1, depChainId: 2, addr: portal2 });
+        _expectXCall({ destChainId: 1, depChainId: 2, dep: XRegistryBase.Deployment(dep2.addr, abi.encode(dep2.shards)) });
 
         // chain 2 gets existing chain 1 portal
-        _expectXCall({ destChainId: 2, depChainId: 1, addr: portal1 });
+        _expectXCall({ destChainId: 2, depChainId: 1, dep: XRegistryBase.Deployment(dep1.addr, abi.encode(dep1.shards)) });
 
         // this chains portal is initialized with the new source chain
         vm.expectCall(address(portal), abi.encodeWithSelector(portal.initSourceChain.selector, dep2.chainId));
@@ -116,17 +145,20 @@ contract PortalRegistry_Test is Test {
 
         vm.startPrank(owner);
 
+        // chain 3 gets itself
+        _expectXCall({ destChainId: 3, depChainId: 3, dep: XRegistryBase.Deployment(dep3.addr, abi.encode(dep3.shards)) });
+
         // chain 1 gets new chain 3 portal
-        _expectXCall({ destChainId: 1, depChainId: 3, addr: portal3 });
+        _expectXCall({ destChainId: 1, depChainId: 3, dep: XRegistryBase.Deployment(dep3.addr, abi.encode(dep3.shards)) });
 
         // chain 2 gets new chain 3 portal
-        _expectXCall({ destChainId: 2, depChainId: 3, addr: portal3 });
+        _expectXCall({ destChainId: 2, depChainId: 3, dep: XRegistryBase.Deployment(dep3.addr, abi.encode(dep3.shards)) });
 
         // chain 3 gets existing chain 1 portal
-        _expectXCall({ destChainId: 3, depChainId: 1, addr: portal1 });
+        _expectXCall({ destChainId: 3, depChainId: 1, dep: XRegistryBase.Deployment(dep1.addr, abi.encode(dep1.shards)) });
 
         // chain 3 gets existing chain 2 portal
-        _expectXCall({ destChainId: 3, depChainId: 2, addr: portal2 });
+        _expectXCall({ destChainId: 3, depChainId: 2, dep: XRegistryBase.Deployment(dep2.addr, abi.encode(dep2.shards)) });
 
         // this chains portal is initialized with the new source chain
         vm.expectCall(address(portal), abi.encodeWithSelector(portal.initSourceChain.selector, dep3.chainId));
@@ -138,20 +170,24 @@ contract PortalRegistry_Test is Test {
      * @notice Expect that the correct portal.xcall(...) was made, to set the portal address on a replica.
      * @param destChainId   The chainId on which to set the deployment.
      * @param depChainId    The chainId of the deployment.
-     * @param addr          The deployment address.
+     * @param dep           The deployment to set.
      */
-    function _expectXCall(uint64 destChainId, uint64 depChainId, address addr) internal {
+    function _expectXCall(uint64 destChainId, uint64 depChainId, XRegistry.Deployment memory dep) private {
         bytes memory data = abi.encodeWithSelector(
-            XRegistryReplica.set.selector, depChainId, XRegistryNames.OmniPortal, Predeploys.PortalRegistry, addr
+            XRegistryReplica.set.selector, depChainId, XRegistryNames.OmniPortal, Predeploys.PortalRegistry, dep
         );
 
-        uint256 fee = portal.feeFor(destChainId, data, xreg.XSET_GAS_LIMIT());
+        uint256 fee = portal.feeFor(destChainId, data, xreg.XSET_PORTAL_GAS_LIMIT());
 
         vm.expectCall(
             address(portal),
             fee,
             abi.encodeWithSignature(
-                "xcall(uint64,address,bytes,uint64)", destChainId, replicas[destChainId], data, xreg.XSET_GAS_LIMIT()
+                "xcall(uint64,address,bytes,uint64)",
+                destChainId,
+                replicas[destChainId],
+                data,
+                xreg.XSET_PORTAL_GAS_LIMIT()
             )
         );
     }
@@ -161,7 +197,7 @@ contract PortalRegistry_Test is Test {
  * @dev Wrapper around MockPortal (a user facing test utility) that adds initSourceChain, required by XRegistry.
  */
 contract MockPortalHarness is MockPortal {
-    function initSourceChain(uint64 _sourceChainId) public {
+    function initSourceChain(uint64 _sourceChainId, uint64[] memory _shards) public {
         // do nothing
     }
 }

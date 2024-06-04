@@ -4,6 +4,7 @@ pragma solidity =0.8.24;
 import { XTypes } from "src/libraries/XTypes.sol";
 import { Base } from "./common/Base.sol";
 import { Vm } from "forge-std/Vm.sol";
+import { ConfLevel } from "src/libraries/ConfLevel.sol";
 
 /**
  * @title OmniPortal_xcall_Test
@@ -25,6 +26,7 @@ contract OmniPortal_xcall_Test is Base {
 
         // make xcall
         vm.prank(xcaller);
+        vm.chainId(thisChainId);
         portal.xcall{ value: fee }(xmsg.destChainId, xmsg.to, xmsg.data);
 
         // check outXMsgOffset is incremented
@@ -45,6 +47,7 @@ contract OmniPortal_xcall_Test is Base {
 
         // make xcall
         vm.prank(xcaller);
+        vm.chainId(thisChainId);
         portal.xcall{ value: fee }(xmsg.destChainId, xmsg.to, xmsg.data, xmsg.gasLimit);
 
         // check outXMsgOffset is incremented
@@ -58,6 +61,7 @@ contract OmniPortal_xcall_Test is Base {
         uint256 fee = portal.feeFor(xmsg.destChainId, xmsg.data, xmsg.gasLimit) - 1;
 
         vm.expectRevert("OmniPortal: insufficient fee");
+        vm.chainId(thisChainId);
         portal.xcall{ value: fee }(xmsg.destChainId, xmsg.to, xmsg.data, xmsg.gasLimit);
     }
 
@@ -69,6 +73,7 @@ contract OmniPortal_xcall_Test is Base {
         uint256 fee = portal.feeFor(xmsg.destChainId, xmsg.data, xmsg.gasLimit);
 
         vm.expectRevert("OmniPortal: gasLimit too low");
+        vm.chainId(thisChainId);
         portal.xcall{ value: fee }(xmsg.destChainId, xmsg.to, xmsg.data, xmsg.gasLimit);
     }
 
@@ -80,6 +85,7 @@ contract OmniPortal_xcall_Test is Base {
         uint256 fee = portal.feeFor(xmsg.destChainId, xmsg.data, xmsg.gasLimit);
 
         vm.expectRevert("OmniPortal: gasLimit too high");
+        vm.chainId(thisChainId);
         portal.xcall{ value: fee }(xmsg.destChainId, xmsg.to, xmsg.data, xmsg.gasLimit);
     }
 
@@ -101,6 +107,22 @@ contract OmniPortal_xcall_Test is Base {
         xmsg.destChainId = chainAId + chainBId + thisChainId;
 
         vm.expectRevert("OmniPortal: unsupported chain");
+        vm.chainId(thisChainId);
         portal.xcall{ value: 10 ether }(xmsg.destChainId, xmsg.to, xmsg.data, xmsg.gasLimit);
+    }
+
+    /// @dev Test that xcall with unsupported conf level reverts
+    function test_xcall_unsupportedConf() public {
+        XTypes.Msg memory xmsg = _outbound_increment();
+
+        vm.expectRevert("OmniPortal: unsupported shard");
+        vm.chainId(thisChainId);
+        portal.xcall{ value: 10 ether }(
+            xmsg.destChainId,
+            ConfLevel.Safe, // not added in MockXRegistryReplica
+            xmsg.to,
+            xmsg.data,
+            xmsg.gasLimit
+        );
     }
 }
