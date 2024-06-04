@@ -144,6 +144,6 @@ func ChainNamer(network ID) func(uint64) string {
 
 func ChainVersionNamer(network ID) func(version xchain.ChainVersion) string {
 	return func(chainVer xchain.ChainVersion) string {
-		return fmt.Sprintf("%s-%s", MetadataByID(network, chainVer.ID).Name, chainVer.ConfLevel)
+		return fmt.Sprintf("%s|%s", MetadataByID(network, chainVer.ID).Name, chainVer.ConfLevel.Label())
 	}
 }

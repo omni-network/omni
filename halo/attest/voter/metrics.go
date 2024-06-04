@@ -10,23 +10,23 @@ var (
 		Namespace: "halo",
 		Subsystem: "voter",
 		Name:      "create_lag_seconds",
-		Help: "Latest lag between vote creation and xblock timestamp (in seconds) per source chain. " +
+		Help: "Latest lag between vote creation and xblock timestamp (in seconds) per source chain version. " +
 			"Alert if too high.",
-	}, []string{"chain"})
+	}, []string{"chain_version"})
 
 	createHeight = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "halo",
 		Subsystem: "voter",
 		Name:      "create_height",
-		Help:      "Latest created vote height per source chain. Alert if not growing.",
-	}, []string{"chain"})
+		Help:      "Latest created vote height per source chain version. Alert if not growing.",
+	}, []string{"chain_version"})
 
 	createBlockOffset = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "halo",
 		Subsystem: "voter",
 		Name:      "create_block_offset",
-		Help:      "Latest created vote block offset per source chain. Alert if not growing.",
-	}, []string{"chain"})
+		Help:      "Latest created vote block offset per source chain version. Alert if not growing.",
+	}, []string{"chain_version"})
 
 	createMsgOffset = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "halo",
@@ -39,22 +39,22 @@ var (
 		Namespace: "halo",
 		Subsystem: "voter",
 		Name:      "commit_height",
-		Help:      "Latest committed vote height per source chain. Alert if not growing.",
-	}, []string{"chain"})
+		Help:      "Latest committed vote height per source chain version. Alert if not growing.",
+	}, []string{"chain_version"})
 
 	availableCount = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "halo",
 		Subsystem: "voter",
 		Name:      "available_votes",
-		Help:      "Current number of available votes per source chain. Alert if growing.",
-	}, []string{"chain"})
+		Help:      "Current number of available votes per source chain version. Alert if growing.",
+	}, []string{"chain_version"})
 
 	proposedCount = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "halo",
 		Subsystem: "voter",
 		Name:      "proposed_votes",
-		Help:      "Current number of proposed votes per source chain. Alert if growing.",
-	}, []string{"chain"})
+		Help:      "Current number of proposed votes per source chain version. Alert if growing.",
+	}, []string{"chain_version"})
 
 	proposedPerBlock = promauto.NewHistogram(prometheus.HistogramOpts{
 		Namespace: "halo",
@@ -76,13 +76,13 @@ var (
 		Namespace: "halo",
 		Subsystem: "voter",
 		Name:      "trim_total",
-		Help:      "Total number of votes trimmed per source chain.",
-	}, []string{"chain"})
+		Help:      "Total number of votes trimmed per source chain version.",
+	}, []string{"chain_version"})
 
 	reorgTotal = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "halo",
 		Subsystem: "voter",
 		Name:      "reorg_total",
-		Help:      "Total number of reorgs detected per source chain.",
-	}, []string{"chain"})
+		Help:      "Total number of reorgs detected per source chain version.",
+	}, []string{"chain_version"})
 )

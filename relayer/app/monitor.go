@@ -2,7 +2,6 @@ package relayer
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -91,10 +90,10 @@ func monitorConsOffsetOnce(ctx context.Context, network netconf.Network, xprovid
 			continue
 		}
 
-		streamName := streamName(network.ChainName, stream)
-		emitMsgOffset.WithLabelValues(streamName).Set(float64(emitted.MsgOffset))
-
+		streamName := network.StreamName(stream)
 		destChain := network.ChainName(stream.DestChainID)
+
+		emitMsgOffset.WithLabelValues(streamName).Set(float64(emitted.MsgOffset))
 
 		submitted, ok, err := xprovider.GetSubmittedCursor(ctx, stream)
 		if err != nil {
@@ -167,7 +166,7 @@ func monitorAttestedForever(
 					Height: &att.BlockHeight,
 				}
 
-				name := streamName(network.ChainName, stream)
+				name := network.StreamName(stream)
 
 				cursor, ok, err := xprovider.GetEmittedCursor(ctx, ref, stream)
 				if err != nil {
@@ -313,7 +312,7 @@ func monitorOffsetsOnce(ctx context.Context, xprovider xchain.Provider, network 
 			return err
 		}
 
-		name := streamName(network.ChainName, stream)
+		name := network.StreamName(stream)
 		emitMsgOffset.WithLabelValues(name).Set(float64(emitted.MsgOffset))
 		// emitBlockOffset isn't statelessly fetched from the source chain, it is calculated and tracked by XProvider...
 		submitMsgOffset.WithLabelValues(name).Set(float64(submitted.MsgOffset))
@@ -342,10 +341,6 @@ func serveMonitoring(address string) <-chan error {
 	}()
 
 	return errChan
-}
-
-func streamName(namer func(uint64) string, streamID xchain.StreamID) string {
-	return fmt.Sprintf("%s|%s", namer(streamID.SourceChainID), namer(streamID.DestChainID))
 }
 
 func ptr[T any](t T) *T {

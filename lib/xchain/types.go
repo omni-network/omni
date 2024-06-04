@@ -1,6 +1,7 @@
 package xchain
 
 import (
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -26,6 +27,12 @@ func (c ConfLevel) Valid() bool {
 // IsFuzzy returns true if this confirmation level is not ConfFinalized.
 func (c ConfLevel) IsFuzzy() bool {
 	return c != ConfFinalized
+}
+
+// Label returns a short label for the confirmation level.
+// IT is the uppercase first letter of the confirmation level.
+func (c ConfLevel) Label() string {
+	return strings.ToUpper(c.String()[:1])
 }
 
 // ConfLevel values MUST never change as they are persisted on-chain.

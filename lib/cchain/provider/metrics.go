@@ -12,30 +12,30 @@ var (
 		Namespace: "lib",
 		Subsystem: "cprovider",
 		Name:      "callback_error_total",
-		Help:      "Total number of callback errors per worker per source chain. Alert if growing.",
-	}, []string{"worker", "chain"})
+		Help:      "Total number of callback errors per worker per source chain version. Alert if growing.",
+	}, []string{"worker", "chain_version"})
 
 	fetchErrTotal = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "lib",
 		Subsystem: "cprovider",
 		Name:      "fetch_error_total",
-		Help:      "Total number of fetch errors per worker per source chain. Alert if growing.",
-	}, []string{"worker", "chain"})
+		Help:      "Total number of fetch errors per worker per source chain version. Alert if growing.",
+	}, []string{"worker", "chain_version"})
 
 	streamHeight = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "lib",
 		Subsystem: "cprovider",
-		Name:      "stream_height",
-		Help:      "Latest streamed xblock height per worker per source chain. Alert if not growing.",
-	}, []string{"worker", "chain"})
+		Name:      "stream_offset",
+		Help:      "Latest streamed xblock offset per worker per source chain version. Alert if not growing.",
+	}, []string{"worker", "chain_version"})
 
 	callbackLatency = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "lib",
 		Subsystem: "cprovider",
 		Name:      "callback_latency_seconds",
-		Help:      "Callback latency in seconds per worker per source chain. Alert if growing.",
+		Help:      "Callback latency in seconds per worker per source chain version. Alert if growing.",
 		Buckets:   []float64{.001, .002, .005, .01, .025, .05, .1, .25, .5, 1, 2.5},
-	}, []string{"worker", "chain"})
+	}, []string{"worker", "chain_version"})
 
 	queryLatency = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "lib",

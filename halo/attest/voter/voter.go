@@ -196,7 +196,7 @@ func (v *Voter) runOnce(ctx context.Context, chainVer xchain.ChainVersion) error
 				return errors.New("not a validator anymore")
 			}
 
-			if err := detectReorg(chainVer, v.network.ChainName(chainVer.ID), prevBlock, block); err != nil {
+			if err := detectReorg(chainVer, v.network.ChainVersionName(chainVer), prevBlock, block); err != nil {
 				// Restart stream, recalculating block offset from finalized version.
 				return err
 			}
@@ -291,12 +291,12 @@ func (v *Voter) Vote(block xchain.Block, allowSkip bool) error {
 	v.available = append(v.available, vote)
 
 	lag := time.Since(block.Timestamp).Seconds()
-	name := v.network.ChainName(chainVer.ID)
+	name := v.network.ChainVersionName(chainVer)
 	createLag.WithLabelValues(name).Set(lag)
 	createHeight.WithLabelValues(name).Set(float64(vote.BlockHeader.Height))
 	createBlockOffset.WithLabelValues(name).Set(float64(vote.BlockHeader.Offset))
 	for stream, msgOffset := range latestMsgOffsets(block.Msgs) {
-		createMsgOffset.WithLabelValues(v.streamName(stream)).Set(float64(msgOffset))
+		createMsgOffset.WithLabelValues(v.network.StreamName(stream)).Set(float64(msgOffset))
 	}
 
 	return v.saveUnsafe()
@@ -327,7 +327,7 @@ func (v *Voter) TrimBehind(minsByChain map[xchain.ChainVersion]uint64) int {
 			chainVer := vote.BlockHeader.XChainVersion()
 			minimum, ok := minsByChain[chainVer]
 			if ok && vote.BlockHeader.Offset < minimum {
-				trimTotal.WithLabelValues(v.network.ChainName(chainVer.ID)).Inc()
+				trimTotal.WithLabelValues(v.network.ChainVersionName(chainVer)).Inc()
 				continue // Skip/Trim
 			}
 			remaining = append(remaining, vote) // Retain all others
@@ -425,7 +425,7 @@ func (v *Voter) SetCommitted(headers []*types.BlockHeader) error {
 
 	// Update committed height metrics.
 	for _, vote := range v.committed {
-		commitHeight.WithLabelValues(v.network.ChainName(vote.BlockHeader.ChainId)).Set(float64(vote.BlockHeader.Height))
+		commitHeight.WithLabelValues(v.network.ChainVersionName(vote.BlockHeader.XChainVersion())).Set(float64(vote.BlockHeader.Height))
 	}
 
 	return v.saveUnsafe()
@@ -489,20 +489,16 @@ func (v *Voter) saveUnsafe() error {
 	return nil
 }
 
-func (v *Voter) streamName(streamID xchain.StreamID) string {
-	return fmt.Sprintf("%s|%s", v.network.ChainName(streamID.SourceChainID), v.network.ChainName(streamID.DestChainID))
-}
-
 // instrumentUnsafe updates metrics. It is unsafe since it assumes the lock is held.
 func (v *Voter) instrumentUnsafe() {
 	count := func(atts []*types.Vote, gaugeVec *prometheus.GaugeVec) {
-		counts := make(map[uint64]int)
+		counts := make(map[xchain.ChainVersion]int)
 		for _, vote := range atts {
-			counts[vote.BlockHeader.ChainId]++
+			counts[vote.BlockHeader.XChainVersion()]++
 		}
 
 		for chain, count := range counts {
-			gaugeVec.WithLabelValues(v.network.ChainName(chain)).Set(float64(count))
+			gaugeVec.WithLabelValues(v.network.ChainVersionName(chain)).Set(float64(count))
 		}
 	}
 
@@ -512,7 +508,7 @@ func (v *Voter) instrumentUnsafe() {
 
 // detectReorg returns an error if the previous block doesn't match the new block's parent hash.
 // This indicates that a reorg occurred.
-func detectReorg(chainVer xchain.ChainVersion, chainName string, prevBlock xchain.Block, block xchain.Block) error {
+func detectReorg(chainVer xchain.ChainVersion, chainVerName string, prevBlock xchain.Block, block xchain.Block) error {
 	if prevBlock.BlockHash == (common.Hash{}) {
 		return nil // Skip previous blocks without parent hash (init or consensus chain without block hashes).
 	}
@@ -525,7 +521,7 @@ func detectReorg(chainVer xchain.ChainVersion, chainName string, prevBlock xchai
 		return nil // No reorg detected.
 	}
 
-	reorgTotal.WithLabelValues(chainName).Inc()
+	reorgTotal.WithLabelValues(chainVerName).Inc()
 
 	if chainVer.ConfLevel.IsFuzzy() {
 		return errors.New("fuzzy chain reorg detected", "height", block.BlockHeight, "offset", block.BlockOffset, "parent_hash", prevBlock.BlockHash, "new_parent_hash", block.ParentHash)
