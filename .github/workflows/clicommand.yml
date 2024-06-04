@@ -70,7 +70,8 @@ jobs:
 
     - name: Build explorer-ui image
       run: |
-        docker build -f "./explorer/ui/Dockerfile" . -t "omniops/explorer-ui:${GITHUB_SHA::7}"
+        cd explorer/ui
+        docker build -f Dockerfile . -t "omniops/explorer-ui:${GITHUB_SHA::7}"
 
     - name: Configure Git
       run: |
