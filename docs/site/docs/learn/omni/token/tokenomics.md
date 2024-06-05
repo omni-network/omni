@@ -2,7 +2,7 @@
 sidebar_position: 2
 ---
 
-# **\$OMNI** Tokenomics & Utility
+# Tokenomics & Utility
 
 This section covers the supply & distribution of **\$OMNI**'s tokenomics.
 
