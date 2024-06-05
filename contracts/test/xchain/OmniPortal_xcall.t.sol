@@ -11,44 +11,22 @@ import { ConfLevel } from "src/libraries/ConfLevel.sol";
  * @dev Tests of OmniPortal.xcall
  */
 contract OmniPortal_xcall_Test is Base {
-    /// @dev Test that xcall with default gas limit emits XMsg event and increments outXMsgOffset
-    function test_xcall_defaultGasLimit_succeeds() public {
+    /// @dev Test that xcall emits XMsg event and increments outXMsgOffset
+    function test_xcall_succeeds() public {
         XTypes.Msg memory xmsg = _outbound_increment();
-
-        uint256 fee = portal.feeFor(xmsg.destChainId, xmsg.data);
-        uint64 offset = 1;
-
-        // check XMsg event is emitted
-        vm.expectEmit();
-        emit XMsg(
-            xmsg.destChainId, xmsg.shardId, offset, xcaller, xmsg.to, xmsg.data, portal.xmsgDefaultGasLimit(), fee
-        );
-
-        // make xcall
-        vm.prank(xcaller);
-        vm.chainId(thisChainId);
-        portal.xcall{ value: fee }(xmsg.destChainId, xmsg.to, xmsg.data);
-
-        // check outXMsgOffset is incremented
-        assertEq(portal.outXMsgOffset(xmsg.destChainId, xmsg.shardId), 1);
-    }
-
-    /// @dev Test that xcall with explicit gas limit emits XMsg event and increments outXMsgOffset
-    function test_xcall_explicitGasLimit_succeeds() public {
-        XTypes.Msg memory xmsg = _outbound_increment();
-        xmsg.gasLimit = portal.xmsgDefaultGasLimit() + 1;
+        uint8 conf = uint8(xmsg.shardId);
 
         uint256 fee = portal.feeFor(xmsg.destChainId, xmsg.data, xmsg.gasLimit);
         uint64 offset = 1;
 
         // check XMsg event is emitted
         vm.expectEmit();
-        emit XMsg(xmsg.destChainId, xmsg.shardId, offset, xcaller, xmsg.to, xmsg.data, xmsg.gasLimit, fee);
+        emit XMsg(xmsg.destChainId, uint64(conf), offset, xcaller, xmsg.to, xmsg.data, xmsg.gasLimit, fee);
 
         // make xcall
         vm.prank(xcaller);
         vm.chainId(thisChainId);
-        portal.xcall{ value: fee }(xmsg.destChainId, xmsg.to, xmsg.data, xmsg.gasLimit);
+        portal.xcall{ value: fee }(xmsg.destChainId, conf, xmsg.to, xmsg.data, xmsg.gasLimit);
 
         // check outXMsgOffset is incremented
         assertEq(portal.outXMsgOffset(xmsg.destChainId, xmsg.shardId), 1);
@@ -57,58 +35,67 @@ contract OmniPortal_xcall_Test is Base {
     /// @dev Test that xcall with insufficient fee revert
     function test_xcall_insufficientFee_reverts() public {
         XTypes.Msg memory xmsg = _outbound_increment();
+        uint8 conf = uint8(xmsg.shardId);
 
         uint256 fee = portal.feeFor(xmsg.destChainId, xmsg.data, xmsg.gasLimit) - 1;
 
         vm.expectRevert("OmniPortal: insufficient fee");
         vm.chainId(thisChainId);
-        portal.xcall{ value: fee }(xmsg.destChainId, xmsg.to, xmsg.data, xmsg.gasLimit);
+        portal.xcall{ value: fee }(xmsg.destChainId, conf, xmsg.to, xmsg.data, xmsg.gasLimit);
     }
 
     /// @dev Test that xcall with too-low gas limit reverts
     function test_xcall_gasLimitTooLow_reverts() public {
         XTypes.Msg memory xmsg = _outbound_increment();
+        uint8 conf = uint8(xmsg.shardId);
+
         xmsg.gasLimit = portal.xmsgMinGasLimit() - 1;
 
         uint256 fee = portal.feeFor(xmsg.destChainId, xmsg.data, xmsg.gasLimit);
 
         vm.expectRevert("OmniPortal: gasLimit too low");
         vm.chainId(thisChainId);
-        portal.xcall{ value: fee }(xmsg.destChainId, xmsg.to, xmsg.data, xmsg.gasLimit);
+        portal.xcall{ value: fee }(xmsg.destChainId, conf, xmsg.to, xmsg.data, xmsg.gasLimit);
     }
 
     /// @dev Test that xcall with too-high gas limit reverts
     function test_xcall_gasLimitTooHigh_reverts() public {
         XTypes.Msg memory xmsg = _outbound_increment();
+        uint8 conf = uint8(xmsg.shardId);
+
         xmsg.gasLimit = portal.xmsgMaxGasLimit() + 1;
 
         uint256 fee = portal.feeFor(xmsg.destChainId, xmsg.data, xmsg.gasLimit);
 
         vm.expectRevert("OmniPortal: gasLimit too high");
         vm.chainId(thisChainId);
-        portal.xcall{ value: fee }(xmsg.destChainId, xmsg.to, xmsg.data, xmsg.gasLimit);
+        portal.xcall{ value: fee }(xmsg.destChainId, conf, xmsg.to, xmsg.data, xmsg.gasLimit);
     }
 
     /// @dev Test that xcall with destChainId == portal.chainId reverts
     function test_xcall_sameChain_reverts() public {
         XTypes.Msg memory xmsg = _outbound_increment();
+        uint8 conf = uint8(xmsg.shardId);
+
         xmsg.destChainId = thisChainId;
 
         uint256 fee = portal.feeFor(xmsg.destChainId, xmsg.data, xmsg.gasLimit);
 
         vm.expectRevert("OmniPortal: no same-chain xcall");
         vm.chainId(thisChainId);
-        portal.xcall{ value: fee }(xmsg.destChainId, xmsg.to, xmsg.data, xmsg.gasLimit);
+        portal.xcall{ value: fee }(xmsg.destChainId, conf, xmsg.to, xmsg.data, xmsg.gasLimit);
     }
 
     /// @dev Test that xcall with unsupported destChainId reverts
     function test_xcall_unsupportedChain_reverts() public {
         XTypes.Msg memory xmsg = _outbound_increment();
+        uint8 conf = uint8(xmsg.shardId);
+
         xmsg.destChainId = chainAId + chainBId + thisChainId;
 
         vm.expectRevert("OmniPortal: unsupported chain");
         vm.chainId(thisChainId);
-        portal.xcall{ value: 10 ether }(xmsg.destChainId, xmsg.to, xmsg.data, xmsg.gasLimit);
+        portal.xcall{ value: 10 ether }(xmsg.destChainId, conf, xmsg.to, xmsg.data, xmsg.gasLimit);
     }
 
     /// @dev Test that xcall with unsupported conf level reverts

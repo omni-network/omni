@@ -20,15 +20,4 @@ contract OmniPortal_feeFor_Test is Base {
             portal.feeFor(destChainId, data, gasLimit)
         );
     }
-
-    /// @dev Test feeFor with default gasLimit matches oracle
-    function test_feeFor_defaultGasLimit_succeeds() public {
-        uint64 destChainId = chainBId;
-        bytes memory data = abi.encodeWithSignature("test()");
-
-        assertEq(
-            IFeeOracle(portal.feeOracle()).feeFor(destChainId, data, portal.xmsgDefaultGasLimit()),
-            portal.feeFor(destChainId, data)
-        );
-    }
 }

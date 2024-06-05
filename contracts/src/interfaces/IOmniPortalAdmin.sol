@@ -21,13 +21,6 @@ interface IOmniPortalAdmin {
     event FeesCollected(address indexed to, uint256 amount);
 
     /**
-     * @notice Emitted when the xmsgDefaultGasLimit is changed.
-     * @param oldDefault The old xmsgDefaultGasLimit
-     * @param newDefault The new xmsgDefaultGasLimit
-     */
-    event XMsgDefaultGasLimitChanged(uint64 indexed oldDefault, uint64 indexed newDefault);
-
-    /**
      * @notice Emitted when xmsgMinGasLimit is changed.
      * @param oldMin The old xmsgMinGasLimit
      * @param newMin The new xmsgMinGasLimit
@@ -63,11 +56,6 @@ interface IOmniPortalAdmin {
      * @param to    The address to transfer the fees to
      */
     function collectFees(address to) external;
-
-    /**
-     * @notice Set the default gas limit for xmsg
-     */
-    function setXMsgDefaultGasLimit(uint64 gasLimit) external;
 
     /**
      * @notice Set the minimum gas limit for xmsg
