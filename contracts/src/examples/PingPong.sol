@@ -38,20 +38,23 @@ contract PingPong is XApp {
      * @notice Start the pingpong xmsg loop
      * @param id            Ping pong id
      * @param destChainID   The destination chain id
+     * @param conf          Confirmation level on which to xcall
      * @param to            The address the PingPong contract on the destination chain
      * @param times         The number of times to pingpong (times == 1 means once there and back)
      */
-    function start(string calldata id, uint64 destChainID, address to, uint64 times) external {
+    function start(string calldata id, uint64 destChainID, uint8 conf, address to, uint64 times) external {
         require(times > 0, "PingPong: times must be > 0");
-        _xpingpong(id, destChainID, to, times, times * 2 - 1);
+        _xpingpong(id, destChainID, conf, to, times, times * 2 - 1);
     }
 
     /**
      * @notice The pingpong xmsg loop
-     * @param times The pingpongs in the loop
-     * @param n The number of xcalls left to make
+     * @param id        The ping pong id
+     * @param conf      Confirmation level on which to xcall
+     * @param times     The pingpongs in the loop
+     * @param n The     number of xcalls left to make
      */
-    function pingpong(string calldata id, uint64 times, uint64 n) external xrecv {
+    function pingpong(string calldata id, uint8 conf, uint64 times, uint64 n) external xrecv {
         require(isXCall(), "PingPong: not an omni xcall");
 
         emit Ping(id, xmsg.sourceChainId, xmsg.sender, n);
@@ -61,11 +64,13 @@ contract PingPong is XApp {
             return;
         }
 
-        _xpingpong(id, xmsg.sourceChainId, xmsg.sender, times, n - 1);
+        _xpingpong(id, xmsg.sourceChainId, conf, xmsg.sender, times, n - 1);
     }
 
-    function _xpingpong(string calldata id, uint64 destChainID, address to, uint64 times, uint64 n) internal {
-        xcall(destChainID, to, abi.encodeWithSelector(this.pingpong.selector, id, times, n), GAS_LIMIT);
+    function _xpingpong(string calldata id, uint64 destChainID, uint8 conf, address to, uint64 times, uint64 n)
+        internal
+    {
+        xcall(destChainID, conf, to, abi.encodeWithSelector(this.pingpong.selector, id, conf, times, n), GAS_LIMIT);
     }
 
     receive() external payable { }

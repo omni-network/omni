@@ -15,6 +15,7 @@ import (
 	"github.com/omni-network/omni/lib/forkjoin"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -173,7 +174,7 @@ func (d *XDapp) StartAllEdges(ctx context.Context, parallel, count uint64) error
 				}
 
 				id := randomHex7()
-				tx, err := from.PingPong.Start(txOpts, id, to.Chain.ChainID, to.Address, count)
+				tx, err := from.PingPong.Start(txOpts, id, to.Chain.ChainID, uint8(xchain.ConfFinalized), to.Address, count)
 				if err != nil {
 					return errors.Wrap(err, "start ping pong", "id", id, "from", from.Chain.Name, "to", to.Chain.Name)
 				}
