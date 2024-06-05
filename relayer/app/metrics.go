@@ -75,7 +75,7 @@ var (
 		Subsystem: "monitor",
 		Name:      "submit_block_offset",
 		Help:      "The latest submitted xblock offset on a destination chain for a specific source chain",
-	}, []string{"src_chain", "dst_chain"})
+	}, []string{"stream"})
 
 	accountBalance = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "relayer",
