@@ -68,7 +68,7 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, str
 
 	offset, err := caller.OutXMsgOffset(opts, stream.DestChainID, stream.ShardID)
 	if err != nil {
-		return xchain.EmitCursor{}, false, errors.Wrap(err, "call inXStreamOffset")
+		return xchain.EmitCursor{}, false, errors.Wrap(err, "call OutXMgsOffset")
 	}
 
 	if offset == 0 {
@@ -104,7 +104,7 @@ func (p *Provider) GetSubmittedCursor(ctx context.Context, stream xchain.StreamI
 
 	msgOffset, err := caller.InXMsgOffset(callOpts, stream.SourceChainID, stream.ShardID)
 	if err != nil {
-		return xchain.SubmitCursor{}, false, errors.Wrap(err, "call inXStreamOffset")
+		return xchain.SubmitCursor{}, false, errors.Wrap(err, "call InXMsgOffset")
 	}
 
 	if msgOffset == 0 {
@@ -113,12 +113,12 @@ func (p *Provider) GetSubmittedCursor(ctx context.Context, stream xchain.StreamI
 
 	blockOffset, err := caller.InXBlockOffset(callOpts, stream.SourceChainID, stream.ShardID)
 	if err != nil {
-		return xchain.SubmitCursor{}, false, errors.Wrap(err, "call inXStreamBlockHeight")
+		return xchain.SubmitCursor{}, false, errors.Wrap(err, "call InXBlockOffset")
 	}
 
 	valSetID, err := caller.InXStreamValidatorSetId(callOpts, stream.SourceChainID, stream.ShardID)
 	if err != nil {
-		return xchain.SubmitCursor{}, false, errors.Wrap(err, "call inXStreamValidatorSetId")
+		return xchain.SubmitCursor{}, false, errors.Wrap(err, "call InXStreamValidatorSetId")
 	}
 
 	return xchain.SubmitCursor{
