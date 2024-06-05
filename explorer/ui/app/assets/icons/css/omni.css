@@ -325,3 +325,5 @@
 .icon-rewind:before { content: '\e90c'; } /* '' */
 .icon-swap:before { content: '\e90d'; } /* '' */
 .icon-cookies:before { content: '\e90e'; } /* '' */
+
+.rounded-full { border-radius: 9999px; }

@@ -12,7 +12,7 @@ export const From = ({ xmsg }) => {
       <div className="flex mt-5 pb-2 border-b-[1px] border-subtle border-solid">
         <p className="w-[150px] sm:w-48 text-sm">Source Chain</p>
         <div className='flex gap-2 items-center'>
-          <img className='w-5 h-5 ' src={xmsg.sourceChain.logoUrl} />
+          <img className='w-5 h-5 rounded-full' src={xmsg.sourceChain.logoUrl} />
           <p className="text-default">{xmsg.sourceChain.name}</p>
         </div>
       </div>
