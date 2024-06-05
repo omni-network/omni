@@ -88,10 +88,10 @@ contract OmniPortal_xsubmit_Test is Base {
         portal.xsubmit(xsub);
     }
 
-    function test_xsubmit_wrongChainId_reverts() public {
+    function test_xsubmit_wrongDestChainId_reverts() public {
         XTypes.Submission memory xsub = readXSubmission({ name: "xblock1", destChainId: thisChainId });
 
-        vm.expectRevert("OmniPortal: wrong destChainId");
+        vm.expectRevert("OmniPortal: wrong dest chain");
         vm.chainId(chainBId);
         chainBPortal.xsubmit(xsub);
     }

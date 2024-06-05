@@ -18,6 +18,7 @@ contract OmniPortal_exec_Test is Base {
     /// @dev Test that exec of a valid XMsg succeeds, and emits the correct XReceipt
     function test_exec_xmsg_succeeds() public {
         XTypes.Msg memory xmsg = _inbound_increment(1);
+        XTypes.BlockHeader memory xheader = _xheader(xmsg);
 
         uint256 count = counter.count();
         uint256 countForChain = counter.countByChainId(xmsg.sourceChainId);
@@ -26,7 +27,7 @@ contract OmniPortal_exec_Test is Base {
         vm.expectCall(xmsg.to, xmsg.data);
         vm.recordLogs();
         vm.chainId(xmsg.destChainId);
-        portal.exec(xmsg);
+        portal.exec(xheader, xmsg);
 
         assertEq(counter.count(), count + 1);
         assertEq(counter.countByChainId(xmsg.sourceChainId), countForChain + 1);
@@ -37,50 +38,54 @@ contract OmniPortal_exec_Test is Base {
     /// @dev Test that exec of an XMsg that reverts succeeds, and emits the correct XReceipt
     function test_exec_xmsgRevert_succeeds() public {
         XTypes.Msg memory xmsg = _inbound_revert(1);
+        XTypes.BlockHeader memory xheader = _xheader(xmsg);
 
         vm.prank(relayer);
         vm.expectCall(xmsg.to, xmsg.data);
         vm.recordLogs();
         vm.chainId(xmsg.destChainId);
-        portal.exec(xmsg);
+        portal.exec(xheader, xmsg);
 
         assertEq(portal.inXMsgOffset(xmsg.sourceChainId, xmsg.shardId), xmsg.offset);
         assertReceipt(vm.getRecordedLogs()[0], xmsg);
     }
 
     /// @dev Test that exec of an XMsg with the wrong destChainId reverts
-    function test_exec_wrongChainId_reverts() public {
+    function test_exec_wrongDestChainId_reverts() public {
         XTypes.Msg memory xmsg = _inbound_increment(1);
+        XTypes.BlockHeader memory xheader = _xheader(xmsg);
 
         uint64 destChainId = xmsg.destChainId;
         xmsg.destChainId = destChainId + 1; // intentionally wrong chainId
 
-        vm.expectRevert("OmniPortal: wrong destChainId");
+        vm.expectRevert("OmniPortal: wrong dest chain");
         vm.chainId(destChainId);
-        portal.exec(xmsg);
+        portal.exec(xheader, xmsg);
     }
 
     /// @dev Test that exec of an XMsg ahead of the current offset reverts
     function test_exec_aheadOffset_reverts() public {
         XTypes.Msg memory xmsg = _inbound_increment(1);
+        XTypes.BlockHeader memory xheader = _xheader(xmsg);
 
         xmsg.offset = xmsg.offset + 1; // intentionally ahead of offset
 
         vm.expectRevert("OmniPortal: wrong offset");
         vm.chainId(xmsg.destChainId);
-        portal.exec(xmsg);
+        portal.exec(xheader, xmsg);
     }
 
     /// @dev Test that exec of an XMsg behind the current offset reverts
     function test_exec_behindOffset_reverts() public {
         XTypes.Msg memory xmsg = _inbound_increment(1);
+        XTypes.BlockHeader memory xheader = _xheader(xmsg);
 
         vm.chainId(xmsg.destChainId);
-        portal.exec(xmsg); // execute, to increment offset
+        portal.exec(xheader, xmsg); // execute, to increment offset
 
         vm.expectRevert("OmniPortal: wrong offset");
         vm.chainId(xmsg.destChainId);
-        portal.exec(xmsg);
+        portal.exec(xheader, xmsg);
     }
 
     /// @dev Test that when an XMsg execution reverts, the correct error bytes are included in the receipt
@@ -94,10 +99,11 @@ contract OmniPortal_exec_Test is Base {
             offset: 1,
             data: abi.encodeWithSelector(Reverter.forceRevert.selector)
         });
+        XTypes.BlockHeader memory xheader = _xheader(xmsg);
 
         vm.recordLogs();
         vm.chainId(xmsg.destChainId);
-        portal.exec(xmsg);
+        portal.exec(xheader, xmsg);
         Vm.Log[] memory logs = vm.getRecordedLogs();
         assertEq(logs.length, 1);
         TestXTypes.Receipt memory receipt = parseReceipt(logs[0]);
@@ -115,7 +121,7 @@ contract OmniPortal_exec_Test is Base {
 
         vm.recordLogs();
         vm.chainId(xmsg.destChainId);
-        portal.exec(xmsg);
+        portal.exec(xheader, xmsg);
         logs = vm.getRecordedLogs();
         assertEq(logs.length, 1);
         receipt = parseReceipt(logs[0]);
@@ -133,7 +139,7 @@ contract OmniPortal_exec_Test is Base {
 
         vm.recordLogs();
         vm.chainId(xmsg.destChainId);
-        portal.exec(xmsg);
+        portal.exec(xheader, xmsg);
         logs = vm.getRecordedLogs();
         assertEq(logs.length, 1);
         receipt = parseReceipt(logs[0]);
@@ -151,7 +157,7 @@ contract OmniPortal_exec_Test is Base {
 
         vm.recordLogs();
         vm.chainId(xmsg.destChainId);
-        portal.exec(xmsg);
+        portal.exec(xheader, xmsg);
         logs = vm.getRecordedLogs();
         assertEq(logs.length, 1);
         receipt = parseReceipt(logs[0]);
@@ -169,7 +175,7 @@ contract OmniPortal_exec_Test is Base {
 
         vm.recordLogs();
         vm.chainId(xmsg.destChainId);
-        portal.exec(xmsg);
+        portal.exec(xheader, xmsg);
         logs = vm.getRecordedLogs();
         assertEq(logs.length, 1);
         receipt = parseReceipt(logs[0]);
@@ -178,8 +184,8 @@ contract OmniPortal_exec_Test is Base {
         assertEq(receipt.error.length, portal.xreceiptMaxErrorBytes());
     }
 
-    /// @dev Test that sys exec that reverts forwards the revert
-    function test_execSys_forwardsRevert() public {
+    /// @dev Test that syscall that reverts forwards the revert
+    function test_syscall_forwardsRevert() public {
         // We use OmniPortal.addValidatorSet, as that is a valid system call
 
         XTypes.Validator[] memory emptyValSet; // doesn't matter
@@ -188,12 +194,12 @@ contract OmniPortal_exec_Test is Base {
 
         // this will revert with "only cchain" because _xmsg.sourceChainId won't be set
         vm.expectRevert("OmniPortal: only cchain");
-        portal.execSys(data);
+        portal.syscall(data);
     }
 
-    /// @dev Test that a call to exec that has not been given enough gas to execute
-    ///      the xmsg message reverts, rather than suceeding with XReceipt(success=false)
-    function test_exec_notEnoughGas_reverts() public {
+    /// @dev Test that a call that has not been given enough gas to execute reverts,
+    ///       rather than suceeding with XReceipt(success=false)
+    function test_call_notEnoughGas_reverts() public {
         GasGuzzler gasGuzzler = new GasGuzzler();
 
         address to = address(gasGuzzler);
@@ -205,7 +211,7 @@ contract OmniPortal_exec_Test is Base {
         // just xmsg gasLimit is insufficient
         uint256 insufficientGas = gasLimit;
         vm.expectRevert(); // reverts with invalid()
-        portal.exec{ gas: insufficientGas }(to, gasLimit, data);
+        portal.call{ gas: insufficientGas }(to, gasLimit, data);
     }
 
     /// @dev Helper to repeat a string a number of times
@@ -215,5 +221,15 @@ contract OmniPortal_exec_Test is Base {
             result = string.concat(result, s);
         }
         return result;
+    }
+
+    // @dev Helper to create a XBlock header for an xmsg
+    function _xheader(XTypes.Msg memory xmsg) internal pure returns (XTypes.BlockHeader memory) {
+        return XTypes.BlockHeader({
+            sourceChainId: xmsg.sourceChainId,
+            confLevel: uint8(xmsg.shardId),
+            offset: 1,
+            sourceBlockHash: bytes32(0)
+        });
     }
 }

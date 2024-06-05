@@ -2,7 +2,8 @@
 pragma solidity =0.8.24;
 
 import { Predeploys } from "../libraries/Predeploys.sol";
-import { OmniPortal } from "./OmniPortal.sol";
+import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
+import { IOmniPortalSys } from "../interfaces/IOmniPortalSys.sol";
 import { XRegistryBase } from "./XRegistryBase.sol";
 import { XTypes } from "../libraries/XTypes.sol";
 
@@ -13,13 +14,16 @@ import { XTypes } from "../libraries/XTypes.sol";
  */
 contract XRegistryReplica is XRegistryBase {
     /// @notice The OmniPortal contract
-    OmniPortal internal immutable omni;
+    address internal immutable portal;
 
-    constructor(address omni_) {
-        omni = OmniPortal(omni_);
+    constructor(address portal_) {
+        require(portal_ != address(0), "XRegistryReplica: no zero portal");
+        portal = portal_;
     }
 
     modifier onlyXRegistry() {
+        IOmniPortal omni = IOmniPortal(portal);
+
         // require the portal is the sender
         require(msg.sender == address(omni), "XReplica: not xcall");
 
@@ -40,7 +44,7 @@ contract XRegistryReplica is XRegistryBase {
         // if OmniPortal registration for, intialize the new source chain on this chain's portal deployment
         if (_isPortalRegistration(name, registrant)) {
             uint64[] memory shards = abi.decode(dep.metadata, (uint64[]));
-            omni.initSourceChain(chainId, shards);
+            IOmniPortalSys(portal).initSourceChain(chainId, shards);
         }
     }
 }

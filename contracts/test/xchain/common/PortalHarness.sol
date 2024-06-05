@@ -9,15 +9,15 @@ import { XTypes } from "src/libraries/XTypes.sol";
  * @dev A test contract that exposes OmniPortal internal functions, and allows state manipulation.
  */
 contract PortalHarness is OmniPortal {
-    function exec(XTypes.Msg calldata xmsg) external {
-        _exec(xmsg);
+    function exec(XTypes.BlockHeader calldata xheader, XTypes.Msg calldata xmsg) external {
+        _exec(xheader, xmsg);
     }
 
-    function exec(address to, uint64 gasLimit, bytes calldata data) external {
-        _exec(to, gasLimit, data);
+    function call(address to, uint64 gasLimit, bytes calldata data) external {
+        _call(to, gasLimit, data);
     }
 
-    function execSys(bytes calldata data) external {
-        _execSys(data);
+    function syscall(bytes calldata data) external {
+        _syscall(data);
     }
 }

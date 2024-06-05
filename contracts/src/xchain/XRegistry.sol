@@ -2,7 +2,8 @@
 pragma solidity =0.8.24;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { OmniPortal } from "../xchain/OmniPortal.sol";
+import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
+import { IOmniPortalSys } from "../interfaces/IOmniPortalSys.sol";
 import { XRegistryBase } from "./XRegistryBase.sol";
 import { XRegistryReplica } from "./XRegistryReplica.sol";
 
@@ -32,7 +33,7 @@ contract XRegistry is Ownable, XRegistryBase {
     /**
      * @notice OmniPortal contract.
      */
-    OmniPortal public omni;
+    address public portal;
 
     /**
      * @notice Mapping of chain IDs to the XRegistryReplica address on that chain.
@@ -63,7 +64,7 @@ contract XRegistry is Ownable, XRegistryBase {
 
         if (_isPortalRegistration(name, msg.sender)) {
             uint64[] memory shards = abi.decode(dep.metadata, (uint64[]));
-            omni.initSourceChain(chainId, shards);
+            IOmniPortalSys(portal).initSourceChain(chainId, shards);
         }
 
         emit ContractRegistered(chainId, name, msg.sender, dep.addr, dep.metadata);
@@ -143,6 +144,8 @@ contract XRegistry is Ownable, XRegistryBase {
     function _xset(uint64 destChainId, uint64 chainId, string calldata name, address registrant, Deployment memory dep)
         internal
     {
+        IOmniPortal omni = IOmniPortal(portal);
+
         // don't xset to self, XRegistry acts as the XRegistryReplica on Omni
         if (destChainId == omni.chainId()) return;
 
@@ -163,6 +166,8 @@ contract XRegistry is Ownable, XRegistryBase {
         address registrant,
         Deployment memory dep
     ) internal view returns (uint256) {
+        IOmniPortal omni = IOmniPortal(portal);
+
         // don't xset on omni, XRegistry acts as the XRegistryReplica on Omni
         if (destChainId == omni.chainId()) return 0;
 
@@ -201,7 +206,7 @@ contract XRegistry is Ownable, XRegistryBase {
     /**
      * @notice Set the address of the OmniPortal contract.
      */
-    function setPortal(address _omni) public onlyOwner {
-        omni = OmniPortal(_omni);
+    function setPortal(address _portal) public onlyOwner {
+        portal = _portal;
     }
 }

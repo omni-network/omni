@@ -1,11 +1,13 @@
 {
   "extends": "solhint:recommended",
   "rules": {
+    "avoid-low-level-calls": "off",
     "const-name-snakecase": "off",
     "custom-errors": "off",
     "func-visibility": ["error", { "ignoreConstructors": true }],
     "func-name-mixedcase": "off",
     "immutable-vars-naming": "off",
+    "no-inline-assembly": "off",
     "no-unused-import": "error",
     "no-unused-vars": "error"
   }
