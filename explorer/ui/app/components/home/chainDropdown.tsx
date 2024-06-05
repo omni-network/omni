@@ -58,7 +58,7 @@ const ChainDropdown: React.FC<Props> = ({
 
         {value && (
           <div className={'flex items-center justify-start gap-2 px-5 pt-3 ml-[-64px]'}>
-            {<img className='w-5 h-5' src={options.find(option => option.chainID === value)?.Icon} alt={''} />}
+            {<img className='w-5 h-5 rounded-full' src={options.find(option => option.chainID === value)?.Icon} alt={''} />}
             <span className={'text-cb capitalize text-default pr-5'}>
               {options.find(option => option.chainID === value)?.DisplayName}
             </span>
@@ -106,7 +106,7 @@ const ChainDropdown: React.FC<Props> = ({
                 className={`p-2 text-b-md text-default font-bold text-nowrap cursor-pointer rounded-lg flex items-center justify-between ${option.value === value && 'bg-active'} hover:bg-hover`}
               >
                 <div className={`flex gap-2 items-center`}>
-                  {option.Icon && <img className='w-5 h-5' src={option?.Icon} alt={`${option?.name} icon`} />}
+                  {option.Icon && <img className='w-5 h-5 rounded-full' src={option?.Icon} alt={`${option?.name} icon`} />}
                   {!option.Icon && <span className='w-5 h-5'></span>}
                   <span className="capitalize">{option?.name}</span>
                 </div>

@@ -14,11 +14,11 @@ const Card: React.FC<{
       <span className="text-subtlest text-sm block h-[26px]">{title}</span>
       <h4 className="text-default text-2xl">{value}</h4>
       <div className='flex'>
-        <img className='w-5 h-5 mr-2' src={sourceChainLogo}/>
+        <img className='w-5 h-5 mr-2 rounded-full' src={sourceChainLogo}/>
         <div className='dark:hidden'>
           <ArrowIconSmall />
         </div>
-        <img className='w-5 h-5 ml-2'  src={destLogo}/>
+        <img className='w-5 h-5 ml-2 rounded-full'  src={destLogo}/>
       </div>
     </div>
   )

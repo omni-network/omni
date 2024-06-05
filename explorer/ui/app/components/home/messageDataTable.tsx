@@ -186,7 +186,7 @@ export default function XMsgDataTable() {
         accessorKey: 'node.sourceChain.logoUrl',
         header: () => <span></span>,
         cell: (value: any) => {
-          return <img className="max-w-none w-5 h-5" src={value.getValue()} />
+          return <img className="max-w-none w-5 h-5 rounded-full" src={value.getValue()} />
         },
       },
       {
@@ -275,7 +275,7 @@ export default function XMsgDataTable() {
         accessorKey: 'node.destChain.logoUrl',
         header: () => <span></span>,
         cell: (value: any) => {
-          return <img className="max-w-none w-5 h-5" src={value.getValue()} />
+          return <img className="max-w-none w-5 h-5 rounded-full" src={value.getValue()} />
         },
       },
       {
