@@ -152,7 +152,7 @@ func (d *XDapp) fund(ctx context.Context) error {
 }
 
 // StartAllEdges starts <parallel> ping pongs for all edges, each doing <count> hops.
-func (d *XDapp) StartAllEdges(ctx context.Context, parallel, count uint64) error {
+func (d *XDapp) StartAllEdges(ctx context.Context, latest, parallel, count uint64) error {
 	log.Info(ctx, "Starting ping pong contracts")
 	eg, ctx := errgroup.WithContext(ctx)
 	for _, edge := range d.edges {
@@ -167,6 +167,12 @@ func (d *XDapp) StartAllEdges(ctx context.Context, parallel, count uint64) error
 		)
 
 		for i := uint64(0); i < parallel; i++ {
+			// First are latest, rest is finalized
+			conf := xchain.ConfFinalized
+			if i < latest {
+				conf = xchain.ConfLatest
+			}
+
 			eg.Go(func() error {
 				txOpts, backend, err := d.backends.BindOpts(ctx, from.Chain.ChainID, d.operator)
 				if err != nil {
@@ -174,9 +180,9 @@ func (d *XDapp) StartAllEdges(ctx context.Context, parallel, count uint64) error
 				}
 
 				id := randomHex7()
-				tx, err := from.PingPong.Start(txOpts, id, to.Chain.ChainID, uint8(xchain.ConfFinalized), to.Address, count)
+				tx, err := from.PingPong.Start(txOpts, id, to.Chain.ChainID, uint8(conf), to.Address, count)
 				if err != nil {
-					return errors.Wrap(err, "start ping pong", "id", id, "from", from.Chain.Name, "to", to.Chain.Name)
+					return errors.Wrap(err, "start ping pong", "id", id, "from", from.Chain.Name, "to", to.Chain.Name, "conf", conf)
 				}
 
 				if _, err := bind.WaitMined(ctx, backend, tx); err != nil {

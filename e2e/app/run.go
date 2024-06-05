@@ -22,18 +22,22 @@ const (
 	defaultPingPongN = 100_000
 	// defaultPingPongP defines 10 parallel ping pongs per edge.
 	defaultPingPongP = 10
+	// defaultPingPongL defines a single parallel ping pongs to use Latest confirmation level. This decreases on-chain costs.
+	defaultPingPongL = 1
 )
 
 func DefaultDeployConfig() DeployConfig {
 	return DeployConfig{
 		PingPongN: defaultPingPongN,
 		PingPongP: defaultPingPongP,
+		PingPongL: defaultPingPongL,
 	}
 }
 
 type DeployConfig struct {
 	PingPongN uint64 // Number of hops per ping pong.
 	PingPongP uint64 // Number of parallel ping pongs to start per edge.
+	PingPongL uint64 // Number of parallel ping pongs to use Latest confirmation level.
 
 	// Internal use parameters (no command line flags).
 	testConfig bool
@@ -123,7 +127,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, err
 	}
 
-	err = pp.StartAllEdges(ctx, cfg.PingPongP, cfg.PingPongN)
+	err = pp.StartAllEdges(ctx, cfg.PingPongL, cfg.PingPongP, cfg.PingPongN)
 	if err != nil {
 		return nil, errors.Wrap(err, "start all edges")
 	}
@@ -148,7 +152,8 @@ func DefaultE2ETestConfig() E2ETestConfig {
 // E2ETest runs a full e2e test.
 func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 	var pingpongN = uint64(3)
-	const pingpongP = uint64(2)
+	const pingpongP = uint64(3)
+	const pingpongL = uint64(2)
 	if def.Manifest.PingPongN != 0 {
 		pingpongN = def.Manifest.PingPongN
 	}
@@ -156,6 +161,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 	depCfg := DeployConfig{
 		PingPongN:  pingpongN,
 		PingPongP:  pingpongP,
+		PingPongL:  pingpongL,
 		testConfig: true,
 	}
 
