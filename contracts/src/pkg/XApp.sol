@@ -3,6 +3,7 @@ pragma solidity ^0.8.12;
 
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
 import { XTypes } from "../libraries/XTypes.sol";
+import { ConfLevel } from "../libraries/ConfLevel.sol";
 
 /**
  * @title XApp
@@ -10,9 +11,25 @@ import { XTypes } from "../libraries/XTypes.sol";
  */
 contract XApp {
     /**
+     * @notice Emitted when the OmniPortal contract address is set
+     */
+    event OmniPortalSet(address omni);
+
+    /**
+     * @notice Emitted when the default confirmation level is set
+     * @param conf  Confirmation level
+     */
+    event DefaultConfLevelSet(uint8 conf);
+
+    /**
      * @notice The OmniPortal contract
      */
-    IOmniPortal internal immutable omni;
+    IOmniPortal public omni;
+
+    /**
+     * @notice Default confirmation level for xcalls
+     */
+    uint8 public defaultConfLevel;
 
     /**
      * @notice Transient storage for the current xmsg
@@ -28,8 +45,10 @@ contract XApp {
         delete xmsg;
     }
 
-    constructor(address _omni) {
-        omni = IOmniPortal(_omni);
+    // TODO: write XAppUpgradeable that follows initialize pattern
+    constructor(address omni_, uint8 defaultConfLevel_) {
+        _setOmniPortal(omni_);
+        _setDefaultConfLevel(defaultConfLevel_);
     }
 
     /**
@@ -40,13 +59,6 @@ contract XApp {
     }
 
     /**
-     * @notice Returns the fee for calling a contract on another chain. Uses OmniPortal.xmsgDefaultGasLimit
-     */
-    function feeFor(uint64 destChainId, bytes memory data) internal view returns (uint256) {
-        return omni.feeFor(destChainId, data);
-    }
-
-    /**
      * @notice Retruns the fee for calling a contract on another chain, with the specified gas limit
      */
     function feeFor(uint64 destChainId, bytes memory data, uint64 gasLimit) internal view returns (uint256) {
@@ -54,37 +66,7 @@ contract XApp {
     }
 
     /**
-     * @notice Call a contract on another.
-     *           (Default gas limit, Default ConfLevel)
-     * @param destChainId   Destination chain ID
-     * @param to            Address of contract to call on destination chain
-     * @param data          ABI Encoded function calldata
-     */
-    function xcall(uint64 destChainId, address to, bytes memory data) internal returns (uint256) {
-        uint256 fee = omni.feeFor(destChainId, data);
-        require(address(this).balance >= fee || msg.value >= fee, "XApp: insufficient funds");
-        omni.xcall{ value: fee }(destChainId, to, data);
-        return fee;
-    }
-
-    /**
-     * @notice Call a contract on another.
-     *           (Default gas limit, explicit ConfLevel)
-     * @param destChainId   Destination chain ID
-     * @param conf          Confirmation level
-     * @param to            Address of contract to call on destination chain
-     * @param data          ABI Encoded function calldata
-     */
-    function xcall(uint64 destChainId, uint8 conf, address to, bytes memory data) internal returns (uint256) {
-        uint256 fee = omni.feeFor(destChainId, data);
-        require(address(this).balance >= fee || msg.value >= fee, "XApp: insufficient funds");
-        omni.xcall{ value: fee }(destChainId, conf, to, data);
-        return fee;
-    }
-
-    /**
-     * @notice Call a contract on another.
-     *           (Explcit gas limit, Default ConfLevel)
+     * @notice Call a contract on another. (Default ConfLevel)
      * @param destChainId   Destination chain ID
      * @param to            Address of contract to call on destination chain
      * @param data          ABI Encoded function calldata
@@ -93,13 +75,12 @@ contract XApp {
     function xcall(uint64 destChainId, address to, bytes memory data, uint64 gasLimit) internal returns (uint256) {
         uint256 fee = omni.feeFor(destChainId, data, gasLimit);
         require(address(this).balance >= fee || msg.value >= fee, "XApp: insufficient funds");
-        omni.xcall{ value: fee }(destChainId, to, data, gasLimit);
+        omni.xcall{ value: fee }(destChainId, defaultConfLevel, to, data, gasLimit);
         return fee;
     }
 
     /**
-     * @notice Call a contract on another chain.
-     *          (Explicit gas limit, explicit ConfLevel)
+     * @notice Call a contract on another chain. (Explicit ConfLevel)
      * @param destChainId   Destination chain ID
      * @param conf          Confirmation level
      * @param to            Address of contract to call on destination chain
@@ -114,5 +95,25 @@ contract XApp {
         require(address(this).balance >= fee || msg.value >= fee, "XApp: insufficient funds");
         omni.xcall{ value: fee }(destChainId, conf, to, data, gasLimit);
         return fee;
+    }
+
+    /**
+     * @notice Set the default confirmation level for xcalls
+     * @param conf  Confirmation level
+     */
+    function _setDefaultConfLevel(uint8 conf) internal {
+        require(ConfLevel.isValid(conf), "XApp: invalid conf level");
+        defaultConfLevel = conf;
+        emit DefaultConfLevelSet(conf);
+    }
+
+    /**
+     * @notice Set the OmniPortal contract address
+     * @param _omni    The OmniPortal contract address
+     */
+    function _setOmniPortal(address _omni) internal {
+        require(_omni != address(0), "XApp: no zero omni");
+        omni = IOmniPortal(_omni);
+        emit OmniPortalSet(_omni);
     }
 }

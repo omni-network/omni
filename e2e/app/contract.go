@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -86,8 +87,9 @@ func xcall(ctx context.Context, backends ethbackend.Backends, sender common.Addr
 	// TODO: use calls to actual contracts
 	var data []byte
 	to := common.HexToAddress("0x1234")
+	gasLimit := uint64(100_000)
 
-	fee, err := from.Contract.FeeFor(&bind.CallOpts{}, destChainID, data)
+	fee, err := from.Contract.FeeFor(&bind.CallOpts{}, destChainID, data, gasLimit)
 	if err != nil {
 		return nil, errors.Wrap(err, "feeFor",
 			"src_chain", from.Chain.Name,
@@ -102,7 +104,7 @@ func xcall(ctx context.Context, backends ethbackend.Backends, sender common.Addr
 
 	txOpts.Value = fee
 
-	tx, err := from.Contract.Xcall(txOpts, destChainID, to, data)
+	tx, err := from.Contract.Xcall(txOpts, destChainID, uint8(xchain.ConfFinalized), to, data, gasLimit)
 	if err != nil {
 		return nil, errors.Wrap(err, "xcall",
 			"src_chain", from.Chain.Name,

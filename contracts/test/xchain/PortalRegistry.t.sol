@@ -183,8 +183,9 @@ contract PortalRegistry_Test is Test {
             address(portal),
             fee,
             abi.encodeWithSignature(
-                "xcall(uint64,address,bytes,uint64)",
+                "xcall(uint64,uint8,address,bytes,uint64)",
                 destChainId,
+                ConfLevel.Finalized,
                 replicas[destChainId],
                 data,
                 xreg.XSET_PORTAL_GAS_LIMIT()

@@ -3,9 +3,9 @@ pragma solidity =0.8.12;
 
 import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
 import { IEthStakeInbox } from "src/interfaces/IEthStakeInbox.sol";
+import { ConfLevel } from "src/libraries/ConfLevel.sol";
 
 import { Base } from "./common/Base.sol";
-import { console } from "forge-std/console.sol";
 
 /**
  * @title OmniAVS_syncWithOmni_Test
@@ -339,7 +339,14 @@ contract OmniAVS_syncWithOmni_Test is Base {
         vm.expectCall(
             address(portal),
             syncFee,
-            abi.encodeWithSignature("xcall(uint64,address,bytes,uint64)", omniChainId, ethStakeInbox, data, gasLimit)
+            abi.encodeWithSignature(
+                "xcall(uint64,uint8,address,bytes,uint64)",
+                omniChainId,
+                ConfLevel.Finalized,
+                ethStakeInbox,
+                data,
+                gasLimit
+            )
         );
     }
 

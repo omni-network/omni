@@ -57,7 +57,6 @@ contract Fixtures is CommonBase, StdCheats {
     address relayer;
     address owner;
 
-    uint64 xmsgDefaultGasLimit = 200_000;
     uint64 xmsgMaxGasLimit = 5_000_000;
     uint64 xmsgMinGasLimit = 21_000;
     uint64 xreceiptMaxErrorBytes = 256;
@@ -359,7 +358,7 @@ contract Fixtures is CommonBase, StdCheats {
             sender: _counters[sourceChainId],
             to: _counters[destChainId],
             data: abi.encodeWithSignature("increment()"),
-            gasLimit: portal.xmsgDefaultGasLimit()
+            gasLimit: 100_000
         });
     }
 
@@ -386,7 +385,7 @@ contract Fixtures is CommonBase, StdCheats {
             sender: _reverters[sourceChainId],
             to: _reverters[destChainId],
             data: data,
-            gasLimit: portal.xmsgDefaultGasLimit()
+            gasLimit: 200_000
         });
     }
 
@@ -503,7 +502,6 @@ contract Fixtures is CommonBase, StdCheats {
                         address(xregistry),
                         omniChainId,
                         omniCChainID,
-                        xmsgDefaultGasLimit,
                         xmsgMaxGasLimit,
                         xmsgMinGasLimit,
                         xreceiptMaxErrorBytes,
@@ -549,7 +547,6 @@ contract Fixtures is CommonBase, StdCheats {
                         chainAXRegistry,
                         omniChainId,
                         omniCChainID,
-                        xmsgDefaultGasLimit,
                         xmsgMaxGasLimit,
                         xmsgMinGasLimit,
                         xreceiptMaxErrorBytes,
@@ -595,7 +592,6 @@ contract Fixtures is CommonBase, StdCheats {
                         address(chainBXRegistry),
                         omniChainId,
                         omniCChainID,
-                        xmsgDefaultGasLimit,
                         xmsgMaxGasLimit,
                         xmsgMinGasLimit,
                         xreceiptMaxErrorBytes,

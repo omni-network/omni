@@ -9,6 +9,12 @@ import { XTypes } from "../libraries/XTypes.sol";
  */
 interface IOmniPortalSys {
     /**
+     * @notice Emitted when a new validator set is added
+     * @param setId Validator set ID
+     */
+    event ValidatorSetAdded(uint64 indexed setId);
+
+    /**
      * @notice Add a new validator set.
      * @dev Only callable via xcall from Omni's consensus chain
      * @param valSetId      Validator set id

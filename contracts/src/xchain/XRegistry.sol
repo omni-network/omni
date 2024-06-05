@@ -4,6 +4,7 @@ pragma solidity =0.8.24;
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
 import { IOmniPortalSys } from "../interfaces/IOmniPortalSys.sol";
+import { ConfLevel } from "../libraries/ConfLevel.sol";
 import { XRegistryBase } from "./XRegistryBase.sol";
 import { XRegistryReplica } from "./XRegistryReplica.sol";
 
@@ -156,7 +157,7 @@ contract XRegistry is Ownable, XRegistryBase {
         uint64 gasLimit = _isPortalRegistration(name, registrant) ? XSET_PORTAL_GAS_LIMIT : XSET_GAS_LIMIT;
         uint256 fee = omni.feeFor(destChainId, data, gasLimit);
 
-        omni.xcall{ value: fee }(destChainId, replica, data, gasLimit);
+        omni.xcall{ value: fee }(destChainId, ConfLevel.Finalized, replica, data, gasLimit);
     }
 
     function _xsetFee(

@@ -3,6 +3,7 @@ pragma solidity =0.8.24;
 
 import { Base } from "./common/Base.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
+import { ConfLevel } from "src/libraries/ConfLevel.sol";
 
 /**
  * @title OmniPortal_admin_Test
@@ -33,13 +34,15 @@ contract OmniPortal_admin_Test is Base {
         // when not paused, can xcall and xsubmit
         assertFalse(portal.paused());
 
-        // xcall with default gas
-        vm.chainId(thisChainId);
-        portal.xcall{ value: 1 ether }(chainAId, address(1234), abi.encodeWithSignature("test()"));
+        // xcall params
+        uint8 conf = ConfLevel.Finalized;
+        address to = address(0x1234);
+        bytes memory data = abi.encodeWithSignature("test()");
+        uint64 gasLimit = 100_000;
 
-        // xcall with specified gas
+        // xcall
         vm.chainId(thisChainId);
-        portal.xcall{ value: 1 ether }(chainAId, address(1234), abi.encodeWithSignature("test()"), 50_000);
+        portal.xcall{ value: 1 ether }(chainAId, conf, to, data, gasLimit);
 
         // xsubmit
         XTypes.Submission memory xsub1 = readXSubmission({ name: "xblock1", destChainId: thisChainId });
@@ -58,11 +61,7 @@ contract OmniPortal_admin_Test is Base {
         // when paused, cannot xcall and xsubmit
         vm.expectRevert("Pausable: paused");
         vm.chainId(thisChainId);
-        portal.xcall(chainAId, address(1234), abi.encodeWithSignature("test()"));
-
-        vm.expectRevert("Pausable: paused");
-        vm.chainId(thisChainId);
-        portal.xcall(chainAId, address(1234), abi.encodeWithSignature("test()"), 50_000);
+        portal.xcall(chainAId, conf, to, data, gasLimit);
 
         vm.expectRevert("Pausable: paused");
         vm.chainId(thisChainId);

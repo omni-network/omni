@@ -5,6 +5,7 @@ services:
     labels:
       anvil: true
     image: ghcr.io/foundry-rs/foundry:latest
+    platform: linux/amd64
     entrypoint:
       - anvil
       - --host=0.0.0.0

@@ -16,11 +16,6 @@ abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
     uint16 public xreceiptMaxErrorBytes;
 
     /**
-     * @notice Default xmsg execution gas limit, enforced on destination chain
-     */
-    uint64 public xmsgDefaultGasLimit;
-
-    /**
      * @notice Maximum allowed xmsg gas limit
      */
     uint64 public xmsgMaxGasLimit;

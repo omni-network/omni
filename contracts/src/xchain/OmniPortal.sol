@@ -47,7 +47,6 @@ contract OmniPortal is
      * @param xregistry_                Address of the xregistry replica contract
      * @param omniChainId_              Chain ID of Omni's EVM execution chain
      * @param omniCChainID_             Virtual chain ID used in xmsgs from Omni's consensus chain
-     * @param xmsgDefaultGasLimit_      Default gas limit for xmsg
      * @param xmsgMaxGasLimit_          Maximum gas limit for xmsg
      * @param xmsgMinGasLimit_          Minimum gas limit for xmsg
      * @param xreceiptMaxErrorBytes_    Maximum error bytes for xreceipt)
@@ -60,7 +59,6 @@ contract OmniPortal is
         address xregistry_,
         uint64 omniChainId_,
         uint64 omniCChainID_,
-        uint64 xmsgDefaultGasLimit_,
         uint64 xmsgMaxGasLimit_,
         uint64 xmsgMinGasLimit_,
         uint16 xreceiptMaxErrorBytes_,
@@ -70,7 +68,6 @@ contract OmniPortal is
         _transferOwnership(owner_);
         _setFeeOracle(feeOracle_);
         _setXRegistry(xregistry_);
-        _setXMsgDefaultGasLimit(xmsgDefaultGasLimit_);
         _setXMsgMaxGasLimit(xmsgMaxGasLimit_);
         _setXMsgMinGasLimit(xmsgMinGasLimit_);
         _setXReceiptMaxErrorBytes(xreceiptMaxErrorBytes_);
@@ -80,12 +77,10 @@ contract OmniPortal is
         omniCChainID = omniCChainID_;
 
         // cchain xmsg & xblock offsets are equal to valSetId
-        // omni cchain is Finalized only
         inXMsgOffset[omniCChainID_][ConfLevel.Finalized] = valSetId;
         inXBlockOffset[omniCChainID_][ConfLevel.Finalized] = valSetId;
 
         // initialize omniChainId valSetId - xmsgs from omni are required to initSourceChain
-        // omni chain is Finalized only
         inXStreamValidatorSetId[omniChainId_][ConfLevel.Finalized] = valSetId;
 
         // initialize omniCChainID valSetId - it is not initialized via initSourceChain
@@ -102,46 +97,6 @@ contract OmniPortal is
 
     /**
      * @notice Call a contract on another chain.
-     *          (Default gas limit, default ConfLevel)
-     * @param destChainId   Destination chain ID
-     * @param to            Address of contract to call on destination chain
-     * @param data          ABI Encoded function calldata
-     */
-    function xcall(uint64 destChainId, address to, bytes calldata data) external payable whenNotPaused {
-        _xcall(destChainId, ConfLevel.Finalized, msg.sender, to, data, xmsgDefaultGasLimit);
-    }
-
-    /**
-     * @notice Call a contract on another chain,
-     *          (Default gas limit, explicit ConfLevel)
-     * @param destChainId   Destination chain ID
-     * @param conf          Confirmation level
-     * @param to            Address of contract to call on destination chain
-     * @param data          ABI Encoded function calldata
-     */
-    function xcall(uint64 destChainId, uint8 conf, address to, bytes calldata data) external payable whenNotPaused {
-        _xcall(destChainId, conf, msg.sender, to, data, xmsgDefaultGasLimit);
-    }
-
-    /**
-     * @notice Call a contract on another.
-     *           (Explcit gas limit , default ConfLevel)
-     * @param destChainId   Destination chain ID
-     * @param to            Address of contract to call on destination chain
-     * @param data          ABI Encoded function calldata
-     * @param gasLimit      Execution gas limit, enforced on destination chain
-     */
-    function xcall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit)
-        external
-        payable
-        whenNotPaused
-    {
-        _xcall(destChainId, ConfLevel.Finalized, msg.sender, to, data, gasLimit);
-    }
-
-    /**
-     * @notice Call a contract on another chain.
-     *          (Explicit gas limit, explicit ConfLevel)
      * @param destChainId   Destination chain ID
      * @param conf          Confirmation level
      * @param to            Address of contract to call on destination chain
@@ -152,37 +107,6 @@ contract OmniPortal is
         external
         payable
         whenNotPaused
-    {
-        _xcall(destChainId, conf, msg.sender, to, data, gasLimit);
-    }
-
-    /**
-     * @notice Calculate the fee for calling a contract on another chain. Uses xmsgDefaultGasLimit.
-     *         Fees denominated in wei.
-     * @param destChainId   Destination chain ID
-     * @param data          Encoded function calldata
-     */
-    function feeFor(uint64 destChainId, bytes calldata data) public view returns (uint256) {
-        return IFeeOracle(feeOracle).feeFor(destChainId, data, xmsgDefaultGasLimit);
-    }
-
-    /**
-     * @notice Calculate the fee for calling a contract on another chain
-     *         Fees denominated in wei.
-     * @param destChainId   Destination chain ID
-     * @param data          Encoded function calldata
-     * @param gasLimit      Execution gas limit, enforced on destination chain
-     */
-    function feeFor(uint64 destChainId, bytes calldata data, uint64 gasLimit) public view returns (uint256) {
-        return IFeeOracle(feeOracle).feeFor(destChainId, data, gasLimit);
-    }
-
-    /**
-     * @notice Initiate an xcall.
-     * @dev Validate the xcall, emit an XMsg, increment dest chain outXStreamOffset
-     */
-    function _xcall(uint64 destChainId, uint8 conf, address sender, address to, bytes calldata data, uint64 gasLimit)
-        private
     {
         require(destChainId != chainId(), "OmniPortal: no same-chain xcall");
         require(destChainId != _BROADCAST_CHAIN_ID, "OmniPortal: no broadcast xcall");
@@ -200,7 +124,18 @@ contract OmniPortal is
 
         outXMsgOffset[destChainId][shardId] += 1;
 
-        emit XMsg(destChainId, shardId, outXMsgOffset[destChainId][shardId], sender, to, data, gasLimit, fee);
+        emit XMsg(destChainId, shardId, outXMsgOffset[destChainId][shardId], msg.sender, to, data, gasLimit, fee);
+    }
+
+    /**
+     * @notice Calculate the fee for calling a contract on another chain
+     *         Fees denominated in wei.
+     * @param destChainId   Destination chain ID
+     * @param data          Encoded function calldata
+     * @param gasLimit      Execution gas limit, enforced on destination chain
+     */
+    function feeFor(uint64 destChainId, bytes calldata data, uint64 gasLimit) public view returns (uint256) {
+        return IFeeOracle(feeOracle).feeFor(destChainId, data, gasLimit);
     }
 
     /**
@@ -513,13 +448,6 @@ contract OmniPortal is
     }
 
     /**
-     * @notice Set the default gas limit for xmsg
-     */
-    function setXMsgDefaultGasLimit(uint64 gasLimit) external onlyOwner {
-        _setXMsgDefaultGasLimit(gasLimit);
-    }
-
-    /**
      * @notice Set the minimum gas limit for xmsg
      */
     function setXMsgMinGasLimit(uint64 gasLimit) external onlyOwner {
@@ -552,18 +480,6 @@ contract OmniPortal is
      */
     function unpause() external onlyOwner {
         _unpause();
-    }
-
-    /**
-     * @notice Set the default gas limit for xmsg
-     */
-    function _setXMsgDefaultGasLimit(uint64 gasLimit) internal {
-        require(gasLimit > 0, "OmniPortal: no zero default gas");
-
-        uint64 oldDefault = xmsgDefaultGasLimit;
-        xmsgDefaultGasLimit = gasLimit;
-
-        emit XMsgDefaultGasLimitChanged(oldDefault, gasLimit);
     }
 
     /**

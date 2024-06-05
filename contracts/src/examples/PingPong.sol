@@ -9,7 +9,9 @@ import { ConfLevel } from "src/libraries/ConfLevel.sol";
  * @notice A contract that pingpongs xmsgs between two chains
  */
 contract PingPong is XApp {
-    /// @notice Gas limit used for a single pingpong xcall
+    /**
+     * @notice Gas limit used for a single pingpong xcall
+     */
     uint64 public constant GAS_LIMIT = 200_000;
 
     /**
@@ -30,7 +32,7 @@ contract PingPong is XApp {
      */
     event Ping(string id, uint64 srcChainID, address from, uint64 n);
 
-    constructor(address portal) XApp(portal) { }
+    constructor(address portal) XApp(portal, ConfLevel.Latest) { }
 
     /**
      * @notice Start the pingpong xmsg loop
@@ -63,9 +65,7 @@ contract PingPong is XApp {
     }
 
     function _xpingpong(string calldata id, uint64 destChainID, address to, uint64 times, uint64 n) internal {
-        xcall(
-            destChainID, ConfLevel.Latest, to, abi.encodeWithSelector(this.pingpong.selector, id, times, n), GAS_LIMIT
-        );
+        xcall(destChainID, to, abi.encodeWithSelector(this.pingpong.selector, id, times, n), GAS_LIMIT);
     }
 
     receive() external payable { }

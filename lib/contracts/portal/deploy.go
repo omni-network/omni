@@ -24,7 +24,6 @@ type DeploymentConfig struct {
 	Owner                 common.Address
 	OmniChainID           uint64
 	OmniCChainID          uint64
-	XMsgDefaultGasLimit   uint64
 	XMsgMinGasLimit       uint64
 	XMsgMaxGasLimit       uint64
 	XReceiptMaxErrorBytes uint16
@@ -32,7 +31,6 @@ type DeploymentConfig struct {
 }
 
 const (
-	XMsgDefaultGasLimit   = 200_000
 	XMsgMinGasLimit       = 21_000
 	XMsgMaxGasLimit       = 5_000_000
 	XReceiptMaxErrorBytes = uint16(256)
@@ -53,9 +51,6 @@ func (cfg DeploymentConfig) Validate() error {
 	}
 	if (cfg.Owner == common.Address{}) {
 		return errors.New("owner is zero")
-	}
-	if cfg.XMsgDefaultGasLimit == 0 {
-		return errors.New("xmsg default gas limit is zero")
 	}
 	if cfg.XMsgMinGasLimit == 0 {
 		return errors.New("xmsg min gas limit is zero")
@@ -118,7 +113,6 @@ func testnetCfg() DeploymentConfig {
 		ProxyAdmin:            contracts.TestnetProxyAdmin(),
 		OmniChainID:           netconf.Testnet.Static().OmniExecutionChainID,
 		OmniCChainID:          netconf.Testnet.Static().OmniConsensusChainIDUint64(),
-		XMsgDefaultGasLimit:   XMsgDefaultGasLimit,
 		XMsgMinGasLimit:       XMsgMinGasLimit,
 		XMsgMaxGasLimit:       XMsgMaxGasLimit,
 		XReceiptMaxErrorBytes: XReceiptMaxErrorBytes,
@@ -135,7 +129,6 @@ func stagingCfg() DeploymentConfig {
 		ProxyAdmin:            contracts.StagingProxyAdmin(),
 		OmniChainID:           netconf.Staging.Static().OmniExecutionChainID,
 		OmniCChainID:          netconf.Staging.Static().OmniConsensusChainIDUint64(),
-		XMsgDefaultGasLimit:   XMsgDefaultGasLimit,
 		XMsgMinGasLimit:       XMsgMinGasLimit,
 		XMsgMaxGasLimit:       XMsgMaxGasLimit,
 		XReceiptMaxErrorBytes: XReceiptMaxErrorBytes,
@@ -152,7 +145,6 @@ func devnetCfg() DeploymentConfig {
 		ProxyAdmin:            contracts.DevnetProxyAdmin(),
 		OmniChainID:           netconf.Devnet.Static().OmniExecutionChainID,
 		OmniCChainID:          netconf.Devnet.Static().OmniConsensusChainIDUint64(),
-		XMsgDefaultGasLimit:   XMsgDefaultGasLimit,
 		XMsgMinGasLimit:       XMsgMinGasLimit,
 		XMsgMaxGasLimit:       XMsgMaxGasLimit,
 		XReceiptMaxErrorBytes: XReceiptMaxErrorBytes,
@@ -295,9 +287,8 @@ func packInitCode(cfg DeploymentConfig, feeOracle common.Address, xregistry comm
 		return nil, errors.Wrap(err, "get proxy abi")
 	}
 
-	initializer, err := portalAbi.Pack("initialize", cfg.Owner, feeOracle, xregistry,
-		cfg.OmniChainID, cfg.OmniCChainID, cfg.XMsgDefaultGasLimit, cfg.XMsgMaxGasLimit,
-		cfg.XMsgMinGasLimit, cfg.XReceiptMaxErrorBytes, valSetID, validators)
+	initializer, err := portalAbi.Pack("initialize", cfg.Owner, feeOracle, xregistry, cfg.OmniChainID, cfg.OmniCChainID,
+		cfg.XMsgMaxGasLimit, cfg.XMsgMinGasLimit, cfg.XReceiptMaxErrorBytes, valSetID, validators)
 	if err != nil {
 		return nil, errors.Wrap(err, "encode portal initializer")
 	}

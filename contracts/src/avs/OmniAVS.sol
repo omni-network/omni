@@ -14,6 +14,7 @@ import { IEthStakeInbox } from "../interfaces/IEthStakeInbox.sol";
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
 import { IOmniAVS } from "../interfaces/IOmniAVS.sol";
 import { IOmniAVSAdmin } from "../interfaces/IOmniAVSAdmin.sol";
+import { ConfLevel } from "../libraries/ConfLevel.sol";
 
 import { OmniAVSStorage } from "./OmniAVSStorage.sol";
 
@@ -138,6 +139,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable, PausableUpgrade
         Operator[] memory ops = _getOperators();
         omni.xcall{ value: msg.value }(
             omniChainId,
+            ConfLevel.Finalized,
             ethStakeInbox,
             abi.encodeWithSelector(IEthStakeInbox.sync.selector, ops),
             _xcallGasLimitFor(ops.length)
