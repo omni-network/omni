@@ -8,6 +8,7 @@ import { ExcessivelySafeCall } from "@nomad-xyz/excessively-safe-call/src/Excess
 
 import { IFeeOracle } from "../interfaces/IFeeOracle.sol";
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
+import { IOmniPortalSys } from "../interfaces/IOmniPortalSys.sol";
 import { IOmniPortalAdmin } from "../interfaces/IOmniPortalAdmin.sol";
 import { XBlockMerkleProof } from "../libraries/XBlockMerkleProof.sol";
 import { XTypes } from "../libraries/XTypes.sol";
@@ -22,6 +23,7 @@ import { OmniPortalStorage } from "./OmniPortalStorage.sol";
 
 contract OmniPortal is
     IOmniPortal,
+    IOmniPortalSys,
     IOmniPortalAdmin,
     OwnableUpgradeable,
     PausableUpgradeable,
@@ -63,7 +65,7 @@ contract OmniPortal is
         uint64 xmsgMinGasLimit_,
         uint16 xreceiptMaxErrorBytes_,
         uint64 valSetId,
-        XTypes.Validator[] memory validators
+        XTypes.Validator[] calldata validators
     ) public initializer {
         _transferOwnership(owner_);
         _setFeeOracle(feeOracle_);
@@ -209,8 +211,235 @@ contract OmniPortal is
             && XRegistryBase(xregistry).has(destChainId, XRegistryNames.OmniPortal, Predeploys.PortalRegistry);
     }
 
+    //////////////////////////////////////////////////////////////////////////////
+    //                      Inbound xcall functions                             //
+    //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * @notice Submit a batch of XMsgs to be executed on this chain
+     * @param xsub  An xchain submisison, including an attestation root w/ validator signatures,
+     *              and a block header and message batch, proven against the attestation root.
+     */
+    function xsubmit(XTypes.Submission calldata xsub) external whenNotPaused nonReentrant {
+        XTypes.Msg[] calldata xmsgs = xsub.msgs;
+        XTypes.BlockHeader calldata xheader = xsub.blockHeader;
+
+        require(xmsgs.length > 0, "OmniPortal: no xmsgs");
+
+        uint64 xsubValSetId = xsub.validatorSetId;
+        uint64 lastValSetId = inXStreamValidatorSetId[xheader.sourceChainId][xheader.confLevel];
+
+        // val set must be known, and at least as recent as the last val set
+        // submission must be for an initialized chain (lastValSetId > 0, set by initSourceChain)
+        require(validatorSetTotalPower[xsubValSetId] > 0, "OmniPortal: unknown val set");
+        require(xsubValSetId >= lastValSetId, "OmniPortal: old val set");
+        require(lastValSetId > 0, "OmniPortal: uninitialized src");
+
+        if (xsubValSetId > lastValSetId) {
+            inXStreamValidatorSetId[xheader.sourceChainId][xheader.confLevel] = xsubValSetId;
+        }
+
+        // check that the attestationRoot is signed by a quorum of validators in xsub.validatorsSetId
+        require(
+            Quorum.verify(
+                xsub.attestationRoot,
+                xsub.signatures,
+                validatorSet[xsubValSetId],
+                validatorSetTotalPower[xsubValSetId],
+                XSUB_QUORUM_NUMERATOR,
+                XSUB_QUORUM_DENOMINATOR
+            ),
+            "OmniPortal: no quorum"
+        );
+
+        // check that blockHeader and xmsgs are included in attestationRoot
+        require(
+            XBlockMerkleProof.verify(xsub.attestationRoot, xheader, xmsgs, xsub.proof, xsub.proofFlags),
+            "OmniPortal: invalid proof"
+        );
+
+        // execute xmsgs
+        for (uint256 i = 0; i < xmsgs.length; i++) {
+            _exec(xheader, xmsgs[i]);
+        }
+    }
+
+    /**
+     * @notice Returns the current XMsg being executed via this portal.
+     *          - xmsg().sourceChainId  Chain ID of the source xcall
+     *          - xmsg().sender         msg.sender of the source xcall
+     *         If no XMsg is being executed, all fields will be zero.
+     *          - xmsg().sourceChainId  == 0
+     *          - xmsg().sender         == address(0)
+     */
+    function xmsg() external view returns (XTypes.MsgShort memory) {
+        return _xmsg;
+    }
+
+    /**
+     * @notice Returns true the current transaction is an xcall, false otherwise
+     */
+    function isXCall() external view returns (bool) {
+        return _xmsg.sourceChainId != 0;
+    }
+
+    /**
+     * @notice Execute an xmsg.
+     * @dev Verify an XMsg is next in its XStream, execute it, increment inXStreamOffset, emit an XReceipt
+     */
+    function _exec(XTypes.BlockHeader memory xheader, XTypes.Msg calldata xmsg_) internal {
+        uint64 sourceChainId = xmsg_.sourceChainId;
+        uint64 destChainId = xmsg_.destChainId;
+        uint64 shardId = xmsg_.shardId;
+        uint64 offset = xmsg_.offset;
+
+        require(sourceChainId == xheader.sourceChainId, "OmniPortal: wrong source chain"); // TODO: we can remove xmsg sourceChainId, and instead just used xheader.sourceChainId
+        require(destChainId == chainId() || destChainId == _BROADCAST_CHAIN_ID, "OmniPortal: wrong dest chain");
+        require(offset == inXMsgOffset[sourceChainId][shardId] + 1, "OmniPortal: wrong offset");
+
+        // verify xmsg conf level matches xheader conf level
+        // allow finalized blocks to for any xmsg, so that finalized blocks may correct "fuzzy" xmsgs
+        require(
+            ConfLevel.Finalized == xheader.confLevel || xheader.confLevel == uint8(shardId),
+            "OmniPortal: wrong conf level"
+        );
+
+        if (inXBlockOffset[sourceChainId][shardId] < xheader.offset) {
+            inXBlockOffset[sourceChainId][shardId] = xheader.offset;
+        }
+
+        inXMsgOffset[sourceChainId][shardId] += 1;
+
+        // do not allow user xcalls to the portal
+        // only sys xcalls (to _VIRTUAL_PORTAL_ADDRESS) are allowed to be executed on the portal
+        if (xmsg_.to == address(this)) {
+            emit XReceipt(
+                sourceChainId,
+                shardId,
+                offset,
+                0,
+                msg.sender,
+                false,
+                abi.encodeWithSignature("Error(string)", "OmniPortal: no xcall to portal")
+            );
+
+            return;
+        }
+
+        // set _xmsg to the one we're executing, allowing external contracts to query the current xmsg via xmsg()
+        _xmsg = XTypes.MsgShort(sourceChainId, xmsg_.sender);
+
+        (bool success, bytes memory result, uint256 gasUsed) = xmsg_.to == _VIRTUAL_PORTAL_ADDRESS // calls to _VIRTUAL_PORTAL_ADDRESS are syscalls
+            ? _syscall(xmsg_.data)
+            : _call(xmsg_.to, xmsg_.gasLimit, xmsg_.data);
+
+        // reset xmsg to zero
+        delete _xmsg;
+
+        bytes memory errorMsg = success ? bytes("") : result;
+
+        emit XReceipt(sourceChainId, shardId, offset, gasUsed, msg.sender, success, errorMsg);
+    }
+
+    /**
+     * @notice Call an external contract.
+     * @dev Returns the result of the call, the gas used, and whether the call was successful.
+     * @param to                The address of the contract to call.
+     * @param gasLimit          Gas limit of the call
+     * @param data              Calldata to send to the contract.
+     */
+    function _call(address to, uint256 gasLimit, bytes calldata data) internal returns (bool, bytes memory, uint256) {
+        uint256 gasLeftBefore = gasleft();
+
+        // use excessivelySafeCall for external calls to prevent large return bytes mem copy
+        (bool success, bytes memory result) =
+            to.excessivelySafeCall({ _gas: gasLimit, _value: 0, _maxCopy: xreceiptMaxErrorBytes, _calldata: data });
+
+        uint256 gasLeftAfter = gasleft();
+
+        // Esnure relayer sent enough gas for the call
+        // See https://github.com/OpenZeppelin/openzeppelin-contracts/blob/bd325d56b4c62c9c5c1aff048c37c6bb18ac0290/contracts/metatx/MinimalForwarder.sol#L58-L68
+        if (gasLeftAfter <= gasLimit / 63) {
+            // We use invalid opcode to consume all gas and bubble-up the effects, to emulate an "OutOfGas" exception
+            assembly {
+                invalid()
+            }
+        }
+
+        return (success, result, gasLeftBefore - gasLeftAfter);
+    }
+
+    /**
+     * @notice Call a function on the current contract.
+     * @dev Reverts on failure. We match _call() return signature for symmetry.
+     * @param data      Calldata to execute on the current contract.
+     */
+    function _syscall(bytes calldata data) internal returns (bool, bytes memory, uint256) {
+        uint256 gasUsed = gasleft();
+        (bool success, bytes memory result) = address(this).call(data);
+        gasUsed = gasUsed - gasleft();
+
+        // if not success, revert with same reason
+        if (!success) {
+            assembly {
+                revert(add(result, 32), mload(result))
+            }
+        }
+
+        return (success, result, gasUsed);
+    }
+
+    //////////////////////////////////////////////////////////////////////////////
+    //                          Syscall functions                               //
+    //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * @notice Add a new validator set.
+     * @dev Only callable via xcall from Omni's consensus chain
+     * @param valSetId      Validator set id
+     * @param validators    Validator set
+     */
+    function addValidatorSet(uint64 valSetId, XTypes.Validator[] calldata validators) external {
+        require(msg.sender == address(this), "OmniPortal: only self");
+        require(_xmsg.sourceChainId == omniCChainID, "OmniPortal: only cchain");
+        require(_xmsg.sender == _CCHAIN_SENDER, "OmniPortal: only cchain sender");
+        _addValidatorSet(valSetId, validators);
+    }
+
+    /**
+     * @notice Add a new validator set
+     * @param valSetId      Validator set id
+     * @param validators    Validator set
+     */
+    function _addValidatorSet(uint64 valSetId, XTypes.Validator[] calldata validators) private {
+        uint256 numVals = validators.length;
+        require(numVals > 0, "OmniPortal: no validators");
+
+        uint64 totalPower;
+        XTypes.Validator memory val;
+        mapping(address => uint64) storage valSet = validatorSet[valSetId];
+
+        for (uint256 i = 0; i < numVals; i++) {
+            val = validators[i];
+
+            require(val.addr != address(0), "OmniPortal: no zero validator");
+            require(val.power > 0, "OmniPortal: no zero power");
+            require(valSet[val.addr] == 0, "OmniPortal: duplicate validator");
+
+            totalPower += val.power;
+            valSet[val.addr] = val.power;
+        }
+
+        validatorSetTotalPower[valSetId] = totalPower;
+
+        emit ValidatorSetAdded(valSetId);
+    }
+
     /**
      * @notice Initialize a source chain's in stream validator set
+     * @dev Only callable from xregistry
+     * @param srcChainId    Source chain ID
+     * @param shards        Shards supported by the source chain
      */
     function initSourceChain(uint64 srcChainId, uint64[] calldata shards) external {
         require(msg.sender == xregistry, "OmniPortal: only xregistry");
@@ -249,207 +478,6 @@ contract OmniPortal is
         for (uint256 i = 0; i < shards.length; i++) {
             inXStreamValidatorSetId[srcChainId][shards[i]] = latestOmniValSetId;
         }
-    }
-
-    //////////////////////////////////////////////////////////////////////////////
-    //                      Inbound xcall functions                             //
-    //////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * @notice Submit a batch of XMsgs to be executed on this chain
-     * @param xsub  An xchain submisison, including an attestation root w/ validator signatures,
-     *              and a block header and message batch, proven against the attestation root.
-     */
-    function xsubmit(XTypes.Submission calldata xsub) external whenNotPaused nonReentrant {
-        XTypes.Msg[] calldata xmsgs = xsub.msgs;
-        XTypes.BlockHeader calldata xheader = xsub.blockHeader;
-
-        require(xmsgs.length > 0, "OmniPortal: no xmsgs");
-
-        // validator set id for this submission
-        uint64 valSetId = xsub.validatorSetId;
-
-        // check that the validator set is known and has non-zero power
-        require(validatorSetTotalPower[valSetId] > 0, "OmniPortal: unknown val set");
-
-        // last seen validator set id for this source chain
-        uint64 lastValSetId = inXStreamValidatorSetId[xheader.sourceChainId][xheader.confLevel];
-
-        // require the validator set id is initialized (initSourceChain has beed called)
-        require(lastValSetId > 0, "OmniPortal: no val set");
-
-        // check that the submission's validator set is the same as the last, or the next one
-        require(valSetId >= lastValSetId, "OmniPortal: old val set");
-
-        // check that the attestationRoot is signed by a quorum of validators in xsub.validatorsSetId
-        require(
-            Quorum.verify(
-                xsub.attestationRoot,
-                xsub.signatures,
-                validatorSet[valSetId],
-                validatorSetTotalPower[valSetId],
-                XSUB_QUORUM_NUMERATOR,
-                XSUB_QUORUM_DENOMINATOR
-            ),
-            "OmniPortal: no quorum"
-        );
-
-        // check that blockHeader and xmsgs are included in attestationRoot
-        require(
-            XBlockMerkleProof.verify(xsub.attestationRoot, xheader, xmsgs, xsub.proof, xsub.proofFlags),
-            "OmniPortal: invalid proof"
-        );
-
-        // source chain block height of this submission
-        uint64 xblockOffset = xheader.offset;
-
-        // last seen xblock offset for this source chain
-        uint64 lastXBlockOffset = inXBlockOffset[xheader.sourceChainId][xheader.confLevel];
-
-        // update in stream block offset, if it's new
-        // TODO: block header conf level may not match conf level for each xmsg shard in the block
-        //       we should update inXBlockOffset for each shard in the block
-        if (xblockOffset > lastXBlockOffset) inXBlockOffset[xheader.sourceChainId][xheader.confLevel] = xblockOffset;
-
-        // update in stream validator set id, if it's new
-        if (valSetId > lastValSetId) inXStreamValidatorSetId[xheader.sourceChainId][xheader.confLevel] = valSetId;
-
-        XTypes.Msg calldata xmsg_;
-
-        // execute xmsgs
-        for (uint256 i = 0; i < xmsgs.length; i++) {
-            xmsg_ = xsub.msgs[i];
-
-            // TODO: we can remove xmsg sourceChainId, and instead set _xmsg.sourceChainId to xsub.blockHeader.sourceChainId
-            require(xmsg_.sourceChainId == xheader.sourceChainId, "OmniPortal: wrong sourceChainId");
-
-            if (uint8(xmsg_.shardId) == ConfLevel.Finalized) {
-                // if xmsg is Finalized, block header must be Finalized
-                require(ConfLevel.Finalized == xheader.confLevel, "OmniPortal: wrong conf level");
-            } else {
-                // else, require block header either matches xmsg conf level, or is finalized
-                // this allows "fuzzy" conf levels to be corrected by finalized blocks
-                require(
-                    xheader.confLevel == uint8(xmsg_.shardId) || xheader.confLevel == ConfLevel.Finalized,
-                    "OmniPortal: wrong conf level"
-                );
-            }
-
-            _exec(xmsg_);
-        }
-    }
-
-    /**
-     * @notice Returns the current XMsg being executed via this portal.
-     *          - xmsg().sourceChainId  Chain ID of the source xcall
-     *          - xmsg().sender         msg.sender of the source xcall
-     *         If no XMsg is being executed, all fields will be zero.
-     *          - xmsg().sourceChainId  == 0
-     *          - xmsg().sender         == address(0)
-     */
-    function xmsg() external view returns (XTypes.MsgShort memory) {
-        return _xmsg;
-    }
-
-    /**
-     * @notice Returns true the current transaction is an xcall, false otherwise
-     */
-    function isXCall() external view returns (bool) {
-        return _xmsg.sourceChainId != 0;
-    }
-
-    /**
-     * @notice Execute an xmsg.
-     * @dev Verify an XMsg is next in its XStream, execute it, increment inXStreamOffset, emit an XReceipt
-     */
-    function _exec(XTypes.Msg calldata xmsg_) internal {
-        require(
-            xmsg_.destChainId == chainId() || xmsg_.destChainId == _BROADCAST_CHAIN_ID, "OmniPortal: wrong destChainId"
-        );
-        require(xmsg_.offset == inXMsgOffset[xmsg_.sourceChainId][xmsg_.shardId] + 1, "OmniPortal: wrong offset");
-
-        inXMsgOffset[xmsg_.sourceChainId][xmsg_.shardId] += 1;
-
-        // do not allow user xcalls to the portal
-        // only sys xcalls (to _VIRTUAL_PORTAL_ADDRESS) are allowed to be executed on the portal
-        if (xmsg_.to == address(this)) {
-            emit XReceipt(
-                xmsg_.sourceChainId,
-                xmsg_.shardId,
-                xmsg_.offset,
-                0,
-                msg.sender,
-                false,
-                abi.encodeWithSignature("Error(string)", "OmniPortal: no xcall to portal")
-            );
-            return;
-        }
-
-        // set _xmsg to the one we're executing
-        _xmsg = XTypes.MsgShort(xmsg_.sourceChainId, xmsg_.sender);
-
-        // xcalls to _VIRTUAL_PORTAL_ADDRESS are system calls
-        bool isSysCall = xmsg_.to == _VIRTUAL_PORTAL_ADDRESS;
-
-        (bool success, bytes memory result, uint256 gasUsed) =
-            isSysCall ? _execSys(xmsg_.data) : _exec(xmsg_.to, xmsg_.gasLimit, xmsg_.data);
-
-        // reset xmsg to zero
-        delete _xmsg;
-
-        // empty error if success is true
-        bytes memory errorMsg = success ? bytes("") : result;
-
-        emit XReceipt(xmsg_.sourceChainId, xmsg_.shardId, xmsg_.offset, gasUsed, msg.sender, success, errorMsg);
-    }
-
-    /**
-     * @notice Execute a call at `to` with `data`, enfocring `gasLimit`. Returns success (true/false) and gasUsed.
-     *         Requires that enough gas is left to execute the call.
-     */
-    function _exec(address to, uint64 gasLimit, bytes calldata data) internal returns (bool, bytes memory, uint256) {
-        uint256 gasLeftBefore = gasleft();
-
-        // solhint-disable-next-line avoid-low-level-calls
-        (bool success, bytes memory result) =
-            to.excessivelySafeCall({ _gas: gasLimit, _value: 0, _maxCopy: xreceiptMaxErrorBytes, _calldata: data });
-
-        uint256 gasLeftAfter = gasleft();
-
-        // Esnure relayer sent enough gas for the call
-        // See https://github.com/OpenZeppelin/openzeppelin-contracts/blob/bd325d56b4c62c9c5c1aff048c37c6bb18ac0290/contracts/metatx/MinimalForwarder.sol#L58-L68
-        if (gasLeftAfter <= gasLimit / 63) {
-            // We could use invalid opcode to consume all gas and bubble-up the effects, since
-            // and emulate an "OutOfGas" exception
-            assembly {
-                invalid()
-            }
-        }
-
-        return (success, result, gasLeftBefore - gasLeftAfter);
-    }
-
-    /**
-     * @notice Execute a system call with `data` at this contract, returning success and gasUsed.
-     *         System calls must succeed.
-     */
-    function _execSys(bytes calldata data) internal returns (bool, bytes memory, uint256) {
-        uint256 gasUsed = gasleft();
-
-        // solhint-disable-next-line avoid-low-level-calls
-        (bool success, bytes memory result) = address(this).call(data);
-
-        gasUsed = gasUsed - gasleft();
-
-        // if not success, revert with same reason
-        if (!success) {
-            // solhint-disable-next-line no-inline-assembly
-            assembly {
-                revert(add(result, 32), mload(result))
-            }
-        }
-
-        return (success, result, gasUsed);
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -592,47 +620,5 @@ contract OmniPortal is
     function _setXRegistry(address xregistry_) private {
         require(xregistry_ != address(0), "OmniPortal: no zero xregistry");
         xregistry = xregistry_;
-    }
-
-    /**
-     * @notice Add a new validator set.
-     * @dev Only callable via xcall from Omni's consensus chain
-     * @param valSetId      Validator set id
-     * @param validators    Validator set
-     */
-    function addValidatorSet(uint64 valSetId, XTypes.Validator[] memory validators) external {
-        require(msg.sender == address(this), "OmniPortal: only self");
-        require(_xmsg.sourceChainId == omniCChainID, "OmniPortal: only cchain");
-        require(_xmsg.sender == _CCHAIN_SENDER, "OmniPortal: only cchain sender");
-        _addValidatorSet(valSetId, validators);
-    }
-
-    /**
-     * @notice Add a new validator set
-     * @param valSetId      Validator set id
-     * @param validators    Validator set
-     */
-    function _addValidatorSet(uint64 valSetId, XTypes.Validator[] memory validators) private {
-        uint256 numVals = validators.length;
-        require(numVals > 0, "OmniPortal: no validators");
-
-        uint64 totalPower;
-        XTypes.Validator memory val;
-        mapping(address => uint64) storage valSet = validatorSet[valSetId];
-
-        for (uint256 i = 0; i < numVals; i++) {
-            val = validators[i];
-
-            require(val.addr != address(0), "OmniPortal: no zero validator");
-            require(val.power > 0, "OmniPortal: no zero power");
-            require(valSet[val.addr] == 0, "OmniPortal: duplicate validator");
-
-            totalPower += val.power;
-            valSet[val.addr] = val.power;
-        }
-
-        validatorSetTotalPower[valSetId] = totalPower;
-
-        emit ValidatorSetAdded(valSetId);
     }
 }

@@ -39,11 +39,21 @@ contract OmniPortal_adversarial is Base {
     function _exec(XTypes.Msg memory xmsg) internal returns (TestXTypes.Receipt memory) {
         vm.recordLogs();
         vm.chainId(thisChainId);
-        portal.exec(xmsg);
+        portal.exec(_xheader(xmsg), xmsg);
 
         Vm.Log[] memory logs = vm.getRecordedLogs();
         assertEq(logs.length, 1);
 
         return parseReceipt(logs[0]);
+    }
+
+    // @dev Helper to create a XBlock header for an xmsg
+    function _xheader(XTypes.Msg memory xmsg) internal pure returns (XTypes.BlockHeader memory) {
+        return XTypes.BlockHeader({
+            sourceChainId: xmsg.sourceChainId,
+            confLevel: uint8(xmsg.shardId),
+            offset: 1,
+            sourceBlockHash: bytes32(0)
+        });
     }
 }

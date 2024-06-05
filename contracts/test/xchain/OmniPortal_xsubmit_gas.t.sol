@@ -47,7 +47,7 @@ contract OmniPortal_xsubmit_gas_Test is Base {
 
             uint256 gasStart = gasleft();
             vm.chainId(xmsg.destChainId);
-            portal.exec(xmsg);
+            portal.exec(_xheader(xmsg), xmsg);
             uint256 gasUsed = gasStart - gasleft();
 
             console.log("exec single");
@@ -85,5 +85,15 @@ contract OmniPortal_xsubmit_gas_Test is Base {
 
         assertEq(portal.inXMsgOffset(sourceChainId, shardId), expectedOffset);
         assertEq(portal.inXBlockOffset(sourceChainId, shardId), xsub.blockHeader.offset);
+    }
+
+    // @dev Helper to create a XBlock header for an xmsg
+    function _xheader(XTypes.Msg memory xmsg) internal pure returns (XTypes.BlockHeader memory) {
+        return XTypes.BlockHeader({
+            sourceChainId: xmsg.sourceChainId,
+            confLevel: uint8(xmsg.shardId),
+            offset: 1,
+            sourceBlockHash: bytes32(0)
+        });
     }
 }
