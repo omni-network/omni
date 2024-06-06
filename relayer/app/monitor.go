@@ -80,7 +80,7 @@ func monitorConsOffsetOnce(ctx context.Context, network netconf.Network, xprovid
 		return nil
 	}
 
-	// Consensus chain messages are broadacst, so query for each EVM chain.
+	// Consensus chain messages are broadcast, so query for each EVM chain.
 	for _, stream := range network.StreamsFrom(cChain.ID) {
 		ref := xchain.EmitRef{ConfLevel: ptr(stream.ConfLevel())}
 		emitted, ok, err := xprovider.GetEmittedCursor(ctx, ref, stream)
@@ -151,7 +151,7 @@ func monitorAttestedForever(
 			att, err := getAttested(ctx, chainVer, cprovider)
 			// Then populate gauges "at the same time" so they update "atomically".
 			if err != nil {
-				log.Error(ctx, "Monitoring attested failed (will retry)", err, "chain", srcChain.Name)
+				log.Warn(ctx, "Monitoring attested failed (will retry)", err, "chain", srcChain.Name)
 				continue
 			}
 
@@ -168,7 +168,7 @@ func monitorAttestedForever(
 
 				cursor, _, err := xprovider.GetEmittedCursor(ctx, ref, stream)
 				if err != nil {
-					log.Error(ctx, "Fetching stream offsets for attestation failed (will retry)", err, "stream", name)
+					log.Warn(ctx, "Fetching stream emit cursor for attestation failed (will retry)", err, "stream", name)
 					continue
 				}
 
