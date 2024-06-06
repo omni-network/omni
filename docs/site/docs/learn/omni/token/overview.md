@@ -8,4 +8,4 @@ sidebar_position: 1
 
 The **\$OMNI** token serves several crucial roles within the Omni protocol. **\$OMNI** can be used to pay for gas to process both cross-rollup transaction requests and Omni EVM transaction requests. All **\$OMNI** gas fees are burned from circulation. **\$OMNI** can also be staked by or delegated to Omni validators to contribute to the network’s economic security. Staking or delegating **\$OMNI** earns rewards and will allow users to participate in network governance when it is live. Users can stake their **\$OMNI** today by visiting the [staking portal.](https://claims.omni.network/)
 
-More details regarding $OMNI’s supply and demand dynamics are covered in the following **\$OMNI** Economics sections.
+More details regarding **\$OMNI**’s supply and demand dynamics are covered in the following **\$OMNI** Economics sections.

@@ -26,7 +26,7 @@ RPCTxFeeCap = 1e+00
 
 [Eth.Miner]
 GasCeil = 30000000
-GasPrice = 1000000000
+GasPrice = 1000000
 Recommit = 500000000
 
 [Eth.TxPool]
