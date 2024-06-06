@@ -140,6 +140,7 @@ services:
     labels:
       e2e: true
     container_name: explorer_indexer
+    platform: linux/amd64
     image: omniops/explorer-indexer:main
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     volumes:
@@ -152,6 +153,7 @@ services:
     labels:
       e2e: true
     container_name: explorer_graphql
+    platform: linux/amd64
     image: omniops/explorer-graphql:main
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     volumes:
@@ -166,6 +168,7 @@ services:
     labels:
       e2e: true
     container_name: explorer_ui
+    platform: linux/amd64
     image: omniops/explorer-ui:main
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     environment:
