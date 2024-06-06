@@ -4,11 +4,12 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/xchain"
 )
 
 //nolint:gochecknoglobals // Static mappings
 var (
-	allShards = []uint64{netconf.ShardFinalized0, netconf.ShardLatest0} // All EVM chains support both finalized and latest shards.
+	allShards = []xchain.ShardID{xchain.ShardFinalized0, xchain.ShardLatest0} // All EVM chains support both finalized and latest shards.
 
 	chainEthereum = EVMChain{
 		Metadata: mustMetadata(evmchain.IDEthereum),

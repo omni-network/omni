@@ -122,28 +122,19 @@ func StartMonitoringReceipts(ctx context.Context, def Definition) func() error {
 
 func MonitorCursors(ctx context.Context, portals map[uint64]netman.Portal, network netconf.Network) error {
 	for _, dest := range network.EVMChains() {
-		for _, src := range network.EVMChains() {
-			if src.ID == dest.ID {
-				continue
-			}
-
-			// right now, we only emit messages in finalized shard
-			// TODO: support testing multiple shards
-			shard := netconf.ShardFinalized0
-
-			srcOffset, err := portals[src.ID].Contract.OutXMsgOffset(nil, dest.ID, shard)
+		for _, stream := range network.StreamsFrom(dest.ID) {
+			srcOffset, err := portals[stream.SourceChainID].Contract.OutXMsgOffset(nil, stream.DestChainID, uint64(stream.ShardID))
 			if err != nil {
 				return errors.Wrap(err, "get outXMsgOffset")
 			}
 
-			destOffset, err := portals[dest.ID].Contract.InXMsgOffset(nil, src.ID, shard)
+			destOffset, err := portals[stream.DestChainID].Contract.InXMsgOffset(nil, stream.SourceChainID, uint64(stream.ShardID))
 			if err != nil {
 				return errors.Wrap(err, "getting inXMsgOffset")
 			}
 
 			log.Debug(ctx, "Submitted cross chain messages",
-				"src", src.Name,
-				"dest", dest.Name,
+				"stream", network.StreamName(stream),
 				"total_in", destOffset,
 				"total_out", srcOffset,
 			)

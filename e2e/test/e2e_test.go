@@ -51,7 +51,7 @@ type Portal struct {
 
 type testFunc struct {
 	TestNode    func(*testing.T, netconf.Network, *e2e.Node, []Portal)
-	TestPortal  func(*testing.T, Portal, []Portal)
+	TestPortal  func(*testing.T, netconf.Network, Portal, []Portal)
 	TestOmniEVM func(*testing.T, ethclient.Client)
 	TestNetwork func(*testing.T, netconf.Network, xchain.RPCEndpoints)
 }
@@ -61,7 +61,7 @@ func testNode(t *testing.T, fn func(*testing.T, netconf.Network, *e2e.Node, []Po
 	test(t, testFunc{TestNode: fn})
 }
 
-func testPortal(t *testing.T, fn func(*testing.T, Portal, []Portal)) {
+func testPortal(t *testing.T, fn func(*testing.T, netconf.Network, Portal, []Portal)) {
 	t.Helper()
 	test(t, testFunc{TestPortal: fn})
 }
@@ -118,7 +118,7 @@ func test(t *testing.T, testFunc testFunc) {
 		for _, portal := range portals {
 			t.Run(portal.Chain.Name, func(t *testing.T) {
 				t.Parallel()
-				testFunc.TestPortal(t, portal, portals)
+				testFunc.TestPortal(t, network, portal, portals)
 			})
 		}
 	}

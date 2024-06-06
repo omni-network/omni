@@ -114,6 +114,8 @@ func testCProvider(t *testing.T, ctx context.Context, cprov cprovider.Provider) 
 	require.True(t, ok)
 	require.GreaterOrEqual(t, xblock.BlockOffset, uint64(1))
 	require.Len(t, xblock.Msgs, 1)
+	require.Equal(t, xchain.ShardBroadcast0, xblock.Msgs[0].ShardID)
+	require.Equal(t, xchain.BroadcastChainID, xblock.Msgs[0].DestChainID)
 
 	// Ensure getting latest xblock.
 	xblock2, ok, err := cprov.XBlock(ctx, xblock.BlockHeight, false)

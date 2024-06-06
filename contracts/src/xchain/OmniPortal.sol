@@ -76,11 +76,14 @@ contract OmniPortal is
         omniChainId = omniChainId_;
         omniCChainID = omniCChainID_;
 
-        // cchain xmsg & xblock offsets are equal to valSetId
-        inXMsgOffset[omniCChainID_][ConfLevel.Finalized] = valSetId;
-        inXBlockOffset[omniCChainID_][ConfLevel.Finalized] = valSetId;
+        // omni consensus chain uses Finalised+Broadcast shard
+        uint64 omniCShard = ConfLevel.toBroadcastShard(ConfLevel.Finalized);
 
-        // initialize omniChainId valSetId - xmsgs from omni are required to initSourceChain
+        // cchain xmsg & xblock offsets are equal to valSetId
+        inXMsgOffset[omniCChainID_][omniCShard] = valSetId;
+        inXBlockOffset[omniCChainID_][omniCShard] = valSetId;
+
+        // initialize omniChainId valSetId to consensus conf level (not shard)
         inXStreamValidatorSetId[omniChainId_][ConfLevel.Finalized] = valSetId;
 
         // initialize omniCChainID valSetId - it is not initialized via initSourceChain

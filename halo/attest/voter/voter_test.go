@@ -511,7 +511,7 @@ func testNetwork(chainIDs ...uint64) netconf.Network {
 		chains = append(chains, netconf.Chain{
 			ID:     id,
 			Name:   fmt.Sprintf("chain_%d", id),
-			Shards: []uint64{netconf.ShardFinalized0},
+			Shards: []xchain.ShardID{xchain.ShardFinalized0},
 		})
 	}
 

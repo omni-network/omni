@@ -2,10 +2,10 @@ package keeper
 
 import (
 	"context"
-	"sort"
 
 	"github.com/omni-network/omni/halo/portal/types"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/xchain"
 
 	ormv1alpha1 "cosmossdk.io/api/cosmos/orm/v1alpha1"
 	"cosmossdk.io/core/store"
@@ -15,8 +15,9 @@ import (
 )
 
 type Keeper struct {
-	blockTable BlockTable
-	msgTable   MsgTable
+	blockTable  BlockTable
+	msgTable    MsgTable
+	offsetTable OffsetTable
 }
 
 func NewKeeper(storeService store.KVStoreService) (Keeper, error) {
@@ -35,14 +36,15 @@ func NewKeeper(storeService store.KVStoreService) (Keeper, error) {
 	}
 
 	return Keeper{
-		blockTable: portalStore.BlockTable(),
-		msgTable:   portalStore.MsgTable(),
+		blockTable:  portalStore.BlockTable(),
+		msgTable:    portalStore.MsgTable(),
+		offsetTable: portalStore.OffsetTable(),
 	}, nil
 }
 
-func (k Keeper) CreateMsg(ctx sdk.Context, typ types.MsgType, msgTypeID uint64) error {
-	if err := typ.Validate(); err != nil {
-		return err
+func (k Keeper) CreateMsg(ctx sdk.Context, typ types.MsgType, msgTypeID uint64, destChainID uint64, shardID xchain.ShardID) error {
+	if (destChainID == xchain.BroadcastChainID) != shardID.Broadcast() {
+		return errors.New("dest chain and shard broadcast flag mismatch [BUG]")
 	}
 
 	height := uint64(ctx.BlockHeight())
@@ -60,16 +62,47 @@ func (k Keeper) CreateMsg(ctx sdk.Context, typ types.MsgType, msgTypeID uint64) 
 		blockID = block.GetId()
 	}
 
-	err := k.msgTable.Insert(ctx, &Msg{
-		BlockId:   blockID,
-		MsgType:   uint32(typ),
-		MsgTypeId: msgTypeID,
+	offset, err := k.incAndGetOffset(ctx, destChainID, shardID)
+	if err != nil {
+		return errors.Wrap(err, "increment offset")
+	}
+
+	err = k.msgTable.Insert(ctx, &Msg{
+		BlockId:      blockID,
+		MsgType:      uint32(typ),
+		MsgTypeId:    msgTypeID,
+		DestChainId:  destChainID,
+		ShardId:      uint64(shardID),
+		StreamOffset: offset,
 	})
 	if err != nil {
 		return errors.Wrap(err, "insert message")
 	}
 
 	return nil
+}
+
+func (k Keeper) incAndGetOffset(ctx context.Context, destChainID uint64, shardID xchain.ShardID) (uint64, error) {
+	offset, err := k.offsetTable.GetByDestChainIdShardId(ctx, destChainID, uint64(shardID))
+	if ormerrors.IsNotFound(err) {
+		offset = &Offset{
+			DestChainId: destChainID,
+			ShardId:     uint64(shardID),
+			Offset:      0,
+		}
+	} else if err != nil {
+		return 0, errors.Wrap(err, "get next offset")
+	}
+
+	// Increment the offset
+	offset.Offset++
+
+	// Save the new offset
+	if err := k.offsetTable.Save(ctx, offset); err != nil {
+		return 0, errors.Wrap(err, "save next offset")
+	}
+
+	return offset.GetOffset(), nil
 }
 
 func (k Keeper) getBlockAndMsgs(ctx context.Context, blockID uint64) (*Block, []*Msg, error) {
@@ -92,10 +125,6 @@ func (k Keeper) getBlockAndMsgs(ctx context.Context, blockID uint64) (*Block, []
 
 		msgs = append(msgs, msg)
 	}
-
-	sort.Slice(msgs, func(i, j int) bool {
-		return msgs[i].GetId() < msgs[j].GetId()
-	})
 
 	return block, msgs, nil
 }

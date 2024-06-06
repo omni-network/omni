@@ -159,7 +159,13 @@ func (k *Keeper) insertValidatorSet(ctx context.Context, vals []*Validator, isGe
 		return errors.Wrap(err, "insert valset")
 	}
 
-	if err := k.portal.CreateMsg(sdkCtx, ptypes.MsgTypeValSet, valsetID); err != nil {
+	if err := k.portal.CreateMsg(
+		sdkCtx,
+		ptypes.MsgTypeValSet,
+		valsetID,
+		xchain.BroadcastChainID,
+		xchain.ShardBroadcast0,
+	); err != nil {
 		return errors.Wrap(err, "create message")
 	}
 

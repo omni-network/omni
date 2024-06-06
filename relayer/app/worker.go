@@ -80,6 +80,15 @@ func (w *Worker) runOnce(ctx context.Context) error {
 		return err
 	}
 
+	for _, cursor := range cursors {
+		log.Info(ctx, "Worker fetched submitted cursor",
+			"stream", w.network.StreamName(cursor.StreamID),
+			"block_offset", cursor.BlockOffset,
+			"msg_offset", cursor.MsgOffset,
+			"valset_id", cursor.ValidatorSetID,
+		)
+	}
+
 	sender, err := w.sendProvider()
 	if err != nil {
 		return err
@@ -334,10 +343,10 @@ func verifyAttBlock(att xchain.Attestation, block xchain.Block) error {
 
 // attestationForShard returns true if the attestation proof contains messages for the shard.
 // Fuzzy attestations cannot be used to prove finalized shards. But finalized attestations can prove all shards.
-func attestationForShard(att xchain.Attestation, shard uint64) bool {
+func attestationForShard(att xchain.Attestation, shard xchain.ShardID) bool {
 	if att.ConfLevel == xchain.ConfFinalized {
 		return true // Finalized attestation, matches all streams.
 	}
 
-	return att.ConfLevel == xchain.ConfFromShard(shard)
+	return att.ConfLevel == shard.ConfLevel()
 }

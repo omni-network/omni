@@ -13,13 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-const (
-	// ShardFinalized0 is the default finalized confirmation level shard.
-	ShardFinalized0 = uint64(xchain.ConfFinalized)
-	// ShardLatest0 is the default latest confirmation level shard.
-	ShardLatest0 = uint64(xchain.ConfLatest)
-)
-
 // Network defines a deployment of the Omni cross chain protocol.
 // It spans an omni chain (both execution and consensus) and a set of
 // supported rollup EVMs.
@@ -149,9 +142,8 @@ func (n Network) ChainVersionName(chainVer xchain.ChainVersion) string {
 func (n Network) StreamName(stream xchain.StreamID) string {
 	srcChain, _ := n.Chain(stream.SourceChainID)
 	destChain, _ := n.Chain(stream.DestChainID)
-	conf := xchain.ConfFromShard(stream.ShardID)
 
-	return fmt.Sprintf("%s|%s|%s", srcChain.Name, conf.Label(), destChain.Name)
+	return fmt.Sprintf("%s|%s|%s", srcChain.Name, stream.ShardID.Label(), destChain.Name)
 }
 
 // Chain returns the chain config for the given ID or false if it does not exist.
@@ -258,12 +250,12 @@ func (n Network) StreamsBetween(srcChainID uint64, dstChainID uint64) []xchain.S
 // the Omni cross chain protocol. This is most supported Rollup EVMs, but
 // also the Omni EVM, and the Omni Consensus chain.
 type Chain struct {
-	ID            uint64         // Chain ID asa per https://chainlist.org
-	Name          string         // Chain name as per https://chainlist.org
-	PortalAddress common.Address // Address of the omni portal contract on the chain
-	DeployHeight  uint64         // Height that the portal contracts were deployed
-	BlockPeriod   time.Duration  // Block period of the chain
-	Shards        []uint64       // Supported xmsg shards
+	ID            uint64           // Chain ID asa per https://chainlist.org
+	Name          string           // Chain name as per https://chainlist.org
+	PortalAddress common.Address   // Address of the omni portal contract on the chain
+	DeployHeight  uint64           // Height that the portal contracts were deployed
+	BlockPeriod   time.Duration    // Block period of the chain
+	Shards        []xchain.ShardID // Supported xmsg shards
 }
 
 // ConfLevels returns the uniq set of confirmation levels
@@ -274,7 +266,7 @@ func (c Chain) ConfLevels() []xchain.ConfLevel {
 	}
 
 	for _, shard := range c.Shards {
-		conf := xchain.ConfFromShard(shard)
+		conf := shard.ConfLevel()
 		if _, ok := dedup[conf]; ok {
 			continue
 		}
@@ -306,16 +298,4 @@ func (c Chain) ChainVersions() []xchain.ChainVersion {
 	}
 
 	return resp
-}
-
-// TODO(kevin): Remove this when XRegistry support shards.
-func MustShardToStrat(shard uint64) string {
-	switch shard {
-	case ShardFinalized0:
-		return "finalized"
-	case ShardLatest0:
-		return "latest"
-	default:
-		panic("unsupported shard")
-	}
 }

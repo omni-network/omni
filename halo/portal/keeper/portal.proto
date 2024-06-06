@@ -26,8 +26,24 @@ message Msg {
     index: {id: 2, fields: "block_id"} // Allow querying by Block ID
   };
 
-  uint64 id          = 1; // Auto-incremented ID (MsgStreamOffset)
-  uint64 block_id    = 2; // Block ID to which this msg belongs
-  uint32 msg_type    = 3; // Message type (ValidatorSet, Withdrawal, etc.)
-  uint64 msg_type_id = 4; // ID of the type referred to be MsgType
+  uint64 id            = 1; // Auto-incremented ID
+  uint64 block_id      = 2; // Block ID to which this msg belongs
+  uint32 msg_type      = 3; // Message type (ValidatorSet, Withdrawal, etc.)
+  uint64 msg_type_id   = 4; // ID of the type referred to be MsgType
+  uint64 dest_chain_id = 5; // Destination chain ID
+  uint64 shard_id      = 6; // Shard of the message
+  uint64 stream_offset = 7; // Offset of the message in the stream
+}
+
+message Offset {
+  option (cosmos.orm.v1.table) = {
+    id: 3;
+    primary_key: { fields: "id", auto_increment: true }
+    index: {id: 2, fields: "dest_chain_id,shard_id", unique: true} // Allow querying by dest_chain and shard.
+  };
+
+  uint64 id            = 1; // Auto-incremented ID
+  uint64 dest_chain_id = 2; // Destination chain ID
+  uint64 shard_id      = 3; // Shard ID
+  uint64 offset        = 4; // Offset of the last message in the stream
 }

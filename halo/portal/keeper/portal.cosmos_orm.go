@@ -306,16 +306,185 @@ func NewMsgTable(db ormtable.Schema) (MsgTable, error) {
 	return msgTable{table.(ormtable.AutoIncrementTable)}, nil
 }
 
+type OffsetTable interface {
+	Insert(ctx context.Context, offset *Offset) error
+	InsertReturningId(ctx context.Context, offset *Offset) (uint64, error)
+	LastInsertedSequence(ctx context.Context) (uint64, error)
+	Update(ctx context.Context, offset *Offset) error
+	Save(ctx context.Context, offset *Offset) error
+	Delete(ctx context.Context, offset *Offset) error
+	Has(ctx context.Context, id uint64) (found bool, err error)
+	// Get returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
+	Get(ctx context.Context, id uint64) (*Offset, error)
+	HasByDestChainIdShardId(ctx context.Context, dest_chain_id uint64, shard_id uint64) (found bool, err error)
+	// GetByDestChainIdShardId returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
+	GetByDestChainIdShardId(ctx context.Context, dest_chain_id uint64, shard_id uint64) (*Offset, error)
+	List(ctx context.Context, prefixKey OffsetIndexKey, opts ...ormlist.Option) (OffsetIterator, error)
+	ListRange(ctx context.Context, from, to OffsetIndexKey, opts ...ormlist.Option) (OffsetIterator, error)
+	DeleteBy(ctx context.Context, prefixKey OffsetIndexKey) error
+	DeleteRange(ctx context.Context, from, to OffsetIndexKey) error
+
+	doNotImplement()
+}
+
+type OffsetIterator struct {
+	ormtable.Iterator
+}
+
+func (i OffsetIterator) Value() (*Offset, error) {
+	var offset Offset
+	err := i.UnmarshalMessage(&offset)
+	return &offset, err
+}
+
+type OffsetIndexKey interface {
+	id() uint32
+	values() []interface{}
+	offsetIndexKey()
+}
+
+// primary key starting index..
+type OffsetPrimaryKey = OffsetIdIndexKey
+
+type OffsetIdIndexKey struct {
+	vs []interface{}
+}
+
+func (x OffsetIdIndexKey) id() uint32            { return 0 }
+func (x OffsetIdIndexKey) values() []interface{} { return x.vs }
+func (x OffsetIdIndexKey) offsetIndexKey()       {}
+
+func (this OffsetIdIndexKey) WithId(id uint64) OffsetIdIndexKey {
+	this.vs = []interface{}{id}
+	return this
+}
+
+type OffsetDestChainIdShardIdIndexKey struct {
+	vs []interface{}
+}
+
+func (x OffsetDestChainIdShardIdIndexKey) id() uint32            { return 2 }
+func (x OffsetDestChainIdShardIdIndexKey) values() []interface{} { return x.vs }
+func (x OffsetDestChainIdShardIdIndexKey) offsetIndexKey()       {}
+
+func (this OffsetDestChainIdShardIdIndexKey) WithDestChainId(dest_chain_id uint64) OffsetDestChainIdShardIdIndexKey {
+	this.vs = []interface{}{dest_chain_id}
+	return this
+}
+
+func (this OffsetDestChainIdShardIdIndexKey) WithDestChainIdShardId(dest_chain_id uint64, shard_id uint64) OffsetDestChainIdShardIdIndexKey {
+	this.vs = []interface{}{dest_chain_id, shard_id}
+	return this
+}
+
+type offsetTable struct {
+	table ormtable.AutoIncrementTable
+}
+
+func (this offsetTable) Insert(ctx context.Context, offset *Offset) error {
+	return this.table.Insert(ctx, offset)
+}
+
+func (this offsetTable) Update(ctx context.Context, offset *Offset) error {
+	return this.table.Update(ctx, offset)
+}
+
+func (this offsetTable) Save(ctx context.Context, offset *Offset) error {
+	return this.table.Save(ctx, offset)
+}
+
+func (this offsetTable) Delete(ctx context.Context, offset *Offset) error {
+	return this.table.Delete(ctx, offset)
+}
+
+func (this offsetTable) InsertReturningId(ctx context.Context, offset *Offset) (uint64, error) {
+	return this.table.InsertReturningPKey(ctx, offset)
+}
+
+func (this offsetTable) LastInsertedSequence(ctx context.Context) (uint64, error) {
+	return this.table.LastInsertedSequence(ctx)
+}
+
+func (this offsetTable) Has(ctx context.Context, id uint64) (found bool, err error) {
+	return this.table.PrimaryKey().Has(ctx, id)
+}
+
+func (this offsetTable) Get(ctx context.Context, id uint64) (*Offset, error) {
+	var offset Offset
+	found, err := this.table.PrimaryKey().Get(ctx, &offset, id)
+	if err != nil {
+		return nil, err
+	}
+	if !found {
+		return nil, ormerrors.NotFound
+	}
+	return &offset, nil
+}
+
+func (this offsetTable) HasByDestChainIdShardId(ctx context.Context, dest_chain_id uint64, shard_id uint64) (found bool, err error) {
+	return this.table.GetIndexByID(2).(ormtable.UniqueIndex).Has(ctx,
+		dest_chain_id,
+		shard_id,
+	)
+}
+
+func (this offsetTable) GetByDestChainIdShardId(ctx context.Context, dest_chain_id uint64, shard_id uint64) (*Offset, error) {
+	var offset Offset
+	found, err := this.table.GetIndexByID(2).(ormtable.UniqueIndex).Get(ctx, &offset,
+		dest_chain_id,
+		shard_id,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if !found {
+		return nil, ormerrors.NotFound
+	}
+	return &offset, nil
+}
+
+func (this offsetTable) List(ctx context.Context, prefixKey OffsetIndexKey, opts ...ormlist.Option) (OffsetIterator, error) {
+	it, err := this.table.GetIndexByID(prefixKey.id()).List(ctx, prefixKey.values(), opts...)
+	return OffsetIterator{it}, err
+}
+
+func (this offsetTable) ListRange(ctx context.Context, from, to OffsetIndexKey, opts ...ormlist.Option) (OffsetIterator, error) {
+	it, err := this.table.GetIndexByID(from.id()).ListRange(ctx, from.values(), to.values(), opts...)
+	return OffsetIterator{it}, err
+}
+
+func (this offsetTable) DeleteBy(ctx context.Context, prefixKey OffsetIndexKey) error {
+	return this.table.GetIndexByID(prefixKey.id()).DeleteBy(ctx, prefixKey.values()...)
+}
+
+func (this offsetTable) DeleteRange(ctx context.Context, from, to OffsetIndexKey) error {
+	return this.table.GetIndexByID(from.id()).DeleteRange(ctx, from.values(), to.values())
+}
+
+func (this offsetTable) doNotImplement() {}
+
+var _ OffsetTable = offsetTable{}
+
+func NewOffsetTable(db ormtable.Schema) (OffsetTable, error) {
+	table := db.GetTable(&Offset{})
+	if table == nil {
+		return nil, ormerrors.TableNotFound.Wrap(string((&Offset{}).ProtoReflect().Descriptor().FullName()))
+	}
+	return offsetTable{table.(ormtable.AutoIncrementTable)}, nil
+}
+
 type PortalStore interface {
 	BlockTable() BlockTable
 	MsgTable() MsgTable
+	OffsetTable() OffsetTable
 
 	doNotImplement()
 }
 
 type portalStore struct {
-	block BlockTable
-	msg   MsgTable
+	block  BlockTable
+	msg    MsgTable
+	offset OffsetTable
 }
 
 func (x portalStore) BlockTable() BlockTable {
@@ -324,6 +493,10 @@ func (x portalStore) BlockTable() BlockTable {
 
 func (x portalStore) MsgTable() MsgTable {
 	return x.msg
+}
+
+func (x portalStore) OffsetTable() OffsetTable {
+	return x.offset
 }
 
 func (portalStore) doNotImplement() {}
@@ -341,8 +514,14 @@ func NewPortalStore(db ormtable.Schema) (PortalStore, error) {
 		return nil, err
 	}
 
+	offsetTable, err := NewOffsetTable(db)
+	if err != nil {
+		return nil, err
+	}
+
 	return portalStore{
 		blockTable,
 		msgTable,
+		offsetTable,
 	}, nil
 }

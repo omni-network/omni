@@ -14,6 +14,7 @@ import (
 
 	types "github.com/cosmos/cosmos-sdk/types"
 	types0 "github.com/omni-network/omni/halo/portal/types"
+	xchain "github.com/omni-network/omni/lib/xchain"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -41,15 +42,15 @@ func (m *MockPortal) EXPECT() *MockPortalMockRecorder {
 }
 
 // CreateMsg mocks base method.
-func (m *MockPortal) CreateMsg(ctx types.Context, typ types0.MsgType, msgTypeID uint64) error {
+func (m *MockPortal) CreateMsg(ctx types.Context, typ types0.MsgType, msgTypeID, destChainID uint64, shardID xchain.ShardID) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateMsg", ctx, typ, msgTypeID)
+	ret := m.ctrl.Call(m, "CreateMsg", ctx, typ, msgTypeID, destChainID, shardID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateMsg indicates an expected call of CreateMsg.
-func (mr *MockPortalMockRecorder) CreateMsg(ctx, typ, msgTypeID any) *gomock.Call {
+func (mr *MockPortalMockRecorder) CreateMsg(ctx, typ, msgTypeID, destChainID, shardID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateMsg", reflect.TypeOf((*MockPortal)(nil).CreateMsg), ctx, typ, msgTypeID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateMsg", reflect.TypeOf((*MockPortal)(nil).CreateMsg), ctx, typ, msgTypeID, destChainID, shardID)
 }

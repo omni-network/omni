@@ -9,6 +9,7 @@ import (
 
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/xchain"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 
@@ -108,8 +109,17 @@ func (t Testnet) HasOmniEVM() bool {
 // EVMChain represents a EVM chain in a omni network.
 type EVMChain struct {
 	evmchain.Metadata
-	Shards   []uint64
+	Shards   []xchain.ShardID
 	IsPublic bool
+}
+
+func (c EVMChain) ShardsUint64() []uint64 {
+	var shards []uint64
+	for _, shard := range c.Shards {
+		shards = append(shards, uint64(shard))
+	}
+
+	return shards
 }
 
 // OmniEVM represents a omni evm instance in a omni network. Similar to e2e.Node for halo instances.

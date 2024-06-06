@@ -21,7 +21,10 @@ message BlockResponse {
 }
 
 message Msg {
-  uint64  id          = 1;
-  uint32  type        = 2;
-  uint64  msg_type_id = 3;
+  uint64 id            = 1;
+  uint32 type          = 2;
+  uint64 msg_type_id   = 3;
+  uint64 dest_chain_id = 4; // Destination chain ID
+  uint64 shard_id      = 5; // Shard of the message
+  uint64 stream_offset = 6; // Offset of the message in the stream
 }

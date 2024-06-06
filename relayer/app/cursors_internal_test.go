@@ -26,7 +26,7 @@ func Test_fromOffsets(t *testing.T) {
 		return xchain.StreamID{
 			SourceChainID: chainVer.ID,
 			DestChainID:   dstChain,
-			ShardID:       uint64(chainVer.ConfLevel),
+			ShardID:       xchain.ShardID(chainVer.ConfLevel),
 		}
 	}
 	stream1 := streamID(chainVer1)
