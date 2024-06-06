@@ -6,6 +6,7 @@ import (
 	"time"
 
 	atypes "github.com/omni-network/omni/halo/attest/types"
+	ptypes "github.com/omni-network/omni/halo/portal/types"
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
@@ -39,12 +40,14 @@ func NewABCIProvider(abci ABCIClient, network netconf.ID, chainNamer func(xchain
 
 	acl := atypes.NewQueryClient(rpcAdaptor{abci: abci})
 	vcl := vtypes.NewQueryClient(rpcAdaptor{abci: abci})
+	pcl := ptypes.NewQueryClient(rpcAdaptor{abci: abci})
 
 	return Provider{
 		fetch:       newABCIFetchFunc(acl),
 		latest:      newABCILatestFunc(acl),
 		window:      newABCIWindowFunc(acl),
 		valset:      newABCIValsetFunc(vcl),
+		portalBlock: newABCIPortalBlockFunc(pcl),
 		chainID:     newChainIDFunc(abci),
 		header:      abci.Header,
 		backoffFunc: backoffFunc,
@@ -189,6 +192,26 @@ func newABCILatestFunc(cl atypes.QueryClient) latestFunc {
 		}
 
 		return att, true, nil
+	}
+}
+
+func newABCIPortalBlockFunc(pcl ptypes.QueryClient) portalBlockFunc {
+	return func(ctx context.Context, blockOffset uint64, latest bool) (*ptypes.BlockResponse, bool, error) {
+		const endpoint = "portal_block"
+		defer latency(endpoint)()
+
+		ctx, span := tracer.Start(ctx, spanName(endpoint))
+		defer span.End()
+
+		resp, err := pcl.Block(ctx, &ptypes.BlockRequest{Id: blockOffset, Latest: latest})
+		if errors.Is(err, sdkerrors.ErrKeyNotFound) {
+			return nil, false, nil
+		} else if err != nil {
+			incQueryErr(endpoint)
+			return nil, false, errors.Wrap(err, "abci query portal block")
+		}
+
+		return resp, true, nil
 	}
 }
 

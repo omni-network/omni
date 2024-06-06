@@ -6,6 +6,8 @@ import (
 	engevmmodule "github.com/omni-network/omni/halo/evmengine/module"
 	engevmtypes "github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/halo/evmstaking"
+	portalmodule "github.com/omni-network/omni/halo/portal/module"
+	portaltypes "github.com/omni-network/omni/halo/portal/types"
 	valsyncmodule "github.com/omni-network/omni/halo/valsync/module"
 	valsynctypes "github.com/omni-network/omni/halo/valsync/types"
 
@@ -192,6 +194,10 @@ var (
 			{
 				Name:   valsynctypes.ModuleName,
 				Config: appconfig.WrapAny(&valsyncmodule.Module{}),
+			},
+			{
+				Name:   portaltypes.ModuleName,
+				Config: appconfig.WrapAny(&portalmodule.Module{}),
 			},
 		},
 	})

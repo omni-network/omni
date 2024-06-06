@@ -1,15 +1,8 @@
 package module
 
 import (
-	"context"
-	"encoding/json"
-
-	ptypes "github.com/omni-network/omni/halo/portal/types"
-	"github.com/omni-network/omni/halo/valsync/keeper"
-	"github.com/omni-network/omni/halo/valsync/types"
-	"github.com/omni-network/omni/lib/errors"
-
-	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/omni-network/omni/halo/portal/keeper"
+	"github.com/omni-network/omni/halo/portal/types"
 
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/core/store"
@@ -17,16 +10,13 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 )
 
 var (
-	_ module.AppModuleBasic  = (*AppModule)(nil)
-	_ module.HasGenesis      = (*AppModule)(nil)
-	_ module.HasABCIEndBlock = (*AppModule)(nil)
-	_ appmodule.AppModule    = (*AppModule)(nil)
+	_ module.AppModuleBasic = (*AppModule)(nil)
+	_ appmodule.AppModule   = (*AppModule)(nil)
 )
 
 // ----------------------------------------------------------------------------
@@ -66,42 +56,12 @@ func (AppModuleBasic) RegisterGRPCGatewayRoutes(client.Context, *runtime.ServeMu
 type AppModule struct {
 	AppModuleBasic
 
-	keeper *keeper.Keeper
-}
-
-func (m AppModule) EndBlock(ctx context.Context) ([]abci.ValidatorUpdate, error) {
-	return m.keeper.EndBlock(ctx)
-}
-
-func (m AppModule) InitGenesis(ctx sdk.Context, _ codec.JSONCodec, _ json.RawMessage) {
-	if err := m.keeper.InsertGenesisSet(ctx); err != nil {
-		panic(errors.Wrap(err, "insert genesis valset"))
-	}
-}
-
-func (AppModule) ExportGenesis(sdk.Context, codec.JSONCodec) json.RawMessage {
-	return nil
-}
-
-// DefaultGenesis returns default genesis state as raw bytes for the bank
-// module.
-func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	return cdc.MustMarshalJSON(types.DefaultGenesisState())
-}
-
-// ValidateGenesis performs genesis state validation for the bank module.
-func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
-	var data types.GenesisState
-	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
-		return errors.Wrap(err, "unmarshal genesis state")
-	}
-
-	return nil
+	keeper keeper.Keeper
 }
 
 func NewAppModule(
 	cdc codec.Codec,
-	keeper *keeper.Keeper,
+	keeper keeper.Keeper,
 ) AppModule {
 	return AppModule{
 		AppModuleBasic: NewAppModuleBasic(cdc),
@@ -137,30 +97,21 @@ func init() {
 type ModuleInputs struct {
 	depinject.In
 
-	StoreService store.KVStoreService
 	Cdc          codec.Codec
+	StoreService store.KVStoreService
 	Config       *Module
-	SKeeper      types.StakingKeeper
-	AKeeper      types.AttestKeeper
-	Subscriber   types.ValSetSubscriber
-	Portal       ptypes.Portal
 }
 
 type ModuleOutputs struct {
 	depinject.Out
 
-	Keeper *keeper.Keeper
+	Keeper keeper.Keeper
 	Module appmodule.AppModule
 }
 
 func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
 	k, err := keeper.NewKeeper(
-		in.Cdc,
 		in.StoreService,
-		in.SKeeper,
-		in.AKeeper,
-		in.Subscriber,
-		in.Portal,
 	)
 	if err != nil {
 		return ModuleOutputs{}, err

@@ -59,19 +59,7 @@ func TestSmoke(t *testing.T) {
 		return s.SyncInfo.LatestBlockHeight >= int64(target)
 	}, time.Second*time.Duration(target*2), time.Millisecond*100)
 
-	_, ok, err := cprov.LatestAttestation(ctx, xchain.ChainVersion{}) // Ensure it doesn't error for unknown chains.
-	require.NoError(t, err)
-	require.False(t, ok)
-
-	xblock, ok, err := cprov.XBlock(ctx, 0, true) // Ensure getting latest xblock.
-	tutil.RequireNoError(t, err)
-	require.True(t, ok)
-	require.GreaterOrEqual(t, xblock.BlockOffset, uint64(1))
-	require.Len(t, xblock.Msgs, 1)
-
-	_, ok, err = cprov.ValidatorSet(ctx, 33) // Ensure it doesn't error for unknown validator sets.
-	require.NoError(t, err)
-	require.False(t, ok)
+	testCProvider(t, ctx, cprov)
 
 	genSet, err := cl.Validators(ctx, int64Ptr(1), nil, nil)
 	require.NoError(t, err)
@@ -110,6 +98,38 @@ func TestSmoke(t *testing.T) {
 
 	// Stop the server.
 	require.NoError(t, stopfunc(ctx))
+}
+
+func testCProvider(t *testing.T, ctx context.Context, cprov cprovider.Provider) {
+	t.Helper()
+
+	// Ensure it doesn't error for unknown chains.
+	_, ok, err := cprov.LatestAttestation(ctx, xchain.ChainVersion{})
+	require.NoError(t, err)
+	require.False(t, ok)
+
+	// Ensure getting latest xblock.
+	xblock, ok, err := cprov.XBlock(ctx, 0, true)
+	tutil.RequireNoError(t, err)
+	require.True(t, ok)
+	require.GreaterOrEqual(t, xblock.BlockOffset, uint64(1))
+	require.Len(t, xblock.Msgs, 1)
+
+	// Ensure getting latest xblock.
+	xblock2, ok, err := cprov.XBlock(ctx, xblock.BlockHeight, false)
+	tutil.RequireNoError(t, err)
+	require.True(t, ok)
+	require.Equal(t, xblock, xblock2)
+
+	// Ensure it doesn't error for unknown validator sets.
+	_, ok, err = cprov.ValidatorSet(ctx, 33)
+	require.NoError(t, err)
+	require.False(t, ok)
+
+	// Ensure the xblock msg streamOffset is the val set id.
+	_, ok, err = cprov.ValidatorSet(ctx, xblock.Msgs[0].StreamOffset)
+	require.NoError(t, err)
+	require.True(t, ok)
 }
 
 func setupSimnet(t *testing.T) haloapp.Config {

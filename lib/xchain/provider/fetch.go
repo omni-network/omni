@@ -30,14 +30,17 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, str
 	}
 
 	if stream.SourceChainID == p.cChainID {
+		// Consensus xblocks only has a single stream/shard for now, so just query the latest block.
 		block, err := getConsXBlock(ctx, ref, p.cProvider)
 		if err != nil {
 			return xchain.EmitCursor{}, false, err
+		} else if len(block.Msgs) == 0 {
+			return xchain.EmitCursor{}, false, errors.New("no consensus xmsgs [BUG]")
 		}
 
 		return xchain.EmitCursor{
 			StreamID:  stream,
-			MsgOffset: block.Msgs[0].StreamOffset, // Consensus xblocks only have a single xmsg.
+			MsgOffset: block.Msgs[len(block.Msgs)-1].StreamOffset,
 		}, true, nil
 	}
 
@@ -141,6 +144,8 @@ func (p *Provider) GetBlock(ctx context.Context, req xchain.ProviderRequest) (xc
 			return xchain.Block{}, false, errors.Wrap(err, "fetch consensus xblock")
 		} else if !ok {
 			return xchain.Block{}, false, nil
+		} else if len(b.Msgs) == 0 {
+			return xchain.Block{}, false, errors.New("empty consensus block [BUG]")
 		} else if b.BlockHeight != req.Height && b.BlockOffset != req.Offset {
 			return xchain.Block{}, false, errors.New("unexpected block height and offset [BUG]")
 		}
@@ -402,8 +407,6 @@ func getConsXBlock(ctx context.Context, ref xchain.EmitRef, cprov cchain.Provide
 		return xchain.Block{}, errors.Wrap(err, "fetch consensus xblock")
 	} else if !ok {
 		return xchain.Block{}, errors.New("no consensus xblocks [BUG]")
-	} else if len(xblock.Msgs) != 1 {
-		return xchain.Block{}, errors.New("unexpected xblock msg conut [BUG]")
 	} else if xblock.Msgs[0].DestChainID != 0 {
 		return xchain.Block{}, errors.New("non-broadcast consensus chain xmsg [BUG]")
 	}

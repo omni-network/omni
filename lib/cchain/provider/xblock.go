@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	ptypes "github.com/omni-network/omni/halo/portal/types"
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/xchain"
@@ -15,16 +16,15 @@ import (
 //nolint:gochecknoglobals // Static ABI types
 var portalABI = mustGetABI(bindings.OmniPortalMetaData)
 
-// XBlock returns the valsync XBlock at the given height or latest, or false if not available, or an error.
-// The height is equivalent to the validator set id.
+// XBlock returns the consensus XBlock at the given height/offset or latest, or false if not available, or an error.
 func (p Provider) XBlock(ctx context.Context, height uint64, latest bool) (xchain.Block, bool, error) {
-	resp, ok, err := p.valset(ctx, height, latest)
+	block, ok, err := p.portalBlock(ctx, height, latest)
 	if err != nil {
 		return xchain.Block{}, false, err
 	} else if !ok {
 		return xchain.Block{}, false, nil
-	} else if !latest && resp.ValSetID != height {
-		return xchain.Block{}, false, errors.New("unexpected validator set id [BUG]")
+	} else if !latest && block.Id != height {
+		return xchain.Block{}, false, errors.New("unexpected block height [BUG]")
 	}
 
 	chainID, err := p.chainID(ctx)
@@ -32,37 +32,54 @@ func (p Provider) XBlock(ctx context.Context, height uint64, latest bool) (xchai
 		return xchain.Block{}, false, errors.Wrap(err, "get chain ID")
 	}
 
-	portalVals, err := toPortalVals(resp.Validators)
-	if err != nil {
-		return xchain.Block{}, false, errors.Wrap(err, "convert validators")
+	broadcastStream := xchain.StreamID{
+		SourceChainID: chainID,
+		ShardID:       uint64(xchain.ConfFinalized), // Hardcode Shard for now.
 	}
 
-	data, err := portalABI.Pack("addValidatorSet", resp.ValSetID, portalVals)
-	if err != nil {
-		return xchain.Block{}, false, errors.Wrap(err, "pack validators")
+	var msgs []xchain.Msg
+	for _, msg := range block.Msgs {
+		switch ptypes.MsgType(msg.Type) {
+		case ptypes.MsgTypeValSet:
+			valset, ok, err := p.valset(ctx, msg.MsgTypeId, false)
+			if err != nil {
+				return xchain.Block{}, false, errors.Wrap(err, "get valset")
+			} else if !ok {
+				return xchain.Block{}, false, errors.New("unexpected valset not found [BUG]")
+			}
+
+			portalVals, err := toPortalVals(valset.Validators)
+			if err != nil {
+				return xchain.Block{}, false, errors.Wrap(err, "convert validators")
+			}
+
+			data, err := portalABI.Pack("addValidatorSet", valset.ValSetID, portalVals)
+			if err != nil {
+				return xchain.Block{}, false, errors.Wrap(err, "pack validators")
+			}
+
+			msgs = append(msgs, xchain.Msg{
+				MsgID: xchain.MsgID{
+					StreamID:     broadcastStream,
+					StreamOffset: msg.Id,
+				},
+				Data: data,
+			})
+		default:
+			return xchain.Block{}, false, errors.New("unexpected msg type [BUG]")
+		}
 	}
 
 	// Return a mostly stubbed xchain.Block with the encoded validators.
-	b := xchain.Block{
+	return xchain.Block{
 		BlockHeader: xchain.BlockHeader{
 			SourceChainID: chainID,
 			ConfLevel:     xchain.ConfFinalized, // Hardcode ConfLevel for now.
-			BlockOffset:   resp.ValSetID,
-			BlockHeight:   resp.ValSetID,
+			BlockOffset:   block.Id,
+			BlockHeight:   block.Id,
 		},
-		Msgs: []xchain.Msg{{
-			MsgID: xchain.MsgID{
-				StreamID: xchain.StreamID{
-					SourceChainID: chainID,
-					ShardID:       uint64(xchain.ConfFinalized), // Hardcode Shard for now.
-				},
-				StreamOffset: resp.ValSetID,
-			},
-			Data: data,
-		}},
-	}
-
-	return b, true, nil
+		Msgs: msgs,
+	}, true, nil
 }
 
 // mustGetABI returns the metadata's ABI as an abi.ABI type.

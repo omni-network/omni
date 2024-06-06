@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package halo.portal.keeper;
+
+import "cosmos/orm/v1/orm.proto";
+
+option go_package = "halo/portal/keeper";
+
+// Block groups a set of Msgs adding height and offset.
+message Block {
+  option (cosmos.orm.v1.table) = {
+    id: 1;
+    primary_key: { fields: "id", auto_increment: true }
+    index: {id: 2, fields: "created_height", unique: true} // Allow querying by created_height.
+  };
+
+  uint64 id               = 1; // Auto-incremented ID (BlockHeight, BlockOffset)
+  uint64 created_height   = 2; // Height this block was created at.
+}
+
+// Msg represents a single cross-chain message emitted by the consensus chain portal.
+message Msg {
+  option (cosmos.orm.v1.table) = {
+    id: 2;
+    primary_key: { fields: "id", auto_increment: true }
+    index: {id: 2, fields: "block_id"} // Allow querying by Block ID
+  };
+
+  uint64 id          = 1; // Auto-incremented ID (MsgStreamOffset)
+  uint64 block_id    = 2; // Block ID to which this msg belongs
+  uint32 msg_type    = 3; // Message type (ValidatorSet, Withdrawal, etc.)
+  uint64 msg_type_id = 4; // ID of the type referred to be MsgType
+}
