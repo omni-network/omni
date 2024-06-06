@@ -10,7 +10,7 @@ This section covers the supply & distribution of **\$OMNI**'s tokenomics.
 
 ### Validator Rewards and Inflation
 
-Incentivizing Omni validators is crucial to the safety of the network. Initial validator rewards will come from the Ecosystem Development category (29.5% of supply) and are used to reward validators for staking restaked **\$ETH** or staking **\$OMNI**. The proportion of rewards distributed for restaked **\$ETH** and staked **\$OMNI** will be dynamic, allowing the network to incentivize more or less of a given asset over time. For example, if the network requires more restaked $ETH, then restaked **\$ETH** would have a higher reward rate than staked **\$OMNI** and vice versa.
+Incentivizing Omni validators is crucial to the safety of the network. Initial validator rewards will come from the Ecosystem Development category (29.5% of supply) and are used to reward validators for staking restaked **\$ETH** or staking **\$OMNI**. The proportion of rewards distributed for restaked **\$ETH** and staked **\$OMNI** will be dynamic, allowing the network to incentivize more or less of a given asset over time. For example, if the network requires more restaked **\$$ETH**, then restaked **\$ETH** would have a higher reward rate than staked **\$OMNI** and vice versa.
 
 Currently, EigenLayer does not support payments to operators (Omni validators) for their restaked assets. It also does not yet support slashing for these restaked assets. Due to these limitations, the Omni network cannot safely support restaked **\$ETH** as part of its security system. Support will be added when these conditions are met.
 
