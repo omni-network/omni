@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 
+	ptypes "github.com/omni-network/omni/halo/portal/types"
 	"github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -33,6 +34,7 @@ type Keeper struct {
 	valsetTable       ValidatorSetTable
 	valTable          ValidatorTable
 	subscriber        types.ValSetSubscriber
+	portal            ptypes.Portal
 	subscriberInitted bool
 }
 
@@ -42,6 +44,7 @@ func NewKeeper(
 	sKeeper types.StakingKeeper,
 	aKeeper types.AttestKeeper,
 	subscriber types.ValSetSubscriber,
+	portal ptypes.Portal,
 ) (*Keeper, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
 		{Id: 1, ProtoFileName: File_halo_valsync_keeper_valset_proto.Path()},
@@ -65,6 +68,7 @@ func NewKeeper(
 		sKeeper:      sKeeper,
 		aKeeper:      aKeeper,
 		subscriber:   subscriber,
+		portal:       portal,
 	}, nil
 }
 
@@ -153,6 +157,10 @@ func (k *Keeper) insertValidatorSet(ctx context.Context, vals []*Validator, isGe
 	})
 	if err != nil {
 		return errors.Wrap(err, "insert valset")
+	}
+
+	if err := k.portal.CreateMsg(sdkCtx, ptypes.MsgTypeValSet, valsetID); err != nil {
+		return errors.Wrap(err, "create message")
 	}
 
 	var totalPower, totalUpdated, totalLen, totalRemoved int64

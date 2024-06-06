@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	ptypes "github.com/omni-network/omni/halo/portal/types"
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/tutil"
 
@@ -55,8 +56,21 @@ func TestXBlock(t *testing.T) {
 			},
 		}, nil
 	}
+	portalBlockFunc := func(ctx context.Context, h uint64, _ bool) (*ptypes.BlockResponse, bool, error) {
+		return &ptypes.BlockResponse{
+			Id:            h,
+			CreatedHeight: 123456,
+			Msgs: []*ptypes.Msg{
+				{
+					Id:        h,
+					Type:      uint32(ptypes.MsgTypeValSet),
+					MsgTypeId: h,
+				},
+			},
+		}, true, nil
+	}
 
-	prov := Provider{valset: valFunc, chainID: chainFunc, header: headerFunc}
+	prov := Provider{valset: valFunc, chainID: chainFunc, header: headerFunc, portalBlock: portalBlockFunc}
 
 	block, ok, err := prov.XBlock(context.Background(), height, false)
 	require.NoError(t, err)

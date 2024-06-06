@@ -3,6 +3,7 @@ package keeper
 import (
 	"testing"
 
+	ptestutil "github.com/omni-network/omni/halo/portal/testutil"
 	"github.com/omni-network/omni/halo/valsync/testutil"
 	"github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/netconf"
@@ -20,6 +21,7 @@ type mocks struct {
 	sKeeper    *testutil.MockStakingKeeper
 	aKeeper    *testutil.MockAttestKeeper
 	subscriber *testutil.MockSubscriber
+	portal     *ptestutil.MockPortal
 }
 
 type expectation func(sdk.Context, mocks)
@@ -40,13 +42,14 @@ func setupKeeper(t *testing.T, expectations ...expectation) (*Keeper, sdk.Contex
 		sKeeper:    testutil.NewMockStakingKeeper(ctrl),
 		aKeeper:    testutil.NewMockAttestKeeper(ctrl),
 		subscriber: testutil.NewMockSubscriber(ctrl),
+		portal:     ptestutil.NewMockPortal(ctrl),
 	}
 
 	for _, exp := range expectations {
 		exp(ctx, m)
 	}
 
-	k, err := NewKeeper(codec, storeSvc, m.sKeeper, m.aKeeper, m.subscriber)
+	k, err := NewKeeper(codec, storeSvc, m.sKeeper, m.aKeeper, m.subscriber, m.portal)
 	require.NoError(t, err, "new keeper")
 
 	return k, ctx

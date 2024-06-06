@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	types1 "github.com/omni-network/omni/halo/attest/types"
+	ptypes "github.com/omni-network/omni/halo/portal/types"
 	"github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
@@ -107,6 +108,13 @@ func approvedExpectation() expectation {
 		).AnyTimes().
 			Return([]*types1.Attestation{{}}, nil)
 
+		m.portal.EXPECT().CreateMsg(
+			gomock.Any(),
+			ptypes.MsgTypeValSet,
+			gomock.Any(),
+		).AnyTimes().
+			Return(nil)
+
 		m.subscriber.EXPECT().UpdateValidators(gomock.Any()).AnyTimes()
 	}
 }
@@ -121,6 +129,13 @@ func defaultExpectation() expectation {
 			uint64(1), // Only query for 1 attestation.
 		).AnyTimes().
 			Return(nil, nil)
+
+		m.portal.EXPECT().CreateMsg(
+			gomock.Any(),
+			ptypes.MsgTypeValSet,
+			gomock.Any(),
+		).AnyTimes().
+			Return(nil)
 	}
 }
 
