@@ -58,13 +58,6 @@ func Run(ctx context.Context, cfg Config) error {
 	cprov := cprovider.NewABCIProvider(tmClient, network.ID, netconf.ChainVersionNamer(cfg.Network))
 	xprov := xprovider.New(network, rpcClientPerChain, cprov)
 
-	state, ok, err := LoadCursors(cfg.StateFile)
-	if err != nil {
-		return err
-	} else if !ok {
-		state = NewEmptyState(cfg.StateFile)
-	}
-
 	for _, destChain := range network.EVMChains() {
 		// Setup sender
 		sendProvider := func() (SendFunc, error) {
@@ -91,7 +84,6 @@ func Run(ctx context.Context, cfg Config) error {
 			xprov,
 			CreateSubmissions,
 			sendProvider,
-			state,
 			awaitValSet)
 
 		go worker.Run(ctx)

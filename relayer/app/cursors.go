@@ -82,21 +82,14 @@ func filterMsgs(ctx context.Context, streamID xchain.StreamID, valSetID uint64, 
 
 // fromChainVersionOffsets calculates the starting block offsets for all chain versions (to the destination chain).
 func fromChainVersionOffsets(
-	destChainID uint64, // Destination chain ID
 	cursors []xchain.SubmitCursor, // All actual on-chain submit cursors
 	chainVers []xchain.ChainVersion, // All expected chain versions
-	state *State, // On-disk local state
 ) (map[xchain.ChainVersion]uint64, error) {
 	res := make(map[xchain.ChainVersion]uint64)
 
 	// Initialize all chain versions to start at 1 by default or if local state is present
 	for _, chainVer := range chainVers {
 		res[chainVer] = initialXBlockOffset
-
-		// If local persisted state is higher, use that instead, skipping a bunch of empty blocks on startup.
-		if offset := state.GetOffset(destChainID, chainVer); offset > initialXBlockOffset {
-			res[chainVer] = offset
-		}
 	}
 
 	// sort cursors by decreasing offset, so we start streaming from minimum offset per source chain
@@ -105,10 +98,6 @@ func fromChainVersionOffsets(
 	})
 
 	for _, cursor := range cursors {
-		if cursor.DestChainID != destChainID {
-			return nil, errors.New("unexpected cursor [BUG]")
-		}
-
 		offset, ok := res[cursor.ChainVersion()]
 		if !ok {
 			return nil, errors.New("unexpected cursor [BUG]")

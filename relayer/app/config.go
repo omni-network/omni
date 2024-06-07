@@ -21,7 +21,6 @@ type Config struct {
 	HaloURL        string
 	Network        netconf.ID
 	MonitoringAddr string
-	StateFile      string
 }
 
 func DefaultConfig() Config {
@@ -30,7 +29,6 @@ func DefaultConfig() Config {
 		HaloURL:        "localhost:26657",
 		Network:        "",
 		MonitoringAddr: ":26660",
-		StateFile:      "relayer-state.json",
 	}
 }
 

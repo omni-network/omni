@@ -138,14 +138,17 @@ func TestWorker_Run(t *testing.T) {
 		{ID: destChainB, Name: "mock_l2"},
 	}}
 
-	state := NewEmptyState("/tmp/relayer-state.json")
-
 	noAwait := func(context.Context, uint64) error { return nil }
 
 	for _, chain := range network.Chains {
-		w := NewWorker(chain, network, mockProvider, mockXClient, mockCreateFunc, func() (SendFunc, error) {
-			return mockSender.SendTransaction, nil
-		}, state, noAwait)
+		w := NewWorker(
+			chain,
+			network,
+			mockProvider,
+			mockXClient,
+			mockCreateFunc,
+			func() (SendFunc, error) { return mockSender.SendTransaction, nil },
+			noAwait)
 		go w.Run(ctx)
 	}
 
