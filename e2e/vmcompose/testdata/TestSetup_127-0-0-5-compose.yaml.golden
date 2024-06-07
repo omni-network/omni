@@ -28,7 +28,7 @@ services:
     labels:
       e2e: true
     container_name: fullnode01_evm
-    image: "ethereum/client-go:v1.14.4"
+    image: "ethereum/client-go:v1.14.5"
     command:
       - --config=/geth/config.toml
       # Flags not available via config.toml
