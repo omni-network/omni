@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
 import { IOmniPortalSys } from "../interfaces/IOmniPortalSys.sol";
 import { ConfLevel } from "../libraries/ConfLevel.sol";
@@ -11,9 +11,13 @@ import { XRegistryReplica } from "./XRegistryReplica.sol";
 /**
  * @title XRegistry
  * @notice Registry for cross-chain contract deployments. Replicated across each supported chain.
- * @dev Using Ownable, rather than OwnableUpgradeable, to because predeploys don't require initalization.
+ * @dev This contract is predeployed, and requires storage slots to be set in genesis.
+ *      Genesis storage slots must:
+ *          - set _owner on proxy
+ *          - set _initialized on proxy to 1, to disable the initializer
+ *          - set _initialized on implementation to 255, to disabled all initializers
  */
-contract XRegistry is Ownable, XRegistryBase {
+contract XRegistry is OwnableUpgradeable, XRegistryBase {
     /**
      * @notice Register a contract deployment.
      */

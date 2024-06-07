@@ -15,8 +15,8 @@ import { Test } from "forge-std/Test.sol";
 
 contract PortalRegistry_Test is Test {
     MockPortalHarness portal;
-    XRegistry xreg;
-    PortalRegistry preg;
+    XRegistryHarness xreg;
+    PortalRegistryHarness preg;
 
     address owner = makeAddr("owner");
 
@@ -52,8 +52,8 @@ contract PortalRegistry_Test is Test {
      });
 
     function setUp() public {
-        xreg = XRegistry(Predeploys.XRegistry);
-        preg = PortalRegistry(Predeploys.PortalRegistry);
+        xreg = XRegistryHarness(Predeploys.XRegistry);
+        preg = PortalRegistryHarness(Predeploys.PortalRegistry);
 
         uint64[] memory shards = new uint64[](2);
         shards[0] = ConfLevel.Finalized;
@@ -63,14 +63,14 @@ contract PortalRegistry_Test is Test {
         dep2.shards = shards;
         dep3.shards = shards;
 
-        XRegistry tmpXReg = new XRegistry();
-        PortalRegistry tmpPReg = new PortalRegistry();
+        address tmpXReg = address(new XRegistryHarness());
+        address tmpPReg = address(new PortalRegistryHarness());
 
-        vm.etch(Predeploys.XRegistry, address(tmpXReg).code);
-        vm.etch(Predeploys.PortalRegistry, address(tmpPReg).code);
+        vm.etch(Predeploys.XRegistry, tmpXReg.code);
+        vm.etch(Predeploys.PortalRegistry, tmpPReg.code);
 
-        vm.store(Predeploys.XRegistry, 0, bytes32(uint256(uint160(owner))));
-        vm.store(Predeploys.PortalRegistry, 0, bytes32(uint256(uint160(owner))));
+        xreg.initialize(owner);
+        preg.initialize(owner);
 
         require(xreg.owner() == owner, "XRegistry owner not set");
         require(preg.owner() == owner, "PortalRegistry owner not set");
@@ -200,5 +200,25 @@ contract PortalRegistry_Test is Test {
 contract MockPortalHarness is MockPortal {
     function initSourceChain(uint64 _sourceChainId, uint64[] memory _shards) public {
         // do nothing
+    }
+}
+
+/**
+ * @dev Wrapper around XRegistry, that adds initializer.
+ */
+contract XRegistryHarness is XRegistry {
+    function initialize(address _owner) external initializer {
+        __Ownable_init();
+        _transferOwnership(_owner);
+    }
+}
+
+/**
+ * @dev Wrapper around PortalRegistry, that adds initializer.
+ */
+contract PortalRegistryHarness is PortalRegistry {
+    function initialize(address _owner) external initializer {
+        __Ownable_init();
+        _transferOwnership(_owner);
     }
 }

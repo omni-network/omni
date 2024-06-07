@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { XRegistry } from "./XRegistry.sol";
 import { XRegistryBase } from "./XRegistryBase.sol";
 import { Predeploys } from "../libraries/Predeploys.sol";
@@ -11,9 +11,13 @@ import { ConfLevel } from "../libraries/ConfLevel.sol";
 /**
  * @title PortalRegistry
  * @notice Registry for OmniPortal deployments. Predeployed on Omni's EVM.
- * @dev Using Ownable, rather than OwnableUpgradeable, because predeploys are initialized at genesis.
+ * @dev This contract is predeployed, and requires storage slots to be set in genesis.
+ *      Genesis storage slots must:
+ *          - set _owner on proxy
+ *          - set _initialized on proxy to 1, to disable the initializer
+ *          - set _initialized on implementation to 255, to disabled all initializers
  */
-contract PortalRegistry is Ownable {
+contract PortalRegistry is OwnableUpgradeable {
     /**
      * @notice Emitted when a new OmniPortal deployment is registered.
      */

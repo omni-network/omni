@@ -38,6 +38,16 @@ func EncodeStorage(layout solc.StorageLayout, values StorageValues) ([]StorageSl
 	return slots, nil
 }
 
+// EncodeStorageEntry encodes the given storage value according to the given storage layout.
+func EncodeStorageEntry(layout solc.StorageLayout, label string, value any) (StorageSlot, error) {
+	slot, ok := solc.SlotOf(layout, label)
+	if !ok {
+		return StorageSlot{}, errors.New("label not found", "label", label)
+	}
+
+	return encodeStorage(slot, value)
+}
+
 func encodeStorage(slot uint, value any) (StorageSlot, error) {
 	key := encodeSlot(slot)
 	v, err := encodeValue(value)
@@ -62,6 +72,8 @@ func encodeValue(value any) (common.Hash, error) {
 		return common.BigToHash(v), nil
 	case common.Address:
 		return common.HexToHash(v.Hex()), nil
+	case uint8:
+		return common.BigToHash(new(big.Int).SetUint64(uint64(v))), nil
 	default:
 		return common.Hash{}, errors.New("unsupported type")
 	}

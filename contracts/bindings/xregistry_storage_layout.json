@@ -1,43 +1,75 @@
 {
   "storage": [
     {
-      "astId": 1002,
+      "astId": 238,
+      "contract": "src/xchain/XRegistry.sol:XRegistry",
+      "label": "_initialized",
+      "offset": 0,
+      "slot": "0",
+      "type": "t_uint8"
+    },
+    {
+      "astId": 241,
+      "contract": "src/xchain/XRegistry.sol:XRegistry",
+      "label": "_initializing",
+      "offset": 1,
+      "slot": "0",
+      "type": "t_bool"
+    },
+    {
+      "astId": 993,
+      "contract": "src/xchain/XRegistry.sol:XRegistry",
+      "label": "__gap",
+      "offset": 0,
+      "slot": "1",
+      "type": "t_array(t_uint256)50_storage"
+    },
+    {
+      "astId": 110,
       "contract": "src/xchain/XRegistry.sol:XRegistry",
       "label": "_owner",
       "offset": 0,
-      "slot": "0",
+      "slot": "51",
       "type": "t_address"
     },
     {
-      "astId": 55530,
+      "astId": 230,
+      "contract": "src/xchain/XRegistry.sol:XRegistry",
+      "label": "__gap",
+      "offset": 0,
+      "slot": "52",
+      "type": "t_array(t_uint256)49_storage"
+    },
+    {
+      "astId": 53563,
       "contract": "src/xchain/XRegistry.sol:XRegistry",
       "label": "_deployments",
       "offset": 0,
-      "slot": "1",
-      "type": "t_mapping(t_uint64,t_mapping(t_bytes32,t_struct(Deployment)55522_storage))"
+      "slot": "101",
+      "type": "t_mapping(t_uint64,t_mapping(t_bytes32,t_struct(Deployment)53555_storage))"
     },
     {
-      "astId": 54955,
+      "astId": 52988,
       "contract": "src/xchain/XRegistry.sol:XRegistry",
       "label": "portal",
       "offset": 0,
-      "slot": "2",
+      "slot": "102",
       "type": "t_address"
     },
     {
-      "astId": 54960,
+      "astId": 52993,
       "contract": "src/xchain/XRegistry.sol:XRegistry",
       "label": "replicas",
       "offset": 0,
-      "slot": "3",
+      "slot": "103",
       "type": "t_mapping(t_uint64,t_address)"
     },
     {
-      "astId": 54964,
+      "astId": 52997,
       "contract": "src/xchain/XRegistry.sol:XRegistry",
       "label": "_chainIds",
       "offset": 0,
-      "slot": "4",
+      "slot": "104",
       "type": "t_array(t_uint64)dyn_storage"
     }
   ],
@@ -47,11 +79,28 @@
       "label": "address",
       "numberOfBytes": "20"
     },
+    "t_array(t_uint256)49_storage": {
+      "encoding": "inplace",
+      "label": "uint256[49]",
+      "numberOfBytes": "1568",
+      "base": "t_uint256"
+    },
+    "t_array(t_uint256)50_storage": {
+      "encoding": "inplace",
+      "label": "uint256[50]",
+      "numberOfBytes": "1600",
+      "base": "t_uint256"
+    },
     "t_array(t_uint64)dyn_storage": {
       "encoding": "dynamic_array",
       "label": "uint64[]",
       "numberOfBytes": "32",
       "base": "t_uint64"
+    },
+    "t_bool": {
+      "encoding": "inplace",
+      "label": "bool",
+      "numberOfBytes": "1"
     },
     "t_bytes32": {
       "encoding": "inplace",
@@ -63,12 +112,12 @@
       "label": "bytes",
       "numberOfBytes": "32"
     },
-    "t_mapping(t_bytes32,t_struct(Deployment)55522_storage)": {
+    "t_mapping(t_bytes32,t_struct(Deployment)53555_storage)": {
       "encoding": "mapping",
       "key": "t_bytes32",
       "label": "mapping(bytes32 => struct XRegistryBase.Deployment)",
       "numberOfBytes": "32",
-      "value": "t_struct(Deployment)55522_storage"
+      "value": "t_struct(Deployment)53555_storage"
     },
     "t_mapping(t_uint64,t_address)": {
       "encoding": "mapping",
@@ -77,20 +126,20 @@
       "numberOfBytes": "32",
       "value": "t_address"
     },
-    "t_mapping(t_uint64,t_mapping(t_bytes32,t_struct(Deployment)55522_storage))": {
+    "t_mapping(t_uint64,t_mapping(t_bytes32,t_struct(Deployment)53555_storage))": {
       "encoding": "mapping",
       "key": "t_uint64",
       "label": "mapping(uint64 => mapping(bytes32 => struct XRegistryBase.Deployment))",
       "numberOfBytes": "32",
-      "value": "t_mapping(t_bytes32,t_struct(Deployment)55522_storage)"
+      "value": "t_mapping(t_bytes32,t_struct(Deployment)53555_storage)"
     },
-    "t_struct(Deployment)55522_storage": {
+    "t_struct(Deployment)53555_storage": {
       "encoding": "inplace",
       "label": "struct XRegistryBase.Deployment",
       "numberOfBytes": "64",
       "members": [
         {
-          "astId": 55519,
+          "astId": 53552,
           "contract": "src/xchain/XRegistry.sol:XRegistry",
           "label": "addr",
           "offset": 0,
@@ -98,7 +147,7 @@
           "type": "t_address"
         },
         {
-          "astId": 55521,
+          "astId": 53554,
           "contract": "src/xchain/XRegistry.sol:XRegistry",
           "label": "metadata",
           "offset": 0,
@@ -107,10 +156,20 @@
         }
       ]
     },
+    "t_uint256": {
+      "encoding": "inplace",
+      "label": "uint256",
+      "numberOfBytes": "32"
+    },
     "t_uint64": {
       "encoding": "inplace",
       "label": "uint64",
       "numberOfBytes": "8"
+    },
+    "t_uint8": {
+      "encoding": "inplace",
+      "label": "uint8",
+      "numberOfBytes": "1"
     }
   }
 }

@@ -1,20 +1,52 @@
 {
   "storage": [
     {
-      "astId": 1002,
+      "astId": 238,
+      "contract": "src/xchain/PortalRegistry.sol:PortalRegistry",
+      "label": "_initialized",
+      "offset": 0,
+      "slot": "0",
+      "type": "t_uint8"
+    },
+    {
+      "astId": 241,
+      "contract": "src/xchain/PortalRegistry.sol:PortalRegistry",
+      "label": "_initializing",
+      "offset": 1,
+      "slot": "0",
+      "type": "t_bool"
+    },
+    {
+      "astId": 993,
+      "contract": "src/xchain/PortalRegistry.sol:PortalRegistry",
+      "label": "__gap",
+      "offset": 0,
+      "slot": "1",
+      "type": "t_array(t_uint256)50_storage"
+    },
+    {
+      "astId": 110,
       "contract": "src/xchain/PortalRegistry.sol:PortalRegistry",
       "label": "_owner",
       "offset": 0,
-      "slot": "0",
+      "slot": "51",
       "type": "t_address"
     },
     {
-      "astId": 54598,
+      "astId": 230,
+      "contract": "src/xchain/PortalRegistry.sol:PortalRegistry",
+      "label": "__gap",
+      "offset": 0,
+      "slot": "52",
+      "type": "t_array(t_uint256)49_storage"
+    },
+    {
+      "astId": 52631,
       "contract": "src/xchain/PortalRegistry.sol:PortalRegistry",
       "label": "deployments",
       "offset": 0,
-      "slot": "1",
-      "type": "t_mapping(t_uint64,t_struct(Deployment)54609_storage)"
+      "slot": "101",
+      "type": "t_mapping(t_uint64,t_struct(Deployment)52642_storage)"
     }
   ],
   "types": {
@@ -23,26 +55,43 @@
       "label": "address",
       "numberOfBytes": "20"
     },
+    "t_array(t_uint256)49_storage": {
+      "encoding": "inplace",
+      "label": "uint256[49]",
+      "numberOfBytes": "1568",
+      "base": "t_uint256"
+    },
+    "t_array(t_uint256)50_storage": {
+      "encoding": "inplace",
+      "label": "uint256[50]",
+      "numberOfBytes": "1600",
+      "base": "t_uint256"
+    },
     "t_array(t_uint64)dyn_storage": {
       "encoding": "dynamic_array",
       "label": "uint64[]",
       "numberOfBytes": "32",
       "base": "t_uint64"
     },
-    "t_mapping(t_uint64,t_struct(Deployment)54609_storage)": {
+    "t_bool": {
+      "encoding": "inplace",
+      "label": "bool",
+      "numberOfBytes": "1"
+    },
+    "t_mapping(t_uint64,t_struct(Deployment)52642_storage)": {
       "encoding": "mapping",
       "key": "t_uint64",
       "label": "mapping(uint64 => struct PortalRegistry.Deployment)",
       "numberOfBytes": "32",
-      "value": "t_struct(Deployment)54609_storage"
+      "value": "t_struct(Deployment)52642_storage"
     },
-    "t_struct(Deployment)54609_storage": {
+    "t_struct(Deployment)52642_storage": {
       "encoding": "inplace",
       "label": "struct PortalRegistry.Deployment",
       "numberOfBytes": "96",
       "members": [
         {
-          "astId": 54601,
+          "astId": 52634,
           "contract": "src/xchain/PortalRegistry.sol:PortalRegistry",
           "label": "chainId",
           "offset": 0,
@@ -50,7 +99,7 @@
           "type": "t_uint64"
         },
         {
-          "astId": 54603,
+          "astId": 52636,
           "contract": "src/xchain/PortalRegistry.sol:PortalRegistry",
           "label": "addr",
           "offset": 8,
@@ -58,7 +107,7 @@
           "type": "t_address"
         },
         {
-          "astId": 54605,
+          "astId": 52638,
           "contract": "src/xchain/PortalRegistry.sol:PortalRegistry",
           "label": "deployHeight",
           "offset": 0,
@@ -66,7 +115,7 @@
           "type": "t_uint64"
         },
         {
-          "astId": 54608,
+          "astId": 52641,
           "contract": "src/xchain/PortalRegistry.sol:PortalRegistry",
           "label": "shards",
           "offset": 0,
@@ -75,10 +124,20 @@
         }
       ]
     },
+    "t_uint256": {
+      "encoding": "inplace",
+      "label": "uint256",
+      "numberOfBytes": "32"
+    },
     "t_uint64": {
       "encoding": "inplace",
       "label": "uint64",
       "numberOfBytes": "8"
+    },
+    "t_uint8": {
+      "encoding": "inplace",
+      "label": "uint8",
+      "numberOfBytes": "1"
     }
   }
 }
