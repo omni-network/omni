@@ -139,17 +139,25 @@ type Receipt struct {
 	TxHash         common.Hash    // Hash of the relayer submission transaction
 }
 
-// BlockHeader uniquely identifies a cross chain block.
+// BlockHeader uniquely identifies a cross chain block and its metadata.
 type BlockHeader struct {
-	SourceChainID uint64      // Source chain ID as per https://chainlist.org
-	ConfLevel     ConfLevel   // ConfLevel defines the cross-chain block "version"; either some fuzzy version or finalized.
-	BlockOffset   uint64      // Offset of the cross-chain block
-	BlockHeight   uint64      // Height of the source-chain block
-	BlockHash     common.Hash // Hash of the source-chain block
+	SourceChainID uint64              // Source chain ID as per https://chainlist.org
+	ConfLevel     ConfLevel           // ConfLevel defines the cross-chain block "version"; either some fuzzy version or finalized.
+	BlockOffset   uint64              // Offset of the cross-chain block
+	BlockHeight   uint64              // Height of the source-chain block
+	BlockHash     common.Hash         // Hash of the source-chain block
+	StreamOffsets []BlockStreamOffset // Latest message offsets for each stream.
 }
 
 func (b BlockHeader) ChainVersion() ChainVersion {
 	return ChainVersion{ID: b.SourceChainID, ConfLevel: b.ConfLevel}
+}
+
+// BlockStreamOffset is the Latest message offsets for a stream in a cross-chain block.
+type BlockStreamOffset struct {
+	DestChainID uint64  // Destination chain ID as per https://chainlist.org
+	ShardID     ShardID // ShardID identifies a sequence of xmsgs.
+	MsgOffset   uint64  // Latest message stream offset for the stream
 }
 
 // Block is a deterministic representation of the omni cross-chain properties of a source chain EVM block.

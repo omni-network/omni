@@ -27,6 +27,8 @@ func Test_translateSubmission(t *testing.T) {
 
 	// Zero BlockHeight as we only submit BlockOffset
 	sub.BlockHeader.BlockHeight = 0
+	// Zero BlockStreamOffsets since we don't submit them
+	sub.BlockHeader.StreamOffsets = nil
 
 	// TODO(corver): Add support for conf level to contracts and bindings
 	sub.BlockHeader.ConfLevel = 0

@@ -40,14 +40,9 @@ func AttestationFromProto(att *Attestation) (xchain.Attestation, error) {
 		return xchain.Attestation{}, err
 	}
 
-	header, err := BlockHeaderFromProto(att.GetBlockHeader())
-	if err != nil {
-		return xchain.Attestation{}, err
-	}
-
 	sigs := make([]xchain.SigTuple, 0, len(att.GetSignatures()))
 	for _, sigpb := range att.GetSignatures() {
-		sig, err := SigFromProto(sigpb)
+		sig, err := sigFromProto(sigpb)
 		if err != nil {
 			return xchain.Attestation{}, err
 		}
@@ -55,15 +50,15 @@ func AttestationFromProto(att *Attestation) (xchain.Attestation, error) {
 	}
 
 	return xchain.Attestation{
-		BlockHeader:     header,
+		BlockHeader:     blockHeaderFromProto(att.GetBlockHeader()),
 		ValidatorSetID:  att.ValidatorSetId,
 		AttestationRoot: common.BytesToHash(att.GetAttestationRoot()),
 		Signatures:      sigs,
 	}, nil
 }
 
-// SigFromProto converts a protobuf SigTuple to a xchain.SigTuple.
-func SigFromProto(sig *SigTuple) (xchain.SigTuple, error) {
+// sigFromProto converts a protobuf SigTuple to a xchain.SigTuple.
+func sigFromProto(sig *SigTuple) (xchain.SigTuple, error) {
 	if err := sig.Verify(); err != nil {
 		return xchain.SigTuple{}, err
 	}
@@ -74,10 +69,15 @@ func SigFromProto(sig *SigTuple) (xchain.SigTuple, error) {
 	}, nil
 }
 
-// BlockHeaderFromProto converts a protobuf BlockHeader to a xchain.BlockHeader.
-func BlockHeaderFromProto(header *BlockHeader) (xchain.BlockHeader, error) {
-	if err := header.Verify(); err != nil {
-		return xchain.BlockHeader{}, err
+// blockHeaderFromProto converts a protobuf BlockHeader to a xchain.BlockHeader.
+func blockHeaderFromProto(header *BlockHeader) xchain.BlockHeader {
+	var offsets []xchain.BlockStreamOffset
+	for _, offset := range header.GetStreamOffsets() {
+		off, err := streamOffsetFromProto(offset)
+		if err != nil {
+			return xchain.BlockHeader{}
+		}
+		offsets = append(offsets, off)
 	}
 
 	return xchain.BlockHeader{
@@ -86,5 +86,42 @@ func BlockHeaderFromProto(header *BlockHeader) (xchain.BlockHeader, error) {
 		BlockOffset:   header.GetOffset(),
 		BlockHeight:   header.GetHeight(),
 		BlockHash:     common.Hash(header.GetHash()),
+		StreamOffsets: offsets,
+	}
+}
+
+func BlockHeaderToProto(header xchain.BlockHeader) *BlockHeader {
+	offsets := make([]*BlockStreamOffset, 0, len(header.StreamOffsets))
+	for _, offset := range header.StreamOffsets {
+		offsets = append(offsets, streamOffsetToProto(offset))
+	}
+
+	return &BlockHeader{
+		ChainId:       header.SourceChainID,
+		ConfLevel:     uint32(header.ConfLevel),
+		Offset:        header.BlockOffset,
+		Height:        header.BlockHeight,
+		Hash:          header.BlockHash[:],
+		StreamOffsets: offsets,
+	}
+}
+
+func streamOffsetFromProto(offset *BlockStreamOffset) (xchain.BlockStreamOffset, error) {
+	if err := offset.Verify(); err != nil {
+		return xchain.BlockStreamOffset{}, err
+	}
+
+	return xchain.BlockStreamOffset{
+		DestChainID: offset.GetDestChainId(),
+		ShardID:     xchain.ShardID(offset.GetShardId()),
+		MsgOffset:   offset.GetMsgOffset(),
 	}, nil
+}
+
+func streamOffsetToProto(offset xchain.BlockStreamOffset) *BlockStreamOffset {
+	return &BlockStreamOffset{
+		DestChainId: offset.DestChainID,
+		ShardId:     uint64(offset.ShardID),
+		MsgOffset:   offset.MsgOffset,
+	}
 }

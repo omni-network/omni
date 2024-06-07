@@ -30,7 +30,6 @@ func (t BlockTree) Proof(header BlockHeader, msgs []Msg) (merkle.MultiProof, err
 	indices = append(indices, headerIndex)
 
 	for _, msg := range msgs {
-		// TODO(corver): Filter msg shards by block confirmation level
 		msgLeaf, err := msgLeaf(msg)
 		if err != nil {
 			return merkle.MultiProof{}, err
@@ -41,6 +40,8 @@ func (t BlockTree) Proof(header BlockHeader, msgs []Msg) (merkle.MultiProof, err
 		}
 		indices = append(indices, msgIndex)
 	}
+
+	// TODO(corver): Add BlockStreamOffset leaves.
 
 	return merkle.GetMultiProof(t, indices...)
 }

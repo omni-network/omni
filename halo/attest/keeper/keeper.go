@@ -141,11 +141,11 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 	defer latency("add_one")()
 
 	header := agg.BlockHeader
+	keyHash := agg.UniqueKey()
 
 	// Get existing attestation (by unique key) or insert new one.
 	var attID uint64
-	existing, err := k.attTable.GetByChainIdConfLevelOffsetHeightHashAttestationRoot(ctx,
-		header.ChainId, header.ConfLevel, header.Offset, header.Height, header.Hash, agg.AttestationRoot)
+	existing, err := k.attTable.GetByKeyHash(ctx, keyHash[:])
 	if ormerrors.IsNotFound(err) {
 		// Insert new attestation
 		attID, err = k.attTable.InsertReturningId(ctx, &Attestation{
@@ -153,11 +153,14 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 			ConfLevel:       agg.BlockHeader.ConfLevel,
 			Offset:          agg.BlockHeader.Offset,
 			Height:          agg.BlockHeader.Height,
-			Hash:            agg.BlockHeader.Hash,
+			BlockHash:       agg.BlockHeader.Hash,
 			AttestationRoot: agg.AttestationRoot,
+			StreamOffsets:   offsetsToDB(agg.BlockHeader.StreamOffsets),
+			KeyHash:         keyHash[:],
 			Status:          uint32(Status_Pending),
 			ValidatorSetId:  0, // Unknown at this point.
 			CreatedHeight:   uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()),
+			FinalizedAttId:  0, // No finalized override yet.
 		})
 		if err != nil {
 			return errors.Wrap(err, "insert")
@@ -348,26 +351,7 @@ func (k *Keeper) ListAttestationsFrom(ctx context.Context, chainID uint64, confL
 			return nil, errors.Wrap(err, "get att sigs")
 		}
 
-		var sigs []*types.SigTuple
-		for _, pbsig := range pbsigs {
-			sigs = append(sigs, &types.SigTuple{
-				ValidatorAddress: pbsig.GetValidatorAddress(),
-				Signature:        pbsig.GetSignature(),
-			})
-		}
-
-		resp = append(resp, &types.Attestation{
-			BlockHeader: &types.BlockHeader{
-				ChainId:   att.GetChainId(),
-				ConfLevel: att.GetConfLevel(),
-				Offset:    att.GetOffset(),
-				Height:    att.GetHeight(),
-				Hash:      att.GetHash(),
-			},
-			ValidatorSetId:  att.GetValidatorSetId(),
-			AttestationRoot: att.GetAttestationRoot(),
-			Signatures:      sigs,
-		})
+		resp = append(resp, AttestationFromDB(att, pbsigs))
 	}
 
 	return resp, nil

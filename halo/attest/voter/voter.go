@@ -381,7 +381,7 @@ func (v *Voter) SetProposed(headers []*types.BlockHeader) error {
 	var newAvailable, newProposed []*types.Vote
 	for _, vote := range v.availableAndProposedUnsafe() {
 		// If proposed, move it to the proposed list.
-		if proposed[vote.BlockHeader.ToXChain()] {
+		if proposed[vote.BlockHeader.UniqueKey()] {
 			newProposed = append(newProposed, vote)
 		} else { // Otherwise, keep or move it to in the available list.
 			newAvailable = append(newAvailable, vote)
@@ -412,7 +412,7 @@ func (v *Voter) SetCommitted(headers []*types.BlockHeader) error {
 	var newAvailable []*types.Vote
 	for _, vote := range v.availableAndProposedUnsafe() {
 		// If newly committed, add to committed.
-		if committed[vote.BlockHeader.ToXChain()] {
+		if committed[vote.BlockHeader.UniqueKey()] {
 			newCommitted = append(newCommitted, vote)
 		} else { // Otherwise, keep/move it back to available.
 			newAvailable = append(newAvailable, vote)
@@ -554,10 +554,10 @@ func loadState(path string) (stateJSON, error) {
 }
 
 // headerMap converts a list of headers to a bool map (set).
-func headerMap(headers []*types.BlockHeader) map[xchain.BlockHeader]bool {
-	resp := make(map[xchain.BlockHeader]bool) // Can't use protos as map keys.
+func headerMap(headers []*types.BlockHeader) map[[32]byte]bool {
+	resp := make(map[[32]byte]bool)
 	for _, header := range headers {
-		resp[header.ToXChain()] = true
+		resp[header.UniqueKey()] = true
 	}
 
 	return resp

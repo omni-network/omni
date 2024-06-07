@@ -271,7 +271,10 @@ func (p *Provider) getXReceiptLogs(ctx context.Context, chainID uint64, height u
 		e := iter.Event
 
 		if !expectedShards[e.ShardId] {
-			return nil, errors.New("unexpected receipt shard", "shard", e.ShardId)
+			return nil, errors.New("unexpected receipt shard",
+				"shard", e.ShardId,
+				"src_chain", e.SourceChainId,
+				"expected", p.network.StreamsBetween(e.SourceChainId, chainID))
 		}
 
 		receipts = append(receipts, xchain.Receipt{

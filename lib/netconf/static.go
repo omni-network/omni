@@ -52,6 +52,17 @@ func (s Static) OmniConsensusChainIDUint64() uint64 {
 	return consensusIDOffset + s.OmniExecutionChainID
 }
 
+// OmniConsensusChain returns the omni consensus Chain struct.
+func (s Static) OmniConsensusChain() Chain {
+	return Chain{
+		ID:           s.OmniConsensusChainIDUint64(),
+		Name:         "omni_consensus",
+		BlockPeriod:  time.Second * 2,
+		Shards:       []xchain.ShardID{xchain.ShardBroadcast0}, // Consensus chain only supports broadcast shard.
+		DeployHeight: 1,                                        // ValidatorSets start at 1, not 0.
+	}
+}
+
 // PortalDeployment returns the portal deployment for the given chainID.
 // If there is none, it returns an empty deployment.
 func (s Static) PortalDeployment(chainID uint64) (Deployment, bool) {
@@ -201,11 +212,7 @@ func SimnetNetwork() Network {
 			mustSimnetChain(Simnet.Static().OmniExecutionChainID, xchain.ShardFinalized0),
 			mustSimnetChain(evmchain.IDMockL1Fast, xchain.ShardLatest0),
 			mustSimnetChain(evmchain.IDMockL2, xchain.ShardLatest0),
-			{
-				ID:     Simnet.Static().OmniConsensusChainIDUint64(),
-				Name:   "omni_consensus",
-				Shards: []xchain.ShardID{xchain.ShardFinalized0},
-			},
+			Simnet.Static().OmniConsensusChain(),
 		},
 	}
 }

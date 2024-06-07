@@ -4,6 +4,7 @@
  "BlockOffset": 4862148799961033790,
  "BlockHeight": 4862148799961033790,
  "BlockHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+ "StreamOffsets": null,
  "Msgs": [
   {
    "SourceChainID": 77,

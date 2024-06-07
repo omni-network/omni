@@ -59,6 +59,13 @@ message BlockHeader {
   uint64 offset      = 3; // Offset of the cross-chain block
   uint64 height      = 4; // Height of the source-chain block
   bytes  hash        = 5; // Hash of the source-chain block
+  repeated BlockStreamOffset stream_offsets = 6; // Latest message stream offsets for the block
+}
+
+message BlockStreamOffset {
+  uint64 dest_chain_id = 1; // Destination chain ID as per https://chainlist.org
+  uint64 shard_id      = 2; // ShardID identifies a sequence of xmsgs.
+  uint64 msg_offset    = 3; // Latest message stream offset for the stream
 }
 
 // SigTuple is a validator public key and signature (over the attestation root).
