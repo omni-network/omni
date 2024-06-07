@@ -27,14 +27,13 @@ type Worker struct {
 	cProvider    cchain.Provider
 	xProvider    xchain.Provider
 	creator      CreateFunc
-	state        *State
 	sendProvider func() (SendFunc, error)
 	awaitValSet  awaitValSet
 }
 
 // NewWorker creates a new worker for a single destination chain.
 func NewWorker(destChain netconf.Chain, network netconf.Network, cProvider cchain.Provider,
-	xProvider xchain.Provider, creator CreateFunc, sendProvider func() (SendFunc, error), state *State,
+	xProvider xchain.Provider, creator CreateFunc, sendProvider func() (SendFunc, error),
 	awaitValSet awaitValSet,
 ) *Worker {
 	return &Worker{
@@ -44,7 +43,6 @@ func NewWorker(destChain netconf.Chain, network netconf.Network, cProvider cchai
 		xProvider:    xProvider,
 		creator:      creator,
 		sendProvider: sendProvider,
-		state:        state,
 		awaitValSet:  awaitValSet,
 	}
 }
@@ -59,10 +57,6 @@ func (w *Worker) Run(ctx context.Context) {
 		}
 
 		log.Error(ctx, "Worker failed, resetting", err)
-
-		if err := w.state.Clear(w.destChain.ID); err != nil {
-			log.Error(ctx, "Failed to clear worker state", err)
-		}
 
 		workerResets.WithLabelValues(w.destChain.Name).Inc()
 		backoff()
@@ -96,7 +90,7 @@ func (w *Worker) runOnce(ctx context.Context) error {
 
 	buf := newActiveBuffer(w.destChain.Name, mempoolLimit, sender)
 
-	blockOffsets, err := fromChainVersionOffsets(w.destChain.ID, cursors, w.network.ChainVersionsTo(w.destChain.ID), w.state)
+	blockOffsets, err := fromChainVersionOffsets(cursors, w.network.ChainVersionsTo(w.destChain.ID))
 	if err != nil {
 		return err
 	}
@@ -113,9 +107,8 @@ func (w *Worker) runOnce(ctx context.Context) error {
 		}
 
 		callback := newCallback(w.xProvider, msgFilter, w.creator, buf.AddInput, w.destChain.ID, newMsgStreamMapper(w.network), w.awaitValSet)
-		wrapCb := wrapStatePersist(callback, w.state, w.destChain.ID)
 
-		w.cProvider.Subscribe(ctx, chainVer, fromOffset, w.destChain.Name, wrapCb)
+		w.cProvider.Subscribe(ctx, chainVer, fromOffset, w.destChain.Name, callback)
 
 		logAttrs = append(logAttrs, w.network.ChainVersionName(chainVer), fromOffset)
 	}
@@ -252,21 +245,6 @@ func newCallback(
 					return err
 				}
 			}
-		}
-
-		return nil
-	}
-}
-
-// wrapStatePersist wraps a provider callback, persisting successful processed block offsets per chain version to local state.
-func wrapStatePersist(cb cchain.ProviderCallback, state *State, destChainID uint64) cchain.ProviderCallback {
-	return func(ctx context.Context, att xchain.Attestation) error {
-		if err := cb(ctx, att); err != nil {
-			return err
-		}
-
-		if err := state.Persist(destChainID, att.ChainVersion(), att.BlockOffset); err != nil {
-			return errors.Wrap(err, "persist state")
 		}
 
 		return nil

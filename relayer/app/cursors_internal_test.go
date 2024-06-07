@@ -2,7 +2,6 @@ package relayer
 
 import (
 	"context"
-	"path/filepath"
 	"testing"
 
 	"github.com/omni-network/omni/lib/cchain"
@@ -33,28 +32,6 @@ func Test_fromOffsets(t *testing.T) {
 	stream2 := streamID(chainVer2)
 	stream3 := streamID(chainVer3)
 
-	makeState := func(t *testing.T, offset1, offset2, offset3 uint64) *State {
-		t.Helper()
-		state := NewEmptyState(filepath.Join(t.TempDir(), "state.json"))
-
-		if offset1 != 0 {
-			err := state.Persist(dstChain, chainVer1, offset1)
-			require.NoError(t, err)
-		}
-
-		if offset2 != 0 {
-			err := state.Persist(dstChain, chainVer2, offset2)
-			require.NoError(t, err)
-		}
-
-		if offset3 != 0 {
-			err := state.Persist(dstChain, chainVer3, offset3)
-			require.NoError(t, err)
-		}
-
-		return state
-	}
-
 	makeCursors := func(offset1, offset2, offset3 uint64) []xchain.SubmitCursor {
 		var resp []xchain.SubmitCursor
 		if offset1 != 0 {
@@ -81,50 +58,28 @@ func Test_fromOffsets(t *testing.T) {
 	tests := []struct {
 		name    string
 		onChain []xchain.SubmitCursor
-		onDisk  *State
 		want    map[xchain.ChainVersion]uint64
 	}{
 		{
-			name:    "on-disk empty, on-chain empty",
+			name:    "on-chain empty",
 			onChain: makeCursors(0, 0, 0),
-			onDisk:  makeState(t, 0, 0, 0),
 			want:    makeResult(1, 1, 1), // All streams initialize at 1
-		},
-		{
-			name:    "on-disk only",
-			onChain: makeCursors(0, 0, 0),
-			onDisk:  makeState(t, 5, 6, 7),
-			want:    makeResult(5, 6, 7),
-		},
-		{
-			name:    "on-disk higher",
-			onChain: makeCursors(2, 2, 2),
-			onDisk:  makeState(t, 5, 6, 7),
-			want:    makeResult(5, 6, 7),
 		},
 		{
 			name:    "on-chain only",
 			onChain: makeCursors(5, 6, 7),
-			onDisk:  makeState(t, 0, 0, 0),
-			want:    makeResult(5, 6, 7),
-		},
-		{
-			name:    "on-chain higher",
-			onChain: makeCursors(5, 6, 7),
-			onDisk:  makeState(t, 2, 2, 2),
 			want:    makeResult(5, 6, 7),
 		},
 		{
 			name:    "mix",
 			onChain: makeCursors(1, 6, 0),
-			onDisk:  makeState(t, 2, 5, 0),
-			want:    makeResult(2, 6, 1),
+			want:    makeResult(1, 6, 1),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := fromChainVersionOffsets(dstChain, tt.onChain, allChainVers, tt.onDisk)
+			got, err := fromChainVersionOffsets(tt.onChain, allChainVers)
 			require.NoError(t, err)
 			require.Equal(t, tt.want, got)
 		})
