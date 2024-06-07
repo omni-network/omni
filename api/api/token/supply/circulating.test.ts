@@ -13,14 +13,14 @@ test('circulating supply', () => {
   expect(circ).toBe(9_895_000)
 
   circ = circulatingSupply(Date.parse('5/17/24'))
-  expect(circ).toBe(10_509_583)
+  expect(circ).toBe(10_509_583.33)
   circ = circulatingSupply(Date.parse('5/18/24'))
-  expect(circ).toBe(10_509_583)
+  expect(circ).toBe(10_509_583.33)
 
   circ = circulatingSupply(Date.parse('1/17/27'))
-  expect(circ).toBe(78_661_093)
+  expect(circ).toBe(78_661_092.88)
   circ = circulatingSupply(Date.parse('1/18/27'))
-  expect(circ).toBe(78_661_093)
+  expect(circ).toBe(78_661_092.88)
 
   // post last cliff returns total supply
   circ = circulatingSupply(Date.parse('4/18/28'))
