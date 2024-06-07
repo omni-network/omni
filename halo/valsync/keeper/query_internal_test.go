@@ -112,6 +112,8 @@ func approvedExpectation() expectation {
 			gomock.Any(),
 			ptypes.MsgTypeValSet,
 			gomock.Any(),
+			xchain.BroadcastChainID,
+			xchain.ShardBroadcast0,
 		).AnyTimes().
 			Return(nil)
 
@@ -134,6 +136,8 @@ func defaultExpectation() expectation {
 			gomock.Any(),
 			ptypes.MsgTypeValSet,
 			gomock.Any(),
+			xchain.BroadcastChainID,
+			xchain.ShardBroadcast0,
 		).AnyTimes().
 			Return(nil)
 	}

@@ -43,7 +43,7 @@ func submissionToBinding(sub xchain.Submission) bindings.XSubmission {
 		msgs = append(msgs, bindings.XMsg{
 			SourceChainId: msg.SourceChainID,
 			DestChainId:   msg.DestChainID,
-			ShardId:       msg.ShardID,
+			ShardId:       uint64(msg.ShardID),
 			Offset:        msg.StreamOffset,
 			Sender:        msg.SourceMsgSender,
 			To:            msg.DestAddress,

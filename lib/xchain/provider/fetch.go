@@ -31,6 +31,7 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, str
 
 	if stream.SourceChainID == p.cChainID {
 		// Consensus xblocks only has a single stream/shard for now, so just query the latest block.
+		// Once we add multiple streams, we need to query portal module offset table using latest or historical blocks.
 		block, err := getConsXBlock(ctx, ref, p.cProvider)
 		if err != nil {
 			return xchain.EmitCursor{}, false, err
@@ -69,7 +70,7 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, str
 		opts.BlockNumber = header.Number
 	}
 
-	offset, err := caller.OutXMsgOffset(opts, stream.DestChainID, stream.ShardID)
+	offset, err := caller.OutXMsgOffset(opts, stream.DestChainID, uint64(stream.ShardID))
 	if err != nil {
 		return xchain.EmitCursor{}, false, errors.Wrap(err, "call OutXMgsOffset")
 	}
@@ -105,7 +106,7 @@ func (p *Provider) GetSubmittedCursor(ctx context.Context, stream xchain.StreamI
 
 	callOpts := &bind.CallOpts{Context: ctx, BlockNumber: big.NewInt(int64(height))}
 
-	msgOffset, err := caller.InXMsgOffset(callOpts, stream.SourceChainID, stream.ShardID)
+	msgOffset, err := caller.InXMsgOffset(callOpts, stream.SourceChainID, uint64(stream.ShardID))
 	if err != nil {
 		return xchain.SubmitCursor{}, false, errors.Wrap(err, "call InXMsgOffset")
 	}
@@ -114,12 +115,13 @@ func (p *Provider) GetSubmittedCursor(ctx context.Context, stream xchain.StreamI
 		return xchain.SubmitCursor{}, false, nil
 	}
 
-	blockOffset, err := caller.InXBlockOffset(callOpts, stream.SourceChainID, stream.ShardID)
+	blockOffset, err := caller.InXBlockOffset(callOpts, stream.SourceChainID, uint64(stream.ShardID))
 	if err != nil {
 		return xchain.SubmitCursor{}, false, errors.Wrap(err, "call InXBlockOffset")
 	}
 
-	valSetID, err := caller.InXStreamValidatorSetId(callOpts, stream.SourceChainID, stream.ShardID)
+	// Validator sets are indexed by the conf level, not shard ID.
+	valSetID, err := caller.InXStreamValidatorSetId(callOpts, stream.SourceChainID, uint64(stream.ShardID.ConfLevel()))
 	if err != nil {
 		return xchain.SubmitCursor{}, false, errors.Wrap(err, "call InXStreamValidatorSetId")
 	}
@@ -244,8 +246,8 @@ func (p *Provider) getXReceiptLogs(ctx context.Context, chainID uint64, height u
 	}
 
 	expectedShards := make(map[uint64]bool)
-	for _, shard := range chain.Shards {
-		expectedShards[shard] = true
+	for _, stream := range p.network.StreamsTo(chainID) {
+		expectedShards[uint64(stream.ShardID)] = true
 	}
 
 	filterer, err := bindings.NewOmniPortalFilterer(chain.PortalAddress, rpcClient)
@@ -277,7 +279,7 @@ func (p *Provider) getXReceiptLogs(ctx context.Context, chainID uint64, height u
 				StreamID: xchain.StreamID{
 					SourceChainID: e.SourceChainId,
 					DestChainID:   chain.ID,
-					ShardID:       e.ShardId,
+					ShardID:       xchain.ShardID(e.ShardId),
 				},
 				StreamOffset: e.Offset,
 			},
@@ -306,7 +308,7 @@ func (p *Provider) getXMsgLogs(ctx context.Context, chainID uint64, height uint6
 
 	expectedShards := make(map[uint64]bool)
 	for _, shard := range chain.Shards {
-		expectedShards[shard] = true
+		expectedShards[uint64(shard)] = true
 	}
 
 	filterer, err := bindings.NewOmniPortalFilterer(chain.PortalAddress, rpcClient)
@@ -338,7 +340,7 @@ func (p *Provider) getXMsgLogs(ctx context.Context, chainID uint64, height uint6
 				StreamID: xchain.StreamID{
 					SourceChainID: chain.ID,
 					DestChainID:   e.DestChainId,
-					ShardID:       e.ShardId,
+					ShardID:       xchain.ShardID(e.ShardId),
 				},
 				StreamOffset: e.Offset,
 			},

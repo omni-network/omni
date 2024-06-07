@@ -42,7 +42,7 @@ func TestProvider(t *testing.T) {
 		ID: netconf.Simnet,
 		Chains: []netconf.Chain{{
 			ID:     chainID,
-			Shards: []uint64{netconf.ShardFinalized0},
+			Shards: []xchain.ShardID{xchain.ShardFinalized0},
 		}},
 	}
 

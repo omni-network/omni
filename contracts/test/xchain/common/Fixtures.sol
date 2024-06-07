@@ -265,7 +265,7 @@ contract Fixtures is CommonBase, StdCheats {
         xmsgs[0] = XTypes.Msg({
             sourceChainId: omniCChainID,
             destChainId: broadcastChainId,
-            shardId: uint64(ConfLevel.Finalized),
+            shardId: ConfLevel.toBroadcastShard(ConfLevel.Finalized),
             offset: valSetId,
             sender: address(0), // Portal._CCHAIN_SENDER
             to: address(0), // Portal._VIRTUAL_PORTAL_ADDRRESS

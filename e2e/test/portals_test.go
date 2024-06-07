@@ -12,32 +12,26 @@ import (
 // and that at least half of the messages are received by the destination chains.
 func TestPortalOffsets(t *testing.T) {
 	t.Parallel()
-	testPortal(t, func(t *testing.T, source Portal, dests []Portal) {
+	testPortal(t, func(t *testing.T, network netconf.Network, source Portal, dests []Portal) {
 		t.Helper()
 		for _, dest := range dests {
-			if source.Chain.ID == dest.Chain.ID {
-				continue
+			for _, stream := range network.StreamsBetween(source.Chain.ID, dest.Chain.ID) {
+				sourceOffset, err := source.Contract.OutXMsgOffset(nil, dest.Chain.ID, uint64(stream.ShardID))
+				require.NoError(t, err)
+
+				destOffset, err := dest.Contract.InXMsgOffset(nil, source.Chain.ID, uint64(stream.ShardID))
+				require.NoError(t, err)
+
+				// require at least some xmsgs were sent
+				require.Greater(t, sourceOffset, uint64(0),
+					"no xmsgs sent from source chain %v to dest chain %v",
+					source.Chain.ID, dest.Chain.ID)
+
+				// require at least half were received
+				require.GreaterOrEqual(t, destOffset, sourceOffset/2,
+					"dest chain %v offset=%d, source chain %v offset=%d",
+					dest.Chain.ID, destOffset, source.Chain.ID, sourceOffset)
 			}
-
-			// right now, we only emit messages in finalized shard
-			// TODO: support testing multiple shards
-			shard := netconf.ShardFinalized0
-
-			sourceOffset, err := source.Contract.OutXMsgOffset(nil, dest.Chain.ID, shard)
-			require.NoError(t, err)
-
-			destOffset, err := dest.Contract.InXMsgOffset(nil, source.Chain.ID, shard)
-			require.NoError(t, err)
-
-			// require at least some xmsgs were sent
-			require.Greater(t, sourceOffset, uint64(0),
-				"no xmsgs sent from source chain %v to dest chain %v",
-				source.Chain.ID, dest.Chain.ID)
-
-			// require at least half were received
-			require.GreaterOrEqual(t, destOffset, sourceOffset/2,
-				"dest chain %v offset=%d, source chain %v offset=%d",
-				dest.Chain.ID, destOffset, source.Chain.ID, sourceOffset)
 		}
 	})
 }
@@ -45,7 +39,7 @@ func TestPortalOffsets(t *testing.T) {
 // TestSupportedChains ensures that all portals have been relayed supported chains from the PortalRegistry, via the XRegistry.
 func TestSupportedChains(t *testing.T) {
 	t.Parallel()
-	testPortal(t, func(t *testing.T, source Portal, dests []Portal) {
+	testPortal(t, func(t *testing.T, network netconf.Network, source Portal, dests []Portal) {
 		t.Helper()
 		for _, dest := range dests {
 			supported, err := source.Contract.IsSupportedChain(nil, dest.Chain.ID)

@@ -34,4 +34,11 @@ library ConfLevel {
     function isValid(uint8 level) internal pure returns (bool) {
         return level >= Latest && level <= Finalized;
     }
+
+    /**
+     * @notice Returns broadcast shard version of the given level.
+     */
+    function toBroadcastShard(uint8 level) internal pure returns (uint64) {
+        return uint64(level) | 0x0100;
+    }
 }

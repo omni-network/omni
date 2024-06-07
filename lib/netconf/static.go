@@ -8,6 +8,7 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -197,19 +198,19 @@ func SimnetNetwork() Network {
 	return Network{
 		ID: Simnet,
 		Chains: []Chain{
-			mustSimnetChain(Simnet.Static().OmniExecutionChainID, ShardFinalized0),
-			mustSimnetChain(evmchain.IDMockL1Fast, ShardLatest0),
-			mustSimnetChain(evmchain.IDMockL2, ShardLatest0),
+			mustSimnetChain(Simnet.Static().OmniExecutionChainID, xchain.ShardFinalized0),
+			mustSimnetChain(evmchain.IDMockL1Fast, xchain.ShardLatest0),
+			mustSimnetChain(evmchain.IDMockL2, xchain.ShardLatest0),
 			{
 				ID:     Simnet.Static().OmniConsensusChainIDUint64(),
 				Name:   "omni_consensus",
-				Shards: []uint64{ShardFinalized0},
+				Shards: []xchain.ShardID{xchain.ShardFinalized0},
 			},
 		},
 	}
 }
 
-func mustSimnetChain(id uint64, shard uint64) Chain {
+func mustSimnetChain(id uint64, shard xchain.ShardID) Chain {
 	meta, ok := evmchain.MetadataByID(id)
 	if !ok {
 		panic("missing chain metadata")
@@ -219,6 +220,6 @@ func mustSimnetChain(id uint64, shard uint64) Chain {
 		ID:          meta.ChainID,
 		Name:        meta.Name,
 		BlockPeriod: time.Millisecond * 500, // Speed up block times for testing
-		Shards:      []uint64{shard},
+		Shards:      []xchain.ShardID{shard},
 	}
 }

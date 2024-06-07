@@ -33,9 +33,12 @@ func (k Keeper) Block(ctx context.Context, req *types.BlockRequest) (*types.Bloc
 	var messages []*types.Msg
 	for _, msg := range msgs {
 		messages = append(messages, &types.Msg{
-			Id:        msg.GetId(),
-			Type:      msg.GetMsgType(),
-			MsgTypeId: msg.GetMsgTypeId(),
+			Id:           msg.GetId(),
+			Type:         msg.GetMsgType(),
+			MsgTypeId:    msg.GetMsgTypeId(),
+			DestChainId:  msg.GetDestChainId(),
+			ShardId:      msg.GetShardId(),
+			StreamOffset: msg.GetStreamOffset(),
 		})
 	}
 

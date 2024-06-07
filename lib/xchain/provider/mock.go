@@ -253,7 +253,7 @@ func newMsg(r *rand.Rand, srcChain, destChain uint64, offsetFunc func(xchain.Str
 	streamID := xchain.StreamID{
 		SourceChainID: srcChain,
 		DestChainID:   destChain,
-		ShardID:       uint64(xchain.ConfFinalized),
+		ShardID:       xchain.ShardFinalized0,
 	}
 
 	return xchain.Msg{

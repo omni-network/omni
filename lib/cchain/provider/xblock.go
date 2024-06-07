@@ -32,11 +32,6 @@ func (p Provider) XBlock(ctx context.Context, height uint64, latest bool) (xchai
 		return xchain.Block{}, false, errors.Wrap(err, "get chain ID")
 	}
 
-	broadcastStream := xchain.StreamID{
-		SourceChainID: chainID,
-		ShardID:       uint64(xchain.ConfFinalized), // Hardcode Shard for now.
-	}
-
 	var msgs []xchain.Msg
 	for _, msg := range block.Msgs {
 		switch ptypes.MsgType(msg.Type) {
@@ -60,8 +55,12 @@ func (p Provider) XBlock(ctx context.Context, height uint64, latest bool) (xchai
 
 			msgs = append(msgs, xchain.Msg{
 				MsgID: xchain.MsgID{
-					StreamID:     broadcastStream,
-					StreamOffset: msg.Id,
+					StreamID: xchain.StreamID{
+						SourceChainID: chainID,
+						DestChainID:   msg.DestChainId,
+						ShardID:       xchain.ShardID(msg.ShardId),
+					},
+					StreamOffset: msg.StreamOffset,
 				},
 				Data: data,
 			})

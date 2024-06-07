@@ -81,7 +81,7 @@ func networkFromPortals(network ID, portals []bindings.PortalRegistryDeployment)
 			PortalAddress: portal.Addr,
 			DeployHeight:  portal.DeployHeight,
 			BlockPeriod:   metadata.BlockPeriod,
-			Shards:        portal.Shards,
+			Shards:        toShardIDs(portal.Shards),
 		})
 	}
 
@@ -91,8 +91,8 @@ func networkFromPortals(network ID, portals []bindings.PortalRegistryDeployment)
 		ID:           consensusMeta.ChainID,
 		Name:         consensusMeta.Name,
 		BlockPeriod:  consensusMeta.BlockPeriod,
-		Shards:       []uint64{ShardFinalized0}, // Consensus chain only supports finalized shard.
-		DeployHeight: 1,                         // ValidatorSets start at 1, not 0.
+		Shards:       []xchain.ShardID{xchain.ShardBroadcast0}, // Consensus chain only supports broadcast shard.
+		DeployHeight: 1,                                        // ValidatorSets start at 1, not 0.
 	})
 
 	return Network{
@@ -131,4 +131,13 @@ func ChainVersionNamer(network ID) func(version xchain.ChainVersion) string {
 	return func(chainVer xchain.ChainVersion) string {
 		return fmt.Sprintf("%s|%s", MetadataByID(network, chainVer.ID).Name, chainVer.ConfLevel.Label())
 	}
+}
+
+func toShardIDs(shards []uint64) []xchain.ShardID {
+	var resp []xchain.ShardID
+	for _, shard := range shards {
+		resp = append(resp, xchain.ShardID(shard))
+	}
+
+	return resp
 }

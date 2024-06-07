@@ -162,7 +162,7 @@ func TestConfLevels(t *testing.T) {
 
 	// Latest finalization start results in 1 shard and 2 conf levels.
 	chain := netconf.Chain{
-		Shards: []uint64{netconf.ShardLatest0},
+		Shards: []xchain.ShardID{xchain.ShardLatest0},
 	}
 	require.Len(t, chain.ConfLevels(), 2)
 	require.EqualValues(t, chain.ConfLevels(), []xchain.ConfLevel{xchain.ConfLatest, xchain.ConfFinalized})
