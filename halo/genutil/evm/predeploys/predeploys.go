@@ -124,14 +124,21 @@ func setProxyAdmin(db *state.MemDB, owner common.Address) error {
 
 // setXRegistry sets the XRegistry predeploy.
 func setXRegistry(db *state.MemDB, owner common.Address) error {
-	storage := state.StorageValues{"_owner": owner}
+	storage := state.StorageValues{
+		"_initialized": uint8(1), // disable initializer
+		"_owner":       owner,
+	}
 
 	return setPredeploy(db, xRegistry, xRegistryCode, bindings.XRegistryStorageLayout, storage)
 }
 
 // setPortalRegistry sets the PortalRegistry predeploy.
 func setPortalRegistry(db *state.MemDB, owner common.Address) error {
-	storage := state.StorageValues{"_owner": owner}
+	storage := state.StorageValues{
+		"_initialized": uint8(1), // disable initializer
+		"_owner":       owner,
+	}
+
 	return setPredeploy(db, portalRegistry, portalRegistryCode, bindings.PortalRegistryStorageLayout, storage)
 }
 
@@ -153,6 +160,17 @@ func setSlashing(db *state.MemDB) error {
 func setPredeploy(db *state.MemDB, proxy common.Address, code []byte, layout solc.StorageLayout, storage state.StorageValues) error {
 	impl := impl(proxy)
 	setProxyImplementation(db, proxy, impl)
+
+	// disable impl initializers, if needed
+	if _, ok := solc.SlotOf(layout, "_initialized"); ok {
+		slot, err := state.EncodeStorageEntry(layout, "_initialized", uint8(255)) // max uint8, disables all initializers
+		if err != nil {
+			return errors.Wrap(err, "encode impl storage", "addr", impl)
+		}
+
+		db.SetState(impl, slot.Key, slot.Value)
+	}
+
 	db.SetCode(impl, code)
 
 	return setStrorage(db, proxy, layout, storage)

@@ -9,7 +9,7 @@ library Predeploys {
     // proxy admin for all predeploys
     address internal constant ProxyAdmin = 0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa;
 
-    // omni Predeploys
+    // omni predeploys
     address internal constant XRegistry = 0x121E240000000000000000000000000000000001;
     address internal constant PortalRegistry = 0x121E240000000000000000000000000000000002;
     address internal constant EthStakeInbox = 0x121E240000000000000000000000000000000003;
