@@ -1,0 +1,135 @@
+{
+  "storage": [
+    {
+      "astId": 139,
+      "contract": "src/token/OmniBridgeNative.sol:OmniBridgeNative",
+      "label": "_initialized",
+      "offset": 0,
+      "slot": "0",
+      "type": "t_uint8"
+    },
+    {
+      "astId": 142,
+      "contract": "src/token/OmniBridgeNative.sol:OmniBridgeNative",
+      "label": "_initializing",
+      "offset": 1,
+      "slot": "0",
+      "type": "t_bool"
+    },
+    {
+      "astId": 681,
+      "contract": "src/token/OmniBridgeNative.sol:OmniBridgeNative",
+      "label": "__gap",
+      "offset": 0,
+      "slot": "1",
+      "type": "t_array(t_uint256)50_storage"
+    },
+    {
+      "astId": 11,
+      "contract": "src/token/OmniBridgeNative.sol:OmniBridgeNative",
+      "label": "_owner",
+      "offset": 0,
+      "slot": "51",
+      "type": "t_address"
+    },
+    {
+      "astId": 131,
+      "contract": "src/token/OmniBridgeNative.sol:OmniBridgeNative",
+      "label": "__gap",
+      "offset": 0,
+      "slot": "52",
+      "type": "t_array(t_uint256)49_storage"
+    },
+    {
+      "astId": 1379,
+      "contract": "src/token/OmniBridgeNative.sol:OmniBridgeNative",
+      "label": "l1ChainId",
+      "offset": 0,
+      "slot": "101",
+      "type": "t_uint64"
+    },
+    {
+      "astId": 1383,
+      "contract": "src/token/OmniBridgeNative.sol:OmniBridgeNative",
+      "label": "omni",
+      "offset": 8,
+      "slot": "101",
+      "type": "t_contract(IOmniPortal)908"
+    },
+    {
+      "astId": 1386,
+      "contract": "src/token/OmniBridgeNative.sol:OmniBridgeNative",
+      "label": "l1BridgeBalance",
+      "offset": 0,
+      "slot": "102",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 1389,
+      "contract": "src/token/OmniBridgeNative.sol:OmniBridgeNative",
+      "label": "l1Bridge",
+      "offset": 0,
+      "slot": "103",
+      "type": "t_address"
+    },
+    {
+      "astId": 1394,
+      "contract": "src/token/OmniBridgeNative.sol:OmniBridgeNative",
+      "label": "claimable",
+      "offset": 0,
+      "slot": "104",
+      "type": "t_mapping(t_address,t_uint256)"
+    }
+  ],
+  "types": {
+    "t_address": {
+      "encoding": "inplace",
+      "label": "address",
+      "numberOfBytes": "20"
+    },
+    "t_array(t_uint256)49_storage": {
+      "encoding": "inplace",
+      "label": "uint256[49]",
+      "numberOfBytes": "1568",
+      "base": "t_uint256"
+    },
+    "t_array(t_uint256)50_storage": {
+      "encoding": "inplace",
+      "label": "uint256[50]",
+      "numberOfBytes": "1600",
+      "base": "t_uint256"
+    },
+    "t_bool": {
+      "encoding": "inplace",
+      "label": "bool",
+      "numberOfBytes": "1"
+    },
+    "t_contract(IOmniPortal)908": {
+      "encoding": "inplace",
+      "label": "contract IOmniPortal",
+      "numberOfBytes": "20"
+    },
+    "t_mapping(t_address,t_uint256)": {
+      "encoding": "mapping",
+      "key": "t_address",
+      "label": "mapping(address => uint256)",
+      "numberOfBytes": "32",
+      "value": "t_uint256"
+    },
+    "t_uint256": {
+      "encoding": "inplace",
+      "label": "uint256",
+      "numberOfBytes": "32"
+    },
+    "t_uint64": {
+      "encoding": "inplace",
+      "label": "uint64",
+      "numberOfBytes": "8"
+    },
+    "t_uint8": {
+      "encoding": "inplace",
+      "label": "uint8",
+      "numberOfBytes": "1"
+    }
+  }
+}

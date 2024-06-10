@@ -41,12 +41,12 @@
       "type": "t_array(t_uint256)49_storage"
     },
     {
-      "astId": 52631,
+      "astId": 52873,
       "contract": "src/xchain/PortalRegistry.sol:PortalRegistry",
       "label": "deployments",
       "offset": 0,
       "slot": "101",
-      "type": "t_mapping(t_uint64,t_struct(Deployment)52642_storage)"
+      "type": "t_mapping(t_uint64,t_struct(Deployment)52884_storage)"
     }
   ],
   "types": {
@@ -78,20 +78,20 @@
       "label": "bool",
       "numberOfBytes": "1"
     },
-    "t_mapping(t_uint64,t_struct(Deployment)52642_storage)": {
+    "t_mapping(t_uint64,t_struct(Deployment)52884_storage)": {
       "encoding": "mapping",
       "key": "t_uint64",
       "label": "mapping(uint64 => struct PortalRegistry.Deployment)",
       "numberOfBytes": "32",
-      "value": "t_struct(Deployment)52642_storage"
+      "value": "t_struct(Deployment)52884_storage"
     },
-    "t_struct(Deployment)52642_storage": {
+    "t_struct(Deployment)52884_storage": {
       "encoding": "inplace",
       "label": "struct PortalRegistry.Deployment",
       "numberOfBytes": "96",
       "members": [
         {
-          "astId": 52634,
+          "astId": 52876,
           "contract": "src/xchain/PortalRegistry.sol:PortalRegistry",
           "label": "chainId",
           "offset": 0,
@@ -99,7 +99,7 @@
           "type": "t_uint64"
         },
         {
-          "astId": 52636,
+          "astId": 52878,
           "contract": "src/xchain/PortalRegistry.sol:PortalRegistry",
           "label": "addr",
           "offset": 8,
@@ -107,7 +107,7 @@
           "type": "t_address"
         },
         {
-          "astId": 52638,
+          "astId": 52880,
           "contract": "src/xchain/PortalRegistry.sol:PortalRegistry",
           "label": "deployHeight",
           "offset": 0,
@@ -115,7 +115,7 @@
           "type": "t_uint64"
         },
         {
-          "astId": 52641,
+          "astId": 52883,
           "contract": "src/xchain/PortalRegistry.sol:PortalRegistry",
           "label": "shards",
           "offset": 0,

@@ -35,6 +35,15 @@ func (db *MemDB) SetCode(addr common.Address, code []byte) {
 	db.genesis.Alloc[addr] = account
 }
 
+func (db *MemDB) SetBalance(addr common.Address, balance *big.Int) {
+	db.rw.Lock()
+	defer db.rw.Unlock()
+
+	account := db.getOrCreate(addr)
+	account.Balance = balance
+	db.genesis.Alloc[addr] = account
+}
+
 func (db *MemDB) SetState(addr common.Address, key, value common.Hash) {
 	db.rw.Lock()
 	defer db.rw.Unlock()
