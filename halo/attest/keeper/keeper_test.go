@@ -5,7 +5,7 @@ import (
 
 	"github.com/omni-network/omni/halo/attest/keeper"
 	"github.com/omni-network/omni/halo/attest/types"
-	vtypes "github.com/omni-network/omni/halo/valsync/types"
+	vtypes "github.com/omni-network/omni/halo/epochsync/types"
 
 	"github.com/ethereum/go-ethereum/common"
 

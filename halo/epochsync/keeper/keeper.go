@@ -3,8 +3,8 @@ package keeper
 import (
 	"context"
 
+	"github.com/omni-network/omni/halo/epochsync/types"
 	ptypes "github.com/omni-network/omni/halo/portal/types"
-	"github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -47,7 +47,7 @@ func NewKeeper(
 	portal ptypes.Portal,
 ) (*Keeper, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
-		{Id: 1, ProtoFileName: File_halo_valsync_keeper_valset_proto.Path()},
+		{Id: 1, ProtoFileName: File_halo_epochsync_keeper_valset_proto.Path()},
 	}}
 
 	modDB, err := ormdb.NewModuleDB(schema, ormdb.ModuleDBOptions{KVStoreService: storeService})

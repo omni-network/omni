@@ -2,7 +2,7 @@ package keeper_test
 
 import (
 	"github.com/omni-network/omni/halo/attest/types"
-	vtypes "github.com/omni-network/omni/halo/valsync/types"
+	vtypes "github.com/omni-network/omni/halo/epochsync/types"
 	"github.com/omni-network/omni/lib/k1util"
 
 	"github.com/cometbft/cometbft/crypto"

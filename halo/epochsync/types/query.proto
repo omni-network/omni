@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package halo.valsync.types;
+package halo.epochsync.types;
 
-option go_package = "halo/valsync/types";
+option go_package = "halo/epochsync/types";
 
 // Query defines the gRPC querier service.
 service Query {

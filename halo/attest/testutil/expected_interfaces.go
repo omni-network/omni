@@ -3,7 +3,7 @@ package testutil
 
 import (
 	"github.com/omni-network/omni/halo/attest/types"
-	vtypes "github.com/omni-network/omni/halo/valsync/types"
+	vtypes "github.com/omni-network/omni/halo/epochsync/types"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"

@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	types1 "github.com/omni-network/omni/halo/attest/types"
+	"github.com/omni-network/omni/halo/epochsync/types"
 	ptypes "github.com/omni-network/omni/halo/portal/types"
-	"github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 

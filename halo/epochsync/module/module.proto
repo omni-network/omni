@@ -1,15 +1,15 @@
 syntax = "proto3";
 
-package halo.valsync.module;
+package halo.epochsync.module;
 
 import "cosmos/app/v1alpha1/module.proto";
 
-option go_package = "halo/valsync/module";
+option go_package = "halo/epochsync/module";
 
 // Module is the config object for the module.
 message Module {
   option (cosmos.app.v1alpha1.module) = {
-    go_import: "github.com/omni-network/omni/halo/valsync"
+    go_import: "github.com/omni-network/omni/halo/epochsync"
   };
 
   // authority defines the custom module authority. If not set, defaults to the governance module.
