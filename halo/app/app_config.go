@@ -3,13 +3,13 @@ package app
 import (
 	attestmodule "github.com/omni-network/omni/halo/attest/module"
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
+	epochsyncmodule "github.com/omni-network/omni/halo/epochsync/module"
+	epochsynctypes "github.com/omni-network/omni/halo/epochsync/types"
 	engevmmodule "github.com/omni-network/omni/halo/evmengine/module"
 	engevmtypes "github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/halo/evmstaking"
 	portalmodule "github.com/omni-network/omni/halo/portal/module"
 	portaltypes "github.com/omni-network/omni/halo/portal/types"
-	valsyncmodule "github.com/omni-network/omni/halo/valsync/module"
-	valsynctypes "github.com/omni-network/omni/halo/valsync/types"
 
 	"github.com/ethereum/go-ethereum/params"
 
@@ -89,7 +89,7 @@ var (
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,
 		genutiltypes.ModuleName,
-		valsynctypes.ModuleName,
+		epochsynctypes.ModuleName,
 	}
 
 	beginBlockers = []string{
@@ -101,7 +101,7 @@ var (
 
 	endBlockers = []string{
 		attesttypes.ModuleName,
-		valsynctypes.ModuleName, // Wraps staking module end blocker (must come after attest module)
+		epochsynctypes.ModuleName, // Wraps staking module end blocker (must come after attest module)
 	}
 
 	// blocked account addresses.
@@ -129,7 +129,7 @@ var (
 				Config: appconfig.WrapAny(&runtimev1alpha1.Module{
 					AppName:       Name,
 					BeginBlockers: beginBlockers,
-					// Setting endblockers in newApp since valsync replaces staking endblocker.
+					// Setting endblockers in newApp since epochsync replaces staking endblocker.
 					InitGenesis: genesisModuleOrder,
 					OverrideStoreKeys: []*runtimev1alpha1.StoreKeyConfig{
 						{
@@ -192,8 +192,8 @@ var (
 				}),
 			},
 			{
-				Name:   valsynctypes.ModuleName,
-				Config: appconfig.WrapAny(&valsyncmodule.Module{}),
+				Name:   epochsynctypes.ModuleName,
+				Config: appconfig.WrapAny(&epochsyncmodule.Module{}),
 			},
 			{
 				Name:   portaltypes.ModuleName,

@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/omni-network/omni/halo/attest/types"
-	vtypes "github.com/omni-network/omni/halo/valsync/types"
+	vtypes "github.com/omni-network/omni/halo/epochsync/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"

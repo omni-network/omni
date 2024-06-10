@@ -6,8 +6,8 @@ import (
 	"time"
 
 	atypes "github.com/omni-network/omni/halo/attest/types"
+	vtypes "github.com/omni-network/omni/halo/epochsync/types"
 	ptypes "github.com/omni-network/omni/halo/portal/types"
-	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/expbackoff"

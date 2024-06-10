@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/omni-network/omni/halo/epochsync/keeper"
+	"github.com/omni-network/omni/halo/epochsync/types"
 	ptypes "github.com/omni-network/omni/halo/portal/types"
-	"github.com/omni-network/omni/halo/valsync/keeper"
-	"github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/errors"
 
 	abci "github.com/cometbft/cometbft/abci/types"

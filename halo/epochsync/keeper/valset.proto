@@ -1,10 +1,10 @@
 syntax = "proto3";
 
-package halo.valsync.keeper;
+package halo.epochsync.keeper;
 
 import "cosmos/orm/v1/orm.proto";
 
-option go_package = "halo/valsync/keeper";
+option go_package = "halo/epochsync/keeper";
 
 // ValidatorSet defines a set of consensus chain validators.
 // The genesis set is created and implicitly attested and activated at height 0.
