@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/halo/epochsync/types"
 	ptypes "github.com/omni-network/omni/halo/portal/types"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
@@ -74,7 +75,7 @@ func (m AppModule) EndBlock(ctx context.Context) ([]abci.ValidatorUpdate, error)
 }
 
 func (m AppModule) InitGenesis(ctx sdk.Context, _ codec.JSONCodec, _ json.RawMessage) {
-	if err := m.keeper.InsertGenesisSet(ctx); err != nil {
+	if err := m.keeper.InsertGenesisEpoch(ctx); err != nil {
 		panic(errors.Wrap(err, "insert genesis valset"))
 	}
 }
@@ -143,7 +144,8 @@ type ModuleInputs struct {
 	SKeeper      types.StakingKeeper
 	AKeeper      types.AttestKeeper
 	Subscriber   types.ValSetSubscriber
-	Portal       ptypes.Portal
+	Portal       ptypes.EmitPortal
+	EthClient    ethclient.Client
 }
 
 type ModuleOutputs struct {
@@ -155,12 +157,12 @@ type ModuleOutputs struct {
 
 func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
 	k, err := keeper.NewKeeper(
-		in.Cdc,
 		in.StoreService,
 		in.SKeeper,
 		in.AKeeper,
 		in.Subscriber,
 		in.Portal,
+		in.EthClient,
 	)
 	if err != nil {
 		return ModuleOutputs{}, err

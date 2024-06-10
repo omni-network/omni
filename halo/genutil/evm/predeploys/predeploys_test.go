@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/netconf"
 
@@ -38,7 +39,10 @@ var (
 func TestAlloc(t *testing.T) {
 	t.Parallel()
 
-	predeps, err := predeploys.Alloc(netconf.Staging)
+	admin, err := eoa.Admin(netconf.Staging)
+	require.NoError(t, err)
+
+	predeps, err := predeploys.Alloc(admin)
 	require.NoError(t, err)
 
 	// Check each namespace filled with proxies

@@ -6,5 +6,5 @@ import (
 )
 
 type Portal interface {
-	types.Portal
+	types.EmitPortal
 }
