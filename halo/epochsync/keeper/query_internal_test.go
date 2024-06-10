@@ -80,7 +80,7 @@ func TestValidatorSet(t *testing.T) {
 
 			for i, set := range tt.populate {
 				sdkCtx = sdkCtx.WithBlockHeight(int64(i + 1))
-				err := keeper.insertValidatorSet(sdkCtx, clone(set), i == 0)
+				_, err := keeper.insertValidatorSet(sdkCtx, clone(set), i == 0)
 				require.NoError(t, err)
 			}
 

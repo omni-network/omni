@@ -23,6 +23,6 @@ const (
 	msgTypeSentinel MsgType = 2 // Must be last
 )
 
-type Portal interface {
+type EmitPortal interface {
 	CreateMsg(ctx sdk.Context, typ MsgType, msgTypeID uint64, destChainID uint64, shardID xchain.ShardID) error
 }

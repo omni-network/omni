@@ -12,7 +12,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdktestutil "github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
@@ -34,7 +33,6 @@ func setupKeeper(t *testing.T, expectations ...expectation) (*Keeper, sdk.Contex
 	ctx := sdktestutil.DefaultContext(key, storetypes.NewTransientStoreKey("test_key"))
 	ctx = ctx.WithBlockHeight(1)
 	ctx = ctx.WithChainID(netconf.Simnet.Static().OmniConsensusChainIDStr())
-	codec := moduletestutil.MakeTestEncodingConfig().Codec
 
 	// gomock initialization
 	ctrl := gomock.NewController(t)
@@ -49,7 +47,7 @@ func setupKeeper(t *testing.T, expectations ...expectation) (*Keeper, sdk.Contex
 		exp(ctx, m)
 	}
 
-	k, err := NewKeeper(codec, storeSvc, m.sKeeper, m.aKeeper, m.subscriber, m.portal)
+	k, err := NewKeeper(storeSvc, m.sKeeper, m.aKeeper, m.subscriber, m.portal, nil)
 	require.NoError(t, err, "new keeper")
 
 	return k, ctx

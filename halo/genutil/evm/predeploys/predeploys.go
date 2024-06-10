@@ -4,10 +4,8 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
-	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/halo/genutil/evm/state"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/solc"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -68,17 +66,12 @@ var (
 )
 
 // Alloc returns the genesis allocs for the predeployed contracts, initializing code and storage.
-func Alloc(network netconf.ID) (types.GenesisAlloc, error) {
+func Alloc(admin common.Address) (types.GenesisAlloc, error) {
 	emptyGenesis := &core.Genesis{Alloc: types.GenesisAlloc{}}
 
 	db := state.NewMemDB(emptyGenesis)
 
 	setProxies(db)
-
-	admin, err := eoa.Admin(network)
-	if err != nil {
-		return nil, errors.Wrap(err, "network admin")
-	}
 
 	if err := setProxyAdmin(db, admin); err != nil {
 		return nil, errors.Wrap(err, "set proxy admin")

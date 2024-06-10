@@ -3,20 +3,24 @@ package keeper
 import (
 	"context"
 
+	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/epochsync/types"
+	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	ptypes "github.com/omni-network/omni/halo/portal/types"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	ormv1alpha1 "cosmossdk.io/api/cosmos/orm/v1alpha1"
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/orm/model/ormdb"
 	"cosmossdk.io/orm/model/ormlist"
-	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
@@ -27,27 +31,31 @@ import (
 const cometValidatorActiveDelay = 2
 
 type Keeper struct {
-	cdc               codec.BinaryCodec
-	storeService      store.KVStoreService
 	sKeeper           types.StakingKeeper
 	aKeeper           types.AttestKeeper
 	valsetTable       ValidatorSetTable
 	valTable          ValidatorTable
+	epochTable        EpochTable
+	networkTable      NetworkTable
 	subscriber        types.ValSetSubscriber
-	portal            ptypes.Portal
+	emilPortal        ptypes.EmitPortal
 	subscriberInitted bool
+
+	ethCl           ethclient.Client
+	portalRegAdress common.Address
+	portalRegistry  *bindings.PortalRegistryFilterer
 }
 
 func NewKeeper(
-	cdc codec.BinaryCodec,
 	storeService store.KVStoreService,
 	sKeeper types.StakingKeeper,
 	aKeeper types.AttestKeeper,
 	subscriber types.ValSetSubscriber,
-	portal ptypes.Portal,
+	portal ptypes.EmitPortal,
+	ethCl ethclient.Client,
 ) (*Keeper, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
-		{Id: 1, ProtoFileName: File_halo_epochsync_keeper_valset_proto.Path()},
+		{Id: 1, ProtoFileName: File_halo_epochsync_keeper_epoch_proto.Path()},
 	}}
 
 	modDB, err := ormdb.NewModuleDB(schema, ormdb.ModuleDBOptions{KVStoreService: storeService})
@@ -55,20 +63,29 @@ func NewKeeper(
 		return nil, errors.Wrap(err, "create module db")
 	}
 
-	valsetStore, err := NewValsetStore(modDB)
+	epochStore, err := NewEpochStore(modDB)
 	if err != nil {
-		return nil, errors.Wrap(err, "create valset store")
+		return nil, errors.Wrap(err, "create epoch store")
+	}
+
+	address := common.HexToAddress(predeploys.PortalRegistry)
+	protalReg, err := bindings.NewPortalRegistryFilterer(address, ethCl)
+	if err != nil {
+		return nil, errors.Wrap(err, "new portal registry")
 	}
 
 	return &Keeper{
-		cdc:          cdc,
-		storeService: storeService,
-		valsetTable:  valsetStore.ValidatorSetTable(),
-		valTable:     valsetStore.ValidatorTable(),
-		sKeeper:      sKeeper,
-		aKeeper:      aKeeper,
-		subscriber:   subscriber,
-		portal:       portal,
+		epochTable:      epochStore.EpochTable(),
+		networkTable:    epochStore.NetworkTable(),
+		valsetTable:     epochStore.ValidatorSetTable(),
+		valTable:        epochStore.ValidatorTable(),
+		sKeeper:         sKeeper,
+		aKeeper:         aKeeper,
+		subscriber:      subscriber,
+		emilPortal:      portal,
+		ethCl:           ethCl,
+		portalRegAdress: address,
+		portalRegistry:  protalReg,
 	}, nil
 }
 
@@ -85,23 +102,8 @@ func (k *Keeper) EndBlock(ctx context.Context) ([]abci.ValidatorUpdate, error) {
 		return nil, errors.Wrap(err, "staking keeper end block")
 	}
 
-	// Insert the new validator set.
-	if len(updates) > 0 {
-		valset, err := k.sKeeper.GetLastValidators(ctx)
-		if err != nil {
-			return nil, errors.Wrap(err, "get last validators")
-		} else if len(valset) == 0 {
-			return nil, errors.New("empty validator set")
-		}
-
-		merged, err := mergeValidatorSet(valset, updates)
-		if err != nil {
-			return nil, errors.Wrap(err, "merge validator set")
-		}
-
-		if err := k.insertValidatorSet(ctx, merged, false); err != nil {
-			return nil, errors.Wrap(err, "insert updates")
-		}
+	if err := k.maybeStoreValidatorUpdates(ctx, updates); err != nil {
+		return nil, err
 	}
 
 	// The subscriber is only added after `InitGenesis`, so ensure we notify it of the latest valset.
@@ -113,9 +115,56 @@ func (k *Keeper) EndBlock(ctx context.Context) ([]abci.ValidatorUpdate, error) {
 	return k.processAttested(ctx)
 }
 
-// InsertGenesisSet inserts the current genesis validator set into the database.
-// This should only be called during InitGenesis AFTER the staking module's InitGenesis.
-func (k *Keeper) InsertGenesisSet(ctx context.Context) error {
+// maybeStoreValidatorUpdates stores the provided validator updates as the next unattested validator set if not empty.
+func (k *Keeper) maybeStoreValidatorUpdates(ctx context.Context, updates []abci.ValidatorUpdate) error {
+	if len(updates) == 0 {
+		return nil
+	}
+
+	valset, err := k.sKeeper.GetLastValidators(ctx)
+	if err != nil {
+		return errors.Wrap(err, "get last validators")
+	} else if len(valset) == 0 {
+		return errors.New("empty validator set")
+	}
+
+	merged, err := mergeValidatorSet(valset, updates)
+	if err != nil {
+		return errors.Wrap(err, "merge validator set")
+	}
+
+	valsetID, err := k.insertValidatorSet(ctx, merged, false)
+	if err != nil {
+		return errors.Wrap(err, "insert updates")
+	}
+
+	epoch, err := k.getOrCreateEpoch(ctx)
+	if err != nil {
+		return errors.Wrap(err, "get or create epoch")
+	}
+
+	epoch.ValsetId = valsetID
+	if err := k.epochTable.Update(ctx, epoch); err != nil {
+		return errors.Wrap(err, "update epoch")
+	}
+
+	stats := setStats(merged)
+	log.Info(ctx, "💫 Storing new unattested epoch and validator set",
+		"epoch_id", epoch.GetId(),
+		"valset_id", valsetID,
+		"len", stats.TotalLen,
+		"updated", stats.TotalUpdated,
+		"removed", stats.TotalRemoved,
+		"total_power", stats.TotalPower,
+		"height", sdk.UnwrapSDKContext(ctx).BlockHeight(),
+	)
+
+	return nil
+}
+
+// InsertGenesisEpoch inserts the current genesis validator set and empty network as the initial epoch.
+// Note: This MUST only be called during InitGenesis AFTER the staking module's InitGenesis.
+func (k *Keeper) InsertGenesisEpoch(ctx context.Context) error {
 	valset, err := k.sKeeper.GetLastValidators(ctx)
 	if err != nil {
 		return errors.Wrap(err, "get genesis validators")
@@ -138,35 +187,76 @@ func (k *Keeper) InsertGenesisSet(ctx context.Context) error {
 		})
 	}
 
-	return k.insertValidatorSet(ctx, vals, true)
+	valsetID, err := k.insertValidatorSet(ctx, vals, true)
+	if err != nil {
+		return errors.Wrap(err, "insert valset")
+	} else if valsetID != 1 {
+		return errors.New("genesis valset id not 1 [BUG]")
+	}
+
+	// Create genesis (empty) network
+	networkID, err := k.networkTable.InsertReturningId(ctx, &Network{})
+	if err != nil {
+		return errors.Wrap(err, "insert network")
+	} else if networkID != 1 {
+		return errors.New("genesis network id not 1 [BUG]")
+	}
+
+	// Create genesis epoch
+	epoch := &Epoch{
+		CreatedHeight: uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()),
+		Attested:      true, // Genesis epoch is automatically attested.
+		NetworkId:     networkID,
+		ValsetId:      valsetID,
+	}
+
+	epochID, err := k.epochTable.InsertReturningId(ctx, epoch)
+	if err != nil {
+		return errors.Wrap(err, "insert epoch")
+	} else if epochID != 1 {
+		return errors.New("genesis epoch id not 1 [BUG]")
+	}
+
+	stats := setStats(vals)
+	log.Info(ctx, "💫 Storing genesis epoch and validator set",
+		"epoch_id", epoch.GetId(),
+		"valset_id", valsetID,
+		"len", stats.TotalLen,
+		"updated", stats.TotalUpdated,
+		"removed", stats.TotalRemoved,
+		"total_power", stats.TotalPower,
+		"height", sdk.UnwrapSDKContext(ctx).BlockHeight(),
+	)
+
+	return nil
 }
 
 // insertValidatorSet inserts the current validator set into the database.
-func (k *Keeper) insertValidatorSet(ctx context.Context, vals []*Validator, isGenesis bool) error {
+func (k *Keeper) insertValidatorSet(ctx context.Context, vals []*Validator, isGenesis bool) (uint64, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	if len(vals) == 0 {
-		return errors.New("empty validators")
+		return 0, errors.New("empty validators")
 	}
 
-	// TODO(corver): Ensure we are not inserting the same validator set twice.
+	// TODO(corver): Remove attested field from valset.
 
 	valsetID, err := k.valsetTable.InsertReturningId(ctx, &ValidatorSet{
 		CreatedHeight: uint64(sdkCtx.BlockHeight()),
 		Attested:      isGenesis, // Only genesis set is automatically attested.
 	})
 	if err != nil {
-		return errors.Wrap(err, "insert valset")
+		return 0, errors.Wrap(err, "insert valset")
 	}
 
-	if err := k.portal.CreateMsg(
+	if err := k.emilPortal.CreateMsg(
 		sdkCtx,
 		ptypes.MsgTypeValSet,
 		valsetID,
 		xchain.BroadcastChainID,
 		xchain.ShardBroadcast0,
 	); err != nil {
-		return errors.Wrap(err, "create message")
+		return 0, errors.Wrap(err, "create message")
 	}
 
 	var totalPower, totalUpdated, totalLen, totalRemoved int64
@@ -174,7 +264,7 @@ func (k *Keeper) insertValidatorSet(ctx context.Context, vals []*Validator, isGe
 		val.ValsetId = valsetID
 		err = k.valTable.Insert(ctx, val)
 		if err != nil {
-			return errors.Wrap(err, "insert validator")
+			return 0, errors.Wrap(err, "insert validator")
 		}
 
 		totalPower += val.GetPower()
@@ -186,25 +276,11 @@ func (k *Keeper) insertValidatorSet(ctx context.Context, vals []*Validator, isGe
 		} else if val.GetPower() == 0 {
 			totalRemoved++
 		} else {
-			return errors.New("negative power")
+			return 0, errors.New("negative power")
 		}
 	}
 
-	msg := "💫 Storing new unattested validator set"
-	if isGenesis {
-		msg = "💫 Storing genesis validator set"
-	}
-
-	log.Info(ctx, msg,
-		"valset_id", valsetID,
-		"len", totalLen,
-		"updated", totalUpdated,
-		"removed", totalRemoved,
-		"total_power", totalPower,
-		"height", sdkCtx.BlockHeight(),
-	)
-
-	return nil
+	return valsetID, nil
 }
 
 func (k *Keeper) maybeInitSubscriber(ctx context.Context) error {
@@ -345,4 +421,25 @@ func mergeValidatorSet(valset []stypes.Validator, updates []abci.ValidatorUpdate
 	}
 
 	return resp, nil
+}
+
+type stats struct {
+	TotalPower, TotalUpdated, TotalLen, TotalRemoved int64
+}
+
+func setStats(vals []*Validator) stats {
+	var resp stats
+	for _, val := range vals {
+		resp.TotalPower += val.GetPower()
+		if val.GetUpdated() {
+			resp.TotalUpdated++
+		}
+		if val.GetPower() > 0 {
+			resp.TotalLen++
+		} else if val.GetPower() == 0 {
+			resp.TotalRemoved++
+		}
+	}
+
+	return resp
 }

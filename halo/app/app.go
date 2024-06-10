@@ -76,7 +76,10 @@ func newApp(
 	depCfg := depinject.Configs(
 		DepConfig(),
 		depinject.Supply(
-			logger, engineCl, namer, voter,
+			logger,
+			engineCl,
+			namer,
+			voter,
 		),
 	)
 
@@ -117,6 +120,7 @@ func newApp(
 	app.EVMEngKeeper.SetVoteProvider(app.AttestKeeper)
 	app.EVMEngKeeper.AddEventProcessor(evmStaking)
 	app.EVMEngKeeper.AddEventProcessor(evmSlashing)
+	app.EVMEngKeeper.AddEventProcessor(app.EpochSyncKeeper)
 	app.AttestKeeper.SetValidatorProvider(app.EpochSyncKeeper)
 
 	baseAppOpts = append(baseAppOpts, func(bapp *baseapp.BaseApp) {

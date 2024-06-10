@@ -202,9 +202,10 @@ func SimnetNetwork() Network {
 			mustSimnetChain(evmchain.IDMockL1Fast, xchain.ShardLatest0),
 			mustSimnetChain(evmchain.IDMockL2, xchain.ShardLatest0),
 			{
-				ID:     Simnet.Static().OmniConsensusChainIDUint64(),
-				Name:   "omni_consensus",
-				Shards: []xchain.ShardID{xchain.ShardFinalized0},
+				ID:          Simnet.Static().OmniConsensusChainIDUint64(),
+				Name:        "omni_consensus",
+				BlockPeriod: time.Millisecond * 500, // Speed up block times for testing
+				Shards:      []xchain.ShardID{xchain.ShardFinalized0},
 			},
 		},
 	}

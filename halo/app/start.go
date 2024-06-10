@@ -281,7 +281,10 @@ func chainIDFromGenesis(cfg Config) (string, error) {
 // newEngineClient returns a new engine API client.
 func newEngineClient(ctx context.Context, cfg Config, network netconf.ID, pubkey crypto.PubKey) (ethclient.EngineClient, error) {
 	if network == netconf.Simnet {
-		return ethclient.NewEngineMock(ethclient.WithMockSelfDelegation(pubkey, 1))
+		return ethclient.NewEngineMock(
+			ethclient.WithMockSelfDelegation(pubkey, 1),
+			ethclient.WithMockPortalRegister(),
+		)
 	}
 
 	jwtBytes, err := ethclient.LoadJWTHexFile(cfg.EngineJWTFile)
