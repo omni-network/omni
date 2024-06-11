@@ -20,4 +20,8 @@ contract PortalHarness is OmniPortal {
     function syscall(bytes calldata data) external {
         _syscall(data);
     }
+
+    function setLatestValSetId(uint64 valSetId) external {
+        latestValSetId = valSetId;
+    }
 }

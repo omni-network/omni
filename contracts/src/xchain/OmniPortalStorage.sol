@@ -26,6 +26,11 @@ abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
     uint64 public xmsgMinGasLimit;
 
     /**
+     * @notice ID of the latest validator set relayed to this portal from the consensus chain.
+     */
+    uint64 public latestValSetId;
+
+    /**
      * @notice Chain ID of Omni's EVM execution chain
      */
     uint64 public omniChainId;
@@ -69,20 +74,14 @@ abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
     mapping(uint64 => mapping(uint64 => uint64)) public inXBlockOffset;
 
     /**
-     * @notice Validator set id of the last XSubmission that was received from sourceChainId in shardId
-     *         Maps sourceChainId -> shardId -> validatorSetId.
-     */
-    mapping(uint64 => mapping(uint64 => uint64)) public inXStreamValidatorSetId;
-
-    /**
      * @notice Maps validator set id -> total power
      */
-    mapping(uint64 => uint64) public validatorSetTotalPower;
+    mapping(uint64 => uint64) public valSetTotalPower;
 
     /**
      * @notice Maps validator set id -> validator address -> power
      */
-    mapping(uint64 => mapping(address => uint64)) public validatorSet;
+    mapping(uint64 => mapping(address => uint64)) public valSet;
 
     /**
      * @notice The current XMsg being executed, exposed via xmsg() getter

@@ -79,7 +79,6 @@ func (w *Worker) runOnce(ctx context.Context) error {
 			"stream", w.network.StreamName(cursor.StreamID),
 			"block_offset", cursor.BlockOffset,
 			"msg_offset", cursor.MsgOffset,
-			"valset_id", cursor.ValidatorSetID,
 		)
 	}
 
@@ -131,7 +130,7 @@ func newValSetAwaiter(portal *bindings.OmniPortal, blockPeriod time.Duration) aw
 		backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(blockPeriod))
 		var attempt int
 		for ctx.Err() == nil {
-			power, err := portal.ValidatorSetTotalPower(&bind.CallOpts{Context: ctx}, valsetID)
+			power, err := portal.ValSetTotalPower(&bind.CallOpts{Context: ctx}, valsetID)
 			if err != nil {
 				return errors.Wrap(err, "get validator set power")
 			}

@@ -42,7 +42,7 @@ func filterMsgs(ctx context.Context, streamID xchain.StreamID, valSetID uint64, 
 	for i := 0; i < len(msgs); {
 		msg := msgs[i]
 
-		check, cursor := msgFilter.Check(streamID, valSetID, msg.StreamOffset)
+		check, cursor := msgFilter.Check(streamID, msg.StreamOffset)
 		if check == checkProcess {
 			res = append(res, msg)
 		} else if check == checkOldVatSet {
@@ -50,7 +50,6 @@ func filterMsgs(ctx context.Context, streamID xchain.StreamID, valSetID uint64, 
 				"stream", streamID,
 				"offset", msg.StreamOffset,
 				"valset", valSetID,
-				"cursor_valset", cursor.ValsSetID,
 			)
 		}
 		if check != checkGapOffset {
@@ -125,7 +124,6 @@ type msgCursorFilter struct {
 
 type streamCursor struct {
 	MsgOffset uint64
-	ValsSetID uint64
 }
 
 func newMsgOffsetFilter(cursors []xchain.SubmitCursor) (*msgCursorFilter, error) {
@@ -133,7 +131,6 @@ func newMsgOffsetFilter(cursors []xchain.SubmitCursor) (*msgCursorFilter, error)
 	for _, cursor := range cursors {
 		streamCursors[cursor.StreamID] = streamCursor{
 			MsgOffset: cursor.MsgOffset,
-			ValsSetID: cursor.ValidatorSetID,
 		}
 	}
 	if len(streamCursors) != len(cursors) {
@@ -163,10 +160,9 @@ const (
 // Otherwise, it does not update the state.
 // It returns checkGap if the next message is too far ahead,
 // or checkIgnore if the next message was already processed,
-// or checkOldVatSet if the next message has a lower validator set ID than the last processed message.
 //
 // It also returns the existing stream cursor.
-func (f *msgCursorFilter) Check(stream xchain.StreamID, valSetID uint64, msgOffset uint64) (checkResult, streamCursor) {
+func (f *msgCursorFilter) Check(stream xchain.StreamID, msgOffset uint64) (checkResult, streamCursor) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
@@ -179,14 +175,9 @@ func (f *msgCursorFilter) Check(stream xchain.StreamID, valSetID uint64, msgOffs
 		return checkIgnoreOffset, cursor
 	}
 
-	if valSetID < cursor.ValsSetID {
-		return checkOldVatSet, cursor
-	}
-
 	// Update the cursor
 	f.cursors[stream] = streamCursor{
 		MsgOffset: msgOffset,
-		ValsSetID: valSetID,
 	}
 
 	return checkProcess, cursor

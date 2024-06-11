@@ -80,14 +80,9 @@ contract OmniPortal is
         uint64 omniCShard = ConfLevel.toBroadcastShard(ConfLevel.Finalized);
 
         // cchain xmsg & xblock offsets are equal to valSetId
+        // TODO: this will change when cchain decouples valset from xblocks
         inXMsgOffset[omniCChainID_][omniCShard] = valSetId;
         inXBlockOffset[omniCChainID_][omniCShard] = valSetId;
-
-        // initialize omniChainId valSetId to consensus conf level (not shard)
-        inXStreamValidatorSetId[omniChainId_][ConfLevel.Finalized] = valSetId;
-
-        // initialize omniCChainID valSetId - it is not initialized via initSourceChain
-        inXStreamValidatorSetId[omniCChainID_][ConfLevel.Finalized] = valSetId;
     }
 
     function chainId() public view returns (uint64) {
@@ -161,29 +156,19 @@ contract OmniPortal is
     function xsubmit(XTypes.Submission calldata xsub) external whenNotPaused nonReentrant {
         XTypes.Msg[] calldata xmsgs = xsub.msgs;
         XTypes.BlockHeader calldata xheader = xsub.blockHeader;
+        uint64 valSetId = xsub.validatorSetId;
 
         require(xmsgs.length > 0, "OmniPortal: no xmsgs");
-
-        uint64 xsubValSetId = xsub.validatorSetId;
-        uint64 lastValSetId = inXStreamValidatorSetId[xheader.sourceChainId][xheader.confLevel];
-
-        // val set must be known, and at least as recent as the last val set
-        // submission must be for an initialized chain (lastValSetId > 0, set by initSourceChain)
-        require(validatorSetTotalPower[xsubValSetId] > 0, "OmniPortal: unknown val set");
-        require(xsubValSetId >= lastValSetId, "OmniPortal: old val set");
-        require(lastValSetId > 0, "OmniPortal: uninitialized src");
-
-        if (xsubValSetId > lastValSetId) {
-            inXStreamValidatorSetId[xheader.sourceChainId][xheader.confLevel] = xsubValSetId;
-        }
+        require(valSetTotalPower[valSetId] > 0, "OmniPortal: unknown val set");
+        require(valSetId >= _minValSet(), "OmniPortal: old val set");
 
         // check that the attestationRoot is signed by a quorum of validators in xsub.validatorsSetId
         require(
             Quorum.verify(
                 xsub.attestationRoot,
                 xsub.signatures,
-                validatorSet[xsubValSetId],
-                validatorSetTotalPower[xsubValSetId],
+                valSet[valSetId],
+                valSetTotalPower[valSetId],
                 XSUB_QUORUM_NUMERATOR,
                 XSUB_QUORUM_DENOMINATOR
             ),
@@ -327,6 +312,16 @@ contract OmniPortal is
         return (success, result, gasUsed);
     }
 
+    /**
+     * @notice Returns the minimum validator set id that can be used for xsubmissions
+     */
+    function _minValSet() internal view returns (uint64) {
+        return latestValSetId > XSUB_VALSET_CUTOFF
+            // plus 1, so the number of accepted valsets == XSUB_VALSET_CUTOFF
+            ? (latestValSetId - XSUB_VALSET_CUTOFF + 1)
+            : 1;
+    }
+
     //////////////////////////////////////////////////////////////////////////////
     //                          Syscall functions                               //
     //////////////////////////////////////////////////////////////////////////////
@@ -352,10 +347,11 @@ contract OmniPortal is
     function _addValidatorSet(uint64 valSetId, XTypes.Validator[] calldata validators) private {
         uint256 numVals = validators.length;
         require(numVals > 0, "OmniPortal: no validators");
+        require(valSetTotalPower[valSetId] == 0, "OmniPortal: duplicate val set");
 
         uint64 totalPower;
         XTypes.Validator memory val;
-        mapping(address => uint64) storage valSet = validatorSet[valSetId];
+        mapping(address => uint64) storage valSet = valSet[valSetId];
 
         for (uint256 i = 0; i < numVals; i++) {
             val = validators[i];
@@ -368,33 +364,20 @@ contract OmniPortal is
             valSet[val.addr] = val.power;
         }
 
-        validatorSetTotalPower[valSetId] = totalPower;
+        valSetTotalPower[valSetId] = totalPower;
+
+        if (valSetId > latestValSetId) latestValSetId = valSetId;
 
         emit ValidatorSetAdded(valSetId);
     }
 
     /**
-     * @notice Initialize a source chain's in stream validator set
+     * @notice Resets a portals supported shards.
      * @dev Only callable from xregistry
-     * @param srcChainId    Source chain ID
-     * @param shards        Shards supported by the source chain
      */
-    function initSourceChain(uint64 srcChainId, uint64[] calldata shards) external {
+    function setShards(uint64[] calldata shards) external {
         require(msg.sender == xregistry, "OmniPortal: only xregistry");
 
-        if (srcChainId == chainId()) {
-            _initShards(shards);
-            return;
-        }
-
-        _initSrcValSet(srcChainId, shards);
-    }
-
-    /**
-     * @notice Initiate / reset supported shards
-     * @dev We track supported shards in storage, rather than querying xregistry, to save gas on each xcall.
-     */
-    function _initShards(uint64[] calldata shards) internal {
         for (uint256 i = 0; i < shards.length; i++) {
             isSupportedShard[shards[i]] = false;
         }
@@ -403,18 +386,6 @@ contract OmniPortal is
         for (uint256 i = 0; i < shards.length; i++) {
             _shards.push(shards[i]);
             isSupportedShard[shards[i]] = true;
-        }
-    }
-
-    /**
-     * @notice Initialize a source chain's in stream validator set
-     * @dev Use the latest omni chain validator set id for each shard, as this validator set
-     *      attested to the initSourceChain xcall. This is an inexact approach, but is sufficient
-     */
-    function _initSrcValSet(uint64 srcChainId, uint64[] calldata shards) internal {
-        uint64 latestOmniValSetId = inXStreamValidatorSetId[omniChainId][ConfLevel.Finalized];
-        for (uint256 i = 0; i < shards.length; i++) {
-            inXStreamValidatorSetId[srcChainId][shards[i]] = latestOmniValSetId;
         }
     }
 

@@ -41,10 +41,9 @@ contract XRegistryReplica is XRegistryBase {
     {
         _set(chainId, name, registrant, dep);
 
-        // if OmniPortal registration for, intialize the new source chain on this chain's portal deployment
-        if (_isPortalRegistration(name, registrant)) {
+        if (_isPortalRegistration(name, registrant) && chainId == IOmniPortal(portal).chainId()) {
             uint64[] memory shards = abi.decode(dep.metadata, (uint64[]));
-            IOmniPortalSys(portal).initSourceChain(chainId, shards);
+            IOmniPortalSys(portal).setShards(shards);
         }
     }
 }

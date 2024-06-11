@@ -25,6 +25,8 @@ contract MockXRegistryReplica is XRegistryBase {
 
         _set(chainId, XRegistryNames.OmniPortal, Predeploys.PortalRegistry, dep);
 
-        OmniPortal(thisChainsPortal).initSourceChain(chainId, shards);
+        if (chainId == OmniPortal(thisChainsPortal).chainId()) {
+            OmniPortal(thisChainsPortal).setShards(shards);
+        }
     }
 }
