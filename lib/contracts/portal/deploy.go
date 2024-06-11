@@ -36,6 +36,10 @@ const (
 	XReceiptMaxErrorBytes = uint16(256)
 )
 
+func isDeadOrEmpty(addr common.Address) bool {
+	return addr == common.Address{} || addr == common.HexToAddress(eoa.ZeroXDead)
+}
+
 func (cfg DeploymentConfig) Validate() error {
 	if (cfg.Create3Factory == common.Address{}) {
 		return errors.New("create3 factory is zero")
@@ -46,11 +50,11 @@ func (cfg DeploymentConfig) Validate() error {
 	if (cfg.ProxyAdmin == common.Address{}) {
 		return errors.New("proxy admin is zero")
 	}
-	if (cfg.Deployer == common.Address{}) {
-		return errors.New("deployer is zero")
+	if isDeadOrEmpty(cfg.Deployer) {
+		return errors.New("deployer is not set")
 	}
-	if (cfg.Owner == common.Address{}) {
-		return errors.New("owner is zero")
+	if isDeadOrEmpty(cfg.Owner) {
+		return errors.New("owner is not set")
 	}
 	if cfg.XMsgMinGasLimit == 0 {
 		return errors.New("xmsg min gas limit is zero")

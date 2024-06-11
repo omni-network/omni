@@ -76,7 +76,7 @@ func defaultChainConfig(network netconf.ID) *params.ChainConfig {
 }
 
 // precompilesAlloc returns allocs for precompiled contracts
-// TODO: this matches go-ethereum's precompiles, but we should understand why balances are set to 1.
+// precompile balances are set to 1 as a performance optimization, as done in geth.
 func precompilesAlloc() types.GenesisAlloc {
 	return types.GenesisAlloc{
 		common.BytesToAddress([]byte{1}): {Balance: big.NewInt(1)}, // ECRecover

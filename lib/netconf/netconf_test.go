@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/e2e/app/key"
 	"github.com/omni-network/omni/e2e/manifests"
 	"github.com/omni-network/omni/e2e/types"
+	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
@@ -166,4 +167,17 @@ func TestConfLevels(t *testing.T) {
 	}
 	require.Len(t, chain.ConfLevels(), 2)
 	require.EqualValues(t, chain.ConfLevels(), []xchain.ConfLevel{xchain.ConfLatest, xchain.ConfFinalized})
+}
+
+func TestAddrs(t *testing.T) {
+	t.Parallel()
+
+	// test that hardcoded address in netconf match lib/contract addresses
+
+	for _, deployment := range netconf.Testnet.Static().Portals {
+		require.Equal(t, contracts.TestnetPortal(), deployment.Address)
+	}
+
+	require.Equal(t, contracts.TestnetAVS(), netconf.Testnet.Static().AVSContractAddress)
+	require.Equal(t, contracts.MainnetAVS(), netconf.Mainnet.Static().AVSContractAddress)
 }

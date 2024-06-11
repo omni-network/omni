@@ -89,6 +89,8 @@ func (cfg DeploymentConfig) Validate() error {
 }
 
 func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) {
+	// NOTE: no mainnet cfg, mainnet avs was deployed outside this deploy flow
+
 	if network == netconf.Devnet {
 		return devnetCfg(), nil
 	}

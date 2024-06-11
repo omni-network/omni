@@ -25,14 +25,18 @@ type DeploymentConfig struct {
 	ProtocolFee  *big.Int
 }
 
+func isDeadOrEmpty(addr common.Address) bool {
+	return addr == common.Address{} || addr == common.HexToAddress(eoa.ZeroXDead)
+}
+
 func (cfg DeploymentConfig) Validate() error {
-	if (cfg.Owner == common.Address{}) {
+	if isDeadOrEmpty(cfg.Owner) {
 		return errors.New("owner is zero")
 	}
-	if (cfg.Manager == common.Address{}) {
+	if isDeadOrEmpty(cfg.Manager) {
 		return errors.New("manager is zero")
 	}
-	if (cfg.Deployer == common.Address{}) {
+	if isDeadOrEmpty(cfg.Deployer) {
 		return errors.New("deployer is zero")
 	}
 	if (cfg.ProxyAdmin == common.Address{}) {
