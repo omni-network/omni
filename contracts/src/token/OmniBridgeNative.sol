@@ -20,9 +20,9 @@ import { XTypes } from "../libraries/XTypes.sol";
  */
 contract OmniBridgeNative is OwnableUpgradeable {
     /**
-     * @notice Emitted when an account Deposits OMNI tokens to this contract.
+     * @notice Emitted when an account deposits OMNI, bridging it to Ethereum.
      */
-    event Deposit(address indexed from, uint256 amount);
+    event Bridge(address indexed payor, address indexed to, uint256 amount);
 
     /**
      * @notice Emitted when OMNI tokens are withdrawn for an account.
@@ -107,11 +107,12 @@ contract OmniBridgeNative is OwnableUpgradeable {
      * @dev Trigger a withdraw of `amount` OMNI to `to` on L1, via xcall.
      */
     function _bridge(address to, uint256 amount) internal {
+        require(to != address(0), "OmniBridge: no bridge to zero");
         require(amount > 0, "OmniBridge: amount must be > 0");
         require(amount <= l1BridgeBalance, "OmniBridge: no liquidity");
 
         uint256 fee = bridgeFee(to, amount);
-        require(msg.value == amount + fee, "OmniBridge: insufficient funds");
+        require(msg.value == amount + fee, "OmniBridge: incorrect funds");
 
         l1BridgeBalance -= amount;
 
@@ -122,6 +123,8 @@ contract OmniBridgeNative is OwnableUpgradeable {
             abi.encodeWithSelector(OmniBridgeL1.withdraw.selector, to, amount),
             XCALL_WITHDRAW_GAS_LIMIT
         );
+
+        emit Bridge(msg.sender, to, amount);
     }
 
     /**
@@ -144,9 +147,10 @@ contract OmniBridgeNative is OwnableUpgradeable {
 
         require(msg.sender == address(omni), "OmniBridge: not xcall");
         require(xmsg.sourceChainId == l1ChainId, "OmniBridge: not L1");
+        require(to != address(0), "OmniBridge: no claim to zero");
 
         address claimant = xmsg.sender;
-        require(claimable[claimant] > 0, "OmniBridge: nothing to reclaim");
+        require(claimable[claimant] > 0, "OmniBridge: nothing to claim");
 
         uint256 amount = claimable[claimant];
         claimable[claimant] = 0;

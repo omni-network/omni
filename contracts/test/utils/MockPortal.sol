@@ -43,26 +43,19 @@ contract MockPortal is IOmniPortal, OmniPortalConstants {
     //////////////////////////////////////////////////////////////////////////////
 
     function xcall(uint64 destChainId, uint8 conf, address to, bytes calldata data, uint64 gasLimit) external payable {
-        require(msg.value >= feeFor(destChainId, data, gasLimit), "OmniPortal: insufficient fee");
         require(gasLimit <= xmsgMaxGasLimit, "OmniPortal: gasLimit too high");
         require(gasLimit >= xmsgMinGasLimit, "OmniPortal: gasLimit too low");
         require(destChainId != chainId, "OmniPortal: no same-chain xcall");
         require(destChainId != _BROADCAST_CHAIN_ID, "OmniPortal: no broadcast xcall");
         require(to != _VIRTUAL_PORTAL_ADDRESS, "OmniPortal: no portal xcall");
 
+        uint256 fee = feeFor(destChainId, data, gasLimit);
+        require(msg.value >= fee, "OmniPortal: insufficient fee");
+
         uint64 shardId = uint64(conf);
         outXMsgOffset[destChainId][shardId] += 1;
 
-        emit XMsg(
-            destChainId,
-            shardId,
-            outXMsgOffset[destChainId][shardId],
-            msg.sender,
-            to,
-            data,
-            gasLimit,
-            1 gwei // fee
-        );
+        emit XMsg(destChainId, shardId, outXMsgOffset[destChainId][shardId], msg.sender, to, data, gasLimit, fee);
     }
 
     function feeFor(uint64 destChainId, bytes calldata data, uint64 gasLimit) public view returns (uint256) {
@@ -83,13 +76,6 @@ contract MockPortal is IOmniPortal, OmniPortalConstants {
 
     /// @dev Execute a mock xcall, custom gas limit. Passes the revert for call fails or too low gas limit
     function mockXCall(uint64 sourceChainId, address sender, address to, bytes calldata data, uint64 gasLimit) public {
-        _mockXCall(sourceChainId, sender, to, data, gasLimit);
-    }
-
-    /// @dev Execute a mock xcall, custom gas limit, passing the revert message if the call fails
-    function _mockXCall(uint64 sourceChainId, address sender, address to, bytes calldata data, uint64 gasLimit)
-        private
-    {
         require(gasLimit <= xmsgMaxGasLimit, "OmniPortal: gasLimit too high");
         require(gasLimit >= xmsgMinGasLimit, "OmniPortal: gasLimit too low");
 

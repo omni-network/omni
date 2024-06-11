@@ -17,10 +17,10 @@ import { OmniBridgeNative } from "./OmniBridgeNative.sol";
  *      add them in the future.
  */
 contract OmniBridgeL1 is OwnableUpgradeable {
-    /*
-     * @notice Emitted when an account Deposits OMNI tokens to this contract.
+    /**
+     * @notice Emitted when an account deposits OMNI, bridging it to Ethereum.
      */
-    event Deposit(address indexed payor, address indexed to, uint256 amount);
+    event Bridge(address indexed payor, address indexed to, uint256 amount);
 
     /**
      * @notice Emitted when OMNI tokens are withdrawn for an account.
@@ -86,6 +86,8 @@ contract OmniBridgeL1 is OwnableUpgradeable {
      * @dev Trigger a withdraw of `amount` OMNI to `to` on Omni's EVM, via xcall.
      */
     function _bridge(address payor, address to, uint256 amount) internal {
+        require(amount > 0, "OmniBridge: amount must be > 0");
+        require(to != address(0), "OmniBridge: no bridge to zero");
         require(msg.value == bridgeFee(to, amount), "OmniBridge: invalid fee");
         require(token.transferFrom(payor, address(this), amount), "OmniBridge: transfer failed");
 
@@ -97,7 +99,7 @@ contract OmniBridgeL1 is OwnableUpgradeable {
             XCALL_WITHDRAW_GAS_LIMIT
         );
 
-        emit Deposit(payor, to, amount);
+        emit Bridge(payor, to, amount);
     }
 
     /**
