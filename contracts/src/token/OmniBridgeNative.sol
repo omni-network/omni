@@ -17,8 +17,6 @@ import { XTypes } from "../libraries/XTypes.sol";
  *          - set _owner on proxy
  *          - set _initialized on proxy to 1, to disable the initializer
  *          - set _initialized on implementation to 255, to disabled all initializers
- *      We currently do now have any onlyOwner methods, but we inherit from OwnableUpgradeable let us
- *      add them in the future.
  */
 contract OmniBridgeNative is OwnableUpgradeable {
     /**
@@ -30,12 +28,12 @@ contract OmniBridgeNative is OwnableUpgradeable {
      * @notice Emitted when OMNI tokens are withdrawn for an account.
      *         If success is false, the amount is claimable by the account.
      */
-    event Withdraw(address indexed to, uint256 amount, bool success);
+    event Withdraw(address indexed payor, address indexed to, uint256 amount, bool success);
 
     /**
      * @notice Emitted when an account claims OMNI tokens that failed to be withdrawn.
      */
-    event Claimed(address indexed to, uint256 amount);
+    event Claimed(address indexed claimant, address indexed to, uint256 amount);
 
     /**
      * @notice Total supply of OMNI tokens minted on L1.
@@ -82,7 +80,7 @@ contract OmniBridgeNative is OwnableUpgradeable {
     /**
      * @notice Withdraw `amount` native OMNI to `to`. Onyl callable via xcall from OmniBridgeL1.
      */
-    function withdraw(address to, uint256 amount) external {
+    function withdraw(address payor, address to, uint256 amount) external {
         XTypes.MsgShort memory xmsg = omni.xmsg();
 
         require(msg.sender == address(omni), "OmniBridge: not xcall"); // this protects against reentrancy
@@ -93,16 +91,9 @@ contract OmniBridgeNative is OwnableUpgradeable {
 
         (bool success,) = to.call{ value: amount }("");
 
-        if (!success) claimable[to] += amount;
+        if (!success) claimable[payor] += amount;
 
-        emit Withdraw(to, amount, success);
-    }
-
-    /**
-     * @notice Bridge `amount` OMNI to msg.sender on L1.
-     */
-    function bridge(uint256 amount) external payable {
-        _bridge(msg.sender, amount);
+        emit Withdraw(payor, to, amount, success);
     }
 
     /**
@@ -121,6 +112,8 @@ contract OmniBridgeNative is OwnableUpgradeable {
 
         uint256 fee = bridgeFee(to, amount);
         require(msg.value == amount + fee, "OmniBridge: insufficient funds");
+
+        l1BridgeBalance -= amount;
 
         omni.xcall{ value: fee }(
             l1ChainId,
@@ -161,6 +154,23 @@ contract OmniBridgeNative is OwnableUpgradeable {
         (bool success,) = to.call{ value: amount }("");
         require(success, "OmniBridge: transfer failed");
 
-        emit Claimed(to, amount);
+        emit Claimed(claimant, to, amount);
+    }
+
+    //////////////////////////////////////////////////////////////////////////////
+    //                          Admin functions                                 //
+    //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * @notice Setup core contract parameters, done by owner immediately after pre-deployment.
+     * @dev TODO: we may do this at genesis
+     * @param l1ChainId_    The chain id of the L1 network.
+     * @param omni_         The address of the OmniPortal contract.
+     * @param l1Bridge_     The address of the L1 OmniBridge contract.
+     */
+    function setup(uint64 l1ChainId_, address omni_, address l1Bridge_) external onlyOwner {
+        l1ChainId = l1ChainId_;
+        omni = IOmniPortal(omni_);
+        l1Bridge = l1Bridge_;
     }
 }

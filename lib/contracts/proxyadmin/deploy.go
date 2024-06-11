@@ -24,15 +24,19 @@ type DeploymentConfig struct {
 	ExpectedAddr   common.Address
 }
 
+func isDeadOrEmpty(addr common.Address) bool {
+	return addr == common.Address{} || addr == common.HexToAddress(eoa.ZeroXDead)
+}
+
 func (cfg DeploymentConfig) Validate() error {
 	if (cfg.Create3Factory == common.Address{}) {
 		return errors.New("create3 factory is zero")
 	}
-	if (cfg.Owner == common.Address{}) {
-		return errors.New("owner is zero")
+	if isDeadOrEmpty(cfg.Owner) {
+		return errors.New("owner is not set")
 	}
-	if (cfg.Deployer == common.Address{}) {
-		return errors.New("deployer is zero")
+	if isDeadOrEmpty(cfg.Deployer) {
+		return errors.New("deployer is not set")
 	}
 
 	return nil

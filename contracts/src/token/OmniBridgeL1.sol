@@ -20,7 +20,7 @@ contract OmniBridgeL1 is OwnableUpgradeable {
     /*
      * @notice Emitted when an account Deposits OMNI tokens to this contract.
      */
-    event Deposit(address indexed from, uint256 amount);
+    event Deposit(address indexed payor, address indexed to, uint256 amount);
 
     /**
      * @notice Emitted when OMNI tokens are withdrawn for an account.
@@ -49,6 +49,7 @@ contract OmniBridgeL1 is OwnableUpgradeable {
 
     constructor(address token_) {
         token = IERC20(token_);
+        _disableInitializers();
     }
 
     function initialize(address owner_, address omni_) external initializer {
@@ -75,13 +76,6 @@ contract OmniBridgeL1 is OwnableUpgradeable {
     }
 
     /**
-     * @notice Bridge `amount` OMNI to msg.sender on Omni's EVM.
-     */
-    function bridge(uint256 amount) external payable {
-        _bridge(msg.sender, msg.sender, amount);
-    }
-
-    /**
      * @notice Bridge `amount` OMNI to `to` on Omni's EVM.
      */
     function bridge(address to, uint256 amount) external payable {
@@ -91,19 +85,19 @@ contract OmniBridgeL1 is OwnableUpgradeable {
     /**
      * @dev Trigger a withdraw of `amount` OMNI to `to` on Omni's EVM, via xcall.
      */
-    function _bridge(address payee, address to, uint256 amount) internal {
+    function _bridge(address payor, address to, uint256 amount) internal {
         require(msg.value == bridgeFee(to, amount), "OmniBridge: invalid fee");
-        require(token.transferFrom(payee, address(this), amount), "OmniBridge: transfer failed");
+        require(token.transferFrom(payor, address(this), amount), "OmniBridge: transfer failed");
 
-        omni.xcall(
+        omni.xcall{ value: msg.value }(
             omni.omniChainId(),
             ConfLevel.Finalized,
             Predeploys.OmniBridgeNative,
-            abi.encodeWithSelector(OmniBridgeNative.withdraw.selector, to, amount),
+            abi.encodeWithSelector(OmniBridgeNative.withdraw.selector, payor, to, amount),
             XCALL_WITHDRAW_GAS_LIMIT
         );
 
-        emit Deposit(payee, amount);
+        emit Deposit(payor, to, amount);
     }
 
     /**

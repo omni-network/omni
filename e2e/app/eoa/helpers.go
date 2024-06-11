@@ -11,6 +11,7 @@ import (
 )
 
 // Admin returns the address of the admin for the given network.
+// NOTE: this relies on the fact that we use the same admin account for all "admin" roles.
 func Admin(network netconf.ID) (common.Address, error) {
 	for _, account := range statics[network] {
 		if account.Role == RoleProxyAdminOwner {

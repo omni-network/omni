@@ -148,8 +148,8 @@ func setOmniBridge(db *state.MemDB, owner common.Address) error {
 		"_owner":       owner,
 	}
 
-	// give OmniBridge total l1 supply (100M)
-	db.SetBalance(omniBridge, new(big.Int).Mul(big.NewInt(1e18), big.NewInt(100e6)))
+	// 100M total supply
+	db.SetBalance(omniBridge, new(big.Int).Mul(big.NewInt(100e6), big.NewInt(1e18)))
 
 	return setPredeploy(db, omniBridge, omniBridgeCode, bindings.OmniBridgeNativeStorageLayout, storage)
 }

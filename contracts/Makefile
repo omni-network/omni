@@ -19,7 +19,7 @@ build: version ## Build contracts.
 
 
 
-CONTRACTS := OmniPortal FeeOracleV1 OmniAVS Create3 TransparentUpgradeableProxy Staking Slashing OmniBridgeL1 OmniBridgeNative \
+CONTRACTS := OmniPortal FeeOracleV1 OmniAVS Create3 TransparentUpgradeableProxy Staking Slashing OmniBridgeL1 OmniBridgeNative Omni \
 			DelegationManager StrategyManager StrategyBase AVSDirectory XRegistry XRegistryReplica PortalRegistry \
 			src/deploy/ProxyAdmin.sol:ProxyAdmin \
 			test/avs/common/MockERC20.sol:MockERC20

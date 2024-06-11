@@ -1,7 +1,7 @@
 repos:
   # First check for secrets
   - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.4.0
+    rev: v1.5.0
     hooks:
     -   id: detect-secrets
         args: ['--baseline', '.secrets.baseline']
@@ -9,7 +9,7 @@ repos:
 
   # Then run code formatters
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v4.6.0
     hooks:
       - id: check-added-large-files # No large files
         exclude: "lib/netconf/.*/.*"
@@ -41,7 +41,7 @@ repos:
   # Then run code validators (on the formatted code)
 
   - repo: https://github.com/golangci/golangci-lint # See .golangci.yml for config
-    rev: v1.55.2
+    rev: v1.59.1
     hooks:
       - id: golangci-lint
         require_serial: true # Don't run this in parallel
