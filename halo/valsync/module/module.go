@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/omni-network/omni/halo/epochsync/keeper"
-	"github.com/omni-network/omni/halo/epochsync/types"
 	ptypes "github.com/omni-network/omni/halo/portal/types"
+	"github.com/omni-network/omni/halo/valsync/keeper"
+	"github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 
@@ -75,7 +75,7 @@ func (m AppModule) EndBlock(ctx context.Context) ([]abci.ValidatorUpdate, error)
 }
 
 func (m AppModule) InitGenesis(ctx sdk.Context, _ codec.JSONCodec, _ json.RawMessage) {
-	if err := m.keeper.InsertGenesisEpoch(ctx); err != nil {
+	if err := m.keeper.InsertGenesisSet(ctx); err != nil {
 		panic(errors.Wrap(err, "insert genesis valset"))
 	}
 }

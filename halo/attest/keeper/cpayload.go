@@ -78,7 +78,7 @@ func votesFromLastCommit(ctx context.Context, windowCompare windowCompareFunc, i
 
 // aggregateVotes aggregates the provided attestations by block header.
 func aggregateVotes(votes []*types.Vote) []*types.AggVote {
-	uniqueAggs := make(map[types.UniqueKey]*types.AggVote)
+	uniqueAggs := make(map[[32]byte]*types.AggVote)
 	for _, vote := range votes {
 		key := vote.UniqueKey()
 		agg, ok := uniqueAggs[key]
@@ -97,7 +97,7 @@ func aggregateVotes(votes []*types.Vote) []*types.AggVote {
 }
 
 // flattenAggs returns the values of the provided map.
-func flattenAggs(aggsByHeader map[types.UniqueKey]*types.AggVote) []*types.AggVote {
+func flattenAggs(aggsByHeader map[[32]byte]*types.AggVote) []*types.AggVote {
 	aggs := make([]*types.AggVote, 0, len(aggsByHeader))
 	for _, agg := range aggsByHeader {
 		aggs = append(aggs, agg)

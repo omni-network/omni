@@ -16,8 +16,8 @@ message Attestation {
   option (cosmos.orm.v1.table) = {
     id: 1;
     primary_key: { fields: "id", auto_increment: true }
-    index: {id: 1, fields: "chain_id,conf_level,offset,height,hash,attestation_root", unique: true} // Unique attestation.
-    index: {id: 2, fields: "status,chain_id,conf_level,offset" } // Allows querying by approved attestations by confLevel and offset.
+    index: {id: 1, fields: "key_hash", unique: true} // Verifiable attestation unique key hash.
+    index: {id: 2, fields: "status,chain_id,conf_level,block_offset" } // Allows querying by approved attestations by confLevel and offset.
     index: {id: 3, fields: "created_height"} // Allows querying/deleting by created height.
   };
 
@@ -25,14 +25,15 @@ message Attestation {
 
   uint64 chain_id         = 2; // Chain ID as per https://chainlist.org
   uint32 conf_level       = 3; // Confirmation level of the cross-chain block
-  uint64 offset           = 4; // Offset of the cross-chain block
-  uint64 height           = 5; // Height of the source-chain block
-  bytes  hash             = 6; // Hash of the source-chain block
+  uint64 block_offset     = 4; // Offset of the cross-chain block
+  uint64 block_height     = 5; // Height of the source-chain block
+  bytes  block_hash       = 6; // Hash of the source-chain block
   bytes  attestation_root = 7; // Attestation merkle root of the cross-chain Block
-  uint32 status           = 8; // Status of the block; pending, approved.
-  uint64 validator_set_id = 9; // Validator set that approved this attestation.
-  uint64 created_height   = 10; // Consensus height at which this attestation was created.
-  uint64 finalized_att_id = 11; // Approved finalized attestation for same chain_id and offset.
+  bytes  key_hash         = 8; // Hash of the above fields uniquely identifying an attestation
+  uint32 status           = 9; // Status of the block; pending, approved.
+  uint64 validator_set_id = 10; // Validator set that approved this attestation.
+  uint64 created_height   = 11; // Consensus height at which this attestation was created.
+  uint64 finalized_att_id = 12; // Approved finalized attestation for same chain_id and offset.
 }
 
 // Signature is the attestation signature of the validator over the block root.

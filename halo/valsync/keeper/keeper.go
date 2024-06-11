@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/contracts/bindings"
-	"github.com/omni-network/omni/halo/epochsync/types"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	ptypes "github.com/omni-network/omni/halo/portal/types"
+	"github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
@@ -35,8 +35,6 @@ type Keeper struct {
 	aKeeper           types.AttestKeeper
 	valsetTable       ValidatorSetTable
 	valTable          ValidatorTable
-	epochTable        EpochTable
-	networkTable      NetworkTable
 	subscriber        types.ValSetSubscriber
 	emilPortal        ptypes.EmitPortal
 	subscriberInitted bool
@@ -55,7 +53,7 @@ func NewKeeper(
 	ethCl ethclient.Client,
 ) (*Keeper, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
-		{Id: 1, ProtoFileName: File_halo_epochsync_keeper_epoch_proto.Path()},
+		{Id: 1, ProtoFileName: File_halo_valsync_keeper_valsync_proto.Path()},
 	}}
 
 	modDB, err := ormdb.NewModuleDB(schema, ormdb.ModuleDBOptions{KVStoreService: storeService})
@@ -63,9 +61,9 @@ func NewKeeper(
 		return nil, errors.Wrap(err, "create module db")
 	}
 
-	epochStore, err := NewEpochStore(modDB)
+	valSyncStore, err := NewValsyncStore(modDB)
 	if err != nil {
-		return nil, errors.Wrap(err, "create epoch store")
+		return nil, errors.Wrap(err, "create valsync store")
 	}
 
 	address := common.HexToAddress(predeploys.PortalRegistry)
@@ -75,10 +73,8 @@ func NewKeeper(
 	}
 
 	return &Keeper{
-		epochTable:      epochStore.EpochTable(),
-		networkTable:    epochStore.NetworkTable(),
-		valsetTable:     epochStore.ValidatorSetTable(),
-		valTable:        epochStore.ValidatorTable(),
+		valsetTable:     valSyncStore.ValidatorSetTable(),
+		valTable:        valSyncStore.ValidatorTable(),
 		sKeeper:         sKeeper,
 		aKeeper:         aKeeper,
 		subscriber:      subscriber,
@@ -138,19 +134,8 @@ func (k *Keeper) maybeStoreValidatorUpdates(ctx context.Context, updates []abci.
 		return errors.Wrap(err, "insert updates")
 	}
 
-	epoch, err := k.getOrCreateEpoch(ctx)
-	if err != nil {
-		return errors.Wrap(err, "get or create epoch")
-	}
-
-	epoch.ValsetId = valsetID
-	if err := k.epochTable.Update(ctx, epoch); err != nil {
-		return errors.Wrap(err, "update epoch")
-	}
-
 	stats := setStats(merged)
-	log.Info(ctx, "💫 Storing new unattested epoch and validator set",
-		"epoch_id", epoch.GetId(),
+	log.Info(ctx, "💫 Storing new unattested validator set",
 		"valset_id", valsetID,
 		"len", stats.TotalLen,
 		"updated", stats.TotalUpdated,
@@ -162,9 +147,9 @@ func (k *Keeper) maybeStoreValidatorUpdates(ctx context.Context, updates []abci.
 	return nil
 }
 
-// InsertGenesisEpoch inserts the current genesis validator set and empty network as the initial epoch.
+// InsertGenesisSet inserts the current genesis validator set and empty network as the initial epoch.
 // Note: This MUST only be called during InitGenesis AFTER the staking module's InitGenesis.
-func (k *Keeper) InsertGenesisEpoch(ctx context.Context) error {
+func (k *Keeper) InsertGenesisSet(ctx context.Context) error {
 	valset, err := k.sKeeper.GetLastValidators(ctx)
 	if err != nil {
 		return errors.Wrap(err, "get genesis validators")
@@ -194,32 +179,8 @@ func (k *Keeper) InsertGenesisEpoch(ctx context.Context) error {
 		return errors.New("genesis valset id not 1 [BUG]")
 	}
 
-	// Create genesis (empty) network
-	networkID, err := k.networkTable.InsertReturningId(ctx, &Network{})
-	if err != nil {
-		return errors.Wrap(err, "insert network")
-	} else if networkID != 1 {
-		return errors.New("genesis network id not 1 [BUG]")
-	}
-
-	// Create genesis epoch
-	epoch := &Epoch{
-		CreatedHeight: uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()),
-		Attested:      true, // Genesis epoch is automatically attested.
-		NetworkId:     networkID,
-		ValsetId:      valsetID,
-	}
-
-	epochID, err := k.epochTable.InsertReturningId(ctx, epoch)
-	if err != nil {
-		return errors.Wrap(err, "insert epoch")
-	} else if epochID != 1 {
-		return errors.New("genesis epoch id not 1 [BUG]")
-	}
-
 	stats := setStats(vals)
-	log.Info(ctx, "💫 Storing genesis epoch and validator set",
-		"epoch_id", epoch.GetId(),
+	log.Info(ctx, "💫 Storing genesis validator set",
 		"valset_id", valsetID,
 		"len", stats.TotalLen,
 		"updated", stats.TotalUpdated,

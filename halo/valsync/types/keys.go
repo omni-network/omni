@@ -2,5 +2,5 @@ package types
 
 const (
 	// ModuleName defines the module name.
-	ModuleName = "epochsync"
+	ModuleName = "valsync"
 )

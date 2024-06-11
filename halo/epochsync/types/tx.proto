@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-package halo.epochsync.types;
-
-option go_package = "halo/epochsync/types";
-
-// GenesisState is an empty genesis state required to trigger epochsync genesis logic only.
-message GenesisState {}

@@ -3,9 +3,9 @@ package keeper
 import (
 	"testing"
 
-	"github.com/omni-network/omni/halo/epochsync/testutil"
-	"github.com/omni-network/omni/halo/epochsync/types"
 	ptestutil "github.com/omni-network/omni/halo/portal/testutil"
+	"github.com/omni-network/omni/halo/valsync/testutil"
+	"github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/netconf"
 
 	storetypes "cosmossdk.io/store/types"

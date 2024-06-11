@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package halo.registry.keeper;
+
+import "cosmos/orm/v1/orm.proto";
+
+option go_package = "halo/registry/keeper";
+
+// Network defines an instance of the cross-chain network configuration including supported chains, portals, and shards.
+message Network {
+  option (cosmos.orm.v1.table) = {
+    id: 4;
+    primary_key: { fields: "id", auto_increment: true }
+  };
+
+  uint64          id             = 1; // Auto-incremented ID
+  uint64          created_height = 2; // Height this network was created at
+  repeated Portal portals        = 3; // Supported portals by source chain.
+}
+
+message Portal {
+  uint64          chain_id           = 1; // Chain ID as per https://chainlist.org/
+  bytes           address            = 2; // Portal contract address
+  uint64          deploy_height      = 3; // Height this portal contract was deployed at
+  repeated uint64 shard_ids          = 4; // Shard IDs supported by this portal
+}

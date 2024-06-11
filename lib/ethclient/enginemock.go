@@ -178,7 +178,7 @@ func (m *engineMock) maybeErr(ctx context.Context) error {
 	return nil
 }
 
-func (m *engineMock) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]types.Log, error) {
+func (m *engineMock) FilterLogs(_ context.Context, q ethereum.FilterQuery) ([]types.Log, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -204,8 +204,6 @@ func (m *engineMock) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]
 
 	m.logs[*q.BlockHash] = eventLog
 	delete(m.pendingLogs, addr)
-
-	log.Error(ctx, "Returning mock log", nil, "block_hash", q.BlockHash.Hex(), "log", eventLog)
 
 	return []types.Log{eventLog}, nil
 }

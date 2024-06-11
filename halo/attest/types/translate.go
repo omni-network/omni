@@ -40,11 +40,6 @@ func AttestationFromProto(att *Attestation) (xchain.Attestation, error) {
 		return xchain.Attestation{}, err
 	}
 
-	header, err := BlockHeaderFromProto(att.GetBlockHeader())
-	if err != nil {
-		return xchain.Attestation{}, err
-	}
-
 	sigs := make([]xchain.SigTuple, 0, len(att.GetSignatures()))
 	for _, sigpb := range att.GetSignatures() {
 		sig, err := SigFromProto(sigpb)
@@ -55,7 +50,7 @@ func AttestationFromProto(att *Attestation) (xchain.Attestation, error) {
 	}
 
 	return xchain.Attestation{
-		BlockHeader:     header,
+		BlockHeader:     BlockHeaderFromProto(att.GetBlockHeader()),
 		ValidatorSetID:  att.ValidatorSetId,
 		AttestationRoot: common.BytesToHash(att.GetAttestationRoot()),
 		Signatures:      sigs,
@@ -75,16 +70,12 @@ func SigFromProto(sig *SigTuple) (xchain.SigTuple, error) {
 }
 
 // BlockHeaderFromProto converts a protobuf BlockHeader to a xchain.BlockHeader.
-func BlockHeaderFromProto(header *BlockHeader) (xchain.BlockHeader, error) {
-	if err := header.Verify(); err != nil {
-		return xchain.BlockHeader{}, err
-	}
-
+func BlockHeaderFromProto(header *BlockHeader) xchain.BlockHeader {
 	return xchain.BlockHeader{
 		SourceChainID: header.GetChainId(),
 		ConfLevel:     xchain.ConfLevel(byte(header.ConfLevel)),
 		BlockOffset:   header.GetOffset(),
 		BlockHeight:   header.GetHeight(),
 		BlockHash:     common.Hash(header.GetHash()),
-	}, nil
+	}
 }

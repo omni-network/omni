@@ -84,7 +84,6 @@
    "delegator_starting_infos": [],
    "validator_slash_events": []
   },
-  "epochsync": {},
   "genutil": {
    "gen_txs": [
     {
@@ -210,7 +209,8 @@
    "unbonding_delegations": [],
    "redelegations": [],
    "exported": false
-  }
+  },
+  "valsync": {}
  },
  "consensus": {
   "params": {

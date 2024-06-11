@@ -3,7 +3,7 @@ package keeper
 import (
 	"context"
 
-	"github.com/omni-network/omni/halo/epochsync/types"
+	"github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/errors"
 
 	"cosmossdk.io/orm/model/ormlist"

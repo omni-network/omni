@@ -2,7 +2,7 @@
 package testutil
 
 import (
-	"github.com/omni-network/omni/halo/epochsync/types"
+	"github.com/omni-network/omni/halo/valsync/types"
 )
 
 type StakingKeeper interface {

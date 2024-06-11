@@ -18,7 +18,7 @@ import (
 	types0 "github.com/cosmos/cosmos-sdk/types"
 	common "github.com/ethereum/go-ethereum/common"
 	types1 "github.com/omni-network/omni/halo/attest/types"
-	types2 "github.com/omni-network/omni/halo/epochsync/types"
+	types2 "github.com/omni-network/omni/halo/valsync/types"
 	xchain "github.com/omni-network/omni/lib/xchain"
 	gomock "go.uber.org/mock/gomock"
 )
