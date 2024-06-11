@@ -69,7 +69,6 @@ func (m *Mock) StreamBlocks(ctx context.Context, req xchain.ProviderRequest, cal
 	return m.stream(ctx, req, callback, false)
 }
 
-//nolint:nilerr // Stream function contract states it returns nil on context error.
 func (m *Mock) stream(
 	ctx context.Context,
 	req xchain.ProviderRequest,

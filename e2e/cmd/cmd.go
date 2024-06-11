@@ -32,7 +32,7 @@ func New() *cobra.Command {
 	var def app.Definition
 
 	cmd := libcmd.NewRootCmd("e2e", "e2e network generator and test runner")
-	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+	cmd.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
 		ctx := cmd.Context()
 		if _, err := log.Init(ctx, logCfg); err != nil {
 			return err
@@ -64,7 +64,7 @@ func New() *cobra.Command {
 	// Root command runs the full E2E test.
 	e2eTestCfg := app.DefaultE2ETestConfig()
 	bindE2EFlags(cmd.Flags(), &e2eTestCfg)
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+	cmd.RunE = func(cmd *cobra.Command, _ []string) error {
 		return app.E2ETest(cmd.Context(), def, e2eTestCfg)
 	}
 
@@ -100,7 +100,7 @@ func newDeployCmd(def *app.Definition) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "deploy",
 		Short: "Deploys the e2e network",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			_, err := app.Deploy(cmd.Context(), *def, cfg)
 			return err
 		},
@@ -172,7 +172,7 @@ func newAVSDeployCmd(def *app.Definition) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "avs-deploy",
 		Short: "Deploys the Omni AVS contracts",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			return app.DeployAVSAndCreate3(cmd.Context(), *def)
 		},
 	}
@@ -186,7 +186,7 @@ func newCreate3DeployCmd(def *app.Definition) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create3-deploy",
 		Short: "Deploys the Create3 factory",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			return app.Create3Deploy(cmd.Context(), *def, cfg)
 		},
 	}
@@ -202,7 +202,7 @@ func newKeyCreate(def *app.Definition) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "key-create",
 		Short: "Creates a private key in GCP secret manager for a node in a manifest",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			if def.Testnet.Network == netconf.Simnet || def.Testnet.Network == netconf.Devnet {
 				return errors.New("cannot create keys for simnet or devnet")
 			}
@@ -228,7 +228,7 @@ func fundAccounts(def *app.Definition) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "fund",
 		Short: "Funds accounts to their target balance, network based on the manifest",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			if def.Testnet.Network == netconf.Simnet || def.Testnet.Network == netconf.Devnet {
 				return errors.New("cannot fund accounts on simnet or devnet")
 			}

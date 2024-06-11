@@ -54,7 +54,7 @@ func newDevnetFundCmd() *cobra.Command {
 		Use:   "fund",
 		Short: "Fund a local devnet account with 1 ETH",
 		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			return devnetFund(cmd.Context(), cfg)
 		},
 	}
@@ -71,7 +71,7 @@ func newDevnetAVSAllow() *cobra.Command {
 		Use:   "avs-allow",
 		Short: "Add an operator to the omni AVS allow list",
 		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			return devnetAllow(cmd.Context(), cfg)
 		},
 	}
@@ -85,7 +85,7 @@ func newDevnetStartCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "start",
 		Short: "Build and deploy a local docker compose devnet with 2 anvil nodes and a halo node",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			return deployDevnet(cmd.Context())
 		},
 	}
@@ -95,7 +95,7 @@ func newDevnetInfoCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "info",
 		Short: "Display portal addresses and RPC URLs for the deployed devnet",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			return printDevnetInfo(cmd.Context())
 		},
 	}
@@ -105,7 +105,7 @@ func newDevnetCleanCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "clean",
 		Short: "Cleans (deletes) previously preserved devnet files and directories",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			return cleanupDevnet(cmd.Context())
 		},
 	}

@@ -24,7 +24,7 @@ func main() {
 	flag.Parse()
 
 	if err := runProxy(*flagUpstream, *flagAddr); err != nil {
-		slog.Error("Fatal error:", err)
+		slog.Error("Fatal error", slog.String("err", err.Error()))
 		os.Exit(1)
 	}
 

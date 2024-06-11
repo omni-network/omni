@@ -120,7 +120,7 @@ func (s msgServer) deliverEvents(ctx context.Context, height uint64, blockHash c
 		branchMS := sdkCtx.MultiStore().CacheMultiStore()
 		branchCtx := sdkCtx.WithMultiStore(branchMS)
 
-		if err := catch(func() error { return proc.Deliver(branchCtx, blockHash, evmLog) }); err != nil {
+		if err := catch(func() error { return proc.Deliver(branchCtx, blockHash, evmLog) }); err != nil { //nolint:contextcheck // False positive
 			log.Warn(ctx, "Delivering EVM log event failed", err,
 				"name", proc.Name(),
 				"height", height,

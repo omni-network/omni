@@ -26,7 +26,7 @@ func New() *cobra.Command {
 	logCfg := log.DefaultConfig()
 	log.BindFlags(cmd.Flags(), &logCfg)
 
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+	cmd.RunE = func(cmd *cobra.Command, _ []string) error {
 		ctx, err := log.Init(cmd.Context(), logCfg)
 		if err != nil {
 			return err

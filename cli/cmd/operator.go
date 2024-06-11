@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -105,7 +104,7 @@ func gethInit(ctx context.Context, network netconf.ID, dir string, moniker strin
 
 	// Run geth init via docker
 	{
-		image := fmt.Sprintf("ethereum/client-go:%s", geth.Version)
+		image := "ethereum/client-go:" + geth.Version
 		//nolint:gosec // Command not "tainted"
 		cmd := exec.CommandContext(ctx,
 			"docker", "run",

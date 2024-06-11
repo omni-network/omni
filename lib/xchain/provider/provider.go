@@ -192,7 +192,7 @@ func (p *Provider) stream(
 		Height: func(block xchain.Block) uint64 {
 			return block.BlockHeight
 		},
-		Verify: func(ctx context.Context, block xchain.Block, h uint64) error {
+		Verify: func(_ context.Context, block xchain.Block, h uint64) error {
 			if block.SourceChainID != req.ChainID {
 				return errors.New("invalid block source chain id")
 			} else if block.BlockHeight != h {

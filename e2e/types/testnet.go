@@ -3,6 +3,7 @@ package types
 import (
 	"crypto/ecdsa"
 	"encoding/hex"
+	"math/rand/v2"
 	"net"
 	"strings"
 	"sync/atomic"
@@ -15,8 +16,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p/enode"
-
-	"math/rand/v2"
 )
 
 // Testnet wraps e2e.Testnet with additional omni-specific fields.
@@ -47,7 +46,7 @@ func (t Testnet) RandomHaloAddr() string {
 		return ""
 	}
 
-	return eligible[rand.IntN(len(eligible))]
+	return eligible[rand.IntN(len(eligible))] //nolint:gosec // Weak random used for deterministic tests.
 }
 
 // BroadcastOmniEVM returns a Omni EVM to use for e2e app tx broadcasts.

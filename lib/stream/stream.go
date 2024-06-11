@@ -49,7 +49,7 @@ type Deps[E any] struct {
 // It can either retry or return callback errors.
 // It returns (nil) when the context is canceled.
 //
-//nolint:nilerr // The function contract states it returns nil on context errors.
+
 func Stream[E any](ctx context.Context, deps Deps[E], srcChainID uint64, startHeight uint64, callback Callback[E]) error {
 	if deps.FetchWorkers == 0 {
 		return errors.New("invalid zero fetch worker count")
@@ -276,7 +276,7 @@ func (m *sortingBuffer[E]) retryLock(ctx context.Context, signalID int, fn func(
 }
 
 func (m *sortingBuffer[E]) Add(ctx context.Context, workerID int, batch []E) {
-	_ = m.retryLock(ctx, workerID, func(ctx context.Context) (bool, error) {
+	_ = m.retryLock(ctx, workerID, func(_ context.Context) (bool, error) {
 		// Wait for any previous batch this worker added to be processed before adding this batch.
 		// This results in backpressure to workers, basically only buffering a single batch per worker.
 		if m.counts[workerID] > 0 {

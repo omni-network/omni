@@ -4,7 +4,7 @@
 package errors
 
 import (
-	pkgerrors "github.com/pkg/errors" //nolint:revive // This package wraps pkg/errors.
+	pkgerrors "github.com/pkg/errors"
 )
 
 // New returns an error that formats as the given text and
@@ -19,7 +19,7 @@ func New(msg string, attrs ...any) error {
 // Wrap returns a new error wrapping the provided with additional
 // structured fields.
 //
-//nolint:wrapcheck,errorlint,inamedparam // This function does custom wrapping and errors.
+//nolint:wrapcheck,inamedparam // This function does custom wrapping and errors.
 func Wrap(err error, msg string, attrs ...any) error {
 	if err == nil {
 		panic("wrap nil error")

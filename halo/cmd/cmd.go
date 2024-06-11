@@ -33,7 +33,7 @@ func newRunCmd(name string, runFunc func(context.Context, app.Config) error) *co
 	cmd := &cobra.Command{
 		Use:   name,
 		Short: "Runs the halo consensus client",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx, err := log.Init(cmd.Context(), logCfg)
 			if err != nil {
 				return err
@@ -77,7 +77,7 @@ in block n will be re-executed against the application. If --hard=true, the bloc
 itself will also be deleted and re-downloaded from the p2p network. Note that a
 different block N cannot be re-built/re-proposed since that would result in validator slashing.
 `,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx, err := log.Init(cmd.Context(), logCfg)
 			if err != nil {
 				return err

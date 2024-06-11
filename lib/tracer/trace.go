@@ -28,6 +28,8 @@ var (
 
 // Start creates a span and a context.Context containing the newly-created span from the global tracer.
 // See go.opentelemetry.io/otel/trace#Start for more details.
+//
+//nolint:spancheck // False positive.
 func Start(ctx context.Context, spanName string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
 	tracerMu.RLock()
 	defer tracerMu.RUnlock()

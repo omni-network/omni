@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 
 	fuzz "github.com/google/gofuzz"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -75,14 +76,14 @@ func Test_activeBuffer_Run(t *testing.T) {
 
 	go func() {
 		err := buffer.Run(ctx)
-		require.ErrorIs(t, err, context.Canceled)
+		assert.ErrorIs(t, err, context.Canceled)
 	}()
 
 	counter := new(atomic.Int64)
 	go func() {
 		for _, sub := range input {
 			err := buffer.AddInput(ctx, sub)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			counter.Add(1)
 		}
 	}()

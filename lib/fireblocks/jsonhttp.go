@@ -68,7 +68,7 @@ func (c jsonHTTP) Send(ctx context.Context, uri string, httpMethod string, reque
 		return false, errors.Wrap(err, "read response body")
 	}
 
-	if resp.StatusCode/100 != 2 {
+	if resp.StatusCode/100 != 2 { //nolint:usestdlibvars // False positive.
 		if errResponse != nil {
 			err = json.Unmarshal(respBytes, errResponse)
 			if err != nil {

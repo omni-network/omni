@@ -49,7 +49,7 @@ func Register(ctx context.Context, cfg RegConfig, opts ...regOpt) error {
 		Prompter:       eigenutils.NewPrompter(),
 		NewBackendFunc: ethbackend.NewBackend,
 		VerifyFunc: func(op eigensdktypes.Operator) error {
-			return op.Validate() //nolint:wrapcheck // Wrapped below
+			return op.Validate()
 		},
 	}
 	for _, opt := range opts {
@@ -64,7 +64,7 @@ func Register(ctx context.Context, cfg RegConfig, opts ...regOpt) error {
 	}
 
 	password, err := deps.Prompter.InputHiddenString("Enter password to decrypt the ecdsa private key:", "",
-		func(password string) error {
+		func(string) error {
 			return nil
 		},
 	)

@@ -2,7 +2,6 @@ package relayer
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
@@ -101,7 +100,7 @@ func Run(ctx context.Context, cfg Config) error {
 }
 
 func newClient(tmNodeAddr string) (client.Client, error) {
-	c, err := http.New(fmt.Sprintf("tcp://%s", tmNodeAddr), "/websocket")
+	c, err := http.New("tcp://"+tmNodeAddr, "/websocket")
 	if err != nil {
 		return nil, errors.Wrap(err, "new tendermint client")
 	}

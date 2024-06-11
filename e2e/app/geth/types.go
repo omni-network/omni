@@ -50,10 +50,10 @@ type FullConfig struct {
 // tomlSettings is the toml settings used to parse/format the geth.toml config file.
 // Copied from https://github.com/ethereum/go-ethereum/blob/master/cmd/geth/config.go#L70.
 var tomlSettings = toml.Config{
-	NormFieldName: func(rt reflect.Type, key string) string {
+	NormFieldName: func(_ reflect.Type, key string) string {
 		return key
 	},
-	FieldToKey: func(rt reflect.Type, field string) string {
+	FieldToKey: func(_ reflect.Type, field string) string {
 		return field
 	},
 	MissingField: func(rt reflect.Type, field string) error {

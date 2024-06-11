@@ -2,6 +2,7 @@ package app_test
 
 import (
 	"context"
+	"math/rand/v2"
 	"testing"
 	"time"
 
@@ -15,7 +16,6 @@ import (
 
 	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"
-	"math/rand/v2"
 )
 
 func TestCursor(t *testing.T) {

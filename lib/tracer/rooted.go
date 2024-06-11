@@ -13,6 +13,8 @@ import (
 
 // StartChainHeight returns a context and span rooted to the network+network.Version+chain+height.
 // This creates a new trace root and should generally only by xprovider or cprovider.
+//
+//nolint:spancheck // False positive.
 func StartChainHeight(ctx context.Context, network netconf.ID, chain string, height uint64, spanName string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
 	// Deterministic TraceID for network+network.Version+chain+height.
 	// So all traces of the same block across all apps/instances of the same network are correlated.
