@@ -310,7 +310,7 @@ func TestOptimistic(t *testing.T) {
 	require.NoError(t, err)
 
 	payloadID, h, ts := keeper.getOptimisticPayload()
-	require.EqualValues(t, h, height+1)
+	require.EqualValues(t, height+1, h)
 	require.NotEmpty(t, ts)
 
 	b, err := mockEngine.HeaderByNumber(ctx, nil)

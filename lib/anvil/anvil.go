@@ -3,7 +3,6 @@ package anvil
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"net"
 	"os"
 	"os/exec"
@@ -51,14 +50,14 @@ func Start(ctx context.Context, dir string, chainID uint64) (ethclient.Client, s
 		return nil, "", nil, errors.Wrap(err, "docker compose up: "+out)
 	}
 
-	endpoint := fmt.Sprintf("http://localhost:%s", port)
+	endpoint := "http://localhost:" + port
 
 	ethCl, err := ethclient.Dial("anvil", endpoint)
 	if err != nil {
 		return nil, "", nil, errors.Wrap(err, "new eth client")
 	}
 
-	stop := func() {
+	stop := func() { //nolint:contextcheck // Fresh context required for stopping.
 		// Fresh stop context since above context might be canceled.
 		stopCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 		defer cancel()

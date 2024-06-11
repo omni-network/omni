@@ -166,7 +166,7 @@ func TestConfLevels(t *testing.T) {
 		Shards: []xchain.ShardID{xchain.ShardLatest0},
 	}
 	require.Len(t, chain.ConfLevels(), 2)
-	require.EqualValues(t, chain.ConfLevels(), []xchain.ConfLevel{xchain.ConfLatest, xchain.ConfFinalized})
+	require.EqualValues(t, []xchain.ConfLevel{xchain.ConfLatest, xchain.ConfFinalized}, chain.ConfLevels())
 }
 
 func TestAddrs(t *testing.T) {

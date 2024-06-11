@@ -1142,7 +1142,6 @@ func TestMinFees(t *testing.T) {
 			minTipCap:  big.NewInt(1),
 		},
 	} {
-		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
 			conf := configWithNumConfs(1)

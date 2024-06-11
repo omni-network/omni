@@ -68,7 +68,7 @@ Ensures all the following files and directories exist:
 Existing files are not overwritten, unless --clean is specified.
 The home directory should only contain subdirectories, no files, use --force to ignore this check.
 `,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
 			if err := libcmd.LogFlags(ctx, cmd.Flags()); err != nil {
 				return err

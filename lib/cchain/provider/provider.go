@@ -103,7 +103,7 @@ func (p Provider) Subscribe(in context.Context, chainVer xchain.ChainVersion, xB
 		Height: func(att xchain.Attestation) uint64 {
 			return att.BlockOffset
 		},
-		Verify: func(ctx context.Context, att xchain.Attestation, h uint64) error {
+		Verify: func(_ context.Context, att xchain.Attestation, h uint64) error {
 			if !chainVer.ConfLevel.IsFuzzy() && att.ConfLevel.IsFuzzy() {
 				return errors.New("fuzzy attestation while streaming finalized [BUG]")
 			} else if att.BlockOffset != h {

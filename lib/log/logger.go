@@ -216,7 +216,7 @@ func (t stubHandler) Handle(ctx context.Context, r slog.Record) error {
 // slogReplaceAtts returns a the slog replace attr function based on the test flag.
 func slogReplaceAtts(o options) func(groups []string, a slog.Attr) slog.Attr {
 	if !o.Test {
-		return func(groups []string, a slog.Attr) slog.Attr { return a }
+		return func(_ []string, a slog.Attr) slog.Attr { return a }
 	}
 
 	return func(groups []string, a slog.Attr) slog.Attr {

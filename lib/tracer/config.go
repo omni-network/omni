@@ -29,7 +29,7 @@ type Config struct {
 
 func (c Config) toOpts() (func(*options), error) {
 	if c.Endpoint == "" {
-		return func(o *options) {}, nil
+		return func(*options) {}, nil
 	}
 
 	headers := make(map[string]string)

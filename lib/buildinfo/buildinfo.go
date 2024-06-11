@@ -46,7 +46,7 @@ func NewVersionCmd() *cobra.Command {
 		Use:   "version",
 		Short: "Print the version information of this binary",
 		Args:  cobra.NoArgs,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			commit, timestamp := get()
 
 			var sb strings.Builder

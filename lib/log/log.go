@@ -4,13 +4,12 @@ package log
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"runtime"
 	"strings"
 	"time"
 
-	pkgerrors "github.com/pkg/errors" //nolint:revive // Need this for stacktraces.
+	pkgerrors "github.com/pkg/errors"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -93,7 +92,7 @@ func log(ctx context.Context, level slog.Level, msg string, attrs ...any) {
 		return true
 	})
 	trace.SpanFromContext(ctx).AddEvent(
-		fmt.Sprintf("log.%s", level.String()),
+		"log"+level.String(),
 		trace.WithAttributes(traceAttrs...),
 	)
 
@@ -119,13 +118,13 @@ func errAttrs(err error) []any {
 	for {
 		// Use the first encountered omniErr's attributes.
 		if len(attrs) == 0 {
-			if serr, ok := err.(omniErr); ok { //nolint:errorlint // Using cast instead of errors.As since we do custom logic
+			if serr, ok := err.(omniErr); ok {
 				attrs = serr.Attrs()
 			}
 		}
 
 		// Use the last encountered stack trace.
-		if serr, ok := err.(stackTracer); ok { //nolint:errorlint // Using cast instead of errors.As since we do custom logic
+		if serr, ok := err.(stackTracer); ok {
 			stack = serr.StackTrace()
 		}
 

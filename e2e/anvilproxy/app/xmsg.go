@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"math/rand/v2"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/types"
@@ -14,8 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-
-	"math/rand/v2"
 )
 
 var (
@@ -93,7 +92,7 @@ func fuzzXMsgs(perturb types.Perturb, msgs []*bindings.OmniPortalXMsg) ([]*bindi
 	case types.PerturbFuzzyHeadAttRoot:
 		// Change 50% of 1st message gas limits.
 		// Consensus would not be possible.
-		do := rand.Float64() < 0.5
+		do := rand.Float64() < 0.5 //nolint:gosec // Weak random ok for tests.
 		if do {
 			msgs[0].GasLimit++
 		}

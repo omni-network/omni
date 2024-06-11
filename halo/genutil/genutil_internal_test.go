@@ -17,8 +17,8 @@ import (
 func TestDefaultConsensusParams(t *testing.T) {
 	t.Parallel()
 	cons := defaultConsensusGenesis()
-	require.EqualValues(t, cons.Params.ABCI.VoteExtensionsEnableHeight, 1)
-	require.EqualValues(t, cons.Params.Validator.PubKeyTypes[0], types.ABCIPubKeyTypeSecp256k1)
+	require.EqualValues(t, 1, cons.Params.ABCI.VoteExtensionsEnableHeight)
+	require.EqualValues(t, types.ABCIPubKeyTypeSecp256k1, cons.Params.Validator.PubKeyTypes[0])
 }
 
 func TestEncodeTXs(t *testing.T) {

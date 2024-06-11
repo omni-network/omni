@@ -1,7 +1,7 @@
 package errors
 
 import (
-	pkgerrors "github.com/pkg/errors" //nolint:revive // This package wraps pkg/errors.
+	pkgerrors "github.com/pkg/errors"
 )
 
 // structured is the implementation of a structured error.
@@ -16,7 +16,7 @@ func (s structured) StackTrace() pkgerrors.StackTrace {
 		StackTrace() pkgerrors.StackTrace
 	}
 
-	tracer, ok := s.err.(stackTracer) //nolint:errorlint // Using cast as per pkgerror documentation.
+	tracer, ok := s.err.(stackTracer)
 	if !ok {
 		return nil
 	}

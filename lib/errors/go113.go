@@ -4,7 +4,7 @@
 package errors
 
 import (
-	stderrors "errors" //nolint:revive // This package wraps std errors.
+	stderrors "errors"
 )
 
 // This file was copied from github.com/pkg/errors/go113.go. It ensures this package is compatible

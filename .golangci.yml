@@ -1,13 +1,6 @@
 run:
   timeout: 5m
   go: "1.22"
-  skip-files:
-    - ".*\\.pb\\.go$" # Ignore generated protobuf files
-  skip-dirs:
-    - explorer/db/ent
-    - explorer/ui/graphql
-    - explorer/graphql  # graphql resolvers are fine with std lib errors (those are not logged)
-    - explorer/graphql/mockresolver  # this is temporary code which will be removed after the backend implementation is complete
 linters-settings:
   exhaustive:
     default-signifies-exhaustive: true
@@ -93,6 +86,13 @@ linters-settings:
 
 issues:
   fix: true
+  exclude-files:
+    - ".*\\.pb\\.go$" # Ignore generated protobuf files
+  exclude-dirs:
+    - explorer/db/ent
+    - explorer/ui/graphql
+    - explorer/graphql  # graphql resolvers are fine with std lib errors (those are not logged)
+    - explorer/graphql/mockresolver  # this is temporary code which will be removed after the backend implementation is complete
   exclude-rules:
     - path: '(.*)(_test|tutil|scripts)(.*)'
       linters:         # Relax linters for both tests/scripts (non-production code)
@@ -121,6 +121,8 @@ issues:
     - "G306: Expect WriteFile permissions to be 0600 or less" # We write a lot of files that need to be editable.
     - "exported: type name will be used as module.Module" # Cosmos style
     - "defer: prefer not to defer chains of function calls" # We use this for defer latency()()
+    - "go-require: do not use require in http handlers" # This is not important
+    - "the given struct should be annotated with the `toml` tag" # TOML tags not required.
 
     # Loop variable issues have been fixed in Go 1.22, so can be ignored
     - "G601: Implicit memory aliasing in for loop"
@@ -139,13 +141,15 @@ linters:
     - funlen               # Some functions will be long
     - gocognit             # We tend to write long multi-step functions
     - gochecknoglobals     # We use globals in many places
-    - goerr113             # We do not religiously follow the Go 1.13 package level error convention
+    - err113               # We do not religiously follow the Go 1.13 package level error convention
     - godox                # Allow TODOs
     - goimports            # Handled by gci
     - gofumpt              # Not compatible with gci, see https://github.com/golangci/golangci-lint/issues/1490.
     - gomnd                # Too many false positives
     - gomoddirectives      # We have a replace directive
+    - intrange             # Intrange just result in other lint warns in many cases.
     - ireturn              # Too many false positives
+    - mnd                  # Too many false positives
     - prealloc             # Too many false positives
     - tagliatelle          # Too strict
     - varnamelen           # False positives
@@ -153,13 +157,4 @@ linters:
     - lll                  # Disable rigid line length limit
 
     # Disable deprecated/archived linters (alphabetical order)
-    - deadcode
-    - exhaustivestruct
-    - golint
-    - ifshort
-    - interfacer
-    - maligned
-    - nosnakecase
-    - scopelint
-    - structcheck
-    - varcheck
+    - execinquery

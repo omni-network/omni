@@ -71,7 +71,7 @@ const (
 
 // Manifest wraps e2e.Manifest with additional omni-specific fields.
 //
-//nolint:musttag // False positive
+
 type Manifest struct {
 	e2e.Manifest
 

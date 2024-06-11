@@ -3,6 +3,7 @@ package loadgen
 import (
 	"context"
 	"math/big"
+	"math/rand/v2"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -12,8 +13,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
-
-	"math/rand/v2"
 )
 
 const selfDelegateJitter = 0.2 // 20% jitter
@@ -22,7 +21,7 @@ func selfDelegateForever(ctx context.Context, contract *bindings.Staking, backen
 	log.Info(ctx, "Starting periodic self-delegation", "validator", validator.Hex(), "period", period)
 
 	nextPeriod := func() time.Duration {
-		jitter := time.Duration(float64(period) * rand.Float64() * selfDelegateJitter)
+		jitter := time.Duration(float64(period) * rand.Float64() * selfDelegateJitter) //nolint:gosec // Weak random ok for load tests.
 		return period + jitter
 	}
 
