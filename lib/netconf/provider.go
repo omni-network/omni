@@ -86,14 +86,7 @@ func networkFromPortals(network ID, portals []bindings.PortalRegistryDeployment)
 	}
 
 	// Add omni consensus chain
-	consensusMeta := MetadataByID(network, network.Static().OmniConsensusChainIDUint64())
-	chains = append(chains, Chain{
-		ID:           consensusMeta.ChainID,
-		Name:         consensusMeta.Name,
-		BlockPeriod:  consensusMeta.BlockPeriod,
-		Shards:       []xchain.ShardID{xchain.ShardBroadcast0}, // Consensus chain only supports broadcast shard.
-		DeployHeight: 1,                                        // ValidatorSets start at 1, not 0.
-	})
+	chains = append(chains, network.Static().OmniConsensusChain())
 
 	return Network{
 		ID:     network,
@@ -103,10 +96,11 @@ func networkFromPortals(network ID, portals []bindings.PortalRegistryDeployment)
 
 func MetadataByID(network ID, chainID uint64) evmchain.Metadata {
 	if IsOmniConsensus(network, chainID) {
+		chain := network.Static().OmniConsensusChain()
 		return evmchain.Metadata{
-			ChainID:     chainID,
-			Name:        "omni_consensus",
-			BlockPeriod: time.Second * 2,
+			ChainID:     chain.ID,
+			Name:        chain.Name,
+			BlockPeriod: chain.BlockPeriod,
 		}
 	}
 
