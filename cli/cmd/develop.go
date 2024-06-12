@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	defaultTemplate 	  = "hello-world-template"
+	defaultTemplate       = "hello-world-template"
 	defaultTemplateCommit = "1d0ba3c" // Commit hash of the template, update as needed
 )
 
