@@ -1,14 +1,19 @@
 package cmd
 
 import (
-	"bytes"
 	"context"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/spf13/cobra"
+)
+
+const (
+	defaultTemplate       = "hello-world-template"
+	defaultTemplateCommit = "1d0ba3c" // Commit hash of the template, update as needed
 )
 
 func newDeveloperCmds() *cobra.Command {
@@ -47,35 +52,56 @@ type developerForgeProjectConfig struct {
 	templateName string
 }
 
-// newForgeProjectTemplate creates a new project using the forge template.
-func newForgeProjectTemplate(_ context.Context, cfg developerForgeProjectConfig) error {
-	// Check if forge is installed
-	if !checkForgeInstalled() {
-		// Forge is not installed, return an error with a suggestion.
-		return &cliError{
-			Msg:     "forge is not installed.",
-			Suggest: "You can install foundry by visiting https://github.com/foundry-rs/foundry",
-		}
+// newForgeProjectTemplate creates a new project by cloning a repository, checking out a specific commit if necessary, and initializing a new Git repository.
+func newForgeProjectTemplate(ctx context.Context, cfg developerForgeProjectConfig) error {
+	destinationPath, err := os.Getwd()
+	if err != nil {
+		return errors.Wrap(err, "failed to get current working directory")
 	}
 
-	// Execute the `forge init` command.
-	// #nosec G204
-	cmd := exec.Command("forge", "init", "--template", "https://github.com/omni-network/"+cfg.templateName+".git")
+	// Clone the repository
+	//nolint:gosec // This is a command-line tool, not a library
+	cmd := exec.CommandContext(ctx, "git", "clone", "--depth", "1", "https://github.com/omni-network/"+cfg.templateName+".git", destinationPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		return errors.Wrap(err, "failed to run forge init")
+		return errors.Wrap(err, "failed to clone repository")
+	}
+
+	// Check out the specific commit if using the default template
+	if cfg.templateName == defaultTemplate {
+		cmd = exec.CommandContext(ctx, "git", "checkout", defaultTemplateCommit)
+		cmd.Dir = destinationPath
+		cmd.Stdout = nil // Suppress output
+		cmd.Stderr = nil // Suppress output
+		if err := cmd.Run(); err != nil {
+			return errors.Wrap(err, "failed to checkout commit")
+		}
+	}
+
+	// Initialize submodules
+	cmd = exec.CommandContext(ctx, "git", "submodule", "update", "--init", "--recursive")
+	cmd.Dir = destinationPath
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return errors.Wrap(err, "failed to update submodules")
+	}
+
+	// Delete the .git directory to remove history
+	err = os.RemoveAll(filepath.Join(destinationPath, ".git"))
+	if err != nil {
+		return errors.Wrap(err, "failed to remove .git directory")
+	}
+
+	// Initialize a new Git repository
+	cmd = exec.CommandContext(ctx, "git", "init")
+	cmd.Dir = destinationPath
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return errors.Wrap(err, "failed to initialize new git repository")
 	}
 
 	return nil
-}
-
-// checkForgeInstalled checks if forge is installed by attempting to run 'forge --version'.
-func checkForgeInstalled() bool {
-	cmd := exec.Command("forge", "--version")
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err := cmd.Run()
-
-	return err == nil // If there is no error, forge is installed.
 }
