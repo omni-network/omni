@@ -75,13 +75,16 @@ contract MockPortal is IOmniPortal, OmniPortalConstants {
     //////////////////////////////////////////////////////////////////////////////
 
     /// @dev Execute a mock xcall, custom gas limit. Passes the revert for call fails or too low gas limit
-    function mockXCall(uint64 sourceChainId, address sender, address to, bytes calldata data, uint64 gasLimit) public {
+    function mockXCall(uint64 sourceChainId, address sender, address to, bytes calldata data, uint64 gasLimit)
+        public
+        returns (uint256 gasUsed)
+    {
         require(gasLimit <= xmsgMaxGasLimit, "OmniPortal: gasLimit too high");
         require(gasLimit >= xmsgMinGasLimit, "OmniPortal: gasLimit too low");
 
         _xmsg = XTypes.MsgShort({ sourceChainId: sourceChainId, sender: sender });
 
-        uint256 gasUsed = gasleft();
+        gasUsed = gasleft();
         (bool success, bytes memory returnData) = to.call{ gas: gasLimit }(data);
         gasUsed = gasUsed - gasleft();
 
@@ -91,6 +94,8 @@ contract MockPortal is IOmniPortal, OmniPortalConstants {
                 revert(add(returnData, 32), mload(returnData))
             }
         }
+
+        return gasUsed;
     }
 
     //////////////////////////////////////////////////////////////////////////////

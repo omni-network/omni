@@ -7,6 +7,7 @@ import { OmniBridgeNative } from "src/token/OmniBridgeNative.sol";
 import { OmniBridgeL1 } from "src/token/OmniBridgeL1.sol";
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
 import { Test } from "forge-std/Test.sol";
+import { console } from "forge-std/console.sol";
 
 /**
  * @title OmniBridgeNative_Test
@@ -20,8 +21,8 @@ contract OmniBridgeNative_Test is Test {
 
     MockPortal portal;
     OmniBridgeNativeHarness b;
+    OmniBridgeL1 l1Bridge;
 
-    address l1Bridge;
     uint64 l1ChainId;
 
     uint256 totalSupply = 100_000_000 * 10 ** 18;
@@ -30,8 +31,8 @@ contract OmniBridgeNative_Test is Test {
         portal = new MockPortal();
         b = new OmniBridgeNativeHarness();
         l1ChainId = 1;
-        l1Bridge = makeAddr("l1Bridge");
-        b.setupNoAuth(l1ChainId, address(portal), l1Bridge);
+        l1Bridge = new OmniBridgeL1(makeAddr("token"));
+        b.setupNoAuth(l1ChainId, address(portal), address(l1Bridge));
         vm.deal(address(b), totalSupply);
     }
 
@@ -99,9 +100,14 @@ contract OmniBridgeNative_Test is Test {
     }
 
     function test_withdraw() public {
+        address payor = makeAddr("payor");
+        address to = makeAddr("to");
+        uint256 amount = 1e18;
+        uint64 gasLimit = l1Bridge.XCALL_WITHDRAW_GAS_LIMIT();
+
         // sender must be portal
         vm.expectRevert("OmniBridge: not xcall");
-        b.withdraw(address(0), address(0), 0);
+        b.withdraw(payor, to, amount);
 
         // xmsg must be from l1Bridge
         vm.expectRevert("OmniBridge: not bridge");
@@ -109,39 +115,38 @@ contract OmniBridgeNative_Test is Test {
             sourceChainId: l1ChainId,
             sender: address(1234), // wrong
             to: address(b),
-            data: abi.encodeWithSelector(OmniBridgeNative.withdraw.selector, address(0), address(0), 0),
-            gasLimit: 100_000
+            data: abi.encodeWithSelector(OmniBridgeNative.withdraw.selector, payor, to, amount),
+            gasLimit: gasLimit
         });
 
         // xmsg must be from l1ChainId
         vm.expectRevert("OmniBridge: not L1");
         portal.mockXCall({
             sourceChainId: l1ChainId + 1, // wrong
-            sender: l1Bridge,
+            sender: address(l1Bridge),
             to: address(b),
-            data: abi.encodeWithSelector(OmniBridgeNative.withdraw.selector, address(0), address(0), 0),
-            gasLimit: 100_000
+            data: abi.encodeWithSelector(OmniBridgeNative.withdraw.selector, payor, to, amount),
+            gasLimit: gasLimit
         });
 
         // succeeds
         //
-        address payor = makeAddr("payor");
-        address to = makeAddr("to");
-        uint256 amount = 1e18;
-
         // emits event
         vm.expectEmit();
         emit Withdraw(payor, to, amount, true);
 
         // transfers amount to to
         vm.expectCall(to, amount, "");
-        portal.mockXCall({
+        uint256 gasUsed = portal.mockXCall({
             sourceChainId: l1ChainId,
-            sender: l1Bridge,
+            sender: address(l1Bridge),
             to: address(b),
             data: abi.encodeWithSelector(OmniBridgeNative.withdraw.selector, payor, to, amount),
-            gasLimit: 100_000
+            gasLimit: gasLimit
         });
+
+        // log gas, to inform xcall gas limit
+        console.log("OmniBridgeNative.withdraw(success=true) gas used: ", gasUsed);
 
         assertEq(to.balance, amount);
 
@@ -159,15 +164,18 @@ contract OmniBridgeNative_Test is Test {
         emit Withdraw(payor, noReceiver, amount, false);
 
         vm.expectCall(noReceiver, amount, "");
-        portal.mockXCall({
+        gasUsed = portal.mockXCall({
             sourceChainId: l1ChainId,
-            sender: l1Bridge,
+            sender: address(l1Bridge),
             to: address(b),
             data: abi.encodeWithSelector(OmniBridgeNative.withdraw.selector, payor, noReceiver, amount),
-            gasLimit: 100_000
+            gasLimit: gasLimit
         });
 
         assertEq(b.claimable(payor), amount);
+
+        // log gas, to inform xcall gas limit
+        console.log("OmniBridgeNative.withdraw(success=false) gas used: ", gasUsed);
     }
 
     function test_claim() public {

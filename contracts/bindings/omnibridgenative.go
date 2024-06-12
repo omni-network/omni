@@ -31,8 +31,8 @@ var (
 
 // OmniBridgeNativeMetaData contains all meta data concerning the OmniBridgeNative contract.
 var OmniBridgeNativeMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"XCALL_WITHDRAW_GAS_LIMIT\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"bridge\",\"inputs\":[{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"bridgeFee\",\"inputs\":[{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"claim\",\"inputs\":[{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"claimable\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"l1Bridge\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"l1BridgeBalance\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"l1ChainId\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"omni\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIOmniPortal\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setup\",\"inputs\":[{\"name\":\"l1ChainId_\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"omni_\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"l1Bridge_\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"totalL1Supply\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"withdraw\",\"inputs\":[{\"name\":\"payor\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"Claimed\",\"inputs\":[{\"name\":\"claimant\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Deposit\",\"inputs\":[{\"name\":\"from\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Withdraw\",\"inputs\":[{\"name\":\"payor\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"success\",\"type\":\"bool\",\"indexed\":false,\"internalType\":\"bool\"}],\"anonymous\":false}]",
-	Bin: "0x608060405234801561001057600080fd5b50610f1d806100206000396000f3fe6080604052600436106100e85760003560e01c80638da5cb5b1161008a578063c3de453d11610059578063c3de453d14610287578063d9caed121461029a578063f2fde38b146102ba578063f35ea557146102da57600080fd5b80638da5cb5b146102135780638fdcb4c914610231578063969b53da146102485780639c5451b01461026857600080fd5b806339acf9f1116100c657806339acf9f1146101725780633abfe55f146101b1578063402914f5146101d1578063715018a6146101fe57600080fd5b806312622e5b146100ed5780631e83409a1461012c57806323b051d91461014e575b600080fd5b3480156100f957600080fd5b5060655461010e9067ffffffffffffffff1681565b60405167ffffffffffffffff90911681526020015b60405180910390f35b34801561013857600080fd5b5061014c610147366004610c66565b6102fa565b005b34801561015a57600080fd5b5061016460665481565b604051908152602001610123565b34801561017e57600080fd5b5060655461019990600160401b90046001600160a01b031681565b6040516001600160a01b039091168152602001610123565b3480156101bd57600080fd5b506101646101cc366004610c8a565b610598565b3480156101dd57600080fd5b506101646101ec366004610c66565b60686020526000908152604090205481565b34801561020a57600080fd5b5061014c61066a565b34801561021f57600080fd5b506033546001600160a01b0316610199565b34801561023d57600080fd5b5061010e620249f081565b34801561025457600080fd5b50606754610199906001600160a01b031681565b34801561027457600080fd5b506101646a52b7d2dcc80cd2e400000081565b61014c610295366004610c8a565b61067e565b3480156102a657600080fd5b5061014c6102b5366004610cb6565b61068c565b3480156102c657600080fd5b5061014c6102d5366004610c66565b6108ee565b3480156102e657600080fd5b5061014c6102f5366004610d0d565b610967565b60655460408051631799380760e11b81528151600093600160401b90046001600160a01b031692632f32700e92600480820193918290030181865afa158015610347573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061036b9190610d58565b606554909150600160401b90046001600160a01b031633146103cc5760405162461bcd60e51b815260206004820152601560248201527413db5b9a509c9a5919d94e881b9bdd081e18d85b1b605a1b60448201526064015b60405180910390fd5b606554815167ffffffffffffffff9081169116146104215760405162461bcd60e51b81526020600482015260126024820152714f6d6e694272696467653a206e6f74204c3160701b60448201526064016103c3565b6020808201516001600160a01b0381166000908152606890925260409091205461048d5760405162461bcd60e51b815260206004820152601e60248201527f4f6d6e694272696467653a206e6f7468696e6720746f207265636c61696d000060448201526064016103c3565b6001600160a01b038181166000908152606860205260408082208054908390559051909286169083908381818185875af1925050503d80600081146104ee576040519150601f19603f3d011682016040523d82523d6000602084013e6104f3565b606091505b50509050806105445760405162461bcd60e51b815260206004820152601b60248201527f4f6d6e694272696467653a207472616e73666572206661696c6564000000000060448201526064016103c3565b846001600160a01b0316836001600160a01b03167ff7a40077ff7a04c7e61f6f26fb13774259ddf1b6bce9ecf26a8276cdd39926838460405161058991815260200190565b60405180910390a35050505050565b606554604080516001600160a01b038581166024830152604480830186905283518084039091018152606490920183526020820180516001600160e01b031663f3fef3a360e01b1790529151632376548f60e21b8152600093600160401b810490931692638dd9523c926106209267ffffffffffffffff90921691620249f090600401610e0b565b602060405180830381865afa15801561063d573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906106619190610e42565b90505b92915050565b6106726109bf565b61067c6000610a19565b565b6106888282610a6b565b5050565b60655460408051631799380760e11b81528151600093600160401b90046001600160a01b031692632f32700e92600480820193918290030181865afa1580156106d9573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906106fd9190610d58565b606554909150600160401b90046001600160a01b031633146107595760405162461bcd60e51b815260206004820152601560248201527413db5b9a509c9a5919d94e881b9bdd081e18d85b1b605a1b60448201526064016103c3565b60675460208201516001600160a01b039081169116146107b45760405162461bcd60e51b81526020600482015260166024820152754f6d6e694272696467653a206e6f742062726964676560501b60448201526064016103c3565b606554815167ffffffffffffffff9081169116146108095760405162461bcd60e51b81526020600482015260126024820152714f6d6e694272696467653a206e6f74204c3160701b60448201526064016103c3565b816066600082825461081b9190610e71565b90915550506040516000906001600160a01b0385169084908381818185875af1925050503d806000811461086b576040519150601f19603f3d011682016040523d82523d6000602084013e610870565b606091505b50509050806108a7576001600160a01b038516600090815260686020526040812080548592906108a1908490610e71565b90915550505b6040805184815282151560208201526001600160a01b0380871692908816917f2b664ab52fe561d3ace376046aea39744dd736ec1f67d89d504ffd2192825f619101610589565b6108f66109bf565b6001600160a01b03811661095b5760405162461bcd60e51b815260206004820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201526564647265737360d01b60648201526084016103c3565b61096481610a19565b50565b61096f6109bf565b6065805467ffffffffffffffff949094166001600160e01b031990941693909317600160401b6001600160a01b039384160217909255606780546001600160a01b03191692909116919091179055565b6033546001600160a01b0316331461067c5760405162461bcd60e51b815260206004820181905260248201527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e657260448201526064016103c3565b603380546001600160a01b038381166001600160a01b0319831681179093556040519116919082907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e090600090a35050565b60008111610abb5760405162461bcd60e51b815260206004820152601e60248201527f4f6d6e694272696467653a20616d6f756e74206d757374206265203e2030000060448201526064016103c3565b606654811115610b0d5760405162461bcd60e51b815260206004820152601860248201527f4f6d6e694272696467653a206e6f206c6971756964697479000000000000000060448201526064016103c3565b6000610b198383610598565b9050610b258183610e71565b3414610b735760405162461bcd60e51b815260206004820152601e60248201527f4f6d6e694272696467653a20696e73756666696369656e742066756e6473000060448201526064016103c3565b8160666000828254610b859190610e84565b9091555050606554606754604080516001600160a01b038781166024830152604480830188905283518084039091018152606490920183526020820180516001600160e01b031663f3fef3a360e01b179052915163c21dda4f60e01b8152600160401b850483169463c21dda4f948794610c1a9467ffffffffffffffff909316936004939190921691620249f0908401610e97565b6000604051808303818588803b158015610c3357600080fd5b505af1158015610c47573d6000803e3d6000fd5b5050505050505050565b6001600160a01b038116811461096457600080fd5b600060208284031215610c7857600080fd5b8135610c8381610c51565b9392505050565b60008060408385031215610c9d57600080fd5b8235610ca881610c51565b946020939093013593505050565b600080600060608486031215610ccb57600080fd5b8335610cd681610c51565b92506020840135610ce681610c51565b929592945050506040919091013590565b67ffffffffffffffff8116811461096457600080fd5b600080600060608486031215610d2257600080fd5b8335610d2d81610cf7565b92506020840135610d3d81610c51565b91506040840135610d4d81610c51565b809150509250925092565b600060408284031215610d6a57600080fd5b6040516040810181811067ffffffffffffffff82111715610d9b57634e487b7160e01b600052604160045260246000fd5b6040528251610da981610cf7565b81526020830151610db981610c51565b60208201529392505050565b6000815180845260005b81811015610deb57602081850181015186830182015201610dcf565b506000602082860101526020601f19601f83011685010191505092915050565b600067ffffffffffffffff808616835260606020840152610e2f6060840186610dc5565b9150808416604084015250949350505050565b600060208284031215610e5457600080fd5b5051919050565b634e487b7160e01b600052601160045260246000fd5b8082018082111561066457610664610e5b565b8181038181111561066457610664610e5b565b600067ffffffffffffffff808816835260ff8716602084015260018060a01b038616604084015260a06060840152610ed260a0840186610dc5565b9150808416608084015250969550505050505056fea26469706673582212203b09f23a62ad3b38b5e1a351a323d98872d94632387f32547f4adc2e0578001e64736f6c63430008180033",
+	ABI: "[{\"type\":\"function\",\"name\":\"XCALL_WITHDRAW_GAS_LIMIT\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"bridge\",\"inputs\":[{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"bridgeFee\",\"inputs\":[{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"claim\",\"inputs\":[{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"claimable\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"l1Bridge\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"l1BridgeBalance\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"l1ChainId\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"omni\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIOmniPortal\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setup\",\"inputs\":[{\"name\":\"l1ChainId_\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"omni_\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"l1Bridge_\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"totalL1Supply\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"withdraw\",\"inputs\":[{\"name\":\"payor\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"Bridge\",\"inputs\":[{\"name\":\"payor\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Claimed\",\"inputs\":[{\"name\":\"claimant\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Withdraw\",\"inputs\":[{\"name\":\"payor\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"success\",\"type\":\"bool\",\"indexed\":false,\"internalType\":\"bool\"}],\"anonymous\":false}]",
+	Bin: "0x608060405234801561001057600080fd5b50611009806100206000396000f3fe6080604052600436106100e85760003560e01c80638da5cb5b1161008a578063c3de453d11610059578063c3de453d14610287578063d9caed121461029a578063f2fde38b146102ba578063f35ea557146102da57600080fd5b80638da5cb5b146102135780638fdcb4c914610231578063969b53da146102485780639c5451b01461026857600080fd5b806339acf9f1116100c657806339acf9f1146101725780633abfe55f146101b1578063402914f5146101d1578063715018a6146101fe57600080fd5b806312622e5b146100ed5780631e83409a1461012c57806323b051d91461014e575b600080fd5b3480156100f957600080fd5b5060655461010e9067ffffffffffffffff1681565b60405167ffffffffffffffff90911681526020015b60405180910390f35b34801561013857600080fd5b5061014c610147366004610d52565b6102fa565b005b34801561015a57600080fd5b5061016460665481565b604051908152602001610123565b34801561017e57600080fd5b5060655461019990600160401b90046001600160a01b031681565b6040516001600160a01b039091168152602001610123565b3480156101bd57600080fd5b506101646101cc366004610d76565b6105ee565b3480156101dd57600080fd5b506101646101ec366004610d52565b60686020526000908152604090205481565b34801561020a57600080fd5b5061014c6106c0565b34801561021f57600080fd5b506033546001600160a01b0316610199565b34801561023d57600080fd5b5061010e620124f881565b34801561025457600080fd5b50606754610199906001600160a01b031681565b34801561027457600080fd5b506101646a52b7d2dcc80cd2e400000081565b61014c610295366004610d76565b6106d4565b3480156102a657600080fd5b5061014c6102b5366004610da2565b6106e2565b3480156102c657600080fd5b5061014c6102d5366004610d52565b610944565b3480156102e657600080fd5b5061014c6102f5366004610df9565b6109bd565b60655460408051631799380760e11b81528151600093600160401b90046001600160a01b031692632f32700e92600480820193918290030181865afa158015610347573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061036b9190610e44565b606554909150600160401b90046001600160a01b031633146103cc5760405162461bcd60e51b815260206004820152601560248201527413db5b9a509c9a5919d94e881b9bdd081e18d85b1b605a1b60448201526064015b60405180910390fd5b606554815167ffffffffffffffff9081169116146104215760405162461bcd60e51b81526020600482015260126024820152714f6d6e694272696467653a206e6f74204c3160701b60448201526064016103c3565b6001600160a01b0382166104775760405162461bcd60e51b815260206004820152601c60248201527f4f6d6e694272696467653a206e6f20636c61696d20746f207a65726f0000000060448201526064016103c3565b6020808201516001600160a01b038116600090815260689092526040909120546104e35760405162461bcd60e51b815260206004820152601c60248201527f4f6d6e694272696467653a206e6f7468696e6720746f20636c61696d0000000060448201526064016103c3565b6001600160a01b038181166000908152606860205260408082208054908390559051909286169083908381818185875af1925050503d8060008114610544576040519150601f19603f3d011682016040523d82523d6000602084013e610549565b606091505b505090508061059a5760405162461bcd60e51b815260206004820152601b60248201527f4f6d6e694272696467653a207472616e73666572206661696c6564000000000060448201526064016103c3565b846001600160a01b0316836001600160a01b03167ff7a40077ff7a04c7e61f6f26fb13774259ddf1b6bce9ecf26a8276cdd3992683846040516105df91815260200190565b60405180910390a35050505050565b606554604080516001600160a01b038581166024830152604480830186905283518084039091018152606490920183526020820180516001600160e01b031663f3fef3a360e01b1790529151632376548f60e21b8152600093600160401b810490931692638dd9523c926106769267ffffffffffffffff90921691620124f890600401610ef7565b602060405180830381865afa158015610693573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906106b79190610f2e565b90505b92915050565b6106c8610a15565b6106d26000610a6f565b565b6106de8282610ac1565b5050565b60655460408051631799380760e11b81528151600093600160401b90046001600160a01b031692632f32700e92600480820193918290030181865afa15801561072f573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906107539190610e44565b606554909150600160401b90046001600160a01b031633146107af5760405162461bcd60e51b815260206004820152601560248201527413db5b9a509c9a5919d94e881b9bdd081e18d85b1b605a1b60448201526064016103c3565b60675460208201516001600160a01b0390811691161461080a5760405162461bcd60e51b81526020600482015260166024820152754f6d6e694272696467653a206e6f742062726964676560501b60448201526064016103c3565b606554815167ffffffffffffffff90811691161461085f5760405162461bcd60e51b81526020600482015260126024820152714f6d6e694272696467653a206e6f74204c3160701b60448201526064016103c3565b81606660008282546108719190610f5d565b90915550506040516000906001600160a01b0385169084908381818185875af1925050503d80600081146108c1576040519150601f19603f3d011682016040523d82523d6000602084013e6108c6565b606091505b50509050806108fd576001600160a01b038516600090815260686020526040812080548592906108f7908490610f5d565b90915550505b6040805184815282151560208201526001600160a01b0380871692908816917f2b664ab52fe561d3ace376046aea39744dd736ec1f67d89d504ffd2192825f6191016105df565b61094c610a15565b6001600160a01b0381166109b15760405162461bcd60e51b815260206004820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201526564647265737360d01b60648201526084016103c3565b6109ba81610a6f565b50565b6109c5610a15565b6065805467ffffffffffffffff949094166001600160e01b031990941693909317600160401b6001600160a01b039384160217909255606780546001600160a01b03191692909116919091179055565b6033546001600160a01b031633146106d25760405162461bcd60e51b815260206004820181905260248201527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e657260448201526064016103c3565b603380546001600160a01b038381166001600160a01b0319831681179093556040519116919082907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e090600090a35050565b6001600160a01b038216610b175760405162461bcd60e51b815260206004820152601d60248201527f4f6d6e694272696467653a206e6f2062726964676520746f207a65726f00000060448201526064016103c3565b60008111610b675760405162461bcd60e51b815260206004820152601e60248201527f4f6d6e694272696467653a20616d6f756e74206d757374206265203e2030000060448201526064016103c3565b606654811115610bb95760405162461bcd60e51b815260206004820152601860248201527f4f6d6e694272696467653a206e6f206c6971756964697479000000000000000060448201526064016103c3565b6000610bc583836105ee565b9050610bd18183610f5d565b3414610c1f5760405162461bcd60e51b815260206004820152601b60248201527f4f6d6e694272696467653a20696e636f72726563742066756e6473000000000060448201526064016103c3565b8160666000828254610c319190610f70565b9091555050606554606754604080516001600160a01b038781166024830152604480830188905283518084039091018152606490920183526020820180516001600160e01b031663f3fef3a360e01b179052915163c21dda4f60e01b8152600160401b850483169463c21dda4f948794610cc69467ffffffffffffffff909316936004939190921691620124f8908401610f83565b6000604051808303818588803b158015610cdf57600080fd5b505af1158015610cf3573d6000803e3d6000fd5b50506040518581526001600160a01b03871693503392507f59bc8a913d49a9626dd6ba5def7fcf12804061c1bb9b8b6db077e1a12cb4b422915060200160405180910390a3505050565b6001600160a01b03811681146109ba57600080fd5b600060208284031215610d6457600080fd5b8135610d6f81610d3d565b9392505050565b60008060408385031215610d8957600080fd5b8235610d9481610d3d565b946020939093013593505050565b600080600060608486031215610db757600080fd5b8335610dc281610d3d565b92506020840135610dd281610d3d565b929592945050506040919091013590565b67ffffffffffffffff811681146109ba57600080fd5b600080600060608486031215610e0e57600080fd5b8335610e1981610de3565b92506020840135610e2981610d3d565b91506040840135610e3981610d3d565b809150509250925092565b600060408284031215610e5657600080fd5b6040516040810181811067ffffffffffffffff82111715610e8757634e487b7160e01b600052604160045260246000fd5b6040528251610e9581610de3565b81526020830151610ea581610d3d565b60208201529392505050565b6000815180845260005b81811015610ed757602081850181015186830182015201610ebb565b506000602082860101526020601f19601f83011685010191505092915050565b600067ffffffffffffffff808616835260606020840152610f1b6060840186610eb1565b9150808416604084015250949350505050565b600060208284031215610f4057600080fd5b5051919050565b634e487b7160e01b600052601160045260246000fd5b808201808211156106ba576106ba610f47565b818103818111156106ba576106ba610f47565b600067ffffffffffffffff808816835260ff8716602084015260018060a01b038616604084015260a06060840152610fbe60a0840186610eb1565b9150808416608084015250969550505050505056fea26469706673582212208387388a7e9923d5a88231afb39cf25012876b5e5a9cd6c50524f387447172e764736f6c63430008180033",
 }
 
 // OmniBridgeNativeABI is the input ABI used to generate the binding from.
@@ -607,6 +607,160 @@ func (_OmniBridgeNative *OmniBridgeNativeTransactorSession) Withdraw(payor commo
 	return _OmniBridgeNative.Contract.Withdraw(&_OmniBridgeNative.TransactOpts, payor, to, amount)
 }
 
+// OmniBridgeNativeBridgeIterator is returned from FilterBridge and is used to iterate over the raw logs and unpacked data for Bridge events raised by the OmniBridgeNative contract.
+type OmniBridgeNativeBridgeIterator struct {
+	Event *OmniBridgeNativeBridge // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *OmniBridgeNativeBridgeIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(OmniBridgeNativeBridge)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(OmniBridgeNativeBridge)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *OmniBridgeNativeBridgeIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *OmniBridgeNativeBridgeIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// OmniBridgeNativeBridge represents a Bridge event raised by the OmniBridgeNative contract.
+type OmniBridgeNativeBridge struct {
+	Payor  common.Address
+	To     common.Address
+	Amount *big.Int
+	Raw    types.Log // Blockchain specific contextual infos
+}
+
+// FilterBridge is a free log retrieval operation binding the contract event 0x59bc8a913d49a9626dd6ba5def7fcf12804061c1bb9b8b6db077e1a12cb4b422.
+//
+// Solidity: event Bridge(address indexed payor, address indexed to, uint256 amount)
+func (_OmniBridgeNative *OmniBridgeNativeFilterer) FilterBridge(opts *bind.FilterOpts, payor []common.Address, to []common.Address) (*OmniBridgeNativeBridgeIterator, error) {
+
+	var payorRule []interface{}
+	for _, payorItem := range payor {
+		payorRule = append(payorRule, payorItem)
+	}
+	var toRule []interface{}
+	for _, toItem := range to {
+		toRule = append(toRule, toItem)
+	}
+
+	logs, sub, err := _OmniBridgeNative.contract.FilterLogs(opts, "Bridge", payorRule, toRule)
+	if err != nil {
+		return nil, err
+	}
+	return &OmniBridgeNativeBridgeIterator{contract: _OmniBridgeNative.contract, event: "Bridge", logs: logs, sub: sub}, nil
+}
+
+// WatchBridge is a free log subscription operation binding the contract event 0x59bc8a913d49a9626dd6ba5def7fcf12804061c1bb9b8b6db077e1a12cb4b422.
+//
+// Solidity: event Bridge(address indexed payor, address indexed to, uint256 amount)
+func (_OmniBridgeNative *OmniBridgeNativeFilterer) WatchBridge(opts *bind.WatchOpts, sink chan<- *OmniBridgeNativeBridge, payor []common.Address, to []common.Address) (event.Subscription, error) {
+
+	var payorRule []interface{}
+	for _, payorItem := range payor {
+		payorRule = append(payorRule, payorItem)
+	}
+	var toRule []interface{}
+	for _, toItem := range to {
+		toRule = append(toRule, toItem)
+	}
+
+	logs, sub, err := _OmniBridgeNative.contract.WatchLogs(opts, "Bridge", payorRule, toRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(OmniBridgeNativeBridge)
+				if err := _OmniBridgeNative.contract.UnpackLog(event, "Bridge", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseBridge is a log parse operation binding the contract event 0x59bc8a913d49a9626dd6ba5def7fcf12804061c1bb9b8b6db077e1a12cb4b422.
+//
+// Solidity: event Bridge(address indexed payor, address indexed to, uint256 amount)
+func (_OmniBridgeNative *OmniBridgeNativeFilterer) ParseBridge(log types.Log) (*OmniBridgeNativeBridge, error) {
+	event := new(OmniBridgeNativeBridge)
+	if err := _OmniBridgeNative.contract.UnpackLog(event, "Bridge", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
 // OmniBridgeNativeClaimedIterator is returned from FilterClaimed and is used to iterate over the raw logs and unpacked data for Claimed events raised by the OmniBridgeNative contract.
 type OmniBridgeNativeClaimedIterator struct {
 	Event *OmniBridgeNativeClaimed // Event containing the contract specifics and raw log
@@ -755,151 +909,6 @@ func (_OmniBridgeNative *OmniBridgeNativeFilterer) WatchClaimed(opts *bind.Watch
 func (_OmniBridgeNative *OmniBridgeNativeFilterer) ParseClaimed(log types.Log) (*OmniBridgeNativeClaimed, error) {
 	event := new(OmniBridgeNativeClaimed)
 	if err := _OmniBridgeNative.contract.UnpackLog(event, "Claimed", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// OmniBridgeNativeDepositIterator is returned from FilterDeposit and is used to iterate over the raw logs and unpacked data for Deposit events raised by the OmniBridgeNative contract.
-type OmniBridgeNativeDepositIterator struct {
-	Event *OmniBridgeNativeDeposit // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *OmniBridgeNativeDepositIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(OmniBridgeNativeDeposit)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(OmniBridgeNativeDeposit)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *OmniBridgeNativeDepositIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *OmniBridgeNativeDepositIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// OmniBridgeNativeDeposit represents a Deposit event raised by the OmniBridgeNative contract.
-type OmniBridgeNativeDeposit struct {
-	From   common.Address
-	Amount *big.Int
-	Raw    types.Log // Blockchain specific contextual infos
-}
-
-// FilterDeposit is a free log retrieval operation binding the contract event 0xe1fffcc4923d04b559f4d29a8bfc6cda04eb5b0d3c460751c2402c5c5cc9109c.
-//
-// Solidity: event Deposit(address indexed from, uint256 amount)
-func (_OmniBridgeNative *OmniBridgeNativeFilterer) FilterDeposit(opts *bind.FilterOpts, from []common.Address) (*OmniBridgeNativeDepositIterator, error) {
-
-	var fromRule []interface{}
-	for _, fromItem := range from {
-		fromRule = append(fromRule, fromItem)
-	}
-
-	logs, sub, err := _OmniBridgeNative.contract.FilterLogs(opts, "Deposit", fromRule)
-	if err != nil {
-		return nil, err
-	}
-	return &OmniBridgeNativeDepositIterator{contract: _OmniBridgeNative.contract, event: "Deposit", logs: logs, sub: sub}, nil
-}
-
-// WatchDeposit is a free log subscription operation binding the contract event 0xe1fffcc4923d04b559f4d29a8bfc6cda04eb5b0d3c460751c2402c5c5cc9109c.
-//
-// Solidity: event Deposit(address indexed from, uint256 amount)
-func (_OmniBridgeNative *OmniBridgeNativeFilterer) WatchDeposit(opts *bind.WatchOpts, sink chan<- *OmniBridgeNativeDeposit, from []common.Address) (event.Subscription, error) {
-
-	var fromRule []interface{}
-	for _, fromItem := range from {
-		fromRule = append(fromRule, fromItem)
-	}
-
-	logs, sub, err := _OmniBridgeNative.contract.WatchLogs(opts, "Deposit", fromRule)
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(OmniBridgeNativeDeposit)
-				if err := _OmniBridgeNative.contract.UnpackLog(event, "Deposit", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseDeposit is a log parse operation binding the contract event 0xe1fffcc4923d04b559f4d29a8bfc6cda04eb5b0d3c460751c2402c5c5cc9109c.
-//
-// Solidity: event Deposit(address indexed from, uint256 amount)
-func (_OmniBridgeNative *OmniBridgeNativeFilterer) ParseDeposit(log types.Log) (*OmniBridgeNativeDeposit, error) {
-	event := new(OmniBridgeNativeDeposit)
-	if err := _OmniBridgeNative.contract.UnpackLog(event, "Deposit", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
