@@ -33,9 +33,9 @@ contract OmniBridgeL1 is OwnableUpgradeable {
     uint256 public constant totalL1Supply = 100_000_000 * 10 ** 18;
 
     /**
-     * @notice xcall gas limit for OmniBridgeL1.withdraw
+     * @notice xcall gas limit for OmniBridgeNative.withdraw
      */
-    uint64 public constant XCALL_WITHDRAW_GAS_LIMIT = 150_000;
+    uint64 public constant XCALL_WITHDRAW_GAS_LIMIT = 75_000;
 
     /**
      * @notice The OMNI token contract.
@@ -88,7 +88,7 @@ contract OmniBridgeL1 is OwnableUpgradeable {
     function _bridge(address payor, address to, uint256 amount) internal {
         require(amount > 0, "OmniBridge: amount must be > 0");
         require(to != address(0), "OmniBridge: no bridge to zero");
-        require(msg.value == bridgeFee(to, amount), "OmniBridge: invalid fee");
+        require(msg.value == bridgeFee(to, amount), "OmniBridge: incorrect fee");
         require(token.transferFrom(payor, address(this), amount), "OmniBridge: transfer failed");
 
         omni.xcall{ value: msg.value }(

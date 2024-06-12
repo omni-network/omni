@@ -1,7 +1,7 @@
 {
   "storage": [
     {
-      "astId": 238,
+      "astId": 139,
       "contract": "src/token/OmniBridgeNative.sol:OmniBridgeNative",
       "label": "_initialized",
       "offset": 0,
@@ -9,7 +9,7 @@
       "type": "t_uint8"
     },
     {
-      "astId": 241,
+      "astId": 142,
       "contract": "src/token/OmniBridgeNative.sol:OmniBridgeNative",
       "label": "_initializing",
       "offset": 1,
@@ -17,7 +17,7 @@
       "type": "t_bool"
     },
     {
-      "astId": 993,
+      "astId": 681,
       "contract": "src/token/OmniBridgeNative.sol:OmniBridgeNative",
       "label": "__gap",
       "offset": 0,
@@ -25,7 +25,7 @@
       "type": "t_array(t_uint256)50_storage"
     },
     {
-      "astId": 110,
+      "astId": 11,
       "contract": "src/token/OmniBridgeNative.sol:OmniBridgeNative",
       "label": "_owner",
       "offset": 0,
@@ -33,7 +33,7 @@
       "type": "t_address"
     },
     {
-      "astId": 230,
+      "astId": 131,
       "contract": "src/token/OmniBridgeNative.sol:OmniBridgeNative",
       "label": "__gap",
       "offset": 0,
@@ -41,7 +41,7 @@
       "type": "t_array(t_uint256)49_storage"
     },
     {
-      "astId": 52062,
+      "astId": 50428,
       "contract": "src/token/OmniBridgeNative.sol:OmniBridgeNative",
       "label": "l1ChainId",
       "offset": 0,
@@ -49,15 +49,15 @@
       "type": "t_uint64"
     },
     {
-      "astId": 52066,
+      "astId": 50432,
       "contract": "src/token/OmniBridgeNative.sol:OmniBridgeNative",
       "label": "omni",
       "offset": 8,
       "slot": "101",
-      "type": "t_contract(IOmniPortal)51149"
+      "type": "t_contract(IOmniPortal)49906"
     },
     {
-      "astId": 52069,
+      "astId": 50435,
       "contract": "src/token/OmniBridgeNative.sol:OmniBridgeNative",
       "label": "l1BridgeBalance",
       "offset": 0,
@@ -65,7 +65,7 @@
       "type": "t_uint256"
     },
     {
-      "astId": 52072,
+      "astId": 50438,
       "contract": "src/token/OmniBridgeNative.sol:OmniBridgeNative",
       "label": "l1Bridge",
       "offset": 0,
@@ -73,7 +73,7 @@
       "type": "t_address"
     },
     {
-      "astId": 52077,
+      "astId": 50443,
       "contract": "src/token/OmniBridgeNative.sol:OmniBridgeNative",
       "label": "claimable",
       "offset": 0,
@@ -104,7 +104,7 @@
       "label": "bool",
       "numberOfBytes": "1"
     },
-    "t_contract(IOmniPortal)51149": {
+    "t_contract(IOmniPortal)49906": {
       "encoding": "inplace",
       "label": "contract IOmniPortal",
       "numberOfBytes": "20"

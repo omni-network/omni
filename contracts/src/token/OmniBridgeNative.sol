@@ -43,7 +43,7 @@ contract OmniBridgeNative is OwnableUpgradeable {
     /**
      * @notice xcall gas limit for OmniBridgeL1.withdraw
      */
-    uint64 public constant XCALL_WITHDRAW_GAS_LIMIT = 150_000;
+    uint64 public constant XCALL_WITHDRAW_GAS_LIMIT = 75_000;
 
     /**
      * @notice L1 chain id, configurable so that this contract can be used on testnets.
