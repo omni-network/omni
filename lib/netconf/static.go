@@ -57,7 +57,7 @@ func (s Static) OmniConsensusChain() Chain {
 		Name:         "omni_consensus",
 		BlockPeriod:  time.Second * 2,
 		Shards:       []xchain.ShardID{xchain.ShardBroadcast0}, // Consensus chain only supports broadcast shard.
-		DeployHeight: 1,                                        // ValidatorSets start at 1, not 0.
+		DeployHeight: 1,                                        // Emit portal blocks start at 1, not 0.
 	}
 }
 

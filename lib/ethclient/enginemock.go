@@ -14,6 +14,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/cometbft/cometbft/crypto"
 
@@ -51,8 +52,8 @@ type engineMock struct {
 
 	mu          sync.Mutex
 	head        *types.Block
-	pendingLogs map[common.Address]types.Log
-	logs        map[common.Hash]types.Log
+	pendingLogs map[common.Address][]types.Log
+	logs        map[common.Hash][]types.Log
 	payloads    map[engine.PayloadID]payloadArgs
 }
 
@@ -75,7 +76,7 @@ func WithMockSelfDelegation(pubkey crypto.PubKey, ether int64) func(*engineMock)
 		}
 
 		contractAddr := common.HexToAddress(predeploys.Staking)
-		mock.pendingLogs[contractAddr] = types.Log{
+		eventLog := types.Log{
 			Address: contractAddr,
 			Topics: []common.Hash{
 				delegateEvent.ID,
@@ -84,33 +85,39 @@ func WithMockSelfDelegation(pubkey crypto.PubKey, ether int64) func(*engineMock)
 			},
 			Data: data,
 		}
+
+		mock.pendingLogs[contractAddr] = []types.Log{eventLog}
 	}
 }
 
-func WithMockPortalRegister() func(*engineMock) {
+func WithPortalRegister(network netconf.Network) func(*engineMock) {
 	return func(mock *engineMock) {
 		mock.mu.Lock()
 		defer mock.mu.Unlock()
 
-		const chainID int64 = 1337
-		const deployHeight uint64 = 9999
-		var shards = []uint64{1, 2, 3, 4, 5}
-
-		data, err := portalRegEvent.Inputs.NonIndexed().Pack(deployHeight, shards)
-		if err != nil {
-			panic(errors.Wrap(err, "pack delegate"))
-		}
-
 		contractAddr := common.HexToAddress(predeploys.PortalRegistry)
-		mock.pendingLogs[contractAddr] = types.Log{
-			Address: contractAddr,
-			Topics: []common.Hash{
-				portalRegEvent.ID,
-				common.BytesToHash(math.U256Bytes(big.NewInt(chainID))), // ChainID
-				common.HexToHash((common.Address{}).Hex()),              // Address
-			},
-			Data: data,
+
+		var eventLogs []types.Log
+		for _, chain := range network.EVMChains() {
+			data, err := portalRegEvent.Inputs.NonIndexed().Pack(chain.DeployHeight, chain.Shards)
+			if err != nil {
+				panic(errors.Wrap(err, "pack delegate"))
+			}
+
+			eventLog := types.Log{
+				Address: contractAddr,
+				Topics: []common.Hash{
+					portalRegEvent.ID,
+					common.BytesToHash(math.U256Bytes(big.NewInt(int64(chain.ID)))), // ChainID
+					common.BytesToHash(chain.PortalAddress.Bytes()),                 // Address
+				},
+				Data: data,
+			}
+
+			eventLogs = append(eventLogs, eventLog)
 		}
+
+		mock.pendingLogs[contractAddr] = eventLogs
 	}
 }
 
@@ -154,9 +161,9 @@ func NewEngineMock(opts ...func(mock *engineMock)) (EngineClient, error) {
 	m := &engineMock{
 		fuzzer:      fuzzer,
 		head:        genesisBlock,
-		pendingLogs: make(map[common.Address]types.Log),
+		pendingLogs: make(map[common.Address][]types.Log),
 		payloads:    make(map[engine.PayloadID]payloadArgs),
-		logs:        make(map[common.Hash]types.Log),
+		logs:        make(map[common.Hash][]types.Log),
 	}
 
 	for _, opt := range opts {
@@ -189,23 +196,26 @@ func (m *engineMock) FilterLogs(_ context.Context, q ethereum.FilterQuery) ([]ty
 	addr := q.Addresses[0]
 
 	// Ensure we returns the same logs for the same query.
-	if eventLog, ok := m.logs[*q.BlockHash]; ok {
-		if eventLog.Address == addr {
-			return []types.Log{eventLog}, nil
+	if eventLogs, ok := m.logs[*q.BlockHash]; ok {
+		var resp []types.Log
+		for _, eventLog := range eventLogs {
+			if eventLog.Address == addr {
+				resp = append(resp, eventLog)
+			}
 		}
 
-		return nil, nil
+		return resp, nil
 	}
 
-	eventLog, ok := m.pendingLogs[addr]
+	eventLogs, ok := m.pendingLogs[addr]
 	if !ok {
 		return nil, nil
 	}
 
-	m.logs[*q.BlockHash] = eventLog
+	m.logs[*q.BlockHash] = eventLogs
 	delete(m.pendingLogs, addr)
 
-	return []types.Log{eventLog}, nil
+	return eventLogs, nil
 }
 
 func (m *engineMock) BlockNumber(ctx context.Context) (uint64, error) {

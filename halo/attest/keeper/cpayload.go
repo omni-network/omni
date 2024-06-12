@@ -29,7 +29,12 @@ func (k *Keeper) PrepareVotes(ctx context.Context, commit abci.ExtendedCommitInf
 		return nil, nil
 	}
 
-	msg, err := votesFromLastCommit(ctx, k.windowCompare, commit)
+	msg, err := votesFromLastCommit(
+		ctx,
+		k.windowCompare,
+		k.portalRegistry.SupportedChain,
+		commit,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -38,10 +43,17 @@ func (k *Keeper) PrepareVotes(ctx context.Context, commit abci.ExtendedCommitInf
 }
 
 type windowCompareFunc func(context.Context, xchain.ChainVersion, uint64) (int, error)
+type supportedChainFunc func(context.Context, uint64) (bool, error)
 
 // votesFromLastCommit returns the aggregated votes contained in vote extensions
 // of the last local commit.
-func votesFromLastCommit(ctx context.Context, windowCompare windowCompareFunc, info abci.ExtendedCommitInfo) (*types.MsgAddVotes, error) {
+func votesFromLastCommit(
+	ctx context.Context,
+	windowCompare windowCompareFunc,
+	supportedChain supportedChainFunc,
+	info abci.ExtendedCommitInfo,
+
+) (*types.MsgAddVotes, error) {
 	var allVotes []*types.Vote
 	for _, vote := range info.Votes {
 		if vote.BlockIdFlag != cmtproto.BlockIDFlagCommit {
@@ -56,6 +68,13 @@ func votesFromLastCommit(ctx context.Context, windowCompare windowCompareFunc, i
 
 		var selected []*types.Vote
 		for _, v := range votes.Votes {
+			if ok, err := supportedChain(ctx, v.BlockHeader.ChainId); err != nil {
+				return nil, err
+			} else if !ok {
+				// Skip votes for unsupported chains.
+				continue
+			}
+
 			cmp, err := windowCompare(ctx, v.BlockHeader.XChainVersion(), v.BlockHeader.Offset)
 			if err != nil {
 				return nil, err

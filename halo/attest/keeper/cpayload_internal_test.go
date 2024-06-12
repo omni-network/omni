@@ -149,7 +149,11 @@ func TestVotesFromCommit(t *testing.T) {
 		return 0, nil
 	}
 
-	resp, err := votesFromLastCommit(context.Background(), comparer, info)
+	supported := func(ctx context.Context, chainID uint64) (bool, error) {
+		return true, nil
+	}
+
+	resp, err := votesFromLastCommit(context.Background(), comparer, supported, info)
 	require.NoError(t, err)
 
 	require.Len(t, resp.Votes, total)

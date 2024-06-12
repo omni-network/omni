@@ -299,3 +299,12 @@ func (c Chain) ChainVersions() []xchain.ChainVersion {
 
 	return resp
 }
+
+func (c Chain) ShardsUint64() []uint64 {
+	var resp []uint64
+	for _, shard := range c.Shards {
+		resp = append(resp, uint64(shard))
+	}
+
+	return resp
+}

@@ -23,6 +23,8 @@ type Keeper struct {
 	ethCl           ethclient.Client
 	portalRegAdress common.Address
 	portalRegistry  *bindings.PortalRegistryFilterer
+
+	latestCache *cache
 }
 
 func NewKeeper(emilPortal ptypes.EmitPortal, storeService store.KVStoreService, ethCl ethclient.Client) (Keeper, error) {
@@ -52,6 +54,7 @@ func NewKeeper(emilPortal ptypes.EmitPortal, storeService store.KVStoreService, 
 		ethCl:           ethCl,
 		portalRegAdress: address,
 		portalRegistry:  protalReg,
+		latestCache:     new(cache),
 	}, nil
 }
 
@@ -95,6 +98,8 @@ func (k Keeper) getOrCreateNetwork(ctx context.Context) (*Network, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "insert next network")
 	}
+
+	k.latestCache.Set(network)
 
 	return network, nil
 }
