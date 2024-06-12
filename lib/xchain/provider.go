@@ -58,3 +58,15 @@ type EmitRef struct {
 func (r EmitRef) Valid() bool {
 	return r.Height != nil || r.ConfLevel != nil
 }
+
+// ConfEmitRef returns a EmitRef with the provided confirmation level.
+func ConfEmitRef(level ConfLevel) EmitRef {
+	return EmitRef{
+		ConfLevel: &level,
+	}
+}
+
+// LatestEmitRef returns a EmitRef with the latest confirmation level.
+func LatestEmitRef() EmitRef {
+	return ConfEmitRef(ConfLatest)
+}
