@@ -175,7 +175,7 @@ func avsAddressOrDefault(avsAddr string, chainID *big.Int) (common.Address, erro
 func avsFromChainID(chainID *big.Int) (common.Address, bool) {
 	switch chainID.Int64() {
 	case eigenutils.HoleskyChainId:
-		return netconf.Testnet.Static().AVSContractAddress, true
+		return netconf.Omega.Static().AVSContractAddress, true
 	case eigenutils.MainnetChainId:
 		return netconf.Mainnet.Static().AVSContractAddress, true
 	// TODO(corver): We need to publish our AVS addresses somewhere

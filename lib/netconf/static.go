@@ -13,8 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/google/uuid"
-
-	_ "embed"
 )
 
 const consensusIDPrefix = "omni-"
@@ -105,21 +103,9 @@ var runid = uuid.New().String()
 //nolint:gochecknoglobals // Static addresses
 var (
 	// Address matches lib/contracts. We do not import to avoid cylic dependencies. Equivalence asserted in tests.
-	testnetPortal = common.HexToAddress("0xFf22F3532C19a6f890c52c4CfcDB94007aA471Dc")
-	testnetAVS    = common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
-	mainnetAVS    = common.HexToAddress("0xed2f4d90b073128ae6769a9A8D51547B1Df766C8")
-
-	//go:embed testnet/consensus-genesis.json
-	testnetConsensusGenesisJSON []byte
-
-	//go:embed testnet/consensus-seeds.txt
-	testnetConsensusSeedsTXT []byte
-
-	//go:embed testnet/execution-genesis.json
-	testnetExecutionGenesisJSON []byte
-
-	//go:embed testnet/execution-seeds.txt
-	testnetExecutionSeedsTXT []byte
+	// testnetPortal = common.HexToAddress("0xFf22F3532C19a6f890c52c4CfcDB94007aA471Dc").
+	testnetAVS = common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
+	mainnetAVS = common.HexToAddress("0xed2f4d90b073128ae6769a9A8D51547B1Df766C8")
 )
 
 //nolint:gochecknoglobals // Static mappings.
@@ -139,32 +125,12 @@ var statics = map[ID]Static{
 		OmniExecutionChainID: evmchain.IDOmniEphemeral,
 		MaxValidators:        maxValidators,
 	},
-	Testnet: {
+	Omega: {
 		Version:              "v0.0.2",
 		AVSContractAddress:   testnetAVS,
-		OmniExecutionChainID: evmchain.IDOmniTestnet,
+		OmniExecutionChainID: evmchain.IDOmniOmega,
 		MaxValidators:        maxValidators,
-		Portals: []Deployment{
-			{
-				ChainID:      evmchain.IDHolesky,
-				Address:      testnetPortal,
-				DeployHeight: 1357819,
-			},
-			{
-				ChainID:      evmchain.IDOpSepolia,
-				Address:      testnetPortal,
-				DeployHeight: 10731455,
-			},
-			{
-				ChainID:      evmchain.IDArbSepolia,
-				Address:      testnetPortal,
-				DeployHeight: 34237972,
-			},
-		},
-		ConsensusGenesisJSON: testnetConsensusGenesisJSON,
-		ConsensusSeedTXT:     testnetConsensusSeedsTXT,
-		ExecutionGenesisJSON: testnetExecutionGenesisJSON,
-		ExecutionSeedTXT:     testnetExecutionSeedsTXT,
+		Portals:              []Deployment{},
 	},
 	Mainnet: {
 		Version:            "v0.0.1",

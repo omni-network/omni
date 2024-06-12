@@ -46,7 +46,7 @@ type Manager interface {
 
 func NewManager(testnet types.Testnet, backends ethbackend.Backends) (Manager, error) {
 	if testnet.OnlyMonitor {
-		if !netconf.IsAny(testnet.Network, netconf.Testnet, netconf.Mainnet) {
+		if !netconf.IsAny(testnet.Network, netconf.Omega, netconf.Mainnet) {
 			return nil, errors.New("monitor-only only supported for testnet and mainnet")
 		}
 
@@ -117,12 +117,12 @@ func NewManager(testnet types.Testnet, backends ethbackend.Backends) (Manager, e
 			network:     netconf.Staging,
 			operator:    fbDev,
 		}, nil
-	case netconf.Testnet:
+	case netconf.Omega:
 		return &manager{
 			portals:     portals,
-			omniChainID: netconf.Testnet.Static().OmniExecutionChainID,
+			omniChainID: netconf.Omega.Static().OmniExecutionChainID,
 			backends:    backends,
-			network:     netconf.Testnet,
+			network:     netconf.Omega,
 			operator:    fbDev,
 		}, nil
 	default:

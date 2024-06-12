@@ -15,7 +15,7 @@ import (
 
 // Monitor starts monitoring the AVS contract.
 func Monitor(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints) error {
-	if network.ID != netconf.Testnet && network.ID != netconf.Mainnet {
+	if network.ID != netconf.Omega && network.ID != netconf.Mainnet {
 		// only monitor in Testned and Mainnet
 		return nil
 	}

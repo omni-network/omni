@@ -87,7 +87,7 @@ func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) 
 		return mainnetCfg(), nil
 	}
 
-	if network == netconf.Testnet {
+	if network == netconf.Omega {
 		return testnetCfg(), nil
 	}
 
@@ -111,12 +111,12 @@ func mainnetCfg() DeploymentConfig {
 func testnetCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory:        contracts.TestnetCreate3Factory(),
-		Create3Salt:           contracts.PortalSalt(netconf.Testnet),
-		Owner:                 eoa.MustAddress(netconf.Testnet, eoa.RolePortalAdmin),
-		Deployer:              eoa.MustAddress(netconf.Testnet, eoa.RoleDeployer),
+		Create3Salt:           contracts.PortalSalt(netconf.Omega),
+		Owner:                 eoa.MustAddress(netconf.Omega, eoa.RolePortalAdmin),
+		Deployer:              eoa.MustAddress(netconf.Omega, eoa.RoleDeployer),
 		ProxyAdmin:            contracts.TestnetProxyAdmin(),
-		OmniChainID:           netconf.Testnet.Static().OmniExecutionChainID,
-		OmniCChainID:          netconf.Testnet.Static().OmniConsensusChainIDUint64(),
+		OmniChainID:           netconf.Omega.Static().OmniExecutionChainID,
+		OmniCChainID:          netconf.Omega.Static().OmniConsensusChainIDUint64(),
 		XMsgMinGasLimit:       XMsgMinGasLimit,
 		XMsgMaxGasLimit:       XMsgMaxGasLimit,
 		XReceiptMaxErrorBytes: XReceiptMaxErrorBytes,
@@ -160,7 +160,7 @@ func AddrForNetwork(network netconf.ID) (common.Address, bool) {
 	switch network {
 	case netconf.Mainnet:
 		return contracts.MainnetPortal(), true
-	case netconf.Testnet:
+	case netconf.Omega:
 		return contracts.TestnetPortal(), true
 	case netconf.Staging:
 		return contracts.StagingPortal(), true

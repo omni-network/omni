@@ -285,7 +285,7 @@ func NoNodesTestnet(manifest types.Manifest, infd types.InfrastructureData, cfg 
 	}, nil
 }
 
-// noNodesTestnet returns a bare minimum instance of *e2e.Testnet. It doesn't have any nodes or chain details setup.
+// noNodesTestnet returns a bare minimum instance of *e2e.Omega. It doesn't have any nodes or chain details setup.
 func noNodesTestnet(manifest e2e.Manifest, file string, ifd e2e.InfrastructureData) (*e2e.Testnet, error) {
 	dir := strings.TrimSuffix(file, filepath.Ext(file))
 

@@ -18,7 +18,7 @@ import (
 	"github.com/ethereum/go-ethereum/p2p/enode"
 )
 
-// Testnet wraps e2e.Testnet with additional omni-specific fields.
+// Testnet wraps e2e.Omega with additional omni-specific fields.
 type Testnet struct {
 	*e2e.Testnet
 	Network      netconf.ID

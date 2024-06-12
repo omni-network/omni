@@ -17,10 +17,10 @@ const (
 	IDOmniMainnet uint64 = 166
 
 	// Testnets.
-	IDOmniTestnet uint64 = 165
-	IDHolesky     uint64 = 17000
-	IDArbSepolia  uint64 = 421614
-	IDOpSepolia   uint64 = 11155420
+	IDOmniOmega  uint64 = 164
+	IDHolesky    uint64 = 17000
+	IDArbSepolia uint64 = 421614
+	IDOpSepolia  uint64 = 11155420
 
 	// Ephemeral.
 	IDOmniEphemeral uint64 = 1651
@@ -69,8 +69,8 @@ var static = map[uint64]Metadata{
 		BlockPeriod: omniEVMBlockPeriod,
 		NativeToken: tokens.OMNI,
 	},
-	IDOmniTestnet: {
-		ChainID:     IDOmniTestnet,
+	IDOmniOmega: {
+		ChainID:     IDOmniOmega,
 		Name:        omniEVMName,
 		BlockPeriod: omniEVMBlockPeriod,
 		NativeToken: tokens.OMNI,

@@ -55,7 +55,7 @@ func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) 
 		return mainnetCfg(), nil
 	}
 
-	if network == netconf.Testnet {
+	if network == netconf.Omega {
 		return testnetCfg(), nil
 	}
 
@@ -81,9 +81,9 @@ func mainnetCfg() DeploymentConfig {
 
 func testnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Owner:        eoa.MustAddress(netconf.Testnet, eoa.RolePortalAdmin),
-		Manager:      eoa.MustAddress(netconf.Testnet, eoa.RoleMonitor),
-		Deployer:     eoa.MustAddress(netconf.Testnet, eoa.RoleDeployer),
+		Owner:        eoa.MustAddress(netconf.Omega, eoa.RolePortalAdmin),
+		Manager:      eoa.MustAddress(netconf.Omega, eoa.RoleMonitor),
+		Deployer:     eoa.MustAddress(netconf.Omega, eoa.RoleDeployer),
 		ProxyAdmin:   contracts.TestnetProxyAdmin(),
 		BaseGasLimit: 50_000,
 		ProtocolFee:  big.NewInt(0),

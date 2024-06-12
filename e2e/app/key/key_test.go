@@ -90,7 +90,7 @@ func TestGenInsecure(t *testing.T) {
 	t.Parallel()
 
 	require.Panics(t, func() {
-		key.GenerateInsecureDeterministic(netconf.Testnet, key.EOA, "")
+		key.GenerateInsecureDeterministic(netconf.Omega, key.EOA, "")
 	})
 
 	k1 := key.GenerateInsecureDeterministic(netconf.Devnet, key.EOA, "test1")

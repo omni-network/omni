@@ -39,8 +39,8 @@ func NewChainsProvider(network netconf.ID) *ChainsProvider {
 			{id: uint64(evmchain.IDMockL1Slow), name: "Mock L1 Slow", logoURL: "https://chainlist.org/unknown-logo.png", addrUrlFmt: "https://mock-l1-slow.dev/address/%s", blockURLFmt: "https://mock-l1-slow.dev/block/%d", txURLFmt: "https://mock-l1-slow.dev/tx/%s"},
 			{id: uint64(evmchain.IDOpSepolia), name: "Op Sepolia", logoURL: "https://icons.llamao.fi/icons/chains/rsz_optimism.jpg", addrUrlFmt: "https://sepolia-optimism.etherscan.io/address/%s", blockURLFmt: "https://sepolia-optimism.etherscan.io/block/%d", txURLFmt: "https://sepolia-optimism.etherscan.io/tx/%s"},
 		},
-		netconf.Testnet: {
-			{id: uint64(evmchain.IDOmniTestnet), name: "Omni Testnet", logoURL: "https://chainlist.org/unknown-logo.png", addrUrlFmt: "", blockURLFmt: "", txURLFmt: ""},
+		netconf.Omega: {
+			{id: uint64(evmchain.IDOmniOmega), name: "Omni Omega", logoURL: "https://chainlist.org/unknown-logo.png", addrUrlFmt: "", blockURLFmt: "", txURLFmt: ""},
 			{id: uint64(evmchain.IDHolesky), name: "Holesky", logoURL: "https://icons.llamao.fi/icons/chains/rsz_ethereum.jpg", addrUrlFmt: "https://holesky.etherscan.io/address/%s", blockURLFmt: "https://holesky.etherscan.io/block/%d", txURLFmt: "https://holesky.etherscan.io/tx/%s"},
 			{id: uint64(evmchain.IDArbSepolia), name: "Arb Sepolia", logoURL: "https://icons.llamao.fi/icons/chains/rsz_arbitrum.jpg", addrUrlFmt: "https://sepolia.arbiscan.io/address/%s", blockURLFmt: "https://sepolia.arbiscan.io/block/%d", txURLFmt: "https://sepolia.arbiscan.io/tx/%s"},
 			{id: uint64(evmchain.IDOpSepolia), name: "Op Sepolia", logoURL: "https://icons.llamao.fi/icons/chains/rsz_optimism.jpg", addrUrlFmt: "https://sepolia-optimism.etherscan.io/address/%s", blockURLFmt: "https://sepolia-optimism.etherscan.io/block/%d", txURLFmt: "https://sepolia-optimism.etherscan.io/tx/%s"},

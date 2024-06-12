@@ -95,7 +95,7 @@ func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) 
 		return devnetCfg(), nil
 	}
 
-	if network == netconf.Testnet {
+	if network == netconf.Omega {
 		return testnetCfg(), nil
 	}
 
@@ -109,14 +109,14 @@ func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) 
 func testnetCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory:   contracts.TestnetCreate3Factory(),
-		Create3Salt:      contracts.AVSSalt(netconf.Testnet),
-		Deployer:         eoa.MustAddress(netconf.Testnet, eoa.RoleDeployer),
-		Owner:            eoa.MustAddress(netconf.Testnet, eoa.RoleAVSAdmin),
+		Create3Salt:      contracts.AVSSalt(netconf.Omega),
+		Deployer:         eoa.MustAddress(netconf.Omega, eoa.RoleDeployer),
+		Owner:            eoa.MustAddress(netconf.Omega, eoa.RoleAVSAdmin),
 		ProxyAdmin:       contracts.TestnetProxyAdmin(),
 		Eigen:            holeskyEigenDeployments(),
 		StrategyParams:   holeskyStrategyParams(),
 		MetadataURI:      metadataURI,
-		OmniChainID:      netconf.Testnet.Static().OmniExecutionChainID,
+		OmniChainID:      netconf.Omega.Static().OmniExecutionChainID,
 		Portal:           contracts.TestnetPortal(),
 		EthStakeInbox:    stubEthStakeInbox,
 		MinOperatorStake: big.NewInt(1e18), // 1 ETH
@@ -170,7 +170,7 @@ func AddrForNetwork(network netconf.ID) (common.Address, bool) {
 	switch network {
 	case netconf.Mainnet:
 		return contracts.MainnetAVS(), true
-	case netconf.Testnet:
+	case netconf.Omega:
 		return contracts.TestnetAVS(), true
 	case netconf.Staging:
 		return contracts.StagingAVS(), true
