@@ -165,10 +165,10 @@ contract OmniPortal_xsubmit_Test is Base {
 
         for (uint256 i = 0; i < valSet2.length; i++) {
             totalPower += valSet2[i].power;
-            assertEq(portal.validatorSet(valSet2Id, valSet2[i].addr), valSet2[i].power);
+            assertEq(portal.valSet(valSet2Id, valSet2[i].addr), valSet2[i].power);
         }
 
-        assertEq(portal.validatorSetTotalPower(valSet2Id), totalPower);
+        assertEq(portal.valSetTotalPower(valSet2Id), totalPower);
 
         // test that we can submit a block with the new validatorSet
         _testSubmitXBlock({
@@ -202,16 +202,11 @@ contract OmniPortal_xsubmit_Test is Base {
     /// @dev test that an xsubmission from a source chain cannot use an old valSetId, if an
     ///      xsubmission with a newer valSetId has been submitted for that source chain
     function test_xsubmit_oldValSet_reverts() public {
-        // add new validator set
-        XTypes.Submission memory xsub = readXSubmission({ name: "addValSet2", destChainId: broadcastChainId });
-        vm.chainId(thisChainId);
-        portal.xsubmit(xsub);
-
-        // submit a block with the valSetId 2
-        _testSubmitXBlock({ name: "xblock1", destChainId: thisChainId, valSetId: 2, portal_: portal, counter_: counter });
+        portal.setLatestValSetId(genesisValSetId + portal.XSUB_VALSET_CUTOFF());
 
         // test that we cannot submit a block with the genesisValSetId
-        xsub = readXSubmission({ name: "xblock1", destChainId: thisChainId, valSetId: genesisValSetId });
+        XTypes.Submission memory xsub =
+            readXSubmission({ name: "xblock1", destChainId: thisChainId, valSetId: genesisValSetId });
 
         vm.expectRevert("OmniPortal: old val set");
         vm.chainId(thisChainId);

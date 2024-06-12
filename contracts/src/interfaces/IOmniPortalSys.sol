@@ -25,8 +25,7 @@ interface IOmniPortalSys {
     /**
      * @notice Initialize a source chain's in stream validator set
      * @dev Only callable from xregistry
-     * @param srcChainId    Source chain ID
      * @param shards        Shards supported by the source chain
      */
-    function initSourceChain(uint64 srcChainId, uint64[] calldata shards) external;
+    function setShards(uint64[] calldata shards) external;
 }

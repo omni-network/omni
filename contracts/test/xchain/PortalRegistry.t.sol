@@ -108,9 +108,6 @@ contract PortalRegistry_Test is Test {
         // chain 1 gets itself
         _expectXCall({ destChainId: 1, depChainId: 1, dep: XRegistryBase.Deployment(dep1.addr, abi.encode(dep1.shards)) });
 
-        // this chains portal is initialized with the new source chain
-        vm.expectCall(address(portal), abi.encodeWithSelector(portal.initSourceChain.selector, dep1.chainId));
-
         vm.startPrank(owner);
         preg.register{ value: fee }(dep1);
 
@@ -132,9 +129,6 @@ contract PortalRegistry_Test is Test {
 
         // chain 2 gets existing chain 1 portal
         _expectXCall({ destChainId: 2, depChainId: 1, dep: XRegistryBase.Deployment(dep1.addr, abi.encode(dep1.shards)) });
-
-        // this chains portal is initialized with the new source chain
-        vm.expectCall(address(portal), abi.encodeWithSelector(portal.initSourceChain.selector, dep2.chainId));
 
         preg.register{ value: fee }(dep2);
 
@@ -159,9 +153,6 @@ contract PortalRegistry_Test is Test {
 
         // chain 3 gets existing chain 2 portal
         _expectXCall({ destChainId: 3, depChainId: 2, dep: XRegistryBase.Deployment(dep2.addr, abi.encode(dep2.shards)) });
-
-        // this chains portal is initialized with the new source chain
-        vm.expectCall(address(portal), abi.encodeWithSelector(portal.initSourceChain.selector, dep3.chainId));
 
         preg.register{ value: fee }(dep3);
     }

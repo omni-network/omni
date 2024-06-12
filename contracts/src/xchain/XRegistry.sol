@@ -67,9 +67,9 @@ contract XRegistry is OwnableUpgradeable, XRegistryBase {
         _set(chainId, name, msg.sender, dep);
         _sync(chainId, name, msg.sender, dep);
 
-        if (_isPortalRegistration(name, msg.sender)) {
+        if (_isPortalRegistration(name, msg.sender) && chainId == IOmniPortal(portal).chainId()) {
             uint64[] memory shards = abi.decode(dep.metadata, (uint64[]));
-            IOmniPortalSys(portal).initSourceChain(chainId, shards);
+            IOmniPortalSys(portal).setShards(shards);
         }
 
         emit ContractRegistered(chainId, name, msg.sender, dep.addr, dep.metadata);

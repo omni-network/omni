@@ -41,15 +41,15 @@
       "type": "t_array(t_uint256)49_storage"
     },
     {
-      "astId": 53805,
+      "astId": 55124,
       "contract": "src/xchain/XRegistry.sol:XRegistry",
       "label": "_deployments",
       "offset": 0,
       "slot": "101",
-      "type": "t_mapping(t_uint64,t_mapping(t_bytes32,t_struct(Deployment)53797_storage))"
+      "type": "t_mapping(t_uint64,t_mapping(t_bytes32,t_struct(Deployment)55116_storage))"
     },
     {
-      "astId": 53230,
+      "astId": 54542,
       "contract": "src/xchain/XRegistry.sol:XRegistry",
       "label": "portal",
       "offset": 0,
@@ -57,7 +57,7 @@
       "type": "t_address"
     },
     {
-      "astId": 53235,
+      "astId": 54547,
       "contract": "src/xchain/XRegistry.sol:XRegistry",
       "label": "replicas",
       "offset": 0,
@@ -65,7 +65,7 @@
       "type": "t_mapping(t_uint64,t_address)"
     },
     {
-      "astId": 53239,
+      "astId": 54551,
       "contract": "src/xchain/XRegistry.sol:XRegistry",
       "label": "_chainIds",
       "offset": 0,
@@ -112,12 +112,12 @@
       "label": "bytes",
       "numberOfBytes": "32"
     },
-    "t_mapping(t_bytes32,t_struct(Deployment)53797_storage)": {
+    "t_mapping(t_bytes32,t_struct(Deployment)55116_storage)": {
       "encoding": "mapping",
       "key": "t_bytes32",
       "label": "mapping(bytes32 => struct XRegistryBase.Deployment)",
       "numberOfBytes": "32",
-      "value": "t_struct(Deployment)53797_storage"
+      "value": "t_struct(Deployment)55116_storage"
     },
     "t_mapping(t_uint64,t_address)": {
       "encoding": "mapping",
@@ -126,20 +126,20 @@
       "numberOfBytes": "32",
       "value": "t_address"
     },
-    "t_mapping(t_uint64,t_mapping(t_bytes32,t_struct(Deployment)53797_storage))": {
+    "t_mapping(t_uint64,t_mapping(t_bytes32,t_struct(Deployment)55116_storage))": {
       "encoding": "mapping",
       "key": "t_uint64",
       "label": "mapping(uint64 => mapping(bytes32 => struct XRegistryBase.Deployment))",
       "numberOfBytes": "32",
-      "value": "t_mapping(t_bytes32,t_struct(Deployment)53797_storage)"
+      "value": "t_mapping(t_bytes32,t_struct(Deployment)55116_storage)"
     },
-    "t_struct(Deployment)53797_storage": {
+    "t_struct(Deployment)55116_storage": {
       "encoding": "inplace",
       "label": "struct XRegistryBase.Deployment",
       "numberOfBytes": "64",
       "members": [
         {
-          "astId": 53794,
+          "astId": 55113,
           "contract": "src/xchain/XRegistry.sol:XRegistry",
           "label": "addr",
           "offset": 0,
@@ -147,7 +147,7 @@
           "type": "t_address"
         },
         {
-          "astId": 53796,
+          "astId": 55115,
           "contract": "src/xchain/XRegistry.sol:XRegistry",
           "label": "metadata",
           "offset": 0,

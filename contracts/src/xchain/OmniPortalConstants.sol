@@ -17,6 +17,11 @@ contract OmniPortalConstants {
     uint8 public constant XSUB_QUORUM_DENOMINATOR = 3;
 
     /**
+     * @notice Number of validator sets since the latest that can be used to validate an XSubmission
+     */
+    uint8 public constant XSUB_VALSET_CUTOFF = 10;
+
+    /**
      * @dev xmsg.destChainId for "broadcast" xcalls, intended for all portals
      */
     uint64 internal constant _BROADCAST_CHAIN_ID = 0;

@@ -63,19 +63,19 @@ func TestDeployDevnet(t *testing.T) {
 	require.Equal(t, eoa.MustAddress(netconf.Devnet, eoa.RolePortalAdmin), owner)
 
 	// check validators
-	totalPower, err := portal.ValidatorSetTotalPower(nil, 1)
+	totalPower, err := portal.ValSetTotalPower(nil, 1)
 	require.NoError(t, err)
 	require.Equal(t, uint64(300), totalPower)
 
-	val1Power, err := portal.ValidatorSet(nil, valSetID, vals[0].Addr)
+	val1Power, err := portal.ValSet(nil, valSetID, vals[0].Addr)
 	require.NoError(t, err)
 	require.Equal(t, uint64(100), val1Power)
 
-	val2Power, err := portal.ValidatorSet(nil, valSetID, vals[1].Addr)
+	val2Power, err := portal.ValSet(nil, valSetID, vals[1].Addr)
 	require.NoError(t, err)
 	require.Equal(t, uint64(100), val2Power)
 
-	val3Power, err := portal.ValidatorSet(nil, valSetID, vals[2].Addr)
+	val3Power, err := portal.ValSet(nil, valSetID, vals[2].Addr)
 	require.NoError(t, err)
 	require.Equal(t, uint64(100), val3Power)
 }

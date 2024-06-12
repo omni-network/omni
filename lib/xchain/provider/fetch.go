@@ -120,17 +120,10 @@ func (p *Provider) GetSubmittedCursor(ctx context.Context, stream xchain.StreamI
 		return xchain.SubmitCursor{}, false, errors.Wrap(err, "call InXBlockOffset")
 	}
 
-	// Validator sets are indexed by the conf level, not shard ID.
-	valSetID, err := caller.InXStreamValidatorSetId(callOpts, stream.SourceChainID, uint64(stream.ShardID.ConfLevel()))
-	if err != nil {
-		return xchain.SubmitCursor{}, false, errors.Wrap(err, "call InXStreamValidatorSetId")
-	}
-
 	return xchain.SubmitCursor{
-		StreamID:       stream,
-		MsgOffset:      msgOffset,
-		BlockOffset:    blockOffset,
-		ValidatorSetID: valSetID,
+		StreamID:    stream,
+		MsgOffset:   msgOffset,
+		BlockOffset: blockOffset,
 	}, true, nil
 }
 
