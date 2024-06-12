@@ -125,6 +125,7 @@ func newApp(
 	app.EVMEngKeeper.AddEventProcessor(evmSlashing)
 	app.EVMEngKeeper.AddEventProcessor(app.RegistryKeeper)
 	app.AttestKeeper.SetValidatorProvider(app.ValSyncKeeper)
+	app.AttestKeeper.SetPortalRegistry(app.RegistryKeeper)
 
 	baseAppOpts = append(baseAppOpts, func(bapp *baseapp.BaseApp) {
 		// Use evm engine to create block proposals.

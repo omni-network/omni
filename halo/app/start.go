@@ -283,7 +283,7 @@ func newEngineClient(ctx context.Context, cfg Config, network netconf.ID, pubkey
 	if network == netconf.Simnet {
 		return ethclient.NewEngineMock(
 			ethclient.WithMockSelfDelegation(pubkey, 1),
-			ethclient.WithMockPortalRegister(),
+			ethclient.WithPortalRegister(netconf.SimnetNetwork()),
 		)
 	}
 

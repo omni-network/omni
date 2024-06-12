@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/omni-network/omni/halo/attest/types"
+	rtypes "github.com/omni-network/omni/halo/registry/types"
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -36,17 +37,18 @@ var _ sdk.VerifyVoteExtensionHandler = (*Keeper)(nil).VerifyVoteExtension
 // Keeper is the attestation keeper.
 // It keeps tracks of all attestations included on-chain and detects when they are approved.
 type Keeper struct {
-	attTable     AttestationTable
-	sigTable     SignatureTable
-	cdc          codec.BinaryCodec
-	storeService store.KVStoreService
-	skeeper      baseapp.ValidatorStore
-	valProvider  vtypes.ValidatorProvider
-	namer        types.ChainVerNameFunc
-	voter        types.Voter
-	voteWindow   uint64
-	voteExtLimit uint64
-	trimLag      uint64
+	attTable       AttestationTable
+	sigTable       SignatureTable
+	cdc            codec.BinaryCodec
+	storeService   store.KVStoreService
+	skeeper        baseapp.ValidatorStore
+	valProvider    vtypes.ValidatorProvider
+	portalRegistry rtypes.PortalRegistry
+	namer          types.ChainVerNameFunc
+	voter          types.Voter
+	voteWindow     uint64
+	voteExtLimit   uint64
+	trimLag        uint64
 }
 
 // New returns a new attestation keeper.
@@ -75,16 +77,17 @@ func New(
 	}
 
 	k := &Keeper{
-		attTable:     attstore.AttestationTable(),
-		sigTable:     attstore.SignatureTable(),
-		cdc:          cdc,
-		storeService: storeSvc,
-		skeeper:      skeeper,
-		namer:        namer,
-		voter:        voter,
-		voteWindow:   voteWindow,
-		voteExtLimit: voteExtLimit,
-		trimLag:      trimLag,
+		attTable:       attstore.AttestationTable(),
+		sigTable:       attstore.SignatureTable(),
+		cdc:            cdc,
+		storeService:   storeSvc,
+		skeeper:        skeeper,
+		namer:          namer,
+		voter:          voter,
+		voteWindow:     voteWindow,
+		voteExtLimit:   voteExtLimit,
+		trimLag:        trimLag,
+		portalRegistry: stubPortalRegistry{},
 	}
 
 	return k, nil
@@ -93,6 +96,11 @@ func New(
 // SetValidatorProvider sets the validator provider.
 func (k *Keeper) SetValidatorProvider(valProvider vtypes.ValidatorProvider) {
 	k.valProvider = valProvider
+}
+
+// SetPortalRegistry sets the portal registry.
+func (k *Keeper) SetPortalRegistry(portalRegistry rtypes.PortalRegistry) {
+	k.portalRegistry = portalRegistry
 }
 
 // RegisterProposalService registers the proposal service on the provided router.
@@ -511,6 +519,13 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 	countsByChainVer := make(map[xchain.ChainVersion]int)
 	var filtered []*types.Vote
 	for _, vote := range votes {
+		if ok, err := k.portalRegistry.SupportedChain(ctx, vote.BlockHeader.ChainId); err != nil {
+			return nil, errors.Wrap(err, "supported chain")
+		} else if !ok {
+			// Skip votes for unsupported chains.
+			continue
+		}
+
 		if cmp, err := k.windowCompare(ctx, vote.BlockHeader.XChainVersion(), vote.BlockHeader.Offset); err != nil {
 			return nil, errors.Wrap(err, "windower")
 		} else if cmp != 0 {
@@ -596,6 +611,14 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 			log.Warn(ctx, "Rejecting invalid vote", err)
 			return respReject, nil
 		}
+
+		if ok, err := k.portalRegistry.SupportedChain(ctx, vote.BlockHeader.ChainId); err != nil {
+			return nil, errors.Wrap(err, "supported chain")
+		} else if !ok {
+			log.Warn(ctx, "Rejecting vote for unsupported chain", nil, "chain", vote.BlockHeader.ChainId)
+			return respReject, nil
+		}
+
 		if cmp, err := k.windowCompare(ctx, vote.BlockHeader.XChainVersion(), vote.BlockHeader.Offset); err != nil {
 			return nil, errors.Wrap(err, "windower")
 		} else if cmp != 0 {
@@ -670,6 +693,12 @@ func (k *Keeper) verifyAggVotes(ctx context.Context, valset ValSet, aggs []*type
 			return errors.Wrap(err, "verify aggregate vote")
 		}
 		errAttrs := []any{"chain_id", agg.BlockHeader.ChainId, "offset", agg.BlockHeader.Offset, log.Hex7("val0", agg.Signatures[0].ValidatorAddress)}
+
+		if ok, err := k.portalRegistry.SupportedChain(ctx, agg.BlockHeader.ChainId); err != nil {
+			return errors.Wrap(err, "supported chain")
+		} else if !ok {
+			return errors.New("vote for unsupported chain", errAttrs...)
+		}
 
 		// Ensure all votes are from validators in the set
 		for _, sig := range agg.Signatures {
@@ -806,4 +835,12 @@ func isApprovedByDifferentSet(att *Attestation, valSetID uint64) bool {
 	}
 
 	return att.GetValidatorSetId() != valSetID
+}
+
+// stubPortalRegistry is a stub implementation of the portal registry.
+// It doesn't support any chains.
+type stubPortalRegistry struct{}
+
+func (stubPortalRegistry) SupportedChain(context.Context, uint64) (bool, error) {
+	return false, nil
 }

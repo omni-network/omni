@@ -93,7 +93,7 @@ func (k Keeper) addPortal(ctx context.Context, portal *Portal) error {
 	// Add new portal to the network
 	network.Portals = append(network.GetPortals(), portal)
 
-	if err := k.networkTable.Update(ctx, network); err != nil {
+	if err := k.updateNetwork(ctx, network); err != nil {
 		return errors.Wrap(err, "insert network")
 	}
 
