@@ -17,7 +17,7 @@ const (
 	IDOmniMainnet uint64 = 166
 
 	// Testnets.
-	IDOmniTestnet uint64 = 165
+	IDOmniTestnet uint64 = 164
 	IDHolesky     uint64 = 17000
 	IDArbSepolia  uint64 = 421614
 	IDOpSepolia   uint64 = 11155420
