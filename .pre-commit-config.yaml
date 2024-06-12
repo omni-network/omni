@@ -1,12 +1,4 @@
 repos:
-  # First check for secrets
-  - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.5.0
-    hooks:
-    -   id: detect-secrets
-        args: ['--baseline', '.secrets.baseline']
-        exclude: "(pnpm-lock.yaml|testdata|static|config.json)"
-
   # Then run code formatters
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0

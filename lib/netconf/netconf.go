@@ -111,7 +111,7 @@ func (n Network) EthereumChain() (Chain, bool) {
 			if chain.ID == evmchain.IDEthereum {
 				return chain, true
 			}
-		case Testnet:
+		case Omega:
 			if chain.ID == evmchain.IDHolesky {
 				return chain, true
 			}

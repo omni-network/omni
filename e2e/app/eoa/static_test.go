@@ -13,7 +13,7 @@ import (
 
 func TestStatic(t *testing.T) {
 	t.Parallel()
-	for _, network := range []netconf.ID{netconf.Devnet, netconf.Staging, netconf.Testnet, netconf.Mainnet} {
+	for _, network := range []netconf.ID{netconf.Devnet, netconf.Staging, netconf.Omega, netconf.Mainnet} {
 		for _, role := range eoa.AllRoles() {
 			acc, ok := eoa.AccountForRole(network, role)
 			require.True(t, ok, "account not found: %s %s", network, role)

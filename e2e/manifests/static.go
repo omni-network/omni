@@ -8,8 +8,8 @@ var (
 	//go:embed devnet0.toml
 	devnet0 []byte
 
-	//go:embed testnet.toml
-	testnet []byte
+	//go:embed omega.toml
+	omega []byte
 )
 
 // Devnet0 returns the devnet0.toml manifest bytes.
@@ -17,7 +17,7 @@ func Devnet0() []byte {
 	return devnet0
 }
 
-// Testnet returns the testnet.toml manifest bytes.
-func Testnet() []byte {
-	return testnet
+// Omega returns the omega.toml manifest bytes.
+func Omega() []byte {
+	return omega
 }

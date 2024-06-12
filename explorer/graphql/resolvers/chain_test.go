@@ -19,7 +19,7 @@ func TestSupportedChains(t *testing.T) {
 	testutil.CreateTestChain(t, ctx, devnet.Client, 1)
 	testutil.CreateTestChain(t, ctx, devnet.Client, 2)
 	staging := createGqlTest(t, netconf.Staging)
-	testnet := createGqlTest(t, netconf.Testnet)
+	testnet := createGqlTest(t, netconf.Omega)
 
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
@@ -135,11 +135,11 @@ func TestSupportedChains(t *testing.T) {
 			ExpectedResult: `{
 				"supportedChains": [
 					{
-						"chainID": "0xa5",
-						"displayID": "165",
-						"id": "Y2hhaW46MTY1",
+						"chainID": "0xa4",
+						"displayID": "164",
+						"id": "Y2hhaW46MTY0",
 						"logoUrl": "https://chainlist.org/unknown-logo.png",
-						"name": "Omni Testnet"
+						"name": "Omni Omega"
 					},
 					{
 						"chainID": "0x4268",

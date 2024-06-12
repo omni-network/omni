@@ -41,9 +41,9 @@ func Monitor(ctx context.Context, network netconf.Network, endpoints xchain.RPCE
 	}
 
 	accounts := map[netconf.ID][]account{
-		netconf.Testnet: {
-			{eoa.MustAddress(netconf.Testnet, eoa.RoleCreate3Deployer), create3Deployer},
-			{eoa.MustAddress(netconf.Testnet, eoa.RoleDeployer), deployer},
+		netconf.Omega: {
+			{eoa.MustAddress(netconf.Omega, eoa.RoleCreate3Deployer), create3Deployer},
+			{eoa.MustAddress(netconf.Omega, eoa.RoleDeployer), deployer},
 		},
 		netconf.Staging: {
 			{eoa.MustAddress(netconf.Staging, eoa.RoleCreate3Deployer), create3Deployer},

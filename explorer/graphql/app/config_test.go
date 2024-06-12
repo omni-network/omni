@@ -28,10 +28,10 @@ func TestDefaultConfigReference(t *testing.T) {
 			graphql.DefaultConfig(),
 		},
 		{
-			"testnet",
+			"omega",
 			func() graphql.Config {
 				cfg := graphql.DefaultConfig()
-				cfg.Network = netconf.Testnet
+				cfg.Network = netconf.Omega
 				return cfg
 			}(),
 		},

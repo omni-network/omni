@@ -28,7 +28,7 @@ var statics = map[netconf.ID][]Account{
 		secret("0x0De553555Fa19d787Af4273B18bDB77282D618c4", RoleMonitor),
 		fbDevAcc(),
 	),
-	netconf.Testnet: flatten(
+	netconf.Omega: flatten(
 		remote("0xEAD625eB2011394cdD739E91Bf9D51A7169C22F5", RoleProxyAdminOwner, RolePortalAdmin, RoleAVSAdmin),
 		remote("0xeC5134556da0797A5C5cD51DD622b689Cac97Fe9", RoleCreate3Deployer),
 		remote("0x0CdCc644158b7D03f40197f55454dc7a11Bd92c1", RoleDeployer),

@@ -52,8 +52,8 @@ const (
 	// E.g. 1 Erigon, 1 Geth, 4 halo validators, 2 halo sentries, 1 relayer.
 	Staging ID = "staging"
 
-	// Testnet is the Omni public testnet.
-	Testnet ID = "testnet"
+	// Omega is a Omni public testnet.
+	Omega ID = "omega"
 
 	// Mainnet is the Omni public mainnet.
 	Mainnet ID = "mainnet"
@@ -66,7 +66,7 @@ var supported = map[ID]bool{
 	Simnet:  true,
 	Devnet:  true,
 	Staging: true,
-	Testnet: true,
+	Omega:   true,
 	Mainnet: true,
 }
 
