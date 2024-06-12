@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/contracts/bindings"
-	"github.com/omni-network/omni/halo/epochsync/types"
 	evmenginetypes "github.com/omni-network/omni/halo/evmengine/types"
+	"github.com/omni-network/omni/halo/registry/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
@@ -24,16 +24,16 @@ var (
 	portalRegEvent = mustGetEvent(portalRegABI, "PortalRegistered")
 )
 
-func (*Keeper) Name() string {
+func (Keeper) Name() string {
 	return types.ModuleName
 }
 
-func (k *Keeper) Addresses() []common.Address {
+func (k Keeper) Addresses() []common.Address {
 	return []common.Address{k.portalRegAdress}
 }
 
 // Prepare returns all omni portal registry contract EVM event logs from the provided block hash.
-func (k *Keeper) Prepare(ctx context.Context, blockHash common.Hash) ([]*evmenginetypes.EVMEvent, error) {
+func (k Keeper) Prepare(ctx context.Context, blockHash common.Hash) ([]*evmenginetypes.EVMEvent, error) {
 	logs, err := k.ethCl.FilterLogs(ctx, ethereum.FilterQuery{
 		BlockHash: &blockHash,
 		Addresses: k.Addresses(),
@@ -60,7 +60,7 @@ func (k *Keeper) Prepare(ctx context.Context, blockHash common.Hash) ([]*evmengi
 }
 
 // Deliver processes a omni portal registry events.
-func (k *Keeper) Deliver(ctx context.Context, _ common.Hash, elog *evmenginetypes.EVMEvent) error {
+func (k Keeper) Deliver(ctx context.Context, _ common.Hash, elog *evmenginetypes.EVMEvent) error {
 	ethlog := elog.ToEthLog()
 
 	switch ethlog.Topics[0] {
@@ -82,43 +82,29 @@ func (k *Keeper) Deliver(ctx context.Context, _ common.Hash, elog *evmenginetype
 }
 
 // addPortal adds the portal to the network config, creating a new epoch and network if necessary.
-func (k *Keeper) addPortal(ctx context.Context, portal *Portal) error {
-	epoch, err := k.getOrCreateEpoch(ctx)
+func (k Keeper) addPortal(ctx context.Context, portal *Portal) error {
+	network, err := k.getOrCreateNetwork(ctx)
 	if err != nil {
-		return errors.Wrap(err, "get or create epoch")
-	} else if epoch.GetAttested() {
-		return errors.New("epoch already attested [BUG]")
+		return errors.Wrap(err, "get or create network")
+	} else if network.GetId() == 0 {
+		return errors.New("invalid existing network")
 	}
 
-	// Get epoch's current network
-	network, err := k.networkTable.Get(ctx, epoch.GetNetworkId())
-	if err != nil {
-		return errors.Wrap(err, "get network")
-	}
-
-	// Add new portal, creating a new network
-	network.Id = 0
+	// Add new portal to the network
 	network.Portals = append(network.GetPortals(), portal)
 
-	networkID, err := k.networkTable.InsertReturningId(ctx, network)
-	if err != nil {
+	if err := k.networkTable.Update(ctx, network); err != nil {
 		return errors.Wrap(err, "insert network")
 	}
 
-	// Update epoch's network
-	epoch.NetworkId = networkID
-	err = k.epochTable.Update(ctx, epoch)
-	if err != nil {
-		return errors.Wrap(err, "update epoch")
-	}
-
-	log.Info(ctx, "💫 Added network portal",
-		"epoch_id", epoch.GetId(),
-		"network_id", networkID,
+	log.Info(ctx, "🔭 Added network portal",
+		"network_id", network.GetId(),
 		"chain_id", portal.GetChainId(),
 		"shards", portal.GetShardIds(),
 		"height", sdk.UnwrapSDKContext(ctx).BlockHeight(),
 	)
+
+	// TODO(corver): Emit a portal event for the new network
 
 	return nil
 }

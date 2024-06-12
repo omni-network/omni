@@ -46,26 +46,7 @@ func (k *Keeper) LatestAttestation(ctx context.Context, req *types.LatestAttesta
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	respSigs := make([]*types.SigTuple, 0, len(sigs))
-	for _, sig := range sigs {
-		respSigs = append(respSigs, &types.SigTuple{
-			ValidatorAddress: sig.GetValidatorAddress(),
-			Signature:        sig.GetSignature(),
-		})
-	}
-
-	return &types.LatestAttestationResponse{Attestation: &types.Attestation{
-		BlockHeader: &types.BlockHeader{
-			ChainId:   att.GetChainId(),
-			ConfLevel: att.GetConfLevel(),
-			Offset:    att.GetOffset(),
-			Height:    att.GetHeight(),
-			Hash:      att.GetHash(),
-		},
-		AttestationRoot: att.GetAttestationRoot(),
-		ValidatorSetId:  att.GetValidatorSetId(),
-		Signatures:      respSigs,
-	}}, nil
+	return &types.LatestAttestationResponse{Attestation: AttestationFromDB(att, sigs)}, nil
 }
 
 func (k *Keeper) WindowCompare(ctx context.Context, req *types.WindowCompareRequest) (*types.WindowCompareResponse, error) {

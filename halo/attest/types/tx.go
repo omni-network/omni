@@ -1,6 +1,9 @@
 package types
 
 import (
+	"crypto/sha256"
+	"encoding/binary"
+
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/xchain"
@@ -8,19 +11,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// UniqueKey uniquely identifies a vote/aggregate vote/attestation.
-type UniqueKey struct {
-	xchain.BlockHeader
-	AttestationRoot common.Hash
-}
-
 // UniqueKey returns a unique key for the vote
 // It panics if the vote is invalid. Ensure Verify() is called before UniqueKey().
-func (v *Vote) UniqueKey() UniqueKey {
-	return UniqueKey{
-		BlockHeader:     v.BlockHeader.ToXChain(),
-		AttestationRoot: common.Hash(v.AttestationRoot),
-	}
+func (v *Vote) UniqueKey() [32]byte {
+	return uniqueVoteHash(v.BlockHeader, v.AttestationRoot)
 }
 
 func (v *Vote) Verify() error {
@@ -83,13 +77,13 @@ func (h *BlockHeader) Verify() error {
 }
 
 func (h *BlockHeader) ToXChain() xchain.BlockHeader {
-	return xchain.BlockHeader{
-		SourceChainID: h.ChainId,
-		ConfLevel:     xchain.ConfLevel(byte(h.ConfLevel)),
-		BlockOffset:   h.Offset,
-		BlockHeight:   h.Height,
-		BlockHash:     common.BytesToHash(h.Hash),
-	}
+	return BlockHeaderFromProto(h)
+}
+
+// UniqueKey returns a unique key for the block header.
+// It panics if the vote is invalid. Ensure Verify() is called before UniqueKey().
+func (h *BlockHeader) UniqueKey() [32]byte {
+	return uniqueVoteHash(h, nil)
 }
 
 func (s *SigTuple) Verify() error {
@@ -141,6 +135,12 @@ func (a *AggVote) Verify() error {
 	return nil
 }
 
+// UniqueKey returns a unique key for the agg vote
+// It panics if the vote is invalid. Ensure Verify() is called before UniqueKey().
+func (a *AggVote) UniqueKey() [32]byte {
+	return uniqueVoteHash(a.BlockHeader, a.AttestationRoot)
+}
+
 func (a *Attestation) Verify() error {
 	if a == nil {
 		return errors.New("nil attestation")
@@ -185,10 +185,34 @@ func (a *Attestation) ToXChain() xchain.Attestation {
 	}
 }
 
+// UniqueKey returns a unique key for the agg vote
+// It panics if the vote is invalid. Ensure Verify() is called before UniqueKey().
+func (a *Attestation) UniqueKey() [32]byte {
+	return uniqueVoteHash(a.BlockHeader, a.AttestationRoot)
+}
+
 func (v *Vote) ToXChain() xchain.Vote {
 	return xchain.Vote{
 		BlockHeader:     v.BlockHeader.ToXChain(),
 		AttestationRoot: common.Hash(v.AttestationRoot),
 		Signature:       v.Signature.ToXChain(),
 	}
+}
+
+// uniqueVoteHash returns a hash that uniquely identifies the vote attestation.
+//
+// The unique key hash is required since the attestation root cannot be verified on-chain.
+// So instead, a unique key hash is calculated from on-chain metadata to uniquely identify the attestation and group votes.
+func uniqueVoteHash(header *BlockHeader, attRoot []byte) [32]byte {
+	h := sha256.New()
+
+	_ = binary.Write(h, binary.BigEndian, header.ChainId)
+	_ = binary.Write(h, binary.BigEndian, header.Height)
+	_ = binary.Write(h, binary.BigEndian, header.Offset)
+	_ = binary.Write(h, binary.BigEndian, header.ConfLevel)
+	_, _ = h.Write(header.Hash)
+
+	_, _ = h.Write(attRoot)
+
+	return [32]byte(h.Sum(nil))
 }

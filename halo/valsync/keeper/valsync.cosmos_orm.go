@@ -9,173 +9,6 @@ import (
 	ormerrors "cosmossdk.io/orm/types/ormerrors"
 )
 
-type EpochTable interface {
-	Insert(ctx context.Context, epoch *Epoch) error
-	InsertReturningId(ctx context.Context, epoch *Epoch) (uint64, error)
-	LastInsertedSequence(ctx context.Context) (uint64, error)
-	Update(ctx context.Context, epoch *Epoch) error
-	Save(ctx context.Context, epoch *Epoch) error
-	Delete(ctx context.Context, epoch *Epoch) error
-	Has(ctx context.Context, id uint64) (found bool, err error)
-	// Get returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
-	Get(ctx context.Context, id uint64) (*Epoch, error)
-	HasByAttestedCreatedHeight(ctx context.Context, attested bool, created_height uint64) (found bool, err error)
-	// GetByAttestedCreatedHeight returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
-	GetByAttestedCreatedHeight(ctx context.Context, attested bool, created_height uint64) (*Epoch, error)
-	List(ctx context.Context, prefixKey EpochIndexKey, opts ...ormlist.Option) (EpochIterator, error)
-	ListRange(ctx context.Context, from, to EpochIndexKey, opts ...ormlist.Option) (EpochIterator, error)
-	DeleteBy(ctx context.Context, prefixKey EpochIndexKey) error
-	DeleteRange(ctx context.Context, from, to EpochIndexKey) error
-
-	doNotImplement()
-}
-
-type EpochIterator struct {
-	ormtable.Iterator
-}
-
-func (i EpochIterator) Value() (*Epoch, error) {
-	var epoch Epoch
-	err := i.UnmarshalMessage(&epoch)
-	return &epoch, err
-}
-
-type EpochIndexKey interface {
-	id() uint32
-	values() []interface{}
-	epochIndexKey()
-}
-
-// primary key starting index..
-type EpochPrimaryKey = EpochIdIndexKey
-
-type EpochIdIndexKey struct {
-	vs []interface{}
-}
-
-func (x EpochIdIndexKey) id() uint32            { return 0 }
-func (x EpochIdIndexKey) values() []interface{} { return x.vs }
-func (x EpochIdIndexKey) epochIndexKey()        {}
-
-func (this EpochIdIndexKey) WithId(id uint64) EpochIdIndexKey {
-	this.vs = []interface{}{id}
-	return this
-}
-
-type EpochAttestedCreatedHeightIndexKey struct {
-	vs []interface{}
-}
-
-func (x EpochAttestedCreatedHeightIndexKey) id() uint32            { return 2 }
-func (x EpochAttestedCreatedHeightIndexKey) values() []interface{} { return x.vs }
-func (x EpochAttestedCreatedHeightIndexKey) epochIndexKey()        {}
-
-func (this EpochAttestedCreatedHeightIndexKey) WithAttested(attested bool) EpochAttestedCreatedHeightIndexKey {
-	this.vs = []interface{}{attested}
-	return this
-}
-
-func (this EpochAttestedCreatedHeightIndexKey) WithAttestedCreatedHeight(attested bool, created_height uint64) EpochAttestedCreatedHeightIndexKey {
-	this.vs = []interface{}{attested, created_height}
-	return this
-}
-
-type epochTable struct {
-	table ormtable.AutoIncrementTable
-}
-
-func (this epochTable) Insert(ctx context.Context, epoch *Epoch) error {
-	return this.table.Insert(ctx, epoch)
-}
-
-func (this epochTable) Update(ctx context.Context, epoch *Epoch) error {
-	return this.table.Update(ctx, epoch)
-}
-
-func (this epochTable) Save(ctx context.Context, epoch *Epoch) error {
-	return this.table.Save(ctx, epoch)
-}
-
-func (this epochTable) Delete(ctx context.Context, epoch *Epoch) error {
-	return this.table.Delete(ctx, epoch)
-}
-
-func (this epochTable) InsertReturningId(ctx context.Context, epoch *Epoch) (uint64, error) {
-	return this.table.InsertReturningPKey(ctx, epoch)
-}
-
-func (this epochTable) LastInsertedSequence(ctx context.Context) (uint64, error) {
-	return this.table.LastInsertedSequence(ctx)
-}
-
-func (this epochTable) Has(ctx context.Context, id uint64) (found bool, err error) {
-	return this.table.PrimaryKey().Has(ctx, id)
-}
-
-func (this epochTable) Get(ctx context.Context, id uint64) (*Epoch, error) {
-	var epoch Epoch
-	found, err := this.table.PrimaryKey().Get(ctx, &epoch, id)
-	if err != nil {
-		return nil, err
-	}
-	if !found {
-		return nil, ormerrors.NotFound
-	}
-	return &epoch, nil
-}
-
-func (this epochTable) HasByAttestedCreatedHeight(ctx context.Context, attested bool, created_height uint64) (found bool, err error) {
-	return this.table.GetIndexByID(2).(ormtable.UniqueIndex).Has(ctx,
-		attested,
-		created_height,
-	)
-}
-
-func (this epochTable) GetByAttestedCreatedHeight(ctx context.Context, attested bool, created_height uint64) (*Epoch, error) {
-	var epoch Epoch
-	found, err := this.table.GetIndexByID(2).(ormtable.UniqueIndex).Get(ctx, &epoch,
-		attested,
-		created_height,
-	)
-	if err != nil {
-		return nil, err
-	}
-	if !found {
-		return nil, ormerrors.NotFound
-	}
-	return &epoch, nil
-}
-
-func (this epochTable) List(ctx context.Context, prefixKey EpochIndexKey, opts ...ormlist.Option) (EpochIterator, error) {
-	it, err := this.table.GetIndexByID(prefixKey.id()).List(ctx, prefixKey.values(), opts...)
-	return EpochIterator{it}, err
-}
-
-func (this epochTable) ListRange(ctx context.Context, from, to EpochIndexKey, opts ...ormlist.Option) (EpochIterator, error) {
-	it, err := this.table.GetIndexByID(from.id()).ListRange(ctx, from.values(), to.values(), opts...)
-	return EpochIterator{it}, err
-}
-
-func (this epochTable) DeleteBy(ctx context.Context, prefixKey EpochIndexKey) error {
-	return this.table.GetIndexByID(prefixKey.id()).DeleteBy(ctx, prefixKey.values()...)
-}
-
-func (this epochTable) DeleteRange(ctx context.Context, from, to EpochIndexKey) error {
-	return this.table.GetIndexByID(from.id()).DeleteRange(ctx, from.values(), to.values())
-}
-
-func (this epochTable) doNotImplement() {}
-
-var _ EpochTable = epochTable{}
-
-func NewEpochTable(db ormtable.Schema) (EpochTable, error) {
-	table := db.GetTable(&Epoch{})
-	if table == nil {
-		return nil, ormerrors.TableNotFound.Wrap(string((&Epoch{}).ProtoReflect().Descriptor().FullName()))
-	}
-	return epochTable{table.(ormtable.AutoIncrementTable)}, nil
-}
-
 type ValidatorSetTable interface {
 	Insert(ctx context.Context, validatorSet *ValidatorSet) error
 	InsertReturningId(ctx context.Context, validatorSet *ValidatorSet) (uint64, error)
@@ -480,172 +313,31 @@ func NewValidatorTable(db ormtable.Schema) (ValidatorTable, error) {
 	return validatorTable{table.(ormtable.AutoIncrementTable)}, nil
 }
 
-type NetworkTable interface {
-	Insert(ctx context.Context, network *Network) error
-	InsertReturningId(ctx context.Context, network *Network) (uint64, error)
-	LastInsertedSequence(ctx context.Context) (uint64, error)
-	Update(ctx context.Context, network *Network) error
-	Save(ctx context.Context, network *Network) error
-	Delete(ctx context.Context, network *Network) error
-	Has(ctx context.Context, id uint64) (found bool, err error)
-	// Get returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
-	Get(ctx context.Context, id uint64) (*Network, error)
-	List(ctx context.Context, prefixKey NetworkIndexKey, opts ...ormlist.Option) (NetworkIterator, error)
-	ListRange(ctx context.Context, from, to NetworkIndexKey, opts ...ormlist.Option) (NetworkIterator, error)
-	DeleteBy(ctx context.Context, prefixKey NetworkIndexKey) error
-	DeleteRange(ctx context.Context, from, to NetworkIndexKey) error
-
-	doNotImplement()
-}
-
-type NetworkIterator struct {
-	ormtable.Iterator
-}
-
-func (i NetworkIterator) Value() (*Network, error) {
-	var network Network
-	err := i.UnmarshalMessage(&network)
-	return &network, err
-}
-
-type NetworkIndexKey interface {
-	id() uint32
-	values() []interface{}
-	networkIndexKey()
-}
-
-// primary key starting index..
-type NetworkPrimaryKey = NetworkIdIndexKey
-
-type NetworkIdIndexKey struct {
-	vs []interface{}
-}
-
-func (x NetworkIdIndexKey) id() uint32            { return 0 }
-func (x NetworkIdIndexKey) values() []interface{} { return x.vs }
-func (x NetworkIdIndexKey) networkIndexKey()      {}
-
-func (this NetworkIdIndexKey) WithId(id uint64) NetworkIdIndexKey {
-	this.vs = []interface{}{id}
-	return this
-}
-
-type networkTable struct {
-	table ormtable.AutoIncrementTable
-}
-
-func (this networkTable) Insert(ctx context.Context, network *Network) error {
-	return this.table.Insert(ctx, network)
-}
-
-func (this networkTable) Update(ctx context.Context, network *Network) error {
-	return this.table.Update(ctx, network)
-}
-
-func (this networkTable) Save(ctx context.Context, network *Network) error {
-	return this.table.Save(ctx, network)
-}
-
-func (this networkTable) Delete(ctx context.Context, network *Network) error {
-	return this.table.Delete(ctx, network)
-}
-
-func (this networkTable) InsertReturningId(ctx context.Context, network *Network) (uint64, error) {
-	return this.table.InsertReturningPKey(ctx, network)
-}
-
-func (this networkTable) LastInsertedSequence(ctx context.Context) (uint64, error) {
-	return this.table.LastInsertedSequence(ctx)
-}
-
-func (this networkTable) Has(ctx context.Context, id uint64) (found bool, err error) {
-	return this.table.PrimaryKey().Has(ctx, id)
-}
-
-func (this networkTable) Get(ctx context.Context, id uint64) (*Network, error) {
-	var network Network
-	found, err := this.table.PrimaryKey().Get(ctx, &network, id)
-	if err != nil {
-		return nil, err
-	}
-	if !found {
-		return nil, ormerrors.NotFound
-	}
-	return &network, nil
-}
-
-func (this networkTable) List(ctx context.Context, prefixKey NetworkIndexKey, opts ...ormlist.Option) (NetworkIterator, error) {
-	it, err := this.table.GetIndexByID(prefixKey.id()).List(ctx, prefixKey.values(), opts...)
-	return NetworkIterator{it}, err
-}
-
-func (this networkTable) ListRange(ctx context.Context, from, to NetworkIndexKey, opts ...ormlist.Option) (NetworkIterator, error) {
-	it, err := this.table.GetIndexByID(from.id()).ListRange(ctx, from.values(), to.values(), opts...)
-	return NetworkIterator{it}, err
-}
-
-func (this networkTable) DeleteBy(ctx context.Context, prefixKey NetworkIndexKey) error {
-	return this.table.GetIndexByID(prefixKey.id()).DeleteBy(ctx, prefixKey.values()...)
-}
-
-func (this networkTable) DeleteRange(ctx context.Context, from, to NetworkIndexKey) error {
-	return this.table.GetIndexByID(from.id()).DeleteRange(ctx, from.values(), to.values())
-}
-
-func (this networkTable) doNotImplement() {}
-
-var _ NetworkTable = networkTable{}
-
-func NewNetworkTable(db ormtable.Schema) (NetworkTable, error) {
-	table := db.GetTable(&Network{})
-	if table == nil {
-		return nil, ormerrors.TableNotFound.Wrap(string((&Network{}).ProtoReflect().Descriptor().FullName()))
-	}
-	return networkTable{table.(ormtable.AutoIncrementTable)}, nil
-}
-
-type EpochStore interface {
-	EpochTable() EpochTable
+type ValsyncStore interface {
 	ValidatorSetTable() ValidatorSetTable
 	ValidatorTable() ValidatorTable
-	NetworkTable() NetworkTable
 
 	doNotImplement()
 }
 
-type epochStore struct {
-	epoch        EpochTable
+type valsyncStore struct {
 	validatorSet ValidatorSetTable
 	validator    ValidatorTable
-	network      NetworkTable
 }
 
-func (x epochStore) EpochTable() EpochTable {
-	return x.epoch
-}
-
-func (x epochStore) ValidatorSetTable() ValidatorSetTable {
+func (x valsyncStore) ValidatorSetTable() ValidatorSetTable {
 	return x.validatorSet
 }
 
-func (x epochStore) ValidatorTable() ValidatorTable {
+func (x valsyncStore) ValidatorTable() ValidatorTable {
 	return x.validator
 }
 
-func (x epochStore) NetworkTable() NetworkTable {
-	return x.network
-}
+func (valsyncStore) doNotImplement() {}
 
-func (epochStore) doNotImplement() {}
+var _ ValsyncStore = valsyncStore{}
 
-var _ EpochStore = epochStore{}
-
-func NewEpochStore(db ormtable.Schema) (EpochStore, error) {
-	epochTable, err := NewEpochTable(db)
-	if err != nil {
-		return nil, err
-	}
-
+func NewValsyncStore(db ormtable.Schema) (ValsyncStore, error) {
 	validatorSetTable, err := NewValidatorSetTable(db)
 	if err != nil {
 		return nil, err
@@ -656,15 +348,8 @@ func NewEpochStore(db ormtable.Schema) (EpochStore, error) {
 		return nil, err
 	}
 
-	networkTable, err := NewNetworkTable(db)
-	if err != nil {
-		return nil, err
-	}
-
-	return epochStore{
-		epochTable,
+	return valsyncStore{
 		validatorSetTable,
 		validatorTable,
-		networkTable,
 	}, nil
 }

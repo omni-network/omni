@@ -3,13 +3,15 @@ package app
 import (
 	attestmodule "github.com/omni-network/omni/halo/attest/module"
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
-	epochsyncmodule "github.com/omni-network/omni/halo/epochsync/module"
-	epochsynctypes "github.com/omni-network/omni/halo/epochsync/types"
 	engevmmodule "github.com/omni-network/omni/halo/evmengine/module"
 	engevmtypes "github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/halo/evmstaking"
 	portalmodule "github.com/omni-network/omni/halo/portal/module"
 	portaltypes "github.com/omni-network/omni/halo/portal/types"
+	registrymodule "github.com/omni-network/omni/halo/registry/module"
+	registrytypes "github.com/omni-network/omni/halo/registry/types"
+	valsyncmodule "github.com/omni-network/omni/halo/valsync/module"
+	valsynctypes "github.com/omni-network/omni/halo/valsync/types"
 
 	"github.com/ethereum/go-ethereum/params"
 
@@ -89,7 +91,7 @@ var (
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,
 		genutiltypes.ModuleName,
-		epochsynctypes.ModuleName,
+		valsynctypes.ModuleName,
 	}
 
 	beginBlockers = []string{
@@ -101,7 +103,7 @@ var (
 
 	endBlockers = []string{
 		attesttypes.ModuleName,
-		epochsynctypes.ModuleName, // Wraps staking module end blocker (must come after attest module)
+		valsynctypes.ModuleName, // Wraps staking module end blocker (must come after attest module)
 	}
 
 	// blocked account addresses.
@@ -129,7 +131,7 @@ var (
 				Config: appconfig.WrapAny(&runtimev1alpha1.Module{
 					AppName:       Name,
 					BeginBlockers: beginBlockers,
-					// Setting endblockers in newApp since epochsync replaces staking endblocker.
+					// Setting endblockers in newApp since valsync replaces staking endblocker.
 					InitGenesis: genesisModuleOrder,
 					OverrideStoreKeys: []*runtimev1alpha1.StoreKeyConfig{
 						{
@@ -192,12 +194,16 @@ var (
 				}),
 			},
 			{
-				Name:   epochsynctypes.ModuleName,
-				Config: appconfig.WrapAny(&epochsyncmodule.Module{}),
+				Name:   valsynctypes.ModuleName,
+				Config: appconfig.WrapAny(&valsyncmodule.Module{}),
 			},
 			{
 				Name:   portaltypes.ModuleName,
 				Config: appconfig.WrapAny(&portalmodule.Module{}),
+			},
+			{
+				Name:   registrytypes.ModuleName,
+				Config: appconfig.WrapAny(&registrymodule.Module{}),
 			},
 		},
 	})

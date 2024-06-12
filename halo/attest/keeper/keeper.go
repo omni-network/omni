@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/omni-network/omni/halo/attest/types"
-	vtypes "github.com/omni-network/omni/halo/epochsync/types"
+	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
@@ -141,23 +141,25 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 	defer latency("add_one")()
 
 	header := agg.BlockHeader
+	keyHash := agg.UniqueKey()
 
 	// Get existing attestation (by unique key) or insert new one.
 	var attID uint64
-	existing, err := k.attTable.GetByChainIdConfLevelOffsetHeightHashAttestationRoot(ctx,
-		header.ChainId, header.ConfLevel, header.Offset, header.Height, header.Hash, agg.AttestationRoot)
+	existing, err := k.attTable.GetByKeyHash(ctx, keyHash[:])
 	if ormerrors.IsNotFound(err) {
 		// Insert new attestation
 		attID, err = k.attTable.InsertReturningId(ctx, &Attestation{
 			ChainId:         agg.BlockHeader.ChainId,
 			ConfLevel:       agg.BlockHeader.ConfLevel,
-			Offset:          agg.BlockHeader.Offset,
-			Height:          agg.BlockHeader.Height,
-			Hash:            agg.BlockHeader.Hash,
+			BlockOffset:     agg.BlockHeader.Offset,
+			BlockHeight:     agg.BlockHeader.Height,
+			BlockHash:       agg.BlockHeader.Hash,
 			AttestationRoot: agg.AttestationRoot,
+			KeyHash:         keyHash[:],
 			Status:          uint32(Status_Pending),
 			ValidatorSetId:  0, // Unknown at this point.
 			CreatedHeight:   uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()),
+			FinalizedAttId:  0, // No finalized override yet.
 		})
 		if err != nil {
 			return errors.Wrap(err, "insert")
@@ -214,7 +216,7 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 	defer latency("approve")()
 
-	pendingIdx := AttestationStatusChainIdConfLevelOffsetIndexKey{}.WithStatus(uint32(Status_Pending))
+	pendingIdx := AttestationStatusChainIdConfLevelBlockOffsetIndexKey{}.WithStatus(uint32(Status_Pending))
 	iter, err := k.attTable.List(ctx, pendingIdx)
 	if err != nil {
 		return errors.Wrap(err, "list pending")
@@ -239,14 +241,14 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 				if err != nil {
 					return errors.Wrap(err, "latest approved")
 				} else if found {
-					approvedByChain[chainVer] = latest.GetOffset()
+					approvedByChain[chainVer] = latest.GetBlockOffset()
 				}
 			}
 			head, ok := approvedByChain[chainVer]
-			if !ok && att.GetOffset() != 1 {
+			if !ok && att.GetBlockOffset() != 1 {
 				// Only start attesting from offset==1
 				continue
-			} else if ok && head+1 != att.GetOffset() {
+			} else if ok && head+1 != att.GetBlockOffset() {
 				// This isn't the next attestation to approve, so we can't approve it yet.
 				continue
 			}
@@ -263,7 +265,7 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 			if ok, err := k.maybeOverrideFinalized(ctx, att); err != nil {
 				return err
 			} else if ok {
-				approvedByChain[chainVer] = att.GetOffset()
+				approvedByChain[chainVer] = att.GetBlockOffset()
 			}
 
 			continue
@@ -284,14 +286,14 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 			return errors.Wrap(err, "save")
 		}
 
-		approvedHeight.WithLabelValues(chainVerName).Set(float64(att.GetHeight()))
-		approvedOffset.WithLabelValues(chainVerName).Set(float64(att.GetOffset()))
-		approvedByChain[chainVer] = att.GetOffset()
+		approvedHeight.WithLabelValues(chainVerName).Set(float64(att.GetBlockHeight()))
+		approvedOffset.WithLabelValues(chainVerName).Set(float64(att.GetBlockOffset()))
+		approvedByChain[chainVer] = att.GetBlockOffset()
 
 		log.Debug(ctx, "📬 Approved attestation",
 			"chain", chainVerName,
-			"offset", att.GetOffset(),
-			"height", att.GetHeight(),
+			"offset", att.GetBlockOffset(),
+			"height", att.GetBlockHeight(),
 		)
 	}
 
@@ -313,8 +315,8 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 func (k *Keeper) ListAttestationsFrom(ctx context.Context, chainID uint64, confLevel uint32, offset uint64, max uint64) ([]*types.Attestation, error) {
 	defer latency("attestations_from")()
 
-	from := AttestationStatusChainIdConfLevelOffsetIndexKey{}.WithStatusChainIdConfLevelOffset(uint32(Status_Approved), chainID, confLevel, offset)
-	to := AttestationStatusChainIdConfLevelOffsetIndexKey{}.WithStatusChainIdConfLevelOffset(uint32(Status_Approved), chainID, confLevel, offset+max)
+	from := AttestationStatusChainIdConfLevelBlockOffsetIndexKey{}.WithStatusChainIdConfLevelBlockOffset(uint32(Status_Approved), chainID, confLevel, offset)
+	to := AttestationStatusChainIdConfLevelBlockOffsetIndexKey{}.WithStatusChainIdConfLevelBlockOffset(uint32(Status_Approved), chainID, confLevel, offset+max)
 
 	iter, err := k.attTable.ListRange(ctx, from, to)
 	if err != nil {
@@ -330,7 +332,7 @@ func (k *Keeper) ListAttestationsFrom(ctx context.Context, chainID uint64, confL
 			return nil, errors.Wrap(err, "value")
 		}
 
-		if att.GetOffset() != next {
+		if att.GetBlockOffset() != next {
 			break
 		}
 		next++
@@ -360,9 +362,9 @@ func (k *Keeper) ListAttestationsFrom(ctx context.Context, chainID uint64, confL
 			BlockHeader: &types.BlockHeader{
 				ChainId:   att.GetChainId(),
 				ConfLevel: att.GetConfLevel(),
-				Offset:    att.GetOffset(),
-				Height:    att.GetHeight(),
-				Hash:      att.GetHash(),
+				Offset:    att.GetBlockOffset(),
+				Height:    att.GetBlockHeight(),
+				Hash:      att.GetBlockHash(),
 			},
 			ValidatorSetId:  att.GetValidatorSetId(),
 			AttestationRoot: att.GetAttestationRoot(),
@@ -383,7 +385,7 @@ func (k *Keeper) maybeOverrideFinalized(ctx context.Context, att *Attestation) (
 		return false, nil // Only fuzzy attestations are overwritten with finalized attestations.
 	}
 
-	finalizedIdx := AttestationStatusChainIdConfLevelOffsetIndexKey{}.WithStatusChainIdConfLevelOffset(uint32(Status_Approved), att.GetChainId(), uint32(xchain.ConfFinalized), att.GetOffset())
+	finalizedIdx := AttestationStatusChainIdConfLevelBlockOffsetIndexKey{}.WithStatusChainIdConfLevelBlockOffset(uint32(Status_Approved), att.GetChainId(), uint32(xchain.ConfFinalized), att.GetBlockOffset())
 	iter, err := k.attTable.List(ctx, finalizedIdx)
 	if err != nil {
 		return false, errors.Wrap(err, "list finalized")
@@ -414,8 +416,8 @@ func (k *Keeper) maybeOverrideFinalized(ctx context.Context, att *Attestation) (
 
 	log.Debug(ctx, "📬 Fuzzy attestation overridden by finalized",
 		"chain", k.namer(att.XChainVersion()),
-		"offset", att.GetOffset(),
-		"height", att.GetHeight(),
+		"offset", att.GetBlockOffset(),
+		"height", att.GetBlockHeight(),
 	)
 
 	return true, nil
@@ -426,7 +428,7 @@ func (k *Keeper) maybeOverrideFinalized(ctx context.Context, att *Attestation) (
 func (k *Keeper) latestAttestation(ctx context.Context, version xchain.ChainVersion) (*Attestation, bool, error) {
 	defer latency("latest_attestation")()
 
-	idx := AttestationStatusChainIdConfLevelOffsetIndexKey{}.WithStatusChainIdConfLevel(uint32(Status_Approved), version.ID, uint32(version.ConfLevel))
+	idx := AttestationStatusChainIdConfLevelBlockOffsetIndexKey{}.WithStatusChainIdConfLevel(uint32(Status_Approved), version.ID, uint32(version.ConfLevel))
 	iter, err := k.attTable.List(ctx, idx, ormlist.Reverse(), ormlist.DefaultLimit(1))
 	if err != nil {
 		return nil, false, errors.Wrap(err, "list")
@@ -652,7 +654,7 @@ func (k *Keeper) windowCompare(ctx context.Context, chainVer xchain.ChainVersion
 
 	latestOffset := initialXOffset // Use initial offset if attestation doesn't exist.
 	if exists {
-		latestOffset = latest.GetOffset()
+		latestOffset = latest.GetBlockOffset()
 	}
 
 	return windowCompare(k.voteWindow, latestOffset, offset), nil
@@ -712,7 +714,7 @@ func (k *Keeper) deleteBefore(ctx context.Context, height uint64) error {
 			return 0, false, nil
 		}
 
-		offset := latest.GetOffset()
+		offset := latest.GetBlockOffset()
 		latestByChain[chainVer] = offset
 
 		return offset, true, nil
@@ -739,7 +741,7 @@ func (k *Keeper) deleteBefore(ctx context.Context, height uint64) error {
 		// once we start catching up.
 		if latest, ok, err := getLatest(att.XChainVersion()); err != nil {
 			return err
-		} else if ok && att.GetOffset() >= latest {
+		} else if ok && att.GetBlockOffset() >= latest {
 			continue
 		}
 

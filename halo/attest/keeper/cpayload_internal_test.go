@@ -75,7 +75,7 @@ func TestVotesFromCommit(t *testing.T) {
 	vals := []k1.PrivKey{k1.GenPrivKey(), k1.GenPrivKey(), k1.GenPrivKey()}
 	batches := [][]uint64{{1, 2}, {3}, { /*empty*/ }}
 
-	expected := make(map[xchain.Vote]bool)
+	expected := make(map[[32]byte]map[xchain.SigTuple]bool)
 	total := 2 * 3 // 2 chains * 3 heights
 
 	var evotes []abci.ExtendedVoteInfo
@@ -111,7 +111,14 @@ func TestVotesFromCommit(t *testing.T) {
 					}
 
 					if i != skipVal && chain != skipChain {
-						expected[vote.ToXChain()] = true
+						sig := xchain.SigTuple{
+							ValidatorAddress: addr,
+							Signature:        sig,
+						}
+						if _, ok := expected[vote.UniqueKey()]; !ok {
+							expected[vote.UniqueKey()] = make(map[xchain.SigTuple]bool)
+						}
+						expected[vote.UniqueKey()][sig] = true
 					}
 					votes = append(votes, vote)
 				}
@@ -148,15 +155,18 @@ func TestVotesFromCommit(t *testing.T) {
 	require.Len(t, resp.Votes, total)
 
 	for _, agg := range resp.Votes {
-		for _, sig := range agg.Signatures {
-			att := xchain.Vote{
-				BlockHeader:     agg.BlockHeader.ToXChain(),
-				AttestationRoot: common.Hash(agg.AttestationRoot),
-				Signature:       sig.ToXChain(),
+		require.NoError(t, agg.Verify())
+		key := agg.UniqueKey()
+		for _, s := range agg.Signatures {
+			sig := xchain.SigTuple{
+				ValidatorAddress: common.BytesToAddress(s.ValidatorAddress),
+				Signature:        xchain.Signature65(s.Signature),
 			}
-
-			require.True(t, expected[att], att)
-			delete(expected, att)
+			require.True(t, expected[key][sig], agg, sig)
+			delete(expected[key], sig)
+			if len(expected[key]) == 0 {
+				delete(expected, key)
+			}
 		}
 	}
 

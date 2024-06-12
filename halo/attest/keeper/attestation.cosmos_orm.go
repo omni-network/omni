@@ -19,9 +19,9 @@ type AttestationTable interface {
 	Has(ctx context.Context, id uint64) (found bool, err error)
 	// Get returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
 	Get(ctx context.Context, id uint64) (*Attestation, error)
-	HasByChainIdConfLevelOffsetHeightHashAttestationRoot(ctx context.Context, chain_id uint64, conf_level uint32, offset uint64, height uint64, hash []byte, attestation_root []byte) (found bool, err error)
-	// GetByChainIdConfLevelOffsetHeightHashAttestationRoot returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
-	GetByChainIdConfLevelOffsetHeightHashAttestationRoot(ctx context.Context, chain_id uint64, conf_level uint32, offset uint64, height uint64, hash []byte, attestation_root []byte) (*Attestation, error)
+	HasByKeyHash(ctx context.Context, key_hash []byte) (found bool, err error)
+	// GetByKeyHash returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
+	GetByKeyHash(ctx context.Context, key_hash []byte) (*Attestation, error)
 	List(ctx context.Context, prefixKey AttestationIndexKey, opts ...ormlist.Option) (AttestationIterator, error)
 	ListRange(ctx context.Context, from, to AttestationIndexKey, opts ...ormlist.Option) (AttestationIterator, error)
 	DeleteBy(ctx context.Context, prefixKey AttestationIndexKey) error
@@ -62,71 +62,44 @@ func (this AttestationIdIndexKey) WithId(id uint64) AttestationIdIndexKey {
 	return this
 }
 
-type AttestationChainIdConfLevelOffsetHeightHashAttestationRootIndexKey struct {
+type AttestationKeyHashIndexKey struct {
 	vs []interface{}
 }
 
-func (x AttestationChainIdConfLevelOffsetHeightHashAttestationRootIndexKey) id() uint32 { return 1 }
-func (x AttestationChainIdConfLevelOffsetHeightHashAttestationRootIndexKey) values() []interface{} {
-	return x.vs
-}
-func (x AttestationChainIdConfLevelOffsetHeightHashAttestationRootIndexKey) attestationIndexKey() {}
+func (x AttestationKeyHashIndexKey) id() uint32            { return 1 }
+func (x AttestationKeyHashIndexKey) values() []interface{} { return x.vs }
+func (x AttestationKeyHashIndexKey) attestationIndexKey()  {}
 
-func (this AttestationChainIdConfLevelOffsetHeightHashAttestationRootIndexKey) WithChainId(chain_id uint64) AttestationChainIdConfLevelOffsetHeightHashAttestationRootIndexKey {
-	this.vs = []interface{}{chain_id}
+func (this AttestationKeyHashIndexKey) WithKeyHash(key_hash []byte) AttestationKeyHashIndexKey {
+	this.vs = []interface{}{key_hash}
 	return this
 }
 
-func (this AttestationChainIdConfLevelOffsetHeightHashAttestationRootIndexKey) WithChainIdConfLevel(chain_id uint64, conf_level uint32) AttestationChainIdConfLevelOffsetHeightHashAttestationRootIndexKey {
-	this.vs = []interface{}{chain_id, conf_level}
-	return this
-}
-
-func (this AttestationChainIdConfLevelOffsetHeightHashAttestationRootIndexKey) WithChainIdConfLevelOffset(chain_id uint64, conf_level uint32, offset uint64) AttestationChainIdConfLevelOffsetHeightHashAttestationRootIndexKey {
-	this.vs = []interface{}{chain_id, conf_level, offset}
-	return this
-}
-
-func (this AttestationChainIdConfLevelOffsetHeightHashAttestationRootIndexKey) WithChainIdConfLevelOffsetHeight(chain_id uint64, conf_level uint32, offset uint64, height uint64) AttestationChainIdConfLevelOffsetHeightHashAttestationRootIndexKey {
-	this.vs = []interface{}{chain_id, conf_level, offset, height}
-	return this
-}
-
-func (this AttestationChainIdConfLevelOffsetHeightHashAttestationRootIndexKey) WithChainIdConfLevelOffsetHeightHash(chain_id uint64, conf_level uint32, offset uint64, height uint64, hash []byte) AttestationChainIdConfLevelOffsetHeightHashAttestationRootIndexKey {
-	this.vs = []interface{}{chain_id, conf_level, offset, height, hash}
-	return this
-}
-
-func (this AttestationChainIdConfLevelOffsetHeightHashAttestationRootIndexKey) WithChainIdConfLevelOffsetHeightHashAttestationRoot(chain_id uint64, conf_level uint32, offset uint64, height uint64, hash []byte, attestation_root []byte) AttestationChainIdConfLevelOffsetHeightHashAttestationRootIndexKey {
-	this.vs = []interface{}{chain_id, conf_level, offset, height, hash, attestation_root}
-	return this
-}
-
-type AttestationStatusChainIdConfLevelOffsetIndexKey struct {
+type AttestationStatusChainIdConfLevelBlockOffsetIndexKey struct {
 	vs []interface{}
 }
 
-func (x AttestationStatusChainIdConfLevelOffsetIndexKey) id() uint32            { return 2 }
-func (x AttestationStatusChainIdConfLevelOffsetIndexKey) values() []interface{} { return x.vs }
-func (x AttestationStatusChainIdConfLevelOffsetIndexKey) attestationIndexKey()  {}
+func (x AttestationStatusChainIdConfLevelBlockOffsetIndexKey) id() uint32            { return 2 }
+func (x AttestationStatusChainIdConfLevelBlockOffsetIndexKey) values() []interface{} { return x.vs }
+func (x AttestationStatusChainIdConfLevelBlockOffsetIndexKey) attestationIndexKey()  {}
 
-func (this AttestationStatusChainIdConfLevelOffsetIndexKey) WithStatus(status uint32) AttestationStatusChainIdConfLevelOffsetIndexKey {
+func (this AttestationStatusChainIdConfLevelBlockOffsetIndexKey) WithStatus(status uint32) AttestationStatusChainIdConfLevelBlockOffsetIndexKey {
 	this.vs = []interface{}{status}
 	return this
 }
 
-func (this AttestationStatusChainIdConfLevelOffsetIndexKey) WithStatusChainId(status uint32, chain_id uint64) AttestationStatusChainIdConfLevelOffsetIndexKey {
+func (this AttestationStatusChainIdConfLevelBlockOffsetIndexKey) WithStatusChainId(status uint32, chain_id uint64) AttestationStatusChainIdConfLevelBlockOffsetIndexKey {
 	this.vs = []interface{}{status, chain_id}
 	return this
 }
 
-func (this AttestationStatusChainIdConfLevelOffsetIndexKey) WithStatusChainIdConfLevel(status uint32, chain_id uint64, conf_level uint32) AttestationStatusChainIdConfLevelOffsetIndexKey {
+func (this AttestationStatusChainIdConfLevelBlockOffsetIndexKey) WithStatusChainIdConfLevel(status uint32, chain_id uint64, conf_level uint32) AttestationStatusChainIdConfLevelBlockOffsetIndexKey {
 	this.vs = []interface{}{status, chain_id, conf_level}
 	return this
 }
 
-func (this AttestationStatusChainIdConfLevelOffsetIndexKey) WithStatusChainIdConfLevelOffset(status uint32, chain_id uint64, conf_level uint32, offset uint64) AttestationStatusChainIdConfLevelOffsetIndexKey {
-	this.vs = []interface{}{status, chain_id, conf_level, offset}
+func (this AttestationStatusChainIdConfLevelBlockOffsetIndexKey) WithStatusChainIdConfLevelBlockOffset(status uint32, chain_id uint64, conf_level uint32, block_offset uint64) AttestationStatusChainIdConfLevelBlockOffsetIndexKey {
+	this.vs = []interface{}{status, chain_id, conf_level, block_offset}
 	return this
 }
 
@@ -187,26 +160,16 @@ func (this attestationTable) Get(ctx context.Context, id uint64) (*Attestation, 
 	return &attestation, nil
 }
 
-func (this attestationTable) HasByChainIdConfLevelOffsetHeightHashAttestationRoot(ctx context.Context, chain_id uint64, conf_level uint32, offset uint64, height uint64, hash []byte, attestation_root []byte) (found bool, err error) {
+func (this attestationTable) HasByKeyHash(ctx context.Context, key_hash []byte) (found bool, err error) {
 	return this.table.GetIndexByID(1).(ormtable.UniqueIndex).Has(ctx,
-		chain_id,
-		conf_level,
-		offset,
-		height,
-		hash,
-		attestation_root,
+		key_hash,
 	)
 }
 
-func (this attestationTable) GetByChainIdConfLevelOffsetHeightHashAttestationRoot(ctx context.Context, chain_id uint64, conf_level uint32, offset uint64, height uint64, hash []byte, attestation_root []byte) (*Attestation, error) {
+func (this attestationTable) GetByKeyHash(ctx context.Context, key_hash []byte) (*Attestation, error) {
 	var attestation Attestation
 	found, err := this.table.GetIndexByID(1).(ormtable.UniqueIndex).Get(ctx, &attestation,
-		chain_id,
-		conf_level,
-		offset,
-		height,
-		hash,
-		attestation_root,
+		key_hash,
 	)
 	if err != nil {
 		return nil, err

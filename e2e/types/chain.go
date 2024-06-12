@@ -38,9 +38,14 @@ var (
 
 // OmniEVMByNetwork returns the Omni evm chain definition by netconf network.
 func OmniEVMByNetwork(network netconf.ID) EVMChain {
+	shards := []xchain.ShardID{xchain.ShardFinalized0} // OmniEVM has instant finality, so Latest == Finalized.
+	if network.IsEphemeral() {
+		shards = allShards // Enable all shards for testing.
+	}
+
 	return EVMChain{
 		Metadata: mustMetadata(network.Static().OmniExecutionChainID),
-		Shards:   allShards,
+		Shards:   shards,
 	}
 }
 

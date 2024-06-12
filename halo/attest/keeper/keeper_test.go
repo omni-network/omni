@@ -5,7 +5,7 @@ import (
 
 	"github.com/omni-network/omni/halo/attest/keeper"
 	"github.com/omni-network/omni/halo/attest/types"
-	vtypes "github.com/omni-network/omni/halo/epochsync/types"
+	vtypes "github.com/omni-network/omni/halo/valsync/types"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -71,7 +71,7 @@ func TestKeeper_Add(t *testing.T) {
 					update(
 						expectPendingAtt(2, defaultOffset+1),
 						func(att *keeper.Attestation) {
-							att.Hash = blockHashes[1].Bytes()
+							att.BlockHash = blockHashes[1].Bytes()
 						},
 					),
 				},
@@ -98,7 +98,7 @@ func TestKeeper_Add(t *testing.T) {
 					update(
 						expectPendingAtt(2, defaultOffset+1),
 						func(att *keeper.Attestation) {
-							att.Height = defaultHeight
+							att.BlockHeight = defaultHeight
 						},
 					),
 				},
@@ -211,8 +211,9 @@ func TestKeeper_Add(t *testing.T) {
 
 			gotAtts, gotSigs := dumpTables(t, ctx, k)
 
-			if !cmp.Equal(tt.want.atts, gotAtts, atteCmpOpts) {
-				t.Error(cmp.Diff(tt.want.atts, gotAtts, atteCmpOpts))
+			wantAtts := populateKeyHashes(tt.want.atts)
+			if !cmp.Equal(wantAtts, gotAtts, atteCmpOpts) {
+				t.Error(cmp.Diff(wantAtts, gotAtts, atteCmpOpts))
 			}
 
 			if !cmp.Equal(tt.want.sigs, gotSigs, sigsCmpOpts) {
@@ -446,8 +447,9 @@ func TestKeeper_Approve(t *testing.T) {
 
 			gotAtts, gotSigs := dumpTables(t, ctx, k)
 
-			if !cmp.Equal(tt.want.atts, gotAtts, atteCmpOpts) {
-				t.Error(cmp.Diff(tt.want.atts, gotAtts, atteCmpOpts))
+			wantAtts := populateKeyHashes(tt.want.atts)
+			if !cmp.Equal(wantAtts, gotAtts, atteCmpOpts) {
+				t.Error(cmp.Diff(wantAtts, gotAtts, atteCmpOpts))
 			}
 
 			if !cmp.Equal(tt.want.sigs, gotSigs, sigsCmpOpts) {
@@ -478,15 +480,44 @@ func expectValSig(id uint64, attID uint64, val *vtypes.Validator) *keeper.Signat
 }
 
 func expectPendingAtt(id uint64, offset uint64) *keeper.Attestation {
-	return &keeper.Attestation{Id: id, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Offset: offset, Height: defaultHeight, CreatedHeight: 1, Status: uint32(keeper.Status_Pending)}
+	return &keeper.Attestation{
+		Id:              id,
+		AttestationRoot: attRoot,
+		ChainId:         1,
+		BlockHash:       blockHashes[0].Bytes(),
+		BlockOffset:     offset,
+		BlockHeight:     defaultHeight,
+		CreatedHeight:   1,
+		Status:          uint32(keeper.Status_Pending),
+	}
 }
 
 func expectApprovedAtt(id uint64, offset uint64, valset *vtypes.ValidatorSetResponse) *keeper.Attestation {
-	return &keeper.Attestation{Id: id, AttestationRoot: attRoot, ChainId: 1, Hash: blockHashes[0].Bytes(), Offset: offset, Height: defaultHeight, CreatedHeight: 1, Status: uint32(keeper.Status_Approved), ValidatorSetId: valset.Id}
+	return &keeper.Attestation{
+		Id:              id,
+		AttestationRoot: attRoot,
+		ChainId:         1,
+		BlockHash:       blockHashes[0].Bytes(),
+		BlockOffset:     offset,
+		BlockHeight:     defaultHeight,
+		CreatedHeight:   1,
+		Status:          uint32(keeper.Status_Approved),
+		ValidatorSetId:  valset.Id,
+	}
 }
 
 func update[T any](t T, fn func(T)) T {
 	fn(t)
 
 	return t
+}
+
+func populateKeyHashes(atts []*keeper.Attestation) []*keeper.Attestation {
+	for i := range atts {
+		a := keeper.AttestationFromDB(atts[i], nil)
+		key := a.UniqueKey()
+		atts[i].KeyHash = key[:]
+	}
+
+	return atts
 }
