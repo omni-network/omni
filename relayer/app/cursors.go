@@ -36,20 +36,26 @@ func getSubmittedCursors(ctx context.Context, network netconf.Network, dstChainI
 // filterMsgs filters messages based on offsets for a specific stream.
 // It takes a slice of messages, offsets indexed by stream ID, and the target stream ID,
 // and returns a filtered slice containing only messages with offsets greater than the specified offset.
-func filterMsgs(ctx context.Context, streamID xchain.StreamID, valSetID uint64, msgs []xchain.Msg, msgFilter *msgCursorFilter) ([]xchain.Msg, error) {
+func filterMsgs(
+	ctx context.Context,
+	streamID xchain.StreamID,
+	streamNamer func(xchain.StreamID) string,
+	msgs []xchain.Msg,
+	msgFilter *msgCursorFilter,
+) ([]xchain.Msg, error) {
 	backoff := expbackoff.New(ctx)
-	res := make([]xchain.Msg, 0, len(msgs)) // Res might have over-capacity, but that's fine, we only filter on startup.
+	res := make([]xchain.Msg, 0, len(msgs)) // Res might have over-capacity, but in most cases we don't filter.
 	for i := 0; i < len(msgs); {
 		msg := msgs[i]
 
 		check, cursor := msgFilter.Check(streamID, msg.StreamOffset)
 		if check == checkProcess {
 			res = append(res, msg)
-		} else if check == checkOldVatSet {
-			log.Warn(ctx, "Skipping msg with old valSetID", nil,
-				"stream", streamID,
+		} else if check == checkIgnoreOffset && !msg.ShardID.ConfLevel().IsFuzzy() {
+			log.Debug(ctx, "Filtering finalized msg already delivered",
+				"stream", streamNamer(streamID),
 				"offset", msg.StreamOffset,
-				"valset", valSetID,
+				"cursor_offset", cursor.MsgOffset,
 			)
 		}
 		if check != checkGapOffset {
@@ -60,7 +66,7 @@ func filterMsgs(ctx context.Context, streamID xchain.StreamID, valSetID uint64, 
 
 		if !streamID.ConfLevel().IsFuzzy() {
 			return nil, errors.New("unexpected gap in finalized msg offsets [BUG]",
-				"stream", streamID,
+				"stream", streamNamer(streamID),
 				"offset", msg.StreamOffset,
 				"cursor_offset", cursor.MsgOffset,
 			)
@@ -68,7 +74,7 @@ func filterMsgs(ctx context.Context, streamID xchain.StreamID, valSetID uint64, 
 
 		// Re-orgs of fuzzy conf levels are expected and can create gaps, block until ConfFinalized fills the gap.
 		log.Warn(ctx, "Gap in fuzzy msg offsets, waiting for ConfFinalized", nil,
-			"stream", streamID,
+			"stream", streamNamer(streamID),
 			"offset", msg.StreamOffset,
 			"cursor_offset", cursor.MsgOffset,
 		)
@@ -151,8 +157,6 @@ const (
 	checkGapOffset
 	// checkIgnoreOffset indicates that the message offset was already processed and should be ignored.
 	checkIgnoreOffset
-	// checkOldVatSet indicates that the message has a lower validator set ID than the last processed message and must be ignored.
-	checkOldVatSet
 )
 
 // Check updates the stream state and returns checkProcess if the provided offset is sequential.

@@ -184,9 +184,12 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 		return nil
 	} else if isApprovedByDifferentSet(existing, valSetID) {
 		log.Debug(ctx, "Ignoring vote for attestation approved by different validator set",
-			"agg_id", attID,
+			"att_id", existing.GetId(),
+			"existing_valset_id", existing.GetValidatorSetId(),
+			"vote_valset_id", valSetID,
 			"chain", k.namer(header.XChainVersion()),
 			"offset", header.Offset,
+			"sigs", len(agg.Signatures),
 		)
 		// Technically these new votes could be from validators also in that previous set, but
 		// we don't have consistent access to historical validator sets.

@@ -105,7 +105,7 @@ func (w *Worker) runOnce(ctx context.Context) error {
 			return errors.New("unexpected chain version [BUG]")
 		}
 
-		callback := newCallback(w.xProvider, msgFilter, w.creator, buf.AddInput, w.destChain.ID, newMsgStreamMapper(w.network), w.awaitValSet)
+		callback := w.newCallback(msgFilter, buf.AddInput, newMsgStreamMapper(w.network))
 
 		w.cProvider.Subscribe(ctx, chainVer, fromOffset, w.destChain.Name, callback)
 
@@ -185,17 +185,13 @@ func newMsgStreamMapper(network netconf.Network) msgStreamMapper {
 	}
 }
 
-func newCallback(
-	xProvider xchain.Provider,
+func (w *Worker) newCallback(
 	msgFilter *msgCursorFilter,
-	creator CreateFunc,
 	sender SendFunc,
-	destChainID uint64,
 	msgStreamMapper msgStreamMapper,
-	awaitValSet awaitValSet,
 ) cchain.ProviderCallback {
 	return func(ctx context.Context, att xchain.Attestation) error {
-		block, ok, err := fetchXBlock(ctx, xProvider, att)
+		block, ok, err := fetchXBlock(ctx, w.xProvider, att)
 		if err != nil {
 			return err
 		} else if !ok {
@@ -209,18 +205,18 @@ func newCallback(
 
 		// Split into streams
 		for streamID, msgs := range msgStreamMapper(block.Msgs) {
-			if streamID.DestChainID != destChainID {
+			if streamID.DestChainID != w.destChain.ID {
 				continue // Skip streams not destined for this worker.
 			} else if !attestationForShard(att, streamID.ShardID) {
 				continue // Skip streams not applicable to this attestation.
 			}
 
-			if err := awaitValSet(ctx, att.ValidatorSetID); err != nil {
+			if err := w.awaitValSet(ctx, att.ValidatorSetID); err != nil {
 				return errors.Wrap(err, "await validator set")
 			}
 
 			// Filter out any previously submitted message offsets
-			msgs, err = filterMsgs(ctx, streamID, att.ValidatorSetID, msgs, msgFilter)
+			msgs, err = filterMsgs(ctx, streamID, w.network.StreamName, msgs, msgFilter)
 			if err != nil {
 				return err
 			} else if len(msgs) == 0 {
@@ -234,7 +230,7 @@ func newCallback(
 				Tree:        tree,
 			}
 
-			submissions, err := creator(update)
+			submissions, err := w.creator(update)
 			if err != nil {
 				return err
 			}

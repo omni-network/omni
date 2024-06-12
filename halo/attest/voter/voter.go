@@ -140,9 +140,6 @@ func (v *Voter) runForever(ctx context.Context, chainVer xchain.ChainVersion) {
 	v.wg.Add(1)
 	defer v.wg.Done()
 
-	label := fmt.Sprintf("%s-%s", v.network.ChainName(chainVer.ID), chainVer.ConfLevel)
-	ctx = log.WithCtx(ctx, "chain_ver", label)
-
 	backoff := v.backoffFunc(ctx)
 	for ctx.Err() == nil {
 		if !v.isValidator() {
@@ -230,11 +227,7 @@ func (v *Voter) runOnce(ctx context.Context, chainVer xchain.ChainVersion) error
 			first = false
 
 			// TODO(corver): Remove if this becomes too noisy.
-			log.Debug(ctx, "📬 Created vote for rollup block",
-				"offset", block.BlockOffset,
-				"msgs", len(block.Msgs),
-				"start_msg_offset", block.Msgs[0].StreamOffset,
-			)
+			logVoteCreated(ctx, v.network, block)
 
 			return nil
 		},
@@ -645,4 +638,26 @@ func latestFromJSON(latest []*types.Vote) map[xchain.ChainVersion]*types.Vote {
 	}
 
 	return resp
+}
+
+func logVoteCreated(ctx context.Context, network netconf.Network, block xchain.Block) {
+	// Collect start offsets per shard.
+	startOffsets := make(map[string]uint64)
+	for _, msg := range block.Msgs {
+		emitShard := fmt.Sprintf("%s|%s", msg.ShardID.Label(), network.ChainName(msg.DestChainID))
+		if _, ok := startOffsets[emitShard]; ok {
+			continue
+		}
+		startOffsets[emitShard] = msg.StreamOffset
+	}
+
+	attrs := []any{
+		"offset", block.BlockOffset,
+		"msgs", len(block.Msgs),
+	}
+	for shard, offset := range startOffsets {
+		attrs = append(attrs, shard, offset)
+	}
+
+	log.Debug(ctx, "📬 Created vote for cross chain block", attrs...)
 }
