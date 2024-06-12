@@ -13,6 +13,7 @@ import (
 
 const (
 	defaultTemplate = "hello-world-template"
+	defaultTemplateCommit = "1d0ba3c" // Commit hash of the template, update as needed
 )
 
 func newDeveloperCmds() *cobra.Command {
@@ -68,7 +69,7 @@ func newForgeProjectTemplate(ctx context.Context, cfg developerForgeProjectConfi
 
 	// Check out the specific commit if using the default template
 	if cfg.templateName == defaultTemplate {
-		cmd = exec.CommandContext(ctx, "git", "checkout", "1d0ba3c") // Commit hash of the template, update as needed
+		cmd = exec.CommandContext(ctx, "git", "checkout", defaultTemplateCommit)
 		cmd.Dir = destinationPath
 		cmd.Stdout = nil // Suppress output
 		cmd.Stderr = nil // Suppress output
