@@ -60,7 +60,7 @@ func assertOffsets(t *testing.T, blocks []xchain.Block) {
 	bOffset := 1
 
 	for _, block := range blocks {
-		if block.ShouldAttest() {
+		if block.ShouldAttest(0) {
 			require.EqualValues(t, bOffset, block.BlockOffset)
 			bOffset++
 		} else {

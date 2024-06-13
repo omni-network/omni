@@ -43,8 +43,10 @@ func OmniEVMByNetwork(network netconf.ID) EVMChain {
 		shards = allShards // Enable all shards for testing.
 	}
 
+	chainID := network.Static().OmniExecutionChainID
+
 	return EVMChain{
-		Metadata: mustMetadata(network.Static().OmniExecutionChainID),
+		Metadata: mustMetadata(chainID),
 		Shards:   shards,
 	}
 }

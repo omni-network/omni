@@ -76,12 +76,13 @@ func networkFromPortals(network ID, portals []bindings.PortalRegistryDeployment)
 	for _, portal := range portals {
 		metadata := MetadataByID(network, portal.ChainId)
 		chains = append(chains, Chain{
-			ID:            portal.ChainId,
-			Name:          metadata.Name,
-			PortalAddress: portal.Addr,
-			DeployHeight:  portal.DeployHeight,
-			BlockPeriod:   metadata.BlockPeriod,
-			Shards:        toShardIDs(portal.Shards),
+			ID:             portal.ChainId,
+			Name:           metadata.Name,
+			PortalAddress:  portal.Addr,
+			DeployHeight:   portal.DeployHeight,
+			BlockPeriod:    metadata.BlockPeriod,
+			Shards:         toShardIDs(portal.Shards),
+			AttestInterval: IntervalFromPeriod(network, metadata.BlockPeriod),
 		})
 	}
 
@@ -92,6 +93,19 @@ func networkFromPortals(network ID, portals []bindings.PortalRegistryDeployment)
 		ID:     network,
 		Chains: chains,
 	}
+}
+
+// IntervalFromPeriod returns the minimum number of blocks between attestations for a given block period.
+// TODO(kevin): Move this to e2e/types once MinAttestPeriod is added to PortalRegistry.
+func IntervalFromPeriod(network ID, period time.Duration) uint64 {
+	target := time.Hour
+	if network == Staging {
+		target = time.Minute * 10
+	} else if network == Devnet {
+		target = time.Second * 10
+	}
+
+	return uint64(target / period)
 }
 
 func MetadataByID(network ID, chainID uint64) evmchain.Metadata {

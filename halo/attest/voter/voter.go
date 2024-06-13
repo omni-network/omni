@@ -160,6 +160,11 @@ func (v *Voter) runForever(ctx context.Context, chainVer xchain.ChainVersion) {
 // runOnce blocks, streaming xblocks from the provided chain until an error is encountered.
 // It always returns a non-nil error.
 func (v *Voter) runOnce(ctx context.Context, chainVer xchain.ChainVersion) error {
+	chain, ok := v.network.Chain(chainVer.ID)
+	if !ok {
+		return errors.New("unknown chain ID")
+	}
+
 	maybeDebugLog := newDebugLogFilterer(time.Minute) // Log empty blocks once per minute.
 	first := true                                     // Allow skipping on first attestation.
 
@@ -199,7 +204,7 @@ func (v *Voter) runOnce(ctx context.Context, chainVer xchain.ChainVersion) error
 			}
 			prevBlock = block
 
-			if !block.ShouldAttest() {
+			if !block.ShouldAttest(chain.AttestInterval) {
 				maybeDebugLog(ctx, "Not creating vote for empty cross chain block")
 
 				return nil // Do not vote for empty blocks.

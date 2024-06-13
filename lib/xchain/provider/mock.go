@@ -219,7 +219,7 @@ func (m *Mock) nextBlock(
 
 	switch height % 4 {
 	case 0:
-		// Empty block, no messages or receipts
+		// Empty block, no messages or receipts, no attestation
 	case 1:
 		msgs = append(msgs, newMsgA()) // Msgs: 1*chainA, 0*chainB
 	case 2:
@@ -241,7 +241,8 @@ func (m *Mock) nextBlock(
 		ParentHash: m.parentBlockHash(chainVer, height),
 	}
 
-	if b.ShouldAttest() {
+	const noEmptyAttestations uint64 = 0
+	if b.ShouldAttest(noEmptyAttestations) {
 		b.BlockHeader.BlockOffset = bOffsetFunc()
 	}
 

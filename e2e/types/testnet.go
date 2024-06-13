@@ -112,6 +112,11 @@ type EVMChain struct {
 	IsPublic bool
 }
 
+// AttestInterval returns the a constant interval for which attestations are always required, even if empty..
+func (c EVMChain) AttestInterval(network netconf.ID) uint64 {
+	return netconf.IntervalFromPeriod(network, c.BlockPeriod)
+}
+
 func (c EVMChain) ShardsUint64() []uint64 {
 	var shards []uint64
 	for _, shard := range c.Shards {

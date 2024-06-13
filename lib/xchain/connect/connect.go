@@ -58,12 +58,12 @@ func New(ctx context.Context, netID netconf.ID, endpoints xchain.RPCEndpoints) (
 		return Connector{}, errors.New("omni evm metadata not found")
 	}
 	if _, err := endpoints.ByNameOrID(omniEVMMetadata.Name, omniEVMMetadata.ChainID); err != nil {
-		endpoints[omniEVMMetadata.Name] = netID.ExecutionRPC()
+		endpoints[omniEVMMetadata.Name] = netID.Static().ExecutionRPC()
 	}
 
 	omniCons := netID.Static().OmniConsensusChain()
 	if _, err := endpoints.ByNameOrID(omniCons.Name, omniCons.ID); err != nil {
-		endpoints[omniCons.Name] = netID.ConsensusRPC()
+		endpoints[omniCons.Name] = netID.Static().ConsensusRPC()
 	}
 
 	portalReg, err := makePortalRegistry(netID, endpoints)
