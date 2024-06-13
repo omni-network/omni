@@ -63,10 +63,7 @@ func (*Provider) Clean(ctx context.Context) error {
 
 // NewProvider returns a new Provider.
 func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag, graphQLURL string) *Provider {
-	platform := fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
-	if runtime.GOOS == "darwin" {
-		platform = fmt.Sprintf("linux/%s", runtime.GOARCH)
-	}
+	platform := fmt.Sprintf("linux/%s", runtime.GOARCH)
 
 	return &Provider{
 		Provider: &cmtdocker.Provider{
