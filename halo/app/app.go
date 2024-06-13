@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	evmengkeeper "github.com/omni-network/omni/octane/evmengine/keeper"
+	etypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	"cosmossdk.io/depinject"
 	"cosmossdk.io/log"
@@ -73,6 +74,7 @@ func newApp(
 	engineCl ethclient.EngineClient,
 	voter atypes.Voter,
 	namer atypes.ChainVerNameFunc,
+	feeRecProvider etypes.FeeRecipientProvider,
 	baseAppOpts ...func(*baseapp.BaseApp),
 ) (*App, error) {
 	depCfg := depinject.Configs(
@@ -82,6 +84,7 @@ func newApp(
 			engineCl,
 			namer,
 			voter,
+			feeRecProvider,
 		),
 	)
 

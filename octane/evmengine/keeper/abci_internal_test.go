@@ -9,6 +9,7 @@ import (
 	"time"
 
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/tutil"
@@ -128,7 +129,8 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 				ap := mockAddressProvider{
 					address: common.BytesToAddress([]byte("test")),
 				}
-				k := NewKeeper(cdc, storeService, &tt.mockEngine, txConfig, ap)
+				frp := newRandomFeeRecipientProvider()
+				k := NewKeeper(cdc, storeService, &tt.mockEngine, txConfig, ap, frp)
 
 				_, err = k.PrepareProposal(withRandomErrs(t, ctx), tt.req)
 				if (err != nil) != tt.wantErr {
@@ -151,7 +153,8 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		ap := mockAddressProvider{
 			address: common.BytesToAddress([]byte("test")),
 		}
-		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap)
+		frp := newRandomFeeRecipientProvider()
+		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp)
 		keeper.SetVoteProvider(mockVEProvider{})
 		keeper.AddEventProcessor(mockLogProvider{})
 
@@ -166,12 +169,12 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		appHash2 := tutil.RandomHash()
 
 		// build next two blocks and get the PayloadID of the second
-		mockEngine.pushPayload(t, ctx, ap.LocalAddress(), latestBlock.Hash(), ts, appHash1)
+		mockEngine.pushPayload(t, ctx, frp.LocalFeeRecipient(), latestBlock.Hash(), ts, appHash1)
 
 		nextBlock, blockPayload := mockEngine.nextBlock(t, latestHeight+1, uint64(ts.Unix()), latestBlock.Hash(), ap.LocalAddress(), &appHash2)
 		_, err = mockEngine.mock.NewPayloadV3(ctx, blockPayload, nil, &appHash2)
 		require.NoError(t, err)
-		payloadID := mockEngine.pushPayload(t, ctx, ap.LocalAddress(), nextBlock.Hash(), ts, appHash2)
+		payloadID := mockEngine.pushPayload(t, ctx, frp.LocalFeeRecipient(), nextBlock.Hash(), ts, appHash2)
 
 		req := &abci.RequestPrepareProposal{
 			Txs:    nil,
@@ -194,7 +197,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 
 		for _, msg := range tx.GetMsgs() {
 			if _, ok := msg.(*etypes.MsgExecutionPayload); ok {
-				assertExecutablePayload(t, msg, ts.Unix(), nextBlock.Hash(), ap, uint64(req.Height))
+				assertExecutablePayload(t, msg, ts.Unix(), nextBlock.Hash(), frp, uint64(req.Height))
 			}
 		}
 	})
@@ -212,7 +215,8 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		ap := mockAddressProvider{
 			address: common.BytesToAddress([]byte("test")),
 		}
-		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap)
+		frp := newRandomFeeRecipientProvider()
+		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp)
 		keeper.AddEventProcessor(mockLogProvider{})
 		keeper.SetVoteProvider(mockVEProvider{})
 
@@ -227,12 +231,12 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		appHash2 := tutil.RandomHash()
 
 		// build next two blocks and get the PayloadID of the second
-		mockEngine.pushPayload(t, ctx, ap.LocalAddress(), latestBlock.Hash(), ts, appHash1)
+		mockEngine.pushPayload(t, ctx, frp.LocalFeeRecipient(), latestBlock.Hash(), ts, appHash1)
 
 		nextBlock, blockPayload := mockEngine.nextBlock(t, latestHeight+1, uint64(ts.Unix()), latestBlock.Hash(), ap.LocalAddress(), &appHash2)
 		_, err = mockEngine.NewPayloadV3(ctx, blockPayload, nil, &appHash2)
 		require.NoError(t, err)
-		mockEngine.pushPayload(t, ctx, ap.LocalAddress(), nextBlock.Hash(), ts, appHash2)
+		mockEngine.pushPayload(t, ctx, frp.LocalFeeRecipient(), nextBlock.Hash(), ts, appHash2)
 
 		keeper.mutablePayload.UpdatedAt = time.Now()
 
@@ -254,7 +258,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		// assert that the message is an executable payload
 		for _, msg := range tx.GetMsgs() {
 			if _, ok := msg.(*etypes.MsgExecutionPayload); ok {
-				assertExecutablePayload(t, msg, req.Time.Unix()+1, nextBlock.Hash(), ap, uint64(req.Height))
+				assertExecutablePayload(t, msg, req.Time.Unix()+1, nextBlock.Hash(), frp, uint64(req.Height))
 			}
 			if msgDelegate, ok := msg.(*stypes.MsgDelegate); ok {
 				require.Equal(t, msgDelegate.Amount, sdk.NewInt64Coin("stake", 100))
@@ -292,7 +296,8 @@ func TestOptimistic(t *testing.T) {
 	ap := mockAddressProvider{
 		address: val1,
 	}
-	keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap)
+	frp := newRandomFeeRecipientProvider()
+	keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp)
 	keeper.SetVoteProvider(mockVEProvider{})
 	keeper.AddEventProcessor(mockLogProvider{})
 	keeper.SetCometAPI(cmtAPI)
@@ -323,12 +328,19 @@ func TestOptimistic(t *testing.T) {
 	require.EqualValues(t, 1, payload.Number)
 	require.EqualValues(t, req.Time.Unix(), payload.Timestamp)
 	require.EqualValues(t, b.Hash(), payload.ParentHash)
-	require.EqualValues(t, ap.LocalAddress(), payload.FeeRecipient)
+	require.EqualValues(t, frp.LocalFeeRecipient(), payload.FeeRecipient)
 	require.Empty(t, payload.Withdrawals)
 }
 
 // assertExecutablePayload asserts that the given message is an executable payload with the expected values.
-func assertExecutablePayload(t *testing.T, msg sdk.Msg, ts int64, blockHash common.Hash, ap mockAddressProvider, height uint64) {
+func assertExecutablePayload(
+	t *testing.T,
+	msg sdk.Msg,
+	ts int64,
+	blockHash common.Hash,
+	frp etypes.FeeRecipientProvider,
+	height uint64,
+) {
 	t.Helper()
 	executionPayload, ok := msg.(*etypes.MsgExecutionPayload)
 	require.True(t, ok)
@@ -339,7 +351,7 @@ func assertExecutablePayload(t *testing.T, msg sdk.Msg, ts int64, blockHash comm
 	require.NoError(t, err)
 	require.Equal(t, int64(payload.Timestamp), ts)
 	require.Equal(t, payload.Random, blockHash)
-	require.Equal(t, payload.FeeRecipient, ap.LocalAddress())
+	require.Equal(t, payload.FeeRecipient, frp.LocalFeeRecipient())
 	require.Empty(t, payload.Withdrawals)
 	require.Equal(t, payload.Number, height)
 
@@ -598,4 +610,24 @@ func (m *mockEngineAPI) nextBlock(t *testing.T, height uint64, timestamp uint64,
 func withRandomErrs(t *testing.T, ctx sdk.Context) sdk.Context {
 	t.Helper()
 	return ctx.WithContext(ethclient.WithRandomErr(ctx, t))
+}
+
+var _ etypes.FeeRecipientProvider = testFeeRecipientProvider{}
+
+type testFeeRecipientProvider common.Address
+
+func newRandomFeeRecipientProvider() testFeeRecipientProvider {
+	return testFeeRecipientProvider(common.BytesToAddress(tutil.RandomBytes(20)))
+}
+
+func (t testFeeRecipientProvider) LocalFeeRecipient() common.Address {
+	return common.Address(t)
+}
+
+func (t testFeeRecipientProvider) VerifyFeeRecipient(address common.Address) error {
+	if address != common.Address(t) {
+		return errors.New("fee recipient not the random test address", "addr", address.Hex())
+	}
+
+	return nil
 }

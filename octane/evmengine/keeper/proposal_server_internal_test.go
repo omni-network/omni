@@ -35,7 +35,8 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 	ctx, storeService := setupCtxStore(t, &cmtproto.Header{AppHash: tutil.RandomHash().Bytes()})
 	ctx = ctx.WithExecMode(sdk.ExecModeFinalize)
 
-	keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, nil)
+	frp := newRandomFeeRecipientProvider()
+	keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, nil, frp)
 	propSrv := NewProposalServer(keeper)
 
 	var payloadData []byte
@@ -52,7 +53,14 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
 		appHash := common.BytesToHash(sdkCtx.BlockHeader().AppHash)
 
-		b, execPayload := mockEngine.nextBlock(t, latestHeight+1, uint64(time.Now().Unix()), latestBlock.Hash(), common.Address{}, &appHash)
+		b, execPayload := mockEngine.nextBlock(
+			t,
+			latestHeight+1,
+			uint64(time.Now().Unix()),
+			latestBlock.Hash(),
+			frp.LocalFeeRecipient(),
+			&appHash,
+		)
 		block = b
 
 		payloadID, err = ethclient.MockPayloadID(execPayload, &appHash)
@@ -75,7 +83,7 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, latestHeight+1, gotPayload.ExecutionPayload.Number)
 		require.Equal(t, block.Hash(), gotPayload.ExecutionPayload.BlockHash)
-		require.Equal(t, common.Address{}, gotPayload.ExecutionPayload.FeeRecipient)
+		require.Equal(t, frp.LocalFeeRecipient(), gotPayload.ExecutionPayload.FeeRecipient)
 		require.Empty(t, gotPayload.ExecutionPayload.Withdrawals)
 	}
 
