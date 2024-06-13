@@ -6,12 +6,12 @@ import (
 	"time"
 
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
-	etypes "github.com/omni-network/omni/halo/evmengine/types"
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/netconf"
+	etypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	"github.com/cometbft/cometbft/crypto"
 

@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/tutil"
+	"github.com/omni-network/omni/octane/evmengine/types"
 
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 

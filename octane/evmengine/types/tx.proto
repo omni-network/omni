@@ -1,10 +1,10 @@
 syntax = "proto3";
 
-package halo.evmengine.types;
+package octane.evmengine.types;
 
 import "cosmos/msg/v1/msg.proto";
 
-option go_package = "halo/evmengine/types";
+option go_package = "octane/evmengine/types";
 
 // MsgService defines all the gRPC methods exposed by the evmengine module.
 service MsgService {

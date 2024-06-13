@@ -28,19 +28,19 @@ if [ ! -f go.mod ]; then
 fi
 
 echo "Generating pulsar protos for cosmos module config"
-for DIR in halo/*/module/
+for DIR in halo/*/module/ octane/*/module/
 do
   bufgen pulsar "${DIR}"
 done
 
 echo "Generating gogo protos for cosmos module types"
-for DIR in halo/*/types/
+for DIR in halo/*/types/ octane/*/types/
 do
   bufgen gogo "${DIR}"
 done
 
 echo "Generating orm protos for cosmos keeper orm"
-for DIR in halo/*/keeper/
+for DIR in halo/*/keeper/ octane/*/keeper/
 do
   bufgen orm "${DIR}"
 done

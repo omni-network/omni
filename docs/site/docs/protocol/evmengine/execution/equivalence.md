@@ -18,7 +18,7 @@ Developers can migrate their dApps to Omni without worrying about the compatibil
 
 Omni's commitment to maintaining an unmodified EVM client extends to full support for all EVM opcodes and the inclusion of the latest EVM upgrades. This dedication ensures that Omni remains in lockstep with Ethereum's evolution, providing developers with a stable and feature-rich environment for their applications.
 
-Below, the [`pushPayload`](https://github.com/omni-network/omni/blob/0f09c724ac941afc45c5f7eb1ed1a773f51dac81/halo/evmengine/keeper/msg_server.go#L116) function showcases the execution of EVM transactions, which implement strictly the same behavior of Ethereum and ensures a frictionless experience for developers.
+Below, the [`pushPayload`](https://github.com/omni-network/omni/blob/0f09c724ac941afc45c5f7eb1ed1a773f51dac81/octane/evmengine/keeper/msg_server.go#L116) function showcases the execution of EVM transactions, which implement strictly the same behavior of Ethereum and ensures a frictionless experience for developers.
 
 ```go
 // pushPayload creates a new payload from the given message and pushes it to the execution client.
