@@ -101,12 +101,13 @@ func init() {
 type ModuleInputs struct {
 	depinject.In
 
-	StoreService store.KVStoreService
-	Cdc          codec.Codec
-	Config       *Module
-	TXConfig     client.TxConfig
-	EngineCl     ethclient.EngineClient
-	AddrProvider types.AddressProvider
+	StoreService   store.KVStoreService
+	Cdc            codec.Codec
+	Config         *Module
+	TXConfig       client.TxConfig
+	EngineCl       ethclient.EngineClient
+	AddrProvider   types.AddressProvider
+	FeeRecProvider types.FeeRecipientProvider
 }
 
 type ModuleOutputs struct {
@@ -124,6 +125,7 @@ func ProvideModule(in ModuleInputs) ModuleOutputs {
 		in.EngineCl,
 		in.TXConfig,
 		in.AddrProvider,
+		in.FeeRecProvider,
 	)
 	m := NewAppModule(
 		in.Cdc,

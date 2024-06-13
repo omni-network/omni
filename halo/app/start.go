@@ -13,6 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tracer"
+	etypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	cmtcfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
@@ -21,6 +22,8 @@ import (
 	"github.com/cometbft/cometbft/proxy"
 	rpclocal "github.com/cometbft/cometbft/rpc/client/local"
 	cmttypes "github.com/cometbft/cometbft/types"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"cosmossdk.io/store"
 	pruningtypes "cosmossdk.io/store/pruning/types"
@@ -127,6 +130,7 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 		engineCl,
 		voter,
 		netconf.ChainVersionNamer(cfg.Network),
+		burnEVMFees{},
 		baseAppOpts...,
 	)
 	if err != nil {
@@ -311,6 +315,28 @@ func enableSDKTelemetry() error {
 	})
 	if err != nil {
 		return errors.Wrap(err, "enable cosmos-sdk telemetry")
+	}
+
+	return nil
+}
+
+var (
+	_ etypes.FeeRecipientProvider = &burnEVMFees{}
+
+	// burnAddress is used as the EVM fee recipient resulting in burned execution fees.
+	burnAddress = common.HexToAddress("0x000000000000000000000000000000000000dEaD")
+)
+
+// burnEVMFees is a fee recipient provider that burns all execution fees.
+type burnEVMFees struct{}
+
+func (burnEVMFees) LocalFeeRecipient() common.Address {
+	return burnAddress
+}
+
+func (burnEVMFees) VerifyFeeRecipient(address common.Address) error {
+	if address != burnAddress {
+		return errors.New("fee recipient not the burn address", "addr", address.Hex())
 	}
 
 	return nil

@@ -28,6 +28,7 @@ type Keeper struct {
 	eventProcs      []types.EvmEventProcessor
 	cmtAPI          comet.API
 	addrProvider    types.AddressProvider
+	feeRecProvider  types.FeeRecipientProvider
 	buildDelay      time.Duration
 	buildOptimistic bool
 
@@ -48,13 +49,15 @@ func NewKeeper(
 	engineCl ethclient.EngineClient,
 	txConfig client.TxConfig,
 	addrProvider types.AddressProvider,
+	feeRecProvider types.FeeRecipientProvider,
 ) *Keeper {
 	return &Keeper{
-		cdc:          cdc,
-		storeService: storeService,
-		engineCl:     engineCl,
-		txConfig:     txConfig,
-		addrProvider: addrProvider,
+		cdc:            cdc,
+		storeService:   storeService,
+		engineCl:       engineCl,
+		txConfig:       txConfig,
+		addrProvider:   addrProvider,
+		feeRecProvider: feeRecProvider,
 	}
 }
 

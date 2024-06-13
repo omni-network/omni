@@ -46,6 +46,10 @@ func (s proposalServer) ExecutionPayload(ctx context.Context, msg *types.MsgExec
 		return nil, err
 	}
 
+	if err := s.feeRecProvider.VerifyFeeRecipient(payload.FeeRecipient); err != nil {
+		return nil, errors.Wrap(err, "verify proposed fee recipient")
+	}
+
 	// Collect local view of the evm logs from the previous payload.
 	evmEvents, err := s.evmEvents(ctx, payload.ParentHash)
 	if err != nil {
