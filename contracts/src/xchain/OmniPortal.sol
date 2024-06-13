@@ -13,9 +13,6 @@ import { IOmniPortalAdmin } from "../interfaces/IOmniPortalAdmin.sol";
 import { XBlockMerkleProof } from "../libraries/XBlockMerkleProof.sol";
 import { XTypes } from "../libraries/XTypes.sol";
 import { Quorum } from "../libraries/Quorum.sol";
-import { XRegistryNames } from "../libraries/XRegistryNames.sol";
-import { XRegistryBase } from "./XRegistryBase.sol";
-import { Predeploys } from "../libraries/Predeploys.sol";
 import { ConfLevel } from "../libraries/ConfLevel.sol";
 
 import { OmniPortalConstants } from "./OmniPortalConstants.sol";
@@ -44,30 +41,31 @@ contract OmniPortal is
      * @notice Initialize the OmniPortal contract
      * @param owner_                    The owner of the contract
      * @param feeOracle_                Address of the fee oracle contract
-     * @param xregistry_                Address of the xregistry replica contract
      * @param omniChainId_              Chain ID of Omni's EVM execution chain
      * @param omniCChainID_             Virtual chain ID used in xmsgs from Omni's consensus chain
      * @param xmsgMaxGasLimit_          Maximum gas limit for xmsg
      * @param xmsgMinGasLimit_          Minimum gas limit for xmsg
      * @param xreceiptMaxErrorBytes_    Maximum error bytes for xreceipt)
+     * @param cChainXMgsOffset          Offset for xmsgs from the consensus chain
+     * @param cChainXBlocksOffset       Offset for xblocks from the consensus chain
      * @param valSetId                  Initial validator set id
      * @param validators                Initial validator set
      */
     function initialize(
         address owner_,
         address feeOracle_,
-        address xregistry_,
         uint64 omniChainId_,
         uint64 omniCChainID_,
         uint64 xmsgMaxGasLimit_,
         uint64 xmsgMinGasLimit_,
         uint16 xreceiptMaxErrorBytes_,
+        uint64 cChainXMgsOffset,
+        uint64 cChainXBlocksOffset,
         uint64 valSetId,
         XTypes.Validator[] calldata validators
     ) public initializer {
         _transferOwnership(owner_);
         _setFeeOracle(feeOracle_);
-        _setXRegistry(xregistry_);
         _setXMsgMaxGasLimit(xmsgMaxGasLimit_);
         _setXMsgMinGasLimit(xmsgMinGasLimit_);
         _setXReceiptMaxErrorBytes(xreceiptMaxErrorBytes_);
@@ -78,11 +76,8 @@ contract OmniPortal is
 
         // omni consensus chain uses Finalised+Broadcast shard
         uint64 omniCShard = ConfLevel.toBroadcastShard(ConfLevel.Finalized);
-
-        // cchain xmsg & xblock offsets are equal to valSetId
-        // TODO: this will change when cchain decouples valset from xblocks
-        inXMsgOffset[omniCChainID_][omniCShard] = valSetId;
-        inXBlockOffset[omniCChainID_][omniCShard] = valSetId;
+        inXMsgOffset[omniCChainID_][omniCShard] = cChainXMgsOffset;
+        inXBlockOffset[omniCChainID_][omniCShard] = cChainXBlocksOffset;
     }
 
     function chainId() public view returns (uint64) {
@@ -106,16 +101,18 @@ contract OmniPortal is
         payable
         whenNotPaused
     {
-        require(destChainId != chainId(), "OmniPortal: no same-chain xcall");
-        require(destChainId != _BROADCAST_CHAIN_ID, "OmniPortal: no broadcast xcall");
-        require(isSupportedChain(destChainId), "OmniPortal: unsupported chain");
+        // TODO: uncomment when cchain setNetwork xmsgs are enabled
+        // require(isSupportedDest[destChainId], "OmniPortal: unsupported dest");
+
         require(to != _VIRTUAL_PORTAL_ADDRESS, "OmniPortal: no portal xcall");
         require(gasLimit <= xmsgMaxGasLimit, "OmniPortal: gasLimit too high");
         require(gasLimit >= xmsgMinGasLimit, "OmniPortal: gasLimit too low");
 
         // conf level will always be first byte of shardId. for now, shardId is just conf level
         uint64 shardId = uint64(conf);
-        require(isSupportedShard[shardId], "OmniPortal: unsupported shard");
+
+        // TODO: uncomment when cchain setNetwork xmsgs are enabled
+        // require(isSupportedShard[shardId], "OmniPortal: unsupported shard");
 
         uint256 fee = feeFor(destChainId, data, gasLimit);
         require(msg.value >= fee, "OmniPortal: insufficient fee");
@@ -134,14 +131,6 @@ contract OmniPortal is
      */
     function feeFor(uint64 destChainId, bytes calldata data, uint64 gasLimit) public view returns (uint256) {
         return IFeeOracle(feeOracle).feeFor(destChainId, data, gasLimit);
-    }
-
-    /**
-     * @notice Returns true if `destChainId` is supported destination chain.
-     */
-    function isSupportedChain(uint64 destChainId) public view returns (bool) {
-        return destChainId != chainId()
-            && XRegistryBase(xregistry).has(destChainId, XRegistryNames.OmniPortal, Predeploys.PortalRegistry);
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -344,7 +333,7 @@ contract OmniPortal is
      * @param valSetId      Validator set id
      * @param validators    Validator set
      */
-    function _addValidatorSet(uint64 valSetId, XTypes.Validator[] calldata validators) private {
+    function _addValidatorSet(uint64 valSetId, XTypes.Validator[] calldata validators) internal {
         uint256 numVals = validators.length;
         require(numVals > 0, "OmniPortal: no validators");
         require(valSetTotalPower[valSetId] == 0, "OmniPortal: duplicate val set");
@@ -372,21 +361,62 @@ contract OmniPortal is
     }
 
     /**
-     * @notice Resets a portals supported shards.
-     * @dev Only callable from xregistry
+     * @notice Set the network of supported chains & shards
+     * @dev Only callable via xcall from Omni's consensus chain
+     * @param network_  The new network
      */
-    function setShards(uint64[] calldata shards) external {
-        require(msg.sender == xregistry, "OmniPortal: only xregistry");
+    function setNetwork(XTypes.Chain[] calldata network_) external {
+        require(msg.sender == address(this), "OmniPortal: only self");
+        require(_xmsg.sourceChainId == omniCChainID, "OmniPortal: only cchain");
+        require(_xmsg.sender == _CCHAIN_SENDER, "OmniPortal: only cchain sender");
+        _setNetwork(network_);
+    }
 
-        for (uint256 i = 0; i < shards.length; i++) {
-            isSupportedShard[shards[i]] = false;
-        }
+    /**
+     * @notice Set the network of supported chains & shards
+     * @param network_  The new network
+     */
+    function _setNetwork(XTypes.Chain[] calldata network_) internal {
+        _clearNetwork();
 
-        delete _shards;
-        for (uint256 i = 0; i < shards.length; i++) {
-            _shards.push(shards[i]);
-            isSupportedShard[shards[i]] = true;
+        XTypes.Chain calldata c;
+        for (uint256 i = 0; i < network_.length; i++) {
+            c = network_[i];
+            network.push(c);
+
+            // if not this chain, mark as supported dest
+            if (c.chainId != chainId()) {
+                isSupportedDest[c.chainId] = true;
+                continue;
+            }
+
+            // if this chain, mark shards as supported
+            for (uint256 j = 0; j < c.shards.length; j++) {
+                isSupportedShard[c.shards[j]] = true;
+            }
         }
+    }
+
+    /**
+     * @notice Clear the network of supported chains & shards
+     */
+    function _clearNetwork() private {
+        XTypes.Chain storage c;
+        for (uint256 i = 0; i < network.length; i++) {
+            c = network[i];
+
+            // if not this chain, mark as unsupported dest
+            if (c.chainId != chainId()) {
+                isSupportedDest[c.chainId] = false;
+                continue;
+            }
+
+            // if this chain, mark shards as unsupported
+            for (uint256 j = 0; j < c.shards.length; j++) {
+                isSupportedShard[c.shards[j]] = false;
+            }
+        }
+        delete network;
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -398,13 +428,6 @@ contract OmniPortal is
      */
     function setFeeOracle(address feeOracle_) external onlyOwner {
         _setFeeOracle(feeOracle_);
-    }
-
-    /**
-     * @notice Set the XRegistry replica contract
-     */
-    function setXRegistry(address xregistry_) external onlyOwner {
-        _setXRegistry(xregistry_);
     }
 
     /**
@@ -502,13 +525,5 @@ contract OmniPortal is
         feeOracle = feeOracle_;
 
         emit FeeOracleChanged(oldFeeOracle, feeOracle);
-    }
-
-    /**
-     * @notice Set the xregistry replica contract address.
-     */
-    function _setXRegistry(address xregistry_) private {
-        require(xregistry_ != address(0), "OmniPortal: no zero xregistry");
-        xregistry = xregistry_;
     }
 }

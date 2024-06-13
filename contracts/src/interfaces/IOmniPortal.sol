@@ -107,6 +107,16 @@ interface IOmniPortal {
     function isXCall() external view returns (bool);
 
     /**
+     * @notice Returns the shard ID is supported by this portal
+     */
+    function isSupportedShard(uint64 shardId) external view returns (bool);
+
+    /**
+     * @notice Returns the destination chain ID is supported by this portal
+     */
+    function isSupportedDest(uint64 destChainId) external view returns (bool);
+
+    /**
      * @notice Calculate the fee for calling a contract on another chain
      *         Fees denominated in wei.
      * @param destChainId   Destination chain ID

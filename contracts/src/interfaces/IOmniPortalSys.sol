@@ -23,9 +23,9 @@ interface IOmniPortalSys {
     function addValidatorSet(uint64 valSetId, XTypes.Validator[] calldata validators) external;
 
     /**
-     * @notice Initialize a source chain's in stream validator set
-     * @dev Only callable from xregistry
-     * @param shards        Shards supported by the source chain
+     * @notice Set the network of supported chains & shards
+     * @dev Only callable via xcall from Omni's consensus chain
+     * @param network_  The new network
      */
-    function setShards(uint64[] calldata shards) external;
+    function setNetwork(XTypes.Chain[] calldata network_) external;
 }

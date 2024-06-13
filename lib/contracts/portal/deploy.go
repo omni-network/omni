@@ -5,7 +5,6 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
-	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/create3"
 	"github.com/omni-network/omni/lib/errors"
@@ -27,6 +26,8 @@ type DeploymentConfig struct {
 	XMsgMinGasLimit       uint64
 	XMsgMaxGasLimit       uint64
 	XReceiptMaxErrorBytes uint16
+	CChainXMsgOffset      uint64
+	CChainXBlockOffset    uint64
 	ExpectedAddr          common.Address
 }
 
@@ -34,6 +35,18 @@ const (
 	XMsgMinGasLimit       = 21_000
 	XMsgMaxGasLimit       = 5_000_000
 	XReceiptMaxErrorBytes = uint16(256)
+
+	// We use default cchain xmsg and xblock offsets of 1. This xmsg / block
+	// contains the genesis validator set. This is set in the portal contract
+	// on initialization, and therefore does not need to be relayed.
+	//
+	// Setting xmsg and xblock offsets to 1 works well for portals that are
+	// deployed at "network genesis" - the start of an omni network. For portals
+	// added to an existing network, we should use higher offsets on initialization,
+	// so that the entire history of cchain xmsgs do not need to be relayed.
+
+	GenesisCChainXMsgOffset   = uint64(1)
+	GenesisCChainXBlockOffset = uint64(1)
 )
 
 func isDeadOrEmpty(addr common.Address) bool {
@@ -71,6 +84,12 @@ func (cfg DeploymentConfig) Validate() error {
 	if cfg.OmniCChainID == 0 {
 		return errors.New("omni cons chain ID is zero")
 	}
+	if cfg.CChainXMsgOffset == 0 {
+		return errors.New("cchain xmsg offset is zero")
+	}
+	if cfg.CChainXBlockOffset == 0 {
+		return errors.New("cchain xblock offset is zero")
+	}
 	if (cfg.ExpectedAddr == common.Address{}) {
 		return errors.New("expected address is zero")
 	}
@@ -78,7 +97,7 @@ func (cfg DeploymentConfig) Validate() error {
 	return nil
 }
 
-func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) {
+func getDeployCfg(network netconf.ID) (DeploymentConfig, error) {
 	if network == netconf.Devnet {
 		return devnetCfg(), nil
 	}
@@ -95,7 +114,7 @@ func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) 
 		return stagingCfg(), nil
 	}
 
-	return DeploymentConfig{}, errors.New("unsupported chain for network", "chain_id", chainID, "network", network)
+	return DeploymentConfig{}, errors.New("unsupported network", "network", network)
 }
 
 func mainnetCfg() DeploymentConfig {
@@ -119,6 +138,8 @@ func testnetCfg() DeploymentConfig {
 		OmniCChainID:          netconf.Omega.Static().OmniConsensusChainIDUint64(),
 		XMsgMinGasLimit:       XMsgMinGasLimit,
 		XMsgMaxGasLimit:       XMsgMaxGasLimit,
+		CChainXMsgOffset:      GenesisCChainXMsgOffset,
+		CChainXBlockOffset:    GenesisCChainXBlockOffset,
 		XReceiptMaxErrorBytes: XReceiptMaxErrorBytes,
 		ExpectedAddr:          contracts.TestnetPortal(),
 	}
@@ -135,6 +156,8 @@ func stagingCfg() DeploymentConfig {
 		OmniCChainID:          netconf.Staging.Static().OmniConsensusChainIDUint64(),
 		XMsgMinGasLimit:       XMsgMinGasLimit,
 		XMsgMaxGasLimit:       XMsgMaxGasLimit,
+		CChainXMsgOffset:      GenesisCChainXMsgOffset,
+		CChainXBlockOffset:    GenesisCChainXBlockOffset,
 		XReceiptMaxErrorBytes: XReceiptMaxErrorBytes,
 		ExpectedAddr:          contracts.StagingPortal(),
 	}
@@ -151,6 +174,8 @@ func devnetCfg() DeploymentConfig {
 		OmniCChainID:          netconf.Devnet.Static().OmniConsensusChainIDUint64(),
 		XMsgMinGasLimit:       XMsgMinGasLimit,
 		XMsgMaxGasLimit:       XMsgMaxGasLimit,
+		CChainXMsgOffset:      GenesisCChainXMsgOffset,
+		CChainXBlockOffset:    GenesisCChainXBlockOffset,
 		XReceiptMaxErrorBytes: XReceiptMaxErrorBytes,
 		ExpectedAddr:          contracts.DevnetPortal(),
 	}
@@ -195,20 +220,15 @@ func IsDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Bac
 // It only allows deployments to explicitly supported chains.
 func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, feeOracle common.Address, valSetID uint64, validators []bindings.Validator,
 ) (common.Address, *ethtypes.Receipt, error) {
-	chainID, err := backend.ChainID(ctx)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "chain id")
-	}
-
-	cfg, err := getDeployCfg(chainID.Uint64(), network)
+	cfg, err := getDeployCfg(network)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "get deployment config")
 	}
 
-	return deploy(ctx, cfg, chainID.Uint64(), backend, feeOracle, valSetID, validators)
+	return deploy(ctx, cfg, backend, feeOracle, valSetID, validators)
 }
 
-func deploy(ctx context.Context, cfg DeploymentConfig, chainID uint64, backend *ethbackend.Backend, feeOracle common.Address, valSetID uint64, validators []bindings.Validator,
+func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backend, feeOracle common.Address, valSetID uint64, validators []bindings.Validator,
 ) (common.Address, *ethtypes.Receipt, error) {
 	if err := cfg.Validate(); err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "validate")
@@ -233,24 +253,6 @@ func deploy(ctx context.Context, cfg DeploymentConfig, chainID uint64, backend *
 		return common.Address{}, nil, errors.New("unexpected address", "expected", cfg.ExpectedAddr, "actual", addr)
 	}
 
-	var xregistry common.Address
-	if chainID == cfg.OmniChainID {
-		// On Omni, the main XRegistry is the "replica"
-		xregistry = common.HexToAddress(predeploys.XRegistry)
-	} else {
-		// On other chains, deploy a new XRegistry replica
-		addr, tx, _, err := bindings.DeployXRegistryReplica(txOpts, backend, addr)
-		if err != nil {
-			return common.Address{}, nil, errors.Wrap(err, "new xregistry replica")
-		}
-		xregistry = addr
-
-		_, err = backend.WaitMined(ctx, tx)
-		if err != nil {
-			return common.Address{}, nil, errors.Wrap(err, "wait mined xregistry replica")
-		}
-	}
-
 	impl, tx, _, err := bindings.DeployOmniPortal(txOpts, backend)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "deploy impl")
@@ -261,7 +263,7 @@ func deploy(ctx context.Context, cfg DeploymentConfig, chainID uint64, backend *
 		return common.Address{}, nil, errors.Wrap(err, "wait mined portal")
 	}
 
-	initCode, err := packInitCode(cfg, feeOracle, xregistry, impl, valSetID, validators)
+	initCode, err := packInitCode(cfg, feeOracle, impl, valSetID, validators)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "pack init code")
 	}
@@ -279,7 +281,7 @@ func deploy(ctx context.Context, cfg DeploymentConfig, chainID uint64, backend *
 	return addr, receipt, nil
 }
 
-func packInitCode(cfg DeploymentConfig, feeOracle common.Address, xregistry common.Address, impl common.Address, valSetID uint64, validators []bindings.Validator,
+func packInitCode(cfg DeploymentConfig, feeOracle common.Address, impl common.Address, valSetID uint64, validators []bindings.Validator,
 ) ([]byte, error) {
 	portalAbi, err := bindings.OmniPortalMetaData.GetAbi()
 	if err != nil {
@@ -291,8 +293,10 @@ func packInitCode(cfg DeploymentConfig, feeOracle common.Address, xregistry comm
 		return nil, errors.Wrap(err, "get proxy abi")
 	}
 
-	initializer, err := portalAbi.Pack("initialize", cfg.Owner, feeOracle, xregistry, cfg.OmniChainID, cfg.OmniCChainID,
-		cfg.XMsgMaxGasLimit, cfg.XMsgMinGasLimit, cfg.XReceiptMaxErrorBytes, valSetID, validators)
+	initializer, err := portalAbi.Pack("initialize",
+		cfg.Owner, feeOracle, cfg.OmniChainID, cfg.OmniCChainID,
+		cfg.XMsgMaxGasLimit, cfg.XMsgMinGasLimit, cfg.XReceiptMaxErrorBytes,
+		cfg.CChainXMsgOffset, cfg.CChainXBlockOffset, valSetID, validators)
 	if err != nil {
 		return nil, errors.Wrap(err, "encode portal initializer")
 	}

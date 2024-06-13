@@ -95,4 +95,14 @@ library XTypes {
         address addr;
         uint64 power;
     }
+
+    /**
+     * @notice A chain in the "omni network" specified by its chain ID and supported shards.
+     * @custom:field chainId  Chain ID
+     * @custom:field shards   Supported shards
+     */
+    struct Chain {
+        uint64 chainId;
+        uint64[] shards;
+    }
 }

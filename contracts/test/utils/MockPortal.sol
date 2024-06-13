@@ -29,6 +29,8 @@ contract MockPortal is IOmniPortal, OmniPortalConstants {
     mapping(uint64 => mapping(uint64 => uint64)) public outXMsgOffset;
     mapping(uint64 => mapping(uint64 => uint64)) public inXMsgOffset;
     mapping(uint64 => mapping(uint64 => uint64)) public inXBlockOffset;
+    mapping(uint64 => bool) public isSupportedShard;
+    mapping(uint64 => bool) public isSupportedDest;
 
     XTypes.MsgShort internal _xmsg;
 
@@ -45,8 +47,8 @@ contract MockPortal is IOmniPortal, OmniPortalConstants {
     function xcall(uint64 destChainId, uint8 conf, address to, bytes calldata data, uint64 gasLimit) external payable {
         require(gasLimit <= xmsgMaxGasLimit, "OmniPortal: gasLimit too high");
         require(gasLimit >= xmsgMinGasLimit, "OmniPortal: gasLimit too low");
-        require(destChainId != chainId, "OmniPortal: no same-chain xcall");
-        require(destChainId != _BROADCAST_CHAIN_ID, "OmniPortal: no broadcast xcall");
+        require(destChainId != chainId, "OmniPortal: unsupported dest");
+        require(destChainId != _BROADCAST_CHAIN_ID, "OmniPortal: unsupported dest");
         require(to != _VIRTUAL_PORTAL_ADDRESS, "OmniPortal: no portal xcall");
 
         uint256 fee = feeFor(destChainId, data, gasLimit);

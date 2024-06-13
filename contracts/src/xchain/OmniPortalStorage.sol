@@ -46,14 +46,19 @@ abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
     address public feeOracle;
 
     /**
-     * @notice The address of the XRegistry replica contract on this chain
+     * @notice A list of supported chains & shards.
      */
-    address public xregistry;
+    XTypes.Chain[] public network;
 
     /**
-     * @notice Maps shard id to true, if the shard is supported.
+     * @notice Maps shard ID to true, if the shard is supported.
      */
     mapping(uint64 => bool) public isSupportedShard;
+
+    /**
+     * @notice Maps chain ID to true, if the chain is supported.
+     */
+    mapping(uint64 => bool) public isSupportedDest;
 
     /**
      * @notice Offset of the last outbound XMsg that was sent to destChainId in shardId
@@ -89,9 +94,4 @@ abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
      *      so that we can use the XMsg struct type in the interface.
      */
     XTypes.MsgShort internal _xmsg;
-
-    /**
-     * @notice List of supported shards.
-     */
-    uint64[] internal _shards;
 }

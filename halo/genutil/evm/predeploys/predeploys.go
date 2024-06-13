@@ -28,10 +28,9 @@ const (
 	ProxyAdmin = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
 	// Omni Predeploys.
-	XRegistry        = "0x121E240000000000000000000000000000000001"
-	PortalRegistry   = "0x121E240000000000000000000000000000000002"
+	PortalRegistry   = "0x121E240000000000000000000000000000000001"
+	OmniBridgeNative = "0x121E240000000000000000000000000000000002"
 	EthStakeInbox    = "0x121E240000000000000000000000000000000003"
-	OmniBridgeNative = "0x121E240000000000000000000000000000000004"
 
 	// Octane Predeploys.
 	Staking  = "0xcccccc0000000000000000000000000000000001"
@@ -49,7 +48,6 @@ var (
 
 	// Predeploy addresses.
 	proxyAdmin     = common.HexToAddress(ProxyAdmin)
-	xRegistry      = common.HexToAddress(XRegistry)
 	portalRegistry = common.HexToAddress(PortalRegistry)
 	staking        = common.HexToAddress(Staking)
 	slashing       = common.HexToAddress(Slashing)
@@ -58,7 +56,6 @@ var (
 	// Predeploy bytecodes.
 	proxyCode          = hexutil.MustDecode(bindings.TransparentUpgradeableProxyDeployedBytecode)
 	proxyAdminCode     = hexutil.MustDecode(bindings.ProxyAdminDeployedBytecode)
-	xRegistryCode      = hexutil.MustDecode(bindings.XRegistryDeployedBytecode)
 	portalRegistryCode = hexutil.MustDecode(bindings.PortalRegistryDeployedBytecode)
 	stakingCode        = hexutil.MustDecode(bindings.StakingDeployedBytecode)
 	slashingCode       = hexutil.MustDecode(bindings.SlashingDeployedBytecode)
@@ -75,10 +72,6 @@ func Alloc(admin common.Address) (types.GenesisAlloc, error) {
 
 	if err := setProxyAdmin(db, admin); err != nil {
 		return nil, errors.Wrap(err, "set proxy admin")
-	}
-
-	if err := setXRegistry(db, admin); err != nil {
-		return nil, errors.Wrap(err, "set xregistry")
 	}
 
 	if err := setPortalRegistry(db, admin); err != nil {
@@ -120,16 +113,6 @@ func setProxyAdmin(db *state.MemDB, owner common.Address) error {
 	db.SetCode(proxyAdmin, proxyAdminCode)
 
 	return setStrorage(db, proxyAdmin, bindings.ProxyAdminStorageLayout, storage)
-}
-
-// setXRegistry sets the XRegistry predeploy.
-func setXRegistry(db *state.MemDB, owner common.Address) error {
-	storage := state.StorageValues{
-		"_initialized": uint8(1), // disable initializer
-		"_owner":       owner,
-	}
-
-	return setPredeploy(db, xRegistry, xRegistryCode, bindings.XRegistryStorageLayout, storage)
 }
 
 // setPortalRegistry sets the PortalRegistry predeploy.

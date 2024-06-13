@@ -24,4 +24,8 @@ contract PortalHarness is OmniPortal {
     function setLatestValSetId(uint64 valSetId) external {
         latestValSetId = valSetId;
     }
+
+    function setNetworkNoAuth(XTypes.Chain[] calldata network) external {
+        _setNetwork(network);
+    }
 }
