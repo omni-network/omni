@@ -15,7 +15,7 @@ func TestKeeper(t *testing.T) {
 	keeper, sdkCtx := keeper.SetupKeeper(t)
 
 	addValSet := func(id uint64) {
-		err := keeper.CreateMsg(sdkCtx, ptypes.MsgTypeValSet, id, xchain.BroadcastChainID, xchain.ShardBroadcast0)
+		_, err := keeper.EmitMsg(sdkCtx, ptypes.MsgTypeValSet, id, xchain.BroadcastChainID, xchain.ShardBroadcast0)
 		require.NoError(t, err)
 	}
 
@@ -24,7 +24,7 @@ func TestKeeper(t *testing.T) {
 		omniEVM       = uint64(999)
 	)
 	addWithDrawal := func(id uint64) {
-		err := keeper.CreateMsg(sdkCtx, typWithdrawal, id, omniEVM, xchain.ShardFinalized0)
+		_, err := keeper.EmitMsg(sdkCtx, typWithdrawal, id, omniEVM, xchain.ShardFinalized0)
 		require.NoError(t, err)
 	}
 

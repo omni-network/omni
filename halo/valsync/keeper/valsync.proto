@@ -17,9 +17,10 @@ message ValidatorSet {
   };
 
   uint64 id               = 1; // Auto-incremented ID
-  uint64 created_height   = 2; // Height this validator set was created at.
-  bool   attested         = 3; // Whether this validator set has been attested to.
-  uint64 activated_height = 4; // Height this validator set is activated in cometBFT (0 while not attested).
+  uint64 created_height   = 2; // Consensus chain height this validator set was created at.
+  uint64 block_offset     = 3; // Emit portal xblock offset/height/id that must be attested to.
+  bool   attested         = 4; // Whether this validator set has been attested to.
+  uint64 activated_height = 5; // Height this validator set is activated in cometBFT (0 while not attested).
 }
 
 // Validator represents a single validator in a validator set.

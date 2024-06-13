@@ -72,7 +72,9 @@ func NewAppModule(
 }
 
 // RegisterServices registers a gRPC query service to respond to the module-specific gRPC queries.
-func (AppModule) RegisterServices(module.Configurator) {}
+func (m AppModule) RegisterServices(cfg module.Configurator) {
+	types.RegisterQueryServer(cfg.QueryServer(), m.keeper)
+}
 
 // IsOnePerModuleType implements the depinject.OnePerModuleType interface.
 func (AppModule) IsOnePerModuleType() {}

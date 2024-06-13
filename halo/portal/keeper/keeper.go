@@ -42,9 +42,9 @@ func NewKeeper(storeService store.KVStoreService) (Keeper, error) {
 	}, nil
 }
 
-func (k Keeper) CreateMsg(ctx sdk.Context, typ types.MsgType, msgTypeID uint64, destChainID uint64, shardID xchain.ShardID) error {
+func (k Keeper) EmitMsg(ctx sdk.Context, typ types.MsgType, msgTypeID uint64, destChainID uint64, shardID xchain.ShardID) (uint64, error) {
 	if (destChainID == xchain.BroadcastChainID) != shardID.Broadcast() {
-		return errors.New("dest chain and shard broadcast flag mismatch [BUG]")
+		return 0, errors.New("dest chain and shard broadcast flag mismatch [BUG]")
 	}
 
 	height := uint64(ctx.BlockHeight())
@@ -54,17 +54,17 @@ func (k Keeper) CreateMsg(ctx sdk.Context, typ types.MsgType, msgTypeID uint64, 
 	if block, err := k.blockTable.GetByCreatedHeight(ctx, height); ormerrors.IsNotFound(err) {
 		blockID, err = k.blockTable.InsertReturningId(ctx, &Block{CreatedHeight: height})
 		if err != nil {
-			return errors.Wrap(err, "insert block")
+			return 0, errors.Wrap(err, "insert block")
 		}
 	} else if err != nil {
-		return errors.Wrap(err, "get block")
+		return 0, errors.Wrap(err, "get block")
 	} else {
 		blockID = block.GetId()
 	}
 
 	offset, err := k.incAndGetOffset(ctx, destChainID, shardID)
 	if err != nil {
-		return errors.Wrap(err, "increment offset")
+		return 0, errors.Wrap(err, "increment offset")
 	}
 
 	err = k.msgTable.Insert(ctx, &Msg{
@@ -76,10 +76,10 @@ func (k Keeper) CreateMsg(ctx sdk.Context, typ types.MsgType, msgTypeID uint64, 
 		StreamOffset: offset,
 	})
 	if err != nil {
-		return errors.Wrap(err, "insert message")
+		return 0, errors.Wrap(err, "insert message")
 	}
 
-	return nil
+	return blockID, nil
 }
 
 func (k Keeper) incAndGetOffset(ctx context.Context, destChainID uint64, shardID xchain.ShardID) (uint64, error) {

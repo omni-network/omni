@@ -104,8 +104,6 @@ func (k Keeper) addPortal(ctx context.Context, portal *Portal) error {
 		"height", sdk.UnwrapSDKContext(ctx).BlockHeight(),
 	)
 
-	// TODO(corver): Emit a portal event for the new network
-
 	return nil
 }
 
