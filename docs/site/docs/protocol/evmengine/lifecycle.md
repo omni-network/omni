@@ -21,7 +21,7 @@ The initial step in the EVM lifecycle involves the preparation of a proposal for
 
 In this stage, the `Keeper` module acts by handling unexpected transactions and leveraging the optimistic payload or creating a new one to ensure the smooth progression of the block preparation process.
 
-Below is a stubbed fragment from source for the function declaration of [the preparation of proposals by the `Keeper`](https://github.com/omni-network/omni/blob/1439d8a99f66a3bb3b7d113c63f8f073512c5377/octane/evmengine/keeper/abci.go#L24-L98):
+Below is a stubbed fragment from source for the function declaration of [the preparation of proposals by the `Keeper`](https://github.com/omni-network/omni/blob/1439d8a99f66a3bb3b7d113c63f8f073512c5377/halo/evmengine/keeper/abci.go#L24-L98):
 
 ```go
 // PrepareProposal function snippet
