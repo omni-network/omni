@@ -65,6 +65,6 @@ func makeProcessProposalHandler(app *App) sdk.ProcessProposalHandler {
 }
 
 func handleErr(ctx context.Context, err error) (*abci.ResponseProcessProposal, error) {
-	log.Error(ctx, "Rejecting failed process proposal", err)
+	log.Error(ctx, "Rejecting process proposal", err)
 	return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 }

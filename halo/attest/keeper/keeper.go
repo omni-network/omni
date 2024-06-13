@@ -525,7 +525,7 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 		if ok, err := k.portalRegistry.SupportedChain(ctx, vote.BlockHeader.ChainId); err != nil {
 			return nil, errors.Wrap(err, "supported chain")
 		} else if !ok {
-			// Skip votes for unsupported chains.
+			log.Warn(ctx, "Skipping own vote for unsupported chain", nil, "chain", k.namer(vote.BlockHeader.XChainVersion()))
 			continue
 		}
 
@@ -618,7 +618,7 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 		if ok, err := k.portalRegistry.SupportedChain(ctx, vote.BlockHeader.ChainId); err != nil {
 			return nil, errors.Wrap(err, "supported chain")
 		} else if !ok {
-			log.Warn(ctx, "Rejecting vote for unsupported chain", nil, "chain", vote.BlockHeader.ChainId)
+			log.Warn(ctx, "Rejecting vote for unsupported chain", nil, "chain", k.namer(vote.BlockHeader.XChainVersion()))
 			return respReject, nil
 		}
 
