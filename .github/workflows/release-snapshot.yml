@@ -9,19 +9,21 @@ jobs:
     runs-on: namespace-profile-default
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-go@v5
         with:
           go-version: stable
+
       - name: Login to Dockerhub container registry
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Build docker images
         uses: goreleaser/goreleaser-action@v5
         with:
           version: latest
-          # Use --snapshot to build current HEAD commit (this doesn't publish images)
           args: release --snapshot --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -40,7 +42,7 @@ jobs:
           context: "{{defaultContext}}:explorer/ui"
           push: true
           tags: omniops/explorer-ui:main,omniops/explorer-ui:${{ steps.git_ref.outputs.short_sha }}
-          platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
+          platforms: linux/amd64,linux/arm64 # dependency node:21-slim unsupported for darwin/amd64, darwin/arm64
 
       - name: Push Explorer Graphql to Dockerhub
         run: |
@@ -67,7 +69,7 @@ jobs:
           docker push omniops/monitor:${GITHUB_SHA::7}
           docker push omniops/monitor:main
 
-      - name: Push Monitor to Dockerhub
+      - name: Push Anvilproxy to Dockerhub
         run: |
           docker push omniops/anvilproxy:${GITHUB_SHA::7}
           docker push omniops/anvilproxy:main

@@ -45,6 +45,7 @@ type Provider struct {
 	testnet      types.Testnet
 	omniTag      string
 	graphQLURL   string
+	platform     string // for Docker images, based on the host
 }
 
 func (*Provider) Clean(ctx context.Context) error {
@@ -62,6 +63,11 @@ func (*Provider) Clean(ctx context.Context) error {
 
 // NewProvider returns a new Provider.
 func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag, graphQLURL string) *Provider {
+	platform := fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
+	if runtime.GOOS == "darwin" {
+		platform = fmt.Sprintf("linux/%s", runtime.GOARCH)
+	}
+
 	return &Provider{
 		Provider: &cmtdocker.Provider{
 			ProviderData: infra.ProviderData{
@@ -72,6 +78,7 @@ func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag, g
 		testnet:    testnet,
 		omniTag:    imgTag,
 		graphQLURL: graphQLURL,
+		platform:   platform,
 	}
 }
 
@@ -93,6 +100,7 @@ func (p *Provider) Setup() error {
 		ExplorerDB:  p.testnet.Explorer && p.testnet.Network.IsEphemeral(),
 		OmniTag:     p.omniTag,
 		GraphQLURL:  p.graphQLURL,
+		Platform:    p.platform,
 	}
 
 	bz, err := GenerateComposeFile(def)
@@ -185,6 +193,7 @@ type ComposeDef struct {
 	Explorer   bool
 
 	GraphQLURL string
+	Platform   string // for Docker images, based on the host
 }
 
 func (ComposeDef) GethTag() string {

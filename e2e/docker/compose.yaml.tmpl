@@ -38,7 +38,7 @@ services:
     labels:
       e2e: true
     container_name: {{ .Chain.Name }}
-    platform: linux/amd64
+    platform: {{ $.Platform }}
     image: omniops/anvilproxy:{{or $.OmniTag "main"}}
     environment:
       - ANVILPROXY_CHAIN_ID={{ .Chain.ChainID }}
@@ -167,6 +167,7 @@ services:
     labels:
       e2e: true
     container_name: explorer_ui
+    platform: {{ $.Platform }}
     image: omniops/explorer-ui:{{or .OmniTag "main"}}
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     environment:
@@ -186,7 +187,7 @@ services:
       e2e: true
     image: postgres:14-alpine
     container_name: explorer_db
-    platform: linux/amd64
+    platform: {{ $.Platform }}
     environment:
       POSTGRES_DB: omni_db
       POSTGRES_USER: omni
