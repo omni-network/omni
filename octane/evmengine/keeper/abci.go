@@ -8,10 +8,10 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/octane/evmengine/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 

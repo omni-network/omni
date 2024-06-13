@@ -1,9 +1,9 @@
 package module
 
 import (
-	"github.com/omni-network/omni/halo/evmengine/keeper"
-	"github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/octane/evmengine/keeper"
+	"github.com/omni-network/omni/octane/evmengine/types"
 
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/core/store"

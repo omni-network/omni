@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/halo/comet"
-	"github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/k1util"
+	"github.com/omni-network/omni/octane/evmengine/types"
 
 	eengine "github.com/ethereum/go-ethereum/beacon/engine"
 

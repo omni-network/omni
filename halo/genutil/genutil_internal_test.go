@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	atypes "github.com/omni-network/omni/halo/attest/types"
-	etypes "github.com/omni-network/omni/halo/evmengine/types"
+	etypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	"github.com/cometbft/cometbft/types"
 

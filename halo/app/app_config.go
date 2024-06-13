@@ -3,8 +3,6 @@ package app
 import (
 	attestmodule "github.com/omni-network/omni/halo/attest/module"
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
-	engevmmodule "github.com/omni-network/omni/halo/evmengine/module"
-	engevmtypes "github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/halo/evmstaking"
 	portalmodule "github.com/omni-network/omni/halo/portal/module"
 	portaltypes "github.com/omni-network/omni/halo/portal/types"
@@ -12,6 +10,8 @@ import (
 	registrytypes "github.com/omni-network/omni/halo/registry/types"
 	valsyncmodule "github.com/omni-network/omni/halo/valsync/module"
 	valsynctypes "github.com/omni-network/omni/halo/valsync/types"
+	engevmmodule "github.com/omni-network/omni/octane/evmengine/module"
+	engevmtypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	"github.com/ethereum/go-ethereum/params"
 

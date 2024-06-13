@@ -7,12 +7,12 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
-	evmenginetypes "github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
+	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"

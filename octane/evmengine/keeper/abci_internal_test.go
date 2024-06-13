@@ -9,10 +9,10 @@ import (
 	"time"
 
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
-	etypes "github.com/omni-network/omni/halo/evmengine/types"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/tutil"
+	etypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
