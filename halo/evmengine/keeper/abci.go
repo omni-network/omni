@@ -56,7 +56,7 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 	if uint64(req.Height) != height {
 		// Create a new payload (retrying on network errors).
 		err := retryForever(ctx, func(ctx context.Context) (bool, error) {
-			response, err := submitPayload(ctx, k.engineCl, req.Time, k.addrProvider.LocalAddress(), appHash)
+			response, err := submitPayload(ctx, k.engineCl, req.Time, k.feeRecipient, appHash)
 			if err != nil {
 				log.Warn(ctx, "Preparing proposal failed: build new evm payload (will retry)", err)
 				return false, nil
@@ -209,7 +209,7 @@ func (k *Keeper) startOptimisticBuild(ctx context.Context, appHash common.Hash, 
 	attrs := &engine.PayloadAttributes{
 		Timestamp:             ts,
 		Random:                latestEBlock.Hash(), // We use head block hash as randao.
-		SuggestedFeeRecipient: k.addrProvider.LocalAddress(),
+		SuggestedFeeRecipient: k.feeRecipient,
 		Withdrawals:           []*etypes.Withdrawal{}, // Withdrawals not supported yet.
 		BeaconRoot:            &appHash,
 	}
@@ -226,7 +226,7 @@ func submitPayload(
 	ctx context.Context,
 	engineCl ethclient.EngineClient,
 	ts time.Time,
-	proposer common.Address,
+	feeRecipient common.Address,
 	appHash common.Hash,
 ) (engine.ForkChoiceResponse, error) {
 	latestEHeight, err := engineCl.BlockNumber(ctx)
@@ -258,7 +258,7 @@ func submitPayload(
 	payloadAttrs := engine.PayloadAttributes{
 		Timestamp:             timestamp,
 		Random:                latestEBlock.Hash(), // TODO(corver): implement proper randao.
-		SuggestedFeeRecipient: proposer,
+		SuggestedFeeRecipient: feeRecipient,
 		Withdrawals:           []*etypes.Withdrawal{}, // Withdrawals not supported yet.
 		BeaconRoot:            &appHash,
 	}

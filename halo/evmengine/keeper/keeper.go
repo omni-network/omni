@@ -12,12 +12,16 @@ import (
 	"github.com/omni-network/omni/lib/k1util"
 
 	eengine "github.com/ethereum/go-ethereum/beacon/engine"
+	"github.com/ethereum/go-ethereum/common"
 
 	"cosmossdk.io/core/store"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
 )
+
+// burnAddress is the default EVM fee recipient address resulting in burned fees.
+var burnAddress = common.HexToAddress("0x000000000000000000000000000000000000dEaD")
 
 type Keeper struct {
 	cdc             codec.BinaryCodec
@@ -27,7 +31,8 @@ type Keeper struct {
 	voteProvider    types.VoteExtensionProvider
 	eventProcs      []types.EvmEventProcessor
 	cmtAPI          comet.API
-	addrProvider    types.AddressProvider
+	addrProvider    types.AddressProvider // Only required when calculating next proposer when building optimistic payloads.
+	feeRecipient    common.Address
 	buildDelay      time.Duration
 	buildOptimistic bool
 
@@ -55,6 +60,7 @@ func NewKeeper(
 		engineCl:     engineCl,
 		txConfig:     txConfig,
 		addrProvider: addrProvider,
+		feeRecipient: burnAddress,
 	}
 }
 
@@ -80,6 +86,12 @@ func (k *Keeper) SetBuildDelay(d time.Duration) {
 // SetBuildOptimistic sets the optimistic build parameter.
 func (k *Keeper) SetBuildOptimistic(b bool) {
 	k.buildOptimistic = b
+}
+
+// SetFeeRecipient sets the suggested fee recipient address when proposing a new EVM block.
+// This overrides the default burn address.
+func (k *Keeper) SetFeeRecipient(feeRecipient common.Address) {
+	k.feeRecipient = feeRecipient
 }
 
 // RegisterProposalService registers the proposal service on the provided router.
