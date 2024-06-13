@@ -20,17 +20,16 @@ build: version ## Build contracts.
 
 
 CONTRACTS := OmniPortal FeeOracleV1 OmniAVS Create3 TransparentUpgradeableProxy Staking Slashing OmniBridgeL1 OmniBridgeNative Omni \
-			DelegationManager StrategyManager StrategyBase AVSDirectory XRegistry XRegistryReplica PortalRegistry \
+			DelegationManager StrategyManager StrategyBase AVSDirectory PortalRegistry \
 			src/deploy/ProxyAdmin.sol:ProxyAdmin \
 			test/avs/common/MockERC20.sol:MockERC20
 
 .PHONY: bindings
 bindings: check-abigen-version build ## Generate golang contract bindings.
 	./bindings/scripts/gen.sh $(CONTRACTS)
-	./bindings/scripts/genmore.sh Create3 TransparentUpgradeableProxy src/deploy/ProxyAdmin.sol:ProxyAdmin XRegistry PortalRegistry Staking Slashing OmniBridgeNative
+	./bindings/scripts/genmore.sh Create3 TransparentUpgradeableProxy src/deploy/ProxyAdmin.sol:ProxyAdmin PortalRegistry Staking Slashing OmniBridgeNative
 	go run ./bindings/scripts/commenttypes.go -- bindings/strategymanager.go IStrategyManagerDeprecatedStructQueuedWithdrawal IStrategyManagerDeprecatedStructWithdrawerAndNonce
 	go run ./bindings/scripts/commenttypes.go -- bindings/avsdirectory.go ISignatureUtilsSignatureWithSaltAndExpiry
-	go run ./bindings/scripts/commenttypes.go -- bindings/xregistry.go XRegistryBaseDeployment
 
 .PHONY: examples-bindings
 examples-bindings: check-abigen-version build ## Generate golang contract bindings for example contracts

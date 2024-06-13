@@ -2,10 +2,6 @@
 pragma solidity =0.8.24;
 
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import { XRegistry } from "./XRegistry.sol";
-import { XRegistryBase } from "./XRegistryBase.sol";
-import { Predeploys } from "../libraries/Predeploys.sol";
-import { XRegistryNames } from "../libraries/XRegistryNames.sol";
 import { ConfLevel } from "../libraries/ConfLevel.sol";
 
 /**
@@ -24,9 +20,9 @@ contract PortalRegistry is OwnableUpgradeable {
     event PortalRegistered(uint64 indexed chainId, address indexed addr, uint64 deployHeight, uint64[] shards);
 
     /**
-     * @notice The XRegistry predeploy.
+     * @notice A list of chain IDs that have registered OmniPortals.
      */
-    XRegistry public constant xregistry = XRegistry(Predeploys.XRegistry);
+    uint64[] public chainIds;
 
     /**
      * @notice Portal deployments by chain ID.
@@ -58,23 +54,9 @@ contract PortalRegistry is OwnableUpgradeable {
      * @notice Get the OmniPortal address for a chain.
      */
     function list() external view returns (Deployment[] memory) {
-        uint64[] memory chainIds = xregistry.chainIds();
-
-        // xregistry.chainIds() is set before portals are registered
-        // we therefore need to filter out the zero addresses.
-
-        uint256 nonZeros = 0;
+        Deployment[] memory deps = new Deployment[](chainIds.length);
         for (uint64 i = 0; i < chainIds.length; i++) {
-            if (deployments[chainIds[i]].addr != address(0)) {
-                nonZeros++;
-            }
-        }
-
-        Deployment[] memory deps = new Deployment[](nonZeros);
-        for (uint64 i = 0; i < chainIds.length; i++) {
-            if (deployments[chainIds[i]].addr != address(0)) {
-                deps[i] = deployments[chainIds[i]];
-            }
+            deps[i] = deployments[chainIds[i]];
         }
 
         return deps;
@@ -82,13 +64,32 @@ contract PortalRegistry is OwnableUpgradeable {
 
     /**
      * @notice Register a new OmniPortal deployment.
+     */
+    function register(Deployment calldata dep) external onlyOwner {
+        _register(dep);
+    }
+
+    /**
+     * @notice Register multiple OmniPortal deployments.
+     */
+    function bulkRegister(Deployment[] calldata deps) external payable onlyOwner {
+        for (uint64 i = 0; i < deps.length; i++) {
+            _register(deps[i]);
+        }
+    }
+
+    /**
+     * @notice Register an new OmniPortal deployment.
      * @dev Zero height deployments are allowed for now, as we use them for "private" chains.
      *      TODO: require non-zero height when e2e flow is updated to reflect real deploy heights.
      */
-    function register(Deployment calldata dep) external payable onlyOwner {
-        require(!isRegistered(dep.chainId), "PortalRegistry: already set");
-        require(dep.addr != address(0), "PortalRegistry: zero address");
+    function _register(Deployment calldata dep) internal {
+        require(dep.addr != address(0), "PortalRegistry: no zero addr");
+        require(dep.chainId > 0, "PortalRegistry: no zero chain ID");
         require(dep.shards.length > 0, "PortalRegistry: no shards");
+
+        // TODO: allow multiple deployments per chain?
+        require(deployments[dep.chainId].addr == address(0), "PortalRegistry: already set");
 
         // only allow ConfLevel shards
         for (uint64 i = 0; i < dep.shards.length; i++) {
@@ -96,35 +97,9 @@ contract PortalRegistry is OwnableUpgradeable {
             require(shard == uint8(shard) && ConfLevel.isValid(uint8(shard)), "PortalRegistry: invalid shard");
         }
 
-        XRegistryBase.Deployment memory xdep =
-            XRegistryBase.Deployment({ addr: dep.addr, metadata: abi.encode(dep.shards) });
-
-        require(
-            msg.value >= xregistry.registrationFee(dep.chainId, XRegistryNames.OmniPortal, xdep),
-            "PortalRegistry: insufficient fee"
-        );
-
-        xregistry.register{ value: msg.value }(dep.chainId, XRegistryNames.OmniPortal, xdep);
         deployments[dep.chainId] = dep;
+        chainIds.push(dep.chainId);
 
         emit PortalRegistered(dep.chainId, dep.addr, dep.deployHeight, dep.shards);
-    }
-
-    /**
-     * @notice Calculate the fee to register a new OmniPortal deployment.
-     */
-    function registrationFee(Deployment calldata deployment) external view returns (uint256) {
-        return xregistry.registrationFee(
-            deployment.chainId,
-            XRegistryNames.OmniPortal,
-            XRegistryBase.Deployment({ addr: deployment.addr, metadata: abi.encode(deployment.shards) })
-        );
-    }
-
-    /**
-     * @notice Check if a deployment is registered.
-     */
-    function isRegistered(uint64 chainId) public view returns (bool) {
-        return deployments[chainId].addr != address(0);
     }
 }

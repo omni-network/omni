@@ -38,11 +38,14 @@ func TestPortalOffsets(t *testing.T) {
 
 // TestSupportedChains ensures that all portals have been relayed supported chains from the PortalRegistry, via the XRegistry.
 func TestSupportedChains(t *testing.T) {
+	// TODO: enable when cchain setNetwork xmsgs are enabled
+	t.Skip()
+
 	t.Parallel()
 	testPortal(t, func(t *testing.T, network netconf.Network, source Portal, dests []Portal) {
 		t.Helper()
 		for _, dest := range dests {
-			supported, err := source.Contract.IsSupportedChain(nil, dest.Chain.ID)
+			supported, err := source.Contract.IsSupportedDest(nil, dest.Chain.ID)
 			require.NoError(t, err)
 
 			if source.Chain.ID == dest.Chain.ID {

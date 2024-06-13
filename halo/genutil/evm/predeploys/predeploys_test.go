@@ -22,16 +22,16 @@ var (
 
 	// Predeploy addresses.
 	proxyAdmin     = common.HexToAddress(predeploys.ProxyAdmin)
-	xRegistry      = common.HexToAddress(predeploys.XRegistry)
 	portalRegistry = common.HexToAddress(predeploys.PortalRegistry)
+	omniBridge     = common.HexToAddress(predeploys.OmniBridgeNative)
 	staking        = common.HexToAddress(predeploys.Staking)
 	slashing       = common.HexToAddress(predeploys.Slashing)
 
 	// Predeploy bytecodes.
 	proxyCode          = hexutil.MustDecode(bindings.TransparentUpgradeableProxyDeployedBytecode)
 	proxyAdminCode     = hexutil.MustDecode(bindings.ProxyAdminDeployedBytecode)
-	xRegistryCode      = hexutil.MustDecode(bindings.XRegistryDeployedBytecode)
 	portalRegistryCode = hexutil.MustDecode(bindings.PortalRegistryDeployedBytecode)
+	omniBridgeCode     = hexutil.MustDecode(bindings.OmniBridgeNativeDeployedBytecode)
 	stakingCode        = hexutil.MustDecode(bindings.StakingDeployedBytecode)
 	slashingCode       = hexutil.MustDecode(bindings.SlashingDeployedBytecode)
 )
@@ -69,8 +69,8 @@ func TestAlloc(t *testing.T) {
 		predeploy common.Address
 		code      []byte
 	}{
-		{"XRegistry", xRegistry, xRegistryCode},
 		{"PortalRegistry", portalRegistry, portalRegistryCode},
+		{"OmniBridge", omniBridge, omniBridgeCode},
 		{"Staking", staking, stakingCode},
 		{"Slashing", slashing, slashingCode},
 	}
