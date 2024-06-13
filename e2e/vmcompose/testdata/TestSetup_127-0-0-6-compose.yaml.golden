@@ -38,6 +38,7 @@ services:
     labels:
       e2e: true
     container_name: explorer_ui
+    platform: linux/amd64
     image: omniops/explorer-ui:7d1ae53
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     environment:
