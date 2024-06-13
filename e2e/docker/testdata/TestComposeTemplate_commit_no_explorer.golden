@@ -30,7 +30,7 @@ services:
     labels:
       e2e: true
     container_name: mock_rollup
-    platform: linux/amd64
+    platform: linux/arm64
     image: omniops/anvilproxy:7d1ae53
     environment:
       - ANVILPROXY_CHAIN_ID=99
@@ -47,7 +47,7 @@ services:
     labels:
       e2e: true
     container_name: mock_l1
-    platform: linux/amd64
+    platform: linux/arm64
     image: omniops/anvilproxy:7d1ae53
     environment:
       - ANVILPROXY_CHAIN_ID=1

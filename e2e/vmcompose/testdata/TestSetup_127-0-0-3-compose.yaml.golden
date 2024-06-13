@@ -10,7 +10,7 @@ services:
     labels:
       e2e: true
     container_name: mock_l1
-    platform: linux/amd64
+    platform: 
     image: omniops/anvilproxy:7d1ae53
     environment:
       - ANVILPROXY_CHAIN_ID=1652
