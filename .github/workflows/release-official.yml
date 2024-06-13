@@ -9,17 +9,17 @@ jobs:
     runs-on: namespace-profile-default
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: actions/setup-go@v5
         with:
           go-version: stable
-      
+
       - name: Login to Dockerhub container registry
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      
+
       - name: Build docker images
         uses: goreleaser/goreleaser-action@v5
         with:
@@ -27,11 +27,11 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Calculate git short sha
         id: git_ref
         run: echo "short_sha=`echo ${GITHUB_SHA::7}`" >> "$GITHUB_OUTPUT"
-      
+
       - name: Build and push Explorer UI to Dockerhub
         uses: docker/build-push-action@v5
         with:
