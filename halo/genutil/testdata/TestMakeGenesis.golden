@@ -1,6 +1,6 @@
 {
  "app_name": "halo",
- "app_version": "v0.1.8",
+ "app_version": "v0.1.9",
  "genesis_time": "1970-01-01T00:00:01Z",
  "chain_id": "omni-1001651",
  "initial_height": 1,

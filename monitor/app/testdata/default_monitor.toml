@@ -3,7 +3,7 @@
 
 # The version of the Halo binary that created or
 # last modified the config file. Do not modify this.
-version = "v0.1.8"
+version = "v0.1.9"
 
 # Omni network to participate in: mainnet, testnet, or devnet.
 network = ""
