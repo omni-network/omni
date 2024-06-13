@@ -30,17 +30,13 @@ jobs:
         id: git_ref
         run: echo "short_sha=`echo ${GITHUB_SHA::7}`" >> "$GITHUB_OUTPUT"
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
       - name: Build and push Explorer UI to Dockerhub
         uses: docker/build-push-action@v5
         with:
           context: "{{defaultContext}}:explorer/ui"
           push: true
           tags: omniops/explorer-ui:main,omniops/explorer-ui:${{ steps.git_ref.outputs.short_sha }}
-          platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
+          platforms: linux/amd64 # Only build for linux/amd64, node:21-slim unsupported for darwin
 
       - name: Push Explorer Graphql to Dockerhub
         run: |
