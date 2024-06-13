@@ -178,7 +178,7 @@ func (p *Provider) stream(
 				return nil, nil
 			}
 
-			if xBlock.ShouldAttest() {
+			if xBlock.ShouldAttest(chain.AttestInterval) {
 				if err := tracker.assignOffset(height); err != nil {
 					return nil, err
 				}
@@ -197,7 +197,7 @@ func (p *Provider) stream(
 				return errors.New("invalid block source chain id")
 			} else if block.BlockHeight != h {
 				return errors.New("invalid block height")
-			} else if block.ShouldAttest() && block.BlockOffset == 0 {
+			} else if block.ShouldAttest(chain.AttestInterval) && block.BlockOffset == 0 {
 				return errors.New("invalid block offset")
 			}
 

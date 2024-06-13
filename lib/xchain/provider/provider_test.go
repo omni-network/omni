@@ -105,7 +105,7 @@ func TestProvider(t *testing.T) {
 	for i, block := range actual {
 		require.Equal(t, chainID, block.SourceChainID)
 		require.Equal(t, fromHeight+uint64(i), block.BlockHeight)
-		if block.ShouldAttest() {
+		if block.ShouldAttest(0) {
 			require.Equal(t, nextXBlockOffset, block.BlockOffset)
 			nextXBlockOffset++
 		} else {

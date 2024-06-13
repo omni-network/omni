@@ -295,9 +295,6 @@ func verifyAttBlock(att xchain.Attestation, block xchain.Block) error {
 			log.Hex7("attestation_hash", att.BlockHash[:]),
 			log.Hex7("block_hash", block.BlockHash[:]),
 		)
-	} else if len(block.Msgs) == 0 {
-		// All attestations must map to non-empty xblocks
-		return errors.New("unexpected empty xblock")
 	} else if block.BlockOffset != att.BlockOffset {
 		// All attestations must map to non-empty xblocks with XBlockOffset populated.
 		return errors.New("unexpected XBlockOffset")

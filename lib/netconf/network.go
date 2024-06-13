@@ -1,8 +1,6 @@
 package netconf
 
 import (
-	"fmt"
-
 	"github.com/omni-network/omni/lib/errors"
 )
 
@@ -38,22 +36,6 @@ func (i ID) String() string {
 
 func (i ID) Version() string {
 	return i.Static().Version
-}
-
-func (i ID) ExecutionRPC() string {
-	if i == Devnet {
-		return "http://localhost:8001"
-	}
-
-	return fmt.Sprintf("https://%s.omni.network", i)
-}
-
-func (i ID) ConsensusRPC() string {
-	if i == Devnet {
-		return "http://localhost:5701"
-	}
-
-	return fmt.Sprintf("https://rpc.consensus.%s.omni.network", i)
 }
 
 const (

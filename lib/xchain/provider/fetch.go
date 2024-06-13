@@ -148,7 +148,7 @@ func (p *Provider) GetBlock(ctx context.Context, req xchain.ProviderRequest) (xc
 		return b, true, nil
 	}
 
-	_, ethCl, err := p.getEVMChain(req.ChainID)
+	chain, ethCl, err := p.getEVMChain(req.ChainID)
 	if err != nil {
 		return xchain.Block{}, false, err
 	}
@@ -222,7 +222,7 @@ func (p *Provider) GetBlock(ctx context.Context, req xchain.ProviderRequest) (xc
 		ParentHash: header.ParentHash,
 		Timestamp:  time.Unix(int64(header.Time), 0),
 	}
-	if resp.ShouldAttest() {
+	if resp.ShouldAttest(chain.AttestInterval) {
 		resp.BlockOffset = req.Offset
 	}
 
