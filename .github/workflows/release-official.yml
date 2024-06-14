@@ -37,5 +37,5 @@ jobs:
         with:
           context: "{{defaultContext}}:explorer/ui"
           push: true
-          tags: omniops/explorer-ui:main,omniops/explorer-ui:${{ steps.git_ref.outputs.short_sha }},omniops/explorer-ui:${GITHUB_REF##*/}
+          tags: omniops/explorer-ui:main,omniops/explorer-ui:${{ steps.git_ref.outputs.short_sha }},omniops/explorer-ui:${{ github.ref_name }}
           platforms: linux/amd64 # Only build for linux/amd64, node:21-slim unsupported for darwin
