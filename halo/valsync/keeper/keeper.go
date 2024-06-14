@@ -16,6 +16,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 
 	ormv1alpha1 "cosmossdk.io/api/cosmos/orm/v1alpha1"
 	"cosmossdk.io/core/store"
@@ -227,6 +228,7 @@ func (k *Keeper) insertValidatorSet(ctx context.Context, vals []*Validator, isGe
 	}
 
 	var totalPower, totalUpdated, totalLen, totalRemoved int64
+	powers := make(map[common.Address]int64)
 	for _, val := range vals {
 		val.ValsetId = valset.GetId()
 		err = k.valTable.Insert(ctx, val)
@@ -244,6 +246,24 @@ func (k *Keeper) insertValidatorSet(ctx context.Context, vals []*Validator, isGe
 			totalRemoved++
 		} else {
 			return 0, errors.New("negative power")
+		}
+
+		pubkey, err := crypto.DecompressPubkey(val.GetPubKey())
+		if err != nil {
+			return 0, errors.Wrap(err, "get pubkey")
+		}
+		powers[crypto.PubkeyToAddress(*pubkey)] = val.GetPower()
+	}
+
+	// Log a warn if any validator has 1/3 or more of the total power.
+	// This is a potential attack vector, as a single validator could halt the chain.
+	for address, power := range powers {
+		if power >= totalPower/3 {
+			log.Warn(ctx, "🚨 Validator has 1/3 or more of total power", nil,
+				"address", address.Hex(),
+				"power", power,
+				"total_power", totalPower,
+			)
 		}
 	}
 

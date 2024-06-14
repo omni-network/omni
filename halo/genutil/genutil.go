@@ -39,6 +39,9 @@ import (
 // since Omni block period (+-1s) is very fast, roughly 10x normal period of 10s.
 const slashingBlocksWindow = 1000
 
+// validatorPower is the default power assigned to genesis validators.
+const validatorPower = 10
+
 func MakeGenesis(network netconf.ID, genesisTime time.Time, valPubkeys ...crypto.PubKey) (*gtypes.AppGenesis, error) {
 	cdc := getCodec()
 	txConfig := authtx.NewTxConfig(cdc, nil)
@@ -170,7 +173,7 @@ func addValidator(txConfig client.TxConfig, pubkey crypto.PubKey, cdc codec.Code
 	}
 
 	// Add validator with 1 power (1e18 $STAKE ~= 1 ether $STAKE)
-	amount := sdk.NewCoin(sdk.DefaultBondDenom, sdk.DefaultPowerReduction)
+	amount := sdk.NewCoin(sdk.DefaultBondDenom, sdk.DefaultPowerReduction.MulRaw(validatorPower))
 
 	err = genutil.AddGenesisAccount(cdc, addr.Bytes(), false, genFile, amount.String(), "", 0, 0, "")
 	if err != nil {
