@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 	"runtime/debug"
+	"strings"
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
@@ -95,7 +96,9 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 	err := retryForever(ctx, func(ctx context.Context) (bool, error) {
 		var err error
 		payloadResp, err = k.engineCl.GetPayloadV3(ctx, *payloadID)
-		if err != nil {
+		if isUnknownPayload(err) {
+			return false, err
+		} else if err != nil {
 			log.Warn(ctx, "Preparing proposal failed: get evm payload (will retry)", err)
 			return false, nil
 		}
@@ -275,4 +278,21 @@ func submitPayload(
 	}
 
 	return forkchoiceResp, nil
+}
+
+// isUnknownPayload returns true if the error is due to an unknown payload.
+func isUnknownPayload(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	// TODO(corver): Add support for typed errors.
+	if strings.Contains(
+		strings.ToLower(err.Error()),
+		strings.ToLower(engine.UnknownPayload.Error()),
+	) {
+		return true
+	}
+
+	return false
 }
