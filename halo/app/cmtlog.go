@@ -32,9 +32,14 @@ var levels = map[string]int{
 //
 //nolint:gochecknoglobals // Static mapping
 var dropCometDebugs = map[string]bool{
-	"Read PacketMsg": true,
-	"Received bytes": true,
-	"Send":           true,
+	"Read PacketMsg":       true,
+	"Received bytes":       true,
+	"Send":                 true,
+	"Receive":              true,
+	"Sending vote message": true,
+	"Flush":                true,
+	"setHasVote":           true,
+	"TrySend":              true,
 }
 
 // cmtLogger implements cmtlog.Logger by using the omni logging pattern.
