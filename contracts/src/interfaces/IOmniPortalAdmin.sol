@@ -35,11 +35,18 @@ interface IOmniPortalAdmin {
     event XMsgMaxGasLimitChanged(uint64 indexed oldMax, uint64 indexed newMax);
 
     /**
-     * @notice Emitted when xreceiptMaxErrorBytes is changed.
-     * @param oldMax The old xreceiptMaxErrorBytes
-     * @param newMax The new xreceiptMaxErrorBytes
+     * @notice Emitted when xmsgMaxDataSize is changed.
+     * @param oldMax The old max size
+     * @param newMax The new max size
      */
-    event XReceiptMaxErrorBytesChanged(uint16 indexed oldMax, uint16 indexed newMax);
+    event XMsgMaxDataSizeChanged(uint16 indexed oldMax, uint16 indexed newMax);
+
+    /**
+     * @notice Emitted when xreceiptMaxErrorSize is changed.
+     * @param oldMax The old max size
+     * @param newMax The new max size
+     */
+    event XReceiptMaxErrorSizeChanged(uint16 indexed oldMax, uint16 indexed newMax);
 
     /**
      * @notice Returns the current fee oracle address
@@ -68,9 +75,14 @@ interface IOmniPortalAdmin {
     function setXMsgMaxGasLimit(uint64 gasLimit) external;
 
     /**
+     * @notice Set the maximum data bytes for xmsg
+     */
+    function setXMsgMaxDataSize(uint16 numBytes) external;
+
+    /**
      * @notice Set the maximum error bytes for xreceipt
      */
-    function setXReceiptMaxErrorBytes(uint16 maxErrorBytes) external;
+    function setXReceiptMaxErrorSize(uint16 numBytes) external;
 
     /**
      * @notice Pause xcalls

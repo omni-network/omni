@@ -89,7 +89,7 @@ contract OmniPortal_exec_Test is Base {
     }
 
     /// @dev Test that when an XMsg execution reverts, the correct error bytes are included in the receipt
-    function test_exec_errorBytes() public {
+    function test_exec_errorSize() public {
         //
         // Reverter.forceRevert() - empty error
         //
@@ -181,7 +181,7 @@ contract OmniPortal_exec_Test is Base {
         receipt = parseReceipt(logs[0]);
 
         // assert error is truncated to max length
-        assertEq(receipt.error.length, portal.xreceiptMaxErrorBytes());
+        assertEq(receipt.error.length, portal.xreceiptMaxErrorSize());
     }
 
     /// @dev Test that syscall that reverts forwards the revert

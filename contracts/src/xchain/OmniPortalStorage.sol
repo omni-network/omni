@@ -13,7 +13,12 @@ abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
     /**
      * @notice Maxium number of bytes allowed in xreceipt result
      */
-    uint16 public xreceiptMaxErrorBytes;
+    uint16 public xreceiptMaxErrorSize;
+
+    /**
+     * @notice Maximum number of bytes allowed in xmsg data
+     */
+    uint16 public xmsgMaxDataSize;
 
     /**
      * @notice Maximum allowed xmsg gas limit
@@ -38,7 +43,7 @@ abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
     /**
      * @notice Virtual chain ID used in xmsgs from Omni's consensus chain
      */
-    uint64 public omniCChainID;
+    uint64 public omniCChainId;
 
     /**
      * @notice The address of the fee oracle contract

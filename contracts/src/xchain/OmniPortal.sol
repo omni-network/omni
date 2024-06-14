@@ -38,46 +38,55 @@ contract OmniPortal is
     }
 
     /**
-     * @notice Initialize the OmniPortal contract
-     * @param owner_                    The owner of the contract
-     * @param feeOracle_                Address of the fee oracle contract
-     * @param omniChainId_              Chain ID of Omni's EVM execution chain
-     * @param omniCChainID_             Virtual chain ID used in xmsgs from Omni's consensus chain
-     * @param xmsgMaxGasLimit_          Maximum gas limit for xmsg
-     * @param xmsgMinGasLimit_          Minimum gas limit for xmsg
-     * @param xreceiptMaxErrorBytes_    Maximum error bytes for xreceipt)
-     * @param cChainXMgsOffset          Offset for xmsgs from the consensus chain
-     * @param cChainXBlocksOffset       Offset for xblocks from the consensus chain
-     * @param valSetId                  Initial validator set id
-     * @param validators                Initial validator set
+     * @notice Initialization init params
+     * @dev Used to reduce stack depth in initialize()
+     * @custom:field owner                  The owner of the contract
+     * @custom:field feeOracle              Address of the fee oracle contract
+     * @custom:field omniChainId            Chain ID of Omni's EVM execution chain
+     * @custom:field omniCChainId           Virtual chain ID used in xmsgs from Omni's consensus chain
+     * @custom:field xmsgMaxGasLimit        Maximum gas limit for xmsg
+     * @custom:field xmsgMinGasLimit        Minimum gas limit for xmsg
+     * @custom:field xmsgMaxDataSize        Maximum size of xmsg data in bytes
+     * @custom:field xreceiptMaxErrorSize   Maximum size of xreceipt error in bytes
+     * @custom:field cChainXMsgOffset       Offset for xmsgs from the consensus chain
+     * @custom:field cChainXBlockOffset    Offset for xblocks from the consensus chain
+     * @custom:field valSetId               Initial validator set id
+     * @custom:field validators             Initial validator set
      */
-    function initialize(
-        address owner_,
-        address feeOracle_,
-        uint64 omniChainId_,
-        uint64 omniCChainID_,
-        uint64 xmsgMaxGasLimit_,
-        uint64 xmsgMinGasLimit_,
-        uint16 xreceiptMaxErrorBytes_,
-        uint64 cChainXMgsOffset,
-        uint64 cChainXBlocksOffset,
-        uint64 valSetId,
-        XTypes.Validator[] calldata validators
-    ) public initializer {
-        _transferOwnership(owner_);
-        _setFeeOracle(feeOracle_);
-        _setXMsgMaxGasLimit(xmsgMaxGasLimit_);
-        _setXMsgMinGasLimit(xmsgMinGasLimit_);
-        _setXReceiptMaxErrorBytes(xreceiptMaxErrorBytes_);
-        _addValidatorSet(valSetId, validators);
+    struct InitParams {
+        address owner;
+        address feeOracle;
+        uint64 omniChainId;
+        uint64 omniCChainId;
+        uint64 xmsgMaxGasLimit;
+        uint64 xmsgMinGasLimit;
+        uint16 xmsgMaxDataSize;
+        uint16 xreceiptMaxErrorSize;
+        uint64 cChainXMsgOffset;
+        uint64 cChainXBlockOffset;
+        uint64 valSetId;
+        XTypes.Validator[] validators;
+    }
 
-        omniChainId = omniChainId_;
-        omniCChainID = omniCChainID_;
+    /**
+     * @notice Initialize the OmniPortal contract
+     */
+    function initialize(InitParams calldata p) public initializer {
+        _transferOwnership(p.owner);
+        _setFeeOracle(p.feeOracle);
+        _setXMsgMaxGasLimit(p.xmsgMaxGasLimit);
+        _setXMsgMinGasLimit(p.xmsgMinGasLimit);
+        _setXMsgMaxDataSize(p.xmsgMaxDataSize);
+        _setXReceiptMaxErrorSize(p.xreceiptMaxErrorSize);
+        _addValidatorSet(p.valSetId, p.validators);
+
+        omniChainId = p.omniChainId;
+        omniCChainId = p.omniCChainId;
 
         // omni consensus chain uses Finalised+Broadcast shard
         uint64 omniCShard = ConfLevel.toBroadcastShard(ConfLevel.Finalized);
-        inXMsgOffset[omniCChainID_][omniCShard] = cChainXMgsOffset;
-        inXBlockOffset[omniCChainID_][omniCShard] = cChainXBlocksOffset;
+        inXMsgOffset[p.omniCChainId][omniCShard] = p.cChainXMsgOffset;
+        inXBlockOffset[p.omniCChainId][omniCShard] = p.cChainXBlockOffset;
     }
 
     function chainId() public view returns (uint64) {
@@ -107,6 +116,7 @@ contract OmniPortal is
         require(to != _VIRTUAL_PORTAL_ADDRESS, "OmniPortal: no portal xcall");
         require(gasLimit <= xmsgMaxGasLimit, "OmniPortal: gasLimit too high");
         require(gasLimit >= xmsgMinGasLimit, "OmniPortal: gasLimit too low");
+        require(data.length <= xmsgMaxDataSize, "OmniPortal: data too large");
 
         // conf level will always be first byte of shardId. for now, shardId is just conf level
         uint64 shardId = uint64(conf);
@@ -265,7 +275,7 @@ contract OmniPortal is
 
         // use excessivelySafeCall for external calls to prevent large return bytes mem copy
         (bool success, bytes memory result) =
-            to.excessivelySafeCall({ _gas: gasLimit, _value: 0, _maxCopy: xreceiptMaxErrorBytes, _calldata: data });
+            to.excessivelySafeCall({ _gas: gasLimit, _value: 0, _maxCopy: xreceiptMaxErrorSize, _calldata: data });
 
         uint256 gasLeftAfter = gasleft();
 
@@ -323,7 +333,7 @@ contract OmniPortal is
      */
     function addValidatorSet(uint64 valSetId, XTypes.Validator[] calldata validators) external {
         require(msg.sender == address(this), "OmniPortal: only self");
-        require(_xmsg.sourceChainId == omniCChainID, "OmniPortal: only cchain");
+        require(_xmsg.sourceChainId == omniCChainId, "OmniPortal: only cchain");
         require(_xmsg.sender == _CCHAIN_SENDER, "OmniPortal: only cchain sender");
         _addValidatorSet(valSetId, validators);
     }
@@ -367,7 +377,7 @@ contract OmniPortal is
      */
     function setNetwork(XTypes.Chain[] calldata network_) external {
         require(msg.sender == address(this), "OmniPortal: only self");
-        require(_xmsg.sourceChainId == omniCChainID, "OmniPortal: only cchain");
+        require(_xmsg.sourceChainId == omniCChainId, "OmniPortal: only cchain");
         require(_xmsg.sender == _CCHAIN_SENDER, "OmniPortal: only cchain sender");
         _setNetwork(network_);
     }
@@ -461,8 +471,15 @@ contract OmniPortal is
     /**
      * @notice Set the maximum error bytes for xreceipt
      */
-    function setXReceiptMaxErrorBytes(uint16 maxErrorBytes) external onlyOwner {
-        _setXReceiptMaxErrorBytes(maxErrorBytes);
+    function setXMsgMaxDataSize(uint16 numBytes) external onlyOwner {
+        _setXMsgMaxDataSize(numBytes);
+    }
+
+    /**
+     * @notice Set the maximum error bytes for xreceipt
+     */
+    function setXReceiptMaxErrorSize(uint16 numBytes) external onlyOwner {
+        _setXReceiptMaxErrorSize(numBytes);
     }
 
     /**
@@ -504,15 +521,27 @@ contract OmniPortal is
     }
 
     /**
+     * @notice Set the maximum data bytes for xmsg
+     */
+    function _setXMsgMaxDataSize(uint16 numBytes) internal {
+        require(numBytes > 0, "OmniPortal: no zero max size");
+
+        uint16 oldMax = xmsgMaxDataSize;
+        xmsgMaxDataSize = numBytes;
+
+        emit XMsgMaxDataSizeChanged(oldMax, numBytes);
+    }
+
+    /**
      * @notice Set the maximum error bytes for xreceipt
      */
-    function _setXReceiptMaxErrorBytes(uint16 maxErrorBytes) internal {
-        require(maxErrorBytes > 0, "OmniPortal: no zero max bytes");
+    function _setXReceiptMaxErrorSize(uint16 numBytes) internal {
+        require(numBytes > 0, "OmniPortal: no zero max size");
 
-        uint16 oldMax = xreceiptMaxErrorBytes;
-        xreceiptMaxErrorBytes = maxErrorBytes;
+        uint16 oldMax = xreceiptMaxErrorSize;
+        xreceiptMaxErrorSize = numBytes;
 
-        emit XReceiptMaxErrorBytesChanged(oldMax, maxErrorBytes);
+        emit XReceiptMaxErrorSizeChanged(oldMax, numBytes);
     }
 
     /**

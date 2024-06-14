@@ -62,9 +62,14 @@ interface IOmniPortal {
     function xmsgMinGasLimit() external view returns (uint64);
 
     /**
+     * @notice Maximum number of bytes allowed in xmsg data
+     */
+    function xmsgMaxDataSize() external view returns (uint16);
+
+    /**
      * @notice Maxium number of bytes allowed in xreceipt result
      */
-    function xreceiptMaxErrorBytes() external view returns (uint16);
+    function xreceiptMaxErrorSize() external view returns (uint16);
 
     /**
      * @notice Returns the chain ID of the chain to which this portal is deployed
