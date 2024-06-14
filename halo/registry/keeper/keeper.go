@@ -8,6 +8,7 @@ import (
 	ptypes "github.com/omni-network/omni/halo/portal/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -61,8 +62,10 @@ func NewKeeper(emilPortal ptypes.EmitPortal, storeService store.KVStoreService, 
 // getOrCreateEpoch returns a network created in the current height.
 // If one already exists, it will be returned.
 // If none already exists, a new one will be created using the previous as base.
+// New networks are emitted as cross chain messages to portals.
 func (k Keeper) getOrCreateNetwork(ctx context.Context) (*Network, error) {
-	createHeight := uint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	createHeight := uint64(sdkCtx.BlockHeight())
 
 	latestNetworkID, err := k.networkTable.LastInsertedSequence(ctx)
 	if err != nil {
@@ -76,6 +79,17 @@ func (k Keeper) getOrCreateNetwork(ctx context.Context) (*Network, error) {
 		network.Id, err = k.networkTable.InsertReturningId(ctx, network)
 		if err != nil {
 			return nil, errors.Wrap(err, "insert first network")
+		}
+
+		_, err := k.emilPortal.EmitMsg(
+			sdkCtx,
+			ptypes.MsgTypeNetwork,
+			network.GetId(),
+			xchain.BroadcastChainID,
+			xchain.ShardBroadcast0,
+		)
+		if err != nil {
+			return nil, errors.Wrap(err, "emit portal message")
 		}
 
 		return network, nil

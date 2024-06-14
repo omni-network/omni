@@ -41,16 +41,17 @@ func (m *MockPortal) EXPECT() *MockPortalMockRecorder {
 	return m.recorder
 }
 
-// CreateMsg mocks base method.
-func (m *MockPortal) CreateMsg(ctx types.Context, typ types0.MsgType, msgTypeID, destChainID uint64, shardID xchain.ShardID) error {
+// EmitMsg mocks base method.
+func (m *MockPortal) EmitMsg(ctx types.Context, typ types0.MsgType, msgTypeID, destChainID uint64, shardID xchain.ShardID) (uint64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateMsg", ctx, typ, msgTypeID, destChainID, shardID)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "EmitMsg", ctx, typ, msgTypeID, destChainID, shardID)
+	ret0, _ := ret[0].(uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// CreateMsg indicates an expected call of CreateMsg.
-func (mr *MockPortalMockRecorder) CreateMsg(ctx, typ, msgTypeID, destChainID, shardID any) *gomock.Call {
+// EmitMsg indicates an expected call of EmitMsg.
+func (mr *MockPortalMockRecorder) EmitMsg(ctx, typ, msgTypeID, destChainID, shardID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateMsg", reflect.TypeOf((*MockPortal)(nil).CreateMsg), ctx, typ, msgTypeID, destChainID, shardID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EmitMsg", reflect.TypeOf((*MockPortal)(nil).EmitMsg), ctx, typ, msgTypeID, destChainID, shardID)
 }

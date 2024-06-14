@@ -99,23 +99,25 @@ func TestValidatorSet(t *testing.T) {
 
 func approvedExpectation() expectation {
 	return func(ctx sdk.Context, m mocks) {
-		m.aKeeper.EXPECT().ListAttestationsFrom(
-			gomock.Any(),
-			netconf.Simnet.Static().OmniConsensusChainIDUint64(),
-			uint32(xchain.ConfFinalized),
-			uint64(2), // Setup 1 is genesis, so auto approved, so it always queries from 2.
-			uint64(1), // Only query for 1 attestation.
-		).AnyTimes().
-			Return([]*types1.Attestation{{}}, nil)
+		blockOffset := uint64(99)
 
-		m.portal.EXPECT().CreateMsg(
+		m.portal.EXPECT().EmitMsg(
 			gomock.Any(),
 			ptypes.MsgTypeValSet,
 			gomock.Any(),
 			xchain.BroadcastChainID,
 			xchain.ShardBroadcast0,
 		).AnyTimes().
-			Return(nil)
+			Return(blockOffset, nil)
+
+		m.aKeeper.EXPECT().ListAttestationsFrom(
+			gomock.Any(),
+			netconf.Simnet.Static().OmniConsensusChainIDUint64(),
+			uint32(xchain.ConfFinalized),
+			blockOffset,
+			uint64(1), // Only query for 1 attestation.
+		).AnyTimes().
+			Return([]*types1.Attestation{{}}, nil)
 
 		m.subscriber.EXPECT().UpdateValidators(gomock.Any()).AnyTimes()
 	}
@@ -123,23 +125,25 @@ func approvedExpectation() expectation {
 
 func defaultExpectation() expectation {
 	return func(ctx sdk.Context, m mocks) {
-		m.aKeeper.EXPECT().ListAttestationsFrom(
-			gomock.Any(),
-			netconf.Simnet.Static().OmniConsensusChainIDUint64(),
-			uint32(xchain.ConfFinalized),
-			uint64(2), // Setup 1 is genesis, so auto approved, so it always queries from 2.
-			uint64(1), // Only query for 1 attestation.
-		).AnyTimes().
-			Return(nil, nil)
+		blockOffset := uint64(99)
 
-		m.portal.EXPECT().CreateMsg(
+		m.portal.EXPECT().EmitMsg(
 			gomock.Any(),
 			ptypes.MsgTypeValSet,
 			gomock.Any(),
 			xchain.BroadcastChainID,
 			xchain.ShardBroadcast0,
 		).AnyTimes().
-			Return(nil)
+			Return(blockOffset, nil)
+
+		m.aKeeper.EXPECT().ListAttestationsFrom(
+			gomock.Any(),
+			netconf.Simnet.Static().OmniConsensusChainIDUint64(),
+			uint32(xchain.ConfFinalized),
+			blockOffset,
+			uint64(1), // Only query for 1 attestation.
+		).AnyTimes().
+			Return(nil, nil)
 	}
 }
 

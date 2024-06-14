@@ -127,11 +127,6 @@ func testCProvider(t *testing.T, ctx context.Context, cprov cprovider.Provider) 
 	_, ok, err = cprov.ValidatorSet(ctx, 33)
 	require.NoError(t, err)
 	require.False(t, ok)
-
-	// Ensure the xblock msg streamOffset is the val set id.
-	_, ok, err = cprov.ValidatorSet(ctx, xblock.Msgs[0].StreamOffset)
-	require.NoError(t, err)
-	require.True(t, ok)
 }
 
 func setupSimnet(t *testing.T) haloapp.Config {

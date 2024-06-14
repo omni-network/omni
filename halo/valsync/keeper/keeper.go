@@ -194,35 +194,41 @@ func (k *Keeper) InsertGenesisSet(ctx context.Context) error {
 
 // insertValidatorSet inserts the current validator set into the database.
 func (k *Keeper) insertValidatorSet(ctx context.Context, vals []*Validator, isGenesis bool) (uint64, error) {
+	var err error
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	if len(vals) == 0 {
 		return 0, errors.New("empty validators")
 	}
 
-	// TODO(corver): Remove attested field from valset.
-
-	valsetID, err := k.valsetTable.InsertReturningId(ctx, &ValidatorSet{
+	valset := &ValidatorSet{
 		CreatedHeight: uint64(sdkCtx.BlockHeight()),
 		Attested:      isGenesis, // Only genesis set is automatically attested.
-	})
+	}
+
+	valset.Id, err = k.valsetTable.InsertReturningId(ctx, valset)
 	if err != nil {
 		return 0, errors.Wrap(err, "insert valset")
 	}
 
-	if err := k.emilPortal.CreateMsg(
+	// Emit this validator set message to portals, updating the resulting block offset/height/id.
+	valset.BlockOffset, err = k.emilPortal.EmitMsg(
 		sdkCtx,
 		ptypes.MsgTypeValSet,
-		valsetID,
+		valset.GetId(),
 		xchain.BroadcastChainID,
 		xchain.ShardBroadcast0,
-	); err != nil {
-		return 0, errors.Wrap(err, "create message")
+	)
+	if err != nil {
+		return 0, errors.Wrap(err, "emit message")
+	}
+	if err := k.valsetTable.Update(ctx, valset); err != nil {
+		return 0, errors.Wrap(err, "update valset")
 	}
 
 	var totalPower, totalUpdated, totalLen, totalRemoved int64
 	for _, val := range vals {
-		val.ValsetId = valsetID
+		val.ValsetId = valset.GetId()
 		err = k.valTable.Insert(ctx, val)
 		if err != nil {
 			return 0, errors.Wrap(err, "insert validator")
@@ -241,7 +247,7 @@ func (k *Keeper) insertValidatorSet(ctx context.Context, vals []*Validator, isGe
 		}
 	}
 
-	return valsetID, nil
+	return valset.GetId(), nil
 }
 
 func (k *Keeper) maybeInitSubscriber(ctx context.Context) error {
@@ -284,8 +290,8 @@ func (k *Keeper) processAttested(ctx context.Context) ([]abci.ValidatorUpdate, e
 	}
 	conf := xchain.ConfFinalized // TODO(corver): Move this to static netconf.
 
-	// Check if this unattested set was attested to (valSet.Id == attestation.BlockOffset)
-	if atts, err := k.aKeeper.ListAttestationsFrom(ctx, chainID, uint32(conf), valset.GetId(), 1); err != nil {
+	// Check if this unattested set was attested to
+	if atts, err := k.aKeeper.ListAttestationsFrom(ctx, chainID, uint32(conf), valset.GetBlockOffset(), 1); err != nil {
 		return nil, errors.Wrap(err, "list attestations")
 	} else if len(atts) == 0 {
 		return nil, nil // No attested set, so no updates.
