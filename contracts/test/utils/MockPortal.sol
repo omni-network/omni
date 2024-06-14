@@ -22,7 +22,8 @@ contract MockPortal is IOmniPortal, OmniPortalConstants {
 
     uint64 public xmsgMaxGasLimit = 5_000_000;
     uint64 public xmsgMinGasLimit = 21_000;
-    uint16 public xreceiptMaxErrorBytes = 256;
+    uint16 public xmsgMaxDataSize = 20_000;
+    uint16 public xreceiptMaxErrorSize = 256;
 
     address public feeOracle;
 

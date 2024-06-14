@@ -25,6 +25,7 @@ type DeploymentConfig struct {
 	OmniCChainID          uint64
 	XMsgMinGasLimit       uint64
 	XMsgMaxGasLimit       uint64
+	XMsgMaxDataSize       uint16
 	XReceiptMaxErrorBytes uint16
 	CChainXMsgOffset      uint64
 	CChainXBlockOffset    uint64
@@ -34,7 +35,8 @@ type DeploymentConfig struct {
 const (
 	XMsgMinGasLimit       = 21_000
 	XMsgMaxGasLimit       = 5_000_000
-	XReceiptMaxErrorBytes = uint16(256)
+	XMsgMaxDataSize       = 20_000
+	XReceiptMaxErrorBytes = 256
 
 	// We use default cchain xmsg and xblock offsets of 1. This xmsg / block
 	// contains the genesis validator set. This is set in the portal contract
@@ -45,8 +47,8 @@ const (
 	// added to an existing network, we should use higher offsets on initialization,
 	// so that the entire history of cchain xmsgs do not need to be relayed.
 
-	GenesisCChainXMsgOffset   = uint64(1)
-	GenesisCChainXBlockOffset = uint64(1)
+	GenesisCChainXMsgOffset   = 1
+	GenesisCChainXBlockOffset = 1
 )
 
 func isDeadOrEmpty(addr common.Address) bool {
@@ -74,6 +76,9 @@ func (cfg DeploymentConfig) Validate() error {
 	}
 	if cfg.XMsgMaxGasLimit == 0 {
 		return errors.New("xmsg max gas limit is zero")
+	}
+	if cfg.XMsgMaxDataSize == 0 {
+		return errors.New("xmsg max data size is zero")
 	}
 	if cfg.XReceiptMaxErrorBytes == 0 {
 		return errors.New("xreceipt max error bytes is zero")
@@ -138,6 +143,7 @@ func testnetCfg() DeploymentConfig {
 		OmniCChainID:          netconf.Omega.Static().OmniConsensusChainIDUint64(),
 		XMsgMinGasLimit:       XMsgMinGasLimit,
 		XMsgMaxGasLimit:       XMsgMaxGasLimit,
+		XMsgMaxDataSize:       XMsgMaxDataSize,
 		CChainXMsgOffset:      GenesisCChainXMsgOffset,
 		CChainXBlockOffset:    GenesisCChainXBlockOffset,
 		XReceiptMaxErrorBytes: XReceiptMaxErrorBytes,
@@ -156,6 +162,7 @@ func stagingCfg() DeploymentConfig {
 		OmniCChainID:          netconf.Staging.Static().OmniConsensusChainIDUint64(),
 		XMsgMinGasLimit:       XMsgMinGasLimit,
 		XMsgMaxGasLimit:       XMsgMaxGasLimit,
+		XMsgMaxDataSize:       XMsgMaxDataSize,
 		CChainXMsgOffset:      GenesisCChainXMsgOffset,
 		CChainXBlockOffset:    GenesisCChainXBlockOffset,
 		XReceiptMaxErrorBytes: XReceiptMaxErrorBytes,
@@ -174,6 +181,7 @@ func devnetCfg() DeploymentConfig {
 		OmniCChainID:          netconf.Devnet.Static().OmniConsensusChainIDUint64(),
 		XMsgMinGasLimit:       XMsgMinGasLimit,
 		XMsgMaxGasLimit:       XMsgMaxGasLimit,
+		XMsgMaxDataSize:       XMsgMaxDataSize,
 		CChainXMsgOffset:      GenesisCChainXMsgOffset,
 		CChainXBlockOffset:    GenesisCChainXBlockOffset,
 		XReceiptMaxErrorBytes: XReceiptMaxErrorBytes,
@@ -294,9 +302,21 @@ func packInitCode(cfg DeploymentConfig, feeOracle common.Address, impl common.Ad
 	}
 
 	initializer, err := portalAbi.Pack("initialize",
-		cfg.Owner, feeOracle, cfg.OmniChainID, cfg.OmniCChainID,
-		cfg.XMsgMaxGasLimit, cfg.XMsgMinGasLimit, cfg.XReceiptMaxErrorBytes,
-		cfg.CChainXMsgOffset, cfg.CChainXBlockOffset, valSetID, validators)
+		&bindings.OmniPortalInitParams{
+			Owner:                cfg.Owner,
+			FeeOracle:            feeOracle,
+			OmniChainId:          cfg.OmniChainID,
+			OmniCChainId:         cfg.OmniCChainID,
+			XmsgMaxGasLimit:      cfg.XMsgMaxGasLimit,
+			XmsgMinGasLimit:      cfg.XMsgMinGasLimit,
+			XmsgMaxDataSize:      cfg.XMsgMaxDataSize,
+			XreceiptMaxErrorSize: cfg.XReceiptMaxErrorBytes,
+			CChainXMsgOffset:     cfg.CChainXMsgOffset,
+			CChainXBlockOffset:   cfg.CChainXBlockOffset,
+			ValSetId:             valSetID,
+			Validators:           validators,
+		},
+	)
 	if err != nil {
 		return nil, errors.Wrap(err, "encode portal initializer")
 	}

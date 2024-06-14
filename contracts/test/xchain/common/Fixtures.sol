@@ -57,7 +57,8 @@ contract Fixtures is CommonBase, StdCheats {
 
     uint64 xmsgMaxGasLimit = 5_000_000;
     uint64 xmsgMinGasLimit = 21_000;
-    uint64 xreceiptMaxErrorBytes = 256;
+    uint16 xmsgMaxDataSize = 20_000;
+    uint16 xreceiptMaxErrorSize = 256;
 
     string constant valMnemonic = "test test test test test test test test test test test junk";
 
@@ -490,17 +491,20 @@ contract Fixtures is CommonBase, StdCheats {
                     address(proxyAdmin),
                     abi.encodeWithSelector(
                         OmniPortal.initialize.selector,
-                        owner,
-                        address(feeOracle),
-                        omniChainId,
-                        omniCChainID,
-                        xmsgMaxGasLimit,
-                        xmsgMinGasLimit,
-                        xreceiptMaxErrorBytes,
-                        1, // cchain xmsg offset
-                        1, // cchain xblock offset
-                        genesisValSetId,
-                        validatorSet[genesisValSetId]
+                        OmniPortal.InitParams(
+                            owner,
+                            address(feeOracle),
+                            omniChainId,
+                            omniCChainID,
+                            xmsgMaxGasLimit,
+                            xmsgMinGasLimit,
+                            xmsgMaxDataSize,
+                            xreceiptMaxErrorSize,
+                            1, // cchain xmsg offset
+                            1, // cchain xblock offset
+                            genesisValSetId,
+                            validatorSet[genesisValSetId]
+                        )
                     )
                 )
             )
@@ -535,17 +539,20 @@ contract Fixtures is CommonBase, StdCheats {
                     address(chainAProxyAdmin),
                     abi.encodeWithSelector(
                         OmniPortal.initialize.selector,
-                        owner,
-                        address(feeOracle),
-                        omniChainId,
-                        omniCChainID,
-                        xmsgMaxGasLimit,
-                        xmsgMinGasLimit,
-                        xreceiptMaxErrorBytes,
-                        1, // cchain xmsg offset
-                        1, // cchain xblock offset
-                        genesisValSetId,
-                        validatorSet[genesisValSetId]
+                        OmniPortal.InitParams(
+                            owner,
+                            address(feeOracle),
+                            omniChainId,
+                            omniCChainID,
+                            xmsgMaxGasLimit,
+                            xmsgMinGasLimit,
+                            xmsgMaxDataSize,
+                            xreceiptMaxErrorSize,
+                            1, // cchain xmsg offset
+                            1, // cchain xblock offset
+                            genesisValSetId,
+                            validatorSet[genesisValSetId]
+                        )
                     )
                 )
             )
@@ -580,17 +587,20 @@ contract Fixtures is CommonBase, StdCheats {
                     address(chainBProxyAdmin),
                     abi.encodeWithSelector(
                         OmniPortal.initialize.selector,
-                        owner,
-                        address(feeOracle),
-                        omniChainId,
-                        omniCChainID,
-                        xmsgMaxGasLimit,
-                        xmsgMinGasLimit,
-                        xreceiptMaxErrorBytes,
-                        1, // cchain xmsg offset
-                        1, // cchain xblock offset
-                        genesisValSetId,
-                        validatorSet[genesisValSetId]
+                        OmniPortal.InitParams(
+                            owner,
+                            address(feeOracle),
+                            omniChainId,
+                            omniCChainID,
+                            xmsgMaxGasLimit,
+                            xmsgMinGasLimit,
+                            xmsgMaxDataSize,
+                            xreceiptMaxErrorSize,
+                            1, // cchain xmsg offset
+                            1, // cchain xblock offset
+                            genesisValSetId,
+                            validatorSet[genesisValSetId]
+                        )
                     )
                 )
             )
