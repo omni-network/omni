@@ -2,8 +2,10 @@ package app
 
 import (
 	"context"
+	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/netman"
 	"github.com/omni-network/omni/e2e/netman/pingpong"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/errors"
@@ -11,6 +13,8 @@ import (
 	"github.com/omni-network/omni/lib/log"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 )
 
 const (
@@ -311,52 +315,48 @@ func deployMonitorOnly(ctx context.Context, def Definition, cfg DeployConfig) er
 }
 
 // waitForSupportedChains waits for all dest chains to be supported by all src chains.
-func waitForSupportedChains(_ context.Context, _ Definition) error {
-	return nil
+func waitForSupportedChains(ctx context.Context, def Definition) error {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	attempt := 1
 
-	// TODO: uncomment when cchain setNetwork xmsgs are enabled.
-	//
-	// ticker := time.NewTicker(time.Second)
-	// defer ticker.Stop()
-	// attempt := 1
+	for {
+		select {
+		case <-ctx.Done():
+			return errors.Wrap(ctx.Err(), "cancel")
+		case <-ticker.C:
+			ok, err := checkSupportedChains(ctx, def.Netman())
+			if err != nil {
+				return err
+			} else if ok {
+				return nil
+			}
 
-	// for {
-	// 	select {
-	// 	case <-ctx.Done():
-	// 		return errors.Wrap(ctx.Err(), "cancel")
-	// 	case <-ticker.C:
-	// 		ok, err := checkSupportedChains(ctx, def.Netman())
-	// 		if err != nil {
-	// 			return err
-	// 		} else if ok {
-	// 			return nil
-	// 		}
-
-	// 		if attempt > 60 {
-	// 			return errors.New("timeout waiting for supported chains")
-	// 		} else if attempt%10 == 0 {
-	// 			log.Debug(ctx, "Waiting for supported chains", "attempt", attempt)
-	// 		}
-	// 		attempt++
-	// 	}
-	// }
+			if attempt > 60 {
+				return errors.New("timeout waiting for supported chains")
+			} else if attempt%10 == 0 {
+				log.Debug(ctx, "Waiting for supported chains", "attempt", attempt)
+			}
+			attempt++
+		}
+	}
 }
 
-// func checkSupportedChains(ctx context.Context, n netman.Manager) (bool, error) {
-// 	for _, src := range n.Portals() {
-// 		for _, dest := range n.Portals() {
-// 			if src.Chain.ChainID == dest.Chain.ChainID {
-// 				continue
-// 			}
+func checkSupportedChains(ctx context.Context, n netman.Manager) (bool, error) {
+	for _, src := range n.Portals() {
+		for _, dest := range n.Portals() {
+			if src.Chain.ChainID == dest.Chain.ChainID {
+				continue
+			}
 
-// 			supported, err := src.Contract.IsSupportedDest(&bind.CallOpts{Context: ctx}, dest.Chain.ChainID)
-// 			if err != nil {
-// 				return false, errors.Wrap(err, "check supported chain")
-// 			} else if !supported {
-// 				return false, nil
-// 			}
-// 		}
-// 	}
+			supported, err := src.Contract.IsSupportedDest(&bind.CallOpts{Context: ctx}, dest.Chain.ChainID)
+			if err != nil {
+				return false, errors.Wrap(err, "check supported chain")
+			} else if !supported {
+				return false, nil
+			}
+		}
+	}
 
-// 	return true, nil
-// }
+	return true, nil
+}
