@@ -123,6 +123,9 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 		if err != nil {
 			return err
 		}
+		if def.Testnet.Network == netconf.Devnet {
+			cfg.LogLevel = "debug" // TODO(corver): Remove this once we find the cause of sporadic chain stalls.
+		}
 		config.WriteConfigFile(filepath.Join(nodeDir, "config", "config.toml"), cfg) // panics
 
 		endpoints := internalEndpoints(def, node.Name)

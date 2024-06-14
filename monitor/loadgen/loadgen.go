@@ -77,7 +77,7 @@ func Start(ctx context.Context, network netconf.Network, endpoints xchain.RPCEnd
 
 	var period = time.Hour
 	if network.ID == netconf.Devnet {
-		period = time.Second * 10
+		period = time.Second * 5
 	}
 
 	for _, key := range keys {
