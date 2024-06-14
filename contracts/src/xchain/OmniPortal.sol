@@ -110,9 +110,7 @@ contract OmniPortal is
         payable
         whenNotPaused
     {
-        // TODO: uncomment when cchain setNetwork xmsgs are enabled
-        // require(isSupportedDest[destChainId], "OmniPortal: unsupported dest");
-
+        require(isSupportedDest[destChainId], "OmniPortal: unsupported dest");
         require(to != _VIRTUAL_PORTAL_ADDRESS, "OmniPortal: no portal xcall");
         require(gasLimit <= xmsgMaxGasLimit, "OmniPortal: gasLimit too high");
         require(gasLimit >= xmsgMinGasLimit, "OmniPortal: gasLimit too low");
@@ -120,9 +118,7 @@ contract OmniPortal is
 
         // conf level will always be first byte of shardId. for now, shardId is just conf level
         uint64 shardId = uint64(conf);
-
-        // TODO: uncomment when cchain setNetwork xmsgs are enabled
-        // require(isSupportedShard[shardId], "OmniPortal: unsupported shard");
+        require(isSupportedShard[shardId], "OmniPortal: unsupported shard");
 
         uint256 fee = feeFor(destChainId, data, gasLimit);
         require(msg.value >= fee, "OmniPortal: insufficient fee");
