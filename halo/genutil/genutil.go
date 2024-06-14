@@ -40,7 +40,8 @@ import (
 const slashingBlocksWindow = 1000
 
 // validatorPower is the default power assigned to genesis validators.
-const validatorPower = 10
+// It is also the minimum stake enforced by the omni staking contract.
+const validatorPower = 100
 
 func MakeGenesis(network netconf.ID, genesisTime time.Time, valPubkeys ...crypto.PubKey) (*gtypes.AppGenesis, error) {
 	cdc := getCodec()
