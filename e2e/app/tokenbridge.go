@@ -226,7 +226,7 @@ func bridgeToNative(ctx context.Context, def Definition, toBridge []BridgeTest) 
 	txns := make([]*ethtypes.Transaction, len(toBridge))
 
 	for i, test := range toBridge {
-		fee, err := bridge.BridgeFee(&bind.CallOpts{Context: ctx}, test.To, test.Amount)
+		fee, err := bridge.BridgeFee(&bind.CallOpts{Context: ctx}, txOpts.From, test.To, test.Amount)
 		if err != nil {
 			return errors.Wrap(err, "bridge fee")
 		}
