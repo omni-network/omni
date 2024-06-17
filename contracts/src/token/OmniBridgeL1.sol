@@ -88,7 +88,7 @@ contract OmniBridgeL1 is OwnableUpgradeable {
     function _bridge(address payor, address to, uint256 amount) internal {
         require(amount > 0, "OmniBridge: amount must be > 0");
         require(to != address(0), "OmniBridge: no bridge to zero");
-        require(msg.value == bridgeFee(to, amount), "OmniBridge: incorrect fee");
+        require(msg.value == bridgeFee(payor, to, amount), "OmniBridge: incorrect fee");
         require(token.transferFrom(payor, address(this), amount), "OmniBridge: transfer failed");
 
         omni.xcall{ value: msg.value }(
@@ -105,10 +105,10 @@ contract OmniBridgeL1 is OwnableUpgradeable {
     /**
      * @notice Return the xcall fee required to bridge `amount` to `to`.
      */
-    function bridgeFee(address to, uint256 amount) public view returns (uint256) {
+    function bridgeFee(address payor, address to, uint256 amount) public view returns (uint256) {
         return omni.feeFor(
             omni.omniChainId(),
-            abi.encodeWithSelector(OmniBridgeNative.withdraw.selector, to, amount),
+            abi.encodeWithSelector(OmniBridgeNative.withdraw.selector, payor, to, amount),
             XCALL_WITHDRAW_GAS_LIMIT
         );
     }

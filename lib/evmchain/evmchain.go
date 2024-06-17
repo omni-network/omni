@@ -36,6 +36,7 @@ const (
 
 type Metadata struct {
 	ChainID     uint64
+	IsL2        bool
 	Name        string
 	BlockPeriod time.Duration
 	NativeToken tokens.Token
@@ -86,12 +87,14 @@ var static = map[uint64]Metadata{
 		Name:        "arb_sepolia",
 		BlockPeriod: 300 * time.Millisecond,
 		NativeToken: tokens.ETH,
+		IsL2:        true,
 	},
 	IDOpSepolia: {
 		ChainID:     IDOpSepolia,
 		Name:        "op_sepolia",
 		BlockPeriod: 2 * time.Second,
 		NativeToken: tokens.ETH,
+		IsL2:        true,
 	},
 	IDOmniEphemeral: {
 		ChainID:     IDOmniEphemeral,
@@ -116,17 +119,20 @@ var static = map[uint64]Metadata{
 		Name:        "mock_l2",
 		BlockPeriod: time.Second,
 		NativeToken: tokens.ETH,
+		IsL2:        true,
 	},
 	IDMockOp: {
 		ChainID:     IDMockOp,
 		Name:        "mock_op",
 		BlockPeriod: time.Second * 2,
 		NativeToken: tokens.ETH,
+		IsL2:        true,
 	},
 	IDMockArb: {
 		ChainID:     IDMockArb,
 		Name:        "mock_arb",
 		BlockPeriod: time.Second,
 		NativeToken: tokens.ETH,
+		IsL2:        true,
 	},
 }

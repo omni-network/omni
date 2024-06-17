@@ -448,18 +448,21 @@ contract Fixtures is CommonBase, StdCheats {
 
         feeParams[0] = IFeeOracleV1.ChainFeeParams({
             chainId: thisChainId,
+            postsTo: thisChainId,
             gasPrice: 0.1 gwei, // 1 gwei
             toNativeRate: 1e6 // feeOracle.CONVERSION_RATE_DENOM , so 1:1
          });
 
         feeParams[1] = IFeeOracleV1.ChainFeeParams({
             chainId: chainAId,
+            postsTo: chainAId,
             gasPrice: 0.1 gwei, // 1 gwei
             toNativeRate: 1e6 // feeOracle.CONVERSION_RATE_DENOM , so 1:1
          });
 
         feeParams[2] = IFeeOracleV1.ChainFeeParams({
             chainId: chainBId,
+            postsTo: chainAId, // let's have chainB "rollup" to chainA
             gasPrice: 0.1 gwei, // 1 gwei
             toNativeRate: 1e6 // feeOracle.CONVERSION_RATE_DENOM , so 1:1
          });

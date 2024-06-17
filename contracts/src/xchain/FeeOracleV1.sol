@@ -27,15 +27,9 @@ contract FeeOracleV1 is IFeeOracle, IFeeOracleV1, OwnableUpgradeable {
     address public manager;
 
     /**
-     * @notice Gas price per destination chain, in wei, of the chains native token.
+     * @notice Fee parameters for a specific chain, by chain ID.
      */
-    mapping(uint64 => uint256) public gasPriceOn;
-
-    /**
-     * @notice Conversion rate from a destination chain's native token to this chain's native token.
-     *         Rate is numerator over CONVERSION_RATE_DENOM.
-     */
-    mapping(uint64 => uint256) public toNativeRate;
+    mapping(uint64 => IFeeOracleV1.ChainFeeParams) internal _feeParams;
 
     /**
      * @notice Denominator for conversion rate calculations.
@@ -66,10 +60,51 @@ contract FeeOracleV1 is IFeeOracle, IFeeOracleV1, OwnableUpgradeable {
     }
 
     /// @inheritdoc IFeeOracle
-    function feeFor(uint64 destChainId, bytes calldata, uint64 gasLimit) external view returns (uint256) {
-        require(gasPriceOn[destChainId] > 0 && toNativeRate[destChainId] > 0, "FeeOracleV1: no fee params");
-        uint256 gasPrice = gasPriceOn[destChainId] * toNativeRate[destChainId] / CONVERSION_RATE_DENOM;
-        return protocolFee + (baseGasLimit * gasPrice) + (gasLimit * gasPrice);
+    function feeFor(uint64 destChainId, bytes calldata data, uint64 gasLimit) external view returns (uint256) {
+        IFeeOracleV1.ChainFeeParams storage execP = _feeParams[destChainId];
+        IFeeOracleV1.ChainFeeParams storage dataP = _feeParams[execP.postsTo];
+
+        require(execP.gasPrice > 0 && execP.toNativeRate > 0, "FeeOracleV1: no fee params");
+        require(dataP.gasPrice > 0 && dataP.toNativeRate > 0, "FeeOracleV1: no fee params");
+
+        uint256 execGasPrice = execP.gasPrice * execP.toNativeRate / CONVERSION_RATE_DENOM;
+        uint256 dataGasPrice = dataP.gasPrice * dataP.toNativeRate / CONVERSION_RATE_DENOM;
+
+        // 16 gas per non-zero byte, assume non-zero bytes
+        // TODO: given we mostly support rollups that post data to L1, it may be cheaper for users to count
+        //       non-zero bytes (consuming L2 execution gas) to reduce their L1 data fee
+        uint256 dataGas = data.length * 16;
+
+        return protocolFee + (baseGasLimit * execGasPrice) + (gasLimit * execGasPrice) + (dataGas * dataGasPrice);
+    }
+
+    /**
+     * @notice Returns the fee parameters for a destination chain.
+     */
+    function feeParams(uint64 chainId) external view returns (ChainFeeParams memory) {
+        return _feeParams[chainId];
+    }
+
+    /**
+     * @notice Returns the gas price for a destination chain.
+     */
+    function gasPriceOn(uint64 chainId) external view returns (uint256) {
+        return _feeParams[chainId].gasPrice;
+    }
+
+    /**
+     * @notice Returns the to-native conversion rate for a destination chain.
+     */
+    function toNativeRate(uint64 chainId) external view returns (uint256) {
+        return _feeParams[chainId].toNativeRate;
+    }
+
+    /**
+     * @notice Returns the chainId of the chain that the given destination chain posts tx data to.
+     *         For rollups, this is L1.
+     */
+    function postsTo(uint64 chainId) external view returns (uint64) {
+        return _feeParams[chainId].postsTo;
     }
 
     /**
@@ -121,8 +156,15 @@ contract FeeOracleV1 is IFeeOracle, IFeeOracleV1, OwnableUpgradeable {
     function _bulkSetFeeParams(ChainFeeParams[] calldata params) internal {
         for (uint256 i = 0; i < params.length; i++) {
             ChainFeeParams memory p = params[i];
-            _setGasPrice(p.chainId, p.gasPrice);
-            _setToNativeRate(p.chainId, p.toNativeRate);
+
+            require(p.gasPrice > 0, "FeeOracleV1: no zero gas price");
+            require(p.toNativeRate > 0, "FeeOracleV1: no zero rate");
+            require(p.chainId != 0, "FeeOracleV1: no zero chain id");
+            require(p.postsTo != 0, "FeeOracleV1: no zero postsTo");
+
+            _feeParams[p.chainId] = p;
+
+            emit FeeParamsSet(p.chainId, p.postsTo, p.gasPrice, p.toNativeRate);
         }
     }
 
@@ -133,7 +175,7 @@ contract FeeOracleV1 is IFeeOracle, IFeeOracleV1, OwnableUpgradeable {
         require(gasPrice > 0, "FeeOracleV1: no zero gas price");
         require(chainId != 0, "FeeOracleV1: no zero chain id");
 
-        gasPriceOn[chainId] = gasPrice;
+        _feeParams[chainId].gasPrice = gasPrice;
         emit GasPriceSet(chainId, gasPrice);
     }
 
@@ -144,7 +186,7 @@ contract FeeOracleV1 is IFeeOracle, IFeeOracleV1, OwnableUpgradeable {
         require(rate > 0, "FeeOracleV1: no zero rate");
         require(chainId != 0, "FeeOracleV1: no zero chain id");
 
-        toNativeRate[chainId] = rate;
+        _feeParams[chainId].toNativeRate = rate;
         emit ToNativeRateSet(chainId, rate);
     }
 
@@ -168,7 +210,7 @@ contract FeeOracleV1 is IFeeOracle, IFeeOracleV1, OwnableUpgradeable {
      * @notice Set the manager admin account.
      */
     function _setManager(address manager_) internal {
-        emit ManagerChanged(manager, manager_);
         manager = manager_;
+        emit ManagerSet(manager_);
     }
 }

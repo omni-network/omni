@@ -9,6 +9,11 @@ import { IFeeOracle } from "./IFeeOracle.sol";
  */
 interface IFeeOracleV1 is IFeeOracle {
     /**
+     * @notice Emitted when fee parameters for a chain are set.
+     */
+    event FeeParamsSet(uint64 chainId, uint64 postsTo, uint256 gasPrice, uint256 toNativeRate);
+
+    /**
      * @notice Emitted when the base gas limit is set.
      */
     event BaseGasLimitSet(uint64 baseGasLimit);
@@ -31,17 +36,20 @@ interface IFeeOracleV1 is IFeeOracle {
     /**
      * @notice Emitted when the manager is changed.
      */
-    event ManagerChanged(address oldManager, address newManager);
+    event ManagerSet(address manager);
 
     /**
      * @notice Fee parameters for a specific chain.
      * @custom:field chainId        The chain ID.
+     * @custom:field postTo         The chain ID to which this chain posts tx calldata, used to calculate
+     *                              calldata fees. For non-rollups, this should be the same as chainId.
      * @custom:field gasPrice       The gas price on that chain (denominated in chains native token).
      * @custom:field toNativeRate   The conversion rate from the chains native token to this chain's
      *                              native token. Rate is numerator over CONVERSION_RATE_DENOM.
      */
     struct ChainFeeParams {
         uint64 chainId;
+        uint64 postsTo;
         uint256 gasPrice;
         uint256 toNativeRate;
     }

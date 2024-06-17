@@ -51,8 +51,8 @@ contract OmniBridgeL1_Test is Test {
     function test_bridge() public {
         address to = makeAddr("to");
         uint256 amount = 1e18;
-        uint256 fee = b.bridgeFee(to, amount);
         address payor = address(this);
+        uint256 fee = b.bridgeFee(payor, to, amount);
 
         // requires amount > 0
         vm.expectRevert("OmniBridge: amount must be > 0");
