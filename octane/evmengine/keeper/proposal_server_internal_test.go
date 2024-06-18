@@ -3,9 +3,7 @@ package keeper
 import (
 	"context"
 	"encoding/json"
-	"math/big"
 	"testing"
-	"time"
 
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/expbackoff"
@@ -32,8 +30,8 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 	mockEngine, err := newMockEngineAPI(0)
 	require.NoError(t, err)
 
-	ctx, storeService := setupCtxStore(t, &cmtproto.Header{AppHash: tutil.RandomHash().Bytes()})
-	ctx = ctx.WithExecMode(sdk.ExecModeFinalize)
+	sdkCtx, storeService := setupCtxStore(t, &cmtproto.Header{AppHash: tutil.RandomHash().Bytes()})
+	sdkCtx = sdkCtx.WithExecMode(sdk.ExecModeFinalize)
 
 	frp := newRandomFeeRecipientProvider()
 	keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, nil, frp)
@@ -45,10 +43,9 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 	var block *etypes.Block
 	newPayload := func(ctx context.Context) {
 		// get latest block to build on top
-		latestHeight, err = mockEngine.BlockNumber(ctx)
+		latestBlock, err := mockEngine.HeaderByType(ctx, ethclient.HeadLatest)
 		require.NoError(t, err)
-		latestBlock, err := mockEngine.HeaderByNumber(ctx, big.NewInt(int64(latestHeight)))
-		require.NoError(t, err)
+		latestHeight = latestBlock.Number.Uint64()
 
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
 		appHash := common.BytesToHash(sdkCtx.BlockHeader().AppHash)
@@ -56,7 +53,7 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 		b, execPayload := mockEngine.nextBlock(
 			t,
 			latestHeight+1,
-			uint64(time.Now().Unix()),
+			uint64(sdkCtx.BlockHeader().Time.Unix()),
 			latestBlock.Hash(),
 			frp.LocalFeeRecipient(),
 			&appHash,
@@ -87,8 +84,8 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 		require.Empty(t, gotPayload.ExecutionPayload.Withdrawals)
 	}
 
-	newPayload(ctx)
-	assertExecutionPayload(ctx)
+	newPayload(sdkCtx)
+	assertExecutionPayload(sdkCtx)
 }
 
 func fastBackoffForT() {

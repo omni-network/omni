@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"encoding/json"
 	"sync"
 	"time"
 
@@ -11,11 +12,12 @@ import (
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/octane/evmengine/types"
 
-	eengine "github.com/ethereum/go-ethereum/beacon/engine"
+	"github.com/ethereum/go-ethereum/beacon/engine"
 
 	"cosmossdk.io/core/store"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
 )
 
@@ -37,7 +39,7 @@ type Keeper struct {
 	// so we might not actually be the next proposer.
 	mutablePayload struct {
 		sync.Mutex
-		ID        *eengine.PayloadID
+		ID        *engine.PayloadID
 		Height    uint64
 		UpdatedAt time.Time
 	}
@@ -91,6 +93,67 @@ func (k *Keeper) RegisterProposalService(server grpc1.Server) {
 	types.RegisterMsgServiceServer(server, NewProposalServer(k))
 }
 
+// parseAndVerifyProposedPayload parses and returns the proposed payload
+// if comparing it against the latest execution block succeeds.
+func (k *Keeper) parseAndVerifyProposedPayload(ctx context.Context, msg *types.MsgExecutionPayload) (engine.ExecutableData, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	// Parse the payload.
+	var payload engine.ExecutableData
+	if err := json.Unmarshal(msg.ExecutionPayload, &payload); err != nil {
+		return engine.ExecutableData{}, errors.Wrap(err, "unmarshal payload")
+	}
+
+	// Ensure no withdrawals are included in the payload.
+	if len(payload.Withdrawals) > 0 {
+		return engine.ExecutableData{}, errors.New("withdrawals not allowed in payload")
+	}
+
+	// Ensure fee recipient using provider
+	if err := k.feeRecProvider.VerifyFeeRecipient(payload.FeeRecipient); err != nil {
+		return engine.ExecutableData{}, errors.Wrap(err, "verify proposed fee recipient")
+	}
+
+	// Fetch the latest execution block.
+	latestEBlock, err := k.engineCl.HeaderByType(ctx, ethclient.HeadLatest)
+	if err != nil {
+		return engine.ExecutableData{}, errors.Wrap(err, "latest execution block")
+	}
+
+	// Ensure the parent hash matches the latest execution block.
+	if payload.ParentHash != latestEBlock.Hash() {
+		return engine.ExecutableData{}, errors.New("parent hash does not match latest execution block")
+	}
+
+	// Ensure the payload timestamp is after latest execution block and before or equaled to the current consensus block.
+	minTimestamp := latestEBlock.Time + 1
+	maxTimestamp := uint64(sdkCtx.BlockHeader().Time.Unix())
+	if maxTimestamp < minTimestamp { // Execution block minimum takes precedence
+		maxTimestamp = minTimestamp
+	}
+	if payload.Timestamp < minTimestamp || payload.Timestamp > maxTimestamp {
+		return engine.ExecutableData{}, errors.New("invalid payload timestamp",
+			"payload", payload.Timestamp, "min", minTimestamp, "max", maxTimestamp,
+		)
+	}
+
+	if payload.Number != latestEBlock.Number.Uint64()+1 {
+		return engine.ExecutableData{}, errors.New("invalid payload number",
+			"payload", payload.Number,
+			"latest", latestEBlock.Number.Uint64(),
+		)
+	}
+
+	if payload.Random != latestEBlock.Hash() {
+		return engine.ExecutableData{}, errors.New("invalid payload random",
+			"payload", payload.Random,
+			"latest", latestEBlock.Hash(),
+		)
+	}
+
+	return payload, nil
+}
+
 // isNextProposer returns true if the local node is the proposer
 // for the next block. It also returns the next block height.
 //
@@ -125,7 +188,7 @@ func (k *Keeper) isNextProposer(ctx context.Context, currentProposer []byte, cur
 	return isNextProposer, nil
 }
 
-func (k *Keeper) setOptimisticPayload(id *eengine.PayloadID, height uint64) {
+func (k *Keeper) setOptimisticPayload(id *engine.PayloadID, height uint64) {
 	k.mutablePayload.Lock()
 	defer k.mutablePayload.Unlock()
 
@@ -134,7 +197,7 @@ func (k *Keeper) setOptimisticPayload(id *eengine.PayloadID, height uint64) {
 	k.mutablePayload.UpdatedAt = time.Now()
 }
 
-func (k *Keeper) getOptimisticPayload() (*eengine.PayloadID, uint64, time.Time) {
+func (k *Keeper) getOptimisticPayload() (*engine.PayloadID, uint64, time.Time) {
 	k.mutablePayload.Lock()
 	defer k.mutablePayload.Unlock()
 

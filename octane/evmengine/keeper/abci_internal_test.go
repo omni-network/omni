@@ -85,10 +85,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 			{
 				name: "forkchoiceUpdateV2  not valid",
 				mockEngine: mockEngineAPI{
-					blockNumberFunc: func(ctx context.Context) (uint64, error) {
-						return 0, nil
-					},
-					HeaderByNumberFunc: func(ctx context.Context, number *big.Int) (*types.Header, error) {
+					headerByTypeFunc: func(context.Context, ethclient.HeadType) (*types.Header, error) {
 						fuzzer := ethclient.NewFuzzer(0)
 						var header *types.Header
 						fuzzer.Fuzz(&header)
@@ -160,10 +157,9 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 
 		// get the genesis block to build on top of
 		ts := time.Now()
-		latestHeight, err := mockEngine.BlockNumber(ctx)
+		latestBlock, err := mockEngine.HeaderByType(ctx, ethclient.HeadLatest)
 		require.NoError(t, err)
-		latestBlock, err := mockEngine.HeaderByNumber(ctx, big.NewInt(int64(latestHeight)))
-		require.NoError(t, err)
+		latestHeight := latestBlock.Number.Uint64()
 
 		appHash1 := tutil.RandomHash()
 		appHash2 := tutil.RandomHash()
@@ -222,10 +218,9 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 
 		// get the genesis block to build on top of
 		ts := time.Now()
-		latestHeight, err := mockEngine.BlockNumber(ctx)
+		latestBlock, err := mockEngine.HeaderByType(ctx, ethclient.HeadLatest)
 		require.NoError(t, err)
-		latestBlock, err := mockEngine.HeaderByNumber(ctx, big.NewInt(int64(latestHeight)))
-		require.NoError(t, err)
+		latestHeight := latestBlock.Number.Uint64()
 
 		appHash1 := tutil.RandomHash()
 		appHash2 := tutil.RandomHash()
@@ -318,7 +313,7 @@ func TestOptimistic(t *testing.T) {
 	require.EqualValues(t, height+1, h)
 	require.NotEmpty(t, ts)
 
-	b, err := mockEngine.HeaderByNumber(ctx, nil)
+	b, err := mockEngine.HeaderByType(ctx, ethclient.HeadLatest)
 	require.NoError(t, err)
 
 	env, err := mockEngine.GetPayloadV3(ctx, *payloadID)
@@ -413,8 +408,7 @@ type mockEngineAPI struct {
 	syncings                <-chan struct{}
 	fuzzer                  *fuzz.Fuzzer
 	mock                    ethclient.EngineClient // avoid repeating the implementation but also allow for custom implementations of mocks
-	blockNumberFunc         func(context.Context) (uint64, error)
-	HeaderByNumberFunc      func(context.Context, *big.Int) (*types.Header, error)
+	headerByTypeFunc        func(context.Context, ethclient.HeadType) (*types.Header, error)
 	forkchoiceUpdatedV3Func func(context.Context, eengine.ForkchoiceStateV1, *eengine.PayloadAttributes) (eengine.ForkChoiceResponse, error)
 	newPayloadV3Func        func(context.Context, eengine.ExecutableData, []common.Hash, *common.Hash) (eengine.PayloadStatusV1, error)
 }
@@ -502,20 +496,12 @@ func (mockEngineAPI) FilterLogs(context.Context, ethereum.FilterQuery) ([]types.
 	return nil, nil
 }
 
-func (m *mockEngineAPI) BlockNumber(ctx context.Context) (uint64, error) {
-	if m.blockNumberFunc != nil {
-		return m.blockNumberFunc(ctx)
+func (m *mockEngineAPI) HeaderByType(ctx context.Context, typ ethclient.HeadType) (*types.Header, error) {
+	if m.headerByTypeFunc != nil {
+		return m.headerByTypeFunc(ctx, typ)
 	}
 
-	return m.mock.BlockNumber(ctx)
-}
-
-func (m *mockEngineAPI) HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error) {
-	if m.HeaderByNumberFunc != nil {
-		return m.HeaderByNumberFunc(ctx, number)
-	}
-
-	return m.mock.HeaderByNumber(ctx, number)
+	return m.mock.HeaderByType(ctx, typ)
 }
 
 func (m *mockEngineAPI) NewPayloadV2(ctx context.Context, params eengine.ExecutableData) (eengine.PayloadStatusV1, error) {
@@ -581,8 +567,14 @@ func (m *mockEngineAPI) pushPayload(t *testing.T, ctx context.Context, feeRecipi
 
 // nextBlock creates a new block with the given height, timestamp, parentHash, and feeRecipient. It also returns the
 // payload for the block. It's a utility function for testing.
-func (m *mockEngineAPI) nextBlock(t *testing.T, height uint64, timestamp uint64, parentHash common.Hash,
-	feeRecipient common.Address, beaconRoot *common.Hash) (*types.Block, eengine.ExecutableData) {
+func (m *mockEngineAPI) nextBlock(
+	t *testing.T,
+	height uint64,
+	timestamp uint64,
+	parentHash common.Hash,
+	feeRecipient common.Address,
+	beaconRoot *common.Hash,
+) (*types.Block, eengine.ExecutableData) {
 	t.Helper()
 	var header types.Header
 	m.fuzzer.Fuzz(&header)
