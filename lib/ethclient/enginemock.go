@@ -238,6 +238,19 @@ func (m *engineMock) HeaderByNumber(ctx context.Context, height *big.Int) (*type
 	return b.Header(), nil
 }
 
+func (m *engineMock) HeaderByType(ctx context.Context, typ HeadType) (*types.Header, error) {
+	if typ != HeadLatest {
+		return nil, errors.New("only support latest block")
+	}
+
+	number, err := m.BlockNumber(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return m.HeaderByNumber(ctx, big.NewInt(int64(number)))
+}
+
 func (m *engineMock) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
 	if err := m.maybeErr(ctx); err != nil {
 		return nil, err
