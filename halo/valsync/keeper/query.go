@@ -24,14 +24,9 @@ func (k *Keeper) ActiveSetByHeight(ctx context.Context, height uint64) (*types.V
 
 	var validators []*types.Validator
 	for _, val := range vals {
-		addr, err := val.Address()
-		if err != nil {
-			return nil, err
-		}
-
 		validators = append(validators, &types.Validator{
-			Address: addr.Bytes(),
-			Power:   val.GetPower(),
+			ConsensusPubkey: val.GetPubKey(),
+			Power:           val.GetPower(),
 		})
 	}
 
@@ -129,14 +124,9 @@ func (k *Keeper) ValidatorSet(ctx context.Context, req *types.ValidatorSetReques
 			continue // Skip zero power validators.
 		}
 
-		addr, err := val.Address()
-		if err != nil {
-			return nil, err
-		}
-
 		vals = append(vals, &types.Validator{
-			Address: addr.Bytes(),
-			Power:   val.GetPower(),
+			ConsensusPubkey: val.GetPubKey(),
+			Power:           val.GetPower(),
 		})
 	}
 

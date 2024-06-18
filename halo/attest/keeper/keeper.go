@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log/slog"
@@ -49,6 +50,8 @@ type Keeper struct {
 	voteWindow     uint64
 	voteExtLimit   uint64
 	trimLag        uint64
+
+	valCache *valCache
 }
 
 // New returns a new attestation keeper.
@@ -88,6 +91,7 @@ func New(
 		voteExtLimit:   voteExtLimit,
 		trimLag:        trimLag,
 		portalRegistry: stubPortalRegistry{},
+		valCache:       new(valCache),
 	}
 
 	return k, nil
@@ -602,7 +606,7 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 		log.Warn(ctx, "Rejecting invalid vote extension", err)
 		return respReject, nil
 	} else if !ok {
-		log.Info(ctx, "Accepting nil vote extension") // This can happen in some edge-cases.
+		log.Debug(ctx, "Accepting nil vote extension") // This can happen if no non-empty blocks are present.
 		return respAccept, nil
 	} else if len(votes.Votes) > int(k.voteExtLimit) {
 		log.Warn(ctx, "Rejecting vote extension exceeding limit", nil, "count", len(votes.Votes), "limit", k.voteExtLimit)
@@ -612,6 +616,16 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 	for _, vote := range votes.Votes {
 		if err := vote.Verify(); err != nil {
 			log.Warn(ctx, "Rejecting invalid vote", err)
+			return respReject, nil
+		}
+
+		// Ensure only votes from the requesting validator are included.
+		ethAddr := common.BytesToAddress(vote.Signature.ValidatorAddress)
+		if cmtAddr, err := k.getValCometAddr(ctx, ethAddr); err != nil {
+			log.Warn(ctx, "Rejecting unknown validator address vote", err, "address", ethAddr)
+			return respReject, nil
+		} else if !bytes.Equal(cmtAddr, req.ValidatorAddress) {
+			log.Warn(ctx, "Rejecting mismatching vote and req validator address", nil, "vote", ethAddr, "req", req.ValidatorAddress)
 			return respReject, nil
 		}
 
@@ -663,7 +677,11 @@ func (k *Keeper) prevBlockValSet(ctx context.Context) (ValSet, error) {
 
 	valsByPower := make(map[common.Address]int64)
 	for _, val := range resp.Validators {
-		valsByPower[common.BytesToAddress(val.Address)] = val.Power
+		ethAddr, err := val.EthereumAddress()
+		if err != nil {
+			return ValSet{}, err
+		}
+		valsByPower[ethAddr] = val.Power
 	}
 
 	return ValSet{
