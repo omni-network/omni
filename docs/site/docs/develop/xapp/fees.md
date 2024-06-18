@@ -20,25 +20,16 @@ uint256 fee = feeFor(
 )
 ```
 
-Or, using the default gas limit.
-```solidity
-
-uint256 fee = feeFor(
-   destChainId,  // destination chain id
-   data,         // abi encoded calldata, ex abi.encodeWithSignature("foo()")
-)
-```
-
 ## Fee Payment
 
 `XApp` handles calculating and charging fees when making an `xcall`
 
-<GitHubCodeBlock url="https://github.com/omni-network/omni/blob/059303647e07fc3481e379b710922e2b84b1827f/contracts/src/pkg/XApp.sol#L56-L65" />
+<GitHubCodeBlock url="https://github.com/omni-network/omni/blob/ad2f5b7dddc245e7f5b6b662d6c1fc44170694ab/contracts/src/xchain/OmniPortal.sol#L131-L140" />
 
-`xcall(...)` charges fees to your contract by default. To charge users for fees, calculate the fee with `feeFor(...)`, and verify `msg.value` is sufficient.
+`xcall(...)` charges fees to your contract by default. To charge users for fees, you can calculate the fee with `feeFor(...)`, and verify `msg.value` is sufficient. Or better yet, you can require users to send sufficient fees with each contract call:
 
 ```solidity
-uint256 fee = feeFor(...)
+uint256 fee = xcall(...)
 require(msg.value >= fee, "insufficient fee")
 ```
 
@@ -46,14 +37,12 @@ You can calculate this fee off chain, and require users send sufficient `xcall` 
 
 ## Example
 
-In the case of our [`XGreeter` example](./example.md), the fee may be different for each greeting, because the length of the greeting message is variable. You can calculate this fee offchain by querying the portal directly (via `OmniPortal.feeFor(...)`). Or, you can introduce a view function on your contract that calculates the fee.
-
+In the case of our [hello world example](./example.md), the fee may be different for each greeting, because the length of the greeting message is variable. You can calculate this fee offchain by querying the portal directly (via `OmniPortal.feeFor(...)`). Or, you can introduce a view function on your contract that calculates the fee.
 
 ```solidity
-function xgreetFee(uint64 destChainId,  string calldata greeting) external view {
+function greetFee(string calldata greeting) external view {
     feeFor(
-        destChainId,
-        abi.encodeWithSignature("greet(string)", greeting)
+        // ...
     );
 }
 ```

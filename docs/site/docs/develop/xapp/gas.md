@@ -15,11 +15,4 @@ xcall(
 )
 ```
 
-If you do not specify a gas limit, Omni enforces a default gas limit, currently set to `200_000`. You can read the default gas limit via the portal contract.
-
-```solidity
-/// @notice Default xmsg execution gas limit, enforced on destination chain
-omni.XMSG_DEFAULT_GAS_LIMIT()
-```
-
-If you do not provide sufficient gas for an `xcall`, its execution will revert. It's important to set appropriate gas limits for each `xcall`. Determine gas limits with proper unit testing.
+If you do not provide sufficient gas for an `xcall`, its execution will revert. It's important to set appropriate gas limits for each `xcall`. Determine gas limits with testing.
