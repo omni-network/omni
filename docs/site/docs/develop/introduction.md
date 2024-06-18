@@ -26,8 +26,8 @@ xmsg.sender          // who sent it (msg.sender of the source xcall)
 
 :::info Omni is a Cross-Chain Messaging Protocol
 
-Omni is a cross-chain messaging protocol that allows contracts to send and receive messages across different chains. It is a simple and secure way to interact with contracts on other chains. That means you can call a contract on another chain as if it were on the same chain, and you can receive messages from other chains as if they were sent from the same chain.
+Omni is a cross-chain messaging protocol that allows contracts to send and receive messages across different chains. It is a simple and secure way to interact with contracts on other chains.
 
-However, Omni is not a bridge. If you need to move assets between chains, you will need to use a bridge or implement your own bridge (with a transfer token proxy and liquidity for source and destination rollups).
+However, Omni is not a bridge for canonical or native tokens. If you need to move assets between chains, you will need to implement your own bridge (with a transfer token proxy and liquidity for source and destination rollups) or use an existing bridge.
 
 :::
