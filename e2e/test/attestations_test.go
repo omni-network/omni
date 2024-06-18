@@ -90,8 +90,8 @@ func TestApprovedValUpdates(t *testing.T) {
 			require.True(t, ok, "Validator update not found in any set: node=%s, valSetID=%v", node.Name, valSetID)
 
 			for _, val := range vals {
-				t.Logf("Got validator update set=%d: %s, %d", valSetID, val.Address.Hex(), val.Power)
-				if val.Address == addr && val.Power == power {
+				t.Logf("Got validator update set=%d: %s, %d", valSetID, val.ConsensusAddress.Hex(), val.Power)
+				if val.ConsensusAddress == addr && val.Power == power {
 					return // Validator update found and confirmed.
 				}
 			}

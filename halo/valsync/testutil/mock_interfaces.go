@@ -14,8 +14,9 @@ import (
 	reflect "reflect"
 
 	types "github.com/cometbft/cometbft/abci/types"
-	types0 "github.com/cosmos/cosmos-sdk/x/staking/types"
-	types1 "github.com/omni-network/omni/halo/attest/types"
+	types0 "github.com/cosmos/cosmos-sdk/types"
+	types1 "github.com/cosmos/cosmos-sdk/x/staking/types"
+	types2 "github.com/omni-network/omni/halo/attest/types"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -58,10 +59,10 @@ func (mr *MockStakingKeeperMockRecorder) EndBlocker(ctx any) *gomock.Call {
 }
 
 // GetLastValidators mocks base method.
-func (m *MockStakingKeeper) GetLastValidators(ctx context.Context) ([]types0.Validator, error) {
+func (m *MockStakingKeeper) GetLastValidators(ctx context.Context) ([]types1.Validator, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLastValidators", ctx)
-	ret0, _ := ret[0].([]types0.Validator)
+	ret0, _ := ret[0].([]types1.Validator)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -70,6 +71,21 @@ func (m *MockStakingKeeper) GetLastValidators(ctx context.Context) ([]types0.Val
 func (mr *MockStakingKeeperMockRecorder) GetLastValidators(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastValidators", reflect.TypeOf((*MockStakingKeeper)(nil).GetLastValidators), ctx)
+}
+
+// GetValidatorByConsAddr mocks base method.
+func (m *MockStakingKeeper) GetValidatorByConsAddr(ctx context.Context, consAddr types0.ConsAddress) (types1.Validator, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetValidatorByConsAddr", ctx, consAddr)
+	ret0, _ := ret[0].(types1.Validator)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetValidatorByConsAddr indicates an expected call of GetValidatorByConsAddr.
+func (mr *MockStakingKeeperMockRecorder) GetValidatorByConsAddr(ctx, consAddr any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorByConsAddr", reflect.TypeOf((*MockStakingKeeper)(nil).GetValidatorByConsAddr), ctx, consAddr)
 }
 
 // MockAttestKeeper is a mock of AttestKeeper interface.
@@ -96,10 +112,10 @@ func (m *MockAttestKeeper) EXPECT() *MockAttestKeeperMockRecorder {
 }
 
 // ListAttestationsFrom mocks base method.
-func (m *MockAttestKeeper) ListAttestationsFrom(ctx context.Context, chainID uint64, confLevel uint32, offset, max uint64) ([]*types1.Attestation, error) {
+func (m *MockAttestKeeper) ListAttestationsFrom(ctx context.Context, chainID uint64, confLevel uint32, offset, max uint64) ([]*types2.Attestation, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListAttestationsFrom", ctx, chainID, confLevel, offset, max)
-	ret0, _ := ret[0].([]*types1.Attestation)
+	ret0, _ := ret[0].([]*types2.Attestation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

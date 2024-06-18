@@ -7,6 +7,7 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
@@ -17,6 +18,7 @@ type AttestKeeper interface {
 type StakingKeeper interface {
 	EndBlocker(ctx context.Context) ([]abci.ValidatorUpdate, error)
 	GetLastValidators(ctx context.Context) ([]stypes.Validator, error)
+	GetValidatorByConsAddr(ctx context.Context, consAddr sdk.ConsAddress) (validator stypes.Validator, err error)
 }
 
 type ValSetSubscriber interface {

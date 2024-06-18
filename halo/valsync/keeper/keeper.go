@@ -22,6 +22,7 @@ import (
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/orm/model/ormdb"
 	"cosmossdk.io/orm/model/ormlist"
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
@@ -113,8 +114,8 @@ func (k *Keeper) EndBlock(ctx context.Context) ([]abci.ValidatorUpdate, error) {
 }
 
 // maybeStoreValidatorUpdates stores the provided validator updates as the next unattested validator set if not empty.
-func (k *Keeper) maybeStoreValidatorUpdates(ctx context.Context, updates []abci.ValidatorUpdate) error {
-	if len(updates) == 0 {
+func (k *Keeper) maybeStoreValidatorUpdates(ctx context.Context, abciUpdates []abci.ValidatorUpdate) error {
+	if len(abciUpdates) == 0 {
 		return nil
 	}
 
@@ -125,7 +126,12 @@ func (k *Keeper) maybeStoreValidatorUpdates(ctx context.Context, updates []abci.
 		return errors.New("empty validator set")
 	}
 
-	merged, err := mergeValidatorSet(valset, updates)
+	udpates, err := k.withOperatorAddrs(ctx, abciUpdates)
+	if err != nil {
+		return errors.Wrap(err, "with operator addresses")
+	}
+
+	merged, err := mergeValidatorSet(valset, udpates)
 	if err != nil {
 		return errors.Wrap(err, "merge validator set")
 	}
@@ -167,9 +173,9 @@ func (k *Keeper) InsertGenesisSet(ctx context.Context) error {
 		}
 
 		vals = append(vals, &Validator{
-			PubKey:  pubkey.Bytes(),
-			Power:   val.ConsensusPower(sdk.DefaultPowerReduction),
-			Updated: true, // All validators are "updated" in the genesis set.
+			ConsensusPubkey: pubkey.Bytes(),
+			Power:           val.ConsensusPower(sdk.DefaultPowerReduction),
+			Updated:         true, // All validators are "updated" in the genesis set.
 		})
 	}
 
@@ -248,7 +254,7 @@ func (k *Keeper) insertValidatorSet(ctx context.Context, vals []*Validator, isGe
 			return 0, errors.New("negative power")
 		}
 
-		pubkey, err := crypto.DecompressPubkey(val.GetPubKey())
+		pubkey, err := crypto.DecompressPubkey(val.GetConsensusPubkey())
 		if err != nil {
 			return 0, errors.Wrap(err, "get pubkey")
 		}
@@ -375,17 +381,51 @@ func (k *Keeper) nextUnattestedSet(ctx context.Context) (*ValidatorSet, bool, er
 	return valset, true, nil
 }
 
+// valUpdateWithOperAddr is a wrapper for abci.ValidatorUpdate that includes the operator address.
+type valUpdateWithOperAddr struct {
+	abci.ValidatorUpdate
+	OperatorAddr sdk.ValAddress
+}
+
+func (k *Keeper) withOperatorAddrs(ctx context.Context, updates []abci.ValidatorUpdate) ([]valUpdateWithOperAddr, error) {
+	var resp []valUpdateWithOperAddr
+	for _, update := range updates {
+		consPubKey, err := cryptocodec.FromCmtProtoPublicKey(update.PubKey)
+		if err != nil {
+			return nil, errors.Wrap(err, "get consensus public key")
+		}
+
+		val, err := k.sKeeper.GetValidatorByConsAddr(ctx, sdk.GetConsAddress(consPubKey))
+		if err != nil {
+			return nil, errors.Wrap(err, "get validator")
+		}
+
+		operAddr, err := sdk.ValAddressFromBech32(val.OperatorAddress)
+		if err != nil {
+			return nil, errors.Wrap(err, "get operator address")
+		}
+
+		resp = append(resp, valUpdateWithOperAddr{
+			ValidatorUpdate: update,
+			OperatorAddr:    operAddr,
+		})
+	}
+
+	return resp, nil
+}
+
 // mergeValidatorSet returns the validator set with any zero power updates merged in.
 // The valsetID is not set.
-func mergeValidatorSet(valset []stypes.Validator, updates []abci.ValidatorUpdate) ([]*Validator, error) {
+func mergeValidatorSet(valset []stypes.Validator, updates []valUpdateWithOperAddr) ([]*Validator, error) {
 	var resp []*Validator //nolint:prealloc // We don't know the length of the result.
 
 	added := make(map[string]bool)
 	for _, update := range updates {
 		resp = append(resp, &Validator{
-			PubKey:  update.PubKey.GetSecp256K1(),
-			Power:   update.Power,
-			Updated: true,
+			ConsensusPubkey: update.PubKey.GetSecp256K1(),
+			OperatorAddr:    update.OperatorAddr.String(),
+			Power:           update.Power,
+			Updated:         true,
 		})
 		added[update.PubKey.String()] = true
 	}
@@ -401,9 +441,10 @@ func mergeValidatorSet(valset []stypes.Validator, updates []abci.ValidatorUpdate
 		}
 
 		resp = append(resp, &Validator{
-			PubKey:  pubkey.GetSecp256K1(),
-			Power:   val.ConsensusPower(sdk.DefaultPowerReduction),
-			Updated: false,
+			ConsensusPubkey: pubkey.GetSecp256K1(),
+			OperatorAddr:    val.OperatorAddress,
+			Power:           val.ConsensusPower(sdk.DefaultPowerReduction),
+			Updated:         false,
 		})
 	}
 

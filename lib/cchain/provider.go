@@ -50,14 +50,18 @@ type Provider interface {
 
 // Validator is a consensus chain validator in a validator set.
 type Validator struct {
-	Address common.Address
-	Power   int64
+	ConsensusAddress common.Address
+	OperatorAddress  common.Address
+	Power            int64
 }
 
 // Verify returns an error if the validator is invalid.
 func (v Validator) Verify() error {
-	if v.Address == (common.Address{}) {
+	if v.ConsensusAddress == (common.Address{}) {
 		return errors.New("empty validator address")
+	}
+	if v.OperatorAddress == (common.Address{}) {
+		return errors.New("empty operator address")
 	}
 	if v.Power <= 0 {
 		return errors.New("invalid validator power")

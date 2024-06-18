@@ -203,7 +203,7 @@ func (b *AggVoteBuilder) Vote() *types.AggVote {
 func sigsTuples(vals ...*vtypes.Validator) []*types.SigTuple {
 	var sigs []*types.SigTuple
 	for _, v := range vals {
-		ethAddr, _ := v.EthereumAddress()
+		ethAddr, _ := v.EthConsensusAddress()
 		sigs = append(sigs, &types.SigTuple{
 			ValidatorAddress: ethAddr.Bytes(),
 			Signature:        ethAddr.Bytes(), // Just make it non-nil for now

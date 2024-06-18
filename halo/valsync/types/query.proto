@@ -23,5 +23,6 @@ message ValidatorSetResponse {
 
 message Validator {
   bytes consensus_pubkey = 1; // 33 byte compressed secp256k1 public key
-  int64 power            = 2;
+  string operator_addr   = 2; // Validator operator address, bech32 encoded
+  int64 power            = 3;
 }

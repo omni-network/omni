@@ -104,13 +104,20 @@ func newABCIValsetFunc(cl vtypes.QueryClient) valsetFunc {
 
 		vals := make([]cchain.Validator, 0, len(resp.Validators))
 		for _, v := range resp.Validators {
-			ethAddr, err := v.EthereumAddress()
+			consAddr, err := v.EthConsensusAddress()
 			if err != nil {
 				return valSetResponse{}, false, err
 			}
+
+			operAddr, err := v.EthOperatorAddress()
+			if err != nil {
+				return valSetResponse{}, false, err
+			}
+
 			vals = append(vals, cchain.Validator{
-				Address: ethAddr,
-				Power:   v.Power,
+				ConsensusAddress: consAddr,
+				OperatorAddress:  operAddr,
+				Power:            v.Power,
 			})
 		}
 

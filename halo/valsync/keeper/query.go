@@ -25,7 +25,8 @@ func (k *Keeper) ActiveSetByHeight(ctx context.Context, height uint64) (*types.V
 	var validators []*types.Validator
 	for _, val := range vals {
 		validators = append(validators, &types.Validator{
-			ConsensusPubkey: val.GetPubKey(),
+			ConsensusPubkey: val.GetConsensusPubkey(),
+			OperatorAddr:    val.GetOperatorAddr(),
 			Power:           val.GetPower(),
 		})
 	}
@@ -125,7 +126,8 @@ func (k *Keeper) ValidatorSet(ctx context.Context, req *types.ValidatorSetReques
 		}
 
 		vals = append(vals, &types.Validator{
-			ConsensusPubkey: val.GetPubKey(),
+			ConsensusPubkey: val.GetConsensusPubkey(),
+			OperatorAddr:    val.GetOperatorAddr(),
 			Power:           val.GetPower(),
 		})
 	}

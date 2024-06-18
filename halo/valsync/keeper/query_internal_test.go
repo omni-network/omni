@@ -171,7 +171,8 @@ func newResp(id uint64, set []*Validator) *types.ValidatorSetResponse {
 	var vals []*types.Validator
 	for _, v := range set {
 		vals = append(vals, &types.Validator{
-			ConsensusPubkey: v.GetPubKey(),
+			ConsensusPubkey: v.GetConsensusPubkey(),
+			OperatorAddr:    v.GetOperatorAddr(),
 			Power:           v.GetPower(),
 		})
 	}
@@ -195,8 +196,9 @@ func newSet(t *testing.T, pubkeys ...int) []*Validator {
 		require.NoError(t, err)
 
 		resp = append(resp, &Validator{
-			PubKey: crypto.CompressPubkey(&priv.PublicKey),
-			Power:  1,
+			ConsensusPubkey: crypto.CompressPubkey(&priv.PublicKey),
+			OperatorAddr:    sdk.ValAddress(pk[:]).String(),
+			Power:           1,
 		})
 	}
 
@@ -207,8 +209,9 @@ func clone(set []*Validator) []*Validator {
 	var resp []*Validator
 	for _, v := range set {
 		resp = append(resp, &Validator{
-			PubKey: v.GetPubKey(),
-			Power:  v.GetPower(),
+			ConsensusPubkey: v.GetConsensusPubkey(),
+			OperatorAddr:    v.GetOperatorAddr(),
+			Power:           v.GetPower(),
 		})
 	}
 

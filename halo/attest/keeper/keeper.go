@@ -677,7 +677,7 @@ func (k *Keeper) prevBlockValSet(ctx context.Context) (ValSet, error) {
 
 	valsByPower := make(map[common.Address]int64)
 	for _, val := range resp.Validators {
-		ethAddr, err := val.EthereumAddress()
+		ethAddr, err := val.EthConsensusAddress()
 		if err != nil {
 			return ValSet{}, err
 		}

@@ -136,7 +136,7 @@ func toPortalVals(vals []cchain.Validator) ([]bindings.Validator, error) {
 		}
 
 		resp = append(resp, bindings.Validator{
-			Addr:  val.Address,
+			Addr:  val.ConsensusAddress,
 			Power: uint64(val.Power),
 		})
 	}

@@ -31,9 +31,10 @@ message Validator {
     index: {id: 2, fields: "valset_id"} // Allow querying by ValidatorSet ID
   };
 
-  uint64 id        = 1; // Auto-incremented ID
-  uint64 valset_id = 2; // ValidatorSet ID to which this validator belongs
-  bytes  pub_key   = 3; // Validator public key
-  int64  power     = 4; // Voting power of the validator
-  bool   updated   = 5; // Whether this validator was updated in this set (wrt previous set)
+  uint64 id               = 1; // Auto-incremented ID
+  uint64 valset_id        = 2; // ValidatorSet ID to which this validator belongs
+  bytes  consensus_pubkey = 3; // Validator consense pubkey, 33 byte compressed secp256k1 public key
+  string operator_addr    = 4; // Validator operator address, bech32 encoded
+  int64  power            = 5; // Voting power of the validator
+  bool   updated          = 6; // Whether this validator was updated in this set (wrt previous set)
 }

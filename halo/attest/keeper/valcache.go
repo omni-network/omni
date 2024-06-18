@@ -29,7 +29,7 @@ func (c *valCache) GetCometAddress(ethAddr common.Address) (crypto.Address, bool
 		return nil, false, nil
 	}
 
-	cmtAddr, err := val.CometAddress()
+	cmtAddr, err := val.CometConsensusAddress()
 	if err != nil {
 		return nil, false, err
 	}
@@ -43,7 +43,7 @@ func (c *valCache) SetAll(vals []*vtypes.Validator) error {
 
 	var valsByAddr = make(map[common.Address]*vtypes.Validator, len(vals))
 	for _, val := range vals {
-		addr, err := val.EthereumAddress()
+		addr, err := val.EthConsensusAddress()
 		if err != nil {
 			return err
 		}
