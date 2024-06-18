@@ -137,7 +137,7 @@ func newApp(
 		bapp.SetPrepareProposal(app.EVMEngKeeper.PrepareProposal)
 
 		// Route proposed messages to keepers for verification and external state updates.
-		bapp.SetProcessProposal(makeProcessProposalHandler(app))
+		bapp.SetProcessProposal(makeProcessProposalHandler(makeProcessProposalRouter(app), app.txConfig))
 
 		// Use attest keeper to extend votes.
 		bapp.SetExtendVoteHandler(app.AttestKeeper.ExtendVote)
