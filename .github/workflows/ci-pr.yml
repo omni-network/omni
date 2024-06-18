@@ -23,5 +23,7 @@ jobs:
     uses: ./.github/workflows/clicommand.yml
   sol-tests:
     uses: ./.github/workflows/soltest.yml
+  codeql:
+    uses: ./.github/workflows/ci-pr-codeql.yml
   e2e-tests:
     uses: ./.github/workflows/pr-e2etest.yml

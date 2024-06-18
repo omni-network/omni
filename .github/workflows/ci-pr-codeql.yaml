@@ -1,0 +1,16 @@
+name: Go CodeQL
+
+on:
+  workflow_call:
+
+jobs:
+  sol_tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: 'go'
+          queries: crypto-com/cosmos-sdk-codeql@v0.0.8 #, <other queries>
