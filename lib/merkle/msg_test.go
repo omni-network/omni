@@ -14,23 +14,23 @@ import (
 func TestBlockTree(t *testing.T) {
 	t.Parallel()
 
-	var block xchain.Block
-	fuzz.New().NilChance(0).NumElements(1, 64).Fuzz(&block)
+	var msgs []xchain.Msg
+	fuzz.New().NilChance(0).NumElements(1, 64).Fuzz(&msgs)
 
-	tree, err := xchain.NewBlockTree(block)
+	tree, err := xchain.NewMsgTree(msgs)
 	require.NoError(t, err)
 
 	// Prove some random messages
-	for end := 1; end < len(block.Msgs); end++ {
+	for end := 1; end < len(msgs); end++ {
 		start := rand.Intn(end)
 
-		multi, err := tree.Proof(block.BlockHeader, block.Msgs[start:end])
+		multi, err := tree.Proof(msgs[start:end])
 		require.NoError(t, err)
-
 		// Verify the proof
+
 		root, err := merkle.ProcessMultiProof(multi)
 		require.NoError(t, err)
 
-		require.Equal(t, tree.Root(), root)
+		require.Equal(t, tree.MsgRoot(), root)
 	}
 }

@@ -161,7 +161,7 @@ func TestKeeper_Add(t *testing.T) {
 				msg: defaultMsg().
 					WithVotes(
 						defaultAggVote().
-							WithAttestationRoot([]byte("different root")).
+							WithMsgRoot(common.BytesToHash([]byte("different root"))).
 							Vote(),
 					).Msg(),
 			},
@@ -180,7 +180,7 @@ func TestKeeper_Add(t *testing.T) {
 					update(
 						expectPendingAtt(2, defaultOffset),
 						func(att *keeper.Attestation) {
-							att.AttestationRoot = []byte("different root")
+							att.MsgRoot = common.BytesToHash([]byte("different root")).Bytes()
 						},
 					),
 				},
@@ -485,28 +485,28 @@ func expectValSig(id uint64, attID uint64, val *vtypes.Validator) *keeper.Signat
 
 func expectPendingAtt(id uint64, offset uint64) *keeper.Attestation {
 	return &keeper.Attestation{
-		Id:              id,
-		AttestationRoot: attRoot,
-		ChainId:         1,
-		BlockHash:       blockHashes[0].Bytes(),
-		BlockOffset:     offset,
-		BlockHeight:     defaultHeight,
-		CreatedHeight:   1,
-		Status:          uint32(keeper.Status_Pending),
+		Id:            id,
+		MsgRoot:       msgRoot.Bytes(),
+		ChainId:       1,
+		BlockHash:     blockHashes[0].Bytes(),
+		BlockOffset:   offset,
+		BlockHeight:   defaultHeight,
+		CreatedHeight: 1,
+		Status:        uint32(keeper.Status_Pending),
 	}
 }
 
 func expectApprovedAtt(id uint64, offset uint64, valset *vtypes.ValidatorSetResponse) *keeper.Attestation {
 	return &keeper.Attestation{
-		Id:              id,
-		AttestationRoot: attRoot,
-		ChainId:         1,
-		BlockHash:       blockHashes[0].Bytes(),
-		BlockOffset:     offset,
-		BlockHeight:     defaultHeight,
-		CreatedHeight:   1,
-		Status:          uint32(keeper.Status_Approved),
-		ValidatorSetId:  valset.Id,
+		Id:             id,
+		MsgRoot:        msgRoot.Bytes(),
+		ChainId:        1,
+		BlockHash:      blockHashes[0].Bytes(),
+		BlockOffset:    offset,
+		BlockHeight:    defaultHeight,
+		CreatedHeight:  1,
+		Status:         uint32(keeper.Status_Approved),
+		ValidatorSetId: valset.Id,
 	}
 }
 
@@ -519,8 +519,8 @@ func update[T any](t T, fn func(T)) T {
 func populateKeyHashes(atts []*keeper.Attestation) []*keeper.Attestation {
 	for i := range atts {
 		a := keeper.AttestationFromDB(atts[i], nil)
-		key := a.UniqueKey()
-		atts[i].KeyHash = key[:]
+		attRoot, _ := a.AttestationRoot()
+		atts[i].AttestationRoot = attRoot[:]
 	}
 
 	return atts

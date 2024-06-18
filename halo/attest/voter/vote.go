@@ -16,11 +16,17 @@ func CreateVote(privKey crypto.PrivKey, block xchain.Block) (*types.Vote, error)
 		return nil, errors.New("invalid pubkey length", "length", len(pubkey))
 	}
 
-	tree, err := xchain.NewBlockTree(block)
+	tree, err := xchain.NewMsgTree(block.Msgs)
 	if err != nil {
 		return nil, err
 	}
-	attRoot := tree.Root()
+
+	msgRoot := tree.MsgRoot()
+
+	attRoot, err := xchain.AttestationRoot(block.BlockHeader, msgRoot)
+	if err != nil {
+		return nil, err
+	}
 
 	sig, err := k1util.Sign(privKey, attRoot)
 	if err != nil {
@@ -40,7 +46,7 @@ func CreateVote(privKey crypto.PrivKey, block xchain.Block) (*types.Vote, error)
 			Height:    block.BlockHeight,
 			Hash:      block.BlockHash[:],
 		},
-		AttestationRoot: attRoot[:],
+		MsgRoot: msgRoot[:],
 		Signature: &types.SigTuple{
 			ValidatorAddress: address[:],
 			Signature:        sig[:],

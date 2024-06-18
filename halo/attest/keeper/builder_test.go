@@ -25,7 +25,7 @@ var (
 	val1          = newValidator(vals[0].PubKey(), 10)
 	val2          = newValidator(vals[1].PubKey(), 15)
 	val3          = newValidator(vals[2].PubKey(), 15)
-	attRoot       = []byte("test attestation root")
+	msgRoot       = common.BytesToHash([]byte("test message root"))
 	defaultOffset = uint64(1)
 	defaultHeight = uint64(700)
 )
@@ -104,8 +104,8 @@ func (b *AggVoteBuilder) Default() *AggVoteBuilder {
 			Height:  defaultHeight,
 			Hash:    blockHashes[0].Bytes(),
 		},
-		AttestationRoot: attRoot,
-		Signatures:      sigsTuples(val1, val2),
+		MsgRoot:    msgRoot.Bytes(),
+		Signatures: sigsTuples(val1, val2),
 	}
 
 	return b
@@ -169,11 +169,11 @@ func (b *AggVoteBuilder) WithBlockHeader(chainID uint64, offset uint64, height u
 	return b
 }
 
-func (b *AggVoteBuilder) WithAttestationRoot(r []byte) *AggVoteBuilder {
+func (b *AggVoteBuilder) WithMsgRoot(r common.Hash) *AggVoteBuilder {
 	if b.vote == nil {
 		b.vote = &types.AggVote{}
 	}
-	b.vote.AttestationRoot = r
+	b.vote.MsgRoot = r.Bytes()
 
 	return b
 }

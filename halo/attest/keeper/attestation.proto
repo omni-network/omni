@@ -16,7 +16,7 @@ message Attestation {
   option (cosmos.orm.v1.table) = {
     id: 1;
     primary_key: { fields: "id", auto_increment: true }
-    index: {id: 1, fields: "key_hash", unique: true} // Verifiable attestation unique key hash.
+    index: {id: 1, fields: "attestation_root", unique: true} // Unique index on attestation root.
     index: {id: 2, fields: "status,chain_id,conf_level,block_offset" } // Allows querying by approved attestations by confLevel and offset.
     index: {id: 3, fields: "created_height"} // Allows querying/deleting by created height.
   };
@@ -28,8 +28,8 @@ message Attestation {
   uint64 block_offset     = 4; // Offset of the cross-chain block
   uint64 block_height     = 5; // Height of the source-chain block
   bytes  block_hash       = 6; // Hash of the source-chain block
-  bytes  attestation_root = 7; // Attestation merkle root of the cross-chain Block
-  bytes  key_hash         = 8; // Hash of the above fields uniquely identifying an attestation
+  bytes  msg_root         = 7; // Merkle root of all the messages in the cross-chain Block
+  bytes  attestation_root = 8; // Attestation merkle root of the cross-chain Block
   uint32 status           = 9; // Status of the block; pending, approved.
   uint64 validator_set_id = 10; // Validator set that approved this attestation.
   uint64 created_height   = 11; // Consensus height at which this attestation was created.

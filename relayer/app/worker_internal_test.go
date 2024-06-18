@@ -111,10 +111,10 @@ func TestWorker_Run(t *testing.T) {
 					Offset:    offset,
 					ConfLevel: chainVer.ConfLevel,
 				})
-				tree, _ := xchain.NewBlockTree(block)
+				tree, _ := xchain.NewMsgTree(block.Msgs)
 
 				return xchain.Attestation{
-					AttestationRoot: tree.Root(),
+					MsgRoot: tree.MsgRoot(),
 					BlockHeader: xchain.BlockHeader{
 						SourceChainID: chainVer.ID,
 						ConfLevel:     chainVer.ConfLevel,

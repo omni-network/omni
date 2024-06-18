@@ -21,9 +21,9 @@ func AttestationFromDB(att *Attestation, sigs []*Signature) *types.Attestation {
 			Height:    att.GetBlockHeight(),
 			Hash:      att.GetBlockHash(),
 		},
-		ValidatorSetId:  att.GetValidatorSetId(),
-		AttestationRoot: att.GetAttestationRoot(),
-		Signatures:      sigsFromDB(sigs),
+		ValidatorSetId: att.GetValidatorSetId(),
+		MsgRoot:        att.GetMsgRoot(),
+		Signatures:     sigsFromDB(sigs),
 	}
 }
 

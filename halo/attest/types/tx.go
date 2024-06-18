@@ -1,9 +1,6 @@
 package types
 
 import (
-	"crypto/sha256"
-	"encoding/binary"
-
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/xchain"
@@ -11,10 +8,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// UniqueKey returns a unique key for the vote
-// It panics if the vote is invalid. Ensure Verify() is called before UniqueKey().
-func (v *Vote) UniqueKey() [32]byte {
-	return uniqueVoteHash(v.BlockHeader, v.AttestationRoot)
+func (v *Vote) AttestationRoot() (common.Hash, error) {
+	return xchain.AttestationRoot(v.BlockHeader.ToXChain(), common.Hash(v.MsgRoot))
 }
 
 func (v *Vote) Verify() error {
@@ -30,8 +25,8 @@ func (v *Vote) Verify() error {
 		return errors.New("nil signature")
 	}
 
-	if len(v.AttestationRoot) != len(common.Hash{}) {
-		return errors.New("invalid attestation root length")
+	if len(v.MsgRoot) != len(common.Hash{}) {
+		return errors.New("invalid message root length")
 	}
 
 	if len(v.BlockHeader.Hash) != len(common.Hash{}) {
@@ -46,9 +41,14 @@ func (v *Vote) Verify() error {
 		return errors.New("invalid validator address length")
 	}
 
+	attRoot, err := v.AttestationRoot()
+	if err != nil {
+		return err
+	}
+
 	ok, err := k1util.Verify(
 		common.Address(v.Signature.ValidatorAddress),
-		common.Hash(v.AttestationRoot),
+		attRoot,
 		xchain.Signature65(v.Signature.Signature),
 	)
 	if err != nil {
@@ -80,10 +80,9 @@ func (h *BlockHeader) ToXChain() xchain.BlockHeader {
 	return BlockHeaderFromProto(h)
 }
 
-// UniqueKey returns a unique key for the block header.
-// It panics if the vote is invalid. Ensure Verify() is called before UniqueKey().
-func (h *BlockHeader) UniqueKey() [32]byte {
-	return uniqueVoteHash(h, nil)
+// BlockRoot returns a unique key for the block header.
+func (h *BlockHeader) BlockRoot() ([32]byte, error) {
+	return xchain.BlockHeaderLeaf(h.ToXChain())
 }
 
 func (s *SigTuple) Verify() error {
@@ -118,27 +117,41 @@ func (a *AggVote) Verify() error {
 		return errors.Wrap(err, "block header")
 	}
 
-	if len(a.AttestationRoot) != len(common.Hash{}) {
-		return errors.New("invalid attestation root length")
+	if len(a.MsgRoot) != len(common.Hash{}) {
+		return errors.New("invalid message root length")
 	}
 
 	if len(a.Signatures) == 0 {
 		return errors.New("empty signatures")
 	}
 
+	attRoot, err := a.AttestationRoot()
+	if err != nil {
+		return err
+	}
+
 	for _, sig := range a.Signatures {
 		if err := sig.Verify(); err != nil {
 			return errors.Wrap(err, "signature")
+		}
+
+		ok, err := k1util.Verify(
+			common.Address(sig.ValidatorAddress),
+			attRoot,
+			xchain.Signature65(sig.Signature),
+		)
+		if err != nil {
+			return err
+		} else if !ok {
+			return errors.New("invalid attestation signature")
 		}
 	}
 
 	return nil
 }
 
-// UniqueKey returns a unique key for the agg vote
-// It panics if the vote is invalid. Ensure Verify() is called before UniqueKey().
-func (a *AggVote) UniqueKey() [32]byte {
-	return uniqueVoteHash(a.BlockHeader, a.AttestationRoot)
+func (a *AggVote) AttestationRoot() (common.Hash, error) {
+	return xchain.AttestationRoot(a.BlockHeader.ToXChain(), common.Hash(a.MsgRoot))
 }
 
 func (a *Attestation) Verify() error {
@@ -150,8 +163,8 @@ func (a *Attestation) Verify() error {
 		return errors.Wrap(err, "block header")
 	}
 
-	if len(a.AttestationRoot) != len(common.Hash{}) {
-		return errors.New("invalid attestation root length")
+	if len(a.MsgRoot) != len(common.Hash{}) {
+		return errors.New("invalid message root length")
 	}
 
 	if a.ValidatorSetId == 0 {
@@ -178,41 +191,21 @@ func (a *Attestation) ToXChain() xchain.Attestation {
 	}
 
 	return xchain.Attestation{
-		BlockHeader:     a.BlockHeader.ToXChain(),
-		ValidatorSetID:  a.ValidatorSetId,
-		AttestationRoot: common.Hash(a.AttestationRoot),
-		Signatures:      sigs,
+		BlockHeader:    a.BlockHeader.ToXChain(),
+		ValidatorSetID: a.ValidatorSetId,
+		MsgRoot:        common.Hash(a.MsgRoot),
+		Signatures:     sigs,
 	}
 }
 
-// UniqueKey returns a unique key for the agg vote
-// It panics if the vote is invalid. Ensure Verify() is called before UniqueKey().
-func (a *Attestation) UniqueKey() [32]byte {
-	return uniqueVoteHash(a.BlockHeader, a.AttestationRoot)
+func (a *Attestation) AttestationRoot() (common.Hash, error) {
+	return xchain.AttestationRoot(a.BlockHeader.ToXChain(), common.Hash(a.MsgRoot))
 }
 
 func (v *Vote) ToXChain() xchain.Vote {
 	return xchain.Vote{
-		BlockHeader:     v.BlockHeader.ToXChain(),
-		AttestationRoot: common.Hash(v.AttestationRoot),
-		Signature:       v.Signature.ToXChain(),
+		BlockHeader: v.BlockHeader.ToXChain(),
+		MsgRoot:     common.Hash(v.MsgRoot),
+		Signature:   v.Signature.ToXChain(),
 	}
-}
-
-// uniqueVoteHash returns a hash that uniquely identifies the vote attestation.
-//
-// The unique key hash is required since the attestation root cannot be verified on-chain.
-// So instead, a unique key hash is calculated from on-chain metadata to uniquely identify the attestation and group votes.
-func uniqueVoteHash(header *BlockHeader, attRoot []byte) [32]byte {
-	h := sha256.New()
-
-	_ = binary.Write(h, binary.BigEndian, header.ChainId)
-	_ = binary.Write(h, binary.BigEndian, header.Height)
-	_ = binary.Write(h, binary.BigEndian, header.Offset)
-	_ = binary.Write(h, binary.BigEndian, header.ConfLevel)
-	_, _ = h.Write(header.Hash)
-
-	_, _ = h.Write(attRoot)
-
-	return [32]byte(h.Sum(nil))
 }

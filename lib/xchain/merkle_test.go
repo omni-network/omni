@@ -10,23 +10,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestBlockTreeNoVerify is mostly for test coverage.
+// TestMsgTreeNoVerify is mostly for test coverage.
 // Go test coverage doesn't count tests by other packages.
 // See ../merkle/block_test.go for a more thorough test that actually verifies proof.
-func TestBlockTreeNoVerify(t *testing.T) {
+func TestMsgTreeNoVerify(t *testing.T) {
 	t.Parallel()
 
-	var block xchain.Block
-	fuzz.New().NilChance(0).NumElements(1, 64).Fuzz(&block)
+	var msgs []xchain.Msg
+	fuzz.New().NilChance(0).NumElements(1, 64).Fuzz(&msgs)
 
-	tree, err := xchain.NewBlockTree(block)
+	tree, err := xchain.NewMsgTree(msgs)
 	require.NoError(t, err)
 
 	// Prove some random messages
-	for end := 1; end < len(block.Msgs); end++ {
+	for end := 1; end < len(msgs); end++ {
 		start := rand.Intn(end)
 
-		_, err := tree.Proof(block.BlockHeader, block.Msgs[start:end])
+		_, err := tree.Proof(msgs[start:end])
 		require.NoError(t, err)
 	}
 }
