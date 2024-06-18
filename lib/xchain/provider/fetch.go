@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -59,6 +60,7 @@ func (p *Provider) ChainVersionHeight(ctx context.Context, chainVer xchain.Chain
 // but tracked off-chain.
 func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, stream xchain.StreamID,
 ) (xchain.EmitCursor, bool, error) {
+	//println("GetEmittedCursor")
 	if !ref.Valid() {
 		return xchain.EmitCursor{}, false, errors.New("invalid emit ref")
 	}
@@ -66,6 +68,7 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, str
 	if stream.SourceChainID == p.cChainID {
 		// Consensus xblocks only has a single stream/shard for now, so just query the latest block.
 		// Once we add multiple streams, we need to query portal module offset table using latest or historical blocks.
+		println("getConsXBlock")
 		block, err := getConsXBlock(ctx, ref, p.cProvider)
 		if err != nil {
 			return xchain.EmitCursor{}, false, err
@@ -102,6 +105,7 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, str
 		}
 
 		opts.BlockNumber = header.Number
+		fmt.Println("Block number: ", header.Number)
 	}
 
 	offset, err := caller.OutXMsgOffset(opts, stream.DestChainID, uint64(stream.ShardID))
@@ -113,6 +117,7 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, str
 		return xchain.EmitCursor{}, false, nil
 	}
 
+	//println("Return")
 	return xchain.EmitCursor{
 		StreamID:  stream,
 		MsgOffset: offset,

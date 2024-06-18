@@ -5,6 +5,7 @@ package bindings
 
 import (
 	"errors"
+	// "fmt"
 	"math/big"
 	"strings"
 
@@ -929,12 +930,18 @@ func (_OmniPortal *OmniPortalCallerSession) OmniChainId() (uint64, error) {
 // Solidity: function outXMsgOffset(uint64 , uint64 ) view returns(uint64)
 func (_OmniPortal *OmniPortalCaller) OutXMsgOffset(opts *bind.CallOpts, arg0 uint64, arg1 uint64) (uint64, error) {
 	var out []interface{}
+	// fmt.Println("OutXMsgOffset")
+	// fmt.Println(opts)
+	// fmt.Println(arg0)
+	// fmt.Println(arg1)
 	err := _OmniPortal.contract.Call(opts, &out, "outXMsgOffset", arg0, arg1)
 
 	if err != nil {
+		//fmt.Println("Got error")
 		return *new(uint64), err
 	}
 
+	//fmt.Println("ConvertType")
 	out0 := *abi.ConvertType(out[0], new(uint64)).(*uint64)
 
 	return out0, err
