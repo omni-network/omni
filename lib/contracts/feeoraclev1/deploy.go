@@ -70,7 +70,7 @@ func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) 
 
 func mainnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Owner:        eoa.MustAddress(netconf.Mainnet, eoa.RolePortalAdmin),
+		Owner:        eoa.MustAddress(netconf.Mainnet, eoa.RoleAdmin),
 		Manager:      eoa.MustAddress(netconf.Mainnet, eoa.RoleMonitor),
 		Deployer:     eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer),
 		ProxyAdmin:   contracts.MainnetProxyAdmin(),
@@ -81,7 +81,7 @@ func mainnetCfg() DeploymentConfig {
 
 func testnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Owner:        eoa.MustAddress(netconf.Omega, eoa.RolePortalAdmin),
+		Owner:        eoa.MustAddress(netconf.Omega, eoa.RoleAdmin),
 		Manager:      eoa.MustAddress(netconf.Omega, eoa.RoleMonitor),
 		Deployer:     eoa.MustAddress(netconf.Omega, eoa.RoleDeployer),
 		ProxyAdmin:   contracts.TestnetProxyAdmin(),
@@ -92,7 +92,7 @@ func testnetCfg() DeploymentConfig {
 
 func devnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Owner:        eoa.MustAddress(netconf.Devnet, eoa.RolePortalAdmin),
+		Owner:        eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
 		Manager:      eoa.MustAddress(netconf.Devnet, eoa.RoleMonitor),
 		Deployer:     eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
 		ProxyAdmin:   contracts.DevnetProxyAdmin(),
@@ -103,7 +103,7 @@ func devnetCfg() DeploymentConfig {
 
 func stagingCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Owner:        eoa.MustAddress(netconf.Staging, eoa.RolePortalAdmin),
+		Owner:        eoa.MustAddress(netconf.Staging, eoa.RoleAdmin),
 		Manager:      eoa.MustAddress(netconf.Staging, eoa.RoleMonitor),
 		Deployer:     eoa.MustAddress(netconf.Staging, eoa.RoleDeployer),
 		ProxyAdmin:   contracts.StagingProxyAdmin(),

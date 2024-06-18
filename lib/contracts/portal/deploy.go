@@ -107,7 +107,7 @@ func getDeployCfg(network netconf.ID) (DeploymentConfig, error) {
 	}
 
 	if network == netconf.Omega {
-		return testnetCfg(), nil
+		return omegaCfg(), nil
 	}
 
 	if network == netconf.Staging {
@@ -121,17 +121,17 @@ func mainnetCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory: contracts.MainnetCreate3Factory(),
 		Create3Salt:    contracts.PortalSalt(netconf.Mainnet),
-		Owner:          eoa.MustAddress(netconf.Mainnet, eoa.RolePortalAdmin),
+		Owner:          eoa.MustAddress(netconf.Mainnet, eoa.RoleAdmin),
 		Deployer:       eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer),
 		// TODO: fill in the rest
 	}
 }
 
-func testnetCfg() DeploymentConfig {
+func omegaCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory:        contracts.TestnetCreate3Factory(),
 		Create3Salt:           contracts.PortalSalt(netconf.Omega),
-		Owner:                 eoa.MustAddress(netconf.Omega, eoa.RolePortalAdmin),
+		Owner:                 eoa.MustAddress(netconf.Omega, eoa.RoleAdmin),
 		Deployer:              eoa.MustAddress(netconf.Omega, eoa.RoleDeployer),
 		ProxyAdmin:            contracts.TestnetProxyAdmin(),
 		OmniChainID:           netconf.Omega.Static().OmniExecutionChainID,
@@ -149,7 +149,7 @@ func stagingCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory:        contracts.StagingCreate3Factory(),
 		Create3Salt:           contracts.PortalSalt(netconf.Staging),
-		Owner:                 eoa.MustAddress(netconf.Staging, eoa.RolePortalAdmin),
+		Owner:                 eoa.MustAddress(netconf.Staging, eoa.RoleAdmin),
 		Deployer:              eoa.MustAddress(netconf.Staging, eoa.RoleDeployer),
 		ProxyAdmin:            contracts.StagingProxyAdmin(),
 		OmniChainID:           netconf.Staging.Static().OmniExecutionChainID,
@@ -167,7 +167,7 @@ func devnetCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory:        contracts.DevnetCreate3Factory(),
 		Create3Salt:           contracts.PortalSalt(netconf.Devnet),
-		Owner:                 eoa.MustAddress(netconf.Devnet, eoa.RolePortalAdmin),
+		Owner:                 eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
 		Deployer:              eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
 		ProxyAdmin:            contracts.DevnetProxyAdmin(),
 		OmniChainID:           netconf.Devnet.Static().OmniExecutionChainID,
