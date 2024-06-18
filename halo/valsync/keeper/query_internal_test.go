@@ -170,10 +170,9 @@ func newActivatedResp(id uint64, set []*Validator) *types.ValidatorSetResponse {
 func newResp(id uint64, set []*Validator) *types.ValidatorSetResponse {
 	var vals []*types.Validator
 	for _, v := range set {
-		addr, _ := v.Address()
 		vals = append(vals, &types.Validator{
-			Address: addr.Bytes(),
-			Power:   v.GetPower(),
+			ConsensusPubkey: v.GetPubKey(),
+			Power:           v.GetPower(),
 		})
 	}
 

@@ -18,8 +18,6 @@ import (
 
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 
-	"github.com/ethereum/go-ethereum/common"
-
 	errorsmod "cosmossdk.io/errors"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	gogogrpc "github.com/cosmos/gogoproto/grpc"
@@ -106,8 +104,12 @@ func newABCIValsetFunc(cl vtypes.QueryClient) valsetFunc {
 
 		vals := make([]cchain.Validator, 0, len(resp.Validators))
 		for _, v := range resp.Validators {
+			ethAddr, err := v.EthereumAddress()
+			if err != nil {
+				return valSetResponse{}, false, err
+			}
 			vals = append(vals, cchain.Validator{
-				Address: common.BytesToAddress(v.Address),
+				Address: ethAddr,
 				Power:   v.Power,
 			})
 		}

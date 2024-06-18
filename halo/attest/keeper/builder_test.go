@@ -3,7 +3,6 @@ package keeper_test
 import (
 	"github.com/omni-network/omni/halo/attest/types"
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
-	"github.com/omni-network/omni/lib/k1util"
 
 	"github.com/cometbft/cometbft/crypto"
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
@@ -41,11 +40,9 @@ func newValSet(id uint64, vals ...*vtypes.Validator) *vtypes.ValidatorSetRespons
 }
 
 func newValidator(key crypto.PubKey, power int64) *vtypes.Validator {
-	addr, _ := k1util.PubKeyToAddress(key)
-
 	return &vtypes.Validator{
-		Address: addr.Bytes(),
-		Power:   power,
+		ConsensusPubkey: key.Bytes(),
+		Power:           power,
 	}
 }
 
@@ -206,9 +203,10 @@ func (b *AggVoteBuilder) Vote() *types.AggVote {
 func sigsTuples(vals ...*vtypes.Validator) []*types.SigTuple {
 	var sigs []*types.SigTuple
 	for _, v := range vals {
+		ethAddr, _ := v.EthereumAddress()
 		sigs = append(sigs, &types.SigTuple{
-			ValidatorAddress: v.Address,
-			Signature:        v.Address, // Just make it non-nil for now
+			ValidatorAddress: ethAddr.Bytes(),
+			Signature:        ethAddr.Bytes(), // Just make it non-nil for now
 		})
 	}
 

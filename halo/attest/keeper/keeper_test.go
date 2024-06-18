@@ -338,7 +338,9 @@ func TestKeeper_Approve(t *testing.T) {
 					require.NoError(t, err)
 
 					// add sig from val3
-					sig := &keeper.Signature{AttId: 1, Signature: val3.Address, ValidatorAddress: val3.Address}
+					ethAddr, err := val3.EthereumAddress()
+					require.NoError(t, err)
+					sig := &keeper.Signature{AttId: 1, Signature: ethAddr.Bytes(), ValidatorAddress: ethAddr.Bytes()}
 					err = k.SignatureTable().Insert(ctx, sig)
 					require.NoError(t, err)
 				},
@@ -466,7 +468,8 @@ func toValSet(valset *vtypes.ValidatorSetResponse) keeper.ValSet {
 
 	vals := make(map[common.Address]int64)
 	for _, v := range valset.Validators {
-		vals[common.BytesToAddress(v.Address)] = v.Power
+		ethAddr, _ := v.EthereumAddress()
+		vals[ethAddr] = v.Power
 	}
 
 	return keeper.ValSet{
@@ -476,7 +479,8 @@ func toValSet(valset *vtypes.ValidatorSetResponse) keeper.ValSet {
 }
 
 func expectValSig(id uint64, attID uint64, val *vtypes.Validator) *keeper.Signature {
-	return &keeper.Signature{Id: id, AttId: attID, Signature: val.Address, ValidatorAddress: val.Address}
+	ethAddr, _ := val.EthereumAddress()
+	return &keeper.Signature{Id: id, AttId: attID, Signature: ethAddr.Bytes(), ValidatorAddress: ethAddr.Bytes()}
 }
 
 func expectPendingAtt(id uint64, offset uint64) *keeper.Attestation {
