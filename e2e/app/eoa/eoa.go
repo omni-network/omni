@@ -19,9 +19,7 @@ const (
 	RoleMonitor         Role = "monitor"
 	RoleCreate3Deployer Role = "create3-deployer"
 	RoleDeployer        Role = "deployer"
-	RoleProxyAdminOwner Role = "proxy-admin-owner"
-	RolePortalAdmin     Role = "portal-admin"
-	RoleAVSAdmin        Role = "avs-admin"
+	RoleAdmin           Role = "admin"
 	RoleFbDev           Role = "fb-dev" // TODO(corver): fb-dev isn't a role...
 )
 
@@ -31,9 +29,7 @@ func AllRoles() []Role {
 		RoleMonitor,
 		RoleCreate3Deployer,
 		RoleDeployer,
-		RoleProxyAdminOwner,
-		RolePortalAdmin,
-		RoleAVSAdmin,
+		RoleAdmin,
 		RoleFbDev,
 	}
 }
