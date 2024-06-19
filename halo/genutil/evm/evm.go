@@ -26,7 +26,7 @@ func newUint64(val uint64) *uint64 { return &val }
 // MakeGenesis returns a genesis block for a development chain.
 // See geth reference: https://github.com/ethereum/go-ethereum/blob/master/core/genesis.go#L564
 func MakeGenesis(network netconf.ID, admin common.Address) (core.Genesis, error) {
-	predeps, err := predeploys.Alloc(admin)
+	predeps, err := predeploys.Alloc(network, admin)
 	if err != nil {
 		return core.Genesis{}, errors.Wrap(err, "predeploys")
 	}

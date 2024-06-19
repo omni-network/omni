@@ -42,7 +42,7 @@ func TestAlloc(t *testing.T) {
 	admin, err := eoa.Admin(netconf.Staging)
 	require.NoError(t, err)
 
-	predeps, err := predeploys.Alloc(admin)
+	predeps, err := predeploys.Alloc(netconf.Staging, admin)
 	require.NoError(t, err)
 
 	// Check each namespace filled with proxies

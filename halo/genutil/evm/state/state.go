@@ -74,6 +74,12 @@ func encodeValue(value any) (common.Hash, error) {
 		return common.HexToHash(v.Hex()), nil
 	case uint8:
 		return common.BigToHash(new(big.Int).SetUint64(uint64(v))), nil
+	case bool:
+		if v {
+			return common.BigToHash(big.NewInt(1)), nil
+		}
+
+		return common.BigToHash(big.NewInt(0)), nil
 	default:
 		return common.Hash{}, errors.New("unsupported type")
 	}

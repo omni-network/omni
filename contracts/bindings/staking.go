@@ -31,8 +31,8 @@ var (
 
 // StakingMetaData contains all meta data concerning the Staking contract.
 var StakingMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"MIN_DEPOSIT\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"createValidator\",\"inputs\":[{\"name\":\"pubkey\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"delegate\",\"inputs\":[{\"name\":\"validator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"event\",\"name\":\"CreateValidator\",\"inputs\":[{\"name\":\"validator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"pubkey\",\"type\":\"bytes\",\"indexed\":false,\"internalType\":\"bytes\"},{\"name\":\"deposit\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Delegate\",\"inputs\":[{\"name\":\"delegator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"validator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false}]",
-	Bin: "0x608060405234801561001057600080fd5b50610383806100206000396000f3fe6080604052600436106100345760003560e01c80635c19a95c14610039578063a5a470ad1461004e578063e1e158a514610061575b600080fd5b61004c610047366004610272565b610090565b005b61004c61005c3660046102a2565b610180565b34801561006d57600080fd5b5061007e68056bc75e2d6310000081565b60405190815260200160405180910390f35b600034116100e55760405162461bcd60e51b815260206004820152601d60248201527f5374616b696e673a20696e73756666696369656e74206465706f73697400000060448201526064015b60405180910390fd5b336001600160a01b0382161461013d5760405162461bcd60e51b815260206004820152601d60248201527f5374616b696e673a206f6e6c792073656c662064656c65676174696f6e00000060448201526064016100dc565b6040513481526001600160a01b0382169033907f510b11bb3f3c799b11307c01ab7db0d335683ef5b2da98f7697de744f465eacc9060200160405180910390a350565b602181146101d05760405162461bcd60e51b815260206004820152601e60248201527f5374616b696e673a20696e76616c6964207075626b6579206c656e677468000060448201526064016100dc565b68056bc75e2d631000003410156102295760405162461bcd60e51b815260206004820152601d60248201527f5374616b696e673a20696e73756666696369656e74206465706f73697400000060448201526064016100dc565b336001600160a01b03167fc7abef7b73f049da6a9bc2349ba5066a39e316eabc9f671b6f9406aa9490a45383833460405161026693929190610314565b60405180910390a25050565b60006020828403121561028457600080fd5b81356001600160a01b038116811461029b57600080fd5b9392505050565b600080602083850312156102b557600080fd5b823567ffffffffffffffff808211156102cd57600080fd5b818501915085601f8301126102e157600080fd5b8135818111156102f057600080fd5b86602082850101111561030257600080fd5b60209290920196919550909350505050565b604081528260408201528284606083013760006060848301015260006060601f19601f860116830101905082602083015294935050505056fea26469706673582212204b7a4a545433c1d1fbe5e73890ef14d959019debfc2e62cfa1c1cc0f80a1f4cc64736f6c63430008180033",
+	ABI: "[{\"type\":\"function\",\"name\":\"MIN_DEPOSIT\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"allowValidators\",\"inputs\":[{\"name\":\"validators\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"createValidator\",\"inputs\":[{\"name\":\"pubkey\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"delegate\",\"inputs\":[{\"name\":\"validator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"disableAllowlist\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"disallowValidators\",\"inputs\":[{\"name\":\"validators\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"enableAllowlist\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"isAllowedValidator\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isAllowlistEnabled\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"CreateValidator\",\"inputs\":[{\"name\":\"validator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"pubkey\",\"type\":\"bytes\",\"indexed\":false,\"internalType\":\"bytes\"},{\"name\":\"deposit\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Delegate\",\"inputs\":[{\"name\":\"delegator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"validator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false}]",
+	Bin: "0x608060405234801561001057600080fd5b5061083e806100206000396000f3fe6080604052600436106100a75760003560e01c8063a5a470ad11610064578063a5a470ad14610183578063c6a2aac814610196578063cf8e629a146101ab578063d146fd1b146101c0578063e1e158a5146101da578063f2fde38b1461020557600080fd5b8063117407e3146100ac5780633f0b1edf146100ce5780635c19a95c146100ee578063715018a61461010157806384768b7a146101165780638da5cb5b1461015b575b600080fd5b3480156100b857600080fd5b506100cc6100c73660046106b4565b610225565b005b3480156100da57600080fd5b506100cc6100e93660046106b4565b61029a565b6100cc6100fc366004610729565b61030a565b34801561010d57600080fd5b506100cc6103fa565b34801561012257600080fd5b50610146610131366004610729565b60666020526000908152604090205460ff1681565b60405190151581526020015b60405180910390f35b34801561016757600080fd5b506033546040516001600160a01b039091168152602001610152565b6100cc610191366004610759565b61040e565b3480156101a257600080fd5b506100cc610564565b3480156101b757600080fd5b506100cc61057b565b3480156101cc57600080fd5b506065546101469060ff1681565b3480156101e657600080fd5b506101f768056bc75e2d6310000081565b604051908152602001610152565b34801561021157600080fd5b506100cc610220366004610729565b61058f565b61022d610608565b60005b8181101561029557600160666000858585818110610250576102506107b9565b90506020020160208101906102659190610729565b6001600160a01b031681526020810191909152604001600020805460ff1916911515919091179055600101610230565b505050565b6102a2610608565b60005b81811015610295576000606660008585858181106102c5576102c56107b9565b90506020020160208101906102da9190610729565b6001600160a01b031681526020810191909152604001600020805460ff19169115159190911790556001016102a5565b6000341161035f5760405162461bcd60e51b815260206004820152601d60248201527f5374616b696e673a20696e73756666696369656e74206465706f73697400000060448201526064015b60405180910390fd5b336001600160a01b038216146103b75760405162461bcd60e51b815260206004820152601d60248201527f5374616b696e673a206f6e6c792073656c662064656c65676174696f6e0000006044820152606401610356565b6040513481526001600160a01b0382169033907f510b11bb3f3c799b11307c01ab7db0d335683ef5b2da98f7697de744f465eacc9060200160405180910390a350565b610402610608565b61040c6000610662565b565b60655460ff16158061042f57503360009081526066602052604090205460ff165b6104725760405162461bcd60e51b815260206004820152601460248201527314dd185ada5b99ce881b9bdd08185b1b1bddd95960621b6044820152606401610356565b602181146104c25760405162461bcd60e51b815260206004820152601e60248201527f5374616b696e673a20696e76616c6964207075626b6579206c656e67746800006044820152606401610356565b68056bc75e2d6310000034101561051b5760405162461bcd60e51b815260206004820152601d60248201527f5374616b696e673a20696e73756666696369656e74206465706f7369740000006044820152606401610356565b336001600160a01b03167fc7abef7b73f049da6a9bc2349ba5066a39e316eabc9f671b6f9406aa9490a453838334604051610558939291906107cf565b60405180910390a25050565b61056c610608565b6065805460ff19166001179055565b610583610608565b6065805460ff19169055565b610597610608565b6001600160a01b0381166105fc5760405162461bcd60e51b815260206004820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201526564647265737360d01b6064820152608401610356565b61060581610662565b50565b6033546001600160a01b0316331461040c5760405162461bcd60e51b815260206004820181905260248201527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e65726044820152606401610356565b603380546001600160a01b038381166001600160a01b0319831681179093556040519116919082907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e090600090a35050565b600080602083850312156106c757600080fd5b823567ffffffffffffffff808211156106df57600080fd5b818501915085601f8301126106f357600080fd5b81358181111561070257600080fd5b8660208260051b850101111561071757600080fd5b60209290920196919550909350505050565b60006020828403121561073b57600080fd5b81356001600160a01b038116811461075257600080fd5b9392505050565b6000806020838503121561076c57600080fd5b823567ffffffffffffffff8082111561078457600080fd5b818501915085601f83011261079857600080fd5b8135818111156107a757600080fd5b86602082850101111561071757600080fd5b634e487b7160e01b600052603260045260246000fd5b604081528260408201528284606083013760006060848301015260006060601f19601f860116830101905082602083015294935050505056fea2646970667358221220f68ad0d9e044314367dff1776ade901bc901d36c7245eeecf6e98ab11a999b5a64736f6c63430008180033",
 }
 
 // StakingABI is the input ABI used to generate the binding from.
@@ -233,6 +233,120 @@ func (_Staking *StakingCallerSession) MINDEPOSIT() (*big.Int, error) {
 	return _Staking.Contract.MINDEPOSIT(&_Staking.CallOpts)
 }
 
+// IsAllowedValidator is a free data retrieval call binding the contract method 0x84768b7a.
+//
+// Solidity: function isAllowedValidator(address ) view returns(bool)
+func (_Staking *StakingCaller) IsAllowedValidator(opts *bind.CallOpts, arg0 common.Address) (bool, error) {
+	var out []interface{}
+	err := _Staking.contract.Call(opts, &out, "isAllowedValidator", arg0)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// IsAllowedValidator is a free data retrieval call binding the contract method 0x84768b7a.
+//
+// Solidity: function isAllowedValidator(address ) view returns(bool)
+func (_Staking *StakingSession) IsAllowedValidator(arg0 common.Address) (bool, error) {
+	return _Staking.Contract.IsAllowedValidator(&_Staking.CallOpts, arg0)
+}
+
+// IsAllowedValidator is a free data retrieval call binding the contract method 0x84768b7a.
+//
+// Solidity: function isAllowedValidator(address ) view returns(bool)
+func (_Staking *StakingCallerSession) IsAllowedValidator(arg0 common.Address) (bool, error) {
+	return _Staking.Contract.IsAllowedValidator(&_Staking.CallOpts, arg0)
+}
+
+// IsAllowlistEnabled is a free data retrieval call binding the contract method 0xd146fd1b.
+//
+// Solidity: function isAllowlistEnabled() view returns(bool)
+func (_Staking *StakingCaller) IsAllowlistEnabled(opts *bind.CallOpts) (bool, error) {
+	var out []interface{}
+	err := _Staking.contract.Call(opts, &out, "isAllowlistEnabled")
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// IsAllowlistEnabled is a free data retrieval call binding the contract method 0xd146fd1b.
+//
+// Solidity: function isAllowlistEnabled() view returns(bool)
+func (_Staking *StakingSession) IsAllowlistEnabled() (bool, error) {
+	return _Staking.Contract.IsAllowlistEnabled(&_Staking.CallOpts)
+}
+
+// IsAllowlistEnabled is a free data retrieval call binding the contract method 0xd146fd1b.
+//
+// Solidity: function isAllowlistEnabled() view returns(bool)
+func (_Staking *StakingCallerSession) IsAllowlistEnabled() (bool, error) {
+	return _Staking.Contract.IsAllowlistEnabled(&_Staking.CallOpts)
+}
+
+// Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
+//
+// Solidity: function owner() view returns(address)
+func (_Staking *StakingCaller) Owner(opts *bind.CallOpts) (common.Address, error) {
+	var out []interface{}
+	err := _Staking.contract.Call(opts, &out, "owner")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
+//
+// Solidity: function owner() view returns(address)
+func (_Staking *StakingSession) Owner() (common.Address, error) {
+	return _Staking.Contract.Owner(&_Staking.CallOpts)
+}
+
+// Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
+//
+// Solidity: function owner() view returns(address)
+func (_Staking *StakingCallerSession) Owner() (common.Address, error) {
+	return _Staking.Contract.Owner(&_Staking.CallOpts)
+}
+
+// AllowValidators is a paid mutator transaction binding the contract method 0x117407e3.
+//
+// Solidity: function allowValidators(address[] validators) returns()
+func (_Staking *StakingTransactor) AllowValidators(opts *bind.TransactOpts, validators []common.Address) (*types.Transaction, error) {
+	return _Staking.contract.Transact(opts, "allowValidators", validators)
+}
+
+// AllowValidators is a paid mutator transaction binding the contract method 0x117407e3.
+//
+// Solidity: function allowValidators(address[] validators) returns()
+func (_Staking *StakingSession) AllowValidators(validators []common.Address) (*types.Transaction, error) {
+	return _Staking.Contract.AllowValidators(&_Staking.TransactOpts, validators)
+}
+
+// AllowValidators is a paid mutator transaction binding the contract method 0x117407e3.
+//
+// Solidity: function allowValidators(address[] validators) returns()
+func (_Staking *StakingTransactorSession) AllowValidators(validators []common.Address) (*types.Transaction, error) {
+	return _Staking.Contract.AllowValidators(&_Staking.TransactOpts, validators)
+}
+
 // CreateValidator is a paid mutator transaction binding the contract method 0xa5a470ad.
 //
 // Solidity: function createValidator(bytes pubkey) payable returns()
@@ -273,6 +387,111 @@ func (_Staking *StakingSession) Delegate(validator common.Address) (*types.Trans
 // Solidity: function delegate(address validator) payable returns()
 func (_Staking *StakingTransactorSession) Delegate(validator common.Address) (*types.Transaction, error) {
 	return _Staking.Contract.Delegate(&_Staking.TransactOpts, validator)
+}
+
+// DisableAllowlist is a paid mutator transaction binding the contract method 0xcf8e629a.
+//
+// Solidity: function disableAllowlist() returns()
+func (_Staking *StakingTransactor) DisableAllowlist(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _Staking.contract.Transact(opts, "disableAllowlist")
+}
+
+// DisableAllowlist is a paid mutator transaction binding the contract method 0xcf8e629a.
+//
+// Solidity: function disableAllowlist() returns()
+func (_Staking *StakingSession) DisableAllowlist() (*types.Transaction, error) {
+	return _Staking.Contract.DisableAllowlist(&_Staking.TransactOpts)
+}
+
+// DisableAllowlist is a paid mutator transaction binding the contract method 0xcf8e629a.
+//
+// Solidity: function disableAllowlist() returns()
+func (_Staking *StakingTransactorSession) DisableAllowlist() (*types.Transaction, error) {
+	return _Staking.Contract.DisableAllowlist(&_Staking.TransactOpts)
+}
+
+// DisallowValidators is a paid mutator transaction binding the contract method 0x3f0b1edf.
+//
+// Solidity: function disallowValidators(address[] validators) returns()
+func (_Staking *StakingTransactor) DisallowValidators(opts *bind.TransactOpts, validators []common.Address) (*types.Transaction, error) {
+	return _Staking.contract.Transact(opts, "disallowValidators", validators)
+}
+
+// DisallowValidators is a paid mutator transaction binding the contract method 0x3f0b1edf.
+//
+// Solidity: function disallowValidators(address[] validators) returns()
+func (_Staking *StakingSession) DisallowValidators(validators []common.Address) (*types.Transaction, error) {
+	return _Staking.Contract.DisallowValidators(&_Staking.TransactOpts, validators)
+}
+
+// DisallowValidators is a paid mutator transaction binding the contract method 0x3f0b1edf.
+//
+// Solidity: function disallowValidators(address[] validators) returns()
+func (_Staking *StakingTransactorSession) DisallowValidators(validators []common.Address) (*types.Transaction, error) {
+	return _Staking.Contract.DisallowValidators(&_Staking.TransactOpts, validators)
+}
+
+// EnableAllowlist is a paid mutator transaction binding the contract method 0xc6a2aac8.
+//
+// Solidity: function enableAllowlist() returns()
+func (_Staking *StakingTransactor) EnableAllowlist(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _Staking.contract.Transact(opts, "enableAllowlist")
+}
+
+// EnableAllowlist is a paid mutator transaction binding the contract method 0xc6a2aac8.
+//
+// Solidity: function enableAllowlist() returns()
+func (_Staking *StakingSession) EnableAllowlist() (*types.Transaction, error) {
+	return _Staking.Contract.EnableAllowlist(&_Staking.TransactOpts)
+}
+
+// EnableAllowlist is a paid mutator transaction binding the contract method 0xc6a2aac8.
+//
+// Solidity: function enableAllowlist() returns()
+func (_Staking *StakingTransactorSession) EnableAllowlist() (*types.Transaction, error) {
+	return _Staking.Contract.EnableAllowlist(&_Staking.TransactOpts)
+}
+
+// RenounceOwnership is a paid mutator transaction binding the contract method 0x715018a6.
+//
+// Solidity: function renounceOwnership() returns()
+func (_Staking *StakingTransactor) RenounceOwnership(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _Staking.contract.Transact(opts, "renounceOwnership")
+}
+
+// RenounceOwnership is a paid mutator transaction binding the contract method 0x715018a6.
+//
+// Solidity: function renounceOwnership() returns()
+func (_Staking *StakingSession) RenounceOwnership() (*types.Transaction, error) {
+	return _Staking.Contract.RenounceOwnership(&_Staking.TransactOpts)
+}
+
+// RenounceOwnership is a paid mutator transaction binding the contract method 0x715018a6.
+//
+// Solidity: function renounceOwnership() returns()
+func (_Staking *StakingTransactorSession) RenounceOwnership() (*types.Transaction, error) {
+	return _Staking.Contract.RenounceOwnership(&_Staking.TransactOpts)
+}
+
+// TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
+//
+// Solidity: function transferOwnership(address newOwner) returns()
+func (_Staking *StakingTransactor) TransferOwnership(opts *bind.TransactOpts, newOwner common.Address) (*types.Transaction, error) {
+	return _Staking.contract.Transact(opts, "transferOwnership", newOwner)
+}
+
+// TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
+//
+// Solidity: function transferOwnership(address newOwner) returns()
+func (_Staking *StakingSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
+	return _Staking.Contract.TransferOwnership(&_Staking.TransactOpts, newOwner)
+}
+
+// TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
+//
+// Solidity: function transferOwnership(address newOwner) returns()
+func (_Staking *StakingTransactorSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
+	return _Staking.Contract.TransferOwnership(&_Staking.TransactOpts, newOwner)
 }
 
 // StakingCreateValidatorIterator is returned from FilterCreateValidator and is used to iterate over the raw logs and unpacked data for CreateValidator events raised by the Staking contract.
@@ -569,6 +788,293 @@ func (_Staking *StakingFilterer) WatchDelegate(opts *bind.WatchOpts, sink chan<-
 func (_Staking *StakingFilterer) ParseDelegate(log types.Log) (*StakingDelegate, error) {
 	event := new(StakingDelegate)
 	if err := _Staking.contract.UnpackLog(event, "Delegate", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// StakingInitializedIterator is returned from FilterInitialized and is used to iterate over the raw logs and unpacked data for Initialized events raised by the Staking contract.
+type StakingInitializedIterator struct {
+	Event *StakingInitialized // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *StakingInitializedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(StakingInitialized)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(StakingInitialized)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *StakingInitializedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *StakingInitializedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// StakingInitialized represents a Initialized event raised by the Staking contract.
+type StakingInitialized struct {
+	Version uint8
+	Raw     types.Log // Blockchain specific contextual infos
+}
+
+// FilterInitialized is a free log retrieval operation binding the contract event 0x7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb3847402498.
+//
+// Solidity: event Initialized(uint8 version)
+func (_Staking *StakingFilterer) FilterInitialized(opts *bind.FilterOpts) (*StakingInitializedIterator, error) {
+
+	logs, sub, err := _Staking.contract.FilterLogs(opts, "Initialized")
+	if err != nil {
+		return nil, err
+	}
+	return &StakingInitializedIterator{contract: _Staking.contract, event: "Initialized", logs: logs, sub: sub}, nil
+}
+
+// WatchInitialized is a free log subscription operation binding the contract event 0x7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb3847402498.
+//
+// Solidity: event Initialized(uint8 version)
+func (_Staking *StakingFilterer) WatchInitialized(opts *bind.WatchOpts, sink chan<- *StakingInitialized) (event.Subscription, error) {
+
+	logs, sub, err := _Staking.contract.WatchLogs(opts, "Initialized")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(StakingInitialized)
+				if err := _Staking.contract.UnpackLog(event, "Initialized", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseInitialized is a log parse operation binding the contract event 0x7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb3847402498.
+//
+// Solidity: event Initialized(uint8 version)
+func (_Staking *StakingFilterer) ParseInitialized(log types.Log) (*StakingInitialized, error) {
+	event := new(StakingInitialized)
+	if err := _Staking.contract.UnpackLog(event, "Initialized", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// StakingOwnershipTransferredIterator is returned from FilterOwnershipTransferred and is used to iterate over the raw logs and unpacked data for OwnershipTransferred events raised by the Staking contract.
+type StakingOwnershipTransferredIterator struct {
+	Event *StakingOwnershipTransferred // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *StakingOwnershipTransferredIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(StakingOwnershipTransferred)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(StakingOwnershipTransferred)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *StakingOwnershipTransferredIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *StakingOwnershipTransferredIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// StakingOwnershipTransferred represents a OwnershipTransferred event raised by the Staking contract.
+type StakingOwnershipTransferred struct {
+	PreviousOwner common.Address
+	NewOwner      common.Address
+	Raw           types.Log // Blockchain specific contextual infos
+}
+
+// FilterOwnershipTransferred is a free log retrieval operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
+//
+// Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
+func (_Staking *StakingFilterer) FilterOwnershipTransferred(opts *bind.FilterOpts, previousOwner []common.Address, newOwner []common.Address) (*StakingOwnershipTransferredIterator, error) {
+
+	var previousOwnerRule []interface{}
+	for _, previousOwnerItem := range previousOwner {
+		previousOwnerRule = append(previousOwnerRule, previousOwnerItem)
+	}
+	var newOwnerRule []interface{}
+	for _, newOwnerItem := range newOwner {
+		newOwnerRule = append(newOwnerRule, newOwnerItem)
+	}
+
+	logs, sub, err := _Staking.contract.FilterLogs(opts, "OwnershipTransferred", previousOwnerRule, newOwnerRule)
+	if err != nil {
+		return nil, err
+	}
+	return &StakingOwnershipTransferredIterator{contract: _Staking.contract, event: "OwnershipTransferred", logs: logs, sub: sub}, nil
+}
+
+// WatchOwnershipTransferred is a free log subscription operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
+//
+// Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
+func (_Staking *StakingFilterer) WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *StakingOwnershipTransferred, previousOwner []common.Address, newOwner []common.Address) (event.Subscription, error) {
+
+	var previousOwnerRule []interface{}
+	for _, previousOwnerItem := range previousOwner {
+		previousOwnerRule = append(previousOwnerRule, previousOwnerItem)
+	}
+	var newOwnerRule []interface{}
+	for _, newOwnerItem := range newOwner {
+		newOwnerRule = append(newOwnerRule, newOwnerItem)
+	}
+
+	logs, sub, err := _Staking.contract.WatchLogs(opts, "OwnershipTransferred", previousOwnerRule, newOwnerRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(StakingOwnershipTransferred)
+				if err := _Staking.contract.UnpackLog(event, "OwnershipTransferred", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseOwnershipTransferred is a log parse operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
+//
+// Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
+func (_Staking *StakingFilterer) ParseOwnershipTransferred(log types.Log) (*StakingOwnershipTransferred, error) {
+	event := new(StakingOwnershipTransferred)
+	if err := _Staking.contract.UnpackLog(event, "OwnershipTransferred", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

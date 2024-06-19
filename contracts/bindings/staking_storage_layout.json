@@ -1,4 +1,101 @@
 {
-  "storage": [],
-  "types": {}
+  "storage": [
+    {
+      "astId": 139,
+      "contract": "src/octane/Staking.sol:Staking",
+      "label": "_initialized",
+      "offset": 0,
+      "slot": "0",
+      "type": "t_uint8"
+    },
+    {
+      "astId": 142,
+      "contract": "src/octane/Staking.sol:Staking",
+      "label": "_initializing",
+      "offset": 1,
+      "slot": "0",
+      "type": "t_bool"
+    },
+    {
+      "astId": 681,
+      "contract": "src/octane/Staking.sol:Staking",
+      "label": "__gap",
+      "offset": 0,
+      "slot": "1",
+      "type": "t_array(t_uint256)50_storage"
+    },
+    {
+      "astId": 11,
+      "contract": "src/octane/Staking.sol:Staking",
+      "label": "_owner",
+      "offset": 0,
+      "slot": "51",
+      "type": "t_address"
+    },
+    {
+      "astId": 131,
+      "contract": "src/octane/Staking.sol:Staking",
+      "label": "__gap",
+      "offset": 0,
+      "slot": "52",
+      "type": "t_array(t_uint256)49_storage"
+    },
+    {
+      "astId": 45564,
+      "contract": "src/octane/Staking.sol:Staking",
+      "label": "isAllowlistEnabled",
+      "offset": 0,
+      "slot": "101",
+      "type": "t_bool"
+    },
+    {
+      "astId": 45569,
+      "contract": "src/octane/Staking.sol:Staking",
+      "label": "isAllowedValidator",
+      "offset": 0,
+      "slot": "102",
+      "type": "t_mapping(t_address,t_bool)"
+    }
+  ],
+  "types": {
+    "t_address": {
+      "encoding": "inplace",
+      "label": "address",
+      "numberOfBytes": "20"
+    },
+    "t_array(t_uint256)49_storage": {
+      "encoding": "inplace",
+      "label": "uint256[49]",
+      "numberOfBytes": "1568",
+      "base": "t_uint256"
+    },
+    "t_array(t_uint256)50_storage": {
+      "encoding": "inplace",
+      "label": "uint256[50]",
+      "numberOfBytes": "1600",
+      "base": "t_uint256"
+    },
+    "t_bool": {
+      "encoding": "inplace",
+      "label": "bool",
+      "numberOfBytes": "1"
+    },
+    "t_mapping(t_address,t_bool)": {
+      "encoding": "mapping",
+      "key": "t_address",
+      "label": "mapping(address => bool)",
+      "numberOfBytes": "32",
+      "value": "t_bool"
+    },
+    "t_uint256": {
+      "encoding": "inplace",
+      "label": "uint256",
+      "numberOfBytes": "32"
+    },
+    "t_uint8": {
+      "encoding": "inplace",
+      "label": "uint8",
+      "numberOfBytes": "1"
+    }
+  }
 }
