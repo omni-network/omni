@@ -13,7 +13,7 @@ import (
 
 const (
 	defaultTemplate       = "hello-world-template"
-	defaultTemplateCommit = "1d0ba3c" // Commit hash of the template, update as needed
+	defaultTemplateCommit = "f4002e9" // Commit hash of the template, update as needed
 )
 
 func newDeveloperCmds() *cobra.Command {
@@ -61,7 +61,7 @@ func newForgeProjectTemplate(ctx context.Context, cfg developerForgeProjectConfi
 
 	// Clone the repository
 	//nolint:gosec // This is a command-line tool, not a library
-	cmd := exec.CommandContext(ctx, "git", "clone", "--depth", "1", "https://github.com/omni-network/"+cfg.templateName+".git", destinationPath)
+	cmd := exec.CommandContext(ctx, "git", "clone", "https://github.com/omni-network/"+cfg.templateName+".git", destinationPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
