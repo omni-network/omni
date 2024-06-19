@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -198,7 +197,7 @@ func (k *Keeper) Finalize(ctx context.Context, req *abci.RequestFinalizeBlock, r
 }
 
 func (k *Keeper) startOptimisticBuild(ctx context.Context, appHash common.Hash, timestamp time.Time) (engine.ForkChoiceResponse, error) {
-	latestEBlock, err := k.engineCl.HeaderByNumber(ctx, nil)
+	latestEBlock, err := k.engineCl.HeaderByType(ctx, ethclient.HeadLatest)
 	if err != nil {
 		return engine.ForkChoiceResponse{}, errors.Wrap(err, "get head")
 	}
@@ -238,12 +237,7 @@ func submitPayload(
 	feeRecipient common.Address,
 	appHash common.Hash,
 ) (engine.ForkChoiceResponse, error) {
-	latestEHeight, err := engineCl.BlockNumber(ctx)
-	if err != nil {
-		return engine.ForkChoiceResponse{}, errors.Wrap(err, "latest execution block number")
-	}
-
-	latestEBlock, err := engineCl.HeaderByNumber(ctx, big.NewInt(int64(latestEHeight)))
+	latestEBlock, err := engineCl.HeaderByType(ctx, ethclient.HeadLatest)
 	if err != nil {
 		return engine.ForkChoiceResponse{}, errors.Wrap(err, "latest execution block")
 	}

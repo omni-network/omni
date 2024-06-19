@@ -17,7 +17,7 @@ import (
 
 const consensusIDPrefix = "omni-"
 const consensusIDOffset = 1_000_000
-const maxValidators = 10
+const maxValidators = 30
 
 // Static defines static config and data for a network.
 type Static struct {

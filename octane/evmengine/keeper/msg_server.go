@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
@@ -28,9 +27,13 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 		return nil, errors.New("only allowed in finalize mode")
 	}
 
-	var payload engine.ExecutableData
-	err := retryForever(ctx, func(ctx context.Context) (bool, error) {
-		pload, status, err := pushPayload(ctx, s.engineCl, msg)
+	payload, err := s.parseAndVerifyProposedPayload(ctx, msg)
+	if err != nil {
+		return nil, err
+	}
+
+	err = retryForever(ctx, func(ctx context.Context) (bool, error) {
+		status, err := pushPayload(ctx, s.engineCl, payload)
 		if err != nil || isUnknown(status) {
 			// We need to retry forever on networking errors, but can't easily identify them, so retry all errors.
 			log.Warn(ctx, "Processing finalized payload failed: push new payload to evm (will retry)", err,
@@ -45,8 +48,6 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 		} else if isSyncing(status) {
 			log.Warn(ctx, "Processing finalized payload; evm syncing", nil)
 		}
-
-		payload = pload
 
 		return true, nil // We are done, don't retry
 	})
@@ -137,19 +138,13 @@ func (s msgServer) deliverEvents(ctx context.Context, height uint64, blockHash c
 	return nil
 }
 
-// pushPayload creates a new payload from the given message and pushes it to the execution client.
-// It returns the new forkchoice state and engine payload status or an error.
-func pushPayload(ctx context.Context, engineCl ethclient.EngineClient, msg *types.MsgExecutionPayload,
-) (engine.ExecutableData, engine.PayloadStatusV1, error) {
-	var payload engine.ExecutableData
-	if err := json.Unmarshal(msg.ExecutionPayload, &payload); err != nil {
-		return engine.ExecutableData{}, engine.PayloadStatusV1{}, errors.Wrap(err, "unmarshal payload")
-	}
-
+// pushPayload pushes the provided execution data as a possible new head to the execution client.
+// It returns the engine payload status or an error.
+func pushPayload(ctx context.Context, engineCl ethclient.EngineClient, payload engine.ExecutableData) (engine.PayloadStatusV1, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	appHash := common.BytesToHash(sdkCtx.BlockHeader().AppHash)
 	if appHash == (common.Hash{}) {
-		return engine.ExecutableData{}, engine.PayloadStatusV1{}, errors.New("app hash is empty")
+		return engine.PayloadStatusV1{}, errors.New("app hash is empty")
 	}
 
 	emptyVersionHashes := make([]common.Hash, 0) // Cannot use nil.
@@ -157,10 +152,10 @@ func pushPayload(ctx context.Context, engineCl ethclient.EngineClient, msg *type
 	// Push it back to the execution client (mark it as possible new head).
 	status, err := engineCl.NewPayloadV3(ctx, payload, emptyVersionHashes, &appHash)
 	if err != nil {
-		return engine.ExecutableData{}, engine.PayloadStatusV1{}, errors.Wrap(err, "new payload")
+		return engine.PayloadStatusV1{}, errors.Wrap(err, "new payload")
 	}
 
-	return payload, status, nil
+	return status, nil
 }
 
 // NewMsgServerImpl returns an implementation of the MsgServer interface
