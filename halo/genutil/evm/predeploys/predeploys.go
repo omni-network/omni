@@ -6,6 +6,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/genutil/evm/state"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/solc"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -63,7 +64,7 @@ var (
 )
 
 // Alloc returns the genesis allocs for the predeployed contracts, initializing code and storage.
-func Alloc(admin common.Address) (types.GenesisAlloc, error) {
+func Alloc(network netconf.ID, admin common.Address) (types.GenesisAlloc, error) {
 	emptyGenesis := &core.Genesis{Alloc: types.GenesisAlloc{}}
 
 	db := state.NewMemDB(emptyGenesis)
@@ -82,7 +83,7 @@ func Alloc(admin common.Address) (types.GenesisAlloc, error) {
 		return nil, errors.Wrap(err, "set omni bridge")
 	}
 
-	if err := setStaking(db); err != nil {
+	if err := setStaking(db, admin, network.IsProtected()); err != nil {
 		return nil, errors.Wrap(err, "set staking")
 	}
 
@@ -138,8 +139,12 @@ func setOmniBridge(db *state.MemDB, owner common.Address) error {
 }
 
 // setStaking sets the Staking predeploy.
-func setStaking(db *state.MemDB) error {
-	storage := state.StorageValues{}
+func setStaking(db *state.MemDB, owner common.Address, isAllowlistEnabled bool) error {
+	storage := state.StorageValues{
+		"_initialized":       uint8(1), // disable initializer
+		"_owner":             owner,
+		"isAllowlistEnabled": isAllowlistEnabled,
+	}
 
 	return setPredeploy(db, staking, stakingCode, bindings.StakingStorageLayout, storage)
 }

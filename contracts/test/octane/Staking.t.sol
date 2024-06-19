@@ -12,16 +12,37 @@ contract Staking_Test is Test {
     /// @dev Matches Staking.CreateValidator event
     event CreateValidator(address indexed validator, bytes pubkey, uint256 deposit);
 
-    Staking staking;
+    address owner;
+    StakingHarness staking;
 
     function setUp() public {
-        staking = new Staking();
+        owner = makeAddr("owner");
+        staking = new StakingHarness(owner);
     }
 
     function test_createValidator() public {
         address validator = makeAddr("validator");
+        address[] memory validators = new address[](1);
+        validators[0] = validator;
         bytes memory pubkey = abi.encodePacked(hex"03", keccak256("pubkey"));
         vm.deal(validator, staking.MIN_DEPOSIT());
+
+        // allowlist is disabled
+        assertFalse(staking.isAllowlistEnabled());
+
+        // enable allowlist
+        vm.prank(owner);
+        staking.enableAllowlist();
+        assertTrue(staking.isAllowlistEnabled());
+
+        // must be in allowlist
+        vm.expectRevert("Staking: not allowed");
+        staking.createValidator(pubkey);
+
+        // add to allowlist
+        vm.prank(owner);
+        staking.allowValidators(validators);
+        assertTrue(staking.isAllowedValidator(validator));
 
         // requires minimum deposit
         uint256 insufficientDeposit = staking.MIN_DEPOSIT() - 1;
@@ -44,5 +65,38 @@ contract Staking_Test is Test {
 
         vm.prank(validator);
         staking.createValidator{ value: deposit }(pubkey);
+
+        // remove from allowlist
+        vm.prank(owner);
+        staking.disallowValidators(validators);
+        assertFalse(staking.isAllowedValidator(validator));
+
+        // must be in allowlist
+        vm.expectRevert("Staking: not allowed");
+        vm.deal(validator, deposit);
+        vm.prank(validator);
+        staking.createValidator{ value: deposit }(pubkey);
+
+        // disable allowlist
+        vm.prank(owner);
+        staking.disableAllowlist();
+        assertFalse(staking.isAllowlistEnabled());
+
+        // can create validator with allowlist disabled
+        vm.expectEmit();
+        emit CreateValidator(validator, pubkey, deposit);
+
+        vm.prank(validator);
+        staking.createValidator{ value: deposit }(pubkey);
+    }
+}
+
+/**
+ * @title StakingHarness
+ * @notice Wrapper around Staking.sol that allows setting owner in constructor
+ */
+contract StakingHarness is Staking {
+    constructor(address _owner) {
+        _transferOwnership(_owner);
     }
 }
