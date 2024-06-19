@@ -29,6 +29,7 @@ import (
 	pruningtypes "cosmossdk.io/store/pruning/types"
 	"cosmossdk.io/store/snapshots"
 	snapshottypes "cosmossdk.io/store/snapshots/types"
+	storetypes "cosmossdk.io/store/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/server"
@@ -209,7 +210,10 @@ func newCometNode(ctx context.Context, cfg *cmtcfg.Config, app *App, privVal cmt
 
 	wrapper := newABCIWrapper(
 		server.NewCometABCIWrapper(app),
-		app.EVMEngKeeper.Finalize,
+		app.EVMEngKeeper.PostFinalize,
+		func() storetypes.CacheMultiStore {
+			return app.CommitMultiStore().CacheMultiStore()
+		},
 	)
 
 	cmtNode, err := node.NewNode(cfg,

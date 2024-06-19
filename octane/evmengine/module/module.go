@@ -1,9 +1,14 @@
 package module
 
 import (
+	"encoding/json"
+
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/octane/evmengine/keeper"
 	"github.com/omni-network/omni/octane/evmengine/types"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/core/store"
@@ -11,6 +16,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	staking "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -19,6 +25,7 @@ import (
 var (
 	_ module.AppModuleBasic = (*AppModule)(nil)
 	_ appmodule.AppModule   = (*AppModule)(nil)
+	_ module.HasGenesis     = (*AppModule)(nil)
 )
 
 // ----------------------------------------------------------------------------
@@ -73,9 +80,38 @@ func NewAppModule(
 	}
 }
 
+func (m AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, raw json.RawMessage) {
+	var data types.GenesisState
+	cdc.MustUnmarshalJSON(raw, &data)
+
+	if err := m.keeper.InsertGenesisHead(ctx, data.ExecutionBlockHash); err != nil {
+		panic(errors.Wrap(err, "insert genesis head"))
+	}
+}
+
+func (AppModule) ExportGenesis(sdk.Context, codec.JSONCodec) json.RawMessage {
+	return nil
+}
+
+func (AppModuleBasic) DefaultGenesis(codec.JSONCodec) json.RawMessage {
+	panic("not supported")
+}
+
+// ValidateGenesis performs genesis state validation for the bank module.
+func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
+	var data types.GenesisState
+	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
+		return errors.Wrap(err, "unmarshal genesis state")
+	} else if len(data.ExecutionBlockHash) != common.HashLength {
+		return errors.New("invalid execution block hash length")
+	}
+
+	return nil
+}
+
 // RegisterServices registers a gRPC query service to respond to the module-specific gRPC queries.
-func (am AppModule) RegisterServices(cfg module.Configurator) {
-	types.RegisterMsgServiceServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
+func (m AppModule) RegisterServices(cfg module.Configurator) {
+	types.RegisterMsgServiceServer(cfg.MsgServer(), keeper.NewMsgServerImpl(m.keeper))
 }
 
 // IsOnePerModuleType implements the depinject.OnePerModuleType interface.
@@ -118,8 +154,8 @@ type ModuleOutputs struct {
 	Hooks        staking.StakingHooksWrapper
 }
 
-func ProvideModule(in ModuleInputs) ModuleOutputs {
-	k := keeper.NewKeeper(
+func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
+	k, err := keeper.NewKeeper(
 		in.Cdc,
 		in.StoreService,
 		in.EngineCl,
@@ -127,6 +163,10 @@ func ProvideModule(in ModuleInputs) ModuleOutputs {
 		in.AddrProvider,
 		in.FeeRecProvider,
 	)
+	if err != nil {
+		return ModuleOutputs{}, err
+	}
+
 	m := NewAppModule(
 		in.Cdc,
 		k,
@@ -136,5 +176,5 @@ func ProvideModule(in ModuleInputs) ModuleOutputs {
 		EngEVMKeeper: k,
 		Module:       m,
 		Hooks:        staking.StakingHooksWrapper{StakingHooks: keeper.Hooks{}},
-	}
+	}, nil
 }

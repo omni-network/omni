@@ -34,7 +34,10 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 	sdkCtx = sdkCtx.WithExecMode(sdk.ExecModeFinalize)
 
 	frp := newRandomFeeRecipientProvider()
-	keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, nil, frp)
+	keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, nil, frp)
+	require.NoError(t, err)
+	populateGenesisHead(sdkCtx, t, keeper)
+
 	propSrv := NewProposalServer(keeper)
 
 	var payloadData []byte

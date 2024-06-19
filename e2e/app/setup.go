@@ -21,6 +21,7 @@ import (
 	halocmd "github.com/omni-network/omni/halo/cmd"
 	halocfg "github.com/omni-network/omni/halo/config"
 	"github.com/omni-network/omni/halo/genutil"
+	evmgenutil "github.com/omni-network/omni/halo/genutil/evm"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
@@ -64,6 +65,20 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 		return SetupOnlyMonitor(ctx, def)
 	}
 
+	// Setup geth execution genesis
+	admin, err := eoa.Admin(def.Testnet.Network)
+	if err != nil {
+		return errors.Wrap(err, "admin")
+	}
+	gethGenesis, err := evmgenutil.MakeGenesis(def.Manifest.Network, admin)
+	if err != nil {
+		return errors.Wrap(err, "make genesis")
+	}
+	if err := geth.WriteAllConfig(def.Testnet, gethGenesis); err != nil {
+		return err
+	}
+
+	// Setup halo consensus genesis
 	var vals []crypto.PubKey
 	var valPrivKeys []crypto.PrivKey
 	for val := range def.Testnet.Validators {
@@ -71,17 +86,17 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 		valPrivKeys = append(valPrivKeys, val.PrivvalKey)
 	}
 
-	cosmosGenesis, err := genutil.MakeGenesis(def.Manifest.Network, time.Now(), vals...)
+	cosmosGenesis, err := genutil.MakeGenesis(
+		def.Manifest.Network,
+		time.Now(),
+		gethGenesis.ToBlock().Hash(),
+		vals...)
 	if err != nil {
 		return errors.Wrap(err, "make genesis")
 	}
 	cmtGenesis, err := cosmosGenesis.ToGenesisDoc()
 	if err != nil {
 		return errors.Wrap(err, "convert genesis")
-	}
-
-	if err := geth.WriteAllConfig(def.Testnet); err != nil {
-		return err
 	}
 
 	logCfg := logConfig(def)

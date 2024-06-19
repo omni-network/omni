@@ -7,27 +7,17 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/types"
-	evmgenutil "github.com/omni-network/omni/halo/genutil/evm"
 	"github.com/omni-network/omni/lib/errors"
 
+	"github.com/ethereum/go-ethereum/core"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/eth/downloader"
 )
 
 // WriteAllConfig writes all the geth config files for all omniEVMs.
-func WriteAllConfig(testnet types.Testnet) error {
-	admin, err := eoa.Admin(testnet.Network)
-	if err != nil {
-		return errors.Wrap(err, "admin")
-	}
-
-	gethGenesis, err := evmgenutil.MakeGenesis(testnet.Network, admin)
-	if err != nil {
-		return errors.Wrap(err, "make genesis")
-	}
-	gethGenesisBz, err := json.MarshalIndent(gethGenesis, "", "  ")
+func WriteAllConfig(testnet types.Testnet, genesis core.Genesis) error {
+	gethGenesisBz, err := json.MarshalIndent(genesis, "", "  ")
 	if err != nil {
 		return errors.Wrap(err, "marshal genesis")
 	}

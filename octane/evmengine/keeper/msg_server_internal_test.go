@@ -49,9 +49,11 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 	}
 	frp := newRandomFeeRecipientProvider()
 	evmLogProc := mockLogProvider{deliverErr: errors.New("test error")}
-	keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp)
+	keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp)
+	require.NoError(t, err)
 	keeper.SetCometAPI(cmtAPI)
 	keeper.AddEventProcessor(evmLogProc)
+	populateGenesisHead(ctx, t, keeper)
 	msgSrv := NewMsgServerImpl(keeper)
 
 	var payloadData []byte
@@ -115,6 +117,15 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 	newPayload(ctx)
 	keeper.SetBuildOptimistic(true)
 	assertExecutionPayload(ctx)
+}
+
+// populateGenesisHead inserts the mock genesis execution head into the database.
+func populateGenesisHead(ctx context.Context, t *testing.T, keeper *Keeper) {
+	t.Helper()
+	genesisBlock, err := ethclient.MockGenesisBlock()
+	require.NoError(t, err)
+
+	require.NoError(t, keeper.InsertGenesisHead(ctx, genesisBlock.Hash().Bytes()))
 }
 
 func Test_pushPayload(t *testing.T) {

@@ -127,7 +127,9 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 					address: common.BytesToAddress([]byte("test")),
 				}
 				frp := newRandomFeeRecipientProvider()
-				k := NewKeeper(cdc, storeService, &tt.mockEngine, txConfig, ap, frp)
+				k, err := NewKeeper(cdc, storeService, &tt.mockEngine, txConfig, ap, frp)
+				require.NoError(t, err)
+				populateGenesisHead(ctx, t, k)
 
 				_, err = k.PrepareProposal(withRandomErrs(t, ctx), tt.req)
 				if (err != nil) != tt.wantErr {
@@ -151,9 +153,11 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 			address: common.BytesToAddress([]byte("test")),
 		}
 		frp := newRandomFeeRecipientProvider()
-		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp)
+		keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp)
+		require.NoError(t, err)
 		keeper.SetVoteProvider(mockVEProvider{})
 		keeper.AddEventProcessor(mockLogProvider{})
+		populateGenesisHead(ctx, t, keeper)
 
 		// get the genesis block to build on top of
 		ts := time.Now()
@@ -212,28 +216,15 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 			address: common.BytesToAddress([]byte("test")),
 		}
 		frp := newRandomFeeRecipientProvider()
-		keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp)
+		keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp)
+		require.NoError(t, err)
 		keeper.AddEventProcessor(mockLogProvider{})
 		keeper.SetVoteProvider(mockVEProvider{})
+		populateGenesisHead(ctx, t, keeper)
 
-		// get the genesis block to build on top of
-		ts := time.Now()
-		latestBlock, err := mockEngine.HeaderByType(ctx, ethclient.HeadLatest)
+		// Get the parent block we will build on top of
+		head, err := keeper.getExecutionHead(ctx)
 		require.NoError(t, err)
-		latestHeight := latestBlock.Number.Uint64()
-
-		appHash1 := tutil.RandomHash()
-		appHash2 := tutil.RandomHash()
-
-		// build next two blocks and get the PayloadID of the second
-		mockEngine.pushPayload(t, ctx, frp.LocalFeeRecipient(), latestBlock.Hash(), ts, appHash1)
-
-		nextBlock, blockPayload := mockEngine.nextBlock(t, latestHeight+1, uint64(ts.Unix()), latestBlock.Hash(), ap.LocalAddress(), &appHash2)
-		_, err = mockEngine.NewPayloadV3(ctx, blockPayload, nil, &appHash2)
-		require.NoError(t, err)
-		mockEngine.pushPayload(t, ctx, frp.LocalFeeRecipient(), nextBlock.Hash(), ts, appHash2)
-
-		keeper.mutablePayload.UpdatedAt = time.Now()
 
 		req := &abci.RequestPrepareProposal{
 			Txs:    nil,
@@ -253,7 +244,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		// assert that the message is an executable payload
 		for _, msg := range tx.GetMsgs() {
 			if _, ok := msg.(*etypes.MsgExecutionPayload); ok {
-				assertExecutablePayload(t, msg, req.Time.Unix()+1, nextBlock.Hash(), frp, uint64(req.Height))
+				assertExecutablePayload(t, msg, req.Time.Unix(), head.Hash(), frp, head.GetBlockHeight()+1)
 			}
 			if msgDelegate, ok := msg.(*stypes.MsgDelegate); ok {
 				require.Equal(t, msgDelegate.Amount, sdk.NewInt64Coin("stake", 100))
@@ -292,21 +283,21 @@ func TestOptimistic(t *testing.T) {
 		address: val1,
 	}
 	frp := newRandomFeeRecipientProvider()
-	keeper := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp)
+	keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp)
+	require.NoError(t, err)
 	keeper.SetVoteProvider(mockVEProvider{})
 	keeper.AddEventProcessor(mockLogProvider{})
 	keeper.SetCometAPI(cmtAPI)
 	keeper.SetBuildOptimistic(true)
+	populateGenesisHead(ctx, t, keeper)
 
-	req := abci.RequestFinalizeBlock{
-		Height:          height,
-		ProposerAddress: val0,
-		Time:            time.Now(),
-	}
-	res := abci.ResponseFinalizeBlock{
-		AppHash: tutil.RandomHash().Bytes(),
-	}
-	err = keeper.Finalize(ctx, &req, &res)
+	timestamp := time.Now()
+	ctx = ctx.
+		WithProposer(val0.Bytes()).
+		WithBlockHeight(height).
+		WithBlockTime(timestamp)
+
+	err = keeper.PostFinalize(ctx)
 	require.NoError(t, err)
 
 	payloadID, h, ts := keeper.getOptimisticPayload()
@@ -321,7 +312,7 @@ func TestOptimistic(t *testing.T) {
 
 	payload := env.ExecutionPayload
 	require.EqualValues(t, 1, payload.Number)
-	require.EqualValues(t, req.Time.Unix(), payload.Timestamp)
+	require.EqualValues(t, timestamp.Unix(), payload.Timestamp)
 	require.EqualValues(t, b.Hash(), payload.ParentHash)
 	require.EqualValues(t, frp.LocalFeeRecipient(), payload.FeeRecipient)
 	require.Empty(t, payload.Withdrawals)
