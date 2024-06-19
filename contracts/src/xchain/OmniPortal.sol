@@ -145,7 +145,7 @@ contract OmniPortal is
 
     /**
      * @notice Submit a batch of XMsgs to be executed on this chain
-     * @param xsub  An xchain submisison, including an attestation root w/ validator signatures,
+     * @param xsub  An xchain submission, including an attestation root w/ validator signatures,
      *              and a block header and message batch, proven against the attestation root.
      */
     function xsubmit(XTypes.Submission calldata xsub) external whenNotPaused nonReentrant {
@@ -203,7 +203,7 @@ contract OmniPortal is
 
     /**
      * @notice Execute an xmsg.
-     * @dev Verify an XMsg is next in its XStream, execute it, increment inXStreamOffset, emit an XReceipt
+     * @dev Verify if an XMsg is next in its XStream, execute it, increment inXMsgOffset, emit an XReceipt event
      */
     function _exec(XTypes.BlockHeader memory xheader, XTypes.Msg calldata xmsg_) internal {
         uint64 sourceChainId = xmsg_.sourceChainId;
@@ -263,7 +263,7 @@ contract OmniPortal is
      * @notice Call an external contract.
      * @dev Returns the result of the call, the gas used, and whether the call was successful.
      * @param to                The address of the contract to call.
-     * @param gasLimit          Gas limit of the call
+     * @param gasLimit          Gas limit of the call.
      * @param data              Calldata to send to the contract.
      */
     function _call(address to, uint256 gasLimit, bytes calldata data) internal returns (bool, bytes memory, uint256) {
@@ -275,7 +275,7 @@ contract OmniPortal is
 
         uint256 gasLeftAfter = gasleft();
 
-        // Esnure relayer sent enough gas for the call
+        // Ensure relayer sent enough gas for the call
         // See https://github.com/OpenZeppelin/openzeppelin-contracts/blob/bd325d56b4c62c9c5c1aff048c37c6bb18ac0290/contracts/metatx/MinimalForwarder.sol#L58-L68
         if (gasLeftAfter <= gasLimit / 63) {
             // We use invalid opcode to consume all gas and bubble-up the effects, to emulate an "OutOfGas" exception
