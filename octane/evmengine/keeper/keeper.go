@@ -14,7 +14,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
 
+	ormv1alpha1 "cosmossdk.io/api/cosmos/orm/v1alpha1"
 	"cosmossdk.io/core/store"
+	"cosmossdk.io/orm/model/ormdb"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -24,6 +26,7 @@ import (
 type Keeper struct {
 	cdc             codec.BinaryCodec
 	storeService    store.KVStoreService
+	headTable       ExecutionHeadTable
 	engineCl        ethclient.EngineClient
 	txConfig        client.TxConfig
 	voteProvider    types.VoteExtensionProvider
@@ -52,15 +55,30 @@ func NewKeeper(
 	txConfig client.TxConfig,
 	addrProvider types.AddressProvider,
 	feeRecProvider types.FeeRecipientProvider,
-) *Keeper {
+) (*Keeper, error) {
+	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
+		{Id: 1, ProtoFileName: File_octane_evmengine_keeper_evmengine_proto.Path()},
+	}}
+
+	modDB, err := ormdb.NewModuleDB(schema, ormdb.ModuleDBOptions{KVStoreService: storeService})
+	if err != nil {
+		return nil, errors.Wrap(err, "create module db")
+	}
+
+	dbStore, err := NewEvmengineStore(modDB)
+	if err != nil {
+		return nil, errors.Wrap(err, "create evmengine store")
+	}
+
 	return &Keeper{
 		cdc:            cdc,
 		storeService:   storeService,
+		headTable:      dbStore.ExecutionHeadTable(),
 		engineCl:       engineCl,
 		txConfig:       txConfig,
 		addrProvider:   addrProvider,
 		feeRecProvider: feeRecProvider,
-	}
+	}, nil
 }
 
 // TODO(corver): Figure out how to use depinject for this.
@@ -96,8 +114,6 @@ func (k *Keeper) RegisterProposalService(server grpc1.Server) {
 // parseAndVerifyProposedPayload parses and returns the proposed payload
 // if comparing it against the latest execution block succeeds.
 func (k *Keeper) parseAndVerifyProposedPayload(ctx context.Context, msg *types.MsgExecutionPayload) (engine.ExecutableData, error) {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-
 	// Parse the payload.
 	var payload engine.ExecutableData
 	if err := json.Unmarshal(msg.ExecutionPayload, &payload); err != nil {
@@ -114,41 +130,34 @@ func (k *Keeper) parseAndVerifyProposedPayload(ctx context.Context, msg *types.M
 		return engine.ExecutableData{}, errors.Wrap(err, "verify proposed fee recipient")
 	}
 
-	// Fetch the latest execution block.
-	latestEBlock, err := k.engineCl.HeaderByType(ctx, ethclient.HeadLatest)
+	// Fetch the latest execution head from the local keeper DB.
+	head, err := k.getExecutionHead(ctx)
 	if err != nil {
 		return engine.ExecutableData{}, errors.Wrap(err, "latest execution block")
 	}
 
-	// Ensure the parent hash matches the latest execution block.
-	if payload.ParentHash != latestEBlock.Hash() {
-		return engine.ExecutableData{}, errors.New("parent hash does not match latest execution block")
+	// Ensure the parent hash and block height matches
+	if payload.Number != head.GetBlockHeight()+1 {
+		return engine.ExecutableData{}, errors.New("invalid proposed payload number", "proposed", payload.Number, "head", head.GetBlockHeight())
+	} else if payload.ParentHash != head.Hash() {
+		return engine.ExecutableData{}, errors.New("invalid proposed payload parent hash", "proposed", payload.ParentHash, "head", head.Hash())
 	}
 
 	// Ensure the payload timestamp is after latest execution block and before or equaled to the current consensus block.
-	minTimestamp := latestEBlock.Time + 1
-	maxTimestamp := uint64(sdkCtx.BlockHeader().Time.Unix())
+	minTimestamp := head.GetBlockTime() + 1
+	maxTimestamp := uint64(sdk.UnwrapSDKContext(ctx).BlockTime().Unix())
 	if maxTimestamp < minTimestamp { // Execution block minimum takes precedence
 		maxTimestamp = minTimestamp
 	}
 	if payload.Timestamp < minTimestamp || payload.Timestamp > maxTimestamp {
 		return engine.ExecutableData{}, errors.New("invalid payload timestamp",
-			"payload", payload.Timestamp, "min", minTimestamp, "max", maxTimestamp,
+			"proposed", payload.Timestamp, "min", minTimestamp, "max", maxTimestamp,
 		)
 	}
 
-	if payload.Number != latestEBlock.Number.Uint64()+1 {
-		return engine.ExecutableData{}, errors.New("invalid payload number",
-			"payload", payload.Number,
-			"latest", latestEBlock.Number.Uint64(),
-		)
-	}
-
-	if payload.Random != latestEBlock.Hash() {
-		return engine.ExecutableData{}, errors.New("invalid payload random",
-			"payload", payload.Random,
-			"latest", latestEBlock.Hash(),
-		)
+	// Ensure the Randao Digest is equaled to parent hash as this is our workaround at this point.
+	if payload.Random != head.Hash() {
+		return engine.ExecutableData{}, errors.New("invalid payload random", "proposed", payload.Random, "latest", head.Hash())
 	}
 
 	return payload, nil

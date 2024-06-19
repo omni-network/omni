@@ -134,32 +134,41 @@ func hasRandomErr(ctx context.Context) bool {
 	return ok && v
 }
 
-// NewEngineMock returns a new mock engine API client.
-//
-// Note only some methods are implemented, it will panic if you call an unimplemented method.
-func NewEngineMock(opts ...func(mock *engineMock)) (EngineClient, error) {
+// MockGenesisBlock returns a deterministic genesis block for testing.
+func MockGenesisBlock() (*types.Block, error) {
+	// Deterministic genesis block
 	var (
-		// Deterministic genesis block
 		height           uint64 // 0
 		parentHash       common.Hash
 		parentBeaconRoot common.Hash
-		timestamp        = time.Now().Truncate(time.Hour * 24).Unix() // TODO(corver): Improve this.
-
-		// Deterministic fuzzer
-		fuzzer = NewFuzzer(timestamp)
+		timestamp        = time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC).Unix()
+		fuzzer           = NewFuzzer(timestamp)
 	)
 
 	genesisPayload, err := makePayload(fuzzer, height, uint64(timestamp), parentHash, common.Address{}, parentHash, &parentBeaconRoot)
 	if err != nil {
 		return nil, errors.Wrap(err, "make next payload")
 	}
+
 	genesisBlock, err := engine.ExecutableDataToBlock(genesisPayload, nil, &parentBeaconRoot)
 	if err != nil {
 		return nil, errors.Wrap(err, "executable data to block")
 	}
 
+	return genesisBlock, nil
+}
+
+// NewEngineMock returns a new mock engine API client.
+//
+// Note only some methods are implemented, it will panic if you call an unimplemented method.
+func NewEngineMock(opts ...func(mock *engineMock)) (EngineClient, error) {
+	genesisBlock, err := MockGenesisBlock()
+	if err != nil {
+		return nil, err
+	}
+
 	m := &engineMock{
-		fuzzer:      fuzzer,
+		fuzzer:      NewFuzzer(int64(genesisBlock.Time())),
 		head:        genesisBlock,
 		pendingLogs: make(map[common.Address][]types.Log),
 		payloads:    make(map[engine.PayloadID]payloadArgs),
@@ -249,6 +258,21 @@ func (m *engineMock) HeaderByType(ctx context.Context, typ HeadType) (*types.Hea
 	}
 
 	return m.HeaderByNumber(ctx, big.NewInt(int64(number)))
+}
+
+func (m *engineMock) HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error) {
+	if err := m.maybeErr(ctx); err != nil {
+		return nil, err
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if hash != m.head.Hash() {
+		return nil, errors.New("only head hash supported") // Only support latest block
+	}
+
+	return m.head.Header(), nil
 }
 
 func (m *engineMock) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {

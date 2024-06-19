@@ -92,6 +92,7 @@ var (
 		slashingtypes.ModuleName,
 		genutiltypes.ModuleName,
 		valsynctypes.ModuleName,
+		engevmtypes.ModuleName,
 	}
 
 	beginBlockers = []string{

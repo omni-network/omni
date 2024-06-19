@@ -8,19 +8,30 @@ import (
 	"github.com/omni-network/omni/lib/log"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+
+	storetypes "cosmossdk.io/store/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-type finaliseCallback func(context.Context, *abci.RequestFinalizeBlock, *abci.ResponseFinalizeBlock) error
+type postFinalizeCallback func(sdk.Context) error
+type multiStoreProvider func() storetypes.CacheMultiStore
 
 type abciWrapper struct {
 	abci.Application
-	finaliseCallback finaliseCallback
+	postFinalize       postFinalizeCallback
+	multiStoreProvider multiStoreProvider
 }
 
-func newABCIWrapper(app abci.Application, finaliseCallback finaliseCallback) *abciWrapper {
+func newABCIWrapper(
+	app abci.Application,
+	finaliseCallback postFinalizeCallback,
+	multiStoreProvider multiStoreProvider,
+) *abciWrapper {
 	return &abciWrapper{
-		Application:      app,
-		finaliseCallback: finaliseCallback,
+		Application:        app,
+		postFinalize:       finaliseCallback,
+		multiStoreProvider: multiStoreProvider,
 	}
 }
 
@@ -86,8 +97,17 @@ func (l abciWrapper) FinalizeBlock(ctx context.Context, req *abci.RequestFinaliz
 		return resp, err
 	}
 
-	if err := l.finaliseCallback(ctx, req, resp); err != nil {
-		log.Error(ctx, "Finalize callback failed [BUG]", err, "height", req.Height)
+	// Call custom `PostFinalize` callback after the block is finalized.
+	header := cmtproto.Header{
+		Height:             req.Height,
+		Time:               req.Time,
+		ProposerAddress:    req.ProposerAddress,
+		NextValidatorsHash: req.NextValidatorsHash,
+		AppHash:            resp.AppHash, // The app hash after the block is finalized.
+	}
+	sdkCtx := sdk.NewContext(l.multiStoreProvider(), header, false, nil)
+	if err := l.postFinalize(sdkCtx); err != nil {
+		log.Error(ctx, "PostFinalize callback failed [BUG]", err, "height", req.Height)
 		return resp, err
 	}
 

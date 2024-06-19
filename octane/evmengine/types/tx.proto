@@ -6,6 +6,11 @@ import "cosmos/msg/v1/msg.proto";
 
 option go_package = "octane/evmengine/types";
 
+// GenesisState is an empty genesis state required to trigger valsync genesis logic only.
+message GenesisState {
+    bytes  execution_block_hash = 1; // Execution genesis block hash to start building on top of.
+}
+
 // MsgService defines all the gRPC methods exposed by the evmengine module.
 service MsgService {
   option (cosmos.msg.v1.service) = true;

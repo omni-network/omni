@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package octane.evmengine.keeper;
+
+import "cosmos/orm/v1/orm.proto";
+
+option go_package = "octane/evmengine/keeper";
+
+// ExecutionHead defines the execution chain head.
+// It is a singleton table; it only has a single row with ID==1.
+message ExecutionHead {
+  option (cosmos.orm.v1.table) = {
+    id: 1;
+    primary_key: { fields: "id", auto_increment: true }
+  };
+
+  uint64 id               = 1; // Auto-incremented ID (always and only 1).
+  uint64 created_height   = 2; // Consensus chain height this execution block was created in.
+  uint64 block_height     = 3; // Execution block height.
+  bytes  block_hash       = 4; // Execution block hash.
+  uint64 block_time       = 5; // Execution block time.
+}

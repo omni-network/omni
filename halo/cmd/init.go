@@ -25,18 +25,21 @@ import (
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cometbft/cometbft/types"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/spf13/cobra"
 )
 
 // InitConfig is the config for the init command.
 type InitConfig struct {
-	HomeDir      string
-	Network      netconf.ID
-	TrustedSync  bool
-	RCPEndpoints xchain.RPCEndpoints
-	Force        bool
-	Clean        bool
-	Cosmos       bool
+	HomeDir       string
+	Network       netconf.ID
+	TrustedSync   bool
+	RCPEndpoints  xchain.RPCEndpoints
+	Force         bool
+	Clean         bool
+	Cosmos        bool
+	ExecutionHash common.Hash
 }
 
 // newInitCmd returns a new cobra command that initializes the files and folders required by halo.
@@ -230,7 +233,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 
 		var genDoc *types.GenesisDoc
 		if initCfg.Cosmos {
-			cosmosGen, err := genutil.MakeGenesis(network, time.Now(), pubKey)
+			cosmosGen, err := genutil.MakeGenesis(network, time.Now(), initCfg.ExecutionHash, pubKey)
 			if err != nil {
 				return err
 			}
