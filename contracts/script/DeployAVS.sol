@@ -19,7 +19,7 @@ import { console } from "forge-std/console.sol";
 
 /**
  * @title DeployAVS
- * @dev A script + utilties to deploy the mainnet OmniAVS contract
+ * @dev A script + utilities to deploy the mainnet OmniAVS contract
  */
 contract DeployAVS is Script {
     uint32 _maxOperatorCount = 30;

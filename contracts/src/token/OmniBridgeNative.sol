@@ -78,7 +78,7 @@ contract OmniBridgeNative is OwnableUpgradeable {
     mapping(address => uint256) public claimable;
 
     /**
-     * @notice Withdraw `amount` native OMNI to `to`. Onyl callable via xcall from OmniBridgeL1.
+     * @notice Withdraw `amount` native OMNI to `to`. Only callable via xcall from OmniBridgeL1.
      */
     function withdraw(address payor, address to, uint256 amount) external {
         XTypes.MsgShort memory xmsg = omni.xmsg();

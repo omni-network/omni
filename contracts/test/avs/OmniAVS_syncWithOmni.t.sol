@@ -319,7 +319,7 @@ contract OmniAVS_syncWithOmni_Test is Base {
         }
     }
 
-    /// @dev Asset syncWithOmni() makes an xcall to OmniPortal with correct ops
+    /// @dev Assert syncWithOmni() makes an xcall to OmniPortal with correct ops
     function _assertSyncWithOmni(IOmniAVS.Operator[] memory ops) internal {
         // skip fork tests in which portal is not set
         if (address(omniAVS.omni()) == address(0)) return;
