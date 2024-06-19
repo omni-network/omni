@@ -20,9 +20,7 @@
       }
     ],
     "proof": [],
-    "proofFlags": [
-      true
-    ],
+    "proofFlags": [],
     "signatures": []
   },
   "guzzle1_xsub_destChainId100": {
@@ -46,13 +44,11 @@
       }
     ],
     "proof": [],
-    "proofFlags": [
-      true
-    ],
+    "proofFlags": [],
     "signatures": []
   },
   "guzzle10_xsub_destChainId100": {
-    "attestationRoot": "0xc30743f1440ea910764fcbb92c0e6da361828954897ac99fff593586d8d9e410",
+    "attestationRoot": "0xa607565172a6c40215e0c1a384413590c1c81444d84b819e550c07916c2f4fa8",
     "validatorSetId": "1",
     "blockHeader": {
       "sourceChainId": "102",
@@ -162,13 +158,12 @@
       true,
       true,
       true,
-      true,
       true
     ],
     "signatures": []
   },
   "guzzle25_xsub_destChainId100": {
-    "attestationRoot": "0x0345bb613c0fb817d461a95fadb520205bab5eedd8ff8004816045a0b43b58b2",
+    "attestationRoot": "0xae57647ab57e361519faaf2005202c15f5fc848c4f4bf5aec827c6b49c0782ec",
     "validatorSetId": "1",
     "blockHeader": {
       "sourceChainId": "102",
@@ -428,13 +423,12 @@
       true,
       true,
       true,
-      true,
       true
     ],
     "signatures": []
   },
   "guzzle5_xsub_destChainId100": {
-    "attestationRoot": "0xc94ff0cf6a8218bac8ba574da8daa5abc3ddad7011ca2b8866e6b0e1ad715313",
+    "attestationRoot": "0x4ce456f561b25b85ab1ff3dd86e7f0e84a38975a4204917a7c4cefab61a4cf83",
     "validatorSetId": "1",
     "blockHeader": {
       "sourceChainId": "102",
@@ -494,13 +488,12 @@
       true,
       true,
       true,
-      true,
       true
     ],
     "signatures": []
   },
   "guzzle50_xsub_destChainId100": {
-    "attestationRoot": "0x49638e1eba8ff173e102fed90f9def152be2ef2a3686f2dc1b2df0020c664e8c",
+    "attestationRoot": "0xd4adb07866d7a09e0a4e203e92d850d4977d47676ad89d9ec69deb46981c8d58",
     "validatorSetId": "1",
     "blockHeader": {
       "sourceChainId": "102",
@@ -1010,7 +1003,6 @@
       true,
       true,
       true,
-      true,
       true
     ],
     "signatures": []
@@ -1036,13 +1028,11 @@
       }
     ],
     "proof": [],
-    "proofFlags": [
-      true
-    ],
+    "proofFlags": [],
     "signatures": []
   },
   "xblock1_xsub_destChainId100": {
-    "attestationRoot": "0x4f98869310819594ee48535dfbd1c0816a8a54ddf6960ebbe4e26f1f460da804",
+    "attestationRoot": "0x217736908c317f26cb4d390c24af5e20fa009286112b9ac018b413d91093de93",
     "validatorSetId": "1",
     "blockHeader": {
       "sourceChainId": "102",
@@ -1098,22 +1088,23 @@
       }
     ],
     "proof": [
-      "0xa7ca7c150690bd8a53f1779bb3a322bc892ace5b78c41dd1f10b08cc6e4f5463",
-      "0x5ba64fe6ee824efd3e114166bae7611e82765a19e5a124afaaa8427b4dc3c542"
+      "0x4cada8424e28620f3eaa0d1deabfe95bc2ed296e66593cee6a902681f95da36d",
+      "0xb14ae9c45898a48e9a03e50c539dc8ce3171a3ee0efb3a7fc893d3f778af93d0",
+      "0x7b6bf008514675d7810ff42dff356c8624f679744709aa863fc520df780177fd"
     ],
     "proofFlags": [
       true,
       true,
-      true,
       false,
       true,
-      true,
-      false
+      false,
+      false,
+      true
     ],
     "signatures": []
   },
   "xblock1_xsub_destChainId103": {
-    "attestationRoot": "0x4f98869310819594ee48535dfbd1c0816a8a54ddf6960ebbe4e26f1f460da804",
+    "attestationRoot": "0x217736908c317f26cb4d390c24af5e20fa009286112b9ac018b413d91093de93",
     "validatorSetId": "1",
     "blockHeader": {
       "sourceChainId": "102",
@@ -1169,12 +1160,11 @@
       }
     ],
     "proof": [
-      "0x26f85c4118dbd9614e3860683438f492dde270913dcd0f662cbb74b21936976b",
-      "0x380c1a1684c06a004d7ae462f93c48accb7ab06c7b3e6fdebe49dd6122266f83"
+      "0x69f517f0d3e9d04c02d7177c16efa233c9afe9e7a95e8dd2a6590624bd9b98a5",
+      "0xa617ada31ad0a48a81e735c0397ad2a4c1d799a75dd92a45059b8508605cc7b9"
     ],
     "proofFlags": [
       false,
-      true,
       true,
       true,
       true,
@@ -1184,7 +1174,7 @@
     "signatures": []
   },
   "xblock2_xsub_destChainId100": {
-    "attestationRoot": "0x317a2dc2ab8d1d97254b8e3e751e58100f4b28e2fcf1f01516fc6e42a1db4866",
+    "attestationRoot": "0x4e9305b581c89a40452292b189ea410c8fa085a2ce4893bc4c91088abfc5655b",
     "validatorSetId": "1",
     "blockHeader": {
       "sourceChainId": "102",
@@ -1240,22 +1230,23 @@
       }
     ],
     "proof": [
-      "0x18e8afcc09d9c44d07b6939bfd649e0f47b9b4bf62d446c0109f861fe79ce5cd",
-      "0x7a297a25aa2dbf675c7f0a04d15bd8c7eb8c72a7565b9c0d0a088038585c34cd"
+      "0x42fa48fb19adbf9e8ee0678761314f7655c5b2d27dfbf4955c5413f1d1004460",
+      "0xad272f4b6826b4e7258936135f587e77fd92d57feedd6df7fc3d388d39cfca7c",
+      "0x46c766095450d7bf2a8288f4a143e3bb005d8d61ce930c278d20114939b4404d"
     ],
     "proofFlags": [
       true,
       true,
-      true,
       false,
       true,
-      true,
-      false
+      false,
+      false,
+      true
     ],
     "signatures": []
   },
   "xblock2_xsub_destChainId103": {
-    "attestationRoot": "0x317a2dc2ab8d1d97254b8e3e751e58100f4b28e2fcf1f01516fc6e42a1db4866",
+    "attestationRoot": "0x4e9305b581c89a40452292b189ea410c8fa085a2ce4893bc4c91088abfc5655b",
     "validatorSetId": "1",
     "blockHeader": {
       "sourceChainId": "102",
@@ -1311,12 +1302,11 @@
       }
     ],
     "proof": [
-      "0xe785c851e00201197698e90e381629ec2495ad5c50515ded19db748b491d512d",
-      "0x6a220be67706ae96cc715cc057f7dbe1232fd2d3605250ec0d7a09ceaf68ded7"
+      "0x57af76c51792f6b48fd57ee39f2e876aa78342d4a72b36dfbb932792bf7e9429",
+      "0xdef4962985a0ec4a3c16099ef63b3ffe7c93be642dc56d7f514bc03effdd21ca"
     ],
     "proofFlags": [
       false,
-      true,
       true,
       true,
       true,
