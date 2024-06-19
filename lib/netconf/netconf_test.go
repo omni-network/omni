@@ -69,6 +69,8 @@ func TestGenConsSeeds(t *testing.T) {
 
 var genExecutionSeeds = flag.Bool("gen-execution-seeds", false, "Enable to generate execution-seeds.txt. Note this requires GCP secret manager read-access")
 
+//go:generate go test -golden -gen-execution-seeds -run=TestGenExecutionSeeds
+
 func TestGenExecutionSeeds(t *testing.T) {
 	t.Parallel()
 	if !*genExecutionSeeds {
