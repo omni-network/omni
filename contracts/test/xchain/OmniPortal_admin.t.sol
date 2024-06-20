@@ -30,9 +30,9 @@ contract OmniPortal_admin_Test is Base {
         portal.setFeeOracle(address(0));
     }
 
-    function test_pause() public {
+    function test_pauseAll() public {
         // when not paused, can xcall and xsubmit
-        assertFalse(portal.paused());
+        assertFalse(portal.isPaused());
 
         // xcall params
         uint8 conf = ConfLevel.Finalized;
@@ -56,15 +56,175 @@ contract OmniPortal_admin_Test is Base {
         // owner can pause
         vm.prank(owner);
         portal.pause();
-        assertTrue(portal.paused());
+        assertTrue(portal.isPaused());
 
         // when paused, cannot xcall and xsubmit
-        vm.expectRevert("Pausable: paused");
+        vm.expectRevert("OmniPortal: paused");
         vm.chainId(thisChainId);
         portal.xcall(chainAId, conf, to, data, gasLimit);
 
-        vm.expectRevert("Pausable: paused");
+        vm.expectRevert("OmniPortal: paused");
         vm.chainId(thisChainId);
         portal.xsubmit(xsub1);
+    }
+
+    function test_pauseXCall() public {
+        assertFalse(portal.isPaused(portal.ActionXCall()));
+        assertFalse(portal.isPaused(portal.ActionXSubmit(), chainAId));
+        assertFalse(portal.isPaused(portal.ActionXSubmit(), chainBId));
+
+        // xcall params
+        uint8 conf = ConfLevel.Finalized;
+        address to = address(0x1234);
+        bytes memory data = abi.encodeWithSignature("test()");
+        uint64 gasLimit = 100_000;
+
+        // can xcall
+        vm.chainId(thisChainId);
+        portal.xcall{ value: 1 ether }(chainAId, conf, to, data, gasLimit);
+
+        // pause xcall to chain b
+        vm.prank(owner);
+        portal.pauseXCallTo(chainBId);
+
+        assertFalse(portal.isPaused(portal.ActionXCall()));
+        assertFalse(portal.isPaused(portal.ActionXSubmit(), chainAId));
+        assertTrue(portal.isPaused(portal.ActionXCall(), chainBId));
+
+        // can xcall to chain a
+        vm.chainId(thisChainId);
+        portal.xcall{ value: 1 ether }(chainAId, conf, to, data, gasLimit);
+
+        // cannot xcall to chain b
+        vm.expectRevert("OmniPortal: paused");
+        vm.chainId(thisChainId);
+        portal.xcall(chainBId, conf, to, data, gasLimit);
+
+        // unpause xcall to chain b
+        vm.prank(owner);
+        portal.unpauseXCallTo(chainBId);
+
+        assertFalse(portal.isPaused(portal.ActionXCall()));
+
+        // can xcall to chain b
+        vm.chainId(thisChainId);
+        portal.xcall{ value: 1 ether }(chainBId, conf, to, data, gasLimit);
+
+        // pause all xcall
+        vm.prank(owner);
+        portal.pauseXCall();
+
+        assertTrue(portal.isPaused(portal.ActionXCall()));
+
+        // cannot xcall to chain a
+        vm.expectRevert("OmniPortal: paused");
+        vm.chainId(thisChainId);
+        portal.xcall(chainAId, conf, to, data, gasLimit);
+
+        // cannot xcall to chain b
+        vm.expectRevert("OmniPortal: paused");
+        vm.chainId(thisChainId);
+        portal.xcall(chainBId, conf, to, data, gasLimit);
+
+        // unpause all xcall
+        vm.prank(owner);
+        portal.unpauseXCall();
+
+        assertFalse(portal.isPaused(portal.ActionXCall()));
+
+        // can xcall to chain a
+        vm.chainId(thisChainId);
+        portal.xcall{ value: 1 ether }(chainAId, conf, to, data, gasLimit);
+
+        // can xcall to chain b
+        vm.chainId(thisChainId);
+        portal.xcall{ value: 1 ether }(chainBId, conf, to, data, gasLimit);
+    }
+
+    function test_pauseXSubmit() public {
+        assertFalse(portal.isPaused(portal.ActionXSubmit()));
+        assertFalse(portal.isPaused(portal.ActionXSubmit(), chainAId));
+        assertFalse(portal.isPaused(portal.ActionXSubmit(), chainBId));
+
+        // can xsubmit
+        // we use a stub xsub, so we don't need to provide a real one
+        // when not paused, xsubmit should error with "OmniPortal: no xmsgs"
+        // when paused, xsubmit should error with "OmniPortal: paused"
+        XTypes.Submission memory xsub;
+        xsub.blockHeader = XTypes.BlockHeader({
+            sourceChainId: chainAId,
+            confLevel: ConfLevel.Finalized,
+            offset: 1,
+            sourceBlockHash: keccak256("hash")
+        });
+        vm.expectRevert("OmniPortal: no xmsgs");
+        vm.chainId(thisChainId);
+        portal.xsubmit(xsub);
+
+        // pause xsubmit from chain b
+        vm.prank(owner);
+        portal.pauseXSubmitFrom(chainBId);
+
+        assertFalse(portal.isPaused(portal.ActionXSubmit()));
+        assertFalse(portal.isPaused(portal.ActionXSubmit(), chainAId));
+        assertTrue(portal.isPaused(portal.ActionXSubmit(), chainBId));
+
+        // can xsubmit from chain a
+        vm.expectRevert("OmniPortal: no xmsgs");
+        vm.chainId(thisChainId);
+        portal.xsubmit(xsub);
+
+        // cannot xsubmit from chain b
+        xsub.blockHeader.sourceChainId = chainBId;
+        vm.expectRevert("OmniPortal: paused");
+        vm.chainId(thisChainId);
+        portal.xsubmit(xsub);
+
+        // unpause xsubmit from chain b
+        vm.prank(owner);
+        portal.unpauseXSubmitFrom(chainBId);
+
+        assertFalse(portal.isPaused(portal.ActionXSubmit()));
+
+        // can xsubmit from chain b
+        vm.expectRevert("OmniPortal: no xmsgs");
+        vm.chainId(thisChainId);
+        portal.xsubmit(xsub);
+
+        // pause all xsubmit
+        vm.prank(owner);
+        portal.pauseXSubmit();
+
+        assertTrue(portal.isPaused(portal.ActionXSubmit()));
+
+        // cannot xsubmit from chain a
+        xsub.blockHeader.sourceChainId = chainAId;
+        vm.expectRevert("OmniPortal: paused");
+        vm.chainId(thisChainId);
+        portal.xsubmit(xsub);
+
+        // cannot xsubmit from chain b
+        xsub.blockHeader.sourceChainId = chainBId;
+        vm.expectRevert("OmniPortal: paused");
+        vm.chainId(thisChainId);
+        portal.xsubmit(xsub);
+
+        // unpause all xsubmit
+        vm.prank(owner);
+        portal.unpauseXSubmit();
+
+        assertFalse(portal.isPaused(portal.ActionXSubmit()));
+
+        // can xsubmit from chain a
+        xsub.blockHeader.sourceChainId = chainAId;
+        vm.expectRevert("OmniPortal: no xmsgs");
+        vm.chainId(thisChainId);
+        portal.xsubmit(xsub);
+
+        // can xsubmit from chain b
+        xsub.blockHeader.sourceChainId = chainBId;
+        vm.expectRevert("OmniPortal: no xmsgs");
+        vm.chainId(thisChainId);
+        portal.xsubmit(xsub);
     }
 }
