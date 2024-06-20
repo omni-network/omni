@@ -1,7 +1,7 @@
 # Code owners for specific directories
-/halo @corverroos @idea404
-/relayer @corverroos @idea404
-/lib @corverroos @idea404 @kevinhalliday @pavelnikolov
+/halo @corverroos @arajasek @idea404
+/relayer @corverroos @arajasek @idea404
+/lib @corverroos @arajasek @idea404 @kevinhalliday @pavelnikolov
 /contracts @kevinhalliday @ttarsi
 /explorer @pavelnikolov
 /explorer/indexer @corverroos
