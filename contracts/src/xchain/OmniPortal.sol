@@ -2,7 +2,6 @@
 pragma solidity =0.8.24;
 
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import { PausableUpgradeable } from "@openzeppelin-upgrades/contracts/security/PausableUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import { ExcessivelySafeCall } from "@nomad-xyz/excessively-safe-call/src/ExcessivelySafeCall.sol";
 
@@ -14,6 +13,7 @@ import { XBlockMerkleProof } from "../libraries/XBlockMerkleProof.sol";
 import { XTypes } from "../libraries/XTypes.sol";
 import { Quorum } from "../libraries/Quorum.sol";
 import { ConfLevel } from "../libraries/ConfLevel.sol";
+import { PausableUpgradeable } from "../utils/Pausable.sol";
 
 import { OmniPortalConstants } from "./OmniPortalConstants.sol";
 import { OmniPortalStorage } from "./OmniPortalStorage.sol";
@@ -29,6 +29,18 @@ contract OmniPortal is
     OmniPortalStorage
 {
     using ExcessivelySafeCall for address;
+
+    /**
+     * @notice Modifier the requires an action is not paused. An action is paused if:
+     *          - actionId is paused for all chains
+     *          - actionId is paused for chainId
+     *          - All actions are paused
+     *         Available actions are ActionXCall and ActionXSubmit, defined in OmniPortalConstants.sol.
+     */
+    modifier whenNotPaused(bytes32 actionId, uint64 chainId_) {
+        require(!_isPaused(actionId, _chainActionId(actionId, chainId_)), "OmniPortal: paused");
+        _;
+    }
 
     /**
      * @notice Construct the OmniPortal contract
@@ -108,10 +120,10 @@ contract OmniPortal is
     function xcall(uint64 destChainId, uint8 conf, address to, bytes calldata data, uint64 gasLimit)
         external
         payable
-        whenNotPaused
+        whenNotPaused(ActionXCall, destChainId)
     {
         require(isSupportedDest[destChainId], "OmniPortal: unsupported dest");
-        require(to != _VIRTUAL_PORTAL_ADDRESS, "OmniPortal: no portal xcall");
+        require(to != VirtualPortalAddress, "OmniPortal: no portal xcall");
         require(gasLimit <= xmsgMaxGasLimit, "OmniPortal: gasLimit too high");
         require(gasLimit >= xmsgMinGasLimit, "OmniPortal: gasLimit too low");
         require(data.length <= xmsgMaxDataSize, "OmniPortal: data too large");
@@ -148,7 +160,11 @@ contract OmniPortal is
      * @param xsub  An xchain submission, including an attestation root w/ validator signatures,
      *              and a block header and message batch, proven against the attestation root.
      */
-    function xsubmit(XTypes.Submission calldata xsub) external whenNotPaused nonReentrant {
+    function xsubmit(XTypes.Submission calldata xsub)
+        external
+        whenNotPaused(ActionXSubmit, xsub.blockHeader.sourceChainId)
+        nonReentrant
+    {
         XTypes.Msg[] calldata xmsgs = xsub.msgs;
         XTypes.BlockHeader calldata xheader = xsub.blockHeader;
         uint64 valSetId = xsub.validatorSetId;
@@ -164,8 +180,8 @@ contract OmniPortal is
                 xsub.signatures,
                 valSet[valSetId],
                 valSetTotalPower[valSetId],
-                XSUB_QUORUM_NUMERATOR,
-                XSUB_QUORUM_DENOMINATOR
+                XSubQuorumNumerator,
+                XSubQuorumDenominator
             ),
             "OmniPortal: no quorum"
         );
@@ -212,7 +228,7 @@ contract OmniPortal is
         uint64 offset = xmsg_.offset;
 
         require(sourceChainId == xheader.sourceChainId, "OmniPortal: wrong source chain"); // TODO: we can remove xmsg sourceChainId, and instead just used xheader.sourceChainId
-        require(destChainId == chainId() || destChainId == _BROADCAST_CHAIN_ID, "OmniPortal: wrong dest chain");
+        require(destChainId == chainId() || destChainId == BroadcastChainId, "OmniPortal: wrong dest chain");
         require(offset == inXMsgOffset[sourceChainId][shardId] + 1, "OmniPortal: wrong offset");
 
         // verify xmsg conf level matches xheader conf level
@@ -247,7 +263,7 @@ contract OmniPortal is
         // set _xmsg to the one we're executing, allowing external contracts to query the current xmsg via xmsg()
         _xmsg = XTypes.MsgShort(sourceChainId, xmsg_.sender);
 
-        (bool success, bytes memory result, uint256 gasUsed) = xmsg_.to == _VIRTUAL_PORTAL_ADDRESS // calls to _VIRTUAL_PORTAL_ADDRESS are syscalls
+        (bool success, bytes memory result, uint256 gasUsed) = xmsg_.to == VirtualPortalAddress // calls to VirtualPortalAddress are syscalls
             ? _syscall(xmsg_.data)
             : _call(xmsg_.to, xmsg_.gasLimit, xmsg_.data);
 
@@ -311,9 +327,9 @@ contract OmniPortal is
      * @notice Returns the minimum validator set id that can be used for xsubmissions
      */
     function _minValSet() internal view returns (uint64) {
-        return latestValSetId > XSUB_VALSET_CUTOFF
-            // plus 1, so the number of accepted valsets == XSUB_VALSET_CUTOFF
-            ? (latestValSetId - XSUB_VALSET_CUTOFF + 1)
+        return latestValSetId > XSubValsetCutoff
+            // plus 1, so the number of accepted valsets == XSubValsetCutoff
+            ? (latestValSetId - XSubValsetCutoff + 1)
             : 1;
     }
 
@@ -330,7 +346,7 @@ contract OmniPortal is
     function addValidatorSet(uint64 valSetId, XTypes.Validator[] calldata validators) external {
         require(msg.sender == address(this), "OmniPortal: only self");
         require(_xmsg.sourceChainId == omniCChainId, "OmniPortal: only cchain");
-        require(_xmsg.sender == _CCHAIN_SENDER, "OmniPortal: only cchain sender");
+        require(_xmsg.sender == CChainSender, "OmniPortal: only cchain sender");
         _addValidatorSet(valSetId, validators);
     }
 
@@ -374,7 +390,7 @@ contract OmniPortal is
     function setNetwork(XTypes.Chain[] calldata network_) external {
         require(msg.sender == address(this), "OmniPortal: only self");
         require(_xmsg.sourceChainId == omniCChainId, "OmniPortal: only cchain");
-        require(_xmsg.sender == _CCHAIN_SENDER, "OmniPortal: only cchain sender");
+        require(_xmsg.sender == CChainSender, "OmniPortal: only cchain sender");
         _setNetwork(network_);
     }
 
@@ -479,17 +495,115 @@ contract OmniPortal is
     }
 
     /**
-     * @notice Pause xcalls
+     * @notice Pause xcalls and xsubissions from all chains
      */
     function pause() external onlyOwner {
-        _pause();
+        _pauseAll();
+        emit Paused();
     }
 
     /**
-     * @notice Unpause xcalls
+     * @notice Unpause xcalls and xsubissions from all chains
      */
     function unpause() external onlyOwner {
-        _unpause();
+        _unpauseAll();
+        emit Unpaused();
+    }
+
+    /**
+     * @notice Pause xcalls to all chains
+     */
+    function pauseXCall() external onlyOwner {
+        _pause(ActionXCall);
+        emit XCallPaused();
+    }
+
+    /**
+     * @notice Unpause xcalls to all chains
+     */
+    function unpauseXCall() external onlyOwner {
+        _unpause(ActionXCall);
+        emit XCallUnpaused();
+    }
+
+    /**
+     * @notice Pause xcalls to a specific chain
+     * @param chainId_   Destination chain ID
+     */
+    function pauseXCallTo(uint64 chainId_) external onlyOwner {
+        _pause(_chainActionId(ActionXCall, chainId_));
+        emit XCallToPaused(chainId_);
+    }
+
+    /**
+     * @notice Unpause xcalls to a specific chain
+     * @param chainId_   Destination chain ID
+     */
+    function unpauseXCallTo(uint64 chainId_) external onlyOwner {
+        _unpause(_chainActionId(ActionXCall, chainId_));
+        emit XCallToUnpaused(chainId_);
+    }
+
+    /**
+     * @notice Pause xsubmissions from all chains
+     */
+    function pauseXSubmit() external onlyOwner {
+        _pause(ActionXSubmit);
+        emit XSubmitPaused();
+    }
+
+    /**
+     * @notice Unpause xsubmissions from all chains
+     */
+    function unpauseXSubmit() external onlyOwner {
+        _unpause(ActionXSubmit);
+        emit XSubmitUnpaused();
+    }
+
+    /**
+     * @notice Pause xsubmissions from a specific chain
+     * @param chainId_    Source chain ID
+     */
+    function pauseXSubmitFrom(uint64 chainId_) external onlyOwner {
+        _pause(_chainActionId(ActionXSubmit, chainId_));
+        emit XSubmitFromPaused(chainId_);
+    }
+
+    /**
+     * @notice Unpause xsubmissions from a specific chain
+     * @param chainId_    Source chain ID
+     */
+    function unpauseXSubmitFrom(uint64 chainId_) external onlyOwner {
+        _unpause(_chainActionId(ActionXSubmit, chainId_));
+        emit XSubmitFromUnpaused(chainId_);
+    }
+
+    /**
+     * @notice Return true if actionId for is paused for the given chain
+     */
+    function isPaused(bytes32 actionId, uint64 chainId_) external view returns (bool) {
+        return _isPaused(actionId, _chainActionId(actionId, chainId_));
+    }
+
+    /**
+     * @notice Return true if actionId is paused for all chains
+     */
+    function isPaused(bytes32 actionId) external view returns (bool) {
+        return _isPaused(actionId);
+    }
+
+    /*
+    * @notice Return true if all actions are paused
+     */
+    function isPaused() external view returns (bool) {
+        return _isAllPaused();
+    }
+
+    /**
+     * @notice An action id with a qualifiying chain id, used as pause keys.
+     */
+    function _chainActionId(bytes32 actionId, uint64 chainId_) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(actionId, chainId_));
     }
 
     /**
@@ -543,7 +657,7 @@ contract OmniPortal is
     /**
      * @notice Set the fee oracle
      */
-    function _setFeeOracle(address feeOracle_) private {
+    function _setFeeOracle(address feeOracle_) internal {
         require(feeOracle_ != address(0), "OmniPortal: no zero feeOracle");
 
         address oldFeeOracle = feeOracle;

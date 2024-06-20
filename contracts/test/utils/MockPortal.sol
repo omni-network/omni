@@ -49,8 +49,8 @@ contract MockPortal is IOmniPortal, OmniPortalConstants {
         require(gasLimit <= xmsgMaxGasLimit, "OmniPortal: gasLimit too high");
         require(gasLimit >= xmsgMinGasLimit, "OmniPortal: gasLimit too low");
         require(destChainId != chainId, "OmniPortal: unsupported dest");
-        require(destChainId != _BROADCAST_CHAIN_ID, "OmniPortal: unsupported dest");
-        require(to != _VIRTUAL_PORTAL_ADDRESS, "OmniPortal: no portal xcall");
+        require(destChainId != BroadcastChainId, "OmniPortal: unsupported dest");
+        require(to != VirtualPortalAddress, "OmniPortal: no portal xcall");
 
         uint256 fee = feeFor(destChainId, data, gasLimit);
         require(msg.value >= fee, "OmniPortal: insufficient fee");

@@ -49,6 +49,60 @@ interface IOmniPortalAdmin {
     event XReceiptMaxErrorSizeChanged(uint16 indexed oldMax, uint16 indexed newMax);
 
     /**
+     * @notice Emitted the portal is paused, all xcalls and xsubmissions.
+     */
+    event Paused();
+
+    /**
+     * @notice Emitted the portal is unpaused, all xcalls and xsubmissions.
+     */
+    event Unpaused();
+
+    /**
+     * @notice Emitted when all xcalls are paused.
+     */
+    event XCallPaused();
+
+    /**
+     * @notice Emitted when all xcalls are unpaused.
+     */
+    event XCallUnpaused();
+
+    /**
+     * @notice Emitted when all xsubmissions are paused.
+     */
+    event XSubmitPaused();
+
+    /**
+     * @notice Emitted when all xsubmissions are unpaused.
+     */
+    event XSubmitUnpaused();
+
+    /**
+     * @notice Emitted when xcalls to a specific chain are paused.
+     * @param chainId   The destination chain
+     */
+    event XCallToPaused(uint64 indexed chainId);
+
+    /**
+     * @notice Emitted when xcalls to a specific chain are unpaused.
+     * @param chainId   The destination chain
+     */
+    event XCallToUnpaused(uint64 indexed chainId);
+
+    /**
+     * @notice Emitted when xsubmissions from a specific chain are paused.
+     * @param chainId    The source chain
+     */
+    event XSubmitFromPaused(uint64 indexed chainId);
+
+    /**
+     * @notice Emitted when xsubmissions from a specific chain are unpaused.
+     * @param chainId    The source chain
+     */
+    event XSubmitFromUnpaused(uint64 indexed chainId);
+
+    /**
      * @notice Returns the current fee oracle address
      */
     function feeOracle() external view returns (address);

@@ -202,7 +202,7 @@ contract OmniPortal_xsubmit_Test is Base {
     /// @dev test that an xsubmission from a source chain cannot use an old valSetId, if an
     ///      xsubmission with a newer valSetId has been submitted for that source chain
     function test_xsubmit_oldValSet_reverts() public {
-        portal.setLatestValSetId(genesisValSetId + portal.XSUB_VALSET_CUTOFF());
+        portal.setLatestValSetId(genesisValSetId + portal.XSubValsetCutoff());
 
         // test that we cannot submit a block with the genesisValSetId
         XTypes.Submission memory xsub =
