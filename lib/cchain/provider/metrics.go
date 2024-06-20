@@ -51,7 +51,26 @@ var (
 		Name:      "query_error_total",
 		Help:      "Total number of query errors per endpoint. Alert if growing.",
 	}, []string{"endpoint"})
+
+	fetchLookbackSteps = promauto.NewHistogram(prometheus.HistogramOpts{
+		Namespace: "lib",
+		Subsystem: "cprovider",
+		Name:      "fetch_lookback_steps",
+		Help:      "Number of steps in the exponential backoff process to find a start for binary search",
+	})
+
+	fetchBinarySearchSteps = promauto.NewHistogram(prometheus.HistogramOpts{
+		Namespace: "lib",
+		Subsystem: "cprovider",
+		Name:      "fetch_binary_search_steps",
+		Help:      "Number of steps in the binary search process to find the right height",
+	})
 )
+
+func fetchStepsMetrics(lookbackSteps, binarySearchSteps uint64) {
+	fetchLookbackSteps.Observe(float64(lookbackSteps))
+	fetchBinarySearchSteps.Observe(float64(binarySearchSteps))
+}
 
 func latency(endpoint string) func() {
 	start := time.Now()

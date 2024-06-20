@@ -28,7 +28,7 @@ func TestApprovedAttestations(t *testing.T) {
 		ctx := context.Background()
 		for _, portal := range portals {
 			for _, chainVer := range portal.Chain.ChainVersions() {
-				atts, err := fetchAllAtts(ctx, cprov, chainVer)
+				atts, err := fetchAllAtts(ctx, cprov, chainVer, node.StartAt > 0)
 				require.NoError(t, err)
 
 				// Only non-empty blocks are attested to, and we don't know how many that should be, so just ensure it isn't 0.
@@ -40,7 +40,7 @@ func TestApprovedAttestations(t *testing.T) {
 		consChain, ok := network.OmniConsensusChain()
 		require.True(t, ok)
 		for _, chainVer := range consChain.ChainVersions() {
-			atts, err := fetchAllAtts(ctx, cprov, chainVer)
+			atts, err := fetchAllAtts(ctx, cprov, chainVer, node.StartAt > 0)
 			require.NoError(t, err)
 			require.NotEmpty(t, len(atts))
 		}
@@ -102,11 +102,17 @@ func TestApprovedValUpdates(t *testing.T) {
 	})
 }
 
-func fetchAllAtts(ctx context.Context, cprov cchain.Provider, chainVer xchain.ChainVersion) ([]xchain.Attestation, error) {
+func fetchAllAtts(ctx context.Context, cprov cchain.Provider, chainVer xchain.ChainVersion, nodeIsDelayed bool) ([]xchain.Attestation, error) {
 	fromOffset := uint64(1) // Start at initialXBlockOffset
 	var resp []xchain.Attestation
 	for {
 		atts, err := cprov.AttestationsFrom(ctx, chainVer, fromOffset)
+		if provider.IsErrHistoryPruned(err) && nodeIsDelayed {
+			// For delayed nodes, we might not have the first attestations.
+			// Just move on and return what we do find in state.
+			fromOffset++
+			continue
+		}
 		if err != nil {
 			return nil, err
 		}

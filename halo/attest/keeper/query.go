@@ -49,6 +49,28 @@ func (k *Keeper) LatestAttestation(ctx context.Context, req *types.LatestAttesta
 	return &types.LatestAttestationResponse{Attestation: AttestationFromDB(att, sigs)}, nil
 }
 
+func (k *Keeper) EarliestAttestation(ctx context.Context, req *types.EarliestAttestationRequest) (*types.EarliestAttestationResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid request")
+	}
+
+	chainVer := xchain.ChainVersion{ID: req.ChainId, ConfLevel: xchain.ConfLevel(req.ConfLevel)}
+
+	att, ok, err := k.earliestAttestation(ctx, chainVer)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	} else if !ok {
+		return nil, status.Error(codes.NotFound, "no approved attestations for chain")
+	}
+
+	sigs, err := k.getSigs(ctx, att.GetId())
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &types.EarliestAttestationResponse{Attestation: AttestationFromDB(att, sigs)}, nil
+}
+
 func (k *Keeper) WindowCompare(ctx context.Context, req *types.WindowCompareRequest) (*types.WindowCompareResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")

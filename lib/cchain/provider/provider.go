@@ -4,6 +4,7 @@ package provider
 import (
 	"context"
 	"path"
+	"strings"
 	"testing"
 	"time"
 
@@ -146,4 +147,14 @@ func (p Provider) Subscribe(in context.Context, chainVer xchain.ChainVersion, xB
 			log.Error(ctx, "Unexpected stream error [BUG]", err)
 		}
 	}()
+}
+
+// IsErrHistoryPruned reports whether the input error matches the CosmosSDK error returned when
+// the state for the requested height isn't found in the store.
+func IsErrHistoryPruned(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	return strings.Contains(err.Error(), "no commit info found")
 }
