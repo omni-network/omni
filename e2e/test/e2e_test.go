@@ -16,6 +16,7 @@ import (
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
@@ -155,6 +156,11 @@ func makePortals(t *testing.T, network netconf.Network, endpoints xchain.RPCEndp
 	t.Helper()
 	resp := make([]Portal, 0, len(network.EVMChains()))
 	for _, chain := range network.EVMChains() {
+		if _, ok := evmchain.MetadataByID(chain.ID); !ok {
+			t.Log("Skipping mock chain", chain.ID)
+			continue
+		}
+
 		rpc, err := endpoints.ByNameOrID(chain.Name, chain.ID)
 		tutil.RequireNoError(t, err)
 
