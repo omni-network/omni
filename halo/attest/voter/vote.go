@@ -11,17 +11,15 @@ import (
 
 // CreateVote creates a vote for the given block.
 func CreateVote(privKey crypto.PrivKey, block xchain.Block) (*types.Vote, error) {
-	pubkey := privKey.PubKey().Bytes()
-	if len(pubkey) != 33 {
-		return nil, errors.New("invalid pubkey length", "length", len(pubkey))
-	}
+	var msgRoot [32]byte
+	if len(block.Msgs) > 0 {
+		tree, err := xchain.NewMsgTree(block.Msgs)
+		if err != nil {
+			return nil, err
+		}
 
-	tree, err := xchain.NewMsgTree(block.Msgs)
-	if err != nil {
-		return nil, err
-	}
-
-	msgRoot := tree.MsgRoot()
+		msgRoot = tree.MsgRoot()
+	} // else use zero value msgRoot
 
 	attRoot, err := xchain.AttestationRoot(block.BlockHeader, msgRoot)
 	if err != nil {

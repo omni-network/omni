@@ -196,6 +196,8 @@ func (w *Worker) newCallback(
 			return err
 		} else if !ok {
 			return nil // Mismatching fuzzy attestation, skip.
+		} else if len(block.Msgs) == 0 {
+			return nil // No messages, nothing to do.
 		}
 
 		msgTree, err := xchain.NewMsgTree(block.Msgs)
@@ -302,14 +304,19 @@ func verifyAttBlock(att xchain.Attestation, block xchain.Block) error {
 		return errors.New("attestation block header mismatch")
 	}
 
-	msgTree, err := xchain.NewMsgTree(block.Msgs)
-	if err != nil {
-		return err
+	var msgRoot [32]byte
+	if len(block.Msgs) > 0 {
+		msgTree, err := xchain.NewMsgTree(block.Msgs)
+		if err != nil {
+			return err
+		}
+		msgRoot = msgTree.MsgRoot()
 	}
-	if root := msgTree.MsgRoot(); att.MsgRoot != root {
+
+	if att.MsgRoot != msgRoot {
 		return errors.New("attestation message root mismatch",
-			log.Hex7("attestation_root", att.MsgRoot[:]),
-			log.Hex7("block_root", root[:]),
+			log.Hex7("att_msg_root", att.MsgRoot[:]),
+			log.Hex7("block_msg_root", msgRoot[:]),
 		)
 	}
 
