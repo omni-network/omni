@@ -35,7 +35,12 @@ contract Staking is OwnableUpgradeable {
     /**
      * @notice The minimum deposit required to create a validator
      */
-    uint256 public constant MIN_DEPOSIT = 100 ether;
+    uint256 public constant MinDeposit = 100 ether;
+
+    /**
+     * @notice The minimum delegation required to delegate to a validator
+     */
+    uint256 public constant MinDelegation = 1 ether;
 
     /**
      * @notice True of the validator allowlist is enabled.
@@ -55,7 +60,7 @@ contract Staking is OwnableUpgradeable {
     function createValidator(bytes calldata pubkey) external payable {
         require(!isAllowlistEnabled || isAllowedValidator[msg.sender], "Staking: not allowed");
         require(pubkey.length == 33, "Staking: invalid pubkey length");
-        require(msg.value >= MIN_DEPOSIT, "Staking: insufficient deposit");
+        require(msg.value >= MinDeposit, "Staking: insufficient deposit");
 
         emit CreateValidator(msg.sender, pubkey, msg.value);
     }
@@ -67,7 +72,7 @@ contract Staking is OwnableUpgradeable {
      * @dev Proxies x/staking.MsgDelegate
      */
     function delegate(address validator) external payable {
-        require(msg.value > 0, "Staking: insufficient deposit");
+        require(msg.value > MinDelegation, "Staking: insufficient deposit");
 
         // only support self delegation for now
         require(msg.sender == validator, "Staking: only self delegation");
