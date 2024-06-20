@@ -22,6 +22,11 @@ import (
 
 var _ evmenginetypes.VoteExtensionProvider = (*Keeper)(nil)
 
+// PrepareVotes returns the cosmosSDK transaction MsgAddVotes that will include all the validator votes included
+// in the previous block's vote extensions into the attest module.
+//
+// Note that the commit is trusted to be valid and only contains valid VEs from the previous block as
+// provided by a trusted cometBFT.
 func (k *Keeper) PrepareVotes(ctx context.Context, commit abci.ExtendedCommitInfo) ([]sdk.Msg, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if err := baseapp.ValidateVoteExtensions(sdkCtx, k.skeeper, sdkCtx.BlockHeight(), sdkCtx.ChainID(), commit); err != nil {

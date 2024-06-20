@@ -50,8 +50,11 @@ type Provider interface {
 	GetEmittedCursor(ctx context.Context, ref EmitRef, stream StreamID) (EmitCursor, bool, error)
 }
 
+// EmitRef specifies which block to query for emit cursors.
 type EmitRef struct {
-	Height    *uint64
+	// Height specifies an absolute height to query; if non-nil.
+	Height *uint64
+	// ConfLevel specifies a relative-to-head block to query; if non-nil.
 	ConfLevel *ConfLevel
 }
 
