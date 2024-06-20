@@ -103,6 +103,7 @@ issues:
         - contextcheck # Context not an issue here
         - maintidx     # Relax linter for table driven tests
         - dupl         # Many tests share similar testing logic but call different methods with different args
+        - forcetypeassert # Asserting casts in tests not required.
     - path: '(.*)(e2e)(.*)'
       linters:         # Relax linters for both e2e (performance not required)
         - perfsprint   # Performance not an issue here

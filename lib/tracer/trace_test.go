@@ -77,7 +77,6 @@ func TestDefaultNoopTracer(_ *testing.T) {
 	inner(ctx)
 }
 
-//nolint:forcetypeassert // Ok for tests
 func TestStdOutTracer(t *testing.T) {
 	ctx := context.Background()
 

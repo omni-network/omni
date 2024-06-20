@@ -90,7 +90,7 @@ func parseKey(t *testing.T, data []byte) *rsa.PrivateKey {
 	k, err := x509.ParsePKCS8PrivateKey(p.Bytes)
 	require.NoError(t, err)
 
-	return k.(*rsa.PrivateKey) //nolint:forcetypeassert // parseKey is only used for testing
+	return k.(*rsa.PrivateKey)
 }
 
 // Populate this or run TestSmoke via terminal

@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
@@ -11,6 +12,8 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tutil"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -163,4 +166,65 @@ func makePortalDeps(def Definition) (map[uint64]bindings.PortalRegistryDeploymen
 	}
 
 	return deps, nil
+}
+
+func startAddingMockPortals(ctx context.Context, def Definition) func() error {
+	quit := make(chan struct{})
+
+	errChan := make(chan error, 1)
+	returnErr := func(err error) {
+		if err != nil {
+			log.Error(ctx, "Adding mock portal failed", err)
+		}
+		select {
+		case errChan <- err:
+		default:
+			log.Error(ctx, "Error channel full, dropping error", err)
+		}
+	}
+
+	go func() {
+		mngr, err := newRegistryMngr(ctx, def)
+		if err != nil {
+			returnErr(err)
+			return
+		}
+
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+
+		chainID := uint64(999000)
+		for {
+			select {
+			case <-ctx.Done():
+				returnErr(nil)
+				return
+			case <-quit:
+				returnErr(nil)
+				return
+			case <-ticker.C:
+			}
+
+			portal := bindings.PortalRegistryDeployment{
+				ChainId: chainID,
+				Addr:    tutil.RandomAddress(),
+				Shards:  []uint64{uint64(xchain.ShardFinalized0)},
+			}
+
+			log.Debug(ctx, "Adding mock portal", "chain", chainID)
+			if tx, err := mngr.contract.Register(mngr.txOpts, portal); err != nil {
+				returnErr(err)
+				return
+			} else if _, err := mngr.backend.WaitMined(ctx, tx); err != nil {
+				returnErr(err)
+				return
+			}
+			chainID++
+		}
+	}()
+
+	return func() error {
+		close(quit)
+		return <-errChan
+	}
 }

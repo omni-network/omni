@@ -185,6 +185,8 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 
 	stopValidatorUpdates := StartValidatorUpdates(ctx, def)
 
+	stopAddingPortals := startAddingMockPortals(ctx, def)
+
 	msgBatches := []int{3, 2, 1} // Send 6 msgs from each chain to each other chain
 	msgsErr := StartSendingXMsgs(ctx, def.Netman(), def.Backends(), msgBatches...)
 
@@ -220,6 +222,10 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	if err := stopAddingPortals(); err != nil {
+		return errors.Wrap(err, "stop adding portals")
 	}
 
 	network := networkFromDef(def)

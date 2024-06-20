@@ -21,3 +21,11 @@ func RandomHash() common.Hash {
 
 	return resp
 }
+
+// RandomAddress returns a random 20-byte ethereum address.
+func RandomAddress() common.Address {
+	var resp common.Address
+	_, _ = rand.Read(resp[:])
+
+	return resp
+}
