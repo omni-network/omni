@@ -256,7 +256,7 @@ func bridgeToNative(ctx context.Context, def Definition, toBridge []BridgeTest) 
 // waitNativeBridges waits for all native bridge test cases to complete.
 // This is required before bridging back to L1, because the native bridge must be informed that L1 tokens are available.
 func waitNativeBridges(ctx context.Context, def Definition, bridges []BridgeTest) error {
-	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	network := networkFromDef(def)

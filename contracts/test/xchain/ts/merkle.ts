@@ -21,15 +21,15 @@ type MultiProof = {
 }
 
 // XBlockMerkleTree, static methods only
-export class XBlockMerkleTree {
+export class XMsgMerkleTree {
   // Make an xblock tree from the provided header and messages
-  static of(header: XBlockHeader, msgs: readonly XMsg[]): Tree {
-    return oz.makeMerkleTree(leafHashes(header, msgs))
+  static of(msgs: readonly XMsg[]): Tree {
+    return oz.makeMerkleTree(leafHashes(msgs))
   }
 
-  // Returns a multi proof provided header and messages, againts the provided tree
-  static prove(tree: Tree, header: XBlockHeader, msgs: readonly XMsg[]): MultiProof {
-    const leaves = leafHashes(header, msgs)
+  // Returns a multi proof provided messages, against the provided tree
+  static prove(tree: Tree, msgs: readonly XMsg[]): MultiProof {
+    const leaves = leafHashes(msgs)
     const indices = leaves.map(l => leafIndex(tree, l))
     return oz.getMultiProof([...tree], indices)
   }
@@ -55,6 +55,8 @@ export class XBlockMerkleTree {
   }
 }
 
+export const attestationRoot = (header: XBlockHeader, msgRoot: Bytes) =>
+  oz.makeMerkleTree([msgRoot, headerLeafHash(header)])[0]
 const stdLeafHash = (data: `0x${string}`) => keccak256(keccak256(hexToBytes(data)))
 const msgLeafHash = (msg: XMsg) => stdLeafHash(encodeXMsg(msg))
 const headerLeafHash = (header: XBlockHeader) => stdLeafHash(encodeXBlockHeader(header))
@@ -79,9 +81,9 @@ function checkMsgOrder(msgs: readonly XMsg[]) {
   }
 }
 
-function leafHashes(header: XBlockHeader, msgs: readonly XMsg[]) {
+function leafHashes(msgs: readonly XMsg[]) {
   checkMsgOrder(msgs)
-  return [headerLeafHash(header), ...msgs.map(msgLeafHash)]
+  return [...msgs.map(msgLeafHash)]
 }
 
 function throwError(message?: string) {

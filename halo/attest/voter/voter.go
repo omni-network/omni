@@ -20,6 +20,7 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto"
+	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/libs/tempfile"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -70,7 +71,7 @@ func GenEmptyStateFile(path string) error {
 func LoadVoter(privKey crypto.PrivKey, path string, provider xchain.Provider, deps types.VoterDeps,
 	network netconf.Network,
 ) (*Voter, error) {
-	if len(privKey.PubKey().Bytes()) != 33 {
+	if len(privKey.PubKey().Bytes()) != k1.PubKeySize {
 		return nil, errors.New("invalid private key")
 	}
 

@@ -179,17 +179,21 @@ func (b Block) ShouldAttest(attestInterval uint64) bool {
 
 // Vote by a validator of a cross-chain Block.
 type Vote struct {
-	BlockHeader                 // BlockHeader identifies the cross-chain Block
-	AttestationRoot common.Hash // Attestation merkle root of the cross-chain Block
-	Signature       SigTuple    // Validator signature and public key
+	BlockHeader             // BlockHeader identifies the cross-chain Block
+	MsgRoot     common.Hash // Merkle root of all messages in the cross-chain Block
+	Signature   SigTuple    // Validator signature and public key
 }
 
 // Attestation containing quorum votes by the validator set of a cross-chain Block.
 type Attestation struct {
-	BlockHeader                 // BlockHeader identifies the cross-chain Block
-	ValidatorSetID  uint64      // Validator set that approved this attestation.
-	AttestationRoot common.Hash // Attestation merkle root of the cross-chain Block
-	Signatures      []SigTuple  // Validator signatures and public keys
+	BlockHeader                // BlockHeader identifies the cross-chain Block
+	ValidatorSetID uint64      // Validator set that approved this attestation.
+	MsgRoot        common.Hash // Merkle root of all messages in the cross-chain Block
+	Signatures     []SigTuple  // Validator signatures and public keys
+}
+
+func (a Attestation) AttestationRoot() ([32]byte, error) {
+	return AttestationRoot(a.BlockHeader, a.MsgRoot)
 }
 
 // SigTuple is a validator signature and address.

@@ -50,10 +50,10 @@ func AttestationFromProto(att *Attestation) (xchain.Attestation, error) {
 	}
 
 	return xchain.Attestation{
-		BlockHeader:     BlockHeaderFromProto(att.GetBlockHeader()),
-		ValidatorSetID:  att.ValidatorSetId,
-		AttestationRoot: common.BytesToHash(att.GetAttestationRoot()),
-		Signatures:      sigs,
+		BlockHeader:    BlockHeaderFromProto(att.GetBlockHeader()),
+		ValidatorSetID: att.GetValidatorSetId(),
+		MsgRoot:        common.BytesToHash(att.GetMsgRoot()),
+		Signatures:     sigs,
 	}, nil
 }
 

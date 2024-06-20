@@ -29,7 +29,7 @@ func TestVotesFromCommitNonUnique(t *testing.T) {
 	var valAddr common.Address
 	var valSig [65]byte
 
-	newVote := func(hash, attRoot common.Hash) *types.Vote {
+	newVote := func(hash, msgRoot common.Hash) *types.Vote {
 		return &types.Vote{
 			BlockHeader: &types.BlockHeader{
 				ChainId: chainID,
@@ -37,7 +37,7 @@ func TestVotesFromCommitNonUnique(t *testing.T) {
 				Height:  height,
 				Hash:    hash[:],
 			},
-			AttestationRoot: attRoot[:],
+			MsgRoot: msgRoot[:],
 			Signature: &types.SigTuple{
 				ValidatorAddress: valAddr[:],
 				Signature:        valSig[:],
@@ -50,12 +50,13 @@ func TestVotesFromCommitNonUnique(t *testing.T) {
 	root1 := common.BytesToHash([]byte("root1"))
 	root2 := common.BytesToHash([]byte("root2"))
 
-	// Same chainID and Height, but different hash and attRoots combinations.
-	aggs := aggregateVotes([]*types.Vote{
+	// Same chainID and Height, but different hash and msgRoots combinations.
+	aggs, err := aggregateVotes([]*types.Vote{
 		newVote(hash1, root1),
 		newVote(hash2, root2),
 		newVote(hash1, root2),
 	})
+	require.NoError(t, err)
 
 	// Result in different aggregates
 	require.Len(t, aggs, 3)
@@ -103,7 +104,7 @@ func TestVotesFromCommit(t *testing.T) {
 							Height:    offset * 2,
 							Hash:      blockHash[:],
 						},
-						AttestationRoot: blockHash[:],
+						MsgRoot: blockHash[:],
 						Signature: &types.SigTuple{
 							ValidatorAddress: addr[:],
 							Signature:        sig[:],
@@ -115,10 +116,13 @@ func TestVotesFromCommit(t *testing.T) {
 							ValidatorAddress: addr,
 							Signature:        sig,
 						}
-						if _, ok := expected[vote.UniqueKey()]; !ok {
-							expected[vote.UniqueKey()] = make(map[xchain.SigTuple]bool)
+						attRoot, err := vote.AttestationRoot()
+						require.NoError(t, err)
+
+						if _, ok := expected[attRoot]; !ok {
+							expected[attRoot] = make(map[xchain.SigTuple]bool)
 						}
-						expected[vote.UniqueKey()][sig] = true
+						expected[attRoot][sig] = true
 					}
 					votes = append(votes, vote)
 				}
@@ -159,17 +163,17 @@ func TestVotesFromCommit(t *testing.T) {
 	require.Len(t, resp.Votes, total)
 
 	for _, agg := range resp.Votes {
-		require.NoError(t, agg.Verify())
-		key := agg.UniqueKey()
+		attRoot, err := agg.AttestationRoot()
+		require.NoError(t, err)
 		for _, s := range agg.Signatures {
 			sig := xchain.SigTuple{
 				ValidatorAddress: common.BytesToAddress(s.ValidatorAddress),
 				Signature:        xchain.Signature65(s.Signature),
 			}
-			require.True(t, expected[key][sig], agg, sig)
-			delete(expected[key], sig)
-			if len(expected[key]) == 0 {
-				delete(expected, key)
+			require.True(t, expected[attRoot][sig], agg, sig)
+			delete(expected[attRoot], sig)
+			if len(expected[attRoot]) == 0 {
+				delete(expected, attRoot)
 			}
 		}
 	}

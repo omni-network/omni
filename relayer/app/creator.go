@@ -38,15 +38,20 @@ func CreateSubmissions(up StreamUpdate) ([]xchain.Submission, error) {
 
 	att := up.Attestation
 
+	attRoot, err := xchain.AttestationRoot(att.BlockHeader, att.MsgRoot)
+	if err != nil {
+		return nil, err
+	}
+
 	var resp []xchain.Submission //nolint:prealloc // Cannot predetermine size
 	for _, msgs := range groupMsgsByCost(up.Msgs) {
-		multi, err := up.Tree.Proof(att.BlockHeader, msgs)
+		multi, err := up.MsgTree.Proof(msgs)
 		if err != nil {
 			return nil, err
 		}
 
 		resp = append(resp, xchain.Submission{
-			AttestationRoot: att.AttestationRoot,
+			AttestationRoot: attRoot,
 			ValidatorSetID:  att.ValidatorSetID,
 			BlockHeader:     att.BlockHeader,
 			Msgs:            msgs,

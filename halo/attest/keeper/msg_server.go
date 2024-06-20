@@ -29,6 +29,12 @@ func (s msgServer) AddVotes(ctx context.Context, msg *types.MsgAddVotes,
 		return nil, errors.New("only allowed in finalize mode")
 	}
 
+	for _, aggVote := range msg.Votes {
+		if err := aggVote.Verify(); err != nil {
+			return nil, errors.Wrap(err, "verify vote")
+		}
+	}
+
 	// Not verifying votes here since this block is now finalized, so it is too late to reject votes.
 
 	err := s.Keeper.Add(ctx, msg)

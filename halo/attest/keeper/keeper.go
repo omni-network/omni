@@ -153,11 +153,14 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 	defer latency("add_one")()
 
 	header := agg.BlockHeader
-	keyHash := agg.UniqueKey()
+	attRoot, err := agg.AttestationRoot()
+	if err != nil {
+		return errors.Wrap(err, "attestation root")
+	}
 
 	// Get existing attestation (by unique key) or insert new one.
 	var attID uint64
-	existing, err := k.attTable.GetByKeyHash(ctx, keyHash[:])
+	existing, err := k.attTable.GetByAttestationRoot(ctx, attRoot[:])
 	if ormerrors.IsNotFound(err) {
 		// Insert new attestation
 		attID, err = k.attTable.InsertReturningId(ctx, &Attestation{
@@ -166,8 +169,8 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 			BlockOffset:     agg.BlockHeader.Offset,
 			BlockHeight:     agg.BlockHeader.Height,
 			BlockHash:       agg.BlockHeader.Hash,
-			AttestationRoot: agg.AttestationRoot,
-			KeyHash:         keyHash[:],
+			MsgRoot:         agg.MsgRoot,
+			AttestationRoot: attRoot[:],
 			Status:          uint32(Status_Pending),
 			ValidatorSetId:  0, // Unknown at this point.
 			CreatedHeight:   uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()),
@@ -381,9 +384,9 @@ func (k *Keeper) ListAttestationsFrom(ctx context.Context, chainID uint64, confL
 				Height:    att.GetBlockHeight(),
 				Hash:      att.GetBlockHash(),
 			},
-			ValidatorSetId:  att.GetValidatorSetId(),
-			AttestationRoot: att.GetAttestationRoot(),
-			Signatures:      sigs,
+			ValidatorSetId: att.GetValidatorSetId(),
+			MsgRoot:        att.GetMsgRoot(),
+			Signatures:     sigs,
 		})
 	}
 
@@ -707,7 +710,6 @@ func (k *Keeper) windowCompare(ctx context.Context, chainVer xchain.ChainVersion
 // verifyAggVotes verifies the given aggregates votes:
 // - Ensure all votes are from validators in the provided set.
 // - Ensure the vote block header is in the vote window.
-// - Ensure votes represent at least 2/3 of the total voting power. <- This isn't done?
 func (k *Keeper) verifyAggVotes(ctx context.Context, valset ValSet, aggs []*types.AggVote) error {
 	for _, agg := range aggs {
 		if err := agg.Verify(); err != nil {

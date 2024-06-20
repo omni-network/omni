@@ -57,14 +57,14 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 	require.Equal(t, block.BlockHeader, vote.BlockHeader.ToXChain())
 	require.Equal(t, addr, common.Address(vote.Signature.ValidatorAddress))
 
-	tree, err := xchain.NewBlockTree(block)
+	tree, err := xchain.NewMsgTree(block.Msgs)
 	require.NoError(t, err)
 
 	att := xchain.Attestation{
-		BlockHeader:     vote.BlockHeader.ToXChain(),
-		ValidatorSetID:  valSetID,
-		AttestationRoot: [32]byte(vote.AttestationRoot),
-		Signatures:      []xchain.SigTuple{vote.Signature.ToXChain()},
+		BlockHeader:    vote.BlockHeader.ToXChain(),
+		ValidatorSetID: valSetID,
+		MsgRoot:        [32]byte(vote.MsgRoot),
+		Signatures:     []xchain.SigTuple{vote.Signature.ToXChain()},
 	}
 
 	ensureNoDuplicates := func(t *testing.T, msgs []xchain.Msg) {
@@ -92,7 +92,7 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 				},
 				Attestation: att,
 				Msgs:        block.Msgs,
-				Tree:        tree,
+				MsgTree:     tree,
 			},
 		},
 	}
@@ -106,7 +106,9 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 			for _, sub := range subs {
 				require.EqualValues(t, valSetID, sub.ValidatorSetID)
 				require.NotNil(t, sub.AttestationRoot)
-				require.Equal(t, sub.AttestationRoot, att.AttestationRoot)
+				attRoot, err := att.AttestationRoot()
+				require.NoError(t, err)
+				require.Equal(t, sub.AttestationRoot.Bytes(), attRoot[:])
 				require.NotNil(t, sub.ProofFlags)
 				require.NotNil(t, sub.Signatures)
 				for _, msg := range sub.Msgs {

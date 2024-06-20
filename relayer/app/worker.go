@@ -196,9 +196,11 @@ func (w *Worker) newCallback(
 			return err
 		} else if !ok {
 			return nil // Mismatching fuzzy attestation, skip.
+		} else if len(block.Msgs) == 0 {
+			return nil // No messages, nothing to do.
 		}
 
-		tree, err := xchain.NewBlockTree(block)
+		msgTree, err := xchain.NewMsgTree(block.Msgs)
 		if err != nil {
 			return err
 		}
@@ -227,7 +229,7 @@ func (w *Worker) newCallback(
 				StreamID:    streamID,
 				Attestation: att,
 				Msgs:        msgs,
-				Tree:        tree,
+				MsgTree:     msgTree,
 			}
 
 			submissions, err := w.creator(update)
@@ -298,13 +300,23 @@ func verifyAttBlock(att xchain.Attestation, block xchain.Block) error {
 	} else if block.BlockOffset != att.BlockOffset {
 		// All attestations must map to non-empty xblocks with XBlockOffset populated.
 		return errors.New("unexpected XBlockOffset")
+	} else if block.BlockHeader != att.BlockHeader {
+		return errors.New("attestation block header mismatch")
 	}
 
-	tree, _ := xchain.NewBlockTree(block)
-	if root := tree.Root(); att.AttestationRoot != root {
-		return errors.New("attestation root mismatch",
-			log.Hex7("attestation_root", att.AttestationRoot[:]),
-			log.Hex7("block_root", root[:]),
+	var msgRoot [32]byte
+	if len(block.Msgs) > 0 {
+		msgTree, err := xchain.NewMsgTree(block.Msgs)
+		if err != nil {
+			return err
+		}
+		msgRoot = msgTree.MsgRoot()
+	}
+
+	if att.MsgRoot != msgRoot {
+		return errors.New("attestation message root mismatch",
+			log.Hex7("att_msg_root", att.MsgRoot[:]),
+			log.Hex7("block_msg_root", msgRoot[:]),
 		)
 	}
 

@@ -10,39 +10,41 @@ import { XTypes } from "./XTypes.sol";
  */
 library XBlockMerkleProof {
     /**
-     * @notice Verifies a multi merkle proof for the provided block header and messages, against the provided root.
-     *      Msgs order must match the order used to construct the merkle proof.
-     * @param root          The root of the xblock merkle tree, generally XSubmission.attestationRoot.
-     * @param blockHeader   The xblock header.
-     * @param msgs          The xmsgs to verify.
-     * @param proof         The merkle proof.
-     * @param proofFlags    The merkle proof flags.
-     * @return              True if the proof is valid, false otherwise.
+     * @notice Verifies that the provided xmsgs & multi proof produce an xmsg merkle root that, when
+     *         combined with the xblock header, produces the provided root.
+     * @param root          The root of the nested xblock merkle tree (xblock header + xmsg merkle root).
+     * @param blockHeader   Xblock header.
+     * @param msgs          Xmsgs to verify.
+     * @param msgProof      Xmsg merkle proof.
+     * @param msgProofFlags Xmsg merkle proof flags.
+     * @return              True if the msgs, msg proof & block header are valid, agsinst the provided root.
      */
     function verify(
         bytes32 root,
         XTypes.BlockHeader calldata blockHeader,
         XTypes.Msg[] calldata msgs,
-        bytes32[] calldata proof,
-        bool[] calldata proofFlags
+        bytes32[] calldata msgProof,
+        bool[] calldata msgProofFlags
     ) internal pure returns (bool) {
-        return MerkleProof.multiProofVerify(proof, proofFlags, root, _leaves(blockHeader, msgs));
+        bytes32[] memory rootProof = new bytes32[](1);
+        rootProof[0] = MerkleProof.processMultiProofCalldata(msgProof, msgProofFlags, _msgLeaves(msgs));
+        return MerkleProof.verify(rootProof, root, _blockHeaderLeaf(blockHeader));
     }
 
-    /// @dev Convert block header and msgs to leaf hashes
-    function _leaves(XTypes.BlockHeader calldata blockHeader, XTypes.Msg[] calldata msgs)
-        private
-        pure
-        returns (bytes32[] memory)
-    {
-        bytes32[] memory leaves = new bytes32[](msgs.length + 1);
+    /// @dev Convert xmsgs to leaf hashes
+    function _msgLeaves(XTypes.Msg[] calldata msgs) private pure returns (bytes32[] memory) {
+        bytes32[] memory leaves = new bytes32[](msgs.length);
 
-        leaves[0] = _leafHash(abi.encode(blockHeader));
         for (uint256 i = 0; i < msgs.length; i++) {
-            leaves[i + 1] = _leafHash(abi.encode(msgs[i]));
+            leaves[i] = _leafHash(abi.encode(msgs[i]));
         }
 
         return leaves;
+    }
+
+    /// @dev Convert xblock header to leaf hash
+    function _blockHeaderLeaf(XTypes.BlockHeader calldata blockHeader) private pure returns (bytes32) {
+        return _leafHash(abi.encode(blockHeader));
     }
 
     /// @dev Double hash leaves, as recommended by OpenZeppelin, to prevent second preimage attacks

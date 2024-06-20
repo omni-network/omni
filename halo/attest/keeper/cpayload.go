@@ -89,30 +89,38 @@ func votesFromLastCommit(
 		allVotes = append(allVotes, selected...)
 	}
 
+	votes, err := aggregateVotes(allVotes)
+	if err != nil {
+		return nil, err
+	}
+
 	return &types.MsgAddVotes{
 		Authority: authtypes.NewModuleAddress(types.ModuleName).String(),
-		Votes:     aggregateVotes(allVotes),
+		Votes:     votes,
 	}, nil
 }
 
 // aggregateVotes aggregates the provided attestations by block header.
-func aggregateVotes(votes []*types.Vote) []*types.AggVote {
+func aggregateVotes(votes []*types.Vote) ([]*types.AggVote, error) {
 	uniqueAggs := make(map[[32]byte]*types.AggVote)
 	for _, vote := range votes {
-		key := vote.UniqueKey()
-		agg, ok := uniqueAggs[key]
+		attRoot, err := vote.AttestationRoot()
+		if err != nil {
+			return nil, err
+		}
+		agg, ok := uniqueAggs[attRoot]
 		if !ok {
 			agg = &types.AggVote{
-				BlockHeader:     vote.BlockHeader,
-				AttestationRoot: vote.AttestationRoot,
+				BlockHeader: vote.BlockHeader,
+				MsgRoot:     vote.MsgRoot,
 			}
 		}
 
 		agg.Signatures = append(agg.Signatures, vote.Signature)
-		uniqueAggs[key] = agg
+		uniqueAggs[attRoot] = agg
 	}
 
-	return sortAggregates(flattenAggs(uniqueAggs))
+	return sortAggregates(flattenAggs(uniqueAggs)), nil
 }
 
 // flattenAggs returns the values of the provided map.

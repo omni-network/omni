@@ -3,7 +3,7 @@
  */
 
 import { XSub } from '../../xtypes'
-import { XBlockMerkleTree } from '../../merkle'
+import { XMsgMerkleTree, attestationRoot } from '../../merkle'
 import { NamedXBlock, NamedXSub } from './types'
 import { bytesToHex } from 'viem'
 import { groupByDestChain } from './utils'
@@ -11,16 +11,17 @@ import { readXBlocks, writeXBlocksDecoded, writeXSubs, writeXSubsDecoded } from 
 
 // Get a XSubs for each destination chain in the XBlock.
 function getXSubs(b: NamedXBlock) {
-  const msgs = XBlockMerkleTree.order(b.xblock.msgs)
-  const tree = XBlockMerkleTree.of(b.xblock.blockHeader, msgs)
+  const msgs = XMsgMerkleTree.order(b.xblock.msgs)
+  const tree = XMsgMerkleTree.of(msgs)
   const byDestChain = groupByDestChain(msgs)
 
   const xsubs: NamedXSub[] = []
   for (const [destChainId, msgs] of Object.entries(byDestChain)) {
-    const proof = XBlockMerkleTree.prove(tree, b.xblock.blockHeader, msgs)
+    const proof = XMsgMerkleTree.prove(tree, msgs)
+    const msgRoot = XMsgMerkleTree.root(tree)
 
     const xsub: XSub = {
-      attestationRoot: bytesToHex(XBlockMerkleTree.root(tree)),
+      attestationRoot: bytesToHex(attestationRoot(b.xblock.blockHeader, msgRoot)),
       validatorSetId: 1n, // validatorSetId set added in contract tests
       blockHeader: b.xblock.blockHeader,
       msgs,

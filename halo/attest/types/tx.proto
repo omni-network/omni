@@ -27,7 +27,7 @@ message AddVotesResponse {}
 // Attestation contains quorum votes for a cross-chain block of a specific validator set.
 message Attestation {
   BlockHeader       block_header     = 1; // BlockHeader identifies the cross-chain Block
-  bytes             attestation_root = 2; // Attestation merkle root of the cross-chain Block
+  bytes             msg_root         = 2; // Merkle root of all the messages in the cross-chain Block
   repeated SigTuple signatures       = 3; // Validator signatures and public keys
   uint64            validator_set_id = 4; // Validator set that approved this attestation.
 }
@@ -36,7 +36,7 @@ message Attestation {
 // AggVote aggregates multiple votes of a cross-chain Block.
 message AggVote {
   BlockHeader       block_header     = 1; // BlockHeader identifies the cross-chain Block
-  bytes             attestation_root = 2; // Attestation merkle root of the cross-chain Block
+  bytes             msg_root         = 2; // Merkle root of all the messages in the cross-chain Block
   repeated SigTuple signatures       = 3; // Validator signatures and public keys
 }
 
@@ -48,7 +48,7 @@ message Votes {
 // Vote by a validator of a cross-chain Block.
 message Vote {
   BlockHeader block_header     = 1; // BlockHeader identifies the cross-chain Block
-  bytes       attestation_root = 2; // Attestation merkle root of the cross-chain Block
+  bytes        msg_root        = 2; // Merkle root of all the messages in the cross-chain Block
   SigTuple    signature        = 3; // Validator signatures and public keys
 }
 

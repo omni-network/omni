@@ -12,7 +12,7 @@ import (
 
 type StreamUpdate struct {
 	xchain.StreamID
-	Tree        xchain.BlockTree
+	MsgTree     xchain.MsgTree
 	Attestation xchain.Attestation // Attestation for the xmsgs
 	Msgs        []xchain.Msg       // msgs that increment the cursor
 }

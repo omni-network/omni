@@ -19,9 +19,9 @@ type AttestationTable interface {
 	Has(ctx context.Context, id uint64) (found bool, err error)
 	// Get returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
 	Get(ctx context.Context, id uint64) (*Attestation, error)
-	HasByKeyHash(ctx context.Context, key_hash []byte) (found bool, err error)
-	// GetByKeyHash returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
-	GetByKeyHash(ctx context.Context, key_hash []byte) (*Attestation, error)
+	HasByAttestationRoot(ctx context.Context, attestation_root []byte) (found bool, err error)
+	// GetByAttestationRoot returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
+	GetByAttestationRoot(ctx context.Context, attestation_root []byte) (*Attestation, error)
 	List(ctx context.Context, prefixKey AttestationIndexKey, opts ...ormlist.Option) (AttestationIterator, error)
 	ListRange(ctx context.Context, from, to AttestationIndexKey, opts ...ormlist.Option) (AttestationIterator, error)
 	DeleteBy(ctx context.Context, prefixKey AttestationIndexKey) error
@@ -62,16 +62,16 @@ func (this AttestationIdIndexKey) WithId(id uint64) AttestationIdIndexKey {
 	return this
 }
 
-type AttestationKeyHashIndexKey struct {
+type AttestationAttestationRootIndexKey struct {
 	vs []interface{}
 }
 
-func (x AttestationKeyHashIndexKey) id() uint32            { return 1 }
-func (x AttestationKeyHashIndexKey) values() []interface{} { return x.vs }
-func (x AttestationKeyHashIndexKey) attestationIndexKey()  {}
+func (x AttestationAttestationRootIndexKey) id() uint32            { return 1 }
+func (x AttestationAttestationRootIndexKey) values() []interface{} { return x.vs }
+func (x AttestationAttestationRootIndexKey) attestationIndexKey()  {}
 
-func (this AttestationKeyHashIndexKey) WithKeyHash(key_hash []byte) AttestationKeyHashIndexKey {
-	this.vs = []interface{}{key_hash}
+func (this AttestationAttestationRootIndexKey) WithAttestationRoot(attestation_root []byte) AttestationAttestationRootIndexKey {
+	this.vs = []interface{}{attestation_root}
 	return this
 }
 
@@ -160,16 +160,16 @@ func (this attestationTable) Get(ctx context.Context, id uint64) (*Attestation, 
 	return &attestation, nil
 }
 
-func (this attestationTable) HasByKeyHash(ctx context.Context, key_hash []byte) (found bool, err error) {
+func (this attestationTable) HasByAttestationRoot(ctx context.Context, attestation_root []byte) (found bool, err error) {
 	return this.table.GetIndexByID(1).(ormtable.UniqueIndex).Has(ctx,
-		key_hash,
+		attestation_root,
 	)
 }
 
-func (this attestationTable) GetByKeyHash(ctx context.Context, key_hash []byte) (*Attestation, error) {
+func (this attestationTable) GetByAttestationRoot(ctx context.Context, attestation_root []byte) (*Attestation, error) {
 	var attestation Attestation
 	found, err := this.table.GetIndexByID(1).(ormtable.UniqueIndex).Get(ctx, &attestation,
-		key_hash,
+		attestation_root,
 	)
 	if err != nil {
 		return nil, err
