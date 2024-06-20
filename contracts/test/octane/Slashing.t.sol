@@ -20,11 +20,13 @@ contract Slashing_Test is Test {
 
     function test_unjail() public {
         address validator = makeAddr("validator");
+        uint256 fee = slashing.Fee();
+        vm.deal(address(validator), fee);
 
         vm.expectEmit();
         emit Unjail(validator);
 
         vm.prank(validator);
-        slashing.unjail();
+        slashing.unjail{ value: fee }();
     }
 }

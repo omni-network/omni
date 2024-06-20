@@ -25,7 +25,7 @@ contract Staking_Test is Test {
         address[] memory validators = new address[](1);
         validators[0] = validator;
         bytes memory pubkey = abi.encodePacked(hex"03", keccak256("pubkey"));
-        vm.deal(validator, staking.MIN_DEPOSIT());
+        vm.deal(validator, staking.MinDeposit());
 
         // allowlist is disabled
         assertFalse(staking.isAllowlistEnabled());
@@ -45,14 +45,14 @@ contract Staking_Test is Test {
         assertTrue(staking.isAllowedValidator(validator));
 
         // requires minimum deposit
-        uint256 insufficientDeposit = staking.MIN_DEPOSIT() - 1;
+        uint256 insufficientDeposit = staking.MinDeposit() - 1;
 
         vm.expectRevert("Staking: insufficient deposit");
         vm.prank(validator);
         staking.createValidator{ value: insufficientDeposit }(pubkey);
 
         // requires 33 byte
-        uint256 deposit = staking.MIN_DEPOSIT();
+        uint256 deposit = staking.MinDeposit();
         bytes memory pubkey32 = abi.encodePacked(keccak256("pubkey"));
 
         vm.expectRevert("Staking: invalid pubkey length");

@@ -20,10 +20,30 @@ contract Slashing {
     event Unjail(address indexed validator);
 
     /**
+     * @notice The address to burn fees to
+     */
+    address private constant BurnAddr = 0x000000000000000000000000000000000000dEaD;
+
+    /**
+     * @notice Static fee to unjail. Used to prevent spamming of Unjail events, which require consensus
+     *         chain work that is not metered by execution chain gas.
+     */
+    uint256 public constant Fee = 0.1 ether;
+
+    /**
      * @notice Unjail your validator
      * @dev Proxies x/slashing.MsgUnjail
      */
-    function unjail() external {
+    function unjail() external payable {
+        _burnFee();
         emit Unjail(msg.sender);
+    }
+
+    /**
+     * @notice Burn the fee, requiring it be sent with the call
+     */
+    function _burnFee() internal {
+        require(msg.value >= Fee, "Slashing: insufficient fee");
+        payable(BurnAddr).transfer(msg.value);
     }
 }

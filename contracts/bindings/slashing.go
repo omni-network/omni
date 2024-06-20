@@ -31,8 +31,8 @@ var (
 
 // SlashingMetaData contains all meta data concerning the Slashing contract.
 var SlashingMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"unjail\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"Unjail\",\"inputs\":[{\"name\":\"validator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false}]",
-	Bin: "0x6080604052348015600f57600080fd5b5060988061001e6000396000f3fe6080604052348015600f57600080fd5b506004361060285760003560e01c8063f679d30514602d575b600080fd5b60336035565b005b60405133907fc3ef55ddda4bc9300706e15ab3aed03c762d8afd43a7d358a7b9503cb39f281b90600090a256fea264697066735822122046125cf3aa1770dee7f65080efcf7560c19924e2c15e3b3fec4cb1deb26fda5164736f6c63430008180033",
+	ABI: "[{\"type\":\"function\",\"name\":\"Fee\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"unjail\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"event\",\"name\":\"Unjail\",\"inputs\":[{\"name\":\"validator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false}]",
+	Bin: "0x608060405234801561001057600080fd5b5061015e806100206000396000f3fe6080604052600436106100295760003560e01c8063bef7a2f01461002e578063f679d3051461005c575b600080fd5b34801561003a57600080fd5b5061004a67016345785d8a000081565b60405190815260200160405180910390f35b610064610066565b005b61006e61009b565b60405133907fc3ef55ddda4bc9300706e15ab3aed03c762d8afd43a7d358a7b9503cb39f281b90600090a2565b67016345785d8a00003410156100f75760405162461bcd60e51b815260206004820152601a60248201527f536c617368696e673a20696e73756666696369656e7420666565000000000000604482015260640160405180910390fd5b60405161dead903480156108fc02916000818181858888f19350505050158015610125573d6000803e3d6000fd5b5056fea26469706673582212208eb43e7331ab8c5760d0fd8f974b525a4b278f17e70419cb5695144ce1f0676e64736f6c63430008180033",
 }
 
 // SlashingABI is the input ABI used to generate the binding from.
@@ -202,23 +202,54 @@ func (_Slashing *SlashingTransactorRaw) Transact(opts *bind.TransactOpts, method
 	return _Slashing.Contract.contract.Transact(opts, method, params...)
 }
 
+// Fee is a free data retrieval call binding the contract method 0xbef7a2f0.
+//
+// Solidity: function Fee() view returns(uint256)
+func (_Slashing *SlashingCaller) Fee(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _Slashing.contract.Call(opts, &out, "Fee")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// Fee is a free data retrieval call binding the contract method 0xbef7a2f0.
+//
+// Solidity: function Fee() view returns(uint256)
+func (_Slashing *SlashingSession) Fee() (*big.Int, error) {
+	return _Slashing.Contract.Fee(&_Slashing.CallOpts)
+}
+
+// Fee is a free data retrieval call binding the contract method 0xbef7a2f0.
+//
+// Solidity: function Fee() view returns(uint256)
+func (_Slashing *SlashingCallerSession) Fee() (*big.Int, error) {
+	return _Slashing.Contract.Fee(&_Slashing.CallOpts)
+}
+
 // Unjail is a paid mutator transaction binding the contract method 0xf679d305.
 //
-// Solidity: function unjail() returns()
+// Solidity: function unjail() payable returns()
 func (_Slashing *SlashingTransactor) Unjail(opts *bind.TransactOpts) (*types.Transaction, error) {
 	return _Slashing.contract.Transact(opts, "unjail")
 }
 
 // Unjail is a paid mutator transaction binding the contract method 0xf679d305.
 //
-// Solidity: function unjail() returns()
+// Solidity: function unjail() payable returns()
 func (_Slashing *SlashingSession) Unjail() (*types.Transaction, error) {
 	return _Slashing.Contract.Unjail(&_Slashing.TransactOpts)
 }
 
 // Unjail is a paid mutator transaction binding the contract method 0xf679d305.
 //
-// Solidity: function unjail() returns()
+// Solidity: function unjail() payable returns()
 func (_Slashing *SlashingTransactorSession) Unjail() (*types.Transaction, error) {
 	return _Slashing.Contract.Unjail(&_Slashing.TransactOpts)
 }
