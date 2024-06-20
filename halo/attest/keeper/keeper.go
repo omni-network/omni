@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"log/slog"
@@ -51,7 +50,7 @@ type Keeper struct {
 	voteExtLimit   uint64
 	trimLag        uint64
 
-	valCache *valCache
+	valAddrCache *valAddrCache
 }
 
 // New returns a new attestation keeper.
@@ -91,7 +90,7 @@ func New(
 		voteExtLimit:   voteExtLimit,
 		trimLag:        trimLag,
 		portalRegistry: stubPortalRegistry{},
-		valCache:       new(valCache),
+		valAddrCache:   new(valAddrCache),
 	}
 
 	return k, nil
@@ -591,6 +590,8 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 }
 
 // VerifyVoteExtension verifies a vote extension.
+//
+// Note this code assumes that cometBFT will only call this function for an active validator in the current set.
 func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVoteExtension) (
 	*abci.ResponseVerifyVoteExtension, error,
 ) {
@@ -599,6 +600,12 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 	}
 	respReject := &abci.ResponseVerifyVoteExtension{
 		Status: abci.ResponseVerifyVoteExtension_REJECT,
+	}
+
+	// Get the ethereum address of the validator
+	ethAddr, err := k.getValEthAddr(ctx, req.ValidatorAddress)
+	if err != nil {
+		return nil, err // This error should never occur
 	}
 
 	// Adding logging attributes to sdk context is a bit tricky
@@ -622,12 +629,8 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 			return respReject, nil
 		}
 
-		// Ensure only votes from the requesting validator are included.
-		ethAddr := common.BytesToAddress(vote.Signature.ValidatorAddress)
-		if cmtAddr, err := k.getValCometAddr(ctx, ethAddr); err != nil {
-			log.Warn(ctx, "Rejecting unknown validator address vote", err, "address", ethAddr)
-			return respReject, nil
-		} else if !bytes.Equal(cmtAddr, req.ValidatorAddress) {
+		// Ensure the votes are from the requesting validator itself.
+		if common.BytesToAddress(vote.Signature.ValidatorAddress) != ethAddr {
 			log.Warn(ctx, "Rejecting mismatching vote and req validator address", nil, "vote", ethAddr, "req", req.ValidatorAddress)
 			return respReject, nil
 		}
