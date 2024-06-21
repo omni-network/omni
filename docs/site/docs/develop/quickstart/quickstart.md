@@ -69,18 +69,22 @@ You can obtain RPC URL values and portal addresses for the running devnet chains
 omni devnet info
 ```
 
-And you the private key value is the first anvil private key, found by running:
+And the private key value is the second listed anvil private key, found by running:
 
 ```bash
 anvil
 ```
 
-These values are kept in `./script/bash/.env.example` and are used to deploy the contracts. You can rename the file to `.env` and fill in the values for other networks.
+These values are found in `./script/bash/.env.example` and are used to deploy the contracts. You can rename the file to `.env` and fill in the values for other networks. You don't have to run any of these commands or update the `.env` file if you are following the tutorial steps.
+
+This `.env` file is used by the bash `deploy.sh` script to deploy the contracts. You can otherwise choose to deploy the contracts using only forge on your terminal as shown in this tutorial.
 
 </details>
 
 ```bash
-bash script/bash/deploy.sh
+forge script DeployGlobalGreeter --broadcast --rpc-url http://localhost:8000 --private-key 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
+forge script DeployRollupGreeter --broadcast --rpc-url http://localhost:8001 --private-key 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
+forge script DeployRollupGreeter --broadcast --rpc-url http://localhost:8002 --private-key 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
 ```
 
 ### Step 5: Perform a Cross-Chain Greet
