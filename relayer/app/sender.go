@@ -24,6 +24,7 @@ import (
 
 // Sender uses txmgr to send transactions to the destination chain.
 type Sender struct {
+	network    netconf.ID
 	txMgr      txmgr.TxManager
 	portal     common.Address
 	abi        *abi.ABI
@@ -33,8 +34,13 @@ type Sender struct {
 }
 
 // NewSender creates a new sender that uses txmgr to send transactions to the destination chain.
-func NewSender(chain netconf.Chain, rpcClient ethclient.Client,
-	privateKey ecdsa.PrivateKey, chainNames map[xchain.ChainVersion]string) (Sender, error) {
+func NewSender(
+	network netconf.ID,
+	chain netconf.Chain,
+	rpcClient ethclient.Client,
+	privateKey ecdsa.PrivateKey,
+	chainNames map[xchain.ChainVersion]string,
+) (Sender, error) {
 	// we want to query receipts every 1/3 of the block time
 	cfg, err := txmgr.NewConfig(txmgr.NewCLIConfig(
 		chain.ID,
@@ -60,6 +66,7 @@ func NewSender(chain netconf.Chain, rpcClient ethclient.Client,
 	}
 
 	return Sender{
+		network:    network,
 		txMgr:      txMgr,
 		portal:     chain.PortalAddress,
 		abi:        &parsedAbi,
@@ -112,6 +119,9 @@ func (o Sender) SendTransaction(ctx context.Context, sub xchain.Submission) erro
 	}
 
 	estimatedGas := estimateGas(sub.Msgs)
+	if sub.BlockHeader.SourceChainID == o.network.Static().OmniConsensusChainIDUint64() {
+		estimatedGas = consensusGasLimit(o.network)
+	}
 
 	candidate := txmgr.TxCandidate{
 		TxData:   txData,
@@ -145,6 +155,7 @@ func (o Sender) SendTransaction(ctx context.Context, sub xchain.Submission) erro
 		errAttrs := slices.Concat(receiptAttrs, reqAttrs, []any{
 			"call_resp", hexutil.Encode(resp),
 			"call_err", err,
+			"gas_limit", estimatedGas,
 		})
 
 		revertedSubmissionTotal.WithLabelValues(srcChain, dstChain).Inc()
