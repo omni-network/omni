@@ -4,13 +4,15 @@ import (
 	"slices"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 )
 
 const (
-	subGasBase         uint64 = 500_000
-	subGasXmsgOverhead uint64 = 100_000
-	subGasMax          uint64 = 10_000_000 // Many chains has block gas limit of 30M, so we limit ourselves to 1/3 of that.
+	subGasBase               uint64 = 500_000
+	subGasXmsgOverhead       uint64 = 100_000
+	subGasMax                uint64 = 10_000_000 // Many chains have block gas limit of 30M, so we limit ourselves to 1/3 of that.
+	subEphemeralConsensusGas uint64 = 5_000_000
 )
 
 // estimateGas returns the estimated max gas usage of a submissions using a naive model:
@@ -22,6 +24,22 @@ func estimateGas(msgs []xchain.Msg) uint64 {
 	}
 
 	return resp
+}
+
+// consensusGasLimit returns the gas limit for consensus chain submissions.
+// Consensus chain xmsgs do not have a gas limit, so the above estimateGas doesn't work.
+//
+// For ephemeral chains, we use a fixed very high value.
+// For protected chains, we rely on proper gas estimation.
+//
+// Proper gas estimation for protected chains is ok since real world consensus chain messages are rare,
+// so the multiple-submissions-per-block-gas-estimation-wrong-offset issue isn't a problem.
+func consensusGasLimit(network netconf.ID) uint64 {
+	if network.IsEphemeral() {
+		return subEphemeralConsensusGas
+	}
+
+	return 0 // we return 0, which is the signal to use proper gas estimation
 }
 
 // CreateSubmissions splits the update into multiple submissions that are each small enough (wrt calldata and gas)

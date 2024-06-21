@@ -40,7 +40,7 @@ func AwaitOnChain(ctx context.Context, netID ID, portalRegistry *bindings.Portal
 			continue
 		}
 
-		network := networkFromPortals(netID, portals)
+		network := networkFromPortals(ctx, netID, portals)
 
 		if !containsAll(network, expected) {
 			log.Info(ctx, "XChain registry doesn't contain all expected chains (will retry)", ""+
@@ -71,9 +71,15 @@ func containsAll(network Network, expected []string) bool {
 	return len(want) == 0
 }
 
-func networkFromPortals(network ID, portals []bindings.PortalRegistryDeployment) Network {
+func networkFromPortals(ctx context.Context, network ID, portals []bindings.PortalRegistryDeployment) Network {
 	var chains []Chain
 	for _, portal := range portals {
+		// Ephemeral networks may contain mock portals for testing purposes, just ignore them.
+		if _, ok := evmchain.MetadataByID(portal.ChainId); !ok && network.IsEphemeral() {
+			log.Warn(ctx, "Ignoring epheral network mock portal", nil, "chain_id", portal.ChainId)
+			continue
+		}
+
 		metadata := MetadataByID(network, portal.ChainId)
 		chains = append(chains, Chain{
 			ID:             portal.ChainId,
