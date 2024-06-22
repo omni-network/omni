@@ -147,7 +147,7 @@ var statics = map[ID]Static{
 	},
 	Omega: {
 		Network:              Omega,
-		Version:              "v0.0.1",
+		Version:              "v0.0.2",
 		AVSContractAddress:   testnetAVS,
 		OmniExecutionChainID: evmchain.IDOmniOmega,
 		MaxValidators:        maxValidators,
