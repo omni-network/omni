@@ -40,6 +40,19 @@ func namerCalled(times int) expectation {
 	}
 }
 
+func trimBehindCalled(times int) expectation {
+	return func(_ sdk.Context, m mocks) {
+		m.voter.EXPECT().TrimBehind(gomock.Any()).Times(1).Return(0)
+	}
+}
+
+func activeSetQueried(height uint64) expectation {
+	return func(_ sdk.Context, m mocks) {
+		m.valProvider.EXPECT().ActiveSetByHeight(gomock.Any(), height).
+			Return(newValSet(1, val1, val2, val3), nil)
+	}
+}
+
 func setupKeeper(t *testing.T, expectations ...expectation) (*keeper.Keeper, sdk.Context) {
 	t.Helper()
 
