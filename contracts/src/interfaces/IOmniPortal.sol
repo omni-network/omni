@@ -72,6 +72,11 @@ interface IOmniPortal {
     function xreceiptMaxErrorSize() external view returns (uint16);
 
     /**
+     * @notice Returns the fee oracle address
+     */
+    function feeOracle() external view returns (address);
+
+    /**
      * @notice Returns the chain ID of the chain to which this portal is deployed
      */
     function chainId() external view returns (uint64);

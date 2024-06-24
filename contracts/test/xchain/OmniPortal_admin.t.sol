@@ -227,4 +227,34 @@ contract OmniPortal_admin_Test is Base {
         vm.chainId(thisChainId);
         portal.xsubmit(xsub);
     }
+
+    function test_setInXMsgOffset() public {
+        uint64 srcChainId = 1;
+        uint64 shardId = 1;
+        uint64 offset = 3;
+
+        // only owner
+        vm.expectRevert("Ownable: caller is not the owner");
+        portal.setInXMsgOffset(srcChainId, shardId, offset);
+
+        // set offset
+        vm.prank(owner);
+        portal.setInXMsgOffset(srcChainId, shardId, offset);
+        assertEq(portal.inXMsgOffset(srcChainId, shardId), offset);
+    }
+
+    function test_setInXBlockOffset() public {
+        uint64 srcChainId = 1;
+        uint64 shardId = 1;
+        uint64 offset = 3;
+
+        // only owner
+        vm.expectRevert("Ownable: caller is not the owner");
+        portal.setInXBlockOffset(srcChainId, shardId, offset);
+
+        // set offset
+        vm.prank(owner);
+        portal.setInXBlockOffset(srcChainId, shardId, offset);
+        assertEq(portal.inXBlockOffset(srcChainId, shardId), offset);
+    }
 }
