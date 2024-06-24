@@ -446,6 +446,28 @@ contract OmniPortal is
     //////////////////////////////////////////////////////////////////////////////
 
     /**
+     * @notice Set the inbound xmsg offset for a chain and shard
+     * @param sourceChainId    Source chain ID
+     * @param shardId          Shard ID
+     * @param offset           New xmsg offset
+     */
+    function setInXMsgOffset(uint64 sourceChainId, uint64 shardId, uint64 offset) external onlyOwner {
+        inXMsgOffset[sourceChainId][shardId] = offset;
+        emit InXMsgOffsetSet(sourceChainId, shardId, offset);
+    }
+
+    /**
+     * @notice Set the inbound xblock offset for a chain and shard
+     * @param sourceChainId    Source chain ID
+     * @param shardId          Shard ID
+     * @param offset           New xblock offset
+     */
+    function setInXBlockOffset(uint64 sourceChainId, uint64 shardId, uint64 offset) external onlyOwner {
+        inXBlockOffset[sourceChainId][shardId] = offset;
+        emit InXBlockOffsetSet(sourceChainId, shardId, offset);
+    }
+
+    /**
      * @notice Set the fee oracle
      */
     function setFeeOracle(address feeOracle_) external onlyOwner {
@@ -611,11 +633,8 @@ contract OmniPortal is
      */
     function _setXMsgMinGasLimit(uint64 gasLimit) internal {
         require(gasLimit > 0, "OmniPortal: no zero min gas");
-
-        uint64 oldMin = xmsgMinGasLimit;
         xmsgMinGasLimit = gasLimit;
-
-        emit XMsgMinGasLimitChanged(oldMin, gasLimit);
+        emit XMsgMinGasLimitSet(gasLimit);
     }
 
     /**
@@ -623,11 +642,8 @@ contract OmniPortal is
      */
     function _setXMsgMaxGasLimit(uint64 gasLimit) internal {
         require(gasLimit > 0, "OmniPortal: no zero max gas");
-
-        uint64 oldMax = xmsgMaxGasLimit;
         xmsgMaxGasLimit = gasLimit;
-
-        emit XMsgMaxGasLimitChanged(oldMax, gasLimit);
+        emit XMsgMaxGasLimitSet(gasLimit);
     }
 
     /**
@@ -635,11 +651,8 @@ contract OmniPortal is
      */
     function _setXMsgMaxDataSize(uint16 numBytes) internal {
         require(numBytes > 0, "OmniPortal: no zero max size");
-
-        uint16 oldMax = xmsgMaxDataSize;
         xmsgMaxDataSize = numBytes;
-
-        emit XMsgMaxDataSizeChanged(oldMax, numBytes);
+        emit XMsgMaxDataSizeSet(numBytes);
     }
 
     /**
@@ -647,11 +660,8 @@ contract OmniPortal is
      */
     function _setXReceiptMaxErrorSize(uint16 numBytes) internal {
         require(numBytes > 0, "OmniPortal: no zero max size");
-
-        uint16 oldMax = xreceiptMaxErrorSize;
         xreceiptMaxErrorSize = numBytes;
-
-        emit XReceiptMaxErrorSizeChanged(oldMax, numBytes);
+        emit XReceiptMaxErrorSizeSet(numBytes);
     }
 
     /**
@@ -659,10 +669,7 @@ contract OmniPortal is
      */
     function _setFeeOracle(address feeOracle_) internal {
         require(feeOracle_ != address(0), "OmniPortal: no zero feeOracle");
-
-        address oldFeeOracle = feeOracle;
         feeOracle = feeOracle_;
-
-        emit FeeOracleChanged(oldFeeOracle, feeOracle);
+        emit FeeOracleSet(feeOracle_);
     }
 }
