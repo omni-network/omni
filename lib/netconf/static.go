@@ -110,7 +110,7 @@ func (s Static) ConsensusRPC() string {
 		return "http://localhost:5701"
 	}
 
-	return fmt.Sprintf("https://rpc.consensus.%s.omni.network", s.Network)
+	return fmt.Sprintf("https://consensus.%s.omni.network", s.Network)
 }
 
 // Use random runid for staging version.
