@@ -31,7 +31,8 @@ const (
 	// Omni Predeploys.
 	PortalRegistry   = "0x121E240000000000000000000000000000000001"
 	OmniBridgeNative = "0x121E240000000000000000000000000000000002"
-	EthStakeInbox    = "0x121E240000000000000000000000000000000003"
+	WOmni            = "0x121E240000000000000000000000000000000003"
+	EthStakeInbox    = "0x121E240000000000000000000000000000000004"
 
 	// Octane Predeploys.
 	Staking  = "0xcccccc0000000000000000000000000000000001"
@@ -50,6 +51,7 @@ var (
 	// Predeploy addresses.
 	proxyAdmin     = common.HexToAddress(ProxyAdmin)
 	portalRegistry = common.HexToAddress(PortalRegistry)
+	womni          = common.HexToAddress(WOmni)
 	staking        = common.HexToAddress(Staking)
 	slashing       = common.HexToAddress(Slashing)
 	omniBridge     = common.HexToAddress(OmniBridgeNative)
@@ -58,6 +60,7 @@ var (
 	proxyCode          = hexutil.MustDecode(bindings.TransparentUpgradeableProxyDeployedBytecode)
 	proxyAdminCode     = hexutil.MustDecode(bindings.ProxyAdminDeployedBytecode)
 	portalRegistryCode = hexutil.MustDecode(bindings.PortalRegistryDeployedBytecode)
+	womniCode          = hexutil.MustDecode(bindings.WOmniDeployedBytecode)
 	stakingCode        = hexutil.MustDecode(bindings.StakingDeployedBytecode)
 	slashingCode       = hexutil.MustDecode(bindings.SlashingDeployedBytecode)
 	omniBridgeCode     = hexutil.MustDecode(bindings.OmniBridgeNativeDeployedBytecode)
@@ -81,6 +84,10 @@ func Alloc(network netconf.ID, admin common.Address) (types.GenesisAlloc, error)
 
 	if err := setOmniBridge(db, admin); err != nil {
 		return nil, errors.Wrap(err, "set omni bridge")
+	}
+
+	if err := setWOmni(db); err != nil {
+		return nil, errors.Wrap(err, "set womni")
 	}
 
 	if err := setStaking(db, admin, network.IsProtected()); err != nil {
@@ -126,6 +133,7 @@ func setPortalRegistry(db *state.MemDB, owner common.Address) error {
 	return setPredeploy(db, portalRegistry, portalRegistryCode, bindings.PortalRegistryStorageLayout, storage)
 }
 
+// setOmniBridge sets the OmniBridgeNative predeploy.
 func setOmniBridge(db *state.MemDB, owner common.Address) error {
 	storage := state.StorageValues{
 		"_initialized": uint8(1), // disable initializer
@@ -136,6 +144,13 @@ func setOmniBridge(db *state.MemDB, owner common.Address) error {
 	db.SetBalance(omniBridge, new(big.Int).Mul(big.NewInt(100e6), big.NewInt(1e18)))
 
 	return setPredeploy(db, omniBridge, omniBridgeCode, bindings.OmniBridgeNativeStorageLayout, storage)
+}
+
+// setWOmni sets the WOmni predeploy.
+func setWOmni(db *state.MemDB) error {
+	storage := state.StorageValues{}
+
+	return setPredeploy(db, womni, womniCode, bindings.WOmniStorageLayout, storage)
 }
 
 // setStaking sets the Staking predeploy.
