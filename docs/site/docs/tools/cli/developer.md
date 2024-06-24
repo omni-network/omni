@@ -29,11 +29,11 @@ The `devnet start` command is used to start a local development network. The com
 omni devnet start
 ```
 
-This will start a local development network with a single Omni validator node and Omni EVM, two (rollup) anvil nodes and a relayer node.
+This will start a local development network with a single Omni validator node and Omni EVM, two (rollup) anvil nodes, a relayer node and a cross-chain message explorer UI and graphQL backend. The UI may be accessed at `http://localhost:57017` and the graphiQL interface at `http://localhost:21335`.
 
 All EVM nodes have the same rich accounts as anvils nodes regularly do.
 
-Configuration files are created in `~/.omni/devnet`.
+Configuration files are created in `~/.omni/devnet`. You can view the ports of available services in the `docker-compose.yml` file created in this directory.
 
 ## Get Local Devnet Information
 
