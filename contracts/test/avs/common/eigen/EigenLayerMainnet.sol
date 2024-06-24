@@ -19,8 +19,8 @@ import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
 import { IEigenDeployer } from "./IEigenDeployer.sol";
 import { EigenPodManagerHarness } from "./EigenPodManagerHarness.sol";
 
-import { StrategyParams } from "script/StrategyParams.sol";
-import { EigenM2Deployments } from "script/EigenM2Deployments.sol";
+import { StrategyParams } from "script/avs/StrategyParams.sol";
+import { EigenM2Deployments } from "script/avs/EigenM2Deployments.sol";
 
 import { Test } from "forge-std/Test.sol";
 
