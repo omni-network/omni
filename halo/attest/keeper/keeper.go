@@ -757,9 +757,10 @@ func (k *Keeper) deleteBefore(ctx context.Context, height uint64) error {
 	// Cache latest offset by chain version so we don't delete it.
 	// TODO(corver): Add tests for this.
 	latestByChain := make(map[xchain.ChainVersion]uint64)
+	// Returns the offset of the latest attestation and true if one is found, 0 and false otherwise
 	getLatest := func(chainVer xchain.ChainVersion) (uint64, bool, error) {
 		if latest, ok := latestByChain[chainVer]; ok {
-			return latest, false, nil
+			return latest, true, nil
 		}
 
 		latest, ok, err := k.latestAttestation(ctx, chainVer)
@@ -794,9 +795,10 @@ func (k *Keeper) deleteBefore(ctx context.Context, height uint64) error {
 		// Never delete anything after the last approved attestation offset per chain,
 		// even if it is very old. Otherwise, we could introduce a gap
 		// once we start catching up.
+		// Also, don't delete anything if we don't have an approved attestation yet (leave all pending attestations).
 		if latest, ok, err := getLatest(att.XChainVersion()); err != nil {
 			return err
-		} else if ok && att.GetBlockOffset() >= latest {
+		} else if !ok || att.GetBlockOffset() >= latest {
 			continue
 		}
 

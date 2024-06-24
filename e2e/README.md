@@ -10,8 +10,8 @@ go install github.com/omni-network/omni/e2e
 # Build docker image of the code to test.
 make build-docker
 
-# Run one of the "manifests" in networks/ directory: e2e -f <manifest>
-e2e -f e2e/networks/single.toml
+# Run one of the "manifests" in manifests/ directory: e2e -f <manifest>
+e2e -f e2e/manifests/devnet0.toml
 ```
 
 This creates and runs a testnet named `single` under `e2e/runs/single/`.
