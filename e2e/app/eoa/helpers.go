@@ -14,7 +14,7 @@ import (
 // NOTE: this relies on the fact that we use the same admin account for all "admin" roles.
 func Admin(network netconf.ID) (common.Address, error) {
 	for _, account := range statics[network] {
-		if account.Role == RoleProxyAdminOwner {
+		if account.Role == RoleAdmin {
 			return account.Address, nil
 		}
 	}
