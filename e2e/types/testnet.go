@@ -52,7 +52,7 @@ func (t Testnet) RandomHaloAddr() string {
 // BroadcastOmniEVM returns a Omni EVM to use for e2e app tx broadcasts.
 // It prefers a validator nodes since we have an issue with mempool+p2p+startup where
 // txs get stuck in non-validator mempool immediately after startup if not connected to peers yet.
-// Also avoid validators that are not started immediately.
+// Also avoid validators that are not started immediately or evms with perturbations.
 func (t Testnet) BroadcastOmniEVM() OmniEVM {
 	isDelayed := func(evm string) bool {
 		for _, node := range t.Nodes {
@@ -64,8 +64,23 @@ func (t Testnet) BroadcastOmniEVM() OmniEVM {
 		return false
 	}
 
+	hasPerturbation := func(evm string) bool {
+		for service := range t.Perturb {
+			if evm == service {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	isValidator := func(evm string) bool {
+		return strings.Contains(evm, "validator")
+	}
+
 	for _, evm := range t.OmniEVMs {
-		if strings.Contains(evm.InstanceName, "validator") && !isDelayed(evm.InstanceName) {
+		instance := evm.InstanceName
+		if isValidator(instance) && !isDelayed(instance) && !hasPerturbation(instance) {
 			return evm
 		}
 	}
