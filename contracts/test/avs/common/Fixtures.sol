@@ -16,7 +16,7 @@ import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
 import { OmniAVS } from "src/avs/OmniAVS.sol";
 
 import { Create3 } from "src/deploy/Create3.sol";
-import { DeployAVS as MainnetAVS } from "script/DeployAVS.sol";
+import { DeployAVS as MainnetAVS } from "script/avs/DeployAVS.sol";
 import { HoleskyAVS } from "./HoleskyAVS.sol";
 import { StrategyParams } from "./StrategyParams.sol";
 import { MockOmniPredeploys } from "test/utils/MockOmniPredeploys.sol";
