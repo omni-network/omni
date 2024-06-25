@@ -18,8 +18,8 @@ func MainnetAVS() common.Address {
 	return common.HexToAddress("0xed2f4d90b073128ae6769a9A8D51547B1Df766C8")
 }
 
-func TestnetAVS() common.Address {
-	return create3.Address(TestnetCreate3Factory(), AVSSalt(netconf.Omega), eoa.MustAddress(netconf.Omega, eoa.RoleDeployer))
+func OmegaAVS() common.Address {
+	return common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
 }
 
 func StagingAVS() common.Address {
