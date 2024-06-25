@@ -19,6 +19,7 @@ func MainnetAVS() common.Address {
 }
 
 func OmegaAVS() common.Address {
+	// This address was deployed outside of the e2e deployment flow, without Create3.
 	return common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
 }
 
