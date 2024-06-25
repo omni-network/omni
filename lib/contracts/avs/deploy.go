@@ -122,7 +122,7 @@ func testnetCfg() DeploymentConfig {
 		MinOperatorStake: big.NewInt(1e18), // 1 ETH
 		MaxOperatorCount: 200,
 		AllowlistEnabled: false,
-		ExpectedAddr:     contracts.TestnetAVS(),
+		ExpectedAddr:     contracts.OmegaAVS(),
 	}
 }
 
@@ -171,7 +171,7 @@ func AddrForNetwork(network netconf.ID) (common.Address, bool) {
 	case netconf.Mainnet:
 		return contracts.MainnetAVS(), true
 	case netconf.Omega:
-		return contracts.TestnetAVS(), true
+		return contracts.OmegaAVS(), true
 	case netconf.Staging:
 		return contracts.StagingAVS(), true
 	case netconf.Devnet:

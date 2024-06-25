@@ -180,6 +180,6 @@ func TestAddrs(t *testing.T) {
 		require.Equal(t, contracts.TestnetPortal(), deployment.Address)
 	}
 
-	// require.Equal(t, contracts.TestnetAVS(), netconf.Omega.Static().AVSContractAddress)
+	require.Equal(t, contracts.OmegaAVS(), netconf.Omega.Static().AVSContractAddress)
 	require.Equal(t, contracts.MainnetAVS(), netconf.Mainnet.Static().AVSContractAddress)
 }
