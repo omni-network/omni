@@ -140,11 +140,19 @@ func sortedKeys[T any](m map[string]T) []string {
 func TestConsensusSeeds(t *testing.T) {
 	t.Parallel()
 
-	require.Empty(t, netconf.Omega.Static().ConsensusSeeds())
+	seeds := netconf.Omega.Static().ConsensusSeeds()
+	require.Len(t, seeds, 2)
+	for _, seed := range seeds {
+		require.NotEmpty(t, seed)
+		parts := strings.Split(seed, "@")
+		require.Len(t, parts, 2)
+		require.NotEmpty(t, parts[0])
+		require.NotEmpty(t, parts[1])
+		t.Logf("Consensus Seed: %s", seed)
+	}
 }
 
 func TestExecutionSeeds(t *testing.T) {
-	t.Skip("testnet shutdown at the moment")
 	t.Parallel()
 
 	seeds := netconf.Omega.Static().ExecutionSeeds()

@@ -13,6 +13,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/google/uuid"
+
+	_ "embed"
 )
 
 const consensusIDPrefix = "omni-"
@@ -124,6 +126,18 @@ var (
 	omegaAVS    = common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
 	mainnetAVS  = common.HexToAddress("0xed2f4d90b073128ae6769a9A8D51547B1Df766C8")
 	omegaPortal = common.HexToAddress("0x023F42795b245924f110dba51C486888836fb54b")
+
+	//go:embed omega/consensus-genesis.json
+	omegaConsensusGenesisJSON []byte
+
+	//go:embed omega/consensus-seeds.txt
+	omegaConsensusSeedsTXT []byte
+
+	//go:embed omega/execution-genesis.json
+	omegaExecutionGenesisJSON []byte
+
+	//go:embed omega/execution-seeds.txt
+	omegaExecutionSeedsTXT []byte
 )
 
 //nolint:gochecknoglobals // Static mappings.
@@ -157,6 +171,10 @@ var statics = map[ID]Static{
 			{ChainID: evmchain.IDOpSepolia, Address: omegaPortal, DeployHeight: 13720175},
 			{ChainID: evmchain.IDArbSepolia, Address: omegaPortal, DeployHeight: 58215316},
 		},
+		ConsensusGenesisJSON: omegaConsensusGenesisJSON,
+		ConsensusSeedTXT:     omegaConsensusSeedsTXT,
+		ExecutionGenesisJSON: omegaExecutionGenesisJSON,
+		ExecutionSeedTXT:     omegaExecutionSeedsTXT,
 	},
 	Mainnet: {
 		Network:            Mainnet,
