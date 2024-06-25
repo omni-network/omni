@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"math/big"
+	"slices"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings/examples"
@@ -166,10 +167,12 @@ func (d *XDapp) StartAllEdges(ctx context.Context, latest, parallel, count uint6
 			"count", count,
 		)
 
+		shards := from.Chain.Shards
 		for i := uint64(0); i < parallel; i++ {
 			// First are latest, rest is finalized
 			conf := xchain.ConfFinalized
-			if i < latest {
+			// Only use latest shard if the chain has it and "latest" is enabled (i.e. not 0)
+			if slices.Contains(shards, xchain.ShardLatest0) && i < latest {
 				conf = xchain.ConfLatest
 			}
 
