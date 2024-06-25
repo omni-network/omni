@@ -21,19 +21,9 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-// TxError is a typed error for transaction errors.
-type TxError string
-
-func (e TxError) Error() string {
-	return string(e)
-}
-
 const (
 	// PriceBump geth requires a minimum fee bump of 10% for regular tx resubmission.
 	PriceBump int64 = 10
-
-	// ErrIntrinsicGasTooLow is the error message returned by json-rpc when the intrinsic gas is too low.
-	ErrIntrinsicGasTooLow TxError = "intrinsic gas too low"
 )
 
 // TxManager is an interface that allows callers to reliably publish txs,
@@ -372,7 +362,7 @@ func (m *simple) publishTx(ctx context.Context, tx *types.Transaction, sendState
 		case errStringMatch(err, txpool.ErrUnderpriced):
 			log.Warn(ctx, "Transaction is underpriced", err)
 			continue // retry with fee bump
-		case errStringMatch(err, ErrIntrinsicGasTooLow):
+		case errStringMatch(err, core.ErrIntrinsicGas):
 			log.Warn(ctx, "Intrinsic gas too low", err)
 			continue // retry with fee bump
 		default:
