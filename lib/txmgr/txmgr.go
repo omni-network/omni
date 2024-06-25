@@ -21,9 +21,19 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
+// TxError is a typed error for transaction errors.
+type TxError string
+
+func (e TxError) Error() string {
+	return string(e)
+}
+
 const (
 	// PriceBump geth requires a minimum fee bump of 10% for regular tx resubmission.
 	PriceBump int64 = 10
+
+	// ErrIntrinsicGasTooLow is the error message returned by json-rpc when the intrinsic gas is too low.
+	ErrIntrinsicGasTooLow TxError = "intrinsic gas too low"
 )
 
 // TxManager is an interface that allows callers to reliably publish txs,
@@ -315,8 +325,7 @@ func (m *simple) sendTx(ctx context.Context, tx *types.Transaction) (*types.Rece
 // publishTx publishes the transaction to the transaction pool. If it receives any underpriced errors
 // it will bump the fees and retry.
 // Returns the latest fee bumped tx, and a boolean indicating whether the tx was sent or not.
-func (m *simple) publishTx(ctx context.Context, tx *types.Transaction, sendState *SendState,
-	bumpFeesImmediately bool) (*types.Transaction, bool) {
+func (m *simple) publishTx(ctx context.Context, tx *types.Transaction, sendState *SendState, bumpFeesImmediately bool) (*types.Transaction, bool) {
 	for {
 		if ctx.Err() != nil {
 			return tx, false
@@ -348,6 +357,8 @@ func (m *simple) publishTx(ctx context.Context, tx *types.Transaction, sendState
 			return tx, true
 		}
 
+		// Handle known errors. The errors are returned by json-rpc and therefore we
+		// can't rely on the error type and need to compare the error message instead.
 		switch {
 		case errStringMatch(err, core.ErrNonceTooLow):
 			log.Warn(ctx, "Nonce too low", err)
@@ -361,8 +372,11 @@ func (m *simple) publishTx(ctx context.Context, tx *types.Transaction, sendState
 		case errStringMatch(err, txpool.ErrUnderpriced):
 			log.Warn(ctx, "Transaction is underpriced", err)
 			continue // retry with fee bump
+		case errStringMatch(err, ErrIntrinsicGasTooLow):
+			log.Warn(ctx, "Intrinsic gas too low", err)
+			continue // retry with fee bump
 		default:
-			log.Warn(ctx, "Unknown error publishing transaction", err)
+			log.Error(ctx, "Unknown error publishing transaction", err)
 		}
 
 		// on non-underpriced error return immediately; will retry on next resubmission timeout
