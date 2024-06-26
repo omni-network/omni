@@ -77,6 +77,18 @@ contract OmniBridgeNative is OwnableUpgradeable {
      */
     mapping(address => uint256) public claimable;
 
+    function initialize(address owner_) external initializer {
+        __Ownable_init();
+        _transferOwnership(owner_);
+    }
+
+    /**
+     * @dev Exposed to allow disabling initializers in predeployed implementations in AllocPredeploys.
+     */
+    function disableInitializers() external {
+        _disableInitializers();
+    }
+
     /**
      * @notice Withdraw `amount` native OMNI to `to`. Only callable via xcall from OmniBridgeL1.
      */

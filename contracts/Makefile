@@ -20,14 +20,13 @@ build: version ## Build contracts.
 
 
 CONTRACTS := OmniPortal FeeOracleV1 OmniAVS Create3 TransparentUpgradeableProxy Staking Slashing OmniBridgeL1 OmniBridgeNative Omni WOmni \
-			DelegationManager StrategyManager StrategyBase AVSDirectory PortalRegistry \
+			DelegationManager StrategyManager StrategyBase AVSDirectory PortalRegistry AllocPredeploys \
 			src/deploy/ProxyAdmin.sol:ProxyAdmin \
 			test/avs/common/MockERC20.sol:MockERC20
 
 .PHONY: bindings
 bindings: check-abigen-version build ## Generate golang contract bindings.
 	./bindings/scripts/gen.sh $(CONTRACTS)
-	./bindings/scripts/genmore.sh Create3 TransparentUpgradeableProxy src/deploy/ProxyAdmin.sol:ProxyAdmin PortalRegistry Staking Slashing OmniBridgeNative WOmni
 	go run ./bindings/scripts/commenttypes.go -- bindings/strategymanager.go IStrategyManagerDeprecatedStructQueuedWithdrawal IStrategyManagerDeprecatedStructWithdrawerAndNonce
 	go run ./bindings/scripts/commenttypes.go -- bindings/avsdirectory.go ISignatureUtilsSignatureWithSaltAndExpiry
 
@@ -35,10 +34,13 @@ bindings: check-abigen-version build ## Generate golang contract bindings.
 examples-bindings: check-abigen-version build ## Generate golang contract bindings for example contracts
 	PKG=examples DIR=./bindings/examples ./bindings/scripts/gen.sh PingPong
 
+.PHONY: allocs
+allocs:
+	go run ./allocs/scripts/genallocs.go
+
 .PHONY: deploy-eigenlayer-save-anvil-state
 deploy-eigenlayer-save-anvil-state: ## Deploy eigenlayer contracts and dump anvil state.
 	./script/eigen/deploy-eigenlayer-save-anvil-state.sh
-
 
 .PHONY: avs-fork-test
 avs-fork-test: ## Run AVS tests againts a local fork.

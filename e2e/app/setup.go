@@ -66,11 +66,7 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	}
 
 	// Setup geth execution genesis
-	admin, err := eoa.Admin(def.Testnet.Network)
-	if err != nil {
-		return errors.Wrap(err, "admin")
-	}
-	gethGenesis, err := evmgenutil.MakeGenesis(def.Manifest.Network, admin)
+	gethGenesis, err := evmgenutil.MakeGenesis(def.Manifest.Network)
 	if err != nil {
 		return errors.Wrap(err, "make genesis")
 	}
