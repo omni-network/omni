@@ -63,7 +63,7 @@ func (c Client) Sign(ctx context.Context, digest common.Hash, signer common.Addr
 	}
 
 	// Then poll every QueryInterval
-	queryTicker := time.NewTicker(c.opts.QueryInterval)
+	queryTicker := time.NewTicker(c.cfg.QueryInterval)
 	defer queryTicker.Stop()
 
 	var attempt int
@@ -83,7 +83,7 @@ func (c Client) Sign(ctx context.Context, digest common.Hash, signer common.Addr
 			prevStatus = status
 
 			attempt++
-			if attempt%c.opts.LogFreqFactor == 0 {
+			if attempt%c.cfg.LogFreqFactor == 0 {
 				log.Warn(ctx, "Fireblocks transaction not signed yet (will retry)", nil,
 					"attempt", attempt,
 					"status", status,
@@ -148,6 +148,6 @@ func (c Client) newRawSignRequest(account uint64, digest common.Hash) createTran
 				}},
 			},
 		},
-		Note: c.opts.SignNote,
+		Note: c.cfg.SignNote,
 	}
 }

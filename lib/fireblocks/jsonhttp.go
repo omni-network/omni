@@ -29,7 +29,7 @@ func newJSONHTTP(host string, apiKey string) jsonHTTP {
 // Send sends an JSON HTTP request with the json formatted request as body.
 // If the response status code is 2XX, it marshals the response body into the response pointer and returns true.
 // Else, it marshals the response body into the errResponse pointer and returns false.
-func (c jsonHTTP) Send(ctx context.Context, uri string, httpMethod string, request any, headers map[string]string, response any, errResponse any) (bool, error) {
+func (c jsonHTTP) Send(ctx context.Context, uri string, httpMethod string, request any, headers map[string]string, response any, errResponse *errorResponse) (bool, error) {
 	endpoint, err := url.Parse(c.host + uri)
 	if err != nil {
 		return false, errors.Wrap(err, "parse")
@@ -68,8 +68,22 @@ func (c jsonHTTP) Send(ctx context.Context, uri string, httpMethod string, reque
 		return false, errors.Wrap(err, "read response body")
 	}
 
-	if resp.StatusCode/100 != 2 { //nolint:usestdlibvars // False positive.
+	if resp.StatusCode/100 != 2 { //nolint:usestdlibvars,nestif // False positive.
 		if errResponse != nil {
+			// When rate limited, Fireblocks returns http body and not JSON.
+			if resp.StatusCode == http.StatusTooManyRequests {
+				errResponse.Message = "rate limited"
+				errResponse.Code = resp.StatusCode
+
+				return false, nil
+			}
+
+			if resp.Header.Get("Content-Type") != "application/json" {
+				errResponse.Code = resp.StatusCode
+
+				return false, errors.New("non-JSON error response", "status code", resp.StatusCode, "body", string(respBytes))
+			}
+
 			err = json.Unmarshal(respBytes, errResponse)
 			if err != nil {
 				return false, errors.Wrap(err, "unmarshal error response", "status code", resp.StatusCode, "body", string(respBytes))
