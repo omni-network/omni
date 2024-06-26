@@ -28,7 +28,7 @@ const (
 
 // Client is a JSON HTTP client for the FireBlocks API.
 type Client struct {
-	opts       options
+	cfg        Config
 	apiKey     string
 	network    netconf.ID
 	privateKey *rsa.PrivateKey
@@ -37,7 +37,7 @@ type Client struct {
 }
 
 // New creates a new FireBlocks client.
-func New(network netconf.ID, apiKey string, privateKey *rsa.PrivateKey, opts ...func(*options)) (Client, error) {
+func New(network netconf.ID, apiKey string, privateKey *rsa.PrivateKey, opts ...Option) (Client, error) {
 	if apiKey == "" {
 		return Client{}, errors.New("apiKey is required")
 	}
@@ -45,20 +45,20 @@ func New(network netconf.ID, apiKey string, privateKey *rsa.PrivateKey, opts ...
 		return Client{}, errors.New("privateKey is required")
 	}
 
-	o := defaultOptions()
+	cfg := defaultConfig()
 	for _, opt := range opts {
-		opt(&o)
+		opt(&cfg)
 	}
-	if err := o.check(); err != nil {
+	if err := cfg.check(); err != nil {
 		return Client{}, errors.Wrap(err, "options check")
 	}
 
 	return Client{
 		apiKey:     apiKey,
 		privateKey: privateKey,
-		jsonHTTP:   newJSONHTTP(o.Host, apiKey),
-		opts:       o,
-		cache:      newAccountCache(o.TestAccounts),
+		jsonHTTP:   newJSONHTTP(cfg.Host, apiKey),
+		cfg:        cfg,
+		cache:      newAccountCache(cfg.TestAccounts),
 		network:    network,
 	}, nil
 }

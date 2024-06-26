@@ -8,8 +8,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// options houses parameters for altering the behavior of a SimpleTxManager.
-type options struct {
+// Config houses parameters for altering the behavior of a SimpleTxManager.
+type Config struct {
 	// NetworkTimeout is the allowed duration for a single network request.
 	// This is intended to be used for network requests that can be replayed.
 	NetworkTimeout time.Duration
@@ -33,9 +33,12 @@ type options struct {
 	TestAccounts map[common.Address]uint64
 }
 
-// defaultOptions returns a options with default values.
-func defaultOptions() options {
-	return options{
+// Option is a function that modifies the Config.
+type Option func(*Config)
+
+// defaultConfig returns a config with default values.
+func defaultConfig() Config {
+	return Config{
 		NetworkTimeout: time.Duration(30) * time.Second,
 		QueryInterval:  time.Second,
 		LogFreqFactor:  10,
@@ -45,38 +48,38 @@ func defaultOptions() options {
 	}
 }
 
-func WithQueryInterval(interval time.Duration) func(*options) {
-	return func(cfg *options) {
+func WithQueryInterval(interval time.Duration) Option {
+	return func(cfg *Config) {
 		cfg.QueryInterval = interval
 	}
 }
 
-func WithLogFreqFactor(factor int) func(*options) {
-	return func(cfg *options) {
+func WithLogFreqFactor(factor int) Option {
+	return func(cfg *Config) {
 		cfg.LogFreqFactor = factor
 	}
 }
 
-func WithTestAccount(addr common.Address, accID uint64) func(*options) {
-	return func(cfg *options) {
+func WithTestAccount(addr common.Address, accID uint64) Option {
+	return func(cfg *Config) {
 		cfg.TestAccounts[addr] = accID
 	}
 }
 
-func WithHost(host string) func(*options) {
-	return func(cfg *options) {
+func WithHost(host string) Option {
+	return func(cfg *Config) {
 		cfg.Host = host
 	}
 }
 
-func WithSignNote(note string) func(*options) {
-	return func(cfg *options) {
+func WithSignNote(note string) Option {
+	return func(cfg *Config) {
 		cfg.SignNote = note
 	}
 }
 
 // check validates the options.
-func (c options) check() error {
+func (c Config) check() error {
 	if c.LogFreqFactor <= 0 {
 		return errors.New("must provide LogFreqFactor")
 	}

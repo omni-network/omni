@@ -183,9 +183,11 @@ func newBackends(ctx context.Context, cfg DefinitionConfig, testnet types.Testne
 		return ethbackend.Backends{}, errors.Wrap(err, "load fireblocks key")
 	}
 
-	fireCl, err := fireblocks.New(testnet.Network, cfg.FireAPIKey, key,
+	opts := []fireblocks.Option{
 		fireblocks.WithSignNote(fmt.Sprintf("omni e2e %s %s", commandName, testnet.Network)),
-	)
+		fireblocks.WithQueryInterval(5 * time.Second), // If we retry too often we get rate limited.
+	}
+	fireCl, err := fireblocks.New(testnet.Network, cfg.FireAPIKey, key, opts...)
 	if err != nil {
 		return ethbackend.Backends{}, errors.Wrap(err, "new fireblocks")
 	}
