@@ -121,9 +121,8 @@ var runid = uuid.New().String()
 //nolint:gochecknoglobals // Static addresses
 var (
 	// Address matches lib/contracts. We do not import to avoid cylic dependencies. Equivalence asserted in tests.
-	omegaAVS    = common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
-	mainnetAVS  = common.HexToAddress("0xed2f4d90b073128ae6769a9A8D51547B1Df766C8")
-	omegaPortal = common.HexToAddress("0x023F42795b245924f110dba51C486888836fb54b")
+	omegaAVS   = common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
+	mainnetAVS = common.HexToAddress("0xed2f4d90b073128ae6769a9A8D51547B1Df766C8")
 )
 
 //nolint:gochecknoglobals // Static mappings.
@@ -148,15 +147,11 @@ var statics = map[ID]Static{
 	},
 	Omega: {
 		Network:              Omega,
-		Version:              "v0.0.2",
+		Version:              "v0.0.3",
 		AVSContractAddress:   omegaAVS,
 		OmniExecutionChainID: evmchain.IDOmniOmega,
 		MaxValidators:        maxValidators,
-		Portals: []Deployment{
-			{ChainID: evmchain.IDHolesky, Address: omegaPortal, DeployHeight: 1799863},
-			{ChainID: evmchain.IDOpSepolia, Address: omegaPortal, DeployHeight: 13720175},
-			{ChainID: evmchain.IDArbSepolia, Address: omegaPortal, DeployHeight: 58215316},
-		},
+		Portals:              []Deployment{},
 	},
 	Mainnet: {
 		Network:            Mainnet,

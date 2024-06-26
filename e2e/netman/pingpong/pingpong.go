@@ -26,6 +26,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+const startPingPongEdgesTimeout = 15 * time.Minute
+
 // XDapp defines the deployed pingpong contract xdapp.
 // The XDapp is graph of ping pong pairs that connects all chains to all chains.
 // So given a network of N chains (vertexes), there will be N! pairs (edges).
@@ -155,6 +157,8 @@ func (d *XDapp) fund(ctx context.Context) error {
 // StartAllEdges starts <parallel> ping pongs for all edges, each doing <count> hops.
 func (d *XDapp) StartAllEdges(ctx context.Context, latest, parallel, count uint64) error {
 	log.Info(ctx, "Starting ping pong contracts")
+	ctx, cancel := context.WithTimeout(ctx, startPingPongEdgesTimeout)
+	defer cancel()
 	eg, ctx := errgroup.WithContext(ctx)
 	for _, edge := range d.edges {
 		from := d.contracts[edge.From]
@@ -163,8 +167,10 @@ func (d *XDapp) StartAllEdges(ctx context.Context, latest, parallel, count uint6
 		log.Debug(ctx, "Starting ping pong contract",
 			"from", from.Chain.Name,
 			"to", to.Chain.Name,
+			"from_chain_id", from.Chain.ChainID,
 			"parallel", parallel,
 			"count", count,
+			"shards", from.Chain.Shards,
 		)
 
 		shards := from.Chain.Shards
@@ -188,6 +194,7 @@ func (d *XDapp) StartAllEdges(ctx context.Context, latest, parallel, count uint6
 					return errors.Wrap(err, "start ping pong", "id", id, "from", from.Chain.Name, "to", to.Chain.Name, "conf", conf)
 				}
 
+				log.Debug(ctx, "Wait for tx to be mined", "id", id, "from", from.Chain.Name, "to", to.Chain.Name, "tx", tx.Hash(), "addr", to.Address.Hex())
 				if _, err := bind.WaitMined(ctx, backend, tx); err != nil {
 					return errors.Wrap(err, "wait mined", "chain", from.Chain.Name, "tx", tx.Hash())
 				}
@@ -197,6 +204,7 @@ func (d *XDapp) StartAllEdges(ctx context.Context, latest, parallel, count uint6
 		}
 	}
 
+	log.Debug(ctx, "Waiting for all ping pong edges to start", "timeout", startPingPongEdgesTimeout)
 	if err := eg.Wait(); err != nil {
 		return errors.Wrap(err, "wait parallel start")
 	}
