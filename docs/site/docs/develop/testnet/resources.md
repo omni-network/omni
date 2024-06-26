@@ -20,6 +20,7 @@ Fields will be updated soon.
 | Ethereum Holesky |    `17000`    | [See ChainList Page](https://chainlist.org/chain/17000) |
 | Arbitrum Sepolia |   `421614`      | `https://sepolia-rollup.arbitrum.io/rpc` |
 | Optimism Sepolia |    `11155420`    | `https://sepolia.optimism.io` |
+| Base Sepolia |    `84532`    | `https://sepolia.base.org` |
 
 ## Addresses
 
@@ -48,3 +49,4 @@ Precompiles on the Omni EVM are equivalent to the Ethereum EVM precompiles.
 | Ethereum Holesky       | https://holesky.etherscan.io/ |
 | Arbitrum Sepolia       | https://sepolia.arbiscan.io/ |
 | Optimism Sepolia       | https://sepolia-optimism.etherscan.io/ |
+| Base Sepolia           | https://sepolia.basescan.org/ |
