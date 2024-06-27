@@ -54,6 +54,8 @@ func (c Client) Sign(ctx context.Context, digest common.Hash, signer common.Addr
 		return [65]byte{}, errors.Wrap(err, "create raw sign tx")
 	}
 
+	log.Debug(ctx, "Created new req_id", "sender", signer, "id", id)
+
 	// First try immediately.
 	resp, status, err := c.maybeGetSignature(ctx, id, digest, signer)
 	if err != nil {
@@ -85,6 +87,7 @@ func (c Client) Sign(ctx context.Context, digest common.Hash, signer common.Addr
 			attempt++
 			if attempt%c.cfg.LogFreqFactor == 0 {
 				log.Warn(ctx, "Fireblocks transaction not signed yet (will retry)", nil,
+					"sender", signer,
 					"attempt", attempt,
 					"status", status,
 					"id", id,
