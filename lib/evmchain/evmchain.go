@@ -17,10 +17,11 @@ const (
 	IDOmniMainnet uint64 = 166
 
 	// Testnets.
-	IDOmniOmega  uint64 = 164
-	IDHolesky    uint64 = 17000
-	IDArbSepolia uint64 = 421614
-	IDOpSepolia  uint64 = 11155420
+	IDOmniOmega   uint64 = 164
+	IDHolesky     uint64 = 17000
+	IDArbSepolia  uint64 = 421614
+	IDOpSepolia   uint64 = 11155420
+	IDBaseSepolia uint64 = 84532
 
 	// Ephemeral.
 	IDOmniEphemeral uint64 = 1651
@@ -92,6 +93,13 @@ var static = map[uint64]Metadata{
 	IDOpSepolia: {
 		ChainID:     IDOpSepolia,
 		Name:        "op_sepolia",
+		BlockPeriod: 2 * time.Second,
+		NativeToken: tokens.ETH,
+		IsL2:        true,
+	},
+	IDBaseSepolia: {
+		ChainID:     IDBaseSepolia,
+		Name:        "base_sepolia",
 		BlockPeriod: 2 * time.Second,
 		NativeToken: tokens.ETH,
 		IsL2:        true,
