@@ -52,7 +52,7 @@ func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) 
 	}
 
 	if network == netconf.Omega {
-		return testnetCfg(), nil
+		return omegaCfg(), nil
 	}
 
 	if network == netconf.Staging {
@@ -72,13 +72,13 @@ func mainnetCfg() DeploymentConfig {
 	}
 }
 
-func testnetCfg() DeploymentConfig {
+func omegaCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory: contracts.TestnetCreate3Factory(),
+		Create3Factory: contracts.OmegaCreate3Factory(),
 		Create3Salt:    contracts.ProxyAdminSalt(netconf.Omega),
 		Owner:          eoa.MustAddress(netconf.Omega, eoa.RoleAdmin),
 		Deployer:       eoa.MustAddress(netconf.Omega, eoa.RoleDeployer),
-		ExpectedAddr:   contracts.TestnetProxyAdmin(),
+		ExpectedAddr:   contracts.OmegaProxyAdmin(),
 	}
 }
 
@@ -107,7 +107,7 @@ func AddrForNetwork(network netconf.ID) (common.Address, bool) {
 	case netconf.Mainnet:
 		return contracts.MainnetProxyAdmin(), true
 	case netconf.Omega:
-		return contracts.TestnetProxyAdmin(), true
+		return contracts.OmegaProxyAdmin(), true
 	case netconf.Staging:
 		return contracts.StagingProxyAdmin(), true
 	case netconf.Devnet:

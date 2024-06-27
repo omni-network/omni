@@ -134,11 +134,11 @@ func mainnetCfg() DeploymentConfig {
 
 func omegaCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory:        contracts.TestnetCreate3Factory(),
+		Create3Factory:        contracts.OmegaCreate3Factory(),
 		Create3Salt:           contracts.PortalSalt(netconf.Omega),
 		Owner:                 eoa.MustAddress(netconf.Omega, eoa.RoleAdmin),
 		Deployer:              eoa.MustAddress(netconf.Omega, eoa.RoleDeployer),
-		ProxyAdmin:            contracts.TestnetProxyAdmin(),
+		ProxyAdmin:            contracts.OmegaProxyAdmin(),
 		OmniChainID:           netconf.Omega.Static().OmniExecutionChainID,
 		OmniCChainID:          netconf.Omega.Static().OmniConsensusChainIDUint64(),
 		XMsgMinGasLimit:       XMsgMinGasLimit,
@@ -147,7 +147,7 @@ func omegaCfg() DeploymentConfig {
 		CChainXMsgOffset:      GenesisCChainXMsgOffset,
 		CChainXBlockOffset:    GenesisCChainXBlockOffset,
 		XReceiptMaxErrorBytes: XReceiptMaxErrorBytes,
-		ExpectedAddr:          contracts.TestnetPortal(),
+		ExpectedAddr:          contracts.OmegaPortal(),
 	}
 }
 
@@ -194,7 +194,7 @@ func AddrForNetwork(network netconf.ID) (common.Address, bool) {
 	case netconf.Mainnet:
 		return contracts.MainnetPortal(), true
 	case netconf.Omega:
-		return contracts.TestnetPortal(), true
+		return contracts.OmegaPortal(), true
 	case netconf.Staging:
 		return contracts.StagingPortal(), true
 	case netconf.Devnet:

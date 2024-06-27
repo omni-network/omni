@@ -39,7 +39,7 @@ func MainnetCreate3Factory() common.Address {
 	return crypto.CreateAddress(eoa.MustAddress(netconf.Mainnet, eoa.RoleCreate3Deployer), 0)
 }
 
-func TestnetCreate3Factory() common.Address {
+func OmegaCreate3Factory() common.Address {
 	return crypto.CreateAddress(eoa.MustAddress(netconf.Omega, eoa.RoleCreate3Deployer), 0)
 }
 
@@ -59,8 +59,8 @@ func MainnetPortal() common.Address {
 	return create3.Address(MainnetCreate3Factory(), PortalSalt(netconf.Mainnet), eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer))
 }
 
-func TestnetPortal() common.Address {
-	return create3.Address(TestnetCreate3Factory(), PortalSalt(netconf.Omega), eoa.MustAddress(netconf.Omega, eoa.RoleDeployer))
+func OmegaPortal() common.Address {
+	return create3.Address(OmegaCreate3Factory(), PortalSalt(netconf.Omega), eoa.MustAddress(netconf.Omega, eoa.RoleDeployer))
 }
 
 func StagingPortal() common.Address {
@@ -76,7 +76,7 @@ func Portal(network netconf.ID) (common.Address, bool) {
 	case netconf.Mainnet:
 		return MainnetPortal(), true
 	case netconf.Omega:
-		return TestnetPortal(), true
+		return OmegaPortal(), true
 	case netconf.Staging:
 		return StagingPortal(), true
 	case netconf.Devnet:
@@ -94,8 +94,8 @@ func MainnetProxyAdmin() common.Address {
 	return create3.Address(MainnetCreate3Factory(), ProxyAdminSalt(netconf.Mainnet), eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer))
 }
 
-func TestnetProxyAdmin() common.Address {
-	return create3.Address(TestnetCreate3Factory(), ProxyAdminSalt(netconf.Omega), eoa.MustAddress(netconf.Omega, eoa.RoleDeployer))
+func OmegaProxyAdmin() common.Address {
+	return create3.Address(OmegaCreate3Factory(), ProxyAdminSalt(netconf.Omega), eoa.MustAddress(netconf.Omega, eoa.RoleDeployer))
 }
 
 func StagingProxyAdmin() common.Address {

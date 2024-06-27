@@ -96,7 +96,7 @@ func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) 
 	}
 
 	if network == netconf.Omega {
-		return testnetCfg(), nil
+		return omegaCfg(), nil
 	}
 
 	if network == netconf.Staging {
@@ -106,18 +106,18 @@ func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) 
 	return DeploymentConfig{}, errors.New("unsupported chain for network", "chain_id", chainID, "network", network)
 }
 
-func testnetCfg() DeploymentConfig {
+func omegaCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory:   contracts.TestnetCreate3Factory(),
+		Create3Factory:   contracts.OmegaCreate3Factory(),
 		Create3Salt:      contracts.AVSSalt(netconf.Omega),
 		Deployer:         eoa.MustAddress(netconf.Omega, eoa.RoleDeployer),
 		Owner:            eoa.MustAddress(netconf.Omega, eoa.RoleAdmin),
-		ProxyAdmin:       contracts.TestnetProxyAdmin(),
+		ProxyAdmin:       contracts.OmegaProxyAdmin(),
 		Eigen:            holeskyEigenDeployments(),
 		StrategyParams:   holeskyStrategyParams(),
 		MetadataURI:      metadataURI,
 		OmniChainID:      netconf.Omega.Static().OmniExecutionChainID,
-		Portal:           contracts.TestnetPortal(),
+		Portal:           contracts.OmegaPortal(),
 		EthStakeInbox:    stubEthStakeInbox,
 		MinOperatorStake: big.NewInt(1e18), // 1 ETH
 		MaxOperatorCount: 200,
