@@ -81,6 +81,12 @@ func (m *simple) ReserveNextNonce(ctx context.Context) (uint64, error) {
 		if err != nil {
 			return 0, errors.Wrap(err, "failed to get nonce")
 		}
+
+		log.Debug(ctx, "Txmgr reset nonce",
+			"chainID", m.chainID,
+			"sender", m.cfg.From,
+			"newNonce", nonce,
+		)
 		m.nonce = &nonce
 	}
 
@@ -197,6 +203,8 @@ func (m *simple) craftTx(ctx context.Context, candidate TxCandidate) (*types.Tra
 	if candidate.Nonce == nil {
 		return nil, errors.New("invalid nil nonce")
 	}
+
+	log.Debug(ctx, "Crafting tx ", "sender", m.cfg.From, "nonce", candidate.Nonce)
 
 	gasTipCap, baseFee, err := m.suggestGasPriceCaps(ctx)
 	if err != nil {
