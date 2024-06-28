@@ -18,7 +18,7 @@ require (
 	github.com/Layr-Labs/eigensdk-go v0.1.8
 	github.com/bufbuild/buf v1.34.0
 	github.com/charmbracelet/log v0.4.0
-	github.com/cometbft/cometbft v0.38.7
+	github.com/cometbft/cometbft v0.38.8
 	github.com/cosmos/cosmos-db v1.0.2
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
 	github.com/cosmos/cosmos-sdk v0.50.7
@@ -286,6 +286,7 @@ require (
 	buf.build/gen/go/bufbuild/registry/protocolbuffers/go v1.34.2-20240610164129-660609bc46d3.2 // indirect
 	github.com/bufbuild/protoplugin v0.0.0-20240323223605-e2735f6c31ee // indirect
 	github.com/ethereum/go-verkle v0.1.1-0.20240306133620-7d920df305f0 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 )
 
 // See https://github.com/cosmos/cosmos-sdk/pull/14952
