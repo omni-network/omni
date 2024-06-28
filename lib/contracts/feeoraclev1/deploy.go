@@ -56,7 +56,7 @@ func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) 
 	}
 
 	if network == netconf.Omega {
-		return testnetCfg(), nil
+		return omegaCfg(), nil
 	}
 
 	if network == netconf.Staging {
@@ -79,12 +79,12 @@ func mainnetCfg() DeploymentConfig {
 	}
 }
 
-func testnetCfg() DeploymentConfig {
+func omegaCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Owner:        eoa.MustAddress(netconf.Omega, eoa.RoleAdmin),
 		Manager:      eoa.MustAddress(netconf.Omega, eoa.RoleMonitor),
 		Deployer:     eoa.MustAddress(netconf.Omega, eoa.RoleDeployer),
-		ProxyAdmin:   contracts.TestnetProxyAdmin(),
+		ProxyAdmin:   contracts.OmegaProxyAdmin(),
 		BaseGasLimit: 50_000,
 		ProtocolFee:  big.NewInt(0),
 	}

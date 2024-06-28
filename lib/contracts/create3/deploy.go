@@ -37,7 +37,7 @@ func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) 
 	}
 
 	if network == netconf.Omega {
-		return testnetCfg(), nil
+		return omegaCfg(), nil
 	}
 
 	if network == netconf.Staging {
@@ -53,7 +53,7 @@ func mainnetCfg() DeploymentConfig {
 	}
 }
 
-func testnetCfg() DeploymentConfig {
+func omegaCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Deployer: eoa.MustAddress(netconf.Omega, eoa.RoleCreate3Deployer),
 	}
@@ -76,7 +76,7 @@ func AddrForNetwork(network netconf.ID) (common.Address, bool) {
 	case netconf.Mainnet:
 		return contracts.MainnetCreate3Factory(), true
 	case netconf.Omega:
-		return contracts.TestnetCreate3Factory(), true
+		return contracts.OmegaCreate3Factory(), true
 	case netconf.Staging:
 		return contracts.StagingCreate3Factory(), true
 	case netconf.Devnet:
