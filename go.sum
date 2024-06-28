@@ -58,8 +58,8 @@ github.com/DataDog/zstd v1.5.5/go.mod h1:g4AWEaM3yOg3HYfnJ3YIawPnVdXJh9QME85blwS
 github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8Leh48TZaKVeNIfJntJ2wa0=
 github.com/Layr-Labs/eigenlayer-cli v0.8.0 h1:9FUvLBVcjj4IETUzOXKi8JV99vpq57h5Bj5RK0bu13A=
 github.com/Layr-Labs/eigenlayer-cli v0.8.0/go.mod h1:jDNlpAI1pgQDN2CMCbpbOFGFo/1b2Q2UnLbiv5kLo/4=
-github.com/Layr-Labs/eigensdk-go v0.1.7 h1:2qC3Wl2gKw/mJJfESeXTH7bKoHWqQCFz6qKO3Ny7TDI=
-github.com/Layr-Labs/eigensdk-go v0.1.7/go.mod h1:OF9lmS/57MKxS0xpSpX0qHZl0SKkDRpvJIvsGvMN1y8=
+github.com/Layr-Labs/eigensdk-go v0.1.8 h1:UsyTjuUpHxkp2n7IZTG7+pgHo+RsL9qBBJiSeyyQpao=
+github.com/Layr-Labs/eigensdk-go v0.1.8/go.mod h1:XcLVDtlB1vOPj63D236b451+SC75B8gwgkpNhYHSxNs=
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
 github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2 h1:+vx7roKuyA63nhn5WAunQHLTznkw5W8b1Xc0dNjp83s=
