@@ -108,8 +108,8 @@ func conversionRate(ctx context.Context, pricer tokens.Pricer, from, to tokens.T
 	}
 
 	has := func(t tokens.Token) bool {
-		_, ok := prices[t]
-		return ok
+		p, ok := prices[t]
+		return ok && p > 0
 	}
 	if !has(to) {
 		return 0, errors.New("missing to token price", "to", to)
