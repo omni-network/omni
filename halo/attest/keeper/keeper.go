@@ -276,12 +276,18 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 			return errors.Wrap(err, "get att signatures")
 		}
 
+		setMetrics := func(att *Attestation) {
+			approvedHeight.WithLabelValues(chainVerName).Set(float64(att.GetBlockHeight()))
+			approvedOffset.WithLabelValues(chainVerName).Set(float64(att.GetBlockOffset()))
+		}
+
 		toDelete, ok := isApproved(sigs, valset)
 		if !ok {
 			// Check if there is a finalized attestation that overrides this one.
 			if ok, err := k.maybeOverrideFinalized(ctx, att); err != nil {
 				return err
 			} else if ok {
+				setMetrics(att)
 				approvedByChain[chainVer] = att.GetBlockOffset()
 			}
 
@@ -303,14 +309,14 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 			return errors.Wrap(err, "save")
 		}
 
-		approvedHeight.WithLabelValues(chainVerName).Set(float64(att.GetBlockHeight()))
-		approvedOffset.WithLabelValues(chainVerName).Set(float64(att.GetBlockOffset()))
+		setMetrics(att)
 		approvedByChain[chainVer] = att.GetBlockOffset()
 
 		log.Debug(ctx, "📬 Approved attestation",
 			"chain", chainVerName,
 			"offset", att.GetBlockOffset(),
 			"height", att.GetBlockHeight(),
+			"hash", att.GetBlockHash(),
 		)
 	}
 
@@ -435,6 +441,7 @@ func (k *Keeper) maybeOverrideFinalized(ctx context.Context, att *Attestation) (
 		"chain", k.namer(att.XChainVersion()),
 		"offset", att.GetBlockOffset(),
 		"height", att.GetBlockHeight(),
+		"hash", att.GetBlockHash(),
 	)
 
 	return true, nil
