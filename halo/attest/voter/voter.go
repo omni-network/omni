@@ -549,6 +549,22 @@ func loadState(path string) (stateJSON, error) {
 		return stateJSON{}, errors.Wrap(err, "unmarshal state path")
 	}
 
+	verify := func(voteSets ...[]*types.Vote) error {
+		for _, votes := range voteSets {
+			for _, vote := range votes {
+				if err := vote.Verify(); err != nil {
+					return errors.Wrap(err, "verify vote")
+				}
+			}
+		}
+
+		return nil
+	}
+
+	if err := verify(s.Latest, s.Proposed, s.Committed, s.Available); err != nil {
+		return stateJSON{}, err
+	}
+
 	return s, nil
 }
 
