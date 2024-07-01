@@ -112,7 +112,8 @@ func TestGenExecutionSeeds(t *testing.T) {
 					stdPrivKey, err := key.ECDSA()
 					require.NoError(t, err)
 
-					pubkey64 := k1util.PubKeyToBytes64(&stdPrivKey.PublicKey)
+					pubkey64, err := k1util.PubKeyToBytes64(&stdPrivKey.PublicKey)
+					require.NoError(t, err)
 					pubkeyHex := hex.EncodeToString(pubkey64)
 					nodeName := strings.TrimSuffix(node, "_evm")
 
