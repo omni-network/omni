@@ -16,7 +16,7 @@
   "Headers": ""
  },
  "Comet": {
-  "Version": "0.38.7",
+  "Version": "0.38.8",
   "RootDir": "foo",
   "ProxyApp": "tcp://127.0.0.1:26658",
   "Moniker": "testmoniker",
@@ -57,6 +57,7 @@
    "WebSocketWriteBufferSize": 200,
    "CloseOnSlowClient": false,
    "TimeoutBroadcastTxCommit": 10000000000,
+   "MaxRequestBatchSize": 10,
    "MaxBodyBytes": 1000000,
    "MaxHeaderBytes": 1048576,
    "TLSCertFile": "",
@@ -99,6 +100,7 @@
    "Type": "nop",
    "RootDir": "foo",
    "Recheck": true,
+   "RecheckTimeout": 1000000000,
    "Broadcast": true,
    "WalPath": "",
    "Size": 5000,

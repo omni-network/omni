@@ -19,7 +19,7 @@
   "Headers": "Authorization=Basic 123456"
  },
  "Comet": {
-  "Version": "0.38.7",
+  "Version": "0.38.8",
   "RootDir": "testinput/input1",
   "ProxyApp": "tcp://127.0.0.1:26658",
   "Moniker": "config.toml",
@@ -60,6 +60,7 @@
    "WebSocketWriteBufferSize": 200,
    "CloseOnSlowClient": false,
    "TimeoutBroadcastTxCommit": 10000000000,
+   "MaxRequestBatchSize": 10,
    "MaxBodyBytes": 1000000,
    "MaxHeaderBytes": 1048576,
    "TLSCertFile": "",
@@ -102,6 +103,7 @@
    "Type": "nop",
    "RootDir": "testinput/input1",
    "Recheck": true,
+   "RecheckTimeout": 1000000000,
    "Broadcast": true,
    "WalPath": "",
    "Size": 5000,
