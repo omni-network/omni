@@ -77,6 +77,16 @@ func (m *simple) ReserveNextNonce(ctx context.Context) (uint64, error) {
 	defer m.nonceLock.Unlock()
 
 	if m.nonce == nil {
+		// Ensure the node is synced before fetching the nonce
+		if syncing, err := m.backend.SyncProgress(ctx); err != nil {
+			return 0, errors.Wrap(err, "sync progress")
+		} else if syncing != nil && !syncing.Done() { // Note syncing is nil if node is not syncing.
+			return 0, errors.New("backend not synced",
+				"lag", syncing.HighestBlock-syncing.CurrentBlock,
+				"indexing", syncing.TxIndexRemainingBlocks,
+			)
+		}
+
 		nonce, err := m.backend.NonceAt(ctx, m.cfg.From, nil)
 		if err != nil {
 			return 0, errors.Wrap(err, "failed to get nonce")

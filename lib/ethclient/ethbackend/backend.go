@@ -242,6 +242,23 @@ func (b *Backend) SendTransaction(ctx context.Context, in *ethtypes.Transaction)
 	return nil
 }
 
+// EnsureSynced returns an error if the backend is not synced.
+func (b *Backend) EnsureSynced(ctx context.Context) error {
+	syncing, err := b.SyncProgress(ctx)
+	if err != nil {
+		return err
+	} else if syncing == nil {
+		return nil // Syncing is nil if node is not syncing.
+	} else if !syncing.Done() {
+		return errors.New("backend not synced",
+			"lag", syncing.HighestBlock-syncing.CurrentBlock,
+			"indexing", syncing.TxIndexRemainingBlocks,
+		)
+	}
+
+	return nil
+}
+
 func randomHex7() string {
 	bytes := make([]byte, 4)
 	_, _ = rand.Read(bytes)

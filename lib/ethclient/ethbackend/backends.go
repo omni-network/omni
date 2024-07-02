@@ -67,10 +67,14 @@ func NewFireBackends(ctx context.Context, testnet types.Testnet, fireCl firebloc
 			return Backends{}, errors.Wrap(err, "dial")
 		}
 
-		inner[chain.Chain().ChainID], err = NewFireBackend(ctx, chain.Chain().Name, chain.Chain().ChainID, chain.Chain().BlockPeriod, ethCl, fireCl)
+		backend, err := NewFireBackend(ctx, chain.Chain().Name, chain.Chain().ChainID, chain.Chain().BlockPeriod, ethCl, fireCl)
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "new public Backend")
+		} else if err := backend.EnsureSynced(ctx); err != nil {
+			return Backends{}, errors.Wrap(err, "ensure public chain synced", "chain", chain.Chain().Name)
 		}
+
+		inner[chain.Chain().ChainID] = backend
 	}
 
 	return Backends{
@@ -79,7 +83,7 @@ func NewFireBackends(ctx context.Context, testnet types.Testnet, fireCl firebloc
 }
 
 // NewBackends returns a multi-backends backed by in-memory keys that supports configured all chains.
-func NewBackends(testnet types.Testnet, deployKeyFile string) (Backends, error) {
+func NewBackends(ctx context.Context, testnet types.Testnet, deployKeyFile string) (Backends, error) {
 	var err error
 
 	var publicDeployKey *ecdsa.PrivateKey
@@ -141,10 +145,14 @@ func NewBackends(testnet types.Testnet, deployKeyFile string) (Backends, error) 
 			return Backends{}, errors.Wrap(err, "dial")
 		}
 
-		inner[chain.Chain().ChainID], err = NewBackend(chain.Chain().Name, chain.Chain().ChainID, chain.Chain().BlockPeriod, ethCl, publicDeployKey)
+		backend, err := NewBackend(chain.Chain().Name, chain.Chain().ChainID, chain.Chain().BlockPeriod, ethCl, publicDeployKey)
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "new public Backend")
+		} else if err := backend.EnsureSynced(ctx); err != nil {
+			return Backends{}, errors.Wrap(err, "ensure public chain synced", "chain", chain.Chain().Name)
 		}
+
+		inner[chain.Chain().ChainID] = backend
 	}
 
 	return Backends{
