@@ -230,6 +230,102 @@ func (m *LatestAttestationResponse) GetAttestation() *Attestation {
 	return nil
 }
 
+type EarliestAttestationRequest struct {
+	ChainId   uint64 `protobuf:"varint,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	ConfLevel uint32 `protobuf:"varint,2,opt,name=conf_level,json=confLevel,proto3" json:"conf_level,omitempty"`
+}
+
+func (m *EarliestAttestationRequest) Reset()         { *m = EarliestAttestationRequest{} }
+func (m *EarliestAttestationRequest) String() string { return proto.CompactTextString(m) }
+func (*EarliestAttestationRequest) ProtoMessage()    {}
+func (*EarliestAttestationRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_93d3f1745081aabb, []int{4}
+}
+func (m *EarliestAttestationRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *EarliestAttestationRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_EarliestAttestationRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *EarliestAttestationRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EarliestAttestationRequest.Merge(m, src)
+}
+func (m *EarliestAttestationRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *EarliestAttestationRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_EarliestAttestationRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_EarliestAttestationRequest proto.InternalMessageInfo
+
+func (m *EarliestAttestationRequest) GetChainId() uint64 {
+	if m != nil {
+		return m.ChainId
+	}
+	return 0
+}
+
+func (m *EarliestAttestationRequest) GetConfLevel() uint32 {
+	if m != nil {
+		return m.ConfLevel
+	}
+	return 0
+}
+
+type EarliestAttestationResponse struct {
+	Attestation *Attestation `protobuf:"bytes,1,opt,name=attestation,proto3" json:"attestation,omitempty"`
+}
+
+func (m *EarliestAttestationResponse) Reset()         { *m = EarliestAttestationResponse{} }
+func (m *EarliestAttestationResponse) String() string { return proto.CompactTextString(m) }
+func (*EarliestAttestationResponse) ProtoMessage()    {}
+func (*EarliestAttestationResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_93d3f1745081aabb, []int{5}
+}
+func (m *EarliestAttestationResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *EarliestAttestationResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_EarliestAttestationResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *EarliestAttestationResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EarliestAttestationResponse.Merge(m, src)
+}
+func (m *EarliestAttestationResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *EarliestAttestationResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_EarliestAttestationResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_EarliestAttestationResponse proto.InternalMessageInfo
+
+func (m *EarliestAttestationResponse) GetAttestation() *Attestation {
+	if m != nil {
+		return m.Attestation
+	}
+	return nil
+}
+
 type WindowCompareRequest struct {
 	ChainId     uint64 `protobuf:"varint,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	ConfLevel   uint32 `protobuf:"varint,2,opt,name=conf_level,json=confLevel,proto3" json:"conf_level,omitempty"`
@@ -240,7 +336,7 @@ func (m *WindowCompareRequest) Reset()         { *m = WindowCompareRequest{} }
 func (m *WindowCompareRequest) String() string { return proto.CompactTextString(m) }
 func (*WindowCompareRequest) ProtoMessage()    {}
 func (*WindowCompareRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_93d3f1745081aabb, []int{4}
+	return fileDescriptor_93d3f1745081aabb, []int{6}
 }
 func (m *WindowCompareRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -298,7 +394,7 @@ func (m *WindowCompareResponse) Reset()         { *m = WindowCompareResponse{} }
 func (m *WindowCompareResponse) String() string { return proto.CompactTextString(m) }
 func (*WindowCompareResponse) ProtoMessage()    {}
 func (*WindowCompareResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_93d3f1745081aabb, []int{5}
+	return fileDescriptor_93d3f1745081aabb, []int{7}
 }
 func (m *WindowCompareResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -339,6 +435,8 @@ func init() {
 	proto.RegisterType((*AttestationsFromResponse)(nil), "halo.attest.types.AttestationsFromResponse")
 	proto.RegisterType((*LatestAttestationRequest)(nil), "halo.attest.types.LatestAttestationRequest")
 	proto.RegisterType((*LatestAttestationResponse)(nil), "halo.attest.types.LatestAttestationResponse")
+	proto.RegisterType((*EarliestAttestationRequest)(nil), "halo.attest.types.EarliestAttestationRequest")
+	proto.RegisterType((*EarliestAttestationResponse)(nil), "halo.attest.types.EarliestAttestationResponse")
 	proto.RegisterType((*WindowCompareRequest)(nil), "halo.attest.types.WindowCompareRequest")
 	proto.RegisterType((*WindowCompareResponse)(nil), "halo.attest.types.WindowCompareResponse")
 }
@@ -346,33 +444,35 @@ func init() {
 func init() { proto.RegisterFile("halo/attest/types/query.proto", fileDescriptor_93d3f1745081aabb) }
 
 var fileDescriptor_93d3f1745081aabb = []byte{
-	// 402 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x53, 0x5d, 0x6b, 0xe2, 0x40,
-	0x14, 0x4d, 0x74, 0xdd, 0x8f, 0x1b, 0x05, 0x1d, 0x76, 0xd9, 0x18, 0x30, 0xeb, 0xe6, 0x65, 0xb3,
-	0xeb, 0x12, 0xc1, 0xfe, 0x81, 0xd6, 0x42, 0xa1, 0x20, 0x94, 0x86, 0x42, 0xa1, 0xd0, 0x4a, 0x4c,
-	0x26, 0x18, 0x9a, 0x64, 0x62, 0x66, 0x6c, 0xeb, 0xbf, 0xe8, 0xcf, 0xea, 0x53, 0xf1, 0xb1, 0x8f,
-	0x45, 0xff, 0x48, 0xc9, 0x68, 0x4b, 0x34, 0x69, 0x15, 0x7c, 0x4b, 0xee, 0x39, 0xf7, 0x9c, 0x7b,
-	0xe7, 0xcc, 0x40, 0x63, 0x68, 0xf9, 0xa4, 0x6d, 0x31, 0x86, 0x29, 0x6b, 0xb3, 0x49, 0x84, 0x69,
-	0x7b, 0x34, 0xc6, 0xf1, 0xc4, 0x88, 0x62, 0xc2, 0x08, 0xaa, 0x25, 0xb0, 0xb1, 0x80, 0x0d, 0x0e,
-	0x2b, 0x4a, 0xb6, 0x83, 0xdd, 0x2d, 0xe8, 0x1a, 0x83, 0x9f, 0x07, 0x1c, 0xb0, 0x98, 0x47, 0x42,
-	0x7a, 0x14, 0x93, 0xc0, 0xc4, 0xa3, 0x31, 0xa6, 0x0c, 0xd5, 0xe1, 0xab, 0x3d, 0xb4, 0xbc, 0xb0,
-	0xef, 0x39, 0xb2, 0xd8, 0x14, 0xf5, 0x4f, 0xe6, 0x17, 0xfe, 0x7f, 0xec, 0xa0, 0x06, 0x80, 0x4d,
-	0x42, 0xb7, 0xef, 0xe3, 0x1b, 0xec, 0xcb, 0x85, 0xa6, 0xa8, 0x57, 0xcc, 0x6f, 0x49, 0xa5, 0x97,
-	0x14, 0xd0, 0x2f, 0x90, 0xdc, 0x98, 0x04, 0x7d, 0xe2, 0xba, 0x14, 0x33, 0xb9, 0xc8, 0x9b, 0x21,
-	0x29, 0x9d, 0xf0, 0x8a, 0x76, 0x05, 0x72, 0xd6, 0x95, 0x46, 0x24, 0xa4, 0x18, 0x75, 0xa1, 0x6c,
-	0xa5, 0x30, 0x59, 0x6c, 0x16, 0x75, 0xa9, 0xa3, 0x1a, 0x99, 0xbd, 0x8c, 0x94, 0x84, 0xb9, 0xd2,
-	0xa3, 0x9d, 0x81, 0xdc, 0xb3, 0x92, 0xff, 0x34, 0x65, 0xd7, 0xb5, 0xb4, 0x4b, 0xa8, 0xe7, 0xa8,
-	0x2e, 0xc7, 0xde, 0x07, 0x29, 0x35, 0x02, 0x57, 0xde, 0x3c, 0x75, 0xba, 0x45, 0xa3, 0xf0, 0xfd,
-	0xdc, 0x0b, 0x1d, 0x72, 0x7b, 0x48, 0x82, 0xc8, 0x8a, 0xf1, 0xee, 0x39, 0xfc, 0x86, 0xf2, 0xc0,
-	0x27, 0xf6, 0xf5, 0x6a, 0x10, 0x12, 0xaf, 0x2d, 0x93, 0xf8, 0x0b, 0x3f, 0xd6, 0x4c, 0x97, 0xfb,
-	0x54, 0xa1, 0x68, 0x07, 0x11, 0x37, 0x2c, 0x99, 0xc9, 0x67, 0xe7, 0xb1, 0x00, 0xa5, 0xd3, 0xe4,
-	0xa6, 0xa1, 0x00, 0xaa, 0xeb, 0xf1, 0xa1, 0x7f, 0x1f, 0xaf, 0x9a, 0xbe, 0x59, 0x4a, 0x6b, 0x2b,
-	0xee, 0x62, 0x10, 0x4d, 0x40, 0x11, 0xd4, 0x32, 0xe7, 0x8e, 0xf2, 0x34, 0xde, 0xcb, 0x5c, 0xf9,
-	0xbf, 0x1d, 0xf9, 0xcd, 0xd1, 0x81, 0xca, 0xca, 0xa9, 0xa0, 0x3f, 0x39, 0x02, 0x79, 0x61, 0x29,
-	0xfa, 0x66, 0xe2, 0xab, 0x4b, 0xb7, 0xf5, 0x30, 0x53, 0xc5, 0xe9, 0x4c, 0x15, 0x9f, 0x67, 0xaa,
-	0x78, 0x3f, 0x57, 0x85, 0xe9, 0x5c, 0x15, 0x9e, 0xe6, 0xaa, 0x70, 0x51, 0xcb, 0xbc, 0xd8, 0xc1,
-	0x67, 0xfe, 0x5e, 0xf7, 0x5e, 0x02, 0x00, 0x00, 0xff, 0xff, 0x64, 0xd9, 0x45, 0x99, 0xff, 0x03,
-	0x00, 0x00,
+	// 435 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x54, 0xcd, 0xce, 0xd2, 0x40,
+	0x14, 0x6d, 0xad, 0x9f, 0x3f, 0xb7, 0x1f, 0x09, 0x8c, 0x1a, 0x4b, 0x0d, 0x15, 0xbb, 0xb1, 0x8a,
+	0x96, 0x04, 0x5f, 0x40, 0x31, 0x9a, 0x98, 0x90, 0x18, 0x1b, 0xa3, 0x89, 0x89, 0x36, 0x43, 0x3b,
+	0x0d, 0x8d, 0x6d, 0xa7, 0x74, 0x06, 0x94, 0xb7, 0xf0, 0xa9, 0x8c, 0x4b, 0x96, 0x2e, 0x0d, 0xbc,
+	0x88, 0xe9, 0x80, 0xa4, 0xd0, 0x22, 0x24, 0xb0, 0x6b, 0xef, 0x3d, 0xf7, 0x9c, 0x73, 0x33, 0x67,
+	0x06, 0x5a, 0x23, 0x1c, 0xd1, 0x2e, 0xe6, 0x9c, 0x30, 0xde, 0xe5, 0xb3, 0x94, 0xb0, 0xee, 0x78,
+	0x42, 0xb2, 0x99, 0x9d, 0x66, 0x94, 0x53, 0xd4, 0xc8, 0xdb, 0xf6, 0xaa, 0x6d, 0x8b, 0xb6, 0xae,
+	0x97, 0x27, 0xf8, 0xf7, 0x15, 0xdc, 0xe4, 0x70, 0xf7, 0x85, 0x68, 0x60, 0x1e, 0xd2, 0x84, 0xbd,
+	0xce, 0x68, 0xec, 0x90, 0xf1, 0x84, 0x30, 0x8e, 0x9a, 0x70, 0xc3, 0x1b, 0xe1, 0x30, 0x71, 0x43,
+	0x5f, 0x93, 0xdb, 0xb2, 0x75, 0xd5, 0xb9, 0x2e, 0xfe, 0xdf, 0xf8, 0xa8, 0x05, 0xe0, 0xd1, 0x24,
+	0x70, 0x23, 0x32, 0x25, 0x91, 0x76, 0xa5, 0x2d, 0x5b, 0x35, 0xe7, 0x66, 0x5e, 0x19, 0xe4, 0x05,
+	0x74, 0x1f, 0xd4, 0x20, 0xa3, 0xb1, 0x4b, 0x83, 0x80, 0x11, 0xae, 0x29, 0x62, 0x18, 0xf2, 0xd2,
+	0x5b, 0x51, 0x31, 0xbf, 0x80, 0x56, 0x56, 0x65, 0x29, 0x4d, 0x18, 0x41, 0x7d, 0xb8, 0xc4, 0x85,
+	0x9e, 0x26, 0xb7, 0x15, 0x4b, 0xed, 0x19, 0x76, 0x69, 0x2f, 0xbb, 0x40, 0xe1, 0x6c, 0xcd, 0x98,
+	0xef, 0x41, 0x1b, 0xe0, 0xfc, 0xbf, 0x08, 0x39, 0x75, 0x2d, 0xf3, 0x33, 0x34, 0x2b, 0x58, 0xd7,
+	0xb6, 0x9f, 0x83, 0x5a, 0xb0, 0x20, 0x98, 0x0f, 0xbb, 0x2e, 0x8e, 0x98, 0x1f, 0x40, 0x7f, 0x85,
+	0xb3, 0x28, 0x3c, 0xb7, 0x6d, 0x17, 0xee, 0x55, 0xf2, 0x9e, 0xcd, 0x38, 0x83, 0xdb, 0x1f, 0xc3,
+	0xc4, 0xa7, 0xdf, 0x5e, 0xd2, 0x38, 0xc5, 0x19, 0x39, 0x3d, 0x40, 0x0f, 0xe0, 0x72, 0x18, 0x51,
+	0xef, 0xeb, 0x76, 0x82, 0x54, 0x51, 0x5b, 0x47, 0xe8, 0x11, 0xdc, 0xd9, 0x11, 0x5d, 0xef, 0x53,
+	0x07, 0xc5, 0x8b, 0x53, 0x21, 0x78, 0xe1, 0xe4, 0x9f, 0xbd, 0x9f, 0x0a, 0x5c, 0xbc, 0xcb, 0xaf,
+	0x08, 0x8a, 0xa1, 0xbe, 0x9b, 0x3b, 0xf4, 0xf8, 0xff, 0xab, 0x16, 0xaf, 0x84, 0xde, 0x39, 0x0a,
+	0xbb, 0x32, 0x62, 0x4a, 0x28, 0x85, 0x46, 0x29, 0x30, 0xa8, 0x8a, 0x63, 0x5f, 0x58, 0xf5, 0x27,
+	0xc7, 0x81, 0x37, 0x8a, 0x53, 0xb8, 0x55, 0x71, 0xd6, 0xe8, 0x69, 0x05, 0xcd, 0xfe, 0xac, 0xe9,
+	0xf6, 0xb1, 0xf0, 0x8d, 0xae, 0x0f, 0xb5, 0xad, 0xd3, 0x40, 0x0f, 0x2b, 0x28, 0xaa, 0x42, 0xa2,
+	0x5b, 0x87, 0x81, 0xff, 0x54, 0xfa, 0x9d, 0x5f, 0x0b, 0x43, 0x9e, 0x2f, 0x0c, 0xf9, 0xcf, 0xc2,
+	0x90, 0x7f, 0x2c, 0x0d, 0x69, 0xbe, 0x34, 0xa4, 0xdf, 0x4b, 0x43, 0xfa, 0xd4, 0x28, 0x3d, 0x71,
+	0xc3, 0x6b, 0xe2, 0x81, 0x7b, 0xf6, 0x37, 0x00, 0x00, 0xff, 0xff, 0xfb, 0x49, 0x4b, 0xb0, 0x30,
+	0x05, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -393,6 +493,8 @@ type QueryClient interface {
 	AttestationsFrom(ctx context.Context, in *AttestationsFromRequest, opts ...grpc.CallOption) (*AttestationsFromResponse, error)
 	// LatestAttestation queries halo for the latest approved attestations for the given chain_id.
 	LatestAttestation(ctx context.Context, in *LatestAttestationRequest, opts ...grpc.CallOption) (*LatestAttestationResponse, error)
+	// EarliestAttestation queries halo for the earliest approved attestation in consensus chain state for the given chain_id.
+	EarliestAttestation(ctx context.Context, in *EarliestAttestationRequest, opts ...grpc.CallOption) (*EarliestAttestationResponse, error)
 	// WindowCompare compares the given chain height to the vote window.
 	// It returns whether the request is behind (-1), or in (0), or after (1) the vote window.
 	// The vote window is a configured number of blocks around the latest approved attestation.
@@ -425,6 +527,15 @@ func (c *queryClient) LatestAttestation(ctx context.Context, in *LatestAttestati
 	return out, nil
 }
 
+func (c *queryClient) EarliestAttestation(ctx context.Context, in *EarliestAttestationRequest, opts ...grpc.CallOption) (*EarliestAttestationResponse, error) {
+	out := new(EarliestAttestationResponse)
+	err := c.cc.Invoke(ctx, "/halo.attest.types.Query/EarliestAttestation", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *queryClient) WindowCompare(ctx context.Context, in *WindowCompareRequest, opts ...grpc.CallOption) (*WindowCompareResponse, error) {
 	out := new(WindowCompareResponse)
 	err := c.cc.Invoke(ctx, "/halo.attest.types.Query/WindowCompare", in, out, opts...)
@@ -442,6 +553,8 @@ type QueryServer interface {
 	AttestationsFrom(context.Context, *AttestationsFromRequest) (*AttestationsFromResponse, error)
 	// LatestAttestation queries halo for the latest approved attestations for the given chain_id.
 	LatestAttestation(context.Context, *LatestAttestationRequest) (*LatestAttestationResponse, error)
+	// EarliestAttestation queries halo for the earliest approved attestation in consensus chain state for the given chain_id.
+	EarliestAttestation(context.Context, *EarliestAttestationRequest) (*EarliestAttestationResponse, error)
 	// WindowCompare compares the given chain height to the vote window.
 	// It returns whether the request is behind (-1), or in (0), or after (1) the vote window.
 	// The vote window is a configured number of blocks around the latest approved attestation.
@@ -457,6 +570,9 @@ func (*UnimplementedQueryServer) AttestationsFrom(ctx context.Context, req *Atte
 }
 func (*UnimplementedQueryServer) LatestAttestation(ctx context.Context, req *LatestAttestationRequest) (*LatestAttestationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LatestAttestation not implemented")
+}
+func (*UnimplementedQueryServer) EarliestAttestation(ctx context.Context, req *EarliestAttestationRequest) (*EarliestAttestationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EarliestAttestation not implemented")
 }
 func (*UnimplementedQueryServer) WindowCompare(ctx context.Context, req *WindowCompareRequest) (*WindowCompareResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method WindowCompare not implemented")
@@ -502,6 +618,24 @@ func _Query_LatestAttestation_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_EarliestAttestation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EarliestAttestationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).EarliestAttestation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/halo.attest.types.Query/EarliestAttestation",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).EarliestAttestation(ctx, req.(*EarliestAttestationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Query_WindowCompare_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(WindowCompareRequest)
 	if err := dec(in); err != nil {
@@ -531,6 +665,10 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "LatestAttestation",
 			Handler:    _Query_LatestAttestation_Handler,
+		},
+		{
+			MethodName: "EarliestAttestation",
+			Handler:    _Query_EarliestAttestation_Handler,
 		},
 		{
 			MethodName: "WindowCompare",
@@ -684,6 +822,74 @@ func (m *LatestAttestationResponse) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	return len(dAtA) - i, nil
 }
 
+func (m *EarliestAttestationRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *EarliestAttestationRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *EarliestAttestationRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.ConfLevel != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.ConfLevel))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.ChainId != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.ChainId))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *EarliestAttestationResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *EarliestAttestationResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *EarliestAttestationResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Attestation != nil {
+		{
+			size, err := m.Attestation.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *WindowCompareRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -810,6 +1016,34 @@ func (m *LatestAttestationRequest) Size() (n int) {
 }
 
 func (m *LatestAttestationResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Attestation != nil {
+		l = m.Attestation.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *EarliestAttestationRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ChainId != 0 {
+		n += 1 + sovQuery(uint64(m.ChainId))
+	}
+	if m.ConfLevel != 0 {
+		n += 1 + sovQuery(uint64(m.ConfLevel))
+	}
+	return n
+}
+
+func (m *EarliestAttestationResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1164,6 +1398,180 @@ func (m *LatestAttestationResponse) Unmarshal(dAtA []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: LatestAttestationResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Attestation", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Attestation == nil {
+				m.Attestation = &Attestation{}
+			}
+			if err := m.Attestation.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *EarliestAttestationRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: EarliestAttestationRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: EarliestAttestationRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
+			}
+			m.ChainId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ChainId |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConfLevel", wireType)
+			}
+			m.ConfLevel = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ConfLevel |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *EarliestAttestationResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: EarliestAttestationResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: EarliestAttestationResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:

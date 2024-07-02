@@ -16,6 +16,9 @@ service Query {
   // LatestAttestation queries halo for the latest approved attestations for the given chain_id.
   rpc LatestAttestation(LatestAttestationRequest) returns (LatestAttestationResponse) {}
 
+  // EarliestAttestation queries halo for the earliest approved attestation in consensus chain state for the given chain_id.
+  rpc EarliestAttestation(EarliestAttestationRequest) returns (EarliestAttestationResponse) {}
+
   // WindowCompare compares the given chain height to the vote window.
   // It returns whether the request is behind (-1), or in (0), or after (1) the vote window.
   // The vote window is a configured number of blocks around the latest approved attestation.
@@ -41,6 +44,15 @@ message LatestAttestationRequest {
 }
 
 message LatestAttestationResponse {
+  Attestation attestation = 1;
+}
+
+message EarliestAttestationRequest {
+  uint64 chain_id   = 1; // Chain ID as per https://chainlist.org
+  uint32 conf_level = 2; // Confirmation level of the attestation
+}
+
+message EarliestAttestationResponse {
   Attestation attestation = 1;
 }
 

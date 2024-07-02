@@ -469,7 +469,45 @@ func (k *Keeper) latestAttestation(ctx context.Context, version xchain.ChainVers
 	}
 
 	if iter.Next() {
-		return nil, false, errors.New("multiple attestation found")
+		return nil, false, errors.New("multiple attestations found")
+	}
+
+	// If this attestation is overridden by a finalized attestation, return that instead.
+	if att.GetFinalizedAttId() != 0 {
+		att, err := k.attTable.Get(ctx, att.GetFinalizedAttId())
+		if err != nil {
+			return nil, false, errors.Wrap(err, "get finalized attestation")
+		}
+
+		return att, true, nil
+	}
+
+	return att, true, nil
+}
+
+// earliestAttestation returns the earliest approved attestation for the given chain currently found in state,
+// or false if none is found.
+func (k *Keeper) earliestAttestation(ctx context.Context, version xchain.ChainVersion) (*Attestation, bool, error) {
+	defer latency("earliest_attestation")()
+
+	idx := AttestationStatusChainIdConfLevelBlockOffsetIndexKey{}.WithStatusChainIdConfLevel(uint32(Status_Approved), version.ID, uint32(version.ConfLevel))
+	iter, err := k.attTable.List(ctx, idx, ormlist.DefaultLimit(1))
+	if err != nil {
+		return nil, false, errors.Wrap(err, "list")
+	}
+	defer iter.Close()
+
+	if !iter.Next() {
+		return nil, false, nil
+	}
+
+	att, err := iter.Value()
+	if err != nil {
+		return nil, false, errors.Wrap(err, "value")
+	}
+
+	if iter.Next() {
+		return nil, false, errors.New("multiple attestations found")
 	}
 
 	// If this attestation is overridden by a finalized attestation, return that instead.
