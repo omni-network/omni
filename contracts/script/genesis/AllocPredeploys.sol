@@ -8,6 +8,7 @@ import { EIP1967Helper } from "./utils/EIP1967Helper.sol";
 import { PortalRegistry } from "src/xchain/PortalRegistry.sol";
 import { OmniBridgeNative } from "src/token/OmniBridgeNative.sol";
 import { Staking } from "src/octane/Staking.sol";
+import { Preinstalls } from "src/octane/Preinstalls.sol";
 
 /**
  * @title AllocPredeploys
@@ -16,6 +17,7 @@ import { Staking } from "src/octane/Staking.sol";
 contract AllocPredeploys is Script {
     struct Config {
         address admin;
+        uint256 chainId;
         bool enableStakingAllowlist;
         string output;
     }
@@ -30,14 +32,11 @@ contract AllocPredeploys is Script {
     function runWithCfg(Config calldata config) public {
         cfg = config;
 
+        vm.chainId(cfg.chainId);
+
         vm.startPrank(deployer);
-        setProxies();
-        setProxyAdmin();
-        setPortalRegistry();
-        setOmniBridgeNative();
-        setWOmni();
-        setStaking();
-        setSlashing();
+        setPredeploys();
+        setPreinstalls();
         vm.stopPrank();
 
         vm.resetNonce(msg.sender);
@@ -46,17 +45,74 @@ contract AllocPredeploys is Script {
         vm.resetNonce(deployer);
         vm.deal(deployer, 0);
 
-        vm.dumpState(config.output);
+        vm.dumpState(cfg.output);
     }
 
     /**
      * @notice Predeploy transparent proxies for each namespace
      */
-    function setProxies() public {
+    function setProxies() internal {
         address[] memory namespaces = Predeploys.namespaces();
         for (uint256 i = 0; i < namespaces.length; i++) {
             setNamespaceProxies(namespaces[i]);
         }
+    }
+
+    /**
+     * @notice Set all protocol predeploys
+     */
+    function setPredeploys() internal {
+        setProxies();
+        setProxyAdmin();
+        setPortalRegistry();
+        setOmniBridgeNative();
+        setWOmni();
+        setStaking();
+        setSlashing();
+    }
+
+    /**
+     * @notice Set all preinstalls (non protocol predeploys)
+     */
+    function setPreinstalls() internal {
+        vm.etch(Preinstalls.MultiCall3, Preinstalls.MultiCall3Code);
+        vm.etch(Preinstalls.Create2Deployer, Preinstalls.Create2DeployerCode);
+        vm.etch(Preinstalls.Safe_v130, Preinstalls.Safe_v130Code);
+        vm.etch(Preinstalls.SafeL2_v130, Preinstalls.SafeL2_v130Code);
+        vm.etch(Preinstalls.MultiSendCallOnly_v130, Preinstalls.MultiSendCallOnly_v130Code);
+        vm.etch(Preinstalls.SafeSingletonFactory, Preinstalls.SafeSingletonFactoryCode);
+        vm.etch(Preinstalls.DeterministicDeploymentProxy, Preinstalls.DeterministicDeploymentProxyCode);
+        vm.etch(Preinstalls.MultiSend_v130, Preinstalls.MultiSend_v130Code);
+        vm.etch(Preinstalls.Permit2, Preinstalls.getPermit2Code(cfg.chainId));
+        vm.etch(Preinstalls.SenderCreator_v060, Preinstalls.SenderCreator_v060Code);
+        vm.etch(Preinstalls.EntryPoint_v060, Preinstalls.EntryPoint_v060Code);
+        vm.etch(Preinstalls.SenderCreator_v070, Preinstalls.SenderCreator_v070Code);
+        vm.etch(Preinstalls.EntryPoint_v070, Preinstalls.EntryPoint_v070Code);
+        vm.etch(Preinstalls.ERC1820Registry, Preinstalls.ERC1820RegistryCode);
+        vm.etch(Preinstalls.BeaconBlockRoots, Preinstalls.BeaconBlockRootsCode);
+
+        // 4788 sender nonce must be incremented, since it's part of later upgrade-transactions.
+        // For the upgrade-tx to not create a contract that conflicts with an already-existing copy,
+        // the nonce must be bumped.
+        vm.setNonce(Preinstalls.BeaconBlockRootsSender, 1);
+
+        // we set nonce of all preinstalls to 1, reflecting regular user execution
+        // as contracts are deployed with a nonce of 1 (post eip-161)
+        vm.setNonce(Preinstalls.MultiCall3, 1);
+        vm.setNonce(Preinstalls.Create2Deployer, 1);
+        vm.setNonce(Preinstalls.Safe_v130, 1);
+        vm.setNonce(Preinstalls.SafeL2_v130, 1);
+        vm.setNonce(Preinstalls.MultiSendCallOnly_v130, 1);
+        vm.setNonce(Preinstalls.SafeSingletonFactory, 1);
+        vm.setNonce(Preinstalls.DeterministicDeploymentProxy, 1);
+        vm.setNonce(Preinstalls.MultiSend_v130, 1);
+        vm.setNonce(Preinstalls.Permit2, 1);
+        vm.setNonce(Preinstalls.SenderCreator_v060, 1);
+        vm.setNonce(Preinstalls.EntryPoint_v060, 1);
+        vm.setNonce(Preinstalls.SenderCreator_v070, 1);
+        vm.setNonce(Preinstalls.EntryPoint_v070, 1);
+        vm.setNonce(Preinstalls.ERC1820Registry, 1);
+        vm.setNonce(Preinstalls.BeaconBlockRoots, 1);
     }
 
     /**

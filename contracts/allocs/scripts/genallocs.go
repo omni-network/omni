@@ -5,6 +5,7 @@ package main
 
 import (
 	"fmt"
+	"math/big"
 	"os"
 	"os/exec"
 
@@ -39,6 +40,7 @@ func genallocs() error {
 
 		cfg := bindings.AllocPredeploysConfig{
 			Admin:                  eoa.MustAddress(network, eoa.RoleAdmin),
+			ChainId:                new(big.Int).SetUint64(network.Static().OmniExecutionChainID),
 			EnableStakingAllowlist: network.IsProtected(),
 			Output:                 "allocs/" + network.String() + ".json",
 		}
