@@ -43,6 +43,18 @@ contract PortalRegistry is OwnableUpgradeable {
         uint64[] shards;
     }
 
+    function initialize(address owner_) public initializer {
+        __Ownable_init();
+        _transferOwnership(owner_);
+    }
+
+    /**
+     * @dev Exposed to allow disabling initializers in predeployed implementations in AllocPredeploys.
+     */
+    function disableInitializers() external {
+        _disableInitializers();
+    }
+
     /**
      * @notice Get the OmniPortal deployment for a chain.
      */

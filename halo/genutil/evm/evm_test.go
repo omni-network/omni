@@ -3,7 +3,6 @@ package evm_test
 import (
 	"testing"
 
-	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/halo/genutil/evm"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
@@ -18,12 +17,7 @@ import (
 func TestMakeGenesis(t *testing.T) {
 	t.Parallel()
 
-	network := netconf.Staging
-
-	admin, err := eoa.Admin(network)
-	require.NoError(t, err)
-
-	genesis, err := evm.MakeGenesis(network, admin)
+	genesis, err := evm.MakeGenesis(netconf.Staging)
 	require.NoError(t, err)
 	tutil.RequireGoldenJSON(t, genesis)
 }

@@ -52,6 +52,19 @@ contract Staking is OwnableUpgradeable {
      */
     mapping(address => bool) public isAllowedValidator;
 
+    function initialize(address owner_, bool isAllowlistEnabled_) public initializer {
+        __Ownable_init();
+        _transferOwnership(owner_);
+        isAllowlistEnabled = isAllowlistEnabled_;
+    }
+
+    /**
+     * @dev Exposed to allow disabling initializers in predeployed implementations in AllocPredeploys.
+     */
+    function disableInitializers() external {
+        _disableInitializers();
+    }
+
     /**
      * @notice Create a new validator
      * @param pubkey The validators consensus public key. 33 bytes compressed secp256k1 public key
