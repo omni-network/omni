@@ -97,9 +97,6 @@ type Manifest struct {
 
 	// Perturb defines additional (non-cometBFT) perturbations by service name.
 	Perturb map[string][]Perturb `json:"perturb"`
-
-	// Explorer defines whether to deploy the explorer.
-	Explorer bool `toml:"explorer"`
 }
 
 // Seeds returns a map of seed nodes by name.

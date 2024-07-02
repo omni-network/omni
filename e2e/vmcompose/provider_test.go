@@ -21,12 +21,10 @@ func TestSetup(t *testing.T) {
 	manifestFile, dataFile := vmcompose.SetupDataFixtures(t)
 
 	def, err := app.MakeDefinition(context.Background(), app.DefinitionConfig{
-		ManifestFile:   manifestFile,
-		InfraProvider:  vmcompose.ProviderName,
-		InfraDataFile:  dataFile,
-		OmniImgTag:     "7d1ae53",
-		ExplorerDBConn: "fake_connection",
-		GraphQLURL:     "http://localhost:8080/graphql",
+		ManifestFile:  manifestFile,
+		InfraProvider: vmcompose.ProviderName,
+		InfraDataFile: dataFile,
+		OmniImgTag:    "7d1ae53",
 	}, "")
 	require.NoError(t, err)
 

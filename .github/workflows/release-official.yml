@@ -27,15 +27,3 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Calculate git short sha
-        id: git_ref
-        run: echo "short_sha=`echo ${GITHUB_SHA::7}`" >> "$GITHUB_OUTPUT"
-
-      - name: Build and push Explorer UI to Dockerhub
-        uses: docker/build-push-action@v5
-        with:
-          context: "{{defaultContext}}:explorer/ui"
-          push: true
-          tags: omniops/explorer-ui:main,omniops/explorer-ui:${{ steps.git_ref.outputs.short_sha }},omniops/explorer-ui:${{ github.ref_name }}
-          platforms: linux/amd64 # Only build for linux/amd64, node:21-slim unsupported for darwin

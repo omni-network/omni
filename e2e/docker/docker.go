@@ -44,7 +44,6 @@ type Provider struct {
 	servicesOnce sync.Once
 	testnet      types.Testnet
 	omniTag      string
-	graphQLURL   string
 }
 
 func (*Provider) Clean(ctx context.Context) error {
@@ -61,7 +60,7 @@ func (*Provider) Clean(ctx context.Context) error {
 }
 
 // NewProvider returns a new Provider.
-func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag, graphQLURL string) *Provider {
+func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag string) *Provider {
 	return &Provider{
 		Provider: &cmtdocker.Provider{
 			ProviderData: infra.ProviderData{
@@ -69,9 +68,8 @@ func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag, g
 				InfrastructureData: infd.InfrastructureData,
 			},
 		},
-		testnet:    testnet,
-		omniTag:    imgTag,
-		graphQLURL: graphQLURL,
+		testnet: testnet,
+		omniTag: imgTag,
 	}
 }
 
@@ -89,10 +87,7 @@ func (p *Provider) Setup() error {
 		Relayer:     true,
 		Prometheus:  p.testnet.Prometheus,
 		Monitor:     true,
-		Explorer:    p.testnet.Explorer,
-		ExplorerDB:  p.testnet.Explorer && p.testnet.Network.IsEphemeral(),
 		OmniTag:     p.omniTag,
-		GraphQLURL:  p.graphQLURL,
 	}
 
 	bz, err := GenerateComposeFile(def)
@@ -180,11 +175,6 @@ type ComposeDef struct {
 	OmniTag    string
 	Relayer    bool
 	Prometheus bool
-
-	ExplorerDB bool
-	Explorer   bool
-
-	GraphQLURL string
 }
 
 func (ComposeDef) GethTag() string {
@@ -291,16 +281,6 @@ func additionalServices(testnet types.Testnet) []string {
 		resp = append(resp, anvil.Chain.Name)
 	}
 	resp = append(resp, "relayer")
-
-	if testnet.Explorer {
-		resp = append(resp, "explorer_indexer")
-		resp = append(resp, "explorer_graphql")
-		resp = append(resp, "explorer_ui")
-
-		if testnet.Network.IsEphemeral() {
-			resp = append(resp, "explorer_db")
-		}
-	}
 
 	return resp
 }

@@ -25,9 +25,8 @@ type Secrets struct {
 }
 
 const (
-	explorerMetricsPort = 3000
-	promPort            = 26660 // Default metrics port for all omni apps (from cometBFT)
-	gethPromPort        = 6060
+	promPort     = 26660 // Default metrics port for all omni apps (from cometBFT)
+	gethPromPort = 6060
 )
 
 //go:embed prometheus.yml.tmpl
@@ -106,21 +105,6 @@ func genPromConfig(ctx context.Context, testnet types.Testnet, secrets Secrets, 
 				MetricsPath: "/metrics",
 				targets:     []string{fmt.Sprintf("monitor:%d", promPort)},
 			},
-			{
-				JobName:     "explorer_indexer",
-				MetricsPath: "/metrics",
-				targets:     []string{fmt.Sprintf("explorer_indexer:%d", promPort)},
-			},
-			{
-				JobName:     "explorer_graphql",
-				MetricsPath: "/metrics",
-				targets:     []string{fmt.Sprintf("explorer_graphql:%d", promPort)},
-			},
-			{
-				JobName:     "explorer_ui",
-				MetricsPath: "/metrics",
-				targets:     []string{fmt.Sprintf("explorer_ui:%d", explorerMetricsPort)},
-			},
 		},
 	}
 
@@ -163,7 +147,7 @@ func (c promScrapConfig) Targets() string {
 //	It replaces the geth targets with provided.
 //	It replaces the host label.
 func ConfigForHost(bz []byte, newHost string, halos []string, geths []string, services map[string]bool) []byte {
-	for _, service := range []string{"relayer", "monitor", "explorer_indexer", "explorer_graphql", "explorer_ui"} {
+	for _, service := range []string{"relayer", "monitor"} {
 		if services[service] {
 			continue
 		}

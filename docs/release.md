@@ -15,9 +15,6 @@ This document outlines the release process for the Omni monorepo. Currently the 
 - Halo
 - Relayer
 - Monitor
-- Explorer-GraphQL
-- Explorer-Indexer
-- Indexer
 - Contracts
 
 ## Release Process

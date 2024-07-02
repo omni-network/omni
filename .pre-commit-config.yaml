@@ -9,7 +9,7 @@ repos:
         exclude: "testdata"
       - id: end-of-file-fixer # ensures that a file is either empty, or ends with one newline
         exclude_types: ["proto"]
-        exclude: "(testdata|.gas-snapshot|buf.gen.yaml|explorer/ui/app/graphql/.*|lib/netconf/.*/.*)"
+        exclude: "(testdata|.gas-snapshot|buf.gen.yaml|lib/netconf/.*/.*)"
       - id: mixed-line-ending # ensures that a file doesn't contain a mix of LF and CRLF
       - id: no-commit-to-branch # Protect specific branches (default: main/master) from direct checkins
 
@@ -55,7 +55,6 @@ repos:
         require_serial: true # Don't run this in parallel
         entry: .pre-commit/run_go_tests.sh
         types: [ file, go ]
-        exclude: "(explorer/db/ent/internal/.*)"
 
       - id: run-forge-tests
         name: run-forge-tests
@@ -69,7 +68,7 @@ repos:
         language: script
         entry: .pre-commit/run_regexp.sh
         types: [ file, go ]
-        exclude: "(_test.go|contracts/bindings/.*|explorer/db/ent|scripts/)"
+        exclude: "(_test.go|contracts/bindings/.*|scripts/)"
 
       - id: run-goversion
         name: run-goversion

@@ -46,9 +46,6 @@ type DefinitionConfig struct {
 	InfraDataFile string // Not required for docker provider
 	OmniImgTag    string // OmniImgTag is the docker image tag used for halo and relayer.
 
-	ExplorerDBConn string // ExplorerDBConn is the connection string for the explorer database.
-	GraphQLURL     string // GraphQLURL is the host for the GraphQL server.
-
 	TracingEndpoint string
 	TracingHeaders  string
 }
@@ -61,11 +58,9 @@ func DefaultDefinitionConfig(ctx context.Context) DefinitionConfig {
 	}
 
 	return DefinitionConfig{
-		AgentSecrets:   agent.Secrets{}, // empty agent.Secrets by default
-		InfraProvider:  docker.ProviderName,
-		OmniImgTag:     defaultTag,
-		ExplorerDBConn: "postgres://omni:password@explorer_db:5432/omni_db",
-		GraphQLURL:     "http://explorer_graphql:8080/query",
+		AgentSecrets:  agent.Secrets{}, // empty agent.Secrets by default
+		InfraProvider: docker.ProviderName,
+		OmniImgTag:    defaultTag,
 	}
 }
 
@@ -151,9 +146,9 @@ func MakeDefinition(ctx context.Context, cfg DefinitionConfig, commandName strin
 	var infp types.InfraProvider
 	switch cfg.InfraProvider {
 	case docker.ProviderName:
-		infp = docker.NewProvider(testnet, infd, cfg.OmniImgTag, cfg.GraphQLURL)
+		infp = docker.NewProvider(testnet, infd, cfg.OmniImgTag)
 	case vmcompose.ProviderName:
-		infp = vmcompose.NewProvider(testnet, infd, cfg.OmniImgTag, cfg.GraphQLURL)
+		infp = vmcompose.NewProvider(testnet, infd, cfg.OmniImgTag)
 	default:
 		return Definition{}, errors.New("unknown infra provider", "provider", cfg.InfraProvider)
 	}
@@ -415,7 +410,6 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 		OmniEVMs:     omniEVMS,
 		AnvilChains:  anvils,
 		PublicChains: publics,
-		Explorer:     manifest.Explorer,
 		Perturb:      manifest.Perturb,
 	}, nil
 }

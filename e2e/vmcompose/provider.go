@@ -26,19 +26,17 @@ const ProviderName = "vmcompose"
 var _ types.InfraProvider = (*Provider)(nil)
 
 type Provider struct {
-	Testnet    types.Testnet
-	Data       types.InfrastructureData
-	once       sync.Once
-	omniTag    string
-	graphQLURL string
+	Testnet types.Testnet
+	Data    types.InfrastructureData
+	once    sync.Once
+	omniTag string
 }
 
-func NewProvider(testnet types.Testnet, data types.InfrastructureData, imgTag, graphQLURL string) *Provider {
+func NewProvider(testnet types.Testnet, data types.InfrastructureData, imgTag string) *Provider {
 	return &Provider{
-		Testnet:    testnet,
-		Data:       data,
-		omniTag:    imgTag,
-		graphQLURL: graphQLURL,
+		Testnet: testnet,
+		Data:    data,
+		omniTag: imgTag,
 	}
 }
 
@@ -79,9 +77,6 @@ func (p *Provider) Setup() error {
 			}
 		}
 
-		// All explorer containers are run on the same VM
-		explorer := p.Testnet.Explorer && (services["explorer_ui"] || services["explorer_graphql"] || services["explorer_indexer"])
-
 		def := docker.ComposeDef{
 			Network:     false,
 			BindAll:     true,
@@ -94,9 +89,6 @@ func (p *Provider) Setup() error {
 			Monitor:     services["monitor"],
 			Prometheus:  p.Testnet.Prometheus,
 			OmniTag:     p.omniTag,
-			Explorer:    explorer,
-			ExplorerDB:  explorer && p.Testnet.Network.IsEphemeral(),
-			GraphQLURL:  p.graphQLURL,
 		}
 		compose, err := docker.GenerateComposeFile(def)
 		if err != nil {
@@ -170,8 +162,6 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.UpgradeConfig) error {
 	addFile("relayer", "privatekey")
 	addFile("monitor", "monitor.toml")
 	addFile("monitor", "privatekey")
-
-	// TODO(corver): Add explorer stuff
 
 	addFile("prometheus", "prometheus.yml") // Prometheus isn't a "service", so not actually copied
 

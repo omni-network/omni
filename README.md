@@ -94,10 +94,6 @@ make devnet-clean
 │ ├── <a href="./contracts/src/">src</a>: Solidity source files for the protocol's smart contracts.
 │ └── <a href="./contracts/test/">test</a>: Tests for smart contracts.
 ├── <a href="./docs/">docs</a>: Documentation resources, including images and diagrams.
-├── <a href="./explorer/">explorer</a>: Components for the Omni explorer.
-│ ├── <a href="./explorer/db/">db</a>: Database schemas and migrations.
-│ ├── <a href="./explorer/graphql/">graphql</a>: GraphQL API for the explorer.
-│ └── <a href="./explorer/ui/">ui</a>: User interface for the explorer.
 ├── <a href="./halo/">halo</a>: The Halo instance, including application logic and attestation mechanisms.
 │ ├── <a href="./halo/app/">app</a>: Application logic for Halo.
 │ └── <a href="./halo/cmd/">cmd</a>: Command-line tools and utilities.

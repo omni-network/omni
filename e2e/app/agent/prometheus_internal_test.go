@@ -47,7 +47,7 @@ func TestPromGen(t *testing.T) {
 			newNodes:     []string{"fullnode04"},
 			geths:        []string{"validator01_evm", "validator02_evm", "validator03_evm"},
 			newGeths:     []string{"fullnode04_evm"},
-			newServices:  []string{"relayer", "explorer_indexer", "explorer_graphql", "explorer_ui"},
+			newServices:  []string{"relayer"},
 			agentSecrets: true,
 		},
 		{

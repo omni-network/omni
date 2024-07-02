@@ -19,7 +19,6 @@ func SetupDataFixtures(t *testing.T) (string, string) {
 network = "devnet"
 anvil_chains = ["mock_l1"]
 multi_omni_evms = true
-explorer=true
 
 [node.validator01]
 [node.validator02]
@@ -61,9 +60,6 @@ mode = "full"
 
 			"fullnode01":     vm5,
 			"fullnode01_evm": vm5,
-
-			"explorer_indexer": vm6,
-			"explorer_graphql": vm6,
 		},
 	}
 

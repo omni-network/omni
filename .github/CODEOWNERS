@@ -3,8 +3,4 @@
 /relayer @corverroos @arajasek @idea404
 /lib @corverroos @arajasek @idea404 @kevinhalliday @pavelnikolov
 /contracts @kevinhalliday @ttarsi
-/explorer @pavelnikolov
-/explorer/indexer @corverroos
-/explorer/ui @kevinhalliday
-/explorer/graphql @pavelnikolov
 /docs @idea404

@@ -4,6 +4,4 @@
 network = "devnet"
 anvil_chains = ["mock_op", "mock_arb"]
 
-explorer = true
-
 [node.validator01]
