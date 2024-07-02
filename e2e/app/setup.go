@@ -16,8 +16,6 @@ import (
 	"github.com/omni-network/omni/e2e/app/static"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/e2e/vmcompose"
-	graphqlapp "github.com/omni-network/omni/explorer/graphql/app"
-	indexerapp "github.com/omni-network/omni/explorer/indexer/app"
 	halocmd "github.com/omni-network/omni/halo/cmd"
 	halocfg "github.com/omni-network/omni/halo/config"
 	"github.com/omni-network/omni/halo/genutil"
@@ -109,14 +107,6 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	}
 
 	if err := writeAnvilState(def.Testnet); err != nil {
-		return err
-	}
-
-	if err := writeExplorerIndexerConfig(def, logCfg); err != nil {
-		return err
-	}
-
-	if err := writeExplorerGraphqlConfig(def, logCfg); err != nil {
 		return err
 	}
 
@@ -488,59 +478,6 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 
 	if err := monapp.WriteConfigTOML(cfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write relayer config")
-	}
-
-	return nil
-}
-
-func writeExplorerIndexerConfig(def Definition, logCfg log.Config) error {
-	confRoot := filepath.Join(def.Testnet.Dir, "explorer_indexer")
-
-	const (
-		configFile = "indexer.toml"
-	)
-
-	err := os.MkdirAll(confRoot, 0o755)
-	if err != nil {
-		return errors.Wrap(err, "mkdir", "path", confRoot)
-	}
-
-	// Save network config
-	endpoints := internalEndpoints(def, "")
-	if def.Infra.GetInfrastructureData().Provider == vmcompose.ProviderName {
-		endpoints = externalEndpoints(def)
-	}
-
-	cfg := indexerapp.DefaultConfig()
-	cfg.Network = def.Testnet.Network
-	cfg.ExplorerDBConn = def.Cfg.ExplorerDBConn
-	cfg.RPCEndpoints = endpoints
-
-	if err := indexerapp.WriteConfigTOML(cfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
-		return errors.Wrap(err, "write indexer config")
-	}
-
-	return nil
-}
-
-func writeExplorerGraphqlConfig(def Definition, logCfg log.Config) error {
-	confRoot := filepath.Join(def.Testnet.Dir, "explorer_graphql")
-
-	const (
-		configFile = "graphql.toml"
-	)
-
-	err := os.MkdirAll(confRoot, 0o755)
-	if err != nil {
-		return errors.Wrap(err, "mkdir", "path", confRoot)
-	}
-
-	cfg := graphqlapp.DefaultConfig()
-	cfg.ExplorerDBConn = def.Cfg.ExplorerDBConn
-	cfg.Network = def.Testnet.Network
-
-	if err := graphqlapp.WriteConfigTOML(cfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
-		return errors.Wrap(err, "write graphql config")
 	}
 
 	return nil

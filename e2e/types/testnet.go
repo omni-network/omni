@@ -26,7 +26,6 @@ type Testnet struct {
 	AnvilChains  []AnvilChain
 	PublicChains []PublicChain
 	OnlyMonitor  bool
-	Explorer     bool
 	Perturb      map[string][]Perturb
 }
 

@@ -28,20 +28,6 @@ builds:
     goos: [linux, darwin]
     goarch: [amd64, arm64]
 
-  - id: explorer-graphql
-    main: ./explorer/graphql
-    binary: graphql
-    env: [ CGO_ENABLED=0 ]
-    goos: [ linux, darwin ]
-    goarch: [ amd64, arm64 ]
-
-  - id: explorer-indexer
-    main: ./explorer/indexer
-    binary: indexer
-    env: [ CGO_ENABLED=0 ]
-    goos: [ linux, darwin ]
-    goarch: [ amd64, arm64 ]
-
   - id: omni
     main: ./cli/cmd/omni
     binary: omni
@@ -86,20 +72,6 @@ dockers:
      - omniops/anvilproxy:{{ .ShortCommit }}
      - omniops/anvilproxy:{{ if .IsSnapshot }}main{{ else }}latest{{ end }}
      - omniops/anvilproxy:{{ if .IsSnapshot }}main{{ else }}{{.Tag}}{{ end }}
-
-  - ids: [explorer-graphql]
-    dockerfile: ./explorer/graphql/Dockerfile
-    image_templates:
-      - omniops/explorer-graphql:{{ .ShortCommit }}
-      - omniops/explorer-graphql:{{ if .IsSnapshot }}main{{ else }}latest{{ end }}
-      - omniops/explorer-graphql:{{ if .IsSnapshot }}main{{ else }}{{.Tag}}{{ end }}
-
-  - ids: [explorer-indexer]
-    dockerfile: ./explorer/indexer/Dockerfile
-    image_templates:
-      - omniops/explorer-indexer:{{ .ShortCommit }}
-      - omniops/explorer-indexer:{{ if .IsSnapshot }}main{{ else }}latest{{ end }}
-      - omniops/explorer-indexer:{{ if .IsSnapshot }}main{{ else }}{{.Tag}}{{ end }}
 
 archives:
   - format: tar.gz

@@ -5,9 +5,6 @@ linters-settings:
   exhaustive:
     default-signifies-exhaustive: true
   forbidigo:
-    exclude-dirs:
-      - explorer/graphql
-      - explorer/graphql/mockresolver
     forbid:
       - 'fmt\.Print.*(# Avoid debug logging)?'
       - 'fmt\.Errorf.*(# Prefer lib/errors.Wrap)?'
@@ -88,11 +85,6 @@ issues:
   fix: true
   exclude-files:
     - ".*\\.pb\\.go$" # Ignore generated protobuf files
-  exclude-dirs:
-    - explorer/db/ent
-    - explorer/ui/graphql
-    - explorer/graphql  # graphql resolvers are fine with std lib errors (those are not logged)
-    - explorer/graphql/mockresolver  # this is temporary code which will be removed after the backend implementation is complete
   exclude-rules:
     - path: '(.*)(_test|tutil|scripts)(.*)'
       linters:         # Relax linters for both tests/scripts (non-production code)

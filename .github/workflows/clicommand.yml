@@ -36,7 +36,7 @@ jobs:
         GOOS: linux
       with:
         version: latest
-        args: build --single-target --snapshot --clean --id=halo --id=relayer --id=monitor --id=anvilproxy --id=explorer-indexer --id=explorer-graphql
+        args: build --single-target --snapshot --clean --id=halo --id=relayer --id=monitor --id=anvilproxy
 
     - name: Build halo image
       run: |
@@ -57,26 +57,6 @@ jobs:
       run: |
         cd dist/anvilproxy_linux_amd64_v1
         docker build -f "../../e2e/anvilproxy/Dockerfile" . -t "omniops/anvilproxy:${GITHUB_SHA::7}"
-
-    - name: Build explorer-indexer image
-      run: |
-        cd dist/explorer-indexer_linux_amd64_v1
-        docker build -f "../../explorer/indexer/Dockerfile" . -t "omniops/explorer-indexer:${GITHUB_SHA::7}"
-
-    - name: Build explorer-graphql image
-      run: |
-        cd dist/explorer-graphql_linux_amd64_v1
-        docker build -f "../../explorer/graphql/Dockerfile" . -t "omniops/explorer-graphql:${GITHUB_SHA::7}"
-
-    - name: Build explorer-ui image
-      run: |
-        cd explorer/ui
-        docker build -f Dockerfile . -t "omniops/explorer-ui:${GITHUB_SHA::7}"
-
-    - name: Configure Git
-      run: |
-        git config --global user.email "you@example.com"
-        git config --global user.name "Your Name"
 
     - name: Install CLI from Source
       run: go install ./cli/cmd/omni

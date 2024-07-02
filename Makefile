@@ -6,7 +6,7 @@ help:  ## Display this help message
 ###############################################################################
 
 .PHONY: build-docker
-build-docker: ensure-go-releaser build-explorer-ui ## Builds the docker images.
+build-docker: ensure-go-releaser ## Builds the docker images.
 	@goreleaser release --snapshot --clean
 
 .PHONY: build-halo-relayer
@@ -16,10 +16,6 @@ build-halo-relayer: ensure-go-releaser ## Builds the halo and relayer docker ima
 	@scripts/build_docker.sh monitor
 	@scripts/build_docker.sh anvilproxy 'e2e' '' 'amd64'
 
-.PHONY:  ## Builds the explorer-ui docker image.
-build-explorer-ui:
-	@make -C ./explorer build-ui
-
 ###############################################################################
 ###                                Contracts                                 ###
 ###############################################################################
@@ -27,15 +23,6 @@ build-explorer-ui:
 .PHONY: contracts-gen
 contract-bindings: ## Generate golang contract bindings.
 	make -C ./contracts bindings
-
-###############################################################################
-###                               Explorer                                 	###
-###############################################################################
-
-.PHONY: explorer-gen
-explorer-gen: ## Generates code for our explorer
-	make -C ./explorer gen-db
-	make -C ./explorer gen-api
 
 ###############################################################################
 ###                                Utils                                 	###
