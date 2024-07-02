@@ -101,11 +101,6 @@ func verify(commitMsg string) error {
 		return errors.New("body empty")
 	}
 
-	// Verify footer is valid.
-	if err := verifyFooter(commit); err != nil {
-		return err
-	}
-
 	// Verify scope is valid.
 	if err := verifyScope(commit); err != nil {
 		return err
@@ -122,30 +117,6 @@ func verifyDescription(description string) error {
 
 	if !descRegex.MatchString(description) {
 		return errors.New("description doesn't match regex")
-	}
-
-	return nil
-}
-
-func verifyFooter(commit *cc.ConventionalCommit) error {
-	if len(commit.Footers) == 0 {
-		return errors.New("missing `task` footer")
-	}
-	if len(commit.Footers) > 1 {
-		return errors.New("invalid number of footers, only `task` required")
-	}
-
-	if len(commit.Footers["task"]) != 1 {
-		return errors.New("invalid number of task footers, only one required")
-	}
-
-	task := commit.Footers["task"][0]
-	if task == "" {
-		return errors.New("task footer empty")
-	} else if task == "none" {
-		// None is also fine
-	} else if !strings.HasPrefix(task, "https://app.asana.com/") {
-		return errors.New("only asana tasks allowed")
 	}
 
 	return nil

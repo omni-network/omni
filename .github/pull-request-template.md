@@ -1,7 +1,5 @@
 Body goes here...
 
-task: none or https://app.asana.com/0/1206208509925075/<task_number>
-
 <!--
   PR title and body follows conventional commit; https://www.conventionalcommits.org/en/v1.0.0
   Title template: `type(app/pkg): concise description`
