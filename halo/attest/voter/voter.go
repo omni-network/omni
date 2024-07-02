@@ -516,6 +516,10 @@ func detectReorg(chainVer xchain.ChainVersion, chainVerName string, prevBlock xc
 		return errors.New("consecutive block height mismatch [BUG]", "prev_height", prevBlock.BlockHeight, "new_height", block.BlockHeight)
 	}
 
+	if prevBlock.BlockOffset+1 != block.BlockOffset {
+		return errors.New("consecutive block offset mismatch [BUG]", "prev_offset", prevBlock.BlockOffset, "new_offset", block.BlockOffset)
+	}
+
 	if prevBlock.BlockHash == block.ParentHash {
 		return nil // No reorg detected.
 	}
