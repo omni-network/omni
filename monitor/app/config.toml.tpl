@@ -18,6 +18,9 @@ private-key = "{{ .PrivateKey }}"
 # The address that the monitor listens for metric scrape requests.
 monitoring-addr = "{{ .MonitoringAddr }}"
 
+# The URL of the halo node to connect to.
+halo-url = "{{ .HaloURL }}"
+
 #######################################################################
 ###                             X-Chain                             ###
 #######################################################################

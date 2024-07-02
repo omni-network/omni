@@ -1,8 +1,7 @@
-package relayer
+package xmonitor
 
 import (
 	"context"
-	"net/http"
 	"time"
 
 	"github.com/omni-network/omni/lib/cchain"
@@ -11,16 +10,21 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
-
-	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-// startMonitoring starts the monitoring goroutines.
-// TODO(corver): Remove xchain offset monitoring once it has been ported to monitor.
-func startMonitoring(ctx context.Context, network netconf.Network, xprovider xchain.Provider,
-	cprovider cchain.Provider, addr common.Address, rpcClients map[uint64]ethclient.Client) {
+// Start starts the xchain monitoring goroutines.
+func Start(
+	ctx context.Context,
+	network netconf.Network,
+	xprovider xchain.Provider,
+	cprovider cchain.Provider,
+	rpcClients map[uint64]ethclient.Client,
+) error {
+	cache, err := startEmitCursorCache(ctx, network, xprovider, cprovider)
+	if err != nil {
+		return err
+	}
+
 	// Monitor the head of all chains, including consensus.
 	for _, srcChain := range network.Chains {
 		headsFunc := func(ctx context.Context) map[ethclient.HeadType]uint64 {
@@ -33,12 +37,11 @@ func startMonitoring(ctx context.Context, network netconf.Network, xprovider xch
 		}
 
 		go monitorHeadsForever(ctx, srcChain, headsFunc)
-		go monitorAttestedForever(ctx, srcChain, cprovider, xprovider, network)
+		go monitorAttestedForever(ctx, srcChain, cprovider, network, cache)
 	}
 
 	// Monitors below only apply to EVM chains.
 	for _, srcChain := range network.EVMChains() {
-		go monitorAccountForever(ctx, addr, srcChain.Name, rpcClients[srcChain.ID])
 		for _, dstChain := range network.EVMChains() {
 			if srcChain.ID == dstChain.ID {
 				continue
@@ -49,6 +52,8 @@ func startMonitoring(ctx context.Context, network netconf.Network, xprovider xch
 	}
 
 	go monitorConsOffsetForever(ctx, network, xprovider)
+
+	return nil
 }
 
 // monitorConsOffsetsForever blocks and periodically monitors the emitted
@@ -135,8 +140,8 @@ func monitorAttestedForever(
 	ctx context.Context,
 	srcChain netconf.Chain,
 	cprovider cchain.Provider,
-	xprovider xchain.Provider,
 	network netconf.Network,
+	cache *emitCursorCache,
 ) {
 	chainVer := srcChain.ChainVersions()[0]
 
@@ -159,17 +164,15 @@ func monitorAttestedForever(
 			attestedHeight.WithLabelValues(srcChain.Name).Set(float64(att.BlockHeight))
 			attestedBlockOffset.WithLabelValues(srcChain.Name).Set(float64(att.BlockOffset))
 
-			// Query stream emit offsets for the original xblock from the chain itself.
+			// Query emit cursor cache for offsets of the original xblock from the chain itself.
 			for _, stream := range network.StreamsFrom(srcChain.ID) {
-				ref := xchain.EmitRef{
-					Height: &att.BlockHeight,
-				}
-
 				name := network.StreamName(stream)
 
-				cursor, _, err := xprovider.GetEmittedCursor(ctx, ref, stream)
-				if err != nil {
-					log.Warn(ctx, "Fetching stream emit cursor for attestation failed (will retry)", err, "stream", name)
+				cursor, ok := cache.Get(att.BlockHeight, stream)
+				if !ok {
+					log.Warn(ctx, "Emit cursor cache not populated", nil,
+						"height", att.BlockHeight, "stream", name)
+
 					continue
 				}
 
@@ -224,48 +227,6 @@ func getAttested(ctx context.Context, chainVer xchain.ChainVersion, cprovider cc
 	return att, nil
 }
 
-// monitorAccountsForever blocks and periodically monitors the relayer accounts
-// for the given chain.
-func monitorAccountForever(ctx context.Context, addr common.Address, chainName string, client ethclient.Client) {
-	ticker := time.NewTicker(time.Second * 30)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			err := monitorAccountOnce(ctx, addr, chainName, client)
-			if ctx.Err() != nil {
-				return
-			} else if err != nil {
-				log.Error(ctx, "Monitoring account failed (will retry)", err,
-					"chain", chainName)
-
-				continue
-			}
-		}
-	}
-}
-
-// monitorAccountOnce monitors the relayer account for the given chain.
-func monitorAccountOnce(ctx context.Context, addr common.Address, chainName string, client ethclient.Client) error {
-	balance, err := client.EtherBalanceAt(ctx, addr)
-	if err != nil {
-		return errors.Wrap(err, "balance at")
-	}
-
-	nonce, err := client.NonceAt(ctx, addr, nil)
-	if err != nil {
-		return errors.Wrap(err, "nonce at")
-	}
-
-	accountBalance.WithLabelValues(chainName).Set(balance)
-	accountNonce.WithLabelValues(chainName).Set(float64(nonce))
-
-	return nil
-}
-
 // monitorOffsetsForever blocks and periodically monitors the emitted and submitted
 // offsets for a given source and destination chain.
 func monitorOffsetsForever(ctx context.Context, xprovider xchain.Provider, network netconf.Network, src, dst netconf.Chain,
@@ -315,27 +276,6 @@ func monitorOffsetsOnce(ctx context.Context, xprovider xchain.Provider, network 
 	}
 
 	return lastErr
-}
-
-// serveMonitoring starts a goroutine that serves the monitoring API. It
-// returns a channel that will receive an error if the server fails to start.
-func serveMonitoring(address string) <-chan error {
-	errChan := make(chan error)
-	go func() {
-		mux := http.NewServeMux()
-		mux.Handle("/metrics", promhttp.Handler())
-
-		srv := &http.Server{
-			Addr:              address,
-			ReadHeaderTimeout: 5 * time.Second,
-			IdleTimeout:       5 * time.Second,
-			WriteTimeout:      5 * time.Second,
-			Handler:           mux,
-		}
-		errChan <- errors.Wrap(srv.ListenAndServe(), "serve monitoring")
-	}()
-
-	return errChan
 }
 
 func ptr[T any](t T) *T {
