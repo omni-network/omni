@@ -18,6 +18,8 @@ fs_permissions = [
   { access = "read", path = "./out" },
 ]
 
+ffi = true
+
 [fuzz]
 seed = "0x6eed"
 
