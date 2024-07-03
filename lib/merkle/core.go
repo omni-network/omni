@@ -40,6 +40,11 @@ func MakeTree(leaves [][32]byte) ([][32]byte, error) {
 		tree[i] = hashPair(tree[leftChildIndex(i)], tree[rightChildIndex(i)])
 	}
 
+	// Ensure the tree always has an odd number of nodes.
+	if treeLen%2 == 0 {
+		return nil, errors.New("invalid even tree [BUG]")
+	}
+
 	return tree, nil
 }
 
@@ -54,6 +59,8 @@ type MultiProof struct {
 func GetMultiProof(tree [][32]byte, indices ...int) (MultiProof, error) {
 	if len(indices) == 0 {
 		return MultiProof{}, errors.New("no indices provided")
+	} else if len(tree)%2 == 0 {
+		return MultiProof{}, errors.New("invalid even tree [BUG]")
 	}
 
 	for _, i := range indices {
@@ -86,6 +93,10 @@ func GetMultiProof(tree [][32]byte, indices ...int) (MultiProof, error) {
 
 		s := siblingIndex(j)
 		p := parentIndex(j)
+
+		if s >= len(tree) {
+			return MultiProof{}, errors.New("invalid sibling index, invalid tree [BUG]")
+		}
 
 		if len(stack) > 0 && s == stack[0] {
 			proofFlags = append(proofFlags, true)

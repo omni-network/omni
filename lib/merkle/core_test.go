@@ -6,6 +6,8 @@ import (
 
 	"github.com/omni-network/omni/lib/merkle"
 
+	"github.com/ethereum/go-ethereum/crypto"
+
 	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"
 )
@@ -68,6 +70,20 @@ func TestLeavesProvable(t *testing.T) {
 	root, err := merkle.ProcessMultiProof(multi)
 	require.NoError(t, err)
 	require.Equal(t, tree[0], root)
+}
+
+func TestEvenTree(t *testing.T) {
+	t.Parallel()
+
+	// Invalid tree with an even number of nodes.
+	tree := [][32]byte{
+		crypto.Keccak256Hash([]byte("node1")),
+		crypto.Keccak256Hash([]byte("node2")),
+	}
+	treeIndices := []int{1}
+
+	_, err := merkle.GetMultiProof(tree, treeIndices...)
+	require.ErrorContains(t, err, "invalid even tree")
 }
 
 // randomIndicesRange returns a random range of indices of the provided slice.
