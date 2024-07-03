@@ -2,6 +2,8 @@ package ethclient
 
 import (
 	"context"
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/omni-network/omni/lib/errors"
 
@@ -159,4 +161,57 @@ func (w Wrapper) EtherBalanceAt(ctx context.Context, addr common.Address) (float
 	bf, _ := b.Float64()
 
 	return bf / params.Ether, nil
+}
+
+// EstimateGasPending tries to estimate the gas needed to execute a specific transaction based on
+// the current pending state of the backend blockchain. There is no guarantee that this is
+// the true gas limit requirement as other transactions may be added or removed by miners,
+// but it should provide a basis for setting a reasonable default.
+//
+// Note the default ethclient.EstimateGas also claims pending but doesn't explicitly request it.
+func (w Wrapper) EstimateGasPending(ctx context.Context, msg ethereum.CallMsg) (uint64, error) {
+	var hex hexutil.Uint64
+	err := w.cl.Client().CallContext(ctx, &hex, "eth_estimateGas", toCallArg(msg), "pending")
+	if err != nil {
+		return 0, err
+	}
+
+	return uint64(hex), nil
+}
+
+// toCallArg converts a CallMsg to a map for the RPC call.
+// This was copied from go-ethereum/ethclient/ethclient.go.
+func toCallArg(msg ethereum.CallMsg) interface{} {
+	arg := map[string]interface{}{
+		"from": msg.From,
+		"to":   msg.To,
+	}
+	if len(msg.Data) > 0 {
+		arg["input"] = hexutil.Bytes(msg.Data)
+	}
+	if msg.Value != nil {
+		arg["value"] = (*hexutil.Big)(msg.Value)
+	}
+	if msg.Gas != 0 {
+		arg["gas"] = hexutil.Uint64(msg.Gas)
+	}
+	if msg.GasPrice != nil {
+		arg["gasPrice"] = (*hexutil.Big)(msg.GasPrice)
+	}
+	if msg.GasFeeCap != nil {
+		arg["maxFeePerGas"] = (*hexutil.Big)(msg.GasFeeCap)
+	}
+	if msg.GasTipCap != nil {
+		arg["maxPriorityFeePerGas"] = (*hexutil.Big)(msg.GasTipCap)
+	}
+	if msg.AccessList != nil {
+		arg["accessList"] = msg.AccessList
+	}
+	if msg.BlobGasFeeCap != nil {
+		arg["maxFeePerBlobGas"] = (*hexutil.Big)(msg.BlobGasFeeCap)
+	}
+	if msg.BlobHashes != nil {
+		arg["blobVersionedHashes"] = msg.BlobHashes
+	}
+	return arg
 }

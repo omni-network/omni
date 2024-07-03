@@ -32,6 +32,7 @@ type Client interface {
 	EtherBalanceAt(ctx context.Context, addr common.Address) (float64, error)
 	PeerCount(ctx context.Context) (uint64, error)
 	SetHead(ctx context.Context, height uint64) error
+	EstimateGasPending(ctx context.Context, msg ethereum.CallMsg) (uint64, error)
 	Address() string
 	Close()
 }

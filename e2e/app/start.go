@@ -2,9 +2,13 @@ package app
 
 import (
 	"context"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/expbackoff"
+	"github.com/omni-network/omni/lib/netconf"
 	"path/filepath"
 	"slices"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
@@ -167,4 +171,41 @@ func getSortedNodes(testnet *e2e.Testnet) ([]*e2e.Node, error) {
 	})
 
 	return nodeQueue, nil
+}
+
+func waitForEVMs(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
+	for _, chain := range network.EVMChains() {
+		backend, err := backends.Backend(chain.ID)
+		if err != nil {
+			return errors.Wrap(err, "backend")
+		}
+
+		innerCtx := log.WithCtx(ctx, "chain", chain.Name)
+		if err := waitForEVM(innerCtx, backend); err != nil {
+			return errors.Wrap(err, "waiting for EVM", "chain", chain.Name)
+		}
+	}
+
+	return nil
+}
+
+func waitForEVM(ctx context.Context, backend *ethbackend.Backend) error {
+	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+	defer cancel()
+
+	var once sync.Once
+
+	backoff := expbackoff.New(ctx)
+	for ctx.Err() == nil {
+		_, err := backend.BlockNumber(ctx)
+		if err == nil {
+			return nil
+		}
+		once.Do(func() {
+			log.Warn(ctx, "Waiting for EVM chain to be available", err, "address", backend.Address())
+		})
+		backoff()
+	}
+
+	return ctx.Err()
 }

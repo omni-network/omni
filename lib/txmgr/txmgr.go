@@ -229,7 +229,7 @@ func (m *simple) craftTx(ctx context.Context, candidate TxCandidate) (*types.Tra
 	// If the gas limit is set, we can use that as the gas
 	if gasLimit == 0 {
 		// Calculate the intrinsic gas for the transaction
-		gas, err := m.backend.EstimateGas(ctx, ethereum.CallMsg{
+		gas, err := m.backend.EstimateGasPending(ctx, ethereum.CallMsg{
 			From:      m.cfg.From,
 			To:        candidate.To,
 			GasTipCap: gasTipCap,
@@ -509,7 +509,7 @@ func (m *simple) increaseGasPrice(ctx context.Context, tx *types.Transaction) (*
 	}
 
 	// Re-estimate gaslimit in case things have changed or a previous gaslimit estimate was wrong
-	gas, err := m.backend.EstimateGas(ctx, ethereum.CallMsg{
+	gas, err := m.backend.EstimateGasPending(ctx, ethereum.CallMsg{
 		From:      m.cfg.From,
 		To:        tx.To(),
 		GasTipCap: bumpedTip,

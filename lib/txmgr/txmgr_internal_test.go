@@ -239,7 +239,7 @@ func (b *mockBackend) HeaderByNumber(ctx context.Context, number *big.Int) (*typ
 	}, nil
 }
 
-func (b *mockBackend) EstimateGas(ctx context.Context, msg ethereum.CallMsg) (uint64, error) {
+func (b *mockBackend) EstimateGasPending(ctx context.Context, msg ethereum.CallMsg) (uint64, error) {
 	if b.g.err != nil {
 		return 0, b.g.err
 	}
@@ -786,7 +786,7 @@ func (b *failingBackend) SuggestGasTipCap(_ context.Context) (*big.Int, error) {
 	return b.gasTip, nil
 }
 
-func (b *failingBackend) EstimateGas(_ context.Context, msg ethereum.CallMsg) (uint64, error) {
+func (b *failingBackend) EstimateGasPending(_ context.Context, msg ethereum.CallMsg) (uint64, error) {
 	return b.baseFee.Uint64(), nil
 }
 

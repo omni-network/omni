@@ -106,7 +106,7 @@ func (mr *MockClientMockRecorder) BlockByNumber(ctx, number any) *gomock.Call {
 // BlockNumber mocks base method.
 func (m *MockClient) BlockNumber(ctx context.Context) (uint64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BlockHeight", ctx)
+	ret := m.ctrl.Call(m, "BlockNumber", ctx)
 	ret0, _ := ret[0].(uint64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -115,7 +115,7 @@ func (m *MockClient) BlockNumber(ctx context.Context) (uint64, error) {
 // BlockNumber indicates an expected call of BlockNumber.
 func (mr *MockClientMockRecorder) BlockNumber(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BlockHeight", reflect.TypeOf((*MockClient)(nil).BlockNumber), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BlockNumber", reflect.TypeOf((*MockClient)(nil).BlockNumber), ctx)
 }
 
 // CallContract mocks base method.
@@ -188,6 +188,21 @@ func (m *MockClient) EstimateGas(ctx context.Context, call ethereum.CallMsg) (ui
 func (mr *MockClientMockRecorder) EstimateGas(ctx, call any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EstimateGas", reflect.TypeOf((*MockClient)(nil).EstimateGas), ctx, call)
+}
+
+// EstimateGasPending mocks base method.
+func (m *MockClient) EstimateGasPending(ctx context.Context, msg ethereum.CallMsg) (uint64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EstimateGasPending", ctx, msg)
+	ret0, _ := ret[0].(uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// EstimateGasPending indicates an expected call of EstimateGasPending.
+func (mr *MockClientMockRecorder) EstimateGasPending(ctx, msg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EstimateGasPending", reflect.TypeOf((*MockClient)(nil).EstimateGasPending), ctx, msg)
 }
 
 // EtherBalanceAt mocks base method.

@@ -118,15 +118,10 @@ func (o Sender) SendTransaction(ctx context.Context, sub xchain.Submission) erro
 		return err
 	}
 
-	estimatedGas := estimateGas(sub.Msgs)
-	if sub.BlockHeader.SourceChainID == o.network.Static().OmniConsensusChainIDUint64() {
-		estimatedGas = consensusGasLimit(o.network)
-	}
-
 	candidate := txmgr.TxCandidate{
 		TxData:   txData,
 		To:       &o.portal,
-		GasLimit: estimatedGas,
+		GasLimit: 0, // Rely on txmgr to estimate gas
 		Value:    big.NewInt(0),
 		Nonce:    &nonce,
 	}
@@ -138,7 +133,7 @@ func (o Sender) SendTransaction(ctx context.Context, sub xchain.Submission) erro
 
 	submissionTotal.WithLabelValues(srcChain, dstChain).Inc()
 	msgTotal.WithLabelValues(srcChain, dstChain).Add(float64(len(sub.Msgs)))
-	gasEstimated.WithLabelValues(dstChain).Observe(float64(estimatedGas))
+	gasEstimated.WithLabelValues(dstChain).Observe(float64(tx.Gas()))
 
 	receiptAttrs := []any{
 		"valset_id", sub.ValidatorSetID,
@@ -155,7 +150,7 @@ func (o Sender) SendTransaction(ctx context.Context, sub xchain.Submission) erro
 		errAttrs := slices.Concat(receiptAttrs, reqAttrs, []any{
 			"call_resp", hexutil.Encode(resp),
 			"call_err", err,
-			"gas_limit", estimatedGas,
+			"gas_limit", tx.Gas(),
 		})
 
 		revertedSubmissionTotal.WithLabelValues(srcChain, dstChain).Inc()
