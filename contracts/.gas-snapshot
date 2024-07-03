@@ -1,3 +1,4 @@
+AllocPredeploys_Test:test_allocs() (gas: 13936727)
 FeeOracleV1_Test:test_bulkSetFeeParams() (gas: 178682)
 FeeOracleV1_Test:test_feeFor() (gas: 127139)
 FeeOracleV1_Test:test_setBaseGasLimit() (gas: 34108)

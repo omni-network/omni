@@ -39,6 +39,8 @@ contract AllocPredeploys is Script {
         setPreinstalls();
         vm.stopPrank();
 
+        // Reset so its not included state dump
+        vm.etch(msg.sender, "");
         vm.resetNonce(msg.sender);
         vm.deal(msg.sender, 0);
 
