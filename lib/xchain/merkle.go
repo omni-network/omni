@@ -7,13 +7,16 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// MsgTree is a merkle tree of all the messages in a cross chain block.
-// It is used a leaf when calculating the AttestationRoot.
-// It's proofs are used to submit messages to destination chains.
-type MsgTree [][32]byte
+// MsgTree is a merkle tree of all the messages in a cross-chain block.
+// It is used as a leaf when calculating the AttestationRoot.
+// Its proofs are used to submit messages to destination chains.
+type MsgTree struct {
+	tree    [][32]byte       // Merkle tree with all nodes, incl leaves
+	indices map[[32]byte]int // Reverse lookup table for node indices
+}
 
 func (t MsgTree) MsgRoot() [32]byte {
-	return t[0]
+	return t.tree[0]
 }
 
 // Proof returns the merkle multi proof for the provided header and messages.
@@ -32,18 +35,16 @@ func (t MsgTree) Proof(msgs []Msg) (merkle.MultiProof, error) {
 		indices = append(indices, msgIndex)
 	}
 
-	return merkle.GetMultiProof(t, indices...)
+	return merkle.GetMultiProof(t.tree, indices...)
 }
 
 func (t MsgTree) leafIndex(leaf [32]byte) (int, error) {
-	// Linear search for the leaf (probably ok since trees are small; < 1000)
-	for i, l := range t {
-		if l == leaf {
-			return i, nil
-		}
+	index, ok := t.indices[leaf]
+	if !ok {
+		return 0, errors.New("leaf not in tree")
 	}
 
-	return 0, errors.New("leaf not in tree")
+	return index, nil
 }
 
 // NewMsgTree returns the merkle root of the provided messages
@@ -58,7 +59,21 @@ func NewMsgTree(msgs []Msg) (MsgTree, error) {
 		leafs = append(leafs, msgLeaf)
 	}
 
-	return merkle.MakeTree(leafs)
+	tree, err := merkle.MakeTree(leafs)
+	if err != nil {
+		return MsgTree{}, err
+	}
+
+	// Create a lookup table for node indices
+	indices := make(map[[32]byte]int)
+	for i, node := range tree {
+		indices[node] = i
+	}
+
+	return MsgTree{
+		tree:    tree,
+		indices: indices,
+	}, nil
 }
 
 func msgLeaf(msg Msg) ([32]byte, error) {

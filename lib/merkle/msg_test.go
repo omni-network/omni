@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestBlockTree(t *testing.T) {
+func TestMsgTree(t *testing.T) {
 	t.Parallel()
 
 	var msgs []xchain.Msg
