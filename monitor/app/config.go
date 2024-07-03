@@ -21,8 +21,8 @@ type Config struct {
 	Network        netconf.ID
 	MonitoringAddr string
 	PrivateKey     string
-
-	LoadGen loadgen.Config
+	HaloURL        string
+	LoadGen        loadgen.Config
 }
 
 func DefaultConfig() Config {

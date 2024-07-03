@@ -469,6 +469,7 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 	cfg := monapp.DefaultConfig()
 	cfg.PrivateKey = privKeyFile
 	cfg.Network = def.Testnet.Network
+	cfg.HaloURL = def.Testnet.BroadcastNode().AddressRPC()
 	cfg.LoadGen.ValidatorKeysGlob = validatorKeyGlob
 	cfg.RPCEndpoints = endpoints
 
