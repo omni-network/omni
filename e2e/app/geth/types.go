@@ -14,7 +14,7 @@ import (
 )
 
 // Version defines the geth version deployed to all networks.
-const Version = "v1.14.5"
+const Version = "v1.14.6"
 
 // Config is the configurable options for the standard omni geth config.
 type Config struct {
