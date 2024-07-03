@@ -27,8 +27,15 @@ func TestProvider(t *testing.T) {
 		fromHeight = uint64(100)
 	)
 
+	// Test fetcher returns <errs> errors, then 0,1,2,3,4,... attestations per fetch.
+	var expectFetched, expectCount int
+	for i := 0; expectFetched < total; i++ {
+		expectCount++
+		expectFetched += i
+	}
+
 	backoff := new(testBackOff)
-	fetcher := &testFetcher{errs: errs}
+	fetcher := newTestFetcher(errs, expectCount)
 
 	p := provider.NewProviderForT(t, fetcher.Fetch, nil, nil, backoff.BackOff)
 
@@ -51,13 +58,6 @@ func TestProvider(t *testing.T) {
 
 	wg.Wait() // Wait for all fetching to complete before proceeding with assertions
 
-	// Test fetcher returns <errs> errors, then 0,1,2,3,4,... attestations per fetch.
-	var expectFetched, expectCount int
-	for i := 0; expectFetched <= total; i++ {
-		expectCount++
-		expectFetched += i
-	}
-
 	require.Empty(t, fetcher.Errs()) // All errors returned
 	require.Equal(t, expectFetched, fetcher.Fetched())
 	require.Equal(t, expectCount, fetcher.Count())
@@ -71,14 +71,22 @@ func TestProvider(t *testing.T) {
 	}
 }
 
+func newTestFetcher(errs, maxCount int) *testFetcher {
+	return &testFetcher{
+		errs:     errs,
+		maxCount: maxCount,
+	}
+}
+
 // testFetcher implements fetchFunc.
 // It first returns errs errors.
 // Then it returns 0,1,2,3,4,5... attestations up to max.
 type testFetcher struct {
-	mu      sync.Mutex
-	errs    int
-	count   int
-	fetched int
+	mu       sync.Mutex
+	errs     int
+	maxCount int
+	count    int
+	fetched  int
 }
 
 func (f *testFetcher) Count() int {
@@ -102,7 +110,7 @@ func (f *testFetcher) Errs() int {
 	return f.errs
 }
 
-func (f *testFetcher) Fetch(_ context.Context, chainVer xchain.ChainVersion, fromHeight uint64,
+func (f *testFetcher) Fetch(ctx context.Context, chainVer xchain.ChainVersion, fromHeight uint64,
 ) ([]xchain.Attestation, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -110,6 +118,11 @@ func (f *testFetcher) Fetch(_ context.Context, chainVer xchain.ChainVersion, fro
 	if f.errs > 0 {
 		f.errs--
 		return nil, errors.New("test error")
+	} else if f.count >= f.maxCount {
+		// Block and wait for test to cancel the context
+		// This is required for deterministic fetch assertions since it is done async wrt callbacks.
+		<-ctx.Done()
+		return nil, ctx.Err()
 	}
 
 	toReturn := f.count
