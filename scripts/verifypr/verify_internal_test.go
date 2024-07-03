@@ -15,16 +15,16 @@ func TestVerify(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "valid no task",
+			name: "valid no issue",
 			commit: `feat(*): add foo bar
 
 foo bar baz
 
-task: none`,
+issue: none`,
 		},
 		{
 			name:   "valid mixed line endings", // Github uses \r\n
-			commit: "feat(*): add foo bar\n\nfoo bar baz\r\n\r\ntask: none",
+			commit: "feat(*): add foo bar\n\nfoo bar baz\r\n\r\nissue: none",
 		},
 		{
 			name: "valid single scope",
@@ -32,7 +32,7 @@ task: none`,
 
 foo bar baz
 
-task: none`,
+issue: none`,
 		},
 		{
 			name: "invalid double scope",
@@ -40,7 +40,7 @@ task: none`,
 
 foo bar baz
 
-task: none`,
+issue: none`,
 		},
 		{
 			name:    "invalid too much scope",
@@ -49,7 +49,7 @@ task: none`,
 
 foo bar baz
 
-task: none`,
+issue: none`,
 		},
 		{
 			name:    "invalid type",
@@ -58,15 +58,23 @@ task: none`,
 
 foo bar baz
 
-task: none`,
+issue: none`,
 		},
 		{
-			name: "valid asana task",
+			name: "valid full github issue",
 			commit: `feat(*): add foo bar
 
 foo bar baz
 
-task: https://app.asana.com/0/1206208509925075/1206265166156265`,
+issue: https://github.com/omni-network/omni/issues/1334`,
+		},
+		{
+			name: "valid short github issue",
+			commit: `feat(*): add foo bar
+
+foo bar baz
+
+issue: #1334`,
 		},
 		{
 			name:    "invalid description title case",
@@ -75,7 +83,7 @@ task: https://app.asana.com/0/1206208509925075/1206265166156265`,
 
 foo bar baz
 
-task: none`,
+issue: none`,
 		},
 		{
 			name:    "invalid description punctuation",
@@ -84,7 +92,7 @@ task: none`,
 
 foo bar baz
 
-task: none`,
+issue: none`,
 		},
 		{
 			name:    "invalid no scope",
@@ -93,14 +101,14 @@ task: none`,
 
 foo bar baz
 
-task: none`,
+issue: none`,
 		},
 		{
 			name:    "invalid no body",
 			wantErr: true,
 			commit: `feat: foo baz bar
 
-task: none`,
+issue: none`,
 		},
 		{
 			name: "valid other type",
@@ -108,7 +116,7 @@ task: none`,
 
 foo bar baz
 
-task: none`,
+issue: none`,
 		},
 		{
 			name: "valid example",
@@ -116,7 +124,7 @@ task: none`,
 
 Adds a 'verifypr' github action that ensures all PR adhere to the omni style conventional commit template.
 
-task: https://app.asana.com/0/1206208509925075/1206265166156265`,
+issue: https://github.com/omni-network/omni/issues/1334`,
 		},
 		{
 			name: "valid description with dashes",
@@ -126,7 +134,7 @@ Adds two github actions:
  - golangci-lint: Runs the go linter so issues are added inline to PR.
  - pre-commit: Runs pre-commit hooks (excluding golangci-lint)
 
-task: none`,
+issue: none`,
 		},
 	}
 

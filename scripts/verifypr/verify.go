@@ -15,9 +15,10 @@ import (
 )
 
 var (
-	descRegex = regexp.MustCompile(`^[a-z][-\w\s]+$`) // e.g. "add foo-bar"
-
-	scopeRegex = regexp.MustCompile(`^[*\w]+(/[*\w]+)?$`) // e.g. "*" or "foo" or "foo/bar"
+	descRegex       = regexp.MustCompile(`^[a-z][-\w\s]+$`)    // e.g. "add foo-bar"
+	scopeRegex      = regexp.MustCompile(`^[*\w]+(/[*\w]+)?$`) // e.g. "*" or "foo" or "foo/bar"
+	issueRegexFull  = regexp.MustCompile(`^https://github.com/omni-network/omni/issues/\d+$`)
+	issueRegexShort = regexp.MustCompile(`^#\d+$`) // e.g. "#1334"
 )
 
 // run runs the verification.
@@ -101,6 +102,11 @@ func verify(commitMsg string) error {
 		return errors.New("body empty")
 	}
 
+	// Verify footer is valid.
+	if err := verifyFooter(commit); err != nil {
+		return err
+	}
+
 	// Verify scope is valid.
 	if err := verifyScope(commit); err != nil {
 		return err
@@ -135,6 +141,34 @@ func verifyScope(commit *cc.ConventionalCommit) error {
 
 	if !scopeRegex.MatchString(scope) {
 		return errors.New("scope doesn't match regex")
+	}
+
+	return nil
+}
+
+func verifyFooter(commit *cc.ConventionalCommit) error {
+	if len(commit.Footers) == 0 {
+		return errors.New("missing `task` footer")
+	}
+	if len(commit.Footers) > 1 {
+		return errors.New("invalid number of footers, only `issue` required")
+	}
+
+	if len(commit.Footers["issue"]) != 1 {
+		return errors.New("invalid number of issue footers, only one allowed")
+	}
+
+	issue := commit.Footers["issue"][0]
+	if issue == "" {
+		return errors.New("issue footer empty")
+	} else if issue == "none" {
+		// None is fine
+	} else if issueRegexFull.MatchString(issue) {
+		// Full issue URL
+	} else if issueRegexShort.MatchString(issue) {
+		// Short issue URL
+	} else {
+		return errors.New("issue footer doesn't match regex")
 	}
 
 	return nil
