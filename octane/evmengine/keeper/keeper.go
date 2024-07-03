@@ -176,7 +176,7 @@ func (k *Keeper) isNextProposer(ctx context.Context, currentProposer []byte, cur
 	valset, ok, err := k.cmtAPI.Validators(ctx, currentHeight)
 	if err != nil {
 		return false, err
-	} else if !ok {
+	} else if !ok || len(valset.Validators) == 0 {
 		return false, errors.New("validators not available")
 	}
 

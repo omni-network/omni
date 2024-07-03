@@ -597,6 +597,11 @@ func nodeByPrefix(testnet types.Testnet, prefix string) *e2e.Node {
 
 // random returns a random item from a slice.
 func random[T any](items []T) T {
+	var zero T
+	if len(items) == 0 {
+		return zero
+	}
+
 	return items[int(time.Now().UnixNano())%len(items)]
 }
 

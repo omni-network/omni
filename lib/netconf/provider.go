@@ -111,6 +111,10 @@ func IntervalFromPeriod(network ID, period time.Duration) uint64 {
 		target = time.Second * 10
 	}
 
+	if period == 0 {
+		return 0
+	}
+
 	return uint64(target / period)
 }
 
