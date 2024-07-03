@@ -3,7 +3,10 @@ package txmgr
 import (
 	"context"
 	"errors"
+	"io"
 	"math/big"
+	"math/rand/v2"
+	"net"
 	"strconv"
 	"sync"
 	"testing"
@@ -676,7 +679,7 @@ func TestWaitMinedReturnsReceiptOnFirstSuccess(t *testing.T) {
 	require.Equal(t, receipt.TxHash, txHash)
 }
 
-// TestWaitMinedCanBeCanceled ensures that waitMined exits of the passed context
+// TestWaitMinedCanBeCanceled ensures that waitMined exits if the passed context
 // is canceled before a receipt is found.
 func TestWaitMinedCanBeCanceled(t *testing.T) {
 	t.Parallel()
@@ -730,6 +733,7 @@ func TestWaitMinedMultipleConfs(t *testing.T) {
 // inner loop of waitMined properly handles this case.
 type failingBackend struct {
 	ethclient.Client
+	txReceiptErr             error // Defaults to ethereum.NotFound if nil
 	returnSuccessBlockNumber bool
 	returnSuccessHeader      bool
 	returnSuccessReceipt     bool
@@ -755,7 +759,13 @@ func (b *failingBackend) TransactionReceipt(
 ) (*types.Receipt, error) {
 	if !b.returnSuccessReceipt {
 		b.returnSuccessReceipt = true
-		return nil, ethereum.NotFound
+
+		err := ethereum.NotFound
+		if b.txReceiptErr != nil {
+			err = b.txReceiptErr
+		}
+
+		return nil, err
 	}
 
 	return &types.Receipt{
@@ -797,6 +807,40 @@ func TestWaitMinedReturnsReceiptAfterNotFound(t *testing.T) {
 		},
 		chainName: "TEST",
 		backend:   &borkedBackend,
+	}
+
+	// Don't mine the tx with the default backend. The failingBackend will
+	// return the txHash on the second call.
+	tx := types.NewTx(&types.LegacyTx{})
+	txHash := tx.Hash()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	receipt, err := mgr.waitMined(ctx, tx, testSendState())
+	require.NoError(t, err)
+	require.NotNil(t, receipt)
+	require.Equal(t, receipt.TxHash, txHash)
+}
+
+func TestWaitMinedRetriesNetError(t *testing.T) {
+	t.Parallel()
+
+	// Temporary errors or any net.OpError results in retries.
+	netErr := context.DeadlineExceeded
+	if rand.Float64() > 0.5 {
+		netErr = &net.OpError{Op: "read", Err: io.EOF}
+	}
+	netErrBackend := failingBackend{txReceiptErr: netErr}
+
+	mgr := &simple{
+		cfg: Config{
+			ResubmissionTimeout:       time.Second,
+			ReceiptQueryInterval:      50 * time.Millisecond,
+			NumConfirmations:          1,
+			SafeAbortNonceTooLowCount: 3,
+		},
+		chainName: "TEST",
+		backend:   &netErrBackend,
 	}
 
 	// Don't mine the tx with the default backend. The failingBackend will

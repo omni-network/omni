@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"math/big"
+	"net"
 	"strings"
 	"sync"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/txpool"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/p2p/netutil"
 	"github.com/ethereum/go-ethereum/params"
 )
 
@@ -421,6 +423,8 @@ func (m *simple) waitMined(ctx context.Context, tx *types.Transaction,
 	const logFreqFactor = 10 // Log every 10th attempt
 	attempt := 1
 
+	netErrBackoff := expbackoff.New(ctx) // Additional backoff on network errors.
+
 	queryTicker := time.NewTicker(m.cfg.ReceiptQueryInterval)
 	defer queryTicker.Stop()
 	for {
@@ -429,7 +433,12 @@ func (m *simple) waitMined(ctx context.Context, tx *types.Transaction,
 			return nil, errors.Wrap(ctx.Err(), "context canceled")
 		case <-queryTicker.C:
 			receipt, ok, err := m.queryReceipt(ctx, txHash, sendState)
-			if err != nil {
+			if netutil.IsTemporaryError(err) || isNetworkError(err) {
+				// Treat all network errors as temporary, since we know we submitted the tx already.
+				// Network issues might resolve, and the tx might still be mined, don't give up.
+				log.Warn(ctx, "Temporary network error querying receipt (will retry)", err, "attempt", attempt)
+				netErrBackoff()
+			} else if err != nil {
 				return nil, err
 			} else if !ok && attempt%logFreqFactor == 0 {
 				log.Warn(ctx, "Transaction not yet mined", nil, "attempt", attempt)
@@ -686,4 +695,15 @@ func maybeSetTimeout(ctx context.Context, timeout time.Duration) (context.Contex
 	}
 
 	return context.WithTimeout(ctx, timeout)
+}
+
+// isNetworkError returns true if the error is a network error.
+func isNetworkError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	opErr := new(net.OpError)
+
+	return errors.As(err, &opErr)
 }

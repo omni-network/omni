@@ -70,6 +70,8 @@ linters-settings:
         arguments:
          - 'fmt.Printf'
          - 'fmt.Println'
+      - name: max-control-nesting
+        arguments: [10] # We allow more nesting
   staticcheck:
     checks:
      - "all"
