@@ -124,7 +124,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, nil //nolint:nilnil // No ping pong, no XDapp to return.
 	}
 
-	pp, err := pingpong.Deploy(ctx, def.Netman(), def.Backends())
+	pp, err := pingpong.Deploy(ctx, networkFromDef(def), def.Backends())
 	if err != nil {
 		return nil, errors.Wrap(err, "deploy pingpong")
 	}
@@ -188,7 +188,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 	stopAddingPortals := startAddingMockPortals(ctx, def)
 
 	msgBatches := []int{3, 2, 1} // Send 6 msgs from each chain to each other chain
-	msgsErr := StartSendingXMsgs(ctx, def.Netman(), def.Backends(), msgBatches...)
+	msgsErr := StartSendingXMsgs(ctx, def.Testnet.Network, def.Netman(), def.Backends(), msgBatches...)
 
 	if err := StartRemaining(ctx, def.Testnet.Testnet, def.Infra); err != nil {
 		return err

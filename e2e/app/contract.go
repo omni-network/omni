@@ -4,10 +4,12 @@ import (
 	"context"
 	"time"
 
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/netman"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -17,7 +19,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func StartSendingXMsgs(ctx context.Context, netman netman.Manager, backends ethbackend.Backends, batches ...int) <-chan error {
+func StartSendingXMsgs(ctx context.Context, network netconf.ID, netman netman.Manager, backends ethbackend.Backends, batches ...int) <-chan error {
 	log.Info(ctx, "Generating cross chain messages async", "batches", batches)
 
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
@@ -26,7 +28,7 @@ func StartSendingXMsgs(ctx context.Context, netman netman.Manager, backends ethb
 	go func() {
 		for i, count := range batches {
 			log.Debug(ctx, "Sending xmsgs", "batch", i, "count", count)
-			err := SendXMsgs(ctx, netman, backends, count)
+			err := SendXMsgs(ctx, network, netman, backends, count)
 			if ctx.Err() != nil {
 				errChan <- ctx.Err()
 				return
@@ -43,7 +45,9 @@ func StartSendingXMsgs(ctx context.Context, netman netman.Manager, backends ethb
 }
 
 // SendXMsgs sends <count> xmsgs from every chain to every other chain, then waits for them to be mined.
-func SendXMsgs(ctx context.Context, netman netman.Manager, backends ethbackend.Backends, count int) error {
+func SendXMsgs(ctx context.Context, network netconf.ID, netman netman.Manager, backends ethbackend.Backends, count int) error {
+	sender := eoa.MustAddress(network, eoa.RoleTester)
+
 	waiter := backends.NewWaiter()
 	var eg errgroup.Group
 	for _, from := range netman.Portals() {
@@ -55,7 +59,7 @@ func SendXMsgs(ctx context.Context, netman netman.Manager, backends ethbackend.B
 			for i := 0; i < count; i++ {
 				// Send async so whole batch included in same block. Important for testing.
 				eg.Go(func() error {
-					tx, err := xcall(ctx, backends, netman.Operator(), from, to.Chain.ChainID)
+					tx, err := xcall(ctx, backends, sender, from, to.Chain.ChainID)
 					if err != nil {
 						return errors.Wrap(err, "xcall")
 					}

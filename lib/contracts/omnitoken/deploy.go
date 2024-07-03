@@ -6,7 +6,6 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
-	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/create3"
 	"github.com/omni-network/omni/lib/errors"
@@ -69,7 +68,7 @@ func stagingCfg() DeploymentConfig {
 		Create3Factory: contracts.StagingCreate3Factory(),
 		Create3Salt:    contracts.TokenSalt(netconf.Staging),
 		Deployer:       eoa.MustAddress(netconf.Staging, eoa.RoleDeployer),
-		Recipient:      eoa.MustAddress(netconf.Staging, eoa.RoleFbDev),
+		Recipient:      eoa.MustAddress(netconf.Staging, eoa.RoleTester),
 		ExpectedAddr:   contracts.StagingToken(),
 	}
 }
@@ -79,18 +78,18 @@ func devnetCfg() DeploymentConfig {
 		Create3Factory: contracts.DevnetCreate3Factory(),
 		Create3Salt:    contracts.TokenSalt(netconf.Devnet),
 		Deployer:       eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
-		Recipient:      anvil.DevAccount7(),
+		Recipient:      eoa.MustAddress(netconf.Devnet, eoa.RoleTester),
 		ExpectedAddr:   contracts.DevnetToken(),
 	}
 }
 
 func InitialSupplyRecipient(network netconf.ID) (common.Address, bool) {
 	if network == netconf.Devnet {
-		return anvil.DevAccount7(), true
+		return devnetCfg().Recipient, true
 	}
 
 	if network == netconf.Staging {
-		return eoa.MustAddress(netconf.Staging, eoa.RoleFbDev), true
+		return stagingCfg().Recipient, true
 	}
 
 	return common.Address{}, false

@@ -19,6 +19,7 @@ var (
 	}
 
 	// thresholdSmall is used by EOAs that deploy contracts or perform actions a couple times per week/month.
+	//nolint:unused // Might be used in future.
 	thresholdSmall = FundThresholds{
 		minEther:    0.1,
 		targetEther: 1.0,
@@ -44,7 +45,7 @@ var (
 		RoleCreate3Deployer: thresholdTiny,   // Only 1 contract per chain
 		RoleAdmin:           thresholdTiny,   // Rarely used
 		RoleDeployer:        thresholdTiny,   // Protected chains are only deployed once
-		RoleFbDev:           thresholdSmall,  // Unclear what this should be used for.
+		RoleTester:          thresholdLarge,  // Tester funds pingpongs, validator updates, etc.
 	}
 
 	ephemeralOverrides = map[Role]FundThresholds{

@@ -75,7 +75,7 @@ func stagingCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory: contracts.StagingCreate3Factory(),
 		Create3Salt:    contracts.L1BridgeSalt(netconf.Staging),
-		Owner:          mustAdmin(netconf.Staging),
+		Owner:          eoa.MustAddress(netconf.Staging, eoa.RoleAdmin),
 		Deployer:       eoa.MustAddress(netconf.Staging, eoa.RoleDeployer),
 		ProxyAdmin:     contracts.StagingProxyAdmin(),
 		Portal:         contracts.StagingPortal(),
@@ -88,22 +88,13 @@ func devnetCfg() DeploymentConfig {
 	return DeploymentConfig{
 		Create3Factory: contracts.DevnetCreate3Factory(),
 		Create3Salt:    contracts.L1BridgeSalt(netconf.Devnet),
-		Owner:          mustAdmin(netconf.Devnet),
+		Owner:          eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
 		Deployer:       eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
 		ProxyAdmin:     contracts.DevnetProxyAdmin(),
 		Portal:         contracts.DevnetPortal(),
 		Token:          contracts.DevnetToken(),
 		ExpectedAddr:   contracts.DevnetL1Bridge(),
 	}
-}
-
-func mustAdmin(network netconf.ID) common.Address {
-	addr, err := eoa.Admin(network)
-	if err != nil {
-		panic(err)
-	}
-
-	return addr
 }
 
 // Deploy deploys a new L1Bridge contract and returns the address and receipt.

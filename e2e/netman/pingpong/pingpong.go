@@ -9,13 +9,12 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings/examples"
-	"github.com/omni-network/omni/e2e/netman"
-	"github.com/omni-network/omni/e2e/types"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/forkjoin"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -35,21 +34,20 @@ type XDapp struct {
 	contracts map[uint64]contract
 	edges     []Edge
 	backends  ethbackend.Backends
-	operator  common.Address
+	deployer  common.Address
+	network   netconf.ID
 }
 
-func Deploy(ctx context.Context, netMgr netman.Manager, backends ethbackend.Backends) (XDapp, error) {
+func Deploy(ctx context.Context, network netconf.Network, backends ethbackend.Backends) (XDapp, error) {
 	log.Info(ctx, "Deploying ping pong contracts")
 
-	operator := netMgr.Operator()
+	deployer := eoa.MustAddress(network.ID, eoa.RoleTester)
 
 	// Define a deploy function that deploys a ping pong contract to a chain.
-	deployFunc := func(ctx context.Context, portal netman.Portal) (contract, error) {
-		log.Debug(ctx, "Deploying ping pong contract", "chain", portal.Chain.Name, "chainID", portal.Chain.ChainID, "portal", portal.DeployInfo.PortalAddress)
+	deployFunc := func(ctx context.Context, chain netconf.Chain) (contract, error) {
+		log.Debug(ctx, "Deploying ping pong contract", "chain", chain.Name, "portal", chain.PortalAddress)
 
-		portalAddr := portal.DeployInfo.PortalAddress
-
-		txOpts, backend, err := backends.BindOpts(ctx, portal.Chain.ChainID, operator)
+		txOpts, backend, err := backends.BindOpts(ctx, chain.ID, deployer)
 		if err != nil {
 			return contract{}, errors.Wrap(err, "deploy opts")
 		}
@@ -59,15 +57,15 @@ func Deploy(ctx context.Context, netMgr netman.Manager, backends ethbackend.Back
 			return contract{}, errors.Wrap(err, "block number")
 		}
 
-		addr, _, pingPong, err := examples.DeployPingPong(txOpts, backend, portalAddr)
+		addr, _, pingPong, err := examples.DeployPingPong(txOpts, backend, chain.PortalAddress)
 		if err != nil {
 			return contract{}, errors.Wrap(err, "deploy ping pong contract")
 		}
 
-		log.Debug(ctx, "Deployed ping pong contract", "addr", addr, "chain", portal.Chain.Name, "height", height)
+		log.Debug(ctx, "Deployed ping pong contract", "addr", addr, "chain", chain.Name, "height", height)
 
 		return contract{
-			Chain:        portal.Chain,
+			Chain:        chain,
 			Address:      addr,
 			PingPong:     pingPong,
 			DeployHeight: height,
@@ -75,8 +73,7 @@ func Deploy(ctx context.Context, netMgr netman.Manager, backends ethbackend.Back
 	}
 
 	// Start forkjoin for all portals
-	portals := flatten[uint64, netman.Portal](netMgr.Portals())
-	results, cancel := forkjoin.NewWithInputs(ctx, deployFunc, portals)
+	results, cancel := forkjoin.NewWithInputs(ctx, deployFunc, network.EVMChains())
 
 	defer cancel()
 
@@ -87,14 +84,15 @@ func Deploy(ctx context.Context, netMgr netman.Manager, backends ethbackend.Back
 			return XDapp{}, errors.Wrap(res.Err, "deploy")
 		}
 
-		contracts[res.Input.Chain.ChainID] = res.Output
+		contracts[res.Input.ID] = res.Output
 	}
 
 	dapp := XDapp{
 		contracts: contracts,
 		backends:  backends,
 		edges:     edges(contracts),
-		operator:  operator,
+		deployer:  deployer,
+		network:   network.ID,
 	}
 
 	if err := dapp.fund(ctx); err != nil {
@@ -106,7 +104,7 @@ func Deploy(ctx context.Context, netMgr netman.Manager, backends ethbackend.Back
 
 func (d *XDapp) LogBalances(ctx context.Context) error {
 	for _, contract := range d.contracts {
-		backend, err := d.backends.Backend(contract.Chain.ChainID)
+		backend, err := d.backends.Backend(contract.Chain.ID)
 		if err != nil {
 			return err
 		}
@@ -124,7 +122,7 @@ func (d *XDapp) LogBalances(ctx context.Context) error {
 
 func (d *XDapp) fund(ctx context.Context) error {
 	for _, contract := range d.contracts {
-		txOpts, backend, err := d.backends.BindOpts(ctx, contract.Chain.ChainID, d.operator)
+		txOpts, backend, err := d.backends.BindOpts(ctx, contract.Chain.ID, d.deployer)
 		if err != nil {
 			return err
 		}
@@ -133,7 +131,7 @@ func (d *XDapp) fund(ctx context.Context) error {
 		fund := new(big.Int).Div(big.NewInt(params.Ether), big.NewInt(2))
 
 		// for OMNI chains, fund it with 100 OMNI
-		if contract.Chain.Metadata.NativeToken == tokens.OMNI {
+		if contract.Chain.ID == d.network.Static().OmniExecutionChainID {
 			fund = new(big.Int).Mul(big.NewInt(params.Ether), big.NewInt(100))
 		}
 
@@ -167,7 +165,7 @@ func (d *XDapp) StartAllEdges(ctx context.Context, latest, parallel, count uint6
 		log.Debug(ctx, "Starting ping pong contract",
 			"from", from.Chain.Name,
 			"to", to.Chain.Name,
-			"from_chain_id", from.Chain.ChainID,
+			"from_chain_id", from.Chain.ID,
 			"parallel", parallel,
 			"count", count,
 			"shards", from.Chain.Shards,
@@ -183,13 +181,13 @@ func (d *XDapp) StartAllEdges(ctx context.Context, latest, parallel, count uint6
 			}
 
 			eg.Go(func() error {
-				txOpts, backend, err := d.backends.BindOpts(ctx, from.Chain.ChainID, d.operator)
+				txOpts, backend, err := d.backends.BindOpts(ctx, from.Chain.ID, d.deployer)
 				if err != nil {
 					return err
 				}
 
 				id := randomHex7()
-				tx, err := from.PingPong.Start(txOpts, id, to.Chain.ChainID, uint8(conf), to.Address, count)
+				tx, err := from.PingPong.Start(txOpts, id, to.Chain.ID, uint8(conf), to.Address, count)
 				if err != nil {
 					return errors.Wrap(err, "start ping pong", "id", id, "from", from.Chain.Name, "to", to.Chain.Name, "conf", conf)
 				}
@@ -260,7 +258,7 @@ func (d *XDapp) Watch(ctx context.Context) error {
 	}
 
 	for _, contract := range d.contracts {
-		backend, err := d.backends.Backend(contract.Chain.ChainID)
+		backend, err := d.backends.Backend(contract.Chain.ID)
 		if err != nil {
 			return err
 		}
@@ -344,7 +342,7 @@ func edges(contracts map[uint64]contract) []Edge {
 	// get all unique edges
 	for i := 0; i < len(arr); i++ {
 		for j := i + 1; j < len(arr); j++ {
-			resp = append(resp, Edge{From: arr[i].Chain.ChainID, To: arr[j].Chain.ChainID})
+			resp = append(resp, Edge{From: arr[i].Chain.ID, To: arr[j].Chain.ID})
 		}
 	}
 
@@ -353,19 +351,10 @@ func edges(contracts map[uint64]contract) []Edge {
 
 // contract defines a deployed contract.
 type contract struct {
-	Chain        types.EVMChain
+	Chain        netconf.Chain
 	Address      common.Address
 	PingPong     *examples.PingPong
 	DeployHeight uint64
-}
-
-func flatten[K comparable, V any](m map[K]V) []V {
-	var resp []V
-	for _, v := range m {
-		resp = append(resp, v)
-	}
-
-	return resp
 }
 
 // randomHex7 returns a random 7-character hex string.

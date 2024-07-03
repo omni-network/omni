@@ -37,13 +37,8 @@ func genallocs() error {
 			continue
 		}
 
-		admin, err := eoa.Admin(network)
-		if err != nil {
-			return errors.Wrap(err, "eoa admin")
-		}
-
 		cfg := bindings.AllocPredeploysConfig{
-			Admin:                  admin,
+			Admin:                  eoa.MustAddress(network, eoa.RoleAdmin),
 			EnableStakingAllowlist: network.IsProtected(),
 			Output:                 "allocs/" + network.String() + ".json",
 		}
