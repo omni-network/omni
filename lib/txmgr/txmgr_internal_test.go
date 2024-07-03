@@ -814,7 +814,7 @@ func TestWaitMinedReturnsReceiptAfterNotFound(t *testing.T) {
 	require.Equal(t, receipt.TxHash, txHash)
 }
 
-func TestWaitMinedRetiesNetError(t *testing.T) {
+func TestWaitMinedRetriesNetError(t *testing.T) {
 	t.Parallel()
 
 	// Temporary errors or any net.OpError results in retries.
