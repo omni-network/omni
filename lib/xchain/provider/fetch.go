@@ -12,7 +12,9 @@ import (
 	"github.com/omni-network/omni/lib/tracer"
 	"github.com/omni-network/omni/lib/xchain"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"golang.org/x/sync/errgroup"
@@ -181,27 +183,25 @@ func (p *Provider) GetBlock(ctx context.Context, req xchain.ProviderRequest) (xc
 		}
 	}
 
-	// Fetch the msgs and receipts (and header if required) in parallel.
+	// Fetch the header if we didn't find it in the cache
+	if header == nil {
+		header, err = ethCl.HeaderByNumber(ctx, big.NewInt(int64(req.Height)))
+		if err != nil {
+			return xchain.Block{}, false, errors.Wrap(err, "header by number")
+		}
+	}
+
+	// Fetch the msgs and receipts in parallel.
 	var eg errgroup.Group
 	eg.Go(func() error {
-		if header != nil {
-			return nil // No need to fetch header again.
-		}
-
 		var err error
-		header, err = ethCl.HeaderByNumber(ctx, big.NewInt(int64(req.Height)))
+		msgs, err = p.getXMsgLogs(ctx, req.ChainID, header.Hash())
 
 		return err
 	})
 	eg.Go(func() error {
 		var err error
-		msgs, err = p.getXMsgLogs(ctx, req.ChainID, req.Height)
-
-		return err
-	})
-	eg.Go(func() error {
-		var err error
-		receipts, err = p.getXReceiptLogs(ctx, req.ChainID, req.Height)
+		receipts, err = p.getXReceiptLogs(ctx, req.ChainID, header.Hash())
 
 		return err
 	})
@@ -229,13 +229,18 @@ func (p *Provider) GetBlock(ctx context.Context, req xchain.ProviderRequest) (xc
 	return resp, true, nil
 }
 
-func (p *Provider) getXReceiptLogs(ctx context.Context, chainID uint64, height uint64) ([]xchain.Receipt, error) {
+func (p *Provider) getXReceiptLogs(ctx context.Context, chainID uint64, blockHash common.Hash) ([]xchain.Receipt, error) {
 	ctx, span := tracer.Start(ctx, spanName("get_receipt_logs"))
 	defer span.End()
 
 	chain, rpcClient, err := p.getEVMChain(chainID)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "get evm chain")
+	}
+
+	logs, err := getLogs(ctx, rpcClient, chain.PortalAddress, blockHash, "XReceipt")
+	if err != nil {
+		return nil, errors.Wrap(err, "get xreceipt logs")
 	}
 
 	expectedShards := make(map[uint64]bool)
@@ -248,20 +253,12 @@ func (p *Provider) getXReceiptLogs(ctx context.Context, chainID uint64, height u
 		return nil, errors.Wrap(err, "new filterer")
 	}
 
-	filterOpts := bind.FilterOpts{
-		Start:   height,
-		End:     &height,
-		Context: ctx,
-	}
-
-	iter, err := filterer.FilterXReceipt(&filterOpts, nil, nil, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "filter receipts logs")
-	}
-
 	var receipts []xchain.Receipt
-	for iter.Next() {
-		e := iter.Event
+	for _, xreceiptLog := range logs {
+		e, err := filterer.ParseXReceipt(xreceiptLog)
+		if err != nil {
+			return nil, errors.Wrap(err, "parse xreceipt log")
+		}
 
 		if !expectedShards[e.ShardId] {
 			return nil, errors.New("unexpected receipt shard",
@@ -287,20 +284,22 @@ func (p *Provider) getXReceiptLogs(ctx context.Context, chainID uint64, height u
 			TxHash:         e.Raw.TxHash,
 		})
 	}
-	if err := iter.Error(); err != nil {
-		return nil, errors.Wrap(err, "iterate receipts logs")
-	}
 
 	return receipts, nil
 }
 
-func (p *Provider) getXMsgLogs(ctx context.Context, chainID uint64, height uint64) ([]xchain.Msg, error) {
+func (p *Provider) getXMsgLogs(ctx context.Context, chainID uint64, blockHash common.Hash) ([]xchain.Msg, error) {
 	ctx, span := tracer.Start(ctx, spanName("get_msg_logs"))
 	defer span.End()
 
 	chain, rpcClient, err := p.getEVMChain(chainID)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "get evm chain")
+	}
+
+	logs, err := getLogs(ctx, rpcClient, chain.PortalAddress, blockHash, "XMsg")
+	if err != nil {
+		return nil, errors.Wrap(err, "get xmsg logs")
 	}
 
 	expectedShards := make(map[uint64]bool)
@@ -313,20 +312,12 @@ func (p *Provider) getXMsgLogs(ctx context.Context, chainID uint64, height uint6
 		return nil, err
 	}
 
-	filterOpts := bind.FilterOpts{
-		Start:   height,
-		End:     &height,
-		Context: ctx,
-	}
-
-	iter, err := filterer.FilterXMsg(&filterOpts, nil, nil, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "filter xmsg logs")
-	}
-
 	var xmsgs []xchain.Msg
-	for iter.Next() {
-		e := iter.Event
+	for _, xmsgLog := range logs {
+		e, err := filterer.ParseXMsg(xmsgLog)
+		if err != nil {
+			return nil, errors.Wrap(err, "parse xmsg log")
+		}
 
 		if !expectedShards[e.ShardId] {
 			return nil, errors.New("unexpected xmsg shard", "shard", e.ShardId)
@@ -347,9 +338,6 @@ func (p *Provider) getXMsgLogs(ctx context.Context, chainID uint64, height uint6
 			DestGasLimit:    e.GasLimit,
 			TxHash:          e.Raw.TxHash,
 		})
-	}
-	if err := iter.Error(); err != nil {
-		return nil, errors.Wrap(err, "iterate xmsg logs")
 	}
 
 	return xmsgs, nil
@@ -432,4 +420,22 @@ func headTypeFromConfLevel(conf xchain.ConfLevel) (ethclient.HeadType, bool) {
 
 func reqToChainVersion(req xchain.ProviderRequest) chainVersion {
 	return chainVersion{ID: req.ChainID, ConfLevel: req.ConfLevel}
+}
+
+func getLogs(ctx context.Context, rpcClient ethclient.Client, contractAddr common.Address, blockHash common.Hash, topicName string) ([]types.Log, error) {
+	portalAbi, err := bindings.OmniPortalMetaData.GetAbi()
+	if err != nil {
+		return nil, errors.Wrap(err, "get abi")
+	}
+
+	logs, err := rpcClient.FilterLogs(ctx, ethereum.FilterQuery{
+		BlockHash: &blockHash,
+		Addresses: []common.Address{contractAddr},
+		Topics:    [][]common.Hash{{portalAbi.Events[topicName].ID}},
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "filter xreceipt logs")
+	}
+
+	return logs, nil
 }
