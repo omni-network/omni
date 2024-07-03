@@ -145,8 +145,13 @@ func PubKeyPBToAddress(pubkey cryptopb.PublicKey) (common.Address, error) {
 }
 
 // PubKeyToBytes64 returns the 64 byte uncompressed version of the public key, by removing the prefix (0x04 for uncompressed keys).
-func PubKeyToBytes64(pubkey *stdecdsa.PublicKey) []byte {
-	return ethcrypto.FromECDSAPub(pubkey)[1:]
+func PubKeyToBytes64(pubkey *stdecdsa.PublicKey) ([]byte, error) {
+	bz := ethcrypto.FromECDSAPub(pubkey)
+	if len(bz) != pubkeyUncompressedLen {
+		return nil, errors.New("invalid pubkey")
+	}
+
+	return bz[1:], nil
 }
 
 // PubKeyFromBytes64 returns the public key from the 64 byte uncompressed version.

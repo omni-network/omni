@@ -62,7 +62,10 @@ func RegisterOperatorWithAVS(ctx context.Context, addr common.Address, backend *
 		return errors.Wrap(err, "public key")
 	}
 
-	pubkey64 := k1util.PubKeyToBytes64(pubkey)
+	pubkey64, err := k1util.PubKeyToBytes64(pubkey)
+	if err != nil {
+		return err
+	}
 
 	tx, err := avs.RegisterOperator(txOpts, pubkey64, bindings.ISignatureUtilsSignatureWithSaltAndExpiry{
 		Signature: sig[:],

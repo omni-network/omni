@@ -123,7 +123,8 @@ func TestPubkey64(t *testing.T) {
 	priv, err := crypto.GenerateKey()
 	require.NoError(t, err)
 
-	bz64 := k1util.PubKeyToBytes64(&priv.PublicKey)
+	bz64, err := k1util.PubKeyToBytes64(&priv.PublicKey)
+	require.NoError(t, err)
 	require.Len(t, bz64, 64)
 
 	pub, err := k1util.PubKeyFromBytes64(bz64)
