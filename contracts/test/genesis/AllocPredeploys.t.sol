@@ -3,6 +3,7 @@ pragma solidity =0.8.24;
 
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { Predeploys } from "src/libraries/Predeploys.sol";
+import { Preinstalls } from "src/octane/Preinstalls.sol";
 import { EIP1967Helper } from "script/genesis/utils/EIP1967Helper.sol";
 import { AllocPredeploys } from "script/genesis/AllocPredeploys.s.sol";
 import { Staking } from "src/octane/Staking.sol";
@@ -43,6 +44,34 @@ contract AllocPredeploys_Test is Test, AllocPredeploys {
         );
 
         _testPredeploys();
+        _testPreinstalls();
+    }
+
+    function _testPreinstalls() internal view {
+        _assertPreinstall(Preinstalls.MultiCall3, Preinstalls.MultiCall3Code);
+        _assertPreinstall(Preinstalls.Create2Deployer, Preinstalls.Create2DeployerCode);
+        _assertPreinstall(Preinstalls.Safe_v130, Preinstalls.Safe_v130Code);
+        _assertPreinstall(Preinstalls.SafeL2_v130, Preinstalls.SafeL2_v130Code);
+        _assertPreinstall(Preinstalls.MultiSendCallOnly_v130, Preinstalls.MultiSendCallOnly_v130Code);
+        _assertPreinstall(Preinstalls.SafeSingletonFactory, Preinstalls.SafeSingletonFactoryCode);
+        _assertPreinstall(Preinstalls.DeterministicDeploymentProxy, Preinstalls.DeterministicDeploymentProxyCode);
+        _assertPreinstall(Preinstalls.MultiSend_v130, Preinstalls.MultiSend_v130Code);
+        _assertPreinstall(Preinstalls.Permit2, Preinstalls.getPermit2Code(cfg.chainId));
+        _assertPreinstall(Preinstalls.SenderCreator_v060, Preinstalls.SenderCreator_v060Code);
+        _assertPreinstall(Preinstalls.EntryPoint_v060, Preinstalls.EntryPoint_v060Code);
+        _assertPreinstall(Preinstalls.SenderCreator_v070, Preinstalls.SenderCreator_v070Code);
+        _assertPreinstall(Preinstalls.EntryPoint_v070, Preinstalls.EntryPoint_v070Code);
+        _assertPreinstall(Preinstalls.BeaconBlockRoots, Preinstalls.BeaconBlockRootsCode);
+        _assertPreinstall(Preinstalls.ERC1820Registry, Preinstalls.ERC1820RegistryCode);
+
+        // BeaconBlockRootsSender must have nonce 1
+        assertEq(vm.getNonce(Preinstalls.BeaconBlockRootsSender), 1, "BeaconBlockRootsSender nonce check");
+    }
+
+    function _assertPreinstall(address addr, bytes memory code) internal view {
+        assertNotEq(code.length, 0, "must have code");
+        assertEq(addr.code, code, "equal code must be deployed");
+        assertEq(vm.getNonce(addr), 1, "preinstall account must have 1 nonce");
     }
 
     function _testPredeploys() internal {
