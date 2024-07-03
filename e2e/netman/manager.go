@@ -5,7 +5,6 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/types"
-	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/contracts/feeoraclev1"
 	"github.com/omni-network/omni/lib/contracts/portal"
 	"github.com/omni-network/omni/lib/errors"
@@ -15,13 +14,6 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
-)
-
-//nolint:gochecknoglobals // Static mapping.
-var (
-	// fbDev is the address of the fireblocks "dev" account.
-	// TODO(corver): Move this to eoa.
-	fbDev = common.HexToAddress("0x7a6cF389082dc698285474976d7C75CAdE08ab7e")
 )
 
 // Manager abstract logic to deploy and bootstrap a network.
@@ -39,9 +31,6 @@ type Manager interface {
 
 	// Portals returns the deployed portals from both public and private chains.
 	Portals() map[uint64]Portal
-
-	// Operator returns the address of the account that operates the network.
-	Operator() common.Address
 }
 
 func NewManager(testnet types.Testnet, backends ethbackend.Backends) (Manager, error) {
@@ -107,7 +96,6 @@ func NewManager(testnet types.Testnet, backends ethbackend.Backends) (Manager, e
 			omniChainID: netconf.Devnet.Static().OmniExecutionChainID,
 			backends:    backends,
 			network:     netconf.Devnet,
-			operator:    anvil.DevAccount4(),
 		}, nil
 	case netconf.Staging:
 		return &manager{
@@ -115,7 +103,6 @@ func NewManager(testnet types.Testnet, backends ethbackend.Backends) (Manager, e
 			omniChainID: netconf.Staging.Static().OmniExecutionChainID,
 			backends:    backends,
 			network:     netconf.Staging,
-			operator:    fbDev,
 		}, nil
 	case netconf.Omega:
 		return &manager{
@@ -123,7 +110,6 @@ func NewManager(testnet types.Testnet, backends ethbackend.Backends) (Manager, e
 			omniChainID: netconf.Omega.Static().OmniExecutionChainID,
 			backends:    backends,
 			network:     netconf.Omega,
-			operator:    fbDev,
 		}, nil
 	default:
 		return nil, errors.New("unknown network", "network", network)
@@ -150,7 +136,6 @@ type manager struct {
 	omniChainID uint64
 	backends    ethbackend.Backends
 	network     netconf.ID
-	operator    common.Address
 }
 
 func (m *manager) DeployInfo() map[uint64]DeployInfo {
@@ -164,22 +149,6 @@ func (m *manager) DeployInfo() map[uint64]DeployInfo {
 
 func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, validators []bindings.Validator,
 ) error {
-	// Log provided key balances for public chains (just FYI).
-	for _, portal := range m.portals {
-		if !portal.Chain.IsPublic {
-			continue // Only log public chain balances.
-		}
-
-		txOpts, backend, err := m.backends.BindOpts(ctx, portal.Chain.ChainID, m.operator)
-		if err != nil {
-			return errors.Wrap(err, "deploy opts", "chain", portal.Chain.Name)
-		}
-
-		if err := logBalance(ctx, backend, portal.Chain.Name, txOpts.From, "operator_key"); err != nil {
-			return err
-		}
-	}
-
 	log.Info(ctx, "Deploying public portal contracts")
 
 	// Define a forkjoin work function that will deploy the omni contracts for each chain
@@ -298,10 +267,6 @@ func (m *manager) DeployPrivatePortals(ctx context.Context, valSetID uint64, val
 
 func (m *manager) Portals() map[uint64]Portal {
 	return m.portals
-}
-
-func (m *manager) Operator() common.Address {
-	return m.operator
 }
 
 // deployIfNeeded deploys a portal if it is not already deployed.

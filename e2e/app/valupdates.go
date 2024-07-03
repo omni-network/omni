@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
@@ -36,7 +37,7 @@ func FundValidatorsForTesting(ctx context.Context, def Definition) error {
 
 	network := networkFromDef(def)
 	omniEVM, _ := network.OmniEVMChain()
-	funder := def.Netman().Operator()
+	funder := eoa.MustAddress(network.ID, eoa.RoleTester) // Fund validators using tester eoa
 	_, fundBackend, err := def.Backends().BindOpts(ctx, omniEVM.ID, funder)
 	if err != nil {
 		return errors.Wrap(err, "bind opts")

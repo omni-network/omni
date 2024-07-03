@@ -61,11 +61,7 @@ func newRegistryMngr(ctx context.Context, def Definition) (registryMngr, error) 
 		return registryMngr{}, errors.Wrap(err, "new portal registry")
 	}
 
-	admin, err := eoa.Admin(def.Testnet.Network)
-	if err != nil {
-		return registryMngr{}, err
-	}
-
+	admin := eoa.MustAddress(def.Testnet.Network, eoa.RoleAdmin)
 	txOpts, err := backend.BindOpts(ctx, admin)
 	if err != nil {
 		return registryMngr{}, err

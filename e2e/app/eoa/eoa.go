@@ -15,12 +15,18 @@ import (
 type Role string
 
 const (
-	RoleRelayer         Role = "relayer"
-	RoleMonitor         Role = "monitor"
+	// RoleRelayer is the relayer eoa on all networks. It creates submissions to portals.
+	RoleRelayer Role = "relayer"
+	// RoleMonitor is the monitor service eoa on all networks. It is used by the feemanager.
+	RoleMonitor Role = "monitor"
+	// RoleCreate3Deployer is used to deploy our create3 factories on all chains. This MUST only be done once with nonce 0.
 	RoleCreate3Deployer Role = "create3-deployer"
-	RoleDeployer        Role = "deployer"
-	RoleAdmin           Role = "admin"
-	RoleFbDev           Role = "fb-dev" // TODO(corver): fb-dev isn't a role...
+	// RoleDeployer is used to deploy official omni contracts on all chains.
+	RoleDeployer Role = "deployer"
+	// RoleAdmin is used to manage the omni contracts on all chains. It has admin privileges on official omni contracts.
+	RoleAdmin Role = "admin"
+	// RoleTester is used for general tasks and testing in non-mainnet networks.
+	RoleTester Role = "tester"
 )
 
 func AllRoles() []Role {
@@ -30,7 +36,7 @@ func AllRoles() []Role {
 		RoleCreate3Deployer,
 		RoleDeployer,
 		RoleAdmin,
-		RoleFbDev,
+		RoleTester,
 	}
 }
 
