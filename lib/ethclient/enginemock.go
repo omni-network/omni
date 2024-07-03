@@ -421,8 +421,6 @@ func (m *engineMock) GetPayloadV3(ctx context.Context, payloadID engine.PayloadI
 	}, nil
 }
 
-// TODO(corver): Add support for V3
-
 func (*engineMock) NewPayloadV2(context.Context, engine.ExecutableData) (engine.PayloadStatusV1, error) {
 	panic("implement me")
 }

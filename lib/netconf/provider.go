@@ -50,6 +50,10 @@ func AwaitOnChain(ctx context.Context, netID ID, portalRegistry *bindings.Portal
 			continue
 		}
 
+		if err := network.Verify(); err != nil {
+			return Network{}, errors.Wrap(err, "invalid network configuration")
+		}
+
 		log.Info(ctx, "XChain network configuration initialized from on-chain registry", "chains", network.ChainNamesByIDs())
 
 		return network, nil

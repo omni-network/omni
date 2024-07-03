@@ -214,7 +214,6 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 		})
 
 		if errors.Is(err, ormerrors.UniqueKeyViolation) {
-			// TODO(corver): We should prevent this from happening earlier.
 			log.Warn(ctx, "Ignoring duplicate vote", nil,
 				"agg_id", attID,
 				"chain", k.namer(header.XChainVersion()),

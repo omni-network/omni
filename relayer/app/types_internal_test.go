@@ -28,12 +28,6 @@ func Test_translateSubmission(t *testing.T) {
 	// Zero BlockHeight as we only submit BlockOffset
 	sub.BlockHeader.BlockHeight = 0
 
-	// TODO(corver): Add support for conf level to contracts and bindings
-	sub.BlockHeader.ConfLevel = 0
-	for i := range sub.Msgs {
-		sub.Msgs[i].StreamID.ShardID = 0
-	}
-
 	require.Equal(t, sub, reversedSub)
 }
 
@@ -53,6 +47,7 @@ func submissionFromBinding(sub bindings.XTypesSubmission, destChainID uint64) xc
 				StreamID: xchain.StreamID{
 					SourceChainID: msg.SourceChainId,
 					DestChainID:   msg.DestChainId,
+					ShardID:       xchain.ShardID(msg.ShardId),
 				},
 				StreamOffset: msg.Offset,
 			},
@@ -70,6 +65,7 @@ func submissionFromBinding(sub bindings.XTypesSubmission, destChainID uint64) xc
 			SourceChainID: sub.BlockHeader.SourceChainId,
 			BlockOffset:   sub.BlockHeader.Offset,
 			BlockHash:     sub.BlockHeader.SourceBlockHash,
+			ConfLevel:     xchain.ConfLevel(sub.BlockHeader.ConfLevel),
 		},
 		Proof:       sub.Proof,
 		ProofFlags:  sub.ProofFlags,

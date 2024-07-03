@@ -163,7 +163,6 @@ func PubKeyFromBytes64(pubkey []byte) (*stdecdsa.PublicKey, error) {
 
 	const prefix = 0x04
 
-	// TODO(corver): Fix possible panics if the pubkey is not on the curve
 	resp, err := ethcrypto.UnmarshalPubkey(append([]byte{prefix}, pubkey...))
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal pubkey")

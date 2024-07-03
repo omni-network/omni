@@ -7,6 +7,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -21,13 +22,17 @@ type Network struct {
 	Chains []Chain `json:"chains"` // Chains that are part of the network
 }
 
-// Validate returns an error if the configuration is invalid.
-func (n Network) Validate() error {
+// Verify returns an error if the configuration is invalid.
+func (n Network) Verify() error {
 	if err := n.ID.Verify(); err != nil {
 		return err
 	}
 
-	// TODO(corver): Validate chains
+	for _, chain := range n.Chains {
+		if err := chain.Verify(); err != nil {
+			return errors.Wrap(err, "chain", "id", chain.ID, "name", chain.Name)
+		}
+	}
 
 	return nil
 }
@@ -320,4 +325,20 @@ func (c Chain) ShardsUint64() []uint64 {
 	}
 
 	return resp
+}
+
+func (c Chain) Verify() error {
+	if c.ID == 0 {
+		return errors.New("zero chain ID")
+	}
+
+	if c.Name == "" {
+		return errors.New("empty chain name")
+	}
+
+	if len(c.Shards) == 0 {
+		return errors.New("empty shards")
+	}
+
+	return nil
 }
