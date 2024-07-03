@@ -29,15 +29,8 @@ contract AllocPredeploys is Script {
         deployer = makeAddr("deployer");
     }
 
-    function runWithCfg(Config calldata config) public {
-        cfg = config;
-
-        vm.chainId(cfg.chainId);
-
-        vm.startPrank(deployer);
-        setPredeploys();
-        setPreinstalls();
-        vm.stopPrank();
+    function run(Config calldata config) public {
+        _run(config);
 
         // Reset so its not included state dump
         vm.etch(msg.sender, "");
@@ -48,6 +41,21 @@ contract AllocPredeploys is Script {
         vm.deal(deployer, 0);
 
         vm.dumpState(cfg.output);
+    }
+
+    function runNoStateDump(Config calldata config) public {
+        _run(config);
+    }
+
+    function _run(Config calldata config) internal {
+        cfg = config;
+
+        vm.chainId(cfg.chainId);
+
+        vm.startPrank(deployer);
+        setPredeploys();
+        setPreinstalls();
+        vm.stopPrank();
     }
 
     /**

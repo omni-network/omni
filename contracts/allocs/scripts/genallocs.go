@@ -45,7 +45,7 @@ func genallocs() error {
 			Output:                 "allocs/" + network.String() + ".json",
 		}
 
-		calldata, err := forgeScriptABI.Pack("runWithCfg", cfg)
+		calldata, err := forgeScriptABI.Pack("run", cfg)
 		if err != nil {
 			return errors.Wrap(err, "pack calldata")
 		}

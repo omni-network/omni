@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { Predeploys } from "src/libraries/Predeploys.sol";
+import { EIP1967Helper } from "script/genesis/utils/EIP1967Helper.sol";
 import { AllocPredeploys } from "script/genesis/AllocPredeploys.s.sol";
+import { Staking } from "src/octane/Staking.sol";
 import { Test } from "forge-std/Test.sol";
 import { Process } from "./utils/Process.sol";
 
@@ -15,13 +19,11 @@ contract AllocPredeploys_Test is Test, AllocPredeploys {
     /**
      * @notice Tests predeploy allocs, asserting the number of allocs is expected.
      */
-    function test_allocs() public {
+    function test_num_allocs() public {
         address admin = makeAddr("admin");
         string memory output = tmpfile();
 
-        this.runWithCfg(
-            AllocPredeploys.Config({ admin: admin, chainId: 165, enableStakingAllowlist: false, output: output })
-        );
+        this.run(AllocPredeploys.Config({ admin: admin, chainId: 165, enableStakingAllowlist: false, output: output }));
 
         uint256 expected = 0;
         expected += 1024 * 2; // namespace size * 2
@@ -33,6 +35,95 @@ contract AllocPredeploys_Test is Test, AllocPredeploys {
         assertEq(expected, getJSONKeyCount(output), "key count check");
 
         deleteFile(output);
+    }
+
+    function test_genesis() public {
+        this.runNoStateDump(
+            AllocPredeploys.Config({ admin: makeAddr("admin"), chainId: 165, enableStakingAllowlist: false, output: "" })
+        );
+
+        _testPredeploys();
+    }
+
+    function _testPredeploys() internal {
+        _testProxies();
+
+        // test owners
+        assertEq(cfg.admin, OwnableUpgradeable(Predeploys.PortalRegistry).owner(), "PortalRegistry owner check");
+        assertEq(cfg.admin, OwnableUpgradeable(Predeploys.OmniBridgeNative).owner(), "OmniBridgeNative owner check");
+        assertEq(cfg.admin, OwnableUpgradeable(Predeploys.Staking).owner(), "Staking owner check");
+
+        // test proxies initialized
+        assertTrue(_isInitialized(Predeploys.PortalRegistry), "PortalRegistry initialized check");
+        assertTrue(_isInitialized(Predeploys.OmniBridgeNative), "OmniBridgeNative initialized check");
+        assertTrue(_isInitialized(Predeploys.Staking), "Staking initialized check");
+
+        // test initializers disabled on implementations
+        assertTrue(
+            _areInitializersDisabled(Predeploys.impl(Predeploys.PortalRegistry)), "PortalRegistry initializer check"
+        );
+        assertTrue(
+            _areInitializersDisabled(Predeploys.impl(Predeploys.OmniBridgeNative)), "OmniBridgeNative initializer check"
+        );
+        assertTrue(_areInitializersDisabled(Predeploys.impl(Predeploys.Staking)), "Staking initializer check");
+    }
+
+    /**
+     * @notice Test that all proxies have the correct admin set and implementaion set.
+     */
+    function _testProxies() internal {
+        _forAllProxies(_testProxy);
+    }
+
+    /**
+     * Test that a give proxy has the correct admin and implementation.
+     */
+    function _testProxy(address addr) internal view {
+        assertEq(Predeploys.ProxyAdmin, EIP1967Helper.getAdmin(addr), "admin check");
+
+        address expectedImpl = Predeploys.isActivePredeploy(addr) ? Predeploys.impl(addr) : address(0);
+        assertEq(expectedImpl, EIP1967Helper.getImplementation(addr), "implementation check");
+    }
+
+    /**
+     * @notice Call f for all proxies in each namespace.
+     */
+    function _forAllProxies(function (address) f) internal {
+        address[] memory namespaces = Predeploys.namespaces();
+        for (uint256 i = 0; i < namespaces.length; i++) {
+            address ns = namespaces[i];
+
+            for (uint160 j = 1; i <= Predeploys.NamespaceSize; i++) {
+                address addr = address(uint160(ns) + j);
+
+                if (Predeploys.notProxied(addr)) {
+                    continue;
+                }
+
+                f(addr);
+            }
+        }
+    }
+
+    /**
+     * @notice Returns the Initializable._initialized value for a given address, at slot 0.
+     */
+    function _getInitialized(address addr) internal view returns (uint256) {
+        return uint256(vm.load(addr, bytes32(0)));
+    }
+
+    /**
+     * @notice Returns true if the address has been initialized.
+     */
+    function _isInitialized(address addr) internal view returns (bool) {
+        return _getInitialized(addr) == uint8(1);
+    }
+
+    /**
+     * @notice Returns true if the initializers are disabled for a given address.
+     */
+    function _areInitializersDisabled(address addr) internal view returns (bool) {
+        return _getInitialized(addr) == type(uint8).max;
     }
 
     //////////////////////////////////////////////////////////////////////////////
