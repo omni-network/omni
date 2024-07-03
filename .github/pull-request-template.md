@@ -1,6 +1,6 @@
 Body goes here...
 
-task: none or https://app.asana.com/0/1206208509925075/<task_number>
+issue: none or #12345
 
 <!--
   PR title and body follows conventional commit; https://www.conventionalcommits.org/en/v1.0.0
