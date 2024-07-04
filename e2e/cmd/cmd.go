@@ -225,6 +225,8 @@ func newKeyCreate(def *app.Definition) *cobra.Command {
 }
 
 func fundAccounts(def *app.Definition) *cobra.Command {
+	var dryRun bool
+
 	cmd := &cobra.Command{
 		Use:   "fund",
 		Short: "Funds accounts to their target balance, network based on the manifest",
@@ -236,9 +238,11 @@ func fundAccounts(def *app.Definition) *cobra.Command {
 				return errors.Wrap(err, "init network")
 			}
 
-			return app.FundEOAAccounts(cmd.Context(), *def)
+			return app.FundEOAAccounts(cmd.Context(), *def, dryRun)
 		},
 	}
+
+	cmd.Flags().BoolVar(&dryRun, "dry-run", dryRun, "Enables dry-run for testing")
 
 	return cmd
 }
