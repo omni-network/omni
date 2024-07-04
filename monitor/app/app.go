@@ -48,11 +48,11 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	if err := avs.Monitor(ctx, network, cfg.RPCEndpoints); err != nil {
+	if err := avs.StartMonitor(ctx, network, cfg.RPCEndpoints); err != nil {
 		return errors.Wrap(err, "monitor AVS")
 	}
 
-	if err := account.Monitor(ctx, network, cfg.RPCEndpoints); err != nil {
+	if err := account.StartMonitor(ctx, network, cfg.RPCEndpoints); err != nil {
 		return errors.Wrap(err, "monitor account balances")
 	}
 

@@ -148,7 +148,6 @@ func MustAddresses(network netconf.ID, roles ...Role) []common.Address {
 }
 
 // AllAccounts returns all accounts for the network.
-func AllAccounts(network netconf.ID) ([]Account, bool) {
-	acc, ok := statics[network]
-	return acc, ok
+func AllAccounts(network netconf.ID) []Account {
+	return statics[network]
 }

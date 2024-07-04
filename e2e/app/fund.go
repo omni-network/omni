@@ -58,10 +58,9 @@ func fundAccounts(ctx context.Context, def Definition) error {
 // FundEOAAccounts funds the EOAs that need funding to their target balance.
 func FundEOAAccounts(ctx context.Context, def Definition) error {
 	network := networkFromDef(def)
-	accounts, ok := eoa.AllAccounts(network.ID)
-	if !ok {
-		return errors.New("no accounts found", "network", network.ID)
-	}
+	accounts := eoa.AllAccounts(network.ID)
+
+	log.Info(ctx, "Checking accounts to fund", "network", network.ID, "count", len(accounts))
 
 	for _, account := range accounts {
 		if account.Address == common.HexToAddress(eoa.ZeroXDead) {

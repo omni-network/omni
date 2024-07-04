@@ -13,8 +13,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// Monitor starts monitoring the AVS contract.
-func Monitor(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints) error {
+// StartMonitor starts monitoring the AVS contract. It doesn't block it returns immediately.
+func StartMonitor(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints) error {
 	if network.ID != netconf.Omega && network.ID != netconf.Mainnet {
 		// only monitor in Testned and Mainnet
 		return nil
