@@ -228,6 +228,21 @@ func (m *simple) craftTx(ctx context.Context, candidate TxCandidate) (*types.Tra
 
 	// If the gas limit is set, we can use that as the gas
 	if gasLimit == 0 {
+		pendingNonce, err := m.backend.PendingNonceAt(ctx, m.cfg.From)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get pending nonce")
+		}
+
+		for pendingNonce < *candidate.Nonce {
+			pendingNonce, err = m.backend.PendingNonceAt(ctx, m.cfg.From)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to get pending nonce")
+			}
+
+			// TODO: Give up after a certain number of attempts
+			time.Sleep(2 * time.Second)
+		}
+
 		// Calculate the intrinsic gas for the transaction
 		gas, err := m.backend.EstimateGasPending(ctx, ethereum.CallMsg{
 			From:      m.cfg.From,
@@ -238,7 +253,7 @@ func (m *simple) craftTx(ctx context.Context, candidate TxCandidate) (*types.Tra
 			Value:     candidate.Value,
 		})
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to estimate gas")
+			return nil, errors.Wrap(err, "failed to estimate gas for ", "shouldveNonce", *candidate.Nonce)
 		}
 		gasLimit = gas
 	}
