@@ -191,6 +191,7 @@ func (v *Voter) runOnce(ctx context.Context, chainVer xchain.ChainVersion) error
 		Offset:    fromOffset,
 	}
 
+	cursors := make(map[xchain.StreamID]uint64)
 	var prevBlock xchain.Block
 
 	return v.provider.StreamBlocks(ctx, req,
@@ -199,7 +200,7 @@ func (v *Voter) runOnce(ctx context.Context, chainVer xchain.ChainVersion) error
 				return errors.New("not a validator anymore")
 			}
 
-			if err := detectReorg(chainVer, v.network.ChainVersionName(chainVer), prevBlock, block); err != nil {
+			if err := detectReorg(chainVer, v.network.ChainVersionName(chainVer), prevBlock, block, cursors); err != nil {
 				// Restart stream, recalculating block offset from finalized version.
 				return err
 			}
@@ -507,13 +508,23 @@ func (v *Voter) instrumentUnsafe() {
 
 // detectReorg returns an error if the previous block doesn't match the new block's parent hash.
 // This indicates that a reorg occurred.
-func detectReorg(chainVer xchain.ChainVersion, chainVerName string, prevBlock xchain.Block, block xchain.Block) error {
+func detectReorg(chainVer xchain.ChainVersion, chainVerName string, prevBlock xchain.Block, block xchain.Block, cursors map[xchain.StreamID]uint64) error {
 	if prevBlock.BlockHash == (common.Hash{}) {
 		return nil // Skip previous blocks without parent hash (init or consensus chain without block hashes).
 	}
 
 	if prevBlock.BlockHeight+1 != block.BlockHeight {
 		return errors.New("consecutive block height mismatch [BUG]", "prev_height", prevBlock.BlockHeight, "new_height", block.BlockHeight)
+	}
+
+	for _, xmsg := range block.Msgs {
+		cursor, ok := cursors[xmsg.StreamID]
+		if ok && xmsg.StreamOffset != cursor+1 {
+			return errors.New("consecutive message offset mismatch", "streamID", xmsg.StreamID, "prev_offset", cursor, "new_offset", xmsg.StreamOffset)
+		}
+
+		// Update the cursor
+		cursors[xmsg.StreamID] = xmsg.StreamOffset
 	}
 
 	if prevBlock.BlockHash == block.ParentHash {
