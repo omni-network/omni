@@ -48,8 +48,6 @@ type Deps[E any] struct {
 // It retries forever on fetch errors.
 // It can either retry or return callback errors.
 // It returns (nil) when the context is canceled.
-//
-
 func Stream[E any](ctx context.Context, deps Deps[E], srcChainID uint64, startHeight uint64, callback Callback[E]) error {
 	if deps.FetchWorkers == 0 {
 		return errors.New("invalid zero fetch worker count")
