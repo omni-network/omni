@@ -216,7 +216,7 @@ func (m *simple) craftTx(ctx context.Context, candidate TxCandidate) (*types.Tra
 		return nil, errors.New("invalid nil nonce")
 	}
 
-	log.Debug(ctx, "Crafting tx ", "sender", m.cfg.From, "nonce", candidate.Nonce)
+	log.Debug(ctx, "Crafting tx ", "sender", m.cfg.From, "nonce", *candidate.Nonce)
 
 	gasTipCap, baseFee, err := m.suggestGasPriceCaps(ctx)
 	if err != nil {
