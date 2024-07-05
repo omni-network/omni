@@ -203,7 +203,6 @@ func (m *manager) DeployPublicPortals(ctx context.Context, valSetID uint64, vali
 		portal.Contract = res.Output.Contract
 
 		m.portals[res.Input.Chain.ChainID] = portal
-		log.Info(ctx, "Deployed public portal contract", "chain", portal.Chain.Name, "address", res.Output.Addr.Hex(), "height", res.Output.Height)
 	}
 
 	return nil

@@ -54,7 +54,7 @@ func (c Client) Sign(ctx context.Context, digest common.Hash, signer common.Addr
 		return [65]byte{}, errors.Wrap(err, "create raw sign tx")
 	}
 
-	log.Debug(ctx, "Created new req_id", "sender", signer, "id", id)
+	log.Debug(ctx, "Awaiting fireblocks signature", "id", id)
 
 	// First try immediately.
 	resp, status, err := c.maybeGetSignature(ctx, id, digest, signer)

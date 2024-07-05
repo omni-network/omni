@@ -94,11 +94,7 @@ func (m *simple) ReserveNextNonce(ctx context.Context) (uint64, error) {
 			return 0, errors.Wrap(err, "failed to get nonce")
 		}
 
-		log.Debug(ctx, "Txmgr reset nonce",
-			"chainID", m.chainID,
-			"sender", m.cfg.From,
-			"newNonce", nonce,
-		)
+		log.Debug(ctx, "Txmgr initialized nonce", "nonce", nonce)
 		m.nonce = &nonce
 	}
 

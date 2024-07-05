@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 
+	"github.com/omni-network/omni/e2e/docker"
 	"github.com/omni-network/omni/lib/contracts/avs"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -34,7 +35,10 @@ func deployAVS(ctx context.Context, def Definition) error {
 	chain, ok := network.EthereumChain()
 	if !ok {
 		if def.Manifest.Network == netconf.Devnet {
-			log.Debug(ctx, "Skipping avs deployment for not configured devnet L1")
+			log.Debug(ctx, "Skipping avs deployment for not configured L1 in devnet")
+			return nil
+		} else if def.Cfg.InfraProvider == docker.ProviderName {
+			log.Debug(ctx, "Skipping avs deployment for not configured L1 in local-docker-infra")
 			return nil
 		}
 
