@@ -189,7 +189,6 @@ func (d *XDapp) StartAllEdges(ctx context.Context, latest, parallel, count uint6
 					return errors.Wrap(err, "start ping pong", "id", id, "from", from.Chain.Name, "to", to.Chain.Name, "conf", conf)
 				}
 
-				log.Debug(ctx, "Wait for tx to be mined", "id", id, "from", from.Chain.Name, "to", to.Chain.Name, "tx", tx.Hash(), "addr", to.Address.Hex())
 				if _, err := bind.WaitMined(ctx, backend, tx); err != nil {
 					return errors.Wrap(err, "wait mined", "chain", from.Chain.Name, "tx", tx.Hash())
 				}

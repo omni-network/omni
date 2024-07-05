@@ -94,8 +94,6 @@ func Run(ctx context.Context, cfg Config) error {
 		go worker.Run(ctx)
 	}
 
-	startMonitoring(ctx, network, xprov, cprov, ethcrypto.PubkeyToAddress(privateKey.PublicKey), rpcClientPerChain)
-
 	select {
 	case <-ctx.Done():
 		log.Info(ctx, "Shutdown detected, stopping...")
