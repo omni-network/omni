@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestEstimateGas(t *testing.T) {
+func TestGroupingMsgsByCost(t *testing.T) {
 	t.Parallel()
 
 	// Constants defined in contracts/src/protocol/OmniPortalConstants.sol
@@ -74,10 +74,10 @@ func TestEstimateGas(t *testing.T) {
 
 			require.Len(t, groups, len(test.expected))
 			for i, group := range groups {
-				require.Equal(t, int(test.expected[i]), int(estimateGas(group)))
+				require.Equal(t, int(test.expected[i]), int(naiveSubmissionGas(group)))
 
 				// Ensure we never cross the max
-				require.LessOrEqual(t, int(estimateGas(group)), int(subGasMax))
+				require.LessOrEqual(t, int(naiveSubmissionGas(group)), int(subGasMax))
 			}
 		})
 	}

@@ -24,13 +24,14 @@ import (
 
 // Sender uses txmgr to send transactions to the destination chain.
 type Sender struct {
-	network    netconf.ID
-	txMgr      txmgr.TxManager
-	portal     common.Address
-	abi        *abi.ABI
-	chain      netconf.Chain
-	chainNames map[xchain.ChainVersion]string
-	rpcClient  ethclient.Client
+	network      netconf.ID
+	txMgr        txmgr.TxManager
+	gasEstimator gasEstimator
+	portal       common.Address
+	abi          *abi.ABI
+	chain        netconf.Chain
+	chainNames   map[xchain.ChainVersion]string
+	rpcClient    ethclient.Client
 }
 
 // NewSender creates a new sender that uses txmgr to send transactions to the destination chain.
@@ -66,23 +67,24 @@ func NewSender(
 	}
 
 	return Sender{
-		network:    network,
-		txMgr:      txMgr,
-		portal:     chain.PortalAddress,
-		abi:        &parsedAbi,
-		chain:      chain,
-		chainNames: chainNames,
-		rpcClient:  rpcClient,
+		network:      network,
+		txMgr:        txMgr,
+		gasEstimator: newGasEstimator(network),
+		portal:       chain.PortalAddress,
+		abi:          &parsedAbi,
+		chain:        chain,
+		chainNames:   chainNames,
+		rpcClient:    rpcClient,
 	}, nil
 }
 
 // SendTransaction sends the submission to the destination chain.
-func (o Sender) SendTransaction(ctx context.Context, sub xchain.Submission) error {
-	if o.txMgr == nil {
+func (s Sender) SendTransaction(ctx context.Context, sub xchain.Submission) error {
+	if s.txMgr == nil {
 		return errors.New("tx mgr not found", "dest_chain_id", sub.DestChainID)
-	} else if sub.DestChainID != o.chain.ID {
+	} else if sub.DestChainID != s.chain.ID {
 		return errors.New("unexpected destination chain [BUG]",
-			"got", sub.DestChainID, "expect", o.chain.ID)
+			"got", sub.DestChainID, "expect", s.chain.ID)
 	}
 
 	// Get some info for logging
@@ -91,8 +93,8 @@ func (o Sender) SendTransaction(ctx context.Context, sub xchain.Submission) erro
 		startOffset = sub.Msgs[0].StreamOffset
 	}
 
-	dstChain := o.chain.Name
-	srcChain := o.chainNames[sub.BlockHeader.ChainVersion()]
+	dstChain := s.chain.Name
+	srcChain := s.chainNames[sub.BlockHeader.ChainVersion()]
 
 	// Request attributes added to context (for downstream logging) and manually added to errors (for upstream logging).
 	reqAttrs := []any{
@@ -107,31 +109,28 @@ func (o Sender) SendTransaction(ctx context.Context, sub xchain.Submission) erro
 		"msgs", len(sub.Msgs),
 	)
 
-	txData, err := o.getXSubmitBytes(submissionToBinding(sub))
+	txData, err := s.getXSubmitBytes(submissionToBinding(sub))
 	if err != nil {
 		return err
 	}
 
 	// Reserve a nonce here to ensure correctly ordered submissions.
-	nonce, err := o.txMgr.ReserveNextNonce(ctx)
+	nonce, err := s.txMgr.ReserveNextNonce(ctx)
 	if err != nil {
 		return err
 	}
 
-	estimatedGas := estimateGas(sub.Msgs)
-	if sub.BlockHeader.SourceChainID == o.network.Static().OmniConsensusChainIDUint64() {
-		estimatedGas = consensusGasLimit(o.network)
-	}
+	estimatedGas := s.gasEstimator(sub.Msgs)
 
 	candidate := txmgr.TxCandidate{
 		TxData:   txData,
-		To:       &o.portal,
+		To:       &s.portal,
 		GasLimit: estimatedGas,
 		Value:    big.NewInt(0),
 		Nonce:    &nonce,
 	}
 
-	tx, rec, err := o.txMgr.Send(ctx, candidate)
+	tx, rec, err := s.txMgr.Send(ctx, candidate)
 	if err != nil {
 		return errors.Wrap(err, "failed to send tx", reqAttrs...)
 	}
@@ -150,7 +149,7 @@ func (o Sender) SendTransaction(ctx context.Context, sub xchain.Submission) erro
 
 	if rec.Status == 0 {
 		// Try and get debug information of the reverted transaction
-		resp, err := o.rpcClient.CallContract(ctx, callFromTx(o.txMgr.From(), tx), rec.BlockNumber)
+		resp, err := s.rpcClient.CallContract(ctx, callFromTx(s.txMgr.From(), tx), rec.BlockNumber)
 
 		errAttrs := slices.Concat(receiptAttrs, reqAttrs, []any{
 			"call_resp", hexutil.Encode(resp),
@@ -169,8 +168,8 @@ func (o Sender) SendTransaction(ctx context.Context, sub xchain.Submission) erro
 }
 
 // getXSubmitBytes returns the byte representation of the xsubmit function call.
-func (o Sender) getXSubmitBytes(sub bindings.XSubmission) ([]byte, error) {
-	bytes, err := o.abi.Pack("xsubmit", sub)
+func (s Sender) getXSubmitBytes(sub bindings.XSubmission) ([]byte, error) {
+	bytes, err := s.abi.Pack("xsubmit", sub)
 	if err != nil {
 		return nil, errors.Wrap(err, "pack xsubmit")
 	}
