@@ -15,10 +15,11 @@ import (
 )
 
 var (
+	optionalLink    = `(fix\w*\s|close\w*\s|resolve\w*\s)?`    // Optional issue linking prefix, see https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue.
 	descRegex       = regexp.MustCompile(`^[a-z][-\w\s]+$`)    // e.g. "add foo-bar"
 	scopeRegex      = regexp.MustCompile(`^[*\w]+(/[*\w]+)?$`) // e.g. "*" or "foo" or "foo/bar"
-	issueRegexFull  = regexp.MustCompile(`^https://github.com/omni-network/omni/issues/\d+$`)
-	issueRegexShort = regexp.MustCompile(`^#\d+$`) // e.g. "#1334"
+	issueRegexFull  = regexp.MustCompile(`^` + optionalLink + `https://github.com/omni-network/omni/issues/\d+$`)
+	issueRegexShort = regexp.MustCompile(`^` + optionalLink + `#\d+$`) // e.g. "#1334"
 )
 
 // run runs the verification.
