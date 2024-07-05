@@ -63,10 +63,9 @@ func FundEOAAccounts(ctx context.Context, def Definition, dryRun bool) error {
 	}
 
 	network := networkFromDef(def)
-	accounts, ok := eoa.AllAccounts(network.ID)
-	if !ok {
-		return errors.New("no accounts found", "network", network.ID)
-	}
+	accounts := eoa.AllAccounts(network.ID)
+
+	log.Info(ctx, "Checking accounts to fund", "network", network.ID, "count", len(accounts))
 
 	for _, chain := range network.EVMChains() {
 		backend, err := def.Backends().Backend(chain.ID)
