@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: foundry-rs/foundry-toolchain@v1
-      - uses: pnpm/action-setup@v2
+      - uses: pnpm/action-setup@v4
         with:
           package_json_file: contracts/package.json
       - run: pnpm install
