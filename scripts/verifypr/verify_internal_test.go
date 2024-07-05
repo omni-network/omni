@@ -77,6 +77,30 @@ foo bar baz
 issue: #1334`,
 		},
 		{
+			name: "fix valid short github issue",
+			commit: `feat(*): add foo bar
+
+foo bar baz
+
+issue: fix #1334`,
+		},
+		{
+			name: "resolves valid short github issue",
+			commit: `feat(*): add foo bar
+
+foo bar baz
+
+issue: resolves #1334`,
+		},
+		{
+			name: "closed full github issue",
+			commit: `feat(*): add foo bar
+
+foo bar baz
+
+issue: closed https://github.com/omni-network/omni/issues/1334`,
+		},
+		{
 			name:    "invalid description title case",
 			wantErr: true,
 			commit: `feat(*): Add foo bar
@@ -84,6 +108,15 @@ issue: #1334`,
 foo bar baz
 
 issue: none`,
+		},
+		{
+			name:    "invalid link short github issue",
+			wantErr: true,
+			commit: `feat(*): add foo bar
+
+foo bar baz
+
+issue: ifix #1334`,
 		},
 		{
 			name:    "invalid description punctuation",
