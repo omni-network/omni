@@ -259,11 +259,8 @@ func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backe
 		return common.Address{}, nil, errors.Wrap(err, "deploy impl")
 	}
 
-	receipt, err := backend.WaitMined(ctx, tx)
-	if err != nil {
+	if _, err := backend.WaitMined(ctx, tx); err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "wait mined portal")
-	} else if receipt.Status != ethtypes.ReceiptStatusSuccessful {
-		return common.Address{}, nil, errors.New("deploy impl failed")
 	}
 
 	initCode, err := packInitCode(cfg, impl)
@@ -276,11 +273,9 @@ func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backe
 		return common.Address{}, nil, errors.Wrap(err, "deploy avs")
 	}
 
-	receipt, err = backend.WaitMined(ctx, tx)
+	receipt, err := backend.WaitMined(ctx, tx)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "wait mined avs")
-	} else if receipt.Status != ethtypes.ReceiptStatusSuccessful {
-		return common.Address{}, nil, errors.New("deploy avs failed")
 	}
 
 	return addr, receipt, nil

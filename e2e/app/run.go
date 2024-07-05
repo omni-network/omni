@@ -91,6 +91,10 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, err
 	}
 
+	if err := waitForEVMs(ctx, networkFromDef(def), def.Backends()); err != nil {
+		return nil, err
+	}
+
 	if err := fundAccounts(ctx, def); err != nil {
 		return nil, err
 	}

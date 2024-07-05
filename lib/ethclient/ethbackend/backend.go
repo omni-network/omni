@@ -162,7 +162,7 @@ func (b *Backend) WaitMined(ctx context.Context, tx *ethtypes.Transaction) (*eth
 	if err != nil {
 		return nil, errors.Wrap(err, "wait mined", "chain", b.chainName)
 	} else if rec.Status != ethtypes.ReceiptStatusSuccessful {
-		return rec, errors.New("receipt status unsuccessful", "status", rec.Status)
+		return rec, errors.New("receipt status unsuccessful", "status", rec.Status, "tx", tx.Hash())
 	}
 
 	return rec, nil
@@ -245,7 +245,9 @@ func (b *Backend) SendTransaction(ctx context.Context, in *ethtypes.Transaction)
 // EnsureSynced returns an error if the backend is not synced.
 func (b *Backend) EnsureSynced(ctx context.Context) error {
 	syncing, err := b.SyncProgress(ctx)
-	if err != nil {
+	if ethclient.IsErrMethodNotAvailable(err) {
+		return nil // Assume synced if method not available.
+	} else if err != nil {
 		return err
 	} else if syncing == nil {
 		return nil // Syncing is nil if node is not syncing.
