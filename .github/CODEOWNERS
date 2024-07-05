@@ -1,6 +1,11 @@
 # Code owners for specific directories
-/halo @corverroos @arajasek @idea404
-/relayer @corverroos @arajasek @idea404
-/lib @corverroos @arajasek @idea404 @kevinhalliday @pavelnikolov
+
+/halo @corverroos @arajasek
+/relayer @corverroos @arajasek
+/octane @corverroos @arajasek
+
 /contracts @kevinhalliday @ttarsi
-/docs @idea404
+
+/monitor @corverroos @arajasek @kevinhalliday @brid
+/e2e @corverroos @arajasek @kevinhalliday @brid
+/lib @corverroos @arajasek @kevinhalliday
