@@ -7,7 +7,6 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
@@ -53,11 +52,9 @@ func (w *Waiter) Wait(ctx context.Context) error {
 
 	for chainID, txs := range w.txs {
 		for _, tx := range txs {
-			rec, err := bind.WaitMined(ctx, w.b.backends[chainID], tx)
+			_, err := w.b.backends[chainID].WaitMined(ctx, tx)
 			if err != nil {
 				return errors.Wrap(err, "wait mined", "chain_id", chainID)
-			} else if rec.Status != ethtypes.ReceiptStatusSuccessful {
-				return errors.New("tx status unsuccessful", "chain_id", chainID)
 			}
 		}
 	}

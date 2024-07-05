@@ -19,7 +19,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 
 	"golang.org/x/sync/errgroup"
@@ -142,10 +141,8 @@ func (d *XDapp) fund(ctx context.Context) error {
 			return errors.Wrap(err, "fund ping pong", "chain", contract.Chain.Name)
 		}
 
-		if rec, err := bind.WaitMined(ctx, backend, tx); err != nil {
+		if _, err := backend.WaitMined(ctx, tx); err != nil {
 			return errors.Wrap(err, "wait mined", "chain", contract.Chain.Name, "tx", tx.Hash())
-		} else if rec.Status != ethtypes.ReceiptStatusSuccessful {
-			return errors.New("fund unsuccessful", "chain", contract.Chain.Name)
 		}
 	}
 
