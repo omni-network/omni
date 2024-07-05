@@ -154,21 +154,16 @@ func (p *Provider) stream(
 		fromOffset = initialXOffset
 	}
 
-	tracker := newOffsetTracker(fromOffset)
+	tracker := newOffsetTracker(fromOffset, fromHeight, chain.AttestInterval)
 
 	deps := stream.Deps[xchain.Block]{
 		FetchWorkers: workers,
 		FetchBatch: func(ctx context.Context, chainID uint64, height uint64) ([]xchain.Block, error) {
-			offset, err := tracker.getOffset(height)
-			if err != nil {
-				return nil, err
-			}
-
 			fetchReq := xchain.ProviderRequest{
 				ChainID:   chainID,
 				Height:    height,
 				ConfLevel: req.ConfLevel,
-				Offset:    offset,
+				Offset:    0, // Don't assign block offset yet
 			}
 
 			xBlock, exists, err := p.GetBlock(ctx, fetchReq)
@@ -178,10 +173,12 @@ func (p *Provider) stream(
 				return nil, nil
 			}
 
-			if xBlock.ShouldAttest(chain.AttestInterval) {
-				if err := tracker.assignOffset(height); err != nil {
-					return nil, err
-				}
+			// Get block offset from tracker.
+			// Possibly waiting for another fetch worker to fetch "next height";
+			// since offsets need to be assigned in sequential order.
+			xBlock.BlockOffset, err = tracker.awaitOffset(ctx, xBlock)
+			if err != nil {
+				return nil, err
 			}
 
 			return []xchain.Block{xBlock}, nil
@@ -247,68 +244,77 @@ func (p *Provider) getEVMChain(chainID uint64) (netconf.Chain, ethclient.Client,
 	return chain, client, nil
 }
 
-// offsetTracker tracks the XBlockOffset for non-empty blocks.
-//
-// It supports at-least-once semantics `assignOffset` and `getOffset`
-// for monotonically incrementing heights; i.e., get and assign may
-// be called for the same or later (higher) heights multiple times,
-// but it may not be called for a previous (lower) height.
+// offsetTracker tracks and assigns the XBlockOffset.
 type offsetTracker struct {
-	mu            sync.RWMutex
-	enabled       bool
-	currentOffset uint64
-	prevHeight    *uint64
-}
+	attestInterval uint64
 
-func newOffsetTracker(from uint64) *offsetTracker {
-	return &offsetTracker{
-		enabled:       true,
-		currentOffset: from,
+	// mutable defines all mutable fields protected by a RWMutex.
+	mutable struct {
+		sync.RWMutex
+		nextOffset uint64
+		nextHeight uint64
 	}
 }
 
-// assignOffset assigns the current offset to the provided height
-// incrementing the current offset by one.
-func (c *offsetTracker) assignOffset(height uint64) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	if !c.enabled {
-		return nil
+// newOffsetTracker returns a new offset tracker, setting the next state to the provided values.
+func newOffsetTracker(nextOffset uint64, nextHeight uint64, attestInterval uint64) *offsetTracker {
+	tracker := offsetTracker{
+		attestInterval: attestInterval,
 	}
 
-	if c.prevHeight != nil && *c.prevHeight > height {
-		return errors.New("assign unexpected old height [BUG]")
-	} else if c.prevHeight != nil && *c.prevHeight == height {
-		return nil
-	}
+	// Take lock, this is only require due to `go test -race`
+	tracker.mutable.Lock()
+	defer tracker.mutable.Unlock()
 
-	c.prevHeight = &height
-	c.currentOffset++
+	tracker.mutable.nextOffset = nextOffset
+	tracker.mutable.nextHeight = nextHeight
 
-	return nil
+	return &tracker
 }
 
-// getOffset returns the XBlockOffset for the provided height,
-// only the previous offset (current-1) or the current offset is supported.
-func (c *offsetTracker) getOffset(height uint64) (uint64, error) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	if !c.enabled {
-		return 0, nil
+// awaitOffset block and waits for the provided block to be the next expected height,
+// it then maybe assigns-and-returns a block offset if block.ShouldAttest,
+// it also updates internal state..
+func (c *offsetTracker) awaitOffset(ctx context.Context, block xchain.Block) (uint64, error) {
+	// Wait for this block to be the next expected height.
+	ticker := time.NewTicker(time.Millisecond) // Avoid spinning
+	defer ticker.Stop()
+	ctx, cancel := context.WithTimeout(ctx, time.Minute) // Avoid blocking forever
+	defer cancel()
+	for c.nextHeightRLock() != block.BlockHeight {
+		select {
+		case <-ctx.Done():
+			return 0, errors.Wrap(ctx.Err(), "timeout waiting for next height", "next_height", c.nextHeightRLock(), "height", block.BlockHeight)
+		case <-ticker.C:
+		}
 	}
 
-	if c.prevHeight == nil {
-		return c.currentOffset, nil
+	c.mutable.Lock()
+	defer c.mutable.Unlock()
+
+	// Sanity check that next height is still as expected.
+	if c.mutable.nextHeight != block.BlockHeight {
+		return 0, errors.New("unexpected next height [BUG]")
 	}
 
-	if *c.prevHeight > height {
-		return 0, errors.New("get unexpected old height [BUG]")
-	}
-	if *c.prevHeight == height {
-		return c.currentOffset - 1, nil
+	// Get block offset to return, maybe increment nextOffset.
+	var blockOffset uint64
+	if block.ShouldAttest(c.attestInterval) {
+		blockOffset = c.mutable.nextOffset
+		c.mutable.nextOffset++
 	}
 
-	return c.currentOffset, nil
+	// Update next height.
+	c.mutable.nextHeight++
+
+	return blockOffset, nil
+}
+
+// nextHeightRLock returns the next height.
+// It takes a read lock, so the write lock MUST not be held.
+func (c *offsetTracker) nextHeightRLock() uint64 {
+	c.mutable.RLock()
+	defer c.mutable.RUnlock()
+
+	return c.mutable.nextHeight
 }
