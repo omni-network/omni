@@ -14,6 +14,7 @@ func bindRunFlags(flags *pflag.FlagSet, cfg *monitor.Config) {
 	xchain.BindFlags(flags, &cfg.RPCEndpoints)
 	flags.StringVar(&cfg.PrivateKey, "private-key", cfg.PrivateKey, "The path to the private key e.g path/private.key")
 	flags.StringVar(&cfg.MonitoringAddr, "monitoring-addr", cfg.MonitoringAddr, "The address to bind the monitoring server")
+	flags.StringVar(&cfg.HaloURL, "halo-url", cfg.HaloURL, "The URL of the halo node e.g localhost:26657")
 }
 
 func bindLoadGenFlags(flags *pflag.FlagSet, cfg *loadgen.Config) {
