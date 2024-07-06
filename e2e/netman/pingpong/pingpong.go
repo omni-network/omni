@@ -155,47 +155,56 @@ func (d *XDapp) StartAllEdges(ctx context.Context, latest, parallel, count uint6
 	ctx, cancel := context.WithTimeout(ctx, startPingPongEdgesTimeout)
 	defer cancel()
 	eg, ctx := errgroup.WithContext(ctx)
+
+	// Group edges by from
+	edgesByFrom := make(map[uint64][]contract)
 	for _, edge := range d.edges {
-		from := d.contracts[edge.From]
-		to := d.contracts[edge.To]
+		edgesByFrom[edge.From] = append(edgesByFrom[edge.From], d.contracts[edge.To])
+	}
 
-		log.Debug(ctx, "Starting ping pong contract",
-			"from", from.Chain.Name,
-			"to", to.Chain.Name,
-			"from_chain_id", from.Chain.ID,
-			"parallel", parallel,
-			"count", count,
-			"shards", from.Chain.Shards,
-		)
+	for fromID, toContracts := range edgesByFrom {
+		from := d.contracts[fromID]
+		log.Debug(ctx, "Starting pingpong deployments for sender", "from", from.Chain.Name)
+		eg.Go(func() error {
+			// For a particular sender (from), we deploy contracts in series to avoid nonce errors
+			for _, to := range toContracts {
+				log.Debug(ctx, "Starting ping pong contract",
+					"from", from.Chain.Name,
+					"to", to.Chain.Name,
+					"from_chain_id", from.Chain.ID,
+					"parallel", parallel,
+					"count", count,
+					"shards", from.Chain.Shards,
+				)
 
-		shards := from.Chain.Shards
-		for i := uint64(0); i < parallel; i++ {
-			// First are latest, rest is finalized
-			conf := xchain.ConfFinalized
-			// Only use latest shard if the chain has it and "latest" is enabled (i.e. not 0)
-			if slices.Contains(shards, xchain.ShardLatest0) && i < latest {
-				conf = xchain.ConfLatest
+				shards := from.Chain.Shards
+				for i := uint64(0); i < parallel; i++ {
+					// First are latest, rest is finalized
+					conf := xchain.ConfFinalized
+					// Only use latest shard if the chain has it and "latest" is enabled (i.e. not 0)
+					if slices.Contains(shards, xchain.ShardLatest0) && i < latest {
+						conf = xchain.ConfLatest
+					}
+
+					txOpts, backend, err := d.backends.BindOpts(ctx, from.Chain.ID, d.deployer)
+					if err != nil {
+						return err
+					}
+
+					id := randomHex7()
+					tx, err := from.PingPong.Start(txOpts, id, to.Chain.ID, uint8(conf), to.Address, count)
+					if err != nil {
+						return errors.Wrap(err, "start ping pong", "id", id, "from", from.Chain.Name, "to", to.Chain.Name, "conf", conf)
+					}
+
+					if _, err := bind.WaitMined(ctx, backend, tx); err != nil {
+						return errors.Wrap(err, "wait mined", "chain", from.Chain.Name, "tx", tx.Hash())
+					}
+				}
 			}
 
-			eg.Go(func() error {
-				txOpts, backend, err := d.backends.BindOpts(ctx, from.Chain.ID, d.deployer)
-				if err != nil {
-					return err
-				}
-
-				id := randomHex7()
-				tx, err := from.PingPong.Start(txOpts, id, to.Chain.ID, uint8(conf), to.Address, count)
-				if err != nil {
-					return errors.Wrap(err, "start ping pong", "id", id, "from", from.Chain.Name, "to", to.Chain.Name, "conf", conf)
-				}
-
-				if _, err := bind.WaitMined(ctx, backend, tx); err != nil {
-					return errors.Wrap(err, "wait mined", "chain", from.Chain.Name, "tx", tx.Hash())
-				}
-
-				return nil
-			})
-		}
+			return nil
+		})
 	}
 
 	log.Debug(ctx, "Waiting for all ping pong edges to start", "timeout", startPingPongEdgesTimeout)
