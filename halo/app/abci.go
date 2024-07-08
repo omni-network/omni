@@ -65,8 +65,8 @@ func (l abciWrapper) InitChain(ctx context.Context, chain *abci.RequestInitChain
 }
 
 func (l abciWrapper) PrepareProposal(ctx context.Context, proposal *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
+	ctx = log.WithCtx(ctx, "height", proposal.Height)
 	log.Debug(ctx, "👾 ABCI call: PrepareProposal",
-		"height", proposal.Height,
 		log.Hex7("proposer", proposal.ProposerAddress),
 	)
 	resp, err := l.Application.PrepareProposal(ctx, proposal)
@@ -78,8 +78,8 @@ func (l abciWrapper) PrepareProposal(ctx context.Context, proposal *abci.Request
 }
 
 func (l abciWrapper) ProcessProposal(ctx context.Context, proposal *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
+	ctx = log.WithCtx(ctx, "height", proposal.Height)
 	log.Debug(ctx, "👾 ABCI call: ProcessProposal",
-		"height", proposal.Height,
 		log.Hex7("proposer", proposal.ProposerAddress),
 	)
 	resp, err := l.Application.ProcessProposal(ctx, proposal)
@@ -91,9 +91,10 @@ func (l abciWrapper) ProcessProposal(ctx context.Context, proposal *abci.Request
 }
 
 func (l abciWrapper) FinalizeBlock(ctx context.Context, req *abci.RequestFinalizeBlock) (*abci.ResponseFinalizeBlock, error) {
+	ctx = log.WithCtx(ctx, "height", req.Height)
 	resp, err := l.Application.FinalizeBlock(ctx, req)
 	if err != nil {
-		log.Error(ctx, "Finalize req failed [BUG]", err, "height", req.Height)
+		log.Error(ctx, "Finalize req failed [BUG]", err)
 		return resp, err
 	}
 
@@ -107,13 +108,12 @@ func (l abciWrapper) FinalizeBlock(ctx context.Context, req *abci.RequestFinaliz
 	}
 	sdkCtx := sdk.NewContext(l.multiStoreProvider(), header, false, nil)
 	if err := l.postFinalize(sdkCtx); err != nil {
-		log.Error(ctx, "PostFinalize callback failed [BUG]", err, "height", req.Height)
+		log.Error(ctx, "PostFinalize callback failed [BUG]", err)
 		return resp, err
 	}
 
 	attrs := []any{
 		"val_updates", len(resp.ValidatorUpdates),
-		"height", req.Height,
 	}
 	for i, update := range resp.ValidatorUpdates {
 		attrs = append(attrs, log.Hex7(fmt.Sprintf("pubkey_%d", i), update.PubKey.GetSecp256K1()))
@@ -134,9 +134,8 @@ func (l abciWrapper) FinalizeBlock(ctx context.Context, req *abci.RequestFinaliz
 }
 
 func (l abciWrapper) ExtendVote(ctx context.Context, vote *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
-	log.Debug(ctx, "👾 ABCI call: ExtendVote",
-		"height", vote.Height,
-	)
+	ctx = log.WithCtx(ctx, "height", vote.Height)
+	log.Debug(ctx, "👾 ABCI call: ExtendVote")
 	resp, err := l.Application.ExtendVote(ctx, vote)
 	if err != nil {
 		log.Error(ctx, "ExtendVote failed [BUG]", err)
@@ -146,9 +145,8 @@ func (l abciWrapper) ExtendVote(ctx context.Context, vote *abci.RequestExtendVot
 }
 
 func (l abciWrapper) VerifyVoteExtension(ctx context.Context, extension *abci.RequestVerifyVoteExtension) (*abci.ResponseVerifyVoteExtension, error) {
-	log.Debug(ctx, "👾 ABCI call: VerifyVoteExtension",
-		"height", extension.Height,
-	)
+	ctx = log.WithCtx(ctx, "height", extension.Height)
+	log.Debug(ctx, "👾 ABCI call: VerifyVoteExtension")
 	resp, err := l.Application.VerifyVoteExtension(ctx, extension)
 	if err != nil {
 		log.Error(ctx, "VerifyVoteExtension failed [BUG]", err)
