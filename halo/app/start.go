@@ -253,7 +253,7 @@ func makeBaseAppOpts(cfg Config) ([]func(*baseapp.BaseApp), error) {
 	}
 
 	return []func(*baseapp.BaseApp){
-		baseapp.SetOptimisticExecution(),
+		// baseapp.SetOptimisticExecution(), // Octane doesn't support this.
 		baseapp.SetChainID(chainID),
 		baseapp.SetMinRetainBlocks(cfg.MinRetainBlocks),
 		baseapp.SetPruning(pruneOpts),
