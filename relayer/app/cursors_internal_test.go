@@ -105,6 +105,10 @@ func (m *mockXChainClient) StreamBlocks(context.Context, xchain.ProviderRequest,
 	panic("unexpected")
 }
 
+func (*mockXChainClient) ChainVersionHeight(context.Context, xchain.ChainVersion) (uint64, error) {
+	panic("unexpected")
+}
+
 func (m *mockXChainClient) GetBlock(ctx context.Context, req xchain.ProviderRequest) (xchain.Block, bool, error) {
 	return m.GetBlockFn(ctx, req)
 }

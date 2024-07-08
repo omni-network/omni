@@ -69,6 +69,10 @@ func (m *Mock) StreamBlocks(ctx context.Context, req xchain.ProviderRequest, cal
 	return m.stream(ctx, req, callback, false)
 }
 
+func (*Mock) ChainVersionHeight(context.Context, xchain.ChainVersion) (uint64, error) {
+	return 0, errors.New("unsupported")
+}
+
 func (m *Mock) stream(
 	ctx context.Context,
 	req xchain.ProviderRequest,

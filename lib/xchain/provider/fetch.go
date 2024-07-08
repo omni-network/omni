@@ -20,6 +20,38 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// LatestHeight returns the latest height for the provided chain version.
+func (p *Provider) ChainVersionHeight(ctx context.Context, chainVer xchain.ChainVersion) (uint64, error) {
+	if chainVer.ID == p.cChainID {
+		// Consensus chain versions all reduce to `latest`.
+		xblock, ok, err := p.cProvider.XBlock(ctx, 0, true)
+		if err != nil {
+			return 0, errors.Wrap(err, "fetch consensus xblock")
+		} else if !ok {
+			return 0, errors.Wrap(err, "unexpected missing latest block [BUG]")
+		}
+
+		return xblock.BlockHeight, nil
+	}
+
+	_, ethCl, err := p.getEVMChain(chainVer.ID)
+	if err != nil {
+		return 0, err
+	}
+
+	headType, ok := headTypeFromConfLevel(chainVer.ConfLevel)
+	if !ok {
+		return 0, errors.New("unsupported conf level")
+	}
+
+	header, err := ethCl.HeaderByType(ctx, headType)
+	if err != nil {
+		return 0, err
+	}
+
+	return header.Number.Uint64(), nil
+}
+
 // GetEmittedCursor returns the emitted cursor for the destination chain on the source chain,
 // or false if not available, or an error. Calls the source chain portal OutXStreamOffset method.
 //

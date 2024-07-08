@@ -47,7 +47,7 @@ func Start(
 				continue
 			}
 
-			go monitorOffsetsForever(ctx, xprovider, network, srcChain, dstChain)
+			go monitorOffsetsForever(ctx, xprovider, network, srcChain, dstChain, cache)
 		}
 	}
 
@@ -229,7 +229,12 @@ func getAttested(ctx context.Context, chainVer xchain.ChainVersion, cprovider cc
 
 // monitorOffsetsForever blocks and periodically monitors the emitted and submitted
 // offsets for a given source and destination chain.
-func monitorOffsetsForever(ctx context.Context, xprovider xchain.Provider, network netconf.Network, src, dst netconf.Chain,
+func monitorOffsetsForever(
+	ctx context.Context,
+	xprovider xchain.Provider,
+	network netconf.Network,
+	src, dst netconf.Chain,
+	cache *emitCursorCache,
 ) {
 	ticker := time.NewTicker(time.Second * 30)
 	defer ticker.Stop()
@@ -239,7 +244,7 @@ func monitorOffsetsForever(ctx context.Context, xprovider xchain.Provider, netwo
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			err := monitorOffsetsOnce(ctx, xprovider, network, src, dst)
+			err := monitorOffsetsOnce(ctx, xprovider, network, src, dst, cache)
 			if ctx.Err() != nil {
 				return
 			} else if err != nil {
@@ -252,15 +257,32 @@ func monitorOffsetsForever(ctx context.Context, xprovider xchain.Provider, netwo
 
 // monitorOffsetsOnce monitors the emitted and submitted offsets for a given source and
 // destination chain.
-func monitorOffsetsOnce(ctx context.Context, xprovider xchain.Provider, network netconf.Network, src, dst netconf.Chain,
+func monitorOffsetsOnce(
+	ctx context.Context,
+	xprovider xchain.Provider,
+	network netconf.Network,
+	src, dst netconf.Chain,
+	cache *emitCursorCache,
 ) error {
 	var lastErr error
 	for _, stream := range network.StreamsBetween(src.ID, dst.ID) {
-		ref := xchain.EmitRef{ConfLevel: ptr(stream.ConfLevel())}
-		emitted, _, err := xprovider.GetEmittedCursor(ctx, ref, stream)
+		// First attempt to get the emit cursor from the cache.
+		srcChainVer := xchain.ChainVersion{ID: src.ID, ConfLevel: stream.ConfLevel()}
+		confHeight, err := xprovider.ChainVersionHeight(ctx, srcChainVer)
 		if err != nil {
-			lastErr = errors.Wrap(err, "get emitted cursor", "stream", network.StreamName(stream))
+			lastErr = errors.Wrap(err, "latest height", "stream", network.StreamName(stream))
 			continue
+		}
+
+		emitted, ok := cache.Get(confHeight, stream)
+		if !ok {
+			// Revert to querying RPC if cache is not populated yet.
+			ref := xchain.EmitRef{ConfLevel: ptr(stream.ConfLevel())}
+			emitted, _, err = xprovider.GetEmittedCursor(ctx, ref, stream)
+			if err != nil {
+				lastErr = errors.Wrap(err, "get emitted cursor", "stream", network.StreamName(stream))
+				continue
+			}
 		}
 
 		submitted, _, err := xprovider.GetSubmittedCursor(ctx, stream)
