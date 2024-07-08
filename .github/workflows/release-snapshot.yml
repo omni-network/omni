@@ -20,7 +20,7 @@ jobs:
       - name: Build docker images
         uses: goreleaser/goreleaser-action@v5
         with:
-          version: latest
+          version: 2
           # Use --snapshot to build current HEAD commit (this doesn't publish images)
           args: release --snapshot --clean
         env:
