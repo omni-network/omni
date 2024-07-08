@@ -35,7 +35,7 @@ var (
 	// to last a weekend without topping up even if fees are spiking.
 	thresholdLarge = FundThresholds{
 		minEther:    5,
-		targetEther: 50,
+		targetEther: 20, // TODO(corver): Increase along with e2e/app#saneMaxEther
 	}
 
 	defaultThresholdsByRole = map[Role]FundThresholds{
