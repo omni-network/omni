@@ -8,7 +8,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/omni-network/omni/contracts/bindings/examples"
+	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -56,7 +56,7 @@ func Deploy(ctx context.Context, network netconf.Network, backends ethbackend.Ba
 			return contract{}, errors.Wrap(err, "block number")
 		}
 
-		addr, _, pingPong, err := examples.DeployPingPong(txOpts, backend, chain.PortalAddress)
+		addr, _, pingPong, err := bindings.DeployPingPong(txOpts, backend, chain.PortalAddress)
 		if err != nil {
 			return contract{}, errors.Wrap(err, "deploy ping pong contract")
 		}
@@ -358,7 +358,7 @@ func edges(contracts map[uint64]contract) []Edge {
 type contract struct {
 	Chain        netconf.Chain
 	Address      common.Address
-	PingPong     *examples.PingPong
+	PingPong     *bindings.PingPong
 	DeployHeight uint64
 }
 

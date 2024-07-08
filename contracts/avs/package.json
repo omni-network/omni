@@ -1,0 +1,26 @@
+{
+  "name": "@omni-network/avs",
+  "version": "0.2.0-alpha.5",
+  "license": "GPL-3.0-only",
+  "packageManager": "pnpm@8.14.0",
+  "repository": "https://github.com/omni-network/omni/contracts/avs",
+  "files": [
+    "src/**/*.sol",
+    "test/**/*.sol",
+    "script/**/*.sol"
+  ],
+  "scripts": {
+    "test": "forge test"
+  },
+  "devDependencies": {
+    "ds-test": "github:dapphub/ds-test",
+    "forge-std": "github:foundry-rs/forge-std"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "4.9.6",
+    "@openzeppelin/contracts-upgradeable": "4.9.6",
+    "eigenlayer-contracts": "github:Layr-Labs/eigenlayer-contracts",
+    "eigenlayer-middleware": "github:Layr-Labs/eigenlayer-middleware",
+    "solmate": "^6.2.0"
+  }
+}

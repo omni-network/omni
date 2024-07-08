@@ -1,0 +1,30 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["node_modules"]
+
+remappings = [
+  "forge-std/=node_modules/forge-std/src",
+  "ds-test/=node_modules/ds-test/src",
+  "src/=src",
+  "core-test/=../core/test",
+  "core/=../core/src",
+  "test/=test",
+  # required so that imports in core/ can be resolved
+  "avs/=src",
+  # remapping for eigenlayers import
+  '@openzeppelin-upgrades/contracts/=node_modules/@openzeppelin/contracts-upgradeable',
+]
+
+fs_permissions = [
+  { access = "read-write", path = "./script" },
+]
+
+allow_paths = ["../core"]
+
+[fuzz]
+seed = "0x6eed"
+
+[fmt]
+bracket_spacing = true
+number_underscore = "thousands"
