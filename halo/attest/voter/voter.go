@@ -153,7 +153,7 @@ func (v *Voter) runForever(ctx context.Context, chainVer xchain.ChainVersion) {
 			return // Don't log or sleep on context cancel.
 		}
 
-		log.Warn(ctx, "Vote runner failed (will retry)", err)
+		log.Warn(ctx, "Vote runner failed (will retry)", err, "chain", v.network.ChainVersionName(chainVer))
 		backoff()
 	}
 }
@@ -182,7 +182,12 @@ func (v *Voter) runOnce(ctx context.Context, chainVer xchain.ChainVersion) error
 		return errors.Wrap(err, "get from height and offset")
 	}
 
-	log.Info(ctx, "Voting started for chain", "from_height", fromHeight, "from_offset", fromOffset, "skip_before_offset", skipBeforeOffset)
+	log.Info(ctx, "Voting started for chain",
+		"from_height", fromHeight,
+		"from_offset", fromOffset,
+		"skip_before_offset", skipBeforeOffset,
+		"chain", v.network.ChainVersionName(chainVer),
+	)
 
 	req := xchain.ProviderRequest{
 		ChainID:   chainVer.ID,
@@ -191,8 +196,8 @@ func (v *Voter) runOnce(ctx context.Context, chainVer xchain.ChainVersion) error
 		Offset:    fromOffset,
 	}
 
-	cursors := make(map[xchain.StreamID]uint64)
-	var prevBlock xchain.Block
+	streamOffsets := make(map[xchain.StreamID]uint64)
+	var prevBlock *xchain.Block
 
 	return v.provider.StreamBlocks(ctx, req,
 		func(ctx context.Context, block xchain.Block) error {
@@ -200,11 +205,13 @@ func (v *Voter) runOnce(ctx context.Context, chainVer xchain.ChainVersion) error
 				return errors.New("not a validator anymore")
 			}
 
-			if err := detectReorg(chainVer, v.network.ChainVersionName(chainVer), prevBlock, block, cursors); err != nil {
+			if err := detectReorg(chainVer, prevBlock, block, streamOffsets); err != nil {
+				reorgTotal.WithLabelValues(v.network.ChainVersionName(chainVer)).Inc()
 				// Restart stream, recalculating block offset from finalized version.
+
 				return err
 			}
-			prevBlock = block
+			prevBlock = &block
 
 			if !block.ShouldAttest(chain.AttestInterval) {
 				maybeDebugLog(ctx, "Not creating vote for empty cross chain block")
@@ -506,11 +513,12 @@ func (v *Voter) instrumentUnsafe() {
 	count(v.proposed, proposedCount)
 }
 
-// detectReorg returns an error if the previous block doesn't match the new block's parent hash.
-// This indicates that a reorg occurred.
-func detectReorg(chainVer xchain.ChainVersion, chainVerName string, prevBlock xchain.Block, block xchain.Block, cursors map[xchain.StreamID]uint64) error {
-	if prevBlock.BlockHash == (common.Hash{}) {
-		return nil // Skip previous blocks without parent hash (init or consensus chain without block hashes).
+// detectReorg returns an error if a reorg is detected based on the following conditions:
+// - Previous block hash doesn't match the next block's parent hash.
+// - Stream offsets are not consecutive.
+func detectReorg(chainVer xchain.ChainVersion, prevBlock *xchain.Block, block xchain.Block, streamOffsets map[xchain.StreamID]uint64) error {
+	if prevBlock == nil {
+		return nil // Skip first block (without previous).
 	}
 
 	if prevBlock.BlockHeight+1 != block.BlockHeight {
@@ -518,20 +526,21 @@ func detectReorg(chainVer xchain.ChainVersion, chainVerName string, prevBlock xc
 	}
 
 	for _, xmsg := range block.Msgs {
-		cursor, ok := cursors[xmsg.StreamID]
-		if ok && xmsg.StreamOffset != cursor+1 {
-			return errors.New("consecutive message offset mismatch", "streamID", xmsg.StreamID, "prev_offset", cursor, "new_offset", xmsg.StreamOffset)
+		offset, ok := streamOffsets[xmsg.StreamID]
+		if ok && xmsg.StreamOffset != offset+1 {
+			return errors.New("non-consecutive message offsets", "streamID", xmsg.StreamID, "prev_offset", offset, "new_offset", xmsg.StreamOffset)
 		}
 
 		// Update the cursor
-		cursors[xmsg.StreamID] = xmsg.StreamOffset
+		streamOffsets[xmsg.StreamID] = xmsg.StreamOffset
 	}
 
+	if block.BlockHash == (common.Hash{}) {
+		return nil // Skip consensus chain blocks without block hashes.
+	}
 	if prevBlock.BlockHash == block.ParentHash {
 		return nil // No reorg detected.
 	}
-
-	reorgTotal.WithLabelValues(chainVerName).Inc()
 
 	if chainVer.ConfLevel.IsFuzzy() {
 		return errors.New("fuzzy chain reorg detected", "height", block.BlockHeight, "offset", block.BlockOffset, "parent_hash", prevBlock.BlockHash, "new_parent_hash", block.ParentHash)
