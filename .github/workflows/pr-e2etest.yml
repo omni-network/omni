@@ -19,7 +19,7 @@ jobs:
         env:
           GOOS: linux
         with:
-          version: latest
+          version: 2
           args: build --single-target --snapshot --clean --id=halo --id=relayer --id=monitor --id=anvilproxy
 
       - name: Build halo image
