@@ -24,6 +24,9 @@ CONTRACTS := OmniPortal FeeOracleV1 OmniAVS Create3 TransparentUpgradeableProxy 
 			src/deploy/ProxyAdmin.sol:ProxyAdmin \
 			test/avs/common/MockERC20.sol:MockERC20
 
+.PHONY: all
+all: build bindings allocs
+
 .PHONY: bindings
 bindings: check-abigen-version build ## Generate golang contract bindings.
 	./bindings/scripts/gen.sh $(CONTRACTS)
@@ -35,7 +38,7 @@ examples-bindings: check-abigen-version build ## Generate golang contract bindin
 	PKG=examples DIR=./bindings/examples ./bindings/scripts/gen.sh PingPong
 
 .PHONY: allocs
-allocs:
+allocs: bindings
 	go run ./allocs/scripts/genallocs.go
 
 .PHONY: deploy-eigenlayer-save-anvil-state
