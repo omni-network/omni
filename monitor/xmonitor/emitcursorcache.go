@@ -65,7 +65,7 @@ func startEmitCursorCache(
 			Offset:    0,                 // No offset required for emit cursors.
 		}
 
-		log.Info(ctx, "Subscribing to xblock to populate emit cursor cache", "chain", chain.Name, "from_height", fromHeight)
+		log.Info(ctx, "Subscribing to xblocks to populate emit cursor cache", "chain", chain.Name, "from_height", fromHeight)
 
 		if err := xprov.StreamAsync(ctx, req, callback); err != nil {
 			return nil, err
@@ -124,13 +124,48 @@ func (c *emitCursorCache) Get(height uint64, stream xchain.StreamID) (xchain.Emi
 	return cursor, ok
 }
 
+// AtOrBefore returns the stream emit cursor at-or-before the given height.
+// Only attested heights are populated, so the first cursor at-or-before any
+// height will return the correct cursor.
+// TODO(corver): Maybe rather do binary search of heights.
+func (c *emitCursorCache) AtOrBefore(height uint64, stream xchain.StreamID) (xchain.EmitCursor, bool) {
+	for {
+		c.mu.RLock()
+		cursor, ok := c.cursors[height][stream]
+		c.mu.RUnlock()
+
+		if ok {
+			// Return if we have a cursor for the current height
+			return cursor, true
+		}
+
+		// Get earliest and latest heights for stream.
+		c.mu.RLock()
+		var earliest, latest uint64
+		if heights := c.heights[stream]; len(heights) > 0 {
+			earliest = heights[0]
+			latest = heights[len(heights)-1]
+		}
+		c.mu.RUnlock()
+
+		if height <= earliest {
+			// We reached earliest height
+			return xchain.EmitCursor{}, false
+		} else if height > latest {
+			height = latest // Jump directly to latest
+		} else {
+			height-- // Try one less
+		}
+	}
+}
+
 // trim removes all cursors for the stream that are older or equaled to the provided height.
 func (c *emitCursorCache) trim(height uint64, stream xchain.StreamID) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	// Remove all heights that are older than the cache trim lag.
-	var trimAfter int
+	trimAfter := -1
 	for i, h := range c.heights[stream] {
 		if h > height {
 			break // All remaining heights are within the trim lag.
@@ -144,5 +179,7 @@ func (c *emitCursorCache) trim(height uint64, stream xchain.StreamID) {
 	}
 
 	// Remove the trimmed heights from the list.
-	c.heights[stream] = c.heights[stream][trimAfter+1:]
+	if trimAfter >= 0 {
+		c.heights[stream] = c.heights[stream][trimAfter+1:]
+	}
 }

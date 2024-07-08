@@ -153,11 +153,11 @@ func monitorAttestedForever(
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			// First get attested head (so it can't be lower than heads).
-			att, err := getAttested(ctx, chainVer, cprovider)
-			// Then populate gauges "at the same time" so they update "atomically".
+			att, ok, err := cprovider.LatestAttestation(ctx, chainVer)
 			if err != nil {
 				log.Warn(ctx, "Monitoring attested failed (will retry)", err, "chain", srcChain.Name)
+				continue
+			} else if !ok {
 				continue
 			}
 
@@ -215,18 +215,6 @@ func getEVMHeads(ctx context.Context, client ethclient.Client) map[ethclient.Hea
 	return resp
 }
 
-// monitorAttestedOnce monitors of the latest attested height by chain.
-func getAttested(ctx context.Context, chainVer xchain.ChainVersion, cprovider cchain.Provider) (xchain.Attestation, error) {
-	att, ok, err := cprovider.LatestAttestation(ctx, chainVer)
-	if err != nil {
-		return xchain.Attestation{}, errors.Wrap(err, "latest attestation")
-	} else if !ok {
-		return xchain.Attestation{}, nil
-	}
-
-	return att, nil
-}
-
 // monitorOffsetsForever blocks and periodically monitors the emitted and submitted
 // offsets for a given source and destination chain.
 func monitorOffsetsForever(
@@ -268,21 +256,18 @@ func monitorOffsetsOnce(
 	for _, stream := range network.StreamsBetween(src.ID, dst.ID) {
 		// First attempt to get the emit cursor from the cache.
 		srcChainVer := xchain.ChainVersion{ID: src.ID, ConfLevel: stream.ConfLevel()}
-		confHeight, err := xprovider.ChainVersionHeight(ctx, srcChainVer)
+		height, err := xprovider.ChainVersionHeight(ctx, srcChainVer)
 		if err != nil {
 			lastErr = errors.Wrap(err, "latest height", "stream", network.StreamName(stream))
 			continue
+		} else if height < src.DeployHeight {
+			continue // Don't monitor chains before finalized.
 		}
 
-		emitted, ok := cache.Get(confHeight, stream)
+		emitted, ok := cache.AtOrBefore(height, stream)
 		if !ok {
-			// Revert to querying RPC if cache is not populated yet.
-			ref := xchain.EmitRef{ConfLevel: ptr(stream.ConfLevel())}
-			emitted, _, err = xprovider.GetEmittedCursor(ctx, ref, stream)
-			if err != nil {
-				lastErr = errors.Wrap(err, "get emitted cursor", "stream", network.StreamName(stream))
-				continue
-			}
+			lastErr = errors.Wrap(err, "emit cursor cache not populated", "stream", network.StreamName(stream))
+			continue
 		}
 
 		submitted, _, err := xprovider.GetSubmittedCursor(ctx, stream)
