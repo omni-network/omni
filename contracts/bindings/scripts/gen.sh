@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Generate bindings for solidity contracts
 
-DIR=${DIR:-./bindings}
-PKG=${PKG:-bindings}
+# forge project root
+ROOT=${ROOT}
 
 # generate bindings for the given contract
 # works on contract name of fully qualified path to the contract
@@ -19,15 +19,15 @@ gen_binding() {
   name_lower=$(echo ${name} | tr '[:upper:]' '[:lower:]')
 
   temp=$(mktemp -d)
-  forge inspect ${contract} abi > ${temp}/${name}.abi
-  forge inspect ${contract} bytecode > ${temp}/${name}.bin
+  forge inspect --root ${ROOT} ${contract} abi > ${temp}/${name}.abi
+  forge inspect --root ${ROOT} ${contract} bytecode > ${temp}/${name}.bin
 
   abigen \
     --abi ${temp}/${name}.abi \
     --bin ${temp}/${name}.bin \
-    --pkg ${PKG} \
     --type ${name} \
-    --out ${DIR}/${name_lower}.go
+    --pkg bindings \
+    --out ./bindings/${name_lower}.go
 }
 
 

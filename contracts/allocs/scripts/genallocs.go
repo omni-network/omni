@@ -50,7 +50,7 @@ func genallocs() error {
 			return errors.Wrap(err, "pack calldata")
 		}
 
-		_, err = execCmd(".", "forge", "script", "AllocPredeploys", "--sig", hexutil.Encode(calldata))
+		_, err = execCmd(".", "forge", "script", "AllocPredeploys", "--root", "core", "--sig", hexutil.Encode(calldata))
 		if err != nil {
 			return errors.Wrap(err, "alloc predeploys")
 		}

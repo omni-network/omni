@@ -1,9 +1,3 @@
-ifneq ("$(wildcard .env)","")
-	include .env
-	export $(shell sed 's/=.*//' .env)
-endif
-
-
 .PHONY: help
 help:  ## Display this help message.
 	@egrep -h '\s##\s' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m  %-30s\033[0m %s\n", $$1, $$2}'
@@ -15,65 +9,33 @@ version: ## Print tool versions.
 
 .PHONY: build
 build: version ## Build contracts.
-	forge build
+	(cd core && forge build)
+	(cd avs && forge build)
 
+CORE_CONTRACTS := OmniPortal FeeOracleV1 Create3 TransparentUpgradeableProxy \
+			Staking Slashing OmniBridgeL1 OmniBridgeNative Omni WOmni \
+			PortalRegistry AllocPredeploys PingPong \
+			core/src/deploy/ProxyAdmin.sol:ProxyAdmin \
 
+AVS_CONTRACTS := OmniAVS DelegationManager StrategyManager StrategyBase AVSDirectory \
+			avs/test/common/MockERC20.sol:MockERC20
 
-CONTRACTS := OmniPortal FeeOracleV1 OmniAVS Create3 TransparentUpgradeableProxy Staking Slashing OmniBridgeL1 OmniBridgeNative Omni WOmni \
-			DelegationManager StrategyManager StrategyBase AVSDirectory PortalRegistry AllocPredeploys \
-			src/deploy/ProxyAdmin.sol:ProxyAdmin \
-			test/avs/common/MockERC20.sol:MockERC20
+.PHONY: all
+all: build bindings allocs
 
 .PHONY: all
 all: build bindings allocs
 
 .PHONY: bindings
 bindings: check-abigen-version build ## Generate golang contract bindings.
-	./bindings/scripts/gen.sh $(CONTRACTS)
+	ROOT=./core ./bindings/scripts/gen.sh $(CORE_CONTRACTS)
+	ROOT=./avs ./bindings/scripts/gen.sh $(CONTRACTS)
 	go run ./bindings/scripts/commenttypes.go -- bindings/strategymanager.go IStrategyManagerDeprecatedStructQueuedWithdrawal IStrategyManagerDeprecatedStructWithdrawerAndNonce
 	go run ./bindings/scripts/commenttypes.go -- bindings/avsdirectory.go ISignatureUtilsSignatureWithSaltAndExpiry
-
-.PHONY: examples-bindings
-examples-bindings: check-abigen-version build ## Generate golang contract bindings for example contracts
-	PKG=examples DIR=./bindings/examples ./bindings/scripts/gen.sh PingPong
 
 .PHONY: allocs
 allocs: bindings
 	go run ./allocs/scripts/genallocs.go
-
-.PHONY: deploy-eigenlayer-save-anvil-state
-deploy-eigenlayer-save-anvil-state: ## Deploy eigenlayer contracts and dump anvil state.
-	./script/eigen/deploy-eigenlayer-save-anvil-state.sh
-
-.PHONY: avs-fork-test
-avs-fork-test: ## Run AVS tests againts a local fork.
-	@FOUNDRY_FUZZ_RUNS=5 forge test --fork-url http://localhost:8545 --match-path "test/avs/**/*.sol"
-
-
-.PHONY: fork-holesky
-fork-holesky: ## Run an anvil holesky fork.
-	anvil --fork-url https://holesky.infura.io/v3/$(INFURA_KEY)
-
-.PHONY: fork-mainnet
-fork-mainnet: ## Run an anvil mainnet fork.
-	anvil --fork-url https://mainnet.infura.io/v3/$(INFURA_KEY)
-
-.PHONY: deploy-mainnet-avs
-deploy-mainnet-avs: ## Deploy AVS contracts to mainnet.
-	forge script DeployAVS --rpc-url https://mainnet.infura.io/v3/$(INFURA_KEY) --broadcast
-
-.PHONY: deploy-local-avs
-deploy-local-avs: ## Deploy AVS contracts to a local fork.
-	forge script DeployAVS --rpc-url http://localhost:8545 --broadcast
-
-.PHONY: deploy-mainnet-proxy-admin
-deploy-mainnet-proxy-admin: ## Deploy ProxyAdmin contract to mainnet.
-	forge script DeployProxyAdmin --rpc-url https://mainnet.infura.io/v3/$(INFURA_KEY) --broadcast
-
-.PHONY: deploy-local-proxy-admin
-deploy-local-proxy-admin: ## Deploy ProxyAdmin contract to a local fork.
-	forge script DeployProxyAdmin --rpc-url http://localhost:8545 --broadcast
-
 
 .PHONY: check-abigen-version
 check-abigen-version: ## Check abigen version, exit(1) if not 1.13.14-stable.
