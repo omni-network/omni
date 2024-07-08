@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -34,7 +35,7 @@ func selfDelegateForever(ctx context.Context, contract *bindings.Staking, backen
 			return
 		case <-timer.C:
 			if err := selfDelegateOnce(ctx, contract, backend, validator); err != nil {
-				log.Error(ctx, "Failed to self-delegate (will retry)", err)
+				log.Warn(ctx, "Failed to self-delegate (will retry)", err)
 			}
 			timer.Reset(nextPeriod())
 		}
@@ -42,14 +43,19 @@ func selfDelegateForever(ctx context.Context, contract *bindings.Staking, backen
 }
 
 func selfDelegateOnce(ctx context.Context, contract *bindings.Staking, backend *ethbackend.Backend, validator common.Address) error {
-	ethBalance, err := backend.EtherBalanceAt(ctx, validator)
-	if err != nil {
-		return err
-	} else if ethBalance < 1 {
-		return errors.New("insufficient balance to self-delegate",
-			"balance", ethBalance,
-			"validator", validator.Hex(),
-		)
+	backoff := expbackoff.New(ctx)
+	for {
+		ethBalance, err := backend.EtherBalanceAt(ctx, validator)
+		if err != nil {
+			return err
+		} else if ethBalance < 1 {
+			log.Info(ctx, "Waiting for validator to be funded", "balance", ethBalance, "validator", validator.Hex())
+			backoff()
+
+			continue
+		}
+
+		break // Continue funding below
 	}
 
 	txOpts, err := backend.BindOpts(ctx, validator)

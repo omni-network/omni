@@ -85,7 +85,7 @@ contract Staking is OwnableUpgradeable {
      * @dev Proxies x/staking.MsgDelegate
      */
     function delegate(address validator) external payable {
-        require(msg.value > MinDelegation, "Staking: insufficient deposit");
+        require(msg.value >= MinDelegation, "Staking: insufficient deposit");
 
         // only support self delegation for now
         require(msg.sender == validator, "Staking: only self delegation");
