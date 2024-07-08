@@ -20,7 +20,7 @@ fs_permissions = [
 ]
 
 allow_paths = ["../avs"]
-
+gas_limit = 9223372036854775807 # prev foundry default
 ffi = true
 
 [fuzz]

@@ -14,8 +14,7 @@ build: version ## Build contracts.
 
 CORE_CONTRACTS := OmniPortal FeeOracleV1 Create3 TransparentUpgradeableProxy \
 			Staking Slashing OmniBridgeL1 OmniBridgeNative Omni WOmni \
-			PortalRegistry AllocPredeploys PingPong \
-			core/src/deploy/ProxyAdmin.sol:ProxyAdmin \
+			PortalRegistry AllocPredeploys PingPong ProxyAdmin \
 
 AVS_CONTRACTS := OmniAVS DelegationManager StrategyManager StrategyBase AVSDirectory \
 			avs/test/common/MockERC20.sol:MockERC20

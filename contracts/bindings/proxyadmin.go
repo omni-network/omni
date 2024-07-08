@@ -31,8 +31,8 @@ var (
 
 // ProxyAdminMetaData contains all meta data concerning the ProxyAdmin contract.
 var ProxyAdminMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"changeProxyAdmin\",\"inputs\":[{\"name\":\"proxy\",\"type\":\"address\",\"internalType\":\"contractITransparentUpgradeableProxy\"},{\"name\":\"newAdmin\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getProxyAdmin\",\"inputs\":[{\"name\":\"proxy\",\"type\":\"address\",\"internalType\":\"contractITransparentUpgradeableProxy\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getProxyImplementation\",\"inputs\":[{\"name\":\"proxy\",\"type\":\"address\",\"internalType\":\"contractITransparentUpgradeableProxy\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"upgrade\",\"inputs\":[{\"name\":\"proxy\",\"type\":\"address\",\"internalType\":\"contractITransparentUpgradeableProxy\"},{\"name\":\"implementation\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"upgradeAndCall\",\"inputs\":[{\"name\":\"proxy\",\"type\":\"address\",\"internalType\":\"contractITransparentUpgradeableProxy\"},{\"name\":\"implementation\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false}]",
-	Bin: "0x608060405234801561001057600080fd5b5060405161076a38038061076a83398101604081905261002f91610097565b61003833610047565b61004181610047565b506100c7565b600080546001600160a01b038381166001600160a01b0319831681178455604051919092169283917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09190a35050565b6000602082840312156100a957600080fd5b81516001600160a01b03811681146100c057600080fd5b9392505050565b610694806100d66000396000f3fe60806040526004361061007b5760003560e01c80639623609d1161004e5780639623609d1461011157806399a88ec414610124578063f2fde38b14610144578063f3b7dead1461016457600080fd5b8063204e1c7a14610080578063715018a6146100bc5780637eff275e146100d35780638da5cb5b146100f3575b600080fd5b34801561008c57600080fd5b506100a061009b366004610499565b610184565b6040516001600160a01b03909116815260200160405180910390f35b3480156100c857600080fd5b506100d1610215565b005b3480156100df57600080fd5b506100d16100ee3660046104bd565b610229565b3480156100ff57600080fd5b506000546001600160a01b03166100a0565b6100d161011f36600461050c565b610291565b34801561013057600080fd5b506100d161013f3660046104bd565b610300565b34801561015057600080fd5b506100d161015f366004610499565b610336565b34801561017057600080fd5b506100a061017f366004610499565b6103b4565b6000806000836001600160a01b03166040516101aa90635c60da1b60e01b815260040190565b600060405180830381855afa9150503d80600081146101e5576040519150601f19603f3d011682016040523d82523d6000602084013e6101ea565b606091505b5091509150816101f957600080fd5b8080602001905181019061020d91906105e2565b949350505050565b61021d6103da565b6102276000610434565b565b6102316103da565b6040516308f2839760e41b81526001600160a01b038281166004830152831690638f283970906024015b600060405180830381600087803b15801561027557600080fd5b505af1158015610289573d6000803e3d6000fd5b505050505050565b6102996103da565b60405163278f794360e11b81526001600160a01b03841690634f1ef2869034906102c990869086906004016105ff565b6000604051808303818588803b1580156102e257600080fd5b505af11580156102f6573d6000803e3d6000fd5b5050505050505050565b6103086103da565b604051631b2ce7f360e11b81526001600160a01b038281166004830152831690633659cfe69060240161025b565b61033e6103da565b6001600160a01b0381166103a85760405162461bcd60e51b815260206004820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201526564647265737360d01b60648201526084015b60405180910390fd5b6103b181610434565b50565b6000806000836001600160a01b03166040516101aa906303e1469160e61b815260040190565b6000546001600160a01b031633146102275760405162461bcd60e51b815260206004820181905260248201527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e6572604482015260640161039f565b600080546001600160a01b038381166001600160a01b0319831681178455604051919092169283917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09190a35050565b6001600160a01b03811681146103b157600080fd5b6000602082840312156104ab57600080fd5b81356104b681610484565b9392505050565b600080604083850312156104d057600080fd5b82356104db81610484565b915060208301356104eb81610484565b809150509250929050565b634e487b7160e01b600052604160045260246000fd5b60008060006060848603121561052157600080fd5b833561052c81610484565b9250602084013561053c81610484565b9150604084013567ffffffffffffffff8082111561055957600080fd5b818601915086601f83011261056d57600080fd5b81358181111561057f5761057f6104f6565b604051601f8201601f19908116603f011681019083821181831017156105a7576105a76104f6565b816040528281528960208487010111156105c057600080fd5b8260208601602083013760006020848301015280955050505050509250925092565b6000602082840312156105f457600080fd5b81516104b681610484565b60018060a01b03831681526000602060406020840152835180604085015260005b8181101561063c57858101830151858201606001528201610620565b506000606082860101526060601f19601f83011685010192505050939250505056fea26469706673582212201a44e73874a3e61dc9ebabfc898877db44dc5d8523e8eb323ad1dd02722003e764736f6c63430008180033",
+	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"initialOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"UPGRADE_INTERFACE_VERSION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"string\",\"internalType\":\"string\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"upgradeAndCall\",\"inputs\":[{\"name\":\"proxy\",\"type\":\"address\",\"internalType\":\"contractITransparentUpgradeableProxy\"},{\"name\":\"implementation\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"OwnableInvalidOwner\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"OwnableUnauthorizedAccount\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}]}]",
+	Bin: "0x608060405234801561001057600080fd5b5060405161052438038061052483398101604081905261002f916100be565b806001600160a01b03811661005e57604051631e4fbdf760e01b81526000600482015260240160405180910390fd5b6100678161006e565b50506100ee565b600080546001600160a01b038381166001600160a01b0319831681178455604051919092169283917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09190a35050565b6000602082840312156100d057600080fd5b81516001600160a01b03811681146100e757600080fd5b9392505050565b610427806100fd6000396000f3fe60806040526004361061004a5760003560e01c8063715018a61461004f5780638da5cb5b146100665780639623609d14610093578063ad3cb1cc146100a6578063f2fde38b146100e4575b600080fd5b34801561005b57600080fd5b50610064610104565b005b34801561007257600080fd5b506000546040516001600160a01b0390911681526020015b60405180910390f35b6100646100a1366004610272565b610118565b3480156100b257600080fd5b506100d7604051806040016040528060058152602001640352e302e360dc1b81525081565b60405161008a919061038e565b3480156100f057600080fd5b506100646100ff3660046103a8565b610187565b61010c6101ca565b61011660006101f7565b565b6101206101ca565b60405163278f794360e11b81526001600160a01b03841690634f1ef28690349061015090869086906004016103c5565b6000604051808303818588803b15801561016957600080fd5b505af115801561017d573d6000803e3d6000fd5b5050505050505050565b61018f6101ca565b6001600160a01b0381166101be57604051631e4fbdf760e01b8152600060048201526024015b60405180910390fd5b6101c7816101f7565b50565b6000546001600160a01b031633146101165760405163118cdaa760e01b81523360048201526024016101b5565b600080546001600160a01b038381166001600160a01b0319831681178455604051919092169283917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09190a35050565b6001600160a01b03811681146101c757600080fd5b634e487b7160e01b600052604160045260246000fd5b60008060006060848603121561028757600080fd5b833561029281610247565b925060208401356102a281610247565b9150604084013567ffffffffffffffff808211156102bf57600080fd5b818601915086601f8301126102d357600080fd5b8135818111156102e5576102e561025c565b604051601f8201601f19908116603f0116810190838211818310171561030d5761030d61025c565b8160405282815289602084870101111561032657600080fd5b8260208601602083013760006020848301015280955050505050509250925092565b6000815180845260005b8181101561036e57602081850181015186830182015201610352565b506000602082860101526020601f19601f83011685010191505092915050565b6020815260006103a16020830184610348565b9392505050565b6000602082840312156103ba57600080fd5b81356103a181610247565b6001600160a01b03831681526040602082018190526000906103e990830184610348565b94935050505056fea26469706673582212204e6c3564458e40536cebf1d675d2ad7af11c5352eae442784c5e053dcf005af164736f6c63430008180033",
 }
 
 // ProxyAdminABI is the input ABI used to generate the binding from.
@@ -44,7 +44,7 @@ var ProxyAdminABI = ProxyAdminMetaData.ABI
 var ProxyAdminBin = ProxyAdminMetaData.Bin
 
 // DeployProxyAdmin deploys a new Ethereum contract, binding an instance of ProxyAdmin to it.
-func DeployProxyAdmin(auth *bind.TransactOpts, backend bind.ContractBackend, owner common.Address) (common.Address, *types.Transaction, *ProxyAdmin, error) {
+func DeployProxyAdmin(auth *bind.TransactOpts, backend bind.ContractBackend, initialOwner common.Address) (common.Address, *types.Transaction, *ProxyAdmin, error) {
 	parsed, err := ProxyAdminMetaData.GetAbi()
 	if err != nil {
 		return common.Address{}, nil, nil, err
@@ -53,7 +53,7 @@ func DeployProxyAdmin(auth *bind.TransactOpts, backend bind.ContractBackend, own
 		return common.Address{}, nil, nil, errors.New("GetABI returned nil")
 	}
 
-	address, tx, contract, err := bind.DeployContract(auth, *parsed, common.FromHex(ProxyAdminBin), backend, owner)
+	address, tx, contract, err := bind.DeployContract(auth, *parsed, common.FromHex(ProxyAdminBin), backend, initialOwner)
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
@@ -202,66 +202,35 @@ func (_ProxyAdmin *ProxyAdminTransactorRaw) Transact(opts *bind.TransactOpts, me
 	return _ProxyAdmin.Contract.contract.Transact(opts, method, params...)
 }
 
-// GetProxyAdmin is a free data retrieval call binding the contract method 0xf3b7dead.
+// UPGRADEINTERFACEVERSION is a free data retrieval call binding the contract method 0xad3cb1cc.
 //
-// Solidity: function getProxyAdmin(address proxy) view returns(address)
-func (_ProxyAdmin *ProxyAdminCaller) GetProxyAdmin(opts *bind.CallOpts, proxy common.Address) (common.Address, error) {
+// Solidity: function UPGRADE_INTERFACE_VERSION() view returns(string)
+func (_ProxyAdmin *ProxyAdminCaller) UPGRADEINTERFACEVERSION(opts *bind.CallOpts) (string, error) {
 	var out []interface{}
-	err := _ProxyAdmin.contract.Call(opts, &out, "getProxyAdmin", proxy)
+	err := _ProxyAdmin.contract.Call(opts, &out, "UPGRADE_INTERFACE_VERSION")
 
 	if err != nil {
-		return *new(common.Address), err
+		return *new(string), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+	out0 := *abi.ConvertType(out[0], new(string)).(*string)
 
 	return out0, err
 
 }
 
-// GetProxyAdmin is a free data retrieval call binding the contract method 0xf3b7dead.
+// UPGRADEINTERFACEVERSION is a free data retrieval call binding the contract method 0xad3cb1cc.
 //
-// Solidity: function getProxyAdmin(address proxy) view returns(address)
-func (_ProxyAdmin *ProxyAdminSession) GetProxyAdmin(proxy common.Address) (common.Address, error) {
-	return _ProxyAdmin.Contract.GetProxyAdmin(&_ProxyAdmin.CallOpts, proxy)
+// Solidity: function UPGRADE_INTERFACE_VERSION() view returns(string)
+func (_ProxyAdmin *ProxyAdminSession) UPGRADEINTERFACEVERSION() (string, error) {
+	return _ProxyAdmin.Contract.UPGRADEINTERFACEVERSION(&_ProxyAdmin.CallOpts)
 }
 
-// GetProxyAdmin is a free data retrieval call binding the contract method 0xf3b7dead.
+// UPGRADEINTERFACEVERSION is a free data retrieval call binding the contract method 0xad3cb1cc.
 //
-// Solidity: function getProxyAdmin(address proxy) view returns(address)
-func (_ProxyAdmin *ProxyAdminCallerSession) GetProxyAdmin(proxy common.Address) (common.Address, error) {
-	return _ProxyAdmin.Contract.GetProxyAdmin(&_ProxyAdmin.CallOpts, proxy)
-}
-
-// GetProxyImplementation is a free data retrieval call binding the contract method 0x204e1c7a.
-//
-// Solidity: function getProxyImplementation(address proxy) view returns(address)
-func (_ProxyAdmin *ProxyAdminCaller) GetProxyImplementation(opts *bind.CallOpts, proxy common.Address) (common.Address, error) {
-	var out []interface{}
-	err := _ProxyAdmin.contract.Call(opts, &out, "getProxyImplementation", proxy)
-
-	if err != nil {
-		return *new(common.Address), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
-
-	return out0, err
-
-}
-
-// GetProxyImplementation is a free data retrieval call binding the contract method 0x204e1c7a.
-//
-// Solidity: function getProxyImplementation(address proxy) view returns(address)
-func (_ProxyAdmin *ProxyAdminSession) GetProxyImplementation(proxy common.Address) (common.Address, error) {
-	return _ProxyAdmin.Contract.GetProxyImplementation(&_ProxyAdmin.CallOpts, proxy)
-}
-
-// GetProxyImplementation is a free data retrieval call binding the contract method 0x204e1c7a.
-//
-// Solidity: function getProxyImplementation(address proxy) view returns(address)
-func (_ProxyAdmin *ProxyAdminCallerSession) GetProxyImplementation(proxy common.Address) (common.Address, error) {
-	return _ProxyAdmin.Contract.GetProxyImplementation(&_ProxyAdmin.CallOpts, proxy)
+// Solidity: function UPGRADE_INTERFACE_VERSION() view returns(string)
+func (_ProxyAdmin *ProxyAdminCallerSession) UPGRADEINTERFACEVERSION() (string, error) {
+	return _ProxyAdmin.Contract.UPGRADEINTERFACEVERSION(&_ProxyAdmin.CallOpts)
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
@@ -293,27 +262,6 @@ func (_ProxyAdmin *ProxyAdminSession) Owner() (common.Address, error) {
 // Solidity: function owner() view returns(address)
 func (_ProxyAdmin *ProxyAdminCallerSession) Owner() (common.Address, error) {
 	return _ProxyAdmin.Contract.Owner(&_ProxyAdmin.CallOpts)
-}
-
-// ChangeProxyAdmin is a paid mutator transaction binding the contract method 0x7eff275e.
-//
-// Solidity: function changeProxyAdmin(address proxy, address newAdmin) returns()
-func (_ProxyAdmin *ProxyAdminTransactor) ChangeProxyAdmin(opts *bind.TransactOpts, proxy common.Address, newAdmin common.Address) (*types.Transaction, error) {
-	return _ProxyAdmin.contract.Transact(opts, "changeProxyAdmin", proxy, newAdmin)
-}
-
-// ChangeProxyAdmin is a paid mutator transaction binding the contract method 0x7eff275e.
-//
-// Solidity: function changeProxyAdmin(address proxy, address newAdmin) returns()
-func (_ProxyAdmin *ProxyAdminSession) ChangeProxyAdmin(proxy common.Address, newAdmin common.Address) (*types.Transaction, error) {
-	return _ProxyAdmin.Contract.ChangeProxyAdmin(&_ProxyAdmin.TransactOpts, proxy, newAdmin)
-}
-
-// ChangeProxyAdmin is a paid mutator transaction binding the contract method 0x7eff275e.
-//
-// Solidity: function changeProxyAdmin(address proxy, address newAdmin) returns()
-func (_ProxyAdmin *ProxyAdminTransactorSession) ChangeProxyAdmin(proxy common.Address, newAdmin common.Address) (*types.Transaction, error) {
-	return _ProxyAdmin.Contract.ChangeProxyAdmin(&_ProxyAdmin.TransactOpts, proxy, newAdmin)
 }
 
 // RenounceOwnership is a paid mutator transaction binding the contract method 0x715018a6.
@@ -356,27 +304,6 @@ func (_ProxyAdmin *ProxyAdminSession) TransferOwnership(newOwner common.Address)
 // Solidity: function transferOwnership(address newOwner) returns()
 func (_ProxyAdmin *ProxyAdminTransactorSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
 	return _ProxyAdmin.Contract.TransferOwnership(&_ProxyAdmin.TransactOpts, newOwner)
-}
-
-// Upgrade is a paid mutator transaction binding the contract method 0x99a88ec4.
-//
-// Solidity: function upgrade(address proxy, address implementation) returns()
-func (_ProxyAdmin *ProxyAdminTransactor) Upgrade(opts *bind.TransactOpts, proxy common.Address, implementation common.Address) (*types.Transaction, error) {
-	return _ProxyAdmin.contract.Transact(opts, "upgrade", proxy, implementation)
-}
-
-// Upgrade is a paid mutator transaction binding the contract method 0x99a88ec4.
-//
-// Solidity: function upgrade(address proxy, address implementation) returns()
-func (_ProxyAdmin *ProxyAdminSession) Upgrade(proxy common.Address, implementation common.Address) (*types.Transaction, error) {
-	return _ProxyAdmin.Contract.Upgrade(&_ProxyAdmin.TransactOpts, proxy, implementation)
-}
-
-// Upgrade is a paid mutator transaction binding the contract method 0x99a88ec4.
-//
-// Solidity: function upgrade(address proxy, address implementation) returns()
-func (_ProxyAdmin *ProxyAdminTransactorSession) Upgrade(proxy common.Address, implementation common.Address) (*types.Transaction, error) {
-	return _ProxyAdmin.Contract.Upgrade(&_ProxyAdmin.TransactOpts, proxy, implementation)
 }
 
 // UpgradeAndCall is a paid mutator transaction binding the contract method 0x9623609d.

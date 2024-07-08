@@ -16,14 +16,14 @@ import (
 )
 
 type DeploymentConfig struct {
-	Create3Factory common.Address
-	Create3Salt    string
-	ProxyAdmin     common.Address
-	Owner          common.Address
-	Portal         common.Address
-	Token          common.Address
-	Deployer       common.Address
-	ExpectedAddr   common.Address
+	Create3Factory  common.Address
+	Create3Salt     string
+	ProxyAdminOwner common.Address
+	Owner           common.Address
+	Portal          common.Address
+	Token           common.Address
+	Deployer        common.Address
+	ExpectedAddr    common.Address
 }
 
 func isDeadOrEmpty(addr common.Address) bool {
@@ -37,7 +37,7 @@ func (cfg DeploymentConfig) Validate() error {
 	if cfg.Create3Salt == "" {
 		return errors.New("create3 salt is empty")
 	}
-	if (cfg.ProxyAdmin == common.Address{}) {
+	if (cfg.ProxyAdminOwner == common.Address{}) {
 		return errors.New("proxy admin is zero")
 	}
 	if isDeadOrEmpty(cfg.Deployer) {
@@ -73,27 +73,27 @@ func getDeployCfg(network netconf.ID) (DeploymentConfig, error) {
 
 func stagingCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory: contracts.StagingCreate3Factory(),
-		Create3Salt:    contracts.L1BridgeSalt(netconf.Staging),
-		Owner:          eoa.MustAddress(netconf.Staging, eoa.RoleAdmin),
-		Deployer:       eoa.MustAddress(netconf.Staging, eoa.RoleDeployer),
-		ProxyAdmin:     contracts.StagingProxyAdmin(),
-		Portal:         contracts.StagingPortal(),
-		Token:          contracts.StagingToken(),
-		ExpectedAddr:   contracts.StagingL1Bridge(),
+		Create3Factory:  contracts.StagingCreate3Factory(),
+		Create3Salt:     contracts.L1BridgeSalt(netconf.Staging),
+		Owner:           eoa.MustAddress(netconf.Staging, eoa.RoleAdmin),
+		Deployer:        eoa.MustAddress(netconf.Staging, eoa.RoleDeployer),
+		ProxyAdminOwner: eoa.MustAddress(netconf.Staging, eoa.RoleAdmin),
+		Portal:          contracts.StagingPortal(),
+		Token:           contracts.StagingToken(),
+		ExpectedAddr:    contracts.StagingL1Bridge(),
 	}
 }
 
 func devnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Create3Factory: contracts.DevnetCreate3Factory(),
-		Create3Salt:    contracts.L1BridgeSalt(netconf.Devnet),
-		Owner:          eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
-		Deployer:       eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
-		ProxyAdmin:     contracts.DevnetProxyAdmin(),
-		Portal:         contracts.DevnetPortal(),
-		Token:          contracts.DevnetToken(),
-		ExpectedAddr:   contracts.DevnetL1Bridge(),
+		Create3Factory:  contracts.DevnetCreate3Factory(),
+		Create3Salt:     contracts.L1BridgeSalt(netconf.Devnet),
+		Owner:           eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
+		Deployer:        eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
+		ProxyAdminOwner: eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
+		Portal:          contracts.DevnetPortal(),
+		Token:           contracts.DevnetToken(),
+		ExpectedAddr:    contracts.DevnetL1Bridge(),
 	}
 }
 
@@ -175,5 +175,5 @@ func packInitCode(cfg DeploymentConfig, impl common.Address) ([]byte, error) {
 		return nil, errors.Wrap(err, "encode initializer")
 	}
 
-	return contracts.PackInitCode(proxyAbi, bindings.TransparentUpgradeableProxyBin, impl, cfg.ProxyAdmin, initializer)
+	return contracts.PackInitCode(proxyAbi, bindings.TransparentUpgradeableProxyBin, impl, cfg.ProxyAdminOwner, initializer)
 }

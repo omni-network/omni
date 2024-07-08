@@ -78,8 +78,7 @@ contract OmniBridgeNative is OwnableUpgradeable {
     mapping(address => uint256) public claimable;
 
     function initialize(address owner_) external initializer {
-        __Ownable_init();
-        _transferOwnership(owner_);
+        __Ownable_init(owner_);
     }
 
     /**

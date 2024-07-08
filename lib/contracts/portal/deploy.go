@@ -18,7 +18,7 @@ import (
 type DeploymentConfig struct {
 	Create3Factory        common.Address
 	Create3Salt           string
-	ProxyAdmin            common.Address
+	ProxyAdminOwner       common.Address
 	Deployer              common.Address
 	Owner                 common.Address
 	OmniChainID           uint64
@@ -62,7 +62,7 @@ func (cfg DeploymentConfig) Validate() error {
 	if cfg.Create3Salt == "" {
 		return errors.New("create3 salt is empty")
 	}
-	if (cfg.ProxyAdmin == common.Address{}) {
+	if (cfg.ProxyAdminOwner == common.Address{}) {
 		return errors.New("proxy admin is zero")
 	}
 	if isDeadOrEmpty(cfg.Deployer) {
@@ -138,7 +138,7 @@ func omegaCfg() DeploymentConfig {
 		Create3Salt:           contracts.PortalSalt(netconf.Omega),
 		Owner:                 eoa.MustAddress(netconf.Omega, eoa.RoleAdmin),
 		Deployer:              eoa.MustAddress(netconf.Omega, eoa.RoleDeployer),
-		ProxyAdmin:            contracts.OmegaProxyAdmin(),
+		ProxyAdminOwner:       eoa.MustAddress(netconf.Omega, eoa.RoleAdmin),
 		OmniChainID:           netconf.Omega.Static().OmniExecutionChainID,
 		OmniCChainID:          netconf.Omega.Static().OmniConsensusChainIDUint64(),
 		XMsgMinGasLimit:       XMsgMinGasLimit,
@@ -157,7 +157,7 @@ func stagingCfg() DeploymentConfig {
 		Create3Salt:           contracts.PortalSalt(netconf.Staging),
 		Owner:                 eoa.MustAddress(netconf.Staging, eoa.RoleAdmin),
 		Deployer:              eoa.MustAddress(netconf.Staging, eoa.RoleDeployer),
-		ProxyAdmin:            contracts.StagingProxyAdmin(),
+		ProxyAdminOwner:       eoa.MustAddress(netconf.Staging, eoa.RoleAdmin),
 		OmniChainID:           netconf.Staging.Static().OmniExecutionChainID,
 		OmniCChainID:          netconf.Staging.Static().OmniConsensusChainIDUint64(),
 		XMsgMinGasLimit:       XMsgMinGasLimit,
@@ -176,7 +176,7 @@ func devnetCfg() DeploymentConfig {
 		Create3Salt:           contracts.PortalSalt(netconf.Devnet),
 		Owner:                 eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
 		Deployer:              eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
-		ProxyAdmin:            contracts.DevnetProxyAdmin(),
+		ProxyAdminOwner:       eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
 		OmniChainID:           netconf.Devnet.Static().OmniExecutionChainID,
 		OmniCChainID:          netconf.Devnet.Static().OmniConsensusChainIDUint64(),
 		XMsgMinGasLimit:       XMsgMinGasLimit,
@@ -321,5 +321,5 @@ func packInitCode(cfg DeploymentConfig, feeOracle common.Address, impl common.Ad
 		return nil, errors.Wrap(err, "encode portal initializer")
 	}
 
-	return contracts.PackInitCode(proxyAbi, bindings.TransparentUpgradeableProxyBin, impl, cfg.ProxyAdmin, initializer)
+	return contracts.PackInitCode(proxyAbi, bindings.TransparentUpgradeableProxyBin, impl, cfg.ProxyAdminOwner, initializer)
 }

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { Base } from "./common/Base.sol";
 import { IFeeOracleV1 } from "src/interfaces/IFeeOracleV1.sol";
 import { console } from "forge-std/console.sol";
@@ -74,7 +75,9 @@ contract FeeOracleV1_Test is Base {
         address newManager = makeAddr("newManager");
 
         // only owner can set manager
-        vm.expectRevert("Ownable: caller is not the owner");
+        address notOwner = address(0x456);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, notOwner));
+        vm.prank(notOwner);
         feeOracle.setManager(newManager);
 
         // cannot set zero manager
@@ -116,7 +119,9 @@ contract FeeOracleV1_Test is Base {
         uint256 newProtocolFee = feeOracle.protocolFee() + 1 gwei;
 
         // only owner can set protocol fee
-        vm.expectRevert("Ownable: caller is not the owner");
+        address notOwner = address(0x456);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, notOwner));
+        vm.prank(notOwner);
         feeOracle.setProtocolFee(newProtocolFee);
 
         // set protocol fee
@@ -129,7 +134,9 @@ contract FeeOracleV1_Test is Base {
         uint64 newBaseGasLimit = feeOracle.baseGasLimit() + 10_000;
 
         // only owner can set base gas limit
-        vm.expectRevert("Ownable: caller is not the owner");
+        address notOwner = address(0x456);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, notOwner));
+        vm.prank(notOwner);
         feeOracle.setBaseGasLimit(newBaseGasLimit);
 
         // set base gas limit

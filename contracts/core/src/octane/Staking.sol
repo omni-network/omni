@@ -53,8 +53,7 @@ contract Staking is OwnableUpgradeable {
     mapping(address => bool) public isAllowedValidator;
 
     function initialize(address owner_, bool isAllowlistEnabled_) public initializer {
-        __Ownable_init();
-        _transferOwnership(owner_);
+        __Ownable_init(owner_);
         isAllowlistEnabled = isAllowlistEnabled_;
     }
 

@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.24;
 
-import { Script } from "forge-std/Script.sol";
+// import { ProxyAdmin } from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { Predeploys } from "src/libraries/Predeploys.sol";
-import { EIP1967Helper } from "./utils/EIP1967Helper.sol";
-
 import { PortalRegistry } from "src/xchain/PortalRegistry.sol";
 import { OmniBridgeNative } from "src/token/OmniBridgeNative.sol";
 import { Staking } from "src/octane/Staking.sol";
 import { Preinstalls } from "src/octane/Preinstalls.sol";
+import { EIP1967Helper } from "./utils/EIP1967Helper.sol";
+import { Script } from "forge-std/Script.sol";
 
 /**
  * @title AllocPredeploys
@@ -22,12 +23,15 @@ contract AllocPredeploys is Script {
         string output;
     }
 
+    /**
+     * @notice Deployment config passed to run / runNoStateDump
+     */
     Config internal cfg;
-    address internal deployer;
 
-    function setUp() public {
-        deployer = makeAddr("deployer");
-    }
+    /**
+     * @notice Predeploy deployer address, used for each `new` call in this script
+     */
+    address internal deployer = 0xDDdDddDdDdddDDddDDddDDDDdDdDDdDDdDDDDDDd;
 
     function run(Config calldata config) public {
         _run(config);
@@ -37,8 +41,14 @@ contract AllocPredeploys is Script {
         vm.resetNonce(msg.sender);
         vm.deal(msg.sender, 0);
 
-        vm.resetNonce(deployer);
-        vm.deal(deployer, 0);
+        // Note we do not reset deployer nonce, because the ProxyAdmin contracts deployed per each temp
+        // TransparentUpgradeableProxy are downstream of the deployers CREATE address chain.
+        //
+        // Keeping the nonce ensures no new deployments conflict with genesis deployments - though this will likely
+        // never happen, as the deployer address does not have a known private key
+        //
+        // We could reset the nonce. In this case, the first Predeploys.NamespaceSize * 2 deployments from the deployer
+        // address would, that themselves deploy new contracts the constructor, would revert.
 
         vm.dumpState(cfg.output);
     }
@@ -73,7 +83,6 @@ contract AllocPredeploys is Script {
      */
     function setPredeploys() internal {
         setProxies();
-        setProxyAdmin();
         setPortalRegistry();
         setOmniBridgeNative();
         setWOmni();
@@ -131,34 +140,40 @@ contract AllocPredeploys is Script {
     function setNamespaceProxies(address ns) internal {
         require(uint32(uint160(ns)) == 0, "invalid namespace");
 
-        bytes memory code = vm.getDeployedCode("TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy");
-
         for (uint160 i = 1; i <= Predeploys.NamespaceSize; i++) {
             address addr = address(uint160(ns) + i);
             if (Predeploys.notProxied(addr)) {
                 continue;
             }
 
-            vm.etch(addr, code);
-            EIP1967Helper.setAdmin(addr, Predeploys.ProxyAdmin);
+            address impl = Predeploys.isActivePredeploy(addr) ? Predeploys.impl(addr) : address(0);
 
-            if (Predeploys.isActivePredeploy(addr)) {
-                address impl = Predeploys.impl(addr);
-                EIP1967Helper.setImplementation(addr, impl);
-            }
+            // set impl code to non-zero length, so it passes TransparentUpgradeableProxy constructor check
+            // assert it is not already set
+            require(impl.code.length == 0, "impl already set");
+            vm.etch(impl, "00");
+
+            // new use new, so that the immutable variable the holds the ProxyAdmin addr is set in properly in bytecode
+            address tmp = address(new TransparentUpgradeableProxy(impl, cfg.admin, ""));
+            vm.etch(addr, tmp.code);
+
+            // set implempentation storage manually
+            EIP1967Helper.setImplementation(addr, impl);
+
+            // set admin storage, to follow EIP1967 standard
+            EIP1967Helper.setAdmin(addr, EIP1967Helper.getAdmin(tmp));
+
+            // reset impl
+            vm.etch(impl, "");
+
+            //
+            vm.etch(tmp, "");
+
+            // can we reset nonce here? we are using "deployer" addr
+            vm.resetNonce(tmp);
         }
-    }
 
-    /**
-     * @notice Setup ProxyAdmin predeploy
-     */
-    function setProxyAdmin() internal {
-        // proxy admin has no initializer, so we set slot manually
-
-        bytes32 ownerSlot = bytes32(0);
-
-        vm.store(Predeploys.ProxyAdmin, ownerSlot, bytes32(uint256(uint160(cfg.admin))));
-        vm.etch(Predeploys.ProxyAdmin, vm.getDeployedCode("src/deploy/ProxyAdmin.sol:ProxyAdmin"));
+        vm.etch(address(0), "");
     }
 
     /**

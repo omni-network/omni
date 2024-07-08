@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
 import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 
@@ -76,7 +77,7 @@ contract OmniPortal_xsubmit_Test is Base {
 
         TestXTypes.Receipt memory receipt = parseReceipt(logs[0]);
         assertEq(receipt.success, false);
-        assertEq(receipt.error, abi.encodeWithSignature("Error(string)", "ReentrancyGuard: reentrant call"));
+        assertEq(receipt.error, abi.encodePacked(ReentrancyGuardUpgradeable.ReentrancyGuardReentrantCall.selector));
     }
 
     function test_xsubmit_noXmsgs_reverts() public {
