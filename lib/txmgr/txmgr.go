@@ -189,11 +189,13 @@ func (m *simple) doSend(ctx context.Context, candidate TxCandidate) (*types.Tran
 		// Create the initial transaction
 		tx, err := m.craftTx(ctx, candidate)
 		if err != nil {
-			log.Warn(ctx, "Failed to create transaction (will retry)", err)
+			log.Warn(ctx, "Failed to create transaction (will retry)", err, "nonce", *candidate.Nonce)
 			backoff()
 
 			continue
 		}
+
+		log.Debug(ctx, "Crafted tx", "sender", m.cfg.From, "nonce", *candidate.Nonce, "tx", tx.Hash())
 
 		// Send it (note this has internal retries bumping fees)
 		rec, err := m.sendTx(ctx, tx)
@@ -214,8 +216,6 @@ func (m *simple) craftTx(ctx context.Context, candidate TxCandidate) (*types.Tra
 	if candidate.Nonce == nil {
 		return nil, errors.New("invalid nil nonce")
 	}
-
-	log.Debug(ctx, "Crafting tx ", "sender", m.cfg.From, "nonce", *candidate.Nonce)
 
 	gasTipCap, baseFee, err := m.suggestGasPriceCaps(ctx)
 	if err != nil {
@@ -372,7 +372,7 @@ func (m *simple) publishTx(ctx context.Context, tx *types.Transaction, sendState
 		case errStringMatch(err, core.ErrNonceTooLow):
 			log.Warn(ctx, "Nonce too low", err)
 		case errStringMatch(err, context.Canceled) || errStringMatch(err, context.DeadlineExceeded):
-			log.Warn(ctx, "Transaction doSend canceled", err)
+			log.Warn(ctx, "Transaction send canceled", err)
 		case errStringMatch(err, txpool.ErrAlreadyKnown):
 			log.Warn(ctx, "Resubmitted already known transaction", err)
 		case errStringMatch(err, txpool.ErrReplaceUnderpriced):

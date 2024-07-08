@@ -478,6 +478,10 @@ func (stubProvider) GetEmittedCursor(context.Context, xchain.EmitRef, xchain.Str
 	panic("unexpected")
 }
 
+func (stubProvider) ChainVersionHeight(context.Context, xchain.ChainVersion) (uint64, error) {
+	panic("unexpected")
+}
+
 type testBackOff struct {
 	mu      sync.Mutex
 	backoff int

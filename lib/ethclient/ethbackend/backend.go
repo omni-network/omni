@@ -235,6 +235,7 @@ func (b *Backend) SendTransaction(ctx context.Context, in *ethtypes.Transaction)
 		"gas_used", resp.GasUsed,
 		"status", resp.Status,
 		"height", resp.BlockNumber.Uint64(),
+		"tx", out.Hash(),
 	)
 
 	*in = *out //nolint:govet // Copy lock (caches) isn't a problem since we are overwriting the object.

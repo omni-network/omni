@@ -48,6 +48,9 @@ type Provider interface {
 	// Note that the BlockOffset field is not populated for emit cursors, since it isn't stored on-chain
 	// but tracked off-chain.
 	GetEmittedCursor(ctx context.Context, ref EmitRef, stream StreamID) (EmitCursor, bool, error)
+
+	// ChainVersionHeight returns the height for the provided chain version.
+	ChainVersionHeight(ctx context.Context, chainVer ChainVersion) (uint64, error)
 }
 
 // EmitRef specifies which block to query for emit cursors.
