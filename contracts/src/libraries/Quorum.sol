@@ -59,6 +59,6 @@ library Quorum {
         pure
         returns (bool)
     {
-        return votedPower > totalPower * numerator / denominator;
+        return votedPower > (totalPower * numerator) / denominator;
     }
 }
