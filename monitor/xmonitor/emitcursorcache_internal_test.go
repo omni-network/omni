@@ -1,6 +1,7 @@
 package xmonitor
 
 import (
+	"math"
 	"testing"
 
 	"github.com/omni-network/omni/lib/xchain"
@@ -15,6 +16,18 @@ func TestEmitCursorCache(t *testing.T) {
 	assertContains := func(t *testing.T, height uint64, stream xchain.StreamID, cursor xchain.EmitCursor) {
 		t.Helper()
 		c, ok := cache.Get(height, stream)
+		require.True(t, ok)
+		require.Equal(t, cursor, c)
+
+		c, ok = cache.AtOrBefore(height, stream)
+		require.True(t, ok)
+		require.Equal(t, cursor, c)
+	}
+
+	assertHighest := func(t *testing.T, stream xchain.StreamID, cursor xchain.EmitCursor) {
+		t.Helper()
+		const maxHeight = math.MaxUint64
+		c, ok := cache.AtOrBefore(maxHeight, stream)
 		require.True(t, ok)
 		require.Equal(t, cursor, c)
 	}
@@ -39,21 +52,28 @@ func TestEmitCursorCache(t *testing.T) {
 	assertNotContains(t, 2, stream1)
 	cache.set(1, stream1, cursor11)
 	assertContains(t, 1, stream1, cursor11)
+	cache.trim(0, stream1) // Nothing trimmed
+	assertContains(t, 1, stream1, cursor11)
+	assertHighest(t, stream1, cursor11)
 
 	assertNotContains(t, 2, stream1)
 	cache.set(2, stream1, cursor12)
+	cache.trim(0, stream1) // Nothing trimmed
 	assertContains(t, 2, stream1, cursor12)
 	assertContains(t, 1, stream1, cursor11)
+	assertHighest(t, stream1, cursor12)
 
 	assertNotContains(t, 1, stream2)
 	assertNotContains(t, 2, stream2)
 	cache.set(1, stream2, cursor21)
 	assertContains(t, 1, stream2, cursor21)
+	assertHighest(t, stream2, cursor21)
 
 	assertNotContains(t, 2, stream2)
 	cache.set(2, stream2, cursor22)
 	assertContains(t, 2, stream2, cursor22)
 	assertContains(t, 1, stream2, cursor21)
+	assertHighest(t, stream2, cursor22)
 
 	assertNotContains(t, 1, stream99)
 	assertNotContains(t, 2, stream99)
