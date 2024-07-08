@@ -17,6 +17,7 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmttypes "github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 
 	"github.com/ethereum/go-ethereum"
@@ -131,6 +132,8 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 				require.NoError(t, err)
 				populateGenesisHead(ctx, t, k)
 
+				tt.req.MaxTxBytes = cmttypes.MaxBlockSizeBytes
+
 				_, err = k.PrepareProposal(withRandomErrs(t, ctx), tt.req)
 				if (err != nil) != tt.wantErr {
 					t.Errorf("PrepareProposal() error = %v, wantErr %v", err, tt.wantErr)
@@ -177,9 +180,10 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		payloadID := mockEngine.pushPayload(t, ctx, frp.LocalFeeRecipient(), nextBlock.Hash(), ts, appHash2)
 
 		req := &abci.RequestPrepareProposal{
-			Txs:    nil,
-			Height: int64(2),
-			Time:   time.Now(),
+			Txs:        nil,
+			Height:     int64(2),
+			Time:       time.Now(),
+			MaxTxBytes: cmttypes.MaxBlockSizeBytes,
 		}
 
 		// initialize mutable payload so we trigger the optimistic flow
@@ -227,9 +231,10 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		require.NoError(t, err)
 
 		req := &abci.RequestPrepareProposal{
-			Txs:    nil,
-			Height: int64(2),
-			Time:   time.Now(),
+			Txs:        nil,
+			Height:     int64(2),
+			Time:       time.Now(),
+			MaxTxBytes: cmttypes.MaxBlockSizeBytes,
 		}
 
 		resp, err := keeper.PrepareProposal(withRandomErrs(t, ctx), req)

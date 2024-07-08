@@ -19,6 +19,8 @@ func TestDefaultConsensusParams(t *testing.T) {
 	cons := defaultConsensusGenesis()
 	require.EqualValues(t, 1, cons.Params.ABCI.VoteExtensionsEnableHeight)
 	require.EqualValues(t, types.ABCIPubKeyTypeSecp256k1, cons.Params.Validator.PubKeyTypes[0])
+	require.EqualValues(t, -1, cons.Params.Block.MaxBytes)
+	require.EqualValues(t, -1, cons.Params.Block.MaxGas)
 }
 
 func TestEncodeTXs(t *testing.T) {

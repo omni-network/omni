@@ -218,7 +218,7 @@
  "consensus": {
   "params": {
    "block": {
-    "max_bytes": "22020096",
+    "max_bytes": "-1",
     "max_gas": "-1"
    },
    "evidence": {
