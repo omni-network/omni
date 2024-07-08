@@ -213,17 +213,17 @@ func (m *manager) DeployPrivatePortals(ctx context.Context, valSetID uint64, val
 	log.Info(ctx, "Deploying private portal contracts")
 
 	// Define a forkjoin work function that will deploy the omni contracts for each chain
-	deployFunc := func(ctx context.Context, p Portal) (*bindings.OmniPortal, error) {
+	deployFunc := func(ctx context.Context, p Portal) (deployResult, error) {
 		backend, err := m.backends.Backend(p.Chain.ChainID)
 		if err != nil {
-			return nil, errors.Wrap(err, "deploy opts", "chain", p.Chain.Name)
+			return deployResult{}, errors.Wrap(err, "deploy opts", "chain", p.Chain.Name)
 		}
 
-		addr, _, err := m.deployIfNeeded(ctx, p.Chain, backend, valSetID, validators)
+		addr, height, err := m.deployIfNeeded(ctx, p.Chain, backend, valSetID, validators)
 		if err != nil {
-			return nil, errors.Wrap(err, "deploy private portals", "chain", p.Chain.Name)
+			return deployResult{}, errors.Wrap(err, "deploy private portals", "chain", p.Chain.Name)
 		} else if addr != p.DeployInfo.PortalAddress {
-			return nil, errors.New("deployed address does not match existing address",
+			return deployResult{}, errors.New("deployed address does not match existing address",
 				"expected", p.DeployInfo.PortalAddress.Hex(),
 				"actual", addr.Hex(),
 				"chain", p.Chain.Name)
@@ -231,10 +231,14 @@ func (m *manager) DeployPrivatePortals(ctx context.Context, valSetID uint64, val
 
 		contract, err := bindings.NewOmniPortal(addr, backend)
 		if err != nil {
-			return nil, errors.Wrap(err, "bind contract", "chain", p.Chain.Name)
+			return deployResult{}, errors.Wrap(err, "bind contract", "chain", p.Chain.Name)
 		}
 
-		return contract, nil
+		return deployResult{
+			Contract: contract,
+			Addr:     addr,
+			Height:   height,
+		}, nil
 	}
 
 	// Start the forkjoin
@@ -255,9 +259,15 @@ func (m *manager) DeployPrivatePortals(ctx context.Context, valSetID uint64, val
 			return errors.Wrap(res.Err, "fork join")
 		}
 
-		// Update the portal with the deployed contract
+		// Update the portal with the deployed contract, height and address
 		portal := m.portals[res.Input.Chain.ChainID]
-		portal.Contract = res.Output
+
+		portal.Contract = res.Output.Contract
+		portal.DeployInfo = DeployInfo{
+			PortalAddress: res.Output.Addr,
+			DeployHeight:  res.Output.Height,
+		}
+
 		m.portals[res.Input.Chain.ChainID] = portal
 	}
 

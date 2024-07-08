@@ -50,7 +50,7 @@ func startEmitCursorCache(
 		}
 
 		// Stream from latest finalized attestation height
-		var fromHeight uint64
+		fromHeight := chain.DeployHeight
 		att, ok, err := cprov.LatestAttestation(ctx, xchain.ChainVersion{ID: chain.ID, ConfLevel: xchain.ConfFinalized})
 		if err != nil {
 			return nil, errors.Wrap(err, "latest attestation", "chain", chain.Name)
