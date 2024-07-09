@@ -120,7 +120,7 @@ func (s Sender) SendTransaction(ctx context.Context, sub xchain.Submission) erro
 		return err
 	}
 
-	estimatedGas := s.gasEstimator(sub.Msgs)
+	estimatedGas := s.gasEstimator(s.chain.ID, sub.Msgs)
 
 	candidate := txmgr.TxCandidate{
 		TxData:   txData,

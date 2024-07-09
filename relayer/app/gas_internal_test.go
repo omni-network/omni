@@ -13,10 +13,11 @@ import (
 func TestGasEstimator(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name    string
-		network netconf.ID
-		msgs    []xchain.Msg
-		gas     uint64
+		name      string
+		network   netconf.ID
+		destChain uint64
+		msgs      []xchain.Msg
+		gas       uint64
 	}{
 		{
 			name: "no msgs",
@@ -51,13 +52,27 @@ func TestGasEstimator(t *testing.T) {
 			gas: properGasEstimation,
 		},
 		{
-			name:    "arb destination",
-			network: netconf.Mainnet,
+			name:      "arb destination",
+			network:   netconf.Mainnet,
+			destChain: evmchain.IDArbSepolia,
+			msgs: []xchain.Msg{
+				{
+					MsgID: xchain.MsgID{
+						StreamID: xchain.StreamID{},
+					},
+				},
+			},
+			gas: properGasEstimation,
+		},
+		{
+			name:      "arb destination from ephemeral consensus",
+			network:   netconf.Devnet,
+			destChain: evmchain.IDArbSepolia,
 			msgs: []xchain.Msg{
 				{
 					MsgID: xchain.MsgID{
 						StreamID: xchain.StreamID{
-							DestChainID: evmchain.IDArbSepolia,
+							SourceChainID: netconf.Devnet.Static().OmniConsensusChainIDUint64(),
 						},
 					},
 				},
@@ -65,14 +80,13 @@ func TestGasEstimator(t *testing.T) {
 			gas: properGasEstimation,
 		},
 		{
-			name:    "naive gas model",
-			network: netconf.Mainnet,
+			name:      "naive gas model to op",
+			network:   netconf.Mainnet,
+			destChain: evmchain.IDOpSepolia,
 			msgs: []xchain.Msg{
 				{
 					MsgID: xchain.MsgID{
-						StreamID: xchain.StreamID{
-							DestChainID: evmchain.IDOpSepolia,
-						},
+						StreamID: xchain.StreamID{},
 					},
 					DestGasLimit: 99,
 				},
@@ -84,7 +98,7 @@ func TestGasEstimator(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			estimator := newGasEstimator(test.network)
-			gas := estimator(test.msgs)
+			gas := estimator(test.destChain, test.msgs)
 			require.Equal(t, test.gas, gas)
 		})
 	}
