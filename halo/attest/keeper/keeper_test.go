@@ -34,12 +34,13 @@ func TestKeeper_Add(t *testing.T) {
 	}
 
 	tests := []struct {
-		name          string
-		expectations  []expectation  // These functions set expectations in the various mocked dependencies.
-		prerequisites []prerequisite // These functions modify the keeper before calling its Add method.
-		args          args
-		want          want
-		wantErr       bool
+		name           string
+		expectations   []expectation   // These functions set expectations in the various mocked dependencies.
+		prerequisites  []prerequisite  // These functions modify the keeper before calling its Add method.
+		postrequisites []postrequisite // These functions run additional checks at the end of the test.
+		args           args
+		want           want
+		wantErr        bool
 	}{
 		{
 			name: "single_vote",
@@ -55,6 +56,20 @@ func TestKeeper_Add(t *testing.T) {
 					expectValSig(2, 1, val2),
 				},
 			},
+			postrequisites: []postrequisite{func(t *testing.T, k *keeper.Keeper, ctx sdk.Context) {
+				t.Helper()
+				expectAtt := expectPendingAtt(1, defaultOffset)
+				allAtts, err := k.ListAllAttestations(ctx, &types.ListAllAttestationsRequest{
+					ChainId:    expectAtt.GetChainId(),
+					ConfLevel:  expectAtt.GetConfLevel(),
+					Status:     uint32(keeper.Status_Pending),
+					FromOffset: defaultOffset,
+				})
+
+				require.NoError(t, err)
+				require.Len(t, allAtts.Attestations, 1)
+				require.Equal(t, allAtts.Attestations[0].BlockHeader.Offset, expectAtt.GetId())
+			}},
 		},
 		{
 			name: "two_votes_diff_block_hashes",
@@ -218,6 +233,10 @@ func TestKeeper_Add(t *testing.T) {
 
 			if !cmp.Equal(tt.want.sigs, gotSigs, sigsCmpOpts) {
 				t.Error(cmp.Diff(tt.want.sigs, gotSigs, sigsCmpOpts))
+			}
+
+			for _, p := range tt.postrequisites {
+				p(t, k, ctx)
 			}
 		})
 	}

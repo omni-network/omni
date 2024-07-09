@@ -367,31 +367,12 @@ func (k *Keeper) ListAttestationsFrom(ctx context.Context, chainID uint64, confL
 			}
 		}
 
-		pbsigs, err := k.getSigs(ctx, att.GetId())
+		sigs, err := k.getSigTuples(ctx, att.GetId())
 		if err != nil {
 			return nil, errors.Wrap(err, "get att sigs")
 		}
 
-		var sigs []*types.SigTuple
-		for _, pbsig := range pbsigs {
-			sigs = append(sigs, &types.SigTuple{
-				ValidatorAddress: pbsig.GetValidatorAddress(),
-				Signature:        pbsig.GetSignature(),
-			})
-		}
-
-		resp = append(resp, &types.Attestation{
-			BlockHeader: &types.BlockHeader{
-				ChainId:   att.GetChainId(),
-				ConfLevel: att.GetConfLevel(),
-				Offset:    att.GetBlockOffset(),
-				Height:    att.GetBlockHeight(),
-				Hash:      att.GetBlockHash(),
-			},
-			ValidatorSetId: att.GetValidatorSetId(),
-			MsgRoot:        att.GetMsgRoot(),
-			Signatures:     sigs,
-		})
+		resp = append(resp, toProto(att, sigs))
 	}
 
 	return resp, nil
@@ -522,6 +503,35 @@ func (k *Keeper) earliestAttestation(ctx context.Context, version xchain.ChainVe
 	return att, true, nil
 }
 
+// listAllAttestations returns all approved attestations for the given chain.
+func (k *Keeper) listAllAttestations(ctx context.Context, version xchain.ChainVersion, status Status, blockOffset uint64) ([]*types.Attestation, error) {
+	defer latency("list_all_attestations")()
+
+	idx := AttestationStatusChainIdConfLevelBlockOffsetIndexKey{}.WithStatusChainIdConfLevelBlockOffset(uint32(status), version.ID, uint32(version.ConfLevel), blockOffset)
+	iter, err := k.attTable.List(ctx, idx)
+	if err != nil {
+		return nil, errors.Wrap(err, "list")
+	}
+	defer iter.Close()
+
+	var resp []*types.Attestation
+	for iter.Next() {
+		att, err := iter.Value()
+		if err != nil {
+			return nil, errors.Wrap(err, "value")
+		}
+
+		sigs, err := k.getSigTuples(ctx, att.GetId())
+		if err != nil {
+			return nil, errors.Wrap(err, "get att sigs")
+		}
+
+		resp = append(resp, toProto(att, sigs))
+	}
+
+	return resp, nil
+}
+
 // getSigs returns the signatures for the given attestation ID.
 func (k *Keeper) getSigs(ctx context.Context, attID uint64) ([]*Signature, error) {
 	attIDIdx := SignatureAttIdIndexKey{}.WithAttId(attID)
@@ -539,6 +549,24 @@ func (k *Keeper) getSigs(ctx context.Context, attID uint64) ([]*Signature, error
 		}
 
 		sigs = append(sigs, sig)
+	}
+
+	return sigs, nil
+}
+
+// getSigTuples returns the signature tuples for the given attestation ID.
+func (k *Keeper) getSigTuples(ctx context.Context, attID uint64) ([]*types.SigTuple, error) {
+	pbsigs, err := k.getSigs(ctx, attID)
+	if err != nil {
+		return nil, errors.Wrap(err, "get att sigs")
+	}
+
+	var sigs []*types.SigTuple
+	for _, pbsig := range pbsigs {
+		sigs = append(sigs, &types.SigTuple{
+			ValidatorAddress: pbsig.GetValidatorAddress(),
+			Signature:        pbsig.GetSignature(),
+		})
 	}
 
 	return sigs, nil
@@ -907,6 +935,22 @@ func isApprovedByDifferentSet(att *Attestation, valSetID uint64) bool {
 	}
 
 	return att.GetValidatorSetId() != valSetID
+}
+
+// toProto converts from the keeper.Attestation type to the types.Attestation type.
+func toProto(att *Attestation, sigs []*types.SigTuple) *types.Attestation {
+	return &types.Attestation{
+		BlockHeader: &types.BlockHeader{
+			ChainId:   att.GetChainId(),
+			ConfLevel: att.GetConfLevel(),
+			Offset:    att.GetBlockOffset(),
+			Height:    att.GetBlockHeight(),
+			Hash:      att.GetBlockHash(),
+		},
+		ValidatorSetId: att.GetValidatorSetId(),
+		MsgRoot:        att.GetMsgRoot(),
+		Signatures:     sigs,
+	}
 }
 
 // stubPortalRegistry is a stub implementation of the portal registry.

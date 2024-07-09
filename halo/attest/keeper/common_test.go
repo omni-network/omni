@@ -26,6 +26,7 @@ type mocks struct {
 
 type expectation func(sdk.Context, mocks)
 type prerequisite func(t *testing.T, k *keeper.Keeper, ctx sdk.Context)
+type postrequisite func(t *testing.T, k *keeper.Keeper, ctx sdk.Context)
 
 func mockDefaultExpectations(_ sdk.Context, m mocks) {
 	m.namer.EXPECT().ChainName(xchain.ChainVersion{ID: 1}).Return("test_chain").AnyTimes()
