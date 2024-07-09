@@ -195,10 +195,8 @@ func (m *simple) doSend(ctx context.Context, candidate TxCandidate) (*types.Tran
 			continue
 		}
 
-		log.Debug(ctx, "Crafted tx", "sender", m.cfg.From, "nonce", *candidate.Nonce, "tx", tx.Hash())
-
-		// Send it (note this has internal retries bumping fees)
-		rec, err := m.sendTx(ctx, tx)
+		// Send it (note this has internal retries bumping fees, so might return a different tx)
+		tx, rec, err := m.sendTx(ctx, tx)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "send tx")
 		}
@@ -256,7 +254,14 @@ func (m *simple) craftTx(ctx context.Context, candidate TxCandidate) (*types.Tra
 	ctx, cancel := context.WithTimeout(ctx, m.cfg.NetworkTimeout)
 	defer cancel()
 
-	return m.cfg.Signer(ctx, m.cfg.From, types.NewTx(txMessage))
+	tx, err := m.cfg.Signer(ctx, m.cfg.From, types.NewTx(txMessage))
+	if err != nil {
+		return nil, errors.Wrap(err, "sign tx")
+	}
+
+	log.Debug(ctx, "Crafted tx", "sender", m.cfg.From, "nonce", tx.Nonce(), "tx", tx.Hash())
+
+	return tx, nil
 }
 
 // resetNonce resets the internal nonce tracking. This is called if any pending doSend
@@ -269,14 +274,15 @@ func (m *simple) resetNonce() {
 
 // sendTx submits the same transaction several times with increasing gas prices as necessary.
 // It waits for the transaction to be confirmed on chain.
-func (m *simple) sendTx(ctx context.Context, tx *types.Transaction) (*types.Receipt, error) {
+// It returns the confirmed transaction.
+func (m *simple) sendTx(ctx context.Context, tx *types.Transaction) (*types.Transaction, *types.Receipt, error) {
 	var wg sync.WaitGroup
 	defer wg.Wait()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	sendState := NewSendState(m.cfg.SafeAbortNonceTooLowCount, m.cfg.TxNotInMempoolTimeout)
-	receiptChan := make(chan *types.Receipt, 1)
+	minedChan := make(chan minedTuple, 1)
 	publishAndWait := func(tx *types.Transaction, bumpFees bool) *types.Transaction {
 		if bumpFees {
 			resendTotal.WithLabelValues(m.chainName).Inc()
@@ -287,7 +293,7 @@ func (m *simple) sendTx(ctx context.Context, tx *types.Transaction) (*types.Rece
 		if published {
 			go func() {
 				defer wg.Done()
-				m.waitForTx(ctx, tx, sendState, receiptChan)
+				m.waitForTx(ctx, tx, sendState, minedChan)
 			}()
 		} else {
 			wg.Done()
@@ -311,22 +317,25 @@ func (m *simple) sendTx(ctx context.Context, tx *types.Transaction) (*types.Rece
 			}
 			// If we see lots of unrecoverable errors (and no pending transactions) abort sending the transaction.
 			if sendState.ShouldAbortImmediately() {
-				return nil, errors.New("aborted transaction sending", txFields(tx, false)...)
+				return nil, nil, errors.New("aborted transaction sending", txFields(tx, false)...)
 			}
 			tx = publishAndWait(tx, true)
 
 		case <-ctx.Done():
-			return nil, errors.Wrap(ctx.Err(), "timeout")
+			return nil, nil, errors.Wrap(ctx.Err(), "timeout")
 
-		case receipt := <-receiptChan:
-			if receipt.EffectiveGasPrice != nil {
+		case mined := <-minedChan:
+			if mined.Tx.Hash() != mined.Rec.TxHash { // Sanity check
+				return nil, nil, errors.New("mined hash mismatch [BUG]", "tx", mined.Tx.Hash(), "receipt", mined.Rec.TxHash)
+			}
+			if mined.Rec.EffectiveGasPrice != nil {
 				txEffectiveGasPrice.
 					WithLabelValues(m.chainName).
-					Set(float64(receipt.EffectiveGasPrice.Uint64() / params.GWei))
-				txGasUsed.WithLabelValues(m.chainName).Observe(float64(receipt.GasUsed))
+					Set(float64(mined.Rec.EffectiveGasPrice.Uint64() / params.GWei))
+				txGasUsed.WithLabelValues(m.chainName).Observe(float64(mined.Rec.GasUsed))
 			}
 
-			return receipt, nil
+			return mined.Tx, mined.Rec, nil
 		}
 	}
 }
@@ -395,7 +404,7 @@ func (m *simple) publishTx(ctx context.Context, tx *types.Transaction, sendState
 
 // waitForTx calls waitMined, and then sends the receipt to receiptChan in a non-blocking way if a receipt is found
 // for the transaction. It should be called in a separate goroutine.
-func (m *simple) waitForTx(ctx context.Context, tx *types.Transaction, sendState *SendState, receiptChan chan *types.Receipt) {
+func (m *simple) waitForTx(ctx context.Context, tx *types.Transaction, sendState *SendState, minedChan chan minedTuple) {
 	t0 := time.Now()
 
 	// Poll for the transaction to be ready & then doSend the result to receiptChan
@@ -410,8 +419,12 @@ func (m *simple) waitForTx(ctx context.Context, tx *types.Transaction, sendState
 	txConfirmationLatency.WithLabelValues(m.chainName).Set(time.Since(t0).Seconds())
 
 	select {
-	case receiptChan <- receipt:
+	case minedChan <- minedTuple{
+		Tx:  tx,
+		Rec: receipt,
+	}:
 	default:
+		log.Error(ctx, "Multiple txs mined for same nonce [BUG]", nil)
 	}
 }
 
@@ -705,4 +718,10 @@ func isNetworkError(err error) bool {
 	opErr := new(net.OpError)
 
 	return errors.As(err, &opErr)
+}
+
+// minedTTuple groups the mined/confirmed tx with its receipt.
+type minedTuple struct {
+	Tx  *types.Transaction
+	Rec *types.Receipt
 }

@@ -333,9 +333,10 @@ func TestTxMgrConfirmAtMinGasPrice(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 250*time.Millisecond)
 	defer cancel()
-	receipt, err := h.mgr.sendTx(ctx, tx)
+	resTx, receipt, err := h.mgr.sendTx(ctx, tx)
 	require.NoError(t, err)
 	require.NotNil(t, receipt)
+	require.Equal(t, resTx.Hash(), tx.Hash())
 	require.Equal(t, gasPricer.expGasFeeCap().Uint64(), receipt.GasUsed)
 }
 
@@ -362,7 +363,7 @@ func TestTxMgrNeverConfirmCancel(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 
-	receipt, err := h.mgr.sendTx(ctx, tx)
+	_, receipt, err := h.mgr.sendTx(ctx, tx)
 	require.Error(t, err)
 	require.Nil(t, receipt)
 }
@@ -392,9 +393,10 @@ func TestTxMgrConfirmsAtHigherGasPrice(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	receipt, err := h.mgr.sendTx(ctx, tx)
+	resTx, receipt, err := h.mgr.sendTx(ctx, tx)
 	require.NoError(t, err)
 	require.NotNil(t, receipt)
+	require.NotEqual(t, resTx.Hash(), tx.Hash()) // Different resulting tx
 	require.Equal(t, h.gasPricer.expGasFeeCap().Uint64(), receipt.GasUsed)
 }
 
@@ -426,10 +428,11 @@ func TestTxMgrBlocksOnFailingRpcCalls(t *testing.T) {
 		return nil
 	}
 	h.backend.setTxSender(sendTx)
-	receipt, err := h.mgr.sendTx(context.Background(), orig)
+	resTx, receipt, err := h.mgr.sendTx(context.Background(), orig)
 	require.NoError(t, err)
 	require.NotNil(t, receipt)
 	require.Equal(t, receipt.TxHash, sent.Hash())
+	require.NotEqual(t, resTx.Hash(), orig.Hash()) // Different resulting tx
 	require.GreaterOrEqual(t, sent.GasTipCap().Uint64(), orig.GasTipCap().Uint64())
 }
 
@@ -572,9 +575,9 @@ func TestTxMgrOnlyOnePublicationSucceeds(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	receipt, err := h.mgr.sendTx(ctx, tx)
+	resTx, receipt, err := h.mgr.sendTx(ctx, tx)
 	require.NoError(t, err)
-
+	require.NotEqual(t, resTx.Hash(), tx.Hash()) // Different resulting tx
 	require.NotNil(t, receipt)
 	require.Equal(t, h.gasPricer.expGasFeeCap().Uint64(), receipt.GasUsed)
 }
@@ -608,9 +611,10 @@ func TestTxMgrConfirmsMinGasPriceAfterBumping(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	receipt, err := h.mgr.sendTx(ctx, tx)
+	resTx, receipt, err := h.mgr.sendTx(ctx, tx)
 	require.NoError(t, err)
 	require.NotNil(t, receipt)
+	require.NotEqual(t, resTx.Hash(), tx.Hash()) // Different resulting tx
 	require.Equal(t, h.gasPricer.expGasFeeCap().Uint64(), receipt.GasUsed)
 }
 
@@ -653,9 +657,10 @@ func TestTxMgrDoesntAbortNonceTooLowAfterMiningTx(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	receipt, err := h.mgr.sendTx(ctx, tx)
+	resTx, receipt, err := h.mgr.sendTx(ctx, tx)
 	require.NoError(t, err)
 	require.NotNil(t, receipt)
+	require.NotEqual(t, resTx.Hash(), tx.Hash()) // Different resulting tx
 	require.Equal(t, h.gasPricer.expGasFeeCap().Uint64(), receipt.GasUsed)
 }
 
