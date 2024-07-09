@@ -2,7 +2,7 @@
 pragma solidity =0.8.24;
 
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { ExcessivelySafeCall } from "@nomad-xyz/excessively-safe-call/src/ExcessivelySafeCall.sol";
 
 import { IFeeOracle } from "../interfaces/IFeeOracle.sol";
@@ -84,7 +84,8 @@ contract OmniPortal is
      * @notice Initialize the OmniPortal contract
      */
     function initialize(InitParams calldata p) public initializer {
-        _transferOwnership(p.owner);
+        __Ownable_init(p.owner);
+
         _setFeeOracle(p.feeOracle);
         _setXMsgMaxGasLimit(p.xmsgMaxGasLimit);
         _setXMsgMinGasLimit(p.xmsgMinGasLimit);

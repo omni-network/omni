@@ -19,13 +19,13 @@ jobs:
       - run: pnpm install
       - name: Check fmt
         run: forge fmt --check
+      - name: Run tests
+        run: forge test -vv
       - name: Check snapshot
         # fuzz tests snapshots are different in CI, so we ignore them
         run: forge snapshot --check --tolerance 5
         env:
             FOUNDRY_FUZZ_SEED: "0x6eed"
-      - name: Run tests
-        run: forge test -vvv
 
   sol_avs_tests:
     runs-on: ubuntu-latest
@@ -41,10 +41,10 @@ jobs:
       - run: pnpm install
       - name: Check fmt
         run: forge fmt --check
+      - name: Run tests
+        run: forge test -vv
       - name: Check snapshot
         # fuzz tests snapshots are different in CI, so we ignore them
         run: forge snapshot --check --tolerance 5 --no-match-test testFuzz_syncWithOmni
         env:
             FOUNDRY_FUZZ_SEED: "0x6eed"
-      - name: Run tests
-        run: forge test -vvv

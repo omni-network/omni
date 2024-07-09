@@ -6,7 +6,6 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
-	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
@@ -17,12 +16,12 @@ import (
 )
 
 type DeploymentConfig struct {
-	Owner        common.Address
-	Manager      common.Address // manager is the address that can set fee parameters (gas price, conversion rates)
-	Deployer     common.Address
-	ProxyAdmin   common.Address
-	BaseGasLimit uint64
-	ProtocolFee  *big.Int
+	Owner           common.Address
+	Manager         common.Address // manager is the address that can set fee parameters (gas price, conversion rates)
+	Deployer        common.Address
+	ProxyAdminOwner common.Address
+	BaseGasLimit    uint64
+	ProtocolFee     *big.Int
 }
 
 func isDeadOrEmpty(addr common.Address) bool {
@@ -39,7 +38,7 @@ func (cfg DeploymentConfig) Validate() error {
 	if isDeadOrEmpty(cfg.Deployer) {
 		return errors.New("deployer is zero")
 	}
-	if (cfg.ProxyAdmin == common.Address{}) {
+	if (cfg.ProxyAdminOwner == common.Address{}) {
 		return errors.New("proxy admin is zero")
 	}
 
@@ -70,45 +69,45 @@ func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) 
 
 func mainnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Owner:        eoa.MustAddress(netconf.Mainnet, eoa.RoleAdmin),
-		Manager:      eoa.MustAddress(netconf.Mainnet, eoa.RoleMonitor),
-		Deployer:     eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer),
-		ProxyAdmin:   contracts.MainnetProxyAdmin(),
-		BaseGasLimit: 50_000,
-		ProtocolFee:  big.NewInt(0),
+		Owner:           eoa.MustAddress(netconf.Mainnet, eoa.RoleAdmin),
+		Manager:         eoa.MustAddress(netconf.Mainnet, eoa.RoleMonitor),
+		Deployer:        eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer),
+		ProxyAdminOwner: eoa.MustAddress(netconf.Mainnet, eoa.RoleAdmin),
+		BaseGasLimit:    50_000,
+		ProtocolFee:     big.NewInt(0),
 	}
 }
 
 func omegaCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Owner:        eoa.MustAddress(netconf.Omega, eoa.RoleAdmin),
-		Manager:      eoa.MustAddress(netconf.Omega, eoa.RoleMonitor),
-		Deployer:     eoa.MustAddress(netconf.Omega, eoa.RoleDeployer),
-		ProxyAdmin:   contracts.OmegaProxyAdmin(),
-		BaseGasLimit: 50_000,
-		ProtocolFee:  big.NewInt(0),
+		Owner:           eoa.MustAddress(netconf.Omega, eoa.RoleAdmin),
+		Manager:         eoa.MustAddress(netconf.Omega, eoa.RoleMonitor),
+		Deployer:        eoa.MustAddress(netconf.Omega, eoa.RoleDeployer),
+		ProxyAdminOwner: eoa.MustAddress(netconf.Omega, eoa.RoleAdmin),
+		BaseGasLimit:    50_000,
+		ProtocolFee:     big.NewInt(0),
 	}
 }
 
 func devnetCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Owner:        eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
-		Manager:      eoa.MustAddress(netconf.Devnet, eoa.RoleMonitor),
-		Deployer:     eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
-		ProxyAdmin:   contracts.DevnetProxyAdmin(),
-		BaseGasLimit: 50_000,
-		ProtocolFee:  big.NewInt(0),
+		Owner:           eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
+		Manager:         eoa.MustAddress(netconf.Devnet, eoa.RoleMonitor),
+		Deployer:        eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
+		ProxyAdminOwner: eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
+		BaseGasLimit:    50_000,
+		ProtocolFee:     big.NewInt(0),
 	}
 }
 
 func stagingCfg() DeploymentConfig {
 	return DeploymentConfig{
-		Owner:        eoa.MustAddress(netconf.Staging, eoa.RoleAdmin),
-		Manager:      eoa.MustAddress(netconf.Staging, eoa.RoleMonitor),
-		Deployer:     eoa.MustAddress(netconf.Staging, eoa.RoleDeployer),
-		ProxyAdmin:   contracts.StagingProxyAdmin(),
-		BaseGasLimit: 50_000,
-		ProtocolFee:  big.NewInt(0),
+		Owner:           eoa.MustAddress(netconf.Staging, eoa.RoleAdmin),
+		Manager:         eoa.MustAddress(netconf.Staging, eoa.RoleMonitor),
+		Deployer:        eoa.MustAddress(netconf.Staging, eoa.RoleDeployer),
+		ProxyAdminOwner: eoa.MustAddress(netconf.Staging, eoa.RoleAdmin),
+		BaseGasLimit:    50_000,
+		ProtocolFee:     big.NewInt(0),
 	}
 }
 
@@ -153,7 +152,7 @@ func Deploy(ctx context.Context, network netconf.ID, chainID uint64, destChainID
 		return common.Address{}, nil, errors.Wrap(err, "wait mined")
 	}
 
-	proxy, tx, _, err := bindings.DeployTransparentUpgradeableProxy(txOpts, backend, impl, cfg.ProxyAdmin, initializer)
+	proxy, tx, _, err := bindings.DeployTransparentUpgradeableProxy(txOpts, backend, impl, cfg.ProxyAdminOwner, initializer)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "deploy proxy")
 	}

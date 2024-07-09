@@ -53,8 +53,7 @@ contract OmniBridgeL1 is OwnableUpgradeable {
     }
 
     function initialize(address owner_, address omni_) external initializer {
-        __Ownable_init();
-        transferOwnership(owner_);
+        __Ownable_init(owner_);
         omni = IOmniPortal(omni_);
     }
 

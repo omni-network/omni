@@ -96,6 +96,9 @@ func InitialSupplyRecipient(network netconf.ID) (common.Address, bool) {
 }
 
 // Deploy deploys a new ERC20 OMNI token contract and returns the address and receipt.
+//
+// NOTE: the mainnet ERC20 OMNI token is already deployed to ETH mainnet. We use
+// this code for test / ephemeral networks.
 func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
 	cfg, err := getDeployCfg(network)
 	if err != nil {

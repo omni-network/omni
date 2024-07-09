@@ -44,8 +44,7 @@ contract PortalRegistry is OwnableUpgradeable {
     }
 
     function initialize(address owner_) public initializer {
-        __Ownable_init();
-        _transferOwnership(owner_);
+        __Ownable_init(owner_);
     }
 
     /**

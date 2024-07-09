@@ -52,7 +52,8 @@ contract FeeOracleV1 is IFeeOracle, IFeeOracleV1, OwnableUpgradeable {
         uint256 protocolFee_,
         ChainFeeParams[] calldata params
     ) public initializer {
-        _transferOwnership(owner_);
+        __Ownable_init(owner_);
+
         _setManager(manager_);
         _setBaseGasLimit(baseGasLimit_);
         _setProtocolFee(protocolFee_);

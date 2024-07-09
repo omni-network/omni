@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { Base } from "./common/Base.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
@@ -18,11 +19,11 @@ contract OmniPortal_admin_Test is Base {
         portal.setFeeOracle(newFeeOracle);
         assertEq(portal.feeOracle(), newFeeOracle);
 
-        assertEq(portal.feeOracle(), newFeeOracle);
-
         // only owner
-        vm.expectRevert("Ownable: caller is not the owner");
-        portal.setFeeOracle(address(0x456));
+        address notOwner = address(0x456);
+        vm.prank(notOwner);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, notOwner));
+        portal.setFeeOracle(address(0x123));
 
         // cannot be zero
         vm.prank(owner);
@@ -50,7 +51,9 @@ contract OmniPortal_admin_Test is Base {
         portal.xsubmit(xsub1);
 
         // only owner can pause
-        vm.expectRevert("Ownable: caller is not the owner");
+        address notOwner = address(0x456);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, notOwner));
+        vm.prank(notOwner);
         portal.pause();
 
         // owner can pause
@@ -234,7 +237,9 @@ contract OmniPortal_admin_Test is Base {
         uint64 offset = 3;
 
         // only owner
-        vm.expectRevert("Ownable: caller is not the owner");
+        address notOwner = address(0x456);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, notOwner));
+        vm.prank(notOwner);
         portal.setInXMsgOffset(srcChainId, shardId, offset);
 
         // set offset
@@ -249,7 +254,9 @@ contract OmniPortal_admin_Test is Base {
         uint64 offset = 3;
 
         // only owner
-        vm.expectRevert("Ownable: caller is not the owner");
+        address notOwner = address(0x456);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, notOwner));
+        vm.prank(notOwner);
         portal.setInXBlockOffset(srcChainId, shardId, offset);
 
         // set offset

@@ -10,9 +10,6 @@ library Predeploys {
     address internal constant OmniNamespace = 0x121e240000000000000000000000000000000000;
     address internal constant OctaneNamespace = 0xCCcCCc0000000000000000000000000000000000;
 
-    // proxy admin for all predeploys
-    address internal constant ProxyAdmin = 0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa;
-
     // omni predeploys
     address internal constant PortalRegistry = 0x121E240000000000000000000000000000000001;
     address internal constant OmniBridgeNative = 0x121E240000000000000000000000000000000002;
