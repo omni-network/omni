@@ -35,3 +35,27 @@ func (v *Validator) CometAddress() (crypto.Address, error) {
 
 	return pk.Address(), nil
 }
+
+// IsValidator returns true if the provided address is a validator in the set.
+func (v *ValidatorSetResponse) IsValidator(addr common.Address) (bool, error) {
+	if len(v.Validators) == 0 {
+		return false, errors.New("empty validators")
+	}
+
+	for _, val := range v.Validators {
+		if val.Power == 0 {
+			return false, errors.New("invalid active validator [BUG]")
+		}
+
+		ethAddr, err := val.EthereumAddress()
+		if err != nil {
+			return false, err
+		}
+
+		if ethAddr == addr {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}

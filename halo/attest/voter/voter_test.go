@@ -12,11 +12,11 @@ import (
 
 	"github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/halo/attest/voter"
+	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -506,12 +506,22 @@ func setIsVal(t *testing.T, v *voter.Voter, pk k1.PrivKey, isVal bool) {
 	cmtPubkey, err := k1util.PBPubKeyFromBytes(pk.PubKey().Bytes())
 	require.NoError(t, err)
 
-	power := int64(0)
+	vals := []*vtypes.Validator{{
+		ConsensusPubkey: k1.GenPrivKey().PubKey().Bytes(),
+		Power:           1,
+	}}
 	if isVal {
-		power = 1
+		vals = append(vals, &vtypes.Validator{
+			ConsensusPubkey: cmtPubkey.GetSecp256K1(),
+			Power:           1,
+		})
 	}
 
-	v.UpdateValidators([]abci.ValidatorUpdate{{PubKey: cmtPubkey, Power: power}})
+	err = v.UpdateValidatorSet(&vtypes.ValidatorSetResponse{
+		Id:         uint64(time.Now().UnixNano()),
+		Validators: vals,
+	})
+	require.NoError(t, err)
 }
 
 func testNetwork(chainIDs ...uint64) netconf.Network {

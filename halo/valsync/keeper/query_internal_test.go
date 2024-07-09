@@ -119,7 +119,24 @@ func approvedExpectation() expectation {
 		).AnyTimes().
 			Return([]*types1.Attestation{{}}, nil)
 
-		m.subscriber.EXPECT().UpdateValidators(gomock.Any()).AnyTimes()
+		m.subscriber.EXPECT().UpdateValidatorSet(gomock.Any()).Do(
+			func(set *types.ValidatorSetResponse) {
+				if set.Id == 0 {
+					panic("validator set id is zero")
+				}
+				if set.ActivatedHeight < set.CreatedHeight {
+					panic("validator set activated height is less than created")
+				}
+				if len(set.Validators) == 0 {
+					panic("validator set is empty")
+				}
+				for _, val := range set.Validators {
+					if val.Power == 0 {
+						panic("zero power validator in active set")
+					}
+				}
+			},
+		).AnyTimes()
 	}
 }
 

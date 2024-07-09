@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	atypes "github.com/omni-network/omni/halo/attest/types"
 	ptypes "github.com/omni-network/omni/halo/portal/types"
 	"github.com/omni-network/omni/halo/valsync/keeper"
 	"github.com/omni-network/omni/halo/valsync/types"
@@ -142,7 +143,7 @@ type ModuleInputs struct {
 	Cdc          codec.Codec
 	Config       *Module
 	SKeeper      types.StakingKeeper
-	AKeeper      types.AttestKeeper
+	AKeeper      atypes.AttestKeeper
 	Subscriber   types.ValSetSubscriber
 	Portal       ptypes.EmitPortal
 	EthClient    ethclient.Client
