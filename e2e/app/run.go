@@ -69,10 +69,6 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, err
 	}
 
-	if err := deployPublicProxyAdmin(ctx, def); err != nil {
-		return nil, err
-	}
-
 	// Deploy public portals first so their addresses are available for setup.
 	if err := def.Netman().DeployPublicPortals(ctx, genesisValSetID, genesisVals); err != nil {
 		return nil, err
@@ -103,20 +99,12 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, err
 	}
 
-	if err := deployPrivateProxyAdmin(ctx, def); err != nil {
-		return nil, err
-	}
-
 	if err := def.Netman().DeployPrivatePortals(ctx, genesisValSetID, genesisVals); err != nil {
 		return nil, err
 	}
 	logRPCs(ctx, def)
 
 	if err := initPortalRegistry(ctx, def); err != nil {
-		return nil, err
-	}
-
-	if err := deployAVS(ctx, def); err != nil {
 		return nil, err
 	}
 

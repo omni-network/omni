@@ -71,7 +71,6 @@ func New() *cobra.Command {
 	// Add subcommands
 	cmd.AddCommand(
 		newCreate3DeployCmd(&def),
-		newAVSDeployCmd(&def),
 		newDeployCmd(&def),
 		newLogsCmd(&def),
 		newCleanCmd(&def),
@@ -164,18 +163,6 @@ func newUpgradeCmd(def *app.Definition) *cobra.Command {
 
 	bindDeployFlags(cmd.Flags(), &cfg)
 	bindUpgradeFlags(cmd.Flags(), &upgradeCfg)
-
-	return cmd
-}
-
-func newAVSDeployCmd(def *app.Definition) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "avs-deploy",
-		Short: "Deploys the Omni AVS contracts",
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			return app.DeployAVSAndCreate3(cmd.Context(), *def)
-		},
-	}
 
 	return cmd
 }

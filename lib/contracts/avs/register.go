@@ -15,6 +15,8 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
+// RegisterOperatorWithAVS registers an operator with the AVS contract.
+// Note RegisterOperatorWithAVS is tested indirectly via cli tests, see cli/cmd/register_test.go.
 func RegisterOperatorWithAVS(ctx context.Context, addr common.Address, backend *ethbackend.Backend, operator common.Address) error {
 	avs, err := bindings.NewOmniAVS(addr, backend)
 	if err != nil {
