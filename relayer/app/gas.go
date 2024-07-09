@@ -15,9 +15,9 @@ const (
 )
 
 // gasEstimator is a function that estimates the gas usage by submitting the set of messages.
-// Note that the messages MUST be from the same source BlockHeader and to the same destination chain.
+// Note that the messages MUST be from the same source chain.
 // It returns zero if proper (RPC) gas estimation should be used.
-type gasEstimator func([]xchain.Msg) uint64
+type gasEstimator func(destChain uint64, msgs []xchain.Msg) uint64
 
 // newGasEstimator returns a new gas estimator function.
 func newGasEstimator(network netconf.ID) gasEstimator {
@@ -28,15 +28,14 @@ func newGasEstimator(network netconf.ID) gasEstimator {
 		evmchain.IDArbSepolia: true, // Arbitrum has non-standard gas usage, and super-fast blocks, so we skip the model.
 	}
 
-	return func(msgs []xchain.Msg) uint64 {
+	return func(destChain uint64, msgs []xchain.Msg) uint64 {
 		if len(msgs) == 0 {
 			return subGasBase
 		}
 
-		dstChain := msgs[0].DestChainID
 		srcChain := msgs[0].SourceChainID
 
-		if skipModel[dstChain] {
+		if skipModel[destChain] { // Note we must provide destination chain explicitly, since msg.DestChainID can be broadcast=0.
 			return properGasEstimation
 		}
 
