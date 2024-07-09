@@ -120,7 +120,6 @@ var runid = uuid.New().String()
 
 //nolint:gochecknoglobals // Static addresses
 var (
-	// Address matches lib/contracts. We do not import to avoid cylic dependencies. Equivalence asserted in tests.
 	omegaAVS   = common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
 	mainnetAVS = common.HexToAddress("0xed2f4d90b073128ae6769a9A8D51547B1Df766C8")
 )

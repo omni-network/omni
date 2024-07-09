@@ -87,26 +87,6 @@ func Portal(network netconf.ID) (common.Address, bool) {
 }
 
 //
-// ProxyAdmin.
-//
-
-func MainnetProxyAdmin() common.Address {
-	return create3.Address(MainnetCreate3Factory(), ProxyAdminSalt(netconf.Mainnet), eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer))
-}
-
-func OmegaProxyAdmin() common.Address {
-	return create3.Address(OmegaCreate3Factory(), ProxyAdminSalt(netconf.Omega), eoa.MustAddress(netconf.Omega, eoa.RoleDeployer))
-}
-
-func StagingProxyAdmin() common.Address {
-	return create3.Address(StagingCreate3Factory(), ProxyAdminSalt(netconf.Staging), eoa.MustAddress(netconf.Staging, eoa.RoleDeployer))
-}
-
-func DevnetProxyAdmin() common.Address {
-	return create3.Address(DevnetCreate3Factory(), ProxyAdminSalt(netconf.Devnet), eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer))
-}
-
-//
 // L1Bridge.
 //
 // We use create3 deployments so we can have predictable addresses in ephemeral networks.
