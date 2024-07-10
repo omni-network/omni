@@ -150,7 +150,12 @@ var statics = map[ID]Static{
 		AVSContractAddress:   omegaAVS,
 		OmniExecutionChainID: evmchain.IDOmniOmega,
 		MaxValidators:        maxValidators,
-		Portals:              []Deployment{},
+		Portals: []Deployment{
+			{ChainID: evmchain.IDArbSepolia, Address: common.HexToAddress("0xc9Eb081a0F3D891f5edc21234B57c834E837307c"), DeployHeight: 62741669},
+			{ChainID: evmchain.IDBaseSepolia, Address: common.HexToAddress("0xc9Eb081a0F3D891f5edc21234B57c834E837307c"), DeployHeight: 12423582},
+			{ChainID: evmchain.IDHolesky, Address: common.HexToAddress("0xc9Eb081a0F3D891f5edc21234B57c834E837307c"), DeployHeight: 1900042},
+			{ChainID: evmchain.IDOpSepolia, Address: common.HexToAddress("0xc9Eb081a0F3D891f5edc21234B57c834E837307c"), DeployHeight: 14406450},
+		},
 	},
 	Mainnet: {
 		Network:            Mainnet,
