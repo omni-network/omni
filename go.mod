@@ -13,8 +13,8 @@ require (
 	cosmossdk.io/store v1.1.0
 	cosmossdk.io/x/tx v0.13.3
 	github.com/BurntSushi/toml v1.4.0
-	github.com/Layr-Labs/eigenlayer-cli v0.8.0
-	github.com/Layr-Labs/eigensdk-go v0.1.8
+	github.com/Layr-Labs/eigenlayer-cli v0.9.0
+	github.com/Layr-Labs/eigensdk-go v0.1.9-0.20240705173150-8f12390d1974
 	github.com/bufbuild/buf v1.34.0
 	github.com/charmbracelet/log v0.4.0
 	github.com/cometbft/cometbft v0.38.9
@@ -115,7 +115,7 @@ require (
 	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
 	github.com/emicklei/dot v1.6.1 // indirect
 	github.com/ethereum/c-kzg-4844 v1.0.0 // indirect
-	github.com/fatih/color v1.16.0 // indirect
+	github.com/fatih/color v1.17.0 // indirect
 	github.com/felixge/fgprof v0.9.4 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fjl/memsize v0.0.2 // indirect
