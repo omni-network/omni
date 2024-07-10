@@ -67,7 +67,10 @@ func startEmitCursorCache(
 			return nil, errors.Wrap(err, "latest height", "chain", chain.Name)
 		}
 
-		fromHeight := latest - cacheStartLag
+		var fromHeight uint64
+		if latest > cacheStartLag {
+			fromHeight = latest - cacheStartLag
+		}
 		req := xchain.ProviderRequest{
 			ChainID:   chain.ID,
 			Height:    fromHeight,
