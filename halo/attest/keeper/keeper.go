@@ -315,7 +315,7 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 			"chain", chainVerName,
 			"offset", att.GetBlockOffset(),
 			"height", att.GetBlockHeight(),
-			"hash", att.GetBlockHash(),
+			log.Hex7("hash", att.GetBlockHash()),
 		)
 	}
 
@@ -440,7 +440,7 @@ func (k *Keeper) maybeOverrideFinalized(ctx context.Context, att *Attestation) (
 		"chain", k.namer(att.XChainVersion()),
 		"offset", att.GetBlockOffset(),
 		"height", att.GetBlockHeight(),
-		"hash", att.GetBlockHash(),
+		log.Hex7("hash", att.GetBlockHash()),
 	)
 
 	return true, nil
