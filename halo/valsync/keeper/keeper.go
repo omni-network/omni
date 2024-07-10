@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	atypes "github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	ptypes "github.com/omni-network/omni/halo/portal/types"
 	"github.com/omni-network/omni/halo/valsync/types"
@@ -33,7 +34,7 @@ const cometValidatorActiveDelay = 2
 
 type Keeper struct {
 	sKeeper           types.StakingKeeper
-	aKeeper           types.AttestKeeper
+	aKeeper           atypes.AttestKeeper
 	valsetTable       ValidatorSetTable
 	valTable          ValidatorTable
 	subscriber        types.ValSetSubscriber
@@ -48,7 +49,7 @@ type Keeper struct {
 func NewKeeper(
 	storeService store.KVStoreService,
 	sKeeper types.StakingKeeper,
-	aKeeper types.AttestKeeper,
+	aKeeper atypes.AttestKeeper,
 	subscriber types.ValSetSubscriber,
 	portal ptypes.EmitPortal,
 	ethCl ethclient.Client,
@@ -275,17 +276,15 @@ func (k *Keeper) maybeInitSubscriber(ctx context.Context) error {
 		return nil
 	}
 
-	_, vals, err := k.activeSetByHeight(ctx, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+	set, err := k.ActiveSetByHeight(ctx, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
 	if err != nil {
 		return err
 	}
 
-	var updates []abci.ValidatorUpdate
-	for _, val := range vals {
-		updates = append(updates, val.ValidatorUpdate())
+	if err := k.subscriber.UpdateValidatorSet(set); err != nil {
+		return err
 	}
 
-	k.subscriber.UpdateValidators(updates)
 	k.subscriberInitted = true
 
 	return nil
@@ -332,19 +331,28 @@ func (k *Keeper) processAttested(ctx context.Context) ([]abci.ValidatorUpdate, e
 	defer valIter.Close()
 
 	var updates []abci.ValidatorUpdate
+	var activeVals []*Validator
 	for valIter.Next() {
 		val, err := valIter.Value()
 		if err != nil {
 			return nil, errors.Wrap(err, "get validator")
-		} else if !val.GetUpdated() {
-			continue // Only return updated validators.
 		}
 
-		updates = append(updates, val.ValidatorUpdate())
+		if val.GetPower() > 0 {
+			// Skip zero power validators (removed from previous set).
+			activeVals = append(activeVals, val)
+		}
+
+		if val.GetUpdated() {
+			// Only add updated validators to updates.
+			updates = append(updates, val.ValidatorUpdate())
+		}
 	}
 
 	if k.subscriberInitted {
-		k.subscriber.UpdateValidators(updates)
+		if err := k.subscriber.UpdateValidatorSet(valSetResponse(valset, activeVals)); err != nil {
+			return nil, err
+		}
 	}
 
 	log.Info(ctx, "💫 Activating attested validator set",

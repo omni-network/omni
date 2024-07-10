@@ -16,6 +16,7 @@ import (
 	types "github.com/cometbft/cometbft/abci/types"
 	types0 "github.com/cosmos/cosmos-sdk/x/staking/types"
 	types1 "github.com/omni-network/omni/halo/attest/types"
+	types2 "github.com/omni-network/omni/halo/valsync/types"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -133,14 +134,16 @@ func (m *MockSubscriber) EXPECT() *MockSubscriberMockRecorder {
 	return m.recorder
 }
 
-// UpdateValidators mocks base method.
-func (m *MockSubscriber) UpdateValidators(valset []types.ValidatorUpdate) {
+// UpdateValidatorSet mocks base method.
+func (m *MockSubscriber) UpdateValidatorSet(arg0 *types2.ValidatorSetResponse) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "UpdateValidators", valset)
+	ret := m.ctrl.Call(m, "UpdateValidatorSet", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
-// UpdateValidators indicates an expected call of UpdateValidators.
-func (mr *MockSubscriberMockRecorder) UpdateValidators(valset any) *gomock.Call {
+// UpdateValidatorSet indicates an expected call of UpdateValidatorSet.
+func (mr *MockSubscriberMockRecorder) UpdateValidatorSet(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateValidators", reflect.TypeOf((*MockSubscriber)(nil).UpdateValidators), valset)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateValidatorSet", reflect.TypeOf((*MockSubscriber)(nil).UpdateValidatorSet), arg0)
 }

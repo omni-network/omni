@@ -2,6 +2,7 @@
 package testutil
 
 import (
+	atypes "github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/halo/valsync/types"
 )
 
@@ -10,7 +11,7 @@ type StakingKeeper interface {
 }
 
 type AttestKeeper interface {
-	types.AttestKeeper
+	atypes.AttestKeeper
 }
 
 type Subscriber interface {

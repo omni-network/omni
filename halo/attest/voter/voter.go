@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/halo/attest/types"
+	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/k1util"
@@ -18,7 +19,6 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto"
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/libs/tempfile"
@@ -46,7 +46,6 @@ type Voter struct {
 	privKey     crypto.PrivKey
 	network     netconf.Network
 	address     common.Address
-	isValFunc   IsValDetector
 	provider    xchain.Provider
 	deps        types.VoterDeps
 	backoffFunc func(context.Context) func()
@@ -59,6 +58,7 @@ type Voter struct {
 	committed   []*types.Vote
 	minsByChain map[xchain.ChainVersion]uint64 // map[chainID]offset
 	isVal       bool
+	valSetID    uint64
 }
 
 // GenEmptyStateFile generates an empty attester state file at the given path.
@@ -86,13 +86,12 @@ func LoadVoter(privKey crypto.PrivKey, path string, provider xchain.Provider, de
 	}
 
 	return &Voter{
-		privKey:   privKey,
-		isValFunc: NewIsValDetector(addr),
-		address:   addr,
-		path:      path,
-		network:   network,
-		provider:  provider,
-		deps:      deps,
+		privKey:  privKey,
+		address:  addr,
+		path:     path,
+		network:  network,
+		provider: provider,
+		deps:     deps,
 		backoffFunc: func(ctx context.Context) func() {
 			return expbackoff.New(ctx, expbackoff.WithPeriodicConfig(prodBackoff))
 		},
@@ -128,7 +127,7 @@ func (v *Voter) minWindow(chainVer xchain.ChainVersion) (uint64, bool) {
 	return resp, ok
 }
 
-// minWindow returns the minimum.
+// isValidator returns true if the local address is a validator in the active set.
 func (v *Voter) isValidator() bool {
 	v.mu.Lock()
 	defer v.mu.Unlock()
@@ -309,17 +308,29 @@ func (v *Voter) Vote(block xchain.Block, allowSkip bool) error {
 	return v.saveUnsafe()
 }
 
-// UpdateValidators caches whether this voter is a validator in the provided set.
-func (v *Voter) UpdateValidators(valset []abci.ValidatorUpdate) {
-	isVal, ok := v.isValFunc(valset)
-	if !ok {
-		// IsVal didn't detect any change
-		return
-	}
-
+// UpdateValidatorSet caches whether this voter is a validator in the provided set.
+func (v *Voter) UpdateValidatorSet(valset *vtypes.ValidatorSetResponse) error {
 	v.mu.Lock()
 	defer v.mu.Unlock()
+
+	isVal, err := valset.IsValidator(v.address)
+	if err != nil {
+		return err
+	}
+
+	if v.valSetID > valset.Id {
+		return errors.New("unexpected validator set ID [BUG]", "old", v.valSetID, "new", valset.Id)
+	} else if v.valSetID == valset.Id && v.isVal != isVal {
+		return errors.New("unexpected isVal [BUG]", "old", v.valSetID, "new", valset.Id)
+	}
+
 	v.isVal = isVal
+	v.valSetID = valset.Id
+
+	// Note this results in outgoing validators not voting in their last block.
+	// This is ok, the added complexity of tracking valset.ActivatedHeight vs currentHeight isn't worth it.
+
+	return nil
 }
 
 // TrimBehind trims all available and proposed votes that are behind the vote window thresholds (map[chainID]offset)
@@ -617,27 +628,6 @@ func pruneLatestPerChain(atts []*types.Vote) []*types.Vote {
 	}
 
 	return resp
-}
-
-// IsValDetector is a function that detects if the "IsValidator" status changes for subsequent validator updates.
-type IsValDetector func(valset []abci.ValidatorUpdate) (isValidator bool, statusChanged bool)
-
-func NewIsValDetector(localAddr common.Address) IsValDetector {
-	return func(valset []abci.ValidatorUpdate) (bool, bool) {
-		for _, val := range valset {
-			addr, err := k1util.PubKeyPBToAddress(val.PubKey)
-			if err != nil {
-				continue
-			}
-			if localAddr != addr {
-				continue
-			}
-
-			return val.Power > 0, true
-		}
-
-		return false, false
-	}
 }
 
 // newDebugLogFilterer returns a debug log function that only logs once per period per message.

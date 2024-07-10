@@ -13,12 +13,11 @@ import (
 	context "context"
 	reflect "reflect"
 
-	types "github.com/cometbft/cometbft/abci/types"
 	crypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
-	types0 "github.com/cosmos/cosmos-sdk/types"
+	types "github.com/cosmos/cosmos-sdk/types"
 	common "github.com/ethereum/go-ethereum/common"
-	types1 "github.com/omni-network/omni/halo/attest/types"
-	types2 "github.com/omni-network/omni/halo/valsync/types"
+	types0 "github.com/omni-network/omni/halo/attest/types"
+	types1 "github.com/omni-network/omni/halo/valsync/types"
 	xchain "github.com/omni-network/omni/lib/xchain"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -47,7 +46,7 @@ func (m *MockStakingKeeper) EXPECT() *MockStakingKeeperMockRecorder {
 }
 
 // GetPubKeyByConsAddr mocks base method.
-func (m *MockStakingKeeper) GetPubKeyByConsAddr(arg0 context.Context, arg1 types0.ConsAddress) (crypto.PublicKey, error) {
+func (m *MockStakingKeeper) GetPubKeyByConsAddr(arg0 context.Context, arg1 types.ConsAddress) (crypto.PublicKey, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPubKeyByConsAddr", arg0, arg1)
 	ret0, _ := ret[0].(crypto.PublicKey)
@@ -85,10 +84,10 @@ func (m *MockVoter) EXPECT() *MockVoterMockRecorder {
 }
 
 // GetAvailable mocks base method.
-func (m *MockVoter) GetAvailable() []*types1.Vote {
+func (m *MockVoter) GetAvailable() []*types0.Vote {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAvailable")
-	ret0, _ := ret[0].([]*types1.Vote)
+	ret0, _ := ret[0].([]*types0.Vote)
 	return ret0
 }
 
@@ -113,7 +112,7 @@ func (mr *MockVoterMockRecorder) LocalAddress() *gomock.Call {
 }
 
 // SetCommitted mocks base method.
-func (m *MockVoter) SetCommitted(headers []*types1.BlockHeader) error {
+func (m *MockVoter) SetCommitted(headers []*types0.BlockHeader) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetCommitted", headers)
 	ret0, _ := ret[0].(error)
@@ -127,7 +126,7 @@ func (mr *MockVoterMockRecorder) SetCommitted(headers any) *gomock.Call {
 }
 
 // SetProposed mocks base method.
-func (m *MockVoter) SetProposed(headers []*types1.BlockHeader) error {
+func (m *MockVoter) SetProposed(headers []*types0.BlockHeader) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetProposed", headers)
 	ret0, _ := ret[0].(error)
@@ -154,16 +153,18 @@ func (mr *MockVoterMockRecorder) TrimBehind(minsByChain any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TrimBehind", reflect.TypeOf((*MockVoter)(nil).TrimBehind), minsByChain)
 }
 
-// UpdateValidators mocks base method.
-func (m *MockVoter) UpdateValidators(valset []types.ValidatorUpdate) {
+// UpdateValidatorSet mocks base method.
+func (m *MockVoter) UpdateValidatorSet(set *types1.ValidatorSetResponse) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "UpdateValidators", valset)
+	ret := m.ctrl.Call(m, "UpdateValidatorSet", set)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
-// UpdateValidators indicates an expected call of UpdateValidators.
-func (mr *MockVoterMockRecorder) UpdateValidators(valset any) *gomock.Call {
+// UpdateValidatorSet indicates an expected call of UpdateValidatorSet.
+func (mr *MockVoterMockRecorder) UpdateValidatorSet(set any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateValidators", reflect.TypeOf((*MockVoter)(nil).UpdateValidators), valset)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateValidatorSet", reflect.TypeOf((*MockVoter)(nil).UpdateValidatorSet), set)
 }
 
 // MockValProvider is a mock of ValProvider interface.
@@ -190,10 +191,10 @@ func (m *MockValProvider) EXPECT() *MockValProviderMockRecorder {
 }
 
 // ActiveSetByHeight mocks base method.
-func (m *MockValProvider) ActiveSetByHeight(ctx context.Context, height uint64) (*types2.ValidatorSetResponse, error) {
+func (m *MockValProvider) ActiveSetByHeight(ctx context.Context, height uint64) (*types1.ValidatorSetResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ActiveSetByHeight", ctx, height)
-	ret0, _ := ret[0].(*types2.ValidatorSetResponse)
+	ret0, _ := ret[0].(*types1.ValidatorSetResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -228,15 +229,15 @@ func (m *MockChainNamer) EXPECT() *MockChainNamerMockRecorder {
 }
 
 // ChainName mocks base method.
-func (m *MockChainNamer) ChainName(arg0 xchain.ChainVersion) string {
+func (m *MockChainNamer) ChainName(chainVer xchain.ChainVersion) string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ChainName", arg0)
+	ret := m.ctrl.Call(m, "ChainName", chainVer)
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
 // ChainName indicates an expected call of ChainName.
-func (mr *MockChainNamerMockRecorder) ChainName(arg0 any) *gomock.Call {
+func (mr *MockChainNamerMockRecorder) ChainName(chainVer any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChainName", reflect.TypeOf((*MockChainNamer)(nil).ChainName), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChainName", reflect.TypeOf((*MockChainNamer)(nil).ChainName), chainVer)
 }

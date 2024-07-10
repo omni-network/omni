@@ -3,9 +3,8 @@ package types
 import (
 	"context"
 
+	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/xchain"
-
-	abci "github.com/cometbft/cometbft/abci/types"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -41,9 +40,9 @@ type Voter interface {
 	// they will never be committed. It returns the number that was deleted.
 	TrimBehind(minsByChain map[xchain.ChainVersion]uint64) int
 
-	// UpdateValidators sets the latest validator set when passed to cometBFT.
+	// UpdateValidatorSet sets the latest active validator set when updated.
 	// This is used to calculate whether the voter is in-or-out of the validator set.
-	UpdateValidators(valset []abci.ValidatorUpdate)
+	UpdateValidatorSet(set *vtypes.ValidatorSetResponse) error
 }
 
 // VoterDeps abstracts the Voter's internal cosmosSDK dependencies; basically the attest keeper.
@@ -55,3 +54,7 @@ type VoterDeps interface {
 
 // ChainVerNameFunc is a function that returns the name of a chain version.
 type ChainVerNameFunc func(xchain.ChainVersion) string
+
+type AttestKeeper interface {
+	ListAttestationsFrom(ctx context.Context, chainID uint64, confLevel uint32, offset uint64, max uint64) ([]*Attestation, error)
+}

@@ -22,20 +22,7 @@ func (k *Keeper) ActiveSetByHeight(ctx context.Context, height uint64) (*types.V
 		return nil, err
 	}
 
-	var validators []*types.Validator
-	for _, val := range vals {
-		validators = append(validators, &types.Validator{
-			ConsensusPubkey: val.GetPubKey(),
-			Power:           val.GetPower(),
-		})
-	}
-
-	return &types.ValidatorSetResponse{
-		Id:              valset.GetId(),
-		CreatedHeight:   valset.GetCreatedHeight(),
-		ActivatedHeight: valset.GetActivatedHeight(),
-		Validators:      validators,
-	}, nil
+	return valSetResponse(valset, vals), nil
 }
 
 // ActiveSetByHeight returns the active cometBFT validator set at the given height. Zero power validators are skipped.
@@ -136,4 +123,21 @@ func (k *Keeper) ValidatorSet(ctx context.Context, req *types.ValidatorSetReques
 		ActivatedHeight: vatset.GetActivatedHeight(),
 		Validators:      vals,
 	}, nil
+}
+
+func valSetResponse(set *ValidatorSet, vals []*Validator) *types.ValidatorSetResponse {
+	var validators []*types.Validator
+	for _, val := range vals {
+		validators = append(validators, &types.Validator{
+			ConsensusPubkey: val.GetPubKey(),
+			Power:           val.GetPower(),
+		})
+	}
+
+	return &types.ValidatorSetResponse{
+		Id:              set.GetId(),
+		CreatedHeight:   set.GetCreatedHeight(),
+		ActivatedHeight: set.GetActivatedHeight(),
+		Validators:      validators,
+	}
 }

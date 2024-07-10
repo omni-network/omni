@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/halo/attest/voter"
 	"github.com/omni-network/omni/halo/comet"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
+	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/cchain"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
@@ -21,7 +22,6 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -39,23 +39,23 @@ type voteDeps struct {
 // voterLoader wraps a voter instances that is lazy loaded from the on-chain registry.
 // It is basically a noop while not loaded.
 type voterLoader struct {
-	mu        sync.Mutex
-	voter     *voter.Voter
-	proposed  []*atypes.BlockHeader
-	committed []*atypes.BlockHeader
-	valsets   [][]abci.ValidatorUpdate
-	isVal     bool
-	isValFunc voter.IsValDetector
+	mu         sync.Mutex
+	voter      *voter.Voter
+	proposed   []*atypes.BlockHeader
+	committed  []*atypes.BlockHeader
+	lastValSet *vtypes.ValidatorSetResponse
+	isVal      bool
+	localAddr  common.Address
 }
 
 func newVoterLoader(privKey crypto.PrivKey) (*voterLoader, error) {
-	addr, err := k1util.PubKeyToAddress(privKey.PubKey())
+	localAddr, err := k1util.PubKeyToAddress(privKey.PubKey())
 	if err != nil {
 		return nil, err
 	}
 
 	return &voterLoader{
-		isValFunc: voter.NewIsValDetector(addr),
+		localAddr: localAddr,
 	}, nil
 }
 
@@ -171,14 +171,16 @@ func (l *voterLoader) LazyLoad(
 	if err := v.SetCommitted(l.committed); err != nil {
 		return errors.Wrap(err, "set cached committed")
 	}
-	for _, valset := range l.valsets {
-		v.UpdateValidators(valset)
+	if l.lastValSet != nil {
+		if err := v.UpdateValidatorSet(l.lastValSet); err != nil {
+			return errors.Wrap(err, "update validator set")
+		}
 	}
 
 	// Clear all cached values
 	l.proposed = nil
 	l.committed = nil
-	l.valsets = nil
+	l.lastValSet = nil
 
 	// Set voter and start it
 	l.voter = v
@@ -187,18 +189,18 @@ func (l *voterLoader) LazyLoad(
 	return nil
 }
 
-func (l *voterLoader) isValidator() bool {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	return l.isVal
-}
-
 func (l *voterLoader) getVoter() (*voter.Voter, bool) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
 	return l.voter, l.voter != nil
+}
+
+func (l *voterLoader) isValidator() bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	return l.isVal
 }
 
 func (l *voterLoader) GetAvailable() []*atypes.Vote {
@@ -253,20 +255,23 @@ func (l *voterLoader) TrimBehind(minsByChain map[xchain.ChainVersion]uint64) int
 	return 0
 }
 
-func (l *voterLoader) UpdateValidators(valset []abci.ValidatorUpdate) {
+func (l *voterLoader) UpdateValidatorSet(valset *vtypes.ValidatorSetResponse) error {
 	if v, ok := l.getVoter(); ok {
-		v.UpdateValidators(valset)
-		return
+		return v.UpdateValidatorSet(valset)
 	}
 
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	if isVal, ok := l.isValFunc(valset); ok {
-		l.isVal = isVal
+	var err error
+	l.isVal, err = valset.IsValidator(l.localAddr)
+	if err != nil {
+		return err
 	}
 
-	l.valsets = append(l.valsets, valset)
+	l.lastValSet = valset
+
+	return nil
 }
 
 func (l *voterLoader) WaitDone() {
