@@ -20,7 +20,7 @@ func Start(
 	cprovider cchain.Provider,
 	rpcClients map[uint64]ethclient.Client,
 ) error {
-	cache, err := startEmitCursorCache(ctx, network, xprovider, cprovider)
+	cache, err := startEmitCursorCache(ctx, network, xprovider)
 	if err != nil {
 		return err
 	}
