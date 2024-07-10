@@ -266,7 +266,7 @@ func monitorOffsetsOnce(
 
 		emitted, ok := cache.AtOrBefore(height, stream)
 		if !ok {
-			lastErr = errors.Wrap(err, "emit cursor cache not populated", "stream", network.StreamName(stream))
+			lastErr = errors.New("emit cursor cache not populated", "stream", network.StreamName(stream))
 			continue
 		}
 
