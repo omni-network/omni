@@ -34,14 +34,16 @@ func startEmitCursorCache(
 				return nil
 			}
 
+			latest, err := xprov.ChainVersionHeight(ctx, xchain.ChainVersion{ID: chain.ID, ConfLevel: xchain.ConfLatest})
+			if err != nil {
+				return err
+			}
+
 			// Update the emit cursor cache for each stream for this height.
 			for _, stream := range network.StreamsFrom(chain.ID) {
 				ref := xchain.EmitRef{Height: &block.BlockHeight}
 				emit, _, err := xprov.GetEmittedCursor(ctx, ref, stream)
 				if err != nil {
-					// TODO(corver): Remove this if noisy or too slow
-					latest, _ := xprov.ChainVersionHeight(ctx, xchain.ChainVersion{ID: chain.ID, ConfLevel: xchain.ConfFinalized})
-
 					log.Warn(ctx, "Skipping populating emit cursor cache", err,
 						"stream", network.StreamName(stream),
 						"lagging", subtract(latest, block.BlockHeight),
@@ -60,7 +62,7 @@ func startEmitCursorCache(
 		}
 
 		// Figure out where to start streaming from.
-		latest, err := xprov.ChainVersionHeight(ctx, xchain.ChainVersion{ID: chain.ID, ConfLevel: xchain.ConfFinalized})
+		latest, err := xprov.ChainVersionHeight(ctx, xchain.ChainVersion{ID: chain.ID, ConfLevel: xchain.ConfLatest})
 		if err != nil {
 			return nil, errors.Wrap(err, "latest height", "chain", chain.Name)
 		}
