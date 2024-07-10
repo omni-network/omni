@@ -12,7 +12,6 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
@@ -27,7 +26,7 @@ type Config struct {
 // Start starts the validator self delegation load generator.
 // It does:
 // - Validator self-delegation on periodic basis.
-func Start(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints, cfg Config) error {
+func Start(ctx context.Context, network netconf.Network, ethClients map[uint64]ethclient.Client, cfg Config) error {
 	// Only generate load in ephemeral networks, devnet and staging.
 	if !network.ID.IsEphemeral() {
 		return nil
@@ -55,14 +54,9 @@ func Start(ctx context.Context, network netconf.Network, endpoints xchain.RPCEnd
 		return errors.New("omniEVM chain not found")
 	}
 
-	rpc, err := endpoints.ByNameOrID(omniEVM.Name, omniEVM.ID)
-	if err != nil {
-		return err
-	}
-
-	ethCl, err := ethclient.Dial(omniEVM.Name, rpc)
-	if err != nil {
-		return err
+	ethCl, ok := ethClients[omniEVM.ID]
+	if !ok {
+		return errors.New("eth client not found")
 	}
 
 	backend, err := ethbackend.NewBackend(omniEVM.Name, omniEVM.ID, omniEVM.BlockPeriod, ethCl, keys...)

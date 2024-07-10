@@ -39,7 +39,14 @@ func startEmitCursorCache(
 				ref := xchain.EmitRef{Height: &block.BlockHeight}
 				emit, _, err := xprov.GetEmittedCursor(ctx, ref, stream)
 				if err != nil {
-					log.Warn(ctx, "Skipping populating emit cursor cache", err, "stream", network.StreamName(stream))
+					// TODO(corver): Remove this if noisy or too slow
+					latest, _ := xprov.ChainVersionHeight(ctx, xchain.ChainVersion{ID: chain.ID, ConfLevel: xchain.ConfFinalized})
+
+					log.Warn(ctx, "Skipping populating emit cursor cache", err,
+						"stream", network.StreamName(stream),
+						"lagging", subtract(latest, block.BlockHeight),
+					)
+
 					continue
 				}
 
@@ -183,4 +190,8 @@ func (c *emitCursorCache) trim(height uint64, stream xchain.StreamID) {
 	if trimAfter >= 0 {
 		c.heights[stream] = c.heights[stream][trimAfter+1:]
 	}
+}
+
+func subtract(a uint64, b uint64) int64 {
+	return int64(a) - int64(b)
 }

@@ -11,7 +11,6 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tokens/coingecko"
-	"github.com/omni-network/omni/lib/xchain"
 	"github.com/omni-network/omni/monitor/xfeemngr/gasprice"
 	"github.com/omni-network/omni/monitor/xfeemngr/ticker"
 	"github.com/omni-network/omni/monitor/xfeemngr/tokenprice"
@@ -51,21 +50,16 @@ const (
 	maxSaneEthPerOmni = float64(1)
 )
 
-func Start(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints, privKeyPath string) error {
+func Start(ctx context.Context, network netconf.Network, ethClients map[uint64]ethclient.Client, privKeyPath string) error {
 	privKey, err := crypto.LoadECDSA(privKeyPath)
 	if err != nil {
 		return errors.Wrap(err, "load private key")
 	}
 
-	gasPricers, err := makeGasPricers(network, endpoints)
-	if err != nil {
-		return err
-	}
-
-	gprice := gasprice.NewBuffer(gasPricers, gasprice.WithThresholdPct(gasPriceBufferThreshold))
+	gprice := gasprice.NewBuffer(makeGasPricers(ethClients), gasprice.WithThresholdPct(gasPriceBufferThreshold))
 	tprice := tokenprice.NewBuffer(coingecko.New(), tokens.OMNI, tokens.ETH, tokenprice.WithThresholdPct(tokenPriceBufferThreshold))
 
-	oracles, err := makeOracles(ctx, network, endpoints, privKey, gprice, tprice)
+	oracles, err := makeOracles(ctx, network, ethClients, privKey, gprice, tprice)
 	if err != nil {
 		return err
 	}
@@ -77,9 +71,7 @@ func Start(ctx context.Context, network netconf.Network, endpoints xchain.RPCEnd
 		ticker:  ticker.New(ticker.WithInterval(feeOracleSyncInterval)),
 	}
 
-	if err := startMonitoring(ctx, network, endpoints); err != nil {
-		return errors.Wrap(err, "start monitoring")
-	}
+	startMonitoring(ctx, network, ethClients)
 
 	m.start(ctx)
 
@@ -101,33 +93,22 @@ func (m *Manager) start(ctx context.Context) {
 
 // makeGasPricers makes a map chainID to ethereum.GasPricer for the given network / endpoints.
 // This map is required by gasprice.Buffer.
-func makeGasPricers(network netconf.Network, endpoints xchain.RPCEndpoints) (map[uint64]ethereum.GasPricer, error) {
+func makeGasPricers(ethClients map[uint64]ethclient.Client) map[uint64]ethereum.GasPricer {
 	pricers := make(map[uint64]ethereum.GasPricer)
-
-	for _, chain := range network.EVMChains() {
-		rpc, err := endpoints.ByNameOrID(chain.Name, chain.ID)
-		if err != nil {
-			return nil, errors.Wrap(err, "rpc endpoint")
-		}
-
-		client, err := ethclient.Dial(chain.Name, rpc)
-		if err != nil {
-			return nil, errors.Wrap(err, "dial client")
-		}
-
-		pricers[chain.ID] = client
+	for chainID, ethClient := range ethClients {
+		pricers[chainID] = ethClient
 	}
 
-	return pricers, nil
+	return pricers
 }
 
 // makeOracles makes a map chainID to feeOracle for each chain in the network.
-func makeOracles(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints,
+func makeOracles(ctx context.Context, network netconf.Network, ethClients map[uint64]ethclient.Client,
 	pk *ecdsa.PrivateKey, gprice *gasprice.Buffer, tprice *tokenprice.Buffer) (map[uint64]feeOracle, error) {
 	oracles := make(map[uint64]feeOracle)
 
 	for _, chain := range network.EVMChains() {
-		oracle, err := makeOracle(ctx, chain, network, endpoints, pk, gprice, tprice)
+		oracle, err := makeOracle(ctx, chain, network, ethClients, pk, gprice, tprice)
 		if err != nil {
 			return nil, errors.Wrap(err, "make oracle", "chain", chain.Name)
 		}
