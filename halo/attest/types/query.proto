@@ -19,6 +19,9 @@ service Query {
   // EarliestAttestation queries halo for the earliest approved attestation in consensus chain state for the given chain_id.
   rpc EarliestAttestation(EarliestAttestationRequest) returns (EarliestAttestationResponse) {}
 
+  // ListAllAttestations queries halo for all approved attestations in consensus chain state for the given chain_id.
+  rpc ListAllAttestations(ListAllAttestationsRequest) returns (ListAllAttestationsResponse) {}
+
   // WindowCompare compares the given chain height to the vote window.
   // It returns whether the request is behind (-1), or in (0), or after (1) the vote window.
   // The vote window is a configured number of blocks around the latest approved attestation.
@@ -54,6 +57,17 @@ message EarliestAttestationRequest {
 
 message EarliestAttestationResponse {
   Attestation attestation = 1;
+}
+
+message ListAllAttestationsRequest {
+  uint64 chain_id    = 1; // Chain ID as per https://chainlist.org
+  uint32 conf_level  = 2; // Confirmation level of the attestation
+  uint32 status      = 3; // Status of the attestation
+  uint64 from_offset = 4; // XBlock offset to start from (inclusive)
+}
+
+message ListAllAttestationsResponse {
+  repeated Attestation attestations = 1;
 }
 
 message WindowCompareRequest {
