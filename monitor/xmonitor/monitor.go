@@ -10,6 +10,9 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
+	"github.com/omni-network/omni/monitor/xmonitor/emitcache"
+
+	dbm "github.com/cosmos/cosmos-db"
 )
 
 // Start starts the xchain monitoring goroutines.
@@ -20,7 +23,9 @@ func Start(
 	cprovider cchain.Provider,
 	rpcClients map[uint64]ethclient.Client,
 ) error {
-	cache, err := startEmitCursorCache(ctx, network, xprovider)
+	db := dbm.NewMemDB() // TODO(corver): Replace with on-disk DB.
+
+	cache, err := emitcache.Start(ctx, network, xprovider, db)
 	if err != nil {
 		return err
 	}
@@ -141,7 +146,7 @@ func monitorAttestedForever(
 	srcChain netconf.Chain,
 	cprovider cchain.Provider,
 	network netconf.Network,
-	cache *emitCursorCache,
+	cache emitcache.Cache,
 ) {
 	chainVer := srcChain.ChainVersions()[0]
 
@@ -168,8 +173,11 @@ func monitorAttestedForever(
 			for _, stream := range network.StreamsFrom(srcChain.ID) {
 				name := network.StreamName(stream)
 
-				cursor, ok := cache.Get(att.BlockHeight, stream)
-				if !ok {
+				cursor, ok, err := cache.Get(ctx, att.BlockHeight, stream)
+				if err != nil {
+					log.Warn(ctx, "Getting cache failed (will retry)", err, "chain", srcChain.Name)
+					continue
+				} else if !ok {
 					log.Warn(ctx, "Emit cursor cache not populated", nil,
 						"height", att.BlockHeight, "stream", name)
 
@@ -222,7 +230,7 @@ func monitorOffsetsForever(
 	xprovider xchain.Provider,
 	network netconf.Network,
 	src, dst netconf.Chain,
-	cache *emitCursorCache,
+	cache emitcache.Cache,
 ) {
 	ticker := time.NewTicker(time.Second * 30)
 	defer ticker.Stop()
@@ -250,7 +258,7 @@ func monitorOffsetsOnce(
 	xprovider xchain.Provider,
 	network netconf.Network,
 	src, dst netconf.Chain,
-	cache *emitCursorCache,
+	cache emitcache.Cache,
 ) error {
 	var lastErr error
 	for _, stream := range network.StreamsBetween(src.ID, dst.ID) {
@@ -264,15 +272,18 @@ func monitorOffsetsOnce(
 			continue // Don't monitor chains before finalized.
 		}
 
-		emitted, ok := cache.AtOrBefore(height, stream)
-		if !ok {
-			lastErr = errors.New("emit cursor cache not populated", "stream", network.StreamName(stream))
+		emitted, ok, err := cache.AtOrBefore(ctx, height, stream)
+		if err != nil {
+			lastErr = errors.Wrap(err, "query cache")
+			continue
+		} else if !ok {
+			lastErr = errors.New("emit cursor cache not populated", "stream", network.StreamName(stream), "height", height)
 			continue
 		}
 
 		submitted, _, err := xprovider.GetSubmittedCursor(ctx, stream)
 		if err != nil {
-			lastErr = errors.Wrap(err, "get submit cursor", "stream", network.StreamName(stream))
+			lastErr = errors.Wrap(err, "get submit cursor", "stream", network.StreamName(stream), "height", height)
 			continue
 		}
 

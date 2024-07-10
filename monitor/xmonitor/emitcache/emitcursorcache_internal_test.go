@@ -1,25 +1,32 @@
-package xmonitor
+package emitcache
 
 import (
+	"context"
 	"math"
 	"testing"
 
 	"github.com/omni-network/omni/lib/xchain"
 
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/stretchr/testify/require"
 )
 
 func TestEmitCursorCache(t *testing.T) {
 	t.Parallel()
-	cache := newEmitCursorCache()
+	db := dbm.NewMemDB()
+	cache, err := newEmitCursorCache(db)
+	require.NoError(t, err)
+	ctx := context.Background()
 
 	assertContains := func(t *testing.T, height uint64, stream xchain.StreamID, cursor xchain.EmitCursor) {
 		t.Helper()
-		c, ok := cache.Get(height, stream)
+		c, ok, err := cache.Get(ctx, height, stream)
+		require.NoError(t, err)
 		require.True(t, ok)
 		require.Equal(t, cursor, c)
 
-		c, ok = cache.AtOrBefore(height, stream)
+		c, ok, err = cache.AtOrBefore(ctx, height, stream)
+		require.NoError(t, err)
 		require.True(t, ok)
 		require.Equal(t, cursor, c)
 	}
@@ -27,15 +34,27 @@ func TestEmitCursorCache(t *testing.T) {
 	assertHighest := func(t *testing.T, stream xchain.StreamID, cursor xchain.EmitCursor) {
 		t.Helper()
 		const maxHeight = math.MaxUint64
-		c, ok := cache.AtOrBefore(maxHeight, stream)
+		c, ok, err := cache.AtOrBefore(ctx, maxHeight, stream)
+		require.NoError(t, err)
 		require.True(t, ok)
 		require.Equal(t, cursor, c)
 	}
 
 	assertNotContains := func(t *testing.T, height uint64, stream xchain.StreamID) {
 		t.Helper()
-		_, ok := cache.Get(height, stream)
+		_, ok, err := cache.Get(ctx, height, stream)
+		require.NoError(t, err)
 		require.False(t, ok)
+	}
+
+	set := func(t *testing.T, height uint64, cursor xchain.EmitCursor) {
+		t.Helper()
+		require.NoError(t, cache.set(ctx, height, cursor))
+	}
+
+	trim := func(t *testing.T, height uint64) {
+		t.Helper()
+		require.NoError(t, cache.trim(ctx, height))
 	}
 
 	stream1 := xchain.StreamID{SourceChainID: 1}
@@ -50,27 +69,29 @@ func TestEmitCursorCache(t *testing.T) {
 
 	assertNotContains(t, 1, stream1)
 	assertNotContains(t, 2, stream1)
-	cache.set(1, stream1, cursor11)
+	set(t, 1, cursor12)
+	assertContains(t, 1, stream1, cursor12)
+	set(t, 1, cursor11) // Update it to 11
 	assertContains(t, 1, stream1, cursor11)
-	cache.trim(0, stream1) // Nothing trimmed
+	trim(t, 0) // Nothing trimmed
 	assertContains(t, 1, stream1, cursor11)
 	assertHighest(t, stream1, cursor11)
 
 	assertNotContains(t, 2, stream1)
-	cache.set(2, stream1, cursor12)
-	cache.trim(0, stream1) // Nothing trimmed
+	set(t, 2, cursor12)
+	trim(t, 0) // Nothing trimmed
 	assertContains(t, 2, stream1, cursor12)
 	assertContains(t, 1, stream1, cursor11)
 	assertHighest(t, stream1, cursor12)
 
 	assertNotContains(t, 1, stream2)
 	assertNotContains(t, 2, stream2)
-	cache.set(1, stream2, cursor21)
+	set(t, 1, cursor21)
 	assertContains(t, 1, stream2, cursor21)
 	assertHighest(t, stream2, cursor21)
 
 	assertNotContains(t, 2, stream2)
-	cache.set(2, stream2, cursor22)
+	set(t, 2, cursor22)
 	assertContains(t, 2, stream2, cursor22)
 	assertContains(t, 1, stream2, cursor21)
 	assertHighest(t, stream2, cursor22)
@@ -78,21 +99,12 @@ func TestEmitCursorCache(t *testing.T) {
 	assertNotContains(t, 1, stream99)
 	assertNotContains(t, 2, stream99)
 
-	cache.trim(1, stream1)
+	trim(t, 1)
 	assertNotContains(t, 1, stream1)
+	assertNotContains(t, 1, stream2)
 	assertContains(t, 2, stream1, cursor12)
 
-	cache.trim(2, stream1)
+	trim(t, 2)
 	assertNotContains(t, 2, stream1)
-
-	cache.trim(2, stream2)
-	assertNotContains(t, 1, stream2)
 	assertNotContains(t, 2, stream2)
-
-	// ensure internal state
-	require.Empty(t, cache.cursors)
-
-	require.Len(t, cache.heights, 2)
-	require.Empty(t, cache.heights[stream1])
-	require.Empty(t, cache.heights[stream2])
 }
