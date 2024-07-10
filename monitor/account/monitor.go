@@ -12,8 +12,8 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-// startMonitoring starts the monitoring goroutines.
-func startMonitoring(ctx context.Context, network netconf.Network, rpcClients map[uint64]ethclient.Client) {
+// StartMonitoring starts the monitoring goroutines.
+func StartMonitoring(ctx context.Context, network netconf.Network, rpcClients map[uint64]ethclient.Client) {
 	accounts := eoa.AllAccounts(network.ID)
 	chains := network.EVMChains()
 	log.Info(ctx, "Monitoring accounts", "accounts", len(accounts), "chains", len(chains))

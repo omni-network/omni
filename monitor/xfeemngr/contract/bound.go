@@ -10,7 +10,6 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -28,23 +27,13 @@ type BoundFeeOracleV1 struct {
 var _ FeeOracleV1 = BoundFeeOracleV1{}
 
 // New creates a new bound FeeOracleV1 contract.
-func New(ctx context.Context, chain netconf.Chain, endpoints xchain.RPCEndpoints, pk *ecdsa.PrivateKey) (BoundFeeOracleV1, error) {
-	rpc, err := endpoints.ByNameOrID(chain.Name, chain.ID)
-	if err != nil {
-		return BoundFeeOracleV1{}, errors.Wrap(err, "rpc endpoint")
-	}
-
-	client, err := ethclient.Dial(chain.Name, rpc)
-	if err != nil {
-		return BoundFeeOracleV1{}, errors.Wrap(err, "dial client")
-	}
-
-	backend, err := ethbackend.NewBackend(chain.Name, chain.ID, chain.BlockPeriod, client, pk)
+func New(ctx context.Context, chain netconf.Chain, ethCl ethclient.Client, pk *ecdsa.PrivateKey) (BoundFeeOracleV1, error) {
+	backend, err := ethbackend.NewBackend(chain.Name, chain.ID, chain.BlockPeriod, ethCl, pk)
 	if err != nil {
 		return BoundFeeOracleV1{}, errors.Wrap(err, "new backend")
 	}
 
-	portal, err := bindings.NewOmniPortal(chain.PortalAddress, client)
+	portal, err := bindings.NewOmniPortal(chain.PortalAddress, ethCl)
 	if err != nil {
 		return BoundFeeOracleV1{}, errors.Wrap(err, "new omni portal")
 	}

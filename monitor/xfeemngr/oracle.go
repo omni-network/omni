@@ -6,11 +6,11 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
-	"github.com/omni-network/omni/lib/xchain"
 	"github.com/omni-network/omni/monitor/xfeemngr/contract"
 	"github.com/omni-network/omni/monitor/xfeemngr/gasprice"
 	"github.com/omni-network/omni/monitor/xfeemngr/ticker"
@@ -25,7 +25,7 @@ type feeOracle struct {
 	tprice   *tokenprice.Buffer  // token price buffer
 }
 
-func makeOracle(ctx context.Context, chain netconf.Chain, network netconf.Network, endpoints xchain.RPCEndpoints,
+func makeOracle(ctx context.Context, chain netconf.Chain, network netconf.Network, ethClients map[uint64]ethclient.Client,
 	pk *ecdsa.PrivateKey, gprice *gasprice.Buffer, tprice *tokenprice.Buffer) (feeOracle, error) {
 	chainmeta, ok := evmchain.MetadataByID(chain.ID)
 	if !ok {
@@ -37,7 +37,12 @@ func makeOracle(ctx context.Context, chain netconf.Chain, network netconf.Networ
 		return feeOracle{}, errors.Wrap(err, "make dest chains")
 	}
 
-	bound, err := contract.New(ctx, chain, endpoints, pk)
+	ethCl, ok := ethClients[chain.ID]
+	if !ok {
+		return feeOracle{}, errors.New("eth client not found", "chain", chain.ID)
+	}
+
+	bound, err := contract.New(ctx, chain, ethCl, pk)
 	if err != nil {
 		return feeOracle{}, errors.Wrap(err, "new bound fee oracle")
 	}

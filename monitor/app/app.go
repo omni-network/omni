@@ -48,29 +48,34 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	if err := avs.StartMonitor(ctx, network, cfg.RPCEndpoints); err != nil {
+	ethClients, err := initializeEthClients(network.EVMChains(), cfg.RPCEndpoints)
+	if err != nil {
+		return err
+	}
+
+	if err := avs.StartMonitor(ctx, network, ethClients); err != nil {
 		return errors.Wrap(err, "monitor AVS")
 	}
 
-	if err := account.StartMonitor(ctx, network, cfg.RPCEndpoints); err != nil {
-		return errors.Wrap(err, "monitor account balances")
-	}
+	account.StartMonitoring(ctx, network, ethClients)
 
-	if err := startLoadGen(ctx, cfg, network); err != nil {
+	if err := startLoadGen(ctx, cfg, network, ethClients); err != nil {
 		return errors.Wrap(err, "start load generator")
 	}
 
-	if err := startAVSSync(ctx, cfg, network); err != nil {
+	if err := startAVSSync(ctx, cfg, network, ethClients); err != nil {
 		return errors.Wrap(err, "start AVS sync")
 	}
 
-	if err := startXMonitor(ctx, cfg, network); err != nil {
+	if err := startXMonitor(ctx, cfg, network, ethClients); err != nil {
 		return errors.Wrap(err, "start xchain monitor")
 	}
 
-	if err := xfeemngr.Start(ctx, network, cfg.RPCEndpoints, cfg.PrivateKey); err != nil {
+	if err := xfeemngr.Start(ctx, network, ethClients, cfg.PrivateKey); err != nil {
 		return errors.Wrap(err, "start xfee manager")
 	}
+
+	startMonitoringSyncDiff(ctx, network, ethClients)
 
 	select {
 	case <-ctx.Done():
@@ -82,15 +87,10 @@ func Run(ctx context.Context, cfg Config) error {
 }
 
 // startXMonitor starts the xchain offset/head monitoring.
-func startXMonitor(ctx context.Context, cfg Config, network netconf.Network) error {
+func startXMonitor(ctx context.Context, cfg Config, network netconf.Network, ethClients map[uint64]ethclient.Client) error {
 	if cfg.HaloURL == "" {
 		log.Warn(ctx, "No Halo URL provided, skipping xchain monitor", nil)
 		return nil
-	}
-
-	rpcClientPerChain, err := initializeRPCClients(network.EVMChains(), cfg.RPCEndpoints)
-	if err != nil {
-		return err
 	}
 
 	tmClient, err := newClient(cfg.HaloURL)
@@ -99,9 +99,9 @@ func startXMonitor(ctx context.Context, cfg Config, network netconf.Network) err
 	}
 
 	cprov := cprovider.NewABCIProvider(tmClient, network.ID, netconf.ChainVersionNamer(cfg.Network))
-	xprov := xprovider.New(network, rpcClientPerChain, cprov)
+	xprov := xprovider.New(network, ethClients, cprov)
 
-	return xmonitor.Start(ctx, network, xprov, cprov, rpcClientPerChain)
+	return xmonitor.Start(ctx, network, xprov, cprov, ethClients)
 }
 
 // serveMonitoring starts a goroutine that serves the monitoring API. It
@@ -125,8 +125,8 @@ func serveMonitoring(address string) <-chan error {
 	return errChan
 }
 
-func startLoadGen(ctx context.Context, cfg Config, network netconf.Network) error {
-	if err := loadgen.Start(ctx, network, cfg.RPCEndpoints, cfg.LoadGen); err != nil {
+func startLoadGen(ctx context.Context, cfg Config, network netconf.Network, ethClients map[uint64]ethclient.Client) error {
+	if err := loadgen.Start(ctx, network, ethClients, cfg.LoadGen); err != nil {
 		return errors.Wrap(err, "start load generator")
 	}
 
@@ -163,8 +163,8 @@ func newClient(tmNodeAddr string) (client.Client, error) {
 	return c, nil
 }
 
-// initializeRPCClients initializes the RPC clients for the given chains.
-func initializeRPCClients(chains []netconf.Chain, endpoints xchain.RPCEndpoints) (map[uint64]ethclient.Client, error) {
+// initializeEthClients initializes the RPC clients for the given chains.
+func initializeEthClients(chains []netconf.Chain, endpoints xchain.RPCEndpoints) (map[uint64]ethclient.Client, error) {
 	rpcClientPerChain := make(map[uint64]ethclient.Client)
 	for _, chain := range chains {
 		rpc, err := endpoints.ByNameOrID(chain.Name, chain.ID)

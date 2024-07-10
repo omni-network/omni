@@ -17,7 +17,7 @@ import (
 
 // startAVSSync starts a forever-loop that calls `OmniAVS.SyncWithOmni` once per day.
 // This results in a xmsg from the AVS contract to the OmniRestaking contract with the latest Eigen delegations.
-func startAVSSync(ctx context.Context, cfg Config, network netconf.Network) error {
+func startAVSSync(ctx context.Context, cfg Config, network netconf.Network, ethClients map[uint64]ethclient.Client) error {
 	privateKey, err := ethcrypto.LoadECDSA(cfg.PrivateKey)
 	if err != nil {
 		return errors.Wrap(err, "load private key")
@@ -38,14 +38,9 @@ func startAVSSync(ctx context.Context, cfg Config, network netconf.Network) erro
 		return nil
 	}
 
-	rpc, err := cfg.RPCEndpoints.ByNameOrID(ethL1.Name, ethL1.ID)
-	if err != nil {
-		return err
-	}
-
-	ethCl, err := ethclient.Dial(ethL1.Name, rpc)
-	if err != nil {
-		return errors.Wrap(err, "dial ethereum chain")
+	ethCl, ok := ethClients[ethL1.ID]
+	if !ok {
+		return errors.New("no eth client for l1")
 	}
 
 	backend, err := ethbackend.NewBackend(ethL1.Name, ethL1.ID, ethL1.BlockPeriod, ethCl)
