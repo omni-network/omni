@@ -4,15 +4,19 @@ import (
 	"context"
 	"sync"
 
-	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 )
 
-// cacheTrimLag is the number of blocks after which cursors are evicted from the cache.
-const cacheTrimLag = 10_000
+const (
+	// cacheTrimLag is the number of blocks after which cursors are evicted from the cache.
+	cacheTrimLag = 10_000
+	// cacheStartLag is the number of blocks behind latest to start streaming and populating the cache.
+	// 128 is the default number of historical block state that geth stores in non-archive mode.
+	cacheStartLag = 128
+)
 
 // startEmitCursorCache subscribes the xprovider iot populate the emit cursor cache.
 // It returns a cache that will be populated and trimmed asynchronously.
@@ -20,7 +24,6 @@ func startEmitCursorCache(
 	ctx context.Context,
 	network netconf.Network,
 	xprov xchain.Provider,
-	cprov cchain.Provider,
 ) (*emitCursorCache, error) {
 	cache := newEmitCursorCache()
 
@@ -49,15 +52,13 @@ func startEmitCursorCache(
 			return nil
 		}
 
-		// Stream from latest finalized attestation height
-		fromHeight := chain.DeployHeight
-		att, ok, err := cprov.LatestAttestation(ctx, xchain.ChainVersion{ID: chain.ID, ConfLevel: xchain.ConfFinalized})
+		// Figure out where to start streaming from.
+		latest, err := xprov.ChainVersionHeight(ctx, xchain.ChainVersion{ID: chain.ID, ConfLevel: xchain.ConfFinalized})
 		if err != nil {
-			return nil, errors.Wrap(err, "latest attestation", "chain", chain.Name)
-		} else if ok {
-			fromHeight = att.BlockHeight
+			return nil, errors.Wrap(err, "latest height", "chain", chain.Name)
 		}
 
+		fromHeight := latest - cacheStartLag
 		req := xchain.ProviderRequest{
 			ChainID:   chain.ID,
 			Height:    fromHeight,
