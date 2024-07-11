@@ -69,7 +69,7 @@ make build-docker
 To run the end-to-end tests, run:
 
 ```bash
-MANIFEST=simple make e2e-run
+MANIFEST=devnet1 make e2e-run
 ```
 
 ### Starting a devnet
@@ -100,6 +100,8 @@ make devnet-clean
 ├── <a href="./lib/">lib</a>: Core libraries for various protocol functionalities.
 │ ├── <a href="./lib/cchain/">cchain</a>: Consensus chain interaction utilities.
 │ └── <a href="./lib/xchain/">xchain</a>: Cross-chain messaging and utilities.
+├── <a href="./octane/">octane</a>: Octane is a modular framework for the EVM.
+│ └── <a href="./octane/evmengine/">evmengine</a>: The EVMEngine cosmos module.
 ├── <a href="./relayer/">relayer</a>: Relayer service for cross-chain messages and transactions.
 │ └── <a href="./relayer/app/">app</a>: Application logic for the relayer service.
 ├── <a href="./scripts/">scripts</a>: Utility scripts for development and operational tasks.
