@@ -12,6 +12,10 @@ import (
 
 // LoadKey loads and returns the RSA256 from disk.
 func LoadKey(path string) (*rsa.PrivateKey, error) {
+	if path == "" {
+		return nil, errors.New("fireblocks key path is empty")
+	}
+
 	bz, err := os.ReadFile(path)
 	if err != nil {
 		return nil, errors.Wrap(err, "load fireblocks key", "path", path)
