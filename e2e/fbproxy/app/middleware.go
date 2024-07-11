@@ -21,10 +21,10 @@ type txSigner interface {
 //   - intercepts eth_sendTransaction requests, signs them `txsigner`
 //     and replaces them with eth_sendRawTransaction requests
 //   - leaves all other requests unmodified
-func NewSendTxMiddleware(txsigner txSigner, chainID *big.Int) Middleware {
-	// signer used to create signaure hash and recover tx sender,
+func NewSendTxMiddleware(txsigner txSigner, chainID uint64) Middleware {
+	// sigHelper used to create signature hash and recover tx sender,
 	// not for actual signing which is left to txsigner
-	signer := types.LatestSignerForChainID(chainID)
+	sigHelper := types.LatestSignerForChainID(big.NewInt(int64(chainID)))
 
 	return func(ctx context.Context, req JSONRPCMessage) (JSONRPCMessage, error) {
 		if req.Method != "eth_sendTransaction" {
@@ -44,16 +44,21 @@ func NewSendTxMiddleware(txsigner txSigner, chainID *big.Int) Middleware {
 		}
 
 		args := paramsIn[0]
+
+		if args.From == nil {
+			return JSONRPCMessage{}, errors.New("missing from field")
+		}
+
 		tx := args.ToTransaction()
 
-		sig, err := txsigner.Sign(ctx, signer.Hash(tx), *args.From)
+		sig, err := txsigner.Sign(ctx, sigHelper.Hash(tx), *args.From)
 		if err != nil {
 			return JSONRPCMessage{}, errors.Wrap(err, "sign")
 		}
 
 		log.Debug(ctx, "Signed tx", "tx", tx.Hash().Hex(), "from", args.From.Hex())
 
-		signed, err := tx.WithSignature(signer, sig[:])
+		signed, err := tx.WithSignature(sigHelper, sig[:])
 		if err != nil {
 			return JSONRPCMessage{}, errors.Wrap(err, "with signature")
 		}

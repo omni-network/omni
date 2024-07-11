@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"math/big"
 	"net/http"
 	"time"
 
@@ -33,15 +32,12 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "new proxy")
 	}
 
-	mux := http.NewServeMux()
-	mux.Handle("/", http.HandlerFunc(proxy.Proxy))
-
 	httpServer := &http.Server{
 		Addr:              cfg.ListenAddr,
 		ReadHeaderTimeout: 30 * time.Second,
 		IdleTimeout:       30 * time.Second,
 		WriteTimeout:      30 * time.Second,
-		Handler:           mux,
+		Handler:           http.HandlerFunc(proxy.Proxy),
 	}
 
 	log.Info(ctx, "Starting fbproxy server", "address", cfg.ListenAddr)
@@ -77,14 +73,23 @@ func Run(ctx context.Context, cfg Config) error {
 	return nil
 }
 
-func getChainID(ctx context.Context, rpc string) (*big.Int, error) {
+func getChainID(ctx context.Context, rpc string) (uint64, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	client, err := ethclient.DialContext(ctx, rpc)
-	if err != nil {
-		return nil, errors.Wrap(err, "dial base rpc")
+	if rpc == "" {
+		return 0, errors.New("base RPC URL is required")
 	}
 
-	return client.ChainID(ctx)
+	client, err := ethclient.DialContext(ctx, rpc)
+	if err != nil {
+		return 0, errors.Wrap(err, "dial base rpc")
+	}
+
+	id, err := client.ChainID(ctx)
+	if err != nil {
+		return 0, errors.Wrap(err, "get chain ID")
+	}
+
+	return id.Uint64(), nil
 }

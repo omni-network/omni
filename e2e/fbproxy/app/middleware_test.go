@@ -64,7 +64,7 @@ func testSendTxMiddlewareOnce(t *testing.T, tt testTx) {
 	err := json.Unmarshal([]byte(tt.txArgsJSON), &txargs)
 	require.NoError(t, err)
 
-	mw := app.NewSendTxMiddleware(txsigner, chainID)
+	mw := app.NewSendTxMiddleware(txsigner, chainID.Uint64())
 	req := app.JSONRPCMessage{
 		Method:  "eth_sendTransaction",
 		Params:  mustMarshal(t, []app.TransactionArgs{txargs}),

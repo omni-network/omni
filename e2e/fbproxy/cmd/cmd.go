@@ -39,9 +39,9 @@ func New() *cobra.Command {
 }
 
 func bindFlags(flags *pflag.FlagSet, cfg *app.Config) {
-	flags.StringVar(&cfg.Network, "network", cfg.Network, "Network ID")
+	flags.StringVar((*string)(&cfg.Network), "network", string(cfg.Network), "Network ID")
 	flags.StringVar(&cfg.ListenAddr, "listen-addr", cfg.ListenAddr, "Address for proxy to listen on")
-	flags.StringVar(&cfg.BaseRPC, "base-rpc", cfg.BaseRPC, "Base RPC URL to forward requests to")
+	flags.StringVar(&cfg.BaseRPC, "base-rpc", cfg.BaseRPC, "Base RPC URL to forward requests to; e.g. http://localhost:8545")
 	flags.StringVar(&cfg.FireAPIKey, "fireblocks-api-key", cfg.FireAPIKey, "FireBlocks api key")
 	flags.StringVar(&cfg.FireKeyPath, "fireblocks-key-path", cfg.FireKeyPath, "FireBlocks RSA private key path")
 }

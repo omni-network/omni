@@ -7,13 +7,12 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"sync"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 )
 
-// A value of this type can a JSON-RPC request, notification, successful response or
+// JSONRPCMessage is a JSON-RPC request, notification, successful response or
 // error response. Which one it is depends on the fields.
 type JSONRPCMessage struct {
 	Version string          `json:"jsonrpc,omitempty"`
@@ -31,7 +30,6 @@ type JSONRPCError struct {
 }
 
 type proxy struct {
-	mu     sync.RWMutex
 	target *url.URL
 	mwares []Middleware
 }
@@ -43,15 +41,15 @@ func newProxy(target string, mwares ...Middleware) (*proxy, error) {
 		return nil, errors.New("no middlewares provided")
 	}
 
-	resp := new(proxy)
-
-	if err := resp.setTarget(target); err != nil {
-		return nil, err
+	targetURL, err := url.Parse(target)
+	if err != nil {
+		return nil, errors.Wrap(err, "parse target")
 	}
 
-	resp.mwares = mwares
-
-	return resp, nil
+	return &proxy{
+		target: targetURL,
+		mwares: mwares,
+	}, nil
 }
 
 func (p *proxy) Proxy(w http.ResponseWriter, r *http.Request) {
@@ -77,7 +75,7 @@ func (p *proxy) proxy(ctx context.Context, w http.ResponseWriter, r *http.Reques
 	}
 
 	// apply middlewares
-	for _, mware := range p.getMiddlewares() {
+	for _, mware := range p.mwares {
 		reqMsg, err = mware(ctx, reqMsg)
 		if err != nil {
 			return errors.Wrap(err, "middleware")
@@ -92,7 +90,7 @@ func (p *proxy) proxy(ctx context.Context, w http.ResponseWriter, r *http.Reques
 	nextReq, err := http.NewRequestWithContext(
 		ctx,
 		r.Method,
-		p.getTarget().String(),
+		p.target.String(),
 		closeReader{bytes.NewReader(reqBody)},
 	)
 	if err != nil {
@@ -106,47 +104,8 @@ func (p *proxy) proxy(ctx context.Context, w http.ResponseWriter, r *http.Reques
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		w.WriteHeader(resp.StatusCode)
-		_, _ = io.Copy(w, resp.Body)
-
-		return nil
-	}
-
-	respBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return errors.Wrap(err, "read response")
-	}
-
-	_, _ = w.Write(respBytes)
-
-	return nil
-}
-
-func (p *proxy) getTarget() *url.URL {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-
-	return p.target
-}
-
-func (p *proxy) getMiddlewares() []Middleware {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-
-	return p.mwares
-}
-
-func (p *proxy) setTarget(target string) error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	u, err := url.Parse(target)
-	if err != nil {
-		return errors.Wrap(err, "parse target url")
-	}
-
-	p.target = u
+	w.WriteHeader(resp.StatusCode)
+	_, _ = io.Copy(w, resp.Body)
 
 	return nil
 }
